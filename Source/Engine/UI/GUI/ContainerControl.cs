@@ -260,6 +260,21 @@ namespace FlaxEngine.GUI
         }
 
         /// <summary>
+        /// Gets child control at given index.
+        /// </summary>
+        /// <param name="index">The control index.</param>
+        /// <param name="onGet">Invoked after child retrieved.</param>
+        /// <param name="onFail">Invoked if failed to retrieve child.</param>
+        /// <returns>The child control.</returns>
+        public Control GetChild(int index, Action<Control> onGet, Action onFail = null)
+        {
+            var result = GetChild(index);
+            if (result != null) onGet?.Invoke(result);
+            else onFail?.Invoke();
+            return result;
+        }
+
+        /// <summary>
         /// Searches for a child control of a specific type. If there are multiple controls matching the type, only the first one found is returned.
         /// </summary>
         /// <typeparam name="T">The type of the control to search for. Includes any controls derived from the type.</typeparam>
@@ -274,6 +289,21 @@ namespace FlaxEngine.GUI
                     return (T)_children[i];
             }
             return null;
+        }
+
+        /// <summary>
+        /// Searches for a child control of a specific type. If there are multiple controls matching the type, only the first one found is returned.
+        /// </summary>
+        /// <typeparam name="T">The type of the control to search for. Includes any controls derived from the type.</typeparam>
+        /// <param name="onGet">Invoked after child retrieved.</param>
+        /// <param name="onFail">Invoked if failed to retrieve child.</param>
+        /// <returns>The control instance if found, otherwise null.</returns>
+        public T GetChild<T>(Action<T> onGet, Action onFail) where T : Control
+        {
+            var result = GetChild<T>();
+            if (result != null) onGet?.Invoke(result);
+            else onFail?.Invoke();
+            return result;
         }
 
         /// <summary>
@@ -348,6 +378,21 @@ namespace FlaxEngine.GUI
         }
 
         /// <summary>
+        /// Tries to find any child control at given point in control local coordinates
+        /// </summary>
+        /// <param name="point">The local point to check.</param>
+        /// <param name="onGet">Invoked after child retrieved.</param>
+        /// <param name="onFail">Invoked if failed to retrieve child.</param>
+        /// <returns>The found control or null.</returns>
+        public Control GetChildAt(Float2 point, Action<Control> onGet, Action onFail = null)
+        {
+            Control result = GetChildAt(point);
+            if (result != null) onGet?.Invoke(result);
+            else onFail?.Invoke();
+            return result;
+        }
+
+        /// <summary>
         /// Tries to find valid child control at given point in control local coordinates. Uses custom callback method to test controls to pick.
         /// </summary>
         /// <param name="point">The local point to check.</param>
@@ -367,6 +412,22 @@ namespace FlaxEngine.GUI
                     break;
                 }
             }
+            return result;
+        }
+
+        /// <summary>
+        /// Tries to find valid child control at given point in control local coordinates. Uses custom callback method to test controls to pick.
+        /// </summary>
+        /// <param name="point">The local point to check.</param>
+        /// <param name="isValid">The control validation callback.</param>
+        /// <param name="onGet">Invoked after child retrieved.</param>
+        /// <param name="onFail">Invoked if failed to retrieve child.</param>
+        /// <returns>The found control or null.</returns>
+        public Control GetChildAt(Float2 point, Func<Control, bool> isValid, Action<Control> onGet, Action onFail = null)
+        {
+            var result = GetChildAt(point, isValid);
+            if (result != null) onGet?.Invoke(result);
+            else onFail?.Invoke();
             return result;
         }
 
@@ -393,6 +454,18 @@ namespace FlaxEngine.GUI
                     break;
                 }
             }
+            return result;
+        }
+
+        /// Tries to find lowest child control at given point in control local coordinates.
+        /// </summary>
+        /// <param name="point">The local point to check.</param>
+        /// <returns>The found control or null.</returns>
+        public Control GetChildAtRecursive(Float2 point, Action<Control> onGet, Action onFail = null)
+        {
+            var result = GetChildAtRecursive(point);
+            if (result != null) onGet?.Invoke(result);
+            else onFail?.Invoke();
             return result;
         }
 
