@@ -1,12 +1,11 @@
 ﻿using System;
 using System.Linq;
-using FlaxEditor.GUI;
 using FlaxEditor.Scripting;
 using FlaxEditor.Surface.Elements;
 using FlaxEditor.Surface.Undo;
 using FlaxEngine;
 
-namespace FlaxEditor.Surface.Archetypes
+namespace FlaxEditor.Surface
 {
     /// <summary>
     /// A special type of node that adds the functionality to convert nodes to parameters
@@ -52,7 +51,7 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 Window = window,
                 IsAdd = true,
-                Name = Utilities.Utils.IncrementNameNumber("New parameter", x => OnParameterRenameValidate(null, x)),
+                Name = Utilities.Utils.IncrementNameNumber("New parameter", x => OnParameterRenameValidate(x)),
                 Type = _type,
                 Index = paramIndex,
                 InitValue = initValue,
@@ -67,7 +66,7 @@ namespace FlaxEditor.Surface.Archetypes
             SurfaceNode node = Surface.Context.SpawnNode(groupId, arch.TypeID, this.Location, new object[] { parameterGuid });
             Surface.Undo.Enabled = undoEnabled;
 
-            if (node is not Parameters.SurfaceNodeParamsGet getNode)
+            if (node is not Archetypes.Parameters.SurfaceNodeParamsGet getNode)
                 throw new Exception("Node is not a ParamsGet node!");
 
             // Recreate connections of constant node
@@ -98,7 +97,7 @@ namespace FlaxEditor.Surface.Archetypes
             removeConstantAction.Do();
         }
 
-        private bool OnParameterRenameValidate(RenamePopup popup, string value)
+        private bool OnParameterRenameValidate(string value)
         {
             if (Surface.Owner is not IVisjectSurfaceWindow window)
                 throw new Exception("Surface owner is not a Visject Surface Window");
