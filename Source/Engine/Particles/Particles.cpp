@@ -1318,6 +1318,7 @@ void ParticlesSystem::Job(int32 index)
                     emitterInstance.Buffer = nullptr;
                 }
             }
+            effect->Stop();
             return;
         }
     }
