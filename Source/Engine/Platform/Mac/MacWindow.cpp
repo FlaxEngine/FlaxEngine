@@ -4,6 +4,7 @@
 
 #include "../Window.h"
 #include "Engine/Platform/Apple/AppleUtils.h"
+#include "Engine/Platform/WindowsManager.h"
 #include "Engine/Platform/IGuiData.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Input/Input.h"
@@ -13,6 +14,14 @@
 #include <Cocoa/Cocoa.h>
 #include <AppKit/AppKit.h>
 #include <QuartzCore/CAMetalLayer.h>
+
+inline bool IsWindowInvalid(Window* win)
+{
+    WindowsManager::WindowsLocker.Lock();
+    const bool hasWindow = WindowsManager::Windows.Contains(win);
+    WindowsManager::WindowsLocker.Unlock();
+    return !hasWindow || !win;
+}
 
 KeyboardKeys GetKey(NSEvent* event)
 {
@@ -268,17 +277,20 @@ NSDragOperation GetDragDropOperation(DragDropEffect dragDropEffect)
 	// Handle resizing to be sure that content has valid size when window was resized
 	[self windowDidResize:notification];
 
+    if (IsWindowInvalid(Window)) return;
     Window->OnGotFocus();
 }
 
 - (void)windowDidResignKey:(NSNotification*)notification
 {
+    if (IsWindowInvalid(Window)) return;
     Window->OnLostFocus();
 }
 
 - (void)windowWillClose:(NSNotification*)notification
 {
     [self setDelegate: nil];
+    if (IsWindowInvalid(Window)) return;
     Window->Close(ClosingReason::User);
 }
 
@@ -375,6 +387,7 @@ static void ConvertNSRect(NSScreen *screen, NSRect *r)
 
 - (void)keyDown:(NSEvent*)event
 {
+    if (IsWindowInvalid(Window)) return;
     KeyboardKeys key = GetKey(event);
     if (key != KeyboardKeys::None)
 	    Input::Keyboard->OnKeyDown(key, Window);
@@ -405,6 +418,7 @@ static void ConvertNSRect(NSScreen *screen, NSRect *r)
 
 - (void)keyUp:(NSEvent*)event
 {
+    if (IsWindowInvalid(Window)) return;
     KeyboardKeys key = GetKey(event);
     if (key != KeyboardKeys::None)
 	    Input::Keyboard->OnKeyUp(key, Window);
@@ -412,6 +426,7 @@ static void ConvertNSRect(NSScreen *screen, NSRect *r)
 
 - (void)flagsChanged:(NSEvent*)event
 {
+    if (IsWindowInvalid(Window)) return;
     int32 modMask;
     int32 keyCode = [event keyCode];
     if (keyCode == 0x36 || keyCode == 0x37)
@@ -437,6 +452,7 @@ static void ConvertNSRect(NSScreen *screen, NSRect *r)
 
 - (void)scrollWheel:(NSEvent*)event
 {
+    if (IsWindowInvalid(Window)) return;
 	Float2 mousePos = GetMousePosition(Window, event);
     double deltaX = [event scrollingDeltaX];
     double deltaY = [event scrollingDeltaY];
@@ -451,6 +467,7 @@ static void ConvertNSRect(NSScreen *screen, NSRect *r)
 
 - (void)mouseMoved:(NSEvent*)event
 {
+    if (IsWindowInvalid(Window)) return;
 	Float2 mousePos = GetMousePosition(Window, event);
     if (!Window->IsMouseTracking() && !IsMouseOver)
         return;
@@ -459,18 +476,21 @@ static void ConvertNSRect(NSScreen *screen, NSRect *r)
 
 - (void)mouseEntered:(NSEvent*)event
 {
+    if (IsWindowInvalid(Window)) return;
     IsMouseOver = true;
     Window->SetIsMouseOver(true);
 }
 
 - (void)mouseExited:(NSEvent*)event
 {
+    if (IsWindowInvalid(Window)) return;
     IsMouseOver = false;
     Window->SetIsMouseOver(false);
 }
 
 - (void)mouseDown:(NSEvent*)event
 {
+    if (IsWindowInvalid(Window)) return;
 	Float2 mousePos = GetMousePosition(Window, event);
     MouseButton mouseButton = MouseButton::Left;
     if ([event clickCount] == 2)
@@ -486,6 +506,7 @@ static void ConvertNSRect(NSScreen *screen, NSRect *r)
 
 - (void)mouseUp:(NSEvent*)event
 {
+    if (IsWindowInvalid(Window)) return;
 	Float2 mousePos = GetMousePosition(Window, event);
     MouseButton mouseButton = MouseButton::Left;
     Input::Mouse->OnMouseUp(Window->ClientToScreen(mousePos), mouseButton, Window);
@@ -493,6 +514,7 @@ static void ConvertNSRect(NSScreen *screen, NSRect *r)
 
 - (void)rightMouseDown:(NSEvent*)event
 {
+    if (IsWindowInvalid(Window)) return;
 	Float2 mousePos = GetMousePosition(Window, event);
     MouseButton mouseButton = MouseButton::Right;
     if ([event clickCount] == 2)
@@ -508,6 +530,7 @@ static void ConvertNSRect(NSScreen *screen, NSRect *r)
 
 - (void)rightMouseUp:(NSEvent*)event
 {
+    if (IsWindowInvalid(Window)) return;
 	Float2 mousePos = GetMousePosition(Window, event);
     MouseButton mouseButton = MouseButton::Right;
     Input::Mouse->OnMouseUp(Window->ClientToScreen(mousePos), mouseButton, Window);
@@ -515,6 +538,7 @@ static void ConvertNSRect(NSScreen *screen, NSRect *r)
 
 - (void)otherMouseDown:(NSEvent*)event
 {
+    if (IsWindowInvalid(Window)) return;
 	Float2 mousePos = GetMousePosition(Window, event);
     MouseButton mouseButton;
     switch ([event buttonNumber])
@@ -544,6 +568,7 @@ static void ConvertNSRect(NSScreen *screen, NSRect *r)
 
 - (void)otherMouseUp:(NSEvent*)event
 {
+    if (IsWindowInvalid(Window)) return;
 	Float2 mousePos = GetMousePosition(Window, event);
     MouseButton mouseButton;
     switch ([event buttonNumber])
@@ -565,6 +590,7 @@ static void ConvertNSRect(NSScreen *screen, NSRect *r)
 
 - (NSDragOperation)draggingEntered:(id<NSDraggingInfo>)sender
 {
+    if (IsWindowInvalid(Window)) return NSDragOperationNone;
     Float2 mousePos;
     MacDropData dropData;
     GetDragDropData(Window, sender, mousePos, dropData);
@@ -580,6 +606,7 @@ static void ConvertNSRect(NSScreen *screen, NSRect *r)
 
 - (NSDragOperation)draggingUpdated:(id<NSDraggingInfo>)sender
 {
+    if (IsWindowInvalid(Window)) return NSDragOperationNone;
     Float2 mousePos;
     MacDropData dropData;
     GetDragDropData(Window, sender, mousePos, dropData);
@@ -590,6 +617,7 @@ static void ConvertNSRect(NSScreen *screen, NSRect *r)
 
 - (BOOL)performDragOperation:(id<NSDraggingInfo>)sender
 {
+    if (IsWindowInvalid(Window)) return NO;
     Float2 mousePos;
     MacDropData dropData;
     GetDragDropData(Window, sender, mousePos, dropData);
@@ -600,6 +628,7 @@ static void ConvertNSRect(NSScreen *screen, NSRect *r)
 
 - (void)draggingExited:(id<NSDraggingInfo>)sender
 {
+    if (IsWindowInvalid(Window)) return;
     Window->OnDragLeave();
 }
 
