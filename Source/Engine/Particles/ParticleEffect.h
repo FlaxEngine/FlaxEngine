@@ -185,6 +185,7 @@ private:
     Array<ParticleEffectParameter> _parameters; // Cached for scripting API
     Array<ParameterOverride> _parametersOverrides; // Cached parameter modifications to be applied to the parameters
     bool _isPlaying = false;
+    bool _isStopped = false;
 
 public:
     /// <summary>

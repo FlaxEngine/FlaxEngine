@@ -1318,8 +1318,8 @@ void ParticlesSystem::Job(int32 index)
                     emitterInstance.Buffer = nullptr;
                 }
             }
-            // Set is playing to false because it is not playing anymore.
-            effect->Pause();
+            // Stop playing effect.
+            effect->Stop();
             return;
         }
     }
