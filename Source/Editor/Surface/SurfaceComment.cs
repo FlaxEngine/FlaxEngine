@@ -2,6 +2,7 @@
 
 using System;
 using FlaxEditor.GUI;
+using FlaxEditor.GUI.ContextMenu;
 using FlaxEditor.GUI.Input;
 using FlaxEngine;
 using FlaxEngine.GUI;
@@ -313,6 +314,21 @@ namespace FlaxEditor.Surface
         {
             Color = ColorValue = color;
             Surface.MarkAsEdited(false);
+        }
+
+        /// <inheritdoc />
+        public override void OnShowSecondaryContextMenu(FlaxEditor.GUI.ContextMenu.ContextMenu menu, Float2 location)
+        {
+            base.OnShowSecondaryContextMenu(menu, location);
+
+            menu.AddSeparator();
+            ContextMenuChildMenu cmOrder = menu.AddChildMenu("Order");
+            {
+                cmOrder.ContextMenu.AddButton("Bring Forward", () => { if(IndexInParent < Context.Comments.Count-1) IndexInParent++;});
+                cmOrder.ContextMenu.AddButton("Bring to Front", () => { IndexInParent = Context.Comments.Count - 1;});
+                cmOrder.ContextMenu.AddButton("Send Backward", () => {if(IndexInParent > 0) IndexInParent--;});
+                cmOrder.ContextMenu.AddButton("Send to Back", () => { IndexInParent = 0;});
+            }
         }
     }
 }
