@@ -283,6 +283,10 @@ void ParticleEffect::UpdateSimulation(bool singleFrame)
 
 void ParticleEffect::Play()
 {
+    // Reset simulation when play is called and particle system is time is complete - ex. if IsLooping is false and simulation is complete
+    if (!IsLooping && Instance.Time >= (float)ParticleSystem->DurationFrames / ParticleSystem->FramesPerSecond)
+        ResetSimulation();
+
     _isPlaying = true;
 }
 
