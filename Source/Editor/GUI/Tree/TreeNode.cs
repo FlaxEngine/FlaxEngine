@@ -776,11 +776,20 @@ namespace FlaxEditor.GUI.Tree
                 // Check if mouse hits arrow
                 if (_mouseOverArrow && HasAnyVisibleChild)
                 {
-                    // Toggle open state
-                    if (_opened)
-                        Collapse();
+                    if (ParentTree.Root.GetKey(KeyboardKeys.Alt))
+                    {
+                        if (_opened)
+                            CollapseAll();
+                        else
+                            ExpandAll();
+                    }
                     else
-                        Expand();
+                    {
+                        if (_opened)
+                            Collapse();
+                        else
+                            Expand();
+                    }
                 }
 
                 // Check if mouse hits bar
