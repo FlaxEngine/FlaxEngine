@@ -53,6 +53,12 @@ namespace FlaxEditor.Surface
             set => SetValue(2, value, false);
         }
 
+        private int OrderValue
+        {
+            get => (int)Values[3];
+            set => SetValue(3, value, false);
+        }
+
         /// <inheritdoc />
         public SurfaceComment(uint id, VisjectSurfaceContext context, NodeArchetype nodeArch, GroupArchetype groupArch)
         : base(id, context, nodeArch, groupArch)
@@ -68,6 +74,19 @@ namespace FlaxEditor.Surface
             Title = TitleValue;
             Color = ColorValue;
             Size = SizeValue;
+
+            // Order
+            // Backwards compatibility - When opening with an older version send the old comments to the back
+            if (Values.Length < 4)
+            {
+                if (IndexInParent > 0)
+                    IndexInParent = 0;
+                OrderValue = IndexInParent;
+            }
+            else if(OrderValue != -1)
+            {
+                IndexInParent = OrderValue;
+            }
         }
 
         /// <inheritdoc />
@@ -77,6 +96,10 @@ namespace FlaxEditor.Surface
 
             // Randomize color
             Color = ColorValue = Color.FromHSV(new Random().NextFloat(0, 360), 0.7f, 0.25f, 0.8f);
+
+            if(OrderValue == -1)
+                OrderValue = Context.CommentCount - 1;
+            IndexInParent = OrderValue;
         }
 
         /// <inheritdoc />
@@ -324,10 +347,28 @@ namespace FlaxEditor.Surface
             menu.AddSeparator();
             ContextMenuChildMenu cmOrder = menu.AddChildMenu("Order");
             {
-                cmOrder.ContextMenu.AddButton("Bring Forward", () => { if(IndexInParent < Context.Comments.Count-1) IndexInParent++;});
-                cmOrder.ContextMenu.AddButton("Bring to Front", () => { IndexInParent = Context.Comments.Count - 1;});
-                cmOrder.ContextMenu.AddButton("Send Backward", () => {if(IndexInParent > 0) IndexInParent--;});
-                cmOrder.ContextMenu.AddButton("Send to Back", () => { IndexInParent = 0;});
+                cmOrder.ContextMenu.AddButton("Bring Forward", () =>
+                {
+                    if(IndexInParent < Context.CommentCount-1) 
+                        IndexInParent++;
+                    OrderValue = IndexInParent;
+                });
+                cmOrder.ContextMenu.AddButton("Bring to Front", () =>
+                {
+                    IndexInParent = Context.CommentCount-1;
+                    OrderValue = IndexInParent;
+                });
+                cmOrder.ContextMenu.AddButton("Send Backward", () =>
+                {
+                    if(IndexInParent > 0) 
+                        IndexInParent--;
+                    OrderValue = IndexInParent;
+                });
+                cmOrder.ContextMenu.AddButton("Send to Back", () =>
+                {
+                    IndexInParent = 0;
+                    OrderValue = IndexInParent;
+                });
             }
         }
     }
