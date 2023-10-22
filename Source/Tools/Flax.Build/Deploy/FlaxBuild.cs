@@ -20,6 +20,7 @@ namespace Flax.Deploy
             if (!string.IsNullOrEmpty(Configuration.Compiler))
                 cmdLine += " -compiler=" + Configuration.Compiler;
 
+            Log.Info($"Building {target} for {platform} {architecture} {configuration}...");
             int result = Utilities.Run(flaxBuildTool, cmdLine, null, root);
             if (result != 0)
             {

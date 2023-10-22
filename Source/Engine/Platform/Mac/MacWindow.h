@@ -14,8 +14,10 @@ class FLAXENGINE_API MacWindow : public WindowBase
 {
 private:
 
-    void* _window;
+    void* _window = nullptr;
+    void* _view = nullptr;
     bool _isMouseOver = false;
+    String _dragText;
 
 public:
 
@@ -24,6 +26,10 @@ public:
 
     void CheckForResize(float width, float height);
     void SetIsMouseOver(bool value);
+    const String& GetDragText() const
+    {
+        return _dragText;
+    }
 
 public:
 
