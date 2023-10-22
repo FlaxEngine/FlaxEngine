@@ -172,6 +172,7 @@ namespace FlaxEditor.CustomEditors
             Editor.Instance.ProjectCache.SetCollapsedGroup(panel.HeaderText, panel.IsClosed);
         }
 
+
         #region HorizontalPanel
 
         /// <summary>
@@ -2136,6 +2137,205 @@ namespace FlaxEditor.CustomEditors
 
         #endregion
 
+        #region Element
+
+        /// <summary>
+        /// Adds a new element
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <returns>The created element.</returns>
+        public virtual T Element<T>() 
+            where T : LayoutElement
+        {
+            var element = Activator.CreateInstance(typeof(T), true) as T;
+            AddElement(element);
+            return element;
+        }
+
+        /// <summary>
+        /// Adds a new element
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="onAdd">Invoke after child is added.</param>
+        /// <returns>The created element.</returns>
+        public virtual T Element<T>(Action<T> onAdd)
+           where T : LayoutElement
+        {
+            var element = Activator.CreateInstance(typeof(T), true) as T;
+            AddElement(element,onAdd);
+            return element;
+        }
+
+        #endregion
+
+        #region Split
+
+        /// <summary>
+        /// Adds a new split container element
+        /// </summary>
+        /// <typeparam name="TElement1"></typeparam>
+        /// <typeparam name="TElement2"></typeparam>
+        /// <param name="orientation">The orientation.</param>  
+        /// <returns>The created element.</returns>
+        public SplitElement<TElement1,TElement2> SplitContainer<TElement1, TElement2>(Orientation orientation) 
+            where TElement1 : LayoutElement
+            where TElement2 : LayoutElement
+        {
+            var element = new SplitElement<TElement1, TElement2>(orientation);
+            AddElement(element);
+            return element;
+        }
+
+        /// <summary>
+        /// Adds a new split container element
+        /// </summary>
+        /// <typeparam name="TElement1"></typeparam>
+        /// <typeparam name="TElement2"></typeparam>
+        /// <param name="orientation">The orientation.</param>  
+        /// <param name="onAdd">Invoke after child is added.</param>
+        /// <returns>The created element.</returns>
+        public SplitElement<TElement1, TElement2> SplitContainer<TElement1, TElement2>(Orientation orientation, Action<SplitElement<TElement1, TElement2>> onAdd)
+            where TElement1 : LayoutElement
+            where TElement2 : LayoutElement
+        {
+            var element = new SplitElement<TElement1, TElement2>(orientation);
+            AddElement(element,onAdd);
+            return element;
+        }
+
+        /// <summary>
+        /// Adds a new split container element
+        /// </summary>
+        /// <typeparam name="TElement1"></typeparam>
+        /// <typeparam name="TElement2"></typeparam>
+        /// <returns>The created element.</returns>
+        public SplitElement<TElement1, TElement2> SplitContainer
+            <TElement1, TElement2>()
+           where TElement1 : LayoutElement
+           where TElement2 : LayoutElement
+        {
+            var element = SplitContainer<TElement1, TElement2>(Orientation.Horizontal);         
+            return element;
+        }
+
+        /// <summary>
+        /// Adds a new split container element
+        /// </summary>
+        /// <typeparam name="TElement1"></typeparam>
+        /// <typeparam name="TElement2"></typeparam>
+        /// <param name="onAdd">Invoke after child is added.</param>
+        /// <returns>The created element.</returns>
+        public SplitElement<TElement1, TElement2> SplitContainer<TElement1, TElement2>(Action<SplitElement<TElement1, TElement2>> onAdd)
+            where TElement1 : LayoutElement
+            where TElement2 : LayoutElement
+        {
+            var element = SplitContainer<TElement1, TElement2>(Orientation.Horizontal, onAdd);
+            return element;
+        }
+
+        /// <summary>
+        /// Adds a new split container element
+        /// </summary>
+        /// <typeparam name="TElement"></typeparam>
+        /// <param name="orientation">The orientation.</param>  
+        /// <returns>The created element.</returns>
+        public SplitElement<TElement, TElement> SplitContainer<TElement>(Orientation orientation)
+            where TElement : LayoutElement
+        {
+            var element = SplitContainer<TElement, TElement>(orientation);
+            return element;
+        }
+
+        /// <summary>
+        /// Adds a new split container element
+        /// </summary>
+        /// <typeparam name="TElement"></typeparam>
+        /// <param name="orientation">The orientation.</param>  
+        /// <param name="onAdd">Invoke after child is added.</param>
+        /// <returns>The created element.</returns>
+        public SplitElement<TElement, TElement> SplitContainer<TElement>(Orientation orientation, Action<SplitElement<TElement, TElement>> onAdd)
+            where TElement : LayoutElement
+        {
+            var element = SplitContainer<TElement, TElement>(orientation, onAdd);
+            return element;
+        }
+
+        /// <summary>
+        /// Adds a new split container element
+        /// </summary>
+        /// <typeparam name="TElement"></typeparam>
+        /// <returns>The created element.</returns>
+        public SplitElement<TElement, TElement> SplitContainer<TElement>()
+            where TElement : LayoutElement
+        {
+            var element = SplitContainer<TElement, TElement>(Orientation.Horizontal);
+            return element;
+        }
+
+        /// <summary>
+        /// Adds a new split container element
+        /// </summary>
+        /// <typeparam name="TElement"></typeparam>
+        /// <param name="onAdd">Invoke after child is added.</param>
+        /// <returns>The created element.</returns>
+        public SplitElement<TElement, TElement> SplitContainer<TElement>(Action<SplitElement<TElement, TElement>> onAdd)
+            where TElement : LayoutElement
+        {
+            var element = SplitContainer<TElement,TElement>(Orientation.Horizontal, onAdd);
+            return element;
+        }
+
+        #endregion
+
+        #region SplitPanel
+
+        /// <summary>
+        /// Adds a new split panel element
+        /// </summary>    
+        /// <param name="orientation">The orientation.</param>  
+        /// <returns>The created element.</returns>
+        public SplitPanelElement SplitPanel(Orientation orientation)         
+        {
+            var element = new SplitPanelElement(orientation);
+            AddElement(element);
+            return element;
+        }
+
+        /// <summary>
+        /// Adds a new split panel element
+        /// </summary>    
+        /// <param name="orientation">The orientation.</param>  
+        /// <param name="onAdd">Invoke after child is added.</param>
+        /// <returns>The created element.</returns>
+        public SplitPanelElement SplitPanel(Orientation orientation, Action<SplitPanelElement> onAdd)
+        {
+            var element = new SplitPanelElement(orientation);
+            AddElement(element,onAdd);
+            return element;
+        }
+
+        /// <summary>
+        /// Adds a new split panel element
+        /// </summary>    
+        /// <returns>The created element.</returns>
+        public SplitPanelElement SplitPanel()
+        {
+            var element = SplitPanel(Orientation.Horizontal);
+            return element;
+        }
+
+        /// <summary>
+        /// Adds a new split panel element
+        /// </summary>    
+        /// <param name="onAdd">Invoke after child is added.</param>
+        /// <returns>The created element.</returns>
+        public SplitPanelElement SplitPanel(Action<SplitPanelElement> onAdd)
+        {
+            var element = SplitPanel(Orientation.Horizontal, onAdd);
+            return element;
+        }
+
+        #endregion
 
 
         private PropertiesListElement AddPropertyItem()

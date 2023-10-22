@@ -5,9 +5,81 @@ namespace FlaxEngine.GUI
     /// <summary>
     /// GUI control that contains two child panels and the splitter between them.
     /// </summary>
+    /// <seealso cref="FlaxEngine.GUI.SplitContainer{Panel,Panel}" />
+    [HideInEditor]
+    public class SplitPanel : SplitContainer<Panel,Panel>
+    {
+        /// <summary>
+        /// The first panel (left or upper based on Orientation).
+        /// </summary>
+        public Panel Panel1 => Control1;
+
+        /// <summary>
+        /// The second panel.
+        /// </summary>
+        public Panel Panel2 => Control2;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="SplitPanel"/> class.
+        /// </summary>
+        /// <param name="orientation">The orientation.</param>
+        /// <param name="panel1Scroll">The panel1 scroll bars.</param>
+        /// <param name="panel2Scroll">The panel2 scroll bars.</param>
+        public SplitPanel(Orientation orientation = Orientation.Horizontal, ScrollBars panel1Scroll = ScrollBars.Both, ScrollBars panel2Scroll = ScrollBars.Both) : 
+            base(new Panel(panel1Scroll), new Panel(panel2Scroll),orientation)
+        {       
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="SplitPanel"/> class.
+        /// </summary>
+        /// <param name="panel1">The first panel.</param>
+        /// <param name="panel2">The second panel.</param>
+        /// <param name="orientation">The orientation.</param>     
+        public SplitPanel(Panel panel1, Panel panel2, Orientation orientation = Orientation.Horizontal) :
+            base(panel1, panel2, orientation)
+        {
+        }
+    }
+
+    /// <summary>
+    /// GUI control that contains two child controls and the splitter between them.
+    /// </summary>
+    /// <seealso cref="FlaxEngine.GUI.SplitContainer{Control,Control}" />
+    [HideInEditor]
+    public class SplitContainer : SplitContainer<Control,Control>
+    {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="SplitContainer"/> class.
+        /// </summary>
+        /// <param name="orientation">The orientation.</param>      
+        public SplitContainer(Orientation orientation = Orientation.Horizontal) :
+            base(orientation)
+        {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="SplitPanel"/> class.
+        /// </summary>
+        /// <param name="control1">The first control.</param>
+        /// <param name="control2">The second control.</param>
+        /// <param name="orientation">The orientation.</param>     
+        public SplitContainer(Control control1, Control control2, Orientation orientation = Orientation.Horizontal) :
+            base(control1, control2, orientation)
+        {
+        }
+
+    }
+
+
+    /// <summary>
+    /// GUI control that contains two child controls and the splitter between them.
+    /// </summary>
     /// <seealso cref="FlaxEngine.GUI.ContainerControl" />
     [HideInEditor]
-    public class SplitPanel : ContainerControl
+    public class SplitContainer<TControl1, TControl2> : ContainerControl
+        where TControl1 : Control
+        where TControl2 : Control
     {
         /// <summary>
         /// The splitter size (in pixels).
@@ -26,14 +98,14 @@ namespace FlaxEngine.GUI
         private bool _cursorChanged;
 
         /// <summary>
-        /// The first panel (left or upper based on Orientation).
+        /// The first control (left or upper based on Orientation).
         /// </summary>
-        public readonly Panel Panel1;
+        public readonly TControl1 Control1;
 
         /// <summary>
-        /// The second panel.
+        /// The second control.
         /// </summary>
-        public readonly Panel Panel2;
+        public readonly TControl2 Control2;
 
         /// <summary>
         /// Gets or sets the panel orientation.
@@ -80,23 +152,43 @@ namespace FlaxEngine.GUI
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="SplitPanel"/> class.
+        /// Initializes a new instance of the <see cref="SplitContainer{TControl1,TControl2}"/> class.
         /// </summary>
+        /// <param name="control1">The first conrol.</param>
+        /// <param name="control2">The second conrol.</param>
         /// <param name="orientation">The orientation.</param>
-        /// <param name="panel1Scroll">The panel1 scroll bars.</param>
-        /// <param name="panel2Scroll">The panel2 scroll bars.</param>
-        public SplitPanel(Orientation orientation = Orientation.Horizontal, ScrollBars panel1Scroll = ScrollBars.Both, ScrollBars panel2Scroll = ScrollBars.Both)
+        public SplitContainer(TControl1 control1, TControl2 control2, Orientation orientation = Orientation.Horizontal)
         {
             AutoFocus = false;
 
             _orientation = orientation;
             _splitterValue = 0.5f;
 
-            Panel1 = new Panel(panel1Scroll);
-            Panel2 = new Panel(panel2Scroll);
+            Control1 = control1;
+            Control2 = control2;
 
-            Panel1.Parent = this;
-            Panel2.Parent = this;
+            Control1.Parent = this;
+            Control2.Parent = this;
+
+            UpdateSplitRect();
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="SplitPanel"/> class.
+        /// </summary>
+        /// <param name="orientation">The orientation.</param>       
+        public SplitContainer(Orientation orientation = Orientation.Horizontal)
+        {
+            AutoFocus = false;
+
+            _orientation = orientation;
+            _splitterValue = 0.5f;
+
+            Control1 = System.Activator.CreateInstance(typeof(TControl1), true) as TControl1;
+            Control2 = System.Activator.CreateInstance(typeof(TControl2), true) as TControl2;
+
+            Control1.Parent = this;
+            Control2.Parent = this;
 
             UpdateSplitRect();
         }
@@ -242,14 +334,14 @@ namespace FlaxEngine.GUI
             if (_orientation == Orientation.Horizontal)
             {
                 var split = Mathf.RoundToInt(_splitterValue * Width);
-                Panel1.Bounds = new Rectangle(0, 0, split - SplitterSizeHalf, Height);
-                Panel2.Bounds = new Rectangle(split + SplitterSizeHalf, 0, Width - split - SplitterSizeHalf, Height);
+                Control1.Bounds = new Rectangle(0, 0, split - SplitterSizeHalf, Height);
+                Control2.Bounds = new Rectangle(split + SplitterSizeHalf, 0, Width - split - SplitterSizeHalf, Height);
             }
             else
             {
                 var split = Mathf.RoundToInt(_splitterValue * Height);
-                Panel1.Bounds = new Rectangle(0, 0, Width, split - SplitterSizeHalf);
-                Panel2.Bounds = new Rectangle(0, split + SplitterSizeHalf, Width, Height - split - SplitterSizeHalf);
+                Control1.Bounds = new Rectangle(0, 0, Width, split - SplitterSizeHalf);
+                Control2.Bounds = new Rectangle(0, split + SplitterSizeHalf, Width, Height - split - SplitterSizeHalf);
             }
         }
     }
