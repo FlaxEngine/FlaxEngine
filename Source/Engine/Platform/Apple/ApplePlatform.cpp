@@ -48,6 +48,7 @@ CPUInfo Cpu;
 String UserLocale;
 double SecondsPerCycle;
 NSAutoreleasePool* AutoreleasePool = nullptr;
+int32 AutoreleasePoolInterval = 0;
 
 float ApplePlatform::ScreenScale = 1.0f;
 
@@ -359,9 +360,13 @@ bool ApplePlatform::Init()
 
 void ApplePlatform::Tick()
 {
-    // TODO: do it once every X fames
-    [AutoreleasePool drain];
-    AutoreleasePool = [[NSAutoreleasePool alloc] init];
+    AutoreleasePoolInterval++;
+    if (AutoreleasePoolInterval >= 60)
+    {
+        AutoreleasePoolInterval = 0;
+        [AutoreleasePool drain];
+        AutoreleasePool = [[NSAutoreleasePool alloc] init];
+    }
 }
 
 void ApplePlatform::BeforeExit()
@@ -370,6 +375,11 @@ void ApplePlatform::BeforeExit()
 
 void ApplePlatform::Exit()
 {
+    if (AutoreleasePool)
+    {
+        [AutoreleasePool drain];
+        AutoreleasePool = nullptr;
+    }
 }
 
 void ApplePlatform::SetHighDpiAwarenessEnabled(bool enable)
@@ -396,9 +406,7 @@ bool ApplePlatform::GetHasFocus()
 		if (window->IsFocused())
 			return true;
 	}
-
-	// Default to true if has no windows open
-    return WindowsManager::Windows.IsEmpty();
+    return false;
 }
 
 void ApplePlatform::CreateGuid(Guid& result)
