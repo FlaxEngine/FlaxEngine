@@ -16,7 +16,7 @@ namespace FlaxEditor.Surface.Archetypes
         {
             return Op1(id, title, desc, null, hints, type);
         }
-        
+
         private static NodeArchetype Op1(ushort id, string title, string desc, string[] altTitles, ConnectionsHint hints = ConnectionsHint.Numeric, Type type = null)
         {
             return new NodeArchetype
