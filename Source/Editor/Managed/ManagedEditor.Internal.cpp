@@ -513,7 +513,9 @@ DEFINE_INTERNAL_CALL(void) EditorInternal_RunVisualScriptBreakpointLoopTick(floa
         WindowsManager::WindowsLocker.Unlock();
     }
     WindowsManager::WindowsLocker.Lock();
-    for (auto& win : WindowsManager::Windows)
+    Array<Window*, InlinedAllocation<32>> windows;
+    windows.Add(WindowsManager::Windows);
+    for (Window* win : windows)
     {
         if (win->IsVisible())
             win->OnUpdate(deltaTime);
