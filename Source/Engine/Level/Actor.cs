@@ -253,10 +253,11 @@ namespace FlaxEngine
         /// Tries to find the actor of the given type in this actor hierarchy (checks this actor and all children hierarchy).
         /// </summary>
         /// <typeparam name="T">Type of the object.</typeparam>
+        /// <param name="activeOnly">Finds only a active actor.</param>
         /// <returns>Actor instance if found, null otherwise.</returns>
-        public T FindActor<T>() where T : Actor
+        public T FindActor<T>(bool activeOnly = false) where T : Actor
         {
-            return FindActor(typeof(T)) as T;
+            return FindActor(typeof(T), activeOnly) as T;
         }
 
         /// <summary>
@@ -269,16 +270,17 @@ namespace FlaxEngine
         {
             return FindActor(typeof(T), name) as T;
         }
-        
+
         /// <summary>
         /// Tries to find actor of the given type and tag in this actor hierarchy (checks this actor and all children hierarchy).
         /// </summary>
         /// <param name="tag">A tag on the object.</param>
         /// <typeparam name="T">Type of the object.</typeparam>
+        /// <param name="activeOnly">Finds only an active actor.</param>
         /// <returns>Actor instance if found, null otherwise.</returns>
-        public T FindActor<T>(Tag tag) where T : Actor
+        public T FindActor<T>(Tag tag, bool activeOnly = false) where T : Actor
         {
-            return FindActor(typeof(T), tag) as T;
+            return FindActor(typeof(T), tag, activeOnly) as T;
         }
 
         /// <summary>
