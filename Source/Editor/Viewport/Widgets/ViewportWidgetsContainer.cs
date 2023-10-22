@@ -61,22 +61,6 @@ namespace FlaxEditor.Viewport.Widgets
         }
 
         /// <inheritdoc />
-        public override void Draw()
-        {
-            // Cache data
-            var style = Style.Current;
-            var clientRect = new Rectangle(Float2.Zero, Size);
-
-            // Draw background
-            Render2D.FillRectangle(clientRect, style.LightBackground * (IsMouseOver ? 0.3f : 0.2f));
-
-            base.Draw();
-
-            // Draw frame
-            Render2D.DrawRectangle(clientRect, style.BackgroundSelected * (IsMouseOver ? 1.0f : 0.6f));
-        }
-
-        /// <inheritdoc />
         public override void OnChildResized(Control control)
         {
             base.OnChildResized(control);

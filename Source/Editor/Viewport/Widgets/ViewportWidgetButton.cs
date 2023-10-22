@@ -104,9 +104,11 @@ namespace FlaxEditor.Viewport.Widgets
 
             // Check if is checked or mouse is over and auto check feature is enabled
             if (_checked)
-                Render2D.FillRectangle(textRect, style.BackgroundSelected * (IsMouseOver ? 0.9f : 0.6f));
+                Render2D.DrawPanel(Editor.Instance.Icons.Panel32, textRect, style.BackgroundSelected * (IsMouseOver ? 0.9f : 0.6f));
             else if (_autoCheck && IsMouseOver)
-                Render2D.FillRectangle(textRect, style.BackgroundHighlighted);
+                Render2D.DrawPanel(Editor.Instance.Icons.Panel32, textRect, style.BackgroundHighlighted);
+            else
+                Render2D.DrawPanel(Editor.Instance.Icons.Panel32, textRect, style.Background);
 
             // Check if has icon
             if (Icon.IsValid)
