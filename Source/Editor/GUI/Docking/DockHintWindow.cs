@@ -83,6 +83,7 @@ namespace FlaxEditor.GUI.Docking
             // Enable hit window presentation
             Proxy.Window.RenderingEnabled = true;
             Proxy.Window.Show();
+            Proxy.Window.Focus();
         }
 
         /// <summary>
@@ -270,15 +271,16 @@ namespace FlaxEditor.GUI.Docking
                 // Cache dock rectangles
                 var size = _rectDock.Size;
                 var offset = _rectDock.Location;
-                float BorderMargin = 4.0f;
-                float ProxyHintWindowsSize2 = Proxy.HintWindowsSize * 0.5f;
-                float centerX = size.X * 0.5f;
-                float centerY = size.Y * 0.5f;
-                _rUpper = new Rectangle(centerX - ProxyHintWindowsSize2, BorderMargin, Proxy.HintWindowsSize, Proxy.HintWindowsSize) + offset;
-                _rBottom = new Rectangle(centerX - ProxyHintWindowsSize2, size.Y - Proxy.HintWindowsSize - BorderMargin, Proxy.HintWindowsSize, Proxy.HintWindowsSize) + offset;
-                _rLeft = new Rectangle(BorderMargin, centerY - ProxyHintWindowsSize2, Proxy.HintWindowsSize, Proxy.HintWindowsSize) + offset;
-                _rRight = new Rectangle(size.X - Proxy.HintWindowsSize - BorderMargin, centerY - ProxyHintWindowsSize2, Proxy.HintWindowsSize, Proxy.HintWindowsSize) + offset;
-                _rCenter = new Rectangle(centerX - ProxyHintWindowsSize2, centerY - ProxyHintWindowsSize2, Proxy.HintWindowsSize, Proxy.HintWindowsSize) + offset;
+                var borderMargin = 4.0f;
+                var hintWindowsSize = Proxy.HintWindowsSize * Platform.DpiScale;
+                var hintWindowsSize2 = hintWindowsSize * 0.5f;
+                var centerX = size.X * 0.5f;
+                var centerY = size.Y * 0.5f;
+                _rUpper = new Rectangle(centerX - hintWindowsSize2, borderMargin, hintWindowsSize, hintWindowsSize) + offset;
+                _rBottom = new Rectangle(centerX - hintWindowsSize2, size.Y - hintWindowsSize - borderMargin, hintWindowsSize, hintWindowsSize) + offset;
+                _rLeft = new Rectangle(borderMargin, centerY - hintWindowsSize2, hintWindowsSize, hintWindowsSize) + offset;
+                _rRight = new Rectangle(size.X - hintWindowsSize - borderMargin, centerY - hintWindowsSize2, hintWindowsSize, hintWindowsSize) + offset;
+                _rCenter = new Rectangle(centerX - hintWindowsSize2, centerY - hintWindowsSize2, hintWindowsSize, hintWindowsSize) + offset;
 
                 // Hit test
                 DockState toSet = DockState.Float;
@@ -428,7 +430,6 @@ namespace FlaxEditor.GUI.Docking
             {
                 if (Window == null)
                 {
-                    // Create proxy window
                     var settings = CreateWindowSettings.Default;
                     settings.Title = "DockHint.Window";
                     settings.Size = initSize;
@@ -440,12 +441,10 @@ namespace FlaxEditor.GUI.Docking
                     settings.IsRegularWindow = false;
                     settings.SupportsTransparency = true;
                     settings.ShowInTaskbar = false;
-                    settings.ShowAfterFirstPaint = true;
+                    settings.ShowAfterFirstPaint = false;
                     settings.IsTopmost = true;
 
                     Window = Platform.CreateWindow(ref settings);
-
-                    // Set opacity and background color
                     Window.Opacity = 0.6f;
                     Window.GUI.BackgroundColor = Style.Current.DragWindow;
                 }
@@ -465,7 +464,7 @@ namespace FlaxEditor.GUI.Docking
 
                 var settings = CreateWindowSettings.Default;
                 settings.Title = name;
-                settings.Size = new Float2(HintWindowsSize);
+                settings.Size = new Float2(HintWindowsSize * Platform.DpiScale);
                 settings.AllowInput = false;
                 settings.AllowMaximize = false;
                 settings.AllowMinimize = false;
@@ -479,7 +478,6 @@ namespace FlaxEditor.GUI.Docking
                 settings.ShowAfterFirstPaint = false;
 
                 win = Platform.CreateWindow(ref settings);
-
                 win.Opacity = 0.6f;
                 win.GUI.BackgroundColor = Style.Current.DragWindow;
             }

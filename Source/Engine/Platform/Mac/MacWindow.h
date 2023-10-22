@@ -13,14 +13,12 @@
 class FLAXENGINE_API MacWindow : public WindowBase
 {
 private:
-
     void* _window = nullptr;
     void* _view = nullptr;
     bool _isMouseOver = false;
     String _dragText;
 
 public:
-
 	MacWindow(const CreateWindowSettings& settings);
 	~MacWindow();
 
@@ -32,7 +30,6 @@ public:
     }
 
 public:
-
 	// [WindowBase]
     void* GetNativePtr() const override;
     void Show() override;
@@ -40,7 +37,6 @@ public:
     void Minimize() override;
     void Maximize() override;
     void Restore() override;
-    bool IsClosed() const override;
     bool IsForegroundWindow() const override;
     void BringToFront(bool force = false) override;
 	void SetClientBounds(const Rectangle& clientArea) override;
@@ -56,6 +52,8 @@ public:
     void Focus() override;
     void SetTitle(const StringView& title) override;
 	DragDropEffect DoDragDrop(const StringView& data) override;
+    void StartTrackingMouse(bool useMouseScreenOffset) override;
+    void EndTrackingMouse() override;
 	void SetCursor(CursorType type) override;
 };
 

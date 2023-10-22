@@ -710,6 +710,8 @@ MacWindow::MacWindow(const CreateWindowSettings& settings)
     {
         styleMask |= NSWindowStyleMaskBorderless;
     }
+    if (settings.Fullscreen)
+        styleMask |= NSWindowStyleMaskFullScreen;
     if (settings.HasBorder)
     {
         styleMask |= NSWindowStyleMaskTitled;
@@ -736,7 +738,8 @@ MacWindow::MacWindow(const CreateWindowSettings& settings)
     [window setMaxSize:NSMakeSize(settings.MaximumSize.X, settings.MaximumSize.Y)];
     [window setOpaque:!settings.SupportsTransparency];
     [window setContentView:view];
-    [window setAcceptsMouseMovedEvents:YES];
+    if (settings.AllowInput)
+        [window setAcceptsMouseMovedEvents:YES];
     [window setDelegate:window];
     _window = window;
     _view = view;
@@ -751,8 +754,6 @@ MacWindow::MacWindow(const CreateWindowSettings& settings)
 		layer.contentsScale = screenScale;
 
     // TODO: impl Parent for MacWindow
-    // TODO: impl StartPosition for MacWindow
-    // TODO: impl Fullscreen for MacWindow
     // TODO: impl ShowInTaskbar for MacWindow
     // TODO: impl IsTopmost for MacWindow
 }
@@ -816,7 +817,10 @@ void MacWindow::Show()
 
         // Show
         NSWindow* window = (NSWindow*)_window;
-        [window makeKeyAndOrderFront:window];
+        if (_settings.AllowInput)
+            [window makeKeyAndOrderFront:window];
+        else
+            [window orderFront:window];
         if (_settings.ActivateWhenFirstShown)
             [NSApp activateIgnoringOtherApps:YES];
         _focused = true;
@@ -870,14 +874,9 @@ void MacWindow::Restore()
         [window zoom:nil];
 }
 
-bool MacWindow::IsClosed() const
-{
-    return _window != nullptr;
-}
-
 bool MacWindow::IsForegroundWindow() const
 {
-    return Platform::GetHasFocus() && IsFocused();
+    return IsFocused() && Platform::GetHasFocus();
 }
 
 void MacWindow::BringToFront(bool force)
@@ -1037,6 +1036,22 @@ DragDropEffect MacWindow::DoDragDrop(const StringView& data)
 #endif
 
     return result;
+}
+
+void MacWindow::StartTrackingMouse(bool useMouseScreenOffset)
+{
+    if (_isTrackingMouse || !_window)
+        return;
+    _isTrackingMouse = true;
+    _trackingMouseOffset = Float2::Zero;
+    _isUsingMouseOffset = useMouseScreenOffset;
+}
+
+void MacWindow::EndTrackingMouse()
+{
+    if (!_isTrackingMouse || !_window)
+        return;
+    _isTrackingMouse = false;
 }
 
 void MacWindow::SetCursor(CursorType type)
