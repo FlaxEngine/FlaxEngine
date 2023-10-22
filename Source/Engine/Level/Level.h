@@ -360,9 +360,8 @@ public:
     /// Tries to find the actor of the given type in all the loaded scenes.
     /// </summary>
     /// <param name="type">Type of the actor to search for. Includes any actors derived from the type.</param>
-    /// <param name="activeOnly">Finds only an active actor.</param>
     /// <returns>Found actor or null.</returns>
-    API_FUNCTION() static Actor* FindActor(API_PARAM(Attributes="TypeReference(typeof(Actor))") const MClass* type, bool activeOnly = false);
+    API_FUNCTION() static Actor* FindActor(API_PARAM(Attributes="TypeReference(typeof(Actor))") const MClass* type);
 
     /// <summary>
     /// Tries to find the actor of the given type and name in all the loaded scenes.
@@ -376,20 +375,18 @@ public:
     /// Tries to find the actor with the given tag (returns the first one found).
     /// </summary>
     /// <param name="tag">The tag of the actor to search for.</param>
-    /// <param name="activeOnly">Finds only an active actor.</param>
     /// <param name="root">The custom root actor to start searching from (hierarchical), otherwise null to search all loaded scenes.</param>
     /// <returns>Found actor or null.</returns>
-    API_FUNCTION() static Actor* FindActor(const Tag& tag, bool activeOnly = false, Actor* root = nullptr);
+    API_FUNCTION() static Actor* FindActor(const Tag& tag, Actor* root = nullptr);
 
     /// <summary>
     /// Tries to find the actor of the given type and tag in all the loaded scenes.
     /// </summary>
     /// <param name="type">Type of the actor to search for. Includes any actors derived from the type.</param>
     /// <param name="tag">The tag of the actor to search for.</param>
-    /// <param name="activeOnly">Finds only an active actor.</param>
     /// <param name="root">The custom root actor to start searching from (hierarchical), otherwise null to search all loaded scenes.</param>
     /// <returns>Actor instance if found, null otherwise.</returns>
-    API_FUNCTION() static Actor* FindActor(API_PARAM(Attributes="TypeReference(typeof(Actor))") const MClass* type, const Tag& tag, bool activeOnly = false, Actor* root = nullptr);
+    API_FUNCTION() static Actor* FindActor(API_PARAM(Attributes="TypeReference(typeof(Actor))") const MClass* type, const Tag& tag, Actor* root = nullptr);
 
     /// <summary>
     /// Tries to find the actors with the given tag (returns all found).

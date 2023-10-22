@@ -1359,16 +1359,14 @@ Actor* Actor::FindActor(const StringView& name) const
     return result;
 }
 
-Actor* Actor::FindActor(const MClass* type, bool activeOnly) const
+Actor* Actor::FindActor(const MClass* type) const
 {
     CHECK_RETURN(type, nullptr);
-    if (activeOnly && !_isActive)
-        return nullptr;
     if (GetClass()->IsSubClassOf(type))
         return const_cast<Actor*>(this);
     for (auto child : Children)
     {
-        const auto actor = child->FindActor(type, activeOnly);
+        const auto actor = child->FindActor(type);
         if (actor)
             return actor;
     }
@@ -1389,16 +1387,14 @@ Actor* Actor::FindActor(const MClass* type, const StringView& name) const
     return nullptr;
 }
 
-Actor* Actor::FindActor(const MClass* type, const Tag& tag, bool activeOnly) const
+Actor* Actor::FindActor(const MClass* type, const Tag& tag) const
 {
     CHECK_RETURN(type, nullptr);
-    if (activeOnly && !_isActive)
-        return nullptr;
     if (GetClass()->IsSubClassOf(type) && HasTag(tag))
         return const_cast<Actor*>(this);
     for (auto child : Children)
     {
-        const auto actor = child->FindActor(type, tag, activeOnly);
+        const auto actor = child->FindActor(type, tag);
         if (actor)
             return actor;
     }

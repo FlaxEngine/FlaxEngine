@@ -62,9 +62,9 @@ namespace FlaxEngine
         /// </summary>
         /// <typeparam name="T">Type of the object.</typeparam>
         /// <returns>Found actor or null.</returns>
-        public static T FindActor<T>(bool activeOnly = false) where T : Actor
+        public static T FindActor<T>() where T : Actor
         {
-            return FindActor(typeof(T), activeOnly) as T;
+            return FindActor(typeof(T)) as T;
         }
         
         /// <summary>
@@ -85,9 +85,9 @@ namespace FlaxEngine
         /// <param name="root">The custom root actor to start searching from (hierarchical), otherwise null to search all loaded scenes.</param>
         /// <typeparam name="T">Type of the object.</typeparam>
         /// <returns>Found actor or null.</returns>
-        public static T FindActor<T>(Tag tag, bool activeOnly, Actor root = null) where T : Actor
+        public static T FindActor<T>(Tag tag, Actor root = null) where T : Actor
         {
-            return FindActor(typeof(T), tag, activeOnly, root) as T;
+            return FindActor(typeof(T), tag, root) as T;
         }
 
         /// <summary>

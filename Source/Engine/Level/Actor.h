@@ -751,9 +751,8 @@ public:
     /// Tries to find the actor of the given type in this actor hierarchy (checks this actor and all children hierarchy).
     /// </summary>
     /// <param name="type">Type of the actor to search for. Includes any actors derived from the type.</param>
-    /// <param name="activeOnly">Finds only a active actor.</param>
     /// <returns>Actor instance if found, null otherwise.</returns>
-    API_FUNCTION() Actor* FindActor(API_PARAM(Attributes="TypeReference(typeof(Actor))") const MClass* type, bool activeOnly = false) const;
+    API_FUNCTION() Actor* FindActor(API_PARAM(Attributes="TypeReference(typeof(Actor))") const MClass* type) const;
 
     /// <summary>
     /// Tries to find the actor of the given type and name in this actor hierarchy (checks this actor and all children hierarchy).
@@ -768,9 +767,8 @@ public:
     /// </summary>
     /// <param name="type">Type of the actor to search for. Includes any actors derived from the type.</param>
     /// <param name="tag">The tag of the actor to search for.</param>
-    /// <param name="activeOnly">Finds only an active actor.</param>
     /// <returns>Actor instance if found, null otherwise.</returns>
-    API_FUNCTION() Actor* FindActor(API_PARAM(Attributes="TypeReference(typeof(Actor))") const MClass* type, const Tag& tag, bool activeOnly = false) const;
+    API_FUNCTION() Actor* FindActor(API_PARAM(Attributes="TypeReference(typeof(Actor))") const MClass* type, const Tag& tag) const;
 
     /// <summary>
     /// Tries to find the actor of the given type in this actor hierarchy (checks this actor and all children hierarchy).
