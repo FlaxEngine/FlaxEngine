@@ -1483,7 +1483,7 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 TypeID = 11,
                 Title = "Comment",
-                AlternativeTitles = new[] { "//" },
+                AlternativeTitles = new[] { "//" , "Group" },
                 TryParseText = (string filterText, out object[] data) =>
                 {
                     data = null;
@@ -1638,6 +1638,7 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 TypeID = 22,
                 Title = "As",
+                AlternativeTitles = new [] { "Cast" },
                 Create = (id, context, arch, groupArch) => new AsNode(id, context, arch, groupArch),
                 Description = "Casts the object to a different type. Returns null if cast fails.",
                 Flags = NodeFlags.VisualScriptGraph | NodeFlags.AnimGraph,
