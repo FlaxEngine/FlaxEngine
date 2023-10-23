@@ -2177,7 +2177,7 @@ namespace FlaxEditor.CustomEditors
         /// <typeparam name="TElement2"></typeparam>
         /// <param name="orientation">The orientation.</param>  
         /// <returns>The created element.</returns>
-        public SplitElement<TElement1,TElement2> SplitContainer<TElement1, TElement2>(Orientation orientation) 
+        public SplitElement<TElement1,TElement2> Split<TElement1, TElement2>(Orientation orientation) 
             where TElement1 : LayoutElement
             where TElement2 : LayoutElement
         {
@@ -2194,7 +2194,7 @@ namespace FlaxEditor.CustomEditors
         /// <param name="orientation">The orientation.</param>  
         /// <param name="onAdd">Invoke after child is added.</param>
         /// <returns>The created element.</returns>
-        public SplitElement<TElement1, TElement2> SplitContainer<TElement1, TElement2>(Orientation orientation, Action<SplitElement<TElement1, TElement2>> onAdd)
+        public SplitElement<TElement1, TElement2> Split<TElement1, TElement2>(Orientation orientation, Action<SplitElement<TElement1, TElement2>> onAdd)
             where TElement1 : LayoutElement
             where TElement2 : LayoutElement
         {
@@ -2209,12 +2209,12 @@ namespace FlaxEditor.CustomEditors
         /// <typeparam name="TElement1"></typeparam>
         /// <typeparam name="TElement2"></typeparam>
         /// <returns>The created element.</returns>
-        public SplitElement<TElement1, TElement2> SplitContainer
+        public SplitElement<TElement1, TElement2> Split
             <TElement1, TElement2>()
            where TElement1 : LayoutElement
            where TElement2 : LayoutElement
         {
-            var element = SplitContainer<TElement1, TElement2>(Orientation.Horizontal);         
+            var element = Split<TElement1, TElement2>(Orientation.Horizontal);         
             return element;
         }
 
@@ -2225,11 +2225,11 @@ namespace FlaxEditor.CustomEditors
         /// <typeparam name="TElement2"></typeparam>
         /// <param name="onAdd">Invoke after child is added.</param>
         /// <returns>The created element.</returns>
-        public SplitElement<TElement1, TElement2> SplitContainer<TElement1, TElement2>(Action<SplitElement<TElement1, TElement2>> onAdd)
+        public SplitElement<TElement1, TElement2> Split<TElement1, TElement2>(Action<SplitElement<TElement1, TElement2>> onAdd)
             where TElement1 : LayoutElement
             where TElement2 : LayoutElement
         {
-            var element = SplitContainer<TElement1, TElement2>(Orientation.Horizontal, onAdd);
+            var element = Split<TElement1, TElement2>(Orientation.Horizontal, onAdd);
             return element;
         }
 
@@ -2239,10 +2239,10 @@ namespace FlaxEditor.CustomEditors
         /// <typeparam name="TElement"></typeparam>
         /// <param name="orientation">The orientation.</param>  
         /// <returns>The created element.</returns>
-        public SplitElement<TElement, TElement> SplitContainer<TElement>(Orientation orientation)
+        public SplitElement<TElement, TElement> Split<TElement>(Orientation orientation)
             where TElement : LayoutElement
         {
-            var element = SplitContainer<TElement, TElement>(orientation);
+            var element = Split<TElement, TElement>(orientation);
             return element;
         }
 
@@ -2253,10 +2253,10 @@ namespace FlaxEditor.CustomEditors
         /// <param name="orientation">The orientation.</param>  
         /// <param name="onAdd">Invoke after child is added.</param>
         /// <returns>The created element.</returns>
-        public SplitElement<TElement, TElement> SplitContainer<TElement>(Orientation orientation, Action<SplitElement<TElement, TElement>> onAdd)
+        public SplitElement<TElement, TElement> Split<TElement>(Orientation orientation, Action<SplitElement<TElement, TElement>> onAdd)
             where TElement : LayoutElement
         {
-            var element = SplitContainer<TElement, TElement>(orientation, onAdd);
+            var element = Split<TElement, TElement>(orientation, onAdd);
             return element;
         }
 
@@ -2265,10 +2265,10 @@ namespace FlaxEditor.CustomEditors
         /// </summary>
         /// <typeparam name="TElement"></typeparam>
         /// <returns>The created element.</returns>
-        public SplitElement<TElement, TElement> SplitContainer<TElement>()
+        public SplitElement<TElement, TElement> Split<TElement>()
             where TElement : LayoutElement
         {
-            var element = SplitContainer<TElement, TElement>(Orientation.Horizontal);
+            var element = Split<TElement, TElement>(Orientation.Horizontal);
             return element;
         }
 
@@ -2278,10 +2278,10 @@ namespace FlaxEditor.CustomEditors
         /// <typeparam name="TElement"></typeparam>
         /// <param name="onAdd">Invoke after child is added.</param>
         /// <returns>The created element.</returns>
-        public SplitElement<TElement, TElement> SplitContainer<TElement>(Action<SplitElement<TElement, TElement>> onAdd)
+        public SplitElement<TElement, TElement> Split<TElement>(Action<SplitElement<TElement, TElement>> onAdd)
             where TElement : LayoutElement
         {
-            var element = SplitContainer<TElement,TElement>(Orientation.Horizontal, onAdd);
+            var element = Split<TElement,TElement>(Orientation.Horizontal, onAdd);
             return element;
         }
 
@@ -2294,7 +2294,7 @@ namespace FlaxEditor.CustomEditors
         /// </summary>    
         /// <param name="orientation">The orientation.</param>  
         /// <returns>The created element.</returns>
-        public SplitPanelElement SplitPanel(Orientation orientation)         
+        public SplitPanelElement Split(Orientation orientation)         
         {
             var element = new SplitPanelElement(orientation);
             AddElement(element);
@@ -2307,7 +2307,7 @@ namespace FlaxEditor.CustomEditors
         /// <param name="orientation">The orientation.</param>  
         /// <param name="onAdd">Invoke after child is added.</param>
         /// <returns>The created element.</returns>
-        public SplitPanelElement SplitPanel(Orientation orientation, Action<SplitPanelElement> onAdd)
+        public SplitPanelElement Split(Orientation orientation, Action<SplitPanelElement> onAdd)
         {
             var element = new SplitPanelElement(orientation);
             AddElement(element,onAdd);
@@ -2318,9 +2318,9 @@ namespace FlaxEditor.CustomEditors
         /// Adds a new split panel element
         /// </summary>    
         /// <returns>The created element.</returns>
-        public SplitPanelElement SplitPanel()
+        public SplitPanelElement Split()
         {
-            var element = SplitPanel(Orientation.Horizontal);
+            var element = Split(Orientation.Horizontal);
             return element;
         }
 
@@ -2329,9 +2329,9 @@ namespace FlaxEditor.CustomEditors
         /// </summary>    
         /// <param name="onAdd">Invoke after child is added.</param>
         /// <returns>The created element.</returns>
-        public SplitPanelElement SplitPanel(Action<SplitPanelElement> onAdd)
+        public SplitPanelElement Split(Action<SplitPanelElement> onAdd)
         {
-            var element = SplitPanel(Orientation.Horizontal, onAdd);
+            var element = Split(Orientation.Horizontal, onAdd);
             return element;
         }
 
@@ -2412,7 +2412,7 @@ namespace FlaxEditor.CustomEditors
         /// <typeparam name="T"></typeparam>
         /// <param name="element">The element.</param>
         /// <returns></returns>
-        public T Addchild<T>(T element) where T : LayoutElement
+        public T AddChild<T>(T element) where T : LayoutElement
         {
             AddElement(element); 
             return element;
@@ -2424,7 +2424,7 @@ namespace FlaxEditor.CustomEditors
         /// <param name="element">The element.</param>
         /// <param name="onAdd">Invoke after child is added.</param>
         /// <returns></returns>
-        public T Addchild<T>(T element, Action<T> onAdd) where T : LayoutElement
+        public T AddChild<T>(T element, Action<T> onAdd) where T : LayoutElement
         {
             AddElement(element,onAdd);
             return element;

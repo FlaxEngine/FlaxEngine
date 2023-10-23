@@ -183,6 +183,7 @@ namespace FlaxEngine.GUI
         /// <summary>
         /// Creates a new control and adds it to the container.
         /// </summary>
+        /// <typeparam name="T"></typeparam>
         /// <returns>The added control.</returns>
         public T AddChild<T>() where T : Control
         {
@@ -194,6 +195,7 @@ namespace FlaxEngine.GUI
         /// <summary>
         /// Adds the control to the container.
         /// </summary>
+        /// <typeparam name="T"></typeparam>
         /// <param name="child">The control to add.</param>
         /// <returns>The added control.</returns>
         public T AddChild<T>(T child) where T : Control
@@ -212,6 +214,7 @@ namespace FlaxEngine.GUI
         /// <summary>
         /// Creates a new control and adds it to the container.
         /// </summary>
+        /// <typeparam name="T"></typeparam>
         /// <param name="onAdd">Invoke after child is added.</param>
         /// <returns>The added control.</returns>
         public T AddChild<T>(Action<T> onAdd) where T : Control
@@ -224,6 +227,7 @@ namespace FlaxEngine.GUI
         /// <summary>
         /// Adds the control to the container.
         /// </summary>
+        /// <typeparam name="T"></typeparam>
         /// <param name="child">The control to add.</param>
         /// <param name="onAdd">Invoke after child is added.</param>
         /// <returns>The added control.</returns>
@@ -233,6 +237,32 @@ namespace FlaxEngine.GUI
             onAdd?.Invoke(child);
             return child;
         }
+
+        
+       /// <summary>
+       /// Adds the control to the container.
+       /// </summary>
+       /// <param name="child">The control to add.</param>
+       /// <returns>The added control.</returns>
+       public Control AddChild(Control child)
+       {
+           child.Parent = this;
+           return child;
+       }
+
+       /// <summary>
+       /// Adds the control to the container.
+       /// </summary>
+       /// <param name="child">The control to add.</param>
+       /// <param name="onAdd">Invoke after child is added.</param>
+       /// <returns>The added control.</returns>
+       public Control AddChild(Control child, Action<Control> onAdd)
+       {
+           AddChild(child);
+           onAdd?.Invoke(child);
+           return child;
+       }
+       
 
         /// <summary>
         /// Removes control from the container.
@@ -457,9 +487,12 @@ namespace FlaxEngine.GUI
             return result;
         }
 
+        /// <summary>
         /// Tries to find lowest child control at given point in control local coordinates.
         /// </summary>
         /// <param name="point">The local point to check.</param>
+        /// <param name="onGet">Invoked after child retrieved.</param>
+        /// <param name="onFail">Invoked if failed to retrieve child.</param>
         /// <returns>The found control or null.</returns>
         public Control GetChildAtRecursive(Float2 point, Action<Control> onGet, Action onFail = null)
         {

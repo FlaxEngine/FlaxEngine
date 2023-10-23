@@ -16,7 +16,7 @@ namespace FlaxEditor.CustomEditors.Elements
         /// <summary>
         /// The split container.
         /// </summary>
-        public readonly SplitContainer Split;
+        public readonly SplitContainer SplitContainer;
 
         /// <summary>
         /// The first control (left or upper based on Orientation).
@@ -36,11 +36,11 @@ namespace FlaxEditor.CustomEditors.Elements
         {
             Element1 = Element<TElement1>();
             Element2 = Element<TElement2>();
-            Split = new SplitContainer(Element1.Control, Element2.Control, orientation);
+            SplitContainer = new SplitContainer(Element1.Control, Element2.Control, orientation);
         }
 
         /// <inheritdoc />
-        public override ContainerControl ContainerControl => Split;
+        public override ContainerControl ContainerControl => SplitContainer;
     }
 
 
