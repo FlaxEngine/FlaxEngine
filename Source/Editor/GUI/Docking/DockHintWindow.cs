@@ -44,11 +44,11 @@ namespace FlaxEditor.GUI.Docking
                 var mousePos = window.MousePosition;
                 var previousSize = window.Size;
                 window.Restore();
-                window.Position = FlaxEngine.Input.MouseScreenPosition - mousePos * window.Size / previousSize;
+                window.Position = Platform.MousePosition - mousePos * window.Size / previousSize;
             }
 
             // Calculate dragging offset and move window to the destination position
-            var mouseScreenPosition = FlaxEngine.Input.MouseScreenPosition;
+            var mouseScreenPosition = Platform.MousePosition;
 
             // If the _toMove window was not focused when initializing this window, the result vector only contains zeros
             // and to prevent a failure, we need to perform an update for the drag offset at later time which will be done in the OnMouseMove event handler.
@@ -114,7 +114,7 @@ namespace FlaxEditor.GUI.Docking
                 var window = _toMove.Window?.Window;
                 if (window == null)
                     return;
-                var mouse = FlaxEngine.Input.MouseScreenPosition;
+                var mouse = Platform.MousePosition;
 
                 // Move base window
                 window.Position = mouse - _dragOffset;
@@ -194,7 +194,7 @@ namespace FlaxEditor.GUI.Docking
 
             // Move window to the mouse position (with some offset for caption bar)
             var window = (WindowRootControl)toMove.Root;
-            var mouse = FlaxEngine.Input.MouseScreenPosition;
+            var mouse = Platform.MousePosition;
             window.Window.Position = mouse - new Float2(8, 8);
 
             // Get floating panel
@@ -245,7 +245,7 @@ namespace FlaxEditor.GUI.Docking
         private void UpdateRects()
         {
             // Cache mouse position
-            _mouse = FlaxEngine.Input.MouseScreenPosition;
+            _mouse = Platform.MousePosition;
 
             // Check intersection with any dock panel
             var uiMouse = _mouse;

@@ -498,7 +498,9 @@ static void ConvertNSRect(NSScreen *screen, NSRect *r)
 {
     if (IsWindowInvalid(Window)) return;
 	Float2 mousePos = GetMousePosition(Window, event);
-    if (!Window->IsMouseTracking() && !IsMouseOver)
+    if (Window->IsMouseTracking())
+        return; // Skip mouse events when tracking mouse (handled in MacWindow::OnUpdate)
+    if (!IsMouseOver)
         return;
 	Input::Mouse->OnMouseMove(Window->ClientToScreen(mousePos), Window);
 }
@@ -521,11 +523,12 @@ static void ConvertNSRect(NSScreen *screen, NSRect *r)
 {
     if (IsWindowInvalid(Window)) return;
 	Float2 mousePos = GetMousePosition(Window, event);
+    mousePos = Window->ClientToScreen(mousePos);
     MouseButton mouseButton = MouseButton::Left;
     if ([event clickCount] == 2)
-        Input::Mouse->OnMouseDoubleClick(Window->ClientToScreen(mousePos), mouseButton, Window);
+        Input::Mouse->OnMouseDoubleClick(mousePos, mouseButton, Window);
     else
-	    Input::Mouse->OnMouseDown(Window->ClientToScreen(mousePos), mouseButton, Window);
+	    Input::Mouse->OnMouseDown(mousePos, mouseButton, Window);
 }
 
 - (void)mouseDragged:(NSEvent*)event
@@ -537,8 +540,21 @@ static void ConvertNSRect(NSScreen *screen, NSRect *r)
 {
     if (IsWindowInvalid(Window)) return;
 	Float2 mousePos = GetMousePosition(Window, event);
+    mousePos = Window->ClientToScreen(mousePos);
     MouseButton mouseButton = MouseButton::Left;
-    Input::Mouse->OnMouseUp(Window->ClientToScreen(mousePos), mouseButton, Window);
+    Input::Mouse->OnMouseUp(mousePos, mouseButton, Window);
+
+    // Redirect event to any window that tracks the mouse (eg. dock window in Editor)
+    WindowsManager::WindowsLocker.Lock();
+    for (auto* win : WindowsManager::Windows)
+    {
+        if (win->IsVisible() && win->IsMouseTracking() && win != Window)
+        {
+            Input::Mouse->OnMouseUp(mousePos, mouseButton, win);
+            break;
+        }
+    }
+    WindowsManager::WindowsLocker.Unlock();
 }
 
 - (void)rightMouseDown:(NSEvent*)event
@@ -788,7 +804,6 @@ void MacWindow::SetIsMouseOver(bool value)
         // Refresh cursor typet
         SetCursor(CursorType::Default);
         SetCursor(cursor);
-        
     }
     else
     {
@@ -801,6 +816,22 @@ void MacWindow::SetIsMouseOver(bool value)
 void* MacWindow::GetNativePtr() const
 {
     return _window;
+}
+
+void MacWindow::OnUpdate(float dt)
+{
+    if (IsMouseTracking())
+    {
+        // Keep sending mouse movement events no matter if window has focus
+        Float2 mousePos = Platform::GetMousePosition();
+        if (_mouseTrackPos != mousePos)
+        {
+            _mouseTrackPos = mousePos;
+            Input::Mouse->OnMouseMove(mousePos, this);
+        }
+    }
+
+    WindowBase::OnUpdate(dt);
 }
 
 void MacWindow::Show()
@@ -838,7 +869,7 @@ void MacWindow::Hide()
 
         // Hide
         NSWindow* window = (NSWindow*)_window;
-        [window orderOut:nil];
+        [window orderOut:window];
 
         // Base
         WindowBase::Hide();
@@ -1044,6 +1075,7 @@ void MacWindow::StartTrackingMouse(bool useMouseScreenOffset)
     _isTrackingMouse = true;
     _trackingMouseOffset = Float2::Zero;
     _isUsingMouseOffset = useMouseScreenOffset;
+    _mouseTrackPos = Float2::Minimum;
 }
 
 void MacWindow::EndTrackingMouse()
