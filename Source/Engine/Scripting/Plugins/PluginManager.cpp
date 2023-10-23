@@ -83,6 +83,8 @@ namespace PluginManagerImpl
     void OnAssemblyUnloading(MAssembly* assembly);
     void OnBinaryModuleLoaded(BinaryModule* module);
     void OnScriptsReloading();
+    Array<GamePlugin*> SortGamePlugins(Array<GamePlugin*>& plugins, MClass* pluginLoadOrderAttribute, MField* typeField);
+    Array<Plugin*> SortPlugins(Array<Plugin*> plugins, MClass* pluginLoadOrderAttribute, MField* typeField);
 }
 
 using namespace PluginManagerImpl;
@@ -146,12 +148,7 @@ void PluginManagerImpl::LoadPlugin(MClass* klass, bool isEditor)
     auto plugin = (Plugin*)Scripting::NewObject(klass);
     if (!plugin)
         return;
-/*
-    auto engineAssembly = ((NativeBinaryModule*)GetBinaryModuleFlaxEngine())->Assembly;
-    auto pluginLoadOrderAttribute = engineAssembly->GetClass("FlaxEngine.PluginLoadOrderAttribute");
-    auto afterTypeField = pluginLoadOrderAttribute->GetField("InitializeAfter");
-    ASSERT(afterTypeField);
-*/
+
     if (!isEditor)
     {
         GamePlugins.Add((GamePlugin*)plugin);
@@ -214,45 +211,10 @@ void PluginManagerImpl::OnAssemblyUnloading(MAssembly* assembly)
 
     auto engineAssembly = ((NativeBinaryModule*)GetBinaryModuleFlaxEngine())->Assembly;
     auto pluginLoadOrderAttribute = engineAssembly->GetClass("FlaxEngine.PluginLoadOrderAttribute");
-    auto afterTypeField = pluginLoadOrderAttribute->GetField("DeinitializeBefore");
-    ASSERT(afterTypeField);
+    auto beforeTypeField = pluginLoadOrderAttribute->GetField("DeinitializeBefore");
+    ASSERT(beforeTypeField);
 
-    // Sort editor plugins
-    Array<Plugin*> editorPlugins;
-    for(int i = 0; i < EditorPlugins.Count(); i++)
-    {
-        Plugin* plugin = EditorPlugins[i];
-        // Sort game plugin as needed
-        int insertIndex = -1;
-        for(int j = 0; j < editorPlugins.Count(); j++)
-        {
-            // Get first instance where a game plugin needs another one before it
-            auto attribute = editorPlugins[j]->GetClass()->GetAttribute(pluginLoadOrderAttribute);
-            if (attribute == nullptr || MCore::Object::GetClass(attribute) != pluginLoadOrderAttribute)
-                continue;
-            
-            // Check if attribute references a valid class
-            MTypeObject* refType = nullptr;
-            afterTypeField->GetValue(attribute, &refType);
-            if (refType == nullptr)
-                continue;
-
-            MType* type = INTERNAL_TYPE_OBJECT_GET(refType);
-            if (type == nullptr)
-                continue;
-            MClass* typeClass = MCore::Type::GetClass(type);
-
-            if (plugin->GetClass() == typeClass)
-            {
-                insertIndex = j;
-                break;
-            }
-        }
-        if (insertIndex == -1)
-            editorPlugins.Add(plugin);
-        else
-            editorPlugins.Insert(insertIndex, plugin);
-    }
+    auto editorPlugins = SortPlugins(EditorPlugins, pluginLoadOrderAttribute, beforeTypeField);
 
     for (int32 i = editorPlugins.Count() - 1; i >= 0 && editorPlugins.Count() > 0; i--)
     {
@@ -265,42 +227,7 @@ void PluginManagerImpl::OnAssemblyUnloading(MAssembly* assembly)
         }
     }
 
-    // Sort game plugins
-    Array<GamePlugin*> gamePlugins;
-    for(int i = 0; i < GamePlugins.Count(); i++)
-    {
-        GamePlugin* plugin = GamePlugins[i];
-        // Sort game plugin as needed
-        int insertIndex = -1;
-        for(int j = 0; j < gamePlugins.Count(); j++)
-        {
-            // Get first instance where a game plugin needs another one before it
-            auto attribute = gamePlugins[j]->GetClass()->GetAttribute(pluginLoadOrderAttribute);
-            if (attribute == nullptr || MCore::Object::GetClass(attribute) != pluginLoadOrderAttribute)
-                continue;
-            
-            // Check if attribute references a valid class
-            MTypeObject* refType = nullptr;
-            afterTypeField->GetValue(attribute, &refType);
-            if (refType == nullptr)
-                continue;
-
-            MType* type = INTERNAL_TYPE_OBJECT_GET(refType);
-            if (type == nullptr)
-                continue;
-            MClass* typeClass = MCore::Type::GetClass(type);
-
-            if (plugin->GetClass() == typeClass)
-            {
-                insertIndex = j;
-                break;
-            }
-        }
-        if (insertIndex == -1)
-            gamePlugins.Add(plugin);
-        else
-            gamePlugins.Insert(insertIndex, plugin);
-    }
+    auto gamePlugins = SortGamePlugins(GamePlugins, pluginLoadOrderAttribute, beforeTypeField);
 
     for (int32 i = gamePlugins.Count() - 1; i >= 0 && gamePlugins.Count() > 0; i--)
     {
@@ -347,45 +274,10 @@ void PluginManagerImpl::OnScriptsReloading()
 
     auto engineAssembly = ((NativeBinaryModule*)GetBinaryModuleFlaxEngine())->Assembly;
     auto pluginLoadOrderAttribute = engineAssembly->GetClass("FlaxEngine.PluginLoadOrderAttribute");
-    auto afterTypeField = pluginLoadOrderAttribute->GetField("DeinitializeBefore");
-    ASSERT(afterTypeField);
+    auto beforeTypeField = pluginLoadOrderAttribute->GetField("DeinitializeBefore");
+    ASSERT(beforeTypeField);
 
-    // Sort editor plugins
-    Array<Plugin*> editorPlugins;
-    for(int i = 0; i < EditorPlugins.Count(); i++)
-    {
-        Plugin* plugin = EditorPlugins[i];
-        // Sort game plugin as needed
-        int insertIndex = -1;
-        for(int j = 0; j < editorPlugins.Count(); j++)
-        {
-            // Get first instance where a game plugin needs another one before it
-            auto attribute = editorPlugins[j]->GetClass()->GetAttribute(pluginLoadOrderAttribute);
-            if (attribute == nullptr || MCore::Object::GetClass(attribute) != pluginLoadOrderAttribute)
-                continue;
-            
-            // Check if attribute references a valid class
-            MTypeObject* refType = nullptr;
-            afterTypeField->GetValue(attribute, &refType);
-            if (refType == nullptr)
-                continue;
-
-            MType* type = INTERNAL_TYPE_OBJECT_GET(refType);
-            if (type == nullptr)
-                continue;
-            MClass* typeClass = MCore::Type::GetClass(type);
-
-            if (plugin->GetClass() == typeClass)
-            {
-                insertIndex = j;
-                break;
-            }
-        }
-        if (insertIndex == -1)
-            editorPlugins.Add(plugin);
-        else
-            editorPlugins.Insert(insertIndex, plugin);
-    }
+    auto editorPlugins = SortPlugins(EditorPlugins, pluginLoadOrderAttribute, beforeTypeField);
 
     for (int32 i = editorPlugins.Count() - 1; i >= 0 && editorPlugins.Count() > 0; i--)
     {
@@ -397,42 +289,7 @@ void PluginManagerImpl::OnScriptsReloading()
         }
     }
 
-    // Sort game plugins
-    Array<GamePlugin*> gamePlugins;
-    for(int i = 0; i < GamePlugins.Count(); i++)
-    {
-        GamePlugin* plugin = GamePlugins[i];
-        // Sort game plugin as needed
-        int insertIndex = -1;
-        for(int j = 0; j < gamePlugins.Count(); j++)
-        {
-            // Get first instance where a game plugin needs another one before it
-            auto attribute = gamePlugins[j]->GetClass()->GetAttribute(pluginLoadOrderAttribute);
-            if (attribute == nullptr || MCore::Object::GetClass(attribute) != pluginLoadOrderAttribute)
-                continue;
-            
-            // Check if attribute references a valid class
-            MTypeObject* refType = nullptr;
-            afterTypeField->GetValue(attribute, &refType);
-            if (refType == nullptr)
-                continue;
-
-            MType* type = INTERNAL_TYPE_OBJECT_GET(refType);
-            if (type == nullptr)
-                continue;
-            MClass* typeClass = MCore::Type::GetClass(type);
-
-            if (plugin->GetClass() == typeClass)
-            {
-                insertIndex = j;
-                break;
-            }
-        }
-        if (insertIndex == -1)
-            gamePlugins.Add(plugin);
-        else
-            gamePlugins.Insert(insertIndex, plugin);
-    }
+    auto gamePlugins = SortGamePlugins(GamePlugins, pluginLoadOrderAttribute, beforeTypeField);
 
     for (int32 i = gamePlugins.Count() - 1; i >= 0 && gamePlugins.Count() > 0; i--)
     {
@@ -445,6 +302,88 @@ void PluginManagerImpl::OnScriptsReloading()
     }
     if (changed)
         PluginManager::PluginsChanged();
+}
+
+Array<GamePlugin*> PluginManagerImpl::SortGamePlugins(Array<GamePlugin*>& plugins, MClass* pluginLoadOrderAttribute, MField* typeField)
+{
+    // Sort game plugins
+    Array<GamePlugin*> newPlugins;
+    for(int i = 0; i < plugins.Count(); i++)
+    {
+        GamePlugin* plugin = plugins[i];
+        // Sort game plugin as needed
+        int insertIndex = -1;
+        for(int j = 0; j < newPlugins.Count(); j++)
+        {
+            // Get first instance where a game plugin needs another one before it
+            auto attribute = newPlugins[j]->GetClass()->GetAttribute(pluginLoadOrderAttribute);
+            if (attribute == nullptr || MCore::Object::GetClass(attribute) != pluginLoadOrderAttribute)
+                continue;
+            
+            // Check if attribute references a valid class
+            MTypeObject* refType = nullptr;
+            typeField->GetValue(attribute, &refType);
+            if (refType == nullptr)
+                continue;
+
+            MType* type = INTERNAL_TYPE_OBJECT_GET(refType);
+            if (type == nullptr)
+                continue;
+            MClass* typeClass = MCore::Type::GetClass(type);
+
+            if (plugin->GetClass() == typeClass)
+            {
+                insertIndex = j;
+                break;
+            }
+        }
+        if (insertIndex == -1)
+            newPlugins.Add(plugin);
+        else
+            newPlugins.Insert(insertIndex, plugin);
+    }
+    return newPlugins;
+}
+
+Array<Plugin*> PluginManagerImpl::SortPlugins(Array<Plugin*> plugins, MClass* pluginLoadOrderAttribute, MField* typeField)
+{
+    // Sort plugins
+    Array<Plugin*> newPlugins;
+    for(int i = 0; i < plugins.Count(); i++)
+    {
+        Plugin* plugin = plugins[i];
+        // Sort plugin as needed
+        int insertIndex = -1;
+        for(int j = 0; j < newPlugins.Count(); j++)
+        {
+            // Get first instance where a game plugin needs another one before it
+            auto attribute = newPlugins[j]->GetClass()->GetAttribute(pluginLoadOrderAttribute);
+            if (attribute == nullptr || MCore::Object::GetClass(attribute) != pluginLoadOrderAttribute)
+                continue;
+            
+            // Check if attribute references a valid class
+            MTypeObject* refType = nullptr;
+            typeField->GetValue(attribute, &refType);
+            if (refType == nullptr)
+                continue;
+
+            MType* type = INTERNAL_TYPE_OBJECT_GET(refType);
+            if (type == nullptr)
+                continue;
+            MClass* typeClass = MCore::Type::GetClass(type);
+
+            if (plugin->GetClass() == typeClass)
+            {
+                insertIndex = j;
+                break;
+            }
+        }
+        if (insertIndex == -1)
+            newPlugins.Add(plugin);
+        else
+            newPlugins.Insert(insertIndex, plugin);
+    }
+    return newPlugins;
 }
 
 bool PluginManagerService::Init()
@@ -460,44 +399,9 @@ bool PluginManagerService::Init()
     auto pluginLoadOrderAttribute = engineAssembly->GetClass("FlaxEngine.PluginLoadOrderAttribute");
     auto afterTypeField = pluginLoadOrderAttribute->GetField("InitializeAfter");
     ASSERT(afterTypeField);
-    
+
 #if !USE_EDITOR
-    // Sort game plugins
-    Array<GamePlugin*> gamePlugins;
-    for(int i = 0; i < GamePlugins.Count(); i++)
-    {
-        GamePlugin* plugin = GamePlugins[i];
-        // Sort game plugin as needed
-        int insertIndex = -1;
-        for(int j = 0; j < gamePlugins.Count(); j++)
-        {
-            // Get first instance where a game plugin needs another one before it
-            auto attribute = gamePlugins[j]->GetClass()->GetAttribute(pluginLoadOrderAttribute);
-            if (attribute == nullptr || MCore::Object::GetClass(attribute) != pluginLoadOrderAttribute)
-                continue;
-            
-            // Check if attribute references a valid class
-            MTypeObject* refType = nullptr;
-            afterTypeField->GetValue(attribute, &refType);
-            if (refType == nullptr)
-                continue;
-
-            MType* type = INTERNAL_TYPE_OBJECT_GET(refType);
-            if (type == nullptr)
-                continue;
-            MClass* typeClass = MCore::Type::GetClass(type);
-
-            if (plugin->GetClass() == typeClass)
-            {
-                insertIndex = j;
-                break;
-            }
-        }
-        if (insertIndex == -1)
-            gamePlugins.Add(plugin);
-        else
-            gamePlugins.Insert(insertIndex, plugin);
-    }
+    auto gamePlugins = SortGamePlugins(GamePlugins, pluginLoadOrderAttribute, afterTypeField);
 
     // Initalize game plugins
     for (auto plugin : gamePlugins)
@@ -507,42 +411,7 @@ bool PluginManagerService::Init()
 #endif
     
 #if USE_EDITOR
-    // Sort editor plugins
-    Array<Plugin*> editorPlugins;
-    for(int i = 0; i < EditorPlugins.Count(); i++)
-    {
-        Plugin* plugin = EditorPlugins[i];
-        // Sort game plugin as needed
-        int insertIndex = -1;
-        for(int j = 0; j < editorPlugins.Count(); j++)
-        {
-            // Get first instance where a game plugin needs another one before it
-            auto attribute = editorPlugins[j]->GetClass()->GetAttribute(pluginLoadOrderAttribute);
-            if (attribute == nullptr || MCore::Object::GetClass(attribute) != pluginLoadOrderAttribute)
-                continue;
-            
-            // Check if attribute references a valid class
-            MTypeObject* refType = nullptr;
-            afterTypeField->GetValue(attribute, &refType);
-            if (refType == nullptr)
-                continue;
-
-            MType* type = INTERNAL_TYPE_OBJECT_GET(refType);
-            if (type == nullptr)
-                continue;
-            MClass* typeClass = MCore::Type::GetClass(type);
-
-            if (plugin->GetClass() == typeClass)
-            {
-                insertIndex = j;
-                break;
-            }
-        }
-        if (insertIndex == -1)
-            editorPlugins.Add(plugin);
-        else
-            editorPlugins.Insert(insertIndex, plugin);
-    }
+    auto editorPlugins = SortPlugins(EditorPlugins, pluginLoadOrderAttribute, afterTypeField);
 
     // Initialize editor plugins
     for (auto plugin : editorPlugins)
@@ -572,45 +441,10 @@ void PluginManagerService::Dispose()
     
     auto engineAssembly = ((NativeBinaryModule*)GetBinaryModuleFlaxEngine())->Assembly;
     auto pluginLoadOrderAttribute = engineAssembly->GetClass("FlaxEngine.PluginLoadOrderAttribute");
-    auto afterTypeField = pluginLoadOrderAttribute->GetField("DeinitializeBefore");
-    ASSERT(afterTypeField);
+    auto beforeTypeField = pluginLoadOrderAttribute->GetField("DeinitializeBefore");
+    ASSERT(beforeTypeField);
 
-    // Sort editor plugins
-    Array<Plugin*> editorPlugins;
-    for(int i = 0; i < EditorPlugins.Count(); i++)
-    {
-        Plugin* plugin = EditorPlugins[i];
-        // Sort game plugin as needed
-        int insertIndex = -1;
-        for(int j = 0; j < editorPlugins.Count(); j++)
-        {
-            // Get first instance where a game plugin needs another one before it
-            auto attribute = editorPlugins[j]->GetClass()->GetAttribute(pluginLoadOrderAttribute);
-            if (attribute == nullptr || MCore::Object::GetClass(attribute) != pluginLoadOrderAttribute)
-                continue;
-            
-            // Check if attribute references a valid class
-            MTypeObject* refType = nullptr;
-            afterTypeField->GetValue(attribute, &refType);
-            if (refType == nullptr)
-                continue;
-
-            MType* type = INTERNAL_TYPE_OBJECT_GET(refType);
-            if (type == nullptr)
-                continue;
-            MClass* typeClass = MCore::Type::GetClass(type);
-
-            if (plugin->GetClass() == typeClass)
-            {
-                insertIndex = j;
-                break;
-            }
-        }
-        if (insertIndex == -1)
-            editorPlugins.Add(plugin);
-        else
-            editorPlugins.Insert(insertIndex, plugin);
-    }
+    auto editorPlugins = SortPlugins(EditorPlugins, pluginLoadOrderAttribute, beforeTypeField);
     
     for (int32 i = editorPlugins.Count() - 1; i >= 0 && editorPlugins.Count() > 0; i--)
     {
@@ -619,42 +453,7 @@ void PluginManagerService::Dispose()
         EditorPlugins.Remove(plugin);
     }
     
-    // Sort game plugins
-    Array<GamePlugin*> gamePlugins;
-    for(int i = 0; i < GamePlugins.Count(); i++)
-    {
-        GamePlugin* plugin = GamePlugins[i];
-        // Sort game plugin as needed
-        int insertIndex = -1;
-        for(int j = 0; j < gamePlugins.Count(); j++)
-        {
-            // Get first instance where a game plugin needs another one before it
-            auto attribute = gamePlugins[j]->GetClass()->GetAttribute(pluginLoadOrderAttribute);
-            if (attribute == nullptr || MCore::Object::GetClass(attribute) != pluginLoadOrderAttribute)
-                continue;
-            
-            // Check if attribute references a valid class
-            MTypeObject* refType = nullptr;
-            afterTypeField->GetValue(attribute, &refType);
-            if (refType == nullptr)
-                continue;
-
-            MType* type = INTERNAL_TYPE_OBJECT_GET(refType);
-            if (type == nullptr)
-                continue;
-            MClass* typeClass = MCore::Type::GetClass(type);
-
-            if (plugin->GetClass() == typeClass)
-            {
-                insertIndex = j;
-                break;
-            }
-        }
-        if (insertIndex == -1)
-            gamePlugins.Add(plugin);
-        else
-            gamePlugins.Insert(insertIndex, plugin);
-    }
+    auto gamePlugins = SortGamePlugins(GamePlugins, pluginLoadOrderAttribute, beforeTypeField);
     for (int32 i = gamePlugins.Count() - 1; i >= 0 && gamePlugins.Count() > 0; i--)
     {
         auto plugin = gamePlugins[i];
@@ -731,43 +530,8 @@ void PluginManager::InitializeGamePlugins()
     auto pluginLoadOrderAttribute = engineAssembly->GetClass("FlaxEngine.PluginLoadOrderAttribute");
     auto afterTypeField = pluginLoadOrderAttribute->GetField("InitializeAfter");
     ASSERT(afterTypeField);
-    
-    // Sort game plugins
-    Array<GamePlugin*> gamePlugins;
-    for(int i = 0; i < GamePlugins.Count(); i++)
-    {
-        GamePlugin* plugin = GamePlugins[i];
-        // Sort game plugin as needed
-        int insertIndex = -1;
-        for(int j = 0; j < gamePlugins.Count(); j++)
-        {
-            // Get first instance where a game plugin needs another one before it
-            auto attribute = gamePlugins[j]->GetClass()->GetAttribute(pluginLoadOrderAttribute);
-            if (attribute == nullptr || MCore::Object::GetClass(attribute) != pluginLoadOrderAttribute)
-                continue;
-            
-            // Check if attribute references a valid class
-            MTypeObject* refType = nullptr;
-            afterTypeField->GetValue(attribute, &refType);
-            if (refType == nullptr)
-                continue;
 
-            MType* type = INTERNAL_TYPE_OBJECT_GET(refType);
-            if (type == nullptr)
-                continue;
-            MClass* typeClass = MCore::Type::GetClass(type);
-
-            if (plugin->GetClass() == typeClass)
-            {
-                insertIndex = j;
-                break;
-            }
-        }
-        if (insertIndex == -1)
-            gamePlugins.Add(plugin);
-        else
-            gamePlugins.Insert(insertIndex, plugin);
-    }
+    auto gamePlugins = SortGamePlugins(GamePlugins, pluginLoadOrderAttribute, afterTypeField);
     for (int32 i = 0; i < gamePlugins.Count(); i++)
     {
         PluginManagerService::InvokeInitialize(gamePlugins[i]);
@@ -780,45 +544,10 @@ void PluginManager::DeinitializeGamePlugins()
 
     auto engineAssembly = ((NativeBinaryModule*)GetBinaryModuleFlaxEngine())->Assembly;
     auto pluginLoadOrderAttribute = engineAssembly->GetClass("FlaxEngine.PluginLoadOrderAttribute");
-    auto afterTypeField = pluginLoadOrderAttribute->GetField("DeinitializeBefore");
-    ASSERT(afterTypeField);
-    
-    // Sort game plugins
-    Array<GamePlugin*> gamePlugins;
-    for(int i = 0; i < GamePlugins.Count(); i++)
-    {
-        GamePlugin* plugin = GamePlugins[i];
-        // Sort game plugin as needed
-        int insertIndex = -1;
-        for(int j = 0; j < gamePlugins.Count(); j++)
-        {
-            // Get first instance where a game plugin needs another one before it
-            auto attribute = gamePlugins[j]->GetClass()->GetAttribute(pluginLoadOrderAttribute);
-            if (attribute == nullptr || MCore::Object::GetClass(attribute) != pluginLoadOrderAttribute)
-                continue;
-            
-            // Check if attribute references a valid class
-            MTypeObject* refType = nullptr;
-            afterTypeField->GetValue(attribute, &refType);
-            if (refType == nullptr)
-                continue;
+    auto beforeTypeField = pluginLoadOrderAttribute->GetField("DeinitializeBefore");
+    ASSERT(beforeTypeField);
 
-            MType* type = INTERNAL_TYPE_OBJECT_GET(refType);
-            if (type == nullptr)
-                continue;
-            MClass* typeClass = MCore::Type::GetClass(type);
-
-            if (plugin->GetClass() == typeClass)
-            {
-                insertIndex = j;
-                break;
-            }
-        }
-        if (insertIndex == -1)
-            gamePlugins.Add(plugin);
-        else
-            gamePlugins.Insert(insertIndex, plugin);
-    }
+    auto gamePlugins = SortGamePlugins(GamePlugins, pluginLoadOrderAttribute, beforeTypeField);
     for (int32 i = gamePlugins.Count() - 1; i >= 0; i--)
     {
         PluginManagerService::InvokeDeinitialize(gamePlugins[i]);
