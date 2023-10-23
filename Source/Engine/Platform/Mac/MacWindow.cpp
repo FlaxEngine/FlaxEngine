@@ -895,14 +895,13 @@ void MacWindow::SetClientBounds(const Rectangle& clientArea)
     NSWindow* window = (NSWindow*)_window;
     if (!window)
         return;
+    const float screenScale = MacPlatform::ScreenScale;
+
     NSRect oldRect = [window frame];
-    NSRect newRect = NSMakeRect(0, 0, clientArea.Size.X, clientArea.Size.Y);
+    NSRect newRect = NSMakeRect(0, 0, clientArea.Size.X / screenScale, clientArea.Size.Y / screenScale);
     newRect = [window frameRectForContentRect:newRect];
 
-    //newRect.origin.x = oldRect.origin.x;
-    //newRect.origin.y = NSMaxY(oldRect) - newRect.size.height;
-
-    Float2 pos = AppleUtils::PosToCoca(clientArea.Location);
+    Float2 pos = AppleUtils::PosToCoca(clientArea.Location) / screenScale;
     Float2 titleSize = GetWindowTitleSize(this);
     newRect.origin.x = pos.X + titleSize.X;
     newRect.origin.y = pos.Y - newRect.size.height + titleSize.Y;
