@@ -16,6 +16,7 @@
 #include "Engine/Threading/ThreadLocal.h"
 #if !BUILD_RELEASE || USE_EDITOR
 #include "Engine/Level/Level.h"
+#include "Engine/Threading/Threading.h"
 #endif
 
 SceneObjectsFactory::Context::Context(ISerializeModifier* modifier)
