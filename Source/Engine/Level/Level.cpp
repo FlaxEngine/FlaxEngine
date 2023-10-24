@@ -416,7 +416,7 @@ public:
         }
 
         // Load scene
-        if (Level::loadScene(SceneAsset.Get()))
+        if (Level::loadScene(SceneAsset))
         {
             LOG(Error, "Failed to deserialize scene {0}", SceneId);
             CallSceneEvent(SceneEventType::OnSceneLoadError, nullptr, SceneId);
@@ -816,40 +816,10 @@ bool LevelImpl::unloadScenes()
     return false;
 }
 
-bool Level::loadScene(const Guid& sceneId)
-{
-    const auto sceneAsset = Content::LoadAsync<JsonAsset>(sceneId);
-    return loadScene(sceneAsset);
-}
-
-bool Level::loadScene(const String& scenePath)
-{
-    LOG(Info, "Loading scene from file. Path: \'{0}\'", scenePath);
-
-    // Check for missing file
-    if (!FileSystem::FileExists(scenePath))
-    {
-        LOG(Error, "Missing scene file.");
-        return true;
-    }
-
-    // Load file
-    BytesContainer sceneData;
-    if (File::ReadAllBytes(scenePath, sceneData))
-    {
-        LOG(Error, "Cannot load data from file.");
-        return true;
-    }
-
-    return loadScene(sceneData);
-}
-
 bool Level::loadScene(JsonAsset* sceneAsset)
 {
     // Keep reference to the asset (prevent unloading during action)
     AssetReference<JsonAsset> ref = sceneAsset;
-
-    // Wait for loaded
     if (sceneAsset == nullptr || sceneAsset->WaitForLoaded())
     {
         LOG(Error, "Cannot load scene asset.");
@@ -879,6 +849,7 @@ bool Level::loadScene(const BytesContainer& sceneData, Scene** outScene)
         return true;
     }
 
+    ScopeLock lock(ScenesLock);
     return loadScene(document, outScene);
 }
 
@@ -1332,6 +1303,7 @@ bool Level::LoadScene(const Guid& id)
     }
 
     // Load scene
+    ScopeLock lock(ScenesLock);
     if (loadScene(sceneAsset))
     {
         LOG(Error, "Failed to deserialize scene {0}", id);
