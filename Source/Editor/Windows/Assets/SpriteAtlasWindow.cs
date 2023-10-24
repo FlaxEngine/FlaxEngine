@@ -1,5 +1,6 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
+using System;
 using System.Linq;
 using System.Xml;
 using FlaxEditor.Content;
@@ -33,9 +34,9 @@ namespace FlaxEditor.Windows.Assets
         {
             internal Float2 Mouselocation;
             internal int SpriteIDUnderTheMouse;
-            internal Rectangle SelectedRectangle;
-            internal bool LockSelection;
-
+            internal int MarkedSpriteID;
+            internal bool HasSelection = false;
+            internal bool IsMouseOverSelection = false;
 
             public AtlasView(bool useWidgets)
             : base(useWidgets)
@@ -46,42 +47,60 @@ namespace FlaxEditor.Windows.Assets
             {
                 base.DrawTexture(ref rect);
 
-                if (Asset && Asset.IsLoaded)
+                if (Asset && Asset.IsLoaded && IsMouseOver)
                 {
                     var count = Asset.SpritesCount;
                     var style = Style.Current;
-                    bool HasSelection = false;
+                    IsMouseOverSelection = false;
                     // Draw all splits
                     for (int i = 0; i < count; i++)
                     {
-                        var sprite = Asset.GetSprite(i);
-                        var area = sprite.Area;
-                        var position = area.Location * rect.Size + rect.Location;
-                        var size = area.Size * rect.Size;
-                        var rectangle = new Rectangle(position, size);
-
-                        if (rectangle.Contains(Mouselocation) && LockSelection == false)
+                        var rectangle = GetRectangle(ref rect, i);
+                        if (rectangle.Contains(Mouselocation))
                         {
                             SpriteIDUnderTheMouse = i;
-                            SelectedRectangle = rectangle;
-                            HasSelection = true;
+                            IsMouseOverSelection = true;
                         }
-                        else //if (!SelectedRectangle.Contains(Mouselocation)) // avoid over draw
+                        else
                         {
-                            //HasSelection = false;
-                            Render2D.DrawRectangle(rectangle, style.BackgroundNormal);
+                            Render2D.DrawRectangle(rectangle, style.BorderNormal);
                         }
                     }
-                    if (LockSelection)
+                    if (IsMouseOverSelection)
                     {
-                        Render2D.DrawRectangle(SelectedRectangle, style.BackgroundSelected);
+                        Render2D.DrawRectangle(GetRectangle(ref rect, SpriteIDUnderTheMouse), style.BorderSelected);
                     }
-                    else if (HasSelection)
+                    if (HasSelection)
                     {
-                        Render2D.DrawRectangle(SelectedRectangle, Color.LightGreen);
+                        Render2D.DrawRectangle(GetRectangle(ref rect, MarkedSpriteID), Color.Lime);
                     }
                 }
             }
+            /// <summary>
+            /// 
+            /// </summary>
+            /// <returns>if mark was succesfull</returns>
+            internal bool MarkSelected()
+            {
+                var r = TextureViewRect;
+                if (IsMouseOverSelection)
+                {
+                    MarkedSpriteID = SpriteIDUnderTheMouse;
+                    HasSelection = true;
+                    return true;
+                }
+                return false;
+            }
+
+            private Rectangle GetRectangle(ref Rectangle rect,int Spriteindex)
+            {
+                var sprite = Asset.GetSprite(Spriteindex);
+                var area = sprite.Area;
+                var position = area.Location * rect.Size + rect.Location;
+                var size = area.Size * rect.Size;
+                return new Rectangle(position, size);
+            }
+
             public override void OnMouseMove(Float2 location)
             {
                 this.Mouselocation = location;
@@ -99,6 +118,8 @@ namespace FlaxEditor.Windows.Assets
 
             public class SpriteEntry
             {
+                [HideInEditor]
+                internal SpritesCollectionEditor GetEditor;
                 [HideInEditor]
                 public SpriteHandle Sprite;
 
@@ -150,11 +171,13 @@ namespace FlaxEditor.Windows.Assets
 
             public sealed class SpritesCollectionEditor : CustomEditor
             {
+                internal LayoutElementsContainer layout;
                 public override DisplayStyle Style => DisplayStyle.InlineIntoParent;
 
                 public override void Initialize(LayoutElementsContainer layout)
                 {
                     var sprites = (SpriteEntry[])Values[0];
+                    
                     if (sprites != null)
                     {
                         var elementType = new ScriptType(typeof(SpriteEntry));
@@ -164,10 +187,25 @@ namespace FlaxEditor.Windows.Assets
                             group.Panel.Tag = i;
                             group.Panel.MouseButtonRightClicked += OnGroupPanelMouseButtonRightClicked;
                             group.Object(new ListValueContainer(elementType, i, Values));
+                            sprites[i].GetEditor = this;//link the editor to SpriteEntry
                         }
                     }
+                    this.layout = layout;
                 }
+                protected override void Deinitialize()
+                {
+                    var sprites = (SpriteEntry[])Values[0];
 
+                    if (sprites != null)
+                    {
+                        for (int i = 0; i < sprites.Length; i++)
+                        {
+                            sprites[i].GetEditor = null;//unlink the editor from SpriteEntry
+                        }
+                    }
+                    layout = null;
+                    base.Deinitialize();
+                }
                 private void OnGroupPanelMouseButtonRightClicked(DropPanel groupPanel, Float2 location)
                 {
                     var menu = new ContextMenu();
@@ -195,6 +233,8 @@ namespace FlaxEditor.Windows.Assets
             /// </summary>
             public void UpdateSprites()
             {
+                if (_window == null)
+                    return;
                 var atlas = _window.Asset;
                 Sprites = new SpriteEntry[atlas.SpritesCount];
                 for (int i = 0; i < Sprites.Length; i++)
@@ -413,30 +453,53 @@ namespace FlaxEditor.Windows.Assets
         {
             _split.SplitterValue = 0.7f;
         }
+        private DropPanel SpriteUnderTheMouseDropPanel;
         /// <inheritdoc />
         public override bool OnMouseDown(Float2 location, MouseButton button)
         {
-            if(button == MouseButton.Left)
+            if (button == MouseButton.Left && _preview.IsMouseOver)
             {
-                LMBDown = true;
-                _preview.LockMovment = true;
-                _preview.LockSelection = true;
+                if (_preview.IsMouseOverSelection)
+                {
+                    var panel = (DropPanel)(_properties.Sprites[_preview.SpriteIDUnderTheMouse].GetEditor.layout.Children[_preview.SpriteIDUnderTheMouse].Control);
+                    if (_preview.MarkSelected())
+                    {
+                        LMBDown = true;
+                        _preview.LockMovment = true;
+                        if (SpriteUnderTheMouseDropPanel != panel)
+                        {
+                            if (SpriteUnderTheMouseDropPanel != null)
+                                SpriteUnderTheMouseDropPanel.IsClosed = true;
+                            panel.IsClosed = false;
+                            SpriteUnderTheMouseDropPanel = panel;
+                        }
+                    }
+                    return true;
+                }
+                else
+                {
+                    _preview.HasSelection = false;
+                    if (SpriteUnderTheMouseDropPanel != null)
+                        SpriteUnderTheMouseDropPanel.IsClosed = true;
+                    SpriteUnderTheMouseDropPanel = null;
+                    return true;
+                }
             }
             return base.OnMouseDown(location, button);
         }
         /// <inheritdoc />
         public override bool OnMouseUp(Float2 location, MouseButton button)
         {
-            if (button == MouseButton.Left)
+            if (button == MouseButton.Left && LMBDown)
             {
                 LMBDown = false;
                 _preview.LockMovment = false;
-                _preview.LockSelection = false;
                 if (gotEdit)
                 {
                     IsEdited = true;
                     gotEdit = false;
                 }
+                return true;
             }
             return base.OnMouseUp(location, button);
         }
@@ -448,11 +511,11 @@ namespace FlaxEditor.Windows.Assets
         public override void OnMouseMove(Float2 location)
         {
             var viewScale = Mathf.Max(_preview._viewScale, 1);
-            if (LMBDown)
+            if (LMBDown && _preview.HasSelection)
             {
                 //[Todo] fix the draging sprite araund it is not directy under the mouse
                 // because of Mouse location is not acauting for a transformation of view
-                var sl = _properties.Sprites[_preview.SpriteIDUnderTheMouse];
+                var sl = _properties.Sprites[_preview.MarkedSpriteID];
                 var cl = sl.Location;
                 offset -= (lastlocation - (location / viewScale));
                 if (ctrlDown)
@@ -471,7 +534,7 @@ namespace FlaxEditor.Windows.Assets
                     offset = Vector2.Zero;
                     gotEdit = true;
                 }
-                _properties.Sprites[_preview.SpriteIDUnderTheMouse].Location = sl.Location;
+                _properties.Sprites[_preview.MarkedSpriteID].Location = sl.Location;
             }
             lastlocation = location / viewScale;
             base.OnMouseMove(location);
