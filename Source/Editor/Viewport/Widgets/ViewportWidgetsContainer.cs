@@ -20,6 +20,11 @@ namespace FlaxEditor.Viewport.Widgets
         /// The upper right corner of the parent container.
         /// </summary>
         UpperRight,
+
+        /// <summary>
+        /// The upper center of the parent container.
+        /// </summary>
+        UpperCenter,
     }
 
     /// <summary>
@@ -58,22 +63,6 @@ namespace FlaxEditor.Viewport.Widgets
         {
             AutoFocus = false;
             WidgetLocation = location;
-        }
-
-        /// <inheritdoc />
-        public override void Draw()
-        {
-            // Cache data
-            var style = Style.Current;
-            var clientRect = new Rectangle(Float2.Zero, Size);
-
-            // Draw background
-            Render2D.FillRectangle(clientRect, style.LightBackground * (IsMouseOver ? 0.3f : 0.2f));
-
-            base.Draw();
-
-            // Draw frame
-            Render2D.DrawRectangle(clientRect, style.BackgroundSelected * (IsMouseOver ? 1.0f : 0.6f));
         }
 
         /// <inheritdoc />
@@ -120,17 +109,21 @@ namespace FlaxEditor.Viewport.Widgets
                     float x;
                     switch (widget.WidgetLocation)
                     {
-                    case ViewportWidgetLocation.UpperLeft:
-                        x = left;
-                        left += widget.Width + margin;
-                        break;
-                    case ViewportWidgetLocation.UpperRight:
-                        x = right - widget.Width;
-                        right = x - margin;
-                        break;
-                    default:
-                        x = 0;
-                        break;
+                        case ViewportWidgetLocation.UpperLeft:
+                            x = left;
+                            left += widget.Width + margin;
+                            break;
+                        case ViewportWidgetLocation.UpperRight:
+                            x = right - widget.Width;
+                            right = x - margin;
+                            break;
+                        case ViewportWidgetLocation.UpperCenter:
+                            x = (control.Width - widget.Width)/2f;
+                            left = widget.Width + margin;
+                            break;
+                        default:
+                            x = 0;
+                            break;
                     }
                     widget.Location = new Float2(x, margin);
                 }
