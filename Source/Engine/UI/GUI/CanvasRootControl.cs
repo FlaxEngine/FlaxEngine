@@ -11,11 +11,135 @@ namespace FlaxEngine.GUI
     [HideInEditor]
     public sealed class CanvasRootControl : RootControl
     {
+        /// <summary>
+        /// Canvas scaling modes.
+        /// </summary>
+        public enum ScalingMode
+        {
+            /// <summary>
+            /// Applies constant scale to the whole UI in pixels.
+            /// </summary>
+            ConstantPixelSize,
+
+            /// <summary>
+            /// Applies constant scale to the whole UI in physical units (depends on the screen DPI). Ensures the UI will have specific real-world size no matter the screen resolution.
+            /// </summary>
+            ConstantPhysicalSize,
+
+            /// <summary>
+            /// Applies min/max scaling to the UI depending on the screen resolution. Ensures the UI size won't go below min or above max resolution to maintain it's readability.
+            /// </summary>
+            ScaleWithResolution,
+
+            /// <summary>
+            /// Applies scaling curve to the UI depending on the screen DPI.
+            /// </summary>
+            ScaleWithDpi,
+        }
+
+        /// <summary>
+        /// Physical unit types for canvas scaling.
+        /// </summary>
+        public enum PhysicalUnitMode
+        {
+            /// <summary>
+            /// Centimeters (0.01 meter).
+            /// </summary>
+            Centimeters,
+
+            /// <summary>
+            /// Millimeters (0.1 centimeter, 0.001 meter).
+            /// </summary>
+            Millimeters,
+
+            /// <summary>
+            /// Inches (2.54 centimeters).
+            /// </summary>
+            Inches,
+
+            /// <summary>
+            /// Points (1/72 inch, 1/112 of pica).
+            /// </summary>
+            Points,
+
+            /// <summary>
+            /// Pica (1/6 inch).
+            /// </summary>
+            Picas,
+        }
+
+        /// <summary>
+        /// Resolution scaling modes.
+        /// </summary>
+        public enum ResolutionScalingMode
+        {
+            /// <summary>
+            /// Uses the shortest side of the screen to scale the canvas for min/max rule.
+            /// </summary>
+            ShortestSide,
+
+            /// <summary>
+            /// Uses the longest side of the screen to scale the canvas for min/max rule.
+            /// </summary>
+            LongestSide,
+
+            /// <summary>
+            /// Uses the horizontal (X, width) side of the screen to scale the canvas for min/max rule.
+            /// </summary>
+            Horizontal,
+
+            /// <summary>
+            /// Uses the vertical (Y, height) side of the screen to scale the canvas for min/max rule.
+            /// </summary>
+            Vertical,
+        }
+        
         private UICanvas _canvas;
         private Float2 _mousePosition;
         private float _navigationHeldTimeUp, _navigationHeldTimeDown, _navigationHeldTimeLeft, _navigationHeldTimeRight, _navigationHeldTimeSubmit;
         private float _navigationRateTimeUp, _navigationRateTimeDown, _navigationRateTimeLeft, _navigationRateTimeRight, _navigationRateTimeSubmit;
 
+        // Canvas Scalar
+        /// <summary>
+        /// The canvas scaling mode.
+        /// </summary>
+        public ScalingMode CanvasScalingMode = ScalingMode.ConstantPixelSize;
+        
+        /// <summary>
+        /// The canvas physical units.
+        /// </summary>
+        public PhysicalUnitMode CanvasPhysicalUnit = PhysicalUnitMode.Points;
+        
+        /// <summary>
+        /// The canvas resolution mode.
+        /// </summary>
+        public ResolutionScalingMode CanvasResolutionMode = ResolutionScalingMode.ShortestSide;
+        
+        /// <summary>
+        /// The canvas scale.
+        /// </summary>
+        public float CanvasScale = 1.0f;
+        
+        /// <summary>
+        /// The canvas scale factor.
+        /// </summary>
+        public float CanvasScaleFactor = 1.0f;
+        
+        /// <summary>
+        /// The canvas physical unit size.
+        /// </summary>
+        public float CanvasPhysicalUnitSize = 1.0f;
+        
+        /// <summary>
+        /// The canvas resolution minimum.
+        /// </summary>
+        public Float2 CanvasResolutionMin = new Float2(1, 1);
+        
+        /// <summary>
+        /// The canvas resolution maximum.
+        /// </summary>
+        public Float2 CanvasResolutionMax = new Float2(10000, 10000);
+        
         /// <summary>
         /// Gets the owning canvas.
         /// </summary>
@@ -38,6 +162,160 @@ namespace FlaxEngine.GUI
         internal CanvasRootControl(UICanvas canvas)
         {
             _canvas = canvas;
+            
+            // Fill the canvas by default
+            Offsets = Margin.Zero;
+            AnchorPreset = AnchorPresets.StretchAll;
+            AutoFocus = false;
+        }
+        
+        /// <summary>
+        /// Updates the scaler for the current setup.
+        /// </summary>
+        public void UpdateScale()
+        {
+            float scale = 1.0f;
+            if (Parent != null)
+            {
+                UICanvas canvas = (Root as CanvasRootControl)?.Canvas;
+                float dpi = Platform.Dpi;
+                switch (canvas?.RenderMode ?? CanvasRenderMode.ScreenSpace)
+                {
+                case CanvasRenderMode.WorldSpace:
+                case CanvasRenderMode.WorldSpaceFaceCamera:
+                    scale = 1.0f;
+                    break;
+                default:
+                    switch (CanvasScalingMode)
+                    {
+                    case ScalingMode.ConstantPixelSize:
+                        scale = 1.0f;
+                        break;
+                    case ScalingMode.ConstantPhysicalSize:
+                    {
+                        float targetDpi = GetUnitDpi(CanvasPhysicalUnit);
+                        scale = dpi / targetDpi * CanvasPhysicalUnitSize;
+                        break;
+                    }
+                    case ScalingMode.ScaleWithResolution:
+                    {
+                        Float2 resolution = Float2.Max(Size, Float2.One);
+                        int axis = 0;
+                        switch (CanvasResolutionMode)
+                        {
+                        case ResolutionScalingMode.ShortestSide:
+                            axis = resolution.X > resolution.Y ? 1 : 0;
+                            break;
+                        case ResolutionScalingMode.LongestSide:
+                            axis = resolution.X > resolution.Y ? 0 : 1;
+                            break;
+                        case ResolutionScalingMode.Horizontal:
+                            axis = 0;
+                            break;
+                        case ResolutionScalingMode.Vertical:
+                            axis = 1;
+                            break;
+                        }
+                        float min = CanvasResolutionMin[axis], max = CanvasResolutionMax[axis], value = resolution[axis];
+                        if (value < min)
+                            scale = min / value;
+                        else if (value > max)
+                            scale = max / value;
+                        if (_canvas.ResolutionCurve != null && _canvas.ResolutionCurve.Keyframes?.Length != 0)
+                        {
+                            _canvas.ResolutionCurve.Evaluate(out var curveScale, value, false);
+                            scale *= curveScale;
+                        }
+                        break;
+                    }
+                    case ScalingMode.ScaleWithDpi:
+                        _canvas.DpiCurve?.Evaluate(out scale, dpi, false);
+                        break;
+                    }
+                    break;
+                }
+            }
+            CanvasScale = Mathf.Max(scale * CanvasScaleFactor, 0.01f);
+        }
+
+        /// <summary>
+        /// Gets the unit's DPI based on the physical unit mode.
+        /// </summary>
+        /// <param name="unit"></param>
+        /// <returns></returns>
+        public float GetUnitDpi(PhysicalUnitMode unit)
+        {
+            float dpi = 1.0f;
+            switch (unit)
+            {
+            case PhysicalUnitMode.Centimeters:
+                dpi = 2.54f;
+                break;
+            case PhysicalUnitMode.Millimeters:
+                dpi = 25.4f;
+                break;
+            case PhysicalUnitMode.Inches:
+                dpi = 1;
+                break;
+            case PhysicalUnitMode.Points:
+                dpi = 72;
+                break;
+            case PhysicalUnitMode.Picas:
+                dpi = 6;
+                break;
+            }
+            return dpi;
+        }
+        
+        /// <inheritdoc />
+        protected override void PerformLayoutBeforeChildren()
+        {
+            // Update current scaling before performing layout
+            UpdateScale();
+
+            base.PerformLayoutBeforeChildren();
+        }
+#if FLAX_EDITOR
+        /// <inheritdoc />
+        public override Rectangle EditorBounds => new Rectangle(Float2.Zero, Size / CanvasScale);
+#endif
+        
+        /// <inheritdoc />
+        public override void Draw()
+        {
+            DrawSelf();
+
+            // Draw children with scale
+            var scaling = new Float3(CanvasScale, CanvasScale, 1);
+            Matrix3x3.Scaling(ref scaling, out Matrix3x3 scale);
+            Render2D.PushTransform(scale);
+            if (ClipChildren)
+            {
+                GetDesireClientArea(out var clientArea);
+                Render2D.PushClip(ref clientArea);
+                DrawChildren();
+                Render2D.PopClip();
+            }
+            else
+            {
+                DrawChildren();
+            }
+            Render2D.PopTransform();
+        }
+        
+        /// <inheritdoc />
+        public override void GetDesireClientArea(out Rectangle rect)
+        {
+            // Scale the area for the client controls
+            rect = new Rectangle(Float2.Zero, Size / CanvasScale);
+        }
+        
+        /// <inheritdoc />
+        public override bool IntersectsContent(ref Float2 locationParent, out Float2 location)
+        {
+            // Skip local PointFromParent but use base code
+            location = base.PointFromParent(ref locationParent);
+            return ContainsPoint(ref location);
         }
 
         /// <summary>
@@ -156,7 +434,11 @@ namespace FlaxEngine.GUI
         public override Float2 PointToParent(ref Float2 location)
         {
             if (Is2D)
-                return base.PointToParent(ref location);
+            {
+                var result = base.PointToParent(ref location);
+                result *= CanvasScale;
+                return result;
+            }
 
             var camera = Camera.MainCamera;
             if (!camera)
@@ -174,7 +456,11 @@ namespace FlaxEngine.GUI
         public override Float2 PointFromParent(ref Float2 locationParent)
         {
             if (Is2D)
-                return base.PointFromParent(ref locationParent);
+            {
+                var result = base.PointFromParent(ref locationParent);
+                result /= CanvasScale;
+                return result;
+            }
 
             var camera = Camera.MainCamera;
             if (!camera)
@@ -279,6 +565,7 @@ namespace FlaxEngine.GUI
             if (!_canvas.ReceivesEvents)
                 return DragDropEffect.None;
 
+            location /= CanvasScale;
             return base.OnDragDrop(ref location, data);
         }
 
@@ -288,6 +575,7 @@ namespace FlaxEngine.GUI
             if (!_canvas.ReceivesEvents)
                 return DragDropEffect.None;
 
+            location /= CanvasScale;
             return base.OnDragEnter(ref location, data);
         }
 
@@ -306,6 +594,7 @@ namespace FlaxEngine.GUI
             if (!_canvas.ReceivesEvents)
                 return DragDropEffect.None;
 
+            location /= CanvasScale;
             return base.OnDragMove(ref location, data);
         }
 
@@ -333,6 +622,7 @@ namespace FlaxEngine.GUI
             if (!_canvas.ReceivesEvents)
                 return false;
 
+            location /= CanvasScale;
             return base.OnMouseDoubleClick(location, button);
         }
 
@@ -342,6 +632,7 @@ namespace FlaxEngine.GUI
             if (!_canvas.ReceivesEvents)
                 return false;
 
+            location /= CanvasScale;
             return base.OnMouseDown(location, button);
         }
 
@@ -351,6 +642,7 @@ namespace FlaxEngine.GUI
             if (!_canvas.ReceivesEvents)
                 return;
 
+            location /= CanvasScale;
             _mousePosition = location;
             base.OnMouseEnter(location);
         }
@@ -372,6 +664,7 @@ namespace FlaxEngine.GUI
             if (!_canvas.ReceivesEvents)
                 return;
 
+            location /= CanvasScale;
             _mousePosition = location;
             base.OnMouseMove(location);
         }
@@ -382,6 +675,7 @@ namespace FlaxEngine.GUI
             if (!_canvas.ReceivesEvents)
                 return false;
 
+            location /= CanvasScale;
             return base.OnMouseUp(location, button);
         }
 
@@ -391,6 +685,7 @@ namespace FlaxEngine.GUI
             if (!_canvas.ReceivesEvents)
                 return false;
 
+            location /= CanvasScale;
             return base.OnMouseWheel(location, delta);
         }
 
@@ -400,6 +695,7 @@ namespace FlaxEngine.GUI
             if (!_canvas.ReceivesEvents)
                 return;
 
+            location /= CanvasScale;
             base.OnTouchEnter(location, pointerId);
         }
 
@@ -409,6 +705,7 @@ namespace FlaxEngine.GUI
             if (!_canvas.ReceivesEvents)
                 return false;
 
+            location /= CanvasScale;
             return base.OnTouchDown(location, pointerId);
         }
 
@@ -418,6 +715,7 @@ namespace FlaxEngine.GUI
             if (!_canvas.ReceivesEvents)
                 return;
 
+            location /= CanvasScale;
             base.OnTouchMove(location, pointerId);
         }
 
@@ -427,6 +725,7 @@ namespace FlaxEngine.GUI
             if (!_canvas.ReceivesEvents)
                 return false;
 
+            location /= CanvasScale;
             return base.OnTouchUp(location, pointerId);
         }
 

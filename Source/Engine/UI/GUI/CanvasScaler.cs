@@ -7,6 +7,7 @@ namespace FlaxEngine.GUI
     /// <summary>
     /// UI canvas scaling component for user interface that targets multiple different game resolutions (eg. mobile screens).
     /// </summary>
+    [System.Obsolete("Obsolete 1.8, use canvas scalar in UICanvas")]
     public class CanvasScaler : ContainerControl
     {
         /// <summary>

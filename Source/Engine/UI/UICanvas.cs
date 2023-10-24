@@ -1,6 +1,8 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
 using System;
+using System.Collections.Generic;
+using System.ComponentModel;
 using System.Globalization;
 using System.IO;
 using System.Text;
@@ -197,6 +199,176 @@ namespace FlaxEngine
         /// </summary>
         [EditorOrder(60), Limit(0.01f), EditorDisplay("Canvas"), VisibleIf("Editor_IsCameraSpace"), Tooltip("Distance from the RenderCamera to place the plane with GUI. If the screen is resized, changes resolution, or the camera frustum changes, the Canvas will automatically change size to match as well.")]
         public float Distance { get; set; } = 500;
+        
+         /// <summary>
+        /// Gets the current UI scale. Computed based on the setup when performing layout.
+        /// </summary>
+        public float CurrentScale => _guiRoot.CanvasScale;
+
+        /// <summary>
+        /// The UI Canvas scaling mode.
+        /// </summary>
+        [EditorOrder(100), EditorDisplay("Canvas Scaler"), ExpandGroups, DefaultValue(CanvasRootControl.ScalingMode.ConstantPixelSize)]
+        public CanvasRootControl.ScalingMode Scaling
+        {
+            get => _guiRoot.CanvasScalingMode;
+            set
+            {
+                if (_guiRoot.CanvasScalingMode == value)
+                    return;
+                _guiRoot.CanvasScalingMode = value;
+                _guiRoot.PerformLayout();
+            }
+        }
+
+        /// <summary>
+        /// The UI Canvas scale. Applied in all scaling modes for custom UI sizing.
+        /// </summary>
+        [EditorOrder(101), EditorDisplay("Canvas Scaler"), DefaultValue(1.0f), Limit(0.001f, 1000.0f, 0.01f)]
+        public float ScaleFactor
+        {
+            get => _guiRoot.CanvasScaleFactor;
+            set
+            {
+                if (Mathf.NearEqual(_guiRoot.CanvasScaleFactor, value))
+                    return;
+                _guiRoot.CanvasScaleFactor = value;
+                _guiRoot.PerformLayout();
+            }
+        }
+
+        /// <summary>
+        /// The UI Canvas physical unit to use for scaling via PhysicalUnitSize. Used only in ConstantPhysicalSize mode.
+        /// </summary>
+#if FLAX_EDITOR
+        [EditorOrder(102), EditorDisplay("Canvas Scaler"), DefaultValue(CanvasRootControl.PhysicalUnitMode.Points), VisibleIf(nameof(IsConstantPhysicalSize))]
+#endif
+        public CanvasRootControl.PhysicalUnitMode PhysicalUnit
+        {
+            get => _guiRoot.CanvasPhysicalUnit;
+            set
+            {
+                if (_guiRoot.CanvasPhysicalUnit == value)
+                    return;
+                _guiRoot.CanvasPhysicalUnit = value;
+#if FLAX_EDITOR
+                if (FlaxEditor.CustomEditors.CustomEditor.IsSettingValue)
+                {
+                    // Set auto-default physical unit value for easier tweaking in Editor
+                    _guiRoot.CanvasPhysicalUnitSize = _guiRoot.GetUnitDpi(_guiRoot.CanvasPhysicalUnit) / Platform.Dpi;
+                }
+#endif
+                _guiRoot.PerformLayout();
+            }
+        }
+
+        /// <summary>
+        /// The UI Canvas physical unit value. Used only in ConstantPhysicalSize mode.
+        /// </summary>
+#if FLAX_EDITOR
+        [EditorOrder(103), EditorDisplay("Canvas Scaler"), DefaultValue(1.0f), Limit(0.000001f, 1000000.0f, 0.0f), VisibleIf(nameof(IsConstantPhysicalSize))]
+#endif
+        public float PhysicalUnitSize
+        {
+            get => _guiRoot.CanvasPhysicalUnitSize;
+            set
+            {
+                if (Mathf.NearEqual(_guiRoot.CanvasPhysicalUnitSize, value))
+                    return;
+                _guiRoot.CanvasPhysicalUnitSize = value;
+                _guiRoot.PerformLayout();
+            }
+        }
+
+        /// <summary>
+        /// The UI Canvas resolution scaling mode. Controls min/max resolutions usage in relation to the current screen resolution to compute the UI scale. Used only in ScaleWithResolution mode.
+        /// </summary>
+#if FLAX_EDITOR
+        [EditorOrder(104), EditorDisplay("Canvas Scaler"), VisibleIf(nameof(IsScaleWithResolution))]
+#endif
+        public CanvasRootControl.ResolutionScalingMode ResolutionMode
+        {
+            get => _guiRoot.CanvasResolutionMode;
+            set
+            {
+                if (_guiRoot.CanvasResolutionMode == value)
+                    return;
+                _guiRoot.CanvasResolutionMode = value;
+                _guiRoot.PerformLayout();
+            }
+        }
+
+        /// <summary>
+        /// The UI Canvas minimum resolution. If the screen has lower size, then the interface will be scaled accordingly. Used only in ScaleWithResolution mode.
+        /// </summary>
+#if FLAX_EDITOR
+        [EditorOrder(105), EditorDisplay("Canvas Scaler"), VisibleIf(nameof(IsScaleWithResolution))]
+#endif
+        public Float2 ResolutionMin
+        {
+            get => _guiRoot.CanvasResolutionMin;
+            set
+            {
+                value = Float2.Max(value, Float2.One);
+                if (Float2.NearEqual(ref _guiRoot.CanvasResolutionMin, ref value))
+                    return;
+                _guiRoot.CanvasResolutionMin = value;
+                _guiRoot.PerformLayout();
+            }
+        }
+
+        /// <summary>
+        /// The UI Canvas maximum resolution. If the screen has higher size, then the interface will be scaled accordingly. Used only in ScaleWithResolution mode.
+        /// </summary>
+#if FLAX_EDITOR
+        [EditorOrder(106), EditorDisplay("Canvas Scaler"), VisibleIf(nameof(IsScaleWithResolution))]
+#endif
+        public Float2 ResolutionMax
+        {
+            get => _guiRoot.CanvasResolutionMax;
+            set
+            {
+                value = Float2.Max(value, Float2.One);
+                if (Float2.NearEqual(ref _guiRoot.CanvasResolutionMax, ref value))
+                    return;
+                _guiRoot.CanvasResolutionMax = value;
+                _guiRoot.PerformLayout();
+            }
+        }
+
+        /// <summary>
+        /// The UI Canvas scaling curve based on screen resolution - shortest/longest/vertical/horizontal (key is resolution, value is scale factor). Clear keyframes to skip using it and follow min/max rules only. Used only in ScaleWithResolution mode.
+        /// </summary>
+#if FLAX_EDITOR
+        [EditorOrder(107), EditorDisplay("Canvas Scaler"), VisibleIf(nameof(IsScaleWithResolution))]
+#endif
+        public LinearCurve<float> ResolutionCurve = new LinearCurve<float>(new[]
+        {
+            new LinearCurve<float>.Keyframe(480, 0.444f), // 480p
+            new LinearCurve<float>.Keyframe(720, 0.666f), // 720p
+            new LinearCurve<float>.Keyframe(1080, 1.0f), // 1080p
+            new LinearCurve<float>.Keyframe(8640, 8.0f), // 8640p
+        });
+
+        /// <summary>
+        /// The UI Canvas scaling curve based on screen DPI (key is DPI, value is scale factor). Used only in ScaleWithDpi mode.
+        /// </summary>
+#if FLAX_EDITOR
+        [EditorOrder(108), EditorDisplay("Canvas Scaler"), VisibleIf(nameof(IsScaleWithDpi))]
+#endif
+        public LinearCurve<float> DpiCurve = new LinearCurve<float>(new[]
+        {
+            new LinearCurve<float>.Keyframe(1.0f, 1.0f),
+            new LinearCurve<float>.Keyframe(96.0f, 1.0f),
+            new LinearCurve<float>.Keyframe(200.0f, 2.0f),
+            new LinearCurve<float>.Keyframe(400.0f, 4.0f),
+        });
+
+#if FLAX_EDITOR
+        private bool IsConstantPhysicalSize => _guiRoot.CanvasScalingMode == CanvasRootControl.ScalingMode.ConstantPhysicalSize;
+        private bool IsScaleWithResolution => _guiRoot.CanvasScalingMode == CanvasRootControl.ScalingMode.ScaleWithResolution;
+        private bool IsScaleWithDpi => _guiRoot.CanvasScalingMode == CanvasRootControl.ScalingMode.ScaleWithDpi;
+#endif
 
         /// <summary>
         /// Gets the canvas GUI root control.
@@ -616,6 +788,63 @@ namespace FlaxEngine
                     jsonWriter.WriteValue(Size.Y);
                     jsonWriter.WriteEndObject();
                 }
+                
+                jsonWriter.WritePropertyName("Scaling");
+                jsonWriter.WriteValue(Scaling);
+                jsonWriter.WritePropertyName("ScaleFactor");
+                jsonWriter.WriteValue(ScaleFactor);
+                jsonWriter.WritePropertyName("PhysicalUnit");
+                jsonWriter.WriteValue(PhysicalUnit);
+                jsonWriter.WritePropertyName("PhysicalUnitSize");
+                jsonWriter.WriteValue(PhysicalUnitSize);
+                jsonWriter.WritePropertyName("ResolutionMode");
+                jsonWriter.WriteValue(ResolutionMode);
+
+                jsonWriter.WritePropertyName("ResolutionMin");
+                jsonWriter.WriteStartObject();
+                jsonWriter.WritePropertyName("X");
+                jsonWriter.WriteValue(ResolutionMin.X);
+                jsonWriter.WritePropertyName("Y");
+                jsonWriter.WriteValue(ResolutionMin.Y);
+                jsonWriter.WriteEndObject();
+
+                jsonWriter.WritePropertyName("ResolutionMax");
+                jsonWriter.WriteStartObject();
+                jsonWriter.WritePropertyName("X");
+                jsonWriter.WriteValue(ResolutionMax.X);
+                jsonWriter.WritePropertyName("Y");
+                jsonWriter.WriteValue(ResolutionMax.Y);
+                jsonWriter.WriteEndObject();
+
+                jsonWriter.WritePropertyName("ResolutionCurve");
+                jsonWriter.WriteStartObject();
+                jsonWriter.WritePropertyName("Length");
+                jsonWriter.WriteValue(ResolutionCurve.Keyframes.Length);
+                jsonWriter.WriteEndObject();
+                foreach (var keyframe in ResolutionCurve.Keyframes)
+                {
+                    jsonWriter.WriteStartObject();
+                    jsonWriter.WritePropertyName("Time");
+                    jsonWriter.WriteValue(keyframe.Time);
+                    jsonWriter.WritePropertyName("Value");
+                    jsonWriter.WriteValue(keyframe.Value);
+                    jsonWriter.WriteEndObject();
+                }
+
+                jsonWriter.WritePropertyName("DpiCurve");
+                jsonWriter.WriteStartObject();
+                jsonWriter.WritePropertyName("Length");
+                jsonWriter.WriteValue(DpiCurve.Keyframes.Length);
+                jsonWriter.WriteEndObject();
+                foreach (var keyframe in DpiCurve.Keyframes)
+                {
+                    jsonWriter.WriteStartObject();
+                    jsonWriter.WritePropertyName("Time");
+                    jsonWriter.WriteValue(keyframe.Time);
+                    jsonWriter.WritePropertyName("Value");
+                    jsonWriter.WriteValue(keyframe.Value);
+                    jsonWriter.WriteEndObject();
+                }
 
                 jsonWriter.WritePropertyName("NavigationInputRepeatDelay");
                 jsonWriter.WriteValue(NavigationInputRepeatDelay);
@@ -724,6 +953,104 @@ namespace FlaxEngine
                     jsonWriter.WritePropertyName("Y");
                     jsonWriter.WriteValue(Size.Y);
                     jsonWriter.WriteEndObject();
+                }
+
+                if (Scaling != other.Scaling)
+                {
+                    jsonWriter.WritePropertyName("Scaling");
+                    jsonWriter.WriteValue(Scaling);
+                }
+
+                if (!Mathf.NearEqual(ScaleFactor, other.ScaleFactor))
+                {
+                    jsonWriter.WritePropertyName("ScaleFactor");
+                    jsonWriter.WriteValue(ScaleFactor);
+                }
+
+                if (PhysicalUnit != other.PhysicalUnit)
+                {
+                    jsonWriter.WritePropertyName("PhysicalUnit");
+                    jsonWriter.WriteValue(PhysicalUnit);
+                }
+                
+                if (!Mathf.NearEqual(PhysicalUnitSize, other.PhysicalUnitSize))
+                {
+                    jsonWriter.WritePropertyName("PhysicalUnitSize");
+                    jsonWriter.WriteValue(PhysicalUnitSize);
+                }
+                
+                if (ResolutionMode != other.ResolutionMode)
+                {
+                    jsonWriter.WritePropertyName("ResolutionMode");
+                    jsonWriter.WriteValue(ResolutionMode);
+                }
+                
+                if (!Float2.NearEqual(ResolutionMin, other.ResolutionMin))
+                {
+                    jsonWriter.WritePropertyName("ResolutionMin");
+                    jsonWriter.WriteStartObject();
+                    jsonWriter.WritePropertyName("X");
+                    jsonWriter.WriteValue(ResolutionMin.X);
+                    jsonWriter.WritePropertyName("Y");
+                    jsonWriter.WriteValue(ResolutionMin.Y);
+                    jsonWriter.WriteEndObject();
+                }
+                
+                if (!Float2.NearEqual(ResolutionMax, other.ResolutionMax))
+                {
+                    jsonWriter.WritePropertyName("ResolutionMax");
+                    jsonWriter.WriteStartObject();
+                    jsonWriter.WritePropertyName("X");
+                    jsonWriter.WriteValue(ResolutionMax.X);
+                    jsonWriter.WritePropertyName("Y");
+                    jsonWriter.WriteValue(ResolutionMax.Y);
+                    jsonWriter.WriteEndObject();
+                }
+
+                if (ResolutionCurve.Keyframes != other.ResolutionCurve.Keyframes)
+                {
+                    var keyframes = new List<LinearCurve<float>.Keyframe>();
+                    int length = 0;
+                    jsonWriter.WritePropertyName("ResolutionCurve");
+                    jsonWriter.WriteStartObject();
+                    jsonWriter.WritePropertyName("Length");
+                    jsonWriter.WriteValue(length);
+                    jsonWriter.WriteEndObject();
+                    for (int i = 0; i < length; i++)
+                    {
+                        LinearCurve<float>.Keyframe keyframe = new LinearCurve<float>.Keyframe();
+                        jsonWriter.WriteStartObject();
+                        jsonWriter.WritePropertyName("Time");
+                        jsonWriter.WriteValue(keyframe.Time);
+                        jsonWriter.WritePropertyName("Value");
+                        jsonWriter.WriteValue(keyframe.Value);
+                        jsonWriter.WriteEndObject();
+                        keyframes.Add(keyframe);
+                    }
+                    ResolutionCurve.Keyframes = keyframes.ToArray();
+                }
+                
+                if (DpiCurve.Keyframes != other.DpiCurve.Keyframes)
+                {
+                    var keyframes = new List<LinearCurve<float>.Keyframe>();
+                    int length = 0;
+                    jsonWriter.WritePropertyName("DpiCurve");
+                    jsonWriter.WriteStartObject();
+                    jsonWriter.WritePropertyName("Length");
+                    jsonWriter.WriteValue(length);
+                    jsonWriter.WriteEndObject();
+                    for (int i = 0; i < length; i++)
+                    {
+                        LinearCurve<float>.Keyframe keyframe = new LinearCurve<float>.Keyframe();
+                        jsonWriter.WriteStartObject();
+                        jsonWriter.WritePropertyName("Time");
+                        jsonWriter.WriteValue(keyframe.Time);
+                        jsonWriter.WritePropertyName("Value");
+                        jsonWriter.WriteValue(keyframe.Value);
+                        jsonWriter.WriteEndObject();
+                        keyframes.Add(keyframe);
+                    }
+                    DpiCurve.Keyframes = keyframes.ToArray();
                 }
 
                 if (!Mathf.NearEqual(NavigationInputRepeatDelay, other.NavigationInputRepeatDelay))
