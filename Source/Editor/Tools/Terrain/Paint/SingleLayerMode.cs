@@ -72,7 +72,7 @@ namespace FlaxEditor.Tools.Terrain.Paint
             var strength = p.Strength;
             var layer = (int)Layer;
             var brushPosition = p.Gizmo.CursorPosition;
-            var layerComponent = layer % 4;
+            var c = layer % 4;
 
             // Apply brush modification
             Profiler.BeginEvent("Apply Brush");
@@ -82,26 +82,38 @@ namespace FlaxEditor.Tools.Terrain.Paint
                 for (int x = 0; x < p.ModifiedSize.X; x++)
                 {
                     var xx = x + p.ModifiedOffset.X;
-                    var src = p.SourceData[zz * p.HeightmapSize + xx];
+                    var src = (Color)p.SourceData[zz * p.HeightmapSize + xx];
 
                     var samplePositionLocal = p.PatchPositionLocal + new Vector3(xx * FlaxEngine.Terrain.UnitsPerVertex, 0, zz * FlaxEngine.Terrain.UnitsPerVertex);
                     Vector3.Transform(ref samplePositionLocal, ref p.TerrainWorld, out Vector3 samplePositionWorld);
-                    
-                    var sample = Mathf.Clamp(p.Brush.Sample(ref brushPosition, ref samplePositionWorld), 0f, 1f);
-                    var paintAmount = sample * strength * (1f - src[layerComponent] / 255f);
 
-                    src[layerComponent] = (byte)Mathf.Clamp(src[layerComponent] + paintAmount * 255, 0, 255);
-                    src[(layerComponent + 1) % 4] = (byte)Mathf.Clamp(src[(layerComponent + 1) % 4] - paintAmount * 255, 0, 255);
-                    src[(layerComponent + 2) % 4] = (byte)Mathf.Clamp(src[(layerComponent + 2) % 4] - paintAmount * 255, 0, 255);
-                    src[(layerComponent + 3) % 4] = (byte)Mathf.Clamp(src[(layerComponent + 3) % 4] - paintAmount * 255, 0, 255);
+                    var sample = Mathf.Clamp(p.Brush.Sample(ref brushPosition, ref samplePositionWorld), 0f, 1f);
+                    var paintAmount = sample * strength * (1f - src[c]);
                     
+                    // Paint on the active splatmap texture
+                    src[c] = Mathf.Clamp(src[c] + paintAmount, 0, 1f);
+                    src[(c + 1) % 4] = Mathf.Clamp(src[(c + 1) % 4] - paintAmount, 0, 1f);
+                    src[(c + 2) % 4] = Mathf.Clamp(src[(c + 2) % 4] - paintAmount, 0, 1f);
+                    src[(c + 3) % 4] = Mathf.Clamp(src[(c + 3) % 4] - paintAmount, 0, 1f);
+
                     p.TempBuffer[z * p.ModifiedSize.X + x] = src;
+
+                    // Remove 'paint' from the other splatmap texture
+                    var other = (Color)p.SourceDataOther[zz * p.HeightmapSize + xx];
+
+                    other[c] = Mathf.Clamp(other[c] - paintAmount, 0, 1f);
+                    other[(c + 1) % 4] = Mathf.Clamp(other[(c + 1) % 4] - paintAmount, 0, 1f);
+                    other[(c + 2) % 4] = Mathf.Clamp(other[(c + 2) % 4] - paintAmount, 0, 1f);
+                    other[(c + 3) % 4] = Mathf.Clamp(other[(c + 3) % 4] - paintAmount, 0, 1f);
+
+                    p.TempBufferOther[z * p.ModifiedSize.X + x] = other;
                 }
             }
             Profiler.EndEvent();
 
             // Update terrain patch
             TerrainTools.ModifySplatMap(p.Terrain, ref p.PatchCoord, p.SplatmapIndex, p.TempBuffer, ref p.ModifiedOffset, ref p.ModifiedSize);
+            TerrainTools.ModifySplatMap(p.Terrain, ref p.PatchCoord, p.SplatmapIndexOther, p.TempBufferOther, ref p.ModifiedOffset, ref p.ModifiedSize);
         }
     }
 }
