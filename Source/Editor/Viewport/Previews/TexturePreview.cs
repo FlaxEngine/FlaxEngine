@@ -17,9 +17,12 @@ namespace FlaxEditor.Viewport.Previews
     public abstract class TexturePreviewBase : ContainerControl
     {
         private Rectangle _textureRect;
-        private Float2 _lastMousePos, _viewPos;
-        private float _viewScale = 1.0f;
+        private Float2 _lastMousePos;
         private bool _isMouseDown;
+
+        internal float _viewScale = 1.0f;
+        internal Float2 _viewPos;
+        internal bool LockMovment = false;
 
         /// <inheritdoc />
         protected TexturePreviewBase()
@@ -123,6 +126,12 @@ namespace FlaxEditor.Viewport.Previews
         /// <inheritdoc />
         public override void OnMouseMove(Float2 location)
         {
+            if (LockMovment) // return of movment mode is off
+            {
+                base.OnMouseMove(location);
+                return;
+            }
+
             // Check if mouse is down
             if (_isMouseDown)
             {
@@ -173,6 +182,11 @@ namespace FlaxEditor.Viewport.Previews
         /// <inheritdoc />
         public override bool OnMouseDown(Float2 location, MouseButton button)
         {
+            if (LockMovment) // return of movment mode is off
+            {
+                base.OnMouseDown(location, button);
+                return true;
+            }
             if (base.OnMouseDown(location, button))
                 return true;
 
@@ -187,6 +201,11 @@ namespace FlaxEditor.Viewport.Previews
         /// <inheritdoc />
         public override bool OnMouseUp(Float2 location, MouseButton button)
         {
+            if (LockMovment) // return of movment mode is off
+            {
+                base.OnMouseUp(location, button);
+                return true;
+            }
             if (base.OnMouseUp(location, button))
                 return true;
 
@@ -329,34 +348,43 @@ namespace FlaxEditor.Viewport.Previews
                 // Channels widget
                 var channelsWidget = new ViewportWidgetsContainer(ViewportWidgetLocation.UpperLeft);
                 //
+                
                 var channelR = new ViewportWidgetButton("R", SpriteHandle.Invalid, null, true)
                 {
                     Checked = true,
                     TooltipText = "Show/hide texture red channel",
-                    Parent = channelsWidget
                 };
                 channelR.Toggled += button => ViewChannels = button.Checked ? ViewChannels | ChannelFlags.Red : (ViewChannels & ~ChannelFlags.Red);
                 var channelG = new ViewportWidgetButton("G", SpriteHandle.Invalid, null, true)
                 {
                     Checked = true,
                     TooltipText = "Show/hide texture green channel",
-                    Parent = channelsWidget
                 };
                 channelG.Toggled += button => ViewChannels = button.Checked ? ViewChannels | ChannelFlags.Green : (ViewChannels & ~ChannelFlags.Green);
                 var channelB = new ViewportWidgetButton("B", SpriteHandle.Invalid, null, true)
                 {
                     Checked = true,
                     TooltipText = "Show/hide texture blue channel",
-                    Parent = channelsWidget
                 };
                 channelB.Toggled += button => ViewChannels = button.Checked ? ViewChannels | ChannelFlags.Blue : (ViewChannels & ~ChannelFlags.Blue);
                 var channelA = new ViewportWidgetButton("A", SpriteHandle.Invalid, null, true)
                 {
                     Checked = true,
                     TooltipText = "Show/hide texture alpha channel",
-                    Parent = channelsWidget
                 };
                 channelA.Toggled += button => ViewChannels = button.Checked ? ViewChannels | ChannelFlags.Alpha : (ViewChannels & ~ChannelFlags.Alpha);
+
+                //Groupe the buttons
+                var ButtonGroupe = new ViewportWidgetButtonHorizontalGroup
+                    (
+                    new ViewportWidgetButton[]
+                    {
+                        channelR,
+                        channelG,
+                        channelB,
+                        channelA,
+                    }
+                );
                 //
                 channelsWidget.Parent = this;
 

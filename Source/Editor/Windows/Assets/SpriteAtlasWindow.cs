@@ -31,6 +31,12 @@ namespace FlaxEditor.Windows.Assets
         /// <seealso cref="FlaxEditor.Viewport.Previews.SpriteAtlasPreview" />
         private sealed class AtlasView : SpriteAtlasPreview
         {
+            internal Float2 Mouselocation;
+            internal int SpriteIDUnderTheMouse;
+            internal Rectangle SelectedRectangle;
+            internal bool LockSelection;
+
+
             public AtlasView(bool useWidgets)
             : base(useWidgets)
             {
@@ -44,7 +50,7 @@ namespace FlaxEditor.Windows.Assets
                 {
                     var count = Asset.SpritesCount;
                     var style = Style.Current;
-
+                    bool HasSelection = false;
                     // Draw all splits
                     for (int i = 0; i < count; i++)
                     {
@@ -52,9 +58,34 @@ namespace FlaxEditor.Windows.Assets
                         var area = sprite.Area;
                         var position = area.Location * rect.Size + rect.Location;
                         var size = area.Size * rect.Size;
-                        Render2D.DrawRectangle(new Rectangle(position, size), style.BackgroundSelected);
+                        var rectangle = new Rectangle(position, size);
+
+                        if (rectangle.Contains(Mouselocation) && LockSelection == false)
+                        {
+                            SpriteIDUnderTheMouse = i;
+                            SelectedRectangle = rectangle;
+                            HasSelection = true;
+                        }
+                        else //if (!SelectedRectangle.Contains(Mouselocation)) // avoid over draw
+                        {
+                            //HasSelection = false;
+                            Render2D.DrawRectangle(rectangle, style.BackgroundNormal);
+                        }
+                    }
+                    if (LockSelection)
+                    {
+                        Render2D.DrawRectangle(SelectedRectangle, style.BackgroundSelected);
+                    }
+                    else if (HasSelection)
+                    {
+                        Render2D.DrawRectangle(SelectedRectangle, Color.LightGreen);
                     }
                 }
+            }
+            public override void OnMouseMove(Float2 location)
+            {
+                this.Mouselocation = location;
+                base.OnMouseMove(location);
             }
         }
 
@@ -230,7 +261,7 @@ namespace FlaxEditor.Windows.Assets
 
         private readonly PropertiesProxy _properties;
         private bool _isWaitingForLoad;
-
+        private bool LMBDown;
         /// <inheritdoc />
         public SpriteAtlasWindow(Editor editor, AssetItem item)
         : base(editor, item)
@@ -337,6 +368,12 @@ namespace FlaxEditor.Windows.Assets
         }
 
         /// <inheritdoc />
+        protected override void OnAssetLoaded()
+        {
+            _properties.UpdateSprites();
+            base.OnAssetLoaded();
+        }
+        /// <inheritdoc />
         public override void Update(float deltaTime)
         {
             base.Update(deltaTime);
@@ -375,6 +412,87 @@ namespace FlaxEditor.Windows.Assets
         public override void OnLayoutDeserialize()
         {
             _split.SplitterValue = 0.7f;
+        }
+        /// <inheritdoc />
+        public override bool OnMouseDown(Float2 location, MouseButton button)
+        {
+            if(button == MouseButton.Left)
+            {
+                LMBDown = true;
+                _preview.LockMovment = true;
+                _preview.LockSelection = true;
+            }
+            return base.OnMouseDown(location, button);
+        }
+        /// <inheritdoc />
+        public override bool OnMouseUp(Float2 location, MouseButton button)
+        {
+            if (button == MouseButton.Left)
+            {
+                LMBDown = false;
+                _preview.LockMovment = false;
+                _preview.LockSelection = false;
+                if (gotEdit)
+                {
+                    IsEdited = true;
+                    gotEdit = false;
+                }
+            }
+            return base.OnMouseUp(location, button);
+        }
+        private Float2 lastlocation;
+        private Float2 offset;
+        private bool ctrlDown;
+        private bool gotEdit;
+        /// <inheritdoc />
+        public override void OnMouseMove(Float2 location)
+        {
+            var viewScale = Mathf.Max(_preview._viewScale, 1);
+            if (LMBDown)
+            {
+                //[Todo] fix the draging sprite araund it is not directy under the mouse
+                // because of Mouse location is not acauting for a transformation of view
+                var sl = _properties.Sprites[_preview.SpriteIDUnderTheMouse];
+                var cl = sl.Location;
+                offset -= (lastlocation - (location / viewScale));
+                if (ctrlDown)
+                {
+                    sl.Location = Float2.Round(sl.Location + offset);
+                }
+                else
+                {
+                    if (sl.Size.X != 0 || sl.Size.Y != 0)// inf nan guard
+                    {
+                        sl.Location = Float2.SnapToGrid(sl.Location + offset, sl.Size);
+                    }
+                }
+                if (cl != sl.Location)
+                {
+                    offset = Vector2.Zero;
+                    gotEdit = true;
+                }
+                _properties.Sprites[_preview.SpriteIDUnderTheMouse].Location = sl.Location;
+            }
+            lastlocation = location / viewScale;
+            base.OnMouseMove(location);
+        }
+        /// <inheritdoc />
+        public override bool OnKeyDown(KeyboardKeys key)
+        {
+            if(key == KeyboardKeys.Control)
+            {
+                ctrlDown = true;
+            }
+            return base.OnKeyDown(key);
+        }
+        /// <inheritdoc />
+        public override void OnKeyUp(KeyboardKeys key)
+        {
+            if (key == KeyboardKeys.Control)
+            {
+                ctrlDown = false;
+            }
+            base.OnKeyUp(key);
         }
     }
 }
