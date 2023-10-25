@@ -19,6 +19,7 @@ namespace FlaxEditor.Viewport.Widgets
         private bool _checked;
         private bool _autoCheck;
         private bool _isMosueDown;
+        private float _forcedTextWidth;
 
         /// <summary>
         /// Event fired when user toggles checked state.
@@ -63,14 +64,16 @@ namespace FlaxEditor.Viewport.Widgets
         /// <param name="text">The text.</param>
         /// <param name="icon">The icon.</param>
         /// <param name="contextMenu">The context menu.</param>
-        /// <param name="autoCheck">if set to <c>true</c> will be automatic checked on mouse click.</param>
-        public ViewportWidgetButton(string text, SpriteHandle icon, ContextMenu contextMenu = null, bool autoCheck = false)
-        : base(0, 0, CalculateButtonWidth(0, icon.IsValid), ViewportWidgetsContainer.WidgetsHeight)
+        /// <param name="autoCheck">If set to <c>true</c> will be automatic checked on mouse click.</param>
+        /// <param name="textWidth">Forces the text to be drawn with the specified width.</param>
+        public ViewportWidgetButton(string text, SpriteHandle icon, ContextMenu contextMenu = null, bool autoCheck = false, float textWidth = 0.0f)
+        : base(0, 0, CalculateButtonWidth(textWidth, icon.IsValid), ViewportWidgetsContainer.WidgetsHeight)
         {
             _text = text;
             Icon = icon;
             _cm = contextMenu;
             _autoCheck = autoCheck;
+            _forcedTextWidth = textWidth;
 
             if (_cm != null)
                 _cm.VisibleChanged += CmOnVisibleChanged;
@@ -160,7 +163,7 @@ namespace FlaxEditor.Viewport.Widgets
             var style = Style.Current;
 
             if (style != null && style.FontMedium)
-                Width = CalculateButtonWidth(style.FontMedium.MeasureText(_text).X, Icon.IsValid);
+                Width = CalculateButtonWidth(_forcedTextWidth > 0.0f ? _forcedTextWidth : style.FontMedium.MeasureText(_text).X, Icon.IsValid);
         }
     }
 }
