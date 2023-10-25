@@ -977,6 +977,12 @@ inline Vector3Base<T> operator/(typename TOtherFloat<T>::Type a, const Vector3Ba
     return Vector3Base<T>(a) / b;
 }
 
+template<typename T>
+inline uint32 GetHash(const Vector3Base<T>& key)
+{
+    return (((*(uint32*)&key.X * 397) ^ *(uint32*)&key.Y) * 397) ^ *(uint32*)&key.Z;
+}
+
 namespace Math
 {
     template<typename T>
