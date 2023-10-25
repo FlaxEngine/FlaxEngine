@@ -849,8 +849,7 @@ bool ProcessMesh(ImportedModelData& result, OpenFbxImporterData& data, const ofb
     mesh.OriginOrientation = quat;
 
     auto scaling = aMesh->getLocalScaling();
-    auto scaleFactor = data.GlobalSettings.UnitScaleFactor;
-    mesh.Scaling = Vector3(scaleFactor * (float)scaling.x, scaleFactor * (float)scaling.y, scaleFactor * (float)scaling.z);
+    mesh.Scaling = Vector3(scale * (float)scaling.x, scale * (float)scaling.y, scale * (float)scaling.z);
     return false;
 }
 
