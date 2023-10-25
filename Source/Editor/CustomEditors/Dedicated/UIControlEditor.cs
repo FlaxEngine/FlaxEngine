@@ -695,7 +695,41 @@ namespace FlaxEditor.CustomEditors.Dedicated
         private void SetType(ref ScriptType controlType, UIControl uiControl)
         {
             string previousName = uiControl.Control?.GetType().Name ?? nameof(UIControl);
-            uiControl.Control = (Control)controlType.CreateInstance();
+
+            var oldControlType = (Control)uiControl.Control;
+            var newControlType = (Control)controlType.CreateInstance();
+
+            // copy old control data to new control
+            if (oldControlType != null)
+            {
+                newControlType.Visible = oldControlType.Visible;
+                newControlType.Enabled = oldControlType.Enabled;
+                newControlType.AutoFocus = oldControlType.AutoFocus;
+
+                newControlType.AnchorMin = oldControlType.AnchorMin;
+                newControlType.AnchorMax = oldControlType.AnchorMax;
+                newControlType.Offsets = oldControlType.Offsets;
+
+                newControlType.LocalLocation = oldControlType.LocalLocation;
+                newControlType.Scale = oldControlType.Scale;
+                newControlType.Bounds = oldControlType.Bounds;
+                newControlType.Width = oldControlType.Width;
+                newControlType.Height = oldControlType.Height;
+                newControlType.Center = oldControlType.Center;
+                newControlType.PivotRelative = oldControlType.PivotRelative;
+
+                newControlType.Pivot = oldControlType.Pivot;
+                newControlType.Shear = oldControlType.Shear;
+                newControlType.Rotation = oldControlType.Rotation;
+            }
+            if (oldControlType is ContainerControl oldContainer && newControlType is ContainerControl newContainer)
+            {
+                newContainer.CullChildren = oldContainer.CullChildren;
+                newContainer.ClipChildren = oldContainer.ClipChildren;
+            }
+
+            uiControl.Control = newControlType;
+
             if (uiControl.Name.StartsWith(previousName))
             {
                 string newName = controlType.Name + uiControl.Name.Substring(previousName.Length);
