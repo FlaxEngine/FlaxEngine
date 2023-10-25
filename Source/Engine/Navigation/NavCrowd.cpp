@@ -7,6 +7,7 @@
 #include "Engine/Level/Level.h"
 #include "Engine/Level/Scene/Scene.h"
 #include "Engine/Profiler/ProfilerCPU.h"
+#include "Engine/Threading/Threading.h"
 #include <ThirdParty/recastnavigation/DetourCrowd.h>
 
 NavCrowd::NavCrowd(const SpawnParams& params)

@@ -2622,9 +2622,7 @@ bool LinuxPlatform::GetHasFocus()
 		if (window->IsFocused())
 			return true;
 	}
-
-	// Default to true if has no windows open
-    return WindowsManager::Windows.IsEmpty();
+	return false;
 }
 
 bool LinuxPlatform::CanOpenUrl(const StringView& url)

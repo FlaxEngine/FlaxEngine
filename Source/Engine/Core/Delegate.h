@@ -583,18 +583,9 @@ public:
     template<void(*Method)(Params...)>
     void Unbind()
     {
-#if DELEGATE_USE_ATOMIC
         FunctionType f;
         f.template Bind<Method>();
         Unbind(f);
-#else
-        if (_functions == nullptr)
-            return;
-        FunctionType f;
-        f.template Bind<Method>();
-        ScopeLock lock(*_locker);
-        _functions->Remove(f);
-#endif
     }
 
     /// <summary>
@@ -604,18 +595,9 @@ public:
     template<class T, void(T::*Method)(Params...)>
     void Unbind(T* callee)
     {
-#if DELEGATE_USE_ATOMIC
         FunctionType f;
         f.template Bind<T, Method>(callee);
         Unbind(f);
-#else
-        if (_functions == nullptr)
-            return;
-        FunctionType f;
-        f.template Bind<T, Method>(callee);
-        ScopeLock lock(*_locker);
-        _functions->Remove(f);
-#endif
     }
 
     /// <summary>
@@ -624,16 +606,8 @@ public:
     /// <param name="method">The method.</param>
     void Unbind(Signature method)
     {
-#if DELEGATE_USE_ATOMIC
         FunctionType f(method);
         Unbind(f);
-#else
-        if (_functions == nullptr)
-            return;
-        FunctionType f(method);
-        ScopeLock lock(*_locker);
-        _functions->Remove(f);
-#endif
     }
 
     /// <summary>

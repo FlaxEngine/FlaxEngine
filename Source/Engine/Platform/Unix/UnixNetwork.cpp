@@ -96,7 +96,11 @@ static bool CreateEndPointFromAddr(sockaddr* addr, NetworkEndPoint& endPoint)
         return true;
     }
     char strPort[6];
+#if __APPLE__
+    snprintf(strPort, sizeof(strPort), "%d", port);
+#else
     sprintf(strPort, "%d", port);
+#endif
     endPoint.IPVersion = addr->sa_family == AF_INET6 ? NetworkIPVersion::IPv6 : NetworkIPVersion::IPv4;
     memcpy(endPoint.Data, addr, size);
     return false;
