@@ -212,8 +212,10 @@ namespace FlaxEditor.Viewport
         /// <summary>
         /// Format of the text for the camera move speed.
         /// </summary>
-        private string MovementSpeedTextFormat {
-            get {
+        private string MovementSpeedTextFormat
+        {
+            get
+            {
                 if (Mathf.Abs(_movementSpeed - _maxMovementSpeed) < Mathf.Epsilon || Mathf.Abs(_movementSpeed - _minMovementSpeed) < Mathf.Epsilon)
                     return "{0:0.##}";
 
@@ -480,7 +482,7 @@ namespace FlaxEditor.Viewport
             get => _panningSpeed;
             set => _panningSpeed = value;
         }
-        
+
         /// <summary>
         /// The input actions collection to processed during user input.
         /// </summary>
@@ -544,6 +546,7 @@ namespace FlaxEditor.Viewport
             if (useWidgets)
             {
                 #region Camera settings widget
+
                 var largestText = "Relative Panning";
                 var textSize = Style.Current.FontMedium.MeasureText(largestText);
                 var xLocationForExtras = textSize.X + 5;
@@ -609,7 +612,7 @@ namespace FlaxEditor.Viewport
                 maxCamSpeedValue.ValueChanged += () =>
                 {
                     OnMaxMovementSpeedChanged(maxCamSpeedValue);
-                    
+
                     minCamSpeedValue.MaxValue = maxCamSpeedValue.Value;
 
                     if (Math.Abs(camSpeedValue.MaxValue - maxCamSpeedValue.Value) > Mathf.Epsilon)
@@ -792,9 +795,11 @@ namespace FlaxEditor.Viewport
                         maxCamSpeedValue.Value = _maxMovementSpeed;
                     };
                 }
+
                 #endregion Camera settings widget
 
                 #region View mode widget
+
                 largestText = "Brightness";
                 textSize = Style.Current.FontMedium.MeasureText(largestText);
                 xLocationForExtras = textSize.X + 5;
@@ -964,6 +969,7 @@ namespace FlaxEditor.Viewport
                     resolutionValue.ValueChanged += () => ResolutionScale = resolutionValue.Value;
                     ViewWidgetButtonMenu.VisibleChanged += control => resolutionValue.Value = ResolutionScale;
                 }
+
                 #endregion View mode widget
             }
 
@@ -1036,7 +1042,7 @@ namespace FlaxEditor.Viewport
             OnCameraMovementProgressChanged();
             _editor.ProjectCache.SetCustomData("CameraMaxMovementSpeedValue", _maxMovementSpeed.ToString());
         }
-        
+
         private void OnCameraEasingToggled(Control control)
         {
             _useCameraEasing = !_useCameraEasing;
@@ -1145,11 +1151,12 @@ namespace FlaxEditor.Viewport
         private void OnCameraMovementProgressChanged()
         {
             // prevent NaN
-            if (Math.Abs(_minMovementSpeed - _maxMovementSpeed) < Mathf.Epsilon) {
+            if (Math.Abs(_minMovementSpeed - _maxMovementSpeed) < Mathf.Epsilon)
+            {
                 _speedStep = 0;
                 return;
             }
-            
+
             if (Math.Abs(_movementSpeed - _maxMovementSpeed) < Mathf.Epsilon)
             {
                 _speedStep = _maxSpeedSteps;
@@ -1180,9 +1187,9 @@ namespace FlaxEditor.Viewport
 
             // calculate new linear/eased progress
             var progress = _useCameraEasing
-                ? Mathf.Pow((float)_speedStep / _maxSpeedSteps, _cameraEasingDegree)
-                : (float)_speedStep / _maxSpeedSteps;
-            
+                           ? Mathf.Pow((float)_speedStep / _maxSpeedSteps, _cameraEasingDegree)
+                           : (float)_speedStep / _maxSpeedSteps;
+
             var speed = Mathf.Lerp(_minMovementSpeed, _maxMovementSpeed, progress);
             MovementSpeed = (float)Math.Round(speed, 3);
             _editor.ProjectCache.SetCustomData("CameraMovementSpeedValue", _movementSpeed.ToString());
