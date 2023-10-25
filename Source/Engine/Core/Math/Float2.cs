@@ -1280,11 +1280,11 @@ namespace FlaxEngine
         /// <param name="Translation"></param>
         /// <param name="GridSize"></param>
         /// <returns>out = Ceil(((A - (GridSize * 0.5f)) / GridSize) * GridSize</returns>
-        public static Float2 SnapToGrid(Float2 Translation, Float2 GridSize)
+        public static Float2 SnapToGrid(Float2 translation, Float2 gridSize)
         {
-            Translation.X = Mathf.Ceil((Translation.X - (GridSize.X * 0.5f)) / GridSize.Y) * GridSize.X;
-            Translation.Y = Mathf.Ceil((Translation.Y - (GridSize.Y * 0.5f)) / GridSize.X) * GridSize.Y;
-            return Translation;
+            translation.X = Mathf.Ceil((translation.X - (gridSize.X * 0.5f)) / gridSize.Y) * gridSize.X;
+            translation.Y = Mathf.Ceil((translation.Y - (gridSize.Y * 0.5f)) / gridSize.X) * gridSize.Y;
+            return translation;
         }
         /// <summary>
         /// funcion for grid snaping snap to absolute world grid 
@@ -1295,9 +1295,9 @@ namespace FlaxEngine
         /// <returns>out = Ceil(((A - (GridSize * 0.5f)) / GridSize) * GridSize</returns>
         public static Float2 SnapToGrid(Float2 Translation, float GridSize)
         {
-            Translation.X = Mathf.Ceil((Translation.X - (GridSize * 0.5f)) / GridSize) * GridSize;
-            Translation.Y = Mathf.Ceil((Translation.Y - (GridSize * 0.5f)) / GridSize) * GridSize;
-            return Translation;
+            translation.X = Mathf.Ceil((translation.X - (gridSize * 0.5f)) / gridSize) * gridSize;
+            translation.Y = Mathf.Ceil((translation.Y - (gridSize * 0.5f)) / gridSize) * gridSize;
+            return translation;
         }
 
         /// <summary>
