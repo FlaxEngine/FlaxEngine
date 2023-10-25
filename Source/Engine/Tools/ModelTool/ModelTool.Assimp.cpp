@@ -1,6 +1,5 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
-#include "OpenFBX/ofbx.h"
 #if COMPILE_WITH_MODEL_TOOL && USE_ASSIMP
 
 #include "ModelTool.h"

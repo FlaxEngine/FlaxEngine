@@ -103,7 +103,7 @@ public:
     /// <summary>
     /// Meshes scaling.
     /// </summary>
-    Vector3 Scaling = Vector3(1);
+    Vector3 Scaling = Vector3::One;
 
 public:
     /// <summary>
