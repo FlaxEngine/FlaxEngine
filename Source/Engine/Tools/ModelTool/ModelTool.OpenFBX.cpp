@@ -836,6 +836,21 @@ bool ProcessMesh(ImportedModelData& result, OpenFbxImporterData& data, const ofb
         mesh.TransformBuffer(geometryTransform);
     }*/
 
+    // Get local transform for origin shifting translation
+    auto translation = ToMatrix(aMesh->getGlobalTransform()).GetTranslation();
+    auto scale = data.GlobalSettings.UnitScaleFactor;
+    if (data.GlobalSettings.CoordAxis == ofbx::CoordSystem_RightHanded)
+        mesh.OriginTranslation = scale * Vector3(translation.X, translation.Y, -translation.Z);
+    else
+        mesh.OriginTranslation = scale * Vector3(translation.X, translation.Y, translation.Z);
+    
+    auto rot = aMesh->getLocalRotation();
+    auto quat = Quaternion::Euler(-(float)rot.x, -(float)rot.y, -(float)rot.z);
+    mesh.OriginOrientation = quat;
+
+    auto scaling = aMesh->getLocalScaling();
+    auto scaleFactor = data.GlobalSettings.UnitScaleFactor;
+    mesh.Scaling = Vector3(scaleFactor * (float)scaling.x, scaleFactor * (float)scaling.y, scaleFactor * (float)scaling.z);
     return false;
 }
 

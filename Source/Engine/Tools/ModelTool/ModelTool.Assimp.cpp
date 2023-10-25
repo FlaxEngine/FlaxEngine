@@ -1,5 +1,6 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
+#include "OpenFBX/ofbx.h"
 #if COMPILE_WITH_MODEL_TOOL && USE_ASSIMP
 
 #include "ModelTool.h"
@@ -648,6 +649,64 @@ bool ImportMesh(int32 i, ImportedModelData& result, AssimpImporterData& data, St
             result.LODs.Resize(lodIndex + 1);
         result.LODs[lodIndex].Meshes.Add(meshData);
     }
+
+    auto root = data.Scene->mRootNode;
+    Array<Transform> points;
+    if (root->mNumChildren == 0)
+    {
+        //auto translation = ToMatrix(root->mTransformation).GetTranslation();
+        //points.Add(Vector3(translation.X, translation.Y, translation.Z));
+        aiQuaternion aiQuat;
+        aiVector3D aiPos;
+        aiVector3D aiScale;
+        root->mTransformation.Decompose(aiScale, aiQuat, aiPos);
+        auto quat = ToQuaternion(aiQuat);
+        auto pos = ToFloat3(aiPos);
+        auto scale = ToFloat3(aiScale);
+        Transform trans = Transform(pos, quat, scale);
+        points.Add(trans);
+    }
+    else
+    {
+        for (unsigned int j = 0; j < root->mNumChildren; j++)
+        {
+            //auto translation = ToMatrix(root->mChildren[j]->mTransformation).GetTranslation();
+            //points.Add(Vector3(translation.X, translation.Y, -translation.Z));
+            aiQuaternion aiQuat;
+            aiVector3D aiPos;
+            aiVector3D aiScale;
+            root->mChildren[j]->mTransformation.Decompose(aiScale, aiQuat, aiPos);
+            auto quat = ToQuaternion(aiQuat);
+            auto pos = ToFloat3(aiPos);
+            auto scale = ToFloat3(aiScale);
+            Transform trans = Transform(pos, quat, scale);
+            points.Add(trans);
+        }
+    }
+
+    Float3 translation = Float3::Zero;
+    Float3 scale = Float3::Zero;
+    Quaternion orientation = Quaternion::Identity;
+    for (auto point : points)
+    {
+        translation += point.Translation;
+        scale += point.Scale;
+        orientation *= point.Orientation;
+    }
+
+    if (points.Count() > 0)
+    {
+        meshData->OriginTranslation = translation / (float)points.Count();
+        meshData->OriginOrientation = Quaternion::Invert(orientation);
+        meshData->Scaling = scale / (float)points.Count();
+    }
+    else
+    {
+        meshData->OriginTranslation = translation;
+        meshData->OriginOrientation = Quaternion::Invert(orientation);
+        meshData->Scaling = Float3(1);
+    }
+
     return false;
 }
 
