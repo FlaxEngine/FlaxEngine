@@ -1293,7 +1293,7 @@ namespace FlaxEngine
         /// <param name="Translation"></param>
         /// <param name="GridSize"></param>
         /// <returns>out = Ceil(((A - (GridSize * 0.5f)) / GridSize) * GridSize</returns>
-        public static Float2 SnapToGrid(Float2 Translation, float GridSize)
+        public static Float2 SnapToGrid(Float2 translation, float gridSize)
         {
             translation.X = Mathf.Ceil((translation.X - (gridSize * 0.5f)) / gridSize) * gridSize;
             translation.Y = Mathf.Ceil((translation.Y - (gridSize * 0.5f)) / gridSize) * gridSize;
