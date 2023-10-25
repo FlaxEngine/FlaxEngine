@@ -934,7 +934,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Elements = new[]
                 {
                     NodeElementArchetype.Factory.Input(0, "value", true, typeof(float), 0),
-                    NodeElementArchetype.Factory.Input(1, "gradient", true, typeof(float), 0),
+                    NodeElementArchetype.Factory.Input(1, "gradient", true, typeof(float), 1),
                     NodeElementArchetype.Factory.Output(0, string.Empty, typeof(float), 5),
                 }
             },
