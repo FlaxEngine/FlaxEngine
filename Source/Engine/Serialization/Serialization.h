@@ -405,14 +405,14 @@ namespace Serialization
 
     // ISerializable
 
-    inline bool ShouldSerialize(ISerializable& v, const void* otherObj)
+    inline bool ShouldSerialize(const ISerializable& v, const void* otherObj)
     {
         return true;
     }
-    inline void Serialize(ISerializable::SerializeStream& stream, ISerializable& v, const void* otherObj)
+    inline void Serialize(ISerializable::SerializeStream& stream, const ISerializable& v, const void* otherObj)
     {
         stream.StartObject();
-        v.Serialize(stream, otherObj);
+        const_cast<ISerializable*>(&v)->Serialize(stream, otherObj);
         stream.EndObject();
     }
     inline void Deserialize(ISerializable::DeserializeStream& stream, ISerializable& v, ISerializeModifier* modifier)
@@ -421,15 +421,15 @@ namespace Serialization
     }
 
     template<typename T>
-    inline typename TEnableIf<TIsBaseOf<ISerializable, T>::Value, bool>::Type ShouldSerialize(ISerializable& v, const void* otherObj)
+    inline typename TEnableIf<TIsBaseOf<ISerializable, T>::Value, bool>::Type ShouldSerialize(const ISerializable& v, const void* otherObj)
     {
         return true;
     }
     template<typename T>
-    inline typename TEnableIf<TIsBaseOf<ISerializable, T>::Value>::Type Serialize(ISerializable::SerializeStream& stream, ISerializable& v, const void* otherObj)
+    inline typename TEnableIf<TIsBaseOf<ISerializable, T>::Value>::Type Serialize(ISerializable::SerializeStream& stream, const ISerializable& v, const void* otherObj)
     {
         stream.StartObject();
-        v.Serialize(stream, otherObj);
+        const_cast<ISerializable*>(&v)->Serialize(stream, otherObj);
         stream.EndObject();
     }
     template<typename T>
@@ -441,12 +441,12 @@ namespace Serialization
     // Scripting Object
 
     template<typename T>
-    inline typename TEnableIf<TIsBaseOf<ScriptingObject, T>::Value, bool>::Type ShouldSerialize(T*& v, const void* otherObj)
+    inline typename TEnableIf<TIsBaseOf<ScriptingObject, T>::Value, bool>::Type ShouldSerialize(const T*& v, const void* otherObj)
     {
         return !otherObj || v != *(T**)otherObj;
     }
     template<typename T>
-    inline typename TEnableIf<TIsBaseOf<ScriptingObject, T>::Value>::Type Serialize(ISerializable::SerializeStream& stream, T*& v, const void* otherObj)
+    inline typename TEnableIf<TIsBaseOf<ScriptingObject, T>::Value>::Type Serialize(ISerializable::SerializeStream& stream, const T*& v, const void* otherObj)
     {
         stream.Guid(v ? v->GetID() : Guid::Empty);
     }
@@ -568,12 +568,13 @@ namespace Serialization
     {
         if (!otherObj)
             return true;
-        const auto other = (Array<T, AllocationType>*)otherObj;
+        const auto other = (const Array<T, AllocationType>*)otherObj;
         if (v.Count() != other->Count())
             return true;
+        const T* vPtr = v.Get();
         for (int32 i = 0; i < v.Count(); i++)
         {
-            if (ShouldSerialize((T&)v[i], (const void*)&other->At(i)))
+            if (ShouldSerialize(vPtr[i], (const void*)&other->At(i)))
                 return true;
         }
         return false;
@@ -582,36 +583,28 @@ namespace Serialization
     inline void Serialize(ISerializable::SerializeStream& stream, const Array<T, AllocationType>& v, const void* otherObj)
     {
         stream.StartArray();
+        const T* vPtr = v.Get();
         for (int32 i = 0; i < v.Count(); i++)
-            Serialize(stream, (T&)v[i], nullptr);
+            Serialize(stream, vPtr[i], nullptr);
         stream.EndArray();
     }
     template<typename T, typename AllocationType = HeapAllocation>
     inline void Deserialize(ISerializable::DeserializeStream& stream, Array<T, AllocationType>& v, ISerializeModifier* modifier)
     {
-        if (!stream.IsArray())
-            return;
-        const auto& streamArray = stream.GetArray();
-        v.Resize(streamArray.Size());
-        for (int32 i = 0; i < v.Count(); i++)
-            Deserialize(streamArray[i], (T&)v[i], modifier);
-    }
-    template<typename AllocationType = HeapAllocation>
-    inline void Deserialize(ISerializable::DeserializeStream& stream, Array<byte, AllocationType>& v, ISerializeModifier* modifier)
-    {
         if (stream.IsArray())
         {
             const auto& streamArray = stream.GetArray();
             v.Resize(streamArray.Size());
+            T* vPtr = v.Get();
             for (int32 i = 0; i < v.Count(); i++)
-                Deserialize(streamArray[i], v[i], modifier);
+                Deserialize(streamArray[i], vPtr[i], modifier);
         }
-        else if (stream.IsString())
+        else if (TIsPODType<T>::Value && stream.IsString())
         {
-            // byte[] encoded as Base64
+            // T[] encoded as Base64
             const StringAnsiView streamView(stream.GetStringAnsiView());
-            v.Resize(Encryption::Base64DecodeLength(*streamView, streamView.Length()));
-            Encryption::Base64Decode(*streamView, streamView.Length(), v.Get());
+            v.Resize(Encryption::Base64DecodeLength(*streamView, streamView.Length()) / sizeof(T));
+            Encryption::Base64Decode(*streamView, streamView.Length(), (byte*)v.Get());
         }
     }
 

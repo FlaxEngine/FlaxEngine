@@ -519,6 +519,17 @@ public:
     /// </summary>
     void UpdateScale();
 
+    template<typename ColliderType = Collider, typename AllocationType = HeapAllocation>
+    void GetColliders(Array<ColliderType*, AllocationType>& result) const
+    {
+        for (int32 i = 0; i < Children.Count(); i++)
+        {
+            const auto collider = Cast<ColliderType>(Children.Get()[i]);
+            if (collider && collider->GetAttachedRigidBody() == this)
+                result.Add(collider);
+        }
+    }
+
 public:
     // [Actor]
     void Serialize(SerializeStream& stream, const void* otherObj) override;

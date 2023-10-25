@@ -1,28 +1,91 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
 #include "ScriptingObject.h"
+#include "SerializableScriptingObject.h"
 #include "Scripting.h"
 #include "BinaryModule.h"
 #include "Engine/Level/Actor.h"
 #include "Engine/Core/Log.h"
+#include "Engine/Core/Types/Pair.h"
 #include "Engine/Utilities/StringConverter.h"
 #include "Engine/Content/Asset.h"
 #include "Engine/Content/Content.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Threading/ThreadLocal.h"
+#include "Engine/Serialization/SerializationFwd.h"
 #include "ManagedCLR/MAssembly.h"
 #include "ManagedCLR/MClass.h"
 #include "ManagedCLR/MUtils.h"
 #include "ManagedCLR/MField.h"
 #include "ManagedCLR/MCore.h"
 #include "Internal/InternalCalls.h"
+#include "Internal/ManagedSerialization.h"
 #include "FlaxEngine.Gen.h"
 
 #define ScriptingObject_unmanagedPtr "__unmanagedPtr"
 #define ScriptingObject_id "__internalId"
 
 // TODO: don't leak memory (use some kind of late manual GC for those wrapper objects)
-Dictionary<ScriptingObject*, void*> ScriptingObjectsInterfaceWrappers;
+typedef Pair<ScriptingObject*, ScriptingTypeHandle> ScriptingObjectsInterfaceKey;
+Dictionary<ScriptingObjectsInterfaceKey, void*> ScriptingObjectsInterfaceWrappers;
+
+SerializableScriptingObject::SerializableScriptingObject(const SpawnParams& params)
+    : ScriptingObject(params)
+{
+}
+
+void SerializableScriptingObject::Serialize(SerializeStream& stream, const void* otherObj)
+{
+    SERIALIZE_GET_OTHER_OBJ(SerializableScriptingObject);
+
+#if !COMPILE_WITHOUT_CSHARP
+    // Handle C# objects data serialization
+    if (EnumHasAnyFlags(Flags, ObjectFlags::IsManagedType))
+    {
+        stream.JKEY("V");
+        if (other)
+        {
+            ManagedSerialization::SerializeDiff(stream, GetOrCreateManagedInstance(), other->GetOrCreateManagedInstance());
+        }
+        else
+        {
+            ManagedSerialization::Serialize(stream, GetOrCreateManagedInstance());
+        }
+    }
+#endif
+
+    // Handle custom scripting objects data serialization
+    if (EnumHasAnyFlags(Flags, ObjectFlags::IsCustomScriptingType))
+    {
+        stream.JKEY("D");
+        _type.Module->SerializeObject(stream, this, other);
+    }
+}
+
+void SerializableScriptingObject::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)
+{
+#if !COMPILE_WITHOUT_CSHARP
+    // Handle C# objects data serialization
+    if (EnumHasAnyFlags(Flags, ObjectFlags::IsManagedType))
+    {
+        auto* const v = SERIALIZE_FIND_MEMBER(stream, "V");
+        if (v != stream.MemberEnd() && v->value.IsObject() && v->value.MemberCount() != 0)
+        {
+            ManagedSerialization::Deserialize(v->value, GetOrCreateManagedInstance());
+        }
+    }
+#endif
+
+    // Handle custom scripting objects data serialization
+    if (EnumHasAnyFlags(Flags, ObjectFlags::IsCustomScriptingType))
+    {
+        auto* const v = SERIALIZE_FIND_MEMBER(stream, "D");
+        if (v != stream.MemberEnd() && v->value.IsObject() && v->value.MemberCount() != 0)
+        {
+            _type.Module->DeserializeObject(v->value, this, modifier);
+        }
+    }
+}
 
 ScriptingObject::ScriptingObject(const SpawnParams& params)
     : _gcHandle(0)
@@ -141,10 +204,10 @@ ScriptingObject* ScriptingObject::FromInterface(void* interfaceObj, const Script
     }
 
     // Special case for interface wrapper object
-    for (auto& e : ScriptingObjectsInterfaceWrappers)
+    for (const auto& e : ScriptingObjectsInterfaceWrappers)
     {
         if (e.Value == interfaceObj)
-            return e.Key;
+            return e.Key.First;
     }
 
     return nullptr;
@@ -165,10 +228,11 @@ void* ScriptingObject::ToInterface(ScriptingObject* obj, const ScriptingTypeHand
     else if (interface)
     {
         // Interface implemented in scripting (eg. C# class inherits C++ interface)
-        if (!ScriptingObjectsInterfaceWrappers.TryGet(obj, result))
+        const ScriptingObjectsInterfaceKey key(obj, interfaceType);
+        if (!ScriptingObjectsInterfaceWrappers.TryGet(key, result))
         {
             result = interfaceType.GetType().Interface.GetInterfaceWrapper(obj);
-            ScriptingObjectsInterfaceWrappers.Add(obj, result);
+            ScriptingObjectsInterfaceWrappers.Add(key, result);
         }
     }
     return result;
@@ -180,7 +244,7 @@ ScriptingObject* ScriptingObject::ToNative(MObject* obj)
 #if USE_CSHARP
     if (obj)
     {
-#if USE_MONO
+#if USE_MONO || USE_MONO_AOT
         const auto ptrField = MCore::Object::GetClass(obj)->GetField(ScriptingObject_unmanagedPtr);
         CHECK_RETURN(ptrField, nullptr);
         ptrField->GetValue(obj, &ptr);

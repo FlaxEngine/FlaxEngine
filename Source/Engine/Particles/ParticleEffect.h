@@ -133,7 +133,7 @@ public:
 /// <summary>
 /// The particle system instance that plays the particles simulation in the game.
 /// </summary>
-API_CLASS(Attributes="ActorContextMenu(\"New/Visuals/Particle Effects\"), ActorToolbox(\"Visuals\")")
+API_CLASS(Attributes="ActorContextMenu(\"New/Visuals/Particle Effect\"), ActorToolbox(\"Visuals\")")
 class FLAXENGINE_API ParticleEffect : public Actor
 {
     DECLARE_SCENE_OBJECT(ParticleEffect);
@@ -185,6 +185,7 @@ private:
     Array<ParticleEffectParameter> _parameters; // Cached for scripting API
     Array<ParameterOverride> _parametersOverrides; // Cached parameter modifications to be applied to the parameters
     bool _isPlaying = false;
+    bool _isStopped = false;
 
 public:
     /// <summary>

@@ -138,15 +138,15 @@ void BoundingBox::Transform(const BoundingBox& box, const ::Transform& transform
 {
     // Reference: http://dev.theomader.com/transform-bounding-boxes/
 
-    const auto right = transform.GetRight();
+    const auto right = Float3::Transform(Float3::Right, transform.Orientation);
     const auto xa = right * box.Minimum.X;
     const auto xb = right * box.Maximum.X;
 
-    const auto up = transform.GetUp();
+    const auto up = Float3::Transform(Float3::Up, transform.Orientation);
     const auto ya = up * box.Minimum.Y;
     const auto yb = up * box.Maximum.Y;
 
-    const auto backward = transform.GetBackward();
+    const auto backward = Float3::Transform(Float3::Backward, transform.Orientation);
     const auto za = backward * box.Minimum.Z;
     const auto zb = backward * box.Maximum.Z;
 

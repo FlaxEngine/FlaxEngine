@@ -521,8 +521,11 @@ namespace FlaxEditor.Windows.Assets
         /// <inheritdoc />
         protected override void OnClose()
         {
-            // Discard unsaved changes
-            _properties.DiscardChanges();
+            if (Asset)
+            {
+                // Discard unsaved changes
+                _properties.DiscardChanges();
+            }
 
             // Cleanup
             _undo.Clear();

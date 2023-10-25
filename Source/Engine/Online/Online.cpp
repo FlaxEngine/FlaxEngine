@@ -10,7 +10,7 @@ class OnlineService : public EngineService
 {
 public:
     OnlineService()
-        : EngineService(TEXT("Online"), 100)
+        : EngineService(TEXT("Online"), 500)
     {
     }
 

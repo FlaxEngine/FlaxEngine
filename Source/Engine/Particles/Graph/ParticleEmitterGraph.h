@@ -37,18 +37,20 @@ public:
     /// <summary>
     /// Flag valid for used particle nodes that need per-particle data to evaluate its value (including dependant nodes linked to input boxes). Used to skip per-particle graph evaluation if graph uses the same value for all particles (eg. is not using per-particle seed or position node).
     /// </summary>
-    bool UsesParticleData;
+    bool UsesParticleData = false;
 
     /// <summary>
     /// Flag valid for used particle nodes that result in constant data (nothing random nor particle data).
     /// </summary>
-    bool IsConstant;
+    bool IsConstant = true;
 
     /// <summary>
     /// The cached particle attribute indices used by the simulation graph to access particle properties.
     /// </summary>
     int32 Attributes[PARTICLE_EMITTER_MAX_ATTRIBUTES_REFS_PER_NODE];
 };
+
+void InitParticleEmitterFunctionCall(const Guid& assetId, AssetReference<Asset>& asset, bool& usesParticleData, ParticleLayout& layout);
 
 /// <summary>
 /// The Particle Emitter Graph used to simulate particles.
@@ -157,8 +159,6 @@ public:
         if (node->Used)
             return;
         node->Used = true;
-        node->UsesParticleData = false;
-        node->IsConstant = true;
 
 #define USE_ATTRIBUTE(name, valueType, slot) \
 	{ \
@@ -292,14 +292,11 @@ public:
         case GRAPH_NODE_MAKE_TYPE(14, 214):
         case GRAPH_NODE_MAKE_TYPE(14, 215):
         case GRAPH_NODE_MAKE_TYPE(14, 216):
-        {
             node->IsConstant = false;
             break;
-        }
         // Particle Emitter Function
         case GRAPH_NODE_MAKE_TYPE(14, 300):
-            node->Assets[0] = Content::LoadAsync<Asset>((Guid)node->Values[0]);
-            node->UsesParticleData = true; // TODO: analyze emitter function graph to detect if it's actually using any particle data at all (even from inputs after inline)
+            InitParticleEmitterFunctionCall((Guid)node->Values[0], node->Assets[0], node->UsesParticleData, Layout);
             break;
         // Particle Index
         case GRAPH_NODE_MAKE_TYPE(14, 301):
@@ -564,7 +561,7 @@ public:
             return true;
 
         // Compute particle data layout and initialize used nodes (for only used nodes, start depth searching rom the modules)
-        Layout.AddAttribute(TEXT("Position"), ParticleAttribute::ValueTypes::Float3);
+        //Layout.AddAttribute(TEXT("Position"), ParticleAttribute::ValueTypes::Float3);
 #define PROCESS_MODULES(modules) for (int32 i = 0; i < modules.Count(); i++) { modules[i]->Used = false; InitializeNode(modules[i]); }
         PROCESS_MODULES(SpawnModules);
         PROCESS_MODULES(InitModules);

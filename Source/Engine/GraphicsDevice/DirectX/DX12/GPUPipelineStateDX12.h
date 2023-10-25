@@ -55,7 +55,7 @@ public:
 
 public:
 
-    D3D_PRIMITIVE_TOPOLOGY PrimitiveTopologyType = D3D_PRIMITIVE_TOPOLOGY_UNDEFINED;
+    D3D_PRIMITIVE_TOPOLOGY PrimitiveTopology = D3D_PRIMITIVE_TOPOLOGY_UNDEFINED;
     DxShaderHeader Header;
 
     /// <summary>

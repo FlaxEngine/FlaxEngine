@@ -596,11 +596,13 @@ void EngineImpl::InitPaths()
     Globals::ProjectCacheFolder = Globals::ProjectFolder / TEXT("Cache");
 #endif
 
+#if USE_MONO
     // We must ensure that engine is located in folder which path contains only ANSI characters
     // Why? Mono lib must have etc and lib folders at ANSI path
     // But project can be located on Unicode path
     if (!Globals::StartupFolder.IsANSI())
         Platform::Fatal(TEXT("Cannot start application in directory which name contains non-ANSI characters."));
+#endif
 
 #if !PLATFORM_SWITCH && !FLAX_TESTS
     // Setup directories

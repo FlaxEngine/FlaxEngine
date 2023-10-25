@@ -279,10 +279,11 @@ struct DrawCall
     uint64 SortKey;
 
     /// <summary>
-    /// Does nothing.
+    /// Zero-init.
     /// </summary>
-    DrawCall()
+    FORCE_INLINE DrawCall()
     {
+        Platform::MemoryClear(this, sizeof(DrawCall));
     }
 };
 

@@ -90,6 +90,17 @@ API_CLASS(Static) class FLAXENGINE_API DebugDraw
     API_FUNCTION() static void DrawLine(const Vector3& start, const Vector3& end, const Color& color, float duration = 0.0f, bool depthTest = true);
 
     /// <summary>
+    /// Draws the line.
+    /// </summary>
+    /// <param name="start">The start point.</param>
+    /// <param name="end">The end point.</param>
+    /// <param name="startColor">The color of the start point.</param>
+    /// <param name="endColor">The color of the end point.</param>
+    /// <param name="duration">The duration (in seconds). Use 0 to draw it only once.</param>
+    /// <param name="depthTest">If set to <c>true</c> depth test will be performed, otherwise depth will be ignored.</param>
+    API_FUNCTION() static void DrawLine(const Vector3& start, const Vector3& end, const Color& startColor, const Color& endColor, float duration = 0.0f, bool depthTest = true);
+
+    /// <summary>
     /// Draws the lines. Line positions are located one after another (e.g. l0.start, l0.end, l1.start, l1.end,...).
     /// </summary>
     /// <param name="lines">The list of vertices for lines (must have multiple of 2 elements).</param>

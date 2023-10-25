@@ -150,6 +150,12 @@ namespace FlaxEditor.Tools.Terrain
                 return;
             }
 
+            // Increase or decrease brush size with scroll
+            if (Input.GetKey(KeyboardKeys.Shift))
+            {
+                Mode.CurrentBrush.Size += dt * Mode.CurrentBrush.Size * Input.Mouse.ScrollDelta * 5f;
+            }
+
             // Check if no terrain is selected
             var terrain = SelectedTerrain;
             if (!terrain)

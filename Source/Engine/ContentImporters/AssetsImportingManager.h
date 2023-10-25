@@ -119,6 +119,11 @@ public:
     static const String CreateAnimationTag;
 
     /// <summary>
+    /// The create Behavior Tree asset tag.
+    /// </summary>
+    static const String CreateBehaviorTreeTag;
+
+    /// <summary>
     /// The create visual script asset tag.
     /// </summary>
     static const String CreateVisualScriptTag;

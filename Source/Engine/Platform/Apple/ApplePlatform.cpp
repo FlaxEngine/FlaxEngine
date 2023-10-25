@@ -48,6 +48,7 @@ CPUInfo Cpu;
 String UserLocale;
 double SecondsPerCycle;
 NSAutoreleasePool* AutoreleasePool = nullptr;
+int32 AutoreleasePoolInterval = 0;
 
 float ApplePlatform::ScreenScale = 1.0f;
 
@@ -245,12 +246,39 @@ void ApplePlatform::GetUTCTime(int32& year, int32& month, int32& dayOfWeek, int3
     millisecond = time.tv_usec / 1000;
 }
 
+#if !BUILD_RELEASE
+
 void ApplePlatform::Log(const StringView& msg)
 {
-#if !BUILD_RELEASE && !USE_EDITOR
+#if !USE_EDITOR
     NSLog(@"%s", StringAsANSI<>(*msg, msg.Length()).Get());
 #endif
 }
+
+bool ApplePlatform::IsDebuggerPresent()
+{
+    // Reference: https://developer.apple.com/library/archive/qa/qa1361/_index.html
+    int mib[4];
+    struct kinfo_proc info;
+
+    // Initialize the flags so that, if sysctl fails for some bizarre reason, we get a predictable result
+    info.kp_proc.p_flag = 0;
+
+    // Initialize mib, which tells sysctl the info we want, in this case we're looking for information about a specific process ID
+    mib[0] = CTL_KERN;
+    mib[1] = KERN_PROC;
+    mib[2] = KERN_PROC_PID;
+    mib[3] = getpid();
+
+    // Call sysctl
+    size_t size = sizeof(info);
+    sysctl(mib, sizeof(mib) / sizeof(*mib), &info, &size, NULL, 0);
+
+    // We're being debugged if the P_TRACED flag is set
+    return ((info.kp_proc.p_flag & P_TRACED) != 0);
+}
+
+#endif
 
 bool ApplePlatform::Init()
 {
@@ -332,9 +360,13 @@ bool ApplePlatform::Init()
 
 void ApplePlatform::Tick()
 {
-    // TODO: do it once every X fames
-    [AutoreleasePool drain];
-    AutoreleasePool = [[NSAutoreleasePool alloc] init];
+    AutoreleasePoolInterval++;
+    if (AutoreleasePoolInterval >= 60)
+    {
+        AutoreleasePoolInterval = 0;
+        [AutoreleasePool drain];
+        AutoreleasePool = [[NSAutoreleasePool alloc] init];
+    }
 }
 
 void ApplePlatform::BeforeExit()
@@ -343,6 +375,11 @@ void ApplePlatform::BeforeExit()
 
 void ApplePlatform::Exit()
 {
+    if (AutoreleasePool)
+    {
+        [AutoreleasePool drain];
+        AutoreleasePool = nullptr;
+    }
 }
 
 void ApplePlatform::SetHighDpiAwarenessEnabled(bool enable)
@@ -369,9 +406,7 @@ bool ApplePlatform::GetHasFocus()
 		if (window->IsFocused())
 			return true;
 	}
-
-	// Default to true if has no windows open
-    return WindowsManager::Windows.IsEmpty();
+    return false;
 }
 
 void ApplePlatform::CreateGuid(Guid& result)

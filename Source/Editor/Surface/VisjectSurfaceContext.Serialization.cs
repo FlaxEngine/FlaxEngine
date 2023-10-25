@@ -14,6 +14,32 @@ using Utils = FlaxEditor.Utilities.Utils;
 namespace FlaxEditor.Surface
 {
     /// <summary>
+    /// Types of surface actions.
+    /// </summary>
+    public enum SurfaceNodeActions
+    {
+        /// <summary>
+        /// Node has been created by surface load.
+        /// </summary>
+        Load,
+
+        /// <summary>
+        /// Node has been created/deleted by user action.
+        /// </summary>
+        User,
+
+        /// <summary>
+        /// Node has been created/deleted via undo.
+        /// </summary>
+        Undo,
+
+        /// <summary>
+        /// Node has been pasted.
+        /// </summary>
+        Paste,
+    }
+
+    /// <summary>
     /// The missing node. Cached the node group, type and stored values information.
     /// </summary>
     /// <seealso cref="FlaxEditor.Surface.SurfaceNode" />
@@ -135,7 +161,7 @@ namespace FlaxEditor.Surface
                             if (comment == null)
                                 throw new InvalidOperationException("Failed to create comment.");
 
-                            OnControlLoaded(comment);
+                            OnControlLoaded(comment, SurfaceNodeActions.Load);
                         }
                     }
                 }
@@ -144,7 +170,7 @@ namespace FlaxEditor.Surface
                 for (int i = 0; i < RootControl.Children.Count; i++)
                 {
                     if (RootControl.Children[i] is SurfaceControl control)
-                        control.OnSurfaceLoaded();
+                        control.OnSurfaceLoaded(SurfaceNodeActions.Load);
                 }
 
                 RootControl.UnlockChildrenRecursive();
@@ -650,7 +676,7 @@ namespace FlaxEditor.Surface
                     // Meta
                     node.Meta.Load(stream);
 
-                    OnControlLoaded(node);
+                    OnControlLoaded(node, SurfaceNodeActions.Load);
                 }
             }
             else if (version == 7000)
@@ -813,7 +839,7 @@ namespace FlaxEditor.Surface
                     // Meta
                     node.Meta.Load(stream);
 
-                    OnControlLoaded(node);
+                    OnControlLoaded(node, SurfaceNodeActions.Load);
                 }
             }
             else
@@ -856,9 +882,10 @@ namespace FlaxEditor.Surface
         /// Called when control gets added to the surface as spawn operation (eg. add new comment or add new node).
         /// </summary>
         /// <param name="control">The control.</param>
-        public virtual void OnControlSpawned(SurfaceControl control)
+        /// <param name="action">The action node.</param>
+        public virtual void OnControlSpawned(SurfaceControl control, SurfaceNodeActions action)
         {
-            control.OnSpawned();
+            control.OnSpawned(action);
             ControlSpawned?.Invoke(control);
             if (Surface != null && control is SurfaceNode node)
                 Surface.OnNodeSpawned(node);
@@ -868,10 +895,11 @@ namespace FlaxEditor.Surface
         /// Called when control gets removed from the surface as delete/cut operation (eg. remove comment or cut node).
         /// </summary>
         /// <param name="control">The control.</param>
-        public virtual void OnControlDeleted(SurfaceControl control)
+        /// <param name="action">The action node.</param>
+        public virtual void OnControlDeleted(SurfaceControl control, SurfaceNodeActions action)
         {
             ControlDeleted?.Invoke(control);
-            control.OnDeleted();
+            control.OnDeleted(action);
             if (control is SurfaceNode node)
                 Surface.OnNodeDeleted(node);
         }
@@ -880,16 +908,17 @@ namespace FlaxEditor.Surface
         /// Called when control gets loaded and should be added to the surface. Handles surface nodes initialization.
         /// </summary>
         /// <param name="control">The control.</param>
-        public virtual void OnControlLoaded(SurfaceControl control)
+        /// <param name="action">The action node.</param>
+        public virtual void OnControlLoaded(SurfaceControl control, SurfaceNodeActions action)
         {
             if (control is SurfaceNode node)
             {
                 // Initialize node
-                OnNodeLoaded(node);
+                OnNodeLoaded(node, action);
             }
 
             // Link control
-            control.OnLoaded();
+            control.OnLoaded(action);
             control.Parent = RootControl;
 
             if (control is SurfaceComment)
@@ -903,7 +932,8 @@ namespace FlaxEditor.Surface
         /// Called when node gets loaded and should be added to the surface. Creates node elements from the archetype.
         /// </summary>
         /// <param name="node">The node.</param>
-        public virtual void OnNodeLoaded(SurfaceNode node)
+        /// <param name="action">The action node.</param>
+        public virtual void OnNodeLoaded(SurfaceNode node, SurfaceNodeActions action)
         {
             // Create child elements of the node based on it's archetype
             int elementsCount = node.Archetype.Elements?.Length ?? 0;

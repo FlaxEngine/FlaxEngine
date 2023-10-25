@@ -20,6 +20,7 @@
 #include "Engine/ShadersCompilation/Config.h"
 #if BUILD_DEBUG
 #include "Engine/Engine/Globals.h"
+#include "Engine/Scripting/BinaryModule.h"
 #endif
 #endif
 
@@ -256,7 +257,9 @@ Asset::LoadResult Material::load()
 
 #if BUILD_DEBUG && USE_EDITOR
         // Dump generated material source to the temporary file
+        BinaryModule::Locker.Lock();
         source.SaveToFile(Globals::ProjectCacheFolder / TEXT("material.txt"));
+        BinaryModule::Locker.Unlock();
 #endif
 
         // Encrypt source code

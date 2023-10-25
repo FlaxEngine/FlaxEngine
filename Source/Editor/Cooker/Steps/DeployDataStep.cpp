@@ -131,7 +131,8 @@ bool DeployDataStep::Perform(CookingData& data)
                     if (FileSystem::DirectoryExists(dstDotnet))
                     {
                         String cachedData;
-                        File::ReadAllText(dotnetCacheFilePath, cachedData);
+                        if (FileSystem::FileExists(dotnetCacheFilePath))
+                            File::ReadAllText(dotnetCacheFilePath, cachedData);
                         if (cachedData != dotnetCachedValue)
                         {
                             FileSystem::DeleteDirectory(dstDotnet);
@@ -360,7 +361,7 @@ bool DeployDataStep::Perform(CookingData& data)
     data.AddRootEngineAsset(PRE_INTEGRATED_GF_ASSET_NAME);
     data.AddRootEngineAsset(SMAA_AREA_TEX);
     data.AddRootEngineAsset(SMAA_SEARCH_TEX);
-    if (data.Configuration != BuildConfiguration::Release)
+    if (!buildSettings.SkipDefaultFonts)
         data.AddRootEngineAsset(TEXT("Editor/Fonts/Roboto-Regular"));
 
     // Register custom assets (eg. plugins)

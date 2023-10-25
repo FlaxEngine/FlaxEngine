@@ -9,6 +9,7 @@
 #include "Engine/Graphics/PixelFormatExtensions.h"
 #include "Engine/Content/Content.h"
 #include "Engine/Graphics/GPUContext.h"
+#include "Engine/Scripting/Enums.h"
 #if USE_EDITOR
 #include "Engine/Renderer/Lightmaps.h"
 #endif
@@ -86,11 +87,12 @@ bool ShadowsPass::Init()
     const auto formatFeaturesTexture = GPUDevice::Instance->GetFormatFeatures(formatTexture);
     _supportsShadows = EnumHasAllFlags(formatFeaturesDepth.Support, FormatSupport::DepthStencil | FormatSupport::Texture2D)
             && EnumHasAllFlags(formatFeaturesTexture.Support, FormatSupport::ShaderSample | FormatSupport::ShaderSampleComparison);
+    // TODO: fallback to 32-bit shadow map format if 16-bit is not supported
     if (!_supportsShadows)
     {
         LOG(Warning, "GPU doesn't support shadows rendering");
-        LOG(Warning, "Format: {0}, features support: {1}", (int32)SHADOW_MAPS_FORMAT, (uint32)formatFeaturesDepth.Support);
-        LOG(Warning, "Format: {0}, features support: {1}", (int32)formatTexture, (uint32)formatFeaturesTexture.Support);
+        LOG(Warning, "Format: {0}, features support: {1}", ScriptingEnum::ToString(SHADOW_MAPS_FORMAT), (uint32)formatFeaturesDepth.Support);
+        LOG(Warning, "Format: {0}, features support: {1}", ScriptingEnum::ToString(formatTexture), (uint32)formatFeaturesTexture.Support);
     }
 
     return false;

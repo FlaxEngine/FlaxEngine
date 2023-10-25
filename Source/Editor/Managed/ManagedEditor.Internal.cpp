@@ -184,6 +184,7 @@ enum class NewAssetType
     ParticleEmitterFunction = 9,
     AnimationGraphFunction = 10,
     Animation = 11,
+    BehaviorTree = 12,
 };
 
 DEFINE_INTERNAL_CALL(bool) EditorInternal_CreateAsset(NewAssetType type, MString* outputPathObj)
@@ -226,6 +227,9 @@ DEFINE_INTERNAL_CALL(bool) EditorInternal_CreateAsset(NewAssetType type, MString
         break;
     case NewAssetType::Animation:
         tag = AssetsImportingManager::CreateAnimationTag;
+        break;
+    case NewAssetType::BehaviorTree:
+        tag = AssetsImportingManager::CreateBehaviorTreeTag;
         break;
     default:
         return true;
@@ -509,7 +513,9 @@ DEFINE_INTERNAL_CALL(void) EditorInternal_RunVisualScriptBreakpointLoopTick(floa
         WindowsManager::WindowsLocker.Unlock();
     }
     WindowsManager::WindowsLocker.Lock();
-    for (auto& win : WindowsManager::Windows)
+    Array<Window*, InlinedAllocation<32>> windows;
+    windows.Add(WindowsManager::Windows);
+    for (Window* win : windows)
     {
         if (win->IsVisible())
             win->OnUpdate(deltaTime);

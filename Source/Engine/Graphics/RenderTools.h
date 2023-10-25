@@ -9,6 +9,7 @@
 class Model;
 class SkinnedModel;
 struct RenderContext;
+struct FloatR10G10B10A2;
 
 PACK_STRUCT(struct QuadShaderData
     {
@@ -119,6 +120,9 @@ public:
         ComputeCascadeUpdateFrequency(cascadeIndex, cascadeCount, updateFrequency, updatePhrase, updateMaxCountPerFrame);
         return (frameIndex % updateFrequency == updatePhrase) || updateForce;
     }
+
+    static void CalculateTangentFrame(FloatR10G10B10A2& resultNormal, FloatR10G10B10A2& resultTangent, const Float3& normal);
+    static void CalculateTangentFrame(FloatR10G10B10A2& resultNormal, FloatR10G10B10A2& resultTangent, const Float3& normal, const Float3& tangent);
 };
 
 // Calculate mip levels count for a texture 1D

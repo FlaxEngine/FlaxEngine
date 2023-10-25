@@ -359,6 +359,7 @@ bool GPUDeviceDX11::Init()
             limits.HasAppendConsumeBuffers = true;
             limits.HasSeparateRenderTargetBlendState = true;
             limits.HasDepthAsSRV = true;
+            limits.HasDepthClip = true;
             limits.HasReadOnlyDepth = true;
             limits.HasMultisampleDepthAsSRV = true;
             limits.HasTypedUAVLoad = featureDataD3D11Options2.TypedUAVLoadAdditionalFormats != 0;
@@ -382,6 +383,7 @@ bool GPUDeviceDX11::Init()
             limits.HasAppendConsumeBuffers = false;
             limits.HasSeparateRenderTargetBlendState = false;
             limits.HasDepthAsSRV = false;
+            limits.HasDepthClip = true;
             limits.HasReadOnlyDepth = createdFeatureLevel == D3D_FEATURE_LEVEL_10_1;
             limits.HasMultisampleDepthAsSRV = false;
             limits.HasTypedUAVLoad = false;

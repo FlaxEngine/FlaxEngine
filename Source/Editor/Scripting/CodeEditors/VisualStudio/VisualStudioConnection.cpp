@@ -286,81 +286,17 @@ namespace VisualStudio
 		return "Visual Studio open timout";
 	}
 
-	static ComPtr<EnvDTE::ProjectItem> FindItem(const ComPtr<EnvDTE::ProjectItems>& projectItems, BSTR filePath)
-	{
-		long count;
-		projectItems->get_Count(&count);
-		if (count == 0)
-			return nullptr;
-
-		for (long i = 1; i <= count; i++) // They are counting from [1..Count]
-		{
-			ComPtr<EnvDTE::ProjectItem> projectItem;
-		    projectItems->Item(_variant_t(i), &projectItem);
-            if (!projectItem)
-                continue;
-
-			short fileCount = 0;
-			projectItem->get_FileCount(&fileCount);
-			for (short fileIndex = 1; fileIndex <= fileCount; fileIndex++)
-			{
-				_bstr_t filename;
-				projectItem->get_FileNames(fileIndex, filename.GetAddress());
-
-				if (filename.GetBSTR() != nullptr && AreFilePathsEqual(filePath, filename))
-				{
-					return projectItem;
-				}
-			}
-
-			ComPtr<EnvDTE::ProjectItems> childProjectItems;
-			projectItem->get_ProjectItems(&childProjectItems);
-			if (childProjectItems)
-			{
-			    ComPtr<EnvDTE::ProjectItem> result = FindItem(childProjectItems, filePath);
-			    if (result)
-				    return result;
-			}
-		}
-
-		return nullptr;
-	}
-
-	static ComPtr<EnvDTE::ProjectItem> FindItem(const ComPtr<EnvDTE::_Solution>& solution, BSTR filePath)
-	{
+    static ComPtr<EnvDTE::ProjectItem> FindItem(const ComPtr<EnvDTE::_Solution>& solution, BSTR filePath)
+    {
         HRESULT result;
 
-		ComPtr<EnvDTE::Projects> projects;
-		result = solution->get_Projects(&projects);
+        ComPtr<EnvDTE::ProjectItem> projectItem;
+        result = solution->FindProjectItem(filePath, &projectItem);
         if (FAILED(result))
             return nullptr;
 
-		long projectsCount = 0;
-		result = projects->get_Count(&projectsCount);
-        if (FAILED(result))
-            return nullptr;
-
-		for (long projectIndex = 1; projectIndex <= projectsCount; projectIndex++) // They are counting from [1..Count]
-		{
-			ComPtr<EnvDTE::Project> project;
-			result = projects->Item(_variant_t(projectIndex), &project);
-			if (FAILED(result) || !project)
-				continue;
-
-			ComPtr<EnvDTE::ProjectItems> projectItems;
-			result = project->get_ProjectItems(&projectItems);
-			if (FAILED(result) || !projectItems)
-				continue;
-
-			auto projectItem = FindItem(projectItems, filePath);
-			if (projectItem)
-			{
-                return projectItem;
-			}
-		}
-
-		return nullptr;
-	}
+        return projectItem;
+    }
 
 	// Opens a file on a specific line in a running Visual Studio instance.
 	//

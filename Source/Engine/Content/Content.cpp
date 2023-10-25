@@ -125,16 +125,12 @@ void ContentService::LateUpdate()
     if (timeNow - LastUnloadCheckTime < Content::AssetsUpdateInterval)
         return;
     LastUnloadCheckTime = timeNow;
-
-    Asset* asset;
-    ScopeLock lock(AssetsLocker);
-
-    // TODO: maybe it would be better to link for asset remove ref event and cache only assets with no references - test it with millions of assets?
+    AssetsLocker.Lock();
 
     // Verify all assets
     for (auto i = Assets.Begin(); i.IsNotEnd(); ++i)
     {
-        asset = i->Value;
+        Asset* asset = i->Value;
 
         // Check if has no references and is not during unloading
         if (asset->GetReferencesCount() <= 0 && !UnloadQueue.ContainsKey(asset))
@@ -158,7 +154,7 @@ void ContentService::LateUpdate()
     // Unload marked assets
     for (int32 i = 0; i < ToUnload.Count(); i++)
     {
-        asset = ToUnload[i];
+        Asset* asset = ToUnload[i];
 
         // Check if has no references
         if (asset->GetReferencesCount() <= 0)
@@ -169,6 +165,8 @@ void ContentService::LateUpdate()
         // Remove from unload queue
         UnloadQueue.Remove(asset);
     }
+
+    AssetsLocker.Unlock();
 
     // Update cache (for longer sessions it will help to reduce cache misses)
     Cache.Save();
@@ -212,7 +210,6 @@ bool FindAssets(const ProjectInfo* project, HashSet<const ProjectInfo*>& project
 {
     if (projects.Contains(project))
         return false;
-
     projects.Add(project);
     bool found = findAsset(id, project->ProjectFolderPath / TEXT("Content"), tmpCache, info);
     for (const auto& reference : project->References)
@@ -220,7 +217,6 @@ bool FindAssets(const ProjectInfo* project, HashSet<const ProjectInfo*>& project
         if (reference.Project)
             found |= FindAssets(reference.Project, projects, id, tmpCache, info);
     }
-
     return found;
 }
 
@@ -232,7 +228,6 @@ bool Content::GetAssetInfo(const Guid& id, AssetInfo& info)
         return false;
 
 #if ENABLE_ASSETS_DISCOVERY
-
     // Find asset in registry
     if (Cache.FindAsset(id, info))
         return true;
@@ -270,19 +265,15 @@ bool Content::GetAssetInfo(const Guid& id, AssetInfo& info)
 
     //LOG(Warning, "Cannot find {0}.", id);
     return false;
-
 #else
-
     // Find asset in registry
     return Cache.FindAsset(id, info);
-
 #endif
 }
 
 bool Content::GetAssetInfo(const StringView& path, AssetInfo& info)
 {
 #if ENABLE_ASSETS_DISCOVERY
-
     // Find asset in registry
     if (Cache.FindAsset(path, info))
         return true;
@@ -326,12 +317,9 @@ bool Content::GetAssetInfo(const StringView& path, AssetInfo& info)
     }
 
     return false;
-
 #else
-
     // Find asset in registry
     return Cache.FindAsset(path, info);
-
 #endif
 }
 
@@ -533,36 +521,32 @@ Asset* Content::GetAsset(const Guid& id)
 
 void Content::DeleteAsset(Asset* asset)
 {
-    ScopeLock locker(AssetsLocker);
-
-    // Validate
     if (asset == nullptr || asset->_deleteFileOnUnload)
-    {
-        // Back
         return;
-    }
 
     LOG(Info, "Deleting asset {0}...", asset->ToString());
+
+    // Ensure that asset is loaded (easier than cancel in-flight loading)
+    asset->WaitForLoaded();
 
     // Mark asset for delete queue (delete it after auto unload)
     asset->_deleteFileOnUnload = true;
 
     // Unload
-    UnloadAsset(asset);
+    asset->DeleteObject();
 }
 
 void Content::DeleteAsset(const StringView& path)
 {
-    ScopeLock locker(AssetsLocker);
-
-    // Check if is loaded
+    // Try to delete already loaded asset
     Asset* asset = GetAsset(path);
     if (asset != nullptr)
     {
-        // Delete asset
         DeleteAsset(asset);
         return;
     }
+
+    ScopeLock locker(AssetsLocker);
 
     // Remove from registry
     AssetInfo info;
@@ -585,7 +569,6 @@ void Content::deleteFileSafety(const StringView& path, const Guid& id)
     // Check if given id is invalid
     if (!id.IsValid())
     {
-        // Cancel operation
         LOG(Warning, "Cannot remove file \'{0}\'. Given ID is invalid.", path);
         return;
     }
@@ -597,7 +580,6 @@ void Content::deleteFileSafety(const StringView& path, const Guid& id)
         storage->CloseFileHandles(); // Close file handle to allow removing it
         if (!storage->HasAsset(id))
         {
-            // Skip removing
             LOG(Warning, "Cannot remove file \'{0}\'. It doesn\'t contain asset {1}.", path, id);
             return;
         }
@@ -715,13 +697,11 @@ bool Content::CloneAssetFile(const StringView& dstPath, const StringView& srcPat
             LOG(Warning, "Cannot copy file to destination.");
             return true;
         }
-
         if (JsonStorageProxy::ChangeId(dstPath, dstId))
         {
             LOG(Warning, "Cannot change asset ID.");
             return true;
         }
-
         return false;
     }
 
@@ -786,12 +766,9 @@ bool Content::CloneAssetFile(const StringView& dstPath, const StringView& srcPat
         FileSystem::DeleteFile(tmpPath);
 
         // Reload storage
+        if (auto storage = ContentStorageManager::GetStorage(dstPath))
         {
-            auto storage = ContentStorageManager::GetStorage(dstPath);
-            if (storage)
-            {
-                storage->Reload();
-            }
+            storage->Reload();
         }
     }
 
@@ -802,10 +779,8 @@ bool Content::CloneAssetFile(const StringView& dstPath, const StringView& srcPat
 
 void Content::UnloadAsset(Asset* asset)
 {
-    // Check input
     if (asset == nullptr)
         return;
-
     asset->DeleteObject();
 }
 
@@ -931,12 +906,8 @@ bool Content::IsAssetTypeIdInvalid(const ScriptingTypeHandle& type, const Script
 
 Asset* Content::LoadAsync(const Guid& id, const ScriptingTypeHandle& type)
 {
-    // Early out
     if (!id.IsValid())
-    {
-        // Back
         return nullptr;
-    }
 
     // Check if asset has been already loaded
     Asset* result = GetAsset(id);
@@ -948,7 +919,6 @@ Asset* Content::LoadAsync(const Guid& id, const ScriptingTypeHandle& type)
             LOG(Warning, "Different loaded asset type! Asset: \'{0}\'. Expected type: {1}", result->ToString(), type.ToString());
             return nullptr;
         }
-
         return result;
     }
 
@@ -966,12 +936,8 @@ Asset* Content::LoadAsync(const Guid& id, const ScriptingTypeHandle& type)
             LoadCallAssetsLocker.Lock();
             const bool contains = LoadCallAssets.Contains(id);
             LoadCallAssetsLocker.Unlock();
-
             if (!contains)
-            {
                 return GetAsset(id);
-            }
-
             Platform::Sleep(1);
         }
     }
@@ -979,7 +945,6 @@ Asset* Content::LoadAsync(const Guid& id, const ScriptingTypeHandle& type)
     {
         // Mark asset as loading
         LoadCallAssets.Add(id);
-
         LoadCallAssetsLocker.Unlock();
     }
 
@@ -1000,7 +965,7 @@ Asset* Content::load(const Guid& id, const ScriptingTypeHandle& type, AssetInfo&
     // Get cached asset info (from registry)
     if (!GetAssetInfo(id, assetInfo))
     {
-        LOG(Warning, "Invalid or missing asset ({0}, {1}).", id.ToString(Guid::FormatType::N), type.ToString());
+        LOG(Warning, "Invalid or missing asset ({0}, {1}).", id, type.ToString());
         return nullptr;
     }
 
@@ -1044,10 +1009,12 @@ Asset* Content::load(const Guid& id, const ScriptingTypeHandle& type, AssetInfo&
     ASSERT(!Assets.ContainsKey(id));
 #endif
     Assets.Add(id, result);
-    AssetsLocker.Unlock();
 
     // Start asset loading
+    // TODO: refactor this to create asset loading task-chain before AssetsLocker.Lock() to allow better parallelization
     result->startLoading();
+
+    AssetsLocker.Unlock();
 
     return result;
 }

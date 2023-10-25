@@ -1,8 +1,12 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
+//#define DEBUG_SEARCH_TIME
+
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using FlaxEditor.GUI.ContextMenu;
+using FlaxEditor.Scripting;
 using FlaxEditor.Surface.ContextMenu;
 using FlaxEditor.Surface.Elements;
 using FlaxEditor.Surface.Undo;
@@ -13,6 +17,157 @@ namespace FlaxEditor.Surface
 {
     public partial class VisjectSurface
     {
+        /// <summary>
+        /// Utility for easy nodes archetypes generation for Visject Surface based on scripting types.
+        /// </summary>
+        internal class NodesCache
+        {
+            public delegate void IterateType(ScriptType scriptType, Dictionary<KeyValuePair<string, ushort>, GroupArchetype> cache, int version);
+
+            internal static readonly List<NodesCache> Caches = new List<NodesCache>(8);
+
+            private readonly object _locker = new object();
+            private readonly IterateType _iterator;
+            private int _version;
+            private Task _task;
+            private VisjectCM _taskContextMenu;
+            private Dictionary<KeyValuePair<string, ushort>, GroupArchetype> _cache;
+
+            public NodesCache(IterateType iterator)
+            {
+                _iterator = iterator;
+            }
+
+            public void Wait()
+            {
+                if (_task != null)
+                {
+                    Profiler.BeginEvent("Setup Context Menu");
+                    _task.Wait();
+                    Profiler.EndEvent();
+                }
+            }
+
+            public void Clear()
+            {
+                Wait();
+
+                if (_cache != null && _cache.Count != 0)
+                {
+                    OnCodeEditingTypesCleared();
+                }
+                lock (_locker)
+                {
+                    Caches.Remove(this);
+                }
+            }
+
+            public void Get(VisjectCM contextMenu)
+            {
+                Profiler.BeginEvent("Setup Context Menu");
+
+                Wait();
+
+                lock (_locker)
+                {
+                    if (_cache == null)
+                    {
+                        if (!Caches.Contains(this))
+                            Caches.Add(this);
+                        _cache = new Dictionary<KeyValuePair<string, ushort>, GroupArchetype>();
+                    }
+                    contextMenu.LockChildrenRecursive();
+
+                    // Check if has cached groups
+                    if (_cache.Count != 0)
+                    {
+                        // Check if context menu doesn't have the recent cached groups
+                        if (!contextMenu.Groups.Any(g => g.Archetypes[0].Tag is int asInt && asInt == _version))
+                        {
+                            var groups = contextMenu.Groups.Where(g => g.Archetypes.Count != 0 && g.Archetypes[0].Tag is int).ToArray();
+                            foreach (var g in groups)
+                                contextMenu.RemoveGroup(g);
+                            foreach (var g in _cache.Values)
+                                contextMenu.AddGroup(g);
+                        }
+                    }
+                    else
+                    {
+                        // Remove any old groups from context menu
+                        var groups = contextMenu.Groups.Where(g => g.Archetypes.Count != 0 && g.Archetypes[0].Tag is int).ToArray();
+                        foreach (var g in groups)
+                            contextMenu.RemoveGroup(g);
+
+                        // Register for scripting types reload
+                        Editor.Instance.CodeEditing.TypesCleared += OnCodeEditingTypesCleared;
+
+                        // Run caching on an async
+                        _task = Task.Run(OnActiveContextMenuShowAsync);
+                        _taskContextMenu = contextMenu;
+                    }
+
+                    contextMenu.UnlockChildrenRecursive();
+                }
+
+                Profiler.EndEvent();
+            }
+
+            private void OnActiveContextMenuShowAsync()
+            {
+                Profiler.BeginEvent("Setup Context Menu (async)");
+#if DEBUG_SEARCH_TIME
+                var searchStartTime = DateTime.Now;
+#endif
+
+                foreach (var scriptType in Editor.Instance.CodeEditing.All.Get())
+                {
+                    if (!SurfaceUtils.IsValidVisualScriptType(scriptType))
+                        continue;
+
+                    _iterator(scriptType, _cache, _version);
+                }
+
+                // Add group to context menu (on a main thread)
+                FlaxEngine.Scripting.InvokeOnUpdate(() =>
+                {
+#if DEBUG_SEARCH_TIME
+                    var addStartTime = DateTime.Now;
+#endif
+                    lock (_locker)
+                    {
+                        _taskContextMenu.AddGroups(_cache.Values);
+                        _taskContextMenu = null;
+                    }
+#if DEBUG_SEARCH_TIME
+                    Editor.LogError($"Added items to VisjectCM in: {(DateTime.Now - addStartTime).TotalMilliseconds} ms");
+#endif
+                });
+
+#if DEBUG_SEARCH_TIME
+                Editor.LogError($"Collected items in: {(DateTime.Now - searchStartTime).TotalMilliseconds} ms");
+#endif
+                Profiler.EndEvent();
+
+                lock (_locker)
+                {
+                    _task = null;
+                }
+            }
+
+            private void OnCodeEditingTypesCleared()
+            {
+                Wait();
+
+                lock (_locker)
+                {
+                    _cache.Clear();
+                    _version++;
+                }
+
+                Editor.Instance.CodeEditing.TypesCleared -= OnCodeEditingTypesCleared;
+            }
+        }
+
         private ContextMenuButton _cmCopyButton;
         private ContextMenuButton _cmDuplicateButton;
         private ContextMenuButton _cmFormatNodesConnectionButton;

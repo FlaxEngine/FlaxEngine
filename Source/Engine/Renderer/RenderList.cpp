@@ -13,6 +13,7 @@
 #include "Engine/Graphics/PostProcessEffect.h"
 #include "Engine/Profiler/Profiler.h"
 #include "Engine/Content/Assets/CubeTexture.h"
+#include "Engine/Core/Log.h"
 #include "Engine/Level/Scene/Lightmap.h"
 #include "Engine/Level/Actors/PostFxVolume.h"
 
@@ -434,11 +435,11 @@ FORCE_INLINE void CalculateSortKey(const RenderContext& renderContext, DrawCall&
     const float distance = Float3::Dot(planeNormal, drawCall.ObjectPosition) - planePoint;
     PackedSortKey key;
     key.DistanceKey = RenderTools::ComputeDistanceSortKey(distance);
-    uint32 batchKey = GetHash(drawCall.Geometry.IndexBuffer);
+    uint32 batchKey = GetHash(drawCall.Material);
     batchKey = (batchKey * 397) ^ GetHash(drawCall.Geometry.VertexBuffers[0]);
     batchKey = (batchKey * 397) ^ GetHash(drawCall.Geometry.VertexBuffers[1]);
     batchKey = (batchKey * 397) ^ GetHash(drawCall.Geometry.VertexBuffers[2]);
-    batchKey = (batchKey * 397) ^ GetHash(drawCall.Material);
+    batchKey = (batchKey * 397) ^ GetHash(drawCall.Geometry.IndexBuffer);
     IMaterial::InstancingHandler handler;
     if (drawCall.Material->CanUseInstancing(handler))
         handler.GetHash(drawCall, batchKey);
@@ -557,7 +558,7 @@ namespace
                 a.InstanceCount != 0 &&
                 b.InstanceCount != 0 &&
                 handler.CanBatch(a, b) &&
-                a.WorldDeterminantSign == b.WorldDeterminantSign;
+                a.WorldDeterminantSign * b.WorldDeterminantSign > 0;
     }
 }
 
@@ -618,7 +619,6 @@ void RenderList::SortDrawCalls(const RenderContext& renderContext, bool reverseD
             const DrawCall& other = drawCallsData[listData[j]];
             if (!CanBatchWith(drawCall, other))
                 break;
-
             batchSize++;
             instanceCount += other.InstanceCount;
         }
