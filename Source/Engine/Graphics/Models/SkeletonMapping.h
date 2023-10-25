@@ -66,7 +66,7 @@ public:
             const auto parentModelIndex = node.ParentIndex;
 
             // Find matching node in skeleton (or map to best parent)
-            const std::function<bool(const T&)> f = [node](const T& x) -> bool
+            const Function<bool(const T&)> f = [node](const T& x) -> bool
             {
                 return x.Name == node.Name;
             };

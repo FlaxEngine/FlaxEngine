@@ -90,96 +90,79 @@ GPUResourceType GPUPipelineState::GetResourceType() const
     return GPUResourceType::PipelineState;
 }
 
+// @formatter:off
 GPUPipelineState::Description GPUPipelineState::Description::Default =
 {
-    // Enable/disable depth write
-    true,
-    // Enable/disable depth test
-    true,
-    // DepthClipEnable
-    true,
-    // DepthFunc
-    ComparisonFunc::Less,
-    // Vertex shader
-    nullptr,
-    // Hull shader
-    nullptr,
-    // Domain shader
-    nullptr,
-    // Geometry shader
-    nullptr,
-    // Pixel shader
-    nullptr,
-    // Primitives topology
-    PrimitiveTopologyType::Triangle,
-    // True if use wireframe rendering
-    false,
-    // Primitives culling mode
-    CullMode::Normal,
-    // Colors blending mode
-    BlendingMode::Opaque,
+    true, // DepthEnable
+    true, // DepthWriteEnable
+    true, // DepthClipEnable
+    ComparisonFunc::Less, // DepthFunc
+    false, // StencilEnable
+    0xff, // StencilReadMask
+    0xff, // StencilWriteMask
+    ComparisonFunc::Always, // StencilFunc
+    StencilOperation::Keep, // StencilFailOp
+    StencilOperation::Keep, // StencilDepthFailOp
+    StencilOperation::Keep, // StencilPassOp
+    nullptr, // VS
+    nullptr, // HS
+    nullptr, // DS
+    nullptr, // GS
+    nullptr, // PS
+    PrimitiveTopologyType::Triangle, // PrimitiveTopology
+    false, // Wireframe
+    CullMode::Normal, // CullMode
+    BlendingMode::Opaque, // BlendMode
 };
 
 GPUPipelineState::Description GPUPipelineState::Description::DefaultNoDepth =
 {
-    // Enable/disable depth write
-    false,
-    // Enable/disable depth test
-    false,
-    // DepthClipEnable
-    false,
-    // DepthFunc
-    ComparisonFunc::Less,
-    // Vertex shader
-    nullptr,
-    // Hull shader
-    nullptr,
-    // Domain shader
-    nullptr,
-    // Geometry shader
-    nullptr,
-    // Pixel shader
-    nullptr,
-    // Primitives topology
-    PrimitiveTopologyType::Triangle,
-    // True if use wireframe rendering
-    false,
-    // Primitives culling mode
-    CullMode::Normal,
-    // Colors blending mode
-    BlendingMode::Opaque,
+    false, // DepthEnable
+    false, // DepthWriteEnable
+    false, // DepthClipEnable
+    ComparisonFunc::Less, // DepthFunc
+    false, // StencilEnable
+    0xff, // StencilReadMask
+    0xff, // StencilWriteMask
+    ComparisonFunc::Always, // StencilFunc
+    StencilOperation::Keep, // StencilFailOp
+    StencilOperation::Keep, // StencilDepthFailOp
+    StencilOperation::Keep, // StencilPassOp
+    nullptr, // VS
+    nullptr, // HS
+    nullptr, // DS
+    nullptr, // GS
+    nullptr, // PS
+    PrimitiveTopologyType::Triangle, // PrimitiveTopology
+    false, // Wireframe
+    CullMode::Normal, // CullMode
+    BlendingMode::Opaque, // BlendMode
 };
 
 GPUPipelineState::Description GPUPipelineState::Description::DefaultFullscreenTriangle =
 {
-    // Enable/disable depth write
-    false,
-    // Enable/disable depth test
-    false,
-    // DepthClipEnable
-    false,
-    // DepthFunc
-    ComparisonFunc::Less,
-    // Vertex shader
-    nullptr,
-    // Set to default quad VS via GPUDevice
-    // Hull shader
-    nullptr,
-    // Domain shader
-    nullptr,
-    // Geometry shader
-    nullptr,
-    // Pixel shader
-    nullptr,
-    // Primitives topology
-    PrimitiveTopologyType::Triangle,
-    // True if use wireframe rendering
-    false,
-    // Primitives culling mode
-    CullMode::TwoSided,
-    // Colors blending mode
-    BlendingMode::Opaque,
+    false, // DepthEnable
+    false, // DepthWriteEnable
+    false, // DepthClipEnable
+    ComparisonFunc::Less, // DepthFunc
+    false, // StencilEnable
+    0xff, // StencilReadMask
+    0xff, // StencilWriteMask
+    ComparisonFunc::Always, // StencilFunc
+    StencilOperation::Keep, // StencilFailOp
+    StencilOperation::Keep, // StencilDepthFailOp
+    StencilOperation::Keep, // StencilPassOp
+    nullptr, // VS (Set to default quad VS via GPUDevice)
+    nullptr, // HS
+    nullptr, // DS
+    nullptr, // GS
+    nullptr, // PS
+    PrimitiveTopologyType::Triangle, // PrimitiveTopology
+    false, // Wireframe
+    CullMode::TwoSided, // CullMode
+    BlendingMode::Opaque, // BlendMode
 };
+// @formatter:on
 
 GPUResource::GPUResource()
     : ScriptingObject(SpawnParams(Guid::New(), TypeInitializer))
@@ -520,6 +503,9 @@ void GPUDevice::DrawEnd()
     // Call present on all used tasks
     int32 presentCount = 0;
     bool anyVSync = false;
+#if COMPILE_WITH_PROFILER
+    const double presentStart = Platform::GetTimeSeconds();
+#endif
     for (int32 i = 0; i < RenderTask::Tasks.Count(); i++)
     {
         const auto task = RenderTask::Tasks[i];
@@ -554,6 +540,10 @@ void GPUDevice::DrawEnd()
 #endif
         GetMainContext()->Flush();
     }
+#if COMPILE_WITH_PROFILER
+    const double presentEnd = Platform::GetTimeSeconds();
+    ProfilerGPU::OnPresentTime((float)((presentEnd - presentStart) * 1000.0));
+#endif
 
     _wasVSyncUsed = anyVSync;
     _isRendering = false;

@@ -451,6 +451,7 @@ DialogResult MessageBox::Show(Window* parent, const StringView& text, const Stri
     default:
         break;
     }
+    flags |= MB_TASKMODAL;
 
     // Show dialog
     int result = MessageBoxW(parent ? static_cast<HWND>(parent->GetNativePtr()) : nullptr, String(text).GetText(), String(caption).GetText(), flags);

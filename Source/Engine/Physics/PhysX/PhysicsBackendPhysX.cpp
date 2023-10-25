@@ -7,6 +7,7 @@
 #include "SimulationEventCallbackPhysX.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Utilities.h"
+#include "Engine/Core/Collections/Dictionary.h"
 #include "Engine/Physics/CollisionData.h"
 #include "Engine/Physics/PhysicalMaterial.h"
 #include "Engine/Physics/PhysicsScene.h"
@@ -38,6 +39,20 @@
 #include <ThirdParty/PhysX/vehicle/PxVehicleDriveNW.h>
 #include <ThirdParty/PhysX/vehicle/PxVehicleUtilSetup.h>
 #include <ThirdParty/PhysX/PxFiltering.h>
+#endif
+#if WITH_CLOTH
+#include "Engine/Physics/Actors/Cloth.h"
+#include "Engine/Threading/JobSystem.h"
+#include "Engine/Threading/Threading.h"
+#include <ThirdParty/NvCloth/Callbacks.h>
+#include <ThirdParty/NvCloth/Factory.h>
+#include <ThirdParty/NvCloth/Cloth.h>
+#include <ThirdParty/NvCloth/Fabric.h>
+#include <ThirdParty/NvCloth/Solver.h>
+#include <ThirdParty/NvCloth/NvClothExt/ClothFabricCooker.h>
+#define MAX_CLOTH_SPHERE_COUNT 32
+#define MAX_CLOTH_PLANE_COUNT 32
+#define CLOTH_COLLISIONS_UPDATE_RATE 10 // Frames between cloth collisions updates
 #endif
 #if WITH_PVD
 #include <ThirdParty/PhysX/pvd/PxPvd.h>
@@ -80,6 +95,15 @@ struct ScenePhysX
     PxBatchQueryExt* WheelRaycastBatchQuery = nullptr;
     int32 WheelRaycastBatchQuerySize = 0;
 #endif
+#if WITH_CLOTH
+    nv::cloth::Solver* ClothSolver = nullptr;
+    Array<nv::cloth::Cloth*> ClothsList;
+#endif
+
+#if WITH_CLOTH
+    void PreSimulateCloth(int32 i);
+    void SimulateCloth(int32 i);
+#endif
 };
 
 class AllocatorPhysX : public PxAllocatorCallback
@@ -103,6 +127,95 @@ class ErrorPhysX : public PxErrorCallback
         LOG(Error, "PhysX Error! Code: {0}.\n{1}\nSource: {2} : {3}.", static_cast<int32>(code), String(message), String(file), line);
     }
 };
+
+#if WITH_CLOTH
+
+class AssertPhysX : public nv::cloth::PxAssertHandler
+{
+public:
+    void operator()(const char* exp, const char* file, int line, bool& ignore) override
+    {
+        Platform::Error(String(exp));
+        Platform::Crash(line, file);
+    }
+};
+
+class ProfilerPhysX : public PxProfilerCallback
+{
+public:
+    void* zoneStart(const char* eventName, bool detached, uint64_t contextId) override
+    {
+        return nullptr;
+    }
+
+    void zoneEnd(void* profilerData, const char* eventName, bool detached, uint64_t contextId) override
+    {
+    }
+};
+
+struct FabricSettings
+{
+    int32 Refs;
+    nv::cloth::Vector<int32_t>::Type PhraseTypes;
+    PhysicsClothDesc Desc;
+    Array<byte> InvMasses;
+
+    bool MatchesDesc(const PhysicsClothDesc& r) const
+    {
+        if (Desc.VerticesData == r.VerticesData &&
+            Desc.VerticesStride == r.VerticesStride &&
+            Desc.VerticesCount == r.VerticesCount &&
+            Desc.IndicesData == r.IndicesData &&
+            Desc.IndicesStride == r.IndicesStride &&
+            Desc.IndicesCount == r.IndicesCount &&
+            Desc.InvMassesStride == r.InvMassesStride)
+        {
+            if (Desc.InvMassesData && r.InvMassesData)
+                return Platform::MemoryCompare(InvMasses.Get(), r.InvMassesData, r.VerticesCount * r.InvMassesStride) == 0;
+            return !Desc.InvMassesData && !r.InvMassesData;
+        }
+        return false;
+    }
+};
+
+struct ClothSettings
+{
+    bool Culled = false;
+    bool SceneCollisions = false;
+    bool CollisionsUpdateFramesRandomize = true;
+    byte CollisionsUpdateFramesLeft = 0;
+    float GravityScale = 1.0f;
+    float CollisionThickness = 0.0f;
+    Cloth* Actor;
+
+    bool UpdateBounds(const nv::cloth::Cloth* clothPhysX) const
+    {
+        // Get cloth particles bounds (in local-space)
+        const PxVec3& clothBoundsPos = clothPhysX->getBoundingBoxCenter();
+        const PxVec3& clothBoundsSize = clothPhysX->getBoundingBoxScale();
+        BoundingBox localBounds;
+        BoundingBox::FromPoints(P2C(clothBoundsPos - clothBoundsSize), P2C(clothBoundsPos + clothBoundsSize), localBounds);
+
+        // Automatic cloth reset when simulation fails (eg. ends with NaN)
+        if (localBounds.Minimum.IsNanOrInfinity() || localBounds.Maximum.IsNanOrInfinity())
+            return true;
+
+        // Transform local-space bounds into world-space
+        const PxTransform clothPose(clothPhysX->getTranslation(), clothPhysX->getRotation());
+        const Transform clothTrans(P2C(clothPose.p), P2C(clothPose.q));
+        Vector3 boundsCorners[8];
+        localBounds.GetCorners(boundsCorners);
+        for (Vector3& c : boundsCorners)
+            clothTrans.LocalToWorld(c, c);
+
+        // Setup bounds
+        BoundingBox::FromPoints(boundsCorners, 8, const_cast<BoundingBox&>(Actor->GetBox()));
+        BoundingSphere::FromBox(Actor->GetBox(), const_cast<BoundingSphere&>(Actor->GetSphere()));
+        return false;
+    }
+};
+
+#endif
 
 class QueryFilterPhysX : public PxQueryFilterCallback
 {
@@ -434,6 +547,10 @@ namespace
     PxMaterial* DefaultMaterial = nullptr;
     AllocatorPhysX AllocatorCallback;
     ErrorPhysX ErrorCallback;
+#if WITH_CLOTH
+    AssertPhysX AssertCallback;
+    ProfilerPhysX ProfilerCallback;
+#endif
     PxTolerancesScale ToleranceScale;
     QueryFilterPhysX QueryFilter;
     CharacterQueryFilterPhysX CharacterQueryFilter;
@@ -458,6 +575,23 @@ namespace
     Array<float> WheelTireTypes;
     WheelFilterPhysX WheelRaycastFilter;
 #endif
+
+#if WITH_CLOTH
+    CriticalSection ClothLocker;
+    nv::cloth::Factory* ClothFactory = nullptr;
+    Dictionary<nv::cloth::Fabric*, FabricSettings> Fabrics;
+    Dictionary<nv::cloth::Cloth*, ClothSettings> Cloths;
+#endif
+}
+
+FORCE_INLINE PxPlane transform(const PxPlane& plane, const PxMat33& inverse)
+{
+    PxPlane result;
+    result.n.x = plane.n.x * inverse.column0.x + plane.n.y * inverse.column0.y + plane.n.z * inverse.column0.z;
+    result.n.y = plane.n.x * inverse.column1.x + plane.n.y * inverse.column1.y + plane.n.z * inverse.column1.z;
+    result.n.z = plane.n.x * inverse.column2.x + plane.n.y * inverse.column2.y + plane.n.z * inverse.column2.z;
+    result.d = plane.d;
+    return result;
 }
 
 PxShapeFlags GetShapeFlags(bool isTrigger, bool isEnabled)
@@ -534,7 +668,6 @@ PxFilterFlags FilterShader(
     if (PxFilterObjectIsKinematic(attributes0) && PxFilterObjectIsKinematic(attributes1))
     {
         pairFlags |= PxPairFlag::eNOTIFY_TOUCH_FOUND;
-        pairFlags |= PxPairFlag::eNOTIFY_TOUCH_PERSISTS;
         pairFlags |= PxPairFlag::eNOTIFY_TOUCH_LOST;
         pairFlags |= PxPairFlag::eDETECT_DISCRETE_CONTACT;
         return PxFilterFlag::eSUPPRESS;
@@ -546,7 +679,7 @@ PxFilterFlags FilterShader(
         pairFlags |= PxPairFlag::eSOLVE_CONTACT;
         pairFlags |= PxPairFlag::eDETECT_DISCRETE_CONTACT;
         pairFlags |= PxPairFlag::eNOTIFY_TOUCH_FOUND;
-        pairFlags |= PxPairFlag::eNOTIFY_TOUCH_PERSISTS;
+        pairFlags |= PxPairFlag::eNOTIFY_TOUCH_LOST;
         pairFlags |= PxPairFlag::ePOST_SOLVER_VELOCITY;
         pairFlags |= PxPairFlag::eNOTIFY_CONTACT_POINTS;
         return PxFilterFlag::eDEFAULT;
@@ -567,6 +700,209 @@ void InitVehicleSDK()
         PxVehicleSetBasisVectors(PxVec3(0, 1, 0), PxVec3(0, 0, 1));
         PxVehicleSetUpdateMode(PxVehicleUpdateMode::eVELOCITY_CHANGE);
     }
+}
+
+#endif
+
+#if WITH_CLOTH
+
+void ScenePhysX::PreSimulateCloth(int32 i)
+{
+    PROFILE_CPU();
+    auto clothPhysX = ClothsList[i];
+    auto& clothSettings = Cloths[clothPhysX];
+
+    if (clothSettings.Actor->OnPreUpdate())
+    {
+        // Cull simulation based on distance
+        if (!clothSettings.Culled)
+        {
+            clothSettings.Culled = true;
+            ClothLocker.Lock();
+            ClothSolver->removeCloth(clothPhysX);
+            ClothLocker.Unlock();
+        }
+        return;
+    }
+    if (clothSettings.Culled)
+    {
+        clothSettings.Culled = false;
+        ClothLocker.Lock();
+        ClothSolver->addCloth(clothPhysX);
+        ClothLocker.Unlock();
+    }
+
+    // Setup automatic scene collisions with colliders around the cloth
+    if (clothSettings.SceneCollisions && clothSettings.CollisionsUpdateFramesLeft == 0)
+    {
+        PROFILE_CPU_NAMED("Collisions");
+        clothSettings.CollisionsUpdateFramesLeft = CLOTH_COLLISIONS_UPDATE_RATE;
+        if (clothSettings.CollisionsUpdateFramesRandomize)
+        {
+            clothSettings.CollisionsUpdateFramesRandomize = false;
+            clothSettings.CollisionsUpdateFramesLeft = i % CLOTH_COLLISIONS_UPDATE_RATE;
+        }
+
+        // Reset existing colliders
+        clothPhysX->setSpheres(nv::cloth::Range<const PxVec4>(), 0, clothPhysX->getNumSpheres());
+        clothPhysX->setPlanes(nv::cloth::Range<const PxVec4>(), 0, clothPhysX->getNumPlanes());
+        clothPhysX->setTriangles(nv::cloth::Range<const PxVec3>(), 0, clothPhysX->getNumTriangles());
+
+        // Setup environment query
+        const bool hitTriggers = false;
+        const bool blockSingle = false;
+        PxQueryFilterData filterData;
+        filterData.flags |= PxQueryFlag::ePREFILTER;
+        filterData.data.word1 = blockSingle ? 1 : 0;
+        filterData.data.word2 = hitTriggers ? 1 : 0;
+        filterData.data.word0 = Physics::LayerMasks[clothSettings.Actor->GetLayer()];
+        const PxTransform clothPose(clothPhysX->getTranslation(), clothPhysX->getRotation());
+        const PxVec3 clothBoundsPos = clothPhysX->getBoundingBoxCenter();
+        const PxVec3 clothBoundsSize = clothPhysX->getBoundingBoxScale();
+        const PxTransform overlapPose(clothPose.transform(clothBoundsPos), clothPose.q);
+        const float boundsMargin = 1.6f; // Pick nearby objects
+        const PxSphereGeometry overlapGeo(clothBoundsSize.magnitude() * boundsMargin);
+
+        // Find any colliders around the cloth
+        DynamicHitBuffer<PxOverlapHit> buffer;
+        if (Scene->overlap(overlapGeo, overlapPose, buffer, filterData, &QueryFilter))
+        {
+            const float collisionThickness = clothSettings.CollisionThickness;
+            for (uint32 j = 0; j < buffer.getNbTouches(); j++)
+            {
+                const auto& hit = buffer.getTouch(j);
+                if (hit.shape)
+                {
+                    const PxGeometry& geo = hit.shape->getGeometry();
+                    const PxTransform shapeToCloth = clothPose.transformInv(hit.actor->getGlobalPose().transform(hit.shape->getLocalPose()));
+                    // TODO: maybe use shared spheres/planes buffers for batched assigning?
+                    switch (geo.getType())
+                    {
+                    case PxGeometryType::eSPHERE:
+                    {
+                        const PxSphereGeometry& geoSphere = (const PxSphereGeometry&)geo;
+                        const PxVec4 packedSphere(shapeToCloth.p, geoSphere.radius + collisionThickness);
+                        const nv::cloth::Range<const PxVec4> sphereRange(&packedSphere, &packedSphere + 1);
+                        const uint32_t spheresCount = clothPhysX->getNumSpheres();
+                        if (spheresCount + 1 > MAX_CLOTH_SPHERE_COUNT)
+                            break;
+                        clothPhysX->setSpheres(sphereRange, spheresCount, spheresCount);
+                        break;
+                    }
+                    case PxGeometryType::eCAPSULE:
+                    {
+                        const PxCapsuleGeometry& geomCapsule = (const PxCapsuleGeometry&)geo;
+                        const PxVec4 packedSpheres[2] = {
+                            PxVec4(shapeToCloth.transform(PxVec3(+geomCapsule.halfHeight, 0, 0)), geomCapsule.radius + collisionThickness),
+                            PxVec4(shapeToCloth.transform(PxVec3(-geomCapsule.halfHeight, 0, 0)), geomCapsule.radius + collisionThickness)
+                        };
+                        const nv::cloth::Range<const PxVec4> sphereRange(packedSpheres, packedSpheres + 2);
+                        const uint32_t spheresCount = clothPhysX->getNumSpheres();
+                        if (spheresCount + 2 > MAX_CLOTH_SPHERE_COUNT)
+                            break;
+                        clothPhysX->setSpheres(sphereRange, spheresCount, spheresCount);
+                        const uint32_t packedCapsules[2] = { spheresCount, spheresCount + 1 };
+                        const int32 capsulesCount = clothPhysX->getNumCapsules();
+                        clothPhysX->setCapsules(nv::cloth::Range<const uint32_t>(packedCapsules, packedCapsules + 2), capsulesCount, capsulesCount);
+                        break;
+                    }
+                    case PxGeometryType::eBOX:
+                    {
+                        const PxBoxGeometry& geomBox = (const PxBoxGeometry&)geo;
+                        const uint32_t planesCount = clothPhysX->getNumPlanes();
+                        if (planesCount + 6 > MAX_CLOTH_PLANE_COUNT)
+                            break;
+                        const PxPlane packedPlanes[6] = {
+                            PxPlane(PxVec3(1, 0, 0), -geomBox.halfExtents.x - collisionThickness).transform(shapeToCloth),
+                            PxPlane(PxVec3(-1, 0, 0), -geomBox.halfExtents.x - collisionThickness).transform(shapeToCloth),
+                            PxPlane(PxVec3(0, 1, 0), -geomBox.halfExtents.y - collisionThickness).transform(shapeToCloth),
+                            PxPlane(PxVec3(0, -1, 0), -geomBox.halfExtents.y - collisionThickness).transform(shapeToCloth),
+                            PxPlane(PxVec3(0, 0, 1), -geomBox.halfExtents.z - collisionThickness).transform(shapeToCloth),
+                            PxPlane(PxVec3(0, 0, -1), -geomBox.halfExtents.z - collisionThickness).transform(shapeToCloth)
+                        };
+                        clothPhysX->setPlanes(nv::cloth::Range<const PxVec4>((const PxVec4*)packedPlanes, (const PxVec4*)packedPlanes + 6), planesCount, planesCount);
+                        const PxU32 convexMask = PxU32(0x3f << planesCount);
+                        const uint32_t convexesCount = clothPhysX->getNumConvexes();
+                        clothPhysX->setConvexes(nv::cloth::Range<const PxU32>(&convexMask, &convexMask + 1), convexesCount, convexesCount);
+                        break;
+                    }
+                    case PxGeometryType::eCONVEXMESH:
+                    {
+                        const PxConvexMeshGeometry& geomConvexMesh = (const PxConvexMeshGeometry&)geo;
+                        const PxU32 convexPlanesCount = geomConvexMesh.convexMesh->getNbPolygons();
+                        const uint32_t planesCount = clothPhysX->getNumPlanes();
+                        if (planesCount + convexPlanesCount > MAX_CLOTH_PLANE_COUNT)
+                            break;
+                        const PxMat33 convexToShapeInv = geomConvexMesh.scale.toMat33().getInverse();
+                        // TODO: merge convexToShapeInv with shapeToCloth to have a single matrix multiplication
+                        PxPlane planes[MAX_CLOTH_PLANE_COUNT];
+                        for (PxU32 k = 0; k < convexPlanesCount; k++)
+                        {
+                            PxHullPolygon polygon;
+                            geomConvexMesh.convexMesh->getPolygonData(k, polygon);
+                            polygon.mPlane[3] -= collisionThickness;
+                            planes[k] = transform(reinterpret_cast<const PxPlane&>(polygon.mPlane), convexToShapeInv).transform(shapeToCloth);
+                        }
+                        clothPhysX->setPlanes(nv::cloth::Range<const PxVec4>((const PxVec4*)planes, (const PxVec4*)planes + convexPlanesCount), planesCount, planesCount);
+                        const PxU32 convexMask = PxU32(((1 << convexPlanesCount) - 1) << planesCount);
+                        const uint32_t convexesCount = clothPhysX->getNumConvexes();
+                        clothPhysX->setConvexes(nv::cloth::Range<const PxU32>(&convexMask, &convexMask + 1), convexesCount, convexesCount);
+                        break;
+                    }
+                    // Cloth vs Triangle collisions are too slow for real-time use
+#if 0
+                    case PxGeometryType::eTRIANGLEMESH:
+                    {
+                        const PxTriangleMeshGeometry& geomTriangleMesh = (const PxTriangleMeshGeometry&)geo;
+                        if (geomTriangleMesh.triangleMesh->getNbTriangles() >= 1024)
+                            break; // Ignore too-tessellated meshes due to poor solver performance
+                        // TODO: use shared memory allocators maybe? maybe per-frame stack allocator?
+                        Array<PxVec3> vertices;
+                        vertices.Add(geomTriangleMesh.triangleMesh->getVertices(), geomTriangleMesh.triangleMesh->getNbVertices());
+                        const PxMat33 triangleMeshToShape = geomTriangleMesh.scale.toMat33();
+                        // TODO: merge triangleMeshToShape with shapeToCloth to have a single matrix multiplication
+                        for (int32 k = 0; k < vertices.Count(); k++)
+                        {
+                            PxVec3& v = vertices.Get()[k];
+                            v = shapeToCloth.transform(triangleMeshToShape.transform(v));
+                        }
+                        Array<PxVec3> triangles;
+                        triangles.Resize(geomTriangleMesh.triangleMesh->getNbTriangles() * 3);
+                        if (geomTriangleMesh.triangleMesh->getTriangleMeshFlags() & PxTriangleMeshFlag::e16_BIT_INDICES)
+                        {
+                            auto indices = (const uint16*)geomTriangleMesh.triangleMesh->getTriangles();
+                            for (int32 k = 0; k < triangles.Count(); k++)
+                                triangles.Get()[k] = vertices.Get()[indices[k]];
+                        }
+                        else
+                        {
+                            auto indices = (const uint32*)geomTriangleMesh.triangleMesh->getTriangles();
+                            for (int32 k = 0; k < triangles.Count(); k++)
+                                triangles.Get()[k] = vertices.Get()[indices[k]];
+                        }
+                        const uint32_t trianglesCount = clothPhysX->getNumTriangles();
+	                    clothPhysX->setTriangles(nv::cloth::Range<const PxVec3>(triangles.begin(), triangles.end()), trianglesCount, trianglesCount);
+                        break;
+                    }
+                    case PxGeometryType::eHEIGHTFIELD:
+                    {
+                        const PxHeightFieldGeometry& geomHeightField = (const PxHeightFieldGeometry&)geo;
+                        // TODO: heightfield collisions (gather triangles only nearby cloth to not blow sim perf)
+                        break;
+                    }
+#endif
+                    }
+                }
+            }
+        }
+    }
+    clothSettings.CollisionsUpdateFramesLeft--;
+}
+
+void ScenePhysX::SimulateCloth(int32 i)
+{
+    PROFILE_CPU();
+    ClothSolver->simulateChunk(i);
 }
 
 #endif
@@ -833,6 +1169,13 @@ void PhysicsBackend::Shutdown()
     RELEASE_PHYSX(DefaultMaterial);
 
     // Shutdown PhysX
+#if WITH_CLOTH
+    if (ClothFactory)
+    {
+        NvClothDestroyFactory(ClothFactory);
+        ClothFactory = nullptr;
+    }
+#endif
 #if WITH_VEHICLE
     if (VehicleSDKInitialized)
     {
@@ -961,6 +1304,13 @@ void PhysicsBackend::DestroyScene(void* scene)
 #if WITH_VEHICLE
     RELEASE_PHYSX(scenePhysX->WheelRaycastBatchQuery);
     scenePhysX->WheelRaycastBatchQuerySize = 0;
+#endif
+#if WITH_CLOTH
+    if (scenePhysX->ClothSolver)
+    {
+        NV_CLOTH_DELETE(scenePhysX->ClothSolver);
+        scenePhysX->ClothSolver = nullptr;
+    }
 #endif
     RELEASE_PHYSX(scenePhysX->ControllerManager);
     SAFE_DELETE(scenePhysX->CpuDispatcher);
@@ -1329,6 +1679,57 @@ void PhysicsBackend::EndSimulateScene(void* scene)
         }
     }
 
+#if WITH_CLOTH
+    nv::cloth::Solver* clothSolver = scenePhysX->ClothSolver;
+    if (clothSolver && scenePhysX->ClothsList.Count() != 0)
+    {
+        PROFILE_CPU_NAMED("Physics.Cloth");
+
+        {
+            PROFILE_CPU_NAMED("Pre");
+            Function<void(int32)> job;
+            job.Bind<ScenePhysX, &ScenePhysX::PreSimulateCloth>(scenePhysX);
+            JobSystem::Execute(job, scenePhysX->ClothsList.Count());
+        }
+
+        {
+            PROFILE_CPU_NAMED("Simulation");
+            if (clothSolver->beginSimulation(scenePhysX->LastDeltaTime))
+            {
+                Function<void(int32)> job;
+                job.Bind<ScenePhysX, &ScenePhysX::SimulateCloth>(scenePhysX);
+                JobSystem::Execute(job, clothSolver->getSimulationChunkCount());
+                clothSolver->endSimulation();
+            }
+        }
+
+        {
+            PROFILE_CPU_NAMED("Post");
+            ScopeLock lock(ClothLocker);
+            Array<Cloth*> brokenCloths;
+            for (auto clothPhysX : scenePhysX->ClothsList)
+            {
+                const auto& clothSettings = Cloths[clothPhysX];
+                if (clothSettings.Culled)
+                    continue;
+                if (clothSettings.UpdateBounds(clothPhysX))
+                    brokenCloths.Add(clothSettings.Actor);
+                clothSettings.Actor->OnPostUpdate();
+            }
+            for (auto cloth : brokenCloths)
+            {
+                // Rebuild cloth object but keep fabric ref to prevent fabric recook
+                auto fabric = &((nv::cloth::Cloth*)cloth->_cloth)->getFabric();
+                Fabrics[fabric].Refs++;
+                fabric->incRefCount();
+                cloth->Rebuild();
+                fabric->decRefCount();
+                if (--Fabrics[fabric].Refs == 0)
+                    Fabrics.Remove(fabric);
+            }
+        }
+    }
+
     {
         PROFILE_CPU_NAMED("Physics.SendEvents");
 
@@ -1337,6 +1738,7 @@ void PhysicsBackend::EndSimulateScene(void* scene)
         scenePhysX->EventsCallback.SendCollisionEvents();
         scenePhysX->EventsCallback.SendJointEvents();
     }
+#endif
 }
 
 Vector3 PhysicsBackend::GetSceneGravity(void* scene)
@@ -1349,6 +1751,19 @@ void PhysicsBackend::SetSceneGravity(void* scene, const Vector3& value)
 {
     auto scenePhysX = (ScenePhysX*)scene;
     scenePhysX->Scene->setGravity(C2P(value));
+#if WITH_CLOTH
+    if (scenePhysX->ClothSolver)
+    {
+        const int32 clothsCount = scenePhysX->ClothSolver->getNumCloths();
+        nv::cloth::Cloth* const* cloths = scenePhysX->ClothSolver->getClothList();
+        for (int32 i = 0; i < clothsCount; i++)
+        {
+            auto clothPhysX = (nv::cloth::Cloth*)cloths[i];
+            const auto& clothSettings = Cloths[clothPhysX];
+            clothPhysX->setGravity(C2P(value * clothSettings.GravityScale));
+        }
+    }
+#endif
 }
 
 bool PhysicsBackend::GetSceneEnableCCD(void* scene)
@@ -1382,6 +1797,7 @@ void PhysicsBackend::SetSceneOrigin(void* scene, const Vector3& oldOrigin, const
     scenePhysX->Origin = newOrigin;
     scenePhysX->Scene->shiftOrigin(shift);
     scenePhysX->ControllerManager->shiftOrigin(shift);
+#if WITH_VEHICLE
     WheelVehiclesCache.Clear();
     for (auto wheelVehicle : scenePhysX->WheelVehicles)
     {
@@ -1392,6 +1808,18 @@ void PhysicsBackend::SetSceneOrigin(void* scene, const Vector3& oldOrigin, const
         WheelVehiclesCache.Add(drive);
     }
     PxVehicleShiftOrigin(shift, WheelVehiclesCache.Count(), WheelVehiclesCache.Get());
+#endif
+#if WITH_CLOTH
+    if (scenePhysX->ClothSolver)
+    {
+        const int32 clothsCount = scenePhysX->ClothSolver->getNumCloths();
+        nv::cloth::Cloth* const* cloths = scenePhysX->ClothSolver->getClothList();
+        for (int32 i = 0; i < clothsCount; i++)
+        {
+            cloths[i]->teleport(shift);
+        }
+    }
+#endif
     SceneOrigins[scenePhysX->Scene] = newOrigin;
 }
 
@@ -3168,6 +3596,363 @@ void PhysicsBackend::RemoveVehicle(void* scene, WheeledVehicle* actor)
 {
     auto scenePhysX = (ScenePhysX*)scene;
     scenePhysX->WheelVehicles.Remove(actor);
+}
+
+#endif
+
+#if WITH_CLOTH
+
+void* PhysicsBackend::CreateCloth(const PhysicsClothDesc& desc)
+{
+    PROFILE_CPU();
+#if USE_CLOTH_SANITY_CHECKS
+    {
+        // Sanity check
+        bool allValid = true;
+        for (uint32 i = 0; i < desc.VerticesCount; i++)
+            allValid &= !(*(Float3*)((byte*)desc.VerticesData + i * desc.VerticesStride)).IsNanOrInfinity();
+        if (desc.InvMassesData)
+        {
+            for (uint32 i = 0; i < desc.VerticesCount; i++)
+            {
+                const float v = *(float*)((byte*)desc.InvMassesData + i * desc.InvMassesStride);
+                allValid &= !isnan(v) && !isinf(v);
+            }
+        }
+        if (desc.MaxDistancesData)
+        {
+            for (uint32 i = 0; i < desc.VerticesCount; i++)
+            {
+                const float v = *(float*)((byte*)desc.MaxDistancesData + i * desc.MaxDistancesStride);
+                allValid &= !isnan(v) && !isinf(v);
+            }
+        }
+        ASSERT(allValid);
+    }
+#endif
+
+    // Lazy-init NvCloth
+    ScopeLock lock(ClothLocker);
+    if (ClothFactory == nullptr)
+    {
+        nv::cloth::InitializeNvCloth(&AllocatorCallback, &ErrorCallback, &AssertCallback, &ProfilerCallback);
+        ClothFactory = NvClothCreateFactoryCPU();
+        ASSERT(ClothFactory);
+    }
+
+    // Cook fabric from the mesh data
+    nv::cloth::Fabric* fabric = nullptr;
+    {
+        for (auto& e : Fabrics)
+        {
+            if (e.Value.MatchesDesc(desc))
+            {
+                fabric = e.Key;
+                break;
+            }
+        }
+        if (fabric)
+        {
+            Fabrics[fabric].Refs++;
+            fabric->incRefCount();
+        }
+        else
+        {
+            PROFILE_CPU_NAMED("CookFabric");
+            nv::cloth::ClothMeshDesc meshDesc;
+            meshDesc.points.data = desc.VerticesData;
+            meshDesc.points.stride = desc.VerticesStride;
+            meshDesc.points.count = desc.VerticesCount;
+            meshDesc.invMasses.data = desc.InvMassesData;
+            meshDesc.invMasses.stride = desc.InvMassesStride;
+            meshDesc.invMasses.count = desc.InvMassesData ? desc.VerticesCount : 0;
+            meshDesc.triangles.data = desc.IndicesData;
+            meshDesc.triangles.stride = desc.IndicesStride * 3;
+            meshDesc.triangles.count = desc.IndicesCount / 3;
+            if (desc.IndicesStride == sizeof(uint16))
+                meshDesc.flags |= nv::cloth::MeshFlag::e16_BIT_INDICES;
+            const Float3 gravity(PhysicsSettings::Get()->DefaultGravity);
+            nv::cloth::Vector<int32_t>::Type phaseTypeInfo;
+            fabric = NvClothCookFabricFromMesh(ClothFactory, meshDesc, gravity.Raw, &phaseTypeInfo);
+            if (!fabric)
+            {
+                LOG(Error, "NvClothCookFabricFromMesh failed");
+                return nullptr;
+            }
+            FabricSettings fabricSettings;
+            fabricSettings.Refs = 1;
+            fabricSettings.PhraseTypes.swap(phaseTypeInfo);
+            fabricSettings.Desc = desc;
+            if (desc.InvMassesData)
+                fabricSettings.InvMasses.Set((byte*)desc.InvMassesData, desc.VerticesCount * desc.InvMassesStride);
+            Fabrics.Add(fabric, MoveTemp(fabricSettings));
+        }
+    }
+
+    // Create cloth object
+    static_assert(sizeof(Float4) == sizeof(PxVec4), "Size mismatch");
+    Array<Float4> initialState;
+    initialState.Resize((int32)desc.VerticesCount);
+    if (desc.InvMassesData)
+    {
+        for (uint32 i = 0; i < desc.VerticesCount; i++)
+            initialState.Get()[i] = Float4(*(Float3*)((byte*)desc.VerticesData + i * desc.VerticesStride), *(float*)((byte*)desc.InvMassesData + i * desc.InvMassesStride));
+    }
+    else
+    {
+        for (uint32 i = 0; i < desc.VerticesCount; i++)
+            initialState.Get()[i] = Float4(*(Float3*)((byte*)desc.VerticesData + i * desc.VerticesStride), 1.0f);
+    }
+    const nv::cloth::Range<PxVec4> initialParticlesRange((PxVec4*)initialState.Get(), (PxVec4*)initialState.Get() + initialState.Count());
+    nv::cloth::Cloth* clothPhysX = ClothFactory->createCloth(initialParticlesRange, *fabric);
+    fabric->decRefCount();
+    if (!clothPhysX)
+    {
+        LOG(Error, "createCloth failed");
+        return nullptr;
+    }
+    if (desc.MaxDistancesData)
+    {
+        nv::cloth::Range<PxVec4> motionConstraints = clothPhysX->getMotionConstraints();
+        ASSERT(motionConstraints.size() == desc.VerticesCount);
+        for (uint32 i = 0; i < desc.VerticesCount; i++)
+            motionConstraints.begin()[i] = PxVec4(*(PxVec3*)((byte*)desc.VerticesData + i * desc.VerticesStride), *(float*)((byte*)desc.MaxDistancesData + i * desc.MaxDistancesStride));
+    }
+    clothPhysX->setUserData(desc.Actor);
+
+    // Setup settings
+    ClothSettings clothSettings;
+    clothSettings.Actor = desc.Actor;
+    clothSettings.UpdateBounds(clothPhysX);
+    Cloths.Add(clothPhysX, clothSettings);
+
+    return clothPhysX;
+}
+
+void PhysicsBackend::DestroyCloth(void* cloth)
+{
+    ScopeLock lock(ClothLocker);
+    auto clothPhysX = (nv::cloth::Cloth*)cloth;
+    if (--Fabrics[&clothPhysX->getFabric()].Refs == 0)
+        Fabrics.Remove(&clothPhysX->getFabric());
+    Cloths.Remove(clothPhysX);
+    NV_CLOTH_DELETE(clothPhysX);
+}
+
+void PhysicsBackend::SetClothForceSettings(void* cloth, const void* settingsPtr)
+{
+    auto clothPhysX = (nv::cloth::Cloth*)cloth;
+    const auto& settings = *(const Cloth::ForceSettings*)settingsPtr;
+    clothPhysX->setGravity(C2P(PhysicsSettings::Get()->DefaultGravity * settings.GravityScale));
+    clothPhysX->setDamping(PxVec3(settings.Damping));
+    clothPhysX->setLinearDrag(PxVec3(settings.LinearDrag));
+    clothPhysX->setAngularDrag(PxVec3(settings.AngularDrag));
+    clothPhysX->setLinearInertia(PxVec3(settings.LinearInertia));
+    clothPhysX->setAngularInertia(PxVec3(settings.AngularInertia));
+    clothPhysX->setCentrifugalInertia(PxVec3(settings.CentrifugalInertia));
+    clothPhysX->setDragCoefficient(Math::Saturate(settings.AirDragCoefficient) * 0.01f);
+    clothPhysX->setLiftCoefficient(Math::Saturate(settings.AirLiftCoefficient) * 0.01f);
+    clothPhysX->setFluidDensity(Math::Max(settings.AirDensity, ZeroTolerance));
+    auto& clothSettings = Cloths[clothPhysX];
+    clothSettings.GravityScale = settings.GravityScale;
+}
+
+void PhysicsBackend::SetClothCollisionSettings(void* cloth, const void* settingsPtr)
+{
+    auto clothPhysX = (nv::cloth::Cloth*)cloth;
+    const auto& settings = *(const Cloth::CollisionSettings*)settingsPtr;
+    clothPhysX->setFriction(settings.Friction);
+    clothPhysX->setCollisionMassScale(settings.MassScale);
+    clothPhysX->enableContinuousCollision(settings.ContinuousCollisionDetection);
+    clothPhysX->setSelfCollisionDistance(settings.SelfCollisionDistance);
+    clothPhysX->setSelfCollisionStiffness(settings.SelfCollisionStiffness);
+    auto& clothSettings = Cloths[clothPhysX];
+    if (clothSettings.SceneCollisions != settings.SceneCollisions && !settings.SceneCollisions)
+    {
+        // Remove colliders
+        clothPhysX->setSpheres(nv::cloth::Range<const PxVec4>(), 0, clothPhysX->getNumSpheres());
+        clothPhysX->setPlanes(nv::cloth::Range<const PxVec4>(), 0, clothPhysX->getNumPlanes());
+        clothPhysX->setTriangles(nv::cloth::Range<const PxVec3>(), 0, clothPhysX->getNumTriangles());
+    }
+    clothSettings.CollisionsUpdateFramesLeft = 0;
+    clothSettings.SceneCollisions = settings.SceneCollisions;
+    clothSettings.CollisionThickness = settings.CollisionThickness;
+}
+
+void PhysicsBackend::SetClothSimulationSettings(void* cloth, const void* settingsPtr)
+{
+    auto clothPhysX = (nv::cloth::Cloth*)cloth;
+    const auto& settings = *(const Cloth::SimulationSettings*)settingsPtr;
+    clothPhysX->setSolverFrequency(settings.SolverFrequency);
+    clothPhysX->setMotionConstraintScaleBias(settings.MaxParticleDistance, 0.0f);
+    clothPhysX->setWindVelocity(C2P(settings.WindVelocity));
+}
+
+void PhysicsBackend::SetClothFabricSettings(void* cloth, const void* settingsPtr)
+{
+    auto clothPhysX = (nv::cloth::Cloth*)cloth;
+    const auto& settings = *(const Cloth::FabricSettings*)settingsPtr;
+    const auto& fabricSettings = Fabrics[&clothPhysX->getFabric()];
+    Array<nv::cloth::PhaseConfig> configs;
+    configs.Resize(fabricSettings.PhraseTypes.size());
+    for (int32 i = 0; i < configs.Count(); i++)
+    {
+        auto& config = configs[i];
+        config.mPhaseIndex = i;
+        const Cloth::FabricAxisSettings* axisSettings;
+        switch (fabricSettings.PhraseTypes[i])
+        {
+        case nv::cloth::ClothFabricPhaseType::eVERTICAL:
+            axisSettings = &settings.Vertical;
+            break;
+        case nv::cloth::ClothFabricPhaseType::eHORIZONTAL:
+            axisSettings = &settings.Horizontal;
+            break;
+        case nv::cloth::ClothFabricPhaseType::eBENDING:
+            axisSettings = &settings.Bending;
+            break;
+        case nv::cloth::ClothFabricPhaseType::eSHEARING:
+            axisSettings = &settings.Shearing;
+            break;
+        }
+        config.mStiffness = axisSettings->Stiffness;
+        config.mStiffnessMultiplier = axisSettings->StiffnessMultiplier;
+        config.mCompressionLimit = axisSettings->CompressionLimit;
+        config.mStretchLimit = axisSettings->StretchLimit;
+    }
+    clothPhysX->setPhaseConfig(nv::cloth::Range<const nv::cloth::PhaseConfig>(configs.begin(), configs.end()));
+}
+
+void PhysicsBackend::SetClothTransform(void* cloth, const Transform& transform, bool teleport)
+{
+    auto clothPhysX = (nv::cloth::Cloth*)cloth;
+    if (teleport)
+    {
+        clothPhysX->teleportToLocation(C2P(transform.Translation), C2P(transform.Orientation));
+    }
+    else
+    {
+        clothPhysX->setTranslation(C2P(transform.Translation));
+        clothPhysX->setRotation(C2P(transform.Orientation));
+    }
+    auto& clothSettings = Cloths[clothPhysX];
+    clothSettings.CollisionsUpdateFramesLeft = 0;
+    clothSettings.UpdateBounds(clothPhysX);
+}
+
+void PhysicsBackend::ClearClothInertia(void* cloth)
+{
+    auto clothPhysX = (nv::cloth::Cloth*)cloth;
+    clothPhysX->clearInertia();
+}
+
+void PhysicsBackend::LockClothParticles(void* cloth)
+{
+    auto clothPhysX = (nv::cloth::Cloth*)cloth;
+    clothPhysX->lockParticles();
+}
+
+void PhysicsBackend::UnlockClothParticles(void* cloth)
+{
+    auto clothPhysX = (nv::cloth::Cloth*)cloth;
+    clothPhysX->unlockParticles();
+}
+
+Span<const Float4> PhysicsBackend::GetClothParticles(void* cloth)
+{
+    auto clothPhysX = (const nv::cloth::Cloth*)cloth;
+    const nv::cloth::MappedRange<const PxVec4> range = clothPhysX->getCurrentParticles();
+    return Span<const Float4>((const Float4*)range.begin(), (int32)range.size());
+}
+
+void PhysicsBackend::SetClothParticles(void* cloth, Span<const Float4> value, Span<const Float3> positions, Span<const float> invMasses)
+{
+    PROFILE_CPU();
+    auto clothPhysX = (nv::cloth::Cloth*)cloth;
+    nv::cloth::MappedRange<PxVec4> range = clothPhysX->getCurrentParticles();
+    const uint32_t size = range.size();
+    PxVec4* dst = range.begin();
+    if (value.IsValid())
+    {
+        // Set XYZW
+        CHECK((uint32_t)value.Length() >= size);
+        const Float4* src = value.Get();
+        Platform::MemoryCopy(dst, src, size * sizeof(Float4));
+
+        // Apply previous particles too for immovable particles
+        nv::cloth::MappedRange<PxVec4> range2 = clothPhysX->getPreviousParticles();
+        for (uint32 i = 0; i < size; i++)
+        {
+            if (src[i].W <= ZeroTolerance)
+                range2.begin()[i] = (PxVec4&)src[i];
+        }
+    }
+    if (positions.IsValid())
+    {
+        // Set XYZ
+        CHECK((uint32_t)positions.Length() >= size);
+        const Float3* src = positions.Get();
+        for (uint32 i = 0; i < size; i++)
+            dst[i] = PxVec4(C2P(src[i]), dst[i].w);
+    }
+    if (invMasses.IsValid())
+    {
+        // Set W
+        CHECK((uint32_t)invMasses.Length() >= size);
+        const float* src = invMasses.Get();
+        for (uint32 i = 0; i < size; i++)
+            dst[i].w = src[i];
+
+        // Apply previous particles too
+        nv::cloth::MappedRange<PxVec4> range2 = clothPhysX->getPreviousParticles();
+        for (uint32 i = 0; i < size; i++)
+            range2.begin()[i].w = src[i];
+    }
+}
+
+void PhysicsBackend::SetClothPaint(void* cloth, Span<const float> value)
+{
+    PROFILE_CPU();
+    auto clothPhysX = (nv::cloth::Cloth*)cloth;
+    if (value.IsValid())
+    {
+        const nv::cloth::MappedRange<const PxVec4> range = ((const nv::cloth::Cloth*)clothPhysX)->getCurrentParticles();
+        nv::cloth::Range<PxVec4> motionConstraints = clothPhysX->getMotionConstraints();
+        ASSERT(motionConstraints.size() <= (uint32)value.Length());
+        for (int32 i = 0; i < value.Length(); i++)
+            motionConstraints.begin()[i] = PxVec4(range[i].getXYZ(), value[i]);
+    }
+    else
+    {
+        clothPhysX->clearMotionConstraints();
+    }
+}
+
+void PhysicsBackend::AddCloth(void* scene, void* cloth)
+{
+    ScopeLock lock(ClothLocker);
+    auto scenePhysX = (ScenePhysX*)scene;
+    auto clothPhysX = (nv::cloth::Cloth*)cloth;
+    if (scenePhysX->ClothSolver == nullptr)
+    {
+        scenePhysX->ClothSolver = ClothFactory->createSolver();
+        ASSERT(scenePhysX->ClothSolver);
+    }
+    scenePhysX->ClothSolver->addCloth(clothPhysX);
+    scenePhysX->ClothsList.Add(clothPhysX);
+}
+
+void PhysicsBackend::RemoveCloth(void* scene, void* cloth)
+{
+    ScopeLock lock(ClothLocker);
+    auto scenePhysX = (ScenePhysX*)scene;
+    auto clothPhysX = (nv::cloth::Cloth*)cloth;
+    auto& clothSettings = Cloths[clothPhysX];
+    if (clothSettings.Culled)
+        clothSettings.Culled = false;
+    else
+        scenePhysX->ClothSolver->removeCloth(clothPhysX);
+    scenePhysX->ClothsList.Remove(clothPhysX);
 }
 
 #endif

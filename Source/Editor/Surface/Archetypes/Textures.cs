@@ -38,9 +38,9 @@ namespace FlaxEditor.Surface.Archetypes
                 UpdateUI();
             }
 
-            public override void OnLoaded()
+            public override void OnLoaded(SurfaceNodeActions action)
             {
-                base.OnLoaded();
+                base.OnLoaded(action);
 
                 UpdateUI();
             }

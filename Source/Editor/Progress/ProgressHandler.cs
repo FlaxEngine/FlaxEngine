@@ -16,7 +16,7 @@ namespace FlaxEditor.Progress
         /// </summary>
         /// <param name="handler">The calling handler.</param>
         public delegate void ProgressDelegate(ProgressHandler handler);
-        
+
         /// <summary>
         /// Progress failed handler event delegate
         /// </summary>
@@ -127,7 +127,7 @@ namespace FlaxEditor.Progress
         {
             if (!_isActive)
                 throw new InvalidOperationException("Already ended.");
-            
+
             _isActive = false;
             _progress = 0;
             _infoText = string.Empty;

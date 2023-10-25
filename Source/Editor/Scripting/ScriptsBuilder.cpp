@@ -170,7 +170,7 @@ bool ScriptsBuilder::IsSourceWorkspaceDirty()
 bool ScriptsBuilder::IsSourceDirtyFor(const TimeSpan& timeout)
 {
     ScopeLock scopeLock(_locker);
-    return _lastSourceCodeEdited > (_lastCompileAction + timeout);
+    return _lastSourceCodeEdited > _lastCompileAction && DateTime::Now() > _lastSourceCodeEdited + timeout;
 }
 
 bool ScriptsBuilder::IsCompiling()
@@ -266,7 +266,7 @@ bool ScriptsBuilder::RunBuildTool(const StringView& args, const StringView& work
 
 bool ScriptsBuilder::GenerateProject(const StringView& customArgs)
 {
-    String args(TEXT("-log -genproject "));
+    String args(TEXT("-log -mutex -genproject "));
     args += customArgs;
     _wasProjectStructureChanged = false;
     return RunBuildTool(args);
@@ -669,7 +669,7 @@ void ScriptsBuilderService::Update()
     }
 
     // Check if compile code (if has been edited)
-    const TimeSpan timeToCallCompileIfDirty = TimeSpan::FromMilliseconds(50);
+    const TimeSpan timeToCallCompileIfDirty = TimeSpan::FromMilliseconds(150);
     auto mainWindow = Engine::MainWindow;
     if (ScriptsBuilder::IsSourceDirtyFor(timeToCallCompileIfDirty) && mainWindow && mainWindow->IsFocused())
     {

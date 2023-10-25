@@ -116,7 +116,7 @@ namespace FlaxEditor.Windows.Assets
                 _window = window;
 
                 // Try to restore target asset AudioClip import options (useful for fast reimport)
-                AudioImportSettings.TryRestore(ref ImportSettings, window.Item.Path);
+                Editor.TryRestoreImportOptions(ref ImportSettings.Settings, window.Item.Path);
 
                 // Prepare restore data
                 PeekState();
@@ -134,6 +134,11 @@ namespace FlaxEditor.Windows.Assets
             /// </summary>
             public void Reimport()
             {
+                if (_window?._previewSource != null)
+                {
+                    _window._previewSource.Stop();
+                    _window.UpdateToolstrip();
+                }
                 Editor.Instance.ContentImporting.Reimport((BinaryAssetItem)_window.Item, ImportSettings, true);
             }
 
@@ -328,6 +333,22 @@ namespace FlaxEditor.Windows.Assets
                 _previewScene.Update();
                 UpdateToolstrip();
             }
+        }
+
+        /// <inheritdoc />
+        public override bool OnKeyDown(KeyboardKeys key)
+        {
+            if (base.OnKeyDown(key))
+                return true;
+
+            if (key == KeyboardKeys.Spacebar)
+            {
+                if (_previewSource?.State == AudioSource.States.Playing)
+                    OnPause();
+                else
+                    OnPlay();
+            }
+            return false;
         }
 
         /// <inheritdoc />

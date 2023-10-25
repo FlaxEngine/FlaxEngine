@@ -92,6 +92,8 @@ bool DecalMaterialShader::Load()
 {
     GPUPipelineState::Description psDesc0 = GPUPipelineState::Description::DefaultNoDepth;
     psDesc0.VS = _shader->GetVS("VS_Decal");
+    if (psDesc0.VS == nullptr)
+        return true;
     psDesc0.PS = _shader->GetPS("PS_Decal");
     psDesc0.CullMode = CullMode::Normal;
 

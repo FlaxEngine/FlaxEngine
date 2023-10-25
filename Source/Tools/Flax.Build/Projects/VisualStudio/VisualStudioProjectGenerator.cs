@@ -24,6 +24,13 @@ namespace Flax.Build.Projects.VisualStudio
             /// <inheritdoc />
             public override void Generate(string solutionPath)
             {
+                // Try to reuse the existing project guid from existing files
+                ProjectGuid = GetProjectGuid(Path, Name);
+                if (ProjectGuid == Guid.Empty)
+                    ProjectGuid = GetProjectGuid(solutionPath, Name);
+                if (ProjectGuid == Guid.Empty)
+                    ProjectGuid = Guid.NewGuid();
+
                 var gen = (VisualStudioProjectGenerator)Generator;
                 var projectFileToolVersion = gen.ProjectFileToolVersion;
                 var vcProjectFileContent = new StringBuilder();
@@ -500,7 +507,15 @@ namespace Flax.Build.Projects.VisualStudio
                                     firstEditorMatch = i;
                                 }
                             }
-                            if (firstFullMatch != -1)
+                            if (project is AndroidProject)
+                            {
+                                // Utility Android deploy project only for exact match
+                                if (firstFullMatch != -1)
+                                    projectConfiguration = configuration;
+                                else
+                                    projectConfiguration = new SolutionConfiguration(project.Configurations[0]);
+                            }
+                            else if (firstFullMatch != -1)
                             {
                                 projectConfiguration = configuration;
                                 build = solution.MainProject == project || (solution.MainProject == null && project.Name == solution.Name);
@@ -588,8 +603,8 @@ namespace Flax.Build.Projects.VisualStudio
             {
                 var profiles = new Dictionary<string, string>();
                 var profile = new StringBuilder();
-                var editorPath = Utilities.NormalizePath(Path.Combine(Globals.EngineRoot, Platform.GetEditorBinaryDirectory(), $"Development/FlaxEditor{Utilities.GetPlatformExecutableExt()}"));
-                var workspacePath = Utilities.NormalizePath(solutionDirectory);
+                var editorPath = Utilities.NormalizePath(Path.Combine(Globals.EngineRoot, Platform.GetEditorBinaryDirectory(), $"Development/FlaxEditor{Utilities.GetPlatformExecutableExt()}")).Replace('\\', '/');
+                var workspacePath = Utilities.NormalizePath(solutionDirectory).Replace('\\', '/');
                 foreach (var project in projects)
                 {
                     if (project.Type == TargetType.DotNetCore)
@@ -625,6 +640,44 @@ namespace Flax.Build.Projects.VisualStudio
                     profile.Append("}");
                     File.WriteAllText(e.Key, profile.ToString(), Encoding.UTF8);
                 }
+            }
+
+            // Generate Rider-specific configuration files
+            {
+                StringBuilder dotSettingsFileContent = new StringBuilder();
+                string dotSettingsUserFilePath = solution.Path + ".DotSettings.user";
+
+                // Solution settings (user layer)
+                bool useResharperBuild = false; // This needs to be disabled for custom build steps to run properly
+
+                if (File.Exists(dotSettingsUserFilePath))
+                {
+                    foreach (var line in File.ReadAllLines(dotSettingsUserFilePath))
+                    {
+                        if (line.Contains(@"/UseMsbuildSolutionBuilder/@EntryValue"))
+                        {
+                            if (!useResharperBuild)
+                            {
+                                dotSettingsFileContent.Append("\t").Append(@"<s:String x:Key=""/Default/Environment/Hierarchy/Build/SolBuilderDuo/UseMsbuildSolutionBuilder/@EntryValue"">No</s:String>");
+                                if (line.Contains("</wpf:ResourceDictionary>"))
+                                    dotSettingsFileContent.Append("</wpf:ResourceDictionary>\n");
+                                else
+                                    dotSettingsFileContent.Append("\n");
+                            }
+                            continue;
+                        }
+                        dotSettingsFileContent.Append(line).Append("\n");
+                    }
+                }
+                else
+                {
+                    dotSettingsFileContent.Append(@"<wpf:ResourceDictionary xml:space=""preserve"" xmlns:x=""http://schemas.microsoft.com/winfx/2006/xaml"" xmlns:s=""clr-namespace:System;assembly=mscorlib"" xmlns:ss=""urn:shemas-jetbrains-com:settings-storage-xaml"" xmlns:wpf=""http://schemas.microsoft.com/winfx/2006/xaml/presentation"">").Append("\n");
+                    if (!useResharperBuild)
+                        dotSettingsFileContent.Append("\t").Append(@"<s:String x:Key=""/Default/Environment/Hierarchy/Build/SolBuilderDuo/UseMsbuildSolutionBuilder/@EntryValue"">No</s:String>");
+                    dotSettingsFileContent.Append("</wpf:ResourceDictionary>\n");
+                }
+
+                Utilities.WriteFileIfChanged(dotSettingsUserFilePath, dotSettingsFileContent.ToString());
             }
         }
 

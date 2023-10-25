@@ -6,11 +6,13 @@
 
 #include "Engine/Core/Config.h"
 #include "Engine/Content/Assets/ModelBase.h"
+#include "Engine/Physics/CollisionData.h"
 #if USE_EDITOR
 #include "Engine/Core/ISerializable.h"
 #include "Engine/Graphics/Models/ModelData.h"
 #include "Engine/Graphics/Models/SkeletonData.h"
 #include "Engine/Animations/AnimationData.h"
+#include "Engine/Content/Assets/MaterialBase.h"
 
 class JsonWriter;
 
@@ -262,6 +264,9 @@ public:
         // If specified, all meshes which name starts with this prefix will be imported as a separate collision data (excluded used for rendering).
         API_FIELD(Attributes="EditorOrder(100), EditorDisplay(\"Geometry\"), VisibleIf(nameof(ShowGeometry))")
         String CollisionMeshesPrefix = TEXT("");
+        // The type of collision that should be generated if has collision prefix specified.
+        API_FIELD(Attributes = "EditorOrder(105), EditorDisplay(\"Geometry\"), VisibleIf(nameof(ShowGeometry))")
+        CollisionDataType CollisionType = CollisionDataType::TriangleMesh;
 
     public: // Transform
 
@@ -334,11 +339,17 @@ public:
         // If checked, the importer will create materials for model meshes as specified in the file.
         API_FIELD(Attributes="EditorOrder(400), EditorDisplay(\"Materials\"), VisibleIf(nameof(ShowGeometry))")
         bool ImportMaterials = true;
+        // If checked, the importer will create the model's materials as instances of a base material.
+        API_FIELD(Attributes = "EditorOrder(401), EditorDisplay(\"Materials\"), VisibleIf(nameof(ImportMaterials))")
+        bool ImportMaterialsAsInstances = false;
+        // The material to import the model's materials as an instance of.
+        API_FIELD(Attributes = "EditorOrder(402), EditorDisplay(\"Materials\"), VisibleIf(nameof(ImportMaterialsAsInstances))")
+        AssetReference<MaterialBase> InstanceToImportAs;
         // If checked, the importer will import texture files used by the model and any embedded texture resources.
         API_FIELD(Attributes="EditorOrder(410), EditorDisplay(\"Materials\"), VisibleIf(nameof(ShowGeometry))")
         bool ImportTextures = true;
-        // If checked, the importer will try to restore the model material slots.
-        API_FIELD(Attributes="EditorOrder(420), EditorDisplay(\"Materials\", \"Restore Materials On Reimport\"), VisibleIf(nameof(ShowGeometry))")
+        // If checked, the importer will try to keep the model's current material slots, instead of importing materials from the source file.
+        API_FIELD(Attributes="EditorOrder(420), EditorDisplay(\"Materials\", \"Keep Material Slots on Reimport\"), VisibleIf(nameof(ShowGeometry))")
         bool RestoreMaterialsOnReimport = true;
 
     public: // SDF
@@ -358,6 +369,12 @@ public:
         // The zero-based index for the mesh/animation clip to import. If the source file has more than one mesh/animation it can be used to pick a desire object. Default -1 imports all objects.
         API_FIELD(Attributes="EditorOrder(2010), EditorDisplay(\"Splitting\")")
         int32 ObjectIndex = -1;
+
+    public: // Other
+
+        // If specified, will be used as sub-directory name for automatically imported sub assets such as textures and materials. Set to whitespace (single space) to import to the same directory.
+        API_FIELD(Attributes="EditorOrder(3030), EditorDisplay(\"Other\")")
+        String SubAssetFolder = TEXT("");
 
         // Runtime data for objects splitting during import (used internally)
         void* SplitContext = nullptr;
@@ -419,6 +436,7 @@ public:
     }
 
 private:
+    static void CalculateBoneOffsetMatrix(const Array<SkeletonNode>& nodes, Matrix& offsetMatrix, int32 nodeIndex);
 #if USE_ASSIMP
     static bool ImportDataAssimp(const char* path, ImportedModelData& data, Options& options, String& errorMsg);
 #endif

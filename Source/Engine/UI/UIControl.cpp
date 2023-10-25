@@ -42,7 +42,6 @@ UIControl::UIControl(const SpawnParams& params)
     if (UIControl_Serialize == nullptr)
     {
         MClass* mclass = GetClass();
-        UIControl_Serialize = mclass->GetMethod("Serialize", 1);
         UIControl_SerializeDiff = mclass->GetMethod("SerializeDiff", 2);
         UIControl_Deserialize = mclass->GetMethod("Deserialize", 2);
         UIControl_ParentChanged = mclass->GetMethod("ParentChanged");
@@ -51,6 +50,7 @@ UIControl::UIControl(const SpawnParams& params)
         UIControl_ActiveInTreeChanged = mclass->GetMethod("ActiveInTreeChanged");
         UIControl_BeginPlay = mclass->GetMethod("BeginPlay");
         UIControl_EndPlay = mclass->GetMethod("EndPlay");
+        UIControl_Serialize = mclass->GetMethod("Serialize", 1);
     }
 #endif
 }

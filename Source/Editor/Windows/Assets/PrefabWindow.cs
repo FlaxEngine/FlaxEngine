@@ -19,7 +19,7 @@ namespace FlaxEditor.Windows.Assets
     /// </summary>
     /// <seealso cref="Prefab" />
     /// <seealso cref="FlaxEditor.Windows.Assets.AssetEditorWindow" />
-    public sealed partial class PrefabWindow : AssetEditorWindowBase<Prefab>
+    public sealed partial class PrefabWindow : AssetEditorWindowBase<Prefab>, IPresenterOwner
     {
         private readonly SplitPanel _split1;
         private readonly SplitPanel _split2;
@@ -52,6 +52,11 @@ namespace FlaxEditor.Windows.Assets
         /// Gets the viewport.
         /// </summary>
         public PrefabWindowViewport Viewport => _viewport;
+
+        /// <summary>
+        /// Gets the prefab objects properties editor.
+        /// </summary>
+        public CustomEditorPresenter Presenter => _propertiesEditor;
 
         /// <summary>
         /// Gets the undo system used by this window for changes tracking.
@@ -144,9 +149,10 @@ namespace FlaxEditor.Windows.Assets
 
             // Prefab structure tree
             Graph = new LocalSceneGraph(new CustomRootNode(this));
+            Graph.Root.TreeNode.Expand(true);
             _tree = new PrefabTree
             {
-                Margin = new Margin(0.0f, 0.0f, -16.0f, 0.0f), // Hide root node
+                Margin = new Margin(0.0f, 0.0f, -16.0f, _treePanel.ScrollBarsSize), // Hide root node
                 IsScrollable = true,
             };
             _tree.AddChild(Graph.Root.TreeNode);
@@ -202,7 +208,7 @@ namespace FlaxEditor.Windows.Assets
             InputActions.Add(options => options.Rename, Rename);
             InputActions.Add(options => options.FocusSelection, _viewport.FocusSelection);
         }
-        
+
         /// <summary>
         /// Enables or disables vertical and horizontal scrolling on the tree panel.
         /// </summary>
@@ -252,7 +258,7 @@ namespace FlaxEditor.Windows.Assets
         {
             if (base.OnMouseUp(location, button))
                 return true;
-            
+
             if (button == MouseButton.Right && _treePanel.ContainsPoint(ref location))
             {
                 _tree.Deselect();
@@ -312,7 +318,7 @@ namespace FlaxEditor.Windows.Assets
             Graph.MainActor = _viewport.Instance;
             Selection.Clear();
             Select(Graph.Main);
-            Graph.Root.TreeNode.ExpandAll(true);
+            Graph.Root.TreeNode.Expand(true);
             _undo.Clear();
             ClearEditedFlag();
         }
@@ -408,7 +414,7 @@ namespace FlaxEditor.Windows.Assets
             _focusCamera = true;
             Selection.Clear();
             Select(Graph.Main);
-            Graph.Root.TreeNode.ExpandAll(true);
+            Graph.Root.TreeNode.Expand(true);
 
             _undo.Clear();
             ClearEditedFlag();
@@ -520,5 +526,8 @@ namespace FlaxEditor.Windows.Assets
 
             base.OnDestroy();
         }
+
+        /// <inheritdoc />
+        public EditorViewport PresenterViewport => _viewport;
     }
 }

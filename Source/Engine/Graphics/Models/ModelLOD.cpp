@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
 #include "ModelLOD.h"
+#include "MeshDeformation.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Math/Transform.h"
 #include "Engine/Graphics/GPUDevice.h"
@@ -108,9 +109,9 @@ BoundingBox ModelLOD::GetBox(const Matrix& world) const
 {
     Vector3 tmp, min = Vector3::Maximum, max = Vector3::Minimum;
     Vector3 corners[8];
-    for (int32 j = 0; j < Meshes.Count(); j++)
+    for (int32 meshIndex = 0; meshIndex < Meshes.Count(); meshIndex++)
     {
-        const auto& mesh = Meshes[j];
+        const auto& mesh = Meshes[meshIndex];
         mesh.GetBox().GetCorners(corners);
         for (int32 i = 0; i < 8; i++)
         {
@@ -122,14 +123,17 @@ BoundingBox ModelLOD::GetBox(const Matrix& world) const
     return BoundingBox(min, max);
 }
 
-BoundingBox ModelLOD::GetBox(const Transform& transform) const
+BoundingBox ModelLOD::GetBox(const Transform& transform, const MeshDeformation* deformation) const
 {
     Vector3 tmp, min = Vector3::Maximum, max = Vector3::Minimum;
     Vector3 corners[8];
-    for (int32 j = 0; j < Meshes.Count(); j++)
+    for (int32 meshIndex = 0; meshIndex < Meshes.Count(); meshIndex++)
     {
-        const auto& mesh = Meshes[j];
-        mesh.GetBox().GetCorners(corners);
+        const auto& mesh = Meshes[meshIndex];
+        BoundingBox box = mesh.GetBox();
+        if (deformation)
+            deformation->GetBounds(_lodIndex, meshIndex, box);
+        box.GetCorners(corners);
         for (int32 i = 0; i < 8; i++)
         {
             transform.LocalToWorld(corners[i], tmp);
@@ -144,9 +148,9 @@ BoundingBox ModelLOD::GetBox() const
 {
     Vector3 min = Vector3::Maximum, max = Vector3::Minimum;
     Vector3 corners[8];
-    for (int32 j = 0; j < Meshes.Count(); j++)
+    for (int32 meshIndex = 0; meshIndex < Meshes.Count(); meshIndex++)
     {
-        Meshes[j].GetBox().GetCorners(corners);
+        Meshes[meshIndex].GetBox().GetCorners(corners);
         for (int32 i = 0; i < 8; i++)
         {
             min = Vector3::Min(min, corners[i]);

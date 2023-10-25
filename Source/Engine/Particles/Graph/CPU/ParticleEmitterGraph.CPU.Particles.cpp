@@ -7,7 +7,7 @@
 #include "Engine/Graphics/RenderTask.h"
 
 #define GET_VIEW() auto mainViewTask = MainRenderTask::Instance && MainRenderTask::Instance->LastUsedFrame != 0 ? MainRenderTask::Instance : nullptr
-#define ACCESS_PARTICLE_ATTRIBUTE(index) (context.Data->Buffer->GetParticleCPU(context.ParticleIndex) + context.Data->Buffer->Layout->Attributes[node->Attributes[index]].Offset)
+#define ACCESS_PARTICLE_ATTRIBUTE(index) (context.Data->Buffer->GetParticleCPU(context.ParticleIndex) + context.Data->Buffer->Layout->Attributes[context.AttributesRemappingTable[node->Attributes[index]]].Offset)
 #define GET_PARTICLE_ATTRIBUTE(index, type) *(type*)ACCESS_PARTICLE_ATTRIBUTE(index)
 
 void ParticleEmitterGraphCPUExecutor::ProcessGroupParameters(Box* box, Node* node, Value& value)
@@ -436,9 +436,19 @@ void ParticleEmitterGraphCPUExecutor::ProcessGroupParticles(Box* box, Node* node
         auto* functionOutputNode = &graph->Nodes[function->Outputs[outputIndex]];
         Box* functionOutputBox = functionOutputNode->TryGetBox(0);
 
+        // Setup particle attributes remapping (so particle data access nodes inside the function will read data at proper offset, see macro ACCESS_PARTICLE_ATTRIBUTE)
+        byte attributesRemappingTable[PARTICLE_ATTRIBUTES_MAX_COUNT];
+        Platform::MemoryCopy(attributesRemappingTable, context.AttributesRemappingTable, sizeof(attributesRemappingTable));
+        for (int32 i = 0; i < graph->Layout.Attributes.Count(); i++)
+        {
+            const ParticleAttribute& e = graph->Layout.Attributes[i];
+            context.AttributesRemappingTable[i] = context.Data->Buffer->Layout->FindAttribute(e.Name, e.ValueType);
+        }
+
         // Evaluate the function output
         context.GraphStack.Push(graph);
         value = functionOutputBox && functionOutputBox->HasConnection() ? eatBox(nodeBase, functionOutputBox->FirstConnection()) : Value::Zero;
+        Platform::MemoryCopy(context.AttributesRemappingTable, attributesRemappingTable, sizeof(attributesRemappingTable));
         context.GraphStack.Pop();
         break;
     }

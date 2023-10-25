@@ -154,7 +154,7 @@ namespace Flax.Build
 
             // Run the compilation
             using var memoryStream = new MemoryStream();
-            CSharpParseOptions parseOptions = CSharpParseOptions.Default.WithLanguageVersion(LanguageVersion.CSharp9).WithPreprocessorSymbols(PreprocessorSymbols);
+            CSharpParseOptions parseOptions = CSharpParseOptions.Default.WithLanguageVersion(LanguageVersion.Latest).WithPreprocessorSymbols(PreprocessorSymbols);
             var syntaxTrees = new List<SyntaxTree>();
             foreach (var sourceFile in SourceFiles)
             {

@@ -90,6 +90,11 @@ namespace FlaxEditor.Surface
         public delegate SurfaceNode CreateCustomNodeFunc(uint id, VisjectSurfaceContext context, NodeArchetype nodeArch, GroupArchetype groupArch);
 
         /// <summary>
+        /// Checks if the given type is compatible with the given node archetype. Used for custom nodes
+        /// </summary>
+        public delegate bool IsCompatible(NodeArchetype nodeArch, ScriptType portType, ConnectionsHint hint, VisjectSurfaceContext context);
+
+        /// <summary>
         /// Unique node type ID within a single group.
         /// </summary>
         public ushort TypeID;
@@ -98,6 +103,16 @@ namespace FlaxEditor.Surface
         /// Custom create function (may be null).
         /// </summary>
         public CreateCustomNodeFunc Create;
+
+        /// <summary>
+        /// Function for asynchronously loaded nodes to check if input ports are compatible, for filtering.
+        /// </summary>
+        public IsCompatible IsInputCompatible;
+
+        /// <summary>
+        /// Function for asynchronously loaded nodes to check if output ports are compatible, for filtering.
+        /// </summary>
+        public IsCompatible IsOutputCompatible;
 
         /// <summary>
         /// Default initial size of the node.
@@ -184,6 +199,8 @@ namespace FlaxEditor.Surface
             {
                 TypeID = TypeID,
                 Create = Create,
+                IsInputCompatible = IsInputCompatible,
+                IsOutputCompatible = IsOutputCompatible,
                 Size = Size,
                 Flags = Flags,
                 Title = Title,

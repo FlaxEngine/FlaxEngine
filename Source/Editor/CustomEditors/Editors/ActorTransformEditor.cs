@@ -88,7 +88,7 @@ namespace FlaxEditor.CustomEditors.Editors
                 LinkValues = Editor.Instance.Windows.PropertiesWin.ScaleLinked;
 
                 // Add button with the link icon
-                
+
                 _linkButton = new Button
                 {
                     BackgroundBrush = new SpriteBrush(Editor.Instance.Icons.Link32),

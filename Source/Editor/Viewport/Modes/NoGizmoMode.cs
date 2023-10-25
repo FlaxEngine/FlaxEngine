@@ -13,7 +13,7 @@ namespace FlaxEditor.Viewport.Modes
         {
             base.OnActivated();
 
-            Viewport.Gizmos.Active = null;
+            Owner.Gizmos.Active = null;
         }
     }
 }

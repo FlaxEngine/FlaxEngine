@@ -8,23 +8,15 @@ namespace FlaxEngine
     /// <summary>
     /// Class containing methods to ease debugging while developing a game.
     /// </summary>
-    public sealed class Debug
+    public static class Debug
     {
-        internal static Logger _logger;
+        internal static Logger _logger = new Logger(new DebugLogHandler());
 
         /// <summary>
         /// Get default debug logger.
         /// </summary>
         [HideInEditor]
-        public static ILogger Logger
-        {
-            get { return _logger; }
-        }
-
-        static Debug()
-        {
-            _logger = new Logger(new DebugLogHandler());
-        }
+        public static ILogger Logger => _logger;
 
         /// <summary>
         /// Assert a condition and logs a formatted error message to the Flax console on failure.

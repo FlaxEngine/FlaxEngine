@@ -2,15 +2,15 @@
 
 #pragma once
 
-#include "Engine/Core/Math/BoundingSphere.h"
-#include "Engine/Core/Math/BoundingBox.h"
-#include "Engine/Serialization/Stream.h"
+#include "Engine/Core/Types/Guid.h"
 #include "Engine/Graphics/Enums.h"
 #include "Types.h"
 #include "Config.h"
 #include "SkeletonData.h"
 #include "BlendShape.h"
 #include "Engine/Animations/AnimationData.h"
+
+class WriteStream;
 
 /// <summary>
 /// Data container for the common model meshes data. Supports holding all types of data related to the models pipeline.

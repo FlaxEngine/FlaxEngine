@@ -50,7 +50,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
                 grid.Button("Remove bone").Button.ButtonClicked += OnRemoveBone;
             }
 
-            if (Presenter.Owner is Windows.PropertiesWindow || Presenter.Owner is Windows.Assets.PrefabWindow)
+            if (Presenter.Owner != null)
             {
                 // Selection
                 var grid = editorGroup.CustomContainer<UniformGridPanel>();
@@ -309,10 +309,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
                 if (node != null)
                     selection.Add(node);
             }
-            if (Presenter.Owner is Windows.PropertiesWindow propertiesWindow)
-                propertiesWindow.Editor.SceneEditing.Select(selection);
-            else if (Presenter.Owner is Windows.Assets.PrefabWindow prefabWindow)
-                prefabWindow.Select(selection);
+            Presenter.Owner.Select(selection);
         }
     }
 }

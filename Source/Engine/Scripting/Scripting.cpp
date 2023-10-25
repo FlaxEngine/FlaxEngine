@@ -128,11 +128,6 @@ bool ScriptingService::Init()
 {
     const auto startTime = DateTime::NowUTC();
 
-    // Link for assemblies events
-    auto engineAssembly = ((NativeBinaryModule*)GetBinaryModuleFlaxEngine())->Assembly;
-    engineAssembly->Loaded.Bind(onEngineLoaded);
-    engineAssembly->Unloading.Bind(onEngineUnloading);
-
     // Initialize managed runtime
     if (MCore::LoadEngine())
     {
@@ -479,26 +474,32 @@ bool Scripting::Load()
     // Load FlaxEngine
     const String flaxEnginePath = Globals::BinariesFolder / TEXT("FlaxEngine.CSharp.dll");
     auto* flaxEngineModule = (NativeBinaryModule*)GetBinaryModuleFlaxEngine();
-    if (flaxEngineModule->Assembly->Load(flaxEnginePath))
+    if (!flaxEngineModule->Assembly->IsLoaded())
     {
-        LOG(Error, "Failed to load FlaxEngine C# assembly.");
-        return true;
-    }
+        if (flaxEngineModule->Assembly->Load(flaxEnginePath))
+        {
+            LOG(Error, "Failed to load FlaxEngine C# assembly.");
+            return true;
+        }
+        onEngineLoaded(flaxEngineModule->Assembly);
 
-    // Insert type aliases for vector types that don't exist in C++ but are just typedef (properly redirect them to actual types)
-    // TODO: add support for automatic typedef aliases setup for scripting module to properly lookup type from the alias typename
+        // Insert type aliases for vector types that don't exist in C++ but are just typedef (properly redirect them to actual types)
+        // TODO: add support for automatic typedef aliases setup for scripting module to properly lookup type from the alias typename
 #if USE_LARGE_WORLDS
-    flaxEngineModule->TypeNameToTypeIndex["FlaxEngine.Vector2"] = flaxEngineModule->TypeNameToTypeIndex["FlaxEngine.Double2"];
-    flaxEngineModule->TypeNameToTypeIndex["FlaxEngine.Vector3"] = flaxEngineModule->TypeNameToTypeIndex["FlaxEngine.Double3"];
-    flaxEngineModule->TypeNameToTypeIndex["FlaxEngine.Vector4"] = flaxEngineModule->TypeNameToTypeIndex["FlaxEngine.Double4"];
+        flaxEngineModule->TypeNameToTypeIndex["FlaxEngine.Vector2"] = flaxEngineModule->TypeNameToTypeIndex["FlaxEngine.Double2"];
+        flaxEngineModule->TypeNameToTypeIndex["FlaxEngine.Vector3"] = flaxEngineModule->TypeNameToTypeIndex["FlaxEngine.Double3"];
+        flaxEngineModule->TypeNameToTypeIndex["FlaxEngine.Vector4"] = flaxEngineModule->TypeNameToTypeIndex["FlaxEngine.Double4"];
 #else
-    flaxEngineModule->TypeNameToTypeIndex["FlaxEngine.Vector2"] = flaxEngineModule->TypeNameToTypeIndex["FlaxEngine.Float2"];
-    flaxEngineModule->TypeNameToTypeIndex["FlaxEngine.Vector3"] = flaxEngineModule->TypeNameToTypeIndex["FlaxEngine.Float3"];
-    flaxEngineModule->TypeNameToTypeIndex["FlaxEngine.Vector4"] = flaxEngineModule->TypeNameToTypeIndex["FlaxEngine.Float4"];
+        flaxEngineModule->TypeNameToTypeIndex["FlaxEngine.Vector2"] = flaxEngineModule->TypeNameToTypeIndex["FlaxEngine.Float2"];
+        flaxEngineModule->TypeNameToTypeIndex["FlaxEngine.Vector3"] = flaxEngineModule->TypeNameToTypeIndex["FlaxEngine.Float3"];
+        flaxEngineModule->TypeNameToTypeIndex["FlaxEngine.Vector4"] = flaxEngineModule->TypeNameToTypeIndex["FlaxEngine.Float4"];
 #endif
-    flaxEngineModule->ClassToTypeIndex[flaxEngineModule->Assembly->GetClass("FlaxEngine.Vector2")] = flaxEngineModule->TypeNameToTypeIndex["FlaxEngine.Vector2"];
-    flaxEngineModule->ClassToTypeIndex[flaxEngineModule->Assembly->GetClass("FlaxEngine.Vector3")] = flaxEngineModule->TypeNameToTypeIndex["FlaxEngine.Vector3"];
-    flaxEngineModule->ClassToTypeIndex[flaxEngineModule->Assembly->GetClass("FlaxEngine.Vector4")] = flaxEngineModule->TypeNameToTypeIndex["FlaxEngine.Vector4"];
+#if USE_CSHARP
+        flaxEngineModule->ClassToTypeIndex[flaxEngineModule->Assembly->GetClass("FlaxEngine.Vector2")] = flaxEngineModule->TypeNameToTypeIndex["FlaxEngine.Vector2"];
+        flaxEngineModule->ClassToTypeIndex[flaxEngineModule->Assembly->GetClass("FlaxEngine.Vector3")] = flaxEngineModule->TypeNameToTypeIndex["FlaxEngine.Vector3"];
+        flaxEngineModule->ClassToTypeIndex[flaxEngineModule->Assembly->GetClass("FlaxEngine.Vector4")] = flaxEngineModule->TypeNameToTypeIndex["FlaxEngine.Vector4"];
+#endif
+    }
 
 #if USE_EDITOR
     // Skip loading game modules in Editor on startup - Editor loads them later during splash screen (eg. after first compilation)
@@ -586,6 +587,9 @@ void Scripting::Release()
 
         asset->DeleteObjectNow();
     }
+
+    auto* flaxEngineModule = (NativeBinaryModule*)GetBinaryModuleFlaxEngine();
+    onEngineUnloading(flaxEngineModule->Assembly);
 
     // Unload assemblies (from back to front)
     {
@@ -821,6 +825,28 @@ ScriptingObject* Scripting::NewObject(const MClass* type)
 FLAXENGINE_API ScriptingObject* FindObject(const Guid& id, MClass* type)
 {
     return Scripting::FindObject(id, type);
+}
+
+void ScriptingObjectReferenceBase::OnSet(ScriptingObject* object)
+{
+    auto e = _object;
+    if (e != object)
+    {
+        if (e)
+            e->Deleted.Unbind<ScriptingObjectReferenceBase, &ScriptingObjectReferenceBase::OnDeleted>(this);
+        _object = e = object;
+        if (e)
+            e->Deleted.Bind<ScriptingObjectReferenceBase, &ScriptingObjectReferenceBase::OnDeleted>(this);
+        Changed();
+    }
+}
+
+void ScriptingObjectReferenceBase::OnDeleted(ScriptingObject* obj)
+{
+    ASSERT(_object == obj);
+    _object->Deleted.Unbind<ScriptingObjectReferenceBase, &ScriptingObjectReferenceBase::OnDeleted>(this);
+    _object = nullptr;
+    Changed();
 }
 
 ScriptingObject* Scripting::FindObject(Guid id, MClass* type)

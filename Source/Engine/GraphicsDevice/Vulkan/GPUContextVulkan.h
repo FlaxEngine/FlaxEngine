@@ -97,6 +97,7 @@ private:
 
     int32 _rtCount;
     int32 _vbCount;
+    uint32 _stencilRef;
 
     RenderPassVulkan* _renderPass;
     GPUPipelineStateVulkan* _currentState;
@@ -160,7 +161,6 @@ private:
     void UpdateDescriptorSets(const struct SpirvShaderDescriptorInfo& descriptorInfo, class DescriptorSetWriterVulkan& dsWriter, bool& needsWrite);
     void UpdateDescriptorSets(GPUPipelineStateVulkan* pipelineState);
     void UpdateDescriptorSets(ComputePipelineStateVulkan* pipelineState);
-    void BindPipeline();
     void OnDrawCall();
 
 public:
@@ -185,6 +185,7 @@ public:
     void SetRenderTarget(GPUTextureView* depthBuffer, GPUTextureView* rt) override;
     void SetRenderTarget(GPUTextureView* depthBuffer, const Span<GPUTextureView*>& rts) override;
     void SetBlendFactor(const Float4& value) override;
+    void SetStencilRef(uint32 value) override;
     void ResetSR() override;
     void ResetUA() override;
     void ResetCB() override;

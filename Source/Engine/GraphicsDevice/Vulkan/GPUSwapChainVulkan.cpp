@@ -460,10 +460,12 @@ GPUSwapChainVulkan::Status GPUSwapChainVulkan::Present(QueueVulkan* presentQueue
     {
         return Status::LostSurface;
     }
+#if GPU_ENABLE_ASSERTION
     if (presentResult != VK_SUCCESS && presentResult != VK_SUBOPTIMAL_KHR)
     {
         VALIDATE_VULKAN_RESULT(presentResult);
     }
+#endif
 
     return Status::Ok;
 }

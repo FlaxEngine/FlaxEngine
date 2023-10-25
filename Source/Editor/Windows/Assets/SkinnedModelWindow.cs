@@ -321,6 +321,7 @@ namespace FlaxEditor.Windows.Assets
 
                         var tree = group.Tree();
                         tree.TreeControl.RightClick += OnTreeNodeRightClick;
+                        tree.TreeControl.SelectedChanged += OnTreeSelectedChanged;
                         for (int i = 0; i < nodes.Length; i++)
                         {
                             if (nodes[i].ParentIndex == -1)
@@ -365,6 +366,12 @@ namespace FlaxEditor.Windows.Assets
                     b.ButtonClicked += OnTreeNodeCopyName;
 
                     menu.Show(node, location);
+                }
+
+                private void OnTreeSelectedChanged(List<TreeNode> before, List<TreeNode> after)
+                {
+                    if (after.Count != 0)
+                        ((SkeletonPropertiesProxy)Values[0]).Window._preview.ShowDebugDraw = true;
                 }
 
                 private void OnTreeNodeCopyName(ContextMenuButton b)

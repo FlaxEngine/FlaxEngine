@@ -21,8 +21,8 @@ public:
 
 protected:
     // [Actor]
-    void BeginPlay(SceneBeginData* data) final override;
-    void EndPlay() final override;
+    void OnBeginPlay() override;
+    void OnEndPlay() override;
     void OnParentChanged() override;
     void OnEnable() override;
     void OnDisable() override;

@@ -4,7 +4,14 @@
 
 #include "../Window.h"
 #include "Engine/Platform/Apple/AppleUtils.h"
+#include "Engine/Platform/WindowsManager.h"
 #include "Engine/Platform/IGuiData.h"
+#if USE_EDITOR
+#include "Engine/Platform/CriticalSection.h"
+#include "Engine/Threading/ThreadPoolTask.h"
+#include "Engine/Threading/ThreadPool.h"
+#include "Engine/Engine/Engine.h"
+#endif
 #include "Engine/Core/Log.h"
 #include "Engine/Input/Input.h"
 #include "Engine/Input/Mouse.h"
@@ -13,6 +20,37 @@
 #include <Cocoa/Cocoa.h>
 #include <AppKit/AppKit.h>
 #include <QuartzCore/CAMetalLayer.h>
+
+#if USE_EDITOR
+// Data for drawing window while doing drag&drop on Mac (engine is paused during platform tick)
+CriticalSection MacDragLocker;
+NSDraggingSession* MacDragSession = nullptr;
+class DoDragDropJob* MacDragJob = nullptr;
+
+class DoDragDropJob : public ThreadPoolTask
+{
+public:
+    int64 ExitFlag = 0;
+
+    bool Run() override
+    {
+        while (Platform::AtomicRead(&ExitFlag) == 0)
+        {
+            Engine::OnDraw();
+            Platform::Sleep(20);
+        }
+        return false;
+    }
+};
+#endif
+
+inline bool IsWindowInvalid(Window* win)
+{
+    WindowsManager::WindowsLocker.Lock();
+    const bool hasWindow = WindowsManager::Windows.Contains(win);
+    WindowsManager::WindowsLocker.Unlock();
+    return !hasWindow || !win;
+}
 
 KeyboardKeys GetKey(NSEvent* event)
 {
@@ -268,17 +306,20 @@ NSDragOperation GetDragDropOperation(DragDropEffect dragDropEffect)
 	// Handle resizing to be sure that content has valid size when window was resized
 	[self windowDidResize:notification];
 
+    if (IsWindowInvalid(Window)) return;
     Window->OnGotFocus();
 }
 
 - (void)windowDidResignKey:(NSNotification*)notification
 {
+    if (IsWindowInvalid(Window)) return;
     Window->OnLostFocus();
 }
 
 - (void)windowWillClose:(NSNotification*)notification
 {
     [self setDelegate: nil];
+    if (IsWindowInvalid(Window)) return;
     Window->Close(ClosingReason::User);
 }
 
@@ -311,7 +352,7 @@ static void ConvertNSRect(NSScreen *screen, NSRect *r)
 
 @end
 
-@interface MacViewImpl : NSView
+@interface MacViewImpl : NSView <NSDraggingSource, NSPasteboardItemDataProvider>
 {
     MacWindow* Window;
     NSTrackingArea* TrackingArea;
@@ -375,6 +416,7 @@ static void ConvertNSRect(NSScreen *screen, NSRect *r)
 
 - (void)keyDown:(NSEvent*)event
 {
+    if (IsWindowInvalid(Window)) return;
     KeyboardKeys key = GetKey(event);
     if (key != KeyboardKeys::None)
 	    Input::Keyboard->OnKeyDown(key, Window);
@@ -405,6 +447,7 @@ static void ConvertNSRect(NSScreen *screen, NSRect *r)
 
 - (void)keyUp:(NSEvent*)event
 {
+    if (IsWindowInvalid(Window)) return;
     KeyboardKeys key = GetKey(event);
     if (key != KeyboardKeys::None)
 	    Input::Keyboard->OnKeyUp(key, Window);
@@ -412,6 +455,7 @@ static void ConvertNSRect(NSScreen *screen, NSRect *r)
 
 - (void)flagsChanged:(NSEvent*)event
 {
+    if (IsWindowInvalid(Window)) return;
     int32 modMask;
     int32 keyCode = [event keyCode];
     if (keyCode == 0x36 || keyCode == 0x37)
@@ -437,6 +481,7 @@ static void ConvertNSRect(NSScreen *screen, NSRect *r)
 
 - (void)scrollWheel:(NSEvent*)event
 {
+    if (IsWindowInvalid(Window)) return;
 	Float2 mousePos = GetMousePosition(Window, event);
     double deltaX = [event scrollingDeltaX];
     double deltaY = [event scrollingDeltaY];
@@ -451,32 +496,39 @@ static void ConvertNSRect(NSScreen *screen, NSRect *r)
 
 - (void)mouseMoved:(NSEvent*)event
 {
+    if (IsWindowInvalid(Window)) return;
 	Float2 mousePos = GetMousePosition(Window, event);
-    if (!Window->IsMouseTracking() && !IsMouseOver)
+    if (Window->IsMouseTracking())
+        return; // Skip mouse events when tracking mouse (handled in MacWindow::OnUpdate)
+    if (!IsMouseOver)
         return;
 	Input::Mouse->OnMouseMove(Window->ClientToScreen(mousePos), Window);
 }
 
 - (void)mouseEntered:(NSEvent*)event
 {
+    if (IsWindowInvalid(Window)) return;
     IsMouseOver = true;
     Window->SetIsMouseOver(true);
 }
 
 - (void)mouseExited:(NSEvent*)event
 {
+    if (IsWindowInvalid(Window)) return;
     IsMouseOver = false;
     Window->SetIsMouseOver(false);
 }
 
 - (void)mouseDown:(NSEvent*)event
 {
+    if (IsWindowInvalid(Window)) return;
 	Float2 mousePos = GetMousePosition(Window, event);
+    mousePos = Window->ClientToScreen(mousePos);
     MouseButton mouseButton = MouseButton::Left;
     if ([event clickCount] == 2)
-        Input::Mouse->OnMouseDoubleClick(Window->ClientToScreen(mousePos), mouseButton, Window);
+        Input::Mouse->OnMouseDoubleClick(mousePos, mouseButton, Window);
     else
-	    Input::Mouse->OnMouseDown(Window->ClientToScreen(mousePos), mouseButton, Window);
+	    Input::Mouse->OnMouseDown(mousePos, mouseButton, Window);
 }
 
 - (void)mouseDragged:(NSEvent*)event
@@ -486,13 +538,28 @@ static void ConvertNSRect(NSScreen *screen, NSRect *r)
 
 - (void)mouseUp:(NSEvent*)event
 {
+    if (IsWindowInvalid(Window)) return;
 	Float2 mousePos = GetMousePosition(Window, event);
+    mousePos = Window->ClientToScreen(mousePos);
     MouseButton mouseButton = MouseButton::Left;
-    Input::Mouse->OnMouseUp(Window->ClientToScreen(mousePos), mouseButton, Window);
+    Input::Mouse->OnMouseUp(mousePos, mouseButton, Window);
+
+    // Redirect event to any window that tracks the mouse (eg. dock window in Editor)
+    WindowsManager::WindowsLocker.Lock();
+    for (auto* win : WindowsManager::Windows)
+    {
+        if (win->IsVisible() && win->IsMouseTracking() && win != Window)
+        {
+            Input::Mouse->OnMouseUp(mousePos, mouseButton, win);
+            break;
+        }
+    }
+    WindowsManager::WindowsLocker.Unlock();
 }
 
 - (void)rightMouseDown:(NSEvent*)event
 {
+    if (IsWindowInvalid(Window)) return;
 	Float2 mousePos = GetMousePosition(Window, event);
     MouseButton mouseButton = MouseButton::Right;
     if ([event clickCount] == 2)
@@ -508,6 +575,7 @@ static void ConvertNSRect(NSScreen *screen, NSRect *r)
 
 - (void)rightMouseUp:(NSEvent*)event
 {
+    if (IsWindowInvalid(Window)) return;
 	Float2 mousePos = GetMousePosition(Window, event);
     MouseButton mouseButton = MouseButton::Right;
     Input::Mouse->OnMouseUp(Window->ClientToScreen(mousePos), mouseButton, Window);
@@ -515,6 +583,7 @@ static void ConvertNSRect(NSScreen *screen, NSRect *r)
 
 - (void)otherMouseDown:(NSEvent*)event
 {
+    if (IsWindowInvalid(Window)) return;
 	Float2 mousePos = GetMousePosition(Window, event);
     MouseButton mouseButton;
     switch ([event buttonNumber])
@@ -544,6 +613,7 @@ static void ConvertNSRect(NSScreen *screen, NSRect *r)
 
 - (void)otherMouseUp:(NSEvent*)event
 {
+    if (IsWindowInvalid(Window)) return;
 	Float2 mousePos = GetMousePosition(Window, event);
     MouseButton mouseButton;
     switch ([event buttonNumber])
@@ -565,6 +635,7 @@ static void ConvertNSRect(NSScreen *screen, NSRect *r)
 
 - (NSDragOperation)draggingEntered:(id<NSDraggingInfo>)sender
 {
+    if (IsWindowInvalid(Window)) return NSDragOperationNone;
     Float2 mousePos;
     MacDropData dropData;
     GetDragDropData(Window, sender, mousePos, dropData);
@@ -580,6 +651,7 @@ static void ConvertNSRect(NSScreen *screen, NSRect *r)
 
 - (NSDragOperation)draggingUpdated:(id<NSDraggingInfo>)sender
 {
+    if (IsWindowInvalid(Window)) return NSDragOperationNone;
     Float2 mousePos;
     MacDropData dropData;
     GetDragDropData(Window, sender, mousePos, dropData);
@@ -590,6 +662,7 @@ static void ConvertNSRect(NSScreen *screen, NSRect *r)
 
 - (BOOL)performDragOperation:(id<NSDraggingInfo>)sender
 {
+    if (IsWindowInvalid(Window)) return NO;
     Float2 mousePos;
     MacDropData dropData;
     GetDragDropData(Window, sender, mousePos, dropData);
@@ -600,7 +673,36 @@ static void ConvertNSRect(NSScreen *screen, NSRect *r)
 
 - (void)draggingExited:(id<NSDraggingInfo>)sender
 {
+    if (IsWindowInvalid(Window)) return;
     Window->OnDragLeave();
+}
+
+- (NSDragOperation)draggingSession:(NSDraggingSession*)session sourceOperationMaskForDraggingContext:(NSDraggingContext)context
+{
+    if (IsWindowInvalid(Window)) return NSDragOperationNone;
+    return NSDragOperationMove;
+}
+
+- (void)draggingSession:(NSDraggingSession*)session endedAtPoint:(NSPoint)screenPoint operation:(NSDragOperation)operation
+{
+#if USE_EDITOR
+    // Stop background worker once the drag ended
+    MacDragLocker.Lock();
+    if (MacDragSession && MacDragSession == session)
+    {
+        Platform::AtomicStore(&MacDragJob->ExitFlag, 1);
+        MacDragJob->Wait();
+        MacDragSession = nullptr;
+        MacDragJob = nullptr;
+    }
+    MacDragLocker.Unlock();
+#endif
+}
+
+- (void)pasteboard:(nullable NSPasteboard*)pasteboard item:(NSPasteboardItem*)item provideDataForType:(NSPasteboardType)type
+{
+    if (IsWindowInvalid(Window)) return;
+    [pasteboard setString:(NSString*)AppleUtils::ToString(Window->GetDragText()) forType:NSPasteboardTypeString];
 }
 
 @end
@@ -624,6 +726,8 @@ MacWindow::MacWindow(const CreateWindowSettings& settings)
     {
         styleMask |= NSWindowStyleMaskBorderless;
     }
+    if (settings.Fullscreen)
+        styleMask |= NSWindowStyleMaskFullScreen;
     if (settings.HasBorder)
     {
         styleMask |= NSWindowStyleMaskTitled;
@@ -650,9 +754,11 @@ MacWindow::MacWindow(const CreateWindowSettings& settings)
     [window setMaxSize:NSMakeSize(settings.MaximumSize.X, settings.MaximumSize.Y)];
     [window setOpaque:!settings.SupportsTransparency];
     [window setContentView:view];
-    [window setAcceptsMouseMovedEvents:YES];
+    if (settings.AllowInput)
+        [window setAcceptsMouseMovedEvents:YES];
     [window setDelegate:window];
     _window = window;
+    _view = view;
     if (settings.AllowDragAndDrop)
     {
         [view registerForDraggedTypes:@[NSPasteboardTypeFileURL, NSPasteboardTypeString]];
@@ -664,8 +770,6 @@ MacWindow::MacWindow(const CreateWindowSettings& settings)
 		layer.contentsScale = screenScale;
 
     // TODO: impl Parent for MacWindow
-    // TODO: impl StartPosition for MacWindow
-    // TODO: impl Fullscreen for MacWindow
     // TODO: impl ShowInTaskbar for MacWindow
     // TODO: impl IsTopmost for MacWindow
 }
@@ -676,6 +780,7 @@ MacWindow::~MacWindow()
     [window close];
     [window release];
     _window = nullptr;
+    _view = nullptr;
 }
 
 void MacWindow::CheckForResize(float width, float height)
@@ -699,7 +804,6 @@ void MacWindow::SetIsMouseOver(bool value)
         // Refresh cursor typet
         SetCursor(CursorType::Default);
         SetCursor(cursor);
-        
     }
     else
     {
@@ -712,6 +816,22 @@ void MacWindow::SetIsMouseOver(bool value)
 void* MacWindow::GetNativePtr() const
 {
     return _window;
+}
+
+void MacWindow::OnUpdate(float dt)
+{
+    if (IsMouseTracking())
+    {
+        // Keep sending mouse movement events no matter if window has focus
+        Float2 mousePos = Platform::GetMousePosition();
+        if (_mouseTrackPos != mousePos)
+        {
+            _mouseTrackPos = mousePos;
+            Input::Mouse->OnMouseMove(mousePos, this);
+        }
+    }
+
+    WindowBase::OnUpdate(dt);
 }
 
 void MacWindow::Show()
@@ -728,7 +848,10 @@ void MacWindow::Show()
 
         // Show
         NSWindow* window = (NSWindow*)_window;
-        [window makeKeyAndOrderFront:window];
+        if (_settings.AllowInput)
+            [window makeKeyAndOrderFront:window];
+        else
+            [window orderFront:window];
         if (_settings.ActivateWhenFirstShown)
             [NSApp activateIgnoringOtherApps:YES];
         _focused = true;
@@ -746,7 +869,7 @@ void MacWindow::Hide()
 
         // Hide
         NSWindow* window = (NSWindow*)_window;
-        [window orderOut:nil];
+        [window orderOut:window];
 
         // Base
         WindowBase::Hide();
@@ -782,14 +905,9 @@ void MacWindow::Restore()
         [window zoom:nil];
 }
 
-bool MacWindow::IsClosed() const
-{
-    return _window != nullptr;
-}
-
 bool MacWindow::IsForegroundWindow() const
 {
-    return Platform::GetHasFocus() && IsFocused();
+    return IsFocused() && Platform::GetHasFocus();
 }
 
 void MacWindow::BringToFront(bool force)
@@ -808,14 +926,13 @@ void MacWindow::SetClientBounds(const Rectangle& clientArea)
     NSWindow* window = (NSWindow*)_window;
     if (!window)
         return;
+    const float screenScale = MacPlatform::ScreenScale;
+
     NSRect oldRect = [window frame];
-    NSRect newRect = NSMakeRect(0, 0, clientArea.Size.X, clientArea.Size.Y);
+    NSRect newRect = NSMakeRect(0, 0, clientArea.Size.X / screenScale, clientArea.Size.Y / screenScale);
     newRect = [window frameRectForContentRect:newRect];
 
-    //newRect.origin.x = oldRect.origin.x;
-    //newRect.origin.y = NSMaxY(oldRect) - newRect.size.height;
-
-    Float2 pos = AppleUtils::PosToCoca(clientArea.Location);
+    Float2 pos = AppleUtils::PosToCoca(clientArea.Location) / screenScale;
     Float2 titleSize = GetWindowTitleSize(this);
     newRect.origin.x = pos.X + titleSize.X;
     newRect.origin.y = pos.Y - newRect.size.height + titleSize.Y;
@@ -909,8 +1026,63 @@ void MacWindow::SetTitle(const StringView& title)
 
 DragDropEffect MacWindow::DoDragDrop(const StringView& data)
 {
-    // TODO: implement using beginDraggingSession and NSDraggingSource
-    return DragDropEffect::None;
+    NSWindow* window = (NSWindow*)_window;
+    MacViewImpl* view = (MacViewImpl*)_view;
+    _dragText = data;
+
+    // Create mouse drag event
+    NSEvent* event = [NSEvent
+        mouseEventWithType:NSEventTypeLeftMouseDragged
+        location:window.mouseLocationOutsideOfEventStream
+        modifierFlags:0
+        timestamp:NSApp.currentEvent.timestamp
+        windowNumber:window.windowNumber
+        context:nil
+        eventNumber:0
+        clickCount:1
+        pressure:1.0];
+
+    // Create drag item
+    NSPasteboardItem* pasteItem = [NSPasteboardItem new];
+    [pasteItem setDataProvider:view forTypes:[NSArray arrayWithObjects:NSPasteboardTypeString, nil]];
+    NSDraggingItem* dragItem = [[NSDraggingItem alloc] initWithPasteboardWriter:pasteItem];
+    [dragItem setDraggingFrame:NSMakeRect(event.locationInWindow.x, event.locationInWindow.y, 1, 1) contents:nil];
+
+    // Start dragging session
+    NSDraggingSession* draggingSession = [view beginDraggingSessionWithItems:[NSArray arrayWithObject:dragItem] event:event source:view];
+    DragDropEffect result = DragDropEffect::None;
+
+#if USE_EDITOR
+    // Create background worker that will keep updating GUI (perform rendering)
+    MacDragLocker.Lock();
+    ASSERT(!MacDragSession && !MacDragJob);
+    MacDragSession = draggingSession;
+    MacDragJob = New<DoDragDropJob>();
+    Task::StartNew(MacDragJob);
+    MacDragLocker.Unlock();
+    while (MacDragJob->GetState() == TaskState::Queued)
+        Platform::Sleep(1);
+    // TODO: maybe wait for the drag end to return result?
+#endif
+
+    return result;
+}
+
+void MacWindow::StartTrackingMouse(bool useMouseScreenOffset)
+{
+    if (_isTrackingMouse || !_window)
+        return;
+    _isTrackingMouse = true;
+    _trackingMouseOffset = Float2::Zero;
+    _isUsingMouseOffset = useMouseScreenOffset;
+    _mouseTrackPos = Float2::Minimum;
+}
+
+void MacWindow::EndTrackingMouse()
+{
+    if (!_isTrackingMouse || !_window)
+        return;
+    _isTrackingMouse = false;
 }
 
 void MacWindow::SetCursor(CursorType type)

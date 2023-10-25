@@ -91,7 +91,7 @@ namespace FlaxEditor.Surface.Elements
                     _currentType = value;
 
                     // Check if will need to update box connections due to type change
-                    if ((Surface == null || Surface._isUpdatingBoxTypes == 0) && HasAnyConnection && !CanCast(prev, _currentType))
+                    if ((Surface == null || Surface._isUpdatingBoxTypes == 0) && HasAnyConnection && !prev.CanCastTo(_currentType))
                     {
                         // Remove all invalid connections and update those which still can be valid
                         var connections = Connections.ToArray();
@@ -132,6 +132,11 @@ namespace FlaxEditor.Surface.Elements
                 }
             }
         }
+
+        /// <summary>
+        /// Cached color for <see cref="CurrentType"/>.
+        /// </summary>
+        public Color CurrentTypeColor => _currentTypeColor;
 
         /// <summary>
         /// The collection of the attributes used by the box. Assigned externally. Can be used to control the default value editing for the <see cref="InputBox"/> or to provide more metadata for the surface UI.
@@ -231,58 +236,8 @@ namespace FlaxEditor.Surface.Elements
             }
 
             // Check using connection hints
-            var connectionsHints = ParentNode.Archetype.ConnectionsHints;
-            if (Archetype.ConnectionsType == ScriptType.Null && connectionsHints != ConnectionsHint.None)
-            {
-                if ((connectionsHints & ConnectionsHint.Anything) == ConnectionsHint.Anything)
-                    return true;
-                if ((connectionsHints & ConnectionsHint.Value) == ConnectionsHint.Value && type.Type != typeof(void))
-                    return true;
-                if ((connectionsHints & ConnectionsHint.Enum) == ConnectionsHint.Enum && type.IsEnum)
-                    return true;
-                if ((connectionsHints & ConnectionsHint.Array) == ConnectionsHint.Array && type.IsArray)
-                    return true;
-                if ((connectionsHints & ConnectionsHint.Dictionary) == ConnectionsHint.Dictionary && type.IsDictionary)
-                    return true;
-                if ((connectionsHints & ConnectionsHint.Vector) == ConnectionsHint.Vector)
-                {
-                    var t = type.Type;
-                    if (t == typeof(Vector2) ||
-                        t == typeof(Vector3) ||
-                        t == typeof(Vector4) ||
-                        t == typeof(Float2) ||
-                        t == typeof(Float3) ||
-                        t == typeof(Float4) ||
-                        t == typeof(Double2) ||
-                        t == typeof(Double3) ||
-                        t == typeof(Double4) ||
-                        t == typeof(Int2) ||
-                        t == typeof(Int3) ||
-                        t == typeof(Int4) ||
-                        t == typeof(Color))
-                    {
-                        return true;
-                    }
-                }
-                if ((connectionsHints & ConnectionsHint.Scalar) == ConnectionsHint.Scalar)
-                {
-                    var t = type.Type;
-                    if (t == typeof(bool) ||
-                        t == typeof(char) ||
-                        t == typeof(byte) ||
-                        t == typeof(short) ||
-                        t == typeof(ushort) ||
-                        t == typeof(int) ||
-                        t == typeof(uint) ||
-                        t == typeof(long) ||
-                        t == typeof(ulong) ||
-                        t == typeof(float) ||
-                        t == typeof(double))
-                    {
-                        return true;
-                    }
-                }
-            }
+            if (VisjectSurface.IsTypeCompatible(Archetype.ConnectionsType, type, ParentNode.Archetype.ConnectionsHints))
+                return true;
 
             // Check independent and if there is box with bigger potential because it may block current one from changing type
             var parentArch = ParentNode.Archetype;
@@ -296,7 +251,7 @@ namespace FlaxEditor.Surface.Elements
                     var b = ParentNode.GetBox(boxes[i]);
 
                     // Check if its the same and tested type matches the default value type
-                    if (b == this && CanCast(parentArch.DefaultType, type))
+                    if (b == this && parentArch.DefaultType.CanCastTo(type))
                     {
                         // Can
                         return true;
@@ -544,44 +499,6 @@ namespace FlaxEditor.Surface.Elements
             }
         }
 
-        /// <summary>
-        /// Draws the box GUI using <see cref="Render2D"/>.
-        /// </summary>
-        protected void DrawBox()
-        {
-            var rect = new Rectangle(Float2.Zero, Size);
-
-            // Size culling
-            const float minBoxSize = 5.0f;
-            if (rect.Size.LengthSquared < minBoxSize * minBoxSize)
-                return;
-
-            // Debugging boxes size
-            //Render2D.DrawRectangle(rect, Color.Orange); return;
-
-            // Draw icon
-            bool hasConnections = HasAnyConnection;
-            float alpha = Enabled ? 1.0f : 0.6f;
-            Color color = _currentTypeColor * alpha;
-            var style = Surface.Style;
-            SpriteHandle icon;
-            if (_currentType.Type == typeof(void))
-                icon = hasConnections ? style.Icons.ArrowClose : style.Icons.ArrowOpen;
-            else
-                icon = hasConnections ? style.Icons.BoxClose : style.Icons.BoxOpen;
-            color *= ConnectionsHighlightIntensity + 1;
-            Render2D.DrawSprite(icon, rect, color);
-
-            // Draw selection hint
-            if (_isSelected)
-            {
-                float outlineAlpha = Mathf.Sin(Time.TimeSinceStartup * 4.0f) * 0.5f + 0.5f;
-                float outlineWidth = Mathf.Lerp(1.5f, 4.0f, outlineAlpha);
-                var outlineRect = new Rectangle(rect.X - outlineWidth, rect.Y - outlineWidth, rect.Width + outlineWidth * 2, rect.Height + outlineWidth * 2);
-                Render2D.DrawSprite(icon, outlineRect, FlaxEngine.GUI.Style.Current.BorderSelected.RGBMultiplied(1.0f + outlineAlpha * 0.4f));
-            }
-        }
-
         /// <inheritdoc />
         public override void OnMouseEnter(Float2 location)
         {
@@ -708,25 +625,19 @@ namespace FlaxEditor.Surface.Elements
             return false;
         }
 
+        /// <summary>
+        /// Connections origin offset.
+        /// </summary>
+        public Float2 ConnectionOffset;
+
         /// <inheritdoc />
         public Float2 ConnectionOrigin
         {
             get
             {
-                var center = Center;
+                var center = Center + ConnectionOffset;
                 return Parent.PointToParent(ref center);
             }
-        }
-
-        private static bool CanCast(ScriptType oB, ScriptType iB)
-        {
-            if (oB == iB)
-                return true;
-            if (oB == ScriptType.Null || iB == ScriptType.Null)
-                return false;
-            return (oB.Type != typeof(void) && oB.Type != typeof(FlaxEngine.Object)) &&
-                   (iB.Type != typeof(void) && iB.Type != typeof(FlaxEngine.Object)) &&
-                   oB.IsAssignableFrom(iB);
         }
 
         /// <inheritdoc />
@@ -787,7 +698,7 @@ namespace FlaxEditor.Surface.Elements
             {
                 if (!iB.CanUseType(oB.CurrentType))
                 {
-                    if (!CanCast(oB.CurrentType, iB.CurrentType))
+                    if (!oB.CurrentType.CanCastTo(iB.CurrentType))
                     {
                         // Cannot
                         return false;
@@ -798,7 +709,7 @@ namespace FlaxEditor.Surface.Elements
             {
                 if (!oB.CanUseType(iB.CurrentType))
                 {
-                    if (!CanCast(oB.CurrentType, iB.CurrentType))
+                    if (!oB.CurrentType.CanCastTo(iB.CurrentType))
                     {
                         // Cannot
                         return false;
@@ -813,7 +724,7 @@ namespace FlaxEditor.Surface.Elements
         /// <inheritdoc />
         public void DrawConnectingLine(ref Float2 startPos, ref Float2 endPos, ref Color color)
         {
-            OutputBox.DrawConnection(ref startPos, ref endPos, ref color, 2);
+            OutputBox.DrawConnection(Surface.Style, ref startPos, ref endPos, ref color, 2);
         }
 
         /// <inheritdoc />
@@ -871,7 +782,7 @@ namespace FlaxEditor.Surface.Elements
             bool useCaster = false;
             if (!iB.CanUseType(oB.CurrentType))
             {
-                if (CanCast(oB.CurrentType, iB.CurrentType))
+                if (oB.CurrentType.CanCastTo(iB.CurrentType))
                     useCaster = true;
                 else
                     return;
@@ -881,8 +792,62 @@ namespace FlaxEditor.Surface.Elements
             if (useCaster)
             {
                 // Connect via Caster
-                //AddCaster(oB, iB);
-                throw new NotImplementedException("AddCaster(..) function");
+                const float casterXOffset = 250;
+                if (Surface.Undo != null && Surface.Undo.Enabled)
+                {
+                    bool undoEnabled = Surface.Undo.Enabled;
+                    Surface.Undo.Enabled = false;
+                    SurfaceNode node = Surface.Context.SpawnNode(7, 22, Float2.Zero); // 22 AsNode, 25 CastNode
+                    Surface.Undo.Enabled = undoEnabled;
+                    if (node is not Archetypes.Tools.AsNode castNode)
+                        throw new Exception("Node is not a casting node!");
+
+                    // Set the type of the casting node
+                    undoEnabled = castNode.Surface.Undo.Enabled;
+                    castNode.Surface.Undo.Enabled = false;
+                    castNode.SetPickerValue(iB.CurrentType);
+                    castNode.Surface.Undo.Enabled = undoEnabled;
+                    if (node.GetBox(0) is not OutputBox castOutputBox || node.GetBox(1) is not InputBox castInputBox)
+                        throw new NullReferenceException("Casting failed. Cast node is invalid!");
+
+                    // We set the position of the cast node here to set it relative to the target nodes input box
+                    undoEnabled = castNode.Surface.Undo.Enabled;
+                    castNode.Surface.Undo.Enabled = false;
+                    var wantedOffset = iB.ParentNode.Location - new Float2(casterXOffset, -(iB.LocalY - castOutputBox.LocalY));
+                    castNode.Location = Surface.Root.PointFromParent(ref wantedOffset);
+                    castNode.Surface.Undo.Enabled = undoEnabled;
+
+                    var spawnNodeAction = new AddRemoveNodeAction(castNode, true);
+
+                    var connectToCastNodeAction = new ConnectBoxesAction(castInputBox, oB, true);
+                    castInputBox.CreateConnection(oB);
+                    connectToCastNodeAction.End();
+
+                    var connectCastToTargetNodeAction = new ConnectBoxesAction(iB, castOutputBox, true);
+                    iB.CreateConnection(castOutputBox);
+                    connectCastToTargetNodeAction.End();
+
+                    Surface.AddBatchedUndoAction(new MultiUndoAction(spawnNodeAction, connectToCastNodeAction, connectCastToTargetNodeAction));
+                }
+                else
+                {
+                    SurfaceNode node = Surface.Context.SpawnNode(7, 22, Float2.Zero); // 22 AsNode, 25 CastNode
+                    if (node is not Archetypes.Tools.AsNode castNode)
+                        throw new Exception("Node is not a casting node!");
+
+                    // Set the type of the casting node
+                    castNode.SetPickerValue(iB.CurrentType);
+                    if (node.GetBox(0) is not OutputBox castOutputBox || node.GetBox(1) is not InputBox castInputBox)
+                        throw new NullReferenceException("Casting failed. Cast node is invalid!");
+
+                    // We set the position of the cast node here to set it relative to the target nodes input box
+                    var wantedOffset = iB.ParentNode.Location - new Float2(casterXOffset, -(iB.LocalY - castOutputBox.LocalY));
+                    castNode.Location = Surface.Root.PointFromParent(ref wantedOffset);
+
+                    castInputBox.CreateConnection(oB);
+                    iB.CreateConnection(castOutputBox);
+                }
+                Surface.MarkAsEdited();
             }
             else
             {

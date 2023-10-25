@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using System.Linq;
 using FlaxEditor.GUI.ContextMenu;
 using FlaxEditor.GUI.Input;
-using FlaxEditor.Scripting;
 using FlaxEngine;
 using FlaxEngine.GUI;
 using FlaxEngine.Utilities;
@@ -29,9 +28,10 @@ namespace FlaxEditor.Surface.ContextMenu
         /// <summary>
         /// Visject Surface node archetype spawn ability checking delegate.
         /// </summary>
+        /// <param name="groupArch">The nodes group archetype to check.</param>
         /// <param name="arch">The node archetype to check.</param>
         /// <returns>True if can use this node to spawn it on a surface, otherwise false..</returns>
-        public delegate bool NodeSpawnCheckDelegate(NodeArchetype arch);
+        public delegate bool NodeSpawnCheckDelegate(GroupArchetype groupArch, NodeArchetype arch);
 
         /// <summary>
         /// Visject Surface parameters getter delegate.
@@ -40,6 +40,8 @@ namespace FlaxEditor.Surface.ContextMenu
         public delegate List<SurfaceParameter> ParameterGetterDelegate();
 
         private readonly List<VisjectCMGroup> _groups = new List<VisjectCMGroup>(16);
+        private CheckBox _contextSensitiveToggle;
+        private bool _contextSensitiveSearchEnabled = true;
         private readonly TextBox _searchBox;
         private bool _waitingForInput;
         private VisjectCMGroup _surfaceParametersGroup;
@@ -127,7 +129,7 @@ namespace FlaxEditor.Surface.ContextMenu
                 _parameterSetNodeArchetype = info.ParameterSetNodeArchetype ?? Archetypes.Parameters.Nodes[3];
 
             // Context menu dimensions
-            Size = new Float2(320, 248);
+            Size = new Float2(300, 400);
 
             var headerPanel = new Panel(ScrollBars.None)
             {
@@ -139,16 +141,40 @@ namespace FlaxEditor.Surface.ContextMenu
             };
 
             // Title bar
+            var titleFontReference = new FontReference(Style.Current.FontLarge.Asset, 10);
             var titleLabel = new Label
             {
-                Width = Width - 8,
+                Width = Width * 0.5f - 8f,
                 Height = 20,
                 X = 4,
                 Parent = headerPanel,
                 Text = "Select Node",
-                HorizontalAlignment = TextAlignment.Center,
-                Font = new FontReference(Style.Current.FontLarge.Asset, 10),
+                HorizontalAlignment = TextAlignment.Near,
+                Font = titleFontReference,
             };
+
+            // Context sensitive toggle
+            var contextSensitiveLabel = new Label
+            {
+                Width = Width * 0.5f - 28,
+                Height = 20,
+                X = Width * 0.5f,
+                Parent = headerPanel,
+                Text = "Context Sensitive",
+                TooltipText = "Should the nodes be filtered to only show those that can be connected in the current context?",
+                HorizontalAlignment = TextAlignment.Far,
+                Font = titleFontReference,
+            };
+
+            _contextSensitiveToggle = new CheckBox
+            {
+                Width = 20,
+                Height = 20,
+                X = Width - 24,
+                Parent = headerPanel,
+                Checked = _contextSensitiveSearchEnabled,
+            };
+            _contextSensitiveToggle.StateChanged += OnContextSensitiveToggleStateChanged;
 
             // Search box
             _searchBox = new SearchBox(false, 2, 22)
@@ -184,7 +210,7 @@ namespace FlaxEditor.Surface.ContextMenu
                 nodes.Clear();
                 foreach (var nodeArchetype in groupArchetype.Archetypes)
                 {
-                    if ((nodeArchetype.Flags & NodeFlags.NoSpawnViaGUI) == 0 && info.CanSpawnNode(nodeArchetype))
+                    if ((nodeArchetype.Flags & NodeFlags.NoSpawnViaGUI) == 0 && info.CanSpawnNode(groupArchetype, nodeArchetype))
                     {
                         nodes.Add(nodeArchetype);
                     }
@@ -282,11 +308,17 @@ namespace FlaxEditor.Surface.ContextMenu
                 {
                     group.UnlockChildrenRecursive();
                     SortGroups();
+                    if (ShowExpanded)
+                        group.Open(false);
                     group.PerformLayout();
                     if (_searchBox.TextLength != 0)
                     {
                         OnSearchFilterChanged();
                     }
+                }
+                else if (_contextSensitiveSearchEnabled)
+                {
+                    group.EvaluateVisibilityWithBox(_selectedBox);
                 }
 
                 Profiler.EndEvent();
@@ -321,7 +353,11 @@ namespace FlaxEditor.Surface.ContextMenu
                             Parent = group
                         };
                     }
+                    if (_contextSensitiveSearchEnabled)
+                        group.EvaluateVisibilityWithBox(_selectedBox);
                     group.SortChildren();
+                    if (ShowExpanded)
+                        group.Open(false);
                     group.Parent = _groupsPanel;
                     _groups.Add(group);
 
@@ -418,8 +454,26 @@ namespace FlaxEditor.Surface.ContextMenu
                 return;
 
             Profiler.BeginEvent("VisjectCM.OnSearchFilterChanged");
-            
-            if (string.IsNullOrEmpty(_searchBox.Text))
+            UpdateFilters();
+            _searchBox.Focus();
+            Profiler.EndEvent();
+        }
+
+        private void OnContextSensitiveToggleStateChanged(CheckBox checkBox)
+        {
+            // Skip events during setup or init stuff
+            if (IsLayoutLocked)
+                return;
+
+            Profiler.BeginEvent("VisjectCM.OnContextSensitiveToggleStateChanged");
+            _contextSensitiveSearchEnabled = checkBox.Checked;
+            UpdateFilters();
+            Profiler.EndEvent();
+        }
+
+        private void UpdateFilters()
+        {
+            if (string.IsNullOrEmpty(_searchBox.Text) && _selectedBox == null)
             {
                 ResetView();
                 Profiler.EndEvent();
@@ -430,7 +484,7 @@ namespace FlaxEditor.Surface.ContextMenu
             LockChildrenRecursive();
             for (int i = 0; i < _groups.Count; i++)
             {
-                _groups[i].UpdateFilter(_searchBox.Text);
+                _groups[i].UpdateFilter(_searchBox.Text, _contextSensitiveSearchEnabled ? _selectedBox : null);
                 _groups[i].UpdateItemSort(_selectedBox);
             }
             SortGroups();
@@ -443,9 +497,6 @@ namespace FlaxEditor.Surface.ContextMenu
             PerformLayout();
             if (SelectedItem != null)
                 _panel1.ScrollViewTo(SelectedItem);
-            _searchBox.Focus();
-            Profiler.EndEvent();
-
             Profiler.EndEvent();
         }
 
@@ -503,7 +554,11 @@ namespace FlaxEditor.Surface.ContextMenu
             _searchBox.Clear();
             SelectedItem = null;
             for (int i = 0; i < _groups.Count; i++)
+            {
                 _groups[i].ResetView();
+                if (_contextSensitiveSearchEnabled)
+                    _groups[i].EvaluateVisibilityWithBox(_selectedBox);
+            }
             UnlockChildrenRecursive();
 
             SortGroups();
@@ -568,7 +623,7 @@ namespace FlaxEditor.Surface.ContextMenu
                     Archetypes = archetypes
                 };
 
-                var group = CreateGroup(groupArchetype);
+                var group = CreateGroup(groupArchetype, false);
                 group.ArrowImageOpened = new SpriteBrush(Style.Current.ArrowDown);
                 group.ArrowImageClosed = new SpriteBrush(Style.Current.ArrowRight);
                 group.Close(false);
@@ -671,9 +726,7 @@ namespace FlaxEditor.Surface.ContextMenu
                     SelectedItem = previousSelectedItem;
 
                     // Scroll into view (without smoothing)
-                    _panel1.VScrollBar.SmoothingScale = 0;
-                    _panel1.ScrollViewTo(SelectedItem);
-                    _panel1.VScrollBar.SmoothingScale = 1;
+                    _panel1.ScrollViewTo(SelectedItem, true);
                 }
                 return true;
             }
@@ -758,6 +811,13 @@ namespace FlaxEditor.Surface.ContextMenu
         private IEnumerable<T> GetPreviousSiblings<T>(Control item) where T : Control
         {
             return GetPreviousSiblings(item).OfType<T>();
+        }
+
+        /// <inheritdoc />
+        public override void OnDestroy()
+        {
+            _contextSensitiveToggle.StateChanged -= OnContextSensitiveToggleStateChanged;
+            base.OnDestroy();
         }
     }
 }

@@ -852,6 +852,7 @@ bool SkinnedModel::Init(const Span<int32>& meshesCountPerLod)
     {
         auto& lod = LODs[lodIndex];
         lod._model = this;
+        lod._lodIndex = lodIndex;
         lod.ScreenSize = 1.0f;
         const int32 meshesCount = meshesCountPerLod[lodIndex];
         if (meshesCount <= 0 || meshesCount > MODEL_MAX_MESHES)
@@ -1112,6 +1113,7 @@ Asset::LoadResult SkinnedModel::load()
     {
         auto& lod = LODs[lodIndex];
         lod._model = this;
+        lod._lodIndex = lodIndex;
 
         // Screen Size
         stream->ReadFloat(&lod.ScreenSize);

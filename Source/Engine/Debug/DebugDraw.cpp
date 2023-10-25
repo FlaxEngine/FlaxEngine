@@ -638,10 +638,10 @@ void DebugDrawService::Update()
 
         // Default
         desc.PS = shader->GetPS("PS", 0);
-        desc.PrimitiveTopologyType = PrimitiveTopologyType::Line;
+        desc.PrimitiveTopology = PrimitiveTopologyType::Line;
         failed |= DebugDrawPsLinesDefault.Create(desc);
         desc.PS = shader->GetPS("PS", 1);
-        desc.PrimitiveTopologyType = PrimitiveTopologyType::Triangle;
+        desc.PrimitiveTopology = PrimitiveTopologyType::Triangle;
         failed |= DebugDrawPsTrianglesDefault.Create(desc);
         desc.Wireframe = true;
         failed |= DebugDrawPsWireTrianglesDefault.Create(desc);
@@ -649,10 +649,10 @@ void DebugDrawService::Update()
         // Depth Test
         desc.Wireframe = false;
         desc.PS = shader->GetPS("PS", 2);
-        desc.PrimitiveTopologyType = PrimitiveTopologyType::Line;
+        desc.PrimitiveTopology = PrimitiveTopologyType::Line;
         failed |= DebugDrawPsLinesDepthTest.Create(desc);
         desc.PS = shader->GetPS("PS", 3);
-        desc.PrimitiveTopologyType = PrimitiveTopologyType::Triangle;
+        desc.PrimitiveTopology = PrimitiveTopologyType::Triangle;
         failed |= DebugDrawPsTrianglesDepthTest.Create(desc);
         desc.Wireframe = true;
         failed |= DebugDrawPsWireTrianglesDepthTest.Create(desc);
@@ -939,6 +939,26 @@ void DebugDraw::DrawLine(const Vector3& start, const Vector3& end, const Color& 
         Vertex l = { startF, Color32(color) };
         debugDrawData.OneFrameLines.Add(l);
         l.Position = endF;
+        debugDrawData.OneFrameLines.Add(l);
+    }
+}
+
+void DebugDraw::DrawLine(const Vector3& start, const Vector3& end, const Color& startColor, const Color& endColor, float duration, bool depthTest)
+{
+    const Float3 startF = start - Context->Origin, endF = end - Context->Origin;
+    auto& debugDrawData = depthTest ? Context->DebugDrawDepthTest : Context->DebugDrawDefault;
+    if (duration > 0)
+    {
+        // TODO: separate start/end colors for persistent lines
+        DebugLine l = { startF, endF, Color32(startColor), duration };
+        debugDrawData.DefaultLines.Add(l);
+    }
+    else
+    {
+        Vertex l = { startF, Color32(startColor) };
+        debugDrawData.OneFrameLines.Add(l);
+        l.Position = endF;
+        l.Color = Color32(endColor);
         debugDrawData.OneFrameLines.Add(l);
     }
 }

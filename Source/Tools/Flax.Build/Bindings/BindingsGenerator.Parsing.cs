@@ -266,10 +266,12 @@ namespace Flax.Build.Bindings
                 // Reference `&` character
                 else if (token.Type == TokenType.And)
                 {
-                    if (type.IsRef)
-                        type.Type += '&';
-                    else
+                    if (!type.IsRef)
                         type.IsRef = true;
+                    else if (!type.IsMoveRef)
+                        type.IsMoveRef = true;
+                    else
+                        type.Type += '&';
                 }
                 // Namespace
                 else if (token.Type == TokenType.Colon)
@@ -613,6 +615,9 @@ namespace Flax.Build.Bindings
                 case "private":
                     desc.Access = AccessLevel.Private;
                     break;
+                case "internal":
+                    desc.Access = AccessLevel.Internal;
+                    break;
                 case "template":
                     desc.IsTemplate = true;
                     break;
@@ -627,6 +632,9 @@ namespace Flax.Build.Bindings
                     break;
                 case "namespace":
                     desc.Namespace = tag.Value;
+                    break;
+                case "marshalas":
+                    desc.MarshalAs = tag.Value;
                     break;
                 case "tag":
                     ParseTag(ref desc.Tags, tag);
@@ -700,6 +708,9 @@ namespace Flax.Build.Bindings
                     break;
                 case "private":
                     desc.Access = AccessLevel.Private;
+                    break;
+                case "internal":
+                    desc.Access = AccessLevel.Internal;
                     break;
                 case "template":
                     desc.IsTemplate = true;
@@ -837,6 +848,9 @@ namespace Flax.Build.Bindings
                     break;
                 case "private":
                     desc.Access = AccessLevel.Private;
+                    break;
+                case "internal":
+                    desc.Access = AccessLevel.Internal;
                     break;
                 case "attributes":
                     desc.Attributes = tag.Value;
@@ -1116,6 +1130,9 @@ namespace Flax.Build.Bindings
                 case "private":
                     desc.Access = AccessLevel.Private;
                     break;
+                case "internal":
+                    desc.Access = AccessLevel.Internal;
+                    break;
                 case "inbuild":
                     desc.IsInBuild = true;
                     break;
@@ -1181,6 +1198,9 @@ namespace Flax.Build.Bindings
                 case "private":
                     desc.Access = AccessLevel.Private;
                     break;
+                case "internal":
+                    desc.Access = AccessLevel.Internal;
+                    break;
                 case "template":
                     desc.IsTemplate = true;
                     break;
@@ -1201,6 +1221,9 @@ namespace Flax.Build.Bindings
                     break;
                 case "namespace":
                     desc.Namespace = tag.Value;
+                    break;
+                case "marshalas":
+                    desc.MarshalAs = tag.Value;
                     break;
                 case "tag":
                     ParseTag(ref desc.Tags, tag);
@@ -1317,6 +1340,9 @@ namespace Flax.Build.Bindings
                 case "private":
                     desc.Access = AccessLevel.Private;
                     break;
+                case "internal":
+                    desc.Access = AccessLevel.Internal;
+                    break;
                 case "attributes":
                     desc.Attributes = tag.Value;
                     break;
@@ -1391,6 +1417,9 @@ namespace Flax.Build.Bindings
                     break;
                 case "private":
                     desc.Access = AccessLevel.Private;
+                    break;
+                case "internal":
+                    desc.Access = AccessLevel.Internal;
                     break;
                 case "attributes":
                     desc.Attributes = tag.Value;

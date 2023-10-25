@@ -20,7 +20,7 @@ API_ENUM() enum class FontHinting : byte
     Default,
 
     /// <summary>
-    /// Force the use of an automatic hinting algorithm (over the font's native hinter).
+    /// Force the use of an automatic hinting algorithm (over the fonts native hinter).
     /// </summary>
     Auto,
 
@@ -35,7 +35,7 @@ API_ENUM() enum class FontHinting : byte
     Monochrome,
 
     /// <summary>
-    /// Do not use hinting. This generally generates 'blurrier' bitmap glyphs when the glyph are rendered in any of the anti-aliased modes.
+    /// Do not use hinting. This generally generates 'blurrier' bitmap glyphs when the glyphs are rendered in any of the anti-aliased modes.
     /// </summary>
     None,
 };
@@ -51,7 +51,7 @@ API_ENUM(Attributes="Flags") enum class FontFlags : byte
     None = 0,
 
     /// <summary>
-    /// Enables using anti-aliasing for font characters. Otherwise font will use monochrome data.
+    /// Enables using anti-aliasing for font characters. Otherwise font will use the monochrome data.
     /// </summary>
     AntiAliasing = 1,
 

@@ -33,7 +33,8 @@
         int alError = alGetError(); \
         if (alError != 0) \
         { \
-        LOG(Error, "OpenAL method {0} failed with error 0x{1:X} (at line {2})", TEXT(#method), alError, __LINE__ - 1); \
+            const Char* errorStr = GetOpenALErrorString(alError); \
+            LOG(Error, "OpenAL method {0} failed with error 0x{1:X}:{2} (at line {3})", TEXT(#method), alError, errorStr, __LINE__ - 1); \
         } \
     }
 #endif
@@ -90,7 +91,7 @@ namespace ALC
         }
         ASSERT(Contexts.HasItems());
 #else
-        ASSERT(Contexts.Count() == 1)
+        ASSERT(Contexts.Count() == 1);
 #endif
         return Contexts[0];
     }
@@ -228,11 +229,9 @@ namespace ALC
 ALenum GetOpenALBufferFormat(uint32 numChannels, uint32 bitDepth)
 {
     // TODO: cache enum values in Init()??
-
     switch (bitDepth)
     {
     case 8:
-    {
         switch (numChannels)
         {
         case 1:
@@ -247,13 +246,8 @@ ALenum GetOpenALBufferFormat(uint32 numChannels, uint32 bitDepth)
             return alGetEnumValue("AL_FORMAT_61CHN8");
         case 8:
             return alGetEnumValue("AL_FORMAT_71CHN8");
-        default:
-            CRASH;
-            return 0;
         }
-    }
     case 16:
-    {
         switch (numChannels)
         {
         case 1:
@@ -268,19 +262,22 @@ ALenum GetOpenALBufferFormat(uint32 numChannels, uint32 bitDepth)
             return alGetEnumValue("AL_FORMAT_61CHN16");
         case 8:
             return alGetEnumValue("AL_FORMAT_71CHN16");
-        default:
-            CRASH;
-            return 0;
         }
-    }
     case 32:
-    {
         switch (numChannels)
         {
         case 1:
+#ifdef AL_FORMAT_MONO_FLOAT32
+            return AL_FORMAT_MONO_FLOAT32;
+#else
             return alGetEnumValue("AL_FORMAT_MONO_FLOAT32");
+#endif
         case 2:
+#ifdef AL_FORMAT_STEREO_FLOAT32
+            return AL_FORMAT_STEREO_FLOAT32;
+#else
             return alGetEnumValue("AL_FORMAT_STEREO_FLOAT32");
+#endif
         case 4:
             return alGetEnumValue("AL_FORMAT_QUAD32");
         case 6:
@@ -289,15 +286,31 @@ ALenum GetOpenALBufferFormat(uint32 numChannels, uint32 bitDepth)
             return alGetEnumValue("AL_FORMAT_61CHN32");
         case 8:
             return alGetEnumValue("AL_FORMAT_71CHN32");
-        default:
-            CRASH;
-            return 0;
         }
     }
+    return 0;
+}
+
+const Char* GetOpenALErrorString(int error)
+{
+    switch (error)
+    {
+    case AL_NO_ERROR:
+        return TEXT("AL_NO_ERROR");
+    case AL_INVALID_NAME:
+        return TEXT("AL_INVALID_NAME");
+    case AL_INVALID_ENUM:
+        return TEXT("AL_INVALID_ENUM");
+    case AL_INVALID_VALUE:
+        return TEXT("AL_INVALID_VALUE");
+    case AL_INVALID_OPERATION:
+        return TEXT("AL_INVALID_OPERATION");
+    case AL_OUT_OF_MEMORY:
+        return TEXT("AL_OUT_OF_MEMORY");
     default:
-        CRASH;
-        return 0;
+        break;
     }
+    return TEXT("???");
 }
 
 void AudioBackendOAL::Listener_OnAdd(AudioListener* listener)
@@ -607,7 +620,8 @@ void AudioBackendOAL::Buffer_Write(uint32 bufferId, byte* samples, const AudioDa
 {
     PROFILE_CPU();
 
-    // TODO: maybe use temporary buffers per thread to reduce dynamic allocations when uploading data to OpenAL?
+    // Pick the format for the audio data (it might not be supported natively)
+    ALenum format = GetOpenALBufferFormat(info.NumChannels, info.BitDepth);
 
     // Mono or stereo
     if (info.NumChannels <= 2)
@@ -618,28 +632,23 @@ void AudioBackendOAL::Buffer_Write(uint32 bufferId, byte* samples, const AudioDa
             {
                 const uint32 bufferSize = info.NumSamples * sizeof(float);
                 float* sampleBufferFloat = (float*)Allocator::Allocate(bufferSize);
-
                 AudioTool::ConvertToFloat(samples, info.BitDepth, sampleBufferFloat, info.NumSamples);
 
-                const ALenum format = GetOpenALBufferFormat(info.NumChannels, info.BitDepth);
+                format = GetOpenALBufferFormat(info.NumChannels, 32);
                 alBufferData(bufferId, format, sampleBufferFloat, bufferSize, info.SampleRate);
                 ALC_CHECK_ERROR(alBufferData);
-
                 Allocator::Free(sampleBufferFloat);
             }
             else
             {
                 LOG(Warning, "OpenAL doesn't support bit depth larger than 16. Your audio data will be truncated.");
-
                 const uint32 bufferSize = info.NumSamples * 2;
                 byte* sampleBuffer16 = (byte*)Allocator::Allocate(bufferSize);
-
                 AudioTool::ConvertBitDepth(samples, info.BitDepth, sampleBuffer16, 16, info.NumSamples);
 
-                const ALenum format = GetOpenALBufferFormat(info.NumChannels, 16);
+                format = GetOpenALBufferFormat(info.NumChannels, 16);
                 alBufferData(bufferId, format, sampleBuffer16, bufferSize, info.SampleRate);
                 ALC_CHECK_ERROR(alBufferData);
-
                 Allocator::Free(sampleBuffer16);
             }
         }
@@ -648,19 +657,15 @@ void AudioBackendOAL::Buffer_Write(uint32 bufferId, byte* samples, const AudioDa
             // OpenAL expects unsigned 8-bit data, but engine stores it as signed, so convert
             const uint32 bufferSize = info.NumSamples * (info.BitDepth / 8);
             byte* sampleBuffer = (byte*)Allocator::Allocate(bufferSize);
-
             for (uint32 i = 0; i < info.NumSamples; i++)
                 sampleBuffer[i] = ((int8*)samples)[i] + 128;
 
-            const ALenum format = GetOpenALBufferFormat(info.NumChannels, 16);
             alBufferData(bufferId, format, sampleBuffer, bufferSize, info.SampleRate);
             ALC_CHECK_ERROR(alBufferData);
-
             Allocator::Free(sampleBuffer);
         }
-        else
+        else if (format)
         {
-            const ALenum format = GetOpenALBufferFormat(info.NumChannels, info.BitDepth);
             alBufferData(bufferId, format, samples, info.NumSamples * (info.BitDepth / 8), info.SampleRate);
             ALC_CHECK_ERROR(alBufferData);
         }
@@ -675,10 +680,9 @@ void AudioBackendOAL::Buffer_Write(uint32 bufferId, byte* samples, const AudioDa
         {
             const uint32 bufferSize = info.NumChannels * sizeof(int32);
             byte* sampleBuffer32 = (byte*)Allocator::Allocate(bufferSize);
-
             AudioTool::ConvertBitDepth(samples, info.BitDepth, sampleBuffer32, 32, info.NumSamples);
 
-            const ALenum format = GetOpenALBufferFormat(info.NumChannels, 32);
+            format = GetOpenALBufferFormat(info.NumChannels, 32);
             alBufferData(bufferId, format, sampleBuffer32, bufferSize, info.SampleRate);
             ALC_CHECK_ERROR(alBufferData);
 
@@ -693,18 +697,22 @@ void AudioBackendOAL::Buffer_Write(uint32 bufferId, byte* samples, const AudioDa
             for (uint32 i = 0; i < info.NumSamples; i++)
                 sampleBuffer[i] = ((int8*)samples)[i] + 128;
 
-            const ALenum format = GetOpenALBufferFormat(info.NumChannels, 16);
+            format = GetOpenALBufferFormat(info.NumChannels, 16);
             alBufferData(bufferId, format, sampleBuffer, bufferSize, info.SampleRate);
             ALC_CHECK_ERROR(alBufferData);
 
             Allocator::Free(sampleBuffer);
         }
-        else
+        else if (format)
         {
-            const ALenum format = GetOpenALBufferFormat(info.NumChannels, info.BitDepth);
             alBufferData(bufferId, format, samples, info.NumSamples * (info.BitDepth / 8), info.SampleRate);
             ALC_CHECK_ERROR(alBufferData);
         }
+    }
+
+    if (!format)
+    {
+        LOG(Error, "Not suppported audio data format for OpenAL device: BitDepth={}, NumChannels={}", info.BitDepth, info.NumChannels);
     }
 }
 
@@ -853,7 +861,11 @@ bool AudioBackendOAL::Base_Init()
     // Init
     Base_SetDopplerFactor(AudioSettings::Get()->DopplerFactor);
     alDistanceModel(AL_INVERSE_DISTANCE_CLAMPED); // Default attenuation model
-    ALC::RebuildContexts(true);
+    int32 clampedIndex = Math::Clamp(activeDeviceIndex, -1, Audio::Devices.Count() - 1);
+    if (clampedIndex == Audio::GetActiveDeviceIndex())
+    {
+        ALC::RebuildContexts(true);
+    }
     Audio::SetActiveDeviceIndex(activeDeviceIndex);
 #ifdef AL_SOFT_source_spatialize
     if (ALC::IsExtensionSupported("AL_SOFT_source_spatialize"))

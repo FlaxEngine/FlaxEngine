@@ -453,7 +453,7 @@ namespace FlaxEditor.Modules
             {
                 Editor.Windows.SceneWin.Focus();
             }
-            
+
             // fix scene window layout
             Editor.Windows.SceneWin.PerformLayout();
             Editor.Windows.SceneWin.PerformLayout();
@@ -520,7 +520,7 @@ namespace FlaxEditor.Modules
                 Undo.AddAction(new MultiUndoAction(pasteAction, selectAction));
                 OnSelectionChanged();
             }
-            
+
             // Scroll to new selected node while pasting
             Editor.Windows.SceneWin.ScrollToSelectedNode();
         }
@@ -620,7 +620,7 @@ namespace FlaxEditor.Modules
                 Undo.AddAction(new MultiUndoAction(undoActions));
                 OnSelectionChanged();
             }
-            
+
             // Scroll to new selected node while duplicating
             Editor.Windows.SceneWin.ScrollToSelectedNode();
         }

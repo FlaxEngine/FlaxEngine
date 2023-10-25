@@ -410,7 +410,7 @@ bool iOSWindow::IsClosed() const
 
 bool iOSWindow::IsForegroundWindow() const
 {
-    return Platform::GetHasFocus() && IsFocused();
+    return IsFocused() && Platform::GetHasFocus();
 }
 
 void iOSWindow::BringToFront(bool force)

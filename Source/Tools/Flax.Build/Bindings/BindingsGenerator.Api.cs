@@ -196,6 +196,9 @@ namespace Flax.Build.Bindings
             var apiType = FindApiTypeInfo(buildData, typeInfo, caller);
             if (apiType != null)
             {
+                if (apiType.MarshalAs != null)
+                    return UsePassByReference(buildData, new TypeInfo(apiType.MarshalAs), caller);
+
                 // Skip for scripting objects
                 if (apiType.IsScriptingObject)
                     return false;

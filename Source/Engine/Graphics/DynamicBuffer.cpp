@@ -4,10 +4,10 @@
 #include "GPUContext.h"
 #include "PixelFormatExtensions.h"
 #include "GPUDevice.h"
+#include "RenderTask.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Utilities.h"
 #include "Engine/Core/Math/Math.h"
-#include "Engine/Threading/Threading.h"
 
 DynamicBuffer::DynamicBuffer(uint32 initialCapacity, uint32 stride, const String& name)
     : _buffer(nullptr)
@@ -46,9 +46,11 @@ void DynamicBuffer::Flush()
         }
 
         // Upload data to the buffer
-        if (IsInMainThread() && GPUDevice::Instance->IsRendering())
+        if (GPUDevice::Instance->IsRendering())
         {
+            RenderContext::GPULocker.Lock();
             GPUDevice::Instance->GetMainContext()->UpdateBuffer(_buffer, Data.Get(), size);
+            RenderContext::GPULocker.Unlock();
         }
         else
         {
