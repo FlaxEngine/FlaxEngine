@@ -5,6 +5,7 @@
 #include "Collections/Dictionary.h"
 #include "Engine/Engine/Time.h"
 #include "Engine/Engine/EngineService.h"
+#include "Engine/Platform/CriticalSection.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Scripting/ScriptingObject.h"
 

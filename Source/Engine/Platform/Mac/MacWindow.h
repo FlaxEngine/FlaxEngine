@@ -6,6 +6,7 @@
 
 #include "Engine/Platform/Base/WindowBase.h"
 #include "Engine/Platform/Platform.h"
+#include "Engine/Core/Math/Vector2.h"
 
 /// <summary>
 /// Implementation of the window class for Mac platform.
@@ -13,14 +14,13 @@
 class FLAXENGINE_API MacWindow : public WindowBase
 {
 private:
-
     void* _window = nullptr;
     void* _view = nullptr;
     bool _isMouseOver = false;
+    Float2 _mouseTrackPos = Float2::Minimum;
     String _dragText;
 
 public:
-
 	MacWindow(const CreateWindowSettings& settings);
 	~MacWindow();
 
@@ -32,15 +32,14 @@ public:
     }
 
 public:
-
 	// [WindowBase]
     void* GetNativePtr() const override;
+    void OnUpdate(float dt) override;
     void Show() override;
     void Hide() override;
     void Minimize() override;
     void Maximize() override;
     void Restore() override;
-    bool IsClosed() const override;
     bool IsForegroundWindow() const override;
     void BringToFront(bool force = false) override;
 	void SetClientBounds(const Rectangle& clientArea) override;
@@ -56,6 +55,8 @@ public:
     void Focus() override;
     void SetTitle(const StringView& title) override;
 	DragDropEffect DoDragDrop(const StringView& data) override;
+    void StartTrackingMouse(bool useMouseScreenOffset) override;
+    void EndTrackingMouse() override;
 	void SetCursor(CursorType type) override;
 };
 
