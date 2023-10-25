@@ -654,8 +654,6 @@ bool ImportMesh(int32 i, ImportedModelData& result, AssimpImporterData& data, St
     Array<Transform> points;
     if (root->mNumChildren == 0)
     {
-        //auto translation = ToMatrix(root->mTransformation).GetTranslation();
-        //points.Add(Vector3(translation.X, translation.Y, translation.Z));
         aiQuaternion aiQuat;
         aiVector3D aiPos;
         aiVector3D aiScale;
@@ -670,8 +668,6 @@ bool ImportMesh(int32 i, ImportedModelData& result, AssimpImporterData& data, St
     {
         for (unsigned int j = 0; j < root->mNumChildren; j++)
         {
-            //auto translation = ToMatrix(root->mChildren[j]->mTransformation).GetTranslation();
-            //points.Add(Vector3(translation.X, translation.Y, -translation.Z));
             aiQuaternion aiQuat;
             aiVector3D aiPos;
             aiVector3D aiScale;
