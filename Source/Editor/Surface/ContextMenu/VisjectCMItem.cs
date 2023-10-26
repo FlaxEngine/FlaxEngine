@@ -72,9 +72,7 @@ namespace FlaxEditor.Surface.ContextMenu
         public void UpdateScore(Box selectedBox)
         {
             SortScore = 0;
-
-            if (!(_highlights?.Count > 0))
-                return;
+            
             if (!Visible)
                 return;
 
