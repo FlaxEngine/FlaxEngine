@@ -80,6 +80,8 @@ namespace FlaxEditor.Surface.ContextMenu
                 SortScore += 1;
             if (Data != null)
                 SortScore += 1;
+            if (_highlights is { Count: > 0 })
+                SortScore += 1;
             if (_isStartsWithMatch)
                 SortScore += 2;
             if (_isFullMatch)
@@ -185,9 +187,9 @@ namespace FlaxEditor.Surface.ContextMenu
                 Visible = true;
                 return;
             }
-            
+
             GetTextRectangle(out var textRect);
-            
+
             // Check archetype title
             if (QueryFilterHelper.Match(filterText, _archetype.Title, out var ranges))
             {
@@ -214,7 +216,7 @@ namespace FlaxEditor.Surface.ContextMenu
                 Visible = true;
                 return;
             }
-            
+
             // Check archetype synonyms
             if (_archetype.AlternativeTitles!= null && _archetype.AlternativeTitles.Any(altTitle => QueryFilterHelper.Match(filterText, altTitle, out ranges)))
             {
@@ -238,7 +240,7 @@ namespace FlaxEditor.Surface.ContextMenu
                 Visible = true;
                 return;
             }
-            
+
             // Check archetype data (if it exists)
             if (NodeArchetype.TryParseText != null && NodeArchetype.TryParseText(filterText, out var data))
             {
@@ -257,13 +259,12 @@ namespace FlaxEditor.Surface.ContextMenu
                 Data = data;
                 return;
             }
-            
-            if (groupHeaderMatches)
-                return;
-            
-            // Hide
+
             _highlights?.Clear();
-            Visible = false;
+
+            // Hide
+            if (!groupHeaderMatches)
+                Visible = false;
         }
 
         /// <inheritdoc />
@@ -296,7 +297,7 @@ namespace FlaxEditor.Surface.ContextMenu
             }
 
             // Draw name
-            Render2D.DrawText(style.FontSmall, _archetype.Title + "(" + SortScore + ")", textRect, Enabled ? style.Foreground : style.ForegroundDisabled, TextAlignment.Near, TextAlignment.Center);
+            Render2D.DrawText(style.FontSmall, _archetype.Title, textRect, Enabled ? style.Foreground : style.ForegroundDisabled, TextAlignment.Near, TextAlignment.Center);
             if (_archetype.SubTitle != null)
             {
                 var titleLength = style.FontSmall.MeasureText(_archetype.Title).X;
