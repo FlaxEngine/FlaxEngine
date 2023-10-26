@@ -166,6 +166,7 @@ namespace FlaxEditor.Surface.ContextMenu
         /// <param name="groupHeaderMatches">True if item's group header got a filter match and item should stay visible.</param>
         public void UpdateFilter(string filterText, Box selectedBox, bool groupHeaderMatches = false)
         {
+            // When dragging connection out of a box, validate if the box is compatible with this item's type
             if (selectedBox != null)
             {
                 Visible = CanConnectTo(selectedBox);
@@ -182,72 +183,87 @@ namespace FlaxEditor.Surface.ContextMenu
                 // Clear filter
                 _highlights?.Clear();
                 Visible = true;
+                return;
             }
-            else
+            
+            GetTextRectangle(out var textRect);
+            
+            // Check archetype title
+            if (QueryFilterHelper.Match(filterText, _archetype.Title, out var ranges))
             {
-                GetTextRectangle(out var textRect);
-                if (QueryFilterHelper.Match(filterText, _archetype.Title, out var ranges))
+                // Update highlights
+                if (_highlights == null)
+                    _highlights = new List<Rectangle>(ranges.Length);
+                else
+                    _highlights.Clear();
+                var style = Style.Current;
+                var font = style.FontSmall;
+                for (int i = 0; i < ranges.Length; i++)
                 {
-                    // Update highlights
-                    if (_highlights == null)
-                        _highlights = new List<Rectangle>(ranges.Length);
-                    else
-                        _highlights.Clear();
-                    var style = Style.Current;
-                    var font = style.FontSmall;
-                    for (int i = 0; i < ranges.Length; i++)
+                    var start = font.GetCharPosition(_archetype.Title, ranges[i].StartIndex);
+                    var end = font.GetCharPosition(_archetype.Title, ranges[i].EndIndex);
+                    _highlights.Add(new Rectangle(start.X + textRect.X, 0, end.X - start.X, Height));
+
+                    if (ranges[i].StartIndex <= 0)
                     {
-                        var start = font.GetCharPosition(_archetype.Title, ranges[i].StartIndex);
-                        var end = font.GetCharPosition(_archetype.Title, ranges[i].EndIndex);
-                        _highlights.Add(new Rectangle(start.X + textRect.X, 0, end.X - start.X, Height));
-
-                        if (ranges[i].StartIndex <= 0)
-                        {
-                            _isStartsWithMatch = true;
-                            if (ranges[i].Length == _archetype.Title.Length)
-                                _isFullMatch = true;
-                        }
+                        _isStartsWithMatch = true;
+                        if (ranges[i].Length == _archetype.Title.Length)
+                            _isFullMatch = true;
                     }
-                    Visible = true;
                 }
-                else if (_archetype.AlternativeTitles?.Any(altTitle => string.Equals(filterText, altTitle, StringComparison.CurrentCultureIgnoreCase)) == true)
-                {
-                    // Update highlights
-                    if (_highlights == null)
-                        _highlights = new List<Rectangle>(1);
-                    else
-                        _highlights.Clear();
-                    var style = Style.Current;
-                    var font = style.FontSmall;
-                    var start = font.GetCharPosition(_archetype.Title, 0);
-                    var end = font.GetCharPosition(_archetype.Title, _archetype.Title.Length - 1);
-                    _highlights.Add(new Rectangle(start.X + textRect.X, 0, end.X - start.X, Height));
-                    _isFullMatch = true;
-                    Visible = true;
-                }
-                else if (NodeArchetype.TryParseText != null && NodeArchetype.TryParseText(filterText, out var data))
-                {
-                    // Update highlights
-                    if (_highlights == null)
-                        _highlights = new List<Rectangle>(1);
-                    else
-                        _highlights.Clear();
-                    var style = Style.Current;
-                    var font = style.FontSmall;
-                    var start = font.GetCharPosition(_archetype.Title, 0);
-                    var end = font.GetCharPosition(_archetype.Title, _archetype.Title.Length - 1);
-                    _highlights.Add(new Rectangle(start.X + textRect.X, 0, end.X - start.X, Height));
-                    Visible = true;
-
-                    Data = data;
-                }
-                else if (!groupHeaderMatches)
-                {
-                    // Hide
-                    _highlights?.Clear();
-                    Visible = false;
-                }
+                Visible = true;
+                return;
             }
+            
+            // Check archetype synonyms
+            if (_archetype.AlternativeTitles!= null && _archetype.AlternativeTitles.Any(altTitle => QueryFilterHelper.Match(filterText, altTitle, out ranges)))
+            {
+                // Update highlights
+                if (_highlights == null)
+                    _highlights = new List<Rectangle>(1);
+                else
+                    _highlights.Clear();
+                var style = Style.Current;
+                var font = style.FontSmall;
+                var start = font.GetCharPosition(_archetype.Title, 0);
+                var end = font.GetCharPosition(_archetype.Title, _archetype.Title.Length - 1);
+                _highlights.Add(new Rectangle(start.X + textRect.X, 0, end.X - start.X, Height));
+                for (int i = 0; i < ranges.Length; i++)
+                {
+                    if (ranges[i].StartIndex <= 0)
+                    {
+                        _isStartsWithMatch = true;
+                    }
+                }
+                Visible = true;
+                return;
+            }
+            
+            // Check archetype data (if it exists)
+            if (NodeArchetype.TryParseText != null && NodeArchetype.TryParseText(filterText, out var data))
+            {
+                // Update highlights
+                if (_highlights == null)
+                    _highlights = new List<Rectangle>(1);
+                else
+                    _highlights.Clear();
+                var style = Style.Current;
+                var font = style.FontSmall;
+                var start = font.GetCharPosition(_archetype.Title, 0);
+                var end = font.GetCharPosition(_archetype.Title, _archetype.Title.Length - 1);
+                _highlights.Add(new Rectangle(start.X + textRect.X, 0, end.X - start.X, Height));
+                Visible = true;
+
+                Data = data;
+                return;
+            }
+            
+            if (groupHeaderMatches)
+                return;
+            
+            // Hide
+            _highlights?.Clear();
+            Visible = false;
         }
 
         /// <inheritdoc />
@@ -280,7 +296,7 @@ namespace FlaxEditor.Surface.ContextMenu
             }
 
             // Draw name
-            Render2D.DrawText(style.FontSmall, _archetype.Title, textRect, Enabled ? style.Foreground : style.ForegroundDisabled, TextAlignment.Near, TextAlignment.Center);
+            Render2D.DrawText(style.FontSmall, _archetype.Title + "(" + SortScore + ")", textRect, Enabled ? style.Foreground : style.ForegroundDisabled, TextAlignment.Near, TextAlignment.Center);
             if (_archetype.SubTitle != null)
             {
                 var titleLength = style.FontSmall.MeasureText(_archetype.Title).X;
