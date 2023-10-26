@@ -14,18 +14,12 @@ namespace FlaxEditor.Surface.Archetypes
     {
         private static NodeArchetype Op1(ushort id, string title, string desc, ConnectionsHint hints = ConnectionsHint.Numeric, Type type = null)
         {
-            return Op1(id, title, desc, null, hints, type);
-        }
-
-        private static NodeArchetype Op1(ushort id, string title, string desc, string[] altTitles, ConnectionsHint hints = ConnectionsHint.Numeric, Type type = null)
-        {
             return new NodeArchetype
             {
                 TypeID = id,
                 Title = title,
                 Description = desc,
                 Flags = NodeFlags.AllGraphs,
-                AlternativeTitles = altTitles,
                 Size = new Float2(110, 20),
                 DefaultType = new ScriptType(type),
                 ConnectionsHints = hints,
@@ -98,7 +92,6 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 TypeID = 11,
                 Title = "Length",
-                AlternativeTitles = new[] { "Magnitude", "Mag" },
                 Description = "Returns the length of A vector",
                 Flags = NodeFlags.AllGraphs,
                 Size = new Float2(110, 20),
@@ -114,10 +107,10 @@ namespace FlaxEditor.Surface.Archetypes
             Op1(13, "Round", "Rounds A to the nearest integer"),
             Op1(14, "Saturate", "Clamps A to the range [0, 1]"),
             Op1(15, "Sine", "Returns sine of A"),
-            Op1(16, "Sqrt", "Returns square root of A", new [] { "Square Root", "Square", "Root" }),
+            Op1(16, "Sqrt", "Returns square root of A"),
             Op1(17, "Tangent", "Returns tangent of A"),
             Op2(18, "Cross", "Returns the cross product of A and B", ConnectionsHint.None, typeof(Float3)),
-            Op2(19, "Distance", "Returns a distance scalar between A and B", new [] { "Magnitude", "Mag", "Length" }, ConnectionsHint.Vector, null, typeof(float), false),
+            Op2(19, "Distance", "Returns a distance scalar between A and B", ConnectionsHint.Vector, null, typeof(float), false),
             Op2(20, "Dot", "Returns the dot product of A and B", ConnectionsHint.Vector, null, typeof(float), false),
             Op2(21, "Max", "Selects the greater of A and B"),
             Op2(22, "Min", "Selects the lesser of A and B"),
@@ -192,7 +185,7 @@ namespace FlaxEditor.Surface.Archetypes
                 }
             },
             //
-            Op1(27, "Negate", "Returns opposite value", new [] { "Invert" }),
+            Op1(27, "Negate", "Returns opposite value"),
             Op1(28, "One Minus", "Returns 1 - value"),
             //
             new NodeArchetype
@@ -232,7 +225,6 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 TypeID = 31,
                 Title = "Mad",
-                AlternativeTitles = new [] { "Multiply", "Add", "*+" },
                 Description = "Performs value multiplication and addition at once",
                 Flags = NodeFlags.AllGraphs,
                 Size = new Float2(160, 60),
