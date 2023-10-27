@@ -305,7 +305,7 @@ namespace FlaxEditor.Windows
 
             InputActions.Add(options => options.TakeScreenshot, () => Screenshot.Capture(string.Empty));
             InputActions.Add(options => options.DebuggerUnlockMouse, UnlockMouseInPlay);
-            InputActions.Add(options => options.DebuggerToggleFullscreen, () => { if (Editor.IsPlayMode) IsMaximized = !IsMaximized; });
+            InputActions.Add(options => options.ToggleFullscreen, () => { if (Editor.IsPlayMode) IsMaximized = !IsMaximized; });
 
             FlaxEditor.Utilities.Utils.SetupCommonInputActions(this);
         }
