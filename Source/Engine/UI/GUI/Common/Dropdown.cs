@@ -22,6 +22,11 @@ namespace FlaxEngine.GUI
             /// Occurs when popup lost focus.
             /// </summary>
             public Action LostFocus;
+            
+            /// <summary>
+            /// The selected control. Used to scroll to the control on popup creation.
+            /// </summary>
+            public ContainerControl SelectedControl = null;
 
             /// <inheritdoc />
             public override void OnEndContainsFocus()
@@ -234,6 +239,18 @@ namespace FlaxEngine.GUI
         }
 
         /// <summary>
+        /// Gets or sets whether to show all of the items.
+        /// </summary>
+        [EditorOrder(3), Tooltip("Whether to show all of the items in the drop down.")]
+        public bool ShowAllItems { get; set; } = true;
+
+        /// <summary>
+        /// Gets or sets the number of items to show. Only used if ShowAllItems is false.
+        /// </summary>
+        [EditorOrder(4), VisibleIf(nameof(ShowAllItems), true), Limit(1), Tooltip("The number of items to show in the drop down.")]
+        public int NumberOfItemsToShow { get; set; } = 5;
+
+        /// <summary>
         /// Event fired when selected index gets changed.
         /// </summary>
         public event Action<Dropdown> SelectedIndexChanged;
@@ -411,12 +428,21 @@ namespace FlaxEngine.GUI
 
             // TODO: support item templates
 
-            var container = new VerticalPanel
+            var panel = new Panel
             {
                 AnchorPreset = AnchorPresets.StretchAll,
                 BackgroundColor = BackgroundColor,
-                AutoSize = false,
+                ScrollBars = ScrollBars.Vertical,
                 Parent = popup,
+            };
+
+            var container = new VerticalPanel
+            {
+                AnchorPreset = AnchorPresets.StretchAll,
+                BackgroundColor = Color.Transparent,
+                IsScrollable = true,
+                AutoSize = true,
+                Parent = panel,
             };
             var border = new Border
             {
@@ -482,10 +508,20 @@ namespace FlaxEngine.GUI
                         //AnchorPreset = AnchorPresets.VerticalStretchLeft,
                         Parent = item,
                     };
+                    popup.SelectedControl = item;
                 }
             }
 
-            popup.Size = new Float2(itemsWidth, height);
+            if (ShowAllItems || _items.Count < NumberOfItemsToShow)
+            {
+                popup.Size = new Float2(itemsWidth, height);
+                panel.Size = popup.Size;
+            }
+            else
+            {
+                popup.Size = new Float2(itemsWidth, (itemsHeight + container.Spacing) * NumberOfItemsToShow);
+                panel.Size = popup.Size;
+            }
 
             return popup;
         }
@@ -527,7 +563,16 @@ namespace FlaxEngine.GUI
         /// </summary>
         public void ShowPopup()
         {
-            var root = Root;
+            // Find canvas scalar and set as root if it exists.
+            ContainerControl c = Parent;
+            while(c.Parent != Root && c.Parent != null)
+            {
+                c = c.Parent;
+                if (c is CanvasScaler scalar)
+                    break;
+            }
+            var root = c is CanvasScaler ? c : Root;
+            
             if (_items.Count == 0 || root == null)
                 return;
 
@@ -542,7 +587,7 @@ namespace FlaxEngine.GUI
             // Show dropdown popup
             var locationRootSpace = Location + new Float2(0, Height);
             var parent = Parent;
-            while (parent != null && parent != Root)
+            while (parent != null && parent != root)
             {
                 locationRootSpace = parent.PointToParent(ref locationRootSpace);
                 parent = parent.Parent;
@@ -551,6 +596,8 @@ namespace FlaxEngine.GUI
             _popup.Parent = root;
             _popup.Focus();
             _popup.StartMouseCapture();
+            if (_popup.SelectedControl != null && _popup.Children[0] is Panel panel)
+                panel.ScrollViewTo(_popup.SelectedControl, true);
             OnPopupShow();
         }
 
