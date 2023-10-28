@@ -704,7 +704,7 @@ namespace FlaxEditor.Surface.ContextMenu
                 Hide();
                 return true;
             }
-            else if (key == KeyboardKeys.Return)
+            else if (key == KeyboardKeys.Return || key == KeyboardKeys.Tab)
             {
                 if (SelectedItem != null)
                     OnClickItem(SelectedItem);
