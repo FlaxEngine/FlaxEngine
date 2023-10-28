@@ -72,7 +72,7 @@ namespace FlaxEditor.Surface.ContextMenu
         public void UpdateScore(Box selectedBox)
         {
             SortScore = 0;
-            
+
             if (!Visible)
                 return;
 
@@ -230,6 +230,7 @@ namespace FlaxEditor.Surface.ContextMenu
                 var start = font.GetCharPosition(_archetype.Title, 0);
                 var end = font.GetCharPosition(_archetype.Title, _archetype.Title.Length - 1);
                 _highlights.Add(new Rectangle(start.X + textRect.X, 0, end.X - start.X, Height));
+
                 for (int i = 0; i < ranges.Length; i++)
                 {
                     if (ranges[i].StartIndex <= 0)
@@ -237,6 +238,7 @@ namespace FlaxEditor.Surface.ContextMenu
                         _isStartsWithMatch = true;
                     }
                 }
+
                 Visible = true;
                 return;
             }
@@ -255,7 +257,6 @@ namespace FlaxEditor.Surface.ContextMenu
                 var end = font.GetCharPosition(_archetype.Title, _archetype.Title.Length - 1);
                 _highlights.Add(new Rectangle(start.X + textRect.X, 0, end.X - start.X, Height));
                 Visible = true;
-
                 Data = data;
                 return;
             }
