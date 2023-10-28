@@ -189,6 +189,8 @@ namespace FlaxEditor.GUI
         /// </summary>
         public event Action<Item> ItemClicked;
 
+        public event Action<string> TextChanged;
+
         /// <summary>
         /// The panel control where you should add your items.
         /// </summary>
@@ -263,6 +265,7 @@ namespace FlaxEditor.GUI
             UnlockChildrenRecursive();
             PerformLayout(true);
             _searchBox.Focus();
+            TextChanged?.Invoke(_searchBox.Text);
         }
 
         /// <summary>

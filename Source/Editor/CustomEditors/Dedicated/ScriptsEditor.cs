@@ -3,6 +3,8 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using FlaxEditor.Actions;
 using FlaxEditor.Content;
 using FlaxEditor.GUI;
@@ -16,6 +18,25 @@ using Object = FlaxEngine.Object;
 
 namespace FlaxEditor.CustomEditors.Dedicated
 {
+    internal class NewScriptItem : ItemsListContextMenu.Item
+    {
+        private string _scriptName;
+        public string ScriptName
+        {
+            get => _scriptName;
+            set
+            {
+                _scriptName = value;
+                Name = $"Create script '{value}'";
+            }
+        }
+
+        public NewScriptItem(string scriptName)
+        {
+            ScriptName = scriptName;
+            TooltipText = "Create a new script";
+        }
+    }
     /// <summary>
     /// Drag and drop scripts area control.
     /// </summary>
@@ -74,7 +95,48 @@ namespace FlaxEditor.CustomEditors.Dedicated
             {
                 cm.AddItem(new TypeSearchPopup.TypeItemView(scripts[i]));
             }
-            cm.ItemClicked += item => AddScript((ScriptType)item.Tag);
+            cm.TextChanged += text =>
+            {
+                if (!IsValidScriptName(text))
+                    return;
+                var items = cm.ItemsPanel.Children.Count(x => x.Visible && x is not NewScriptItem);
+                if (items == 0)
+                {
+                    // If there are no visible items, that means the search failed so we can find the create script
+                    // button or create one if it's the first time.
+                    
+                    var createScriptItem = cm.ItemsPanel.Children.FirstOrDefault(x => x is NewScriptItem);
+                    if (createScriptItem != null)
+                    {
+                        var item = createScriptItem as NewScriptItem;
+                        item.Visible = true;
+                        item.ScriptName = text;
+                    }
+                    else
+                    {
+                        cm.AddItem(new NewScriptItem(text));
+                    }
+                }
+                else
+                {
+                    // Make sure to hide the create script button if there
+                    var createScriptButton = cm.ItemsPanel.Children.FirstOrDefault(x => x is NewScriptItem);
+                    if (createScriptButton != null)
+                        createScriptButton.Visible = false;
+                }
+            };
+            cm.ItemClicked += item =>
+            {
+                if (item.Tag is ScriptType script)
+                {
+                    AddScript(script);
+                }
+                else if (item is NewScriptItem newScriptItem)
+                {
+                    CreateScript(newScriptItem);
+                }
+                
+            };
             cm.SortItems();
             cm.Show(this, button.BottomLeft - new Float2((cm.Width - button.Width) / 2, 0));
         }
@@ -111,6 +173,17 @@ namespace FlaxEditor.CustomEditors.Dedicated
             if (assetItem is VisualScriptItem scriptItem)
                 return scriptItem.ScriptType != ScriptType.Null;
             return false;
+        }
+        
+        private static bool IsValidScriptName(string text)
+        {
+            if (text.Contains(' '))
+                return false;
+            if (char.IsDigit(text[0]))
+                return false;
+            if (text.Any(c => !char.IsLetterOrDigit(c) && c != '_'))
+                return false;
+            return true;
         }
 
         /// <inheritdoc />
@@ -177,7 +250,46 @@ namespace FlaxEditor.CustomEditors.Dedicated
             return result;
         }
 
-        private void AddScript(ScriptType item)
+        private void CreateScript(NewScriptItem item)
+        {
+            ScriptsEditor.NewScriptItem = item;
+            var paths = Directory.GetFiles(Globals.ProjectSourceFolder, "*.Build.cs");
+
+            string moduleName = null;
+            foreach (var p in paths)
+            {
+                var file = File.ReadAllText(p);
+                // Skip 
+                if (!file.Contains("GameProjectTarget"))
+                    continue;
+            
+                if (file.Contains("Modules.Add(\"Game\")"))
+                {
+                    // Assume Game represents the main game module
+                    moduleName = "Game";
+                    break;
+                }
+            }
+
+            // Ensure the path slashes are correct for the OS
+            var correctedPath = Path.GetFullPath(Globals.ProjectSourceFolder);
+            
+            if (string.IsNullOrEmpty(moduleName))
+            {
+                var error = FileSystem.ShowBrowseFolderDialog(Editor.Instance.Windows.MainWindow, correctedPath, "Select a module folder to put the new script in", out moduleName);
+                if (error)
+                    return;
+            }
+            
+            var path = Path.Combine(Globals.ProjectSourceFolder, moduleName, item.ScriptName + ".cs");
+            new CSharpScriptProxy().Create(path, null);
+        }
+
+        /// <summary>
+        /// Attach a script to the actor.
+        /// </summary>
+        /// <param name="item">The script.</param>
+        public void AddScript(ScriptType item)
         {
             var list = new List<ScriptType>(1) { item };
             AddScripts(list);
@@ -439,6 +551,11 @@ namespace FlaxEditor.CustomEditors.Dedicated
         /// <inheritdoc />
         public override IEnumerable<object> UndoObjects => _scripts;
 
+        // We need somewhere to store the newly created script name.
+        // The problem is that the ScriptsEditor gets destroyed after scripts compilation
+        // so we must make it static to store this information.
+        internal static NewScriptItem NewScriptItem { get; set; }
+
         private void AddMissingScript(int index, LayoutElementsContainer layout)
         {
             var group = layout.Group("Missing script");
@@ -546,6 +663,23 @@ namespace FlaxEditor.CustomEditors.Dedicated
             // Area for drag&drop scripts
             var dragArea = layout.CustomContainer<DragAreaControl>();
             dragArea.CustomControl.ScriptsEditor = this;
+            
+            // If the initialization is triggered by an editor recompilation, check if it
+            // was due to script generation from DragAreaControl.
+            if (NewScriptItem != null)
+            {
+                var script = Editor.Instance.CodeEditing.Scripts.Get()
+                                   .FirstOrDefault(x => x.Name == NewScriptItem.ScriptName);
+                if (script != null)
+                {
+                    dragArea.CustomControl.AddScript(script);
+                    NewScriptItem = null;
+                }
+                else
+                {
+                    Editor.LogWarning("Failed to find newly created script.");
+                }
+            }
 
             // No support for showing scripts from multiple actors that have different set of scripts
             var scripts = (Script[])Values[0];
