@@ -492,8 +492,7 @@ namespace FlaxEditor.Surface.ContextMenu
 
             // If no item is selected (or it's not visible anymore), select the top one
             Profiler.BeginEvent("VisjectCM.Layout");
-            if (SelectedItem == null || !SelectedItem.VisibleInHierarchy)
-                SelectedItem = _groups.Find(g => g.Visible)?.Children.Find(c => c.Visible && c is VisjectCMItem) as VisjectCMItem;
+            SelectedItem = _groups.Find(g => g.Visible)?.Children.Find(c => c.Visible && c is VisjectCMItem) as VisjectCMItem;
             PerformLayout();
             if (SelectedItem != null)
                 _panel1.ScrollViewTo(SelectedItem);
