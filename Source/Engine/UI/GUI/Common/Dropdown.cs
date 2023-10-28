@@ -32,7 +32,13 @@ namespace FlaxEngine.GUI
             public override void OnEndContainsFocus()
             {
                 base.OnEndContainsFocus();
-
+                
+                // Dont lose focus when using panel. Does prevent LostFocus even from being called if clicking inside of the panel.
+                if (Children[0] is Panel panel && panel.IsMouseOver && !panel.ContainsFocus)
+                {
+                    panel.Focus();
+                    return;
+                }
                 // Call event after this 'focus contains flag' propagation ends to prevent focus issues
                 if (LostFocus != null)
                     Scripting.RunOnUpdate(LostFocus);
@@ -433,6 +439,7 @@ namespace FlaxEngine.GUI
                 AnchorPreset = AnchorPresets.StretchAll,
                 BackgroundColor = BackgroundColor,
                 ScrollBars = ScrollBars.Vertical,
+                AutoFocus = true,
                 Parent = popup,
             };
 
