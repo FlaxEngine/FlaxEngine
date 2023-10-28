@@ -313,6 +313,8 @@ bool GPUDevice::Init()
 
     _res->TasksManager.SetExecutor(CreateTasksExecutor());
     LOG(Info, "Total graphics memory: {0}", Utilities::BytesToText(TotalGraphicsMemory));
+    if (!Limits.HasCompute)
+        LOG(Warning, "Compute Shaders are not supported");
     return false;
 }
 
