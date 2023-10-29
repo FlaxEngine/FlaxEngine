@@ -23,17 +23,11 @@ namespace FlaxEditor
         public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
         {
             if (value == null)
-            {
                 writer.WriteNull();
-            }
             else if (value is Version)
-            {
                 writer.WriteValue(value.ToString());
-            }
             else
-            {
                 throw new JsonSerializationException("Expected Version object value");
-            }
         }
 
         /// <summary>
@@ -47,65 +41,60 @@ namespace FlaxEditor
         public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
         {
             if (reader.TokenType == JsonToken.Null)
-            {
                 return null;
-            }
-            else
+
+            if (reader.TokenType == JsonToken.StartObject)
             {
-                if (reader.TokenType == JsonToken.StartObject)
+                try
                 {
-                    try
+                    reader.Read();
+                    var values = new Dictionary<string, int>();
+                    while (reader.TokenType == JsonToken.PropertyName)
                     {
+                        var key = reader.Value as string;
                         reader.Read();
-                        Dictionary<string, int> values = new Dictionary<string, int>();
-                        while (reader.TokenType == JsonToken.PropertyName)
-                        {
-                            var key = reader.Value as string;
-                            reader.Read();
-                            var val = (long)reader.Value;
-                            reader.Read();
-                            values.Add(key, (int)val);
-                        }
+                        var val = (long)reader.Value;
+                        reader.Read();
+                        values.Add(key, (int)val);
+                    }
 
-                        int major = 0, minor = 0, build = 0;
-                        values.TryGetValue("Major", out major);
-                        values.TryGetValue("Minor", out minor);
-                        values.TryGetValue("Build", out build);
+                    values.TryGetValue("Major", out var major);
+                    values.TryGetValue("Minor", out var minor);
+                    if (!values.TryGetValue("Build", out var build))
+                        build = -1;
+                    if (!values.TryGetValue("Revision", out var revision))
+                        revision = -1;
 
-                        Version v = new Version(major, minor, build);
-                        return v;
-                    }
-                    catch (Exception ex)
-                    {
-                        throw new Exception(String.Format("Error parsing version string: {0}", reader.Value), ex);
-                    }
+                    if (build <= 0)
+                        return new Version(major, minor);
+                    if (revision <= 0)
+                        return new Version(major, minor, build);
+                    return new Version(major, minor, build, revision);
                 }
-                else if (reader.TokenType == JsonToken.String)
+                catch (Exception ex)
                 {
-                    try
-                    {
-                        Version v = new Version((string)reader.Value!);
-                        return v;
-                    }
-                    catch (Exception ex)
-                    {
-                        throw new Exception(String.Format("Error parsing version string: {0}", reader.Value), ex);
-                    }
-                }
-                else
-                {
-                    throw new Exception(String.Format("Unexpected token or value when parsing version. Token: {0}, Value: {1}", reader.TokenType, reader.Value));
+                    throw new Exception(String.Format("Error parsing version string: {0}", reader.Value), ex);
                 }
             }
+            if (reader.TokenType == JsonToken.String)
+            {
+                try
+                {
+                    return new Version((string)reader.Value!);
+                }
+                catch (Exception ex)
+                {
+                    throw new Exception(String.Format("Error parsing version string: {0}", reader.Value), ex);
+                }
+            }
+            throw new Exception(String.Format("Unexpected token or value when parsing version. Token: {0}, Value: {1}", reader.TokenType, reader.Value));
         }
 
         /// <summary>
         /// Determines whether this instance can convert the specified object type.
         /// </summary>
         /// <param name="objectType">Type of the object.</param>
-        /// <returns>
-        /// 	<c>true</c> if this instance can convert the specified object type; otherwise, <c>false</c>.
-        /// </returns>
+        /// <returns><c>true</c> if this instance can convert the specified object type; otherwise, <c>false</c>.</returns>
         public override bool CanConvert(Type objectType)
         {
             return objectType == typeof(Version);

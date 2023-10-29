@@ -3135,14 +3135,17 @@ namespace Flax.Build.Bindings
             contents.AppendLine("#pragma once");
             contents.AppendLine();
             contents.AppendLine($"#define {binaryModuleNameUpper}_NAME \"{binaryModuleName}\"");
-            if (version.Build == -1)
+            if (version.Build <= 0)
                 contents.AppendLine($"#define {binaryModuleNameUpper}_VERSION Version({version.Major}, {version.Minor})");
-            else
+            else if (version.Revision <= 0)
                 contents.AppendLine($"#define {binaryModuleNameUpper}_VERSION Version({version.Major}, {version.Minor}, {version.Build})");
+            else
+                contents.AppendLine($"#define {binaryModuleNameUpper}_VERSION Version({version.Major}, {version.Minor}, {version.Build}, {version.Revision})");
             contents.AppendLine($"#define {binaryModuleNameUpper}_VERSION_TEXT \"{version}\"");
             contents.AppendLine($"#define {binaryModuleNameUpper}_VERSION_MAJOR {version.Major}");
             contents.AppendLine($"#define {binaryModuleNameUpper}_VERSION_MINOR {version.Minor}");
             contents.AppendLine($"#define {binaryModuleNameUpper}_VERSION_BUILD {version.Build}");
+            contents.AppendLine($"#define {binaryModuleNameUpper}_VERSION_REVISION {version.Revision}");
             contents.AppendLine($"#define {binaryModuleNameUpper}_COMPANY \"{project.Company}\"");
             contents.AppendLine($"#define {binaryModuleNameUpper}_COPYRIGHT \"{project.Copyright}\"");
             contents.AppendLine();
