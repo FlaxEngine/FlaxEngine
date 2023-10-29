@@ -557,8 +557,9 @@ namespace FlaxEditor.Viewport
 
                 // Camera Settings Menu
                 var cameraCM = new ContextMenu();
-                _cameraButton = new ViewportWidgetButton(string.Format(MovementSpeedTextFormat, _movementSpeed), Editor.Instance.Icons.Camera64, cameraCM, false, cameraSpeedTextWidth)
+                _cameraButton = new ViewportWidgetButton(string.Format(MovementSpeedTextFormat, _movementSpeed), Editor.Instance.Icons.Camera64, cameraCM, false)
                 {
+                    ConstantTextSize = cameraSpeedTextWidth,
                     Tag = this,
                     TooltipText = "Camera Settings",
                     Parent = _cameraWidget
