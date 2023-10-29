@@ -204,7 +204,7 @@ void DepthOfFieldPass::Render(RenderContext& renderContext, GPUTexture*& frame, 
 {
     DepthOfFieldSettings& dofSettings = renderContext.List->Settings.DepthOfField;
     const bool useDoF = EnumHasAnyFlags(renderContext.View.Flags, ViewFlags::DepthOfField) && dofSettings.Enabled;
-    if (!useDoF || _platformSupportsDoF || checkIfSkipPass())
+    if (!useDoF || !_platformSupportsDoF || checkIfSkipPass())
         return;
     auto device = GPUDevice::Instance;
     auto context = device->GetMainContext();
