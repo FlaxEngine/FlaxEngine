@@ -18,7 +18,6 @@ namespace FlaxEditor.Viewport.Widgets
         public ViewportWidgetButtonHorizontalGroup(ViewportWidgetButton[] buttons)
         {
             Margin = Margin.Zero;
-            AnchorPreset = AnchorPresets.TopCenter;
             if (buttons.Length == 1)
             {
                 buttons[0].BackgraundPlanel = Editor.Instance.Icons.Panel32;
