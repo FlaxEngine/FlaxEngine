@@ -460,16 +460,15 @@ bool ShaderCompiler::WriteCustomDataVS(ShaderCompilationContext* context, Shader
         auto& element = layout[a];
         if (!layoutVisible[a])
             continue;
-
-        // TODO: serialize whole struct?
-
-        output->WriteByte(static_cast<byte>(element.Type));
-        output->WriteByte(element.Index);
-        output->WriteByte(static_cast<byte>(element.Format));
-        output->WriteByte(element.InputSlot);
-        output->WriteUint32(element.AlignedByteOffset);
-        output->WriteByte(element.InputSlotClass);
-        output->WriteUint32(element.InstanceDataStepRate);
+        GPUShaderProgramVS::InputElement data;
+        data.Type = static_cast<byte>(element.Type);
+        data.Index = element.Index;
+        data.Format = static_cast<byte>(element.Format);
+        data.InputSlot = element.InputSlot;
+        data.AlignedByteOffset = element.AlignedByteOffset;
+        data.InputSlotClass = element.InputSlotClass;
+        data.InstanceDataStepRate = element.InstanceDataStepRate;
+        output->Write(data);
     }
 
     return false;
