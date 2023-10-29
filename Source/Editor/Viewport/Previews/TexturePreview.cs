@@ -22,7 +22,6 @@ namespace FlaxEditor.Viewport.Previews
 
         internal float _viewScale = 1.0f;
         internal Float2 _viewPos;
-        internal bool LockMovment = false;
 
         /// <inheritdoc />
         protected TexturePreviewBase()
@@ -87,7 +86,7 @@ namespace FlaxEditor.Viewport.Previews
         /// <summary>
         /// Gets the texture view rect (scaled and offseted).
         /// </summary>
-        protected Rectangle TextureViewRect => (_textureRect + _viewPos) * _viewScale;
+        internal Rectangle TextureViewRect => (_textureRect + _viewPos) * _viewScale;
 
         /// <inheritdoc />
         public override void Draw()
@@ -126,12 +125,6 @@ namespace FlaxEditor.Viewport.Previews
         /// <inheritdoc />
         public override void OnMouseMove(Float2 location)
         {
-            if (LockMovment) // return of movment mode is off
-            {
-                base.OnMouseMove(location);
-                return;
-            }
-
             // Check if mouse is down
             if (_isMouseDown)
             {
@@ -182,38 +175,28 @@ namespace FlaxEditor.Viewport.Previews
         /// <inheritdoc />
         public override bool OnMouseDown(Float2 location, MouseButton button)
         {
-            if (LockMovment) // return of movment mode is off
+            // Set flag
+            if (button == MouseButton.Middle)
             {
-                base.OnMouseDown(location, button);
+                _isMouseDown = true;
+                _lastMousePos = location;
+                Cursor = CursorType.SizeAll;
                 return true;
             }
-            if (base.OnMouseDown(location, button))
-                return true;
-
-            // Set flag
-            _isMouseDown = true;
-            _lastMousePos = location;
-            Cursor = CursorType.SizeAll;
-
-            return true;
+            return base.OnMouseDown(location, button);
         }
 
         /// <inheritdoc />
         public override bool OnMouseUp(Float2 location, MouseButton button)
         {
-            if (LockMovment) // return of movment mode is off
+            // Clear flag
+            if (button == MouseButton.Middle)
             {
-                base.OnMouseUp(location, button);
+                _isMouseDown = false;
+                Cursor = CursorType.Default;
                 return true;
             }
-            if (base.OnMouseUp(location, button))
-                return true;
-
-            // Clear flag
-            _isMouseDown = false;
-            Cursor = CursorType.Default;
-
-            return true;
+            return base.OnMouseDown(location, button);
         }
 
         /// <inheritdoc />
@@ -385,6 +368,7 @@ namespace FlaxEditor.Viewport.Previews
                         channelA,
                     }
                 );
+                ButtonGroupe.Parent = channelsWidget;
                 //
                 channelsWidget.Parent = this;
 

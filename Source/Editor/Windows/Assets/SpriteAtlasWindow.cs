@@ -2,11 +2,13 @@
 
 using System;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Xml;
 using FlaxEditor.Content;
 using FlaxEditor.Content.Import;
 using FlaxEditor.CustomEditors;
 using FlaxEditor.CustomEditors.Editors;
+using FlaxEditor.CustomEditors.Elements;
 using FlaxEditor.GUI;
 using FlaxEditor.GUI.ContextMenu;
 using FlaxEditor.Scripting;
@@ -38,6 +40,7 @@ namespace FlaxEditor.Windows.Assets
             internal bool HasSelection = false;
             internal bool IsMouseOverSelection = false;
 
+
             public AtlasView(bool useWidgets)
             : base(useWidgets)
             {
@@ -46,8 +49,7 @@ namespace FlaxEditor.Windows.Assets
             protected override void DrawTexture(ref Rectangle rect)
             {
                 base.DrawTexture(ref rect);
-
-                if (Asset && Asset.IsLoaded && IsMouseOver)
+                if (Asset && Asset.IsLoaded)
                 {
                     var count = Asset.SpritesCount;
                     var style = Style.Current;
@@ -72,6 +74,7 @@ namespace FlaxEditor.Windows.Assets
                     }
                     if (HasSelection)
                     {
+
                         Render2D.DrawRectangle(GetRectangle(ref rect, MarkedSpriteID), Color.Lime);
                     }
                 }
@@ -105,6 +108,51 @@ namespace FlaxEditor.Windows.Assets
             {
                 this.Mouselocation = location;
                 base.OnMouseMove(location);
+
+            }
+            /// <summary>
+            /// moves sprite pixels to new location
+            /// </summary>
+            internal void MoveSpritePixels(Float2 from, Float2 to, Float2 spriteSize)
+            {
+                //init
+                var Duplicate = GPUDevice.Instance.CreateTexture("MoveSpritePixels.Duplicate");
+                var Ereser = GPUDevice.Instance.CreateTexture("MoveSpritePixels.Ereser");
+                var desc = GPUTextureDescription.New2D((int)spriteSize.X, (int)spriteSize.Y, Asset.Format);
+                Duplicate.Init(ref desc);
+                Ereser.Init(ref desc);
+
+                //crop and coppy
+                GPUDevice.Instance.MainContext.CopyTexture(Duplicate, 0, 0, 0, 0, Asset.Texture, 0,new Rectangle(from, spriteSize));
+                unsafe
+                {
+                    //make a clear texture with size of the crop
+                    Color[] Buffer = new Color[desc.Width * desc.Height];
+                    Array.Fill(Buffer, new Color(0, 0, 0, 0));
+                    fixed (void* pBuffer = Buffer)
+                    {
+                        GPUDevice.Instance.MainContext.UpdateTexture(Ereser, 0, 0, (nint)pBuffer, (uint)desc.Width, (uint)desc.Height);
+                    }
+                }
+                
+                
+                //paste it back
+                GPUDevice.Instance.MainContext.CopyTexture(Asset.Texture, 0, (uint)to.X, (uint)to.Y, 0, Duplicate, 0, new Rectangle(Float2.Zero, spriteSize));
+                //erase last
+                GPUDevice.Instance.MainContext.CopyTexture(Asset.Texture, 0, (uint)from.X, (uint)from.Y, 0, Ereser, 0, new Rectangle(Float2.Zero, spriteSize));
+
+                Duplicate.ReleaseGPU();
+                Ereser.ReleaseGPU();
+                FlaxEngine.Object.Destroy(ref Duplicate);
+                FlaxEngine.Object.Destroy(ref Ereser);
+            }
+            /// <summary>
+            /// 
+            /// </summary>
+            /// <returns>Mouse location on the texture</returns>
+            public Float2 GetMouseLocationOnTexture()
+            {
+                return Asset.Size * ((Mouselocation - TextureViewRect.Location) / TextureViewRect.Size);
             }
         }
 
@@ -118,8 +166,6 @@ namespace FlaxEditor.Windows.Assets
 
             public class SpriteEntry
             {
-                [HideInEditor]
-                internal SpritesCollectionEditor GetEditor;
                 [HideInEditor]
                 public SpriteHandle Sprite;
 
@@ -171,7 +217,6 @@ namespace FlaxEditor.Windows.Assets
 
             public sealed class SpritesCollectionEditor : CustomEditor
             {
-                internal LayoutElementsContainer layout;
                 public override DisplayStyle Style => DisplayStyle.InlineIntoParent;
 
                 public override void Initialize(LayoutElementsContainer layout)
@@ -187,24 +232,8 @@ namespace FlaxEditor.Windows.Assets
                             group.Panel.Tag = i;
                             group.Panel.MouseButtonRightClicked += OnGroupPanelMouseButtonRightClicked;
                             group.Object(new ListValueContainer(elementType, i, Values));
-                            sprites[i].GetEditor = this;//link the editor to SpriteEntry
                         }
                     }
-                    this.layout = layout;
-                }
-                protected override void Deinitialize()
-                {
-                    var sprites = (SpriteEntry[])Values[0];
-
-                    if (sprites != null)
-                    {
-                        for (int i = 0; i < sprites.Length; i++)
-                        {
-                            sprites[i].GetEditor = null;//unlink the editor from SpriteEntry
-                        }
-                    }
-                    layout = null;
-                    base.Deinitialize();
                 }
                 private void OnGroupPanelMouseButtonRightClicked(DropPanel groupPanel, Float2 location)
                 {
@@ -298,10 +327,22 @@ namespace FlaxEditor.Windows.Assets
         private readonly AtlasView _preview;
         private readonly CustomEditorPresenter _propertiesEditor;
         private readonly ToolStripButton _saveButton;
-
+        private readonly ToolStripButton _moveSprite;
+        
         private readonly PropertiesProxy _properties;
         private bool _isWaitingForLoad;
         private bool LMBDown;
+        private bool moveSprite;
+        private DropPanel spriteUnderTheMouseDropPanel;
+        private Rectangle beginDragBounds;
+        private Float2 offset;
+        private bool ctrlDown;
+        private bool shiftDown;
+        private bool gotEdit;
+        private bool lockduplicate;
+        private GPUTexture BackUpAtlas;
+
+        Undo _undo = new Undo();
         /// <inheritdoc />
         public SpriteAtlasWindow(Editor editor, AssetItem item)
         : base(editor, item)
@@ -334,25 +375,103 @@ namespace FlaxEditor.Windows.Assets
             _toolstrip.AddSeparator();
             _toolstrip.AddButton(editor.Icons.AddFile64, () =>
             {
-                var sprite = new Sprite
-                {
-                    Name = Utilities.Utils.IncrementNameNumber("New Sprite", name => Asset.Sprites.All(s => s.Name != name)),
-                    Area = new Rectangle(Float2.Zero, Float2.One),
-                };
-                Asset.AddSprite(sprite);
-                MarkAsEdited();
-                _properties.UpdateSprites();
-                _propertiesEditor.BuildLayout();
+                AddSprite(new Rectangle(Float2.Zero, Float2.One));
             }).LinkTooltip("Add a new sprite");
             _toolstrip.AddSeparator();
             _toolstrip.AddButton(editor.Icons.CenterView64, _preview.CenterView).LinkTooltip("Center view");
-        }
+            _moveSprite = (ToolStripButton)_toolstrip.AddButton(editor.Icons.Paint96, ToggleMoveSprite).LinkTooltip("Enable move sprite");
 
+            InputActions.Add(options => options.Undo, () =>
+            {
+                _undo.PerformUndo();
+                Focus();
+            });
+            InputActions.Add(options => options.Redo, () =>
+            {
+                _undo.PerformRedo();
+                Focus();
+            });
+            InputActions.Add(options => options.Delete, () => PuffSelectedSprite());
+        }
+        private void PuffSelectedSprite()
+        {
+            //[todo] add undo
+            if (_preview.HasSelection)
+            {
+                Asset.RemoveSprite(_preview.MarkedSpriteID);
+                MarkAsEdited();
+                _properties.UpdateSprites();
+                _propertiesEditor.BuildLayout();
+            }
+        }
+        private int AddSprite(Rectangle area)
+        {
+            var sprite = new Sprite
+            {
+                Name = Utilities.Utils.IncrementNameNumber("New Sprite", name => Asset.Sprites.All(s => s.Name != name)),
+                Area = area,
+            };
+            Asset.AddSprite(sprite);
+            MarkAsEdited();
+            _properties.UpdateSprites();
+            _propertiesEditor.BuildLayout();
+
+            return _properties.Sprites.Length -1;
+        }
+        private class UndoAction : IUndoAction
+        {
+            public string ActionString => "Sprite Modfyay";
+            int spriteID;
+            Rectangle cords;
+
+            SpriteAtlasWindow atlas;
+            //snap shot of the atlas texture
+            GPUTexture snapshot;
+            bool doneEditOnTexture;
+            public UndoAction(int spriteID, Float2 location, SpriteAtlasWindow atlas,bool doneEditOnTexture)
+            {
+                this.spriteID           = spriteID;
+                this.cords.Location     = location;
+                this.atlas              = atlas;
+                this.doneEditOnTexture  = doneEditOnTexture;
+                snapshot = GPUDevice.Instance.CreateTexture("SpriteAtlasWindow.BackUpAtlas" + spriteID.ToString());
+                var desc = GPUTextureDescription.New2D((int)atlas.Asset.Size.X, (int)atlas.Asset.Size.Y, atlas.Asset.Format);
+                snapshot.Init(ref desc);
+                GPUDevice.Instance.MainContext.CopyTexture(snapshot, 0, 0, 0, 0, atlas.Asset.Texture, 0);
+            }
+            public void Do()
+            {
+                //[noir_sc] no idea if it will work
+                PreformAction();
+            }
+            public void Undo()
+            {
+                PreformAction();
+            }
+            private void PreformAction()
+            {
+                atlas._preview.MarkedSpriteID = spriteID;
+                atlas._properties.Sprites[spriteID].Location = cords.Location;
+                atlas._properties.UpdateSprites();
+                if (!doneEditOnTexture)
+                    return;
+                GPUDevice.Instance.MainContext.CopyTexture(atlas.Asset.Texture, 0, 0, 0, 0, snapshot, 0);
+            }
+            public void Dispose()
+            {
+                if (!doneEditOnTexture)
+                    return;
+                snapshot.ReleaseGPU();
+                FlaxEngine.Object.Destroy(ref snapshot);
+            }
+        }
         /// <inheritdoc />
         public override void Save()
         {
             if (!IsEdited)
                 return;
+
+            _undo.Clear();
 
             if (Asset.SaveSprites())
             {
@@ -370,6 +489,13 @@ namespace FlaxEditor.Windows.Assets
             _saveButton.Enabled = IsEdited;
 
             base.UpdateToolstrip();
+        }
+        void ToggleMoveSprite()
+        {
+            moveSprite = !moveSprite;
+            _moveSprite.Checked = moveSprite;
+
+            UpdateToolstrip();
         }
 
         /// <inheritdoc />
@@ -396,6 +522,7 @@ namespace FlaxEditor.Windows.Assets
         {
             // Invalidate data
             _isWaitingForLoad = true;
+            _undo.Clear();
         }
 
         /// <inheritdoc />
@@ -403,6 +530,9 @@ namespace FlaxEditor.Windows.Assets
         {
             // Discard unsaved changes
             _properties.DiscardChanges();
+            _undo.Clear();
+            BackUpAtlas.ReleaseGPU();
+            FlaxEngine.Object.Destroy(ref BackUpAtlas);
 
             base.OnClose();
         }
@@ -411,6 +541,10 @@ namespace FlaxEditor.Windows.Assets
         protected override void OnAssetLoaded()
         {
             _properties.UpdateSprites();
+            //create a backup to restore if atlas gets edited
+            BackUpAtlas = GPUDevice.Instance.CreateTexture("SpriteAtlasWindow.BackUpAtlas");
+            var desc = GPUTextureDescription.New2D((int)Asset.Size.X, (int)Asset.Size.Y, Asset.Format);
+            BackUpAtlas.Init(ref desc);
             base.OnAssetLoaded();
         }
         /// <inheritdoc />
@@ -453,39 +587,47 @@ namespace FlaxEditor.Windows.Assets
         {
             _split.SplitterValue = 0.7f;
         }
-        private DropPanel SpriteUnderTheMouseDropPanel;
         /// <inheritdoc />
         public override bool OnMouseDown(Float2 location, MouseButton button)
         {
+            bool b = base.OnMouseDown(location, button);
             if (button == MouseButton.Left && _preview.IsMouseOver)
             {
+
                 if (_preview.IsMouseOverSelection)
                 {
-                    var panel = (DropPanel)(_properties.Sprites[_preview.SpriteIDUnderTheMouse].GetEditor.layout.Children[_preview.SpriteIDUnderTheMouse].Control);
+                    //[Nori_SC] this will crash some day :D but not now
+                    var panel = (DropPanel)(((GroupElement)_propertiesEditor.Children[0]).Children[_preview.SpriteIDUnderTheMouse].Control);
+                    //let it be a auto scroll
+                    var p = _propertiesEditor.Panel.Parent as Panel;
+                    var parentScrollV = p?.VScrollBar;
                     if (_preview.MarkSelected())
                     {
                         LMBDown = true;
-                        _preview.LockMovment = true;
-                        if (SpriteUnderTheMouseDropPanel != panel)
+                        if (spriteUnderTheMouseDropPanel != panel)
                         {
-                            if (SpriteUnderTheMouseDropPanel != null)
-                                SpriteUnderTheMouseDropPanel.IsClosed = true;
+                            if (spriteUnderTheMouseDropPanel != null)
+                                spriteUnderTheMouseDropPanel.IsClosed = true;
                             panel.IsClosed = false;
-                            SpriteUnderTheMouseDropPanel = panel;
+                            spriteUnderTheMouseDropPanel = panel;
                         }
                     }
+                    beginDragBounds.Location = _properties.Sprites[_preview.MarkedSpriteID].Location;
+                    beginDragBounds.Size = _properties.Sprites[_preview.MarkedSpriteID].Size;
+                    parentScrollV.Value = panel.LocalY - panel.Size.Y;
+                    offset = _preview.GetMouseLocationOnTexture() - beginDragBounds.Location;
                     return true;
                 }
                 else
                 {
                     _preview.HasSelection = false;
-                    if (SpriteUnderTheMouseDropPanel != null)
-                        SpriteUnderTheMouseDropPanel.IsClosed = true;
-                    SpriteUnderTheMouseDropPanel = null;
+                    if (spriteUnderTheMouseDropPanel != null)
+                        spriteUnderTheMouseDropPanel.IsClosed = true;
+                    spriteUnderTheMouseDropPanel = null;
                     return true;
                 }
             }
-            return base.OnMouseDown(location, button);
+            return b;
         }
         /// <inheritdoc />
         public override bool OnMouseUp(Float2 location, MouseButton button)
@@ -493,51 +635,71 @@ namespace FlaxEditor.Windows.Assets
             if (button == MouseButton.Left && LMBDown)
             {
                 LMBDown = false;
-                _preview.LockMovment = false;
                 if (gotEdit)
                 {
-                    IsEdited = true;
+                    var sl = beginDragBounds;
+                    var cl = sl.Location;
+                    if (cl != _properties.Sprites[_preview.MarkedSpriteID].Location)
+                    {
+                        if (moveSprite)
+                        {
+                            _undo.AddAction(new UndoAction(_preview.MarkedSpriteID, cl, this, true));
+                            _preview.MoveSpritePixels(cl, _properties.Sprites[_preview.MarkedSpriteID].Location, _properties.Sprites[_preview.MarkedSpriteID].Size);
+                        }
+                        else
+                        {
+                            _undo.AddAction(new UndoAction(_preview.MarkedSpriteID, cl, this, false));
+                        }
+                        IsEdited = true;
+                    }
                     gotEdit = false;
                 }
                 return true;
             }
+            
+            lockduplicate = false;
             return base.OnMouseUp(location, button);
         }
-        private Float2 lastlocation;
-        private Float2 offset;
-        private bool ctrlDown;
-        private bool gotEdit;
         /// <inheritdoc />
         public override void OnMouseMove(Float2 location)
         {
-            var viewScale = Mathf.Max(_preview._viewScale, 1);
+            base.OnMouseMove(location);
             if (LMBDown && _preview.HasSelection)
             {
-                //[Todo] fix the draging sprite araund it is not directy under the mouse
-                // because of Mouse location is not acauting for a transformation of view
+                location = _preview.GetMouseLocationOnTexture();
                 var sl = _properties.Sprites[_preview.MarkedSpriteID];
                 var cl = sl.Location;
-                offset -= (lastlocation - (location / viewScale));
                 if (ctrlDown)
                 {
-                    sl.Location = Float2.Round(sl.Location + offset);
+                    sl.Location = Float2.Round(location + offset);
                 }
                 else
                 {
                     if (sl.Size.X != 0 || sl.Size.Y != 0)// inf nan guard
                     {
-                        sl.Location = Float2.SnapToGrid(sl.Location + offset, sl.Size);
+                        sl.Location = Float2.SnapToGrid(location + offset, sl.Size);
                     }
                 }
                 if (cl != sl.Location)
                 {
-                    offset = Vector2.Zero;
                     gotEdit = true;
+                    if (shiftDown && lockduplicate == false)
+                    {
+                        lockduplicate = true;
+                        _undo.Clear();
+                        _properties.Sprites[_preview.MarkedSpriteID].Location = beginDragBounds.Location;
+                        _properties.Sprites[_preview.MarkedSpriteID].Size = beginDragBounds.Size;
+                        var rect = new Rectangle(sl.Location / Asset.Size, sl.Size / Asset.Size);
+                        _preview.MarkedSpriteID = AddSprite(rect);
+                        beginDragBounds = rect;
+                    }
+                    else
+                    {
+                        _properties.Sprites[_preview.MarkedSpriteID].Location = sl.Location;
+                    }
+                    offset = Vector2.Zero;
                 }
-                _properties.Sprites[_preview.MarkedSpriteID].Location = sl.Location;
             }
-            lastlocation = location / viewScale;
-            base.OnMouseMove(location);
         }
         /// <inheritdoc />
         public override bool OnKeyDown(KeyboardKeys key)
@@ -545,6 +707,10 @@ namespace FlaxEditor.Windows.Assets
             if(key == KeyboardKeys.Control)
             {
                 ctrlDown = true;
+            }
+            if(key == KeyboardKeys.Shift)
+            {
+                shiftDown = true;
             }
             return base.OnKeyDown(key);
         }
@@ -555,7 +721,19 @@ namespace FlaxEditor.Windows.Assets
             {
                 ctrlDown = false;
             }
+            if (key == KeyboardKeys.Shift)
+            {
+                shiftDown = false;
+            }
             base.OnKeyUp(key);
+        }
+        /// <inheritdoc/>
+        public override void OnLostFocus()
+        {
+            ctrlDown = false;
+            shiftDown = false;
+            LMBDown = false;
+            base.OnLostFocus();
         }
     }
 }

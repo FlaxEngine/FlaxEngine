@@ -96,7 +96,6 @@ namespace FlaxEditor.Viewport.Widgets
         /// <param name="icon">The icon.</param>
         /// <param name="contextMenu">The context menu.</param>
         /// <param name="autoCheck">if set to <c>true</c> will be automatic checked on mouse click.</param>
-        /// <param name="textWidth">Forces the text to be drawn with the specified width.</param>
         public ViewportWidgetButton(string text, SpriteHandle icon, ContextMenu contextMenu = null, bool autoCheck = false)
         : base(0, 0, CalculateButtonWidth(0, icon.IsValid), ViewportWidgetsContainer.WidgetsHeight)
         {

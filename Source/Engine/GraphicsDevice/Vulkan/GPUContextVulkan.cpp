@@ -1456,6 +1456,55 @@ void GPUContextVulkan::CopyTexture(GPUTexture* dstResource, uint32 dstSubresourc
     vkCmdCopyImage(cmdBuffer->GetHandle(), srcTextureVulkan->GetHandle(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, dstTextureVulkan->GetHandle(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
 }
 
+void GPUContextVulkan::CopyTexture(GPUTexture* dstResource, uint32 dstSubresource, uint32 dstX, uint32 dstY, uint32 dstZ, GPUTexture* srcResource, uint32 srcSubresource, Rectangle& rect)
+{
+    ASSERT(dstResource && srcResource);
+    const auto cmdBuffer = _cmdBufferManager->GetCmdBuffer();
+
+    // Ensure to end active render pass
+    if (cmdBuffer->IsInsideRenderPass())
+        EndRenderPass();
+
+    const auto dstTextureVulkan = static_cast<GPUTextureVulkan*>(dstResource);
+    const auto srcTextureVulkan = static_cast<GPUTextureVulkan*>(srcResource);
+
+    // Transition resources
+    AddImageBarrier(dstTextureVulkan, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+    AddImageBarrier(srcTextureVulkan, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+    FlushBarriers();
+
+    // Prepare
+    const int32 dstMipIndex = dstSubresource % dstTextureVulkan->MipLevels();
+    const int32 dstArrayIndex = dstSubresource / dstTextureVulkan->MipLevels();
+    const int32 srcMipIndex = srcSubresource % srcTextureVulkan->MipLevels();
+    const int32 srcArrayIndex = srcSubresource / srcTextureVulkan->MipLevels();
+    int32 mipWidth, mipHeight, mipDepth;
+    srcTextureVulkan->GetMipSize(srcMipIndex, mipWidth, mipHeight, mipDepth);
+
+    //overite size
+    //[TODO] Cheak it if is working [blind coding :) is fun]
+    mipWidth = rect.Size.X;
+    mipHeight = rect.Size.Y;
+    // Copy
+    VkImageCopy region;
+    Platform::MemoryClear(&region, sizeof(VkBufferImageCopy));
+    region.extent.width = mipWidth;
+    region.extent.height = mipHeight;
+    region.extent.depth = mipDepth;
+    region.dstOffset.x = dstX;
+    region.dstOffset.y = dstY;
+    region.dstOffset.z = dstZ;
+    region.srcSubresource.baseArrayLayer = srcArrayIndex;
+    region.srcSubresource.layerCount = 1;
+    region.srcSubresource.mipLevel = srcMipIndex;
+    region.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    region.dstSubresource.baseArrayLayer = dstArrayIndex;
+    region.dstSubresource.layerCount = 1;
+    region.dstSubresource.mipLevel = dstMipIndex;
+    region.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    vkCmdCopyImage(cmdBuffer->GetHandle(), srcTextureVulkan->GetHandle(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, dstTextureVulkan->GetHandle(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
+}
+
 void GPUContextVulkan::ResetCounter(GPUBuffer* buffer)
 {
     ASSERT(buffer);

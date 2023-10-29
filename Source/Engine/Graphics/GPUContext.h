@@ -258,6 +258,19 @@ public:
     /// <param name="srcResource">The source resource.</param>
     /// <param name="srcSubresource">The source subresource index.</param>
     API_FUNCTION() virtual void CopyTexture(GPUTexture* dstResource, uint32 dstSubresource, uint32 dstX, uint32 dstY, uint32 dstZ, GPUTexture* srcResource, uint32 srcSubresource) = 0;
+    
+    /// <summary>
+    /// Copies region of the texture.
+    /// </summary>
+    /// <param name="dstResource">The destination resource.</param>
+    /// <param name="dstSubresource">The destination subresource index.</param>
+    /// <param name="dstX">The x-coordinate of the upper left corner of the destination region.</param>
+    /// <param name="dstY">The y-coordinate of the upper left corner of the destination region.</param>
+    /// <param name="dstZ">The z-coordinate of the upper left corner of the destination region.</param>
+    /// <param name="srcResource">The source resource.</param>
+    /// <param name="srcSubresource">The source subresource index.</param>
+    /// <param name="rect">The source bounds. The bounds must fit within the source resource</param>
+    API_FUNCTION() virtual void CopyTexture(GPUTexture* dstResource, uint32 dstSubresource, uint32 dstX, uint32 dstY, uint32 dstZ, GPUTexture* srcResource, uint32 srcSubresource, Rectangle& rect) = 0;
 
     /// <summary>
     /// Resets the counter buffer to zero (hidden by the driver).
