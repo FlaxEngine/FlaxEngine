@@ -21,7 +21,6 @@ namespace FlaxEditor.Viewport.Widgets
         private bool _autoCheck;
         private bool _isMosueDown;
         private float _forcedTextWidth;
-        private float _forcedTextWidth;
         private SpriteHandle _backgraundPlanel;
 
         /// <summary>
