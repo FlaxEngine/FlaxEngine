@@ -1181,7 +1181,10 @@ namespace FlaxEngine.Interop
         [UnmanagedCallersOnly]
         internal static void GCCollect(int generation, int mode, bool blocking, bool compacting)
         {
+            // TODO: fix stall on iOS with AOT
+#if !USE_AOT
             GC.Collect(generation, (GCCollectionMode)mode, blocking, compacting);
+#endif
         }
 
         [UnmanagedCallersOnly]
