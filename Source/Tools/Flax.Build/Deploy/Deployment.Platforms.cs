@@ -55,6 +55,20 @@ namespace Flax.Deploy
                         CodeSign(Path.Combine(binaries, "FlaxGame.exe"));
                         CodeSign(Path.Combine(binaries, "FlaxEngine.CSharp.dll"));
                     }
+                    else if (platform == TargetPlatform.Mac)
+                    {
+                        var binaries = Path.Combine(dst, "Binaries", "Game", "arm64", "Debug");
+                        CodeSign(Path.Combine(binaries, "FlaxGame"));
+                        CodeSign(Path.Combine(binaries, "FlaxGame.dylib"));
+
+                        binaries = Path.Combine(dst, "Binaries", "Game", "arm64", "Development");
+                        CodeSign(Path.Combine(binaries, "FlaxGame"));
+                        CodeSign(Path.Combine(binaries, "FlaxGame.dylib"));
+
+                        binaries = Path.Combine(dst, "Binaries", "Game", "arm64", "Release");
+                        CodeSign(Path.Combine(binaries, "FlaxGame"));
+                        CodeSign(Path.Combine(binaries, "FlaxGame.dylib"));
+                    }
 
                     // Don't distribute engine deps
                     Utilities.DirectoryDelete(Path.Combine(dst, "Binaries", "ThirdParty"));
