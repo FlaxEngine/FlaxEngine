@@ -95,7 +95,7 @@ namespace FlaxEditor.Surface.Archetypes
 
             private void OnAssetPickerSelectedItemChanged()
             {
-                SetValue(0, _assetPicker.SelectedID);
+                SetValue(0, _assetPicker.Validator.SelectedID);
             }
 
             private void TryRestoreConnections(Box box, Box[] prevBoxes, ref NodeElementArchetype arch)
@@ -133,7 +133,7 @@ namespace FlaxEditor.Surface.Archetypes
                 var prevOutputs = _outputs;
 
                 // Extract function signature parameters (inputs and outputs packed)
-                _asset = LoadSignature(_assetPicker.SelectedID, out var typeNames, out var names);
+                _asset = LoadSignature(_assetPicker.Validator.SelectedID, out var typeNames, out var names);
                 if (typeNames != null && names != null)
                 {
                     var types = new Type[typeNames.Length];
@@ -174,7 +174,7 @@ namespace FlaxEditor.Surface.Archetypes
                         _outputs[i] = box;
                     }
 
-                    Title = _assetPicker.SelectedItem.ShortName;
+                    Title = _assetPicker.Validator.SelectedItem.ShortName;
                 }
                 else
                 {
