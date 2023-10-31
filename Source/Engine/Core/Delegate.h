@@ -511,7 +511,7 @@ public:
             _locker = New<CriticalSection>();
         ScopeLock lock(*_locker);
         if (_functions == nullptr)
-            _functions = New<HashSet<FunctionType>>(32);
+            _functions = New<HashSet<FunctionType>>();
         _functions->Add(f);
 #endif
     }
