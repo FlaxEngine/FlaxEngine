@@ -46,6 +46,7 @@
 #include <mono/metadata/metadata.h>
 #include <mono/metadata/threads.h>
 #include <mono/metadata/reflection.h>
+#include <mono/metadata/mono-gc.h>
 #include <mono/metadata/mono-private-unstable.h>
 typedef char char_t;
 #define DOTNET_HOST_MONO_DEBUG 0
@@ -522,7 +523,8 @@ void MCore::GC::FreeMemory(void* ptr, bool coTaskMem)
 
 void MCore::Thread::Attach()
 {
-#if DOTNET_HOST_MONO
+    // TODO: find a way to properly register native thread so Mono Stop The World (stw) won't freeze when native threads (eg. Job System) are running native code only
+#if DOTNET_HOST_MONO && !USE_MONO_AOT
     if (!IsInMainThread() && !mono_domain_get())
     {
         mono_thread_attach(MonoDomainHandle);
@@ -2056,7 +2058,7 @@ bool InitHostfxr()
     // Setup debugger
     {
         int32 debuggerLogLevel = 0;
-        if (CommandLine::Options.MonoLog.IsTrue())
+        if (CommandLine::Options.MonoLog.IsTrue() || DOTNET_HOST_MONO_DEBUG)
         {
             LOG(Info, "Using detailed Mono logging");
             mono_trace_set_level_string("debug");
@@ -2139,6 +2141,7 @@ bool InitHostfxr()
         LOG(Fatal, "Failed to initialize Mono.");
         return true;
     }
+    mono_gc_init_finalizer_thread();
 
     // Log info
     char* buildInfo = mono_get_runtime_build_info();
