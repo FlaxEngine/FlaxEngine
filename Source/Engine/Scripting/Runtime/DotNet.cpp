@@ -524,7 +524,7 @@ void MCore::GC::FreeMemory(void* ptr, bool coTaskMem)
 void MCore::Thread::Attach()
 {
     // TODO: find a way to properly register native thread so Mono Stop The World (stw) won't freeze when native threads (eg. Job System) are running native code only
-#if DOTNET_HOST_MONO && !USE_MONO_AOT
+#if DOTNET_HOST_MONO && 0
     if (!IsInMainThread() && !mono_domain_get())
     {
         mono_thread_attach(MonoDomainHandle);
