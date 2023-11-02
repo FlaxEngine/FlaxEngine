@@ -1,5 +1,6 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
+using System.Collections.Generic;
 using System.IO;
 using Flax.Build;
 using Flax.Build.NativeCpp;
@@ -61,5 +62,13 @@ public class volk : ThirdPartyModule
         {
             Log.ErrorOnce("Missing VulkanSDK.", ref _missingSDKError);
         }
+    }
+
+    /// <inheritdoc />
+    public override void GetFilesToDeploy(List<string> files)
+    {
+        base.GetFilesToDeploy(files);
+
+        files.Add(Path.Combine(FolderPath, "volk.h"));
     }
 }

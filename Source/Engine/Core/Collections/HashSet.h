@@ -82,7 +82,6 @@ public:
 
 private:
     int32 _elementsCount = 0;
-    int32 _deletedCount = 0;
     int32 _size = 0;
     AllocationData _allocation;
 
@@ -109,14 +108,11 @@ public:
     /// <param name="other">The other collection to move.</param>
     HashSet(HashSet&& other) noexcept
         : _elementsCount(other._elementsCount)
-        , _deletedCount(other._deletedCount)
         , _size(other._size)
     {
         _elementsCount = other._elementsCount;
-        _deletedCount = other._deletedCount;
         _size = other._size;
         other._elementsCount = 0;
-        other._deletedCount = 0;
         other._size = 0;
         _allocation.Swap(other._allocation);
     }
@@ -154,10 +150,8 @@ public:
             Clear();
             _allocation.Free();
             _elementsCount = other._elementsCount;
-            _deletedCount = other._deletedCount;
             _size = other._size;
             other._elementsCount = 0;
-            other._deletedCount = 0;
             other._size = 0;
             _allocation.Swap(other._allocation);
         }
@@ -337,12 +331,12 @@ public:
     /// </summary>
     void Clear()
     {
-        if (_elementsCount + _deletedCount != 0)
+        if (_elementsCount != 0)
         {
             Bucket* data = _allocation.Get();
             for (int32 i = 0; i < _size; i++)
                 data[i].Free();
-            _elementsCount = _deletedCount = 0;
+            _elementsCount = 0;
         }
     }
 
@@ -377,7 +371,7 @@ public:
         oldAllocation.Swap(_allocation);
         const int32 oldSize = _size;
         const int32 oldElementsCount = _elementsCount;
-        _deletedCount = _elementsCount = 0;
+        _elementsCount = 0;
         if (capacity != 0 && (capacity & (capacity - 1)) != 0)
         {
             // Align capacity value to the next power of two (http://graphics.stanford.edu/~seander/bithacks.html#RoundUpPowerOf2)
@@ -439,7 +433,7 @@ public:
     bool Add(const ItemType& item)
     {
         // Ensure to have enough memory for the next item (in case of new element insertion)
-        EnsureCapacity(_elementsCount + _deletedCount + 1);
+        EnsureCapacity(_elementsCount + 1);
 
         // Find location of the item or place to insert it
         FindPositionResult pos;
@@ -485,7 +479,6 @@ public:
         {
             _allocation.Get()[pos.ObjectIndex].Delete();
             _elementsCount--;
-            _deletedCount++;
             return true;
         }
         return false;
@@ -504,7 +497,6 @@ public:
             ASSERT(_allocation.Get()[i._index].IsOccupied());
             _allocation.Get()[i._index].Delete();
             _elementsCount--;
-            _deletedCount++;
             return true;
         }
         return false;

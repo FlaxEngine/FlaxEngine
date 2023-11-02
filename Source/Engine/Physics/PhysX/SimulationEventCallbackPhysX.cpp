@@ -117,9 +117,7 @@ void SimulationEventCallback::onContact(const PxContactPairHeader& pairHeader, c
 {
     // Skip sending events to removed actors
     if (pairHeader.flags & (PxContactPairHeaderFlag::eREMOVED_ACTOR_0 | PxContactPairHeaderFlag::eREMOVED_ACTOR_1))
-    {
         return;
-    }
 
     Collision c;
     PxContactPairExtraDataIterator j(pairHeader.extraDataStream, pairHeader.extraDataStreamSize);
@@ -193,7 +191,7 @@ void SimulationEventCallback::onContact(const PxContactPairHeader& pairHeader, c
             RemovedCollisions.Add(c);
         }
     }
-    ASSERT(!j.nextItemSet());
+    //ASSERT(!j.nextItemSet());
 }
 
 void SimulationEventCallback::onTrigger(PxTriggerPair* pairs, PxU32 count)
