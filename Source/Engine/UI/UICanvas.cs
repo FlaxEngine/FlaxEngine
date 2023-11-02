@@ -95,7 +95,7 @@ namespace FlaxEngine
     partial class UICanvas
     {
         private CanvasRenderMode _renderMode;
-        private readonly CanvasRootControl _guiRoot;
+        internal readonly CanvasRootControl _guiRoot;
         private CanvasRenderer _renderer;
         private bool _isLoading, _isRegisteredForTick;
 

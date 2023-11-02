@@ -1082,6 +1082,7 @@ namespace FlaxEditor.Modules
             Proxy.Add(new LocalizedStringTableProxy());
             Proxy.Add(new FileProxy());
             Proxy.Add(new SpawnableJsonAssetProxy<PhysicalMaterial>());
+            Proxy.Add(new UIProxy());
 
             // Settings
             Proxy.Add(new SettingsProxy(typeof(GameSettings), Editor.Instance.Icons.GameSettings128));

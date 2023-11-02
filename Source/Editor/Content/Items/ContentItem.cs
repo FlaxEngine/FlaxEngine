@@ -111,6 +111,16 @@ namespace FlaxEditor.Content
         Shader,
 
         /// <summary>
+        /// The widget source files.
+        /// </summary>
+        Widget,
+
+        /// <summary>
+        /// The engine widget source files.
+        /// </summary>
+        EngineWidget,
+
+        /// <summary>
         /// The other.
         /// </summary>
         Other,
