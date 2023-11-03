@@ -1564,12 +1564,14 @@ Script* Level::FindScript(const MClass* type)
 
 namespace
 {
-    void GetActors(const MClass* type, Actor* actor, Array<Actor*>& result)
+    void GetActors(const MClass* type, Actor* actor, bool activeOnly, Array<Actor*>& result)
     {
+        if (activeOnly && !actor->GetIsActive())
+            return;
         if (actor->GetClass()->IsSubClassOf(type))
             result.Add(actor);
         for (auto child : actor->Children)
-            GetActors(type, child, result);
+            GetActors(type, child, activeOnly, result);
     }
 
     void GetScripts(const MClass* type, Actor* actor, Array<Script*>& result)
@@ -1582,13 +1584,13 @@ namespace
     }
 }
 
-Array<Actor*> Level::GetActors(const MClass* type)
+Array<Actor*> Level::GetActors(const MClass* type, bool activeOnly)
 {
     Array<Actor*> result;
     CHECK_RETURN(type, result);
     ScopeLock lock(ScenesLock);
     for (int32 i = 0; i < Scenes.Count(); i++)
-        ::GetActors(type, Scenes[i], result);
+        ::GetActors(type, Scenes[i], activeOnly, result);
     return result;
 }
 
