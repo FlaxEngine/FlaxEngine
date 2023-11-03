@@ -702,8 +702,9 @@ private:
         FindPositionResult pos;
         FindPosition(key, pos);
 
-        // Ensure key is unknown
-        ASSERT(pos.ObjectIndex == -1 && "That key has been already added to the dictionary.");
+        // Check if object has been already added
+        if (pos.ObjectIndex != -1)
+            return nullptr;
 
         // Insert
         ASSERT(pos.FreeSlotIndex != -1);
