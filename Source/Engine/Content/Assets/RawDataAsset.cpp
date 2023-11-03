@@ -31,7 +31,7 @@ bool RawDataAsset::Save(const StringView& path)
     }
 
     ScopeLock lock(Locker);
-
+    OnSave();
     bool result;
     if (IsVirtual())
     {

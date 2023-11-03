@@ -11,56 +11,45 @@ using FlaxEngine.GUI;
 namespace FlaxEditor.Content
 {
     /// <summary>
-    /// A <see cref="GameUI"/> asset proxy object.
+    /// A <see cref="Widget"/> asset proxy object.
     /// </summary>
     /// <seealso cref="FlaxEditor.Content.UIProxy" />
     [ContentContextMenu("New/UI/GameUI")]
-    public class UIProxy : JsonAssetProxy
+    public class UIProxy : AssetProxy
     {
-        /// <inheritdoc />
-        public override string Name => "GameUI";
-
-        /// <inheritdoc />
-        public override bool CanReimport(ContentItem item)
+        /// <inheritdoc/>
+        public override string TypeName => typeof(Widget).FullName;
+        /// <inheritdoc/>
+        public override string Name => typeof(Widget).Name;
+        /// <inheritdoc/>
+        public override string FileExtension => "widget";
+        /// <inheritdoc/>
+        public override Color AccentColor => Color.Aqua;
+        /// <inheritdoc/>
+        public override AssetItem ConstructItem(string path, string typeName, ref Guid id)
         {
-            return true;
+            return new WidgetItem(path, typeName, ref id);
         }
-
-        /// <inheritdoc />
+        /// <inheritdoc/>
+        public override bool IsProxyFor(ContentItem item)
+        {
+            return item is WidgetItem AssetItem && TypeName == AssetItem.TypeName;
+        }
+        /// <inheritdoc/>
         public override EditorWindow Open(Editor editor, ContentItem item)
         {
-            return new UIEditorWindow(editor, (AssetItem)item);
+            return new UIEditorWindow(editor, item as WidgetItem);
         }
-
-        /// <inheritdoc />
-        public override Color AccentColor => Color.ParseHex("#313abd");
-
-        /// <inheritdoc />
-        public override string TypeName => typeof(GameUI).FullName;
-
         /// <inheritdoc />
         public override bool CanCreate(ContentFolder targetLocation)
         {
             return targetLocation.CanHaveAssets;
         }
-
         /// <inheritdoc />
         public override void Create(string outputPath, object arg)
         {
-            if (Editor.CreateAsset(Editor.NewAssetType.GameUI, outputPath))
-                throw new Exception("Failed to create new asset.");
-        }
-
-        /// <inheritdoc />
-        public override void OnThumbnailDrawBegin(ThumbnailRequest request, ContainerControl guiRoot, GPUContext context)
-        {
-            guiRoot.AddChild(new Label
-            {
-                Text = Path.GetFileNameWithoutExtension(request.Asset.Path),
-                Offsets = Margin.Zero,
-                AnchorPreset = AnchorPresets.StretchAll,
-                Wrapping = TextWrapping.WrapWords
-            });
+            Widget data = FlaxEngine.Content.CreateVirtualAsset<Widget>();
+            data.Save(outputPath);
         }
     }
 }

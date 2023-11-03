@@ -15,13 +15,18 @@ using FlaxEngine.GUI;
 namespace FlaxEditor.Windows.Assets
 {
     /// <summary>
-    /// Prefab window allows to view and edit <see cref="GameUI"/> asset.
+    /// UI editor window allows to view and edit <see cref="Widget"/> asset.
     /// </summary>
-    /// <seealso cref="GameUI" />
+    /// <seealso cref="WidgetItem" />
     /// <seealso cref="FlaxEditor.Windows.Assets.AssetEditorWindow" />
-    public sealed partial class UIEditorWindow : AssetEditorWindowBase<GameUI>
+    public sealed partial class UIEditorWindow : AssetEditorWindowBase<WidgetData>
     {
-        public UIEditorWindow(Editor editor, AssetItem item) : base(editor, item)
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="editor"></param>
+        /// <param name="item"></param>
+        public UIEditorWindow(Editor editor, WidgetItem item) : base(editor, item)
         {
         }
     }

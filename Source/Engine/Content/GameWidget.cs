@@ -9,7 +9,7 @@ using System.Reflection;
 using FlaxEditor.Content;
 using FlaxEditor.Surface.Elements;
 
-namespace FlaxEngine.Content
+namespace FlaxEngine
 {
     /// <summary>
     /// [todo] add summary here
@@ -37,6 +37,10 @@ namespace FlaxEngine.Content
                 rawStringData.AddRange(Encoding.ASCII.GetBytes(control.AnchorMax.X.ToString() + "\n"));
                 rawStringData.AddRange(Encoding.ASCII.GetBytes(control.AnchorMin.Y.ToString() + "\n"));
                 rawStringData.AddRange(Encoding.ASCII.GetBytes(control.Rotation.ToString() + "\n"));
+                for (int i = 0; i < controlTypes.Count; i++)
+                {
+                    WriteControl(ref rawStringData);
+                }
                 rawStringData.AddRange(Encoding.ASCII.GetBytes("}\n"));
             }
         }
@@ -89,12 +93,11 @@ namespace FlaxEngine.Content
         }
     }
     /// <inheritdoc/>
-    public class Widget : AssetItem
+    public class WidgetItem : AssetItem
     {
         /// <inheritdoc/>
-        public Widget(string path, string typeName, ref Guid id) : base(path, typeName, ref id)
+        public WidgetItem(string path, string typeName, ref Guid id) : base(path, typeName, ref id)
         {
-            
         }
         /// <inheritdoc/>
         public override ContentItemSearchFilter SearchFilter => ContentItemSearchFilter.Widget;
