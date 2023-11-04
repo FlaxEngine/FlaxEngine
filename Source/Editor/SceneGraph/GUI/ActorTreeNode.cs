@@ -266,7 +266,7 @@ namespace FlaxEditor.SceneGraph.GUI
         /// <summary>
         /// Starts the actor renaming action.
         /// </summary>
-        public void StartRenaming(EditorWindow window, Panel treePanel)
+        public void StartRenaming(EditorWindow window, Panel treePanel = null)
         {
             // Block renaming during scripts reload
             if (Editor.Instance.ProgressReporting.CompileScripts.IsActive)
@@ -281,9 +281,12 @@ namespace FlaxEditor.SceneGraph.GUI
                 (window as PrefabWindow).ScrollingOnTreeView(false);
 
             // Start renaming the actor
-            treePanel.ScrollViewTo(this, true);
-            var size = new Float2(treePanel.Width - TextRect.Location.X, TextRect.Height);
-            var rect = new Rectangle(TextRect.Location, size);
+            var rect = TextRect;
+            if (treePanel != null)
+            {
+                treePanel.ScrollViewTo(this, true);
+                rect.Size = new Float2(treePanel.Width - TextRect.Location.X, TextRect.Height);
+            }
             var dialog = RenamePopup.Show(this, rect, _actorNode.Name, false);
             dialog.Renamed += OnRenamed;
             dialog.Closed += popup =>
