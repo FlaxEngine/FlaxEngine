@@ -4,11 +4,11 @@
 #include "GBufferPass.h"
 #include "VolumetricFogPass.h"
 #include "Engine/Graphics/Graphics.h"
+#include "Engine/Graphics/GPUContext.h"
 #include "Engine/Graphics/RenderTask.h"
 #include "Engine/Graphics/RenderBuffers.h"
 #include "Engine/Graphics/PixelFormatExtensions.h"
 #include "Engine/Content/Content.h"
-#include "Engine/Graphics/GPUContext.h"
 #include "Engine/Scripting/Enums.h"
 #if USE_EDITOR
 #include "Engine/Renderer/Lightmaps.h"
@@ -81,19 +81,22 @@ bool ShadowsPass::Init()
     _shader.Get()->OnReloading.Bind<ShadowsPass, &ShadowsPass::OnShaderReloading>(this);
 #endif
 
-    // If GPU doesn't support linear sampling for the shadow map then fallback to the single sample on lowest quality
-    const auto formatTexture = PixelFormatExtensions::FindShaderResourceFormat(SHADOW_MAPS_FORMAT, false);
-    const auto formatFeaturesDepth = GPUDevice::Instance->GetFormatFeatures(SHADOW_MAPS_FORMAT);
-    const auto formatFeaturesTexture = GPUDevice::Instance->GetFormatFeatures(formatTexture);
-    _supportsShadows = EnumHasAllFlags(formatFeaturesDepth.Support, FormatSupport::DepthStencil | FormatSupport::Texture2D)
-            && EnumHasAllFlags(formatFeaturesTexture.Support, FormatSupport::ShaderSample | FormatSupport::ShaderSampleComparison);
-    // TODO: fallback to 32-bit shadow map format if 16-bit is not supported
-    if (!_supportsShadows)
+    // Select format for shadow maps
+    _shadowMapFormat = PixelFormat::Unknown;
+    for (const PixelFormat format : { PixelFormat::D16_UNorm, PixelFormat::D24_UNorm_S8_UInt, PixelFormat::D32_Float })
     {
-        LOG(Warning, "GPU doesn't support shadows rendering");
-        LOG(Warning, "Format: {0}, features support: {1}", ScriptingEnum::ToString(SHADOW_MAPS_FORMAT), (uint32)formatFeaturesDepth.Support);
-        LOG(Warning, "Format: {0}, features support: {1}", ScriptingEnum::ToString(formatTexture), (uint32)formatFeaturesTexture.Support);
+        const auto formatTexture = PixelFormatExtensions::FindShaderResourceFormat(format, false);
+        const auto formatFeaturesDepth = GPUDevice::Instance->GetFormatFeatures(format);
+        const auto formatFeaturesTexture = GPUDevice::Instance->GetFormatFeatures(formatTexture);
+        if (EnumHasAllFlags(formatFeaturesDepth.Support, FormatSupport::DepthStencil | FormatSupport::Texture2D) &&
+            EnumHasAllFlags(formatFeaturesTexture.Support, FormatSupport::ShaderSample | FormatSupport::ShaderSampleComparison))
+        {
+            _shadowMapFormat = format;
+            break;
+        }
     }
+    if (_shadowMapFormat == PixelFormat::Unknown)
+        LOG(Warning, "GPU doesn't support shadows rendering");
 
     return false;
 }
@@ -148,7 +151,7 @@ void ShadowsPass::updateShadowMapSize()
 
     // Select new size
     _currentShadowMapsQuality = Graphics::ShadowMapsQuality;
-    if (_supportsShadows)
+    if (_shadowMapFormat != PixelFormat::Unknown)
     {
         switch (_currentShadowMapsQuality)
         {
@@ -174,18 +177,18 @@ void ShadowsPass::updateShadowMapSize()
     // Check if size will change
     if (newSizeCSM > 0 && newSizeCSM != _shadowMapsSizeCSM)
     {
-        if (_shadowMapCSM->Init(GPUTextureDescription::New2D(newSizeCSM, newSizeCSM, SHADOW_MAPS_FORMAT, GPUTextureFlags::ShaderResource | GPUTextureFlags::DepthStencil, 1, MAX_CSM_CASCADES)))
+        if (_shadowMapCSM->Init(GPUTextureDescription::New2D(newSizeCSM, newSizeCSM, _shadowMapFormat, GPUTextureFlags::ShaderResource | GPUTextureFlags::DepthStencil, 1, MAX_CSM_CASCADES)))
         {
-            LOG(Fatal, "Cannot setup shadow map '{0}' Size: {1}, format: {2}.", TEXT("CSM"), newSizeCSM, (int32)SHADOW_MAPS_FORMAT);
+            LOG(Fatal, "Cannot setup shadow map '{0}' Size: {1}, format: {2}.", TEXT("CSM"), newSizeCSM, ScriptingEnum::ToString(_shadowMapFormat));
             return;
         }
         _shadowMapsSizeCSM = newSizeCSM;
     }
     if (newSizeCube > 0 && newSizeCube != _shadowMapsSizeCube)
     {
-        if (_shadowMapCube->Init(GPUTextureDescription::NewCube(newSizeCube, SHADOW_MAPS_FORMAT, GPUTextureFlags::ShaderResource | GPUTextureFlags::DepthStencil)))
+        if (_shadowMapCube->Init(GPUTextureDescription::NewCube(newSizeCube, _shadowMapFormat, GPUTextureFlags::ShaderResource | GPUTextureFlags::DepthStencil)))
         {
-            LOG(Fatal, "Cannot setup shadow map '{0}' Size: {1}, format: {2}.", TEXT("Cube"), newSizeCube, (int32)SHADOW_MAPS_FORMAT);
+            LOG(Fatal, "Cannot setup shadow map '{0}' Size: {1}, format: {2}.", TEXT("Cube"), newSizeCube, ScriptingEnum::ToString(_shadowMapFormat));
             return;
         }
         _shadowMapsSizeCube = newSizeCube;
@@ -586,7 +589,7 @@ bool ShadowsPass::CanRenderShadow(const RenderContext& renderContext, const Rend
     const float fadeDistance = Math::Max(light.ShadowsFadeDistance, 0.1f);
     const float fade = 1 - Math::Saturate((dstLightToView - light.Radius - light.ShadowsDistance + fadeDistance) / fadeDistance);
 
-    return fade > ZeroTolerance && _supportsShadows;
+    return fade > ZeroTolerance && _shadowMapFormat != PixelFormat::Unknown;
 }
 
 bool ShadowsPass::CanRenderShadow(const RenderContext& renderContext, const RendererSpotLightData& light)
@@ -598,12 +601,12 @@ bool ShadowsPass::CanRenderShadow(const RenderContext& renderContext, const Rend
     const float fadeDistance = Math::Max(light.ShadowsFadeDistance, 0.1f);
     const float fade = 1 - Math::Saturate((dstLightToView - light.Radius - light.ShadowsDistance + fadeDistance) / fadeDistance);
 
-    return fade > ZeroTolerance && _supportsShadows;
+    return fade > ZeroTolerance && _shadowMapFormat != PixelFormat::Unknown;
 }
 
 bool ShadowsPass::CanRenderShadow(const RenderContext& renderContext, const RendererDirectionalLightData& light)
 {
-    return _supportsShadows;
+    return _shadowMapFormat != PixelFormat::Unknown;
 }
 
 void ShadowsPass::RenderShadow(RenderContextBatch& renderContextBatch, RendererPointLightData& light, GPUTextureView* shadowMask)

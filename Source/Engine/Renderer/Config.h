@@ -114,6 +114,3 @@ PACK_STRUCT(struct ProbeData {
 
 // Maximum amount of directional light cascades (using CSM technique)
 #define MAX_CSM_CASCADES 4
-
-// Default format for the shadow map textures
-#define SHADOW_MAPS_FORMAT PixelFormat::D16_UNorm
