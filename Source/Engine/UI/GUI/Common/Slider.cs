@@ -52,8 +52,6 @@ public class Slider : ContainerControl
         get => _maximum;
         set
         {
-            //if (value < _minimum || Mathf.IsZero(value))
-            //throw new ArgumentOutOfRangeException();
             if (WholeNumbers)
                 value = Mathf.RoundToInt(value);
             _maximum = value;
@@ -71,8 +69,6 @@ public class Slider : ContainerControl
         get => _minimum;
         set
         {
-            //if (value > _maximum)
-                //throw new ArgumentOutOfRangeException();
             if (WholeNumbers)
                 value = Mathf.RoundToInt(value);
             _minimum = value;
