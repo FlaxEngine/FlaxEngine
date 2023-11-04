@@ -47,6 +47,7 @@ struct RendererDirectionalLightData
     float ShadowsDistance;
     int32 CascadeCount;
     float ContactShadowsLength;
+    bool CacheShadows;
     ShadowsCastingMode ShadowsMode;
 
     Guid ID;
@@ -82,6 +83,7 @@ struct RendererSpotLightData
     float InvCosConeDifference;
     float ContactShadowsLength;
     float IndirectLightingIntensity;
+    bool CacheShadows;
     ShadowsCastingMode ShadowsMode;
 
     StaticFlags StaticFlags;
@@ -120,6 +122,7 @@ struct RendererPointLightData
     float SourceLength;
     float ContactShadowsLength;
     float IndirectLightingIntensity;
+    bool CacheShadows;
     ShadowsCastingMode ShadowsMode;
 
     StaticFlags StaticFlags;

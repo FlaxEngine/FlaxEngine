@@ -100,6 +100,7 @@ void LightWithShadow::Serialize(SerializeStream& stream, const void* otherObj)
     SERIALIZE(ShadowsDepthBias);
     SERIALIZE(ShadowsNormalOffsetScale);
     SERIALIZE(ContactShadowsLength);
+    SERIALIZE(CacheShadows);
 }
 
 void LightWithShadow::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)
@@ -116,4 +117,5 @@ void LightWithShadow::Deserialize(DeserializeStream& stream, ISerializeModifier*
     DESERIALIZE(ShadowsDepthBias);
     DESERIALIZE(ShadowsNormalOffsetScale);
     DESERIALIZE(ContactShadowsLength);
+    DESERIALIZE(CacheShadows);  
 }

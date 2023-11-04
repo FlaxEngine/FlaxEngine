@@ -41,6 +41,8 @@ void DirectionalLight::Draw(RenderContext& renderContext)
         data.RenderedVolumetricFog = 0;
         data.ShadowsMode = ShadowsMode;
         data.CascadeCount = CascadeCount;
+        data.CacheShadows = CacheShadows;
+        
         data.ContactShadowsLength = ContactShadowsLength;
         data.StaticFlags = GetStaticFlags();
         data.ID = GetID();
