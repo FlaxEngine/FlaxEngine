@@ -258,6 +258,9 @@ public:
         // Enable/disable importing blend shapes (morph targets).
         API_FIELD(Attributes="EditorOrder(85), EditorDisplay(\"Geometry\"), VisibleIf(nameof(ShowSkinnedModel))")
         bool ImportBlendShapes = false;
+        // Enable skeleton bones offset matrices recalculating.
+        API_FIELD(Attributes="EditorOrder(86), EditorDisplay(\"Geometry\"), VisibleIf(nameof(ShowSkinnedModel))")
+        bool CalculateBoneOffsetMatrices = false;
         // The lightmap UVs source.
         API_FIELD(Attributes="EditorOrder(90), EditorDisplay(\"Geometry\", \"Lightmap UVs Source\"), VisibleIf(nameof(ShowModel))")
         ModelLightmapUVsSource LightmapUVsSource = ModelLightmapUVsSource::Disable;
