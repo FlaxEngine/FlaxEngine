@@ -30,9 +30,7 @@ public:
     /// <summary>
     /// Finalizes an instance of the <see cref="SoftAssetReferenceBase"/> class.
     /// </summary>
-    ~SoftAssetReferenceBase()
-    {
-    }
+    ~SoftAssetReferenceBase();
 
 public:
     /// <summary>

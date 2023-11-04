@@ -5,6 +5,7 @@
 #include "Engine/Core/Math/Vector3.h"
 #include "Engine/Core/Math/Vector4.h"
 #include "Engine/Content/AssetReference.h"
+#include "Engine/Content/SoftAssetReference.h"
 #include "Engine/Core/ISerializable.h"
 #include "Engine/Content/Assets/Texture.h"
 #include "Engine/Content/Assets/MaterialBase.h"
@@ -850,7 +851,7 @@ API_STRUCT() struct FLAXENGINE_API ColorGradingSettings : ISerializable
     /// The Lookup Table (LUT) used to perform color correction.
     /// </summary>
     API_FIELD(Attributes="DefaultValue(null), EditorOrder(22), PostProcessSetting((int)ColorGradingSettingsOverride.LutTexture)")
-    AssetReference<Texture> LutTexture;
+    SoftAssetReference<Texture> LutTexture;
 
     /// <summary>
     /// The LUT blending weight (normalized to range 0-1). Default is 1.0.
@@ -1277,7 +1278,7 @@ API_STRUCT() struct FLAXENGINE_API LensFlaresSettings : ISerializable
     /// Fullscreen lens dirt texture.
     /// </summary>
     API_FIELD(Attributes="DefaultValue(null), EditorOrder(8), PostProcessSetting((int)LensFlaresSettingsOverride.LensDirt)")
-    AssetReference<Texture> LensDirt;
+    SoftAssetReference<Texture> LensDirt;
 
     /// <summary>
     /// Fullscreen lens dirt intensity parameter. Allows to tune dirt visibility.
@@ -1289,13 +1290,13 @@ API_STRUCT() struct FLAXENGINE_API LensFlaresSettings : ISerializable
     /// Custom lens color texture (1D) used for lens color spectrum.
     /// </summary>
     API_FIELD(Attributes="DefaultValue(null), EditorOrder(10), PostProcessSetting((int)LensFlaresSettingsOverride.LensColor)")
-    AssetReference<Texture> LensColor;
+    SoftAssetReference<Texture> LensColor;
 
     /// <summary>
     /// Custom lens star texture sampled by lens flares.
     /// </summary>
     API_FIELD(Attributes="DefaultValue(null), EditorOrder(11), PostProcessSetting((int)LensFlaresSettingsOverride.LensStar)")
-    AssetReference<Texture> LensStar;
+    SoftAssetReference<Texture> LensStar;
 
 public:
     /// <summary>
@@ -1487,7 +1488,7 @@ API_STRUCT() struct FLAXENGINE_API DepthOfFieldSettings : ISerializable
     /// If BokehShape is set to Custom, then this texture will be used for the bokeh shapes. For best performance, use small, compressed, grayscale textures (for instance 32px).
     /// </summary>
     API_FIELD(Attributes="DefaultValue(null), EditorOrder(11), PostProcessSetting((int)DepthOfFieldSettingsOverride.BokehShapeCustom)")
-    AssetReference<Texture> BokehShapeCustom;
+    SoftAssetReference<Texture> BokehShapeCustom;
 
     /// <summary>
     /// The minimum pixel brightness to create bokeh. Pixels with lower brightness will be skipped.

@@ -16,11 +16,13 @@
 
 AssetReferenceBase::~AssetReferenceBase()
 {
-    if (_asset)
+    Asset* asset = _asset;
+    if (asset)
     {
-        _asset->OnLoaded.Unbind<AssetReferenceBase, &AssetReferenceBase::OnLoaded>(this);
-        _asset->OnUnloaded.Unbind<AssetReferenceBase, &AssetReferenceBase::OnUnloaded>(this);
-        _asset->RemoveReference();
+        _asset = nullptr;
+        asset->OnLoaded.Unbind<AssetReferenceBase, &AssetReferenceBase::OnLoaded>(this);
+        asset->OnUnloaded.Unbind<AssetReferenceBase, &AssetReferenceBase::OnUnloaded>(this);
+        asset->RemoveReference();
     }
 }
 
@@ -70,8 +72,12 @@ void AssetReferenceBase::OnUnloaded(Asset* asset)
 
 WeakAssetReferenceBase::~WeakAssetReferenceBase()
 {
-    if (_asset)
-        _asset->OnUnloaded.Unbind<WeakAssetReferenceBase, &WeakAssetReferenceBase::OnUnloaded>(this);
+    Asset* asset = _asset;
+    if (asset)
+    {
+        _asset = nullptr;
+        asset->OnUnloaded.Unbind<WeakAssetReferenceBase, &WeakAssetReferenceBase::OnUnloaded>(this);
+    }
 }
 
 String WeakAssetReferenceBase::ToString() const
@@ -99,6 +105,20 @@ void WeakAssetReferenceBase::OnUnloaded(Asset* asset)
     Unload();
     asset->OnUnloaded.Unbind<WeakAssetReferenceBase, &WeakAssetReferenceBase::OnUnloaded>(this);
     _asset = nullptr;
+}
+
+SoftAssetReferenceBase::~SoftAssetReferenceBase()
+{
+    Asset* asset = _asset;
+    if (asset)
+    {
+        _asset = nullptr;
+        asset->OnUnloaded.Unbind<SoftAssetReferenceBase, &SoftAssetReferenceBase::OnUnloaded>(this);
+        asset->RemoveReference();
+    }
+#if !BUILD_RELEASE
+    _id = Guid::Empty;
+#endif
 }
 
 String SoftAssetReferenceBase::ToString() const

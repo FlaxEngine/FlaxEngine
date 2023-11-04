@@ -339,7 +339,7 @@ namespace FlaxEditor.Windows.Assets
             {
                 if (selection.Count != 0)
                     Select(actor);
-                actor.TreeNode.StartRenaming(this);
+                actor.TreeNode.StartRenaming(this, _treePanel);
             }
         }
 

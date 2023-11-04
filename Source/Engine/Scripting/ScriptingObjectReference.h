@@ -47,8 +47,12 @@ public:
     /// </summary>
     ~ScriptingObjectReferenceBase()
     {
-        if (_object)
-            _object->Deleted.Unbind<ScriptingObjectReferenceBase, &ScriptingObjectReferenceBase::OnDeleted>(this);
+        ScriptingObject* obj = _object;
+        if (obj)
+        {
+            _object = nullptr;
+            obj->Deleted.Unbind<ScriptingObjectReferenceBase, &ScriptingObjectReferenceBase::OnDeleted>(this);
+        }
     }
 
 public:
