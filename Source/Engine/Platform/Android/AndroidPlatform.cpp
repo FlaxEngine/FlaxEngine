@@ -665,6 +665,7 @@ void AndroidPlatform::PreInit(android_app* app)
     app->onInputEvent = OnAppInput;
     ANativeActivity_setWindowFlags(app->activity, AWINDOW_FLAG_KEEP_SCREEN_ON | AWINDOW_FLAG_TURN_SCREEN_ON | AWINDOW_FLAG_FULLSCREEN | AWINDOW_FLAG_DISMISS_KEYGUARD, 0);
     ANativeActivity_setWindowFormat(app->activity, WINDOW_FORMAT_RGBA_8888);
+    pthread_setname_np(pthread_self(), "Main");
 }
 
 bool AndroidPlatform::Is64BitPlatform()
