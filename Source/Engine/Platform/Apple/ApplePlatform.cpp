@@ -187,9 +187,11 @@ void ApplePlatform::SetThreadPriority(ThreadPriority priority)
 
 void ApplePlatform::SetThreadAffinityMask(uint64 affinityMask)
 {
+#if PLATFORM_MAC
     thread_affinity_policy policy;
     policy.affinity_tag = affinityMask;
     thread_policy_set(pthread_mach_thread_np(pthread_self()), THREAD_AFFINITY_POLICY, (integer_t*)&policy, THREAD_AFFINITY_POLICY_COUNT);
+#endif
 }
 
 void ApplePlatform::Sleep(int32 milliseconds)
