@@ -109,6 +109,19 @@ TEST_CASE("BitArray")
         a1 = testData;
         CHECK(a1 == testData);
     }
+
+    SECTION("Test Set All")
+    {
+        BitArray<> a1;
+        a1.Resize(9);
+        CHECK(a1.Count() == 9);
+        a1.SetAll(true);
+        for (int32 i = 0; i < a1.Count(); i++)
+            CHECK(a1[i] == true);
+        a1.SetAll(false);
+        for (int32 i = 0; i < a1.Count(); i++)
+            CHECK(a1[i] == false);
+    }
 }
 
 TEST_CASE("HashSet")
