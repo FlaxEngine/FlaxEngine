@@ -19,6 +19,7 @@
 #include "Engine/Platform/StringUtils.h"
 #include "Engine/Platform/WindowsManager.h"
 #include "Engine/Platform/Clipboard.h"
+#include "Engine/Platform/Thread.h"
 #include "Engine/Platform/IGuiData.h"
 #include "Engine/Platform/Base/PlatformUtils.h"
 #include "Engine/Utilities/StringConverter.h"
@@ -176,12 +177,19 @@ uint64 ApplePlatform::GetCurrentThreadID()
 
 void ApplePlatform::SetThreadPriority(ThreadPriority priority)
 {
-    // TODO: impl this
+    struct sched_param sched;
+    Platform::MemoryClear(&sched, sizeof(struct sched_param));
+    int32 policy = SCHED_RR;
+    pthread_getschedparam(pthread_self(), &policy, &sched);
+    sched.sched_priority = AppleThread::GetAppleThreadPriority(priority);
+    pthread_setschedparam(pthread_self(), policy, &sched);
 }
 
 void ApplePlatform::SetThreadAffinityMask(uint64 affinityMask)
 {
-    // TODO: impl this
+    thread_affinity_policy policy;
+    policy.affinity_tag = affinityMask;
+    thread_policy_set(pthread_mach_thread_np(pthread_self()), THREAD_AFFINITY_POLICY, (integer_t*)&policy, THREAD_AFFINITY_POLICY_COUNT);
 }
 
 void ApplePlatform::Sleep(int32 milliseconds)

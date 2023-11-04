@@ -40,10 +40,7 @@ public:
         return (AppleThread*)Setup(New<AppleThread>(runnable, name, priority), stackSize);
     }
 
-protected:
-
-    // [UnixThread]
-    int32 GetThreadPriority(ThreadPriority priority) override
+    static int32 GetAppleThreadPriority(ThreadPriority priority)
     {
         switch (priority)
         {
@@ -59,6 +56,14 @@ protected:
             return 20;
         }
         return 31;
+    }
+
+protected:
+
+    // [UnixThread]
+    int32 GetThreadPriority(ThreadPriority priority) override
+    {
+        return GetAppleThreadPriority(priority);
     }
     int32 Start(pthread_attr_t& attr) override
     {
