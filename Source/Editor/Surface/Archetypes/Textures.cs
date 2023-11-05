@@ -96,7 +96,7 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 TypeID = 1,
                 Title = "Texture",
-                Create = (id, context, arch, groupArch) => new ConvertibleNode(id, context, arch, groupArch, new ScriptType(typeof(Texture))),
+                Create = (id, context, arch, groupArch) => new Constants.ConvertToParameterNode(id, context, arch, groupArch, new ScriptType(typeof(Texture))),
                 Description = "Two dimensional texture object",
                 Flags = NodeFlags.MaterialGraph,
                 Size = new Float2(140, 120),
@@ -133,7 +133,7 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 TypeID = 3,
                 Title = "Cube Texture",
-                Create = (id, context, arch, groupArch) => new ConvertibleNode(id, context, arch, groupArch, new ScriptType(typeof(CubeTexture))),
+                Create = (id, context, arch, groupArch) => new Constants.ConvertToParameterNode(id, context, arch, groupArch, new ScriptType(typeof(CubeTexture))),
                 Description = "Set of 6 textures arranged in a cube",
                 Flags = NodeFlags.MaterialGraph,
                 Size = new Float2(140, 120),
@@ -157,7 +157,7 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 TypeID = 4,
                 Title = "Normal Map",
-                Create = (id, context, arch, groupArch) => new ConvertibleNode(id, context, arch, groupArch, new ScriptType(typeof(NormalMap))),
+                Create = (id, context, arch, groupArch) => new Constants.ConvertToParameterNode(id, context, arch, groupArch, new ScriptType(typeof(NormalMap))),
                 Description = "Two dimensional texture object sampled as a normal map",
                 Flags = NodeFlags.MaterialGraph,
                 Size = new Float2(140, 120),

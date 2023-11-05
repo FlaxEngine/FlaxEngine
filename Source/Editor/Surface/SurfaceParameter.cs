@@ -55,6 +55,7 @@ namespace FlaxEditor.Surface
         /// </summary>
         /// <param name="type">The type.</param>
         /// <param name="name">The name.</param>
+        /// <param name="initValue">The initial value to use. Null to use automatic default value.</param>
         /// <returns>The created parameter.</returns>
         public static SurfaceParameter Create(ScriptType type, string name, object initValue = null)
         {

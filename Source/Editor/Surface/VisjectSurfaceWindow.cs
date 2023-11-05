@@ -279,7 +279,7 @@ namespace FlaxEditor.Surface
         public ScriptType Type;
 
         /// <summary>
-        /// The value to initialize the parameter with. (Can be null)
+        /// The value to initialize the parameter with. Can be null to use default one for the parameter type.
         /// </summary>
         public object InitValue;
 
@@ -1065,7 +1065,6 @@ namespace FlaxEditor.Surface
         public virtual void OnParamRemoveUndo()
         {
             _refreshPropertiesOnLoad = true;
-            //_propertiesEditor.BuildLayoutOnUpdate();
             _propertiesEditor.BuildLayout();
         }
 
