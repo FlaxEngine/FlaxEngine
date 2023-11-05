@@ -14,8 +14,7 @@ namespace FlaxEngine.GUI
         /// <summary>
         /// The children collection.
         /// </summary>
-        [NoSerialize]
-        protected readonly List<Control> _children = new List<Control>();
+        protected List<Control> _children = new List<Control>();
 
         /// <summary>
         /// The contains focus cached flag.
@@ -68,8 +67,15 @@ namespace FlaxEngine.GUI
         /// <summary>
         /// Gets child controls list
         /// </summary>
-        public List<Control> Children => _children;
-
+        public List<Control> Children { get => _children; set 
+            {
+                for (int i = 0; i < value.Count; i++)
+                {
+                    value[i].Parent = this;
+                }
+                _children = value;
+            }
+        }
         /// <summary>
         /// Gets amount of the children controls
         /// </summary>

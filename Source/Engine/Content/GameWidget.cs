@@ -1,39 +1,33 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using FlaxEditor.Viewport;
+using System.IO;
 using FlaxEngine.GUI;
 using System.Reflection;
+using System.Text;
 using FlaxEditor.Content;
-using FlaxEditor.Surface.Elements;
-
+using Newtonsoft.Json;
 namespace FlaxEngine
 {
     /// <summary>
     /// [todo] add summary here
     /// </summary>
-    public class Widget
+    public class UIBlueprintAsset
     {
-        public Vector2[] SupportedResolutions =
+        public UIBlueprintAsset()
         {
-        new Vector2(1280, 720),
-        new Vector2(1920, 1080),
-    };
-
-        public string DefaultLanguage = "en";
+            Root = new ContainerControl();
+        }
+        /// <summary>
+        /// root control
+        /// </summary>
+        public Control Root;
     }
     /// <inheritdoc/>
-    public class WidgetItem : JsonAssetItem
+    public class UIBlueprintAssetItem : JsonAssetItem
     {
         /// <inheritdoc/>
-        public WidgetItem(string path, Guid id, string typeName) : base(path, id, typeName)
-        {
-        }
-
-        
-
+        public UIBlueprintAssetItem(string path, Guid id, string typeName) : base(path, id, typeName){}
         /// <inheritdoc/>
         public override ContentItemSearchFilter SearchFilter => ContentItemSearchFilter.Widget;
     }
@@ -65,3 +59,4 @@ namespace FlaxEngine
         }
     }
 }
+
