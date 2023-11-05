@@ -22,6 +22,16 @@ private:
     int32 _capacity;
     AllocationData _allocation;
 
+    FORCE_INLINE static int32 ToItemCount(int32 size)
+    {
+        return Math::DivideAndRoundUp<int32>(size, sizeof(ItemType));
+    }
+
+    FORCE_INLINE static int32 ToItemCapacity(int32 size)
+    {
+        return Math::Max<int32>(Math::DivideAndRoundUp<int32>(size, sizeof(ItemType)), 1);
+    }
+
 public:
     /// <summary>
     /// Initializes a new instance of the <see cref="BitArray"/> class.
@@ -41,7 +51,7 @@ public:
         , _capacity(capacity)
     {
         if (capacity > 0)
-            _allocation.Allocate(Math::Max<ItemType>(capacity / sizeof(ItemType), 1));
+            _allocation.Allocate(ToItemCapacity(capacity));
     }
 
     /// <summary>
@@ -53,7 +63,7 @@ public:
         _count = _capacity = other.Count();
         if (_capacity > 0)
         {
-            const uint64 itemsCapacity = Math::Max<ItemType>(_capacity / sizeof(ItemType), 1);
+            const uint64 itemsCapacity = ToItemCapacity(_capacity);
             _allocation.Allocate(itemsCapacity);
             Platform::MemoryCopy(Get(), other.Get(), itemsCapacity * sizeof(ItemType));
         }
@@ -69,7 +79,7 @@ public:
         _count = _capacity = other.Count();
         if (_capacity > 0)
         {
-            const uint64 itemsCapacity = Math::Max<ItemType>(_capacity / sizeof(ItemType), 1);
+            const uint64 itemsCapacity = ToItemCapacity(_capacity);
             _allocation.Allocate(itemsCapacity);
             Platform::MemoryCopy(Get(), other.Get(), itemsCapacity * sizeof(ItemType));
         }
@@ -101,7 +111,7 @@ public:
             {
                 _allocation.Free();
                 _capacity = other._count;
-                const uint64 itemsCapacity = Math::Max<ItemType>(_capacity / sizeof(ItemType), 1);
+                const uint64 itemsCapacity = ToItemCapacity(_capacity);
                 _allocation.Allocate(itemsCapacity);
                 Platform::MemoryCopy(Get(), other.Get(), itemsCapacity * sizeof(ItemType));
             }
@@ -246,7 +256,7 @@ public:
             return;
         ASSERT(capacity >= 0);
         const int32 count = preserveContents ? (_count < capacity ? _count : capacity) : 0;
-        _allocation.Relocate(Math::Max<ItemType>(capacity / sizeof(ItemType), 1), _count / sizeof(ItemType), count / sizeof(ItemType));
+        _allocation.Relocate(ToItemCapacity(capacity), ToItemCount(_count), ToItemCount(count));
         _capacity = capacity;
         _count = count;
     }
@@ -272,7 +282,7 @@ public:
     {
         if (_capacity < minCapacity)
         {
-            const int32 capacity = _allocation.CalculateCapacityGrow(Math::Max<int32>(_capacity / sizeof(ItemType), 1), minCapacity);
+            const int32 capacity = _allocation.CalculateCapacityGrow(ToItemCapacity(_capacity), minCapacity);
             SetCapacity(capacity, preserveContents);
         }
     }
@@ -284,7 +294,7 @@ public:
     void SetAll(const bool value)
     {
         if (_count != 0)
-            Platform::MemorySet(_allocation.Get(), Math::Max<ItemType>(_count / sizeof(ItemType), 1), value ? MAX_int32 : 0);
+            Platform::MemorySet(_allocation.Get(), ToItemCount(_count) * sizeof(ItemType), value ? MAX_uint64 : 0);
     }
 
     /// <summary>

@@ -22,10 +22,10 @@ TextureHeader::TextureHeader()
     TextureGroup = -1;
 }
 
-TextureHeader::TextureHeader(TextureHeader_Deprecated& old)
+TextureHeader::TextureHeader(const TextureHeader_Deprecated& old)
 {
     Platform::MemoryClear(this, sizeof(*this));
-    Width = old.Width;;
+    Width = old.Width;
     Height = old.Height;
     MipLevels = old.MipLevels;
     Format = old.Format;
@@ -49,7 +49,7 @@ StreamingTexture::StreamingTexture(ITextureOwner* parent, const String& name)
     , _texture(nullptr)
     , _isBlockCompressed(false)
 {
-    ASSERT(_owner != nullptr);
+    ASSERT(parent != nullptr);
 
     // Always have created texture object
     ASSERT(GPUDevice::Instance);

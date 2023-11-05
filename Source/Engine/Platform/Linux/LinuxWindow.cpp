@@ -594,6 +594,12 @@ void LinuxWindow::OnButtonPress(void* event)
 	case Button3:
 		mouseButton = MouseButton::Right;
 		break;
+	case 8:
+		mouseButton = MouseButton::Extended2;
+		break;
+	case 9:
+		mouseButton = MouseButton::Extended1;
+		break;
 	default:
 		return;
 	}
@@ -640,6 +646,12 @@ void LinuxWindow::OnButtonRelease(void* event)
 		break;
 	case Button5:
 		Input::Mouse->OnMouseWheel(ClientToScreen(mousePos), -1.0f, this);
+		break;
+	case 8:
+		Input::Mouse->OnMouseUp(ClientToScreen(mousePos), MouseButton::Extended2, this);
+		break;
+	case 9:
+		Input::Mouse->OnMouseUp(ClientToScreen(mousePos), MouseButton::Extended1, this);
 		break;
 	default:
 		return;
