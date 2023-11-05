@@ -470,13 +470,13 @@ namespace FlaxEditor.Modules
                 // Place dialog nearby the target control
                 var targetControlDesktopCenter = targetControl.PointToScreen(targetControl.Size * 0.5f);
                 var desktopSize = Platform.GetMonitorBounds(targetControlDesktopCenter);
-                var pos = targetControlDesktopCenter + new Float2(10.0f, -dialog.Height * 0.5f);
-                var dialogEnd = pos + dialog.Size;
+                var pos = targetControlDesktopCenter + new Float2(10.0f, -dialog.DialogSize.Y * 0.5f);
+                var dialogEnd = pos + dialog.DialogSize;
                 var desktopEnd = desktopSize.BottomRight - new Float2(10.0f);
                 if (dialogEnd.X >= desktopEnd.X || dialogEnd.Y >= desktopEnd.Y)
-                    pos = targetControl.PointToScreen(Float2.Zero) - new Float2(10.0f + dialog.Width, dialog.Height);
+                    pos = targetControl.PointToScreen(Float2.Zero) - new Float2(10.0f + dialog.DialogSize.X, dialog.DialogSize.Y);
                 var desktopBounds = Platform.VirtualDesktopBounds;
-                pos = Float2.Clamp(pos, desktopBounds.UpperLeft, desktopBounds.BottomRight - dialog.Size);
+                pos = Float2.Clamp(pos, desktopBounds.UpperLeft, desktopBounds.BottomRight - dialog.DialogSize);
                 dialog.RootWindow.Window.Position = pos;
 
                 // Register for context menu (prevent auto-closing context menu when selecting color)
