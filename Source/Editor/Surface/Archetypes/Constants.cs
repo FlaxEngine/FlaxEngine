@@ -644,6 +644,7 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 TypeID = 12,
                 Title = "Unsigned Integer",
+                AlternativeTitles = new[] { "UInt" , "U Int" },
                 Description = "Constant unsigned integer value",
                 Flags = NodeFlags.AllGraphs,
                 Size = new Float2(170, 20),
