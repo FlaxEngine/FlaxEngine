@@ -3083,6 +3083,48 @@ int32 PhysicsBackend::MoveController(void* controller, void* shape, const Vector
 
 #if WITH_VEHICLE
 
+PxVehicleGearsData CreatePxVehicleGearsData(WheeledVehicle::GearboxSettings settings)
+{
+    PxVehicleGearsData gears;
+
+    // Total gears is forward gears + neutral/rear gears
+    int gearsAmount = settings.ForwardGearsRatios + 2;
+
+    // Setup gears torque/top speed relations
+    // Higher torque = less speed
+    // Low torque = high speed
+
+    // Example:
+    // ForwardGearsRatios = 4
+    // GearRev = -5
+    // Gear0 = 0  
+    // Gear1 = 4.2
+    // Gear2 = 3.4
+    // Gear3 = 2.6
+    // Gear4 = 1.8
+    // Gear5 = 1
+
+    gears.mRatios[0] = -(gearsAmount - 2);  // reverse
+    gears.mRatios[1] = 0;                   // neutral
+
+    // Setup all gears except neutral and reverse
+    for (int i = gearsAmount; i > 2; i--) {
+
+        float gearsRatios = settings.ForwardGearsRatios;
+        float currentGear = i - 2;
+
+        gears.mRatios[i] = Math::Lerp(gearsRatios, 1.0f, (currentGear / gearsRatios));
+    }
+
+    // reset unused gears
+    for (int i = gearsAmount; i < PxVehicleGearsData::eGEARSRATIO_COUNT; i++) 
+        gears.mRatios[i] = 0;
+
+    gears.mSwitchTime = Math::Max(settings.SwitchTime, 0.0f);
+    gears.mNbRatios = Math::Clamp(gearsAmount, 2, (int)PxVehicleGearsData::eGEARSRATIO_COUNT);
+    return gears;
+}
+
 bool SortWheels(WheeledVehicle::Wheel const& a, WheeledVehicle::Wheel const& b)
 {
     return (int32)a.Type < (int32)b.Type;
@@ -3279,10 +3321,7 @@ void* PhysicsBackend::CreateVehicle(WheeledVehicle* actor)
         engineData.mDampingRateZeroThrottleClutchDisengaged = M2ToCm2(0.35f);
         driveSimData.setEngineData(engineData);
 
-        // Gears
-        PxVehicleGearsData gears;
-        gears.mSwitchTime = Math::Max(gearbox.SwitchTime, 0.0f);
-        driveSimData.setGearsData(gears);
+        driveSimData.setGearsData(CreatePxVehicleGearsData(gearbox));
 
         // Auto Box
         PxVehicleAutoBoxData autoBox;
@@ -3330,9 +3369,7 @@ void* PhysicsBackend::CreateVehicle(WheeledVehicle* actor)
         driveSimData.setEngineData(engineData);
 
         // Gears
-        PxVehicleGearsData gears;
-        gears.mSwitchTime = Math::Max(gearbox.SwitchTime, 0.0f);
-        driveSimData.setGearsData(gears);
+        driveSimData.setGearsData(CreatePxVehicleGearsData(gearbox));
 
         // Auto Box
         PxVehicleAutoBoxData autoBox;
@@ -3507,9 +3544,7 @@ void PhysicsBackend::SetVehicleGearbox(void* vehicle, const void* value)
         PxVehicleDriveSimData4W& driveSimData = drive4W->mDriveSimData;
 
         // Gears
-        PxVehicleGearsData gears;
-        gears.mSwitchTime = Math::Max(gearbox.SwitchTime, 0.0f);
-        driveSimData.setGearsData(gears);
+        driveSimData.setGearsData(CreatePxVehicleGearsData(gearbox));
 
         // Auto Box
         PxVehicleAutoBoxData autoBox;
@@ -3527,9 +3562,7 @@ void PhysicsBackend::SetVehicleGearbox(void* vehicle, const void* value)
         PxVehicleDriveSimDataNW& driveSimData = drive4W->mDriveSimData;
 
         // Gears
-        PxVehicleGearsData gears;
-        gears.mSwitchTime = Math::Max(gearbox.SwitchTime, 0.0f);
-        driveSimData.setGearsData(gears);
+        driveSimData.setGearsData(CreatePxVehicleGearsData(gearbox));
 
         // Auto Box
         PxVehicleAutoBoxData autoBox;

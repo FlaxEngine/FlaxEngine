@@ -129,6 +129,11 @@ API_CLASS(Attributes="ActorContextMenu(\"New/Physics/Wheeled Vehicle\"), ActorTo
         API_FIELD() bool AutoGear = true;
 
         /// <summary>
+        /// Number of gears to move to forward
+        /// </summary>
+        API_FIELD(Attributes = "Limit(1, 30)") int ForwardGearsRatios = 5;
+
+        /// <summary>
         /// Time it takes to switch gear. Specified in seconds (s).
         /// </summary>
         API_FIELD(Attributes="Limit(0)") float SwitchTime = 0.5f;
