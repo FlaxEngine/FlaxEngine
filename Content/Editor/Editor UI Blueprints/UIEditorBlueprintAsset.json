@@ -1,0 +1,49 @@
+{
+	"ID": "6c04846443dfde4b5fef88a76d93117e",
+	"TypeName": "FlaxEngine.UIBlueprintAsset",
+	"EngineBuild": 6404,
+	"Data": {
+	"Root": {
+		"$type": "FlaxEngine.GUI.ContainerControl, FlaxEngine.CSharp",
+		"Children": [],
+		"ClipChildren": true,
+		"CullChildren": true,
+		"AnchorMin": {
+			"X": 0.0,
+			"Y": 0.0
+		},
+		"AnchorMax": {
+			"X": 0.0,
+			"Y": 0.0
+		},
+		"Offsets": {
+			"Left": 0.0,
+			"Right": 100.0,
+			"Top": 0.0,
+			"Bottom": 30.0
+		},
+		"Scale": {
+			"X": 1.0,
+			"Y": 1.0
+		},
+		"Pivot": {
+			"X": 0.5,
+			"Y": 0.5
+		},
+		"Shear": {
+			"X": 0.0,
+			"Y": 0.0
+		},
+		"Rotation": 0.0,
+		"BackgroundColor": {
+			"R": 0.0,
+			"G": 0.0,
+			"B": 0.0,
+			"A": 0.0
+		},
+		"Enabled": true,
+		"Visible": true,
+		"AutoFocus": true
+	}
+}
+}
