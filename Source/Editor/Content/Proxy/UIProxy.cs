@@ -2,6 +2,7 @@
 
 using System;
 using System.IO;
+using System.Runtime;
 using FlaxEditor.Content.Thumbnails;
 using FlaxEditor.Windows;
 using FlaxEditor.Windows.Assets;
@@ -15,7 +16,7 @@ namespace FlaxEditor.Content
     /// </summary>
     /// <seealso cref="FlaxEditor.Content.UIProxy" />
     [ContentContextMenu("New/UI/GameUI")]
-    public class UIProxy : AssetProxy
+    public class UIProxy : SpawnableJsonAssetProxy<Widget>
     {
         /// <inheritdoc/>
         public override string TypeName => typeof(Widget).FullName;
@@ -28,7 +29,7 @@ namespace FlaxEditor.Content
         /// <inheritdoc/>
         public override AssetItem ConstructItem(string path, string typeName, ref Guid id)
         {
-            return new WidgetItem(path, typeName, ref id);
+            return new WidgetItem(path, id, typeName);
         }
         /// <inheritdoc/>
         public override bool IsProxyFor(ContentItem item)
@@ -48,8 +49,7 @@ namespace FlaxEditor.Content
         /// <inheritdoc />
         public override void Create(string outputPath, object arg)
         {
-            Widget data = FlaxEngine.Content.CreateVirtualAsset<Widget>();
-            data.Save(outputPath);
+            FlaxEditor.Editor.SaveJsonAsset(outputPath, new Widget());
         }
     }
 }

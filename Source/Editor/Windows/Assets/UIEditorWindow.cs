@@ -19,7 +19,7 @@ namespace FlaxEditor.Windows.Assets
     /// </summary>
     /// <seealso cref="WidgetItem" />
     /// <seealso cref="FlaxEditor.Windows.Assets.AssetEditorWindow" />
-    public sealed partial class UIEditorWindow : AssetEditorWindowBase<WidgetData>
+    public sealed partial class UIEditorWindow : AssetEditorWindowBase<JsonAsset>
     {
         /// <summary>
         /// 

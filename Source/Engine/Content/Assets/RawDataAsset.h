@@ -26,8 +26,6 @@ public:
     /// <returns>True if failed, otherwise false.</returns>
     API_FUNCTION() bool Save(const StringView& path = StringView::Empty);
 
-protected:
-    virtual void OnSave() {};
 #endif
 
 public:
