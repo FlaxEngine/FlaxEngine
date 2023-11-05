@@ -56,7 +56,7 @@ namespace FlaxEditor.Surface
         /// <param name="type">The type.</param>
         /// <param name="name">The name.</param>
         /// <returns>The created parameter.</returns>
-        public static SurfaceParameter Create(ScriptType type, string name)
+        public static SurfaceParameter Create(ScriptType type, string name, object initValue = null)
         {
             return new SurfaceParameter
             {
@@ -64,7 +64,7 @@ namespace FlaxEditor.Surface
                 IsPublic = true,
                 Name = name,
                 Type = type,
-                Value = TypeUtils.GetDefaultValue(type),
+                Value = initValue ?? TypeUtils.GetDefaultValue(type),
             };
         }
     }

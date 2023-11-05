@@ -278,6 +278,11 @@ namespace FlaxEditor.Surface
         /// </summary>
         public ScriptType Type;
 
+        /// <summary>
+        /// The value to initialize the parameter with. (Can be null)
+        /// </summary>
+        public object InitValue;
+
         /// <inheritdoc />
         public string ActionString => IsAdd ? "Add parameter" : "Remove parameter";
 
@@ -304,7 +309,7 @@ namespace FlaxEditor.Surface
             var type = Type;
             if (IsAdd && type.Type == typeof(NormalMap))
                 type = new ScriptType(typeof(Texture));
-            var param = SurfaceParameter.Create(type, Name);
+            var param = SurfaceParameter.Create(type, Name, InitValue);
             if (IsAdd && Type.Type == typeof(NormalMap))
                 param.Value = FlaxEngine.Content.LoadAsyncInternal<Texture>("Engine/Textures/NormalTexture");
             Window.VisjectSurface.Parameters.Insert(Index, param);

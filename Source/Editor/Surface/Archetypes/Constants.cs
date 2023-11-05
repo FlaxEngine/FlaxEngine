@@ -356,6 +356,7 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 TypeID = 1,
                 Title = "Bool",
+                Create = (id, context, arch, groupArch) => new ConvertibleNode(id, context, arch, groupArch, new ScriptType(typeof(bool))),
                 Description = "Constant boolean value",
                 Flags = NodeFlags.AllGraphs,
                 Size = new Float2(110, 20),
@@ -388,6 +389,7 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 TypeID = 2,
                 Title = "Integer",
+                Create = (id, context, arch, groupArch) => new ConvertibleNode(id, context, arch, groupArch, new ScriptType(typeof(int))),
                 Description = "Constant integer value",
                 Flags = NodeFlags.AllGraphs,
                 Size = new Float2(110, 20),
@@ -415,6 +417,7 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 TypeID = 3,
                 Title = "Float",
+                Create = (id, context, arch, groupArch) => new ConvertibleNode(id, context, arch, groupArch, new ScriptType(typeof(float))),
                 Description = "Constant floating point",
                 Flags = NodeFlags.AllGraphs,
                 Size = new Float2(110, 20),
@@ -442,6 +445,7 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 TypeID = 4,
                 Title = "Float2",
+                Create = (id, context, arch, groupArch) => new ConvertibleNode(id, context, arch, groupArch, new ScriptType(typeof(Float2))),
                 Description = "Constant Float2",
                 Flags = NodeFlags.AllGraphs,
                 Size = new Float2(130, 60),
@@ -472,6 +476,7 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 TypeID = 5,
                 Title = "Float3",
+                Create = (id, context, arch, groupArch) => new ConvertibleNode(id, context, arch, groupArch, new ScriptType(typeof(Float3))),
                 Description = "Constant Float3",
                 Flags = NodeFlags.AllGraphs,
                 Size = new Float2(130, 80),
@@ -504,6 +509,7 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 TypeID = 6,
                 Title = "Float4",
+                Create = (id, context, arch, groupArch) => new ConvertibleNode(id, context, arch, groupArch, new ScriptType(typeof(Float4))),
                 Description = "Constant Float4",
                 Flags = NodeFlags.AllGraphs,
                 Size = new Float2(130, 100),
@@ -538,6 +544,7 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 TypeID = 7,
                 Title = "Color",
+                Create = (id, context, arch, groupArch) => new ConvertibleNode(id, context, arch, groupArch, new ScriptType(typeof(Color))),
                 Description = "RGBA color",
                 Flags = NodeFlags.AllGraphs,
                 Size = new Float2(70, 100),
@@ -570,6 +577,10 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 TypeID = 8,
                 Title = "Rotation",
+                // TODO: Way too long and ugly - find a better way to add conversion
+                Create = (id, context, arch, groupArch) =>
+                    new ConvertibleNode(id, context, arch, groupArch, new ScriptType(typeof(Quaternion)), 
+                        values => Quaternion.Euler((float)values[0], (float)values[1], (float)values[2])),
                 Description = "Euler angle rotation",
                 Flags = NodeFlags.AnimGraph | NodeFlags.VisualScriptGraph | NodeFlags.ParticleEmitterGraph,
                 Size = new Float2(110, 60),
@@ -594,6 +605,7 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 TypeID = 9,
                 Title = "String",
+                Create = (id, context, arch, groupArch) => new ConvertibleNode(id, context, arch, groupArch, new ScriptType(typeof(string))),
                 Description = "Text",
                 Flags = NodeFlags.VisualScriptGraph | NodeFlags.AnimGraph,
                 Size = new Float2(200, 20),
@@ -645,6 +657,7 @@ namespace FlaxEditor.Surface.Archetypes
                 TypeID = 12,
                 Title = "Unsigned Integer",
                 AlternativeTitles = new[] { "UInt" , "U Int" },
+                Create = (id, context, arch, groupArch) => new ConvertibleNode(id, context, arch, groupArch, new ScriptType(typeof(uint))),
                 Description = "Constant unsigned integer value",
                 Flags = NodeFlags.AllGraphs,
                 Size = new Float2(170, 20),
@@ -684,6 +697,7 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 TypeID = 15,
                 Title = "Double",
+                Create = (id, context, arch, groupArch) => new ConvertibleNode(id, context, arch, groupArch, new ScriptType(typeof(double))),
                 Description = "Constant floating point",
                 Flags = NodeFlags.AllGraphs,
                 Size = new Float2(110, 20),
@@ -701,6 +715,7 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 TypeID = 16,
                 Title = "Vector2",
+                Create = (id, context, arch, groupArch) => new ConvertibleNode(id, context, arch, groupArch, new ScriptType(typeof(Vector2))),
                 Description = "Constant Vector2",
                 Flags = NodeFlags.AllGraphs,
                 Size = new Float2(130, 60),
@@ -721,6 +736,7 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 TypeID = 17,
                 Title = "Vector3",
+                Create = (id, context, arch, groupArch) => new ConvertibleNode(id, context, arch, groupArch, new ScriptType(typeof(Vector3))),
                 Description = "Constant Vector3",
                 Flags = NodeFlags.AllGraphs,
                 Size = new Float2(130, 80),
@@ -743,6 +759,7 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 TypeID = 18,
                 Title = "Vector4",
+                Create = (id, context, arch, groupArch) => new ConvertibleNode(id, context, arch, groupArch, new ScriptType(typeof(Vector4))),
                 Description = "Constant Vector4",
                 Flags = NodeFlags.AllGraphs,
                 Size = new Float2(130, 100),
