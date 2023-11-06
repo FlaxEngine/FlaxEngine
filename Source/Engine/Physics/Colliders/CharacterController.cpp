@@ -23,6 +23,7 @@ CharacterController::CharacterController(const SpawnParams& params)
     , _nonWalkableMode(NonWalkableModes::PreventClimbing)
     , _lastFlags(CollisionFlags::None)
 {
+    _contactOffset = 10.0f;
 }
 
 float CharacterController::GetRadius() const

@@ -74,7 +74,7 @@ public:
     /// <remarks>
     /// Colliders whose distance is less than the sum of their ContactOffset values will generate contacts. The contact offset must be positive. Contact offset allows the collision detection system to predictively enforce the contact constraint even when the objects are slightly separated.
     /// </remarks>
-    API_PROPERTY(Attributes="EditorOrder(1), DefaultValue(10.0f), Limit(0, 100), EditorDisplay(\"Collider\")")
+    API_PROPERTY(Attributes="EditorOrder(1), DefaultValue(2.0f), Limit(0, 100), EditorDisplay(\"Collider\")")
     FORCE_INLINE float GetContactOffset() const
     {
         return _contactOffset;
