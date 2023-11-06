@@ -94,6 +94,8 @@ public:
     LightShadowData LastDirLight;
 
 public:
+    void Prepare();
+
     /// <summary>
     /// Setups the shadows rendering for batched scene drawing. Checks which lights will cast a shadow.
     /// </summary>

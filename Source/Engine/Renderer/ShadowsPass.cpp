@@ -549,10 +549,17 @@ void ShadowsPass::Dispose()
     SAFE_DELETE_GPU_RESOURCE(_shadowMapCube);
 }
 
+void ShadowsPass::Prepare()
+{
+    // Clear cached data
+    _shadowData.Clear();
+    LastDirLightIndex = -1;
+    LastDirLightShadowMap = nullptr;
+}
+
 void ShadowsPass::SetupShadows(RenderContext& renderContext, RenderContextBatch& renderContextBatch)
 {
     PROFILE_CPU();
-    _shadowData.Clear();
     auto& view = renderContext.View;
 
     // Update shadow map
