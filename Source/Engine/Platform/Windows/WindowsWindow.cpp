@@ -1056,22 +1056,23 @@ LRESULT WindowsWindow::WndProc(UINT msg, WPARAM wParam, LPARAM lParam)
     case WM_GETMINMAXINFO:
     {
         const auto minMax = reinterpret_cast<MINMAXINFO*>(lParam);
-
-        int32 borderWidth = 0, borderHeight = 0;
-        if (_settings.HasBorder)
-        {
-            const DWORD windowStyle = GetWindowLongW(_handle, GWL_STYLE);
-            const DWORD windowExStyle = GetWindowLongW(_handle, GWL_EXSTYLE);
-            RECT borderRect = { 0, 0, 0, 0 };
-            AdjustWindowRectEx(&borderRect, windowStyle, false, windowExStyle);
-            borderWidth = borderRect.right - borderRect.left;
-            borderHeight = borderRect.bottom - borderRect.top;
-        }
-
         minMax->ptMinTrackSize.x = (int32)_settings.MinimumSize.X;
         minMax->ptMinTrackSize.y = (int32)_settings.MinimumSize.Y;
-        minMax->ptMaxTrackSize.x = (int32)_settings.MaximumSize.X + borderWidth;
-        minMax->ptMaxTrackSize.y = (int32)_settings.MaximumSize.Y + borderHeight;
+        if (_settings.MaximumSize.SumValues() > 0)
+        {
+            int32 borderWidth = 0, borderHeight = 0;
+            if (_settings.HasBorder)
+            {
+                const DWORD windowStyle = GetWindowLongW(_handle, GWL_STYLE);
+                const DWORD windowExStyle = GetWindowLongW(_handle, GWL_EXSTYLE);
+                RECT borderRect = { 0, 0, 0, 0 };
+                AdjustWindowRectEx(&borderRect, windowStyle, false, windowExStyle);
+                borderWidth = borderRect.right - borderRect.left;
+                borderHeight = borderRect.bottom - borderRect.top;
+            }
+            minMax->ptMaxTrackSize.x = (int32)_settings.MaximumSize.X + borderWidth;
+            minMax->ptMaxTrackSize.y = (int32)_settings.MaximumSize.Y + borderHeight;
+        }
 
         // Include Windows task bar size into maximized tool window
         WINDOWPLACEMENT e;

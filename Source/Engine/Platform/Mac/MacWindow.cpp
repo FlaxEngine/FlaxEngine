@@ -751,7 +751,8 @@ MacWindow::MacWindow(const CreateWindowSettings& settings)
     [window setWindow:this];
     [window setReleasedWhenClosed:NO];
     [window setMinSize:NSMakeSize(settings.MinimumSize.X, settings.MinimumSize.Y)];
-    [window setMaxSize:NSMakeSize(settings.MaximumSize.X, settings.MaximumSize.Y)];
+    if (settings.MaximumSize.SumValues() > 0)
+        [window setMaxSize:NSMakeSize(settings.MaximumSize.X, settings.MaximumSize.Y)];
     [window setOpaque:!settings.SupportsTransparency];
     [window setContentView:view];
     if (settings.AllowInput)
