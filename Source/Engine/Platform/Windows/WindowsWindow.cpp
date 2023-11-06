@@ -12,14 +12,10 @@
 #include "Engine/Graphics/GPUDevice.h"
 #if USE_EDITOR
 #include "Engine/Core/Collections/Array.h"
-#include "Engine/Engine/Engine.h"
 #include "Engine/Platform/IGuiData.h"
+#include "Engine/Platform/Base/DragDropHelper.h"
 #include "Engine/Input/Input.h"
 #include "Engine/Input/Mouse.h"
-#include "Engine/Threading/ThreadPoolTask.h"
-#include "Engine/Threading/ThreadPool.h"
-#include "Engine/Scripting/Scripting.h"
-#include "Engine/Scripting/ManagedCLR/MDomain.h"
 #endif
 #include "../Win32/IncludeWindowsHeaders.h"
 #include <propidl.h>
@@ -1829,36 +1825,13 @@ private:
 
 WindowsGuiData GuiDragDropData;
 
-/// <summary>
-/// Async DoDragDrop helper (used for rendering frames during main thread stall).
-/// </summary>
-class DoDragDropJob : public ThreadPoolTask
-{
-public:
-    int64 ExitFlag = 0;
-
-    // [ThreadPoolTask]
-    bool Run() override
-    {
-        Scripting::GetScriptsDomain()->Dispatch();
-        while (Platform::AtomicRead(&ExitFlag) == 0)
-        {
-            Engine::OnDraw();
-            Platform::Sleep(20);
-        }
-        return false;
-    }
-};
-
 DragDropEffect WindowsWindow::DoDragDrop(const StringView& data)
 {
     // Create background worker that will keep updating GUI (perform rendering)
     const auto task = New<DoDragDropJob>();
     Task::StartNew(task);
     while (task->GetState() == TaskState::Queued)
-    {
         Platform::Sleep(1);
-    }
 
     // Create descriptors
     FORMATETC fmtetc = { CF_TEXT, nullptr, DVASPECT_CONTENT, -1, TYMED_HGLOBAL };

@@ -8,9 +8,7 @@
 #include "Engine/Platform/IGuiData.h"
 #if USE_EDITOR
 #include "Engine/Platform/CriticalSection.h"
-#include "Engine/Threading/ThreadPoolTask.h"
-#include "Engine/Threading/ThreadPool.h"
-#include "Engine/Engine/Engine.h"
+#include "Engine/Platform/Base/DragDropHelper.h"
 #endif
 #include "Engine/Core/Log.h"
 #include "Engine/Input/Input.h"
@@ -25,23 +23,7 @@
 // Data for drawing window while doing drag&drop on Mac (engine is paused during platform tick)
 CriticalSection MacDragLocker;
 NSDraggingSession* MacDragSession = nullptr;
-class DoDragDropJob* MacDragJob = nullptr;
-
-class DoDragDropJob : public ThreadPoolTask
-{
-public:
-    int64 ExitFlag = 0;
-
-    bool Run() override
-    {
-        while (Platform::AtomicRead(&ExitFlag) == 0)
-        {
-            Engine::OnDraw();
-            Platform::Sleep(20);
-        }
-        return false;
-    }
-};
+DoDragDropJob* MacDragJob = nullptr;
 #endif
 
 inline bool IsWindowInvalid(Window* win)
