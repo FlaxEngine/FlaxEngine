@@ -28,15 +28,20 @@ namespace FlaxEngine.GUI
             /// </summary>
             public ContainerControl SelectedControl = null;
 
+            /// <summary>
+            /// The main panel used to hold the items.
+            /// </summary>
+            public Panel MainPanel = null;
+
             /// <inheritdoc />
             public override void OnEndContainsFocus()
             {
                 base.OnEndContainsFocus();
                 
                 // Dont lose focus when using panel. Does prevent LostFocus even from being called if clicking inside of the panel.
-                if (Children[0] is Panel panel && panel.IsMouseOver && !panel.ContainsFocus)
+                if (MainPanel != null && MainPanel.IsMouseOver && !MainPanel.ContainsFocus)
                 {
-                    panel.Focus();
+                    MainPanel.Focus();
                     return;
                 }
                 // Call event after this 'focus contains flag' propagation ends to prevent focus issues
@@ -136,6 +141,8 @@ namespace FlaxEngine.GUI
             public override void OnDestroy()
             {
                 LostFocus = null;
+                MainPanel = null;
+                SelectedControl = null;
 
                 base.OnDestroy();
             }
@@ -442,6 +449,7 @@ namespace FlaxEngine.GUI
                 AutoFocus = true,
                 Parent = popup,
             };
+            popup.MainPanel = panel;
 
             var container = new VerticalPanel
             {
@@ -603,8 +611,8 @@ namespace FlaxEngine.GUI
             _popup.Parent = root;
             _popup.Focus();
             _popup.StartMouseCapture();
-            if (_popup.SelectedControl != null && _popup.Children[0] is Panel panel)
-                panel.ScrollViewTo(_popup.SelectedControl, true);
+            if (_popup.SelectedControl != null && _popup.MainPanel != null)
+                _popup.MainPanel.ScrollViewTo(_popup.SelectedControl, true);
             OnPopupShow();
         }
 
