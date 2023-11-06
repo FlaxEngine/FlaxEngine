@@ -75,6 +75,7 @@ namespace FlaxEditor.Surface.Archetypes
                     InitValue = initValue,
                 };
                 paramAction.Do();
+                Surface.AddBatchedUndoAction(paramAction);
 
                 // Spawn Get Parameter Node based on the added parameter
                 Guid parameterGuid = Surface.Parameters[paramIndex].ID;
@@ -85,9 +86,12 @@ namespace FlaxEditor.Surface.Archetypes
                 Surface.Undo.Enabled = undoEnabled;
                 if (node is not Parameters.SurfaceNodeParamsGet getNode)
                     throw new Exception("Node is not a ParamsGet node!");
+                Surface.AddBatchedUndoAction(new AddRemoveNodeAction(getNode, true));
 
                 // Recreate connections of constant node
                 // Constant nodes and parameter nodes should have the same ports, so we can just iterate through the connections
+                var editConnectionsAction1 = new EditNodeConnections(Context, this);
+                var editConnectionsAction2 = new EditNodeConnections(Context, node);
                 var boxes = GetBoxes();
                 for (int i = 0; i < boxes.Count; i++)
                 {
@@ -104,12 +108,16 @@ namespace FlaxEditor.Surface.Archetypes
                         paramBox.CreateConnection(connectedBox);
                     }
                 }
+                editConnectionsAction1.End();
+                editConnectionsAction2.End();
+                Surface.AddBatchedUndoAction(editConnectionsAction1);
+                Surface.AddBatchedUndoAction(editConnectionsAction2);
 
                 // Add undo actions and remove constant node
-                var spawnNodeAction = new AddRemoveNodeAction(getNode, true);
                 var removeConstantAction = new AddRemoveNodeAction(this, false);
-                Surface.AddBatchedUndoAction(new MultiUndoAction(paramAction, spawnNodeAction, removeConstantAction));
+                Surface.AddBatchedUndoAction(removeConstantAction);
                 removeConstantAction.Do();
+                Surface.MarkAsEdited();
             }
 
             private bool OnParameterRenameValidate(string value)
