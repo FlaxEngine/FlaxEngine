@@ -26,6 +26,7 @@ namespace FlaxEngine
         /// </summary>
         public Control Root;
     }
+#if FLAX_EDITOR
     /// <inheritdoc/>
     public class UIBlueprintAssetItem : JsonAssetItem
     {
@@ -61,5 +62,6 @@ namespace FlaxEngine
             return (UIControl)Activator.CreateInstance(type);
         }
     }
+#endif
 }
 
