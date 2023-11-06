@@ -66,7 +66,7 @@ public:
     /// <summary>
     /// Gets the value indicating if camera should use perspective rendering mode, otherwise it will use orthographic projection.
     /// </summary>
-    API_PROPERTY(Attributes="EditorOrder(20), DefaultValue(true), EditorDisplay(\"Camera\")")
+    API_PROPERTY(Attributes="EditorOrder(10), DefaultValue(true), EditorDisplay(\"Camera\")")
     bool GetUsePerspective() const;
 
     /// <summary>
@@ -77,7 +77,7 @@ public:
     /// <summary>
     /// Gets the camera's field of view (in degrees).
     /// </summary>
-    API_PROPERTY(Attributes="EditorOrder(10), DefaultValue(60.0f), Limit(0, 179), EditorDisplay(\"Camera\", \"Field Of View\")")
+    API_PROPERTY(Attributes="EditorOrder(20), DefaultValue(60.0f), Limit(0, 179), EditorDisplay(\"Camera\", \"Field Of View\"), VisibleIf(nameof(UsePerspective))")
     float GetFieldOfView() const;
 
     /// <summary>
@@ -88,7 +88,7 @@ public:
     /// <summary>
     /// Gets the custom aspect ratio. 0 if not use custom value.
     /// </summary>
-    API_PROPERTY(Attributes="EditorOrder(50), DefaultValue(0.0f), Limit(0, 10, 0.01f), EditorDisplay(\"Camera\")")
+    API_PROPERTY(Attributes="EditorOrder(50), DefaultValue(0.0f), Limit(0, 10, 0.01f), EditorDisplay(\"Camera\"), VisibleIf(nameof(UsePerspective))")
     float GetCustomAspectRatio() const;
 
     /// <summary>
@@ -121,7 +121,7 @@ public:
     /// <summary>
     /// Gets the orthographic projection scale.
     /// </summary>
-    API_PROPERTY(Attributes="EditorOrder(60), DefaultValue(1.0f), Limit(0.0001f, 1000, 0.01f), EditorDisplay(\"Camera\")")
+    API_PROPERTY(Attributes="EditorOrder(60), DefaultValue(1.0f), Limit(0.0001f, 1000, 0.01f), EditorDisplay(\"Camera\"), VisibleIf(nameof(UsePerspective), true)")
     float GetOrthographicScale() const;
 
     /// <summary>
