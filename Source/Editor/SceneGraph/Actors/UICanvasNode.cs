@@ -34,6 +34,7 @@ namespace FlaxEditor.SceneGraph.Actors
             var uiControl = new UIControl
             {
                 Name = "Canvas Scalar",
+                Transform = Actor.Transform,
                 Control = new CanvasScaler()
             };
             Root.Spawn(uiControl, Actor);
