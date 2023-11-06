@@ -3083,7 +3083,41 @@ int32 PhysicsBackend::MoveController(void* controller, void* shape, const Vector
 
 #if WITH_VEHICLE
 
-PxVehicleGearsData CreatePxVehicleGearsData(WheeledVehicle::GearboxSettings settings)
+PxVehicleDifferential4WData CreatePxVehicleDifferential4WData(const WheeledVehicle::DifferentialSettings settings)
+{
+    PxVehicleDifferential4WData differential4WData;
+    differential4WData.mType = (PxVehicleDifferential4WData::Enum)settings.Type;
+    differential4WData.mFrontRearSplit = settings.FrontRearSplit;
+    differential4WData.mFrontLeftRightSplit = settings.FrontLeftRightSplit;
+    differential4WData.mRearLeftRightSplit = settings.RearLeftRightSplit;
+    differential4WData.mCentreBias = settings.CentreBias;
+    differential4WData.mFrontBias = settings.FrontBias;
+    differential4WData.mRearBias = settings.RearBias;
+    return differential4WData;
+}
+
+PxVehicleDifferentialNWData CreatePxVehicleDifferentialNWData(const WheeledVehicle::DifferentialSettings settings, const Array<WheeledVehicle::Wheel*, FixedAllocation<PX_MAX_NB_WHEELS>> wheels)
+{
+    PxVehicleDifferentialNWData differentialNwData;
+    for (int32 i = 0; i < wheels.Count(); i++)
+        differentialNwData.setDrivenWheel(i, true);
+
+    return differentialNwData;
+}
+
+PxVehicleEngineData CreatePxVehicleEngineData(const WheeledVehicle::EngineSettings settings)
+{
+    PxVehicleEngineData engineData;
+    engineData.mMOI = M2ToCm2(settings.MOI);
+    engineData.mPeakTorque = M2ToCm2(settings.MaxTorque);
+    engineData.mMaxOmega = RpmToRadPerS(settings.MaxRotationSpeed);
+    engineData.mDampingRateFullThrottle = M2ToCm2(0.15f);
+    engineData.mDampingRateZeroThrottleClutchEngaged = M2ToCm2(2.0f);
+    engineData.mDampingRateZeroThrottleClutchDisengaged = M2ToCm2(0.35f);
+    return engineData;
+}
+
+PxVehicleGearsData CreatePxVehicleGearsData(const WheeledVehicle::GearboxSettings settings)
 {
     PxVehicleGearsData gears;
 
@@ -3123,6 +3157,71 @@ PxVehicleGearsData CreatePxVehicleGearsData(WheeledVehicle::GearboxSettings sett
     gears.mSwitchTime = Math::Max(settings.SwitchTime, 0.0f);
     gears.mNbRatios = Math::Clamp(gearsAmount, 2, (int)PxVehicleGearsData::eGEARSRATIO_COUNT);
     return gears;
+}
+
+PxVehicleAutoBoxData CreatePxVehicleAutoBoxData()
+{
+    return PxVehicleAutoBoxData();
+}
+
+PxVehicleClutchData CreatePxVehicleClutchData(WheeledVehicle::GearboxSettings settings)
+{
+    PxVehicleClutchData clutch;
+    clutch.mStrength = M2ToCm2(settings.ClutchStrength);
+    return clutch;
+}
+
+PxVehicleSuspensionData CreatePxVehicleSuspensionData(WheeledVehicle::Wheel settings, PxReal wheelSprungMass)
+{
+    PxVehicleSuspensionData suspensionData;
+    const float suspensionFrequency = 7.0f;
+    suspensionData.mMaxCompression = settings.SuspensionMaxRaise;
+    suspensionData.mMaxDroop = settings.SuspensionMaxDrop;
+    suspensionData.mSprungMass = wheelSprungMass;
+    suspensionData.mSpringStrength = Math::Square(suspensionFrequency) * suspensionData.mSprungMass;
+    suspensionData.mSpringDamperRate = settings.SuspensionDampingRate * 2.0f * Math::Sqrt(suspensionData.mSpringStrength * suspensionData.mSprungMass);
+    return suspensionData;
+}
+
+PxVehicleTireData CreatePxVehicleTireData(WheeledVehicle::Wheel settings)
+{
+    PxVehicleTireData tire;
+    int32 tireIndex = WheelTireTypes.Find(settings.TireFrictionScale);
+    if (tireIndex == -1)
+    {
+        // New tire type
+        tireIndex = WheelTireTypes.Count();
+        WheelTireTypes.Add(settings.TireFrictionScale);
+        WheelTireFrictionsDirty = true;
+    }
+    tire.mType = tireIndex;
+    tire.mLatStiffX = settings.TireLateralMax;
+    tire.mLatStiffY = settings.TireLateralStiffness;
+    tire.mLongitudinalStiffnessPerUnitGravity = settings.TireLongitudinalStiffness;
+    return tire;
+}
+
+PxVehicleWheelData CreatePxVehicleWheelData(WheeledVehicle::Wheel settings)
+{
+    PxVehicleWheelData wheelData;
+    wheelData.mMass = settings.Mass;
+    wheelData.mRadius = settings.Radius;
+    wheelData.mWidth = settings.Width;
+    wheelData.mMOI = 0.5f * wheelData.mMass * Math::Square(wheelData.mRadius);
+    wheelData.mDampingRate = M2ToCm2(settings.DampingRate);
+    wheelData.mMaxSteer = settings.MaxSteerAngle * DegreesToRadians;
+    wheelData.mMaxBrakeTorque = M2ToCm2(settings.MaxBrakeTorque);
+    wheelData.mMaxHandBrakeTorque = M2ToCm2(settings.MaxHandBrakeTorque);
+    return wheelData;
+}
+
+PxVehicleAckermannGeometryData CreatePxVehicleAckermannGeometryData(PxVehicleWheelsSimData* wheelsSimData)
+{
+    PxVehicleAckermannGeometryData ackermann;
+    ackermann.mAxleSeparation = Math::Abs(wheelsSimData->getWheelCentreOffset(PxVehicleDrive4WWheelOrder::eFRONT_LEFT).z - wheelsSimData->getWheelCentreOffset(PxVehicleDrive4WWheelOrder::eREAR_LEFT).z);
+    ackermann.mFrontWidth = Math::Abs(wheelsSimData->getWheelCentreOffset(PxVehicleDrive4WWheelOrder::eFRONT_RIGHT).x - wheelsSimData->getWheelCentreOffset(PxVehicleDrive4WWheelOrder::eFRONT_LEFT).x);
+    ackermann.mRearWidth = Math::Abs(wheelsSimData->getWheelCentreOffset(PxVehicleDrive4WWheelOrder::eREAR_RIGHT).x - wheelsSimData->getWheelCentreOffset(PxVehicleDrive4WWheelOrder::eREAR_LEFT).x);
+    return ackermann;
 }
 
 bool SortWheels(WheeledVehicle::Wheel const& a, WheeledVehicle::Wheel const& b)
@@ -3197,42 +3296,14 @@ void* PhysicsBackend::CreateVehicle(WheeledVehicle* actor)
         data.Collider = wheel.Collider;
         data.LocalOrientation = wheel.Collider->GetLocalOrientation();
 
-        PxVehicleSuspensionData suspensionData;
-        const float suspensionFrequency = 7.0f;
-        suspensionData.mMaxCompression = wheel.SuspensionMaxRaise;
-        suspensionData.mMaxDroop = wheel.SuspensionMaxDrop;
-        suspensionData.mSprungMass = sprungMasses[i];
-        suspensionData.mSpringStrength = Math::Square(suspensionFrequency) * suspensionData.mSprungMass;
-        suspensionData.mSpringDamperRate = wheel.SuspensionDampingRate * 2.0f * Math::Sqrt(suspensionData.mSpringStrength * suspensionData.mSprungMass);
-
-        PxVehicleTireData tire;
-        int32 tireIndex = WheelTireTypes.Find(wheel.TireFrictionScale);
-        if (tireIndex == -1)
-        {
-            // New tire type
-            tireIndex = WheelTireTypes.Count();
-            WheelTireTypes.Add(wheel.TireFrictionScale);
-            WheelTireFrictionsDirty = true;
-        }
-        tire.mType = tireIndex;
-        tire.mLatStiffX = wheel.TireLateralMax;
-        tire.mLatStiffY = wheel.TireLateralStiffness;
-        tire.mLongitudinalStiffnessPerUnitGravity = wheel.TireLongitudinalStiffness;
-
-        PxVehicleWheelData wheelData;
-        wheelData.mMass = wheel.Mass;
-        wheelData.mRadius = wheel.Radius;
-        wheelData.mWidth = wheel.Width;
-        wheelData.mMOI = 0.5f * wheelData.mMass * Math::Square(wheelData.mRadius);
-        wheelData.mDampingRate = M2ToCm2(wheel.DampingRate);
-        wheelData.mMaxSteer = wheel.MaxSteerAngle * DegreesToRadians;
-        wheelData.mMaxBrakeTorque = M2ToCm2(wheel.MaxBrakeTorque);
-        wheelData.mMaxHandBrakeTorque = M2ToCm2(wheel.MaxHandBrakeTorque);
-
         PxVec3 centreOffset = centerOfMassOffset.transformInv(offsets[i]);
         PxVec3 forceAppPointOffset(centreOffset.x, wheel.SuspensionForceOffset, centreOffset.z);
 
-        wheelsSimData->setTireData(i, tire);
+        PxVehicleTireData tireData = CreatePxVehicleTireData(wheel);
+        PxVehicleWheelData wheelData = CreatePxVehicleWheelData(wheel);
+        PxVehicleSuspensionData suspensionData = CreatePxVehicleSuspensionData(wheel, sprungMasses[i]);
+
+        wheelsSimData->setTireData(i,tireData);
         wheelsSimData->setWheelData(i, wheelData);
         wheelsSimData->setSuspensionData(i, suspensionData);
         wheelsSimData->setSuspTravelDirection(i, centerOfMassOffset.rotate(PxVec3(0.0f, -1.0f, 0.0f)));
@@ -3299,45 +3370,19 @@ void* PhysicsBackend::CreateVehicle(WheeledVehicle* actor)
     case WheeledVehicle::DriveTypes::Drive4W:
     {
         PxVehicleDriveSimData4W driveSimData;
+        PxVehicleDifferential4WData differentialData = CreatePxVehicleDifferential4WData(differential);
+        PxVehicleEngineData engineData = CreatePxVehicleEngineData(engine);
+        PxVehicleGearsData gearsData = CreatePxVehicleGearsData(gearbox);
+        PxVehicleAutoBoxData autoBoxData = CreatePxVehicleAutoBoxData();
+        PxVehicleClutchData cluchData = CreatePxVehicleClutchData(gearbox);
+        PxVehicleAckermannGeometryData geometryData = CreatePxVehicleAckermannGeometryData(wheelsSimData);
 
-        // Differential
-        PxVehicleDifferential4WData differential4WData;
-        differential4WData.mType = (PxVehicleDifferential4WData::Enum)differential.Type;
-        differential4WData.mFrontRearSplit = differential.FrontRearSplit;
-        differential4WData.mFrontLeftRightSplit = differential.FrontLeftRightSplit;
-        differential4WData.mRearLeftRightSplit = differential.RearLeftRightSplit;
-        differential4WData.mCentreBias = differential.CentreBias;
-        differential4WData.mFrontBias = differential.FrontBias;
-        differential4WData.mRearBias = differential.RearBias;
-        driveSimData.setDiffData(differential4WData);
-
-        // Engine
-        PxVehicleEngineData engineData;
-        engineData.mMOI = M2ToCm2(engine.MOI);
-        engineData.mPeakTorque = M2ToCm2(engine.MaxTorque);
-        engineData.mMaxOmega = RpmToRadPerS(engine.MaxRotationSpeed);
-        engineData.mDampingRateFullThrottle = M2ToCm2(0.15f);
-        engineData.mDampingRateZeroThrottleClutchEngaged = M2ToCm2(2.0f);
-        engineData.mDampingRateZeroThrottleClutchDisengaged = M2ToCm2(0.35f);
+        driveSimData.setDiffData(differentialData);
         driveSimData.setEngineData(engineData);
-
-        driveSimData.setGearsData(CreatePxVehicleGearsData(gearbox));
-
-        // Auto Box
-        PxVehicleAutoBoxData autoBox;
-        driveSimData.setAutoBoxData(autoBox);
-
-        // Clutch
-        PxVehicleClutchData clutch;
-        clutch.mStrength = M2ToCm2(gearbox.ClutchStrength);
-        driveSimData.setClutchData(clutch);
-
-        // Ackermann steer accuracy
-        PxVehicleAckermannGeometryData ackermann;
-        ackermann.mAxleSeparation = Math::Abs(wheelsSimData->getWheelCentreOffset(PxVehicleDrive4WWheelOrder::eFRONT_LEFT).z - wheelsSimData->getWheelCentreOffset(PxVehicleDrive4WWheelOrder::eREAR_LEFT).z);
-        ackermann.mFrontWidth = Math::Abs(wheelsSimData->getWheelCentreOffset(PxVehicleDrive4WWheelOrder::eFRONT_RIGHT).x - wheelsSimData->getWheelCentreOffset(PxVehicleDrive4WWheelOrder::eFRONT_LEFT).x);
-        ackermann.mRearWidth = Math::Abs(wheelsSimData->getWheelCentreOffset(PxVehicleDrive4WWheelOrder::eREAR_RIGHT).x - wheelsSimData->getWheelCentreOffset(PxVehicleDrive4WWheelOrder::eREAR_LEFT).x);
-        driveSimData.setAckermannGeometryData(ackermann);
+        driveSimData.setGearsData(gearsData);
+        driveSimData.setAutoBoxData(autoBoxData);
+        driveSimData.setClutchData(cluchData);
+        driveSimData.setAckermannGeometryData(geometryData);
 
         // Create vehicle drive
         auto drive4W = PxVehicleDrive4W::allocate(wheels.Count());
@@ -3351,34 +3396,18 @@ void* PhysicsBackend::CreateVehicle(WheeledVehicle* actor)
     case WheeledVehicle::DriveTypes::DriveNW:
     {
         PxVehicleDriveSimDataNW driveSimData;
+        PxVehicleDifferentialNWData differentialData = CreatePxVehicleDifferentialNWData(differential, wheels);
+        PxVehicleEngineData engineData = CreatePxVehicleEngineData(engine);
+        PxVehicleGearsData gearsData = CreatePxVehicleGearsData(gearbox);
+        PxVehicleAutoBoxData autoBoxData = CreatePxVehicleAutoBoxData();
+        PxVehicleClutchData cluchData = CreatePxVehicleClutchData(gearbox);
+        PxVehicleAckermannGeometryData geometryData = CreatePxVehicleAckermannGeometryData(wheelsSimData);
 
-        // Differential
-        PxVehicleDifferentialNWData differentialNwData;
-        for (int32 i = 0; i < wheels.Count(); i++)
-            differentialNwData.setDrivenWheel(i, true);
-        driveSimData.setDiffData(differentialNwData);
-
-        // Engine
-        PxVehicleEngineData engineData;
-        engineData.mMOI = M2ToCm2(engine.MOI);
-        engineData.mPeakTorque = M2ToCm2(engine.MaxTorque);
-        engineData.mMaxOmega = RpmToRadPerS(engine.MaxRotationSpeed);
-        engineData.mDampingRateFullThrottle = M2ToCm2(0.15f);
-        engineData.mDampingRateZeroThrottleClutchEngaged = M2ToCm2(2.0f);
-        engineData.mDampingRateZeroThrottleClutchDisengaged = M2ToCm2(0.35f);
+        driveSimData.setDiffData(differentialData);
         driveSimData.setEngineData(engineData);
-
-        // Gears
-        driveSimData.setGearsData(CreatePxVehicleGearsData(gearbox));
-
-        // Auto Box
-        PxVehicleAutoBoxData autoBox;
-        driveSimData.setAutoBoxData(autoBox);
-
-        // Clutch
-        PxVehicleClutchData clutch;
-        clutch.mStrength = M2ToCm2(gearbox.ClutchStrength);
-        driveSimData.setClutchData(clutch);
+        driveSimData.setGearsData(gearsData);
+        driveSimData.setAutoBoxData(autoBoxData);
+        driveSimData.setClutchData(cluchData);
 
         // Create vehicle drive
         auto driveNW = PxVehicleDriveNW::allocate(wheels.Count());
@@ -3429,42 +3458,11 @@ void PhysicsBackend::UpdateVehicleWheels(WheeledVehicle* actor)
     for (uint32 i = 0; i < wheelsSimData->getNbWheels(); i++)
     {
         auto& wheel = actor->_wheels[i];
-
-        // Update suspension data
-        PxVehicleSuspensionData suspensionData = wheelsSimData->getSuspensionData(i);
-        const float suspensionFrequency = 7.0f;
-        suspensionData.mMaxCompression = wheel.SuspensionMaxRaise;
-        suspensionData.mMaxDroop = wheel.SuspensionMaxDrop;
-        suspensionData.mSpringStrength = Math::Square(suspensionFrequency) * suspensionData.mSprungMass;
-        suspensionData.mSpringDamperRate = wheel.SuspensionDampingRate * 2.0f * Math::Sqrt(suspensionData.mSpringStrength * suspensionData.mSprungMass);
+        PxVehicleSuspensionData suspensionData = CreatePxVehicleSuspensionData(wheel, wheelsSimData->getSuspensionData(i).mSprungMass);
+        PxVehicleTireData tireData = CreatePxVehicleTireData(wheel);
+        PxVehicleWheelData wheelData = CreatePxVehicleWheelData(wheel);
         wheelsSimData->setSuspensionData(i, suspensionData);
-
-        // Update tire data
-        PxVehicleTireData tire;
-        int32 tireIndex = WheelTireTypes.Find(wheel.TireFrictionScale);
-        if (tireIndex == -1)
-        {
-            // New tire type
-            tireIndex = WheelTireTypes.Count();
-            WheelTireTypes.Add(wheel.TireFrictionScale);
-            WheelTireFrictionsDirty = true;
-        }
-        tire.mType = tireIndex;
-        tire.mLatStiffX = wheel.TireLateralMax;
-        tire.mLatStiffY = wheel.TireLateralStiffness;
-        tire.mLongitudinalStiffnessPerUnitGravity = wheel.TireLongitudinalStiffness;
-        wheelsSimData->setTireData(i, tire);
-
-        // Update wheel data
-        PxVehicleWheelData wheelData;
-        wheelData.mMass = wheel.Mass;
-        wheelData.mRadius = wheel.Radius;
-        wheelData.mWidth = wheel.Width;
-        wheelData.mMOI = 0.5f * wheelData.mMass * Math::Square(wheelData.mRadius);
-        wheelData.mDampingRate = M2ToCm2(wheel.DampingRate);
-        wheelData.mMaxSteer = wheel.MaxSteerAngle * DegreesToRadians;
-        wheelData.mMaxBrakeTorque = M2ToCm2(wheel.MaxBrakeTorque);
-        wheelData.mMaxHandBrakeTorque = M2ToCm2(wheel.MaxHandBrakeTorque);
+        wheelsSimData->setTireData(i, tireData);
         wheelsSimData->setWheelData(i, wheelData);
     }
 }
@@ -3479,13 +3477,7 @@ void PhysicsBackend::SetVehicleEngine(void* vehicle, const void* value)
     {
         auto drive4W = (PxVehicleDrive4W*)drive;
         PxVehicleDriveSimData4W& driveSimData = drive4W->mDriveSimData;
-        PxVehicleEngineData engineData;
-        engineData.mMOI = M2ToCm2(engine.MOI);
-        engineData.mPeakTorque = M2ToCm2(engine.MaxTorque);
-        engineData.mMaxOmega = RpmToRadPerS(engine.MaxRotationSpeed);
-        engineData.mDampingRateFullThrottle = M2ToCm2(0.15f);
-        engineData.mDampingRateZeroThrottleClutchEngaged = M2ToCm2(2.0f);
-        engineData.mDampingRateZeroThrottleClutchDisengaged = M2ToCm2(0.35f);
+        PxVehicleEngineData engineData = CreatePxVehicleEngineData(engine);
         driveSimData.setEngineData(engineData);
         break;
     }
@@ -3493,13 +3485,7 @@ void PhysicsBackend::SetVehicleEngine(void* vehicle, const void* value)
     {
         auto drive4W = (PxVehicleDriveNW*)drive;
         PxVehicleDriveSimDataNW& driveSimData = drive4W->mDriveSimData;
-        PxVehicleEngineData engineData;
-        engineData.mMOI = M2ToCm2(engine.MOI);
-        engineData.mPeakTorque = M2ToCm2(engine.MaxTorque);
-        engineData.mMaxOmega = RpmToRadPerS(engine.MaxRotationSpeed);
-        engineData.mDampingRateFullThrottle = M2ToCm2(0.15f);
-        engineData.mDampingRateZeroThrottleClutchEngaged = M2ToCm2(2.0f);
-        engineData.mDampingRateZeroThrottleClutchDisengaged = M2ToCm2(0.35f);
+        PxVehicleEngineData engineData = CreatePxVehicleEngineData(engine);
         driveSimData.setEngineData(engineData);
         break;
     }
@@ -3516,15 +3502,8 @@ void PhysicsBackend::SetVehicleDifferential(void* vehicle, const void* value)
     {
         auto drive4W = (PxVehicleDrive4W*)drive;
         PxVehicleDriveSimData4W& driveSimData = drive4W->mDriveSimData;
-        PxVehicleDifferential4WData differential4WData;
-        differential4WData.mType = (PxVehicleDifferential4WData::Enum)differential.Type;
-        differential4WData.mFrontRearSplit = differential.FrontRearSplit;
-        differential4WData.mFrontLeftRightSplit = differential.FrontLeftRightSplit;
-        differential4WData.mRearLeftRightSplit = differential.RearLeftRightSplit;
-        differential4WData.mCentreBias = differential.CentreBias;
-        differential4WData.mFrontBias = differential.FrontBias;
-        differential4WData.mRearBias = differential.RearBias;
-        driveSimData.setDiffData(differential4WData);
+        PxVehicleDifferential4WData differentialData = CreatePxVehicleDifferential4WData(differential);
+        driveSimData.setDiffData(differentialData);
         break;
     }
     }
@@ -3542,36 +3521,24 @@ void PhysicsBackend::SetVehicleGearbox(void* vehicle, const void* value)
     {
         auto drive4W = (PxVehicleDrive4W*)drive;
         PxVehicleDriveSimData4W& driveSimData = drive4W->mDriveSimData;
-
-        // Gears
-        driveSimData.setGearsData(CreatePxVehicleGearsData(gearbox));
-
-        // Auto Box
-        PxVehicleAutoBoxData autoBox;
-        driveSimData.setAutoBoxData(autoBox);
-
-        // Clutch
-        PxVehicleClutchData clutch;
-        clutch.mStrength = M2ToCm2(gearbox.ClutchStrength);
-        driveSimData.setClutchData(clutch);
+        PxVehicleGearsData gearData = CreatePxVehicleGearsData(gearbox);
+        PxVehicleClutchData clutchData = CreatePxVehicleClutchData(gearbox);
+        PxVehicleAutoBoxData autoBoxData = CreatePxVehicleAutoBoxData();
+        driveSimData.setGearsData(gearData);
+        driveSimData.setAutoBoxData(autoBoxData);
+        driveSimData.setClutchData(clutchData);
         break;
     }
     case PxVehicleTypes::eDRIVENW:
     {
         auto drive4W = (PxVehicleDriveNW*)drive;
         PxVehicleDriveSimDataNW& driveSimData = drive4W->mDriveSimData;
-
-        // Gears
-        driveSimData.setGearsData(CreatePxVehicleGearsData(gearbox));
-
-        // Auto Box
-        PxVehicleAutoBoxData autoBox;
-        driveSimData.setAutoBoxData(autoBox);
-
-        // Clutch
-        PxVehicleClutchData clutch;
-        clutch.mStrength = M2ToCm2(gearbox.ClutchStrength);
-        driveSimData.setClutchData(clutch);
+        PxVehicleGearsData gearData = CreatePxVehicleGearsData(gearbox);
+        PxVehicleClutchData clutchData = CreatePxVehicleClutchData(gearbox);
+        PxVehicleAutoBoxData autoBoxData = CreatePxVehicleAutoBoxData();
+        driveSimData.setGearsData(gearData);
+        driveSimData.setAutoBoxData(autoBoxData);
+        driveSimData.setClutchData(clutchData);
         break;
     }
     }
