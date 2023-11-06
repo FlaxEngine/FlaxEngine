@@ -13,6 +13,7 @@
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Engine/EngineService.h"
 #include "Engine/Core/Log.h"
+#include "Engine/Scripting/ManagedCLR/MField.h"
 
 Plugin::Plugin(const SpawnParams& params)
     : ScriptingObject(params)
@@ -82,6 +83,8 @@ namespace PluginManagerImpl
     void OnAssemblyUnloading(MAssembly* assembly);
     void OnBinaryModuleLoaded(BinaryModule* module);
     void OnScriptsReloading();
+    Array<GamePlugin*> SortGamePlugins(Array<GamePlugin*>& plugins, MClass* pluginLoadOrderAttribute, MField* typeField);
+    Array<Plugin*> SortPlugins(Array<Plugin*> plugins, MClass* pluginLoadOrderAttribute, MField* typeField);
 }
 
 using namespace PluginManagerImpl;
@@ -149,15 +152,11 @@ void PluginManagerImpl::LoadPlugin(MClass* klass, bool isEditor)
     if (!isEditor)
     {
         GamePlugins.Add((GamePlugin*)plugin);
-#if !USE_EDITOR
-        PluginManagerService::InvokeInitialize(plugin);
-#endif
     }
 #if USE_EDITOR
     else
     {
         EditorPlugins.Add(plugin);
-        PluginManagerService::InvokeInitialize(plugin);
     }
 #endif
     PluginManager::PluginsChanged();
@@ -209,23 +208,34 @@ void PluginManagerImpl::OnAssemblyLoaded(MAssembly* assembly)
 void PluginManagerImpl::OnAssemblyUnloading(MAssembly* assembly)
 {
     bool changed = false;
-    for (int32 i = EditorPlugins.Count() - 1; i >= 0 && EditorPlugins.Count() > 0; i--)
+
+    auto engineAssembly = ((NativeBinaryModule*)GetBinaryModuleFlaxEngine())->Assembly;
+    auto pluginLoadOrderAttribute = engineAssembly->GetClass("FlaxEngine.PluginLoadOrderAttribute");
+    auto beforeTypeField = pluginLoadOrderAttribute->GetField("DeinitializeBefore");
+    ASSERT(beforeTypeField);
+
+    auto editorPlugins = SortPlugins(EditorPlugins, pluginLoadOrderAttribute, beforeTypeField);
+
+    for (int32 i = editorPlugins.Count() - 1; i >= 0 && editorPlugins.Count() > 0; i--)
     {
-        auto plugin = EditorPlugins[i];
+        auto plugin = editorPlugins[i];
         if (plugin->GetType().ManagedClass->GetAssembly() == assembly)
         {
             PluginManagerService::InvokeDeinitialize(plugin);
-            EditorPlugins.RemoveAtKeepOrder(i);
+            EditorPlugins.Remove(plugin);
             changed = true;
         }
     }
-    for (int32 i = GamePlugins.Count() - 1; i >= 0 && GamePlugins.Count() > 0; i--)
+
+    auto gamePlugins = SortGamePlugins(GamePlugins, pluginLoadOrderAttribute, beforeTypeField);
+
+    for (int32 i = gamePlugins.Count() - 1; i >= 0 && gamePlugins.Count() > 0; i--)
     {
-        auto plugin = GamePlugins[i];
+        auto plugin = gamePlugins[i];
         if (plugin->GetType().ManagedClass->GetAssembly() == assembly)
         {
             PluginManagerService::InvokeDeinitialize(plugin);
-            GamePlugins.RemoveAtKeepOrder(i);
+            GamePlugins.Remove(plugin);
             changed = true;
         }
     }
@@ -261,26 +271,119 @@ void PluginManagerImpl::OnScriptsReloading()
 {
     // When scripting is reloading (eg. for hot-reload in Editor) we have to deinitialize plugins (Scripting service destroys C# objects later on)
     bool changed = false;
-    for (int32 i = EditorPlugins.Count() - 1; i >= 0 && EditorPlugins.Count() > 0; i--)
+
+    auto engineAssembly = ((NativeBinaryModule*)GetBinaryModuleFlaxEngine())->Assembly;
+    auto pluginLoadOrderAttribute = engineAssembly->GetClass("FlaxEngine.PluginLoadOrderAttribute");
+    auto beforeTypeField = pluginLoadOrderAttribute->GetField("DeinitializeBefore");
+    ASSERT(beforeTypeField);
+
+    auto editorPlugins = SortPlugins(EditorPlugins, pluginLoadOrderAttribute, beforeTypeField);
+
+    for (int32 i = editorPlugins.Count() - 1; i >= 0 && editorPlugins.Count() > 0; i--)
     {
-        auto plugin = EditorPlugins[i];
+        auto plugin = editorPlugins[i];
         {
             PluginManagerService::InvokeDeinitialize(plugin);
-            EditorPlugins.RemoveAtKeepOrder(i);
+            EditorPlugins.Remove(plugin);
             changed = true;
         }
     }
-    for (int32 i = GamePlugins.Count() - 1; i >= 0 && GamePlugins.Count() > 0; i--)
+
+    auto gamePlugins = SortGamePlugins(GamePlugins, pluginLoadOrderAttribute, beforeTypeField);
+
+    for (int32 i = gamePlugins.Count() - 1; i >= 0 && gamePlugins.Count() > 0; i--)
     {
-        auto plugin = GamePlugins[i];
+        auto plugin = gamePlugins[i];
         {
             PluginManagerService::InvokeDeinitialize(plugin);
-            GamePlugins.RemoveAtKeepOrder(i);
+            GamePlugins.Remove(plugin);
             changed = true;
         }
     }
     if (changed)
         PluginManager::PluginsChanged();
+}
+
+Array<GamePlugin*> PluginManagerImpl::SortGamePlugins(Array<GamePlugin*>& plugins, MClass* pluginLoadOrderAttribute, MField* typeField)
+{
+    // Sort game plugins
+    Array<GamePlugin*> newPlugins;
+    for(int i = 0; i < plugins.Count(); i++)
+    {
+        GamePlugin* plugin = plugins[i];
+        // Sort game plugin as needed
+        int insertIndex = -1;
+        for(int j = 0; j < newPlugins.Count(); j++)
+        {
+            // Get first instance where a game plugin needs another one before it
+            auto attribute = newPlugins[j]->GetClass()->GetAttribute(pluginLoadOrderAttribute);
+            if (attribute == nullptr || MCore::Object::GetClass(attribute) != pluginLoadOrderAttribute)
+                continue;
+            
+            // Check if attribute references a valid class
+            MTypeObject* refType = nullptr;
+            typeField->GetValue(attribute, &refType);
+            if (refType == nullptr)
+                continue;
+
+            MType* type = INTERNAL_TYPE_OBJECT_GET(refType);
+            if (type == nullptr)
+                continue;
+            MClass* typeClass = MCore::Type::GetClass(type);
+
+            if (plugin->GetClass() == typeClass)
+            {
+                insertIndex = j;
+                break;
+            }
+        }
+        if (insertIndex == -1)
+            newPlugins.Add(plugin);
+        else
+            newPlugins.Insert(insertIndex, plugin);
+    }
+    return newPlugins;
+}
+
+Array<Plugin*> PluginManagerImpl::SortPlugins(Array<Plugin*> plugins, MClass* pluginLoadOrderAttribute, MField* typeField)
+{
+    // Sort plugins
+    Array<Plugin*> newPlugins;
+    for(int i = 0; i < plugins.Count(); i++)
+    {
+        Plugin* plugin = plugins[i];
+        // Sort plugin as needed
+        int insertIndex = -1;
+        for(int j = 0; j < newPlugins.Count(); j++)
+        {
+            // Get first instance where a game plugin needs another one before it
+            auto attribute = newPlugins[j]->GetClass()->GetAttribute(pluginLoadOrderAttribute);
+            if (attribute == nullptr || MCore::Object::GetClass(attribute) != pluginLoadOrderAttribute)
+                continue;
+            
+            // Check if attribute references a valid class
+            MTypeObject* refType = nullptr;
+            typeField->GetValue(attribute, &refType);
+            if (refType == nullptr)
+                continue;
+
+            MType* type = INTERNAL_TYPE_OBJECT_GET(refType);
+            if (type == nullptr)
+                continue;
+            MClass* typeClass = MCore::Type::GetClass(type);
+
+            if (plugin->GetClass() == typeClass)
+            {
+                insertIndex = j;
+                break;
+            }
+        }
+        if (insertIndex == -1)
+            newPlugins.Add(plugin);
+        else
+            newPlugins.Insert(insertIndex, plugin);
+    }
+    return newPlugins;
 }
 
 bool PluginManagerService::Init()
@@ -291,6 +394,32 @@ bool PluginManagerService::Init()
         OnBinaryModuleLoaded(module);
     }
 
+    // Initialize plugins
+    auto engineAssembly = ((NativeBinaryModule*)GetBinaryModuleFlaxEngine())->Assembly;
+    auto pluginLoadOrderAttribute = engineAssembly->GetClass("FlaxEngine.PluginLoadOrderAttribute");
+    auto afterTypeField = pluginLoadOrderAttribute->GetField("InitializeAfter");
+    ASSERT(afterTypeField);
+
+#if !USE_EDITOR
+    auto gamePlugins = SortGamePlugins(GamePlugins, pluginLoadOrderAttribute, afterTypeField);
+
+    // Initalize game plugins
+    for (auto plugin : gamePlugins)
+    {
+        PluginManagerService::InvokeInitialize(plugin);
+    }
+#endif
+    
+#if USE_EDITOR
+    auto editorPlugins = SortPlugins(EditorPlugins, pluginLoadOrderAttribute, afterTypeField);
+
+    // Initialize editor plugins
+    for (auto plugin : editorPlugins)
+    {
+        PluginManagerService::InvokeInitialize(plugin);
+    }
+#endif
+    
     // Register for new binary modules load actions
     Scripting::BinaryModuleLoaded.Bind(&OnBinaryModuleLoaded);
     Scripting::ScriptsReloading.Bind(&OnScriptsReloading);
@@ -309,17 +438,27 @@ void PluginManagerService::Dispose()
     if (pluginsCount == 0)
         return;
     LOG(Info, "Unloading {0} plugins", pluginsCount);
-    for (int32 i = EditorPlugins.Count() - 1; i >= 0 && EditorPlugins.Count() > 0; i--)
+    
+    auto engineAssembly = ((NativeBinaryModule*)GetBinaryModuleFlaxEngine())->Assembly;
+    auto pluginLoadOrderAttribute = engineAssembly->GetClass("FlaxEngine.PluginLoadOrderAttribute");
+    auto beforeTypeField = pluginLoadOrderAttribute->GetField("DeinitializeBefore");
+    ASSERT(beforeTypeField);
+
+    auto editorPlugins = SortPlugins(EditorPlugins, pluginLoadOrderAttribute, beforeTypeField);
+    
+    for (int32 i = editorPlugins.Count() - 1; i >= 0 && editorPlugins.Count() > 0; i--)
     {
-        auto plugin = EditorPlugins[i];
+        auto plugin = editorPlugins[i];
         InvokeDeinitialize(plugin);
-        EditorPlugins.RemoveAtKeepOrder(i);
+        EditorPlugins.Remove(plugin);
     }
-    for (int32 i = GamePlugins.Count() - 1; i >= 0 && GamePlugins.Count() > 0; i--)
+    
+    auto gamePlugins = SortGamePlugins(GamePlugins, pluginLoadOrderAttribute, beforeTypeField);
+    for (int32 i = gamePlugins.Count() - 1; i >= 0 && gamePlugins.Count() > 0; i--)
     {
-        auto plugin = GamePlugins[i];
+        auto plugin = gamePlugins[i];
         InvokeDeinitialize(plugin);
-        GamePlugins.RemoveAtKeepOrder(i);
+        GamePlugins.Remove(plugin);
     }
     PluginManager::PluginsChanged();
 }
@@ -386,18 +525,32 @@ Plugin* PluginManager::GetPlugin(const ScriptingTypeHandle& type)
 void PluginManager::InitializeGamePlugins()
 {
     PROFILE_CPU();
-    for (int32 i = 0; i < GamePlugins.Count(); i++)
+
+    auto engineAssembly = ((NativeBinaryModule*)GetBinaryModuleFlaxEngine())->Assembly;
+    auto pluginLoadOrderAttribute = engineAssembly->GetClass("FlaxEngine.PluginLoadOrderAttribute");
+    auto afterTypeField = pluginLoadOrderAttribute->GetField("InitializeAfter");
+    ASSERT(afterTypeField);
+
+    auto gamePlugins = SortGamePlugins(GamePlugins, pluginLoadOrderAttribute, afterTypeField);
+    for (int32 i = 0; i < gamePlugins.Count(); i++)
     {
-        PluginManagerService::InvokeInitialize(GamePlugins[i]);
+        PluginManagerService::InvokeInitialize(gamePlugins[i]);
     }
 }
 
 void PluginManager::DeinitializeGamePlugins()
 {
     PROFILE_CPU();
-    for (int32 i = GamePlugins.Count() - 1; i >= 0; i--)
+
+    auto engineAssembly = ((NativeBinaryModule*)GetBinaryModuleFlaxEngine())->Assembly;
+    auto pluginLoadOrderAttribute = engineAssembly->GetClass("FlaxEngine.PluginLoadOrderAttribute");
+    auto beforeTypeField = pluginLoadOrderAttribute->GetField("DeinitializeBefore");
+    ASSERT(beforeTypeField);
+
+    auto gamePlugins = SortGamePlugins(GamePlugins, pluginLoadOrderAttribute, beforeTypeField);
+    for (int32 i = gamePlugins.Count() - 1; i >= 0; i--)
     {
-        PluginManagerService::InvokeDeinitialize(GamePlugins[i]);
+        PluginManagerService::InvokeDeinitialize(gamePlugins[i]);
     }
 }
 
