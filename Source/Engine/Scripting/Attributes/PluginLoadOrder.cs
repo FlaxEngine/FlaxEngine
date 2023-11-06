@@ -1,9 +1,9 @@
-﻿using System;
+using System;
 
 namespace FlaxEngine;
 
 /// <summary>
-/// This attribute allows for specifying initialization and deinitialization order for plugins
+/// This attribute allows for specifying initialization and deinitialization order for plugins.
 /// </summary>
 [Serializable]
 [AttributeUsage(AttributeTargets.Class)]
