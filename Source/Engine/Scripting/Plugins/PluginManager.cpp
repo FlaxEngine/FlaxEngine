@@ -358,9 +358,9 @@ bool PluginManagerService::Init()
     ASSERT(afterTypeField);
 
 #if !USE_EDITOR
-    auto gamePlugins = SortGamePlugins(GamePlugins, pluginLoadOrderAttribute, afterTypeField);
+    auto gamePlugins = SortPlugins(GamePlugins, pluginLoadOrderAttribute, afterTypeField);
 
-    // Initalize game plugins
+    // Initialize game plugins
     for (auto plugin : gamePlugins)
     {
         PluginManagerService::InvokeInitialize(plugin);
