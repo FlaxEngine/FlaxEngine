@@ -1510,6 +1510,7 @@ namespace FlaxEditor.Surface.Archetypes
                     "Comment", // Title
                     new Color(1.0f, 1.0f, 1.0f, 0.2f), // Color
                     new Float2(400.0f, 400.0f), // Size
+                    -1, // Order
                 },
             },
             CurveNode<float>.GetArchetype(12, "Curve", typeof(float), 0.0f, 1.0f),
