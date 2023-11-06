@@ -306,6 +306,7 @@ namespace FlaxEditor.Surface
         /// <param name="surfaceArea">The surface area to create comment.</param>
         /// <param name="title">The comment title.</param>
         /// <param name="color">The comment color.</param>
+        /// <param name="customOrder">The comment order or -1 to use default.</param>
         /// <returns>The comment object</returns>
         public virtual SurfaceComment SpawnComment(ref Rectangle surfaceArea, string title, Color color, int customOrder = -1)
         {
@@ -325,6 +326,7 @@ namespace FlaxEditor.Surface
         /// <param name="surfaceArea">The surface area to create comment.</param>
         /// <param name="title">The comment title.</param>
         /// <param name="color">The comment color.</param>
+        /// <param name="customOrder">The comment order or -1 to use default.</param>
         /// <returns>The comment object</returns>
         public SurfaceComment CreateComment(ref Rectangle surfaceArea, string title, Color color, int customOrder = -1)
         {
