@@ -39,6 +39,7 @@ namespace FlaxEditor.Modules
         ContextMenuSingleSelectGroup<int> _numberOfClientsGroup = new ContextMenuSingleSelectGroup<int>();
 
         private ContextMenuButton _menuFileSaveScenes;
+        private ContextMenuButton _menuFileReloadScenes;
         private ContextMenuButton _menuFileCloseScenes;
         private ContextMenuButton _menuFileOpenScriptsProject;
         private ContextMenuButton _menuFileGenerateScriptsProjectFiles;
@@ -527,6 +528,8 @@ namespace FlaxEditor.Modules
             _menuFileSaveAll = cm.AddButton("Save All", inputOptions.Save, Editor.SaveAll);
             _menuFileSaveScenes = cm.AddButton("Save scenes", inputOptions.SaveScenes, Editor.Scene.SaveScenes);
             _menuFileCloseScenes = cm.AddButton("Close scenes", inputOptions.CloseScenes, Editor.Scene.CloseAllScenes);
+            cm.AddSeparator();
+            _menuFileReloadScenes = cm.AddButton("Reload Scenes", Editor.Scene.ReloadScenes);
             cm.AddSeparator();
             _menuFileOpenScriptsProject = cm.AddButton("Open scripts project", inputOptions.OpenScriptsProject, Editor.CodeEditing.OpenSolution);
             _menuFileGenerateScriptsProjectFiles = cm.AddButton("Generate scripts project files", inputOptions.GenerateScriptsProject, Editor.ProgressReporting.GenerateScriptsProjectFiles.RunAsync);
