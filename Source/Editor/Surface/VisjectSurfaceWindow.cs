@@ -17,6 +17,7 @@ using FlaxEditor.Viewport.Previews;
 using FlaxEditor.Windows.Assets;
 using FlaxEngine;
 using FlaxEngine.GUI;
+using FlaxEngine.Utilities;
 
 namespace FlaxEditor.Surface
 {
@@ -259,6 +260,11 @@ namespace FlaxEditor.Surface
         public IVisjectSurfaceWindow Window;
 
         /// <summary>
+        /// The identifier of the parameter. Empty to auto generate it.
+        /// </summary>
+        public Guid Id = Guid.NewGuid();
+
+        /// <summary>
         /// True if adding, false if removing parameter.
         /// </summary>
         public bool IsAdd;
@@ -277,6 +283,11 @@ namespace FlaxEditor.Surface
         /// The type of the parameter.
         /// </summary>
         public ScriptType Type;
+
+        /// <summary>
+        /// The value to initialize the parameter with. Can be null to use default one for the parameter type.
+        /// </summary>
+        public object InitValue;
 
         /// <inheritdoc />
         public string ActionString => IsAdd ? "Add parameter" : "Remove parameter";
@@ -304,7 +315,14 @@ namespace FlaxEditor.Surface
             var type = Type;
             if (IsAdd && type.Type == typeof(NormalMap))
                 type = new ScriptType(typeof(Texture));
-            var param = SurfaceParameter.Create(type, Name);
+            var param = new SurfaceParameter
+            {
+                ID = Id,
+                IsPublic = true,
+                Name = Name,
+                Type = type,
+                Value = InitValue ?? TypeUtils.GetDefaultValue(type),
+            };
             if (IsAdd && Type.Type == typeof(NormalMap))
                 param.Value = FlaxEngine.Content.LoadAsyncInternal<Texture>("Engine/Textures/NormalTexture");
             Window.VisjectSurface.Parameters.Insert(Index, param);
@@ -1060,7 +1078,6 @@ namespace FlaxEditor.Surface
         public virtual void OnParamRemoveUndo()
         {
             _refreshPropertiesOnLoad = true;
-            //_propertiesEditor.BuildLayoutOnUpdate();
             _propertiesEditor.BuildLayout();
         }
 
