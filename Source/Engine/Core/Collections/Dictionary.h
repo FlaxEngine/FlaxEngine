@@ -534,7 +534,7 @@ public:
         }
         _size = capacity;
         Bucket* oldData = oldAllocation.Get();
-        if (oldElementsCount != 0 && preserveContents)
+        if (oldElementsCount != 0 && capacity != 0 && preserveContents)
         {
             FindPositionResult pos;
             for (int32 i = 0; i < oldSize; i++)
@@ -543,6 +543,7 @@ public:
                 if (oldBucket.IsOccupied())
                 {
                     FindPosition(oldBucket.Key, pos);
+                    ASSERT(pos.FreeSlotIndex != -1);
                     Bucket* bucket = &_allocation.Get()[pos.FreeSlotIndex];
                     Memory::MoveItems(&bucket->Key, &oldBucket.Key, 1);
                     Memory::MoveItems(&bucket->Value, &oldBucket.Value, 1);
@@ -942,6 +943,7 @@ private:
                 if (oldBucket.IsOccupied())
                 {
                     FindPosition(oldBucket.Key, pos);
+                    ASSERT(pos.FreeSlotIndex != -1);
                     Bucket* bucket = &_allocation.Get()[pos.FreeSlotIndex];
                     Memory::MoveItems(&bucket->Key, &oldBucket.Key, 1);
                     Memory::MoveItems(&bucket->Value, &oldBucket.Value, 1);
