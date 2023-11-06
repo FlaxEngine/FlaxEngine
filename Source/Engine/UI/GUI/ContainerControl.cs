@@ -12,9 +12,13 @@ namespace FlaxEngine.GUI
     public class ContainerControl : Control
     {
         /// <summary>
-        /// The children collection.
+        /// The children collection. 
+        /// <br></br>
+        /// [Don't use directy]
+        /// <br></br>
+        /// use <see cref="Children"/> instead if u planning to set Children if u set it will not prevent it automatically !!!
         /// </summary>
-        protected List<Control> _children = new List<Control>();
+        protected List<Control> _children = new List<Control>(); //[ToDo] make it private ? [Note] this is used for .json data dump cheak if is working if _children are private
 
         /// <summary>
         /// The contains focus cached flag.
@@ -67,6 +71,7 @@ namespace FlaxEngine.GUI
         /// <summary>
         /// Gets child controls list
         /// </summary>
+        [HideInEditor]
         public List<Control> Children { get => _children; set 
             {
                 for (int i = 0; i < value.Count; i++)

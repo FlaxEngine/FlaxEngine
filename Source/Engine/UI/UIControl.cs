@@ -21,7 +21,7 @@ namespace FlaxEngine
         /// <remarks>
         /// When changing the control, the previous one is disposed. Use <see cref="UnlinkControl"/> to manage it on your own.
         /// </remarks>
-        [EditorDisplay("Control", EditorDisplayAttribute.InlineStyle), CustomEditorAlias("FlaxEditor.CustomEditors.Dedicated.UIControlControlEditor"), EditorOrder(50)]
+        [EditorDisplay("Control", EditorDisplayAttribute.InlineStyle), CustomEditorAlias("FlaxEditor.CustomEditors.Dedicated.UIControlControlEditor"), EditorOrder(50),NoSerialize]
         public Control Control
         {
             get => _control;

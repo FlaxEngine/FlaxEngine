@@ -14,6 +14,9 @@ namespace FlaxEngine
     /// </summary>
     public class UIBlueprintAsset
     {
+        /// <summary>
+        /// 
+        /// </summary>
         public UIBlueprintAsset()
         {
             Root = new ContainerControl();

@@ -1,10 +1,17 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
 using System;
+using System.Collections.Generic;
+using System.Collections;
 using FlaxEditor.Content;
+using FlaxEditor.CustomEditors;
 using FlaxEditor.GUI;
 using FlaxEngine;
 using FlaxEngine.GUI;
+using FlaxEditor.CustomEditors.Dedicated;
+using FlaxEditor.CustomEditors.GUI;
+using FlaxEditor.Viewport;
+using FlaxEditor.SceneGraph;
 
 namespace FlaxEditor.Windows.Assets
 {
@@ -13,18 +20,23 @@ namespace FlaxEditor.Windows.Assets
     /// </summary>
     /// <seealso cref="UIBlueprintAssetItem" />
     /// <seealso cref="FlaxEditor.Windows.Assets.AssetEditorWindow" />
-    public sealed partial class UIBlueprintEditorWindow : AssetEditorWindowBase<JsonAsset>
+    public sealed partial class UIBlueprintEditorWindow : AssetEditorWindowBase<JsonAsset>, IPresenterOwner
     {
         internal class UIBlueprintEditor : Panel
         {
             /// <summary>
             /// if is true enables the events like on mouse move,update...
             /// </summary>
-            public bool Simulate;
+            public bool Simulate = false;
             public Control Hit = null;
+            public Control Selected = null;
             public float Zoom = 1;
             UIBlueprintEditorWindow window;
-            public UIBlueprintEditor(UIBlueprintEditorWindow window, ScrollBars scrollBars, bool autoFocus = false)
+            private bool isLeftMouseDown;
+            private bool isMiddleMouseDown;
+            private Float2 mouseStartLocation;
+            private Float2 viewOffset;
+            public UIBlueprintEditor(UIBlueprintEditorWindow window)
             {
                 this.window = window;
             }
@@ -35,7 +47,23 @@ namespace FlaxEditor.Windows.Assets
                 {
                     return base.OnMouseDown(location, button);
                 }
-                return true;
+                mouseStartLocation = location;
+                switch (button)
+                {
+                    case MouseButton.Left:
+                        isLeftMouseDown = Hit != null;
+                        if(isLeftMouseDown)
+                        {
+                            window._propertiesEditor.Select(Hit);
+                        }
+                        break;
+                    case MouseButton.Middle:
+                        isMiddleMouseDown = true;
+                        break;
+                    case MouseButton.Right:
+                        break;
+                }
+                return ContainsPoint(ref location);
             }
             /// <inheritdoc />
             public override bool OnMouseUp(Float2 location, MouseButton button)
@@ -44,7 +72,18 @@ namespace FlaxEditor.Windows.Assets
                 {
                     return base.OnMouseUp(location, button);
                 }
-                return true;
+                switch (button)
+                {
+                    case MouseButton.Left:
+                        isLeftMouseDown = false;
+                        break;
+                    case MouseButton.Middle:
+                        isMiddleMouseDown = false;
+                        break;
+                    case MouseButton.Right:
+                        break;
+                }
+                return ContainsPoint(ref location);
             }
             
             /// <inheritdoc />
@@ -55,9 +94,28 @@ namespace FlaxEditor.Windows.Assets
                     base.OnMouseMove(location);
                     return;
                 }
-                if (UIRaycaster.CastRay((ContainerControl)window.Blueprint.Root, ref location, ref Hit))
+                if(isMiddleMouseDown)
                 {
-                    Debug.Log("Hit");
+                    viewOffset += location - mouseStartLocation;
+                    window.Blueprint.Root.Location += location - mouseStartLocation;
+                    mouseStartLocation = location;
+                    return;
+                }
+                if (isLeftMouseDown && Hit != null)
+                {
+                    Hit.Location += location - mouseStartLocation;
+                    mouseStartLocation = location;
+                }
+                else
+                {
+                    var CL = location - window.Blueprint.Root.Location;
+                    if (UIRaycaster.CastRay((ContainerControl)window.Blueprint.Root, ref CL, ref Hit))
+                    {
+                    }
+                    else
+                    {
+                        Hit = null;
+                    }
                 }
             }
             /// <inheritdoc />
@@ -71,9 +129,12 @@ namespace FlaxEditor.Windows.Assets
                 base.Draw();
                 if (Hit != null)
                 {
-                    Render2D.DrawRectangle(new Rectangle(Hit.Location, Hit.Size), Color.Green, (1 / (float)Zoom) + 2);
+                    Render2D.DrawRectangle(new Rectangle(Hit.PointToParent(this,Float2.Zero)+ window.Blueprint.Root.Location, Hit.Size), Color.Green, (1 / (float)Zoom) + 2);
                 }
-                Render2D.DrawRectangle(new Rectangle(Location, Size), Color.Blue, (1 / (float)Zoom) + 1);
+                if (window.Blueprint != null)
+                {
+                    Render2D.DrawRectangle(window.Blueprint.Root.Bounds, Color.Blue, (1 / (float)Zoom) + 1);
+                }
             }
             /// <inheritdoc />
             public override bool OnMouseWheel(Float2 location, float delta)
@@ -85,12 +146,15 @@ namespace FlaxEditor.Windows.Assets
         }
         internal UIBlueprintAsset Blueprint;
         internal UIBlueprintEditor BlueprintEditor;
+        private CustomEditorPresenter _propertiesEditor;
         private readonly ToolStripButton _saveButton;
         private readonly ToolStripButton _undoButton;
         private readonly ToolStripButton _redoButton;
         private readonly Undo _undo;
         private bool _isRegisteredForScriptsReload;
+        internal PropertiesWindow Properties;
 
+        public EditorViewport PresenterViewport => ((IPresenterOwner)Properties).PresenterViewport;
 
         /// <summary>
         /// 
@@ -99,20 +163,32 @@ namespace FlaxEditor.Windows.Assets
         /// <param name="item"></param>
         public UIBlueprintEditorWindow(Editor editor, UIBlueprintAssetItem item) : base(editor, item)
         {
-            // Panel
-            BlueprintEditor = new UIBlueprintEditor(this, ScrollBars.Vertical)
+            SplitPanel split = new SplitPanel(Orientation.Horizontal)
             {
-                AnchorPreset = AnchorPresets.MiddleCenter,
-                //Offsets = new Margin(0, 0, _toolstrip.Bottom, 0),
-                Size = Screen.Size,
+                AnchorPreset = AnchorPresets.StretchAll,
+                Offsets = new Margin(0, 0, ToolStrip.Bottom, 0),
                 Parent = this
             };
-            
+            // editor window
+            BlueprintEditor = new UIBlueprintEditor(this)
+            {
+                AnchorPreset = AnchorPresets.StretchAll,
+                Offsets = new Margin(0, 0, ToolStrip.Bottom, 0),
+                Parent = split.Panel1
+            };
+            // UI element editor window
+            _propertiesEditor = new CustomEditorPresenter(_undo, null,this);
+            _propertiesEditor.OverrideEditor = new UIControlControlEditor();
+            _propertiesEditor.Panel.Parent = split.Panel2;
+            _propertiesEditor.Features |= FeatureFlags.CacheExpandedGroups;
+            _propertiesEditor.Select(null);
+            _propertiesEditor.Modified += MarkAsEdited;
+            _propertiesEditor.SelectionChanged += () => { };
             ToolStrip.AddButton(Editor.Icons.AddFile64, () =>
             {
                 if (Blueprint.Root is ContainerControl control) {
                     Image image = control.AddChild<Image>();
-                    image.Location = Size*0.5f;
+                    image.Location = control.Location + control.Size * 0.5f;
                     image.Size = new Float2(32, 32);
                     image.Brush = new SolidColorBrush(Color.White);
                     IsEdited = true;
@@ -198,8 +274,8 @@ namespace FlaxEditor.Windows.Assets
             else
             {
                 Blueprint.Root.Parent = BlueprintEditor;
-                Blueprint.Root.AnchorPreset = AnchorPresets.StretchAll;
-                Blueprint.Root.Offsets = new Margin(0, 0, 0, 0);
+                Blueprint.Root.AnchorPreset = AnchorPresets.MiddleCenter;
+                Blueprint.Root.Size = Screen.Size;
             }
         }
         /// <inheritdoc />
@@ -225,6 +301,11 @@ namespace FlaxEditor.Windows.Assets
                 ScriptsBuilder.ScriptsReloadBegin -= OnScriptsReloadBegin;
             }
             base.OnDestroy();
+        }
+
+        public void Select(List<SceneGraphNode> nodes)
+        {
+            ((IPresenterOwner)Properties).Select(nodes);
         }
     }
 }

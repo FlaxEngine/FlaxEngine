@@ -14,7 +14,6 @@ namespace FlaxEditor.Content
     /// <summary>
     /// A <see cref="UIBlueprintAsset"/> asset proxy object.
     /// </summary>
-    /// <seealso cref="FlaxEditor.Content.UIProxy" />
     [ContentContextMenu("New/UI/GameUI")]
     public class UIBlueprintProxy : SpawnableJsonAssetProxy<UIBlueprintAsset>
     {
@@ -22,7 +21,7 @@ namespace FlaxEditor.Content
         public override string TypeName => typeof(UIBlueprintAsset).FullName;
         /// <inheritdoc/>
         public override string Name => typeof(UIBlueprintAsset).Name;
-        /// <inheritdoc/>
+        ///// <inheritdoc/>
         //public override string FileExtension => "";
         /// <inheritdoc/>
         public override Color AccentColor => Color.Aqua;
