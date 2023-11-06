@@ -294,7 +294,7 @@ public:
     void SetAll(const bool value)
     {
         if (_count != 0)
-            Platform::MemorySet(_allocation.Get(), ToItemCount(_count) * sizeof(ItemType), value ? MAX_uint64 : 0);
+            Platform::MemorySet(_allocation.Get(), ToItemCount(_count) * sizeof(ItemType), value ? MAX_uint32 : 0);
     }
 
     /// <summary>
