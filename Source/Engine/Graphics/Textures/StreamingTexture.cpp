@@ -329,11 +329,11 @@ public:
         , _dataLock(_streamingTexture->GetOwner()->LockData())
     {
         _streamingTexture->_streamingTasks.Add(this);
-        _texture.OnUnload.Bind<StreamTextureMipTask, &StreamTextureMipTask::onResourceUnload2>(this);
+        _texture.Released.Bind<StreamTextureMipTask, &StreamTextureMipTask::OnResourceReleased2>(this);
     }
 
 private:
-    void onResourceUnload2(GPUTextureReference* ref)
+    void OnResourceReleased2()
     {
         // Unlink texture
         if (_streamingTexture)

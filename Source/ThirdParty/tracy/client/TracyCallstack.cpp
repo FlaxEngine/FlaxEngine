@@ -154,7 +154,6 @@ void InitCallstack()
     DBGHELP_LOCK;
 #endif
 
-    //SymInitialize( GetCurrentProcess(), "C:\\Flax\\FlaxEngine\\Binaries\\Editor\\Win64\\Debug;C:\\Flax\\FlaxEngine\\Cache\\Projects", true );
     SymInitialize( GetCurrentProcess(), nullptr, true );
     SymSetOptions( SYMOPT_LOAD_LINES );
 
@@ -228,6 +227,10 @@ void InitCallstack()
                 const auto res = GetModuleFileNameA( mod[i], name, 1021 );
                 if( res > 0 )
                 {
+                    // This may be a new module loaded since our call to SymInitialize.
+                    // Just in case, force DbgHelp to load its pdb !
+                    SymLoadModuleEx(proc, NULL, name, NULL, (DWORD64)info.lpBaseOfDll, info.SizeOfImage, NULL, 0);
+
                     auto ptr = name + res;
                     while( ptr > name && *ptr != '\\' && *ptr != '/' ) ptr--;
                     if( ptr > name ) ptr++;
@@ -683,7 +686,9 @@ void InitCallstackCritical()
 void InitCallstack()
 {
     cb_bts = backtrace_create_state( nullptr, 0, nullptr, nullptr );
+#ifndef TRACY_DEMANGLE
     ___tracy_init_demangle_buffer();
+#endif
 
 #ifdef __linux
     InitKernelSymbols();
@@ -758,7 +763,9 @@ debuginfod_client* GetDebuginfodClient()
 
 void EndCallstack()
 {
+#ifndef TRACY_DEMANGLE
     ___tracy_free_demangle_buffer();
+#endif
 #ifdef TRACY_DEBUGINFOD
     ClearDebugInfoVector( s_di_known );
     debuginfod_end( s_debuginfod );

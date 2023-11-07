@@ -25,13 +25,6 @@
 
 namespace tracy
 {
-enum class PlotFormatType : uint8_t
-{
-    Number,
-    Memory,
-    Percentage
-};
-
 typedef void(*ParameterCallback)( void* data, uint32_t idx, int32_t val );
 
 struct TRACY_API SourceLocationData
@@ -47,7 +40,6 @@ class TRACY_API ScopedZone
 {
 public:
     static void Begin( const SourceLocationData* srcloc );
-    static void Begin( uint32_t line, const char* source, size_t sourceSz, const char* function, size_t functionSz, const Char* name, size_t nameSz );
     static void End();
 
     ScopedZone( const ScopedZone& ) = delete;
@@ -68,7 +60,6 @@ public:
     void Name( const Char* txt, size_t size );
     void Color( uint32_t color );
     void Value( uint64_t value );
-    bool IsActive() const;
 
 private:
     const bool m_active;

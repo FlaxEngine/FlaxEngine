@@ -8,9 +8,7 @@
 #include "Engine/Platform/IGuiData.h"
 #if USE_EDITOR
 #include "Engine/Platform/CriticalSection.h"
-#include "Engine/Threading/ThreadPoolTask.h"
-#include "Engine/Threading/ThreadPool.h"
-#include "Engine/Engine/Engine.h"
+#include "Engine/Platform/Base/DragDropHelper.h"
 #endif
 #include "Engine/Core/Log.h"
 #include "Engine/Input/Input.h"
@@ -25,23 +23,7 @@
 // Data for drawing window while doing drag&drop on Mac (engine is paused during platform tick)
 CriticalSection MacDragLocker;
 NSDraggingSession* MacDragSession = nullptr;
-class DoDragDropJob* MacDragJob = nullptr;
-
-class DoDragDropJob : public ThreadPoolTask
-{
-public:
-    int64 ExitFlag = 0;
-
-    bool Run() override
-    {
-        while (Platform::AtomicRead(&ExitFlag) == 0)
-        {
-            Engine::OnDraw();
-            Platform::Sleep(20);
-        }
-        return false;
-    }
-};
+DoDragDropJob* MacDragJob = nullptr;
 #endif
 
 inline bool IsWindowInvalid(Window* win)
@@ -751,7 +733,8 @@ MacWindow::MacWindow(const CreateWindowSettings& settings)
     [window setWindow:this];
     [window setReleasedWhenClosed:NO];
     [window setMinSize:NSMakeSize(settings.MinimumSize.X, settings.MinimumSize.Y)];
-    [window setMaxSize:NSMakeSize(settings.MaximumSize.X, settings.MaximumSize.Y)];
+    if (settings.MaximumSize.SumValues() > 0)
+        [window setMaxSize:NSMakeSize(settings.MaximumSize.X, settings.MaximumSize.Y)];
     [window setOpaque:!settings.SupportsTransparency];
     [window setContentView:view];
     if (settings.AllowInput)

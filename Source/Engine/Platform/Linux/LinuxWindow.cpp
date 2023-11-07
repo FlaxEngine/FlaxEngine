@@ -150,9 +150,9 @@ LinuxWindow::LinuxWindow(const CreateWindowSettings& settings)
 	{
 		// Set resizing range
 		hints.min_width = (int)settings.MinimumSize.X;
-		hints.max_width = (int)settings.MaximumSize.X;
+		hints.max_width = settings.MaximumSize.X > 0 ? (int)settings.MaximumSize.X : MAX_uint16;
 		hints.min_height = (int)settings.MinimumSize.Y;
-		hints.max_height = (int)settings.MaximumSize.Y;
+		hints.max_height = settings.MaximumSize.Y > 0 ? (int)settings.MaximumSize.Y : MAX_uint16;
 		hints.flags |= USSize;
 	}
     // honor the WM placement except for manual (overriding) placements

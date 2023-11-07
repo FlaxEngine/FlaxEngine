@@ -696,12 +696,15 @@ void* DebugDraw::AllocateContext()
 
 void DebugDraw::FreeContext(void* context)
 {
+    ASSERT(context);
     Memory::DestructItem((DebugDrawContext*)context);
     Allocator::Free(context);
 }
 
 void DebugDraw::UpdateContext(void* context, float deltaTime)
 {
+    if (!context)
+        context = &GlobalContext;
     ((DebugDrawContext*)context)->DebugDrawDefault.Update(deltaTime);
     ((DebugDrawContext*)context)->DebugDrawDepthTest.Update(deltaTime);
 }
