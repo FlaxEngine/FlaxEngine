@@ -2,17 +2,14 @@
 
 using System;
 using System.Collections;
-using System.Collections.Generic;
 using System.Linq;
 using FlaxEditor.Content;
 using FlaxEditor.CustomEditors.Elements;
 using FlaxEditor.CustomEditors.GUI;
 using FlaxEditor.GUI.ContextMenu;
 using FlaxEditor.GUI.Drag;
-using FlaxEditor.Options;
 using FlaxEditor.SceneGraph;
 using FlaxEditor.Scripting;
-using FlaxEditor.Utilities;
 using FlaxEngine;
 using FlaxEngine.GUI;
 using FlaxEngine.Utilities;
@@ -140,11 +137,11 @@ namespace FlaxEditor.CustomEditors.Editors
                 overrideEditorType = TypeUtils.GetType(collection.OverrideEditorTypeName).Type;
                 spacing = collection.Spacing;
             }
-            
+
             var dragArea = layout.CustomContainer<DragAreaControl>();
             dragArea.CustomControl.Editor = this;
             dragArea.CustomControl.ElementType = ElementType;
-            
+
             // Check for the AssetReferenceAttribute. In JSON assets, it can be used to filter
             // which scripts can be dragged over and dropped on this collection editor.
             var assetReference = (AssetReferenceAttribute)attributes?.FirstOrDefault(x => x is AssetReferenceAttribute);
@@ -250,7 +247,7 @@ namespace FlaxEditor.CustomEditors.Editors
                 var panel = dragArea.HorizontalPanel();
                 panel.Panel.Size = new Float2(0, 20);
                 panel.Panel.Margin = new Margin(2);
-                
+
                 var removeButton = panel.Button("-", "Remove last item");
                 removeButton.Button.Size = new Float2(16, 16);
                 removeButton.Button.Enabled = size > 0;
@@ -262,7 +259,7 @@ namespace FlaxEditor.CustomEditors.Editors
 
                     Resize(Count - 1);
                 };
-                
+
                 var addButton = panel.Button("+", "Add new item");
                 addButton.Button.Size = new Float2(16, 16);
                 addButton.Button.Enabled = !NotNullItems || size > 0;
@@ -400,27 +397,18 @@ namespace FlaxEditor.CustomEditors.Editors
             }
             return base.OnDirty(editor, value, token);
         }
-        
+
         private class DragAreaControl : VerticalPanel
         {
-            // private DragHandlers _dragHandlers;
-            // private DragAssets _dragAssets;
-            // private DragActors _dragActors;
             private DragItems _dragItems;
             private DragActors _dragActors;
             private DragHandlers _dragHandlers;
-
             private AssetPickerValidator _pickerValidator;
-            private ScriptType _elementType;
-            
+
             public ScriptType ElementType
             {
-                get => _elementType;
-                set
-                {
-                    _pickerValidator = new AssetPickerValidator(value);
-                    _elementType = value;
-                }
+                get => _pickerValidator?.AssetType ?? ScriptType.Null;
+                set => _pickerValidator = new AssetPickerValidator(value);
             }
 
             public CollectionEditor Editor { get; set; }
@@ -433,12 +421,13 @@ namespace FlaxEditor.CustomEditors.Editors
             /// <inheritdoc />
             public override void Draw()
             {
-                if (_dragHandlers is {HasValidDrag: true})
+                if (_dragHandlers is { HasValidDrag: true })
                 {
                     var area = new Rectangle(Float2.Zero, Size);
                     Render2D.FillRectangle(area, Color.Orange * 0.5f);
                     Render2D.DrawRectangle(area, Color.Black);
                 }
+
                 base.Draw();
             }
 
@@ -523,7 +512,7 @@ namespace FlaxEditor.CustomEditors.Editors
                             var type = Editor.Values.Type.GetElementType();
                             var array = TypeUtils.CreateArrayInstance(type, newSize);
                             list.CopyTo(array, 0);
-                            
+
                             for (var i = oldSize; i < newSize; i++)
                             {
                                 var validator = new AssetPickerValidator
@@ -543,7 +532,7 @@ namespace FlaxEditor.CustomEditors.Editors
                                     array.SetValue(validator.SelectedPath, i);
                                 else
                                     array.SetValue(validator.SelectedAsset, i);
-                                
+
                                 validator.OnDestroy();
                             }
                             Editor.SetValue(array);
@@ -558,7 +547,7 @@ namespace FlaxEditor.CustomEditors.Editors
                                     AssetType = _pickerValidator.AssetType,
                                     SelectedItem = item,
                                 };
-                                
+
                                 if (typeof(AssetItem).IsAssignableFrom(ElementType.Type))
                                     list.Add(validator.SelectedItem);
                                 else if (ElementType.Type == typeof(Guid))
@@ -569,7 +558,7 @@ namespace FlaxEditor.CustomEditors.Editors
                                     list.Add(validator.SelectedPath);
                                 else
                                     list.Add(validator.SelectedAsset);
-                                
+
                                 validator.OnDestroy();
                             }
                             Editor.SetValue(list);
@@ -589,7 +578,7 @@ namespace FlaxEditor.CustomEditors.Editors
                                 list = Editor.Values.Type.CreateInstance() as IList;
                             }
                         }
-                        
+
                         if (list.IsFixedSize)
                         {
                             var oldSize = list.Count;
@@ -597,7 +586,7 @@ namespace FlaxEditor.CustomEditors.Editors
                             var type = Editor.Values.Type.GetElementType();
                             var array = TypeUtils.CreateArrayInstance(type, newSize);
                             list.CopyTo(array, 0);
-                            
+
                             for (var i = oldSize; i < newSize; i++)
                             {
                                 var actor = _dragActors.Objects[i - oldSize].Actor;
@@ -628,7 +617,7 @@ namespace FlaxEditor.CustomEditors.Editors
                             Editor.SetValue(list);
                         }
                     }
-                    
+
                     _dragHandlers.OnDragDrop(null);
                 }
 
@@ -636,5 +625,4 @@ namespace FlaxEditor.CustomEditors.Editors
             }
         }
     }
-
 }

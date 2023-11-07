@@ -9,7 +9,7 @@ namespace FlaxEditor.Content;
 /// <summary>
 /// Manages and converts the selected content item to the appropriate types. Useful for drag operations.
 /// </summary>
-public class AssetPickerValidator: IContentItemOwner
+public class AssetPickerValidator : IContentItemOwner
 {
     private Asset _selected;
     private ContentItem _selectedItem;
