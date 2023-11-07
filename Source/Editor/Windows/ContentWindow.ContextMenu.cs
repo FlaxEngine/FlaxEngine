@@ -187,7 +187,7 @@ namespace FlaxEditor.Windows
                     continue;
 
                 // Get context proxy
-                ContentProxy p;
+                ContentProxy p = null;
                 if (type.Type.IsSubclassOf(typeof(ContentProxy)))
                 {
                     p = Editor.ContentDatabase.Proxy.Find(x => x.GetType() == type.Type);
