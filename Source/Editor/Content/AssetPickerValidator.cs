@@ -1,11 +1,10 @@
-﻿using System;
+using System;
 using System.IO;
-using FlaxEditor.Content;
 using FlaxEditor.Scripting;
 using FlaxEngine;
 using FlaxEngine.Utilities;
 
-namespace FlaxEditor.Utilities;
+namespace FlaxEditor.Content;
 
 /// <summary>
 /// Manages and converts the selected content item to the appropriate types. Useful for drag operations.
