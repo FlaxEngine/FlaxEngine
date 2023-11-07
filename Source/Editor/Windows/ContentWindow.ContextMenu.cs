@@ -192,7 +192,7 @@ namespace FlaxEditor.Windows
                 {
                     p = Editor.ContentDatabase.Proxy.Find(x => x.GetType() == type.Type);
                 }
-                else
+                else if (type.CanCreateInstance)
                 {
                     // User can use attribute to put their own assets into the content context menu
                     var generic = typeof(SpawnableJsonAssetProxy<>).MakeGenericType(type.Type);
