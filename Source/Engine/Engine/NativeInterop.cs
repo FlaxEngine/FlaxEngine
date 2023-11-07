@@ -317,11 +317,16 @@ namespace FlaxEngine.Interop
         /// <returns>The resolved assembly, or null if none could be found.</returns>
         internal static Assembly ResolveScriptingAssemblyByName(AssemblyName assemblyName, bool allowPartial = false)
         {
-            foreach (Assembly assembly in scriptingAssemblyLoadContext.Assemblies)
+            var lc = scriptingAssemblyLoadContext;
+
+            if (lc is null)
+                return null;
+
+            foreach (Assembly assembly in lc.Assemblies)
             {
                 var curName = assembly.GetName();
 
-                if (curName == assemblyName || (allowPartial && curName.Name == assemblyName.Name))
+                if (curName == assemblyName)
                     return assembly;
             }
 
@@ -329,7 +334,7 @@ namespace FlaxEngine.Interop
             {
                 string partialName = assemblyName.Name;
 
-                foreach (Assembly assembly in scriptingAssemblyLoadContext.Assemblies)
+                foreach (Assembly assembly in lc.Assemblies)
                 {
                     var curName = assembly.GetName();
 

@@ -4,6 +4,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using System.Reflection;
 using System.Runtime.Serialization;
 using FlaxEngine.Interop;
@@ -56,13 +57,13 @@ namespace FlaxEngine.Json.JsonCustomSerializers
             if (type is null && key.assemblyName is not null) { // Type not found yet, but we have assembly name
                 Assembly? assembly = null;
 
-                assembly = FindScriptingAssembly(key.assemblyName); // Attempt to load from scripting assembly
+                assembly = FindScriptingAssembly(new(key.assemblyName)); // Attempt to find in scripting assemblies
 
                 if (assembly is null)
-                    assembly = FindLoadedAssembly(key.assemblyName); // Attempt to load from loaded assemblies
+                    assembly = FindLoadAssembly(new(key.assemblyName)); // Attempt to load
 
                 if (assembly is null)
-                    assembly = FindUnloadedAssembly(key.assemblyName); // Attempt to load from unloaded assemblies
+                    assembly = FindDomainAssembly(new(key.assemblyName)); // Attempt to find in the current domain
 
                 if (assembly is null)
                     throw MakeAsmResolutionException(key.assemblyName); // Assembly failed to resolve
@@ -80,27 +81,35 @@ namespace FlaxEngine.Json.JsonCustomSerializers
         }
 
         /// <summary>Attempt to find the assembly among loaded scripting assemblies</summary>
-        Assembly? FindScriptingAssembly(string assemblyName)
+        Assembly? FindScriptingAssembly(AssemblyName assemblyName)
         {
-            return NativeInterop.ResolveScriptingAssemblyByName(new AssemblyName(assemblyName), allowPartial: true);
+            return NativeInterop.ResolveScriptingAssemblyByName(assemblyName, allowPartial: true);
         }
 
-        /// <summary>Attempt to find the assembly by name</summary>
-        Assembly? FindLoadedAssembly(string assemblyName) // TODO
+        /// <summary>Attempt to find the assembly in the current domain</summary>
+        Assembly? FindDomainAssembly(AssemblyName assemblyName)
         {
+            var assemblies = AppDomain.CurrentDomain.GetAssemblies().ToArray();
+
+            foreach (Assembly assembly in assemblies) {
+                var curName = assembly.GetName();
+
+                if (curName == assemblyName || curName.Name == assemblyName.Name)
+                    return assembly;
+            }
+
             return null;
         }
 
-        /// <summary>Attempt to find the assembly by name</summary>
-        Assembly? FindUnloadedAssembly(string assemblyName)
+        /// <summary>Attempt to load the assembly</summary>
+        Assembly? FindLoadAssembly(AssemblyName assemblyName)
         {
             Assembly? assembly = null;
 
-            assembly = Assembly.Load(new AssemblyName(assemblyName));
+            assembly = Assembly.Load(assemblyName);
 
             if (assembly is null)
-                assembly = Assembly.LoadWithPartialName(assemblyName); // Copying behavior of DefaultSerializationBinder
-
+                assembly = Assembly.LoadWithPartialName(assemblyName.Name); // Copying behavior of DefaultSerializationBinder
 
             return assembly;
         }
