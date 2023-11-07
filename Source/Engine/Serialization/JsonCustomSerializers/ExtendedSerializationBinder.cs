@@ -19,14 +19,15 @@ namespace FlaxEngine.Json.JsonCustomSerializers
     {
         private record struct TypeKey(string? assemblyName, string typeName);
 
-        private ConcurrentDictionary<TypeKey, Type> _cache;
-        private Func<TypeKey, Type> _resolve;
+        private ConcurrentDictionary<TypeKey, Type> _typeCache;
+        private Func<TypeKey, Type> _resolveType;
+
 
         /// <summary>Clear the cache</summary>
         /// <remarks>Should be cleared on scripting domain reload to avoid out of date types participating in dynamic type resolution</remarks>
         public void ResetCache()
         {
-            _cache.Clear();
+            _typeCache.Clear();
         }
 
         public override Type BindToType(string? assemblyName, string typeName)
@@ -43,11 +44,11 @@ namespace FlaxEngine.Json.JsonCustomSerializers
 
         public ExtendedSerializationBinder()
         {
-            _resolve = ResolveBind;
-            _cache = new();
+            _resolveType = ResolveType;
+            _typeCache = new();
         }
 
-        Type ResolveBind(TypeKey key)
+        Type ResolveType(TypeKey key)
         {
             Type? type = null;
             if (key.assemblyName is null) { // No assembly name, attempt to find globally
@@ -55,18 +56,7 @@ namespace FlaxEngine.Json.JsonCustomSerializers
             }
 
             if (type is null && key.assemblyName is not null) { // Type not found yet, but we have assembly name
-                Assembly? assembly = null;
-
-                assembly = FindScriptingAssembly(new(key.assemblyName)); // Attempt to find in scripting assemblies
-
-                if (assembly is null)
-                    assembly = FindLoadAssembly(new(key.assemblyName)); // Attempt to load
-
-                if (assembly is null)
-                    assembly = FindDomainAssembly(new(key.assemblyName)); // Attempt to find in the current domain
-
-                if (assembly is null)
-                    throw MakeAsmResolutionException(key.assemblyName); // Assembly failed to resolve
+                var assembly = ResolveAssembly(new(key.assemblyName));
 
                 type = FindTypeInAssembly(key.typeName, assembly); // We have assembly, attempt to load from assembly
             }
@@ -80,6 +70,25 @@ namespace FlaxEngine.Json.JsonCustomSerializers
             return type;
         }
 
+
+        Assembly ResolveAssembly(AssemblyName name)
+        {
+            Assembly? assembly = null;
+
+            assembly = FindScriptingAssembly(name); // Attempt to find in scripting assemblies
+
+            if (assembly is null)
+                assembly = FindLoadAssembly(name); // Attempt to load
+
+            if (assembly is null)
+                assembly = FindDomainAssembly(name); // Attempt to find in the current domain
+
+            if (assembly is null)
+                throw MakeAsmResolutionException(name.FullName); // Assembly failed to resolve
+
+            return assembly;
+        }
+
         /// <summary>Attempt to find the assembly among loaded scripting assemblies</summary>
         Assembly? FindScriptingAssembly(AssemblyName assemblyName)
         {
@@ -91,7 +100,7 @@ namespace FlaxEngine.Json.JsonCustomSerializers
         {
             var assemblies = AppDomain.CurrentDomain.GetAssemblies().ToArray();
 
-            foreach (Assembly assembly in assemblies) {
+            foreach (Assembly assembly in assemblies) { // Looking in domain may be necessary (in case of anon dynamic assembly for example)
                 var curName = assembly.GetName();
 
                 if (curName == assemblyName || curName.Name == assemblyName.Name)
@@ -115,7 +124,7 @@ namespace FlaxEngine.Json.JsonCustomSerializers
         }
 
 
-
+        /// <summary>Attempt to find a type in a specified assembly</summary>
         Type? FindTypeInAssembly(string typeName, Assembly assembly)
         {
             var type = assembly.GetType(typeName); // Attempt to load directly
@@ -135,10 +144,9 @@ namespace FlaxEngine.Json.JsonCustomSerializers
         /// <summary>Get type from the cache</summary>
         private Type FindCachedType(TypeKey key)
         {
-            return _cache.GetOrAdd(key, _resolve);
+            return _typeCache.GetOrAdd(key, _resolveType);
         }
-
-
+        
 
         /*********************************************
          ** Below code is adapted from Newtonsoft.Json
