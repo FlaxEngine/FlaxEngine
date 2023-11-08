@@ -94,6 +94,8 @@ namespace FlaxEditor.Windows.Assets
                     base.OnMouseMove(location);
                     return;
                 }
+                if (window.Blueprint == null)
+                    return;
                 if(isMiddleMouseDown)
                 {
                     viewOffset += location - mouseStartLocation;
@@ -178,12 +180,18 @@ namespace FlaxEditor.Windows.Assets
             };
             // UI element editor window
             _propertiesEditor = new CustomEditorPresenter(_undo, null,this);
+            
             _propertiesEditor.OverrideEditor = new UIControlControlEditor();
+            //_propertiesEditor.OverrideEditor.ParentEditor = _propertiesEditor.OverrideEditor;
             _propertiesEditor.Panel.Parent = split.Panel2;
             _propertiesEditor.Features |= FeatureFlags.CacheExpandedGroups;
             _propertiesEditor.Select(null);
             _propertiesEditor.Modified += MarkAsEdited;
-            _propertiesEditor.SelectionChanged += () => { };
+            _propertiesEditor.SelectionChanged += () => 
+            {
+                _propertiesEditor.OverrideEditor.Refresh();
+                BlueprintEditor.PerformLayout(true);
+            };
             ToolStrip.AddButton(Editor.Icons.AddFile64, () =>
             {
                 if (Blueprint.Root is ContainerControl control) {

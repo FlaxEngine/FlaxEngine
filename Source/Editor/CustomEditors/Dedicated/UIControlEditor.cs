@@ -708,6 +708,24 @@ namespace FlaxEditor.CustomEditors.Dedicated
         private void SetType(ScriptType controlType)
         {
             var uiControls = ParentEditor.Values;
+            if(uiControls == null)
+            {
+                uiControls = Values;
+                if (Presenter.Undo?.Enabled ?? false)
+                {
+                    using (new UndoMultiBlock(Presenter.Undo, uiControls, "Set Control Type"))
+                    {
+                        for (int i = 0; i < uiControls.Count; i++)
+                            Values[i] = (Control)controlType.CreateInstance();
+                    }
+                }
+                else
+                {
+                    for (int i = 0; i < uiControls.Count; i++)
+                        Values[i] = (Control)controlType.CreateInstance();
+                }
+                return;
+            }
             if (Presenter.Undo?.Enabled ?? false)
             {
                 using (new UndoMultiBlock(Presenter.Undo, uiControls, "Set Control Type"))
