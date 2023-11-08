@@ -267,6 +267,19 @@ namespace FlaxEditor.Modules
         }
 
         /// <summary>
+        /// Reload all loaded scenes.
+        /// </summary>
+        public void ReloadScenes()
+        {
+            foreach (var scene in Level.Scenes)
+            {
+                var sceneId = scene.ID;
+                if (!Level.UnloadScene(scene))
+                    Level.LoadScene(sceneId);
+            }
+        }
+
+        /// <summary>
         /// Closes scene (async).
         /// </summary>
         /// <param name="scene">The scene.</param>
@@ -332,7 +345,7 @@ namespace FlaxEditor.Modules
                     continue;
                 scenes.Add(s);
             }
-            
+
             // In play-mode Editor mocks the level streaming script
             if (Editor.IsPlayMode)
             {

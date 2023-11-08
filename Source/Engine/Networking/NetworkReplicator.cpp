@@ -258,16 +258,30 @@ void NetworkReplicationService::Dispose()
 
 NetworkReplicationService NetworkReplicationServiceInstance;
 
-void INetworkSerializable_Serialize(void* instance, NetworkStream* stream, void* tag)
+void INetworkSerializable_Native_Serialize(void* instance, NetworkStream* stream, void* tag)
 {
     const int16 vtableOffset = (int16)(intptr)tag;
     ((INetworkSerializable*)((byte*)instance + vtableOffset))->Serialize(stream);
 }
 
-void INetworkSerializable_Deserialize(void* instance, NetworkStream* stream, void* tag)
+void INetworkSerializable_Native_Deserialize(void* instance, NetworkStream* stream, void* tag)
 {
     const int16 vtableOffset = (int16)(intptr)tag;
     ((INetworkSerializable*)((byte*)instance + vtableOffset))->Deserialize(stream);
+}
+
+void INetworkSerializable_Script_Serialize(void* instance, NetworkStream* stream, void* tag)
+{
+    auto obj = (ScriptingObject*)instance;
+    auto interface = ScriptingObject::ToInterface<INetworkSerializable>(obj);
+    interface->Serialize(stream);
+}
+
+void INetworkSerializable_Script_Deserialize(void* instance, NetworkStream* stream, void* tag)
+{
+    auto obj = (ScriptingObject*)instance;
+    auto interface = ScriptingObject::ToInterface<INetworkSerializable>(obj);
+    interface->Deserialize(stream);
 }
 
 NetworkReplicatedObject* ResolveObject(Guid objectId)
@@ -803,7 +817,7 @@ void InvokeObjectSpawn(const NetworkMessageObjectSpawn& msgData, const NetworkMe
                 NETWORK_REPLICATOR_LOG(Error, "[NetworkReplicator] Failed to find prefab {}", msgData.PrefabId.ToString());
                 return;
             }
-            prefabInstance = PrefabManager::SpawnPrefab(prefab, nullptr, nullptr);
+            prefabInstance = PrefabManager::SpawnPrefab(prefab, Transform::Identity, nullptr, nullptr);
             if (!prefabInstance)
             {
                 NETWORK_REPLICATOR_LOG(Error, "[NetworkReplicator] Failed to spawn object type {}", msgData.PrefabId.ToString());
@@ -1064,9 +1078,21 @@ bool NetworkReplicator::InvokeSerializer(const ScriptingTypeHandle& typeHandle, 
         const ScriptingType::InterfaceImplementation* interface = type.GetInterface(INetworkSerializable::TypeInitializer);
         if (interface)
         {
-            serializer.Methods[0] = INetworkSerializable_Serialize;
-            serializer.Methods[1] = INetworkSerializable_Deserialize;
-            serializer.Tags[0] = serializer.Tags[1] = (void*)(intptr)interface->VTableOffset; // Pass VTableOffset to the callback
+            if (interface->IsNative)
+            {
+                // Native interface (implemented in C++)
+                serializer.Methods[0] = INetworkSerializable_Native_Serialize;
+                serializer.Methods[1] = INetworkSerializable_Native_Deserialize;
+                serializer.Tags[0] = serializer.Tags[1] = (void*)(intptr)interface->VTableOffset; // Pass VTableOffset to the callback
+            }
+            else
+            {
+                // Generic interface (implemented in C# or elsewhere)
+                ASSERT(type.Type == ScriptingTypes::Script);
+                serializer.Methods[0] = INetworkSerializable_Script_Serialize;
+                serializer.Methods[1] = INetworkSerializable_Script_Deserialize;
+                serializer.Tags[0] = serializer.Tags[1] = nullptr;
+            }
             SerializersTable.Add(typeHandle, serializer);
         }
         else if (const ScriptingTypeHandle baseTypeHandle = typeHandle.GetType().GetBaseType())
@@ -1777,7 +1803,7 @@ void NetworkInternal::NetworkReplicatorUpdate()
 
             // Send object to clients
             const uint32 size = stream->GetPosition();
-            ASSERT(size <= MAX_uint16)
+            ASSERT(size <= MAX_uint16);
             NetworkMessageObjectReplicate msgData;
             msgData.OwnerFrame = NetworkManager::Frame;
             msgData.ObjectId = item.ObjectId;
@@ -1806,7 +1832,7 @@ void NetworkInternal::NetworkReplicatorUpdate()
             }
             else
                 dataStart += size;
-            ASSERT(partsCount <= MAX_uint8)
+            ASSERT(partsCount <= MAX_uint8);
             msgData.PartsCount = partsCount;
             NetworkMessage msg = peer->BeginSendMessage();
             msg.WriteStructure(msgData);

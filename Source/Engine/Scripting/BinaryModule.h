@@ -60,6 +60,9 @@ public:
     /// <returns>The found binary module or null if missing.</returns>
     static BinaryModule* GetModule(const StringAnsiView& name);
 
+    // Global scripting locker for cached data.
+    static CriticalSection Locker;
+
 protected:
 
     /// <summary>

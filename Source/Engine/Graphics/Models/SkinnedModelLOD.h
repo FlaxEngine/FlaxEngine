@@ -16,6 +16,7 @@ API_CLASS(NoSpawn) class FLAXENGINE_API SkinnedModelLOD : public ScriptingObject
     friend SkinnedModel;
 private:
     SkinnedModel* _model = nullptr;
+    int32 _lodIndex = 0;
 
 public:
     /// <summary>
@@ -29,9 +30,21 @@ public:
     API_FIELD(ReadOnly) Array<SkinnedMesh> Meshes;
 
     /// <summary>
+    /// Gets the model LOD index.
+    /// </summary>
+    API_PROPERTY() FORCE_INLINE int32 GetLODIndex() const
+    {
+        return _lodIndex;
+    }
+
+    /// <summary>
     /// Determines whether any mesh has been initialized.
     /// </summary>
-    bool HasAnyMeshInitialized() const;
+    bool HasAnyMeshInitialized() const
+    {
+        // Note: we initialize all meshes at once so the last one can be used to check it.
+        return Meshes.HasItems() && Meshes.Last().IsInitialized();
+    }
 
 public:
     /// <summary>
@@ -80,6 +93,14 @@ public:
     /// <param name="world">World matrix</param>
     /// <returns>Bounding box</returns>
     BoundingBox GetBox(const Matrix& world) const;
+
+    /// <summary>
+    /// Get model bounding box in transformed world.
+    /// </summary>
+    /// <param name="transform">The instance transformation.</param>
+    /// <param name="deformation">The meshes deformation container (optional).</param>
+    /// <returns>Bounding box</returns>
+    BoundingBox GetBox(const Transform& transform, const MeshDeformation* deformation = nullptr) const;
 
     /// <summary>
     /// Get model bounding box in transformed world for given instance buffer for only one mesh

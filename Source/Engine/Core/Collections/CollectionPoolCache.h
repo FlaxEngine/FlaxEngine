@@ -49,7 +49,7 @@ public:
     private:
         CollectionPoolCache* _pool;
 
-        ScopeCache(CollectionPoolCache* pool, T* value)
+        FORCE_INLINE ScopeCache(CollectionPoolCache* pool, T* value)
         {
             _pool = pool;
             Value = value;
@@ -71,7 +71,7 @@ public:
 
         ~ScopeCache()
         {
-            _pool->Release(Value);
+            _pool->Put(Value);
         }
 
         T* operator->()
@@ -99,13 +99,6 @@ private:
     CriticalSection _locker;
     Array<T*, InlinedAllocation<64>> _pool;
 
-    void Release(T* value)
-    {
-        _locker.Lock();
-        _pool.Add(value);
-        _locker.Unlock();
-    }
-
 public:
     /// <summary>
     /// Finalizes an instance of the <see cref="CollectionPoolCache"/> class.
@@ -120,7 +113,16 @@ public:
     /// Gets the collection instance from the pool. Can reuse the object from the pool or create a new one. Returns collection is always cleared and ready to use.
     /// </summary>
     /// <returns>The collection (cleared).</returns>
-    ScopeCache Get()
+    FORCE_INLINE ScopeCache Get()
+    {
+        return ScopeCache(this, GetUnscoped());
+    }
+
+    /// <summary>
+    /// Gets the collection instance from the pool. Can reuse the object from the pool or create a new one. Returns collection is always cleared and ready to use.
+    /// </summary>
+    /// <returns>The collection (cleared).</returns>
+    T* GetUnscoped()
     {
         T* result;
         _locker.Lock();
@@ -129,10 +131,18 @@ public:
         else
             result = CreateCallback();
         _locker.Unlock();
-
         ClearCallback(result);
+        return result;
+    }
 
-        return ScopeCache(this, result);
+    /// <summary>
+    /// Puts the collection value back to the pool.
+    /// </summary>
+    void Put(T* value)
+    {
+        _locker.Lock();
+        _pool.Add(value);
+        _locker.Unlock();
     }
 
     /// <summary>

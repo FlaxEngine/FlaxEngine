@@ -465,36 +465,47 @@ namespace FlaxEditor.GUI.Docking
             {
                 if (Parent.Parent is SplitPanel splitter)
                 {
-                    // Check if has any child panels
-                    var childPanel = new List<DockPanel>(_childPanels);
-                    for (int i = 0; i < childPanel.Count; i++)
+                    // Check if there is another nested dock panel inside this dock panel and extract it here
+                    var childPanels = _childPanels.ToArray();
+                    if (childPanels.Length != 0)
                     {
-                        // Undock all tabs
-                        var panel = childPanel[i];
-                        int count = panel.TabsCount;
-                        while (count-- > 0)
+                        // Move tabs from child panels into this one
+                        DockWindow selectedTab = null;
+                        foreach (var childPanel in childPanels)
                         {
-                            panel.GetTab(0).Close();
+                            var childPanelTabs = childPanel.Tabs.ToArray();
+                            for (var i = 0; i < childPanelTabs.Length; i++)
+                            {
+                                var childPanelTab = childPanelTabs[i];
+                                if (selectedTab == null && childPanelTab.IsSelected)
+                                    selectedTab = childPanelTab;
+                                childPanel.UndockWindow(childPanelTab);
+                                AddTab(childPanelTab, false);
+                            }
                         }
+                        if (selectedTab != null)
+                            SelectTab(selectedTab);
                     }
-
-                    // Unlink splitter
-                    var splitterParent = splitter.Parent;
-                    Assert.IsNotNull(splitterParent);
-                    splitter.Parent = null;
-
-                    // Move controls from second split panel to the split panel parent
-                    var scrPanel = Parent == splitter.Panel2 ? splitter.Panel1 : splitter.Panel2;
-                    var srcPanelChildrenCount = scrPanel.ChildrenCount;
-                    for (int i = srcPanelChildrenCount - 1; i >= 0 && scrPanel.ChildrenCount > 0; i--)
+                    else
                     {
-                        scrPanel.GetChild(i).Parent = splitterParent;
-                    }
-                    Assert.IsTrue(scrPanel.ChildrenCount == 0);
-                    Assert.IsTrue(splitterParent.ChildrenCount == srcPanelChildrenCount);
+                        // Unlink splitter
+                        var splitterParent = splitter.Parent;
+                        Assert.IsNotNull(splitterParent);
+                        splitter.Parent = null;
 
-                    // Delete
-                    splitter.Dispose();
+                        // Move controls from second split panel to the split panel parent
+                        var scrPanel = Parent == splitter.Panel2 ? splitter.Panel1 : splitter.Panel2;
+                        var srcPanelChildrenCount = scrPanel.ChildrenCount;
+                        for (int i = srcPanelChildrenCount - 1; i >= 0 && scrPanel.ChildrenCount > 0; i--)
+                        {
+                            scrPanel.GetChild(i).Parent = splitterParent;
+                        }
+                        Assert.IsTrue(scrPanel.ChildrenCount == 0);
+                        Assert.IsTrue(splitterParent.ChildrenCount == srcPanelChildrenCount);
+
+                        // Delete
+                        splitter.Dispose();
+                    }
                 }
                 else if (!IsMaster)
                 {
@@ -582,19 +593,17 @@ namespace FlaxEditor.GUI.Docking
         /// Adds the tab.
         /// </summary>
         /// <param name="window">The window to insert as a tab.</param>
-        protected virtual void AddTab(DockWindow window)
+        /// <param name="autoSelect">True if auto-select newly added tab.</param>
+        protected virtual void AddTab(DockWindow window, bool autoSelect = true)
         {
-            // Dock
             _tabs.Add(window);
             window.ParentDockPanel = this;
-
-            // Select tab
-            SelectTab(window);
+            if (autoSelect)
+                SelectTab(window);
         }
 
         private void CreateTabsProxy()
         {
-            // Check if has no tabs proxy created
             if (_tabsProxy == null)
             {
                 // Create proxy and make set simple full dock

@@ -159,7 +159,7 @@ public:
     struct DrawInfo
     {
         /// <summary>
-        /// The instance buffer to use during model rendering
+        /// The instance buffer to use during model rendering.
         /// </summary>
         ModelInstanceEntries* Buffer;
 
@@ -169,9 +169,14 @@ public:
         Matrix* World;
 
         /// <summary>
-        /// The instance drawing state data container. Used for LOD transition handling and previous world transformation matrix updating. 
+        /// The instance drawing state data container. Used for LOD transition handling and previous world transformation matrix updating.
         /// </summary>
         GeometryDrawStateData* DrawState;
+
+        /// <summary>
+        /// The instance deformation utility.
+        /// </summary>
+        MeshDeformation* Deformation;
 
         union
         {
@@ -181,11 +186,6 @@ public:
                 /// The skinning.
                 /// </summary>
                 SkinnedMeshDrawData* Skinning;
-
-                /// <summary>
-                /// The blend shapes.
-                /// </summary>
-                BlendShapesInstance* BlendShapes;
             };
 
             struct

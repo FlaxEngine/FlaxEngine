@@ -171,7 +171,7 @@ namespace FlaxEditor.Viewport.Previews
                 case DrawModes.Fill:
                     clipsInView = 1.0f;
                     clipWidth = width;
-                    samplesPerIndex = (uint)(samplesPerChannel / width);
+                    samplesPerIndex = (uint)(samplesPerChannel / width) * info.NumChannels;
                     break;
                 case DrawModes.Single:
                     clipsInView = Mathf.Min(clipsInView, 1.0f);

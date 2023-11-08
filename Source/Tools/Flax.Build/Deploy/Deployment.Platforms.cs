@@ -10,8 +10,13 @@ namespace Flax.Deploy
     {
         public class Platforms
         {
+            internal static List<TargetPlatform> PackagedPlatforms;
+
             public static void Package(TargetPlatform platform)
             {
+                if (PackagedPlatforms == null)
+                    PackagedPlatforms = new List<TargetPlatform>();
+                PackagedPlatforms.Add(platform);
                 var platformsRoot = Path.Combine(Globals.EngineRoot, "Source", "Platforms");
 
                 Log.Info(string.Empty);
@@ -49,6 +54,20 @@ namespace Flax.Deploy
                         binaries = Path.Combine(dst, "Binaries", "Game", "x64", "Release");
                         CodeSign(Path.Combine(binaries, "FlaxGame.exe"));
                         CodeSign(Path.Combine(binaries, "FlaxEngine.CSharp.dll"));
+                    }
+                    else if (platform == TargetPlatform.Mac)
+                    {
+                        var binaries = Path.Combine(dst, "Binaries", "Game", "arm64", "Debug");
+                        CodeSign(Path.Combine(binaries, "FlaxGame"));
+                        CodeSign(Path.Combine(binaries, "FlaxGame.dylib"));
+
+                        binaries = Path.Combine(dst, "Binaries", "Game", "arm64", "Development");
+                        CodeSign(Path.Combine(binaries, "FlaxGame"));
+                        CodeSign(Path.Combine(binaries, "FlaxGame.dylib"));
+
+                        binaries = Path.Combine(dst, "Binaries", "Game", "arm64", "Release");
+                        CodeSign(Path.Combine(binaries, "FlaxGame"));
+                        CodeSign(Path.Combine(binaries, "FlaxGame.dylib"));
                     }
 
                     // Don't distribute engine deps

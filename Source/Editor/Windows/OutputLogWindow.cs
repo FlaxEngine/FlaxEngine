@@ -467,6 +467,7 @@ namespace FlaxEditor.Windows
             if (_isDirty)
             {
                 _isDirty = false;
+                var wasEmpty = _output.TextLength == 0;
 
                 // Cache fonts
                 _output.DefaultStyle.Font.GetFont();
@@ -589,7 +590,7 @@ namespace FlaxEditor.Windows
                 // Update the output
                 var cachedScrollValue = _vScroll.Value;
                 var cachedSelection = _output.SelectionRange;
-                var isBottomScroll = _vScroll.Value >= _vScroll.Maximum - 20.0f;
+                var isBottomScroll = _vScroll.Value >= _vScroll.Maximum - 20.0f || wasEmpty;
                 _output.Text = _textBuffer.ToString();
                 _textBufferCount = _entries.Count;
                 if (!_vScroll.IsThumbClicked)

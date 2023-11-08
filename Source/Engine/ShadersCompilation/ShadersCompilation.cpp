@@ -28,10 +28,11 @@
 #include "Engine/ContentImporters/AssetsImportingManager.h"
 #include "Engine/Platform/FileSystemWatcher.h"
 #include "Engine/Platform/FileSystem.h"
+#include "Engine/Platform/File.h"
+#include "Engine/Engine/Globals.h"
 #include "Editor/Editor.h"
 #include "Editor/ProjectInfo.h"
 #endif
-
 #if COMPILE_WITH_D3D_SHADER_COMPILER
 #include "DirectX/ShaderCompilerD3D.h"
 #endif
@@ -53,6 +54,49 @@ namespace ShadersCompilationImpl
     CriticalSection Locker;
     Array<ShaderCompiler*> Compilers;
     Array<ShaderCompiler*> ReadyCompilers;
+
+#if USE_EDITOR
+    const ProjectInfo* FindProjectByName(const ProjectInfo* project, HashSet<const ProjectInfo*>& projects, const StringView& projectName)
+    {
+        if (!project || projects.Contains(project))
+            return nullptr;
+        projects.Add(project);
+
+        // Check the project name
+        if (project->Name == projectName)
+            return project;
+
+        // Search referenced projects
+        for (const auto& reference : project->References)
+        {
+            const ProjectInfo* result = FindProjectByName(reference.Project, projects, projectName);
+            if (result)
+                return result;
+        }
+        return nullptr;
+    }
+
+    const ProjectInfo* FindProjectByPath(const ProjectInfo* project, HashSet<const ProjectInfo*>& projects, const StringView& projectPath)
+    {
+        if (!project || projects.Contains(project))
+            return nullptr;
+        projects.Add(project);
+
+        // Search referenced projects (depth first to handle plugin projects first)
+        for (const auto& reference : project->References)
+        {
+            const ProjectInfo* result = FindProjectByPath(reference.Project, projects, projectPath);
+            if (result)
+                return result;
+        }
+
+        // Check the project path
+        if (projectPath.StartsWith(project->ProjectFolderPath))
+            return project;
+
+        return nullptr;
+    }
+#endif
 }
 
 using namespace ShadersCompilationImpl;
@@ -143,9 +187,22 @@ bool ShadersCompilation::Compile(ShaderCompilationOptions& options)
 #endif
     }
 
-    // Print info if succeed
-    if (result == false)
+    if (result)
     {
+#if USE_EDITOR
+        // Output shader source to easily investigate errors (eg. for generated shaders like materials or particles)
+        const String outputSourceFolder = Globals::ProjectCacheFolder / TEXT("/Shaders/Source");
+        const String outputSourcePath = outputSourceFolder / options.TargetName + TEXT(".hlsl");
+        if (!FileSystem::DirectoryExists(outputSourceFolder))
+            FileSystem::CreateDirectory(outputSourceFolder);
+        File::WriteAllBytes(outputSourcePath, (const byte*)options.Source, options.SourceLength);
+        LOG(Error, "Shader compilation '{0}' failed (profile: {1})", options.TargetName, ::ToString(options.Profile));
+        LOG(Error, "Source: {0}", outputSourcePath);
+#endif
+    }
+    else
+    {
+        // Success
         const DateTime endTime = DateTime::NowUTC();
         LOG(Info, "Shader compilation '{0}' succeed in {1} ms (profile: {2})", options.TargetName, Math::CeilToInt(static_cast<float>((endTime - startTime).GetTotalMilliseconds())), ::ToString(options.Profile));
     }
@@ -301,7 +358,7 @@ void ShadersCompilation::RegisterForShaderReloads(Asset* asset, const String& in
     {
         // Create a directory watcher to track the included file changes
         const String directory = StringUtils::GetDirectoryName(includedPath);
-        if (!ShaderIncludesWatcher.ContainsKey(directory))
+        if (FileSystem::DirectoryExists(directory) && !ShaderIncludesWatcher.ContainsKey(directory))
         {
             auto watcher = New<FileSystemWatcher>(directory, false);
             watcher->OnEvent.Bind<OnShaderIncludesWatcherEvent>();
@@ -346,9 +403,87 @@ void ShadersCompilation::ExtractShaderIncludes(byte* shaderCache, int32 shaderCa
     {
         String& include = includes.AddOne();
         stream.ReadString(&include, 11);
+        include  = ShadersCompilation::ResolveShaderPath(include);
         DateTime lastEditTime;
         stream.Read(lastEditTime);
     }
+}
+
+String ShadersCompilation::ResolveShaderPath(StringView path)
+{
+    // Skip to the last root start './' but preserve the leading one
+    for (int32 i = path.Length() - 2; i >= 2; i--)
+    {
+        if (StringUtils::Compare(path.Get() + i, TEXT("./"), 2) == 0)
+        {
+            path = path.Substring(i);
+            break;
+        }
+    }
+
+    // Find the included file path
+    String result;
+#if USE_EDITOR
+    if (path.StartsWith(StringView(TEXT("./"), 2)))
+    {
+        int32 projectNameEnd = -1;
+        for (int32 i = 2; i < path.Length(); i++)
+        {
+            if (path[i] == '/')
+            {
+                projectNameEnd = i;
+                break;
+            }
+        }
+        if (projectNameEnd == -1)
+            return String::Empty; // Invalid project path
+        StringView projectName = path.Substring(2, projectNameEnd - 2);
+        if (projectName.StartsWith(StringView(TEXT("FlaxPlatforms"))))
+        {
+            // Hard-coded redirect to platform-specific includes
+            result = Globals::StartupFolder / TEXT("Source/Platforms");
+        }
+        else
+        {
+            HashSet<const ProjectInfo*> projects;
+            const ProjectInfo* project = FindProjectByName(Editor::Project, projects, StringView(projectName.Get(), projectNameEnd - 2));
+            if (project)
+                result = project->ProjectFolderPath / TEXT("/Source/Shaders/");
+            else
+                return String::Empty;
+        }
+        result /= path.Substring(projectNameEnd + 1);
+    }
+#else
+    if (path.StartsWith(StringView(TEXT("./Flax/"), 7)))
+    {
+        // Engine project relative shader path
+        result = Globals::StartupFolder / TEXT("Source/Shaders") / path.Substring(6);
+    }
+#endif
+    else
+    {
+        // Absolute shader path
+        result = path;
+    }
+
+    return result;
+}
+
+String ShadersCompilation::CompactShaderPath(StringView path)
+{
+#if USE_EDITOR
+    // Try to use file path relative to the project shader sources folder 
+    HashSet<const ProjectInfo*> projects;
+    const ProjectInfo* project = FindProjectByPath(Editor::Project, projects, path);
+    if (project)
+    {
+        String projectSourcesPath = project->ProjectFolderPath / TEXT("/Source/Shaders/");
+        if (path.StartsWith(projectSourcesPath))
+            return String::Format(TEXT("./{}/{}"), project->Name, path.Substring(projectSourcesPath.Length()));
+    }
+#endif
+    return String(path);
 }
 
 #if USE_EDITOR

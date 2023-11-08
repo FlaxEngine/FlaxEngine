@@ -46,14 +46,14 @@ namespace FlaxEditor.Windows
                 if (asset != null)
                 {
                     var path = asset.Path;
-                    picker.SelectedAsset = asset;
+                    picker.Validator.SelectedAsset = asset;
                     Title = System.IO.Path.GetFileNameWithoutExtension(path);
                     TooltipText = asset.TypeName + '\n' + path;
                 }
                 else
                 {
-                    picker.SelectedID = AssetId;
-                    var assetItem = picker.SelectedItem as AssetItem;
+                    picker.Validator.SelectedID = AssetId;
+                    var assetItem = picker.Validator.SelectedItem as AssetItem;
                     if (assetItem != null)
                     {
                         Title = assetItem.ShortName;
@@ -127,9 +127,9 @@ namespace FlaxEditor.Windows
                 Nodes.AddRange(nodes);
                 foreach (var node in nodes)
                 {
-                    Context.OnControlLoaded(node);
-                    node.OnSurfaceLoaded();
-                    Context.OnControlSpawned(node);
+                    Context.OnControlLoaded(node, SurfaceNodeActions.Load);
+                    node.OnSurfaceLoaded(SurfaceNodeActions.Load);
+                    Context.OnControlSpawned(node, SurfaceNodeActions.Load);
                 }
                 ShowWholeGraph();
                 UnlockChildrenRecursive();

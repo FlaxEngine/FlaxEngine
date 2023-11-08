@@ -73,6 +73,7 @@ namespace FlaxEngine.Json
                 if (IsWriting)
                 {
                     // Reset writing state (eg if previous serialization got exception)
+                    SerializerWriter = new JsonSerializerInternalWriter(JsonSerializer);
                     JsonWriter = new JsonTextWriter(StringWriter)
                     {
                         IndentChar = '\t',
@@ -124,6 +125,7 @@ namespace FlaxEngine.Json
             settings.Converters.Add(new SceneReferenceConverter());
             settings.Converters.Add(new SoftObjectReferenceConverter());
             settings.Converters.Add(new SoftTypeReferenceConverter());
+            settings.Converters.Add(new BehaviorKnowledgeSelectorAnyConverter());
             settings.Converters.Add(new MarginConverter());
             settings.Converters.Add(new VersionConverter());
             settings.Converters.Add(new LocalizedStringConverter());

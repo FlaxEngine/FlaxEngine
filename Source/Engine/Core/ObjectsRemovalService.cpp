@@ -5,7 +5,7 @@
 #include "Collections/Dictionary.h"
 #include "Engine/Engine/Time.h"
 #include "Engine/Engine/EngineService.h"
-#include "Engine/Threading/Threading.h"
+#include "Engine/Platform/CriticalSection.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Scripting/ScriptingObject.h"
 
@@ -14,15 +14,14 @@ const Char* HertzSizesData[] = { TEXT("Hz"), TEXT("KHz"), TEXT("MHz"), TEXT("GHz
 Span<const Char*> Utilities::Private::BytesSizes(BytesSizesData, ARRAY_COUNT(BytesSizesData));
 Span<const Char*> Utilities::Private::HertzSizes(HertzSizesData, ARRAY_COUNT(HertzSizesData));
 
-namespace ObjectsRemovalServiceImpl
+namespace
 {
     CriticalSection PoolLocker;
     DateTime LastUpdate;
     float LastUpdateGameTime;
     Dictionary<Object*, float> Pool(8192);
+    uint64 PoolCounter = 0;
 }
-
-using namespace ObjectsRemovalServiceImpl;
 
 class ObjectsRemoval : public EngineService
 {
@@ -64,6 +63,7 @@ void ObjectsRemovalService::Add(Object* obj, float timeToLive, bool useGameTime)
 
     PoolLocker.Lock();
     Pool[obj] = timeToLive;
+    PoolCounter++;
     PoolLocker.Unlock();
 }
 
@@ -72,29 +72,42 @@ void ObjectsRemovalService::Flush(float dt, float gameDelta)
     PROFILE_CPU();
 
     PoolLocker.Lock();
+    PoolCounter = 0;
 
-    int32 itemsLeft;
-    do
+    // Update timeouts and delete objects that timed out
+    for (auto i = Pool.Begin(); i.IsNotEnd(); ++i)
     {
-        // Update timeouts and delete objects that timed out
-        itemsLeft = Pool.Count();
-        for (auto i = Pool.Begin(); i.IsNotEnd(); ++i)
+        auto& bucket = *i;
+        Object* obj = bucket.Key;
+        const float ttl = bucket.Value - ((obj->Flags & ObjectFlags::UseGameTimeForDelete) != ObjectFlags::None ? gameDelta : dt);
+        if (ttl <= 0.0f)
         {
-            Object* obj = i->Key;
-            const float ttl = i->Value - ((obj->Flags & ObjectFlags::UseGameTimeForDelete) != ObjectFlags::None ? gameDelta : dt);
-            if (ttl <= 0.0f)
-            {
-                Pool.Remove(i);
-                obj->OnDeleteObject();
-                itemsLeft--;
-            }
-            else
-            {
-                i->Value = ttl;
-            }
+            Pool.Remove(i);
+            obj->OnDeleteObject();
+        }
+        else
+        {
+            bucket.Value = ttl;
         }
     }
-    while (itemsLeft != Pool.Count()); // Continue removing if any new item was added during removing (eg. sub-object delete with 0 timeout)
+
+    // If any object was added to the pool while removing objects (by this thread) then retry removing any nested objects (but without delta time)
+    if (PoolCounter != 0)
+    {
+    RETRY:
+        PoolCounter = 0;
+        for (auto i = Pool.Begin(); i.IsNotEnd(); ++i)
+        {
+            if (i->Value <= 0.0f)
+            {
+                Object* obj = i->Key;
+                Pool.Remove(i);
+                obj->OnDeleteObject();
+            }
+        }
+        if (PoolCounter != 0)
+            goto RETRY;
+    }
 
     PoolLocker.Unlock();
 }
@@ -127,7 +140,7 @@ void ObjectsRemoval::Dispose()
 
     // Delete all remaining objects
     {
-        ScopeLock lock(PoolLocker);
+        PoolLocker.Lock();
         for (auto i = Pool.Begin(); i.IsNotEnd(); ++i)
         {
             Object* obj = i->Key;
@@ -135,6 +148,7 @@ void ObjectsRemoval::Dispose()
             obj->OnDeleteObject();
         }
         Pool.Clear();
+        PoolLocker.Unlock();
     }
 }
 

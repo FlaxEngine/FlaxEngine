@@ -106,5 +106,5 @@ struct FLAXENGINE_API TextureHeader
     byte CustomData[10];
 
     TextureHeader();
-    TextureHeader(TextureHeader_Deprecated& old);
+    TextureHeader(const TextureHeader_Deprecated& old);
 };

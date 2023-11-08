@@ -193,9 +193,9 @@ namespace FlaxEditor.Surface.Archetypes
             }
 
             /// <inheritdoc />
-            public override void OnSurfaceLoaded()
+            public override void OnSurfaceLoaded(SurfaceNodeActions action)
             {
-                base.OnSurfaceLoaded();
+                base.OnSurfaceLoaded(action);
 
                 var upperLeft = GetBox(0).BottomLeft;
                 var upperRight = GetBox(1).BottomRight;
@@ -477,9 +477,9 @@ namespace FlaxEditor.Surface.Archetypes
             }
 
             /// <inheritdoc />
-            public override void OnLoaded()
+            public override void OnLoaded(SurfaceNodeActions action)
             {
-                base.OnLoaded();
+                base.OnLoaded(action);
 
                 var upperLeft = GetBox(0).BottomLeft;
                 var upperRight = GetBox(1).BottomRight;
@@ -657,9 +657,9 @@ namespace FlaxEditor.Surface.Archetypes
             }
 
             /// <inheritdoc />
-            public override void OnLoaded()
+            public override void OnLoaded(SurfaceNodeActions action)
             {
-                base.OnLoaded();
+                base.OnLoaded(action);
 
                 UpdateCombo();
             }
@@ -682,9 +682,9 @@ namespace FlaxEditor.Surface.Archetypes
             }
 
             /// <inheritdoc />
-            public override void OnLoaded()
+            public override void OnLoaded(SurfaceNodeActions action)
             {
-                base.OnLoaded();
+                base.OnLoaded(action);
 
                 var type = ScriptType.Null;
                 if (Context.Surface is VisualScriptSurface visjectSurface)
@@ -710,9 +710,9 @@ namespace FlaxEditor.Surface.Archetypes
             }
 
             /// <inheritdoc />
-            public override void OnLoaded()
+            public override void OnLoaded(SurfaceNodeActions action)
             {
-                base.OnLoaded();
+                base.OnLoaded(action);
 
                 UpdateOutputBox();
             }
@@ -763,9 +763,9 @@ namespace FlaxEditor.Surface.Archetypes
             }
 
             /// <inheritdoc />
-            public override void OnLoaded()
+            public override void OnLoaded(SurfaceNodeActions action)
             {
-                base.OnLoaded();
+                base.OnLoaded(action);
 
                 UpdateOutputBox();
             }
@@ -822,9 +822,9 @@ namespace FlaxEditor.Surface.Archetypes
             }
 
             /// <inheritdoc />
-            public override void OnLoaded()
+            public override void OnLoaded(SurfaceNodeActions action)
             {
-                base.OnLoaded();
+                base.OnLoaded(action);
 
                 if (Surface != null)
                     _picker.ValueTypeName = (string)Values[0];
@@ -890,9 +890,9 @@ namespace FlaxEditor.Surface.Archetypes
             }
 
             /// <inheritdoc />
-            public override void OnLoaded()
+            public override void OnLoaded(SurfaceNodeActions action)
             {
-                base.OnLoaded();
+                base.OnLoaded(action);
 
                 if (Surface != null)
                     _picker.ValueTypeName = (string)Values[0];
@@ -941,9 +941,9 @@ namespace FlaxEditor.Surface.Archetypes
             }
 
             /// <inheritdoc />
-            public override void OnLoaded()
+            public override void OnLoaded(SurfaceNodeActions action)
             {
-                base.OnLoaded();
+                base.OnLoaded(action);
 
                 if (Surface != null)
                     _picker.ValueTypeName = (string)Values[0];
@@ -993,9 +993,9 @@ namespace FlaxEditor.Surface.Archetypes
             }
 
             /// <inheritdoc />
-            public override void OnLoaded()
+            public override void OnLoaded(SurfaceNodeActions action)
             {
-                base.OnLoaded();
+                base.OnLoaded(action);
 
                 if (Surface != null)
                     _picker.ValueTypeName = (string)Values[0];
@@ -1065,9 +1065,9 @@ namespace FlaxEditor.Surface.Archetypes
             }
 
             /// <inheritdoc />
-            public override void OnSurfaceLoaded()
+            public override void OnSurfaceLoaded(SurfaceNodeActions action)
             {
-                base.OnSurfaceLoaded();
+                base.OnSurfaceLoaded(action);
 
                 _input = (InputBox)GetBox(0);
                 _output = (OutputBox)GetBox(1);
@@ -1255,7 +1255,7 @@ namespace FlaxEditor.Surface.Archetypes
             /// <inheritdoc />
             public void DrawConnectingLine(ref Float2 startPos, ref Float2 endPos, ref Color color)
             {
-                OutputBox.DrawConnection(ref startPos, ref endPos, ref color, 2);
+                OutputBox.DrawConnection(Surface.Style, ref startPos, ref endPos, ref color, 2);
             }
 
             /// <inheritdoc />
@@ -1483,7 +1483,7 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 TypeID = 11,
                 Title = "Comment",
-                AlternativeTitles = new[] { "//" },
+                AlternativeTitles = new[] { "//" , "Group" },
                 TryParseText = (string filterText, out object[] data) =>
                 {
                     data = null;
@@ -1510,6 +1510,7 @@ namespace FlaxEditor.Surface.Archetypes
                     "Comment", // Title
                     new Color(1.0f, 1.0f, 1.0f, 0.2f), // Color
                     new Float2(400.0f, 400.0f), // Size
+                    -1, // Order
                 },
             },
             CurveNode<float>.GetArchetype(12, "Curve", typeof(float), 0.0f, 1.0f),
@@ -1638,6 +1639,7 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 TypeID = 22,
                 Title = "As",
+                AlternativeTitles = new [] { "Cast" },
                 Create = (id, context, arch, groupArch) => new AsNode(id, context, arch, groupArch),
                 Description = "Casts the object to a different type. Returns null if cast fails.",
                 Flags = NodeFlags.VisualScriptGraph | NodeFlags.AnimGraph,

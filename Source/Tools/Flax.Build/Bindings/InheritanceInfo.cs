@@ -7,5 +7,6 @@ namespace Flax.Build.Bindings
         Private,
         Protected,
         Public,
+        Internal,
     }
 }

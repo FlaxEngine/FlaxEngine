@@ -103,6 +103,7 @@ void GPUContextDX11::FrameBegin()
     CurrentPS = nullptr;
     CurrentCS = nullptr;
     CurrentPrimitiveTopology = D3D11_PRIMITIVE_TOPOLOGY_UNDEFINED;
+    CurrentStencilRef = 0;
     CurrentBlendFactor = Float4::One;
 
     // Bind static samplers
@@ -273,6 +274,12 @@ void GPUContextDX11::SetBlendFactor(const Float4& value)
     CurrentBlendFactor = value;
     if (CurrentBlendState)
         _context->OMSetBlendState(CurrentBlendState, CurrentBlendFactor.Raw, D3D11_DEFAULT_SAMPLE_MASK);
+}
+
+void GPUContextDX11::SetStencilRef(uint32 value)
+{
+    if (CurrentStencilRef != value)
+        _context->OMSetDepthStencilState(CurrentDepthStencilState, CurrentStencilRef);
 }
 
 void GPUContextDX11::ResetSR()
@@ -559,7 +566,7 @@ void GPUContextDX11::SetState(GPUPipelineState* state)
         if (CurrentDepthStencilState != depthStencilState)
         {
             CurrentDepthStencilState = depthStencilState;
-            _context->OMSetDepthStencilState(depthStencilState, 0);
+            _context->OMSetDepthStencilState(depthStencilState, CurrentStencilRef);
         }
         if (CurrentRasterizerState != rasterizerState)
         {

@@ -20,7 +20,6 @@
 #include "Engine/Threading/MainThreadTask.h"
 #include "Engine/Threading/ThreadRegistry.h"
 #include "Engine/Graphics/GPUDevice.h"
-#include "Engine/Scripting/ManagedCLR/MCore.h"
 #include "Engine/Scripting/ScriptingType.h"
 #include "Engine/Content/Content.h"
 #include "Engine/Content/JsonAsset.h"
@@ -327,14 +326,6 @@ void Engine::OnUpdate()
 
     // Update services
     EngineService::OnUpdate();
-
-#ifdef USE_NETCORE
-    // Force GC to run in background periodically to avoid large blocking collections causing hitches
-    if (Time::Update.TicksCount % 60 == 0)
-    {
-        MCore::GC::Collect(MCore::GC::MaxGeneration(), MGCCollectionMode::Forced, false, false);
-    }
-#endif
 }
 
 void Engine::OnLateUpdate()
@@ -596,11 +587,13 @@ void EngineImpl::InitPaths()
     Globals::ProjectCacheFolder = Globals::ProjectFolder / TEXT("Cache");
 #endif
 
+#if USE_MONO
     // We must ensure that engine is located in folder which path contains only ANSI characters
     // Why? Mono lib must have etc and lib folders at ANSI path
     // But project can be located on Unicode path
     if (!Globals::StartupFolder.IsANSI())
         Platform::Fatal(TEXT("Cannot start application in directory which name contains non-ANSI characters."));
+#endif
 
 #if !PLATFORM_SWITCH && !FLAX_TESTS
     // Setup directories

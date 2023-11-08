@@ -54,9 +54,9 @@ namespace FlaxEditor.Surface.Archetypes
             protected abstract Asset LoadSignature(Guid id, out string[] types, out string[] names);
 
             /// <inheritdoc />
-            public override void OnLoaded()
+            public override void OnLoaded(SurfaceNodeActions action)
             {
-                base.OnLoaded();
+                base.OnLoaded(action);
 
                 FlaxEngine.Content.AssetReloading += OnAssetReloading;
                 FlaxEngine.Content.AssetDisposing += OnContentAssetDisposing;
@@ -95,7 +95,7 @@ namespace FlaxEditor.Surface.Archetypes
 
             private void OnAssetPickerSelectedItemChanged()
             {
-                SetValue(0, _assetPicker.SelectedID);
+                SetValue(0, _assetPicker.Validator.SelectedID);
             }
 
             private void TryRestoreConnections(Box box, Box[] prevBoxes, ref NodeElementArchetype arch)
@@ -133,7 +133,7 @@ namespace FlaxEditor.Surface.Archetypes
                 var prevOutputs = _outputs;
 
                 // Extract function signature parameters (inputs and outputs packed)
-                _asset = LoadSignature(_assetPicker.SelectedID, out var typeNames, out var names);
+                _asset = LoadSignature(_assetPicker.Validator.SelectedID, out var typeNames, out var names);
                 if (typeNames != null && names != null)
                 {
                     var types = new Type[typeNames.Length];
@@ -174,7 +174,7 @@ namespace FlaxEditor.Surface.Archetypes
                         _outputs[i] = box;
                     }
 
-                    Title = _assetPicker.SelectedItem.ShortName;
+                    Title = _assetPicker.Validator.SelectedItem.ShortName;
                 }
                 else
                 {
@@ -275,17 +275,17 @@ namespace FlaxEditor.Surface.Archetypes
             }
 
             /// <inheritdoc />
-            public override void OnSurfaceLoaded()
+            public override void OnSurfaceLoaded(SurfaceNodeActions action)
             {
-                base.OnSurfaceLoaded();
+                base.OnSurfaceLoaded(action);
 
                 _nameField.Text = SignatureName;
             }
 
             /// <inheritdoc />
-            public override void OnSpawned()
+            public override void OnSpawned(SurfaceNodeActions action)
             {
-                base.OnSpawned();
+                base.OnSpawned(action);
 
                 // Ensure to have unique name
                 var name = SignatureName;
@@ -397,9 +397,9 @@ namespace FlaxEditor.Surface.Archetypes
             }
 
             /// <inheritdoc />
-            public override void OnSurfaceLoaded()
+            public override void OnSurfaceLoaded(SurfaceNodeActions action)
             {
-                base.OnSurfaceLoaded();
+                base.OnSurfaceLoaded(action);
 
                 _outputBox = GetBox(0);
                 _outputBox.CurrentType = SignatureType;
@@ -466,9 +466,9 @@ namespace FlaxEditor.Surface.Archetypes
             }
 
             /// <inheritdoc />
-            public override void OnSurfaceLoaded()
+            public override void OnSurfaceLoaded(SurfaceNodeActions action)
             {
-                base.OnSurfaceLoaded();
+                base.OnSurfaceLoaded(action);
 
                 _inputBox = GetBox(0);
                 _inputBox.CurrentType = SignatureType;
@@ -634,18 +634,18 @@ namespace FlaxEditor.Surface.Archetypes
             protected override Color FooterColor => new Color(200, 11, 112);
 
             /// <inheritdoc />
-            public override void OnLoaded()
+            public override void OnLoaded(SurfaceNodeActions action)
             {
-                base.OnLoaded();
+                base.OnLoaded(action);
 
                 Title = SurfaceUtils.GetMethodDisplayName((string)Values[0]);
                 UpdateSignature();
             }
 
             /// <inheritdoc />
-            public override void OnSurfaceLoaded()
+            public override void OnSurfaceLoaded(SurfaceNodeActions action)
             {
-                base.OnSurfaceLoaded();
+                base.OnSurfaceLoaded(action);
 
                 // Update the boxes connection types to match the signature
                 // Do it after surface load so connections can receive update on type changes of the method parameter
@@ -663,9 +663,9 @@ namespace FlaxEditor.Surface.Archetypes
             }
 
             /// <inheritdoc />
-            public override void OnSpawned()
+            public override void OnSpawned(SurfaceNodeActions action)
             {
-                base.OnSpawned();
+                base.OnSpawned(action);
 
                 var method = GetMethod();
                 _parameters = null;
@@ -745,12 +745,12 @@ namespace FlaxEditor.Surface.Archetypes
                 base.OnDestroy();
             }
 
-            internal static bool IsInputCompatible(NodeArchetype nodeArch, ScriptType outputType, ConnectionsHint hint)
+            internal static bool IsInputCompatible(NodeArchetype nodeArch, ScriptType outputType, ConnectionsHint hint, VisjectSurfaceContext context)
             {
                 return false;
             }
 
-            internal static bool IsOutputCompatible(NodeArchetype nodeArch, ScriptType inputType, ConnectionsHint hint)
+            internal static bool IsOutputCompatible(NodeArchetype nodeArch, ScriptType inputType, ConnectionsHint hint, VisjectSurfaceContext context)
             {
                 return inputType.IsVoid;
             }
@@ -1009,9 +1009,9 @@ namespace FlaxEditor.Surface.Archetypes
             }
 
             /// <inheritdoc />
-            public override void OnSpawned()
+            public override void OnSpawned(SurfaceNodeActions action)
             {
-                base.OnSpawned();
+                base.OnSpawned(action);
 
                 var method = GetMethod(out _, out _, out var parameters);
                 if (method && parameters != null)
@@ -1038,18 +1038,18 @@ namespace FlaxEditor.Surface.Archetypes
             }
 
             /// <inheritdoc />
-            public override void OnLoaded()
+            public override void OnLoaded(SurfaceNodeActions action)
             {
-                base.OnLoaded();
+                base.OnLoaded(action);
 
                 Title = SurfaceUtils.GetMethodDisplayName((string)Values[1]);
                 UpdateSignature();
             }
 
             /// <inheritdoc />
-            public override void OnSurfaceLoaded()
+            public override void OnSurfaceLoaded(SurfaceNodeActions action)
             {
-                base.OnSurfaceLoaded();
+                base.OnSurfaceLoaded(action);
 
                 // Update the boxes connection types to match the signature
                 // Do it after surface load so connections can receive update on type changes of the method parameter
@@ -1162,7 +1162,7 @@ namespace FlaxEditor.Surface.Archetypes
                 base.OnDestroy();
             }
 
-            internal static bool IsInputCompatible(NodeArchetype nodeArch, ScriptType outputType, ConnectionsHint hint)
+            internal static bool IsInputCompatible(NodeArchetype nodeArch, ScriptType outputType, ConnectionsHint hint, VisjectSurfaceContext context)
             {
                 if (nodeArch.Tag is not ScriptMemberInfo memberInfo)
                     return false;
@@ -1188,7 +1188,7 @@ namespace FlaxEditor.Surface.Archetypes
                 return false;
             }
 
-            internal static bool IsOutputCompatible(NodeArchetype nodeArch, ScriptType inputType, ConnectionsHint hint)
+            internal static bool IsOutputCompatible(NodeArchetype nodeArch, ScriptType inputType, ConnectionsHint hint, VisjectSurfaceContext context)
             {
                 if (nodeArch.Tag is not ScriptMemberInfo memberInfo)
                     return false;
@@ -1240,9 +1240,9 @@ namespace FlaxEditor.Surface.Archetypes
             }
 
             /// <inheritdoc />
-            public override void OnLoaded()
+            public override void OnLoaded(SurfaceNodeActions action)
             {
-                base.OnLoaded();
+                base.OnLoaded(action);
 
                 UpdateSignature();
             }
@@ -1758,9 +1758,9 @@ namespace FlaxEditor.Surface.Archetypes
             }
 
             /// <inheritdoc />
-            public override void OnLoaded()
+            public override void OnLoaded(SurfaceNodeActions action)
             {
-                base.OnLoaded();
+                base.OnLoaded(action);
 
                 LoadSignature();
 
@@ -1773,9 +1773,9 @@ namespace FlaxEditor.Surface.Archetypes
             }
 
             /// <inheritdoc />
-            public override void OnSpawned()
+            public override void OnSpawned(SurfaceNodeActions action)
             {
-                base.OnSpawned();
+                base.OnSpawned(action);
 
                 // Setup initial signature
                 var defaultSignature = _signature.Node == null;
@@ -1801,7 +1801,7 @@ namespace FlaxEditor.Surface.Archetypes
             }
 
             /// <inheritdoc />
-            public override void OnDeleted()
+            public override void OnDeleted(SurfaceNodeActions action)
             {
                 // Send event
                 for (int i = 0; i < Surface.Nodes.Count; i++)
@@ -1810,7 +1810,7 @@ namespace FlaxEditor.Surface.Archetypes
                         node.OnFunctionDeleted(this);
                 }
 
-                base.OnDeleted();
+                base.OnDeleted(action);
             }
 
             /// <inheritdoc />
@@ -1836,12 +1836,12 @@ namespace FlaxEditor.Surface.Archetypes
                 base.OnDestroy();
             }
 
-            internal static bool IsInputCompatible(NodeArchetype nodeArch, ScriptType outputType, ConnectionsHint hint)
+            internal static bool IsInputCompatible(NodeArchetype nodeArch, ScriptType outputType, ConnectionsHint hint, VisjectSurfaceContext context)
             {
                 return false;
             }
 
-            internal static bool IsOutputCompatible(NodeArchetype nodeArch, ScriptType inputType, ConnectionsHint hint)
+            internal static bool IsOutputCompatible(NodeArchetype nodeArch, ScriptType inputType, ConnectionsHint hint, VisjectSurfaceContext context)
             {
                 return inputType.IsVoid;
             }
@@ -1974,15 +1974,15 @@ namespace FlaxEditor.Surface.Archetypes
             }
 
             /// <inheritdoc />
-            public override void OnLoaded()
+            public override void OnLoaded(SurfaceNodeActions action)
             {
-                base.OnLoaded();
+                base.OnLoaded(action);
 
                 Title = "Get " + SurfaceUtils.GetMethodDisplayName((string)Values[1]);
                 UpdateSignature();
             }
 
-            internal static bool IsInputCompatible(NodeArchetype nodeArch, ScriptType outputType, ConnectionsHint hint)
+            internal static bool IsInputCompatible(NodeArchetype nodeArch, ScriptType outputType, ConnectionsHint hint, VisjectSurfaceContext context)
             {
                 var scriptType = TypeUtils.GetType((string)nodeArch.DefaultValues[0]);
                 if (scriptType == ScriptType.Null)
@@ -2011,7 +2011,7 @@ namespace FlaxEditor.Surface.Archetypes
                 return false;
             }
 
-            internal static bool IsOutputCompatible(NodeArchetype nodeArch, ScriptType inputType, ConnectionsHint hint)
+            internal static bool IsOutputCompatible(NodeArchetype nodeArch, ScriptType inputType, ConnectionsHint hint, VisjectSurfaceContext context)
             {
                 var scriptType = TypeUtils.GetType((string)nodeArch.DefaultValues[0]);
                 if (scriptType == ScriptType.Null)
@@ -2085,15 +2085,15 @@ namespace FlaxEditor.Surface.Archetypes
             }
 
             /// <inheritdoc />
-            public override void OnLoaded()
+            public override void OnLoaded(SurfaceNodeActions action)
             {
-                base.OnLoaded();
+                base.OnLoaded(action);
 
                 Title = "Set " + SurfaceUtils.GetMethodDisplayName((string)Values[1]);
                 UpdateSignature();
             }
 
-            internal static bool IsInputCompatible(NodeArchetype nodeArch, ScriptType outputType, ConnectionsHint hint)
+            internal static bool IsInputCompatible(NodeArchetype nodeArch, ScriptType outputType, ConnectionsHint hint, VisjectSurfaceContext context)
             {
                 if (outputType.IsVoid)
                     return true;
@@ -2130,7 +2130,7 @@ namespace FlaxEditor.Surface.Archetypes
                 return false;
             }
 
-            internal static bool IsOutputCompatible(NodeArchetype nodeArch, ScriptType inputType, ConnectionsHint hint)
+            internal static bool IsOutputCompatible(NodeArchetype nodeArch, ScriptType inputType, ConnectionsHint hint, VisjectSurfaceContext context)
             {
                 return inputType.IsVoid;
             }
@@ -2303,9 +2303,9 @@ namespace FlaxEditor.Surface.Archetypes
                 UpdateUI();
             }
 
-            public override void OnSurfaceLoaded()
+            public override void OnSurfaceLoaded(SurfaceNodeActions action)
             {
-                base.OnSurfaceLoaded();
+                base.OnSurfaceLoaded(action);
 
                 // Find reflection information about event
                 _signature = null;
@@ -2353,7 +2353,7 @@ namespace FlaxEditor.Surface.Archetypes
                 base.OnDestroy();
             }
 
-            internal static bool IsInputCompatible(NodeArchetype nodeArch, ScriptType outputType, ConnectionsHint hint)
+            internal static bool IsInputCompatible(NodeArchetype nodeArch, ScriptType outputType, ConnectionsHint hint, VisjectSurfaceContext context)
             {
                 // Event based nodes always have a pulse input, so it's always compatible with void
                 if (outputType.IsVoid)
@@ -2373,7 +2373,7 @@ namespace FlaxEditor.Surface.Archetypes
                 return false;
             }
 
-            internal static bool IsOutputCompatible(NodeArchetype nodeArch, ScriptType inputType, ConnectionsHint hint)
+            internal static bool IsOutputCompatible(NodeArchetype nodeArch, ScriptType inputType, ConnectionsHint hint, VisjectSurfaceContext context)
             {
                 // Event based nodes always have a pulse output, so it's always compatible with void
                 if (inputType.IsVoid)
@@ -2398,11 +2398,11 @@ namespace FlaxEditor.Surface.Archetypes
             {
             }
 
-            public override void OnSurfaceLoaded()
+            public override void OnSurfaceLoaded(SurfaceNodeActions action)
             {
                 Title = "Bind " + (string)Values[1];
 
-                base.OnSurfaceLoaded();
+                base.OnSurfaceLoaded(action);
             }
         }
 
@@ -2413,11 +2413,11 @@ namespace FlaxEditor.Surface.Archetypes
             {
             }
 
-            public override void OnSurfaceLoaded()
+            public override void OnSurfaceLoaded(SurfaceNodeActions action)
             {
                 Title = "Unbind " + (string)Values[1];
 
-                base.OnSurfaceLoaded();
+                base.OnSurfaceLoaded(action);
             }
         }
 
@@ -2470,6 +2470,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Title = string.Empty,
                 Description = "Overrides the base class method with custom implementation",
                 Flags = NodeFlags.VisualScriptGraph | NodeFlags.NoSpawnViaGUI | NodeFlags.NoSpawnViaPaste,
+                SortScore = 10,
                 IsInputCompatible = MethodOverrideNode.IsInputCompatible,
                 IsOutputCompatible = MethodOverrideNode.IsOutputCompatible,
                 Size = new Float2(240, 60),

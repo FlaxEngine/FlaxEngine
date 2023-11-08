@@ -649,22 +649,6 @@ void GPUContextVulkan::UpdateDescriptorSets(ComputePipelineStateVulkan* pipeline
     }
 }
 
-void GPUContextVulkan::BindPipeline()
-{
-    if (_psDirtyFlag && _currentState && (_rtDepth || _rtCount))
-    {
-        // Clear flag
-        _psDirtyFlag = false;
-
-        // Change state
-        const auto cmdBuffer = _cmdBufferManager->GetCmdBuffer();
-        const auto pipeline = _currentState->GetState(_renderPass);
-        vkCmdBindPipeline(cmdBuffer->GetHandle(), VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
-
-        RENDER_STAT_PS_STATE_CHANGE();
-    }
-}
-
 void GPUContextVulkan::OnDrawCall()
 {
     GPUPipelineStateVulkan* pipelineState = _currentState;
@@ -704,7 +688,15 @@ void GPUContextVulkan::OnDrawCall()
         BeginRenderPass();
     }
 
-    BindPipeline();
+    // Bind pipeline
+    if (_psDirtyFlag && _currentState && (_rtDepth || _rtCount))
+    {
+        _psDirtyFlag = false;
+        const auto cmdBuffer = _cmdBufferManager->GetCmdBuffer();
+        const auto pipeline = _currentState->GetState(_renderPass);
+        vkCmdBindPipeline(cmdBuffer->GetHandle(), VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+        RENDER_STAT_PS_STATE_CHANGE();
+    }
 
     //UpdateDynamicStates();
 
@@ -733,6 +725,7 @@ void GPUContextVulkan::FrameBegin()
     _cbDirtyFlag = 0;
     _rtCount = 0;
     _vbCount = 0;
+    _stencilRef = 0;
     _renderPass = nullptr;
     _currentState = nullptr;
     _rtDepth = nullptr;
@@ -978,6 +971,16 @@ void GPUContextVulkan::SetBlendFactor(const Float4& value)
     vkCmdSetBlendConstants(cmdBuffer->GetHandle(), value.Raw);
 }
 
+void GPUContextVulkan::SetStencilRef(uint32 value)
+{
+    if (_stencilRef != value)
+    {
+        _stencilRef = value;
+        const auto cmdBuffer = _cmdBufferManager->GetCmdBuffer();
+        vkCmdSetStencilReference(cmdBuffer->GetHandle(), VK_STENCIL_FRONT_AND_BACK, _stencilRef);
+    }
+}
+
 void GPUContextVulkan::ResetSR()
 {
     Platform::MemoryClear(_srHandles, sizeof(_srHandles));
@@ -1104,9 +1107,7 @@ void GPUContextVulkan::Dispatch(GPUShaderProgramCS* shader, uint32 threadGroupCo
         EndRenderPass();
 
     auto pipelineState = shaderVulkan->GetOrCreateState();
-
     UpdateDescriptorSets(pipelineState);
-
     FlushBarriers();
 
     // Bind pipeline
@@ -1141,10 +1142,8 @@ void GPUContextVulkan::DispatchIndirect(GPUShaderProgramCS* shader, GPUBuffer* b
         EndRenderPass();
 
     auto pipelineState = shaderVulkan->GetOrCreateState();
-
     UpdateDescriptorSets(pipelineState);
     AddBufferBarrier(bufferForArgsVulkan, VK_ACCESS_INDIRECT_COMMAND_READ_BIT);
-
     FlushBarriers();
 
     // Bind pipeline
@@ -1211,16 +1210,16 @@ void GPUContextVulkan::ResolveMultisample(GPUTexture* sourceMultisampleTexture, 
 
 void GPUContextVulkan::DrawInstanced(uint32 verticesCount, uint32 instanceCount, int32 startInstance, int32 startVertex)
 {
-    const auto cmdBuffer = _cmdBufferManager->GetCmdBuffer();
     OnDrawCall();
+    const auto cmdBuffer = _cmdBufferManager->GetCmdBuffer();
     vkCmdDraw(cmdBuffer->GetHandle(), verticesCount, instanceCount, startVertex, startInstance);
     RENDER_STAT_DRAW_CALL(verticesCount * instanceCount, verticesCount * instanceCount / 3);
 }
 
 void GPUContextVulkan::DrawIndexedInstanced(uint32 indicesCount, uint32 instanceCount, int32 startInstance, int32 startVertex, int32 startIndex)
 {
-    const auto cmdBuffer = _cmdBufferManager->GetCmdBuffer();
     OnDrawCall();
+    const auto cmdBuffer = _cmdBufferManager->GetCmdBuffer();
     vkCmdDrawIndexed(cmdBuffer->GetHandle(), indicesCount, instanceCount, startIndex, startVertex, startInstance);
     RENDER_STAT_DRAW_CALL(0, indicesCount / 3 * instanceCount);
 }
@@ -1228,10 +1227,9 @@ void GPUContextVulkan::DrawIndexedInstanced(uint32 indicesCount, uint32 instance
 void GPUContextVulkan::DrawInstancedIndirect(GPUBuffer* bufferForArgs, uint32 offsetForArgs)
 {
     ASSERT(bufferForArgs && EnumHasAnyFlags(bufferForArgs->GetFlags(), GPUBufferFlags::Argument));
-
+    OnDrawCall();
     auto bufferForArgsVK = (GPUBufferVulkan*)bufferForArgs;
     const auto cmdBuffer = _cmdBufferManager->GetCmdBuffer();
-    OnDrawCall();
     vkCmdDrawIndirect(cmdBuffer->GetHandle(), bufferForArgsVK->GetHandle(), (VkDeviceSize)offsetForArgs, 1, sizeof(VkDrawIndirectCommand));
     RENDER_STAT_DRAW_CALL(0, 0);
 }
@@ -1239,10 +1237,9 @@ void GPUContextVulkan::DrawInstancedIndirect(GPUBuffer* bufferForArgs, uint32 of
 void GPUContextVulkan::DrawIndexedInstancedIndirect(GPUBuffer* bufferForArgs, uint32 offsetForArgs)
 {
     ASSERT(bufferForArgs && EnumHasAnyFlags(bufferForArgs->GetFlags(), GPUBufferFlags::Argument));
-
+    OnDrawCall();
     auto bufferForArgsVK = (GPUBufferVulkan*)bufferForArgs;
     const auto cmdBuffer = _cmdBufferManager->GetCmdBuffer();
-    OnDrawCall();
     vkCmdDrawIndexedIndirect(cmdBuffer->GetHandle(), bufferForArgsVK->GetHandle(), (VkDeviceSize)offsetForArgs, 1, sizeof(VkDrawIndexedIndirectCommand));
     RENDER_STAT_DRAW_CALL(0, 0);
 }

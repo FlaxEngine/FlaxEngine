@@ -78,6 +78,7 @@ namespace FlaxEditor.Surface.ContextMenu
             if (!Visible)
                 return;
 
+            SortScore += _archetype.SortScore;
             if (selectedBox != null && CanConnectTo(selectedBox))
                 SortScore += 1;
             if (Data != null)
@@ -110,11 +111,11 @@ namespace FlaxEditor.Surface.ContextMenu
             bool isCompatible = false;
             if (startBox.IsOutput && _archetype.IsInputCompatible != null)
             {
-                isCompatible |= _archetype.IsInputCompatible.Invoke(_archetype, startBox.CurrentType, _archetype.ConnectionsHints);
+                isCompatible |= _archetype.IsInputCompatible.Invoke(_archetype, startBox.CurrentType, _archetype.ConnectionsHints, startBox.ParentNode.Context);
             }
             else if (!startBox.IsOutput && _archetype.IsOutputCompatible != null)
             {
-                isCompatible |= _archetype.IsOutputCompatible.Invoke(_archetype, startBox.CurrentType, startBox.ParentNode.Archetype.ConnectionsHints);
+                isCompatible |= _archetype.IsOutputCompatible.Invoke(_archetype, startBox.CurrentType, startBox.ParentNode.Archetype.ConnectionsHints, startBox.ParentNode.Context);
             }
             else if (_archetype.Elements != null)
             {

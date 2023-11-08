@@ -74,7 +74,7 @@ public:
     typedef Dictionary<String, Guid> PathsMapping;
 
 private:
-    bool _isDirty;
+    bool _isDirty = false;
     CriticalSection _locker;
     Registry _registry;
     PathsMapping _pathsMapping;
@@ -82,15 +82,8 @@ private:
 
 public:
     /// <summary>
-    /// Initializes a new instance of the <see cref="AssetsCache"/> class.
+    /// Gets amount of registered assets.
     /// </summary>
-    AssetsCache();
-
-public:
-    /// <summary>
-    /// Gets amount of registered assets
-    /// </summary>
-    /// <returns>Registry size</returns>
     int32 Size() const
     {
         _locker.Lock();

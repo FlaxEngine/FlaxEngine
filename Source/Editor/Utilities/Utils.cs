@@ -11,6 +11,7 @@ using System.Globalization;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -1060,8 +1061,9 @@ namespace FlaxEditor.Utilities
         /// <param name="searchBox">The search box.</param>
         /// <param name="tree">The tree control.</param>
         /// <param name="headerHeight">Amount of additional space above the search box to put custom UI.</param>
+        /// <param name="autoSearch">Plug automatic tree search delegate.</param>
         /// <returns>The created menu to setup and show.</returns>
-        public static ContextMenuBase CreateSearchPopup(out TextBox searchBox, out Tree tree, float headerHeight = 0)
+        public static ContextMenuBase CreateSearchPopup(out TextBox searchBox, out Tree tree, float headerHeight = 0, bool autoSearch = false)
         {
             var menu = new ContextMenuBase
             {
@@ -1087,7 +1089,33 @@ namespace FlaxEditor.Utilities
             {
                 Parent = panel2,
             };
+            if (autoSearch)
+            {
+                var s = searchBox;
+                var t = tree;
+                searchBox.TextChanged += delegate
+                {
+                    if (t.IsLayoutLocked)
+                        return;
+                    t.LockChildrenRecursive();
+                    UpdateSearchPopupFilter(t, s.Text);
+                    t.UnlockChildrenRecursive();
+                    menu.PerformLayout();
+                };
+            }
             return menu;
+        }
+
+        /// <summary>
+        /// Updates (recursively) search popup tree structures based on the filter text.
+        /// </summary>
+        public static void UpdateSearchPopupFilter(Tree tree, string filterText)
+        {
+            for (int i = 0; i < tree.Children.Count; i++)
+            {
+                if (tree.Children[i] is TreeNode child)
+                    UpdateSearchPopupFilter(child, filterText);
+            }
         }
 
         /// <summary>

@@ -70,7 +70,13 @@ namespace FlaxEngine
         [NoSerialize]
         public Float2 Size
         {
-            get => Area.Size * Atlas.Size;
+            get
+            {
+                if (Atlas == null)
+                    throw new InvalidOperationException("Cannot use invalid sprite.");
+                Atlas.GetSpriteArea(Index, out var area);
+                return area.Size * Atlas.Size;
+            }
             set
             {
                 var area = Area;
@@ -89,7 +95,8 @@ namespace FlaxEngine
             {
                 if (Atlas == null)
                     throw new InvalidOperationException("Cannot use invalid sprite.");
-                return Atlas.GetSprite(Index).Area;
+                Atlas.GetSpriteArea(Index, out var area);
+                return area;
             }
             set
             {

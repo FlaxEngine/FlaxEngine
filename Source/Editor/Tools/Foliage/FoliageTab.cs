@@ -251,13 +251,13 @@ namespace FlaxEditor.Tools.Foliage
             switch (_modes.SelectedTabIndex)
             {
             case 0:
-                Editor.Windows.EditWin.Viewport.SetActiveMode<NoGizmoMode>();
+                Editor.Windows.EditWin.Viewport.Gizmos.SetActiveMode<NoGizmoMode>();
                 break;
             case 1:
-                Editor.Windows.EditWin.Viewport.SetActiveMode<PaintFoliageGizmoMode>();
+                Editor.Windows.EditWin.Viewport.Gizmos.SetActiveMode<PaintFoliageGizmoMode>();
                 break;
             case 2:
-                Editor.Windows.EditWin.Viewport.SetActiveMode<EditFoliageGizmoMode>();
+                Editor.Windows.EditWin.Viewport.Gizmos.SetActiveMode<EditFoliageGizmoMode>();
                 break;
             default: throw new IndexOutOfRangeException("Invalid foliage tab mode.");
             }

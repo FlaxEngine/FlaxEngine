@@ -451,6 +451,7 @@ DialogResult MessageBox::Show(Window* parent, const StringView& text, const Stri
     default:
         break;
     }
+    flags |= MB_TASKMODAL;
 
     // Show dialog
     int result = MessageBoxW(parent ? static_cast<HWND>(parent->GetNativePtr()) : nullptr, String(text).GetText(), String(caption).GetText(), flags);
@@ -1200,8 +1201,8 @@ void* WindowsPlatform::LoadLibrary(const Char* filename)
         folder = StringView::Empty;
     if (folder.HasChars())
     {
-        String folderNullTerminated(folder);
-        SetDllDirectoryW(folderNullTerminated.Get());
+        const String folderNullTerminated(folder);
+        AddDllDirectory(folderNullTerminated.Get());
     }
 
     // Avoiding windows dialog boxes if missing
@@ -1209,7 +1210,10 @@ void* WindowsPlatform::LoadLibrary(const Char* filename)
     DWORD prevErrorMode = 0;
     const BOOL hasErrorMode = SetThreadErrorMode(errorMode, &prevErrorMode);
 
-    // Load the DLL
+    // Ensure that dll is properly searched
+    SetDefaultDllDirectories(LOAD_LIBRARY_SEARCH_APPLICATION_DIR | LOAD_LIBRARY_SEARCH_DEFAULT_DIRS | LOAD_LIBRARY_SEARCH_SYSTEM32 | LOAD_LIBRARY_SEARCH_USER_DIRS);
+
+    // Load the library
     void* handle = ::LoadLibraryW(filename);
     if (!handle)
     {
@@ -1219,10 +1223,6 @@ void* WindowsPlatform::LoadLibrary(const Char* filename)
     if (hasErrorMode)
     {
         SetThreadErrorMode(prevErrorMode, nullptr);
-    }
-    if (folder.HasChars())
-    {
-        SetDllDirectoryW(nullptr);
     }
 
 #if CRASH_LOG_ENABLE

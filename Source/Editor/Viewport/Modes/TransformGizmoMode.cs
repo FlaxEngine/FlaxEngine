@@ -13,7 +13,7 @@ namespace FlaxEditor.Viewport.Modes
         {
             base.OnActivated();
 
-            Viewport.Gizmos.Active = Viewport.TransformGizmo;
+            Owner.Gizmos.Active = ((MainEditorGizmoViewport)Owner).TransformGizmo;
         }
     }
 }

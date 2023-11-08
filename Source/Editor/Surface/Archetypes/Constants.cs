@@ -7,11 +7,12 @@ using Real = System.Single;
 #endif
 
 using System;
-using System.Reflection;
+using System.Linq;
 using FlaxEditor.CustomEditors.Editors;
 using FlaxEditor.GUI;
 using FlaxEditor.Scripting;
 using FlaxEditor.Surface.Elements;
+using FlaxEditor.Surface.Undo;
 using FlaxEngine;
 using FlaxEngine.GUI;
 using FlaxEngine.Utilities;
@@ -24,6 +25,109 @@ namespace FlaxEditor.Surface.Archetypes
     [HideInEditor]
     public static class Constants
     {
+        /// <summary>
+        /// A special type of node that adds the functionality to convert nodes to parameters.
+        /// </summary>
+        internal class ConvertToParameterNode : SurfaceNode
+        {
+            private readonly ScriptType _type;
+            private readonly Func<object[], object> _convertFunction;
+
+            /// <inheritdoc />
+            public ConvertToParameterNode(uint id, VisjectSurfaceContext context, NodeArchetype nodeArch, GroupArchetype groupArch, ScriptType type, Func<object[], object> convertFunction = null)
+            : base(id, context, nodeArch, groupArch)
+            {
+                _type = type;
+                _convertFunction = convertFunction;
+            }
+
+            /// <inheritdoc />
+            public override void OnShowSecondaryContextMenu(FlaxEditor.GUI.ContextMenu.ContextMenu menu, Float2 location)
+            {
+                base.OnShowSecondaryContextMenu(menu, location);
+
+                menu.AddSeparator();
+                menu.AddButton("Convert to Parameter", OnConvertToParameter);
+            }
+
+            private void OnConvertToParameter()
+            {
+                if (Surface.Owner is not IVisjectSurfaceWindow window)
+                    throw new Exception("Surface owner is not a Visject Surface Window");
+
+                Asset asset = Surface.Owner.SurfaceAsset;
+                if (asset == null || !asset.IsLoaded)
+                {
+                    Editor.LogError("Asset is null or not loaded");
+                    return;
+                }
+
+                // Add parameter to editor
+                var paramIndex = Surface.Parameters.Count;
+                var initValue = _convertFunction == null ? Values[0] : _convertFunction.Invoke(Values);
+                var paramAction = new AddRemoveParamAction
+                {
+                    Window = window,
+                    IsAdd = true,
+                    Name = Utilities.Utils.IncrementNameNumber("New parameter", OnParameterRenameValidate),
+                    Type = _type,
+                    Index = paramIndex,
+                    InitValue = initValue,
+                };
+                paramAction.Do();
+                Surface.AddBatchedUndoAction(paramAction);
+
+                // Spawn Get Parameter Node based on the added parameter
+                Guid parameterGuid = Surface.Parameters[paramIndex].ID;
+                bool undoEnabled = Surface.Undo.Enabled;
+                Surface.Undo.Enabled = false;
+                NodeArchetype arch = Surface.GetParameterGetterNodeArchetype(out var groupId);
+                SurfaceNode node = Surface.Context.SpawnNode(groupId, arch.TypeID, Location, new object[] { parameterGuid });
+                Surface.Undo.Enabled = undoEnabled;
+                if (node is not Parameters.SurfaceNodeParamsGet getNode)
+                    throw new Exception("Node is not a ParamsGet node!");
+                Surface.AddBatchedUndoAction(new AddRemoveNodeAction(getNode, true));
+
+                // Recreate connections of constant node
+                // Constant nodes and parameter nodes should have the same ports, so we can just iterate through the connections
+                var editConnectionsAction1 = new EditNodeConnections(Context, this);
+                var editConnectionsAction2 = new EditNodeConnections(Context, node);
+                var boxes = GetBoxes();
+                for (int i = 0; i < boxes.Count; i++)
+                {
+                    Box box = boxes[i];
+                    if (!box.HasAnyConnection)
+                        continue;
+                    if (!getNode.TryGetBox(box.ID, out Box paramBox))
+                        continue;
+
+                    // Iterating backwards, because the CreateConnection method deletes entries from the box connections when target box IsSingle is set to true
+                    for (int k = box.Connections.Count - 1; k >= 0; k--)
+                    {
+                        Box connectedBox = box.Connections[k];
+                        paramBox.CreateConnection(connectedBox);
+                    }
+                }
+                editConnectionsAction1.End();
+                editConnectionsAction2.End();
+                Surface.AddBatchedUndoAction(editConnectionsAction1);
+                Surface.AddBatchedUndoAction(editConnectionsAction2);
+
+                // Add undo actions and remove constant node
+                var removeConstantAction = new AddRemoveNodeAction(this, false);
+                Surface.AddBatchedUndoAction(removeConstantAction);
+                removeConstantAction.Do();
+                Surface.MarkAsEdited();
+            }
+
+            private bool OnParameterRenameValidate(string value)
+            {
+                if (Surface.Owner is not IVisjectSurfaceWindow window)
+                    throw new Exception("Surface owner is not a Visject Surface Window");
+                return !string.IsNullOrWhiteSpace(value) && window.VisjectSurface.Parameters.All(x => x.Name != value);
+            }
+        }
+
         private class EnumNode : SurfaceNode
         {
             private EnumComboBox _picker;
@@ -43,9 +147,9 @@ namespace FlaxEditor.Surface.Archetypes
                 box.CurrentType = new ScriptType(Values[0].GetType());
             }
 
-            public override void OnLoaded()
+            public override void OnLoaded(SurfaceNodeActions action)
             {
-                base.OnLoaded();
+                base.OnLoaded(action);
 
                 var box = (OutputBox)GetBox(0);
                 if (Values[0] == null)
@@ -100,9 +204,9 @@ namespace FlaxEditor.Surface.Archetypes
                 base.OnValuesChanged();
             }
 
-            public override void OnLoaded()
+            public override void OnLoaded(SurfaceNodeActions action)
             {
-                base.OnLoaded();
+                base.OnLoaded(action);
 
                 _output = (OutputBox)Elements[0];
                 _typePicker = new TypePickerControl
@@ -238,9 +342,9 @@ namespace FlaxEditor.Surface.Archetypes
                 base.OnValuesChanged();
             }
 
-            public override void OnLoaded()
+            public override void OnLoaded(SurfaceNodeActions action)
             {
-                base.OnLoaded();
+                base.OnLoaded(action);
 
                 _output = (OutputBox)Elements[0];
                 _keyTypePicker = new TypePickerControl
@@ -356,6 +460,7 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 TypeID = 1,
                 Title = "Bool",
+                Create = (id, context, arch, groupArch) => new ConvertToParameterNode(id, context, arch, groupArch, new ScriptType(typeof(bool))),
                 Description = "Constant boolean value",
                 Flags = NodeFlags.AllGraphs,
                 Size = new Float2(110, 20),
@@ -388,6 +493,7 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 TypeID = 2,
                 Title = "Integer",
+                Create = (id, context, arch, groupArch) => new ConvertToParameterNode(id, context, arch, groupArch, new ScriptType(typeof(int))),
                 Description = "Constant integer value",
                 Flags = NodeFlags.AllGraphs,
                 Size = new Float2(110, 20),
@@ -415,6 +521,7 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 TypeID = 3,
                 Title = "Float",
+                Create = (id, context, arch, groupArch) => new ConvertToParameterNode(id, context, arch, groupArch, new ScriptType(typeof(float))),
                 Description = "Constant floating point",
                 Flags = NodeFlags.AllGraphs,
                 Size = new Float2(110, 20),
@@ -442,6 +549,7 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 TypeID = 4,
                 Title = "Float2",
+                Create = (id, context, arch, groupArch) => new ConvertToParameterNode(id, context, arch, groupArch, new ScriptType(typeof(Float2))),
                 Description = "Constant Float2",
                 Flags = NodeFlags.AllGraphs,
                 Size = new Float2(130, 60),
@@ -472,6 +580,7 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 TypeID = 5,
                 Title = "Float3",
+                Create = (id, context, arch, groupArch) => new ConvertToParameterNode(id, context, arch, groupArch, new ScriptType(typeof(Float3))),
                 Description = "Constant Float3",
                 Flags = NodeFlags.AllGraphs,
                 Size = new Float2(130, 80),
@@ -504,6 +613,7 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 TypeID = 6,
                 Title = "Float4",
+                Create = (id, context, arch, groupArch) => new ConvertToParameterNode(id, context, arch, groupArch, new ScriptType(typeof(Float4))),
                 Description = "Constant Float4",
                 Flags = NodeFlags.AllGraphs,
                 Size = new Float2(130, 100),
@@ -538,6 +648,7 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 TypeID = 7,
                 Title = "Color",
+                Create = (id, context, arch, groupArch) => new ConvertToParameterNode(id, context, arch, groupArch, new ScriptType(typeof(Color))),
                 Description = "RGBA color",
                 Flags = NodeFlags.AllGraphs,
                 Size = new Float2(70, 100),
@@ -570,6 +681,8 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 TypeID = 8,
                 Title = "Rotation",
+                Create = (id, context, arch, groupArch) =>
+                new ConvertToParameterNode(id, context, arch, groupArch, new ScriptType(typeof(Quaternion)), values => Quaternion.Euler((float)values[0], (float)values[1], (float)values[2])),
                 Description = "Euler angle rotation",
                 Flags = NodeFlags.AnimGraph | NodeFlags.VisualScriptGraph | NodeFlags.ParticleEmitterGraph,
                 Size = new Float2(110, 60),
@@ -594,6 +707,7 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 TypeID = 9,
                 Title = "String",
+                Create = (id, context, arch, groupArch) => new ConvertToParameterNode(id, context, arch, groupArch, new ScriptType(typeof(string))),
                 Description = "Text",
                 Flags = NodeFlags.VisualScriptGraph | NodeFlags.AnimGraph,
                 Size = new Float2(200, 20),
@@ -644,6 +758,8 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 TypeID = 12,
                 Title = "Unsigned Integer",
+                AlternativeTitles = new[] { "UInt", "U Int" },
+                Create = (id, context, arch, groupArch) => new ConvertToParameterNode(id, context, arch, groupArch, new ScriptType(typeof(uint))),
                 Description = "Constant unsigned integer value",
                 Flags = NodeFlags.AllGraphs,
                 Size = new Float2(170, 20),
@@ -683,6 +799,7 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 TypeID = 15,
                 Title = "Double",
+                Create = (id, context, arch, groupArch) => new ConvertToParameterNode(id, context, arch, groupArch, new ScriptType(typeof(double))),
                 Description = "Constant floating point",
                 Flags = NodeFlags.AllGraphs,
                 Size = new Float2(110, 20),
@@ -700,6 +817,7 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 TypeID = 16,
                 Title = "Vector2",
+                Create = (id, context, arch, groupArch) => new ConvertToParameterNode(id, context, arch, groupArch, new ScriptType(typeof(Vector2))),
                 Description = "Constant Vector2",
                 Flags = NodeFlags.AllGraphs,
                 Size = new Float2(130, 60),
@@ -720,6 +838,7 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 TypeID = 17,
                 Title = "Vector3",
+                Create = (id, context, arch, groupArch) => new ConvertToParameterNode(id, context, arch, groupArch, new ScriptType(typeof(Vector3))),
                 Description = "Constant Vector3",
                 Flags = NodeFlags.AllGraphs,
                 Size = new Float2(130, 80),
@@ -742,6 +861,7 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 TypeID = 18,
                 Title = "Vector4",
+                Create = (id, context, arch, groupArch) => new ConvertToParameterNode(id, context, arch, groupArch, new ScriptType(typeof(Vector4))),
                 Description = "Constant Vector4",
                 Flags = NodeFlags.AllGraphs,
                 Size = new Float2(130, 100),

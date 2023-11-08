@@ -22,7 +22,7 @@ class ScreenService : public EngineService
 {
 public:
     ScreenService()
-        : EngineService(TEXT("Screen"), 120)
+        : EngineService(TEXT("Screen"), 500)
     {
     }
 

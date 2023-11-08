@@ -727,6 +727,23 @@ public:
         Lerp(start, end, amount, result);
     }
 
+    /// <summary>
+    /// Moves a value current towards target.
+    /// </summary>
+    /// <param name="current">The position to move from.</param>
+    /// <param name="target">The position to move towards.</param>
+    /// <param name="maxDistanceDelta">The maximum distance that can be applied to the value.</param>
+    /// <returns>The new position.</returns>
+    static Vector3 MoveTowards(Vector3 current, Vector3 target, float maxDistanceDelta)
+    {
+        const Vector3Base to = target - current;
+        const T distanceSq = to.LengthSquared();
+        if (distanceSq == 0 || (maxDistanceDelta >= 0 && distanceSq <= maxDistanceDelta * maxDistanceDelta))
+            return target;
+        const T scale = maxDistanceDelta / Math::Sqrt(distanceSq);
+        return Vector3Base(current.X + to.X * scale, current.Y + to.Y * scale, current.Z + to.Z * scale);
+    }
+
     // Performs a Hermite spline interpolation.
     // @param value1 First source position vector
     // @param tangent1 First source tangent vector
@@ -958,6 +975,12 @@ template<typename T>
 inline Vector3Base<T> operator/(typename TOtherFloat<T>::Type a, const Vector3Base<T>& b)
 {
     return Vector3Base<T>(a) / b;
+}
+
+template<typename T>
+inline uint32 GetHash(const Vector3Base<T>& key)
+{
+    return (((*(uint32*)&key.X * 397) ^ *(uint32*)&key.Y) * 397) ^ *(uint32*)&key.Z;
 }
 
 namespace Math

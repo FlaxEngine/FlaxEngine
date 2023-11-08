@@ -26,6 +26,12 @@ int32 UnixThread::Start(pthread_attr_t& attr)
 void* UnixThread::ThreadProc(void* pThis)
 {
     auto thread = (UnixThread*)pThis;
+#if PLATFORM_APPLE_FAMILY
+    // Apple doesn't support creating named thread so assign name here
+    {
+        pthread_setname_np(StringAnsi(thread->GetName()).Get());
+    }
+#endif
     const int32 exitCode = thread->Run();
     return (void*)(uintptr)exitCode;
 }

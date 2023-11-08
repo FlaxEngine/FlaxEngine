@@ -101,8 +101,11 @@ namespace FlaxEditor.GUI
                 if (_isValid(type))
                 {
                     var attributes = type.GetAttributes(true);
-                    if (attributes.FirstOrDefault(x => x is HideInEditorAttribute) == null)
+                    if (attributes.FirstOrDefault(x => x is HideInEditorAttribute || x is System.Runtime.CompilerServices.CompilerGeneratedAttribute) == null)
                     {
+                        var mType = type.Type;
+                        if (mType != null && mType.IsValueType && mType.ReflectedType != null && string.Equals(mType.ReflectedType.Name, "<PrivateImplementationDetails>", StringComparison.Ordinal))
+                            continue;
                         AddItem(new TypeItemView(type, attributes));
                     }
                 }

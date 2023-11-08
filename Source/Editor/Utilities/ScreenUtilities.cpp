@@ -73,6 +73,7 @@ Color32 ScreenUtilities::GetColorAt(const Float2& pos)
     outputColor.R = color.red / 256;
     outputColor.G = color.green / 256;
     outputColor.B = color.blue / 256;
+    outputColor.A = 255;
     return outputColor;
 }
 
