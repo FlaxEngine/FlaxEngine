@@ -3164,14 +3164,14 @@ PxVehicleAutoBoxData CreatePxVehicleAutoBoxData()
     return PxVehicleAutoBoxData();
 }
 
-PxVehicleClutchData CreatePxVehicleClutchData(WheeledVehicle::GearboxSettings settings)
+PxVehicleClutchData CreatePxVehicleClutchData(const WheeledVehicle::GearboxSettings settings)
 {
     PxVehicleClutchData clutch;
     clutch.mStrength = M2ToCm2(settings.ClutchStrength);
     return clutch;
 }
 
-PxVehicleSuspensionData CreatePxVehicleSuspensionData(WheeledVehicle::Wheel settings, PxReal wheelSprungMass)
+PxVehicleSuspensionData CreatePxVehicleSuspensionData(const WheeledVehicle::Wheel settings, const PxReal wheelSprungMass)
 {
     PxVehicleSuspensionData suspensionData;
     const float suspensionFrequency = 7.0f;
@@ -3183,7 +3183,7 @@ PxVehicleSuspensionData CreatePxVehicleSuspensionData(WheeledVehicle::Wheel sett
     return suspensionData;
 }
 
-PxVehicleTireData CreatePxVehicleTireData(WheeledVehicle::Wheel settings)
+PxVehicleTireData CreatePxVehicleTireData(const WheeledVehicle::Wheel settings)
 {
     PxVehicleTireData tire;
     int32 tireIndex = WheelTireTypes.Find(settings.TireFrictionScale);
@@ -3201,7 +3201,7 @@ PxVehicleTireData CreatePxVehicleTireData(WheeledVehicle::Wheel settings)
     return tire;
 }
 
-PxVehicleWheelData CreatePxVehicleWheelData(WheeledVehicle::Wheel settings)
+PxVehicleWheelData CreatePxVehicleWheelData(const WheeledVehicle::Wheel settings)
 {
     PxVehicleWheelData wheelData;
     wheelData.mMass = settings.Mass;
@@ -3299,9 +3299,9 @@ void* PhysicsBackend::CreateVehicle(WheeledVehicle* actor)
         PxVec3 centreOffset = centerOfMassOffset.transformInv(offsets[i]);
         PxVec3 forceAppPointOffset(centreOffset.x, wheel.SuspensionForceOffset, centreOffset.z);
 
-        PxVehicleTireData tireData = CreatePxVehicleTireData(wheel);
-        PxVehicleWheelData wheelData = CreatePxVehicleWheelData(wheel);
-        PxVehicleSuspensionData suspensionData = CreatePxVehicleSuspensionData(wheel, sprungMasses[i]);
+        const PxVehicleTireData& tireData = CreatePxVehicleTireData(wheel);
+        const PxVehicleWheelData& wheelData = CreatePxVehicleWheelData(wheel);
+        const PxVehicleSuspensionData& suspensionData = CreatePxVehicleSuspensionData(wheel, sprungMasses[i]);
 
         wheelsSimData->setTireData(i,tireData);
         wheelsSimData->setWheelData(i, wheelData);
@@ -3370,12 +3370,12 @@ void* PhysicsBackend::CreateVehicle(WheeledVehicle* actor)
     case WheeledVehicle::DriveTypes::Drive4W:
     {
         PxVehicleDriveSimData4W driveSimData;
-        PxVehicleDifferential4WData differentialData = CreatePxVehicleDifferential4WData(differential);
-        PxVehicleEngineData engineData = CreatePxVehicleEngineData(engine);
-        PxVehicleGearsData gearsData = CreatePxVehicleGearsData(gearbox);
-        PxVehicleAutoBoxData autoBoxData = CreatePxVehicleAutoBoxData();
-        PxVehicleClutchData cluchData = CreatePxVehicleClutchData(gearbox);
-        PxVehicleAckermannGeometryData geometryData = CreatePxVehicleAckermannGeometryData(wheelsSimData);
+        const PxVehicleDifferential4WData& differentialData = CreatePxVehicleDifferential4WData(differential);
+        const PxVehicleEngineData& engineData = CreatePxVehicleEngineData(engine);
+        const PxVehicleGearsData& gearsData = CreatePxVehicleGearsData(gearbox);
+        const PxVehicleAutoBoxData& autoBoxData = CreatePxVehicleAutoBoxData();
+        const PxVehicleClutchData& cluchData = CreatePxVehicleClutchData(gearbox);
+        const PxVehicleAckermannGeometryData& geometryData = CreatePxVehicleAckermannGeometryData(wheelsSimData);
 
         driveSimData.setDiffData(differentialData);
         driveSimData.setEngineData(engineData);
@@ -3396,12 +3396,12 @@ void* PhysicsBackend::CreateVehicle(WheeledVehicle* actor)
     case WheeledVehicle::DriveTypes::DriveNW:
     {
         PxVehicleDriveSimDataNW driveSimData;
-        PxVehicleDifferentialNWData differentialData = CreatePxVehicleDifferentialNWData(differential, wheels);
-        PxVehicleEngineData engineData = CreatePxVehicleEngineData(engine);
-        PxVehicleGearsData gearsData = CreatePxVehicleGearsData(gearbox);
-        PxVehicleAutoBoxData autoBoxData = CreatePxVehicleAutoBoxData();
-        PxVehicleClutchData cluchData = CreatePxVehicleClutchData(gearbox);
-        PxVehicleAckermannGeometryData geometryData = CreatePxVehicleAckermannGeometryData(wheelsSimData);
+        const PxVehicleDifferentialNWData& differentialData = CreatePxVehicleDifferentialNWData(differential, wheels);
+        const PxVehicleEngineData& engineData = CreatePxVehicleEngineData(engine);
+        const PxVehicleGearsData& gearsData = CreatePxVehicleGearsData(gearbox);
+        const PxVehicleAutoBoxData& autoBoxData = CreatePxVehicleAutoBoxData();
+        const PxVehicleClutchData& cluchData = CreatePxVehicleClutchData(gearbox);
+        const PxVehicleAckermannGeometryData& geometryData = CreatePxVehicleAckermannGeometryData(wheelsSimData);
 
         driveSimData.setDiffData(differentialData);
         driveSimData.setEngineData(engineData);
@@ -3458,9 +3458,9 @@ void PhysicsBackend::UpdateVehicleWheels(WheeledVehicle* actor)
     for (uint32 i = 0; i < wheelsSimData->getNbWheels(); i++)
     {
         auto& wheel = actor->_wheels[i];
-        PxVehicleSuspensionData suspensionData = CreatePxVehicleSuspensionData(wheel, wheelsSimData->getSuspensionData(i).mSprungMass);
-        PxVehicleTireData tireData = CreatePxVehicleTireData(wheel);
-        PxVehicleWheelData wheelData = CreatePxVehicleWheelData(wheel);
+        const PxVehicleSuspensionData& suspensionData = CreatePxVehicleSuspensionData(wheel, wheelsSimData->getSuspensionData(i).mSprungMass);
+        const PxVehicleTireData& tireData = CreatePxVehicleTireData(wheel);
+        const PxVehicleWheelData& wheelData = CreatePxVehicleWheelData(wheel);
         wheelsSimData->setSuspensionData(i, suspensionData);
         wheelsSimData->setTireData(i, tireData);
         wheelsSimData->setWheelData(i, wheelData);
@@ -3476,16 +3476,16 @@ void PhysicsBackend::SetVehicleEngine(void* vehicle, const void* value)
     case PxVehicleTypes::eDRIVE4W:
     {
         auto drive4W = (PxVehicleDrive4W*)drive;
+        const PxVehicleEngineData& engineData = CreatePxVehicleEngineData(engine);
         PxVehicleDriveSimData4W& driveSimData = drive4W->mDriveSimData;
-        PxVehicleEngineData engineData = CreatePxVehicleEngineData(engine);
         driveSimData.setEngineData(engineData);
         break;
     }
     case PxVehicleTypes::eDRIVENW:
     {
         auto drive4W = (PxVehicleDriveNW*)drive;
+        const PxVehicleEngineData& engineData = CreatePxVehicleEngineData(engine);
         PxVehicleDriveSimDataNW& driveSimData = drive4W->mDriveSimData;
-        PxVehicleEngineData engineData = CreatePxVehicleEngineData(engine);
         driveSimData.setEngineData(engineData);
         break;
     }
@@ -3501,8 +3501,8 @@ void PhysicsBackend::SetVehicleDifferential(void* vehicle, const void* value)
     case PxVehicleTypes::eDRIVE4W:
     {
         auto drive4W = (PxVehicleDrive4W*)drive;
+        const PxVehicleDifferential4WData& differentialData = CreatePxVehicleDifferential4WData(differential);
         PxVehicleDriveSimData4W& driveSimData = drive4W->mDriveSimData;
-        PxVehicleDifferential4WData differentialData = CreatePxVehicleDifferential4WData(differential);
         driveSimData.setDiffData(differentialData);
         break;
     }
@@ -3520,10 +3520,10 @@ void PhysicsBackend::SetVehicleGearbox(void* vehicle, const void* value)
     case PxVehicleTypes::eDRIVE4W:
     {
         auto drive4W = (PxVehicleDrive4W*)drive;
+        const PxVehicleGearsData& gearData = CreatePxVehicleGearsData(gearbox);
+        const PxVehicleClutchData& clutchData = CreatePxVehicleClutchData(gearbox);
+        const PxVehicleAutoBoxData& autoBoxData = CreatePxVehicleAutoBoxData();
         PxVehicleDriveSimData4W& driveSimData = drive4W->mDriveSimData;
-        PxVehicleGearsData gearData = CreatePxVehicleGearsData(gearbox);
-        PxVehicleClutchData clutchData = CreatePxVehicleClutchData(gearbox);
-        PxVehicleAutoBoxData autoBoxData = CreatePxVehicleAutoBoxData();
         driveSimData.setGearsData(gearData);
         driveSimData.setAutoBoxData(autoBoxData);
         driveSimData.setClutchData(clutchData);
@@ -3532,10 +3532,10 @@ void PhysicsBackend::SetVehicleGearbox(void* vehicle, const void* value)
     case PxVehicleTypes::eDRIVENW:
     {
         auto drive4W = (PxVehicleDriveNW*)drive;
+        const PxVehicleGearsData& gearData = CreatePxVehicleGearsData(gearbox);
+        const PxVehicleClutchData& clutchData = CreatePxVehicleClutchData(gearbox);
+        const PxVehicleAutoBoxData& autoBoxData = CreatePxVehicleAutoBoxData();
         PxVehicleDriveSimDataNW& driveSimData = drive4W->mDriveSimData;
-        PxVehicleGearsData gearData = CreatePxVehicleGearsData(gearbox);
-        PxVehicleClutchData clutchData = CreatePxVehicleClutchData(gearbox);
-        PxVehicleAutoBoxData autoBoxData = CreatePxVehicleAutoBoxData();
         driveSimData.setGearsData(gearData);
         driveSimData.setAutoBoxData(autoBoxData);
         driveSimData.setClutchData(clutchData);
