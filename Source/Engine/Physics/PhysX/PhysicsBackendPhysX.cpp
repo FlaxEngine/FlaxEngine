@@ -3083,7 +3083,7 @@ int32 PhysicsBackend::MoveController(void* controller, void* shape, const Vector
 
 #if WITH_VEHICLE
 
-PxVehicleDifferential4WData CreatePxVehicleDifferential4WData(const WheeledVehicle::DifferentialSettings settings)
+PxVehicleDifferential4WData CreatePxVehicleDifferential4WData(const WheeledVehicle::DifferentialSettings& settings)
 {
     PxVehicleDifferential4WData differential4WData;
     differential4WData.mType = (PxVehicleDifferential4WData::Enum)settings.Type;
@@ -3096,7 +3096,7 @@ PxVehicleDifferential4WData CreatePxVehicleDifferential4WData(const WheeledVehic
     return differential4WData;
 }
 
-PxVehicleDifferentialNWData CreatePxVehicleDifferentialNWData(const WheeledVehicle::DifferentialSettings settings, const Array<WheeledVehicle::Wheel*, FixedAllocation<PX_MAX_NB_WHEELS>> wheels)
+PxVehicleDifferentialNWData CreatePxVehicleDifferentialNWData(const WheeledVehicle::DifferentialSettings& settings, const Array<WheeledVehicle::Wheel*, FixedAllocation<PX_MAX_NB_WHEELS>>& wheels)
 {
     PxVehicleDifferentialNWData differentialNwData;
     for (int32 i = 0; i < wheels.Count(); i++)
@@ -3105,7 +3105,7 @@ PxVehicleDifferentialNWData CreatePxVehicleDifferentialNWData(const WheeledVehic
     return differentialNwData;
 }
 
-PxVehicleEngineData CreatePxVehicleEngineData(const WheeledVehicle::EngineSettings settings)
+PxVehicleEngineData CreatePxVehicleEngineData(const WheeledVehicle::EngineSettings& settings)
 {
     PxVehicleEngineData engineData;
     engineData.mMOI = M2ToCm2(settings.MOI);
@@ -3117,7 +3117,7 @@ PxVehicleEngineData CreatePxVehicleEngineData(const WheeledVehicle::EngineSettin
     return engineData;
 }
 
-PxVehicleGearsData CreatePxVehicleGearsData(const WheeledVehicle::GearboxSettings settings)
+PxVehicleGearsData CreatePxVehicleGearsData(const WheeledVehicle::GearboxSettings& settings)
 {
     PxVehicleGearsData gears;
 
@@ -3164,14 +3164,14 @@ PxVehicleAutoBoxData CreatePxVehicleAutoBoxData()
     return PxVehicleAutoBoxData();
 }
 
-PxVehicleClutchData CreatePxVehicleClutchData(const WheeledVehicle::GearboxSettings settings)
+PxVehicleClutchData CreatePxVehicleClutchData(const WheeledVehicle::GearboxSettings& settings)
 {
     PxVehicleClutchData clutch;
     clutch.mStrength = M2ToCm2(settings.ClutchStrength);
     return clutch;
 }
 
-PxVehicleSuspensionData CreatePxVehicleSuspensionData(const WheeledVehicle::Wheel settings, const PxReal wheelSprungMass)
+PxVehicleSuspensionData CreatePxVehicleSuspensionData(const WheeledVehicle::Wheel& settings, const PxReal wheelSprungMass)
 {
     PxVehicleSuspensionData suspensionData;
     const float suspensionFrequency = 7.0f;
@@ -3183,7 +3183,7 @@ PxVehicleSuspensionData CreatePxVehicleSuspensionData(const WheeledVehicle::Whee
     return suspensionData;
 }
 
-PxVehicleTireData CreatePxVehicleTireData(const WheeledVehicle::Wheel settings)
+PxVehicleTireData CreatePxVehicleTireData(const WheeledVehicle::Wheel& settings)
 {
     PxVehicleTireData tire;
     int32 tireIndex = WheelTireTypes.Find(settings.TireFrictionScale);
@@ -3201,7 +3201,7 @@ PxVehicleTireData CreatePxVehicleTireData(const WheeledVehicle::Wheel settings)
     return tire;
 }
 
-PxVehicleWheelData CreatePxVehicleWheelData(const WheeledVehicle::Wheel settings)
+PxVehicleWheelData CreatePxVehicleWheelData(const WheeledVehicle::Wheel& settings)
 {
     PxVehicleWheelData wheelData;
     wheelData.mMass = settings.Mass;
