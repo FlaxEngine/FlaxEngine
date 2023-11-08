@@ -258,6 +258,9 @@ public:
         // Enable/disable importing blend shapes (morph targets).
         API_FIELD(Attributes="EditorOrder(85), EditorDisplay(\"Geometry\"), VisibleIf(nameof(ShowSkinnedModel))")
         bool ImportBlendShapes = false;
+        // Enable skeleton bones offset matrices recalculating.
+        API_FIELD(Attributes="EditorOrder(86), EditorDisplay(\"Geometry\"), VisibleIf(nameof(ShowSkinnedModel))")
+        bool CalculateBoneOffsetMatrices = false;
         // The lightmap UVs source.
         API_FIELD(Attributes="EditorOrder(90), EditorDisplay(\"Geometry\", \"Lightmap UVs Source\"), VisibleIf(nameof(ShowModel))")
         ModelLightmapUVsSource LightmapUVsSource = ModelLightmapUVsSource::Disable;
@@ -279,8 +282,11 @@ public:
         // Custom import geometry offset.
         API_FIELD(Attributes="EditorOrder(520), EditorDisplay(\"Transform\")")
         Float3 Translation = Float3::Zero;
-        // If checked, the imported geometry will be shifted to the center of mass.
+        // If checked, the imported geometry will be shifted to its local transform origin.
         API_FIELD(Attributes="EditorOrder(530), EditorDisplay(\"Transform\")")
+        bool UseLocalOrigin = false;
+        // If checked, the imported geometry will be shifted to the center of mass.
+        API_FIELD(Attributes="EditorOrder(540), EditorDisplay(\"Transform\")")
         bool CenterGeometry = false;
 
     public: // Animation

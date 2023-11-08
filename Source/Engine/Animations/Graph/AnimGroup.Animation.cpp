@@ -2109,7 +2109,8 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
                 bucket.LoopsLeft--;
             bucket.LoopsDone++;
         }
-        value = SampleAnimation(node, loop, length, 0.0f, bucket.TimePosition, newTimePos, anim, slot.Speed);
+        // Speed is accounted for in the new time pos, so keep sample speed at 1
+        value = SampleAnimation(node, loop, length, 0.0f, bucket.TimePosition, newTimePos, anim, 1);
         bucket.TimePosition = newTimePos;
         if (bucket.LoopsLeft == 0 && slot.BlendOutTime > 0.0f && length - slot.BlendOutTime < bucket.TimePosition)
         {

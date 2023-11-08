@@ -367,11 +367,13 @@ void ModelTool::Options::Serialize(SerializeStream& stream, const void* otherObj
     SERIALIZE(ImportLODs);
     SERIALIZE(ImportVertexColors);
     SERIALIZE(ImportBlendShapes);
+    SERIALIZE(CalculateBoneOffsetMatrices);
     SERIALIZE(LightmapUVsSource);
     SERIALIZE(CollisionMeshesPrefix);
     SERIALIZE(Scale);
     SERIALIZE(Rotation);
     SERIALIZE(Translation);
+    SERIALIZE(UseLocalOrigin);
     SERIALIZE(CenterGeometry);
     SERIALIZE(Duration);
     SERIALIZE(FramesRange);
@@ -413,11 +415,13 @@ void ModelTool::Options::Deserialize(DeserializeStream& stream, ISerializeModifi
     DESERIALIZE(ImportLODs);
     DESERIALIZE(ImportVertexColors);
     DESERIALIZE(ImportBlendShapes);
+    DESERIALIZE(CalculateBoneOffsetMatrices);
     DESERIALIZE(LightmapUVsSource);
     DESERIALIZE(CollisionMeshesPrefix);
     DESERIALIZE(Scale);
     DESERIALIZE(Rotation);
     DESERIALIZE(Translation);
+    DESERIALIZE(UseLocalOrigin);
     DESERIALIZE(CenterGeometry);
     DESERIALIZE(Duration);
     DESERIALIZE(FramesRange);
@@ -1089,11 +1093,16 @@ bool ModelTool::ImportModel(const String& path, ModelData& meshData, Options& op
 
     // Prepare import transformation
     Transform importTransform(options.Translation, options.Rotation, Float3(options.Scale));
+    if (options.UseLocalOrigin && data.LODs.HasItems() && data.LODs[0].Meshes.HasItems())
+    {
+        importTransform.Translation -= importTransform.Orientation * data.LODs[0].Meshes[0]->OriginTranslation * importTransform.Scale;
+    }
     if (options.CenterGeometry && data.LODs.HasItems() && data.LODs[0].Meshes.HasItems())
     {
         // Calculate the bounding box (use LOD0 as a reference)
         BoundingBox box = data.LODs[0].GetBox();
-        importTransform.Translation -= box.GetCenter();
+        auto center = data.LODs[0].Meshes[0]->OriginOrientation * importTransform.Orientation * box.GetCenter() * importTransform.Scale * data.LODs[0].Meshes[0]->Scaling;
+        importTransform.Translation -= center;
     }
     const bool applyImportTransform = !importTransform.IsIdentity();
 
@@ -1418,6 +1427,15 @@ bool ModelTool::ImportModel(const String& path, ModelData& meshData, Options& op
         SkeletonUpdater<ImportedModelData::Node> hierarchyUpdater(data.Nodes);
         hierarchyUpdater.UpdateMatrices();
 
+        if (options.CalculateBoneOffsetMatrices)
+        {
+            // Calculate offset matrix (inverse bind pose transform) for every bone manually
+            for (SkeletonBone& bone : data.Skeleton.Bones)
+            {
+                CalculateBoneOffsetMatrix(data.Skeleton.Nodes, bone.OffsetMatrix, bone.NodeIndex);
+            }
+        }
+
         // Move meshes in the new nodes
         for (int32 lodIndex = 0; lodIndex < data.LODs.Count(); lodIndex++)
         {
@@ -1438,15 +1456,6 @@ bool ModelTool::ImportModel(const String& path, ModelData& meshData, Options& op
                 mesh.NodeIndex = skeletonMapping.SourceToTarget[mesh.NodeIndex];
             }
         }
-
-        // TODO: allow to link skeleton asset to model to retarget model bones skeleton for an animation
-        // use SkeletonMapping<SkeletonBone> to map bones?
-
-        // Calculate offset matrix (inverse bind pose transform) for every bone manually
-        /*for (SkeletonBone& bone : data.Skeleton.Bones)
-        {
-            CalculateBoneOffsetMatrix(data.Skeleton.Nodes, bone.OffsetMatrix, bone.NodeIndex);
-        }*/
 
 #if USE_SKELETON_NODES_SORTING
         // Sort skeleton nodes and bones hierarchy (parents first)

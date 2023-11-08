@@ -225,8 +225,15 @@ namespace FlaxEditor.CustomEditors.Dedicated
             }
             _actor = actor;
 
-            var showActorPicker = actor == null || ParentEditor.Values.All(x => x is not Cloth);
-            if (showActorPicker)
+            if (ParentEditor.Values.Any(x => x is Cloth))
+            {
+                // Cloth always picks the parent model mesh
+                if (actor == null)
+                {
+                    layout.Label("Cloth needs to be added as a child to model actor.");
+                }
+            }
+            else
             {
                 // Actor reference picker
                 _actorPicker = layout.Custom<FlaxObjectRefPickerControl>();
@@ -242,7 +249,10 @@ namespace FlaxEditor.CustomEditors.Dedicated
                 {
                     var model = staticModel.Model;
                     if (model == null || model.WaitForLoaded())
+                    {
+                        layout.Label("No model.");
                         return;
+                    }
                     var materials = model.MaterialSlots;
                     var lods = model.LODs;
                     meshNames = new string[lods.Length][];
@@ -267,7 +277,10 @@ namespace FlaxEditor.CustomEditors.Dedicated
                 {
                     var skinnedModel = animatedModel.SkinnedModel;
                     if (skinnedModel == null || skinnedModel.WaitForLoaded())
+                    {
+                        layout.Label("No model.");
                         return;
+                    }
                     var materials = skinnedModel.MaterialSlots;
                     var lods = skinnedModel.LODs;
                     meshNames = new string[lods.Length][];

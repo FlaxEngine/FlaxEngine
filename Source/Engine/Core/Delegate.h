@@ -226,7 +226,7 @@ public:
     /// <returns>Function result</returns>
     FORCE_INLINE ReturnType operator()(Params... params) const
     {
-        ASSERT(_function);
+        ASSERT_LOW_LAYER(_function);
         return _function(_callee, Forward<Params>(params)...);
     }
 
@@ -289,8 +289,13 @@ protected:
     intptr volatile _ptr = 0;
     intptr volatile _size = 0;
 #else
-    HashSet<FunctionType>* _functions = nullptr;
-    CriticalSection* _locker = nullptr;
+    struct Data
+    {
+        HashSet<FunctionType> Functions;
+        CriticalSection Locker;
+    };
+    // Holds pointer to Data with Functions and Locker. Thread-safe access via atomic operations.
+    intptr volatile _data = 0;
 #endif
     typedef void (*StubSignature)(void*, Params...);
 
@@ -314,15 +319,12 @@ public:
         _ptr = (intptr)newBindings;
         _size = newSize;
 #else
-        if (other._functions == nullptr)
+        Data* otherData = (Data*)Platform::AtomicRead(&_data);
+        if (otherData == nullptr)
             return;
-        _functions = New<HashSet<FunctionType>>(*other._functions);
-        for (auto i = _functions->Begin(); i.IsNotEnd(); ++i)
-        {
-            if (i->Item._function && i->Item._lambda)
-                i->Item.LambdaCtor();
-        }
-        _locker = other._locker;
+        ScopeLock lock(otherData->Locker);
+        for (auto i = otherData->Functions.Begin(); i.IsNotEnd(); ++i)
+            Bind(i->Item);
 #endif
     }
 
@@ -334,10 +336,8 @@ public:
         other._ptr = 0;
         other._size = 0;
 #else
-        _functions = other._functions;
-        _locker = other._locker;
-        other._functions = nullptr;
-        other._locker = nullptr;
+        _data = other._data;
+        other._data = 0;
 #endif
     }
 
@@ -356,20 +356,11 @@ public:
             Allocator::Free((void*)_ptr);
         }
 #else
-        if (_locker != nullptr)
+        Data* data = (Data*)_data;
+        if (data)
         {
-            Allocator::Free(_locker);
-            _locker = nullptr;
-        }
-        if (_functions != nullptr)
-        {
-            for (auto i = _functions->Begin(); i.IsNotEnd(); ++i)
-            {
-                if (i->Item._lambda)
-                    i->Item.LambdaCtor();
-            }
-            Allocator::Free(_functions);
-            _functions = nullptr;
+            _data = 0;
+            Delete(data);
         }
 #endif
     }
@@ -385,8 +376,13 @@ public:
             for (intptr i = 0; i < size; i++)
                 Bind(bindings[i]);
 #else
-            for (auto i = other._functions->Begin(); i.IsNotEnd(); ++i)
-                Bind(i->Item);
+            Data* otherData = (Data*)Platform::AtomicRead(&_data);
+            if (otherData != nullptr)
+            {
+                ScopeLock lock(otherData->Locker);
+                for (auto i = otherData->Functions.Begin(); i.IsNotEnd(); ++i)
+                    Bind(i->Item);
+            }
 #endif
         }
         return *this;
@@ -402,10 +398,8 @@ public:
             other._ptr = 0;
             other._size = 0;
 #else
-            _functions = other._functions;
-            _locker = other._locker;
-            other._functions = nullptr;
-            other._locker = nullptr;
+            _data = other._data;
+            other._data = 0;
 #endif
         }
         return *this;
@@ -507,12 +501,20 @@ public:
             Allocator::Free(bindings);
         }
 #else
-        if (_locker == nullptr)
-            _locker = New<CriticalSection>();
-        ScopeLock lock(*_locker);
-        if (_functions == nullptr)
-            _functions = New<HashSet<FunctionType>>(32);
-        _functions->Add(f);
+        Data* data = (Data*)Platform::AtomicRead(&_data);
+        while (!data)
+        {
+            Data* newData = New<Data>();
+            Data* oldData = (Data*)Platform::InterlockedCompareExchange(&_data, (intptr)newData, (intptr)data);
+            if (oldData != data)
+            {
+                // Other thread already set the new data so free it and try again
+                Delete(newData);
+            }
+            data = (Data*)Platform::AtomicRead(&_data);
+        }
+        ScopeLock lock(data->Locker);
+        data->Functions.Add(f);
 #endif
     }
 
@@ -568,13 +570,22 @@ public:
             }
         }
 #else
-        if (_locker == nullptr)
-            _locker = New<CriticalSection>();
-        ScopeLock lock(*_locker);
-        if (_functions && _functions->Contains(f))
-            return;
+        Data* data = (Data*)Platform::AtomicRead(&_data);
+        if (data)
+        {
+            data->Locker.Lock();
+            if (data->Functions.Contains(f))
+            {
+                data->Locker.Unlock();
+                return;
+            }
+        }
 #endif
         Bind(f);
+#if !DELEGATE_USE_ATOMIC
+        if (data)
+            data->Locker.Unlock();
+#endif
     }
 
     /// <summary>
@@ -640,10 +651,11 @@ public:
             Unbind(f);
         }
 #else
-        if (_functions == nullptr)
+        Data* data = (Data*)Platform::AtomicRead(&_data);
+        if (!data)
             return;
-        ScopeLock lock(*_locker);
-        _functions->Remove(f);
+        ScopeLock lock(data->Locker);
+        data->Functions.Remove(f);
 #endif
     }
 
@@ -666,15 +678,11 @@ public:
             Platform::AtomicStore((intptr volatile*)&bindings[i]._callee, 0);
         }
 #else
-        if (_functions == nullptr)
+        Data* data = (Data*)Platform::AtomicRead(&_data);
+        if (!data)
             return;
-        ScopeLock lock(*_locker);
-        for (auto i = _functions->Begin(); i.IsNotEnd(); ++i)
-        {
-            if (i->Item._lambda)
-                i->Item.LambdaDtor();
-        }
-        _functions->Clear();
+        ScopeLock lock(data->Locker);
+        data->Functions.Clear();
 #endif
     }
 
@@ -684,22 +692,24 @@ public:
     /// <returns>The bound functions count.</returns>
     int32 Count() const
     {
+        int32 result = 0;
 #if DELEGATE_USE_ATOMIC
-        int32 count = 0;
         const intptr size = Platform::AtomicRead((intptr volatile*)&_size);
         FunctionType* bindings = (FunctionType*)Platform::AtomicRead((intptr volatile*)&_ptr);
         for (intptr i = 0; i < size; i++)
         {
             if (Platform::AtomicRead((intptr volatile*)&bindings[i]._function) != 0)
-                count++;
+                result++;
         }
-        return count;
 #else
-        if (_functions == nullptr)
-            return 0;
-        ScopeLock lock(*_locker);
-        return _functions->Count();
+        Data* data = (Data*)Platform::AtomicRead((intptr volatile*)&_data);
+        if (data)
+        {
+            ScopeLock lock(data->Locker);
+            result = data->Functions.Count();
+        }
 #endif
+        return result;
     }
 
     /// <summary>
@@ -710,10 +720,14 @@ public:
 #if DELEGATE_USE_ATOMIC
         return (int32)Platform::AtomicRead((intptr volatile*)&_size);
 #else
-        if (_functions == nullptr)
-            return 0;
-        ScopeLock lock(*_locker);
-        return _functions->Capacity();
+        int32 result = 0;
+        Data* data = (Data*)Platform::AtomicRead((intptr volatile*)&_data);
+        if (data)
+        {
+            ScopeLock lock(data->Locker);
+            result = data->Functions.Capacity();
+        }
+        return result;
 #endif
     }
 
@@ -733,10 +747,14 @@ public:
         }
         return false;
 #else
-        if (_functions == nullptr)
-            return false;
-        ScopeLock lock(*_locker);
-        return _functions->Count() > 0;
+        bool result = false;
+        Data* data = (Data*)Platform::AtomicRead((intptr volatile*)&_data);
+        if (data)
+        {
+            ScopeLock lock(data->Locker);
+            result = data->Functions.Count() != 0;
+        }
+        return result;
 #endif
     }
 
@@ -765,18 +783,13 @@ public:
             }
         }
 #else
-        if (_functions == nullptr)
-            return 0;
-        ScopeLock lock(*_locker);
-        for (auto i = _functions->Begin(); i.IsNotEnd(); ++i)
+        Data* data = (Data*)Platform::AtomicRead((intptr volatile*)&_data);
+        if (data)
         {
-            if (i->Item._function != nullptr)
+            ScopeLock lock(data->Locker);
+            for (auto i = data->Functions.Begin(); i.IsNotEnd(); ++i)
             {
-                buffer[count]._function = (StubSignature)i->Item._function;
-                buffer[count]._callee = (void*)i->Item._callee;
-                buffer[count]._lambda = (typename FunctionType::Lambda*)i->Item._lambda;
-                if (buffer[count]._lambda)
-                    buffer[count].LambdaCtor();
+                new(buffer + count) FunctionType((const FunctionType&)i->Item);
                 count++;
             }
         }
@@ -802,15 +815,15 @@ public:
             ++bindings;
         }
 #else
-        if (_functions == nullptr)
+        Data* data = (Data*)Platform::AtomicRead((intptr volatile*)&_data);
+        if (!data)
             return;
-        ScopeLock lock(*_locker);
-        for (auto i = _functions->Begin(); i.IsNotEnd(); ++i)
+        ScopeLock lock(data->Locker);
+        for (auto i = data->Functions.Begin(); i.IsNotEnd(); ++i)
         {
-            auto function = (StubSignature)(i->Item._function);
-            auto callee = (void*)(i->Item._callee);
-            if (function != nullptr)
-                function(callee, Forward<Params>(params)...);
+            const FunctionType& item = i->Item;
+            ASSERT_LOW_LAYER(item._function);
+            item._function(item._callee, Forward<Params>(params)...);
         }
 #endif
     }

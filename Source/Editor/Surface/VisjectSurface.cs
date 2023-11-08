@@ -716,7 +716,18 @@ namespace FlaxEditor.Surface
                 return null;
             Rectangle surfaceArea = GetNodesBounds(selection).MakeExpanded(80.0f);
 
-            return _context.CreateComment(ref surfaceArea, string.IsNullOrEmpty(text) ? "Comment" : text, new Color(1.0f, 1.0f, 1.0f, 0.2f));
+            // Order below other selected comments
+            bool hasCommentsSelected = false;
+            int lowestCommentOrder = int.MaxValue;
+            for (int i = 0; i < selection.Count; i++)
+            {
+                if (selection[i] is not SurfaceComment || selection[i].IndexInParent >= lowestCommentOrder)
+                    continue;
+                hasCommentsSelected = true;
+                lowestCommentOrder = selection[i].IndexInParent;
+            }
+
+            return _context.CreateComment(ref surfaceArea, string.IsNullOrEmpty(text) ? "Comment" : text, new Color(1.0f, 1.0f, 1.0f, 0.2f), hasCommentsSelected ? lowestCommentOrder : -1);
         }
 
         private static Rectangle GetNodesBounds(List<SurfaceNode> nodes)

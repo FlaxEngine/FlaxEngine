@@ -40,6 +40,11 @@ namespace FlaxEditor.GUI.Dialogs
         public DialogResult Result => _result;
 
         /// <summary>
+        /// Returns the size of the dialog.
+        /// </summary>
+        public Float2 DialogSize => _dialogSize;
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="Dialog"/> class.
         /// </summary>
         /// <param name="title">The title.</param>

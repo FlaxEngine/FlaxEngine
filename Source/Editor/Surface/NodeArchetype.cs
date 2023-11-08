@@ -150,6 +150,11 @@ namespace FlaxEditor.Surface
         public object Tag;
 
         /// <summary>
+        /// Custom score value to use when sorting node archetypes in Editor. If positive (eg. 1, 2) can be used to add more importance for a specific node type.
+        /// </summary>
+        public float SortScore;
+
+        /// <summary>
         /// Default node values. This array supports types: bool, int, float, Vector2, Vector3, Vector4, Color, Rectangle, Guid, string, Matrix and byte[].
         /// </summary>
         /// <remarks>
@@ -204,14 +209,17 @@ namespace FlaxEditor.Surface
                 Size = Size,
                 Flags = Flags,
                 Title = Title,
-                Description = Title,
+                SubTitle = SubTitle,
+                Description = Description,
                 AlternativeTitles = (string[])AlternativeTitles?.Clone(),
                 Tag = Tag,
+                SortScore = SortScore,
                 DefaultValues = (object[])DefaultValues?.Clone(),
                 DefaultType = DefaultType,
                 ConnectionsHints = ConnectionsHints,
                 IndependentBoxes = (int[])IndependentBoxes?.Clone(),
                 DependentBoxes = (int[])DependentBoxes?.Clone(),
+                DependentBoxFilter = DependentBoxFilter,
                 Elements = (NodeElementArchetype[])Elements?.Clone(),
                 TryParseText = TryParseText,
             };

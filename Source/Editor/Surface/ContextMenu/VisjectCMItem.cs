@@ -78,6 +78,7 @@ namespace FlaxEditor.Surface.ContextMenu
             if (!Visible)
                 return;
 
+            SortScore += _archetype.SortScore;
             if (selectedBox != null && CanConnectTo(selectedBox))
                 SortScore += 1;
             if (Data != null)

@@ -1334,7 +1334,8 @@ void ParticlesSystem::Job(int32 index)
         auto emitter = particleSystem->Emitters[track.AsEmitter.Index].Get();
         auto& data = instance.Emitters[track.AsEmitter.Index];
         ASSERT(emitter && emitter->IsLoaded());
-        ASSERT(emitter->Capacity != 0 && emitter->Graph.Layout.Size != 0);
+        if (emitter->Capacity == 0 || emitter->Graph.Layout.Size == 0)
+            continue;
         PROFILE_CPU_ASSET(emitter);
 
         // Calculate new time position
