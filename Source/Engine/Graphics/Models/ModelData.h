@@ -90,6 +90,21 @@ public:
     /// </summary>
     Array<BlendShape> BlendShapes;
 
+    /// <summary>
+    /// Global translation for this mesh to be at it's local origin.
+    /// </summary>
+    Vector3 OriginTranslation = Vector3::Zero;
+
+    /// <summary>
+    /// Orientation for this mesh at it's local origin.
+    /// </summary>
+    Quaternion OriginOrientation = Quaternion::Identity;
+
+    /// <summary>
+    /// Meshes scaling.
+    /// </summary>
+    Vector3 Scaling = Vector3::One;
+
 public:
     /// <summary>
     /// Determines whether this instance has any mesh data.

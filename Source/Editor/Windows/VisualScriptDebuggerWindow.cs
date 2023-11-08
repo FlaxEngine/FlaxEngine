@@ -399,6 +399,8 @@ namespace FlaxEditor.Windows
         {
             Title = "Visual Script Debugger";
 
+            var inputOptions = editor.Options.Options.Input;
+
             var toolstrip = new ToolStrip
             {
                 Parent = this
@@ -407,7 +409,7 @@ namespace FlaxEditor.Windows
             _debugToolstripControls = new[]
             {
                 toolstrip.AddSeparator(),
-                toolstrip.AddButton(editor.Icons.Play64, OnDebuggerContinue).LinkTooltip("Continue (F5)"),
+                toolstrip.AddButton(editor.Icons.Play64, OnDebuggerContinue).LinkTooltip($"Continue ({inputOptions.DebuggerContinue})"),
                 toolstrip.AddButton(editor.Icons.Search64, OnDebuggerNavigateToCurrentNode).LinkTooltip("Navigate to the current stack trace node"),
                 toolstrip.AddButton(editor.Icons.Stop64, OnDebuggerStop).LinkTooltip("Stop debugging"),
             };

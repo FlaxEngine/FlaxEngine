@@ -218,10 +218,10 @@ float4 ClampedPow(float4 x, float4 y)
 
 float4 FindQuatBetween(float3 from, float3 to)
 {
+    // http://lolengine.net/blog/2014/02/24/quaternion-from-two-vectors-final
     float normAB = 1.0f;
     float w = normAB + dot(from, to);
     float4 result;
-
     if (w >= 1e-6f * normAB)
     {
         result = float4
@@ -234,12 +234,10 @@ float4 FindQuatBetween(float3 from, float3 to)
     }
     else
     {
-        w = 0.f;
         result = abs(from.x) > abs(from.y)
-                     ? float4(-from.z, 0.f, from.x, w)
-                     : float4(0.f, -from.z, from.y, w);
+                     ? float4(-from.z, 0.f, from.x, 0.0f)
+                     : float4(0.f, -from.z, from.y, 0.0f);
     }
-
     return normalize(result);
 }
 

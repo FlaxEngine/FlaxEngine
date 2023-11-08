@@ -19,7 +19,7 @@ API_CLASS(Static) class FLAXENGINE_API LargeWorlds
     /// <summary>
     /// Defines the size of a single chunk. Large world (64-bit) gets divided into smaller chunks so all the math operations (32-bit) can be performed relative to the chunk origin without precision loss.
     /// </summary>
-    API_FIELD() static constexpr Real ChunkSize = 262144;
+    API_FIELD() static constexpr Real ChunkSize = 8192;
 
     /// <summary>
     /// Updates the large world origin to match the input position. The origin is snapped to the best matching chunk location.

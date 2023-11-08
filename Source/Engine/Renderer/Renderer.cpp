@@ -343,6 +343,7 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext, RenderCont
     // Prepare
     renderContext.View.Prepare(renderContext);
     renderContext.Buffers->Prepare();
+    ShadowsPass::Instance()->Prepare();
 
     // Build batch of render contexts (main view and shadow projections)
     {

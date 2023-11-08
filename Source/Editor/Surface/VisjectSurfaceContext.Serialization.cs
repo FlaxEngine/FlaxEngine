@@ -920,12 +920,6 @@ namespace FlaxEditor.Surface
             // Link control
             control.OnLoaded(action);
             control.Parent = RootControl;
-
-            if (control is SurfaceComment)
-            {
-                // Move comments to the background
-                control.IndexInParent = 0;
-            }
         }
 
         /// <summary>

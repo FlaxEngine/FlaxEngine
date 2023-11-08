@@ -184,21 +184,14 @@ Dictionary<void*, MAssembly*> CachedAssemblyHandles;
 void* GetStaticMethodPointer(const String& methodName);
 
 /// <summary>
-/// Calls the managed static method in NativeInterop class with given parameters.
-/// </summary>
-template<typename RetType, typename... Args>
-FORCE_INLINE RetType CallStaticMethodByName(const String& methodName, Args... args)
-{
-    typedef RetType (CORECLR_DELEGATE_CALLTYPE* fun)(Args...);
-    return ((fun)GetStaticMethodPointer(methodName))(args...);
-}
-
-/// <summary>
 /// Calls the managed static method with given parameters.
 /// </summary>
 template<typename RetType, typename... Args>
 FORCE_INLINE RetType CallStaticMethod(void* methodPtr, Args... args)
 {
+#if DOTNET_HOST_MONO
+    ASSERT_LOW_LAYER(mono_domain_get()); // Ensure that Mono runtime has been attached to this thread
+#endif
     typedef RetType (CORECLR_DELEGATE_CALLTYPE* fun)(Args...);
     return ((fun)methodPtr)(args...);
 }
@@ -274,7 +267,7 @@ bool MCore::LoadEngine()
         return true;
 
     // Prepare managed side
-    CallStaticMethodByName<void>(TEXT("Init"));
+    CallStaticMethod<void>(GetStaticMethodPointer(TEXT("Init")));
 #ifdef MCORE_MAIN_MODULE_NAME
     // MCORE_MAIN_MODULE_NAME define is injected by Scripting.Build.cs on platforms that use separate shared library for engine symbols
     ::String flaxLibraryPath(Platform::GetMainDirectory() / TEXT(MACRO_TO_STR(MCORE_MAIN_MODULE_NAME)));
@@ -293,7 +286,8 @@ bool MCore::LoadEngine()
     MRootDomain = New<MDomain>("Root");
     MDomains.Add(MRootDomain);
 
-    char* buildInfo = CallStaticMethodByName<char*>(TEXT("GetRuntimeInformation"));
+    void* GetRuntimeInformationPtr = GetStaticMethodPointer(TEXT("GetRuntimeInformation"));
+    char* buildInfo = CallStaticMethod<char*>(GetRuntimeInformationPtr);
     LOG(Info, ".NET runtime version: {0}", ::String(buildInfo));
     MCore::GC::FreeMemory(buildInfo);
 
@@ -305,7 +299,7 @@ void MCore::UnloadEngine()
     if (!MRootDomain)
         return;
     PROFILE_CPU();
-    CallStaticMethodByName<void>(TEXT("Exit"));
+    CallStaticMethod<void>(GetStaticMethodPointer(TEXT("Exit")));
     MDomains.ClearDelete();
     MRootDomain = nullptr;
     ShutdownHostfxr();
@@ -523,8 +517,7 @@ void MCore::GC::FreeMemory(void* ptr, bool coTaskMem)
 
 void MCore::Thread::Attach()
 {
-    // TODO: find a way to properly register native thread so Mono Stop The World (stw) won't freeze when native threads (eg. Job System) are running native code only
-#if DOTNET_HOST_MONO && 0
+#if DOTNET_HOST_MONO
     if (!IsInMainThread() && !mono_domain_get())
     {
         mono_thread_attach(MonoDomainHandle);
@@ -1793,6 +1786,7 @@ void* GetStaticMethodPointer(const String& methodName)
     void* fun;
     if (CachedFunctions.TryGet(methodName, fun))
         return fun;
+    PROFILE_CPU();
     const int rc = get_function_pointer(NativeInteropTypeName, FLAX_CORECLR_STRING(methodName).Get(), UNMANAGEDCALLERSONLY_METHOD, nullptr, nullptr, &fun);
     if (rc != 0)
         LOG(Fatal, "Failed to get unmanaged function pointer for method {0}: 0x{1:x}", methodName.Get(), (unsigned int)rc);
@@ -2014,6 +2008,9 @@ bool InitHostfxr()
     //Platform::SetEnvironmentVariable(TEXT("MONO_GC_DEBUG"), TEXT("6:gc-log.txt,check-remset-consistency,nursery-canaries"));
 #endif
 
+    // Adjust GC threads suspending mode to not block attached native threads (eg. Job System)
+    Platform::SetEnvironmentVariable(TEXT("MONO_THREADS_SUSPEND"), TEXT("preemptive"));
+
 #if defined(USE_MONO_AOT_MODE)
     // Enable AOT mode (per-platform)
     mono_jit_set_aot_mode(USE_MONO_AOT_MODE);
@@ -2166,6 +2163,7 @@ void* GetStaticMethodPointer(const String& methodName)
     void* fun;
     if (CachedFunctions.TryGet(methodName, fun))
         return fun;
+    PROFILE_CPU();
 
     static MonoClass* nativeInteropClass = nullptr;
     if (!nativeInteropClass)
