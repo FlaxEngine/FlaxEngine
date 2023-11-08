@@ -388,14 +388,16 @@ namespace FlaxEditor.Windows.Assets
         protected override void OnShow()
         {
             // Check if has no asset (but has item linked)
-            if (_asset == null && _item != null)
+            var item = _item;
+            if (_asset == null && item != null)
             {
                 // Load asset
                 _asset = LoadAsset();
                 if (_asset == null)
                 {
-                    Editor.LogError(string.Format("Cannot load asset \'{0}\' ({1})", _item.Path, typeof(T)));
+                    Editor.LogError(string.Format("Cannot load asset \'{0}\' ({1})", item.Path, typeof(T)));
                     Close();
+                    Editor.ContentDatabase.RefreshFolder(item, false);
                     return;
                 }
 

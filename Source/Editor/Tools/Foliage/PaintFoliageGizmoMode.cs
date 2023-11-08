@@ -1,5 +1,6 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
+using FlaxEditor.Gizmo;
 using FlaxEditor.SceneGraph.Actors;
 using FlaxEditor.Viewport;
 using FlaxEditor.Viewport.Modes;
@@ -69,11 +70,11 @@ namespace FlaxEditor.Tools.Foliage
         }
 
         /// <inheritdoc />
-        public override void Init(MainEditorGizmoViewport viewport)
+        public override void Init(IGizmoOwner owner)
         {
-            base.Init(viewport);
+            base.Init(owner);
 
-            Gizmo = new PaintFoliageGizmo(viewport, this);
+            Gizmo = new PaintFoliageGizmo(owner, this);
         }
 
         /// <inheritdoc />
@@ -81,7 +82,7 @@ namespace FlaxEditor.Tools.Foliage
         {
             base.OnActivated();
 
-            Viewport.Gizmos.Active = Gizmo;
+            Owner.Gizmos.Active = Gizmo;
             ClearCursor();
         }
 

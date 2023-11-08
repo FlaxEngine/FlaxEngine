@@ -26,12 +26,12 @@ public:
         , _srcResource(src)
         , _dstResource(dst)
     {
-        _srcResource.OnUnload.Bind<GPUCopyResourceTask, &GPUCopyResourceTask::OnResourceUnload>(this);
-        _dstResource.OnUnload.Bind<GPUCopyResourceTask, &GPUCopyResourceTask::OnResourceUnload>(this);
+        _srcResource.Released.Bind<GPUCopyResourceTask, &GPUCopyResourceTask::OnResourceReleased>(this);
+        _dstResource.Released.Bind<GPUCopyResourceTask, &GPUCopyResourceTask::OnResourceReleased>(this);
     }
 
 private:
-    void OnResourceUnload(GPUResourceReference* ref)
+    void OnResourceReleased()
     {
         Cancel();
     }
@@ -47,14 +47,11 @@ protected:
     // [GPUTask]
     Result run(GPUTasksContext* context) override
     {
-        if (_srcResource.IsMissing() || _dstResource.IsMissing())
+        if (!_srcResource || !_dstResource)
             return Result::MissingResources;
-
         context->GPU->CopyResource(_dstResource, _srcResource);
-
         return Result::Ok;
     }
-
     void OnEnd() override
     {
         _srcResource.Unlink();

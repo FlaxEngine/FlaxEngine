@@ -14,9 +14,9 @@
 #include "Engine/Graphics/PixelFormatExtensions.h"
 
 #if PLATFORM_DESKTOP
-#define VULKAN_UNIFORM_RING_BUFFER_SIZE 24 * 1024 * 1024
+#define VULKAN_UNIFORM_RING_BUFFER_SIZE (24 * 1024 * 1024)
 #else
-#define VULKAN_UNIFORM_RING_BUFFER_SIZE 8 * 1024 * 1024
+#define VULKAN_UNIFORM_RING_BUFFER_SIZE (8 * 1024 * 1024)
 #endif
 
 UniformBufferUploaderVulkan::UniformBufferUploaderVulkan(GPUDeviceVulkan* device)
@@ -153,10 +153,6 @@ GPUShaderProgram* GPUShaderVulkan::CreateGPUShaderProgram(ShaderStage type, cons
             vertexBindingDescriptions[i].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
         }
 
-        // Temporary variables
-        byte Type, Format, Index, InputSlot, InputSlotClass;
-        uint32 AlignedByteOffset, InstanceDataStepRate;
-
         // Load Input Layout (it may be empty)
         byte inputLayoutSize;
         stream.ReadByte(&inputLayoutSize);
@@ -167,32 +163,26 @@ GPUShaderProgram* GPUShaderVulkan::CreateGPUShaderProgram(ShaderStage type, cons
         for (int32 a = 0; a < inputLayoutSize; a++)
         {
             // Read description
-            // TODO: maybe use struct and load at once?
-            stream.ReadByte(&Type);
-            stream.ReadByte(&Index);
-            stream.ReadByte(&Format);
-            stream.ReadByte(&InputSlot);
-            stream.ReadUint32(&AlignedByteOffset);
-            stream.ReadByte(&InputSlotClass);
-            stream.ReadUint32(&InstanceDataStepRate);
+            GPUShaderProgramVS::InputElement inputElement;
+            stream.Read(inputElement);
 
-            const auto size = PixelFormatExtensions::SizeInBytes((PixelFormat)Format);
-            if (AlignedByteOffset != INPUT_LAYOUT_ELEMENT_ALIGN)
-                offset = AlignedByteOffset;
+            const auto size = PixelFormatExtensions::SizeInBytes((PixelFormat)inputElement.Format);
+            if (inputElement.AlignedByteOffset != INPUT_LAYOUT_ELEMENT_ALIGN)
+                offset = inputElement.AlignedByteOffset;
 
-            auto& vertexBindingDescription = vertexBindingDescriptions[InputSlot];
-            vertexBindingDescription.binding = InputSlot;
+            auto& vertexBindingDescription = vertexBindingDescriptions[inputElement.InputSlot];
+            vertexBindingDescription.binding = inputElement.InputSlot;
             vertexBindingDescription.stride = Math::Max(vertexBindingDescription.stride, (uint32_t)(offset + size));
-            vertexBindingDescription.inputRate = InputSlotClass == INPUT_LAYOUT_ELEMENT_PER_VERTEX_DATA ? VK_VERTEX_INPUT_RATE_VERTEX : VK_VERTEX_INPUT_RATE_INSTANCE;
-            ASSERT(InstanceDataStepRate == 0 || InstanceDataStepRate == 1);
+            vertexBindingDescription.inputRate = inputElement.InputSlotClass == INPUT_LAYOUT_ELEMENT_PER_VERTEX_DATA ? VK_VERTEX_INPUT_RATE_VERTEX : VK_VERTEX_INPUT_RATE_INSTANCE;
+            ASSERT(inputElement.InstanceDataStepRate == 0 || inputElement.InstanceDataStepRate == 1);
 
             auto& vertexAttributeDescription = vertexAttributeDescriptions[a];
             vertexAttributeDescription.location = a;
-            vertexAttributeDescription.binding = InputSlot;
-            vertexAttributeDescription.format = RenderToolsVulkan::ToVulkanFormat((PixelFormat)Format);
+            vertexAttributeDescription.binding = inputElement.InputSlot;
+            vertexAttributeDescription.format = RenderToolsVulkan::ToVulkanFormat((PixelFormat)inputElement.Format);
             vertexAttributeDescription.offset = offset;
 
-            bindingsCount = Math::Max(bindingsCount, (uint32)InputSlot + 1);
+            bindingsCount = Math::Max(bindingsCount, (uint32)inputElement.InputSlot + 1);
             offset += size;
         }
 

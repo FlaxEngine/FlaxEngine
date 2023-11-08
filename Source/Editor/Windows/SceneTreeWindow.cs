@@ -74,7 +74,7 @@ namespace FlaxEditor.Windows
             root.TreeNode.Expand();
             _tree = new Tree(true)
             {
-                Margin = new Margin(0.0f, 0.0f, -16.0f, 0.0f), // Hide root node
+                Margin = new Margin(0.0f, 0.0f, -16.0f, _sceneTreePanel.ScrollBarsSize), // Hide root node
                 IsScrollable = true,
             };
             _tree.AddChild(root.TreeNode);
@@ -142,7 +142,7 @@ namespace FlaxEditor.Windows
             {
                 if (selection.Count != 0)
                     Editor.SceneEditing.Select(actor);
-                actor.TreeNode.StartRenaming(this);
+                actor.TreeNode.StartRenaming(this, _sceneTreePanel);
             }
         }
 

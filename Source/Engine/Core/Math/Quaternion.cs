@@ -1078,6 +1078,115 @@ namespace FlaxEngine
         }
 
         /// <summary>
+        /// Gets the shortest arc quaternion to rotate this vector to the destination vector.
+        /// </summary>
+        /// <param name="from">The source vector.</param>
+        /// <param name="to">The destination vector.</param>
+        /// <param name="result">The result.</param>
+        /// <param name="fallbackAxis">The fallback axis.</param>
+        public static void GetRotationFromTo(ref Float3 from, ref Float3 to, out Quaternion result, ref Float3 fallbackAxis)
+        {
+            // Based on Stan Melax's article in Game Programming Gems
+
+            Float3 v0 = from;
+            Float3 v1 = to;
+            v0.Normalize();
+            v1.Normalize();
+
+            // If dot == 1, vectors are the same
+            float d = Float3.Dot(ref v0, ref v1);
+            if (d >= 1.0f)
+            {
+                result = Identity;
+                return;
+            }
+
+            if (d < 1e-6f - 1.0f)
+            {
+                if (fallbackAxis != Float3.Zero)
+                {
+                    // Rotate 180 degrees about the fallback axis
+                    RotationAxis(ref fallbackAxis, Mathf.Pi, out result);
+                }
+                else
+                {
+                    // Generate an axis
+                    Float3 axis = Float3.Cross(Float3.UnitX, from);
+                    if (axis.LengthSquared < Mathf.Epsilon) // Pick another if colinear
+                        axis = Float3.Cross(Float3.UnitY, from);
+                    axis.Normalize();
+                    RotationAxis(ref axis, Mathf.Pi, out result);
+                }
+            }
+            else
+            {
+                float s = Mathf.Sqrt((1 + d) * 2);
+                float invS = 1 / s;
+                Float3.Cross(ref v0, ref v1, out var c);
+                result.X = c.X * invS;
+                result.Y = c.Y * invS;
+                result.Z = c.Z * invS;
+                result.W = s * 0.5f;
+                result.Normalize();
+            }
+        }
+
+        /// <summary>
+        /// Gets the shortest arc quaternion to rotate this vector to the destination vector.
+        /// </summary>
+        /// <param name="from">The source vector.</param>
+        /// <param name="to">The destination vector.</param>
+        /// <param name="fallbackAxis">The fallback axis.</param>
+        /// <returns>The rotation.</returns>
+        public static Quaternion GetRotationFromTo(Float3 from, Float3 to, Float3 fallbackAxis)
+        {
+            GetRotationFromTo(ref from, ref to, out var result, ref fallbackAxis);
+            return result;
+        }
+
+        /// <summary>
+        /// Gets the quaternion that will rotate vector from into vector to, around their plan perpendicular axis.The input vectors don't need to be normalized.
+        /// </summary>
+        /// <param name="from">The source vector.</param>
+        /// <param name="to">The destination vector.</param>
+        /// <param name="result">The result.</param>
+        public static void FindBetween(ref Float3 from, ref Float3 to, out Quaternion result)
+        {
+            // http://lolengine.net/blog/2014/02/24/quaternion-from-two-vectors-final
+            float normFromNormTo = Mathf.Sqrt(from.LengthSquared * to.LengthSquared);
+            if (normFromNormTo < Mathf.Epsilon)
+            {
+                result = Identity;
+                return;
+            }
+            float w = normFromNormTo + Float3.Dot(from, to);
+            if (w < 1.0-6f * normFromNormTo)
+            {
+                result = Mathf.Abs(from.X) > Mathf.Abs(from.Z)
+                         ? new Quaternion(-from.Y, from.X, 0.0f, 0.0f)
+                         : new Quaternion(0.0f, -from.Z, from.Y, 0.0f);
+            }
+            else
+            {
+                Float3 cross = Float3.Cross(from, to);
+                result = new Quaternion(cross.X, cross.Y, cross.Z, w);
+            }
+            result.Normalize();
+        }
+
+        /// <summary>
+        /// Gets the quaternion that will rotate vector from into vector to, around their plan perpendicular axis.The input vectors don't need to be normalized.
+        /// </summary>
+        /// <param name="from">The source vector.</param>
+        /// <param name="to">The destination vector.</param>
+        /// <returns>The rotation.</returns>
+        public static Quaternion FindBetween(Float3 from, Float3 to)
+        {
+            FindBetween(ref from, ref to, out var result);
+            return result;
+        }
+
+        /// <summary>
         /// Creates a left-handed spherical billboard that rotates around a specified object position.
         /// </summary>
         /// <param name="objectPosition">The position of the object around which the billboard will rotate.</param>

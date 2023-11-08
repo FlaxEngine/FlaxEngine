@@ -151,6 +151,8 @@ namespace Flax.Build.Bindings
                 return value;
             if (typeInfo.Type == "String")
                 return $"Variant(StringView({value}))";
+            if (typeInfo.Type == "StringAnsi")
+                return $"Variant(StringAnsiView({value}))";
             if (typeInfo.Type == "AssetReference" ||
                 typeInfo.Type == "WeakAssetReference" ||
                 typeInfo.Type == "SoftAssetReference" ||
@@ -207,6 +209,8 @@ namespace Flax.Build.Bindings
                 return value;
             if (typeInfo.Type == "String")
                 return $"(StringView){value}";
+            if (typeInfo.Type == "StringAnsi")
+                return $"(StringAnsiView){value}";
             if (typeInfo.IsPtr && typeInfo.IsConst && typeInfo.Type == "Char")
                 return $"((StringView){value}).GetText()"; // (StringView)Variant, if not empty, is guaranteed to point to a null-terminated buffer.
             if (typeInfo.Type == "AssetReference" || typeInfo.Type == "WeakAssetReference" || typeInfo.Type == "SoftAssetReference")
@@ -578,6 +582,9 @@ namespace Flax.Build.Bindings
                 {
                     CppReferencesFiles.Add(apiType.File);
 
+                    if (apiType.MarshalAs != null)
+                        return GenerateCppWrapperNativeToManaged(buildData, new TypeInfo(apiType.MarshalAs), caller, out type, functionInfo);
+
                     // Scripting Object
                     if (apiType.IsScriptingObject)
                     {
@@ -787,6 +794,9 @@ namespace Flax.Build.Bindings
 
                 if (apiType != null)
                 {
+                    if (apiType.MarshalAs != null)
+                        return GenerateCppWrapperManagedToNative(buildData, new TypeInfo(apiType.MarshalAs), caller, out type, out apiType, functionInfo, out needLocalVariable);
+
                     // Scripting Object (for non-pod types converting only, other API converts managed to unmanaged object in C# wrapper code)
                     if (CppNonPodTypesConvertingGeneration && apiType.IsScriptingObject && typeInfo.IsPtr)
                     {
@@ -839,14 +849,12 @@ namespace Flax.Build.Bindings
                     if (typeInfo.GenericArgs != null)
                     {
                         type += '<';
-
                         for (var i = 0; i < typeInfo.GenericArgs.Count; i++)
                         {
                             if (i != 0)
                                 type += ", ";
                             type += typeInfo.GenericArgs[i];
                         }
-
                         type += '>';
                     }
                     return string.Empty;
@@ -1064,6 +1072,10 @@ namespace Flax.Build.Bindings
                         {
                             convertOutputParameter = true;
                         }
+                        else if (apiType.Name == "Variant")
+                        {
+                            convertOutputParameter = true;
+                        }
                     }
                     // BytesContainer
                     else if (parameterInfo.Type.Type == "BytesContainer" && parameterInfo.Type.GenericArgs == null)
@@ -1228,6 +1240,11 @@ namespace Flax.Build.Bindings
                         callParams += "&";
                     callParams += parameterInfo.Name;
                     callParams += "Temp";
+                }
+                // Instruct for more optoimized value move operation
+                else if (parameterInfo.Type.IsMoveRef)
+                {
+                    callParams += $"MoveTemp({param})";
                 }
                 else
                 {
@@ -1950,7 +1967,7 @@ namespace Flax.Build.Bindings
                     }
                     contents.Append(')').AppendLine();
                     contents.Append("    {").AppendLine();
-                    if (buildData.Target.IsEditor)
+                    if (buildData.Target.IsEditor && false)
                         contents.Append("        MMethod* method = nullptr;").AppendLine(); // TODO: find a better way to cache event method in editor and handle C# hot-reload
                     else
                         contents.Append("        static MMethod* method = nullptr;").AppendLine();
@@ -2367,7 +2384,9 @@ namespace Flax.Build.Bindings
                     CppUsedNonPodTypes.Add(structureInfo);
                 contents.AppendLine("    static MObject* Box(void* ptr)");
                 contents.AppendLine("    {");
-                if (structureInfo.IsPod)
+                if (structureInfo.MarshalAs != null)
+                    contents.AppendLine($"        MISSING_CODE(\"Boxing native type {structureInfo.Name} as {structureInfo.MarshalAs}\"); return nullptr;"); // TODO: impl this
+                else if (structureInfo.IsPod)
                     contents.AppendLine($"        return MCore::Object::Box(ptr, {structureTypeNameNative}::TypeInitializer.GetClass());");
                 else
                     contents.AppendLine($"        return MUtils::Box(*({structureTypeNameNative}*)ptr, {structureTypeNameNative}::TypeInitializer.GetClass());");
@@ -2376,7 +2395,9 @@ namespace Flax.Build.Bindings
                 // Unboxing structures from managed object to native data
                 contents.AppendLine("    static void Unbox(void* ptr, MObject* managed)");
                 contents.AppendLine("    {");
-                if (structureInfo.IsPod)
+                if (structureInfo.MarshalAs != null)
+                    contents.AppendLine($"        MISSING_CODE(\"Boxing native type {structureInfo.Name} as {structureInfo.MarshalAs}\");"); // TODO: impl this
+                else if (structureInfo.IsPod)
                     contents.AppendLine($"        Platform::MemoryCopy(ptr, MCore::Object::Unbox(managed), sizeof({structureTypeNameNative}));");
                 else
                     contents.AppendLine($"        *({structureTypeNameNative}*)ptr = ToNative(*({GenerateCppManagedWrapperName(structureInfo)}*)MCore::Object::Unbox(managed));");
@@ -2654,6 +2675,13 @@ namespace Flax.Build.Bindings
         {
             if (CppUsedNonPodTypesList.Contains(apiType))
                 return;
+            if (apiType is ClassStructInfo classStructInfo)
+            {
+                if (classStructInfo.MarshalAs != null)
+                    return;
+                if (classStructInfo.IsTemplate)
+                    throw new Exception($"Cannot use template type '{classStructInfo}' as non-POD type for cross-language bindings.");
+            }
             if (apiType is StructureInfo structureInfo)
             {
                 // Check all fields (if one of them is also non-POD structure then we need to generate wrappers for them too)
@@ -2675,11 +2703,6 @@ namespace Flax.Build.Bindings
                         }
                     }
                 }
-            }
-            if (apiType is ClassStructInfo classStructInfo)
-            {
-                if (classStructInfo.IsTemplate)
-                    throw new Exception($"Cannot use template type '{classStructInfo}' as non-POD type for cross-language bindings.");
             }
             CppUsedNonPodTypesList.Add(apiType);
         }
@@ -3112,14 +3135,17 @@ namespace Flax.Build.Bindings
             contents.AppendLine("#pragma once");
             contents.AppendLine();
             contents.AppendLine($"#define {binaryModuleNameUpper}_NAME \"{binaryModuleName}\"");
-            if (version.Build == -1)
+            if (version.Build <= 0)
                 contents.AppendLine($"#define {binaryModuleNameUpper}_VERSION Version({version.Major}, {version.Minor})");
-            else
+            else if (version.Revision <= 0)
                 contents.AppendLine($"#define {binaryModuleNameUpper}_VERSION Version({version.Major}, {version.Minor}, {version.Build})");
+            else
+                contents.AppendLine($"#define {binaryModuleNameUpper}_VERSION Version({version.Major}, {version.Minor}, {version.Build}, {version.Revision})");
             contents.AppendLine($"#define {binaryModuleNameUpper}_VERSION_TEXT \"{version}\"");
             contents.AppendLine($"#define {binaryModuleNameUpper}_VERSION_MAJOR {version.Major}");
             contents.AppendLine($"#define {binaryModuleNameUpper}_VERSION_MINOR {version.Minor}");
             contents.AppendLine($"#define {binaryModuleNameUpper}_VERSION_BUILD {version.Build}");
+            contents.AppendLine($"#define {binaryModuleNameUpper}_VERSION_REVISION {version.Revision}");
             contents.AppendLine($"#define {binaryModuleNameUpper}_COMPANY \"{project.Company}\"");
             contents.AppendLine($"#define {binaryModuleNameUpper}_COPYRIGHT \"{project.Copyright}\"");
             contents.AppendLine();

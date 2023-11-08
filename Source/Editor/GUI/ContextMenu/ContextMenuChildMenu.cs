@@ -72,7 +72,7 @@ namespace FlaxEditor.GUI.ContextMenu
             // Hide parent CM popups and set itself as child
             parentContextMenu.ShowChild(ContextMenu, PointToParent(ParentContextMenu, new Float2(Width, 0)));
         }
-        
+
         /// <inheritdoc />
         public override bool OnMouseUp(Float2 location, MouseButton button)
         {

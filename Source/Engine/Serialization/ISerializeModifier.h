@@ -18,6 +18,9 @@ public:
     /// </summary>
     uint32 EngineBuild = FLAXENGINE_VERSION_BUILD;
 
+    // Utility for scene deserialization to track currently mapped in Prefab Instance object IDs into IdsMapping.
+    int32 CurrentInstance = -1;
+
     /// <summary>
     /// The object IDs mapping. Key is a serialized object id, value is mapped value to use.
     /// </summary>

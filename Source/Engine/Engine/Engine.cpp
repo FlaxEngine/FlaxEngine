@@ -20,7 +20,6 @@
 #include "Engine/Threading/MainThreadTask.h"
 #include "Engine/Threading/ThreadRegistry.h"
 #include "Engine/Graphics/GPUDevice.h"
-#include "Engine/Scripting/ManagedCLR/MCore.h"
 #include "Engine/Scripting/ScriptingType.h"
 #include "Engine/Content/Content.h"
 #include "Engine/Content/JsonAsset.h"
@@ -105,6 +104,14 @@ int32 Engine::Main(const Char* cmdLine)
     Globals::StartupFolder = Globals::BinariesFolder = Platform::GetMainDirectory();
 #if USE_EDITOR
     Globals::StartupFolder /= TEXT("../../../..");
+#if PLATFORM_MAC
+    if (Globals::BinariesFolder.EndsWith(TEXT(".app/Contents")))
+    {
+        // If running editor from application package on macOS
+        Globals::StartupFolder = Globals::BinariesFolder;
+        Globals::BinariesFolder /= TEXT("MacOS");
+    }
+#endif
 #endif
     StringUtils::PathRemoveRelativeParts(Globals::StartupFolder);
     FileSystem::NormalizePath(Globals::BinariesFolder);
@@ -122,7 +129,6 @@ int32 Engine::Main(const Char* cmdLine)
     }
 
     EngineImpl::InitPaths();
-
     EngineImpl::InitLog();
 
 #if USE_EDITOR
@@ -320,14 +326,6 @@ void Engine::OnUpdate()
 
     // Update services
     EngineService::OnUpdate();
-
-#ifdef USE_NETCORE
-    // Force GC to run in background periodically to avoid large blocking collections causing hitches
-    if (Time::Update.TicksCount % 60 == 0)
-    {
-        MCore::GC::Collect(MCore::GC::MaxGeneration(), MGCCollectionMode::Forced, false, false);
-    }
-#endif
 }
 
 void Engine::OnLateUpdate()
@@ -542,7 +540,8 @@ void EngineImpl::InitLog()
     LOG(Info, "Product: {0}, Company: {1}", Globals::ProductName, Globals::CompanyName);
     LOG(Info, "Current culture: {0}", Platform::GetUserLocaleName());
     LOG(Info, "Command line: {0}", CommandLine);
-    LOG(Info, "Base directory: {0}", Globals::StartupFolder);
+    LOG(Info, "Base folder: {0}", Globals::StartupFolder);
+    LOG(Info, "Binaries folder: {0}", Globals::BinariesFolder);
     LOG(Info, "Temporary folder: {0}", Globals::TemporaryFolder);
     LOG(Info, "Project folder: {0}", Globals::ProjectFolder);
 #if USE_EDITOR
@@ -588,11 +587,13 @@ void EngineImpl::InitPaths()
     Globals::ProjectCacheFolder = Globals::ProjectFolder / TEXT("Cache");
 #endif
 
+#if USE_MONO
     // We must ensure that engine is located in folder which path contains only ANSI characters
     // Why? Mono lib must have etc and lib folders at ANSI path
     // But project can be located on Unicode path
     if (!Globals::StartupFolder.IsANSI())
         Platform::Fatal(TEXT("Cannot start application in directory which name contains non-ANSI characters."));
+#endif
 
 #if !PLATFORM_SWITCH && !FLAX_TESTS
     // Setup directories

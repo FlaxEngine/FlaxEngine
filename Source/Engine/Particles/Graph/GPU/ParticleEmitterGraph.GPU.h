@@ -5,7 +5,7 @@
 /// <summary>
 /// Current GPU particles emitter shader version.
 /// </summary>
-#define PARTICLE_GPU_GRAPH_VERSION 9
+#define PARTICLE_GPU_GRAPH_VERSION 10
 
 #if COMPILE_WITH_PARTICLE_GPU_GRAPH
 
@@ -94,7 +94,6 @@ public:
     /// <summary>
     /// Gets the root graph.
     /// </summary>
-    /// <returns>The base graph.</returns>
     FORCE_INLINE ParticleEmitterGraphGPU* GetRootGraph() const
     {
         return _graphs.First();
@@ -154,12 +153,12 @@ private:
 
     bool IsLocalSimulationSpace() const
     {
-        return ((ParticleEmitterGraphGPU*)_graphStack.Peek())->SimulationSpace == ParticlesSimulationSpace::Local;
+        return GetRootGraph()->SimulationSpace == ParticlesSimulationSpace::Local;
     }
 
     bool IsWorldSimulationSpace() const
     {
-        return ((ParticleEmitterGraphGPU*)_graphStack.Peek())->SimulationSpace == ParticlesSimulationSpace::World;
+        return GetRootGraph()->SimulationSpace == ParticlesSimulationSpace::World;
     }
 };
 

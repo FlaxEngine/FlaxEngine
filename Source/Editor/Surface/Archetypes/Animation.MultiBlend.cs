@@ -465,7 +465,7 @@ namespace FlaxEditor.Surface.Archetypes
                 if (selectedIndex != -1)
                 {
                     var index = 5 + selectedIndex * 2;
-                    SetValue(index, _animationPicker.SelectedID);
+                    SetValue(index, _animationPicker.Validator.SelectedID);
                 }
             }
 
@@ -495,7 +495,7 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 if (isValid)
                 {
-                    _animationPicker.SelectedID = data1;
+                    _animationPicker.Validator.SelectedID = data1;
                     _animationSpeed.Value = data0.W;
 
                     var path = string.Empty;
@@ -505,7 +505,7 @@ namespace FlaxEditor.Surface.Archetypes
                 }
                 else
                 {
-                    _animationPicker.SelectedID = Guid.Empty;
+                    _animationPicker.Validator.SelectedID = Guid.Empty;
                     _animationSpeed.Value = 1.0f;
                 }
                 _animationPicker.Enabled = isValid;
@@ -542,9 +542,9 @@ namespace FlaxEditor.Surface.Archetypes
             }
 
             /// <inheritdoc />
-            public override void OnSurfaceLoaded()
+            public override void OnSurfaceLoaded(SurfaceNodeActions action)
             {
-                base.OnSurfaceLoaded();
+                base.OnSurfaceLoaded(action);
 
                 UpdateUI();
             }

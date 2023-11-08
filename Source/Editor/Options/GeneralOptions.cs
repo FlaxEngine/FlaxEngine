@@ -106,7 +106,7 @@ namespace FlaxEditor.Options
         [DefaultValue(60.0f), Limit(0, 666)]
         [EditorDisplay("General", "Editor FPS"), EditorOrder(110), Tooltip("Limit for the editor draw/update frames per second rate (FPS). Use higher values if you need more responsive interface or lower values to use less device power. Value 0 disables any limits.")]
         public float EditorFPS { get; set; } = 60.0f;
-        
+
         /// <summary>
         /// Gets or sets The FPS of the editor when the editor window is not focused. Usually set to lower then the editor FPS.
         /// </summary>
@@ -117,7 +117,7 @@ namespace FlaxEditor.Options
         /// <summary>
         /// Gets or sets the sequence of actions to perform when using Build Scenes button. Can be used to configure this as button (eg. compile code or just update navmesh).
         /// </summary>
-        [EditorDisplay("General"), EditorOrder(200), Tooltip("The sequence of actions to perform when using Build Scenes button. Can be used to configure this as button (eg. compile code or just update navmesh).")]
+        [EditorDisplay("General"), EditorOrder(200), ExpandGroups, Tooltip("The sequence of actions to perform when using Build Scenes button. Can be used to configure this as button (eg. compile code or just update navmesh).")]
         public BuildAction[] BuildActions { get; set; } =
         {
             BuildAction.CSG,
@@ -203,7 +203,7 @@ namespace FlaxEditor.Options
         [DefaultValue(5), Limit(1)]
         [EditorDisplay("Auto Save", "Auto Save Frequency"), EditorOrder(801), Tooltip("The interval between auto saves (in minutes)")]
         public int AutoSaveFrequency { get; set; } = 5;
-        
+
         /// <summary>
         /// Gets or sets a value indicating the time before the auto save that the popup shows (in seconds).
         /// </summary>

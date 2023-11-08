@@ -195,7 +195,7 @@ namespace FlaxEditor.Windows
             _contextMenu.AddButton("Clear log", Clear);
             _contextMenu.AddButton("Copy selection", _output.Copy);
             _contextMenu.AddButton("Select All", _output.SelectAll);
-            _contextMenu.AddButton("Show in explorer", () => FileSystem.ShowFileExplorer(Path.Combine(Globals.ProjectFolder, "Logs")));
+            _contextMenu.AddButton(Utilities.Constants.ShowInExplorer, () => FileSystem.ShowFileExplorer(Path.Combine(Globals.ProjectFolder, "Logs")));
             _contextMenu.AddButton("Scroll to bottom", () => { _vScroll.TargetValue = _vScroll.Maximum; }).Icon = Editor.Icons.ArrowDown12;
 
             // Setup editor options
@@ -467,6 +467,7 @@ namespace FlaxEditor.Windows
             if (_isDirty)
             {
                 _isDirty = false;
+                var wasEmpty = _output.TextLength == 0;
 
                 // Cache fonts
                 _output.DefaultStyle.Font.GetFont();
@@ -589,7 +590,7 @@ namespace FlaxEditor.Windows
                 // Update the output
                 var cachedScrollValue = _vScroll.Value;
                 var cachedSelection = _output.SelectionRange;
-                var isBottomScroll = _vScroll.Value >= _vScroll.Maximum - 20.0f;
+                var isBottomScroll = _vScroll.Value >= _vScroll.Maximum - 20.0f || wasEmpty;
                 _output.Text = _textBuffer.ToString();
                 _textBufferCount = _entries.Count;
                 if (!_vScroll.IsThumbClicked)

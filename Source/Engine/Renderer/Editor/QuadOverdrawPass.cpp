@@ -49,7 +49,6 @@ void QuadOverdrawPass::Render(RenderContext& renderContext, GPUContext* context,
     context->BindUA(1, overdrawTexture->View());
     context->BindUA(2, liveCountTexture->View());
     DrawCall drawCall;
-    Platform::MemoryClear(&drawCall, sizeof(DrawCall));
     drawCall.PerInstanceRandom = 1.0f;
     MaterialBase::BindParameters bindParams(context, renderContext, drawCall);
     bindParams.BindViewData();

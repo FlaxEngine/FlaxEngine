@@ -4,6 +4,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Xml;
 using FlaxEditor.CustomEditors;
+using FlaxEditor.SceneGraph;
+using FlaxEditor.Viewport;
 using FlaxEngine.GUI;
 
 namespace FlaxEditor.Windows
@@ -13,7 +15,7 @@ namespace FlaxEditor.Windows
     /// </summary>
     /// <seealso cref="FlaxEditor.Windows.EditorWindow" />
     /// <seealso cref="FlaxEditor.Windows.SceneEditorWindow" />
-    public class PropertiesWindow : SceneEditorWindow
+    public class PropertiesWindow : SceneEditorWindow, IPresenterOwner
     {
         private IEnumerable<object> undoRecordObjects;
 
@@ -81,6 +83,15 @@ namespace FlaxEditor.Windows
                 ScaleLinked = value1;
             if (bool.TryParse(node.GetAttribute("UIPivotRelative"), out value1))
                 UIPivotRelative = value1;
+        }
+
+        /// <inheritdoc />
+        public EditorViewport PresenterViewport => Editor.Windows.EditWin.Viewport;
+
+        /// <inheritdoc />
+        public void Select(List<SceneGraphNode> nodes)
+        {
+            Editor.SceneEditing.Select(nodes);
         }
     }
 }

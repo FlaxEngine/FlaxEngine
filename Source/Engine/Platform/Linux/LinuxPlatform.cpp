@@ -945,7 +945,7 @@ const char* ButtonCodeToKeyName(KeyboardKeys code)
 		// Row #6
 	case KeyboardKeys::Control:	return "LCTL"; // Left Control
 	case KeyboardKeys::LeftWindows: return "LWIN";
-	case KeyboardKeys::LeftMenu: return "LALT";
+	case KeyboardKeys::Alt: return "LALT";
 	case KeyboardKeys::Spacebar: return "SPCE";
 	case KeyboardKeys::RightMenu: return "RALT";
 	case KeyboardKeys::RightWindows: return "RWIN";
@@ -2622,9 +2622,7 @@ bool LinuxPlatform::GetHasFocus()
 		if (window->IsFocused())
 			return true;
 	}
-
-	// Default to true if has no windows open
-    return WindowsManager::Windows.IsEmpty();
+	return false;
 }
 
 bool LinuxPlatform::CanOpenUrl(const StringView& url)
@@ -2700,6 +2698,8 @@ Float2 LinuxPlatform::GetDesktopSize()
 	if (screenIdx >= count)
 		return Float2::Zero;
 
+    // this function is used as a fallback to place a window at the center of
+    // a screen so we report only one screen instead of the real desktop
 	Float2 size((float)xsi[screenIdx].width, (float)xsi[screenIdx].height);
 	X11::XFree(xsi);
 	return size;
@@ -2707,14 +2707,72 @@ Float2 LinuxPlatform::GetDesktopSize()
 
 Rectangle LinuxPlatform::GetMonitorBounds(const Float2& screenPos)
 {
-	// TODO: do it in a proper way
-	return Rectangle(Float2::Zero, GetDesktopSize());
+    if (!xDisplay)
+        return Rectangle::Empty;
+
+    int event, err;
+    const bool ok = X11::XineramaQueryExtension(xDisplay, &event, &err);
+    if (!ok)
+        return Rectangle::Empty;
+
+    int count;
+    int screenIdx = 0;
+    X11::XineramaScreenInfo* xsi = X11::XineramaQueryScreens(xDisplay, &count);
+    if (screenIdx >= count)
+        return Rectangle::Empty;
+    // find the screen for this screenPos
+    for (int i = 0; i < count; i++)
+    {
+        if (screenPos.X >= xsi[i].x_org && screenPos.X < xsi[i].x_org+xsi[i].width
+            && screenPos.Y >= xsi[i].y_org && screenPos.Y < xsi[i].y_org+xsi[i].height)
+        {
+            screenIdx = i;
+            break;
+        }
+    }
+
+    Float2 org((float)xsi[screenIdx].x_org, (float)xsi[screenIdx].y_org);
+    Float2 size((float)xsi[screenIdx].width, (float)xsi[screenIdx].height);
+    X11::XFree(xsi);
+	return Rectangle(org, size);
 }
 
 Rectangle LinuxPlatform::GetVirtualDesktopBounds()
 {
-	// TODO: do it in a proper way
-	return Rectangle(Float2::Zero, GetDesktopSize());
+    if (!xDisplay)
+        return Rectangle::Empty;
+
+    int event, err;
+    const bool ok = X11::XineramaQueryExtension(xDisplay, &event, &err);
+    if (!ok)
+        return Rectangle::Empty;
+
+    int count;
+    X11::XineramaScreenInfo* xsi = X11::XineramaQueryScreens(xDisplay, &count);
+    if (count <= 0)
+        return Rectangle::Empty;
+    // get all screen dimensions and assume the monitors form a rectangle
+    // as you can arrange monitors to your liking this is not necessarily the case
+    int minX = INT32_MAX, minY = INT32_MAX;
+    int maxX = 0, maxY = 0;
+    for (int i = 0; i < count; i++)
+    {
+        int maxScreenX = xsi[i].x_org + xsi[i].width;
+        int maxScreenY = xsi[i].y_org + xsi[i].height;
+        if (maxScreenX > maxX)
+            maxX = maxScreenX;
+        if (maxScreenY > maxY)
+            maxY = maxScreenY;
+        if (minX > xsi[i].x_org)
+            minX = xsi[i].x_org;
+        if (minY > xsi[i].y_org)
+            minY = xsi[i].y_org;
+    }
+
+    Float2 org(static_cast<float>(minX), static_cast<float>(minY));
+    Float2 size(static_cast<float>(maxX - minX), static_cast<float>(maxY - minY));
+    X11::XFree(xsi);
+    return Rectangle(org, size);
 }
 
 String LinuxPlatform::GetMainDirectory()

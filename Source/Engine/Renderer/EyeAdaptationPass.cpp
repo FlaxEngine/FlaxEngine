@@ -35,7 +35,6 @@ PACK_STRUCT(struct EyeAdaptationData {
 
 void EyeAdaptationPass::Render(RenderContext& renderContext, GPUTexture* colorBuffer)
 {
-    // Cache data
     auto device = GPUDevice::Instance;
     auto context = device->GetMainContext();
     auto& view = renderContext.View;
@@ -45,12 +44,8 @@ void EyeAdaptationPass::Render(RenderContext& renderContext, GPUTexture* colorBu
     //const float frameDelta = Time::ElapsedGameTime.GetTotalSeconds();
     const float frameDelta = time - renderContext.Buffers->LastEyeAdaptationTime;
     renderContext.Buffers->LastEyeAdaptationTime = 0.0f;
-
-    // Optionally skip the rendering
-    if (checkIfSkipPass() || (view.Flags & ViewFlags::EyeAdaptation) == ViewFlags::None || settings.Mode == EyeAdaptationMode::None)
-    {
+    if ((view.Flags & ViewFlags::EyeAdaptation) == ViewFlags::None || settings.Mode == EyeAdaptationMode::None || checkIfSkipPass())
         return;
-    }
 
     PROFILE_GPU_CPU("Eye Adaptation");
 

@@ -87,7 +87,11 @@ bool GPUShader::Create(MemoryReadStream& stream)
     GPUShaderProgramInitializer initializer;
 #if !BUILD_RELEASE
     initializer.Owner = this;
+    const StringView name = GetName();
+#else
+    const StringView name;
 #endif
+    const bool hasCompute = GPUDevice::Instance->Limits.HasCompute;
     for (int32 i = 0; i < shadersCount; i++)
     {
         const ShaderStage type = static_cast<ShaderStage>(stream.ReadByte());
@@ -117,10 +121,15 @@ bool GPUShader::Create(MemoryReadStream& stream)
             stream.ReadBytes(&initializer.Bindings, sizeof(ShaderBindings));
 
             // Create shader program
+            if (type == ShaderStage::Compute && !hasCompute)
+            {
+                LOG(Warning, "Failed to create {} Shader program '{}' ({}).", ::ToString(type), String(initializer.Name), name);
+                continue;
+            }
             GPUShaderProgram* shader = CreateGPUShaderProgram(type, initializer, cache, cacheSize, stream);
             if (shader == nullptr)
             {
-                LOG(Error, "Failed to create {} Shader program '{}'.", ::ToString(type), String(initializer.Name));
+                LOG(Error, "Failed to create {} Shader program '{}' ({}).", ::ToString(type), String(initializer.Name), name);
                 return true;
             }
 

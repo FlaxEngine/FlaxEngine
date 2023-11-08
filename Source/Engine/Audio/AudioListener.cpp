@@ -66,7 +66,7 @@ void AudioListener::OnTransformChanged()
     _box = BoundingBox(_transform.Translation);
     _sphere = BoundingSphere(_transform.Translation, 0.0f);
 
-    if (IsActiveInHierarchy())
+    if (IsActiveInHierarchy() && IsDuringPlay())
     {
         AudioBackend::Listener::TransformChanged(this);
     }

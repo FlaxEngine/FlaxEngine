@@ -502,6 +502,29 @@ namespace FlaxEngine.GUI
         }
 
         /// <inheritdoc />
+        public override bool OnMouseDoubleClick(Float2 location, MouseButton button)
+        {
+            if (base.OnMouseDoubleClick(location, button))
+                return true;
+            
+            _mouseOverHeader = HeaderRectangle.Contains(location);
+            if (button == MouseButton.Left && _mouseOverHeader)
+            {
+                _mouseButtonLeftDown = true;
+                return true;
+            }
+
+            if (button == MouseButton.Left && _mouseButtonLeftDown)
+            {
+                _mouseButtonLeftDown = false;
+                if (_mouseOverHeader)
+                    Toggle();
+                return true;
+            }
+            return false;
+        }
+
+        /// <inheritdoc />
         public override void OnMouseLeave()
         {
             _mouseButtonLeftDown = false;

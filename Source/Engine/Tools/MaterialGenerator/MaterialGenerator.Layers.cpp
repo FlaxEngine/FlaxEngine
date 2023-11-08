@@ -147,7 +147,7 @@ void MaterialGenerator::ProcessGroupLayers(Box* box, Node* node, Value& value)
     case 8:
     {
         const Value defaultValue = MaterialValue::InitForZero(VariantType::Void);
-        const Value alpha = tryGetValue(node->GetBox(2), 0, Value::Zero);
+        Value alpha = tryGetValue(node->GetBox(2), 0, Value::Zero).AsFloat();
         if (alpha.IsZero())
         {
             // Bottom-only
@@ -178,6 +178,7 @@ void MaterialGenerator::ProcessGroupLayers(Box* box, Node* node, Value& value)
             auto topHeightScaled = writeLocal(VariantType::Float, String::Format(TEXT("{0} * {1}"), topHeight.Value, alpha.Value), node);
             auto heightStart = writeLocal(VariantType::Float, String::Format(TEXT("max({0}, {1}) - 0.05"), bottomHeightScaled.Value, topHeightScaled.Value), node);
             auto bottomLevel = writeLocal(VariantType::Float, String::Format(TEXT("max({0} - {1}, 0.0001)"), topHeightScaled.Value, heightStart.Value), node);
+            alpha = writeLocal(VariantType::Float, alpha.Value, node);
             _writer.Write(TEXT("\t{0} = {1} / (max({2} - {3}, 0) + {4});\n"), alpha.Value, bottomLevel.Value, bottomHeightScaled.Value, heightStart.Value, bottomLevel.Value);
         }
 #define EAT_BOX(type) writeBlending(MaterialGraphBoxes::type, value, bottom, top, alpha)

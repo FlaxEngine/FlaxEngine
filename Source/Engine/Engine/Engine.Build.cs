@@ -14,6 +14,7 @@ public class Engine : EngineModule
     {
         base.Setup(options);
 
+        options.PublicDependencies.Add("AI");
         options.PublicDependencies.Add("Animations");
         options.PublicDependencies.Add("Audio");
         options.PublicDependencies.Add("Content");

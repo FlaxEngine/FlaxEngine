@@ -122,7 +122,7 @@ class PxTransformV
 		return PxTransformV(V3Add(QuatRotate(q, src.p), p), QuatMul(q, src.q));
 	}
 
-#if PX_CLANG
+#if PX_CLANG && __clang_major__ >= 12
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wbitwise-instead-of-logical" // bitwise intentionally chosen for performance
 #endif
@@ -156,7 +156,7 @@ class PxTransformV
 		return isFiniteVec3V(p) & isFiniteQuatV(q);
 	}
 
-#if PX_CLANG
+#if PX_CLANG && __clang_major__ >= 12
 #pragma clang diagnostic pop
 #endif
 

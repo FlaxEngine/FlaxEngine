@@ -8,7 +8,6 @@
 #include "Engine/Physics/Collisions.h"
 #include "Engine/Physics/Colliders/Collider.h"
 #include "Engine/Core/Types/Pair.h"
-#include "Engine/Core/Collections/Dictionary.h"
 #include <ThirdParty/PhysX/PxSimulationEventCallback.h>
 
 /// <summary>
@@ -18,27 +17,16 @@ class SimulationEventCallback : public PxSimulationEventCallback
 {
 public:
     typedef Pair<PhysicsColliderActor*, PhysicsColliderActor*> CollidersPair;
-    typedef Dictionary<CollidersPair, Collision> CollisionsPool;
-
-    /// <summary>
-    /// The collected collisions.
-    /// </summary>
-    CollisionsPool Collisions;
-
-    /// <summary>
-    /// The previous step collisions.
-    /// </summary>
-    CollisionsPool PrevCollisions;
 
     /// <summary>
     /// The new collisions (for enter event).
     /// </summary>
-    Array<CollidersPair> NewCollisions;
+    Array<Collision> NewCollisions;
 
     /// <summary>
     /// The old collisions (for exit event).
     /// </summary>
-    Array<CollidersPair> RemovedCollisions;
+    Array<Collision> RemovedCollisions;
 
     /// <summary>
     /// The new trigger pairs (for enter event).

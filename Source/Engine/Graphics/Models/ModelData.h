@@ -2,15 +2,15 @@
 
 #pragma once
 
-#include "Engine/Core/Math/BoundingSphere.h"
-#include "Engine/Core/Math/BoundingBox.h"
-#include "Engine/Serialization/Stream.h"
+#include "Engine/Core/Types/Guid.h"
 #include "Engine/Graphics/Enums.h"
 #include "Types.h"
 #include "Config.h"
 #include "SkeletonData.h"
 #include "BlendShape.h"
 #include "Engine/Animations/AnimationData.h"
+
+class WriteStream;
 
 /// <summary>
 /// Data container for the common model meshes data. Supports holding all types of data related to the models pipeline.
@@ -89,6 +89,21 @@ public:
     /// Blend shapes used by this mesh
     /// </summary>
     Array<BlendShape> BlendShapes;
+
+    /// <summary>
+    /// Global translation for this mesh to be at it's local origin.
+    /// </summary>
+    Vector3 OriginTranslation = Vector3::Zero;
+
+    /// <summary>
+    /// Orientation for this mesh at it's local origin.
+    /// </summary>
+    Quaternion OriginOrientation = Quaternion::Identity;
+
+    /// <summary>
+    /// Meshes scaling.
+    /// </summary>
+    Vector3 Scaling = Vector3::One;
 
 public:
     /// <summary>

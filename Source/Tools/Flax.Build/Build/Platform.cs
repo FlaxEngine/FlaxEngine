@@ -244,7 +244,19 @@ namespace Flax.Build
         /// <returns>The toolchain.</returns>
         public Toolchain TryGetToolchain(TargetArchitecture targetArchitecture)
         {
-            return HasRequiredSDKsInstalled ? GetToolchain(targetArchitecture) : null;
+            Toolchain result = null;
+            if (HasRequiredSDKsInstalled)
+            {
+                try
+                {
+                    result = GetToolchain(targetArchitecture);
+                }
+                catch (Exception ex)
+                {
+                    Log.Exception(ex);
+                }
+            }
+            return result;
         }
 
         /// <summary>
@@ -260,16 +272,12 @@ namespace Flax.Build
             if (_toolchains == null)
                 _toolchains = new Dictionary<TargetArchitecture, Toolchain>();
 
-            var key = targetArchitecture;
-
             Toolchain toolchain;
-            if (_toolchains.TryGetValue(key, out toolchain))
-            {
+            if (_toolchains.TryGetValue(targetArchitecture, out toolchain))
                 return toolchain;
-            }
 
             toolchain = CreateToolchain(targetArchitecture);
-            _toolchains.Add(key, toolchain);
+            _toolchains.Add(targetArchitecture, toolchain);
 
             return toolchain;
         }
