@@ -63,7 +63,7 @@ public:
         _count = _capacity = other.Count();
         if (_capacity > 0)
         {
-            const uint64 itemsCapacity = ToItemCapacity(_capacity);
+            const int32 itemsCapacity = ToItemCapacity(_capacity);
             _allocation.Allocate(itemsCapacity);
             Platform::MemoryCopy(Get(), other.Get(), itemsCapacity * sizeof(ItemType));
         }
@@ -79,7 +79,7 @@ public:
         _count = _capacity = other.Count();
         if (_capacity > 0)
         {
-            const uint64 itemsCapacity = ToItemCapacity(_capacity);
+            const int32 itemsCapacity = ToItemCapacity(_capacity);
             _allocation.Allocate(itemsCapacity);
             Platform::MemoryCopy(Get(), other.Get(), itemsCapacity * sizeof(ItemType));
         }
@@ -111,7 +111,7 @@ public:
             {
                 _allocation.Free();
                 _capacity = other._count;
-                const uint64 itemsCapacity = ToItemCapacity(_capacity);
+                const int32 itemsCapacity = ToItemCapacity(_capacity);
                 _allocation.Allocate(itemsCapacity);
                 Platform::MemoryCopy(Get(), other.Get(), itemsCapacity * sizeof(ItemType));
             }
