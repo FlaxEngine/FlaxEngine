@@ -886,20 +886,19 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 TypeID = 40,
                 Title = "Rectangle Mask",
-                Description = "Creates a Rectangle mask",
+                Description = "Creates a rectangle mask",
                 Flags = NodeFlags.MaterialGraph,
                 Size = new Float2(150, 40),
                 ConnectionsHints = ConnectionsHint.Vector,
                 DefaultValues = new object[]
                 {
-                    new Float2(0, 0),
                     new Float2(0.5f, 0.5f),
                 },
                 Elements = new[]
                 {
                     NodeElementArchetype.Factory.Input(0, "UV", true, typeof(Float2), 0),
-                    NodeElementArchetype.Factory.Input(1, "Rectangle", true, typeof(Float2), 1),
-                    NodeElementArchetype.Factory.Output(0, string.Empty, typeof(float), 5),
+                    NodeElementArchetype.Factory.Input(1, "Rectangle", true, typeof(Float2), 1, 0),
+                    NodeElementArchetype.Factory.Output(0, string.Empty, typeof(float), 2),
                 }
             },
             new NodeArchetype
@@ -914,28 +913,27 @@ namespace FlaxEditor.Surface.Archetypes
                 DependentBoxes = new[] { 1 },
                 Elements = new[]
                 {
-                    NodeElementArchetype.Factory.Input(0, "value", true, null, 0),
+                    NodeElementArchetype.Factory.Input(0, "Value", true, null, 0),
                     NodeElementArchetype.Factory.Output(0, string.Empty, null, 1),
                 }
             },
             new NodeArchetype
             {
                 TypeID = 42,
-                Title = "AAStep",
-                Description = "Smooth version of step",
+                Title = "AA Step",
+                Description = "Smooth version of step function with less aliasing",
                 Flags = NodeFlags.MaterialGraph,
                 Size = new Float2(150, 40),
                 ConnectionsHints = ConnectionsHint.Vector,
                 DefaultValues = new object[]
                 {
-                    1,
-                    0
+                    0.5f
                 },
                 Elements = new[]
                 {
-                    NodeElementArchetype.Factory.Input(0, "value", true, typeof(float), 0),
-                    NodeElementArchetype.Factory.Input(1, "gradient", true, typeof(float), 1),
-                    NodeElementArchetype.Factory.Output(0, string.Empty, typeof(float), 5),
+                    NodeElementArchetype.Factory.Input(0, "Value", true, typeof(float), 0),
+                    NodeElementArchetype.Factory.Input(1, "Gradient", true, typeof(float), 1, 0),
+                    NodeElementArchetype.Factory.Output(0, string.Empty, typeof(float), 2),
                 }
             },
         };
