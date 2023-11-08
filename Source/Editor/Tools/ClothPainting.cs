@@ -225,6 +225,7 @@ namespace FlaxEngine.Tools
             var cloth = _cloth;
             if (cloth == null)
                 return;
+            var hasPaintInput = Owner.IsLeftMouseButtonDown && !Owner.IsAltKeyDown;
 
             // Perform detailed tracing to find cursor location for the brush
             var ray = Owner.MouseRay;
@@ -240,7 +241,7 @@ namespace FlaxEngine.Tools
                 // Cursor hit other object or nothing
                 PaintEnd();
 
-                if (Owner.IsLeftMouseButtonDown)
+                if (hasPaintInput)
                 {
                     // Select something else
                     var view = new Ray(Owner.ViewPosition, Owner.ViewDirection);
@@ -253,7 +254,7 @@ namespace FlaxEngine.Tools
             }
 
             // Handle painting
-            if (Owner.IsLeftMouseButtonDown)
+            if (hasPaintInput)
                 PaintStart();
             else
                 PaintEnd();

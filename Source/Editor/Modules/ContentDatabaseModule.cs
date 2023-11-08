@@ -811,10 +811,9 @@ namespace FlaxEditor.Modules
         {
             if (node == null)
                 return;
-
-            // Temporary data
             var folder = node.Folder;
             var path = folder.Path;
+            var canHaveAssets = node.CanHaveAssets;
 
             if (_isDuringFastSetup)
             {
@@ -833,20 +832,38 @@ namespace FlaxEditor.Modules
                     var child = folder.Children[i];
                     if (!child.Exists)
                     {
-                        // Send info
+                        // Item doesn't exist anymore
                         Editor.Log(string.Format($"Content item \'{child.Path}\' has been removed"));
-
-                        // Destroy it
                         Delete(child, false);
-
                         i--;
+                    }
+                    else if (canHaveAssets && child is AssetItem childAsset)
+                    {
+                        // Check if asset type doesn't match the item proxy (eg. item reimported as Material Instance instead of Material)
+                        if (FlaxEngine.Content.GetAssetInfo(child.Path, out var assetInfo))
+                        {
+                            bool changed = assetInfo.ID != childAsset.ID;
+                            if (!changed && assetInfo.TypeName != childAsset.TypeName)
+                            {
+                                // Use proxy check (eg. scene asset might accept different typename than AssetInfo reports)
+                                var proxy = GetAssetProxy(childAsset.TypeName, child.Path);
+                                if (proxy == null)
+                                    proxy = GetAssetProxy(assetInfo.TypeName, child.Path);
+                                changed = !proxy.AcceptsAsset(assetInfo.TypeName, child.Path);
+                            }
+                            if (changed)
+                            {
+                                OnAssetTypeInfoChanged(childAsset, ref assetInfo);
+                                i--;
+                            }
+                        }
                     }
                 }
             }
 
             // Find files
             var files = Directory.GetFiles(path, "*.*", SearchOption.TopDirectoryOnly);
-            if (node.CanHaveAssets)
+            if (canHaveAssets)
             {
                 LoadAssets(node, files);
             }
@@ -1157,19 +1174,8 @@ namespace FlaxEditor.Modules
                     // For eg. change texture to sprite atlas on reimport
                     if (binaryAssetItem.TypeName != assetInfo.TypeName)
                     {
-                        // Asset type has been changed!
-                        Editor.LogWarning(string.Format("Asset \'{0}\' changed type from {1} to {2}", item.Path, binaryAssetItem.TypeName, assetInfo.TypeName));
-                        Editor.Windows.CloseAllEditors(item);
-
-                        // Remove this item from the database and some related data
                         var toRefresh = binaryAssetItem.ParentFolder;
-                        binaryAssetItem.Dispose();
-                        toRefresh.Children.Remove(binaryAssetItem);
-                        if (!binaryAssetItem.HasDefaultThumbnail)
-                        {
-                            // Delete old thumbnail and remove it from the cache
-                            Editor.Instance.Thumbnails.DeletePreview(binaryAssetItem);
-                        }
+                        OnAssetTypeInfoChanged(binaryAssetItem, ref assetInfo);
 
                         // Refresh the parent folder to find the new asset (it should have different type or some other format)
                         RefreshFolder(toRefresh, false);
@@ -1183,6 +1189,23 @@ namespace FlaxEditor.Modules
 
                 // Refresh content view (not the best design because window could also track this event but it gives better performance)
                 Editor.Windows.ContentWin?.RefreshView();
+            }
+        }
+
+        private void OnAssetTypeInfoChanged(AssetItem assetItem, ref AssetInfo assetInfo)
+        {
+            // Asset type has been changed!
+            Editor.LogWarning(string.Format("Asset \'{0}\' changed type from {1} to {2}", assetItem.Path, assetItem.TypeName, assetInfo.TypeName));
+            Editor.Windows.CloseAllEditors(assetItem);
+
+            // Remove this item from the database and some related data
+            assetItem.Dispose();
+            assetItem.ParentFolder.Children.Remove(assetItem);
+
+            // Delete old thumbnail and remove it from the cache
+            if (!assetItem.HasDefaultThumbnail)
+            {
+                Editor.Instance.Thumbnails.DeletePreview(assetItem);
             }
         }
 

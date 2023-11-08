@@ -6,6 +6,9 @@ using System.Linq;
 using FlaxEditor.CustomEditors.GUI;
 using FlaxEditor.GUI.ContextMenu;
 using FlaxEditor.GUI.Input;
+using FlaxEditor.Content;
+using FlaxEditor.GUI.Drag;
+using FlaxEditor.SceneGraph;
 using FlaxEditor.Scripting;
 using FlaxEngine;
 using FlaxEngine.GUI;
@@ -309,6 +312,35 @@ namespace FlaxEditor.CustomEditors.Editors
                 _displayType = collection.Display;
             }
 
+            var dragArea = layout.CustomContainer<DragAreaControl>();
+            dragArea.CustomControl.Editor = this;
+            dragArea.CustomControl.ElementType = ElementType;
+
+            // Check for the AssetReferenceAttribute. In JSON assets, it can be used to filter
+            // which scripts can be dragged over and dropped on this collection editor.
+            var assetReference = (AssetReferenceAttribute)attributes?.FirstOrDefault(x => x is AssetReferenceAttribute);
+            if (assetReference != null)
+            {
+                if (string.IsNullOrEmpty(assetReference.TypeName))
+                {
+                }
+                else if (assetReference.TypeName.Length > 1 && assetReference.TypeName[0] == '.')
+                {
+                    dragArea.CustomControl.ElementType = ScriptType.Null;
+                    dragArea.CustomControl.FileExtension = assetReference.TypeName;
+                }
+                else
+                {
+                    var customType = TypeUtils.GetType(assetReference.TypeName);
+                    if (customType != ScriptType.Null)
+                        dragArea.CustomControl.ElementType = customType;
+                    else if (!Content.Settings.GameSettings.OptionalPlatformSettings.Contains(assetReference.TypeName))
+                        Debug.LogWarning(string.Format("Unknown asset type '{0}' to use for drag and drop filter.", assetReference.TypeName));
+                    else
+                        dragArea.CustomControl.ElementType = ScriptType.Void;
+                }
+            }
+
             // Size
             if (layout.ContainerControl is DropPanel dropPanel)
             {
@@ -345,8 +377,9 @@ namespace FlaxEditor.CustomEditors.Editors
             // Elements
             if (size > 0)
             {
-                var panel = layout.VerticalPanel();
+                var panel = dragArea.VerticalPanel();
                 panel.Panel.Offsets = new Margin(7, 7, 0, 0);
+
                 panel.Panel.BackgroundColor = _background;
                 var elementType = ElementType;
                 bool single = elementType.IsPrimitive ||
@@ -389,36 +422,32 @@ namespace FlaxEditor.CustomEditors.Editors
             // Add/Remove buttons
             if (!_readOnly)
             {
-                var area = layout.Space(20);
-                var addButton = new Button(area.ContainerControl.Width - (16 + 16 + 2 + 2), 2, 16, 16)
-                {
-                    Text = "+",
-                    TooltipText = "Add new item",
-                    AnchorPreset = AnchorPresets.TopRight,
-                    Parent = area.ContainerControl,
-                    Enabled = !NotNullItems || size > 0,
-                };
-                addButton.Clicked += () =>
-                {
-                    if (IsSetBlocked)
-                        return;
+                var panel = dragArea.HorizontalPanel();
+                panel.Panel.Size = new Float2(0, 20);
+                panel.Panel.Margin = new Margin(2);
 
-                    Resize(Count + 1);
-                };
-                var removeButton = new Button(addButton.Right + 2, addButton.Y, 16, 16)
-                {
-                    Text = "-",
-                    TooltipText = "Remove last item",
-                    AnchorPreset = AnchorPresets.TopRight,
-                    Parent = area.ContainerControl,
-                    Enabled = size > 0,
-                };
-                removeButton.Clicked += () =>
+                var removeButton = panel.Button("-", "Remove last item");
+                removeButton.Button.Size = new Float2(16, 16);
+                removeButton.Button.Enabled = size > 0;
+                removeButton.Button.AnchorPreset = AnchorPresets.TopRight;
+                removeButton.Button.Clicked += () =>
                 {
                     if (IsSetBlocked)
                         return;
 
                     Resize(Count - 1);
+                };
+
+                var addButton = panel.Button("+", "Add new item");
+                addButton.Button.Size = new Float2(16, 16);
+                addButton.Button.Enabled = !NotNullItems || size > 0;
+                addButton.Button.AnchorPreset = AnchorPresets.TopRight;
+                addButton.Button.Clicked += () =>
+                {
+                    if (IsSetBlocked)
+                        return;
+
+                    Resize(Count + 1);
                 };
             }
         }
@@ -545,6 +574,233 @@ namespace FlaxEditor.CustomEditors.Editors
                 }
             }
             return base.OnDirty(editor, value, token);
+        }
+
+        private class DragAreaControl : VerticalPanel
+        {
+            private DragItems _dragItems;
+            private DragActors _dragActors;
+            private DragHandlers _dragHandlers;
+            private AssetPickerValidator _pickerValidator;
+
+            public ScriptType ElementType
+            {
+                get => _pickerValidator?.AssetType ?? ScriptType.Null;
+                set => _pickerValidator = new AssetPickerValidator(value);
+            }
+
+            public CollectionEditor Editor { get; set; }
+
+            public string FileExtension
+            {
+                set => _pickerValidator.FileExtension = value;
+            }
+
+            /// <inheritdoc />
+            public override void Draw()
+            {
+                if (_dragHandlers is { HasValidDrag: true })
+                {
+                    var area = new Rectangle(Float2.Zero, Size);
+                    Render2D.FillRectangle(area, Color.Orange * 0.5f);
+                    Render2D.DrawRectangle(area, Color.Black);
+                }
+
+                base.Draw();
+            }
+
+            public override void OnDestroy()
+            {
+                _pickerValidator.OnDestroy();
+            }
+
+            private bool ValidateActors(ActorNode node)
+            {
+                return node.Actor.GetScript(ElementType.Type) || ElementType.Type.IsAssignableTo(typeof(Actor));
+            }
+
+            /// <inheritdoc />
+            public override DragDropEffect OnDragEnter(ref Float2 location, DragData data)
+            {
+                var result = base.OnDragEnter(ref location, data);
+                if (result != DragDropEffect.None)
+                    return result;
+
+                if (_dragHandlers == null)
+                {
+                    _dragItems = new DragItems(_pickerValidator.IsValid);
+                    _dragActors = new DragActors(ValidateActors);
+                    _dragHandlers = new DragHandlers
+                    {
+                        _dragActors,
+                        _dragItems
+                    };
+                }
+                return _dragHandlers.OnDragEnter(data);
+            }
+
+            /// <inheritdoc />
+            public override DragDropEffect OnDragMove(ref Float2 location, DragData data)
+            {
+                var result = base.OnDragMove(ref location, data);
+                if (result != DragDropEffect.None)
+                    return result;
+
+                return _dragHandlers.Effect;
+            }
+
+            /// <inheritdoc />
+            public override void OnDragLeave()
+            {
+                _dragHandlers.OnDragLeave();
+
+                base.OnDragLeave();
+            }
+
+            /// <inheritdoc />
+            public override DragDropEffect OnDragDrop(ref Float2 location, DragData data)
+            {
+                var result = base.OnDragDrop(ref location, data);
+                if (result != DragDropEffect.None)
+                {
+                    _dragHandlers.OnDragDrop(null);
+                    return result;
+                }
+
+                if (_dragHandlers.HasValidDrag)
+                {
+                    if (_dragItems.HasValidDrag)
+                    {
+                        var list = Editor.CloneValues();
+                        if (list == null)
+                        {
+                            if (Editor.Values.Type.IsArray)
+                            {
+                                list = TypeUtils.CreateArrayInstance(Editor.Values.Type.GetElementType(), 0);
+                            }
+                            else
+                            {
+                                list = Editor.Values.Type.CreateInstance() as IList;
+                            }
+                        }
+                        if (list.IsFixedSize)
+                        {
+                            var oldSize = list.Count;
+                            var newSize = list.Count + _dragItems.Objects.Count;
+                            var type = Editor.Values.Type.GetElementType();
+                            var array = TypeUtils.CreateArrayInstance(type, newSize);
+                            list.CopyTo(array, 0);
+
+                            for (var i = oldSize; i < newSize; i++)
+                            {
+                                var validator = new AssetPickerValidator
+                                {
+                                    FileExtension = _pickerValidator.FileExtension,
+                                    AssetType = _pickerValidator.AssetType,
+                                    SelectedItem = _dragItems.Objects[i - oldSize],
+                                };
+
+                                if (typeof(AssetItem).IsAssignableFrom(ElementType.Type))
+                                    array.SetValue(validator.SelectedItem, i);
+                                else if (ElementType.Type == typeof(Guid))
+                                    array.SetValue(validator.SelectedID, i);
+                                else if (ElementType.Type == typeof(SceneReference))
+                                    array.SetValue(new SceneReference(validator.SelectedID), i);
+                                else if (ElementType.Type == typeof(string))
+                                    array.SetValue(validator.SelectedPath, i);
+                                else
+                                    array.SetValue(validator.SelectedAsset, i);
+
+                                validator.OnDestroy();
+                            }
+                            Editor.SetValue(array);
+                        }
+                        else
+                        {
+                            foreach (var item in _dragItems.Objects)
+                            {
+                                var validator = new AssetPickerValidator
+                                {
+                                    FileExtension = _pickerValidator.FileExtension,
+                                    AssetType = _pickerValidator.AssetType,
+                                    SelectedItem = item,
+                                };
+
+                                if (typeof(AssetItem).IsAssignableFrom(ElementType.Type))
+                                    list.Add(validator.SelectedItem);
+                                else if (ElementType.Type == typeof(Guid))
+                                    list.Add(validator.SelectedID);
+                                else if (ElementType.Type == typeof(SceneReference))
+                                    list.Add(new SceneReference(validator.SelectedID));
+                                else if (ElementType.Type == typeof(string))
+                                    list.Add(validator.SelectedPath);
+                                else
+                                    list.Add(validator.SelectedAsset);
+
+                                validator.OnDestroy();
+                            }
+                            Editor.SetValue(list);
+                        }
+                    }
+                    else if (_dragActors.HasValidDrag)
+                    {
+                        var list = Editor.CloneValues();
+                        if (list == null)
+                        {
+                            if (Editor.Values.Type.IsArray)
+                            {
+                                list = TypeUtils.CreateArrayInstance(Editor.Values.Type.GetElementType(), 0);
+                            }
+                            else
+                            {
+                                list = Editor.Values.Type.CreateInstance() as IList;
+                            }
+                        }
+
+                        if (list.IsFixedSize)
+                        {
+                            var oldSize = list.Count;
+                            var newSize = list.Count + _dragActors.Objects.Count;
+                            var type = Editor.Values.Type.GetElementType();
+                            var array = TypeUtils.CreateArrayInstance(type, newSize);
+                            list.CopyTo(array, 0);
+
+                            for (var i = oldSize; i < newSize; i++)
+                            {
+                                var actor = _dragActors.Objects[i - oldSize].Actor;
+                                if (ElementType.Type.IsAssignableTo(typeof(Actor)))
+                                {
+                                    array.SetValue(actor, i);
+                                }
+                                else
+                                {
+                                    array.SetValue(actor.GetScript(ElementType.Type), i);
+                                }
+                            }
+                            Editor.SetValue(array);
+                        }
+                        else
+                        {
+                            foreach (var actorNode in _dragActors.Objects)
+                            {
+                                if (ElementType.Type.IsAssignableTo(typeof(Actor)))
+                                {
+                                    list.Add(actorNode.Actor);
+                                }
+                                else
+                                {
+                                    list.Add(actorNode.Actor.GetScript(ElementType.Type));
+                                }
+                            }
+                            Editor.SetValue(list);
+                        }
+                    }
+
+                    _dragHandlers.OnDragDrop(null);
+                }
+
+                return result;
+            }
         }
     }
 }

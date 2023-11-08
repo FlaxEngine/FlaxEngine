@@ -76,14 +76,14 @@ namespace FlaxEditor.CustomEditors.Editors
                 return;
             _isRefreshing = true;
             var slots = _modelInstance.MaterialSlots;
-            var material = _materialEditor.Picker.SelectedAsset as MaterialBase;
+            var material = _materialEditor.Picker.Validator.SelectedAsset as MaterialBase;
             var defaultMaterial = GPUDevice.Instance.DefaultMaterial;
             var value = (ModelInstanceEntry)Values[0];
             var prevMaterial = value.Material;
             if (!material)
             {
                 // Fallback to default material
-                _materialEditor.Picker.SelectedAsset = defaultMaterial;
+                _materialEditor.Picker.Validator.SelectedAsset = defaultMaterial;
                 value.Material = defaultMaterial;
             }
             else if (material == slots[_entryIndex].Material)

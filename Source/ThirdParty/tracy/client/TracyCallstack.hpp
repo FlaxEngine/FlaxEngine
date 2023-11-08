@@ -10,7 +10,14 @@
 #endif
 
 
-#ifdef TRACY_HAS_CALLSTACK
+#ifndef TRACY_HAS_CALLSTACK
+
+namespace tracy
+{
+static tracy_force_inline void* Callstack( int depth ) { return nullptr; }
+}
+
+#else
 
 #ifdef TRACY_DEBUGINFOD
 #  include <elfutils/debuginfod.h>

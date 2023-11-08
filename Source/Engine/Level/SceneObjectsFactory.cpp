@@ -14,6 +14,10 @@
 #include "Engine/Serialization/JsonWriters.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Threading/ThreadLocal.h"
+#if !BUILD_RELEASE || USE_EDITOR
+#include "Engine/Level/Level.h"
+#include "Engine/Threading/Threading.h"
+#endif
 
 SceneObjectsFactory::Context::Context(ISerializeModifier* modifier)
     : Modifier(modifier)
@@ -254,6 +258,10 @@ void SceneObjectsFactory::Deserialize(Context& context, SceneObject* obj, ISeria
 
 void SceneObjectsFactory::HandleObjectDeserializationError(const ISerializable::DeserializeStream& value)
 {
+#if !BUILD_RELEASE || USE_EDITOR
+    // Prevent race-conditions when logging missing objects (especially when adding dummy MissingScript)
+    ScopeLock lock(Level::ScenesLock);
+
     // Print invalid object data contents
     rapidjson_flax::StringBuffer buffer;
     PrettyJsonWriter writer(buffer);
@@ -272,14 +280,15 @@ void SceneObjectsFactory::HandleObjectDeserializationError(const ISerializable::
 #if USE_EDITOR
             // Add dummy script
             auto* dummyScript = parent->AddScript<MissingScript>();
-            const auto parentIdMember = value.FindMember("TypeName");
-            if (parentIdMember != value.MemberEnd() && parentIdMember->value.IsString())
-                dummyScript->MissingTypeName = parentIdMember->value.GetString();
+            const auto typeNameMember = value.FindMember("TypeName");
+            if (typeNameMember != value.MemberEnd() && typeNameMember->value.IsString())
+                dummyScript->MissingTypeName = typeNameMember->value.GetString();
             dummyScript->Data = MoveTemp(bufferStr);
 #endif
             LOG(Warning, "Parent actor of the missing object: {0}", parent->GetName());
         }
     }
+#endif
 }
 
 Actor* SceneObjectsFactory::CreateActor(int32 typeId, const Guid& id)
@@ -361,14 +370,14 @@ SceneObjectsFactory::PrefabSyncData::PrefabSyncData(Array<SceneObject*>& sceneOb
 {
 }
 
-void SceneObjectsFactory::SetupPrefabInstances(Context& context, PrefabSyncData& data)
+void SceneObjectsFactory::SetupPrefabInstances(Context& context, const PrefabSyncData& data)
 {
     PROFILE_CPU_NAMED("SetupPrefabInstances");
     const int32 count = data.Data.Size();
     ASSERT(count <= data.SceneObjects.Count());
     for (int32 i = 0; i < count; i++)
     {
-        SceneObject* obj = data.SceneObjects[i];
+        const SceneObject* obj = data.SceneObjects[i];
         if (!obj)
             continue;
         const auto& stream = data.Data[i];
@@ -409,6 +418,21 @@ void SceneObjectsFactory::SetupPrefabInstances(Context& context, PrefabSyncData&
         // Add to the prefab instance IDs mapping
         auto& prefabInstance = context.Instances[index];
         prefabInstance.IdsMapping[prefabObjectId] = id;
+
+        // Walk over nested prefabs to link any subobjects into this object (eg. if nested prefab uses cross-object references to link them correctly)
+    NESTED_PREFAB_WALK:
+        const ISerializable::DeserializeStream* prefabData;
+        if (prefab->ObjectsDataCache.TryGet(prefabObjectId, prefabData) && JsonTools::GetGuidIfValid(prefabObjectId, *prefabData, "PrefabObjectID"))
+        {
+            prefabId = JsonTools::GetGuid(stream, "PrefabID");
+            prefab = Content::LoadAsync<Prefab>(prefabId);
+            if (prefab && !prefab->WaitForLoaded())
+            {
+                // Map prefab object ID to the deserialized instance ID
+                prefabInstance.IdsMapping[prefabObjectId] = id;
+                goto NESTED_PREFAB_WALK;
+            }
+        }
     }
 }
 

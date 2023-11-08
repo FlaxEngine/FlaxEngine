@@ -46,6 +46,7 @@
 #include <mono/metadata/metadata.h>
 #include <mono/metadata/threads.h>
 #include <mono/metadata/reflection.h>
+#include <mono/metadata/mono-gc.h>
 #include <mono/metadata/mono-private-unstable.h>
 typedef char char_t;
 #define DOTNET_HOST_MONO_DEBUG 0
@@ -183,21 +184,14 @@ Dictionary<void*, MAssembly*> CachedAssemblyHandles;
 void* GetStaticMethodPointer(const String& methodName);
 
 /// <summary>
-/// Calls the managed static method in NativeInterop class with given parameters.
-/// </summary>
-template<typename RetType, typename... Args>
-FORCE_INLINE RetType CallStaticMethodByName(const String& methodName, Args... args)
-{
-    typedef RetType (CORECLR_DELEGATE_CALLTYPE* fun)(Args...);
-    return ((fun)GetStaticMethodPointer(methodName))(args...);
-}
-
-/// <summary>
 /// Calls the managed static method with given parameters.
 /// </summary>
 template<typename RetType, typename... Args>
 FORCE_INLINE RetType CallStaticMethod(void* methodPtr, Args... args)
 {
+#if DOTNET_HOST_MONO
+    ASSERT_LOW_LAYER(mono_domain_get()); // Ensure that Mono runtime has been attached to this thread
+#endif
     typedef RetType (CORECLR_DELEGATE_CALLTYPE* fun)(Args...);
     return ((fun)methodPtr)(args...);
 }
@@ -273,7 +267,7 @@ bool MCore::LoadEngine()
         return true;
 
     // Prepare managed side
-    CallStaticMethodByName<void>(TEXT("Init"));
+    CallStaticMethod<void>(GetStaticMethodPointer(TEXT("Init")));
 #ifdef MCORE_MAIN_MODULE_NAME
     // MCORE_MAIN_MODULE_NAME define is injected by Scripting.Build.cs on platforms that use separate shared library for engine symbols
     ::String flaxLibraryPath(Platform::GetMainDirectory() / TEXT(MACRO_TO_STR(MCORE_MAIN_MODULE_NAME)));
@@ -292,7 +286,8 @@ bool MCore::LoadEngine()
     MRootDomain = New<MDomain>("Root");
     MDomains.Add(MRootDomain);
 
-    char* buildInfo = CallStaticMethodByName<char*>(TEXT("GetRuntimeInformation"));
+    void* GetRuntimeInformationPtr = GetStaticMethodPointer(TEXT("GetRuntimeInformation"));
+    char* buildInfo = CallStaticMethod<char*>(GetRuntimeInformationPtr);
     LOG(Info, ".NET runtime version: {0}", ::String(buildInfo));
     MCore::GC::FreeMemory(buildInfo);
 
@@ -304,7 +299,7 @@ void MCore::UnloadEngine()
     if (!MRootDomain)
         return;
     PROFILE_CPU();
-    CallStaticMethodByName<void>(TEXT("Exit"));
+    CallStaticMethod<void>(GetStaticMethodPointer(TEXT("Exit")));
     MDomains.ClearDelete();
     MRootDomain = nullptr;
     ShutdownHostfxr();
@@ -1791,6 +1786,7 @@ void* GetStaticMethodPointer(const String& methodName)
     void* fun;
     if (CachedFunctions.TryGet(methodName, fun))
         return fun;
+    PROFILE_CPU();
     const int rc = get_function_pointer(NativeInteropTypeName, FLAX_CORECLR_STRING(methodName).Get(), UNMANAGEDCALLERSONLY_METHOD, nullptr, nullptr, &fun);
     if (rc != 0)
         LOG(Fatal, "Failed to get unmanaged function pointer for method {0}: 0x{1:x}", methodName.Get(), (unsigned int)rc);
@@ -2012,6 +2008,9 @@ bool InitHostfxr()
     //Platform::SetEnvironmentVariable(TEXT("MONO_GC_DEBUG"), TEXT("6:gc-log.txt,check-remset-consistency,nursery-canaries"));
 #endif
 
+    // Adjust GC threads suspending mode to not block attached native threads (eg. Job System)
+    Platform::SetEnvironmentVariable(TEXT("MONO_THREADS_SUSPEND"), TEXT("preemptive"));
+
 #if defined(USE_MONO_AOT_MODE)
     // Enable AOT mode (per-platform)
     mono_jit_set_aot_mode(USE_MONO_AOT_MODE);
@@ -2056,7 +2055,7 @@ bool InitHostfxr()
     // Setup debugger
     {
         int32 debuggerLogLevel = 0;
-        if (CommandLine::Options.MonoLog.IsTrue())
+        if (CommandLine::Options.MonoLog.IsTrue() || DOTNET_HOST_MONO_DEBUG)
         {
             LOG(Info, "Using detailed Mono logging");
             mono_trace_set_level_string("debug");
@@ -2139,6 +2138,7 @@ bool InitHostfxr()
         LOG(Fatal, "Failed to initialize Mono.");
         return true;
     }
+    mono_gc_init_finalizer_thread();
 
     // Log info
     char* buildInfo = mono_get_runtime_build_info();
@@ -2163,6 +2163,7 @@ void* GetStaticMethodPointer(const String& methodName)
     void* fun;
     if (CachedFunctions.TryGet(methodName, fun))
         return fun;
+    PROFILE_CPU();
 
     static MonoClass* nativeInteropClass = nullptr;
     if (!nativeInteropClass)

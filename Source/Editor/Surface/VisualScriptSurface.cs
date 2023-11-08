@@ -144,7 +144,7 @@ namespace FlaxEditor.Surface
         }
 
         /// <inheritdoc />
-        protected override NodeArchetype GetParameterGetterNodeArchetype(out ushort groupId)
+        protected internal override NodeArchetype GetParameterGetterNodeArchetype(out ushort groupId)
         {
             groupId = 6;
             return Archetypes.Parameters.Nodes[2];

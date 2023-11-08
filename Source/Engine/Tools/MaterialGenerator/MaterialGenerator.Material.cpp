@@ -393,8 +393,8 @@ void MaterialGenerator::ProcessGroupMaterial(Box* box, Node* node, Value& value)
     // Sphere Mask
     case 28:
     {
-        const auto a = tryGetValue(node->GetBox(0), 0, Value::Zero);
-        const auto b = tryGetValue(node->GetBox(1), 1, Value::Zero).Cast(a.Type);
+        const auto a = tryGetValue(node->GetBox(0), getUVs);
+        const auto b = tryGetValue(node->GetBox(1), Value::Half).Cast(a.Type);
         const auto radius = tryGetValue(node->GetBox(2), node->Values[0]).AsFloat();
         const auto hardness = tryGetValue(node->GetBox(3), node->Values[1]).AsFloat();
         const auto invert = tryGetValue(node->GetBox(4), node->Values[2]).AsBool();

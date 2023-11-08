@@ -171,9 +171,13 @@ namespace FlaxEditor.Modules
             var mainWindow = MainWindow;
             if (mainWindow)
             {
-                var projectPath = Globals.ProjectFolder.Replace('/', '\\');
-                var platformBit = Platform.Is64BitApp ? "64" : "32";
-                var title = string.Format("Flax Editor - \'{0}\' ({1}-bit)", projectPath, platformBit);
+                var projectPath = Globals.ProjectFolder;
+#if PLATFORM_WINDOWS
+                projectPath = projectPath.Replace('/', '\\');
+#endif
+                var engineVersion = Editor.EngineProject.Version;
+                var engineVersionText = engineVersion.Revision > 0 ? $"{engineVersion.Major}.{engineVersion.Minor}.{engineVersion.Revision}" : $"{engineVersion.Major}.{engineVersion.Minor}";
+                var title = $"Flax Editor {engineVersionText} - \'{projectPath}\'";
                 mainWindow.Title = title;
             }
         }
@@ -237,7 +241,11 @@ namespace FlaxEditor.Modules
         /// </summary>
         public void LoadDefaultLayout()
         {
-            LoadLayout(StringUtils.CombinePaths(Globals.EngineContentFolder, "Editor/LayoutDefault.xml"));
+            var path = StringUtils.CombinePaths(Globals.EngineContentFolder, "Editor/LayoutDefault.xml");
+            if (File.Exists(path))
+            {
+                LoadLayout(path);
+            }
         }
 
         /// <summary>
@@ -472,19 +480,13 @@ namespace FlaxEditor.Modules
         {
             writer.WriteStartElement("Bounds");
             {
-                var isMaximized = win.IsMaximized;
-                var isMinimized = win.IsMinimized;
-                if (isMinimized)
-                    win.Restore(); // Restore window back to desktop to get proper client bounds
                 var bounds = win.ClientBounds;
-                if (isMinimized)
-                    win.Minimize();
                 writer.WriteAttributeString("X", bounds.X.ToString(CultureInfo.InvariantCulture));
                 writer.WriteAttributeString("Y", bounds.Y.ToString(CultureInfo.InvariantCulture));
                 writer.WriteAttributeString("Width", bounds.Width.ToString(CultureInfo.InvariantCulture));
                 writer.WriteAttributeString("Height", bounds.Height.ToString(CultureInfo.InvariantCulture));
-                writer.WriteAttributeString("IsMaximized", isMaximized.ToString());
-                writer.WriteAttributeString("IsMinimized", isMinimized.ToString());
+                writer.WriteAttributeString("IsMaximized", win.IsMaximized.ToString());
+                writer.WriteAttributeString("IsMinimized", win.IsMinimized.ToString());
             }
             writer.WriteEndElement();
         }
@@ -737,7 +739,6 @@ namespace FlaxEditor.Modules
             settings.Size = Platform.DesktopSize * 0.75f;
             settings.StartPosition = WindowStartPosition.CenterScreen;
             settings.ShowAfterFirstPaint = true;
-
 #if PLATFORM_WINDOWS
             if (!Editor.Instance.Options.Options.Interface.UseNativeWindowSystem)
             {
@@ -749,12 +750,9 @@ namespace FlaxEditor.Modules
 #elif PLATFORM_LINUX
             settings.HasBorder = false;
 #endif
-
             MainWindow = Platform.CreateWindow(ref settings);
-
             if (MainWindow == null)
             {
-                // Error
                 Editor.LogError("Failed to create editor main window!");
                 return;
             }

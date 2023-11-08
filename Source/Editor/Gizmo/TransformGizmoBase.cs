@@ -162,10 +162,23 @@ namespace FlaxEditor.Gizmo
 
             // Scale gizmo to fit on-screen
             Vector3 position = Position;
-            Vector3 vLength = Owner.ViewPosition - position;
-            float gizmoSize = Editor.Instance.Options.Options.Visual.GizmoSize;
-            _screenScale = (float)(vLength.Length / GizmoScaleFactor * gizmoSize);
-
+            if (Owner.Viewport.UseOrthographicProjection)
+            {
+                //[hack] this is far form ideal the View Position is in wrong location, any think using the View Position will have problem
+                //the camera system needs rewrite the to be a camera on springarm, similar how the ArcBallCamera is handled
+                //the ortho projection cannot exist with fps camera because there is no
+                // - focus point to calculate correct View Position with Orthographic Scale as a reference and Orthographic Scale from View Position
+                // with make the camera jump
+                // - and deaph so w and s movment in orto mode moves the cliping plane now
+                float gizmoSize = Editor.Instance.Options.Options.Visual.GizmoSize;
+                _screenScale = gizmoSize * (50 * Owner.Viewport.OrthographicScale);
+            }
+            else
+            {
+                Vector3 vLength = Owner.ViewPosition - position;
+                float gizmoSize = Editor.Instance.Options.Options.Visual.GizmoSize;
+                _screenScale = (float)(vLength.Length / GizmoScaleFactor * gizmoSize);
+            }
             // Setup world
             Quaternion orientation = GetSelectedObject(0).Orientation;
             _gizmoWorld = new Transform(position, orientation, new Float3(_screenScale));

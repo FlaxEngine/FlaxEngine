@@ -284,6 +284,7 @@ void ParticleEffect::UpdateSimulation(bool singleFrame)
 void ParticleEffect::Play()
 {
     _isPlaying = true;
+    _isStopped = false;
 }
 
 void ParticleEffect::Pause()
@@ -293,6 +294,7 @@ void ParticleEffect::Pause()
 
 void ParticleEffect::Stop()
 {
+    _isStopped = true;
     _isPlaying = false;
     ResetSimulation();
 }
@@ -448,7 +450,7 @@ void ParticleEffect::Update()
 void ParticleEffect::UpdateExecuteInEditor()
 {
     // Auto-play in Editor
-    if (!Editor::IsPlayMode)
+    if (!Editor::IsPlayMode && !_isStopped)
     {
         _isPlaying = true;
         Update();

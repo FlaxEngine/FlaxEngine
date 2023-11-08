@@ -3,16 +3,15 @@
 #include "Log.h"
 #include "Engine/Engine/CommandLine.h"
 #include "Engine/Core/Types/DateTime.h"
-#include "Engine/Core/Collections/Sorting.h"
+#include "Engine/Core/Collections/Array.h"
 #include "Engine/Engine/Time.h"
 #include "Engine/Engine/Globals.h"
 #include "Engine/Platform/FileSystem.h"
 #include "Engine/Platform/CriticalSection.h"
 #include "Engine/Serialization/FileWriteStream.h"
-#include "Engine/Serialization/MemoryWriteStream.h"
 #include "Engine/Debug/Exceptions/Exceptions.h"
 #if USE_EDITOR
-#include "Engine/Core/Collections/Array.h"
+#include "Engine/Core/Collections/Sorting.h"
 #endif
 #include <iostream>
 
@@ -210,17 +209,18 @@ void Log::Logger::ProcessLogMessage(LogType type, const StringView& msg, fmt_fla
         hasWindowsNewLine |= msg.Get()[i - 1] != '\r' && msg.Get()[i] == '\n';
     if (hasWindowsNewLine)
     {
-        MemoryWriteStream msgStream(msgLength * sizeof(Char));
-        msgStream.WriteChar(msg.Get()[0]);
+        Array<Char> msgStream;
+        msgStream.EnsureCapacity(msgLength);
+        msgStream.Add(msg.Get()[0]);
         for (int32 i = 1; i < msgLength; i++)
         {
             if (msg.Get()[i - 1] != '\r' && msg.Get()[i] == '\n')
-                msgStream.WriteChar(TEXT('\r'));
-            msgStream.WriteChar(msg.Get()[i]);
+                msgStream.Add(TEXT('\r'));
+            msgStream.Add(msg.Get()[i]);
         }
-        msgStream.WriteChar(TEXT('\0'));
-        w.append((const Char*)msgStream.GetHandle(), (const Char*)msgStream.GetHandle() + msgStream.GetPosition());
-        //fmt_flax::format(w, TEXT("{}"), (const Char*)msgStream.GetHandle());
+        msgStream.Add(TEXT('\0'));
+        w.append(msgStream.Get(), (const Char*)(msgStream.Get() + msgStream.Count()));
+        //fmt_flax::format(w, TEXT("{}"), (const Char*)msgStream.Get());
         return;
     }
 #endif

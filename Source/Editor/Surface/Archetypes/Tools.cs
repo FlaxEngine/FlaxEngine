@@ -1483,7 +1483,7 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 TypeID = 11,
                 Title = "Comment",
-                AlternativeTitles = new[] { "//" },
+                AlternativeTitles = new[] { "//" , "Group" },
                 TryParseText = (string filterText, out object[] data) =>
                 {
                     data = null;
@@ -1510,6 +1510,7 @@ namespace FlaxEditor.Surface.Archetypes
                     "Comment", // Title
                     new Color(1.0f, 1.0f, 1.0f, 0.2f), // Color
                     new Float2(400.0f, 400.0f), // Size
+                    -1, // Order
                 },
             },
             CurveNode<float>.GetArchetype(12, "Curve", typeof(float), 0.0f, 1.0f),
@@ -1638,6 +1639,7 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 TypeID = 22,
                 Title = "As",
+                AlternativeTitles = new [] { "Cast" },
                 Create = (id, context, arch, groupArch) => new AsNode(id, context, arch, groupArch),
                 Description = "Casts the object to a different type. Returns null if cast fails.",
                 Flags = NodeFlags.VisualScriptGraph | NodeFlags.AnimGraph,

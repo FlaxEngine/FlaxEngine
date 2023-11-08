@@ -1302,7 +1302,8 @@ namespace FlaxEngine.Interop
 #if !USE_AOT
             internal bool TryGetDelegate(out Invoker.MarshalAndInvokeDelegate outDeleg, out object outDelegInvoke)
             {
-                if (invokeDelegate == null)
+                // Skip using in-built delegate for value types (eg. Transform) to properly handle instance value passing to method
+                if (invokeDelegate == null && !method.DeclaringType.IsValueType)
                 {
                     List<Type> methodTypes = new List<Type>();
                     if (!method.IsStatic)

@@ -202,16 +202,14 @@ GPUTexture* DepthOfFieldPass::getDofBokehShape(DepthOfFieldSettings& dofSettings
 
 void DepthOfFieldPass::Render(RenderContext& renderContext, GPUTexture*& frame, GPUTexture*& tmp)
 {
-    if (!_platformSupportsDoF || checkIfSkipPass())
+    DepthOfFieldSettings& dofSettings = renderContext.List->Settings.DepthOfField;
+    const bool useDoF = EnumHasAnyFlags(renderContext.View.Flags, ViewFlags::DepthOfField) && dofSettings.Enabled;
+    if (!useDoF || !_platformSupportsDoF || checkIfSkipPass())
         return;
     auto device = GPUDevice::Instance;
     auto context = device->GetMainContext();
     const auto depthBuffer = renderContext.Buffers->DepthBuffer;
     const auto shader = _shader->GetShader();
-    DepthOfFieldSettings& dofSettings = renderContext.List->Settings.DepthOfField;
-    const bool useDoF = _platformSupportsDoF && EnumHasAnyFlags(renderContext.View.Flags, ViewFlags::DepthOfField) && dofSettings.Enabled;
-    if (!useDoF)
-        return;
     PROFILE_GPU_CPU("Depth Of Field");
 
     context->ResetSR();

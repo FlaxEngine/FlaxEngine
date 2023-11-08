@@ -154,7 +154,7 @@ void ContentService::LateUpdate()
     // Unload marked assets
     for (int32 i = 0; i < ToUnload.Count(); i++)
     {
-        Asset*  asset = ToUnload[i];
+        Asset* asset = ToUnload[i];
 
         // Check if has no references
         if (asset->GetReferencesCount() <= 0)
@@ -697,13 +697,11 @@ bool Content::CloneAssetFile(const StringView& dstPath, const StringView& srcPat
             LOG(Warning, "Cannot copy file to destination.");
             return true;
         }
-
         if (JsonStorageProxy::ChangeId(dstPath, dstId))
         {
             LOG(Warning, "Cannot change asset ID.");
             return true;
         }
-
         return false;
     }
 
@@ -768,12 +766,9 @@ bool Content::CloneAssetFile(const StringView& dstPath, const StringView& srcPat
         FileSystem::DeleteFile(tmpPath);
 
         // Reload storage
+        if (auto storage = ContentStorageManager::GetStorage(dstPath))
         {
-            auto storage = ContentStorageManager::GetStorage(dstPath);
-            if (storage)
-            {
-                storage->Reload();
-            }
+            storage->Reload();
         }
     }
 
@@ -911,12 +906,8 @@ bool Content::IsAssetTypeIdInvalid(const ScriptingTypeHandle& type, const Script
 
 Asset* Content::LoadAsync(const Guid& id, const ScriptingTypeHandle& type)
 {
-    // Early out
     if (!id.IsValid())
-    {
-        // Back
         return nullptr;
-    }
 
     // Check if asset has been already loaded
     Asset* result = GetAsset(id);
@@ -928,7 +919,6 @@ Asset* Content::LoadAsync(const Guid& id, const ScriptingTypeHandle& type)
             LOG(Warning, "Different loaded asset type! Asset: \'{0}\'. Expected type: {1}", result->ToString(), type.ToString());
             return nullptr;
         }
-
         return result;
     }
 
@@ -946,12 +936,8 @@ Asset* Content::LoadAsync(const Guid& id, const ScriptingTypeHandle& type)
             LoadCallAssetsLocker.Lock();
             const bool contains = LoadCallAssets.Contains(id);
             LoadCallAssetsLocker.Unlock();
-
             if (!contains)
-            {
                 return GetAsset(id);
-            }
-
             Platform::Sleep(1);
         }
     }
@@ -959,7 +945,6 @@ Asset* Content::LoadAsync(const Guid& id, const ScriptingTypeHandle& type)
     {
         // Mark asset as loading
         LoadCallAssets.Add(id);
-
         LoadCallAssetsLocker.Unlock();
     }
 
@@ -980,7 +965,7 @@ Asset* Content::load(const Guid& id, const ScriptingTypeHandle& type, AssetInfo&
     // Get cached asset info (from registry)
     if (!GetAssetInfo(id, assetInfo))
     {
-        LOG(Warning, "Invalid or missing asset ({0}, {1}).", id.ToString(Guid::FormatType::N), type.ToString());
+        LOG(Warning, "Invalid or missing asset ({0}, {1}).", id, type.ToString());
         return nullptr;
     }
 
@@ -1024,10 +1009,12 @@ Asset* Content::load(const Guid& id, const ScriptingTypeHandle& type, AssetInfo&
     ASSERT(!Assets.ContainsKey(id));
 #endif
     Assets.Add(id, result);
-    AssetsLocker.Unlock();
 
     // Start asset loading
+    // TODO: refactor this to create asset loading task-chain before AssetsLocker.Lock() to allow better parallelization
     result->startLoading();
+
+    AssetsLocker.Unlock();
 
     return result;
 }

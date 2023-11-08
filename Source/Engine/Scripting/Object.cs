@@ -320,7 +320,7 @@ namespace FlaxEngine
         internal static partial Object Internal_Create2(string typeName);
 
         [LibraryImport("FlaxEngine", EntryPoint = "ObjectInternal_ManagedInstanceCreated", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(Interop.StringMarshaller))]
-        internal static partial void Internal_ManagedInstanceCreated(Object managedInstance, IntPtr theKlass);
+        internal static partial void Internal_ManagedInstanceCreated(Object managedInstance, IntPtr typeClass);
 
         [LibraryImport("FlaxEngine", EntryPoint = "ObjectInternal_ManagedInstanceDeleted", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(Interop.StringMarshaller))]
         internal static partial void Internal_ManagedInstanceDeleted(IntPtr nativeInstance);

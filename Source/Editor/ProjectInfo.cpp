@@ -154,7 +154,8 @@ bool ProjectInfo::LoadProject(const String& projectPath)
             Version = ::Version(
                 JsonTools::GetInt(version, "Major", 0),
                 JsonTools::GetInt(version, "Minor", 0),
-                JsonTools::GetInt(version, "Build", 0));
+                JsonTools::GetInt(version, "Build", -1),
+                JsonTools::GetInt(version, "Revision", -1));
         }
     }
     if (Version.Revision() == 0)

@@ -3,7 +3,6 @@
 using System;
 using FlaxEditor.Scripting;
 using FlaxEngine;
-using FlaxEngine.Utilities;
 
 namespace FlaxEditor.Surface
 {
@@ -27,7 +26,7 @@ namespace FlaxEditor.Surface
         /// <summary>
         /// Parameter unique ID
         /// </summary>
-        public Guid ID;
+        public Guid ID = Guid.Empty;
 
         /// <summary>
         /// Parameter name
@@ -49,23 +48,5 @@ namespace FlaxEditor.Surface
         /// </summary>
         [NoSerialize, HideInEditor]
         public readonly SurfaceMeta Meta = new SurfaceMeta();
-
-        /// <summary>
-        /// Creates the new parameter of the given type.
-        /// </summary>
-        /// <param name="type">The type.</param>
-        /// <param name="name">The name.</param>
-        /// <returns>The created parameter.</returns>
-        public static SurfaceParameter Create(ScriptType type, string name)
-        {
-            return new SurfaceParameter
-            {
-                ID = Guid.NewGuid(),
-                IsPublic = true,
-                Name = name,
-                Type = type,
-                Value = TypeUtils.GetDefaultValue(type),
-            };
-        }
     }
 }

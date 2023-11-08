@@ -28,8 +28,8 @@
 #include "Engine/Content/Content.h"
 #include "Engine/Engine/EngineService.h"
 #include "Engine/Engine/Globals.h"
+#include "Engine/Engine/Time.h"
 #include "Engine/Graphics/RenderTask.h"
-#include "Engine/Platform/MemoryStats.h"
 #include "Engine/Serialization/JsonTools.h"
 
 extern void registerFlaxEngineInternalCalls();
@@ -193,6 +193,14 @@ void ScriptingService::Update()
 {
     PROFILE_CPU_NAMED("Scripting::Update");
     INVOKE_EVENT(Update);
+
+#ifdef USE_NETCORE
+    // Force GC to run in background periodically to avoid large blocking collections causing hitches
+    if (Time::Update.TicksCount % 60 == 0)
+    {
+        MCore::GC::Collect(MCore::GC::MaxGeneration(), MGCCollectionMode::Forced, false, false);
+    }
+#endif
 }
 
 void ScriptingService::LateUpdate()
