@@ -783,6 +783,7 @@ void Model::InitAsVirtual()
 
 void Model::CancelStreaming()
 {
+    Asset::CancelStreaming();
     CancelStreamingTasks();
 }
 
