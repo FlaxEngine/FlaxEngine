@@ -282,8 +282,11 @@ public:
         // Custom import geometry offset.
         API_FIELD(Attributes="EditorOrder(520), EditorDisplay(\"Transform\")")
         Float3 Translation = Float3::Zero;
-        // If checked, the imported geometry will be shifted to the center of mass.
+        // If checked, the imported geometry will be shifted to its local transform origin.
         API_FIELD(Attributes="EditorOrder(530), EditorDisplay(\"Transform\")")
+        bool UseLocalOrigin = false;
+        // If checked, the imported geometry will be shifted to the center of mass.
+        API_FIELD(Attributes="EditorOrder(540), EditorDisplay(\"Transform\")")
         bool CenterGeometry = false;
 
     public: // Animation

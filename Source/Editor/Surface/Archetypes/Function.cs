@@ -2470,6 +2470,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Title = string.Empty,
                 Description = "Overrides the base class method with custom implementation",
                 Flags = NodeFlags.VisualScriptGraph | NodeFlags.NoSpawnViaGUI | NodeFlags.NoSpawnViaPaste,
+                SortScore = 10,
                 IsInputCompatible = MethodOverrideNode.IsInputCompatible,
                 IsOutputCompatible = MethodOverrideNode.IsOutputCompatible,
                 Size = new Float2(240, 60),

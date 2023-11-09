@@ -373,6 +373,7 @@ void ModelTool::Options::Serialize(SerializeStream& stream, const void* otherObj
     SERIALIZE(Scale);
     SERIALIZE(Rotation);
     SERIALIZE(Translation);
+    SERIALIZE(UseLocalOrigin);
     SERIALIZE(CenterGeometry);
     SERIALIZE(Duration);
     SERIALIZE(FramesRange);
@@ -420,6 +421,7 @@ void ModelTool::Options::Deserialize(DeserializeStream& stream, ISerializeModifi
     DESERIALIZE(Scale);
     DESERIALIZE(Rotation);
     DESERIALIZE(Translation);
+    DESERIALIZE(UseLocalOrigin);
     DESERIALIZE(CenterGeometry);
     DESERIALIZE(Duration);
     DESERIALIZE(FramesRange);
@@ -1091,11 +1093,16 @@ bool ModelTool::ImportModel(const String& path, ModelData& meshData, Options& op
 
     // Prepare import transformation
     Transform importTransform(options.Translation, options.Rotation, Float3(options.Scale));
+    if (options.UseLocalOrigin && data.LODs.HasItems() && data.LODs[0].Meshes.HasItems())
+    {
+        importTransform.Translation -= importTransform.Orientation * data.LODs[0].Meshes[0]->OriginTranslation * importTransform.Scale;
+    }
     if (options.CenterGeometry && data.LODs.HasItems() && data.LODs[0].Meshes.HasItems())
     {
         // Calculate the bounding box (use LOD0 as a reference)
         BoundingBox box = data.LODs[0].GetBox();
-        importTransform.Translation -= box.GetCenter();
+        auto center = data.LODs[0].Meshes[0]->OriginOrientation * importTransform.Orientation * box.GetCenter() * importTransform.Scale * data.LODs[0].Meshes[0]->Scaling;
+        importTransform.Translation -= center;
     }
     const bool applyImportTransform = !importTransform.IsIdentity();
 
