@@ -530,42 +530,46 @@ void VisjectExecutor::ProcessGroupPacking(Box* box, Node* node, Value& value)
         value = Variant(BoundingBox(vX, vY));
         break;
     }
-    // Unpack
+    // Unpack Float2
     case 30:
     {
-        Float2 v = (Float2)tryGetValue(node->GetBox(0), Float2::Zero);
+        Float2 v = (Float2)tryGetValue(node->TryGetBox(0), Float2::Zero);
         int32 subIndex = box->ID - 1;
         ASSERT(subIndex >= 0 && subIndex < 2);
         value = v.Raw[subIndex];
         break;
     }
+    // Unpack Float3
     case 31:
     {
-        Float3 v = (Float3)tryGetValue(node->GetBox(0), Float3::Zero);
+        Float3 v = (Float3)tryGetValue(node->TryGetBox(0), Float3::Zero);
         int32 subIndex = box->ID - 1;
         ASSERT(subIndex >= 0 && subIndex < 3);
         value = v.Raw[subIndex];
         break;
     }
+    // Unpack Float4
     case 32:
     {
-        Float4 v = (Float4)tryGetValue(node->GetBox(0), Float4::Zero);
+        Float4 v = (Float4)tryGetValue(node->TryGetBox(0), Float4::Zero);
         int32 subIndex = box->ID - 1;
         ASSERT(subIndex >= 0 && subIndex < 4);
         value = v.Raw[subIndex];
         break;
     }
+    // Unpack Rotation
     case 33:
     {
-        const Float3 v = ((Quaternion)tryGetValue(node->GetBox(0), Quaternion::Identity)).GetEuler();
+        const Float3 v = ((Quaternion)tryGetValue(node->TryGetBox(0), Quaternion::Identity)).GetEuler();
         const int32 subIndex = box->ID - 1;
         ASSERT(subIndex >= 0 && subIndex < 3);
         value = v.Raw[subIndex];
         break;
     }
+    // Unpack Transform
     case 34:
     {
-        const Transform v = (Transform)tryGetValue(node->GetBox(0), Variant::Zero);
+        const Transform v = (Transform)tryGetValue(node->TryGetBox(0), Variant::Zero);
         switch (box->ID)
         {
         case 1:
@@ -580,9 +584,10 @@ void VisjectExecutor::ProcessGroupPacking(Box* box, Node* node, Value& value)
         }
         break;
     }
+    // Unpack Box
     case 35:
     {
-        const BoundingBox v = (BoundingBox)tryGetValue(node->GetBox(0), Variant::Zero);
+        const BoundingBox v = (BoundingBox)tryGetValue(node->TryGetBox(0), Variant::Zero);
         switch (box->ID)
         {
         case 1:
