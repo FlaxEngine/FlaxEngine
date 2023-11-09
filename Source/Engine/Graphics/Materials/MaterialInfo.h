@@ -86,7 +86,7 @@ API_ENUM() enum class MaterialBlendMode : byte
 API_ENUM() enum class MaterialShadingModel : byte
 {
     /// <summary>
-    /// The unlit material. Emissive channel is used as an output color. Can perform custom lighting operations or just glow. Won't be affected by the lighting pipeline.
+    /// The unlit material. The emissive channel is used as an output color. Can perform custom lighting operations or just glow. Won't be affected by the lighting pipeline.
     /// </summary>
     Unlit = 0,
 
@@ -96,7 +96,7 @@ API_ENUM() enum class MaterialShadingModel : byte
     Lit = 1,
 
     /// <summary>
-    /// The subsurface material. Intended for materials like vax or skin that need light scattering to transport simulation through the object.
+    /// The subsurface material. Intended for materials like wax or skin that need light scattering to transport simulation through the object.
     /// </summary>
     Subsurface = 2,
 
@@ -366,12 +366,12 @@ API_ENUM() enum class MaterialDecalBlendingMode : byte
 API_ENUM() enum class MaterialTransparentLightingMode : byte
 {
     /// <summary>
-    /// Default directional lighting evaluated per-pixel at the material surface. Use it for semi-transparent surfaces - with both diffuse and specular lighting component active.
+    /// Default directional lighting evaluated per-pixel at the material surface. Use it for semi-transparent surfaces - with both diffuse and specular lighting components active.
     /// </summary>
     Surface = 0,
 
     /// <summary>
-    /// Non-directional lighting evaluated per-pixel at material surface. Use it for volumetric objects such as smoke, rain or dust - only diffuse lighting term is active (no specular highlights).
+    /// Non-directional lighting evaluated per-pixel at material surface. Use it for volumetric objects such as smoke, rain or dust - only the diffuse lighting term is active (no specular highlights).
     /// </summary>
     SurfaceNonDirectional = 1,
 };
