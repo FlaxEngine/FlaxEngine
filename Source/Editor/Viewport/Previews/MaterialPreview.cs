@@ -7,7 +7,6 @@ using FlaxEngine.GUI;
 using FlaxEditor.Viewport.Widgets;
 using FlaxEditor.GUI.ContextMenu;
 using Object = FlaxEngine.Object;
-using FlaxEditor.CustomEditors.Editors;
 using FlaxEditor.GUI;
 using FlaxEditor.Scripting;
 
@@ -80,17 +79,12 @@ namespace FlaxEditor.Viewport.Previews
             set
             {
                 if (value == -1) // Using Custom Model
-                {
                     return;
-                }
-
                 if (value < 0 || value > Models.Length)
                     throw new ArgumentOutOfRangeException();
 
                 if (_customModelPicker != null)
-                {
-                    _customModelPicker.SelectedAsset = null;
-                }
+                    _customModelPicker.Validator.SelectedAsset = null;
                 _selectedModelIndex = value;
                 _previewModel.Model = FlaxEngine.Content.LoadAsyncInternal<Model>("Editor/Primitives/" + Models[value]);
                 _previewModel.Transform = Transforms[value];
@@ -116,22 +110,21 @@ namespace FlaxEditor.Viewport.Previews
             _modelWidgetButtonMenu.AddSeparator();
             _customModelPicker = new AssetPicker(new ScriptType(typeof(Model)), Float2.Zero);
 
-            // Label Button
+            // Label button
             var customModelPickerLabel = _modelWidgetButtonMenu.AddButton("Custom Model:");
             customModelPickerLabel.CloseMenuOnClick = false;
             customModelPickerLabel.Checked = _customModel != null;
 
             // Container button
             var customModelPickerButton = _modelWidgetButtonMenu.AddButton("");
-
             customModelPickerButton.Height = _customModelPicker.Height + 4;
             customModelPickerButton.CloseMenuOnClick = false;
             _customModelPicker.Parent = customModelPickerButton;
-            _customModelPicker.SelectedAsset = _customModel;
+            _customModelPicker.Validator.SelectedAsset = _customModel;
             _customModelPicker.SelectedItemChanged += () =>
             {
-                _customModel = _customModelPicker.SelectedAsset as Model;
-                if (_customModelPicker.SelectedAsset == null)
+                _customModel = _customModelPicker.Validator.SelectedAsset as Model;
+                if (_customModelPicker.Validator.SelectedAsset == null)
                 {
                     SelectedModelIndex = 0;
                     ResetModelContextMenu();
