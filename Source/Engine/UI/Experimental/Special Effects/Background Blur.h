@@ -27,13 +27,13 @@ namespace Experimental
         void Draw() override
         {
             UIElement::Draw();
-            auto size = Transform.GetSize();
+            auto size = Transform.Size;
             auto strength = BlurStrength;
             if (BlurScaleWithSize)
-                strength *= size.MinValue / 1000.0f;
+                strength *= size.MinValue() / 1000.0f;
             if (strength > 0.00001f)
             {
-                Render2D::DrawBlur(new Rectangle(Float2.Zero, size), strength);
+                Render2D::DrawBlur(Rectangle(Float2::Zero, size), strength);
             }
         };
     };

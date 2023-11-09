@@ -5,22 +5,99 @@
 	"Data": {
 	"Root": {
 		"$type": "FlaxEngine.GUI.ContainerControl, FlaxEngine.CSharp",
-		"Children": [],
+		"Children": [
+			{
+				"$type": "FlaxEngine.GUI.Image, FlaxEngine.CSharp",
+				"Brush": {
+					"$type": "FlaxEngine.GUI.SolidColorBrush, FlaxEngine.CSharp",
+					"Color": {
+						"R": 1.0,
+						"G": 1.0,
+						"B": 1.0,
+						"A": 1.0
+					}
+				},
+				"Margin": {
+					"Left": 0.0,
+					"Right": 0.0,
+					"Top": 0.0,
+					"Bottom": 0.0
+				},
+				"Color": {
+					"R": 1.0,
+					"G": 1.0,
+					"B": 1.0,
+					"A": 1.0
+				},
+				"MouseOverColor": {
+					"R": 1.0,
+					"G": 1.0,
+					"B": 1.0,
+					"A": 1.0
+				},
+				"DisabledTint": {
+					"R": 0.5019608,
+					"G": 0.5019608,
+					"B": 0.5019608,
+					"A": 1.0
+				},
+				"KeepAspectRatio": true,
+				"Children": [],
+				"ClipChildren": true,
+				"CullChildren": true,
+				"AnchorMin": {
+					"X": 0.0,
+					"Y": 0.0
+				},
+				"AnchorMax": {
+					"X": 0.0,
+					"Y": 0.0
+				},
+				"Offsets": {
+					"Left": 0.5,
+					"Right": 32.0,
+					"Top": 0.5,
+					"Bottom": 32.0
+				},
+				"Scale": {
+					"X": 1.0,
+					"Y": 1.0
+				},
+				"Pivot": {
+					"X": 0.5,
+					"Y": 0.5
+				},
+				"Shear": {
+					"X": 0.0,
+					"Y": 0.0
+				},
+				"Rotation": 0.0,
+				"BackgroundColor": {
+					"R": 0.0,
+					"G": 0.0,
+					"B": 0.0,
+					"A": 0.0
+				},
+				"Enabled": true,
+				"Visible": true,
+				"AutoFocus": false
+			}
+		],
 		"ClipChildren": true,
 		"CullChildren": true,
 		"AnchorMin": {
-			"X": 0.0,
-			"Y": 0.0
+			"X": 0.5,
+			"Y": 0.5
 		},
 		"AnchorMax": {
-			"X": 0.0,
-			"Y": 0.0
+			"X": 0.5,
+			"Y": 0.5
 		},
 		"Offsets": {
-			"Left": 0.0,
-			"Right": 100.0,
-			"Top": 0.0,
-			"Bottom": 30.0
+			"Left": -26.833328,
+			"Right": 1032.0,
+			"Top": -69.16667,
+			"Bottom": 409.0
 		},
 		"Scale": {
 			"X": 1.0,
