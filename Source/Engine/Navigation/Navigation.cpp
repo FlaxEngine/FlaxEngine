@@ -220,6 +220,12 @@ void NavigationSettings::Apply()
 #endif
         }
     }
+
+    // Rebuild all navmeshs after apply changes on navigation
+    for (auto scene : Level::Scenes)
+    {
+        Navigation::BuildNavMesh(scene);
+    }
 }
 
 void NavigationSettings::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)
