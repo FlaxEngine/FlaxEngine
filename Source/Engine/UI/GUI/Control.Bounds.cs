@@ -545,14 +545,14 @@ namespace FlaxEngine.GUI
             //Matrix2x2.Multiply(ref m1, ref m2, out m1);
             m1.M11 = (_scale.X * cos) + (m1.M12 * -sin);
             m1.M12 = (_scale.X * sin) + (m1.M12 * cos);
-            m1.M21 = (m1.M21 * cos) + (_scale.Y * -sin);
+            float m21 = (m1.M21 * cos) + (_scale.Y * -sin);
             m1.M22 = (m1.M21 * sin) + (_scale.Y * cos);
-
+            m1.M21 = m21;
             // Mix all the stuff
             //Matrix3x3.Translation2D(ref v2, out Matrix3x3 m3);
             //Matrix3x3 m4 = (Matrix3x3)m1;
             //Matrix3x3.Multiply(ref m3, ref m4, out m3);
-            //Matrix3x3.Translation2D(ref v1, out Matrix3x3 m4);
+            //Matrix3x3.Translation2D(ref v1, out m4);
             //Matrix3x3.Multiply(ref m3, ref m4, out _cachedTransform);
             m1.M31 = (v2.X * m1.M11) + (v2.Y * m1.M21) + v1.X;
             m1.M32 = (v2.X * m1.M12) + (v2.Y * m1.M22) + v1.Y;
