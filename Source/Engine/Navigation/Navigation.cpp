@@ -221,11 +221,13 @@ void NavigationSettings::Apply()
         }
     }
 
+#if USE_EDITOR
     // Rebuild all navmeshs after apply changes on navigation
     for (auto scene : Level::Scenes)
     {
         Navigation::BuildNavMesh(scene);
     }
+#endif
 }
 
 void NavigationSettings::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)
