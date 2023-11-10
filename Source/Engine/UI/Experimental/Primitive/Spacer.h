@@ -1,5 +1,5 @@
 #pragma once
-#include "UIElement.h"
+#include "Engine/UI/Experimental/Types/UIElement.h"
 
 API_CLASS()
 class FLAXENGINE_API Spacer : public UIElement

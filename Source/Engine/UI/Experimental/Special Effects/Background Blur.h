@@ -1,6 +1,5 @@
 #pragma once
-#include "Engine/UI/Experimental/Primitive/UIElement.h"
-#include "Engine/Render2D/Render2D.h"
+#include "Engine/UI/Experimental/Types/UIElement.h"
 
 /// <summary>
 /// Background Blur panel

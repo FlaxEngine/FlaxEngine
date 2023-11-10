@@ -1,6 +1,6 @@
 #pragma once
 #include "Engine/Scripting/ScriptingObject.h"
-#include "Engine/UI/Experimental/Anchor.h"
+#include "Anchor.h"
 
 class UIElement;
 

@@ -1,9 +1,9 @@
 #pragma once
 #include "Engine/Debug/DebugLog.h"
-#include "Engine/UI/Experimental/Anchor.h"
-#include "Engine/UI/Experimental/Types/VisabilityFlags.h"
-#include "Engine/UI/Experimental/Types/ClippingFlags.h"
-#include "Engine/UI/Experimental/UIRenderTransform.h"
+#include "Anchor.h"
+#include "VisabilityFlags.h"
+#include "ClippingFlags.h"
+#include "UIRenderTransform.h"
 #include "ISlot.h"
 
 /// <summary>

@@ -1,5 +1,6 @@
 #include "Engine/UI/Experimental/Special Effects/Background Blur.h"
 #include "Engine/Core/Math/Rectangle.h"
+#include "Engine/Render2D/Render2D.h"
 
 BackgroundBlur::BackgroundBlur(const SpawnParams& params) : UIElement(params) 
 {

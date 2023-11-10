@@ -1,5 +1,5 @@
 #include "Engine/Core/Common.h"
-#include "Engine/UI/Experimental/Primitive/ISlot.h"
+#include "Engine/UI/Experimental/Types/ISlot.h"
 
 Float2 ISlot::GetSize()
 {

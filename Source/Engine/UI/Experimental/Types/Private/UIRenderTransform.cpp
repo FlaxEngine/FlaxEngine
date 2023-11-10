@@ -1,7 +1,7 @@
-#include "UIRenderTransform.h"
 #include "Engine/Render2D/Render2D.h"
 #include "Engine/Core/Math/Rectangle.h"
-#include "Primitive/ISlot.h"
+#include "Engine/UI/Experimental/Types/UIRenderTransform.h"
+#include "Engine/UI/Experimental/Types/ISlot.h"
 
 UIRenderTransform::UIRenderTransform(const SpawnParams& params) : ScriptingObject(params)
 {
