@@ -914,6 +914,7 @@ Asset::LoadResult Model::load()
     // Amount of LODs
     byte lods;
     stream->ReadByte(&lods);
+    stream->ReadTransform(&_originalTransform);
     if (lods == 0 || lods > MODEL_MAX_LODS)
         return LoadResult::InvalidData;
     LODs.Resize(lods);

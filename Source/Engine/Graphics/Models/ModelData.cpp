@@ -713,6 +713,21 @@ bool ModelData::Pack2ModelHeader(WriteStream* stream) const
 
     // Amount of LODs
     stream->WriteByte(lodCount);
+    Transform originalTransform = Transform::Identity;
+    if (lodCount != 0)
+    {
+        if (LODs[0].Meshes.Count() != 0)
+        {
+            auto meshData = LODs[0].Meshes[0];
+            if (meshData)
+            {
+                originalTransform.Translation = meshData->OriginalTranslation;
+                originalTransform.Orientation = meshData->OriginOrientation;
+                originalTransform.Scale = meshData->Scaling;
+            }
+        }
+    }
+    stream->WriteTransform(originalTransform);
 
     // For each LOD
     for (int32 lodIndex = 0; lodIndex < lodCount; lodIndex++)

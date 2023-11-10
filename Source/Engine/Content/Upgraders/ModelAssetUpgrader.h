@@ -26,6 +26,7 @@ public:
     {
         static const Upgrader upgraders[] =
         {
+            { 25, 26, &Upgrade_With_Repack },
             { 24, 25, &Upgrade_With_Repack }, // [Deprecated on 28.04.2023, expires on 01.01.2024]
             { 23, 24, &Upgrade_22OrNewer_To_Newest }, // [Deprecated on 28.04.2023, expires on 01.01.2024]
             { 22, 24, &Upgrade_22OrNewer_To_Newest }, // [Deprecated on 28.04.2023, expires on 01.01.2024]
@@ -35,6 +36,10 @@ public:
     }
 
 private:
+    // ============================================
+    //                  Version 26:
+    // The same as version 25 except added original transform data
+    // ============================================
     // ============================================
     //                  Version 25:
     // The same as version 24 except Vertex Buffer 1 has `Color32 Color` component per vertex added
@@ -140,6 +145,8 @@ private:
         Asset::LoadResult result;
         switch (version)
         {
+        case 26:
+            result = loadVersion26(context, &headerStream, &modelData);
         case 25:
             result = loadVersion25(context, &headerStream, &modelData);
             break;
@@ -177,6 +184,141 @@ private:
         }
 
         return result;
+    }
+
+    static Asset::LoadResult loadVersion26(AssetMigrationContext& context, ReadStream* headerStream, ModelData* data)
+    {
+        // Min Screen Size
+        headerStream->ReadFloat(&data->MinScreenSize);
+
+        // Amount of material slots
+        int32 materialSlotsCount;
+        headerStream->ReadInt32(&materialSlotsCount);
+        data->Materials.Resize(materialSlotsCount, false);
+
+        // For each material slot
+        for (int32 i = 0; i < materialSlotsCount; i++)
+        {
+            auto& slot = data->Materials[i];
+
+            // Material
+            headerStream->Read(slot.AssetID);
+
+            // Shadows Mode
+            slot.ShadowsMode = static_cast<ShadowsCastingMode>(headerStream->ReadByte());
+
+            // Name
+            headerStream->ReadString(&slot.Name, 11);
+        }
+
+        // Amount of LODs
+        const int32 lodsCount = headerStream->ReadByte();
+        data->LODs.Resize(lodsCount, false);
+
+        // Read original transform
+        Transform originalTransform;
+        headerStream->ReadTransform(&originalTransform);
+
+        if (lodsCount != 0)
+        {
+            if (data->LODs[0].Meshes.Count() != 0)
+            {
+                auto meshData = data->LODs[0].Meshes[0];
+                if (meshData)
+                {
+                    meshData->OriginalTranslation = originalTransform.Translation;
+                    meshData->OriginOrientation = originalTransform.Orientation;
+                    meshData->Scaling = originalTransform.Scale;
+                }
+            }
+        }
+
+        // For each LOD
+        for (int32 lodIndex = 0; lodIndex < lodsCount; lodIndex++)
+        {
+            auto& lod = data->LODs[lodIndex];
+
+            // Screen Size
+            headerStream->ReadFloat(&lod.ScreenSize);
+
+            // Amount of meshes (and material slots for older formats)
+            uint16 meshesCount;
+            headerStream->ReadUint16(&meshesCount);
+            lod.Meshes.Resize(meshesCount);
+            lod.Meshes.SetAll(nullptr);
+
+            // Get meshes data
+            {
+                auto lodData = context.Input.Header.Chunks[1 + lodIndex];
+                MemoryReadStream stream(lodData->Get(), lodData->Size());
+
+                // Load LOD for each mesh
+                for (int32 meshIndex = 0; meshIndex < meshesCount; meshIndex++)
+                {
+                    // Load mesh data
+                    uint32 vertices;
+                    stream.ReadUint32(&vertices);
+                    uint32 triangles;
+                    stream.ReadUint32(&triangles);
+                    if (vertices == 0 || triangles == 0)
+                        return Asset::LoadResult::InvalidData;
+
+                    // Vertex buffers
+                    auto vb0 = stream.Move<VB0ElementType18>(vertices);
+                    auto vb1 = stream.Move<VB1ElementType18>(vertices);
+                    bool hasColors = stream.ReadBool();
+                    VB2ElementType18* vb2 = nullptr;
+                    if (hasColors)
+                    {
+                        vb2 = stream.Move<VB2ElementType18>(vertices);
+                    }
+
+                    // Index Buffer
+                    uint32 indicesCount = triangles * 3;
+                    bool use16BitIndexBuffer = indicesCount <= MAX_uint16;
+                    uint32 ibStride = use16BitIndexBuffer ? sizeof(uint16) : sizeof(uint32);
+                    auto ib = stream.Move<byte>(indicesCount * ibStride);
+
+                    // Allocate mesh
+                    lod.Meshes[meshIndex] = New<MeshData>();
+                    auto& mesh = *lod.Meshes[meshIndex];
+
+                    // Copy data
+                    mesh.InitFromModelVertices(vb0, vb1, vb2, vertices);
+                    mesh.SetIndexBuffer(ib, indicesCount);
+                }
+            }
+
+            // For each mesh
+            for (int32 meshIndex = 0; meshIndex < meshesCount; meshIndex++)
+            {
+                auto& mesh = *lod.Meshes[meshIndex];
+
+                // Material Slot index
+                int32 materialSlotIndex;
+                headerStream->ReadInt32(&materialSlotIndex);
+                if (materialSlotIndex < 0 || materialSlotIndex >= materialSlotsCount)
+                {
+                    LOG(Warning, "Invalid material slot index {0} for mesh {1}. Slots count: {2}.", materialSlotIndex, meshIndex, materialSlotsCount);
+                    return Asset::LoadResult::InvalidData;
+                }
+
+                // Box
+                BoundingBox box;
+                headerStream->Read(box);
+
+                // Sphere
+                BoundingSphere sphere;
+                headerStream->Read(sphere);
+
+                // Has Lightmap UVs
+                bool hasLightmapUVs = headerStream->ReadBool();
+                if (!hasLightmapUVs)
+                    mesh.LightmapUVs.Resize(0);
+            }
+        }
+
+        return Asset::LoadResult::Ok;
     }
 
     static Asset::LoadResult loadVersion25(AssetMigrationContext& context, ReadStream* headerStream, ModelData* data)

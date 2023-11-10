@@ -1096,6 +1096,7 @@ bool ModelTool::ImportModel(const String& path, ModelData& meshData, Options& op
     if (options.UseLocalOrigin && data.LODs.HasItems() && data.LODs[0].Meshes.HasItems())
     {
         importTransform.Translation -= importTransform.Orientation * data.LODs[0].Meshes[0]->OriginTranslation * importTransform.Scale;
+        data.LODs[0].Meshes[0]->OriginalTranslation = importTransform.Orientation * data.LODs[0].Meshes[0]->OriginTranslation * importTransform.Scale;
     }
     if (options.CenterGeometry && data.LODs.HasItems() && data.LODs[0].Meshes.HasItems())
     {
@@ -1103,6 +1104,7 @@ bool ModelTool::ImportModel(const String& path, ModelData& meshData, Options& op
         BoundingBox box = data.LODs[0].GetBox();
         auto center = data.LODs[0].Meshes[0]->OriginOrientation * importTransform.Orientation * box.GetCenter() * importTransform.Scale * data.LODs[0].Meshes[0]->Scaling;
         importTransform.Translation -= center;
+        data.LODs[0].Meshes[0]->OriginalTranslation += center;
     }
     const bool applyImportTransform = !importTransform.IsIdentity();
 

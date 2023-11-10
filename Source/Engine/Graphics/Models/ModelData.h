@@ -105,6 +105,11 @@ public:
     /// </summary>
     Vector3 Scaling = Vector3::One;
 
+    /// <summary>
+    /// Original Transform.
+    /// </summary>
+    Vector3 OriginalTranslation = Vector3::Zero;
+
 public:
     /// <summary>
     /// Determines whether this instance has any mesh data.

@@ -13,12 +13,13 @@ class StreamModelLODTask;
 /// </summary>
 API_CLASS(NoSpawn) class FLAXENGINE_API Model : public ModelBase
 {
-    DECLARE_BINARY_ASSET_HEADER(Model, 25);
+    DECLARE_BINARY_ASSET_HEADER(Model, 26);
     friend Mesh;
     friend StreamModelLODTask;
 private:
     int32 _loadedLODs = 0;
     StreamModelLODTask* _streamingTask = nullptr;
+    Transform _originalTransform = Transform::Identity;
 
 public:
     /// <summary>
@@ -86,6 +87,14 @@ public:
     FORCE_INLINE bool CanBeRendered() const
     {
         return _loadedLODs > 0;
+    }
+
+    /// <summary>
+    /// Gets the original transform before importation.
+    /// </summary>
+    API_PROPERTY() FORCE_INLINE Transform GetOriginalTransform() const
+    {
+        return _originalTransform;
     }
 
 public:
