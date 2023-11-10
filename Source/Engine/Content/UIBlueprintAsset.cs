@@ -14,6 +14,7 @@ namespace FlaxEngine
     /// </summary>
     public class UIBlueprintAsset
     {
+        
         /// <summary>
         /// 
         /// </summary>

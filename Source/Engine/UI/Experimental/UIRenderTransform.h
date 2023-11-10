@@ -2,13 +2,14 @@
 #include "Engine/Core/Math/Matrix3x3.h"
 #include "Engine/Scripting/ScriptingObject.h"
 #include "Engine/Serialization/Serialization.h"
+
 /// <summary>
-/// Transform
+/// 2D Transform Component spectfic to UI
 /// </summary>
 API_CLASS()
-class FLAXENGINE_API UITransform : public ScriptingObject
+class FLAXENGINE_API UIRenderTransform : public ScriptingObject
 {
-    DECLARE_SCRIPTING_TYPE(UITransform);
+    DECLARE_SCRIPTING_TYPE(UIRenderTransform);
 
 private:
     Matrix3x3 _cachedTransform;
@@ -18,22 +19,7 @@ public:
     /// location (coordinates of the upper-left corner)
     /// </summary>
     API_FIELD()
-        Float2 Location;
-    /// <summary>
-    /// size
-    /// </summary>
-    API_FIELD()
-        Float2 Size;
-    /// <summary>
-    /// Scale
-    /// </summary>
-    API_FIELD()
-        Float2 Scale = Float2::One;
-    /// <summary>
-    /// Povit
-    /// </summary>
-    API_FIELD()
-        Float2 Povit = Float2::One * 0.5f;
+        Float2 Transformation;
     /// <summary>
     /// Shear
     /// </summary>
@@ -48,7 +34,7 @@ public:
     /// <summary>
     /// Update Transform Matrix3x3 call it if any component is changed
     /// </summary>
-    API_FUNCTION() void UpdateTransformCache();
+    API_FUNCTION() void UpdateTransformCache(Float2& Location, Float2& Size);
 
     /// <summary>
     /// Check if transform is overlapping a point
@@ -68,15 +54,15 @@ public:
 
 namespace Serialization
 {
-    inline bool ShouldSerialize(const UITransform& v, const void* otherObj)
+    inline bool ShouldSerialize(const UIRenderTransform& v, const void* otherObj)
     {
-        auto other = static_cast<const UITransform*>(otherObj);
+        auto other = static_cast<const UIRenderTransform*>(otherObj);
         // This can detect if value is the same as other object (if not null) and skip serialization
         return true;
     }
-    inline void Serialize(ISerializable::SerializeStream& stream, const UITransform& v, const void* otherObj)
+    inline void Serialize(ISerializable::SerializeStream& stream, const UIRenderTransform& v, const void* otherObj)
     {
-        SERIALIZE_GET_OTHER_OBJ(UITransform);
+        SERIALIZE_GET_OTHER_OBJ(UIRenderTransform);
         auto Location =v.Location;
         auto Size     =v.Size    ;
         auto Scale    =v.Scale   ;
@@ -90,7 +76,7 @@ namespace Serialization
         SERIALIZE_MEMBER(Shear,    Shear   );
         SERIALIZE_MEMBER(Rotation, Rotation);
     }
-    inline void Deserialize(ISerializable::DeserializeStream& stream, UITransform& v, ISerializeModifier* modifier)
+    inline void Deserialize(ISerializable::DeserializeStream& stream, UIRenderTransform& v, ISerializeModifier* modifier)
     {
         // Populate data with values from stream
         DESERIALIZE_MEMBER(Location,v.Location);

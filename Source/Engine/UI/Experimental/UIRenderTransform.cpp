@@ -1,11 +1,18 @@
-#include "UITransform.h"
+#include "UIRenderTransform.h"
 #include "Engine/Render2D/Render2D.h"
 #include "Engine/Core/Math/Rectangle.h"
-UITransform::UITransform(const SpawnParams& params) : ScriptingObject(params)
+
+UIRenderTransform::UIRenderTransform(const SpawnParams& params) : ScriptingObject(params)
 {
+    Location = Float2::Zero;
+    Size = Float2(100,100);
+    Scale = Float2::One;
+    Povit = Float2::One * 0.5f;
+    Shear = Float2::Zero;
+    Rotation = 0;
 }
 
- void UITransform::UpdateTransformCache()
+ void UIRenderTransform::UpdateTransformCache()
 {
     // Actual pivot and negative pivot
     auto v1 = Povit * Size;
@@ -45,14 +52,14 @@ UITransform::UITransform(const SpawnParams& params) : ScriptingObject(params)
  /// <param name="point">relative to object</param>
  /// <returns></returns>
 
- bool UITransform::Ovelaps(Float2 point)
+ bool UIRenderTransform::Ovelaps(Float2 point)
  {
      //transform point and include Transformation,Scale,Povit,Shear
      _cachedTransform.Transform2DPoint(point - Location, _cachedTransform, point);
      return true;//Transformation.Contains(point);
  }
 
- void UITransform::DrawBorder(const Color& color, float thickness)
+ void UIRenderTransform::DrawBorder(const Color& color, float thickness)
  {
      Render2D::PushTransform(_cachedTransform);
      Render2D::DrawRectangle(Rectangle(Float2::Zero, Size), color, thickness);
