@@ -330,13 +330,14 @@ bool ManagedEditor::CanReloadScripts()
 
 bool ManagedEditor::CanAutoBuildCSG()
 {
+    if (!ManagedEditorOptions.AutoRebuildCSG)
+        return false;
+
     // Skip calls from non-managed thread (eg. physics worker)
     if (!MCore::Thread::IsAttached())
         return false;
 
     if (!HasManagedInstance())
-        return false;
-    if (!ManagedEditorOptions.AutoRebuildCSG)
         return false;
     if (Internal_CanAutoBuildCSG == nullptr)
     {
@@ -348,13 +349,14 @@ bool ManagedEditor::CanAutoBuildCSG()
 
 bool ManagedEditor::CanAutoBuildNavMesh()
 {
+    if (!ManagedEditorOptions.AutoRebuildNavMesh)
+        return false;
+
     // Skip calls from non-managed thread (eg. physics worker)
     if (!MCore::Thread::IsAttached())
         return false;
 
     if (!HasManagedInstance())
-        return false;
-    if (!ManagedEditorOptions.AutoRebuildNavMesh)
         return false;
     if (Internal_CanAutoBuildNavMesh == nullptr)
     {
