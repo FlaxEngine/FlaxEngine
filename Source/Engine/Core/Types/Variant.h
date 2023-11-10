@@ -372,6 +372,9 @@ public:
     // Inlines potential value type into in-built format (eg. Vector3 stored as Structure, or String stored as ManagedObject).
     void Inline();
 
+    // Inverts the inlined value from in-built format into generic storage (eg. Float3 from inlined format into Structure).
+    void InvertInline();
+
     // Allocates the Variant of the specific type (eg. structure or object or value).
     static Variant NewValue(const StringAnsiView& typeName);
 

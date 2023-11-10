@@ -113,7 +113,7 @@ namespace FlaxEditor.CustomEditors.Editors
         public override void Initialize(LayoutElementsContainer layout)
         {
             // No support for different collections for now
-            if (HasDifferentValues || HasDifferentTypes)
+            if (HasDifferentTypes)
                 return;
 
             var size = Count;
