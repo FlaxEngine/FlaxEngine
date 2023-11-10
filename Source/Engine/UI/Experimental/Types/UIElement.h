@@ -13,14 +13,15 @@ API_CLASS()
 class FLAXENGINE_API UIElement : public ScriptingObject
 {
     DECLARE_SCRIPTING_TYPE(UIElement);
-public:
 
-    UIElement(const SpawnParams& params, bool isInDesigner);
-
+private:
     /// <summary>
     /// The parent
     /// </summary>
     ISlot* Parent;
+public:
+
+    UIElement(const SpawnParams& params, bool isInDesigner);
 
     /// <summary>
     /// The transform
@@ -86,6 +87,10 @@ public:
     /// </summary>
     API_FUNCTION() void Attach(ISlot* To);
 
+    /// <summary>
+    /// Attach this to <see cref="ISlot"/>
+    /// </summary>
+    API_FUNCTION() const ISlot& GetParent();
 public:
     // [Object]
     void OnScriptingDispose() override;

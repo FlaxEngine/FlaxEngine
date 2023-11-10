@@ -39,6 +39,15 @@ void UIElement::OnPreCunstruct(bool isInDesigner){}
 void UIElement::OnCunstruct(){}
 void UIElement::OnDestruct(){}
 void UIElement::OnDraw(){}
+
+/// <summary>
+/// Attach this to <see cref="ISlot"/>
+/// </summary>
+
+const ISlot& UIElement::GetParent()
+{
+    return *Parent;
+}
 void UIElement::OnScriptingDispose()
 {
     Detach();
