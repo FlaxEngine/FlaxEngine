@@ -24,10 +24,5 @@ public:
         bool BlurScaleWithSize = false;
 
     /// <inheritdoc />
-    void Draw() override;;
-
-    /// <inheritdoc />
-    virtual void Layout();
-    /// <inheritdoc />
-    virtual Float2 GetDesiredSize();
+    void OnDraw() override;
 };

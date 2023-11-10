@@ -8,7 +8,4 @@ API_CLASS()
 class FLAXENGINE_API CircularThrobber : public UIElement , public ISlot
 {
     DECLARE_SCRIPTING_TYPE(CircularThrobber);
-
-    /// <inheritdoc />
-    void Draw() override;
 };

@@ -10,5 +10,5 @@ class FLAXENGINE_API Throbber : public UIElement, public ISlot
     DECLARE_SCRIPTING_TYPE(Throbber);
 
     /// <inheritdoc />
-    void Draw() override;
+    void OnDraw() override;
 };

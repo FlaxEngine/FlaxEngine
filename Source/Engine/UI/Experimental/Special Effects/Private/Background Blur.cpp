@@ -7,9 +7,9 @@ BackgroundBlur::BackgroundBlur(const SpawnParams& params) : UIElement(params)
     BlurScaleWithSize = false;
 }
 
-void BackgroundBlur::Draw()
+void BackgroundBlur::OnDraw()
 {
-    auto size = Transform->Size;
+    auto size = GetSize();
     auto strength = BlurStrength;
     if (BlurScaleWithSize)
         strength *= size.MinValue() / 1000.0f;
@@ -17,13 +17,4 @@ void BackgroundBlur::Draw()
     {
         Render2D::DrawBlur(Rectangle(Float2::Zero, size), strength);
     }
-}
-
-void BackgroundBlur::Layout()
-{
-}
-
-Float2 BackgroundBlur::GetDesiredSize()
-{
-    return Float2();
 }
