@@ -4,6 +4,7 @@
 
 #include "ModelBase.h"
 #include "Engine/Graphics/Models/ModelLOD.h"
+#include "Engine/Core/Math/Transform.h"
 
 class Mesh;
 class StreamModelLODTask;
