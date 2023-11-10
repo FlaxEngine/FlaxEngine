@@ -1986,8 +1986,8 @@ namespace Flax.Build.Bindings
                     throw new Exception($"Not supported {"static"} function {functionInfo.Name} inside interface {interfaceInfo.Name}.");
                 if (functionInfo.NoProxy)
                     throw new Exception($"Not supported {"NoProxy"} function {functionInfo.Name} inside interface {interfaceInfo.Name}.");
-                if (!functionInfo.IsVirtual)
-                    throw new Exception($"Not supported {"non-virtual"} function {functionInfo.Name} inside interface {interfaceInfo.Name}.");
+                //if (!functionInfo.IsVirtual)
+                //    throw new Exception($"Not supported {"non-virtual"} function {functionInfo.Name} inside interface {interfaceInfo.Name}.");
                 if (functionInfo.Access != AccessLevel.Public)
                     throw new Exception($"Not supported {"non-public"} function {functionInfo.Name} inside interface {interfaceInfo.Name}.");
 
