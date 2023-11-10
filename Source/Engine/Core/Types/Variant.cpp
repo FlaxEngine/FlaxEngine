@@ -2821,7 +2821,10 @@ void Variant::Inline()
                 type = VariantType::Types::Vector4;
         }
         if (type != VariantType::Null)
+        {
+            ASSERT(sizeof(data) >= AsBlob.Length);
             Platform::MemoryCopy(data, AsBlob.Data, AsBlob.Length);
+        }
     }
     if (type != VariantType::Null)
     {
@@ -2910,6 +2913,60 @@ void Variant::Inline()
             break;
         }
     }
+}
+
+void Variant::InvertInline()
+{
+    byte data[sizeof(Matrix)];
+    switch (Type.Type)
+    {
+    case VariantType::Bool:
+    case VariantType::Int:
+    case VariantType::Uint:
+    case VariantType::Int64:
+    case VariantType::Uint64:
+    case VariantType::Float:
+    case VariantType::Double:
+    case VariantType::Pointer:
+    case VariantType::String:
+    case VariantType::Float2:
+    case VariantType::Float3:
+    case VariantType::Float4:
+    case VariantType::Color:
+#if !USE_LARGE_WORLDS
+    case VariantType::BoundingSphere:
+    case VariantType::BoundingBox:
+    case VariantType::Ray:
+#endif
+    case VariantType::Guid:
+    case VariantType::Quaternion:
+    case VariantType::Rectangle:
+    case VariantType::Int2:
+    case VariantType::Int3:
+    case VariantType::Int4:
+    case VariantType::Int16:
+    case VariantType::Uint16:
+    case VariantType::Double2:
+    case VariantType::Double3:
+    case VariantType::Double4:
+        static_assert(sizeof(data) >= sizeof(AsData), "Invalid memory size.");
+        Platform::MemoryCopy(data, AsData, sizeof(AsData));
+        break;
+#if USE_LARGE_WORLDS
+    case VariantType::BoundingSphere:
+    case VariantType::BoundingBox:
+    case VariantType::Ray:
+#endif
+    case VariantType::Transform:
+    case VariantType::Matrix:
+        ASSERT(sizeof(data) >= AsBlob.Length);
+        Platform::MemoryCopy(data, AsBlob.Data, AsBlob.Length);
+        break;
+    default:
+        return; // Not used
+    }
+    SetType(VariantType(VariantType::Structure, InBuiltTypesTypeNames[Type.Type]));
+    CopyStructure(data);
 }
 
 Variant Variant::NewValue(const StringAnsiView& typeName)
