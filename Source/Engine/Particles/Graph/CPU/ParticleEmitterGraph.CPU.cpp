@@ -133,6 +133,8 @@ void ParticleEmitterGraphCPUExecutor::Init(ParticleEmitter* emitter, ParticleEff
     context.ViewTask = effect->GetRenderTask();
     context.CallStackSize = 0;
     context.Functions.Clear();
+    for (int32 i = 0; i < PARTICLE_ATTRIBUTES_MAX_COUNT; i++)
+        context.AttributesRemappingTable[i] = i;
 }
 
 bool ParticleEmitterGraphCPUExecutor::ComputeBounds(ParticleEmitter* emitter, ParticleEffect* effect, ParticleEmitterInstance& data, BoundingBox& result)

@@ -541,13 +541,15 @@ namespace FlaxEditor.Surface
             Action save, Action showWholeGraph, Action toggleGridSnap, InputActionsContainer actionsContainer,
             out ToolStripButton saveButton, out ToolStripButton undoButton, out ToolStripButton redoButton, out ToolStripButton gridSnapButton)
         {
+            var inputOptions = editor.Options.Options.Input;
+
             // Toolstrip
             saveButton = (ToolStripButton)toolStrip.AddButton(editor.Icons.Save64, save).LinkTooltip("Save");
             toolStrip.AddSeparator();
-            undoButton = (ToolStripButton)toolStrip.AddButton(editor.Icons.Undo64, undo.PerformUndo).LinkTooltip("Undo (Ctrl+Z)");
-            redoButton = (ToolStripButton)toolStrip.AddButton(editor.Icons.Redo64, undo.PerformRedo).LinkTooltip("Redo (Ctrl+Y)");
+            undoButton = (ToolStripButton)toolStrip.AddButton(editor.Icons.Undo64, undo.PerformUndo).LinkTooltip($"Undo ({inputOptions.Undo})");
+            redoButton = (ToolStripButton)toolStrip.AddButton(editor.Icons.Redo64, undo.PerformRedo).LinkTooltip($"Redo ({inputOptions.Redo})");
             toolStrip.AddSeparator();
-            toolStrip.AddButton(editor.Icons.Search64, editor.ContentFinding.ShowSearch).LinkTooltip("Open content search tool (Ctrl+F)");
+            toolStrip.AddButton(editor.Icons.Search64, editor.ContentFinding.ShowSearch).LinkTooltip($"Open content search tool ({inputOptions.Search})");
             toolStrip.AddButton(editor.Icons.CenterView64, showWholeGraph).LinkTooltip("Show whole graph");
             gridSnapButton = (ToolStripButton)toolStrip.AddButton(editor.Icons.Stop64, toggleGridSnap).LinkTooltip("Toggle grid snapping for nodes.");
             gridSnapButton.BackgroundColor = Style.Current.Background; // Default color for grid snap button.

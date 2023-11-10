@@ -249,4 +249,19 @@ bool MacPlatformTools::OnPostProcess(CookingData& data)
     return false;
 }
 
+void MacPlatformTools::OnRun(CookingData& data, String& executableFile, String& commandLineFormat, String& workingDir)
+{
+    // Pick the first executable file
+    Array<String> files;
+    FileSystem::DirectoryGetFiles(files, data.NativeCodeOutputPath, TEXT("*"), DirectorySearchOption::TopDirectoryOnly);
+    for (auto& file : files)
+    {
+        if (FileSystem::GetExtension(file).IsEmpty())
+        {
+            executableFile = file;
+            break;
+        }
+    }
+}
+
 #endif

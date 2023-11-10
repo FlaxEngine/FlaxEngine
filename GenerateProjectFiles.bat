@@ -15,7 +15,7 @@ if errorlevel 1 goto BuildToolFailed
 
 :: Build bindings for all editor configurations
 echo Building C# bindings...
-Binaries\Tools\Flax.Build.exe -build -BuildBindingsOnly -arch=x64 -platform=Windows --buildTargets=FlaxEditor,FlaxGame
+Binaries\Tools\Flax.Build.exe -build -BuildBindingsOnly -arch=x64 -platform=Windows --buildTargets=FlaxEditor
 
 popd
 echo Done!

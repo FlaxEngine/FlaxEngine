@@ -166,13 +166,13 @@ namespace Flax.Build.Projects.VisualStudioCode
                             foreach (var configuration in project.Configurations)
                             {
                                 var target = configuration.Target;
-                                var name = project.Name + '|' + configuration.Name;
+                                var name = solution.Name + '|' + configuration.Name;
 
                                 json.BeginObject();
 
                                 json.AddField("label", name);
 
-                                bool isDefaultTask = defaultTask && configuration.Configuration == TargetConfiguration.Development && configuration.Platform == Platform.BuildPlatform.Target;
+                                bool isDefaultTask = defaultTask && configuration.Configuration == TargetConfiguration.Development && configuration.Platform == Platform.BuildPlatform.Target && configuration.Architecture == Platform.BuildTargetArchitecture;
 
                                 json.BeginObject("group");
                                 {
@@ -294,132 +294,121 @@ namespace Flax.Build.Projects.VisualStudioCode
 
                     json.BeginArray("configurations");
                     {
-                        foreach (var project in solution.Projects)
+                        var cppProject = solution.Projects.FirstOrDefault(x => x.BaseName == solution.Name || x.Name == solution.Name);
+                        var csharpProject = solution.Projects.FirstOrDefault(x => x.BaseName == solution.MainProject.Targets[0].Modules[0] || x.Name == solution.MainProject.Targets[0].Modules[0]);
+
+                        if (cppProject != null)
                         {
-                            if (project.Name == "BuildScripts")
-                                continue;
                             // C++ project
-                            if (project.Type == TargetType.NativeCpp)
+                            foreach (var configuration in cppProject.Configurations)
                             {
-                                // Skip generating launch profiles for plugins and dependencies
-                                if (solution.MainProject.Name != "Flax" && project.Name != "Flax.Build" && solution.MainProject.WorkspaceRootPath != project.WorkspaceRootPath)
-                                    continue;
+                                var name = solution.Name + '|' + configuration.Name + " (C++)";
+                                var target = configuration.Target;
+                                var outputType = cppProject.OutputType ?? target.OutputType;
+                                var outputTargetFilePath = target.GetOutputFilePath(configuration.TargetBuildOptions, TargetOutputType.Executable);
 
-                                foreach (var configuration in project.Configurations)
+                                json.BeginObject();
                                 {
-                                    var name = project.Name + '|' + configuration.Name;
-                                    var target = configuration.Target;
+                                    if (configuration.Platform == TargetPlatform.Windows)
+                                        json.AddField("type", "cppvsdbg");
+                                    else
+                                        json.AddField("type", "cppdbg");
+                                    json.AddField("name", name);
+                                    json.AddField("request", "launch");
+                                    json.AddField("preLaunchTask", solution.Name + '|' + configuration.Name);
+                                    json.AddField("cwd", buildToolWorkspace);
 
-                                    var outputType = project.OutputType ?? target.OutputType;
-                                    var outputTargetFilePath = target.GetOutputFilePath(configuration.TargetBuildOptions, TargetOutputType.Executable);
+                                    WriteNativePlatformLaunchSettings(json, configuration.Platform);
 
-                                    json.BeginObject();
+                                    if (outputType != TargetOutputType.Executable && configuration.Name.StartsWith("Editor."))
                                     {
                                         if (configuration.Platform == TargetPlatform.Windows)
-                                            json.AddField("type", "cppvsdbg");
-                                        else
-                                            json.AddField("type", "cppdbg");
-                                        json.AddField("name", name);
-                                        json.AddField("request", "launch");
-                                        json.AddField("preLaunchTask", name);
-                                        json.AddField("cwd", buildToolWorkspace);
-
-                                        WriteNativePlatformLaunchSettings(json, configuration.Platform);
-
-                                        if (outputType != TargetOutputType.Executable && configuration.Name.StartsWith("Editor."))
                                         {
-                                            if (configuration.Platform == TargetPlatform.Windows)
-                                            {
-                                                var editorFolder = configuration.Architecture == TargetArchitecture.x64 ? "Win64" : "Win32";
-                                                json.AddField("program", Path.Combine(Globals.EngineRoot, "Binaries", "Editor", editorFolder, configuration.ConfigurationName, "FlaxEditor.exe"));
-                                            }
-                                            else if (configuration.Platform == TargetPlatform.Linux)
-                                                json.AddField("program", Path.Combine(Globals.EngineRoot, "Binaries", "Editor", "Linux", configuration.ConfigurationName, "FlaxEditor"));
-                                            else if (configuration.Platform == TargetPlatform.Mac)
-                                                json.AddField("program", Path.Combine(Globals.EngineRoot, "Binaries", "Editor", "Mac", configuration.ConfigurationName, "FlaxEditor"));
-
-                                            json.BeginArray("args");
-                                            {
-                                                json.AddUnnamedField("-project");
-                                                json.AddUnnamedField(buildToolWorkspace);
-                                                json.AddUnnamedField("-skipCompile");
-                                                if (hasMonoProjects)
-                                                {
-                                                    json.AddUnnamedField("-debug");
-                                                    json.AddUnnamedField("127.0.0.1:55555");
-                                                }
-                                            }
-                                            json.EndArray();
+                                            var editorFolder = configuration.Architecture == TargetArchitecture.x64 ? "Win64" : "Win32";
+                                            json.AddField("program", Path.Combine(Globals.EngineRoot, "Binaries", "Editor", editorFolder, configuration.ConfigurationName, "FlaxEditor.exe"));
                                         }
-                                        else
+                                        else if (configuration.Platform == TargetPlatform.Linux)
+                                            json.AddField("program", Path.Combine(Globals.EngineRoot, "Binaries", "Editor", "Linux", configuration.ConfigurationName, "FlaxEditor"));
+                                        else if (configuration.Platform == TargetPlatform.Mac)
+                                            json.AddField("program", Path.Combine(Globals.EngineRoot, "Binaries", "Editor", "Mac", configuration.ConfigurationName, "FlaxEditor"));
+
+                                        json.BeginArray("args");
                                         {
-                                            json.AddField("program", outputTargetFilePath);
-                                            json.BeginArray("args");
+                                            json.AddUnnamedField("-project");
+                                            json.AddUnnamedField(buildToolWorkspace);
+                                            json.AddUnnamedField("-skipCompile");
+                                            if (hasMonoProjects)
                                             {
-                                                if (configuration.Platform == TargetPlatform.Linux || configuration.Platform == TargetPlatform.Mac)
-                                                    json.AddUnnamedField("--std");
-                                                if (hasMonoProjects)
-                                                {
-                                                    json.AddUnnamedField("-debug");
-                                                    json.AddUnnamedField("127.0.0.1:55555");
-                                                }
+                                                json.AddUnnamedField("-debug");
+                                                json.AddUnnamedField("127.0.0.1:55555");
                                             }
-                                            json.EndArray();
                                         }
-
-                                        json.AddField("visualizerFile", Path.Combine(Globals.EngineRoot, "Source", "flax.natvis"));
+                                        json.EndArray();
                                     }
-                                    json.EndObject();
-                                }
-                            }
-                            // C# project
-                            else if (project.Type == TargetType.DotNetCore)
-                            {
-                                // Skip generating launch profiles for plugins and dependencies
-                                if (solution.MainProject.WorkspaceRootPath != project.WorkspaceRootPath)
-                                    continue;
-
-                                foreach (var configuration in project.Configurations)
-                                {
-                                    var name = project.Name + '|' + configuration.Name + " (C#)";
-                                    var outputTargetFilePath = configuration.Target.GetOutputFilePath(configuration.TargetBuildOptions, TargetOutputType.Executable);
-
-                                    json.BeginObject();
+                                    else
                                     {
-                                        json.AddField("type", "coreclr");
-                                        json.AddField("name", name);
-                                        json.AddField("request", "launch");
-                                        json.AddField("preLaunchTask", solution.Name + '|' + configuration.Name);
-                                        json.AddField("cwd", buildToolWorkspace);
-                                        if (configuration.Platform == Platform.BuildPlatform.Target)
+                                        json.AddField("program", outputTargetFilePath);
+                                        json.BeginArray("args");
                                         {
-                                            var editorFolder = configuration.Platform == TargetPlatform.Windows ? (configuration.Architecture == TargetArchitecture.x64 ? "Win64" : "Win32") : configuration.Platform.ToString();
-                                            json.AddField("program", Path.Combine(Globals.EngineRoot, "Binaries", "Editor", editorFolder, configuration.ConfigurationName, "FlaxEditor"));
-                                            json.BeginArray("args");
+                                            if (configuration.Platform == TargetPlatform.Linux || configuration.Platform == TargetPlatform.Mac)
+                                                json.AddUnnamedField("--std");
+                                            if (hasMonoProjects)
                                             {
-                                                json.AddUnnamedField("-project");
-                                                json.AddUnnamedField(buildToolWorkspace);
-                                                json.AddUnnamedField("-skipCompile");
+                                                json.AddUnnamedField("-debug");
+                                                json.AddUnnamedField("127.0.0.1:55555");
                                             }
-                                            json.EndArray();
                                         }
-                                        else
-                                        {
-                                            json.AddField("program", configuration.Target.GetOutputFilePath(configuration.TargetBuildOptions, TargetOutputType.Executable));
-                                        }
-
-                                        switch (configuration.Platform)
-                                        {
-                                        case TargetPlatform.Windows:
-                                            json.AddField("stopAtEntry", false);
-                                            json.AddField("externalConsole", true);
-                                            break;
-                                        case TargetPlatform.Linux:
-                                            break;
-                                        }
+                                        json.EndArray();
                                     }
-                                    json.EndObject();
+
+                                    json.AddField("visualizerFile", Path.Combine(Globals.EngineRoot, "Source", "flax.natvis"));
                                 }
+                                json.EndObject();
+                            }
+                        }
+                        if (csharpProject != null)
+                        {
+                            // C# project
+                            foreach (var configuration in csharpProject.Configurations)
+                            {
+                                var name = solution.Name + '|' + configuration.Name + " (C#)";
+                                var outputTargetFilePath = configuration.Target.GetOutputFilePath(configuration.TargetBuildOptions, TargetOutputType.Executable);
+
+                                json.BeginObject();
+                                {
+                                    json.AddField("type", "coreclr");
+                                    json.AddField("name", name);
+                                    json.AddField("request", "launch");
+                                    json.AddField("preLaunchTask", solution.Name + '|' + configuration.Name);
+                                    json.AddField("cwd", buildToolWorkspace);
+                                    if (configuration.Platform == Platform.BuildPlatform.Target)
+                                    {
+                                        var editorFolder = configuration.Platform == TargetPlatform.Windows ? (configuration.Architecture == TargetArchitecture.x64 ? "Win64" : "Win32") : configuration.Platform.ToString();
+                                        json.AddField("program", Path.Combine(Globals.EngineRoot, "Binaries", "Editor", editorFolder, configuration.ConfigurationName, "FlaxEditor"));
+                                        json.BeginArray("args");
+                                        {
+                                            json.AddUnnamedField("-project");
+                                            json.AddUnnamedField(buildToolWorkspace);
+                                            json.AddUnnamedField("-skipCompile");
+                                        }
+                                        json.EndArray();
+                                    }
+                                    else
+                                    {
+                                        json.AddField("program", configuration.Target.GetOutputFilePath(configuration.TargetBuildOptions, TargetOutputType.Executable));
+                                    }
+
+                                    switch (configuration.Platform)
+                                    {
+                                    case TargetPlatform.Windows:
+                                        json.AddField("stopAtEntry", false);
+                                        json.AddField("externalConsole", true);
+                                        break;
+                                    case TargetPlatform.Linux:
+                                        break;
+                                    }
+                                }
+                                json.EndObject();
                             }
                         }
                     }
@@ -428,6 +417,9 @@ namespace Flax.Build.Projects.VisualStudioCode
                     {
                         foreach (var platform in solution.Projects.SelectMany(x => x.Configurations).Select(x => x.Platform).Distinct())
                         {
+                            if (platform != TargetPlatform.Windows && platform != TargetPlatform.Linux && platform != TargetPlatform.Mac)
+                                continue;
+
                             json.BeginObject();
                             {
                                 if (platform == TargetPlatform.Windows)

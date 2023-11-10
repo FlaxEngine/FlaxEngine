@@ -76,6 +76,10 @@ namespace FlaxEditor.Options
         [EditorDisplay("Common"), EditorOrder(230)]
         public InputBinding RotateSelection = new InputBinding(KeyboardKeys.R);
 
+        [DefaultValue(typeof(InputBinding), "F11")]
+        [EditorDisplay("Common"), EditorOrder(240)]
+        public InputBinding ToggleFullscreen = new InputBinding(KeyboardKeys.F11);
+
         #endregion
 
         #region File
@@ -208,16 +212,20 @@ namespace FlaxEditor.Options
         [EditorDisplay("Debugger", "Continue"), EditorOrder(810)]
         public InputBinding DebuggerContinue = new InputBinding(KeyboardKeys.F5);
 
+        [DefaultValue(typeof(InputBinding), "Shift+F11")]
+        [EditorDisplay("Debugger", "Unlock mouse in Play Mode"), EditorOrder(820)]
+        public InputBinding DebuggerUnlockMouse = new InputBinding(KeyboardKeys.F11, KeyboardKeys.Shift);
+
         [DefaultValue(typeof(InputBinding), "F10")]
-        [EditorDisplay("Debugger", "Step Over"), EditorOrder(820)]
+        [EditorDisplay("Debugger", "Step Over"), EditorOrder(830)]
         public InputBinding DebuggerStepOver = new InputBinding(KeyboardKeys.F10);
 
         [DefaultValue(typeof(InputBinding), "F11")]
-        [EditorDisplay("Debugger", "Step Into"), EditorOrder(830)]
+        [EditorDisplay("Debugger", "Step Into"), EditorOrder(840)]
         public InputBinding DebuggerStepInto = new InputBinding(KeyboardKeys.F11);
 
         [DefaultValue(typeof(InputBinding), "Shift+F11")]
-        [EditorDisplay("Debugger", "Step Out"), EditorOrder(840)]
+        [EditorDisplay("Debugger", "Step Out"), EditorOrder(850)]
         public InputBinding DebuggerStepOut = new InputBinding(KeyboardKeys.F11, KeyboardKeys.Shift);
 
         #endregion

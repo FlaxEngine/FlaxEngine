@@ -9,6 +9,7 @@
 #include "Engine/Core/Types/StringBuilder.h"
 #include "Engine/Core/Types/StringView.h"
 #include "Engine/Core/Types/TimeSpan.h"
+#include "Engine/Core/Collections/Array.h"
 #include "Engine/Core/Math/Math.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Utilities/StringConverter.h"
@@ -678,8 +679,14 @@ void LinuxFileSystem::GetSpecialFolderPath(const SpecialFolder type, String& res
         result = TEXT("/usr/share");
         break;
     case SpecialFolder::LocalAppData:
-        result = home;
+    {
+        String dataHome;
+        if (!Platform::GetEnvironmentVariable(TEXT("XDG_DATA_HOME"), dataHome))
+            result = dataHome;
+        else
+            result = home / TEXT(".local/share");
         break;
+    }
     case SpecialFolder::ProgramData:
         result = String::Empty;
         break;

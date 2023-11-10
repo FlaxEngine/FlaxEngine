@@ -19,25 +19,25 @@ namespace FlaxEditor.Progress.Handlers
         public ImportAssetsProgress()
         {
             var importing = Editor.Instance.ContentImporting;
-            importing.ImportingQueueBegin += OnStart;
-            importing.ImportingQueueEnd += OnEnd;
+            importing.ImportingQueueBegin += () => FlaxEngine.Scripting.InvokeOnUpdate(OnStart);
+            importing.ImportingQueueEnd += () => FlaxEngine.Scripting.InvokeOnUpdate(OnEnd);
             importing.ImportFileBegin += OnImportFileBegin;
         }
 
         private void OnImportFileBegin(IFileEntryAction importFileEntry)
         {
+            string info;
             if (importFileEntry is ImportFileEntry)
-                _currentInfo = string.Format("Importing \'{0}\'", System.IO.Path.GetFileName(importFileEntry.SourceUrl));
+                info = string.Format("Importing \'{0}\'", System.IO.Path.GetFileName(importFileEntry.SourceUrl));
             else
-                _currentInfo = string.Format("Creating \'{0}\'", importFileEntry.SourceUrl);
-            UpdateProgress();
-        }
-
-        private void UpdateProgress()
-        {
-            var importing = Editor.Instance.ContentImporting;
-            var info = string.Format("{0} ({1}/{2})...", _currentInfo, importing.ImportBatchDone, importing.ImportBatchSize);
-            OnUpdate(importing.ImportingProgress, info);
+                info = string.Format("Creating \'{0}\'", importFileEntry.SourceUrl);
+            FlaxEngine.Scripting.InvokeOnUpdate(() =>
+            {
+                _currentInfo = info;
+                var importing = Editor.Instance.ContentImporting;
+                var text = string.Format("{0} ({1}/{2})...", _currentInfo, importing.ImportBatchDone, importing.ImportBatchSize);
+                OnUpdate(importing.ImportingProgress, text);
+            });
         }
     }
 }

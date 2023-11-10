@@ -562,6 +562,7 @@ namespace FlaxEditor.Windows.Assets
         : base(editor, item)
         {
             var isPlayMode = Editor.IsPlayMode;
+            var inputOptions = Editor.Options.Options.Input;
 
             // Undo
             _undo = new Undo();
@@ -607,11 +608,11 @@ namespace FlaxEditor.Windows.Assets
             _debugToolstripControls = new[]
             {
                 _toolstrip.AddSeparator(),
-                _toolstrip.AddButton(editor.Icons.Play64, OnDebuggerContinue).LinkTooltip("Continue (F5)"),
+                _toolstrip.AddButton(editor.Icons.Play64, OnDebuggerContinue).LinkTooltip($"Continue ({inputOptions.DebuggerContinue})"),
                 _toolstrip.AddButton(editor.Icons.Search64, OnDebuggerNavigateToCurrentNode).LinkTooltip("Navigate to the current stack trace node"),
-                _toolstrip.AddButton(editor.Icons.Right64, OnDebuggerStepOver).LinkTooltip("Step Over (F10)"),
-                _toolstrip.AddButton(editor.Icons.Down64, OnDebuggerStepInto).LinkTooltip("Step Into (F11)"),
-                _toolstrip.AddButton(editor.Icons.Up64, OnDebuggerStepOut).LinkTooltip("Step Out (Shift+F11)"),
+                _toolstrip.AddButton(editor.Icons.Right64, OnDebuggerStepOver).LinkTooltip($"Step Over ({inputOptions.DebuggerStepOver})"),
+                _toolstrip.AddButton(editor.Icons.Down64, OnDebuggerStepInto).LinkTooltip($"Step Into ({inputOptions.DebuggerStepInto})"),
+                _toolstrip.AddButton(editor.Icons.Up64, OnDebuggerStepOut).LinkTooltip($"Step Out ({inputOptions.DebuggerStepOut})"),
                 _toolstrip.AddButton(editor.Icons.Stop64, OnDebuggerStop).LinkTooltip("Stop debugging"),
             };
             foreach (var control in _debugToolstripControls)

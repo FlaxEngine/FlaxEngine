@@ -9,6 +9,27 @@
 #endif
 #include "Engine/Content/Factories/BinaryAssetFactory.h"
 
+void InitParticleEmitterFunctionCall(const Guid& assetId, AssetReference<Asset>& asset, bool& usesParticleData, ParticleLayout& layout)
+{
+    const auto function = Content::Load<ParticleEmitterFunction>(assetId);
+    asset = function;
+    if (function)
+    {
+        // Insert any used particle data into the calling graph
+        for (const ParticleAttribute& e : function->Graph.Layout.Attributes)
+        {
+            if (layout.FindAttribute(e.Name, e.ValueType) == -1)
+                layout.AddAttribute(e.Name, e.ValueType);
+        }
+
+        // Detect if function needs to be evaluated per-particle
+        for (int32 i = 0; i < function->Outputs.Count() && !usesParticleData; i++)
+        {
+            usesParticleData = function->Graph.Nodes[function->Outputs.Get()[i]].UsesParticleData;
+        }
+    }
+}
+
 REGISTER_BINARY_ASSET(ParticleEmitterFunction, "FlaxEngine.ParticleEmitterFunction", false);
 
 ParticleEmitterFunction::ParticleEmitterFunction(const SpawnParams& params, const AssetInfo* info)

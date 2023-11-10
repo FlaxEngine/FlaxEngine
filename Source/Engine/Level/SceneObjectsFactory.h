@@ -100,7 +100,7 @@ public:
     /// </remarks>
     /// <param name="context">The serialization context.</param>
     /// <param name="data">The sync data.</param>
-    static void SetupPrefabInstances(Context& context, PrefabSyncData& data);
+    static void SetupPrefabInstances(Context& context, const PrefabSyncData& data);
 
     /// <summary>
     /// Synchronizes the new prefab instances by spawning missing objects that were added to prefab but were not saved with scene objects collection.

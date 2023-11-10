@@ -176,7 +176,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Size = new Float2(200, 100),
                 DefaultValues = new object[]
                 {
-                    0.0f,
+                    0.5f,
                 },
                 Elements = new[]
                 {

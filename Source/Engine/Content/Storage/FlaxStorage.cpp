@@ -1302,15 +1302,15 @@ void FlaxStorage::CloseFileHandles()
     // In those situations all the async tasks using this storage should be cancelled externally
 
     // Ensure that no one is using this resource
-    int32 waitTime = 10;
+    int32 waitTime = 100;
     while (Platform::AtomicRead(&_chunksLock) != 0 && waitTime-- > 0)
-        Platform::Sleep(10);
+        Platform::Sleep(1);
     if (Platform::AtomicRead(&_chunksLock) != 0)
     {
         // File can be locked by some streaming tasks (eg. AudioClip::StreamingTask or StreamModelLODTask)
+        Entry e;
         for (int32 i = 0; i < GetEntriesCount(); i++)
         {
-            Entry e;
             GetEntry(i, e);
             Asset* asset = Content::GetAsset(e.ID);
             if (asset)
@@ -1320,8 +1320,12 @@ void FlaxStorage::CloseFileHandles()
             }
         }
     }
+    waitTime = 100;
+    while (Platform::AtomicRead(&_chunksLock) != 0 && waitTime-- > 0)
+        Platform::Sleep(1);
     ASSERT(_chunksLock == 0);
 
+    // Close file handles (from all threads)
     _file.DeleteAll();
 }
 

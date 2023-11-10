@@ -38,8 +38,12 @@ public:
     /// </summary>
     ~SoftObjectReferenceBase()
     {
-        if (_object)
-            _object->Deleted.Unbind<SoftObjectReferenceBase, &SoftObjectReferenceBase::OnDeleted>(this);
+        ScriptingObject* obj = _object;
+        if (obj)
+        {
+            _object = nullptr;
+            obj->Deleted.Unbind<SoftObjectReferenceBase, &SoftObjectReferenceBase::OnDeleted>(this);
+        }
     }
 
 public:

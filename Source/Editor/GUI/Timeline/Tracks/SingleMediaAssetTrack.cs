@@ -39,7 +39,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
                 if (AssetID == value?.ID)
                     return;
                 AssetID = value?.ID ?? Guid.Empty;
-                _picker.SelectedAsset = value;
+                _picker.Validator.SelectedAsset = value;
                 OnAssetChanged();
                 Timeline?.MarkAsEdited();
             }
@@ -63,10 +63,10 @@ namespace FlaxEditor.GUI.Timeline.Tracks
 
         private void OnPickerSelectedItemChanged()
         {
-            if (Asset == (TAsset)_picker.SelectedAsset)
+            if (Asset == (TAsset)_picker.Validator.SelectedAsset)
                 return;
             using (new TrackUndoBlock(this))
-                Asset = (TAsset)_picker.SelectedAsset;
+                Asset = (TAsset)_picker.Validator.SelectedAsset;
         }
 
         /// <summary>

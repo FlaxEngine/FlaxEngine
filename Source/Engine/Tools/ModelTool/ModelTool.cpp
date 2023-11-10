@@ -22,6 +22,7 @@
 #include "Engine/Core/Types/DateTime.h"
 #include "Engine/Core/Types/TimeSpan.h"
 #include "Engine/Core/Types/Pair.h"
+#include "Engine/Core/Types/Variant.h"
 #include "Engine/Graphics/Models/SkeletonUpdater.h"
 #include "Engine/Graphics/Models/SkeletonMapping.h"
 #include "Engine/Core/Utilities.h"
@@ -366,11 +367,13 @@ void ModelTool::Options::Serialize(SerializeStream& stream, const void* otherObj
     SERIALIZE(ImportLODs);
     SERIALIZE(ImportVertexColors);
     SERIALIZE(ImportBlendShapes);
+    SERIALIZE(CalculateBoneOffsetMatrices);
     SERIALIZE(LightmapUVsSource);
     SERIALIZE(CollisionMeshesPrefix);
     SERIALIZE(Scale);
     SERIALIZE(Rotation);
     SERIALIZE(Translation);
+    SERIALIZE(UseLocalOrigin);
     SERIALIZE(CenterGeometry);
     SERIALIZE(Duration);
     SERIALIZE(FramesRange);
@@ -396,6 +399,7 @@ void ModelTool::Options::Serialize(SerializeStream& stream, const void* otherObj
     SERIALIZE(SDFResolution);
     SERIALIZE(SplitObjects);
     SERIALIZE(ObjectIndex);
+    SERIALIZE(SubAssetFolder);
 }
 
 void ModelTool::Options::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)
@@ -411,11 +415,13 @@ void ModelTool::Options::Deserialize(DeserializeStream& stream, ISerializeModifi
     DESERIALIZE(ImportLODs);
     DESERIALIZE(ImportVertexColors);
     DESERIALIZE(ImportBlendShapes);
+    DESERIALIZE(CalculateBoneOffsetMatrices);
     DESERIALIZE(LightmapUVsSource);
     DESERIALIZE(CollisionMeshesPrefix);
     DESERIALIZE(Scale);
     DESERIALIZE(Rotation);
     DESERIALIZE(Translation);
+    DESERIALIZE(UseLocalOrigin);
     DESERIALIZE(CenterGeometry);
     DESERIALIZE(Duration);
     DESERIALIZE(FramesRange);
@@ -441,6 +447,7 @@ void ModelTool::Options::Deserialize(DeserializeStream& stream, ISerializeModifi
     DESERIALIZE(SDFResolution);
     DESERIALIZE(SplitObjects);
     DESERIALIZE(ObjectIndex);
+    DESERIALIZE(SubAssetFolder);
 
     // [Deprecated on 23.11.2021, expires on 21.11.2023]
     int32 AnimationIndex = -1;
@@ -744,6 +751,32 @@ void MeshOptDeallocate(void* ptr)
     Allocator::Free(ptr);
 }
 
+void TrySetupMaterialParameter(MaterialInstance* instance, Span<const Char*> paramNames, const Variant& value, MaterialParameterType type)
+{
+    for (const Char* name : paramNames)
+    {
+        for (MaterialParameter& param : instance->Params)
+        {
+            const MaterialParameterType paramType = param.GetParameterType();
+            if (type != paramType)
+            {
+                if (type == MaterialParameterType::Color)
+                {
+                    if (paramType != MaterialParameterType::Vector3 || 
+                        paramType != MaterialParameterType::Vector4)
+                        continue;
+                }
+                else
+                    continue;
+            }
+            if (StringUtils::CompareIgnoreCase(name, param.GetName().Get()) != 0)
+                continue;
+            param.SetValue(value);
+            return;
+        }
+    }
+}
+
 bool ModelTool::ImportModel(const String& path, ModelData& meshData, Options& options, String& errorMsg, const String& autoImportOutput)
 {
     LOG(Info, "Importing model from \'{0}\'", path);
@@ -1014,9 +1047,18 @@ bool ModelTool::ImportModel(const String& path, ModelData& meshData, Options& op
         {
             // Create material instance
             AssetsImportingManager::Create(AssetsImportingManager::CreateMaterialInstanceTag, assetPath, material.AssetID);
-            if (MaterialInstance* materialInstance = Content::Load<MaterialInstance>(assetPath))
+            if (auto* materialInstance = Content::Load<MaterialInstance>(assetPath))
             {
                 materialInstance->SetBaseMaterial(options.InstanceToImportAs);
+
+                // Customize base material based on imported material (blind guess based on the common names used in materials)
+                const Char* diffuseColorNames[] = { TEXT("color"), TEXT("col"), TEXT("diffuse"), TEXT("basecolor"), TEXT("base color") };
+                TrySetupMaterialParameter(materialInstance, ToSpan(diffuseColorNames, ARRAY_COUNT(diffuseColorNames)), material.Diffuse.Color, MaterialParameterType::Color);
+                const Char* emissiveColorNames[] = { TEXT("emissive"), TEXT("emission"), TEXT("light") };
+                TrySetupMaterialParameter(materialInstance, ToSpan(emissiveColorNames, ARRAY_COUNT(emissiveColorNames)), material.Emissive.Color, MaterialParameterType::Color);
+                const Char* opacityValueNames[] = { TEXT("opacity"), TEXT("alpha") };
+                TrySetupMaterialParameter(materialInstance, ToSpan(opacityValueNames, ARRAY_COUNT(opacityValueNames)), material.Opacity.Value, MaterialParameterType::Float);
+
                 materialInstance->Save();
             }
             else
@@ -1051,11 +1093,16 @@ bool ModelTool::ImportModel(const String& path, ModelData& meshData, Options& op
 
     // Prepare import transformation
     Transform importTransform(options.Translation, options.Rotation, Float3(options.Scale));
+    if (options.UseLocalOrigin && data.LODs.HasItems() && data.LODs[0].Meshes.HasItems())
+    {
+        importTransform.Translation -= importTransform.Orientation * data.LODs[0].Meshes[0]->OriginTranslation * importTransform.Scale;
+    }
     if (options.CenterGeometry && data.LODs.HasItems() && data.LODs[0].Meshes.HasItems())
     {
         // Calculate the bounding box (use LOD0 as a reference)
         BoundingBox box = data.LODs[0].GetBox();
-        importTransform.Translation -= box.GetCenter();
+        auto center = data.LODs[0].Meshes[0]->OriginOrientation * importTransform.Orientation * box.GetCenter() * importTransform.Scale * data.LODs[0].Meshes[0]->Scaling;
+        importTransform.Translation -= center;
     }
     const bool applyImportTransform = !importTransform.IsIdentity();
 
@@ -1380,6 +1427,15 @@ bool ModelTool::ImportModel(const String& path, ModelData& meshData, Options& op
         SkeletonUpdater<ImportedModelData::Node> hierarchyUpdater(data.Nodes);
         hierarchyUpdater.UpdateMatrices();
 
+        if (options.CalculateBoneOffsetMatrices)
+        {
+            // Calculate offset matrix (inverse bind pose transform) for every bone manually
+            for (SkeletonBone& bone : data.Skeleton.Bones)
+            {
+                CalculateBoneOffsetMatrix(data.Skeleton.Nodes, bone.OffsetMatrix, bone.NodeIndex);
+            }
+        }
+
         // Move meshes in the new nodes
         for (int32 lodIndex = 0; lodIndex < data.LODs.Count(); lodIndex++)
         {
@@ -1400,15 +1456,6 @@ bool ModelTool::ImportModel(const String& path, ModelData& meshData, Options& op
                 mesh.NodeIndex = skeletonMapping.SourceToTarget[mesh.NodeIndex];
             }
         }
-
-        // TODO: allow to link skeleton asset to model to retarget model bones skeleton for an animation
-        // use SkeletonMapping<SkeletonBone> to map bones?
-
-        // Calculate offset matrix (inverse bind pose transform) for every bone manually
-        /*for (SkeletonBone& bone : data.Skeleton.Bones)
-        {
-            CalculateBoneOffsetMatrix(data.Skeleton.Nodes, bone.OffsetMatrix, bone.NodeIndex);
-        }*/
 
 #if USE_SKELETON_NODES_SORTING
         // Sort skeleton nodes and bones hierarchy (parents first)

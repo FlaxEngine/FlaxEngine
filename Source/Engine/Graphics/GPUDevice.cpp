@@ -3,6 +3,7 @@
 #include "GPUDevice.h"
 #include "RenderTargetPool.h"
 #include "GPUPipelineState.h"
+#include "GPUResourceProperty.h"
 #include "GPUSwapChain.h"
 #include "RenderTask.h"
 #include "RenderTools.h"
@@ -24,6 +25,39 @@
 #include "Engine/Profiler/Profiler.h"
 #include "Engine/Renderer/RenderList.h"
 #include "Engine/Scripting/Enums.h"
+
+GPUResourcePropertyBase::~GPUResourcePropertyBase()
+{
+    const auto e = _resource;
+    if (e)
+    {
+        _resource = nullptr;
+        e->Releasing.Unbind<GPUResourcePropertyBase, &GPUResourcePropertyBase::OnReleased>(this);
+    }
+}
+
+void GPUResourcePropertyBase::OnSet(GPUResource* resource)
+{
+    auto e = _resource;
+    if (e != resource)
+    {
+        if (e)
+            e->Releasing.Unbind<GPUResourcePropertyBase, &GPUResourcePropertyBase::OnReleased>(this);
+        _resource = e = resource;
+        if (e)
+            e->Releasing.Bind<GPUResourcePropertyBase, &GPUResourcePropertyBase::OnReleased>(this);
+    }
+}
+
+void GPUResourcePropertyBase::OnReleased()
+{
+    auto e = _resource;
+    if (e)
+    {
+        _resource = nullptr;
+        e->Releasing.Unbind<GPUResourcePropertyBase, &GPUResourcePropertyBase::OnReleased>(this);
+    }
+}
 
 GPUPipelineState* GPUPipelineState::Spawn(const SpawnParams& params)
 {
@@ -313,6 +347,8 @@ bool GPUDevice::Init()
 
     _res->TasksManager.SetExecutor(CreateTasksExecutor());
     LOG(Info, "Total graphics memory: {0}", Utilities::BytesToText(TotalGraphicsMemory));
+    if (!Limits.HasCompute)
+        LOG(Warning, "Compute Shaders are not supported");
     return false;
 }
 
@@ -503,6 +539,9 @@ void GPUDevice::DrawEnd()
     // Call present on all used tasks
     int32 presentCount = 0;
     bool anyVSync = false;
+#if COMPILE_WITH_PROFILER
+    const double presentStart = Platform::GetTimeSeconds();
+#endif
     for (int32 i = 0; i < RenderTask::Tasks.Count(); i++)
     {
         const auto task = RenderTask::Tasks[i];
@@ -537,6 +576,10 @@ void GPUDevice::DrawEnd()
 #endif
         GetMainContext()->Flush();
     }
+#if COMPILE_WITH_PROFILER
+    const double presentEnd = Platform::GetTimeSeconds();
+    ProfilerGPU::OnPresentTime((float)((presentEnd - presentStart) * 1000.0));
+#endif
 
     _wasVSyncUsed = anyVSync;
     _isRendering = false;

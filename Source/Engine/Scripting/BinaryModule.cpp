@@ -1270,7 +1270,11 @@ bool ManagedBinaryModule::InvokeMethod(void* method, const Variant& instance, Sp
 
     // Invoke the method
     MObject* exception = nullptr;
+#if USE_NETCORE // NetCore uses the same path for both virtual and non-virtual calls
+    MObject* resultObject = mMethod->Invoke(mInstance, params, &exception);
+#else
     MObject* resultObject = withInterfaces ? mMethod->InvokeVirtual((MObject*)mInstance, params, &exception) : mMethod->Invoke(mInstance, params, &exception);
+#endif
     if (exception)
     {
         MException ex(exception);

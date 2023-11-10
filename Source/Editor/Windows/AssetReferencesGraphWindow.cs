@@ -46,14 +46,14 @@ namespace FlaxEditor.Windows
                 if (asset != null)
                 {
                     var path = asset.Path;
-                    picker.SelectedAsset = asset;
+                    picker.Validator.SelectedAsset = asset;
                     Title = System.IO.Path.GetFileNameWithoutExtension(path);
                     TooltipText = asset.TypeName + '\n' + path;
                 }
                 else
                 {
-                    picker.SelectedID = AssetId;
-                    var assetItem = picker.SelectedItem as AssetItem;
+                    picker.Validator.SelectedID = AssetId;
+                    var assetItem = picker.Validator.SelectedItem as AssetItem;
                     if (assetItem != null)
                     {
                         Title = assetItem.ShortName;

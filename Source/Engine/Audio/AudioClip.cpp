@@ -225,6 +225,7 @@ bool AudioClip::ExtractDataRaw(Array<byte>& resultData, AudioDataInfo& resultDat
 
 void AudioClip::CancelStreaming()
 {
+    Asset::CancelStreaming();
     CancelStreamingTasks();
 }
 

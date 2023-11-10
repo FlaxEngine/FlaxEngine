@@ -41,6 +41,8 @@ namespace FlaxEditor.Viewport
                 Gizmos[i].Update(deltaTime);
             }
         }
+        /// <inheritdoc />
+        public EditorViewport Viewport => this;
 
         /// <inheritdoc />
         public GizmosCollection Gizmos { get; }
