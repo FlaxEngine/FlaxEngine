@@ -67,10 +67,10 @@ namespace FlaxEditor.Content
             });
             var createPrefabButton = menu.AddButton("Create Prefab");
             createPrefabButton.CloseMenuOnClick = false;
-            createPrefabButton.Clicked += () => OnCreatePrefab(createPrefabButton, item);
+            createPrefabButton.Clicked += () => OnCreatePrefabClicked(createPrefabButton, item);
         }
 
-        private void OnCreatePrefab(ContextMenuButton button, ContentItem item)
+        private void OnCreatePrefabClicked(ContextMenuButton button, ContentItem item)
         {
             var popup = new ContextMenuBase
             {
