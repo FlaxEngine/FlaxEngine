@@ -5,7 +5,7 @@
 /// Background Blur panel
 /// </summary>
 API_CLASS()
-class FLAXENGINE_API BackgroundBlur : public UIElement , public ISlot
+class FLAXENGINE_API BackgroundBlur : public UIElement
 {
     DECLARE_SCRIPTING_TYPE(BackgroundBlur);
 public:

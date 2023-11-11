@@ -10,7 +10,7 @@ BackgroundBlur::BackgroundBlur(const SpawnParams& params) : UIElement(params)
 
 void BackgroundBlur::OnDraw()
 {
-    auto size = GetSize();
+    auto size = GetSlot()->GetSize();
     auto strength = BlurStrength;
     if (BlurScaleWithSize)
         strength *= size.MinValue() / 1000.0f;
