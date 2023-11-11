@@ -200,6 +200,12 @@ bool WindowsMouse::WndProc(Window* window, const UINT msg, WPARAM wParam, LPARAM
         OnMouseMove(mousePos, window);
         result = true;
         break;
+    }    
+    case WM_NCMOUSEMOVE:
+    {
+        OnMouseMove(mousePos, window);
+        result = true;
+        break;
     }
     case WM_MOUSELEAVE:
     {
