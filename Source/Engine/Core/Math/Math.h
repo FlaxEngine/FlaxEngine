@@ -899,8 +899,7 @@ namespace Math
     template<class T>
     static FORCE_INLINE T PingPong(const T& t, T length)
     {
-        t = Repeat(t, length * 2.0f);
-        return length - Abs(t - length);
+        return length - Abs(Repeat(t, length * 2.0f) - length);
     }
 
     // Rotates position about the given axis by the given angle, in radians, and returns the offset to position
