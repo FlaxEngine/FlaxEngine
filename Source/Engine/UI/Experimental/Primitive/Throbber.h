@@ -1,6 +1,5 @@
 #pragma once
-#include "Engine/UI/Experimental/Types/UIElement.h"
-#include "Engine/UI/Experimental/Types/IBrush.h"
+#include "Engine/UI/Experimental/Common.h"
 
 /// <summary>
 /// Shows serverals zooming images in the row

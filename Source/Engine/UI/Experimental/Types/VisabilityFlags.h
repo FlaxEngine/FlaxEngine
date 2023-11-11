@@ -1,4 +1,5 @@
 #pragma once
+
 /// <summary>
 /// Visability flags
 /// </summary>

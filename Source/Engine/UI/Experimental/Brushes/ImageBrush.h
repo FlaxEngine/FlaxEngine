@@ -1,5 +1,5 @@
 #pragma once
-#include "Engine/UI/Experimental/Types/IBrush.h"
+#include "Engine/UI/Experimental/Common.h"
 
 API_CLASS(Namespace = "FlaxEngine.Experimental.UI") 
 class FLAXENGINE_API ImageBrush : public ScriptingObject, public IBrush
@@ -9,7 +9,7 @@ public:
     API_FIELD()
         AssetReference<Texture> Image;
     API_FIELD()
-        Int2 ImageSize;
+        Int2 ImageSize = Int2::Zero;
     API_FIELD()
         Color Tint = Color::White;
 

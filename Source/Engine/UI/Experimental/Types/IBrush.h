@@ -1,16 +1,13 @@
 #pragma once
-#include "Engine/Scripting/ScriptingObject.h"
-#include "UIElement.h"
 #include "Engine/Content/AssetReference.h"
 #include "Engine/Content/Assets/Texture.h"
-#include "Engine/Core/Math/Color.h"
 
 API_INTERFACE(Namespace = "FlaxEngine.Experimental.UI")
 class FLAXENGINE_API IBrush
 {
     DECLARE_SCRIPTING_TYPE_MINIMAL(IBrush);
 protected:
-    UIElement* Owner;
+    class UIElement* Owner;
 public:
     /// <summary>
     /// Caled when IBrush is Cunstructed

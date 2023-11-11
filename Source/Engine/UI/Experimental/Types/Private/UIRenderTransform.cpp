@@ -10,7 +10,7 @@ UIRenderTransform::UIRenderTransform(const SpawnParams& params) : ScriptingObjec
     Rotation = 0;
 }
 
- void UIRenderTransform::UpdateTransformCache(Float2& Location, Float2& Size,Float2 Povit)
+ void UIRenderTransform::UpdateTransformCache(Float2 Location, Float2 Size,Float2 Povit)
 {
     // Actual pivot and negative pivot
     auto v1 = Povit * Size;

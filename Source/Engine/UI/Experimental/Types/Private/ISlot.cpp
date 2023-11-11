@@ -1,7 +1,7 @@
 #include "Engine/Core/Common.h"
 #include "Engine/UI/Experimental/Types/ISlot.h"
 
-Float2 ISlot::GetSize()
+Float2& ISlot::GetSize()
 {
     return Size;
 }
@@ -41,7 +41,7 @@ int ISlot::GetCountOfFreeSlots()
     return out;
 }
 
-Float2 ISlot::GetLocation()
+Float2& ISlot::GetLocation()
 {
     return Location;
 }

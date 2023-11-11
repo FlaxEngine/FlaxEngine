@@ -1,5 +1,4 @@
 #pragma once
-#include "Engine/Scripting/ScriptingObject.h"
 #include "Anchor.h"
 
 class UIElement;
@@ -33,7 +32,7 @@ public:
     /// Removes the specyfic child
     /// </summary>
     /// <returns>true if Remove Child was successful otherwise false</returns>
-    API_FUNCTION() virtual bool RemoveChild(UIElement* Element) = 0;
+    API_FUNCTION() virtual bool RemoveChild(class UIElement* Element) = 0;
 
     /// <summary>
     /// Adds the specyfic child
@@ -45,7 +44,7 @@ public:
     /// gets children of ISlot
     /// </summary>
     /// <returns>A array of slots</returns>
-    API_FUNCTION() virtual Array<class UIElement*> GetChildren() = 0;
+    API_FUNCTION() virtual Array<UIElement*> GetChildren() = 0;
 
     /// <summary>
     /// counts number of free slots
@@ -56,7 +55,7 @@ public:
     /// Gets a Location
     /// </summary>
     /// <returns>Anchor</returns>
-    API_FUNCTION() Float2 GetLocation();
+    API_FUNCTION() Float2& GetLocation();
 
     /// <summary>
     /// sets the Location
@@ -68,7 +67,7 @@ public:
     /// Gets a size
     /// </summary>
     /// <returns>Anchor</returns>
-    API_FUNCTION() Float2 GetSize();
+    API_FUNCTION() Float2& GetSize();
 
     /// <summary>
     /// sets the size

@@ -1,5 +1,6 @@
 #include "Engine/Core/Memory/Memory.h"
 #include "Engine/UI/Experimental/Types/UIElement.h"
+#include "Engine/Debug/DebugLog.h"
 
 void UIElement::Detach()
 {
@@ -39,6 +40,16 @@ void UIElement::OnPreCunstruct(bool isInDesigner){}
 void UIElement::OnCunstruct(){}
 void UIElement::OnDestruct(){}
 void UIElement::OnDraw(){}
+
+/// <summary>
+/// Calculates Layout for this element
+/// </summary>
+
+void UIElement::Layout()
+{
+    // Update cached transformation matrix
+    RenderTransform->UpdateTransformCache(Slot->GetLocation(), GetDesiredSize(), Povit);
+}
 
 /// <summary>
 /// Attach this to <see cref="ISlot"/>

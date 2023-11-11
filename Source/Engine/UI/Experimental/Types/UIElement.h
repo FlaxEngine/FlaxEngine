@@ -1,6 +1,5 @@
 #pragma once
-#include "Engine/Debug/DebugLog.h"
-#include "Anchor.h"
+#include "Engine/Scripting/ScriptingObject.h"
 #include "VisabilityFlags.h"
 #include "ClippingFlags.h"
 #include "UIRenderTransform.h"
@@ -80,11 +79,7 @@ public:
     /// <summary>
     /// Calculates Layout for this element
     /// </summary>
-    API_FUNCTION() virtual void Layout()
-    {
-        // Update cached transformation matrix
-        RenderTransform->UpdateTransformCache(Slot->GetLocation(), GetDesiredSize(), Povit);
-    };
+    API_FUNCTION() virtual void Layout();
     /// <summary>
     /// Gets desired size for this element
     /// </summary>

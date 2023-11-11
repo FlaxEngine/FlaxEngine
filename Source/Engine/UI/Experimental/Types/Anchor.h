@@ -1,5 +1,4 @@
 #pragma once
-#include "Engine/Scripting/ScriptingObject.h"
 #include "Engine/Core/Math/Vector2.h"
 
 /// <summary>

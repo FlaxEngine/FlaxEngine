@@ -1,6 +1,5 @@
 #pragma once
 #include "Engine/Core/Math/Matrix3x3.h"
-#include "Engine/Scripting/ScriptingObject.h"
 #include "Engine/Serialization/Serialization.h"
 
 /// <summary>
@@ -41,7 +40,7 @@ public:
     /// <summary>
     /// Update Transform Matrix3x3 call it if any component is changed
     /// </summary>
-    API_FUNCTION() void UpdateTransformCache(Float2& Location, Float2& Size, Float2 Povit);
+    API_FUNCTION() void UpdateTransformCache(Float2 Location, Float2 Size, Float2 Povit);
 
     /// <summary>
     /// Check if transform is overlapping a point

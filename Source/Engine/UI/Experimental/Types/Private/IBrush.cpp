@@ -1,4 +1,6 @@
 #include "Engine/UI/Experimental/Types/IBrush.h"
+#include "Engine/UI/Experimental/Types/UIElement.h"
+
 #include "Engine/Core/Math/Rectangle.h"
 #include "Engine/Render2D/Render2D.h"
 
