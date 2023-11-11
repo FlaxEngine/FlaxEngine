@@ -18,7 +18,7 @@ private:
     /// <summary>
     /// The parent
     /// </summary>
-    ISlot* Parent;
+    ISlot* Slot;
 public:
 
     UIElement(const SpawnParams& params, bool isInDesigner);
@@ -78,6 +78,18 @@ public:
     API_FUNCTION() virtual void OnDraw();
 
     /// <summary>
+    /// Calculates Layout for this element
+    /// </summary>
+    API_FUNCTION() virtual void Layout()
+    {
+        // Update cached transformation matrix
+        RenderTransform->UpdateTransformCache(Slot->GetLocation(), GetDesiredSize(), Povit);
+    };
+    /// <summary>
+    /// Gets desired size for this element
+    /// </summary>
+    API_FUNCTION() virtual Float2 GetDesiredSize() { return Slot->GetSize(); };
+    /// <summary>
     /// removes this from <see cref="ISlot"/> Parent if exists
     /// </summary>
     API_FUNCTION() void Detach();
@@ -90,7 +102,7 @@ public:
     /// <summary>
     /// Attach this to <see cref="ISlot"/>
     /// </summary>
-    API_FUNCTION() const ISlot& GetParent();
+    API_FUNCTION() ISlot* GetSlot();
 public:
     // [Object]
     void OnScriptingDispose() override;

@@ -3,9 +3,9 @@
 
 void UIElement::Detach()
 {
-    if (Parent) 
+    if (Slot) 
     {
-        Parent->RemoveChild(this);
+        Slot->RemoveChild(this);
     }
     else
     {
@@ -44,9 +44,9 @@ void UIElement::OnDraw(){}
 /// Attach this to <see cref="ISlot"/>
 /// </summary>
 
-const ISlot& UIElement::GetParent()
+ISlot* UIElement::GetSlot()
 {
-    return *Parent;
+    return Slot;
 }
 void UIElement::OnScriptingDispose()
 {

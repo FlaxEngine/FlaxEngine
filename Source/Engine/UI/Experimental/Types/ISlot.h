@@ -32,35 +32,25 @@ public:
     /// Removes the specyfic child
     /// </summary>
     /// <returns>true if Remove Child was successful otherwise false</returns>
-    API_FUNCTION() virtual bool RemoveChild(UIElement* Element) { return false; };
+    API_FUNCTION() virtual bool RemoveChild(UIElement* Element) = 0;
 
     /// <summary>
     /// Adds the specyfic child
     /// </summary>
     /// <returns>true if add child was successful otherwise false</returns>
-    API_FUNCTION() virtual bool AddChild(UIElement* Element) { return false; };
+    API_FUNCTION() virtual bool AddChild(UIElement* Element) = 0;
 
     /// <summary>
     /// gets children of ISlot
     /// </summary>
     /// <returns>A array of slots</returns>
-    API_FUNCTION() virtual Array<class UIElement*> GetChildren() { return Array<class UIElement*>(); };
-
-    /// <summary>
-    /// Calculates Layout for this element
-    /// </summary>
-    API_FUNCTION() virtual void Layout() {};
-
-    /// <summary>
-    /// Gets desired size for this element
-    /// </summary>
-    API_FUNCTION() virtual Float2 GetDesiredSize() { return Size; };
+    API_FUNCTION() virtual Array<class UIElement*> GetChildren() = 0;
 
     /// <summary>
     /// counts number of free slots
     /// </summary>
-    /// <returns>Free slot count (-1 if ISlot can't have children)</returns>
-    API_FUNCTION() virtual int GetCountOfFreeSlots();
+    /// <returns>Free slot count</returns>
+    API_FUNCTION() virtual int GetCountOfFreeSlots() = 0;
     /// <summary>
     /// Gets a Location
     /// </summary>
