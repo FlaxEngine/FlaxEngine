@@ -4,7 +4,7 @@
 /// <summary>
 /// Background Blur panel
 /// </summary>
-API_CLASS()
+API_CLASS(Namespace = "FlaxEngine.Experimental.UI")
 class FLAXENGINE_API BackgroundBlur : public UIElement
 {
     DECLARE_SCRIPTING_TYPE(BackgroundBlur);

@@ -5,7 +5,7 @@
 /// <summary>
 /// Shows serverals zooming images in the row
 /// </summary>
-API_CLASS()
+API_CLASS(Namespace = "FlaxEngine.Experimental.UI")
 class FLAXENGINE_API Throbber : public UIElement
 {
     DECLARE_SCRIPTING_TYPE(Throbber);
@@ -25,11 +25,6 @@ public:
     /// The brush
     /// </summary>
     API_FIELD() IBrush* Brush;
-
-    /// <summary>
-    /// [ToDo] add summary
-    /// </summary>
-    API_FIELD() byte NumberOfPieces;
 
     /// <summary>
     /// [ToDo] add summary

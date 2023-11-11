@@ -5,7 +5,8 @@
 /// <summary>
 /// the Anchor
 /// </summary>
-API_STRUCT() struct FLAXENGINE_API Anchor
+API_STRUCT(Namespace = "FlaxEngine.Experimental.UI")
+struct FLAXENGINE_API Anchor
 {
     DECLARE_SCRIPTING_TYPE_MINIMAL(Anchor);
 public:

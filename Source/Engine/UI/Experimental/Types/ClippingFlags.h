@@ -2,7 +2,7 @@
 /// <summary>
 /// Clipping Flags
 /// </summary>
-API_ENUM()
+API_ENUM(Namespace = "FlaxEngine.Experimental.UI")
 enum ClippingFlags
 {
     /// <summary>

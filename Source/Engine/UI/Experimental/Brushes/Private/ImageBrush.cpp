@@ -1,0 +1,46 @@
+#include "Engine/UI/Experimental/Brushes/ImageBrush.h"
+#include "Engine/Core/Math/Rectangle.h"
+#include "Engine/Render2D/Render2D.h"
+
+ImageBrush::ImageBrush(const SpawnParams& params) : ScriptingObject(params)
+{
+
+}
+
+void ImageBrush::OnPreCunstruct(bool isInDesigner)
+{
+    if (Image && !Image->WaitForLoaded())
+    {
+        OnImageAssetChanged();
+    }
+};
+
+void ImageBrush::OnCunstruct()
+{
+    Image.Changed.Bind<ImageBrush, &ImageBrush::OnImageAssetChanged>(this);
+};
+void ImageBrush::OnDraw(const Float2& At)
+{
+    auto texture = Image.Get();
+    if (texture) {
+        Render2D::DrawTexture(texture, Rectangle(At, GetDesiredSize()), Color::White);
+    }
+    else
+    {
+        // if texture is null call default IBrush::OnDraw to render FillRectangle
+        IBrush::OnDraw(At);
+    }
+}
+void ImageBrush::OnDestruct()
+{
+    Image.Changed.Unbind<ImageBrush, &ImageBrush::OnImageAssetChanged>(this);
+};
+
+Float2 ImageBrush::GetDesiredSize()
+{
+    return ImageSize;
+}
+void ImageBrush::OnImageAssetChanged()
+{
+    ImageSize = Image.Get()->Size();
+}

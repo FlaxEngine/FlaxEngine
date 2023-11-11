@@ -6,7 +6,7 @@
 /// <summary>
 /// 2D Transform Component spectfic to UI
 /// </summary>
-API_CLASS()
+API_CLASS(Namespace = "FlaxEngine.Experimental.UI")
 class FLAXENGINE_API UIRenderTransform : public ScriptingObject
 {
     DECLARE_SCRIPTING_TYPE(UIRenderTransform);

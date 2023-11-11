@@ -9,7 +9,7 @@
 /// <summary>
 /// Base class for any UI element
 /// </summary>
-API_CLASS()
+API_CLASS(Namespace = "FlaxEngine.Experimental.UI")
 class FLAXENGINE_API UIElement : public ScriptingObject
 {
     DECLARE_SCRIPTING_TYPE(UIElement);

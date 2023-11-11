@@ -4,7 +4,8 @@
 
 class UIElement;
 
-API_INTERFACE() class FLAXENGINE_API ISlot
+API_INTERFACE(Namespace = "FlaxEngine.Experimental.UI") 
+class FLAXENGINE_API ISlot
 {
     DECLARE_SCRIPTING_TYPE_MINIMAL(ISlot);
 private:

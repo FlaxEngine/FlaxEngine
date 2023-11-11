@@ -2,7 +2,7 @@
 /// <summary>
 /// Visability flags
 /// </summary>
-API_ENUM(Attribute = "Flags")
+API_ENUM(Namespace = "FlaxEngine.Experimental.UI",Attribute = "Flags")
 enum VisabilityFlags
 {
     /// <summary>
