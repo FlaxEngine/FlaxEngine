@@ -5,7 +5,11 @@
 
 Throbber::Throbber(const SpawnParams& params) : UIElement(params) 
 {
+}
 
+void Throbber::OnCunstruct() 
+{
+    Brush->OnCunstruct();
 }
 
 void Throbber::OnDraw()
@@ -26,7 +30,17 @@ void Throbber::OnDraw()
     Float3 sce = States[CurentElement];
     for (auto i = 0; i < States.Count(); i++)
     {
-        Render2D::FillRectangle(Rectangle(Float2(0, i * GetSlot()->GetSize().X), Float2(sce.X, sce.Y)), Color(Color::White).AlphaMultiplied(sce.Z));
+        Brush->OnDraw(Float2(0, i * GetSlot()->GetSize().X));
     }
     CurentElement++;
+}
+
+void Throbber::OnDestruct() 
+{
+    Brush->OnDestruct(); 
+}
+
+Float2 Throbber::GetDesiredSize()
+{
+    return Float2(NumberOfPieces * Brush->GetDesiredSize().X, Brush->GetDesiredSize().Y);
 }

@@ -9,7 +9,7 @@ public:
     API_FIELD()
         AssetReference<Texture> Image;
     API_FIELD()
-        Int2 ImageSize = Int2::Zero;
+        Int2 ImageSize = Int2(32,32);
     API_FIELD()
         Color Tint = Color::White;
 

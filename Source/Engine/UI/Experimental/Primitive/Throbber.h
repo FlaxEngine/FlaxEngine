@@ -9,8 +9,8 @@ class FLAXENGINE_API Throbber : public UIElement
 {
     DECLARE_SCRIPTING_TYPE(Throbber);
 private:
-    Array<Float3> States;
-    int CurentElement;
+    Array<Float3> States = Array<Float3>(3);
+    int CurentElement = 0;
 public:
     API_ENUM()
     enum AnimateFlags
@@ -23,12 +23,12 @@ public:
     /// <summary>
     /// The brush
     /// </summary>
-    API_FIELD() IBrush* Brush;
+    API_FIELD() ImageBrush* Brush = nullptr;
 
     /// <summary>
     /// [ToDo] add summary
     /// </summary>
-    API_FIELD() byte NumberOfPieces;
+    API_FIELD() byte NumberOfPieces = 3;
 
     /// <summary>
     /// [ToDo] add summary
@@ -36,10 +36,21 @@ public:
     API_FIELD() AnimateFlags Animate = (AnimateFlags)(AnimateFlags::Vertical | AnimateFlags::Horizontal | AnimateFlags::Alpha);
 
     /// <inheritdoc />
-    void OnDraw() override;
-
-    API_FUNCTION() virtual Float2 GetDesiredSize() override 
+    API_FUNCTION() void OnPreCunstruct(bool isInDesigner) override
     {
-        return Float2(NumberOfPieces * GetSlot()->GetSize().X, GetSlot()->GetSize().Y);
-    }
+        if (!Brush) 
+        {
+            Brush = New<ImageBrush>();
+        }
+        Brush->OnPreCunstruct(isInDesigner);
+    };
+
+    /// <inheritdoc />
+    API_FUNCTION() void OnCunstruct() override;
+    /// <inheritdoc />
+    API_FUNCTION() void OnDraw() override;
+    /// <inheritdoc />
+    API_FUNCTION() void OnDestruct() override;
+    /// <inheritdoc />
+    API_FUNCTION() Float2 GetDesiredSize() override;
 };
