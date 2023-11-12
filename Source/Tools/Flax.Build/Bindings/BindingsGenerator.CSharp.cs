@@ -671,12 +671,7 @@ namespace Flax.Build.Bindings
 
         private static void GenerateCSharpWrapperFunctionCall(BuildData buildData, StringBuilder contents, ApiTypeInfo caller, FunctionInfo functionInfo, bool isSetter = false,string indent = "")
         {
-            bool isInterface = false;
-            if(caller is InterfaceInfo)
-            {
-                isInterface = true;
-                //System.Diagnostics.Debugger.Break();
-            }
+
 #if USE_NETCORE
             for (var i = 0; i < functionInfo.Parameters.Count; i++)
             {
@@ -688,7 +683,7 @@ namespace Flax.Build.Bindings
                 }
             }
 #endif
-            if (isInterface)
+            if (caller.IsInterface)
             {
                 indent += "    ";
                 // create default 
@@ -723,7 +718,7 @@ namespace Flax.Build.Bindings
             var separator = false;
             if (!functionInfo.IsStatic)
             {
-                if (isInterface)
+                if (caller.IsInterface)
                 {
                     contents.Append("Object.GetUnmanagedPtr(obj)");
                 }
@@ -780,7 +775,7 @@ namespace Flax.Build.Bindings
                         contents.Append("ref ");
 
                     // Pass value
-                    if (isInterface)
+                    if (caller.IsInterface)
                     {
                         contents.Append(parameterInfo.Name);
                     }
@@ -806,7 +801,7 @@ namespace Flax.Build.Bindings
                 contents.Append("    ");
                 contents.Append("return __resultAsRef;");
             }
-            if (isInterface)
+            if (caller.IsInterface)
             {
                 contents.AppendLine();
                 contents.Append(indent);

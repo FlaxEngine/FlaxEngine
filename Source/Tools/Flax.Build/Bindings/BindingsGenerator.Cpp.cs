@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using BuildData = Flax.Build.Builder.BuildData;
 
@@ -1017,6 +1018,8 @@ namespace Flax.Build.Bindings
             }
             if (useLibraryExportInPlainC)
                 contents.AppendFormat("static {0} {1}(", returnValueType, functionInfo.UniqueName);
+            else if(caller.IsInterface)
+                contents.AppendFormat("DLLEXPORT {0} {1}(", returnValueType, functionInfo.UniqueName);
             else
                 contents.AppendFormat("DLLEXPORT static {0} {1}(", returnValueType, functionInfo.UniqueName);
             functionInfo.Glue.LibraryEntryPoint = libraryEntryPoint;
@@ -2642,12 +2645,18 @@ namespace Flax.Build.Bindings
             // Properties
             foreach (var propertyInfo in interfaceInfo.Fields)
             {
-                if (!useCSharp || propertyInfo.IsHidden)
+                if (!useCSharp || propertyInfo.IsHidden || propertyInfo.IsConstexpr)
                     continue;
                 if (propertyInfo.Getter != null)
-                    GenerateCppWrapperFunction(buildData, contents, interfaceInfo, interfaceTypeNameInternal, propertyInfo.Getter);
+                    GenerateCppWrapperFunction(buildData, contents, interfaceInfo, interfaceTypeNameInternal, propertyInfo.Getter, "{0}");
                 if (propertyInfo.Setter != null)
-                    GenerateCppWrapperFunction(buildData, contents, interfaceInfo, interfaceTypeNameInternal, propertyInfo.Setter);
+                {
+                    var callFormat = "{0} = {1}";
+                    var type = propertyInfo.Setter.Parameters[0].Type;
+                    if (type.IsArray)
+                        callFormat = $"auto __tmp = {{1}}; for (int32 i = 0; i < {type.ArraySize}; i++) {{0}}[i] = __tmp[i]";
+                    GenerateCppWrapperFunction(buildData, contents, interfaceInfo, interfaceTypeNameInternal, propertyInfo.Setter, callFormat);
+                }
             }
 
             // Nested types
