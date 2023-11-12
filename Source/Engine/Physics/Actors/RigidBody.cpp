@@ -327,12 +327,10 @@ void RigidBody::OnColliderChanged(Collider* c)
 
 void RigidBody::UpdateBounds()
 {
-    void* actor = _actor;
-    if (actor && PhysicsBackend::GetRigidActorShapesCount(actor) != 0)
-        PhysicsBackend::GetActorBounds(actor, _box);
-    else
-        _box = BoundingBox(_transform.Translation);
-    BoundingSphere::FromBox(_box, _sphere);
+    const float radius = GetScale().MaxValue();
+    const Vector3 position = _transform.Translation;
+    _sphere = BoundingSphere(position, radius);
+    _box = BoundingBox::FromSphere(_sphere);
 }
 
 void RigidBody::UpdateScale()
