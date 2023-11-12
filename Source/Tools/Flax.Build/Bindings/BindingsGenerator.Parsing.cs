@@ -820,6 +820,7 @@ namespace Flax.Build.Bindings
                         break;
                     case "override":
                         desc.IsVirtual = true;
+                        desc.IsOverridden = true;
                         break;
                     default: throw new Exception($"Unknown identifier '{token.Value}' in function {desc.Name} at line {context.Tokenizer.CurrentLine}.");
                     }

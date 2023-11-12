@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace Flax.Build.Bindings
@@ -10,6 +11,7 @@ namespace Flax.Build.Bindings
     /// </summary>
     public class InterfaceInfo : VirtualClassInfo
     {
+        public List<FieldInfo> Fields = new List<FieldInfo>();
         public override int GetScriptVTableSize(out int offset)
         {
             offset = 0;
@@ -31,6 +33,57 @@ namespace Flax.Build.Bindings
                 throw new Exception(string.Format("Interface {0} cannot inherit from {1}.", FullNameNative, BaseType));
             if (Interfaces != null && Interfaces.Count != 0)
                 throw new Exception(string.Format("Interface {0} cannot inherit from {1}.", FullNameNative, "interfaces"));
+
+            foreach (var fieldInfo in Fields)
+            {
+                if (fieldInfo.IsHidden)
+                    continue;
+
+                fieldInfo.Getter = new FunctionInfo
+                {
+                    Name = "Get" + fieldInfo.Name,
+                    Comment = fieldInfo.Comment,
+                    IsStatic = fieldInfo.IsStatic,
+                    Access = fieldInfo.Access,
+                    Attributes = fieldInfo.Attributes,
+                    ReturnType = fieldInfo.Type,
+                    Parameters = new List<FunctionInfo.ParameterInfo>(),
+                    IsVirtual = false,
+                    IsConst = true,
+                    Glue = new FunctionInfo.GlueInfo()
+                };
+                ProcessAndValidate(fieldInfo.Getter);
+                fieldInfo.Getter.Name = fieldInfo.Name;
+
+                if (!fieldInfo.IsReadOnly)
+                {
+                    fieldInfo.Setter = new FunctionInfo
+                    {
+                        Name = "Set" + fieldInfo.Name,
+                        Comment = fieldInfo.Comment,
+                        IsStatic = fieldInfo.IsStatic,
+                        Access = fieldInfo.Access,
+                        Attributes = fieldInfo.Attributes,
+                        ReturnType = new TypeInfo
+                        {
+                            Type = "void",
+                        },
+                        Parameters = new List<FunctionInfo.ParameterInfo>
+                        {
+                            new FunctionInfo.ParameterInfo
+                            {
+                                Name = "value",
+                                Type = fieldInfo.Type,
+                            },
+                        },
+                        IsVirtual = false,
+                        IsConst = true,
+                        Glue = new FunctionInfo.GlueInfo()
+                    };
+                    ProcessAndValidate(fieldInfo.Setter);
+                    fieldInfo.Setter.Name = fieldInfo.Name;
+                }
+            }
         }
 
         public override string ToString()
