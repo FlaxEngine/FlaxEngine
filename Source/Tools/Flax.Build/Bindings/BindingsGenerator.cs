@@ -316,8 +316,8 @@ namespace Flax.Build.Bindings
                                 classInfo.Fields.Add(fieldInfo);
                             else if (scopeInfo is StructureInfo structureInfo)
                                 structureInfo.Fields.Add(fieldInfo);
-                            else
-                                throw new Exception($"Not supported location for field {fieldInfo.Name} at line {tokenizer.CurrentLine}. Place it in the class or structure to use API bindings for it.");
+                            else if (scopeInfo is InterfaceInfo interfaceInfo)
+                                interfaceInfo.Fields.Add(fieldInfo);
                         }
                         else if (string.Equals(token.Value, ApiTokens.Event, StringComparison.Ordinal))
                         {

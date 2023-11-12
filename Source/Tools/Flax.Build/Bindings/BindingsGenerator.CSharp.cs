@@ -6,7 +6,10 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text;
+using System.Xml.Linq;
+using static Flax.Build.Bindings.FunctionInfo;
 using BuildData = Flax.Build.Builder.BuildData;
 
 namespace Flax.Build.Bindings
@@ -568,7 +571,11 @@ namespace Flax.Build.Bindings
             contents.AppendLine().Append(indent).Append($"[LibraryImport(\"{caller.ParentModule.Module.BinaryModuleName}\", EntryPoint = \"{functionInfo.Glue.LibraryEntryPoint}\", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.Interop.StringMarshaller))]");
             if (!string.IsNullOrEmpty(returnMarshalType))
                 contents.AppendLine().Append(indent).Append($"[return: {returnMarshalType}]");
-            contents.AppendLine().Append(indent).Append("internal static partial ");
+            if (functionInfo.IsOverridden)
+                contents.AppendLine().Append(indent).Append("internal new static partial ");
+            else
+                contents.AppendLine().Append(indent).Append("internal static partial ");
+            
 #endif
             contents.Append(returnValueType).Append(" Internal_").Append(functionInfo.UniqueName).Append('(');
 
@@ -1203,7 +1210,11 @@ namespace Flax.Build.Bindings
                     if (functionInfo.IsStatic)
                         contents.Append("static ");
                     if (functionInfo.IsVirtual && !classInfo.IsSealed)
-                        contents.Append("virtual ");
+                        if (functionInfo.IsOverridden)
+                            contents.Append("override ");
+                        else
+                            contents.Append("virtual ");
+
                     var returnValueType = GenerateCSharpNativeToManaged(buildData, functionInfo.ReturnType, classInfo);
                     contents.Append(returnValueType).Append(' ').Append(functionInfo.Name).Append('(');
 
@@ -1254,6 +1265,8 @@ namespace Flax.Build.Bindings
                 {
                     if (interfaceInfo.Access != AccessLevel.Public)
                         continue;
+
+                    // Functions
                     foreach (var functionInfo in interfaceInfo.Functions)
                     {
                         if (!classInfo.IsScriptingObject)
@@ -1265,7 +1278,10 @@ namespace Flax.Build.Bindings
                         GenerateCSharpAttributes(buildData, contents, indent, classInfo, functionInfo.Attributes, null, false, useUnmanaged);
                         contents.Append(indent).Append(GenerateCSharpAccessLevel(functionInfo.Access));
                         if (functionInfo.IsVirtual && !classInfo.IsSealed)
-                            contents.Append("virtual ");
+                            if (functionInfo.IsOverridden)
+                                contents.Append("override ");
+                            else
+                                contents.Append("virtual ");
                         var returnValueType = GenerateCSharpNativeToManaged(buildData, functionInfo.ReturnType, classInfo);
                         contents.Append(returnValueType).Append(' ').Append(functionInfo.Name).Append('(');
 
@@ -2025,7 +2041,44 @@ namespace Flax.Build.Bindings
 
                 contents.Append(");").AppendLine();
             }
+            // Fields
+            foreach (var fieldInfo in interfaceInfo.Fields)
+            {
+                if (fieldInfo.IsHidden)
+                    continue;
 
+                contents.AppendLine();
+                GenerateCSharpComment(contents, indent, fieldInfo.Comment, true);
+                GenerateCSharpAttributes(buildData, contents, indent, interfaceInfo, fieldInfo, true);
+                contents.Append(indent).Append(GenerateCSharpAccessLevel(fieldInfo.Access));
+                if (fieldInfo.IsStatic)
+                    contents.Append("static ");
+                var returnValueType = GenerateCSharpNativeToManaged(buildData, fieldInfo.Type, interfaceInfo);
+                contents.Append(returnValueType).Append(' ').AppendLine(fieldInfo.Name);
+                contents.AppendLine(indent + "{");
+                indent += "    ";
+
+                //Getter
+                contents.Append(indent);
+                contents.Append(GenerateCSharpAccessLevel(fieldInfo.Access));
+                contents.Append("get { ");
+                GenerateCSharpWrapperFunctionCall(buildData, contents, interfaceInfo, fieldInfo.Getter);
+                contents.Append(" }").AppendLine();
+
+                //Setter
+                contents.Append(indent);
+                contents.Append(GenerateCSharpAccessLevel(fieldInfo.Access));
+                contents.Append("set { ");
+                GenerateCSharpWrapperFunctionCall(buildData, contents, interfaceInfo, fieldInfo.Setter, true);
+                contents.Append(" }").AppendLine();
+
+
+                indent = indent.Substring(0, indent.Length - 4);
+                contents.AppendLine(indent + "}");
+
+                GenerateCSharpWrapperFunction(buildData, contents, indent, interfaceInfo, fieldInfo.Getter);
+                GenerateCSharpWrapperFunction(buildData, contents, indent, interfaceInfo, fieldInfo.Setter);
+            }
             GenerateCSharpManagedTypeInternals(buildData, interfaceInfo, contents, indent);
 
             // End

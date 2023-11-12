@@ -2509,7 +2509,7 @@ namespace Flax.Build.Bindings
             var interfaceTypeNameNative = interfaceInfo.FullNameNative;
             var interfaceTypeNameManaged = interfaceInfo.FullNameManaged;
             var interfaceTypeNameInternal = interfaceInfo.FullNameNativeInternal;
-
+            var useCSharp = EngineConfiguration.WithCSharp(buildData.TargetOptions);
             GenerateCppTypeInternalsStatics?.Invoke(buildData, interfaceInfo, contents);
 
             // Wrapper interface implement to invoke scripting if inherited in C# or VS
@@ -2638,6 +2638,17 @@ namespace Flax.Build.Bindings
             contents.Append($"StringAnsiView(\"{interfaceTypeNameManaged}\", {interfaceTypeNameManaged.Length}), &{interfaceTypeNameInternal}Internal::InitRuntime,");
             contents.Append(setupScriptVTable).Append($", &{interfaceTypeNameInternal}Internal::GetInterfaceWrapper").Append(");");
             contents.AppendLine();
+
+            // Properties
+            foreach (var propertyInfo in interfaceInfo.Fields)
+            {
+                if (!useCSharp || propertyInfo.IsHidden)
+                    continue;
+                if (propertyInfo.Getter != null)
+                    GenerateCppWrapperFunction(buildData, contents, interfaceInfo, interfaceTypeNameInternal, propertyInfo.Getter);
+                if (propertyInfo.Setter != null)
+                    GenerateCppWrapperFunction(buildData, contents, interfaceInfo, interfaceTypeNameInternal, propertyInfo.Setter);
+            }
 
             // Nested types
             foreach (var apiTypeInfo in interfaceInfo.Children)
