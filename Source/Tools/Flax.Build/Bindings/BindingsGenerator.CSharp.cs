@@ -669,8 +669,14 @@ namespace Flax.Build.Bindings
             contents.Append(')').Append(';').AppendLine();
         }
 
-        private static void GenerateCSharpWrapperFunctionCall(BuildData buildData, StringBuilder contents, ApiTypeInfo caller, FunctionInfo functionInfo, bool isSetter = false)
+        private static void GenerateCSharpWrapperFunctionCall(BuildData buildData, StringBuilder contents, ApiTypeInfo caller, FunctionInfo functionInfo, bool isSetter = false,string indent = "")
         {
+            bool isInterface = false;
+            if(caller is InterfaceInfo)
+            {
+                isInterface = true;
+                //System.Diagnostics.Debugger.Break();
+            }
 #if USE_NETCORE
             for (var i = 0; i < functionInfo.Parameters.Count; i++)
             {
@@ -682,6 +688,27 @@ namespace Flax.Build.Bindings
                 }
             }
 #endif
+            if (isInterface)
+            {
+                indent += "    ";
+                // create default 
+                var customParametersc = functionInfo.Glue.CustomParameters?.Count ?? 0;
+                for (var i = 0; i < customParametersc; i++)
+                {
+                    var parameterInfo = functionInfo.Glue.CustomParameters[i];
+                    contents.Append(indent);
+                    contents.Append(parameterInfo.Type);
+                    contents.Append(' ');
+                    contents.Append(parameterInfo.Name);
+                    contents.Append(" = default;\n");
+                }
+                contents.Append(indent);
+                contents.Append("if (this is Object obj)\n");
+                contents.Append(indent);
+                contents.Append("{\n");
+                contents.Append("    ");
+            }
+            contents.Append(indent);
             if (functionInfo.Glue.UseReferenceForResult)
             {
             }
@@ -689,13 +716,21 @@ namespace Flax.Build.Bindings
             {
                 contents.Append("return ");
             }
+
             contents.Append("Internal_").Append(functionInfo.UniqueName).Append('(');
 
             // Pass parameters
             var separator = false;
             if (!functionInfo.IsStatic)
             {
-                contents.Append("__unmanagedPtr");
+                if (isInterface)
+                {
+                    contents.Append("Object.GetUnmanagedPtr(obj)");
+                }
+                else
+                {
+                    contents.Append("__unmanagedPtr");
+                }
                 separator = true;
             }
             for (var i = 0; i < functionInfo.Parameters.Count; i++)
@@ -745,7 +780,14 @@ namespace Flax.Build.Bindings
                         contents.Append("ref ");
 
                     // Pass value
-                    contents.Append(parameterInfo.DefaultValue);
+                    if (isInterface)
+                    {
+                        contents.Append(parameterInfo.Name);
+                    }
+                    else
+                    {
+                        contents.Append(parameterInfo.DefaultValue);
+                    }
                 }
                 else
                 {
@@ -759,7 +801,18 @@ namespace Flax.Build.Bindings
             // Return result
             if (functionInfo.Glue.UseReferenceForResult)
             {
-                contents.Append(" return __resultAsRef;");
+                contents.AppendLine();
+                contents.Append(indent);
+                contents.Append("    ");
+                contents.Append("return __resultAsRef;");
+            }
+            if (isInterface)
+            {
+                contents.AppendLine();
+                contents.Append(indent);
+                contents.AppendLine("}");
+                contents.Append(indent);
+                contents.Append("throw new NotSupportedException(\"The \" + typeof(" + caller.Name + ").FullName + \" got incorrecty implemented base of class u are using this interface needs to be delivered from\" + typeof(Object).FullName + \" API_FIELD can't support (c# binding limits)\");");
             }
         }
 
@@ -2060,17 +2113,27 @@ namespace Flax.Build.Bindings
 
                 //Getter
                 contents.Append(indent);
-                contents.Append(GenerateCSharpAccessLevel(fieldInfo.Access));
-                contents.Append("get { ");
-                GenerateCSharpWrapperFunctionCall(buildData, contents, interfaceInfo, fieldInfo.Getter);
-                contents.Append(" }").AppendLine();
+                //contents.Append(GenerateCSharpAccessLevel(fieldInfo.Access)); //CS0273
+                contents.Append("get");
+                contents.AppendLine();
+                contents.Append(indent);
+                contents.Append("{\n");
+                GenerateCSharpWrapperFunctionCall(buildData, contents, interfaceInfo, fieldInfo.Getter,false,indent);
+                contents.AppendLine();
+                contents.Append(indent);
+                contents.Append("}\n");
 
                 //Setter
                 contents.Append(indent);
-                contents.Append(GenerateCSharpAccessLevel(fieldInfo.Access));
-                contents.Append("set { ");
-                GenerateCSharpWrapperFunctionCall(buildData, contents, interfaceInfo, fieldInfo.Setter, true);
-                contents.Append(" }").AppendLine();
+                //contents.Append(GenerateCSharpAccessLevel(fieldInfo.Access)); //CS0273
+                contents.Append("set");
+                contents.AppendLine();
+                contents.Append(indent);
+                contents.Append("{\n");
+                GenerateCSharpWrapperFunctionCall(buildData, contents, interfaceInfo, fieldInfo.Setter, true, indent);
+                contents.AppendLine();
+                contents.Append(indent);
+                contents.Append("}\n");
 
 
                 indent = indent.Substring(0, indent.Length - 4);
