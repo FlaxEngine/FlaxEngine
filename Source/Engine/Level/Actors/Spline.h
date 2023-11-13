@@ -168,6 +168,13 @@ public:
     API_PROPERTY() float GetSplineLength() const;
 
     /// <summary>
+    /// Gets the length of the spline segment (distance between pair of two points).
+    /// </summary>
+    /// <param name="index">The index of the segment end index. Zero-based, smaller than GetSplinePointsCount().</param>
+    /// <returns>The spline segment length.</returns>
+    API_FUNCTION() float GetSplineSegmentLength(int32 index) const;
+
+    /// <summary>
     /// Gets the time of the spline keyframe.
     /// </summary>
     /// <param name="index">The curve keyframe index. Zero-based, smaller than GetSplinePointsCount().</param>
