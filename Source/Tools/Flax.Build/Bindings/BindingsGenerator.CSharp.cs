@@ -2039,6 +2039,20 @@ namespace Flax.Build.Bindings
             GenerateCSharpAttributes(buildData, contents, indent, interfaceInfo, true);
             contents.Append(indent).Append(GenerateCSharpAccessLevel(interfaceInfo.Access));
             contents.Append("unsafe partial interface ").Append(interfaceInfo.Name);
+            {
+                if (interfaceInfo.Interfaces != null)
+                {
+                    contents.Append(" : ");
+                    bool separetor = false;
+                    foreach (var item in interfaceInfo.Interfaces)
+                    {
+                        if (separetor)
+                            contents.Append(" , ");
+                        contents.Append(item.Name);
+                        separetor = true;
+                    }
+                }
+            }
             contents.AppendLine();
             contents.Append(indent + "{");
             indent += "    ";

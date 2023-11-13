@@ -31,9 +31,16 @@ namespace Flax.Build.Bindings
 
             if (BaseType != null)
                 throw new Exception(string.Format("Interface {0} cannot inherit from {1}.", FullNameNative, BaseType));
-            if (Interfaces != null && Interfaces.Count != 0)
-                throw new Exception(string.Format("Interface {0} cannot inherit from {1}.", FullNameNative, "interfaces"));
-
+            if (Interfaces != null)
+            {
+                for (int i = 0; i < Interfaces.Count; i++)
+                {
+                    if (!Interfaces[i].IsInterface)
+                    {
+                        throw new Exception(string.Format("Interface {0} cannot inherit from {1}. Because the {1} is not a Interface", FullNameNative, Interfaces[i]));
+                    }
+                }
+            }
             foreach (var fieldInfo in Fields)
             {
                 if (fieldInfo.IsHidden)
