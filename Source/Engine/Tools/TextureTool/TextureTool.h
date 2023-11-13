@@ -57,11 +57,11 @@ API_CLASS(Namespace="FlaxEngine.Tools", Static) class FLAXENGINE_API TextureTool
         API_FIELD(Attributes="EditorOrder(70)")
         bool FlipY = false;
 
-        // Texture size scale. Default is 1.
+        // Texture size scale. Allows increasing or decreasing the imported texture resolution. Default is 1.
         API_FIELD(Attributes="EditorOrder(80), Limit(0.0001f, 1000.0f, 0.01f)")
         float Scale = 1.0f;
 
-        // Maximum size of the texture (for both width and height). Higher resolution textures will be resized during importing process.
+        // Maximum size of the texture (for both width and height). Higher resolution textures will be resized during importing process. Used to clip textures that are too big.
         API_FIELD(Attributes="HideInEditor")
         int32 MaxSize = 8192;
 
@@ -69,11 +69,11 @@ API_CLASS(Namespace="FlaxEngine.Tools", Static) class FLAXENGINE_API TextureTool
         API_FIELD(Attributes="EditorOrder(100)")
         bool Resize = false;
 
-        // The width of the imported texture. If Resize property is set to true then texture will be resized during the import to this value. Otherwise it will be ignored.
+        // The width of the imported texture. If Resize property is set to true then texture will be resized during the import to this value during the import, otherwise it will be ignored.
         API_FIELD(Attributes="HideInEditor")
         int32 SizeX = 1024;
 
-        // The height of the imported texture. If Resize property is set to true then texture will be resized during the import to this value. Otherwise it will be ignored.
+        // The height of the imported texture. If Resize property is set to true then texture will be resized during the import to this value during the import, otherwise it will be ignored.
         API_FIELD(Attributes="HideInEditor")
         int32 SizeY = 1024;
 
@@ -85,7 +85,7 @@ API_CLASS(Namespace="FlaxEngine.Tools", Static) class FLAXENGINE_API TextureTool
         API_FIELD(Attributes="EditorOrder(210), VisibleIf(\"PreserveAlphaCoverage\")")
         float PreserveAlphaCoverageReference = 0.5f;
 
-        // Texture group for streaming (negative if unused). See Streaming Settings.
+        // The texture group for streaming (negative if unused). See Streaming Settings.
         API_FIELD(Attributes="EditorOrder(300), CustomEditorAlias(\"FlaxEditor.CustomEditors.Dedicated.TextureGroupEditor\")")
         int32 TextureGroup = -1;
 

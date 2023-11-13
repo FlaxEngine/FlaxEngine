@@ -278,44 +278,70 @@ namespace FlaxEngine.Interop
             if (typeCache.TryGetValue(typeName, out Type type))
                 return type;
 
-            type = Type.GetType(typeName, ResolveAssemblyByName, null);
+            type = Type.GetType(typeName, ResolveAssembly, null);
             if (type == null)
-            {
-                foreach (var assembly in scriptingAssemblyLoadContext.Assemblies)
-                {
-                    type = assembly.GetType(typeName);
-                    if (type != null)
-                        break;
-                }
-            }
+                type = ResolveSlow(typeName);
 
             if (type == null)
             {
-                string oldTypeName = typeName;
+                string fullTypeName = typeName;
                 typeName = typeName.Substring(0, typeName.IndexOf(','));
-                type = Type.GetType(typeName, ResolveAssemblyByName, null);
+                type = Type.GetType(typeName, ResolveAssembly, null);
                 if (type == null)
-                {
-                    foreach (var assembly in scriptingAssemblyLoadContext.Assemblies)
-                    {
-                        type = assembly.GetType(typeName);
-                        if (type != null)
-                            break;
-                    }
-                }
-                typeName = oldTypeName;
+                    type = ResolveSlow(typeName);
+
+                typeName = fullTypeName;
             }
 
             typeCache.Add(typeName, type);
 
             return type;
+
+            static Type ResolveSlow(string typeName)
+            {
+                foreach (var assembly in scriptingAssemblyLoadContext.Assemblies)
+                {
+                    var type = assembly.GetType(typeName);
+                    if (type != null)
+                        return type;
+                }
+                return null;
+            }
+
+            static Assembly ResolveAssembly(AssemblyName name) => ResolveScriptingAssemblyByName(name, allowPartial: false);
         }
 
-        private static Assembly ResolveAssemblyByName(AssemblyName assemblyName)
+        /// <summary>Find <paramref name="assemblyName"/> among the scripting assemblies.</summary>
+        /// <param name="assemblyName">The name to find</param>
+        /// <param name="allowPartial">If true, partial names should be allowed to be resolved.</param>
+        /// <returns>The resolved assembly, or null if none could be found.</returns>
+        internal static Assembly ResolveScriptingAssemblyByName(AssemblyName assemblyName, bool allowPartial = false)
         {
-            foreach (Assembly assembly in scriptingAssemblyLoadContext.Assemblies)
-                if (assembly.GetName() == assemblyName)
+            var lc = scriptingAssemblyLoadContext;
+
+            if (lc is null)
+                return null;
+
+            foreach (Assembly assembly in lc.Assemblies)
+            {
+                var curName = assembly.GetName();
+
+                if (curName == assemblyName)
                     return assembly;
+            }
+
+            if (allowPartial) // Check partial names if full name isn't found
+            {
+                string partialName = assemblyName.Name;
+
+                foreach (Assembly assembly in lc.Assemblies)
+                {
+                    var curName = assembly.GetName();
+
+                    if (curName.Name == partialName)
+                        return assembly;
+                }
+            }
             return null;
         }
 
