@@ -34,10 +34,10 @@ void RigidBody::SetIsKinematic(const bool value)
     if (value == GetIsKinematic())
         return;
     _isKinematic = value;
-    if (_actor && _isActive)
+    if (_actor)
     {
         PhysicsBackend::SetRigidDynamicActorFlag(_actor, PhysicsBackend::RigidDynamicFlags::Kinematic, value);
-        if (!value)
+        if (!value && _isActive)
             WakeUp();
     }
 }
