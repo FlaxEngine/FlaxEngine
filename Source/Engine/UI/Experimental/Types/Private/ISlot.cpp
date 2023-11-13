@@ -13,26 +13,18 @@ inline API_FUNCTION()Array<UIElement*> ISlotMinimal::GetChildren() { return Arra
 
 inline API_FUNCTION() int ISlotMinimal::GetCountOfFreeSlots() { return 0; }
 
-/// <summary>
-/// Calculates Layout for this element
-/// </summary>
-
 inline API_FUNCTION() void ISlotMinimal::Layout()
 {
     if (GetCountOfFreeSlots())
     {
         auto children = GetChildren();
-        for each (auto child in children)
+        for (auto i = 0; i < children.Count(); i++)
         {
             // Update cached transformation matrix
-            child->RenderTransform->UpdateTransformCache(GetDesiredLocation(), GetDesiredSize(), Float2::One * 0.5f);
+            children[i]->RenderTransform->UpdateTransformCache(GetDesiredLocation(), GetDesiredSize(), Float2::One * 0.5f);
         }
     }
 }
-
-/// <summary>
-/// Gets desired size for this element
-/// </summary>
 
 inline API_FUNCTION()Float2 ISlotMinimal::GetDesiredSize() { return Float2::One; }
 
