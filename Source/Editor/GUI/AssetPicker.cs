@@ -173,8 +173,8 @@ namespace FlaxEditor.GUI
             else
             {
                 // No element selected
-                Render2D.FillRectangle(iconRect, new Color(0.2f));
-                Render2D.DrawText(style.FontMedium, "No asset\nselected", iconRect, Color.Wheat, TextAlignment.Center, TextAlignment.Center, TextWrapping.NoWrap, 1.0f, Height / DefaultIconSize);
+                Render2D.FillRectangle(iconRect, style.BackgroundNormal);
+                Render2D.DrawText(style.FontMedium, "No asset\nselected", iconRect, Color.Orange, TextAlignment.Center, TextAlignment.Center, TextWrapping.NoWrap, 1.0f, Height / DefaultIconSize);
             }
 
             // Check if drag is over

@@ -98,7 +98,7 @@ namespace FlaxEditor.GUI
                     rect.Width -= leftDepthMargin;
 
                     Render2D.PushClip(rect);
-                    Render2D.DrawText(style.FontMedium, text, rect, Color.White, column.CellAlignment, TextAlignment.Center);
+                    Render2D.DrawText(style.FontMedium, text, rect, style.Foreground, column.CellAlignment, TextAlignment.Center);
                     Render2D.PopClip();
 
                     x += width;
