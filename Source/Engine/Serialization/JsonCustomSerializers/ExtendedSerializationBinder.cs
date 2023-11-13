@@ -3,8 +3,6 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Globalization;
-using System.Linq;
 using System.Reflection;
 using System.Runtime.Serialization;
 using FlaxEngine.Interop;
@@ -21,7 +19,6 @@ namespace FlaxEngine.Json.JsonCustomSerializers
 
         private ConcurrentDictionary<TypeKey, Type> _typeCache;
         private Func<TypeKey, Type> _resolveType;
-
 
         /// <summary>Clear the cache</summary>
         /// <remarks>Should be cleared on scripting domain reload to avoid out of date types participating in dynamic type resolution</remarks>
@@ -51,14 +48,19 @@ namespace FlaxEngine.Json.JsonCustomSerializers
         Type ResolveType(TypeKey key)
         {
             Type? type = null;
-            if (key.assemblyName is null) { // No assembly name, attempt to find globally
+            if (key.assemblyName is null)
+            {
+                // No assembly name, attempt to find globally
                 type = FindTypeGlobal(key.typeName);
             }
 
-            if (type is null && key.assemblyName is not null) { // Type not found yet, but we have assembly name
+            if (type is null && key.assemblyName is not null)
+            {
+                // Type not found yet, but we have assembly name
                 var assembly = ResolveAssembly(new(key.assemblyName));
 
-                type = FindTypeInAssembly(key.typeName, assembly); // We have assembly, attempt to load from assembly
+                // We have assembly, attempt to load from assembly
+                type = FindTypeInAssembly(key.typeName, assembly);
             }
 
             //if (type is null)
@@ -74,18 +76,13 @@ namespace FlaxEngine.Json.JsonCustomSerializers
         Assembly ResolveAssembly(AssemblyName name)
         {
             Assembly? assembly = null;
-
             assembly = FindScriptingAssembly(name); // Attempt to find in scripting assemblies
-
             if (assembly is null)
                 assembly = FindLoadAssembly(name); // Attempt to load
-
             if (assembly is null)
                 assembly = FindDomainAssembly(name); // Attempt to find in the current domain
-
             if (assembly is null)
                 throw MakeAsmResolutionException(name.FullName); // Assembly failed to resolve
-
             return assembly;
         }
 
@@ -98,15 +95,14 @@ namespace FlaxEngine.Json.JsonCustomSerializers
         /// <summary>Attempt to find the assembly in the current domain</summary>
         Assembly? FindDomainAssembly(AssemblyName assemblyName)
         {
-            var assemblies = AppDomain.CurrentDomain.GetAssemblies().ToArray();
-
-            foreach (Assembly assembly in assemblies) { // Looking in domain may be necessary (in case of anon dynamic assembly for example)
+            var assemblies = AppDomain.CurrentDomain.GetAssemblies();
+            foreach (Assembly assembly in assemblies)
+            {
+                // Looking in domain may be necessary (in case of anon dynamic assembly for example)
                 var curName = assembly.GetName();
-
                 if (curName == assemblyName || curName.Name == assemblyName.Name)
                     return assembly;
             }
-
             return null;
         }
 
@@ -114,24 +110,20 @@ namespace FlaxEngine.Json.JsonCustomSerializers
         Assembly? FindLoadAssembly(AssemblyName assemblyName)
         {
             Assembly? assembly = null;
-
             assembly = Assembly.Load(assemblyName);
-
-            if (assembly is null)
+            if (assembly is null && assemblyName.Name is not null)
+#pragma warning disable CS0618 // Type or member is obsolete
                 assembly = Assembly.LoadWithPartialName(assemblyName.Name); // Copying behavior of DefaultSerializationBinder
-
+#pragma warning restore CS0618 // Type or member is obsolete
             return assembly;
         }
-
 
         /// <summary>Attempt to find a type in a specified assembly</summary>
         Type? FindTypeInAssembly(string typeName, Assembly assembly)
         {
             var type = assembly.GetType(typeName); // Attempt to load directly
-
             if (type is null && typeName.IndexOf('`') >= 0) // Attempt failed, but name has generic variant tick, try resolving generic manually
                 type = FindTypeGeneric(typeName, assembly);
-
             return type;
         }
 
@@ -146,7 +138,6 @@ namespace FlaxEngine.Json.JsonCustomSerializers
         {
             return _typeCache.GetOrAdd(key, _resolveType);
         }
-        
 
         /*********************************************
          ** Below code is adapted from Newtonsoft.Json
@@ -157,26 +148,33 @@ namespace FlaxEngine.Json.JsonCustomSerializers
         {
             Type? type = null;
             int openBracketIndex = typeName.IndexOf('[', StringComparison.Ordinal);
-            if (openBracketIndex >= 0) {
+            if (openBracketIndex >= 0)
+            {
                 string genericTypeDefName = typeName.Substring(0, openBracketIndex); // Find the unspecialized type
                 Type? genericTypeDef = assembly.GetType(genericTypeDefName);
-                if (genericTypeDef != null) {
+                if (genericTypeDef != null)
+                {
                     List<Type> genericTypeArguments = new List<Type>(); // Recursively resolve the arguments
                     int scope = 0;
                     int typeArgStartIndex = 0;
                     int endIndex = typeName.Length - 1;
-                    for (int i = openBracketIndex + 1; i < endIndex; ++i) {
+                    for (int i = openBracketIndex + 1; i < endIndex; ++i)
+                    {
                         char current = typeName[i];
-                        switch (current) {
+                        switch (current)
+                        {
                         case '[':
-                            if (scope == 0) {
+                            if (scope == 0)
+                            {
                                 typeArgStartIndex = i + 1;
                             }
                             ++scope;
                             break;
                         case ']':
                             --scope;
-                            if (scope == 0) { // All arguments resolved, compose our type
+                            if (scope == 0)
+                            {
+                                // All arguments resolved, compose our type
                                 string typeArgAssemblyQualifiedName = typeName.Substring(typeArgStartIndex, i - typeArgStartIndex);
 
                                 TypeKey typeNameKey = SplitFullyQualifiedTypeName(typeArgAssemblyQualifiedName);
@@ -189,7 +187,6 @@ namespace FlaxEngine.Json.JsonCustomSerializers
                     type = genericTypeDef.MakeGenericType(genericTypeArguments.ToArray());
                 }
             }
-
             return type;
         }
 
@@ -197,18 +194,17 @@ namespace FlaxEngine.Json.JsonCustomSerializers
         private static TypeKey SplitFullyQualifiedTypeName(string fullyQualifiedTypeName)
         {
             int? assemblyDelimiterIndex = GetAssemblyDelimiterIndex(fullyQualifiedTypeName);
-
-            ReadOnlySpan<char> typeName;
-            ReadOnlySpan<char> assemblyName;
-
-            if (assemblyDelimiterIndex != null) {
+            ReadOnlySpan<char> typeName, assemblyName;
+            if (assemblyDelimiterIndex != null)
+            {
                 typeName = fullyQualifiedTypeName.AsSpan().Slice(0, assemblyDelimiterIndex ?? 0);
                 assemblyName = fullyQualifiedTypeName.AsSpan().Slice((assemblyDelimiterIndex ?? 0) + 1);
-            } else {
+            }
+            else
+            {
                 typeName = fullyQualifiedTypeName;
                 assemblyName = null;
             }
-            
             return new(new(assemblyName), new(typeName));
         }
 
@@ -218,9 +214,11 @@ namespace FlaxEngine.Json.JsonCustomSerializers
             // we need to get the first comma following all surrounded in brackets because of generic types
             // e.g. System.Collections.Generic.Dictionary`2[[System.String, mscorlib,Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089],[System.String, mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089]], mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089
             int scope = 0;
-            for (int i = 0; i < fullyQualifiedTypeName.Length; i++) {
+            for (int i = 0; i < fullyQualifiedTypeName.Length; i++)
+            {
                 char current = fullyQualifiedTypeName[i];
-                switch (current) {
+                switch (current)
+                {
                 case '[':
                     scope++;
                     break;
@@ -228,7 +226,8 @@ namespace FlaxEngine.Json.JsonCustomSerializers
                     scope--;
                     break;
                 case ',':
-                    if (scope == 0) {
+                    if (scope == 0)
+                    {
                         return i;
                     }
                     break;
@@ -243,7 +242,7 @@ namespace FlaxEngine.Json.JsonCustomSerializers
         {
             return new($"Could not load assembly '{asmName}'.");
         }
-        
+
         private static JsonSerializationException MakeTypeResolutionException(string? asmName, string typeName)
         {
             if (asmName is null)

@@ -19,7 +19,7 @@ namespace FlaxEngine.Json
     {
         internal class SerializerCache
         {
-            public readonly JsonSerializerSettings settings;
+            public readonly JsonSerializerSettings JsonSettings;
             public Newtonsoft.Json.JsonSerializer JsonSerializer;
             public StringBuilder StringBuilder;
             public StringWriter StringWriter;
@@ -29,23 +29,27 @@ namespace FlaxEngine.Json
             public StreamReader Reader;
             public bool IsWriting;
             public bool IsReading;
-            public uint cacheVersion;
+#if FLAX_EDITOR
+            public uint CacheVersion;
+#endif
 
             public unsafe SerializerCache(JsonSerializerSettings settings)
             {
-                this.settings = settings;
-
+                JsonSettings = settings;
                 StringBuilder = new StringBuilder(256);
                 StringWriter = new StringWriter(StringBuilder, CultureInfo.InvariantCulture);
                 MemoryStream = new UnmanagedMemoryStream((byte*)0, 0);
 
-                lock (cacheSyncRoot)
+#if FLAX_EDITOR
+                lock (CurrentCacheSyncRoot)
+#endif
                 {
                     BuildSerializer();
                     BuildRead();
                     BuildWrite();
-
-                    cacheVersion = currentCacheVersion;
+#if FLAX_EDITOR
+                    CacheVersion = Json.JsonSerializer.CurrentCacheVersion;
+#endif
                 }
             }
 
@@ -56,7 +60,6 @@ namespace FlaxEngine.Json
                 // TODO: Reset reading state (eg if previous deserialization got exception)
                 if (IsReading)
                     BuildRead();
-
 
                 IsWriting = false;
                 IsReading = true;
@@ -88,29 +91,30 @@ namespace FlaxEngine.Json
             /// <summary>Check that the cache is up to date, rebuild it if it isn't</summary>
             private void CheckCacheVersionRebuild()
             {
-                var cCV = currentCacheVersion;
-                if (cacheVersion == cCV)
+#if FLAX_EDITOR
+                var version = Json.JsonSerializer.CurrentCacheVersion;
+                if (CacheVersion == version)
                     return;
 
-                lock (cacheSyncRoot)
+                lock (CurrentCacheSyncRoot)
                 {
-                    cCV = currentCacheVersion;
-                    if (cacheVersion == cCV)
+                    version = Json.JsonSerializer.CurrentCacheVersion;
+                    if (CacheVersion == version)
                         return;
 
                     BuildSerializer();
-
                     BuildRead();
                     BuildWrite();
 
-                    cacheVersion = cCV;
+                    CacheVersion = version;
                 }
+#endif
             }
 
             /// <summary>Builds the serializer</summary>
             private void BuildSerializer()
             {
-                JsonSerializer = Newtonsoft.Json.JsonSerializer.CreateDefault(settings);
+                JsonSerializer = Newtonsoft.Json.JsonSerializer.CreateDefault(Settings);
                 JsonSerializer.Formatting = Formatting.Indented;
                 JsonSerializer.ReferenceLoopHandling = ReferenceLoopHandling.Serialize;
             }
@@ -125,7 +129,8 @@ namespace FlaxEngine.Json
             private void BuildWrite()
             {
                 SerializerWriter = new JsonSerializerInternalWriter(JsonSerializer);
-                JsonWriter = new JsonTextWriter(StringWriter) {
+                JsonWriter = new JsonTextWriter(StringWriter)
+                {
                     IndentChar = '\t',
                     Indentation = 1,
                     Formatting = JsonSerializer.Formatting,
@@ -143,24 +148,24 @@ namespace FlaxEngine.Json
         internal static JsonSerializerSettings SettingsManagedOnly = CreateDefaultSettings(true);
         internal static ExtendedSerializationBinder SerializationBinder;
         internal static FlaxObjectConverter ObjectConverter;
-
         internal static ThreadLocal<SerializerCache> Current = new ThreadLocal<SerializerCache>();
         internal static ThreadLocal<SerializerCache> Cache = new ThreadLocal<SerializerCache>(() => new SerializerCache(Settings));
         internal static ThreadLocal<SerializerCache> CacheManagedOnly = new ThreadLocal<SerializerCache>(() => new SerializerCache(SettingsManagedOnly));
         internal static ThreadLocal<IntPtr> CachedGuidBuffer = new ThreadLocal<IntPtr>(() => Marshal.AllocHGlobal(32 * sizeof(char)), true);
         internal static string CachedGuidDigits = "0123456789abcdef";
+#if FLAX_EDITOR
         /// <summary>The version of the cache, used to check that a cache is not out of date</summary>
-        internal static uint currentCacheVersion = 0;
+        internal static uint CurrentCacheVersion = 0;
+
         /// <summary>Used to synchronize cache operations such as <see cref="SerializerCache"/> rebuild, and <see cref="ResetCache"/></summary>
-        internal static readonly object cacheSyncRoot = new();
+        internal static readonly object CurrentCacheSyncRoot = new();
+#endif
 
         internal static JsonSerializerSettings CreateDefaultSettings(bool isManagedOnly)
         {
             //Newtonsoft.Json.Utilities.MiscellaneousUtils.ValueEquals = ValueEquals;
-
             if (SerializationBinder is null)
                 SerializationBinder = new();
-
             var settings = new JsonSerializerSettings
             {
                 ContractResolver = new ExtendedDefaultContractResolver(isManagedOnly),
@@ -185,17 +190,22 @@ namespace FlaxEngine.Json
             return settings;
         }
 
-        /// <summary>Called to reset the serialization cache</summary>
+#if FLAX_EDITOR
+        /// <summary>Resets the serialization cache.</summary>
         internal static void ResetCache()
         {
-            lock (cacheSyncRoot)
+            lock (CurrentCacheSyncRoot)
             {
-                unchecked { currentCacheVersion++; }
+                unchecked
+                {
+                    CurrentCacheVersion++;
+                }
 
                 Newtonsoft.Json.JsonSerializer.ClearCache();
                 SerializationBinder.ResetCache();
             }
         }
+#endif
 
         internal static void Dispose()
         {

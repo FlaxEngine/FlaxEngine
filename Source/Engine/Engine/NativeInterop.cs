@@ -297,9 +297,10 @@ namespace FlaxEngine.Interop
 
             return type;
 
-            /// <summary>Resolve the type by manually checking every scripting assembly</summary>
-            static Type ResolveSlow(string typeName) {
-                foreach (var assembly in scriptingAssemblyLoadContext.Assemblies) {
+            static Type ResolveSlow(string typeName)
+            {
+                foreach (var assembly in scriptingAssemblyLoadContext.Assemblies)
+                {
                     var type = assembly.GetType(typeName);
                     if (type != null)
                         return type;
@@ -307,7 +308,6 @@ namespace FlaxEngine.Interop
                 return null;
             }
 
-            /// <summary>Resolve the assembly by name</summary>
             static Assembly ResolveAssembly(AssemblyName name) => ResolveScriptingAssemblyByName(name, allowPartial: false);
         }
 
