@@ -23,7 +23,5 @@ public:
 
     void OnDestruct() override;
 
-    Float2 GetDesiredSize() override;
-
     void OnImageAssetChanged();
 };

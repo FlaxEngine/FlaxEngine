@@ -19,7 +19,7 @@ void Throbber::OnDraw()
     {
         States.Resize(NumberOfPieces, true);
     }
-    auto size = GetSlot()->GetSize();
+    auto size = GetSlot()->GetDesiredSize();
     if (EnumHasAllFlags(Animate, AnimateFlags::Horizontal))
         States[CurentElement].X = Math::PingPong(States[CurentElement].X, size.X);
     if (EnumHasAllFlags(Animate, AnimateFlags::Vertical))
@@ -30,7 +30,7 @@ void Throbber::OnDraw()
     Float3 sce = States[CurentElement];
     for (auto i = 0; i < States.Count(); i++)
     {
-        Brush->OnDraw(Float2(0, i * GetSlot()->GetSize().X));
+        Brush->OnDraw(Float2(0, i * GetSlot()->GetDesiredSize().X));
     }
     CurentElement++;
 }
@@ -38,9 +38,4 @@ void Throbber::OnDraw()
 void Throbber::OnDestruct() 
 {
     Brush->OnDestruct(); 
-}
-
-Float2 Throbber::GetDesiredSize()
-{
-    return Float2(NumberOfPieces * Brush->GetDesiredSize().X, Brush->GetDesiredSize().Y);
 }

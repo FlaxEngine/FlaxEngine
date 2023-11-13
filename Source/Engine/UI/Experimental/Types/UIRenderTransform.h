@@ -47,13 +47,13 @@ public:
     /// </summary>
     /// <param name="point">relative to object</param>
     /// <returns></returns>
-    API_FUNCTION() bool Ovelaps(class ISlot* slot,Float2 point);
+    API_FUNCTION() bool Ovelaps(class ISlotMinimal* slot,Float2 point);
     /// <summary>
     /// Draws a rectangle borders.
     /// </summary>
     /// <param name="rect">The rectangle to draw.</param>
     /// <param name="color">The color to use.</param>
-    API_FUNCTION() void DrawBorder(class ISlot* element, const Color& color, float thickness = 1.0f);
+    API_FUNCTION() void DrawBorder(class ISlotMinimal* element, const Color& color, float thickness = 1.0f);
 
 };
 

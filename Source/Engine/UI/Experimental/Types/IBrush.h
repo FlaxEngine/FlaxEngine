@@ -34,9 +34,4 @@ public:
     /// can be called mupltiple times
     /// </summary>
     API_FUNCTION() virtual void OnDestruct();;
-
-    /// <summary>
-    /// Gets desired size for this element
-    /// </summary>
-    API_FUNCTION() virtual Float2 GetDesiredSize();;
 };

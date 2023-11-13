@@ -46,11 +46,9 @@ public:
     };
 
     /// <inheritdoc />
-    API_FUNCTION() void OnCunstruct() override;
+    API_FUNCTION() virtual void OnCunstruct() override;
     /// <inheritdoc />
-    API_FUNCTION() void OnDraw() override;
+    API_FUNCTION() virtual void OnDraw() override;
     /// <inheritdoc />
-    API_FUNCTION() void OnDestruct() override;
-    /// <inheritdoc />
-    API_FUNCTION() Float2 GetDesiredSize() override;
+    API_FUNCTION() virtual void OnDestruct() override;
 };

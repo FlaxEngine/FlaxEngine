@@ -112,4 +112,55 @@ public:
     /// </summary>
     API_FIELD()
         Float2 Max;
+
+    /// <summary>
+    /// sets the preset for anchor
+    /// </summary>
+    void SetAnchorPreset(Anchor::Presets presets)
+    {
+        switch (presets)
+        {
+        case Anchor::Presets::TopLeft:                  Min = Float2(0, 0);         Max = Float2(0, 0);         break;
+        case Anchor::Presets::TopCenter:                Min = Float2(0.5f, 0);      Max = Float2(0.5f, 0);      break;
+        case Anchor::Presets::TopRight:                 Min = Float2(1, 0);         Max = Float2(1, 0);         break;
+        case Anchor::Presets::MiddleLeft:               Min = Float2(0, 0.5f);      Max = Float2(0, 0.5f);      break;
+        case Anchor::Presets::MiddleCenter:             Min = Float2(0.5f, 0.5f);   Max = Float2(0.5f, 0.5f);   break;
+        case Anchor::Presets::MiddleRight:              Min = Float2(1, 0.5f);      Max = Float2(1, 0.5f);      break;
+        case Anchor::Presets::BottomLeft:               Min = Float2(0, 1);         Max = Float2(0, 1);         break;
+        case Anchor::Presets::BottomCenter:             Min = Float2(0.5f, 1);      Max = Float2(0.5f, 1);      break;
+        case Anchor::Presets::BottomRight:              Min = Float2(1, 1);         Max = Float2(1, 1);         break;
+        case Anchor::Presets::HorizontalStretchTop:     Min = Float2(0, 0);         Max = Float2(1, 0);         break;
+        case Anchor::Presets::HorizontalStretchMiddle:  Min = Float2(0, 0.5f);      Max = Float2(1, 0.5f);      break;
+        case Anchor::Presets::HorizontalStretchBottom:  Min = Float2(0, 1);         Max = Float2(1, 1);         break;
+        case Anchor::Presets::VerticalStretchLeft:      Min = Float2(0, 0);         Max = Float2(0, 1);         break;
+        case Anchor::Presets::VerticalStretchCenter:    Min = Float2(0.5f, 0);      Max = Float2(0.5f, 1);      break;
+        case Anchor::Presets::VerticalStretchRight:     Min = Float2(1, 0);         Max = Float2(1, 1);         break;
+        case Anchor::Presets::StretchAll:               Min = Float2(0, 0);         Max = Float2(1, 1);         break;
+        }
+    }
+
+    /// <summary>
+    /// Gets the preset from anchor
+    /// </summary>
+    Anchor::Presets GetAnchorPreset()
+    {
+        if (Min == Float2(0, 0)         && Max == Float2(0, 0)) { return Anchor::Presets::TopLeft; }
+        if (Min == Float2(0.5f, 0)      && Max == Float2(0.5f, 0)) { return Anchor::Presets::TopCenter; }
+        if (Min == Float2(1, 0)         && Max == Float2(1, 0)) { return Anchor::Presets::TopRight; }
+        if (Min == Float2(0, 0.5f)      && Max == Float2(0, 0.5f)) { return Anchor::Presets::MiddleLeft; }
+        if (Min == Float2(0.5f, 0.5f)   && Max == Float2(0.5f, 0.5f)) { return Anchor::Presets::MiddleCenter; }
+        if (Min == Float2(1, 0.5f)      && Max == Float2(1, 0.5f)) { return Anchor::Presets::MiddleRight; }
+        if (Min == Float2(0, 1)         && Max == Float2(0, 1)) { return Anchor::Presets::BottomLeft; }
+        if (Min == Float2(0.5f, 1)      && Max == Float2(0.5f, 1)) { return Anchor::Presets::BottomCenter; }
+        if (Min == Float2(1, 1)         && Max == Float2(1, 1)) { return Anchor::Presets::BottomRight; }
+        if (Min == Float2(0, 0)         && Max == Float2(1, 0)) { return Anchor::Presets::HorizontalStretchTop; }
+        if (Min == Float2(0, 0.5f)      && Max == Float2(1, 0.5f)) { return Anchor::Presets::HorizontalStretchMiddle; }
+        if (Min == Float2(0, 1)         && Max == Float2(1, 1)) { return Anchor::Presets::HorizontalStretchBottom; }
+        if (Min == Float2(0, 0)         && Max == Float2(0, 1)) { return Anchor::Presets::VerticalStretchLeft; }
+        if (Min == Float2(0.5f, 0)      && Max == Float2(0.5f, 1)) { return Anchor::Presets::VerticalStretchCenter; }
+        if (Min == Float2(1, 0)         && Max == Float2(1, 1)) { return Anchor::Presets::VerticalStretchRight; }
+        if (Min == Float2(0, 0)         && Max == Float2(1, 1)) { return Anchor::Presets::StretchAll; }
+
+        return Anchor::Presets::Custom;
+    };
 };

@@ -23,7 +23,7 @@ void ImageBrush::OnDraw(const Float2& At)
 {
     auto texture = Image.Get();
     if (texture) {
-        Render2D::DrawTexture(texture, Rectangle(At, GetDesiredSize()), Color::White);
+        Render2D::DrawTexture(texture, Rectangle(At,Owner->GetSlot()->GetDesiredSize()), Color::White);
     }
     else
     {
@@ -36,10 +36,6 @@ void ImageBrush::OnDestruct()
     Image.Changed.Unbind<ImageBrush, &ImageBrush::OnImageAssetChanged>(this);
 };
 
-Float2 ImageBrush::GetDesiredSize()
-{
-    return ImageSize;
-}
 void ImageBrush::OnImageAssetChanged()
 {
     ImageSize = Image.Get()->Size();

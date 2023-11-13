@@ -12,12 +12,12 @@ API_CLASS(Namespace = "FlaxEngine.Experimental.UI")
 class FLAXENGINE_API UIElement : public ScriptingObject
 {
     DECLARE_SCRIPTING_TYPE(UIElement);
-
+    
 private:
     /// <summary>
-    /// The parent
+    /// The slot
     /// </summary>
-    ISlot* Slot;
+    ISlotMinimal* Slot;
 public:
 
     UIElement(const SpawnParams& params, bool isInDesigner);
@@ -77,27 +77,19 @@ public:
     API_FUNCTION() virtual void OnDraw();
 
     /// <summary>
-    /// Calculates Layout for this element
-    /// </summary>
-    API_FUNCTION() virtual void Layout();
-    /// <summary>
-    /// Gets desired size for this element
-    /// </summary>
-    API_FUNCTION() virtual Float2 GetDesiredSize() { return Slot->GetSize(); };
-    /// <summary>
-    /// removes this from <see cref="ISlot"/> Parent if exists
+    /// removes this from <see cref="ISlot"/> if exists
     /// </summary>
     API_FUNCTION() void Detach();
 
     /// <summary>
     /// Attach this to <see cref="ISlot"/>
     /// </summary>
-    API_FUNCTION() void Attach(ISlot* To);
+    API_FUNCTION() void Attach(ISlotMinimal* To);
 
     /// <summary>
     /// Attach this to <see cref="ISlot"/>
     /// </summary>
-    API_FUNCTION() ISlot* GetSlot();
+    API_FUNCTION() ISlotMinimal* GetSlot();
 public:
     // [Object]
     void OnScriptingDispose() override;

@@ -49,16 +49,16 @@ UIRenderTransform::UIRenderTransform(const SpawnParams& params) : ScriptingObjec
  /// <param name="point">relative to object</param>
  /// <returns></returns>
 
- bool UIRenderTransform::Ovelaps(ISlot* slot, Float2 point)
+ bool UIRenderTransform::Ovelaps(ISlotMinimal* slot, Float2 point)
  {
      //transform point and include Transformation,Scale,Povit,Shear
-     _cachedTransform.Transform2DPoint(point - slot->GetLocation(), _cachedTransform, point);
+     _cachedTransform.Transform2DPoint(point - slot->GetDesiredLocation(), _cachedTransform, point);
      return true;//Transformation.Contains(point);
  }
 
- void UIRenderTransform::DrawBorder(ISlot* slot, const Color& color, float thickness)
+ void UIRenderTransform::DrawBorder(ISlotMinimal* slot, const Color& color, float thickness)
  {
      Render2D::PushTransform(_cachedTransform);
-     Render2D::DrawRectangle(Rectangle(Float2::Zero, slot->GetSize()), color, thickness);
+     Render2D::DrawRectangle(Rectangle(Float2::Zero, slot->GetDesiredSize()), color, thickness);
      Render2D::PopTransform();
  }

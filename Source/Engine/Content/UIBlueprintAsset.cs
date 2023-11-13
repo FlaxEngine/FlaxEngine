@@ -10,12 +10,14 @@ using Newtonsoft.Json;
 using FlaxEngine.Experimental.UI;
 namespace FlaxEngine
 {
+    public class test : ICanvasSlot
+    {
+    }
     /// <summary>
     /// [todo] add summary here
     /// </summary>
     public class UIBlueprintAsset
     {
-        
         /// <summary>
         /// 
         /// </summary>

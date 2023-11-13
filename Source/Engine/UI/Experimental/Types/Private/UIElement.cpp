@@ -13,7 +13,7 @@ void UIElement::Detach()
         DebugLog::LogWarning(StringView(TEXT("Failed to Detach from ISlot, the UIElement do not have parent")));
     }
 }
-void UIElement::Attach(ISlot* To)
+void UIElement::Attach(ISlotMinimal* To)
 {
     if (To)
     {
@@ -41,21 +41,7 @@ void UIElement::OnCunstruct(){}
 void UIElement::OnDestruct(){}
 void UIElement::OnDraw(){}
 
-/// <summary>
-/// Calculates Layout for this element
-/// </summary>
-
-void UIElement::Layout()
-{
-    // Update cached transformation matrix
-    RenderTransform->UpdateTransformCache(Slot->GetLocation(), GetDesiredSize(), Povit);
-}
-
-/// <summary>
-/// Attach this to <see cref="ISlot"/>
-/// </summary>
-
-ISlot* UIElement::GetSlot()
+ISlotMinimal* UIElement::GetSlot()
 {
     return Slot;
 }

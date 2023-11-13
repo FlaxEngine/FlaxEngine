@@ -1,100 +1,36 @@
 #include "Engine/Core/Common.h"
 #include "Engine/UI/Experimental/Types/ISlot.h"
+#include "Engine/UI/Experimental/Types/UIElement.h"
 
-Float2& ISlot::GetSize()
-{
-    return Size;
-}
+inline API_FUNCTION() bool ISlotMinimal::RemoveChild(UIElement* Element) { return false; }
 
-void ISlot::SetSize(Float2 newSize)
-{
-    Size = newSize;
-}
+inline API_FUNCTION() bool ISlotMinimal::AddChild(UIElement* Element) { return false; }
 
-Anchor* ISlot::GetAnchor()
-{
-    return &Anchors;
-}
-void ISlot::SetAnchor(Anchor& anchor)
-{
-    Anchors = anchor;
-}
-bool ISlot::GetSizeToContent()
-{
-    return SizeToContent;
-}
+inline API_FUNCTION()Array<UIElement*> ISlotMinimal::GetChildren() { return Array<UIElement*>(); }
 
-int ISlot::GetCountOfFreeSlots()
+inline API_FUNCTION() int ISlotMinimal::GetCountOfFreeSlots() { return 0; }
+
+/// <summary>
+/// Calculates Layout for this element
+/// </summary>
+
+inline API_FUNCTION() void ISlotMinimal::Layout()
 {
-    auto gc = GetChildren();
-    int out = -1;
-    if (gc.HasItems())
+    if (GetCountOfFreeSlots())
     {
-        for (auto i = 0; i < gc.Count(); i++)
+        auto children = GetChildren();
+        for each (auto child in children)
         {
-            if (gc[i] == nullptr)
-            {
-                out++;
-            }
+            // Update cached transformation matrix
+            child->RenderTransform->UpdateTransformCache(GetDesiredLocation(), GetDesiredSize(), Float2::One * 0.5f);
         }
     }
-    return out;
 }
 
-Float2& ISlot::GetLocation()
-{
-    return Location;
-}
-void ISlot::SetLocation(Float2 newLocation)
-{
-    Location = newLocation;
-}
+/// <summary>
+/// Gets desired size for this element
+/// </summary>
 
-void ISlot::SetSizeToContent(bool value)
-{
-    SizeToContent = value;
-}
+inline API_FUNCTION()Float2 ISlotMinimal::GetDesiredSize() { return Float2::One; }
 
-void ISlot::SetAnchorPreset(Anchor::Presets presets)
-{
-    switch (presets)
-    {
-    case Anchor::Presets::TopLeft:                  Anchors.Min = Float2(0, 0);         Anchors.Max = Float2(0, 0);         break;
-    case Anchor::Presets::TopCenter:                Anchors.Min = Float2(0.5f, 0);      Anchors.Max = Float2(0.5f, 0);      break;
-    case Anchor::Presets::TopRight:                 Anchors.Min = Float2(1, 0);         Anchors.Max = Float2(1, 0);         break;
-    case Anchor::Presets::MiddleLeft:               Anchors.Min = Float2(0, 0.5f);      Anchors.Max = Float2(0, 0.5f);      break;
-    case Anchor::Presets::MiddleCenter:             Anchors.Min = Float2(0.5f, 0.5f);   Anchors.Max = Float2(0.5f, 0.5f);   break;
-    case Anchor::Presets::MiddleRight:              Anchors.Min = Float2(1, 0.5f);      Anchors.Max = Float2(1, 0.5f);      break;
-    case Anchor::Presets::BottomLeft:               Anchors.Min = Float2(0, 1);         Anchors.Max = Float2(0, 1);         break;
-    case Anchor::Presets::BottomCenter:             Anchors.Min = Float2(0.5f, 1);      Anchors.Max = Float2(0.5f, 1);      break;
-    case Anchor::Presets::BottomRight:              Anchors.Min = Float2(1, 1);         Anchors.Max = Float2(1, 1);         break;
-    case Anchor::Presets::HorizontalStretchTop:     Anchors.Min = Float2(0, 0);         Anchors.Max = Float2(1, 0);         break;
-    case Anchor::Presets::HorizontalStretchMiddle:  Anchors.Min = Float2(0, 0.5f);      Anchors.Max = Float2(1, 0.5f);      break;
-    case Anchor::Presets::HorizontalStretchBottom:  Anchors.Min = Float2(0, 1);         Anchors.Max = Float2(1, 1);         break;
-    case Anchor::Presets::VerticalStretchLeft:      Anchors.Min = Float2(0, 0);         Anchors.Max = Float2(0, 1);         break;
-    case Anchor::Presets::VerticalStretchCenter:    Anchors.Min = Float2(0.5f, 0);      Anchors.Max = Float2(0.5f, 1);      break;
-    case Anchor::Presets::VerticalStretchRight:     Anchors.Min = Float2(1, 0);         Anchors.Max = Float2(1, 1);         break;
-    case Anchor::Presets::StretchAll:               Anchors.Min = Float2(0, 0);         Anchors.Max = Float2(1, 1);         break;
-    }
-}
-Anchor::Presets ISlot::GetAnchorPreset()
-{
-    if (Anchors.Min == Float2(0, 0) && Anchors.Max == Float2(0, 0)) { return Anchor::Presets::TopLeft; }
-    if (Anchors.Min == Float2(0.5f, 0) && Anchors.Max == Float2(0.5f, 0)) { return Anchor::Presets::TopCenter; }
-    if (Anchors.Min == Float2(1, 0) && Anchors.Max == Float2(1, 0)) { return Anchor::Presets::TopRight; }
-    if (Anchors.Min == Float2(0, 0.5f) && Anchors.Max == Float2(0, 0.5f)) { return Anchor::Presets::MiddleLeft; }
-    if (Anchors.Min == Float2(0.5f, 0.5f) && Anchors.Max == Float2(0.5f, 0.5f)) { return Anchor::Presets::MiddleCenter; }
-    if (Anchors.Min == Float2(1, 0.5f) && Anchors.Max == Float2(1, 0.5f)) { return Anchor::Presets::MiddleRight; }
-    if (Anchors.Min == Float2(0, 1) && Anchors.Max == Float2(0, 1)) { return Anchor::Presets::BottomLeft; }
-    if (Anchors.Min == Float2(0.5f, 1) && Anchors.Max == Float2(0.5f, 1)) { return Anchor::Presets::BottomCenter; }
-    if (Anchors.Min == Float2(1, 1) && Anchors.Max == Float2(1, 1)) { return Anchor::Presets::BottomRight; }
-    if (Anchors.Min == Float2(0, 0) && Anchors.Max == Float2(1, 0)) { return Anchor::Presets::HorizontalStretchTop; }
-    if (Anchors.Min == Float2(0, 0.5f) && Anchors.Max == Float2(1, 0.5f)) { return Anchor::Presets::HorizontalStretchMiddle; }
-    if (Anchors.Min == Float2(0, 1) && Anchors.Max == Float2(1, 1)) { return Anchor::Presets::HorizontalStretchBottom; }
-    if (Anchors.Min == Float2(0, 0) && Anchors.Max == Float2(0, 1)) { return Anchor::Presets::VerticalStretchLeft; }
-    if (Anchors.Min == Float2(0.5f, 0) && Anchors.Max == Float2(0.5f, 1)) { return Anchor::Presets::VerticalStretchCenter; }
-    if (Anchors.Min == Float2(1, 0) && Anchors.Max == Float2(1, 1)) { return Anchor::Presets::VerticalStretchRight; }
-    if (Anchors.Min == Float2(0, 0) && Anchors.Max == Float2(1, 1)) { return Anchor::Presets::StretchAll; }
-
-    return Anchor::Presets::Custom;
-}
+inline API_FUNCTION()Float2 ISlotMinimal::GetDesiredLocation() { return Float2::One; }

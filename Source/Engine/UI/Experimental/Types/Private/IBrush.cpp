@@ -8,10 +8,6 @@ void IBrush::OnPreCunstruct(bool isInDesigner) {}
 void IBrush::OnCunstruct() {}
 void IBrush::OnDraw(const Float2& At)
 {
-    Render2D::FillRectangle(Rectangle(At, GetDesiredSize()), Color::White);
+    Render2D::FillRectangle(Rectangle(At, Owner->GetSlot()->GetDesiredSize()), Color::White);
 }
 void IBrush::OnDestruct() {}
-Float2 IBrush::GetDesiredSize() 
-{
-    return Owner->GetSlot()->GetSize(); 
-}
