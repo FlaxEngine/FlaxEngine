@@ -1,3 +1,6 @@
+// Writen by Nori_SC for https://flaxengine.com all copyright transferred to Wojciech Figat
+// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+
 #include "Engine/Core/Common.h"
 #include "Engine/UI/Experimental/Types/ISlot.h"
 #include "Engine/UI/Experimental/Types/UIElement.h"
