@@ -719,6 +719,7 @@ void GetAssemblyName(void* assemblyHandle, StringAnsi& name, StringAnsi& fullnam
 
 DEFINE_INTERNAL_CALL(void) NativeInterop_CreateClass(NativeClassDefinitions* managedClass, void* assemblyHandle)
 {
+    ScopeLock lock(BinaryModule::Locker);
     MAssembly* assembly = GetAssembly(assemblyHandle);
     if (assembly == nullptr)
     {
@@ -732,7 +733,18 @@ DEFINE_INTERNAL_CALL(void) NativeInterop_CreateClass(NativeClassDefinitions* man
     MClass* klass = New<MClass>(assembly, managedClass->typeHandle, managedClass->name, managedClass->fullname, managedClass->namespace_, managedClass->typeAttributes);
     if (assembly != nullptr)
     {
-        const_cast<MAssembly::ClassesDictionary&>(assembly->GetClasses()).Add(klass->GetFullName(), klass);
+        auto& classes = const_cast<MAssembly::ClassesDictionary&>(assembly->GetClasses());
+        MClass* oldKlass;
+        if (classes.TryGet(klass->GetFullName(), oldKlass))
+        {
+            LOG(Warning, "Class '{0}' was already added to assembly '{1}'", String(klass->GetFullName()), String(assembly->GetName()));
+            Delete(klass);
+            klass = oldKlass;
+        }
+        else
+        {
+            classes.Add(klass->GetFullName(), klass);
+        }
     }
     managedClass->nativePointer = klass;
 }
@@ -873,7 +885,7 @@ MClass::MClass(const MAssembly* parentAssembly, void* handle, const char* name, 
     static void* TypeIsEnumPtr = GetStaticMethodPointer(TEXT("TypeIsEnum"));
     _isEnum = CallStaticMethod<bool, void*>(TypeIsEnumPtr, handle);
 
-    CachedClassHandles.Add(handle, this);
+    CachedClassHandles[handle] = this;
 }
 
 bool MAssembly::ResolveMissingFile(String& assemblyPath) const
@@ -1551,6 +1563,7 @@ const Array<MObject*>& MProperty::GetAttributes() const
 
 MAssembly* GetAssembly(void* assemblyHandle)
 {
+    ScopeLock lock(BinaryModule::Locker);
     MAssembly* assembly;
     if (CachedAssemblyHandles.TryGet(assemblyHandle, assembly))
         return assembly;
@@ -1559,6 +1572,7 @@ MAssembly* GetAssembly(void* assemblyHandle)
 
 MClass* GetClass(MType* typeHandle)
 {
+    ScopeLock lock(BinaryModule::Locker);
     MClass* klass = nullptr;
     CachedClassHandles.TryGet(typeHandle, klass);
     return nullptr;
@@ -1568,6 +1582,7 @@ MClass* GetOrCreateClass(MType* typeHandle)
 {
     if (!typeHandle)
         return nullptr;
+    ScopeLock lock(BinaryModule::Locker);
     MClass* klass;
     if (!CachedClassHandles.TryGet(typeHandle, klass))
     {
@@ -1579,7 +1594,12 @@ MClass* GetOrCreateClass(MType* typeHandle)
         klass = New<MClass>(assembly, classInfo.typeHandle, classInfo.name, classInfo.fullname, classInfo.namespace_, classInfo.typeAttributes);
         if (assembly != nullptr)
         {
-            const_cast<MAssembly::ClassesDictionary&>(assembly->GetClasses()).Add(klass->GetFullName(), klass);
+            auto& classes = const_cast<MAssembly::ClassesDictionary&>(assembly->GetClasses());
+            if (classes.ContainsKey(klass->GetFullName()))
+            {
+                LOG(Warning, "Class '{0}' was already added to assembly '{1}'", String(klass->GetFullName()), String(assembly->GetName()));
+            }
+            classes[klass->GetFullName()] = klass;
         }
 
         if (typeHandle != classInfo.typeHandle)

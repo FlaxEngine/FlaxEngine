@@ -906,6 +906,7 @@ void ManagedBinaryModule::OnLoaded(MAssembly* assembly)
 #if !COMPILE_WITHOUT_CSHARP
     PROFILE_CPU();
     ASSERT(ClassToTypeIndex.IsEmpty());
+    ScopeLock lock(Locker);
 
     const auto& classes = assembly->GetClasses();
 
