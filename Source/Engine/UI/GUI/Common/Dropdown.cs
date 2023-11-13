@@ -258,10 +258,10 @@ namespace FlaxEngine.GUI
         public bool ShowAllItems { get; set; } = true;
 
         /// <summary>
-        /// Gets or sets the number of items to show. Only used if ShowAllItems is false.
+        /// Gets or sets the maximum number of items to show at once. Only used if ShowAllItems is false.
         /// </summary>
         [EditorOrder(4), VisibleIf(nameof(ShowAllItems), true), Limit(1), Tooltip("The number of items to show in the drop down.")]
-        public int NumberOfItemsToShow { get; set; } = 5;
+        public int ShowMaxItemsCount { get; set; } = 5;
 
         /// <summary>
         /// Event fired when selected index gets changed.
@@ -527,14 +527,14 @@ namespace FlaxEngine.GUI
                 }
             }
 
-            if (ShowAllItems || _items.Count < NumberOfItemsToShow)
+            if (ShowAllItems || _items.Count < ShowMaxItemsCount)
             {
                 popup.Size = new Float2(itemsWidth, height);
                 panel.Size = popup.Size;
             }
             else
             {
-                popup.Size = new Float2(itemsWidth, (itemsHeight + container.Spacing) * NumberOfItemsToShow);
+                popup.Size = new Float2(itemsWidth, (itemsHeight + container.Spacing) * ShowMaxItemsCount);
                 panel.Size = popup.Size;
             }
 
