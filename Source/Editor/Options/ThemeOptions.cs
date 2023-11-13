@@ -15,6 +15,9 @@ namespace FlaxEditor.Options
     [CustomEditor(typeof(ThemeOptionsEditor))]
     public sealed class ThemeOptions
     {
+        internal const string DefaultName = "Default";
+        internal const string LightDefault = "LightDefault";
+
         internal class ThemeOptionsEditor : Editor<ThemeOptions>
         {
             private LabelElement _infoLabel;
@@ -64,8 +67,8 @@ namespace FlaxEditor.Options
             {
                 var themeOptions = (ThemeOptions)ParentEditor.Values[0];
                 var options = new string[themeOptions.Styles.Count + 2];
-                options[0] = "Default";
-                options[1] = "LightDefault";
+                options[0] = DefaultName;
+                options[1] = LightDefault;
 
                 int i = 0;
                 foreach (var styleName in themeOptions.Styles.Keys)

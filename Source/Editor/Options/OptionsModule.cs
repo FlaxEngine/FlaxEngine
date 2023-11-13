@@ -208,13 +208,13 @@ namespace FlaxEditor.Options
 
             // If a non-default style was chosen, switch to that style
             string styleName = themeOptions.SelectedStyle;
-            if (styleName != "Default" && styleName != "LightDefault" && themeOptions.Styles.TryGetValue(styleName, out var style) && style != null)
+            if (styleName != ThemeOptions.DefaultName && styleName != ThemeOptions.LightDefault && themeOptions.Styles.TryGetValue(styleName, out var style) && style != null)
             {
                 Style.Current = style;
             }
             else
             {
-                if (styleName == "LightDefault")
+                if (styleName == ThemeOptions.LightDefault)
                 {
                     Style.Current = CreateLightStyle();
                 } 
@@ -231,7 +231,6 @@ namespace FlaxEditor.Options
         /// <returns>The style object.</returns>
         public Style CreateDefaultStyle()
         {
-            // Metro Style colors
             var options = Options;
             var style = new Style
             {
@@ -282,7 +281,6 @@ namespace FlaxEditor.Options
                 SharedTooltip = new Tooltip(),
             };
             style.DragWindow = style.BackgroundSelected * 0.7f;
-
             return style;
         }
 
@@ -292,7 +290,6 @@ namespace FlaxEditor.Options
         /// <returns>The style object.</returns>
         public Style CreateLightStyle()
         {
-            // Metro Style colors
             var options = Options;
             var style = new Style
             {
@@ -334,9 +331,8 @@ namespace FlaxEditor.Options
                 Scale = Editor.Icons.Scale32,
                 Scalar = Editor.Icons.Scalar32,
 
-                SharedTooltip = new Tooltip()
+                SharedTooltip = new Tooltip(),
             };
-            
             return style;
         }
 

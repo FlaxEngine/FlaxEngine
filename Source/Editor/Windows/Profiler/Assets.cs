@@ -62,8 +62,9 @@ namespace FlaxEditor.Windows.Profiler
             _memoryUsageChart.SelectedSampleChanged += OnSelectedSampleChanged;
 
             // Table
-            var headerColor = Style.Current.LightBackground;
-            var textColor = Style.Current.Foreground;
+            var style = Style.Current;
+            var headerColor = style.LightBackground;
+            var textColor = style.Foreground;
             _table = new Table
             {
                 Columns = new[]

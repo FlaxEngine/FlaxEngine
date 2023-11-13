@@ -173,7 +173,7 @@ namespace FlaxEditor.GUI
             else
             {
                 // No element selected
-                Render2D.FillRectangle(iconRect, Style.Current.BackgroundNormal);
+                Render2D.FillRectangle(iconRect, style.BackgroundNormal);
                 Render2D.DrawText(style.FontMedium, "No asset\nselected", iconRect, Color.Orange, TextAlignment.Center, TextAlignment.Center, TextWrapping.NoWrap, 1.0f, Height / DefaultIconSize);
             }
 

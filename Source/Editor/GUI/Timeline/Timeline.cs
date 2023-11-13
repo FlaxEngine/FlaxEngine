@@ -627,10 +627,11 @@ namespace FlaxEditor.GUI.Timeline
                 Parent = this
             };
 
+            var style = Style.Current;
             var headerTopArea = new ContainerControl
             {
                 AutoFocus = false,
-                BackgroundColor = Style.Current.LightBackground,
+                BackgroundColor = style.LightBackground,
                 AnchorPreset = AnchorPresets.HorizontalStretchTop,
                 Offsets = new Margin(0, 0, 0, HeaderTopAreaHeight),
                 Parent = _splitter.Panel1
@@ -683,7 +684,7 @@ namespace FlaxEditor.GUI.Timeline
                 {
                     AutoFocus = false,
                     ClipChildren = false,
-                    BackgroundColor = Style.Current.LightBackground,
+                    BackgroundColor = style.LightBackground,
                     AnchorPreset = AnchorPresets.HorizontalStretchBottom,
                     Offsets = new Margin(0, 0, -playbackButtonsSize, playbackButtonsSize),
                     Parent = _splitter.Panel1
@@ -845,7 +846,7 @@ namespace FlaxEditor.GUI.Timeline
             _timeIntervalsHeader = new TimeIntervalsHeader(this)
             {
                 AutoFocus = false,
-                BackgroundColor = Style.Current.Background.RGBMultiplied(0.9f),
+                BackgroundColor = style.Background.RGBMultiplied(0.9f),
                 AnchorPreset = AnchorPresets.HorizontalStretchTop,
                 Offsets = new Margin(0, 0, 0, HeaderTopAreaHeight),
                 Parent = _splitter.Panel2
@@ -854,7 +855,7 @@ namespace FlaxEditor.GUI.Timeline
             {
                 AutoFocus = false,
                 ClipChildren = false,
-                BackgroundColor = Style.Current.Background.RGBMultiplied(0.7f),
+                BackgroundColor = style.Background.RGBMultiplied(0.7f),
                 AnchorPreset = AnchorPresets.StretchAll,
                 Offsets = new Margin(0, 0, HeaderTopAreaHeight, 0),
                 Parent = _splitter.Panel2
