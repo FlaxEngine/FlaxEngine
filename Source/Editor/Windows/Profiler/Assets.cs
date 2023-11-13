@@ -63,6 +63,7 @@ namespace FlaxEditor.Windows.Profiler
 
             // Table
             var headerColor = Style.Current.LightBackground;
+            var textColor = Style.Current.Foreground;
             _table = new Table
             {
                 Columns = new[]
@@ -73,22 +74,26 @@ namespace FlaxEditor.Windows.Profiler
                         CellAlignment = TextAlignment.Near,
                         Title = "Resource",
                         TitleBackgroundColor = headerColor,
+                        TitleColor = textColor,
                     },
                     new ColumnDefinition
                     {
                         Title = "Type",
                         CellAlignment = TextAlignment.Center,
                         TitleBackgroundColor = headerColor,
+                        TitleColor = textColor,
                     },
                     new ColumnDefinition
                     {
                         Title = "References",
                         TitleBackgroundColor = headerColor,
+                        TitleColor = textColor,
                     },
                     new ColumnDefinition
                     {
                         Title = "Memory Usage",
                         TitleBackgroundColor = headerColor,
+                        TitleColor = textColor,
                         FormatValue = v => Utilities.Utils.FormatBytesCount((ulong)v),
                     },
                 },

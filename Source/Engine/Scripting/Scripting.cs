@@ -268,6 +268,7 @@ namespace FlaxEngine
                 Foreground = Color.FromBgra(0xFFFFFFFF),
                 ForegroundGrey = Color.FromBgra(0xFFA9A9B3),
                 ForegroundDisabled = Color.FromBgra(0xFF787883),
+                ForegroundViewport = Color.FromBgra(0xFFFFFFFF),
                 BackgroundHighlighted = Color.FromBgra(0xFF54545C),
                 BorderHighlighted = Color.FromBgra(0xFF6A6A75),
                 BackgroundSelected = Color.FromBgra(0xFF007ACC),

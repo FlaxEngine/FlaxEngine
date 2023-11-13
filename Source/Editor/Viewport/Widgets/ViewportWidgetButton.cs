@@ -115,7 +115,7 @@ namespace FlaxEditor.Viewport.Widgets
             if (Icon.IsValid)
             {
                 // Draw icon
-                Render2D.DrawSprite(Icon, iconRect, style.Foreground);
+                Render2D.DrawSprite(Icon, iconRect, style.ForegroundViewport);
 
                 // Update text rectangle
                 textRect.Location.X += iconSize;
@@ -123,7 +123,7 @@ namespace FlaxEditor.Viewport.Widgets
             }
 
             // Draw text
-            Render2D.DrawText(style.FontMedium, _text, textRect, style.Foreground * (IsMouseOver ? 1.0f : 0.9f), TextAlignment.Center, TextAlignment.Center);
+            Render2D.DrawText(style.FontMedium, _text, textRect, style.ForegroundViewport * (IsMouseOver ? 1.0f : 0.9f), TextAlignment.Center, TextAlignment.Center);
         }
 
         /// <inheritdoc />
