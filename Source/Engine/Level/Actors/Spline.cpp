@@ -152,6 +152,11 @@ float Spline::GetSplineLength() const
     const int32 slices = 20;
     const float step = 1.0f / (float)slices;
     Vector3 prevPoint = Vector3::Zero;
+    if (Curve.GetKeyframes().Count() != 0)
+    {
+        const auto& a = Curve[0];
+        prevPoint = a.Value.Translation * _transform.Scale;
+    }
     for (int32 i = 1; i < Curve.GetKeyframes().Count(); i++)
     {
         const auto& a = Curve[i - 1];
