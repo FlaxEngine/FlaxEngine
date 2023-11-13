@@ -12,6 +12,7 @@
 API_CLASS(Sealed, Namespace="FlaxEditor.Content.Settings") class FLAXENGINE_API iOSPlatformSettings : public ApplePlatformSettings
 {
     DECLARE_SCRIPTING_TYPE_MINIMAL(ApplePlatformSettings);
+    API_AUTO_SERIALIZATION();
 
     /// <summary>
     /// The app export destination methods.
@@ -79,17 +80,6 @@ API_CLASS(Sealed, Namespace="FlaxEditor.Content.Settings") class FLAXENGINE_API 
     /// Gets the instance of the settings asset (default value if missing). Object returned by this method is always loaded with valid data to use.
     /// </summary>
     static iOSPlatformSettings* Get();
-
-    // [SettingsBase]
-    void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) final override
-    {
-        ApplePlatformSettings::Deserialize(stream, modifier);
-        DESERIALIZE(AppTeamId);
-        DESERIALIZE(AppVersion);
-        DESERIALIZE(ExportMethod);
-        DESERIALIZE(SupportedInterfaceOrientationsiPhone);
-        DESERIALIZE(SupportedInterfaceOrientationsiPad);
-    }
 };
 
 #if PLATFORM_IOS

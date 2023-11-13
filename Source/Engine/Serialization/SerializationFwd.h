@@ -3,9 +3,10 @@
 #pragma once
 
 #include "Engine/Core/ISerializable.h"
-#include "ISerializeModifier.h"
 #include "Json.h"
 #include "JsonWriter.h"
+
+class ISerializeModifier;
 
 // The floating-point values serialization epsilon for equality checks precision
 #define SERIALIZE_EPSILON 1e-7f

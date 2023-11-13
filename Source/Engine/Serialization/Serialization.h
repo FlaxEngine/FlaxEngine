@@ -3,6 +3,7 @@
 #pragma once
 
 #include "SerializationFwd.h"
+#include "ISerializeModifier.h"
 #include "Engine/Core/Collections/Array.h"
 #include "Engine/Core/Collections/Dictionary.h"
 #include "Engine/Scripting/ScriptingObject.h"

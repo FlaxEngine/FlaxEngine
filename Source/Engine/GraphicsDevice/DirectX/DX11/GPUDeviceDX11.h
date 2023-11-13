@@ -4,6 +4,7 @@
 
 #include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Graphics/GPUResource.h"
+#include "Engine/Core/Collections/Dictionary.h"
 #include "../GPUDeviceDX.h"
 #include "../IncludeDirectXHeaders.h"
 
