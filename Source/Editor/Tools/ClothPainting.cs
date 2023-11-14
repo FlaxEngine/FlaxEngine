@@ -18,21 +18,25 @@ namespace FlaxEngine.Tools
         /// <summary>
         /// Brush radius (world-space).
         /// </summary>
+        [Limit(0)]
         public float BrushSize = 50.0f;
 
         /// <summary>
         /// Brush paint intensity.
         /// </summary>
+        [Limit(0)]
         public float BrushStrength = 2.0f;
 
         /// <summary>
         /// Brush paint falloff. Hardens or softens painting.
         /// </summary>
+        [Limit(0)]
         public float BrushFalloff = 1.5f;
 
         /// <summary>
         /// Value to paint with. Hold Ctrl hey to paint with inverse value (1 - value).
         /// </summary>
+        [Limit(0, 1, 0.01f)]
         public float PaintValue = 0.0f;
 
         /// <summary>
