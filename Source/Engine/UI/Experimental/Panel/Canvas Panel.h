@@ -12,7 +12,7 @@ class FLAXENGINE_API ICanvasSlot : public ISlotMinimal
     /// <summary>
     /// Location of ISlot
     /// </summary>
-    API_FIELD() Float2 Location;
+    API_FIELD() Float2 Location = Float2::Zero;
 
     /// <summary>
     /// Size of ISlot
@@ -29,7 +29,7 @@ class FLAXENGINE_API ICanvasSlot : public ISlotMinimal
     /// </summary>
     API_FIELD() bool SizeToContent;
 
-    API_FUNCTION() virtual int GetCountOfFreeSlots() override
+    /*virtual int GetCountOfFreeSlots() override
     {
         auto gc = GetChildren();
         int out = -1;
@@ -44,6 +44,6 @@ class FLAXENGINE_API ICanvasSlot : public ISlotMinimal
             }
         }
         return out;
-    }
+    }*/
 
 };

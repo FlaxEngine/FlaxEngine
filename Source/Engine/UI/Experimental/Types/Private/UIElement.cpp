@@ -40,7 +40,7 @@ UIElement::UIElement(const SpawnParams& params, bool isInDesigner) : ScriptingOb
 }
 
 void UIElement::OnPreCunstruct(bool isInDesigner){}
-void UIElement::OnCunstruct(){}
+void UIElement::OnCunstruct() { DebugLog::Log(TEXT("Hello from c++")); }
 void UIElement::OnDestruct(){}
 void UIElement::OnDraw(){}
 

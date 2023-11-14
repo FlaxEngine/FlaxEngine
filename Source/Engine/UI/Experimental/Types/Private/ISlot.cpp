@@ -5,15 +5,18 @@
 #include "Engine/UI/Experimental/Types/ISlot.h"
 #include "Engine/UI/Experimental/Types/UIElement.h"
 
-inline API_FUNCTION() bool ISlotMinimal::RemoveChild(UIElement* Element) { return false; }
+bool ISlotMinimal::RemoveChild(UIElement* Element) { return false; }
 
-inline API_FUNCTION() bool ISlotMinimal::AddChild(UIElement* Element) { return false; }
+bool ISlotMinimal::AddChild(UIElement* Element) { return false; }
 
-inline API_FUNCTION()Array<UIElement*> ISlotMinimal::GetChildren() { return Array<UIElement*>(); }
+Array<UIElement*> ISlotMinimal::GetChildren() { return Array<UIElement*>(); }
 
-inline API_FUNCTION() int ISlotMinimal::GetCountOfFreeSlots() { return 0; }
+int ISlotMinimal::GetCountOfFreeSlots() 
+{
+    return 0;
+}
 
-inline API_FUNCTION() void ISlotMinimal::Layout()
+void ISlotMinimal::Layout()
 {
     if (GetCountOfFreeSlots())
     {
@@ -25,7 +28,6 @@ inline API_FUNCTION() void ISlotMinimal::Layout()
         }
     }
 }
+Float2 ISlotMinimal::GetDesiredSize() { return Float2::One; }
 
-inline API_FUNCTION()Float2 ISlotMinimal::GetDesiredSize() { return Float2::One; }
-
-inline API_FUNCTION()Float2 ISlotMinimal::GetDesiredLocation() { return Float2::One; }
+Float2 ISlotMinimal::GetDesiredLocation() { return Float2::One; }
