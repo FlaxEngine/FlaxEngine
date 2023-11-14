@@ -157,7 +157,7 @@ namespace FlaxEditor.CustomEditors
             var values = _values;
             var presenter = _presenter;
             var layout = _layout;
-            if (layout.Editors.Count != 1)
+            if (layout.Editors.Count > 1)
             {
                 // There are more editors using the same layout so rebuild parent editor to prevent removing others editors
                 _parent?.RebuildLayout();

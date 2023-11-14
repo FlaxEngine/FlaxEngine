@@ -1022,6 +1022,8 @@ namespace FlaxEngine.Interop
                 pair.Value.Free();
             classAttributesCacheCollectible.Clear();
 
+            FlaxEngine.Json.JsonSerializer.ResetCache();
+
             // Unload the ALC
             bool unloading = true;
             scriptingAssemblyLoadContext.Unloading += (alc) => { unloading = false; };

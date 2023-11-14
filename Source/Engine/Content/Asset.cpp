@@ -522,6 +522,14 @@ void Asset::InitAsVirtual()
 
 void Asset::CancelStreaming()
 {
+    // Cancel loading task but go over asset locker to prevent case if other load threads still loads asset while it's reimported on other thread
+    Locker.Lock();
+    ContentLoadTask* loadTask = _loadingTask;
+    Locker.Unlock();
+    if (loadTask)
+    {
+        loadTask->Cancel();
+    }
 }
 
 #if USE_EDITOR

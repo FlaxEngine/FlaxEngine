@@ -202,7 +202,7 @@ namespace FlaxEngine
         public T Get(BehaviorKnowledge knowledge)
         {
             if (knowledge != null && knowledge.Get(Path, out var value))
-                return (T)value;
+                return Utilities.VariantUtils.Cast<T>(value);
             return default;
         }
 
@@ -218,7 +218,7 @@ namespace FlaxEngine
             object tmp = null;
             bool result = knowledge != null && knowledge.Get(Path, out tmp);
             if (result)
-                value = (T)tmp;
+                value = Utilities.VariantUtils.Cast<T>(tmp);
             return result;
         }
 

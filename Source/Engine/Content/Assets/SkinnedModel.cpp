@@ -969,6 +969,7 @@ void SkinnedModel::InitAsVirtual()
 
 void SkinnedModel::CancelStreaming()
 {
+    Asset::CancelStreaming();
     CancelStreamingTasks();
 }
 

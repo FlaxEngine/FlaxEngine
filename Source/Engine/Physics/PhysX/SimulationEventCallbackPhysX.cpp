@@ -137,7 +137,11 @@ void SimulationEventCallback::onContact(const PxContactPairHeader& pairHeader, c
 
         c.ThisActor = static_cast<PhysicsColliderActor*>(pair.shapes[0]->userData);
         c.OtherActor = static_cast<PhysicsColliderActor*>(pair.shapes[1]->userData);
-        ASSERT_LOW_LAYER(c.ThisActor && c.OtherActor);
+        if (c.ThisActor == nullptr || c.OtherActor == nullptr)
+        {
+            // One of the actors was deleted (eg. via RigidBody destroyed by gameplay) then skip processing this collision
+            continue;
+        }
 
         // Extract contact points
         while (i.hasNextPatch())

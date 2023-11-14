@@ -35,7 +35,11 @@ void RigidBody::SetIsKinematic(const bool value)
         return;
     _isKinematic = value;
     if (_actor)
+    {
         PhysicsBackend::SetRigidDynamicActorFlag(_actor, PhysicsBackend::RigidDynamicFlags::Kinematic, value);
+        if (!value && _isActive && _startAwake)
+            WakeUp();
+    }
 }
 
 void RigidBody::SetLinearDamping(float value)

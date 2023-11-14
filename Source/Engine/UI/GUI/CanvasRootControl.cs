@@ -198,19 +198,18 @@ namespace FlaxEngine.GUI
         /// <inheritdoc />
         public override void Update(float deltaTime)
         {
-            // UI navigation
+            // Update navigation
             if (SkipEvents)
+            {
+                _navigationHeldTimeUp = _navigationHeldTimeDown = _navigationHeldTimeLeft = _navigationHeldTimeRight = 0;
+                _navigationRateTimeUp = _navigationRateTimeDown = _navigationRateTimeLeft = _navigationRateTimeRight = 0;
+            }
             {
                 UpdateNavigation(deltaTime, _canvas.NavigateUp.Name, NavDirection.Up, ref _navigationHeldTimeUp, ref _navigationRateTimeUp);
                 UpdateNavigation(deltaTime, _canvas.NavigateDown.Name, NavDirection.Down, ref _navigationHeldTimeDown, ref _navigationRateTimeDown);
                 UpdateNavigation(deltaTime, _canvas.NavigateLeft.Name, NavDirection.Left, ref _navigationHeldTimeLeft, ref _navigationRateTimeLeft);
                 UpdateNavigation(deltaTime, _canvas.NavigateRight.Name, NavDirection.Right, ref _navigationHeldTimeRight, ref _navigationRateTimeRight);
                 UpdateNavigation(deltaTime, _canvas.NavigateSubmit.Name, ref _navigationHeldTimeSubmit, ref _navigationRateTimeSubmit, SubmitFocused);
-            }
-            else
-            {
-                _navigationHeldTimeUp = _navigationHeldTimeDown = _navigationHeldTimeLeft = _navigationHeldTimeRight = 0;
-                _navigationRateTimeUp = _navigationRateTimeDown = _navigationRateTimeLeft = _navigationRateTimeRight = 0;
             }
 
             base.Update(deltaTime);

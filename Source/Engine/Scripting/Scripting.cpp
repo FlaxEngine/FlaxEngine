@@ -436,6 +436,7 @@ bool Scripting::Load()
     PROFILE_CPU();
     // Note: this action can be called from main thread (due to Mono problems with assemblies actions from other threads)
     ASSERT(IsInMainThread());
+    ScopeLock lock(BinaryModule::Locker);
 
 #if USE_CSHARP
     // Load C# core assembly

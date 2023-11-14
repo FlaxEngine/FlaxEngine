@@ -124,6 +124,7 @@ namespace FlaxEditor.Modules
                 if (!Editor.StateMachine.CurrentState.CanEditScene)
                     return;
                 undo = Editor.Undo;
+                Editor.Scene.MarkSceneEdited(actor.Scene);
             }
 
             // Record undo for prefab creating (backend links the target instance with the prefab)

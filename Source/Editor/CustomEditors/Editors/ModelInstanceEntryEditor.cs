@@ -28,14 +28,16 @@ namespace FlaxEditor.CustomEditors.Editors
             var group = layout.Group("Entry");
             _group = group;
 
-            if (ParentEditor == null)
+            if (ParentEditor == null || HasDifferentTypes)
                 return;
             var entry = (ModelInstanceEntry)Values[0];
             var entryIndex = ParentEditor.ChildrenEditors.IndexOf(this);
             var materialLabel = new PropertyNameLabel("Material");
             materialLabel.TooltipText = "The mesh surface material used for the rendering.";
-            if (ParentEditor.ParentEditor?.Values[0] is ModelInstanceActor modelInstance)
+            var parentEditorValues = ParentEditor.ParentEditor?.Values;
+            if (parentEditorValues?[0] is ModelInstanceActor modelInstance)
             {
+                // TODO: store _modelInstance and _material in array for each selected model instance actor
                 _entryIndex = entryIndex;
                 _modelInstance = modelInstance;
                 var slots = modelInstance.MaterialSlots;
@@ -56,6 +58,8 @@ namespace FlaxEditor.CustomEditors.Editors
 
                 // Create material picker
                 var materialValue = new CustomValueContainer(new ScriptType(typeof(MaterialBase)), _material, (instance, index) => _material, (instance, index, value) => _material = value as MaterialBase);
+                for (var i = 1; i < parentEditorValues.Count; i++)
+                    materialValue.Add(_material);
                 var materialEditor = (AssetRefEditor)_group.Property(materialLabel, materialValue);
                 materialEditor.Values.SetDefaultValue(defaultValue);
                 materialEditor.RefreshDefaultValue();
