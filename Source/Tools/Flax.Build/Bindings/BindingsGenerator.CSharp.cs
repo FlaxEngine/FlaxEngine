@@ -2,11 +2,13 @@
 
 //#define AUTO_DOC_TOOLTIPS
 
+using Ionic.Zlib;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.Serialization.Formatters;
 using System.Text;
 using System.Xml.Linq;
 using static Flax.Build.Bindings.FunctionInfo;
@@ -669,7 +671,7 @@ namespace Flax.Build.Bindings
             contents.Append(')').Append(';').AppendLine();
         }
 
-        private static void GenerateCSharpWrapperFunctionCall(BuildData buildData, StringBuilder contents, ApiTypeInfo caller, FunctionInfo functionInfo, bool isSetter = false,string indent = "")
+        private static void GenerateCSharpWrapperFunctionCall(BuildData buildData, StringBuilder contents, ApiTypeInfo caller, FunctionInfo functionInfo, bool isSetter = false,string indent = "",bool IsInterfaceFuncion = false)
         {
 
 #if USE_NETCORE
@@ -685,23 +687,27 @@ namespace Flax.Build.Bindings
 #endif
             if (caller.IsInterface)
             {
+                contents.Append("Debug.Log(GetType().ToString());").AppendLine();
                 indent += "    ";
-                // create default 
-                var customParametersc = functionInfo.Glue.CustomParameters?.Count ?? 0;
-                for (var i = 0; i < customParametersc; i++)
+                if (!IsInterfaceFuncion)
                 {
-                    var parameterInfo = functionInfo.Glue.CustomParameters[i];
-                    contents.Append(indent);
-                    contents.Append(parameterInfo.Type);
-                    contents.Append(' ');
-                    contents.Append(parameterInfo.Name);
-                    contents.Append(" = default;\n");
+                    // create default 
+                    var customParametersc = functionInfo.Glue.CustomParameters?.Count ?? 0;
+                    for (var i = 0; i < customParametersc; i++)
+                    {
+                        var parameterInfo = functionInfo.Glue.CustomParameters[i];
+                        contents.Append(indent);
+                        contents.Append(parameterInfo.Type);
+                        contents.Append(' ');
+                        contents.Append(parameterInfo.Name);
+                        contents.Append(" = default;\n");
+                    }
                 }
-                contents.Append(indent);
-                contents.Append("if (this is Object obj)\n");
-                contents.Append(indent);
-                contents.Append("{\n");
-                contents.Append("    ");
+                //contents.Append(indent);
+                //contents.Append("if (typeof(Object).IsAssignableTo(this.GetType()))\n");
+                //contents.Append(indent);
+                //contents.Append("{\n");
+                //contents.Append("    ");
             }
             contents.Append(indent);
             if (functionInfo.Glue.UseReferenceForResult)
@@ -720,7 +726,7 @@ namespace Flax.Build.Bindings
             {
                 if (caller.IsInterface)
                 {
-                    contents.Append("Object.GetUnmanagedPtr(obj)");
+                    contents.Append("Object.GetUnmanagedPtr((Object)this)");
                 }
                 else
                 {
@@ -775,7 +781,7 @@ namespace Flax.Build.Bindings
                         contents.Append("ref ");
 
                     // Pass value
-                    if (caller.IsInterface)
+                    if (caller.IsInterface && !IsInterfaceFuncion)
                     {
                         contents.Append(parameterInfo.Name);
                     }
@@ -803,11 +809,11 @@ namespace Flax.Build.Bindings
             }
             if (caller.IsInterface)
             {
-                contents.AppendLine();
-                contents.Append(indent);
-                contents.AppendLine("}");
-                contents.Append(indent);
-                contents.Append("throw new NotSupportedException(\"The \" + typeof(" + caller.Name + ").FullName + \" got incorrecty implemented base of class u are using this interface needs to be delivered from\" + typeof(Object).FullName + \" API_FIELD can't support (c# binding limits)\");");
+                //contents.AppendLine();
+                //contents.Append(indent);
+                //contents.AppendLine("}");
+                //contents.Append(indent);
+                //contents.Append("throw new NotSupportedException(\"The \" + typeof(" + caller.Name + ").FullName + \" got incorrecty implemented base of class u are using this interface needs to be delivered from\" + typeof(Object).FullName + \" can't support (c# binding limits)\");");
             }
         }
 
@@ -2073,7 +2079,41 @@ namespace Flax.Build.Bindings
                 GenerateCSharpComment(contents, indent, functionInfo.Comment);
                 GenerateCSharpAttributes(buildData, contents, indent, interfaceInfo, functionInfo, true);
                 var returnValueType = GenerateCSharpNativeToManaged(buildData, functionInfo.ReturnType, interfaceInfo);
-                contents.Append(indent).Append(returnValueType).Append(' ').Append(functionInfo.Name).Append('(');
+                contents.Append(indent);
+                bool generateCSharpWrapperFunction = false;
+                contents.Append(functionInfo.Access.ToString().ToLower()).Append(' ');
+                if (functionInfo.IsVirtual) 
+                {
+                    if (functionInfo.IsPure)
+                    {
+                        contents.Append(returnValueType).Append(' ').Append(functionInfo.Name).Append('(');
+                    }
+                    else
+                    {
+                        if (functionInfo.IsOverridden)
+                        {
+                            contents.Append("override ").Append(returnValueType).Append(' ').Append(functionInfo.Name).Append('(');
+                            generateCSharpWrapperFunction = true;
+                        }
+                        else
+                        {
+                            contents.Append("virtual ").Append(returnValueType).Append(' ').Append(functionInfo.Name).Append('(');
+                            generateCSharpWrapperFunction = true;
+                        }
+                    }
+                }
+                else
+                {
+                    if (functionInfo.IsPure)
+                    {
+                        contents.Append(returnValueType).Append(' ').Append(functionInfo.Name).Append('(');
+                    }
+                    else
+                    {
+                        contents.Append(returnValueType).Append(' ').Append(functionInfo.Name).Append('(');
+                        generateCSharpWrapperFunction = true;
+                    }
+                }
 
                 for (var i = 0; i < functionInfo.Parameters.Count; i++)
                 {
@@ -2101,7 +2141,33 @@ namespace Flax.Build.Bindings
                         contents.Append(" = ").Append(defaultValue);
                 }
 
-                contents.Append(");").AppendLine();
+                
+                if (generateCSharpWrapperFunction)
+                {
+                    if (functionInfo.Glue.LibraryEntryPoint == null)
+                    {
+                        Console.WriteLine($"Function {interfaceInfo.FullNameNative}::{functionInfo.Name} has missing entry point for library import. \n Skipping \n Implemeted as Pure");
+                        contents.Append(");").AppendLine();
+                    }
+                    else
+                    {
+                        contents.Append(")");
+                        contents.AppendLine();
+                        contents.Append(indent);
+                        contents.Append("{\n");
+                        GenerateCSharpWrapperFunctionCall(buildData, contents, interfaceInfo, functionInfo, false, indent,true);
+                        contents.AppendLine();
+                        contents.Append(indent);
+                        contents.Append("}\n");
+
+                        GenerateCSharpWrapperFunction(buildData, contents, indent, interfaceInfo, functionInfo);
+                    }
+                }
+                else
+                {
+                    
+                    contents.Append(");").AppendLine();
+                }
             }
             // Fields
             foreach (var fieldInfo in interfaceInfo.Fields)
