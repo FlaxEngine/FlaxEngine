@@ -3,7 +3,6 @@
 #pragma once
 
 #include "../Enums.h"
-#include "Engine/Core/Math/Math.h"
 
 /// <summary>
 /// Material domain type. Material domain defines the target usage of the material shader.

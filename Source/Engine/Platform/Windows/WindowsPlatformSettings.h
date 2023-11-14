@@ -14,8 +14,8 @@ class Texture;
 /// </summary>
 API_CLASS(sealed, Namespace="FlaxEditor.Content.Settings") class FLAXENGINE_API WindowsPlatformSettings : public SettingsBase
 {
-DECLARE_SCRIPTING_TYPE_MINIMAL(WindowsPlatformSettings);
-public:
+    DECLARE_SCRIPTING_TYPE_MINIMAL(WindowsPlatformSettings);
+    API_AUTO_SERIALIZATION();
 
     /// <summary>
     /// The default game window mode.
@@ -83,28 +83,10 @@ public:
     API_FIELD(Attributes="EditorOrder(2030), DefaultValue(false), EditorDisplay(\"Graphics\")")
     bool SupportVulkan = false;
 
-public:
-
     /// <summary>
     /// Gets the instance of the settings asset (default value if missing). Object returned by this method is always loaded with valid data to use.
     /// </summary>
     static WindowsPlatformSettings* Get();
-
-    // [SettingsBase]
-    void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) final override
-    {
-        DESERIALIZE(WindowMode);
-        DESERIALIZE(ScreenWidth);
-        DESERIALIZE(ScreenHeight);
-        DESERIALIZE(RunInBackground);
-        DESERIALIZE(ResizableWindow);
-        DESERIALIZE(ForceSingleInstance);
-        DESERIALIZE(OverrideIcon);
-        DESERIALIZE(SupportDX12);
-        DESERIALIZE(SupportDX11);
-        DESERIALIZE(SupportDX10);
-        DESERIALIZE(SupportVulkan);
-    }
 };
 
 #if PLATFORM_WINDOWS

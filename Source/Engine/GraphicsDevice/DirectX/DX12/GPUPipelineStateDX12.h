@@ -7,6 +7,7 @@
 #include "Engine/Graphics/GPUPipelineState.h"
 #include "GPUDeviceDX12.h"
 #include "Types.h"
+#include "Engine/Core/Collections/Dictionary.h"
 #include "../IncludeDirectXHeaders.h"
 
 class GPUTextureViewDX12;

@@ -3967,7 +3967,11 @@ PUGI__NS_BEGIN
 	PUGI__FN bool set_value_convert(char_t*& dest, uintptr_t& header, uintptr_t header_mask, int value)
 	{
 		char buf[128];
+#if __APPLE__
+		snprintf(buf, sizeof(buf), "%d", value);
+#else
 		sprintf(buf, "%d", value);
+#endif
 	
 		return set_value_buffer(dest, header, header_mask, buf);
 	}
@@ -3975,7 +3979,11 @@ PUGI__NS_BEGIN
 	PUGI__FN bool set_value_convert(char_t*& dest, uintptr_t& header, uintptr_t header_mask, unsigned int value)
 	{
 		char buf[128];
+#if __APPLE__
+		snprintf(buf, sizeof(buf), "%u", value);
+#else
 		sprintf(buf, "%u", value);
+#endif
 
 		return set_value_buffer(dest, header, header_mask, buf);
 	}
@@ -3983,7 +3991,11 @@ PUGI__NS_BEGIN
 	PUGI__FN bool set_value_convert(char_t*& dest, uintptr_t& header, uintptr_t header_mask, float value)
 	{
 		char buf[128];
+#if __APPLE__
+		snprintf(buf, sizeof(buf), "%.9g", value);
+#else
 		sprintf(buf, "%.9g", value);
+#endif
 
 		return set_value_buffer(dest, header, header_mask, buf);
 	}
@@ -3991,7 +4003,11 @@ PUGI__NS_BEGIN
 	PUGI__FN bool set_value_convert(char_t*& dest, uintptr_t& header, uintptr_t header_mask, double value)
 	{
 		char buf[128];
+#if __APPLE__
+		snprintf(buf, sizeof(buf), "%.17g", value);
+#else
 		sprintf(buf, "%.17g", value);
+#endif
 
 		return set_value_buffer(dest, header, header_mask, buf);
 	}
@@ -4005,7 +4021,11 @@ PUGI__NS_BEGIN
 	PUGI__FN bool set_value_convert(char_t*& dest, uintptr_t& header, uintptr_t header_mask, long long value)
 	{
 		char buf[128];
+#if __APPLE__
+		snprintf(buf, sizeof(buf), "%lld", value);
+#else
 		sprintf(buf, "%lld", value);
+#endif
 	
 		return set_value_buffer(dest, header, header_mask, buf);
 	}
@@ -4013,7 +4033,11 @@ PUGI__NS_BEGIN
 	PUGI__FN bool set_value_convert(char_t*& dest, uintptr_t& header, uintptr_t header_mask, unsigned long long value)
 	{
 		char buf[128];
+#if __APPLE__
+		snprintf(buf, sizeof(buf), "%llu", value);
+#else
 		sprintf(buf, "%llu", value);
+#endif
 	
 		return set_value_buffer(dest, header, header_mask, buf);
 	}

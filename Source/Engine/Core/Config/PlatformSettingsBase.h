@@ -3,7 +3,7 @@
 #pragma once
 
 #include "Engine/Core/Config/Settings.h"
-#include "Engine/Serialization/Serialization.h"
+#include "Engine/Serialization/SerializationFwd.h"
 
 /// <summary>
 /// Specifies the display mode of a game window.
