@@ -687,7 +687,7 @@ namespace Flax.Build.Bindings
 #endif
             if (caller.IsInterface)
             {
-                contents.Append("Debug.Log(GetType().ToString());").AppendLine();
+                //contents.Append("Debug.Log(GetType().ToString());").AppendLine();
                 indent += "    ";
                 if (!IsInterfaceFuncion)
                 {
@@ -726,7 +726,7 @@ namespace Flax.Build.Bindings
             {
                 if (caller.IsInterface)
                 {
-                    contents.Append("Object.GetUnmanagedPtr((Object)this)");
+                    contents.Append("FlaxEngine.Object.GetUnmanagedInterface(this, typeof("+ caller.FullNameManaged+"))");
                 }
                 else
                 {
@@ -2141,31 +2141,37 @@ namespace Flax.Build.Bindings
                         contents.Append(" = ").Append(defaultValue);
                 }
 
-                
+
                 if (generateCSharpWrapperFunction)
                 {
-                    if (functionInfo.Glue.LibraryEntryPoint == null)
-                    {
-                        Console.WriteLine($"Function {interfaceInfo.FullNameNative}::{functionInfo.Name} has missing entry point for library import. \n Skipping \n Implemeted as Pure");
-                        contents.Append(");").AppendLine();
-                    }
+                    Console.WriteLine($"Function {interfaceInfo.FullNameNative}::{functionInfo.Name}. Implemeted as not Pure c#");
+                    if (functionInfo.ReturnType.IsVoid)
+                        contents.Append(") {}").AppendLine();
                     else
-                    {
-                        contents.Append(")");
-                        contents.AppendLine();
-                        contents.Append(indent);
-                        contents.Append("{\n");
-                        GenerateCSharpWrapperFunctionCall(buildData, contents, interfaceInfo, functionInfo, false, indent,true);
-                        contents.AppendLine();
-                        contents.Append(indent);
-                        contents.Append("}\n");
+                        contents.Append(") { return default; }").AppendLine();
 
-                        GenerateCSharpWrapperFunction(buildData, contents, indent, interfaceInfo, functionInfo);
-                    }
+                    //if (functionInfo.Glue.LibraryEntryPoint == null)
+                    //{
+
+                    //    contents.Append(");").AppendLine();
+                    //}
+                    //else
+                    //{
+                    //    contents.Append(")");
+                    //    contents.AppendLine();
+                    //    contents.Append(indent);
+                    //    contents.Append("{\n");
+                    //    GenerateCSharpWrapperFunctionCall(buildData, contents, interfaceInfo, functionInfo, false, indent,true);
+                    //    contents.AppendLine();
+                    //    contents.Append(indent);
+                    //    contents.Append("}\n");
+
+                    //    GenerateCSharpWrapperFunction(buildData, contents, indent, interfaceInfo, functionInfo);
+                    //}
                 }
                 else
                 {
-                    
+
                     contents.Append(");").AppendLine();
                 }
             }

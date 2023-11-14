@@ -806,6 +806,8 @@ namespace Flax.Build.Bindings
                 var token = context.Tokenizer.ExpectAnyTokens(new[] { TokenType.SemiColon, TokenType.LeftCurlyBrace, TokenType.Equal, TokenType.Identifier });
                 if (token.Type == TokenType.Equal)
                 {
+                    if (desc.IsVirtual)
+                        desc.IsPure = true;
                     context.Tokenizer.SkipUntil(TokenType.SemiColon);
                     break;
                 }
@@ -813,20 +815,16 @@ namespace Flax.Build.Bindings
                 {
                     switch (token.Value)
                     {
-                    case "const":
-                        if (desc.IsConst)
-                            throw new Exception($"Invalid double 'const' specifier in function {desc.Name} at line {context.Tokenizer.CurrentLine}.");
-                        desc.IsConst = true;
-                        break;
-                    case "override":
-                        desc.IsVirtual = true;
-                        desc.IsOverridden = true;
-                        break;
-                    case " = 0;"://pure Virtual
-                        desc.IsVirtual = true;
-                        desc.IsPure = true;
-                        break;
-                    default: throw new Exception($"Unknown identifier '{token.Value}' in function {desc.Name} at line {context.Tokenizer.CurrentLine}.");
+                        case "const":
+                            if (desc.IsConst)
+                                throw new Exception($"Invalid double 'const' specifier in function {desc.Name} at line {context.Tokenizer.CurrentLine}.");
+                            desc.IsConst = true;
+                            break;
+                        case "override":
+                            desc.IsVirtual = true;
+                            desc.IsOverridden = true;
+                            break;
+                        default: throw new Exception($"Unknown identifier '{token.Value}' in function {desc.Name} at line {context.Tokenizer.CurrentLine}.");
                     }
                 }
                 else if (token.Type == TokenType.LeftCurlyBrace)

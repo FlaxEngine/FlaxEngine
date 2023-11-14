@@ -2629,6 +2629,13 @@ namespace Flax.Build.Bindings
                     GenerateCppWrapperFunction(buildData, contents, interfaceInfo, interfaceTypeNameInternal, propertyInfo.Setter, callFormat);
                 }
             }
+            //// Functions
+            //foreach (var functionInfo in interfaceInfo.Functions)
+            //{
+            //    if (!useCSharp || functionInfo.IsHidden)
+            //        continue;
+            //    GenerateCppWrapperFunction(buildData, contents, interfaceInfo, interfaceTypeNameInternal, functionInfo);
+            //}
 
             contents.Append('}').Append(';').AppendLine();
             contents.AppendLine();
@@ -2669,14 +2676,6 @@ namespace Flax.Build.Bindings
             contents.Append($"StringAnsiView(\"{interfaceTypeNameManaged}\", {interfaceTypeNameManaged.Length}), &{interfaceTypeNameInternal}Internal::InitRuntime,");
             contents.Append(setupScriptVTable).Append($", &{interfaceTypeNameInternal}Internal::GetInterfaceWrapper").Append(");");
             contents.AppendLine();
-
-            // Functions
-            foreach (var functionInfo in interfaceInfo.Functions)
-            {
-                if (!useCSharp || functionInfo.IsHidden)
-                    continue;
-                GenerateCppWrapperFunction(buildData, contents, interfaceInfo, interfaceTypeNameInternal, functionInfo);
-            }
 
             // Nested types
             foreach (var apiTypeInfo in interfaceInfo.Children)
