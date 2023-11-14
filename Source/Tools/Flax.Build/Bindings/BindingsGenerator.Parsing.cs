@@ -822,6 +822,10 @@ namespace Flax.Build.Bindings
                         desc.IsVirtual = true;
                         desc.IsOverridden = true;
                         break;
+                    case " = 0;"://pure Virtual
+                        desc.IsVirtual = true;
+                        desc.IsPure = true;
+                        break;
                     default: throw new Exception($"Unknown identifier '{token.Value}' in function {desc.Name} at line {context.Tokenizer.CurrentLine}.");
                     }
                 }

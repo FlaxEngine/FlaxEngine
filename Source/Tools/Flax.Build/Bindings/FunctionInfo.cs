@@ -74,6 +74,7 @@ namespace Flax.Build.Bindings
         public TypeInfo ReturnType;
         public List<ParameterInfo> Parameters = new List<ParameterInfo>();
         public bool IsVirtual;
+        public bool IsPure;
         public bool IsOverridden;
         public bool IsConst;
         public bool NoProxy;
@@ -85,6 +86,7 @@ namespace Flax.Build.Bindings
             BindingsGenerator.Write(writer, Parameters);
             // TODO: convert into flags
             writer.Write(IsVirtual);
+            writer.Write(IsPure);
             writer.Write(IsOverridden);
             writer.Write(IsConst);
             writer.Write(NoProxy);
@@ -98,6 +100,7 @@ namespace Flax.Build.Bindings
             Parameters = BindingsGenerator.Read(reader, Parameters);
             // TODO: convert into flags
             IsVirtual = reader.ReadBoolean();
+            IsPure = reader.ReadBoolean();
             IsOverridden = reader.ReadBoolean();
             IsConst = reader.ReadBoolean();
             NoProxy = reader.ReadBoolean();

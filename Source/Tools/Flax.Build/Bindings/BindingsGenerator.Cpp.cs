@@ -1018,7 +1018,7 @@ namespace Flax.Build.Bindings
             }
             if (useLibraryExportInPlainC)
                 contents.AppendFormat("static {0} {1}(", returnValueType, functionInfo.UniqueName);
-            else if(caller.IsInterface)
+            else if (caller.IsInterface)
                 contents.AppendFormat("DLLEXPORT {0} {1}(", returnValueType, functionInfo.UniqueName);
             else
                 contents.AppendFormat("DLLEXPORT static {0} {1}(", returnValueType, functionInfo.UniqueName);
@@ -1146,7 +1146,17 @@ namespace Flax.Build.Bindings
                 contents.Append(indent).AppendLine($"MSVC_FUNC_EXPORT(\"{libraryEntryPoint}\")"); // Export generated function binding under the C# name
 #endif
             if (!functionInfo.IsStatic)
+            {
+
                 contents.Append(indent).AppendLine("if (__obj == nullptr) DebugLog::ThrowNullReference();");
+#pragma warning disable
+                //[Note] set this to true for debug display
+                if (false)
+                {
+                    contents.Append("DebugLog::Log(L\"Called " + functionInfo.UniqueName + "\");");
+                }
+#pragma warning restore
+            }
 
             string callBegin = indent;
             if (functionInfo.Glue.UseReferenceForResult)
@@ -2603,8 +2613,26 @@ namespace Flax.Build.Bindings
             contents.AppendLine("        return wrapper;");
             contents.AppendLine("    }");
 
+            // c++ field->Properties c#
+            foreach (var propertyInfo in interfaceInfo.Fields)
+            {
+                if (!useCSharp || propertyInfo.IsHidden || propertyInfo.IsConstexpr)
+                    continue;
+                if (propertyInfo.Getter != null)
+                    GenerateCppWrapperFunction(buildData, contents, interfaceInfo, interfaceTypeNameInternal, propertyInfo.Getter, "{0}");
+                if (propertyInfo.Setter != null)
+                {
+                    var callFormat = "{0} = {1}";
+                    var type = propertyInfo.Setter.Parameters[0].Type;
+                    if (type.IsArray)
+                        callFormat = $"auto __tmp = {{1}}; for (int32 i = 0; i < {type.ArraySize}; i++) {{0}}[i] = __tmp[i]";
+                    GenerateCppWrapperFunction(buildData, contents, interfaceInfo, interfaceTypeNameInternal, propertyInfo.Setter, callFormat);
+                }
+            }
+
             contents.Append('}').Append(';').AppendLine();
             contents.AppendLine();
+
 
             // Native interfaces override in managed code requires vtables hacking which requires additional inject on Clang-platforms
             if (buildData.Toolchain?.Compiler == TargetCompiler.Clang)
@@ -2642,21 +2670,12 @@ namespace Flax.Build.Bindings
             contents.Append(setupScriptVTable).Append($", &{interfaceTypeNameInternal}Internal::GetInterfaceWrapper").Append(");");
             contents.AppendLine();
 
-            // Properties
-            foreach (var propertyInfo in interfaceInfo.Fields)
+            // Functions
+            foreach (var functionInfo in interfaceInfo.Functions)
             {
-                if (!useCSharp || propertyInfo.IsHidden || propertyInfo.IsConstexpr)
+                if (!useCSharp || functionInfo.IsHidden)
                     continue;
-                if (propertyInfo.Getter != null)
-                    GenerateCppWrapperFunction(buildData, contents, interfaceInfo, interfaceTypeNameInternal, propertyInfo.Getter, "{0}");
-                if (propertyInfo.Setter != null)
-                {
-                    var callFormat = "{0} = {1}";
-                    var type = propertyInfo.Setter.Parameters[0].Type;
-                    if (type.IsArray)
-                        callFormat = $"auto __tmp = {{1}}; for (int32 i = 0; i < {type.ArraySize}; i++) {{0}}[i] = __tmp[i]";
-                    GenerateCppWrapperFunction(buildData, contents, interfaceInfo, interfaceTypeNameInternal, propertyInfo.Setter, callFormat);
-                }
+                GenerateCppWrapperFunction(buildData, contents, interfaceInfo, interfaceTypeNameInternal, functionInfo);
             }
 
             // Nested types
