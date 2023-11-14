@@ -29,7 +29,7 @@ public:
     float Brightness = 3.14f;
 
     /// <summary>
-    /// Controls light visibility range. The distance at which the light be completely faded. Use value 0 to always draw light.
+    /// Controls light visibility range. The distance at which the light becomes completely faded. Use a value of 0 to always draw light.
     /// </summary>
     API_FIELD(Attributes="EditorOrder(35), Limit(0, float.MaxValue, 10.0f), EditorDisplay(\"Light\")")
     float ViewDistance = 0.0f;
@@ -87,19 +87,19 @@ public:
     float MinRoughness = 0.04f;
 
     /// <summary>
-    /// The light shadows casting distance from view.
+    /// Shadows casting distance from view.
     /// </summary>
     API_FIELD(Attributes="EditorOrder(80), EditorDisplay(\"Shadow\", \"Distance\"), Limit(0, 1000000)")
     float ShadowsDistance = 5000.0f;
 
     /// <summary>
-    /// The light shadows fade off distance
+    /// Shadows fade off distance.
     /// </summary>
     API_FIELD(Attributes="EditorOrder(90), EditorDisplay(\"Shadow\", \"Fade Distance\"), Limit(0.0f, 10000.0f, 0.1f)")
     float ShadowsFadeDistance = 500.0f;
 
     /// <summary>
-    /// The light shadows edges sharpness
+    /// TheShadows edges sharpness.
     /// </summary>
     API_FIELD(Attributes="EditorOrder(70), EditorDisplay(\"Shadow\", \"Sharpness\"), Limit(1.0f, 10.0f, 0.001f)")
     float ShadowsSharpness = 1.0f;
@@ -129,7 +129,7 @@ public:
     float ContactShadowsLength = 0.0f;
 
     /// <summary>
-    /// Shadows casting mode by this visual element
+    /// Describes how a visual element casts shadows.
     /// </summary>
     API_FIELD(Attributes="EditorOrder(60), EditorDisplay(\"Shadow\", \"Mode\")")
     ShadowsCastingMode ShadowsMode = ShadowsCastingMode::All;
