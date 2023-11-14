@@ -37,7 +37,7 @@ void RigidBody::SetIsKinematic(const bool value)
     if (_actor)
     {
         PhysicsBackend::SetRigidDynamicActorFlag(_actor, PhysicsBackend::RigidDynamicFlags::Kinematic, value);
-        if (!value && _isActive)
+        if (!value && _isActive && _startAwake)
             WakeUp();
     }
 }
