@@ -1067,6 +1067,12 @@ void NavMeshBuilder::Update()
 
 void NavMeshBuilder::Build(Scene* scene, float timeoutMs)
 {
+    if (!scene)
+    {
+        LOG(Warning, "Could not generate navmesh without scene.");
+        return;
+    }
+
     // Early out if scene is not using navigation
     if (scene->Navigation.Volumes.IsEmpty())
     {
@@ -1098,6 +1104,17 @@ void NavMeshBuilder::Build(Scene* scene, float timeoutMs)
 
 void NavMeshBuilder::Build(Scene* scene, const BoundingBox& dirtyBounds, float timeoutMs)
 {
+    if (!scene)
+    {
+        LOG(Warning, "Could not generate navmesh without scene.");
+        return;    
+    }
+    if (!&dirtyBounds)
+    {
+        LOG(Warning, "Could not generate navmesh without dirty bounds.");
+        return;
+    }
+
     // Early out if scene is not using navigation
     if (scene->Navigation.Volumes.IsEmpty())
     {
