@@ -6,7 +6,8 @@
 
 #include "Engine/Core/Config/PlatformSettingsBase.h"
 #include "Engine/Scripting/SoftObjectReference.h"
-#include "Engine/Content/Assets/Texture.h"
+
+class Texture;
 
 /// <summary>
 /// Android platform settings.
