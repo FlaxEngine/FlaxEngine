@@ -8,7 +8,6 @@ using System.IO;
 using FlaxEditor.Scripting;
 using FlaxEditor.Utilities;
 #endif
-using FlaxEngine;
 using Newtonsoft.Json;
 
 namespace FlaxEngine.Utilities
@@ -18,6 +17,78 @@ namespace FlaxEngine.Utilities
     /// </summary>
     public static class VariantUtils
     {
+        /// <summary>
+        /// Casts the generic value to a given type. Matches native Variant casting logic that favors returning null/zero value rather than error.
+        /// </summary>
+        /// <typeparam name="T">The destination value type.</typeparam>
+        /// <param name="value">The input value to cast.</param>
+        /// <returns>The result value.</returns>
+        internal static T Cast<T>(object value)
+        {
+            if (value == null)
+                return default;
+            var type = value.GetType();
+            if (type != typeof(T))
+            {
+                if (typeof(T) == typeof(Vector2))
+                {
+                    if (value is Float2 asFloat2)
+                        return (T)(object)new Vector2(asFloat2.X, asFloat2.Y);
+                    if (value is Float3 asFloat3)
+                        return (T)(object)new Vector2(asFloat3.X, asFloat3.Y);
+                    if (value is Float4 asFloat4)
+                        return (T)(object)new Vector2(asFloat4.X, asFloat4.Y);
+                }
+                else if (typeof(T) == typeof(Vector3))
+                {
+                    if (value is Float2 asFloat2)
+                        return (T)(object)new Vector3(asFloat2.X, asFloat2.Y, 0);
+                    if (value is Float3 asFloat3)
+                        return (T)(object)new Vector3(asFloat3.X, asFloat3.Y, asFloat3.Z);
+                    if (value is Float4 asFloat4)
+                        return (T)(object)new Vector3(asFloat4.X, asFloat4.Y, asFloat4.Z);
+                }
+                else if (typeof(T) == typeof(Vector4))
+                {
+                    if (value is Float2 asFloat2)
+                        return (T)(object)new Vector4(asFloat2.X, asFloat2.Y, 0, 0);
+                    if (value is Float3 asFloat3)
+                        return (T)(object)new Vector4(asFloat3.X, asFloat3.Y, asFloat3.Z, 0);
+                    if (value is Vector4 asFloat4)
+                        return (T)(object)new Vector4(asFloat4.X, asFloat4.Y, asFloat4.Z, asFloat4.W);
+                }
+                else if (typeof(T) == typeof(Float2))
+                {
+                    if (value is Vector2 asVector2)
+                        return (T)(object)new Float2(asVector2.X, asVector2.Y);
+                    if (value is Vector3 asVector3)
+                        return (T)(object)new Float2(asVector3.X, asVector3.Y);
+                    if (value is Vector4 asVector4)
+                        return (T)(object)new Float2(asVector4.X, asVector4.Y);
+                }
+                else if (typeof(T) == typeof(Float3))
+                {
+                    if (value is Vector2 asVector2)
+                        return (T)(object)new Float3(asVector2.X, asVector2.Y, 0);
+                    if (value is Vector3 asVector3)
+                        return (T)(object)new Float3(asVector3.X, asVector3.Y, asVector3.Z);
+                    if (value is Vector4 asFloat4)
+                        return (T)(object)new Float3(asFloat4.X, asFloat4.Y, asFloat4.Z);
+                }
+                else if (typeof(T) == typeof(Float4))
+                {
+                    if (value is Vector2 asVector2)
+                        return (T)(object)new Float4(asVector2.X, asVector2.Y, 0, 0);
+                    if (value is Vector3 asVector3)
+                        return (T)(object)new Float4(asVector3.X, asVector3.Y, asVector3.Z, 0);
+                    if (value is Vector4 asVector4)
+                        return (T)(object)new Float4(asVector4.X, asVector4.Y, asVector4.Z, asVector4.W);
+                }
+                return (T)Convert.ChangeType(value, typeof(T));
+            }
+            return (T)value;
+        }
+
         internal enum VariantType
         {
             Null = 0,
