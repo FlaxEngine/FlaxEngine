@@ -95,12 +95,16 @@ namespace FlaxEngine
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public ref T GetState<T>(IntPtr memory) where T : struct
         {
-            var ptr = IntPtr.Add(memory, _memoryOffset).ToPointer();
-            var handle = GCHandle.FromIntPtr(Unsafe.Read<IntPtr>(ptr));
+            var ptr = Unsafe.Read<IntPtr>(IntPtr.Add(memory, _memoryOffset).ToPointer());
+#if !BUILD_RELEASE
+            if (ptr == IntPtr.Zero)
+                throw new Exception($"Missing state '{typeof(T).FullName}' for node '{GetType().FullName}'");
+#endif
+            var handle = GCHandle.FromIntPtr(ptr);
             var state = handle.Target;
 #if !BUILD_RELEASE
             if (state == null)
-                throw new NullReferenceException();
+                throw new Exception($"Missing state '{typeof(T).FullName}' for node '{GetType().FullName}'");
 #endif
             return ref Unsafe.Unbox<T>(state);
         }
@@ -111,8 +115,10 @@ namespace FlaxEngine
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void FreeState(IntPtr memory)
         {
-            var ptr = IntPtr.Add(memory, _memoryOffset).ToPointer();
-            var handle = GCHandle.FromIntPtr(Unsafe.Read<IntPtr>(ptr));
+            var ptr = Unsafe.Read<IntPtr>(IntPtr.Add(memory, _memoryOffset).ToPointer());
+            if (ptr == IntPtr.Zero)
+                return;
+            var handle = GCHandle.FromIntPtr(ptr);
             handle.Free();
         }
     }
