@@ -11,6 +11,7 @@
 #pragma once
 #include "Engine/Core/Memory/Memory.h"
 
+
 template<typename T>
 class ShadredObjectPtr;
 /// <summary>
@@ -66,25 +67,31 @@ public:
         if (SharesWith != nullptr)
         {
             SharesWith->Destroy();
+            return;
         }
         ptr = nullptr;
         SharesWith = nullptr;
         if (createNew)
         {
             ptr = New<T>();
-        }
     }
     /// <summary>
     /// Gets shared pointer
     /// </summary>
     /// <returns>Shadred Object Ptr or new Shadred Object Ptr</returns>
-    ShadredObjectPtr<T>& GetSharedPtr()
+    ShadredObjectPtr<T>& ToSharedPtr()
     {
+        ShadredObjectPtr<T>* out;
         if (SharesWith != nullptr)
         {
-            return SharesWith;
+            out = SharesWith;
         }
-        return new ShadredObjectPtr<T>(ptr);
+        else
+        {
+            out = New(ShadredObjectPtr<T>(ptr));
+            ptr = nullptr;
+        }
+        return *out;
     }
 protected:
     /// <summary>
@@ -92,8 +99,8 @@ protected:
     /// </summary>
     //Action OnDestructacted;
 
-    const class ShadredObjectPtr<T>* SharesWith;
-    friend class ShadredObjectPtr<T>;
+    class ShadredObjectPtr<T>* SharesWith = nullptr;
+    friend ShadredObjectPtr<T>;
 };
 #define SHADREDOBJECTPTRREFRENCETYPE unsigned int
 /// <summary>
@@ -113,14 +120,14 @@ private:
 public:
     // Constructor
     ShadredObjectPtr() : ptr(nullptr), refCount(nullptr) {};
-    ShadredObjectPtr(int* ptr) : ptr(ptr), refCount(New<SHADREDOBJECTPTRREFRENCETYPE>(1ull)) {};
+    ShadredObjectPtr(int* ptr) : ptr(ptr), refCount(new SHADREDOBJECTPTRREFRENCETYPE(1ull)) {};
 
     void Create()
     {
         if (refCount == nullptr && ptr == nullptr)
         {
-            ptr = New<T>();
-            refCount = New<SHADREDOBJECTPTRREFRENCETYPE>(1ull);
+            ptr = New(T());
+            refCount = new SHADREDOBJECTPTRREFRENCETYPE(1ull);
         }
     }
     // copy constructor
@@ -158,7 +165,7 @@ public:
         this->refCount = dyingObj.refCount; // share refCount
 
         // cleanup any existing data
-        Destroy();
+        dyingObj.Destroy();
         // clean up dyingObj
         dyingObj.refCount = nullptr;
         dyingObj.ptr = nullptr;
@@ -170,7 +177,7 @@ public:
         this->refCount = dyingObj.refCount; // share refCount
 
         // cleanup any existing data
-        Destroy();
+        dyingObj.Destroy();
 
         // clean up dyingObj
         dyingObj.refCount = nullptr;
@@ -201,8 +208,8 @@ public:
     ObjectPtr<T>& Get() const
     {
         (*this->refCount)++;
-        auto op = new ObjectPtr<T>(this->ptr);
-        op->SharesWith = this;
+        auto op = New(ObjectPtr<T>(this->ptr));
+        op->SharesWith = (ShadredObjectPtr<T>*)this;
         return *op;
     }
 
@@ -213,6 +220,7 @@ public:
     }
 
 protected:
+    friend ObjectPtr<T>;
     void Destroy()
     {
         if (refCount == nullptr)
@@ -225,7 +233,7 @@ protected:
                 Delete(ptr);
                 ptr = nullptr;
             }
-            Delete(refCount);
+            delete refCount;
             refCount = nullptr;
         }
     }
