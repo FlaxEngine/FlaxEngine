@@ -1650,9 +1650,9 @@ bool InitHostfxr()
     const ::String csharpLibraryPath = Globals::BinariesFolder / TEXT("FlaxEngine.CSharp.dll");
     const ::String csharpRuntimeConfigPath = Globals::BinariesFolder / TEXT("FlaxEngine.CSharp.runtimeconfig.json");
     if (!FileSystem::FileExists(csharpLibraryPath))
-        LOG(Fatal, "Failed to initialize managed runtime, missing file: {0}", csharpLibraryPath);
+        LOG(Fatal, "Failed to initialize .NET runtime, missing file: {0}", csharpLibraryPath);
     if (!FileSystem::FileExists(csharpRuntimeConfigPath))
-        LOG(Fatal, "Failed to initialize managed runtime, missing file: {0}", csharpRuntimeConfigPath);
+        LOG(Fatal, "Failed to initialize .NET runtime, missing file: {0}", csharpRuntimeConfigPath);
     const FLAX_CORECLR_STRING& libraryPath = FLAX_CORECLR_STRING(csharpLibraryPath);
 
     // Get path to hostfxr library
@@ -1703,9 +1703,9 @@ bool InitHostfxr()
         Platform::OpenUrl(TEXT("https://dotnet.microsoft.com/en-us/download/dotnet/7.0"));
 #endif
 #if USE_EDITOR
-        LOG(Fatal, "Missing .NET 7 SDK installation required to run Flax Editor.");
+        LOG(Fatal, "Missing .NET 7 or later SDK installation required to run Flax Editor.");
 #else
-        LOG(Fatal, "Missing .NET 7 Runtime installation required to run this application.");
+        LOG(Fatal, "Missing .NET 7 or later Runtime installation required to run this application.");
 #endif
         return true;
     }
@@ -1735,14 +1735,13 @@ bool InitHostfxr()
         return true;
     }
 
-    // TODO: Implement picking different version of hostfxr, currently prefers highest available version.
-    // Allow future and preview versions of .NET
-    String dotnetRollForward;
+    // TODO: Implement support for picking RC/beta updates of .NET runtime
+    // Uncomment for enabling support for upcoming .NET major release candidates
+#if 0
     String dotnetRollForwardPr;
-    if (Platform::GetEnvironmentVariable(TEXT("DOTNET_ROLL_FORWARD"), dotnetRollForward))
-        Platform::SetEnvironmentVariable(TEXT("DOTNET_ROLL_FORWARD"), TEXT("LatestMajor"));
     if (Platform::GetEnvironmentVariable(TEXT("DOTNET_ROLL_FORWARD_TO_PRERELEASE"), dotnetRollForwardPr))
         Platform::SetEnvironmentVariable(TEXT("DOTNET_ROLL_FORWARD_TO_PRERELEASE"), TEXT("1"));
+#endif
 
     // Initialize hosting component
     const char_t* argv[1] = { libraryPath.Get() };
