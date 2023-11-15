@@ -281,6 +281,10 @@ bool MCore::LoadEngine()
         flaxLibraryPath = ::String(StringUtils::GetDirectoryName(Platform::GetExecutableFilePath())) / StringUtils::GetFileName(flaxLibraryPath);
     }
 #endif
+    if (!FileSystem::FileExists(flaxLibraryPath))
+    {
+        LOG(Error, "Flax Engine native library file is missing ({0})", flaxLibraryPath);
+    }
     RegisterNativeLibrary("FlaxEngine", flaxLibraryPath.Get());
 
     MRootDomain = New<MDomain>("Root");
