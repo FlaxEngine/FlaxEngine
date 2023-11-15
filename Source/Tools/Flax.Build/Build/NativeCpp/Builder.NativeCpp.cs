@@ -32,6 +32,7 @@ namespace Flax.Build
             public IGrouping<string, Module>[] BinaryModules;
             public BuildTargetInfo BuildInfo;
             public Dictionary<ProjectInfo, BuildData> ReferenceBuilds = new Dictionary<ProjectInfo, BuildData>();
+            public Dictionary<string, string> PrecompiledHeaderFiles = new();
 
             public BuildTargetBinaryModuleInfo FinReferenceBuildModule(string name)
             {
@@ -484,6 +485,13 @@ namespace Flax.Build
                     }
                 }
 
+                // If the PCH was already created (eg. by other engine module) then simply reuse the same file
+                if (moduleOptions.CompileEnv.PrecompiledHeaderUsage == PrecompiledHeaderFileUsage.CreateManual && buildData.PrecompiledHeaderFiles.TryGetValue(moduleOptions.CompileEnv.PrecompiledHeaderSource, out var pch))
+                {
+                    moduleOptions.CompileEnv.PrecompiledHeaderUsage = PrecompiledHeaderFileUsage.UseManual;
+                    moduleOptions.CompileEnv.PrecompiledHeaderFile =  pch;
+                }
+
                 // Compile all source files
                 var compilationOutput = buildData.Toolchain.CompileCppFiles(buildData.Graph, moduleOptions, cppFiles, moduleOptions.OutputFolder);
                 foreach (var e in compilationOutput.ObjectFiles)
@@ -492,6 +500,11 @@ namespace Flax.Build
                 {
                     // TODO: find better way to add generated doc files to the target linker (module exports the output doc files?)
                     buildData.TargetOptions.LinkEnv.DocumentationFiles.AddRange(compilationOutput.DocumentationFiles);
+                }
+                if (moduleOptions.CompileEnv.PrecompiledHeaderUsage == PrecompiledHeaderFileUsage.CreateManual && !string.IsNullOrEmpty(compilationOutput.PrecompiledHeaderFile))
+                {
+                    // Cache PCH file to be used by other modules that reference the same file
+                    buildData.PrecompiledHeaderFiles.Add(moduleOptions.CompileEnv.PrecompiledHeaderSource, compilationOutput.PrecompiledHeaderFile);
                 }
 
                 if (buildData.Target.LinkType != TargetLinkType.Monolithic)
