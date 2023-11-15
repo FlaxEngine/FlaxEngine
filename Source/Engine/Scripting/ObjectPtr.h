@@ -10,7 +10,6 @@
 
 #pragma once
 #include "Engine/Core/Memory/Memory.h"
-#include "Engine/Core/Delegate.h"
 
 template<typename T>
 class ShadredObjectPtr;
@@ -43,7 +42,7 @@ public:
                 SharesWith->Destroy();
                 return;
             }
-            delete ptr;
+            Delete(ptr);
             ptr = nullptr;
         }
     }
@@ -58,16 +57,22 @@ public:
     }
     FORCE_INLINE operator T& () const { return *ptr; }
 
-    void RemoveLink()
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="createNew">if is true will create new instance of T </param>
+    void RemoveLink(bool createNew = false)
     {
         if (SharesWith != nullptr)
         {
             SharesWith->Destroy();
-            return;
         }
         ptr = nullptr;
         SharesWith = nullptr;
-
+        if (createNew)
+        {
+            ptr = New<T>();
+        }
     }
     /// <summary>
     /// Gets shared pointer
@@ -108,14 +113,14 @@ private:
 public:
     // Constructor
     ShadredObjectPtr() : ptr(nullptr), refCount(nullptr) {};
-    ShadredObjectPtr(int* ptr) : ptr(ptr), refCount(new SHADREDOBJECTPTRREFRENCETYPE(1ull)) {};
+    ShadredObjectPtr(int* ptr) : ptr(ptr), refCount(New<SHADREDOBJECTPTRREFRENCETYPE>(1ull)) {};
 
     void Create()
     {
         if (refCount == nullptr && ptr == nullptr)
         {
-            ptr = new T();
-            refCount = new SHADREDOBJECTPTRREFRENCETYPE(1ull);
+            ptr = New<T>();
+            refCount = New<SHADREDOBJECTPTRREFRENCETYPE>(1ull);
         }
     }
     // copy constructor
@@ -217,10 +222,10 @@ protected:
         {
             if (nullptr != ptr)
             {
-                delete ptr;
+                Delete(ptr);
                 ptr = nullptr;
             }
-            delete refCount;
+            Delete(refCount);
             refCount = nullptr;
         }
     }
