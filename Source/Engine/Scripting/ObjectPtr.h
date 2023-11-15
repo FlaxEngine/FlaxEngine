@@ -11,6 +11,9 @@
 #pragma once
 #include "Engine/Core/Memory/Memory.h"
 #include "Engine/Core/Delegate.h"
+
+template<typename T>
+class ShadredObjectPtr;
 /// <summary>
 /// Object pointer when gets deconstructed automatically frees the memory pointer with is pointing to
 /// </summary>
@@ -34,54 +37,60 @@ public:
     {
         if (ptr != nullptr)
         {
-            if(OnDestructacted.IsBinded())
+            if (SharesWith != nullptr)
             {
-                //we are holding shared pointer it is not job of this class to delete it
-                OnDestructacted();
                 ptr = nullptr;
-                SharesWith = nullptr;
+                SharesWith->Destroy();
                 return;
             }
-            Delete(ptr);
+            delete ptr;
             ptr = nullptr;
         }
     }
 
     FORCE_INLINE T& operator*()
     {
-        return *ptr; 
+        return *ptr;
     }
     FORCE_INLINE T* operator->()
     {
-        return ptr; 
+        return ptr;
     }
-    void RemoveLink() 
-    {
-        if (OnDestructacted.IsBinded())
-        {
-            //we are holding shared pointer it is not job of this class to delete it
-            OnDestructacted();
-            ptr = nullptr;
-            SharesWith = nullptr;
-        }
-    }
-    bool GetSharedPtr(ShadredObjectPtr<T>& shared)
+    FORCE_INLINE operator T& () const { return *ptr; }
+
+    void RemoveLink()
     {
         if (SharesWith != nullptr)
         {
-            shared = *SharesWith;
-            return true;
+            SharesWith->Destroy();
+            return;
         }
-        return false;
+        ptr = nullptr;
+        SharesWith = nullptr;
+
+    }
+    /// <summary>
+    /// Gets shared pointer
+    /// </summary>
+    /// <returns>Shadred Object Ptr or new Shadred Object Ptr</returns>
+    ShadredObjectPtr<T>& GetSharedPtr()
+    {
+        if (SharesWith != nullptr)
+        {
+            return SharesWith;
+        }
+        return new ShadredObjectPtr<T>(ptr);
     }
 protected:
     /// <summary>
     /// Call back to ShadredObjectPtr to remove the Refrence
     /// </summary>
-    Action OnDestructacted;
-    ShadredObjectPtr<T> SharesWith;
+    //Action OnDestructacted;
+
+    const class ShadredObjectPtr<T>* SharesWith;
     friend class ShadredObjectPtr<T>;
 };
+#define SHADREDOBJECTPTRREFRENCETYPE unsigned int
 /// <summary>
 /// Shared pointer when gets deconstructed if any of other ObjectPtr or other ShadredObjectPtr are not holding its pointer it will destroty it self
 /// Automatically free the memory pointer is pointing to
@@ -95,12 +104,20 @@ private:
     /// shared pointer
     /// </summary>
     T* ptr = nullptr;
-    unsigned long long* refCount = nullptr; //64 bit int
+    SHADREDOBJECTPTRREFRENCETYPE* refCount = nullptr; //64 bit int
 public:
     // Constructor
-    ShadredObjectPtr(int* p = nullptr) : ptr(nullptr), refCount(new unsigned long long(0ull)) {};
-    ShadredObjectPtr(int* ptr) : ptr(ptr), refCount(new unsigned long long(1ull)) {};
+    ShadredObjectPtr() : ptr(nullptr), refCount(nullptr) {};
+    ShadredObjectPtr(int* ptr) : ptr(ptr), refCount(new SHADREDOBJECTPTRREFRENCETYPE(1ull)) {};
 
+    void Create()
+    {
+        if (refCount == nullptr && ptr == nullptr)
+        {
+            ptr = new T();
+            refCount = new SHADREDOBJECTPTRREFRENCETYPE(1ull);
+        }
+    }
     // copy constructor
     ShadredObjectPtr(const ShadredObjectPtr& obj)
     {
@@ -125,6 +142,7 @@ public:
             // if the pointer is not null, increment the refCount
             (*this->refCount)++;
         }
+        return *this;
     }
 
     // move constructor
@@ -152,16 +170,19 @@ public:
         // clean up dyingObj
         dyingObj.refCount = nullptr;
         dyingObj.ptr = nullptr;
+
+        return *this;
     }
 
-    FORCE_INLINE int* operator->() const
+    FORCE_INLINE T* operator->() const
     {
         return this->ptr;
     }
-    FORCE_INLINE int& operator*() const
+    FORCE_INLINE T& operator*() const
     {
         return *this->ptr;
     }
+    FORCE_INLINE operator T& () const { return *ptr; }
 
     FORCE_INLINE unsigned long long SheredCount() const
     {
@@ -172,19 +193,12 @@ public:
     /// Gets The ObjectPtr
     /// </summary>
     /// <returns>new ObjectPtr</returns>
-    ObjectPtr& Get() const
+    ObjectPtr<T>& Get() const
     {
         (*this->refCount)++;
-        auto op = ObjectPtr<T>(this->ptr);
-        op.SharesWith = *this;
-        op.OnDestructacted.Bind
-        (
-            [](ShadredObjectPtr shared = *this)
-            {
-                shared.Destroy();
-            }
-        );
-        return op;
+        auto op = new ObjectPtr<T>(this->ptr);
+        op->SharesWith = this;
+        return *op;
     }
 
     // Destructor
@@ -196,12 +210,14 @@ public:
 protected:
     void Destroy()
     {
+        if (refCount == nullptr)
+            return;
         (*refCount)--;
         if (*refCount == 0)
         {
             if (nullptr != ptr)
             {
-                Delete(ptr);
+                delete ptr;
                 ptr = nullptr;
             }
             delete refCount;
