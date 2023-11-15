@@ -23,6 +23,11 @@ namespace Flax.Build
         public static ProjectInfo Project;
 
         /// <summary>
+        /// Set when any build related errors were raised.
+        /// </summary>
+        public static bool BuildErrors = false;
+
+        /// <summary>
         /// All platforms array.
         /// </summary>
         public static readonly TargetPlatform[] AllPlatforms =
