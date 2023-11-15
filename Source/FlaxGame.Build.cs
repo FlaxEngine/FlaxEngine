@@ -14,11 +14,10 @@ public class FlaxGame : EngineTarget
     {
         base.Init();
 
-        // Initialize
         OutputName = "FlaxGame";
         ConfigurationName = "Game";
         IsPreBuilt = false;
-        Win32ResourceFile = Path.Combine(Globals.EngineRoot, "Source", "FlaxGame.rc");
+        IsMonolithicExecutable = false;
     }
 
     /// <inheritdoc />

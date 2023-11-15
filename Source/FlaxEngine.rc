@@ -70,12 +70,12 @@ BEGIN
         BLOCK "040004b0"
         BEGIN
             VALUE "CompanyName", FLAXENGINE_COMPANY
-            VALUE "FileDescription", "Flax Engine"
+            VALUE "FileDescription", PRODUCT_NAME
             VALUE "FileVersion", FLAXENGINE_VERSION_TEXT
-            VALUE "InternalName", "FlaxEngine"
+            VALUE "InternalName", PRODUCT_NAME_INTERNAL
             VALUE "LegalCopyright", FLAXENGINE_COPYRIGHT
-            VALUE "OriginalFilename", "FlaxGame.exe"
-            VALUE "ProductName", "Flax Engine"
+            VALUE "OriginalFilename", ORIGINAL_FILENAME
+            VALUE "ProductName", PRODUCT_NAME
             VALUE "ProductVersion", FLAXENGINE_VERSION_TEXT
         END
     END

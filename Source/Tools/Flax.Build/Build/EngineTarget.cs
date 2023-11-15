@@ -70,6 +70,7 @@ namespace Flax.Build
 
             Modules.Add("Main");
             Modules.Add("Engine");
+            Win32ResourceFile = Path.Combine(Globals.EngineRoot, "Source", "FlaxEngine.rc");
         }
 
         /// <inheritdoc />
@@ -194,6 +195,7 @@ namespace Flax.Build
             mainModuleOptions.SourcePaths.Add(mainModule.FolderPath);
             mainModule.Setup(mainModuleOptions);
             mainModuleOptions.MergeSourcePathsIntoSourceFiles();
+            mainModuleOptions.CompileEnv.PrecompiledHeaderUsage = PrecompiledHeaderFileUsage.None;
             mainModuleOptions.CompileEnv.PreprocessorDefinitions.Add("FLAXENGINE_API=" + buildOptions.Toolchain.DllImport);
             Builder.BuildModuleInner(buildData, mainModule, mainModuleOptions, false);
 
