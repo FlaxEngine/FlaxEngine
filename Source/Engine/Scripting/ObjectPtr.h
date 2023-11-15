@@ -74,6 +74,7 @@ public:
         if (createNew)
         {
             ptr = New<T>();
+        }
     }
     /// <summary>
     /// Gets shared pointer
@@ -85,6 +86,9 @@ public:
         if (SharesWith != nullptr)
         {
             out = SharesWith;
+            SharesWith->Destroy();
+            ptr = nullptr;
+            SharesWith = nullptr;
         }
         else
         {
