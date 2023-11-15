@@ -172,7 +172,7 @@ namespace Flax.Build
             catch (Exception ex)
             {
                 // Ignore exception logging for build errors
-                if (!Globals.BuildErrors)
+                if (!(ex is BuildException))
                     Log.Exception(ex);
                 failed = true;
             }

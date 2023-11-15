@@ -525,7 +525,7 @@ namespace Flax.Build.Projects.VisualStudio
                                 // Build C# projects (needed for Rider solution wide analysis)
                                 build |= project.Type == TargetType.DotNetCore;
 
-                                // 
+                                // Always build the project named after solution if main project was not set
                                 build |= solution.MainProject == null && project.Name == solution.Name;
                             }
                             else if (firstPlatformMatch != -1 && !configuration.Name.StartsWith("Editor."))

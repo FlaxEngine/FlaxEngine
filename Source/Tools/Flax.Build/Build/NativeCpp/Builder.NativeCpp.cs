@@ -628,10 +628,7 @@ namespace Flax.Build
                         }
                     }
                     if (failed)
-                    {
-                        Globals.BuildErrors = true;
-                        throw new Exception($"Failed to build target {target.Name}. See log.");
-                    }
+                        throw new BuildException($"Failed to build target {target.Name}. See log.");
                 }
                 else
                 {
@@ -692,10 +689,7 @@ namespace Flax.Build
                         }
                     }
                     if (failed)
-                    {
-                        Globals.BuildErrors = true;
-                        throw new Exception($"Failed to build target {target.Name}. See log.");
-                    }
+                        throw new BuildException($"Failed to build target {target.Name}. See log.");
                 }
                 else
                 {
