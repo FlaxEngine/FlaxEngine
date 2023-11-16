@@ -1026,30 +1026,28 @@ bool Scripting::IsTypeFromGameScripts(MClass* type)
 
 void Scripting::RegisterObject(ScriptingObject* obj)
 {
+    const Guid id = obj->GetID();
     ScopeLock lock(_objectsLocker);
 
     //ASSERT(!_objectsDictionary.ContainsValue(obj));
 #if ENABLE_ASSERTION
 #if USE_OBJECTS_DISPOSE_CRASHES_DEBUGGING
     ScriptingObjectData other;
-    if (_objectsDictionary.TryGet(obj->GetID(), other))
+    if (_objectsDictionary.TryGet(id, other))
 #else
     ScriptingObject* other;
-    if (_objectsDictionary.TryGet(obj->GetID(), other))
+    if (_objectsDictionary.TryGet(id, other))
 #endif
     {
         // Something went wrong...
-        LOG(Error, "Objects registry already contains object with ID={0} (type '{3}')! Trying to register object {1} (type '{2}').", obj->GetID(), obj->ToString(), String(obj->GetClass()->GetFullName()), String(other->GetClass()->GetFullName()));
-        _objectsDictionary.Remove(obj->GetID());
+        LOG(Error, "Objects registry already contains object with ID={0} (type '{3}')! Trying to register object {1} (type '{2}').", id, obj->ToString(), String(obj->GetClass()->GetFullName()), String(other->GetClass()->GetFullName()));
     }
-#else
-	ASSERT(!_objectsDictionary.ContainsKey(obj->_id));
 #endif
 
 #if USE_OBJECTS_DISPOSE_CRASHES_DEBUGGING
     LOG(Info, "[RegisterObject] obj = 0x{0:x}, {1}", (uint64)obj, String(ScriptingObjectData(obj).TypeName));
 #endif
-    _objectsDictionary.Add(obj->GetID(), obj);
+    _objectsDictionary[id] = obj;
 }
 
 void Scripting::UnregisterObject(ScriptingObject* obj)

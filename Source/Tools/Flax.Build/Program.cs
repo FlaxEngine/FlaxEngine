@@ -171,7 +171,9 @@ namespace Flax.Build
             }
             catch (Exception ex)
             {
-                Log.Exception(ex);
+                // Ignore exception logging for build errors
+                if (!(ex is BuildException))
+                    Log.Exception(ex);
                 failed = true;
             }
             finally

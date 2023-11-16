@@ -693,6 +693,14 @@ void BinaryModule::Destroy(bool isReloading)
         }
     }
 
+    // Remove any scripting events
+    for (auto i = ScriptingEvents::EventsTable.Begin(); i.IsNotEnd(); ++i)
+    {
+        const ScriptingTypeHandle type = i->Key.First;
+        if (type.Module == this)
+            ScriptingEvents::EventsTable.Remove(i);
+    }
+
     // Unregister
     GetModules().RemoveKeepOrder(this);
 }
