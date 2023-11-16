@@ -396,7 +396,7 @@ namespace Flax.Build.Platforms
                 rpathTask.DependentTasks.Add(lastTask);
                 lastTask = rpathTask;
             }
-            // TODO: fix dylib ID: 'install_name_tool -id @rpath/FlaxGame.dylib FlaxGame.dylib'
+            // TODO: fix dylib ID: 'install_name_tool -id @rpath/FlaxEngine.dylib FlaxEngine.dylib'
             if (!options.LinkEnv.DebugInformation)
             {
                 // Strip debug symbols

@@ -11,6 +11,7 @@
 #include "Engine/Tools/TextureTool/TextureTool.h"
 #include "Engine/Core/Math/Color32.h"
 #include "Engine/Core/Config/GameSettings.h"
+#include "Engine/Core/Config/BuildSettings.h"
 #include "Engine/Content/Content.h"
 #include "Engine/Content/AssetReference.h"
 #include "Engine/Content/Assets/Texture.h"
@@ -509,6 +510,18 @@ bool EditorUtilities::UpdateExeIcon(const String& path, const TextureData& icon)
     stream.close();
 
     return false;
+}
+
+String EditorUtilities::GetOutputName()
+{
+    const auto gameSettings = GameSettings::Get();
+    const auto buildSettings = BuildSettings::Get();
+    String outputName = buildSettings->OutputName;
+    outputName.Replace(TEXT("${PROJECT_NAME}"), *gameSettings->ProductName, StringSearchCase::IgnoreCase);
+    outputName.Replace(TEXT("${COMPANY_NAME}"), *gameSettings->CompanyName, StringSearchCase::IgnoreCase);
+    if (outputName.IsEmpty())
+        outputName = TEXT("FlaxGame");
+    return outputName;
 }
 
 bool EditorUtilities::FormatAppPackageName(String& packageName)

@@ -295,7 +295,7 @@ bool AndroidPlatformTools::OnPostProcess(CookingData& data)
 
     // Copy result package
     const String apk = data.OriginalOutputPath / (distributionPackage ? TEXT("app/build/outputs/apk/release/app-release-unsigned.apk") : TEXT("app/build/outputs/apk/debug/app-debug.apk"));
-    const String outputApk = data.OriginalOutputPath / gameSettings->ProductName + TEXT(".apk");
+    const String outputApk = data.OriginalOutputPath / EditorUtilities::GetOutputName() + TEXT(".apk");
     if (FileSystem::CopyFile(outputApk, apk))
     {
         LOG(Error, "Failed to copy package from {0} to {1}", apk, outputApk);

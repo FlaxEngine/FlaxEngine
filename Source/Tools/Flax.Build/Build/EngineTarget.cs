@@ -76,10 +76,10 @@ namespace Flax.Build
         /// <inheritdoc />
         public override string GetOutputFilePath(BuildOptions options, TargetOutputType? outputType)
         {
-            var useSeparateMainExe = UseSeparateMainExecutable(options);
+            var asLib = UseSeparateMainExecutable(options) || BuildAsLibrary(options);
 
             // If building engine executable for platform doesn't support referencing it when linking game shared libraries
-            if (outputType == null && useSeparateMainExe)
+            if (outputType == null && asLib)
             {
                 // Build into shared library
                 outputType = TargetOutputType.Library;
@@ -87,7 +87,7 @@ namespace Flax.Build
 
             // Override output name to shared library name when building library for the separate main executable
             var outputName = OutputName;
-            if (useSeparateMainExe && (outputType ?? OutputType) == TargetOutputType.Library)
+            if (asLib && (outputType ?? OutputType) == TargetOutputType.Library)
                 OutputName = LibraryName;
 
             var result = base.GetOutputFilePath(options, outputType);
@@ -101,7 +101,7 @@ namespace Flax.Build
             base.SetupTargetEnvironment(options);
 
             // If building engine executable for platform doesn't support referencing it when linking game shared libraries
-            if (UseSeparateMainExecutable(options))
+            if (UseSeparateMainExecutable(options) || BuildAsLibrary(options))
             {
                 // Build into shared library
                 options.LinkEnv.Output = LinkerOutput.SharedLibrary;
@@ -127,7 +127,7 @@ namespace Flax.Build
             base.PostBuild(graph, buildOptions);
 
             // If building engine executable for platform doesn't support referencing it when linking game shared libraries
-            if (UseSeparateMainExecutable(buildOptions))
+            if (UseSeparateMainExecutable(buildOptions) && !BuildAsLibrary(buildOptions))
             {
                 // Build additional executable with Main module only that uses shared library
                 using (new ProfileEventScope("BuildExecutable"))
@@ -150,6 +150,16 @@ namespace Flax.Build
                 return !IsMonolithicExecutable || (!buildOptions.Platform.HasExecutableFileReferenceSupport && UseSymbolsExports);
             }
             return false;
+        }
+
+        private bool BuildAsLibrary(BuildOptions buildOptions)
+        {
+            switch (buildOptions.Platform.Target)
+            {
+            case TargetPlatform.UWP:
+            case TargetPlatform.Android: return true;
+            default: return false;
+            }
         }
 
         private void BuildMainExecutable(TaskGraph graph, BuildOptions buildOptions)

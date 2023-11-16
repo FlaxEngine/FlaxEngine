@@ -18,6 +18,12 @@ API_CLASS(sealed, Namespace="FlaxEditor.Content.Settings") class FLAXENGINE_API 
 
 public:
     /// <summary>
+    /// Name of the output app created by the build system. Used to rename main executable (eg. MyGame.exe) or final package name (eg. MyGame.apk). Custom tokens: ${PROJECT_NAME}, ${COMPANY_NAME}.
+    /// </summary>
+    API_FIELD(Attributes="EditorOrder(0), EditorDisplay(\"General\")")
+    String OutputName = TEXT("${PROJECT_NAME}");
+
+    /// <summary>
     /// The maximum amount of assets to include into a single assets package. Asset packages will split into several packages if need to.
     /// </summary>
     API_FIELD(Attributes="EditorOrder(10), Limit(1, ushort.MaxValue), EditorDisplay(\"General\", \"Max assets per package\")")
