@@ -530,9 +530,9 @@ namespace FlaxEngine.GUI
             Matrix3x3 m1 = new Matrix3x3
                 (
                 _scale.X,
-                _scale.X * (_shear.X == 0 ? 0 : (1.0f / Mathf.Tan(Mathf.DegreesToRadians * (90 - Mathf.Clamp(_shear.X, -89.0f, 89.0f))))),
+                _scale.X * (_shear.Y == 0 ? 0 : (1.0f / Mathf.Tan(Mathf.DegreesToRadians * (90 - Mathf.Clamp(_shear.Y, -89.0f, 89.0f))))),
                 0,
-                _scale.Y * (_shear.Y == 0 ? 0 : (1.0f / Mathf.Tan(Mathf.DegreesToRadians * (90 - Mathf.Clamp(_shear.Y, -89.0f, 89.0f))))),
+                _scale.Y * (_shear.X == 0 ? 0 : (1.0f / Mathf.Tan(Mathf.DegreesToRadians * (90 - Mathf.Clamp(_shear.X, -89.0f, 89.0f))))),
                 _scale.Y,
                 0, 0, 0, 1
                 );
