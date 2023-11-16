@@ -837,7 +837,7 @@ namespace FlaxEditor.Windows.Assets
                         sourceAssetPicker.CheckValid = CheckSourceAssetValid;
                         sourceAssetPicker.SelectedItemChanged += () =>
                         {
-                            proxy.Setups.Add(sourceAssetPicker.SelectedAsset, new SetupProxy());
+                            proxy.Setups.Add(sourceAssetPicker.Validator.SelectedAsset, new SetupProxy());
                             proxy.Window.MarkAsEdited();
                             RebuildLayout();
                         };
@@ -856,7 +856,7 @@ namespace FlaxEditor.Windows.Assets
 
                         // Source asset picker
                         var sourceAssetPicker = setupGroup.AddPropertyItem("Source Asset").Custom<AssetPicker>().CustomControl;
-                        sourceAssetPicker.SelectedAsset = sourceAsset;
+                        sourceAssetPicker.Validator.SelectedAsset = sourceAsset;
                         sourceAssetPicker.CanEdit = false;
                         sourceAssetPicker.Height = 48;
 
@@ -916,12 +916,12 @@ namespace FlaxEditor.Windows.Assets
                         {
                             // Show skeleton asset picker
                             var sourceSkeletonPicker = setupGroup.AddPropertyItem("Skeleton", "Skinned model that contains a skeleton for this animation retargeting.").Custom<AssetPicker>().CustomControl;
-                            sourceSkeletonPicker.AssetType = new ScriptType(typeof(SkinnedModel));
-                            sourceSkeletonPicker.SelectedAsset = setup.Value.Skeleton;
+                            sourceSkeletonPicker.Validator.AssetType = new ScriptType(typeof(SkinnedModel));
+                            sourceSkeletonPicker.Validator.SelectedAsset = setup.Value.Skeleton;
                             sourceSkeletonPicker.Height = 48;
                             sourceSkeletonPicker.SelectedItemChanged += () =>
                             {
-                                setup.Value.Skeleton = (SkinnedModel)sourceSkeletonPicker.SelectedAsset;
+                                setup.Value.Skeleton = (SkinnedModel)sourceSkeletonPicker.Validator.SelectedAsset;
                                 proxy.Window.MarkAsEdited();
                             };
                         }

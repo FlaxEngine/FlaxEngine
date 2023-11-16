@@ -150,7 +150,13 @@ void BehaviorKnowledge::InitMemory(BehaviorTree* tree)
     RelevantNodes.Resize(tree->Graph.NodesCount, false);
     RelevantNodes.SetAll(false);
     if (!Memory && tree->Graph.NodesStatesSize)
+    {
         Memory = Allocator::Allocate(tree->Graph.NodesStatesSize);
+#if !BUILD_RELEASE
+        // Clear memory to make it easier to spot missing data issues (eg. zero GCHandle in C# BT node due to missing state init)
+        Platform::MemoryClear(Memory, tree->Graph.NodesStatesSize);
+#endif
+    }
 }
 
 void BehaviorKnowledge::FreeMemory()

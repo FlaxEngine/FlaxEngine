@@ -13,7 +13,7 @@ class FLAXENGINE_API DirectionalLight : public LightWithShadow
     DECLARE_SCENE_OBJECT(DirectionalLight);
 public:
     /// <summary>
-    /// The number of cascades used for slicing the range of depth covered by the light. Values are 1, 2 or 4 cascades; a typical scene uses 4 cascades.
+    /// The number of cascades used for slicing the range of depth covered by the light during shadow rendering. Values are 1, 2 or 4 cascades; a typical scene uses 4 cascades.
     /// </summary>
     API_FIELD(Attributes="EditorOrder(65), DefaultValue(4), Limit(1, 4), EditorDisplay(\"Shadow\")")
     int32 CascadeCount = 4;

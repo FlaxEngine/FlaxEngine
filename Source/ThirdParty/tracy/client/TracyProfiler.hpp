@@ -10,6 +10,7 @@
 #include "tracy_concurrentqueue.h"
 #include "tracy_SPSCQueue.h"
 #include "TracyCallstack.hpp"
+#include "TracySysPower.hpp"
 #include "TracySysTime.hpp"
 #include "TracyFastVector.hpp"
 #include "../common/TracyQueue.hpp"
@@ -190,7 +191,22 @@ public:
         if( HardwareSupportsInvariantTSC() )
         {
             uint64_t rax, rdx;
+#ifdef TRACY_PATCHABLE_NOPSLEDS
+            // Some external tooling (such as rr) wants to patch our rdtsc and replace it by a
+            // branch to control the external input seen by a program. This kind of patching is
+            // not generally possible depending on the surrounding code and can lead to significant
+            // slowdowns if the compiler generated unlucky code and rr and tracy are used together.
+            // To avoid this, use the rr-safe `nopl 0(%rax, %rax, 1); rdtsc` instruction sequence,
+            // which rr promises will be patchable independent of the surrounding code.
+            asm volatile (
+                    // This is nopl 0(%rax, %rax, 1), but assemblers are inconsistent about whether
+                    // they emit that as a 4 or 5 byte sequence and we need to be guaranteed to use
+                    // the 5 byte one.
+                    ".byte 0x0f, 0x1f, 0x44, 0x00, 0x00\n\t"
+                    "rdtsc" : "=a" (rax), "=d" (rdx) );
+#else
             asm volatile ( "rdtsc" : "=a" (rax), "=d" (rdx) );
+#endif
             return (int64_t)(( rdx << 32 ) + rax);
         }
 #  else
@@ -240,6 +256,30 @@ public:
         p.m_serialLock.unlock();
     }
 
+    static void SendFrameMark( const char* name );
+    static void SendFrameMark( const char* name, QueueType type );
+    static void SendFrameImage( const void* image, uint16_t w, uint16_t h, uint8_t offset, bool flip );
+    static void PlotData( const char* name, int64_t val );
+    static void PlotData( const char* name, float val );
+    static void PlotData( const char* name, double val );
+    static void ConfigurePlot( const char* name, PlotFormatType type, bool step, bool fill, uint32_t color );
+    static void Message( const char* txt, size_t size, int callstack );
+    static void Message( const char* txt, int callstack );
+    static void MessageColor( const char* txt, size_t size, uint32_t color, int callstack );
+    static void MessageColor( const char* txt, uint32_t color, int callstack );
+    static void MessageAppInfo( const char* txt, size_t size );
+    static void MemAlloc( const void* ptr, size_t size, bool secure );
+    static void MemFree( const void* ptr, bool secure );
+    static void MemAllocCallstack( const void* ptr, size_t size, int depth, bool secure );
+    static void MemFreeCallstack( const void* ptr, int depth, bool secure );
+    static void MemAllocNamed( const void* ptr, size_t size, bool secure, const char* name );
+    static void MemFreeNamed( const void* ptr, bool secure, const char* name );
+    static void MemAllocCallstackNamed( const void* ptr, size_t size, int depth, bool secure, const char* name );
+    static void MemFreeCallstackNamed( const void* ptr, int depth, bool secure, const char* name );
+    static void SendCallstack( int depth );
+    static void ParameterRegister( ParameterCallback cb, void* data );
+    static void ParameterSetup( uint32_t idx, const char* name, bool isBool, int32_t val );
+
     static tracy_force_inline void SourceCallbackRegister( SourceContentsCallback cb, void* data )
     {
         auto& profiler = GetProfiler();
@@ -264,31 +304,6 @@ public:
     }
 #endif
 
-    static void SendFrameMark( const char* name );
-    static void SendFrameMark( const char* name, QueueType type );
-    static void SendFrameImage( const void* image, uint16_t w, uint16_t h, uint8_t offset, bool flip );
-    static void PlotData( const char* name, int64_t val );
-    static void PlotData( const char* name, float val );
-    static void PlotData( const char* name, double val );
-    static void ConfigurePlot( const char* name, PlotFormatType type, bool step, bool fill, uint32_t color );
-    static void Message( const char* txt, size_t size, int callstack );
-    static void Message( const char* txt, int callstack );
-    static void MessageColor( const char* txt, size_t size, uint32_t color, int callstack );
-    static void MessageColor( const char* txt, uint32_t color, int callstack );
-    static void MessageAppInfo( const char* txt, size_t size );
-    static void MemAlloc( const void* ptr, size_t size, bool secure );
-    static void MemFree( const void* ptr, bool secure );
-    static void MemAllocCallstack( const void* ptr, size_t size, int depth, bool secure );
-    static void MemFreeCallstack( const void* ptr, int depth, bool secure );
-    static void MemAllocNamed( const void* ptr, size_t size, bool secure, const char* name );
-    static void MemFreeNamed( const void* ptr, bool secure, const char* name );
-    static void MemAllocCallstackNamed( const void* ptr, size_t size, int depth, bool secure, const char* name );
-    static void MemFreeCallstackNamed( const void* ptr, int depth, bool secure, const char* name );
-    static void SendCallstack( int depth );
-    static void ParameterRegister( ParameterCallback cb );
-    static void ParameterRegister( ParameterCallback cb, void* data );
-    static void ParameterSetup( uint32_t idx, const char* name, bool isBool, int32_t val );
-
     void SendCallstack( int depth, const char* skipBefore );
     static void CutCallstack( void* callstack, const char* skipBefore );
 
@@ -297,6 +312,13 @@ public:
     tracy_force_inline bool IsConnected() const
     {
         return m_isConnected.load( std::memory_order_acquire );
+    }
+
+    tracy_force_inline void SetProgramName( const char* name )
+    {
+        m_programNameLock.lock();
+        m_programName = name;
+        m_programNameLock.unlock();
     }
 
 #ifdef TRACY_ON_DEMAND
@@ -347,13 +369,13 @@ public:
 
     static tracy_force_inline uint64_t AllocSourceLocation( uint32_t line, const char* source, size_t sourceSz, const char* function, size_t functionSz )
     {
-        return AllocSourceLocation( line, source, sourceSz, function, functionSz, (const char*)nullptr, 0 );
+        return AllocSourceLocation( line, source, sourceSz, function, functionSz, nullptr, 0 );
     }
 
     static tracy_force_inline uint64_t AllocSourceLocation( uint32_t line, const char* source, size_t sourceSz, const char* function, size_t functionSz, const char* name, size_t nameSz )
     {
         const auto sz32 = uint32_t( 2 + 4 + 4 + functionSz + 1 + sourceSz + 1 + nameSz );
-        assert( sz32 <= std::numeric_limits<uint16_t>::max() );
+        assert( sz32 <= (std::numeric_limits<uint16_t>::max)() );
         const auto sz = uint16_t( sz32 );
         auto ptr = (char*)tracy_malloc( sz );
         memcpy( ptr, &sz, 2 );
@@ -366,28 +388,6 @@ public:
         if( nameSz != 0 )
         {
             memcpy( ptr + 10 + functionSz + 1 + sourceSz + 1, name, nameSz );
-        }
-        return uint64_t( ptr );
-    }
-
-    static tracy_force_inline uint64_t AllocSourceLocation( uint32_t line, const char* source, size_t sourceSz, const char* function, size_t functionSz, const Char* name, size_t nameSz )
-    {
-        const auto sz32 = uint32_t( 2 + 4 + 4 + functionSz + 1 + sourceSz + 1 + nameSz );
-        assert( sz32 <= std::numeric_limits<uint16_t>::max() );
-        const auto sz = uint16_t( sz32 );
-        auto ptr = (char*)tracy_malloc( sz );
-        memcpy( ptr, &sz, 2 );
-        memset( ptr + 2, 0, 4 );
-        memcpy( ptr + 6, &line, 4 );
-        memcpy( ptr + 10, function, functionSz );
-        ptr[10 + functionSz] = '\0';
-        memcpy( ptr + 10 + functionSz + 1, source, sourceSz );
-        ptr[10 + functionSz + 1 + sourceSz] = '\0';
-        if( nameSz != 0 )
-        {
-            char* dst = ptr + 10 + functionSz + 1 + sourceSz + 1;
-            for ( size_t i = 0; i < nameSz; i++)
-                dst[i] = (char)name[i];
         }
         return uint64_t( ptr );
     }
@@ -586,6 +586,10 @@ private:
     void ProcessSysTime() {}
 #endif
 
+#ifdef TRACY_HAS_SYSPOWER
+    SysPower m_sysPower;
+#endif
+
     ParameterCallback m_paramCallback;
     void* m_paramCallbackData;
     SourceContentsCallback m_sourceCallback;
@@ -604,6 +608,9 @@ private:
     } m_prevSignal;
 #endif
     bool m_crashHandlerInstalled;
+
+    const char* m_programName;
+    TracyMutex m_programNameLock;
 };
 
 }

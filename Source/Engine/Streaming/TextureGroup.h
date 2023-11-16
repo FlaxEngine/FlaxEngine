@@ -36,7 +36,7 @@ DECLARE_SCRIPTING_TYPE_MINIMAL(TextureGroup);
     int32 MaxAnisotropy = 16;
 
     /// <summary>
-    /// The quality scale factor applied to textures in this group. Can be used to increase or decrease textures resolution. In range 0-1 where 0 means lowest quality, 1 means full quality.
+    /// The quality scale factor applied to textures in this group. Can be used to increase or decrease textures resolution. In the range 0-1 where 0 means lowest quality, 1 means full quality.
     /// </summary>
     API_FIELD(Attributes="EditorOrder(20), Limit(0, 1)")
     float Quality = 1.0f;
@@ -60,20 +60,20 @@ DECLARE_SCRIPTING_TYPE_MINIMAL(TextureGroup);
     int32 MipLevelsMin = 0;
 
     /// <summary>
-    /// The maximum amount of loaded mip levels for textures in this group. Defines the maximum amount of the mips that can be loaded. Overriden per-platform. Lower values reduce textures quality and improve performance.
+    /// The maximum amount of loaded mip levels for textures in this group. Defines the maximum amount of mips that can be loaded. Overriden per-platform. Lower values reduce texture quality and improve performance.
     /// </summary>
     API_FIELD(Attributes="EditorOrder(40), Limit(1, 14)")
     int32 MipLevelsMax = 14;
 
     /// <summary>
-    /// The loaded mip levels bias for textures in this group. Can be used to increase or decrease quality of the streaming for textures in this group (eg. bump up the quality during cinematic sequence).
+    /// The loaded mip levels bias for textures in this group. Can be used to increase or decrease the quality of streaming for textures in this group (eg. bump up the quality during cinematic sequence).
     /// </summary>
     API_FIELD(Attributes="EditorOrder(50), Limit(-14, 14)")
     int32 MipLevelsBias = 0;
 
 #if USE_EDITOR
     /// <summary>
-    /// The per-platform maximum amount of mip levels for textures in this group. Can be used to strip textures quality when cooking game for a target platform.
+    /// The per-platform maximum amount of mip levels for textures in this group. Can be used to strip textures quality when cooking the game for a target platform.
     /// </summary>
     API_FIELD(Attributes="EditorOrder(50)")
     Dictionary<PlatformType, int32> MipLevelsMaxPerPlatform;

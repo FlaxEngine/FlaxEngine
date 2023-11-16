@@ -35,7 +35,7 @@ public:
         , _rowPitch(rowPitch)
         , _slicePitch(slicePitch)
     {
-        _texture.OnUnload.Bind<GPUUploadTextureMipTask, &GPUUploadTextureMipTask::OnResourceUnload>(this);
+        _texture.Released.Bind<GPUUploadTextureMipTask, &GPUUploadTextureMipTask::OnResourceReleased>(this);
 
         if (copyData)
             _data.Copy(data);
@@ -44,7 +44,7 @@ public:
     }
 
 private:
-    void OnResourceUnload(GPUTextureReference* ref)
+    void OnResourceReleased()
     {
         Cancel();
     }

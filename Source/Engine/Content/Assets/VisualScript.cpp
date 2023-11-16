@@ -1428,6 +1428,10 @@ Asset::LoadResult VisualScript::load()
 #if USE_EDITOR
     if (_instances.HasItems())
     {
+        // Mark as already loaded so any WaitForLoaded checks during GetDefaultInstance bellow will handle this Visual Script as ready to use
+        _loadFailed = false;
+        _isLoaded = true;
+
         // Setup scripting type
         CacheScriptingType();
 
@@ -1512,7 +1516,7 @@ void VisualScript::unload(bool isReloading)
     // Note: preserve the registered scripting type but invalidate the locally cached handle
     if (_scriptingTypeHandle)
     {
-        VisualScriptingModule.Locker.Lock();
+        VisualScriptingBinaryModule::Locker.Lock();
         auto& type = VisualScriptingModule.Types[_scriptingTypeHandle.TypeIndex];
         if (type.Script.DefaultInstance)
         {
@@ -1523,7 +1527,7 @@ void VisualScript::unload(bool isReloading)
         VisualScriptingModule.Scripts[_scriptingTypeHandle.TypeIndex] = nullptr;
         _scriptingTypeHandleCached = _scriptingTypeHandle;
         _scriptingTypeHandle = ScriptingTypeHandle();
-        VisualScriptingModule.Locker.Unlock();
+        VisualScriptingBinaryModule::Locker.Unlock();
     }
 }
 
@@ -1534,8 +1538,8 @@ AssetChunksFlag VisualScript::getChunksToPreload() const
 
 void VisualScript::CacheScriptingType()
 {
+    ScopeLock lock(VisualScriptingBinaryModule::Locker);
     auto& binaryModule = VisualScriptingModule;
-    ScopeLock lock(binaryModule.Locker);
 
     // Find base type
     const StringAnsi baseTypename(Meta.BaseTypename);

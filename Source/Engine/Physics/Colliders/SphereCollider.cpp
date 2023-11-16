@@ -40,6 +40,13 @@ void SphereCollider::OnDebugDrawSelected()
 {
     DEBUG_DRAW_WIRE_SPHERE(_sphere, Color::GreenYellow, 0, false);
 
+    if (_contactOffset > 0)
+    {
+        BoundingSphere contactBounds = _sphere;
+        contactBounds.Radius += _contactOffset;
+        DEBUG_DRAW_WIRE_SPHERE(contactBounds, Color::Blue.AlphaMultiplied(0.2f), 0, false);
+    }
+
     // Base
     Collider::OnDebugDrawSelected();
 }

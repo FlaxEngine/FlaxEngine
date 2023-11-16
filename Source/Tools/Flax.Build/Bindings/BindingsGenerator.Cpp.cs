@@ -1793,6 +1793,18 @@ namespace Flax.Build.Bindings
             var apiTypeInfo = FindApiTypeInfo(buildData, typeInfo, caller);
             if (apiTypeInfo != null && apiTypeInfo.IsInterface)
                 return true;
+
+            // Add includes to properly compile bindings (eg. SoftObjectReference<class Texture>)
+            CppReferencesFiles.Add(apiTypeInfo?.File);
+            if (typeInfo.GenericArgs != null)
+            {
+                for (int i = 0; i < typeInfo.GenericArgs.Count; i++)
+                {
+                    var t = FindApiTypeInfo(buildData, typeInfo.GenericArgs[i], caller);
+                    CppReferencesFiles.Add(t?.File);
+                }
+            }
+
             return false;
         }
 

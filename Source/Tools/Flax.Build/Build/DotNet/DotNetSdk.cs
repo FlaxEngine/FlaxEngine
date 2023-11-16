@@ -118,6 +118,11 @@ namespace Flax.Build
         /// </summary>
         public static Version MinimumVersion => new Version(7, 0);
 
+        /// <summary>
+        /// The maximum SDK version.
+        /// </summary>
+        public static Version MaximumVersion => new Version(8, 0);
+
         /// <inheritdoc />
         public override TargetPlatform[] Platforms
         {
@@ -245,19 +250,22 @@ namespace Flax.Build
                 dotnetSdkVersions = GetVersions(Path.Combine(dotnetPath, "sdk"));
             if (dotnetRuntimeVersions == null)
                 dotnetRuntimeVersions = GetVersions(Path.Combine(dotnetPath, "shared/Microsoft.NETCore.App"));
-            string dotnetSdkVersion = dotnetSdkVersions.OrderByDescending(ParseVersion).FirstOrDefault();
-            string dotnetRuntimeVersion = dotnetRuntimeVersions.OrderByDescending(ParseVersion).FirstOrDefault();
+
+            dotnetSdkVersions = dotnetSdkVersions.OrderByDescending(ParseVersion);
+            dotnetRuntimeVersions = dotnetRuntimeVersions.OrderByDescending(ParseVersion);
+
+            string dotnetSdkVersion = dotnetSdkVersions.FirstOrDefault(x => ParseVersion(x).Major >= MinimumVersion.Major && ParseVersion(x).Major <= MaximumVersion.Major);
+            string dotnetRuntimeVersion = dotnetRuntimeVersions.FirstOrDefault(x => ParseVersion(x).Major >= MinimumVersion.Major && ParseVersion(x).Major <= MaximumVersion.Major);
             if (string.IsNullOrEmpty(dotnetSdkVersion))
                 dotnetSdkVersion = dotnetPath;
+            if (dotnetSdkVersion == null && dotnetSdkVersions.Count() > 0)
+            {
+                Log.Warning($"Unsupported .NET SDK {dotnetSdkVersions.First()} version found. Minimum version required is .NET {MinimumVersion}.");
+                return;
+            }
             if (string.IsNullOrEmpty(dotnetSdkVersion) || string.IsNullOrEmpty(dotnetRuntimeVersion))
             {
                 Log.Warning("Missing .NET SDK");
-                return;
-            }
-            int majorVersion = int.Parse(dotnetSdkVersion.Substring(0, dotnetSdkVersion.IndexOf(".")));
-            if (majorVersion < MinimumVersion.Major)
-            {
-                Log.Warning($"Unsupported .NET SDK {dotnetSdkVersion} version found. Minimum version required is .NET {MinimumVersion}.");
                 return;
             }
             RootPath = dotnetPath;
@@ -452,8 +460,9 @@ namespace Flax.Build
 
         private static string GetVersion(IEnumerable<string> versions)
         {
-            // TODO: reject 'future' versions like .Net 8?
-            return versions.OrderByDescending(ParseVersion).FirstOrDefault();
+            return versions.OrderByDescending(ParseVersion)
+                .Where(x => ParseVersion(x).Major >= MinimumVersion.Major && ParseVersion(x).Major <= MaximumVersion.Major)
+                .FirstOrDefault();
         }
 
         private static string SearchForDotnetLocationLinux()

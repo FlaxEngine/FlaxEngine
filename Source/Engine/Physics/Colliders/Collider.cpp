@@ -19,7 +19,7 @@ Collider::Collider(const SpawnParams& params)
     , _shape(nullptr)
     , _staticActor(nullptr)
     , _cachedScale(1.0f)
-    , _contactOffset(10.0f)
+    , _contactOffset(2.0f)
 {
     Material.Changed.Bind<Collider, &Collider::OnMaterialChanged>(this);
 }

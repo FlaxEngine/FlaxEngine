@@ -3,6 +3,7 @@
 #if COMPILE_WITH_SHADER_COMPILER
 
 #include "ShaderCompiler.h"
+#include "ShadersCompilation.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Collections/Dictionary.h"
 #include "Engine/Engine/Globals.h"
@@ -14,10 +15,6 @@
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Serialization/MemoryWriteStream.h"
 #include "Engine/Utilities/StringConverter.h"
-#if USE_EDITOR
-#include "Editor/Editor.h"
-#include "Editor/ProjectInfo.h"
-#endif
 
 namespace IncludedFiles
 {
@@ -30,31 +27,6 @@ namespace IncludedFiles
 
     CriticalSection Locker;
     Dictionary<String, File*> Files;
-
-#if USE_EDITOR
-    bool FindProject(const ProjectInfo* project, HashSet<const ProjectInfo*>& projects, const StringView& projectName, String& path)
-    {
-        if (!project || projects.Contains(project))
-            return false;
-        projects.Add(project);
-
-        // Check the project name
-        if (project->Name == projectName)
-        {
-            path = project->ProjectFolderPath;
-            return true;
-        }
-
-        // Initialize referenced projects
-        for (const auto& reference : project->References)
-        {
-            if (reference.Project && FindProject(reference.Project, projects, projectName, path))
-                return true;
-        }
-
-        return false;
-    }
-#endif
 }
 
 bool ShaderCompiler::Compile(ShaderCompilationContext* context)
@@ -124,7 +96,8 @@ bool ShaderCompiler::Compile(ShaderCompilationContext* context)
     output->WriteInt32(context->Includes.Count());
     for (auto& include : context->Includes)
     {
-        output->WriteString(include.Item, 11);
+        String compactPath = ShadersCompilation::CompactShaderPath(include.Item);
+        output->WriteString(compactPath, 11);
         const auto date = FileSystem::GetFileLastEditTime(include.Item);
         output->Write(date);
     }
@@ -138,74 +111,16 @@ bool ShaderCompiler::GetIncludedFileSource(ShaderCompilationContext* context, co
     source = nullptr;
     sourceLength = 0;
 
-    // Skip to the last root start './' but preserve the leading one
-    const int32 includedFileLength = StringUtils::Length(includedFile);
-    for (int32 i = includedFileLength - 2; i >= 2; i--)
+    // Get actual file path
+    const String includedFileName(includedFile);
+    String path = ShadersCompilation::ResolveShaderPath(includedFileName);
+    if (!FileSystem::FileExists(path))
     {
-        if (StringUtils::Compare(includedFile + i, "./", 2) == 0)
-        {
-            includedFile = includedFile + i;
-            break;
-        }
+        LOG(Error, "Unknown shader source file '{0}' included in '{1}'.{2}", includedFileName, String(sourceFile), String::Empty);
+        return true;
     }
 
     ScopeLock lock(IncludedFiles::Locker);
-
-    // Find the included file path
-    String path;
-#if USE_EDITOR
-    if (StringUtils::Compare(includedFile, "./", 2) == 0)
-    {
-        int32 projectNameEnd = -1;
-        for (int32 i = 2; i < includedFileLength; i++)
-        {
-            if (includedFile[i] == '/')
-            {
-                projectNameEnd = i;
-                break;
-            }
-        }
-        if (projectNameEnd == -1)
-        {
-            LOG(Error, "Unknown shader source file '{0}' included in '{1}'.{2}", String(includedFile), String(sourceFile), TEXT("Missing project name after root path."));
-            return true;
-        }
-        const StringAsUTF16<120> projectName(includedFile + 2, projectNameEnd - 2);
-        if (StringUtils::Compare(projectName.Get(), TEXT("FlaxPlatforms")) == 0)
-        {
-            // Hard-coded redirect to platform-specific includes
-            path /= Globals::StartupFolder / TEXT("Source/Platforms");
-        }
-        else
-        {
-            HashSet<const ProjectInfo*> projects;
-            if (!IncludedFiles::FindProject(Editor::Project, projects, StringView(projectName.Get(), projectNameEnd - 2), path))
-            {
-                LOG(Error, "Unknown shader source file '{0}' included in '{1}'.{2}", String(includedFile), String(sourceFile), TEXT("Failed to find the project of the given name."));
-                return true;
-            }
-            path /= TEXT("Source/Shaders/");
-        }
-        const StringAsUTF16<250> localPath(includedFile + projectNameEnd + 1, includedFileLength - projectNameEnd - 1);
-        path /= localPath.Get();
-    }
-#else
-    if (StringUtils::Compare(includedFile, "./Flax/", 7) == 0)
-    {
-        // Engine project relative shader path
-        const auto includedFileStr = String(includedFile + 6);
-        path = Globals::StartupFolder / TEXT("Source/Shaders") / includedFileStr;
-    }
-#endif
-    else if (FileSystem::FileExists(path = String(includedFile)))
-    {
-        // Absolute shader path
-    }
-    else
-    {
-        LOG(Error, "Unknown shader source file '{0}' included in '{1}'.{2}", String(includedFile), String(sourceFile), String::Empty);
-        return true;
-    }
 
     // Try to reuse file
     IncludedFiles::File* result = nullptr;
