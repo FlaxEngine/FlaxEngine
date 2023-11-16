@@ -48,16 +48,17 @@ public:
         }
     }
 
-    FORCE_INLINE T& operator*()
+    FORCE_INLINE T& operator*() const
     {
         return *ptr;
     }
-    FORCE_INLINE T* operator->()
+    FORCE_INLINE T* operator->() const
     {
         return ptr;
     }
     FORCE_INLINE operator T& () const { return *ptr; }
-
+    FORCE_INLINE operator T* () const { return  ptr; }
+    FORCE_INLINE operator bool() const { ptr  == nullptr}
     /// <summary>
     /// 
     /// </summary>
@@ -190,15 +191,17 @@ public:
         return *this;
     }
 
-    FORCE_INLINE T* operator->() const
-    {
-        return this->ptr;
-    }
     FORCE_INLINE T& operator*() const
     {
-        return *this->ptr;
+        return *ptr;
+    }
+    FORCE_INLINE T* operator->() const
+    {
+        return ptr;
     }
     FORCE_INLINE operator T& () const { return *ptr; }
+    FORCE_INLINE operator T* () const { return  ptr; }
+    FORCE_INLINE operator bool() const { ptr == nullptr }
 
     FORCE_INLINE unsigned long long SheredCount() const
     {
