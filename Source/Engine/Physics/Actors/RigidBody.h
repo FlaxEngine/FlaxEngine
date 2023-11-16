@@ -30,14 +30,14 @@ protected:
     Float3 _centerOfMassOffset;
     RigidbodyConstraints _constraints;
 
-    int32 _enableSimulation : 1;
-    int32 _isKinematic : 1;
-    int32 _useCCD : 1;
-    int32 _enableGravity : 1;
-    int32 _startAwake : 1;
-    int32 _updateMassWhenScaleChanges : 1;
-    int32 _overrideMass : 1;
-    int32 _isUpdatingTransform : 1;
+    uint32 _enableSimulation : 1;
+    uint32 _isKinematic : 1;
+    uint32 _useCCD : 1;
+    uint32 _enableGravity : 1;
+    uint32 _startAwake : 1;
+    uint32 _updateMassWhenScaleChanges : 1;
+    uint32 _overrideMass : 1;
+    uint32 _isUpdatingTransform : 1;
 
 public:
     /// <summary>

@@ -1,5 +1,11 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
+#if USE_LARGE_WORLDS
+using Real = System.Double;
+#else
+using Real = System.Single;
+#endif
+
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -33,56 +39,56 @@ namespace FlaxEngine.Utilities
                 if (typeof(T) == typeof(Vector2))
                 {
                     if (value is Float2 asFloat2)
-                        return (T)(object)new Vector2(asFloat2.X, asFloat2.Y);
+                        return (T)(object)new Vector2((Real)asFloat2.X, (Real)asFloat2.Y);
                     if (value is Float3 asFloat3)
-                        return (T)(object)new Vector2(asFloat3.X, asFloat3.Y);
+                        return (T)(object)new Vector2((Real)asFloat3.X, (Real)asFloat3.Y);
                     if (value is Float4 asFloat4)
-                        return (T)(object)new Vector2(asFloat4.X, asFloat4.Y);
+                        return (T)(object)new Vector2((Real)asFloat4.X, (Real)asFloat4.Y);
                 }
                 else if (typeof(T) == typeof(Vector3))
                 {
                     if (value is Float2 asFloat2)
-                        return (T)(object)new Vector3(asFloat2.X, asFloat2.Y, 0);
+                        return (T)(object)new Vector3((Real)asFloat2.X, (Real)asFloat2.Y, (Real)0);
                     if (value is Float3 asFloat3)
-                        return (T)(object)new Vector3(asFloat3.X, asFloat3.Y, asFloat3.Z);
+                        return (T)(object)new Vector3((Real)asFloat3.X, (Real)asFloat3.Y, (Real)asFloat3.Z);
                     if (value is Float4 asFloat4)
-                        return (T)(object)new Vector3(asFloat4.X, asFloat4.Y, asFloat4.Z);
+                        return (T)(object)new Vector3((Real)asFloat4.X, (Real)asFloat4.Y, (Real)asFloat4.Z);
                 }
                 else if (typeof(T) == typeof(Vector4))
                 {
                     if (value is Float2 asFloat2)
-                        return (T)(object)new Vector4(asFloat2.X, asFloat2.Y, 0, 0);
+                        return (T)(object)new Vector4((Real)asFloat2.X, (Real)asFloat2.Y, (Real)0, (Real)0);
                     if (value is Float3 asFloat3)
-                        return (T)(object)new Vector4(asFloat3.X, asFloat3.Y, asFloat3.Z, 0);
+                        return (T)(object)new Vector4((Real)asFloat3.X, (Real)asFloat3.Y, (Real)asFloat3.Z, (Real)0);
                     if (value is Vector4 asFloat4)
-                        return (T)(object)new Vector4(asFloat4.X, asFloat4.Y, asFloat4.Z, asFloat4.W);
+                        return (T)(object)new Vector4((Real)asFloat4.X, (Real)asFloat4.Y, (Real)asFloat4.Z, (Real)asFloat4.W);
                 }
                 else if (typeof(T) == typeof(Float2))
                 {
                     if (value is Vector2 asVector2)
-                        return (T)(object)new Float2(asVector2.X, asVector2.Y);
+                        return (T)(object)new Float2((float)asVector2.X, (float)asVector2.Y);
                     if (value is Vector3 asVector3)
-                        return (T)(object)new Float2(asVector3.X, asVector3.Y);
+                        return (T)(object)new Float2((float)asVector3.X, (float)asVector3.Y);
                     if (value is Vector4 asVector4)
-                        return (T)(object)new Float2(asVector4.X, asVector4.Y);
+                        return (T)(object)new Float2((float)asVector4.X, (float)asVector4.Y);
                 }
                 else if (typeof(T) == typeof(Float3))
                 {
                     if (value is Vector2 asVector2)
-                        return (T)(object)new Float3(asVector2.X, asVector2.Y, 0);
+                        return (T)(object)new Float3((float)asVector2.X, (float)asVector2.Y, (float)0);
                     if (value is Vector3 asVector3)
-                        return (T)(object)new Float3(asVector3.X, asVector3.Y, asVector3.Z);
+                        return (T)(object)new Float3((float)asVector3.X, (float)asVector3.Y, (float)asVector3.Z);
                     if (value is Vector4 asFloat4)
-                        return (T)(object)new Float3(asFloat4.X, asFloat4.Y, asFloat4.Z);
+                        return (T)(object)new Float3((float)asFloat4.X, (float)asFloat4.Y, (float)asFloat4.Z);
                 }
                 else if (typeof(T) == typeof(Float4))
                 {
                     if (value is Vector2 asVector2)
-                        return (T)(object)new Float4(asVector2.X, asVector2.Y, 0, 0);
+                        return (T)(object)new Float4((float)asVector2.X, (float)asVector2.Y, (float)0, (float)0);
                     if (value is Vector3 asVector3)
-                        return (T)(object)new Float4(asVector3.X, asVector3.Y, asVector3.Z, 0);
+                        return (T)(object)new Float4((float)asVector3.X, (float)asVector3.Y, (float)asVector3.Z, (float)0);
                     if (value is Vector4 asVector4)
-                        return (T)(object)new Float4(asVector4.X, asVector4.Y, asVector4.Z, asVector4.W);
+                        return (T)(object)new Float4((float)asVector4.X, (float)asVector4.Y, (float)asVector4.Z, (float)asVector4.W);
                 }
                 return (T)Convert.ChangeType(value, typeof(T));
             }
