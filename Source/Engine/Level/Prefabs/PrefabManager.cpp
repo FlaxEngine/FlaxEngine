@@ -374,13 +374,13 @@ bool PrefabManager::CreatePrefab(Actor* targetActor, const StringView& outputPat
     if (targetActor->HasParent())
     {
         // Unlink from parent actor
-        objectInstanceIdToPrefabObjectId.Add(targetActor->GetParent()->GetID(), Guid::Empty);
+        objectInstanceIdToPrefabObjectId[targetActor->GetParent()->GetID()] = Guid::Empty;
     }
     for (int32 i = 0; i < sceneObjects->Count(); i++)
     {
         // Generate new IDs for the prefab objects (other than reference instance used to create prefab)
         const SceneObject* obj = sceneObjects->At(i);
-        objectInstanceIdToPrefabObjectId.Add(obj->GetSceneObjectId(), Guid::New());
+        objectInstanceIdToPrefabObjectId[obj->GetSceneObjectId()] = Guid::New();
     }
     {
         // Parse json to DOM document
