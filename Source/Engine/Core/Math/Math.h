@@ -728,9 +728,7 @@ namespace Math
     /// <summary>
     ///  Returns value based on comparand. The main purpose of this function is to avoid branching based on floating point comparison which can be avoided via compiler intrinsics.
     /// </summary>
-    /// <remarks>
-    /// Please note that this doesn't define what happens in the case of NaNs as there might be platform specific differences.
-    /// </remarks>
+    /// <remarks>Please note that this doesn't define what happens in the case of NaNs as there might be platform specific differences.</remarks>
     /// <param name="comparand">Comparand the results are based on.</param>
     /// <param name="valueGEZero">The result value if comparand >= 0.</param>
     /// <param name="valueLTZero">The result value if comparand < 0.</param>
@@ -890,8 +888,9 @@ namespace Math
     {
         return Lerp<T>(a, b, alpha < 0.5f ? InterpCircularIn(0.f, 1.f, alpha * 2.f) * 0.5f : InterpCircularOut(0.f, 1.f, alpha * 2.f - 1.f) * 0.5f + 0.5f);
     }
+
     /// <summary>
-    /// PingPongs the value <paramref name="t"/>, so that it is never larger than <paramref name="length"/> and never smaller than 0.
+    /// Ping pongs the value <paramref name="t"/>, so that it is never larger than <paramref name="length"/> and never smaller than 0.
     /// </summary>
     /// <param name="t"></param>
     /// <param name="length"></param>
