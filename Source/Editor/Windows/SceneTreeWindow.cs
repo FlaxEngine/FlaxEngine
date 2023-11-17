@@ -148,17 +148,24 @@ namespace FlaxEditor.Windows
 
         private void Spawn(Type type)
         {
-            // Create actor
-            Actor actor = (Actor)FlaxEngine.Object.New(type);
             Actor parentActor = null;
-            Vector3 spawnPosition = Vector3.Zero;
 
             if (Editor.SceneEditing.HasSthSelected && Editor.SceneEditing.Selection[0] is ActorNode actorNode)
             {
                 parentActor = actorNode.Actor;
                 actorNode.TreeNode.Expand();
-                spawnPosition = parentActor.Position;
             }
+
+            Spawn(type, parentActor);
+        }
+
+        private void Spawn(Type type, Actor parentActor)
+        {
+            var spawnPosition = Vector3.Zero;
+
+            // Create actor
+            var actor = (Actor)FlaxEngine.Object.New(type);
+
             if (parentActor == null)
             {
                 var scenes = Level.Scenes;
