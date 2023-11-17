@@ -16,16 +16,13 @@ class FLAXENGINE_API Win32CriticalSection
     friend Win32ConditionVariable;
 
 private:
-
     mutable Windows::CRITICAL_SECTION _criticalSection;
 
 private:
-
     Win32CriticalSection(const Win32CriticalSection&);
     Win32CriticalSection& operator=(const Win32CriticalSection&);
 
 public:
-
     /// <summary>
     /// Initializes a new instance of the <see cref="Win32CriticalSection"/> class.
     /// </summary>
@@ -43,17 +40,12 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Locks the critical section.
     /// </summary>
     void Lock() const
     {
-        // Spin first before entering critical section, causing ring-0 transition and context switch
-        if (Windows::TryEnterCriticalSection(&_criticalSection) == 0)
-        {
-            Windows::EnterCriticalSection(&_criticalSection);
-        }
+        Windows::EnterCriticalSection(&_criticalSection);
     }
 
     /// <summary>

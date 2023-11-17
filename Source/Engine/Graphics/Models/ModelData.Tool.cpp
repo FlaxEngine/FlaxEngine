@@ -171,6 +171,8 @@ int32 FindVertex(const MeshData& mesh, int32 vertexIndex, int32 startIndex, int3
     const Float3 vNormal = mesh.Normals.HasItems() ? mesh.Normals[vertexIndex] : Float3::Zero;
     const Float3 vTangent = mesh.Tangents.HasItems() ? mesh.Tangents[vertexIndex] : Float3::Zero;
     const Float2 vLightmapUV = mesh.LightmapUVs.HasItems() ? mesh.LightmapUVs[vertexIndex] : Float2::Zero;
+    const Color vColor = mesh.Colors.HasItems() ? mesh.Colors[vertexIndex] : Color::Black; // Assuming Color::Black as a default color
+
     const int32 end = startIndex + searchRange;
 
     for (size_t i = 0; i < sparialSortCache.size(); i++)
@@ -184,6 +186,8 @@ int32 FindVertex(const MeshData& mesh, int32 vertexIndex, int32 startIndex, int3
 	const Float3 vNormal = mesh.Normals.HasItems() ? mesh.Normals[vertexIndex] : Float3::Zero;
 	const Float3 vTangent = mesh.Tangents.HasItems() ? mesh.Tangents[vertexIndex] : Float3::Zero;
 	const Float2 vLightmapUV = mesh.LightmapUVs.HasItems() ? mesh.LightmapUVs[vertexIndex] : Float2::Zero;
+    const Color vColor = mesh.Colors.HasItems() ? mesh.Colors[vertexIndex] : Color::Black; // Assuming Color::Black as a default color
+
 	const int32 end = startIndex + searchRange;
 
 	for (int32 v = startIndex; v < end; v++)
@@ -200,6 +204,8 @@ int32 FindVertex(const MeshData& mesh, int32 vertexIndex, int32 startIndex, int3
         if (mesh.Tangents.HasItems() && Float3::Dot(vTangent, mesh.Tangents[v]) < 0.98f)
             continue;
         if (mesh.LightmapUVs.HasItems() && (vLightmapUV - mesh.LightmapUVs[v]).LengthSquared() > uvEpsSqr)
+            continue;
+        if (mesh.Colors.HasItems() && vColor != mesh.Colors[v])
             continue;
         // TODO: check more components?
 
@@ -312,7 +318,9 @@ void MeshData::BuildIndexBuffer()
     }
 
     const auto endTime = Platform::GetTimeSeconds();
-    LOG(Info, "Generated index buffer for mesh in {0}s ({1} vertices, {2} indices)", Utilities::RoundTo2DecimalPlaces(endTime - startTime), Positions.Count(), Indices.Count());
+    const double time = Utilities::RoundTo2DecimalPlaces(endTime - startTime);
+    if (time > 0.5f) // Don't log if generation was fast enough
+        LOG(Info, "Generated {3} for mesh in {0}s ({1} vertices, {2} indices)", time, vertexCount, Indices.Count(), TEXT("indices"));
 }
 
 void MeshData::FindPositions(const Float3& position, float epsilon, Array<int32>& result)
@@ -443,7 +451,9 @@ bool MeshData::GenerateNormals(float smoothingAngle)
     }
 
     const auto endTime = Platform::GetTimeSeconds();
-    LOG(Info, "Generated tangents for mesh in {0}s ({1} vertices, {2} indices)", Utilities::RoundTo2DecimalPlaces(endTime - startTime), vertexCount, indexCount);
+    const double time = Utilities::RoundTo2DecimalPlaces(endTime - startTime);
+    if (time > 0.5f) // Don't log if generation was fast enough
+        LOG(Info, "Generated {3} for mesh in {0}s ({1} vertices, {2} indices)", time, vertexCount, indexCount, TEXT("normals"));
 
     return false;
 }
@@ -679,7 +689,10 @@ bool MeshData::GenerateTangents(float smoothingAngle)
 #endif
 
     const auto endTime = Platform::GetTimeSeconds();
-    LOG(Info, "Generated tangents for mesh in {0}s ({1} vertices, {2} indices)", Utilities::RoundTo2DecimalPlaces(endTime - startTime), vertexCount, indexCount);
+    const double time = Utilities::RoundTo2DecimalPlaces(endTime - startTime);
+    if (time > 0.5f) // Don't log if generation was fast enough
+        LOG(Info, "Generated {3} for mesh in {0}s ({1} vertices, {2} indices)", time, vertexCount, indexCount, TEXT("tangents"));
+
     return false;
 }
 
@@ -866,7 +879,9 @@ void MeshData::ImproveCacheLocality()
     Allocator::Free(piCandidates);
 
     const auto endTime = Platform::GetTimeSeconds();
-    LOG(Info, "Cache relevant optimize for {0} vertices and {1} indices. Average output ACMR is {2}. Time: {3}s", vertexCount, indexCount, (float)iCacheMisses / indexCount / 3, Utilities::RoundTo2DecimalPlaces(endTime - startTime));
+    const double time = Utilities::RoundTo2DecimalPlaces(endTime - startTime);
+    if (time > 0.5f) // Don't log if generation was fast enough
+        LOG(Info, "Generated {3} for mesh in {0}s ({1} vertices, {2} indices)", time, vertexCount, indexCount, TEXT("optimized indices"));
 }
 
 float MeshData::CalculateTrianglesArea() const

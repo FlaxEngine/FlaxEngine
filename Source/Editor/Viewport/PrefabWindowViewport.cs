@@ -84,6 +84,8 @@ namespace FlaxEditor.Viewport
             _dragAssets = new DragAssets(ValidateDragItem);
             ShowDebugDraw = true;
             ShowEditorPrimitives = true;
+            Gizmos = new GizmosCollection(this);
+            var inputOptions = window.Editor.Options.Options.Input;
 
             // Prepare rendering task
             Task.ActorsSource = ActorsSources.CustomActors;
@@ -113,7 +115,7 @@ namespace FlaxEditor.Viewport
             var transformSpaceToggle = new ViewportWidgetButton(string.Empty, window.Editor.Icons.Globe32, null, true)
             {
                 Checked = TransformGizmo.ActiveTransformSpace == TransformGizmoBase.TransformSpace.World,
-                TooltipText = "Gizmo transform space (world or local)",
+                TooltipText = $"Gizmo transform space (world or local) ({inputOptions.ToggleTransformSpace})",
                 Parent = transformSpaceWidget
             };
             transformSpaceToggle.Toggled += OnTransformSpaceToggle;
@@ -205,7 +207,7 @@ namespace FlaxEditor.Viewport
             _gizmoModeTranslate = new ViewportWidgetButton(string.Empty, window.Editor.Icons.Translate32, null, true)
             {
                 Tag = TransformGizmoBase.Mode.Translate,
-                TooltipText = "Translate gizmo mode",
+                TooltipText = $"Translate gizmo mode ({inputOptions.TranslateMode})",
                 Checked = true,
                 Parent = gizmoMode
             };
@@ -213,14 +215,14 @@ namespace FlaxEditor.Viewport
             _gizmoModeRotate = new ViewportWidgetButton(string.Empty, window.Editor.Icons.Rotate32, null, true)
             {
                 Tag = TransformGizmoBase.Mode.Rotate,
-                TooltipText = "Rotate gizmo mode",
+                TooltipText = $"Rotate gizmo mode ({inputOptions.RotateMode})",
                 Parent = gizmoMode
             };
             _gizmoModeRotate.Toggled += OnGizmoModeToggle;
             _gizmoModeScale = new ViewportWidgetButton(string.Empty, window.Editor.Icons.Scale32, null, true)
             {
                 Tag = TransformGizmoBase.Mode.Scale,
-                TooltipText = "Scale gizmo mode",
+                TooltipText = $"Scale gizmo mode ({inputOptions.ScaleMode})",
                 Parent = gizmoMode
             };
             _gizmoModeScale.Toggled += OnGizmoModeToggle;
@@ -233,6 +235,7 @@ namespace FlaxEditor.Viewport
             InputActions.Add(options => options.TranslateMode, () => TransformGizmo.ActiveMode = TransformGizmoBase.Mode.Translate);
             InputActions.Add(options => options.RotateMode, () => TransformGizmo.ActiveMode = TransformGizmoBase.Mode.Rotate);
             InputActions.Add(options => options.ScaleMode, () => TransformGizmo.ActiveMode = TransformGizmoBase.Mode.Scale);
+            InputActions.Add(options => options.ToggleTransformSpace, () => { OnTransformSpaceToggle(transformSpaceToggle); transformSpaceToggle.Checked = !transformSpaceToggle.Checked; });
             InputActions.Add(options => options.FocusSelection, ShowSelectedActors);
 
             SetUpdate(ref _update, OnUpdate);
@@ -300,12 +303,14 @@ namespace FlaxEditor.Viewport
         /// </summary>
         public void ShowSelectedActors()
         {
-            var orient = Viewport.ViewOrientation;
+            var orient = ViewOrientation;
             ((FPSCamera)ViewportCamera).ShowActors(TransformGizmo.SelectedParents, ref orient);
         }
+        /// <inheritdoc />
+        public EditorViewport Viewport => this;
 
         /// <inheritdoc />
-        public GizmosCollection Gizmos { get; } = new GizmosCollection();
+        public GizmosCollection Gizmos { get; }
 
         /// <inheritdoc />
         public SceneRenderTask RenderTask => Task;
@@ -344,7 +349,10 @@ namespace FlaxEditor.Viewport
         public RootNode SceneGraphRoot => _window.Graph.Root;
 
         /// <inheritdoc />
-        public EditorViewport Viewport => this;
+        public void Select(List<SceneGraphNode> nodes)
+        {
+            _window.Select(nodes);
+        }
 
         /// <inheritdoc />
         protected override bool IsControllingMouse => Gizmos.Active?.IsControllingMouse ?? false;

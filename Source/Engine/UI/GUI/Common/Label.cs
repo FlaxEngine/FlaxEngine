@@ -75,9 +75,15 @@ namespace FlaxEngine.GUI
         public TextWrapping Wrapping { get; set; } = TextWrapping.NoWrap;
 
         /// <summary>
+        /// Gets or sets the text wrapping within the control bounds.
+        /// </summary>
+        [EditorDisplay("Text Style"), EditorOrder(2023), Tooltip("The gap between lines when wrapping and more than a single line is displayed."), Limit(0f)]
+        public float BaseLinesGapScale { get; set; } = 1.0f;
+
+        /// <summary>
         /// Gets or sets the font.
         /// </summary>
-        [EditorDisplay("Text Style"), EditorOrder(2023)]
+        [EditorDisplay("Text Style"), EditorOrder(2024)]
         public FontReference Font
         {
             get => _font;
@@ -99,7 +105,7 @@ namespace FlaxEngine.GUI
         /// <summary>
         /// Gets or sets the custom material used to render the text. It must has domain set to GUI and have a public texture parameter named Font used to sample font atlas texture with font characters data.
         /// </summary>
-        [EditorDisplay("Text Style"), EditorOrder(2024)]
+        [EditorDisplay("Text Style"), EditorOrder(2025)]
         public MaterialBase Material { get; set; }
 
         /// <summary>
@@ -201,9 +207,9 @@ namespace FlaxEngine.GUI
         }
 
         /// <inheritdoc />
-        public override void Draw()
+        public override void DrawSelf()
         {
-            base.Draw();
+            base.DrawSelf();
 
             var rect = new Rectangle(new Float2(Margin.Left, Margin.Top), Size - Margin.Size);
 
@@ -227,7 +233,7 @@ namespace FlaxEngine.GUI
                 }
             }
 
-            Render2D.DrawText(_font.GetFont(), Material, _text, rect, color, hAlignment, wAlignment, Wrapping, 1.0f, scale);
+            Render2D.DrawText(_font.GetFont(), Material, _text, rect, color, hAlignment, wAlignment, Wrapping, BaseLinesGapScale, scale);
 
             if (ClipText)
                 Render2D.PopClip();
@@ -249,6 +255,7 @@ namespace FlaxEngine.GUI
                     else if (_autoWidth && !_autoHeight)
                         layout.Bounds.Size.Y = Height - Margin.Height;
                     _textSize = font.MeasureText(_text, ref layout);
+                    _textSize.Y *= BaseLinesGapScale;
 
                     // Check if size is controlled via text
                     if (_autoWidth || _autoHeight)

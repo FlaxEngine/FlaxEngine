@@ -66,7 +66,8 @@ namespace FlaxEditor.SceneGraph.GUI
                 _orderInParent = actor.OrderInParent;
                 Visible = (actor.HideFlags & HideFlags.HideInHierarchy) == 0;
 
-                var id = actor.ID;
+                // Pick the correct id when inside a prefab window.
+                var id = actor.HasPrefabLink && actor.Scene == null ? actor.PrefabObjectID : actor.ID;
                 if (Editor.Instance.ProjectCache.IsExpandedActor(ref id))
                 {
                     Expand(true);
@@ -171,7 +172,8 @@ namespace FlaxEditor.SceneGraph.GUI
             // Restore cached state on query filter clear
             if (noFilter && actor != null)
             {
-                var id = actor.ID;
+                // Pick the correct id when inside a prefab window.
+                var id = actor.HasPrefabLink && actor.Scene.Scene == null ? actor.PrefabObjectID : actor.ID;
                 isExpanded = Editor.Instance.ProjectCache.IsExpandedActor(ref id);
             }
 
@@ -264,7 +266,7 @@ namespace FlaxEditor.SceneGraph.GUI
         /// <summary>
         /// Starts the actor renaming action.
         /// </summary>
-        public void StartRenaming(EditorWindow window)
+        public void StartRenaming(EditorWindow window, Panel treePanel = null)
         {
             // Block renaming during scripts reload
             if (Editor.Instance.ProgressReporting.CompileScripts.IsActive)
@@ -279,7 +281,13 @@ namespace FlaxEditor.SceneGraph.GUI
                 (window as PrefabWindow).ScrollingOnTreeView(false);
 
             // Start renaming the actor
-            var dialog = RenamePopup.Show(this, TextRect, _actorNode.Name, false);
+            var rect = TextRect;
+            if (treePanel != null)
+            {
+                treePanel.ScrollViewTo(this, true);
+                rect.Size = new Float2(treePanel.Width - TextRect.Location.X, TextRect.Height);
+            }
+            var dialog = RenamePopup.Show(this, rect, _actorNode.Name, false);
             dialog.Renamed += OnRenamed;
             dialog.Closed += popup =>
             {
@@ -301,10 +309,12 @@ namespace FlaxEditor.SceneGraph.GUI
         protected override void OnExpandedChanged()
         {
             base.OnExpandedChanged();
+            var actor = Actor;
 
-            if (!IsLayoutLocked && Actor)
+            if (!IsLayoutLocked && actor)
             {
-                var id = Actor.ID;
+                // Pick the correct id when inside a prefab window.
+                var id = actor.HasPrefabLink && actor.Scene == null ? actor.PrefabObjectID : actor.ID;
                 Editor.Instance.ProjectCache.SetExpandedActor(ref id, IsExpanded);
             }
         }
@@ -599,7 +609,7 @@ namespace FlaxEditor.SceneGraph.GUI
             // Drag scripts
             else if (_dragScripts != null && _dragScripts.HasValidDrag)
             {
-                foreach(var script in _dragScripts.Objects)
+                foreach (var script in _dragScripts.Objects)
                 {
                     var customAction = script.HasPrefabLink ? new ReparentAction(script) : null;
                     using (new UndoBlock(ActorNode.Root.Undo, script, "Change script parent", customAction))
@@ -616,7 +626,7 @@ namespace FlaxEditor.SceneGraph.GUI
                 var spawnParent = myActor;
                 if (DragOverMode == DragItemPositioning.Above || DragOverMode == DragItemPositioning.Below)
                     spawnParent = newParent;
-                
+
                 for (int i = 0; i < _dragAssets.Objects.Count; i++)
                 {
                     var item = _dragAssets.Objects[i];
@@ -720,7 +730,7 @@ namespace FlaxEditor.SceneGraph.GUI
                 for (var i = 0; i < tree.Selection.Count; i++)
                 {
                     var e = tree.Selection[i];
-                    
+
                     // Skip if parent is already selected to keep correct parenting
                     if (tree.Selection.Contains(e.Parent))
                         continue;

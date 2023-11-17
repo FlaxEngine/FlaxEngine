@@ -10,6 +10,7 @@ struct Transform;
 struct CommonValue;
 template<typename T>
 class AssetReference;
+struct ScriptingTypeHandle;
 
 /// <summary>
 /// Represents an object type that can be interpreted as more than one type.
@@ -120,6 +121,7 @@ public:
     VariantType& operator=(const VariantType& other);
     bool operator==(const Types& type) const;
     bool operator==(const VariantType& other) const;
+    bool operator==(const ScriptingTypeHandle& type) const;
 
     FORCE_INLINE bool operator!=(const VariantType& other) const
     {
@@ -345,6 +347,14 @@ public:
     Array<Variant, HeapAllocation>& AsArray();
     const Array<Variant, HeapAllocation>& AsArray() const;
 
+    template<typename T>
+    const T* AsStructure() const
+    {
+        if (Type.Type == VariantType::Structure && Type == T::TypeInitializer)
+            return (const T*)AsBlob.Data;
+        return nullptr;
+    }
+
 public:
     void SetType(const VariantType& type);
     void SetType(VariantType&& type);
@@ -361,6 +371,15 @@ public:
 
     // Inlines potential value type into in-built format (eg. Vector3 stored as Structure, or String stored as ManagedObject).
     void Inline();
+
+    // Inverts the inlined value from in-built format into generic storage (eg. Float3 from inlined format into Structure).
+    void InvertInline();
+
+    // Allocates the Variant of the specific type (eg. structure or object or value).
+    static Variant NewValue(const StringAnsiView& typeName);
+
+    // Frees the object or data owned by this Variant container (eg. structure or object).
+    void DeleteValue();
 
     FORCE_INLINE Variant Cast(const VariantType& to) const
     {

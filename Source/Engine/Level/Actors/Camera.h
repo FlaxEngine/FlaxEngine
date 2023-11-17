@@ -7,6 +7,7 @@
 #include "Engine/Core/Math/Viewport.h"
 #include "Engine/Core/Math/Ray.h"
 #include "Engine/Core/Types/LayersMask.h"
+#include "Engine/Graphics/Enums.h"
 #include "Engine/Scripting/ScriptingObjectReference.h"
 #if USE_EDITOR
 #include "Engine/Content/AssetReference.h"
@@ -65,7 +66,7 @@ public:
     /// <summary>
     /// Gets the value indicating if camera should use perspective rendering mode, otherwise it will use orthographic projection.
     /// </summary>
-    API_PROPERTY(Attributes="EditorOrder(20), DefaultValue(true), EditorDisplay(\"Camera\"), Tooltip(\"Enables perspective projection mode, otherwise uses orthographic.\")")
+    API_PROPERTY(Attributes="EditorOrder(10), DefaultValue(true), EditorDisplay(\"Camera\")")
     bool GetUsePerspective() const;
 
     /// <summary>
@@ -76,7 +77,7 @@ public:
     /// <summary>
     /// Gets the camera's field of view (in degrees).
     /// </summary>
-    API_PROPERTY(Attributes="EditorOrder(10), DefaultValue(60.0f), Limit(0, 179), EditorDisplay(\"Camera\", \"Field Of View\"), Tooltip(\"Field of view angle in degrees.\")")
+    API_PROPERTY(Attributes="EditorOrder(20), DefaultValue(60.0f), Limit(0, 179), EditorDisplay(\"Camera\", \"Field Of View\"), VisibleIf(nameof(UsePerspective))")
     float GetFieldOfView() const;
 
     /// <summary>
@@ -87,7 +88,7 @@ public:
     /// <summary>
     /// Gets the custom aspect ratio. 0 if not use custom value.
     /// </summary>
-    API_PROPERTY(Attributes="EditorOrder(50), DefaultValue(0.0f), Limit(0, 10, 0.01f), EditorDisplay(\"Camera\"), Tooltip(\"Custom aspect ratio to use. Set to 0 to disable.\")")
+    API_PROPERTY(Attributes="EditorOrder(50), DefaultValue(0.0f), Limit(0, 10, 0.01f), EditorDisplay(\"Camera\"), VisibleIf(nameof(UsePerspective))")
     float GetCustomAspectRatio() const;
 
     /// <summary>
@@ -98,7 +99,7 @@ public:
     /// <summary>
     /// Gets camera's near plane distance.
     /// </summary>
-    API_PROPERTY(Attributes="EditorOrder(30), DefaultValue(10.0f), Limit(0, 1000, 0.05f), EditorDisplay(\"Camera\"), Tooltip(\"Near clipping plane distance\")")
+    API_PROPERTY(Attributes="EditorOrder(30), DefaultValue(10.0f), Limit(0, 1000, 0.05f), EditorDisplay(\"Camera\")")
     float GetNearPlane() const;
 
     /// <summary>
@@ -109,7 +110,7 @@ public:
     /// <summary>
     /// Gets camera's far plane distance.
     /// </summary>
-    API_PROPERTY(Attributes="EditorOrder(40), DefaultValue(40000.0f), Limit(0, float.MaxValue, 5), EditorDisplay(\"Camera\"), Tooltip(\"Far clipping plane distance\")")
+    API_PROPERTY(Attributes="EditorOrder(40), DefaultValue(40000.0f), Limit(0, float.MaxValue, 5), EditorDisplay(\"Camera\")")
     float GetFarPlane() const;
 
     /// <summary>
@@ -120,7 +121,7 @@ public:
     /// <summary>
     /// Gets the orthographic projection scale.
     /// </summary>
-    API_PROPERTY(Attributes="EditorOrder(60), DefaultValue(1.0f), Limit(0.0001f, 1000, 0.01f), EditorDisplay(\"Camera\"), Tooltip(\"Orthographic projection scale\")")
+    API_PROPERTY(Attributes="EditorOrder(60), DefaultValue(1.0f), Limit(0.0001f, 1000, 0.01f), EditorDisplay(\"Camera\"), VisibleIf(nameof(UsePerspective), true)")
     float GetOrthographicScale() const;
 
     /// <summary>
@@ -133,6 +134,18 @@ public:
     /// </summary>
     API_FIELD(Attributes="EditorOrder(100), EditorDisplay(\"Camera\")")
     LayersMask RenderLayersMask;
+
+    /// <summary>
+    /// Frame rendering flags used to switch between graphics features for this camera.
+    /// </summary>
+    API_FIELD(Attributes = "EditorOrder(110), EditorDisplay(\"Camera\")")
+    ViewFlags RenderFlags = ViewFlags::DefaultGame;
+
+    /// <summary>
+    /// Describes frame rendering modes for this camera.
+    /// </summary>
+    API_FIELD(Attributes = "EditorOrder(120), EditorDisplay(\"Camera\")")
+    ViewMode RenderMode = ViewMode::Default;
 
 public:
     /// <summary>

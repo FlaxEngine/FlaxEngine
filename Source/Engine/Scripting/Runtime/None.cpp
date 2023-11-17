@@ -1,9 +1,8 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
 #include "Engine/Scripting/Types.h"
-
 #if !USE_CSHARP
-
+#include "Engine/Core/Types/Span.h"
 #include "Engine/Scripting/ManagedCLR/MCore.h"
 #include "Engine/Scripting/ManagedCLR/MDomain.h"
 #include "Engine/Scripting/ManagedCLR/MAssembly.h"
@@ -563,6 +562,15 @@ MObject* MProperty::GetAttribute(MClass* monoClass) const
 const Array<MObject*>& MProperty::GetAttributes() const
 {
     return _attributes;
+}
+
+void MCore::ScriptingObject::SetInternalValues(MClass* klass, MObject* object, void* unmanagedPtr, const Guid* id)
+{
+}
+
+MObject* MCore::ScriptingObject::CreateScriptingObject(MClass* klass, void* unmanagedPtr, const Guid* id)
+{
+    return nullptr;
 }
 
 #endif

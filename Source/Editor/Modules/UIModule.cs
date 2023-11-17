@@ -2,7 +2,6 @@
 
 using System;
 using System.IO;
-using System.Linq;
 using System.Collections.Generic;
 using FlaxEditor.Gizmo;
 using FlaxEditor.GUI;
@@ -11,7 +10,6 @@ using FlaxEditor.GUI.Dialogs;
 using FlaxEditor.GUI.Input;
 using FlaxEditor.Progress.Handlers;
 using FlaxEditor.SceneGraph;
-using FlaxEditor.SceneGraph.Actors;
 using FlaxEditor.Utilities;
 using FlaxEditor.Viewport.Cameras;
 using FlaxEditor.Windows;
@@ -41,9 +39,12 @@ namespace FlaxEditor.Modules
         ContextMenuSingleSelectGroup<int> _numberOfClientsGroup = new ContextMenuSingleSelectGroup<int>();
 
         private ContextMenuButton _menuFileSaveScenes;
+        private ContextMenuButton _menuFileReloadScenes;
         private ContextMenuButton _menuFileCloseScenes;
+        private ContextMenuButton _menuFileOpenScriptsProject;
         private ContextMenuButton _menuFileGenerateScriptsProjectFiles;
-        private ContextMenuButton _menuSaveAll;
+        private ContextMenuButton _menuFileRecompileScripts;
+        private ContextMenuButton _menuFileSaveAll;
         private ContextMenuButton _menuEditUndo;
         private ContextMenuButton _menuEditRedo;
         private ContextMenuButton _menuEditCut;
@@ -62,15 +63,19 @@ namespace FlaxEditor.Modules
         private ContextMenuButton _menuGamePlayCurrentScenes;
         private ContextMenuButton _menuGameStop;
         private ContextMenuButton _menuGamePause;
+        private ContextMenuButton _menuGameCookAndRun;
+        private ContextMenuButton _menuGameRunCookedGame;
         private ContextMenuButton _menuToolsBuildScenes;
         private ContextMenuButton _menuToolsBakeLightmaps;
         private ContextMenuButton _menuToolsClearLightmaps;
         private ContextMenuButton _menuToolsBakeAllEnvProbes;
         private ContextMenuButton _menuToolsBuildCSGMesh;
         private ContextMenuButton _menuToolsBuildNavMesh;
-        private ContextMenuButton _menuToolsBuildAllMesgesSDF;
+        private ContextMenuButton _menuToolsBuildAllMeshesSDF;
         private ContextMenuButton _menuToolsCancelBuilding;
+        private ContextMenuButton _menuToolsProfilerWindow;
         private ContextMenuButton _menuToolsSetTheCurrentSceneViewAsDefault;
+        private ContextMenuButton _menuToolsTakeScreenshot;
         private ContextMenuChildMenu _menuWindowApplyWindowLayout;
 
         private ToolStripButton _toolStripSaveAll;
@@ -202,6 +207,7 @@ namespace FlaxEditor.Modules
             _toolStripScale.Checked = gizmoMode == TransformGizmoBase.Mode.Scale;
             //
             _toolStripBuildScenes.Enabled = (canEditScene && !isPlayMode) || Editor.StateMachine.BuildingScenesState.IsActive;
+            _toolStripBuildScenes.Visible = Editor.Options.Options.General.BuildActions?.Length != 0;
             _toolStripCook.Enabled = Editor.Windows.GameCookerWin.CanBuild(Platform.PlatformType) && !GameCooker.IsRunning;
             //
             var play = _toolStripPlay;
@@ -279,7 +285,7 @@ namespace FlaxEditor.Modules
 
             Color color;
             if (Editor.StateMachine.IsPlayMode)
-                color = Color.OrangeRed;
+                color = Style.Current.Statusbar.PlayMode;
             else
                 color = Style.Current.BackgroundSelected;
 
@@ -292,6 +298,11 @@ namespace FlaxEditor.Modules
                 text = string.Format("Loading {0}/{1}", contentStats.LoadingAssetsCount, contentStats.AssetsCount);
             else
                 text = "Ready";
+
+            if (ProgressVisible)
+            {
+                color = Style.Current.Statusbar.Loading;
+            }
 
             StatusBar.Text = text;
             StatusBar.StatusColor = color;
@@ -338,7 +349,7 @@ namespace FlaxEditor.Modules
         internal void ProgressFailed(string message)
         {
             _progressFailed = true;
-            StatusBar.StatusColor = Color.Red;
+            StatusBar.StatusColor = Style.Current.Statusbar.Failed;
             StatusBar.Text = message;
             _outputLogButton.Visible = true;
         }
@@ -388,6 +399,10 @@ namespace FlaxEditor.Modules
                 UpdateStatusBar();
             }
             else if (FlaxEngine.Content.Stats.LoadingAssetsCount != _contentStats.LoadingAssetsCount)
+            {
+                UpdateStatusBar();
+            }
+            else if (ProgressVisible)
             {
                 UpdateStatusBar();
             }
@@ -456,13 +471,13 @@ namespace FlaxEditor.Modules
                 // Place dialog nearby the target control
                 var targetControlDesktopCenter = targetControl.PointToScreen(targetControl.Size * 0.5f);
                 var desktopSize = Platform.GetMonitorBounds(targetControlDesktopCenter);
-                var pos = targetControlDesktopCenter + new Float2(10.0f, -dialog.Height * 0.5f);
-                var dialogEnd = pos + dialog.Size;
+                var pos = targetControlDesktopCenter + new Float2(10.0f, -dialog.DialogSize.Y * 0.5f);
+                var dialogEnd = pos + dialog.DialogSize;
                 var desktopEnd = desktopSize.BottomRight - new Float2(10.0f);
                 if (dialogEnd.X >= desktopEnd.X || dialogEnd.Y >= desktopEnd.Y)
-                    pos = targetControl.PointToScreen(Float2.Zero) - new Float2(10.0f + dialog.Width, dialog.Height);
+                    pos = targetControl.PointToScreen(Float2.Zero) - new Float2(10.0f + dialog.DialogSize.X, dialog.DialogSize.Y);
                 var desktopBounds = Platform.VirtualDesktopBounds;
-                pos = Float2.Clamp(pos, desktopBounds.UpperLeft, desktopBounds.BottomRight - dialog.Size);
+                pos = Float2.Clamp(pos, desktopBounds.UpperLeft, desktopBounds.BottomRight - dialog.DialogSize);
                 dialog.RootWindow.Window.Position = pos;
 
                 // Register for context menu (prevent auto-closing context menu when selecting color)
@@ -510,13 +525,14 @@ namespace FlaxEditor.Modules
             MenuFile = MainMenu.AddButton("File");
             var cm = MenuFile.ContextMenu;
             cm.VisibleChanged += OnMenuFileShowHide;
-            _menuSaveAll = cm.AddButton("Save All", inputOptions.Save.ToString(), Editor.SaveAll);
-            _menuFileSaveScenes = cm.AddButton("Save scenes", Editor.Scene.SaveScenes);
-            _menuFileCloseScenes = cm.AddButton("Close scenes", Editor.Scene.CloseAllScenes);
+            _menuFileSaveAll = cm.AddButton("Save All", inputOptions.Save, Editor.SaveAll);
+            _menuFileSaveScenes = cm.AddButton("Save scenes", inputOptions.SaveScenes, Editor.Scene.SaveScenes);
+            _menuFileCloseScenes = cm.AddButton("Close scenes", inputOptions.CloseScenes, Editor.Scene.CloseAllScenes);
+            _menuFileReloadScenes = cm.AddButton("Reload scenes", Editor.Scene.ReloadScenes);
             cm.AddSeparator();
-            cm.AddButton("Open scripts project", Editor.CodeEditing.OpenSolution);
-            _menuFileGenerateScriptsProjectFiles = cm.AddButton("Generate scripts project files", Editor.ProgressReporting.GenerateScriptsProjectFiles.RunAsync);
-            cm.AddButton("Recompile scripts", ScriptsBuilder.Compile);
+            _menuFileOpenScriptsProject = cm.AddButton("Open scripts project", inputOptions.OpenScriptsProject, Editor.CodeEditing.OpenSolution);
+            _menuFileGenerateScriptsProjectFiles = cm.AddButton("Generate scripts project files", inputOptions.GenerateScriptsProject, Editor.ProgressReporting.GenerateScriptsProjectFiles.RunAsync);
+            _menuFileRecompileScripts = cm.AddButton("Recompile scripts", inputOptions.RecompileScripts, ScriptsBuilder.Compile);
             cm.AddSeparator();
             cm.AddButton("Open project...", OpenProject);
             cm.AddSeparator();
@@ -526,27 +542,34 @@ namespace FlaxEditor.Modules
             MenuEdit = MainMenu.AddButton("Edit");
             cm = MenuEdit.ContextMenu;
             cm.VisibleChanged += OnMenuEditShowHide;
-            _menuEditUndo = cm.AddButton(string.Empty, inputOptions.Undo.ToString(), Editor.PerformUndo);
-            _menuEditRedo = cm.AddButton(string.Empty, inputOptions.Redo.ToString(), Editor.PerformRedo);
+            _menuEditUndo = cm.AddButton(string.Empty, inputOptions.Undo, Editor.PerformUndo);
+            _menuEditRedo = cm.AddButton(string.Empty, inputOptions.Redo, Editor.PerformRedo);
             cm.AddSeparator();
-            _menuEditCut = cm.AddButton("Cut", inputOptions.Cut.ToString(), Editor.SceneEditing.Cut);
-            _menuEditCopy = cm.AddButton("Copy", inputOptions.Copy.ToString(), Editor.SceneEditing.Copy);
-            _menuEditPaste = cm.AddButton("Paste", inputOptions.Paste.ToString(), Editor.SceneEditing.Paste);
+            _menuEditCut = cm.AddButton("Cut", inputOptions.Cut, Editor.SceneEditing.Cut);
+            _menuEditCopy = cm.AddButton("Copy", inputOptions.Copy, Editor.SceneEditing.Copy);
+            _menuEditPaste = cm.AddButton("Paste", inputOptions.Paste, Editor.SceneEditing.Paste);
             cm.AddSeparator();
-            _menuEditDelete = cm.AddButton("Delete", inputOptions.Delete.ToString(), Editor.SceneEditing.Delete);
-            _menuEditDuplicate = cm.AddButton("Duplicate", inputOptions.Duplicate.ToString(), Editor.SceneEditing.Duplicate);
+            _menuEditDelete = cm.AddButton("Delete", inputOptions.Delete, Editor.SceneEditing.Delete);
+            _menuEditDuplicate = cm.AddButton("Duplicate", inputOptions.Duplicate, Editor.SceneEditing.Duplicate);
             cm.AddSeparator();
-            _menuEditSelectAll = cm.AddButton("Select all", inputOptions.SelectAll.ToString(), Editor.SceneEditing.SelectAllScenes);
-            _menuEditFind = cm.AddButton("Find", inputOptions.Search.ToString(), Editor.Windows.SceneWin.Search);
+            _menuEditSelectAll = cm.AddButton("Select all", inputOptions.SelectAll, Editor.SceneEditing.SelectAllScenes);
+            _menuEditFind = cm.AddButton("Find", inputOptions.Search, Editor.Windows.SceneWin.Search);
+            cm.AddSeparator();
+            cm.AddButton("Game Settings", () =>
+            {
+                var item = Editor.ContentDatabase.Find(GameSettings.GameSettingsAssetPath);
+                if (item != null)
+                    Editor.ContentEditing.Open(item);
+            });
 
             // Scene
             MenuScene = MainMenu.AddButton("Scene");
             cm = MenuScene.ContextMenu;
             cm.VisibleChanged += OnMenuSceneShowHide;
-            _menuSceneMoveActorToViewport = cm.AddButton("Move actor to viewport", MoveActorToViewport);
-            _menuSceneAlignActorWithViewport = cm.AddButton("Align actor with viewport", AlignActorWithViewport);
-            _menuSceneAlignViewportWithActor = cm.AddButton("Align viewport with actor", AlignViewportWithActor);
-            _menuScenePilotActor = cm.AddButton("Pilot actor", PilotActor);
+            _menuSceneMoveActorToViewport = cm.AddButton("Move actor to viewport", inputOptions.MoveActorToViewport, MoveActorToViewport);
+            _menuSceneAlignActorWithViewport = cm.AddButton("Align actor with viewport", inputOptions.AlignActorWithViewport, AlignActorWithViewport);
+            _menuSceneAlignViewportWithActor = cm.AddButton("Align viewport with actor", inputOptions.AlignViewportWithActor, AlignViewportWithActor);
+            _menuScenePilotActor = cm.AddButton("Pilot actor", inputOptions.PilotActor, PilotActor);
             cm.AddSeparator();
             _menuSceneCreateTerrain = cm.AddButton("Create terrain", CreateTerrain);
 
@@ -555,39 +578,41 @@ namespace FlaxEditor.Modules
             cm = MenuGame.ContextMenu;
             cm.VisibleChanged += OnMenuGameShowHide;
 
-            _menuGamePlayGame = cm.AddButton("Play Game", Editor.Simulation.RequestPlayGameOrStopPlay);
-            _menuGamePlayCurrentScenes = cm.AddButton("Play Current Scenes", Editor.Simulation.RequestPlayScenesOrStopPlay);
-            _menuGameStop = cm.AddButton("Stop Game", Editor.Simulation.RequestStopPlay);
-            _menuGamePause = cm.AddButton("Pause", inputOptions.Pause.ToString(), Editor.Simulation.RequestPausePlay);
+            _menuGamePlayGame = cm.AddButton("Play Game", inputOptions.Play, Editor.Simulation.RequestPlayGameOrStopPlay);
+            _menuGamePlayCurrentScenes = cm.AddButton("Play Current Scenes", inputOptions.PlayCurrentScenes, Editor.Simulation.RequestPlayScenesOrStopPlay);
+            _menuGameStop = cm.AddButton("Stop Game", inputOptions.Play, Editor.Simulation.RequestStopPlay);
+            _menuGamePause = cm.AddButton("Pause", inputOptions.Pause, Editor.Simulation.RequestPausePlay);
 
             cm.AddSeparator();
             var numberOfClientsMenu = cm.AddChildMenu("Number of game clients");
             _numberOfClientsGroup.AddItemsToContextMenu(numberOfClientsMenu.ContextMenu);
 
             cm.AddSeparator();
-            cm.AddButton("Cook & Run", Editor.Windows.GameCookerWin.BuildAndRun).LinkTooltip("Runs Game Cooker to build the game for this platform and runs the game after.");
-            cm.AddButton("Run cooked game", Editor.Windows.GameCookerWin.RunCooked).LinkTooltip("Runs the game build from the last cooking output. Use Cook&Play or Game Cooker first.");
+            _menuGameCookAndRun = cm.AddButton("Cook & Run", inputOptions.CookAndRun, Editor.Windows.GameCookerWin.BuildAndRun);
+            _menuGameCookAndRun.LinkTooltip("Runs Game Cooker to build the game for this platform and runs the game after.");
+            _menuGameRunCookedGame = cm.AddButton("Run cooked game", inputOptions.RunCookedGame, Editor.Windows.GameCookerWin.RunCooked);
+            _menuGameRunCookedGame.LinkTooltip("Runs the game build from the last cooking output. Use 'Cook & Run' or Game Cooker first.");
 
             // Tools
             MenuTools = MainMenu.AddButton("Tools");
             cm = MenuTools.ContextMenu;
             cm.VisibleChanged += OnMenuToolsShowHide;
-            _menuToolsBuildScenes = cm.AddButton("Build scenes data", "Ctrl+F10", Editor.BuildScenesOrCancel);
+            _menuToolsBuildScenes = cm.AddButton("Build scenes data", inputOptions.BuildScenesData, Editor.BuildScenesOrCancel);
             cm.AddSeparator();
-            _menuToolsBakeLightmaps = cm.AddButton("Bake lightmaps", Editor.BakeLightmapsOrCancel);
-            _menuToolsClearLightmaps = cm.AddButton("Clear lightmaps data", Editor.ClearLightmaps);
-            _menuToolsBakeAllEnvProbes = cm.AddButton("Bake all env probes", BakeAllEnvProbes);
-            _menuToolsBuildCSGMesh = cm.AddButton("Build CSG mesh", BuildCSG);
-            _menuToolsBuildNavMesh = cm.AddButton("Build Nav Mesh", BuildNavMesh);
-            _menuToolsBuildAllMesgesSDF = cm.AddButton("Build all meshes SDF", BuildAllMeshesSDF);
+            _menuToolsBakeLightmaps = cm.AddButton("Bake lightmaps", inputOptions.BakeLightmaps, Editor.BakeLightmapsOrCancel);
+            _menuToolsClearLightmaps = cm.AddButton("Clear lightmaps data", inputOptions.ClearLightmaps, Editor.ClearLightmaps);
+            _menuToolsBakeAllEnvProbes = cm.AddButton("Bake all env probes", inputOptions.BakeEnvProbes, Editor.BakeAllEnvProbes);
+            _menuToolsBuildCSGMesh = cm.AddButton("Build CSG mesh", inputOptions.BuildCSG, Editor.BuildCSG);
+            _menuToolsBuildNavMesh = cm.AddButton("Build Nav Mesh", inputOptions.BuildNav, Editor.BuildNavMesh);
+            _menuToolsBuildAllMeshesSDF = cm.AddButton("Build all meshes SDF", inputOptions.BuildSDF, Editor.BuildAllMeshesSDF);
             cm.AddSeparator();
             cm.AddButton("Game Cooker", Editor.Windows.GameCookerWin.FocusOrShow);
             _menuToolsCancelBuilding = cm.AddButton("Cancel building game", () => GameCooker.Cancel());
             cm.AddSeparator();
-            cm.AddButton("Profiler", Editor.Windows.ProfilerWin.FocusOrShow);
+            _menuToolsProfilerWindow = cm.AddButton("Profiler", inputOptions.ProfilerWindow, () => Editor.Windows.ProfilerWin.FocusOrShow());
             cm.AddSeparator();
             _menuToolsSetTheCurrentSceneViewAsDefault = cm.AddButton("Set current scene view as project default", SetTheCurrentSceneViewAsDefault);
-            cm.AddButton("Take screenshot", "F12", Editor.Windows.TakeScreenshot);
+            _menuToolsTakeScreenshot = cm.AddButton("Take screenshot", inputOptions.TakeScreenshot, Editor.Windows.TakeScreenshot);
             cm.AddSeparator();
             cm.AddButton("Plugins", () => Editor.Windows.PluginsWin.Show());
             cm.AddButton("Options", () => Editor.Windows.EditorOptionsWin.Show());
@@ -606,7 +631,7 @@ namespace FlaxEditor.Modules
             cm.AddButton("Output Log", Editor.Windows.OutputLogWin.FocusOrShow);
             cm.AddButton("Graphics Quality", Editor.Windows.GraphicsQualityWin.FocusOrShow);
             cm.AddButton("Game Cooker", Editor.Windows.GameCookerWin.FocusOrShow);
-            cm.AddButton("Profiler", Editor.Windows.ProfilerWin.FocusOrShow);
+            cm.AddButton("Profiler", inputOptions.ProfilerWindow, Editor.Windows.ProfilerWin.FocusOrShow);
             cm.AddButton("Content Search", Editor.ContentFinding.ShowSearch);
             cm.AddButton("Visual Script Debugger", Editor.Windows.VisualScriptDebuggerWin.FocusOrShow);
             cm.AddSeparator();
@@ -629,11 +654,16 @@ namespace FlaxEditor.Modules
             cm.AddButton("Information about Flax", () => new AboutDialog().Show());
         }
 
-        private void OnOptionsChanged(FlaxEditor.Options.EditorOptions options)
+        private void OnOptionsChanged(EditorOptions options)
         {
             var inputOptions = options.Input;
 
-            _menuSaveAll.ShortKeys = inputOptions.Save.ToString();
+            _menuFileSaveAll.ShortKeys = inputOptions.Save.ToString();
+            _menuFileSaveScenes.ShortKeys = inputOptions.SaveScenes.ToString();
+            _menuFileCloseScenes.ShortKeys = inputOptions.CloseScenes.ToString();
+            _menuFileOpenScriptsProject.ShortKeys = inputOptions.OpenScriptsProject.ToString();
+            _menuFileGenerateScriptsProjectFiles.ShortKeys = inputOptions.GenerateScriptsProject.ToString();
+            _menuFileRecompileScripts.ShortKeys = inputOptions.RecompileScripts.ToString();
             _menuEditUndo.ShortKeys = inputOptions.Undo.ToString();
             _menuEditRedo.ShortKeys = inputOptions.Redo.ToString();
             _menuEditCut.ShortKeys = inputOptions.Cut.ToString();
@@ -642,10 +672,25 @@ namespace FlaxEditor.Modules
             _menuEditDuplicate.ShortKeys = inputOptions.Duplicate.ToString();
             _menuEditSelectAll.ShortKeys = inputOptions.SelectAll.ToString();
             _menuEditFind.ShortKeys = inputOptions.Search.ToString();
-            _menuGamePlayCurrentScenes.ShortKeys = inputOptions.Play.ToString();
+            _menuGamePlayGame.ShortKeys = inputOptions.Play.ToString();
+            _menuGamePlayCurrentScenes.ShortKeys = inputOptions.PlayCurrentScenes.ToString();
             _menuGamePause.ShortKeys = inputOptions.Pause.ToString();
+            _menuGameStop.ShortKeys = inputOptions.Play.ToString();
+            _menuGameCookAndRun.ShortKeys = inputOptions.CookAndRun.ToString();
+            _menuGameRunCookedGame.ShortKeys = inputOptions.RunCookedGame.ToString();
+            _menuToolsBuildScenes.ShortKeys = inputOptions.BuildScenesData.ToString();
+            _menuToolsBakeLightmaps.ShortKeys = inputOptions.BakeLightmaps.ToString();
+            _menuToolsClearLightmaps.ShortKeys = inputOptions.ClearLightmaps.ToString();
+            _menuToolsBakeAllEnvProbes.ShortKeys = inputOptions.BakeEnvProbes.ToString();
+            _menuToolsBuildCSGMesh.ShortKeys = inputOptions.BuildCSG.ToString();
+            _menuToolsBuildNavMesh.ShortKeys = inputOptions.BuildNav.ToString();
+            _menuToolsBuildAllMeshesSDF.ShortKeys = inputOptions.BuildSDF.ToString();
+            _menuToolsProfilerWindow.ShortKeys = inputOptions.ProfilerWindow.ToString();
+            _menuToolsTakeScreenshot.ShortKeys = inputOptions.TakeScreenshot.ToString();
 
             MainMenuShortcutKeysUpdated?.Invoke();
+
+            UpdateToolstrip();
         }
 
         private void InitToolstrip(RootControl mainWindow)
@@ -667,11 +712,11 @@ namespace FlaxEditor.Modules
             _toolStripScale = (ToolStripButton)ToolStrip.AddButton(Editor.Icons.Scale32, () => Editor.MainTransformGizmo.ActiveMode = TransformGizmoBase.Mode.Scale).LinkTooltip($"Change Gizmo tool mode to Scale ({inputOptions.ScaleMode})");
             ToolStrip.AddSeparator();
 
-            // Cook scenes
-            _toolStripBuildScenes = (ToolStripButton)ToolStrip.AddButton(Editor.Icons.Build64, Editor.BuildScenesOrCancel).LinkTooltip("Build scenes data - CSG, navmesh, static lighting, env probes - configurable via Build Actions in editor options (Ctrl+F10)");
+            // Build scenes
+            _toolStripBuildScenes = (ToolStripButton)ToolStrip.AddButton(Editor.Icons.Build64, Editor.BuildScenesOrCancel).LinkTooltip($"Build scenes data - CSG, navmesh, static lighting, env probes - configurable via Build Actions in editor options ({inputOptions.BuildScenesData})");
 
             // Cook and run
-            _toolStripCook = (ToolStripButton)ToolStrip.AddButton(Editor.Icons.ShipIt64, Editor.Windows.GameCookerWin.BuildAndRun).LinkTooltip("Cook & Run - build game for the current platform and run it locally");
+            _toolStripCook = (ToolStripButton)ToolStrip.AddButton(Editor.Icons.ShipIt64, Editor.Windows.GameCookerWin.BuildAndRun).LinkTooltip($"Cook & Run - build game for the current platform and run it locally ({inputOptions.CookAndRun})");
             _toolStripCook.ContextMenu = new ContextMenu();
             _toolStripCook.ContextMenu.AddButton("Run cooked game", Editor.Windows.GameCookerWin.RunCooked);
             _toolStripCook.ContextMenu.AddSeparator();
@@ -692,7 +737,7 @@ namespace FlaxEditor.Modules
             playActionGroup.SelectedChanged = SetPlayAction;
             Editor.Options.OptionsChanged += options => { playActionGroup.Selected = options.Interface.PlayButtonAction; };
 
-            _toolStripPause = (ToolStripButton)ToolStrip.AddButton(Editor.Icons.Pause64, Editor.Simulation.RequestResumeOrPause).LinkTooltip($"Pause/Resume game({inputOptions.Pause})");
+            _toolStripPause = (ToolStripButton)ToolStrip.AddButton(Editor.Icons.Pause64, Editor.Simulation.RequestResumeOrPause).LinkTooltip($"Pause/Resume game ({inputOptions.Pause})");
             _toolStripStep = (ToolStripButton)ToolStrip.AddButton(Editor.Icons.Skip64, Editor.Simulation.RequestPlayOneFrame).LinkTooltip("Step one frame in game");
 
             UpdateToolstrip();
@@ -752,7 +797,7 @@ namespace FlaxEditor.Modules
                 HorizontalAlignment = TextAlignment.Far,
                 AnchorPreset = AnchorPresets.HorizontalStretchMiddle,
                 Parent = progressPanel,
-                Offsets = new Margin(progressBarRightMargin, progressBarWidth + progressBarLeftMargin + progressBarRightMargin, 0, 0),
+                Offsets = new Margin(progressBarRightMargin, progressBarWidth + progressBarLeftMargin + progressBarRightMargin, 0, 0)
             };
 
             UpdateStatusBar();
@@ -787,6 +832,7 @@ namespace FlaxEditor.Modules
 
             _menuFileSaveScenes.Enabled = hasOpenedScene;
             _menuFileCloseScenes.Enabled = hasOpenedScene;
+            _menuFileReloadScenes.Enabled = hasOpenedScene;
             _menuFileGenerateScriptsProjectFiles.Enabled = !Editor.ProgressReporting.GenerateScriptsProjectFiles.IsActive;
 
             c.PerformLayout();
@@ -872,7 +918,7 @@ namespace FlaxEditor.Modules
             _menuToolsBakeLightmaps.Text = isBakingLightmaps ? "Cancel baking lightmaps" : "Bake lightmaps";
             _menuToolsClearLightmaps.Enabled = canEdit;
             _menuToolsBakeAllEnvProbes.Enabled = canEdit;
-            _menuToolsBuildAllMesgesSDF.Enabled = canEdit && !isBakingLightmaps;
+            _menuToolsBuildAllMeshesSDF.Enabled = canEdit && !isBakingLightmaps;
             _menuToolsBuildCSGMesh.Enabled = canEdit;
             _menuToolsBuildNavMesh.Enabled = canEdit;
             _menuToolsCancelBuilding.Enabled = GameCooker.IsRunning;
@@ -911,7 +957,7 @@ namespace FlaxEditor.Modules
             Editor.Windows.LoadLayout((string)button.Tag);
         }
 
-        private void AlignViewportWithActor()
+        internal void AlignViewportWithActor()
         {
             var selection = Editor.SceneEditing;
             if (selection.HasSthSelected && selection.Selection[0] is ActorNode node)
@@ -922,7 +968,7 @@ namespace FlaxEditor.Modules
             }
         }
 
-        private void MoveActorToViewport()
+        internal void MoveActorToViewport()
         {
             var selection = Editor.SceneEditing;
             if (selection.HasSthSelected && selection.Selection[0] is ActorNode node)
@@ -936,7 +982,7 @@ namespace FlaxEditor.Modules
             }
         }
 
-        private void AlignActorWithViewport()
+        internal void AlignActorWithViewport()
         {
             var selection = Editor.SceneEditing;
             if (selection.HasSthSelected && selection.Selection[0] is ActorNode node)
@@ -970,57 +1016,6 @@ namespace FlaxEditor.Modules
         internal void CreateTerrain()
         {
             new Tools.Terrain.CreateTerrainDialog().Show(Editor.Windows.MainWindow);
-        }
-
-        private void BakeAllEnvProbes()
-        {
-            Editor.Scene.ExecuteOnGraph(node =>
-            {
-                if (node is EnvironmentProbeNode envProbeNode && envProbeNode.IsActive)
-                {
-                    ((EnvironmentProbe)envProbeNode.Actor).Bake();
-                    node.ParentScene.IsEdited = true;
-                }
-                else if (node is SkyLightNode skyLightNode && skyLightNode.IsActive && skyLightNode.Actor is SkyLight skyLight && skyLight.Mode == SkyLight.Modes.CaptureScene)
-                {
-                    skyLight.Bake();
-                    node.ParentScene.IsEdited = true;
-                }
-
-                return node.IsActive;
-            });
-        }
-
-        private void BuildCSG()
-        {
-            var scenes = Level.Scenes;
-            scenes.ToList().ForEach(x => x.BuildCSG(0));
-            Editor.Scene.MarkSceneEdited(scenes);
-        }
-
-        private void BuildNavMesh()
-        {
-            var scenes = Level.Scenes;
-            scenes.ToList().ForEach(x => Navigation.BuildNavMesh(x, 0));
-            Editor.Scene.MarkSceneEdited(scenes);
-        }
-
-        private void BuildAllMeshesSDF()
-        {
-            // TODO: async maybe with progress reporting?
-            Editor.Scene.ExecuteOnGraph(node =>
-            {
-                if (node is StaticModelNode staticModelNode && staticModelNode.Actor is StaticModel staticModel)
-                {
-                    if (staticModel.DrawModes.HasFlag(DrawPass.GlobalSDF) && staticModel.Model != null && !staticModel.Model.IsVirtual && staticModel.Model.SDF.Texture == null)
-                    {
-                        Editor.Log("Generating SDF for " + staticModel.Model);
-                        if (!staticModel.Model.GenerateSDF())
-                            staticModel.Model.Save();
-                    }
-                }
-                return true;
-            });
         }
 
         private void SetTheCurrentSceneViewAsDefault()

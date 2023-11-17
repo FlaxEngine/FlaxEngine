@@ -50,43 +50,6 @@
 
 Guid ManagedEditor::ObjectID(0x91970b4e, 0x99634f61, 0x84723632, 0x54c776af);
 
-// Disable warning C4800: 'const byte': forcing value to bool 'true' or 'false' (performance warning)
-#if defined(_MSC_VER)
-#pragma warning( push )
-#pragma warning( disable : 4800)
-#endif
-
-struct InternalAudioOptions
-{
-    AudioFormat Format;
-    byte DisableStreaming;
-    byte Is3D;
-    int32 BitDepth;
-    float Quality;
-
-    static void Convert(InternalAudioOptions* from, ImportAudio::Options* to)
-    {
-        to->Format = from->Format;
-        to->DisableStreaming = from->DisableStreaming;
-        to->Is3D = from->Is3D;
-        to->BitDepth = from->BitDepth;
-        to->Quality = from->Quality;
-    }
-
-    static void Convert(ImportAudio::Options* from, InternalAudioOptions* to)
-    {
-        to->Format = from->Format;
-        to->DisableStreaming = from->DisableStreaming;
-        to->Is3D = from->Is3D;
-        to->BitDepth = from->BitDepth;
-        to->Quality = from->Quality;
-    }
-};
-
-#if defined(_MSC_VER)
-#pragma warning( pop )
-#endif
-
 // Pack log messages into a single scratch buffer to reduce dynamic memory allocations
 CriticalSection CachedLogDataLocker;
 Array<byte> CachedLogData;
@@ -221,6 +184,7 @@ enum class NewAssetType
     ParticleEmitterFunction = 9,
     AnimationGraphFunction = 10,
     Animation = 11,
+    BehaviorTree = 12,
 };
 
 DEFINE_INTERNAL_CALL(bool) EditorInternal_CreateAsset(NewAssetType type, MString* outputPathObj)
@@ -264,6 +228,9 @@ DEFINE_INTERNAL_CALL(bool) EditorInternal_CreateAsset(NewAssetType type, MString
     case NewAssetType::Animation:
         tag = AssetsImportingManager::CreateAnimationTag;
         break;
+    case NewAssetType::BehaviorTree:
+        tag = AssetsImportingManager::CreateBehaviorTreeTag;
+        break;
     default:
         return true;
     }
@@ -293,16 +260,6 @@ DEFINE_INTERNAL_CALL(MString*) EditorInternal_CanImport(MString* extensionObj)
         extension.Remove(0, 1);
     const AssetImporter* importer = AssetsImportingManager::GetImporter(extension);
     return importer ? MUtils::ToString(importer->ResultExtension) : nullptr;
-}
-
-DEFINE_INTERNAL_CALL(bool) EditorInternal_ImportAudio(MString* inputPathObj, MString* outputPathObj, InternalAudioOptions* optionsObj)
-{
-    ImportAudio::Options options;
-    InternalAudioOptions::Convert(optionsObj, &options);
-    String inputPath, outputPath;
-    MUtils::ToString(inputPathObj, inputPath);
-    MUtils::ToString(outputPathObj, outputPath);
-    return ManagedEditor::Import(inputPath, outputPath, &options);
 }
 
 DEFINE_INTERNAL_CALL(void) EditorInternal_GetAudioClipMetadata(AudioClip* clip, int32* originalSize, int32* importedSize)
@@ -556,7 +513,9 @@ DEFINE_INTERNAL_CALL(void) EditorInternal_RunVisualScriptBreakpointLoopTick(floa
         WindowsManager::WindowsLocker.Unlock();
     }
     WindowsManager::WindowsLocker.Lock();
-    for (auto& win : WindowsManager::Windows)
+    Array<Window*, InlinedAllocation<32>> windows;
+    windows.Add(WindowsManager::Windows);
+    for (Window* win : windows)
     {
         if (win->IsVisible())
             win->OnUpdate(deltaTime);
@@ -765,24 +724,6 @@ DEFINE_INTERNAL_CALL(MTypeObject*) CustomEditorsUtilInternal_GetCustomEditor(MTy
     return CustomEditorsUtil::GetCustomEditor(targetType);
 }
 
-DEFINE_INTERNAL_CALL(bool) AudioImportEntryInternal_GetAudioImportOptions(MString* pathObj, InternalAudioOptions* result)
-{
-    String path;
-    MUtils::ToString(pathObj, path);
-    FileSystem::NormalizePath(path);
-
-    ImportAudio::Options options;
-    if (ImportAudio::TryGetImportOptions(path, options))
-    {
-        // Convert into managed storage
-        InternalAudioOptions::Convert(&options, result);
-
-        return true;
-    }
-
-    return false;
-}
-
 DEFINE_INTERNAL_CALL(MArray*) LayersAndTagsSettingsInternal_GetCurrentLayers(int* layersCount)
 {
     *layersCount = Math::Max(1, Level::GetNonEmptyLayerNamesCount());
@@ -829,4 +770,16 @@ bool ManagedEditor::TryRestoreImportOptions(ModelTool::Options& options, String 
     // Get options from model
     FileSystem::NormalizePath(assetPath);
     return ImportModelFile::TryGetImportOptions(assetPath, options);
+}
+
+bool ManagedEditor::Import(const String& inputPath, const String& outputPath, const AudioTool::Options& options)
+{
+    return Import(inputPath, outputPath, (void*)&options);
+}
+
+bool ManagedEditor::TryRestoreImportOptions(AudioTool::Options& options, String assetPath)
+{
+    // Get options from model
+    FileSystem::NormalizePath(assetPath);
+    return ImportAudio::TryGetImportOptions(assetPath, options);
 }

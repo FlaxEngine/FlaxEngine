@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "Engine/Core/Common.h"
+#include "Engine/Core/Collections/Array.h"
 #include "Engine/Graphics/GPUBuffer.h"
 
 /// <summary>

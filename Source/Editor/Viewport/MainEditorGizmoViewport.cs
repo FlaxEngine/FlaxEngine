@@ -10,6 +10,7 @@ using FlaxEditor.SceneGraph;
 using FlaxEditor.SceneGraph.Actors;
 using FlaxEditor.Scripting;
 using FlaxEditor.Viewport.Cameras;
+using FlaxEditor.Viewport.Modes;
 using FlaxEditor.Viewport.Widgets;
 using FlaxEditor.Windows;
 using FlaxEngine;
@@ -22,7 +23,7 @@ namespace FlaxEditor.Viewport
     /// Main editor gizmo viewport used by the <see cref="EditGameWindow"/>.
     /// </summary>
     /// <seealso cref="FlaxEditor.Viewport.EditorGizmoViewport" />
-    public partial class MainEditorGizmoViewport : EditorGizmoViewport, IEditorPrimitivesOwner, IGizmoOwner
+    public class MainEditorGizmoViewport : EditorGizmoViewport, IEditorPrimitivesOwner
     {
         private readonly Editor _editor;
 
@@ -186,6 +187,31 @@ namespace FlaxEditor.Viewport
         }
 
         /// <summary>
+        /// The sculpt terrain gizmo.
+        /// </summary>
+        public Tools.Terrain.SculptTerrainGizmoMode SculptTerrainGizmo;
+
+        /// <summary>
+        /// The paint terrain gizmo.
+        /// </summary>
+        public Tools.Terrain.PaintTerrainGizmoMode PaintTerrainGizmo;
+
+        /// <summary>
+        /// The edit terrain gizmo.
+        /// </summary>
+        public Tools.Terrain.EditTerrainGizmoMode EditTerrainGizmo;
+
+        /// <summary>
+        /// The paint foliage gizmo.
+        /// </summary>
+        public Tools.Foliage.PaintFoliageGizmoMode PaintFoliageGizmo;
+
+        /// <summary>
+        /// The edit foliage gizmo.
+        /// </summary>
+        public Tools.Foliage.EditFoliageGizmoMode EditFoliageGizmo;
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="MainEditorGizmoViewport"/> class.
         /// </summary>
         /// <param name="editor">Editor instance.</param>
@@ -194,6 +220,7 @@ namespace FlaxEditor.Viewport
         {
             _editor = editor;
             _dragAssets = new DragAssets<DragDropEventArgs>(ValidateDragItem);
+            var inputOptions = editor.Options.Options.Input;
 
             // Prepare rendering task
             Task.ActorsSource = ActorsSources.Scenes;
@@ -250,7 +277,7 @@ namespace FlaxEditor.Viewport
             var transformSpaceToggle = new ViewportWidgetButton(string.Empty, editor.Icons.Globe32, null, true)
             {
                 Checked = TransformGizmo.ActiveTransformSpace == TransformGizmoBase.TransformSpace.World,
-                TooltipText = "Gizmo transform space (world or local)",
+                TooltipText = $"Gizmo transform space (world or local) ({inputOptions.ToggleTransformSpace})",
                 Parent = transformSpaceWidget
             };
             transformSpaceToggle.Toggled += OnTransformSpaceToggle;
@@ -347,7 +374,7 @@ namespace FlaxEditor.Viewport
             _gizmoModeTranslate = new ViewportWidgetButton(string.Empty, editor.Icons.Translate32, null, true)
             {
                 Tag = TransformGizmoBase.Mode.Translate,
-                TooltipText = "Translate gizmo mode",
+                TooltipText = $"Translate gizmo mode ({inputOptions.TranslateMode})",
                 Checked = true,
                 Parent = gizmoMode
             };
@@ -355,14 +382,14 @@ namespace FlaxEditor.Viewport
             _gizmoModeRotate = new ViewportWidgetButton(string.Empty, editor.Icons.Rotate32, null, true)
             {
                 Tag = TransformGizmoBase.Mode.Rotate,
-                TooltipText = "Rotate gizmo mode",
+                TooltipText = $"Rotate gizmo mode ({inputOptions.RotateMode})",
                 Parent = gizmoMode
             };
             _gizmoModeRotate.Toggled += OnGizmoModeToggle;
             _gizmoModeScale = new ViewportWidgetButton(string.Empty, editor.Icons.Scale32, null, true)
             {
                 Tag = TransformGizmoBase.Mode.Scale,
-                TooltipText = "Scale gizmo mode",
+                TooltipText = $"Scale gizmo mode ({inputOptions.ScaleMode})",
                 Parent = gizmoMode
             };
             _gizmoModeScale.Toggled += OnGizmoModeToggle;
@@ -384,12 +411,26 @@ namespace FlaxEditor.Viewport
             DragHandlers.Add(_dragActorType);
             DragHandlers.Add(_dragAssets);
 
-            InitModes();
+            // Init gizmo modes
+            {
+                // Add default modes used by the editor
+                Gizmos.AddMode(new TransformGizmoMode());
+                Gizmos.AddMode(new NoGizmoMode());
+                Gizmos.AddMode(SculptTerrainGizmo = new Tools.Terrain.SculptTerrainGizmoMode());
+                Gizmos.AddMode(PaintTerrainGizmo = new Tools.Terrain.PaintTerrainGizmoMode());
+                Gizmos.AddMode(EditTerrainGizmo = new Tools.Terrain.EditTerrainGizmoMode());
+                Gizmos.AddMode(PaintFoliageGizmo = new Tools.Foliage.PaintFoliageGizmoMode());
+                Gizmos.AddMode(EditFoliageGizmo = new Tools.Foliage.EditFoliageGizmoMode());
+
+                // Activate transform mode first
+                Gizmos.SetActiveMode<TransformGizmoMode>();
+            }
 
             // Setup input actions
             InputActions.Add(options => options.TranslateMode, () => TransformGizmo.ActiveMode = TransformGizmoBase.Mode.Translate);
             InputActions.Add(options => options.RotateMode, () => TransformGizmo.ActiveMode = TransformGizmoBase.Mode.Rotate);
             InputActions.Add(options => options.ScaleMode, () => TransformGizmo.ActiveMode = TransformGizmoBase.Mode.Scale);
+            InputActions.Add(options => options.ToggleTransformSpace, () => { OnTransformSpaceToggle(transformSpaceToggle); transformSpaceToggle.Checked = !transformSpaceToggle.Checked; });
             InputActions.Add(options => options.LockFocusSelection, LockFocusSelection);
             InputActions.Add(options => options.FocusSelection, FocusSelection);
             InputActions.Add(options => options.RotateSelection, RotateSelection);
@@ -1165,12 +1206,17 @@ namespace FlaxEditor.Viewport
         }
 
         /// <inheritdoc />
+        public override void Select(List<SceneGraphNode> nodes)
+        {
+            _editor.SceneEditing.Select(nodes);
+        }
+
+        /// <inheritdoc />
         public override void OnDestroy()
         {
             if (IsDisposing)
                 return;
 
-            DisposeModes();
             _debugDrawData.Dispose();
             if (_task != null)
             {

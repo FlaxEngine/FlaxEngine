@@ -153,7 +153,7 @@ namespace FlaxEditor.Windows.Assets
             {
                 OnPasteAction(pasteAction);
             }
-            
+
             // Scroll to new selected node
             ScrollToSelectedNode();
         }
@@ -183,7 +183,7 @@ namespace FlaxEditor.Windows.Assets
             {
                 OnPasteAction(pasteAction);
             }
-            
+
             // Scroll to new selected node
             ScrollToSelectedNode();
         }
@@ -334,7 +334,7 @@ namespace FlaxEditor.Windows.Assets
             }, action2.ActionString);
             action.Do();
             Undo.AddAction(action);
-            
+
             _treePanel.PerformLayout();
             _treePanel.PerformLayout();
         }

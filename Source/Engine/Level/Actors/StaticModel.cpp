@@ -7,6 +7,7 @@
 #include "Engine/Graphics/GPUContext.h"
 #include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Graphics/RenderTask.h"
+#include "Engine/Graphics/Models/MeshDeformation.h"
 #include "Engine/Serialization/Serialization.h"
 #include "Engine/Level/Prefabs/PrefabManager.h"
 #include "Engine/Level/Scene/Scene.h"
@@ -36,6 +37,8 @@ StaticModel::~StaticModel()
 {
     for (int32 lodIndex = 0; lodIndex < _vertexColorsCount; lodIndex++)
         SAFE_DELETE_GPU_RESOURCE(_vertexColorsBuffer[lodIndex]);
+    if (_deformation)
+        Delete(_deformation);
 }
 
 float StaticModel::GetScaleInLightmap() const
@@ -230,6 +233,8 @@ void StaticModel::OnModelChanged()
     Entries.Release();
     if (Model && !Model->IsLoaded())
         UpdateBounds();
+    if (_deformation)
+        _deformation->Clear();
     else if (!Model && _sceneRenderingKey != -1)
         GetSceneRendering()->RemoveActor(this, _sceneRenderingKey);
 }
@@ -265,11 +270,12 @@ void StaticModel::OnModelResidencyChanged()
 
 void StaticModel::UpdateBounds()
 {
-    if (Model && Model->IsLoaded())
+    const auto model = Model.Get();
+    if (model && model->IsLoaded() && model->LODs.Count() != 0)
     {
         Transform transform = _transform;
         transform.Scale *= _boundsScale;
-        _box = Model->GetBox(transform);
+        _box = model->LODs[0].GetBox(transform, _deformation);
     }
     else
     {
@@ -339,6 +345,7 @@ void StaticModel::Draw(RenderContext& renderContext)
     draw.Buffer = &Entries;
     draw.World = &world;
     draw.DrawState = &_drawState;
+    draw.Deformation = _deformation;
     draw.Lightmap = _scene->LightmapsData.GetReadyLightmap(Lightmap.TextureIndex);
     draw.LightmapUVs = &Lightmap.UVsArea;
     draw.Flags = _staticFlags;
@@ -372,6 +379,7 @@ void StaticModel::Draw(RenderContextBatch& renderContextBatch)
     draw.Buffer = &Entries;
     draw.World = &world;
     draw.DrawState = &_drawState;
+    draw.Deformation = _deformation;
     draw.Lightmap = _scene->LightmapsData.GetReadyLightmap(Lightmap.TextureIndex);
     draw.LightmapUVs = &Lightmap.UVsArea;
     draw.Flags = _staticFlags;
@@ -613,12 +621,23 @@ bool StaticModel::IntersectsEntry(const Ray& ray, Real& distance, Vector3& norma
     return result;
 }
 
-void StaticModel::OnTransformChanged()
+bool StaticModel::GetMeshData(const MeshReference& mesh, MeshBufferType type, BytesContainer& result, int32& count) const
 {
-    // Base
-    ModelInstanceActor::OnTransformChanged();
+    count = 0;
+    if (mesh.LODIndex < 0 || mesh.MeshIndex < 0)
+        return true;
+    const auto model = Model.Get();
+    if (!model || model->WaitForLoaded())
+        return true;
+    auto& lod = model->LODs[Math::Min(mesh.LODIndex, model->LODs.Count() - 1)];
+    return lod.Meshes[Math::Min(mesh.MeshIndex, lod.Meshes.Count() - 1)].DownloadDataCPU(type, result, count);
+}
 
-    UpdateBounds();
+MeshDeformation* StaticModel::GetMeshDeformation() const
+{
+    if (!_deformation)
+        _deformation = New<MeshDeformation>();
+    return _deformation;
 }
 
 void StaticModel::OnEnable()

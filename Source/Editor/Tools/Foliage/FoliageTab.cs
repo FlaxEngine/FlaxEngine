@@ -137,14 +137,23 @@ namespace FlaxEditor.Tools.Foliage
                 Offsets = Margin.Zero,
                 Parent = _noFoliagePanel
             };
+
+            var buttonText = "Create new foliage";
             _createNewFoliage = new Button
             {
-                Text = "Create new foliage",
+                Text = buttonText,
                 AnchorPreset = AnchorPresets.MiddleCenter,
                 Offsets = new Margin(-60, 120, -12, 24),
                 Parent = _noFoliagePanel,
                 Enabled = false
             };
+            var textSize = Style.Current.FontMedium.MeasureText(buttonText);
+            if (_createNewFoliage.Width < textSize.X)
+            {
+                _createNewFoliage.LocalX -= (textSize.X - _createNewFoliage.Width) / 2;
+                _createNewFoliage.Width = textSize.X + 6;
+            }
+
             _createNewFoliage.Clicked += OnCreateNewFoliageClicked;
         }
 
@@ -242,13 +251,13 @@ namespace FlaxEditor.Tools.Foliage
             switch (_modes.SelectedTabIndex)
             {
             case 0:
-                Editor.Windows.EditWin.Viewport.SetActiveMode<NoGizmoMode>();
+                Editor.Windows.EditWin.Viewport.Gizmos.SetActiveMode<NoGizmoMode>();
                 break;
             case 1:
-                Editor.Windows.EditWin.Viewport.SetActiveMode<PaintFoliageGizmoMode>();
+                Editor.Windows.EditWin.Viewport.Gizmos.SetActiveMode<PaintFoliageGizmoMode>();
                 break;
             case 2:
-                Editor.Windows.EditWin.Viewport.SetActiveMode<EditFoliageGizmoMode>();
+                Editor.Windows.EditWin.Viewport.Gizmos.SetActiveMode<EditFoliageGizmoMode>();
                 break;
             default: throw new IndexOutOfRangeException("Invalid foliage tab mode.");
             }

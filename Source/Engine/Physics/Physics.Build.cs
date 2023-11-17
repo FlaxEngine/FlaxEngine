@@ -15,6 +15,16 @@ public class Physics : EngineModule
     public static bool WithCooking = true;
 
     /// <summary>
+    /// Enables using vehicles simulation.
+    /// </summary>
+    public static bool WithVehicle = true;
+
+    /// <summary>
+    /// Enables using cloth simulation.
+    /// </summary>
+    public static bool WithCloth = true;
+
+    /// <summary>
     /// Enables using PhysX library. Can be overriden by SetupPhysicsBackend.
     /// </summary>
     public static bool WithPhysX = true;
@@ -42,6 +52,8 @@ public class Physics : EngineModule
         if (WithPhysX)
         {
             options.PrivateDependencies.Add("PhysX");
+            if (WithCloth && options.Platform.Target != TargetPlatform.PS4) // TODO: build nvcloth for ps4 with vs2017
+                options.PrivateDependencies.Add("NvCloth");
         }
         else
         {

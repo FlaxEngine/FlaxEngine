@@ -268,20 +268,20 @@ namespace FlaxEditor.Surface.Archetypes
             }
 
             /// <inheritdoc />
-            public override void OnSurfaceLoaded()
+            public override void OnSurfaceLoaded(SurfaceNodeActions action)
             {
                 _enabled.Checked = ModuleEnabled;
                 _enabled.StateChanged += OnEnabledStateChanged;
 
-                base.OnSurfaceLoaded();
+                base.OnSurfaceLoaded(action);
 
                 ParticleSurface?.ArrangeModulesNodes();
             }
 
             /// <inheritdoc />
-            public override void OnSpawned()
+            public override void OnSpawned(SurfaceNodeActions action)
             {
-                base.OnSpawned();
+                base.OnSpawned(action);
 
                 ParticleSurface.ArrangeModulesNodes();
             }
@@ -295,11 +295,11 @@ namespace FlaxEditor.Surface.Archetypes
             }
 
             /// <inheritdoc />
-            public override void OnDeleted()
+            public override void OnDeleted(SurfaceNodeActions action)
             {
                 ParticleSurface.ArrangeModulesNodes();
 
-                base.OnDeleted();
+                base.OnDeleted(action);
             }
 
             /// <inheritdoc />
@@ -324,9 +324,9 @@ namespace FlaxEditor.Surface.Archetypes
             }
 
             /// <inheritdoc />
-            public override void OnSurfaceLoaded()
+            public override void OnSurfaceLoaded(SurfaceNodeActions action)
             {
-                base.OnSurfaceLoaded();
+                base.OnSurfaceLoaded(action);
 
                 UpdateOutputBoxType();
             }
@@ -381,9 +381,9 @@ namespace FlaxEditor.Surface.Archetypes
             }
 
             /// <inheritdoc />
-            public override void OnSurfaceLoaded()
+            public override void OnSurfaceLoaded(SurfaceNodeActions action)
             {
-                base.OnSurfaceLoaded();
+                base.OnSurfaceLoaded(action);
 
                 UpdateInputBox();
             }
@@ -416,9 +416,9 @@ namespace FlaxEditor.Surface.Archetypes
             }
 
             /// <inheritdoc />
-            public override void OnSurfaceLoaded()
+            public override void OnSurfaceLoaded(SurfaceNodeActions action)
             {
-                base.OnSurfaceLoaded();
+                base.OnSurfaceLoaded(action);
 
                 UpdateTextBox();
             }

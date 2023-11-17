@@ -90,6 +90,11 @@ namespace Flax.Build.Projects.VisualStudio
             var baseConfiguration = project.Configurations.First();
             var baseOutputDir = Utilities.MakePathRelativeTo(project.CSharp.OutputPath ?? baseConfiguration.TargetBuildOptions.OutputFolder, projectDirectory);
             var baseIntermediateOutputPath = Utilities.MakePathRelativeTo(project.CSharp.IntermediateOutputPath ?? Path.Combine(baseConfiguration.TargetBuildOptions.IntermediateFolder, "CSharp"), projectDirectory);
+            
+            bool isMainProject = Globals.Project.ProjectFolderPath == project.WorkspaceRootPath && project.Name != "BuildScripts" && (Globals.Project.Name != "Flax" || project.Name != "FlaxEngine");
+            var flaxBuildTargetsFilename = isMainProject ? "Flax.Build.CSharp.targets" : "Flax.Build.CSharp.SkipBuild.targets";
+            var cacheProjectsPath = Utilities.MakePathRelativeTo(Path.Combine(Globals.Root, "Cache", "Projects"), projectDirectory);
+            var flaxBuildTargetsPath = !string.IsNullOrEmpty(cacheProjectsPath) ? Path.Combine(cacheProjectsPath, flaxBuildTargetsFilename) : flaxBuildTargetsFilename;
 
             csProjectFileContent.AppendLine("    <TargetFramework>net7.0</TargetFramework>");
             csProjectFileContent.AppendLine("    <ImplicitUsings>disable</ImplicitUsings>");
@@ -106,14 +111,14 @@ namespace Flax.Build.Projects.VisualStudio
             csProjectFileContent.AppendLine("    <LangVersion>11.0</LangVersion>");
             csProjectFileContent.AppendLine("    <FileAlignment>512</FileAlignment>");
 
-            // Needed for Hostfxr
-            csProjectFileContent.AppendLine("    <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>");
-            csProjectFileContent.AppendLine("    <EnableDynamicLoading>true</EnableDynamicLoading>");
             //csProjectFileContent.AppendLine("    <CopyLocalLockFileAssemblies>false</CopyLocalLockFileAssemblies>"); // TODO: use it to reduce burden of framework libs
 
-            // This needs to be set here to fix errors in VS
-            csProjectFileContent.AppendLine(string.Format("    <OutDir>{0}</OutDir>", baseOutputDir));
-            csProjectFileContent.AppendLine(string.Format("    <IntermediateOutputPath>{0}</IntermediateOutputPath>", baseIntermediateOutputPath));
+            // Custom .targets file for overriding MSBuild build tasks
+            csProjectFileContent.AppendLine(string.Format("    <CustomAfterMicrosoftCommonTargets>$(MSBuildThisFileDirectory){0}</CustomAfterMicrosoftCommonTargets>", flaxBuildTargetsPath));
+
+            // Hide annoying warnings during build
+            csProjectFileContent.AppendLine("    <RestorePackages>false</RestorePackages>");
+            csProjectFileContent.AppendLine("    <DisableFastUpToDateCheck>True</DisableFastUpToDateCheck>");
 
             csProjectFileContent.AppendLine("  </PropertyGroup>");
             csProjectFileContent.AppendLine("");

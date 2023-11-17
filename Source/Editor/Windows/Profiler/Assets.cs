@@ -62,7 +62,9 @@ namespace FlaxEditor.Windows.Profiler
             _memoryUsageChart.SelectedSampleChanged += OnSelectedSampleChanged;
 
             // Table
-            var headerColor = Style.Current.LightBackground;
+            var style = Style.Current;
+            var headerColor = style.LightBackground;
+            var textColor = style.Foreground;
             _table = new Table
             {
                 Columns = new[]
@@ -73,22 +75,26 @@ namespace FlaxEditor.Windows.Profiler
                         CellAlignment = TextAlignment.Near,
                         Title = "Resource",
                         TitleBackgroundColor = headerColor,
+                        TitleColor = textColor,
                     },
                     new ColumnDefinition
                     {
                         Title = "Type",
                         CellAlignment = TextAlignment.Center,
                         TitleBackgroundColor = headerColor,
+                        TitleColor = textColor,
                     },
                     new ColumnDefinition
                     {
                         Title = "References",
                         TitleBackgroundColor = headerColor,
+                        TitleColor = textColor,
                     },
                     new ColumnDefinition
                     {
                         Title = "Memory Usage",
                         TitleBackgroundColor = headerColor,
+                        TitleColor = textColor,
                         FormatValue = v => Utilities.Utils.FormatBytesCount((ulong)v),
                     },
                 },
@@ -274,7 +280,7 @@ namespace FlaxEditor.Windows.Profiler
                 ContextMenuButton b;
                 b = cm.AddButton("Open", () => Editor.Instance.ContentEditing.Open(assetItem));
                 cm.AddButton("Show in content window", () => Editor.Instance.Windows.ContentWin.Select(assetItem));
-                cm.AddButton("Show in explorer", () => FileSystem.ShowFileExplorer(System.IO.Path.GetDirectoryName(assetItem.Path)));
+                cm.AddButton(Utilities.Constants.ShowInExplorer, () => FileSystem.ShowFileExplorer(System.IO.Path.GetDirectoryName(assetItem.Path)));
                 cm.AddButton("Select actors using this asset", () => Editor.Instance.SceneEditing.SelectActorsUsingAsset(assetItem.ID));
                 cm.AddButton("Show asset references graph", () => Editor.Instance.Windows.Open(new AssetReferencesGraphWindow(Editor.Instance, assetItem)));
                 cm.AddButton("Copy name", () => Clipboard.Text = assetItem.NamePath);

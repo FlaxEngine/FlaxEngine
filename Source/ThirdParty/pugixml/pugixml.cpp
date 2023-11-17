@@ -3967,7 +3967,11 @@ PUGI__NS_BEGIN
 	PUGI__FN bool set_value_convert(char_t*& dest, uintptr_t& header, uintptr_t header_mask, int value)
 	{
 		char buf[128];
+#if __APPLE__
+		snprintf(buf, sizeof(buf), "%d", value);
+#else
 		sprintf(buf, "%d", value);
+#endif
 	
 		return set_value_buffer(dest, header, header_mask, buf);
 	}
@@ -3975,7 +3979,11 @@ PUGI__NS_BEGIN
 	PUGI__FN bool set_value_convert(char_t*& dest, uintptr_t& header, uintptr_t header_mask, unsigned int value)
 	{
 		char buf[128];
+#if __APPLE__
+		snprintf(buf, sizeof(buf), "%u", value);
+#else
 		sprintf(buf, "%u", value);
+#endif
 
 		return set_value_buffer(dest, header, header_mask, buf);
 	}
@@ -3983,7 +3991,11 @@ PUGI__NS_BEGIN
 	PUGI__FN bool set_value_convert(char_t*& dest, uintptr_t& header, uintptr_t header_mask, float value)
 	{
 		char buf[128];
+#if __APPLE__
+		snprintf(buf, sizeof(buf), "%.9g", value);
+#else
 		sprintf(buf, "%.9g", value);
+#endif
 
 		return set_value_buffer(dest, header, header_mask, buf);
 	}
@@ -3991,7 +4003,11 @@ PUGI__NS_BEGIN
 	PUGI__FN bool set_value_convert(char_t*& dest, uintptr_t& header, uintptr_t header_mask, double value)
 	{
 		char buf[128];
+#if __APPLE__
+		snprintf(buf, sizeof(buf), "%.17g", value);
+#else
 		sprintf(buf, "%.17g", value);
+#endif
 
 		return set_value_buffer(dest, header, header_mask, buf);
 	}
@@ -4005,7 +4021,11 @@ PUGI__NS_BEGIN
 	PUGI__FN bool set_value_convert(char_t*& dest, uintptr_t& header, uintptr_t header_mask, long long value)
 	{
 		char buf[128];
+#if __APPLE__
+		snprintf(buf, sizeof(buf), "%lld", value);
+#else
 		sprintf(buf, "%lld", value);
+#endif
 	
 		return set_value_buffer(dest, header, header_mask, buf);
 	}
@@ -4013,7 +4033,11 @@ PUGI__NS_BEGIN
 	PUGI__FN bool set_value_convert(char_t*& dest, uintptr_t& header, uintptr_t header_mask, unsigned long long value)
 	{
 		char buf[128];
+#if __APPLE__
+		snprintf(buf, sizeof(buf), "%llu", value);
+#else
 		sprintf(buf, "%llu", value);
+#endif
 	
 		return set_value_buffer(dest, header, header_mask, buf);
 	}
@@ -4799,16 +4823,6 @@ namespace pugi
 		return xml_node();
 	}
 
-	PUGI__FN xml_node xml_node::child_or_append(const char_t* name_)
-	{
-		if (!_root) return xml_node();
-
-		for (xml_node_struct* i = _root->first_child; i; i = i->next_sibling)
-			if (i->name && impl::strequal(name_, i->name)) return xml_node(i);
-
-		return append_child(name_);
-	}
-
 	PUGI__FN xml_attribute xml_node::attribute(const char_t* name_) const
 	{
 		if (!_root) return xml_attribute();
@@ -4878,17 +4892,6 @@ namespace pugi
 
 		return PUGIXML_TEXT("");
 	}
-
-    PUGI__FN bool xml_node::set_child_value(const char_t* rhs)
-    {
-		if (!_root) return false;
-		
-		for (xml_node_struct* i = _root->first_child; i; i = i->next_sibling)
-			if (i->value && impl::is_text_node(i))
-				return xml_node(i).set_value(rhs);
-
-		return append_child(node_pcdata).set_value(rhs);
-    }
 
     PUGI__FN const char_t* xml_node::child_value(const char_t* name_) const
 	{

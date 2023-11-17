@@ -26,7 +26,8 @@ namespace
 }
 
 NavMeshRuntime::NavMeshRuntime(const NavMeshProperties& properties)
-    : Properties(properties)
+    : ScriptingObject(SpawnParams(Guid::New(), NavMeshRuntime::TypeInitializer))
+    , Properties(properties)
 {
     _navMesh = nullptr;
     _navMeshQuery = dtAllocNavMeshQuery();
@@ -79,9 +80,10 @@ bool NavMeshRuntime::FindDistanceToWall(const Vector3& startPosition, NavMeshHit
     return true;
 }
 
-bool NavMeshRuntime::FindPath(const Vector3& startPosition, const Vector3& endPosition, Array<Vector3, HeapAllocation>& resultPath) const
+bool NavMeshRuntime::FindPath(const Vector3& startPosition, const Vector3& endPosition, Array<Vector3, HeapAllocation>& resultPath, NavMeshPathFlags& resultFlags) const
 {
     resultPath.Clear();
+    resultFlags = NavMeshPathFlags::None;
     ScopeLock lock(Locker);
     const auto query = GetNavMeshQuery();
     if (!query || !_navMesh)
@@ -121,6 +123,7 @@ bool NavMeshRuntime::FindPath(const Vector3& startPosition, const Vector3& endPo
 
     if (pathSize == 1 && dtStatusDetail(findPathStatus, DT_PARTIAL_RESULT))
     {
+        resultFlags |= NavMeshPathFlags::PartialPath;
         // TODO: skip adding 2nd end point if it's not reachable (use navmesh raycast check? or physics check? or local Z distance check?)
         resultPath.Resize(2);
         resultPath[0] = startPosition;

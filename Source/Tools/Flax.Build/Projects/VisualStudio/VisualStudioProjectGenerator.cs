@@ -24,6 +24,13 @@ namespace Flax.Build.Projects.VisualStudio
             /// <inheritdoc />
             public override void Generate(string solutionPath)
             {
+                // Try to reuse the existing project guid from existing files
+                ProjectGuid = GetProjectGuid(Path, Name);
+                if (ProjectGuid == Guid.Empty)
+                    ProjectGuid = GetProjectGuid(solutionPath, Name);
+                if (ProjectGuid == Guid.Empty)
+                    ProjectGuid = Guid.NewGuid();
+
                 var gen = (VisualStudioProjectGenerator)Generator;
                 var projectFileToolVersion = gen.ProjectFileToolVersion;
                 var vcProjectFileContent = new StringBuilder();
@@ -166,12 +173,14 @@ namespace Flax.Build.Projects.VisualStudio
             {
                 try
                 {
-                    Regex projectRegex = new Regex(@"Project\(.*\) = \""(\S+)\"", \""(\S+)\"", \""{(\S+)}\""");
+                    Regex projectRegex = new Regex(@"Project\(""{(\S+)}""\) = \""(\S+)\"", \""(\S+)\"", \""{(\S+)}\""");
                     MatchCollection matches = projectRegex.Matches(File.ReadAllText(path));
                     for (int i = 0; i < matches.Count; i++)
                     {
-                        if (matches[i].Groups[1].Value == projectName)
-                            return Guid.ParseExact(matches[i].Groups[3].Value, "D");
+                        if (matches[i].Groups[1].Value.Equals("2150E333-8FDC-42A3-9474-1A3956D46DE8", StringComparison.OrdinalIgnoreCase))
+                            continue;
+                        if (matches[i].Groups[2].Value == projectName)
+                            return Guid.ParseExact(matches[i].Groups[4].Value, "D");
                     }
                 }
                 catch
@@ -376,7 +385,8 @@ namespace Flax.Build.Projects.VisualStudio
                         {
                             if (!folderIds.TryGetValue(folderPath, out project.FolderGuid))
                             {
-                                project.FolderGuid = Guid.NewGuid();
+                                if (!folderIds.TryGetValue(folderParents[i], out project.FolderGuid))
+                                    project.FolderGuid = Guid.NewGuid();
                                 folderIds.Add(folderPath, project.FolderGuid);
                             }
                             folderNames.Add(folderPath);
@@ -479,7 +489,7 @@ namespace Flax.Build.Projects.VisualStudio
                         {
                             SolutionConfiguration projectConfiguration;
                             bool build = false;
-                            int firstFullMatch = -1, firstPlatformMatch = -1;
+                            int firstFullMatch = -1, firstPlatformMatch = -1, firstEditorMatch = -1;
                             for (int i = 0; i < project.Configurations.Count; i++)
                             {
                                 var e = new SolutionConfiguration(project.Configurations[i]);
@@ -492,18 +502,47 @@ namespace Flax.Build.Projects.VisualStudio
                                 {
                                     firstPlatformMatch = i;
                                 }
+                                if (firstEditorMatch == -1 && e.Configuration == configuration.Configuration)
+                                {
+                                    firstEditorMatch = i;
+                                }
                             }
-                            if (firstFullMatch != -1)
+                            if (project is AndroidProject)
+                            {
+                                // Utility Android deploy project only for exact match
+                                if (firstFullMatch != -1)
+                                    projectConfiguration = configuration;
+                                else
+                                    projectConfiguration = new SolutionConfiguration(project.Configurations[0]);
+                            }
+                            else if (firstFullMatch != -1)
                             {
                                 projectConfiguration = configuration;
-                                build = solution.MainProject == project || (solution.MainProject == null && project.Name == solution.Name);
+
+                                // Always build the main project
+                                build = solution.MainProject == project;
+
+                                // Build C# projects (needed for Rider solution wide analysis)
+                                build |= project.Type == TargetType.DotNetCore;
+
+                                // Always build the project named after solution if main project was not set
+                                build |= solution.MainProject == null && project.Name == solution.Name;
                             }
-                            else if (firstPlatformMatch != -1)
+                            else if (firstPlatformMatch != -1 && !configuration.Name.StartsWith("Editor."))
                             {
+                                // No exact match, pick the first configuration for matching platform
                                 projectConfiguration = new SolutionConfiguration(project.Configurations[firstPlatformMatch]);
+                            }
+                            else if (firstEditorMatch != -1 && configuration.Name.StartsWith("Editor."))
+                            {
+                                // No exact match, pick the matching editor configuration for different platform.
+                                // As an example, Editor configuration for Android projects should be remapped
+                                // to desktop platform in order to provide working Intellisense information.
+                                projectConfiguration = new SolutionConfiguration(project.Configurations[firstEditorMatch]);
                             }
                             else
                             {
+                                // No match
                                 projectConfiguration = new SolutionConfiguration(project.Configurations[0]);
                             }
 
@@ -572,8 +611,8 @@ namespace Flax.Build.Projects.VisualStudio
             {
                 var profiles = new Dictionary<string, string>();
                 var profile = new StringBuilder();
-                var editorPath = Utilities.NormalizePath(Path.Combine(Globals.EngineRoot, Platform.GetEditorBinaryDirectory(), $"Development/FlaxEditor{Utilities.GetPlatformExecutableExt()}"));
-                var workspacePath = Utilities.NormalizePath(solutionDirectory);
+                var editorPath = Utilities.NormalizePath(Path.Combine(Globals.EngineRoot, Platform.GetEditorBinaryDirectory(), $"Development/FlaxEditor{Utilities.GetPlatformExecutableExt()}")).Replace('\\', '/');
+                var workspacePath = Utilities.NormalizePath(solutionDirectory).Replace('\\', '/');
                 foreach (var project in projects)
                 {
                     if (project.Type == TargetType.DotNetCore)
@@ -608,6 +647,95 @@ namespace Flax.Build.Projects.VisualStudio
                     profile.AppendLine("  }");
                     profile.Append("}");
                     File.WriteAllText(e.Key, profile.ToString(), Encoding.UTF8);
+                }
+            }
+
+            // Generate Rider-specific configuration files
+            {
+                StringBuilder dotSettingsFileContent = new StringBuilder();
+                string dotSettingsUserFilePath = solution.Path + ".DotSettings.user";
+
+                // Solution settings (user layer)
+                bool useResharperBuild = false; // This needs to be disabled for custom build steps to run properly
+
+                if (File.Exists(dotSettingsUserFilePath))
+                {
+                    foreach (var line in File.ReadAllLines(dotSettingsUserFilePath))
+                    {
+                        if (line.Contains(@"/UseMsbuildSolutionBuilder/@EntryValue"))
+                        {
+                            if (!useResharperBuild)
+                            {
+                                dotSettingsFileContent.Append("\t").Append(@"<s:String x:Key=""/Default/Environment/Hierarchy/Build/SolBuilderDuo/UseMsbuildSolutionBuilder/@EntryValue"">No</s:String>");
+                                if (line.Contains("</wpf:ResourceDictionary>"))
+                                    dotSettingsFileContent.Append("</wpf:ResourceDictionary>\n");
+                                else
+                                    dotSettingsFileContent.Append("\n");
+                            }
+                            continue;
+                        }
+                        dotSettingsFileContent.Append(line).Append("\n");
+                    }
+                }
+                else
+                {
+                    dotSettingsFileContent.Append(@"<wpf:ResourceDictionary xml:space=""preserve"" xmlns:x=""http://schemas.microsoft.com/winfx/2006/xaml"" xmlns:s=""clr-namespace:System;assembly=mscorlib"" xmlns:ss=""urn:shemas-jetbrains-com:settings-storage-xaml"" xmlns:wpf=""http://schemas.microsoft.com/winfx/2006/xaml/presentation"">").Append("\n");
+                    if (!useResharperBuild)
+                        dotSettingsFileContent.Append("\t").Append(@"<s:String x:Key=""/Default/Environment/Hierarchy/Build/SolBuilderDuo/UseMsbuildSolutionBuilder/@EntryValue"">No</s:String>");
+                    dotSettingsFileContent.Append("</wpf:ResourceDictionary>\n");
+                }
+
+                Utilities.WriteFileIfChanged(dotSettingsUserFilePath, dotSettingsFileContent.ToString());
+            }
+
+            // Custom MSBuild .targets file to prevent building Flax C#-projects directly with MSBuild
+            {
+                var targetsFileContent = new StringBuilder();
+                targetsFileContent.AppendLine("<Project>");
+                targetsFileContent.AppendLine("  <!-- Prevent building projects with MSBuild, let Flax.Build handle the building process -->");
+                targetsFileContent.AppendLine("  <Target Name=\"Build\" Condition=\"'false' == 'true'\" />");
+                targetsFileContent.AppendLine("</Project>");
+
+                Utilities.WriteFileIfChanged(Path.Combine(Globals.Root, "Cache", "Projects", "Flax.Build.CSharp.SkipBuild.targets"), targetsFileContent.ToString());
+            }
+
+            // Override MSBuild build tasks to run Flax.Build in C#-only projects
+            {
+                // Build command for the build tool
+                var buildToolPath = Path.ChangeExtension(Utilities.MakePathRelativeTo(typeof(Builder).Assembly.Location, Path.GetDirectoryName(solution.MainProject.Path)), null);
+                
+                var targetsFileContent = new StringBuilder();
+                targetsFileContent.AppendLine("<Project>");
+                targetsFileContent.AppendLine("  <!-- Custom Flax.Build scripts for C# projects. -->");
+                targetsFileContent.AppendLine("  <Target Name=\"Build\">");
+                AppendBuildToolCommands(targetsFileContent, "-build");
+                targetsFileContent.AppendLine("  </Target>");
+                targetsFileContent.AppendLine("  <Target Name=\"Rebuild\">");
+                AppendBuildToolCommands(targetsFileContent, "-rebuild");
+                targetsFileContent.AppendLine("  </Target>");
+                targetsFileContent.AppendLine("  <Target Name=\"Clean\">");
+                AppendBuildToolCommands(targetsFileContent, "-clean");
+                targetsFileContent.AppendLine("  </Target>");
+                targetsFileContent.AppendLine("</Project>");
+
+                Utilities.WriteFileIfChanged(Path.Combine(Globals.Root, "Cache", "Projects", "Flax.Build.CSharp.targets"), targetsFileContent.ToString());
+
+                void AppendBuildToolCommands(StringBuilder str, string extraArgs)
+                {
+                    foreach (var configuration in solution.MainProject.Configurations)
+                    {
+                        var cmdLine = string.Format("{0} -log -mutex -workspace={1} -arch={2} -configuration={3} -platform={4} -buildTargets={5}",
+                                                FixPath(buildToolPath),
+                                                FixPath(solution.MainProject.WorkspaceRootPath),
+                                                configuration.Architecture,
+                                                configuration.Configuration,
+                                                configuration.Platform,
+                                                configuration.Target);
+                        if (!string.IsNullOrEmpty(Configuration.Compiler))
+                            cmdLine += " -compiler=" + Configuration.Compiler;
+
+                        str.AppendLine(string.Format("    <Exec Command=\"{0} {1}\" Condition=\"'$(Configuration)|$(Platform)'=='{2}'\"/>", cmdLine, extraArgs, configuration.Name));
+                    }
                 }
             }
         }
@@ -646,6 +774,15 @@ namespace Flax.Build.Projects.VisualStudio
                 };
                 projects.Add(project);
             }
+        }
+
+        private static string FixPath(string path)
+        {
+            if (path.Contains(' '))
+            {
+                path = "\"" + path + "\"";
+            }
+            return path;
         }
     }
 }

@@ -9,9 +9,6 @@
 /// </summary>
 class FLAXENGINE_API AssetReferenceBase
 {
-public:
-    typedef Delegate<> EventType;
-
 protected:
     Asset* _asset = nullptr;
 
@@ -19,17 +16,17 @@ public:
     /// <summary>
     /// The asset loaded event (fired when asset gets loaded or is already loaded after change).
     /// </summary>
-    EventType Loaded;
+    Action Loaded;
 
     /// <summary>
     /// The asset unloading event (should cleanup refs to it).
     /// </summary>
-    EventType Unload;
+    Action Unload;
 
     /// <summary>
     /// Action fired when field gets changed (link a new asset or change to the another value).
     /// </summary>
-    EventType Changed;
+    Action Changed;
 
 public:
     NON_COPYABLE(AssetReferenceBase);
@@ -105,12 +102,12 @@ public:
     /// <param name="other">The other.</param>
     AssetReference(const AssetReference& other)
     {
-        OnSet(other.Get());
+        OnSet(other._asset);
     }
 
     AssetReference(AssetReference&& other)
     {
-        OnSet(other.Get());
+        OnSet(other._asset);
         other.OnSet(nullptr);
     }
 
@@ -118,7 +115,7 @@ public:
     {
         if (&other != this)
         {
-            OnSet(other.Get());
+            OnSet(other._asset);
             other.OnSet(nullptr);
         }
         return *this;
@@ -134,19 +131,19 @@ public:
 public:
     FORCE_INLINE AssetReference& operator=(const AssetReference& other)
     {
-        OnSet(other.Get());
+        OnSet(other._asset);
         return *this;
     }
 
     FORCE_INLINE AssetReference& operator=(T* other)
     {
-        OnSet(other);
+        OnSet((Asset*)other);
         return *this;
     }
 
     FORCE_INLINE AssetReference& operator=(const Guid& id)
     {
-        OnSet((T*)::LoadAsset(id, T::TypeInitializer));
+        OnSet(::LoadAsset(id, T::TypeInitializer));
         return *this;
     }
 

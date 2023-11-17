@@ -45,7 +45,6 @@ UICanvas::UICanvas(const SpawnParams& params)
     if (UICanvas_Serialize == nullptr)
     {
         MClass* mclass = GetClass();
-        UICanvas_Serialize = mclass->GetMethod("Serialize");
         UICanvas_SerializeDiff = mclass->GetMethod("SerializeDiff", 1);
         UICanvas_Deserialize = mclass->GetMethod("Deserialize", 1);
         UICanvas_PostDeserialize = mclass->GetMethod("PostDeserialize");
@@ -56,6 +55,8 @@ UICanvas::UICanvas(const SpawnParams& params)
 #endif
         UICanvas_EndPlay = mclass->GetMethod("EndPlay");
         UICanvas_ParentChanged = mclass->GetMethod("ParentChanged");
+        UICanvas_Serialize = mclass->GetMethod("Serialize");
+        Platform::MemoryBarrier();
     }
 #endif
 }
@@ -123,29 +124,28 @@ void UICanvas::Deserialize(DeserializeStream& stream, ISerializeModifier* modifi
             MException ex(exception);
             ex.Log(LogType::Error, TEXT("UICanvas::Deserialize"));
         }
+        if (IsDuringPlay())
+        {
+            UICANVAS_INVOKE(PostDeserialize);
+        }
     }
 #endif
-
-    if (IsDuringPlay())
-    {
-        UICANVAS_INVOKE(PostDeserialize);
-    }
 }
 
-void UICanvas::BeginPlay(SceneBeginData* data)
+void UICanvas::OnBeginPlay()
 {
     UICANVAS_INVOKE(PostDeserialize);
 
     // Base
-    Actor::BeginPlay(data);
+    Actor::OnBeginPlay();
 }
 
-void UICanvas::EndPlay()
+void UICanvas::OnEndPlay()
 {
     UICANVAS_INVOKE(EndPlay);
 
     // Base
-    Actor::EndPlay();
+    Actor::OnEndPlay();
 }
 
 void UICanvas::OnParentChanged()

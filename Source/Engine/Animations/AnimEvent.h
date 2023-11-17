@@ -2,8 +2,7 @@
 
 #pragma once
 
-#include "Engine/Scripting/ScriptingObject.h"
-#include "Engine/Core/ISerializable.h"
+#include "Engine/Scripting/SerializableScriptingObject.h"
 #if USE_EDITOR
 #include "Engine/Core/Math/Color.h"
 #endif
@@ -14,7 +13,7 @@ class Animation;
 /// <summary>
 /// The animation notification event triggered during animation playback.
 /// </summary>
-API_CLASS(Abstract) class FLAXENGINE_API AnimEvent : public ScriptingObject, public ISerializable
+API_CLASS(Abstract) class FLAXENGINE_API AnimEvent : public SerializableScriptingObject
 {
     DECLARE_SCRIPTING_TYPE(AnimEvent);
 
@@ -35,10 +34,6 @@ API_CLASS(Abstract) class FLAXENGINE_API AnimEvent : public ScriptingObject, pub
     API_FUNCTION() virtual void OnEvent(AnimatedModel* actor, Animation* anim, float time, float deltaTime)
     {
     }
-
-    // [ISerializable]
-    void Serialize(SerializeStream& stream, const void* otherObj) override;
-    void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) override;
 };
 
 /// <summary>

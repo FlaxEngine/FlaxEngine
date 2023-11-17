@@ -40,12 +40,6 @@ namespace Flax.Build
         public static bool Deploy = false;
 
         /// <summary>
-        /// Compresses deployed files.
-        /// </summary>
-        [CommandLine("deployDontCompress", "Skips compressing deployed files, and keeps files.")]
-        public static bool DontCompress = false;
-
-        /// <summary>
         /// Builds the targets. Builds all the targets, use <see cref="BuildTargets"/> to select a custom set of targets for the build.
         /// </summary>
         [CommandLine("build", "Builds the targets.")]

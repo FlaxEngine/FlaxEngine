@@ -54,9 +54,7 @@ namespace FlaxEditor.Windows.Search
                     _selectedItem.BackgroundColor = Style.Current.BackgroundSelected;
                     if (_matchedItems.Count > VisibleItemCount)
                     {
-                        _resultPanel.VScrollBar.SmoothingScale = 0;
-                        _resultPanel.ScrollViewTo(_selectedItem);
-                        _resultPanel.VScrollBar.SmoothingScale = 1;
+                        _resultPanel.ScrollViewTo(_selectedItem, true);
                     }
                 }
             }

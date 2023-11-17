@@ -183,11 +183,10 @@ void AudioSource::Stop()
 
 float AudioSource::GetTime() const
 {
-    if (_state == States::Stopped || SourceIDs.IsEmpty())
+    if (_state == States::Stopped || SourceIDs.IsEmpty() || !Clip->IsLoaded())
         return 0.0f;
 
     float time = AudioBackend::Source::GetCurrentBufferTime(this);
-    ASSERT(time >= 0.0f && time <= Clip->GetLength());
 
     if (UseStreaming())
     {
@@ -265,6 +264,7 @@ void AudioSource::Cleanup()
 void AudioSource::OnClipChanged()
 {
     Stop();
+    _clipChanged = true;
 }
 
 void AudioSource::OnClipLoaded()
@@ -318,6 +318,12 @@ void AudioSource::SetNonStreamingBuffer()
 
 void AudioSource::PlayInternal()
 {
+    if (_clipChanged && SourceIDs.HasItems())
+    {
+        // If clip was changed between source setup (OnEnable) and actual playback start then ensure to flush any runtime properties with the audio backend
+        _clipChanged = false;
+        AudioBackend::Source::SpatialSetupChanged(this);
+    }
     AudioBackend::Source::Play(this);
 
     _isActuallyPlayingSth = true;
@@ -482,6 +488,7 @@ void AudioSource::OnEnable()
 {
     _prevPos = GetPosition();
     _velocity = Vector3::Zero;
+    _clipChanged = false;
 
     Audio::OnAddSource(this);
     GetScene()->Ticking.Update.AddTick<AudioSource, &AudioSource::Update>(this);

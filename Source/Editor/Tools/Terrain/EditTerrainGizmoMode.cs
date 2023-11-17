@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
 using System;
+using FlaxEditor.Gizmo;
 using FlaxEditor.Viewport;
 using FlaxEditor.Viewport.Modes;
 using FlaxEngine;
@@ -84,12 +85,12 @@ namespace FlaxEditor.Tools.Terrain
         public event Action SelectedChunkCoordChanged;
 
         /// <inheritdoc />
-        public override void Init(MainEditorGizmoViewport viewport)
+        public override void Init(IGizmoOwner owner)
         {
-            base.Init(viewport);
+            base.Init(owner);
 
             EditMode = Modes.Edit;
-            Gizmo = new EditTerrainGizmo(viewport, this);
+            Gizmo = new EditTerrainGizmo(owner, this);
         }
 
         /// <inheritdoc />
@@ -97,7 +98,7 @@ namespace FlaxEditor.Tools.Terrain
         {
             base.OnActivated();
 
-            Viewport.Gizmos.Active = Gizmo;
+            Owner.Gizmos.Active = Gizmo;
         }
 
         /// <summary>

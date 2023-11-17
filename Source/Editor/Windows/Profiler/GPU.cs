@@ -63,7 +63,9 @@ namespace FlaxEditor.Windows.Profiler
             };
 
             // Table
-            var headerColor = Style.Current.LightBackground;
+            var style = Style.Current;
+            var headerColor = style.LightBackground;
+            var textColor = style.Foreground;
             _table = new Table
             {
                 Columns = new[]
@@ -74,35 +76,41 @@ namespace FlaxEditor.Windows.Profiler
                         CellAlignment = TextAlignment.Near,
                         Title = "Event",
                         TitleBackgroundColor = headerColor,
+                        TitleColor = textColor,
                     },
                     new ColumnDefinition
                     {
                         Title = "Total",
                         TitleBackgroundColor = headerColor,
+                        TitleColor = textColor,
                         FormatValue = (x) => ((float)x).ToString("0.0") + '%',
                     },
                     new ColumnDefinition
                     {
                         Title = "GPU ms",
                         TitleBackgroundColor = headerColor,
+                        TitleColor = textColor,
                         FormatValue = (x) => ((float)x).ToString("0.000"),
                     },
                     new ColumnDefinition
                     {
                         Title = "Draw Calls",
                         TitleBackgroundColor = headerColor,
+                        TitleColor = textColor,
                         FormatValue = FormatCountLong,
                     },
                     new ColumnDefinition
                     {
                         Title = "Triangles",
                         TitleBackgroundColor = headerColor,
+                        TitleColor = textColor,
                         FormatValue = FormatCountLong,
                     },
                     new ColumnDefinition
                     {
                         Title = "Vertices",
                         TitleBackgroundColor = headerColor,
+                        TitleColor = textColor,
                         FormatValue = FormatCountLong,
                     },
                 },

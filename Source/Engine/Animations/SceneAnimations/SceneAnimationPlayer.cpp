@@ -905,7 +905,7 @@ void SceneAnimationPlayer::Tick(SceneAnimation* anim, float time, float dt, int3
                         MException ex(exception);
                         ex.Log(LogType::Error, TEXT("Property"));
                     }
-                    else if (!MCore::Type::IsPointer(valueType))
+                    else if (!MCore::Type::IsPointer(valueType) && !MCore::Type::IsReference(valueType))
                     {
                         if (boxed)
                             Platform::MemoryCopy(value, MCore::Object::Unbox(boxed), valueSize);

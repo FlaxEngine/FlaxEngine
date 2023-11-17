@@ -42,19 +42,7 @@ namespace Flax.Build.Platforms
                     var subdirs = Directory.GetDirectories(Path.Combine(AndroidSdk.Instance.RootPath, "ndk"));
                     if (subdirs.Length != 0)
                     {
-                        Array.Sort(subdirs, (a, b) =>
-                        {
-                            Version va, vb;
-                            if (Version.TryParse(a, out va))
-                            {
-                                if (Version.TryParse(b, out vb))
-                                    return va.CompareTo(vb);
-                                return 1;
-                            }
-                            if (Version.TryParse(b, out vb))
-                                return -1;
-                            return 0;
-                        });
+                        Utilities.SortVersionDirectories(subdirs);
                         sdkPath = subdirs.Last();
                     }
                 }

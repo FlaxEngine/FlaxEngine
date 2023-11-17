@@ -20,7 +20,7 @@ namespace FlaxEditor.GUI.Input
         : this(false, 0, 0)
         {
         }
-        
+
         /// <summary>
         /// Init search box
         /// </summary>
@@ -28,7 +28,7 @@ namespace FlaxEditor.GUI.Input
         : base(isMultiline, x, y, width)
         {
             WatermarkText = "Search...";
-            
+
             ClearSearchButton = new Button
             {
                 Parent = this,

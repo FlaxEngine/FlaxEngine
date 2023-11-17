@@ -59,7 +59,7 @@ public:
 private:
 
     bool GetResult(Query& query);
-    void WriteTimestamp(CmdBufferVulkan* cmdBuffer, Query& query) const;
+    void WriteTimestamp(CmdBufferVulkan* cmdBuffer, Query& query, VkPipelineStageFlagBits stage) const;
     bool TryGetResult();
     bool UseQueries();
 

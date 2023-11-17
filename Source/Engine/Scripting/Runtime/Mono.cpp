@@ -1044,7 +1044,7 @@ const MAssembly::ClassesDictionary& MAssembly::GetClasses() const
     const StringAnsiView monoImageName(mono_image_get_name(_monoImage));
     ZoneText(*monoImageName, monoImageName.Length());
 #endif
-    ScopeLock lock(_locker);
+    ScopeLock lock(BinaryModule::Locker);
     if (_hasCachedClasses)
         return _classes;
     ASSERT(_classes.IsEmpty());
@@ -2125,6 +2125,44 @@ const Array<MObject*>& MProperty::GetAttributes() const
         _attributes[i] = mono_array_get(monoAttributesArray, MonoObject*, i);
     mono_custom_attrs_free(attrInfo);
     return _attributes;
+}
+
+void MCore::ScriptingObject::SetInternalValues(MClass* klass, MObject* object, void* unmanagedPtr, const Guid* id)
+{
+    // Set handle to unmanaged object
+    const MField* monoUnmanagedPtrField = klass->GetField("__unmanagedPtr");
+    if (monoUnmanagedPtrField)
+    {
+        const void* param = unmanagedPtr;
+        monoUnmanagedPtrField->SetValue(managedInstance, &param);
+    }
+    if (id != nullptr)
+    {
+        // Set object id
+        const MField* monoIdField = klass->GetField("__internalId");
+        if (monoIdField)
+        {
+            monoIdField->SetValue(managedInstance, (void*)id);
+        }
+    }
+}
+
+MObject* MCore::ScriptingObject::CreateScriptingObject(MClass* klass, void* unmanagedPtr, const Guid* id)
+{
+    // Ensure to have managed domain attached (this can be called from custom native thread, eg. content loader)
+    MCore::Thread::Attach();
+
+    // Allocate managed instance
+    MObject* managedInstance = MCore::Object::New(klass);
+    if (managedInstance)
+    {
+        // Set unmanaged object handle and id
+        MCore::ScriptingObject::SetInternalValues(klass, managedInstance, unmanagedPtr, id);
+
+        // Initialize managed instance (calls constructor)
+        MCore::Object::Init(managedInstance);
+    }
+    return managedInstance;
 }
 
 #endif

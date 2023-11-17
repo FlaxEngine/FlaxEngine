@@ -81,7 +81,6 @@ void JsonTools::ChangeIds(Document& doc, const Dictionary<Guid, Guid>& mapping)
     ::ChangeIds(doc, doc, mapping);
 }
 
-
 Float2 JsonTools::GetFloat2(const Value& value)
 {
     Float2 result;
@@ -256,7 +255,7 @@ BoundingBox JsonTools::GetBoundingBox(const Value& value)
 
 Guid JsonTools::GetGuid(const Value& value)
 {
-    if (value.IsNull())
+    if (!value.IsString())
         return Guid::Empty;
     CHECK_RETURN(value.GetStringLength() == 32, Guid::Empty);
 

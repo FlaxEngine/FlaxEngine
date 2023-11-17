@@ -88,6 +88,10 @@ public:
     {
     }
 
+    void SetStencilRef(uint32 value) override
+    {
+    }
+
     void ResetSR() override
     {
     }

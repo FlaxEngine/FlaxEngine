@@ -312,7 +312,7 @@ void Float3::FindBestAxisVectors(Float3& firstAxis, Float3& secondAxis) const
 template<>
 float Float3::TriangleArea(const Float3& v0, const Float3& v1, const Float3& v2)
 {
-    return (v2 - v0 ^ v1 - v0).Length() * 0.5f;
+    return ((v2 - v0) ^ (v1 - v0)).Length() * 0.5f;
 }
 
 template<>
@@ -626,7 +626,7 @@ void Double3::FindBestAxisVectors(Double3& firstAxis, Double3& secondAxis) const
 template<>
 double Double3::TriangleArea(const Double3& v0, const Double3& v1, const Double3& v2)
 {
-    return (v2 - v0 ^ v1 - v0).Length() * 0.5;
+    return ((v2 - v0) ^ (v1 - v0)).Length() * 0.5;
 }
 
 template<>

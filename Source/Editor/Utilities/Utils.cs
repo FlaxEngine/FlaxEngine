@@ -11,6 +11,7 @@ using System.Globalization;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -18,10 +19,10 @@ using FlaxEditor.GUI.ContextMenu;
 using FlaxEditor.GUI.Input;
 using FlaxEditor.GUI.Tree;
 using FlaxEditor.SceneGraph;
-using FlaxEditor.Scripting;
 using FlaxEngine;
 using FlaxEngine.GUI;
 using FlaxEngine.Utilities;
+using FlaxEditor.Windows;
 
 namespace FlaxEngine
 {
@@ -1060,8 +1061,9 @@ namespace FlaxEditor.Utilities
         /// <param name="searchBox">The search box.</param>
         /// <param name="tree">The tree control.</param>
         /// <param name="headerHeight">Amount of additional space above the search box to put custom UI.</param>
+        /// <param name="autoSearch">Plug automatic tree search delegate.</param>
         /// <returns>The created menu to setup and show.</returns>
-        public static ContextMenuBase CreateSearchPopup(out TextBox searchBox, out Tree tree, float headerHeight = 0)
+        public static ContextMenuBase CreateSearchPopup(out TextBox searchBox, out Tree tree, float headerHeight = 0, bool autoSearch = false)
         {
             var menu = new ContextMenuBase
             {
@@ -1087,7 +1089,33 @@ namespace FlaxEditor.Utilities
             {
                 Parent = panel2,
             };
+            if (autoSearch)
+            {
+                var s = searchBox;
+                var t = tree;
+                searchBox.TextChanged += delegate
+                {
+                    if (t.IsLayoutLocked)
+                        return;
+                    t.LockChildrenRecursive();
+                    UpdateSearchPopupFilter(t, s.Text);
+                    t.UnlockChildrenRecursive();
+                    menu.PerformLayout();
+                };
+            }
             return menu;
+        }
+
+        /// <summary>
+        /// Updates (recursively) search popup tree structures based on the filter text.
+        /// </summary>
+        public static void UpdateSearchPopupFilter(Tree tree, string filterText)
+        {
+            for (int i = 0; i < tree.Children.Count; i++)
+            {
+                if (tree.Children[i] is TreeNode child)
+                    UpdateSearchPopupFilter(child, filterText);
+            }
         }
 
         /// <summary>
@@ -1234,6 +1262,61 @@ namespace FlaxEditor.Utilities
                     s = "0." + z + s;
             }
             return s;
+        }
+
+        /// <summary>
+        /// Binds global input actions for the window.
+        /// </summary>
+        /// <param name="window">The editor window.</param>
+        public static void SetupCommonInputActions(EditorWindow window)
+        {
+            var inputActions = window.InputActions;
+
+            // Setup input actions
+            inputActions.Add(options => options.Save, Editor.Instance.SaveAll);
+            inputActions.Add(options => options.Undo, () =>
+            {
+                Editor.Instance.PerformUndo();
+                window.Focus();
+            });
+            inputActions.Add(options => options.Redo, () =>
+            {
+                Editor.Instance.PerformRedo();
+                window.Focus();
+            });
+            inputActions.Add(options => options.Cut, Editor.Instance.SceneEditing.Cut);
+            inputActions.Add(options => options.Copy, Editor.Instance.SceneEditing.Copy);
+            inputActions.Add(options => options.Paste, Editor.Instance.SceneEditing.Paste);
+            inputActions.Add(options => options.Duplicate, Editor.Instance.SceneEditing.Duplicate);
+            inputActions.Add(options => options.SelectAll, Editor.Instance.SceneEditing.SelectAllScenes);
+            inputActions.Add(options => options.Delete, Editor.Instance.SceneEditing.Delete);
+            inputActions.Add(options => options.Search, () => Editor.Instance.Windows.SceneWin.Search());
+            inputActions.Add(options => options.MoveActorToViewport, Editor.Instance.UI.MoveActorToViewport);
+            inputActions.Add(options => options.AlignActorWithViewport, Editor.Instance.UI.AlignActorWithViewport);
+            inputActions.Add(options => options.AlignViewportWithActor, Editor.Instance.UI.AlignViewportWithActor);
+            inputActions.Add(options => options.PilotActor, Editor.Instance.UI.PilotActor);
+            inputActions.Add(options => options.Play, Editor.Instance.Simulation.DelegatePlayOrStopPlayInEditor);
+            inputActions.Add(options => options.PlayCurrentScenes, Editor.Instance.Simulation.RequestPlayScenesOrStopPlay);
+            inputActions.Add(options => options.Pause, Editor.Instance.Simulation.RequestResumeOrPause);
+            inputActions.Add(options => options.StepFrame, Editor.Instance.Simulation.RequestPlayOneFrame);
+            inputActions.Add(options => options.CookAndRun, () => Editor.Instance.Windows.GameCookerWin.BuildAndRun());
+            inputActions.Add(options => options.RunCookedGame, () => Editor.Instance.Windows.GameCookerWin.RunCooked());
+            inputActions.Add(options => options.BuildScenesData, Editor.Instance.BuildScenesOrCancel);
+            inputActions.Add(options => options.BakeLightmaps, Editor.Instance.BakeLightmapsOrCancel);
+            inputActions.Add(options => options.ClearLightmaps, Editor.Instance.ClearLightmaps);
+            inputActions.Add(options => options.BakeEnvProbes, Editor.Instance.BakeAllEnvProbes);
+            inputActions.Add(options => options.BuildCSG, Editor.Instance.BuildCSG);
+            inputActions.Add(options => options.BuildNav, Editor.Instance.BuildNavMesh);
+            inputActions.Add(options => options.BuildSDF, Editor.Instance.BuildAllMeshesSDF);
+            inputActions.Add(options => options.TakeScreenshot, Editor.Instance.Windows.TakeScreenshot);
+            inputActions.Add(options => options.ProfilerWindow, () => Editor.Instance.Windows.ProfilerWin.FocusOrShow());
+            inputActions.Add(options => options.ProfilerStartStop, () => { Editor.Instance.Windows.ProfilerWin.LiveRecording = !Editor.Instance.Windows.ProfilerWin.LiveRecording; Editor.Instance.UI.AddStatusMessage($"Profiling {(Editor.Instance.Windows.ProfilerWin.LiveRecording ? "started" : "stopped")}."); });
+            inputActions.Add(options => options.ProfilerClear, () => { Editor.Instance.Windows.ProfilerWin.Clear(); Editor.Instance.UI.AddStatusMessage($"Profiling results cleared."); });
+            inputActions.Add(options => options.SaveScenes, () => Editor.Instance.Scene.SaveScenes());
+            inputActions.Add(options => options.CloseScenes, () => Editor.Instance.Scene.CloseAllScenes());
+            inputActions.Add(options => options.OpenScriptsProject, () => Editor.Instance.CodeEditing.OpenSolution());
+            inputActions.Add(options => options.GenerateScriptsProject, () => Editor.Instance.ProgressReporting.GenerateScriptsProjectFiles.RunAsync());
+            inputActions.Add(options => options.RecompileScripts, ScriptsBuilder.Compile);
         }
     }
 }

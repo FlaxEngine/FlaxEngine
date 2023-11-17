@@ -37,6 +37,9 @@ namespace FlaxEditor.GUI
         : base(0, 0, 100, height)
         {
             Depth = -1;
+
+            if (Height < Style.Current.FontMedium.Height)
+                Height = Style.Current.FontMedium.Height + 4;
         }
 
         /// <inheritdoc />
@@ -95,7 +98,7 @@ namespace FlaxEditor.GUI
                     rect.Width -= leftDepthMargin;
 
                     Render2D.PushClip(rect);
-                    Render2D.DrawText(style.FontMedium, text, rect, Color.White, column.CellAlignment, TextAlignment.Center);
+                    Render2D.DrawText(style.FontMedium, text, rect, style.Foreground, column.CellAlignment, TextAlignment.Center);
                     Render2D.PopClip();
 
                     x += width;
@@ -238,7 +241,7 @@ namespace FlaxEditor.GUI
         {
             DoubleClick?.Invoke();
             RowDoubleClick?.Invoke(this);
-            
+
             return base.OnMouseDoubleClick(location, button);
         }
 
