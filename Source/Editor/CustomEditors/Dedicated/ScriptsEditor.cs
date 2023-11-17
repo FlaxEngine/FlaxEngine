@@ -643,9 +643,8 @@ namespace FlaxEditor.CustomEditors.Dedicated
                             var requiredScript = script.Actor.GetScript(type.Type);
                             if (requiredScript == null)
                             {
-                                Editor.LogWarning($"{script} on {script.Actor} is missing required script of type {type}.");
+                                Editor.LogWarning($"{Utilities.Utils.GetPropertyNameUI(scriptType.Name)} on {script.Actor} is missing a required script of type {type}.");
                                 hasAllRequiredScripts = false;
-                                break;
                             }
                         }
                     }
