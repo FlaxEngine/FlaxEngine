@@ -42,24 +42,7 @@ public:
     /// <summary>
     /// Field for assigning new script to transfer data to.
     /// </summary>
-    API_PROPERTY() void SetReferenceScript(const ScriptingObjectReference<Script>& value)
-    {
-        _referenceScript = value;
-        if (Data.IsEmpty())
-            return;
-        rapidjson_flax::Document document;
-        document.Parse(Data.ToStringAnsi().GetText());
-
-        auto modifier = Cache::ISerializeModifier.Get();
-        _referenceScript->Deserialize(document, modifier.Value);
-
-        DeleteObject();
-    }
+    API_PROPERTY() void SetReferenceScript(const ScriptingObjectReference<Script>& value);
 };
-
-inline MissingScript::MissingScript(const SpawnParams& params)
-    : Script(params)
-{
-}
 
 #endif

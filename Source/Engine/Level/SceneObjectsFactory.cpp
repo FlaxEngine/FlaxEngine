@@ -19,6 +19,29 @@
 #include "Engine/Threading/Threading.h"
 #endif
 
+MissingScript::MissingScript(const SpawnParams& params)
+    : Script(params)
+{
+}
+
+void MissingScript::SetReferenceScript(const ScriptingObjectReference<Script>& value)
+{
+    if (_referenceScript == value)
+        return;
+    _referenceScript = value;
+    if (Data.IsEmpty() || !_referenceScript)
+        return;
+    rapidjson_flax::Document document;
+    document.Parse(Data.ToStringAnsi().GetText());
+    document.RemoveMember("ParentID"); // Prevent changing parent
+    auto modifier = Cache::ISerializeModifier.Get();
+    const auto idsMapping = Scripting::ObjectsLookupIdMapping.Get();
+    if (idsMapping)
+        modifier->IdsMapping = *idsMapping;
+    _referenceScript->Deserialize(document, modifier.Value);
+    DeleteObject();
+}
+
 SceneObjectsFactory::Context::Context(ISerializeModifier* modifier)
     : Modifier(modifier)
 {
