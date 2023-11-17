@@ -890,6 +890,17 @@ namespace Math
     {
         return Lerp<T>(a, b, alpha < 0.5f ? InterpCircularIn(0.f, 1.f, alpha * 2.f) * 0.5f : InterpCircularOut(0.f, 1.f, alpha * 2.f - 1.f) * 0.5f + 0.5f);
     }
+    /// <summary>
+    /// PingPongs the value <paramref name="t"/>, so that it is never larger than <paramref name="length"/> and never smaller than 0.
+    /// </summary>
+    /// <param name="t"></param>
+    /// <param name="length"></param>
+    /// <returns></returns>
+    template<class T>
+    static FORCE_INLINE T PingPong(const T& t, T length)
+    {
+        return length - Abs(Repeat(t, length * 2.0f) - length);
+    }
 
     // Rotates position about the given axis by the given angle, in radians, and returns the offset to position
     Vector3 FLAXENGINE_API RotateAboutAxis(const Vector3& normalizedRotationAxis, float angle, const Vector3& positionOnAxis, const Vector3& position);
