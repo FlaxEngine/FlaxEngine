@@ -33,6 +33,7 @@ void MissingScript::SetReferenceScript(const ScriptingObjectReference<Script>& v
         return;
     rapidjson_flax::Document document;
     document.Parse(Data.ToStringAnsi().GetText());
+    document.RemoveMember("ParentID"); // Prevent changing parent
     auto modifier = Cache::ISerializeModifier.Get();
     const auto idsMapping = Scripting::ObjectsLookupIdMapping.Get();
     if (idsMapping)
