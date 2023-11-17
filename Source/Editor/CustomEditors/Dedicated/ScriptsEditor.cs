@@ -229,25 +229,15 @@ namespace FlaxEditor.CustomEditors.Dedicated
             for (int i = 0; i < items.Count; i++)
             {
                 var scriptType = items[i];
-                List<ScriptType> requiredScripts = new List<ScriptType>();
+                RequireScriptAttribute scriptAttribute = null;
                 if (scriptType.HasAttribute(typeof(RequireScriptAttribute), false))
                 {
-                    var attributes = new List<RequireScriptAttribute>();
                     foreach (var e in scriptType.GetAttributes(false))
                     {
                         if (e is not RequireScriptAttribute requireScriptAttribute)
                             continue;
-                        attributes.Add(requireScriptAttribute);
-                    }
-
-                    if (attributes.Count > 0)
-                    {
-                        foreach (var e in attributes)
-                        {
-                            if (!e.RequiredType.IsSubclassOf(typeof(Script)))
-                                continue;
-                            requiredScripts.Add(new ScriptType(e.RequiredType));
-                        }
+                        scriptAttribute = requireScriptAttribute;
+                        break;
                     }
                 }
 
@@ -274,18 +264,26 @@ namespace FlaxEditor.CustomEditors.Dedicated
                     {
                         if (actor.GetType() != actorAttribute.RequiredType && !actor.GetType().IsSubclassOf(actorAttribute.RequiredType))
                         {
-                            Editor.LogWarning($"{Utilities.Utils.GetPropertyNameUI(scriptType.Name)} not added to {actor} due to script requiring an Actor type of {actorAttribute.RequiredType}.");
+                            Editor.LogWarning($"`{Utilities.Utils.GetPropertyNameUI(scriptType.Name)}` not added to `{actor}` due to script requiring an Actor type of `{actorAttribute.RequiredType}`.");
                             continue;
                         }
                     }
 
                     actions.Add(AddRemoveScript.Add(actor, scriptType));
                     // Check if actor has required scripts and add them if the actor does not.
-                    foreach (var type in requiredScripts)
+                    if (scriptAttribute != null)
                     {
-                        if (actor.GetScript(type.Type) != null)
-                            continue;
-                        actions.Add(AddRemoveScript.Add(actor, type));
+                        foreach (var type in scriptAttribute.RequiredTypes)
+                        {
+                            if (!type.IsSubclassOf(typeof(Script)))
+                            {
+                                Editor.LogWarning($"`{Utilities.Utils.GetPropertyNameUI(type.Name)}` not added to `{actor}` due to the class not being a subclass of Script.");
+                                continue;
+                            }
+                            if (actor.GetScript(type) != null)
+                                continue;
+                            actions.Add(AddRemoveScript.Add(actor, new ScriptType(type)));
+                        }
                     }
                 }
             }
@@ -642,33 +640,24 @@ namespace FlaxEditor.CustomEditors.Dedicated
                 bool hasAllRequirements = true;
                 if (scriptType.HasAttribute(typeof(RequireScriptAttribute), false))
                 {
-                    var scriptTypesToCheck = new List<ScriptType>();
-                    var attributes = new List<RequireScriptAttribute>();
+                    RequireScriptAttribute scriptAttribute = null;
                     foreach (var e in scriptType.GetAttributes(false))
                     {
                         if (e is not RequireScriptAttribute requireScriptAttribute)
                             continue;
-                        attributes.Add(requireScriptAttribute);
+                        scriptAttribute = requireScriptAttribute;
                     }
 
-                    if (attributes.Count > 0)
+                    if (scriptAttribute != null)
                     {
-                        foreach (var attribute in attributes)
+                        foreach (var type in scriptAttribute.RequiredTypes)
                         {
-                            if (!attribute.RequiredType.IsSubclassOf(typeof(Script)))
+                            if (!type.IsSubclassOf(typeof(Script)))
                                 continue;
-                            scriptTypesToCheck.Add(new ScriptType(attribute.RequiredType));
-                        }
-                    }
-
-                    if (scriptTypesToCheck.Count > 0)
-                    {
-                        foreach (var type in scriptTypesToCheck)
-                        {
-                            var requiredScript = script.Actor.GetScript(type.Type);
+                            var requiredScript = script.Actor.GetScript(type);
                             if (requiredScript == null)
                             {
-                                Editor.LogWarning($"{Utilities.Utils.GetPropertyNameUI(scriptType.Name)} on {script.Actor} is missing a required Script of type {type}.");
+                                Editor.LogWarning($"`{Utilities.Utils.GetPropertyNameUI(scriptType.Name)}` on `{script.Actor}` is missing a required Script of type `{type}`.");
                                 hasAllRequirements = false;
                             }
                         }
@@ -676,7 +665,6 @@ namespace FlaxEditor.CustomEditors.Dedicated
                 }
                 if (scriptType.HasAttribute(typeof(RequireActorAttribute), false))
                 {
-                    var scriptTypesToCheck = new List<ScriptType>();
                     RequireActorAttribute attribute = null;
                     foreach (var e in scriptType.GetAttributes(false))
                     {
@@ -691,7 +679,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
                         var actor = script.Actor;
                         if (actor.GetType() != attribute.RequiredType && !actor.GetType().IsSubclassOf(attribute.RequiredType))
                         {
-                            Editor.LogWarning($"{Utilities.Utils.GetPropertyNameUI(scriptType.Name)} on {script.Actor} is missing a required Actor of type {attribute.RequiredType}.");
+                            Editor.LogWarning($"`{Utilities.Utils.GetPropertyNameUI(scriptType.Name)}` on `{script.Actor}` is missing a required Actor of type `{attribute.RequiredType}`.");
                             hasAllRequirements = false;
                             // Maybe call to remove script here?
                         }

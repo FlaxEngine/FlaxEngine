@@ -12,7 +12,7 @@ public class RequireScriptAttribute : Attribute
     /// <summary>
     /// The required type.
     /// </summary>
-    public Type RequiredType;
+    public Type[] RequiredTypes;
 
     /// <summary>
     /// Initializes a new instance of the  <see cref="RequireScriptAttribute"/> class.
@@ -20,6 +20,15 @@ public class RequireScriptAttribute : Attribute
     /// <param name="type">The required type.</param>
     public RequireScriptAttribute(Type type)
     {
-        RequiredType = type;
+        RequiredTypes = new[] { type };
+    }
+
+    /// <summary>
+    /// Initializes a new instance of the  &lt;see cref="RequireScriptAttribute"/&gt; class.
+    /// </summary>
+    /// <param name="types">The required types.</param>
+    public RequireScriptAttribute(Type[] types)
+    {
+        RequiredTypes = types;
     }
 }
