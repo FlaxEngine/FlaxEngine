@@ -24,6 +24,7 @@ namespace FlaxEngine
             IsRegularWindow = true,
             HasSizingFrame = true,
             ShowAfterFirstPaint = true,
+            WindowFPSWhenNotFocused = 2,
         };
     }
 }

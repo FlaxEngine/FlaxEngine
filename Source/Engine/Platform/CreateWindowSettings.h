@@ -134,6 +134,11 @@ DECLARE_SCRIPTING_TYPE_MINIMAL(CreateWindowSettings);
     API_FIELD() bool ShowAfterFirstPaint = true;
 
     /// <summary>
+    /// Custom framerate limit for window rendering when the window is not focused.
+    /// </summary>
+    API_FIELD() int WindowFPSWhenNotFocused = 2;
+
+    /// <summary>
     /// The custom data (platform dependant).
     /// </summary>
     API_FIELD() void* Data = nullptr;

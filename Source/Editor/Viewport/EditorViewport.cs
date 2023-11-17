@@ -1216,6 +1216,10 @@ namespace FlaxEditor.Viewport
 
         private class FpsCounter : Control
         {
+            private int fps;
+            private int accumFrames;
+            private float lastUpdate;
+
             public FpsCounter(float x, float y)
             : base(x, y, 64, 32)
             {
@@ -1225,7 +1229,15 @@ namespace FlaxEditor.Viewport
             {
                 base.Draw();
 
-                int fps = Engine.FramesPerSecond;
+                accumFrames++;
+                float timeNow = Time.TimeSinceStartup;
+                if (timeNow - lastUpdate >= 1.0f)
+                {
+                    fps = accumFrames;
+                    lastUpdate = timeNow;
+                    accumFrames = 0;
+                }
+
                 Color color = Color.Green;
                 if (fps < 13)
                     color = Color.Red;

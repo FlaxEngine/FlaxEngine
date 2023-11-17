@@ -298,7 +298,7 @@ public:
     /// <summary>
     /// The rendering task for that window.
     /// </summary>
-    RenderTask* RenderTask;
+    API_FIELD() RenderTask* RenderTask;
 
     /// <summary>
     /// Event fired when window gets shown.
