@@ -1,7 +1,6 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
 #include "SceneObjectsFactory.h"
-#include "Components/MissingScript.h"
 #include "Engine/Level/Actor.h"
 #include "Engine/Level/Prefabs/Prefab.h"
 #include "Engine/Content/Content.h"
@@ -17,7 +16,10 @@
 #if !BUILD_RELEASE || USE_EDITOR
 #include "Engine/Level/Level.h"
 #include "Engine/Threading/Threading.h"
+#include "Engine/Level/Components/MissingScript.h"
 #endif
+
+#if USE_EDITOR
 
 MissingScript::MissingScript(const SpawnParams& params)
     : Script(params)
@@ -41,6 +43,8 @@ void MissingScript::SetReferenceScript(const ScriptingObjectReference<Script>& v
     _referenceScript->Deserialize(document, modifier.Value);
     DeleteObject();
 }
+
+#endif
 
 SceneObjectsFactory::Context::Context(ISerializeModifier* modifier)
     : Modifier(modifier)
