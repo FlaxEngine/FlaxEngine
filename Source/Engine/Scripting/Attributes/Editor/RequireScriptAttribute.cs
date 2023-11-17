@@ -3,19 +3,19 @@ using System;
 namespace FlaxEngine;
 
 /// <summary>
-/// This attribute is used to check for if a script requires another script type.
+/// This attribute is used to check for if a script requires other script types.
 /// </summary>
 [Serializable]
 [AttributeUsage(AttributeTargets.Class)]
 public class RequireScriptAttribute : Attribute
 {
     /// <summary>
-    /// The required type.
+    /// The required types.
     /// </summary>
     public Type[] RequiredTypes;
 
     /// <summary>
-    /// Initializes a new instance of the  <see cref="RequireScriptAttribute"/> class.
+    /// Initializes a new instance of the <see cref="RequireScriptAttribute"/> class.
     /// </summary>
     /// <param name="type">The required type.</param>
     public RequireScriptAttribute(Type type)
@@ -24,7 +24,7 @@ public class RequireScriptAttribute : Attribute
     }
 
     /// <summary>
-    /// Initializes a new instance of the  &lt;see cref="RequireScriptAttribute"/&gt; class.
+    /// Initializes a new instance of the <see cref="RequireScriptAttribute"/> class.
     /// </summary>
     /// <param name="types">The required types.</param>
     public RequireScriptAttribute(Type[] types)
