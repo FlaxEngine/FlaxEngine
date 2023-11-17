@@ -242,18 +242,43 @@ namespace FlaxEditor.CustomEditors.Dedicated
 
                     if (attributes.Count > 0)
                     {
-                        foreach (var attribute in attributes)
+                        foreach (var e in attributes)
                         {
-                            if (!attribute.RequiredType.IsSubclassOf(typeof(Script)))
+                            if (!e.RequiredType.IsSubclassOf(typeof(Script)))
                                 continue;
-                            requiredScripts.Add(new ScriptType(attribute.RequiredType));
+                            requiredScripts.Add(new ScriptType(e.RequiredType));
                         }
                     }
                 }
+
+                // See if script requires a specific actor type
+                RequireActorAttribute actorAttribute = null;
+                if (scriptType.HasAttribute(typeof(RequireActorAttribute), false))
+                {
+                    foreach (var e in scriptType.GetAttributes(false))
+                    {
+                        if (e is not RequireActorAttribute requireActorAttribute)
+                            continue;
+                        actorAttribute = requireActorAttribute;
+                        break;
+                    }
+                }
+
                 var actors = ScriptsEditor.ParentEditor.Values;
                 for (int j = 0; j < actors.Count; j++)
                 {
                     var actor = (Actor)actors[j];
+
+                    // If required actor exists but is not this actor type then skip adding to actor 
+                    if (actorAttribute != null)
+                    {
+                        if (actor.GetType() != actorAttribute.RequiredType && !actor.GetType().IsSubclassOf(actorAttribute.RequiredType))
+                        {
+                            Editor.LogWarning($"{Utilities.Utils.GetPropertyNameUI(scriptType.Name)} not added to {actor} due to script requiring an Actor type of {actorAttribute.RequiredType}.");
+                            continue;
+                        }
+                    }
+
                     actions.Add(AddRemoveScript.Add(actor, scriptType));
                     // Check if actor has required scripts and add them if the actor does not.
                     foreach (var type in requiredScripts)
@@ -614,7 +639,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
                 var editor = CustomEditorsUtil.CreateEditor(scriptType, false);
                 
                 // Check if actor has all the required scripts
-                bool hasAllRequiredScripts = true;
+                bool hasAllRequirements = true;
                 if (scriptType.HasAttribute(typeof(RequireScriptAttribute), false))
                 {
                     var scriptTypesToCheck = new List<ScriptType>();
@@ -643,9 +668,32 @@ namespace FlaxEditor.CustomEditors.Dedicated
                             var requiredScript = script.Actor.GetScript(type.Type);
                             if (requiredScript == null)
                             {
-                                Editor.LogWarning($"{Utilities.Utils.GetPropertyNameUI(scriptType.Name)} on {script.Actor} is missing a required script of type {type}.");
-                                hasAllRequiredScripts = false;
+                                Editor.LogWarning($"{Utilities.Utils.GetPropertyNameUI(scriptType.Name)} on {script.Actor} is missing a required Script of type {type}.");
+                                hasAllRequirements = false;
                             }
+                        }
+                    }
+                }
+                if (scriptType.HasAttribute(typeof(RequireActorAttribute), false))
+                {
+                    var scriptTypesToCheck = new List<ScriptType>();
+                    RequireActorAttribute attribute = null;
+                    foreach (var e in scriptType.GetAttributes(false))
+                    {
+                        if (e is not RequireActorAttribute requireActorAttribute)
+                            continue;
+                        attribute = requireActorAttribute;
+                        break;
+                    }
+
+                    if (attribute != null)
+                    {
+                        var actor = script.Actor;
+                        if (actor.GetType() != attribute.RequiredType && !actor.GetType().IsSubclassOf(attribute.RequiredType))
+                        {
+                            Editor.LogWarning($"{Utilities.Utils.GetPropertyNameUI(scriptType.Name)} on {script.Actor} is missing a required Actor of type {attribute.RequiredType}.");
+                            hasAllRequirements = false;
+                            // Maybe call to remove script here?
                         }
                     }
                 }
@@ -653,7 +701,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
                 // Create group
                 var title = Utilities.Utils.GetPropertyNameUI(scriptType.Name);
                 var group = layout.Group(title, editor);
-                if (!hasAllRequiredScripts)
+                if (!hasAllRequirements)
                     group.Panel.HeaderTextColor = FlaxEngine.GUI.Style.Current.Statusbar.Failed;
                 if ((Presenter.Features & FeatureFlags.CacheExpandedGroups) != 0)
                 {
