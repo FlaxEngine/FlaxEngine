@@ -28,7 +28,6 @@ public:
         Dictionary<Guid, int32> ObjectToInstance;
         CriticalSection Locker;
         ThreadLocal<ISerializeModifier*> Modifiers;
-        uint64 MainThreadId;
 
         Context(ISerializeModifier* modifier);
         ~Context();

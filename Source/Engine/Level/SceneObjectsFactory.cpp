@@ -48,8 +48,9 @@ void MissingScript::SetReferenceScript(const ScriptingObjectReference<Script>& v
 
 SceneObjectsFactory::Context::Context(ISerializeModifier* modifier)
     : Modifier(modifier)
-    , MainThreadId(Platform::GetCurrentThreadID())
 {
+    // Override the main thread value to not create it again in GetModifier() if called from the same thread
+    Modifiers.Set(modifier);
 }
 
 SceneObjectsFactory::Context::~Context()
@@ -59,7 +60,11 @@ SceneObjectsFactory::Context::~Context()
         Array<ISerializeModifier*, FixedAllocation<PLATFORM_THREADS_LIMIT>> modifiers;
         Modifiers.GetValues(modifiers);
         for (ISerializeModifier* e : modifiers)
+        {
+            if (e == Modifier)
+                continue;
             Cache::ISerializeModifier.Put(e);
+        }
     }
 }
 
@@ -68,12 +73,10 @@ ISerializeModifier* SceneObjectsFactory::Context::GetModifier()
     ISerializeModifier* modifier = Modifier;
     if (Async)
     {
-        // When using context in async then use one ISerializeModifier for each jpb thread
+        // When using context in async then use one ISerializeModifier per-thread
         ISerializeModifier*& modifierThread = Modifiers.Get();
         if (!modifierThread)
         {
-            if (Platform::GetCurrentThreadID() == MainThreadId)
-                return modifier;
             modifierThread = Cache::ISerializeModifier.GetUnscoped();
             Modifiers.Set(modifierThread);
             Locker.Lock();
