@@ -33,7 +33,7 @@ public:
         ~Context();
 
         ISerializeModifier* GetModifier();
-        void SetupIdsMapping(const SceneObject* obj, ISerializeModifier* modifier);
+        void SetupIdsMapping(const SceneObject* obj, ISerializeModifier* modifier) const;
     };
 
     /// <summary>
