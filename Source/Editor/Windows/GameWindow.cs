@@ -484,6 +484,16 @@ namespace FlaxEditor.Windows
         {
             base.OnShowContextMenu(menu);
 
+            // Focus on play
+            {
+                var focus = menu.AddButton("Start Focused");
+                focus.CloseMenuOnClick = false;
+                var checkbox = new CheckBox(140, 2, FocusOnPlay) { Parent = focus };
+                checkbox.StateChanged += state => FocusOnPlay = state.Checked;
+            }
+
+            menu.AddSeparator();
+
             // Viewport Brightness
             {
                 var brightness = menu.AddButton("Viewport Brightness");
