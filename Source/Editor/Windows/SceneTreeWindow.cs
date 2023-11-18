@@ -161,7 +161,7 @@ namespace FlaxEditor.Windows
 
         private void Spawn(Type type, Actor parentActor)
         {
-            var spawnPosition = Vector3.Zero;
+            var spawnPosition = parentActor ? parentActor.Position : Vector3.Zero;
 
             // Create actor
             var actor = (Actor)FlaxEngine.Object.New(type);
