@@ -48,6 +48,7 @@ void MissingScript::SetReferenceScript(const ScriptingObjectReference<Script>& v
 
 SceneObjectsFactory::Context::Context(ISerializeModifier* modifier)
     : Modifier(modifier)
+    , MainThreadId(Platform::GetCurrentThreadID())
 {
 }
 
@@ -67,10 +68,12 @@ ISerializeModifier* SceneObjectsFactory::Context::GetModifier()
     ISerializeModifier* modifier = Modifier;
     if (Async)
     {
-        // When using context in async then use one ISerializeModifier per-thread
+        // When using context in async then use one ISerializeModifier for each jpb thread
         ISerializeModifier*& modifierThread = Modifiers.Get();
         if (!modifierThread)
         {
+            if (Platform::GetCurrentThreadID() == MainThreadId)
+                return modifier;
             modifierThread = Cache::ISerializeModifier.GetUnscoped();
             Modifiers.Set(modifierThread);
             Locker.Lock();
@@ -84,15 +87,15 @@ ISerializeModifier* SceneObjectsFactory::Context::GetModifier()
     return modifier;
 }
 
-void SceneObjectsFactory::Context::SetupIdsMapping(const SceneObject* obj, ISerializeModifier* modifier)
+void SceneObjectsFactory::Context::SetupIdsMapping(const SceneObject* obj, ISerializeModifier* modifier) const
 {
     int32 instanceIndex;
     if (ObjectToInstance.TryGet(obj->GetID(), instanceIndex) && instanceIndex != modifier->CurrentInstance)
     {
         // Apply the current prefab instance objects ids table to resolve references inside a prefab properly
         modifier->CurrentInstance = instanceIndex;
-        auto& instance = Instances[instanceIndex];
-        for (auto& e : instance.IdsMapping)
+        const auto& instance = Instances[instanceIndex];
+        for (const auto& e : instance.IdsMapping)
             modifier->IdsMapping[e.Key] = e.Value;
     }
 }
@@ -486,9 +489,6 @@ void SceneObjectsFactory::SynchronizeNewPrefabInstances(Context& context, Prefab
             continue;
         const Guid actorParentId = JsonTools::GetGuid(stream, "ParentID");
 
-        // Map prefab object id to this actor so the new objects gets added to it
-        data.Modifier->IdsMapping[actorPrefabObjectId] = actor->GetID();
-
         // Load prefab
         auto prefab = Content::LoadAsync<Prefab>(prefabId);
         if (prefab == nullptr)
@@ -554,8 +554,12 @@ void SceneObjectsFactory::SynchronizeNewPrefabInstances(Context& context, Prefab
             if (spawned)
                 continue;
 
-            // Create instance (including all children)
+            // Map prefab object id to this actor's prefab instance so the new objects gets added to it
+            context.SetupIdsMapping(actor, data.Modifier);
+            data.Modifier->IdsMapping[actorPrefabObjectId] = actor->GetID();
             Scripting::ObjectsLookupIdMapping.Set(&data.Modifier->IdsMapping);
+
+            // Create instance (including all children)
             SynchronizeNewPrefabInstance(context, data, prefab, actor, prefabObjectId);
         }
     }

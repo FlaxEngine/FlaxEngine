@@ -28,12 +28,13 @@ public:
         Dictionary<Guid, int32> ObjectToInstance;
         CriticalSection Locker;
         ThreadLocal<ISerializeModifier*> Modifiers;
+        uint64 MainThreadId;
 
         Context(ISerializeModifier* modifier);
         ~Context();
 
         ISerializeModifier* GetModifier();
-        void SetupIdsMapping(const SceneObject* obj, ISerializeModifier* modifier);
+        void SetupIdsMapping(const SceneObject* obj, ISerializeModifier* modifier) const;
     };
 
     /// <summary>
