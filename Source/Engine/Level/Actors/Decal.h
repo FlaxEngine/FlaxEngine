@@ -11,7 +11,7 @@
 /// <summary>
 /// Actor that draws the can be used to draw a custom decals on top of the other objects.
 /// </summary>
-API_CLASS(Attributes="ActorContextMenu(\"New/Visuals/Decal\"), ActorToolbox(\"Visuals\")")
+API_CLASS(Attributes="ActorContextMenu(\"Visuals/Decal\"), ActorToolbox(\"Visuals\")")
 class FLAXENGINE_API Decal : public Actor
 {
     DECLARE_SCENE_OBJECT(Decal);

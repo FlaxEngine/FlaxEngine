@@ -10,7 +10,7 @@
 /// Representation of the car vehicle that uses wheels. Built on top of the RigidBody with collider representing its chassis shape and wheels.
 /// </summary>
 /// <seealso cref="RigidBody" />
-API_CLASS(Attributes="ActorContextMenu(\"New/Physics/Wheeled Vehicle\"), ActorToolbox(\"Physics\")") class FLAXENGINE_API WheeledVehicle : public RigidBody
+API_CLASS(Attributes="ActorContextMenu(\"Physics/Wheeled Vehicle\"), ActorToolbox(\"Physics\")") class FLAXENGINE_API WheeledVehicle : public RigidBody
 {
     friend class PhysicsBackend;
     DECLARE_SCENE_OBJECT(WheeledVehicle);

@@ -159,29 +159,18 @@ namespace FlaxEditor.Windows
 
                 var attribute = GetContextMenu(actorType);
                 var splitPath = GetActorSplitPath(attribute.Path);
-                var newSplitPath = new List<string>();
-
-                // force add actor inside "New" context menu
-                if (!splitPath[0].Equals("New") && !splitPath[0].Equals("new"))
-                    newSplitPath.Add("New");
+                var newSplitPath = new List<string>(new string[] { "New" });
                 newSplitPath.AddRange(splitPath);
 
-                ContextMenuChildMenu newCM = null;
-
                 // create new actor cm
-                GenerateActorCM(contextMenu, newCM, newSplitPath, () => Spawn(actorType.Type, null));
+                GenerateActorCM(contextMenu, newSplitPath, () => Spawn(actorType.Type, null));
 
                 // create actor as child cm
                 if (isSingleActorSelected)
                 {
-                    // force move actor to "New Child" context menu
                     var newChildSplitPath = new List<string>(new string[] { "New Child" });
                     newChildSplitPath.AddRange(splitPath);
-                    if (newChildSplitPath[1] == "New")
-                        newChildSplitPath.RemoveAt(1);
-
-                    ContextMenuChildMenu newChildCM = null;
-                    GenerateActorCM(contextMenu, newChildCM, newChildSplitPath, () => Spawn(actorType.Type));
+                    GenerateActorCM(contextMenu, newChildSplitPath, () => Spawn(actorType.Type));
                 }
             }
 
@@ -227,11 +216,12 @@ namespace FlaxEditor.Windows
             return splitPath;
         }
 
-        private void GenerateActorCM(ContextMenu contextMenu, ContextMenuChildMenu childCM, List<string> path, Action OnPressItem)
+        private ContextMenuChildMenu GenerateActorCM(ContextMenu contextMenu, List<string> path, Action OnPressItem)
         {
             if (path == null)
-                return;
+                return null;
 
+            ContextMenuChildMenu childCM = null;
             var isMainCM = true;
             var pathCount = path.Count;
 
@@ -266,6 +256,7 @@ namespace FlaxEditor.Windows
                     childCM.ContextMenu.AutoSort = true;
                 }
             }
+            return childCM;
         }
 
         /// <summary>

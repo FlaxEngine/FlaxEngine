@@ -13,7 +13,7 @@
 /// <remarks>
 /// Whether or not an audio source is spatial is controlled by the assigned AudioClip.The volume and the pitch of a spatial audio source is controlled by its position and the AudioListener's position/direction/velocity.
 /// </remarks>
-API_CLASS(Attributes="ActorContextMenu(\"New/Audio/Audio Source\"), ActorToolbox(\"Other\")")
+API_CLASS(Attributes="ActorContextMenu(\"Audio/Audio Source\"), ActorToolbox(\"Other\")")
 class FLAXENGINE_API AudioSource : public Actor
 {
     DECLARE_SCENE_OBJECT(AudioSource);

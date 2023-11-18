@@ -37,7 +37,7 @@ DECLARE_ENUM_OPERATORS(DistanceJointFlag);
 /// Physics joint that maintains an upper or lower (or both) bound on the distance between two bodies.
 /// </summary>
 /// <seealso cref="Joint" />
-API_CLASS(Attributes="ActorContextMenu(\"New/Physics/Joints/Distance Joint\"), ActorToolbox(\"Physics\")")
+API_CLASS(Attributes="ActorContextMenu(\"Physics/Joints/Distance Joint\"), ActorToolbox(\"Physics\")")
 class FLAXENGINE_API DistanceJoint : public Joint
 {
     DECLARE_SCENE_OBJECT(DistanceJoint);

@@ -133,7 +133,7 @@ public:
 /// <summary>
 /// The particle system instance that plays the particles simulation in the game.
 /// </summary>
-API_CLASS(Attributes="ActorContextMenu(\"New/Visuals/Particle Effect\"), ActorToolbox(\"Visuals\")")
+API_CLASS(Attributes="ActorContextMenu(\"Visuals/Particle Effect\"), ActorToolbox(\"Visuals\")")
 class FLAXENGINE_API ParticleEffect : public Actor
 {
     DECLARE_SCENE_OBJECT(ParticleEffect);

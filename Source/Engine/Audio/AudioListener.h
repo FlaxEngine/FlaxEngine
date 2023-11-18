@@ -7,7 +7,7 @@
 /// <summary>
 /// Represents a listener that hears audio sources. For spatial audio the volume and pitch of played audio is determined by the distance, orientation and velocity differences between the source and the listener.
 /// </summary>
-API_CLASS(Attributes="ActorContextMenu(\"New/Audio/Audio Listener\"), ActorToolbox(\"Other\")")
+API_CLASS(Attributes="ActorContextMenu(\"Audio/Audio Listener\"), ActorToolbox(\"Other\")")
 class FLAXENGINE_API AudioListener : public Actor
 {
     DECLARE_SCENE_OBJECT(AudioListener);

@@ -10,7 +10,7 @@
 /// <summary>
 /// Renders model on the screen.
 /// </summary>
-API_CLASS(Attributes="ActorContextMenu(\"New/Model\"), ActorToolbox(\"Visuals\")")
+API_CLASS(Attributes="ActorContextMenu(\"Model\"), ActorToolbox(\"Visuals\")")
 class FLAXENGINE_API StaticModel : public ModelInstanceActor
 {
     DECLARE_SCENE_OBJECT(StaticModel);

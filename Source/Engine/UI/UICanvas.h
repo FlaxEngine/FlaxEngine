@@ -7,7 +7,7 @@
 /// <summary>
 /// Root of the UI structure. Renders GUI and handles input events forwarding.
 /// </summary>
-API_CLASS(Sealed, NoConstructor, Attributes="ActorContextMenu(\"New/UI/UI Canvas\"), ActorToolbox(\"GUI\")")
+API_CLASS(Sealed, NoConstructor, Attributes="ActorContextMenu(\"UI/UI Canvas\"), ActorToolbox(\"GUI\")")
 class FLAXENGINE_API UICanvas : public Actor
 {
     DECLARE_SCENE_OBJECT(UICanvas);

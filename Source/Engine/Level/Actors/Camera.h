@@ -18,7 +18,7 @@
 /// <summary>
 /// Describes the camera projection and view. Provides information about how to render scene (viewport location and direction, etc.).
 /// </summary>
-API_CLASS(Sealed, Attributes="ActorContextMenu(\"New/Camera\"), ActorToolbox(\"Visuals\")")
+API_CLASS(Sealed, Attributes="ActorContextMenu(\"Camera\"), ActorToolbox(\"Visuals\")")
 class FLAXENGINE_API Camera : public Actor
 {
     DECLARE_SCENE_OBJECT(Camera);

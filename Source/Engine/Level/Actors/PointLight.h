@@ -9,7 +9,7 @@
 /// <summary>
 /// Point light emits light from point in all directions.
 /// </summary>
-API_CLASS(Attributes="ActorContextMenu(\"New/Lights/Point Light\"), ActorToolbox(\"Lights\")")
+API_CLASS(Attributes="ActorContextMenu(\"Lights/Point Light\"), ActorToolbox(\"Lights\")")
 class FLAXENGINE_API PointLight : public LightWithShadow
 {
     DECLARE_SCENE_OBJECT(PointLight);

@@ -8,7 +8,7 @@
 /// A sphere-shaped primitive collider.
 /// </summary>
 /// <seealso cref="Collider" />
-API_CLASS(Attributes="ActorContextMenu(\"New/Physics/Colliders/Sphere Collider\"), ActorToolbox(\"Physics\")")
+API_CLASS(Attributes="ActorContextMenu(\"Physics/Colliders/Sphere Collider\"), ActorToolbox(\"Physics\")")
 class FLAXENGINE_API SphereCollider : public Collider
 {
     DECLARE_SCENE_OBJECT(SphereCollider);

@@ -7,7 +7,7 @@
 /// <summary>
 /// Directional light emits light from direction in space.
 /// </summary>
-API_CLASS(Attributes="ActorContextMenu(\"New/Lights/Directional Light\"), ActorToolbox(\"Lights\")")
+API_CLASS(Attributes="ActorContextMenu(\"Lights/Directional Light\"), ActorToolbox(\"Lights\")")
 class FLAXENGINE_API DirectionalLight : public LightWithShadow
 {
     DECLARE_SCENE_OBJECT(DirectionalLight);

@@ -8,7 +8,7 @@
 /// <summary>
 /// Spline shape actor that defines spatial curve with utility functions for general purpose usage.
 /// </summary>
-API_CLASS(Attributes="ActorContextMenu(\"New/Other/Spline\"), ActorToolbox(\"Other\")")
+API_CLASS(Attributes="ActorContextMenu(\"Other/Spline\"), ActorToolbox(\"Other\")")
 class FLAXENGINE_API Spline : public Actor
 {
     DECLARE_SCENE_OBJECT(Spline);

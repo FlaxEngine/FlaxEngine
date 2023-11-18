@@ -9,7 +9,7 @@
 /// <summary>
 /// Spot light emits light from the point in a given direction.
 /// </summary>
-API_CLASS(Attributes="ActorContextMenu(\"New/Lights/Spot Light\"), ActorToolbox(\"Lights\")")
+API_CLASS(Attributes="ActorContextMenu(\"Lights/Spot Light\"), ActorToolbox(\"Lights\")")
 class FLAXENGINE_API SpotLight : public LightWithShadow
 {
     DECLARE_SCENE_OBJECT(SpotLight);

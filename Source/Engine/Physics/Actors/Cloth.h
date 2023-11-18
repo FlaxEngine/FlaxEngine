@@ -11,7 +11,7 @@
 /// <summary>
 /// Physical simulation actor for cloth objects made of vertices that are simulated as cloth particles with physical properties, forces, and constraints to affect cloth behavior. 
 /// </summary>
-API_CLASS(Attributes="ActorContextMenu(\"New/Physics/Cloth\"), ActorToolbox(\"Physics\")") class FLAXENGINE_API Cloth : public Actor
+API_CLASS(Attributes="ActorContextMenu(\"Physics/Cloth\"), ActorToolbox(\"Physics\")") class FLAXENGINE_API Cloth : public Actor
 {
     friend class PhysicsBackend;
     DECLARE_SCENE_OBJECT(Cloth);

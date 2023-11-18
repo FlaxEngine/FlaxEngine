@@ -14,7 +14,7 @@ class Collider;
 /// Physics simulation driven object.
 /// </summary>
 /// <seealso cref="Actor" />
-API_CLASS(Attributes="ActorContextMenu(\"New/Physics/Rigid Body\"), ActorToolbox(\"Physics\")")
+API_CLASS(Attributes="ActorContextMenu(\"Physics/Rigid Body\"), ActorToolbox(\"Physics\")")
 class FLAXENGINE_API RigidBody : public Actor, public IPhysicsActor
 {
     DECLARE_SCENE_OBJECT(RigidBody);

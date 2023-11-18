@@ -10,7 +10,7 @@
 /// A collider represented by an arbitrary mesh.
 /// </summary>
 /// <seealso cref="Collider" />
-API_CLASS(Attributes="ActorContextMenu(\"New/Physics/Colliders/Mesh Collider\"), ActorToolbox(\"Physics\")")
+API_CLASS(Attributes="ActorContextMenu(\"Physics/Colliders/Mesh Collider\"), ActorToolbox(\"Physics\")")
 class FLAXENGINE_API MeshCollider : public Collider
 {
     DECLARE_SCENE_OBJECT(MeshCollider);

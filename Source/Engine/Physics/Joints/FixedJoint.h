@@ -8,7 +8,7 @@
 /// Physics joint that maintains a fixed distance and orientation between its two attached bodies.
 /// </summary>
 /// <seealso cref="Joint" />
-API_CLASS(Attributes="ActorContextMenu(\"New/Physics/Joints/Fixed Joint\"), ActorToolbox(\"Physics\")")
+API_CLASS(Attributes="ActorContextMenu(\"Physics/Joints/Fixed Joint\"), ActorToolbox(\"Physics\")")
 class FLAXENGINE_API FixedJoint : public Joint
 {
     DECLARE_SCENE_OBJECT(FixedJoint);

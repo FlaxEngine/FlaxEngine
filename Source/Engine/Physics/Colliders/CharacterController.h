@@ -9,7 +9,7 @@
 /// Physical objects that allows to easily do player movement constrained by collisions without having to deal with a rigidbody.
 /// </summary>
 /// <seealso cref="Collider" />
-API_CLASS(Attributes="ActorContextMenu(\"New/Physics/Character Controller\"), ActorToolbox(\"Physics\")")
+API_CLASS(Attributes="ActorContextMenu(\"Physics/Character Controller\"), ActorToolbox(\"Physics\")")
 class FLAXENGINE_API CharacterController : public Collider, public IPhysicsActor
 {
     DECLARE_SCENE_OBJECT(CharacterController);

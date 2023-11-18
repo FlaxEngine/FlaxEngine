@@ -27,7 +27,7 @@ DECLARE_ENUM_OPERATORS(SliderJointFlag);
 /// Physics joint that removes all but a single translational degree of freedom. Bodies are allowed to move along a single axis.
 /// </summary>
 /// <seealso cref="Joint" />
-API_CLASS(Attributes="ActorContextMenu(\"New/Physics/Joints/Slider Joint\"), ActorToolbox(\"Physics\")")
+API_CLASS(Attributes="ActorContextMenu(\"Physics/Joints/Slider Joint\"), ActorToolbox(\"Physics\")")
 class FLAXENGINE_API SliderJoint : public Joint
 {
     DECLARE_SCENE_OBJECT(SliderJoint);
