@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using FlaxEditor.Content;
 using FlaxEditor.GUI.ContextMenu;
+using FlaxEditor.GUI.ContextMenu.Utils;
 using FlaxEditor.GUI.Drag;
 using FlaxEditor.GUI.Tree;
 using FlaxEditor.SceneGraph;
@@ -261,44 +262,25 @@ namespace FlaxEditor.Windows.Assets
                 }
                 if (attribute == null)
                     continue;
-                var parts = attribute.Path.Split('/');
-                ContextMenuChildMenu childCM = null;
-                bool mainCM = true;
-                for (int i = 0; i < parts.Length; i++)
+
+                var basePath = attribute.Path.Split('/');
+                var contextMenuPath = new List<string>(new string[] { "New" });
+                contextMenuPath.AddRange(basePath);
+
+                // create new actor cm
+                ContextMenuUtils.CreateChildByPath(contextMenu, contextMenuPath, () => SpawnRootChild(actorType.Type));
+
+                // create actor as child cm
+                if (isSingleActorSelected)
                 {
-                    var part = parts[i].Trim();
-                    if (i == parts.Length - 1)
-                    {
-                        if (mainCM)
-                        {
-                            contextMenu.AddButton(part, () => Spawn(actorType.Type));
-                            mainCM = false;
-                        }
-                        else if (childCM != null)
-                        {
-                            childCM.ContextMenu.AddButton(part, () => Spawn(actorType.Type));
-                            childCM.ContextMenu.AutoSort = true;
-                        }
-                    }
-                    else
-                    {
-                        if (mainCM)
-                        {
-                            childCM = contextMenu.GetOrAddChildMenu(part);
-                            childCM.ContextMenu.AutoSort = true;
-                            mainCM = false;
-                        }
-                        else if (childCM != null)
-                        {
-                            childCM = childCM.ContextMenu.GetOrAddChildMenu(part);
-                            childCM.ContextMenu.AutoSort = true;
-                        }
-                    }
+                    var newChildSplitPath = new List<string>(new string[] { "New Child" });
+                    newChildSplitPath.AddRange(basePath);
+                    ContextMenuUtils.CreateChildByPath(contextMenu, newChildSplitPath, () => Spawn(actorType.Type));
                 }
             }
 
             // Custom options
-            bool showCustomNodeOptions = Selection.Count == 1;
+            var showCustomNodeOptions = Selection.Count == 1;
             if (!showCustomNodeOptions && Selection.Count != 0)
             {
                 showCustomNodeOptions = true;
@@ -344,39 +326,35 @@ namespace FlaxEditor.Windows.Assets
         }
 
         /// <summary>
-        /// Spawns the specified actor to the prefab (adds actor to root).
+        /// Spawns the specified actor to the prefab (adds actor to child of selected actor).
         /// </summary>
-        /// <param name="actor">The actor.</param>
+        /// <param name="actor"></param>
         public void Spawn(Actor actor)
         {
-            // Link to parent
             Actor parentActor = null;
+            // Link to parent
             if (Selection.Count > 0 && Selection[0] is ActorNode actorNode)
             {
                 parentActor = actorNode.Actor;
                 actorNode.TreeNode.Expand();
             }
-            if (parentActor == null)
-            {
-                parentActor = Graph.MainActor;
-            }
-            if (parentActor != null)
-            {
-                // Match the parent
-                actor.Transform = parentActor.Transform;
-                actor.StaticFlags = parentActor.StaticFlags;
-                actor.Layer = parentActor.Layer;
 
-                // Rename actor to identify it easily
-                actor.Name = Utilities.Utils.IncrementNameNumber(actor.GetType().Name, x => parentActor.GetChild(x) == null);
-            }
+            Spawn(actor, parentActor);
+        }
 
+        /// <summary>
+        /// Spawns the specified actor to the prefab (adds actor to root).
+        /// </summary>
+        /// <param name="actor">The actor.</param>
+        public void SpawnRootChild(Actor actor)
+        {
+            Actor parentActor = Graph.MainActor;
             // Spawn it
             Spawn(actor, parentActor);
         }
 
         /// <summary>
-        /// Spawns the actor of the specified type to the prefab (adds actor to root).
+        /// Spawns the actor of the specified type to the prefab (adds actor to child of selected actor).
         /// </summary>
         /// <param name="type">The actor type.</param>
         public void Spawn(Type type)
@@ -386,6 +364,19 @@ namespace FlaxEditor.Windows.Assets
 
             // Spawn it
             Spawn(actor);
+        }
+
+        /// <summary>
+        /// Spawns the actor of the specified type to the prefab (adds actor to root).
+        /// </summary>
+        /// <param name="type">The actor type.</param>
+        public void SpawnRootChild(Type type)
+        {
+            // Create actor
+            Actor actor = (Actor)FlaxEngine.Object.New(type);
+
+            // Spawn it
+            SpawnRootChild(actor);
         }
 
         /// <summary>
@@ -415,6 +406,22 @@ namespace FlaxEditor.Windows.Assets
             // Create undo action
             var action = new CustomDeleteActorsAction(new List<SceneGraphNode>(1) { actorNode }, true);
             Undo.AddAction(action);
+
+            OnSpawnActor(actor);
+        }
+
+        private void OnSpawnActor(Actor actor)
+        {
+            if (actor.Parent != null)
+            {
+                // Match the parent
+                actor.Transform = actor.Parent.Transform;
+                actor.StaticFlags = actor.Parent.StaticFlags;
+                actor.Layer = actor.Parent.Layer;
+
+                // Rename actor to identify it easily
+                actor.Name = Utilities.Utils.IncrementNameNumber(actor.GetType().Name, x => actor.Parent.GetChild(x) == null);
+            }
         }
 
         private void OnTreeRightClick(TreeNode node, Float2 location)

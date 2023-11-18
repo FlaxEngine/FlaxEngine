@@ -3,6 +3,7 @@
 using System;
 using System.Collections.Generic;
 using FlaxEditor.GUI.ContextMenu;
+using FlaxEditor.GUI.ContextMenu.Utils;
 using FlaxEditor.SceneGraph;
 using FlaxEngine;
 using FlaxEngine.GUI;
@@ -158,19 +159,19 @@ namespace FlaxEditor.Windows
                     continue;
 
                 var attribute = GetContextMenu(actorType);
-                var splitPath = GetActorSplitPath(attribute.Path);
-                var newSplitPath = new List<string>(new string[] { "New" });
-                newSplitPath.AddRange(splitPath);
+                var basePath = GetActorContextMenuPath(attribute.Path);
+                var contextMenuPath = new List<string>(new string[] { "New" });
+                contextMenuPath.AddRange(basePath);
 
                 // create new actor cm
-                GenerateActorCM(contextMenu, newSplitPath, () => Spawn(actorType.Type, null));
+                ContextMenuUtils.CreateChildByPath(contextMenu, contextMenuPath, () => Spawn(actorType.Type, null));
 
                 // create actor as child cm
                 if (isSingleActorSelected)
                 {
                     var newChildSplitPath = new List<string>(new string[] { "New Child" });
-                    newChildSplitPath.AddRange(splitPath);
-                    GenerateActorCM(contextMenu, newChildSplitPath, () => Spawn(actorType.Type));
+                    newChildSplitPath.AddRange(basePath);
+                    ContextMenuUtils.CreateChildByPath(contextMenu, newChildSplitPath, () => Spawn(actorType.Type));
                 }
             }
 
@@ -210,53 +211,10 @@ namespace FlaxEditor.Windows
             return null;
         }
 
-        private string[] GetActorSplitPath(string path)
+        private string[] GetActorContextMenuPath(string path)
         {
             var splitPath = path.Split('/');
             return splitPath;
-        }
-
-        private ContextMenuChildMenu GenerateActorCM(ContextMenu contextMenu, List<string> path, Action OnPressItem)
-        {
-            if (path == null)
-                return null;
-
-            ContextMenuChildMenu childCM = null;
-            var isMainCM = true;
-            var pathCount = path.Count;
-
-            for (int i = 0; i < pathCount; i++)
-            {
-                var part = path[i].Trim();
-
-                if (i == pathCount - 1)
-                {
-                    if (isMainCM)
-                    {
-                        contextMenu.AddButton(part, OnPressItem);
-                        isMainCM = false;
-                    }
-                    else
-                    {
-                        childCM?.ContextMenu.AddButton(part, OnPressItem);
-                        childCM.ContextMenu.AutoSort = true;
-                    }
-                }
-                else
-                {
-                    if (isMainCM)
-                    {
-                        childCM = contextMenu.GetOrAddChildMenu(part);
-                        isMainCM = false;
-                    }
-                    else
-                    {
-                        childCM = childCM?.ContextMenu.GetOrAddChildMenu(part);
-                    }
-                    childCM.ContextMenu.AutoSort = true;
-                }
-            }
-            return childCM;
         }
 
         /// <summary>
