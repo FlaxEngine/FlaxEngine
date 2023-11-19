@@ -1064,6 +1064,7 @@ bool Level::loadScene(rapidjson_flax::Value& data, int32 engineBuild, Scene** ou
                 }
             }
         }
+        prefabSyncData.InitNewObjects();
     }
 
     // /\ all above this has to be done on an any thread
