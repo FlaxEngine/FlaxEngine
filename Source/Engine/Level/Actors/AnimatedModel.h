@@ -230,6 +230,22 @@ public:
     API_FUNCTION() void GetNodeTransformation(const StringView& nodeName, API_PARAM(Out) Matrix& nodeTransformation, bool worldSpace = false) const;
 
     /// <summary>
+    /// Gets the node final transformation.
+    /// </summary>
+    /// <param name="nodeIndex">The index of the skinned model skeleton node.</param>
+    /// <param name="nodeTransformation">The final node transformation matrix.</param>
+    /// <param name="worldSpace">True if convert matrices from world-space, otherwise values will be in local-space of the actor.</param>
+    API_FUNCTION() void SetNodeTransformation(int32 nodeIndex, const Matrix& nodeTransformation, bool worldSpace = false);
+
+    /// <summary>
+    /// Gets the node final transformation.
+    /// </summary>
+    /// <param name="nodeName">The name of the skinned model skeleton node.</param>
+    /// <param name="nodeTransformation">The final node transformation matrix.</param>
+    /// <param name="worldSpace">True if convert matrices from world-space, otherwise values will be in local-space of the actor.</param>
+    API_FUNCTION() void SetNodeTransformation(const StringView& nodeName, const Matrix& nodeTransformation, bool worldSpace = false);
+
+    /// <summary>
     /// Finds the closest node to a given location.
     /// </summary>
     /// <param name="location">The text location (in local-space of the actor or world-space depending on <paramref name="worldSpace"/>).</param>
