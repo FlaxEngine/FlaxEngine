@@ -3,6 +3,7 @@
 #pragma once
 
 #include "String.h"
+#include "StringView.h"
 #include "Engine/Core/Collections/Array.h"
 
 /// <summary>
@@ -134,6 +135,11 @@ public:
     // @param str String to append
     // @return Current String Builder instance
     StringBuilder& Append(const String& str)
+    {
+        _data.Add(*str, str.Length());
+        return *this;
+    }
+    StringBuilder& Append(const StringView& str)
     {
         _data.Add(*str, str.Length());
         return *this;
