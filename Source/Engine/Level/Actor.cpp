@@ -480,6 +480,18 @@ bool Actor::HasTag(const Tag& tag) const
     return Tags.Contains(tag);
 }
 
+bool Actor::HasParentTag(const Tag &tag) const
+{
+    const String& tagName = tag.ToString();
+    for (int i = 0; i < Tags.Count(); i++)
+    {
+        const String& actorTag = Tags[i].ToString();
+        if (actorTag.StartsWith(tagName))
+            return true;
+    }
+    return false;
+}
+
 bool Actor::HasTag(const StringView& tag) const
 {
     return Tags.Contains(tag);

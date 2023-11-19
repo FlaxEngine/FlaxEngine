@@ -136,6 +136,12 @@ public:
     API_FUNCTION() bool HasTag(const Tag& tag) const;
 
     /// <summary>
+    /// Check if actor contains the tag or a parent tag.
+    /// </summary>
+    /// <param name="tag">The tag to check.</param>
+    API_FUNCTION() bool HasParentTag(const Tag& tag) const;
+
+    /// <summary>
     /// Determines whether this actor has given tag assigned (exact match).
     /// </summary>
     /// <param name="tag">The tag to check.</param>
