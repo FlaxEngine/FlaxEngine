@@ -230,7 +230,7 @@ public:
     API_FUNCTION() void GetNodeTransformation(const StringView& nodeName, API_PARAM(Out) Matrix& nodeTransformation, bool worldSpace = false) const;
 
     /// <summary>
-    /// Gets the node final transformation.
+    /// Sets the node final transformation. If multiple nodes are to be set within a frame, do not use set worldSpace to true, and do the conversion yourself to avoid recalculation of inv matrices. 
     /// </summary>
     /// <param name="nodeIndex">The index of the skinned model skeleton node.</param>
     /// <param name="nodeTransformation">The final node transformation matrix.</param>
@@ -238,7 +238,7 @@ public:
     API_FUNCTION() void SetNodeTransformation(int32 nodeIndex, const Matrix& nodeTransformation, bool worldSpace = false);
 
     /// <summary>
-    /// Gets the node final transformation.
+    /// Sets the node final transformation. If multiple nodes are to be set within a frame, do not use set worldSpace to true, and do the conversion yourself to avoid recalculation of inv matrices. 
     /// </summary>
     /// <param name="nodeName">The name of the skinned model skeleton node.</param>
     /// <param name="nodeTransformation">The final node transformation matrix.</param>
