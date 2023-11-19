@@ -50,6 +50,10 @@
 #include <pwd.h>
 #include <inttypes.h>
 #include <dlfcn.h>
+#if CRASH_LOG_ENABLE
+#include <signal.h>
+#include <execinfo.h>
+#endif
 
 CPUInfo UnixCpu;
 int ClockSource;
@@ -1868,6 +1872,46 @@ void LinuxPlatform::GetUTCTime(int32& year, int32& month, int32& dayOfWeek, int3
     millisecond = time.tv_usec / 1000;
 }
 
+#if !BUILD_RELEASE
+
+bool LinuxPlatform::IsDebuggerPresent()
+{
+	static int32 CachedState = -1;
+	if (CachedState == -1)
+	{
+		CachedState = 0;
+
+    	// Reference: https://stackoverflow.com/questions/3596781/how-to-detect-if-the-current-process-is-being-run-by-gdb
+		char buf[4096];
+		const int status_fd = open("/proc/self/status", O_RDONLY);
+		if (status_fd == -1)
+			return false;
+		const ssize_t num_read = read(status_fd, buf, sizeof(buf) - 1);
+		close(status_fd);
+		if (num_read <= 0)
+			return false;
+		buf[num_read] = '\0';
+		constexpr char tracerPidString[] = "TracerPid:";
+		const auto tracer_pid_ptr = strstr(buf, tracerPidString);
+		if (!tracer_pid_ptr)
+			return false;
+		for (const char* characterPtr = tracer_pid_ptr + sizeof(tracerPidString) - 1; characterPtr <= buf + num_read; ++characterPtr)
+		{
+			if (StringUtils::IsWhitespace(*characterPtr))
+				continue;
+			else
+			{
+				if (StringUtils::IsDigit(*characterPtr) && *characterPtr != '0')
+					CachedState = 1;
+				return CachedState == 1;
+			}
+		}
+	}
+	return CachedState == 1;
+}
+
+#endif
+
 bool LinuxPlatform::Init()
 {
     if (PlatformBase::Init())
@@ -2990,6 +3034,38 @@ void LinuxPlatform::FreeLibrary(void* handle)
 void* LinuxPlatform::GetProcAddress(void* handle, const char* symbol)
 {
     return dlsym(handle, symbol);
+}
+
+Array<LinuxPlatform::StackFrame> LinuxPlatform::GetStackFrames(int32 skipCount, int32 maxDepth, void* context)
+{
+    Array<StackFrame> result;
+#if CRASH_LOG_ENABLE
+    void* callstack[120];
+    skipCount = Math::Min<int32>(skipCount, ARRAY_COUNT(callstack));
+    int32 maxCount = Math::Min<int32>(ARRAY_COUNT(callstack), skipCount + maxDepth);
+    int32 count = backtrace(callstack, maxCount);
+    int32 useCount = count - skipCount;
+    if (useCount > 0)
+    {
+        char** names = backtrace_symbols(callstack + skipCount, useCount);
+        result.Resize(useCount);
+        for (int32 i = 0; i < useCount; i++)
+        {
+            char* name = names[i];
+            StackFrame& frame = result[i];
+            frame.ProgramCounter = callstack[skipCount + i];
+            frame.ModuleName[0] = 0;
+            frame.FileName[0] = 0;
+            frame.LineNumber = 0;
+            int32 nameLen = Math::Min<int32>(StringUtils::Length(name), ARRAY_COUNT(frame.FunctionName) - 1);
+            Platform::MemoryCopy(frame.FunctionName, name, nameLen);
+            frame.FunctionName[nameLen] = 0;
+            
+        }
+        free(names);
+    }
+#endif
+    return result;
 }
 
 #endif
