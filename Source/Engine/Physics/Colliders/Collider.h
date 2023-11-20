@@ -193,6 +193,7 @@ protected:
 
 private:
     void OnMaterialChanged();
+    RigidBody* FindRigidBodyParent(Actor* actor) const;
 
 public:
     // [PhysicsColliderActor]

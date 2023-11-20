@@ -130,7 +130,7 @@ RigidBody* Collider::GetAttachedRigidBody() const
 {
     if (_shape && _staticActor == nullptr)
     {
-        return dynamic_cast<RigidBody*>(GetParent());
+        return FindRigidBodyParent(GetParent());
     }
     return nullptr;
 }
@@ -236,7 +236,7 @@ void Collider::UpdateGeometry()
         // Reattach again (only if can, see CanAttach function)
         if (actor)
         {
-            const auto rigidBody = dynamic_cast<RigidBody*>(GetParent());
+            const auto rigidBody = FindRigidBodyParent(GetParent());
             if (_staticActor != nullptr || (rigidBody && CanAttach(rigidBody)))
             {
                 PhysicsBackend::AttachShape(_shape, actor);
@@ -292,6 +292,18 @@ void Collider::OnMaterialChanged()
         PhysicsBackend::SetShapeMaterial(_shape, Material.Get());
 }
 
+RigidBody* Collider::FindRigidBodyParent(Actor* actor) const
+{
+    if (actor == (Actor*)_scene)
+        return nullptr;
+    
+    auto rb = dynamic_cast<RigidBody*>(actor);
+    if (rb)
+        return rb;
+    
+    return FindRigidBodyParent(actor->GetParent());
+}
+
 void Collider::Serialize(SerializeStream& stream, const void* otherObj)
 {
     // Base
@@ -324,7 +336,7 @@ void Collider::BeginPlay(SceneBeginData* data)
         CreateShape();
 
         // Check if parent is a rigidbody
-        const auto rigidBody = dynamic_cast<RigidBody*>(GetParent());
+        const auto rigidBody = FindRigidBodyParent(GetParent());
         if (rigidBody && CanAttach(rigidBody))
         {
             // Attach to the rigidbody
@@ -405,7 +417,7 @@ void Collider::OnParentChanged()
         }
 
         // Check if the new parent is a rigidbody
-        rigidBody = dynamic_cast<RigidBody*>(GetParent());
+        rigidBody = FindRigidBodyParent(GetParent());
         if (rigidBody && CanAttach(rigidBody))
         {
             // Attach to the rigidbody
