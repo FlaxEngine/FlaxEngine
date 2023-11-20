@@ -166,8 +166,6 @@ namespace Flax.Build.Platforms
 
                 if (compileEnvironment.BufferSecurityCheck)
                     commonArgs.Add("-fstack-protector");
-                else
-                    commonArgs.Add("fno-stack-protector");
 
                 if (!compileEnvironment.Inlining)
                 {
