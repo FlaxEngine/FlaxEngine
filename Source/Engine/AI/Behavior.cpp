@@ -114,14 +114,19 @@ void Behavior::UpdateAsync()
 
 void Behavior::StartLogic()
 {
+    if (_result == BehaviorUpdateResult::Running)
+        return;
     PROFILE_CPU();
 
-    // Ensure to have tree loaded on begin play
+    // Ensure to have tree loaded on play
     CHECK(Tree && !Tree->WaitForLoaded());
     BehaviorTree* tree = Tree.Get();
     CHECK(tree->Graph.Root);
 
+    // Setup state
     _result = BehaviorUpdateResult::Running;
+    _accumulatedTime = 0.0f;
+    _totalTime = 0;
 
     // Init knowledge
     _knowledge.InitMemory(tree);
@@ -135,6 +140,7 @@ void Behavior::StopLogic(BehaviorUpdateResult result)
     _accumulatedTime = 0.0f;
     _totalTime = 0;
     _result = result;
+    _knowledge.FreeMemory();
 }
 
 void Behavior::ResetLogic()
