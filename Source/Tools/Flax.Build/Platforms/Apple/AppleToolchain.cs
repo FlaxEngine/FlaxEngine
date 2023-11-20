@@ -150,22 +150,24 @@ namespace Flax.Build.Platforms
                 if (compileEnvironment.TreatWarningsAsErrors)
                     commonArgs.Add("-Wall -Werror");
 
-                // TODO: compileEnvironment.IntrinsicFunctions
-                // TODO: compileEnvironment.FunctionLevelLinking
-                // TODO: compileEnvironment.FavorSizeOrSpeed
-                // TODO: compileEnvironment.RuntimeChecks
-                // TODO: compileEnvironment.StringPooling
-                // TODO: compileEnvironment.BufferSecurityCheck
-
                 if (compileEnvironment.DebugInformation)
                     commonArgs.Add("-gdwarf-2");
 
                 commonArgs.Add("-pthread");
 
+                if (compileEnvironment.FavorSizeOrSpeed == FavorSizeOrSpeed.FastCode)
+                    commonArgs.Add("-Ofast");
+                else if (compileEnvironment.FavorSizeOrSpeed == FavorSizeOrSpeed.SmallCode)
+                    commonArgs.Add("-Os");
                 if (compileEnvironment.Optimization)
                     commonArgs.Add("-O3");
                 else
                     commonArgs.Add("-O0");
+
+                if (compileEnvironment.BufferSecurityCheck)
+                    commonArgs.Add("-fstack-protector");
+                else
+                    commonArgs.Add("fno-stack-protector");
 
                 if (!compileEnvironment.Inlining)
                 {
