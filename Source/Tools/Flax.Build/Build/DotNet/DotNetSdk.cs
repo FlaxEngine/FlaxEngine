@@ -249,10 +249,16 @@ namespace Flax.Build
             if (dotnetSdkVersions == null)
                 dotnetSdkVersions = GetVersions(Path.Combine(dotnetPath, "sdk"));
             if (dotnetRuntimeVersions == null)
-                dotnetRuntimeVersions = GetVersions(Path.Combine(dotnetPath, "shared/Microsoft.NETCore.App"));
+                dotnetRuntimeVersions = GetVersions(Path.Combine(dotnetPath, "shared", "Microsoft.NETCore.App"));
+
+            dotnetSdkVersions = dotnetSdkVersions.Where(x => IsValidVersion(Path.Combine(dotnetPath, "sdk", x)));
+            dotnetRuntimeVersions = dotnetRuntimeVersions.Where(x => IsValidVersion(Path.Combine(dotnetPath, "shared", "Microsoft.NETCore.App", x)));
 
             dotnetSdkVersions = dotnetSdkVersions.OrderByDescending(ParseVersion);
             dotnetRuntimeVersions = dotnetRuntimeVersions.OrderByDescending(ParseVersion);
+
+            Log.Verbose($"Found the following .NET SDK versions: {string.Join(", ", dotnetSdkVersions)}");
+            Log.Verbose($"Found the following .NET runtime versions: {string.Join(", ", dotnetRuntimeVersions)}");
 
             string dotnetSdkVersion = dotnetSdkVersions.FirstOrDefault(x => ParseVersion(x).Major >= MinimumVersion.Major && ParseVersion(x).Major <= MaximumVersion.Major);
             string dotnetRuntimeVersion = dotnetRuntimeVersions.FirstOrDefault(x => ParseVersion(x).Major >= MinimumVersion.Major && ParseVersion(x).Major <= MaximumVersion.Major);
@@ -276,7 +282,7 @@ namespace Flax.Build
             // Pick SDK runtime
             if (!TryAddHostRuntime(platform, architecture, rid) && !TryAddHostRuntime(platform, architecture, ridFallback))
             {
-                var path = Path.Combine(RootPath, $"packs/Microsoft.NETCore.App.Host.{rid}/{RuntimeVersionName}/runtimes/{rid}/native");
+                var path = Path.Combine(RootPath, "packs", $"Microsoft.NETCore.App.Host.{rid}", RuntimeVersionName, "runtimes", rid, "native");
                 Log.Warning($"Missing .NET SDK host runtime for {platform} {architecture} ({path}).");
                 return;
             }
@@ -463,6 +469,11 @@ namespace Flax.Build
             return versions.OrderByDescending(ParseVersion)
                 .Where(x => ParseVersion(x).Major >= MinimumVersion.Major && ParseVersion(x).Major <= MaximumVersion.Major)
                 .FirstOrDefault();
+        }
+
+        private static bool IsValidVersion(string versionPath)
+        {
+            return File.Exists(Path.Combine(versionPath, ".version"));
         }
 
         private static string SearchForDotnetLocationLinux()

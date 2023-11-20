@@ -29,7 +29,7 @@ public:
     float FogDensity = 0.02f;
 
     /// <summary>
-    /// The fog height density factor that controls how the density increases as height decreases. The smaller values produce more visible transition larger.
+    /// The fog height density factor that controls how the density increases as height decreases. Smaller values produce a more visible transition layer.
     /// </summary>
     API_FIELD(Attributes="EditorOrder(20), DefaultValue(0.2f), Limit(0.0001f, 10.0f, 0.001f), EditorDisplay(\"Exponential Height Fog\")")
     float FogHeightFalloff = 0.2f;
@@ -55,7 +55,7 @@ public:
     float StartDistance = 0.0f;
 
     /// <summary>
-    /// Scene elements past this distance will not have fog applied. This is useful for excluding skyboxes which already have fog baked in.
+    /// Scene elements past this distance will not have fog applied. This is useful for excluding skyboxes which already have fog baked in. Setting this value to 0 disables it.
     /// </summary>
     API_FIELD(Attributes="EditorOrder(60), DefaultValue(0.0f), Limit(0), EditorDisplay(\"Exponential Height Fog\")")
     float FogCutoffDistance = 0.0f;
@@ -111,7 +111,7 @@ public:
     Color VolumetricFogAlbedo = Color::White;
 
     /// <summary>
-    /// Light emitted by height fog. This is a density so more light is emitted the further you are looking through the fog.
+    /// Light emitted by height fog. This is a density value so more light is emitted the further you are looking through the fog.
     /// In most cases using a Skylight is a better choice, however, it may be useful in certain scenarios.
     /// </summary>
     API_FIELD(Attributes="EditorOrder(330), DefaultValue(typeof(Color), \"0,0,0,1\"), EditorDisplay(\"Volumetric Fog\", \"Emissive\")")

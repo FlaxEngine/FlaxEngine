@@ -43,6 +43,7 @@
 #include <dlfcn.h>
 #if CRASH_LOG_ENABLE
 #include <execinfo.h>
+#include <cxxabi.h>
 #endif
 
 CPUInfo Cpu;
@@ -502,20 +503,42 @@ Array<ApplePlatform::StackFrame> ApplePlatform::GetStackFrames(int32 skipCount, 
     {
         char** names = backtrace_symbols(callstack + skipCount, useCount);
         result.Resize(useCount);
+        Array<StringAnsi> parts;
+        int32 len;
+#define COPY_STR(str, dst) \
+    len = Math::Min<int32>(str.Length(), ARRAY_COUNT(frame.dst) - 1); \
+    Platform::MemoryCopy(frame.dst, str.Get(), len); \
+    frame.dst[len] = 0
         for (int32 i = 0; i < useCount; i++)
         {
-            char* name = names[i];
+            const StringAnsi name(names[i]);
             StackFrame& frame = result[i];
             frame.ProgramCounter = callstack[skipCount + i];
             frame.ModuleName[0] = 0;
             frame.FileName[0] = 0;
             frame.LineNumber = 0;
-            int32 nameLen = Math::Min<int32>(StringUtils::Length(name), ARRAY_COUNT(frame.FunctionName) - 1);
-            Platform::MemoryCopy(frame.FunctionName, name, nameLen);
-            frame.FunctionName[nameLen] = 0;
-            
+
+            // Decode name
+            parts.Clear();
+            name.Split(' ', parts);
+            if (parts.Count() == 6)
+            {
+                COPY_STR(parts[1], ModuleName);
+                const StringAnsiView toDemangle(parts[3]);
+                int status = 0;
+                char* demangled = __cxxabiv1::__cxa_demangle(*toDemangle, 0, 0, &status);
+                const StringAnsiView toCopy = demangled && status == 0 ? StringAnsiView(demangled) : StringAnsiView(toDemangle);
+                COPY_STR(toCopy, FunctionName);
+                if (demangled)
+                    free(demangled);
+            }
+            else
+            {
+                COPY_STR(name, FunctionName);
+            }
         }
         free(names);
+#undef COPY_STR
     }
 #endif
     return result;

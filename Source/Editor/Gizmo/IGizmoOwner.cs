@@ -106,5 +106,11 @@ namespace FlaxEditor.Gizmo
         /// </summary>
         /// <param name="nodes">The nodes to select</param>
         void Select(List<SceneGraph.SceneGraphNode> nodes);
+
+        /// <summary>
+        /// Spawns the actor in the viewport hierarchy.
+        /// </summary>
+        /// <param name="actor">The new actor to spawn.</param>
+        void Spawn(Actor actor);
     }
 }
