@@ -78,6 +78,7 @@ public:
         ISerializeModifier* Modifier;
 
         PrefabSyncData(Array<SceneObject*>& sceneObjects, const ISerializable::DeserializeStream& data, ISerializeModifier* modifier);
+        void InitNewObjects();
 
     private:
         struct NewObj

@@ -190,7 +190,7 @@ namespace FlaxEditor.Windows
             };
             _addPluginProjectButton = new Button
             {
-                Text = "Create Plugin Project",
+                Text = "Create Project",
                 TooltipText = "Add new plugin project.",
                 AnchorPreset = AnchorPresets.TopLeft,
                 LocalLocation = new Float2(70, 18),
@@ -201,7 +201,7 @@ namespace FlaxEditor.Windows
 
             _cloneProjectButton = new Button
             {
-                Text = "Clone Plugin Project",
+                Text = "Clone Project",
                 TooltipText = "Git Clone a plugin project.",
                 AnchorPreset = AnchorPresets.TopLeft,
                 LocalLocation = new Float2(70 + _addPluginProjectButton.Size.X + 8, 18),

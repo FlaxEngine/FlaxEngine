@@ -403,6 +403,15 @@ SceneObjectsFactory::PrefabSyncData::PrefabSyncData(Array<SceneObject*>& sceneOb
 {
 }
 
+void SceneObjectsFactory::PrefabSyncData::InitNewObjects()
+{
+    for (int32 i = 0; i < NewObjects.Count(); i++)
+    {
+        SceneObject* obj = SceneObjects[InitialCount + i];
+        obj->Initialize();
+    }
+}
+
 void SceneObjectsFactory::SetupPrefabInstances(Context& context, const PrefabSyncData& data)
 {
     PROFILE_CPU_NAMED("SetupPrefabInstances");
