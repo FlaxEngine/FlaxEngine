@@ -12,6 +12,9 @@ namespace FlaxEditor.Content
     {
         private FileSystemWatcher _watcher;
 
+        /// <inheritdoc />
+        protected override bool _canDelete => false;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="MainContentTreeNode"/> class.
         /// </summary>

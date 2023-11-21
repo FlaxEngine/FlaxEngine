@@ -114,18 +114,28 @@ namespace FlaxEditor.Windows
                     }
                 }
 
-                cm.AddButton("Delete", () => Delete(item));
+                if (isFolder && folder.Node is not MainContentTreeNode)
+                {
+                    cm.AddButton("Delete", () => Delete(item));
 
-                cm.AddSeparator();
+                    cm.AddSeparator();
 
-                cm.AddButton("Duplicate", _view.Duplicate);
+                    cm.AddButton("Duplicate", _view.Duplicate);
 
-                cm.AddButton("Copy", _view.Copy);
+                    cm.AddButton("Copy", _view.Copy);
+                }
+                else
+                {
+                    cm.AddSeparator();
+                }
 
                 b = cm.AddButton("Paste", _view.Paste);
                 b.Enabled = _view.CanPaste();
 
-                cm.AddButton("Rename", () => Rename(item));
+                if (isFolder && folder.Node is not MainContentTreeNode)
+                {
+                    cm.AddButton("Rename", () => Rename(item));
+                }
 
                 // Custom options
                 ContextMenuShow?.Invoke(cm, item);
