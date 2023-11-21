@@ -114,7 +114,11 @@ namespace FlaxEditor.Windows
                     }
                 }
 
-                if (isFolder && folder.Node is not MainContentTreeNode)
+                if (isFolder && folder.Node is MainContentTreeNode)
+                {
+                    cm.AddSeparator();
+                }
+                else
                 {
                     cm.AddButton("Delete", () => Delete(item));
 
@@ -124,15 +128,15 @@ namespace FlaxEditor.Windows
 
                     cm.AddButton("Copy", _view.Copy);
                 }
-                else
-                {
-                    cm.AddSeparator();
-                }
 
                 b = cm.AddButton("Paste", _view.Paste);
                 b.Enabled = _view.CanPaste();
 
-                if (isFolder && folder.Node is not MainContentTreeNode)
+                if (isFolder && folder.Node is MainContentTreeNode)
+                {
+                    // Do nothing
+                }
+                else
                 {
                     cm.AddButton("Rename", () => Rename(item));
                 }
