@@ -5,7 +5,6 @@
 #include "Engine/Core/Types/TimeSpan.h"
 #include "Engine/Core/Types/DateTime.h"
 #include "Engine/Scripting/ScriptingType.h"
-#include "Engine/Core/Collections/SamplesBuffer.h"
 
 /// <summary>
 /// Game ticking and timing system.
@@ -91,13 +90,6 @@ public:
     /// </summary>
     class FixedStepTickData : public TickData
     {
-    public:
-
-        /// <summary>
-        /// The last few ticks delta times. Used to check if can use fixed steps or whenever is running slowly so should use normal stepping.
-        /// </summary>
-        SamplesBuffer<double, 4> Samples;
-
     public:
 
         // [TickData]
