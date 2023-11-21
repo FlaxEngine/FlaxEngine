@@ -15,6 +15,9 @@ namespace FlaxEditor.Content
         /// <inheritdoc />
         protected override bool _canDelete => false;
 
+        /// <inheritdoc />
+        protected override bool _canDuplicate => false;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="MainContentTreeNode"/> class.
         /// </summary>

@@ -28,6 +28,11 @@ namespace FlaxEditor.Content
         /// Whether this node can be deleted.
         /// </summary>
         protected virtual bool _canDelete => true;
+        
+        /// <summary>
+        /// Whether this node can be duplicated.
+        /// </summary>
+        protected virtual bool _canDuplicate => true;
 
         /// <summary>
         /// Gets the content folder item.
@@ -315,7 +320,7 @@ namespace FlaxEditor.Content
                     switch (key)
                     {
                     case KeyboardKeys.D:
-                        if (Folder.Exists)
+                        if (Folder.Exists && _canDuplicate)
                             Editor.Instance.Windows.ContentWin.Duplicate(Folder);
                         return true;
                     }
