@@ -21,6 +21,7 @@ class PostProcessEffect;
 struct RenderContext;
 class Camera;
 class Actor;
+class Scene;
 
 /// <summary>
 /// Allows to perform custom rendering using graphics pipeline.
@@ -175,6 +176,11 @@ API_ENUM(Attributes="Flags") enum class ActorsSources
     CustomActors = 2,
 
     /// <summary>
+    /// The scenes from the custom collection.
+    /// </summary>
+    CustomScenes = 4,
+
+    /// <summary>
     /// The actors from the loaded scenes and custom collection.
     /// </summary>
     ScenesAndCustomActors = Scenes | CustomActors,
@@ -267,9 +273,14 @@ public:
 
 public:
     /// <summary>
-    /// The custom set of actors to render.
+    /// The custom set of actors to render. Used when ActorsSources::CustomActors flag is active.
     /// </summary>
-    Array<Actor*> CustomActors;
+    API_FIELD() Array<Actor*> CustomActors;
+
+    /// <summary>
+    /// The custom set of scenes to render. Used when ActorsSources::CustomScenes flag is active.
+    /// </summary>
+    API_FIELD() Array<Scene*> CustomScenes;
 
     /// <summary>
     /// Adds the custom actor to the rendering.
