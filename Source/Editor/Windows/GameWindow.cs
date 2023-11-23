@@ -386,6 +386,7 @@ namespace FlaxEditor.Windows
             {
                 _viewport.Bounds = new Rectangle(Width * (1 - scaleWidth) / 2, 0, Width * scaleWidth, Height);
             }
+            _viewport.SyncBackbufferSize();
             PerformLayout();
         }
 

@@ -1342,7 +1342,12 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
                 {
                     const bool xAxis = Math::IsZero(v0.X) && Math::IsZero(v1.X);
                     const bool yAxis = Math::IsZero(v0.Y) && Math::IsZero(v1.Y);
-                    if (xAxis || yAxis)
+                    if (xAxis && yAxis)
+                    {
+                        // Single animation
+                        value = SampleAnimation(node, loop, data.Length, startTimePos, bucket.TimePosition, newTimePos, aAnim, aData.W);
+                    }
+                    else if (xAxis || yAxis)
                     {
                         if (yAxis)
                         {

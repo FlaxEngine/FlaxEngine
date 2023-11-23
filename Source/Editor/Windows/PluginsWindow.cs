@@ -190,7 +190,7 @@ namespace FlaxEditor.Windows
             };
             _addPluginProjectButton = new Button
             {
-                Text = "Create Plugin Project",
+                Text = "Create Project",
                 TooltipText = "Add new plugin project.",
                 AnchorPreset = AnchorPresets.TopLeft,
                 LocalLocation = new Float2(70, 18),
@@ -201,7 +201,7 @@ namespace FlaxEditor.Windows
 
             _cloneProjectButton = new Button
             {
-                Text = "Clone Plugin Project",
+                Text = "Clone Project",
                 TooltipText = "Git Clone a plugin project.",
                 AnchorPreset = AnchorPresets.TopLeft,
                 LocalLocation = new Float2(70 + _addPluginProjectButton.Size.X + 8, 18),
@@ -391,6 +391,25 @@ namespace FlaxEditor.Windows
             }
 
             Editor.Log("Plugin project has been cloned.");
+            
+            try
+            {
+                // Start git submodule clone
+                var settings = new CreateProcessSettings
+                {
+                    FileName = "git",
+                    WorkingDirectory = clonePath,
+                    Arguments = "submodule update --init",
+                    ShellExecute = false,
+                    LogOutput = true,
+                };
+                Platform.CreateProcess(ref settings);
+            }
+            catch (Exception e)
+            {
+                Editor.LogError($"Failed Git submodule process. {e}");
+                return;
+            }
 
             // Find project config file. Could be different then what the user named the folder.
             var files = Directory.GetFiles(clonePath);

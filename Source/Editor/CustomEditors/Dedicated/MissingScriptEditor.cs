@@ -37,41 +37,32 @@ public class MissingScriptEditor : GenericEditor
             Parent = _dropPanel,
             Height = 64,
         };
-
         _replaceScriptButton = new Button
         {
             Text = "Replace Script",
             TooltipText = "Replaces the missing script with a given script type",
             AnchorPreset = AnchorPresets.TopCenter,
-            Width = 240,
-            Height = 24,
-            X = -120,
-            Y = 0,
+            Bounds = new Rectangle(-120, 0, 240, 24),
             Parent = replaceScriptPanel,
         };
         _replaceScriptButton.Clicked += OnReplaceScriptButtonClicked;
-
         var replaceAllLabel = new Label
         {
             Text = "Replace all matching missing scripts",
             TooltipText = "Whether or not to apply this script change to all scripts missing the same type.",
             AnchorPreset = AnchorPresets.BottomCenter,
-            Y = -34,
+            Y = -38,
             Parent = replaceScriptPanel,
         };
-        replaceAllLabel.X -= FlaxEngine.GUI.Style.Current.FontSmall.MeasureText(replaceAllLabel.Text).X;
-
         _shouldReplaceAllCheckbox = new CheckBox
         {
             TooltipText = replaceAllLabel.TooltipText,
             AnchorPreset = AnchorPresets.BottomCenter,
-            Y = -34,
+            Y = -38,
             Parent = replaceScriptPanel,
         };
-
-        float centerDifference = (_shouldReplaceAllCheckbox.Right - replaceAllLabel.Left) / 2;
-        replaceAllLabel.X += centerDifference;
-        _shouldReplaceAllCheckbox.X += centerDifference;
+        _shouldReplaceAllCheckbox.X -= _replaceScriptButton.Width * 0.5f + 0.5f;
+        replaceAllLabel.X -= 52;
 
         base.Initialize(layout);
     }

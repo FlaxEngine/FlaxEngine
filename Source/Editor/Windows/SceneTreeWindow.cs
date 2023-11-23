@@ -423,6 +423,7 @@ namespace FlaxEditor.Windows
                         var actor = item.OnEditorDrop(this);
                         actor.Name = item.ShortName;
                         Level.SpawnActor(actor);
+                        Editor.Scene.MarkSceneEdited(actor.Scene);
                     }
                     result = DragDropEffect.Move;
                 }
@@ -440,6 +441,7 @@ namespace FlaxEditor.Windows
                         }
                         actor.Name = item.Name;
                         Level.SpawnActor(actor);
+                        Editor.Scene.MarkSceneEdited(actor.Scene);
                     }
                     result = DragDropEffect.Move;
                 }
