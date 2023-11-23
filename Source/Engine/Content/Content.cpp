@@ -54,8 +54,7 @@ namespace
     // Assets
     CriticalSection AssetsLocker;
     Dictionary<Guid, Asset*> Assets(2048);
-    CriticalSection LoadCallAssetsLocker;
-    Array<Guid> LoadCallAssets(64);
+    Array<Guid> LoadCallAssets(PLATFORM_THREADS_LIMIT);
     CriticalSection LoadedAssetsToInvokeLocker;
     Array<Asset*> LoadedAssetsToInvoke(64);
     Array<Asset*> ToUnload;
@@ -924,29 +923,29 @@ Asset* Content::LoadAsync(const Guid& id, const ScriptingTypeHandle& type)
     }
 
     // Check if that asset is during loading
-    LoadCallAssetsLocker.Lock();
+    AssetsLocker.Lock();
     if (LoadCallAssets.Contains(id))
     {
-        LoadCallAssetsLocker.Unlock();
+        AssetsLocker.Unlock();
 
-        // Wait for load end
-        // TODO: dont use active waiting and prevent deadlocks if running on a main thread
-        //while (!Engine::ShouldExit())
+        // Wait for loading end by other thread
         while (true)
         {
-            LoadCallAssetsLocker.Lock();
-            const bool contains = LoadCallAssets.Contains(id);
-            LoadCallAssetsLocker.Unlock();
-            if (!contains)
-                return GetAsset(id);
             Platform::Sleep(1);
+            result = nullptr;
+            AssetsLocker.Lock();
+            if (!LoadCallAssets.Contains(id))
+                Assets.TryGet(id, result);
+            AssetsLocker.Unlock();
+            if (result)
+                return result;
         }
     }
     else
     {
         // Mark asset as loading
         LoadCallAssets.Add(id);
-        LoadCallAssetsLocker.Unlock();
+        AssetsLocker.Unlock();
     }
 
     // Load asset
@@ -954,9 +953,9 @@ Asset* Content::LoadAsync(const Guid& id, const ScriptingTypeHandle& type)
     result = load(id, type, assetInfo);
 
     // End loading
-    LoadCallAssetsLocker.Lock();
+    AssetsLocker.Lock();
     LoadCallAssets.Remove(id);
-    LoadCallAssetsLocker.Unlock();
+    AssetsLocker.Unlock();
 
     return result;
 }
