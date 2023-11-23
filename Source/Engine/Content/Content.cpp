@@ -449,18 +449,19 @@ Asset* Content::LoadAsync(const StringView& path, const ScriptingTypeHandle& typ
 {
     // Ensure path is in a valid format
     String pathNorm(path);
-    StringUtils::PathRemoveRelativeParts(pathNorm);
+    ContentStorageManager::FormatPath(pathNorm);
+    const StringView filePath = pathNorm;
 
 #if USE_EDITOR
-    if (!FileSystem::FileExists(pathNorm))
+    if (!FileSystem::FileExists(filePath))
     {
-        LOG(Error, "Missing file \'{0}\'", pathNorm);
+        LOG(Error, "Missing file \'{0}\'", filePath);
         return nullptr;
     }
 #endif
 
     AssetInfo assetInfo;
-    if (GetAssetInfo(pathNorm, assetInfo))
+    if (GetAssetInfo(filePath, assetInfo))
     {
         return LoadAsync(assetInfo.ID, type);
     }
