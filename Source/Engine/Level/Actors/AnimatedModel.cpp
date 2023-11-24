@@ -188,6 +188,7 @@ void AnimatedModel::SetNodeTransformation(int32 nodeIndex, const Matrix& nodeTra
     }
     OnAnimationUpdated();
 }
+
 void AnimatedModel::SetNodeTransformation(const StringView& nodeName, const Matrix& nodeTransformation, bool worldSpace)
 {
     SetNodeTransformation(SkinnedModel ? SkinnedModel->FindNode(nodeName) : -1, nodeTransformation, worldSpace);
