@@ -288,6 +288,9 @@ namespace FlaxEditor.Surface.Archetypes
                         }
                     }
                     SetValue(2, ids);
+
+                    // Force refresh UI
+                    ResizeAuto();
                 }
             }
 
