@@ -371,7 +371,10 @@ namespace FlaxEditor.Windows.Assets
                 private void OnTreeSelectedChanged(List<TreeNode> before, List<TreeNode> after)
                 {
                     if (after.Count != 0)
-                        ((SkeletonPropertiesProxy)Values[0]).Window._preview.ShowDebugDraw = true;
+                    {
+                        var proxy = (SkeletonPropertiesProxy)Values[0];
+                        proxy.Window._preview.ShowDebugDraw = true;
+                    }
                 }
 
                 private void OnTreeNodeCopyName(ContextMenuButton b)
@@ -1045,6 +1048,7 @@ namespace FlaxEditor.Windows.Assets
             {
                 Proxy = new SkeletonPropertiesProxy();
                 Presenter.Select(Proxy);
+                // Draw highlight on selected node
                 window._preview.CustomDebugDraw += OnDebugDraw;
             }
 
@@ -1145,6 +1149,15 @@ namespace FlaxEditor.Windows.Assets
             _tabs.AddTab(new UVsTab(this));
             _tabs.AddTab(new RetargetTab(this));
             _tabs.AddTab(new ImportTab(this));
+
+            // Automatically show nodes when switching to skeleton page
+            _tabs.SelectedTabChanged += (tabs) =>
+            {
+                if (tabs.SelectedTab is SkeletonTab)
+                {
+                    _preview.ShowNodes = true;
+                }
+            };
 
             // Highlight actor (used to highlight selected material slot, see UpdateEffectsOnAsset)
             _highlightActor = new AnimatedModel
