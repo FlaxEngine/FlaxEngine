@@ -27,12 +27,12 @@ namespace FlaxEditor.Content
         /// <summary>
         /// Whether this node can be deleted.
         /// </summary>
-        protected virtual bool CanDelete => true;
+        public virtual bool CanDelete => true;
         
         /// <summary>
         /// Whether this node can be duplicated.
         /// </summary>
-        protected virtual bool CanDuplicate => true;
+        public virtual bool CanDuplicate => true;
 
         /// <summary>
         /// Gets the content folder item.
