@@ -910,9 +910,13 @@ Asset* Content::LoadAsync(const Guid& id, const ScriptingTypeHandle& type)
         return nullptr;
 
     // Check if asset has been already loaded
-    Asset* result = GetAsset(id);
+    Asset* result = nullptr;
+    AssetsLocker.Lock();
+    Assets.TryGet(id, result);
     if (result)
     {
+        AssetsLocker.Unlock();
+
         // Validate type
         if (IsAssetTypeIdInvalid(type, result->GetTypeHandle()) && !result->Is(type))
         {
@@ -923,57 +927,39 @@ Asset* Content::LoadAsync(const Guid& id, const ScriptingTypeHandle& type)
     }
 
     // Check if that asset is during loading
-    AssetsLocker.Lock();
     if (LoadCallAssets.Contains(id))
     {
         AssetsLocker.Unlock();
 
         // Wait for loading end by other thread
-        while (true)
+        bool contains = true;
+        while (contains)
         {
             Platform::Sleep(1);
-            result = nullptr;
             AssetsLocker.Lock();
-            if (!LoadCallAssets.Contains(id))
-                Assets.TryGet(id, result);
+            contains = LoadCallAssets.Contains(id);
             AssetsLocker.Unlock();
-            if (result)
-                return result;
         }
-    }
-    else
-    {
-        // Mark asset as loading
-        LoadCallAssets.Add(id);
-        AssetsLocker.Unlock();
+        Assets.TryGet(id, result);
+        return result;
     }
 
-    // Load asset
-    AssetInfo assetInfo;
-    result = load(id, type, assetInfo);
-
-    // End loading
-    AssetsLocker.Lock();
-    LoadCallAssets.Remove(id);
+    // Mark asset as loading and release lock so other threads can load other assets
+    LoadCallAssets.Add(id);
     AssetsLocker.Unlock();
 
-    return result;
-}
-
-Asset* Content::load(const Guid& id, const ScriptingTypeHandle& type, AssetInfo& assetInfo)
-{
     // Get cached asset info (from registry)
+    AssetInfo assetInfo;
     if (!GetAssetInfo(id, assetInfo))
     {
         LOG(Warning, "Invalid or missing asset ({0}, {1}).", id, type.ToString());
-        return nullptr;
+        goto LOAD_FAILED;
     }
-
 #if ASSETS_LOADING_EXTRA_VERIFICATION
     if (!FileSystem::FileExists(assetInfo.Path))
     {
         LOG(Error, "Cannot find file '{0}'", assetInfo.Path);
-        return nullptr;
+        goto LOAD_FAILED;
     }
 #endif
 
@@ -982,28 +968,27 @@ Asset* Content::load(const Guid& id, const ScriptingTypeHandle& type, AssetInfo&
     if (factory == nullptr)
     {
         LOG(Error, "Cannot find asset factory. Info: {0}", assetInfo.ToString());
-        return nullptr;
+        goto LOAD_FAILED;
     }
 
     // Create asset object
-    auto result = factory->New(assetInfo);
+    result = factory->New(assetInfo);
     if (result == nullptr)
     {
         LOG(Error, "Cannot create asset object. Info: {0}", assetInfo.ToString());
-        return nullptr;
+        goto LOAD_FAILED;
     }
-
+    ASSERT(result->GetID() == id);
 #if ASSETS_LOADING_EXTRA_VERIFICATION
     if (IsAssetTypeIdInvalid(type, result->GetTypeHandle()) && !result->Is(type))
     {
-        LOG(Error, "Different loaded asset type! Asset: '{0}'. Expected type: {1}", assetInfo.ToString(), type.ToString());
+        LOG(Warning, "Different loaded asset type! Asset: '{0}'. Expected type: {1}", assetInfo.ToString(), type.ToString());
         result->DeleteObject();
-        return nullptr;
+        goto LOAD_FAILED;
     }
 #endif
 
     // Register asset
-    ASSERT(result->GetID() == id);
     AssetsLocker.Lock();
 #if ASSETS_LOADING_EXTRA_VERIFICATION
     ASSERT(!Assets.ContainsKey(id));
@@ -1011,12 +996,20 @@ Asset* Content::load(const Guid& id, const ScriptingTypeHandle& type, AssetInfo&
     Assets.Add(id, result);
 
     // Start asset loading
-    // TODO: refactor this to create asset loading task-chain before AssetsLocker.Lock() to allow better parallelization
     result->startLoading();
 
+    // Remove from the loading queue and release lock
+    LoadCallAssets.Remove(id);
     AssetsLocker.Unlock();
 
     return result;
+
+LOAD_FAILED:
+    // Remove from loading queue
+    AssetsLocker.Lock();
+    LoadCallAssets.Remove(id);
+    AssetsLocker.Unlock();
+    return nullptr;
 }
 
 #if ENABLE_ASSETS_DISCOVERY
