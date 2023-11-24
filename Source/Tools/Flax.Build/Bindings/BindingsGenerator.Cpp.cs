@@ -145,6 +145,20 @@ namespace Flax.Build.Bindings
             return $"(void*){result}";
         }
 
+
+        private static void GenerateCppAddFileReference(BuildData buildData, ApiTypeInfo caller, TypeInfo typeInfo, ApiTypeInfo apiType)
+        {
+            CppReferencesFiles.Add(apiType?.File);
+            if (typeInfo.GenericArgs != null)
+            {
+                for (int i = 0; i < typeInfo.GenericArgs.Count; i++)
+                {
+                    var g = typeInfo.GenericArgs[i];
+                    GenerateCppAddFileReference(buildData, caller, g, FindApiTypeInfo(buildData, g, caller));
+                }
+            }
+        }
+
         public static string GenerateCppWrapperNativeToVariant(BuildData buildData, TypeInfo typeInfo, ApiTypeInfo caller, string value)
         {
             if (typeInfo.Type == "Variant")
@@ -640,15 +654,7 @@ namespace Flax.Build.Bindings
 
             // Register any API types usage
             apiType = FindApiTypeInfo(buildData, typeInfo, caller);
-            CppReferencesFiles.Add(apiType?.File);
-            if (typeInfo.GenericArgs != null)
-            {
-                for (int i = 0; i < typeInfo.GenericArgs.Count; i++)
-                {
-                    var t = FindApiTypeInfo(buildData, typeInfo.GenericArgs[i], caller);
-                    CppReferencesFiles.Add(t?.File);
-                }
-            }
+            GenerateCppAddFileReference(buildData, caller, typeInfo, apiType);
 
             // Use dynamic array as wrapper container for fixed-size native arrays
             if (typeInfo.IsArray)
@@ -1795,15 +1801,7 @@ namespace Flax.Build.Bindings
                 return true;
 
             // Add includes to properly compile bindings (eg. SoftObjectReference<class Texture>)
-            CppReferencesFiles.Add(apiTypeInfo?.File);
-            if (typeInfo.GenericArgs != null)
-            {
-                for (int i = 0; i < typeInfo.GenericArgs.Count; i++)
-                {
-                    var t = FindApiTypeInfo(buildData, typeInfo.GenericArgs[i], caller);
-                    CppReferencesFiles.Add(t?.File);
-                }
-            }
+            GenerateCppAddFileReference(buildData, caller, typeInfo, apiTypeInfo);
 
             return false;
         }

@@ -83,7 +83,7 @@ bool AccessVariant(Variant& instance, const StringAnsiView& member, Variant& val
         }
     }
 #endif
-    else
+    else if (typeName.HasChars())
     {
         LOG(Warning, "Missing scripting type \'{0}\'", String(typeName));
     }

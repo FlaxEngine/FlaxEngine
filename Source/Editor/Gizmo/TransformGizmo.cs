@@ -111,7 +111,8 @@ namespace FlaxEditor.Gizmo
                     if (isSelected)
                     {
                         GetSelectedObjectsBounds(out var selectionBounds, out _);
-                        ray.Position = ray.GetPoint(selectionBounds.Size.Y * 0.5f);
+                        var offset = Mathf.Max(selectionBounds.Size.Y * 0.5f, 1.0f);
+                        ray.Position = ray.GetPoint(offset);
                         continue;
                     }
 
