@@ -948,18 +948,20 @@ Asset* Content::LoadAsync(const Guid& id, const ScriptingTypeHandle& type)
     LoadCallAssets.Add(id);
     AssetsLocker.Unlock();
 
+#define LOAD_FAILED() AssetsLocker.Lock(); LoadCallAssets.Remove(id); AssetsLocker.Unlock(); return nullptr
+
     // Get cached asset info (from registry)
     AssetInfo assetInfo;
     if (!GetAssetInfo(id, assetInfo))
     {
         LOG(Warning, "Invalid or missing asset ({0}, {1}).", id, type.ToString());
-        goto LOAD_FAILED;
+        LOAD_FAILED();
     }
 #if ASSETS_LOADING_EXTRA_VERIFICATION
     if (!FileSystem::FileExists(assetInfo.Path))
     {
         LOG(Error, "Cannot find file '{0}'", assetInfo.Path);
-        goto LOAD_FAILED;
+        LOAD_FAILED();
     }
 #endif
 
@@ -968,7 +970,7 @@ Asset* Content::LoadAsync(const Guid& id, const ScriptingTypeHandle& type)
     if (factory == nullptr)
     {
         LOG(Error, "Cannot find asset factory. Info: {0}", assetInfo.ToString());
-        goto LOAD_FAILED;
+        LOAD_FAILED();
     }
 
     // Create asset object
@@ -976,7 +978,7 @@ Asset* Content::LoadAsync(const Guid& id, const ScriptingTypeHandle& type)
     if (result == nullptr)
     {
         LOG(Error, "Cannot create asset object. Info: {0}", assetInfo.ToString());
-        goto LOAD_FAILED;
+        LOAD_FAILED();
     }
     ASSERT(result->GetID() == id);
 #if ASSETS_LOADING_EXTRA_VERIFICATION
@@ -984,7 +986,7 @@ Asset* Content::LoadAsync(const Guid& id, const ScriptingTypeHandle& type)
     {
         LOG(Warning, "Different loaded asset type! Asset: '{0}'. Expected type: {1}", assetInfo.ToString(), type.ToString());
         result->DeleteObject();
-        goto LOAD_FAILED;
+        LOAD_FAILED();
     }
 #endif
 
@@ -1002,14 +1004,9 @@ Asset* Content::LoadAsync(const Guid& id, const ScriptingTypeHandle& type)
     LoadCallAssets.Remove(id);
     AssetsLocker.Unlock();
 
-    return result;
+#undef LOAD_FAILED
 
-LOAD_FAILED:
-    // Remove from loading queue
-    AssetsLocker.Lock();
-    LoadCallAssets.Remove(id);
-    AssetsLocker.Unlock();
-    return nullptr;
+    return result;
 }
 
 #if ENABLE_ASSETS_DISCOVERY
