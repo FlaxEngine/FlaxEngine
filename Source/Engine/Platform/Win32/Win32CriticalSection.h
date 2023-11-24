@@ -28,7 +28,7 @@ public:
     /// </summary>
     Win32CriticalSection()
     {
-        Windows::InitializeCriticalSectionEx(&_criticalSection, 100, 0x01000000);
+        Windows::InitializeCriticalSectionEx(&_criticalSection, 4000, 0x01000000);
     }
 
     /// <summary>
