@@ -206,10 +206,6 @@ namespace Flax.Build
                 dotnetSdkVersions = sdkVersionsKey.GetValueNames();
                 dotnetRuntimeVersions = runtimeKey.GetValueNames();
 #pragma warning restore CA1416
-                // DEBUG:
-                Log.Info($"[WIN] dotnetPath={dotnetPath}");
-                Log.Info($"[WIN] dotnetSdkVersions={(dotnetSdkVersions != null ? string.Join(", ", dotnetSdkVersions) : "null")}");
-                Log.Info($"[WIN] dotnetRuntimeVersions={(dotnetRuntimeVersions != null ? string.Join(", ", dotnetRuntimeVersions) : "null")}");
                 break;
             }
             case TargetPlatform.Linux:
@@ -270,17 +266,9 @@ namespace Flax.Build
 
             dotnetSdkVersions = dotnetSdkVersions.Where(x => IsValidVersion(Path.Combine(dotnetPath, "sdk", x)));
             dotnetRuntimeVersions = dotnetRuntimeVersions.Where(x => IsValidVersion(Path.Combine(dotnetPath, "shared", "Microsoft.NETCore.App", x)));
-            
-            // DEBUG:
-            Log.Info($"[WIN] valid dotnetSdkVersions={(dotnetSdkVersions != null ? string.Join(", ", dotnetSdkVersions) : "null")}");
-            Log.Info($"[WIN] valid dotnetRuntimeVersions={(dotnetRuntimeVersions != null ? string.Join(", ", dotnetRuntimeVersions) : "null")}");
 
             dotnetSdkVersions = dotnetSdkVersions.OrderByDescending(ParseVersion);
             dotnetRuntimeVersions = dotnetRuntimeVersions.OrderByDescending(ParseVersion);
-            
-            // DEBUG:
-            Log.Info($"[WIN] sorted dotnetSdkVersions={(dotnetSdkVersions != null ? string.Join(", ", dotnetSdkVersions) : "null")}");
-            Log.Info($"[WIN] sorted dotnetRuntimeVersions={(dotnetRuntimeVersions != null ? string.Join(", ", dotnetRuntimeVersions) : "null")}");
 
             Log.Verbose($"Found the following .NET SDK versions: {string.Join(", ", dotnetSdkVersions)}");
             Log.Verbose($"Found the following .NET runtime versions: {string.Join(", ", dotnetRuntimeVersions)}");
@@ -505,9 +493,6 @@ namespace Flax.Build
 
         private static IEnumerable<string> GetVersions(string folder)
         {
-            Log.Info($"[WIN] GetVersions={folder}");
-            foreach (var c in Directory.GetDirectories(folder).Select(Path.GetFileName))
-                Log.Info($"    [WIN] {c}");
             return Directory.GetDirectories(folder).Select(Path.GetFileName);
         }
 
