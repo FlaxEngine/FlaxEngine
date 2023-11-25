@@ -33,4 +33,4 @@ jobs:
         git lfs pull
     - name: Build
       run: |
-        .\Development\Scripts\Windows\CallBuildTool.bat -build -log -printSDKs -arch=ARM64 -platform=Android -configuration=Release -buildtargets=FlaxGame
+        .\Development\Scripts\Windows\CallBuildTool.bat -build -log -printSDKs -dotnet=7 -arch=ARM64 -platform=Android -configuration=Release -buildtargets=FlaxGame
