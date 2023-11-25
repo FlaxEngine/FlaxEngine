@@ -391,6 +391,25 @@ namespace FlaxEditor.Windows
             }
 
             Editor.Log("Plugin project has been cloned.");
+            
+            try
+            {
+                // Start git submodule clone
+                var settings = new CreateProcessSettings
+                {
+                    FileName = "git",
+                    WorkingDirectory = clonePath,
+                    Arguments = "submodule update --init",
+                    ShellExecute = false,
+                    LogOutput = true,
+                };
+                Platform.CreateProcess(ref settings);
+            }
+            catch (Exception e)
+            {
+                Editor.LogError($"Failed Git submodule process. {e}");
+                return;
+            }
 
             // Find project config file. Could be different then what the user named the folder.
             var files = Directory.GetFiles(clonePath);

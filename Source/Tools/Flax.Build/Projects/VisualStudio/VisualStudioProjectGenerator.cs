@@ -731,8 +731,7 @@ namespace Flax.Build.Projects.VisualStudio
                                                 configuration.Configuration,
                                                 configuration.Platform,
                                                 configuration.Target);
-                        if (!string.IsNullOrEmpty(Configuration.Compiler))
-                            cmdLine += " -compiler=" + Configuration.Compiler;
+                        Configuration.PassArgs(ref cmdLine);
 
                         str.AppendLine(string.Format("    <Exec Command=\"{0} {1}\" Condition=\"'$(Configuration)|$(Platform)'=='{2}'\"/>", cmdLine, extraArgs, configuration.Name));
                     }

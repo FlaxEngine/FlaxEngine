@@ -82,7 +82,10 @@ namespace Flax.Build
                 {
                     var engineProject = EngineTarget.EngineProject;
                     if (engineProject != null && engineProject.Configuration != null && engineProject.Configuration.Count != 0)
+                    {
                         CommandLine.Configure(typeof(EngineConfiguration), engineProject.Configuration);
+                        CommandLine.Configure(typeof(Configuration), engineProject.Configuration);
+                    }
                     CommandLine.Configure(typeof(EngineConfiguration));
                 }
 
@@ -90,7 +93,6 @@ namespace Flax.Build
                 if (Configuration.Mutex)
                 {
                     singleInstanceMutex = new Mutex(true, "Flax.Build", out var oneInstanceMutexCreated);
-
                     if (!oneInstanceMutexCreated)
                     {
                         try

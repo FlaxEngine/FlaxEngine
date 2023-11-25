@@ -106,6 +106,20 @@ namespace Flax.Build
             }
         }
 
+        /// <summary>
+        /// Exception when .NET SDK is missing.
+        /// </summary>
+        public sealed class MissingException : Exception
+        {
+            /// <summary>
+            /// Init with a proper message.
+            /// </summary>
+            public MissingException()
+            : base(string.IsNullOrEmpty(Configuration.Dotnet) ? $"Missing .NET SDK {MinimumVersion} (or higher)." : $"Missing .NET SDK {Configuration.Dotnet}.")
+            {
+            }
+        }
+
         private Dictionary<KeyValuePair<TargetPlatform, TargetArchitecture>, HostRuntime> _hostRuntimes = new();
 
         /// <summary>
@@ -223,7 +237,7 @@ namespace Flax.Build
                 // We need to support two paths here: 
                 // 1. We are running an x64 binary and we are running on an arm64 host machine 
                 // 2. We are running an Arm64 binary and we are targeting an x64 host machine
-                if (Flax.Build.Platforms.MacPlatform.GetProcessIsTranslated() || isRunningOnArm64Targetx64) 
+                if (Flax.Build.Platforms.MacPlatform.GetProcessIsTranslated() || isRunningOnArm64Targetx64)
                 {
                     rid = "osx-x64";
                     dotnetPath = Path.Combine(dotnetPath, "x64");
@@ -246,10 +260,9 @@ namespace Flax.Build
                 Log.Warning($"Missing .NET SDK ({dotnetPath})");
                 return;
             }
-            if (dotnetSdkVersions == null)
-                dotnetSdkVersions = GetVersions(Path.Combine(dotnetPath, "sdk"));
-            if (dotnetRuntimeVersions == null)
-                dotnetRuntimeVersions = GetVersions(Path.Combine(dotnetPath, "shared", "Microsoft.NETCore.App"));
+
+            dotnetSdkVersions = MergeVersions(dotnetSdkVersions, GetVersions(Path.Combine(dotnetPath, "sdk")));
+            dotnetRuntimeVersions = MergeVersions(dotnetRuntimeVersions, GetVersions(Path.Combine(dotnetPath, "shared", "Microsoft.NETCore.App")));
 
             dotnetSdkVersions = dotnetSdkVersions.Where(x => IsValidVersion(Path.Combine(dotnetPath, "sdk", x)));
             dotnetRuntimeVersions = dotnetRuntimeVersions.Where(x => IsValidVersion(Path.Combine(dotnetPath, "shared", "Microsoft.NETCore.App", x)));
@@ -260,18 +273,23 @@ namespace Flax.Build
             Log.Verbose($"Found the following .NET SDK versions: {string.Join(", ", dotnetSdkVersions)}");
             Log.Verbose($"Found the following .NET runtime versions: {string.Join(", ", dotnetRuntimeVersions)}");
 
-            string dotnetSdkVersion = dotnetSdkVersions.FirstOrDefault(x => ParseVersion(x).Major >= MinimumVersion.Major && ParseVersion(x).Major <= MaximumVersion.Major);
-            string dotnetRuntimeVersion = dotnetRuntimeVersions.FirstOrDefault(x => ParseVersion(x).Major >= MinimumVersion.Major && ParseVersion(x).Major <= MaximumVersion.Major);
+            var dotnetSdkVersion = GetVersion(dotnetSdkVersions);
+            var dotnetRuntimeVersion = GetVersion(dotnetRuntimeVersions);
+            var minVer = string.IsNullOrEmpty(Configuration.Dotnet) ? MinimumVersion.ToString() : Configuration.Dotnet;
             if (string.IsNullOrEmpty(dotnetSdkVersion))
-                dotnetSdkVersion = dotnetPath;
-            if (dotnetSdkVersion == null && dotnetSdkVersions.Count() > 0)
             {
-                Log.Warning($"Unsupported .NET SDK {dotnetSdkVersions.First()} version found. Minimum version required is .NET {MinimumVersion}.");
+                if (dotnetSdkVersions.Any())
+                    Log.Warning($"Unsupported .NET SDK versions found: {string.Join(", ", dotnetSdkVersions)}. Minimum version required is .NET {minVer}.");
+                else
+                    Log.Warning($"Missing .NET SDK. Minimum version required is .NET {minVer}.");
                 return;
             }
-            if (string.IsNullOrEmpty(dotnetSdkVersion) || string.IsNullOrEmpty(dotnetRuntimeVersion))
+            if (string.IsNullOrEmpty(dotnetRuntimeVersion))
             {
-                Log.Warning("Missing .NET SDK");
+                if (dotnetRuntimeVersions.Any())
+                    Log.Warning($"Unsupported .NET runtime versions found: {string.Join(", ", dotnetRuntimeVersions)}. Minimum version required is .NET {minVer}.");
+                else
+                    Log.Warning($"Missing .NET runtime. Minimum version required is .NET {minVer}.");
                 return;
             }
             RootPath = dotnetPath;
@@ -434,7 +452,7 @@ namespace Flax.Build
             exists = Directory.Exists(path);
 
             if (exists)
-                _hostRuntimes[new KeyValuePair<TargetPlatform, TargetArchitecture>(platform, arch)] = new HostRuntime(platform, path);
+                _hostRuntimes[new KeyValuePair<TargetPlatform, TargetArchitecture>(platform, arch)] = new HostRuntime(platform, Utilities.NormalizePath(path));
             return exists;
         }
 
@@ -443,6 +461,18 @@ namespace Flax.Build
             var versions = GetVersions(root);
             var version = GetVersion(versions);
             return Path.Combine(root, version);
+        }
+
+        private static IEnumerable<string> MergeVersions(IEnumerable<string> a, IEnumerable<string> b)
+        {
+            if (a == null || !a.Any())
+                return b;
+            if (b == null || !b.Any())
+                return a;
+            var result = new HashSet<string>();
+            result.AddRange(a);
+            result.AddRange(b);
+            return result;
         }
 
         private static Version ParseVersion(string version)
@@ -456,6 +486,8 @@ namespace Flax.Build
             }
             if (!Version.TryParse(version, out var ver))
                 return null;
+            if (ver.Build == -1)
+                return new Version(ver.Major, ver.Minor);
             return new Version(ver.Major, ver.Minor, ver.Build, rev);
         }
 
@@ -466,9 +498,42 @@ namespace Flax.Build
 
         private static string GetVersion(IEnumerable<string> versions)
         {
-            return versions.OrderByDescending(ParseVersion)
-                .Where(x => ParseVersion(x).Major >= MinimumVersion.Major && ParseVersion(x).Major <= MaximumVersion.Major)
-                .FirstOrDefault();
+            Version dotnetVer = null;
+            int dotnetVerNum = -1;
+            if (!string.IsNullOrEmpty(Configuration.Dotnet))
+            {
+                dotnetVer = ParseVersion(Configuration.Dotnet);
+                if (int.TryParse(Configuration.Dotnet, out var tmp) && tmp >= MinimumVersion.Major)
+                    dotnetVerNum = tmp;
+            }
+            var sorted = versions.OrderByDescending(ParseVersion);
+            foreach (var version in sorted)
+            {
+                var v = ParseVersion(version);
+
+                // Filter by version specified in command line
+                if (dotnetVer != null)
+                {
+                    if (dotnetVer.Major != v.Major)
+                        continue;
+                    if (dotnetVer.Minor != v.Minor)
+                        continue;
+                    if (dotnetVer.Revision != -1 && dotnetVer.Revision != v.Revision)
+                        continue;
+                    if (dotnetVer.Build != -1 && dotnetVer.Build != v.Build)
+                        continue;
+                }
+                else if (dotnetVerNum != -1)
+                {
+                    if (dotnetVerNum != v.Major)
+                        continue;
+                }
+
+                // Filter by min/max versions supported by Flax.Build
+                if (v.Major >= MinimumVersion.Major && v.Major <= MaximumVersion.Major)
+                    return version;
+            }
+            return null;
         }
 
         private static bool IsValidVersion(string versionPath)

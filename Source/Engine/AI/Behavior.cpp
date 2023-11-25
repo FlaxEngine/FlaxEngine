@@ -114,14 +114,19 @@ void Behavior::UpdateAsync()
 
 void Behavior::StartLogic()
 {
+    if (_result == BehaviorUpdateResult::Running)
+        return;
     PROFILE_CPU();
 
-    // Ensure to have tree loaded on begin play
+    // Ensure to have tree loaded on play
     CHECK(Tree && !Tree->WaitForLoaded());
     BehaviorTree* tree = Tree.Get();
     CHECK(tree->Graph.Root);
 
+    // Setup state
     _result = BehaviorUpdateResult::Running;
+    _accumulatedTime = 0.0f;
+    _totalTime = 0;
 
     // Init knowledge
     _knowledge.InitMemory(tree);
@@ -135,6 +140,7 @@ void Behavior::StopLogic(BehaviorUpdateResult result)
     _accumulatedTime = 0.0f;
     _totalTime = 0;
     _result = result;
+    _knowledge.FreeMemory();
 }
 
 void Behavior::ResetLogic()
@@ -170,7 +176,11 @@ void Behavior::OnDisable()
 
 bool Behavior::GetNodeDebugRelevancy(const BehaviorTreeNode* node, const Behavior* behavior)
 {
-    return node && behavior && node->_executionIndex != -1 && behavior->_knowledge.RelevantNodes.Get(node->_executionIndex);
+    return node &&
+            behavior &&
+            node->_executionIndex >= 0 &&
+            node->_executionIndex < behavior->_knowledge.RelevantNodes.Count() &&
+            behavior->_knowledge.RelevantNodes.Get(node->_executionIndex);
 }
 
 String Behavior::GetNodeDebugInfo(const BehaviorTreeNode* node, Behavior* behavior)
@@ -179,7 +189,7 @@ String Behavior::GetNodeDebugInfo(const BehaviorTreeNode* node, Behavior* behavi
         return String::Empty;
     BehaviorUpdateContext context;
     Platform::MemoryClear(&context, sizeof(context));
-    if (behavior && node->_executionIndex != -1 && behavior->_knowledge.RelevantNodes.Get(node->_executionIndex))
+    if (GetNodeDebugRelevancy(node, behavior))
     {
         // Pass behavior and knowledge data only for relevant nodes to properly access it
         context.Behavior = behavior;
