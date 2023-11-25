@@ -264,10 +264,9 @@ namespace Flax.Build
                 Log.Warning($"Missing .NET SDK ({dotnetPath})");
                 return;
             }
-            if (dotnetSdkVersions == null)
-                dotnetSdkVersions = GetVersions(Path.Combine(dotnetPath, "sdk"));
-            if (dotnetRuntimeVersions == null)
-                dotnetRuntimeVersions = GetVersions(Path.Combine(dotnetPath, "shared", "Microsoft.NETCore.App"));
+
+            dotnetSdkVersions = MergeVersions(dotnetSdkVersions, GetVersions(Path.Combine(dotnetPath, "sdk")));
+            dotnetRuntimeVersions = MergeVersions(dotnetRuntimeVersions, GetVersions(Path.Combine(dotnetPath, "shared", "Microsoft.NETCore.App")));
 
             dotnetSdkVersions = dotnetSdkVersions.Where(x => IsValidVersion(Path.Combine(dotnetPath, "sdk", x)));
             dotnetRuntimeVersions = dotnetRuntimeVersions.Where(x => IsValidVersion(Path.Combine(dotnetPath, "shared", "Microsoft.NETCore.App", x)));
@@ -474,6 +473,18 @@ namespace Flax.Build
             var versions = GetVersions(root);
             var version = GetVersion(versions);
             return Path.Combine(root, version);
+        }
+
+        private static IEnumerable<string> MergeVersions(IEnumerable<string> a, IEnumerable<string> b)
+        {
+            if (a == null || !a.Any())
+                return b;
+            if (b == null || !b.Any())
+                return a;
+            var result = new HashSet<string>();
+            result.AddRange(a);
+            result.AddRange(b);
+            return result;
         }
 
         private static Version ParseVersion(string version)
