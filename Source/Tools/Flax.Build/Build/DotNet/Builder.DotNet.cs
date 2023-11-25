@@ -164,7 +164,7 @@ namespace Flax.Build
 #if USE_NETCORE
             var dotnetSdk = DotNetSdk.Instance;
             if (!dotnetSdk.IsValid)
-                throw new Exception("Cannot compile C# without .NET SDK");
+                throw new DotNetSdk.MissingException();
             string dotnetPath = "dotnet", referenceAnalyzers;
             string[] runtimeVersionNameParts = dotnetSdk.RuntimeVersionName.Split('.');
             string runtimeVersionShort = runtimeVersionNameParts[0] + '.' + runtimeVersionNameParts[1];
