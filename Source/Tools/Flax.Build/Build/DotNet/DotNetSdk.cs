@@ -162,6 +162,18 @@ namespace Flax.Build
         public readonly string RuntimeVersionName;
 
         /// <summary>
+        /// Maximum supported C#-language version for the SDK.
+        /// </summary>
+        public string CSharpLanguageVersion => Version.Major switch
+        {
+            8 => "12.0",
+            7 => "11.0",
+            6 => "10.0",
+            5 => "9.0",
+            _ => "7.3",
+        };
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="DotNetSdk"/> class.
         /// </summary>
         public DotNetSdk()

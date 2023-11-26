@@ -28,6 +28,7 @@ namespace Flax.Build.Projects.VisualStudio
         /// <inheritdoc />
         public override void GenerateProject(Project project, string solutionPath)
         {
+            var dotnetSdk = DotNetSdk.Instance;
             var csProjectFileContent = new StringBuilder();
 
             var vsProject = (VisualStudioProject)project;
@@ -96,7 +97,7 @@ namespace Flax.Build.Projects.VisualStudio
             var cacheProjectsPath = Utilities.MakePathRelativeTo(Path.Combine(Globals.Root, "Cache", "Projects"), projectDirectory);
             var flaxBuildTargetsPath = !string.IsNullOrEmpty(cacheProjectsPath) ? Path.Combine(cacheProjectsPath, flaxBuildTargetsFilename) : flaxBuildTargetsFilename;
 
-            csProjectFileContent.AppendLine("    <TargetFramework>net7.0</TargetFramework>");
+            csProjectFileContent.AppendLine($"    <TargetFramework>net{dotnetSdk.Version.Major}.{dotnetSdk.Version.Minor}</TargetFramework>");
             csProjectFileContent.AppendLine("    <ImplicitUsings>disable</ImplicitUsings>");
             csProjectFileContent.AppendLine(string.Format("    <Nullable>{0}</Nullable>", baseConfiguration.TargetBuildOptions.ScriptingAPI.CSharpNullableReferences.ToString().ToLowerInvariant()));
             csProjectFileContent.AppendLine("    <IsPackable>false</IsPackable>");
@@ -108,7 +109,7 @@ namespace Flax.Build.Projects.VisualStudio
             csProjectFileContent.AppendLine("    <ProduceReferenceAssembly>false</ProduceReferenceAssembly>");
             csProjectFileContent.AppendLine(string.Format("    <RootNamespace>{0}</RootNamespace>", project.BaseName));
             csProjectFileContent.AppendLine(string.Format("    <AssemblyName>{0}.CSharp</AssemblyName>", project.BaseName));
-            csProjectFileContent.AppendLine("    <LangVersion>11.0</LangVersion>");
+            csProjectFileContent.AppendLine($"    <LangVersion>{dotnetSdk.CSharpLanguageVersion}</LangVersion>");
             csProjectFileContent.AppendLine("    <FileAlignment>512</FileAlignment>");
 
             //csProjectFileContent.AppendLine("    <CopyLocalLockFileAssemblies>false</CopyLocalLockFileAssemblies>"); // TODO: use it to reduce burden of framework libs
