@@ -50,7 +50,7 @@ namespace Flax.Deps.Dependencies
         {
             // Build configuration (see build.cmd -help)
             string configuration = "Release";
-            string framework = "net7.0";
+            string framework = "net8.0";
 
             // Clean output directory
             var artifacts = Path.Combine(root, "artifacts");
@@ -224,7 +224,7 @@ namespace Flax.Deps.Dependencies
             }
             var privateCorelib = "System.Private.CoreLib.dll";
             Utilities.FileCopy(Path.Combine(unpackTemp, "runtimes", hostRuntimeName, "native", privateCorelib), Path.Combine(dstClassLibrary, privateCorelib));
-            Utilities.DirectoryCopy(Path.Combine(unpackTemp, "runtimes", hostRuntimeName, "lib", "net7.0"), dstClassLibrary, false, true);
+            Utilities.DirectoryCopy(Path.Combine(unpackTemp, "runtimes", hostRuntimeName, "lib", "net8.0"), dstClassLibrary, false, true);
             // TODO: host/fxr/<version>/hostfxr.dll
             // TODO: shared/Microsoft.NETCore.App/<version>/hostpolicy.dl
             // TODO: shared/Microsoft.NETCore.App/<version>/System.IO.Compression.Native.dll

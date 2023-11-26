@@ -96,7 +96,7 @@ namespace Flax.Build.Projects.VisualStudio
             var cacheProjectsPath = Utilities.MakePathRelativeTo(Path.Combine(Globals.Root, "Cache", "Projects"), projectDirectory);
             var flaxBuildTargetsPath = !string.IsNullOrEmpty(cacheProjectsPath) ? Path.Combine(cacheProjectsPath, flaxBuildTargetsFilename) : flaxBuildTargetsFilename;
 
-            csProjectFileContent.AppendLine("    <TargetFramework>net7.0</TargetFramework>");
+            csProjectFileContent.AppendLine("    <TargetFramework>net8.0</TargetFramework>");
             csProjectFileContent.AppendLine("    <ImplicitUsings>disable</ImplicitUsings>");
             csProjectFileContent.AppendLine(string.Format("    <Nullable>{0}</Nullable>", baseConfiguration.TargetBuildOptions.ScriptingAPI.CSharpNullableReferences.ToString().ToLowerInvariant()));
             csProjectFileContent.AppendLine("    <IsPackable>false</IsPackable>");

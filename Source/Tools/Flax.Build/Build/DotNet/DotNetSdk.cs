@@ -130,7 +130,7 @@ namespace Flax.Build
         /// <summary>
         /// The minimum SDK version.
         /// </summary>
-        public static Version MinimumVersion => new Version(7, 0);
+        public static Version MinimumVersion => new Version(8, 0);
 
         /// <summary>
         /// The maximum SDK version.

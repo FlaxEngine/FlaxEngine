@@ -164,6 +164,30 @@ namespace Flax.Build
                 }
             }
 
+            public string Serialize()
+            {
+                // Null any empty fields to exclude them from serialization
+                if (HotReloadPostfix?.Length == 0)
+                    HotReloadPostfix = null;
+                foreach (var binaryModule in BinaryModules)
+                {
+                    if (binaryModule.NativePathProcessed?.Length == 0)
+                        binaryModule.NativePathProcessed = null;
+                    if (binaryModule.ManagedPathProcessed?.Length == 0)
+                        binaryModule.ManagedPathProcessed = null;
+                }
+
+                // Convert to Json
+                var options = new JsonSerializerOptions
+                {
+                    WriteIndented = true,
+                    IncludeFields = true,
+                    DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+                    TypeInfoResolver = BuildTargetInfoSourceGenerationContext.Default,
+                };
+                return JsonSerializer.Serialize<BuildTargetInfo>(this, options);
+            }
+
             public static string ProcessPath(string path, string projectPath)
             {
                 if (string.IsNullOrEmpty(path))
@@ -1017,7 +1041,7 @@ namespace Flax.Build
                 buildData.BuildInfo.AddReferencedBuilds(ref i, project.ProjectFolderPath, buildData.ReferenceBuilds);
 
                 if (!buildData.Target.IsPreBuilt)
-                    Utilities.WriteFileIfChanged(Path.Combine(outputPath, target.Name + ".Build.json"), JsonSerializer.Serialize<BuildTargetInfo>(buildData.BuildInfo, new JsonSerializerOptions() { WriteIndented = true, IncludeFields = true, TypeInfoResolver = BuildTargetInfoSourceGenerationContext.Default }));
+                    Utilities.WriteFileIfChanged(Path.Combine(outputPath, target.Name + ".Build.json"), buildData.BuildInfo.Serialize());
             }
 
             // Deploy files
@@ -1216,7 +1240,7 @@ namespace Flax.Build
                 buildData.BuildInfo.AddReferencedBuilds(ref i, project.ProjectFolderPath, buildData.ReferenceBuilds);
 
                 if (!buildData.Target.IsPreBuilt)
-                    Utilities.WriteFileIfChanged(Path.Combine(outputPath, target.Name + ".Build.json"), JsonSerializer.Serialize<BuildTargetInfo>(buildData.BuildInfo, new JsonSerializerOptions() { WriteIndented = true, IncludeFields = true, TypeInfoResolver = BuildTargetInfoSourceGenerationContext.Default }));
+                    Utilities.WriteFileIfChanged(Path.Combine(outputPath, target.Name + ".Build.json"), buildData.BuildInfo.Serialize());
             }
 
             // Deploy files

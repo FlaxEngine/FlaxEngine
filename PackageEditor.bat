@@ -7,7 +7,7 @@ pushd
 echo Building and packaging Flax Editor...
 
 rem Run the build tool.
-call "Development\Scripts\Windows\CallBuildTool.bat" -deploy -deployEditor -dotnet=7 -verbose -log -logFile="Cache\Intermediate\PackageLog.txt" %*
+call "Development\Scripts\Windows\CallBuildTool.bat" -deploy -deployEditor -dotnet=8 -verbose -log -logFile="Cache\Intermediate\PackageLog.txt" %*
 if errorlevel 1 goto BuildToolFailed
 
 popd

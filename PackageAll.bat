@@ -7,7 +7,7 @@ pushd
 echo Performing the full package...
 
 rem Run the build tool.
-call "Development\Scripts\Windows\CallBuildTool.bat" -deploy -deployEditor -deployPlatforms -dotnet=7 -verbose -log -logFile="Cache\Intermediate\PackageLog.txt" %*
+call "Development\Scripts\Windows\CallBuildTool.bat" -deploy -deployEditor -deployPlatforms -dotnet=8 -verbose -log -logFile="Cache\Intermediate\PackageLog.txt" %*
 if errorlevel 1 goto BuildToolFailed
 
 popd

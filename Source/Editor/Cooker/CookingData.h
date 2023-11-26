@@ -14,7 +14,7 @@ class PlatformTools;
 
 #if OFFICIAL_BUILD
 // Use the fixed .NET SDK version in packaged builds for compatibility (FlaxGame is precompiled with it)
-#define GAME_BUILD_DOTNET_VER TEXT("-dotnet=7")
+#define GAME_BUILD_DOTNET_VER TEXT("-dotnet=8")
 #else
 #define GAME_BUILD_DOTNET_VER TEXT("")
 #endif
