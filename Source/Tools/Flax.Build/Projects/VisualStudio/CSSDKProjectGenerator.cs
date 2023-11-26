@@ -73,8 +73,8 @@ namespace Flax.Build.Projects.VisualStudio
             csProjectFileContent.AppendLine(string.Format("    <Platforms>{0}</Platforms>", string.Join(";", allPlatforms)));
 
             // Provide default platform and configuration
-            csProjectFileContent.AppendLine(string.Format("    <Configuration Condition=\" '$(Configuration)' == '' \">{0}</Configuration>", defaultConfiguration.Text));
-            csProjectFileContent.AppendLine(string.Format("    <Platform Condition=\" '$(Platform)' == '' \">{0}</Platform>", defaultConfiguration.ArchitectureName));
+            csProjectFileContent.AppendLine(string.Format("    <Configuration>{0}</Configuration>", defaultConfiguration.Text));
+            csProjectFileContent.AppendLine(string.Format("    <Platform>{0}</Platform>", defaultConfiguration.ArchitectureName));
 
             switch (project.OutputType ?? defaultTarget.OutputType)
             {
