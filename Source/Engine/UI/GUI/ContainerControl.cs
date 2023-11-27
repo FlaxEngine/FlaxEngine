@@ -29,7 +29,7 @@ namespace FlaxEngine.GUI
         [NoSerialize]
         protected bool _isLayoutLocked;
 
-        private bool _clipChildren = true;
+        private Clipping _clipChildren = Clipping.Inherit;
         private bool _cullChildren = true;
 
         /// <summary>
@@ -98,12 +98,28 @@ namespace FlaxEngine.GUI
         /// <summary>
         /// Gets or sets a value indicating whether apply clipping mask on children during rendering.
         /// </summary>
-        [EditorOrder(530), Tooltip("If checked, control will apply clipping mask on children during rendering.")]
-        public bool ClipChildren
-        {
-            get => _clipChildren;
-            set => _clipChildren = value;
-        }
+        [EditorOrder(530), Tooltip("If checked, control will apply clipping mask on children during rendering."), Obsolete("Use Clipping"),NoSerialize]
+        public bool ClipChildren;
+
+        /// <summary>
+        /// Controls how the clipping behavior of this Control.
+        /// Normally content that overflows the bounds of the Control continues rendering.
+        /// Enabling clipping prevents that overflowing content from being seen.
+        /// <para><b>Note:</b></para>
+        /// Controls in different clipping spaces can not be batched together, and so there is a performance cost to clipping.
+        /// Do not enable clipping unless a panel actually needs to prevent content from showing up outside its bounds.
+        /// </summary>
+        [EditorOrder(530), Tooltip
+            (
+            "Controls how the clipping behavior of this Control.\n" +
+            "Normally content that overflows the bounds of the Control continues rendering." +
+            "Enabling clipping prevents that overflowing content from being seen." +
+            "" +
+            "Note:" +
+            "Controls in different clipping spaces can not be batched together, and so there is a performance cost to clipping." +
+            "Do not enable clipping unless a panel actually needs to prevent content from showing up outside its bounds."
+            )]
+        public Clipping Clipping;
 
         /// <summary>
         /// Gets or sets a value indicating whether perform view culling on children during rendering.
@@ -793,16 +809,23 @@ namespace FlaxEngine.GUI
         {
             DrawSelf();
 
-            if (_clipChildren)
+            switch (Clipping)
             {
-                GetDesireClientArea(out var clientArea);
-                Render2D.PushClip(ref clientArea);
-                DrawChildren();
-                Render2D.PopClip();
-            }
-            else
-            {
-                DrawChildren();
+                case Clipping.Inherit:
+                    DrawChildren();
+                    return;
+                case Clipping.DontClip:
+                    Render2D.PeekClip(out var clipRect);
+                    Render2D.PopClip();
+                    DrawChildren();
+                    Render2D.PushClip(ref clipRect);
+                    return;
+                case Clipping.ClipToBounds:
+                    GetDesireClientArea(out var clientArea);
+                    Render2D.PushClip(ref clientArea);
+                    DrawChildren();
+                    Render2D.PopClip();
+                    return;
             }
         }
 
