@@ -159,7 +159,7 @@ namespace FlaxEditor.Windows
                 {
                     contextMenu.AddSeparator();
                     var childCM = contextMenu.GetOrAddChildMenu("Add Scene");
-                    foreach (var sceneGuid in unloadedScenes.Where(sceneGuid => !Level.FindScene(sceneGuid)))
+                    foreach (var sceneGuid in unloadedScenes)
                     {
                         if (FlaxEngine.Content.GetAssetInfo(sceneGuid, out var unloadedScene))
                         {
