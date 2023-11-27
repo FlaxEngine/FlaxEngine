@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
 using System;
+using System.Linq;
 
 namespace FlaxEngine.GUI
 {
@@ -237,7 +238,7 @@ namespace FlaxEngine.GUI
             var style = Style.Current;
             HeaderColor = style.BackgroundNormal;
             HeaderColorMouseOver = style.BackgroundHighlighted;
-            HeaderTextFont = new FontReference(style.FontMedium);
+            HeaderTextFont = new FontReference(style.FontMedium.First());
             HeaderTextColor = style.Foreground;
             ArrowImageOpened = new SpriteBrush(style.ArrowDown);
             ArrowImageClosed = new SpriteBrush(style.ArrowRight);

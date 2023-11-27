@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using FlaxEditor.GUI.Tabs;
 using FlaxEditor.Modules;
 using FlaxEditor.SceneGraph.Actors;
@@ -147,7 +148,7 @@ namespace FlaxEditor.Tools.Foliage
                 Parent = _noFoliagePanel,
                 Enabled = false
             };
-            var textSize = Style.Current.FontMedium.MeasureText(buttonText);
+            var textSize = Style.Current.FontMedium.First().MeasureText(buttonText);
             if (_createNewFoliage.Width < textSize.X)
             {
                 _createNewFoliage.LocalX -= (textSize.X - _createNewFoliage.Width) / 2;

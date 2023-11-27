@@ -273,7 +273,7 @@ namespace FlaxEditor.GUI
             MaximumItemsInViewCount = 20;
 
             var style = Style.Current;
-            Font = new FontReference(style.FontMedium);
+            Font = new FontReference(style.FontMedium.First());
             TextColor = style.Foreground;
             BackgroundColor = style.BackgroundNormal;
             BackgroundColorHighlighted = BackgroundColor;

@@ -345,7 +345,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
             if (_previewValue != null)
             {
                 // Based on Track.Draw for track text placement
-                var left = _xOffset + 16 + Style.Current.FontSmall.MeasureText(Title ?? Name).X;
+                var left = _xOffset + 16 + Style.Current.FontSmall.First().MeasureText(Title ?? Name).X;
                 if (Icon.IsValid)
                     left += 18;
                 if (IsExpanded)

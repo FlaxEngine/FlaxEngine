@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
 using System;
+using System.Linq;
 using FlaxEngine;
 using FlaxEngine.GUI;
 
@@ -150,8 +151,8 @@ namespace FlaxEditor.GUI
 
             if (hasSprite)
                 width += iconSize;
-            if (!string.IsNullOrEmpty(_text) && style.FontMedium)
-                width += style.FontMedium.MeasureText(_text).X + (hasSprite ? DefaultMargin : 0);
+            if (!string.IsNullOrEmpty(_text) && style.FontMedium.First())
+                width += style.FontMedium.First().MeasureText(_text).X + (hasSprite ? DefaultMargin : 0);
 
             Width = width;
         }

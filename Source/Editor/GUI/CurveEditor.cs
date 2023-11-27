@@ -437,7 +437,7 @@ namespace FlaxEditor.GUI
             _contentsColor = style.Background.RGBMultiplied(0.7f);
             _linesColor = style.ForegroundDisabled.RGBMultiplied(0.7f);
             _labelsColor = style.ForegroundDisabled;
-            _labelsFont = style.FontSmall;
+            _labelsFont = style.FontSmall.First();
 
             _mainPanel = new Panel(ScrollBars.Both)
             {

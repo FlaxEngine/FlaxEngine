@@ -283,6 +283,206 @@ void Font::ProcessText(const StringView& text, Array<FontLineCache>& outputLines
     }
 }
 
+void Font::ProcessText(const Array<Font*>& fonts, const StringView& text, Array<FontLineCache>& outputLines, API_PARAM(Ref) const TextLayoutOptions& layout)
+{
+    float cursorX = 0;
+    int32 kerning;
+    FontLineCache tmpLine;
+    FontCharacterEntry entry;
+    FontCharacterEntry previous;
+    int32 textLength = text.Length();
+    float scale = layout.Scale / FontManager::FontScale;
+    float boundsWidth = layout.Bounds.GetWidth();
+    float baseLinesDistanceScale = layout.BaseLinesGapScale * scale;
+    tmpLine.Location = Float2::Zero;
+    tmpLine.Size = Float2::Zero;
+    tmpLine.FirstCharIndex = 0;
+    tmpLine.LastCharIndex = -1;
+
+    int32 lastWrapCharIndex = INVALID_INDEX;
+    float lastWrapCharX = 0;
+    bool lastMoveLine = false;
+
+    int32 previousFontIndex = -1;
+    // The maximum font height of the current line
+    float maxHeight = 0;
+    // Process each character to split text into single lines
+    for (int32 currentIndex = 0; currentIndex < textLength;)
+    {
+        bool moveLine = false;
+        float xAdvance = 0;
+        int32 nextCharIndex = currentIndex + 1;
+
+        // Cache current character
+        const Char currentChar = text[currentIndex];
+        const bool isWhitespace = StringUtils::IsWhitespace(currentChar);
+
+        // Check if character can wrap words
+        const bool isWrapChar = !StringUtils::IsAlnum(currentChar) || isWhitespace || StringUtils::IsUpper(currentChar);
+        if (isWrapChar && currentIndex != 0)
+        {
+            lastWrapCharIndex = currentIndex;
+            lastWrapCharX = cursorX;
+        }
+
+        // Check if it's a newline character
+        if (currentChar == '\n')
+        {
+            // Break line
+            moveLine = true;
+            currentIndex++;
+            tmpLine.LastCharIndex++;
+        }
+        else
+        {
+            // Get character entry
+            int32 fontIndex = 0;
+            while (fontIndex < fonts.Count() && !fonts[fontIndex]->ContainsChar(currentChar))
+            {
+                fontIndex++;
+            }
+
+            // If no font can match the char, then use the first font
+            if (fontIndex == fonts.Count()) {
+                fontIndex = 0;
+            }
+            // Get character entry
+            fonts[fontIndex]->GetCharacter(currentChar, entry);
+            maxHeight = Math::Max(maxHeight, static_cast<float>(fonts[fontIndex]->GetHeight()));
+
+            // Get kerning, only when the font hasn't changed
+            if (!isWhitespace && previous.IsValid && previousFontIndex == fontIndex)
+            {
+                kerning = fonts[fontIndex]->GetKerning(previous.Character, entry.Character);
+            }
+            else
+            {
+                kerning = 0;
+            }
+            previous = entry;
+            previousFontIndex = fontIndex;
+            xAdvance = (kerning + entry.AdvanceX) * scale;
+
+            // Check if character fits the line or skip wrapping
+            if (cursorX + xAdvance <= boundsWidth || layout.TextWrapping == TextWrapping::NoWrap)
+            {
+                // Move character
+                cursorX += xAdvance;
+                tmpLine.LastCharIndex++;
+            }
+            else if (layout.TextWrapping == TextWrapping::WrapWords)
+            {
+                if (lastWrapCharIndex != INVALID_INDEX)
+                {
+                    // Skip moving twice for the same character
+                    int32 lastLineLasCharIndex = outputLines.HasItems() ? outputLines.Last().LastCharIndex : -10000;
+                    if (lastLineLasCharIndex == lastWrapCharIndex || lastLineLasCharIndex == lastWrapCharIndex - 1 || lastLineLasCharIndex == lastWrapCharIndex - 2)
+                    {
+                        currentIndex = nextCharIndex;
+                        lastMoveLine = moveLine;
+                        continue;
+                    }
+
+                    // Move line
+                    const Char wrapChar = text[lastWrapCharIndex];
+                    moveLine = true;
+                    cursorX = lastWrapCharX;
+                    if (StringUtils::IsWhitespace(wrapChar))
+                    {
+                        // Skip whitespaces
+                        tmpLine.LastCharIndex = lastWrapCharIndex - 1;
+                        nextCharIndex = currentIndex = lastWrapCharIndex + 1;
+                    }
+                    else
+                    {
+                        tmpLine.LastCharIndex = lastWrapCharIndex - 1;
+                        nextCharIndex = currentIndex = lastWrapCharIndex;
+                    }
+                }
+            }
+            else if (layout.TextWrapping == TextWrapping::WrapChars)
+            {
+                // Move line
+                moveLine = true;
+                nextCharIndex = currentIndex;
+
+                // Skip moving twice for the same character
+                if (lastMoveLine)
+                    break;
+            }
+        }
+
+        // Check if move to another line
+        if (moveLine)
+        {
+            // Add line
+            tmpLine.Size.X = cursorX;
+            tmpLine.Size.Y = baseLinesDistanceScale * maxHeight;
+            tmpLine.LastCharIndex = Math::Max(tmpLine.LastCharIndex, tmpLine.FirstCharIndex);
+            outputLines.Add(tmpLine);
+
+            // Reset line
+            tmpLine.Location.Y += baseLinesDistanceScale * maxHeight;
+            tmpLine.FirstCharIndex = currentIndex;
+            tmpLine.LastCharIndex = currentIndex - 1;
+            cursorX = 0;
+            lastWrapCharIndex = INVALID_INDEX;
+            lastWrapCharX = 0;
+            previous.IsValid = false;
+
+            // Reset max font height
+            maxHeight = 0;
+        }
+
+        currentIndex = nextCharIndex;
+        lastMoveLine = moveLine;
+    }
+
+    if (textLength != 0 && (tmpLine.LastCharIndex >= tmpLine.FirstCharIndex || text[textLength - 1] == '\n'))
+    {
+        // Add line
+        tmpLine.Size.X = cursorX;
+        tmpLine.Size.Y = baseLinesDistanceScale * maxHeight;
+        tmpLine.LastCharIndex = textLength - 1;
+        outputLines.Add(tmpLine);
+
+        tmpLine.Location.Y += baseLinesDistanceScale * maxHeight;
+    }
+
+    // Check amount of lines
+    if (outputLines.IsEmpty())
+        return;
+
+    float totalHeight = tmpLine.Location.Y;
+
+    Float2 offset = Float2::Zero;
+    if (layout.VerticalAlignment == TextAlignment::Center)
+    {
+        offset.Y += (layout.Bounds.GetHeight() - totalHeight) * 0.5f;
+    }
+    else if (layout.VerticalAlignment == TextAlignment::Far)
+    {
+        offset.Y += layout.Bounds.GetHeight() - totalHeight;
+    }
+    for (int32 i = 0; i < outputLines.Count(); i++)
+    {
+        FontLineCache& line = outputLines[i];
+        Float2 rootPos = line.Location + offset;
+
+        // Fix upper left line corner to match desire text alignment
+        if (layout.HorizontalAlignment == TextAlignment::Center)
+        {
+            rootPos.X += (layout.Bounds.GetWidth() - line.Size.X) * 0.5f;
+        }
+        else if (layout.HorizontalAlignment == TextAlignment::Far)
+        {
+            rootPos.X += layout.Bounds.GetWidth() - line.Size.X;
+        }
+
+        line.Location = rootPos;
+    }
+}
+
 Float2 Font::MeasureText(const StringView& text, const TextLayoutOptions& layout)
 {
     // Check if there is no need to do anything
@@ -430,6 +630,11 @@ Float2 Font::GetCharPosition(const StringView& text, int32 index, const TextLayo
 
     // Position after last character in the last line
     return rootOffset + Float2(lines.Last().Size.X, static_cast<float>((lines.Count() - 1) * baseLinesDistance));
+}
+
+bool Font::ContainsChar(Char c)
+{
+    return FT_Get_Char_Index(GetAsset()->GetFTFace(), c) > 0;
 }
 
 void Font::FlushFaceSize() const

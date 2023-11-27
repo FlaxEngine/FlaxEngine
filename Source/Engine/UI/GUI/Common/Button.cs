@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
 using System;
+using System.Linq;
 
 namespace FlaxEngine.GUI
 {
@@ -155,7 +156,7 @@ namespace FlaxEngine.GUI
             var style = Style.Current;
             if (style != null)
             {
-                _font = new FontReference(style.FontMedium);
+                _font = new FontReference(style.FontMedium.First());
                 TextColor = style.Foreground;
                 BackgroundColor = style.BackgroundNormal;
                 BorderColor = style.BorderNormal;

@@ -153,6 +153,59 @@ namespace FlaxEngine
         }
 
         /// <summary>
+        /// Draws a text.
+        /// </summary>
+        /// <param name="fonts">The fonts to use, ordered by priority.</param>
+        /// <param name="text">The text to render.</param>
+        /// <param name="layoutRect">The size and position of the area in which the text is drawn.</param>
+        /// <param name="color">The text color.</param>
+        /// <param name="horizontalAlignment">The horizontal alignment of the text in a layout rectangle.</param>
+        /// <param name="verticalAlignment">The vertical alignment of the text in a layout rectangle.</param>
+        /// <param name="textWrapping">Describes how wrap text inside a layout rectangle.</param>
+        /// <param name="baseLinesGapScale">The scale for distance one baseline from another. Default is 1.</param>
+        /// <param name="scale">The text drawing scale. Default is 1.</param>
+        public static void DrawText(Font[] fonts, string text, Rectangle layoutRect, Color color, TextAlignment horizontalAlignment = TextAlignment.Near, TextAlignment verticalAlignment = TextAlignment.Near, TextWrapping textWrapping = TextWrapping.NoWrap, float baseLinesGapScale = 1.0f, float scale = 1.0f)
+        {
+            var layout = new TextLayoutOptions
+            {
+                Bounds = layoutRect,
+                HorizontalAlignment = horizontalAlignment,
+                VerticalAlignment = verticalAlignment,
+                TextWrapping = textWrapping,
+                Scale = scale,
+                BaseLinesGapScale = baseLinesGapScale,
+            };
+            DrawText(fonts, text, color, ref layout);
+        }
+
+        /// <summary>
+        /// Draws a text using a custom material shader. Given material must have GUI domain and a public parameter named Font (texture parameter used for a font atlas sampling).
+        /// </summary>
+        /// <param name="fonts">The fonts to use, ordered by priority.</param>
+        /// <param name="customMaterial">Custom material for font characters rendering. It must contain texture parameter named Font used to sample font texture.</param>
+        /// <param name="text">The text to render.</param>
+        /// <param name="layoutRect">The size and position of the area in which the text is drawn.</param>
+        /// <param name="color">The text color.</param>
+        /// <param name="horizontalAlignment">The horizontal alignment of the text in a layout rectangle.</param>
+        /// <param name="verticalAlignment">The vertical alignment of the text in a layout rectangle.</param>
+        /// <param name="textWrapping">Describes how wrap text inside a layout rectangle.</param>
+        /// <param name="baseLinesGapScale">The scale for distance one baseline from another. Default is 1.</param>
+        /// <param name="scale">The text drawing scale. Default is 1.</param>
+        public static void DrawText(Font[] fonts, MaterialBase customMaterial, string text, Rectangle layoutRect, Color color, TextAlignment horizontalAlignment = TextAlignment.Near, TextAlignment verticalAlignment = TextAlignment.Near, TextWrapping textWrapping = TextWrapping.NoWrap, float baseLinesGapScale = 1.0f, float scale = 1.0f)
+        {
+            var layout = new TextLayoutOptions
+            {
+                Bounds = layoutRect,
+                HorizontalAlignment = horizontalAlignment,
+                VerticalAlignment = verticalAlignment,
+                TextWrapping = textWrapping,
+                Scale = scale,
+                BaseLinesGapScale = baseLinesGapScale,
+            };
+            DrawText(fonts, text, color, ref layout, customMaterial);
+        }
+
+        /// <summary>
         /// Calls drawing GUI to the texture.
         /// </summary>
         /// <param name="drawableElement">The root container for Draw methods.</param>

@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using FlaxEditor.GUI.ContextMenu;
 using FlaxEditor.GUI.Input;
 using FlaxEditor.Utilities;
@@ -86,8 +87,8 @@ namespace FlaxEditor.GUI
                         var font = style.FontSmall;
                         for (int i = 0; i < ranges.Length; i++)
                         {
-                            var start = font.GetCharPosition(Name, ranges[i].StartIndex);
-                            var end = font.GetCharPosition(Name, ranges[i].EndIndex);
+                            var start = font.First().GetCharPosition(Name, ranges[i].StartIndex);
+                            var end = font.First().GetCharPosition(Name, ranges[i].EndIndex);
                             _highlights.Add(new Rectangle(start.X + 2, 0, end.X - start.X, Height));
                         }
                         Visible = true;

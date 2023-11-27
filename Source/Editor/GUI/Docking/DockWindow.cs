@@ -6,6 +6,7 @@ using FlaxEngine;
 using FlaxEngine.Assertions;
 using FlaxEngine.GUI;
 using FlaxEditor.Options;
+using System.Linq;
 
 namespace FlaxEditor.GUI.Docking
 {
@@ -488,7 +489,7 @@ namespace FlaxEditor.GUI.Docking
             {
                 var style = Style.Current;
                 if (style?.FontMedium != null)
-                    _titleSize = style.FontMedium.MeasureText(_title);
+                    _titleSize = style.FontMedium.First().MeasureText(_title);
             }
 
             base.PerformLayoutBeforeChildren();

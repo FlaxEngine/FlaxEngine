@@ -1,5 +1,7 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
+using System.Linq;
+
 namespace FlaxEngine.GUI
 {
     /// <summary>
@@ -88,7 +90,7 @@ namespace FlaxEngine.GUI
             _layout.Bounds = new Rectangle(DefaultMargin, 1, Width - 2 * DefaultMargin, Height - 2);
 
             var style = Style.Current;
-            Font = new FontReference(style.FontMedium);
+            Font = new FontReference(style.FontMedium.First());
             TextColor = style.Foreground;
             WatermarkTextColor = style.ForegroundDisabled;
             SelectionColor = style.BackgroundSelected;

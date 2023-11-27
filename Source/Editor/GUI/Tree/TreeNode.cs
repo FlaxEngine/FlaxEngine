@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
 using System;
+using System.Linq;
 using FlaxEngine;
 using FlaxEngine.GUI;
 
@@ -317,7 +318,7 @@ namespace FlaxEditor.GUI.Tree
             BackgroundColorSelected = style.BackgroundSelected;
             BackgroundColorHighlighted = style.BackgroundHighlighted;
             BackgroundColorSelectedUnfocused = style.LightBackground;
-            TextFont = new FontReference(style.FontSmall);
+            TextFont = new FontReference(style.FontSmall.First());
         }
 
         /// <summary>

@@ -295,12 +295,13 @@ namespace FlaxEngine
 
             // Use optionally bundled default font (matches Editor)
             var defaultFont = Content.LoadAsyncInternal<FontAsset>("Editor/Fonts/Roboto-Regular");
+            var cjkFont = Content.LoadAsyncInternal<FontAsset>("NotoSansSC-Medium");
             if (defaultFont)
             {
                 style.FontTitle = defaultFont.CreateFont(18);
                 style.FontLarge = defaultFont.CreateFont(14);
-                style.FontMedium = defaultFont.CreateFont(9);
-                style.FontSmall = defaultFont.CreateFont(9);
+                style.FontMedium = new Font[] { defaultFont.CreateFont(9), cjkFont.CreateFont(9) };
+                style.FontSmall = new Font[] { defaultFont.CreateFont(9), cjkFont.CreateFont(9) };
             }
 
             Style.Current = style;

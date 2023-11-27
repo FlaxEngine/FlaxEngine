@@ -237,11 +237,17 @@ namespace FlaxEditor.Options
         public int NumberOfGameClientsToLaunch = 1;
 
         private static FontAsset DefaultFont => FlaxEngine.Content.LoadAsyncInternal<FontAsset>(EditorAssets.PrimaryFont);
+        private static FontAsset _cjkFont => FlaxEngine.Content.LoadAsyncInternal<FontAsset>(EditorAssets.CJKFont);
         private FontReference _titleFont = new FontReference(DefaultFont, 18);
         private FontReference _largeFont = new FontReference(DefaultFont, 14);
         private FontReference _mediumFont = new FontReference(DefaultFont, 9);
         private FontReference _smallFont = new FontReference(DefaultFont, 9);
         private FontReference _outputLogFont = new FontReference(FlaxEngine.Content.LoadAsyncInternal<FontAsset>(EditorAssets.InconsolataRegularFont), 10);
+
+        public FontReference CJKFont
+        {
+            get => new FontReference(_cjkFont, 9);
+        }
 
         /// <summary>
         /// Gets or sets the title font for editor UI.

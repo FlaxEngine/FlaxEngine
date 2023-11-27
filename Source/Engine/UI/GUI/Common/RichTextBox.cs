@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
 using System.Collections.Generic;
+using System.Linq;
 
 namespace FlaxEngine.GUI
 {
@@ -45,7 +46,7 @@ namespace FlaxEngine.GUI
             var style = Style.Current;
             _textStyle = new TextBlockStyle
             {
-                Font = new FontReference(style.FontMedium),
+                Font = new FontReference(style.FontMedium.First()),
                 Color = style.Foreground,
                 BackgroundSelectedBrush = new SolidColorBrush(style.BackgroundSelected),
             };

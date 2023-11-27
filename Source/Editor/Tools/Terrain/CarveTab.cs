@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
 using System;
+using System.Linq;
 using FlaxEditor.GUI.Tabs;
 using FlaxEditor.Modules;
 using FlaxEditor.SceneGraph.Actors;
@@ -105,7 +106,7 @@ namespace FlaxEditor.Tools.Terrain
                 Parent = _noTerrainPanel,
                 Enabled = false
             };
-            var textSize = Style.Current.FontMedium.MeasureText(buttonText);
+            var textSize = Style.Current.FontMedium.First().MeasureText(buttonText);
             if (_createTerrainButton.Width < textSize.X)
             {
                 _createTerrainButton.LocalX -= (textSize.X - _createTerrainButton.Width) / 2;

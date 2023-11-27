@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using FlaxEditor.Scripting;
 using FlaxEditor.Surface.Elements;
 using FlaxEditor.Surface.Undo;
@@ -199,7 +200,7 @@ namespace FlaxEditor.Surface
                     continue;
                 if (child is InputBox inputBox)
                 {
-                    var boxWidth = boxLabelFont.MeasureText(inputBox.Text).X + 20;
+                    var boxWidth = boxLabelFont.First().MeasureText(inputBox.Text).X + 20;
                     if (inputBox.DefaultValueEditor != null)
                         boxWidth += inputBox.DefaultValueEditor.Width + 4;
                     leftWidth = Mathf.Max(leftWidth, boxWidth);
@@ -207,7 +208,7 @@ namespace FlaxEditor.Surface
                 }
                 else if (child is OutputBox outputBox)
                 {
-                    rightWidth = Mathf.Max(rightWidth, boxLabelFont.MeasureText(outputBox.Text).X + 20);
+                    rightWidth = Mathf.Max(rightWidth, boxLabelFont.First().MeasureText(outputBox.Text).X + 20);
                     rightHeight = Mathf.Max(rightHeight, outputBox.Archetype.Position.Y - Constants.NodeMarginY - Constants.NodeHeaderSize + 20.0f);
                 }
                 else if (child is Control control)

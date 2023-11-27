@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
 using System;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using FlaxEngine;
 using FlaxEngine.GUI;
@@ -129,7 +130,7 @@ namespace FlaxEditor.GUI
             Render2D.FillRectangle(rect, column.TitleBackgroundColor);
 
             var style = Style.Current;
-            var font = column.TitleFont ?? style.FontMedium;
+            var font = column.TitleFont ?? style.FontMedium.First();
             Render2D.DrawText(font, column.Title, rect, column.TitleColor, TextAlignment.Center, TextAlignment.Center);
 
             if (columnIndex < _columns.Length - 1)

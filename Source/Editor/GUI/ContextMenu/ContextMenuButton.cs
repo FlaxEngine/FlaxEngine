@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
 using System;
+using System.Linq;
 using FlaxEngine;
 using FlaxEngine.GUI;
 
@@ -233,11 +234,11 @@ namespace FlaxEditor.GUI.ContextMenu
             {
                 var style = Style.Current;
                 float width = 20;
-                if (style.FontMedium)
+                if (style.FontMedium.First())
                 {
-                    width += style.FontMedium.MeasureText(Text).X;
+                    width += style.FontMedium.First().MeasureText(Text).X;
                     if (!string.IsNullOrEmpty(ShortKeys))
-                        width += 40 + style.FontMedium.MeasureText(ShortKeys).X;
+                        width += 40 + style.FontMedium.First().MeasureText(ShortKeys).X;
                 }
 
                 return Mathf.Max(width, base.MinimumWidth);

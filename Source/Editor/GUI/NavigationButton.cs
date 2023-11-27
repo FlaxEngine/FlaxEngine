@@ -2,6 +2,7 @@
 
 using FlaxEngine;
 using FlaxEngine.GUI;
+using System.Linq;
 
 namespace FlaxEditor.GUI
 {
@@ -65,9 +66,9 @@ namespace FlaxEditor.GUI
         {
             var style = Style.Current;
 
-            if (style.FontMedium)
+            if (style.FontMedium.First())
             {
-                Width = style.FontMedium.MeasureText(Text).X + 2 * DefaultMargin;
+                Width = style.FontMedium.First().MeasureText(Text).X + 2 * DefaultMargin;
             }
         }
     }

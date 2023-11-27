@@ -3,6 +3,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using FlaxEditor.Actions;
 using FlaxEditor.Content;
 using FlaxEditor.GUI;
@@ -42,7 +43,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
 
             // Add script button
             var buttonText = "Add script";
-            var textSize = Style.Current.FontMedium.MeasureText(buttonText);
+            var textSize = Style.Current.FontMedium.First().MeasureText(buttonText);
             float addScriptButtonWidth = (textSize.X < 60.0f) ? 60.0f : textSize.X + 4;
             var buttonHeight = (textSize.Y < 18) ? 18 : textSize.Y + 4;
             _addScriptsButton = new Button

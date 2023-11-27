@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using FlaxEditor.CustomEditors.Dedicated;
 using FlaxEditor.GUI.ContextMenu;
 using FlaxEditor.GUI.Drag;
@@ -100,7 +101,7 @@ namespace FlaxEditor.Surface.Archetypes
                     _debugRelevant = Behavior.GetNodeDebugRelevancy(instance, behavior);
                     _debugInfo = Behavior.GetNodeDebugInfo(instance, behavior);
                     if (!string.IsNullOrEmpty(_debugInfo))
-                        _debugInfoSize = Style.Current.FontSmall.MeasureText(_debugInfo);
+                        _debugInfoSize = Style.Current.FontSmall.First().MeasureText(_debugInfo);
                 }
             }
 

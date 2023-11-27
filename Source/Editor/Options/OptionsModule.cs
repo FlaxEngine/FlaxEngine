@@ -261,8 +261,9 @@ namespace FlaxEditor.Options
                 // Fonts
                 FontTitle = options.Interface.TitleFont.GetFont(),
                 FontLarge = options.Interface.LargeFont.GetFont(),
-                FontMedium = options.Interface.MediumFont.GetFont(),
-                FontSmall = options.Interface.SmallFont.GetFont(),
+                FontMedium = new Font[] { options.Interface.MediumFont.GetFont(), options.Interface.CJKFont.GetFont() },
+                FontSmall = new Font[] { options.Interface.SmallFont.GetFont(), options.Interface.CJKFont.GetFont() },
+                FontCJK = options.Interface.CJKFont.GetFont(),
 
                 // Icons
                 ArrowDown = Editor.Icons.ArrowDown12,
@@ -314,8 +315,8 @@ namespace FlaxEditor.Options
                 // Fonts
                 FontTitle = options.Interface.TitleFont.GetFont(),
                 FontLarge = options.Interface.LargeFont.GetFont(),
-                FontMedium = options.Interface.MediumFont.GetFont(),
-                FontSmall = options.Interface.SmallFont.GetFont(),
+                FontMedium = new Font[] { options.Interface.MediumFont.GetFont(), options.Interface.CJKFont.GetFont() },
+                FontSmall = new Font[] { options.Interface.SmallFont.GetFont(), options.Interface.CJKFont.GetFont() },
 
                 // Icons
                 ArrowDown = Editor.Icons.ArrowDown12,

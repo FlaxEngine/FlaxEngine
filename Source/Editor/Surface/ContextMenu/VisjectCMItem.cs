@@ -200,8 +200,8 @@ namespace FlaxEditor.Surface.ContextMenu
                     var font = style.FontSmall;
                     for (int i = 0; i < ranges.Length; i++)
                     {
-                        var start = font.GetCharPosition(_archetype.Title, ranges[i].StartIndex);
-                        var end = font.GetCharPosition(_archetype.Title, ranges[i].EndIndex);
+                        var start = font.First().GetCharPosition(_archetype.Title, ranges[i].StartIndex);
+                        var end = font.First().GetCharPosition(_archetype.Title, ranges[i].EndIndex);
                         _highlights.Add(new Rectangle(start.X + textRect.X, 0, end.X - start.X, Height));
 
                         if (ranges[i].StartIndex <= 0)
@@ -222,8 +222,8 @@ namespace FlaxEditor.Surface.ContextMenu
                         _highlights.Clear();
                     var style = Style.Current;
                     var font = style.FontSmall;
-                    var start = font.GetCharPosition(_archetype.Title, 0);
-                    var end = font.GetCharPosition(_archetype.Title, _archetype.Title.Length - 1);
+                    var start = font.First().GetCharPosition(_archetype.Title, 0);
+                    var end = font.First().GetCharPosition(_archetype.Title, _archetype.Title.Length - 1);
                     _highlights.Add(new Rectangle(start.X + textRect.X, 0, end.X - start.X, Height));
                     _isFullMatch = true;
                     Visible = true;
@@ -237,8 +237,8 @@ namespace FlaxEditor.Surface.ContextMenu
                         _highlights.Clear();
                     var style = Style.Current;
                     var font = style.FontSmall;
-                    var start = font.GetCharPosition(_archetype.Title, 0);
-                    var end = font.GetCharPosition(_archetype.Title, _archetype.Title.Length - 1);
+                    var start = font.First().GetCharPosition(_archetype.Title, 0);
+                    var end = font.First().GetCharPosition(_archetype.Title, _archetype.Title.Length - 1);
                     _highlights.Add(new Rectangle(start.X + textRect.X, 0, end.X - start.X, Height));
                     Visible = true;
 
@@ -286,7 +286,7 @@ namespace FlaxEditor.Surface.ContextMenu
             Render2D.DrawText(style.FontSmall, _archetype.Title, textRect, Enabled ? style.Foreground : style.ForegroundDisabled, TextAlignment.Near, TextAlignment.Center);
             if (_archetype.SubTitle != null)
             {
-                var titleLength = style.FontSmall.MeasureText(_archetype.Title).X;
+                var titleLength = style.FontSmall.First().MeasureText(_archetype.Title).X;
                 var subTitleRect = new Rectangle(textRect.X + titleLength, textRect.Y, textRect.Width - titleLength, textRect.Height);
                 Render2D.DrawText(style.FontSmall, _archetype.SubTitle, subTitleRect, style.ForegroundDisabled, TextAlignment.Near, TextAlignment.Center);
             }

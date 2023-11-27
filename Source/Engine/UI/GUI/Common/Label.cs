@@ -1,6 +1,8 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
+using FlaxEditor.Options;
 using System.ComponentModel;
+using System.Linq;
 
 namespace FlaxEngine.GUI
 {
@@ -190,7 +192,7 @@ namespace FlaxEngine.GUI
         {
             AutoFocus = false;
             var style = Style.Current;
-            Font = new FontReference(style.FontMedium);
+            Font = new FontReference(style.FontMedium.First());
             TextColor = style.Foreground;
             TextColorHighlighted = style.Foreground;
         }
@@ -201,7 +203,7 @@ namespace FlaxEngine.GUI
         {
             AutoFocus = false;
             var style = Style.Current;
-            Font = new FontReference(style.FontMedium);
+            Font = new FontReference(style.FontMedium.First());
             TextColor = style.Foreground;
             TextColorHighlighted = style.Foreground;
         }
@@ -233,7 +235,7 @@ namespace FlaxEngine.GUI
                 }
             }
 
-            Render2D.DrawText(_font.GetFont(), Material, _text, rect, color, hAlignment, wAlignment, Wrapping, BaseLinesGapScale, scale);
+            Render2D.DrawText(new Font[] { _font.GetFont(), Style.Current.FontCJK }, Material, _text, rect, color, hAlignment, wAlignment, Wrapping, BaseLinesGapScale, scale);
 
             if (ClipText)
                 Render2D.PopClip();

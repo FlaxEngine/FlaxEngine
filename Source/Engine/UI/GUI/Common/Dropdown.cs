@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace FlaxEngine.GUI
 {
@@ -358,7 +359,7 @@ namespace FlaxEngine.GUI
         : base(0, 0, 120, 18.0f)
         {
             var style = Style.Current;
-            Font = new FontReference(style.FontMedium);
+            Font = new FontReference(style.FontMedium.First());
             TextColor = style.Foreground;
             BackgroundColor = style.BackgroundNormal;
             BackgroundColorHighlighted = BackgroundColor;

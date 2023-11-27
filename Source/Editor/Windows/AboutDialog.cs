@@ -2,6 +2,7 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
 using System.Collections.Generic;
+using System.Linq;
 using FlaxEditor.GUI.Dialogs;
 using FlaxEngine;
 using FlaxEngine.GUI;
@@ -53,7 +54,7 @@ namespace FlaxEditor.Windows
                 Parent = this
             };
             var buttonText = "Copy version info";
-            var fontSize = Style.Current.FontMedium.MeasureText(buttonText);
+            var fontSize = Style.Current.FontMedium.First().MeasureText(buttonText);
             var copyVersionButton = new Button(Width - fontSize.X - 8, 6, fontSize.X + 4, 20)
             {
                 Text = buttonText,

@@ -1,5 +1,7 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
+using System.Linq;
+
 namespace FlaxEngine.GUI
 {
     /// <summary>
@@ -11,6 +13,14 @@ namespace FlaxEngine.GUI
         /// Global GUI style used by all the controls.
         /// </summary>
         public static Style Current { get; set; }
+
+        public Font FontCJK
+        {
+            get => _fontCJK?.GetFont();
+            set => _fontCJK = new FontReference(value);
+        }
+
+        private FontReference _fontCJK;
 
         [Serialize]
         private FontReference _fontTitle;
@@ -41,31 +51,31 @@ namespace FlaxEngine.GUI
         }
 
         [Serialize]
-        private FontReference _fontMedium;
+        private FontReference[] _fontMedium;
 
         /// <summary>
         /// The font medium.
         /// </summary>
         [NoSerialize]
         [EditorOrder(30)]
-        public Font FontMedium
+        public Font[] FontMedium
         {
-            get => _fontMedium?.GetFont();
-            set => _fontMedium = new FontReference(value);
+            get => _fontMedium?.Select((x)=>x.GetFont()).ToArray();
+            set => _fontMedium = value.Select((x)=>new FontReference(x)).ToArray();
         }
 
         [Serialize]
-        private FontReference _fontSmall;
+        private FontReference[] _fontSmall;
 
         /// <summary>
         /// The font small.
         /// </summary>
         [NoSerialize]
         [EditorOrder(40)]
-        public Font FontSmall
+        public Font[] FontSmall
         {
-            get => _fontSmall?.GetFont();
-            set => _fontSmall = new FontReference(value);
+            get => _fontSmall?.Select((x) => x.GetFont()).ToArray();
+            set => _fontSmall = value.Select((x) => new FontReference(x)).ToArray();
         }
 
         /// <summary>
