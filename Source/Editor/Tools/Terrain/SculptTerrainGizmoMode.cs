@@ -3,6 +3,7 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using FlaxEditor.Gizmo;
 using FlaxEditor.SceneGraph.Actors;
 using FlaxEditor.Tools.Terrain.Brushes;
 using FlaxEditor.Tools.Terrain.Sculpt;
@@ -270,11 +271,11 @@ namespace FlaxEditor.Tools.Terrain
         internal EditTerrainMapAction CurrentEditUndoAction => _activeAction;
 
         /// <inheritdoc />
-        public override void Init(MainEditorGizmoViewport viewport)
+        public override void Init(IGizmoOwner owner)
         {
-            base.Init(viewport);
+            base.Init(owner);
 
-            Gizmo = new SculptTerrainGizmo(viewport, this);
+            Gizmo = new SculptTerrainGizmo(owner, this);
             Gizmo.PaintStarted += OnPaintStarted;
             Gizmo.PaintEnded += OnPaintEnded;
         }
@@ -284,7 +285,7 @@ namespace FlaxEditor.Tools.Terrain
         {
             base.OnActivated();
 
-            Viewport.Gizmos.Active = Gizmo;
+            Owner.Gizmos.Active = Gizmo;
             ClearCursor();
         }
 

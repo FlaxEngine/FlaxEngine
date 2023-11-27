@@ -253,7 +253,7 @@ void PrefabInstanceData::SerializePrefabInstances(PrefabInstancesData& prefabIns
         for (int32 i = 0; i < sceneObjects->Count(); i++)
         {
             SceneObject* obj = sceneObjects.Value->At(i);
-            instance.PrefabInstanceIdToDataIndex.Add(obj->GetSceneObjectId(), i);
+            instance.PrefabInstanceIdToDataIndex[obj->GetSceneObjectId()] = i;
         }
     }
     tmpBuffer.Clear();
@@ -313,15 +313,13 @@ bool PrefabInstanceData::SynchronizePrefabInstances(PrefabInstancesData& prefabI
                     continue;
                 }
 
-                modifier.Value->IdsMapping.Add(obj->GetPrefabObjectID(), obj->GetSceneObjectId());
+                modifier.Value->IdsMapping[obj->GetPrefabObjectID()] = obj->GetSceneObjectId();
             }
         }
 
         // Generate new IDs for the added objects (objects in prefab has to have a unique Ids, other than the targetActor instance objects to prevent Id collisions)
         for (int32 i = 0; i < newPrefabObjectIds.Count(); i++)
-        {
-            modifier->IdsMapping.Add(newPrefabObjectIds[i], Guid::New());
-        }
+            modifier->IdsMapping[newPrefabObjectIds[i]] = Guid::New();
 
         // Create new objects added to prefab
         int32 deserializeSceneObjectIndex = sceneObjects->Count();
@@ -786,7 +784,7 @@ bool Prefab::ApplyAllInternal(Actor* targetActor, bool linkTargetActorObjectToPr
                 }
 
                 // Cache connection for fast lookup
-                diffPrefabObjectIdToDataIndex.Add(obj->GetPrefabObjectID(), i);
+                diffPrefabObjectIdToDataIndex[obj->GetPrefabObjectID()] = i;
 
                 // Strip unwanted data
                 data.RemoveMember("ID");
@@ -796,7 +794,7 @@ bool Prefab::ApplyAllInternal(Actor* targetActor, bool linkTargetActorObjectToPr
             else
             {
                 // Object if a new thing
-                newPrefabInstanceIdToDataIndex.Add(obj->GetSceneObjectId(), i);
+                newPrefabInstanceIdToDataIndex[obj->GetSceneObjectId()] = i;
             }
         }
 
@@ -836,8 +834,8 @@ bool Prefab::ApplyAllInternal(Actor* targetActor, bool linkTargetActorObjectToPr
         for (auto i = newPrefabInstanceIdToDataIndex.Begin(); i.IsNotEnd(); ++i)
         {
             const auto prefabObjectId = Guid::New();
-            newPrefabInstanceIdToPrefabObjectId.Add(i->Key, prefabObjectId);
-            modifier->IdsMapping.Add(i->Key, prefabObjectId);
+            newPrefabInstanceIdToPrefabObjectId[i->Key] = prefabObjectId;
+            modifier->IdsMapping[i->Key] = prefabObjectId;
         }
 
         // Add inverse IDs mapping to link added objects and references inside them to the prefab objects
@@ -1221,14 +1219,14 @@ bool Prefab::SyncChangesInternal(PrefabInstancesData& prefabInstancesData)
     {
         ScopeLock lock(Locker);
         _isCreatingDefaultInstance = true;
-        _defaultInstance = PrefabManager::SpawnPrefab(this, nullptr, &ObjectsCache, true);
+        _defaultInstance = PrefabManager::SpawnPrefab(this, Transform::Identity, nullptr, &ObjectsCache, true);
         _isCreatingDefaultInstance = false;
     }
 
     // Instantiate prefab instance from prefab (default spawning logic)
     // Note: it will get any added or removed objects from the nested prefabs
     // TODO: try to optimize by using recreated default instance to ApplyAllInternal (will need special path there if apply is done with default instance to unlink it instead of destroying)
-    const auto targetActor = PrefabManager::SpawnPrefab(this, nullptr, nullptr, true);
+    const auto targetActor = PrefabManager::SpawnPrefab(this, Transform::Identity, nullptr, nullptr, true);
     if (targetActor == nullptr)
     {
         LOG(Warning, "Failed to instantiate default prefab instance from changes synchronization.");

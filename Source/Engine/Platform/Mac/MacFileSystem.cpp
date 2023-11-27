@@ -9,6 +9,7 @@
 #include "Engine/Core/Types/String.h"
 #include "Engine/Core/Types/StringView.h"
 #include "Engine/Core/Types/TimeSpan.h"
+#include "Engine/Core/Collections/Array.h"
 #include "Engine/Core/Math/Math.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Utilities/StringConverter.h"
@@ -132,7 +133,7 @@ bool MacFileSystem::ShowBrowseFolderDialog(Window* parentWindow, const StringVie
 
 bool MacFileSystem::ShowFileExplorer(const StringView& path)
 {
-    return Platform::StartProcess(TEXT("open"), String::Format(TEXT("\"{0}\""), path), StringView::Empty) != 0;
+    return [[NSWorkspace sharedWorkspace] selectFile: AppleUtils::ToNSString(FileSystem::ConvertRelativePathToAbsolute(path)) inFileViewerRootedAtPath: @""];
 }
 
 #endif

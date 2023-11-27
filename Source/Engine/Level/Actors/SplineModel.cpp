@@ -366,6 +366,11 @@ MaterialBase* SplineModel::GetMaterial(int32 entryIndex)
     return material;
 }
 
+void SplineModel::UpdateBounds()
+{
+    OnSplineUpdated();
+}
+
 bool SplineModel::HasContentLoaded() const
 {
     return (Model == nullptr || Model->IsLoaded()) && Entries.HasContentLoaded();
@@ -405,6 +410,7 @@ void SplineModel::Draw(RenderContext& renderContext)
     const Transform splineTransform = GetTransform();
     renderContext.View.GetWorldMatrix(splineTransform, drawCall.World);
     drawCall.ObjectPosition = drawCall.World.GetTranslation() + drawCall.Deformable.LocalMatrix.GetTranslation();
+    drawCall.ObjectRadius = _sphere.Radius; // TODO: use radius for the spline chunk rather than whole spline
     const float worldDeterminantSign = drawCall.World.RotDeterminant() * drawCall.Deformable.LocalMatrix.RotDeterminant();
     for (int32 segment = 0; segment < _instances.Count(); segment++)
     {
@@ -512,14 +518,6 @@ void SplineModel::Deserialize(DeserializeStream& stream, ISerializeModifier* mod
     // [Deprecated on 27.04.2022, expires on 27.04.2024]
     if (modifier->EngineBuild <= 6331)
         DrawModes |= DrawPass::GlobalSurfaceAtlas;
-}
-
-void SplineModel::OnTransformChanged()
-{
-    // Base
-    ModelInstanceActor::OnTransformChanged();
-
-    OnSplineUpdated();
 }
 
 void SplineModel::OnActiveInTreeChanged()

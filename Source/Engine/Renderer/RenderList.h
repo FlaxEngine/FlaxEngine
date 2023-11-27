@@ -41,8 +41,8 @@ struct RendererDirectionalLightData
     StaticFlags StaticFlags;
     float IndirectLightingIntensity;
     int16 ShadowDataIndex = -1;
-    int8 CastVolumetricShadow : 1;
-    int8 RenderedVolumetricFog : 1;
+    uint8 CastVolumetricShadow : 1;
+    uint8 RenderedVolumetricFog : 1;
 
     float ShadowsDistance;
     int32 CascadeCount;
@@ -86,9 +86,9 @@ struct RendererSpotLightData
 
     StaticFlags StaticFlags;
     int16 ShadowDataIndex = -1;
-    int8 CastVolumetricShadow : 1;
-    int8 RenderedVolumetricFog : 1;
-    int8 UseInverseSquaredFalloff : 1;
+    uint8 CastVolumetricShadow : 1;
+    uint8 RenderedVolumetricFog : 1;
+    uint8 UseInverseSquaredFalloff : 1;
 
     GPUTexture* IESTexture;
     Guid ID;
@@ -124,9 +124,9 @@ struct RendererPointLightData
 
     StaticFlags StaticFlags;
     int16 ShadowDataIndex = -1;
-    int8 CastVolumetricShadow : 1;
-    int8 RenderedVolumetricFog : 1;
-    int8 UseInverseSquaredFalloff : 1;
+    uint8 CastVolumetricShadow : 1;
+    uint8 RenderedVolumetricFog : 1;
+    uint8 UseInverseSquaredFalloff : 1;
 
     GPUTexture* IESTexture;
     Guid ID;
@@ -146,8 +146,8 @@ struct RendererSkyLightData
     float IndirectLightingIntensity;
 
     StaticFlags StaticFlags;
-    int8 CastVolumetricShadow : 1;
-    int8 RenderedVolumetricFog : 1;
+    uint8 CastVolumetricShadow : 1;
+    uint8 RenderedVolumetricFog : 1;
 
     CubeTexture* Image;
     Guid ID;

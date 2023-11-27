@@ -55,7 +55,7 @@ namespace Flax.Build.Projects.VisualStudio
         }
 
         /// <inheritdoc />
-        public override void GenerateProject(Project project)
+        public override void GenerateProject(Project project, string solutionPath)
         {
             var vcProjectFileContent = new StringBuilder();
             var vcFiltersFileContent = new StringBuilder();
@@ -66,6 +66,13 @@ namespace Flax.Build.Projects.VisualStudio
             var projectFilePlatformToolsetVersion = ProjectFilePlatformToolsetVersion;
             var projectDirectory = Path.GetDirectoryName(project.Path);
             var filtersDirectory = project.SourceFolderPath;
+
+            // Try to reuse the existing project guid from existing files
+            vsProject.ProjectGuid = GetProjectGuid(vsProject.Path, vsProject.Name);
+            if (vsProject.ProjectGuid == Guid.Empty)
+                vsProject.ProjectGuid = GetProjectGuid(solutionPath, vsProject.Name);
+            if (vsProject.ProjectGuid == Guid.Empty)
+                vsProject.ProjectGuid = Guid.NewGuid();
 
             // Header
             vcProjectFileContent.AppendLine("<?xml version=\"1.0\" encoding=\"utf-8\"?>");
@@ -165,8 +172,7 @@ namespace Flax.Build.Projects.VisualStudio
                                             configuration.Configuration,
                                             configuration.Platform,
                                             target.Name);
-                if (!string.IsNullOrEmpty(Configuration.Compiler))
-                    cmdLine += " -compiler=" + Configuration.Compiler;
+                Configuration.PassArgs(ref cmdLine);
 
                 vcProjectFileContent.AppendLine(string.Format("  <PropertyGroup Condition=\"'$(Configuration)|$(Platform)'=='{0}'\">", configuration.Name));
                 if (platform is IVisualStudioProjectCustomizer customizer)

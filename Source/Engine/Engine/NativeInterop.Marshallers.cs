@@ -119,13 +119,13 @@ namespace FlaxEngine.Interop
     [CustomMarshaller(typeof(Type), MarshalMode.Default, typeof(SystemTypeMarshaller))]
     public static class SystemTypeMarshaller
     {
-        public static Type ConvertToManaged(IntPtr unmanaged) => Unsafe.As<Type>(ManagedHandleMarshaller.ConvertToManaged(unmanaged));
+        public static Type ConvertToManaged(IntPtr unmanaged) => unmanaged != IntPtr.Zero ? Unsafe.As<FlaxEngine.Interop.NativeInterop.TypeHolder>(ManagedHandleMarshaller.ConvertToManaged(unmanaged)).type : null;
 
         public static IntPtr ConvertToUnmanaged(Type managed)
         {
             if (managed == null)
                 return IntPtr.Zero;
-            ManagedHandle handle = NativeInterop.GetTypeGCHandle(managed);
+            ManagedHandle handle = NativeInterop.GetTypeManagedHandle(managed);
             return ManagedHandle.ToIntPtr(handle);
         }
 

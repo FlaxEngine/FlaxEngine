@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
 #include "SkinnedMesh.h"
+#include "MeshDeformation.h"
 #include "ModelInstanceEntry.h"
 #include "Engine/Content/Assets/Material.h"
 #include "Engine/Content/Assets/SkinnedModel.h"
@@ -8,6 +9,7 @@
 #include "Engine/Graphics/GPUContext.h"
 #include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Graphics/RenderTask.h"
+#include "Engine/Graphics/RenderTools.h"
 #include "Engine/Level/Scene/Scene.h"
 #include "Engine/Renderer/RenderList.h"
 #include "Engine/Serialization/MemoryReadStream.h"
@@ -172,32 +174,16 @@ void SkinnedMesh::Draw(const RenderContext& renderContext, const DrawInfo& info,
     // Setup draw call
     DrawCall drawCall;
     drawCall.Geometry.IndexBuffer = _indexBuffer;
-    BlendShapesInstance::MeshInstance* blendShapeMeshInstance;
-    if (info.BlendShapes && info.BlendShapes->Meshes.TryGet(this, blendShapeMeshInstance) && blendShapeMeshInstance->IsUsed)
-    {
-        // Use modified vertex buffer from the blend shapes
-        if (blendShapeMeshInstance->IsDirty)
-        {
-            blendShapeMeshInstance->VertexBuffer.Flush();
-            blendShapeMeshInstance->IsDirty = false;
-        }
-        drawCall.Geometry.VertexBuffers[0] = blendShapeMeshInstance->VertexBuffer.GetBuffer();
-    }
-    else
-    {
-        drawCall.Geometry.VertexBuffers[0] = _vertexBuffer;
-    }
-    drawCall.Geometry.VertexBuffers[1] = nullptr;
-    drawCall.Geometry.VertexBuffers[2] = nullptr;
-    drawCall.Geometry.VertexBuffersOffsets[0] = 0;
-    drawCall.Geometry.VertexBuffersOffsets[1] = 0;
-    drawCall.Geometry.VertexBuffersOffsets[2] = 0;
+    drawCall.Geometry.VertexBuffers[0] = _vertexBuffer;
+    if (info.Deformation)
+        info.Deformation->RunDeformers(this, MeshBufferType::Vertex0, drawCall.Geometry.VertexBuffers[0]);
     drawCall.Draw.StartIndex = 0;
     drawCall.Draw.IndicesCount = _triangles * 3;
     drawCall.InstanceCount = 1;
     drawCall.Material = material;
     drawCall.World = *info.World;
     drawCall.ObjectPosition = drawCall.World.GetTranslation();
+    drawCall.ObjectRadius = info.Bounds.Radius; // TODO: should it be kept in sync with ObjectPosition?
     drawCall.Surface.GeometrySize = _box.GetSize();
     drawCall.Surface.PrevWorld = info.DrawState->PrevWorld;
     drawCall.Surface.Lightmap = nullptr;
@@ -232,32 +218,15 @@ void SkinnedMesh::Draw(const RenderContextBatch& renderContextBatch, const DrawI
     // Setup draw call
     DrawCall drawCall;
     drawCall.Geometry.IndexBuffer = _indexBuffer;
-    BlendShapesInstance::MeshInstance* blendShapeMeshInstance;
-    if (info.BlendShapes && info.BlendShapes->Meshes.TryGet(this, blendShapeMeshInstance) && blendShapeMeshInstance->IsUsed)
-    {
-        // Use modified vertex buffer from the blend shapes
-        if (blendShapeMeshInstance->IsDirty)
-        {
-            blendShapeMeshInstance->VertexBuffer.Flush();
-            blendShapeMeshInstance->IsDirty = false;
-        }
-        drawCall.Geometry.VertexBuffers[0] = blendShapeMeshInstance->VertexBuffer.GetBuffer();
-    }
-    else
-    {
-        drawCall.Geometry.VertexBuffers[0] = _vertexBuffer;
-    }
-    drawCall.Geometry.VertexBuffers[1] = nullptr;
-    drawCall.Geometry.VertexBuffers[2] = nullptr;
-    drawCall.Geometry.VertexBuffersOffsets[0] = 0;
-    drawCall.Geometry.VertexBuffersOffsets[1] = 0;
-    drawCall.Geometry.VertexBuffersOffsets[2] = 0;
-    drawCall.Draw.StartIndex = 0;
+    drawCall.Geometry.VertexBuffers[0] = _vertexBuffer;
+    if (info.Deformation)
+        info.Deformation->RunDeformers(this, MeshBufferType::Vertex0, drawCall.Geometry.VertexBuffers[0]);
     drawCall.Draw.IndicesCount = _triangles * 3;
     drawCall.InstanceCount = 1;
     drawCall.Material = material;
     drawCall.World = *info.World;
     drawCall.ObjectPosition = drawCall.World.GetTranslation();
+    drawCall.ObjectRadius = info.Bounds.Radius; // TODO: should it be kept in sync with ObjectPosition?
     drawCall.Surface.GeometrySize = _box.GetSize();
     drawCall.Surface.PrevWorld = info.DrawState->PrevWorld;
     drawCall.Surface.Lightmap = nullptr;
@@ -412,9 +381,7 @@ bool UpdateMesh(SkinnedMesh* mesh, MArray* verticesObj, MArray* trianglesObj, MA
     Array<VB0SkinnedElementType> vb;
     vb.Resize(vertexCount);
     for (uint32 i = 0; i < vertexCount; i++)
-    {
-        vb[i].Position = vertices[i];
-    }
+        vb.Get()[i].Position = vertices[i];
     if (normalsObj)
     {
         const auto normals = MCore::Array::GetAddress<Float3>(normalsObj);
@@ -423,42 +390,19 @@ bool UpdateMesh(SkinnedMesh* mesh, MArray* verticesObj, MArray* trianglesObj, MA
             const auto tangents = MCore::Array::GetAddress<Float3>(tangentsObj);
             for (uint32 i = 0; i < vertexCount; i++)
             {
-                // Peek normal and tangent
                 const Float3 normal = normals[i];
                 const Float3 tangent = tangents[i];
-
-                // Calculate bitangent sign
-                Float3 bitangent = Float3::Normalize(Float3::Cross(normal, tangent));
-                byte sign = static_cast<byte>(Float3::Dot(Float3::Cross(bitangent, normal), tangent) < 0.0f ? 1 : 0);
-
-                // Set tangent frame
-                vb[i].Tangent = Float1010102(tangent * 0.5f + 0.5f, sign);
-                vb[i].Normal = Float1010102(normal * 0.5f + 0.5f, 0);
+                auto& v = vb.Get()[i];
+                RenderTools::CalculateTangentFrame(v.Normal, v.Tangent, normal, tangent);
             }
         }
         else
         {
             for (uint32 i = 0; i < vertexCount; i++)
             {
-                // Peek normal
                 const Float3 normal = normals[i];
-
-                // Calculate tangent
-                Float3 c1 = Float3::Cross(normal, Float3::UnitZ);
-                Float3 c2 = Float3::Cross(normal, Float3::UnitY);
-                Float3 tangent;
-                if (c1.LengthSquared() > c2.LengthSquared())
-                    tangent = c1;
-                else
-                    tangent = c2;
-
-                // Calculate bitangent sign
-                Float3 bitangent = Float3::Normalize(Float3::Cross(normal, tangent));
-                byte sign = static_cast<byte>(Float3::Dot(Float3::Cross(bitangent, normal), tangent) < 0.0f ? 1 : 0);
-
-                // Set tangent frame
-                vb[i].Tangent = Float1010102(tangent * 0.5f + 0.5f, sign);
-                vb[i].Normal = Float1010102(normal * 0.5f + 0.5f, 0);
+                auto& v = vb.Get()[i];
+                RenderTools::CalculateTangentFrame(v.Normal, v.Tangent, normal);
             }
         }
     }

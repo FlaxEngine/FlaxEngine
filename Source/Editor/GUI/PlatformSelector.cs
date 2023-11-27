@@ -100,9 +100,10 @@ namespace FlaxEditor.GUI
             AutoResize = true;
             Offsets = new Margin(0, 0, 0, IconSize);
 
-            _mouseOverColor = style.Foreground;
-            _selectedColor = style.Foreground;
-            _defaultColor = style.ForegroundGrey;
+            // Ignoring style on purpose (style would make sense if the icons were white, but they are colored)
+            _mouseOverColor = new Color(0.8f, 0.8f, 0.8f, 1f);
+            _selectedColor = Color.White;
+            _defaultColor = new Color(0.7f, 0.7f, 0.7f, 0.5f);
 
             for (int i = 0; i < platforms.Length; i++)
             {

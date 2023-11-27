@@ -2,16 +2,86 @@
 
 #pragma once
 
+#if COMPILE_WITH_AUDIO_TOOL
+
 #include "Engine/Core/Config.h"
 #include "Engine/Core/Types/BaseTypes.h"
+#if USE_EDITOR
+#include "Engine/Core/ISerializable.h"
+#endif
+#include "Engine/Audio/Types.h"
 
 /// <summary>
 /// Audio data importing and processing utilities.
 /// </summary>
-class FLAXENGINE_API AudioTool
+API_CLASS(Namespace="FlaxEngine.Tools", Static) class FLAXENGINE_API AudioTool
 {
-public:
+    DECLARE_SCRIPTING_TYPE_MINIMAL(AudioTool);
 
+#if USE_EDITOR
+
+public:
+    /// <summary>
+    /// Declares the imported audio clip bit depth.
+    /// </summary>
+    API_ENUM(Attributes="HideInEditor") enum class BitDepth : int32
+    {
+        // 8-bits per sample.
+        _8 = 8,
+        // 16-bits per sample.
+        _16 = 16,
+        // 24-bits per sample.
+        _24 = 24,
+        // 32-bits per sample.
+        _32 = 32,
+    };
+
+    /// <summary>
+    /// Audio import options.
+    /// </summary>
+    API_STRUCT(Attributes="HideInEditor") struct FLAXENGINE_API Options : public ISerializable
+    {
+        DECLARE_SCRIPTING_TYPE_MINIMAL(Options);
+
+        /// <summary>
+        /// The audio data format to import the audio clip as.
+        /// </summary>
+        API_FIELD(Attributes="EditorOrder(10)")
+        AudioFormat Format = AudioFormat::Vorbis;
+
+        /// <summary>
+        /// The audio data compression quality. Used only if target format is using compression. Value 0 means the smallest size, value 1 means the best quality.
+        /// </summary>
+        API_FIELD(Attributes="EditorOrder(20), EditorDisplay(null, \"Compression Quality\"), Limit(0, 1, 0.01f)")
+        float Quality = 0.4f;
+
+        /// <summary>
+        /// Disables dynamic audio streaming. The whole clip will be loaded into the memory. Useful for small clips (eg. gunfire sounds).
+        /// </summary>
+        API_FIELD(Attributes="EditorOrder(30)")
+        bool DisableStreaming = false;
+
+        /// <summary>
+        /// Checks should the clip be played as spatial (3D) audio or as normal audio. 3D audio is stored in Mono format.
+        /// </summary>
+        API_FIELD(Attributes="EditorOrder(40), EditorDisplay(null, \"Is 3D\")")
+        bool Is3D = false;
+
+        /// <summary>
+        /// The size of a single sample in bits. The clip will be converted to this bit depth on import.
+        /// </summary>
+        API_FIELD(Attributes="EditorOrder(50), VisibleIf(nameof(ShowBtiDepth))")
+        BitDepth BitDepth = BitDepth::_16;
+
+        String ToString() const;
+
+        // [ISerializable]
+        void Serialize(SerializeStream& stream, const void* otherObj) override;
+        void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) override;
+    };
+#endif
+
+public:
     /// <summary>
     /// Converts a set of audio samples using multiple channels into a set of mono samples.
     /// </summary>
@@ -59,3 +129,5 @@ public:
         return (input[2] << 24) | (input[1] << 16) | (input[0] << 8);
     }
 };
+
+#endif

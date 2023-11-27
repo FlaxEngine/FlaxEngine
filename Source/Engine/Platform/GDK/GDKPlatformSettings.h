@@ -16,7 +16,8 @@ class Texture;
 API_CLASS(Namespace="FlaxEditor.Content.Settings") class FLAXENGINE_API GDKPlatformSettings : public SettingsBase
 {
     DECLARE_SCRIPTING_TYPE_MINIMAL(GDKPlatformSettings);
-public:
+    API_AUTO_SERIALIZATION();
+
     /// <summary>
     /// Game identity name stored in game package manifest (for store). If empty the product name will be used from Game Settings.
     /// </summary>
@@ -118,28 +119,6 @@ public:
     /// </summary>
     API_FIELD(Attributes="EditorOrder(420), EditorDisplay(\"Media Capture\")")
     bool BlockGameDVR = false;
-
-public:
-    // [SettingsBase]
-    void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) override
-    {
-        DESERIALIZE(Name);
-        DESERIALIZE(PublisherName);
-        DESERIALIZE(PublisherDisplayName);
-        DESERIALIZE(Square150x150Logo);
-        DESERIALIZE(Square480x480Logo);
-        DESERIALIZE(Square44x44Logo);
-        DESERIALIZE(SplashScreenImage);
-        DESERIALIZE(StoreLogo);
-        DESERIALIZE(BackgroundColor);
-        DESERIALIZE(TitleId);
-        DESERIALIZE(StoreId);
-        DESERIALIZE(RequiresXboxLive);
-        DESERIALIZE(SCID);
-        DESERIALIZE(GameDVRSystemComponent);
-        DESERIALIZE(BlockBroadcast);
-        DESERIALIZE(BlockGameDVR);
-    }
 };
 
 #endif

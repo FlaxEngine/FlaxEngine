@@ -1,144 +1,52 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
-using System.ComponentModel;
-using System.Reflection;
-using System.Runtime.InteropServices;
+using System.Collections.Generic;
+using FlaxEditor.CustomEditors.Editors;
+using FlaxEditor.Scripting;
 using FlaxEngine;
-using FlaxEngine.Interop;
+using FlaxEngine.Tools;
+
+namespace FlaxEngine.Tools
+{
+    partial class AudioTool
+    {
+        partial struct Options
+        {
+            private bool ShowBtiDepth => Format != AudioFormat.Vorbis;
+        }
+    }
+}
+
+namespace FlaxEditor.CustomEditors.Dedicated
+{
+    /// <summary>
+    /// Custom editor for <see cref="FlaxEngine.Tools.AudioTool.Options"/>.
+    /// </summary>
+    [CustomEditor(typeof(FlaxEngine.Tools.AudioTool.Options)), DefaultEditor]
+    public class AudioToolOptionsEditor : GenericEditor
+    {
+        /// <inheritdoc />
+        protected override List<ItemInfo> GetItemsForType(ScriptType type)
+        {
+            // Show both fields and properties
+            return GetItemsForType(type, true, true);
+        }
+    }
+}
 
 namespace FlaxEditor.Content.Import
 {
     /// <summary>
     /// Proxy object to present audio import settings in <see cref="ImportFilesDialog"/>.
     /// </summary>
+    [HideInEditor]
     public class AudioImportSettings
     {
         /// <summary>
-        /// A custom set of bit depth audio import sizes.
+        /// The settings data.
         /// </summary>
-        public enum CustomBitDepth
-        {
-            /// <summary>
-            /// The 8.
-            /// </summary>
-            _8 = 8,
-
-            /// <summary>
-            /// The 16.
-            /// </summary>
-            _16 = 16,
-
-            /// <summary>
-            /// The 24.
-            /// </summary>
-            _24 = 24,
-
-            /// <summary>
-            /// The 32.
-            /// </summary>
-            _32 = 32,
-        }
-
-        /// <summary>
-        /// Converts the bit depth to enum.
-        /// </summary>
-        /// <param name="f">The bit depth.</param>
-        /// <returns>The converted enum.</returns>
-        public static CustomBitDepth ConvertBitDepth(int f)
-        {
-            FieldInfo[] fields = typeof(CustomBitDepth).GetFields();
-            for (int i = 0; i < fields.Length; i++)
-            {
-                var field = fields[i];
-                if (field.Name.Equals("value__"))
-                    continue;
-
-                if (f == (int)field.GetRawConstantValue())
-                    return (CustomBitDepth)f;
-            }
-
-            return CustomBitDepth._16;
-        }
-
-        /// <summary>
-        /// The audio data format to import the audio clip as. 
-        /// </summary>
-        [EditorOrder(10), DefaultValue(AudioFormat.Vorbis), Tooltip("The audio data format to import the audio clip as.")]
-        public AudioFormat Format { get; set; } = AudioFormat.Vorbis;
-
-        /// <summary>
-        /// The audio data compression quality. Used only if target format is using compression. Value 0 means the smallest size, value 1 means the best quality.
-        /// </summary>
-        [EditorOrder(15), DefaultValue(0.4f), Limit(0, 1, 0.01f), Tooltip("The audio data compression quality. Used only if target format is using compression. Value 0 means the smallest size, value 1 means the best quality.")]
-        public float CompressionQuality { get; set; } = 0.4f;
-
-        /// <summary>
-        /// Disables dynamic audio streaming. The whole clip will be loaded into the memory. Useful for small clips (eg. gunfire sounds).
-        /// </summary>
-        [EditorOrder(20), DefaultValue(false), Tooltip("Disables dynamic audio streaming. The whole clip will be loaded into the memory. Useful for small clips (eg. gunfire sounds).")]
-        public bool DisableStreaming { get; set; } = false;
-
-        /// <summary>
-        /// Checks should the clip be played as spatial (3D) audio or as normal audio. 3D audio is stored in Mono format.
-        /// </summary>
-        [EditorOrder(30), DefaultValue(false), EditorDisplay(null, "Is 3D"), Tooltip("Checks should the clip be played as spatial (3D) audio or as normal audio. 3D audio is stored in Mono format.")]
-        public bool Is3D { get; set; } = false;
-
-        /// <summary>
-        /// The size of a single sample in bits. The clip will be converted to this bit depth on import.
-        /// </summary>
-        [EditorOrder(40), DefaultValue(CustomBitDepth._16), Tooltip("The size of a single sample in bits. The clip will be converted to this bit depth on import.")]
-        public CustomBitDepth BitDepth { get; set; } = CustomBitDepth._16;
-
-        [StructLayout(LayoutKind.Sequential)]
-        internal struct InternalOptions
-        {
-            [MarshalAs(UnmanagedType.I1)]
-            public AudioFormat Format;
-            public byte DisableStreaming;
-            public byte Is3D;
-            public int BitDepth;
-            public float Quality;
-        }
-
-        internal void ToInternal(out InternalOptions options)
-        {
-            options = new InternalOptions
-            {
-                Format = Format,
-                DisableStreaming = (byte)(DisableStreaming ? 1 : 0),
-                Is3D = (byte)(Is3D ? 1 : 0),
-                Quality = CompressionQuality,
-                BitDepth = (int)BitDepth,
-            };
-        }
-
-        internal void FromInternal(ref InternalOptions options)
-        {
-            Format = options.Format;
-            DisableStreaming = options.DisableStreaming != 0;
-            Is3D = options.Is3D != 0;
-            CompressionQuality = options.Quality;
-            BitDepth = ConvertBitDepth(options.BitDepth);
-        }
-
-        /// <summary>
-        /// Tries the restore the asset import options from the target resource file.
-        /// </summary>
-        /// <param name="options">The options.</param>
-        /// <param name="assetPath">The asset path.</param>
-        /// <returns>True settings has been restored, otherwise false.</returns>
-        public static bool TryRestore(ref AudioImportSettings options, string assetPath)
-        {
-            if (AudioImportEntry.Internal_GetAudioImportOptions(assetPath, out var internalOptions))
-            {
-                // Restore settings
-                options.FromInternal(ref internalOptions);
-                return true;
-            }
-
-            return false;
-        }
+        [EditorDisplay(null, EditorDisplayAttribute.InlineStyle)]
+        public AudioTool.Options Settings = AudioTool.Options.Default;
     }
 
     /// <summary>
@@ -147,7 +55,7 @@ namespace FlaxEditor.Content.Import
     /// <seealso cref="AssetImportEntry" />
     public partial class AudioImportEntry : AssetImportEntry
     {
-        private AudioImportSettings _settings = new AudioImportSettings();
+        private AudioImportSettings _settings = new();
 
         /// <summary>
         /// Initializes a new instance of the <see cref="AudioImportEntry"/> class.
@@ -157,7 +65,7 @@ namespace FlaxEditor.Content.Import
         : base(ref request)
         {
             // Try to restore target asset Audio import options (useful for fast reimport)
-            AudioImportSettings.TryRestore(ref _settings, ResultUrl);
+            Editor.TryRestoreImportOptions(ref _settings.Settings, ResultUrl);
         }
 
         /// <inheritdoc />
@@ -166,27 +74,23 @@ namespace FlaxEditor.Content.Import
         /// <inheritdoc />
         public override bool TryOverrideSettings(object settings)
         {
-            if (settings is AudioImportSettings o)
+            if (settings is AudioImportSettings s)
             {
-                _settings = o;
+                _settings.Settings = s.Settings;
                 return true;
             }
-
+            if (settings is AudioTool.Options o)
+            {
+                _settings.Settings = o;
+                return true;
+            }
             return false;
         }
 
         /// <inheritdoc />
         public override bool Import()
         {
-            return Editor.Import(SourceUrl, ResultUrl, _settings);
+            return Editor.Import(SourceUrl, ResultUrl, _settings.Settings);
         }
-
-        #region Internal Calls
-
-        [LibraryImport("FlaxEngine", EntryPoint = "AudioImportEntryInternal_GetAudioImportOptions", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(StringMarshaller))]
-        [return: MarshalAs(UnmanagedType.U1)]
-        internal static partial bool Internal_GetAudioImportOptions(string path, out AudioImportSettings.InternalOptions result);
-
-        #endregion
     }
 }

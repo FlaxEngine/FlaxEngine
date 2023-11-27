@@ -3,6 +3,7 @@
 #pragma once
 
 #include "ModelBase.h"
+#include "Engine/Core/Collections/Dictionary.h"
 #include "Engine/Graphics/Models/Config.h"
 #include "Engine/Graphics/Models/SkeletonData.h"
 #include "Engine/Graphics/Models/SkinnedModelLOD.h"
@@ -298,7 +299,7 @@ public:
         // Skeleton asset id to use for remapping.
         API_FIELD() Guid SkeletonAsset;
         // Skeleton nodes remapping table (maps this skeleton node name to other skeleton node).
-        API_FIELD() Dictionary<String, String, HeapAllocation> NodesMapping;
+        API_FIELD() Dictionary<String, String> NodesMapping;
     };
     // Gets or sets the skeleton retarget entries (accessed in Editor only).
     API_PROPERTY() const Array<SkeletonRetarget>& GetSkeletonRetargets() const { return _skeletonRetargets; }

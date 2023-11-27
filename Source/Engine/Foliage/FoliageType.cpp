@@ -130,7 +130,7 @@ void FoliageType::Serialize(SerializeStream& stream, const void* otherObj)
 
     SERIALIZE(Model);
 
-    const std::function<bool(const ModelInstanceEntry&)> IsValidMaterial = [](const ModelInstanceEntry& e) -> bool
+    const Function<bool(const ModelInstanceEntry&)> IsValidMaterial = [](const ModelInstanceEntry& e) -> bool
     {
         return e.Material;
     };

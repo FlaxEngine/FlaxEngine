@@ -255,7 +255,7 @@ public:
     /// <param name="data">Stream with graph data.</param>
     /// <param name="meta">Script metadata.</param>
     /// <returns>True if cannot save it, otherwise false.</returns>
-    API_FUNCTION() bool SaveSurface(BytesContainer& data, API_PARAM(Ref) const Metadata& meta);
+    API_FUNCTION() bool SaveSurface(const BytesContainer& data, API_PARAM(Ref) const Metadata& meta);
 
     // Returns the amount of methods in the script.
     API_FUNCTION() int32 GetMethodsCount() const

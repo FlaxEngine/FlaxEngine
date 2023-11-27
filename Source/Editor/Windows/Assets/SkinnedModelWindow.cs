@@ -151,7 +151,7 @@ namespace FlaxEditor.Windows.Assets
                 if (Window._skipEffectsGuiEvents)
                     return;
 
-                Window._isolateIndex = mesh?.MaterialSlotIndex ?? -1;
+                Window._isolateIndex = mesh != null ? mesh.MaterialSlotIndex : -1;
                 Window.UpdateEffectsOnAsset();
                 UpdateEffectsOnUI();
             }
@@ -165,7 +165,7 @@ namespace FlaxEditor.Windows.Assets
                 if (Window._skipEffectsGuiEvents)
                     return;
 
-                Window._highlightIndex = mesh?.MaterialSlotIndex ?? -1;
+                Window._highlightIndex = mesh != null ? mesh.MaterialSlotIndex : -1;
                 Window.UpdateEffectsOnAsset();
                 UpdateEffectsOnUI();
             }
@@ -321,6 +321,7 @@ namespace FlaxEditor.Windows.Assets
 
                         var tree = group.Tree();
                         tree.TreeControl.RightClick += OnTreeNodeRightClick;
+                        tree.TreeControl.SelectedChanged += OnTreeSelectedChanged;
                         for (int i = 0; i < nodes.Length; i++)
                         {
                             if (nodes[i].ParentIndex == -1)
@@ -365,6 +366,15 @@ namespace FlaxEditor.Windows.Assets
                     b.ButtonClicked += OnTreeNodeCopyName;
 
                     menu.Show(node, location);
+                }
+
+                private void OnTreeSelectedChanged(List<TreeNode> before, List<TreeNode> after)
+                {
+                    if (after.Count != 0)
+                    {
+                        var proxy = (SkeletonPropertiesProxy)Values[0];
+                        proxy.Window._preview.ShowDebugDraw = true;
+                    }
                 }
 
                 private void OnTreeNodeCopyName(ContextMenuButton b)
@@ -415,7 +425,7 @@ namespace FlaxEditor.Windows.Assets
             [EditorOrder(10), EditorDisplay("Materials", EditorDisplayAttribute.InlineStyle)]
             public MaterialSlot[] MaterialSlots
             {
-                get => Asset?.MaterialSlots;
+                get => Asset != null ? Asset.MaterialSlots : null;
                 set
                 {
                     if (Asset != null)
@@ -830,7 +840,7 @@ namespace FlaxEditor.Windows.Assets
                         sourceAssetPicker.CheckValid = CheckSourceAssetValid;
                         sourceAssetPicker.SelectedItemChanged += () =>
                         {
-                            proxy.Setups.Add(sourceAssetPicker.SelectedAsset, new SetupProxy());
+                            proxy.Setups.Add(sourceAssetPicker.Validator.SelectedAsset, new SetupProxy());
                             proxy.Window.MarkAsEdited();
                             RebuildLayout();
                         };
@@ -849,7 +859,7 @@ namespace FlaxEditor.Windows.Assets
 
                         // Source asset picker
                         var sourceAssetPicker = setupGroup.AddPropertyItem("Source Asset").Custom<AssetPicker>().CustomControl;
-                        sourceAssetPicker.SelectedAsset = sourceAsset;
+                        sourceAssetPicker.Validator.SelectedAsset = sourceAsset;
                         sourceAssetPicker.CanEdit = false;
                         sourceAssetPicker.Height = 48;
 
@@ -909,12 +919,12 @@ namespace FlaxEditor.Windows.Assets
                         {
                             // Show skeleton asset picker
                             var sourceSkeletonPicker = setupGroup.AddPropertyItem("Skeleton", "Skinned model that contains a skeleton for this animation retargeting.").Custom<AssetPicker>().CustomControl;
-                            sourceSkeletonPicker.AssetType = new ScriptType(typeof(SkinnedModel));
-                            sourceSkeletonPicker.SelectedAsset = setup.Value.Skeleton;
+                            sourceSkeletonPicker.Validator.AssetType = new ScriptType(typeof(SkinnedModel));
+                            sourceSkeletonPicker.Validator.SelectedAsset = setup.Value.Skeleton;
                             sourceSkeletonPicker.Height = 48;
                             sourceSkeletonPicker.SelectedItemChanged += () =>
                             {
-                                setup.Value.Skeleton = (SkinnedModel)sourceSkeletonPicker.SelectedAsset;
+                                setup.Value.Skeleton = (SkinnedModel)sourceSkeletonPicker.Validator.SelectedAsset;
                                 proxy.Window.MarkAsEdited();
                             };
                         }
@@ -1038,6 +1048,7 @@ namespace FlaxEditor.Windows.Assets
             {
                 Proxy = new SkeletonPropertiesProxy();
                 Presenter.Select(Proxy);
+                // Draw highlight on selected node
                 window._preview.CustomDebugDraw += OnDebugDraw;
             }
 
@@ -1138,6 +1149,15 @@ namespace FlaxEditor.Windows.Assets
             _tabs.AddTab(new UVsTab(this));
             _tabs.AddTab(new RetargetTab(this));
             _tabs.AddTab(new ImportTab(this));
+
+            // Automatically show nodes when switching to skeleton page
+            _tabs.SelectedTabChanged += (tabs) =>
+            {
+                if (tabs.SelectedTab is SkeletonTab)
+                {
+                    _preview.ShowNodes = true;
+                }
+            };
 
             // Highlight actor (used to highlight selected material slot, see UpdateEffectsOnAsset)
             _highlightActor = new AnimatedModel

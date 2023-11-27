@@ -115,15 +115,23 @@ namespace FlaxEditor.Surface
             var p1 = _rootControl.PointFromParent(ref _leftMouseDownPos);
             var p2 = _rootControl.PointFromParent(ref _mousePos);
             var selectionRect = Rectangle.FromPoints(p1, p2);
+            var selectionChanged = false;
 
             // Find controls to select
             for (int i = 0; i < _rootControl.Children.Count; i++)
             {
                 if (_rootControl.Children[i] is SurfaceControl control)
                 {
-                    control.IsSelected = control.IsSelectionIntersecting(ref selectionRect);
+                    var select = control.IsSelectionIntersecting(ref selectionRect);
+                    if (select != control.IsSelected)
+                    {
+                        control.IsSelected = select;
+                        selectionChanged = true;
+                    }
                 }
             }
+            if (selectionChanged)
+                SelectionChanged?.Invoke();
         }
 
         private void OnSurfaceControlSpawned(SurfaceControl control)
@@ -213,6 +221,23 @@ namespace FlaxEditor.Surface
                 return;
             }
 
+            if (_middleMouseDown)
+            {
+                // Calculate delta
+                var delta = location - _middleMouseDownPos;
+                if (delta.LengthSquared > 0.01f)
+                {
+                    // Move view
+                    _mouseMoveAmount += delta.Length;
+                    _rootControl.Location += delta;
+                    _middleMouseDownPos = location;
+                    Cursor = CursorType.SizeAll;
+                }
+
+                // Handled
+                return;
+            }
+
             // Check if user is selecting or moving node(s)
             if (_leftMouseDown)
             {
@@ -235,8 +260,11 @@ namespace FlaxEditor.Surface
                             node.Location += delta;
                         _leftMouseDownPos = location;
                         _movingNodesDelta += delta;
-                        Cursor = CursorType.SizeAll;
-                        MarkAsEdited(false);
+                        if (_movingNodes.Count > 0)
+                        {
+                            Cursor = CursorType.SizeAll;
+                            MarkAsEdited(false);
+                        }
                     }
 
                     // Handled
@@ -269,6 +297,11 @@ namespace FlaxEditor.Surface
                 _rightMouseDown = false;
                 Cursor = CursorType.Default;
             }
+            if (_middleMouseDown)
+            {
+                _middleMouseDown = false;
+                Cursor = CursorType.Default;
+            }
             _isMovingSelection = false;
             ConnectingEnd(null);
 
@@ -291,7 +324,7 @@ namespace FlaxEditor.Surface
             if (IsMouseOver && !_leftMouseDown && !IsPrimaryMenuOpened)
             {
                 var nextViewScale = ViewScale + delta * 0.1f;
-                
+
                 if (delta > 0 && !_rightMouseDown)
                 {
                     // Scale towards mouse when zooming in
@@ -306,7 +339,7 @@ namespace FlaxEditor.Surface
                     ViewScale = nextViewScale;
                     ViewCenterPosition = viewCenter;
                 }
-                
+
                 return true;
             }
 
@@ -321,12 +354,12 @@ namespace FlaxEditor.Surface
             if (!handled)
                 CustomMouseDoubleClick?.Invoke(ref location, button, ref handled);
 
-            if (!handled && CanEdit)
+            // Insert reroute node
+            if (!handled && CanEdit && CanUseNodeType(7, 29))
             {
                 var mousePos = _rootControl.PointFromParent(ref _mousePos);
                 if (IntersectsConnection(mousePos, out InputBox inputBox, out OutputBox outputBox) && GetControlUnderMouse() == null)
                 {
-                    // Insert reroute node
                     if (Undo != null)
                     {
                         bool undoEnabled = Undo.Enabled;
@@ -380,6 +413,7 @@ namespace FlaxEditor.Surface
                 _isMovingSelection = false;
                 _rightMouseDown = false;
                 _leftMouseDown = false;
+                _middleMouseDown = false;
                 return true;
             }
 
@@ -398,6 +432,11 @@ namespace FlaxEditor.Surface
             {
                 _rightMouseDown = true;
                 _rightMouseDownPos = location;
+            }
+            if (button == MouseButton.Middle)
+            {
+                _middleMouseDown = true;
+                _middleMouseDownPos = location;
             }
 
             // Check if any node is under the mouse
@@ -444,7 +483,7 @@ namespace FlaxEditor.Surface
                     Focus();
                     return true;
                 }
-                if (_rightMouseDown)
+                if (_rightMouseDown || _middleMouseDown)
                 {
                     // Start navigating
                     StartMouseCapture();
@@ -513,6 +552,13 @@ namespace FlaxEditor.Surface
                 }
                 _mouseMoveAmount = 0;
             }
+            if (_middleMouseDown && button == MouseButton.Middle)
+            {
+                _middleMouseDown = false;
+                EndMouseCapture();
+                Cursor = CursorType.Default;
+                _mouseMoveAmount = 0;
+            }
 
             // Base
             bool handled = base.OnMouseUp(location, button);
@@ -523,6 +569,7 @@ namespace FlaxEditor.Surface
                 // Clear flags
                 _rightMouseDown = false;
                 _leftMouseDown = false;
+                _middleMouseDown = false;
                 return true;
             }
 
@@ -706,6 +753,8 @@ namespace FlaxEditor.Surface
             {
                 if (_inputBrackets.Count == 0)
                 {
+                    if (currentInputText.StartsWith(' '))
+                        currentInputText = "";
                     ResetInput();
                     ShowPrimaryMenu(_mousePos, false, currentInputText);
                 }

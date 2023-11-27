@@ -10,6 +10,12 @@ namespace Flax.Build
     public static partial class Configuration
     {
         /// <summary>
+        /// Compresses deployed files.
+        /// </summary>
+        [CommandLine("deployDontCompress", "Skips compressing deployed files, and keeps files.")]
+        public static bool DontCompress = false;
+
+        /// <summary>
         /// Package deployment output path.
         /// </summary>
         [CommandLine("deployOutput", "Package deployment output path.")]
@@ -28,9 +34,9 @@ namespace Flax.Build
         public static bool DeployPlatforms;
 
         /// <summary>
-        /// Certificate file path for binaries signing.
+        /// Certificate file path for binaries signing. Or sign identity for Apple platforms.
         /// </summary>
-        [CommandLine("deployCert", "Certificate file path for binaries signing.")]
+        [CommandLine("deployCert", "Certificate file path for binaries signing. Or sign identity for Apple platforms.")]
         public static string DeployCert;
 
         /// <summary>
@@ -38,6 +44,12 @@ namespace Flax.Build
         /// </summary>
         [CommandLine("deployCertPass", "Certificate file password for binaries signing.")]
         public static string DeployCertPass;
+
+        /// <summary>
+        /// Apple keychain profile name to use for app notarize action (installed locally).
+        /// </summary>
+        [CommandLine("deployKeychainProfile", "Apple keychain profile name to use for app notarize action (installed locally).")]
+        public static string DeployKeychainProfile;
     }
 }
 
@@ -60,12 +72,6 @@ namespace Flax.Deploy
             {
                 Initialize();
 
-                if (Configuration.DeployEditor)
-                {
-                    BuildEditor();
-                    Deployment.Editor.Package();
-                }
-
                 if (Configuration.DeployPlatforms)
                 {
                     if (Configuration.BuildPlatforms == null || Configuration.BuildPlatforms.Length == 0)
@@ -87,6 +93,12 @@ namespace Flax.Deploy
                             BuildPlatform(platform, architectures);
                         }
                     }
+                }
+
+                if (Configuration.DeployEditor)
+                {
+                    BuildEditor();
+                    Deployment.Editor.Package();
                 }
             }
             catch (Exception ex)
@@ -177,6 +189,10 @@ namespace Flax.Deploy
             {
                 if (Platform.IsPlatformSupported(platform, architecture))
                 {
+                    Log.Info(string.Empty);
+                    Log.Info($"Build {platform} {architecture} platform");
+                    Log.Info(string.Empty);
+
                     foreach (var configuration in Configurations)
                     {
                         FlaxBuild.Build(Globals.EngineRoot, "FlaxGame", platform, architecture, configuration);

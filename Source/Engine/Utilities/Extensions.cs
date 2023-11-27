@@ -27,7 +27,7 @@ namespace FlaxEngine.Utilities
         where T : new()
         {
             var json = Json.JsonSerializer.Serialize(instance);
-            return Json.JsonSerializer.Deserialize<T>(json);
+            return (T)Json.JsonSerializer.Deserialize(json, instance.GetType());
         }
 
         /// <summary>

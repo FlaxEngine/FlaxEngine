@@ -136,6 +136,7 @@ void DeferredMaterialShader::Unload()
 
 bool DeferredMaterialShader::Load()
 {
+    bool failed = false;
     auto psDesc = GPUPipelineState::Description::Default;
     psDesc.DepthWriteEnable = (_info.FeaturesFlags & MaterialFeaturesFlags::DisableDepthWrite) == MaterialFeaturesFlags::None;
     if (EnumHasAnyFlags(_info.FeaturesFlags, MaterialFeaturesFlags::DisableDepthTest))
@@ -155,16 +156,20 @@ bool DeferredMaterialShader::Load()
 
     // GBuffer Pass
     psDesc.VS = _shader->GetVS("VS");
+    failed |= psDesc.VS == nullptr;
     psDesc.PS = _shader->GetPS("PS_GBuffer");
     _cache.Default.Init(psDesc);
     psDesc.VS = _shader->GetVS("VS", 1);
+    failed |= psDesc.VS == nullptr;
     _cacheInstanced.Default.Init(psDesc);
 
     // GBuffer Pass with lightmap (pixel shader permutation for USE_LIGHTMAP=1)
     psDesc.VS = _shader->GetVS("VS");
+    failed |= psDesc.VS == nullptr;
     psDesc.PS = _shader->GetPS("PS_GBuffer", 1);
     _cache.DefaultLightmap.Init(psDesc);
     psDesc.VS = _shader->GetVS("VS", 1);
+    failed |= psDesc.VS == nullptr;
     _cacheInstanced.DefaultLightmap.Init(psDesc);
 
     // GBuffer Pass with skinning
@@ -233,5 +238,5 @@ bool DeferredMaterialShader::Load()
     psDesc.VS = _shader->GetVS("VS_Skinned");
     _cache.DepthSkinned.Init(psDesc);
 
-    return false;
+    return failed;
 }

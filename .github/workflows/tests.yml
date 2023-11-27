@@ -34,8 +34,8 @@ jobs:
         sudo apt-get install libx11-dev libxcursor-dev libxinerama-dev build-essential gettext libtool libtool-bin libpulse-dev libasound2-dev libjack-dev portaudio19-dev
     - name: Build
       run: |
-        ./GenerateProjectFiles.sh -vs2022 -log -verbose -printSDKs
-        ./Development/Scripts/Linux/CallBuildTool.sh -build -log -arch=x64 -platform=Linux -configuration=Development -buildtargets=FlaxTestsTarget
+        ./GenerateProjectFiles.sh -vs2022 -log -verbose -printSDKs -dotnet=7
+        ./Development/Scripts/Linux/CallBuildTool.sh -build -log -dotnet=7 -arch=x64 -platform=Linux -configuration=Development -buildtargets=FlaxTestsTarget
         dotnet msbuild Source/Tools/Flax.Build.Tests/Flax.Build.Tests.csproj /m /t:Restore,Build /p:Configuration=Debug /p:Platform=AnyCPU /nologo
         dotnet msbuild Source/Tools/Flax.Build.Tests/Flax.Build.Tests.csproj /m /t:Restore,Build /p:Configuration=Debug /p:Platform=AnyCPU /nologo
     - name: Test
@@ -48,7 +48,7 @@ jobs:
         dotnet test -f net7.0 Binaries/Tests/FlaxEngine.CSharp.dll
     - name: Test UseLargeWorlds
       run: |
-        ./Development/Scripts/Linux/CallBuildTool.sh -build -log -arch=x64 -platform=Linux -configuration=Development -buildtargets=FlaxTestsTarget -UseLargeWorlds=true
+        ./Development/Scripts/Linux/CallBuildTool.sh -build -log -dotnet=7 -arch=x64 -platform=Linux -configuration=Development -buildtargets=FlaxTestsTarget -UseLargeWorlds=true
         ${GITHUB_WORKSPACE}/Binaries/Editor/Linux/Development/FlaxTests
 
   # Tests on Windows
@@ -72,8 +72,8 @@ jobs:
         git lfs pull
     - name: Build
       run: |
-        .\GenerateProjectFiles.bat -vs2022 -log -verbose -printSDKs
-        .\Development\Scripts\Windows\CallBuildTool.bat -build -log -arch=x64 -platform=Windows -configuration=Development -buildtargets=FlaxTestsTarget
+        .\GenerateProjectFiles.bat -vs2022 -log -verbose -printSDKs -dotnet=7
+        .\Development\Scripts\Windows\CallBuildTool.bat -build -log -dotnet=7 -arch=x64 -platform=Windows -configuration=Development -buildtargets=FlaxTestsTarget
         dotnet msbuild Source\Tools\Flax.Build.Tests\Flax.Build.Tests.csproj /m /t:Restore,Build /p:Configuration=Debug /p:Platform=AnyCPU /nologo
     - name: Test
       run: |

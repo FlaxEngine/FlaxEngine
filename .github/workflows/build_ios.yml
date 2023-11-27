@@ -33,4 +33,4 @@ jobs:
         git lfs pull
     - name: Build
       run: |
-        ./Development/Scripts/Mac/CallBuildTool.sh -build -log -arch=ARM64 -platform=iOS -configuration=Release -buildtargets=FlaxGame
+        ./Development/Scripts/Mac/CallBuildTool.sh -build -log -dotnet=7 -arch=ARM64 -platform=iOS -configuration=Release -buildtargets=FlaxGame

@@ -4,7 +4,7 @@
 
 #include "../Collections/Array.h"
 #include "../Collections/Dictionary.h"
-#include <functional>
+#include "../Delegate.h"
 
 class ArrayExtensions;
 
@@ -23,7 +23,6 @@ public:
     /// <summary>
     /// Gets the common key.
     /// </summary>
-    /// <returns>The key.</returns>
     FORCE_INLINE const TKey& GetKey() const
     {
         return _key;
@@ -32,7 +31,6 @@ public:
     /// <summary>
     /// Gets the common key.
     /// </summary>
-    /// <returns>The key.</returns>
     FORCE_INLINE TKey GetKey()
     {
         return _key;
@@ -52,7 +50,7 @@ public:
     /// <param name="predicate">The prediction function. Should return true for the target element to find.</param>
     /// <returns>The index of the element or -1 if nothing found.</returns>
     template<typename T, typename AllocationType>
-    static int32 IndexOf(const Array<T, AllocationType>& obj, const std::function<bool(const T&)>& predicate)
+    static int32 IndexOf(const Array<T, AllocationType>& obj, const Function<bool(const T&)>& predicate)
     {
         for (int32 i = 0; i < obj.Count(); i++)
         {
@@ -71,7 +69,7 @@ public:
     /// <param name="predicate">The prediction function.</param>
     /// <returns>True if any element in the collection matches the prediction, otherwise false.</returns>
     template<typename T, typename AllocationType>
-    static bool Any(const Array<T, AllocationType>& obj, const std::function<bool(const T&)>& predicate)
+    static bool Any(const Array<T, AllocationType>& obj, const Function<bool(const T&)>& predicate)
     {
         for (int32 i = 0; i < obj.Count(); i++)
         {
@@ -90,7 +88,7 @@ public:
     /// <param name="predicate">The prediction function.</param>
     /// <returns>True if all elements in the collection matches the prediction, otherwise false.</returns>
     template<typename T, typename AllocationType>
-    static int32 All(const Array<T, AllocationType>& obj, const std::function<bool(const T&)>& predicate)
+    static int32 All(const Array<T, AllocationType>& obj, const Function<bool(const T&)>& predicate)
     {
         for (int32 i = 0; i < obj.Count(); i++)
         {
@@ -109,7 +107,7 @@ public:
     /// <param name="keySelector">A function to extract the key for each element.</param>
     /// <param name="result">The result collection with groups.</param>
     template<typename TSource, typename TKey, typename AllocationType>
-    static void GroupBy(const Array<TSource, AllocationType>& obj, const std::function<TKey(TSource const&)>& keySelector, Array<IGrouping<TKey, TSource>, AllocationType>& result)
+    static void GroupBy(const Array<TSource, AllocationType>& obj, const Function<TKey(TSource const&)>& keySelector, Array<IGrouping<TKey, TSource>, AllocationType>& result)
     {
         Dictionary<TKey, IGrouping<TKey, TSource>> data(static_cast<int32>(obj.Count() * 3.0f));
         for (int32 i = 0; i < obj.Count(); i++)

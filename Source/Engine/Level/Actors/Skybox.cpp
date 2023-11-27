@@ -97,9 +97,9 @@ void Skybox::ApplySky(GPUContext* context, RenderContext& renderContext, const M
 {
     // Prepare mock draw call data
     DrawCall drawCall;
-    Platform::MemoryClear(&drawCall, sizeof(DrawCall));
     drawCall.World = world;
     drawCall.ObjectPosition = drawCall.World.GetTranslation();
+    drawCall.ObjectRadius = _sphere.Radius;
     drawCall.Surface.GeometrySize = _box.GetSize();
     drawCall.WorldDeterminantSign = Math::FloatSelect(world.RotDeterminant(), 1, -1);
     drawCall.PerInstanceRandom = GetPerInstanceRandom();

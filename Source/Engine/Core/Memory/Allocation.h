@@ -43,14 +43,14 @@ public:
             return Capacity;
         }
 
-        FORCE_INLINE void Allocate(uint64 capacity)
+        FORCE_INLINE void Allocate(int32 capacity)
         {
 #if ENABLE_ASSERTION_LOW_LAYERS
             ASSERT(capacity <= Capacity);
 #endif
         }
 
-        FORCE_INLINE void Relocate(uint64 capacity, int32 oldCount, int32 newCount)
+        FORCE_INLINE void Relocate(int32 capacity, int32 oldCount, int32 newCount)
         {
 #if ENABLE_ASSERTION_LOW_LAYERS
             ASSERT(capacity <= Capacity);
@@ -120,12 +120,15 @@ public:
                 capacity |= capacity >> 4;
                 capacity |= capacity >> 8;
                 capacity |= capacity >> 16;
-                capacity = (capacity + 1) * 2;
+                uint64 capacity64 = (uint64)(capacity + 1) * 2;
+                if (capacity64 > MAX_int32)
+                    capacity64 = MAX_int32;
+                capacity = (int32)capacity64;
             }
             return capacity;
         }
 
-        FORCE_INLINE void Allocate(uint64 capacity)
+        FORCE_INLINE void Allocate(int32 capacity)
         {
 #if  ENABLE_ASSERTION_LOW_LAYERS
             ASSERT(!_data);
@@ -137,7 +140,7 @@ public:
 #endif
         }
 
-        FORCE_INLINE void Relocate(uint64 capacity, int32 oldCount, int32 newCount)
+        FORCE_INLINE void Relocate(int32 capacity, int32 oldCount, int32 newCount)
         {
             T* newData = capacity != 0 ? (T*)Allocator::Allocate(capacity * sizeof(T)) : nullptr;
 #if !BUILD_RELEASE
@@ -210,7 +213,7 @@ public:
             return minCapacity <= Capacity ? Capacity : _other.CalculateCapacityGrow(capacity, minCapacity);
         }
 
-        FORCE_INLINE void Allocate(uint64 capacity)
+        FORCE_INLINE void Allocate(int32 capacity)
         {
             if (capacity > Capacity)
             {
@@ -219,7 +222,7 @@ public:
             }
         }
 
-        FORCE_INLINE void Relocate(uint64 capacity, int32 oldCount, int32 newCount)
+        FORCE_INLINE void Relocate(int32 capacity, int32 oldCount, int32 newCount)
         {
             // Check if the new allocation will fit into inlined storage
             if (capacity <= Capacity)

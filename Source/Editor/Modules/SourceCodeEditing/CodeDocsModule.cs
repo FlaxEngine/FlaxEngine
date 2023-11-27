@@ -147,6 +147,17 @@ namespace FlaxEditor.Modules.SourceCodeEditing
                     }
                     if (key != null)
                         xml.TryGetValue(key, out text);
+
+                    // Customize tooltips for properties to be more human-readable in UI
+                    if (text != null && memberType.HasFlag(MemberTypes.Property) && text.StartsWith("Gets or sets ", StringComparison.Ordinal))
+                    {
+                        text = text.Substring(13);
+                        unsafe
+                        {
+                            fixed (char* e = text)
+                                e[0] = char.ToUpper(e[0]);
+                        }
+                    }
                 }
             }
 

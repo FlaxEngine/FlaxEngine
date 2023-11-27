@@ -53,6 +53,7 @@ private:
     bool _loop;
     bool _playOnStart;
     bool _allowSpatialization;
+    bool _clipChanged = false;
 
     bool _isActuallyPlayingSth = false;
     bool _needToUpdateStreamingBuffers = false;

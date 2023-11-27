@@ -126,6 +126,10 @@ namespace Flax.Build
                             if (!platform.HasRequiredSDKsInstalled && (!projectInfo.IsCSharpOnlyProject || platform != Platform.BuildPlatform))
                                 continue;
 
+                            // Prevent generating configuration data for Windows x86
+                            if (architecture == TargetArchitecture.x86 && targetPlatform == TargetPlatform.Windows)
+                                continue;
+
                             string configurationText = targetName + '.' + platformName + '.' + configurationName;
                             string architectureName = architecture.ToString();
                             if (platform is IProjectCustomizer customizer)
@@ -175,7 +179,7 @@ namespace Flax.Build
             using (new ProfileEventScope("GenerateProjects"))
             {
                 // Pick the project format
-                List<ProjectFormat> projectFormats = new List<ProjectFormat>();
+                HashSet<ProjectFormat> projectFormats = new HashSet<ProjectFormat>();
 
                 if (Configuration.ProjectFormatVS2022)
                     projectFormats.Add(ProjectFormat.VisualStudio2022);
@@ -187,11 +191,16 @@ namespace Flax.Build
                     projectFormats.Add(ProjectFormat.VisualStudio2015);
                 if (Configuration.ProjectFormatVSCode)
                     projectFormats.Add(ProjectFormat.VisualStudioCode);
+                if (Configuration.ProjectFormatRider)
+                    projectFormats.Add(ProjectFormat.VisualStudio2022);
                 if (!string.IsNullOrEmpty(Configuration.ProjectFormatCustom))
                     projectFormats.Add(ProjectFormat.Custom);
 
                 if (projectFormats.Count == 0)
                     projectFormats.Add(Platform.BuildPlatform.DefaultProjectFormat);
+
+                // Always generate VS solution files for project (needed for C# Intellisense support)
+                projectFormats.Add(ProjectFormat.VisualStudio2022);
 
                 foreach (ProjectFormat projectFormat in projectFormats)
                     GenerateProject(projectFormat);
@@ -219,6 +228,8 @@ namespace Flax.Build
                 var projectToModulesBuildOptions = new Dictionary<Project, Dictionary<Module, BuildOptions>>();
                 Project mainSolutionProject = null;
                 ProjectGenerator nativeProjectGenerator = ProjectGenerator.Create(projectFormat, TargetType.NativeCpp);
+                var solutionName = rootProject.Name;
+                var solutionPath = Path.Combine(workspaceRoot, solutionName + '.' + nativeProjectGenerator.SolutionFileExtension);
 
                 // Group targets by project name and sort groups based on the project (ensures that referenced plugin source projects are generated firstly before main source projects)
                 var targetGroups = new List<ProjectTargetsGroup>();
@@ -493,11 +504,40 @@ namespace Flax.Build
                                     else if (dependencyModule.BinaryModuleName == "FlaxEngine")
                                     {
                                         // TODO: instead of this hack find a way to reference the prebuilt target bindings binary (example: game C# project references FlaxEngine C# prebuilt dll)
-                                        project.CSharp.FileReferences.Add(Path.Combine(Globals.EngineRoot, "Binaries/Editor/Win64/Development/FlaxEngine.CSharp.dll"));
+                                        project.CSharp.FileReferences.Add(Path.Combine(Globals.EngineRoot, Platform.GetEditorBinaryDirectory(), "Development/FlaxEngine.CSharp.dll"));
                                     }
                                 }
                             }
                         }
+                    }
+                }
+
+                // When generating C#-only projects for Game that uses source-engine distribution replace dependencies on FlaxEngine with fixed dll file refs to fix Intellisense issues
+                if (rootProject.IsCSharpOnlyProject)
+                {
+                    Project flaxDependencyToRemove = null;
+                    foreach (var project in projects)
+                    {
+                        if (project.BaseName != "FlaxEngine")
+                        {
+                            var flaxDependency = project.Dependencies.FirstOrDefault(x => x.BaseName == "FlaxEngine");
+                            if (flaxDependency != null)
+                            {
+                                project.Dependencies.Remove(flaxDependency);
+
+                                // TODO: instead of this hack find a way to reference the prebuilt target bindings binary (example: game C# project references FlaxEngine C# prebuilt dll)
+                                project.CSharp.FileReferences.Add(Path.Combine(Globals.EngineRoot, Platform.GetEditorBinaryDirectory(), "Development/FlaxEngine.CSharp.dll"));
+
+                                // Remove FlaxEngine from projects to prevent duplicated types errors in Intellisense (eg. Actor type defined in both FlaxEngine.CSharp.dll and FlaxEngine.csproj)
+                                flaxDependencyToRemove = flaxDependency;
+                            }
+                        }
+                    }
+                    if (flaxDependencyToRemove != null)
+                    {
+                        projects.Remove(flaxDependencyToRemove);
+                        foreach (var project in projects)
+                            project.Dependencies.Remove(flaxDependencyToRemove);
                     }
                 }
 
@@ -511,7 +551,7 @@ namespace Flax.Build
                     foreach (var project in projects)
                     {
                         Log.Verbose(project.Name + " -> " + project.Path);
-                        project.Generate();
+                        project.Generate(solutionPath);
                     }
                 }
 
@@ -590,7 +630,7 @@ namespace Flax.Build
                     using (new ProfileEventScope("GenerateProject"))
                     {
                         Log.Verbose("Project " + rulesProjectName + " -> " + project.Path);
-                        dotNetProjectGenerator.GenerateProject(project);
+                        dotNetProjectGenerator.GenerateProject(project, solutionPath);
                     }
 
                     projects.Add(project);
@@ -603,9 +643,9 @@ namespace Flax.Build
                     using (new ProfileEventScope("CreateSolution"))
                     {
                         solution = nativeProjectGenerator.CreateSolution();
-                        solution.Name = rootProject.Name;
+                        solution.Name = solutionName;
                         solution.WorkspaceRootPath = workspaceRoot;
-                        solution.Path = Path.Combine(workspaceRoot, solution.Name + '.' + nativeProjectGenerator.SolutionFileExtension);
+                        solution.Path = solutionPath;
                         solution.Projects = projects.ToArray();
                         solution.MainProject = mainSolutionProject;
                     }

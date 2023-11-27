@@ -141,6 +141,16 @@ namespace FlaxEditor.Surface
         public Texture Background;
 
         /// <summary>
+        /// Boxes drawing callback.
+        /// </summary>
+        public Action<Elements.Box> DrawBox = DefaultDrawBox;
+
+        /// <summary>
+        /// Custom box connection drawing callback (null by default).
+        /// </summary>
+        public Action<Float2, Float2, Color, float> DrawConnection = null;
+
+        /// <summary>
         /// Gets the color for the connection.
         /// </summary>
         /// <param name="type">The connection type.</param>
@@ -202,6 +212,41 @@ namespace FlaxEditor.Surface
                 color = Colors.Vector;
             else
                 color = Colors.Default;
+        }
+
+        private static void DefaultDrawBox(Elements.Box box)
+        {
+            var rect = new Rectangle(Float2.Zero, box.Size);
+
+            // Size culling
+            const float minBoxSize = 5.0f;
+            if (rect.Size.LengthSquared < minBoxSize * minBoxSize)
+                return;
+
+            // Debugging boxes size
+            //Render2D.DrawRectangle(rect, Color.Orange); return;
+
+            // Draw icon
+            bool hasConnections = box.HasAnyConnection;
+            float alpha = box.Enabled ? 1.0f : 0.6f;
+            Color color = box.CurrentTypeColor * alpha;
+            var style = box.Surface.Style;
+            SpriteHandle icon;
+            if (box.CurrentType.Type == typeof(void))
+                icon = hasConnections ? style.Icons.ArrowClose : style.Icons.ArrowOpen;
+            else
+                icon = hasConnections ? style.Icons.BoxClose : style.Icons.BoxOpen;
+            color *= box.ConnectionsHighlightIntensity + 1;
+            Render2D.DrawSprite(icon, rect, color);
+
+            // Draw selection hint
+            if (box.IsSelected)
+            {
+                float outlineAlpha = Mathf.Sin(Time.TimeSinceStartup * 4.0f) * 0.5f + 0.5f;
+                float outlineWidth = Mathf.Lerp(1.5f, 4.0f, outlineAlpha);
+                var outlineRect = new Rectangle(rect.X - outlineWidth, rect.Y - outlineWidth, rect.Width + outlineWidth * 2, rect.Height + outlineWidth * 2);
+                Render2D.DrawSprite(icon, outlineRect, FlaxEngine.GUI.Style.Current.BorderSelected.RGBMultiplied(1.0f + outlineAlpha * 0.4f));
+            }
         }
 
         /// <summary>

@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>English</string>
+	<key>CFBundleIconFile</key>
+	<string>icon.icns</string>
+	<key>CFBundleExecutable</key>
+	<string>{Executable}</string>
+	<key>CFBundleName</key>
+	<string>FlaxEditor</string>
+	<key>CFBundleIdentifier</key>
+	<string>com.flaxengine.editor</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>{Version}</string>
+	<key>CFBundleVersion</key>
+	<string>{Version}</string>
+	<key>NSRequiresAquaSystemAppearance</key>
+	<false/>
+	<key>NSHumanReadableCopyright</key>
+	<string>{Copyright}</string>
+	<key>CFBundleSupportedPlatforms</key>
+	<array>
+		<string>MacOSX</string>
+	</array>
+	<key>NSPrincipalClass</key>
+	<string>NSApplication</string>
+	<key>LSApplicationCategoryType</key>
+	<string>public.app-category.developer-tools</string>
+	<key>LSMinimumSystemVersion</key>
+	<string>10.15</string>
+	<key>LSMinimumSystemVersionByArchitecture</key>
+	<dict>
+		<key>{Arch}</key>
+		<string>10.15</string>
+	</dict>
+	<key>NSHighResolutionCapable</key>
+	<true/>
+</dict>
+</plist>

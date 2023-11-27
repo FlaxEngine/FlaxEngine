@@ -4,6 +4,8 @@
 
 #include "SceneObject.h"
 #include "Engine/Core/Collections/Dictionary.h"
+#include "Engine/Platform/CriticalSection.h"
+#include "Engine/Threading/ThreadLocal.h"
 
 /// <summary>
 /// Helper class for scene objects creation and deserialization utilities.
@@ -21,13 +23,17 @@ public:
     struct Context
     {
         ISerializeModifier* Modifier;
-        int32 CurrentInstance = -1;
+        bool Async = false;
         Array<PrefabInstance> Instances;
         Dictionary<Guid, int32> ObjectToInstance;
+        CriticalSection Locker;
+        ThreadLocal<ISerializeModifier*> Modifiers;
 
         Context(ISerializeModifier* modifier);
+        ~Context();
 
-        void SetupIdsMapping(const SceneObject* obj);
+        ISerializeModifier* GetModifier();
+        void SetupIdsMapping(const SceneObject* obj, ISerializeModifier* modifier) const;
     };
 
     /// <summary>
@@ -72,6 +78,7 @@ public:
         ISerializeModifier* Modifier;
 
         PrefabSyncData(Array<SceneObject*>& sceneObjects, const ISerializable::DeserializeStream& data, ISerializeModifier* modifier);
+        void InitNewObjects();
 
     private:
         struct NewObj
@@ -94,7 +101,7 @@ public:
     /// </remarks>
     /// <param name="context">The serialization context.</param>
     /// <param name="data">The sync data.</param>
-    static void SetupPrefabInstances(Context& context, PrefabSyncData& data);
+    static void SetupPrefabInstances(Context& context, const PrefabSyncData& data);
 
     /// <summary>
     /// Synchronizes the new prefab instances by spawning missing objects that were added to prefab but were not saved with scene objects collection.

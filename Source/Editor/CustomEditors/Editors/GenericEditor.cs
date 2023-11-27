@@ -26,7 +26,7 @@ namespace FlaxEditor.CustomEditors.Editors
         /// Describes object property/field information for custom editors pipeline.
         /// </summary>
         /// <seealso cref="System.IComparable" />
-        protected class ItemInfo : IComparable
+        public class ItemInfo : IComparable
         {
             private Options.GeneralOptions.MembersOrder _membersOrder;
 
@@ -247,8 +247,9 @@ namespace FlaxEditor.CustomEditors.Editors
         /// <param name="type">The type.</param>
         /// <param name="useProperties">True if use type properties.</param>
         /// <param name="useFields">True if use type fields.</param>
+        /// <param name="usePropertiesWithoutSetter">True if use type properties that have only getter method without setter method (aka read-only).</param>
         /// <returns>The items.</returns>
-        protected List<ItemInfo> GetItemsForType(ScriptType type, bool useProperties, bool useFields)
+        public static List<ItemInfo> GetItemsForType(ScriptType type, bool useProperties, bool useFields, bool usePropertiesWithoutSetter = false)
         {
             var items = new List<ItemInfo>();
 
@@ -264,7 +265,7 @@ namespace FlaxEditor.CustomEditors.Editors
                     var showInEditor = attributes.Any(x => x is ShowInEditorAttribute);
 
                     // Skip properties without getter or setter
-                    if (!p.HasGet || (!p.HasSet && !showInEditor))
+                    if (!p.HasGet || (!p.HasSet && !showInEditor && !usePropertiesWithoutSetter))
                         continue;
 
                     // Skip hidden fields, handle special attributes

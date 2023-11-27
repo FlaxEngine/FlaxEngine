@@ -58,6 +58,7 @@ using Mathr = FlaxEngine.Mathf;
 */
 using System;
 using System.Globalization;
+using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -1043,6 +1044,103 @@ namespace FlaxEngine
         }
 
         /// <summary>
+        /// Performs a gradual change of a vector towards a specified target over time
+        /// </summary>
+        /// <param name="current">Current vector.</param>
+        /// <param name="target">Target vector.</param>
+        /// <param name="currentVelocity">Used to store the current velocity.</param>
+        /// <param name="smoothTime">Determines the approximate time it should take to reach the target vector.</param>
+        /// <param name="maxSpeed">Defines the upper limit on the speed of the Smooth Damp.</param>
+        public static Vector3 SmoothDamp(Vector3 current, Vector3 target, ref Vector3 currentVelocity, float smoothTime, float maxSpeed)
+        {
+            return SmoothDamp(current, target, ref currentVelocity, smoothTime, maxSpeed, Time.DeltaTime);
+        }
+
+        /// <summary>
+        /// Performs a gradual change of a vector towards a specified target over time
+        /// </summary>
+        /// <param name="current">Current vector.</param>
+        /// <param name="target">Target vector.</param>
+        /// <param name="currentVelocity">Used to store the current velocity.</param>
+        /// <param name="smoothTime">Determines the approximate time it should take to reach the target vector.</param>
+        public static Vector3 SmoothDamp(Vector3 current, Vector3 target, ref Vector3 currentVelocity, float smoothTime)
+        {
+            return SmoothDamp(current, target, ref currentVelocity, smoothTime, float.PositiveInfinity, Time.DeltaTime);
+        }
+
+        /// <summary>
+        /// Performs a gradual change of a vector towards a specified target over time
+        /// </summary>
+        /// <param name="current">Current vector.</param>
+        /// <param name="target">Target vector.</param>
+        /// <param name="currentVelocity">Used to store the current velocity.</param>
+        /// <param name="smoothTime">Determines the approximate time it should take to reach the target vector.</param>
+        /// <param name="maxSpeed">Defines the upper limit on the speed of the Smooth Damp.</param>
+        /// <param name="deltaTime">Delta Time, represents the time elapsed since last frame.</param>
+        public static Vector3 SmoothDamp(Vector3 current, Vector3 target, ref Vector3 currentVelocity, float smoothTime, [DefaultValue("float.PositiveInfinity")] float maxSpeed, [DefaultValue("Time.DeltaTime")] float deltaTime)
+        {
+            smoothTime = Mathf.Max(0.0001f, smoothTime);
+            Real a = 2f / smoothTime;
+            Real b = a * deltaTime;
+            Real e = 1f / (1f + b + 0.48f * b * b + 0.235f * b * b * b);
+
+            Real change_x = current.X - target.X;
+            Real change_y = current.Y - target.Y;
+            Real change_z = current.Z - target.Z;
+
+            Vector3 originalTo = target;
+
+            Real maxChangeSpeed = maxSpeed * smoothTime;
+            Real changeSq = maxChangeSpeed * maxChangeSpeed;
+            Real sqrLen = change_x * change_x + change_y * change_y + change_z * change_z;
+            if (sqrLen > changeSq)
+            {
+                var len = (Real)Math.Sqrt(sqrLen);
+                change_x = change_x / len * maxChangeSpeed;
+                change_y = change_y / len * maxChangeSpeed;
+                change_z = change_z / len * maxChangeSpeed;
+            }
+
+            target.X = current.X - change_x;
+            target.Y = current.Y - change_y;
+            target.Z = current.Z - change_z;
+
+            Real temp_x = (currentVelocity.X + a * change_x) * deltaTime;
+            Real temp_y = (currentVelocity.Y + a * change_y) * deltaTime;
+            Real temp_z = (currentVelocity.Z + a * change_z) * deltaTime;
+
+            currentVelocity.X = (currentVelocity.X - a * temp_x) * e;
+            currentVelocity.Y = (currentVelocity.Y - a * temp_y) * e;
+            currentVelocity.Z = (currentVelocity.Z - a * temp_z) * e;
+
+            Real output_x = target.X + (change_x + temp_x) * e;
+            Real output_y = target.Y + (change_y + temp_y) * e;
+            Real output_z = target.Z + (change_z + temp_z) * e;
+
+            Real x1 = originalTo.X - current.X;
+            Real y1 = originalTo.Y - current.Y;
+            Real z1 = originalTo.Z - current.Z;
+
+            Real x2 = output_x - originalTo.X;
+            Real y2 = output_y - originalTo.Y;
+            Real z2 = output_z - originalTo.Z;
+
+            if (x1 * x2 + y1 * y2 + z1 * z2 > 0)
+            {
+                output_x = originalTo.X;
+                output_y = originalTo.Y;
+                output_z = originalTo.Z;
+
+                currentVelocity.X = (output_x - originalTo.X) / deltaTime;
+                currentVelocity.Y = (output_y - originalTo.Y) / deltaTime;
+                currentVelocity.Z = (output_z - originalTo.Z) / deltaTime;
+            }
+
+            return new Vector3(output_x, output_y, output_z);
+        }
+
+
+        /// <summary>
         /// Performs a cubic interpolation between two vectors.
         /// </summary>
         /// <param name="start">Start vector.</param>
@@ -1066,6 +1164,23 @@ namespace FlaxEngine
         {
             SmoothStep(ref start, ref end, amount, out var result);
             return result;
+        }
+
+        /// <summary>
+        /// Moves a value current towards target.
+        /// </summary>
+        /// <param name="current">The position to move from.</param>
+        /// <param name="target">The position to move towards.</param>
+        /// <param name="maxDistanceDelta">The maximum distance that can be applied to the value.</param>
+        /// <returns>The new position.</returns>
+        public static Vector3 MoveTowards(Vector3 current, Vector3 target, float maxDistanceDelta)
+        {
+            var to = target - current;
+            var distanceSq = to.LengthSquared;
+            if (distanceSq == 0 || (maxDistanceDelta >= 0 && distanceSq <= maxDistanceDelta * maxDistanceDelta))
+                return target;
+            var scale = maxDistanceDelta / Mathr.Sqrt(distanceSq);
+            return new Vector3(current.X + to.X * scale, current.Y + to.Y * scale, current.Z + to.Z * scale);
         }
 
         /// <summary>

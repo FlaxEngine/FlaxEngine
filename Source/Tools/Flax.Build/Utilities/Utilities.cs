@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace Flax.Build
@@ -745,6 +746,42 @@ namespace Flax.Build
             var text = File.ReadAllText(file);
             text = text.Replace(findWhat, replaceWith);
             File.WriteAllText(file, text);
+        }
+
+        /// <summary>
+        /// Returns back the exe ext for the current platform
+        /// </summary>
+        public static string GetPlatformExecutableExt()
+        {
+            var extEnding = ".exe";
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX) || RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            {
+                extEnding = "";
+            }
+            return extEnding;
+        }
+
+        /// <summary>
+        /// Sorts the directories by name assuming they contain version text. Sorted from lowest to the highest version.
+        /// </summary>
+        /// <param name="paths">The paths array to sort.</param>
+        public static void SortVersionDirectories(string[] paths)
+        {
+            if (paths == null || paths.Length == 0)
+                return;
+            Array.Sort(paths, (a, b) =>
+            {
+                Version va, vb;
+                if (Version.TryParse(a, out va))
+                {
+                    if (Version.TryParse(b, out vb))
+                        return va.CompareTo(vb);
+                    return 1;
+                }
+                if (Version.TryParse(b, out vb))
+                    return -1;
+                return 0;
+            });
         }
     }
 }

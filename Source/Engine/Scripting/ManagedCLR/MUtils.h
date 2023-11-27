@@ -64,8 +64,8 @@ struct MConverter<T, typename TEnableIf<TAnd<TIsPODType<T>, TNot<TIsBaseOf<class
 
     void Unbox(T& result, MObject* data)
     {
-        CHECK(data);
-        Platform::MemoryCopy(&result, MCore::Object::Unbox(data), sizeof(T));
+        if (data)
+            Platform::MemoryCopy(&result, MCore::Object::Unbox(data), sizeof(T));
     }
 
     void ToManagedArray(MArray* result, const Span<T>& data)
@@ -363,11 +363,12 @@ struct MConverter<Array<T>>
 
     void Unbox(Array<T>& result, MObject* data)
     {
-        const int32 length = data ? MCore::Array::GetLength((MArray*)data) : 0;
+        MArray* array = MCore::Array::Unbox(data);
+        const int32 length = array ? MCore::Array::GetLength(array) : 0;
         result.Resize(length);
         MConverter<T> converter;
         Span<T> resultSpan(result.Get(), length);
-        converter.ToNativeArray(resultSpan, (MArray*)data);
+        converter.ToNativeArray(resultSpan, array);
     }
 };
 

@@ -105,6 +105,12 @@ namespace FlaxEngine.GUI
         public Color ForegroundDisabled;
 
         /// <summary>
+        /// The foreground color in viewports (usually have a dark background)
+        /// </summary>
+        [EditorOrder(115)]
+        public Color ForegroundViewport;
+
+        /// <summary>
         /// The background highlighted color.
         /// </summary>
         [EditorOrder(120)]
@@ -163,6 +169,12 @@ namespace FlaxEngine.GUI
         /// </summary>
         [EditorOrder(200)]
         public Color ProgressNormal;
+
+        /// <summary>
+        /// The status bar style
+        /// </summary>
+        [EditorOrder(210)]
+        public StatusbarStyle Statusbar;
 
         /// <summary>
         /// The arrow right icon.
@@ -241,5 +253,27 @@ namespace FlaxEngine.GUI
         /// </summary>
         [EditorOrder(340)]
         public Tooltip SharedTooltip;
+
+        /// <summary>
+        /// Style for the Statusbar
+        /// </summary>
+        [System.Serializable, ShowInEditor]
+        public struct StatusbarStyle
+        {
+            /// <summary>
+            /// Color of the Statusbar when in Play Mode
+            /// </summary>
+            public Color PlayMode;
+
+            /// <summary>
+            /// Color of the Statusbar when in loading state (e.g. when importing assets)
+            /// </summary>
+            public Color Loading;
+
+            /// <summary>
+            /// Color of the Statusbar in its failed state (e.g. with compilation errors)
+            /// </summary>
+            public Color Failed;
+        }
     }
 }

@@ -306,13 +306,8 @@ void JsonWriter::CommonValue(const ::CommonValue& value)
         Matrix(value.AsMatrix);
         break;
     case CommonType::Blob:
-    {
-        ::Array<char> base64;
-        base64.Resize(Encryption::Base64EncodeLength(value.AsBlob.Length));
-        Encryption::Base64Encode(value.AsBlob.Data, value.AsBlob.Length, base64.Get());
-        String(base64.Get(), base64.Count());
+        Blob(value.AsBlob.Data, value.AsBlob.Length);
         break;
-    }
     case CommonType::Object:
         Guid(value.GetObjectId());
         break;

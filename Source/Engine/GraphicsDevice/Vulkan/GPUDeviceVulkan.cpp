@@ -431,7 +431,7 @@ void DeferredDeletionQueueVulkan::EnqueueGenericResource(Type type, uint64 handl
     ScopeLock lock(_locker);
 
 #if BUILD_DEBUG
-    const std::function<bool(const Entry&)> ContainsHandle = [handle](const Entry& e)
+    const Function<bool(const Entry&)> ContainsHandle = [handle](const Entry& e)
     {
         return e.Handle == handle;
     };
@@ -868,7 +868,7 @@ GPUBufferVulkan* HelperResourcesVulkan::GetDummyBuffer()
     if (!_dummyBuffer)
     {
         _dummyBuffer = (GPUBufferVulkan*)_device->CreateBuffer(TEXT("DummyBuffer"));
-        _dummyBuffer->Init(GPUBufferDescription::Buffer(sizeof(int32), GPUBufferFlags::ShaderResource | GPUBufferFlags::UnorderedAccess, PixelFormat::R32_SInt));
+        _dummyBuffer->Init(GPUBufferDescription::Buffer(sizeof(int32) * 256, GPUBufferFlags::ShaderResource | GPUBufferFlags::UnorderedAccess, PixelFormat::R32_SInt));
     }
 
     return _dummyBuffer;
@@ -1078,13 +1078,16 @@ GPUDevice* GPUDeviceVulkan::Create()
 
     VkInstanceCreateInfo instInfo;
     RenderToolsVulkan::ZeroStruct(instInfo, VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO);
+#if PLATFORM_APPLE_FAMILY
+    instInfo.flags |= VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR;
+#endif
     instInfo.pApplicationInfo = &appInfo;
 
     GetInstanceLayersAndExtensions(InstanceExtensions, InstanceLayers, SupportsDebugUtilsExt);
 
     const auto hasExtension = [](const Array<const char*>& extensions, const char* name) -> bool
     {
-        const std::function<bool(const char* const&)> callback = [&name](const char* const& extension) -> bool
+        const Function<bool(const char* const&)> callback = [&name](const char* const& extension) -> bool
         {
             return extension && StringUtils::Compare(extension, name) == 0;
         };
@@ -1701,6 +1704,7 @@ bool GPUDeviceVulkan::Init()
         limits.HasDrawIndirect = PhysicalDeviceLimits.maxDrawIndirectCount >= 1;
         limits.HasAppendConsumeBuffers = false; // TODO: add Append Consume buffers support for Vulkan
         limits.HasSeparateRenderTargetBlendState = true;
+        limits.HasDepthClip = PhysicalDeviceFeatures.depthClamp;
         limits.HasDepthAsSRV = true;
         limits.HasReadOnlyDepth = true;
         limits.HasMultisampleDepthAsSRV = !!PhysicalDeviceFeatures.sampleRateShading;

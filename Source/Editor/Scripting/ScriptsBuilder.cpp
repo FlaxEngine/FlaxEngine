@@ -170,7 +170,7 @@ bool ScriptsBuilder::IsSourceWorkspaceDirty()
 bool ScriptsBuilder::IsSourceDirtyFor(const TimeSpan& timeout)
 {
     ScopeLock scopeLock(_locker);
-    return _lastSourceCodeEdited > (_lastCompileAction + timeout);
+    return _lastSourceCodeEdited > _lastCompileAction && DateTime::Now() > _lastSourceCodeEdited + timeout;
 }
 
 bool ScriptsBuilder::IsCompiling()
@@ -246,20 +246,17 @@ bool ScriptsBuilder::RunBuildTool(const StringView& args, const StringView& work
         Log::FileNotFoundException(monoPath).SetLevel(LogType::Fatal);
         return true;
     }
-    //const String monoPath = TEXT("mono");
-    cmdLine.Append(TEXT("\""));
+    const String monoPath = TEXT("mono");
     cmdLine.Append(monoPath);
-    cmdLine.Append(TEXT("\" "));
+    cmdLine.Append(TEXT(" "));
     // TODO: Set env var for the mono MONO_GC_PARAMS=nursery-size64m to boost build performance -> profile it
 #endif
-    cmdLine.Append(TEXT("\""));
     cmdLine.Append(buildToolPath);
-    cmdLine.Append(TEXT("\" "));
-    cmdLine.Append(args.Get(), args.Length());
 
     // Call build tool
     CreateProcessSettings procSettings;
     procSettings.FileName = StringView(*cmdLine, cmdLine.Length());
+    procSettings.Arguments = args.Get();
     procSettings.WorkingDirectory = workingDir;
     const int32 result = Platform::CreateProcess(procSettings);
     if (result != 0)
@@ -269,7 +266,7 @@ bool ScriptsBuilder::RunBuildTool(const StringView& args, const StringView& work
 
 bool ScriptsBuilder::GenerateProject(const StringView& customArgs)
 {
-    String args(TEXT("-log -genproject "));
+    String args(TEXT("-log -mutex -genproject "));
     args += customArgs;
     _wasProjectStructureChanged = false;
     return RunBuildTool(args);
@@ -672,7 +669,7 @@ void ScriptsBuilderService::Update()
     }
 
     // Check if compile code (if has been edited)
-    const TimeSpan timeToCallCompileIfDirty = TimeSpan::FromMilliseconds(50);
+    const TimeSpan timeToCallCompileIfDirty = TimeSpan::FromMilliseconds(150);
     auto mainWindow = Engine::MainWindow;
     if (ScriptsBuilder::IsSourceDirtyFor(timeToCallCompileIfDirty) && mainWindow && mainWindow->IsFocused())
     {

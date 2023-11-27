@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Text;
 using Flax.Build;
 using Flax.Build.Platforms;
 
@@ -17,10 +18,14 @@ namespace Flax.Deploy
         {
             if (string.IsNullOrEmpty(Configuration.DeployCert))
                 return;
+            Log.Info("Code signing file: " + file);
             switch (Platform.BuildTargetPlatform)
             {
             case TargetPlatform.Windows:
                 VCEnvironment.CodeSign(file, Configuration.DeployCert, Configuration.DeployCertPass);
+                break;
+            case TargetPlatform.Mac:
+                MacPlatform.CodeSign(file, Configuration.DeployCert);
                 break;
             }
         }
@@ -122,10 +127,98 @@ namespace Flax.Deploy
                 // Deploy project
                 DeployFile(RootPath, OutputPath, "Flax.flaxproj");
 
+                // When deploying Editor with Platforms at once then bundle them inside it
+                if (Configuration.DeployPlatforms && Platforms.PackagedPlatforms != null)
+                {
+                    foreach (var platform in Platforms.PackagedPlatforms)
+                    {
+                        Log.Info(string.Empty);
+                        Log.Info($"Bunding {platform} platform with Editor");
+                        Log.Info(string.Empty);
+
+                        string platformName = platform.ToString();
+                        string platformFiles = Path.Combine(Deployer.PackageOutputPath, platformName);
+                        string platformData = Path.Combine(OutputPath, "Source", "Platforms", platformName);
+                        if (Directory.Exists(platformFiles))
+                        {
+                            // Copy deployed files
+                            Utilities.DirectoryCopy(platformFiles, platformData);
+                        }
+                        else
+                        {
+                            // Extract deployed files
+                            var packageZipPath = Path.Combine(Deployer.PackageOutputPath, platformName + ".zip");
+                            Log.Verbose(packageZipPath + " -> " + platformData);
+                            System.IO.Compression.ZipFile.ExtractToDirectory(packageZipPath, platformData, true);
+                        }
+                    }
+                }
+
+                // Package Editor into macOS app
+                if (Platform.BuildTargetPlatform == TargetPlatform.Mac)
+                {
+                    var arch = Platform.BuildTargetArchitecture;
+                    Log.Info(string.Empty);
+                    Log.Info("Creating macOS app...");
+                    var appPath = Path.Combine(Deployer.PackageOutputPath, "FlaxEditor.app");
+                    var appContentsPath = Path.Combine(appPath, "Contents");
+                    var appBinariesPath = Path.Combine(appContentsPath, "MacOS");
+                    Utilities.DirectoryDelete(appPath);
+                    Directory.CreateDirectory(appPath);
+                    Directory.CreateDirectory(appContentsPath);
+                    Directory.CreateDirectory(appBinariesPath);
+
+                    // Copy icons set
+                    Directory.CreateDirectory(Path.Combine(appContentsPath, "Resources"));
+                    Utilities.FileCopy(Path.Combine(Globals.EngineRoot, "Source/Platforms/Mac/Default.icns"), Path.Combine(appContentsPath, "Resources/icon.icns"));
+
+                    // Create PkgInfo file
+                    File.WriteAllText(Path.Combine(appContentsPath, "PkgInfo"), "APPL???", Encoding.ASCII);
+
+                    // Create Info.plist
+                    var plist = File.ReadAllText(Path.Combine(Globals.EngineRoot, "Source/Platforms/Mac/Default.plist"));
+                    var flaxProject = EngineTarget.EngineProject;
+                    plist = plist.Replace("{Version}", flaxProject.Version.ToString());
+                    plist = plist.Replace("{Copyright}", flaxProject.Copyright);
+                    plist = plist.Replace("{Executable}", "FlaxEditor");
+                    plist = plist.Replace("{Arch}", arch == TargetArchitecture.ARM64 ? "arm64" : "x86_64");
+                    File.WriteAllText(Path.Combine(appContentsPath, "Info.plist"), plist, Encoding.ASCII);
+
+                    // Copy output editor files
+                    Utilities.DirectoryCopy(OutputPath, appContentsPath);
+
+                    // Copy native binaries for app execution
+                    var defaultEditorConfig = "Development";
+                    var ediotrBinariesPath = Path.Combine(appContentsPath, "Binaries/Editor/Mac", defaultEditorConfig);
+                    Utilities.DirectoryCopy(ediotrBinariesPath, appBinariesPath, true, true);
+
+                    // Sign app resources
+                    CodeSign(appPath);
+
+                    // Build a disk image
+                    var dmgPath = Path.Combine(Deployer.PackageOutputPath, "FlaxEditor.dmg");
+                    Log.Info(string.Empty);
+                    Log.Info("Building disk image...");
+                    if (File.Exists(dmgPath))
+                        File.Delete(dmgPath);
+                    Utilities.Run("hdiutil", $"create -srcFolder \"{appPath}\" -o \"{dmgPath}\"", null, null, Utilities.RunOptions.Default | Utilities.RunOptions.ThrowExceptionOnError);
+                    CodeSign(dmgPath);
+                    Log.Info("Output disk image size: " + Utilities.GetFileSize(dmgPath));
+
+                    // Notarize disk image
+                    if (!string.IsNullOrEmpty(Configuration.DeployKeychainProfile))
+                    {
+                        Log.Info(string.Empty);
+                        Log.Info("Notarizing disk image...");
+                        Utilities.Run("xcrun", $"notarytool submit \"{dmgPath}\" --wait --keychain-profile \"{Configuration.DeployKeychainProfile}\"", null, null, Utilities.RunOptions.Default | Utilities.RunOptions.ThrowExceptionOnError);
+                        Utilities.Run("xcrun", $"stapler staple \"{dmgPath}\"", null, null, Utilities.RunOptions.Default | Utilities.RunOptions.ThrowExceptionOnError);
+                        Log.Info("App notarized for macOS distribution!");
+                    }
+                }
+
                 // Compress
                 if (Configuration.DontCompress)
                     return;
-
                 Log.Info(string.Empty);
                 Log.Info("Compressing editor files...");
                 string editorPackageZipPath;
@@ -254,6 +347,11 @@ namespace Flax.Deploy
                     Utilities.Run("strip", "FlaxEditor", null, dst, Utilities.RunOptions.None);
                     Utilities.Run("strip", "FlaxEditor.dylib", null, dst, Utilities.RunOptions.None);
                     Utilities.Run("strip", "libMoltenVK.dylib", null, dst, Utilities.RunOptions.None);
+
+                    // Sign binaries
+                    CodeSign(Path.Combine(dst, "FlaxEditor"));
+                    CodeSign(Path.Combine(dst, "FlaxEditor.dylib"));
+                    CodeSign(Path.Combine(dst, "libMoltenVK.dylib"));
                 }
             }
         }

@@ -66,6 +66,8 @@ namespace FlaxEngine
         /// <inheritdoc />
         public override void Render(GPUContext context, ref RenderContext renderContext, GPUTexture input, GPUTexture output)
         {
+            if (!Canvas.IsVisible(renderContext.View.RenderLayersMask))
+                return;
             var bounds = Canvas.Bounds;
             bounds.Transformation.Translation -= renderContext.View.Origin;
             if (renderContext.View.Frustum.Contains(bounds.GetBoundingBox()) == ContainmentType.Disjoint)
@@ -493,7 +495,8 @@ namespace FlaxEngine
                 if (_renderer)
                 {
 #if FLAX_EDITOR
-                    _editorTask?.RemoveCustomPostFx(_renderer);
+                    if (_editorTask != null)
+                        _editorTask.RemoveCustomPostFx(_renderer);
 #endif
                     SceneRenderTask.RemoveGlobalCustomPostFx(_renderer);
                     _renderer.Canvas = null;
@@ -870,6 +873,20 @@ namespace FlaxEngine
                 Destroy(_renderer);
                 _renderer = null;
             }
+        }
+
+        internal bool IsVisible()
+        {
+            return IsVisible(MainRenderTask.Instance?.ViewLayersMask ?? LayersMask.Default);
+        }
+
+        internal bool IsVisible(LayersMask layersMask)
+        {
+#if FLAX_EDITOR
+            if (_editorTask != null || _editorRoot != null)
+                return true;
+#endif
+            return layersMask.HasLayer(Layer);
         }
 
 #if FLAX_EDITOR

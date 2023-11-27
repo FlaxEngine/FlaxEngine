@@ -215,6 +215,11 @@
     </Expand>
   </Type>
 
+  <!-- ScriptingType -->
+  <Type Name="ScriptingType">
+    <DisplayString>{Fullname} ({Type})</DisplayString>
+  </Type>
+
   <!-- Tag -->
   <Type Name="Tag">
     <DisplayString Condition="Index == 0">None</DisplayString>

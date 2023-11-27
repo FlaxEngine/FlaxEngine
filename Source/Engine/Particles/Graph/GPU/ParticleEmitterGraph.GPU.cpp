@@ -30,10 +30,10 @@ void ParticleEmitterGraphGPU::ClearCache()
 {
     for (int32 i = 0; i < Nodes.Count(); i++)
     {
-        auto& node = Nodes[i];
+        ParticleEmitterGraphGPUNode& node = Nodes.Get()[i];
         for (int32 j = 0; j < node.Boxes.Count(); j++)
         {
-            node.Boxes[j].Cache.Clear();
+            node.Boxes.Get()[j].Cache.Clear();
         }
     }
 }
@@ -86,9 +86,7 @@ bool ParticleEmitterGPUGenerator::Generate(WriteStream& source, BytesContainer& 
     auto& layout = baseGraph->Layout;
     _attributeValues.Resize(layout.Attributes.Count());
     for (int32 i = 0; i < _attributeValues.Count(); i++)
-    {
         _attributeValues[i] = AttributeCache();
-    }
     _contextUsesKill = false;
 
     // Cache attributes
@@ -112,7 +110,7 @@ bool ParticleEmitterGPUGenerator::Generate(WriteStream& source, BytesContainer& 
 
         for (int32 i = 0; i < baseGraph->InitModules.Count(); i++)
         {
-            ProcessModule(baseGraph->InitModules[i]);
+            ProcessModule(baseGraph->InitModules.Get()[i]);
         }
 
         WriteParticleAttributesWrites();
@@ -135,7 +133,7 @@ bool ParticleEmitterGPUGenerator::Generate(WriteStream& source, BytesContainer& 
 
         for (int32 i = 0; i < baseGraph->UpdateModules.Count(); i++)
         {
-            ProcessModule(baseGraph->UpdateModules[i]);
+            ProcessModule(baseGraph->UpdateModules.Get()[i]);
         }
 
         // Dead particles removal
@@ -321,22 +319,22 @@ void ParticleEmitterGPUGenerator::clearCache()
     // Reset cached boxes values
     for (int32 i = 0; i < _graphs.Count(); i++)
     {
-        _graphs[i]->ClearCache();
+        _graphs.Get()[i]->ClearCache();
     }
-    for (auto& e : _functions)
+    for (const auto& e : _functions)
     {
-        for (auto& node : e.Value->Nodes)
+        auto& nodes = ((ParticleEmitterGraphGPU*)e.Value)->Nodes;
+        for (int32 i = 0; i < nodes.Count(); i++)
         {
+            ParticleEmitterGraphGPUNode& node = nodes.Get()[i];
             for (int32 j = 0; j < node.Boxes.Count(); j++)
-                node.Boxes[j].Cache.Clear();
+                node.Boxes.Get()[j].Cache.Clear();
         }
     }
 
     // Reset cached attributes
     for (int32 i = 0; i < _attributeValues.Count(); i++)
-    {
-        _attributeValues[i] = AttributeCache();
-    }
+        _attributeValues.Get()[i] = AttributeCache();
 
     _contextUsesKill = false;
 }
@@ -344,10 +342,11 @@ void ParticleEmitterGPUGenerator::clearCache()
 void ParticleEmitterGPUGenerator::WriteParticleAttributesWrites()
 {
     bool hadAnyWrite = false;
+    ParticleEmitterGraphGPU* graph = GetRootGraph();
     for (int32 i = 0; i < _attributeValues.Count(); i++)
     {
         auto& value = _attributeValues[i];
-        auto& attribute = ((ParticleEmitterGraphGPU*)_graphStack.Peek())->Layout.Attributes[i];
+        auto& attribute = graph->Layout.Attributes[i];
 
         // Skip not used attributes or read-only attributes
         if (value.Variable.Type == VariantType::Null || ((int)value.Access & (int)AccessMode::Write) == 0)

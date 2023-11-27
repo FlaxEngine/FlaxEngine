@@ -49,6 +49,8 @@ namespace FlaxEditor.Windows.Profiler
         /// <returns>The sample value</returns>
         public T Get(int index)
         {
+            if (_count == 0 || index >= _data.Length || _data.Length == 0)
+                return default;
             return index == -1 ? _data[_count - 1] : _data[index];
         }
 

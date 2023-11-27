@@ -22,7 +22,7 @@ class ScreenService : public EngineService
 {
 public:
     ScreenService()
-        : EngineService(TEXT("Screen"), 120)
+        : EngineService(TEXT("Screen"), 500)
     {
     }
 
@@ -179,6 +179,11 @@ void Screen::SetGameWindowMode(GameWindowMode windowMode)
         break;
     }
 #endif
+}
+
+Window* Screen::GetMainWindow()
+{
+    return Engine::MainWindow;
 }
 
 void ScreenService::Update()

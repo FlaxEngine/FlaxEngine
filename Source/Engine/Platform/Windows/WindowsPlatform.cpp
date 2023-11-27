@@ -30,6 +30,9 @@
 #endif
 #include "resource.h"
 
+#define CLR_EXCEPTION 0xE0434352
+#define VCPP_EXCEPTION 0xE06D7363
+
 const Char* WindowsPlatform::ApplicationWindowClass = TEXT("FlaxWindow");
 void* WindowsPlatform::Instance = nullptr;
 
@@ -272,6 +275,12 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
 LONG CALLBACK SehExceptionHandler(EXCEPTION_POINTERS* ep)
 {
+    if (ep->ExceptionRecord->ExceptionCode == CLR_EXCEPTION)
+    {
+        // Pass CLR exceptions back to runtime
+        return EXCEPTION_CONTINUE_SEARCH;
+    }
+
     // Skip if engine already crashed
     if (Globals::FatalErrorOccurred)
         return EXCEPTION_CONTINUE_SEARCH;
@@ -442,6 +451,7 @@ DialogResult MessageBox::Show(Window* parent, const StringView& text, const Stri
     default:
         break;
     }
+    flags |= MB_TASKMODAL;
 
     // Show dialog
     int result = MessageBoxW(parent ? static_cast<HWND>(parent->GetNativePtr()) : nullptr, String(text).GetText(), String(caption).GetText(), flags);
@@ -1191,8 +1201,8 @@ void* WindowsPlatform::LoadLibrary(const Char* filename)
         folder = StringView::Empty;
     if (folder.HasChars())
     {
-        String folderNullTerminated(folder);
-        SetDllDirectoryW(folderNullTerminated.Get());
+        const String folderNullTerminated(folder);
+        AddDllDirectory(folderNullTerminated.Get());
     }
 
     // Avoiding windows dialog boxes if missing
@@ -1200,7 +1210,10 @@ void* WindowsPlatform::LoadLibrary(const Char* filename)
     DWORD prevErrorMode = 0;
     const BOOL hasErrorMode = SetThreadErrorMode(errorMode, &prevErrorMode);
 
-    // Load the DLL
+    // Ensure that dll is properly searched
+    SetDefaultDllDirectories(LOAD_LIBRARY_SEARCH_APPLICATION_DIR | LOAD_LIBRARY_SEARCH_DEFAULT_DIRS | LOAD_LIBRARY_SEARCH_SYSTEM32 | LOAD_LIBRARY_SEARCH_USER_DIRS);
+
+    // Load the library
     void* handle = ::LoadLibraryW(filename);
     if (!handle)
     {
@@ -1210,10 +1223,6 @@ void* WindowsPlatform::LoadLibrary(const Char* filename)
     if (hasErrorMode)
     {
         SetThreadErrorMode(prevErrorMode, nullptr);
-    }
-    if (folder.HasChars())
-    {
-        SetDllDirectoryW(nullptr);
     }
 
 #if CRASH_LOG_ENABLE

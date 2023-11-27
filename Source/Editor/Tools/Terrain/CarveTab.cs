@@ -95,14 +95,23 @@ namespace FlaxEditor.Tools.Terrain
                 Offsets = Margin.Zero,
                 Parent = _noTerrainPanel
             };
+
+            var buttonText = "Create new terrain";
             _createTerrainButton = new Button
             {
-                Text = "Create new terrain",
+                Text = buttonText,
                 AnchorPreset = AnchorPresets.MiddleCenter,
                 Offsets = new Margin(-60, 120, -12, 24),
                 Parent = _noTerrainPanel,
                 Enabled = false
             };
+            var textSize = Style.Current.FontMedium.MeasureText(buttonText);
+            if (_createTerrainButton.Width < textSize.X)
+            {
+                _createTerrainButton.LocalX -= (textSize.X - _createTerrainButton.Width) / 2;
+                _createTerrainButton.Width = textSize.X + 6;
+            }
+
             _createTerrainButton.Clicked += OnCreateNewTerrainClicked;
         }
 
@@ -191,13 +200,13 @@ namespace FlaxEditor.Tools.Terrain
             switch (_modes.SelectedTabIndex)
             {
             case 0:
-                Editor.Windows.EditWin.Viewport.SetActiveMode<SculptTerrainGizmoMode>();
+                Editor.Windows.EditWin.Viewport.Gizmos.SetActiveMode<SculptTerrainGizmoMode>();
                 break;
             case 1:
-                Editor.Windows.EditWin.Viewport.SetActiveMode<PaintTerrainGizmoMode>();
+                Editor.Windows.EditWin.Viewport.Gizmos.SetActiveMode<PaintTerrainGizmoMode>();
                 break;
             case 2:
-                Editor.Windows.EditWin.Viewport.SetActiveMode<EditTerrainGizmoMode>();
+                Editor.Windows.EditWin.Viewport.Gizmos.SetActiveMode<EditTerrainGizmoMode>();
                 break;
             default: throw new IndexOutOfRangeException("Invalid carve tab mode.");
             }

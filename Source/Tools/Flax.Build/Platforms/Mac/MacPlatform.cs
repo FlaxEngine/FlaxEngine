@@ -1,5 +1,9 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
+using System;
+using System.IO;
+using System.Runtime.InteropServices;
+
 namespace Flax.Build.Platforms
 {
     /// <summary>
@@ -41,5 +45,47 @@ namespace Flax.Build.Platforms
             default: return false;
             }
         }
+
+        /// <summary>
+        /// Runs codesign tool on macOS to sign the code with a given identity from local keychain.
+        /// </summary>
+        /// <param name="file">Path to file to codesign.</param>
+        /// <param name="signIdenity">App code signing idenity name (from local Mac keychain). Use 'security find-identity -v -p codesigning' to list possible options.</param>
+        public static void CodeSign(string file, string signIdenity)
+        {
+            var isDirectory = Directory.Exists(file);
+            if (!isDirectory && !File.Exists(file))
+                throw new FileNotFoundException("Missing file to sign.", file);
+            string cmdLine = string.Format("--force --timestamp -s \"{0}\" \"{1}\"", signIdenity, file);
+            if (isDirectory)
+            {
+                // Automatically sign contents
+                cmdLine += " --deep";
+            }
+            {
+                // Enable the hardened runtime
+                cmdLine += " --options=runtime";
+            }
+            {
+                // Add entitlements file with some settings for the app execution
+                cmdLine += string.Format(" --entitlements \"{0}\"", Path.Combine(Globals.EngineRoot, "Source/Platforms/Mac/Default.entitlements"));
+            }
+            Utilities.Run("codesign", cmdLine, null, null, Utilities.RunOptions.Default | Utilities.RunOptions.ThrowExceptionOnError);
+        }
+
+        /// <summary>
+        /// Returns true if running an x64 binary an arm64 host machine.
+        /// </summary>
+        public unsafe static bool GetProcessIsTranslated()
+		{
+			int ret = 0;
+			ulong size = sizeof(int);
+			if (sysctlbyname("sysctl.proc_translated", &ret, &size, null, 0) == -1)
+				return false;
+			return ret != 0;
+		}
+
+        [DllImport("c")]
+		private static unsafe extern int sysctlbyname(string name, void* oldp, ulong* oldlenp, void* newp, ulong newlen);
     }
 }

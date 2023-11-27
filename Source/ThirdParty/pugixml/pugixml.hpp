@@ -452,14 +452,12 @@ namespace pugi
 
 		// Get child, attribute or next/previous sibling with the specified name
 		xml_node child(const char_t* name) const;
-		xml_node child_or_append(const char_t* name);
 		xml_attribute attribute(const char_t* name) const;
 		xml_node next_sibling(const char_t* name) const;
 		xml_node previous_sibling(const char_t* name) const;
 
 		// Get child value of current node; that is, value of the first child node of type PCDATA/CDATA
 		const char_t* child_value() const;
-		bool set_child_value(const char_t* rhs);
 
 		// Get child value of child with specified name. Equivalent to child(name).child_value().
 		const char_t* child_value(const char_t* name) const;

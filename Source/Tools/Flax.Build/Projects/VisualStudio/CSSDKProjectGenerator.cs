@@ -26,7 +26,7 @@ namespace Flax.Build.Projects.VisualStudio
         public override TargetType? Type => TargetType.DotNetCore;
 
         /// <inheritdoc />
-        public override void GenerateProject(Project project)
+        public override void GenerateProject(Project project, string solutionPath)
         {
             var csProjectFileContent = new StringBuilder();
 
@@ -52,6 +52,11 @@ namespace Flax.Build.Projects.VisualStudio
                     break;
                 }
             }
+
+            // Try to reuse the existing project guid from solution file
+            vsProject.ProjectGuid = GetProjectGuid(solutionPath, vsProject.Name);
+            if (vsProject.ProjectGuid == Guid.Empty)
+                vsProject.ProjectGuid = Guid.NewGuid();
 
             // Header
             csProjectFileContent.AppendLine("<Project Sdk=\"Microsoft.NET.Sdk\">");
@@ -85,6 +90,11 @@ namespace Flax.Build.Projects.VisualStudio
             var baseConfiguration = project.Configurations.First();
             var baseOutputDir = Utilities.MakePathRelativeTo(project.CSharp.OutputPath ?? baseConfiguration.TargetBuildOptions.OutputFolder, projectDirectory);
             var baseIntermediateOutputPath = Utilities.MakePathRelativeTo(project.CSharp.IntermediateOutputPath ?? Path.Combine(baseConfiguration.TargetBuildOptions.IntermediateFolder, "CSharp"), projectDirectory);
+            
+            bool isMainProject = Globals.Project.ProjectFolderPath == project.WorkspaceRootPath && project.Name != "BuildScripts" && (Globals.Project.Name != "Flax" || project.Name != "FlaxEngine");
+            var flaxBuildTargetsFilename = isMainProject ? "Flax.Build.CSharp.targets" : "Flax.Build.CSharp.SkipBuild.targets";
+            var cacheProjectsPath = Utilities.MakePathRelativeTo(Path.Combine(Globals.Root, "Cache", "Projects"), projectDirectory);
+            var flaxBuildTargetsPath = !string.IsNullOrEmpty(cacheProjectsPath) ? Path.Combine(cacheProjectsPath, flaxBuildTargetsFilename) : flaxBuildTargetsFilename;
 
             csProjectFileContent.AppendLine("    <TargetFramework>net7.0</TargetFramework>");
             csProjectFileContent.AppendLine("    <ImplicitUsings>disable</ImplicitUsings>");
@@ -101,14 +111,14 @@ namespace Flax.Build.Projects.VisualStudio
             csProjectFileContent.AppendLine("    <LangVersion>11.0</LangVersion>");
             csProjectFileContent.AppendLine("    <FileAlignment>512</FileAlignment>");
 
-            // Needed for Hostfxr
-            csProjectFileContent.AppendLine("    <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>");
-            csProjectFileContent.AppendLine("    <EnableDynamicLoading>true</EnableDynamicLoading>");
             //csProjectFileContent.AppendLine("    <CopyLocalLockFileAssemblies>false</CopyLocalLockFileAssemblies>"); // TODO: use it to reduce burden of framework libs
 
-            // This needs to be set here to fix errors in VS
-            csProjectFileContent.AppendLine(string.Format("    <OutDir>{0}</OutDir>", baseOutputDir));
-            csProjectFileContent.AppendLine(string.Format("    <IntermediateOutputPath>{0}</IntermediateOutputPath>", baseIntermediateOutputPath));
+            // Custom .targets file for overriding MSBuild build tasks
+            csProjectFileContent.AppendLine(string.Format("    <CustomAfterMicrosoftCommonTargets>$(MSBuildThisFileDirectory){0}</CustomAfterMicrosoftCommonTargets>", flaxBuildTargetsPath));
+
+            // Hide annoying warnings during build
+            csProjectFileContent.AppendLine("    <RestorePackages>false</RestorePackages>");
+            csProjectFileContent.AppendLine("    <DisableFastUpToDateCheck>True</DisableFastUpToDateCheck>");
 
             csProjectFileContent.AppendLine("  </PropertyGroup>");
             csProjectFileContent.AppendLine("");
@@ -174,8 +184,35 @@ namespace Flax.Build.Projects.VisualStudio
                 else
                     fileType = "None";
 
-                var projectPath = Utilities.MakePathRelativeTo(file, projectDirectory);
-                csProjectFileContent.AppendLine(string.Format("    <{0} Include=\"{1}\" />", fileType, projectPath));
+                var filePath = file.Replace('/', '\\'); // Normalize path
+                var projectPath = Utilities.MakePathRelativeTo(filePath, projectDirectory);
+                string linkPath = null;
+                if (projectPath.StartsWith(@"..\..\..\"))
+                {
+                    // Create folder structure for project external files
+                    var sourceIndex = filePath.LastIndexOf(@"\Source\");
+                    if (sourceIndex != -1)
+                    {
+                        projectPath = filePath;
+                        string fileProjectRoot = filePath.Substring(0, sourceIndex);
+                        string fileProjectName = Path.GetFileName(fileProjectRoot);
+                        string fileProjectRelativePath = filePath.Substring(sourceIndex + 1);
+
+                        // Remove Source-directory from path
+                        if (fileProjectRelativePath.IndexOf('\\') != -1)
+                            fileProjectRelativePath = fileProjectRelativePath.Substring(fileProjectRelativePath.IndexOf('\\') + 1);
+
+                        if (fileProjectRoot == project.SourceFolderPath)
+                            linkPath = fileProjectRelativePath;
+                        else // BuildScripts project
+                            linkPath = Path.Combine(fileProjectName, fileProjectRelativePath);
+                    }
+                }
+
+                if (!string.IsNullOrEmpty(linkPath))
+                    csProjectFileContent.AppendLine(string.Format("    <{0} Include=\"{1}\" Link=\"{2}\" />", fileType, projectPath, linkPath));
+                else
+                    csProjectFileContent.AppendLine(string.Format("    <{0} Include=\"{1}\" />", fileType, projectPath));
             }
 
             if (project.GeneratedSourceFiles != null)
@@ -188,7 +225,8 @@ namespace Flax.Build.Projects.VisualStudio
                     else
                         fileType = "None";
 
-                    csProjectFileContent.AppendLine(string.Format("    <{0} Visible=\"false\" Include=\"{1}\" />", fileType, file));
+                    var filePath = file.Replace('/', '\\');
+                    csProjectFileContent.AppendLine(string.Format("    <{0} Visible=\"false\" Include=\"{1}\" />", fileType, filePath));
                 }
             }
 

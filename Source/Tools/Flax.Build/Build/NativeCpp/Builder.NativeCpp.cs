@@ -403,7 +403,7 @@ namespace Flax.Build
                     moduleOptions.PrivateIncludePaths.AddRange(dependencyOptions.PublicIncludePaths);
                     moduleOptions.Libraries.AddRange(dependencyOptions.Libraries);
                     moduleOptions.DelayLoadLibraries.AddRange(dependencyOptions.DelayLoadLibraries);
-                    moduleOptions.ScriptingAPI.Add(dependencyOptions.ScriptingAPI, false);
+                    moduleOptions.ScriptingAPI.Add(dependencyOptions.ScriptingAPI);
                     moduleOptions.ExternalModules.AddRange(dependencyOptions.ExternalModules);
                 }
             }
@@ -418,7 +418,7 @@ namespace Flax.Build
                     moduleOptions.PublicIncludePaths.AddRange(dependencyOptions.PublicIncludePaths);
                     moduleOptions.Libraries.AddRange(dependencyOptions.Libraries);
                     moduleOptions.DelayLoadLibraries.AddRange(dependencyOptions.DelayLoadLibraries);
-                    moduleOptions.ScriptingAPI.Add(dependencyOptions.ScriptingAPI, false);
+                    moduleOptions.ScriptingAPI.Add(dependencyOptions.ScriptingAPI);
                     moduleOptions.ExternalModules.AddRange(dependencyOptions.ExternalModules);
                 }
             }
@@ -628,7 +628,7 @@ namespace Flax.Build
                         }
                     }
                     if (failed)
-                        throw new Exception($"Failed to build target {target.Name}. See log.");
+                        throw new BuildException($"Failed to build target {target.Name}. See log.");
                 }
                 else
                 {
@@ -689,7 +689,7 @@ namespace Flax.Build
                         }
                     }
                     if (failed)
-                        throw new Exception($"Failed to build target {target.Name}. See log.");
+                        throw new BuildException($"Failed to build target {target.Name}. See log.");
                 }
                 else
                 {

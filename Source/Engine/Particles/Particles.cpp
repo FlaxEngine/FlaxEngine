@@ -938,7 +938,8 @@ void Particles::DrawParticles(RenderContext& renderContext, ParticleEffect* effe
     // Setup a draw call common data
     DrawCall drawCall;
     drawCall.PerInstanceRandom = effect->GetPerInstanceRandom();
-    drawCall.ObjectPosition = effect->GetPosition();
+    drawCall.ObjectPosition = effect->GetSphere().Center - view.Origin;
+    drawCall.ObjectRadius = effect->GetSphere().Radius;
 
     // Draw all emitters
     for (int32 emitterIndex = 0; emitterIndex < effect->Instance.Emitters.Count(); emitterIndex++)
@@ -1282,8 +1283,8 @@ void ParticlesSystem::Job(int32 index)
         updateBounds = true;
     }
     // TODO: if using fixed timestep quantize the dt and accumulate remaining part for the next update?
-    if (dt <= 1.0f / 240.0f)
-        return;
+    //if (dt <= 1.0f / 240.0f)
+    //    return;
     dt *= effect->SimulationSpeed;
     instance.Time += dt;
     const float fps = particleSystem->FramesPerSecond;
@@ -1317,6 +1318,8 @@ void ParticlesSystem::Job(int32 index)
                     emitterInstance.Buffer = nullptr;
                 }
             }
+            // Stop playing effect.
+            effect->Stop();
             return;
         }
     }
@@ -1331,7 +1334,8 @@ void ParticlesSystem::Job(int32 index)
         auto emitter = particleSystem->Emitters[track.AsEmitter.Index].Get();
         auto& data = instance.Emitters[track.AsEmitter.Index];
         ASSERT(emitter && emitter->IsLoaded());
-        ASSERT(emitter->Capacity != 0 && emitter->Graph.Layout.Size != 0);
+        if (emitter->Capacity == 0 || emitter->Graph.Layout.Size == 0)
+            continue;
         PROFILE_CPU_ASSET(emitter);
 
         // Calculate new time position

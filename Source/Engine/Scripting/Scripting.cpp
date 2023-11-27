@@ -28,8 +28,8 @@
 #include "Engine/Content/Content.h"
 #include "Engine/Engine/EngineService.h"
 #include "Engine/Engine/Globals.h"
+#include "Engine/Engine/Time.h"
 #include "Engine/Graphics/RenderTask.h"
-#include "Engine/Platform/MemoryStats.h"
 #include "Engine/Serialization/JsonTools.h"
 
 extern void registerFlaxEngineInternalCalls();
@@ -104,7 +104,7 @@ namespace
     MMethod* _method_LateFixedUpdate = nullptr;
     MMethod* _method_Draw = nullptr;
     MMethod* _method_Exit = nullptr;
-    Array<BinaryModule*, InlinedAllocation<64>> _nonNativeModules;
+    Dictionary<StringAnsi, BinaryModule*, InlinedAllocation<64>> _nonNativeModules;
 #if USE_EDITOR
     bool LastBinariesLoadTriggeredCompilation = false;
 #endif
@@ -127,11 +127,6 @@ void onEngineUnloading(MAssembly* assembly);
 bool ScriptingService::Init()
 {
     const auto startTime = DateTime::NowUTC();
-
-    // Link for assemblies events
-    auto engineAssembly = ((NativeBinaryModule*)GetBinaryModuleFlaxEngine())->Assembly;
-    engineAssembly->Loaded.Bind(onEngineLoaded);
-    engineAssembly->Unloading.Bind(onEngineUnloading);
 
     // Initialize managed runtime
     if (MCore::LoadEngine())
@@ -198,6 +193,14 @@ void ScriptingService::Update()
 {
     PROFILE_CPU_NAMED("Scripting::Update");
     INVOKE_EVENT(Update);
+
+#ifdef USE_NETCORE
+    // Force GC to run in background periodically to avoid large blocking collections causing hitches
+    if (Time::Update.TicksCount % 60 == 0)
+    {
+        MCore::GC::Collect(MCore::GC::MaxGeneration(), MGCCollectionMode::Forced, false, false);
+    }
+#endif
 }
 
 void ScriptingService::LateUpdate()
@@ -335,6 +338,8 @@ bool Scripting::LoadBinaryModules(const String& path, const String& projectFolde
             // Check if that module has been already registered
             BinaryModule* module = BinaryModule::GetModule(nameAnsi);
             if (!module)
+                _nonNativeModules.TryGet(nameAnsi, module);
+            if (!module)
             {
                 // C++
                 if (nativePath.HasChars())
@@ -403,7 +408,7 @@ bool Scripting::LoadBinaryModules(const String& path, const String& projectFolde
                 {
                     // Create module if native library is not used
                     module = New<ManagedBinaryModule>(nameAnsi);
-                    _nonNativeModules.Add(module);
+                    _nonNativeModules.Add(nameAnsi, module);
                 }
             }
 
@@ -431,6 +436,7 @@ bool Scripting::Load()
     PROFILE_CPU();
     // Note: this action can be called from main thread (due to Mono problems with assemblies actions from other threads)
     ASSERT(IsInMainThread());
+    ScopeLock lock(BinaryModule::Locker);
 
 #if USE_CSHARP
     // Load C# core assembly
@@ -477,26 +483,32 @@ bool Scripting::Load()
     // Load FlaxEngine
     const String flaxEnginePath = Globals::BinariesFolder / TEXT("FlaxEngine.CSharp.dll");
     auto* flaxEngineModule = (NativeBinaryModule*)GetBinaryModuleFlaxEngine();
-    if (flaxEngineModule->Assembly->Load(flaxEnginePath))
+    if (!flaxEngineModule->Assembly->IsLoaded())
     {
-        LOG(Error, "Failed to load FlaxEngine C# assembly.");
-        return true;
-    }
+        if (flaxEngineModule->Assembly->Load(flaxEnginePath))
+        {
+            LOG(Error, "Failed to load FlaxEngine C# assembly.");
+            return true;
+        }
+        onEngineLoaded(flaxEngineModule->Assembly);
 
-    // Insert type aliases for vector types that don't exist in C++ but are just typedef (properly redirect them to actual types)
-    // TODO: add support for automatic typedef aliases setup for scripting module to properly lookup type from the alias typename
+        // Insert type aliases for vector types that don't exist in C++ but are just typedef (properly redirect them to actual types)
+        // TODO: add support for automatic typedef aliases setup for scripting module to properly lookup type from the alias typename
 #if USE_LARGE_WORLDS
-    flaxEngineModule->TypeNameToTypeIndex["FlaxEngine.Vector2"] = flaxEngineModule->TypeNameToTypeIndex["FlaxEngine.Double2"];
-    flaxEngineModule->TypeNameToTypeIndex["FlaxEngine.Vector3"] = flaxEngineModule->TypeNameToTypeIndex["FlaxEngine.Double3"];
-    flaxEngineModule->TypeNameToTypeIndex["FlaxEngine.Vector4"] = flaxEngineModule->TypeNameToTypeIndex["FlaxEngine.Double4"];
+        flaxEngineModule->TypeNameToTypeIndex["FlaxEngine.Vector2"] = flaxEngineModule->TypeNameToTypeIndex["FlaxEngine.Double2"];
+        flaxEngineModule->TypeNameToTypeIndex["FlaxEngine.Vector3"] = flaxEngineModule->TypeNameToTypeIndex["FlaxEngine.Double3"];
+        flaxEngineModule->TypeNameToTypeIndex["FlaxEngine.Vector4"] = flaxEngineModule->TypeNameToTypeIndex["FlaxEngine.Double4"];
 #else
-    flaxEngineModule->TypeNameToTypeIndex["FlaxEngine.Vector2"] = flaxEngineModule->TypeNameToTypeIndex["FlaxEngine.Float2"];
-    flaxEngineModule->TypeNameToTypeIndex["FlaxEngine.Vector3"] = flaxEngineModule->TypeNameToTypeIndex["FlaxEngine.Float3"];
-    flaxEngineModule->TypeNameToTypeIndex["FlaxEngine.Vector4"] = flaxEngineModule->TypeNameToTypeIndex["FlaxEngine.Float4"];
+        flaxEngineModule->TypeNameToTypeIndex["FlaxEngine.Vector2"] = flaxEngineModule->TypeNameToTypeIndex["FlaxEngine.Float2"];
+        flaxEngineModule->TypeNameToTypeIndex["FlaxEngine.Vector3"] = flaxEngineModule->TypeNameToTypeIndex["FlaxEngine.Float3"];
+        flaxEngineModule->TypeNameToTypeIndex["FlaxEngine.Vector4"] = flaxEngineModule->TypeNameToTypeIndex["FlaxEngine.Float4"];
 #endif
-    flaxEngineModule->ClassToTypeIndex[flaxEngineModule->Assembly->GetClass("FlaxEngine.Vector2")] = flaxEngineModule->TypeNameToTypeIndex["FlaxEngine.Vector2"];
-    flaxEngineModule->ClassToTypeIndex[flaxEngineModule->Assembly->GetClass("FlaxEngine.Vector3")] = flaxEngineModule->TypeNameToTypeIndex["FlaxEngine.Vector3"];
-    flaxEngineModule->ClassToTypeIndex[flaxEngineModule->Assembly->GetClass("FlaxEngine.Vector4")] = flaxEngineModule->TypeNameToTypeIndex["FlaxEngine.Vector4"];
+#if USE_CSHARP
+        flaxEngineModule->ClassToTypeIndex[flaxEngineModule->Assembly->GetClass("FlaxEngine.Vector2")] = flaxEngineModule->TypeNameToTypeIndex["FlaxEngine.Vector2"];
+        flaxEngineModule->ClassToTypeIndex[flaxEngineModule->Assembly->GetClass("FlaxEngine.Vector3")] = flaxEngineModule->TypeNameToTypeIndex["FlaxEngine.Vector3"];
+        flaxEngineModule->ClassToTypeIndex[flaxEngineModule->Assembly->GetClass("FlaxEngine.Vector4")] = flaxEngineModule->TypeNameToTypeIndex["FlaxEngine.Vector4"];
+#endif
+    }
 
 #if USE_EDITOR
     // Skip loading game modules in Editor on startup - Editor loads them later during splash screen (eg. after first compilation)
@@ -584,6 +596,9 @@ void Scripting::Release()
 
         asset->DeleteObjectNow();
     }
+
+    auto* flaxEngineModule = (NativeBinaryModule*)GetBinaryModuleFlaxEngine();
+    onEngineUnloading(flaxEngineModule->Assembly);
 
     // Unload assemblies (from back to front)
     {
@@ -821,6 +836,28 @@ FLAXENGINE_API ScriptingObject* FindObject(const Guid& id, MClass* type)
     return Scripting::FindObject(id, type);
 }
 
+void ScriptingObjectReferenceBase::OnSet(ScriptingObject* object)
+{
+    auto e = _object;
+    if (e != object)
+    {
+        if (e)
+            e->Deleted.Unbind<ScriptingObjectReferenceBase, &ScriptingObjectReferenceBase::OnDeleted>(this);
+        _object = e = object;
+        if (e)
+            e->Deleted.Bind<ScriptingObjectReferenceBase, &ScriptingObjectReferenceBase::OnDeleted>(this);
+        Changed();
+    }
+}
+
+void ScriptingObjectReferenceBase::OnDeleted(ScriptingObject* obj)
+{
+    ASSERT(_object == obj);
+    _object->Deleted.Unbind<ScriptingObjectReferenceBase, &ScriptingObjectReferenceBase::OnDeleted>(this);
+    _object = nullptr;
+    Changed();
+}
+
 ScriptingObject* Scripting::FindObject(Guid id, MClass* type)
 {
     if (!id.IsValid())
@@ -989,30 +1026,28 @@ bool Scripting::IsTypeFromGameScripts(MClass* type)
 
 void Scripting::RegisterObject(ScriptingObject* obj)
 {
+    const Guid id = obj->GetID();
     ScopeLock lock(_objectsLocker);
 
     //ASSERT(!_objectsDictionary.ContainsValue(obj));
 #if ENABLE_ASSERTION
 #if USE_OBJECTS_DISPOSE_CRASHES_DEBUGGING
     ScriptingObjectData other;
-    if (_objectsDictionary.TryGet(obj->GetID(), other))
+    if (_objectsDictionary.TryGet(id, other))
 #else
     ScriptingObject* other;
-    if (_objectsDictionary.TryGet(obj->GetID(), other))
+    if (_objectsDictionary.TryGet(id, other))
 #endif
     {
         // Something went wrong...
-        LOG(Error, "Objects registry already contains object with ID={0} (type '{3}')! Trying to register object {1} (type '{2}').", obj->GetID(), obj->ToString(), String(obj->GetClass()->GetFullName()), String(other->GetClass()->GetFullName()));
-        _objectsDictionary.Remove(obj->GetID());
+        LOG(Error, "Objects registry already contains object with ID={0} (type '{3}')! Trying to register object {1} (type '{2}').", id, obj->ToString(), String(obj->GetClass()->GetFullName()), String(other->GetClass()->GetFullName()));
     }
-#else
-	ASSERT(!_objectsDictionary.ContainsKey(obj->_id));
 #endif
 
 #if USE_OBJECTS_DISPOSE_CRASHES_DEBUGGING
     LOG(Info, "[RegisterObject] obj = 0x{0:x}, {1}", (uint64)obj, String(ScriptingObjectData(obj).TypeName));
 #endif
-    _objectsDictionary.Add(obj->GetID(), obj);
+    _objectsDictionary[id] = obj;
 }
 
 void Scripting::UnregisterObject(ScriptingObject* obj)

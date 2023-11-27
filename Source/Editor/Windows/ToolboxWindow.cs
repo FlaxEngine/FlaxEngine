@@ -116,7 +116,7 @@ namespace FlaxEditor.Windows
         : base(string.Empty, icon)
         {
             Editor = editor;
-            Selected += tab => Editor.Windows.EditWin.Viewport.SetActiveMode<TransformGizmoMode>();
+            Selected += tab => Editor.Windows.EditWin.Viewport.Gizmos.SetActiveMode<TransformGizmoMode>();
             ScriptsBuilder.ScriptsReload += OnScriptsReload;
             ScriptsBuilder.ScriptsReloadEnd += OnScriptsReloadEnd;
 
@@ -353,6 +353,8 @@ namespace FlaxEditor.Windows
         : base(editor, true, ScrollBars.None)
         {
             Title = "Toolbox";
+
+            FlaxEditor.Utilities.Utils.SetupCommonInputActions(this);
         }
 
         /// <inheritdoc />

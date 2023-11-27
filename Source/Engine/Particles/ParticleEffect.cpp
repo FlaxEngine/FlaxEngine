@@ -284,6 +284,7 @@ void ParticleEffect::UpdateSimulation(bool singleFrame)
 void ParticleEffect::Play()
 {
     _isPlaying = true;
+    _isStopped = false;
 }
 
 void ParticleEffect::Pause()
@@ -293,6 +294,7 @@ void ParticleEffect::Pause()
 
 void ParticleEffect::Stop()
 {
+    _isStopped = true;
     _isPlaying = false;
     ResetSimulation();
 }
@@ -402,7 +404,7 @@ SceneRenderTask* ParticleEffect::GetRenderTask() const
 
 #if USE_EDITOR
 
-Array<ParticleEffect::ParameterOverride> ParticleEffect::GetParametersOverrides()
+Array<ParticleEffect::ParameterOverride>& ParticleEffect::GetParametersOverrides()
 {
     CacheModifiedParameters();
     return _parametersOverrides;
@@ -448,7 +450,7 @@ void ParticleEffect::Update()
 void ParticleEffect::UpdateExecuteInEditor()
 {
     // Auto-play in Editor
-    if (!Editor::IsPlayMode)
+    if (!Editor::IsPlayMode && !_isStopped)
     {
         _isPlaying = true;
         Update();
@@ -461,7 +463,6 @@ void ParticleEffect::CacheModifiedParameters()
 {
     if (_parameters.IsEmpty())
         return;
-
     _parametersOverrides.Clear();
     auto& parameters = GetParameters();
     for (auto& param : parameters)

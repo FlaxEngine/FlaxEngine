@@ -154,6 +154,7 @@ namespace FlaxEditor.GUI.ContextMenu
             }
 
             // Unlock and perform controls update
+            Location = Float2.Zero;
             UnlockChildrenRecursive();
             PerformLayout();
 
@@ -162,7 +163,6 @@ namespace FlaxEditor.GUI.ContextMenu
             var dpiSize = Size * dpiScale;
             var locationWS = parent.PointToWindow(location);
             var locationSS = parentWin.PointToScreen(locationWS);
-            Location = Float2.Zero;
             var monitorBounds = Platform.GetMonitorBounds(locationSS);
             var rightBottomLocationSS = locationSS + dpiSize;
             bool isUp = false, isLeft = false;

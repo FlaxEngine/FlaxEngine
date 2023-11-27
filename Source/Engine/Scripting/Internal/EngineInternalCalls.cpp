@@ -190,7 +190,6 @@ DEFINE_INTERNAL_CALL(bool) ScriptingInternal_IsTypeFromGameScripts(MTypeObject* 
 
 DEFINE_INTERNAL_CALL(void) ScriptingInternal_FlushRemovedObjects()
 {
-    ASSERT(IsInMainThread());
     ObjectsRemovalService::Flush();
 }
 

@@ -48,6 +48,22 @@ MAssembly::MAssembly(MDomain* domain, const StringAnsiView& name)
 {
 }
 
+#if USE_NETCORE
+
+MAssembly::MAssembly(MDomain* domain, const StringAnsiView& name, const StringAnsiView& fullname, void* handle)
+    : _handle(handle)
+    , _fullname(fullname)
+    , _domain(domain)
+    , _isLoaded(false)
+    , _isLoading(false)
+    , _hasCachedClasses(false)
+    , _reloadCount(0)
+    , _name(name)
+{
+}
+
+#endif
+
 MAssembly::~MAssembly()
 {
     Unload();

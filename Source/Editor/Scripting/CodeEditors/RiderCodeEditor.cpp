@@ -207,9 +207,9 @@ void RiderCodeEditor::FindEditors(Array<CodeEditor*>* output)
     FileSystem::GetChildDirectories(subDirectories, TEXT("/opt/"));
     
     // Versions installed via JetBrains Toolbox
-    SearchDirectory(&installations, localAppDataPath / TEXT(".local/share/JetBrains/Toolbox/apps/rider/"));
-    FileSystem::GetChildDirectories(subDirectories, localAppDataPath / TEXT(".local/share/JetBrains/Toolbox/apps/Rider/ch-0"));
-    FileSystem::GetChildDirectories(subDirectories, localAppDataPath / TEXT(".local/share/JetBrains/Toolbox/apps/Rider/ch-1")); // Beta versions
+    SearchDirectory(&installations, localAppDataPath / TEXT("JetBrains/Toolbox/apps/rider/"));
+    FileSystem::GetChildDirectories(subDirectories, localAppDataPath / TEXT("JetBrains/Toolbox/apps/Rider/ch-0"));
+    FileSystem::GetChildDirectories(subDirectories, localAppDataPath / TEXT("JetBrains/Toolbox/apps/Rider/ch-1")); // Beta versions
 
     // Detect Flatpak installations
     SearchDirectory(&installations,
@@ -268,8 +268,16 @@ void RiderCodeEditor::OpenFile(const String& path, int32 line)
     // Open file
     line = line > 0 ? line : 1;
     CreateProcessSettings procSettings;
+
+#if !PLATFORM_MAC
     procSettings.FileName = _execPath;
     procSettings.Arguments = String::Format(TEXT("\"{0}\" --line {2} \"{1}\""), _solutionPath, path, line);
+#else
+    // This follows pretty much how all the other engines open rider which deals with cross architecture issues
+    procSettings.FileName = "/usr/bin/open";
+    procSettings.Arguments = String::Format(TEXT("-n -a \"{0}\" --args \"{1}\" --line {3} \"{2}\""), _execPath, _solutionPath, path, line);
+#endif
+
     procSettings.HiddenWindow = false;
     procSettings.WaitForEnd = false;
     procSettings.LogOutput = false;
@@ -287,8 +295,14 @@ void RiderCodeEditor::OpenSolution()
 
     // Open solution
     CreateProcessSettings procSettings;
+#if !PLATFORM_MAC
     procSettings.FileName = _execPath;
     procSettings.Arguments = String::Format(TEXT("\"{0}\""), _solutionPath);
+#else
+    // This follows pretty much how all the other engines open rider which deals with cross architecture issues
+    procSettings.FileName = "/usr/bin/open";
+    procSettings.Arguments = String::Format(TEXT("-n -a \"{0}\" \"{1}\""), _execPath, _solutionPath);
+#endif
     procSettings.HiddenWindow = false;
     procSettings.WaitForEnd = false;
     procSettings.LogOutput = false;

@@ -11,6 +11,7 @@ using System.Collections.Generic;
 using FlaxEditor.Actions;
 using FlaxEditor.Modules;
 using FlaxEditor.GUI.ContextMenu;
+using FlaxEditor.Windows;
 using FlaxEngine;
 using FlaxEngine.Json;
 using FlaxEngine.Utilities;
@@ -206,9 +207,9 @@ namespace FlaxEditor.SceneGraph.Actors
                 }
             }
 
-            public override void OnContextMenu(ContextMenu contextMenu)
+            public override void OnContextMenu(ContextMenu contextMenu, EditorWindow window)
             {
-                ParentNode.OnContextMenu(contextMenu);
+                ParentNode.OnContextMenu(contextMenu, window);
             }
 
             public static SceneGraphNode Create(StateData state)
@@ -275,9 +276,9 @@ namespace FlaxEditor.SceneGraph.Actors
                 DebugDraw.DrawSphere(new BoundingSphere(pos, tangentSize), Color.YellowGreen, 0, false);
             }
 
-            public override void OnContextMenu(ContextMenu contextMenu)
+            public override void OnContextMenu(ContextMenu contextMenu, EditorWindow window)
             {
-                ParentNode.OnContextMenu(contextMenu);
+                ParentNode.OnContextMenu(contextMenu, window);
             }
 
             public override void OnDispose()
@@ -505,9 +506,9 @@ namespace FlaxEditor.SceneGraph.Actors
         }
 
         /// <inheritdoc />
-        public override void OnContextMenu(ContextMenu contextMenu)
+        public override void OnContextMenu(ContextMenu contextMenu, EditorWindow window)
         {
-            base.OnContextMenu(contextMenu);
+            base.OnContextMenu(contextMenu, window);
 
             contextMenu.AddButton("Add spline model", OnAddSplineModel);
             contextMenu.AddButton("Add spline collider", OnAddSplineCollider);

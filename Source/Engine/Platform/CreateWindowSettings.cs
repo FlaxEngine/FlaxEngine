@@ -12,7 +12,7 @@ namespace FlaxEngine
             Position = new Float2(100, 100),
             Size = new Float2(640, 480),
             MinimumSize = Float2.One,
-            MaximumSize = new Float2(4100, 4100),
+            MaximumSize = Float2.Zero, // Unlimited size
             StartPosition = WindowStartPosition.CenterParent,
             HasBorder = true,
             ShowInTaskbar = true,
@@ -23,6 +23,7 @@ namespace FlaxEngine
             AllowDragAndDrop = true,
             IsRegularWindow = true,
             HasSizingFrame = true,
+            ShowAfterFirstPaint = true,
         };
     }
 }

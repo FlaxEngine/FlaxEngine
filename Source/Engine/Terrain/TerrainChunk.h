@@ -3,6 +3,7 @@
 #pragma once
 
 #include "Engine/Core/Math/BoundingBox.h"
+#include "Engine/Core/Math/BoundingSphere.h"
 #include "Engine/Core/Math/Matrix.h"
 #include "Engine/Core/Math/Transform.h"
 #include "Engine/Core/ISerializable.h"
@@ -29,7 +30,7 @@ private:
     Float4 _heightmapUVScaleBias;
     Transform _transform;
     BoundingBox _bounds;
-    Vector3 _boundsCenter;
+    BoundingSphere _sphere;
     float _perInstanceRandom;
     float _yOffset, _yHeight;
 

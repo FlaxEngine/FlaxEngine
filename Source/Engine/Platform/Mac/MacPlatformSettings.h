@@ -12,6 +12,7 @@
 API_CLASS(Sealed, Namespace="FlaxEditor.Content.Settings") class FLAXENGINE_API MacPlatformSettings : public ApplePlatformSettings
 {
     DECLARE_SCRIPTING_TYPE_MINIMAL(MacPlatformSettings);
+    API_AUTO_SERIALIZATION();
 
     /// <summary>
     /// The default game window mode.
@@ -43,22 +44,10 @@ API_CLASS(Sealed, Namespace="FlaxEditor.Content.Settings") class FLAXENGINE_API 
     API_FIELD(Attributes="EditorOrder(1010), EditorDisplay(\"Other\", \"Run In Background\")")
     bool RunInBackground = false;
 
-public:
     /// <summary>
     /// Gets the instance of the settings asset (default value if missing). Object returned by this method is always loaded with valid data to use.
     /// </summary>
     static MacPlatformSettings* Get();
-
-    // [SettingsBase]
-    void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) final override
-    {
-        ApplePlatformSettings::Deserialize(stream, modifier);
-        DESERIALIZE(WindowMode);
-        DESERIALIZE(ScreenWidth);
-        DESERIALIZE(ScreenHeight);
-        DESERIALIZE(ResizableWindow);
-        DESERIALIZE(RunInBackground);
-    }
 };
 
 #if PLATFORM_MAC

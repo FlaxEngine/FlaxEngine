@@ -191,6 +191,8 @@ namespace FlaxEditor.GUI.Tabs
             get => _autoTabsSizeAuto;
             set
             {
+                if (_autoTabsSizeAuto == value)
+                    return;
                 _autoTabsSizeAuto = value;
                 PerformLayout();
             }
@@ -204,11 +206,11 @@ namespace FlaxEditor.GUI.Tabs
             get => _orientation;
             set
             {
+                if (_orientation == value)
+                    return;
                 _orientation = value;
-
                 if (UseScroll)
                     TabsPanel.ScrollBars = _orientation == Orientation.Horizontal ? ScrollBars.Horizontal : ScrollBars.Vertical;
-
                 PerformLayout();
             }
         }
@@ -237,7 +239,7 @@ namespace FlaxEditor.GUI.Tabs
         /// </summary>
         public Tab SelectedTab
         {
-            get => _selectedIndex == -1 && Children.Count > _selectedIndex + 1 ? null : Children[_selectedIndex + 1] as Tab;
+            get => _selectedIndex < 0 || Children.Count <= _selectedIndex ? null : Children[_selectedIndex + 1] as Tab;
             set => SelectedTabIndex = value != null ? Children.IndexOf(value) - 1 : -1;
         }
 
@@ -261,7 +263,12 @@ namespace FlaxEditor.GUI.Tabs
                 // Check if index will change
                 if (_selectedIndex != index)
                 {
-                    SelectedTab?.OnDeselected();
+                    var prev = SelectedTab;
+                    if (prev != null)
+                    {
+                        prev._selectedInTabs = null;
+                        prev.OnDeselected();
+                    }
                     _selectedIndex = index;
                     PerformLayout();
                     OnSelectedTabChanged();
@@ -340,8 +347,13 @@ namespace FlaxEditor.GUI.Tabs
         /// </summary>
         protected virtual void OnSelectedTabChanged()
         {
+            var selectedTab = SelectedTab;
             SelectedTabChanged?.Invoke(this);
-            SelectedTab?.OnSelected();
+            if (selectedTab != null)
+            {
+                selectedTab._selectedInTabs = this;
+                selectedTab.OnSelected();
+            }
         }
 
         /// <inheritdoc />
@@ -401,6 +413,14 @@ namespace FlaxEditor.GUI.Tabs
                     if (TabsPanel.Children[i] is TabHeader tabHeader)
                         tabHeader.Size = tabsSize;
                 }
+            }
+            else if (UseScroll)
+            {
+                // If scroll bar is visible it covers part of the tab header so include this in tab size to improve usability
+                if (_orientation == Orientation.Horizontal && TabsPanel.HScrollBar.Visible)
+                    tabsSize.Y += TabsPanel.HScrollBar.Height;
+                else if (_orientation == Orientation.Vertical && TabsPanel.VScrollBar.Visible)
+                    tabsSize.X += TabsPanel.VScrollBar.Width;
             }
 
             // Fit the tabs panel

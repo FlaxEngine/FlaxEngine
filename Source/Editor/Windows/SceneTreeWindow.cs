@@ -74,7 +74,7 @@ namespace FlaxEditor.Windows
             root.TreeNode.Expand();
             _tree = new Tree(true)
             {
-                Margin = new Margin(0.0f, 0.0f, -16.0f, 0.0f), // Hide root node
+                Margin = new Margin(0.0f, 0.0f, -16.0f, _sceneTreePanel.ScrollBarsSize), // Hide root node
                 IsScrollable = true,
             };
             _tree.AddChild(root.TreeNode);
@@ -142,7 +142,7 @@ namespace FlaxEditor.Windows
             {
                 if (selection.Count != 0)
                     Editor.SceneEditing.Select(actor);
-                actor.TreeNode.StartRenaming(this);
+                actor.TreeNode.StartRenaming(this, _sceneTreePanel);
             }
         }
 
@@ -173,6 +173,9 @@ namespace FlaxEditor.Windows
 
             // Spawn it
             Editor.SceneEditing.Spawn(actor, parentActor);
+
+            Editor.SceneEditing.Select(actor);
+            Rename();
         }
 
         /// <summary>
@@ -420,6 +423,7 @@ namespace FlaxEditor.Windows
                         var actor = item.OnEditorDrop(this);
                         actor.Name = item.ShortName;
                         Level.SpawnActor(actor);
+                        Editor.Scene.MarkSceneEdited(actor.Scene);
                     }
                     result = DragDropEffect.Move;
                 }
@@ -437,6 +441,7 @@ namespace FlaxEditor.Windows
                         }
                         actor.Name = item.Name;
                         Level.SpawnActor(actor);
+                        Editor.Scene.MarkSceneEdited(actor.Scene);
                     }
                     result = DragDropEffect.Move;
                 }

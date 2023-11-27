@@ -7,6 +7,7 @@
 #include "Engine/Graphics/GPUPipelineState.h"
 #include "GPUDeviceDX12.h"
 #include "Types.h"
+#include "Engine/Core/Collections/Dictionary.h"
 #include "../IncludeDirectXHeaders.h"
 
 class GPUTextureViewDX12;
@@ -55,7 +56,7 @@ public:
 
 public:
 
-    D3D_PRIMITIVE_TOPOLOGY PrimitiveTopologyType = D3D_PRIMITIVE_TOPOLOGY_UNDEFINED;
+    D3D_PRIMITIVE_TOPOLOGY PrimitiveTopology = D3D_PRIMITIVE_TOPOLOGY_UNDEFINED;
     DxShaderHeader Header;
 
     /// <summary>

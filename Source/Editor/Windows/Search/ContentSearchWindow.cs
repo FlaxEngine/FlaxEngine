@@ -72,6 +72,7 @@ namespace FlaxEngine.Windows.Search
     /// <summary>
     /// The content searching window. Allows to search inside Visual Scripts, Materials, Particles and other assets.
     /// </summary>
+    [HideInEditor]
     internal class ContentSearchWindow : EditorWindow
     {
         /// <summary>
@@ -115,6 +116,7 @@ namespace FlaxEngine.Windows.Search
             }
         }
 
+        [HideInEditor]
         private sealed class SearchResultTreeNode : TreeNode
         {
             public Action<SearchResultTreeNode> Navigate;

@@ -16,14 +16,35 @@ namespace FlaxEngine
         public string Name;
 
         /// <summary>
-        /// Returns true if the event has been triggered during the current frame (e.g. user pressed a key). Use <see cref="Triggered"/> to catch events without active waiting.
+        /// Returns true if the event has been triggered during the current frame (e.g. user pressed a key). Use <see cref="Pressed"/> to catch events without active waiting.
         /// </summary>
         public bool Active => Input.GetAction(Name);
 
         /// <summary>
+        /// Returns the event state. Use Use <see cref="Pressed"/>, <see cref="Pressing"/>, <see cref="Released"/> to catch events without active waiting.
+        /// </summary>
+        public InputActionState State => Input.GetActionState(Name);
+
+        /// <summary>
         /// Occurs when event is triggered (e.g. user pressed a key). Called before scripts update.
         /// </summary>
+        [System.Obsolete("Depreciated in 1.7, use Pressed Action.")]
         public event Action Triggered;
+
+        /// <summary>
+        /// Occurs when event is pressed (e.g. user pressed a key). Called before scripts update.
+        /// </summary>
+        public event Action Pressed;
+        
+        /// <summary>
+        /// Occurs when event is being pressing (e.g. user pressing a key). Called before scripts update.
+        /// </summary>
+        public event Action Pressing;
+        
+        /// <summary>
+        /// Occurs when event is released (e.g. user releases a key). Called before scripts update.
+        /// </summary>
+        public event Action Released;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="InputEvent"/> class.
@@ -51,10 +72,26 @@ namespace FlaxEngine
             Input.ActionTriggered -= Handler;
         }
 
-        private void Handler(string name)
+        private void Handler(string name, InputActionState state)
         {
-            if (string.Equals(name, Name, StringComparison.OrdinalIgnoreCase))
+            if (!string.Equals(name, Name, StringComparison.OrdinalIgnoreCase))
+                return;
+            switch (state)
+            {
+            case InputActionState.None: break;
+            case InputActionState.Waiting: break;
+            case InputActionState.Pressing:
+                Pressing?.Invoke();
+                break;
+            case InputActionState.Press:
                 Triggered?.Invoke();
+                Pressed?.Invoke();
+                break;
+            case InputActionState.Release:
+                Released?.Invoke();
+                break;
+            default: break;
+            }
         }
 
         /// <summary>

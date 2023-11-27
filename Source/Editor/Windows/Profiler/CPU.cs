@@ -92,7 +92,9 @@ namespace FlaxEditor.Windows.Profiler
             };
 
             // Table
-            var headerColor = Style.Current.LightBackground;
+            var style = Style.Current;
+            var headerColor = style.LightBackground;
+            var textColor = style.Foreground;
             _table = new Table
             {
                 Columns = new[]
@@ -103,36 +105,42 @@ namespace FlaxEditor.Windows.Profiler
                         CellAlignment = TextAlignment.Near,
                         Title = "Event",
                         TitleBackgroundColor = headerColor,
+                        TitleColor = textColor,
                     },
                     new ColumnDefinition
                     {
                         Title = "Total",
                         TitleBackgroundColor = headerColor,
                         FormatValue = FormatCellPercentage,
+                        TitleColor = textColor,
                     },
                     new ColumnDefinition
                     {
                         Title = "Self",
                         TitleBackgroundColor = headerColor,
                         FormatValue = FormatCellPercentage,
+                        TitleColor = textColor,
                     },
                     new ColumnDefinition
                     {
                         Title = "Time ms",
                         TitleBackgroundColor = headerColor,
                         FormatValue = FormatCellMs,
+                        TitleColor = textColor,
                     },
                     new ColumnDefinition
                     {
                         Title = "Self ms",
                         TitleBackgroundColor = headerColor,
                         FormatValue = FormatCellMs,
+                        TitleColor = textColor,
                     },
                     new ColumnDefinition
                     {
                         Title = "Memory",
                         TitleBackgroundColor = headerColor,
                         FormatValue = FormatCellBytes,
+                        TitleColor = textColor,
                     },
                 },
                 Parent = layout,
@@ -429,21 +437,8 @@ namespace FlaxEditor.Windows.Profiler
         private void UpdateTable(ref ViewRange viewRange)
         {
             _table.IsLayoutLocked = true;
-            int idx = 0;
-            while (_table.Children.Count > idx)
-            {
-                var child = _table.Children[idx];
-                if (child is Row row)
-                {
-                    _tableRowsCache.Add(row);
-                    child.Parent = null;
-                }
-                else
-                {
-                    idx++;
-                }
-            }
 
+            RecycleTableRows(_table, _tableRowsCache);
             UpdateTableInner(ref viewRange);
 
             _table.UnlockChildrenRecursive();

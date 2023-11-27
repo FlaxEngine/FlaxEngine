@@ -218,7 +218,7 @@ namespace FlaxEditor.Tools.Foliage
 
         private void OnModified()
         {
-            Editor.Instance.Scene.MarkSceneEdited(_proxy.Foliage?.Scene);
+            Editor.Instance.Scene.MarkSceneEdited(_proxy.Foliage != null ? _proxy.Foliage.Scene : null);
         }
 
         private void OnSelectedFoliageChanged()

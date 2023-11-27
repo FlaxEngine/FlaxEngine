@@ -58,7 +58,6 @@ namespace FlaxEditor.GUI.Drag
         {
             if (item == null)
                 throw new ArgumentNullException();
-
             return new DragDataText(DragPrefix + item.ID.ToString("N"));
         }
 
@@ -71,11 +70,9 @@ namespace FlaxEditor.GUI.Drag
         {
             if (items == null)
                 throw new ArgumentNullException();
-
             string text = DragPrefix;
             foreach (var item in items)
                 text += item.ID.ToString("N") + '\n';
-
             return new DragDataText(text);
         }
 
@@ -83,9 +80,7 @@ namespace FlaxEditor.GUI.Drag
         /// Tries to parse the drag data.
         /// </summary>
         /// <param name="data">The data.</param>
-        /// <returns>
-        /// Gathered objects or empty IEnumerable if cannot get any valid.
-        /// </returns>
+        /// <returns>Gathered objects or empty IEnumerable if cannot get any valid.</returns>
         public override IEnumerable<Script> FromDragData(DragData data)
         {
             if (data is DragDataText dataText)
@@ -97,12 +92,9 @@ namespace FlaxEditor.GUI.Drag
                     var results = new List<Script>(ids.Length);
                     for (int i = 0; i < ids.Length; i++)
                     {
-                        // Find element
                         if (Guid.TryParse(ids[i], out Guid id))
                         {
                             var obj = FlaxEngine.Object.Find<Script>(ref id);
-
-                            // Check it
                             if (obj != null)
                                 results.Add(obj);
                         }
@@ -111,11 +103,11 @@ namespace FlaxEditor.GUI.Drag
                     return results.ToArray();
                 }
             }
-            return new Script[0];
+            return Utils.GetEmptyArray<Script>();
         }
 
         /// <summary>
-        /// Tries to parse the drag data to validate if it has valid scripts darg.
+        /// Tries to parse the drag data to validate if it has valid scripts drag.
         /// </summary>
         /// <param name="data">The data.</param>
         /// <returns>True if drag data has valid scripts, otherwise false.</returns>
@@ -138,7 +130,6 @@ namespace FlaxEditor.GUI.Drag
                     }
                 }
             }
-
             return false;
         }
     }

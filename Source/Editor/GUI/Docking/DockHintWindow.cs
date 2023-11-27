@@ -44,11 +44,11 @@ namespace FlaxEditor.GUI.Docking
                 var mousePos = window.MousePosition;
                 var previousSize = window.Size;
                 window.Restore();
-                window.Position = FlaxEngine.Input.MouseScreenPosition - mousePos * window.Size / previousSize;
+                window.Position = Platform.MousePosition - mousePos * window.Size / previousSize;
             }
 
             // Calculate dragging offset and move window to the destination position
-            var mouseScreenPosition = FlaxEngine.Input.MouseScreenPosition;
+            var mouseScreenPosition = Platform.MousePosition;
 
             // If the _toMove window was not focused when initializing this window, the result vector only contains zeros
             // and to prevent a failure, we need to perform an update for the drag offset at later time which will be done in the OnMouseMove event handler.
@@ -83,6 +83,7 @@ namespace FlaxEditor.GUI.Docking
             // Enable hit window presentation
             Proxy.Window.RenderingEnabled = true;
             Proxy.Window.Show();
+            Proxy.Window.Focus();
         }
 
         /// <summary>
@@ -113,7 +114,7 @@ namespace FlaxEditor.GUI.Docking
                 var window = _toMove.Window?.Window;
                 if (window == null)
                     return;
-                var mouse = FlaxEngine.Input.MouseScreenPosition;
+                var mouse = Platform.MousePosition;
 
                 // Move base window
                 window.Position = mouse - _dragOffset;
@@ -193,7 +194,7 @@ namespace FlaxEditor.GUI.Docking
 
             // Move window to the mouse position (with some offset for caption bar)
             var window = (WindowRootControl)toMove.Root;
-            var mouse = FlaxEngine.Input.MouseScreenPosition;
+            var mouse = Platform.MousePosition;
             window.Window.Position = mouse - new Float2(8, 8);
 
             // Get floating panel
@@ -244,7 +245,7 @@ namespace FlaxEditor.GUI.Docking
         private void UpdateRects()
         {
             // Cache mouse position
-            _mouse = FlaxEngine.Input.MouseScreenPosition;
+            _mouse = Platform.MousePosition;
 
             // Check intersection with any dock panel
             var uiMouse = _mouse;
@@ -270,15 +271,16 @@ namespace FlaxEditor.GUI.Docking
                 // Cache dock rectangles
                 var size = _rectDock.Size;
                 var offset = _rectDock.Location;
-                float BorderMargin = 4.0f;
-                float ProxyHintWindowsSize2 = Proxy.HintWindowsSize * 0.5f;
-                float centerX = size.X * 0.5f;
-                float centerY = size.Y * 0.5f;
-                _rUpper = new Rectangle(centerX - ProxyHintWindowsSize2, BorderMargin, Proxy.HintWindowsSize, Proxy.HintWindowsSize) + offset;
-                _rBottom = new Rectangle(centerX - ProxyHintWindowsSize2, size.Y - Proxy.HintWindowsSize - BorderMargin, Proxy.HintWindowsSize, Proxy.HintWindowsSize) + offset;
-                _rLeft = new Rectangle(BorderMargin, centerY - ProxyHintWindowsSize2, Proxy.HintWindowsSize, Proxy.HintWindowsSize) + offset;
-                _rRight = new Rectangle(size.X - Proxy.HintWindowsSize - BorderMargin, centerY - ProxyHintWindowsSize2, Proxy.HintWindowsSize, Proxy.HintWindowsSize) + offset;
-                _rCenter = new Rectangle(centerX - ProxyHintWindowsSize2, centerY - ProxyHintWindowsSize2, Proxy.HintWindowsSize, Proxy.HintWindowsSize) + offset;
+                var borderMargin = 4.0f;
+                var hintWindowsSize = Proxy.HintWindowsSize * Platform.DpiScale;
+                var hintWindowsSize2 = hintWindowsSize * 0.5f;
+                var centerX = size.X * 0.5f;
+                var centerY = size.Y * 0.5f;
+                _rUpper = new Rectangle(centerX - hintWindowsSize2, borderMargin, hintWindowsSize, hintWindowsSize) + offset;
+                _rBottom = new Rectangle(centerX - hintWindowsSize2, size.Y - hintWindowsSize - borderMargin, hintWindowsSize, hintWindowsSize) + offset;
+                _rLeft = new Rectangle(borderMargin, centerY - hintWindowsSize2, hintWindowsSize, hintWindowsSize) + offset;
+                _rRight = new Rectangle(size.X - hintWindowsSize - borderMargin, centerY - hintWindowsSize2, hintWindowsSize, hintWindowsSize) + offset;
+                _rCenter = new Rectangle(centerX - hintWindowsSize2, centerY - hintWindowsSize2, hintWindowsSize, hintWindowsSize) + offset;
 
                 // Hit test
                 DockState toSet = DockState.Float;
@@ -428,7 +430,6 @@ namespace FlaxEditor.GUI.Docking
             {
                 if (Window == null)
                 {
-                    // Create proxy window
                     var settings = CreateWindowSettings.Default;
                     settings.Title = "DockHint.Window";
                     settings.Size = initSize;
@@ -440,12 +441,10 @@ namespace FlaxEditor.GUI.Docking
                     settings.IsRegularWindow = false;
                     settings.SupportsTransparency = true;
                     settings.ShowInTaskbar = false;
-                    settings.ShowAfterFirstPaint = true;
+                    settings.ShowAfterFirstPaint = false;
                     settings.IsTopmost = true;
 
                     Window = Platform.CreateWindow(ref settings);
-
-                    // Set opacity and background color
                     Window.Opacity = 0.6f;
                     Window.GUI.BackgroundColor = Style.Current.DragWindow;
                 }
@@ -465,7 +464,7 @@ namespace FlaxEditor.GUI.Docking
 
                 var settings = CreateWindowSettings.Default;
                 settings.Title = name;
-                settings.Size = new Float2(HintWindowsSize);
+                settings.Size = new Float2(HintWindowsSize * Platform.DpiScale);
                 settings.AllowInput = false;
                 settings.AllowMaximize = false;
                 settings.AllowMinimize = false;
@@ -476,9 +475,9 @@ namespace FlaxEditor.GUI.Docking
                 settings.ShowInTaskbar = false;
                 settings.ActivateWhenFirstShown = false;
                 settings.IsTopmost = true;
+                settings.ShowAfterFirstPaint = false;
 
                 win = Platform.CreateWindow(ref settings);
-
                 win.Opacity = 0.6f;
                 win.GUI.BackgroundColor = Style.Current.DragWindow;
             }

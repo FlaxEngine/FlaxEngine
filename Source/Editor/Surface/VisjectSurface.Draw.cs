@@ -1,5 +1,6 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
+using FlaxEditor.Surface.Elements;
 using FlaxEngine;
 
 namespace FlaxEditor.Surface
@@ -135,8 +136,25 @@ namespace FlaxEditor.Surface
                 endPos = _lastInstigatorUnderMouse.ConnectionOrigin;
             }
 
+            Float2 actualStartPos = startPos;
+            Float2 actualEndPos = endPos;
+
+            if (_connectionInstigator is Archetypes.Tools.RerouteNode)
+            {
+                if (endPos.X < startPos.X && _lastInstigatorUnderMouse is null or Box { IsOutput: true })
+                {
+                    actualStartPos = endPos;
+                    actualEndPos = startPos;
+                }
+            }
+            else if (_connectionInstigator is Box { IsOutput: false })
+            {
+                actualStartPos = endPos;
+                actualEndPos = startPos;
+            }
+
             // Draw connection
-            _connectionInstigator.DrawConnectingLine(ref startPos, ref endPos, ref lineColor);
+            _connectionInstigator.DrawConnectingLine(ref actualStartPos, ref actualEndPos, ref lineColor);
         }
 
         /// <summary>
@@ -176,7 +194,7 @@ namespace FlaxEditor.Surface
                 var bezierStartPoint = new Float2(upperRight.X + offsetX * 0.75f, (upperRight.Y + bottomRight.Y) * 0.5f);
                 var bezierEndPoint = inputBracket.Box.ParentNode.PointToParent(_rootControl.Parent, inputBracket.Box.Center);
 
-                Elements.OutputBox.DrawConnection(ref bezierStartPoint, ref bezierEndPoint, ref fadedColor);
+                Elements.OutputBox.DrawConnection(Style, ref bezierStartPoint, ref bezierEndPoint, ref fadedColor);
 
                 // Debug Area
                 //Rectangle drawRect = Rectangle.FromPoints(upperLeft, bottomRight);

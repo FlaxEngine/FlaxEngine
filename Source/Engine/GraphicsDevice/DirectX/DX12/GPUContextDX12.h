@@ -47,6 +47,8 @@ private:
 
     uint32 _srMaskDirtyGraphics;
     uint32 _srMaskDirtyCompute;
+    uint32 _stencilRef;
+    D3D_PRIMITIVE_TOPOLOGY _primitiveTopology;
 
     int32 _isCompute : 1;
     int32 _rtDirtyFlag : 1;
@@ -167,6 +169,7 @@ public:
     void SetRenderTarget(GPUTextureView* depthBuffer, GPUTextureView* rt) override;
     void SetRenderTarget(GPUTextureView* depthBuffer, const Span<GPUTextureView*>& rts) override;
     void SetBlendFactor(const Float4& value) override;
+    void SetStencilRef(uint32 value) override;
     void ResetSR() override;
     void ResetUA() override;
     void ResetCB() override;

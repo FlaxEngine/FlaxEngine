@@ -41,8 +41,6 @@ namespace FlaxEditor.Windows.Assets
             new ScriptType(typeof(Vector3)),
             new ScriptType(typeof(Vector4)),
             new ScriptType(typeof(Color)),
-            new ScriptType(typeof(Quaternion)),
-            new ScriptType(typeof(Transform)),
             new ScriptType(typeof(Matrix)),
         };
 
@@ -284,7 +282,6 @@ namespace FlaxEditor.Windows.Assets
                 var mainNode = _surface.FindNode(1, 1) as Surface.Archetypes.Material.SurfaceNodeMaterial;
                 if (mainNode == null)
                 {
-                    // Error
                     Editor.LogError("Failed to find main material node.");
                 }
                 return mainNode;
@@ -349,7 +346,7 @@ namespace FlaxEditor.Windows.Assets
                 if (_asset.SaveSurface(value, info))
                 {
                     _surface.MarkAsEdited();
-                    Editor.LogError("Failed to save material surface data");
+                    Editor.LogError("Failed to save surface data");
                 }
                 _asset.Reload();
                 _asset.WaitForLoaded();
