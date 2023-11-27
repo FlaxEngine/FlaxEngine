@@ -1135,7 +1135,7 @@ namespace FlaxEngine.Interop
                     marshallers[i](fields[i], offsets[i], ref managedValue, fieldPtr, out int fieldSize);
                     fieldPtr += fieldSize;
                 }
-                Assert.IsTrue((fieldPtr - nativePtr) <= Unsafe.SizeOf<T>());
+                Assert.IsTrue((fieldPtr - nativePtr) <= GetTypeSize(typeof(T)));
             }
 
             internal static void ToManaged(ref T managedValue, IntPtr nativePtr, bool byRef)
@@ -1182,7 +1182,7 @@ namespace FlaxEngine.Interop
                     marshallers[i](fields[i], offsets[i], ref managedValue, nativePtr, out int fieldSize);
                     nativePtr += fieldSize;
                 }
-                Assert.IsTrue((nativePtr - fieldPtr) <= Unsafe.SizeOf<T>());
+                Assert.IsTrue((nativePtr - fieldPtr) <= GetTypeSize(typeof(T)));
             }
 
             internal static void ToNative(ref T managedValue, IntPtr nativePtr)
@@ -1580,7 +1580,7 @@ namespace FlaxEngine.Interop
             private static IntPtr PinValue<T>(T value) where T : struct
             {
                 // Store the converted value in unmanaged memory so it will not be relocated by the garbage collector.
-                int size = Unsafe.SizeOf<T>();
+                int size = GetTypeSize(typeof(T));
                 uint index = Interlocked.Increment(ref pinnedAllocationsPointer) % (uint)pinnedAllocations.Length;
                 ref (IntPtr ptr, int size) alloc = ref pinnedAllocations[index];
                 if (alloc.size < size)
