@@ -1,6 +1,8 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using FlaxEditor.GUI.ContextMenu;
 using FlaxEditor.SceneGraph;
 using FlaxEngine;
@@ -147,6 +149,26 @@ namespace FlaxEditor.Windows
             }
 
             // Spawning actors options
+
+            if (!hasSthSelected)
+            {
+                var allScenes = FlaxEngine.Content.GetAllAssetsByType(typeof(SceneAsset));
+                var loadedSceneIds = Editor.Instance.Scene.Root.ChildNodes.Select(node => node.ID).ToList();
+                var unloadedScenes = allScenes.Where(sceneId => !loadedSceneIds.Contains(sceneId)).ToList();
+                if (unloadedScenes.Count > 0)
+                {
+                    contextMenu.AddSeparator();
+                    var childCM = contextMenu.GetOrAddChildMenu("Open Scene additionally");
+                    foreach (var sceneGuid in unloadedScenes.Where(sceneGuid => !Level.FindScene(sceneGuid)))
+                    {
+                        if (FlaxEngine.Content.GetAssetInfo(sceneGuid, out var unloadedScene))
+                        {
+                            var splitPath = unloadedScene.Path.Split('/');
+                            childCM.ContextMenu.AddButton(splitPath[^1], () => { Editor.Instance.Scene.OpenScene(sceneGuid, true); });
+                        }
+                    }
+                }
+            }
 
             contextMenu.AddSeparator();
 
