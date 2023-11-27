@@ -158,13 +158,16 @@ namespace FlaxEditor.Windows
                 if (unloadedScenes.Count > 0)
                 {
                     contextMenu.AddSeparator();
-                    var childCM = contextMenu.GetOrAddChildMenu("Open Scene additionally");
+                    var childCM = contextMenu.GetOrAddChildMenu("Add Scene");
                     foreach (var sceneGuid in unloadedScenes.Where(sceneGuid => !Level.FindScene(sceneGuid)))
                     {
                         if (FlaxEngine.Content.GetAssetInfo(sceneGuid, out var unloadedScene))
                         {
                             var splitPath = unloadedScene.Path.Split('/');
-                            childCM.ContextMenu.AddButton(splitPath[^1], () => { Editor.Instance.Scene.OpenScene(sceneGuid, true); });
+                            var sceneName = splitPath[^1];
+                            if (splitPath[^1].EndsWith(".scene"))
+                                sceneName = sceneName[..^6];
+                            childCM.ContextMenu.AddButton(sceneName, () => { Editor.Instance.Scene.OpenScene(sceneGuid, true); });
                         }
                     }
                 }
