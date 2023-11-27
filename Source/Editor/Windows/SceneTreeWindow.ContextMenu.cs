@@ -148,7 +148,7 @@ namespace FlaxEditor.Windows
                 contextMenu.AddButton("Break Prefab Link", Editor.Prefabs.BreakLinks);
             }
 
-            // Spawning actors options
+            // Load additional scenes option
 
             if (!hasSthSelected)
             {
@@ -172,6 +172,8 @@ namespace FlaxEditor.Windows
                     }
                 }
             }
+
+            // Spawning actors options
 
             contextMenu.AddSeparator();
 
