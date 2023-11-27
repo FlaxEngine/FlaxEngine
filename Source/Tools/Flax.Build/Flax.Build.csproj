@@ -21,6 +21,7 @@
     <ErrorReport>none</ErrorReport>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <NoWarn>1701;1702;8981</NoWarn>
+    <RollForward>LatestMajor</RollForward>
   </PropertyGroup>
 
   <ItemGroup>
