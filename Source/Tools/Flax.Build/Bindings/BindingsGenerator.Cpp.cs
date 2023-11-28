@@ -1532,9 +1532,7 @@ namespace Flax.Build.Bindings
                     if (paramIsRef && !parameterInfo.Type.IsConst)
                     {
                         // Unbox from MObject*
-                        parameterInfo.Type.IsRef = false;
-                        contents.Append($"        {parameterInfo.Name} = MUtils::Unbox<{parameterInfo.Type}>(*(MObject**)params[{i}]);").AppendLine();
-                        parameterInfo.Type.IsRef = true;
+                        contents.Append($"        {parameterInfo.Name} = MUtils::Unbox<{parameterInfo.Type.ToString(false)}>(*(MObject**)params[{i}]);").AppendLine();
                     }
                 }
             }
@@ -1559,8 +1557,7 @@ namespace Flax.Build.Bindings
                 for (var i = 0; i < functionInfo.Parameters.Count; i++)
                 {
                     var parameterInfo = functionInfo.Parameters[i];
-                    var paramIsRef = parameterInfo.IsRef || parameterInfo.IsOut;
-                    if (paramIsRef && !parameterInfo.Type.IsConst)
+                    if (parameterInfo.IsRef || parameterInfo.IsOut && !parameterInfo.Type.IsConst)
                     {
                         // Direct value convert
                         var managedToNative = GenerateCppWrapperManagedToNative(buildData, parameterInfo.Type, classInfo, out var managedType, out var apiType, null, out _);
@@ -2007,8 +2004,7 @@ namespace Flax.Build.Bindings
                     for (var i = 0; i < paramsCount; i++)
                     {
                         var paramType = eventInfo.Type.GenericArgs[i];
-                        var paramIsRef = paramType.IsRef && !paramType.IsConst;
-                        if (paramIsRef)
+                        if (paramType.IsRef && !paramType.IsConst)
                         {
                             // Convert value back from managed to native (could be modified there)
                             paramType.IsRef = false;
@@ -2569,6 +2565,18 @@ namespace Flax.Build.Bindings
                 contents.AppendLine("            {");
                 contents.AppendLine("                Variant __result;");
                 contents.AppendLine($"                typeHandle.Module->InvokeMethod(method, Object, Span<Variant>(parameters, {functionInfo.Parameters.Count}), __result);");
+
+                // Convert parameter values back from scripting to native (could be modified there)
+                for (var i = 0; i < functionInfo.Parameters.Count; i++)
+                {
+                    var parameterInfo = functionInfo.Parameters[i];
+                    var paramIsRef = parameterInfo.IsRef || parameterInfo.IsOut;
+                    if (paramIsRef && !parameterInfo.Type.IsConst)
+                    {
+                        contents.AppendLine($"                {parameterInfo.Name} = {GenerateCppWrapperVariantToNative(buildData, parameterInfo.Type, interfaceInfo, $"parameters[{i}]")};");
+                    }
+                }
+
                 if (functionInfo.ReturnType.IsVoid)
                     contents.AppendLine("                return;");
                 else
