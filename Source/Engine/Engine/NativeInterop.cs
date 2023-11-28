@@ -1112,11 +1112,9 @@ namespace FlaxEngine.Interop
 
             internal static void ToManagedPointer(ref IntPtr managedValue, IntPtr nativePtr, bool byRef)
             {
-                Type type = typeof(T);
-                byRef |= type.IsByRef; // Is this needed?
-                if (type.IsByRef)
-                    Assert.IsTrue(type.GetElementType().IsValueType);
-                managedValue = byRef ? nativePtr : Unsafe.Read<IntPtr>(nativePtr.ToPointer());
+                if (byRef)
+                    nativePtr = Unsafe.Read<IntPtr>(nativePtr.ToPointer());
+                managedValue = nativePtr;
             }
 
             internal static void ToManagedHandle(ref ManagedHandle managedValue, IntPtr nativePtr, bool byRef)
