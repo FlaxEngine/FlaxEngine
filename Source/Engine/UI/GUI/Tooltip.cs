@@ -17,6 +17,8 @@ namespace FlaxEngine.GUI
         private string _currentText;
         private Window _window;
 
+        private const float _textborder = 12.0f;
+
         /// <summary>
         /// Gets or sets the time in seconds that mouse have to be over the target to show the tooltip.
         /// </summary>
@@ -233,14 +235,15 @@ namespace FlaxEngine.GUI
             Render2D.FillRectangle(new Rectangle(Float2.Zero, Size), Color.Lerp(style.BackgroundSelected, style.Background, 0.6f));
             Render2D.FillRectangle(new Rectangle(1.1f, 1.1f, Width - 2, Height - 2), style.Background);
 
+            var r = GetClientArea();
             // Tooltip text
             Render2D.DrawText(
                               style.FontMedium,
                               _currentText,
-                              GetClientArea(),
+                              new Rectangle(r.Location + _textborder, r.Size),
                               style.Foreground,
-                              TextAlignment.Center,
-                              TextAlignment.Center,
+                              TextAlignment.Near,
+                              TextAlignment.Near,
                               TextWrapping.WrapWords
                              );
         }
@@ -259,8 +262,8 @@ namespace FlaxEngine.GUI
             {
                 var layout = TextLayoutOptions.Default;
                 layout.Bounds = new Rectangle(0, 0, MaxWidth, 10000000);
-                layout.HorizontalAlignment = TextAlignment.Center;
-                layout.VerticalAlignment = TextAlignment.Center;
+                layout.HorizontalAlignment = TextAlignment.Near;
+                layout.VerticalAlignment = TextAlignment.Near;
                 layout.TextWrapping = TextWrapping.WrapWords;
                 var items = style.FontMedium.ProcessText(_currentText, ref layout);
                 for (int i = 0; i < items.Length; i++)
@@ -271,7 +274,7 @@ namespace FlaxEngine.GUI
                 }
                 //size.X += style.FontMedium.MeasureText(_currentText).X;
             }
-            Size = size + new Float2(24.0f);
+            Size = size + new Float2(_textborder * 2f);
 
             // Check if is visible size get changed
             if (Visible && prevSize != Size)
