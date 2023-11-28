@@ -2775,11 +2775,12 @@ namespace Flax.Build.Bindings
                 // Variant converting helper methods
                 foreach (var typeInfo in CppVariantToTypes)
                 {
+                    var name = typeInfo.ToString(false);
                     header.AppendLine();
                     header.AppendLine("namespace {");
-                    header.Append($"{typeInfo} VariantTo{GenerateCppWrapperNativeToVariantMethodName(typeInfo)}(const Variant& v)").AppendLine();
+                    header.Append($"{name} VariantTo{GenerateCppWrapperNativeToVariantMethodName(typeInfo)}(const Variant& v)").AppendLine();
                     header.Append('{').AppendLine();
-                    header.Append($"    {typeInfo} result;").AppendLine();
+                    header.Append($"    {name} result;").AppendLine();
                     if (typeInfo.Type == "Array" && typeInfo.GenericArgs != null)
                     {
                         header.Append("    const auto* array = reinterpret_cast<const Array<Variant, HeapAllocation>*>(v.AsData);").AppendLine();
