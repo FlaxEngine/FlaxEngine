@@ -11,6 +11,8 @@ public:
     static FLAXENGINE_API void* Allocate(uintptr size);
     static FLAXENGINE_API void Free(void* ptr, uintptr size);
 
+    enum { HasSwap = true };
+
     template<typename T>
     class Data
     {
