@@ -441,6 +441,23 @@ void MaterialGenerator::ProcessGroupTextures(Box* box, Node* node, Value& value)
             break;
         }
         }
+
+        // Channel masking
+        switch (box->ID)
+        {
+        case 2:
+            value = Value(VariantType::Float, value.Value + _subs[0]);
+            break;
+        case 3:
+            value = Value(VariantType::Float, value.Value + _subs[1]);
+            break;
+        case 4:
+            value = Value(VariantType::Float, value.Value + _subs[2]);
+            break;
+        case 5:
+            value = Value(VariantType::Float, value.Value + _subs[3]);
+            break;
+        }
         break;
     }
     // Scene Color
