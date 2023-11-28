@@ -446,16 +446,16 @@ void MaterialGenerator::ProcessGroupTextures(Box* box, Node* node, Value& value)
         switch (box->ID)
         {
         case 2:
-            value = Value(VariantType::Float, value.Value + _subs[0]);
+            value = value.GetX();
             break;
         case 3:
-            value = Value(VariantType::Float, value.Value + _subs[1]);
+            value = value.GetY();
             break;
         case 4:
-            value = Value(VariantType::Float, value.Value + _subs[2]);
+            value = value.GetZ();
             break;
         case 5:
-            value = Value(VariantType::Float, value.Value + _subs[3]);
+            value = value.GetW();
             break;
         }
         break;
