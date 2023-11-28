@@ -453,6 +453,7 @@ namespace Flax.Build.Platforms
                     commonArgs.Add("/std:c++latest");
                     break;
                 }
+                commonArgs.Add("/Zc:__cplusplus");
 
                 // Generate Intrinsic Functions
                 if (compileEnvironment.IntrinsicFunctions)
