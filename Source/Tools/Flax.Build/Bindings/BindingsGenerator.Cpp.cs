@@ -1557,7 +1557,7 @@ namespace Flax.Build.Bindings
                 for (var i = 0; i < functionInfo.Parameters.Count; i++)
                 {
                     var parameterInfo = functionInfo.Parameters[i];
-                    if (parameterInfo.IsRef || parameterInfo.IsOut && !parameterInfo.Type.IsConst)
+                    if ((parameterInfo.IsRef || parameterInfo.IsOut) && !parameterInfo.Type.IsConst)
                     {
                         // Direct value convert
                         var managedToNative = GenerateCppWrapperManagedToNative(buildData, parameterInfo.Type, classInfo, out var managedType, out var apiType, null, out _);

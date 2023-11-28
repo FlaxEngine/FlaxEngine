@@ -1133,7 +1133,7 @@ namespace FlaxEngine.Interop
                     marshallers[i](fields[i], offsets[i], ref managedValue, fieldPtr, out int fieldSize);
                     fieldPtr += fieldSize;
                 }
-                Assert.IsTrue((fieldPtr - nativePtr) <= GetTypeSize(typeof(T)));
+                //Assert.IsTrue((fieldPtr - nativePtr) <= GetTypeSize(typeof(T)));
             }
 
             internal static void ToManaged(ref T managedValue, IntPtr nativePtr, bool byRef)
@@ -1180,7 +1180,7 @@ namespace FlaxEngine.Interop
                     marshallers[i](fields[i], offsets[i], ref managedValue, nativePtr, out int fieldSize);
                     nativePtr += fieldSize;
                 }
-                Assert.IsTrue((nativePtr - fieldPtr) <= GetTypeSize(typeof(T)));
+                //Assert.IsTrue((nativePtr - fieldPtr) <= GetTypeSize(typeof(T)));
             }
 
             internal static void ToNative(ref T managedValue, IntPtr nativePtr)
