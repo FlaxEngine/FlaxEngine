@@ -235,7 +235,7 @@ namespace FlaxEngine.GUI
                 }
             }
 
-            Render2D.DrawText(new Font[] { _font.GetFont(), Style.Current.FontCJK }, Material, _text, rect, color, hAlignment, wAlignment, Wrapping, BaseLinesGapScale, scale);
+            Render2D.DrawText([_font.GetFont(), Style.Current.FontCJK], Material, _text, rect, color, hAlignment, wAlignment, Wrapping, BaseLinesGapScale, scale);
 
             if (ClipText)
                 Render2D.PopClip();

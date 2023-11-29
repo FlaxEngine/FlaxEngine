@@ -8,9 +8,11 @@
 #include "Engine/Content/AssetReference.h"
 #include "Engine/Scripting/ScriptingObject.h"
 #include "TextLayoutOptions.h"
+#include "MultiFont.h"
 
 class FontAsset;
 struct FontTextureAtlasSlot;
+struct MultiFontLineCache;
 
 // The default DPI that engine is using
 #define DefaultDPI 96
@@ -20,7 +22,7 @@ struct FontTextureAtlasSlot;
 /// </summary>
 API_STRUCT(NoDefault) struct TextRange
 {
-DECLARE_SCRIPTING_TYPE_MINIMAL(TextRange);
+    DECLARE_SCRIPTING_TYPE_MINIMAL(TextRange);
 
     /// <summary>
     /// The start index (inclusive).
@@ -90,7 +92,7 @@ struct TIsPODType<TextRange>
 /// </summary>
 API_STRUCT(NoDefault) struct FontLineCache
 {
-DECLARE_SCRIPTING_TYPE_MINIMAL(FontLineCache);
+    DECLARE_SCRIPTING_TYPE_MINIMAL(FontLineCache);
 
     /// <summary>
     /// The root position of the line (upper left corner).
@@ -108,7 +110,7 @@ DECLARE_SCRIPTING_TYPE_MINIMAL(FontLineCache);
     API_FIELD() int32 FirstCharIndex;
 
     /// <summary>
-    /// The last character index (from the input text).
+    /// The last character index (from the input text), inclusive.
     /// </summary>
     API_FIELD() int32 LastCharIndex;
 };
@@ -154,7 +156,7 @@ struct TIsPODType<FontLineCache>
 /// </summary>
 API_STRUCT(NoDefault) struct FontCharacterEntry
 {
-DECLARE_SCRIPTING_TYPE_MINIMAL(FontCharacterEntry);
+    DECLARE_SCRIPTING_TYPE_MINIMAL(FontCharacterEntry);
 
     /// <summary>
     /// The character represented by this entry.
@@ -223,7 +225,7 @@ struct TIsPODType<FontCharacterEntry>
 /// </summary>
 API_CLASS(Sealed, NoSpawn) class FLAXENGINE_API Font : public ManagedScriptingObject
 {
-DECLARE_SCRIPTING_TYPE_NO_SPAWN(Font);
+    DECLARE_SCRIPTING_TYPE_NO_SPAWN(Font);
     friend FontAsset;
 private:
 
@@ -346,7 +348,7 @@ public:
     /// <param name="text">The input text.</param>
     /// <param name="layout">The layout properties.</param>
     /// <param name="outputLines">The output lines list.</param>
-    static void ProcessText(const Array<Font*>& fonts, const StringView& text, Array<FontLineCache>& outputLines, API_PARAM(Ref) const TextLayoutOptions& layout);
+    static void ProcessText(const Array<Font*>& fonts, const StringView& text, Array<MultiFontLineCache>& outputLines, API_PARAM(Ref) const TextLayoutOptions& layout);
 
     /// <summary>
     /// Processes text to get cached lines for rendering.
@@ -404,6 +406,7 @@ public:
     /// <returns>The minimum size for that text and fot to render properly.</returns>
     API_FUNCTION() Float2 MeasureText(const StringView& text, API_PARAM(Ref) const TextLayoutOptions& layout);
 
+    /*
     /// <summary>
     /// Measures minimum size of the rectangle that will be needed to draw given text.
     /// </summary>
@@ -412,6 +415,7 @@ public:
     /// <param name="layout">The layout properties.</param>
     /// <returns>The minimum size for that text and fot to render properly.</returns>
     API_FUNCTION() static Float2 MeasureText(const Array<Font*>& fonts, const StringView& text, API_PARAM(Ref) const TextLayoutOptions& layout);
+    */
 
     /// <summary>
     /// Measures minimum size of the rectangle that will be needed to draw given text.
@@ -500,6 +504,7 @@ public:
     /// <returns>The character position (upper left corner which can be used for a caret position).</returns>
     API_FUNCTION() Float2 GetCharPosition(const StringView& text, int32 index, API_PARAM(Ref) const TextLayoutOptions& layout);
 
+    /*
     /// <summary>
     /// Calculates character position for given text and character index.
     /// </summary>
@@ -509,6 +514,7 @@ public:
     /// <param name="layout">The text layout properties.</param>
     /// <returns>The character position (upper left corner which can be used for a caret position).</returns>
     API_FUNCTION() static Float2 GetCharPosition(const Array<Font*>& fonts, const StringView& text, int32 index, API_PARAM(Ref) const TextLayoutOptions& layout);
+    */
 
     /// <summary>
     /// Calculates character position for given text and character index.
@@ -552,6 +558,27 @@ public:
     /// <param name="c">The char to test.</param>
     /// <returns>True if the font contains the glyph of the char, otherwise false.</returns>
     API_FUNCTION() FORCE_INLINE bool ContainsChar(Char c);
+
+    /// <summary>
+    /// Gets the index of the font that should be used to render the char
+    /// </summary>
+    /// <param name="fonts">The font list.</param>
+    /// <param name="c">The char.</param>
+    /// <param name="missing">Number to return if char cannot be found.</param>
+    /// <returns></returns>
+    API_FUNCTION() FORCE_INLINE static int32 GetCharFontIndex(const Array<Font*>& fonts, Char c, int32 missing = -1) {
+        int32 fontIndex = 0;
+        while (fontIndex < fonts.Count() && !fonts[fontIndex]->ContainsChar(c))
+        {
+            fontIndex++;
+        }
+
+        if (fontIndex == fonts.Count()) {
+            return missing;
+        }
+
+        return fontIndex;
+    }
 
     /// <summary>
     /// Flushes the size of the face with the Free Type library backend.
