@@ -81,8 +81,11 @@ public:
     /// </summary>
     /// <param name="cmdLine">The input application command line arguments.</param>
     /// <returns>The application exit code.</returns>
+#if PLATFORM_LINUX | PLATFORM_MAC
+    static int32 Main(int argc, const char** argv);
+#else
     static int32 Main(const Char* cmdLine);
-
+#endif
     /// <summary>
     /// Exits the engine.
     /// </summary>

@@ -184,10 +184,22 @@ public:
 
 public:
 
+#if PLATFORM_LINUX | PLATFORM_MAC
+    /// <summary>
+    /// Parses the input command line.
+    /// </summary>
+    /// <param name="argc">The number of args</param>
+    /// <param name="argv">The argument values</param>
+    /// <returns>True if failed, otherwise false.</returns>
+    static bool Parse(int argc, const char** argv);
+    static void SetValue(const char *name, const Char *value);
+
+#else
     /// <summary>
     /// Parses the input command line.
     /// </summary>
     /// <param name="cmdLine">The command line.</param>
     /// <returns>True if failed, otherwise false.</returns>
     static bool Parse(const Char* cmdLine);
+#endif
 };
