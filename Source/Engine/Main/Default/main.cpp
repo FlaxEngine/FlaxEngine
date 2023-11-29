@@ -1,8 +1,8 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
 #if PLATFORM_LINUX || PLATFORM_MAC || PLATFORM_IOS
+#if PLATFORM_LINUX || PLATFORM_MAC
 #include "Engine/Engine/Engine.h"
-#include "Engine/Core/Types/StringBuilder.h"
 
 int main(int argc, const char** argv)
 {
@@ -29,4 +29,5 @@ int main(int argc, char* argv[])
     return Engine::Main(*args);
 }
 
+#endif
 #endif
