@@ -836,7 +836,7 @@ bool MAssembly::UnloadImage(bool isReloading)
 MClass::MClass(const MAssembly* parentAssembly, void* handle, const char* name, const char* fullname, const char* namespace_, MTypeAttributes attributes)
     : _handle(handle)
     , _name(name)
-    , _namespace_(namespace_)
+    , _namespace(namespace_)
     , _assembly(parentAssembly)
     , _fullname(fullname)
     , _hasCachedProperties(false)
@@ -915,7 +915,7 @@ StringAnsiView MClass::GetName() const
 
 StringAnsiView MClass::GetNamespace() const
 {
-    return _namespace_;
+    return _namespace;
 }
 
 MType* MClass::GetType() const

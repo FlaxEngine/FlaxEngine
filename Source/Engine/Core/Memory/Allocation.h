@@ -12,6 +12,8 @@ template<int Capacity>
 class FixedAllocation
 {
 public:
+    enum { HasSwap = false };
+
     template<typename T>
     class Data
     {
@@ -61,12 +63,9 @@ public:
         {
         }
 
-        FORCE_INLINE void Swap(Data& other)
+        void Swap(Data& other)
         {
-            byte tmp[Capacity * sizeof(T)];
-            Platform::MemoryCopy(tmp, _data, Capacity * sizeof(T));
-            Platform::MemoryCopy(_data, other._data, Capacity * sizeof(T));
-            Platform::MemoryCopy(other._data, tmp, Capacity * sizeof(T));
+            // Not supported
         }
     };
 };
@@ -77,6 +76,8 @@ public:
 class HeapAllocation
 {
 public:
+    enum { HasSwap = true };
+
     template<typename T>
     class Data
     {
@@ -179,6 +180,8 @@ template<int Capacity, typename OtherAllocator = HeapAllocation>
 class InlinedAllocation
 {
 public:
+    enum { HasSwap = false };
+
     template<typename T>
     class Data
     {
@@ -267,14 +270,9 @@ public:
             }
         }
 
-        FORCE_INLINE void Swap(Data& other)
+        void Swap(Data& other)
         {
-            byte tmp[Capacity * sizeof(T)];
-            Platform::MemoryCopy(tmp, _data, Capacity * sizeof(T));
-            Platform::MemoryCopy(_data, other._data, Capacity * sizeof(T));
-            Platform::MemoryCopy(other._data, tmp, Capacity * sizeof(T));
-            ::Swap(_useOther, other._useOther);
-            _other.Swap(other._other);
+            // Not supported
         }
     };
 };

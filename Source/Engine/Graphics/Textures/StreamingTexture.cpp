@@ -63,7 +63,6 @@ StreamingTexture::~StreamingTexture()
 {
     UnloadTexture();
     SAFE_DELETE(_texture);
-    ASSERT(_streamingTasks.Count() == 0);
 }
 
 Float2 StreamingTexture::Size() const
@@ -134,11 +133,9 @@ bool StreamingTexture::Create(const TextureHeader& header)
 void StreamingTexture::UnloadTexture()
 {
     ScopeLock lock(_owner->GetOwnerLocker());
-
-    // Release
+    CancelStreamingTasks();
     _texture->ReleaseGPU();
     _header.MipLevels = 0;
-
     ASSERT(_streamingTasks.Count() == 0);
 }
 

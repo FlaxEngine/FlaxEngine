@@ -271,6 +271,48 @@ ShaderGraphValue ShaderGraphValue::InitForOne(VariantType::Types type)
     return ShaderGraphValue(type, String(v));
 }
 
+ShaderGraphValue ShaderGraphValue::GetY() const
+{
+    switch (Type)
+    {
+    case VariantType::Float2:
+    case VariantType::Float3:
+    case VariantType::Float4:
+    case VariantType::Double2:
+    case VariantType::Double3:
+    case VariantType::Double4:
+        return ShaderGraphValue(VariantType::Types::Float, Value + _subs[1]);
+    default:
+        return Zero;
+    }
+}
+
+ShaderGraphValue ShaderGraphValue::GetZ() const
+{
+    switch (Type)
+    {
+    case VariantType::Float3:
+    case VariantType::Float4:
+    case VariantType::Double3:
+    case VariantType::Double4:
+        return ShaderGraphValue(VariantType::Types::Float, Value + _subs[2]);
+    default:
+        return Zero;
+    }
+}
+
+ShaderGraphValue ShaderGraphValue::GetW() const
+{
+    switch (Type)
+    {
+    case VariantType::Float4:
+    case VariantType::Double4:
+        return ShaderGraphValue(VariantType::Types::Float, Value + _subs[3]);
+    default:
+        return One;
+    }
+}
+
 ShaderGraphValue ShaderGraphValue::Cast(const ShaderGraphValue& v, VariantType::Types to)
 {
     // If they are the same types or input value is empty, then just return value

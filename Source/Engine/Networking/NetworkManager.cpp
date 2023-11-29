@@ -382,7 +382,8 @@ void NetworkManagerService::Update()
 
     // Process network messages
     NetworkEvent event;
-    while (peer->PopEvent(event))
+    bool eventIsValid = true;
+    while (peer->PopEvent(event) && eventIsValid)
     {
         switch (event.EventType)
         {
@@ -471,6 +472,9 @@ void NetworkManagerService::Update()
                 }
             }
             peer->RecycleMessage(event.Message);
+            break;
+        default:
+            eventIsValid = false;
             break;
         }
     }

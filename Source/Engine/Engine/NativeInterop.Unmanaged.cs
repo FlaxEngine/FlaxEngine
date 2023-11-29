@@ -1271,6 +1271,9 @@ namespace FlaxEngine.Interop
             case Type _ when type == typeof(IntPtr):
                 monoType = MTypes.Ptr;
                 break;
+            case Type _ when type.IsPointer:
+                monoType = MTypes.Ptr;
+                break;
             case Type _ when type.IsEnum:
                 monoType = MTypes.Enum;
                 break;
