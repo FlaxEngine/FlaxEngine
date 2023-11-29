@@ -166,7 +166,6 @@ SceneObject* SceneObjectsFactory::Spawn(Context& context, const ISerializable::D
                 return nullptr;
             }
             const StringAnsiView typeName(typeNameMember->value.GetStringAnsiView());
-
             const ScriptingTypeHandle type = Scripting::FindScriptingType(typeName);
             if (type)
             {
