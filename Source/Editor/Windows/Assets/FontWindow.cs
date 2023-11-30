@@ -144,7 +144,7 @@ namespace FlaxEditor.Windows.Assets
         protected override void OnAssetLinked()
         {
             Asset.WaitForLoaded();
-            _textPreview.Font = new FontReference(Asset.CreateFont(30));
+            _textPreview.Font = new MultiFontReference([Asset], 30);
             _inputText.Text = string.Format("This is a sample text using font {0}.", Asset.FamilyName);
             var options = Asset.Options;
             _proxy.Set(ref options);

@@ -101,7 +101,7 @@ namespace FlaxEditor.Surface.Archetypes
                     _debugRelevant = Behavior.GetNodeDebugRelevancy(instance, behavior);
                     _debugInfo = Behavior.GetNodeDebugInfo(instance, behavior);
                     if (!string.IsNullOrEmpty(_debugInfo))
-                        _debugInfoSize = Style.Current.FontSmall.First().MeasureText(_debugInfo);
+                        _debugInfoSize = Style.Current.FontSmall.MeasureText(_debugInfo);
                 }
             }
 

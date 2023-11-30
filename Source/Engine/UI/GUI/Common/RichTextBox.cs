@@ -46,7 +46,7 @@ namespace FlaxEngine.GUI
             var style = Style.Current;
             _textStyle = new TextBlockStyle
             {
-                Font = new FontReference(style.FontMedium.First()),
+                Font = new MultiFontReference(style.FontMedium),
                 Color = style.Foreground,
                 BackgroundSelectedBrush = new SolidColorBrush(style.BackgroundSelected),
             };

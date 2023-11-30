@@ -317,7 +317,7 @@ namespace FlaxEditor.GUI
         private Color _contentsColor;
         private Color _linesColor;
         private Color _labelsColor;
-        private Font _labelsFont;
+        private MultiFont _labelsFont;
 
         /// <summary>
         /// The keyframe UI points.
@@ -437,7 +437,7 @@ namespace FlaxEditor.GUI
             _contentsColor = style.Background.RGBMultiplied(0.7f);
             _linesColor = style.ForegroundDisabled.RGBMultiplied(0.7f);
             _labelsColor = style.ForegroundDisabled;
-            _labelsFont = style.FontSmall.First();
+            _labelsFont = style.FontSmall;
 
             _mainPanel = new Panel(ScrollBars.Both)
             {

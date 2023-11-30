@@ -14,6 +14,7 @@ using FlaxEditor.GUI.Tabs;
 using FlaxEngine;
 using FlaxEngine.GUI;
 using FlaxEngine.Json;
+using FlaxEngine.Utilities;
 
 namespace FlaxEditor.Windows
 {
@@ -78,7 +79,7 @@ namespace FlaxEditor.Windows
                     HorizontalAlignment = TextAlignment.Near,
                     AnchorPreset = AnchorPresets.HorizontalStretchTop,
                     Text = desc.Name,
-                    Font = new FontReference(Style.Current.FontLarge),
+                    Font = new MultiFontReference(Style.Current.FontLarge),
                     Parent = this,
                     Bounds = new Rectangle(tmp1, margin, Width - tmp1 - margin, 28),
                 };
@@ -119,8 +120,8 @@ namespace FlaxEditor.Windows
                     url = desc.HomepageUrl;
                 else if (!string.IsNullOrEmpty(desc.RepositoryUrl))
                     url = desc.RepositoryUrl;
-                versionLabel.Font.Font.WaitForLoaded();
-                var font = versionLabel.Font.GetFont();
+                versionLabel.Font.ForEach(x => x.Font.WaitForLoaded());
+                var font = versionLabel.Font.GetMultiFont();
                 var authorWidth = font.MeasureText(desc.Author).X + 8;
                 var authorLabel = new ClickableLabel
                 {
@@ -391,7 +392,7 @@ namespace FlaxEditor.Windows
             }
 
             Editor.Log("Plugin project has been cloned.");
-            
+
             try
             {
                 // Start git submodule clone

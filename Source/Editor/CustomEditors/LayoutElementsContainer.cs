@@ -276,7 +276,7 @@ namespace FlaxEditor.CustomEditors
         public LabelElement Header(string text)
         {
             var element = Label(text);
-            element.Label.Font = new FontReference(Style.Current.FontLarge);
+            element.Label.Font = new MultiFontReference(Style.Current.FontLarge);
             return element;
         }
 
@@ -284,7 +284,7 @@ namespace FlaxEditor.CustomEditors
         {
             var element = Header(header.Text);
             if (header.FontSize != -1)
-                element.Label.Font = new FontReference(element.Label.Font.Font, header.FontSize);
+                element.Label.Font = new MultiFontReference(element.Label.Font, header.FontSize);
             if (header.Color != 0)
                 element.Label.TextColor = Color.FromRGBA(header.Color);
             return element;

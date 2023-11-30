@@ -239,7 +239,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
                 // Title
                 var title = new Label(2, 2, DialogWidth - 4, TitleHeight)
                 {
-                    Font = new FontReference(style.FontLarge),
+                    Font = new MultiFontReference(style.FontLarge),
                     Text = "Anchor Presets",
                     Parent = this
                 };
@@ -247,7 +247,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
                 // Info
                 var info = new Label(0, title.Bottom, DialogWidth, InfoHeight)
                 {
-                    Font = new FontReference(style.FontSmall.First()),
+                    Font = new MultiFontReference(style.FontSmall),
                     Text = "Shift: also set bounds\nControl: also set pivot",
                     Parent = this
                 };
@@ -423,7 +423,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
             // Set control type button
             var space = layout.Space(20);
             var buttonText = "Set Type";
-            var textSize = FlaxEngine.GUI.Style.Current.FontMedium.First().MeasureText(buttonText);
+            var textSize = FlaxEngine.GUI.Style.Current.FontMedium.MeasureText(buttonText);
             float setTypeButtonWidth = (textSize.X < 60.0f) ? 60.0f : textSize.X + 4;
             var setTypeButton = new Button
             {

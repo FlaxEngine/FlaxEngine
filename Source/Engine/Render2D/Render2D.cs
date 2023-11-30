@@ -164,7 +164,7 @@ namespace FlaxEngine
         /// <param name="textWrapping">Describes how wrap text inside a layout rectangle.</param>
         /// <param name="baseLinesGapScale">The scale for distance one baseline from another. Default is 1.</param>
         /// <param name="scale">The text drawing scale. Default is 1.</param>
-        public static void DrawText(Font[] fonts, string text, Rectangle layoutRect, Color color, TextAlignment horizontalAlignment = TextAlignment.Near, TextAlignment verticalAlignment = TextAlignment.Near, TextWrapping textWrapping = TextWrapping.NoWrap, float baseLinesGapScale = 1.0f, float scale = 1.0f)
+        public static void DrawText(MultiFont fonts, string text, Rectangle layoutRect, Color color, TextAlignment horizontalAlignment = TextAlignment.Near, TextAlignment verticalAlignment = TextAlignment.Near, TextWrapping textWrapping = TextWrapping.NoWrap, float baseLinesGapScale = 1.0f, float scale = 1.0f)
         {
             var layout = new TextLayoutOptions
             {
@@ -175,6 +175,8 @@ namespace FlaxEngine
                 Scale = scale,
                 BaseLinesGapScale = baseLinesGapScale,
             };
+
+            
             DrawText(fonts, text, color, ref layout);
         }
 
@@ -191,7 +193,7 @@ namespace FlaxEngine
         /// <param name="textWrapping">Describes how wrap text inside a layout rectangle.</param>
         /// <param name="baseLinesGapScale">The scale for distance one baseline from another. Default is 1.</param>
         /// <param name="scale">The text drawing scale. Default is 1.</param>
-        public static void DrawText(Font[] fonts, MaterialBase customMaterial, string text, Rectangle layoutRect, Color color, TextAlignment horizontalAlignment = TextAlignment.Near, TextAlignment verticalAlignment = TextAlignment.Near, TextWrapping textWrapping = TextWrapping.NoWrap, float baseLinesGapScale = 1.0f, float scale = 1.0f)
+        public static void DrawText(MultiFont fonts, MaterialBase customMaterial, string text, Rectangle layoutRect, Color color, TextAlignment horizontalAlignment = TextAlignment.Near, TextAlignment verticalAlignment = TextAlignment.Near, TextWrapping textWrapping = TextWrapping.NoWrap, float baseLinesGapScale = 1.0f, float scale = 1.0f)
         {
             var layout = new TextLayoutOptions
             {
@@ -202,6 +204,7 @@ namespace FlaxEngine
                 Scale = scale,
                 BaseLinesGapScale = baseLinesGapScale,
             };
+
             DrawText(fonts, text, color, ref layout, customMaterial);
         }
 

@@ -64,7 +64,7 @@ namespace FlaxEngine.GUI
         /// The text font.
         /// </summary>
         [EditorOrder(0)]
-        public FontReference Font;
+        public MultiFontReference Font;
 
         /// <summary>
         /// The custom material for the text rendering (must be GUI domain).

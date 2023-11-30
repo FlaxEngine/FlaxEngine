@@ -142,8 +142,8 @@ namespace FlaxEditor.SceneGraph.GUI
                     var textRect = TextRect;
                     for (int i = 0; i < ranges.Length; i++)
                     {
-                        var start = font.First().GetCharPosition(text, ranges[i].StartIndex);
-                        var end = font.First().GetCharPosition(text, ranges[i].EndIndex);
+                        var start = font.GetCharPosition(text, ranges[i].StartIndex);
+                        var end = font.GetCharPosition(text, ranges[i].EndIndex);
                         _highlights.Add(new Rectangle(start.X + textRect.X, textRect.Y, end.X - start.X, textRect.Height));
                     }
                     isThisVisible = true;

@@ -123,10 +123,10 @@ namespace FlaxEngine.GUI
             if (index <= 0)
             {
                 ref TextBlock textBlock = ref textBlocks[0];
-                var font = textBlock.Style.Font.GetFont();
+                var font = textBlock.Style.Font.GetMultiFont();
                 if (font)
                 {
-                    height = font.Height / DpiScale;
+                    height = font.MaxHeight / DpiScale;
                     return textBlock.Bounds.UpperLeft;
                 }
             }
@@ -135,10 +135,10 @@ namespace FlaxEngine.GUI
             if (index >= _text.Length)
             {
                 ref TextBlock textBlock = ref textBlocks[count - 1];
-                var font = textBlock.Style.Font.GetFont();
+                var font = textBlock.Style.Font.GetMultiFont();
                 if (font)
                 {
-                    height = font.Height / DpiScale;
+                    height = font.MaxHeight / DpiScale;
                     return textBlock.Bounds.UpperRight;
                 }
             }
@@ -150,10 +150,10 @@ namespace FlaxEngine.GUI
 
                 if (textBlock.Range.Contains(index))
                 {
-                    var font = textBlock.Style.Font.GetFont();
+                    var font = textBlock.Style.Font.GetMultiFont();
                     if (!font)
                         break;
-                    height = font.Height / DpiScale;
+                    height = font.MaxHeight / DpiScale;
                     return textBlock.Bounds.Location + font.GetCharPosition(_text, ref textBlock.Range, index - textBlock.Range.StartIndex);
                 }
             }
@@ -165,10 +165,10 @@ namespace FlaxEngine.GUI
 
                 if (index >= textBlock.Range.EndIndex)
                 {
-                    var font = textBlock.Style.Font.GetFont();
+                    var font = textBlock.Style.Font.GetMultiFont();
                     if (!font)
                         break;
-                    height = font.Height / DpiScale;
+                    height = font.MaxHeight / DpiScale;
                     return textBlock.Bounds.UpperRight;
                 }
             }
@@ -193,7 +193,7 @@ namespace FlaxEngine.GUI
 
                 if (containsY && (containsX || (i + 1 < count && textBlocks[i + 1].Bounds.Location.Y > textBlock.Bounds.Location.Y + 1.0f)))
                 {
-                    var font = textBlock.Style.Font.GetFont();
+                    var font = textBlock.Style.Font.GetMultiFont();
                     if (!font && textBlock.Range.Length > 0)
                         break;
                     return font.HitTestText(_text, ref textBlock.Range, location - textBlock.Bounds.Location) + textBlock.Range.StartIndex;
@@ -281,7 +281,7 @@ namespace FlaxEngine.GUI
                 }
 
                 // Pick font
-                var font = textBlock.Style.Font.GetFont();
+                var font = textBlock.Style.Font.GetMultiFont();
                 if (!font)
                     continue;
 
@@ -290,7 +290,7 @@ namespace FlaxEngine.GUI
                 {
                     var leftEdge = selection.StartIndex <= textBlock.Range.StartIndex ? textBlock.Bounds.UpperLeft : font.GetCharPosition(_text, selection.StartIndex);
                     var rightEdge = selection.EndIndex >= textBlock.Range.EndIndex ? textBlock.Bounds.UpperRight : font.GetCharPosition(_text, selection.EndIndex);
-                    float height = font.Height / DpiScale;
+                    float height = font.MaxHeight / DpiScale;
                     float alpha = Mathf.Min(1.0f, Mathf.Cos(_animateTime * BackgroundSelectedFlashSpeed) * 0.5f + 1.3f);
                     alpha *= alpha;
                     Color selectionColor = Color.White * alpha;
@@ -305,7 +305,7 @@ namespace FlaxEngine.GUI
                 ref TextBlock textBlock = ref textBlocks[i];
 
                 // Pick font
-                var font = textBlock.Style.Font.GetFont();
+                var font = textBlock.Style.Font.GetMultiFont();
                 if (!font)
                     continue;
 
@@ -332,7 +332,7 @@ namespace FlaxEngine.GUI
                 ref TextBlock textBlock = ref textBlocks[i];
 
                 // Pick font
-                var font = textBlock.Style.Font.GetFont();
+                var font = textBlock.Style.Font.GetMultiFont();
                 if (!font)
                     continue;
 
@@ -340,7 +340,7 @@ namespace FlaxEngine.GUI
                 if (textBlock.Style.UnderlineBrush != null)
                 {
                     var underLineHeight = 2.0f;
-                    var height = font.Height / DpiScale;
+                    var height = font.MaxHeight / DpiScale;
                     var underlineRect = new Rectangle(textBlock.Bounds.Location.X, textBlock.Bounds.Location.Y + height - underLineHeight * 0.5f, textBlock.Bounds.Width, underLineHeight);
                     textBlock.Style.UnderlineBrush.Draw(underlineRect, textBlock.Style.Color);
                 }

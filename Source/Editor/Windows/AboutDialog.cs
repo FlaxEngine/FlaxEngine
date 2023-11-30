@@ -41,7 +41,7 @@ namespace FlaxEditor.Windows
             var nameLabel = new Label(icon.Right + 10, icon.Top, 200, 34)
             {
                 Text = "Flax Engine",
-                Font = new FontReference(Style.Current.FontTitle),
+                Font = new MultiFontReference(Style.Current.FontTitle),
                 HorizontalAlignment = TextAlignment.Near,
                 VerticalAlignment = TextAlignment.Center,
                 Parent = this
@@ -54,7 +54,7 @@ namespace FlaxEditor.Windows
                 Parent = this
             };
             var buttonText = "Copy version info";
-            var fontSize = Style.Current.FontMedium.First().MeasureText(buttonText);
+            var fontSize = Style.Current.FontMedium.MeasureText(buttonText);
             var copyVersionButton = new Button(Width - fontSize.X - 8, 6, fontSize.X + 4, 20)
             {
                 Text = buttonText,

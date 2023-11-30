@@ -81,7 +81,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
                 // Title
                 var title = new Label(2, 2, width - 4, 23.0f)
                 {
-                    Font = new FontReference(FlaxEngine.GUI.Style.Current.FontLarge),
+                    Font = new MultiFontReference(FlaxEngine.GUI.Style.Current.FontLarge),
                     Text = "Ragdoll Options",
                     Parent = this
                 };

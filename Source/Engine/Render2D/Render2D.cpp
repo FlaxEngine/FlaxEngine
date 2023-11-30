@@ -1370,10 +1370,11 @@ void Render2D::DrawText(Font* font, const StringView& text, const TextRange& tex
     DrawText(font, textRange.Substring(text), color, layout, customMaterial);
 }
 
-void Render2D::DrawText(const Array<Font*>& fonts, const StringView& text, const Color& color, const Float2& location, MaterialBase* customMaterial)
+void Render2D::DrawText(MultiFont* multiFont, const StringView& text, const Color& color, const Float2& location, MaterialBase* customMaterial)
 {
     RENDER2D_CHECK_RENDERING_STATE;
 
+    const Array<Font*>& fonts = multiFont->GetFonts();
     // Check if there is no need to do anything
     if (fonts.IsEmpty() || text.Length() < 0)
         return;
@@ -1408,7 +1409,7 @@ void Render2D::DrawText(const Array<Font*>& fonts, const StringView& text, const
     for (int32 currentIndex = 0; currentIndex < text.Length(); currentIndex++)
     {
         if (text[currentIndex] != '\n') {
-            int32 fontIndex = Font::GetCharFontIndex(fonts, text[currentIndex], 0);
+            int32 fontIndex = multiFont->GetCharFontIndex(text[currentIndex], 0);
             maxAscenders[lineIndex] = Math::Max(maxAscenders[lineIndex], static_cast<float>(fonts[fontIndex]->GetAscender()));
         }
         else {
@@ -1418,12 +1419,12 @@ void Render2D::DrawText(const Array<Font*>& fonts, const StringView& text, const
     }
 
     lineIndex = 0;
-    // The following code cut the text into segments, according to the font used to render
+    // The following code cut the text into blocks, according to the font used to render
     Float2 pointer = location;
-    // The starting index of the current segment
+    // The starting index of the current block
     int32 startIndex = 0;
-    // The index of the font used by the current segment
-    int32 currentFontIndex = Font::GetCharFontIndex(fonts, text[0], 0);
+    // The index of the font used by the current block
+    int32 currentFontIndex = multiFont->GetCharFontIndex(text[0], 0);
     // The maximum font height of the current line
     float maxHeight = 0;
     for (int32 currentIndex = 0; currentIndex < text.Length(); currentIndex++)
@@ -1431,13 +1432,13 @@ void Render2D::DrawText(const Array<Font*>& fonts, const StringView& text, const
         // Cache current character
         const Char currentChar = text[currentIndex];
         int32 nextCharIndex = currentIndex + 1;
-        bool moveSegment = false;
+        bool moveBlock = false;
         bool moveLine = false;
         int32 nextFontIndex = currentFontIndex;
 
-        // Submit segment if text ends
+        // Submit block if text ends
         if (nextCharIndex == text.Length()) {
-            moveSegment = true;
+            moveBlock = true;
         }
 
         // Check if it isn't a newline character
@@ -1445,21 +1446,21 @@ void Render2D::DrawText(const Array<Font*>& fonts, const StringView& text, const
         {
             // Get character entry
             if (nextCharIndex < text.Length()) {
-                nextFontIndex = Font::GetCharFontIndex(fonts, text[nextCharIndex], currentFontIndex);
+                nextFontIndex = multiFont->GetCharFontIndex(text[nextCharIndex], currentFontIndex);
             }
 
             if (nextFontIndex != currentFontIndex) {
-                moveSegment = true;
+                moveBlock = true;
             }
         }
         else
         {
             // Move
-            moveLine = moveSegment = true;
+            moveLine = moveBlock = true;
         }
 
-        if (moveSegment) {
-            // Render the pending segment before beginning the new segment
+        if (moveBlock) {
+            // Render the pending block before beginning the new block
             auto fontHeight = fonts[currentFontIndex]->GetHeight();
             maxHeight = Math::Max(maxHeight, static_cast<float>(fontHeight));
             auto fontDescender = fonts[currentFontIndex]->GetDescender();
@@ -1533,22 +1534,23 @@ void Render2D::DrawText(const Array<Font*>& fonts, const StringView& text, const
                 lineIndex++;
             }
 
-            // Start new segment
+            // Start new block
             startIndex = nextCharIndex;
             currentFontIndex = nextFontIndex;
         }
     }
 }
 
-void Render2D::DrawText(const Array<Font*>& fonts, const StringView& text, const TextRange& textRange, const Color& color, const Float2& location, MaterialBase* customMaterial)
+void Render2D::DrawText(MultiFont* multiFont, const StringView& text, const TextRange& textRange, const Color& color, const Float2& location, MaterialBase* customMaterial)
 {
-    DrawText(fonts, textRange.Substring(text), color, location, customMaterial);
+    DrawText(multiFont, textRange.Substring(text), color, location, customMaterial);
 }
 
-void Render2D::DrawText(const Array<Font*>& fonts, const StringView& text, const Color& color, const TextLayoutOptions& layout, MaterialBase* customMaterial)
+void Render2D::DrawText(MultiFont* multiFont, const StringView& text, const Color& color, const TextLayoutOptions& layout, MaterialBase* customMaterial)
 {
     RENDER2D_CHECK_RENDERING_STATE;
 
+    const Array<Font*>& fonts = multiFont->GetFonts();
     // Check if there is no need to do anything
     if (fonts.IsEmpty() || text.IsEmpty() || layout.Scale <= ZeroTolerance)
         return;
@@ -1563,7 +1565,7 @@ void Render2D::DrawText(const Array<Font*>& fonts, const StringView& text, const
 
     // Process text to get lines
     MultiFontLines.Clear();
-    Font::ProcessText(fonts, text, MultiFontLines, layout);
+    multiFont->ProcessText(text, MultiFontLines, layout);
 
     // Render all lines
     FontCharacterEntry entry;
@@ -1582,14 +1584,14 @@ void Render2D::DrawText(const Array<Font*>& fonts, const StringView& text, const
     for (int32 lineIndex = 0; lineIndex < MultiFontLines.Count(); lineIndex++)
     {
         const MultiFontLineCache& line = MultiFontLines[lineIndex];
-        for (int32 segmentIndex = 0; segmentIndex < line.Segments.Count(); segmentIndex++)
+        for (int32 blockIndex = 0; blockIndex < line.Blocks.Count(); blockIndex++)
         {
-            const MultiFontSegmentCache& segment = MultiFontLines[lineIndex].Segments[segmentIndex];
-            auto fontHeight = fonts[segment.FontIndex]->GetHeight();
-            auto fontDescender = fonts[segment.FontIndex]->GetDescender();
-            Float2 pointer = line.Location + segment.Location;
+            const MultiFontBlockCache& block = MultiFontLines[lineIndex].Blocks[blockIndex];
+            auto fontHeight = fonts[block.FontIndex]->GetHeight();
+            auto fontDescender = fonts[block.FontIndex]->GetDescender();
+            Float2 pointer = line.Location + block.Location;
 
-            for (int32 charIndex = segment.FirstCharIndex; charIndex <= segment.LastCharIndex; charIndex++)
+            for (int32 charIndex = block.FirstCharIndex; charIndex <= block.LastCharIndex; charIndex++)
             {
                 Char c = text[charIndex];
                 if (c == '\n')
@@ -1598,7 +1600,7 @@ void Render2D::DrawText(const Array<Font*>& fonts, const StringView& text, const
                 }
 
                 // Get character entry
-                fonts[segment.FontIndex]->GetCharacter(c, entry);
+                fonts[block.FontIndex]->GetCharacter(c, entry);
 
                 // Check if need to select/change font atlas (since characters even in the same font may be located in different atlases)
                 if (fontAtlas == nullptr || entry.TextureIndex != fontAtlasIndex)
@@ -1623,7 +1625,7 @@ void Render2D::DrawText(const Array<Font*>& fonts, const StringView& text, const
                 const bool isWhitespace = StringUtils::IsWhitespace(c);
                 if (!isWhitespace && previous.IsValid)
                 {
-                    kerning = fonts[segment.FontIndex]->GetKerning(previous.Character, entry.Character);
+                    kerning = fonts[block.FontIndex]->GetKerning(previous.Character, entry.Character);
                 }
                 else
                 {
@@ -1659,9 +1661,9 @@ void Render2D::DrawText(const Array<Font*>& fonts, const StringView& text, const
     }
 }
 
-void Render2D::DrawText(const Array<Font*>& fonts, const StringView& text, const TextRange& textRange, const Color& color, const TextLayoutOptions& layout, MaterialBase* customMaterial)
+void Render2D::DrawText(MultiFont* multiFont, const StringView& text, const TextRange& textRange, const Color& color, const TextLayoutOptions& layout, MaterialBase* customMaterial)
 {
-    DrawText(fonts, textRange.Substring(text), color, layout, customMaterial);
+    DrawText(multiFont, textRange.Substring(text), color, layout, customMaterial);
 }
 
 FORCE_INLINE bool NeedAlphaWithTint(const Color& color)
@@ -2165,22 +2167,22 @@ void Render2D::DrawBezier(const Float2& p1, const Float2& p2, const Float2& p3, 
 {
     RENDER2D_CHECK_RENDERING_STATE;
 
-    // Find amount of segments to use
+    // Find amount of blocks to use
     const Float2 d1 = p2 - p1;
     const Float2 d2 = p3 - p2;
     const Float2 d3 = p4 - p3;
     const float len = d1.Length() + d2.Length() + d3.Length();
-    const int32 segmentCount = Math::Clamp(Math::CeilToInt(len * 0.05f), 1, 100);
-    const float segmentCountInv = 1.0f / segmentCount;
+    const int32 blockCount = Math::Clamp(Math::CeilToInt(len * 0.05f), 1, 100);
+    const float blockCountInv = 1.0f / blockCount;
 
-    // Draw segmented curve
+    // Draw blocked curve
     Float2 p;
     AnimationUtils::Bezier(p1, p2, p3, p4, 0, p);
     Lines2.Clear();
     Lines2.Add(p);
-    for (int32 i = 1; i <= segmentCount; i++)
+    for (int32 i = 1; i <= blockCount; i++)
     {
-        const float t = i * segmentCountInv;
+        const float t = i * blockCountInv;
         AnimationUtils::Bezier(p1, p2, p3, p4, t, p);
         Lines2.Add(p);
     }

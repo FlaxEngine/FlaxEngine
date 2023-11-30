@@ -631,7 +631,7 @@ namespace FlaxEditor.CustomEditors.Editors
                 TooltipText = "Edit...",
                 Parent = _label,
             };
-            var textSize = FlaxEngine.GUI.Style.Current.FontMedium.First().MeasureText(buttonText);
+            var textSize = FlaxEngine.GUI.Style.Current.FontMedium.MeasureText(buttonText);
             if (textSize.Y > button.Width)
                 button.Width = textSize.Y + 2;
 

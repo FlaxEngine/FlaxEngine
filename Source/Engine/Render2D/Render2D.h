@@ -15,6 +15,7 @@ struct Matrix3x3;
 struct Viewport;
 struct TextRange;
 class Font;
+class MultiFont;
 class GPUPipelineState;
 class GPUTexture;
 class GPUTextureView;
@@ -224,7 +225,7 @@ public:
     /// <param name="color">The text color.</param>
     /// <param name="location">The text location.</param>
     /// <param name="customMaterial">The custom material for font characters rendering. It must contain texture parameter named Font used to sample font texture.</param>
-    API_FUNCTION() static void DrawText(const Array<Font*, HeapAllocation>& fonts, const StringView& text, const Color& color, const Float2& location, MaterialBase* customMaterial = nullptr);
+    API_FUNCTION() static void DrawText(MultiFont* multiFont, const StringView& text, const Color& color, const Float2& location, MaterialBase* customMaterial = nullptr);
 
     /// <summary>
     /// Draws a text with formatting.
@@ -234,18 +235,7 @@ public:
     /// <param name="color">The text color.</param>
     /// <param name="layout">The text layout properties.</param>
     /// <param name="customMaterial">The custom material for font characters rendering. It must contain texture parameter named Font used to sample font texture.</param>
-    API_FUNCTION() static void DrawText(const Array<Font*, HeapAllocation>& fonts, const StringView& text, API_PARAM(Ref) const TextRange& textRange, const Color& color, const Float2& location, MaterialBase* customMaterial = nullptr);
-
-    /// <summary>
-    /// Draws a text with formatting.
-    /// </summary>
-    /// <param name="fonts">The fonts to use, ordered by priority.</param>
-    /// <param name="text">The text to render.</param>
-    /// <param name="textRange">The input text range (substring range of the input text parameter).</param>
-    /// <param name="color">The text color.</param>
-    /// <param name="layout">The text layout properties.</param>
-    /// <param name="customMaterial">The custom material for font characters rendering. It must contain texture parameter named Font used to sample font texture.</param>
-    API_FUNCTION() static void DrawText(const Array<Font*, HeapAllocation>& fonts, const StringView& text, const Color& color, API_PARAM(Ref) const TextLayoutOptions& layout, MaterialBase* customMaterial = nullptr);
+    API_FUNCTION() static void DrawText(MultiFont* multiFont, const StringView& text, API_PARAM(Ref) const TextRange& textRange, const Color& color, const Float2& location, MaterialBase* customMaterial = nullptr);
 
     /// <summary>
     /// Draws a text with formatting.
@@ -256,7 +246,18 @@ public:
     /// <param name="color">The text color.</param>
     /// <param name="layout">The text layout properties.</param>
     /// <param name="customMaterial">The custom material for font characters rendering. It must contain texture parameter named Font used to sample font texture.</param>
-    API_FUNCTION() static void DrawText(const Array<Font*, HeapAllocation>& fonts, const StringView& text, API_PARAM(Ref) const TextRange& textRange, const Color& color, API_PARAM(Ref) const TextLayoutOptions& layout, MaterialBase* customMaterial = nullptr);
+    API_FUNCTION() static void DrawText(MultiFont* multiFont, const StringView& text, const Color& color, API_PARAM(Ref) const TextLayoutOptions& layout, MaterialBase* customMaterial = nullptr);
+
+    /// <summary>
+    /// Draws a text with formatting.
+    /// </summary>
+    /// <param name="fonts">The fonts to use, ordered by priority.</param>
+    /// <param name="text">The text to render.</param>
+    /// <param name="textRange">The input text range (substring range of the input text parameter).</param>
+    /// <param name="color">The text color.</param>
+    /// <param name="layout">The text layout properties.</param>
+    /// <param name="customMaterial">The custom material for font characters rendering. It must contain texture parameter named Font used to sample font texture.</param>
+    API_FUNCTION() static void DrawText(MultiFont* multiFont, const StringView& text, API_PARAM(Ref) const TextRange& textRange, const Color& color, API_PARAM(Ref) const TextLayoutOptions& layout, MaterialBase* customMaterial = nullptr);
 
     /// <summary>
     /// Fills a rectangle area.

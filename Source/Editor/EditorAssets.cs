@@ -54,7 +54,7 @@ namespace FlaxEditor
         /// </summary>
         public static string PrimaryFont = "Editor/Fonts/Roboto-Regular";
 
-        public static string CJKFont = "Editor/Fonts/NotoSansSC-Regular";
+        public static string CjkFont = "Editor/Fonts/NotoSansSC-Regular";
 
         /// <summary>
         /// The Inconsolata Regular font.

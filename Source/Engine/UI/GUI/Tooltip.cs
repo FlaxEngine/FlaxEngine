@@ -244,6 +244,7 @@ namespace FlaxEngine.GUI
                               TextAlignment.Center,
                               TextWrapping.WrapWords
                              );
+
         }
 
         /// <inheritdoc />
@@ -256,14 +257,14 @@ namespace FlaxEngine.GUI
 
             // Calculate size of the tooltip
             var size = Float2.Zero;
-            if (style != null && style.FontMedium.First() && !string.IsNullOrEmpty(_currentText))
+            if (style != null && style.FontMedium && !string.IsNullOrEmpty(_currentText))
             {
                 var layout = TextLayoutOptions.Default;
                 layout.Bounds = new Rectangle(0, 0, MaxWidth, 10000000);
                 layout.HorizontalAlignment = TextAlignment.Center;
                 layout.VerticalAlignment = TextAlignment.Center;
                 layout.TextWrapping = TextWrapping.WrapWords;
-                var items = style.FontMedium.First().ProcessText(_currentText, ref layout);
+                var items = style.FontMedium.ProcessText(_currentText, ref layout);
                 for (int i = 0; i < items.Length; i++)
                 {
                     ref var item = ref items[i];

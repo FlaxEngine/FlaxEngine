@@ -141,7 +141,7 @@ namespace FlaxEditor.Surface.ContextMenu
             };
 
             // Title bar
-            var titleFontReference = new FontReference(Style.Current.FontLarge.Asset, 10);
+            var titleFontReference = new MultiFontReference(Style.Current.FontLarge);
             var titleLabel = new Label
             {
                 Width = Width * 0.5f - 8f,

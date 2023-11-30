@@ -2,6 +2,7 @@
 
 using System;
 using System.Globalization;
+using System.Linq;
 using FlaxEngine;
 using FlaxEngine.GUI;
 
@@ -36,16 +37,16 @@ namespace FlaxEditor.GUI.Timeline.GUI
             string labelText;
             switch (_timeline.TimeShowMode)
             {
-            case Timeline.TimeShowModes.Frames:
-                labelText = _timeline.CurrentFrame.ToString("###0", CultureInfo.InvariantCulture);
-                break;
-            case Timeline.TimeShowModes.Seconds:
-                labelText = _timeline.CurrentTime.ToString("###0.##'s'", CultureInfo.InvariantCulture);
-                break;
-            case Timeline.TimeShowModes.Time:
-                labelText = TimeSpan.FromSeconds(_timeline.CurrentTime).ToString("g");
-                break;
-            default: throw new ArgumentOutOfRangeException();
+                case Timeline.TimeShowModes.Frames:
+                    labelText = _timeline.CurrentFrame.ToString("###0", CultureInfo.InvariantCulture);
+                    break;
+                case Timeline.TimeShowModes.Seconds:
+                    labelText = _timeline.CurrentTime.ToString("###0.##'s'", CultureInfo.InvariantCulture);
+                    break;
+                case Timeline.TimeShowModes.Time:
+                    labelText = TimeSpan.FromSeconds(_timeline.CurrentTime).ToString("g");
+                    break;
+                default: throw new ArgumentOutOfRangeException();
             }
             var color = (_timeline.IsMovingPositionHandle ? style.ProgressNormal : style.Foreground).AlphaMultiplied(0.6f);
             Matrix3x3.RotationZ(Mathf.PiOverTwo, out var m1);

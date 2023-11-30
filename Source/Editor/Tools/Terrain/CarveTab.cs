@@ -106,7 +106,7 @@ namespace FlaxEditor.Tools.Terrain
                 Parent = _noTerrainPanel,
                 Enabled = false
             };
-            var textSize = Style.Current.FontMedium.First().MeasureText(buttonText);
+            var textSize = Style.Current.FontMedium.MeasureText(buttonText);
             if (_createTerrainButton.Width < textSize.X)
             {
                 _createTerrainButton.LocalX -= (textSize.X - _createTerrainButton.Width) / 2;

@@ -130,7 +130,7 @@ namespace FlaxEditor.GUI
             Render2D.FillRectangle(rect, column.TitleBackgroundColor);
 
             var style = Style.Current;
-            var font = column.TitleFont ?? style.FontMedium.First();
+            var font = column.TitleFont ?? style.FontMedium;
             Render2D.DrawText(font, column.Title, rect, column.TitleColor, TextAlignment.Center, TextAlignment.Center);
 
             if (columnIndex < _columns.Length - 1)

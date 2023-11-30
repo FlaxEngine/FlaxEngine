@@ -76,7 +76,7 @@ namespace FlaxEditor.GUI
 
                 var windowIcon = FlaxEngine.Content.LoadAsyncInternal<Texture>(EditorAssets.WindowIcon);
                 FontAsset windowIconsFont = FlaxEngine.Content.LoadAsyncInternal<FontAsset>(EditorAssets.WindowIconsFont);
-                Font iconFont = windowIconsFont?.CreateFont(9);
+                MultiFont iconFont = new MultiFontReference([windowIconsFont], 9).GetMultiFont();
 
                 _window = mainWindow.RootWindow.Window;
                 _window.HitTest += OnHitTest;
@@ -108,7 +108,7 @@ namespace FlaxEditor.GUI
                 _closeButton = new Button
                 {
                     Text = ((char)EditorAssets.SegMDL2Icons.ChromeClose).ToString(),
-                    Font = new FontReference(iconFont),
+                    Font = new MultiFontReference(iconFont),
                     BackgroundColor = Color.Transparent,
                     BorderColor = Color.Transparent,
                     BorderColorHighlighted = Color.Transparent,
@@ -124,7 +124,7 @@ namespace FlaxEditor.GUI
                 _minimizeButton = new Button
                 {
                     Text = ((char)EditorAssets.SegMDL2Icons.ChromeMinimize).ToString(),
-                    Font = new FontReference(iconFont),
+                    Font = new MultiFontReference(iconFont),
                     BackgroundColor = Color.Transparent,
                     BorderColor = Color.Transparent,
                     BorderColorHighlighted = Color.Transparent,
@@ -139,7 +139,7 @@ namespace FlaxEditor.GUI
                 _maximizeButton = new Button
                 {
                     Text = ((char)(_window.IsMaximized ? EditorAssets.SegMDL2Icons.ChromeRestore : EditorAssets.SegMDL2Icons.ChromeMaximize)).ToString(),
-                    Font = new FontReference(iconFont),
+                    Font = new MultiFontReference(iconFont),
                     BackgroundColor = Color.Transparent,
                     BorderColor = Color.Transparent,
                     BorderColorHighlighted = Color.Transparent,

@@ -1,5 +1,6 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
+using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using FlaxEngine.Utilities;
@@ -185,7 +186,7 @@ namespace FlaxEngine.GUI
             };
 
             // Process text into text blocks (handle newlines etc.)
-            var font = textBlock.Style.Font.GetFont();
+            var font = textBlock.Style.Font.GetMultiFont();
             if (!font)
                 return;
             var lines = font.ProcessText(_text, ref textBlock.Range);
@@ -194,20 +195,27 @@ namespace FlaxEngine.GUI
             for (int i = 0; i < lines.Length; i++)
             {
                 ref var line = ref lines[i];
-                textBlock.Range = new TextRange
-                {
-                    StartIndex = start + line.FirstCharIndex,
-                    EndIndex = start + line.LastCharIndex,
-                };
+
                 if (i != 0)
                 {
                     context.Caret.X = 0;
                     OnLineAdded(ref context, textBlock.Range.StartIndex - 1);
                 }
-                textBlock.Bounds = new Rectangle(context.Caret, line.Size);
-                textBlock.Bounds.X += line.Location.X;
+                for (int k = 0; k < line.Blocks.Length; k++)
+                {
+                    ref var block = ref line.Blocks[k];
 
-                context.AddTextBlock(ref textBlock);
+                    textBlock.Range = new TextRange
+                    {
+                        StartIndex = start + block.FirstCharIndex,
+                        EndIndex = start + block.LastCharIndex,
+                    };
+                    
+                    textBlock.Bounds = new Rectangle(context.Caret, block.Size);
+                    textBlock.Bounds.X += block.Location.X;
+
+                    context.AddTextBlock(ref textBlock);
+                }
             }
 
             // Update the caret location
@@ -236,9 +244,9 @@ namespace FlaxEngine.GUI
                 var ascender = textBlock.Ascender;
                 //if (ascender <= 0)
                 {
-                    var textBlockFont = textBlock.Style.Font.GetFont();
+                    var textBlockFont = textBlock.Style.Font.GetMultiFont();
                     if (textBlockFont)
-                        ascender = textBlockFont.Ascender;
+                        ascender = textBlockFont.MaxAscender;
                 }
                 lineAscender = Mathf.Max(lineAscender, ascender);
                 lineSize = Float2.Max(lineSize, textBlockSize);
@@ -259,9 +267,9 @@ namespace FlaxEngine.GUI
                     var ascender = textBlock.Ascender;
                     if (ascender <= 0)
                     {
-                        var textBlockFont = textBlock.Style.Font.GetFont();
+                        var textBlockFont = textBlock.Style.Font.GetMultiFont();
                         if (textBlockFont)
-                            ascender = textBlockFont.Ascender;
+                            ascender = textBlockFont.MaxAscender;
                     }
                     vOffset = lineAscender - ascender;
                     textBlock.Bounds.Location.Y += vOffset;

@@ -35,7 +35,7 @@ namespace FlaxEditor.GUI
         /// <summary>
         /// The title font.
         /// </summary>
-        public Font TitleFont;
+        public MultiFont TitleFont;
 
         /// <summary>
         /// The column title text color.

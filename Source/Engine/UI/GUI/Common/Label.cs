@@ -26,7 +26,7 @@ namespace FlaxEngine.GUI
         /// <summary>
         /// The font.
         /// </summary>
-        protected FontReference _font;
+        protected MultiFontReference _font;
 
         /// <summary>
         /// Gets or sets the text.
@@ -86,7 +86,7 @@ namespace FlaxEngine.GUI
         /// Gets or sets the font.
         /// </summary>
         [EditorDisplay("Text Style"), EditorOrder(2024)]
-        public FontReference Font
+        public MultiFontReference Font
         {
             get => _font;
             set
@@ -192,7 +192,7 @@ namespace FlaxEngine.GUI
         {
             AutoFocus = false;
             var style = Style.Current;
-            Font = new FontReference(style.FontMedium.First());
+            Font = new MultiFontReference(style.FontMedium);
             TextColor = style.Foreground;
             TextColorHighlighted = style.Foreground;
         }
@@ -203,7 +203,7 @@ namespace FlaxEngine.GUI
         {
             AutoFocus = false;
             var style = Style.Current;
-            Font = new FontReference(style.FontMedium.First());
+            Font = new MultiFontReference(style.FontMedium);
             TextColor = style.Foreground;
             TextColorHighlighted = style.Foreground;
         }
@@ -235,7 +235,7 @@ namespace FlaxEngine.GUI
                 }
             }
 
-            Render2D.DrawText([_font.GetFont(), Style.Current.FontCJK], Material, _text, rect, color, hAlignment, wAlignment, Wrapping, BaseLinesGapScale, scale);
+            Render2D.DrawText(_font.GetMultiFont(), Material, _text, rect, color, hAlignment, wAlignment, Wrapping, BaseLinesGapScale, scale);
 
             if (ClipText)
                 Render2D.PopClip();
@@ -246,7 +246,7 @@ namespace FlaxEngine.GUI
         {
             if (_autoWidth || _autoHeight || _autoFitText)
             {
-                var font = _font.GetFont();
+                var font = _font.GetMultiFont();
                 if (font)
                 {
                     // Calculate text size

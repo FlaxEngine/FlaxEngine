@@ -66,9 +66,9 @@ namespace FlaxEditor.GUI
         {
             var style = Style.Current;
 
-            if (style.FontMedium.First())
+            if (style.FontMedium)
             {
-                Width = style.FontMedium.First().MeasureText(Text).X + 2 * DefaultMargin;
+                Width = style.FontMedium.MeasureText(Text).X + 2 * DefaultMargin;
             }
         }
     }

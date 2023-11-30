@@ -14,68 +14,60 @@ namespace FlaxEngine.GUI
         /// </summary>
         public static Style Current { get; set; }
 
-        public Font FontCJK
-        {
-            get => _fontCJK?.GetFont();
-            set => _fontCJK = new FontReference(value);
-        }
-
-        private FontReference _fontCJK;
-
         [Serialize]
-        private FontReference _fontTitle;
+        private MultiFontReference _fontTitle;
 
         /// <summary>
         /// The font title.
         /// </summary>
         [NoSerialize]
         [EditorOrder(10)]
-        public Font FontTitle
+        public MultiFont FontTitle
         {
-            get => _fontTitle?.GetFont();
-            set => _fontTitle = new FontReference(value);
+            get => _fontTitle?.GetMultiFont();
+            set => _fontTitle = new MultiFontReference(value);
         }
 
         [Serialize]
-        private FontReference _fontLarge;
+        private MultiFontReference _fontLarge;
 
         /// <summary>
         /// The font large.
         /// </summary>
         [NoSerialize]
         [EditorOrder(20)]
-        public Font FontLarge
+        public MultiFont FontLarge
         {
-            get => _fontLarge?.GetFont();
-            set => _fontLarge = new FontReference(value);
+            get => _fontLarge?.GetMultiFont();
+            set => _fontLarge = new MultiFontReference(value);
         }
 
         [Serialize]
-        private FontReference[] _fontMedium;
+        private MultiFontReference _fontMedium;
 
         /// <summary>
         /// The font medium.
         /// </summary>
         [NoSerialize]
         [EditorOrder(30)]
-        public Font[] FontMedium
+        public MultiFont FontMedium
         {
-            get => _fontMedium?.Select((x)=>x.GetFont()).ToArray();
-            set => _fontMedium = value.Select((x)=>new FontReference(x)).ToArray();
+            get => _fontMedium?.GetMultiFont();
+            set => _fontMedium = new MultiFontReference(value);
         }
 
         [Serialize]
-        private FontReference[] _fontSmall;
+        private MultiFontReference _fontSmall;
 
         /// <summary>
         /// The font small.
         /// </summary>
         [NoSerialize]
         [EditorOrder(40)]
-        public Font[] FontSmall
+        public MultiFont FontSmall
         {
-            get => _fontSmall?.Select((x) => x.GetFont()).ToArray();
-            set => _fontSmall = value.Select((x) => new FontReference(x)).ToArray();
+            get => _fontSmall?.GetMultiFont();
+            set => _fontSmall = new MultiFontReference(value);
         }
 
         /// <summary>

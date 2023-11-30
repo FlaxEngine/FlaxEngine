@@ -1407,7 +1407,7 @@ namespace FlaxEditor.Surface.Archetypes
                     // Title
                     var title = new Label(2, 2, width - 4, 23.0f)
                     {
-                        Font = new FontReference(Style.Current.FontLarge),
+                        Font = new MultiFontReference(Style.Current.FontLarge),
                         Text = "Edit function signature",
                         Parent = this
                     };

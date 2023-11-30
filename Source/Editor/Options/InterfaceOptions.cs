@@ -166,15 +166,13 @@ namespace FlaxEditor.Options
         /// Gets or sets the output log text font.
         /// </summary>
         [EditorDisplay("Output Log", "Text Font"), EditorOrder(320), Tooltip("The output log text font.")]
-        public FontReference OutputLogTextFont
+        public MultiFontReference OutputLogTextFont
         {
             get => _outputLogFont;
             set
             {
-                if (value == null)
-                    _outputLogFont = new FontReference(FlaxEngine.Content.LoadAsyncInternal<FontAsset>(EditorAssets.InconsolataRegularFont), 10);
-                else if (!value.Font)
-                    _outputLogFont.Font = FlaxEngine.Content.LoadAsyncInternal<FontAsset>(EditorAssets.InconsolataRegularFont);
+                if (value == null || !value.Verify())
+                    _outputLogFont = new MultiFontReference(ConsoleFonts, 10);
                 else
                     _outputLogFont = value;
             }
@@ -236,32 +234,31 @@ namespace FlaxEditor.Options
         [EditorDisplay("Cook & Run"), EditorOrder(500)]
         public int NumberOfGameClientsToLaunch = 1;
 
-        private static FontAsset DefaultFont => FlaxEngine.Content.LoadAsyncInternal<FontAsset>(EditorAssets.PrimaryFont);
-        private static FontAsset _cjkFont => FlaxEngine.Content.LoadAsyncInternal<FontAsset>(EditorAssets.CJKFont);
-        private FontReference _titleFont = new FontReference(DefaultFont, 18);
-        private FontReference _largeFont = new FontReference(DefaultFont, 14);
-        private FontReference _mediumFont = new FontReference(DefaultFont, 9);
-        private FontReference _smallFont = new FontReference(DefaultFont, 9);
-        private FontReference _outputLogFont = new FontReference(FlaxEngine.Content.LoadAsyncInternal<FontAsset>(EditorAssets.InconsolataRegularFont), 10);
+        private static FontAsset[] DefaultFonts =>
+            [FlaxEngine.Content.LoadAsyncInternal<FontAsset>(EditorAssets.PrimaryFont),
+                FlaxEngine.Content.LoadAsyncInternal<FontAsset>(EditorAssets.CjkFont)];
 
-        public FontReference CJKFont
-        {
-            get => new FontReference(_cjkFont, 9);
-        }
+        private static FontAsset[] ConsoleFonts => [FlaxEngine.Content.LoadAsyncInternal<FontAsset>(EditorAssets.PrimaryFont),
+            FlaxEngine.Content.LoadAsyncInternal<FontAsset>(EditorAssets.CjkFont)];
+
+        private MultiFontReference _titleFont = new MultiFontReference(DefaultFonts, 18);
+        private MultiFontReference _largeFont = new MultiFontReference(DefaultFonts, 14);
+        private MultiFontReference _mediumFont = new MultiFontReference(DefaultFonts, 9);
+        private MultiFontReference _smallFont = new MultiFontReference(DefaultFonts, 9);
+        private MultiFontReference _outputLogFont = new MultiFontReference(ConsoleFonts, 10);
+
 
         /// <summary>
         /// Gets or sets the title font for editor UI.
         /// </summary>
         [EditorDisplay("Fonts"), EditorOrder(600), Tooltip("The title font for editor UI.")]
-        public FontReference TitleFont
+        public MultiFontReference TitleFont
         {
             get => _titleFont;
             set
             {
-                if (value == null)
-                    _titleFont = new FontReference(DefaultFont, 18);
-                else if (!value.Font)
-                    _titleFont.Font = DefaultFont;
+                if (value == null || !value.Verify())
+                    _titleFont = new MultiFontReference(DefaultFonts, 18);
                 else
                     _titleFont = value;
             }
@@ -271,15 +268,13 @@ namespace FlaxEditor.Options
         /// Gets or sets the large font for editor UI.
         /// </summary>
         [EditorDisplay("Fonts"), EditorOrder(610), Tooltip("The large font for editor UI.")]
-        public FontReference LargeFont
+        public MultiFontReference LargeFont
         {
             get => _largeFont;
             set
             {
-                if (value == null)
-                    _largeFont = new FontReference(DefaultFont, 14);
-                else if (!value.Font)
-                    _largeFont.Font = DefaultFont;
+                if (value == null || !value.Verify())
+                    _largeFont = new MultiFontReference(DefaultFonts, 14);
                 else
                     _largeFont = value;
             }
@@ -289,15 +284,13 @@ namespace FlaxEditor.Options
         /// Gets or sets the medium font for editor UI.
         /// </summary>
         [EditorDisplay("Fonts"), EditorOrder(620), Tooltip("The medium font for editor UI.")]
-        public FontReference MediumFont
+        public MultiFontReference MediumFont
         {
             get => _mediumFont;
             set
             {
-                if (value == null)
-                    _mediumFont = new FontReference(DefaultFont, 9);
-                else if (!value.Font)
-                    _mediumFont.Font = DefaultFont;
+                if (value == null || !value.Verify())
+                    _mediumFont = new MultiFontReference(DefaultFonts, 9);
                 else
                     _mediumFont = value;
             }
@@ -307,15 +300,13 @@ namespace FlaxEditor.Options
         /// Gets or sets the small font for editor UI.
         /// </summary>
         [EditorDisplay("Fonts"), EditorOrder(630), Tooltip("The small font for editor UI.")]
-        public FontReference SmallFont
+        public MultiFontReference SmallFont
         {
             get => _smallFont;
             set
             {
-                if (value == null)
-                    _smallFont = new FontReference(DefaultFont, 9);
-                else if (!value.Font)
-                    _smallFont.Font = DefaultFont;
+                if (value == null || !value.Verify())
+                    _smallFont = new MultiFontReference(DefaultFonts, 9);
                 else
                     _smallFont = value;
             }

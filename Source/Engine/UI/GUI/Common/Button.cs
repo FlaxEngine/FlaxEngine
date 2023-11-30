@@ -23,7 +23,7 @@ namespace FlaxEngine.GUI
         /// <summary>
         /// The font.
         /// </summary>
-        protected FontReference _font;
+        protected MultiFontReference _font;
 
         /// <summary>
         /// The text.
@@ -44,7 +44,7 @@ namespace FlaxEngine.GUI
         /// Gets or sets the font used to draw button text.
         /// </summary>
         [EditorDisplay("Text Style"), EditorOrder(2022), ExpandGroups]
-        public FontReference Font
+        public MultiFontReference Font
         {
             get => _font;
             set => _font = value;
@@ -156,7 +156,7 @@ namespace FlaxEngine.GUI
             var style = Style.Current;
             if (style != null)
             {
-                _font = new FontReference(style.FontMedium.First());
+                _font = new MultiFontReference(style.FontMedium);
                 TextColor = style.Foreground;
                 BackgroundColor = style.BackgroundNormal;
                 BorderColor = style.BorderNormal;
@@ -262,7 +262,7 @@ namespace FlaxEngine.GUI
                 Render2D.DrawRectangle(clientRect, borderColor, BorderThickness);
 
             // Draw text
-            Render2D.DrawText(_font?.GetFont(), TextMaterial, _text, clientRect, textColor, TextAlignment.Center, TextAlignment.Center);
+            Render2D.DrawText(_font?.GetMultiFont(), TextMaterial, _text, clientRect, textColor, TextAlignment.Center, TextAlignment.Center);
         }
 
         /// <inheritdoc />

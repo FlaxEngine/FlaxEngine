@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
 using FlaxEngine.Utilities;
+using System.Linq;
 
 namespace FlaxEngine.GUI
 {
@@ -10,9 +11,9 @@ namespace FlaxEngine.GUI
         {
             context.Caret.X = 0;
             var style = context.StyleStack.Peek();
-            var font = style.Font.GetFont();
+            var font = style.Font.GetMultiFont();
             if (font)
-                context.Caret.Y += font.Height;
+                context.Caret.Y += font.MaxHeight;
         }
 
         private static void ProcessColor(ref ParsingContext context, ref HtmlTag tag)
@@ -86,15 +87,14 @@ namespace FlaxEngine.GUI
             else
             {
                 var style = context.StyleStack.Peek();
-                style.Font = new FontReference(style.Font);
-                if (tag.Attributes.TryGetValue(string.Empty, out var fontName))
+                style.Font = new MultiFontReference(style.Font);
+                if (tag.Attributes.TryGetValue("size", out var sizeText) && int.TryParse(sizeText, out var size) && tag.Attributes.TryGetValue(string.Empty, out var fontName))
                 {
                     var font = (FontAsset)FindAsset(fontName, typeof(FontAsset));
                     if (font)
-                        style.Font.Font = font;
+                        style.Font = new MultiFontReference([font], size);
                 }
-                if (tag.Attributes.TryGetValue("size", out var sizeText) && int.TryParse(sizeText, out var size))
-                    style.Font.Size = size;
+
                 context.StyleStack.Push(style);
             }
         }
@@ -108,7 +108,7 @@ namespace FlaxEngine.GUI
             else
             {
                 var style = context.StyleStack.Peek();
-                style.Font = style.Font.GetBold();
+                // style.Font = style.Font.GetBold();
                 context.StyleStack.Push(style);
             }
         }
@@ -122,7 +122,7 @@ namespace FlaxEngine.GUI
             else
             {
                 var style = context.StyleStack.Peek();
-                style.Font = style.Font.GetItalic();
+                // style.Font = style.Font.GetItalic();
                 context.StyleStack.Push(style);
             }
         }
@@ -136,9 +136,9 @@ namespace FlaxEngine.GUI
             else
             {
                 var style = context.StyleStack.Peek();
-                style.Font = new FontReference(style.Font);
-                TryParseNumberTag(ref tag, string.Empty, style.Font.Size, out var size);
-                style.Font.Size = (int)size;
+                style.Font = new MultiFontReference(style.Font);
+                TryParseNumberTag(ref tag, string.Empty, style.Font.First().Size, out var size);
+                style.Font = new MultiFontReference(style.Font, (int)size);
                 context.StyleStack.Push(style);
             }
         }
@@ -173,9 +173,9 @@ namespace FlaxEngine.GUI
             imageBlock.Style.BackgroundBrush = image;
 
             // Setup size
-            var font = imageBlock.Style.Font.GetFont();
+            var font = imageBlock.Style.Font.GetMultiFont();
             if (font)
-                imageBlock.Bounds.Size = new Float2(font.Height);
+                imageBlock.Bounds.Size = new Float2(font.MaxHeight);
             imageBlock.Bounds.Size.X *= image.Size.X / image.Size.Y; // Keep original aspect ratio
             bool hasWidth = TryParseNumberTag(ref tag, "width", imageBlock.Bounds.Width, out var width);
             imageBlock.Bounds.Width = width;
@@ -213,18 +213,18 @@ namespace FlaxEngine.GUI
                     style.Alignment &= ~TextBlockStyle.Alignments.VerticalMask;
                     switch (valign)
                     {
-                    case "top":
-                        style.Alignment = TextBlockStyle.Alignments.Top;
-                        break;
-                    case "bottom":
-                        style.Alignment = TextBlockStyle.Alignments.Bottom;
-                        break;
-                    case "middle":
-                        style.Alignment = TextBlockStyle.Alignments.Middle;
-                        break;
-                    case "baseline":
-                        style.Alignment = TextBlockStyle.Alignments.Baseline;
-                        break;
+                        case "top":
+                            style.Alignment = TextBlockStyle.Alignments.Top;
+                            break;
+                        case "bottom":
+                            style.Alignment = TextBlockStyle.Alignments.Bottom;
+                            break;
+                        case "middle":
+                            style.Alignment = TextBlockStyle.Alignments.Middle;
+                            break;
+                        case "baseline":
+                            style.Alignment = TextBlockStyle.Alignments.Baseline;
+                            break;
                     }
                 }
                 context.StyleStack.Push(style);
@@ -245,15 +245,15 @@ namespace FlaxEngine.GUI
                     style.Alignment &= ~TextBlockStyle.Alignments.VerticalMask;
                     switch (valign)
                     {
-                    case "left":
-                        style.Alignment = TextBlockStyle.Alignments.Left;
-                        break;
-                    case "right":
-                        style.Alignment = TextBlockStyle.Alignments.Right;
-                        break;
-                    case "center":
-                        style.Alignment = TextBlockStyle.Alignments.Center;
-                        break;
+                        case "left":
+                            style.Alignment = TextBlockStyle.Alignments.Left;
+                            break;
+                        case "right":
+                            style.Alignment = TextBlockStyle.Alignments.Right;
+                            break;
+                        case "center":
+                            style.Alignment = TextBlockStyle.Alignments.Center;
+                            break;
                     }
                 }
                 context.StyleStack.Push(style);
@@ -280,7 +280,7 @@ namespace FlaxEngine.GUI
             foreach (var id in ids)
             {
                 var path = Content.GetEditorAssetPath(id);
-                if (!string.IsNullOrEmpty(path) && 
+                if (!string.IsNullOrEmpty(path) &&
                     string.Equals(name, System.IO.Path.GetFileNameWithoutExtension(path), System.StringComparison.OrdinalIgnoreCase))
                 {
                     return Content.LoadAsync(id, type);

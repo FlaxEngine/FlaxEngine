@@ -40,7 +40,7 @@ namespace FlaxEngine.GUI
         /// Gets or sets the font.
         /// </summary>
         [EditorDisplay("Text Style"), EditorOrder(2024)]
-        public FontReference Font { get; set; }
+        public MultiFontReference Font { get; set; }
 
         /// <summary>
         /// Gets or sets the custom material used to render the text. It must has domain set to GUI and have a public texture parameter named Font used to sample font atlas texture with font characters data.
@@ -90,7 +90,7 @@ namespace FlaxEngine.GUI
             _layout.Bounds = new Rectangle(DefaultMargin, 1, Width - 2 * DefaultMargin, Height - 2);
 
             var style = Style.Current;
-            Font = new FontReference(style.FontMedium.First());
+            Font = new MultiFontReference(style.FontMedium);
             TextColor = style.Foreground;
             WatermarkTextColor = style.ForegroundDisabled;
             SelectionColor = style.BackgroundSelected;
@@ -99,7 +99,7 @@ namespace FlaxEngine.GUI
         /// <inheritdoc />
         public override Float2 GetTextSize()
         {
-            var font = Font.GetFont();
+            var font = Font.GetMultiFont();
             if (font == null)
             {
                 return Float2.Zero;
@@ -111,21 +111,21 @@ namespace FlaxEngine.GUI
         /// <inheritdoc />
         public override Float2 GetCharPosition(int index, out float height)
         {
-            var font = Font.GetFont();
+            var font = Font.GetMultiFont();
             if (font == null)
             {
                 height = Height;
                 return Float2.Zero;
             }
 
-            height = font.Height / DpiScale;
+            height = font.MaxHeight / DpiScale;
             return font.GetCharPosition(_text, index, ref _layout);
         }
 
         /// <inheritdoc />
         public override int HitTestText(Float2 location)
         {
-            var font = Font.GetFont();
+            var font = Font.GetMultiFont();
             if (font == null)
             {
                 return 0;
@@ -148,7 +148,7 @@ namespace FlaxEngine.GUI
             // Cache data
             var rect = new Rectangle(Float2.Zero, Size);
             bool enabled = EnabledInHierarchy;
-            var font = Font.GetFont();
+            var font = Font.GetMultiFont();
             if (!font)
                 return;
 
@@ -172,7 +172,7 @@ namespace FlaxEngine.GUI
             {
                 var leftEdge = font.GetCharPosition(_text, SelectionLeft, ref _layout);
                 var rightEdge = font.GetCharPosition(_text, SelectionRight, ref _layout);
-                float fontHeight = font.Height / DpiScale;
+                float fontHeight = font.MaxHeight / DpiScale;
 
                 // Draw selection background
                 float alpha = Mathf.Min(1.0f, Mathf.Cos(_animateTime * BackgroundSelectedFlashSpeed) * 0.5f + 1.3f);
