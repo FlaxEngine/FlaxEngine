@@ -199,6 +199,10 @@ bool FontAsset::Save(const StringView& path)
 
 #endif
 
+bool FontAsset::ContainsChar(Char c) const {
+    return FT_Get_Char_Index(GetFTFace(), c) > 0;
+}
+
 void FontAsset::Invalidate()
 {
     ScopeLock lock(Locker);

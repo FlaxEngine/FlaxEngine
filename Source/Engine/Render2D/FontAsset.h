@@ -175,6 +175,13 @@ public:
 #endif
 
     /// <summary>
+    /// Check if the font contains the glyph of a char
+    /// </summary>
+    /// <param name="c">The char to test.</param>
+    /// <returns>True if the font contains the glyph of the char, otherwise false.</returns>
+    API_FUNCTION() FORCE_INLINE bool ContainsChar(Char c) const;
+
+    /// <summary>
     /// Invalidates all cached dynamic font atlases using this font. Can be used to reload font characters after changing font asset options.
     /// </summary>
     API_FUNCTION() void Invalidate();

@@ -3,7 +3,7 @@
 #include "Render2D.h"
 #include "Font.h"
 #include "FontManager.h"
-#include "MultiFont.h"
+#include "FallbackFonts.h"
 #include "FontTextureAtlas.h"
 #include "RotatedRectangle.h"
 #include "SpriteAtlas.h"
@@ -195,7 +195,7 @@ namespace
     // Drawing
     Array<Render2DDrawCall> DrawCalls;
     Array<FontLineCache> Lines;
-    Array<MultiFontLineCache> MultiFontLines;
+    Array<BlockedTextLineCache> BlockedTextLines;
     Array<Float2> Lines2;
     bool IsScissorsRectEmpty;
     bool IsScissorsRectEnabled;
@@ -1370,16 +1370,16 @@ void Render2D::DrawText(Font* font, const StringView& text, const TextRange& tex
     DrawText(font, textRange.Substring(text), color, layout, customMaterial);
 }
 
-void Render2D::DrawText(MultiFont* multiFont, const StringView& text, const Color& color, const Float2& location, MaterialBase* customMaterial)
+void Render2D::DrawText(Font* font, FallbackFonts* fallbacks, const StringView& text, const Color& color, const Float2& location, MaterialBase* customMaterial)
 {
     RENDER2D_CHECK_RENDERING_STATE;
 
-    const Array<Font*>& fonts = multiFont->GetFonts();
     // Check if there is no need to do anything
-    if (fonts.IsEmpty() || text.Length() < 0)
+    if (font == nullptr || text.Length() < 0)
         return;
 
     // Temporary data
+    const Array<Font*>& fallbackFonts = fallbacks->GetFontList(font->GetSize());
     uint32 fontAtlasIndex = 0;
     FontTextureAtlas* fontAtlas = nullptr;
     Float2 invAtlasSize = Float2::One;
@@ -1406,11 +1406,19 @@ void Render2D::DrawText(MultiFont* multiFont, const StringView& text, const Colo
 
     int32 lineIndex = 0;
     maxAscenders.Add(0);
+
+    auto getFont = [&](int32 index)->Font* {
+        return index >= 0 ? fallbackFonts[index] : font;
+        };
+
+    // Preprocess the text to determine vertical offset of blocks
     for (int32 currentIndex = 0; currentIndex < text.Length(); currentIndex++)
     {
-        if (text[currentIndex] != '\n') {
-            int32 fontIndex = multiFont->GetCharFontIndex(text[currentIndex], 0);
-            maxAscenders[lineIndex] = Math::Max(maxAscenders[lineIndex], static_cast<float>(fonts[fontIndex]->GetAscender()));
+        const Char c = text[currentIndex];
+        if (c != '\n') {
+            int32 fontIndex = fallbacks->GetCharFallbackIndex(c, font);
+            maxAscenders[lineIndex] = Math::Max(maxAscenders[lineIndex],
+                static_cast<float>(getFont(fontIndex)->GetAscender()));
         }
         else {
             lineIndex++;
@@ -1424,7 +1432,7 @@ void Render2D::DrawText(MultiFont* multiFont, const StringView& text, const Colo
     // The starting index of the current block
     int32 startIndex = 0;
     // The index of the font used by the current block
-    int32 currentFontIndex = multiFont->GetCharFontIndex(text[0], 0);
+    int32 currentFontIndex = fallbacks->GetCharFallbackIndex(text[0], font);
     // The maximum font height of the current line
     float maxHeight = 0;
     for (int32 currentIndex = 0; currentIndex < text.Length(); currentIndex++)
@@ -1446,7 +1454,7 @@ void Render2D::DrawText(MultiFont* multiFont, const StringView& text, const Colo
         {
             // Get character entry
             if (nextCharIndex < text.Length()) {
-                nextFontIndex = multiFont->GetCharFontIndex(text[nextCharIndex], currentFontIndex);
+                nextFontIndex = fallbacks->GetCharFallbackIndex(text[nextCharIndex], font);
             }
 
             if (nextFontIndex != currentFontIndex) {
@@ -1461,13 +1469,13 @@ void Render2D::DrawText(MultiFont* multiFont, const StringView& text, const Colo
 
         if (moveBlock) {
             // Render the pending block before beginning the new block
-            auto fontHeight = fonts[currentFontIndex]->GetHeight();
+            auto fontHeight = getFont(currentFontIndex)->GetHeight();
             maxHeight = Math::Max(maxHeight, static_cast<float>(fontHeight));
-            auto fontDescender = fonts[currentFontIndex]->GetDescender();
+            auto fontDescender = getFont(currentFontIndex)->GetDescender();
             for (int32 renderIndex = startIndex; renderIndex <= currentIndex; renderIndex++)
             {
                 // Get character entry
-                fonts[currentFontIndex]->GetCharacter(text[renderIndex], entry);
+                getFont(currentFontIndex)->GetCharacter(text[renderIndex], entry);
 
                 // Check if need to select/change font atlas (since characters even in the same font may be located in different atlases)
                 if (fontAtlas == nullptr || entry.TextureIndex != fontAtlasIndex)
@@ -1494,7 +1502,7 @@ void Render2D::DrawText(MultiFont* multiFont, const StringView& text, const Colo
                 // Get kerning
                 if (!isWhitespace && previous.IsValid)
                 {
-                    kerning = fonts[currentFontIndex]->GetKerning(previous.Character, entry.Character);
+                    kerning = getFont(currentFontIndex)->GetKerning(previous.Character, entry.Character);
                 }
                 else
                 {
@@ -1510,7 +1518,7 @@ void Render2D::DrawText(MultiFont* multiFont, const StringView& text, const Colo
                     const float x = pointer.X + entry.OffsetX * scale;
                     const float y = pointer.Y + (fontHeight + fontDescender - entry.OffsetY) * scale;
 
-                    Rectangle charRect(x, y + (maxAscenders[lineIndex] - fonts[currentFontIndex]->GetAscender()) / 2, entry.UVSize.X * scale, entry.UVSize.Y * scale);
+                    Rectangle charRect(x, y + (maxAscenders[lineIndex] - getFont(currentFontIndex)->GetAscender()) / 2, entry.UVSize.X * scale, entry.UVSize.Y * scale);
 
                     Float2 upperLeftUV = entry.UV * invAtlasSize;
                     Float2 rightBottomUV = (entry.UV + entry.UVSize) * invAtlasSize;
@@ -1541,21 +1549,21 @@ void Render2D::DrawText(MultiFont* multiFont, const StringView& text, const Colo
     }
 }
 
-void Render2D::DrawText(MultiFont* multiFont, const StringView& text, const TextRange& textRange, const Color& color, const Float2& location, MaterialBase* customMaterial)
+void Render2D::DrawText(Font* font, FallbackFonts* fallbacks, const StringView& text, const TextRange& textRange, const Color& color, const Float2& location, MaterialBase* customMaterial)
 {
-    DrawText(multiFont, textRange.Substring(text), color, location, customMaterial);
+    DrawText(font, fallbacks, textRange.Substring(text), color, location, customMaterial);
 }
 
-void Render2D::DrawText(MultiFont* multiFont, const StringView& text, const Color& color, const TextLayoutOptions& layout, MaterialBase* customMaterial)
+void Render2D::DrawText(Font* font, FallbackFonts* fallbacks, const StringView& text, const Color& color, const TextLayoutOptions& layout, MaterialBase* customMaterial)
 {
     RENDER2D_CHECK_RENDERING_STATE;
 
-    const Array<Font*>& fonts = multiFont->GetFonts();
     // Check if there is no need to do anything
-    if (fonts.IsEmpty() || text.IsEmpty() || layout.Scale <= ZeroTolerance)
+    if (font == nullptr || text.IsEmpty() || layout.Scale <= ZeroTolerance)
         return;
 
     // Temporary data
+    const Array<Font*>& fallbackFonts = fallbacks->GetFontList(font->GetSize());
     uint32 fontAtlasIndex = 0;
     FontTextureAtlas* fontAtlas = nullptr;
     Float2 invAtlasSize = Float2::One;
@@ -1564,8 +1572,8 @@ void Render2D::DrawText(MultiFont* multiFont, const StringView& text, const Colo
     float scale = layout.Scale / FontManager::FontScale;
 
     // Process text to get lines
-    MultiFontLines.Clear();
-    multiFont->ProcessText(text, MultiFontLines, layout);
+    BlockedTextLines.Clear();
+    font->ProcessText(fallbacks, text, BlockedTextLines, layout);
 
     // Render all lines
     FontCharacterEntry entry;
@@ -1581,14 +1589,18 @@ void Render2D::DrawText(MultiFont* multiFont, const StringView& text, const Colo
         drawCall.AsChar.Mat = nullptr;
     }
 
-    for (int32 lineIndex = 0; lineIndex < MultiFontLines.Count(); lineIndex++)
+    auto getFont = [&](int32 index)->Font* {
+        return index >= 0 ? fallbackFonts[index] : font;
+        };
+
+    for (int32 lineIndex = 0; lineIndex < BlockedTextLines.Count(); lineIndex++)
     {
-        const MultiFontLineCache& line = MultiFontLines[lineIndex];
+        const BlockedTextLineCache& line = BlockedTextLines[lineIndex];
         for (int32 blockIndex = 0; blockIndex < line.Blocks.Count(); blockIndex++)
         {
-            const MultiFontBlockCache& block = MultiFontLines[lineIndex].Blocks[blockIndex];
-            auto fontHeight = fonts[block.FontIndex]->GetHeight();
-            auto fontDescender = fonts[block.FontIndex]->GetDescender();
+            const FontBlockCache& block = BlockedTextLines[lineIndex].Blocks[blockIndex];
+            auto fontHeight = getFont(block.FallbackFontIndex)->GetHeight();
+            auto fontDescender = getFont(block.FallbackFontIndex)->GetDescender();
             Float2 pointer = line.Location + block.Location;
 
             for (int32 charIndex = block.FirstCharIndex; charIndex <= block.LastCharIndex; charIndex++)
@@ -1600,7 +1612,7 @@ void Render2D::DrawText(MultiFont* multiFont, const StringView& text, const Colo
                 }
 
                 // Get character entry
-                fonts[block.FontIndex]->GetCharacter(c, entry);
+                getFont(block.FallbackFontIndex)->GetCharacter(c, entry);
 
                 // Check if need to select/change font atlas (since characters even in the same font may be located in different atlases)
                 if (fontAtlas == nullptr || entry.TextureIndex != fontAtlasIndex)
@@ -1625,7 +1637,7 @@ void Render2D::DrawText(MultiFont* multiFont, const StringView& text, const Colo
                 const bool isWhitespace = StringUtils::IsWhitespace(c);
                 if (!isWhitespace && previous.IsValid)
                 {
-                    kerning = fonts[block.FontIndex]->GetKerning(previous.Character, entry.Character);
+                    kerning = getFont(block.FallbackFontIndex)->GetKerning(previous.Character, entry.Character);
                 }
                 else
                 {
@@ -1661,9 +1673,9 @@ void Render2D::DrawText(MultiFont* multiFont, const StringView& text, const Colo
     }
 }
 
-void Render2D::DrawText(MultiFont* multiFont, const StringView& text, const TextRange& textRange, const Color& color, const TextLayoutOptions& layout, MaterialBase* customMaterial)
+void Render2D::DrawText(Font* font, FallbackFonts* fallbacks, const StringView& text, const TextRange& textRange, const Color& color, const TextLayoutOptions& layout, MaterialBase* customMaterial)
 {
-    DrawText(multiFont, textRange.Substring(text), color, layout, customMaterial);
+    DrawText(font, fallbacks, textRange.Substring(text), color, layout, customMaterial);
 }
 
 FORCE_INLINE bool NeedAlphaWithTint(const Color& color)
