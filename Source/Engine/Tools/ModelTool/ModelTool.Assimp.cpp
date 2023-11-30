@@ -238,7 +238,7 @@ void ProcessNodes(AssimpImporterData& data, aiNode* aNode, int32 parentIndex)
     }
 }
 
-bool ProcessMesh(ImportedModelData& result, AssimpImporterData& data, const aiMesh* aMesh, MeshData& mesh, String& errorMsg)
+bool ProcessMesh(ModelData& result, AssimpImporterData& data, const aiMesh* aMesh, MeshData& mesh, String& errorMsg)
 {
     // Properties
     mesh.Name = aMesh->mName.C_Str();
@@ -363,7 +363,7 @@ bool ProcessMesh(ImportedModelData& result, AssimpImporterData& data, const aiMe
     }
 
     // Blend Indices and Blend Weights
-    if (aMesh->mNumBones > 0 && aMesh->mBones && EnumHasAnyFlags(result.Types, ImportDataTypes::Skeleton))
+    if (aMesh->mNumBones > 0 && aMesh->mBones && EnumHasAnyFlags(data.Options.ImportTypes, ImportDataTypes::Skeleton))
     {
         const int32 vertexCount = mesh.Positions.Count();
         mesh.BlendIndices.Resize(vertexCount);
@@ -444,7 +444,7 @@ bool ProcessMesh(ImportedModelData& result, AssimpImporterData& data, const aiMe
     }
 
     // Blend Shapes
-    if (aMesh->mNumAnimMeshes > 0 && EnumHasAnyFlags(result.Types, ImportDataTypes::Skeleton) && data.Options.ImportBlendShapes)
+    if (aMesh->mNumAnimMeshes > 0 && EnumHasAnyFlags(data.Options.ImportTypes, ImportDataTypes::Skeleton) && data.Options.ImportBlendShapes)
     {
         mesh.BlendShapes.EnsureCapacity(aMesh->mNumAnimMeshes);
         for (unsigned int animMeshIndex = 0; animMeshIndex < aMesh->mNumAnimMeshes; animMeshIndex++)
@@ -489,7 +489,7 @@ bool ProcessMesh(ImportedModelData& result, AssimpImporterData& data, const aiMe
     return false;
 }
 
-bool ImportTexture(ImportedModelData& result, AssimpImporterData& data, aiString& aFilename, int32& textureIndex, TextureEntry::TypeHint type)
+bool ImportTexture(ModelData& result, AssimpImporterData& data, aiString& aFilename, int32& textureIndex, TextureEntry::TypeHint type)
 {
     // Find texture file path
     const String filename = String(aFilename.C_Str()).TrimTrailing();
@@ -514,7 +514,7 @@ bool ImportTexture(ImportedModelData& result, AssimpImporterData& data, aiString
     return true;
 }
 
-bool ImportMaterialTexture(ImportedModelData& result, AssimpImporterData& data, const aiMaterial* aMaterial, aiTextureType aTextureType, int32& textureIndex, TextureEntry::TypeHint type)
+bool ImportMaterialTexture(ModelData& result, AssimpImporterData& data, const aiMaterial* aMaterial, aiTextureType aTextureType, int32& textureIndex, TextureEntry::TypeHint type)
 {
     aiString aFilename;
     if (aMaterial->GetTexture(aTextureType, 0, &aFilename, nullptr, nullptr, nullptr, nullptr) == AI_SUCCESS)
@@ -560,7 +560,7 @@ bool ImportMaterialTexture(ImportedModelData& result, AssimpImporterData& data, 
     return false;
 }
 
-bool ImportMaterials(ImportedModelData& result, AssimpImporterData& data, String& errorMsg)
+bool ImportMaterials(ModelData& result, AssimpImporterData& data, String& errorMsg)
 {
     const uint32 materialsCount = data.Scene->mNumMaterials;
     result.Materials.Resize(materialsCount, false);
@@ -574,7 +574,7 @@ bool ImportMaterials(ImportedModelData& result, AssimpImporterData& data, String
             materialSlot.Name = String(aName.C_Str()).TrimTrailing();
         materialSlot.AssetID = Guid::Empty;
 
-        if (EnumHasAnyFlags(result.Types, ImportDataTypes::Materials))
+        if (EnumHasAnyFlags(data.Options.ImportTypes, ImportDataTypes::Materials))
         {
             aiColor3D aColor;
             if (aMaterial->Get(AI_MATKEY_COLOR_DIFFUSE, aColor) == AI_SUCCESS)
@@ -586,7 +586,7 @@ bool ImportMaterials(ImportedModelData& result, AssimpImporterData& data, String
             if (aMaterial->Get(AI_MATKEY_OPACITY, aFloat) == AI_SUCCESS)
                 materialSlot.Opacity.Value = aFloat;
 
-            if (EnumHasAnyFlags(result.Types, ImportDataTypes::Textures))
+            if (EnumHasAnyFlags(data.Options.ImportTypes, ImportDataTypes::Textures))
             {
                 ImportMaterialTexture(result, data, aMaterial, aiTextureType_DIFFUSE, materialSlot.Diffuse.TextureIndex, TextureEntry::TypeHint::ColorRGB);
                 ImportMaterialTexture(result, data, aMaterial, aiTextureType_EMISSIVE, materialSlot.Emissive.TextureIndex, TextureEntry::TypeHint::ColorRGB);
@@ -612,7 +612,7 @@ bool IsMeshInvalid(const aiMesh* aMesh)
     return aMesh->mPrimitiveTypes != aiPrimitiveType_TRIANGLE || aMesh->mNumVertices == 0 || aMesh->mNumFaces == 0 || aMesh->mFaces[0].mNumIndices != 3;
 }
 
-bool ImportMesh(int32 i, ImportedModelData& result, AssimpImporterData& data, String& errorMsg)
+bool ImportMesh(int32 i, ModelData& result, AssimpImporterData& data, String& errorMsg)
 {
     const auto aMesh = data.Scene->mMeshes[i];
 
@@ -739,7 +739,7 @@ void ImportCurve(aiQuatKey* keys, uint32 keysCount, LinearCurve<Quaternion>& cur
     }
 }
 
-bool ModelTool::ImportDataAssimp(const char* path, ImportedModelData& data, Options& options, String& errorMsg)
+bool ModelTool::ImportDataAssimp(const char* path, ModelData& data, Options& options, String& errorMsg)
 {
     auto context = (AssimpImporterData*)options.SplitContext;
     if (!context)
@@ -750,8 +750,8 @@ bool ModelTool::ImportDataAssimp(const char* path, ImportedModelData& data, Opti
             AssimpInited = true;
             LOG(Info, "Assimp {0}.{1}.{2}", aiGetVersionMajor(), aiGetVersionMinor(), aiGetVersionRevision());
         }
-        bool importMeshes = EnumHasAnyFlags(data.Types, ImportDataTypes::Geometry);
-        bool importAnimations = EnumHasAnyFlags(data.Types, ImportDataTypes::Animations);
+        bool importMeshes = EnumHasAnyFlags(options.ImportTypes, ImportDataTypes::Geometry);
+        bool importAnimations = EnumHasAnyFlags(options.ImportTypes, ImportDataTypes::Animations);
         context = New<AssimpImporterData>(path, options);
 
         // Setup import flags
@@ -820,7 +820,7 @@ bool ModelTool::ImportDataAssimp(const char* path, ImportedModelData& data, Opti
     }
 
     // Import geometry
-    if (EnumHasAnyFlags(data.Types, ImportDataTypes::Geometry) && context->Scene->HasMeshes())
+    if (EnumHasAnyFlags(options.ImportTypes, ImportDataTypes::Geometry) && context->Scene->HasMeshes())
     {
         const int meshCount = context->Scene->mNumMeshes;
         if (options.SplitObjects && options.ObjectIndex == -1 && meshCount > 1)
@@ -863,7 +863,7 @@ bool ModelTool::ImportDataAssimp(const char* path, ImportedModelData& data, Opti
     }
 
     // Import skeleton
-    if (EnumHasAnyFlags(data.Types, ImportDataTypes::Skeleton))
+    if (EnumHasAnyFlags(options.ImportTypes, ImportDataTypes::Skeleton))
     {
         data.Skeleton.Nodes.Resize(context->Nodes.Count(), false);
         for (int32 i = 0; i < context->Nodes.Count(); i++)
@@ -893,7 +893,7 @@ bool ModelTool::ImportDataAssimp(const char* path, ImportedModelData& data, Opti
     }
 
     // Import animations
-    if (EnumHasAnyFlags(data.Types, ImportDataTypes::Animations) && context->Scene->HasAnimations())
+    if (EnumHasAnyFlags(options.ImportTypes, ImportDataTypes::Animations) && context->Scene->HasAnimations())
     {
         const int32 animCount = (int32)context->Scene->mNumAnimations;
         if (options.SplitObjects && options.ObjectIndex == -1 && animCount > 1)
@@ -948,7 +948,7 @@ bool ModelTool::ImportDataAssimp(const char* path, ImportedModelData& data, Opti
     }
 
     // Import nodes
-    if (EnumHasAnyFlags(data.Types, ImportDataTypes::Nodes))
+    if (EnumHasAnyFlags(options.ImportTypes, ImportDataTypes::Nodes))
     {
         data.Nodes.Resize(context->Nodes.Count());
         for (int32 i = 0; i < context->Nodes.Count(); i++)

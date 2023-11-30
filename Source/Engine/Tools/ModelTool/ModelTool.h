@@ -56,94 +56,6 @@ enum class ImportDataTypes : int32
 
 DECLARE_ENUM_OPERATORS(ImportDataTypes);
 
-/// <summary>
-/// Imported model data container. Represents unified model source file data (meshes, animations, skeleton, materials).
-/// </summary>
-class ImportedModelData
-{
-public:
-    struct LOD
-    {
-        Array<MeshData*> Meshes;
-
-        BoundingBox GetBox() const;
-    };
-
-    struct Node
-    {
-        /// <summary>
-        /// The parent node index. The root node uses value -1.
-        /// </summary>
-        int32 ParentIndex;
-
-        /// <summary>
-        /// The local transformation of the node, relative to the parent node.
-        /// </summary>
-        Transform LocalTransform;
-
-        /// <summary>
-        /// The name of this node.
-        /// </summary>
-        String Name;
-    };
-
-public:
-    /// <summary>
-    /// The import data types types.
-    /// </summary>
-    ImportDataTypes Types;
-
-    /// <summary>
-    /// The textures slots.
-    /// </summary>
-    Array<TextureEntry> Textures;
-
-    /// <summary>
-    /// The material slots.
-    /// </summary>
-    Array<MaterialSlotEntry> Materials;
-
-    /// <summary>
-    /// The level of details data with meshes.
-    /// </summary>
-    Array<LOD> LODs;
-
-    /// <summary>
-    /// The skeleton data.
-    /// </summary>
-    SkeletonData Skeleton;
-
-    /// <summary>
-    /// The scene nodes.
-    /// </summary>
-    Array<Node> Nodes;
-
-    /// <summary>
-    /// The node animations.
-    /// </summary>
-    AnimationData Animation;
-
-public:
-    /// <summary>
-    /// Initializes a new instance of the <see cref="ImportedModelData"/> class.
-    /// </summary>
-    /// <param name="types">The types.</param>
-    ImportedModelData(ImportDataTypes types)
-    {
-        Types = types;
-    }
-
-    /// <summary>
-    /// Finalizes an instance of the <see cref="ImportedModelData"/> class.
-    /// </summary>
-    ~ImportedModelData()
-    {
-        // Ensure to cleanup data
-        for (int32 i = 0; i < LODs.Count(); i++)
-            LODs[i].Meshes.ClearDelete();
-    }
-};
-
 #endif
 
 struct ModelSDFHeader
@@ -382,9 +294,14 @@ public:
         API_FIELD(Attributes="EditorOrder(3030), EditorDisplay(\"Other\")")
         String SubAssetFolder = TEXT("");
 
+    public: // Internals
+
         // Runtime data for objects splitting during import (used internally)
         void* SplitContext = nullptr;
         Function<bool(Options& splitOptions, const String& objectName)> OnSplitImport;
+
+        // Internal flags for objects to import.
+        ImportDataTypes ImportTypes = ImportDataTypes::None;
 
     public:
         // [ISerializable]
@@ -401,7 +318,7 @@ public:
     /// <param name="options">The import options.</param>
     /// <param name="errorMsg">The error message container.</param>
     /// <returns>True if fails, otherwise false.</returns>
-    static bool ImportData(const String& path, ImportedModelData& data, Options& options, String& errorMsg);
+    static bool ImportData(const String& path, ModelData& data, Options& options, String& errorMsg);
 
     /// <summary>
     /// Imports the model.
@@ -444,13 +361,13 @@ public:
 private:
     static void CalculateBoneOffsetMatrix(const Array<SkeletonNode>& nodes, Matrix& offsetMatrix, int32 nodeIndex);
 #if USE_ASSIMP
-    static bool ImportDataAssimp(const char* path, ImportedModelData& data, Options& options, String& errorMsg);
+    static bool ImportDataAssimp(const char* path, ModelData& data, Options& options, String& errorMsg);
 #endif
 #if USE_AUTODESK_FBX_SDK
-	static bool ImportDataAutodeskFbxSdk(const char* path, ImportedModelData& data, Options& options, String& errorMsg);
+	static bool ImportDataAutodeskFbxSdk(const char* path, ModelData& data, Options& options, String& errorMsg);
 #endif
 #if USE_OPEN_FBX
-    static bool ImportDataOpenFBX(const char* path, ImportedModelData& data, Options& options, String& errorMsg);
+    static bool ImportDataOpenFBX(const char* path, ModelData& data, Options& options, String& errorMsg);
 #endif
 #endif
 };

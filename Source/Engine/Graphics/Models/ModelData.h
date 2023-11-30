@@ -367,11 +367,31 @@ struct FLAXENGINE_API MaterialSlotEntry
 };
 
 /// <summary>
+/// Data container for model hierarchy node.
+/// </summary>
+struct FLAXENGINE_API ModelDataNode
+{
+    /// <summary>
+    /// The parent node index. The root node uses value -1.
+    /// </summary>
+    int32 ParentIndex;
+
+    /// <summary>
+    /// The local transformation of the node, relative to the parent node.
+    /// </summary>
+    Transform LocalTransform;
+
+    /// <summary>
+    /// The name of this node.
+    /// </summary>
+    String Name;
+};
+
+/// <summary>
 /// Data container for LOD metadata and sub meshes.
 /// </summary>
-class FLAXENGINE_API ModelLodData
+struct FLAXENGINE_API ModelLodData
 {
-public:
     /// <summary>
     /// The screen size to switch LODs. Bottom limit of the model screen size to render this LOD.
     /// </summary>
@@ -381,14 +401,6 @@ public:
     /// The meshes array.
     /// </summary>
     Array<MeshData*> Meshes;
-
-public:
-    /// <summary>
-    /// Initializes a new instance of the <see cref="ModelLodData"/> class.
-    /// </summary>
-    ModelLodData()
-    {
-    }
 
     /// <summary>
     /// Finalizes an instance of the <see cref="ModelLodData"/> class.
@@ -426,7 +438,7 @@ public:
     Array<MaterialSlotEntry> Materials;
 
     /// <summary>
-    /// Array with all LODs. The first element is the top most LOD0 followed by the LOD1, LOD2, etc.
+    /// Array with all Level Of Details that contain meshes. The first element is the top most LOD0 followed by the LOD1, LOD2, etc.
     /// </summary>
     Array<ModelLodData> LODs;
 
@@ -434,6 +446,11 @@ public:
     /// The skeleton bones hierarchy.
     /// </summary>
     SkeletonData Skeleton;
+
+    /// <summary>
+    /// The scene nodes (in hierarchy).
+    /// </summary>
+    Array<ModelDataNode> Nodes;
 
     /// <summary>
     /// The node animations.

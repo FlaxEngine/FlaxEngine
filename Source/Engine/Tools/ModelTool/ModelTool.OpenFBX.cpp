@@ -182,7 +182,7 @@ struct OpenFbxImporterData
 #endif
     }
 
-    bool ImportMaterialTexture(ImportedModelData& result, const ofbx::Material* mat, ofbx::Texture::TextureType textureType, int32& textureIndex, TextureEntry::TypeHint type) const
+    bool ImportMaterialTexture(ModelData& result, const ofbx::Material* mat, ofbx::Texture::TextureType textureType, int32& textureIndex, TextureEntry::TypeHint type) const
     {
         const ofbx::Texture* tex = mat->getTexture(textureType);
         if (tex)
@@ -217,7 +217,7 @@ struct OpenFbxImporterData
         return false;
     }
 
-    int32 AddMaterial(ImportedModelData& result, const ofbx::Material* mat)
+    int32 AddMaterial(ModelData& result, const ofbx::Material* mat)
     {
         int32 index = Materials.Find(mat);
         if (index == -1)
@@ -229,11 +229,11 @@ struct OpenFbxImporterData
             if (mat)
                 material.Name = String(mat->name).TrimTrailing();
 
-            if (mat && EnumHasAnyFlags(result.Types, ImportDataTypes::Materials))
+            if (mat && EnumHasAnyFlags(Options.ImportTypes, ImportDataTypes::Materials))
             {
                 material.Diffuse.Color = ToColor(mat->getDiffuseColor());
 
-                if (EnumHasAnyFlags(result.Types, ImportDataTypes::Textures))
+                if (EnumHasAnyFlags(Options.ImportTypes, ImportDataTypes::Textures))
                 {
                     ImportMaterialTexture(result, mat, ofbx::Texture::DIFFUSE, material.Diffuse.TextureIndex, TextureEntry::TypeHint::ColorRGB);
                     ImportMaterialTexture(result, mat, ofbx::Texture::EMISSIVE, material.Emissive.TextureIndex, TextureEntry::TypeHint::ColorRGB);
@@ -522,7 +522,7 @@ bool ImportBones(OpenFbxImporterData& data, String& errorMsg)
     return false;
 }
 
-bool ProcessMesh(ImportedModelData& result, OpenFbxImporterData& data, const ofbx::Mesh* aMesh, MeshData& mesh, String& errorMsg, int32 triangleStart, int32 triangleEnd)
+bool ProcessMesh(ModelData& result, OpenFbxImporterData& data, const ofbx::Mesh* aMesh, MeshData& mesh, String& errorMsg, int32 triangleStart, int32 triangleEnd)
 {
     // Prepare
     const int32 firstVertexOffset = triangleStart * 3;
@@ -682,7 +682,7 @@ bool ProcessMesh(ImportedModelData& result, OpenFbxImporterData& data, const ofb
     }
 
     // Blend Indices and Blend Weights
-    if (skin && skin->getClusterCount() > 0 && EnumHasAnyFlags(result.Types, ImportDataTypes::Skeleton))
+    if (skin && skin->getClusterCount() > 0 && EnumHasAnyFlags(data.Options.ImportTypes, ImportDataTypes::Skeleton))
     {
         mesh.BlendIndices.Resize(vertexCount);
         mesh.BlendWeights.Resize(vertexCount);
@@ -746,7 +746,7 @@ bool ProcessMesh(ImportedModelData& result, OpenFbxImporterData& data, const ofb
     }
 
     // Blend Shapes
-    if (blendShape && blendShape->getBlendShapeChannelCount() > 0 && EnumHasAnyFlags(result.Types, ImportDataTypes::Skeleton) && data.Options.ImportBlendShapes)
+    if (blendShape && blendShape->getBlendShapeChannelCount() > 0 && EnumHasAnyFlags(data.Options.ImportTypes, ImportDataTypes::Skeleton) && data.Options.ImportBlendShapes)
     {
         mesh.BlendShapes.EnsureCapacity(blendShape->getBlendShapeChannelCount());
         for (int32 channelIndex = 0; channelIndex < blendShape->getBlendShapeChannelCount(); channelIndex++)
@@ -853,7 +853,7 @@ bool ProcessMesh(ImportedModelData& result, OpenFbxImporterData& data, const ofb
     return false;
 }
 
-bool ImportMesh(ImportedModelData& result, OpenFbxImporterData& data, const ofbx::Mesh* aMesh, String& errorMsg, int32 triangleStart, int32 triangleEnd)
+bool ImportMesh(ModelData& result, OpenFbxImporterData& data, const ofbx::Mesh* aMesh, String& errorMsg, int32 triangleStart, int32 triangleEnd)
 {
     // Find the parent node
     int32 nodeIndex = data.FindNode(aMesh);
@@ -906,7 +906,7 @@ bool ImportMesh(ImportedModelData& result, OpenFbxImporterData& data, const ofbx
     return false;
 }
 
-bool ImportMesh(int32 index, ImportedModelData& result, OpenFbxImporterData& data, String& errorMsg)
+bool ImportMesh(int32 index, ModelData& result, OpenFbxImporterData& data, String& errorMsg)
 {
     const auto aMesh = data.Scene->getMesh(index);
     const auto aGeometry = aMesh->getGeometry();
@@ -1006,7 +1006,7 @@ void ImportCurve(const ofbx::AnimationCurveNode* curveNode, LinearCurve<T>& curv
     }
 }
 
-bool ImportAnimation(int32 index, ImportedModelData& data, OpenFbxImporterData& importerData)
+bool ImportAnimation(int32 index, ModelData& data, OpenFbxImporterData& importerData)
 {
     const ofbx::AnimationStack* stack = importerData.Scene->getAnimationStack(index);
     const ofbx::AnimationLayer* layer = stack->getLayer(0);
@@ -1103,7 +1103,7 @@ static Float3 FbxVectorFromAxisAndSign(int axis, int sign)
     return { 0.f, 0.f, 0.f };
 }
 
-bool ModelTool::ImportDataOpenFBX(const char* path, ImportedModelData& data, Options& options, String& errorMsg)
+bool ModelTool::ImportDataOpenFBX(const char* path, ModelData& data, Options& options, String& errorMsg)
 {
     auto context = (OpenFbxImporterData*)options.SplitContext;
     if (!context)
@@ -1116,7 +1116,7 @@ bool ModelTool::ImportDataOpenFBX(const char* path, ImportedModelData& data, Opt
             return true;
         }
         ofbx::u64 loadFlags = 0;
-        if (EnumHasAnyFlags(data.Types, ImportDataTypes::Geometry))
+        if (EnumHasAnyFlags(options.ImportTypes, ImportDataTypes::Geometry))
         {
             loadFlags |= (ofbx::u64)ofbx::LoadFlags::TRIANGULATE;
             if (!options.ImportBlendShapes)
@@ -1161,7 +1161,7 @@ bool ModelTool::ImportDataOpenFBX(const char* path, ImportedModelData& data, Opt
 #endif
 
         // Extract embedded textures
-        if (EnumHasAnyFlags(data.Types, ImportDataTypes::Textures))
+        if (EnumHasAnyFlags(options.ImportTypes, ImportDataTypes::Textures))
         {
             String outputPath;
             for (int i = 0, c = scene->getEmbeddedDataCount(); i < c; i++)
@@ -1232,7 +1232,7 @@ bool ModelTool::ImportDataOpenFBX(const char* path, ImportedModelData& data, Opt
     DeleteMe<OpenFbxImporterData> contextCleanup(options.SplitContext ? nullptr : context);
 
     // Build final skeleton bones hierarchy before importing meshes
-    if (EnumHasAnyFlags(data.Types, ImportDataTypes::Skeleton))
+    if (EnumHasAnyFlags(options.ImportTypes, ImportDataTypes::Skeleton))
     {
         if (ImportBones(*context, errorMsg))
         {
@@ -1244,7 +1244,7 @@ bool ModelTool::ImportDataOpenFBX(const char* path, ImportedModelData& data, Opt
     }
 
     // Import geometry (meshes and materials)
-    if (EnumHasAnyFlags(data.Types, ImportDataTypes::Geometry) && context->Scene->getMeshCount() > 0)
+    if (EnumHasAnyFlags(options.ImportTypes, ImportDataTypes::Geometry) && context->Scene->getMeshCount() > 0)
     {
         const int meshCount = context->Scene->getMeshCount();
         if (options.SplitObjects && options.ObjectIndex == -1 && meshCount > 1)
@@ -1303,7 +1303,7 @@ bool ModelTool::ImportDataOpenFBX(const char* path, ImportedModelData& data, Opt
     }
 
     // Import skeleton
-    if (EnumHasAnyFlags(data.Types, ImportDataTypes::Skeleton))
+    if (EnumHasAnyFlags(options.ImportTypes, ImportDataTypes::Skeleton))
     {
         data.Skeleton.Nodes.Resize(context->Nodes.Count(), false);
         for (int32 i = 0; i < context->Nodes.Count(); i++)
@@ -1343,7 +1343,7 @@ bool ModelTool::ImportDataOpenFBX(const char* path, ImportedModelData& data, Opt
     }
 
     // Import animations
-    if (EnumHasAnyFlags(data.Types, ImportDataTypes::Animations))
+    if (EnumHasAnyFlags(options.ImportTypes, ImportDataTypes::Animations))
     {
         const int animCount = context->Scene->getAnimationStackCount();
         if (options.SplitObjects && options.ObjectIndex == -1 && animCount > 1)
@@ -1386,7 +1386,7 @@ bool ModelTool::ImportDataOpenFBX(const char* path, ImportedModelData& data, Opt
     }
 
     // Import nodes
-    if (EnumHasAnyFlags(data.Types, ImportDataTypes::Nodes))
+    if (EnumHasAnyFlags(options.ImportTypes, ImportDataTypes::Nodes))
     {
         data.Nodes.Resize(context->Nodes.Count());
         for (int32 i = 0; i < context->Nodes.Count(); i++)

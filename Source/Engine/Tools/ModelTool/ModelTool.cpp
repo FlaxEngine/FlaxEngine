@@ -332,26 +332,6 @@ bool ModelTool::GenerateModelSDF(Model* inputModel, ModelData* modelData, float 
 
 #if USE_EDITOR
 
-BoundingBox ImportedModelData::LOD::GetBox() const
-{
-    if (Meshes.IsEmpty())
-        return BoundingBox::Empty;
-
-    BoundingBox box;
-    Meshes[0]->CalculateBox(box);
-    for (int32 i = 1; i < Meshes.Count(); i++)
-    {
-        if (Meshes[i]->Positions.HasItems())
-        {
-            BoundingBox t;
-            Meshes[i]->CalculateBox(t);
-            BoundingBox::Merge(box, t, box);
-        }
-    }
-
-    return box;
-}
-
 void ModelTool::Options::Serialize(SerializeStream& stream, const void* otherObj)
 {
     SERIALIZE_GET_OTHER_OBJ(ModelTool::Options);
@@ -463,7 +443,7 @@ void RemoveNamespace(String& name)
         name = name.Substring(namespaceStart + 1);
 }
 
-bool ModelTool::ImportData(const String& path, ImportedModelData& data, Options& options, String& errorMsg)
+bool ModelTool::ImportData(const String& path, ModelData& data, Options& options, String& errorMsg)
 {
     // Validate options
     options.Scale = Math::Clamp(options.Scale, 0.0001f, 100000.0f);
@@ -610,7 +590,7 @@ bool ModelTool::ImportData(const String& path, ImportedModelData& data, Options&
     }
 
     // Flip normals of the imported geometry
-    if (options.FlipNormals && EnumHasAnyFlags(data.Types, ImportDataTypes::Geometry))
+    if (options.FlipNormals && EnumHasAnyFlags(options.ImportTypes, ImportDataTypes::Geometry))
     {
         for (auto& lod : data.LODs)
         {
@@ -783,30 +763,29 @@ bool ModelTool::ImportModel(const String& path, ModelData& meshData, Options& op
     const auto startTime = DateTime::NowUTC();
 
     // Import data
-    ImportDataTypes importDataTypes;
     switch (options.Type)
     {
     case ModelType::Model:
-        importDataTypes = ImportDataTypes::Geometry | ImportDataTypes::Nodes;
+        options.ImportTypes = ImportDataTypes::Geometry | ImportDataTypes::Nodes;
         if (options.ImportMaterials)
-            importDataTypes |= ImportDataTypes::Materials;
+            options.ImportTypes |= ImportDataTypes::Materials;
         if (options.ImportTextures)
-            importDataTypes |= ImportDataTypes::Textures;
+            options.ImportTypes |= ImportDataTypes::Textures;
         break;
     case ModelType::SkinnedModel:
-        importDataTypes = ImportDataTypes::Geometry | ImportDataTypes::Nodes | ImportDataTypes::Skeleton;
+        options.ImportTypes = ImportDataTypes::Geometry | ImportDataTypes::Nodes | ImportDataTypes::Skeleton;
         if (options.ImportMaterials)
-            importDataTypes |= ImportDataTypes::Materials;
+            options.ImportTypes |= ImportDataTypes::Materials;
         if (options.ImportTextures)
-            importDataTypes |= ImportDataTypes::Textures;
+            options.ImportTypes |= ImportDataTypes::Textures;
         break;
     case ModelType::Animation:
-        importDataTypes = ImportDataTypes::Animations;
+        options.ImportTypes = ImportDataTypes::Animations;
         break;
     default:
         return true;
     }
-    ImportedModelData data(importDataTypes);
+    ModelData data;
     if (ImportData(path, data, options, errorMsg))
         return true;
 
@@ -965,7 +944,7 @@ bool ModelTool::ImportModel(const String& path, ModelData& meshData, Options& op
         auto& texture = data.Textures[i];
 
         // Auto-import textures
-        if (autoImportOutput.IsEmpty() || (data.Types & ImportDataTypes::Textures) == ImportDataTypes::None || texture.FilePath.IsEmpty())
+        if (autoImportOutput.IsEmpty() || (options.ImportTypes & ImportDataTypes::Textures) == ImportDataTypes::None || texture.FilePath.IsEmpty())
             continue;
         String filename = StringUtils::GetFileNameWithoutExtension(texture.FilePath);
         for (int32 j = filename.Length() - 1; j >= 0; j--)
@@ -1012,7 +991,7 @@ bool ModelTool::ImportModel(const String& path, ModelData& meshData, Options& op
             material.Name = TEXT("Material ") + StringUtils::ToString(i);
 
         // Auto-import materials
-        if (autoImportOutput.IsEmpty() || (data.Types & ImportDataTypes::Materials) == ImportDataTypes::None || !material.UsesProperties())
+        if (autoImportOutput.IsEmpty() || (options.ImportTypes & ImportDataTypes::Materials) == ImportDataTypes::None || !material.UsesProperties())
             continue;
         auto filename = material.Name;
         for (int32 j = filename.Length() - 1; j >= 0; j--)
@@ -1124,10 +1103,10 @@ bool ModelTool::ImportModel(const String& path, ModelData& meshData, Options& op
         }
 
         // Perform simple nodes mapping to single node (will transform meshes to model local space)
-        SkeletonMapping<ImportedModelData::Node> skeletonMapping(data.Nodes, nullptr);
+        SkeletonMapping<ModelDataNode> skeletonMapping(data.Nodes, nullptr);
 
         // Refresh skeleton updater with model skeleton
-        SkeletonUpdater<ImportedModelData::Node> hierarchyUpdater(data.Nodes);
+        SkeletonUpdater<ModelDataNode> hierarchyUpdater(data.Nodes);
         hierarchyUpdater.UpdateMatrices();
 
         // Move meshes in the new nodes
@@ -1421,10 +1400,10 @@ bool ModelTool::ImportModel(const String& path, ModelData& meshData, Options& op
         }
 
         // Perform simple nodes mapping to single node (will transform meshes to model local space)
-        SkeletonMapping<ImportedModelData::Node> skeletonMapping(data.Nodes, nullptr);
+        SkeletonMapping<ModelDataNode> skeletonMapping(data.Nodes, nullptr);
 
         // Refresh skeleton updater with model skeleton
-        SkeletonUpdater<ImportedModelData::Node> hierarchyUpdater(data.Nodes);
+        SkeletonUpdater<ModelDataNode> hierarchyUpdater(data.Nodes);
         hierarchyUpdater.UpdateMatrices();
 
         if (options.CalculateBoneOffsetMatrices)
