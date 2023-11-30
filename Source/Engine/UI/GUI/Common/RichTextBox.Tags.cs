@@ -11,9 +11,9 @@ namespace FlaxEngine.GUI
         {
             context.Caret.X = 0;
             var style = context.StyleStack.Peek();
-            var font = style.Font.GetMultiFont();
+            var font = style.Font.GetFont();
             if (font)
-                context.Caret.Y += font.MaxHeight;
+                context.Caret.Y += font.Height;
         }
 
         private static void ProcessColor(ref ParsingContext context, ref HtmlTag tag)
@@ -87,14 +87,15 @@ namespace FlaxEngine.GUI
             else
             {
                 var style = context.StyleStack.Peek();
-                style.Font = new MultiFontReference(style.Font);
-                if (tag.Attributes.TryGetValue("size", out var sizeText) && int.TryParse(sizeText, out var size) && tag.Attributes.TryGetValue(string.Empty, out var fontName))
+                style.Font = new FontReference(style.Font);
+                if (tag.Attributes.TryGetValue(string.Empty, out var fontName))
                 {
                     var font = (FontAsset)FindAsset(fontName, typeof(FontAsset));
                     if (font)
-                        style.Font = new MultiFontReference([font], size);
+                        style.Font.Font = font;
                 }
-
+                if (tag.Attributes.TryGetValue("size", out var sizeText) && int.TryParse(sizeText, out var size))
+                    style.Font.Size = size;
                 context.StyleStack.Push(style);
             }
         }
@@ -108,7 +109,7 @@ namespace FlaxEngine.GUI
             else
             {
                 var style = context.StyleStack.Peek();
-                // style.Font = style.Font.GetBold();
+                style.Font = style.Font.GetBold();
                 context.StyleStack.Push(style);
             }
         }
@@ -122,7 +123,7 @@ namespace FlaxEngine.GUI
             else
             {
                 var style = context.StyleStack.Peek();
-                // style.Font = style.Font.GetItalic();
+                style.Font = style.Font.GetItalic();
                 context.StyleStack.Push(style);
             }
         }
@@ -136,9 +137,9 @@ namespace FlaxEngine.GUI
             else
             {
                 var style = context.StyleStack.Peek();
-                style.Font = new MultiFontReference(style.Font);
-                TryParseNumberTag(ref tag, string.Empty, style.Font.First().Size, out var size);
-                style.Font = new MultiFontReference(style.Font, (int)size);
+                style.Font = new FontReference(style.Font);
+                TryParseNumberTag(ref tag, string.Empty, style.Font.Size, out var size);
+                style.Font.Size = (int)size;
                 context.StyleStack.Push(style);
             }
         }
@@ -173,9 +174,9 @@ namespace FlaxEngine.GUI
             imageBlock.Style.BackgroundBrush = image;
 
             // Setup size
-            var font = imageBlock.Style.Font.GetMultiFont();
+            var font = imageBlock.Style.Font.GetFont();
             if (font)
-                imageBlock.Bounds.Size = new Float2(font.MaxHeight);
+                imageBlock.Bounds.Size = new Float2(font.Height);
             imageBlock.Bounds.Size.X *= image.Size.X / image.Size.Y; // Keep original aspect ratio
             bool hasWidth = TryParseNumberTag(ref tag, "width", imageBlock.Bounds.Width, out var width);
             imageBlock.Bounds.Width = width;

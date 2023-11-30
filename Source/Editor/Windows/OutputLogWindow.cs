@@ -470,9 +470,9 @@ namespace FlaxEditor.Windows
                 var wasEmpty = _output.TextLength == 0;
 
                 // Cache fonts
-                _output.DefaultStyle.Font.GetMultiFont();
-                _output.WarningStyle.Font.GetMultiFont();
-                _output.ErrorStyle.Font.GetMultiFont();
+                _output.DefaultStyle.Font.GetFont();
+                _output.WarningStyle.Font.GetFont();
+                _output.ErrorStyle.Font.GetFont();
 
                 // Generate the output log
                 Span<Entry> entries = CollectionsMarshal.AsSpan(_entries);
@@ -536,7 +536,7 @@ namespace FlaxEditor.Windows
                     }
                     var prevBlockBottom = _textBlocks.Count == 0 ? 0.0f : _textBlocks[_textBlocks.Count - 1].Bounds.Bottom;
                     var entryText = _textBuffer.ToString(startIndex, endIndex - startIndex);
-                    var font = textBlock.Style.Font.GetMultiFont();
+                    var font = textBlock.Style.Font.GetFont();
                     if (!font)
                         continue;
                     var style = textBlock.Style;
@@ -544,52 +544,46 @@ namespace FlaxEditor.Windows
                     for (int j = 0; j < lines.Length; j++)
                     {
                         ref var line = ref lines[j];
-                        for (int k = 0; k < line.Blocks.Length; k++)
+                        textBlock.Range.StartIndex = startIndex + line.FirstCharIndex;
+                        textBlock.Range.EndIndex = startIndex + line.LastCharIndex + 1;
+                        textBlock.Bounds = new Rectangle(new Float2(0.0f, prevBlockBottom), line.Size);
+
+                        if (textBlock.Range.Length > 0)
                         {
-                            ref var block = ref line.Blocks[k];
-
-                            textBlock.Range.StartIndex = startIndex + block.FirstCharIndex;
-                            textBlock.Range.EndIndex = startIndex + block.LastCharIndex + 1;
-                            textBlock.Bounds = new Rectangle(new Float2(block.Location.X, prevBlockBottom), block.Size);
-
-                            if (textBlock.Range.Length > 0)
+                            // Parse compilation error/warning
+                            var regexStart = line.FirstCharIndex;
+                            if (j == 0)
+                                regexStart += prefixLength;
+                            var regexLength = line.LastCharIndex + 1 - regexStart;
+                            if (regexLength > 0)
                             {
-                                // Parse compilation error/warning
-                                var regexStart = block.FirstCharIndex;
-                                if (j == 0)
-                                    regexStart += prefixLength;
-                                var regexLength = block.LastCharIndex + 1 - regexStart;
-                                if (regexLength > 0)
+                                var match = _compileRegex.Match(entryText, regexStart, regexLength);
+                                if (match.Success)
                                 {
-                                    var match = _compileRegex.Match(entryText, regexStart, regexLength);
-                                    if (match.Success)
+                                    switch (match.Groups["level"].Value)
                                     {
-                                        switch (match.Groups["level"].Value)
-                                        {
-                                            case "error":
-                                                textBlock.Style = _output.ErrorStyle;
-                                                break;
-                                            case "warning":
-                                                textBlock.Style = _output.WarningStyle;
-                                                break;
-                                        }
-                                        textBlock.Tag = new TextBlockTag
-                                        {
-                                            Type = TextBlockTag.Types.CodeLocation,
-                                            Url = match.Groups["path"].Value,
-                                            Line = int.Parse(match.Groups["line"].Value),
-                                        };
+                                        case "error":
+                                            textBlock.Style = _output.ErrorStyle;
+                                            break;
+                                        case "warning":
+                                            textBlock.Style = _output.WarningStyle;
+                                            break;
                                     }
-                                    // TODO: parsing hyperlinks with link
-                                    // TODO: parsing file paths with link
+                                    textBlock.Tag = new TextBlockTag
+                                    {
+                                        Type = TextBlockTag.Types.CodeLocation,
+                                        Url = match.Groups["path"].Value,
+                                        Line = int.Parse(match.Groups["line"].Value),
+                                    };
                                 }
+                                // TODO: parsing hyperlinks with link
+                                // TODO: parsing file paths with link
                             }
-
-                            _textBlocks.Add(textBlock);
-                            textBlock.Style = style;
                         }
 
                         prevBlockBottom += line.Size.Y;
+                        _textBlocks.Add(textBlock);
+                        textBlock.Style = style;
                     }
                 }
 
