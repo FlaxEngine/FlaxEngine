@@ -152,7 +152,7 @@ namespace FlaxEditor.GUI
             if (hasSprite)
                 width += iconSize;
             if (!string.IsNullOrEmpty(_text) && style.FontMedium)
-                width += Render2D.MeasureText(style.FontMedium, _text).X + (hasSprite ? DefaultMargin : 0);
+                width += FallbackTextUtils.MeasureText(style.FontMedium, _text).X + (hasSprite ? DefaultMargin : 0);
 
             Width = width;
         }

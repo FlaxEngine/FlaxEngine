@@ -106,7 +106,7 @@ namespace FlaxEngine.GUI
                 return Float2.Zero;
             }
 
-            return Render2D.MeasureText(font, _text, ref _layout);
+            return FallbackTextUtils.MeasureText(font, _text, ref _layout);
         }
 
         /// <inheritdoc />

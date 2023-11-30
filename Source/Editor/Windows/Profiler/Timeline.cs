@@ -86,7 +86,7 @@ namespace FlaxEditor.Windows.Profiler
                 Render2D.DrawRectangle(bounds, color * 0.5f);
 
                 if (_nameLength < 0 && style.FontMedium)
-                    _nameLength = Render2D.MeasureText(style.FontMedium, _name).X;
+                    _nameLength = FallbackTextUtils.MeasureText(style.FontMedium, _name).X;
 
                 if (_nameLength < bounds.Width + 4)
                 {

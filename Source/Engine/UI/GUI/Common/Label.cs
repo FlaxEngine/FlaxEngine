@@ -256,7 +256,7 @@ namespace FlaxEngine.GUI
                         layout.Bounds.Size.X = Width - Margin.Width;
                     else if (_autoWidth && !_autoHeight)
                         layout.Bounds.Size.Y = Height - Margin.Height;
-                    _textSize = Render2D.MeasureText(font, _text, ref layout);
+                    _textSize = FallbackTextUtils.MeasureText(font, _text, ref layout);
                     _textSize.Y *= BaseLinesGapScale;
 
                     // Check if size is controlled via text

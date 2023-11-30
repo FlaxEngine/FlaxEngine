@@ -122,7 +122,7 @@ namespace FlaxEditor.Windows
                     url = desc.RepositoryUrl;
                 versionLabel.Font.Font.WaitForLoaded();
                 var font = versionLabel.Font.GetFont();
-                var authorWidth = Render2D.MeasureText(font, desc.Author).X + 8;
+                var authorWidth = FallbackTextUtils.MeasureText(font, desc.Author).X + 8;
                 var authorLabel = new ClickableLabel
                 {
                     HorizontalAlignment = TextAlignment.Far,

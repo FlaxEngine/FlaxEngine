@@ -7,10 +7,6 @@ namespace FlaxEngine
 {
     partial class Render2D
     {
-        public static FallbackFonts Fallbacks
-        {
-            get; set;
-        } = null;
 
         /// <summary>
         /// Pushes transformation layer.
@@ -117,8 +113,7 @@ namespace FlaxEngine
         /// <param name="textWrapping">Describes how wrap text inside a layout rectangle.</param>
         /// <param name="baseLinesGapScale">The scale for distance one baseline from another. Default is 1.</param>
         /// <param name="scale">The text drawing scale. Default is 1.</param>
-        /// <param name="useFallback">Whether to use fallback fonts for chars not renderable by the font.</param>
-        public static void DrawText(Font font, string text, Rectangle layoutRect, Color color, TextAlignment horizontalAlignment = TextAlignment.Near, TextAlignment verticalAlignment = TextAlignment.Near, TextWrapping textWrapping = TextWrapping.NoWrap, float baseLinesGapScale = 1.0f, float scale = 1.0f, bool useFallback = true)
+        public static void DrawText(Font font, string text, Rectangle layoutRect, Color color, TextAlignment horizontalAlignment = TextAlignment.Near, TextAlignment verticalAlignment = TextAlignment.Near, TextWrapping textWrapping = TextWrapping.NoWrap, float baseLinesGapScale = 1.0f, float scale = 1.0f)
         {
             var layout = new TextLayoutOptions
             {
@@ -129,15 +124,7 @@ namespace FlaxEngine
                 Scale = scale,
                 BaseLinesGapScale = baseLinesGapScale,
             };
-
-            if (useFallback && Fallbacks != null)
-            {
-                DrawText(font, Fallbacks, text, color, ref layout);
-            }
-            else
-            {
-                DrawText(font, text, color, ref layout);
-            }
+            DrawText(font, text, color, ref layout);
         }
 
         /// <summary>
@@ -153,8 +140,7 @@ namespace FlaxEngine
         /// <param name="textWrapping">Describes how wrap text inside a layout rectangle.</param>
         /// <param name="baseLinesGapScale">The scale for distance one baseline from another. Default is 1.</param>
         /// <param name="scale">The text drawing scale. Default is 1.</param>
-        /// <param name="useFallback">Whether to use fallback fonts for chars not renderable by the font.</param>
-        public static void DrawText(Font font, MaterialBase customMaterial, string text, Rectangle layoutRect, Color color, TextAlignment horizontalAlignment = TextAlignment.Near, TextAlignment verticalAlignment = TextAlignment.Near, TextWrapping textWrapping = TextWrapping.NoWrap, float baseLinesGapScale = 1.0f, float scale = 1.0f, bool useFallback = true)
+        public static void DrawText(Font font, MaterialBase customMaterial, string text, Rectangle layoutRect, Color color, TextAlignment horizontalAlignment = TextAlignment.Near, TextAlignment verticalAlignment = TextAlignment.Near, TextWrapping textWrapping = TextWrapping.NoWrap, float baseLinesGapScale = 1.0f, float scale = 1.0f)
         {
             var layout = new TextLayoutOptions
             {
@@ -165,63 +151,7 @@ namespace FlaxEngine
                 Scale = scale,
                 BaseLinesGapScale = baseLinesGapScale,
             };
-
-            if (useFallback && Fallbacks != null)
-            {
-                DrawText(font, Fallbacks, text, color, ref layout, customMaterial);
-            }
-            else
-            {
-                DrawText(font, text, color, ref layout, customMaterial);
-            }
-        }
-
-        public static Float2 MeasureText(Font font, string text, bool useFallback = true)
-        {
-            if (useFallback && Fallbacks != null)
-            {
-                return font.MeasureText(Style.Current.Fallbacks, text);
-            }
-            else
-            {
-                return font.MeasureText(text);
-            }
-        }
-
-        public static Float2 MeasureText(Font font, string text, ref TextRange textRange, bool useFallback = true)
-        {
-            if (useFallback && Fallbacks != null)
-            {
-                return font.MeasureText(Style.Current.Fallbacks, text, ref textRange);
-            }
-            else
-            {
-                return font.MeasureText(text, ref textRange);
-            }
-        }
-
-        public static Float2 MeasureText(Font font, string text, ref TextLayoutOptions layout, bool useFallback = true)
-        {
-            if (useFallback && Fallbacks != null)
-            {
-                return font.MeasureText(Style.Current.Fallbacks, text, ref layout);
-            }
-            else
-            {
-                return font.MeasureText(text, ref layout);
-            }
-        }
-
-        public static Float2 MeasureText(Font font, string text, ref TextRange textRange, ref TextLayoutOptions layout, bool useFallback = true)
-        {
-            if (useFallback && Fallbacks != null)
-            {
-                return font.MeasureText(Style.Current.Fallbacks, text, ref textRange, ref layout);
-            }
-            else
-            {
-                return font.MeasureText(text, ref textRange, ref layout);
-            }
+            DrawText(font, text, color, ref layout, customMaterial);
         }
 
         /// <summary>

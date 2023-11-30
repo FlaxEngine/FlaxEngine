@@ -236,9 +236,9 @@ namespace FlaxEditor.GUI.ContextMenu
                 float width = 20;
                 if (style.FontMedium)
                 {
-                    width += Render2D.MeasureText(style.FontMedium, Text).X;
+                    width += FallbackTextUtils.MeasureText(style.FontMedium, Text).X;
                     if (!string.IsNullOrEmpty(ShortKeys))
-                        width += 40 + Render2D.MeasureText(style.FontMedium, ShortKeys).X;
+                        width += 40 + FallbackTextUtils.MeasureText(style.FontMedium, ShortKeys).X;
                 }
 
                 return Mathf.Max(width, base.MinimumWidth);

@@ -476,7 +476,7 @@ namespace FlaxEngine.GUI
             var font = Font.GetFont();
             for (int i = 0; i < _items.Count; i++)
             {
-                itemsWidth = Mathf.Max(itemsWidth, itemsMargin + 4 + Render2D.MeasureText(font, _items[i]).X);
+                itemsWidth = Mathf.Max(itemsWidth, itemsMargin + 4 + FallbackTextUtils.MeasureText(font, _items[i]).X);
             }
             */
             var itemsWidth = Width;

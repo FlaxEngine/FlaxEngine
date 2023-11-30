@@ -548,9 +548,9 @@ namespace FlaxEditor.Viewport
                 #region Camera settings widget
 
                 var largestText = "Relative Panning";
-                var textSize = Render2D.MeasureText(Style.Current.FontMedium, largestText);
+                var textSize = FallbackTextUtils.MeasureText(Style.Current.FontMedium, largestText);
                 var xLocationForExtras = textSize.X + 5;
-                var cameraSpeedTextWidth = Render2D.MeasureText(Style.Current.FontMedium, "0.00").X;
+                var cameraSpeedTextWidth = FallbackTextUtils.MeasureText(Style.Current.FontMedium, "0.00").X;
 
                 // Camera Settings Widget
                 _cameraWidget = new ViewportWidgetsContainer(ViewportWidgetLocation.UpperRight);
@@ -801,7 +801,7 @@ namespace FlaxEditor.Viewport
                 #region View mode widget
 
                 largestText = "Brightness";
-                textSize = Render2D.MeasureText(Style.Current.FontMedium, largestText);
+                textSize = FallbackTextUtils.MeasureText(Style.Current.FontMedium, largestText);
                 xLocationForExtras = textSize.X + 5;
 
                 var viewMode = new ViewportWidgetsContainer(ViewportWidgetLocation.UpperLeft);

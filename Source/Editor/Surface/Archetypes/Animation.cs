@@ -77,7 +77,7 @@ namespace FlaxEditor.Surface.Archetypes
                     Title = asset?.ShortName ?? "Animation";
                 
                 var style = Style.Current;
-                Resize(Mathf.Max(230, Render2D.MeasureText(style.FontLarge, Title).X + 30), 160);
+                Resize(Mathf.Max(230, FallbackTextUtils.MeasureText(style.FontLarge, Title).X + 30), 160);
             }
 
             /// <inheritdoc />

@@ -148,7 +148,7 @@ namespace FlaxEditor.Tools.Foliage
                 Parent = _noFoliagePanel,
                 Enabled = false
             };
-            var textSize = Render2D.MeasureText(Style.Current.FontMedium, buttonText);
+            var textSize = FallbackTextUtils.MeasureText(Style.Current.FontMedium, buttonText);
             if (_createNewFoliage.Width < textSize.X)
             {
                 _createNewFoliage.LocalX -= (textSize.X - _createNewFoliage.Width) / 2;

@@ -576,7 +576,7 @@ namespace FlaxEditor.GUI.Tree
                 var font = TextFont.GetFont();
                 if (font)
                 {
-                    _textWidth = Render2D.MeasureText(font, _text).X;
+                    _textWidth = FallbackTextUtils.MeasureText(font, _text).X;
                     _textChanged = false;
                 }
             }

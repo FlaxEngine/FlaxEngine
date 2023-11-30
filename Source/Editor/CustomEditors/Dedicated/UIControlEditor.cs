@@ -423,7 +423,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
             // Set control type button
             var space = layout.Space(20);
             var buttonText = "Set Type";
-            var textSize = Render2D.MeasureText(FlaxEngine.GUI.Style.Current.FontMedium, buttonText);
+            var textSize = FallbackTextUtils.MeasureText(FlaxEngine.GUI.Style.Current.FontMedium, buttonText);
             float setTypeButtonWidth = (textSize.X < 60.0f) ? 60.0f : textSize.X + 4;
             var setTypeButton = new Button
             {
