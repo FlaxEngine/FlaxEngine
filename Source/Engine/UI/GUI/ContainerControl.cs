@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using FlaxEngine.Assertions;
 
 namespace FlaxEngine.GUI
@@ -108,8 +109,8 @@ namespace FlaxEngine.GUI
         /// Controls in different clipping spaces can not be batched together, and so there is a performance cost to clipping.
         /// Do not enable clipping unless a panel actually needs to prevent content from showing up outside its bounds.
         /// </summary>
-        [EditorOrder(530), Tooltip("Controls how the clipping behavior of this Control.\nNormally content that overflows the bounds of the Control continues rendering.\nEnabling clipping prevents that overflowing content from being seen.\n\nNote:\nControls in different clipping spaces can not be batched together, and so there is a performance cost to clipping.\nDo not enable clipping unless a panel actually needs to prevent content from showing up outside its bounds.")]
-        public Clipping Clipping;
+        [EditorOrder(530), DefaultValue(Clipping.Inherit), Tooltip("Controls how the clipping behavior of this Control.\nNormally content that overflows the bounds of the Control continues rendering.\nEnabling clipping prevents that overflowing content from being seen.\n\nNote:\nControls in different clipping spaces can not be batched together, and so there is a performance cost to clipping.\nDo not enable clipping unless a panel actually needs to prevent content from showing up outside its bounds.")]
+        public Clipping Clipping = Clipping.Inherit;
 
         /// <summary>
         /// Gets or sets a value indicating whether perform view culling on children during rendering.
