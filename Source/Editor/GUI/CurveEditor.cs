@@ -317,7 +317,7 @@ namespace FlaxEditor.GUI
         private Color _contentsColor;
         private Color _linesColor;
         private Color _labelsColor;
-        private MultiFont _labelsFont;
+        private Font _labelsFont;
 
         /// <summary>
         /// The keyframe UI points.

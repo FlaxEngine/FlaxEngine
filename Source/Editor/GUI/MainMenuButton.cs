@@ -103,7 +103,7 @@ namespace FlaxEditor.GUI
             float width = 18;
 
             if (style.FontMedium)
-                width += style.FontMedium.MeasureText(Text).X;
+                width += Render2D.MeasureText(style.FontMedium, Text).X;
 
             Width = width;
         }

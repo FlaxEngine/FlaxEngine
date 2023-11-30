@@ -164,7 +164,7 @@ namespace FlaxEditor.Viewport.Widgets
             var style = Style.Current;
 
             if (style != null && style.FontMedium)
-                Width = CalculateButtonWidth(_forcedTextWidth > 0.0f ? _forcedTextWidth : style.FontMedium.MeasureText(_text).X, Icon.IsValid);
+                Width = CalculateButtonWidth(_forcedTextWidth > 0.0f ? _forcedTextWidth : Render2D.MeasureText(style.FontMedium, _text).X, Icon.IsValid);
         }
     }
 }

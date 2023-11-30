@@ -39,7 +39,7 @@ public:
     /// <summary>
     /// Combine the primary fonts with the fallback fonts to get a font list
     /// </summary>
-    API_PROPERTY() FORCE_INLINE Array<Font*>& GetFontList(float size) {
+    API_FUNCTION() FORCE_INLINE Array<Font*>& GetFontList(float size) {
         Array<Font*>* result;
         if (_cache.TryGet(size, result)) {
             return *result;

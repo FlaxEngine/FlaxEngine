@@ -191,7 +191,7 @@ namespace FlaxEditor.GUI
         /// Gets or sets the font used to draw text.
         /// </summary>
         [EditorDisplay("Style"), EditorOrder(2000)]
-        public MultiFontReference Font { get; set; }
+        public FontReference Font { get; set; }
 
         /// <summary>
         /// Gets or sets the color of the text.
@@ -273,7 +273,7 @@ namespace FlaxEditor.GUI
             MaximumItemsInViewCount = 20;
 
             var style = Style.Current;
-            Font = new MultiFontReference(style.FontMedium);
+            Font = new FontReference(style.FontMedium);
             TextColor = style.Foreground;
             BackgroundColor = style.BackgroundNormal;
             BackgroundColorHighlighted = BackgroundColor;
@@ -554,7 +554,7 @@ namespace FlaxEditor.GUI
                 var textRect = new Rectangle(margin, 0, clientRect.Width - boxSize - 2.0f * margin, clientRect.Height);
                 Render2D.PushClip(textRect);
                 var textColor = TextColor;
-                Render2D.DrawText(Font.GetMultiFont(), text, textRect, enabled ? textColor : textColor * 0.5f, TextAlignment.Near, TextAlignment.Center, TextWrapping.NoWrap, 1.0f, textScale);
+                Render2D.DrawText(Font.GetFont(), text, textRect, enabled ? textColor : textColor * 0.5f, TextAlignment.Near, TextAlignment.Center, TextWrapping.NoWrap, 1.0f, textScale);
                 Render2D.PopClip();
             }
 

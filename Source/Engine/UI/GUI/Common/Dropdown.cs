@@ -278,7 +278,7 @@ namespace FlaxEngine.GUI
         /// Gets or sets the font used to draw text.
         /// </summary>
         [EditorDisplay("Text Style"), EditorOrder(2021)]
-        public MultiFontReference Font { get; set; }
+        public FontReference Font { get; set; }
 
         /// <summary>
         /// Gets or sets the custom material used to render the text. It must has domain set to GUI and have a public texture parameter named Font used to sample font atlas texture with font characters data.
@@ -359,7 +359,7 @@ namespace FlaxEngine.GUI
         : base(0, 0, 120, 18.0f)
         {
             var style = Style.Current;
-            Font = new MultiFontReference(style.FontMedium);
+            Font = new FontReference(style.FontMedium);
             TextColor = style.Foreground;
             BackgroundColor = style.BackgroundNormal;
             BackgroundColorHighlighted = BackgroundColor;
@@ -476,7 +476,7 @@ namespace FlaxEngine.GUI
             var font = Font.GetFont();
             for (int i = 0; i < _items.Count; i++)
             {
-                itemsWidth = Mathf.Max(itemsWidth, itemsMargin + 4 + font.MeasureText(_items[i]).X);
+                itemsWidth = Mathf.Max(itemsWidth, itemsMargin + 4 + Render2D.MeasureText(font, _items[i]).X);
             }
             */
             var itemsWidth = Width;
@@ -674,7 +674,7 @@ namespace FlaxEngine.GUI
                 var textRect = new Rectangle(margin, 0, clientRect.Width - boxSize - 2.0f * margin, clientRect.Height);
                 Render2D.PushClip(textRect);
                 var textColor = TextColor;
-                Render2D.DrawText(Font.GetMultiFont(), FontMaterial, _items[_selectedIndex], textRect, enabled ? textColor : textColor * 0.5f, TextAlignment.Near, TextAlignment.Center);
+                Render2D.DrawText(Font.GetFont(), FontMaterial, _items[_selectedIndex], textRect, enabled ? textColor : textColor * 0.5f, TextAlignment.Near, TextAlignment.Center);
                 Render2D.PopClip();
             }
 

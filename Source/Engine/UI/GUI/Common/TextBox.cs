@@ -1,5 +1,6 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
+using System.Drawing;
 using System.Linq;
 
 namespace FlaxEngine.GUI
@@ -40,7 +41,7 @@ namespace FlaxEngine.GUI
         /// Gets or sets the font.
         /// </summary>
         [EditorDisplay("Text Style"), EditorOrder(2024)]
-        public MultiFontReference Font { get; set; }
+        public FontReference Font { get; set; }
 
         /// <summary>
         /// Gets or sets the custom material used to render the text. It must has domain set to GUI and have a public texture parameter named Font used to sample font atlas texture with font characters data.
@@ -90,7 +91,7 @@ namespace FlaxEngine.GUI
             _layout.Bounds = new Rectangle(DefaultMargin, 1, Width - 2 * DefaultMargin, Height - 2);
 
             var style = Style.Current;
-            Font = new MultiFontReference(style.FontMedium);
+            Font = new FontReference(style.FontMedium);
             TextColor = style.Foreground;
             WatermarkTextColor = style.ForegroundDisabled;
             SelectionColor = style.BackgroundSelected;
@@ -99,33 +100,33 @@ namespace FlaxEngine.GUI
         /// <inheritdoc />
         public override Float2 GetTextSize()
         {
-            var font = Font.GetMultiFont();
+            var font = Font.GetFont();
             if (font == null)
             {
                 return Float2.Zero;
             }
 
-            return font.MeasureText(_text, ref _layout);
+            return Render2D.MeasureText(font, _text, ref _layout);
         }
 
         /// <inheritdoc />
         public override Float2 GetCharPosition(int index, out float height)
         {
-            var font = Font.GetMultiFont();
+            var font = Font.GetFont();
             if (font == null)
             {
                 height = Height;
                 return Float2.Zero;
             }
 
-            height = font.MaxHeight / DpiScale;
+            height = font.Height / DpiScale;
             return font.GetCharPosition(_text, index, ref _layout);
         }
 
         /// <inheritdoc />
         public override int HitTestText(Float2 location)
         {
-            var font = Font.GetMultiFont();
+            var font = Font.GetFont();
             if (font == null)
             {
                 return 0;
@@ -148,7 +149,7 @@ namespace FlaxEngine.GUI
             // Cache data
             var rect = new Rectangle(Float2.Zero, Size);
             bool enabled = EnabledInHierarchy;
-            var font = Font.GetMultiFont();
+            var font = Font.GetFont();
             if (!font)
                 return;
 
@@ -172,7 +173,7 @@ namespace FlaxEngine.GUI
             {
                 var leftEdge = font.GetCharPosition(_text, SelectionLeft, ref _layout);
                 var rightEdge = font.GetCharPosition(_text, SelectionRight, ref _layout);
-                float fontHeight = font.MaxHeight / DpiScale;
+                float fontHeight = font.Height / DpiScale;
 
                 // Draw selection background
                 float alpha = Mathf.Min(1.0f, Mathf.Cos(_animateTime * BackgroundSelectedFlashSpeed) * 0.5f + 1.3f);
@@ -212,11 +213,25 @@ namespace FlaxEngine.GUI
                 var color = TextColor;
                 if (!enabled)
                     color *= 0.6f;
-                Render2D.DrawText(font, _text, color, ref _layout, TextMaterial);
+                if (Render2D.Fallbacks != null)
+                {
+                    Render2D.DrawText(font, Render2D.Fallbacks, _text, color, ref _layout, TextMaterial);
+                }
+                else
+                {
+                    Render2D.DrawText(font, _text, color, ref _layout, TextMaterial);
+                }
             }
             else if (!string.IsNullOrEmpty(_watermarkText) && !IsFocused)
             {
-                Render2D.DrawText(font, _watermarkText, WatermarkTextColor, ref _layout, TextMaterial);
+                if (Render2D.Fallbacks != null)
+                {
+                    Render2D.DrawText(font, Render2D.Fallbacks, _watermarkText, WatermarkTextColor, ref _layout, TextMaterial);
+                }
+                else
+                {
+                    Render2D.DrawText(font, _watermarkText, WatermarkTextColor, ref _layout, TextMaterial);
+                }
             }
 
             // Caret

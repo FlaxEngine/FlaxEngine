@@ -115,7 +115,7 @@ namespace FlaxEditor.GUI.Tree
         /// Gets or sets the font used to render text.
         /// </summary>
         [EditorDisplay("Style"), EditorOrder(2000)]
-        public MultiFontReference TextFont { get; set; }
+        public FontReference TextFont { get; set; }
 
         /// <summary>
         /// Gets or sets the color of the background when tree node is selected.
@@ -318,7 +318,7 @@ namespace FlaxEditor.GUI.Tree
             BackgroundColorSelected = style.BackgroundSelected;
             BackgroundColorHighlighted = style.BackgroundHighlighted;
             BackgroundColorSelectedUnfocused = style.LightBackground;
-            TextFont = new MultiFontReference(style.FontSmall);
+            TextFont = new FontReference(style.FontSmall);
         }
 
         /// <summary>
@@ -573,10 +573,10 @@ namespace FlaxEditor.GUI.Tree
         {
             if (_textChanged)
             {
-                var font = TextFont.GetMultiFont();
+                var font = TextFont.GetFont();
                 if (font)
                 {
-                    _textWidth = font.MeasureText(_text).X;
+                    _textWidth = Render2D.MeasureText(font, _text).X;
                     _textChanged = false;
                 }
             }
@@ -657,7 +657,7 @@ namespace FlaxEditor.GUI.Tree
             }
 
             // Draw text
-            Render2D.DrawText(TextFont.GetMultiFont(), _text, textRect, _cachedTextColor, TextAlignment.Near, TextAlignment.Center);
+            Render2D.DrawText(TextFont.GetFont(), _text, textRect, _cachedTextColor, TextAlignment.Near, TextAlignment.Center);
 
             // Draw drag and drop effect
             if (IsDragOver && _tree.DraggedOverNode == this)

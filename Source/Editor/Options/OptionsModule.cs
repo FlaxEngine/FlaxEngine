@@ -217,12 +217,14 @@ namespace FlaxEditor.Options
                 if (styleName == ThemeOptions.LightDefault)
                 {
                     Style.Current = CreateLightStyle();
-                } 
+                }
                 else
                 {
                     Style.Current = CreateDefaultStyle();
                 }
             }
+
+            Render2D.Fallbacks = FallbackFonts.Create(Options.Interface.Fallbacks);
         }
 
         /// <summary>
@@ -259,10 +261,10 @@ namespace FlaxEditor.Options
                 },
 
                 // Fonts
-                FontTitle = options.Interface.TitleFont.GetMultiFont(),
-                FontLarge = options.Interface.LargeFont.GetMultiFont(),
-                FontMedium = options.Interface.MediumFont.GetMultiFont(),
-                FontSmall = options.Interface.SmallFont.GetMultiFont(),
+                FontTitle = options.Interface.TitleFont.GetFont(),
+                FontLarge = options.Interface.LargeFont.GetFont(),
+                FontMedium = options.Interface.MediumFont.GetFont(),
+                FontSmall = options.Interface.SmallFont.GetFont(),
 
                 // Icons
                 ArrowDown = Editor.Icons.ArrowDown12,
@@ -312,10 +314,10 @@ namespace FlaxEditor.Options
                 ProgressNormal = new Color(0.03f, 0.65f, 0.12f, 1f),
 
                 // Fonts
-                FontTitle = options.Interface.TitleFont.GetMultiFont(),
-                FontLarge = options.Interface.LargeFont.GetMultiFont(),
-                FontMedium = options.Interface.MediumFont.GetMultiFont(),
-                FontSmall = options.Interface.SmallFont.GetMultiFont(),
+                FontTitle = options.Interface.TitleFont.GetFont(),
+                FontLarge = options.Interface.LargeFont.GetFont(),
+                FontMedium = options.Interface.MediumFont.GetFont(),
+                FontSmall = options.Interface.SmallFont.GetFont(),
 
                 // Icons
                 ArrowDown = Editor.Icons.ArrowDown12,

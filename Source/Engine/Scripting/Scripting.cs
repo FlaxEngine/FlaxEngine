@@ -294,12 +294,12 @@ namespace FlaxEngine
             style.DragWindow = style.BackgroundSelected * 0.7f;
 
             // Use optionally bundled default font (matches Editor)
-            FontAsset[] defaultFont = [Content.LoadAsyncInternal<FontAsset>("Editor/Fonts/Roboto-Regular"), Content.LoadAsyncInternal<FontAsset>("Editor/Fonts/NotoSansSC-Regular")];
+            FontAsset defaultFont = Content.LoadAsyncInternal<FontAsset>("Editor/Fonts/Roboto-Regular");
 
-            style.FontTitle = new MultiFontReference(defaultFont, 18).GetMultiFont();
-            style.FontLarge = new MultiFontReference(defaultFont, 14).GetMultiFont();
-            style.FontMedium = new MultiFontReference(defaultFont, 9).GetMultiFont();
-            style.FontSmall = new MultiFontReference(defaultFont, 9).GetMultiFont();
+            style.FontTitle = new FontReference(defaultFont, 18).GetFont();
+            style.FontLarge = new FontReference(defaultFont, 14).GetFont();
+            style.FontMedium = new FontReference(defaultFont, 9).GetFont();
+            style.FontSmall = new FontReference(defaultFont, 9).GetFont();
 
             Style.Current = style;
         }

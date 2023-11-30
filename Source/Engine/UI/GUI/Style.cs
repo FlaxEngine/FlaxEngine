@@ -15,60 +15,66 @@ namespace FlaxEngine.GUI
         public static Style Current { get; set; }
 
         [Serialize]
-        private MultiFontReference _fontTitle;
+        private FontReference _fontTitle;
 
         /// <summary>
         /// The font title.
         /// </summary>
         [NoSerialize]
         [EditorOrder(10)]
-        public MultiFont FontTitle
+        public Font FontTitle
         {
-            get => _fontTitle?.GetMultiFont();
-            set => _fontTitle = new MultiFontReference(value);
+            get => _fontTitle?.GetFont();
+            set => _fontTitle = new FontReference(value);
         }
 
         [Serialize]
-        private MultiFontReference _fontLarge;
+        private FontReference _fontLarge;
 
         /// <summary>
         /// The font large.
         /// </summary>
         [NoSerialize]
         [EditorOrder(20)]
-        public MultiFont FontLarge
+        public Font FontLarge
         {
-            get => _fontLarge?.GetMultiFont();
-            set => _fontLarge = new MultiFontReference(value);
+            get => _fontLarge?.GetFont();
+            set => _fontLarge = new FontReference(value);
         }
 
         [Serialize]
-        private MultiFontReference _fontMedium;
+        private FontReference _fontMedium;
 
         /// <summary>
         /// The font medium.
         /// </summary>
         [NoSerialize]
         [EditorOrder(30)]
-        public MultiFont FontMedium
+        public Font FontMedium
         {
-            get => _fontMedium?.GetMultiFont();
-            set => _fontMedium = new MultiFontReference(value);
+            get => _fontMedium?.GetFont();
+            set => _fontMedium = new FontReference(value);
         }
 
         [Serialize]
-        private MultiFontReference _fontSmall;
+        private FontReference _fontSmall;
 
         /// <summary>
         /// The font small.
         /// </summary>
         [NoSerialize]
         [EditorOrder(40)]
-        public MultiFont FontSmall
+        public Font FontSmall
         {
-            get => _fontSmall?.GetMultiFont();
-            set => _fontSmall = new MultiFontReference(value);
+            get => _fontSmall?.GetFont();
+            set => _fontSmall = new FontReference(value);
         }
+
+        /// <summary>
+        /// The fallback fonts to use if the primary font can't render the char.
+        /// </summary>
+        [EditorOrder(50)]
+        public FallbackFonts Fallbacks;
 
         /// <summary>
         /// The background color.

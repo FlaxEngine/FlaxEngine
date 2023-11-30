@@ -286,7 +286,7 @@ namespace FlaxEditor.Surface.ContextMenu
             Render2D.DrawText(style.FontSmall, _archetype.Title, textRect, Enabled ? style.Foreground : style.ForegroundDisabled, TextAlignment.Near, TextAlignment.Center);
             if (_archetype.SubTitle != null)
             {
-                var titleLength = style.FontSmall.MeasureText(_archetype.Title).X;
+                var titleLength = Render2D.MeasureText(style.FontSmall, _archetype.Title).X;
                 var subTitleRect = new Rectangle(textRect.X + titleLength, textRect.Y, textRect.Width - titleLength, textRect.Height);
                 Render2D.DrawText(style.FontSmall, _archetype.SubTitle, subTitleRect, style.ForegroundDisabled, TextAlignment.Near, TextAlignment.Center);
             }

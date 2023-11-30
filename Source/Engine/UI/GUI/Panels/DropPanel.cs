@@ -130,7 +130,7 @@ namespace FlaxEngine.GUI
         /// Gets or sets the font used to render panel header text.
         /// </summary>
         [EditorDisplay("Header Text Style"), EditorOrder(2020), ExpandGroups]
-        public MultiFontReference HeaderTextFont { get; set; }
+        public FontReference HeaderTextFont { get; set; }
 
         /// <summary>
         /// Gets or sets the custom material used to render the text. It must has domain set to GUI and have a public texture parameter named Font used to sample font atlas texture with font characters data.
@@ -238,7 +238,7 @@ namespace FlaxEngine.GUI
             var style = Style.Current;
             HeaderColor = style.BackgroundNormal;
             HeaderColorMouseOver = style.BackgroundHighlighted;
-            HeaderTextFont = new MultiFontReference(style.FontMedium);
+            HeaderTextFont = new FontReference(style.FontMedium);
             HeaderTextColor = style.Foreground;
             ArrowImageOpened = new SpriteBrush(style.ArrowDown);
             ArrowImageClosed = new SpriteBrush(style.ArrowRight);
@@ -375,7 +375,7 @@ namespace FlaxEngine.GUI
                 textColor *= 0.6f;
             }
 
-            Render2D.DrawText(HeaderTextFont.GetMultiFont(), HeaderTextMaterial, HeaderText, textRect, textColor, TextAlignment.Near, TextAlignment.Center);
+            Render2D.DrawText(HeaderTextFont.GetFont(), HeaderTextMaterial, HeaderText, textRect, textColor, TextAlignment.Near, TextAlignment.Center);
 
             if (!_isClosed && EnableContainmentLines)
             {

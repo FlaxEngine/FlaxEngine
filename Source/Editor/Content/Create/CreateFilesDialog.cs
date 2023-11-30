@@ -39,7 +39,7 @@ namespace FlaxEditor.Content.Create
                 AnchorPreset = AnchorPresets.HorizontalStretchTop,
                 Offsets = new Margin(0, 0, 0, 40),
                 Parent = this,
-                Font = new MultiFontReference(Style.Current.FontTitle)
+                Font = new FontReference(Style.Current.FontTitle)
             };
             var infoLabel = new Label
             {

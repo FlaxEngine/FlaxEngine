@@ -337,7 +337,7 @@ namespace FlaxEditor.Surface.Archetypes
                 _textRect = new Rectangle(Float2.Zero, Size);
 
                 var style = Style.Current;
-                var titleSize = style.FontLarge.MeasureText(Title);
+                var titleSize = Render2D.MeasureText(style.FontLarge, Title);
                 var width = Mathf.Max(100, titleSize.X + 50);
                 Resize(width, 0);
                 titleSize.X += 8.0f;
@@ -1402,7 +1402,7 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 Title = StateTitle;
                 var style = Style.Current;
-                var titleSize = style.FontLarge.MeasureText(Title);
+                var titleSize = Render2D.MeasureText(style.FontLarge, Title);
                 var width = Mathf.Max(100, titleSize.X + 50);
                 Resize(width, 0);
                 titleSize.X += 8.0f;

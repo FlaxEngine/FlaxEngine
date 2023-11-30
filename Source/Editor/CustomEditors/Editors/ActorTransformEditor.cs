@@ -101,7 +101,7 @@ namespace FlaxEditor.CustomEditors.Editors
                 _linkButton.Clicked += ToggleLink;
                 ToggleEnabled();
                 SetLinkStyle();
-                var textSize = FlaxEngine.GUI.Style.Current.FontMedium.MeasureText(LinkedLabel.Text.Value);
+                var textSize = Render2D.MeasureText(FlaxEngine.GUI.Style.Current.FontMedium, LinkedLabel.Text.Value);
                 _linkButton.LocalX += textSize.X + 10;
                 LinkedLabel.SetupContextMenu += (label, menu, editor) =>
                 {

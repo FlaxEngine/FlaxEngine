@@ -200,7 +200,7 @@ namespace FlaxEditor.Surface
                     continue;
                 if (child is InputBox inputBox)
                 {
-                    var boxWidth = boxLabelFont.MeasureText(inputBox.Text).X + 20;
+                    var boxWidth = Render2D.MeasureText(boxLabelFont, inputBox.Text).X + 20;
                     if (inputBox.DefaultValueEditor != null)
                         boxWidth += inputBox.DefaultValueEditor.Width + 4;
                     leftWidth = Mathf.Max(leftWidth, boxWidth);
@@ -208,7 +208,7 @@ namespace FlaxEditor.Surface
                 }
                 else if (child is OutputBox outputBox)
                 {
-                    rightWidth = Mathf.Max(rightWidth, boxLabelFont.MeasureText(outputBox.Text).X + 20);
+                    rightWidth = Mathf.Max(rightWidth, Render2D.MeasureText(boxLabelFont, outputBox.Text).X + 20);
                     rightHeight = Mathf.Max(rightHeight, outputBox.Archetype.Position.Y - Constants.NodeMarginY - Constants.NodeHeaderSize + 20.0f);
                 }
                 else if (child is Control control)
@@ -226,7 +226,7 @@ namespace FlaxEditor.Surface
                 }
             }
             width = Mathf.Max(width, leftWidth + rightWidth + 10);
-            width = Mathf.Max(width, titleLabelFont.MeasureText(Title).X + 30);
+            width = Mathf.Max(width, Render2D.MeasureText(titleLabelFont, Title).X + 30);
             height = Mathf.Max(height, Mathf.Max(leftHeight, rightHeight));
             Resize(width, height);
         }

@@ -26,7 +26,7 @@ namespace FlaxEngine.GUI
         /// <summary>
         /// The font.
         /// </summary>
-        protected MultiFontReference _font;
+        protected FontReference _font;
 
         /// <summary>
         /// Gets or sets the text.
@@ -86,7 +86,7 @@ namespace FlaxEngine.GUI
         /// Gets or sets the font.
         /// </summary>
         [EditorDisplay("Text Style"), EditorOrder(2024)]
-        public MultiFontReference Font
+        public FontReference Font
         {
             get => _font;
             set
@@ -192,7 +192,7 @@ namespace FlaxEngine.GUI
         {
             AutoFocus = false;
             var style = Style.Current;
-            Font = new MultiFontReference(style.FontMedium);
+            Font = new FontReference(style.FontMedium);
             TextColor = style.Foreground;
             TextColorHighlighted = style.Foreground;
         }
@@ -203,7 +203,7 @@ namespace FlaxEngine.GUI
         {
             AutoFocus = false;
             var style = Style.Current;
-            Font = new MultiFontReference(style.FontMedium);
+            Font = new FontReference(style.FontMedium);
             TextColor = style.Foreground;
             TextColorHighlighted = style.Foreground;
         }
@@ -235,7 +235,7 @@ namespace FlaxEngine.GUI
                 }
             }
 
-            Render2D.DrawText(_font.GetMultiFont(), Material, _text, rect, color, hAlignment, wAlignment, Wrapping, BaseLinesGapScale, scale);
+            Render2D.DrawText(_font.GetFont(), Material, _text, rect, color, hAlignment, wAlignment, Wrapping, BaseLinesGapScale, scale);
 
             if (ClipText)
                 Render2D.PopClip();
@@ -246,7 +246,7 @@ namespace FlaxEngine.GUI
         {
             if (_autoWidth || _autoHeight || _autoFitText)
             {
-                var font = _font.GetMultiFont();
+                var font = _font.GetFont();
                 if (font)
                 {
                     // Calculate text size
@@ -256,7 +256,7 @@ namespace FlaxEngine.GUI
                         layout.Bounds.Size.X = Width - Margin.Width;
                     else if (_autoWidth && !_autoHeight)
                         layout.Bounds.Size.Y = Height - Margin.Height;
-                    _textSize = font.MeasureText(_text, ref layout);
+                    _textSize = Render2D.MeasureText(font, _text, ref layout);
                     _textSize.Y *= BaseLinesGapScale;
 
                     // Check if size is controlled via text

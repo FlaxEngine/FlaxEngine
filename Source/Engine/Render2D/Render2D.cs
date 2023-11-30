@@ -1,11 +1,17 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
+using FlaxEngine.GUI;
 using System;
 
 namespace FlaxEngine
 {
     partial class Render2D
     {
+        public static FallbackFonts Fallbacks
+        {
+            get; set;
+        } = null;
+
         /// <summary>
         /// Pushes transformation layer.
         /// </summary>
@@ -111,7 +117,8 @@ namespace FlaxEngine
         /// <param name="textWrapping">Describes how wrap text inside a layout rectangle.</param>
         /// <param name="baseLinesGapScale">The scale for distance one baseline from another. Default is 1.</param>
         /// <param name="scale">The text drawing scale. Default is 1.</param>
-        public static void DrawText(Font font, string text, Rectangle layoutRect, Color color, TextAlignment horizontalAlignment = TextAlignment.Near, TextAlignment verticalAlignment = TextAlignment.Near, TextWrapping textWrapping = TextWrapping.NoWrap, float baseLinesGapScale = 1.0f, float scale = 1.0f)
+        /// <param name="useFallback">Whether to use fallback fonts for chars not renderable by the font.</param>
+        public static void DrawText(Font font, string text, Rectangle layoutRect, Color color, TextAlignment horizontalAlignment = TextAlignment.Near, TextAlignment verticalAlignment = TextAlignment.Near, TextWrapping textWrapping = TextWrapping.NoWrap, float baseLinesGapScale = 1.0f, float scale = 1.0f, bool useFallback = true)
         {
             var layout = new TextLayoutOptions
             {
@@ -122,7 +129,15 @@ namespace FlaxEngine
                 Scale = scale,
                 BaseLinesGapScale = baseLinesGapScale,
             };
-            DrawText(font, text, color, ref layout);
+
+            if (useFallback && Fallbacks != null)
+            {
+                DrawText(font, Fallbacks, text, color, ref layout);
+            }
+            else
+            {
+                DrawText(font, text, color, ref layout);
+            }
         }
 
         /// <summary>
@@ -138,7 +153,8 @@ namespace FlaxEngine
         /// <param name="textWrapping">Describes how wrap text inside a layout rectangle.</param>
         /// <param name="baseLinesGapScale">The scale for distance one baseline from another. Default is 1.</param>
         /// <param name="scale">The text drawing scale. Default is 1.</param>
-        public static void DrawText(Font font, MaterialBase customMaterial, string text, Rectangle layoutRect, Color color, TextAlignment horizontalAlignment = TextAlignment.Near, TextAlignment verticalAlignment = TextAlignment.Near, TextWrapping textWrapping = TextWrapping.NoWrap, float baseLinesGapScale = 1.0f, float scale = 1.0f)
+        /// <param name="useFallback">Whether to use fallback fonts for chars not renderable by the font.</param>
+        public static void DrawText(Font font, MaterialBase customMaterial, string text, Rectangle layoutRect, Color color, TextAlignment horizontalAlignment = TextAlignment.Near, TextAlignment verticalAlignment = TextAlignment.Near, TextWrapping textWrapping = TextWrapping.NoWrap, float baseLinesGapScale = 1.0f, float scale = 1.0f, bool useFallback = true)
         {
             var layout = new TextLayoutOptions
             {
@@ -149,63 +165,63 @@ namespace FlaxEngine
                 Scale = scale,
                 BaseLinesGapScale = baseLinesGapScale,
             };
-            DrawText(font, text, color, ref layout, customMaterial);
+
+            if (useFallback && Fallbacks != null)
+            {
+                DrawText(font, Fallbacks, text, color, ref layout, customMaterial);
+            }
+            else
+            {
+                DrawText(font, text, color, ref layout, customMaterial);
+            }
         }
 
-        /// <summary>
-        /// Draws a text.
-        /// </summary>
-        /// <param name="fonts">The fonts to use, ordered by priority.</param>
-        /// <param name="text">The text to render.</param>
-        /// <param name="layoutRect">The size and position of the area in which the text is drawn.</param>
-        /// <param name="color">The text color.</param>
-        /// <param name="horizontalAlignment">The horizontal alignment of the text in a layout rectangle.</param>
-        /// <param name="verticalAlignment">The vertical alignment of the text in a layout rectangle.</param>
-        /// <param name="textWrapping">Describes how wrap text inside a layout rectangle.</param>
-        /// <param name="baseLinesGapScale">The scale for distance one baseline from another. Default is 1.</param>
-        /// <param name="scale">The text drawing scale. Default is 1.</param>
-        public static void DrawText(MultiFont fonts, string text, Rectangle layoutRect, Color color, TextAlignment horizontalAlignment = TextAlignment.Near, TextAlignment verticalAlignment = TextAlignment.Near, TextWrapping textWrapping = TextWrapping.NoWrap, float baseLinesGapScale = 1.0f, float scale = 1.0f)
+        public static Float2 MeasureText(Font font, string text, bool useFallback = true)
         {
-            var layout = new TextLayoutOptions
+            if (useFallback && Fallbacks != null)
             {
-                Bounds = layoutRect,
-                HorizontalAlignment = horizontalAlignment,
-                VerticalAlignment = verticalAlignment,
-                TextWrapping = textWrapping,
-                Scale = scale,
-                BaseLinesGapScale = baseLinesGapScale,
-            };
-
-            
-            DrawText(fonts, text, color, ref layout);
+                return font.MeasureText(Style.Current.Fallbacks, text);
+            }
+            else
+            {
+                return font.MeasureText(text);
+            }
         }
 
-        /// <summary>
-        /// Draws a text using a custom material shader. Given material must have GUI domain and a public parameter named Font (texture parameter used for a font atlas sampling).
-        /// </summary>
-        /// <param name="fonts">The fonts to use, ordered by priority.</param>
-        /// <param name="customMaterial">Custom material for font characters rendering. It must contain texture parameter named Font used to sample font texture.</param>
-        /// <param name="text">The text to render.</param>
-        /// <param name="layoutRect">The size and position of the area in which the text is drawn.</param>
-        /// <param name="color">The text color.</param>
-        /// <param name="horizontalAlignment">The horizontal alignment of the text in a layout rectangle.</param>
-        /// <param name="verticalAlignment">The vertical alignment of the text in a layout rectangle.</param>
-        /// <param name="textWrapping">Describes how wrap text inside a layout rectangle.</param>
-        /// <param name="baseLinesGapScale">The scale for distance one baseline from another. Default is 1.</param>
-        /// <param name="scale">The text drawing scale. Default is 1.</param>
-        public static void DrawText(MultiFont fonts, MaterialBase customMaterial, string text, Rectangle layoutRect, Color color, TextAlignment horizontalAlignment = TextAlignment.Near, TextAlignment verticalAlignment = TextAlignment.Near, TextWrapping textWrapping = TextWrapping.NoWrap, float baseLinesGapScale = 1.0f, float scale = 1.0f)
+        public static Float2 MeasureText(Font font, string text, ref TextRange textRange, bool useFallback = true)
         {
-            var layout = new TextLayoutOptions
+            if (useFallback && Fallbacks != null)
             {
-                Bounds = layoutRect,
-                HorizontalAlignment = horizontalAlignment,
-                VerticalAlignment = verticalAlignment,
-                TextWrapping = textWrapping,
-                Scale = scale,
-                BaseLinesGapScale = baseLinesGapScale,
-            };
+                return font.MeasureText(Style.Current.Fallbacks, text, ref textRange);
+            }
+            else
+            {
+                return font.MeasureText(text, ref textRange);
+            }
+        }
 
-            DrawText(fonts, text, color, ref layout, customMaterial);
+        public static Float2 MeasureText(Font font, string text, ref TextLayoutOptions layout, bool useFallback = true)
+        {
+            if (useFallback && Fallbacks != null)
+            {
+                return font.MeasureText(Style.Current.Fallbacks, text, ref layout);
+            }
+            else
+            {
+                return font.MeasureText(text, ref layout);
+            }
+        }
+
+        public static Float2 MeasureText(Font font, string text, ref TextRange textRange, ref TextLayoutOptions layout, bool useFallback = true)
+        {
+            if (useFallback && Fallbacks != null)
+            {
+                return font.MeasureText(Style.Current.Fallbacks, text, ref textRange, ref layout);
+            }
+            else
+            {
+                return font.MeasureText(text, ref textRange, ref layout);
+            }
         }
 
         /// <summary>
