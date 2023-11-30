@@ -452,7 +452,6 @@ public:
     /// <summary>
     /// Gets the valid level of details count.
     /// </summary>
-    /// <returns>The LOD count.</returns>
     FORCE_INLINE int32 GetLODsCount() const
     {
         return LODs.Count();
@@ -461,7 +460,6 @@ public:
     /// <summary>
     /// Determines whether this instance has valid skeleton structure.
     /// </summary>
-    /// <returns>True if has skeleton, otherwise false.</returns>
     FORCE_INLINE bool HasSkeleton() const
     {
         return Skeleton.Bones.HasItems();

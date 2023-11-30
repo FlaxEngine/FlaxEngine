@@ -24,7 +24,7 @@ enum class ImportDataTypes : int32
     None = 0,
 
     /// <summary>
-    /// Imports materials and meshes.
+    /// Imports meshes (and LODs).
     /// </summary>
     Geometry = 1 << 0,
 
@@ -104,7 +104,7 @@ public:
     Array<MaterialSlotEntry> Materials;
 
     /// <summary>
-    /// The level of details data.
+    /// The level of details data with meshes.
     /// </summary>
     Array<LOD> LODs;
 

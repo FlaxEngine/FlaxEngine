@@ -1117,11 +1117,15 @@ bool ModelTool::ImportDataOpenFBX(const char* path, ImportedModelData& data, Opt
         }
         ofbx::u64 loadFlags = 0;
         if (EnumHasAnyFlags(data.Types, ImportDataTypes::Geometry))
+        {
             loadFlags |= (ofbx::u64)ofbx::LoadFlags::TRIANGULATE;
+            if (!options.ImportBlendShapes)
+                loadFlags |= (ofbx::u64)ofbx::LoadFlags::IGNORE_BLEND_SHAPES;
+        }
         else
-            loadFlags |= (ofbx::u64)ofbx::LoadFlags::IGNORE_GEOMETRY;
-        if (!options.ImportBlendShapes)
-            loadFlags |= (ofbx::u64)ofbx::LoadFlags::IGNORE_BLEND_SHAPES;
+        {
+            loadFlags |= (ofbx::u64)ofbx::LoadFlags::IGNORE_GEOMETRY | (ofbx::u64)ofbx::LoadFlags::IGNORE_BLEND_SHAPES;
+        }
         ofbx::IScene* scene = ofbx::load(fileData.Get(), fileData.Count(), loadFlags);
         if (!scene)
         {

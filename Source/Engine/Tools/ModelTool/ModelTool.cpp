@@ -787,7 +787,7 @@ bool ModelTool::ImportModel(const String& path, ModelData& meshData, Options& op
     switch (options.Type)
     {
     case ModelType::Model:
-        importDataTypes = ImportDataTypes::Geometry | ImportDataTypes::Nodes | ImportDataTypes::Textures;
+        importDataTypes = ImportDataTypes::Geometry | ImportDataTypes::Nodes;
         if (options.ImportMaterials)
             importDataTypes |= ImportDataTypes::Materials;
         if (options.ImportTextures)
@@ -1036,7 +1036,7 @@ bool ModelTool::ImportModel(const String& path, ModelData& meshData, Options& op
         // When splitting imported meshes allow only the first mesh to import assets (mesh[0] is imported after all following ones so import assets during mesh[1])
         if (!options.SplitObjects && options.ObjectIndex != 1 && options.ObjectIndex != -1)
         {
-            // Find that asset create previously
+            // Find that asset created previously
             AssetInfo info;
             if (Content::GetAssetInfo(assetPath, info))
                 material.AssetID = info.ID;

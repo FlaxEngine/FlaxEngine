@@ -151,9 +151,7 @@ public:
     {
         int32 result = 0;
         for (int32 i = 0; i < Channels.Count(); i++)
-        {
             result += Channels[i].GetKeyframesCount();
-        }
         return result;
     }
 

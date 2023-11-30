@@ -9,11 +9,6 @@
 #include "Engine/Tools/ModelTool/ModelTool.h"
 
 /// <summary>
-/// Enable/disable caching model import options
-/// </summary>
-#define IMPORT_MODEL_CACHE_OPTIONS 1
-
-/// <summary>
 /// Importing models utility
 /// </summary>
 class ImportModelFile

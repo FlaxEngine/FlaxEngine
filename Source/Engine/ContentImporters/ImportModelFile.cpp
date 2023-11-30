@@ -18,7 +18,6 @@
 
 bool ImportModelFile::TryGetImportOptions(const StringView& path, Options& options)
 {
-#if IMPORT_MODEL_CACHE_OPTIONS
     if (FileSystem::FileExists(path))
     {
         // Try to load asset file and asset info
@@ -44,7 +43,6 @@ bool ImportModelFile::TryGetImportOptions(const StringView& path, Options& optio
             }
         }
     }
-#endif
     return false;
 }
 
@@ -158,7 +156,6 @@ CreateAssetResult ImportModelFile::Import(CreateAssetContext& context)
     if (result != CreateAssetResult::Ok)
         return result;
 
-#if IMPORT_MODEL_CACHE_OPTIONS
     // Create json with import context
     rapidjson_flax::StringBuffer importOptionsMetaBuffer;
     importOptionsMetaBuffer.Reserve(256);
@@ -171,7 +168,6 @@ CreateAssetResult ImportModelFile::Import(CreateAssetContext& context)
     }
     importOptionsMeta.EndObject();
     context.Data.Metadata.Copy((const byte*)importOptionsMetaBuffer.GetString(), (uint32)importOptionsMetaBuffer.GetSize());
-#endif
 
     return CreateAssetResult::Ok;
 }
