@@ -15,7 +15,7 @@
 #include "Engine/Platform/Platform.h"
 #include "Engine/Engine/Globals.h"
 #include "ImportTexture.h"
-#include "ImportModelFile.h"
+#include "ImportModel.h"
 #include "ImportAudio.h"
 #include "ImportShader.h"
 #include "ImportFont.h"
@@ -425,37 +425,37 @@ bool AssetsImportingManagerService::Init()
         { TEXT("otf"), ASSET_FILES_EXTENSION, ImportFont::Import },
 
         // Models
-        { TEXT("obj"), ASSET_FILES_EXTENSION, ImportModelFile::Import },
-        { TEXT("fbx"), ASSET_FILES_EXTENSION, ImportModelFile::Import },
-        { TEXT("x"), ASSET_FILES_EXTENSION, ImportModelFile::Import },
-        { TEXT("dae"), ASSET_FILES_EXTENSION, ImportModelFile::Import },
-        { TEXT("gltf"), ASSET_FILES_EXTENSION, ImportModelFile::Import },
-        { TEXT("glb"), ASSET_FILES_EXTENSION, ImportModelFile::Import },
+        { TEXT("obj"), ASSET_FILES_EXTENSION, ImportModel::Import },
+        { TEXT("fbx"), ASSET_FILES_EXTENSION, ImportModel::Import },
+        { TEXT("x"), ASSET_FILES_EXTENSION, ImportModel::Import },
+        { TEXT("dae"), ASSET_FILES_EXTENSION, ImportModel::Import },
+        { TEXT("gltf"), ASSET_FILES_EXTENSION, ImportModel::Import },
+        { TEXT("glb"), ASSET_FILES_EXTENSION, ImportModel::Import },
 
         // gettext PO files
         { TEXT("po"), TEXT("json"), CreateJson::ImportPo },
 
         // Models (untested formats - may fail :/)
-        { TEXT("blend"), ASSET_FILES_EXTENSION, ImportModelFile::Import },
-        { TEXT("bvh"), ASSET_FILES_EXTENSION, ImportModelFile::Import },
-        { TEXT("ase"), ASSET_FILES_EXTENSION, ImportModelFile::Import },
-        { TEXT("ply"), ASSET_FILES_EXTENSION, ImportModelFile::Import },
-        { TEXT("dxf"), ASSET_FILES_EXTENSION, ImportModelFile::Import },
-        { TEXT("ifc"), ASSET_FILES_EXTENSION, ImportModelFile::Import },
-        { TEXT("nff"), ASSET_FILES_EXTENSION, ImportModelFile::Import },
-        { TEXT("smd"), ASSET_FILES_EXTENSION, ImportModelFile::Import },
-        { TEXT("vta"), ASSET_FILES_EXTENSION, ImportModelFile::Import },
-        { TEXT("mdl"), ASSET_FILES_EXTENSION, ImportModelFile::Import },
-        { TEXT("md2"), ASSET_FILES_EXTENSION, ImportModelFile::Import },
-        { TEXT("md3"), ASSET_FILES_EXTENSION, ImportModelFile::Import },
-        { TEXT("md5mesh"), ASSET_FILES_EXTENSION, ImportModelFile::Import },
-        { TEXT("q3o"), ASSET_FILES_EXTENSION, ImportModelFile::Import },
-        { TEXT("q3s"), ASSET_FILES_EXTENSION, ImportModelFile::Import },
-        { TEXT("ac"), ASSET_FILES_EXTENSION, ImportModelFile::Import },
-        { TEXT("stl"), ASSET_FILES_EXTENSION, ImportModelFile::Import },
-        { TEXT("lwo"), ASSET_FILES_EXTENSION, ImportModelFile::Import },
-        { TEXT("lws"), ASSET_FILES_EXTENSION, ImportModelFile::Import },
-        { TEXT("lxo"), ASSET_FILES_EXTENSION, ImportModelFile::Import },
+        { TEXT("blend"), ASSET_FILES_EXTENSION, ImportModel::Import },
+        { TEXT("bvh"), ASSET_FILES_EXTENSION, ImportModel::Import },
+        { TEXT("ase"), ASSET_FILES_EXTENSION, ImportModel::Import },
+        { TEXT("ply"), ASSET_FILES_EXTENSION, ImportModel::Import },
+        { TEXT("dxf"), ASSET_FILES_EXTENSION, ImportModel::Import },
+        { TEXT("ifc"), ASSET_FILES_EXTENSION, ImportModel::Import },
+        { TEXT("nff"), ASSET_FILES_EXTENSION, ImportModel::Import },
+        { TEXT("smd"), ASSET_FILES_EXTENSION, ImportModel::Import },
+        { TEXT("vta"), ASSET_FILES_EXTENSION, ImportModel::Import },
+        { TEXT("mdl"), ASSET_FILES_EXTENSION, ImportModel::Import },
+        { TEXT("md2"), ASSET_FILES_EXTENSION, ImportModel::Import },
+        { TEXT("md3"), ASSET_FILES_EXTENSION, ImportModel::Import },
+        { TEXT("md5mesh"), ASSET_FILES_EXTENSION, ImportModel::Import },
+        { TEXT("q3o"), ASSET_FILES_EXTENSION, ImportModel::Import },
+        { TEXT("q3s"), ASSET_FILES_EXTENSION, ImportModel::Import },
+        { TEXT("ac"), ASSET_FILES_EXTENSION, ImportModel::Import },
+        { TEXT("stl"), ASSET_FILES_EXTENSION, ImportModel::Import },
+        { TEXT("lwo"), ASSET_FILES_EXTENSION, ImportModel::Import },
+        { TEXT("lws"), ASSET_FILES_EXTENSION, ImportModel::Import },
+        { TEXT("lxo"), ASSET_FILES_EXTENSION, ImportModel::Import },
     };
     AssetsImportingManager::Importers.Add(InBuildImporters, ARRAY_COUNT(InBuildImporters));
 
@@ -473,7 +473,7 @@ bool AssetsImportingManagerService::Init()
         { AssetsImportingManager::CreateMaterialInstanceTag, CreateMaterialInstance::Create },
 
         // Models
-        { AssetsImportingManager::CreateModelTag, ImportModelFile::Create },
+        { AssetsImportingManager::CreateModelTag, ImportModel::Create },
 
         // Other
         { AssetsImportingManager::CreateRawDataTag, CreateRawData::Create },

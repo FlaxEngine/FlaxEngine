@@ -4,7 +4,6 @@
 
 #include "ModelTool.h"
 #include "Engine/Core/Log.h"
-#include "Engine/Core/DeleteMe.h"
 #include "Engine/Core/Math/Mathd.h"
 #include "Engine/Core/Math/Matrix.h"
 #include "Engine/Core/Collections/Sorting.h"
@@ -1006,27 +1005,19 @@ void ImportCurve(const ofbx::AnimationCurveNode* curveNode, LinearCurve<T>& curv
     }
 }
 
-bool ImportAnimation(int32 index, ModelData& data, OpenFbxImporterData& importerData)
+void ImportAnimation(int32 index, ModelData& data, OpenFbxImporterData& importerData)
 {
     const ofbx::AnimationStack* stack = importerData.Scene->getAnimationStack(index);
     const ofbx::AnimationLayer* layer = stack->getLayer(0);
     const ofbx::TakeInfo* takeInfo = importerData.Scene->getTakeInfo(stack->name);
     if (takeInfo == nullptr)
-        return true;
+        return;
 
     // Initialize animation animation keyframes sampling
     const float frameRate = importerData.FrameRate;
-    data.Animation.FramesPerSecond = frameRate;
     const double localDuration = takeInfo->local_time_to - takeInfo->local_time_from;
     if (localDuration <= ZeroTolerance)
-        return true;
-    data.Animation.Duration = (double)(int32)(localDuration * frameRate + 0.5f);
-    AnimInfo info;
-    info.TimeStart = takeInfo->local_time_from;
-    info.TimeEnd = takeInfo->local_time_to;
-    info.Duration = localDuration;
-    info.FramesCount = (int32)data.Animation.Duration;
-    info.SamplingPeriod = 1.0f / frameRate;
+        return;
 
     // Count valid animation channels
     Array<int32> animatedNodes(importerData.Nodes.Count());
@@ -1042,15 +1033,32 @@ bool ImportAnimation(int32 index, ModelData& data, OpenFbxImporterData& importer
             animatedNodes.Add(nodeIndex);
     }
     if (animatedNodes.IsEmpty())
-        return true;
-    data.Animation.Channels.Resize(animatedNodes.Count(), false);
+        return;
+
+    // Setup animation descriptor
+    auto& animation = data.Animations.AddOne();
+    animation.Duration = (double)(int32)(localDuration * frameRate + 0.5f);
+    animation.FramesPerSecond = frameRate;
+    char nameData[256];
+    takeInfo->name.toString(nameData);
+    animation.Name = nameData;
+    animation.Name = animation.Name.TrimTrailing();
+    if (animation.Name.IsEmpty())
+        animation.Name = String(layer->name);
+    animation.Channels.Resize(animatedNodes.Count(), false);
+    AnimInfo info;
+    info.TimeStart = takeInfo->local_time_from;
+    info.TimeEnd = takeInfo->local_time_to;
+    info.Duration = localDuration;
+    info.FramesCount = (int32)animation.Duration;
+    info.SamplingPeriod = 1.0f / frameRate;
 
     // Import curves
     for (int32 i = 0; i < animatedNodes.Count(); i++)
     {
         const int32 nodeIndex = animatedNodes[i];
         auto& aNode = importerData.Nodes[nodeIndex];
-        auto& anim = data.Animation.Channels[i];
+        auto& anim = animation.Channels[i];
 
         const ofbx::AnimationCurveNode* translationNode = layer->getCurveNode(*aNode.FbxObj, "Lcl Translation");
         const ofbx::AnimationCurveNode* rotationNode = layer->getCurveNode(*aNode.FbxObj, "Lcl Rotation");
@@ -1066,9 +1074,8 @@ bool ImportAnimation(int32 index, ModelData& data, OpenFbxImporterData& importer
 
     if (importerData.ConvertRH)
     {
-        for (int32 i = 0; i < data.Animation.Channels.Count(); i++)
+        for (auto& anim : animation.Channels)
         {
-            auto& anim = data.Animation.Channels[i];
             auto& posKeys = anim.Position.GetKeyframes();
             auto& rotKeys = anim.Rotation.GetKeyframes();
 
@@ -1084,8 +1091,6 @@ bool ImportAnimation(int32 index, ModelData& data, OpenFbxImporterData& importer
             }
         }
     }
-
-    return false;
 }
 
 static Float3 FbxVectorFromAxisAndSign(int axis, int sign)
@@ -1105,239 +1110,185 @@ static Float3 FbxVectorFromAxisAndSign(int axis, int sign)
 
 bool ModelTool::ImportDataOpenFBX(const char* path, ModelData& data, Options& options, String& errorMsg)
 {
-    auto context = (OpenFbxImporterData*)options.SplitContext;
-    if (!context)
+    // Import file
+    Array<byte> fileData;
+    if (File::ReadAllBytes(String(path), fileData))
     {
-        // Import file
-        Array<byte> fileData;
-        if (File::ReadAllBytes(String(path), fileData))
-        {
-            errorMsg = TEXT("Cannot load file.");
-            return true;
-        }
-        ofbx::u64 loadFlags = 0;
-        if (EnumHasAnyFlags(options.ImportTypes, ImportDataTypes::Geometry))
-        {
-            loadFlags |= (ofbx::u64)ofbx::LoadFlags::TRIANGULATE;
-            if (!options.ImportBlendShapes)
-                loadFlags |= (ofbx::u64)ofbx::LoadFlags::IGNORE_BLEND_SHAPES;
-        }
-        else
-        {
-            loadFlags |= (ofbx::u64)ofbx::LoadFlags::IGNORE_GEOMETRY | (ofbx::u64)ofbx::LoadFlags::IGNORE_BLEND_SHAPES;
-        }
-        ofbx::IScene* scene = ofbx::load(fileData.Get(), fileData.Count(), loadFlags);
-        if (!scene)
-        {
-            errorMsg = ofbx::getError();
-            return true;
-        }
-        fileData.Resize(0);
-
-        // Tweak scene if exported by Blender
-        auto& globalInfo = *scene->getGlobalInfo();
-        if (StringAnsiView(globalInfo.AppName).StartsWith(StringAnsiView("Blender"), StringSearchCase::IgnoreCase))
-        {
-            auto ptr = const_cast<ofbx::GlobalSettings*>(scene->getGlobalSettings());
-            ptr->UpAxis = (ofbx::UpVector)((int32)ptr->UpAxis + 1);
-        }
-
-        // Process imported scene
-        context = New<OpenFbxImporterData>(path, options, scene);
-        auto& globalSettings = context->GlobalSettings;
-        ProcessNodes(*context, scene->getRoot(), -1);
-
-        // Apply model scene global scale factor
-        context->Nodes[0].LocalTransform = Transform(Vector3::Zero, Quaternion::Identity, globalSettings.UnitScaleFactor) * context->Nodes[0].LocalTransform;
-
-        // Log scene info
-        LOG(Info, "Loaded FBX model, Frame Rate: {0}, Unit Scale Factor: {1}", context->FrameRate, globalSettings.UnitScaleFactor);
-        LOG(Info, "{0}, {1}, {2}", String(globalInfo.AppName), String(globalInfo.AppVersion), String(globalInfo.AppVendor));
-        LOG(Info, "Up: {1}{0}", globalSettings.UpAxis == ofbx::UpVector_AxisX ? TEXT("X") : globalSettings.UpAxis == ofbx::UpVector_AxisY ? TEXT("Y") : TEXT("Z"), globalSettings.UpAxisSign == 1 ? TEXT("+") : TEXT("-"));
-        LOG(Info, "Front: {1}{0}", globalSettings.FrontAxis == ofbx::FrontVector_ParityEven ? TEXT("ParityEven") : TEXT("ParityOdd"), globalSettings.FrontAxisSign == 1 ? TEXT("+") : TEXT("-"));
-        LOG(Info, "{0} Handed{1}", globalSettings.CoordAxis == ofbx::CoordSystem_RightHanded ? TEXT("Right") : TEXT("Left"), globalSettings.CoordAxisSign == 1 ? TEXT("") : TEXT(" (negative)"));
-#if OPEN_FBX_CONVERT_SPACE
-        LOG(Info, "Imported scene: Up={0}, Front={1}, Right={2}", context->Up, context->Front, context->Right);
-#endif
-
-        // Extract embedded textures
-        if (EnumHasAnyFlags(options.ImportTypes, ImportDataTypes::Textures))
-        {
-            String outputPath;
-            for (int i = 0, c = scene->getEmbeddedDataCount(); i < c; i++)
-            {
-                const ofbx::DataView aEmbedded = scene->getEmbeddedData(i);
-                ofbx::DataView aFilename = scene->getEmbeddedFilename(i);
-                char filenameData[256];
-                aFilename.toString(filenameData);
-                if (outputPath.IsEmpty())
-                {
-                    String pathStr(path);
-                    outputPath = String(StringUtils::GetDirectoryName(pathStr)) / TEXT("textures");
-                    FileSystem::CreateDirectory(outputPath);
-                }
-                const String filenameStr(filenameData);
-                String embeddedPath = outputPath / StringUtils::GetFileName(filenameStr);
-                if (FileSystem::FileExists(embeddedPath))
-                    continue;
-                LOG(Info, "Extracing embedded resource to {0}", embeddedPath);
-                if (File::WriteAllBytes(embeddedPath, aEmbedded.begin + 4, (int32)(aEmbedded.end - aEmbedded.begin - 4)))
-                {
-                    LOG(Error, "Failed to write data to file");
-                }
-            }
-        }
-
-#if OPEN_FBX_CONVERT_SPACE
-        // Transform nodes to match the engine coordinates system - DirectX (UpVector = +Y, FrontVector = +Z, CoordSystem = -X (LeftHanded))
-        if (context->Up == Float3(1, 0, 0) && context->Front == Float3(0, 0, 1) && context->Right == Float3(0, 1, 0))
-        {
-            context->RootConvertRotation = Quaternion::Euler(0, 180, 0);
-        }
-        else if (context->Up == Float3(0, 1, 0) && context->Front == Float3(-1, 0, 0) && context->Right == Float3(0, 0, 1))
-        {
-            context->RootConvertRotation = Quaternion::Euler(90, -90, 0);
-        }
-        /*Float3 engineUp(0, 1, 0);
-        Float3 engineFront(0, 0, 1);
-        Float3 engineRight(-1, 0, 0);*/
-        /*Float3 engineUp(1, 0, 0);
-        Float3 engineFront(0, 0, 1);
-        Float3 engineRight(0, 1, 0);
-        if (context->Up != engineUp || context->Front != engineFront || context->Right != engineRight)
-        {
-            LOG(Info, "Converting imported scene nodes to match engine coordinates system");
-            context->RootConvertRotation = Quaternion::GetRotationFromTo(context->Up, engineUp, engineUp);
-            //context->RootConvertRotation *= Quaternion::GetRotationFromTo(rotation * context->Right, engineRight, engineRight);
-            //context->RootConvertRotation *= Quaternion::GetRotationFromTo(rotation * context->Front, engineFront, engineFront);
-        }*/
-        /*Float3 hackUp = FbxVectorFromAxisAndSign(globalSettings.UpAxis, globalSettings.UpAxisSign);
-        if (hackUp == Float3::UnitX)
-            context->RootConvertRotation = Quaternion::Euler(-90, 0, 0);
-        else if (hackUp == Float3::UnitZ)
-            context->RootConvertRotation = Quaternion::Euler(90, 0, 0);*/
-        if (!context->RootConvertRotation.IsIdentity())
-        {
-            for (auto& node : context->Nodes)
-            {
-                if (node.ParentIndex == -1)
-                {
-                    node.LocalTransform.Orientation = context->RootConvertRotation * node.LocalTransform.Orientation;
-                    break;
-                }
-            }
-        }
-#endif
+        errorMsg = TEXT("Cannot load file.");
+        return true;
     }
-    DeleteMe<OpenFbxImporterData> contextCleanup(options.SplitContext ? nullptr : context);
+    ofbx::u64 loadFlags = 0;
+    if (EnumHasAnyFlags(options.ImportTypes, ImportDataTypes::Geometry))
+    {
+        loadFlags |= (ofbx::u64)ofbx::LoadFlags::TRIANGULATE;
+        if (!options.ImportBlendShapes)
+            loadFlags |= (ofbx::u64)ofbx::LoadFlags::IGNORE_BLEND_SHAPES;
+    }
+    else
+    {
+        loadFlags |= (ofbx::u64)ofbx::LoadFlags::IGNORE_GEOMETRY | (ofbx::u64)ofbx::LoadFlags::IGNORE_BLEND_SHAPES;
+    }
+    ofbx::IScene* scene = ofbx::load(fileData.Get(), fileData.Count(), loadFlags);
+    if (!scene)
+    {
+        errorMsg = ofbx::getError();
+        return true;
+    }
+    fileData.Resize(0);
+
+    // Tweak scene if exported by Blender
+    auto& globalInfo = *scene->getGlobalInfo();
+    if (StringAnsiView(globalInfo.AppName).StartsWith(StringAnsiView("Blender"), StringSearchCase::IgnoreCase))
+    {
+        auto ptr = const_cast<ofbx::GlobalSettings*>(scene->getGlobalSettings());
+        ptr->UpAxis = (ofbx::UpVector)((int32)ptr->UpAxis + 1);
+    }
+
+    // Process imported scene
+    OpenFbxImporterData context(path, options, scene);
+    auto& globalSettings = context.GlobalSettings;
+    ProcessNodes(context, scene->getRoot(), -1);
+
+    // Apply model scene global scale factor
+    context.Nodes[0].LocalTransform = Transform(Vector3::Zero, Quaternion::Identity, globalSettings.UnitScaleFactor) * context.Nodes[0].LocalTransform;
+
+    // Log scene info
+    LOG(Info, "Loaded FBX model, Frame Rate: {0}, Unit Scale Factor: {1}", context.FrameRate, globalSettings.UnitScaleFactor);
+    LOG(Info, "{0}, {1}, {2}", String(globalInfo.AppName), String(globalInfo.AppVersion), String(globalInfo.AppVendor));
+    LOG(Info, "Up: {1}{0}", globalSettings.UpAxis == ofbx::UpVector_AxisX ? TEXT("X") : globalSettings.UpAxis == ofbx::UpVector_AxisY ? TEXT("Y") : TEXT("Z"), globalSettings.UpAxisSign == 1 ? TEXT("+") : TEXT("-"));
+    LOG(Info, "Front: {1}{0}", globalSettings.FrontAxis == ofbx::FrontVector_ParityEven ? TEXT("ParityEven") : TEXT("ParityOdd"), globalSettings.FrontAxisSign == 1 ? TEXT("+") : TEXT("-"));
+    LOG(Info, "{0} Handed{1}", globalSettings.CoordAxis == ofbx::CoordSystem_RightHanded ? TEXT("Right") : TEXT("Left"), globalSettings.CoordAxisSign == 1 ? TEXT("") : TEXT(" (negative)"));
+#if OPEN_FBX_CONVERT_SPACE
+    LOG(Info, "Imported scene: Up={0}, Front={1}, Right={2}", context.Up, context.Front, context.Right);
+#endif
+
+    // Extract embedded textures
+    if (EnumHasAnyFlags(options.ImportTypes, ImportDataTypes::Textures))
+    {
+        String outputPath;
+        for (int i = 0, c = scene->getEmbeddedDataCount(); i < c; i++)
+        {
+            const ofbx::DataView aEmbedded = scene->getEmbeddedData(i);
+            ofbx::DataView aFilename = scene->getEmbeddedFilename(i);
+            char filenameData[256];
+            aFilename.toString(filenameData);
+            if (outputPath.IsEmpty())
+            {
+                String pathStr(path);
+                outputPath = String(StringUtils::GetDirectoryName(pathStr)) / TEXT("textures");
+                FileSystem::CreateDirectory(outputPath);
+            }
+            const String filenameStr(filenameData);
+            String embeddedPath = outputPath / StringUtils::GetFileName(filenameStr);
+            if (FileSystem::FileExists(embeddedPath))
+                continue;
+            LOG(Info, "Extracing embedded resource to {0}", embeddedPath);
+            if (File::WriteAllBytes(embeddedPath, aEmbedded.begin + 4, (int32)(aEmbedded.end - aEmbedded.begin - 4)))
+            {
+                LOG(Error, "Failed to write data to file");
+            }
+        }
+    }
+
+#if OPEN_FBX_CONVERT_SPACE
+    // Transform nodes to match the engine coordinates system - DirectX (UpVector = +Y, FrontVector = +Z, CoordSystem = -X (LeftHanded))
+    if (context.Up == Float3(1, 0, 0) && context.Front == Float3(0, 0, 1) && context.Right == Float3(0, 1, 0))
+    {
+        context.RootConvertRotation = Quaternion::Euler(0, 180, 0);
+    }
+    else if (context.Up == Float3(0, 1, 0) && context.Front == Float3(-1, 0, 0) && context.Right == Float3(0, 0, 1))
+    {
+        context.RootConvertRotation = Quaternion::Euler(90, -90, 0);
+    }
+    /*Float3 engineUp(0, 1, 0);
+    Float3 engineFront(0, 0, 1);
+    Float3 engineRight(-1, 0, 0);*/
+    /*Float3 engineUp(1, 0, 0);
+    Float3 engineFront(0, 0, 1);
+    Float3 engineRight(0, 1, 0);
+    if (context.Up != engineUp || context.Front != engineFront || context.Right != engineRight)
+    {
+        LOG(Info, "Converting imported scene nodes to match engine coordinates system");
+        context.RootConvertRotation = Quaternion::GetRotationFromTo(context.Up, engineUp, engineUp);
+        //context.RootConvertRotation *= Quaternion::GetRotationFromTo(rotation * context.Right, engineRight, engineRight);
+        //context.RootConvertRotation *= Quaternion::GetRotationFromTo(rotation * context.Front, engineFront, engineFront);
+    }*/
+    /*Float3 hackUp = FbxVectorFromAxisAndSign(globalSettings.UpAxis, globalSettings.UpAxisSign);
+    if (hackUp == Float3::UnitX)
+        context.RootConvertRotation = Quaternion::Euler(-90, 0, 0);
+    else if (hackUp == Float3::UnitZ)
+        context.RootConvertRotation = Quaternion::Euler(90, 0, 0);*/
+    if (!context.RootConvertRotation.IsIdentity())
+    {
+        for (auto& node : context.Nodes)
+        {
+            if (node.ParentIndex == -1)
+            {
+                node.LocalTransform.Orientation = context.RootConvertRotation * node.LocalTransform.Orientation;
+                break;
+            }
+        }
+    }
+#endif
 
     // Build final skeleton bones hierarchy before importing meshes
     if (EnumHasAnyFlags(options.ImportTypes, ImportDataTypes::Skeleton))
     {
-        if (ImportBones(*context, errorMsg))
+        if (ImportBones(context, errorMsg))
         {
             LOG(Warning, "Failed to import skeleton bones.");
             return true;
         }
-
-        Sorting::QuickSort(context->Bones.Get(), context->Bones.Count());
+        Sorting::QuickSort(context.Bones.Get(), context.Bones.Count());
     }
 
     // Import geometry (meshes and materials)
-    if (EnumHasAnyFlags(options.ImportTypes, ImportDataTypes::Geometry) && context->Scene->getMeshCount() > 0)
+    if (EnumHasAnyFlags(options.ImportTypes, ImportDataTypes::Geometry) && context.Scene->getMeshCount() > 0)
     {
-        const int meshCount = context->Scene->getMeshCount();
-        if (options.SplitObjects && options.ObjectIndex == -1 && meshCount > 1)
+        const int meshCount = context.Scene->getMeshCount();
+        for (int32 meshIndex = 0; meshIndex < meshCount; meshIndex++)
         {
-            // Import the first object within this call
-            options.SplitObjects = false;
-            options.ObjectIndex = 0;
-
-            if (options.OnSplitImport.IsBinded())
-            {
-                // Split all animations into separate assets
-                LOG(Info, "Splitting imported {0} meshes", meshCount);
-                for (int32 i = 1; i < meshCount; i++)
-                {
-                    auto splitOptions = options;
-                    splitOptions.ObjectIndex = i;
-                    splitOptions.SplitContext = context;
-                    const auto aMesh = context->Scene->getMesh(i);
-                    const String objectName(aMesh->name);
-                    options.OnSplitImport(splitOptions, objectName);
-                }
-            }
-        }
-        if (options.ObjectIndex != -1)
-        {
-            // Import the selected mesh
-            const auto meshIndex = Math::Clamp<int32>(options.ObjectIndex, 0, meshCount - 1);
-            if (ImportMesh(meshIndex, data, *context, errorMsg))
+            if (ImportMesh(meshIndex, data, context, errorMsg))
                 return true;
-
-            // Let the firstly imported mesh import all materials from all meshes (index 0 is importing all following ones before itself during splitting - see code above)
-            if (options.ObjectIndex == 1)
-            {
-                for (int32 i = 0; i < meshCount; i++)
-                {
-                    const auto aMesh = context->Scene->getMesh(i);
-                    if (i == 1 || IsMeshInvalid(aMesh))
-                        continue;
-                    for (int32 j = 0; j < aMesh->getMaterialCount(); j++)
-                    {
-                        const ofbx::Material* aMaterial = aMesh->getMaterial(j);
-                        context->AddMaterial(data, aMaterial);
-                    }
-                }
-            }
-        }
-        else
-        {
-            // Import all meshes
-            for (int32 meshIndex = 0; meshIndex < meshCount; meshIndex++)
-            {
-                if (ImportMesh(meshIndex, data, *context, errorMsg))
-                    return true;
-            }
         }
     }
 
     // Import skeleton
     if (EnumHasAnyFlags(options.ImportTypes, ImportDataTypes::Skeleton))
     {
-        data.Skeleton.Nodes.Resize(context->Nodes.Count(), false);
-        for (int32 i = 0; i < context->Nodes.Count(); i++)
+        data.Skeleton.Nodes.Resize(context.Nodes.Count(), false);
+        for (int32 i = 0; i < context.Nodes.Count(); i++)
         {
             auto& node = data.Skeleton.Nodes[i];
-            auto& aNode = context->Nodes[i];
+            auto& aNode = context.Nodes[i];
 
             node.Name = aNode.Name;
             node.ParentIndex = aNode.ParentIndex;
             node.LocalTransform = aNode.LocalTransform;
         }
 
-        data.Skeleton.Bones.Resize(context->Bones.Count(), false);
-        for (int32 i = 0; i < context->Bones.Count(); i++)
+        data.Skeleton.Bones.Resize(context.Bones.Count(), false);
+        for (int32 i = 0; i < context.Bones.Count(); i++)
         {
             auto& bone = data.Skeleton.Bones[i];
-            auto& aBone = context->Bones[i];
+            auto& aBone = context.Bones[i];
             const auto boneNodeIndex = aBone.NodeIndex;
 
             // Find the parent bone
             int32 parentBoneIndex = -1;
-            for (int32 j = context->Nodes[boneNodeIndex].ParentIndex; j != -1; j = context->Nodes[j].ParentIndex)
+            for (int32 j = context.Nodes[boneNodeIndex].ParentIndex; j != -1; j = context.Nodes[j].ParentIndex)
             {
-                parentBoneIndex = context->FindBone(j);
+                parentBoneIndex = context.FindBone(j);
                 if (parentBoneIndex != -1)
                     break;
             }
             aBone.ParentBoneIndex = parentBoneIndex;
 
-            const auto parentBoneNodeIndex = aBone.ParentBoneIndex == -1 ? -1 : context->Bones[aBone.ParentBoneIndex].NodeIndex;
+            const auto parentBoneNodeIndex = aBone.ParentBoneIndex == -1 ? -1 : context.Bones[aBone.ParentBoneIndex].NodeIndex;
 
             bone.ParentIndex = aBone.ParentBoneIndex;
             bone.NodeIndex = aBone.NodeIndex;
-            bone.LocalTransform = CombineTransformsFromNodeIndices(context->Nodes, parentBoneNodeIndex, boneNodeIndex);
+            bone.LocalTransform = CombineTransformsFromNodeIndices(context.Nodes, parentBoneNodeIndex, boneNodeIndex);
             bone.OffsetMatrix = aBone.OffsetMatrix;
         }
     }
@@ -1345,54 +1296,21 @@ bool ModelTool::ImportDataOpenFBX(const char* path, ModelData& data, Options& op
     // Import animations
     if (EnumHasAnyFlags(options.ImportTypes, ImportDataTypes::Animations))
     {
-        const int animCount = context->Scene->getAnimationStackCount();
-        if (options.SplitObjects && options.ObjectIndex == -1 && animCount > 1)
+        const int animCount = context.Scene->getAnimationStackCount();
+        for (int32 animIndex = 0; animIndex < animCount; animIndex++)
         {
-            // Import the first object within this call
-            options.SplitObjects = false;
-            options.ObjectIndex = 0;
-
-            if (options.OnSplitImport.IsBinded())
-            {
-                // Split all animations into separate assets
-                LOG(Info, "Splitting imported {0} animations", animCount);
-                for (int32 i = 1; i < animCount; i++)
-                {
-                    auto splitOptions = options;
-                    splitOptions.ObjectIndex = i;
-                    splitOptions.SplitContext = context;
-                    const ofbx::AnimationStack* stack = context->Scene->getAnimationStack(i);
-                    const ofbx::AnimationLayer* layer = stack->getLayer(0);
-                    const String objectName(layer->name);
-                    options.OnSplitImport(splitOptions, objectName);
-                }
-            }
-        }
-        if (options.ObjectIndex != -1)
-        {
-            // Import selected animation
-            const auto animIndex = Math::Clamp<int32>(options.ObjectIndex, 0, animCount - 1);
-            ImportAnimation(animIndex, data, *context);
-        }
-        else
-        {
-            // Import first valid animation
-            for (int32 animIndex = 0; animIndex < animCount; animIndex++)
-            {
-                if (!ImportAnimation(animIndex, data, *context))
-                    break;
-            }
+            ImportAnimation(animIndex, data, context);
         }
     }
 
     // Import nodes
     if (EnumHasAnyFlags(options.ImportTypes, ImportDataTypes::Nodes))
     {
-        data.Nodes.Resize(context->Nodes.Count());
-        for (int32 i = 0; i < context->Nodes.Count(); i++)
+        data.Nodes.Resize(context.Nodes.Count());
+        for (int32 i = 0; i < context.Nodes.Count(); i++)
         {
             auto& node = data.Nodes[i];
-            auto& aNode = context->Nodes[i];
+            auto& aNode = context.Nodes[i];
 
             node.Name = aNode.Name;
             node.ParentIndex = aNode.ParentIndex;

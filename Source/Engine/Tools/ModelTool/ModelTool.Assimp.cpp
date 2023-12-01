@@ -4,7 +4,6 @@
 
 #include "ModelTool.h"
 #include "Engine/Core/Log.h"
-#include "Engine/Core/DeleteMe.h"
 #include "Engine/Core/Math/Matrix.h"
 #include "Engine/Core/Collections/Dictionary.h"
 #include "Engine/Platform/FileSystem.h"
@@ -28,7 +27,6 @@ using namespace Assimp;
 class AssimpLogStream : public LogStream
 {
 public:
-
     AssimpLogStream()
     {
         DefaultLogger::create("");
@@ -612,32 +610,35 @@ bool IsMeshInvalid(const aiMesh* aMesh)
     return aMesh->mPrimitiveTypes != aiPrimitiveType_TRIANGLE || aMesh->mNumVertices == 0 || aMesh->mNumFaces == 0 || aMesh->mFaces[0].mNumIndices != 3;
 }
 
-bool ImportMesh(int32 i, ModelData& result, AssimpImporterData& data, String& errorMsg)
+bool ImportMesh(int32 index, ModelData& result, AssimpImporterData& data, String& errorMsg)
 {
-    const auto aMesh = data.Scene->mMeshes[i];
+    const auto aMesh = data.Scene->mMeshes[index];
 
     // Skip invalid meshes
     if (IsMeshInvalid(aMesh))
         return false;
 
     // Skip unused meshes
-    if (!data.MeshIndexToNodeIndex.ContainsKey(i))
+    if (!data.MeshIndexToNodeIndex.ContainsKey(index))
         return false;
 
     // Import mesh data
     MeshData* meshData = New<MeshData>();
     if (ProcessMesh(result, data, aMesh, *meshData, errorMsg))
-        return true;
-
-    auto& nodesWithMesh = data.MeshIndexToNodeIndex[i];
-    for (int32 j = 0; j < nodesWithMesh.Count(); j++)
     {
-        const auto nodeIndex = nodesWithMesh[j];
+        Delete(meshData);
+        return true;
+    }
+
+    auto& nodesWithMesh = data.MeshIndexToNodeIndex[index];
+    for (int32 i = 0; i < nodesWithMesh.Count(); i++)
+    {
+        const auto nodeIndex = nodesWithMesh[i];
         auto& node = data.Nodes[nodeIndex];
         const int32 lodIndex = node.LodIndex;
 
         // The first mesh instance uses meshData directly while others have to clone it
-        if (j != 0)
+        if (i != 0)
         {
             meshData = New<MeshData>(*meshData);
         }
@@ -739,222 +740,166 @@ void ImportCurve(aiQuatKey* keys, uint32 keysCount, LinearCurve<Quaternion>& cur
     }
 }
 
+void ImportAnimation(int32 index, ModelData& data, AssimpImporterData& importerData)
+{
+    const auto animations = importerData.Scene->mAnimations[index];
+    auto& anim = data.Animations.AddOne();
+    anim.Channels.Resize(animations->mNumChannels, false);
+    anim.Duration = animations->mDuration;
+    anim.FramesPerSecond = animations->mTicksPerSecond;
+    if (anim.FramesPerSecond <= 0)
+    {
+        anim.FramesPerSecond = importerData.Options.DefaultFrameRate;
+        if (anim.FramesPerSecond <= 0)
+            anim.FramesPerSecond = 30.0f;
+    }
+    anim.Name = animations->mName.C_Str();
+
+    for (unsigned i = 0; i < animations->mNumChannels; i++)
+    {
+        const auto aAnim = animations->mChannels[i];
+        auto& channel = anim.Channels[i];
+
+        channel.NodeName = aAnim->mNodeName.C_Str();
+
+        ImportCurve(aAnim->mPositionKeys, aAnim->mNumPositionKeys, channel.Position);
+        ImportCurve(aAnim->mRotationKeys, aAnim->mNumRotationKeys, channel.Rotation);
+        if (importerData.Options.ImportScaleTracks)
+            ImportCurve(aAnim->mScalingKeys, aAnim->mNumScalingKeys, channel.Scale);
+    }
+}
+
 bool ModelTool::ImportDataAssimp(const char* path, ModelData& data, Options& options, String& errorMsg)
 {
-    auto context = (AssimpImporterData*)options.SplitContext;
-    if (!context)
+    static bool AssimpInited = false;
+    if (!AssimpInited)
     {
-        static bool AssimpInited = false;
-        if (!AssimpInited)
-        {
-            AssimpInited = true;
-            LOG(Info, "Assimp {0}.{1}.{2}", aiGetVersionMajor(), aiGetVersionMinor(), aiGetVersionRevision());
-        }
-        bool importMeshes = EnumHasAnyFlags(options.ImportTypes, ImportDataTypes::Geometry);
-        bool importAnimations = EnumHasAnyFlags(options.ImportTypes, ImportDataTypes::Animations);
-        context = New<AssimpImporterData>(path, options);
-
-        // Setup import flags
-        unsigned int flags =
-                aiProcess_JoinIdenticalVertices |
-                aiProcess_LimitBoneWeights |
-                aiProcess_Triangulate |
-                aiProcess_SortByPType |
-                aiProcess_GenUVCoords |
-                aiProcess_FindDegenerates |
-                aiProcess_FindInvalidData |
-                //aiProcess_ValidateDataStructure |
-                aiProcess_ConvertToLeftHanded;
-        if (importMeshes)
-        {
-            if (options.CalculateNormals)
-                flags |= aiProcess_FixInfacingNormals | aiProcess_GenSmoothNormals;
-            if (options.CalculateTangents)
-                flags |= aiProcess_CalcTangentSpace;
-            if (options.OptimizeMeshes)
-                flags |= aiProcess_OptimizeMeshes | aiProcess_SplitLargeMeshes | aiProcess_ImproveCacheLocality;
-            if (options.MergeMeshes)
-                flags |= aiProcess_RemoveRedundantMaterials;
-        }
-
-        // Setup import options
-        context->AssimpImporter.SetPropertyFloat(AI_CONFIG_PP_GSN_MAX_SMOOTHING_ANGLE, options.SmoothingNormalsAngle);
-        context->AssimpImporter.SetPropertyFloat(AI_CONFIG_PP_CT_MAX_SMOOTHING_ANGLE, options.SmoothingTangentsAngle);
-        //context->AssimpImporter.SetPropertyInteger(AI_CONFIG_PP_SLM_TRIANGLE_LIMIT, MAX_uint16);
-        context->AssimpImporter.SetPropertyBool(AI_CONFIG_IMPORT_FBX_READ_CAMERAS, false);
-        context->AssimpImporter.SetPropertyBool(AI_CONFIG_IMPORT_FBX_READ_LIGHTS, false);
-        context->AssimpImporter.SetPropertyBool(AI_CONFIG_IMPORT_FBX_READ_TEXTURES, false);
-        context->AssimpImporter.SetPropertyBool(AI_CONFIG_IMPORT_FBX_READ_ANIMATIONS, importAnimations);
-        //context->AssimpImporter.SetPropertyBool(AI_CONFIG_IMPORT_FBX_PRESERVE_PIVOTS, false); // TODO: optimize pivots when https://github.com/assimp/assimp/issues/1068 gets fixed
-        context->AssimpImporter.SetPropertyBool(AI_CONFIG_IMPORT_FBX_OPTIMIZE_EMPTY_ANIMATION_CURVES, true);
-
-        // Import file
-        context->Scene = context->AssimpImporter.ReadFile(path, flags);
-        if (context->Scene == nullptr)
-        {
-            LOG_STR(Warning, String(context->AssimpImporter.GetErrorString()));
-            LOG_STR(Warning, String(path));
-            LOG_STR(Warning, StringUtils::ToString(flags));
-            errorMsg = context->AssimpImporter.GetErrorString();
-            Delete(context);
-            return true;
-        }
-
-        // Create root node
-        AssimpNode& rootNode = context->Nodes.AddOne();
-        rootNode.ParentIndex = -1;
-        rootNode.LodIndex = 0;
-        rootNode.Name = TEXT("Root");
-        rootNode.LocalTransform = Transform::Identity;
-
-        // Process imported scene nodes
-        ProcessNodes(*context, context->Scene->mRootNode, 0);
+        AssimpInited = true;
+        LOG(Info, "Assimp {0}.{1}.{2}", aiGetVersionMajor(), aiGetVersionMinor(), aiGetVersionRevision());
     }
-    DeleteMe<AssimpImporterData> contextCleanup(options.SplitContext ? nullptr : context);
+    bool importMeshes = EnumHasAnyFlags(options.ImportTypes, ImportDataTypes::Geometry);
+    bool importAnimations = EnumHasAnyFlags(options.ImportTypes, ImportDataTypes::Animations);
+    AssimpImporterData context(path, options);
+
+    // Setup import flags
+    unsigned int flags =
+            aiProcess_JoinIdenticalVertices |
+            aiProcess_LimitBoneWeights |
+            aiProcess_Triangulate |
+            aiProcess_SortByPType |
+            aiProcess_GenUVCoords |
+            aiProcess_FindDegenerates |
+            aiProcess_FindInvalidData |
+            //aiProcess_ValidateDataStructure |
+            aiProcess_ConvertToLeftHanded;
+    if (importMeshes)
+    {
+        if (options.CalculateNormals)
+            flags |= aiProcess_FixInfacingNormals | aiProcess_GenSmoothNormals;
+        if (options.CalculateTangents)
+            flags |= aiProcess_CalcTangentSpace;
+        if (options.OptimizeMeshes)
+            flags |= aiProcess_OptimizeMeshes | aiProcess_SplitLargeMeshes | aiProcess_ImproveCacheLocality;
+        if (options.MergeMeshes)
+            flags |= aiProcess_RemoveRedundantMaterials;
+    }
+
+    // Setup import options
+    context.AssimpImporter.SetPropertyFloat(AI_CONFIG_PP_GSN_MAX_SMOOTHING_ANGLE, options.SmoothingNormalsAngle);
+    context.AssimpImporter.SetPropertyFloat(AI_CONFIG_PP_CT_MAX_SMOOTHING_ANGLE, options.SmoothingTangentsAngle);
+    //context.AssimpImporter.SetPropertyInteger(AI_CONFIG_PP_SLM_TRIANGLE_LIMIT, MAX_uint16);
+    context.AssimpImporter.SetPropertyBool(AI_CONFIG_IMPORT_FBX_READ_CAMERAS, false);
+    context.AssimpImporter.SetPropertyBool(AI_CONFIG_IMPORT_FBX_READ_LIGHTS, false);
+    context.AssimpImporter.SetPropertyBool(AI_CONFIG_IMPORT_FBX_READ_TEXTURES, false);
+    context.AssimpImporter.SetPropertyBool(AI_CONFIG_IMPORT_FBX_READ_ANIMATIONS, importAnimations);
+    //context.AssimpImporter.SetPropertyBool(AI_CONFIG_IMPORT_FBX_PRESERVE_PIVOTS, false); // TODO: optimize pivots when https://github.com/assimp/assimp/issues/1068 gets fixed
+    context.AssimpImporter.SetPropertyBool(AI_CONFIG_IMPORT_FBX_OPTIMIZE_EMPTY_ANIMATION_CURVES, true);
+
+    // Import file
+    context.Scene = context.AssimpImporter.ReadFile(path, flags);
+    if (context.Scene == nullptr)
+    {
+        LOG_STR(Warning, String(context.AssimpImporter.GetErrorString()));
+        LOG_STR(Warning, String(path));
+        LOG_STR(Warning, StringUtils::ToString(flags));
+        errorMsg = context.AssimpImporter.GetErrorString();
+        return true;
+    }
+
+    // Create root node
+    AssimpNode& rootNode = context.Nodes.AddOne();
+    rootNode.ParentIndex = -1;
+    rootNode.LodIndex = 0;
+    rootNode.Name = TEXT("Root");
+    rootNode.LocalTransform = Transform::Identity;
+
+    // Process imported scene nodes
+    ProcessNodes(context, context.Scene->mRootNode, 0);
 
     // Import materials
-    if (ImportMaterials(data, *context, errorMsg))
+    if (ImportMaterials(data, context, errorMsg))
     {
         LOG(Warning, "Failed to import materials.");
         return true;
     }
 
     // Import geometry
-    if (EnumHasAnyFlags(options.ImportTypes, ImportDataTypes::Geometry) && context->Scene->HasMeshes())
+    if (EnumHasAnyFlags(options.ImportTypes, ImportDataTypes::Geometry) && context.Scene->HasMeshes())
     {
-        const int meshCount = context->Scene->mNumMeshes;
-        if (options.SplitObjects && options.ObjectIndex == -1 && meshCount > 1)
+        for (unsigned meshIndex = 0; meshIndex < context.Scene->mNumMeshes; meshIndex++)
         {
-            // Import the first object within this call
-            options.SplitObjects = false;
-            options.ObjectIndex = 0;
-
-            if (options.OnSplitImport.IsBinded())
-            {
-                // Split all animations into separate assets
-                LOG(Info, "Splitting imported {0} meshes", meshCount);
-                for (int32 i = 1; i < meshCount; i++)
-                {
-                    auto splitOptions = options;
-                    splitOptions.ObjectIndex = i;
-                    splitOptions.SplitContext = context;
-                    const auto aMesh = context->Scene->mMeshes[i];
-                    const String objectName(aMesh->mName.C_Str());
-                    options.OnSplitImport(splitOptions, objectName);
-                }
-            }
-        }
-        if (options.ObjectIndex != -1)
-        {
-            // Import the selected mesh
-            const auto meshIndex = Math::Clamp<int32>(options.ObjectIndex, 0, meshCount - 1);
-            if (ImportMesh(meshIndex, data, *context, errorMsg))
+            if (ImportMesh((int32)meshIndex, data, context, errorMsg))
                 return true;
-        }
-        else
-        {
-            // Import all meshes
-            for (int32 meshIndex = 0; meshIndex < meshCount; meshIndex++)
-            {
-                if (ImportMesh(meshIndex, data, *context, errorMsg))
-                    return true;
-            }
         }
     }
 
     // Import skeleton
     if (EnumHasAnyFlags(options.ImportTypes, ImportDataTypes::Skeleton))
     {
-        data.Skeleton.Nodes.Resize(context->Nodes.Count(), false);
-        for (int32 i = 0; i < context->Nodes.Count(); i++)
+        data.Skeleton.Nodes.Resize(context.Nodes.Count(), false);
+        for (int32 i = 0; i < context.Nodes.Count(); i++)
         {
             auto& node = data.Skeleton.Nodes[i];
-            auto& aNode = context->Nodes[i];
+            auto& aNode = context.Nodes[i];
 
             node.Name = aNode.Name;
             node.ParentIndex = aNode.ParentIndex;
             node.LocalTransform = aNode.LocalTransform;
         }
 
-        data.Skeleton.Bones.Resize(context->Bones.Count(), false);
-        for (int32 i = 0; i < context->Bones.Count(); i++)
+        data.Skeleton.Bones.Resize(context.Bones.Count(), false);
+        for (int32 i = 0; i < context.Bones.Count(); i++)
         {
             auto& bone = data.Skeleton.Bones[i];
-            auto& aBone = context->Bones[i];
+            auto& aBone = context.Bones[i];
 
             const auto boneNodeIndex = aBone.NodeIndex;
-            const auto parentBoneNodeIndex = aBone.ParentBoneIndex == -1 ? -1 : context->Bones[aBone.ParentBoneIndex].NodeIndex;
+            const auto parentBoneNodeIndex = aBone.ParentBoneIndex == -1 ? -1 : context.Bones[aBone.ParentBoneIndex].NodeIndex;
 
             bone.ParentIndex = aBone.ParentBoneIndex;
             bone.NodeIndex = aBone.NodeIndex;
-            bone.LocalTransform = CombineTransformsFromNodeIndices(context->Nodes, parentBoneNodeIndex, boneNodeIndex);
+            bone.LocalTransform = CombineTransformsFromNodeIndices(context.Nodes, parentBoneNodeIndex, boneNodeIndex);
             bone.OffsetMatrix = aBone.OffsetMatrix;
         }
     }
 
     // Import animations
-    if (EnumHasAnyFlags(options.ImportTypes, ImportDataTypes::Animations) && context->Scene->HasAnimations())
+    if (EnumHasAnyFlags(options.ImportTypes, ImportDataTypes::Animations))
     {
-        const int32 animCount = (int32)context->Scene->mNumAnimations;
-        if (options.SplitObjects && options.ObjectIndex == -1 && animCount > 1)
+        for (unsigned animIndex = 0; animIndex < context.Scene->mNumAnimations; animIndex++)
         {
-            // Import the first object within this call
-            options.SplitObjects = false;
-            options.ObjectIndex = 0;
-
-            if (options.OnSplitImport.IsBinded())
-            {
-                // Split all animations into separate assets
-                LOG(Info, "Splitting imported {0} animations", animCount);
-                for (int32 i = 1; i < animCount; i++)
-                {
-                    auto splitOptions = options;
-                    splitOptions.ObjectIndex = i;
-                    splitOptions.SplitContext = context;
-                    const auto animations = context->Scene->mAnimations[i];
-                    const String objectName(animations->mName.C_Str());
-                    options.OnSplitImport(splitOptions, objectName);
-                }
-            }
-        }
-
-        // Import the animation
-        {
-            const auto animIndex = Math::Clamp<int32>(options.ObjectIndex, 0, context->Scene->mNumAnimations - 1);
-            const auto animations = context->Scene->mAnimations[animIndex];
-            data.Animation.Channels.Resize(animations->mNumChannels, false);
-            data.Animation.Duration = animations->mDuration;
-            data.Animation.FramesPerSecond = animations->mTicksPerSecond;
-            if (data.Animation.FramesPerSecond <= 0)
-            {
-                data.Animation.FramesPerSecond = context->Options.DefaultFrameRate;
-                if (data.Animation.FramesPerSecond <= 0)
-                    data.Animation.FramesPerSecond = 30.0f;
-            }
-
-            for (unsigned i = 0; i < animations->mNumChannels; i++)
-            {
-                const auto aAnim = animations->mChannels[i];
-                auto& anim = data.Animation.Channels[i];
-
-                anim.NodeName = aAnim->mNodeName.C_Str();
-
-                ImportCurve(aAnim->mPositionKeys, aAnim->mNumPositionKeys, anim.Position);
-                ImportCurve(aAnim->mRotationKeys, aAnim->mNumRotationKeys, anim.Rotation);
-                if (options.ImportScaleTracks)
-                    ImportCurve(aAnim->mScalingKeys, aAnim->mNumScalingKeys, anim.Scale);
-            }
+            ImportAnimation((int32)animIndex, data, context);
         }
     }
 
     // Import nodes
     if (EnumHasAnyFlags(options.ImportTypes, ImportDataTypes::Nodes))
     {
-        data.Nodes.Resize(context->Nodes.Count());
-        for (int32 i = 0; i < context->Nodes.Count(); i++)
+        data.Nodes.Resize(context.Nodes.Count());
+        for (int32 i = 0; i < context.Nodes.Count(); i++)
         {
             auto& node = data.Nodes[i];
-            auto& aNode = context->Nodes[i];
+            auto& aNode = context.Nodes[i];
 
             node.Name = aNode.Name;
             node.ParentIndex = aNode.ParentIndex;

@@ -405,10 +405,7 @@ struct FLAXENGINE_API ModelLodData
     /// <summary>
     /// Finalizes an instance of the <see cref="ModelLodData"/> class.
     /// </summary>
-    ~ModelLodData()
-    {
-        Meshes.ClearDelete();
-    }
+    ~ModelLodData();
 
     /// <summary>
     /// Gets the bounding box combined for all meshes in this model LOD.
@@ -455,15 +452,7 @@ public:
     /// <summary>
     /// The node animations.
     /// </summary>
-    AnimationData Animation;
-
-public:
-    /// <summary>
-    /// Initializes a new instance of the <see cref="ModelData"/> class.
-    /// </summary>
-    ModelData()
-    {
-    }
+    Array<AnimationData> Animations;
 
 public:
     /// <summary>
@@ -494,6 +483,7 @@ public:
     /// <param name="matrix">The matrix to use for the transformation.</param>
     void TransformBuffer(const Matrix& matrix);
 
+#if USE_EDITOR
 public:
     /// <summary>
     /// Pack mesh data to the header stream
@@ -513,6 +503,8 @@ public:
     /// Pack animation data to the header stream
     /// </summary>
     /// <param name="stream">Output stream</param>
+    /// <param name="animIndex">Index of animation.</param>
     /// <returns>True if cannot save data, otherwise false</returns>
-    bool Pack2AnimationHeader(WriteStream* stream) const;
+    bool Pack2AnimationHeader(WriteStream* stream, int32 animIndex = 0) const;
+#endif
 };

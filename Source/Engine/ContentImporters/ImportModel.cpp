@@ -5,6 +5,8 @@
 #if COMPILE_WITH_ASSETS_IMPORTER
 
 #include "Engine/Core/Log.h"
+#include "Engine/Core/Collections/Sorting.h"
+#include "Engine/Core/Collections/ArrayExtensions.h"
 #include "Engine/Serialization/MemoryWriteStream.h"
 #include "Engine/Serialization/JsonWriters.h"
 #include "Engine/Graphics/Models/ModelData.h"
@@ -16,7 +18,7 @@
 #include "Engine/Platform/FileSystem.h"
 #include "AssetsImportingManager.h"
 
-bool ImportModelFile::TryGetImportOptions(const StringView& path, Options& options)
+bool ImportModel::TryGetImportOptions(const StringView& path, Options& options)
 {
     if (FileSystem::FileExists(path))
     {
@@ -88,7 +90,32 @@ void TryRestoreMaterials(CreateAssetContext& context, ModelData& modelData)
     }
 }
 
-CreateAssetResult ImportModelFile::Import(CreateAssetContext& context)
+void SetupMaterialSlots(ModelData& data, const Array<MaterialSlotEntry>& materials)
+{
+    Array<int32> materialSlotsTable;
+    materialSlotsTable.Resize(materials.Count());
+    materialSlotsTable.SetAll(-1);
+    for (auto& lod : data.LODs)
+    {
+        for (MeshData* mesh : lod.Meshes)
+        {
+            int32 newSlotIndex = materialSlotsTable[mesh->MaterialSlotIndex];
+            if (newSlotIndex == -1)
+            {
+                newSlotIndex = data.Materials.Count();
+                data.Materials.AddOne() = materials[mesh->MaterialSlotIndex];
+            }
+            mesh->MaterialSlotIndex = newSlotIndex;
+        }
+    }
+}
+
+bool SortMeshGroups(IGrouping<StringView, MeshData*> const& i1, IGrouping<StringView, MeshData*> const& i2)
+{
+    return i1.GetKey().Compare(i2.GetKey()) < 0;
+}
+
+CreateAssetResult ImportModel::Import(CreateAssetContext& context)
 {
     // Get import options
     Options options;
@@ -105,9 +132,50 @@ CreateAssetResult ImportModelFile::Import(CreateAssetContext& context)
             LOG(Warning, "Missing model import options. Using default values.");
         }
     }
+
+    // Import model file
+    ModelData* data = options.Cached ? options.Cached->Data : nullptr;
+    ModelData dataThis;
+    Array<IGrouping<StringView, MeshData*>>* meshesByNamePtr = options.Cached ? (Array<IGrouping<StringView, MeshData*>>*)options.Cached->MeshesByName : nullptr;
+    Array<IGrouping<StringView, MeshData*>> meshesByNameThis;
+    if (!data)
+    {
+        String errorMsg;
+        String autoImportOutput(StringUtils::GetDirectoryName(context.TargetAssetPath));
+        autoImportOutput /= options.SubAssetFolder.HasChars() ? options.SubAssetFolder.TrimTrailing() : String(StringUtils::GetFileNameWithoutExtension(context.InputPath));
+        if (ModelTool::ImportModel(context.InputPath, dataThis, options, errorMsg, autoImportOutput))
+        {
+            LOG(Error, "Cannot import model file. {0}", errorMsg);
+            return CreateAssetResult::Error;
+        }
+        data = &dataThis;
+
+        // Group meshes by the name (the same mesh name can be used by multiple meshes that use different materials)
+        if (data->LODs.Count() != 0)
+        {
+            const Function<StringView(MeshData* const&)> f = [](MeshData* const& x) -> StringView
+            {
+                return x->Name;
+            };
+            ArrayExtensions::GroupBy(data->LODs[0].Meshes, f, meshesByNameThis);
+            Sorting::QuickSort(meshesByNameThis.Get(), meshesByNameThis.Count(), &SortMeshGroups);
+        }
+        meshesByNamePtr = &meshesByNameThis;
+    }
+    Array<IGrouping<StringView, MeshData*>>& meshesByName = *meshesByNamePtr;
+
+    // Import objects from file separately
     if (options.SplitObjects)
     {
-        options.OnSplitImport.Bind([&context](Options& splitOptions, const String& objectName)
+        // Import the first object within this call
+        options.SplitObjects = false;
+        options.ObjectIndex = 0;
+
+        // Import rest of the objects recursive but use current model data to skip loading file again
+        ModelTool::Options::CachedData cached = { data, (void*)meshesByNamePtr };
+        options.Cached = &cached;
+        Function<bool(Options& splitOptions, const StringView& objectName)> splitImport;
+        splitImport.Bind([&context](Options& splitOptions, const StringView& objectName)
         {
             // Recursive importing of the split object
             String postFix = objectName;
@@ -117,42 +185,132 @@ CreateAssetResult ImportModelFile::Import(CreateAssetContext& context)
             const String outputPath = String(StringUtils::GetPathWithoutExtension(context.TargetAssetPath)) + TEXT(" ") + postFix + TEXT(".flax");
             return AssetsImportingManager::Import(context.InputPath, outputPath, &splitOptions);
         });
+        auto splitOptions = options;
+        switch (options.Type)
+        {
+        case ModelTool::ModelType::Model:
+        case ModelTool::ModelType::SkinnedModel:
+            LOG(Info, "Splitting imported {0} meshes", meshesByName.Count());
+            for (int32 groupIndex = 1; groupIndex < meshesByName.Count(); groupIndex++)
+            {
+                auto& group = meshesByName[groupIndex];
+                splitOptions.ObjectIndex = groupIndex;
+                splitImport(splitOptions, group.GetKey());
+            }
+            break;
+        case ModelTool::ModelType::Animation:
+            LOG(Info, "Splitting imported {0} animations", data->Animations.Count());
+            for (int32 i = 1; i < data->Animations.Count(); i++)
+            {
+                auto& animation = data->Animations[i];
+                splitOptions.ObjectIndex = i;
+                splitImport(splitOptions, animation.Name);
+            }
+            break;
+        }
     }
 
-    // Import model file
-    ModelData modelData;
-    String errorMsg;
-    String autoImportOutput(StringUtils::GetDirectoryName(context.TargetAssetPath));
-    autoImportOutput /= options.SubAssetFolder.HasChars() ? options.SubAssetFolder.TrimTrailing() : String(StringUtils::GetFileNameWithoutExtension(context.InputPath));
-    if (ModelTool::ImportModel(context.InputPath, modelData, options, errorMsg, autoImportOutput))
+    // When importing a single object as model asset then select a specific mesh group
+    Array<MeshData*> meshesToDelete;
+    if (options.ObjectIndex >= 0 &&
+        options.ObjectIndex < meshesByName.Count() &&
+        (options.Type == ModelTool::ModelType::Model || options.Type == ModelTool::ModelType::SkinnedModel))
     {
-        LOG(Error, "Cannot import model file. {0}", errorMsg);
-        return CreateAssetResult::Error;
+        auto& group = meshesByName[options.ObjectIndex];
+        if (&dataThis == data)
+        {
+            // Use meshes only from the the grouping (others will be removed manually)
+            {
+                auto& lod = dataThis.LODs[0];
+                meshesToDelete.Add(lod.Meshes);
+                lod.Meshes.Clear();
+                for (MeshData* mesh : group)
+                {
+                    lod.Meshes.Add(mesh);
+                    meshesToDelete.Remove(mesh);
+                }
+            }
+            for (int32 lodIndex = 1; lodIndex < dataThis.LODs.Count(); lodIndex++)
+            {
+                auto& lod = dataThis.LODs[lodIndex];
+                Array<MeshData*> lodMeshes = lod.Meshes;
+                lod.Meshes.Clear();
+                for (MeshData* lodMesh : lodMeshes)
+                {
+                    if (lodMesh->Name == group.GetKey())
+                        lod.Meshes.Add(lodMesh);
+                    else
+                        meshesToDelete.Add(lodMesh);
+                }
+            }
+
+            // Use only materials references by meshes from the first grouping
+            {
+                auto materials = dataThis.Materials;
+                dataThis.Materials.Clear();
+                SetupMaterialSlots(dataThis, materials);
+            }
+        }
+        else
+        {
+            // Copy data from others data
+            dataThis.Skeleton = data->Skeleton;
+            dataThis.Nodes = data->Nodes;
+
+            // Move meshes from this group (including any LODs of them)
+            {
+                auto& lod = dataThis.LODs.AddOne();
+                lod.ScreenSize = data->LODs[0].ScreenSize;
+                lod.Meshes.Add(group);
+                for (MeshData* mesh : group)
+                    data->LODs[0].Meshes.Remove(mesh);
+            }
+            for (int32 lodIndex = 1; lodIndex < data->LODs.Count(); lodIndex++)
+            {
+                Array<MeshData*> lodMeshes = data->LODs[lodIndex].Meshes;
+                for (int32 i = lodMeshes.Count() - 1; i >= 0; i--)
+                {
+                    MeshData* lodMesh = lodMeshes[i];
+                    if (lodMesh->Name == group.GetKey())
+                        data->LODs[lodIndex].Meshes.Remove(lodMesh);
+                    else
+                        lodMeshes.RemoveAtKeepOrder(i);
+                }
+                if (lodMeshes.Count() == 0)
+                    break; // No meshes of that name in this LOD so skip further ones
+                auto& lod = dataThis.LODs.AddOne();
+                lod.ScreenSize = data->LODs[lodIndex].ScreenSize;
+                lod.Meshes.Add(lodMeshes);
+            }
+
+            // Copy materials used by the meshes
+            SetupMaterialSlots(dataThis, data->Materials);
+        }
+        data = &dataThis;
     }
 
     // Check if restore materials on model reimport
-    if (options.RestoreMaterialsOnReimport && modelData.Materials.HasItems())
+    if (options.RestoreMaterialsOnReimport && data->Materials.HasItems())
     {
-        TryRestoreMaterials(context, modelData);
+        TryRestoreMaterials(context, *data);
     }
-
-    // Auto calculate LODs transition settings
-    modelData.CalculateLODsScreenSizes();
 
     // Create destination asset type
     CreateAssetResult result = CreateAssetResult::InvalidTypeID;
     switch (options.Type)
     {
     case ModelTool::ModelType::Model:
-        result = ImportModel(context, modelData, &options);
+        result = CreateModel(context, *data, &options);
         break;
     case ModelTool::ModelType::SkinnedModel:
-        result = ImportSkinnedModel(context, modelData, &options);
+        result = CreateSkinnedModel(context, *data, &options);
         break;
     case ModelTool::ModelType::Animation:
-        result = ImportAnimation(context, modelData, &options);
+        result = CreateAnimation(context, *data, &options);
         break;
     }
+    for (auto mesh : meshesToDelete)
+        Delete(mesh);
     if (result != CreateAssetResult::Ok)
         return result;
 
@@ -172,7 +330,7 @@ CreateAssetResult ImportModelFile::Import(CreateAssetContext& context)
     return CreateAssetResult::Ok;
 }
 
-CreateAssetResult ImportModelFile::Create(CreateAssetContext& context)
+CreateAssetResult ImportModel::Create(CreateAssetContext& context)
 {
     ASSERT(context.CustomArg != nullptr);
     auto& modelData = *(ModelData*)context.CustomArg;
@@ -187,13 +345,11 @@ CreateAssetResult ImportModelFile::Create(CreateAssetContext& context)
     // Auto calculate LODs transition settings
     modelData.CalculateLODsScreenSizes();
 
-    // Import
-    return ImportModel(context, modelData);
+    return CreateModel(context, modelData);
 }
 
-CreateAssetResult ImportModelFile::ImportModel(CreateAssetContext& context, ModelData& modelData, const Options* options)
+CreateAssetResult ImportModel::CreateModel(CreateAssetContext& context, ModelData& modelData, const Options* options)
 {
-    // Base
     IMPORT_SETUP(Model, Model::SerializedVersion);
 
     // Save model header
@@ -242,9 +398,8 @@ CreateAssetResult ImportModelFile::ImportModel(CreateAssetContext& context, Mode
     return CreateAssetResult::Ok;
 }
 
-CreateAssetResult ImportModelFile::ImportSkinnedModel(CreateAssetContext& context, ModelData& modelData, const Options* options)
+CreateAssetResult ImportModel::CreateSkinnedModel(CreateAssetContext& context, ModelData& modelData, const Options* options)
 {
-    // Base
     IMPORT_SETUP(SkinnedModel, SkinnedModel::SerializedVersion);
 
     // Save skinned model header
@@ -284,14 +439,14 @@ CreateAssetResult ImportModelFile::ImportSkinnedModel(CreateAssetContext& contex
     return CreateAssetResult::Ok;
 }
 
-CreateAssetResult ImportModelFile::ImportAnimation(CreateAssetContext& context, ModelData& modelData, const Options* options)
+CreateAssetResult ImportModel::CreateAnimation(CreateAssetContext& context, ModelData& modelData, const Options* options)
 {
-    // Base
     IMPORT_SETUP(Animation, Animation::SerializedVersion);
 
     // Save animation data
     MemoryWriteStream stream(8182);
-    if (modelData.Pack2AnimationHeader(&stream))
+    const int32 animIndex = options && options->ObjectIndex != -1 ? options->ObjectIndex : 0; // Single animation per asset
+    if (modelData.Pack2AnimationHeader(&stream, animIndex))
         return CreateAssetResult::Error;
     if (context.AllocateChunk(0))
         return CreateAssetResult::CannotAllocateChunk;

@@ -296,12 +296,16 @@ public:
 
     public: // Internals
 
-        // Runtime data for objects splitting during import (used internally)
-        void* SplitContext = nullptr;
-        Function<bool(Options& splitOptions, const String& objectName)> OnSplitImport;
-
         // Internal flags for objects to import.
         ImportDataTypes ImportTypes = ImportDataTypes::None;
+
+        struct CachedData
+        {
+            ModelData* Data = nullptr;
+            void* MeshesByName = nullptr;
+        };
+        // Cached model data - used when performing nested importing (eg. via objects splitting). Allows to read and process source file only once and use those results for creation of multiple assets (permutation via ObjectIndex).
+        CachedData* Cached = nullptr;
 
     public:
         // [ISerializable]
@@ -324,12 +328,12 @@ public:
     /// Imports the model.
     /// </summary>
     /// <param name="path">The file path.</param>
-    /// <param name="meshData">The output data.</param>
+    /// <param name="data">The output data.</param>
     /// <param name="options">The import options.</param>
     /// <param name="errorMsg">The error message container.</param>
     /// <param name="autoImportOutput">The output folder for the additional imported data - optional. Used to auto-import textures and material assets.</param>
     /// <returns>True if fails, otherwise false.</returns>
-    static bool ImportModel(const String& path, ModelData& meshData, Options& options, String& errorMsg, const String& autoImportOutput = String::Empty);
+    static bool ImportModel(const String& path, ModelData& data, Options& options, String& errorMsg, const String& autoImportOutput = String::Empty);
 
 public:
     static int32 DetectLodIndex(const String& nodeName);

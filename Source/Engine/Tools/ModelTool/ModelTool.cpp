@@ -452,6 +452,9 @@ bool ModelTool::ImportData(const String& path, ModelData& data, Options& options
     options.FramesRange.Y = Math::Max(options.FramesRange.Y, options.FramesRange.X);
     options.DefaultFrameRate = Math::Max(0.0f, options.DefaultFrameRate);
     options.SamplingRate = Math::Max(0.0f, options.SamplingRate);
+    if (options.SplitObjects)
+        options.MergeMeshes = false; // Meshes merging doesn't make sense when we want to import each mesh individually
+    // TODO: maybe we could update meshes merger to collapse meshes within the same name if splitting is enabled?
 
     // Validate path
     // Note: Assimp/Autodesk supports only ANSI characters in imported file path
@@ -511,8 +514,6 @@ bool ModelTool::ImportData(const String& path, ModelData& data, Options& options
         FileSystem::DeleteFile(tmpPath);
     }
 
-    // TODO: check model LODs sequence (eg. {LOD0, LOD2, LOD5} is invalid)
-
     // Remove namespace prefixes from the nodes names
     {
         for (auto& node : data.Nodes)
@@ -523,9 +524,10 @@ bool ModelTool::ImportData(const String& path, ModelData& data, Options& options
         {
             RemoveNamespace(node.Name);
         }
-        for (auto& channel : data.Animation.Channels)
+        for (auto& animation : data.Animations)
         {
-            RemoveNamespace(channel.NodeName);
+            for (auto& channel : animation.Channels)
+                RemoveNamespace(channel.NodeName);
         }
         for (auto& lod : data.LODs)
         {
@@ -533,18 +535,19 @@ bool ModelTool::ImportData(const String& path, ModelData& data, Options& options
             {
                 RemoveNamespace(mesh->Name);
                 for (auto& blendShape : mesh->BlendShapes)
-                {
                     RemoveNamespace(blendShape.Name);
-                }
             }
         }
     }
 
     // Validate the animation channels
-    if (data.Animation.Channels.HasItems())
+    for (auto& animation : data.Animations)
     {
+        auto& channels = animation.Channels;
+        if (channels.IsEmpty())
+            continue;
+
         // Validate bone animations uniqueness
-        auto& channels = data.Animation.Channels;
         for (int32 i = 0; i < channels.Count(); i++)
         {
             for (int32 j = i + 1; j < channels.Count(); j++)
@@ -742,7 +745,7 @@ void TrySetupMaterialParameter(MaterialInstance* instance, Span<const Char*> par
             {
                 if (type == MaterialParameterType::Color)
                 {
-                    if (paramType != MaterialParameterType::Vector3 || 
+                    if (paramType != MaterialParameterType::Vector3 ||
                         paramType != MaterialParameterType::Vector4)
                         continue;
                 }
@@ -757,7 +760,7 @@ void TrySetupMaterialParameter(MaterialInstance* instance, Span<const Char*> par
     }
 }
 
-bool ModelTool::ImportModel(const String& path, ModelData& meshData, Options& options, String& errorMsg, const String& autoImportOutput)
+bool ModelTool::ImportModel(const String& path, ModelData& data, Options& options, String& errorMsg, const String& autoImportOutput)
 {
     LOG(Info, "Importing model from \'{0}\'", path);
     const auto startTime = DateTime::NowUTC();
@@ -785,7 +788,6 @@ bool ModelTool::ImportModel(const String& path, ModelData& meshData, Options& op
     default:
         return true;
     }
-    ModelData data;
     if (ImportData(path, data, options, errorMsg))
         return true;
 
@@ -926,13 +928,20 @@ bool ModelTool::ImportModel(const String& path, ModelData& meshData, Options& op
     case ModelType::Animation:
     {
         // Validate
-        if (data.Animation.Channels.IsEmpty())
+        if (data.Animations.IsEmpty())
         {
             errorMsg = TEXT("Imported file has no valid animations.");
             return true;
         }
-
-        LOG(Info, "Imported animation has {0} channels, duration: {1} frames, frames per second: {2}", data.Animation.Channels.Count(), data.Animation.Duration, data.Animation.FramesPerSecond);
+        for (auto& animation : data.Animations)
+        {
+            LOG(Info, "Imported animation '{}' has {} channels, duration: {} frames, frames per second: {}", animation.Name, animation.Channels.Count(), animation.Duration, animation.FramesPerSecond);
+            if (animation.Duration <= ZeroTolerance || animation.FramesPerSecond <= ZeroTolerance)
+            {
+                errorMsg = TEXT("Invalid animation duration.");
+                return true;
+            }
+        }
         break;
     }
     }
@@ -976,7 +985,6 @@ bool ModelTool::ImportModel(const String& path, ModelData& meshData, Options& op
         case TextureEntry::TypeHint::Normals:
             textureOptions.Type = TextureFormatType::NormalMap;
             break;
-        default: ;
         }
         AssetsImportingManager::ImportIfEdited(texture.FilePath, assetPath, texture.AssetID, &textureOptions);
 #endif
@@ -1461,65 +1469,67 @@ bool ModelTool::ImportModel(const String& path, ModelData& meshData, Options& op
     }
     else if (options.Type == ModelType::Animation)
     {
-        // Trim the animation keyframes range if need to
-        if (options.Duration == AnimationDuration::Custom)
+        for (auto& animation : data.Animations)
         {
-            // Custom animation import, frame index start and end
-            const float start = options.FramesRange.X;
-            const float end = options.FramesRange.Y;
-            for (int32 i = 0; i < data.Animation.Channels.Count(); i++)
+            // Trim the animation keyframes range if need to
+            if (options.Duration == AnimationDuration::Custom)
             {
-                auto& anim = data.Animation.Channels[i];
-                anim.Position.Trim(start, end);
-                anim.Rotation.Trim(start, end);
-                anim.Scale.Trim(start, end);
-            }
-            data.Animation.Duration = end - start;
-        }
-
-        // Change the sampling rate if need to
-        if (!Math::IsZero(options.SamplingRate))
-        {
-            const float timeScale = (float)(data.Animation.FramesPerSecond / options.SamplingRate);
-            if (!Math::IsOne(timeScale))
-            {
-                data.Animation.FramesPerSecond = options.SamplingRate;
-                for (int32 i = 0; i < data.Animation.Channels.Count(); i++)
+                // Custom animation import, frame index start and end
+                const float start = options.FramesRange.X;
+                const float end = options.FramesRange.Y;
+                for (int32 i = 0; i < animation.Channels.Count(); i++)
                 {
-                    auto& anim = data.Animation.Channels[i];
+                    auto& anim = animation.Channels[i];
+                    anim.Position.Trim(start, end);
+                    anim.Rotation.Trim(start, end);
+                    anim.Scale.Trim(start, end);
+                }
+                animation.Duration = end - start;
+            }
 
-                    anim.Position.TransformTime(timeScale, 0.0f);
-                    anim.Rotation.TransformTime(timeScale, 0.0f);
-                    anim.Scale.TransformTime(timeScale, 0.0f);
+            // Change the sampling rate if need to
+            if (!Math::IsZero(options.SamplingRate))
+            {
+                const float timeScale = (float)(animation.FramesPerSecond / options.SamplingRate);
+                if (!Math::IsOne(timeScale))
+                {
+                    animation.FramesPerSecond = options.SamplingRate;
+                    for (int32 i = 0; i < animation.Channels.Count(); i++)
+                    {
+                        auto& anim = animation.Channels[i];
+                        anim.Position.TransformTime(timeScale, 0.0f);
+                        anim.Rotation.TransformTime(timeScale, 0.0f);
+                        anim.Scale.TransformTime(timeScale, 0.0f);
+                    }
                 }
             }
-        }
 
-        // Optimize the keyframes
-        if (options.OptimizeKeyframes)
-        {
-            const int32 before = data.Animation.GetKeyframesCount();
-            for (int32 i = 0; i < data.Animation.Channels.Count(); i++)
+            // Optimize the keyframes
+            if (options.OptimizeKeyframes)
             {
-                auto& anim = data.Animation.Channels[i];
-
-                // Optimize keyframes
-                OptimizeCurve(anim.Position);
-                OptimizeCurve(anim.Rotation);
-                OptimizeCurve(anim.Scale);
-
-                // Remove empty channels
-                if (anim.GetKeyframesCount() == 0)
+                const int32 before = animation.GetKeyframesCount();
+                for (int32 i = 0; i < animation.Channels.Count(); i++)
                 {
-                    data.Animation.Channels.RemoveAt(i--);
-                }
-            }
-            const int32 after = data.Animation.GetKeyframesCount();
-            LOG(Info, "Optimized {0} animation keyframe(s). Before: {1}, after: {2}, Ratio: {3}%", before - after, before, after, Utilities::RoundTo2DecimalPlaces((float)after / before));
-        }
+                    auto& anim = animation.Channels[i];
 
-        data.Animation.EnableRootMotion = options.EnableRootMotion;
-        data.Animation.RootNodeName = options.RootNodeName;
+                    // Optimize keyframes
+                    OptimizeCurve(anim.Position);
+                    OptimizeCurve(anim.Rotation);
+                    OptimizeCurve(anim.Scale);
+
+                    // Remove empty channels
+                    if (anim.GetKeyframesCount() == 0)
+                    {
+                        animation.Channels.RemoveAt(i--);
+                    }
+                }
+                const int32 after = animation.GetKeyframesCount();
+                LOG(Info, "Optimized {0} animation keyframe(s). Before: {1}, after: {2}, Ratio: {3}%", before - after, before, after, Utilities::RoundTo2DecimalPlaces((float)after / before));
+            }
+
+            animation.EnableRootMotion = options.EnableRootMotion;
+            animation.RootNodeName = options.RootNodeName;
+        }
     }
 
     // Merge meshes with the same parent nodes, material and skinning
@@ -1696,27 +1706,8 @@ bool ModelTool::ImportModel(const String& path, ModelData& meshData, Options& op
         }
     }
 
-    // Export imported data to the output container (we reduce vertex data copy operations to minimum)
-    {
-        meshData.Textures.Swap(data.Textures);
-        meshData.Materials.Swap(data.Materials);
-        meshData.LODs.Resize(data.LODs.Count(), false);
-        for (int32 i = 0; i < data.LODs.Count(); i++)
-        {
-            auto& dst = meshData.LODs[i];
-            auto& src = data.LODs[i];
-
-            dst.Meshes = src.Meshes;
-        }
-        meshData.Skeleton.Swap(data.Skeleton);
-        meshData.Animation.Swap(data.Animation);
-
-        // Clear meshes from imported data (we link them to result model data). This reduces amount of allocations.
-        data.LODs.Resize(0);
-    }
-
     // Calculate blend shapes vertices ranges
-    for (auto& lod : meshData.LODs)
+    for (auto& lod : data.LODs)
     {
         for (auto& mesh : lod.Meshes)
         {
@@ -1736,6 +1727,9 @@ bool ModelTool::ImportModel(const String& path, ModelData& meshData, Options& op
             }
         }
     }
+
+    // Auto calculate LODs transition settings
+    data.CalculateLODsScreenSizes();
 
     const auto endTime = DateTime::NowUTC();
     LOG(Info, "Model file imported in {0} ms", static_cast<int32>((endTime - startTime).GetTotalMilliseconds()));
