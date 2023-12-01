@@ -535,6 +535,11 @@ namespace FlaxEditor.Surface
         public virtual bool CanSetParameters => false;
 
         /// <summary>
+        /// Gets a value indicating whether surface supports/allows live previewing graph modifications due to value sliders and color pickers. True by default but disabled for shader surfaces that generate and compile shader source at flight.
+        /// </summary>
+        public virtual bool CanLivePreviewValueChanges => true;
+
+        /// <summary>
         /// Determines whether the specified node archetype can be used in the surface.
         /// </summary>
         /// <param name="groupID">The nodes group archetype identifier.</param>

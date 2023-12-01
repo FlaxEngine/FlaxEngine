@@ -1209,9 +1209,20 @@ void* MUtils::VariantToManagedArgPtr(Variant& value, MType* type, bool& failed)
         return object;
     }
     case MTypes::Ptr:
-        if (value.Type.Type == VariantType::Null)
+        switch (value.Type.Type)
+        {
+        case VariantType::Pointer:
+            return &value.AsPointer;
+        case VariantType::Object:
+            return &value.AsObject;
+        case VariantType::Asset:
+            return &value.AsAsset;
+        case VariantType::Structure:
+        case VariantType::Blob:
+            return &value.AsBlob.Data;
+        default:
             return nullptr;
-        return (void*)value;
+        }
     default:
         break;
     }
