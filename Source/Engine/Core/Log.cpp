@@ -58,7 +58,7 @@ bool Log::Logger::Init()
         int32 remaining = oldLogs.Count() - maxLogFiles + 1;
         if (remaining > 0)
         {
-            Sorting::QuickSort(oldLogs.Get(), oldLogs.Count());
+            Sorting::QuickSort(oldLogs);
 
             // Delete the oldest logs
             int32 i = 0;

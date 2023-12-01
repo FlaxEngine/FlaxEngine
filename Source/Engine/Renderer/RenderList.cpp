@@ -194,7 +194,7 @@ void RenderList::AddSettingsBlend(IPostFxSettingsProvider* provider, float weigh
 void RenderList::BlendSettings()
 {
     PROFILE_CPU();
-    Sorting::QuickSort(Blendable.Get(), Blendable.Count());
+    Sorting::QuickSort(Blendable);
     Settings = Graphics::PostProcessSettings;
     for (auto& b : Blendable)
     {
@@ -634,7 +634,7 @@ void RenderList::SortDrawCalls(const RenderContext& renderContext, bool reverseD
     }
 
     // Sort draw calls batches by depth
-    Sorting::QuickSort(list.Batches.Get(), list.Batches.Count());
+    Sorting::QuickSort(list.Batches);
 }
 
 FORCE_INLINE bool CanUseInstancing(DrawPass pass)

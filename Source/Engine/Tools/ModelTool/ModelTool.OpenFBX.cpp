@@ -1239,7 +1239,7 @@ bool ModelTool::ImportDataOpenFBX(const char* path, ModelData& data, Options& op
             LOG(Warning, "Failed to import skeleton bones.");
             return true;
         }
-        Sorting::QuickSort(context.Bones.Get(), context.Bones.Count());
+        Sorting::QuickSort(context.Bones);
     }
 
     // Import geometry (meshes and materials)

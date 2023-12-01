@@ -119,7 +119,7 @@ bool DeployDataStep::Perform(CookingData& data)
                     if (!version.StartsWith(TEXT("7.")))
                         version.Clear();
                 }
-                Sorting::QuickSort(versions.Get(), versions.Count());
+                Sorting::QuickSort(versions);
                 const String version = versions.Last();
                 FileSystem::NormalizePath(srcDotnet);
                 LOG(Info, "Using .Net Runtime {} at {}", version, srcDotnet);
