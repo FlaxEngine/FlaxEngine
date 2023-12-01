@@ -199,6 +199,13 @@ bool FontAsset::Save(const StringView& path)
 
 #endif
 
+
+/// <summary>
+/// Check if the font contains the glyph of a char
+/// </summary>
+/// <param name="c">The char to test.</param>
+/// <returns>True if the font contains the glyph of the char, otherwise false.</returns>
+
 bool FontAsset::ContainsChar(Char c) const {
     return FT_Get_Char_Index(GetFTFace(), c) > 0;
 }

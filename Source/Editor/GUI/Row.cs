@@ -38,8 +38,9 @@ namespace FlaxEditor.GUI
         {
             Depth = -1;
 
-            if (Height < Style.Current.FontMedium.Height)
-                Height = Style.Current.FontMedium.Height + 4;
+            var mediumHeight = FallbackTextUtils.GetMaxHeight(Style.Current.FontMedium);
+            if (Height < mediumHeight)
+                Height = mediumHeight + 4;
         }
 
         /// <inheritdoc />

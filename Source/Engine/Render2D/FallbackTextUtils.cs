@@ -227,5 +227,42 @@ namespace FlaxEngine
                 return font.GetCharPosition(text, ref textRange, index, ref layout);
             }
         }
+
+        /// <summary>
+        /// Gets the max font height among the font and all fallback fonts of the same size.
+        /// </summary>
+        /// <param name="font">The primary font to use.</param>
+        /// <param name="fallbacks">The fallback fonts.</param>
+        /// <returns>The max height.</returns>
+        public static float GetMaxHeight(Font font, FallbackFonts fallbacks)
+        {
+            float height = font.Height;
+
+            var fallbackFonts = fallbacks.GetFontList(font.Size);
+            foreach (var item in fallbackFonts)
+            {
+                height = Mathf.Max(height, item.Height);
+            }
+
+            return height;
+        }
+
+        /// <summary>
+        /// Gets the max font height among the font and all fallback fonts of the same size. 
+        /// </summary>
+        /// <param name="font">The primary font to use.</param>
+        /// <param name="useFallback">Whether to enable fallback fonts, uses <see cref="Fallbacks"/> if true.</param>
+        /// <returns>The max height.</returns>
+        public static float GetMaxHeight(Font font, bool useFallback = true)
+        {
+            if(Fallbacks != null && useFallback)
+            {
+                return GetMaxHeight(font, Fallbacks);
+            }
+            else
+            {
+                return font.Height;
+            }
+        }
     }
 }

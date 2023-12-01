@@ -316,6 +316,7 @@ namespace FlaxEngine.GUI
                     color = textBlock.Style.ShadowColor;
                     if (!enabled)
                         color *= 0.6f;
+                    // We don't need font fallbacks for rich text since the font is user-selected
                     Render2D.DrawText(font, _text, ref textBlock.Range, color, textBlock.Bounds.Location + textBlock.Style.ShadowOffset, textBlock.Style.CustomMaterial);
                 }
 

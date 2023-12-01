@@ -122,7 +122,8 @@ struct TIsPODType<FontLineCache>
 };
 
 /// <summary>
-/// The font block info generated during text processing.
+/// The font block info generated during text processing. 
+/// A block means a range of text that belongs to the same line and can be rendered with the same font.
 /// </summary>
 API_STRUCT(NoDefault) struct FontBlockCache
 {
@@ -134,7 +135,7 @@ API_STRUCT(NoDefault) struct FontBlockCache
     API_FIELD() Float2 Location;
 
     /// <summary>
-    /// The height of the current block
+    /// The size of the current block
     /// </summary>
     API_FIELD() Float2 Size;
 
@@ -183,7 +184,7 @@ API_STRUCT(NoDefault) struct BlockedTextLineCache
     API_FIELD() float MaxAscender;
 
     /// <summary>
-    /// The index of the font to render with
+    /// The blocks that belongs to this line
     /// </summary>
     API_FIELD() Array<FontBlockCache> Blocks;
 };

@@ -117,7 +117,7 @@ namespace FlaxEngine.GUI
                 return Float2.Zero;
             }
 
-            height = font.Height / DpiScale;
+            height = FallbackTextUtils.GetMaxHeight(font) / DpiScale;
             return FallbackTextUtils.GetCharPosition(font, _text, index, ref _layout);
         }
 
@@ -171,7 +171,7 @@ namespace FlaxEngine.GUI
             {
                 var leftEdge = FallbackTextUtils.GetCharPosition(font, _text, SelectionLeft, ref _layout);
                 var rightEdge = FallbackTextUtils.GetCharPosition(font, _text, SelectionRight, ref _layout);
-                float fontHeight = font.Height / DpiScale;
+                float fontHeight = FallbackTextUtils.GetMaxHeight(font) / DpiScale;
 
                 // Draw selection background
                 float alpha = Mathf.Min(1.0f, Mathf.Cos(_animateTime * BackgroundSelectedFlashSpeed) * 0.5f + 1.3f);
