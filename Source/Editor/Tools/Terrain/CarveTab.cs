@@ -1,7 +1,6 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
 using System;
-using System.Linq;
 using FlaxEditor.GUI.Tabs;
 using FlaxEditor.Modules;
 using FlaxEditor.SceneGraph.Actors;

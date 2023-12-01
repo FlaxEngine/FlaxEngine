@@ -2,7 +2,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace FlaxEngine.GUI
 {
@@ -674,7 +673,7 @@ namespace FlaxEngine.GUI
                 var textRect = new Rectangle(margin, 0, clientRect.Width - boxSize - 2.0f * margin, clientRect.Height);
                 Render2D.PushClip(textRect);
                 var textColor = TextColor;
-                Render2D.DrawText(Font.GetFont(), FontMaterial, _items[_selectedIndex], textRect, enabled ? textColor : textColor * 0.5f, TextAlignment.Near, TextAlignment.Center);
+                FallbackTextUtils.DrawText(Font.GetFont(), FontMaterial, _items[_selectedIndex], textRect, enabled ? textColor : textColor * 0.5f, TextAlignment.Near, TextAlignment.Center);
                 Render2D.PopClip();
             }
 

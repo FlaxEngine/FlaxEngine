@@ -2,7 +2,6 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
 using System.Collections.Generic;
-using System.Linq;
 using FlaxEditor.GUI.Dialogs;
 using FlaxEngine;
 using FlaxEngine.GUI;

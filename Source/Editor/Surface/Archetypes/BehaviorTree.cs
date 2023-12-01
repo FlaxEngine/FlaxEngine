@@ -2,7 +2,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using FlaxEditor.CustomEditors.Dedicated;
 using FlaxEditor.GUI.ContextMenu;
 using FlaxEditor.GUI.Drag;
@@ -185,7 +184,7 @@ namespace FlaxEditor.Surface.Archetypes
                 if (!string.IsNullOrEmpty(_debugInfo))
                 {
                     var style = Style.Current;
-                    Render2D.DrawText(style.FontSmall, _debugInfo, new Rectangle(4, _headerRect.Bottom + 4, _debugInfoSize), style.Foreground);
+                    FallbackTextUtils.DrawText(style.FontSmall, _debugInfo, new Rectangle(4, _headerRect.Bottom + 4, _debugInfoSize), style.Foreground);
                 }
 
                 // Debug relevancy outline

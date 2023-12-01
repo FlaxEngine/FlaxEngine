@@ -56,7 +56,7 @@ namespace FlaxEditor.GUI
                 Render2D.DrawSprite(style.StatusBarSizeGrip, new Rectangle(Width - 12, 10, 12, 12), style.Foreground);
 
             // Draw status text
-            Render2D.DrawText(style.FontSmall, Text, new Rectangle(4, 0, Width - 20, Height), TextColor, TextAlignment.Near, TextAlignment.Center);
+            FallbackTextUtils.DrawText(style.FontSmall, Text, new Rectangle(4, 0, Width - 20, Height), TextColor, TextAlignment.Near, TextAlignment.Center);
         }
     }
 }

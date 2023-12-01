@@ -48,7 +48,7 @@ namespace FlaxEditor.Windows.Assets
                 var asset = _window.Asset;
                 if (asset == null || !asset.IsLoaded)
                 {
-                    Render2D.DrawText(style.FontLarge, "Loading...", new Rectangle(Float2.Zero, Size), style.ForegroundDisabled, TextAlignment.Center, TextAlignment.Center);
+                    FallbackTextUtils.DrawText(style.FontLarge, "Loading...", new Rectangle(Float2.Zero, Size), style.ForegroundDisabled, TextAlignment.Center, TextAlignment.Center);
                 }
             }
         }
@@ -645,7 +645,7 @@ namespace FlaxEditor.Windows.Assets
                     if (!Proxy.Window._meshData.RequestMeshData(Proxy.Window._asset))
                     {
                         Invalidate();
-                        Render2D.DrawText(Style.Current.FontMedium, "Loading...", new Rectangle(Float2.Zero, size), Color.White, TextAlignment.Center, TextAlignment.Center);
+                        FallbackTextUtils.DrawText(Style.Current.FontMedium, "Loading...", new Rectangle(Float2.Zero, size), Color.White, TextAlignment.Center, TextAlignment.Center);
                         return;
                     }
 

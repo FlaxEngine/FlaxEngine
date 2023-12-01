@@ -1,7 +1,6 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
 using System;
-using System.Linq;
 using FlaxEngine;
 using FlaxEngine.GUI;
 
@@ -137,7 +136,7 @@ namespace FlaxEditor.GUI
             if (!string.IsNullOrEmpty(_text))
             {
                 textRect.Size.X = Width - DefaultMargin - textRect.Left;
-                Render2D.DrawText(style.FontMedium, _text, textRect, enabled ? style.Foreground : style.ForegroundDisabled, TextAlignment.Near, TextAlignment.Center);
+                FallbackTextUtils.DrawText(style.FontMedium, _text, textRect, enabled ? style.Foreground : style.ForegroundDisabled, TextAlignment.Near, TextAlignment.Center);
             }
         }
 

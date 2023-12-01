@@ -1,7 +1,6 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
 using System;
-using System.Linq;
 
 namespace FlaxEngine.GUI
 {
@@ -262,7 +261,7 @@ namespace FlaxEngine.GUI
                 Render2D.DrawRectangle(clientRect, borderColor, BorderThickness);
 
             // Draw text
-            Render2D.DrawText(_font?.GetFont(), TextMaterial, _text, clientRect, textColor, TextAlignment.Center, TextAlignment.Center);
+            FallbackTextUtils.DrawText(_font?.GetFont(), TextMaterial, _text, clientRect, textColor, TextAlignment.Center, TextAlignment.Center);
         }
 
         /// <inheritdoc />

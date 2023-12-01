@@ -379,7 +379,7 @@ namespace FlaxEditor.Surface.Archetypes
                 }
 
                 // Name
-                Render2D.DrawText(style.FontLarge, Title, _textRect, style.Foreground, TextAlignment.Center, TextAlignment.Center);
+                FallbackTextUtils.DrawText(style.FontLarge, Title, _textRect, style.Foreground, TextAlignment.Center, TextAlignment.Center);
             }
 
             /// <inheritdoc />
@@ -1128,7 +1128,7 @@ namespace FlaxEditor.Surface.Archetypes
                 }
 
                 // Name
-                Render2D.DrawText(style.FontLarge, Title, _textRect, style.Foreground, TextAlignment.Center, TextAlignment.Center);
+                FallbackTextUtils.DrawText(style.FontLarge, Title, _textRect, style.Foreground, TextAlignment.Center, TextAlignment.Center);
 
                 // Close button
                 Render2D.DrawSprite(style.Cross, _closeButtonRect, _closeButtonRect.Contains(_mousePosition) ? style.Foreground : style.ForegroundGrey);

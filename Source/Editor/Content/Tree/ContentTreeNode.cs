@@ -1,7 +1,6 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
 using System.Collections.Generic;
-using System.Linq;
 using FlaxEditor.GUI;
 using FlaxEditor.GUI.Drag;
 using FlaxEditor.GUI.Tree;
@@ -151,8 +150,8 @@ namespace FlaxEditor.Content
                     var textRect = TextRect;
                     for (int i = 0; i < ranges.Length; i++)
                     {
-                        var start = font.GetCharPosition(text, ranges[i].StartIndex);
-                        var end = font.GetCharPosition(text, ranges[i].EndIndex);
+                        var start = FallbackTextUtils.GetCharPosition(font, text, ranges[i].StartIndex);
+                        var end = FallbackTextUtils.GetCharPosition(font, text, ranges[i].EndIndex);
                         _highlights.Add(new Rectangle(start.X + textRect.X, textRect.Y, end.X - start.X, textRect.Height));
                     }
                     isThisVisible = true;

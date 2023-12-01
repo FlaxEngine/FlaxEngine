@@ -1,7 +1,6 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
 using System;
-using System.Linq;
 using FlaxEngine;
 using FlaxEngine.GUI;
 
@@ -129,12 +128,12 @@ namespace FlaxEditor.GUI.ContextMenu
             base.Draw();
 
             // Draw text
-            Render2D.DrawText(style.FontMedium, Text, textRect, textColor, TextAlignment.Near, TextAlignment.Center);
+            FallbackTextUtils.DrawText(style.FontMedium, Text, textRect, textColor, TextAlignment.Near, TextAlignment.Center);
 
             if (!string.IsNullOrEmpty(ShortKeys))
             {
                 // Draw short keys
-                Render2D.DrawText(style.FontMedium, ShortKeys, textRect, textColor, TextAlignment.Far, TextAlignment.Center);
+                FallbackTextUtils.DrawText(style.FontMedium, ShortKeys, textRect, textColor, TextAlignment.Far, TextAlignment.Center);
             }
 
             // Draw icon

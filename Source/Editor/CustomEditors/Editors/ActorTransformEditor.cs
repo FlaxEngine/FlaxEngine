@@ -2,7 +2,6 @@
 
 using FlaxEngine;
 using FlaxEngine.GUI;
-using System.Linq;
 
 namespace FlaxEditor.CustomEditors.Editors
 {

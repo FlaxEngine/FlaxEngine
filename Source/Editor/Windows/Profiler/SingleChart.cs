@@ -138,8 +138,8 @@ namespace FlaxEditor.Windows.Profiler
             var headerRect = new Rectangle(0, chartHeight, Width, TitleHeight);
             var headerTextRect = new Rectangle(2, chartHeight, Width - 4, TitleHeight);
             Render2D.FillRectangle(headerRect, style.BackgroundNormal);
-            Render2D.DrawText(style.FontMedium, Title, headerTextRect, style.ForegroundGrey, TextAlignment.Near, TextAlignment.Center);
-            Render2D.DrawText(style.FontMedium, _sample, headerTextRect, style.Foreground, TextAlignment.Far, TextAlignment.Center);
+            FallbackTextUtils.DrawText(style.FontMedium, Title, headerTextRect, style.ForegroundGrey, TextAlignment.Near, TextAlignment.Center);
+            FallbackTextUtils.DrawText(style.FontMedium, _sample, headerTextRect, style.Foreground, TextAlignment.Far, TextAlignment.Center);
         }
 
         private void OnClick(ref Float2 location)

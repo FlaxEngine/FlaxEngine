@@ -160,13 +160,13 @@ namespace FlaxEditor.CustomEditors.Editors
 
                 // Draw name
                 Render2D.PushClip(nameRect);
-                Render2D.DrawText(style.FontMedium, _valueName, nameRect, style.Foreground, TextAlignment.Near, TextAlignment.Center);
+                FallbackTextUtils.DrawText(style.FontMedium, _valueName, nameRect, style.Foreground, TextAlignment.Near, TextAlignment.Center);
                 Render2D.PopClip();
             }
             else
             {
                 // Draw info
-                Render2D.DrawText(style.FontMedium, "-", nameRect, Color.OrangeRed, TextAlignment.Near, TextAlignment.Center);
+                FallbackTextUtils.DrawText(style.FontMedium, "-", nameRect, Color.OrangeRed, TextAlignment.Near, TextAlignment.Center);
             }
 
             // Draw picker button

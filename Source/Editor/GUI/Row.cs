@@ -1,7 +1,6 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
 using System;
-using System.Linq;
 using FlaxEngine;
 using FlaxEngine.GUI;
 
@@ -99,7 +98,7 @@ namespace FlaxEditor.GUI
                     rect.Width -= leftDepthMargin;
 
                     Render2D.PushClip(rect);
-                    Render2D.DrawText(style.FontMedium, text, rect, style.Foreground, column.CellAlignment, TextAlignment.Center);
+                    FallbackTextUtils.DrawText(style.FontMedium, text, rect, style.Foreground, column.CellAlignment, TextAlignment.Center);
                     Render2D.PopClip();
 
                     x += width;

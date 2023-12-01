@@ -1233,8 +1233,8 @@ namespace FlaxEditor.Viewport
                     color = Color.Yellow;
                 var text = string.Format("FPS: {0}", fps);
                 var font = Style.Current.FontMedium;
-                Render2D.DrawText(font, text, new Rectangle(Float2.One, Size), Color.Black);
-                Render2D.DrawText(font, text, new Rectangle(Float2.Zero, Size), color);
+                FallbackTextUtils.DrawText(font, text, new Rectangle(Float2.One, Size), Color.Black);
+                FallbackTextUtils.DrawText(font, text, new Rectangle(Float2.Zero, Size), color);
             }
         }
 
@@ -1814,7 +1814,7 @@ namespace FlaxEditor.Viewport
             {
                 var bounds = new Rectangle(Float2.Zero, Size);
                 Render2D.FillRectangle(bounds, new Color(0.0f, 0.0f, 0.0f, 0.2f));
-                Render2D.DrawText(Style.Current.FontLarge, "Debugger breakpoint hit...", bounds, Color.White, TextAlignment.Center, TextAlignment.Center);
+                FallbackTextUtils.DrawText(Style.Current.FontLarge, "Debugger breakpoint hit...", bounds, Color.White, TextAlignment.Center, TextAlignment.Center);
             }
         }
 

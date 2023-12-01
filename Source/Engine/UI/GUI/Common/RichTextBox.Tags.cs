@@ -1,7 +1,6 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
 using FlaxEngine.Utilities;
-using System.Linq;
 
 namespace FlaxEngine.GUI
 {

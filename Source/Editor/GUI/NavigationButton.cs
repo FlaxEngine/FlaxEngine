@@ -2,7 +2,6 @@
 
 using FlaxEngine;
 using FlaxEngine.GUI;
-using System.Linq;
 
 namespace FlaxEditor.GUI
 {
@@ -58,7 +57,7 @@ namespace FlaxEditor.GUI
             }
 
             // Draw text
-            Render2D.DrawText(style.FontMedium, Text, textRect, EnabledInHierarchy ? style.Foreground : style.ForegroundDisabled, TextAlignment.Near, TextAlignment.Center);
+            FallbackTextUtils.DrawText(style.FontMedium, Text, textRect, EnabledInHierarchy ? style.Foreground : style.ForegroundDisabled, TextAlignment.Near, TextAlignment.Center);
         }
 
         /// <inheritdoc />

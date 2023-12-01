@@ -301,7 +301,7 @@ namespace FlaxEditor.GUI.Timeline.GUI
                     default: throw new ArgumentOutOfRangeException();
                     }
                     var labelRect = new Rectangle(x + 2, -verticalLinesHeaderExtend * 0.8f + timeAxisHeaderOffset, 50, verticalLinesHeaderExtend);
-                    Render2D.DrawText(style.FontSmall, labelText, labelRect, labelColor, TextAlignment.Near, TextAlignment.Center, TextWrapping.NoWrap, 1.0f, 0.8f);
+                    FallbackTextUtils.DrawText(style.FontSmall, labelText, labelRect, labelColor, TextAlignment.Near, TextAlignment.Center, TextWrapping.NoWrap, 1.0f, 0.8f);
                 }
             }
         }

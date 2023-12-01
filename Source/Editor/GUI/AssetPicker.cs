@@ -139,7 +139,7 @@ namespace FlaxEditor.GUI
                 float sizeForTextLeft = Width - button1Rect.Right;
                 if (sizeForTextLeft > 30)
                 {
-                    Render2D.DrawText(
+                    FallbackTextUtils.DrawText(
                                       style.FontSmall,
                                       Validator.SelectedItem.ShortName,
                                       new Rectangle(button1Rect.Right + 2, 0, sizeForTextLeft, ButtonsSize),
@@ -161,7 +161,7 @@ namespace FlaxEditor.GUI
                     var name = Validator.SelectedAsset.GetType().Name;
                     if (Validator.SelectedAsset.IsVirtual)
                         name += " (virtual)";
-                    Render2D.DrawText(
+                    FallbackTextUtils.DrawText(
                                       style.FontSmall,
                                       name,
                                       new Rectangle(button1Rect.Right + 2, 0, sizeForTextLeft, ButtonsSize),
@@ -174,7 +174,7 @@ namespace FlaxEditor.GUI
             {
                 // No element selected
                 Render2D.FillRectangle(iconRect, style.BackgroundNormal);
-                Render2D.DrawText(style.FontMedium, "No asset\nselected", iconRect, Color.Orange, TextAlignment.Center, TextAlignment.Center, TextWrapping.NoWrap, 1.0f, Height / DefaultIconSize);
+                FallbackTextUtils.DrawText(style.FontMedium, "No asset\nselected", iconRect, Color.Orange, TextAlignment.Center, TextAlignment.Center, TextWrapping.NoWrap, 1.0f, Height / DefaultIconSize);
             }
 
             // Check if drag is over

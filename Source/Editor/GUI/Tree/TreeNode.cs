@@ -1,7 +1,6 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
 using System;
-using System.Linq;
 using FlaxEngine;
 using FlaxEngine.GUI;
 
@@ -657,7 +656,7 @@ namespace FlaxEditor.GUI.Tree
             }
 
             // Draw text
-            Render2D.DrawText(TextFont.GetFont(), _text, textRect, _cachedTextColor, TextAlignment.Near, TextAlignment.Center);
+            FallbackTextUtils.DrawText(TextFont.GetFont(), _text, textRect, _cachedTextColor, TextAlignment.Near, TextAlignment.Center);
 
             // Draw drag and drop effect
             if (IsDragOver && _tree.DraggedOverNode == this)

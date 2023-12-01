@@ -3,7 +3,6 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 using FlaxEditor.Actions;
 using FlaxEditor.Content;
 using FlaxEditor.GUI;
@@ -87,7 +86,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
             var size = Size;
 
             // Info
-            Render2D.DrawText(style.FontSmall, "Drag scripts here", new Rectangle(2, _addScriptsButton.Height + 4, size.X - 4, size.Y - 4 - 20), style.ForegroundDisabled, TextAlignment.Center, TextAlignment.Center);
+            FallbackTextUtils.DrawText(style.FontSmall, "Drag scripts here", new Rectangle(2, _addScriptsButton.Height + 4, size.X - 4, size.Y - 4 - 20), style.ForegroundDisabled, TextAlignment.Center, TextAlignment.Center);
 
             // Check if drag is over
             if (IsDragOver && _dragHandlers != null && _dragHandlers.HasValidDrag)

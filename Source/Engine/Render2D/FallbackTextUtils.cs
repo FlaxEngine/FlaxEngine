@@ -1,4 +1,6 @@
 
+using System.Runtime.CompilerServices;
+
 namespace FlaxEngine
 {
     /// <summary>
@@ -11,41 +13,10 @@ namespace FlaxEngine
             get; set;
         } = null;
 
-        public static void DrawText(Font font, string text, Rectangle layoutRect, Color color, TextAlignment horizontalAlignment = TextAlignment.Near, TextAlignment verticalAlignment = TextAlignment.Near, TextWrapping textWrapping = TextWrapping.NoWrap, float baseLinesGapScale = 1.0f, float scale = 1.0f)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void DrawText(Font font, string text, Color color, ref TextLayoutOptions layout, MaterialBase customMaterial = null, bool useFallback = true)
         {
-            var layout = new TextLayoutOptions
-            {
-                Bounds = layoutRect,
-                HorizontalAlignment = horizontalAlignment,
-                VerticalAlignment = verticalAlignment,
-                TextWrapping = textWrapping,
-                Scale = scale,
-                BaseLinesGapScale = baseLinesGapScale,
-            };
-
-            if (Fallbacks != null)
-            {
-                Render2D.DrawText(font, Fallbacks, text, color, ref layout);
-            }
-            else
-            {
-                Render2D.DrawText(font, text, color, ref layout);
-            }
-        }
-
-        public static void DrawText(Font font, MaterialBase customMaterial, string text, Rectangle layoutRect, Color color, TextAlignment horizontalAlignment = TextAlignment.Near, TextAlignment verticalAlignment = TextAlignment.Near, TextWrapping textWrapping = TextWrapping.NoWrap, float baseLinesGapScale = 1.0f, float scale = 1.0f)
-        {
-            var layout = new TextLayoutOptions
-            {
-                Bounds = layoutRect,
-                HorizontalAlignment = horizontalAlignment,
-                VerticalAlignment = verticalAlignment,
-                TextWrapping = textWrapping,
-                Scale = scale,
-                BaseLinesGapScale = baseLinesGapScale,
-            };
-
-            if (Fallbacks != null)
+            if (Fallbacks != null && useFallback)
             {
                 Render2D.DrawText(font, Fallbacks, text, color, ref layout, customMaterial);
             }
@@ -55,9 +26,56 @@ namespace FlaxEngine
             }
         }
 
-        public static Float2 MeasureText(Font font, string text)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void DrawText(Font font, string text, Rectangle layoutRect, Color color, TextAlignment horizontalAlignment = TextAlignment.Near, TextAlignment verticalAlignment = TextAlignment.Near, TextWrapping textWrapping = TextWrapping.NoWrap, float baseLinesGapScale = 1.0f, float scale = 1.0f, bool useFallback = true)
         {
-            if (Fallbacks != null)
+            var layout = new TextLayoutOptions
+            {
+                Bounds = layoutRect,
+                HorizontalAlignment = horizontalAlignment,
+                VerticalAlignment = verticalAlignment,
+                TextWrapping = textWrapping,
+                Scale = scale,
+                BaseLinesGapScale = baseLinesGapScale,
+            };
+
+            if (Fallbacks != null && useFallback)
+            {
+                Render2D.DrawText(font, Fallbacks, text, color, ref layout);
+            }
+            else
+            {
+                Render2D.DrawText(font, text, color, ref layout);
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void DrawText(Font font, MaterialBase customMaterial, string text, Rectangle layoutRect, Color color, TextAlignment horizontalAlignment = TextAlignment.Near, TextAlignment verticalAlignment = TextAlignment.Near, TextWrapping textWrapping = TextWrapping.NoWrap, float baseLinesGapScale = 1.0f, float scale = 1.0f, bool useFallback = true)
+        {
+            var layout = new TextLayoutOptions
+            {
+                Bounds = layoutRect,
+                HorizontalAlignment = horizontalAlignment,
+                VerticalAlignment = verticalAlignment,
+                TextWrapping = textWrapping,
+                Scale = scale,
+                BaseLinesGapScale = baseLinesGapScale,
+            };
+
+            if (Fallbacks != null && useFallback)
+            {
+                Render2D.DrawText(font, Fallbacks, text, color, ref layout, customMaterial);
+            }
+            else
+            {
+                Render2D.DrawText(font, text, color, ref layout, customMaterial);
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Float2 MeasureText(Font font, string text, bool useFallback = true)
+        {
+            if (Fallbacks != null && useFallback)
             {
                 return font.MeasureText(Fallbacks, text);
             }
@@ -67,9 +85,10 @@ namespace FlaxEngine
             }
         }
 
-        public static Float2 MeasureText(Font font, string text, ref TextRange textRange)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Float2 MeasureText(Font font, string text, ref TextRange textRange, bool useFallback = true)
         {
-            if (Fallbacks != null)
+            if (Fallbacks != null && useFallback)
             {
                 return font.MeasureText(Fallbacks, text, ref textRange);
             }
@@ -79,9 +98,10 @@ namespace FlaxEngine
             }
         }
 
-        public static Float2 MeasureText(Font font, string text, ref TextLayoutOptions layout)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Float2 MeasureText(Font font, string text, ref TextLayoutOptions layout, bool useFallback = true)
         {
-            if (Fallbacks != null)
+            if (Fallbacks != null && useFallback)
             {
                 return font.MeasureText(Fallbacks, text, ref layout);
             }
@@ -91,9 +111,10 @@ namespace FlaxEngine
             }
         }
 
-        public static Float2 MeasureText(Font font, string text, ref TextRange textRange, ref TextLayoutOptions layout)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Float2 MeasureText(Font font, string text, ref TextRange textRange, ref TextLayoutOptions layout, bool useFallback = true)
         {
-            if (Fallbacks != null)
+            if (Fallbacks != null && useFallback)
             {
                 return font.MeasureText(Fallbacks, text, ref textRange, ref layout);
             }
@@ -103,24 +124,108 @@ namespace FlaxEngine
             }
         }
 
-        public static Float2 GetCharPosition(Font font, string text, int index)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int HitTestText(Font font, string text, Float2 location, bool useFallback = true)
         {
-            return font.GetCharPosition(Style.Current.Fallbacks, text, index);
+            if (Fallbacks != null && useFallback)
+            {
+                return font.HitTestText(Fallbacks, text, location);
+            }
+            else
+            {
+                return font.HitTestText(text, location);
+            }
         }
 
-        public static Float2 GetCharPosition(Font font, string text, ref TextRange textRange, int index)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int HitTestText(Font font, string text, ref TextRange textRange, Float2 location, bool useFallback = true)
         {
-            return font.GetCharPosition(Style.Current.Fallbacks, text, ref textRange, index);
+            if (Fallbacks != null && useFallback)
+            {
+                return font.HitTestText(Fallbacks, text, ref textRange, location);
+            }
+            else
+            {
+                return font.HitTestText(text, ref textRange, location);
+            }
         }
 
-        public static Float2 GetCharPosition(Font font, string text, int index, ref TextLayoutOptions layout)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int HitTestText(Font font, string text, Float2 location, ref TextLayoutOptions layout, bool useFallback = true)
         {
-            return font.GetCharPosition(Style.Current.Fallbacks, text, index, ref layout);
+            if (Fallbacks != null && useFallback)
+            {
+                return font.HitTestText(Fallbacks, text, location, ref layout);
+            }
+            else
+            {
+                return font.HitTestText(text, location, ref layout);
+            }
         }
 
-        public static Float2 GetCharPosition(Font font, string text, ref TextRange textRange, int index, ref TextLayoutOptions layout)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int HitTestText(Font font, string text, ref TextRange textRange, Float2 location, ref TextLayoutOptions layout, bool useFallback = true)
         {
-            return font.GetCharPosition(Style.Current.Fallbacks, text, ref textRange, index, ref layout);
+            if (Fallbacks != null && useFallback)
+            {
+                return font.HitTestText(Fallbacks, text, ref textRange, location, ref layout);
+            }
+            else
+            {
+                return font.HitTestText(text, ref textRange, location, ref layout);
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Float2 GetCharPosition(Font font, string text, int index, bool useFallback = true)
+        {
+            if (Fallbacks != null && useFallback)
+            {
+                return font.GetCharPosition(Fallbacks, text, index);
+            }
+            else
+            {
+                return font.GetCharPosition(text, index);
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Float2 GetCharPosition(Font font, string text, ref TextRange textRange, int index, bool useFallback = true)
+        {
+            if (Fallbacks != null && useFallback)
+            {
+                return font.GetCharPosition(Fallbacks, text, ref textRange, index);
+            }
+            else
+            {
+                return font.GetCharPosition(text, ref textRange, index);
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Float2 GetCharPosition(Font font, string text, int index, ref TextLayoutOptions layout, bool useFallback = true)
+        {
+            if (Fallbacks != null && useFallback)
+            {
+                return font.GetCharPosition(Fallbacks, text, index, ref layout);
+            }
+            else
+            {
+                return font.GetCharPosition(text, index, ref layout);
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Float2 GetCharPosition(Font font, string text, ref TextRange textRange, int index, ref TextLayoutOptions layout, bool useFallback = true)
+        {
+            if (Fallbacks != null && useFallback)
+            {
+                return font.GetCharPosition(Fallbacks, text, ref textRange, index, ref layout);
+            }
+            else
+            {
+                return font.GetCharPosition(text, ref textRange, index, ref layout);
+            }
         }
     }
 }

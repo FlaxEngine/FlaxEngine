@@ -598,7 +598,7 @@ namespace FlaxEditor.Content.GUI
             // Check if it's an empty thing
             if (_items.Count == 0)
             {
-                Render2D.DrawText(style.FontSmall, IsSearching ? "No results" : "Empty", new Rectangle(Float2.Zero, Size), style.ForegroundDisabled, TextAlignment.Center, TextAlignment.Center);
+                FallbackTextUtils.DrawText(style.FontSmall, IsSearching ? "No results" : "Empty", new Rectangle(Float2.Zero, Size), style.ForegroundDisabled, TextAlignment.Center, TextAlignment.Center);
             }
         }
 

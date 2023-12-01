@@ -1,7 +1,6 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
 using System;
-using System.Linq;
 
 namespace FlaxEngine.GUI
 {
@@ -375,7 +374,7 @@ namespace FlaxEngine.GUI
                 textColor *= 0.6f;
             }
 
-            Render2D.DrawText(HeaderTextFont.GetFont(), HeaderTextMaterial, HeaderText, textRect, textColor, TextAlignment.Near, TextAlignment.Center);
+            FallbackTextUtils.DrawText(HeaderTextFont.GetFont(), HeaderTextMaterial, HeaderText, textRect, textColor, TextAlignment.Near, TextAlignment.Center);
 
             if (!_isClosed && EnableContainmentLines)
             {

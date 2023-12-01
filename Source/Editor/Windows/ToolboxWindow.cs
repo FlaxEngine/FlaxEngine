@@ -2,7 +2,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using FlaxEditor.GUI.Input;
 using FlaxEditor.GUI.Tabs;
 using FlaxEditor.GUI.Tree;
@@ -273,8 +272,8 @@ namespace FlaxEditor.Windows
                 var textRect = item.TextRect;
                 for (int i = 0; i < ranges.Length; i++)
                 {
-                    var start = font.GetCharPosition(text, ranges[i].StartIndex);
-                    var end = font.GetCharPosition(text, ranges[i].EndIndex);
+                    var start = FallbackTextUtils.GetCharPosition(font, text, ranges[i].StartIndex);
+                    var end = FallbackTextUtils.GetCharPosition(font, text, ranges[i].EndIndex);
                     highlights.Add(new Rectangle(start.X + textRect.X, textRect.Y, end.X - start.X, textRect.Height));
                 }
                 item.SetHighlights(highlights);

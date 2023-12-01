@@ -1,8 +1,6 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
-using FlaxEditor.Options;
 using System.ComponentModel;
-using System.Linq;
 
 namespace FlaxEngine.GUI
 {
@@ -235,7 +233,7 @@ namespace FlaxEngine.GUI
                 }
             }
 
-            Render2D.DrawText(_font.GetFont(), Material, _text, rect, color, hAlignment, wAlignment, Wrapping, BaseLinesGapScale, scale);
+            FallbackTextUtils.DrawText(_font.GetFont(), Material, _text, rect, color, hAlignment, wAlignment, Wrapping, BaseLinesGapScale, scale);
 
             if (ClipText)
                 Render2D.PopClip();

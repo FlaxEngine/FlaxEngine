@@ -2,7 +2,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using FlaxEditor.Scripting;
 using FlaxEditor.Surface.Elements;
 using FlaxEditor.Surface.Undo;
@@ -1028,7 +1027,7 @@ namespace FlaxEditor.Surface
             if (_headerRect.Contains(ref _mousePosition))
                 headerColor *= 1.07f;
             Render2D.FillRectangle(_headerRect, headerColor);
-            Render2D.DrawText(style.FontLarge, Title, _headerRect, style.Foreground, TextAlignment.Center, TextAlignment.Center);
+            FallbackTextUtils.DrawText(style.FontLarge, Title, _headerRect, style.Foreground, TextAlignment.Center, TextAlignment.Center);
 
             // Close button
             if ((Archetype.Flags & NodeFlags.NoCloseButton) == 0 && Surface.CanEdit)

@@ -297,7 +297,7 @@ namespace FlaxEditor.Windows
             }
             if (overlayText != null)
             {
-                Render2D.DrawText(style.FontLarge, overlayText, GetClientArea(), style.ForegroundDisabled, TextAlignment.Center, TextAlignment.Center, textWrap);
+                FallbackTextUtils.DrawText(style.FontLarge, overlayText, GetClientArea(), style.ForegroundDisabled, TextAlignment.Center, TextAlignment.Center, textWrap);
             }
 
             base.Draw();

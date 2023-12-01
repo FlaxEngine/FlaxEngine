@@ -965,7 +965,7 @@ namespace FlaxEditor.GUI.Timeline
             }
 
             // Draw text
-            Render2D.DrawText(style.FontSmall, Title ?? Name, textRect, textColor, TextAlignment.Near, TextAlignment.Center);
+            FallbackTextUtils.DrawText(style.FontSmall, Title ?? Name, textRect, textColor, TextAlignment.Near, TextAlignment.Center);
 
             // Disabled overlay
             DrawDisabled = Mute || (ParentTrack != null && ParentTrack.DrawDisabled);

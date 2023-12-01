@@ -1,7 +1,5 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
-using System.Drawing;
-using System.Linq;
 
 namespace FlaxEngine.GUI
 {
@@ -120,7 +118,7 @@ namespace FlaxEngine.GUI
             }
 
             height = font.Height / DpiScale;
-            return font.GetCharPosition(_text, index, ref _layout);
+            return FallbackTextUtils.GetCharPosition(font, _text, index, ref _layout);
         }
 
         /// <inheritdoc />
@@ -132,7 +130,7 @@ namespace FlaxEngine.GUI
                 return 0;
             }
 
-            return font.HitTestText(_text, location, ref _layout);
+            return FallbackTextUtils.HitTestText(font, _text, location, ref _layout);
         }
 
         /// <inheritdoc />
@@ -171,8 +169,8 @@ namespace FlaxEngine.GUI
             // Check if sth is selected to draw selection
             if (HasSelection)
             {
-                var leftEdge = font.GetCharPosition(_text, SelectionLeft, ref _layout);
-                var rightEdge = font.GetCharPosition(_text, SelectionRight, ref _layout);
+                var leftEdge = FallbackTextUtils.GetCharPosition(font, _text, SelectionLeft, ref _layout);
+                var rightEdge = FallbackTextUtils.GetCharPosition(font, _text, SelectionRight, ref _layout);
                 float fontHeight = font.Height / DpiScale;
 
                 // Draw selection background
@@ -213,25 +211,11 @@ namespace FlaxEngine.GUI
                 var color = TextColor;
                 if (!enabled)
                     color *= 0.6f;
-                if (Render2D.Fallbacks != null)
-                {
-                    Render2D.DrawText(font, Render2D.Fallbacks, _text, color, ref _layout, TextMaterial);
-                }
-                else
-                {
-                    Render2D.DrawText(font, _text, color, ref _layout, TextMaterial);
-                }
+                FallbackTextUtils.DrawText(font, _text, color, ref _layout, TextMaterial);
             }
             else if (!string.IsNullOrEmpty(_watermarkText) && !IsFocused)
             {
-                if (Render2D.Fallbacks != null)
-                {
-                    Render2D.DrawText(font, Render2D.Fallbacks, _watermarkText, WatermarkTextColor, ref _layout, TextMaterial);
-                }
-                else
-                {
-                    Render2D.DrawText(font, _watermarkText, WatermarkTextColor, ref _layout, TextMaterial);
-                }
+                FallbackTextUtils.DrawText(font, _watermarkText, WatermarkTextColor, ref _layout, TextMaterial);
             }
 
             // Caret

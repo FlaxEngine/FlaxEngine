@@ -254,7 +254,7 @@ namespace FlaxEditor.Viewport.Previews
             if (_showParticlesCounter)
             {
                 var count = _previewEffect.ParticlesCount;
-                Render2D.DrawText(
+                FallbackTextUtils.DrawText(
                                   Style.Current.FontSmall,
                                   "Particles: " + count,
                                   new Rectangle(Float2.Zero, Size),

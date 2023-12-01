@@ -6,7 +6,6 @@ using FlaxEngine;
 using FlaxEngine.Assertions;
 using FlaxEngine.GUI;
 using FlaxEditor.Options;
-using System.Linq;
 
 namespace FlaxEditor.GUI.Docking
 {

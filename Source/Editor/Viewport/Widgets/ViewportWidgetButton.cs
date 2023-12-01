@@ -1,7 +1,6 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
 using System;
-using System.Linq;
 using FlaxEditor.GUI.ContextMenu;
 using FlaxEngine;
 using FlaxEngine.GUI;
@@ -124,7 +123,7 @@ namespace FlaxEditor.Viewport.Widgets
             }
 
             // Draw text
-            Render2D.DrawText(style.FontMedium, _text, textRect, style.ForegroundViewport * (IsMouseOver ? 1.0f : 0.9f), TextAlignment.Center, TextAlignment.Center);
+            FallbackTextUtils.DrawText(style.FontMedium, _text, textRect, style.ForegroundViewport * (IsMouseOver ? 1.0f : 0.9f), TextAlignment.Center, TextAlignment.Center);
         }
 
         /// <inheritdoc />

@@ -224,7 +224,7 @@ namespace FlaxEditor.Options
                 }
             }
 
-            Render2D.Fallbacks = FallbackFonts.Create(Options.Interface.Fallbacks);
+            FallbackTextUtils.Fallbacks = FallbackFonts.Create(Options.Interface.Fallbacks);
         }
 
         /// <summary>

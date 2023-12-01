@@ -103,7 +103,7 @@ namespace FlaxEditor.Viewport.Previews
             {
                 var bounds = new Rectangle(Float2.Zero, Size);
                 Render2D.FillRectangle(bounds, new Color(0.0f, 0.0f, 0.0f, 0.2f));
-                Render2D.DrawText(Style.Current.FontLarge, "Debugger breakpoint hit...", bounds, Color.White, TextAlignment.Center, TextAlignment.Center);
+                FallbackTextUtils.DrawText(Style.Current.FontLarge, "Debugger breakpoint hit...", bounds, Color.White, TextAlignment.Center, TextAlignment.Center);
             }
 
             Render2D.PopClip();

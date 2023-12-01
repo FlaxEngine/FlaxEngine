@@ -51,7 +51,7 @@ namespace FlaxEditor.Windows.Assets
                 var style = Style.Current;
                 if (_window.Asset == null || !_window.Asset.IsLoaded)
                 {
-                    Render2D.DrawText(style.FontLarge, "Loading...", new Rectangle(Float2.Zero, Size), style.ForegroundDisabled, TextAlignment.Center, TextAlignment.Center);
+                    FallbackTextUtils.DrawText(style.FontLarge, "Loading...", new Rectangle(Float2.Zero, Size), style.ForegroundDisabled, TextAlignment.Center, TextAlignment.Center);
                 }
             }
         }

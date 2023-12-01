@@ -200,8 +200,8 @@ namespace FlaxEditor.Surface.ContextMenu
                     var font = style.FontSmall;
                     for (int i = 0; i < ranges.Length; i++)
                     {
-                        var start = font.GetCharPosition(_archetype.Title, ranges[i].StartIndex);
-                        var end = font.GetCharPosition(_archetype.Title, ranges[i].EndIndex);
+                        var start = FallbackTextUtils.GetCharPosition(font, _archetype.Title, ranges[i].StartIndex);
+                        var end = FallbackTextUtils.GetCharPosition(font, _archetype.Title, ranges[i].EndIndex);
                         _highlights.Add(new Rectangle(start.X + textRect.X, 0, end.X - start.X, Height));
 
                         if (ranges[i].StartIndex <= 0)
@@ -222,8 +222,8 @@ namespace FlaxEditor.Surface.ContextMenu
                         _highlights.Clear();
                     var style = Style.Current;
                     var font = style.FontSmall;
-                    var start = font.GetCharPosition(_archetype.Title, 0);
-                    var end = font.GetCharPosition(_archetype.Title, _archetype.Title.Length - 1);
+                    var start = FallbackTextUtils.GetCharPosition(font, _archetype.Title, 0);
+                    var end = FallbackTextUtils.GetCharPosition(font, _archetype.Title, _archetype.Title.Length - 1);
                     _highlights.Add(new Rectangle(start.X + textRect.X, 0, end.X - start.X, Height));
                     _isFullMatch = true;
                     Visible = true;
@@ -237,8 +237,8 @@ namespace FlaxEditor.Surface.ContextMenu
                         _highlights.Clear();
                     var style = Style.Current;
                     var font = style.FontSmall;
-                    var start = font.GetCharPosition(_archetype.Title, 0);
-                    var end = font.GetCharPosition(_archetype.Title, _archetype.Title.Length - 1);
+                    var start = FallbackTextUtils.GetCharPosition(font, _archetype.Title, 0);
+                    var end = FallbackTextUtils.GetCharPosition(font, _archetype.Title, _archetype.Title.Length - 1);
                     _highlights.Add(new Rectangle(start.X + textRect.X, 0, end.X - start.X, Height));
                     Visible = true;
 
@@ -283,19 +283,19 @@ namespace FlaxEditor.Surface.ContextMenu
             }
 
             // Draw name
-            Render2D.DrawText(style.FontSmall, _archetype.Title, textRect, Enabled ? style.Foreground : style.ForegroundDisabled, TextAlignment.Near, TextAlignment.Center);
+            FallbackTextUtils.DrawText(style.FontSmall, _archetype.Title, textRect, Enabled ? style.Foreground : style.ForegroundDisabled, TextAlignment.Near, TextAlignment.Center);
             if (_archetype.SubTitle != null)
             {
                 var titleLength = FallbackTextUtils.MeasureText(style.FontSmall, _archetype.Title).X;
                 var subTitleRect = new Rectangle(textRect.X + titleLength, textRect.Y, textRect.Width - titleLength, textRect.Height);
-                Render2D.DrawText(style.FontSmall, _archetype.SubTitle, subTitleRect, style.ForegroundDisabled, TextAlignment.Near, TextAlignment.Center);
+                FallbackTextUtils.DrawText(style.FontSmall, _archetype.SubTitle, subTitleRect, style.ForegroundDisabled, TextAlignment.Near, TextAlignment.Center);
             }
 
             // Reset transform and draw score mark
             if (showScoreHit)
             {
                 Render2D.PopTransform();
-                Render2D.DrawText(style.FontSmall, "> ", textRect, Enabled ? style.Foreground : style.ForegroundDisabled, TextAlignment.Near, TextAlignment.Center);
+                FallbackTextUtils.DrawText(style.FontSmall, "> ", textRect, Enabled ? style.Foreground : style.ForegroundDisabled, TextAlignment.Near, TextAlignment.Center);
             }
         }
 

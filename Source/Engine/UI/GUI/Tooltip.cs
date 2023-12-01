@@ -1,7 +1,6 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
 using System;
-using System.Linq;
 
 namespace FlaxEngine.GUI
 {
@@ -235,7 +234,7 @@ namespace FlaxEngine.GUI
             Render2D.FillRectangle(new Rectangle(1.1f, 1.1f, Width - 2, Height - 2), style.Background);
 
             // Tooltip text
-            Render2D.DrawText(
+            FallbackTextUtils.DrawText(
                               style.FontMedium,
                               _currentText,
                               GetClientArea(),
