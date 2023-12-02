@@ -948,7 +948,7 @@ API_STRUCT() struct FLAXENGINE_API EyeAdaptationSettings : ISerializable
     /// The effect rendering mode used for the exposure processing.
     /// </summary>
     API_FIELD(Attributes="EditorOrder(0), PostProcessSetting((int)EyeAdaptationSettingsOverride.Mode)")
-    EyeAdaptationMode Mode = EyeAdaptationMode::AutomaticHistogram;
+    EyeAdaptationMode Mode = EyeAdaptationMode::None;
 
     /// <summary>
     /// The speed at which the exposure changes when the scene brightness moves from a dark area to a bright area (brightness goes up).
