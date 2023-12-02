@@ -12,6 +12,7 @@
 API_CLASS(Attributes="ActorContextMenu(\"New/Lights/Point Light\"), ActorToolbox(\"Lights\")")
 class FLAXENGINE_API PointLight : public LightWithShadow
 {
+    API_AUTO_SERIALIZATION();
     DECLARE_SCENE_OBJECT(PointLight);
 private:
     Float3 _direction;
@@ -98,8 +99,6 @@ public:
     void DrawLightsDebug(RenderView& view) override;
 #endif
     void OnLayerChanged() override;
-    void Serialize(SerializeStream& stream, const void* otherObj) override;
-    void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) override;
     bool IntersectsItself(const Ray& ray, Real& distance, Vector3& normal) override;
 
 protected:

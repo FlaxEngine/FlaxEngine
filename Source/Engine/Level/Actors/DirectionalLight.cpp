@@ -4,7 +4,6 @@
 #include "Engine/Graphics/RenderTask.h"
 #include "Engine/Graphics/RenderView.h"
 #include "Engine/Renderer/RenderList.h"
-#include "Engine/Serialization/Serialization.h"
 #include "Engine/Level/Scene/SceneRendering.h"
 
 DirectionalLight::DirectionalLight(const SpawnParams& params)
@@ -46,24 +45,6 @@ void DirectionalLight::Draw(RenderContext& renderContext)
         data.ID = GetID();
         renderContext.List->DirectionalLights.Add(data);
     }
-}
-
-void DirectionalLight::Serialize(SerializeStream& stream, const void* otherObj)
-{
-    // Base
-    LightWithShadow::Serialize(stream, otherObj);
-
-    SERIALIZE_GET_OTHER_OBJ(DirectionalLight);
-
-    SERIALIZE(CascadeCount);
-}
-
-void DirectionalLight::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)
-{
-    // Base
-    LightWithShadow::Deserialize(stream, modifier);
-
-    DESERIALIZE(CascadeCount);
 }
 
 bool DirectionalLight::IntersectsItself(const Ray& ray, Real& distance, Vector3& normal)

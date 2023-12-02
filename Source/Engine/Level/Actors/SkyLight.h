@@ -12,6 +12,7 @@
 API_CLASS(Attributes="ActorContextMenu(\"New/Lights/Sky Light\"), ActorToolbox(\"Lights\")")
 class FLAXENGINE_API SkyLight : public Light
 {
+    API_AUTO_SERIALIZATION();
     DECLARE_SCENE_OBJECT(SkyLight);
 public:
     /// <summary>
@@ -106,8 +107,6 @@ public:
 #if USE_EDITOR
     void OnDebugDrawSelected() override;
 #endif
-    void Serialize(SerializeStream& stream, const void* otherObj) override;
-    void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) override;
     bool HasContentLoaded() const override;
 
 protected:

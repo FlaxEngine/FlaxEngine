@@ -4,7 +4,6 @@
 #include "Engine/Graphics/RenderTask.h"
 #include "Engine/Graphics/RenderView.h"
 #include "Engine/Renderer/RenderList.h"
-#include "Engine/Serialization/Serialization.h"
 #include "Engine/Level/Scene/SceneRendering.h"
 
 PointLight::PointLight(const SpawnParams& params)
@@ -159,38 +158,6 @@ void PointLight::OnLayerChanged()
 {
     if (_sceneRenderingKey != -1)
         GetSceneRendering()->UpdateActor(this, _sceneRenderingKey);
-}
-
-void PointLight::Serialize(SerializeStream& stream, const void* otherObj)
-{
-    // Base
-    LightWithShadow::Serialize(stream, otherObj);
-
-    SERIALIZE_GET_OTHER_OBJ(PointLight);
-
-    SERIALIZE_MEMBER(Radius, _radius);
-    SERIALIZE(IESTexture);
-    SERIALIZE(SourceRadius);
-    SERIALIZE(SourceLength);
-    SERIALIZE(FallOffExponent);
-    SERIALIZE(UseInverseSquaredFalloff);
-    SERIALIZE(UseIESBrightness);
-    SERIALIZE(IESBrightnessScale);
-}
-
-void PointLight::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)
-{
-    // Base
-    LightWithShadow::Deserialize(stream, modifier);
-
-    DESERIALIZE_MEMBER(Radius, _radius);
-    DESERIALIZE(IESTexture);
-    DESERIALIZE(SourceRadius);
-    DESERIALIZE(SourceLength);
-    DESERIALIZE(FallOffExponent);
-    DESERIALIZE(UseInverseSquaredFalloff);
-    DESERIALIZE(UseIESBrightness);
-    DESERIALIZE(IESBrightnessScale);
 }
 
 bool PointLight::IntersectsItself(const Ray& ray, Real& distance, Vector3& normal)

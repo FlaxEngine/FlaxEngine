@@ -11,6 +11,7 @@
 /// </summary>
 API_CLASS(Abstract) class FLAXENGINE_API Light : public Actor
 {
+    API_AUTO_SERIALIZATION();
     DECLARE_SCENE_OBJECT_ABSTRACT(Light);
 protected:
     int32 _sceneRenderingKey = -1;
@@ -69,8 +70,6 @@ public:
     
     virtual void DrawLightsDebug(RenderView& view);
 #endif
-    void Serialize(SerializeStream& stream, const void* otherObj) override;
-    void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) override;
 };
 
 /// <summary>
@@ -78,6 +77,7 @@ public:
 /// </summary>
 API_CLASS(Abstract) class FLAXENGINE_API LightWithShadow : public Light
 {
+    API_AUTO_SERIALIZATION();
     DECLARE_SCENE_OBJECT_ABSTRACT(LightWithShadow);
 public:
     /// <summary>
@@ -133,9 +133,4 @@ public:
     /// </summary>
     API_FIELD(Attributes="EditorOrder(60), EditorDisplay(\"Shadow\", \"Mode\")")
     ShadowsCastingMode ShadowsMode = ShadowsCastingMode::All;
-
-public:
-    // [Light]
-    void Serialize(SerializeStream& stream, const void* otherObj) override;
-    void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) override;
 };

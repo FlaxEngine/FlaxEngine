@@ -5,7 +5,6 @@
 #include "Engine/Renderer/RenderList.h"
 #include "Engine/Content/Assets/IESProfile.h"
 #include "Engine/Graphics/RenderTask.h"
-#include "Engine/Serialization/Serialization.h"
 #include "Engine/Level/Scene/SceneRendering.h"
 
 SpotLight::SpotLight(const SpawnParams& params)
@@ -244,40 +243,6 @@ void SpotLight::DrawLightsDebug(RenderView& view)
     DEBUG_DRAW_CIRCLE(position + forward * radius, forward, falloffDiscRadius, color * 0.6f, 0, true);
 }
 #endif
-
-void SpotLight::Serialize(SerializeStream& stream, const void* otherObj)
-{
-    // Base
-    LightWithShadow::Serialize(stream, otherObj);
-
-    SERIALIZE_GET_OTHER_OBJ(SpotLight);
-
-    SERIALIZE_MEMBER(Radius, _radius);
-    SERIALIZE_MEMBER(OuterAngle, _outerConeAngle);
-    SERIALIZE_MEMBER(InnerAngle, _innerConeAngle);
-    SERIALIZE(IESTexture);
-    SERIALIZE(SourceRadius);
-    SERIALIZE(FallOffExponent);
-    SERIALIZE(UseInverseSquaredFalloff);
-    SERIALIZE(UseIESBrightness);
-    SERIALIZE(IESBrightnessScale);
-}
-
-void SpotLight::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)
-{
-    // Base
-    LightWithShadow::Deserialize(stream, modifier);
-
-    DESERIALIZE_MEMBER(Radius, _radius);
-    DESERIALIZE_MEMBER(OuterAngle, _outerConeAngle);
-    DESERIALIZE_MEMBER(InnerAngle, _innerConeAngle);
-    DESERIALIZE(IESTexture);
-    DESERIALIZE(SourceRadius);
-    DESERIALIZE(FallOffExponent);
-    DESERIALIZE(UseInverseSquaredFalloff);
-    DESERIALIZE(UseIESBrightness);
-    DESERIALIZE(IESBrightnessScale);
-}
 
 bool SpotLight::IntersectsItself(const Ray& ray, Real& distance, Vector3& normal)
 {

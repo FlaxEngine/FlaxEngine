@@ -12,6 +12,7 @@
 API_CLASS(Attributes="ActorContextMenu(\"New/Lights/Spot Light\"), ActorToolbox(\"Lights\")")
 class FLAXENGINE_API SpotLight : public LightWithShadow
 {
+    API_AUTO_SERIALIZATION();
     DECLARE_SCENE_OBJECT(SpotLight);
 private:
     Vector3 _direction;
@@ -123,8 +124,6 @@ public:
     void OnDebugDrawSelected() override;
     void DrawLightsDebug(RenderView& view) override;
 #endif
-    void Serialize(SerializeStream& stream, const void* otherObj) override;
-    void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) override;
     bool IntersectsItself(const Ray& ray, Real& distance, Vector3& normal) override;
 
 protected:

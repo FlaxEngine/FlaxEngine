@@ -10,6 +10,7 @@
 API_CLASS(Attributes="ActorContextMenu(\"New/Lights/Directional Light\"), ActorToolbox(\"Lights\")")
 class FLAXENGINE_API DirectionalLight : public LightWithShadow
 {
+    API_AUTO_SERIALIZATION();
     DECLARE_SCENE_OBJECT(DirectionalLight);
 public:
     /// <summary>
@@ -21,8 +22,6 @@ public:
 public:
     // [LightWithShadow]
     void Draw(RenderContext& renderContext) override;
-    void Serialize(SerializeStream& stream, const void* otherObj) override;
-    void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) override;
     bool IntersectsItself(const Ray& ray, Real& distance, Vector3& normal) override;
 
 protected:

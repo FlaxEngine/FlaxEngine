@@ -9,7 +9,6 @@
 #include "Engine/Renderer/RenderList.h"
 #include "Engine/Renderer/ProbesRenderer.h"
 #include "Engine/Content/Content.h"
-#include "Engine/Serialization/Serialization.h"
 #include "Engine/ContentImporters/AssetsImportingManager.h"
 #include "Engine/Level/Scene/Scene.h"
 
@@ -141,34 +140,6 @@ void SkyLight::OnDebugDrawSelected()
 }
 
 #endif
-
-void SkyLight::Serialize(SerializeStream& stream, const void* otherObj)
-{
-    // Base
-    Light::Serialize(stream, otherObj);
-
-    SERIALIZE_GET_OTHER_OBJ(SkyLight);
-
-    SERIALIZE(AdditiveColor);
-    SERIALIZE_MEMBER(Radius, _radius);
-    SERIALIZE(SkyDistanceThreshold);
-    SERIALIZE_MEMBER(BakedProbe, _bakedProbe);
-    SERIALIZE(Mode);
-    SERIALIZE(CustomTexture);
-}
-
-void SkyLight::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)
-{
-    // Base
-    Light::Deserialize(stream, modifier);
-
-    DESERIALIZE(AdditiveColor);
-    DESERIALIZE_MEMBER(Radius, _radius);
-    DESERIALIZE(SkyDistanceThreshold);
-    DESERIALIZE_MEMBER(BakedProbe, _bakedProbe);
-    DESERIALIZE(Mode);
-    DESERIALIZE(CustomTexture);
-}
 
 bool SkyLight::HasContentLoaded() const
 {
