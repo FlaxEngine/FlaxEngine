@@ -1342,7 +1342,12 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
                 {
                     const bool xAxis = Math::IsZero(v0.X) && Math::IsZero(v1.X);
                     const bool yAxis = Math::IsZero(v0.Y) && Math::IsZero(v1.Y);
-                    if (xAxis || yAxis)
+                    if (xAxis && yAxis)
+                    {
+                        // Single animation
+                        value = SampleAnimation(node, loop, data.Length, startTimePos, bucket.TimePosition, newTimePos, aAnim, aData.W);
+                    }
+                    else if (xAxis || yAxis)
                     {
                         if (yAxis)
                         {
@@ -2109,7 +2114,8 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
                 bucket.LoopsLeft--;
             bucket.LoopsDone++;
         }
-        value = SampleAnimation(node, loop, length, 0.0f, bucket.TimePosition, newTimePos, anim, slot.Speed);
+        // Speed is accounted for in the new time pos, so keep sample speed at 1
+        value = SampleAnimation(node, loop, length, 0.0f, bucket.TimePosition, newTimePos, anim, 1);
         bucket.TimePosition = newTimePos;
         if (bucket.LoopsLeft == 0 && slot.BlendOutTime > 0.0f && length - slot.BlendOutTime < bucket.TimePosition)
         {

@@ -301,11 +301,8 @@ void NetworkTransform::Deserialize(NetworkStream* stream)
             _buffer.Clear();
             _bufferHasDeltas = true;
         }
-        // TODO: items are added in order to do batch removal
-        for (int32 i = 0; i < _buffer.Count() && _buffer[i].SequenceIndex < sequenceIndex; i++)
-        {
-            _buffer.RemoveAtKeepOrder(i);
-        }
+        while (_buffer.Count() != 0 && _buffer[0].SequenceIndex < sequenceIndex)
+            _buffer.RemoveAtKeepOrder(0);
 
         // Use received authoritative actor transformation but re-apply all deltas not yet processed by the server due to lag (reconciliation)
         for (auto& e : _buffer)

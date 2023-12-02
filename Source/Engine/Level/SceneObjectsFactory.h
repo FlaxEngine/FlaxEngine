@@ -33,7 +33,7 @@ public:
         ~Context();
 
         ISerializeModifier* GetModifier();
-        void SetupIdsMapping(const SceneObject* obj, ISerializeModifier* modifier);
+        void SetupIdsMapping(const SceneObject* obj, ISerializeModifier* modifier) const;
     };
 
     /// <summary>
@@ -78,6 +78,7 @@ public:
         ISerializeModifier* Modifier;
 
         PrefabSyncData(Array<SceneObject*>& sceneObjects, const ISerializable::DeserializeStream& data, ISerializeModifier* modifier);
+        void InitNewObjects();
 
     private:
         struct NewObj

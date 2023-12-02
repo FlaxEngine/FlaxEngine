@@ -67,8 +67,8 @@ bool PrecompileAssembliesStep::Perform(CookingData& data)
     data.GetBuildPlatformName(platform, architecture);
     const String logFile = data.CacheDirectory / TEXT("AOTLog.txt");
     String args = String::Format(
-        TEXT("-log -logfile=\"{}\" -runDotNetAOT -mutex -platform={} -arch={} -configuration={} -aotMode={} -binaries=\"{}\" -intermediate=\"{}\""),
-        logFile, platform, architecture, configuration, ToString(aotMode), data.DataOutputPath, data.ManagedCodeOutputPath);
+        TEXT("-log -logfile=\"{}\" -runDotNetAOT -mutex -platform={} -arch={} -configuration={} -aotMode={} -binaries=\"{}\" -intermediate=\"{}\" {}"),
+        logFile, platform, architecture, configuration, ToString(aotMode), data.DataOutputPath, data.ManagedCodeOutputPath, GAME_BUILD_DOTNET_VER);
     if (!buildSettings.SkipUnusedDotnetLibsPackaging)
         args += TEXT(" -skipUnusedDotnetLibs=false"); // Run AOT on whole class library (not just used libs)
     for (const String& define : data.CustomDefines)

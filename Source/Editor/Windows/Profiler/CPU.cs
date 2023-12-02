@@ -92,7 +92,9 @@ namespace FlaxEditor.Windows.Profiler
             };
 
             // Table
-            var headerColor = Style.Current.LightBackground;
+            var style = Style.Current;
+            var headerColor = style.LightBackground;
+            var textColor = style.Foreground;
             _table = new Table
             {
                 Columns = new[]
@@ -103,36 +105,42 @@ namespace FlaxEditor.Windows.Profiler
                         CellAlignment = TextAlignment.Near,
                         Title = "Event",
                         TitleBackgroundColor = headerColor,
+                        TitleColor = textColor,
                     },
                     new ColumnDefinition
                     {
                         Title = "Total",
                         TitleBackgroundColor = headerColor,
                         FormatValue = FormatCellPercentage,
+                        TitleColor = textColor,
                     },
                     new ColumnDefinition
                     {
                         Title = "Self",
                         TitleBackgroundColor = headerColor,
                         FormatValue = FormatCellPercentage,
+                        TitleColor = textColor,
                     },
                     new ColumnDefinition
                     {
                         Title = "Time ms",
                         TitleBackgroundColor = headerColor,
                         FormatValue = FormatCellMs,
+                        TitleColor = textColor,
                     },
                     new ColumnDefinition
                     {
                         Title = "Self ms",
                         TitleBackgroundColor = headerColor,
                         FormatValue = FormatCellMs,
+                        TitleColor = textColor,
                     },
                     new ColumnDefinition
                     {
                         Title = "Memory",
                         TitleBackgroundColor = headerColor,
                         FormatValue = FormatCellBytes,
+                        TitleColor = textColor,
                     },
                 },
                 Parent = layout,

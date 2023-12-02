@@ -162,7 +162,7 @@ void ENetDriver::Disconnect(const NetworkConnection& connection)
     }
 }
 
-bool ENetDriver::PopEvent(NetworkEvent* eventPtr)
+bool ENetDriver::PopEvent(NetworkEvent& eventPtr)
 {
     ASSERT(_host);
     ENetEvent event;
@@ -173,30 +173,30 @@ bool ENetDriver::PopEvent(NetworkEvent* eventPtr)
     {
         // Copy sender data
         const uint32 connectionId = enet_peer_get_id(event.peer);
-        eventPtr->Sender.ConnectionId = connectionId;
+        eventPtr.Sender.ConnectionId = connectionId;
 
         switch (event.type)
         {
         case ENET_EVENT_TYPE_CONNECT:
-            eventPtr->EventType = NetworkEventType::Connected;
+            eventPtr.EventType = NetworkEventType::Connected;
             if (IsServer())
                 _peerMap.Add(connectionId, event.peer);
             break;
         case ENET_EVENT_TYPE_DISCONNECT:
-            eventPtr->EventType = NetworkEventType::Disconnected;
+            eventPtr.EventType = NetworkEventType::Disconnected;
             if (IsServer())
                 _peerMap.Remove(connectionId);
             break;
         case ENET_EVENT_TYPE_DISCONNECT_TIMEOUT:
-            eventPtr->EventType = NetworkEventType::Timeout;
+            eventPtr.EventType = NetworkEventType::Timeout;
             if (IsServer())
                 _peerMap.Remove(connectionId);
             break;
         case ENET_EVENT_TYPE_RECEIVE:
-            eventPtr->EventType = NetworkEventType::Message;
-            eventPtr->Message = _networkHost->CreateMessage();
-            eventPtr->Message.Length = event.packet->dataLength;
-            Platform::MemoryCopy(eventPtr->Message.Buffer, event.packet->data, event.packet->dataLength);
+            eventPtr.EventType = NetworkEventType::Message;
+            eventPtr.Message = _networkHost->CreateMessage();
+            eventPtr.Message.Length = event.packet->dataLength;
+            Platform::MemoryCopy(eventPtr.Message.Buffer, event.packet->data, event.packet->dataLength);
             break;
         default:
             break;

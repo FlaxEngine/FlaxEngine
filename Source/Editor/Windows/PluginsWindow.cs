@@ -190,7 +190,7 @@ namespace FlaxEditor.Windows
             };
             _addPluginProjectButton = new Button
             {
-                Text = "Create Plugin Project",
+                Text = "Create Project",
                 TooltipText = "Add new plugin project.",
                 AnchorPreset = AnchorPresets.TopLeft,
                 LocalLocation = new Float2(70, 18),
@@ -201,7 +201,7 @@ namespace FlaxEditor.Windows
 
             _cloneProjectButton = new Button
             {
-                Text = "Clone Plugin Project",
+                Text = "Clone Project",
                 TooltipText = "Git Clone a plugin project.",
                 AnchorPreset = AnchorPresets.TopLeft,
                 LocalLocation = new Float2(70 + _addPluginProjectButton.Size.X + 8, 18),
@@ -392,25 +392,48 @@ namespace FlaxEditor.Windows
 
             Editor.Log("Plugin project has been cloned.");
 
+            try
+            {
+                // Start git submodule clone
+                var settings = new CreateProcessSettings
+                {
+                    FileName = "git",
+                    WorkingDirectory = clonePath,
+                    Arguments = "submodule update --init",
+                    ShellExecute = false,
+                    LogOutput = true,
+                };
+                Platform.CreateProcess(ref settings);
+            }
+            catch (Exception e)
+            {
+                Editor.LogError($"Failed Git submodule process. {e}");
+                return;
+            }
+
             // Find project config file. Could be different then what the user named the folder.
-            var files = Directory.GetFiles(clonePath);
             string pluginProjectName = "";
-            foreach (var file in files)
+            foreach (var file in Directory.GetFiles(clonePath))
             {
                 if (file.Contains(".flaxproj", StringComparison.OrdinalIgnoreCase))
                 {
                     pluginProjectName = Path.GetFileNameWithoutExtension(file);
-                    Debug.Log(pluginProjectName);
+                    break;
                 }
             }
-
             if (string.IsNullOrEmpty(pluginProjectName))
-                Editor.LogError("Failed to find plugin project file to add to Project config. Please add manually.");
-            else
             {
-                await AddReferenceToProject(pluginName, pluginProjectName);
-                MessageBox.Show($"{pluginName} has been successfully cloned. Restart editor for changes to take effect.", "Plugin Project Created", MessageBoxButtons.OK);
+                Editor.LogError("Failed to find plugin project file to add to Project config. Please add manually.");
+                return;
             }
+
+            await AddModuleReferencesInGameModule(clonePath);
+            await AddReferenceToProject(pluginName, pluginProjectName);
+
+            if (Editor.Options.Options.SourceCode.AutoGenerateScriptsProjectFiles)
+                Editor.ProgressReporting.GenerateScriptsProjectFiles.RunAsync();
+
+            MessageBox.Show($"{pluginName} has been successfully cloned. Restart editor for changes to take effect.", "Plugin Project Created", MessageBoxButtons.OK);
         }
 
         private void OnAddButtonClicked()
@@ -728,6 +751,37 @@ namespace FlaxEditor.Windows
 
             await AddReferenceToProject(pluginName, pluginName);
             MessageBox.Show($"{pluginName} has been successfully created. Restart editor for changes to take effect.", "Plugin Project Created", MessageBoxButtons.OK);
+        }
+
+        private async Task AddModuleReferencesInGameModule(string pluginFolderPath)
+        {
+            // Common game build script location
+            var gameScript = Path.Combine(Globals.ProjectFolder, "Source/Game/Game.Build.cs");
+            if (File.Exists(gameScript))
+            {
+                var gameScriptContents = await File.ReadAllTextAsync(gameScript);
+                var insertLocation = gameScriptContents.IndexOf("base.Setup(options);", StringComparison.Ordinal);
+                if (insertLocation != -1)
+                {
+                    insertLocation += 20;
+                    var modifiedAny = false;
+
+                    // Find all code modules in a plugin to auto-reference them in game build script
+                    foreach (var subDir in Directory.GetDirectories(Path.Combine(pluginFolderPath, "Source")))
+                    {
+                        var pluginModuleName = Path.GetFileName(subDir);
+                        var pluginModuleScriptPath = Path.Combine(subDir, pluginModuleName + ".Build.cs");
+                        if (File.Exists(pluginModuleScriptPath))
+                        {
+                            gameScriptContents = gameScriptContents.Insert(insertLocation, $"\n        options.PublicDependencies.Add(\"{pluginModuleName}\");");
+                            modifiedAny = true;
+                        }
+                    }
+
+                    if (modifiedAny)
+                        await File.WriteAllTextAsync(gameScript, gameScriptContents, Encoding.UTF8);
+                }
+            }
         }
 
         private async Task AddReferenceToProject(string pluginFolderName, string pluginName)

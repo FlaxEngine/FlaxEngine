@@ -67,7 +67,8 @@ void GraphicsSettings::Apply()
     Graphics::AllowCSMBlending = AllowCSMBlending;
     Graphics::GlobalSDFQuality = GlobalSDFQuality;
     Graphics::GIQuality = GIQuality;
-    Graphics::PostProcessSettings = PostProcessSettings;
+    Graphics::PostProcessSettings = ::PostProcessSettings();
+    Graphics::PostProcessSettings.BlendWith(PostProcessSettings, 1.0f);
 }
 
 void Graphics::DisposeDevice()

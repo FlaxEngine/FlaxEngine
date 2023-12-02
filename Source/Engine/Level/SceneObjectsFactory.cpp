@@ -1,7 +1,6 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
 #include "SceneObjectsFactory.h"
-#include "Components/MissingScript.h"
 #include "Engine/Level/Actor.h"
 #include "Engine/Level/Prefabs/Prefab.h"
 #include "Engine/Content/Content.h"
@@ -16,11 +15,42 @@
 #include "Engine/Threading/ThreadLocal.h"
 #if !BUILD_RELEASE || USE_EDITOR
 #include "Engine/Level/Level.h"
+#include "Engine/Threading/Threading.h"
+#include "Engine/Level/Components/MissingScript.h"
+#endif
+
+#if USE_EDITOR
+
+MissingScript::MissingScript(const SpawnParams& params)
+    : Script(params)
+{
+}
+
+void MissingScript::SetReferenceScript(const ScriptingObjectReference<Script>& value)
+{
+    if (_referenceScript == value)
+        return;
+    _referenceScript = value;
+    if (Data.IsEmpty() || !_referenceScript)
+        return;
+    rapidjson_flax::Document document;
+    document.Parse(Data.ToStringAnsi().GetText());
+    document.RemoveMember("ParentID"); // Prevent changing parent
+    auto modifier = Cache::ISerializeModifier.Get();
+    const auto idsMapping = Scripting::ObjectsLookupIdMapping.Get();
+    if (idsMapping)
+        modifier->IdsMapping = *idsMapping;
+    _referenceScript->Deserialize(document, modifier.Value);
+    DeleteObject();
+}
+
 #endif
 
 SceneObjectsFactory::Context::Context(ISerializeModifier* modifier)
     : Modifier(modifier)
 {
+    // Override the main thread value to not create it again in GetModifier() if called from the same thread
+    Modifiers.Set(modifier);
 }
 
 SceneObjectsFactory::Context::~Context()
@@ -30,7 +60,11 @@ SceneObjectsFactory::Context::~Context()
         Array<ISerializeModifier*, FixedAllocation<PLATFORM_THREADS_LIMIT>> modifiers;
         Modifiers.GetValues(modifiers);
         for (ISerializeModifier* e : modifiers)
+        {
+            if (e == Modifier)
+                continue;
             Cache::ISerializeModifier.Put(e);
+        }
     }
 }
 
@@ -56,15 +90,15 @@ ISerializeModifier* SceneObjectsFactory::Context::GetModifier()
     return modifier;
 }
 
-void SceneObjectsFactory::Context::SetupIdsMapping(const SceneObject* obj, ISerializeModifier* modifier)
+void SceneObjectsFactory::Context::SetupIdsMapping(const SceneObject* obj, ISerializeModifier* modifier) const
 {
     int32 instanceIndex;
     if (ObjectToInstance.TryGet(obj->GetID(), instanceIndex) && instanceIndex != modifier->CurrentInstance)
     {
         // Apply the current prefab instance objects ids table to resolve references inside a prefab properly
         modifier->CurrentInstance = instanceIndex;
-        auto& instance = Instances[instanceIndex];
-        for (auto& e : instance.IdsMapping)
+        const auto& instance = Instances[instanceIndex];
+        for (const auto& e : instance.IdsMapping)
             modifier->IdsMapping[e.Key] = e.Value;
     }
 }
@@ -132,7 +166,6 @@ SceneObject* SceneObjectsFactory::Spawn(Context& context, const ISerializable::D
                 return nullptr;
             }
             const StringAnsiView typeName(typeNameMember->value.GetStringAnsiView());
-
             const ScriptingTypeHandle type = Scripting::FindScriptingType(typeName);
             if (type)
             {
@@ -279,9 +312,9 @@ void SceneObjectsFactory::HandleObjectDeserializationError(const ISerializable::
 #if USE_EDITOR
             // Add dummy script
             auto* dummyScript = parent->AddScript<MissingScript>();
-            const auto parentIdMember = value.FindMember("TypeName");
-            if (parentIdMember != value.MemberEnd() && parentIdMember->value.IsString())
-                dummyScript->MissingTypeName = parentIdMember->value.GetString();
+            const auto typeNameMember = value.FindMember("TypeName");
+            if (typeNameMember != value.MemberEnd() && typeNameMember->value.IsString())
+                dummyScript->MissingTypeName = typeNameMember->value.GetString();
             dummyScript->Data = MoveTemp(bufferStr);
 #endif
             LOG(Warning, "Parent actor of the missing object: {0}", parent->GetName());
@@ -367,6 +400,15 @@ SceneObjectsFactory::PrefabSyncData::PrefabSyncData(Array<SceneObject*>& sceneOb
     , Modifier(modifier)
     , InitialCount(0)
 {
+}
+
+void SceneObjectsFactory::PrefabSyncData::InitNewObjects()
+{
+    for (int32 i = 0; i < NewObjects.Count(); i++)
+    {
+        SceneObject* obj = SceneObjects[InitialCount + i];
+        obj->Initialize();
+    }
 }
 
 void SceneObjectsFactory::SetupPrefabInstances(Context& context, const PrefabSyncData& data)
@@ -458,9 +500,6 @@ void SceneObjectsFactory::SynchronizeNewPrefabInstances(Context& context, Prefab
             continue;
         const Guid actorParentId = JsonTools::GetGuid(stream, "ParentID");
 
-        // Map prefab object id to this actor so the new objects gets added to it
-        data.Modifier->IdsMapping[actorPrefabObjectId] = actor->GetID();
-
         // Load prefab
         auto prefab = Content::LoadAsync<Prefab>(prefabId);
         if (prefab == nullptr)
@@ -526,8 +565,12 @@ void SceneObjectsFactory::SynchronizeNewPrefabInstances(Context& context, Prefab
             if (spawned)
                 continue;
 
-            // Create instance (including all children)
+            // Map prefab object id to this actor's prefab instance so the new objects gets added to it
+            context.SetupIdsMapping(actor, data.Modifier);
+            data.Modifier->IdsMapping[actorPrefabObjectId] = actor->GetID();
             Scripting::ObjectsLookupIdMapping.Set(&data.Modifier->IdsMapping);
+
+            // Create instance (including all children)
             SynchronizeNewPrefabInstance(context, data, prefab, actor, prefabObjectId);
         }
     }

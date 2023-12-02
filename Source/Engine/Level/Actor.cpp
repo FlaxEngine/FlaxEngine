@@ -1406,7 +1406,7 @@ Script* Actor::FindScript(const MClass* type) const
     CHECK_RETURN(type, nullptr);
     for (auto script : Scripts)
     {
-        if (script->GetClass()->IsSubClassOf(type))
+        if (script->GetClass()->IsSubClassOf(type) || script->GetClass()->HasInterface(type))
             return script;
     }
     for (auto child : Children)

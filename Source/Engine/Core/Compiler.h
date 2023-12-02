@@ -93,3 +93,10 @@
 #endif
 
 #define PACK_STRUCT(__Declaration__) PACK_BEGIN() __Declaration__ PACK_END()
+
+// C++ 17
+#if __cplusplus >= 201703L
+#define IF_CONSTEXPR constexpr
+#else
+#define IF_CONSTEXPR
+#endif

@@ -7,6 +7,8 @@ using FlaxEngine.GUI;
 using FlaxEditor.Viewport.Widgets;
 using FlaxEditor.GUI.ContextMenu;
 using Object = FlaxEngine.Object;
+using FlaxEditor.GUI;
+using FlaxEditor.Scripting;
 
 namespace FlaxEditor.Viewport.Previews
 {
@@ -49,6 +51,8 @@ namespace FlaxEditor.Viewport.Previews
         private Image _guiMaterialControl;
         private readonly MaterialBase[] _postFxMaterialsCache = new MaterialBase[1];
         private ContextMenu _modelWidgetButtonMenu;
+        private AssetPicker _customModelPicker;
+        private Model _customModel;
 
         /// <summary>
         /// Gets or sets the material asset to preview. It can be <see cref="FlaxEngine.Material"/> or <see cref="FlaxEngine.MaterialInstance"/>.
@@ -74,13 +78,64 @@ namespace FlaxEditor.Viewport.Previews
             get => _selectedModelIndex;
             set
             {
+                if (value == -1) // Using Custom Model
+                    return;
                 if (value < 0 || value > Models.Length)
                     throw new ArgumentOutOfRangeException();
 
+                if (_customModelPicker != null)
+                    _customModelPicker.Validator.SelectedAsset = null;
                 _selectedModelIndex = value;
                 _previewModel.Model = FlaxEngine.Content.LoadAsyncInternal<Model>("Editor/Primitives/" + Models[value]);
                 _previewModel.Transform = Transforms[value];
             }
+        }
+
+        // Used to automatically update which entry is checked.
+        // TODO: Maybe a better system with predicate bool checks could be used?
+        private void ResetModelContextMenu()
+        {
+            _modelWidgetButtonMenu.ItemsContainer.DisposeChildren();
+
+            // Fill out all models
+            for (int i = 0; i < Models.Length; i++)
+            {
+                var index = i;
+                var button = _modelWidgetButtonMenu.AddButton(Models[index]);
+                button.ButtonClicked += _ => SelectedModelIndex = index;
+                button.Checked = SelectedModelIndex == index && _customModel == null;
+                button.Tag = index;
+            }
+
+            _modelWidgetButtonMenu.AddSeparator();
+            _customModelPicker = new AssetPicker(new ScriptType(typeof(Model)), Float2.Zero);
+
+            // Label button
+            var customModelPickerLabel = _modelWidgetButtonMenu.AddButton("Custom Model:");
+            customModelPickerLabel.CloseMenuOnClick = false;
+            customModelPickerLabel.Checked = _customModel != null;
+
+            // Container button
+            var customModelPickerButton = _modelWidgetButtonMenu.AddButton("");
+            customModelPickerButton.Height = _customModelPicker.Height + 4;
+            customModelPickerButton.CloseMenuOnClick = false;
+            _customModelPicker.Parent = customModelPickerButton;
+            _customModelPicker.Validator.SelectedAsset = _customModel;
+            _customModelPicker.SelectedItemChanged += () =>
+            {
+                _customModel = _customModelPicker.Validator.SelectedAsset as Model;
+                if (_customModelPicker.Validator.SelectedAsset == null)
+                {
+                    SelectedModelIndex = 0;
+                    ResetModelContextMenu();
+                    return;
+                }
+
+                _previewModel.Model = _customModel;
+                _previewModel.Transform = Transforms[0];
+                SelectedModelIndex = -1;
+                ResetModelContextMenu();
+            };
         }
 
         /// <summary>
@@ -107,17 +162,7 @@ namespace FlaxEditor.Viewport.Previews
                 {
                     if (!control.Visible)
                         return;
-                    _modelWidgetButtonMenu.ItemsContainer.DisposeChildren();
-
-                    // Fill out all models
-                    for (int i = 0; i < Models.Length; i++)
-                    {
-                        var index = i;
-                        var button = _modelWidgetButtonMenu.AddButton(Models[index]);
-                        button.ButtonClicked += _ => SelectedModelIndex = index;
-                        button.Checked = SelectedModelIndex == index;
-                        button.Tag = index;
-                    }
+                    ResetModelContextMenu();
                 };
                 new ViewportWidgetButton("Model", SpriteHandle.Invalid, _modelWidgetButtonMenu)
                 {

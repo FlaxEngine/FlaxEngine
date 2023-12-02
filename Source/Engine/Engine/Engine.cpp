@@ -20,7 +20,6 @@
 #include "Engine/Threading/MainThreadTask.h"
 #include "Engine/Threading/ThreadRegistry.h"
 #include "Engine/Graphics/GPUDevice.h"
-#include "Engine/Scripting/ManagedCLR/MCore.h"
 #include "Engine/Scripting/ScriptingType.h"
 #include "Engine/Content/Content.h"
 #include "Engine/Content/JsonAsset.h"
@@ -327,14 +326,6 @@ void Engine::OnUpdate()
 
     // Update services
     EngineService::OnUpdate();
-
-#ifdef USE_NETCORE
-    // Force GC to run in background periodically to avoid large blocking collections causing hitches
-    if (Time::Update.TicksCount % 60 == 0)
-    {
-        MCore::GC::Collect(MCore::GC::MaxGeneration(), MGCCollectionMode::Forced, false, false);
-    }
-#endif
 }
 
 void Engine::OnLateUpdate()
@@ -531,7 +522,13 @@ void EngineImpl::InitLog()
     LOG(Info, "Compiled for Dev Environment");
 #endif
     LOG(Info, "Version " FLAXENGINE_VERSION_TEXT);
-    LOG(Info, "Compiled: {0} {1}", TEXT(__DATE__), TEXT(__TIME__));
+    const Char* cpp = TEXT("?");
+    if (__cplusplus == 202101L) cpp = TEXT("C++23");
+    else if (__cplusplus == 202002L) cpp = TEXT("C++20");
+    else if (__cplusplus == 201703L) cpp = TEXT("C++17");
+    else if (__cplusplus == 201402L) cpp = TEXT("C++14");
+    else if (__cplusplus == 201103L) cpp = TEXT("C++11");
+    LOG(Info, "Compiled: {0} {1} {2}", TEXT(__DATE__), TEXT(__TIME__), cpp);
 #ifdef _MSC_VER
     const String mcsVer = StringUtils::ToString(_MSC_FULL_VER);
     LOG(Info, "Compiled with Visual C++ {0}.{1}.{2}.{3:0^2d}", mcsVer.Substring(0, 2), mcsVer.Substring(2, 2), mcsVer.Substring(4, 5), _MSC_BUILD);

@@ -87,7 +87,7 @@ bool DeployDataStep::Perform(CookingData& data)
             {
                 // Ask Flax.Build to provide .Net SDK location for the current platform
                 String sdks;
-                bool failed = ScriptsBuilder::RunBuildTool(TEXT("-log -logMessagesOnly -logFileWithConsole -logfile=SDKs.txt -printSDKs"), data.CacheDirectory);
+                bool failed = ScriptsBuilder::RunBuildTool(String::Format(TEXT("-log -logMessagesOnly -logFileWithConsole -logfile=SDKs.txt -printSDKs {}"), GAME_BUILD_DOTNET_VER), data.CacheDirectory);
                 failed |= File::ReadAllText(data.CacheDirectory / TEXT("SDKs.txt"), sdks);
                 int32 idx = sdks.Find(TEXT("DotNetSdk, "), StringSearchCase::CaseSensitive);
                 if (idx != -1)
@@ -168,7 +168,7 @@ bool DeployDataStep::Perform(CookingData& data)
                 String sdks;
                 const Char *platformName, *archName;
                 data.GetBuildPlatformName(platformName, archName);
-                String args = String::Format(TEXT("-log -logMessagesOnly -logFileWithConsole -logfile=SDKs.txt -printDotNetRuntime -platform={} -arch={}"), platformName, archName);
+                String args = String::Format(TEXT("-log -logMessagesOnly -logFileWithConsole -logfile=SDKs.txt -printDotNetRuntime -platform={} -arch={} {}"), platformName, archName, GAME_BUILD_DOTNET_VER);
                 bool failed = ScriptsBuilder::RunBuildTool(args, data.CacheDirectory);
                 failed |= File::ReadAllText(data.CacheDirectory / TEXT("SDKs.txt"), sdks);
                 Array<String> parts;
@@ -269,8 +269,8 @@ bool DeployDataStep::Perform(CookingData& data)
             LOG(Info, "Optimizing .NET class library size to include only used assemblies");
             const String logFile = data.CacheDirectory / TEXT("StripDotnetLibs.txt");
             String args = String::Format(
-                TEXT("-log -logfile=\"{}\" -runDotNetClassLibStripping -mutex -binaries=\"{}\""),
-                logFile, data.DataOutputPath);
+                TEXT("-log -logfile=\"{}\" -runDotNetClassLibStripping -mutex -binaries=\"{}\" {}"),
+                logFile, data.DataOutputPath, GAME_BUILD_DOTNET_VER);
             for (const String& define : data.CustomDefines)
             {
                 args += TEXT(" -D");

@@ -33,12 +33,12 @@ API_CLASS(Abstract) class FLAXENGINE_API Actor : public SceneObject
     friend Prefab;
     friend PrefabInstanceData;
 protected:
-    int16 _isActive : 1;
-    int16 _isActiveInHierarchy : 1;
-    int16 _isPrefabRoot : 1;
-    int16 _isEnabled : 1;
-    int16 _drawNoCulling : 1;
-    int16 _drawCategory : 4;
+    uint16 _isActive : 1;
+    uint16 _isActiveInHierarchy : 1;
+    uint16 _isPrefabRoot : 1;
+    uint16 _isEnabled : 1;
+    uint16 _drawNoCulling : 1;
+    uint16 _drawCategory : 4;
     byte _layer;
     StaticFlags _staticFlags;
     Transform _localTransform;

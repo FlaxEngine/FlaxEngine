@@ -172,6 +172,28 @@ void AnimatedModel::GetNodeTransformation(const StringView& nodeName, Matrix& no
     GetNodeTransformation(SkinnedModel ? SkinnedModel->FindNode(nodeName) : -1, nodeTransformation, worldSpace);
 }
 
+void AnimatedModel::SetNodeTransformation(int32 nodeIndex, const Matrix& nodeTransformation, bool worldSpace)
+{
+    if (GraphInstance.NodesPose.IsEmpty())
+        const_cast<AnimatedModel*>(this)->PreInitSkinningData(); // Ensure to have valid nodes pose to return
+    CHECK(nodeIndex >= 0 && nodeIndex < GraphInstance.NodesPose.Count());
+    GraphInstance.NodesPose[nodeIndex] = nodeTransformation;
+    if (worldSpace)
+    {
+        Matrix world;
+        _transform.GetWorld(world);
+        Matrix invWorld;
+        Matrix::Invert(world, invWorld);
+        GraphInstance.NodesPose[nodeIndex] = GraphInstance.NodesPose[nodeIndex] * invWorld;
+    }
+    OnAnimationUpdated();
+}
+
+void AnimatedModel::SetNodeTransformation(const StringView& nodeName, const Matrix& nodeTransformation, bool worldSpace)
+{
+    SetNodeTransformation(SkinnedModel ? SkinnedModel->FindNode(nodeName) : -1, nodeTransformation, worldSpace);
+}
+
 int32 AnimatedModel::FindClosestNode(const Vector3& location, bool worldSpace) const
 {
     if (GraphInstance.NodesPose.IsEmpty())

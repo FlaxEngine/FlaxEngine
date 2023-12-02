@@ -693,6 +693,14 @@ void BinaryModule::Destroy(bool isReloading)
         }
     }
 
+    // Remove any scripting events
+    for (auto i = ScriptingEvents::EventsTable.Begin(); i.IsNotEnd(); ++i)
+    {
+        const ScriptingTypeHandle type = i->Key.First;
+        if (type.Module == this)
+            ScriptingEvents::EventsTable.Remove(i);
+    }
+
     // Unregister
     GetModules().RemoveKeepOrder(this);
 }
@@ -906,6 +914,7 @@ void ManagedBinaryModule::OnLoaded(MAssembly* assembly)
 #if !COMPILE_WITHOUT_CSHARP
     PROFILE_CPU();
     ASSERT(ClassToTypeIndex.IsEmpty());
+    ScopeLock lock(Locker);
 
     const auto& classes = assembly->GetClasses();
 
@@ -1270,7 +1279,11 @@ bool ManagedBinaryModule::InvokeMethod(void* method, const Variant& instance, Sp
 
     // Invoke the method
     MObject* exception = nullptr;
+#if USE_NETCORE // NetCore uses the same path for both virtual and non-virtual calls
+    MObject* resultObject = mMethod->Invoke(mInstance, params, &exception);
+#else
     MObject* resultObject = withInterfaces ? mMethod->InvokeVirtual((MObject*)mInstance, params, &exception) : mMethod->Invoke(mInstance, params, &exception);
+#endif
     if (exception)
     {
         MException ex(exception);

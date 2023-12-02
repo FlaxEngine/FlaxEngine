@@ -15,15 +15,15 @@ API_CLASS(Abstract) class FLAXENGINE_API Script : public SceneObject
     friend SceneTicking;
     friend class PrefabInstanceData;
 protected:
-    int32 _enabled : 1;
-    int32 _tickFixedUpdate : 1;
-    int32 _tickUpdate : 1;
-    int32 _tickLateUpdate : 1;
-    int32 _tickLateFixedUpdate : 1;
-    int32 _wasStartCalled : 1;
-    int32 _wasEnableCalled : 1;
+    uint16 _enabled : 1;
+    uint16 _tickFixedUpdate : 1;
+    uint16 _tickUpdate : 1;
+    uint16 _tickLateUpdate : 1;
+    uint16 _tickLateFixedUpdate : 1;
+    uint16 _wasStartCalled : 1;
+    uint16 _wasEnableCalled : 1;
 #if USE_EDITOR
-    int32 _executeInEditor : 1;
+    uint16 _executeInEditor : 1;
 #endif
 
 public:

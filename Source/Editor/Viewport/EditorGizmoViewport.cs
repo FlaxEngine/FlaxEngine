@@ -87,6 +87,9 @@ namespace FlaxEditor.Viewport
         public abstract void Select(List<SceneGraphNode> nodes);
 
         /// <inheritdoc />
+        public abstract void Spawn(Actor actor);
+
+        /// <inheritdoc />
         protected override bool IsControllingMouse => Gizmos.Active?.IsControllingMouse ?? false;
 
         /// <inheritdoc />

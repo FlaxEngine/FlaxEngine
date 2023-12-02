@@ -129,6 +129,11 @@ public:
     }
 
     /// <summary>
+    /// Gets the font style flags.
+    /// </summary>
+    API_PROPERTY() FontFlags GetStyle() const;
+
+    /// <summary>
     /// Sets the font options.
     /// </summary>
     API_PROPERTY() void SetOptions(const FontOptions& value);

@@ -327,6 +327,18 @@ public:
     bool operator!=(const String& other) const;
 
 public:
+    using StringViewBase::StartsWith;
+    FORCE_INLINE bool StartsWith(const StringView& prefix, StringSearchCase searchCase = StringSearchCase::IgnoreCase) const
+    {
+        return StringViewBase::StartsWith(prefix, searchCase);
+    }
+
+    using StringViewBase::EndsWith;
+    FORCE_INLINE bool EndsWith(const StringView& suffix, StringSearchCase searchCase = StringSearchCase::IgnoreCase) const
+    {
+        return StringViewBase::EndsWith(suffix, searchCase);
+    }
+
     /// <summary>
     /// Gets the left most given number of characters.
     /// </summary>
@@ -511,6 +523,18 @@ public:
     bool operator!=(const StringAnsi& other) const;
 
 public:
+    using StringViewBase::StartsWith;
+    FORCE_INLINE bool StartsWith(const StringAnsiView& prefix, StringSearchCase searchCase = StringSearchCase::IgnoreCase) const
+    {
+        return StringViewBase::StartsWith(prefix, searchCase);
+    }
+
+    using StringViewBase::EndsWith;
+    FORCE_INLINE bool EndsWith(const StringAnsiView& suffix, StringSearchCase searchCase = StringSearchCase::IgnoreCase) const
+    {
+        return StringViewBase::EndsWith(suffix, searchCase);
+    }
+
     /// <summary>
     /// Retrieves substring created from characters starting from startIndex to the String end.
     /// </summary>

@@ -280,17 +280,25 @@ bool AndroidPlatformTools::OnPostProcess(CookingData& data)
     const Char* gradlew = TEXT("gradlew");
 #endif
 #if PLATFORM_LINUX
-    Platform::RunProcess(String::Format(TEXT("chmod +x \"{0}/gradlew\""), data.OriginalOutputPath), data.OriginalOutputPath, Dictionary<String, String>(), true);
+    {
+        CreateProcessSettings procSettings;
+        procSettings.FileName = String::Format(TEXT("chmod +x \"{0}/gradlew\""), data.OriginalOutputPath);
+        procSettings.WorkingDirectory = data.OriginalOutputPath;
+        procSettings.HiddenWindow = true;
+        Platform::CreateProcess(procSettings);
+    }
 #endif
     const bool distributionPackage = buildSettings->ForDistribution;
-    CreateProcessSettings procSettings;
-    procSettings.FileName = String::Format(TEXT("\"{0}\" {1}"), data.OriginalOutputPath / gradlew, distributionPackage ? TEXT("assemble") : TEXT("assembleDebug"));
-    procSettings.WorkingDirectory = data.OriginalOutputPath;
-    const int32 result = Platform::CreateProcess(procSettings);
-    if (result != 0)
     {
-        data.Error(String::Format(TEXT("Failed to build Gradle project into package (result code: {0}). See log for more info."), result));
-        return true;
+        CreateProcessSettings procSettings;
+        procSettings.FileName = String::Format(TEXT("\"{0}\" {1}"), data.OriginalOutputPath / gradlew, distributionPackage ? TEXT("assemble") : TEXT("assembleDebug"));
+        procSettings.WorkingDirectory = data.OriginalOutputPath;
+        const int32 result = Platform::CreateProcess(procSettings);
+        if (result != 0)
+        {
+            data.Error(String::Format(TEXT("Failed to build Gradle project into package (result code: {0}). See log for more info."), result));
+            return true;
+        }
     }
 
     // Copy result package

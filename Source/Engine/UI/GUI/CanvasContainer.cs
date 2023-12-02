@@ -41,11 +41,12 @@ namespace FlaxEngine.GUI
         protected override void DrawChildren()
         {
             // Draw all screen space canvases
+            var layerMask = MainRenderTask.Instance?.ViewLayersMask ?? LayersMask.Default;
             for (int i = 0; i < _children.Count; i++)
             {
                 var child = (CanvasRootControl)_children[i];
 
-                if (child.Visible && child.Is2D)
+                if (child.Visible && child.Is2D && layerMask.HasLayer(child.Canvas.Layer))
                 {
                     child.Draw();
                 }
@@ -69,10 +70,11 @@ namespace FlaxEngine.GUI
             UICanvas.CalculateRay(ref location, out Ray ray);
 
             // Test 3D
+            var layerMask = MainRenderTask.Instance?.ViewLayersMask ?? LayersMask.Default;
             for (int i = _children.Count - 1; i >= 0 && _children.Count > 0; i--)
             {
                 var child = (CanvasRootControl)_children[i];
-                if (child.Visible && child.Enabled && child.Is3D)
+                if (child.Visible && child.Enabled && child.Is3D && layerMask.HasLayer(child.Canvas.Layer))
                 {
                     if (child.Intersects3D(ref ray, out var childLocation))
                     {
@@ -91,10 +93,11 @@ namespace FlaxEngine.GUI
 
             // Check all children collisions with mouse and fire events for them
             bool isFirst3DHandled = false;
+            var layerMask = MainRenderTask.Instance?.ViewLayersMask ?? LayersMask.Default;
             for (int i = _children.Count - 1; i >= 0 && _children.Count > 0; i--)
             {
                 var child = (CanvasRootControl)_children[i];
-                if (child.Visible && child.Enabled)
+                if (child.Visible && child.Enabled && layerMask.HasLayer(child.Canvas.Layer))
                 {
                     // Fire events
                     if (child.Is2D)
@@ -156,10 +159,11 @@ namespace FlaxEngine.GUI
             UICanvas.CalculateRay(ref location, out Ray ray);
 
             // Test 3D
+            var layerMask = MainRenderTask.Instance?.ViewLayersMask ?? LayersMask.Default;
             for (int i = _children.Count - 1; i >= 0 && _children.Count > 0; i--)
             {
                 var child = (CanvasRootControl)_children[i];
-                if (child.Visible && child.Enabled && child.Is3D)
+                if (child.Visible && child.Enabled && child.Is3D && layerMask.HasLayer(child.Canvas.Layer))
                 {
                     if (child.Intersects3D(ref ray, out var childLocation))
                     {
@@ -183,10 +187,11 @@ namespace FlaxEngine.GUI
             UICanvas.CalculateRay(ref location, out Ray ray);
 
             // Test 3D
+            var layerMask = MainRenderTask.Instance?.ViewLayersMask ?? LayersMask.Default;
             for (int i = _children.Count - 1; i >= 0 && _children.Count > 0; i--)
             {
                 var child = (CanvasRootControl)_children[i];
-                if (child.Visible && child.Enabled && child.Is3D)
+                if (child.Visible && child.Enabled && child.Is3D && layerMask.HasLayer(child.Canvas.Layer))
                 {
                     if (child.Intersects3D(ref ray, out var childLocation))
                     {
@@ -210,10 +215,11 @@ namespace FlaxEngine.GUI
             UICanvas.CalculateRay(ref location, out Ray ray);
 
             // Test 3D
+            var layerMask = MainRenderTask.Instance?.ViewLayersMask ?? LayersMask.Default;
             for (int i = _children.Count - 1; i >= 0 && _children.Count > 0; i--)
             {
                 var child = (CanvasRootControl)_children[i];
-                if (child.Visible && child.Enabled && child.Is3D)
+                if (child.Visible && child.Enabled && child.Is3D && layerMask.HasLayer(child.Canvas.Layer))
                 {
                     if (child.Intersects3D(ref ray, out var childLocation))
                     {
@@ -237,10 +243,11 @@ namespace FlaxEngine.GUI
             UICanvas.CalculateRay(ref location, out Ray ray);
 
             // Test 3D
+            var layerMask = MainRenderTask.Instance?.ViewLayersMask ?? LayersMask.Default;
             for (int i = _children.Count - 1; i >= 0 && _children.Count > 0; i--)
             {
                 var child = (CanvasRootControl)_children[i];
-                if (child.Visible && child.Enabled && child.Is3D)
+                if (child.Visible && child.Enabled && child.Is3D && layerMask.HasLayer(child.Canvas.Layer))
                 {
                     if (child.Intersects3D(ref ray, out var childLocation))
                     {

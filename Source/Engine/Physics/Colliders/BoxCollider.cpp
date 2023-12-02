@@ -81,6 +81,13 @@ void BoxCollider::OnDebugDrawSelected()
     const Color color = Color::GreenYellow;
     DEBUG_DRAW_WIRE_BOX(_bounds, color * 0.3f, 0, false);
 
+    if (_contactOffset > 0)
+    {
+        OrientedBoundingBox contactBounds = _bounds;
+        contactBounds.Extents += Vector3(_contactOffset) / contactBounds.Transformation.Scale;
+        DEBUG_DRAW_WIRE_BOX(contactBounds, Color::Blue.AlphaMultiplied(0.2f), 0, false);
+    }
+
     Vector3 corners[8];
     _bounds.GetCorners(corners);
     const float margin = 1.0f;

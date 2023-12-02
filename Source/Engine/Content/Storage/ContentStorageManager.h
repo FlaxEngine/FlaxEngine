@@ -75,6 +75,9 @@ public:
     /// </summary>
     static void EnsureUnlocked();
 
+    // Formats path into valid format used by the storage system (normalized and absolute).
+    static void FormatPath(String& path);
+
 public:
     /// <summary>
     /// Determines whether the specified path can be a binary asset file (based on it's extension).

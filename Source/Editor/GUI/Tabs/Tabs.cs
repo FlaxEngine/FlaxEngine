@@ -239,7 +239,7 @@ namespace FlaxEditor.GUI.Tabs
         /// </summary>
         public Tab SelectedTab
         {
-            get => _selectedIndex == -1 && Children.Count > _selectedIndex + 1 ? null : Children[_selectedIndex + 1] as Tab;
+            get => _selectedIndex < 0 || Children.Count <= _selectedIndex ? null : Children[_selectedIndex + 1] as Tab;
             set => SelectedTabIndex = value != null ? Children.IndexOf(value) - 1 : -1;
         }
 
@@ -263,7 +263,12 @@ namespace FlaxEditor.GUI.Tabs
                 // Check if index will change
                 if (_selectedIndex != index)
                 {
-                    SelectedTab?.OnDeselected();
+                    var prev = SelectedTab;
+                    if (prev != null)
+                    {
+                        prev._selectedInTabs = null;
+                        prev.OnDeselected();
+                    }
                     _selectedIndex = index;
                     PerformLayout();
                     OnSelectedTabChanged();
@@ -342,8 +347,13 @@ namespace FlaxEditor.GUI.Tabs
         /// </summary>
         protected virtual void OnSelectedTabChanged()
         {
+            var selectedTab = SelectedTab;
             SelectedTabChanged?.Invoke(this);
-            SelectedTab?.OnSelected();
+            if (selectedTab != null)
+            {
+                selectedTab._selectedInTabs = this;
+                selectedTab.OnSelected();
+            }
         }
 
         /// <inheritdoc />

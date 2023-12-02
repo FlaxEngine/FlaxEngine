@@ -9,9 +9,6 @@
 /// </summary>
 class FLAXENGINE_API AssetReferenceBase
 {
-public:
-    typedef Delegate<> EventType;
-
 protected:
     Asset* _asset = nullptr;
 
@@ -19,17 +16,17 @@ public:
     /// <summary>
     /// The asset loaded event (fired when asset gets loaded or is already loaded after change).
     /// </summary>
-    EventType Loaded;
+    Action Loaded;
 
     /// <summary>
     /// The asset unloading event (should cleanup refs to it).
     /// </summary>
-    EventType Unload;
+    Action Unload;
 
     /// <summary>
     /// Action fired when field gets changed (link a new asset or change to the another value).
     /// </summary>
-    EventType Changed;
+    Action Changed;
 
 public:
     NON_COPYABLE(AssetReferenceBase);

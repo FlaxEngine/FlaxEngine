@@ -114,6 +114,9 @@ public:
     }
     static void GetSystemTime(int32& year, int32& month, int32& dayOfWeek, int32& day, int32& hour, int32& minute, int32& second, int32& millisecond);
     static void GetUTCTime(int32& year, int32& month, int32& dayOfWeek, int32& day, int32& hour, int32& minute, int32& second, int32& millisecond);
+#if !BUILD_RELEASE
+    static bool IsDebuggerPresent();
+#endif
     static bool Init();
     static void BeforeRun();
     static void Tick();
@@ -143,6 +146,7 @@ public:
     static void* LoadLibrary(const Char* filename);
     static void FreeLibrary(void* handle);
     static void* GetProcAddress(void* handle, const char* symbol);
+    static Array<StackFrame, HeapAllocation> GetStackFrames(int32 skipCount = 0, int32 maxDepth = 60, void* context = nullptr);
 };
 
 #endif

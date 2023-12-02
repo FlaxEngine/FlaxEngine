@@ -39,6 +39,7 @@ namespace FlaxEditor.Modules
         ContextMenuSingleSelectGroup<int> _numberOfClientsGroup = new ContextMenuSingleSelectGroup<int>();
 
         private ContextMenuButton _menuFileSaveScenes;
+        private ContextMenuButton _menuFileReloadScenes;
         private ContextMenuButton _menuFileCloseScenes;
         private ContextMenuButton _menuFileOpenScriptsProject;
         private ContextMenuButton _menuFileGenerateScriptsProjectFiles;
@@ -470,13 +471,13 @@ namespace FlaxEditor.Modules
                 // Place dialog nearby the target control
                 var targetControlDesktopCenter = targetControl.PointToScreen(targetControl.Size * 0.5f);
                 var desktopSize = Platform.GetMonitorBounds(targetControlDesktopCenter);
-                var pos = targetControlDesktopCenter + new Float2(10.0f, -dialog.Height * 0.5f);
-                var dialogEnd = pos + dialog.Size;
+                var pos = targetControlDesktopCenter + new Float2(10.0f, -dialog.DialogSize.Y * 0.5f);
+                var dialogEnd = pos + dialog.DialogSize;
                 var desktopEnd = desktopSize.BottomRight - new Float2(10.0f);
                 if (dialogEnd.X >= desktopEnd.X || dialogEnd.Y >= desktopEnd.Y)
-                    pos = targetControl.PointToScreen(Float2.Zero) - new Float2(10.0f + dialog.Width, dialog.Height);
+                    pos = targetControl.PointToScreen(Float2.Zero) - new Float2(10.0f + dialog.DialogSize.X, dialog.DialogSize.Y);
                 var desktopBounds = Platform.VirtualDesktopBounds;
-                pos = Float2.Clamp(pos, desktopBounds.UpperLeft, desktopBounds.BottomRight - dialog.Size);
+                pos = Float2.Clamp(pos, desktopBounds.UpperLeft, desktopBounds.BottomRight - dialog.DialogSize);
                 dialog.RootWindow.Window.Position = pos;
 
                 // Register for context menu (prevent auto-closing context menu when selecting color)
@@ -527,6 +528,7 @@ namespace FlaxEditor.Modules
             _menuFileSaveAll = cm.AddButton("Save All", inputOptions.Save, Editor.SaveAll);
             _menuFileSaveScenes = cm.AddButton("Save scenes", inputOptions.SaveScenes, Editor.Scene.SaveScenes);
             _menuFileCloseScenes = cm.AddButton("Close scenes", inputOptions.CloseScenes, Editor.Scene.CloseAllScenes);
+            _menuFileReloadScenes = cm.AddButton("Reload scenes", Editor.Scene.ReloadScenes);
             cm.AddSeparator();
             _menuFileOpenScriptsProject = cm.AddButton("Open scripts project", inputOptions.OpenScriptsProject, Editor.CodeEditing.OpenSolution);
             _menuFileGenerateScriptsProjectFiles = cm.AddButton("Generate scripts project files", inputOptions.GenerateScriptsProject, Editor.ProgressReporting.GenerateScriptsProjectFiles.RunAsync);
@@ -830,6 +832,7 @@ namespace FlaxEditor.Modules
 
             _menuFileSaveScenes.Enabled = hasOpenedScene;
             _menuFileCloseScenes.Enabled = hasOpenedScene;
+            _menuFileReloadScenes.Enabled = hasOpenedScene;
             _menuFileGenerateScriptsProjectFiles.Enabled = !Editor.ProgressReporting.GenerateScriptsProjectFiles.IsActive;
 
             c.PerformLayout();

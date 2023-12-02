@@ -172,7 +172,7 @@ namespace Flax.Build.Projects.VisualStudioCode
 
                                 json.AddField("label", name);
 
-                                bool isDefaultTask = defaultTask && configuration.Configuration == TargetConfiguration.Development && configuration.Platform == Platform.BuildPlatform.Target;
+                                bool isDefaultTask = defaultTask && configuration.Configuration == TargetConfiguration.Development && configuration.Platform == Platform.BuildPlatform.Target && configuration.Architecture == Platform.BuildTargetArchitecture;
 
                                 json.BeginObject("group");
                                 {
@@ -201,6 +201,8 @@ namespace Flax.Build.Projects.VisualStudioCode
                                         json.AddUnnamedField(string.Format("-buildTargets={0}", target.Name));
                                         if (!string.IsNullOrEmpty(Configuration.Compiler))
                                             json.AddUnnamedField(string.Format("-compiler={0}", Configuration.Compiler));
+                                        if (!string.IsNullOrEmpty(Configuration.Dotnet))
+                                            json.AddUnnamedField(string.Format("-dotnet={0}", Configuration.Dotnet));
                                     }
                                     json.EndArray();
 
@@ -228,6 +230,8 @@ namespace Flax.Build.Projects.VisualStudioCode
                                         json.AddUnnamedField(string.Format("--buildTargets={0}", target.Name));
                                         if (!string.IsNullOrEmpty(Configuration.Compiler))
                                             json.AddUnnamedField(string.Format("--compiler={0}", Configuration.Compiler));
+                                        if (!string.IsNullOrEmpty(Configuration.Dotnet))
+                                            json.AddUnnamedField(string.Format("-dotnet={0}", Configuration.Dotnet));
                                     }
                                     json.EndArray();
 
@@ -255,6 +259,8 @@ namespace Flax.Build.Projects.VisualStudioCode
                                         json.AddUnnamedField(string.Format("--buildTargets={0}", target.Name));
                                         if (!string.IsNullOrEmpty(Configuration.Compiler))
                                             json.AddUnnamedField(string.Format("--compiler={0}", Configuration.Compiler));
+                                        if (!string.IsNullOrEmpty(Configuration.Dotnet))
+                                            json.AddUnnamedField(string.Format("-dotnet={0}", Configuration.Dotnet));
                                     }
                                     json.EndArray();
 

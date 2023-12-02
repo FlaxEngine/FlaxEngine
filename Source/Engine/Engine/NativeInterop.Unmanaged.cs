@@ -1022,6 +1022,8 @@ namespace FlaxEngine.Interop
                 pair.Value.Free();
             classAttributesCacheCollectible.Clear();
 
+            FlaxEngine.Json.JsonSerializer.ResetCache();
+
             // Unload the ALC
             bool unloading = true;
             scriptingAssemblyLoadContext.Unloading += (alc) => { unloading = false; };
@@ -1267,6 +1269,9 @@ namespace FlaxEngine.Interop
                 monoType = MTypes.String;
                 break;
             case Type _ when type == typeof(IntPtr):
+                monoType = MTypes.Ptr;
+                break;
+            case Type _ when type.IsPointer:
                 monoType = MTypes.Ptr;
                 break;
             case Type _ when type.IsEnum:

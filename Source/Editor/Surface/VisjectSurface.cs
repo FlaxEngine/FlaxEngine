@@ -535,6 +535,11 @@ namespace FlaxEditor.Surface
         public virtual bool CanSetParameters => false;
 
         /// <summary>
+        /// Gets a value indicating whether surface supports/allows live previewing graph modifications due to value sliders and color pickers. True by default but disabled for shader surfaces that generate and compile shader source at flight.
+        /// </summary>
+        public virtual bool CanLivePreviewValueChanges => true;
+
+        /// <summary>
         /// Determines whether the specified node archetype can be used in the surface.
         /// </summary>
         /// <param name="groupID">The nodes group archetype identifier.</param>
@@ -716,7 +721,18 @@ namespace FlaxEditor.Surface
                 return null;
             Rectangle surfaceArea = GetNodesBounds(selection).MakeExpanded(80.0f);
 
-            return _context.CreateComment(ref surfaceArea, string.IsNullOrEmpty(text) ? "Comment" : text, new Color(1.0f, 1.0f, 1.0f, 0.2f));
+            // Order below other selected comments
+            bool hasCommentsSelected = false;
+            int lowestCommentOrder = int.MaxValue;
+            for (int i = 0; i < selection.Count; i++)
+            {
+                if (selection[i] is not SurfaceComment || selection[i].IndexInParent >= lowestCommentOrder)
+                    continue;
+                hasCommentsSelected = true;
+                lowestCommentOrder = selection[i].IndexInParent;
+            }
+
+            return _context.CreateComment(ref surfaceArea, string.IsNullOrEmpty(text) ? "Comment" : text, new Color(1.0f, 1.0f, 1.0f, 0.2f), hasCommentsSelected ? lowestCommentOrder : -1);
         }
 
         private static Rectangle GetNodesBounds(List<SurfaceNode> nodes)

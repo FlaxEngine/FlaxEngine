@@ -242,7 +242,6 @@ namespace FlaxEditor.Modules
         /// <param name="additive">True if don't close opened scenes and just add new scene to them, otherwise will release current scenes and load single one.</param>
         public void OpenScene(Guid sceneId, bool additive = false)
         {
-            // Check if cannot change scene now
             if (!Editor.StateMachine.CurrentState.CanChangeScene)
                 return;
 
@@ -267,12 +266,34 @@ namespace FlaxEditor.Modules
         }
 
         /// <summary>
+        /// Reload all loaded scenes.
+        /// </summary>
+        public void ReloadScenes()
+        {
+            if (!Editor.StateMachine.CurrentState.CanChangeScene)
+                return;
+
+            if (!Editor.IsPlayMode)
+            {
+                if (CheckSaveBeforeClose())
+                    return;
+            }
+
+            // Reload scenes
+            foreach (var scene in Level.Scenes)
+            {
+                var sceneId = scene.ID;
+                Level.UnloadScene(scene);
+                Level.LoadScene(sceneId);
+            }
+        }
+
+        /// <summary>
         /// Closes scene (async).
         /// </summary>
         /// <param name="scene">The scene.</param>
         public void CloseScene(Scene scene)
         {
-            // Check if cannot change scene now
             if (!Editor.StateMachine.CurrentState.CanChangeScene)
                 return;
 
@@ -296,7 +317,6 @@ namespace FlaxEditor.Modules
         /// </summary>
         public void CloseAllScenes()
         {
-            // Check if cannot change scene now
             if (!Editor.StateMachine.CurrentState.CanChangeScene)
                 return;
 
@@ -321,7 +341,6 @@ namespace FlaxEditor.Modules
         /// <param name="scene">The scene to not close.</param>
         public void CloseAllScenesExcept(Scene scene)
         {
-            // Check if cannot change scene now
             if (!Editor.StateMachine.CurrentState.CanChangeScene)
                 return;
 

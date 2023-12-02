@@ -679,8 +679,14 @@ void LinuxFileSystem::GetSpecialFolderPath(const SpecialFolder type, String& res
         result = TEXT("/usr/share");
         break;
     case SpecialFolder::LocalAppData:
-        result = home;
+    {
+        String dataHome;
+        if (!Platform::GetEnvironmentVariable(TEXT("XDG_DATA_HOME"), dataHome))
+            result = dataHome;
+        else
+            result = home / TEXT(".local/share");
         break;
+    }
     case SpecialFolder::ProgramData:
         result = String::Empty;
         break;

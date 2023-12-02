@@ -1084,7 +1084,7 @@ namespace FlaxEditor.Surface.Archetypes
                 },
                 Elements = new[]
                 {
-                    NodeElementArchetype.Factory.Input(0, string.Empty, true, typeof(void), 0),
+                    NodeElementArchetype.Factory.Input(0, string.Empty, false, typeof(void), 0),
                     NodeElementArchetype.Factory.Input(1, string.Empty, true, ScriptType.Null, 1, 1),
                     NodeElementArchetype.Factory.Output(0, string.Empty, typeof(void), 2, true),
                     NodeElementArchetype.Factory.ComboBox(2 + 20, 0, 116)

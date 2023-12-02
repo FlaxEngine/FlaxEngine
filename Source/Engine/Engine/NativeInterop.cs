@@ -278,44 +278,70 @@ namespace FlaxEngine.Interop
             if (typeCache.TryGetValue(typeName, out Type type))
                 return type;
 
-            type = Type.GetType(typeName, ResolveAssemblyByName, null);
+            type = Type.GetType(typeName, ResolveAssembly, null);
             if (type == null)
-            {
-                foreach (var assembly in scriptingAssemblyLoadContext.Assemblies)
-                {
-                    type = assembly.GetType(typeName);
-                    if (type != null)
-                        break;
-                }
-            }
+                type = ResolveSlow(typeName);
 
             if (type == null)
             {
-                string oldTypeName = typeName;
+                string fullTypeName = typeName;
                 typeName = typeName.Substring(0, typeName.IndexOf(','));
-                type = Type.GetType(typeName, ResolveAssemblyByName, null);
+                type = Type.GetType(typeName, ResolveAssembly, null);
                 if (type == null)
-                {
-                    foreach (var assembly in scriptingAssemblyLoadContext.Assemblies)
-                    {
-                        type = assembly.GetType(typeName);
-                        if (type != null)
-                            break;
-                    }
-                }
-                typeName = oldTypeName;
+                    type = ResolveSlow(typeName);
+
+                typeName = fullTypeName;
             }
 
             typeCache.Add(typeName, type);
 
             return type;
+
+            static Type ResolveSlow(string typeName)
+            {
+                foreach (var assembly in scriptingAssemblyLoadContext.Assemblies)
+                {
+                    var type = assembly.GetType(typeName);
+                    if (type != null)
+                        return type;
+                }
+                return null;
+            }
+
+            static Assembly ResolveAssembly(AssemblyName name) => ResolveScriptingAssemblyByName(name, allowPartial: false);
         }
 
-        private static Assembly ResolveAssemblyByName(AssemblyName assemblyName)
+        /// <summary>Find <paramref name="assemblyName"/> among the scripting assemblies.</summary>
+        /// <param name="assemblyName">The name to find</param>
+        /// <param name="allowPartial">If true, partial names should be allowed to be resolved.</param>
+        /// <returns>The resolved assembly, or null if none could be found.</returns>
+        internal static Assembly ResolveScriptingAssemblyByName(AssemblyName assemblyName, bool allowPartial = false)
         {
-            foreach (Assembly assembly in scriptingAssemblyLoadContext.Assemblies)
-                if (assembly.GetName() == assemblyName)
+            var lc = scriptingAssemblyLoadContext;
+
+            if (lc is null)
+                return null;
+
+            foreach (Assembly assembly in lc.Assemblies)
+            {
+                var curName = assembly.GetName();
+
+                if (curName == assemblyName)
                     return assembly;
+            }
+
+            if (allowPartial) // Check partial names if full name isn't found
+            {
+                string partialName = assemblyName.Name;
+
+                foreach (Assembly assembly in lc.Assemblies)
+                {
+                    var curName = assembly.GetName();
+
+                    if (curName.Name == partialName)
+                        return assembly;
+                }
+            }
             return null;
         }
 
@@ -1109,7 +1135,7 @@ namespace FlaxEngine.Interop
                     marshallers[i](fields[i], offsets[i], ref managedValue, fieldPtr, out int fieldSize);
                     fieldPtr += fieldSize;
                 }
-                Assert.IsTrue((fieldPtr - nativePtr) <= Unsafe.SizeOf<T>());
+                //Assert.IsTrue((fieldPtr - nativePtr) <= GetTypeSize(typeof(T)));
             }
 
             internal static void ToManaged(ref T managedValue, IntPtr nativePtr, bool byRef)
@@ -1156,7 +1182,7 @@ namespace FlaxEngine.Interop
                     marshallers[i](fields[i], offsets[i], ref managedValue, nativePtr, out int fieldSize);
                     nativePtr += fieldSize;
                 }
-                Assert.IsTrue((nativePtr - fieldPtr) <= Unsafe.SizeOf<T>());
+                //Assert.IsTrue((nativePtr - fieldPtr) <= GetTypeSize(typeof(T)));
             }
 
             internal static void ToNative(ref T managedValue, IntPtr nativePtr)
@@ -1302,7 +1328,8 @@ namespace FlaxEngine.Interop
 #if !USE_AOT
             internal bool TryGetDelegate(out Invoker.MarshalAndInvokeDelegate outDeleg, out object outDelegInvoke)
             {
-                if (invokeDelegate == null)
+                // Skip using in-built delegate for value types (eg. Transform) to properly handle instance value passing to method
+                if (invokeDelegate == null && !method.DeclaringType.IsValueType)
                 {
                     List<Type> methodTypes = new List<Type>();
                     if (!method.IsStatic)
@@ -1553,7 +1580,7 @@ namespace FlaxEngine.Interop
             private static IntPtr PinValue<T>(T value) where T : struct
             {
                 // Store the converted value in unmanaged memory so it will not be relocated by the garbage collector.
-                int size = Unsafe.SizeOf<T>();
+                int size = GetTypeSize(typeof(T));
                 uint index = Interlocked.Increment(ref pinnedAllocationsPointer) % (uint)pinnedAllocations.Length;
                 ref (IntPtr ptr, int size) alloc = ref pinnedAllocations[index];
                 if (alloc.size < size)

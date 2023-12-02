@@ -18,7 +18,7 @@ private:
 #elif USE_NETCORE
     void* _handle;
     StringAnsi _name;
-    StringAnsi _namespace_;
+    StringAnsi _namespace;
     uint32 _types = 0;
     mutable uint32 _size = 0;
 #endif

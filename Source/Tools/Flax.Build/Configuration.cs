@@ -226,9 +226,23 @@ namespace Flax.Build
         public static string Compiler = null;
 
         /// <summary>
+        /// Specifies the dotnet SDK version to use for the build. Eg. set to '7' to use .NET 7 even if .NET 8 is installed.
+        /// </summary>
+        [CommandLine("dotnet", "<ver>", "Specifies the dotnet SDK version to use for the build. Eg. set to '7' to use .NET 7 even if .NET 8 is installed.")]
+        public static string Dotnet = null;
+
+        /// <summary>
         /// Custom configuration defines provided via command line for the build tool.
         /// </summary>
         public static List<string> CustomDefines = new List<string>();
+
+        internal static void PassArgs(ref string cmdLine)
+        {
+            if (!string.IsNullOrEmpty(Compiler))
+                cmdLine += " -compiler=" + Compiler;
+            if (!string.IsNullOrEmpty(Dotnet))
+                cmdLine += " -dotnet=" + Dotnet;
+        }
     }
 
     /// <summary>

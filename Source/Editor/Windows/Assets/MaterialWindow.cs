@@ -41,8 +41,6 @@ namespace FlaxEditor.Windows.Assets
             new ScriptType(typeof(Vector3)),
             new ScriptType(typeof(Vector4)),
             new ScriptType(typeof(Color)),
-            new ScriptType(typeof(Quaternion)),
-            new ScriptType(typeof(Transform)),
             new ScriptType(typeof(Matrix)),
         };
 

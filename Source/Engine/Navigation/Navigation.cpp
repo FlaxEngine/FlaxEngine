@@ -9,6 +9,8 @@
 #include "Engine/Content/JsonAsset.h"
 #include "Engine/Threading/Threading.h"
 #if USE_EDITOR
+#include "Editor/Editor.h"
+#include "Editor/Managed/ManagedEditor.h"
 #include "Engine/Level/Level.h"
 #include "Engine/Level/Scene/Scene.h"
 #endif
@@ -220,6 +222,17 @@ void NavigationSettings::Apply()
 #endif
         }
     }
+
+#if USE_EDITOR
+    if (!Editor::IsPlayMode && Editor::Managed && Editor::Managed->CanAutoBuildNavMesh())
+    {
+        // Rebuild all navmeshs after apply changes on navigation
+        for (auto scene : Level::Scenes)
+        {
+            Navigation::BuildNavMesh(scene);
+        }
+    }
+#endif
 }
 
 void NavigationSettings::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)

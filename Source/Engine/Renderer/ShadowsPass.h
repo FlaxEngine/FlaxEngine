@@ -55,7 +55,7 @@ private:
     GPUPipelineStatePermutationsPs<static_cast<int32>(Quality::MAX) * 2 * 2> _psShadowDir;
     GPUPipelineStatePermutationsPs<static_cast<int32>(Quality::MAX) * 2> _psShadowPoint;
     GPUPipelineStatePermutationsPs<static_cast<int32>(Quality::MAX) * 2> _psShadowSpot;
-    bool _supportsShadows;
+    PixelFormat _shadowMapFormat;
 
     // Shadow maps stuff
     int32 _shadowMapsSizeCSM;
@@ -94,6 +94,8 @@ public:
     LightShadowData LastDirLight;
 
 public:
+    void Prepare();
+
     /// <summary>
     /// Setups the shadows rendering for batched scene drawing. Checks which lights will cast a shadow.
     /// </summary>

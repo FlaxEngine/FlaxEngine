@@ -232,13 +232,13 @@ private:
 
 public:
     /// <summary>
-    /// Gets the mesh to use for the cloth simulation (single mesh from specific LOD).
+    /// Gets the mesh to use for the cloth simulation (single mesh from specific LOD). Always from the parent static or animated model actor.
     /// </summary>
     API_PROPERTY(Attributes="EditorOrder(0), EditorDisplay(\"Cloth\")")
     ModelInstanceActor::MeshReference GetMesh() const;
 
     /// <summary>
-    /// Sets the mesh to use for the cloth simulation (single mesh from specific LOD).
+    /// Sets the mesh to use for the cloth simulation (single mesh from specific LOD). Always from the parent static or animated model actor.
     /// </summary>
     API_PROPERTY() void SetMesh(const ModelInstanceActor::MeshReference& value);
 

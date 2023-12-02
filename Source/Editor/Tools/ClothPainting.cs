@@ -18,21 +18,25 @@ namespace FlaxEngine.Tools
         /// <summary>
         /// Brush radius (world-space).
         /// </summary>
+        [Limit(0)]
         public float BrushSize = 50.0f;
 
         /// <summary>
         /// Brush paint intensity.
         /// </summary>
+        [Limit(0)]
         public float BrushStrength = 2.0f;
 
         /// <summary>
         /// Brush paint falloff. Hardens or softens painting.
         /// </summary>
+        [Limit(0)]
         public float BrushFalloff = 1.5f;
 
         /// <summary>
         /// Value to paint with. Hold Ctrl hey to paint with inverse value (1 - value).
         /// </summary>
+        [Limit(0, 1, 0.01f)]
         public float PaintValue = 0.0f;
 
         /// <summary>
@@ -225,6 +229,7 @@ namespace FlaxEngine.Tools
             var cloth = _cloth;
             if (cloth == null)
                 return;
+            var hasPaintInput = Owner.IsLeftMouseButtonDown && !Owner.IsAltKeyDown;
 
             // Perform detailed tracing to find cursor location for the brush
             var ray = Owner.MouseRay;
@@ -240,7 +245,7 @@ namespace FlaxEngine.Tools
                 // Cursor hit other object or nothing
                 PaintEnd();
 
-                if (Owner.IsLeftMouseButtonDown)
+                if (hasPaintInput)
                 {
                     // Select something else
                     var view = new Ray(Owner.ViewPosition, Owner.ViewDirection);
@@ -253,7 +258,7 @@ namespace FlaxEngine.Tools
             }
 
             // Handle painting
-            if (Owner.IsLeftMouseButtonDown)
+            if (hasPaintInput)
                 PaintStart();
             else
                 PaintEnd();

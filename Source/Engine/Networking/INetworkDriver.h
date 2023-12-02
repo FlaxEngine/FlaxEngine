@@ -71,7 +71,7 @@ public:
     /// </summary>
     /// <param name="eventPtr">The pointer to event structure.</param>
     /// <returns>True when succeeded and the event can be processed.</returns>
-    API_FUNCTION() virtual bool PopEvent(NetworkEvent* eventPtr) = 0;
+    API_FUNCTION() virtual bool PopEvent(API_PARAM(Out) NetworkEvent& eventPtr) = 0;
 
     /// <summary>
     /// Sends given message over specified channel to the server.
