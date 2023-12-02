@@ -124,26 +124,6 @@ bool SplineCollider::IntersectsItself(const Ray& ray, Real& distance, Vector3& n
     return _box.Intersects(ray, distance, normal);
 }
 
-void SplineCollider::Serialize(SerializeStream& stream, const void* otherObj)
-{
-    // Base
-    Collider::Serialize(stream, otherObj);
-
-    SERIALIZE_GET_OTHER_OBJ(SplineCollider);
-
-    SERIALIZE(CollisionData);
-    SERIALIZE_MEMBER(PreTransform, _preTransform)
-}
-
-void SplineCollider::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)
-{
-    // Base
-    Collider::Deserialize(stream, modifier);
-
-    DESERIALIZE(CollisionData);
-    DESERIALIZE_MEMBER(PreTransform, _preTransform);
-}
-
 void SplineCollider::OnParentChanged()
 {
     if (_spline)

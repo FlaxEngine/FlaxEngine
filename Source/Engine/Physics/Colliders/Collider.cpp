@@ -292,30 +292,6 @@ void Collider::OnMaterialChanged()
         PhysicsBackend::SetShapeMaterial(_shape, Material.Get());
 }
 
-void Collider::Serialize(SerializeStream& stream, const void* otherObj)
-{
-    // Base
-    PhysicsColliderActor::Serialize(stream, otherObj);
-
-    SERIALIZE_GET_OTHER_OBJ(Collider);
-
-    SERIALIZE_MEMBER(IsTrigger, _isTrigger);
-    SERIALIZE_MEMBER(Center, _center);
-    SERIALIZE_MEMBER(ContactOffset, _contactOffset);
-    SERIALIZE(Material);
-}
-
-void Collider::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)
-{
-    // Base
-    PhysicsColliderActor::Deserialize(stream, modifier);
-
-    DESERIALIZE_MEMBER(IsTrigger, _isTrigger);
-    DESERIALIZE_MEMBER(Center, _center);
-    DESERIALIZE_MEMBER(ContactOffset, _contactOffset);
-    DESERIALIZE(Material);
-}
-
 void Collider::BeginPlay(SceneBeginData* data)
 {
     // Check if has no shape created (it means no rigidbody requested it but also collider may be spawned at runtime)

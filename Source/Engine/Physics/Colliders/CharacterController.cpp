@@ -387,33 +387,3 @@ void CharacterController::OnPhysicsSceneChanged(PhysicsScene* previous)
     DeleteController();
     CreateController();
 }
-
-void CharacterController::Serialize(SerializeStream& stream, const void* otherObj)
-{
-    // Base
-    Collider::Serialize(stream, otherObj);
-
-    SERIALIZE_GET_OTHER_OBJ(CharacterController);
-
-    SERIALIZE_MEMBER(StepOffset, _stepOffset);
-    SERIALIZE_MEMBER(SlopeLimit, _slopeLimit);
-    SERIALIZE_MEMBER(NonWalkableMode, _nonWalkableMode);
-    SERIALIZE_MEMBER(Radius, _radius);
-    SERIALIZE_MEMBER(Height, _height);
-    SERIALIZE_MEMBER(MinMoveDistance, _minMoveDistance);
-    SERIALIZE_MEMBER(UpDirection, _upDirection);
-}
-
-void CharacterController::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)
-{
-    // Base
-    Collider::Deserialize(stream, modifier);
-
-    DESERIALIZE_MEMBER(StepOffset, _stepOffset);
-    DESERIALIZE_MEMBER(SlopeLimit, _slopeLimit);
-    DESERIALIZE_MEMBER(NonWalkableMode, _nonWalkableMode);
-    DESERIALIZE_MEMBER(Radius, _radius);
-    DESERIALIZE_MEMBER(Height, _height);
-    DESERIALIZE_MEMBER(MinMoveDistance, _minMoveDistance);
-    DESERIALIZE_MEMBER(UpDirection, _upDirection);
-}

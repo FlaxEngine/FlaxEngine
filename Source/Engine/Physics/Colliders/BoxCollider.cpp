@@ -116,24 +116,6 @@ bool BoxCollider::IntersectsItself(const Ray& ray, Real& distance, Vector3& norm
     return _bounds.Intersects(ray, distance, normal);
 }
 
-void BoxCollider::Serialize(SerializeStream& stream, const void* otherObj)
-{
-    // Base
-    Collider::Serialize(stream, otherObj);
-
-    SERIALIZE_GET_OTHER_OBJ(BoxCollider);
-
-    SERIALIZE_MEMBER(Size, _size);
-}
-
-void BoxCollider::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)
-{
-    // Base
-    Collider::Deserialize(stream, modifier);
-
-    DESERIALIZE_MEMBER(Size, _size);
-}
-
 void BoxCollider::UpdateBounds()
 {
     // Cache bounds

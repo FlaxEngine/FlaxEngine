@@ -81,26 +81,6 @@ bool CapsuleCollider::IntersectsItself(const Ray& ray, Real& distance, Vector3& 
     return _orientedBox.Intersects(ray, distance, normal);
 }
 
-void CapsuleCollider::Serialize(SerializeStream& stream, const void* otherObj)
-{
-    // Base
-    Collider::Serialize(stream, otherObj);
-
-    SERIALIZE_GET_OTHER_OBJ(CapsuleCollider);
-
-    SERIALIZE_MEMBER(Radius, _radius);
-    SERIALIZE_MEMBER(Height, _height);
-}
-
-void CapsuleCollider::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)
-{
-    // Base
-    Collider::Deserialize(stream, modifier);
-
-    DESERIALIZE_MEMBER(Radius, _radius);
-    DESERIALIZE_MEMBER(Height, _height);
-}
-
 void CapsuleCollider::UpdateBounds()
 {
     // Cache bounds

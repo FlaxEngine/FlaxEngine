@@ -117,24 +117,6 @@ bool MeshCollider::IntersectsItself(const Ray& ray, Real& distance, Vector3& nor
     return _box.Intersects(ray, distance, normal);
 }
 
-void MeshCollider::Serialize(SerializeStream& stream, const void* otherObj)
-{
-    // Base
-    Collider::Serialize(stream, otherObj);
-
-    SERIALIZE_GET_OTHER_OBJ(MeshCollider);
-
-    SERIALIZE(CollisionData);
-}
-
-void MeshCollider::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)
-{
-    // Base
-    Collider::Deserialize(stream, modifier);
-
-    DESERIALIZE(CollisionData);
-}
-
 void MeshCollider::UpdateBounds()
 {
     // Cache bounds
