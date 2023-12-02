@@ -57,7 +57,7 @@
 #undef CreateWindow
 #undef CreateProcess
 #undef SetWindowText
-#undef DrawTextInternal
+#undef DrawText
 #undef CreateFont
 #undef IsMinimized
 #undef IsMaximized
