@@ -12,9 +12,9 @@ class FontAsset;
 /// <summary>
 /// Defines a list of fonts that can be used as a fallback, ordered by priority. 
 /// </summary>
-API_CLASS(Sealed, NoSpawn) class FLAXENGINE_API FallbackFonts : public ManagedScriptingObject
+API_CLASS(Sealed, NoSpawn) class FLAXENGINE_API FontFallbackList : public ManagedScriptingObject
 {
-    DECLARE_SCRIPTING_TYPE_NO_SPAWN(FallbackFonts);
+    DECLARE_SCRIPTING_TYPE_NO_SPAWN(FontFallbackList);
 private:
     Array<FontAsset*> _fontAssets;
 
@@ -23,18 +23,18 @@ private:
 
 public:
     /// <summary>
-    /// Initializes a new instance of the <see cref="FallbackFonts"/> class.
+    /// Initializes a new instance of the <see cref="FontFallbackList"/> class.
     /// </summary>
     /// <param name="fonts">The fallback font assets.</param>
-    FallbackFonts(const Array<FontAsset*>& fonts);
+    FontFallbackList(const Array<FontAsset*>& fonts);
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="FallbackFonts"/> class, exposed for C#.
+    /// Initializes a new instance of the <see cref="FontFallbackList"/> class, exposed for C#.
     /// </summary>
     /// <param name="fonts">The fallback font assets.</param>
     /// <returns>The new instance.</returns>
-    API_FUNCTION() FORCE_INLINE static FallbackFonts* Create(const Array<FontAsset*>& fonts) {
-        return New<FallbackFonts>(fonts);
+    API_FUNCTION() FORCE_INLINE static FontFallbackList* Create(const Array<FontAsset*>& fonts) {
+        return New<FontFallbackList>(fonts);
     }
 
     /// <summary>

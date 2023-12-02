@@ -264,7 +264,7 @@ void SplashScreen::OnDraw()
     layout.HorizontalAlignment = TextAlignment::Near;
     layout.VerticalAlignment = TextAlignment::Near;
     layout.Scale = Math::Min((width - 20 * s) / titleLength.X, 1.0f);
-    Render2D::DrawText(_titleFont, GetTitle(), Color::White, layout);
+    Render2D::DrawTextInternal(_titleFont, GetTitle(), Color::White, layout);
 
     // Subtitle
     String subtitle(_quote);
@@ -279,14 +279,14 @@ void SplashScreen::OnDraw()
     layout.Scale = 1.0f;
     layout.HorizontalAlignment = TextAlignment::Far;
     layout.VerticalAlignment = TextAlignment::Far;
-    Render2D::DrawText(_subtitleFont, subtitle, Color::FromRGB(0x8C8C8C), layout);
+    Render2D::DrawTextInternal(_subtitleFont, subtitle, Color::FromRGB(0x8C8C8C), layout);
 
     // Additional info
     const float infoMargin = 6 * s;
     layout.Bounds = Rectangle(infoMargin, lightBarHeight + infoMargin, width - (2 * infoMargin), height - lightBarHeight - (2 * infoMargin));
     layout.HorizontalAlignment = TextAlignment::Near;
     layout.VerticalAlignment = TextAlignment::Center;
-    Render2D::DrawText(_subtitleFont, _infoText, Color::FromRGB(0xFFFFFF) * 0.9f, layout);
+    Render2D::DrawTextInternal(_subtitleFont, _infoText, Color::FromRGB(0xFFFFFF) * 0.9f, layout);
 }
 
 bool SplashScreen::HasLoadedFonts() const

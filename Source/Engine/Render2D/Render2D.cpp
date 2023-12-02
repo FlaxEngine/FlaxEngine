@@ -1144,7 +1144,7 @@ void DrawBatch(int32 startIndex, int32 count)
     Context->DrawIndexed(countIb, 0, d.StartIB);
 }
 
-void Render2D::DrawText(Font* font, const StringView& text, const Color& color, const Float2& location, MaterialBase* customMaterial)
+void Render2D::DrawTextInternal(Font* font, const StringView& text, const Color& color, const Float2& location, MaterialBase* customMaterial)
 {
     RENDER2D_CHECK_RENDERING_STATE;
 
@@ -1252,12 +1252,12 @@ void Render2D::DrawText(Font* font, const StringView& text, const Color& color, 
     }
 }
 
-void Render2D::DrawText(Font* font, const StringView& text, const TextRange& textRange, const Color& color, const Float2& location, MaterialBase* customMaterial)
+void Render2D::DrawTextInternal(Font* font, const StringView& text, const TextRange& textRange, const Color& color, const Float2& location, MaterialBase* customMaterial)
 {
-    DrawText(font, textRange.Substring(text), color, location, customMaterial);
+    DrawTextInternal(font, textRange.Substring(text), color, location, customMaterial);
 }
 
-void Render2D::DrawText(Font* font, const StringView& text, const Color& color, const TextLayoutOptions& layout, MaterialBase* customMaterial)
+void Render2D::DrawTextInternal(Font* font, const StringView& text, const Color& color, const TextLayoutOptions& layout, MaterialBase* customMaterial)
 {
     RENDER2D_CHECK_RENDERING_STATE;
 
@@ -1365,12 +1365,12 @@ void Render2D::DrawText(Font* font, const StringView& text, const Color& color, 
     }
 }
 
-void Render2D::DrawText(Font* font, const StringView& text, const TextRange& textRange, const Color& color, const TextLayoutOptions& layout, MaterialBase* customMaterial)
+void Render2D::DrawTextInternal(Font* font, const StringView& text, const TextRange& textRange, const Color& color, const TextLayoutOptions& layout, MaterialBase* customMaterial)
 {
-    DrawText(font, textRange.Substring(text), color, layout, customMaterial);
+    DrawTextInternal(font, textRange.Substring(text), color, layout, customMaterial);
 }
 
-void Render2D::DrawText(Font* font, FallbackFonts* fallbacks, const StringView& text, const Color& color, const Float2& location, MaterialBase* customMaterial)
+void Render2D::DrawTextInternal(Font* font, FontFallbackList* fallbacks, const StringView& text, const Color& color, const Float2& location, MaterialBase* customMaterial)
 {
     RENDER2D_CHECK_RENDERING_STATE;
 
@@ -1549,12 +1549,12 @@ void Render2D::DrawText(Font* font, FallbackFonts* fallbacks, const StringView& 
     }
 }
 
-void Render2D::DrawText(Font* font, FallbackFonts* fallbacks, const StringView& text, const TextRange& textRange, const Color& color, const Float2& location, MaterialBase* customMaterial)
+void Render2D::DrawTextInternal(Font* font, FontFallbackList* fallbacks, const StringView& text, const TextRange& textRange, const Color& color, const Float2& location, MaterialBase* customMaterial)
 {
-    DrawText(font, fallbacks, textRange.Substring(text), color, location, customMaterial);
+    DrawTextInternal(font, fallbacks, textRange.Substring(text), color, location, customMaterial);
 }
 
-void Render2D::DrawText(Font* font, FallbackFonts* fallbacks, const StringView& text, const Color& color, const TextLayoutOptions& layout, MaterialBase* customMaterial)
+void Render2D::DrawTextInternal(Font* font, FontFallbackList* fallbacks, const StringView& text, const Color& color, const TextLayoutOptions& layout, MaterialBase* customMaterial)
 {
     RENDER2D_CHECK_RENDERING_STATE;
 
@@ -1673,9 +1673,9 @@ void Render2D::DrawText(Font* font, FallbackFonts* fallbacks, const StringView& 
     }
 }
 
-void Render2D::DrawText(Font* font, FallbackFonts* fallbacks, const StringView& text, const TextRange& textRange, const Color& color, const TextLayoutOptions& layout, MaterialBase* customMaterial)
+void Render2D::DrawTextInternal(Font* font, FontFallbackList* fallbacks, const StringView& text, const TextRange& textRange, const Color& color, const TextLayoutOptions& layout, MaterialBase* customMaterial)
 {
-    DrawText(font, fallbacks, textRange.Substring(text), color, layout, customMaterial);
+    DrawTextInternal(font, fallbacks, textRange.Substring(text), color, layout, customMaterial);
 }
 
 FORCE_INLINE bool NeedAlphaWithTint(const Color& color)

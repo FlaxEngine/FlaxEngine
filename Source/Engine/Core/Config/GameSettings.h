@@ -7,6 +7,8 @@
 #include "Engine/Core/Types/String.h"
 #include "Engine/Core/Collections/Dictionary.h"
 
+class FontFallbackList;
+
 /// <summary>
 /// The main game engine configuration service. Loads and applies game configuration.
 /// </summary>
@@ -32,6 +34,15 @@ public:
     /// </summary>
     API_FIELD(Attributes="EditorOrder(15), EditorDisplay(\"General\")")
     String CopyrightNotice;
+
+    /// <summary>
+    /// The copyright note used for content signing (eg. source code header).
+    /// </summary>
+    API_FIELD(Attributes = "EditorOrder(1200), EditorDisplay(\"Other Settings\")")
+    bool EnableFontFallback;
+
+    API_FIELD(Attributes = "EditorOrder(1205), EditorDisplay(\"Other Settings\")")
+    FontFallbackList* FontFallbacks;
 
     /// <summary>
     /// The default application icon.

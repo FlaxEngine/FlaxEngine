@@ -293,7 +293,7 @@ void Font::ProcessText(const StringView& text, Array<FontLineCache>& outputLines
     }
 }
 
-void Font::ProcessText(FallbackFonts* fallbacks, const StringView& text, Array<BlockedTextLineCache>& outputLines, API_PARAM(Ref) const TextLayoutOptions& layout)
+void Font::ProcessText(FontFallbackList* fallbacks, const StringView& text, Array<BlockedTextLineCache>& outputLines, API_PARAM(Ref) const TextLayoutOptions& layout)
 {
     const Array<Font*>& fallbackFonts = fallbacks->GetFontList(GetSize());
     float cursorX = 0;
@@ -569,7 +569,7 @@ Float2 Font::MeasureText(const StringView& text, const TextLayoutOptions& layout
     return max;
 }
 
-Float2 Font::MeasureText(FallbackFonts* fallbacks, const StringView& text, const TextLayoutOptions& layout)
+Float2 Font::MeasureText(FontFallbackList* fallbacks, const StringView& text, const TextLayoutOptions& layout)
 {
     // Check if there is no need to do anything
     if (text.IsEmpty())
@@ -664,7 +664,7 @@ int32 Font::HitTestText(const StringView& text, const Float2& location, const Te
     return smallestIndex;
 }
 
-int32 Font::HitTestText(FallbackFonts* fallbacks, const StringView& text, const Float2& location, const TextLayoutOptions& layout)
+int32 Font::HitTestText(FontFallbackList* fallbacks, const StringView& text, const Float2& location, const TextLayoutOptions& layout)
 {
     // Check if there is no need to do anything
     if (text.Length() <= 0)
@@ -818,7 +818,7 @@ Float2 Font::GetCharPosition(const StringView& text, int32 index, const TextLayo
     return rootOffset + Float2(lines.Last().Location.X + lines.Last().Size.X, static_cast<float>((lines.Count() - 1) * baseLinesDistance));
 }
 
-Float2 Font::GetCharPosition(FallbackFonts* fallbacks, const StringView& text, int32 index, const TextLayoutOptions& layout)
+Float2 Font::GetCharPosition(FontFallbackList* fallbacks, const StringView& text, int32 index, const TextLayoutOptions& layout)
 {
     // Check if there is no need to do anything
     if (text.IsEmpty())
