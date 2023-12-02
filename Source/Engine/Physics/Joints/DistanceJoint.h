@@ -40,6 +40,7 @@ DECLARE_ENUM_OPERATORS(DistanceJointFlag);
 API_CLASS(Attributes="ActorContextMenu(\"New/Physics/Joints/Distance Joint\"), ActorToolbox(\"Physics\")")
 class FLAXENGINE_API DistanceJoint : public Joint
 {
+    API_AUTO_SERIALIZATION();
     DECLARE_SCENE_OBJECT(DistanceJoint);
 private:
     DistanceJointFlag _flags;
@@ -136,8 +137,6 @@ public:
 #if USE_EDITOR
     void OnDebugDrawSelected() override;
 #endif
-    void Serialize(SerializeStream& stream, const void* otherObj) override;
-    void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) override;
 
 protected:
     // [Joint]

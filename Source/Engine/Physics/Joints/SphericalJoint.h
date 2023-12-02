@@ -32,6 +32,7 @@ DECLARE_ENUM_OPERATORS(SphericalJointFlag);
 API_CLASS(Attributes = "ActorContextMenu(\"New/Physics/Joints/Spherical Joint\"), ActorToolbox(\"Physics\")")
 class FLAXENGINE_API SphericalJoint : public Joint
 {
+    API_AUTO_SERIALIZATION();
     DECLARE_SCENE_OBJECT(SphericalJoint);
 private:
     SphericalJointFlag _flags;
@@ -73,8 +74,6 @@ public:
 #if USE_EDITOR
     void OnDebugDrawSelected() override;
 #endif
-    void Serialize(SerializeStream& stream, const void* otherObj) override;
-    void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) override;
 
 protected:
     // [Joint]

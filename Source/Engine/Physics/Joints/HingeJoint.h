@@ -31,8 +31,9 @@ DECLARE_ENUM_OPERATORS(HingeJointFlag);
 /// <summary>
 /// Properties of a drive that drives the joint's angular velocity towards a particular value.
 /// </summary>
-API_STRUCT() struct HingeJointDrive
+API_STRUCT() struct FLAXENGINE_API HingeJointDrive : ISerializable
 {
+    API_AUTO_SERIALIZATION();
     DECLARE_SCRIPTING_TYPE_MINIMAL(HingeJointDrive);
 
     /// <summary>
@@ -70,6 +71,7 @@ public:
 API_CLASS(Attributes="ActorContextMenu(\"New/Physics/Joints/Hinge Joint\"), ActorToolbox(\"Physics\")")
 class FLAXENGINE_API HingeJoint : public Joint
 {
+    API_AUTO_SERIALIZATION();
     DECLARE_SCENE_OBJECT(HingeJoint);
 private:
     HingeJointFlag _flags;
@@ -80,7 +82,7 @@ public:
     /// <summary>
     /// Gets the joint mode flags. Controls joint behaviour.
     /// </summary>
-    API_PROPERTY(Attributes="EditorOrder(100), DefaultValue(HingeJointFlag.Limit | HingeJointFlag.Drive)")
+    API_PROPERTY(Attributes="EditorOrder(100), DefaultValue(HingeJointFlag.Limit | HingeJointFlag.Drive), EditorDisplay(\"Joint\")")
     FORCE_INLINE HingeJointFlag GetFlags() const
     {
         return _flags;
@@ -139,8 +141,6 @@ public:
 #if USE_EDITOR
     void OnDebugDrawSelected() override;
 #endif
-    void Serialize(SerializeStream& stream, const void* otherObj) override;
-    void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) override;
 
 protected:
     // [Joint]

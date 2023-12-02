@@ -30,6 +30,7 @@ DECLARE_ENUM_OPERATORS(SliderJointFlag);
 API_CLASS(Attributes="ActorContextMenu(\"New/Physics/Joints/Slider Joint\"), ActorToolbox(\"Physics\")")
 class FLAXENGINE_API SliderJoint : public Joint
 {
+    API_AUTO_SERIALIZATION();
     DECLARE_SCENE_OBJECT(SliderJoint);
 private:
     SliderJointFlag _flags;
@@ -82,8 +83,6 @@ public:
 #if USE_EDITOR
     void OnDebugDrawSelected() override;
 #endif
-    void Serialize(SerializeStream& stream, const void* otherObj) override;
-    void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) override;
 
 protected:
     // [Joint]

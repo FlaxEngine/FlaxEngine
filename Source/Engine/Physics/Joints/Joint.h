@@ -18,6 +18,7 @@ class IPhysicsActor;
 /// <seealso cref="Actor" />
 API_CLASS(Abstract) class FLAXENGINE_API Joint : public Actor
 {
+    API_AUTO_SERIALIZATION();
     DECLARE_SCENE_OBJECT_ABSTRACT(Joint);
 protected:
     void* _joint;
@@ -188,8 +189,6 @@ public:
 #if USE_EDITOR
     void OnDebugDrawSelected() override;
 #endif
-    void Serialize(SerializeStream& stream, const void* otherObj) override;
-    void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) override;
 
 protected:
     // [Actor]

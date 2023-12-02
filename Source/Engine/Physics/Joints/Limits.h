@@ -8,8 +8,9 @@
 /// Controls spring parameters for a physics joint limits. If a limit is soft (body bounces back due to restitution when 
 /// the limit is reached) the spring will pull the body back towards the limit using the specified parameters.
 /// </summary>
-API_STRUCT() struct SpringParameters
+API_STRUCT() struct FLAXENGINE_API SpringParameters : ISerializable
 {
+    API_AUTO_SERIALIZATION();
     DECLARE_SCRIPTING_TYPE_MINIMAL(SpringParameters);
 
     /// <summary>
@@ -53,8 +54,9 @@ public:
 /// <summary>
 /// Represents a joint limit between two distance values. Lower value must be less than the upper value.
 /// </summary>
-API_STRUCT() struct LimitLinearRange
+API_STRUCT() struct FLAXENGINE_API LimitLinearRange : ISerializable
 {
+    API_AUTO_SERIALIZATION();
     DECLARE_SCRIPTING_TYPE_MINIMAL(LimitLinearRange);
 
     /// <summary>
@@ -128,8 +130,9 @@ public:
 /// <summary>
 /// Represents a joint limit between zero a single distance value.
 /// </summary>
-API_STRUCT() struct LimitLinear
+API_STRUCT() struct FLAXENGINE_API LimitLinear : ISerializable
 {
+    API_AUTO_SERIALIZATION();
     DECLARE_SCRIPTING_TYPE_MINIMAL(LimitLinear);
 
     /// <summary>
@@ -194,8 +197,9 @@ public:
 /// <summary>
 /// Represents a joint limit between two angles.
 /// </summary>
-API_STRUCT() struct LimitAngularRange
+API_STRUCT() struct FLAXENGINE_API LimitAngularRange : ISerializable
 {
+    API_AUTO_SERIALIZATION();
     DECLARE_SCRIPTING_TYPE_MINIMAL(LimitAngularRange);
 
     /// <summary>
@@ -269,8 +273,9 @@ public:
 /// <summary>
 /// Represents a joint limit that constraints movement to within an elliptical cone.
 /// </summary>
-API_STRUCT() struct LimitConeRange
+API_STRUCT() struct FLAXENGINE_API LimitConeRange :ISerializable
 {
+    API_AUTO_SERIALIZATION();
     DECLARE_SCRIPTING_TYPE_MINIMAL(LimitConeRange);
 
     /// <summary>

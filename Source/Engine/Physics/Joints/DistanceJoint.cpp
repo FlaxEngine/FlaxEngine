@@ -2,7 +2,6 @@
 
 #include "DistanceJoint.h"
 #include "Engine/Physics/PhysicsBackend.h"
-#include "Engine/Serialization/Serialization.h"
 
 DistanceJoint::DistanceJoint(const SpawnParams& params)
     : Joint(params)
@@ -98,34 +97,6 @@ void DistanceJoint::OnDebugDrawSelected()
 }
 
 #endif
-
-void DistanceJoint::Serialize(SerializeStream& stream, const void* otherObj)
-{
-    // Base
-    Joint::Serialize(stream, otherObj);
-
-    SERIALIZE_GET_OTHER_OBJ(DistanceJoint);
-
-    SERIALIZE_MEMBER(Flags, _flags);
-    SERIALIZE_MEMBER(MinDistance, _minDistance);
-    SERIALIZE_MEMBER(MaxDistance, _maxDistance);
-    SERIALIZE_MEMBER(Tolerance, _tolerance);
-    SERIALIZE_MEMBER(Stiffness, _spring.Stiffness);
-    SERIALIZE_MEMBER(Damping, _spring.Damping);
-}
-
-void DistanceJoint::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)
-{
-    // Base
-    Joint::Deserialize(stream, modifier);
-
-    DESERIALIZE_MEMBER(Flags, _flags);
-    DESERIALIZE_MEMBER(MinDistance, _minDistance);
-    DESERIALIZE_MEMBER(MaxDistance, _maxDistance);
-    DESERIALIZE_MEMBER(Tolerance, _tolerance);
-    DESERIALIZE_MEMBER(Stiffness, _spring.Stiffness);
-    DESERIALIZE_MEMBER(Damping, _spring.Damping);
-}
 
 void* DistanceJoint::CreateJoint(const PhysicsJointDesc& desc)
 {

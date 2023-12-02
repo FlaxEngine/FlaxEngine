@@ -1,7 +1,6 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
 #include "Joint.h"
-#include "Engine/Serialization/Serialization.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Physics/Physics.h"
 #include "Engine/Physics/PhysicsBackend.h"
@@ -239,36 +238,6 @@ void Joint::OnDebugDrawSelected()
 }
 
 #endif
-
-void Joint::Serialize(SerializeStream& stream, const void* otherObj)
-{
-    // Base
-    Actor::Serialize(stream, otherObj);
-
-    SERIALIZE_GET_OTHER_OBJ(Joint);
-
-    SERIALIZE(Target);
-    SERIALIZE_MEMBER(BreakForce, _breakForce);
-    SERIALIZE_MEMBER(BreakTorque, _breakTorque);
-    SERIALIZE_MEMBER(TargetAnchor, _targetAnchor);
-    SERIALIZE_MEMBER(TargetAnchorRotation, _targetAnchorRotation);
-    SERIALIZE_MEMBER(EnableCollision, _enableCollision);
-    SERIALIZE_MEMBER(EnableAutoAnchor, _enableAutoAnchor);
-}
-
-void Joint::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)
-{
-    // Base
-    Actor::Deserialize(stream, modifier);
-
-    DESERIALIZE(Target);
-    DESERIALIZE_MEMBER(BreakForce, _breakForce);
-    DESERIALIZE_MEMBER(BreakTorque, _breakTorque);
-    DESERIALIZE_MEMBER(TargetAnchor, _targetAnchor);
-    DESERIALIZE_MEMBER(TargetAnchorRotation, _targetAnchorRotation);
-    DESERIALIZE_MEMBER(EnableCollision, _enableCollision);
-    DESERIALIZE_MEMBER(EnableAutoAnchor, _enableAutoAnchor);
-}
 
 void Joint::BeginPlay(SceneBeginData* data)
 {

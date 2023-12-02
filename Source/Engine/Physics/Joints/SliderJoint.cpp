@@ -1,7 +1,6 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
 #include "SliderJoint.h"
-#include "Engine/Serialization/Serialization.h"
 #include "Engine/Physics/PhysicsBackend.h"
 
 SliderJoint::SliderJoint(const SpawnParams& params)
@@ -63,36 +62,6 @@ void SliderJoint::OnDebugDrawSelected()
 }
 
 #endif
-
-void SliderJoint::Serialize(SerializeStream& stream, const void* otherObj)
-{
-    // Base
-    Joint::Serialize(stream, otherObj);
-
-    SERIALIZE_GET_OTHER_OBJ(SliderJoint);
-
-    SERIALIZE_MEMBER(Flags, _flags);
-    SERIALIZE_MEMBER(ContactDist, _limit.ContactDist);
-    SERIALIZE_MEMBER(Restitution, _limit.Restitution);
-    SERIALIZE_MEMBER(Stiffness, _limit.Spring.Stiffness);
-    SERIALIZE_MEMBER(Damping, _limit.Spring.Damping);
-    SERIALIZE_MEMBER(LowerLimit, _limit.Lower);
-    SERIALIZE_MEMBER(UpperLimit, _limit.Upper);
-}
-
-void SliderJoint::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)
-{
-    // Base
-    Joint::Deserialize(stream, modifier);
-
-    DESERIALIZE_MEMBER(Flags, _flags);
-    DESERIALIZE_MEMBER(ContactDist, _limit.ContactDist);
-    DESERIALIZE_MEMBER(Restitution, _limit.Restitution);
-    DESERIALIZE_MEMBER(Stiffness, _limit.Spring.Stiffness);
-    DESERIALIZE_MEMBER(Damping, _limit.Spring.Damping);
-    DESERIALIZE_MEMBER(LowerLimit, _limit.Lower);
-    DESERIALIZE_MEMBER(UpperLimit, _limit.Upper);
-}
 
 void* SliderJoint::CreateJoint(const PhysicsJointDesc& desc)
 {

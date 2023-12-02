@@ -1,7 +1,6 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
 #include "HingeJoint.h"
-#include "Engine/Serialization/Serialization.h"
 #include "Engine/Physics/PhysicsBackend.h"
 
 HingeJoint::HingeJoint(const SpawnParams& params)
@@ -83,44 +82,6 @@ void HingeJoint::OnDebugDrawSelected()
 }
 
 #endif
-
-void HingeJoint::Serialize(SerializeStream& stream, const void* otherObj)
-{
-    // Base
-    Joint::Serialize(stream, otherObj);
-
-    SERIALIZE_GET_OTHER_OBJ(HingeJoint);
-
-    SERIALIZE_MEMBER(Flags, _flags);
-    SERIALIZE_MEMBER(ContactDist, _limit.ContactDist);
-    SERIALIZE_MEMBER(Restitution, _limit.Restitution);
-    SERIALIZE_MEMBER(Stiffness, _limit.Spring.Stiffness);
-    SERIALIZE_MEMBER(Damping, _limit.Spring.Damping);
-    SERIALIZE_MEMBER(LowerLimit, _limit.Lower);
-    SERIALIZE_MEMBER(UpperLimit, _limit.Upper);
-    SERIALIZE_MEMBER(Velocity, _drive.Velocity);
-    SERIALIZE_MEMBER(ForceLimit, _drive.ForceLimit);
-    SERIALIZE_MEMBER(GearRatio, _drive.GearRatio);
-    SERIALIZE_MEMBER(FreeSpin, _drive.FreeSpin);
-}
-
-void HingeJoint::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)
-{
-    // Base
-    Joint::Deserialize(stream, modifier);
-
-    DESERIALIZE_MEMBER(Flags, _flags);
-    DESERIALIZE_MEMBER(ContactDist, _limit.ContactDist);
-    DESERIALIZE_MEMBER(Restitution, _limit.Restitution);
-    DESERIALIZE_MEMBER(Stiffness, _limit.Spring.Stiffness);
-    DESERIALIZE_MEMBER(Damping, _limit.Spring.Damping);
-    DESERIALIZE_MEMBER(LowerLimit, _limit.Lower);
-    DESERIALIZE_MEMBER(UpperLimit, _limit.Upper);
-    DESERIALIZE_MEMBER(Velocity, _drive.Velocity);
-    DESERIALIZE_MEMBER(ForceLimit, _drive.ForceLimit);
-    DESERIALIZE_MEMBER(GearRatio, _drive.GearRatio);
-    DESERIALIZE_MEMBER(FreeSpin, _drive.FreeSpin);
-}
 
 void* HingeJoint::CreateJoint(const PhysicsJointDesc& desc)
 {
