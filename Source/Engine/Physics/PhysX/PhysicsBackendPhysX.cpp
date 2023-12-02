@@ -2800,7 +2800,7 @@ void PhysicsBackend::SetHingeJointLimit(void* joint, const LimitAngularRange& va
 void PhysicsBackend::SetHingeJointDrive(void* joint, const HingeJointDrive& value)
 {
     auto jointPhysX = (PxRevoluteJoint*)joint;
-    jointPhysX->setDriveVelocity(Math::Max(value.Velocity, 0.0f));
+    jointPhysX->setDriveVelocity(value.Velocity);
     jointPhysX->setDriveForceLimit(Math::Max(value.ForceLimit, 0.0f));
     jointPhysX->setDriveGearRatio(Math::Max(value.GearRatio, 0.0f));
     jointPhysX->setRevoluteJointFlag(PxRevoluteJointFlag::eDRIVE_FREESPIN, value.FreeSpin);
