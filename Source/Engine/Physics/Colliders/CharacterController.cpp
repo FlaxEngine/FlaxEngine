@@ -5,7 +5,6 @@
 #include "Engine/Physics/Physics.h"
 #include "Engine/Physics/PhysicsBackend.h"
 #include "Engine/Physics/PhysicsScene.h"
-#include "Engine/Serialization/Serialization.h"
 #include "Engine/Engine/Time.h"
 
 #define CC_MIN_SIZE 0.001f

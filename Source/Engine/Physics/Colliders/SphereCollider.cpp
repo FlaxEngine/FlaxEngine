@@ -1,7 +1,6 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
 #include "SphereCollider.h"
-#include "Engine/Serialization/Serialization.h"
 
 SphereCollider::SphereCollider(const SpawnParams& params)
     : Collider(params)

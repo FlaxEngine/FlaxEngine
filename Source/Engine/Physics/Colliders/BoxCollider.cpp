@@ -1,7 +1,6 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
 #include "BoxCollider.h"
-#include "Engine/Serialization/Serialization.h"
 #include "Engine/Physics/PhysicsBackend.h"
 
 BoxCollider::BoxCollider(const SpawnParams& params)

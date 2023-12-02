@@ -5,7 +5,6 @@
 #if USE_EDITOR
 #include "Engine/Level/Scene/SceneRendering.h"
 #endif
-#include "Engine/Serialization/Serialization.h"
 #include "Engine/Physics/PhysicsSettings.h"
 #include "Engine/Physics/Physics.h"
 #include "Engine/Physics/PhysicsBackend.h"

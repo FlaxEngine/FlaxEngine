@@ -1,7 +1,6 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
 #include "CapsuleCollider.h"
-#include "Engine/Serialization/Serialization.h"
 
 CapsuleCollider::CapsuleCollider(const SpawnParams& params)
     : Collider(params)
