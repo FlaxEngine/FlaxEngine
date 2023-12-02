@@ -37,6 +37,7 @@ namespace FlaxEditor.SceneGraph.Actors
                 if (uiControl.Get<CanvasScaler>() == null)
                     continue;
                 canSpawn = false;
+                break;
             }
 
             if (canSpawn)
