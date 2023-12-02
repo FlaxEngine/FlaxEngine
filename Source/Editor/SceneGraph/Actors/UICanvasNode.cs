@@ -31,13 +31,25 @@ namespace FlaxEditor.SceneGraph.Actors
 
             // Rotate to match the space (GUI uses upper left corner as a root)
             Actor.LocalOrientation = Quaternion.Euler(0, -180, -180);
-            var uiControl = new UIControl
+            bool canSpawn = true;
+            foreach (var uiControl in Actor.GetChildren<UIControl>())
             {
-                Name = "Canvas Scalar",
-                Transform = Actor.Transform,
-                Control = new CanvasScaler()
-            };
-            Root.Spawn(uiControl, Actor);
+                if (uiControl.Get<CanvasScaler>() == null)
+                    continue;
+                canSpawn = false;
+            }
+
+            if (canSpawn)
+            {
+                var uiControl = new UIControl
+                {
+                    Name = "Canvas Scalar",
+                    Transform = Actor.Transform,
+                    Control = new CanvasScaler()
+                };
+                Root.Spawn(uiControl, Actor);
+            }
+            _treeNode.Expand();
         }
 
         /// <inheritdoc />
