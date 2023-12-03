@@ -103,7 +103,7 @@ void Font::Invalidate()
     _characters.Clear();
 }
 
-inline API_FUNCTION() float Font::GetMaxHeight(FontFallbackList* fallbacks) const
+float Font::GetMaxHeight(FontFallbackList* fallbacks) const
 {
     float height = GetHeight();
     auto& fallbackFonts = fallbacks->GetFontList(GetSize());
