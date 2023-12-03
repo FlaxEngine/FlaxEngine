@@ -16,6 +16,7 @@
 #include "Engine/Content/Assets/Animation.h"
 #include "Engine/Content/Content.h"
 #include "Engine/Platform/FileSystem.h"
+#include "Engine/Utilities/RectPack.h"
 #include "AssetsImportingManager.h"
 
 bool ImportModel::TryGetImportOptions(const StringView& path, Options& options)
@@ -46,6 +47,85 @@ bool ImportModel::TryGetImportOptions(const StringView& path, Options& options)
         }
     }
     return false;
+}
+
+void RepackMeshLightmapUVs(ModelData& data)
+{
+    // Use weight-based coordinates space placement and rect-pack to allocate more space for bigger meshes in the model lightmap chart
+    int32 lodIndex = 0;
+    auto& lod = data.LODs[lodIndex];
+
+    // Build list of meshes with their area
+    struct LightmapUVsPack : RectPack<LightmapUVsPack, float>
+    {
+        LightmapUVsPack(float x, float y, float width, float height)
+            : RectPack<LightmapUVsPack, float>(x, y, width, height)
+        {
+        }
+
+        void OnInsert()
+        {
+        }
+    };
+    struct MeshEntry
+    {
+        MeshData* Mesh;
+        float Area;
+        float Size;
+        LightmapUVsPack* Slot;
+    };
+    Array<MeshEntry> entries;
+    entries.Resize(lod.Meshes.Count());
+    float areaSum = 0;
+    for (int32 meshIndex = 0; meshIndex < lod.Meshes.Count(); meshIndex++)
+    {
+        auto& entry = entries[meshIndex];
+        entry.Mesh = lod.Meshes[meshIndex];
+        entry.Area = entry.Mesh->CalculateTrianglesArea();
+        entry.Size = Math::Sqrt(entry.Area);
+        areaSum += entry.Area;
+    }
+
+    if (areaSum > ZeroTolerance)
+    {
+        // Pack all surfaces into atlas
+        float atlasSize = Math::Sqrt(areaSum) * 1.02f;
+        int32 triesLeft = 10;
+        while (triesLeft--)
+        {
+            bool failed = false;
+            const float chartsPadding = (4.0f / 256.0f) * atlasSize;
+            LightmapUVsPack root(chartsPadding, chartsPadding, atlasSize - chartsPadding, atlasSize - chartsPadding);
+            for (auto& entry : entries)
+            {
+                entry.Slot = root.Insert(entry.Size, entry.Size, chartsPadding);
+                if (entry.Slot == nullptr)
+                {
+                    // Failed to insert surface, increase atlas size and try again
+                    atlasSize *= 1.5f;
+                    failed = true;
+                    break;
+                }
+            }
+
+            if (!failed)
+            {
+                // Transform meshes lightmap UVs into the slots in the whole atlas
+                const float atlasSizeInv = 1.0f / atlasSize;
+                for (const auto& entry : entries)
+                {
+                    Float2 uvOffset(entry.Slot->X * atlasSizeInv, entry.Slot->Y * atlasSizeInv);
+                    Float2 uvScale((entry.Slot->Width - chartsPadding) * atlasSizeInv, (entry.Slot->Height - chartsPadding) * atlasSizeInv);
+                    // TODO: SIMD
+                    for (auto& uv : entry.Mesh->LightmapUVs)
+                    {
+                        uv = uv * uvScale + uvOffset;
+                    }
+                }
+                break;
+            }
+        }
+    }
 }
 
 void TryRestoreMaterials(CreateAssetContext& context, ModelData& modelData)
@@ -293,6 +373,13 @@ CreateAssetResult ImportModel::Import(CreateAssetContext& context)
     if (options.RestoreMaterialsOnReimport && data->Materials.HasItems())
     {
         TryRestoreMaterials(context, *data);
+    }
+
+    // When using generated lightmap UVs those coordinates needs to be moved so all meshes are in unique locations in [0-1]x[0-1] coordinates space
+    // Model importer generates UVs in [0-1] space for each mesh so now we need to pack them inside the whole model (only when using multiple meshes)
+    if (options.Type == ModelTool::ModelType::Model && options.LightmapUVsSource == ModelLightmapUVsSource::Generate && data->LODs.HasItems() && data->LODs[0].Meshes.Count() > 1)
+    {
+        RepackMeshLightmapUVs(*data);
     }
 
     // Create destination asset type
