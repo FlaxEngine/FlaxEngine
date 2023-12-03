@@ -337,7 +337,7 @@ namespace FlaxEditor.Surface.Archetypes
                 _textRect = new Rectangle(Float2.Zero, Size);
 
                 var style = Style.Current;
-                var titleSize = FallbackTextUtils.MeasureText(style.FontLarge, Title);
+                var titleSize = style.FontLarge.MeasureText(Title);
                 var width = Mathf.Max(100, titleSize.X + 50);
                 Resize(width, 0);
                 titleSize.X += 8.0f;
@@ -379,7 +379,7 @@ namespace FlaxEditor.Surface.Archetypes
                 }
 
                 // Name
-                FallbackTextUtils.DrawText(style.FontLarge, Title, _textRect, style.Foreground, TextAlignment.Center, TextAlignment.Center);
+                Render2D.DrawText(style.FontLarge, Title, _textRect, style.Foreground, TextAlignment.Center, TextAlignment.Center);
             }
 
             /// <inheritdoc />
@@ -1128,7 +1128,7 @@ namespace FlaxEditor.Surface.Archetypes
                 }
 
                 // Name
-                FallbackTextUtils.DrawText(style.FontLarge, Title, _textRect, style.Foreground, TextAlignment.Center, TextAlignment.Center);
+                Render2D.DrawText(style.FontLarge, Title, _textRect, style.Foreground, TextAlignment.Center, TextAlignment.Center);
 
                 // Close button
                 Render2D.DrawSprite(style.Cross, _closeButtonRect, _closeButtonRect.Contains(_mousePosition) ? style.Foreground : style.ForegroundGrey);
@@ -1402,7 +1402,7 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 Title = StateTitle;
                 var style = Style.Current;
-                var titleSize = FallbackTextUtils.MeasureText(style.FontLarge, Title);
+                var titleSize = style.FontLarge.MeasureText(Title);
                 var width = Mathf.Max(100, titleSize.X + 50);
                 Resize(width, 0);
                 titleSize.X += 8.0f;

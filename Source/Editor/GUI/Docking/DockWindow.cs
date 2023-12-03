@@ -488,7 +488,7 @@ namespace FlaxEditor.GUI.Docking
             {
                 var style = Style.Current;
                 if (style?.FontMedium != null)
-                    _titleSize = FallbackTextUtils.MeasureText(style.FontMedium, _title);
+                    _titleSize = style.FontMedium.MeasureText(_title);
             }
 
             base.PerformLayoutBeforeChildren();

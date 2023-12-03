@@ -154,7 +154,7 @@ namespace FlaxEditor.Surface.Archetypes
                     if (headerRect.Contains(mousePosition))
                         headerColor *= 1.07f;
                     Render2D.FillRectangle(headerRect, headerColor);
-                    FallbackTextUtils.DrawText(style.FontLarge, Names[idx], headerRect, style.Foreground, TextAlignment.Center, TextAlignment.Center);
+                    Render2D.DrawText(style.FontLarge, Names[idx], headerRect, style.Foreground, TextAlignment.Center, TextAlignment.Center);
 
                     DrawChildren();
                 }
@@ -194,7 +194,7 @@ namespace FlaxEditor.Surface.Archetypes
                 if (_headerRect.Contains(ref _mousePosition))
                     headerColor *= 1.07f;
                 Render2D.FillRectangle(_headerRect, headerColor);
-                FallbackTextUtils.DrawText(style.FontLarge, Title, _headerRect, style.Foreground, TextAlignment.Center, TextAlignment.Center);
+                Render2D.DrawText(style.FontLarge, Title, _headerRect, style.Foreground, TextAlignment.Center, TextAlignment.Center);
 
                 DrawChildren();
 

@@ -8,6 +8,7 @@
 #include "Engine/Core/Config/GraphicsSettings.h"
 #include "Engine/Engine/CommandLine.h"
 #include "Engine/Engine/EngineService.h"
+#include "Engine/Render2D/Render2D.h"
 
 bool Graphics::UseVSync = false;
 Quality Graphics::AAQuality = Quality::Medium;
@@ -69,6 +70,9 @@ void GraphicsSettings::Apply()
     Graphics::GIQuality = GIQuality;
     Graphics::PostProcessSettings = ::PostProcessSettings();
     Graphics::PostProcessSettings.BlendWith(PostProcessSettings, 1.0f);
+
+    Render2D::EnableFontFallback = EnableFontFallback;
+    Render2D::FallbackFonts = FallbackFonts;
 }
 
 void Graphics::DisposeDevice()

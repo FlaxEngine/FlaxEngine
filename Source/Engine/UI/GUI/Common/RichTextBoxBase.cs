@@ -154,7 +154,7 @@ namespace FlaxEngine.GUI
                     if (!font)
                         break;
                     height = font.Height / DpiScale;
-                    return textBlock.Bounds.Location + FallbackTextUtils.GetCharPosition(font, _text, ref textBlock.Range, index - textBlock.Range.StartIndex);
+                    return textBlock.Bounds.Location + font.GetCharPosition(_text, ref textBlock.Range, index - textBlock.Range.StartIndex);
                 }
             }
 
@@ -196,7 +196,7 @@ namespace FlaxEngine.GUI
                     var font = textBlock.Style.Font.GetFont();
                     if (!font && textBlock.Range.Length > 0)
                         break;
-                    return FallbackTextUtils.HitTestText(font, _text, ref textBlock.Range, location - textBlock.Bounds.Location) + textBlock.Range.StartIndex;
+                    return font.HitTestText(_text, ref textBlock.Range, location - textBlock.Bounds.Location) + textBlock.Range.StartIndex;
                 }
             }
 
@@ -288,8 +288,8 @@ namespace FlaxEngine.GUI
                 // Selection
                 if (hasSelection && textBlock.Style.BackgroundSelectedBrush != null && textBlock.Range.Intersect(ref selection))
                 {
-                    var leftEdge = selection.StartIndex <= textBlock.Range.StartIndex ? textBlock.Bounds.UpperLeft : FallbackTextUtils.GetCharPosition(font, _text, selection.StartIndex);
-                    var rightEdge = selection.EndIndex >= textBlock.Range.EndIndex ? textBlock.Bounds.UpperRight : FallbackTextUtils.GetCharPosition(font, _text, selection.EndIndex);
+                    var leftEdge = selection.StartIndex <= textBlock.Range.StartIndex ? textBlock.Bounds.UpperLeft : font.GetCharPosition(_text, selection.StartIndex);
+                    var rightEdge = selection.EndIndex >= textBlock.Range.EndIndex ? textBlock.Bounds.UpperRight : font.GetCharPosition(_text, selection.EndIndex);
                     float height = font.Height / DpiScale;
                     float alpha = Mathf.Min(1.0f, Mathf.Cos(_animateTime * BackgroundSelectedFlashSpeed) * 0.5f + 1.3f);
                     alpha *= alpha;

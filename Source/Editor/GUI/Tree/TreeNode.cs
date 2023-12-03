@@ -575,7 +575,7 @@ namespace FlaxEditor.GUI.Tree
                 var font = TextFont.GetFont();
                 if (font)
                 {
-                    _textWidth = FallbackTextUtils.MeasureText(font, _text).X;
+                    _textWidth = font.MeasureText(_text).X;
                     _textChanged = false;
                 }
             }
@@ -656,7 +656,7 @@ namespace FlaxEditor.GUI.Tree
             }
 
             // Draw text
-            FallbackTextUtils.DrawText(TextFont.GetFont(), _text, textRect, _cachedTextColor, TextAlignment.Near, TextAlignment.Center);
+            Render2D.DrawText(TextFont.GetFont(), _text, textRect, _cachedTextColor, TextAlignment.Near, TextAlignment.Center);
 
             // Draw drag and drop effect
             if (IsDragOver && _tree.DraggedOverNode == this)

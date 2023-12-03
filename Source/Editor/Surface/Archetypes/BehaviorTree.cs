@@ -100,7 +100,7 @@ namespace FlaxEditor.Surface.Archetypes
                     _debugRelevant = Behavior.GetNodeDebugRelevancy(instance, behavior);
                     _debugInfo = Behavior.GetNodeDebugInfo(instance, behavior);
                     if (!string.IsNullOrEmpty(_debugInfo))
-                        _debugInfoSize = FallbackTextUtils.MeasureText(Style.Current.FontSmall, _debugInfo);
+                        _debugInfoSize = Style.Current.FontSmall.MeasureText(_debugInfo);
                 }
             }
 
@@ -184,7 +184,7 @@ namespace FlaxEditor.Surface.Archetypes
                 if (!string.IsNullOrEmpty(_debugInfo))
                 {
                     var style = Style.Current;
-                    FallbackTextUtils.DrawText(style.FontSmall, _debugInfo, new Rectangle(4, _headerRect.Bottom + 4, _debugInfoSize), style.Foreground);
+                    Render2D.DrawText(style.FontSmall, _debugInfo, new Rectangle(4, _headerRect.Bottom + 4, _debugInfoSize), style.Foreground);
                 }
 
                 // Debug relevancy outline
@@ -487,7 +487,7 @@ namespace FlaxEditor.Surface.Archetypes
                 var height = 0.0f;
                 var titleLabelFont = Style.Current.FontLarge;
                 width = Mathf.Max(width, 100.0f);
-                width = Mathf.Max(width, FallbackTextUtils.MeasureText(titleLabelFont, Title).X + 30);
+                width = Mathf.Max(width, titleLabelFont.MeasureText(Title).X + 30);
                 if (_debugInfoSize.X > 0)
                 {
                     width = Mathf.Max(width, _debugInfoSize.X + 8.0f);

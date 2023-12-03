@@ -38,7 +38,7 @@ namespace FlaxEditor.GUI
         {
             Depth = -1;
 
-            var mediumHeight = FallbackTextUtils.GetMaxHeight(Style.Current.FontMedium);
+            var mediumHeight = Style.Current.FontMedium.GetMaxHeight();
             if (Height < mediumHeight)
                 Height = mediumHeight + 4;
         }
@@ -99,7 +99,7 @@ namespace FlaxEditor.GUI
                     rect.Width -= leftDepthMargin;
 
                     Render2D.PushClip(rect);
-                    FallbackTextUtils.DrawText(style.FontMedium, text, rect, style.Foreground, column.CellAlignment, TextAlignment.Center);
+                    Render2D.DrawText(style.FontMedium, text, rect, style.Foreground, column.CellAlignment, TextAlignment.Center);
                     Render2D.PopClip();
 
                     x += width;

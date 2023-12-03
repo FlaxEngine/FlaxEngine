@@ -70,12 +70,6 @@ namespace FlaxEngine.GUI
         }
 
         /// <summary>
-        /// The fallback fonts to use if the primary font can't render the char.
-        /// </summary>
-        [EditorOrder(50)]
-        public FallbackFonts Fallbacks;
-
-        /// <summary>
         /// The background color.
         /// </summary>
         [EditorOrder(60)]

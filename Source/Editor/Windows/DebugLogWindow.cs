@@ -140,11 +140,11 @@ namespace FlaxEditor.Windows
                 Render2D.PushClip(ref clientRect);
                 if (LogCount == 1)
                 {
-                    FallbackTextUtils.DrawText(style.FontMedium, Desc.Title, textRect, style.Foreground);
+                    Render2D.DrawText(style.FontMedium, Desc.Title, textRect, style.Foreground);
                 }
                 else if (LogCount > 1)
                 {
-                    FallbackTextUtils.DrawText(style.FontMedium, $"{Desc.Title} ({LogCount})", textRect, style.Foreground);
+                    Render2D.DrawText(style.FontMedium, $"{Desc.Title} ({LogCount})", textRect, style.Foreground);
                 }
                 Render2D.PopClip();
             }

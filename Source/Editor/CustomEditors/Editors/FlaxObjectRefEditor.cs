@@ -199,7 +199,7 @@ namespace FlaxEditor.CustomEditors.Editors
             {
                 // Draw name
                 Render2D.PushClip(nameRect);
-                FallbackTextUtils.DrawText(style.FontMedium, _valueName, nameRect, isEnabled ? style.Foreground : style.ForegroundDisabled, TextAlignment.Near, TextAlignment.Center);
+                Render2D.DrawText(style.FontMedium, _valueName, nameRect, isEnabled ? style.Foreground : style.ForegroundDisabled, TextAlignment.Near, TextAlignment.Center);
                 Render2D.PopClip();
 
                 // Draw deselect button
@@ -208,7 +208,7 @@ namespace FlaxEditor.CustomEditors.Editors
             else
             {
                 // Draw info
-                FallbackTextUtils.DrawText(style.FontMedium, "-", nameRect, isEnabled ? Color.OrangeRed : Color.DarkOrange, TextAlignment.Near, TextAlignment.Center);
+                Render2D.DrawText(style.FontMedium, "-", nameRect, isEnabled ? Color.OrangeRed : Color.DarkOrange, TextAlignment.Near, TextAlignment.Center);
             }
 
             // Draw picker button

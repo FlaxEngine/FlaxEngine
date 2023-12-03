@@ -258,7 +258,7 @@ void SplashScreen::OnDraw()
         return;
 
     // Title
-    const auto titleLength = _titleFont->MeasureText(GetTitle());
+    const auto titleLength = _titleFont->MeasureTextInternal(GetTitle());
     TextLayoutOptions layout;
     layout.Bounds = Rectangle(10 * s, 10 * s, width - 10 * s, 50 * s);
     layout.HorizontalAlignment = TextAlignment::Near;

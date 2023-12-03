@@ -182,6 +182,8 @@ struct ClipMask
 };
 
 Render2D::RenderingFeatures Render2D::Features = RenderingFeatures::VertexSnapping;
+bool Render2D::EnableFontFallback = true;
+FontFallbackList* Render2D::FallbackFonts = nullptr;
 
 namespace
 {

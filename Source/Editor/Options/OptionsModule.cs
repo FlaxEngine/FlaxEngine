@@ -3,6 +3,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using FlaxEditor.Content.Settings;
 using FlaxEditor.Modules;
 using FlaxEngine;
 using FlaxEngine.GUI;
@@ -224,7 +225,11 @@ namespace FlaxEditor.Options
                 }
             }
 
-            FallbackTextUtils.Fallbacks = FallbackFonts.Create(Options.Interface.Fallbacks);
+            var graphicsSetttings = GameSettings.Load<GraphicsSettings>();
+            if (graphicsSetttings.EnableFontFallback && graphicsSetttings.FallbackFonts == null)
+            {
+                Render2D.FallbackFonts = graphicsSetttings.FallbackFonts = FontFallbackList.Create(Options.Interface.Fallbacks);
+            }
         }
 
         /// <summary>

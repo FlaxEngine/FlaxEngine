@@ -208,7 +208,7 @@ namespace FlaxEditor.GUI.Docking
                 }
 
                 // Draw text
-                FallbackTextUtils.DrawText(
+                Render2D.DrawText(
                     style.FontMedium,
                     tab.Title,
                     new Rectangle(DockPanel.DefaultLeftTextMargin + iconWidth, 0, Width - DockPanel.DefaultLeftTextMargin - DockPanel.DefaultButtonsSize - 2 * DockPanel.DefaultButtonsMargin, DockPanel.DefaultHeaderHeight),
@@ -271,7 +271,7 @@ namespace FlaxEditor.GUI.Docking
                     }
 
                     // Draw text
-                    FallbackTextUtils.DrawText(
+                    Render2D.DrawText(
                         style.FontMedium,
                         tab.Title,
                         new Rectangle(x + DockPanel.DefaultLeftTextMargin + iconWidth, 0, 10000, DockPanel.DefaultHeaderHeight),

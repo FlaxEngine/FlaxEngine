@@ -53,7 +53,7 @@ namespace FlaxEditor.Windows
                 Parent = this
             };
             var buttonText = "Copy version info";
-            var fontSize = FallbackTextUtils.MeasureText(Style.Current.FontMedium, buttonText);
+            var fontSize = Style.Current.FontMedium.MeasureText(buttonText);
             var copyVersionButton = new Button(Width - fontSize.X - 8, 6, fontSize.X + 4, 20)
             {
                 Text = buttonText,

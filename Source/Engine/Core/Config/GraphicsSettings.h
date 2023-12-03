@@ -6,6 +6,8 @@
 #include "Engine/Graphics/Enums.h"
 #include "Engine/Graphics/PostProcessSettings.h"
 
+class FontFallbackList;
+
 /// <summary>
 /// Graphics rendering settings.
 /// </summary>
@@ -117,6 +119,18 @@ public:
     /// </summary>
     API_FIELD(Attributes="EditorOrder(10000), EditorDisplay(\"Post Process Settings\", EditorDisplayAttribute.InlineStyle)")
     PostProcessSettings PostProcessSettings;
+
+    /// <summary>
+    /// 
+    /// </summary>
+    API_FIELD(Attributes = "EditorOrder(12000), EditorDisplay(\"Text Render Settings\", EditorDisplayAttribute.InlineStyle)")
+    bool EnableFontFallback = true;
+
+    /// <summary>
+    /// 
+    /// </summary>
+    API_FIELD(Attributes = "EditorOrder(12005), EditorDisplay(\"Text Render Settings\", EditorDisplayAttribute.InlineStyle)")
+    FontFallbackList* FallbackFonts;
 
 private:
     /// <summary>

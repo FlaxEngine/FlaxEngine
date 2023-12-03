@@ -234,7 +234,7 @@ namespace FlaxEngine.GUI
             Render2D.FillRectangle(new Rectangle(1.1f, 1.1f, Width - 2, Height - 2), style.Background);
 
             // Tooltip text
-            FallbackTextUtils.DrawText(
+            Render2D.DrawText(
                               style.FontMedium,
                               _currentText,
                               GetClientArea(),

@@ -261,7 +261,7 @@ namespace FlaxEngine.GUI
                 Render2D.DrawRectangle(clientRect, borderColor, BorderThickness);
 
             // Draw text
-            FallbackTextUtils.DrawText(_font?.GetFont(), TextMaterial, _text, clientRect, textColor, TextAlignment.Center, TextAlignment.Center);
+            Render2D.DrawText(_font?.GetFont(), TextMaterial, _text, clientRect, textColor, TextAlignment.Center, TextAlignment.Center);
         }
 
         /// <inheritdoc />

@@ -1428,7 +1428,7 @@ namespace FlaxEditor.Surface.Elements
 
             if (_defaultValueEditor != null)
             {
-                _defaultValueEditor.Location = new Float2(X + Width + 8 + FallbackTextUtils.MeasureText(Style.Current.FontSmall, Text).X, Y);
+                _defaultValueEditor.Location = new Float2(X + Width + 8 + Style.Current.FontSmall.MeasureText(Text).X, Y);
             }
         }
 
@@ -1443,7 +1443,7 @@ namespace FlaxEditor.Surface.Elements
             // Draw text
             var style = Style.Current;
             var rect = new Rectangle(Width + 4, 0, 1410, Height);
-            FallbackTextUtils.DrawText(style.FontSmall, Text, rect, Enabled ? style.Foreground : style.ForegroundDisabled, TextAlignment.Near, TextAlignment.Center);
+            Render2D.DrawText(style.FontSmall, Text, rect, Enabled ? style.Foreground : style.ForegroundDisabled, TextAlignment.Near, TextAlignment.Center);
         }
 
         /// <inheritdoc />
@@ -1635,7 +1635,7 @@ namespace FlaxEditor.Surface.Elements
             {
                 if (DefaultValueEditors[i].CanUse(this, ref _currentType))
                 {
-                    var bounds = new Rectangle(X + Width + 8 + FallbackTextUtils.MeasureText(Style.Current.FontSmall, Text).X, Y, 90, Height);
+                    var bounds = new Rectangle(X + Width + 8 + Style.Current.FontSmall.MeasureText(Text).X, Y, 90, Height);
                     _editor = DefaultValueEditors[i];
                     try
                     {

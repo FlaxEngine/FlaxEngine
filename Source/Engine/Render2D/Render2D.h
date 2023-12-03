@@ -54,8 +54,6 @@ API_CLASS(Static) class FLAXENGINE_API Render2D
     };
 
 public:
-    API_FIELD() static bool EnableFontFallback;
-    API_FIELD() static FontFallbackList* FallbackFonts;
 
     /// <summary>
     /// Checks if interface is during rendering phrase (Draw calls may be performed without failing).
@@ -71,6 +69,10 @@ public:
     /// The active rendering features flags.
     /// </summary>
     API_FIELD() static RenderingFeatures Features;
+
+    API_FIELD() static bool EnableFontFallback;
+
+    API_FIELD() static FontFallbackList* FallbackFonts;
 
     /// <summary>
     /// Called when frame rendering begins by the graphics device.

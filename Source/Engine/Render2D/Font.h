@@ -8,6 +8,7 @@
 #include "Engine/Content/AssetReference.h"
 #include "Engine/Scripting/ScriptingObject.h"
 #include "TextLayoutOptions.h"
+#include "Render2D.h"
 
 class FontAsset;
 class FontFallbackList;
@@ -402,7 +403,31 @@ public:
 public:
 
     /// <summary>
-    /// Processes text to get cached lines for rendering.
+    /// Gets the maximum height among the font and the fallback fonts.
+    /// </summary>
+    /// <param name="fallbacks">The fallback fonts.</param>
+    /// <returns>The maximum height.</returns>
+    API_FUNCTION() float GetMaxHeight(FontFallbackList* fallbacks) const;
+
+    /// <summary>
+    /// Gets the maximum height among the font and the fallback fonts, uses the default font defined in <see cref="Render2D"/>. 
+    /// </summary>
+    /// <param name="fallbacks">The fallback fonts.</param>
+    /// <returns>The maximum height.</returns>
+    API_FUNCTION() FORCE_INLINE float GetMaxHeight() const
+    {
+        if (Render2D::EnableFontFallback && Render2D::FallbackFonts)
+        {
+            return GetMaxHeight(Render2D::FallbackFonts);
+        }
+        else
+        {
+            return GetHeight();
+        }
+    }
+
+    /// <summary>
+    /// Processes text to get cached lines for rendering, with font fallbacking disabled.
     /// </summary>
     /// <param name="text">The input text.</param>
     /// <param name="layout">The layout properties.</param>
@@ -410,12 +435,12 @@ public:
     void ProcessText(const StringView& text, Array<FontLineCache>& outputLines, API_PARAM(Ref) const TextLayoutOptions& layout);
 
     /// <summary>
-    /// Processes text to get cached lines for rendering.
+    /// Processes text to get cached lines for rendering, with font fallbacking disabled.
     /// </summary>
     /// <param name="text">The input text.</param>
     /// <param name="layout">The layout properties.</param>
     /// <returns>The output lines list.</returns>
-    API_FUNCTION() Array<FontLineCache> ProcessText(const StringView& text, API_PARAM(Ref) const TextLayoutOptions& layout)
+    API_FUNCTION() FORCE_INLINE Array<FontLineCache> ProcessText(const StringView& text, API_PARAM(Ref) const TextLayoutOptions& layout)
     {
         Array<FontLineCache> lines;
         ProcessText(text, lines, layout);
@@ -423,13 +448,13 @@ public:
     }
 
     /// <summary>
-    /// Processes text to get cached lines for rendering.
+    /// Processes text to get cached lines for rendering, with font fallbacking disabled.
     /// </summary>
     /// <param name="text">The input text.</param>
     /// <param name="textRange">The input text range (substring range of the input text parameter).</param>
     /// <param name="layout">The layout properties.</param>
     /// <returns>The output lines list.</returns>
-    API_FUNCTION() Array<FontLineCache> ProcessText(const StringView& text, API_PARAM(Ref) const TextRange& textRange, API_PARAM(Ref) const TextLayoutOptions& layout)
+    API_FUNCTION() FORCE_INLINE Array<FontLineCache> ProcessText(const StringView& text, API_PARAM(Ref) const TextRange& textRange, API_PARAM(Ref) const TextLayoutOptions& layout)
     {
         Array<FontLineCache> lines;
         ProcessText(textRange.Substring(text), lines, layout);
@@ -437,7 +462,7 @@ public:
     }
 
     /// <summary>
-    /// Processes text to get cached lines for rendering.
+    /// Processes text to get cached lines for rendering, with font fallbacking disabled.
     /// </summary>
     /// <param name="text">The input text.</param>
     /// <returns>The output lines list.</returns>
@@ -447,7 +472,7 @@ public:
     }
 
     /// <summary>
-    /// Processes text to get cached lines for rendering.
+    /// Processes text to get cached lines for rendering, with font fallbacking disabled.
     /// </summary>
     /// <param name="text">The input text.</param>
     /// <param name="textRange">The input text range (substring range of the input text parameter).</param>
@@ -458,7 +483,7 @@ public:
     }
 
     /// <summary>
-    /// Processes text to get cached lines for rendering.
+    /// Processes text to get cached lines for rendering, using custom fallback options.
     /// </summary>
     /// <param name="text">The input text.</param>
     /// <param name="layout">The layout properties.</param>
@@ -466,12 +491,12 @@ public:
     void ProcessText(FontFallbackList* fallbacks, const StringView& text, Array<BlockedTextLineCache>& outputLines, API_PARAM(Ref) const TextLayoutOptions& layout);
 
     /// <summary>
-    /// Processes text to get cached lines for rendering.
+    /// Processes text to get cached lines for rendering, using custom fallback options.
     /// </summary>
     /// <param name="text">The input text.</param>
     /// <param name="layout">The layout properties.</param>
     /// <returns>The output lines list.</returns>
-    API_FUNCTION() Array<BlockedTextLineCache> ProcessText(FontFallbackList* fallbacks, const StringView& text, API_PARAM(Ref) const TextLayoutOptions& layout)
+    API_FUNCTION() FORCE_INLINE Array<BlockedTextLineCache> ProcessText(FontFallbackList* fallbacks, const StringView& text, API_PARAM(Ref) const TextLayoutOptions& layout)
     {
         Array<BlockedTextLineCache> lines;
         ProcessText(fallbacks, text, lines, layout);
@@ -479,13 +504,13 @@ public:
     }
 
     /// <summary>
-    /// Processes text to get cached lines for rendering.
+    /// Processes text to get cached lines for rendering, using custom fallback options.
     /// </summary>
     /// <param name="text">The input text.</param>
     /// <param name="textRange">The input text range (substring range of the input text parameter).</param>
     /// <param name="layout">The layout properties.</param>
     /// <returns>The output lines list.</returns>
-    API_FUNCTION() Array<BlockedTextLineCache> ProcessText(FontFallbackList* fallbacks, const StringView& text, API_PARAM(Ref) const TextRange& textRange, API_PARAM(Ref) const TextLayoutOptions& layout)
+    API_FUNCTION() FORCE_INLINE Array<BlockedTextLineCache> ProcessText(FontFallbackList* fallbacks, const StringView& text, API_PARAM(Ref) const TextRange& textRange, API_PARAM(Ref) const TextLayoutOptions& layout)
     {
         Array<BlockedTextLineCache> lines;
         ProcessText(fallbacks, textRange.Substring(text), lines, layout);
@@ -493,7 +518,7 @@ public:
     }
 
     /// <summary>
-    /// Processes text to get cached lines for rendering.
+    /// Processes text to get cached lines for rendering, using custom fallback options.
     /// </summary>
     /// <param name="text">The input text.</param>
     /// <returns>The output lines list.</returns>
@@ -503,7 +528,7 @@ public:
     }
 
     /// <summary>
-    /// Processes text to get cached lines for rendering.
+    /// Processes text to get cached lines for rendering, using custom fallback options.
     /// </summary>
     /// <param name="text">The input text.</param>
     /// <param name="textRange">The input text range (substring range of the input text parameter).</param>
@@ -514,122 +539,293 @@ public:
     }
 
     /// <summary>
-    /// Measures minimum size of the rectangle that will be needed to draw given text.
+    /// Measures minimum size of the rectangle that will be needed to draw given text, with font fallbacking disabled.
     /// </summary>
     /// <param name="text">The input text to test.</param>
     /// <param name="layout">The layout properties.</param>
     /// <returns>The minimum size for that text and fot to render properly.</returns>
-    API_FUNCTION() Float2 MeasureText(const StringView& text, API_PARAM(Ref) const TextLayoutOptions& layout);
+    API_FUNCTION() Float2 MeasureTextInternal(const StringView& text, API_PARAM(Ref) const TextLayoutOptions& layout);
 
     /// <summary>
-    /// Measures minimum size of the rectangle that will be needed to draw given text.
+    /// Measures minimum size of the rectangle that will be needed to draw given text, with font fallbacking disabled.
     /// </summary>
     /// <param name="text">The input text to test.</param>
     /// <param name="textRange">The input text range (substring range of the input text parameter).</param>
     /// <param name="layout">The layout properties.</param>
     /// <returns>The minimum size for that text and fot to render properly.</returns>
-    API_FUNCTION() Float2 MeasureText(const StringView& text, API_PARAM(Ref) const TextRange& textRange, API_PARAM(Ref) const TextLayoutOptions& layout)
+    API_FUNCTION() FORCE_INLINE Float2 MeasureTextInternal(const StringView& text, API_PARAM(Ref) const TextRange& textRange, API_PARAM(Ref) const TextLayoutOptions& layout)
     {
-        return MeasureText(textRange.Substring(text), layout);
+        return MeasureTextInternal(textRange.Substring(text), layout);
     }
 
     /// <summary>
-    /// Measures minimum size of the rectangle that will be needed to draw given text
+    /// Measures minimum size of the rectangle that will be needed to draw given text, with font fallbacking disabled.
+    /// </summary>.
+    /// <param name="text">The input text to test.</param>
+    /// <returns>The minimum size for that text and fot to render properly.</returns>
+    API_FUNCTION() FORCE_INLINE Float2 MeasureTextInternal(const StringView& text)
+    {
+        return MeasureTextInternal(text, TextLayoutOptions());
+    }
+
+    /// <summary>
+    /// Measures minimum size of the rectangle that will be needed to draw given text, with font fallbacking disabled.
+    /// </summary>.
+    /// <param name="text">The input text to test.</param>
+    /// <param name="textRange">The input text range (substring range of the input text parameter).</param>
+    /// <returns>The minimum size for that text and fot to render properly.</returns>
+    API_FUNCTION() FORCE_INLINE Float2 MeasureTextInternal(const StringView& text, API_PARAM(Ref) const TextRange& textRange)
+    {
+        return MeasureTextInternal(textRange.Substring(text), TextLayoutOptions());
+    }
+
+    /// <summary>
+    /// Measures minimum size of the rectangle that will be needed to draw given text, using custom fallback options.
+    /// </summary>
+    /// <param name="text">The input text to test.</param>
+    /// <param name="layout">The layout properties.</param>
+    /// <returns>The minimum size for that text and fot to render properly.</returns>
+    API_FUNCTION() Float2 MeasureTextInternal(FontFallbackList* fallbacks, const StringView& text, API_PARAM(Ref) const TextLayoutOptions& layout);
+
+    /// <summary>
+    /// Measures minimum size of the rectangle that will be needed to draw given text, using custom fallback options.
+    /// </summary>
+    /// <param name="text">The input text to test.</param>
+    /// <param name="textRange">The input text range (substring range of the input text parameter).</param>
+    /// <param name="layout">The layout properties.</param>
+    /// <returns>The minimum size for that text and fot to render properly.</returns>
+    API_FUNCTION() FORCE_INLINE Float2 MeasureTextInternal(FontFallbackList* fallbacks, const StringView& text, API_PARAM(Ref) const TextRange& textRange, API_PARAM(Ref) const TextLayoutOptions& layout)
+    {
+        return MeasureTextInternal(fallbacks, textRange.Substring(text), layout);
+    }
+
+    /// <summary>
+    /// Measures minimum size of the rectangle that will be needed to draw given text, using custom fallback options.
+    /// </summary>.
+    /// <param name="text">The input text to test.</param>
+    /// <returns>The minimum size for that text and fot to render properly.</returns>
+    API_FUNCTION() FORCE_INLINE Float2 MeasureTextInternal(FontFallbackList* fallbacks, const StringView& text)
+    {
+        return MeasureTextInternal(fallbacks, text, TextLayoutOptions());
+    }
+
+    /// <summary>
+    /// Measures minimum size of the rectangle that will be needed to draw given text, using custom fallback options.
+    /// </summary>.
+    /// <param name="text">The input text to test.</param>
+    /// <param name="textRange">The input text range (substring range of the input text parameter).</param>
+    /// <returns>The minimum size for that text and fot to render properly.</returns>
+    API_FUNCTION() FORCE_INLINE Float2 MeasureTextInternal(FontFallbackList* fallbacks, const StringView& text, API_PARAM(Ref) const TextRange& textRange)
+    {
+        return MeasureTextInternal(fallbacks, textRange.Substring(text), TextLayoutOptions());
+    }
+
+    /// <summary>
+    /// Measures minimum size of the rectangle that will be needed to draw given text, follows the fallback settings defined in <see cref="Render2D" />.
+    /// </summary>
+    /// <param name="text">The input text to test.</param>
+    /// <param name="layout">The layout properties.</param>
+    /// <returns>The minimum size for that text and fot to render properly.</returns>
+    API_FUNCTION() FORCE_INLINE Float2 MeasureText(const StringView& text, API_PARAM(Ref) const TextLayoutOptions& layout) {
+        if (Render2D::EnableFontFallback && Render2D::FallbackFonts) {
+            return MeasureTextInternal(Render2D::FallbackFonts, text, layout);
+        }
+        else {
+            return MeasureTextInternal(text, layout);
+        }
+    }
+
+    /// <summary>
+    /// Measures minimum size of the rectangle that will be needed to draw given text, follows the fallback settings defined in <see cref="Render2D" />.
+    /// </summary>
+    /// <param name="text">The input text to test.</param>
+    /// <param name="textRange">The input text range (substring range of the input text parameter).</param>
+    /// <param name="layout">The layout properties.</param>
+    /// <returns>The minimum size for that text and fot to render properly.</returns>
+    API_FUNCTION() FORCE_INLINE Float2 MeasureText(const StringView& text, API_PARAM(Ref) const TextRange& textRange, API_PARAM(Ref) const TextLayoutOptions& layout)
+    {
+        if (Render2D::EnableFontFallback && Render2D::FallbackFonts) {
+            return MeasureTextInternal(Render2D::FallbackFonts, textRange.Substring(text), layout);
+        }
+        else {
+            return MeasureTextInternal(textRange.Substring(text), layout);
+        }
+    }
+
+    /// <summary>
+    /// Measures minimum size of the rectangle that will be needed to draw given text, follows the fallback settings defined in <see cref="Render2D" />.
     /// </summary>.
     /// <param name="text">The input text to test.</param>
     /// <returns>The minimum size for that text and fot to render properly.</returns>
     API_FUNCTION() FORCE_INLINE Float2 MeasureText(const StringView& text)
     {
-        return MeasureText(text, TextLayoutOptions());
+        if (Render2D::EnableFontFallback && Render2D::FallbackFonts) {
+            return MeasureTextInternal(Render2D::FallbackFonts, text, TextLayoutOptions());
+        }
+        else {
+            return MeasureTextInternal(text, TextLayoutOptions());
+        }
     }
 
     /// <summary>
-    /// Measures minimum size of the rectangle that will be needed to draw given text
+    /// Measures minimum size of the rectangle that will be needed to draw given text, follows the fallback settings defined in <see cref="Render2D" />.
     /// </summary>.
     /// <param name="text">The input text to test.</param>
     /// <param name="textRange">The input text range (substring range of the input text parameter).</param>
     /// <returns>The minimum size for that text and fot to render properly.</returns>
     API_FUNCTION() FORCE_INLINE Float2 MeasureText(const StringView& text, API_PARAM(Ref) const TextRange& textRange)
     {
-        return MeasureText(textRange.Substring(text), TextLayoutOptions());
+        if (Render2D::EnableFontFallback && Render2D::FallbackFonts) {
+            return MeasureTextInternal(Render2D::FallbackFonts, textRange.Substring(text), TextLayoutOptions());
+        }
+        else {
+            return MeasureTextInternal(textRange.Substring(text), TextLayoutOptions());
+        }
     }
 
     /// <summary>
-    /// Measures minimum size of the rectangle that will be needed to draw given text.
-    /// </summary>
-    /// <param name="text">The input text to test.</param>
-    /// <param name="layout">The layout properties.</param>
-    /// <returns>The minimum size for that text and fot to render properly.</returns>
-    API_FUNCTION() Float2 MeasureText(FontFallbackList* fallbacks, const StringView& text, API_PARAM(Ref) const TextLayoutOptions& layout);
-
-    /// <summary>
-    /// Measures minimum size of the rectangle that will be needed to draw given text.
-    /// </summary>
-    /// <param name="text">The input text to test.</param>
-    /// <param name="textRange">The input text range (substring range of the input text parameter).</param>
-    /// <param name="layout">The layout properties.</param>
-    /// <returns>The minimum size for that text and fot to render properly.</returns>
-    API_FUNCTION() Float2 MeasureText(FontFallbackList* fallbacks, const StringView& text, API_PARAM(Ref) const TextRange& textRange, API_PARAM(Ref) const TextLayoutOptions& layout)
-    {
-        return MeasureText(fallbacks, textRange.Substring(text), layout);
-    }
-
-    /// <summary>
-    /// Measures minimum size of the rectangle that will be needed to draw given text
-    /// </summary>.
-    /// <param name="text">The input text to test.</param>
-    /// <returns>The minimum size for that text and fot to render properly.</returns>
-    API_FUNCTION() FORCE_INLINE Float2 MeasureText(FontFallbackList* fallbacks, const StringView& text)
-    {
-        return MeasureText(fallbacks, text, TextLayoutOptions());
-    }
-
-    /// <summary>
-    /// Measures minimum size of the rectangle that will be needed to draw given text
-    /// </summary>.
-    /// <param name="text">The input text to test.</param>
-    /// <param name="textRange">The input text range (substring range of the input text parameter).</param>
-    /// <returns>The minimum size for that text and fot to render properly.</returns>
-    API_FUNCTION() FORCE_INLINE Float2 MeasureText(FontFallbackList* fallbacks, const StringView& text, API_PARAM(Ref) const TextRange& textRange)
-    {
-        return MeasureText(fallbacks, textRange.Substring(text), TextLayoutOptions());
-    }
-    
-    /// <summary>
-    /// Calculates hit character index at given location.
+    /// Calculates hit character index at given location, with font fallbacking disabled.
     /// </summary>
     /// <param name="text">The input text to test.</param>
     /// <param name="location">The input location to test.</param>
     /// <param name="layout">The text layout properties.</param>
     /// <returns>The selected character position index (can be equal to text length if location is outside of the layout rectangle).</returns>
-    API_FUNCTION() int32 HitTestText(const StringView& text, const Float2& location, API_PARAM(Ref) const TextLayoutOptions& layout);
+    API_FUNCTION() int32 HitTestTextInternal(const StringView& text, const Float2& location, API_PARAM(Ref) const TextLayoutOptions& layout);
 
     /// <summary>
-    /// Calculates hit character index at given location.
+    /// Calculates hit character index at given location, with font fallbacking disabled.
     /// </summary>
     /// <param name="text">The input text to test.</param>
     /// <param name="textRange">The input text range (substring range of the input text parameter).</param>
     /// <param name="location">The input location to test.</param>
     /// <param name="layout">The text layout properties.</param>
     /// <returns>The selected character position index (can be equal to text length if location is outside of the layout rectangle).</returns>
-    API_FUNCTION() int32 HitTestText(const StringView& text, API_PARAM(Ref) const TextRange& textRange, const Float2& location, API_PARAM(Ref) const TextLayoutOptions& layout)
+    API_FUNCTION() FORCE_INLINE int32 HitTestTextInternal(const StringView& text, API_PARAM(Ref) const TextRange& textRange, const Float2& location, API_PARAM(Ref) const TextLayoutOptions& layout)
     {
-        return HitTestText(textRange.Substring(text), location, layout);
+        return HitTestTextInternal(textRange.Substring(text), location, layout);
     }
 
     /// <summary>
-    /// Calculates hit character index at given location.
+    /// Calculates hit character index at given location, with font fallbacking disabled.
+    /// </summary>
+    /// <param name="text">The input text to test.</param>
+    /// <param name="location">The input location to test.</param>
+    /// <returns>The selected character position index (can be equal to text length if location is outside of the layout rectangle).</returns>
+    API_FUNCTION() FORCE_INLINE int32 HitTestTextInternal(const StringView& text, const Float2& location)
+    {
+        return HitTestTextInternal(text, location, TextLayoutOptions());
+    }
+
+    /// <summary>
+    /// Calculates hit character index at given location, with font fallbacking disabled.
+    /// </summary>
+    /// <param name="text">The input text to test.</param>
+    /// <param name="textRange">The input text range (substring range of the input text parameter).</param>
+    /// <param name="location">The input location to test.</param>
+    /// <returns>The selected character position index (can be equal to text length if location is outside of the layout rectangle).</returns>
+    API_FUNCTION() FORCE_INLINE int32 HitTestTextInternal(const StringView& text, API_PARAM(Ref) const TextRange& textRange, const Float2& location)
+    {
+        return HitTestTextInternal(textRange.Substring(text), location, TextLayoutOptions());
+    }
+
+    /// <summary>
+    /// Calculates hit character index at given location, using custom fallback options.
+    /// </summary>
+    /// <param name="text">The input text to test.</param>
+    /// <param name="location">The input location to test.</param>
+    /// <param name="layout">The text layout properties.</param>
+    /// <returns>The selected character position index (can be equal to text length if location is outside of the layout rectangle).</returns>
+    API_FUNCTION() int32 HitTestTextInternal(FontFallbackList* fallbacks, const StringView& text, const Float2& location, API_PARAM(Ref) const TextLayoutOptions& layout);
+
+    /// <summary>
+    /// Calculates hit character index at given location, using custom fallback options.
+    /// </summary>
+    /// <param name="text">The input text to test.</param>
+    /// <param name="textRange">The input text range (substring range of the input text parameter).</param>
+    /// <param name="location">The input location to test.</param>
+    /// <param name="layout">The text layout properties.</param>
+    /// <returns>The selected character position index (can be equal to text length if location is outside of the layout rectangle).</returns>
+    API_FUNCTION() FORCE_INLINE int32 HitTestTextInternal(FontFallbackList* fallbacks, const StringView& text, API_PARAM(Ref) const TextRange& textRange, const Float2& location, API_PARAM(Ref) const TextLayoutOptions& layout)
+    {
+        return HitTestTextInternal(fallbacks, textRange.Substring(text), location, layout);
+    }
+
+    /// <summary>
+    /// Calculates hit character index at given location, using custom fallback options.
+    /// </summary>
+    /// <param name="text">The input text to test.</param>
+    /// <param name="location">The input location to test.</param>
+    /// <returns>The selected character position index (can be equal to text length if location is outside of the layout rectangle).</returns>
+    API_FUNCTION() FORCE_INLINE int32 HitTestTextInternal(FontFallbackList* fallbacks, const StringView& text, const Float2& location)
+    {
+        return HitTestTextInternal(fallbacks, text, location, TextLayoutOptions());
+    }
+
+    /// <summary>
+    /// Calculates hit character index at given location, using custom fallback options.
+    /// </summary>
+    /// <param name="text">The input text to test.</param>
+    /// <param name="textRange">The input text range (substring range of the input text parameter).</param>
+    /// <param name="location">The input location to test.</param>
+    /// <returns>The selected character position index (can be equal to text length if location is outside of the layout rectangle).</returns>
+    API_FUNCTION() FORCE_INLINE int32 HitTestTextInternal(FontFallbackList* fallbacks, const StringView& text, API_PARAM(Ref) const TextRange& textRange, const Float2& location)
+    {
+        return HitTestTextInternal(fallbacks, textRange.Substring(text), location, TextLayoutOptions());
+    }
+
+    /// <summary>
+    /// Calculates hit character index at given location, follows the fallback settings defined in <see cref="Render2D" />.
+    /// </summary>
+    /// <param name="text">The input text to test.</param>
+    /// <param name="location">The input location to test.</param>
+    /// <param name="layout">The text layout properties.</param>
+    /// <returns>The selected character position index (can be equal to text length if location is outside of the layout rectangle).</returns>
+    API_FUNCTION() FORCE_INLINE int32 HitTestText(const StringView& text, const Float2& location, API_PARAM(Ref) const TextLayoutOptions& layout) {
+        if (Render2D::EnableFontFallback && Render2D::FallbackFonts) {
+            return HitTestTextInternal(Render2D::FallbackFonts, text, location, layout);
+        }
+        else {
+            return HitTestTextInternal(text, location, layout);
+        }
+    }
+
+    /// <summary>
+    /// Calculates hit character index at given location, follows the fallback settings defined in <see cref="Render2D" />.
+    /// </summary>
+    /// <param name="text">The input text to test.</param>
+    /// <param name="textRange">The input text range (substring range of the input text parameter).</param>
+    /// <param name="location">The input location to test.</param>
+    /// <param name="layout">The text layout properties.</param>
+    /// <returns>The selected character position index (can be equal to text length if location is outside of the layout rectangle).</returns>
+    API_FUNCTION() FORCE_INLINE int32 HitTestText(const StringView& text, API_PARAM(Ref) const TextRange& textRange, const Float2& location, API_PARAM(Ref) const TextLayoutOptions& layout)
+    {
+        if (Render2D::EnableFontFallback && Render2D::FallbackFonts) {
+            return HitTestTextInternal(Render2D::FallbackFonts, textRange.Substring(text), location, layout);
+        }
+        else {
+            return HitTestTextInternal(textRange.Substring(text), location, layout);
+        }
+
+    }
+
+    /// <summary>
+    /// Calculates hit character index at given location, follows the fallback settings defined in <see cref="Render2D" />.
     /// </summary>
     /// <param name="text">The input text to test.</param>
     /// <param name="location">The input location to test.</param>
     /// <returns>The selected character position index (can be equal to text length if location is outside of the layout rectangle).</returns>
     API_FUNCTION() FORCE_INLINE int32 HitTestText(const StringView& text, const Float2& location)
     {
-        return HitTestText(text, location, TextLayoutOptions());
+        if (Render2D::EnableFontFallback && Render2D::FallbackFonts) {
+            return HitTestTextInternal(Render2D::FallbackFonts, text, location, TextLayoutOptions());
+        }
+        else {
+            return HitTestTextInternal(text, location, TextLayoutOptions());
+        }
     }
 
     /// <summary>
-    /// Calculates hit character index at given location.
+    /// Calculates hit character index at given location, follows the fallback settings defined in <see cref="Render2D" />.
     /// </summary>
     /// <param name="text">The input text to test.</param>
     /// <param name="textRange">The input text range (substring range of the input text parameter).</param>
@@ -637,89 +833,156 @@ public:
     /// <returns>The selected character position index (can be equal to text length if location is outside of the layout rectangle).</returns>
     API_FUNCTION() FORCE_INLINE int32 HitTestText(const StringView& text, API_PARAM(Ref) const TextRange& textRange, const Float2& location)
     {
-        return HitTestText(textRange.Substring(text), location, TextLayoutOptions());
+        if (Render2D::EnableFontFallback && Render2D::FallbackFonts) {
+            return HitTestTextInternal(Render2D::FallbackFonts, textRange.Substring(text), location, TextLayoutOptions());
+        }
+        else {
+            return HitTestTextInternal(textRange.Substring(text), location, TextLayoutOptions());
+        }
     }
 
     /// <summary>
-    /// Calculates hit character index at given location.
-    /// </summary>
-    /// <param name="text">The input text to test.</param>
-    /// <param name="location">The input location to test.</param>
-    /// <param name="layout">The text layout properties.</param>
-    /// <returns>The selected character position index (can be equal to text length if location is outside of the layout rectangle).</returns>
-    API_FUNCTION() int32 HitTestText(FontFallbackList* fallbacks, const StringView& text, const Float2& location, API_PARAM(Ref) const TextLayoutOptions& layout);
-
-    /// <summary>
-    /// Calculates hit character index at given location.
-    /// </summary>
-    /// <param name="text">The input text to test.</param>
-    /// <param name="textRange">The input text range (substring range of the input text parameter).</param>
-    /// <param name="location">The input location to test.</param>
-    /// <param name="layout">The text layout properties.</param>
-    /// <returns>The selected character position index (can be equal to text length if location is outside of the layout rectangle).</returns>
-    API_FUNCTION() int32 HitTestText(FontFallbackList* fallbacks, const StringView& text, API_PARAM(Ref) const TextRange& textRange, const Float2& location, API_PARAM(Ref) const TextLayoutOptions& layout)
-    {
-        return HitTestText(fallbacks, textRange.Substring(text), location, layout);
-    }
-
-    /// <summary>
-    /// Calculates hit character index at given location.
-    /// </summary>
-    /// <param name="text">The input text to test.</param>
-    /// <param name="location">The input location to test.</param>
-    /// <returns>The selected character position index (can be equal to text length if location is outside of the layout rectangle).</returns>
-    API_FUNCTION() FORCE_INLINE int32 HitTestText(FontFallbackList* fallbacks, const StringView& text, const Float2& location)
-    {
-        return HitTestText(fallbacks, text, location, TextLayoutOptions());
-    }
-
-    /// <summary>
-    /// Calculates hit character index at given location.
-    /// </summary>
-    /// <param name="text">The input text to test.</param>
-    /// <param name="textRange">The input text range (substring range of the input text parameter).</param>
-    /// <param name="location">The input location to test.</param>
-    /// <returns>The selected character position index (can be equal to text length if location is outside of the layout rectangle).</returns>
-    API_FUNCTION() FORCE_INLINE int32 HitTestText(FontFallbackList* fallbacks, const StringView& text, API_PARAM(Ref) const TextRange& textRange, const Float2& location)
-    {
-        return HitTestText(fallbacks, textRange.Substring(text), location, TextLayoutOptions());
-    }
-
-    /// <summary>
-    /// Calculates character position for given text and character index.
+    /// Calculates character position for given text and character index, with font fallbacking disabled.
     /// </summary>
     /// <param name="text">The input text to test.</param>
     /// <param name="index">The text position to get coordinates of.</param>
     /// <param name="layout">The text layout properties.</param>
     /// <returns>The character position (upper left corner which can be used for a caret position).</returns>
-    API_FUNCTION() Float2 GetCharPosition(const StringView& text, int32 index, API_PARAM(Ref) const TextLayoutOptions& layout);
+    API_FUNCTION() Float2 GetCharPositionInternal(const StringView& text, int32 index, API_PARAM(Ref) const TextLayoutOptions& layout);
 
     /// <summary>
-    /// Calculates character position for given text and character index.
+    /// Calculates character position for given text and character index, with font fallbacking disabled.
     /// </summary>
     /// <param name="text">The input text to test.</param>
     /// <param name="textRange">The input text range (substring range of the input text parameter).</param>
     /// <param name="index">The text position to get coordinates of.</param>
     /// <param name="layout">The text layout properties.</param>
     /// <returns>The character position (upper left corner which can be used for a caret position).</returns>
-    API_FUNCTION() Float2 GetCharPosition(const StringView& text, API_PARAM(Ref) const TextRange& textRange, int32 index, API_PARAM(Ref) const TextLayoutOptions& layout)
+    API_FUNCTION() FORCE_INLINE Float2 GetCharPositionInternal(const StringView& text, API_PARAM(Ref) const TextRange& textRange, int32 index, API_PARAM(Ref) const TextLayoutOptions& layout)
     {
-        return GetCharPosition(textRange.Substring(text), index, layout);
+        return GetCharPositionInternal(textRange.Substring(text), index, layout);
     }
 
     /// <summary>
-    /// Calculates character position for given text and character index
+    /// Calculates character position for given text and character index, with font fallbacking disabled.
+    /// </summary>
+    /// <param name="text">The input text to test.</param>
+    /// <param name="index">The text position to get coordinates of.</param>
+    /// <returns>The character position (upper left corner which can be used for a caret position).</returns>
+    API_FUNCTION() FORCE_INLINE Float2 GetCharPositionInternal(const StringView& text, int32 index)
+    {
+        return GetCharPositionInternal(text, index, TextLayoutOptions());
+    }
+
+    /// <summary>
+    /// Calculates character position for given text and character index, with font fallbacking disabled.
+    /// </summary>
+    /// <param name="text">The input text to test.</param>
+    /// <param name="textRange">The input text range (substring range of the input text parameter).</param>
+    /// <param name="index">The text position to get coordinates of.</param>
+    /// <returns>The character position (upper left corner which can be used for a caret position).</returns>
+    API_FUNCTION() FORCE_INLINE Float2 GetCharPositionInternal(const StringView& text, API_PARAM(Ref) const TextRange& textRange, int32 index)
+    {
+        return GetCharPositionInternal(textRange.Substring(text), index, TextLayoutOptions());
+    }
+
+    /// <summary>
+    /// Calculates character position for given text and character index, using custom fallback options.
+    /// </summary>
+    /// <param name="text">The input text to test.</param>
+    /// <param name="index">The text position to get coordinates of.</param>
+    /// <param name="layout">The text layout properties.</param>
+    /// <returns>The character position (upper left corner which can be used for a caret position).</returns>
+    API_FUNCTION() Float2 GetCharPositionInternal(FontFallbackList* fallbacks, const StringView& text, int32 index, API_PARAM(Ref) const TextLayoutOptions& layout);
+
+    /// <summary>
+    /// Calculates character position for given text and character index, using custom fallback options.
+    /// </summary>
+    /// <param name="text">The input text to test.</param>
+    /// <param name="textRange">The input text range (substring range of the input text parameter).</param>
+    /// <param name="index">The text position to get coordinates of.</param>
+    /// <param name="layout">The text layout properties.</param>
+    /// <returns>The character position (upper left corner which can be used for a caret position).</returns>
+    API_FUNCTION() FORCE_INLINE Float2 GetCharPositionInternal(FontFallbackList* fallbacks, const StringView& text, API_PARAM(Ref) const TextRange& textRange, int32 index, API_PARAM(Ref) const TextLayoutOptions& layout)
+    {
+        return GetCharPositionInternal(fallbacks, textRange.Substring(text), index, layout);
+    }
+
+    /// <summary>
+    /// Calculates character position for given text and character index, using custom fallback options.
+    /// </summary>
+    /// <param name="text">The input text to test.</param>
+    /// <param name="index">The text position to get coordinates of.</param>
+    /// <returns>The character position (upper left corner which can be used for a caret position).</returns>
+    API_FUNCTION() FORCE_INLINE Float2 GetCharPositionInternal(FontFallbackList* fallbacks, const StringView& text, int32 index)
+    {
+        return GetCharPositionInternal(fallbacks, text, index, TextLayoutOptions());
+    }
+
+    /// <summary>
+    /// Calculates character position for given text and character index, using custom fallback options.
+    /// </summary>
+    /// <param name="text">The input text to test.</param>
+    /// <param name="textRange">The input text range (substring range of the input text parameter).</param>
+    /// <param name="index">The text position to get coordinates of.</param>
+    /// <returns>The character position (upper left corner which can be used for a caret position).</returns>
+    API_FUNCTION() FORCE_INLINE Float2 GetCharPositionInternal(FontFallbackList* fallbacks, const StringView& text, API_PARAM(Ref) const TextRange& textRange, int32 index)
+    {
+        return GetCharPositionInternal(fallbacks, textRange.Substring(text), index, TextLayoutOptions());
+    }
+
+    /// <summary>
+    /// Calculates character position for given text and character index, follows the fallback settings defined in <see cref="Render2D" />.
+    /// </summary>
+    /// <param name="text">The input text to test.</param>
+    /// <param name="index">The text position to get coordinates of.</param>
+    /// <param name="layout">The text layout properties.</param>
+    /// <returns>The character position (upper left corner which can be used for a caret position).</returns>
+    API_FUNCTION() FORCE_INLINE Float2 GetCharPosition(const StringView& text, int32 index, API_PARAM(Ref) const TextLayoutOptions& layout) {
+        if (Render2D::EnableFontFallback && Render2D::FallbackFonts) {
+            return GetCharPositionInternal(Render2D::FallbackFonts, text, index, layout);
+        }
+        else {
+            return GetCharPositionInternal(text, index, layout);
+        }
+    }
+
+    /// <summary>
+    /// Calculates character position for given text and character index, follows the fallback settings defined in <see cref="Render2D" />.
+    /// </summary>
+    /// <param name="text">The input text to test.</param>
+    /// <param name="textRange">The input text range (substring range of the input text parameter).</param>
+    /// <param name="index">The text position to get coordinates of.</param>
+    /// <param name="layout">The text layout properties.</param>
+    /// <returns>The character position (upper left corner which can be used for a caret position).</returns>
+    API_FUNCTION() FORCE_INLINE Float2 GetCharPosition(const StringView& text, API_PARAM(Ref) const TextRange& textRange, int32 index, API_PARAM(Ref) const TextLayoutOptions& layout)
+    {
+        if (Render2D::EnableFontFallback && Render2D::FallbackFonts) {
+            return GetCharPositionInternal(Render2D::FallbackFonts, textRange.Substring(text), index, layout);
+        }
+        else {
+            return GetCharPositionInternal(textRange.Substring(text), index, layout);
+        }
+    }
+
+    /// <summary>
+    /// Calculates character position for given text and character index, follows the fallback settings defined in <see cref="Render2D" />.
     /// </summary>
     /// <param name="text">The input text to test.</param>
     /// <param name="index">The text position to get coordinates of.</param>
     /// <returns>The character position (upper left corner which can be used for a caret position).</returns>
     API_FUNCTION() FORCE_INLINE Float2 GetCharPosition(const StringView& text, int32 index)
     {
-        return GetCharPosition(text, index, TextLayoutOptions());
+        if (Render2D::EnableFontFallback && Render2D::FallbackFonts) {
+            return GetCharPositionInternal(Render2D::FallbackFonts, text, index, TextLayoutOptions());
+        }
+        else {
+            return GetCharPositionInternal(text, index, TextLayoutOptions());
+        }
     }
 
     /// <summary>
-    /// Calculates character position for given text and character index
+    /// Calculates character position for given text and character index, follows the fallback settings defined in <see cref="Render2D" />.
     /// </summary>
     /// <param name="text">The input text to test.</param>
     /// <param name="textRange">The input text range (substring range of the input text parameter).</param>
@@ -727,52 +990,12 @@ public:
     /// <returns>The character position (upper left corner which can be used for a caret position).</returns>
     API_FUNCTION() FORCE_INLINE Float2 GetCharPosition(const StringView& text, API_PARAM(Ref) const TextRange& textRange, int32 index)
     {
-        return GetCharPosition(textRange.Substring(text), index, TextLayoutOptions());
-    }
-
-    /// <summary>
-    /// Calculates character position for given text and character index.
-    /// </summary>
-    /// <param name="text">The input text to test.</param>
-    /// <param name="index">The text position to get coordinates of.</param>
-    /// <param name="layout">The text layout properties.</param>
-    /// <returns>The character position (upper left corner which can be used for a caret position).</returns>
-    API_FUNCTION() Float2 GetCharPosition(FontFallbackList* fallbacks, const StringView& text, int32 index, API_PARAM(Ref) const TextLayoutOptions& layout);
-
-    /// <summary>
-    /// Calculates character position for given text and character index.
-    /// </summary>
-    /// <param name="text">The input text to test.</param>
-    /// <param name="textRange">The input text range (substring range of the input text parameter).</param>
-    /// <param name="index">The text position to get coordinates of.</param>
-    /// <param name="layout">The text layout properties.</param>
-    /// <returns>The character position (upper left corner which can be used for a caret position).</returns>
-    API_FUNCTION() Float2 GetCharPosition(FontFallbackList* fallbacks, const StringView& text, API_PARAM(Ref) const TextRange& textRange, int32 index, API_PARAM(Ref) const TextLayoutOptions& layout)
-    {
-        return GetCharPosition(fallbacks, textRange.Substring(text), index, layout);
-    }
-
-    /// <summary>
-    /// Calculates character position for given text and character index
-    /// </summary>
-    /// <param name="text">The input text to test.</param>
-    /// <param name="index">The text position to get coordinates of.</param>
-    /// <returns>The character position (upper left corner which can be used for a caret position).</returns>
-    API_FUNCTION() FORCE_INLINE Float2 GetCharPosition(FontFallbackList* fallbacks, const StringView& text, int32 index)
-    {
-        return GetCharPosition(fallbacks, text, index, TextLayoutOptions());
-    }
-
-    /// <summary>
-    /// Calculates character position for given text and character index
-    /// </summary>
-    /// <param name="text">The input text to test.</param>
-    /// <param name="textRange">The input text range (substring range of the input text parameter).</param>
-    /// <param name="index">The text position to get coordinates of.</param>
-    /// <returns>The character position (upper left corner which can be used for a caret position).</returns>
-    API_FUNCTION() FORCE_INLINE Float2 GetCharPosition(FontFallbackList* fallbacks, const StringView& text, API_PARAM(Ref) const TextRange& textRange, int32 index)
-    {
-        return GetCharPosition(fallbacks, textRange.Substring(text), index, TextLayoutOptions());
+        if (Render2D::EnableFontFallback && Render2D::FallbackFonts) {
+            return GetCharPositionInternal(Render2D::FallbackFonts, textRange.Substring(text), index, TextLayoutOptions());
+        }
+        else {
+            return GetCharPositionInternal(textRange.Substring(text), index, TextLayoutOptions());
+        }
     }
 
     /// <summary>

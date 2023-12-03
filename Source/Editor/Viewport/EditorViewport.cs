@@ -548,9 +548,9 @@ namespace FlaxEditor.Viewport
                 #region Camera settings widget
 
                 var largestText = "Relative Panning";
-                var textSize = FallbackTextUtils.MeasureText(Style.Current.FontMedium, largestText);
+                var textSize = Style.Current.FontMedium.MeasureText(largestText);
                 var xLocationForExtras = textSize.X + 5;
-                var cameraSpeedTextWidth = FallbackTextUtils.MeasureText(Style.Current.FontMedium, "0.00").X;
+                var cameraSpeedTextWidth = Style.Current.FontMedium.MeasureText("0.00").X;
 
                 // Camera Settings Widget
                 _cameraWidget = new ViewportWidgetsContainer(ViewportWidgetLocation.UpperRight);
@@ -801,7 +801,7 @@ namespace FlaxEditor.Viewport
                 #region View mode widget
 
                 largestText = "Brightness";
-                textSize = FallbackTextUtils.MeasureText(Style.Current.FontMedium, largestText);
+                textSize = Style.Current.FontMedium.MeasureText(largestText);
                 xLocationForExtras = textSize.X + 5;
 
                 var viewMode = new ViewportWidgetsContainer(ViewportWidgetLocation.UpperLeft);
@@ -1233,8 +1233,8 @@ namespace FlaxEditor.Viewport
                     color = Color.Yellow;
                 var text = string.Format("FPS: {0}", fps);
                 var font = Style.Current.FontMedium;
-                FallbackTextUtils.DrawText(font, text, new Rectangle(Float2.One, Size), Color.Black);
-                FallbackTextUtils.DrawText(font, text, new Rectangle(Float2.Zero, Size), color);
+                Render2D.DrawText(font, text, new Rectangle(Float2.One, Size), Color.Black);
+                Render2D.DrawText(font, text, new Rectangle(Float2.Zero, Size), color);
             }
         }
 
@@ -1814,7 +1814,7 @@ namespace FlaxEditor.Viewport
             {
                 var bounds = new Rectangle(Float2.Zero, Size);
                 Render2D.FillRectangle(bounds, new Color(0.0f, 0.0f, 0.0f, 0.2f));
-                FallbackTextUtils.DrawText(Style.Current.FontLarge, "Debugger breakpoint hit...", bounds, Color.White, TextAlignment.Center, TextAlignment.Center);
+                Render2D.DrawText(Style.Current.FontLarge, "Debugger breakpoint hit...", bounds, Color.White, TextAlignment.Center, TextAlignment.Center);
             }
         }
 

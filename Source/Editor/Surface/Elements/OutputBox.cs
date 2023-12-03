@@ -189,7 +189,7 @@ namespace FlaxEditor.Surface.Elements
             // Draw text
             var style = Style.Current;
             var rect = new Rectangle(-100, 0, 100 - 2, Height);
-            FallbackTextUtils.DrawText(style.FontSmall, Text, rect, Enabled ? style.Foreground : style.ForegroundDisabled, TextAlignment.Far, TextAlignment.Center);
+            Render2D.DrawText(style.FontSmall, Text, rect, Enabled ? style.Foreground : style.ForegroundDisabled, TextAlignment.Far, TextAlignment.Center);
         }
     }
 }

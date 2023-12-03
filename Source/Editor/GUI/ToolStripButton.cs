@@ -136,7 +136,7 @@ namespace FlaxEditor.GUI
             if (!string.IsNullOrEmpty(_text))
             {
                 textRect.Size.X = Width - DefaultMargin - textRect.Left;
-                FallbackTextUtils.DrawText(style.FontMedium, _text, textRect, enabled ? style.Foreground : style.ForegroundDisabled, TextAlignment.Near, TextAlignment.Center);
+                Render2D.DrawText(style.FontMedium, _text, textRect, enabled ? style.Foreground : style.ForegroundDisabled, TextAlignment.Near, TextAlignment.Center);
             }
         }
 
@@ -151,7 +151,7 @@ namespace FlaxEditor.GUI
             if (hasSprite)
                 width += iconSize;
             if (!string.IsNullOrEmpty(_text) && style.FontMedium)
-                width += FallbackTextUtils.MeasureText(style.FontMedium, _text).X + (hasSprite ? DefaultMargin : 0);
+                width += style.FontMedium.MeasureText(_text).X + (hasSprite ? DefaultMargin : 0);
 
             Width = width;
         }

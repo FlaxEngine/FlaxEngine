@@ -25,7 +25,7 @@ namespace FlaxEditor.Surface.Elements
 
             var style = Style.Current;
             var color = Enabled ? style.Foreground : style.ForegroundDisabled;
-            FallbackTextUtils.DrawText(style.FontSmall, Archetype.Text, new Rectangle(Float2.Zero, Size), color, TextAlignment.Near, TextAlignment.Center);
+            Render2D.DrawText(style.FontSmall, Archetype.Text, new Rectangle(Float2.Zero, Size), color, TextAlignment.Near, TextAlignment.Center);
         }
     }
 }

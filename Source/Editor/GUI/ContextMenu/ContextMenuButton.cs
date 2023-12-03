@@ -128,12 +128,12 @@ namespace FlaxEditor.GUI.ContextMenu
             base.Draw();
 
             // Draw text
-            FallbackTextUtils.DrawText(style.FontMedium, Text, textRect, textColor, TextAlignment.Near, TextAlignment.Center);
+            Render2D.DrawText(style.FontMedium, Text, textRect, textColor, TextAlignment.Near, TextAlignment.Center);
 
             if (!string.IsNullOrEmpty(ShortKeys))
             {
                 // Draw short keys
-                FallbackTextUtils.DrawText(style.FontMedium, ShortKeys, textRect, textColor, TextAlignment.Far, TextAlignment.Center);
+                Render2D.DrawText(style.FontMedium, ShortKeys, textRect, textColor, TextAlignment.Far, TextAlignment.Center);
             }
 
             // Draw icon
@@ -235,9 +235,9 @@ namespace FlaxEditor.GUI.ContextMenu
                 float width = 20;
                 if (style.FontMedium)
                 {
-                    width += FallbackTextUtils.MeasureText(style.FontMedium, Text).X;
+                    width += style.FontMedium.MeasureText(Text).X;
                     if (!string.IsNullOrEmpty(ShortKeys))
-                        width += 40 + FallbackTextUtils.MeasureText(style.FontMedium, ShortKeys).X;
+                        width += 40 + style.FontMedium.MeasureText(ShortKeys).X;
                 }
 
                 return Mathf.Max(width, base.MinimumWidth);

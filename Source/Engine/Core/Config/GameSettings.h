@@ -36,15 +36,6 @@ public:
     String CopyrightNotice;
 
     /// <summary>
-    /// The copyright note used for content signing (eg. source code header).
-    /// </summary>
-    API_FIELD(Attributes = "EditorOrder(1200), EditorDisplay(\"Other Settings\")")
-    bool EnableFontFallback;
-
-    API_FIELD(Attributes = "EditorOrder(1205), EditorDisplay(\"Other Settings\")")
-    FontFallbackList* FontFallbacks;
-
-    /// <summary>
     /// The default application icon.
     /// </summary>
     Guid Icon = Guid::Empty;

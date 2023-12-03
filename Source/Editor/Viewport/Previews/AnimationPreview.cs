@@ -96,11 +96,11 @@ namespace FlaxEditor.Viewport.Previews
             var skinnedModel = SkinnedModel;
             if (skinnedModel == null)
             {
-                FallbackTextUtils.DrawText(style.FontLarge, "Missing Base Model", new Rectangle(Float2.Zero, Size), Color.Red, TextAlignment.Center, TextAlignment.Center, TextWrapping.WrapWords);
+                Render2D.DrawText(style.FontLarge, "Missing Base Model", new Rectangle(Float2.Zero, Size), Color.Red, TextAlignment.Center, TextAlignment.Center, TextWrapping.WrapWords);
             }
             else if (!skinnedModel.IsLoaded)
             {
-                FallbackTextUtils.DrawText(style.FontLarge, "Loading...", new Rectangle(Float2.Zero, Size), style.ForegroundDisabled, TextAlignment.Center, TextAlignment.Center);
+                Render2D.DrawText(style.FontLarge, "Loading...", new Rectangle(Float2.Zero, Size), style.ForegroundDisabled, TextAlignment.Center, TextAlignment.Center);
             }
         }
 

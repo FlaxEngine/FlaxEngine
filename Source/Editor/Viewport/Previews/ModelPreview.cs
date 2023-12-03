@@ -409,8 +409,8 @@ namespace FlaxEditor.Viewport.Previews
                 }
                 var font = Style.Current.FontMedium;
                 var pos = new Float2(10, 50);
-                FallbackTextUtils.DrawText(font, text, new Rectangle(pos + Float2.One, Size), Color.Black);
-                FallbackTextUtils.DrawText(font, text, new Rectangle(pos, Size), Color.White);
+                Render2D.DrawText(font, text, new Rectangle(pos + Float2.One, Size), Color.Black);
+                Render2D.DrawText(font, text, new Rectangle(pos, Size), Color.White);
             }
         }
 

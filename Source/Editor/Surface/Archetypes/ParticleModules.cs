@@ -113,7 +113,7 @@ namespace FlaxEditor.Surface.Archetypes
                 var idx = (int)ModuleType;
                 var headerRect = new Rectangle(0, 0, Width, 16.0f);
                 //Render2D.FillRectangle(headerRect, Color.Red);
-                FallbackTextUtils.DrawText(style.FontMedium, Title, headerRect, style.Foreground, TextAlignment.Center, TextAlignment.Center);
+                Render2D.DrawText(style.FontMedium, Title, headerRect, style.Foreground, TextAlignment.Center, TextAlignment.Center);
 
                 DrawChildren();
 

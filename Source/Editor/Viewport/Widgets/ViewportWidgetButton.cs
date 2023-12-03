@@ -123,7 +123,7 @@ namespace FlaxEditor.Viewport.Widgets
             }
 
             // Draw text
-            FallbackTextUtils.DrawText(style.FontMedium, _text, textRect, style.ForegroundViewport * (IsMouseOver ? 1.0f : 0.9f), TextAlignment.Center, TextAlignment.Center);
+            Render2D.DrawText(style.FontMedium, _text, textRect, style.ForegroundViewport * (IsMouseOver ? 1.0f : 0.9f), TextAlignment.Center, TextAlignment.Center);
         }
 
         /// <inheritdoc />
@@ -163,7 +163,7 @@ namespace FlaxEditor.Viewport.Widgets
             var style = Style.Current;
 
             if (style != null && style.FontMedium)
-                Width = CalculateButtonWidth(_forcedTextWidth > 0.0f ? _forcedTextWidth : FallbackTextUtils.MeasureText(style.FontMedium, _text).X, Icon.IsValid);
+                Width = CalculateButtonWidth(_forcedTextWidth > 0.0f ? _forcedTextWidth : style.FontMedium.MeasureText(_text).X, Icon.IsValid);
         }
     }
 }

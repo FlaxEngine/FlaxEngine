@@ -157,7 +157,7 @@ namespace FlaxEditor.GUI
             {
                 Rectangle textRectangle = r;
                 textRectangle.X = 4;
-                FallbackTextUtils.DrawText(style.FontMedium, "No Style", textRectangle, style.Foreground);
+                Render2D.DrawText(style.FontMedium, "No Style", textRectangle, style.Foreground);
             }
         }
 

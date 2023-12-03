@@ -104,7 +104,7 @@ namespace FlaxEngine.GUI
                 return Float2.Zero;
             }
 
-            return FallbackTextUtils.MeasureText(font, _text, ref _layout);
+            return font.MeasureText(_text, ref _layout);
         }
 
         /// <inheritdoc />
@@ -117,8 +117,8 @@ namespace FlaxEngine.GUI
                 return Float2.Zero;
             }
 
-            height = FallbackTextUtils.GetMaxHeight(font) / DpiScale;
-            return FallbackTextUtils.GetCharPosition(font, _text, index, ref _layout);
+            height = font.GetMaxHeight() / DpiScale;
+            return font.GetCharPosition(_text, index, ref _layout);
         }
 
         /// <inheritdoc />
@@ -130,7 +130,7 @@ namespace FlaxEngine.GUI
                 return 0;
             }
 
-            return FallbackTextUtils.HitTestText(font, _text, location, ref _layout);
+            return font.HitTestText(_text, location, ref _layout);
         }
 
         /// <inheritdoc />
@@ -169,9 +169,9 @@ namespace FlaxEngine.GUI
             // Check if sth is selected to draw selection
             if (HasSelection)
             {
-                var leftEdge = FallbackTextUtils.GetCharPosition(font, _text, SelectionLeft, ref _layout);
-                var rightEdge = FallbackTextUtils.GetCharPosition(font, _text, SelectionRight, ref _layout);
-                float fontHeight = FallbackTextUtils.GetMaxHeight(font) / DpiScale;
+                var leftEdge = font.GetCharPosition(_text, SelectionLeft, ref _layout);
+                var rightEdge = font.GetCharPosition(_text, SelectionRight, ref _layout);
+                float fontHeight = font.GetMaxHeight() / DpiScale;
 
                 // Draw selection background
                 float alpha = Mathf.Min(1.0f, Mathf.Cos(_animateTime * BackgroundSelectedFlashSpeed) * 0.5f + 1.3f);
@@ -211,11 +211,11 @@ namespace FlaxEngine.GUI
                 var color = TextColor;
                 if (!enabled)
                     color *= 0.6f;
-                FallbackTextUtils.DrawText(font, _text, color, ref _layout, TextMaterial);
+                Render2D.DrawText(font, _text, color, ref _layout, TextMaterial);
             }
             else if (!string.IsNullOrEmpty(_watermarkText) && !IsFocused)
             {
-                FallbackTextUtils.DrawText(font, _watermarkText, WatermarkTextColor, ref _layout, TextMaterial);
+                Render2D.DrawText(font, _watermarkText, WatermarkTextColor, ref _layout, TextMaterial);
             }
 
             // Caret

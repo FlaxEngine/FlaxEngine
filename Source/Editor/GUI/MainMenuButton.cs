@@ -72,7 +72,7 @@ namespace FlaxEditor.GUI
             }
 
             // Draw text
-            FallbackTextUtils.DrawText(style.FontMedium, Text, clientRect, enabled && hasChildItems ? style.Foreground : style.ForegroundDisabled, TextAlignment.Center, TextAlignment.Center);
+            Render2D.DrawText(style.FontMedium, Text, clientRect, enabled && hasChildItems ? style.Foreground : style.ForegroundDisabled, TextAlignment.Center, TextAlignment.Center);
         }
 
         /// <inheritdoc />
@@ -102,7 +102,7 @@ namespace FlaxEditor.GUI
             float width = 18;
 
             if (style.FontMedium)
-                width += FallbackTextUtils.MeasureText(style.FontMedium, Text).X;
+                width += style.FontMedium.MeasureText(Text).X;
 
             Width = width;
         }

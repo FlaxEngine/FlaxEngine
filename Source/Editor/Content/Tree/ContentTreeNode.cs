@@ -150,8 +150,8 @@ namespace FlaxEditor.Content
                     var textRect = TextRect;
                     for (int i = 0; i < ranges.Length; i++)
                     {
-                        var start = FallbackTextUtils.GetCharPosition(font, text, ranges[i].StartIndex);
-                        var end = FallbackTextUtils.GetCharPosition(font, text, ranges[i].EndIndex);
+                        var start = font.GetCharPosition(text, ranges[i].StartIndex);
+                        var end = font.GetCharPosition(text, ranges[i].EndIndex);
                         _highlights.Add(new Rectangle(start.X + textRect.X, textRect.Y, end.X - start.X, textRect.Height));
                     }
                     isThisVisible = true;

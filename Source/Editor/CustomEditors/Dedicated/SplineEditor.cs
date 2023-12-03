@@ -226,7 +226,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
                     if (!enabled)
                         color *= 0.6f;
                     Render2D.DrawSprite(tab._customIcon, iconRect, color);
-                    FallbackTextUtils.DrawText(style.FontMedium, tab._customText, new Rectangle(0, iconSize, size.X, textHeight), color, TextAlignment.Center, TextAlignment.Center);
+                    Render2D.DrawText(style.FontMedium, tab._customText, new Rectangle(0, iconSize, size.X, textHeight), color, TextAlignment.Center, TextAlignment.Center);
                 }
             }
 

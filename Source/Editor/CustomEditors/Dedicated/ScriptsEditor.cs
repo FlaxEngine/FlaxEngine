@@ -42,7 +42,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
 
             // Add script button
             var buttonText = "Add script";
-            var textSize = FallbackTextUtils.MeasureText(Style.Current.FontMedium, buttonText);
+            var textSize = Style.Current.FontMedium.MeasureText(buttonText);
             float addScriptButtonWidth = (textSize.X < 60.0f) ? 60.0f : textSize.X + 4;
             var buttonHeight = (textSize.Y < 18) ? 18 : textSize.Y + 4;
             _addScriptsButton = new Button
@@ -86,7 +86,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
             var size = Size;
 
             // Info
-            FallbackTextUtils.DrawText(style.FontSmall, "Drag scripts here", new Rectangle(2, _addScriptsButton.Height + 4, size.X - 4, size.Y - 4 - 20), style.ForegroundDisabled, TextAlignment.Center, TextAlignment.Center);
+            Render2D.DrawText(style.FontSmall, "Drag scripts here", new Rectangle(2, _addScriptsButton.Height + 4, size.X - 4, size.Y - 4 - 20), style.ForegroundDisabled, TextAlignment.Center, TextAlignment.Center);
 
             // Check if drag is over
             if (IsDragOver && _dragHandlers != null && _dragHandlers.HasValidDrag)

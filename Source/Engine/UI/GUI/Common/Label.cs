@@ -233,7 +233,7 @@ namespace FlaxEngine.GUI
                 }
             }
 
-            FallbackTextUtils.DrawText(_font.GetFont(), Material, _text, rect, color, hAlignment, wAlignment, Wrapping, BaseLinesGapScale, scale);
+            Render2D.DrawText(_font.GetFont(), Material, _text, rect, color, hAlignment, wAlignment, Wrapping, BaseLinesGapScale, scale);
 
             if (ClipText)
                 Render2D.PopClip();
@@ -254,7 +254,7 @@ namespace FlaxEngine.GUI
                         layout.Bounds.Size.X = Width - Margin.Width;
                     else if (_autoWidth && !_autoHeight)
                         layout.Bounds.Size.Y = Height - Margin.Height;
-                    _textSize = FallbackTextUtils.MeasureText(font, _text, ref layout);
+                    _textSize = font.MeasureText(_text, ref layout);
                     _textSize.Y *= BaseLinesGapScale;
 
                     // Check if size is controlled via text

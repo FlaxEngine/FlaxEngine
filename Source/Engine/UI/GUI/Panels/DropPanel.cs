@@ -374,7 +374,7 @@ namespace FlaxEngine.GUI
                 textColor *= 0.6f;
             }
 
-            FallbackTextUtils.DrawText(HeaderTextFont.GetFont(), HeaderTextMaterial, HeaderText, textRect, textColor, TextAlignment.Near, TextAlignment.Center);
+            Render2D.DrawText(HeaderTextFont.GetFont(), HeaderTextMaterial, HeaderText, textRect, textColor, TextAlignment.Near, TextAlignment.Center);
 
             if (!_isClosed && EnableContainmentLines)
             {

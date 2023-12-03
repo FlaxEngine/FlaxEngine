@@ -103,6 +103,18 @@ void Font::Invalidate()
     _characters.Clear();
 }
 
+inline API_FUNCTION() float Font::GetMaxHeight(FontFallbackList* fallbacks) const
+{
+    float height = GetHeight();
+    auto& fallbackFonts = fallbacks->GetFontList(GetSize());
+    for (int32 i = 0; i < fallbackFonts.Count(); i++)
+    {
+        height = Math::Max(height, static_cast<float>(fallbackFonts[i]->GetHeight()));
+    }
+
+    return height;
+}
+
 void Font::ProcessText(const StringView& text, Array<FontLineCache>& outputLines, const TextLayoutOptions& layout)
 {
     float cursorX = 0;
@@ -548,7 +560,7 @@ void Font::ProcessText(FontFallbackList* fallbacks, const StringView& text, Arra
     }
 }
 
-Float2 Font::MeasureText(const StringView& text, const TextLayoutOptions& layout)
+Float2 Font::MeasureTextInternal(const StringView& text, const TextLayoutOptions& layout)
 {
     // Check if there is no need to do anything
     if (text.IsEmpty())
@@ -569,7 +581,7 @@ Float2 Font::MeasureText(const StringView& text, const TextLayoutOptions& layout
     return max;
 }
 
-Float2 Font::MeasureText(FontFallbackList* fallbacks, const StringView& text, const TextLayoutOptions& layout)
+Float2 Font::MeasureTextInternal(FontFallbackList* fallbacks, const StringView& text, const TextLayoutOptions& layout)
 {
     // Check if there is no need to do anything
     if (text.IsEmpty())
@@ -590,7 +602,7 @@ Float2 Font::MeasureText(FontFallbackList* fallbacks, const StringView& text, co
     return max;
 }
 
-int32 Font::HitTestText(const StringView& text, const Float2& location, const TextLayoutOptions& layout)
+int32 Font::HitTestTextInternal(const StringView& text, const Float2& location, const TextLayoutOptions& layout)
 {
     // Check if there is no need to do anything
     if (text.Length() <= 0)
@@ -664,7 +676,7 @@ int32 Font::HitTestText(const StringView& text, const Float2& location, const Te
     return smallestIndex;
 }
 
-int32 Font::HitTestText(FontFallbackList* fallbacks, const StringView& text, const Float2& location, const TextLayoutOptions& layout)
+int32 Font::HitTestTextInternal(FontFallbackList* fallbacks, const StringView& text, const Float2& location, const TextLayoutOptions& layout)
 {
     // Check if there is no need to do anything
     if (text.Length() <= 0)
@@ -764,7 +776,7 @@ int32 Font::HitTestText(FontFallbackList* fallbacks, const StringView& text, con
     return smallestIndex;
 }
 
-Float2 Font::GetCharPosition(const StringView& text, int32 index, const TextLayoutOptions& layout)
+Float2 Font::GetCharPositionInternal(const StringView& text, int32 index, const TextLayoutOptions& layout)
 {
     // Check if there is no need to do anything
     if (text.IsEmpty())
@@ -818,7 +830,7 @@ Float2 Font::GetCharPosition(const StringView& text, int32 index, const TextLayo
     return rootOffset + Float2(lines.Last().Location.X + lines.Last().Size.X, static_cast<float>((lines.Count() - 1) * baseLinesDistance));
 }
 
-Float2 Font::GetCharPosition(FontFallbackList* fallbacks, const StringView& text, int32 index, const TextLayoutOptions& layout)
+Float2 Font::GetCharPositionInternal(FontFallbackList* fallbacks, const StringView& text, int32 index, const TextLayoutOptions& layout)
 {
     // Check if there is no need to do anything
     if (text.IsEmpty())

@@ -199,7 +199,7 @@ namespace FlaxEditor.Surface
                     continue;
                 if (child is InputBox inputBox)
                 {
-                    var boxWidth = FallbackTextUtils.MeasureText(boxLabelFont, inputBox.Text).X + 20;
+                    var boxWidth = boxLabelFont.MeasureText(inputBox.Text).X + 20;
                     if (inputBox.DefaultValueEditor != null)
                         boxWidth += inputBox.DefaultValueEditor.Width + 4;
                     leftWidth = Mathf.Max(leftWidth, boxWidth);
@@ -207,7 +207,7 @@ namespace FlaxEditor.Surface
                 }
                 else if (child is OutputBox outputBox)
                 {
-                    rightWidth = Mathf.Max(rightWidth, FallbackTextUtils.MeasureText(boxLabelFont, outputBox.Text).X + 20);
+                    rightWidth = Mathf.Max(rightWidth, boxLabelFont.MeasureText(outputBox.Text).X + 20);
                     rightHeight = Mathf.Max(rightHeight, outputBox.Archetype.Position.Y - Constants.NodeMarginY - Constants.NodeHeaderSize + 20.0f);
                 }
                 else if (child is Control control)
@@ -225,7 +225,7 @@ namespace FlaxEditor.Surface
                 }
             }
             width = Mathf.Max(width, leftWidth + rightWidth + 10);
-            width = Mathf.Max(width, FallbackTextUtils.MeasureText(titleLabelFont, Title).X + 30);
+            width = Mathf.Max(width, titleLabelFont.MeasureText(Title).X + 30);
             height = Mathf.Max(height, Mathf.Max(leftHeight, rightHeight));
             Resize(width, height);
         }
@@ -1027,7 +1027,7 @@ namespace FlaxEditor.Surface
             if (_headerRect.Contains(ref _mousePosition))
                 headerColor *= 1.07f;
             Render2D.FillRectangle(_headerRect, headerColor);
-            FallbackTextUtils.DrawText(style.FontLarge, Title, _headerRect, style.Foreground, TextAlignment.Center, TextAlignment.Center);
+            Render2D.DrawText(style.FontLarge, Title, _headerRect, style.Foreground, TextAlignment.Center, TextAlignment.Center);
 
             // Close button
             if ((Archetype.Flags & NodeFlags.NoCloseButton) == 0 && Surface.CanEdit)

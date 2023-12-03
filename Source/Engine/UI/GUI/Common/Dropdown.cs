@@ -475,7 +475,7 @@ namespace FlaxEngine.GUI
             var font = Font.GetFont();
             for (int i = 0; i < _items.Count; i++)
             {
-                itemsWidth = Mathf.Max(itemsWidth, itemsMargin + 4 + FallbackTextUtils.MeasureText(font, _items[i]).X);
+                itemsWidth = Mathf.Max(itemsWidth, itemsMargin + 4 + font.MeasureText(_items[i]).X);
             }
             */
             var itemsWidth = Width;
@@ -673,7 +673,7 @@ namespace FlaxEngine.GUI
                 var textRect = new Rectangle(margin, 0, clientRect.Width - boxSize - 2.0f * margin, clientRect.Height);
                 Render2D.PushClip(textRect);
                 var textColor = TextColor;
-                FallbackTextUtils.DrawText(Font.GetFont(), FontMaterial, _items[_selectedIndex], textRect, enabled ? textColor : textColor * 0.5f, TextAlignment.Near, TextAlignment.Center);
+                Render2D.DrawText(Font.GetFont(), FontMaterial, _items[_selectedIndex], textRect, enabled ? textColor : textColor * 0.5f, TextAlignment.Near, TextAlignment.Center);
                 Render2D.PopClip();
             }
 

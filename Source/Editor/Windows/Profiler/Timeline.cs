@@ -85,12 +85,12 @@ namespace FlaxEditor.Windows.Profiler
                 Render2D.DrawRectangle(bounds, color * 0.5f);
 
                 if (_nameLength < 0 && style.FontMedium)
-                    _nameLength = FallbackTextUtils.MeasureText(style.FontMedium, _name).X;
+                    _nameLength = style.FontMedium.MeasureText(_name).X;
 
                 if (_nameLength < bounds.Width + 4)
                 {
                     Render2D.PushClip(bounds);
-                    FallbackTextUtils.DrawText(style.FontMedium, _name, bounds, Style.Current.Foreground, TextAlignment.Center, TextAlignment.Center);
+                    Render2D.DrawText(style.FontMedium, _name, bounds, Style.Current.Foreground, TextAlignment.Center, TextAlignment.Center);
                     Render2D.PopClip();
                 }
             }
@@ -115,7 +115,7 @@ namespace FlaxEditor.Windows.Profiler
                 var style = Style.Current;
                 var rect = new Rectangle(Float2.Zero, Size);
                 Render2D.PushClip(rect);
-                FallbackTextUtils.DrawText(style.FontMedium, Name, rect, Style.Current.Foreground, TextAlignment.Center, TextAlignment.Center, TextWrapping.WrapChars);
+                Render2D.DrawText(style.FontMedium, Name, rect, Style.Current.Foreground, TextAlignment.Center, TextAlignment.Center, TextWrapping.WrapChars);
                 Render2D.PopClip();
             }
         }
