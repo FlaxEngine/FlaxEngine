@@ -9,6 +9,7 @@
 #include "Engine/Core/Collections/Sorting.h"
 #include "Engine/Platform/FileSystem.h"
 #include "Engine/Tools/TextureTool/TextureTool.h"
+#include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Platform/File.h"
 
 #define OPEN_FBX_CONVERT_SPACE 1
@@ -425,7 +426,7 @@ Matrix GetOffsetMatrix(OpenFbxImporterData& data, const ofbx::Mesh* mesh, const 
             }
         }
     }
-	//return Matrix::Identity;
+    //return Matrix::Identity;
     return ToMatrix(node->getGlobalTransform());
 #else
     Matrix t = Matrix::Identity;
@@ -523,7 +524,9 @@ bool ImportBones(OpenFbxImporterData& data, String& errorMsg)
 
 bool ProcessMesh(ModelData& result, OpenFbxImporterData& data, const ofbx::Mesh* aMesh, MeshData& mesh, String& errorMsg, int32 triangleStart, int32 triangleEnd)
 {
-    // Prepare
+    PROFILE_CPU();
+    mesh.Name = aMesh->name;
+    ZoneText(*mesh.Name, mesh.Name.Length());
     const int32 firstVertexOffset = triangleStart * 3;
     const int32 lastVertexOffset = triangleEnd * 3;
     const ofbx::Geometry* aGeometry = aMesh->getGeometry();
@@ -538,7 +541,6 @@ bool ProcessMesh(ModelData& result, OpenFbxImporterData& data, const ofbx::Mesh*
     const ofbx::BlendShape* blendShape = aGeometry->getBlendShape();
 
     // Properties
-    mesh.Name = aMesh->name;
     const ofbx::Material* aMaterial = nullptr;
     if (aMesh->getMaterialCount() > 0)
     {
@@ -842,7 +844,7 @@ bool ProcessMesh(ModelData& result, OpenFbxImporterData& data, const ofbx::Mesh*
         mesh.OriginTranslation = scale * Vector3(translation.X, translation.Y, -translation.Z);
     else
         mesh.OriginTranslation = scale * Vector3(translation.X, translation.Y, translation.Z);
-    
+
     auto rot = aMesh->getLocalRotation();
     auto quat = Quaternion::Euler(-(float)rot.x, -(float)rot.y, -(float)rot.z);
     mesh.OriginOrientation = quat;
@@ -854,6 +856,8 @@ bool ProcessMesh(ModelData& result, OpenFbxImporterData& data, const ofbx::Mesh*
 
 bool ImportMesh(ModelData& result, OpenFbxImporterData& data, const ofbx::Mesh* aMesh, String& errorMsg, int32 triangleStart, int32 triangleEnd)
 {
+    PROFILE_CPU();
+
     // Find the parent node
     int32 nodeIndex = data.FindNode(aMesh);
 
@@ -1128,7 +1132,11 @@ bool ModelTool::ImportDataOpenFBX(const char* path, ModelData& data, Options& op
     {
         loadFlags |= (ofbx::u64)ofbx::LoadFlags::IGNORE_GEOMETRY | (ofbx::u64)ofbx::LoadFlags::IGNORE_BLEND_SHAPES;
     }
-    ofbx::IScene* scene = ofbx::load(fileData.Get(), fileData.Count(), loadFlags);
+    ofbx::IScene* scene;
+    {
+        PROFILE_CPU_NAMED("ofbx::load");
+        scene = ofbx::load(fileData.Get(), fileData.Count(), loadFlags);
+    }
     if (!scene)
     {
         errorMsg = ofbx::getError();

@@ -961,6 +961,7 @@ void PhysicalMaterial::UpdatePhysicsMaterial()
 
 bool CollisionCooking::CookConvexMesh(CookingInput& input, BytesContainer& output)
 {
+    PROFILE_CPU();
     ENSURE_CAN_COOK;
     if (input.VertexCount == 0)
         LOG(Warning, "Empty mesh data for collision cooking.");
@@ -1004,6 +1005,7 @@ bool CollisionCooking::CookConvexMesh(CookingInput& input, BytesContainer& outpu
 
 bool CollisionCooking::CookTriangleMesh(CookingInput& input, BytesContainer& output)
 {
+    PROFILE_CPU();
     ENSURE_CAN_COOK;
     if (input.VertexCount == 0 || input.IndexCount == 0)
         LOG(Warning, "Empty mesh data for collision cooking.");
@@ -1038,6 +1040,7 @@ bool CollisionCooking::CookTriangleMesh(CookingInput& input, BytesContainer& out
 
 bool CollisionCooking::CookHeightField(int32 cols, int32 rows, const PhysicsBackend::HeightFieldSample* data, WriteStream& stream)
 {
+    PROFILE_CPU();
     ENSURE_CAN_COOK;
 
     PxHeightFieldDesc heightFieldDesc;

@@ -562,6 +562,7 @@ bool FlaxStorage::Reload()
 {
     if (!IsLoaded())
         return false;
+    PROFILE_CPU();
 
     OnReloading(this);
 
@@ -776,6 +777,8 @@ FlaxChunk* FlaxStorage::AllocateChunk()
 
 bool FlaxStorage::Create(const StringView& path, const AssetInitData* data, int32 dataCount, bool silentMode, const CustomData* customData)
 {
+    PROFILE_CPU();
+    ZoneText(*path, path.Length());
     LOG(Info, "Creating package at \'{0}\'. Silent Mode: {1}", path, silentMode);
 
     // Prepare to have access to the file

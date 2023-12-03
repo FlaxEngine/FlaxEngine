@@ -444,6 +444,8 @@ void RemoveNamespace(String& name)
 
 bool ModelTool::ImportData(const String& path, ModelData& data, Options& options, String& errorMsg)
 {
+    PROFILE_CPU();
+
     // Validate options
     options.Scale = Math::Clamp(options.Scale, 0.0001f, 100000.0f);
     options.SmoothingNormalsAngle = Math::Clamp(options.SmoothingNormalsAngle, 0.0f, 175.0f);
@@ -782,6 +784,7 @@ String GetAdditionalImportPath(const String& autoImportOutput, Array<String>& im
 
 bool ModelTool::ImportModel(const String& path, ModelData& data, Options& options, String& errorMsg, const String& autoImportOutput)
 {
+    PROFILE_CPU();
     LOG(Info, "Importing model from \'{0}\'", path);
     const auto startTime = DateTime::NowUTC();
 

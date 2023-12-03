@@ -306,6 +306,8 @@ bool AssetsImportingManager::ImportIfEdited(const StringView& inputPath, const S
 
 bool AssetsImportingManager::Create(const Function<CreateAssetResult(CreateAssetContext&)>& callback, const StringView& inputPath, const StringView& outputPath, Guid& assetId, void* arg)
 {
+    PROFILE_CPU();
+    ZoneText(*outputPath, outputPath.Length());
     const auto startTime = Platform::GetTimeSeconds();
 
     // Pick ID if not specified
@@ -369,7 +371,7 @@ bool AssetsImportingManager::Create(const Function<CreateAssetResult(CreateAsset
     if (result == CreateAssetResult::Ok)
     {
         // Register asset
-        Content::GetRegistry()->RegisterAsset(context.Data.Header, outputPath);
+        Content::GetRegistry()->RegisterAsset(context.Data.Header, context.TargetAssetPath);
 
         // Done
         const auto endTime = Platform::GetTimeSeconds();

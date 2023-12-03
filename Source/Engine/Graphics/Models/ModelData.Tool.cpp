@@ -10,6 +10,7 @@
 #include "Engine/Core/Collections/BitArray.h"
 #include "Engine/Tools/ModelTool/ModelTool.h"
 #include "Engine/Tools/ModelTool/VertexTriangleAdjacency.h"
+#include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Platform/Platform.h"
 #define USE_MIKKTSPACE 1
 #include "ThirdParty/MikkTSpace/mikktspace.h"
@@ -78,6 +79,7 @@ void RemapArrayHelper(Array<T>& target, const std::vector<uint32_t>& remap)
 
 bool MeshData::GenerateLightmapUVs()
 {
+    PROFILE_CPU();
 #if PLATFORM_WINDOWS
     // Prepare
     HRESULT hr;
@@ -235,6 +237,7 @@ void RemapBuffer(Array<T>& src, Array<T>& dst, const Array<int32>& mapping, int3
 
 void MeshData::BuildIndexBuffer()
 {
+    PROFILE_CPU();
     const auto startTime = Platform::GetTimeSeconds();
 
     const int32 vertexCount = Positions.Count();
@@ -341,6 +344,7 @@ bool MeshData::GenerateNormals(float smoothingAngle)
         LOG(Warning, "Missing vertex or index data to generate normals.");
         return true;
     }
+    PROFILE_CPU();
 
     const auto startTime = Platform::GetTimeSeconds();
 
@@ -520,6 +524,7 @@ bool MeshData::GenerateTangents(float smoothingAngle)
         LOG(Warning, "Missing normals or texcoors data to generate tangents.");
         return true;
     }
+    PROFILE_CPU();
 
     const auto startTime = Platform::GetTimeSeconds();
     const int32 vertexCount = Positions.Count();
@@ -706,6 +711,7 @@ void MeshData::ImproveCacheLocality()
 
     if (Positions.IsEmpty() || Indices.IsEmpty() || Positions.Count() <= VertexCacheSize)
         return;
+    PROFILE_CPU();
 
     const auto startTime = Platform::GetTimeSeconds();
 
@@ -886,6 +892,7 @@ void MeshData::ImproveCacheLocality()
 
 float MeshData::CalculateTrianglesArea() const
 {
+    PROFILE_CPU();
     float sum = 0;
     // TODO: use SIMD
     for (int32 i = 0; i + 2 < Indices.Count(); i += 3)

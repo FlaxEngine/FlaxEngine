@@ -17,6 +17,7 @@
 #include "Engine/Content/Content.h"
 #include "Engine/Platform/FileSystem.h"
 #include "Engine/Utilities/RectPack.h"
+#include "Engine/Profiler/ProfilerCPU.h"
 #include "AssetsImportingManager.h"
 
 bool ImportModel::TryGetImportOptions(const StringView& path, Options& options)
@@ -437,6 +438,7 @@ CreateAssetResult ImportModel::Create(CreateAssetContext& context)
 
 CreateAssetResult ImportModel::CreateModel(CreateAssetContext& context, ModelData& modelData, const Options* options)
 {
+    PROFILE_CPU();
     IMPORT_SETUP(Model, Model::SerializedVersion);
 
     // Save model header
@@ -487,6 +489,7 @@ CreateAssetResult ImportModel::CreateModel(CreateAssetContext& context, ModelDat
 
 CreateAssetResult ImportModel::CreateSkinnedModel(CreateAssetContext& context, ModelData& modelData, const Options* options)
 {
+    PROFILE_CPU();
     IMPORT_SETUP(SkinnedModel, SkinnedModel::SerializedVersion);
 
     // Save skinned model header
@@ -528,6 +531,7 @@ CreateAssetResult ImportModel::CreateSkinnedModel(CreateAssetContext& context, M
 
 CreateAssetResult ImportModel::CreateAnimation(CreateAssetContext& context, ModelData& modelData, const Options* options)
 {
+    PROFILE_CPU();
     IMPORT_SETUP(Animation, Animation::SerializedVersion);
 
     // Save animation data
