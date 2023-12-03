@@ -121,13 +121,13 @@ public:
     PostProcessSettings PostProcessSettings;
 
     /// <summary>
-    /// 
+    /// Whether to enable font fallbacking globally. 
     /// </summary>
     API_FIELD(Attributes = "EditorOrder(12000), EditorDisplay(\"Text Render Settings\", EditorDisplayAttribute.InlineStyle)")
     bool EnableFontFallback = true;
 
     /// <summary>
-    /// 
+    /// The fallback fonts used for text rendering, ignored if null.
     /// </summary>
     API_FIELD(Attributes = "EditorOrder(12005), EditorDisplay(\"Text Render Settings\", EditorDisplayAttribute.InlineStyle)")
     FontFallbackList* FallbackFonts;

@@ -281,6 +281,15 @@ public:
         }
     }
 
+    /// <summary>
+    /// Draws a text, follows the fallback settings defined in <see cref="Render2D" />.
+    /// </summary>
+    /// <param name="font">The font to use.</param>
+    /// <param name="text">The text to render.</param>
+    /// <param name="textRange">The input text range (substring range of the input text parameter).</param>
+    /// <param name="color">The text color.</param>
+    /// <param name="location">The text location.</param>
+    /// <param name="customMaterial">The custom material for font characters rendering. It must contain texture parameter named Font used to sample font texture.</param>
     API_FUNCTION() FORCE_INLINE static void DrawText(Font* font, const StringView& text, API_PARAM(Ref) const TextRange& textRange, const Color& color, const Float2& location, MaterialBase* customMaterial = nullptr) {
         if (EnableFontFallback && FallbackFonts) {
             DrawTextInternal(font, FallbackFonts, text, textRange, color, location, customMaterial);
@@ -290,6 +299,14 @@ public:
         }
     }
 
+    /// <summary>
+    /// Draws a text with formatting, follows the fallback settings defined in <see cref="Render2D" />.
+    /// </summary>
+    /// <param name="font">The font to use.</param>
+    /// <param name="text">The text to render.</param>
+    /// <param name="color">The text color.</param>
+    /// <param name="layout">The text layout properties.</param>
+    /// <param name="customMaterial">The custom material for font characters rendering. It must contain texture parameter named Font used to sample font texture.</param>
     API_FUNCTION() FORCE_INLINE static void DrawText(Font* font, const StringView& text, const Color& color, API_PARAM(Ref) const TextLayoutOptions& layout, MaterialBase* customMaterial = nullptr) {
         if (EnableFontFallback && FallbackFonts) {
             DrawTextInternal(font, FallbackFonts, text, color, layout, customMaterial);
@@ -299,6 +316,15 @@ public:
         }
     }
 
+    /// <summary>
+    /// Draws a text with formatting, follows the fallback settings defined in <see cref="Render2D" />.
+    /// </summary>
+    /// <param name="font">The font to use.</param>
+    /// <param name="text">The text to render.</param>
+    /// <param name="textRange">The input text range (substring range of the input text parameter).</param>
+    /// <param name="color">The text color.</param>
+    /// <param name="layout">The text layout properties.</param>
+    /// <param name="customMaterial">The custom material for font characters rendering. It must contain texture parameter named Font used to sample font texture.</param>
     API_FUNCTION() FORCE_INLINE static void DrawText(Font* font, const StringView& text, API_PARAM(Ref) const TextRange& textRange, const Color& color, API_PARAM(Ref) const TextLayoutOptions& layout, MaterialBase* customMaterial = nullptr) {
         if (EnableFontFallback && FallbackFonts) {
             DrawTextInternal(font, FallbackFonts, text, textRange, color, layout, customMaterial);
