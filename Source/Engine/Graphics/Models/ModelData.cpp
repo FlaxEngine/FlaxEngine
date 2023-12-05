@@ -729,7 +729,12 @@ bool ModelData::Pack2ModelHeader(WriteStream* stream) const
 
         // Amount of meshes
         const int32 meshes = lod.Meshes.Count();
-        if (meshes == 0 || meshes > MODEL_MAX_MESHES)
+        if (meshes == 0)
+        {
+            LOG(Warning, "Empty LOD.");
+            return true;
+        }
+        if (meshes > MODEL_MAX_MESHES)
         {
             LOG(Warning, "Too many meshes per LOD.");
             return true;
