@@ -108,6 +108,7 @@ namespace
     };
 
     ChunkedArray<Location, 256> ManagedSourceLocations;
+    uint32 ManagedEventsCount[PLATFORM_THREADS_LIMIT] = { 0 };
 #endif
 #endif
 }
@@ -145,7 +146,9 @@ DEFINE_INTERNAL_CALL(void) ProfilerInternal_BeginEvent(MString* nameObj)
         srcLoc->color = 0;
     }
     //static constexpr tracy::SourceLocationData tracySrcLoc{ nullptr, __FUNCTION__, __FILE__, (uint32_t)__LINE__, 0 };
-    tracy::ScopedZone::Begin(srcLoc);
+    const bool tracyActive = tracy::ScopedZone::Begin(srcLoc);
+    if (tracyActive)
+        ManagedEventsCount[Platform::GetCurrentThreadID()]++;
 #endif
 #endif
 #endif
@@ -155,7 +158,12 @@ DEFINE_INTERNAL_CALL(void) ProfilerInternal_EndEvent()
 {
 #if COMPILE_WITH_PROFILER
 #if TRACY_ENABLE
-    tracy::ScopedZone::End();
+    auto& tracyActive = ManagedEventsCount[Platform::GetCurrentThreadID()];
+    if (tracyActive > 0)
+    {
+        tracyActive--;
+        tracy::ScopedZone::End();
+    }
 #endif
     ProfilerCPU::EndEvent();
 #endif
