@@ -245,6 +245,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
 
             var multiAction = new MultiUndoAction(actions);
             multiAction.Do();
+            ScriptsEditor.ParentEditor?.RebuildLayout();
             var presenter = ScriptsEditor.Presenter;
             if (presenter != null)
             {
