@@ -1565,17 +1565,28 @@ bool ModelTool::ImportModel(const String& path, ModelData& data, Options& option
                 generatedLod++;
             }
 
-            // Remove empty meshes
+            // Remove empty meshes (no LOD was generated for them)
             for (int32 i = dstLod.Meshes.Count() - 1; i >= 0; i--)
             {
-                if (dstLod.Meshes[i]->Indices.IsEmpty())
-                    dstLod.Meshes.RemoveAt(i--);
+                MeshData* mesh = dstLod.Meshes[i];
+                if (mesh->Indices.IsEmpty() || mesh->Positions.IsEmpty())
+                {
+                    Delete(mesh);
+                    dstLod.Meshes.RemoveAtKeepOrder(i);
+                }
             }
 
             LOG(Info, "Generated LOD{0}: triangles: {1} ({2}% of base LOD), verticies: {3} ({4}% of base LOD)",
                 lodIndex,
                 lodTriangleCount, (int32)(lodTriangleCount * 100 / baseLodTriangleCount),
                 lodVertexCount, (int32)(lodVertexCount * 100 / baseLodVertexCount));
+        }
+        for (int32 lodIndex = data.LODs.Count() - 1; lodIndex > 0; lodIndex--)
+        {
+            if (data.LODs[lodIndex].Meshes.IsEmpty())
+                data.LODs.RemoveAt(lodIndex);
+            else
+                break;
         }
         if (generatedLod)
         {
