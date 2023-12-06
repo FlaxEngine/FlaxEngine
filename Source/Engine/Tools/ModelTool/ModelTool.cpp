@@ -453,7 +453,7 @@ bool ModelTool::ImportData(const String& path, ModelData& data, Options& options
     options.FramesRange.Y = Math::Max(options.FramesRange.Y, options.FramesRange.X);
     options.DefaultFrameRate = Math::Max(0.0f, options.DefaultFrameRate);
     options.SamplingRate = Math::Max(0.0f, options.SamplingRate);
-    if (options.SplitObjects)
+    if (options.SplitObjects || options.Type == ModelType::Prefab)
         options.MergeMeshes = false; // Meshes merging doesn't make sense when we want to import each mesh individually
     // TODO: maybe we could update meshes merger to collapse meshes within the same name if splitting is enabled?
 
@@ -807,6 +807,13 @@ bool ModelTool::ImportModel(const String& path, ModelData& data, Options& option
         break;
     case ModelType::Animation:
         options.ImportTypes = ImportDataTypes::Animations;
+        break;
+    case ModelType::Prefab:
+        options.ImportTypes = ImportDataTypes::Geometry | ImportDataTypes::Nodes | ImportDataTypes::Animations;
+        if (options.ImportMaterials)
+            options.ImportTypes |= ImportDataTypes::Materials;
+        if (options.ImportTextures)
+            options.ImportTypes |= ImportDataTypes::Textures;
         break;
     default:
         return true;
@@ -1279,7 +1286,7 @@ bool ModelTool::ImportModel(const String& path, ModelData& data, Options& option
         !
 #endif
     }
-    if (EnumHasAnyFlags(options.ImportTypes, ImportDataTypes::Geometry))
+    if (EnumHasAnyFlags(options.ImportTypes, ImportDataTypes::Geometry) && options.Type != ModelType::Prefab)
     {
         // Perform simple nodes mapping to single node (will transform meshes to model local space)
         SkeletonMapping<ModelDataNode> skeletonMapping(data.Nodes, nullptr);

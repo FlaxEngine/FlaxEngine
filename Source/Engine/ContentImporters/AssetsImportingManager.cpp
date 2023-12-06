@@ -382,7 +382,7 @@ bool AssetsImportingManager::Create(const Function<CreateAssetResult(CreateAsset
         // Do nothing
         return true;
     }
-    else
+    else if (result != CreateAssetResult::Skip)
     {
         LOG(Error, "Cannot import file '{0}'! Result: {1}", inputPath, ::ToString(result));
         return true;

@@ -15,6 +15,10 @@
 #include "Engine/Content/Storage/ContentStorageManager.h"
 #include "Engine/Content/Assets/Animation.h"
 #include "Engine/Content/Content.h"
+#include "Engine/Level/Actors/EmptyActor.h"
+#include "Engine/Level/Actors/StaticModel.h"
+#include "Engine/Level/Prefabs/Prefab.h"
+#include "Engine/Level/Prefabs/PrefabManager.h"
 #include "Engine/Platform/FileSystem.h"
 #include "Engine/Utilities/RectPack.h"
 #include "Engine/Profiler/ProfilerCPU.h"
@@ -49,6 +53,13 @@ bool ImportModel::TryGetImportOptions(const StringView& path, Options& options)
     }
     return false;
 }
+
+struct PrefabObject
+{
+    int32 NodeIndex;
+    String Name;
+    String AssetPath;
+};
 
 void RepackMeshLightmapUVs(ModelData& data)
 {
@@ -219,10 +230,11 @@ CreateAssetResult ImportModel::Import(CreateAssetContext& context)
     ModelData dataThis;
     Array<IGrouping<StringView, MeshData*>>* meshesByNamePtr = options.Cached ? (Array<IGrouping<StringView, MeshData*>>*)options.Cached->MeshesByName : nullptr;
     Array<IGrouping<StringView, MeshData*>> meshesByNameThis;
+    String autoImportOutput;
     if (!data)
     {
         String errorMsg;
-        String autoImportOutput(StringUtils::GetDirectoryName(context.TargetAssetPath));
+        autoImportOutput = StringUtils::GetDirectoryName(context.TargetAssetPath);
         autoImportOutput /= options.SubAssetFolder.HasChars() ? options.SubAssetFolder.TrimTrailing() : String(StringUtils::GetFileNameWithoutExtension(context.InputPath));
         if (ModelTool::ImportModel(context.InputPath, dataThis, options, errorMsg, autoImportOutput))
         {
@@ -246,14 +258,62 @@ CreateAssetResult ImportModel::Import(CreateAssetContext& context)
     Array<IGrouping<StringView, MeshData*>>& meshesByName = *meshesByNamePtr;
 
     // Import objects from file separately
-    if (options.SplitObjects)
+    ModelTool::Options::CachedData cached = { data, (void*)meshesByNamePtr };
+    Array<PrefabObject> prefabObjects;
+    if (options.Type == ModelTool::ModelType::Prefab)
+    {
+        // Normalize options
+        options.SplitObjects = false;
+        options.ObjectIndex = -1;
+
+        // Import all of the objects recursive but use current model data to skip loading file again
+        options.Cached = &cached;
+        Function<bool(Options& splitOptions, const StringView& objectName, String& outputPath)> splitImport = [&context, &autoImportOutput](Options& splitOptions, const StringView& objectName, String& outputPath)
+        {
+            // Recursive importing of the split object
+            String postFix = objectName;
+            const int32 splitPos = postFix.FindLast(TEXT('|'));
+            if (splitPos != -1)
+                postFix = postFix.Substring(splitPos + 1);
+            // TODO: check for name collisions with material/texture assets
+            outputPath = autoImportOutput / String(StringUtils::GetFileNameWithoutExtension(context.TargetAssetPath)) + TEXT(" ") + postFix + TEXT(".flax");
+            splitOptions.SubAssetFolder = TEXT(" "); // Use the same folder as asset as they all are imported to the subdir for the prefab (see SubAssetFolder usage above)
+            return AssetsImportingManager::Import(context.InputPath, outputPath, &splitOptions);
+        };
+        auto splitOptions = options;
+        LOG(Info, "Splitting imported {0} meshes", meshesByName.Count());
+        PrefabObject prefabObject;
+        for (int32 groupIndex = 0; groupIndex < meshesByName.Count(); groupIndex++)
+        {
+            auto& group = meshesByName[groupIndex];
+
+            // Cache object options (nested sub-object import removes the meshes)
+            prefabObject.NodeIndex = group.First()->NodeIndex;
+            prefabObject.Name = group.First()->Name;
+
+            splitOptions.Type = ModelTool::ModelType::Model;
+            splitOptions.ObjectIndex = groupIndex;
+            if (!splitImport(splitOptions, group.GetKey(), prefabObject.AssetPath))
+            {
+                prefabObjects.Add(prefabObject);
+            }
+        }
+        LOG(Info, "Splitting imported {0} animations", data->Animations.Count());
+        for (int32 i = 0; i < data->Animations.Count(); i++)
+        {
+            auto& animation = data->Animations[i];
+            splitOptions.Type = ModelTool::ModelType::Animation;
+            splitOptions.ObjectIndex = i;
+            splitImport(splitOptions, animation.Name, prefabObject.AssetPath);
+        }
+    }
+    else if (options.SplitObjects)
     {
         // Import the first object within this call
         options.SplitObjects = false;
         options.ObjectIndex = 0;
 
         // Import rest of the objects recursive but use current model data to skip loading file again
-        ModelTool::Options::CachedData cached = { data, (void*)meshesByNamePtr };
         options.Cached = &cached;
         Function<bool(Options& splitOptions, const StringView& objectName)> splitImport;
         splitImport.Bind([&context](Options& splitOptions, const StringView& objectName)
@@ -395,6 +455,9 @@ CreateAssetResult ImportModel::Import(CreateAssetContext& context)
         break;
     case ModelTool::ModelType::Animation:
         result = CreateAnimation(context, *data, &options);
+        break;
+    case ModelTool::ModelType::Prefab:
+        result = CreatePrefab(context, *data, options, prefabObjects);
         break;
     }
     for (auto mesh : meshesToDelete)
@@ -544,6 +607,117 @@ CreateAssetResult ImportModel::CreateAnimation(CreateAssetContext& context, Mode
     context.Data.Header.Chunks[0]->Data.Copy(stream.GetHandle(), stream.GetPosition());
 
     return CreateAssetResult::Ok;
+}
+
+CreateAssetResult ImportModel::CreatePrefab(CreateAssetContext& context, ModelData& data, const Options& options, const Array<PrefabObject>& prefabObjects)
+{
+    PROFILE_CPU();
+    if (data.Nodes.Count() == 0)
+        return CreateAssetResult::Error;
+
+    // If that prefab already exists then we need to use it as base to preserve object IDs and local changes applied by user
+    const String outputPath = String(StringUtils::GetPathWithoutExtension(context.TargetAssetPath)) + DEFAULT_PREFAB_EXTENSION_DOT;
+    auto* prefab = FileSystem::FileExists(outputPath) ? Content::Load<Prefab>(outputPath) : nullptr;
+    if (prefab)
+    {
+        // Ensure that prefab has Default Instance so ObjectsCache is valid (used below)
+        prefab->GetDefaultInstance();
+    }
+
+    // Create prefab structure
+    Dictionary<int32, Actor*> nodeToActor;
+    Array<Actor*> nodeActors;
+    Actor* rootActor = nullptr;
+    for (int32 nodeIndex = 0; nodeIndex < data.Nodes.Count(); nodeIndex++)
+    {
+        const auto& node = data.Nodes[nodeIndex];
+
+        // Create actor(s) for this node
+        nodeActors.Clear();
+        for (const PrefabObject& e : prefabObjects)
+        {
+            if (e.NodeIndex == nodeIndex)
+            {
+                auto* actor = New<StaticModel>();
+                actor->SetName(e.Name);
+                if (auto* model = Content::LoadAsync<Model>(e.AssetPath))
+                {
+                    actor->Model = model;
+                }
+                nodeActors.Add(actor);
+            }
+        }
+        Actor* nodeActor = nodeActors.Count() == 1 ? nodeActors[0] : New<EmptyActor>();
+        if (nodeActors.Count() > 1)
+        {
+            for (Actor* e : nodeActors)
+            {
+                e->SetParent(nodeActor);
+            }
+        }
+        if (nodeActors.Count() != 1)
+        {
+            // Include default actor to iterate over it properly in code below
+            nodeActors.Add(nodeActor);
+        }
+
+        // Setup node in hierarchy
+        nodeToActor.Add(nodeIndex, nodeActor);
+        nodeActor->SetName(node.Name);
+        nodeActor->SetLocalTransform(node.LocalTransform);
+        if (nodeIndex == 0)
+        {
+            // Special case for root actor to link any unlinked nodes
+            nodeToActor.Add(-1, nodeActor);
+            rootActor = nodeActor;
+        }
+        else
+        {
+            Actor* parentActor;
+            if (nodeToActor.TryGet(node.ParentIndex, parentActor))
+                nodeActor->SetParent(parentActor);
+        }
+
+        // Link with object from prefab (if reimporting)
+        if (prefab)
+        {
+            for (Actor* a : nodeActors)
+            {
+                for (const auto& i : prefab->ObjectsCache)
+                {
+                    if (i.Value->GetTypeHandle() != a->GetTypeHandle()) // Type match
+                        continue;
+                    auto* o = (Actor*)i.Value;
+                    if (o->GetName() != a->GetName()) // Name match
+                        continue;
+
+                    // Mark as this object already exists in prefab so will be preserved when updating it
+                    a->LinkPrefab(o->GetPrefabID(), o->GetPrefabObjectID());
+                    break;
+                }
+            }
+        }
+    }
+    ASSERT_LOW_LAYER(rootActor);
+    // TODO: add PrefabModel script for asset reimporting
+
+    // Create prefab instead of native asset
+    bool failed;
+    if (prefab)
+    {
+        failed = prefab->ApplyAll(rootActor);
+    }
+    else
+    {
+        failed = PrefabManager::CreatePrefab(rootActor, outputPath, false);
+    }
+
+    // Cleanup objects from memory
+    rootActor->DeleteObjectNow();
+
+    if (failed)
+        return CreateAssetResult::Error;
+    return CreateAssetResult::Skip;
 }
 
 #endif

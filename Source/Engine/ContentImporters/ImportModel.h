@@ -43,6 +43,7 @@ private:
     static CreateAssetResult CreateModel(CreateAssetContext& context, ModelData& data, const Options* options = nullptr);
     static CreateAssetResult CreateSkinnedModel(CreateAssetContext& context, ModelData& data, const Options* options = nullptr);
     static CreateAssetResult CreateAnimation(CreateAssetContext& context, ModelData& data, const Options* options = nullptr);
+    static CreateAssetResult CreatePrefab(CreateAssetContext& context, ModelData& data, const Options& options, const Array<struct PrefabObject>& prefabObjects);
 };
 
 #endif

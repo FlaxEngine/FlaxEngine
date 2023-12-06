@@ -114,6 +114,8 @@ public:
         SkinnedModel = 1,
         // The animation asset.
         Animation = 2,
+        // The prefab scene.
+        Prefab = 3,
     };
 
     /// <summary>
@@ -282,10 +284,10 @@ public:
     public: // Splitting
 
         // If checked, the imported mesh/animations are split into separate assets. Used if ObjectIndex is set to -1.
-        API_FIELD(Attributes="EditorOrder(2000), EditorDisplay(\"Splitting\")")
+        API_FIELD(Attributes="EditorOrder(2000), EditorDisplay(\"Splitting\"), VisibleIf(nameof(ShowSplitting))")
         bool SplitObjects = false;
         // The zero-based index for the mesh/animation clip to import. If the source file has more than one mesh/animation it can be used to pick a desired object. Default -1 imports all objects.
-        API_FIELD(Attributes="EditorOrder(2010), EditorDisplay(\"Splitting\")")
+        API_FIELD(Attributes="EditorOrder(2010), EditorDisplay(\"Splitting\"), VisibleIf(nameof(ShowSplitting))")
         int32 ObjectIndex = -1;
 
     public: // Other
