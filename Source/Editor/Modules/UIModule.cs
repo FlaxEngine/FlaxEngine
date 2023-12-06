@@ -108,7 +108,7 @@ namespace FlaxEditor.Modules
         /// <summary>
         /// The status strip control.
         /// </summary>
-        public StatusBar StatusBar;
+        public MultiFieldStatusBar StatusBar;
 
         /// <summary>
         /// The visject surface background texture. Cached to be used globally.
@@ -418,7 +418,7 @@ namespace FlaxEditor.Modules
                     return;
 
                 var color = Editor.Instance.UI.StatusBar.StatusColor;
-                var rect = new Rectangle(0.5f, 0.5f, Parent.Width - 1.0f, Parent.Height - 1.0f - StatusBar.DefaultHeight);
+                var rect = new Rectangle(0.5f, 0.5f, Parent.Width - 1.0f, Parent.Height - 1.0f - MultiFieldStatusBar.DefaultHeight);
                 Render2D.DrawLine(rect.UpperLeft, rect.UpperRight, color);
                 Render2D.DrawLine(rect.UpperLeft, rect.BottomLeft, color);
                 Render2D.DrawLine(rect.UpperRight, rect.BottomRight, color);
@@ -746,12 +746,13 @@ namespace FlaxEditor.Modules
         private void InitStatusBar(RootControl mainWindow)
         {
             // Status Bar
-            StatusBar = new StatusBar
+            StatusBar = new MultiFieldStatusBar
             {
                 Text = "Loading...",
                 Parent = mainWindow,
-                Offsets = new Margin(0, 0, -StatusBar.DefaultHeight, StatusBar.DefaultHeight),
+                Offsets = new Margin(0, 0, -MultiFieldStatusBar.DefaultHeight, MultiFieldStatusBar.DefaultHeight),
             };
+            StatusBar.SetRelativeWidthDefaultField(0.4f);
             // Output log button
             _outputLogButton = new Button()
             {
