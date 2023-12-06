@@ -29,6 +29,7 @@ namespace FlaxEditor.Modules
     /// <seealso cref="FlaxEditor.Modules.EditorModule" />
     public sealed class UIModule : EditorModule
     {
+        private const string UsageStatusBarField = "Usage";
         private Label _progressLabel;
         private ProgressBar _progressBar;
         private Button _outputLogButton;
@@ -304,9 +305,21 @@ namespace FlaxEditor.Modules
                 color = Style.Current.Statusbar.Loading;
             }
 
+            UpdateUsageHint();
+
             StatusBar.Text = text;
             StatusBar.StatusColor = color;
             _contentStats = contentStats;
+        }
+
+        public void UpdateUsageHint()
+        {
+            // fake some hints to showcase what the usage field is supposed to do
+            if (Editor.Windows.SceneWin.IsFocused)
+                StatusBar.SetText(UsageStatusBarField, "F: focus selected");
+            else if (Editor.Windows.EditWin.IsFocused)
+                StatusBar.SetText(UsageStatusBarField, "LMB: select, MMB: pan, RMB: rotate");
+            else StatusBar.SetText(UsageStatusBarField, "(no hints available)");
         }
 
         /// <summary>
@@ -406,6 +419,7 @@ namespace FlaxEditor.Modules
             {
                 UpdateStatusBar();
             }
+            UpdateUsageHint();
         }
 
         private class CustomWindowBorderControl : Control
@@ -753,6 +767,12 @@ namespace FlaxEditor.Modules
                 Offsets = new Margin(0, 0, -MultiFieldStatusBar.DefaultHeight, MultiFieldStatusBar.DefaultHeight),
             };
             StatusBar.SetRelativeWidthDefaultField(0.4f);
+            StatusBar.Field[UsageStatusBarField] = new MultiFieldStatusBar.StatusBarField
+            {
+                RelativeWidth = 0.6f,
+                RelativeX = 0.4f,
+                TextColor = Style.Current.Foreground
+            };
             // Output log button
             _outputLogButton = new Button()
             {

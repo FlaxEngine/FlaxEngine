@@ -25,6 +25,15 @@ public class MultiFieldStatusBar : ContainerControl
     }
 
     /// <summary>
+    /// Initializes a new instance of the <see cref="MultiFieldStatusBar"/> class.
+    /// </summary>
+    public MultiFieldStatusBar()
+    {
+        AutoFocus = false;
+        AnchorPreset = AnchorPresets.HorizontalStretchBottom;
+    }
+
+    /// <summary>
     /// Definition of a field inside a status bar
     /// </summary>
     public Dictionary<string, StatusBarField> Field = new();
@@ -71,7 +80,7 @@ public class MultiFieldStatusBar : ContainerControl
         else
         {
             // add a default field spanning the available width for compatibility with a single field status bar
-            Field[DefaultFieldName] = new StatusBarField
+            Field[name] = new StatusBarField
             {
                 Text = text,
                 TextColor = Style.Current.Foreground,
@@ -105,7 +114,7 @@ public class MultiFieldStatusBar : ContainerControl
         else
         {
             // add a default field spanning the available width for compatibility with a single field status bar
-            Field[DefaultFieldName] = new StatusBarField
+            Field[name] = new StatusBarField
             {
                 Text = "",
                 TextColor = color,
@@ -143,7 +152,8 @@ public class MultiFieldStatusBar : ContainerControl
         {
             var field = keyValue.Value;
             var x = (Width - 24) * field.RelativeX + 4;
-            var width = (Width - 24) * field.RelativeWidth;
+            var width = (Width - 20) * field.RelativeWidth;
+            //Debug.Log($"draw status bar with {Field.Count} fields, text {field.Text}, x {x}, width {width}");
             // Draw status field text
             Render2D.DrawText(style.FontSmall, field.Text, new Rectangle(x, 0, width, Height),
                               field.TextColor, TextAlignment.Near, TextAlignment.Center);
