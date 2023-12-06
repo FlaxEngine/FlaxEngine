@@ -108,7 +108,7 @@ namespace
     };
 
     ChunkedArray<Location, 256> ManagedSourceLocations;
-    uint32 ManagedEventsCount[PLATFORM_THREADS_LIMIT] = { 0 };
+    ThreadLocal<uint32> ManagedEventsCount;
 #endif
 #endif
 }
@@ -148,7 +148,7 @@ DEFINE_INTERNAL_CALL(void) ProfilerInternal_BeginEvent(MString* nameObj)
     //static constexpr tracy::SourceLocationData tracySrcLoc{ nullptr, __FUNCTION__, __FILE__, (uint32_t)__LINE__, 0 };
     const bool tracyActive = tracy::ScopedZone::Begin(srcLoc);
     if (tracyActive)
-        ManagedEventsCount[Platform::GetCurrentThreadID()]++;
+        ManagedEventsCount.Get()++;
 #endif
 #endif
 #endif
@@ -158,7 +158,7 @@ DEFINE_INTERNAL_CALL(void) ProfilerInternal_EndEvent()
 {
 #if COMPILE_WITH_PROFILER
 #if TRACY_ENABLE
-    auto& tracyActive = ManagedEventsCount[Platform::GetCurrentThreadID()];
+    uint32& tracyActive = ManagedEventsCount.Get();
     if (tracyActive > 0)
     {
         tracyActive--;
