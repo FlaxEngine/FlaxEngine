@@ -11,6 +11,7 @@
 API_CLASS(Attributes="ActorContextMenu(\"New/Physics/Colliders/Sphere Collider\"), ActorToolbox(\"Physics\")")
 class FLAXENGINE_API SphereCollider : public Collider
 {
+    API_AUTO_SERIALIZATION();
     DECLARE_SCENE_OBJECT(SphereCollider);
 private:
     float _radius;
@@ -38,8 +39,6 @@ public:
     void OnDebugDrawSelected() override;
 #endif
     bool IntersectsItself(const Ray& ray, Real& distance, Vector3& normal) override;
-    void Serialize(SerializeStream& stream, const void* otherObj) override;
-    void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) override;
 
 protected:
     // [Collider]

@@ -1,7 +1,6 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
 #include "BoxCollider.h"
-#include "Engine/Serialization/Serialization.h"
 #include "Engine/Physics/PhysicsBackend.h"
 
 BoxCollider::BoxCollider(const SpawnParams& params)
@@ -114,24 +113,6 @@ void BoxCollider::OnDebugDrawSelected()
 bool BoxCollider::IntersectsItself(const Ray& ray, Real& distance, Vector3& normal)
 {
     return _bounds.Intersects(ray, distance, normal);
-}
-
-void BoxCollider::Serialize(SerializeStream& stream, const void* otherObj)
-{
-    // Base
-    Collider::Serialize(stream, otherObj);
-
-    SERIALIZE_GET_OTHER_OBJ(BoxCollider);
-
-    SERIALIZE_MEMBER(Size, _size);
-}
-
-void BoxCollider::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)
-{
-    // Base
-    Collider::Deserialize(stream, modifier);
-
-    DESERIALIZE_MEMBER(Size, _size);
 }
 
 void BoxCollider::UpdateBounds()
