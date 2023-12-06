@@ -1079,16 +1079,16 @@ API_STRUCT() struct FLAXENGINE_API CameraArtifactsSettings : ISerializable
     CameraArtifactsSettingsOverride OverrideFlags = Override::None;
 
     /// <summary>
-    /// Strength of the vignette effect. Value 0 hides it. The default value is 0.
+    /// Strength of the vignette effect. Value 0 hides it. The default value is 0.4.
     /// </summary>
     API_FIELD(Attributes="Limit(0, 2, 0.001f), EditorOrder(0), PostProcessSetting((int)CameraArtifactsSettingsOverride.VignetteIntensity)")
-    float VignetteIntensity = 0.0f;
+    float VignetteIntensity = 0.4f;
 
     /// <summary>
     /// Color of the vignette.
     /// </summary>
     API_FIELD(Attributes="EditorOrder(1), PostProcessSetting((int)CameraArtifactsSettingsOverride.VignetteColor)")
-    Float3 VignetteColor = Float3::Zero;
+    Float3 VignetteColor = Float3(0 ,0, 0.001f);
 
     /// <summary>
     /// Controls the shape of the vignette. Values near 0 produce a rectangular shape. Higher values result in a rounder shape. The default value is 0.125.
