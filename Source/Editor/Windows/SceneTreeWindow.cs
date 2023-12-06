@@ -91,6 +91,9 @@ namespace FlaxEditor.Windows
             InputActions.Add(options => options.Rename, Rename);
         }
 
+        /// <inheritdoc />
+        protected override string UsageHint { get; set; }
+
         /// <summary>
         /// Enables or disables vertical and horizontal scrolling on the scene tree panel.
         /// </summary>
@@ -204,12 +207,16 @@ namespace FlaxEditor.Windows
 
                 // Select
                 Editor.SceneEditing.Select(actors);
+                UsageHint = Editor.Options.Options.Input.FocusSelection + ": focus selected, " +
+                            Editor.Options.Options.Input.LockFocusSelection + ": lock focus";
             }
             else
             {
                 // Deselect
                 Editor.SceneEditing.Deselect();
+                UsageHint = "";
             }
+            DisplayUsageHint();
         }
 
         private void OnTreeRightClick(TreeNode node, Float2 location)

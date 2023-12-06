@@ -30,6 +30,15 @@ namespace FlaxEditor.Windows
         protected virtual bool CanUseNavigation => true;
 
         /// <summary>
+        /// Gets a usage hint that is displayed in the status bar when this window gets focused.
+        /// </summary>
+        protected virtual string UsageHint
+        {
+            get => string.Empty;
+            set => value = "";
+        }
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="EditorWindow"/> class.
         /// </summary>
         /// <param name="editor">The editor.</param>
@@ -60,6 +69,16 @@ namespace FlaxEditor.Windows
         public virtual bool IsEditingItem(ContentItem item)
         {
             return false;
+        }
+
+        public virtual void DisplayUsageHint()
+        {
+            Editor.UI.DisplayUsageHint(UsageHint);
+        }
+
+        public virtual void HideUsageHint()
+        {
+            Editor.UI.DisplayUsageHint("");
         }
 
         #region Window Events
@@ -188,6 +207,20 @@ namespace FlaxEditor.Windows
         }
 
         #endregion
+
+        /// <inheritdoc />
+        public override void OnStartContainsFocus()
+        {
+            base.OnStartContainsFocus();
+            DisplayUsageHint();
+        }
+
+        /// <inheritdoc />
+        public override void OnEndContainsFocus()
+        {
+            base.OnEndContainsFocus();
+            HideUsageHint();
+        }
 
         /// <inheritdoc />
         public override bool OnKeyDown(KeyboardKeys key)

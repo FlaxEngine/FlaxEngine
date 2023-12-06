@@ -19,6 +19,10 @@ namespace FlaxEditor.Windows
     /// <seealso cref="FlaxEditor.Windows.SceneEditorWindow" />
     public sealed class EditGameWindow : SceneEditorWindow
     {
+        /// <inheritdoc />
+        protected override string UsageHint => "LMB: select, MMB: pan, RMB: rotate, " +
+                                               Editor.Options.Options.Input.Play + ": play";
+
         /// <summary>
         /// Camera preview output control.
         /// </summary>

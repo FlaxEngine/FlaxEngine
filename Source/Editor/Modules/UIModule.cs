@@ -305,21 +305,14 @@ namespace FlaxEditor.Modules
                 color = Style.Current.Statusbar.Loading;
             }
 
-            UpdateUsageHint();
-
             StatusBar.Text = text;
             StatusBar.StatusColor = color;
             _contentStats = contentStats;
         }
 
-        public void UpdateUsageHint()
+        public void DisplayUsageHint(string hint)
         {
-            // fake some hints to showcase what the usage field is supposed to do
-            if (Editor.Windows.SceneWin.IsFocused)
-                StatusBar.SetText(UsageStatusBarField, "F: focus selected");
-            else if (Editor.Windows.EditWin.IsFocused)
-                StatusBar.SetText(UsageStatusBarField, "LMB: select, MMB: pan, RMB: rotate");
-            else StatusBar.SetText(UsageStatusBarField, "(no hints available)");
+            StatusBar.SetText(UsageStatusBarField, hint);
         }
 
         /// <summary>
@@ -419,7 +412,6 @@ namespace FlaxEditor.Modules
             {
                 UpdateStatusBar();
             }
-            UpdateUsageHint();
         }
 
         private class CustomWindowBorderControl : Control
