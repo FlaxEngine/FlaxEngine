@@ -98,8 +98,8 @@ namespace FlaxEngine.GUI
         private float _scale = 1.0f;
         private float _scaleFactor = 1.0f;
         private float _physicalUnitSize = 1.0f;
-        private Float2 _resolutionMin = new Float2(1, 1);
-        private Float2 _resolutionMax = new Float2(10000, 10000);
+        private Float2 _resolutionMin = new Float2(640, 480);
+        private Float2 _resolutionMax = new Float2(7680, 4320);
 
         /// <summary>
         /// Gets the current UI scale. Computed based on the setup when performing layout.

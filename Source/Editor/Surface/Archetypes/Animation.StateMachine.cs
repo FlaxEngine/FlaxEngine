@@ -1335,6 +1335,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Surface?.AddBatchedUndoAction(action);
                 action.Do();
                 Surface?.OnNodesConnected(this, other);
+                Surface?.MarkAsEdited();
             }
         }
 
@@ -1911,6 +1912,7 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 var action = new StateMachineStateBase.AddRemoveTransitionAction(this);
                 SourceState.Surface?.AddBatchedUndoAction(action);
+                SourceState.Surface?.MarkAsEdited();
                 action.Do();
             }
 
