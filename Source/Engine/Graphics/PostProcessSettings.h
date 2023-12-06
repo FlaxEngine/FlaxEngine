@@ -1088,7 +1088,7 @@ API_STRUCT() struct FLAXENGINE_API CameraArtifactsSettings : ISerializable
     /// Color of the vignette.
     /// </summary>
     API_FIELD(Attributes="EditorOrder(1), PostProcessSetting((int)CameraArtifactsSettingsOverride.VignetteColor)")
-    Float3 VignetteColor = Float3(0 ,0, 0.001f);
+    Float3 VignetteColor = Float3(0, 0, 0.001f);
 
     /// <summary>
     /// Controls the shape of the vignette. Values near 0 produce a rectangular shape. Higher values result in a rounder shape. The default value is 0.125.
