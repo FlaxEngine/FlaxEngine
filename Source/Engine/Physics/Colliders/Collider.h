@@ -17,6 +17,7 @@ class RigidBody;
 /// <seealso cref="PhysicsColliderActor" />
 API_CLASS(Abstract) class FLAXENGINE_API Collider : public PhysicsColliderActor
 {
+    API_AUTO_SERIALIZATION();
     DECLARE_SCENE_OBJECT_ABSTRACT(Collider);
 protected:
     Vector3 _center;
@@ -196,8 +197,6 @@ private:
 
 public:
     // [PhysicsColliderActor]
-    void Serialize(SerializeStream& stream, const void* otherObj) override;
-    void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) override;
     RigidBody* GetAttachedRigidBody() const override;
 
 protected:
