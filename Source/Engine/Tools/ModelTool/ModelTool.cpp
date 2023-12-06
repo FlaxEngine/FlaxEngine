@@ -1465,6 +1465,7 @@ bool ModelTool::ImportModel(const String& path, ModelData& data, Options& option
             baseLodTriangleCount += mesh->Indices.Count() / 3;
             baseLodVertexCount += mesh->Positions.Count();
         }
+        Array<unsigned int> indices;
         for (int32 lodIndex = Math::Clamp(baseLOD + 1, 1, lodCount - 1); lodIndex < lodCount; lodIndex++)
         {
             auto& dstLod = data.LODs[lodIndex];
@@ -1486,16 +1487,18 @@ bool ModelTool::ImportModel(const String& path, ModelData& data, Options& option
                 int32 srcMeshIndexCount = srcMesh->Indices.Count();
                 int32 srcMeshVertexCount = srcMesh->Positions.Count();
                 int32 dstMeshIndexCountTarget = int32(srcMeshIndexCount * triangleReduction) / 3 * 3;
-                Array<unsigned int> indices;
-                indices.Resize(dstMeshIndexCountTarget);
+                if (dstMeshIndexCountTarget < 3 || dstMeshIndexCountTarget >= srcMeshIndexCount)
+                    continue;
+                indices.Clear();
+                indices.Resize(srcMeshIndexCount);
                 int32 dstMeshIndexCount = {};
                 if (options.SloppyOptimization)
-                    dstMeshIndexCount = (int32)meshopt_simplifySloppy(indices.Get(), srcMesh->Indices.Get(), srcMeshIndexCount, (const float*)srcMesh->Positions.Get(), srcMeshVertexCount, sizeof(Float3), dstMeshIndexCountTarget);
+                    dstMeshIndexCount = (int32)meshopt_simplifySloppy(indices.Get(), srcMesh->Indices.Get(), srcMeshIndexCount, (const float*)srcMesh->Positions.Get(), srcMeshVertexCount, sizeof(Float3), dstMeshIndexCountTarget, options.LODTargetError);
                 else
                     dstMeshIndexCount = (int32)meshopt_simplify(indices.Get(), srcMesh->Indices.Get(), srcMeshIndexCount, (const float*)srcMesh->Positions.Get(), srcMeshVertexCount, sizeof(Float3), dstMeshIndexCountTarget, options.LODTargetError);
-                indices.Resize(dstMeshIndexCount);
-                if (dstMeshIndexCount == 0)
+                if (dstMeshIndexCount <= 0 || dstMeshIndexCount > indices.Count())
                     continue;
+                indices.Resize(dstMeshIndexCount);
 
                 // Generate simplified vertex buffer remapping table (use only vertices from LOD index buffer)
                 Array<unsigned int> remap;
