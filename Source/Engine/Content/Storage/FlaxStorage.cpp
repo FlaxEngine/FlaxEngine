@@ -729,7 +729,11 @@ bool FlaxStorage::ChangeAssetID(Entry& e, const Guid& newId)
     }
 
     // Close file
-    CloseFileHandles();
+    if (CloseFileHandles())
+    {
+        LOG(Error, "Cannot close file access for '{}'", _path);
+        return true;
+    }
 
     // Change ID
     // TODO: here we could extend it and load assets from the storage and call asset ID change event to change references
@@ -1299,7 +1303,7 @@ FileReadStream* FlaxStorage::OpenFile()
     return stream;
 }
 
-void FlaxStorage::CloseFileHandles()
+bool FlaxStorage::CloseFileHandles()
 {
     // Note: this is usually called by the content manager when this file is not used or on exit
     // In those situations all the async tasks using this storage should be cancelled externally
@@ -1326,10 +1330,12 @@ void FlaxStorage::CloseFileHandles()
     waitTime = 100;
     while (Platform::AtomicRead(&_chunksLock) != 0 && waitTime-- > 0)
         Platform::Sleep(1);
-    ASSERT(_chunksLock == 0);
+    if (Platform::AtomicRead(&_chunksLock) != 0)
+        return true; // Failed, someone is still accessing the file
 
     // Close file handles (from all threads)
     _file.DeleteAll();
+    return false;
 }
 
 void FlaxStorage::Dispose()
@@ -1338,7 +1344,10 @@ void FlaxStorage::Dispose()
         return;
 
     // Close file
-    CloseFileHandles();
+    if (CloseFileHandles())
+    {
+        LOG(Error, "Cannot close file access for '{}'", _path);
+    }
 
     // Release data
     _chunks.ClearDelete();

@@ -176,7 +176,12 @@ void CreateAssetContext::ApplyChanges()
     auto storage = ContentStorageManager::TryGetStorage(TargetAssetPath);
     if (storage && storage->IsLoaded())
     {
-        storage->CloseFileHandles();
+        if (storage->CloseFileHandles())
+        {
+            LOG(Error, "Cannot close file access for '{}'", TargetAssetPath);
+            _applyChangesResult = CreateAssetResult::CannotSaveFile;
+            return;
+        }
     }
 
     // Move file
