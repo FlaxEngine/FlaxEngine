@@ -1219,13 +1219,13 @@ bool ModelTool::ImportModel(const String& path, ModelData& data, Options& option
     // Apply the import transformation
     if (!importTransform.IsIdentity())
     {
-        // Transform the root node using the import transformation
-        auto& root = data.Skeleton.RootNode();
-        Transform meshTransform = root.LocalTransform.WorldToLocal(importTransform).LocalToWorld(root.LocalTransform);
-        root.LocalTransform = importTransform.LocalToWorld(root.LocalTransform);
-
         if (options.Type == ModelType::SkinnedModel)
         {
+            // Transform the root node using the import transformation
+            auto& root = data.Skeleton.RootNode();
+            Transform meshTransform = root.LocalTransform.WorldToLocal(importTransform).LocalToWorld(root.LocalTransform);
+            root.LocalTransform = importTransform.LocalToWorld(root.LocalTransform);
+
             // Apply import transform on meshes
             Matrix meshTransformMatrix;
             meshTransform.GetWorld(meshTransformMatrix);
@@ -1248,6 +1248,12 @@ bool ModelTool::ImportModel(const String& path, ModelData& data, Options& option
                     bone.LocalTransform = importTransform.LocalToWorld(bone.LocalTransform);
                 bone.OffsetMatrix = importMatrixInv * bone.OffsetMatrix;
             }
+        }
+        else
+        {
+            // Transform the root node using the import transformation
+            auto& root = data.Nodes[0];
+            root.LocalTransform = importTransform.LocalToWorld(root.LocalTransform);
         }
     }
 
