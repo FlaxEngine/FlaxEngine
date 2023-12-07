@@ -38,22 +38,16 @@ void AnimGraphImpulse::SetNodeModelTransformation(SkeletonData& skeleton, int32 
 
 void AnimGraphInstanceData::Clear()
 {
-    Version = 0;
-    LastUpdateTime = -1;
-    CurrentFrame = 0;
-    RootTransform = Transform::Identity;
-    RootMotion = Transform::Identity;
+    ClearState();
     Parameters.Resize(0);
-    State.Resize(0);
-    NodesPose.Resize(0);
-    Slots.Resize(0);
-    for (const auto& e : Events)
-        ((AnimContinuousEvent*)e.Instance)->OnEnd((AnimatedModel*)Object, e.Anim, 0.0f, 0.0f);
-    Events.Resize(0);
 }
 
 void AnimGraphInstanceData::ClearState()
 {
+    for (const auto& e : ActiveEvents)
+        OutgoingEvents.Add(e.End((AnimatedModel*)Object));
+    ActiveEvents.Clear();
+    InvokeAnimEvents();
     Version = 0;
     LastUpdateTime = -1;
     CurrentFrame = 0;
@@ -62,15 +56,49 @@ void AnimGraphInstanceData::ClearState()
     State.Resize(0);
     NodesPose.Resize(0);
     Slots.Clear();
-    for (const auto& e : Events)
-        ((AnimContinuousEvent*)e.Instance)->OnEnd((AnimatedModel*)Object, e.Anim, 0.0f, 0.0f);
-    Events.Clear();
 }
 
 void AnimGraphInstanceData::Invalidate()
 {
     LastUpdateTime = -1;
     CurrentFrame = 0;
+}
+
+void AnimGraphInstanceData::InvokeAnimEvents()
+{
+    const bool all = IsInMainThread();
+    for (int32 i = 0; i < OutgoingEvents.Count(); i++)
+    {
+        const OutgoingEvent e = OutgoingEvents[i];
+        if (all || e.Instance->Async)
+        {
+            OutgoingEvents.RemoveAtKeepOrder(i);
+            switch (e.Type)
+            {
+            case OutgoingEvent::OnEvent:
+                e.Instance->OnEvent(e.Actor, e.Anim, e.Time, e.DeltaTime);
+                break;
+            case OutgoingEvent::OnBegin:
+                ((AnimContinuousEvent*)e.Instance)->OnBegin(e.Actor, e.Anim, e.Time, e.DeltaTime);
+                break;
+            case OutgoingEvent::OnEnd:
+                ((AnimContinuousEvent*)e.Instance)->OnEnd(e.Actor, e.Anim, e.Time, e.DeltaTime);
+                break;
+            }
+        }
+    }
+}
+
+AnimGraphInstanceData::OutgoingEvent AnimGraphInstanceData::ActiveEvent::End(AnimatedModel* actor) const
+{
+    OutgoingEvent out;
+    out.Instance = Instance;
+    out.Actor = actor;
+    out.Anim = Anim;
+    out.Time = 0.0f;
+    out.DeltaTime = 0.0f;
+    out.Type = OutgoingEvent::OnEnd;
+    return out;
 }
 
 AnimGraphImpulse* AnimGraphNode::GetNodes(AnimGraphExecutor* executor)
@@ -208,7 +236,7 @@ void AnimGraphExecutor::Update(AnimGraphInstanceData& data, float dt)
             // Initialize buckets
             ResetBuckets(context, &_graph);
         }
-        for (auto& e : data.Events)
+        for (auto& e : data.ActiveEvents)
             e.Hit = false;
 
         // Init empty nodes data
@@ -240,16 +268,17 @@ void AnimGraphExecutor::Update(AnimGraphInstanceData& data, float dt)
         if (animResult == nullptr)
             animResult = GetEmptyNodes();
     }
-    if (data.Events.Count() != 0)
+    if (data.ActiveEvents.Count() != 0)
     {
         ANIM_GRAPH_PROFILE_EVENT("Events");
-        for (int32 i = data.Events.Count() - 1; i >= 0; i--)
+        for (int32 i = data.ActiveEvents.Count() - 1; i >= 0; i--)
         {
-            const auto& e = data.Events[i];
+            const auto& e = data.ActiveEvents[i];
             if (!e.Hit)
             {
-                ((AnimContinuousEvent*)e.Instance)->OnEnd((AnimatedModel*)context.Data->Object, e.Anim, 0.0f, 0.0f);
-                data.Events.RemoveAt(i);
+                // Remove active event that was not hit during this frame (eg. animation using it was not used in blending)
+                data.OutgoingEvents.Add(e.End((AnimatedModel*)context.Data->Object));
+                data.ActiveEvents.RemoveAt(i);
             }
         }
     }
@@ -284,7 +313,6 @@ void AnimGraphExecutor::Update(AnimGraphInstanceData& data, float dt)
                     RetargetSkeletonNode(sourceSkeleton, targetSkeleton, mapping, node, i);
                     targetNodes[i] = node;
                 }
-
             }
         }
 
@@ -318,6 +346,9 @@ void AnimGraphExecutor::Update(AnimGraphInstanceData& data, float dt)
         data.RootTransform = nodesTransformations[0];
         data.RootMotion = animResult->RootMotion;
     }
+
+    // Invoke any async anim events
+    context.Data->InvokeAnimEvents();
 
     // Cleanup
     context.Data = nullptr;
