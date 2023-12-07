@@ -29,12 +29,13 @@ String CommandLine::GetOptionValue(const String& name, const Array<String>& arg)
     return String::Empty;
 }
 
+// arg is already excluding the argv[0] (the called program name)
 bool CommandLine::Parse(const Array<String>& arg)
 {
     StringBuilder sb;
-    for (int i = 1; i < arg.Count(); i++)
+    for (int i = 0; i < arg.Count(); i++)
     {
-        if (i > 1)
+        if (i > 0)
             sb.Append(TEXT(" "));
         sb.Append(arg[i]);
     }
