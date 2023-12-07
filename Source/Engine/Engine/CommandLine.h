@@ -4,6 +4,7 @@
 
 #include "Engine/Core/Types/String.h"
 #include "Engine/Core/Types/Nullable.h"
+#include "Engine/Core/Collections/Array.h"
 
 /// <summary>
 /// Command line options helper.
@@ -188,11 +189,12 @@ public:
     /// <summary>
     /// Parses the input command line.
     /// </summary>
-    /// <param name="argc">The number of args</param>
-    /// <param name="argv">The argument values</param>
+    /// <param name="arg">The argument values</param>
     /// <returns>True if failed, otherwise false.</returns>
-    static bool Parse(int argc, const char** argv);
-    static void SetValue(const char *name, const Char *value);
+    static bool Parse(const Array<String>& arg);
+    static bool HasOption(const String& name, const Array<String>& arg);
+    static Nullable<bool> CommandLine::GetOption(const String& name, const Array<String>& arg);
+    static String GetOptionValue(const String& name, const Array<String>& arg);
 
 #else
     /// <summary>

@@ -1,10 +1,88 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
+#if PLATFORM_LINUX | PLATFORM_MAC | PLATFORM_IOS
+#include "CommandLine.h"
+#include "Engine/Core/Collections/Array.h"
+#include "Engine/Core/Types/StringBuilder.h"
+
+CommandLine::OptionsData CommandLine::Options;
+
+bool CommandLine::HasOption(const String& name, const Array<String>& arg)
+{
+    return arg.Contains(name);
+}
+
+Nullable<bool> CommandLine::GetOption(const String& name, const Array<String>& arg)
+{
+    if (!HasOption(name, arg))
+        return nullptr;
+    return true;
+}
+
+String CommandLine::GetOptionValue(const String& name, const Array<String>& arg)
+{
+    const int index = arg.Find(name);
+    if (index < 0)
+        return nullptr;
+    if (index+1 < arg.Count())
+        return arg[index+1];
+    return String::Empty;
+}
+
+bool CommandLine::Parse(const Array<String>& arg)
+{
+    StringBuilder sb;
+    for (int i = 1; i < arg.Count(); i++)
+    {
+        if (i > 1)
+            sb.Append(TEXT(" "));
+        sb.Append(arg[i]);
+    }
+    Options.CmdLine = *sb;
+
+    Options.Windowed = GetOption(TEXT("-windowed"), arg);
+    Options.Fullscreen = GetOption(TEXT("-fullscreen"), arg);
+    Options.VSync = GetOption(TEXT("-vsync"), arg);
+    Options.NoVSync = GetOption(TEXT("-novsync"), arg);
+    Options.NoLog = GetOption(TEXT("-nolog"), arg);
+    Options.Std = GetOption(TEXT("-std"), arg);
+#if !BUILD_RELEASE
+    Options.DebuggerAddress = GetOptionValue(TEXT("-debug"), arg);
+    Options.WaitForDebugger = GetOption(TEXT("-debugwait"), arg);
+#endif
+#if PLATFORM_HAS_HEADLESS_MODE
+    Options.Headless = GetOption(TEXT("-headless"), arg);
+#endif
+    Options.D3D10 = GetOption(TEXT("-d3d10"), arg);
+    Options.D3D11 = GetOption(TEXT("-d3d11"), arg);
+    Options.D3D12 = GetOption(TEXT("-d3d12"), arg);
+    Options.Null = GetOption(TEXT("-null"), arg);
+    Options.Vulkan = GetOption(TEXT("-vulkan"), arg);
+    Options.NVIDIA = GetOption(TEXT("-nvidia"), arg);
+    Options.AMD = GetOption(TEXT("-amd"), arg);
+    Options.Intel = GetOption(TEXT("-intel"), arg);
+    Options.MonoLog = GetOption(TEXT("-monolog"), arg);
+    Options.Mute = GetOption(TEXT("-mute"), arg);
+    Options.LowDPI = GetOption(TEXT("-lowdpi"), arg);
+#if USE_EDITOR
+    Options.ClearCache = GetOption(TEXT("-clearcache"), arg);
+    Options.ClearCookerCache = GetOption(TEXT("-clearcooker"), arg);
+    Options.Project = GetOptionValue(TEXT("-project"), arg);
+    Options.NewProject = GetOption(TEXT("-new"), arg);
+    Options.GenProjectFiles = GetOption(TEXT("-genprojectfiles"), arg);
+    Options.Build = GetOptionValue(TEXT("-build"), arg);
+    Options.SkipCompile = GetOption(TEXT("-skipcompile"), arg);
+    Options.ShaderDebug = GetOption(TEXT("-shaderdebug"), arg);
+    Options.Play = GetOptionValue(TEXT("-play"), arg);
+#endif
+
+    return false;
+}
+
+#else
 #include "CommandLine.h"
 #include "Engine/Core/Collections/Array.h"
 #include <iostream>
-
-#include "Engine/Core/Types/StringBuilder.h"
 
 CommandLine::OptionsData CommandLine::Options;
 
@@ -59,182 +137,6 @@ bool ParseArg(Char* ptr, Char*& start, Char*& end)
     return true;
 }
 
-#if PLATFORM_LINUX | PLATFORM_MAC
-
-// a map as OptionsData would make sense
-void CommandLine::SetValue(const char *name, const Char *value)
-{
-    if (strcmp("-windowed", name) == 0)
-        Options.Windowed = true;
-    else if (strcmp("-fullscreen", name) == 0)
-        Options.Fullscreen = true;
-    else if (strcmp("-vsync", name) == 0)
-        Options.VSync = true;
-    else if (strcmp("-novsync", name) == 0)
-        Options.NoVSync = true;
-    else if (strcmp("-nolog", name) == 0)
-        Options.NoLog = true;
-    else if (strcmp("-std", name) == 0)
-        Options.Std = true;
-#if !BUILD_RELEASE
-    else if (strcmp("-debug", name) == 0)
-        Options.DebuggerAddress = String(value);
-    else if (strcmp("-debugwait", name) == 0)
-        Options.WaitForDebugger = true;
-#endif
-#if PLATFORM_HAS_HEADLESS_MODE
-    else if (strcmp("-headless", name) == 0)
-        Options.Headless = true;
-#endif
-    else if (strcmp("-d3d12", name) == 0)
-        Options.D3D12 = true;
-    else if (strcmp("-d3d11", name) == 0)
-        Options.D3D11 = true;
-    else if (strcmp("-d3d10", name) == 0)
-        Options.D3D10 = true;
-    else if (strcmp("-null", name) == 0)
-        Options.Null = true;
-    else if (strcmp("-vulkan", name) == 0)
-        Options.Vulkan = true;
-    else if (strcmp("-nvidia", name) == 0)
-        Options.NVIDIA = true;
-    else if (strcmp("-amd", name) == 0)
-        Options.AMD = true;
-    else if (strcmp("-intel", name) == 0)
-        Options.Intel = true;
-    else if (strcmp("-monolog", name) == 0)
-        Options.MonoLog = true;
-    else if (strcmp("-mute", name) == 0)
-        Options.Mute = true;
-    else if (strcmp("-lowdpi", name) == 0)
-        Options.LowDPI = true;
-#if USE_EDITOR
-    else if (strcmp("-clearcache", name) == 0)
-        Options.ClearCache = true;
-    else if (strcmp("-clearcooker", name) == 0)
-        Options.ClearCookerCache = true;
-    else if (strcmp("-project", name) == 0)
-        Options.Project = String(value);
-    else if (strcmp("-new", name) == 0)
-        Options.NewProject = true;
-    else if (strcmp("-genprojectfiles", name) == 0)
-        Options.GenProjectFiles = true;
-    else if (strcmp("-build", name) == 0)
-        Options.Build = String(value);
-    else if (strcmp("-skipcompile", name) == 0)
-        Options.SkipCompile = true;
-    else if (strcmp("-shaderdebug", name) == 0)
-        Options.ShaderDebug = true;
-    else if (strcmp("-play", name) == 0)
-        Options.Play = String(value);
-#endif
-}
-
-bool CommandLine::Parse(int argc, const char** argv)
-{
-    enum ArgType { Flag, Value, OptionalValue, Invalid };
-    struct OptArg
-    {
-        const char *name;
-        ArgType type;
-    };
-    OptArg optArgs[] =
-    {
-        { "-windowed", Flag },
-        { "-fullscreen", Flag },
-        { "-vsync", Flag },
-        { "-novsync", Flag },
-        { "-nolog", Flag },
-        { "-std", Flag },
-#if !BUILD_RELEASE
-        { "-debug", Value },
-        { "-debugwait", Flag },
-#endif
-#if PLATFORM_HAS_HEADLESS_MODE
-        { "-headless", Flag },
-#endif
-        { "-d3d12", Flag },
-        { "-d3d11", Flag },
-        { "-d3d10", Flag },
-        { "-null", Flag },
-        { "-vulkan", Flag },
-        { "-nvidia", Flag },
-        { "-amd", Flag },
-        { "-intel", Flag },
-        { "-monolog", Flag },
-        { "-mute", Flag },
-        { "-lowdpi", Flag },
-#if USE_EDITOR
-        { "-clearcache", Flag },
-        { "-clearcooker", Flag },
-        { "-project", Value },
-        { "-new", Flag },
-        { "-genprojectfiles", Flag },
-        { "-build", Value },
-        { "-skipcompile", Flag },
-        { "-shaderdebug", Flag },
-        { "-play", OptionalValue }
-#endif
-    };
-
-    StringBuilder cmdString;
-    for (int i = 1; i < argc; i++)
-    {
-        cmdString.Append(argv[i]);
-
-        if (i + 1 != argc)
-            cmdString.Append(TEXT(' '));
-    }
-    cmdString.Append(TEXT('\0'));
-    Options.CmdLine = *cmdString;
-
-    int argvP = 1;
-    while (argvP < argc)
-    {
-        OptArg optarg = { "", Invalid };
-        const Char *optValue;
-        for (int i = 0; i < sizeof(optArgs); i++)
-        {
-            if (strcmp(argv[argvP], optArgs[i].name) == 0)
-            {
-                optarg = optArgs[i];
-                break;
-            }
-        }
-        if (optarg.type == Invalid)
-        {
-            std::cerr << "Unknown command line option: " << argv[argvP] << std::endl;
-            break;
-        }
-        if (optarg.type == Flag)
-        {
-            // set boolean flag, the value is ignored
-            SetValue(optarg.name, nullptr);
-        }
-        else
-        {
-            if (argvP < argc-1)
-            {
-                argvP++;
-                auto sb = StringBuilder();
-                sb.Append(argv[argvP]);
-                optValue = *sb;
-            }
-            else
-            {
-                if (optarg.type == OptionalValue)
-                    optValue = TEXT("");
-                else
-                {
-                    std::cerr << "Command line option " << optarg.name << "requires an argument" << std::endl;
-                    break;
-                }
-            }
-            SetValue(optarg.name, optValue);
-        }
-        argvP++;
-    }
-#else
 bool CommandLine::Parse(const Char* cmdLine)
 {
     Options.CmdLine = cmdLine;
@@ -337,7 +239,7 @@ bool CommandLine::Parse(const Char* cmdLine)
 
 #endif
 
-#endif
     return false;
 }
+#endif
 

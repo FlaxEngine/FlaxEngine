@@ -76,10 +76,12 @@ Action Engine::Pause;
 Action Engine::Unpause;
 Window* Engine::MainWindow = nullptr;
 
+// if the general command line parsing can be adopted to Windows as well
+// we can get rid of these preprocessor directives
 #if PLATFORM_LINUX | PLATFORM_MAC
-int32 Engine::Main(const int argc, const char** argv)
+int32 Engine::Main(Array<String> arg)
 {
-    if (CommandLine::Parse(argc, argv))
+    if (CommandLine::Parse(arg))
     {
         std::cerr << "Invalid command line.";
         return -1;
