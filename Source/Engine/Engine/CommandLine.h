@@ -193,7 +193,7 @@ public:
     /// <returns>True if failed, otherwise false.</returns>
     static bool Parse(const Array<String>& arg);
     static bool HasOption(const String& name, const Array<String>& arg);
-    static Nullable<bool> CommandLine::GetOption(const String& name, const Array<String>& arg);
+    static Nullable<bool> GetOption(const String& name, const Array<String>& arg);
     static String GetOptionValue(const String& name, const Array<String>& arg);
 
 #else

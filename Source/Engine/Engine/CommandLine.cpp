@@ -15,7 +15,7 @@ bool CommandLine::HasOption(const String& name, const Array<String>& arg)
 Nullable<bool> CommandLine::GetOption(const String& name, const Array<String>& arg)
 {
     if (!HasOption(name, arg))
-        return nullptr;
+        return Nullable<bool>();
     return true;
 }
 
