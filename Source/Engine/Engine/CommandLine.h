@@ -185,7 +185,7 @@ public:
 
 public:
 
-#if PLATFORM_LINUX | PLATFORM_MAC
+#if PLATFORM_LINUX | PLATFORM_MAC | PLATFORM_IOS
     /// <summary>
     /// Parses the input command line.
     /// </summary>
