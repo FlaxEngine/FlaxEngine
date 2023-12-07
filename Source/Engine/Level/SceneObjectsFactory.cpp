@@ -16,8 +16,9 @@
 #if !BUILD_RELEASE || USE_EDITOR
 #include "Engine/Level/Level.h"
 #include "Engine/Threading/Threading.h"
-#include "Engine/Level/Components/MissingScript.h"
+#include "Engine/Level/Scripts/MissingScript.h"
 #endif
+#include "Engine/Level/Scripts/ModelPrefab.h"
 
 #if USE_EDITOR
 
@@ -45,6 +46,11 @@ void MissingScript::SetReferenceScript(const ScriptingObjectReference<Script>& v
 }
 
 #endif
+
+ModelPrefab::ModelPrefab(const SpawnParams& params)
+    : Script(params)
+{
+}
 
 SceneObjectsFactory::Context::Context(ISerializeModifier* modifier)
     : Modifier(modifier)

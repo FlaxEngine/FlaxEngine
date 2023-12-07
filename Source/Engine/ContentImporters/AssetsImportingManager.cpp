@@ -165,20 +165,7 @@ bool CreateAssetContext::AllocateChunk(int32 index)
 void CreateAssetContext::AddMeta(JsonWriter& writer) const
 {
     writer.JKEY("ImportPath");
-    if (AssetsImportingManager::UseImportPathRelative && !FileSystem::IsRelative(InputPath)
-#if PLATFORM_WINDOWS
-        // Import path from other drive should be stored as absolute on Windows to prevent issues
-        && InputPath.Length() > 2 && Globals::ProjectFolder.Length() > 2 && InputPath[0] == Globals::ProjectFolder[0]
-#endif
-    )
-    {
-        const String relativePath = FileSystem::ConvertAbsolutePathToRelative(Globals::ProjectFolder, InputPath);
-        writer.String(relativePath);
-    }
-    else
-    {
-        writer.String(InputPath);
-    }
+    writer.String(AssetsImportingManager::GetImportPath(InputPath));
     writer.JKEY("ImportUsername");
     writer.String(Platform::GetUserName());
 }
@@ -302,6 +289,20 @@ bool AssetsImportingManager::ImportIfEdited(const StringView& inputPath, const S
         assetId = assetInfo.ID;
     }
     return false;
+}
+
+String AssetsImportingManager::GetImportPath(const String& path)
+{
+    if (UseImportPathRelative && !FileSystem::IsRelative(path)
+#if PLATFORM_WINDOWS
+        // Import path from other drive should be stored as absolute on Windows to prevent issues
+        && path.Length() > 2 && Globals::ProjectFolder.Length() > 2 && path[0] == Globals::ProjectFolder[0]
+#endif
+    )
+    {
+        return FileSystem::ConvertAbsolutePathToRelative(Globals::ProjectFolder, path);
+    }
+    return path;
 }
 
 bool AssetsImportingManager::Create(const Function<CreateAssetResult(CreateAssetContext&)>& callback, const StringView& inputPath, const StringView& outputPath, Guid& assetId, void* arg)

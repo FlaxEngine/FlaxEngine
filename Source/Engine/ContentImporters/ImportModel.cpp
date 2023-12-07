@@ -19,6 +19,7 @@
 #include "Engine/Level/Actors/StaticModel.h"
 #include "Engine/Level/Prefabs/Prefab.h"
 #include "Engine/Level/Prefabs/PrefabManager.h"
+#include "Engine/Level/Scripts/ModelPrefab.h"
 #include "Engine/Platform/FileSystem.h"
 #include "Engine/Utilities/RectPack.h"
 #include "Engine/Profiler/ProfilerCPU.h"
@@ -699,7 +700,26 @@ CreateAssetResult ImportModel::CreatePrefab(CreateAssetContext& context, ModelDa
         }
     }
     ASSERT_LOW_LAYER(rootActor);
-    // TODO: add PrefabModel script for asset reimporting
+    {
+        // Add script with import options
+        auto* modelPrefabScript = New<ModelPrefab>();
+        modelPrefabScript->SetParent(rootActor);
+        modelPrefabScript->ImportPath = AssetsImportingManager::GetImportPath(context.InputPath);
+        modelPrefabScript->ImportOptions = options;
+
+        // Link with existing prefab instance
+        if (prefab)
+        {
+            for (const auto& i : prefab->ObjectsCache)
+            {
+                if (i.Value->GetTypeHandle() == modelPrefabScript->GetTypeHandle())
+                {
+                    modelPrefabScript->LinkPrefab(i.Value->GetPrefabID(), i.Value->GetPrefabObjectID());
+                    break;
+                }
+            }
+        }
+    }
 
     // Create prefab instead of native asset
     bool failed;
