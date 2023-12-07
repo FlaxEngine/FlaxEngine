@@ -20,7 +20,7 @@ namespace FlaxEditor.Windows
     public sealed class EditGameWindow : SceneEditorWindow
     {
         /// <inheritdoc />
-        protected override string UsageHint => "LMB: select, MMB: pan, RMB: rotate, " +
+        protected override string UsageHint => "LMB: select, MMB: pan, RMB: rotate, Alt+LMB: orbit, " +
                                                Editor.Options.Options.Input.Play + ": play";
 
         /// <summary>
