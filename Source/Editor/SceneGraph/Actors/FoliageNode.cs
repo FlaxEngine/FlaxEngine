@@ -10,10 +10,21 @@ namespace FlaxEditor.SceneGraph.Actors
     [HideInEditor]
     public sealed class FoliageNode : ActorNode
     {
+        private FoliageInstance instance;
+        /// <summary>
+        /// The selected instance index
+        /// </summary>
+        public int SelectedInstanceIndex;
+
         /// <inheritdoc />
-        public FoliageNode(Actor actor)
+        public FoliageNode(Foliage actor, int selectedInstanceIndex = -1)
         : base(actor)
         {
+            SelectedInstanceIndex = selectedInstanceIndex;
+            if (selectedInstanceIndex != -1)
+            {
+                instance = actor.GetInstance(selectedInstanceIndex);
+            }
         }
     }
 }

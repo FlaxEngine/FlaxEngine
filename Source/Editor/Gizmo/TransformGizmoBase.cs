@@ -108,7 +108,7 @@ namespace FlaxEditor.Gizmo
                 _startTransforms.Capacity = Mathf.NextPowerOfTwo(count);
             for (var i = 0; i < count; i++)
             {
-                _startTransforms.Add(GetSelectedObject(i));
+                _startTransforms.Add(GetSelectedObject(i).Transform);
             }
             GetSelectedObjectsBounds(out _startBounds, out _navigationDirty);
 
@@ -139,7 +139,7 @@ namespace FlaxEditor.Gizmo
             {
             case PivotType.ObjectCenter:
                 if (SelectionCount > 0)
-                    Position = GetSelectedObject(0).Translation;
+                    Position = GetSelectedObject(0).Transform.Translation;
                 break;
             case PivotType.SelectionCenter:
                 Position = GetSelectionCenter();
@@ -180,7 +180,7 @@ namespace FlaxEditor.Gizmo
                 _screenScale = (float)(vLength.Length / GizmoScaleFactor * gizmoSize);
             }
             // Setup world
-            Quaternion orientation = GetSelectedObject(0).Orientation;
+            Quaternion orientation = GetSelectedObject(0).Transform.Orientation;
             _gizmoWorld = new Transform(position, orientation, new Float3(_screenScale));
             if (_activeTransformSpace == TransformSpace.World && _activeMode != Mode.Scale)
             {
@@ -394,6 +394,13 @@ namespace FlaxEditor.Gizmo
         /// <inheritdoc />
         public override bool IsControllingMouse => _isTransforming;
 
+        //vertex snaping stff
+        Mesh.Vertex[] verts;
+        Mesh.Vertex[] otherVerts;
+        Transform otherTransform;
+        bool hasSelectedVertex;
+        int selectedvert;
+        int otherSelectedvert;
         /// <inheritdoc />
         public override void Update(float dt)
         {
@@ -429,12 +436,22 @@ namespace FlaxEditor.Gizmo
                         UpdateRotate(dt);
                         break;
                     }
+                    VertexSnap();
                 }
                 else
                 {
                     // If nothing selected, try to select any axis
                     if (!isLeftBtnDown && !Owner.IsRightMouseButtonDown)
+                    {
+                        if (Owner.IsAltKeyDown)
+                            SelectVertexSnaping();
                         SelectAxis();
+                    }
+                    else
+                    {
+                        verts = null;
+                        otherVerts = null;
+                    }
                 }
 
                 // Set positions of the gizmo
@@ -516,6 +533,93 @@ namespace FlaxEditor.Gizmo
             // Update
             UpdateMatrices();
         }
+        void SelectVertexSnaping()
+        {
+            //this
+            if (GetSelectedObject(0).EditableObject is Actor e)
+            {
+                if (e is StaticModel model)
+                {
+                    verts = model.Model.LODs[0].Meshes[0].DownloadVertexBuffer();
+                    var ray = Owner.MouseRay;
+                    var bb = model.EditorBox;
+                    //select vertex
+                    if (CollisionsHelper.RayIntersectsBox(ref ray, ref bb, out Vector3 point))
+                    {
+                        point = GetSelectedObject(0).Transform.WorldToLocal(point);
+                        Real lastdistance = Vector3.Distance(point, verts[0].Position);
+                        for (int i = 0; i < verts.Length; i++)
+                        {
+                            var d = Vector3.Distance(point, verts[i].Position);
+                            if (d <= lastdistance)
+                            {
+                                lastdistance = d;
+                                selectedvert = i;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        void VertexSnap()
+        {
+            Profiler.BeginEvent("VertexSnap");
+            //ray cast others
+            if (verts != null)
+            {
+                var ray = Owner.MouseRay;
+
+                SceneGraphNode.RayCastData rayCast = new SceneGraphNode.RayCastData()
+                {
+                    Ray = ray,
+                    Exclude = new List<Actor>() { (Actor)GetSelectedObject(0).EditableObject },
+                    Scan = new List<Type>() { typeof(StaticModel) }
+                };
+                var actor = GetSelectedObject(0).ParentScene.RayCast(ref rayCast, out var distance, out var _);
+                if (actor != null)
+                {
+                    if (actor.EditableObject is StaticModel model)
+                    {
+                        otherTransform = model.Transform;
+                        Vector3 p = rayCast.Ray.Position + (rayCast.Ray.Direction * distance);
+
+                        otherVerts = model.Model.LODs[0].Meshes[0].DownloadVertexBuffer();
+
+                        p = actor.Transform.WorldToLocal(p);
+                        Real lastdistance = Vector3.Distance(p, otherVerts[0].Position);
+
+                        for (int i = 0; i < otherVerts.Length; i++)
+                        {
+                            var d = Vector3.Distance(p, otherVerts[i].Position);
+                            if (d <= lastdistance)
+                            {
+                                lastdistance = d;
+                                otherSelectedvert = i;
+                            }
+                        }
+                        if(lastdistance > 25)
+                        {
+                            otherSelectedvert = -1;
+                            otherVerts = null;
+                        }
+                    }
+                }
+            }
+
+            if (verts != null && otherVerts != null)
+            {
+                Transform t = GetSelectedObject(0).Transform;
+                Vector3 selected = ((verts[selectedvert].Position * t.Orientation) * t.Scale) + t.Translation;
+
+                t = otherTransform;
+                Vector3 other = ((otherVerts[otherSelectedvert].Position * t.Orientation) * t.Scale) + t.Translation;
+
+                // Translation
+                _translationDelta = -(selected - other);
+            }
+
+            Profiler.EndEvent();
+        }
 
         /// <summary>
         /// Gets a value indicating whether this tool can transform objects.
@@ -536,7 +640,7 @@ namespace FlaxEditor.Gizmo
         /// Gets the selected object transformation.
         /// </summary>
         /// <param name="index">The selected object index.</param>
-        protected abstract Transform GetSelectedObject(int index);
+        protected abstract SceneGraphNode GetSelectedObject(int index);
 
         /// <summary>
         /// Gets the selected objects bounding box (contains the whole selection).
