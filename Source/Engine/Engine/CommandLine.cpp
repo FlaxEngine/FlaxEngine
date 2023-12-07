@@ -29,6 +29,16 @@ String CommandLine::GetOptionValue(const String& name, const Array<String>& arg)
     return String::Empty;
 }
 
+Nullable<String> CommandLine::GetOptionalValue(const String& name, const Array<String>& arg)
+{
+    const int index = arg.Find(name);
+    if (index < 0)
+        return Nullable<String>();
+    if (index+1 < arg.Count())
+        return Nullable<String>(arg[index+1]);
+    return Nullable<String>(String::Empty);
+}
+
 // arg is already excluding the argv[0] (the called program name)
 bool CommandLine::Parse(const Array<String>& arg)
 {
@@ -39,6 +49,7 @@ bool CommandLine::Parse(const Array<String>& arg)
             sb.Append(TEXT(" "));
         sb.Append(arg[i]);
     }
+    sb.Append(TEXT('\0'));
     Options.CmdLine = *sb;
 
     Options.Windowed = GetOption(TEXT("-windowed"), arg);
@@ -48,7 +59,7 @@ bool CommandLine::Parse(const Array<String>& arg)
     Options.NoLog = GetOption(TEXT("-nolog"), arg);
     Options.Std = GetOption(TEXT("-std"), arg);
 #if !BUILD_RELEASE
-    Options.DebuggerAddress = GetOptionValue(TEXT("-debug"), arg);
+    Options.DebuggerAddress = GetOptionalValue(TEXT("-debug"), arg);
     Options.WaitForDebugger = GetOption(TEXT("-debugwait"), arg);
 #endif
 #if PLATFORM_HAS_HEADLESS_MODE
@@ -71,10 +82,10 @@ bool CommandLine::Parse(const Array<String>& arg)
     Options.Project = GetOptionValue(TEXT("-project"), arg);
     Options.NewProject = GetOption(TEXT("-new"), arg);
     Options.GenProjectFiles = GetOption(TEXT("-genprojectfiles"), arg);
-    Options.Build = GetOptionValue(TEXT("-build"), arg);
+    Options.Build = GetOptionalValue(TEXT("-build"), arg);
     Options.SkipCompile = GetOption(TEXT("-skipcompile"), arg);
     Options.ShaderDebug = GetOption(TEXT("-shaderdebug"), arg);
-    Options.Play = GetOptionValue(TEXT("-play"), arg);
+    Options.Play = GetOptionalValue(TEXT("-play"), arg);
 #endif
 
     return false;

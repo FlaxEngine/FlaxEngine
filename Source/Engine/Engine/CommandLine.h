@@ -195,6 +195,7 @@ public:
     static bool HasOption(const String& name, const Array<String>& arg);
     static Nullable<bool> GetOption(const String& name, const Array<String>& arg);
     static String GetOptionValue(const String& name, const Array<String>& arg);
+    static Nullable<String> GetOptionalValue(const String& name, const Array<String>& arg);
 
 #else
     /// <summary>
