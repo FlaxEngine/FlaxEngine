@@ -26,7 +26,7 @@ namespace
 
 String TextureTool::Options::ToString() const
 {
-    return String::Format(TEXT("Type: {}, IsAtlas: {}, NeverStream: {}, IndependentChannels: {}, sRGB: {}, GenerateMipMaps: {}, FlipY: {}, Scale: {}, MaxSize: {}, Resize: {}, PreserveAlphaCoverage: {}, PreserveAlphaCoverageReference: {}, SizeX: {}, SizeY: {}"),
+    return String::Format(TEXT("Type: {}, IsAtlas: {}, NeverStream: {}, IndependentChannels: {}, sRGB: {}, GenerateMipMaps: {}, FlipY: {}, InvertGreen: {} Scale: {}, MaxSize: {}, Resize: {}, PreserveAlphaCoverage: {}, PreserveAlphaCoverageReference: {}, SizeX: {}, SizeY: {}"),
                           ScriptingEnum::ToString(Type),
                           IsAtlas,
                           NeverStream,
@@ -34,6 +34,7 @@ String TextureTool::Options::ToString() const
                           sRGB,
                           GenerateMipMaps,
                           FlipY,
+                          InvertGreenChannel,
                           Scale,
                           MaxSize,
                           MaxSize,
@@ -70,6 +71,9 @@ void TextureTool::Options::Serialize(SerializeStream& stream, const void* otherO
 
     stream.JKEY("FlipY");
     stream.Bool(FlipY);
+
+    stream.JKEY("InvertGreenChannel");
+    stream.Bool(InvertGreenChannel);
 
     stream.JKEY("Resize");
     stream.Bool(Resize);
@@ -128,6 +132,7 @@ void TextureTool::Options::Deserialize(DeserializeStream& stream, ISerializeModi
     sRGB = JsonTools::GetBool(stream, "sRGB", sRGB);
     GenerateMipMaps = JsonTools::GetBool(stream, "GenerateMipMaps", GenerateMipMaps);
     FlipY = JsonTools::GetBool(stream, "FlipY", FlipY);
+    InvertGreenChannel = JsonTools::GetBool(stream, "InvertGreenChannel", InvertGreenChannel);
     Resize = JsonTools::GetBool(stream, "Resize", Resize);
     PreserveAlphaCoverage = JsonTools::GetBool(stream, "PreserveAlphaCoverage", PreserveAlphaCoverage);
     PreserveAlphaCoverageReference = JsonTools::GetFloat(stream, "PreserveAlphaCoverageReference", PreserveAlphaCoverageReference);

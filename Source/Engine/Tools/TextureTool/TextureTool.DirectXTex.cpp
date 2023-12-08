@@ -625,7 +625,7 @@ bool TextureTool::ImportTextureDirectXTex(ImageType type, const StringView& path
     }
 
     bool keepAsIs = false;
-    if (!options.FlipY && options.Compress && type == ImageType::DDS && mipLevels == sourceMipLevels && DirectX::IsCompressed(sourceDxgiFormat) && !DirectX::IsSRGB(sourceDxgiFormat))
+    if (!options.FlipY && !options.InvertGreenChannel && options.Compress && type == ImageType::DDS && mipLevels == sourceMipLevels && DirectX::IsCompressed(sourceDxgiFormat) && !DirectX::IsSRGB(sourceDxgiFormat))
     {
         // Keep image in the current compressed format (artist choice) so we don't have to run the slow mipmap generation
         keepAsIs = true;
@@ -698,6 +698,35 @@ bool TextureTool::ImportTextureDirectXTex(ImageType type, const StringView& path
 
         // Use converted image
         SET_CURRENT_IMG(tmpImg);
+    }
+
+    if (!keepAsIs && options.InvertGreenChannel)
+    {
+        auto& timage = GET_TMP_IMG();
+
+        result = TransformImage(currentImage->GetImages(), currentImage->GetImageCount(), currentImage->GetMetadata(),
+            [&](DirectX::XMVECTOR* outPixels, const DirectX::XMVECTOR* inPixels, size_t w, size_t y)
+            {
+                static const DirectX::XMVECTORU32 s_selecty = { { { DirectX::XM_SELECT_0, DirectX::XM_SELECT_1, DirectX::XM_SELECT_0, DirectX::XM_SELECT_0 } } };
+
+                UNREFERENCED_PARAMETER(y);
+
+                for (size_t j = 0; j < w; ++j)
+                {
+                    const DirectX::XMVECTOR value = inPixels[j];
+
+                    const DirectX::XMVECTOR inverty = DirectX::XMVectorSubtract(DirectX::g_XMOne, value);
+
+                    outPixels[j] = DirectX::XMVectorSelect(value, inverty, s_selecty);
+                }
+            }, timage);
+        if (FAILED(result))
+        {
+            errorMsg = String::Format(TEXT("Cannot invert green channel in texture, error: {0:x}"), static_cast<uint32>(result));
+            return true;
+        }
+        // Use converted image
+        SET_CURRENT_IMG(timage);
     }
 
     // Generate mip maps chain

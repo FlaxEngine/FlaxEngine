@@ -57,6 +57,10 @@ API_CLASS(Namespace="FlaxEngine.Tools", Static) class FLAXENGINE_API TextureTool
         API_FIELD(Attributes="EditorOrder(70)")
         bool FlipY = false;
 
+        // True if to invert the green channel on a normal map. Good for OpenGL to DirectX conversion.
+        API_FIELD(Attributes = "EditorOrder(71)")
+        bool InvertGreenChannel = false;
+
         // Texture size scale. Allows increasing or decreasing the imported texture resolution. Default is 1.
         API_FIELD(Attributes="EditorOrder(80), Limit(0.0001f, 1000.0f, 0.01f)")
         float Scale = 1.0f;
