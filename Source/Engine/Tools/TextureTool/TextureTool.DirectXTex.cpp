@@ -663,7 +663,7 @@ bool TextureTool::ImportTextureDirectXTex(ImageType type, const StringView& path
     {
         auto& tmpImg = GET_TMP_IMG();
 
-        TransformImage(currentImage->GetImages(), currentImage->GetImageCount(), currentImage->GetMetadata(),
+        result = TransformImage(currentImage->GetImages(), currentImage->GetImageCount(), currentImage->GetMetadata(),
                        [](DirectX::XMVECTOR* outPixels, const DirectX::XMVECTOR* inPixels, size_t width, size_t y)
                        {
                            UNREFERENCED_PARAMETER(y);
