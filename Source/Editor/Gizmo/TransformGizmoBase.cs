@@ -10,6 +10,7 @@ using System;
 using System.Collections.Generic;
 using FlaxEditor.SceneGraph;
 using FlaxEngine;
+using FlaxEditor.Surface;
 
 namespace FlaxEditor.Gizmo
 {
@@ -137,16 +138,22 @@ namespace FlaxEditor.Gizmo
         {
             switch (_activePivotType)
             {
-            case PivotType.ObjectCenter:
-                if (SelectionCount > 0)
-                    Position = GetSelectedObject(0).Transform.Translation;
-                break;
-            case PivotType.SelectionCenter:
-                Position = GetSelectionCenter();
-                break;
-            case PivotType.WorldOrigin:
-                Position = Vector3.Zero;
-                break;
+                case PivotType.ObjectCenter:
+                    if (SelectionCount > 0)
+                        Position = GetSelectedObject(0).Transform.Translation;
+                    break;
+                case PivotType.SelectionCenter:
+                    Position = GetSelectionCenter();
+                    break;
+                case PivotType.WorldOrigin:
+                    Position = Vector3.Zero;
+                    break;
+            }
+            if(verts != null)
+            {
+                Transform t = thisTransform;
+                Vector3 selected = ((verts[selectedvert].Position * t.Orientation) * t.Scale) + t.Translation;
+                Position += -(Position - selected);
             }
             Position += _translationDelta;
         }
@@ -210,88 +217,88 @@ namespace FlaxEditor.Gizmo
             Real intersection;
             switch (_activeAxis)
             {
-            case Axis.X:
-            {
-                var plane = planeDotXY > planeDotZX ? planeXY : planeZX;
-                if (ray.Intersects(ref plane, out intersection))
-                {
-                    _intersectPosition = ray.Position + ray.Direction * intersection;
-                    if (_lastIntersectionPosition != Vector3.Zero)
-                        _tDelta = _intersectPosition - _lastIntersectionPosition;
-                    delta = new Vector3(_tDelta.X, 0, 0);
-                }
-                break;
-            }
-            case Axis.Y:
-            {
-                var plane = planeDotXY > planeDotYZ ? planeXY : planeYZ;
-                if (ray.Intersects(ref plane, out intersection))
-                {
-                    _intersectPosition = ray.Position + ray.Direction * intersection;
-                    if (_lastIntersectionPosition != Vector3.Zero)
-                        _tDelta = _intersectPosition - _lastIntersectionPosition;
-                    delta = new Vector3(0, _tDelta.Y, 0);
-                }
-                break;
-            }
-            case Axis.Z:
-            {
-                var plane = planeDotZX > planeDotYZ ? planeZX : planeYZ;
-                if (ray.Intersects(ref plane, out intersection))
-                {
-                    _intersectPosition = ray.Position + ray.Direction * intersection;
-                    if (_lastIntersectionPosition != Vector3.Zero)
-                        _tDelta = _intersectPosition - _lastIntersectionPosition;
-                    delta = new Vector3(0, 0, _tDelta.Z);
-                }
-                break;
-            }
-            case Axis.YZ:
-            {
-                if (ray.Intersects(ref planeYZ, out intersection))
-                {
-                    _intersectPosition = ray.Position + ray.Direction * intersection;
-                    if (_lastIntersectionPosition != Vector3.Zero)
-                        _tDelta = _intersectPosition - _lastIntersectionPosition;
-                    delta = new Vector3(0, _tDelta.Y, _tDelta.Z);
-                }
-                break;
-            }
-            case Axis.XY:
-            {
-                if (ray.Intersects(ref planeXY, out intersection))
-                {
-                    _intersectPosition = ray.Position + ray.Direction * intersection;
-                    if (_lastIntersectionPosition != Vector3.Zero)
-                        _tDelta = _intersectPosition - _lastIntersectionPosition;
-                    delta = new Vector3(_tDelta.X, _tDelta.Y, 0);
-                }
-                break;
-            }
-            case Axis.ZX:
-            {
-                if (ray.Intersects(ref planeZX, out intersection))
-                {
-                    _intersectPosition = ray.Position + ray.Direction * intersection;
-                    if (_lastIntersectionPosition != Vector3.Zero)
-                        _tDelta = _intersectPosition - _lastIntersectionPosition;
-                    delta = new Vector3(_tDelta.X, 0, _tDelta.Z);
-                }
-                break;
-            }
-            case Axis.Center:
-            {
-                var gizmoToView = Position - Owner.ViewPosition;
-                var plane = new Plane(-Vector3.Normalize(gizmoToView), gizmoToView.Length);
-                if (ray.Intersects(ref plane, out intersection))
-                {
-                    _intersectPosition = ray.Position + ray.Direction * intersection;
-                    if (_lastIntersectionPosition != Vector3.Zero)
-                        _tDelta = _intersectPosition - _lastIntersectionPosition;
-                }
-                delta = _tDelta;
-                break;
-            }
+                case Axis.X:
+                    {
+                        var plane = planeDotXY > planeDotZX ? planeXY : planeZX;
+                        if (ray.Intersects(ref plane, out intersection))
+                        {
+                            _intersectPosition = ray.Position + ray.Direction * intersection;
+                            if (_lastIntersectionPosition != Vector3.Zero)
+                                _tDelta = _intersectPosition - _lastIntersectionPosition;
+                            delta = new Vector3(_tDelta.X, 0, 0);
+                        }
+                        break;
+                    }
+                case Axis.Y:
+                    {
+                        var plane = planeDotXY > planeDotYZ ? planeXY : planeYZ;
+                        if (ray.Intersects(ref plane, out intersection))
+                        {
+                            _intersectPosition = ray.Position + ray.Direction * intersection;
+                            if (_lastIntersectionPosition != Vector3.Zero)
+                                _tDelta = _intersectPosition - _lastIntersectionPosition;
+                            delta = new Vector3(0, _tDelta.Y, 0);
+                        }
+                        break;
+                    }
+                case Axis.Z:
+                    {
+                        var plane = planeDotZX > planeDotYZ ? planeZX : planeYZ;
+                        if (ray.Intersects(ref plane, out intersection))
+                        {
+                            _intersectPosition = ray.Position + ray.Direction * intersection;
+                            if (_lastIntersectionPosition != Vector3.Zero)
+                                _tDelta = _intersectPosition - _lastIntersectionPosition;
+                            delta = new Vector3(0, 0, _tDelta.Z);
+                        }
+                        break;
+                    }
+                case Axis.YZ:
+                    {
+                        if (ray.Intersects(ref planeYZ, out intersection))
+                        {
+                            _intersectPosition = ray.Position + ray.Direction * intersection;
+                            if (_lastIntersectionPosition != Vector3.Zero)
+                                _tDelta = _intersectPosition - _lastIntersectionPosition;
+                            delta = new Vector3(0, _tDelta.Y, _tDelta.Z);
+                        }
+                        break;
+                    }
+                case Axis.XY:
+                    {
+                        if (ray.Intersects(ref planeXY, out intersection))
+                        {
+                            _intersectPosition = ray.Position + ray.Direction * intersection;
+                            if (_lastIntersectionPosition != Vector3.Zero)
+                                _tDelta = _intersectPosition - _lastIntersectionPosition;
+                            delta = new Vector3(_tDelta.X, _tDelta.Y, 0);
+                        }
+                        break;
+                    }
+                case Axis.ZX:
+                    {
+                        if (ray.Intersects(ref planeZX, out intersection))
+                        {
+                            _intersectPosition = ray.Position + ray.Direction * intersection;
+                            if (_lastIntersectionPosition != Vector3.Zero)
+                                _tDelta = _intersectPosition - _lastIntersectionPosition;
+                            delta = new Vector3(_tDelta.X, 0, _tDelta.Z);
+                        }
+                        break;
+                    }
+                case Axis.Center:
+                    {
+                        var gizmoToView = Position - Owner.ViewPosition;
+                        var plane = new Plane(-Vector3.Normalize(gizmoToView), gizmoToView.Length);
+                        if (ray.Intersects(ref plane, out intersection))
+                        {
+                            _intersectPosition = ray.Position + ray.Direction * intersection;
+                            if (_lastIntersectionPosition != Vector3.Zero)
+                                _tDelta = _intersectPosition - _lastIntersectionPosition;
+                        }
+                        delta = _tDelta;
+                        break;
+                    }
             }
 
             // Modifiers
@@ -364,30 +371,30 @@ namespace FlaxEditor.Gizmo
 
             switch (_activeAxis)
             {
-            case Axis.X:
-            case Axis.Y:
-            case Axis.Z:
-            {
-                Float3 dir;
-                if (_activeAxis == Axis.X)
-                    dir = Float3.Right * _gizmoWorld.Orientation;
-                else if (_activeAxis == Axis.Y)
-                    dir = Float3.Up * _gizmoWorld.Orientation;
-                else
-                    dir = Float3.Forward * _gizmoWorld.Orientation;
+                case Axis.X:
+                case Axis.Y:
+                case Axis.Z:
+                    {
+                        Float3 dir;
+                        if (_activeAxis == Axis.X)
+                            dir = Float3.Right * _gizmoWorld.Orientation;
+                        else if (_activeAxis == Axis.Y)
+                            dir = Float3.Up * _gizmoWorld.Orientation;
+                        else
+                            dir = Float3.Forward * _gizmoWorld.Orientation;
 
-                Float3 viewDir = Owner.ViewPosition - Position;
-                Float3.Dot(ref viewDir, ref dir, out float dot);
-                if (dot < 0.0f)
-                    delta *= -1;
+                        Float3 viewDir = Owner.ViewPosition - Position;
+                        Float3.Dot(ref viewDir, ref dir, out float dot);
+                        if (dot < 0.0f)
+                            delta *= -1;
 
-                Quaternion.RotationAxis(ref dir, delta, out _rotationDelta);
-                break;
-            }
+                        Quaternion.RotationAxis(ref dir, delta, out _rotationDelta);
+                        break;
+                    }
 
-            default:
-                _rotationDelta = Quaternion.Identity;
-                break;
+                default:
+                    _rotationDelta = Quaternion.Identity;
+                    break;
             }
         }
 
@@ -398,6 +405,8 @@ namespace FlaxEditor.Gizmo
         Mesh.Vertex[] verts;
         Mesh.Vertex[] otherVerts;
         Transform otherTransform;
+        StaticModel SelectedModel;
+        Transform thisTransform => SelectedModel.Transform;
         bool hasSelectedVertex;
         int selectedvert;
         int otherSelectedvert;
@@ -428,22 +437,25 @@ namespace FlaxEditor.Gizmo
                 {
                     switch (_activeMode)
                     {
-                    case Mode.Scale:
-                    case Mode.Translate:
-                        UpdateTranslateScale();
-                        break;
-                    case Mode.Rotate:
-                        UpdateRotate(dt);
-                        break;
+                        case Mode.Translate:
+                            UpdateTranslateScale();
+                            VertexSnap();
+                            break;
+                        case Mode.Scale:
+                            UpdateTranslateScale();
+                            break;
+                        case Mode.Rotate:
+                            UpdateRotate(dt);
+                            break;
                     }
-                    VertexSnap();
+                    
                 }
                 else
                 {
                     // If nothing selected, try to select any axis
                     if (!isLeftBtnDown && !Owner.IsRightMouseButtonDown)
                     {
-                        if (Owner.IsAltKeyDown)
+                        if (Owner.IsAltKeyDown && _activeMode == Mode.Translate)
                             SelectVertexSnaping();
                         SelectAxis();
                     }
@@ -535,30 +547,71 @@ namespace FlaxEditor.Gizmo
         }
         void SelectVertexSnaping()
         {
-            //this
-            if (GetSelectedObject(0).EditableObject is Actor e)
+            Vector3 point = Vector3.Zero;
+            var ray = Owner.MouseRay;
+            Real lastdistance = Real.MaxValue;
+            StaticModel Lastmodel = null;
+            int index = 0;
+
+            int i = 0;
+            //get first
+            for (; i < SelectionCount; i++)
             {
-                if (e is StaticModel model)
+                if (GetSelectedObject(i).EditableObject is StaticModel model)
                 {
-                    verts = model.Model.LODs[0].Meshes[0].DownloadVertexBuffer();
-                    var ray = Owner.MouseRay;
                     var bb = model.EditorBox;
-                    //select vertex
-                    if (CollisionsHelper.RayIntersectsBox(ref ray, ref bb, out Vector3 point))
+                    if (CollisionsHelper.RayIntersectsBox(ref ray, ref bb, out Vector3 p))
                     {
-                        point = GetSelectedObject(0).Transform.WorldToLocal(point);
-                        Real lastdistance = Vector3.Distance(point, verts[0].Position);
-                        for (int i = 0; i < verts.Length; i++)
+                        Lastmodel = model;
+                        point = p;
+                        index = 0;
+                        break;
+                    }
+                }
+            }
+
+            if (Lastmodel == null) // nothing to do return
+                return;
+
+            //find closest bounding box in selection
+            for (; i < SelectionCount; i++)
+            {
+                if (GetSelectedObject(i).EditableObject is StaticModel model)
+                {
+                    var bb = model.EditorBox;
+                    //check for other we might have one closer
+                    var d = Vector3.Distance(model.Transform.Translation, ray.Position);
+                    if (lastdistance < d)
+                    {
+                        if (CollisionsHelper.RayIntersectsBox(ref ray, ref bb, out Vector3 p))
                         {
-                            var d = Vector3.Distance(point, verts[i].Position);
-                            if (d <= lastdistance)
-                            {
-                                lastdistance = d;
-                                selectedvert = i;
-                            }
+                            lastdistance = d;
+                            Lastmodel = model;
+                            point = p;
+                            index = i;
                         }
                     }
                 }
+            }
+            SelectedModel = Lastmodel;
+
+            //find closest vertex to bounding box point (collision detection approximation)
+            //[ToDo] replace this with collision detection with is suporting concave shapes (compute shader) 
+            point = thisTransform.WorldToLocal(point);
+
+            //[To Do] comlite this  there is not suport for multy mesh model
+            verts = Lastmodel.Model.LODs[0].Meshes[0].DownloadVertexBuffer();
+
+            lastdistance = Vector3.Distance(point, verts[0].Position);
+            for (int j = 0; j < verts.Length; j++)
+            {
+                var d = Vector3.Distance(point, verts[j].Position);
+                if (d <= lastdistance)
+                {
+                    lastdistance = d;
+                    selectedvert = j;
+                }
+
             }
         }
         void VertexSnap()
@@ -572,9 +625,14 @@ namespace FlaxEditor.Gizmo
                 SceneGraphNode.RayCastData rayCast = new SceneGraphNode.RayCastData()
                 {
                     Ray = ray,
-                    Exclude = new List<Actor>() { (Actor)GetSelectedObject(0).EditableObject },
+                    Exclude = new List<Actor>() {},
                     Scan = new List<Type>() { typeof(StaticModel) }
                 };
+                for (int i = 0; i < SelectionCount; i++)
+                {
+                    rayCast.Exclude.Add((Actor)GetSelectedObject(i).EditableObject);
+                }
+                //grab scene and raycast
                 var actor = GetSelectedObject(0).ParentScene.RayCast(ref rayCast, out var distance, out var _);
                 if (actor != null)
                 {
@@ -583,11 +641,13 @@ namespace FlaxEditor.Gizmo
                         otherTransform = model.Transform;
                         Vector3 p = rayCast.Ray.Position + (rayCast.Ray.Direction * distance);
 
+                        //[To Do] comlite this  there is not suport for multy mesh model
                         otherVerts = model.Model.LODs[0].Meshes[0].DownloadVertexBuffer();
 
+                        //find closest vertex to bounding box point (collision detection approximation)
+                        //[ToDo] replace this with collision detection with is suporting concave shapes (compute shader)
                         p = actor.Transform.WorldToLocal(p);
                         Real lastdistance = Vector3.Distance(p, otherVerts[0].Position);
-
                         for (int i = 0; i < otherVerts.Length; i++)
                         {
                             var d = Vector3.Distance(p, otherVerts[i].Position);
@@ -597,6 +657,7 @@ namespace FlaxEditor.Gizmo
                                 otherSelectedvert = i;
                             }
                         }
+
                         if(lastdistance > 25)
                         {
                             otherSelectedvert = -1;
@@ -608,17 +669,41 @@ namespace FlaxEditor.Gizmo
 
             if (verts != null && otherVerts != null)
             {
-                Transform t = GetSelectedObject(0).Transform;
+                Transform t = thisTransform;
                 Vector3 selected = ((verts[selectedvert].Position * t.Orientation) * t.Scale) + t.Translation;
 
                 t = otherTransform;
                 Vector3 other = ((otherVerts[otherSelectedvert].Position * t.Orientation) * t.Scale) + t.Translation;
 
                 // Translation
-                _translationDelta = -(selected - other);
+                var projection = -(selected - other);
+
+                //at some point
+                //Quaternion inverse = t.Orientation;
+                //inverse.Invert();
+                //projection *= inverse;                                       //world to local
+                //flip mask
+                //var Not = ~_activeAxis;
+                //LockAxisWorld(Not, ref projection);                          //lock axis
+                //projection *= t.Orientation;                                 //local to world
+
+                _translationDelta = projection;
             }
 
             Profiler.EndEvent();
+        }
+
+        /// <summary>
+        /// zeros the <see cref="Vector3"/> <paramref name="v"/> component using the <see cref="Axis"/> <paramref name="lockAxis"/>
+        /// </summary>
+        public static void LockAxisWorld(Axis lockAxis, ref Vector3 v)
+        {
+            if (lockAxis.HasFlag(Axis.X))
+                v.X = 0;
+            if (lockAxis.HasFlag(Axis.Y))
+                v.Y = 0;
+            if (lockAxis.HasFlag(Axis.Z))
+                v.Z = 0;
         }
 
         /// <summary>

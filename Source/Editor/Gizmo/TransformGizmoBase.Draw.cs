@@ -203,7 +203,7 @@ namespace FlaxEditor.Gizmo
             }
             if (verts != null && selectedvert != -1)
             {
-                Transform t = GetSelectedObject(0).Transform;
+                Transform t = thisTransform;
                 Vector3 selected = ((verts[selectedvert].Position * t.Orientation) * t.Scale) + t.Translation;
                 Matrix matrix = new Transform(selected, t.Orientation, new Float3(gizmoModelsScale2RealGizmoSize)).GetWorld();
                 cubeMesh.Draw(ref renderContext, _materialSphere, ref matrix);
