@@ -10,6 +10,37 @@
 class Texture;
 
 /// <summary>
+/// Android screen orientation options.
+/// </summary>
+API_ENUM() enum class FLAXENGINE_API AndroidScreenOrientation 
+{
+    /// <summary>
+    /// "portrait" mode
+    /// </summary>
+    Portrait,
+
+    /// <summary>
+    /// "reversePortrait" mode
+    /// </summary>
+    PortraitReverse,
+
+    /// <summary>
+    /// "landscape" mode
+    /// </summary>
+    LandscapeRight,
+
+    /// <summary>
+    /// "reverseLandscape" mode
+    /// </summary>
+    LandscapeLeft,
+
+    /// <summary>
+    /// "fullSensor" mode
+    /// </summary>
+    AutoRotation,
+};
+
+/// <summary>
 /// Android platform settings.
 /// </summary>
 API_CLASS(sealed, Namespace="FlaxEditor.Content.Settings") class FLAXENGINE_API AndroidPlatformSettings : public SettingsBase
@@ -28,6 +59,12 @@ API_CLASS(sealed, Namespace="FlaxEditor.Content.Settings") class FLAXENGINE_API 
     /// </summary>
     API_FIELD(Attributes="EditorOrder(100), EditorDisplay(\"General\")")
     Array<String> Permissions;
+
+    /// <summary>
+    /// The default screen orientation.
+    /// </summary>
+    API_FIELD(Attributes = "EditorOrder(110), EditorDisplay(\"General\")")
+    AndroidScreenOrientation DefaultOrientation = AndroidScreenOrientation::AutoRotation;
 
     /// <summary>
     /// Custom icon texture to use for the application (overrides the default one).
