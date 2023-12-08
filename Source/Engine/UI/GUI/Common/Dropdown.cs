@@ -469,7 +469,13 @@ namespace FlaxEngine.GUI
 
             var itemsHeight = 20.0f;
             var itemsMargin = 20.0f;
-
+            // Scale height and margive with text height if needed
+            var textHeight = Font.GetFont().Height;
+            if (textHeight > itemsHeight)
+            {
+                itemsHeight = textHeight;
+                itemsMargin = textHeight;
+            }
             /*
             var itemsWidth = 40.0f;
             var font = Font.GetFont();
