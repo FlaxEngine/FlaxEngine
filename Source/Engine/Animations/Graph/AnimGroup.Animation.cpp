@@ -1077,10 +1077,29 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
                 {
                     tA = nodesA->Nodes[i];
                     tB = nodesB->Nodes[i];
-                    t.Translation = tA.Translation + tB.Translation;
-                    t.Orientation = tA.Orientation * tB.Orientation;
-                    t.Scale = tA.Scale * tB.Scale;
+
+                    // Get Base pose nodes
+                    auto baseNode = _graph.BaseModel.Get()->GetNodes()[i];
+
+                    t.Translation = tA.Translation + (tB.Translation - baseNode.LocalTransform.Translation) * alpha;
+
+                    //auto baseOrientation = tA.Orientation;
+                    //Quaternion additiveOrientation = alpha * (tB.Orientation - baseNode.LocalTransform.Orientation);
+                    //t.Orientation = baseOrientation + additiveOrientation;
+                    auto m1 = Matrix::RotationQuaternion(tA.Orientation);
+                    auto m2 = Matrix::RotationQuaternion(alpha * tB.Orientation);
+                    auto m3 = Matrix::RotationQuaternion(alpha * baseNode.LocalTransform.Orientation);
+                    Matrix m4;
+                    Matrix::Subtract(m2, m3, m4);
+                    Matrix m5;
+                    Matrix::Add(m1, m4, m5);
+
+                    t.SetRotation(m5);
                     t.Orientation.Normalize();
+
+                    t.Scale = tA.Scale * tB.Scale;
+                    
+                    //nodes->Nodes[i] = t;
                     Transform::Lerp(tA, t, alpha, nodes->Nodes[i]);
                 }
                 Transform::Lerp(nodesA->RootMotion, nodesA->RootMotion + nodesB->RootMotion, alpha, nodes->RootMotion);
