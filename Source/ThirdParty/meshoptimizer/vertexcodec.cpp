@@ -42,14 +42,22 @@
 #endif
 
 // When targeting Wasm SIMD we can't use runtime cpuid checks so we unconditionally enable SIMD
-// Note that we need unimplemented-simd128 subset for a few functions that are implemented de-facto
 #if defined(__wasm_simd128__)
 #define SIMD_WASM
-#define SIMD_TARGET __attribute__((target("unimplemented-simd128")))
+// Prevent compiling other variant when wasm simd compilation is active
+#undef SIMD_NEON
+#undef SIMD_SSE
+#undef SIMD_AVX
 #endif
 
 #ifndef SIMD_TARGET
 #define SIMD_TARGET
+#endif
+
+// When targeting AArch64/x64, optimize for latency to allow decoding of individual 16-byte groups to overlap
+// We don't do this for 32-bit systems because we need 64-bit math for this and this will hurt in-order CPUs
+#if defined(__x86_64__) || defined(_M_X64) || defined(__aarch64__) || defined(_M_ARM64)
+#define SIMD_LATENCYOPT
 #endif
 
 #endif // !MESHOPTIMIZER_NO_SIMD
@@ -82,31 +90,14 @@
 #include <wasm_simd128.h>
 #endif
 
-#ifndef TRACE
-#define TRACE 0
-#endif
-
-#if TRACE
-#include <stdio.h>
-#endif
-
 #ifdef SIMD_WASM
-#define wasmx_splat_v32x4(v, i) wasm_v32x4_shuffle(v, v, i, i, i, i)
-#define wasmx_unpacklo_v8x16(a, b) wasm_v8x16_shuffle(a, b, 0, 16, 1, 17, 2, 18, 3, 19, 4, 20, 5, 21, 6, 22, 7, 23)
-#define wasmx_unpackhi_v8x16(a, b) wasm_v8x16_shuffle(a, b, 8, 24, 9, 25, 10, 26, 11, 27, 12, 28, 13, 29, 14, 30, 15, 31)
-#define wasmx_unpacklo_v16x8(a, b) wasm_v16x8_shuffle(a, b, 0, 8, 1, 9, 2, 10, 3, 11)
-#define wasmx_unpackhi_v16x8(a, b) wasm_v16x8_shuffle(a, b, 4, 12, 5, 13, 6, 14, 7, 15)
-#define wasmx_unpacklo_v64x2(a, b) wasm_v64x2_shuffle(a, b, 0, 2)
-#define wasmx_unpackhi_v64x2(a, b) wasm_v64x2_shuffle(a, b, 1, 3)
-#endif
-
-#if defined(SIMD_WASM)
-// v128_t wasm_v8x16_swizzle(v128_t a, v128_t b)
-SIMD_TARGET
-static __inline__ v128_t wasm_v8x16_swizzle(v128_t a, v128_t b)
-{
-	return (v128_t)__builtin_wasm_swizzle_v8x16((__i8x16)a, (__i8x16)b);
-}
+#define wasmx_splat_v32x4(v, i) wasm_i32x4_shuffle(v, v, i, i, i, i)
+#define wasmx_unpacklo_v8x16(a, b) wasm_i8x16_shuffle(a, b, 0, 16, 1, 17, 2, 18, 3, 19, 4, 20, 5, 21, 6, 22, 7, 23)
+#define wasmx_unpackhi_v8x16(a, b) wasm_i8x16_shuffle(a, b, 8, 24, 9, 25, 10, 26, 11, 27, 12, 28, 13, 29, 14, 30, 15, 31)
+#define wasmx_unpacklo_v16x8(a, b) wasm_i16x8_shuffle(a, b, 0, 8, 1, 9, 2, 10, 3, 11)
+#define wasmx_unpackhi_v16x8(a, b) wasm_i16x8_shuffle(a, b, 4, 12, 5, 13, 6, 14, 7, 15)
+#define wasmx_unpacklo_v64x2(a, b) wasm_i64x2_shuffle(a, b, 0, 2)
+#define wasmx_unpackhi_v64x2(a, b) wasm_i64x2_shuffle(a, b, 1, 3)
 #endif
 
 namespace meshopt
@@ -143,19 +134,6 @@ inline unsigned char unzigzag8(unsigned char v)
 {
 	return -(v & 1) ^ (v >> 1);
 }
-
-#if TRACE
-struct Stats
-{
-	size_t size;
-	size_t header;
-	size_t bitg[4];
-	size_t bitb[4];
-};
-
-Stats* bytestats;
-Stats vertexstats[256];
-#endif
 
 static bool encodeBytesGroupZero(const unsigned char* buffer)
 {
@@ -242,7 +220,7 @@ static unsigned char* encodeBytes(unsigned char* data, unsigned char* data_end, 
 	size_t header_size = (buffer_size / kByteGroupSize + 3) / 4;
 
 	if (size_t(data_end - data) < header_size)
-		return 0;
+		return NULL;
 
 	data += header_size;
 
@@ -251,7 +229,7 @@ static unsigned char* encodeBytes(unsigned char* data, unsigned char* data_end, 
 	for (size_t i = 0; i < buffer_size; i += kByteGroupSize)
 	{
 		if (size_t(data_end - data) < kByteGroupDecodeLimit)
-			return 0;
+			return NULL;
 
 		int best_bits = 8;
 		size_t best_size = encodeBytesGroupMeasure(buffer + i, 8);
@@ -278,16 +256,7 @@ static unsigned char* encodeBytes(unsigned char* data, unsigned char* data_end, 
 
 		assert(data + best_size == next);
 		data = next;
-
-#if TRACE > 1
-		bytestats->bitg[bitslog2]++;
-		bytestats->bitb[bitslog2] += best_size;
-#endif
 	}
-
-#if TRACE > 1
-	bytestats->header += header_size;
-#endif
 
 	return data;
 }
@@ -317,19 +286,9 @@ static unsigned char* encodeVertexBlock(unsigned char* data, unsigned char* data
 			vertex_offset += vertex_size;
 		}
 
-#if TRACE
-		const unsigned char* olddata = data;
-		bytestats = &vertexstats[k];
-#endif
-
 		data = encodeBytes(data, data_end, buffer, (vertex_count + kByteGroupSize - 1) & ~(kByteGroupSize - 1));
 		if (!data)
-			return 0;
-
-#if TRACE
-		bytestats = 0;
-		vertexstats[k].size += data - olddata;
-#endif
+			return NULL;
 	}
 
 	memcpy(last_vertex, &vertex_data[vertex_size * (vertex_count - 1)], vertex_size);
@@ -337,7 +296,7 @@ static unsigned char* encodeVertexBlock(unsigned char* data, unsigned char* data
 	return data;
 }
 
-#if defined(SIMD_FALLBACK) || (!defined(SIMD_SSE) && !defined(SIMD_NEON) && !defined(SIMD_AVX))
+#if defined(SIMD_FALLBACK) || (!defined(SIMD_SSE) && !defined(SIMD_NEON) && !defined(SIMD_AVX) && !defined(SIMD_WASM))
 static const unsigned char* decodeBytesGroup(const unsigned char* data, unsigned char* buffer, int bitslog2)
 {
 #define READ() byte = *data++
@@ -397,14 +356,14 @@ static const unsigned char* decodeBytes(const unsigned char* data, const unsigne
 	size_t header_size = (buffer_size / kByteGroupSize + 3) / 4;
 
 	if (size_t(data_end - data) < header_size)
-		return 0;
+		return NULL;
 
 	data += header_size;
 
 	for (size_t i = 0; i < buffer_size; i += kByteGroupSize)
 	{
 		if (size_t(data_end - data) < kByteGroupDecodeLimit)
-			return 0;
+			return NULL;
 
 		size_t header_offset = i / kByteGroupSize;
 
@@ -429,7 +388,7 @@ static const unsigned char* decodeVertexBlock(const unsigned char* data, const u
 	{
 		data = decodeBytes(data, data_end, buffer, vertex_count_aligned);
 		if (!data)
-			return 0;
+			return NULL;
 
 		size_t vertex_offset = k;
 
@@ -458,7 +417,7 @@ static const unsigned char* decodeVertexBlock(const unsigned char* data, const u
 static unsigned char kDecodeBytesGroupShuffle[256][8];
 static unsigned char kDecodeBytesGroupCount[256];
 
-#ifdef EMSCRIPTEN
+#ifdef __wasm__
 __attribute__((cold)) // this saves 500 bytes in the output binary - we don't need to vectorize this loop!
 #endif
 static bool
@@ -521,6 +480,18 @@ static const unsigned char* decodeBytesGroupSimd(const unsigned char* data, unsi
 		typedef int unaligned_int;
 #endif
 
+#ifdef SIMD_LATENCYOPT
+		unsigned int data32;
+		memcpy(&data32, data, 4);
+		data32 &= data32 >> 1;
+
+		// arrange bits such that low bits of nibbles of data64 contain all 2-bit elements of data32
+		unsigned long long data64 = ((unsigned long long)data32 << 30) | (data32 & 0x3fffffff);
+
+		// adds all 1-bit nibbles together; the sum fits in 4 bits because datacnt=16 would have used mode 3
+		int datacnt = int(((data64 & 0x1111111111111111ull) * 0x1111111111111111ull) >> 60);
+#endif
+
 		__m128i sel2 = _mm_cvtsi32_si128(*reinterpret_cast<const unaligned_int*>(data));
 		__m128i rest = _mm_loadu_si128(reinterpret_cast<const __m128i*>(data + 4));
 
@@ -539,11 +510,25 @@ static const unsigned char* decodeBytesGroupSimd(const unsigned char* data, unsi
 
 		_mm_storeu_si128(reinterpret_cast<__m128i*>(buffer), result);
 
+#ifdef SIMD_LATENCYOPT
+		return data + 4 + datacnt;
+#else
 		return data + 4 + kDecodeBytesGroupCount[mask0] + kDecodeBytesGroupCount[mask1];
+#endif
 	}
 
 	case 2:
 	{
+#ifdef SIMD_LATENCYOPT
+		unsigned long long data64;
+		memcpy(&data64, data, 8);
+		data64 &= data64 >> 1;
+		data64 &= data64 >> 2;
+
+		// adds all 1-bit nibbles together; the sum fits in 4 bits because datacnt=16 would have used mode 3
+		int datacnt = int(((data64 & 0x1111111111111111ull) * 0x1111111111111111ull) >> 60);
+#endif
+
 		__m128i sel4 = _mm_loadl_epi64(reinterpret_cast<const __m128i*>(data));
 		__m128i rest = _mm_loadu_si128(reinterpret_cast<const __m128i*>(data + 8));
 
@@ -561,7 +546,11 @@ static const unsigned char* decodeBytesGroupSimd(const unsigned char* data, unsi
 
 		_mm_storeu_si128(reinterpret_cast<__m128i*>(buffer), result);
 
+#ifdef SIMD_LATENCYOPT
+		return data + 8 + datacnt;
+#else
 		return data + 8 + kDecodeBytesGroupCount[mask0] + kDecodeBytesGroupCount[mask1];
+#endif
 	}
 
 	case 3:
@@ -653,24 +642,13 @@ static uint8x16_t shuffleBytes(unsigned char mask0, unsigned char mask1, uint8x8
 
 static void neonMoveMask(uint8x16_t mask, unsigned char& mask0, unsigned char& mask1)
 {
-	static const unsigned char byte_mask_data[16] = {1, 2, 4, 8, 16, 32, 64, 128, 1, 2, 4, 8, 16, 32, 64, 128};
+	// magic constant found using z3 SMT assuming mask has 8 groups of 0xff or 0x00
+	const uint64_t magic = 0x000103070f1f3f80ull;
 
-	uint8x16_t byte_mask = vld1q_u8(byte_mask_data);
-	uint8x16_t masked = vandq_u8(mask, byte_mask);
+	uint64x2_t mask2 = vreinterpretq_u64_u8(mask);
 
-#ifdef __aarch64__
-	// aarch64 has horizontal sums; MSVC doesn't expose this via arm64_neon.h so this path is exclusive to clang/gcc
-	mask0 = vaddv_u8(vget_low_u8(masked));
-	mask1 = vaddv_u8(vget_high_u8(masked));
-#else
-	// we need horizontal sums of each half of masked, which can be done in 3 steps (yielding sums of sizes 2, 4, 8)
-	uint8x8_t sum1 = vpadd_u8(vget_low_u8(masked), vget_high_u8(masked));
-	uint8x8_t sum2 = vpadd_u8(sum1, sum1);
-	uint8x8_t sum3 = vpadd_u8(sum2, sum2);
-
-	mask0 = vget_lane_u8(sum3, 0);
-	mask1 = vget_lane_u8(sum3, 1);
-#endif
+	mask0 = uint8_t((vgetq_lane_u64(mask2, 0) * magic) >> 56);
+	mask1 = uint8_t((vgetq_lane_u64(mask2, 1) * magic) >> 56);
 }
 
 static const unsigned char* decodeBytesGroupSimd(const unsigned char* data, unsigned char* buffer, int bitslog2)
@@ -688,6 +666,18 @@ static const unsigned char* decodeBytesGroupSimd(const unsigned char* data, unsi
 
 	case 1:
 	{
+#ifdef SIMD_LATENCYOPT
+		unsigned int data32;
+		memcpy(&data32, data, 4);
+		data32 &= data32 >> 1;
+
+		// arrange bits such that low bits of nibbles of data64 contain all 2-bit elements of data32
+		unsigned long long data64 = ((unsigned long long)data32 << 30) | (data32 & 0x3fffffff);
+
+		// adds all 1-bit nibbles together; the sum fits in 4 bits because datacnt=16 would have used mode 3
+		int datacnt = int(((data64 & 0x1111111111111111ull) * 0x1111111111111111ull) >> 60);
+#endif
+
 		uint8x8_t sel2 = vld1_u8(data);
 		uint8x8_t sel22 = vzip_u8(vshr_n_u8(sel2, 4), sel2).val[0];
 		uint8x8x2_t sel2222 = vzip_u8(vshr_n_u8(sel22, 2), sel22);
@@ -704,11 +694,25 @@ static const unsigned char* decodeBytesGroupSimd(const unsigned char* data, unsi
 
 		vst1q_u8(buffer, result);
 
+#ifdef SIMD_LATENCYOPT
+		return data + 4 + datacnt;
+#else
 		return data + 4 + kDecodeBytesGroupCount[mask0] + kDecodeBytesGroupCount[mask1];
+#endif
 	}
 
 	case 2:
 	{
+#ifdef SIMD_LATENCYOPT
+		unsigned long long data64;
+		memcpy(&data64, data, 8);
+		data64 &= data64 >> 1;
+		data64 &= data64 >> 2;
+
+		// adds all 1-bit nibbles together; the sum fits in 4 bits because datacnt=16 would have used mode 3
+		int datacnt = int(((data64 & 0x1111111111111111ull) * 0x1111111111111111ull) >> 60);
+#endif
+
 		uint8x8_t sel4 = vld1_u8(data);
 		uint8x8x2_t sel44 = vzip_u8(vshr_n_u8(sel4, 4), vand_u8(sel4, vdup_n_u8(15)));
 		uint8x16_t sel = vcombine_u8(sel44.val[0], sel44.val[1]);
@@ -724,7 +728,11 @@ static const unsigned char* decodeBytesGroupSimd(const unsigned char* data, unsi
 
 		vst1q_u8(buffer, result);
 
+#ifdef SIMD_LATENCYOPT
+		return data + 8 + datacnt;
+#else
 		return data + 8 + kDecodeBytesGroupCount[mask0] + kDecodeBytesGroupCount[mask1];
+#endif
 	}
 
 	case 3:
@@ -747,13 +755,11 @@ static const unsigned char* decodeBytesGroupSimd(const unsigned char* data, unsi
 SIMD_TARGET
 static v128_t decodeShuffleMask(unsigned char mask0, unsigned char mask1)
 {
-	// TODO: 8b buffer overrun - should we use splat or extend buffers?
 	v128_t sm0 = wasm_v128_load(&kDecodeBytesGroupShuffle[mask0]);
 	v128_t sm1 = wasm_v128_load(&kDecodeBytesGroupShuffle[mask1]);
 
-	// TODO: we should use v8x16_load_splat
 	v128_t sm1off = wasm_v128_load(&kDecodeBytesGroupCount[mask0]);
-	sm1off = wasm_v8x16_shuffle(sm1off, sm1off, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+	sm1off = wasm_i8x16_shuffle(sm1off, sm1off, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
 
 	v128_t sm1r = wasm_i8x16_add(sm1, sm1off);
 
@@ -763,26 +769,16 @@ static v128_t decodeShuffleMask(unsigned char mask0, unsigned char mask1)
 SIMD_TARGET
 static void wasmMoveMask(v128_t mask, unsigned char& mask0, unsigned char& mask1)
 {
-	v128_t mask_0 = wasm_v32x4_shuffle(mask, mask, 0, 2, 1, 3);
+	// magic constant found using z3 SMT assuming mask has 8 groups of 0xff or 0x00
+	const uint64_t magic = 0x000103070f1f3f80ull;
 
-	// TODO: when Chrome supports v128.const we can try doing vectorized and?
-	uint64_t mask_1a = wasm_i64x2_extract_lane(mask_0, 0) & 0x0804020108040201ull;
-	uint64_t mask_1b = wasm_i64x2_extract_lane(mask_0, 1) & 0x8040201080402010ull;
-
-	uint64_t mask_2 = mask_1a | mask_1b;
-	uint64_t mask_4 = mask_2 | (mask_2 >> 16);
-	uint64_t mask_8 = mask_4 | (mask_4 >> 8);
-
-	mask0 = uint8_t(mask_8);
-	mask1 = uint8_t(mask_8 >> 32);
+	mask0 = uint8_t((wasm_i64x2_extract_lane(mask, 0) * magic) >> 56);
+	mask1 = uint8_t((wasm_i64x2_extract_lane(mask, 1) * magic) >> 56);
 }
 
 SIMD_TARGET
 static const unsigned char* decodeBytesGroupSimd(const unsigned char* data, unsigned char* buffer, int bitslog2)
 {
-	unsigned char byte, enc, encv;
-	const unsigned char* data_var;
-
 	switch (bitslog2)
 	{
 	case 0:
@@ -796,7 +792,6 @@ static const unsigned char* decodeBytesGroupSimd(const unsigned char* data, unsi
 
 	case 1:
 	{
-		// TODO: test 4b load splat
 		v128_t sel2 = wasm_v128_load(data);
 		v128_t rest = wasm_v128_load(data + 4);
 
@@ -811,8 +806,7 @@ static const unsigned char* decodeBytesGroupSimd(const unsigned char* data, unsi
 
 		v128_t shuf = decodeShuffleMask(mask0, mask1);
 
-		// TODO: test or/andnot
-		v128_t result = wasm_v128_bitselect(wasm_v8x16_swizzle(rest, shuf), sel, mask);
+		v128_t result = wasm_v128_bitselect(wasm_i8x16_swizzle(rest, shuf), sel, mask);
 
 		wasm_v128_store(buffer, result);
 
@@ -821,7 +815,6 @@ static const unsigned char* decodeBytesGroupSimd(const unsigned char* data, unsi
 
 	case 2:
 	{
-		// TODO: test 8b load splat
 		v128_t sel4 = wasm_v128_load(data);
 		v128_t rest = wasm_v128_load(data + 8);
 
@@ -835,8 +828,7 @@ static const unsigned char* decodeBytesGroupSimd(const unsigned char* data, unsi
 
 		v128_t shuf = decodeShuffleMask(mask0, mask1);
 
-		// TODO: test or/andnot
-		v128_t result = wasm_v128_bitselect(wasm_v8x16_swizzle(rest, shuf), sel, mask);
+		v128_t result = wasm_v128_bitselect(wasm_i8x16_swizzle(rest, shuf), sel, mask);
 
 		wasm_v128_store(buffer, result);
 
@@ -927,8 +919,7 @@ SIMD_TARGET
 static v128_t unzigzag8(v128_t v)
 {
 	v128_t xl = wasm_i8x16_neg(wasm_v128_and(v, wasm_i8x16_splat(1)));
-	// TODO: use wasm_u8x16_shr when v8 fixes codegen for constant shifts
-	v128_t xr = wasm_v128_and(wasm_u16x8_shr(v, 1), wasm_i8x16_splat(127));
+	v128_t xr = wasm_u8x16_shr(v, 1);
 
 	return wasm_v128_xor(xl, xr);
 }
@@ -947,7 +938,7 @@ static const unsigned char* decodeBytesSimd(const unsigned char* data, const uns
 	size_t header_size = (buffer_size / kByteGroupSize + 3) / 4;
 
 	if (size_t(data_end - data) < header_size)
-		return 0;
+		return NULL;
 
 	data += header_size;
 
@@ -969,7 +960,7 @@ static const unsigned char* decodeBytesSimd(const unsigned char* data, const uns
 	for (; i < buffer_size; i += kByteGroupSize)
 	{
 		if (size_t(data_end - data) < kByteGroupDecodeLimit)
-			return 0;
+			return NULL;
 
 		size_t header_offset = i / kByteGroupSize;
 
@@ -997,7 +988,7 @@ static const unsigned char* decodeVertexBlockSimd(const unsigned char* data, con
 		{
 			data = decodeBytesSimd(data, data_end, buffer + j * vertex_count_aligned, vertex_count_aligned);
 			if (!data)
-				return 0;
+				return NULL;
 		}
 
 #if defined(SIMD_SSE) || defined(SIMD_AVX)
@@ -1020,7 +1011,7 @@ static const unsigned char* decodeVertexBlockSimd(const unsigned char* data, con
 
 #ifdef SIMD_WASM
 #define TEMP v128_t
-#define PREP() v128_t pi = wasm_v128_load(last_vertex + k) // TODO: use wasm_v32x4_load_splat to avoid buffer overrun
+#define PREP() v128_t pi = wasm_v128_load(last_vertex + k)
 #define LOAD(i) v128_t r##i = wasm_v128_load(buffer + j + i * vertex_count_aligned)
 #define GRP4(i) t0 = wasmx_splat_v32x4(r##i, 0), t1 = wasmx_splat_v32x4(r##i, 1), t2 = wasmx_splat_v32x4(r##i, 2), t3 = wasmx_splat_v32x4(r##i, 3)
 #define FIXD(i) t##i = pi = wasm_i8x16_add(pi, t##i)
@@ -1092,7 +1083,7 @@ static unsigned int getCpuFeatures()
 	return cpuinfo[2];
 }
 
-unsigned int cpuid = getCpuFeatures();
+static unsigned int cpuid = getCpuFeatures();
 #endif
 
 } // namespace meshopt
@@ -1103,10 +1094,6 @@ size_t meshopt_encodeVertexBuffer(unsigned char* buffer, size_t buffer_size, con
 
 	assert(vertex_size > 0 && vertex_size <= 256);
 	assert(vertex_size % 4 == 0);
-
-#if TRACE
-	memset(vertexstats, 0, sizeof(vertexstats));
-#endif
 
 	const unsigned char* vertex_data = static_cast<const unsigned char*>(vertices);
 
@@ -1160,28 +1147,6 @@ size_t meshopt_encodeVertexBuffer(unsigned char* buffer, size_t buffer_size, con
 	assert(data >= buffer + tail_size);
 	assert(data <= buffer + buffer_size);
 
-#if TRACE
-	size_t total_size = data - buffer;
-
-	for (size_t k = 0; k < vertex_size; ++k)
-	{
-		const Stats& vsk = vertexstats[k];
-
-		printf("%2d: %d bytes\t%.1f%%\t%.1f bpv", int(k), int(vsk.size), double(vsk.size) / double(total_size) * 100, double(vsk.size) / double(vertex_count) * 8);
-
-#if TRACE > 1
-		printf("\t\thdr %d bytes\tbit0 %d (%d bytes)\tbit1 %d (%d bytes)\tbit2 %d (%d bytes)\tbit3 %d (%d bytes)",
-		       int(vsk.header),
-		       int(vsk.bitg[0]), int(vsk.bitb[0]),
-		       int(vsk.bitg[1]), int(vsk.bitb[1]),
-		       int(vsk.bitg[2]), int(vsk.bitb[2]),
-		       int(vsk.bitg[3]), int(vsk.bitb[3]));
-#endif
-
-		printf("\n");
-	}
-#endif
-
 	return data - buffer;
 }
 
@@ -1217,7 +1182,7 @@ int meshopt_decodeVertexBuffer(void* destination, size_t vertex_count, size_t ve
 	assert(vertex_size > 0 && vertex_size <= 256);
 	assert(vertex_size % 4 == 0);
 
-	const unsigned char* (*decode)(const unsigned char*, const unsigned char*, unsigned char*, size_t, size_t, unsigned char[256]) = 0;
+	const unsigned char* (*decode)(const unsigned char*, const unsigned char*, unsigned char*, size_t, size_t, unsigned char[256]) = NULL;
 
 #if defined(SIMD_SSE) && defined(SIMD_FALLBACK)
 	decode = (cpuid & (1 << 9)) ? decodeVertexBlockSimd : decodeVertexBlock;

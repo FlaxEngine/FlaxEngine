@@ -428,11 +428,9 @@ namespace FlaxEditor.Windows.Assets
 
         private void Update(ActorNode actorNode)
         {
-            if (actorNode.Actor)
-            {
-                actorNode.TreeNode.UpdateText();
-                actorNode.TreeNode.OnOrderInParentChanged();
-            }
+            actorNode.TreeNode.UpdateText();
+            if (actorNode.TreeNode.IsCollapsed)
+                return;
 
             for (int i = 0; i < actorNode.ChildNodes.Count; i++)
             {

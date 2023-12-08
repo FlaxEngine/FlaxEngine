@@ -533,6 +533,7 @@ namespace FlaxEditor.Surface
                     UpdateSelectionRectangle();
                 }
             }
+            bool showPrimaryMenu = false;
             if (_rightMouseDown && button == MouseButton.Right)
             {
                 _rightMouseDown = false;
@@ -546,8 +547,7 @@ namespace FlaxEditor.Surface
                     _cmStartPos = location;
                     if (controlUnderMouse == null)
                     {
-                        // Show primary context menu
-                        ShowPrimaryMenu(_cmStartPos);
+                        showPrimaryMenu = true;
                     }
                 }
                 _mouseMoveAmount = 0;
@@ -573,8 +573,13 @@ namespace FlaxEditor.Surface
                 return true;
             }
 
+            // If none of the child controls handled this show the primary context menu
+            if (showPrimaryMenu)
+            {
+                ShowPrimaryMenu(_cmStartPos);
+            }
             // Letting go of a connection or right clicking while creating a connection
-            if (!_isMovingSelection && _connectionInstigator != null && !IsPrimaryMenuOpened)
+            else if (!_isMovingSelection && _connectionInstigator != null && !IsPrimaryMenuOpened)
             {
                 _cmStartPos = location;
                 Cursor = CursorType.Default;

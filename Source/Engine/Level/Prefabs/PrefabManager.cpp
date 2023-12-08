@@ -76,12 +76,12 @@ Actor* PrefabManager::SpawnPrefab(Prefab* prefab, Actor* parent)
     return SpawnPrefab(prefab, Transform(Vector3::Minimum), parent, nullptr);
 }
 
-Actor* PrefabManager::SpawnPrefab(Prefab* prefab, Actor* parent, Dictionary<Guid, const void*>* objectsCache, bool withSynchronization)
+Actor* PrefabManager::SpawnPrefab(Prefab* prefab, Actor* parent, Dictionary<Guid, SceneObject*>* objectsCache, bool withSynchronization)
 {
     return SpawnPrefab(prefab, Transform(Vector3::Minimum), parent, objectsCache, withSynchronization);
 }
 
-Actor* PrefabManager::SpawnPrefab(Prefab* prefab, const Transform& transform, Actor* parent, Dictionary<Guid, const void*>* objectsCache, bool withSynchronization)
+Actor* PrefabManager::SpawnPrefab(Prefab* prefab, const Transform& transform, Actor* parent, Dictionary<Guid, SceneObject*>* objectsCache, bool withSynchronization)
 {
     PROFILE_CPU_NAMED("Prefab.Spawn");
     if (prefab == nullptr)

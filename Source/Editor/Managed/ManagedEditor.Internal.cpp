@@ -769,7 +769,7 @@ bool ManagedEditor::TryRestoreImportOptions(ModelTool::Options& options, String 
 
     // Get options from model
     FileSystem::NormalizePath(assetPath);
-    return ImportModelFile::TryGetImportOptions(assetPath, options);
+    return ImportModel::TryGetImportOptions(assetPath, options);
 }
 
 bool ManagedEditor::Import(const String& inputPath, const String& outputPath, const AudioTool::Options& options)

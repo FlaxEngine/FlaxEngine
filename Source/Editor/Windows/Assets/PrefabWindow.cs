@@ -440,6 +440,7 @@ namespace FlaxEditor.Windows.Assets
         {
             try
             {
+                FlaxEngine.Profiler.BeginEvent("PrefabWindow.Update");
                 if (Graph.Main != null)
                 {
                     // Due to fact that actors in prefab editor are only created but not added to gameplay 
@@ -467,6 +468,10 @@ namespace FlaxEditor.Windows.Assets
                     Select(Graph.Main);
                     Graph.Root.TreeNode.ExpandAll(true);
                 }
+            }
+            finally
+            {
+                FlaxEngine.Profiler.EndEvent();
             }
 
             // Auto fit

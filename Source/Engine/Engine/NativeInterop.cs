@@ -1135,7 +1135,7 @@ namespace FlaxEngine.Interop
                     marshallers[i](fields[i], offsets[i], ref managedValue, fieldPtr, out int fieldSize);
                     fieldPtr += fieldSize;
                 }
-                Assert.IsTrue((fieldPtr - nativePtr) <= Unsafe.SizeOf<T>());
+                //Assert.IsTrue((fieldPtr - nativePtr) <= GetTypeSize(typeof(T)));
             }
 
             internal static void ToManaged(ref T managedValue, IntPtr nativePtr, bool byRef)
@@ -1182,7 +1182,7 @@ namespace FlaxEngine.Interop
                     marshallers[i](fields[i], offsets[i], ref managedValue, nativePtr, out int fieldSize);
                     nativePtr += fieldSize;
                 }
-                Assert.IsTrue((nativePtr - fieldPtr) <= Unsafe.SizeOf<T>());
+                //Assert.IsTrue((nativePtr - fieldPtr) <= GetTypeSize(typeof(T)));
             }
 
             internal static void ToNative(ref T managedValue, IntPtr nativePtr)
@@ -1331,38 +1331,49 @@ namespace FlaxEngine.Interop
                 // Skip using in-built delegate for value types (eg. Transform) to properly handle instance value passing to method
                 if (invokeDelegate == null && !method.DeclaringType.IsValueType)
                 {
-                    List<Type> methodTypes = new List<Type>();
-                    if (!method.IsStatic)
-                        methodTypes.Add(method.DeclaringType);
-                    if (returnType != typeof(void))
-                        methodTypes.Add(returnType);
-                    methodTypes.AddRange(parameterTypes);
-
-                    List<Type> genericParamTypes = new List<Type>();
-                    foreach (var type in methodTypes)
+                    // Thread-safe creation
+                    lock (typeCache)
                     {
-                        if (type.IsByRef)
-                            genericParamTypes.Add(type.GetElementType());
-                        else if (type.IsPointer)
-                            genericParamTypes.Add(typeof(IntPtr));
-                        else
-                            genericParamTypes.Add(type);
-                    }
-
-                    string invokerTypeName = $"{typeof(Invoker).FullName}+Invoker{(method.IsStatic ? "Static" : "")}{(returnType != typeof(void) ? "Ret" : "NoRet")}{parameterTypes.Length}{(genericParamTypes.Count > 0 ? "`" + genericParamTypes.Count : "")}";
-                    Type invokerType = Type.GetType(invokerTypeName);
-                    if (invokerType != null)
-                    {
-                        if (genericParamTypes.Count != 0)
-                            invokerType = invokerType.MakeGenericType(genericParamTypes.ToArray());
-                        invokeDelegate = invokerType.GetMethod(nameof(Invoker.InvokerStaticNoRet0.MarshalAndInvoke), BindingFlags.Static | BindingFlags.NonPublic).CreateDelegate<Invoker.MarshalAndInvokeDelegate>();
-                        delegInvoke = invokerType.GetMethod(nameof(Invoker.InvokerStaticNoRet0.CreateDelegate), BindingFlags.Static | BindingFlags.NonPublic).Invoke(null, new object[] { method });
+                        if (invokeDelegate == null)
+                        {
+                            TryCreateDelegate();
+                        }
                     }
                 }
-
                 outDeleg = invokeDelegate;
                 outDelegInvoke = delegInvoke;
                 return outDeleg != null;
+            }
+
+            private void TryCreateDelegate()
+            {
+                var methodTypes = new List<Type>();
+                if (!method.IsStatic)
+                    methodTypes.Add(method.DeclaringType);
+                if (returnType != typeof(void))
+                    methodTypes.Add(returnType);
+                methodTypes.AddRange(parameterTypes);
+
+                var genericParamTypes = new List<Type>();
+                foreach (var type in methodTypes)
+                {
+                    if (type.IsByRef)
+                        genericParamTypes.Add(type.GetElementType());
+                    else if (type.IsPointer)
+                        genericParamTypes.Add(typeof(IntPtr));
+                    else
+                        genericParamTypes.Add(type);
+                }
+
+                string invokerTypeName = $"{typeof(Invoker).FullName}+Invoker{(method.IsStatic ? "Static" : "")}{(returnType != typeof(void) ? "Ret" : "NoRet")}{parameterTypes.Length}{(genericParamTypes.Count > 0 ? "`" + genericParamTypes.Count : "")}";
+                Type invokerType = Type.GetType(invokerTypeName);
+                if (invokerType != null)
+                {
+                    if (genericParamTypes.Count != 0)
+                        invokerType = invokerType.MakeGenericType(genericParamTypes.ToArray());
+                    delegInvoke = invokerType.GetMethod(nameof(Invoker.InvokerStaticNoRet0.CreateDelegate), BindingFlags.Static | BindingFlags.NonPublic).Invoke(null, new object[] { method });
+                    invokeDelegate = invokerType.GetMethod(nameof(Invoker.InvokerStaticNoRet0.MarshalAndInvoke), BindingFlags.Static | BindingFlags.NonPublic).CreateDelegate<Invoker.MarshalAndInvokeDelegate>();
+                }
             }
 #endif
         }
@@ -1580,7 +1591,7 @@ namespace FlaxEngine.Interop
             private static IntPtr PinValue<T>(T value) where T : struct
             {
                 // Store the converted value in unmanaged memory so it will not be relocated by the garbage collector.
-                int size = Unsafe.SizeOf<T>();
+                int size = GetTypeSize(typeof(T));
                 uint index = Interlocked.Increment(ref pinnedAllocationsPointer) % (uint)pinnedAllocations.Length;
                 ref (IntPtr ptr, int size) alloc = ref pinnedAllocations[index];
                 if (alloc.size < size)

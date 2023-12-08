@@ -100,48 +100,50 @@ void AnimGraphExecutor::ProcessAnimEvents(AnimGraphNode* node, bool loop, float 
             if (!k.Value.Instance)
                 continue;
             const float duration = k.Value.Duration > 1 ? k.Value.Duration : 0.0f;
+#define ADD_OUTGOING_EVENT(type) context.Data->OutgoingEvents.Add({ k.Value.Instance, (AnimatedModel*)context.Data->Object, anim, eventTime, eventDeltaTime, AnimGraphInstanceData::OutgoingEvent::type })
             if (k.Time <= eventTimeMax && eventTimeMin <= k.Time + duration)
             {
                 int32 stateIndex = -1;
                 if (duration > 1)
                 {
                     // Begin for continuous event
-                    for (stateIndex = 0; stateIndex < context.Data->Events.Count(); stateIndex++)
+                    for (stateIndex = 0; stateIndex < context.Data->ActiveEvents.Count(); stateIndex++)
                     {
-                        const auto& e = context.Data->Events[stateIndex];
+                        const auto& e = context.Data->ActiveEvents[stateIndex];
                         if (e.Instance == k.Value.Instance && e.Node == node)
                             break;
                     }
-                    if (stateIndex == context.Data->Events.Count())
+                    if (stateIndex == context.Data->ActiveEvents.Count())
                     {
-                        auto& e = context.Data->Events.AddOne();
-                        e.Instance = k.Value.Instance;
+                        ASSERT(k.Value.Instance->Is<AnimContinuousEvent>());
+                        auto& e = context.Data->ActiveEvents.AddOne();
+                        e.Instance = (AnimContinuousEvent*)k.Value.Instance;
                         e.Anim = anim;
                         e.Node = node;
-                        ASSERT(k.Value.Instance->Is<AnimContinuousEvent>());
-                        ((AnimContinuousEvent*)k.Value.Instance)->OnBegin((AnimatedModel*)context.Data->Object, anim, eventTime, eventDeltaTime);
+                        ADD_OUTGOING_EVENT(OnBegin);
                     }
                 }
 
                 // Event
-                k.Value.Instance->OnEvent((AnimatedModel*)context.Data->Object, anim, eventTime, eventDeltaTime);
+                ADD_OUTGOING_EVENT(OnEvent);
                 if (stateIndex != -1)
-                    context.Data->Events[stateIndex].Hit = true;
+                    context.Data->ActiveEvents[stateIndex].Hit = true;
             }
             else if (duration > 1)
             {
                 // End for continuous event
-                for (int32 i = 0; i < context.Data->Events.Count(); i++)
+                for (int32 i = 0; i < context.Data->ActiveEvents.Count(); i++)
                 {
-                    const auto& e = context.Data->Events[i];
+                    const auto& e = context.Data->ActiveEvents[i];
                     if (e.Instance == k.Value.Instance && e.Node == node)
                     {
-                        ((AnimContinuousEvent*)k.Value.Instance)->OnEnd((AnimatedModel*)context.Data->Object, anim, eventTime, eventDeltaTime);
-                        context.Data->Events.RemoveAt(i);
+                        ADD_OUTGOING_EVENT(OnEnd);
+                        context.Data->ActiveEvents.RemoveAt(i);
                         break;
                     }
                 }
             }
+#undef ADD_OUTGOING_EVENT
         }
     }
 }
@@ -1070,15 +1072,33 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
                 const auto nodes = node->GetNodes(this);
                 const auto nodesA = static_cast<AnimGraphImpulse*>(valueA.AsPointer);
                 const auto nodesB = static_cast<AnimGraphImpulse*>(valueB.AsPointer);
+                const auto& baseNodes = _graph.BaseModel.Get()->GetNodes();
                 Transform t, tA, tB;
                 for (int32 i = 0; i < nodes->Nodes.Count(); i++)
                 {
                     tA = nodesA->Nodes[i];
                     tB = nodesB->Nodes[i];
-                    t.Translation = tA.Translation + tB.Translation;
-                    t.Orientation = tA.Orientation * tB.Orientation;
-                    t.Scale = tA.Scale * tB.Scale;
+                    const auto& baseNode = baseNodes[i];
+
+                    t.Translation = tA.Translation + (tB.Translation - baseNode.LocalTransform.Translation) * alpha;
+
+                    //auto baseOrientation = tA.Orientation;
+                    //Quaternion additiveOrientation = alpha * (tB.Orientation - baseNode.LocalTransform.Orientation);
+                    //t.Orientation = baseOrientation + additiveOrientation;
+                    auto m1 = Matrix::RotationQuaternion(tA.Orientation);
+                    auto m2 = Matrix::RotationQuaternion(alpha * tB.Orientation);
+                    auto m3 = Matrix::RotationQuaternion(alpha * baseNode.LocalTransform.Orientation);
+                    Matrix m4;
+                    Matrix::Subtract(m2, m3, m4);
+                    Matrix m5;
+                    Matrix::Add(m1, m4, m5);
+
+                    t.SetRotation(m5);
                     t.Orientation.Normalize();
+
+                    t.Scale = tA.Scale * tB.Scale;
+                    
+                    //nodes->Nodes[i] = t;
                     Transform::Lerp(tA, t, alpha, nodes->Nodes[i]);
                 }
                 Transform::Lerp(nodesA->RootMotion, nodesA->RootMotion + nodesB->RootMotion, alpha, nodes->RootMotion);

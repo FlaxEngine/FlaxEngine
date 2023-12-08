@@ -85,12 +85,20 @@ namespace FlaxEditor.SceneGraph.GUI
         {
             if (Parent is ActorTreeNode parent)
             {
-                for (int i = 0; i < parent.ChildrenCount; i++)
+                var anyChanged = false;
+                var children = parent.Children;
+                for (int i = 0; i < children.Count; i++)
                 {
-                    if (parent.Children[i] is ActorTreeNode child && child.Actor)
-                        child._orderInParent = child.Actor.OrderInParent;
+                    if (children[i] is ActorTreeNode child && child.Actor)
+                    {
+                        var orderInParent = child.Actor.OrderInParent;
+                        anyChanged |= child._orderInParent != orderInParent;
+                        if (anyChanged)
+                            child._orderInParent = orderInParent;
+                    }
                 }
-                parent.SortChildren();
+                if (anyChanged)
+                    parent.SortChildren();
             }
             else if (Actor)
             {

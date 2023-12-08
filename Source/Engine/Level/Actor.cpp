@@ -239,14 +239,8 @@ const Guid& Actor::GetSceneObjectId() const
 
 void Actor::SetParent(Actor* value, bool worldPositionsStays, bool canBreakPrefabLink)
 {
-    // Check if value won't change
     if (_parent == value)
         return;
-    if (IsDuringPlay() && !IsInMainThread())
-    {
-        LOG(Error, "Editing scene hierarchy is only allowed on a main thread.");
-        return;
-    }
 #if USE_EDITOR || !BUILD_RELEASE
     if (Is<Scene>())
     {
@@ -264,6 +258,13 @@ void Actor::SetParent(Actor* value, bool worldPositionsStays, bool canBreakPrefa
 
     // Detect it actor is not in a game but new parent is already in a game (we should spawn it)
     const bool isBeingSpawned = !IsDuringPlay() && newScene && value->IsDuringPlay();
+
+    // Actors system doesn't support editing scene hierarchy from multiple threads
+    if (!IsInMainThread() && (IsDuringPlay() || isBeingSpawned))
+    {
+        LOG(Error, "Editing scene hierarchy is only allowed on a main thread.");
+        return;
+    }
 
     // Handle changing scene (unregister from it)
     const bool isSceneChanging = prevScene != newScene;

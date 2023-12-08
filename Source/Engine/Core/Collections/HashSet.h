@@ -93,6 +93,31 @@ private:
     int32 _size = 0;
     AllocationData _allocation;
 
+    FORCE_INLINE static void MoveToEmpty(AllocationData& to, AllocationData& from, int32 fromSize)
+    {
+        if IF_CONSTEXPR (AllocationType::HasSwap)
+            to.Swap(from);
+        else
+        {
+            to.Allocate(fromSize);
+            Bucket* toData = to.Get();
+            Bucket* fromData = from.Get();
+            for (int32 i = 0; i < fromSize; i++)
+            {
+                Bucket& fromBucket = fromData[i];
+                if (fromBucket.IsOccupied())
+                {
+                    Bucket& toBucket = toData[i];
+                    Memory::MoveItems(&toBucket.Item, &fromBucket.Item, 1);
+                    toBucket._state = Bucket::Occupied;
+                    Memory::DestructItem(&fromBucket.Item);
+                    fromBucket._state = Bucket::Empty;
+                }
+            }
+            from.Free();
+        }
+    }
+
 public:
     /// <summary>
     /// Initializes a new instance of the <see cref="HashSet"/> class.
@@ -122,7 +147,7 @@ public:
         other._elementsCount = 0;
         other._deletedCount = 0;
         other._size = 0;
-        _allocation.Swap(other._allocation);
+        MoveToEmpty(_allocation, other._allocation, _size);
     }
 
     /// <summary>
@@ -163,7 +188,7 @@ public:
             other._elementsCount = 0;
             other._deletedCount = 0;
             other._size = 0;
-            _allocation.Swap(other._allocation);
+            MoveToEmpty(_allocation, other._allocation, _size);
         }
         return *this;
     }
@@ -389,7 +414,7 @@ public:
             return;
         ASSERT(capacity >= 0);
         AllocationData oldAllocation;
-        oldAllocation.Swap(_allocation);
+        MoveToEmpty(oldAllocation, _allocation, _size);
         const int32 oldSize = _size;
         const int32 oldElementsCount = _elementsCount;
         _deletedCount = _elementsCount = 0;
@@ -458,10 +483,19 @@ public:
     /// <param name="other">The other collection.</param>
     void Swap(HashSet& other)
     {
-        ::Swap(_elementsCount, other._elementsCount);
-        ::Swap(_deletedCount, other._deletedCount);
-        ::Swap(_size, other._size);
-        _allocation.Swap(other._allocation);
+        if IF_CONSTEXPR (AllocationType::HasSwap)
+        {
+            ::Swap(_elementsCount, other._elementsCount);
+            ::Swap(_deletedCount, other._deletedCount);
+            ::Swap(_size, other._size);
+            _allocation.Swap(other._allocation);
+        }
+        else
+        {
+            HashSet tmp = MoveTemp(other);
+            other = *this;
+            *this = MoveTemp(tmp);
+        }
     }
 
 public:
@@ -726,7 +760,7 @@ private:
         {
             // Rebuild entire table completely
             AllocationData oldAllocation;
-            oldAllocation.Swap(_allocation);
+            MoveToEmpty(oldAllocation, _allocation, _size);
             _allocation.Allocate(_size);
             Bucket* data = _allocation.Get();
             for (int32 i = 0; i < _size; i++)

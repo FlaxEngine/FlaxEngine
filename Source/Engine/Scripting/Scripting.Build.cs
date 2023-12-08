@@ -20,10 +20,7 @@ public class Scripting : EngineModule
                 void AddFrameworkDefines(string template, int major, int latestMinor)
                 {
                     for (int minor = latestMinor; minor >= 0; minor--)
-                    {
                         options.ScriptingAPI.Defines.Add(string.Format(template, major, minor));
-                        options.ScriptingAPI.Defines.Add(string.Format($"{template}_OR_GREATER", major, minor));
-                    }
                 }
 
                 // .NET
@@ -31,14 +28,15 @@ public class Scripting : EngineModule
                 options.ScriptingAPI.Defines.Add("USE_NETCORE");
 
                 // .NET SDK
-                AddFrameworkDefines("NET{0}_{1}", 7, 0); // "NET7_0" and "NET7_0_OR_GREATER"
-                AddFrameworkDefines("NET{0}_{1}", 6, 0);
-                AddFrameworkDefines("NET{0}_{1}", 5, 0);
+                var dotnetSdk = DotNetSdk.Instance;
                 options.ScriptingAPI.Defines.Add("NET");
-                AddFrameworkDefines("NETCOREAPP{0}_{1}", 3, 1); // "NETCOREAPP3_1" and "NETCOREAPP3_1_OR_GREATER"
-                AddFrameworkDefines("NETCOREAPP{0}_{1}", 2, 2);
-                AddFrameworkDefines("NETCOREAPP{0}_{1}", 1, 1);
+                AddFrameworkDefines("NET{0}_{1}", dotnetSdk.Version.Major, 0); // "NET7_0"
+                for (int i = 5; i <= dotnetSdk.Version.Major; i++)
+                    AddFrameworkDefines("NET{0}_{1}_OR_GREATER", dotnetSdk.Version.Major, 0); // "NET7_0_OR_GREATER"
                 options.ScriptingAPI.Defines.Add("NETCOREAPP");
+                AddFrameworkDefines("NETCOREAPP{0}_{1}_OR_GREATER", 3, 1); // "NETCOREAPP3_1_OR_GREATER"
+                AddFrameworkDefines("NETCOREAPP{0}_{1}_OR_GREATER", 2, 2);
+                AddFrameworkDefines("NETCOREAPP{0}_{1}_OR_GREATER", 1, 1);
 
                 if (options.Target is EngineTarget engineTarget && engineTarget.UseSeparateMainExecutable(options))
                 {

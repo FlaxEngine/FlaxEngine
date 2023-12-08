@@ -23,6 +23,9 @@ namespace FlaxEditor.Surface
         }
 
         /// <inheritdoc />
+        public override bool CanLivePreviewValueChanges => false;
+
+        /// <inheritdoc />
         public override string GetTypeName(ScriptType type)
         {
             if (type.Type == typeof(void))

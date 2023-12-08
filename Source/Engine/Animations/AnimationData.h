@@ -98,7 +98,6 @@ public:
 /// </summary>
 struct AnimationData
 {
-public:
     /// <summary>
     /// The duration of the animation (in frames).
     /// </summary>
@@ -113,6 +112,11 @@ public:
     /// Enables root motion extraction support from this animation.
     /// </summary>
     bool EnableRootMotion = false;
+
+    /// <summary>
+    /// The animation name.
+    /// </summary>
+    String Name;
 
     /// <summary>
     /// The custom node name to be used as a root motion source. If not specified the actual root node will be used.
@@ -131,14 +135,14 @@ public:
     FORCE_INLINE float GetLength() const
     {
 #if BUILD_DEBUG
-        ASSERT(FramesPerSecond != 0);
+        ASSERT(FramesPerSecond > ZeroTolerance);
 #endif
         return static_cast<float>(Duration / FramesPerSecond);
     }
 
     uint64 GetMemoryUsage() const
     {
-        uint64 result = RootNodeName.Length() * sizeof(Char) + Channels.Capacity() * sizeof(NodeAnimationData);
+        uint64 result = (Name.Length() + RootNodeName.Length()) * sizeof(Char) + Channels.Capacity() * sizeof(NodeAnimationData);
         for (const auto& e : Channels)
             result += e.GetMemoryUsage();
         return result;
@@ -151,9 +155,7 @@ public:
     {
         int32 result = 0;
         for (int32 i = 0; i < Channels.Count(); i++)
-        {
             result += Channels[i].GetKeyframesCount();
-        }
         return result;
     }
 
@@ -166,6 +168,7 @@ public:
         ::Swap(Duration, other.Duration);
         ::Swap(FramesPerSecond, other.FramesPerSecond);
         ::Swap(EnableRootMotion, other.EnableRootMotion);
+        ::Swap(Name, other.Name);
         ::Swap(RootNodeName, other.RootNodeName);
         Channels.Swap(other.Channels);
     }
@@ -175,6 +178,7 @@ public:
     /// </summary>
     void Dispose()
     {
+        Name.Clear();
         Duration = 0.0;
         FramesPerSecond = 0.0;
         RootNodeName.Clear();

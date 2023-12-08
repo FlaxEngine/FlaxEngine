@@ -73,7 +73,6 @@ namespace FlaxEditor.CustomEditors
         {
             if (instanceValues == null || instanceValues.Count != Count)
                 throw new ArgumentException();
-
             for (int i = 0; i < Count; i++)
             {
                 var v = instanceValues[i];

@@ -318,28 +318,19 @@ public:
     /// Gets the Y component of the value. Valid only for vector types.
     /// </summary>
     /// <returns>The Y component.</returns>
-    ShaderGraphValue GetY() const
-    {
-        return ShaderGraphValue(VariantType::Types::Float, Value + _subs[1]);
-    }
+    ShaderGraphValue GetY() const;
 
     /// <summary>
     /// Gets the Z component of the value. Valid only for vector types.
     /// </summary>
     /// <returns>The Z component.</returns>
-    ShaderGraphValue GetZ() const
-    {
-        return ShaderGraphValue(VariantType::Types::Float, Value + _subs[2]);
-    }
+    ShaderGraphValue GetZ() const;
 
     /// <summary>
     /// Gets the W component of the value. Valid only for vector types.
     /// </summary>
     /// <returns>The W component.</returns>
-    ShaderGraphValue GetW() const
-    {
-        return ShaderGraphValue(VariantType::Types::Float, Value + _subs[3]);
-    }
+    ShaderGraphValue GetW() const;
 
 public:
     /// <summary>

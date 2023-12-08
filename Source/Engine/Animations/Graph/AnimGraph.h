@@ -23,6 +23,9 @@ class AnimSubGraph;
 class AnimGraphBase;
 class AnimGraphNode;
 class AnimGraphExecutor;
+class AnimatedModel;
+class AnimEvent;
+class AnimContinuousEvent;
 class SkinnedModel;
 class SkeletonData;
 
@@ -349,16 +352,40 @@ public:
     /// </summary>
     void Invalidate();
 
+    /// <summary>
+    /// Invokes any outgoing AnimEvent and AnimContinuousEvent collected during the last animation update. When called from non-main thread only Async events will be invoked.
+    /// </summary>
+    void InvokeAnimEvents();
+
 private:
-    struct Event
+    struct OutgoingEvent
     {
+        enum Types
+        {
+            OnEvent,
+            OnBegin,
+            OnEnd,
+        };
+
         AnimEvent* Instance;
+        AnimatedModel* Actor;
+        Animation* Anim;
+        float Time, DeltaTime;
+        Types Type;
+    };
+
+    struct ActiveEvent
+    {
+        AnimContinuousEvent* Instance;
         Animation* Anim;
         AnimGraphNode* Node;
         bool Hit;
+
+        OutgoingEvent End(AnimatedModel* actor) const;
     };
 
-    Array<Event, InlinedAllocation<8>> Events;
+    Array<ActiveEvent, InlinedAllocation<8>> ActiveEvents;
+    Array<OutgoingEvent, InlinedAllocation<8>> OutgoingEvents;
 };
 
 /// <summary>
@@ -441,7 +468,7 @@ public:
         /// The invalid transition valid used in Transitions to indicate invalid transition linkage.
         /// </summary>
         const static uint16 InvalidTransitionIndex = MAX_uint16;
-        
+
         /// <summary>
         /// The outgoing transitions from this state to the other states. Each array item contains index of the transition data from the state node graph transitions cache. Value InvalidTransitionIndex is used for last transition to indicate the transitions amount.
         /// </summary>

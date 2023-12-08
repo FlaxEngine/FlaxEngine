@@ -90,11 +90,11 @@ SceneObject* Prefab::GetDefaultInstance(const Guid& objectId)
 
     if (objectId.IsValid())
     {
-        const void* object;
+        SceneObject* object;
         if (ObjectsCache.TryGet(objectId, object))
         {
             // Actor or Script
-            return (SceneObject*)object;
+            return object;
         }
     }
 

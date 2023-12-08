@@ -12,15 +12,16 @@
 
 namespace tracy
 {
-void ScopedZone::Begin(const SourceLocationData* srcloc)
+bool ScopedZone::Begin(const SourceLocationData* srcloc)
 {
 #ifdef TRACY_ON_DEMAND
-    if (!GetProfiler().IsConnected()) return;
+    if (!GetProfiler().IsConnected()) return false;
 #endif
     TracyLfqPrepare( QueueType::ZoneBegin );
     MemWrite( &item->zoneBegin.time, Profiler::GetTime() );
     MemWrite( &item->zoneBegin.srcloc, (uint64_t)srcloc );
     TracyQueueCommit( zoneBeginThread );
+    return true;
 }
 
 void ScopedZone::End()

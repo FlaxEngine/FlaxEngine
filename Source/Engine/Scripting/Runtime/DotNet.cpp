@@ -840,7 +840,7 @@ bool MAssembly::UnloadImage(bool isReloading)
 MClass::MClass(const MAssembly* parentAssembly, void* handle, const char* name, const char* fullname, const char* namespace_, MTypeAttributes attributes)
     : _handle(handle)
     , _name(name)
-    , _namespace_(namespace_)
+    , _namespace(namespace_)
     , _assembly(parentAssembly)
     , _fullname(fullname)
     , _hasCachedProperties(false)
@@ -919,7 +919,7 @@ StringAnsiView MClass::GetName() const
 
 StringAnsiView MClass::GetNamespace() const
 {
-    return _namespace_;
+    return _namespace;
 }
 
 MType* MClass::GetType() const
@@ -1661,7 +1661,7 @@ bool InitHostfxr()
 
     // Get path to hostfxr library
     get_hostfxr_parameters get_hostfxr_params;
-    get_hostfxr_params.size = sizeof(hostfxr_initialize_parameters);
+    get_hostfxr_params.size = sizeof(get_hostfxr_parameters);
     get_hostfxr_params.assembly_path = libraryPath.Get();
 #if PLATFORM_MAC
     ::String macOSDotnetRoot = TEXT("/usr/local/share/dotnet");

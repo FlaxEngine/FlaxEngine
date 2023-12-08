@@ -624,8 +624,10 @@ void BehaviorTreeLoopDecorator::PostUpdate(const BehaviorUpdateContext& context,
     if (result == BehaviorUpdateResult::Success)
     {
         auto state = GetState<State>(context.Memory);
-        state->Loops--;
-        if (state->Loops > 0)
+        if (!InfiniteLoop)
+            state->Loops--;
+
+        if (state->Loops > 0 || InfiniteLoop)
         {
             // Keep running in a loop but reset node's state (preserve self state)
             result = BehaviorUpdateResult::Running;

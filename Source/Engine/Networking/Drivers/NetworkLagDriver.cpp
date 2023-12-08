@@ -92,7 +92,7 @@ void NetworkLagDriver::Disconnect(const NetworkConnection& connection)
     _driver->Disconnect(connection);
 }
 
-bool NetworkLagDriver::PopEvent(NetworkEvent* eventPtr)
+bool NetworkLagDriver::PopEvent(NetworkEvent& eventPtr)
 {
     if (!_driver)
         return false;
@@ -104,7 +104,7 @@ bool NetworkLagDriver::PopEvent(NetworkEvent* eventPtr)
         if (e.Lag > 0.0)
             continue;
 
-        *eventPtr = e.Event;
+        eventPtr = e.Event;
         _events.RemoveAtKeepOrder(i);
         return true;
     }
@@ -117,7 +117,7 @@ bool NetworkLagDriver::PopEvent(NetworkEvent* eventPtr)
 
         auto& e = _events.AddOne();
         e.Lag = (double)Lag;
-        e.Event = *eventPtr;
+        e.Event = eventPtr;
     }
     return false;
 }
