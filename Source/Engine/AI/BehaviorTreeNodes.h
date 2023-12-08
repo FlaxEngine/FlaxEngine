@@ -305,12 +305,16 @@ API_CLASS(Sealed) class FLAXENGINE_API BehaviorTreeLoopDecorator : public Behavi
     DECLARE_SCRIPTING_TYPE_WITH_CONSTRUCTOR_IMPL(BehaviorTreeLoopDecorator, BehaviorTreeDecorator);
     API_AUTO_SERIALIZATION();
 
-    // Amount of times to execute the node. Unused if LoopCountSelector is used.
-    API_FIELD(Attributes="EditorOrder(10), Limit(0)")
+    // Is the loop infinite (until failed)?
+    API_FIELD(Attributes = "EditorOrder(10)")
+    bool InfiniteLoop = false;
+
+    // Amount of times to execute the node. Unused if LoopCountSelector is used or if InfiniteLoop is used.
+    API_FIELD(Attributes="EditorOrder(20), Limit(0)")
     int32 LoopCount = 3;
 
-    // Amount of times to execute the node from behavior's knowledge (blackboard, goal or sensor). If set, overrides LoopCount.
-    API_FIELD(Attributes="EditorOrder(20)")
+    // Amount of times to execute the node from behavior's knowledge (blackboard, goal or sensor). If set, overrides LoopCount. Unused if InfiniteLoop is used.
+    API_FIELD(Attributes="EditorOrder(30)")
     BehaviorKnowledgeSelector<int32> LoopCountSelector;
 
 public:
