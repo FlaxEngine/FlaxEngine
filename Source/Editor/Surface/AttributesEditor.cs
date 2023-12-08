@@ -117,17 +117,9 @@ namespace FlaxEditor.Surface
             editor.Panel.Tag = attributeType;
             _presenter = editor;
 
-            using (var stream = new MemoryStream())
-            {
-                // Ensure we are in the correct load context (https://github.com/dotnet/runtime/issues/42041)
-                using var ctx = AssemblyLoadContext.EnterContextualReflection(typeof(Editor).Assembly);
+            // Cache 'previous' state to check if attributes were edited after operation
+            _oldData = SurfaceMeta.GetAttributesData(attributes);
 
-                var formatter = new BinaryFormatter();
-#pragma warning disable SYSLIB0011
-                formatter.Serialize(stream, attributes);
-#pragma warning restore SYSLIB0011
-                _oldData = stream.ToArray();
-            }
             editor.Select(new Proxy
             {
                 Value = attributes,
@@ -145,20 +137,11 @@ namespace FlaxEditor.Surface
                     return;
                 }
             }
-            using (var stream = new MemoryStream())
-            {
-                // Ensure we are in the correct load context (https://github.com/dotnet/runtime/issues/42041)
-                using var ctx = AssemblyLoadContext.EnterContextualReflection(typeof(Editor).Assembly);
 
-                var formatter = new BinaryFormatter();
-#pragma warning disable SYSLIB0011
-                formatter.Serialize(stream, newValue);
-#pragma warning restore SYSLIB0011
-                var newData = stream.ToArray();
-                if (!_oldData.SequenceEqual(newData))
-                {
-                    Edited?.Invoke(newValue);
-                }
+            var newData = SurfaceMeta.GetAttributesData(newValue);
+            if (!_oldData.SequenceEqual(newData))
+            {
+                Edited?.Invoke(newValue);
             }
 
             Hide();

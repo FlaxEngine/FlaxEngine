@@ -4,9 +4,9 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Reflection;
 using System.Runtime.Loader;
 using System.Runtime.Serialization.Formatters.Binary;
+using System.Text;
 using FlaxEngine;
 
 namespace FlaxEditor.Surface
@@ -39,28 +39,48 @@ namespace FlaxEditor.Surface
         public readonly List<Entry> Entries = new List<Entry>();
 
         /// <summary>
-        /// The attribute meta type identifier.
+        /// The attribute meta type identifier. Uses byte[] as storage for Attribute[] serialized with BinaryFormatter (deprecated in .NET 5).
+        /// [Deprecated on 8.12.2023, expires on 8.12.2025]
         /// </summary>
-        public const int AttributeMetaTypeID = 12;
+        public const int OldAttributeMetaTypeID = 12;
+
+        /// <summary>
+        /// The attribute meta type identifier. Uses byte[] as storage for Attribute[] serialized with JsonSerializer.
+        /// </summary>
+        public const int AttributeMetaTypeID = 13;
 
         /// <summary>
         /// Gets the attributes collection from the data.
         /// </summary>
-        /// <param name="data">The graph metadata.</param>
+        /// <param name="data">The graph metadata serialized with JsonSerializer.</param>
+        /// <param name="oldData">The graph metadata serialized with BinaryFormatter.</param>
         /// <returns>The attributes collection.</returns>
-        public static Attribute[] GetAttributes(byte[] data)
+        public static Attribute[] GetAttributes(byte[] data, byte[] oldData)
         {
             if (data != null && data.Length != 0)
             {
-                using (var stream = new MemoryStream(data))
+                try
+                {
+                    var json = Encoding.Unicode.GetString(data);
+                    return FlaxEngine.Json.JsonSerializer.Deserialize<Attribute[]>(json);
+                }
+                catch (Exception ex)
+                {
+                    Editor.LogError("Failed to deserialize Visject attributes array.");
+                    Editor.LogWarning(ex);
+                }
+            }
+            if (oldData != null && oldData.Length != 0)
+            {
+                // [Deprecated on 8.12.2023, expires on 8.12.2025]
+                using (var stream = new MemoryStream(oldData))
                 {
                     try
                     {
                         // Ensure we are in the correct load context (https://github.com/dotnet/runtime/issues/42041)
                         using var ctx = AssemblyLoadContext.EnterContextualReflection(typeof(Editor).Assembly);
-
-                        var formatter = new BinaryFormatter();
 #pragma warning disable SYSLIB0011
+                        var formatter = new BinaryFormatter();
                         return (Attribute[])formatter.Deserialize(stream);
 #pragma warning restore SYSLIB0011
                     }
@@ -72,6 +92,21 @@ namespace FlaxEditor.Surface
                 }
             }
             return Utils.GetEmptyArray<Attribute>();
+        }
+
+        /// <summary>
+        /// Serializes surface attributes into byte[] data using the current format.
+        /// </summary>
+        /// <param name="attributes">The input attributes.</param>
+        /// <returns>The result array with bytes. Can be empty but not null.</returns>
+        internal static byte[] GetAttributesData(Attribute[] attributes)
+        {
+            if (attributes != null && attributes.Length != 0)
+            {
+                var json = FlaxEngine.Json.JsonSerializer.Serialize(attributes);
+                return Encoding.Unicode.GetBytes(json);
+            }
+            return Utils.GetEmptyArray<byte>();
         }
 
         /// <summary>
@@ -93,7 +128,8 @@ namespace FlaxEditor.Surface
         public static Attribute[] GetAttributes(GraphParameter parameter)
         {
             var data = parameter.GetMetaData(AttributeMetaTypeID);
-            return GetAttributes(data);
+            var dataOld = parameter.GetMetaData(OldAttributeMetaTypeID);
+            return GetAttributes(data, dataOld);
         }
 
         /// <summary>
@@ -102,12 +138,7 @@ namespace FlaxEditor.Surface
         /// <returns>The attributes collection.</returns>
         public Attribute[] GetAttributes()
         {
-            for (int i = 0; i < Entries.Count; i++)
-            {
-                if (Entries[i].TypeID == AttributeMetaTypeID)
-                    return GetAttributes(Entries[i].Data);
-            }
-            return Utils.GetEmptyArray<Attribute>();
+            return GetAttributes(GetEntry(AttributeMetaTypeID).Data, GetEntry(OldAttributeMetaTypeID).Data);
         }
 
         /// <summary>
@@ -119,25 +150,12 @@ namespace FlaxEditor.Surface
             if (attributes == null || attributes.Length == 0)
             {
                 RemoveEntry(AttributeMetaTypeID);
+                RemoveEntry(OldAttributeMetaTypeID);
             }
             else
             {
-                for (int i = 0; i < attributes.Length; i++)
-                {
-                    if (attributes[i] == null)
-                        throw new NullReferenceException("One of the Visject attributes is null.");
-                }
-                using (var stream = new MemoryStream())
-                {
-                    // Ensure we are in the correct load context (https://github.com/dotnet/runtime/issues/42041)
-                    using var ctx = AssemblyLoadContext.EnterContextualReflection(typeof(Editor).Assembly);
-
-                    var formatter = new BinaryFormatter();
-#pragma warning disable SYSLIB0011
-                    formatter.Serialize(stream, attributes);
-#pragma warning restore SYSLIB0011
-                    AddEntry(AttributeMetaTypeID, stream.ToArray());
-                }
+                AddEntry(AttributeMetaTypeID, GetAttributesData(attributes));
+                RemoveEntry(OldAttributeMetaTypeID);
             }
         }
 
@@ -180,11 +198,11 @@ namespace FlaxEditor.Surface
         /// <returns>True if cannot save data</returns>
         public void Save(BinaryWriter stream)
         {
-            stream.Write(Entries.Count);
-
-            for (int i = 0; i < Entries.Count; i++)
+            var entries = Entries;
+            stream.Write(entries.Count);
+            for (int i = 0; i < entries.Count; i++)
             {
-                Entry e = Entries[i];
+                Entry e = entries[i];
 
                 stream.Write(e.TypeID);
                 stream.Write((long)0);
@@ -214,14 +232,12 @@ namespace FlaxEditor.Surface
         /// <returns>Entry</returns>
         public Entry GetEntry(int typeID)
         {
-            for (int i = 0; i < Entries.Count; i++)
+            var entries = Entries;
+            for (int i = 0; i < entries.Count; i++)
             {
-                if (Entries[i].TypeID == typeID)
-                {
-                    return Entries[i];
-                }
+                if (entries[i].TypeID == typeID)
+                    return entries[i];
             }
-
             return new Entry();
         }
 

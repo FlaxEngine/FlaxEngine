@@ -213,7 +213,8 @@ namespace FlaxEditor.Content
             if (_attributes == null)
             {
                 var data = _type.Asset.GetMethodMetaData(_index, Surface.SurfaceMeta.AttributeMetaTypeID);
-                _attributes = Surface.SurfaceMeta.GetAttributes(data);
+                var dataOld = _type.Asset.GetMethodMetaData(_index, Surface.SurfaceMeta.OldAttributeMetaTypeID);
+                _attributes = Surface.SurfaceMeta.GetAttributes(data, dataOld);
             }
             return _attributes;
         }
@@ -290,13 +291,11 @@ namespace FlaxEditor.Content
                 _methods = Utils.GetEmptyArray<ScriptMemberInfo>();
 
             // Cache Visual Script attributes
-            var attributesData = _asset.GetMetaData(Surface.SurfaceMeta.AttributeMetaTypeID);
-            if (attributesData != null && attributesData.Length != 0)
             {
-                _attributes = Surface.SurfaceMeta.GetAttributes(attributesData);
+                var data = _asset.GetMetaData(Surface.SurfaceMeta.AttributeMetaTypeID);
+                var dataOld = _asset.GetMetaData(Surface.SurfaceMeta.OldAttributeMetaTypeID);
+                _attributes = Surface.SurfaceMeta.GetAttributes(data, dataOld);
             }
-            else
-                _attributes = Utils.GetEmptyArray<object>();
         }
 
         private void OnAssetReloading(Asset asset)
