@@ -1072,14 +1072,13 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
                 const auto nodes = node->GetNodes(this);
                 const auto nodesA = static_cast<AnimGraphImpulse*>(valueA.AsPointer);
                 const auto nodesB = static_cast<AnimGraphImpulse*>(valueB.AsPointer);
+                const auto& baseNodes = _graph.BaseModel.Get()->GetNodes();
                 Transform t, tA, tB;
                 for (int32 i = 0; i < nodes->Nodes.Count(); i++)
                 {
                     tA = nodesA->Nodes[i];
                     tB = nodesB->Nodes[i];
-
-                    // Get Base pose nodes
-                    auto baseNode = _graph.BaseModel.Get()->GetNodes()[i];
+                    const auto& baseNode = baseNodes[i];
 
                     t.Translation = tA.Translation + (tB.Translation - baseNode.LocalTransform.Translation) * alpha;
 
