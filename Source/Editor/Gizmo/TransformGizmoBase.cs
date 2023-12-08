@@ -439,7 +439,8 @@ namespace FlaxEditor.Gizmo
                     {
                         case Mode.Translate:
                             UpdateTranslateScale();
-                            VertexSnap();
+                            if (Owner.UseSnapping)
+                                VertexSnap();
                             break;
                         case Mode.Scale:
                             UpdateTranslateScale();
@@ -459,7 +460,7 @@ namespace FlaxEditor.Gizmo
                             SelectVertexSnaping();
                         SelectAxis();
                     }
-                    else
+                    else if (Owner.IsAltKeyDown)
                     {
                         verts = null;
                         otherVerts = null;
