@@ -1075,15 +1075,12 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
                 {
                     tA = nodesA->Nodes[i];
                     tB = nodesB->Nodes[i];
-                    t.Translation = tA.Translation * (1 - alpha) + tB.Translation * alpha;
+
+                    auto t = tB;
                     auto originalOrientation = (1 - alpha) * tA.Orientation;
-                    auto additiveOrientation = alpha * tB.Orientation;
+                    auto additiveOrientation = alpha * t.Orientation;
                     if (Quaternion::Dot(originalOrientation, additiveOrientation) < 0)
-                        additiveOrientation *= -1;
-                    t.Orientation = originalOrientation + additiveOrientation;
-                    t.Scale = tA.Scale * (1 - alpha) + tB.Scale * alpha;
-                    t.Orientation.Normalize();
-                    //nodes->Nodes[i] = t;
+                        t.Orientation *= -1;
                     Transform::Lerp(tA, t, alpha, nodes->Nodes[i]);
                 }
                 Transform::Lerp(nodesA->RootMotion, nodesA->RootMotion + nodesB->RootMotion, alpha, nodes->RootMotion);
