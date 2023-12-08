@@ -1083,8 +1083,8 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
                     t.Orientation = originalOrientation + additiveOrientation;
                     t.Scale = tA.Scale * (1 - alpha) + tB.Scale * alpha;
                     t.Orientation.Normalize();
-                    nodes->Nodes[i] = t;
-                    //Transform::Lerp(tA, t, alpha, nodes->Nodes[i]);
+                    //nodes->Nodes[i] = t;
+                    Transform::Lerp(tA, t, alpha, nodes->Nodes[i]);
                 }
                 Transform::Lerp(nodesA->RootMotion, nodesA->RootMotion + nodesB->RootMotion, alpha, nodes->RootMotion);
                 value = nodes;
