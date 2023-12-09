@@ -1096,7 +1096,7 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
                     t.SetRotation(m5);
                     t.Orientation.Normalize();
 
-                    t.Scale = tA.Scale * tB.Scale;
+                    t.Scale = tA.Scale + (tB.Scale - baseNode.LocalTransform.Scale) * alpha;
                     
                     //nodes->Nodes[i] = t;
                     Transform::Lerp(tA, t, alpha, nodes->Nodes[i]);
