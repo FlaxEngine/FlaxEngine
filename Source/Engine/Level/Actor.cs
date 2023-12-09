@@ -117,6 +117,15 @@ namespace FlaxEngine
         }
 
         /// <summary>
+        /// Called in-editor when an actor is added to the scene.
+        /// If not in the editor, this function will not be called.
+        /// </summary>
+        public virtual void OnActorSpawned()
+        {
+
+        }
+
+        /// <summary>
         /// Creates a new child actor of the given type.
         /// </summary>
         /// <param name="type">Type of the actor.</param>
