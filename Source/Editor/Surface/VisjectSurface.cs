@@ -382,6 +382,7 @@ namespace FlaxEditor.Surface
             {
                 new InputActionsContainer.Binding(options => options.Delete, Delete),
                 new InputActionsContainer.Binding(options => options.SelectAll, SelectAll),
+                new InputActionsContainer.Binding(options => options.DeselectAll, DeselectAll),
                 new InputActionsContainer.Binding(options => options.Copy, Copy),
                 new InputActionsContainer.Binding(options => options.Paste, Paste),
                 new InputActionsContainer.Binding(options => options.Cut, Cut),
@@ -611,22 +612,35 @@ namespace FlaxEditor.Surface
             _context.MarkAsModified(graphEdited);
         }
 
-        /// <summary>
-        /// Selects all the nodes.
-        /// </summary>
-        public void SelectAll()
+        private void BulkSelectUpdate(bool select = true)
         {
             bool selectionChanged = false;
             for (int i = 0; i < _rootControl.Children.Count; i++)
             {
-                if (_rootControl.Children[i] is SurfaceControl control && !control.IsSelected)
+                if (_rootControl.Children[i] is SurfaceControl control && control.IsSelected != select)
                 {
-                    control.IsSelected = true;
+                    control.IsSelected = select;
                     selectionChanged = true;
                 }
             }
             if (selectionChanged)
                 SelectionChanged?.Invoke();
+        }
+
+        /// <summary>
+        /// Selects all the nodes.
+        /// </summary>
+        public void SelectAll()
+        {
+            BulkSelectUpdate(true);
+        }
+
+        /// <summary>
+        /// Deelects all the nodes.
+        /// </summary>
+        public void DeselectAll()
+        {
+            BulkSelectUpdate(false);
         }
 
         /// <summary>

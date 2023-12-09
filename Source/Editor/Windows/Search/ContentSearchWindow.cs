@@ -12,6 +12,7 @@ using FlaxEditor.GUI.ContextMenu;
 using FlaxEditor.GUI.Docking;
 using FlaxEditor.GUI.Input;
 using FlaxEditor.GUI.Tree;
+using FlaxEditor.Options;
 using FlaxEditor.Scripting;
 using FlaxEditor.Surface;
 using FlaxEditor.Windows;
@@ -142,6 +143,7 @@ namespace FlaxEngine.Windows.Search
             /// <inheritdoc />
             public override bool OnKeyDown(KeyboardKeys key)
             {
+                InputOptions options = FlaxEditor.Editor.Instance.Options.Options.Input;
                 if (IsFocused)
                 {
                     if (key == KeyboardKeys.Return && Navigate != null)
@@ -149,7 +151,7 @@ namespace FlaxEngine.Windows.Search
                         Navigate.Invoke(this);
                         return true;
                     }
-                    if (key == KeyboardKeys.C && Root.GetKey(KeyboardKeys.Control))
+                    if (options.Copy.Process(this))
                     {
                         Clipboard.Text = Text;
                         return true;

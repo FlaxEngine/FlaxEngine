@@ -190,6 +190,7 @@ namespace FlaxEditor.Content.GUI
                         OnDelete?.Invoke(_selection);
                 }),
                 new InputActionsContainer.Binding(options => options.SelectAll, SelectAll),
+                new InputActionsContainer.Binding(options => options.DeselectAll, DeselectAll),
                 new InputActionsContainer.Binding(options => options.Rename, () =>
                 {
                     if (HasSelection && _selection[0].CanRename)
@@ -394,10 +395,7 @@ namespace FlaxEditor.Content.GUI
             PerformLayout();
         }
 
-        /// <summary>
-        /// Selects all the items.
-        /// </summary>
-        public void SelectAll()
+        private void BulkSelectUpdate(bool select = true)
         {
             // Lock layout
             var wasLayoutLocked = IsLayoutLocked;
@@ -405,11 +403,28 @@ namespace FlaxEditor.Content.GUI
 
             // Select items
             _selection.Clear();
-            _selection.AddRange(_items);
+            if (select)
+                _selection.AddRange(_items);
 
             // Unload and perform UI layout
             IsLayoutLocked = wasLayoutLocked;
             PerformLayout();
+        }
+
+        /// <summary>
+        /// Selects all the items.
+        /// </summary>
+        public void SelectAll()
+        {
+            BulkSelectUpdate(true);
+        }
+
+        /// <summary>
+        /// Deselects all the items.
+        /// </summary>
+        public void DeselectAll()
+        {
+            BulkSelectUpdate(false);
         }
 
         /// <summary>

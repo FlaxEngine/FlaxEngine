@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
 using System;
+using FlaxEditor.Options;
 using FlaxEngine.Assertions;
 using FlaxEngine.Utilities;
 
@@ -1296,6 +1297,40 @@ namespace FlaxEngine.GUI
             bool ctrDown = window.GetKey(KeyboardKeys.Control);
             KeyDown?.Invoke(key);
 
+            // Handle controls that have bindings
+            InputOptions options = FlaxEditor.Editor.Instance.Options.Options.Input;
+            if (options.Copy.Process(this))
+            {
+                Copy();
+                return true;
+            }
+            else if (options.Paste.Process(this))
+            {
+                Paste();
+                return true;
+            }
+            else if (options.Duplicate.Process(this))
+            {
+                Duplicate();
+                return true;
+            }
+            else if (options.Cut.Process(this))
+            {
+                Cut();
+                return true;
+            }
+            else if (options.SelectAll.Process(this))
+            {
+                SelectAll();
+                return true;
+            }
+            else if (options.DeselectAll.Process(this))
+            {
+                Deselect();
+                return true;
+            }
+
+            // Handle controls without bindings
             switch (key)
             {
             case KeyboardKeys.ArrowRight:
@@ -1310,41 +1345,6 @@ namespace FlaxEngine.GUI
             case KeyboardKeys.ArrowDown:
                 MoveDown(shiftDown, ctrDown);
                 return true;
-            case KeyboardKeys.C:
-                if (ctrDown)
-                {
-                    Copy();
-                    return true;
-                }
-                break;
-            case KeyboardKeys.V:
-                if (ctrDown)
-                {
-                    Paste();
-                    return true;
-                }
-                break;
-            case KeyboardKeys.D:
-                if (ctrDown)
-                {
-                    Duplicate();
-                    return true;
-                }
-                break;
-            case KeyboardKeys.X:
-                if (ctrDown)
-                {
-                    Cut();
-                    return true;
-                }
-                break;
-            case KeyboardKeys.A:
-                if (ctrDown)
-                {
-                    SelectAll();
-                    return true;
-                }
-                break;
             case KeyboardKeys.Backspace:
             {
                 if (IsReadOnly)

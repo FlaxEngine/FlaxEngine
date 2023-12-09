@@ -714,15 +714,28 @@ namespace FlaxEditor.GUI
             }
         }
 
+        private void BulkSelectUpdate(bool select = true)
+        {
+            for (int i = 0; i < _points.Count; i++)
+            {
+                _points[i].IsSelected = select;
+            }
+        }
+
         /// <summary>
         /// Selects all keyframes.
         /// </summary>
         public void SelectAll()
         {
-            for (int i = 0; i < _points.Count; i++)
-            {
-                _points[i].IsSelected = true;
-            }
+            BulkSelectUpdate(true);
+        }
+
+        /// <summary>
+        /// Deselects all keyframes.
+        /// </summary>
+        public void DeselectAll()
+        {
+            BulkSelectUpdate(false);
         }
 
         /// <summary>
@@ -931,6 +944,12 @@ namespace FlaxEditor.GUI
             if (options.SelectAll.Process(this))
             {
                 SelectAll();
+                UpdateTangents();
+                return true;
+            }
+            else if (options.DeselectAll.Process(this))
+            {
+                DeselectAll();
                 UpdateTangents();
                 return true;
             }
