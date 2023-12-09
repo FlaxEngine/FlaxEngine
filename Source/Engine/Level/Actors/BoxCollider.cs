@@ -8,20 +8,15 @@ namespace FlaxEngine
         public override void OnActorSpawned()
         {
             base.OnActorSpawned();
-            if (Parent is StaticModel model)
-            {
-                Vector3 modelScale = model.Scale;
-                Vector3 modelSize = model.Box.Size;
-                Vector3 modelCenter = model.Box.Center - model.Position;
-                Vector3 colliderSize = modelSize / modelScale;
-                Vector3 colliderCenter = modelCenter / modelScale;
+            Vector3 parentScale = Parent.Scale;
+            Vector3 parentSize = Parent.Box.Size;
+            Vector3 parentCenter = Parent.Box.Center - Parent.Position;
 
-                Size = colliderSize;
-                Center = colliderCenter;
+            Size = parentSize / parentScale;
+            Center = parentCenter / parentScale;
 
-                // Undo Rotation
-                Orientation *= Quaternion.Invert(Orientation);
-            }
+            // Undo Rotation
+            Orientation *= Quaternion.Invert(Orientation);
         }
     }
 }
