@@ -1,7 +1,9 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
 using System;
+#if FLAX_EDITOR
 using FlaxEditor.Options;
+#endif
 using FlaxEngine.Assertions;
 using FlaxEngine.Utilities;
 
@@ -1298,6 +1300,7 @@ namespace FlaxEngine.GUI
             KeyDown?.Invoke(key);
 
             // Handle controls that have bindings
+#if FLAX_EDITOR
             InputOptions options = FlaxEditor.Editor.Instance.Options.Options.Input;
             if (options.Copy.Process(this))
             {
@@ -1329,6 +1332,7 @@ namespace FlaxEngine.GUI
                 Deselect();
                 return true;
             }
+#endif
 
             // Handle controls without bindings
             switch (key)
@@ -1345,6 +1349,41 @@ namespace FlaxEngine.GUI
             case KeyboardKeys.ArrowDown:
                 MoveDown(shiftDown, ctrDown);
                 return true;
+            case KeyboardKeys.C:
+                if (ctrDown)
+                {
+                    Copy();
+                    return true;
+                }
+                break;
+            case KeyboardKeys.V:
+                if (ctrDown)
+                {
+                    Paste();
+                    return true;
+                }
+                break;
+            case KeyboardKeys.D:
+                if (ctrDown)
+                {
+                    Duplicate();
+                    return true;
+                }
+                break;
+            case KeyboardKeys.X:
+                if (ctrDown)
+                {
+                    Cut();
+                    return true;
+                }
+                break;
+            case KeyboardKeys.A:
+                if (ctrDown)
+                {
+                    SelectAll();
+                    return true;
+                }
+                break;
             case KeyboardKeys.Backspace:
             {
                 if (IsReadOnly)
