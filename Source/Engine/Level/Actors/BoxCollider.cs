@@ -1,5 +1,3 @@
-using FlaxEditor.Windows;
-
 namespace FlaxEngine
 {
     partial class BoxCollider
@@ -18,10 +16,16 @@ namespace FlaxEngine
             }
         }
 
-        /// <inheritdoc />
-        public override void OnActorSpawned()
+        /// <summary>
+        /// Resizes the box collider based on the bounds of it's parent.
+        /// </summary>
+        public void AutoResize()
         {
-            base.OnActorSpawned();
+            if (Parent is Scene)
+            {
+                return;
+            }
+
             Vector3 parentScale = Parent.Scale;
             BoundingBox parentBox = Parent.Box;
             BoxExcluding(Parent, ref parentBox, this);
@@ -40,6 +44,13 @@ namespace FlaxEngine
 
             // Undo Rotation
             Orientation *= Quaternion.Invert(Orientation);
+        }
+
+        /// <inheritdoc />
+        public override void OnActorSpawned()
+        {
+            base.OnActorSpawned();
+            AutoResize();
         }
     }
 }
