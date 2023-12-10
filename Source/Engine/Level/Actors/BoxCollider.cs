@@ -1,5 +1,30 @@
+#if FLAX_EDITOR
+using FlaxEditor.CustomEditors;
+using FlaxEditor.CustomEditors.Dedicated;
+#endif
+
 namespace FlaxEngine
 {
+#if FLAX_EDITOR
+    /// <summary>
+    /// Dedicated custom editor for BoxCollider objects.
+    /// </summary>
+    [CustomEditor(typeof(BoxCollider)), DefaultEditor]
+    public class BoxColliderEditor : ActorEditor
+    {
+        /// <inheritdoc />
+        public override void Initialize(LayoutElementsContainer layout)
+        {
+            base.Initialize(layout);
+            layout.Space(20f);
+            var autoResizeButton = layout.Button("Resize to Fit", "Resize the box collider to fit it's parent's bounds.");
+
+            BoxCollider collider = Values[0] as BoxCollider;
+            autoResizeButton.Button.Clicked += collider.AutoResize;
+        }
+    }
+#endif
+
     partial class BoxCollider
     {
         private void BoxExcluding(Actor target, ref BoundingBox output, Actor excluded)
@@ -25,6 +50,8 @@ namespace FlaxEngine
             {
                 return;
             }
+
+            LocalPosition = Vector3.Zero;
 
             Vector3 parentScale = Parent.Scale;
             BoundingBox parentBox = Parent.Box;
