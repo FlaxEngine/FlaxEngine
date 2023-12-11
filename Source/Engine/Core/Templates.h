@@ -304,7 +304,7 @@ template<typename T>
 inline void Swap(T& a, T& b) noexcept
 {
     T tmp = MoveTemp(a);
-    a = b;
+    a = MoveTemp(b);
     b = MoveTemp(tmp);
 }
 
