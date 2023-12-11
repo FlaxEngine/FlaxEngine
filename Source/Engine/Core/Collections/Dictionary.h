@@ -616,9 +616,7 @@ public:
         }
         else
         {
-            Dictionary tmp = MoveTemp(other);
-            other = *this;
-            *this = MoveTemp(tmp);
+            ::Swap(other, *this);
         }
     }
 
