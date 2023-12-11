@@ -10,43 +10,43 @@
 class Texture;
 
 /// <summary>
-/// Android screen orientation options.
-/// </summary>
-API_ENUM() enum class FLAXENGINE_API AndroidScreenOrientation 
-{
-    /// <summary>
-    /// "portrait" mode
-    /// </summary>
-    Portrait,
-
-    /// <summary>
-    /// "reversePortrait" mode
-    /// </summary>
-    PortraitReverse,
-
-    /// <summary>
-    /// "landscape" mode
-    /// </summary>
-    LandscapeRight,
-
-    /// <summary>
-    /// "reverseLandscape" mode
-    /// </summary>
-    LandscapeLeft,
-
-    /// <summary>
-    /// "fullSensor" mode
-    /// </summary>
-    AutoRotation,
-};
-
-/// <summary>
 /// Android platform settings.
 /// </summary>
 API_CLASS(sealed, Namespace="FlaxEditor.Content.Settings") class FLAXENGINE_API AndroidPlatformSettings : public SettingsBase
 {
     DECLARE_SCRIPTING_TYPE_MINIMAL(AndroidPlatformSettings);
     API_AUTO_SERIALIZATION();
+
+    /// <summary>
+    /// Android screen orientation options.
+    /// </summary>
+    API_ENUM() enum class FLAXENGINE_API ScreenOrientation
+    {
+        /// <summary>
+        /// "portrait" mode
+        /// </summary>
+        Portrait,
+
+        /// <summary>
+        /// "reversePortrait" mode
+        /// </summary>
+        PortraitReverse,
+
+        /// <summary>
+        /// "landscape" mode
+        /// </summary>
+        LandscapeRight,
+
+        /// <summary>
+        /// "reverseLandscape" mode
+        /// </summary>
+        LandscapeLeft,
+
+        /// <summary>
+        /// "fullSensor" mode
+        /// </summary>
+        AutoRotation,
+    };
 
     /// <summary>
     /// The application package name (eg. com.company.product). Custom tokens: ${PROJECT_NAME}, ${COMPANY_NAME}.
@@ -64,7 +64,7 @@ API_CLASS(sealed, Namespace="FlaxEditor.Content.Settings") class FLAXENGINE_API 
     /// The default screen orientation.
     /// </summary>
     API_FIELD(Attributes = "EditorOrder(110), EditorDisplay(\"General\")")
-    AndroidScreenOrientation DefaultOrientation = AndroidScreenOrientation::AutoRotation;
+    ScreenOrientation DefaultOrientation = ScreenOrientation::AutoRotation;
 
     /// <summary>
     /// Custom icon texture to use for the application (overrides the default one).

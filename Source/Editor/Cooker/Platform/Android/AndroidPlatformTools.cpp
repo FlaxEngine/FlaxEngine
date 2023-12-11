@@ -174,19 +174,19 @@ bool AndroidPlatformTools::OnPostProcess(CookingData& data)
     String orientation = String("fullSensor");
     switch (defaultOrienation)
     {
-    case AndroidScreenOrientation::Portrait:
+    case AndroidPlatformSettings::ScreenOrientation::Portrait:
         orientation = String("portrait");
         break;
-    case AndroidScreenOrientation::PortraitReverse:
+    case AndroidPlatformSettings::ScreenOrientation::PortraitReverse:
         orientation = String("reversePortrait");
         break;
-    case AndroidScreenOrientation::LandscapeRight:
+    case AndroidPlatformSettings::ScreenOrientation::LandscapeRight:
         orientation = String("landscape");
         break;
-    case AndroidScreenOrientation::LandscapeLeft:
+    case AndroidPlatformSettings::ScreenOrientation::LandscapeLeft:
         orientation = String("reverseLandscape");
         break;
-    case AndroidScreenOrientation::AutoRotation:
+    case AndroidPlatformSettings::ScreenOrientation::AutoRotation:
         orientation = String("fullSensor");
         break;
     default:
