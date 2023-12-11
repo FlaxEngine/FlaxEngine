@@ -381,6 +381,7 @@ namespace FlaxEditor.Windows
                     Arguments = $"clone {gitPath} \"{clonePath}\"",
                     ShellExecute = false,
                     LogOutput = true,
+                    WaitForEnd = true
                 };
                 Platform.CreateProcess(ref settings);
             }
@@ -402,6 +403,7 @@ namespace FlaxEditor.Windows
                     Arguments = "submodule update --init",
                     ShellExecute = false,
                     LogOutput = true,
+                    WaitForEnd = true
                 };
                 Platform.CreateProcess(ref settings);
             }
