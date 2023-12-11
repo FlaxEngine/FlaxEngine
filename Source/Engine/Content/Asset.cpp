@@ -438,12 +438,15 @@ bool Asset::WaitForLoaded(double timeoutInMilliseconds) const
         // Note: to reproduce this case just include material into material (use layering).
         // So during loading first material it will wait for child materials loaded calling this function
 
+        const double timeoutInSeconds = timeoutInMilliseconds * 0.001;
+        const double startTime = Platform::GetTimeSeconds();
         Task* task = loadingTask;
         Array<ContentLoadTask*, InlinedAllocation<64>> localQueue;
-        while (!Engine::ShouldExit())
+#define CHECK_CONDITIONS() (!Engine::ShouldExit() && (timeoutInSeconds <= 0.0 || Platform::GetTimeSeconds() - startTime < timeoutInSeconds))
+        do
         {
             // Try to execute content tasks
-            while (task->IsQueued() && !Engine::ShouldExit())
+            while (task->IsQueued() && CHECK_CONDITIONS())
             {
                 // Dequeue task from the loading queue
                 ContentLoadTask* tmp;
@@ -494,7 +497,8 @@ bool Asset::WaitForLoaded(double timeoutInMilliseconds) const
                     break;
                 }
             }
-        }
+        } while (CHECK_CONDITIONS());
+#undef CHECK_CONDITIONS
     }
     else
     {
