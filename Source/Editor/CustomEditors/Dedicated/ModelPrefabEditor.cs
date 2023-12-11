@@ -31,6 +31,11 @@ public class ModelPrefabEditor : GenericEditor
         _prefabId = modelPrefab.PrefabID;
         while (true)
         {
+            if (_prefabId == Guid.Empty)
+            {
+                break;
+            }
+
             var prefab = FlaxEngine.Content.Load<Prefab>(_prefabId);
             if (prefab)
             {
