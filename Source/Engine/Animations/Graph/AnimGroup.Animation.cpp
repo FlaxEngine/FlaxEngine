@@ -1070,38 +1070,26 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
             else
             {
                 const auto nodes = node->GetNodes(this);
-                const auto nodesA = static_cast<AnimGraphImpulse*>(valueA.AsPointer);
-                const auto nodesB = static_cast<AnimGraphImpulse*>(valueB.AsPointer);
-                const auto& baseNodes = _graph.BaseModel.Get()->GetNodes();
-                Transform t, tA, tB;
+                const auto basePoseNodes = static_cast<AnimGraphImpulse*>(valueA.AsPointer);
+                const auto blendPoseNodes = static_cast<AnimGraphImpulse*>(valueB.AsPointer);
+                const auto& refrenceNodes = _graph.BaseModel.Get()->GetNodes();
+                Transform t, basePoseTransform, blendPoseTransform, refrenceTransform;
                 for (int32 i = 0; i < nodes->Nodes.Count(); i++)
                 {
-                    tA = nodesA->Nodes[i];
-                    tB = nodesB->Nodes[i];
-                    const auto& baseNode = baseNodes[i];
+                    basePoseTransform = basePoseNodes->Nodes[i];
+                    blendPoseTransform = blendPoseNodes->Nodes[i];
+                    refrenceTransform = refrenceNodes[i].LocalTransform;
 
-                    t.Translation = tA.Translation + (tB.Translation - baseNode.LocalTransform.Translation) * alpha;
+                    // base + (blend - refrence) = transform
+                    t.Translation = basePoseTransform.Translation + (blendPoseTransform.Translation - refrenceTransform.Translation);
+                    auto diff = Quaternion::Invert(refrenceTransform.Orientation) * blendPoseTransform.Orientation;
+                    t.Orientation = basePoseTransform.Orientation * diff;
+                    t.Scale = basePoseTransform.Scale + (blendPoseTransform.Scale - refrenceTransform.Scale);
 
-                    //auto baseOrientation = tA.Orientation;
-                    //Quaternion additiveOrientation = alpha * (tB.Orientation - baseNode.LocalTransform.Orientation);
-                    //t.Orientation = baseOrientation + additiveOrientation;
-                    auto m1 = Matrix::RotationQuaternion(tA.Orientation);
-                    auto m2 = Matrix::RotationQuaternion(alpha * tB.Orientation);
-                    auto m3 = Matrix::RotationQuaternion(alpha * baseNode.LocalTransform.Orientation);
-                    Matrix m4;
-                    Matrix::Subtract(m2, m3, m4);
-                    Matrix m5;
-                    Matrix::Add(m1, m4, m5);
-
-                    t.SetRotation(m5);
-                    t.Orientation.Normalize();
-
-                    t.Scale = tA.Scale * tB.Scale;
-                    
-                    //nodes->Nodes[i] = t;
-                    Transform::Lerp(tA, t, alpha, nodes->Nodes[i]);
+                    //lerp base and transform
+                    Transform::Lerp(basePoseTransform, t, alpha, nodes->Nodes[i]);
                 }
-                Transform::Lerp(nodesA->RootMotion, nodesA->RootMotion + nodesB->RootMotion, alpha, nodes->RootMotion);
+                Transform::Lerp(basePoseNodes->RootMotion, basePoseNodes->RootMotion + blendPoseNodes->RootMotion, alpha, nodes->RootMotion);
                 value = nodes;
             }
         }
