@@ -18,6 +18,37 @@ API_CLASS(sealed, Namespace="FlaxEditor.Content.Settings") class FLAXENGINE_API 
     API_AUTO_SERIALIZATION();
 
     /// <summary>
+    /// Android screen orientation options.
+    /// </summary>
+    API_ENUM() enum class FLAXENGINE_API ScreenOrientation
+    {
+        /// <summary>
+        /// "portrait" mode
+        /// </summary>
+        Portrait,
+
+        /// <summary>
+        /// "reversePortrait" mode
+        /// </summary>
+        PortraitReverse,
+
+        /// <summary>
+        /// "landscape" mode
+        /// </summary>
+        LandscapeRight,
+
+        /// <summary>
+        /// "reverseLandscape" mode
+        /// </summary>
+        LandscapeLeft,
+
+        /// <summary>
+        /// "fullSensor" mode
+        /// </summary>
+        AutoRotation,
+    };
+
+    /// <summary>
     /// The application package name (eg. com.company.product). Custom tokens: ${PROJECT_NAME}, ${COMPANY_NAME}.
     /// </summary>
     API_FIELD(Attributes="EditorOrder(0), EditorDisplay(\"General\")")
@@ -28,6 +59,12 @@ API_CLASS(sealed, Namespace="FlaxEditor.Content.Settings") class FLAXENGINE_API 
     /// </summary>
     API_FIELD(Attributes="EditorOrder(100), EditorDisplay(\"General\")")
     Array<String> Permissions;
+
+    /// <summary>
+    /// The default screen orientation.
+    /// </summary>
+    API_FIELD(Attributes = "EditorOrder(110), EditorDisplay(\"General\")")
+    ScreenOrientation DefaultOrientation = ScreenOrientation::AutoRotation;
 
     /// <summary>
     /// Custom icon texture to use for the application (overrides the default one).
