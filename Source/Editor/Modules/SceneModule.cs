@@ -534,8 +534,6 @@ namespace FlaxEditor.Modules
             {
                 node.ParentNode = parentNode;
             }
-
-            actor.OnActorSpawned();
         }
 
         private void OnActorDeleted(Actor actor)
