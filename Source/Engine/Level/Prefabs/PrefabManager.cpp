@@ -157,7 +157,7 @@ Actor* PrefabManager::SpawnPrefab(Prefab* prefab, const Transform& transform, Ac
     // Pick prefab root object
     if (sceneObjects->IsEmpty())
     {
-        LOG(Warning, "No valid objects in prefab.");
+        LOG(Warning, "No valid objects in prefab. {0}", prefab->ToString());
         return nullptr;
     }
     Actor* root = nullptr;
@@ -172,7 +172,7 @@ Actor* PrefabManager::SpawnPrefab(Prefab* prefab, const Transform& transform, Ac
     }
     if (!root)
     {
-        LOG(Warning, "Missing prefab root object.");
+        LOG(Warning, "Missing prefab root object. {0}", prefab->ToString());
         return nullptr;
     }
 

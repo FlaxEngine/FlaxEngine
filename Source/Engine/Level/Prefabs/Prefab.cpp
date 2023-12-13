@@ -76,7 +76,7 @@ Actor* Prefab::GetDefaultInstance()
     _isCreatingDefaultInstance = true;
 
     // Instantiate objects from prefab (default spawning logic)
-    _defaultInstance = PrefabManager::SpawnPrefab(this, Transform(Vector3::Minimum), nullptr, &ObjectsCache);
+    _defaultInstance = PrefabManager::SpawnPrefab(this, nullptr, &ObjectsCache);
 
     _isCreatingDefaultInstance = false;
     return _defaultInstance;
