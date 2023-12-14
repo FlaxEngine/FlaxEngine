@@ -24,6 +24,8 @@
 #include <stdlib.h>
 #include <fcntl.h>
 
+#include "ThirdParty/curl/curl.h"
+
 const DateTime UnixEpoch(1970, 1, 1);
 
 bool LinuxFileSystem::ShowOpenFileDialog(Window* parentWindow, const StringView& initialDirectory, const StringView& filter, bool multiSelect, const StringView& title, Array<String, HeapAllocation>& filenames)
@@ -509,6 +511,70 @@ out_error:
         close(dstFile);
     errno = cachedError;
     return true;
+}
+
+bool LinuxFileSystem::MoveFileToRecycleBin(const StringView& path)
+{
+    String trashDir;
+    GetSpecialFolderPath(SpecialFolder::LocalAppData, trashDir);
+    trashDir += TEXT("/Trash");
+    String filesDir = trashDir + TEXT("/files");
+    String infoDir = trashDir + TEXT("/info");
+    String trashName = getBaseName(path);
+    String dst = filesDir / trashName;
+
+    int fd = -1;
+    if (FileExists(dst))
+    {
+        String ext = GetExtension(path);
+        dst = filesDir / getNameWithoutExtension(path) / TEXT("XXXXXX.") / ext;
+        char *base = dst.ToStringAnsi().Get();
+        char *extension = GetExtension(path).ToStringAnsi().Get();
+        int templateLength = strlen(base) + 7 + strlen(extension);
+        char *templateString = dst.ToStringAnsi().Get();
+        fd = mkstemps(templateString, ext.Length());
+        dst = filesDir / String(templateString);
+        trashName = getBaseName(dst);
+    }
+    if (fd != -1)
+        close(fd);
+
+    if (!MoveFile(dst, path, true))
+    {
+        // not MoveFile means success so write the info file
+        String infoFile = infoDir / trashName + TEXT(".trashinfo");
+        StringBuilder trashInfo;
+        const char *ansiPath = path.ToStringAnsi().Get();
+        char *encoded = curl_escape(ansiPath, strlen(ansiPath));
+        DateTime now = DateTime::Now();
+        String rfcDate = String::Format(TEXT("{0}-{1:0>2}-{2:0>2}T{3:0>2}:{4:0>2}:{5:0>2}"),
+            now.GetYear(), now.GetMonth(), now.GetDay(), now.GetHour(), now.GetMinute(), now.GetSecond());
+        trashInfo.AppendLine(TEXT("[Trash Info]")).Append(TEXT("Path=")).Append(encoded).Append(TEXT('\n'));
+        trashInfo.Append(TEXT("DeletionDate=")).Append(rfcDate).Append(TEXT("\n\0"));
+        free(encoded);
+        // a failure to write the info file is considered non-fatal according to the FreeDesktop.org specification
+        FileBase::WriteAllText(infoFile, trashInfo, Encoding::ANSI);
+        // return false on success as the Windows pendant does
+        return false;
+    }
+    return true;
+}
+
+String LinuxFileSystem::getBaseName(const StringView& path)
+{
+    String baseName = path.Substring(path.FindLast('/') + 1);
+    if (baseName.IsEmpty())
+        baseName = path;
+    return baseName;
+}
+
+String LinuxFileSystem::getNameWithoutExtension(const StringView& path)
+{
+    String baseName = getBaseName(path);
+    const int pos = baseName.FindLast('.');
+    if (pos > 0)
+        return baseName.Left(pos);
+    return baseName;
 }
 
 bool LinuxFileSystem::getFilesFromDirectoryTop(Array<String>& results, const char* path, const char* searchPattern)

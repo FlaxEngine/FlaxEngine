@@ -24,6 +24,7 @@ public:
     static bool GetChildDirectories(Array<String, HeapAllocation>& results, const String& directory);
     static bool FileExists(const StringView& path);
     static bool DeleteFile(const StringView& path);
+    static bool MoveFileToRecycleBin(const StringView& path);
     static uint64 GetFileSize(const StringView& path);
     static bool IsReadOnly(const StringView& path);
     static bool SetReadOnly(const StringView& path, bool isReadOnly);
@@ -50,6 +51,8 @@ private:
 
     static bool getFilesFromDirectoryTop(Array<String, HeapAllocation>& results, const char* path, const char* searchPattern);
     static bool getFilesFromDirectoryAll(Array<String, HeapAllocation>& results, const char* path, const char* searchPattern);
+    static String getBaseName(const StringView& path);
+    static String getNameWithoutExtension(const StringView& path);
 };
 
 #endif
