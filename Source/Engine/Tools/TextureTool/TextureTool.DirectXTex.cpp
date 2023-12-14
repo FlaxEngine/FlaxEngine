@@ -10,7 +10,6 @@
 #include "Engine/Platform/ConditionVariable.h"
 #include "Engine/Graphics/RenderTools.h"
 #include "Engine/Graphics/Async/GPUTask.h"
-#include "Engine/Graphics/Textures/TextureUtils.h"
 #include "Engine/Graphics/Textures/TextureData.h"
 #include "Engine/Graphics/PixelFormatExtensions.h"
 #if USE_EDITOR
@@ -318,7 +317,7 @@ bool TextureTool::ImportTextureDirectXTex(ImageType type, const StringView& path
     textureData.Width = (int32)meta.width;
     textureData.Height = (int32)meta.height;
     textureData.Depth = (int32)meta.depth;
-    textureData.Format = ToPixelFormat(meta.format);
+    textureData.Format = ::ToPixelFormat(meta.format);
     textureData.Items.Resize(1);
     textureData.Items.Resize((int32)meta.arraySize);
     for (int32 arrayIndex = 0; arrayIndex < (int32)meta.arraySize; arrayIndex++)
@@ -598,7 +597,7 @@ bool TextureTool::ImportTextureDirectXTex(ImageType type, const StringView& path
     float alphaThreshold = 0.3f;
     bool isPowerOfTwo = Math::IsPowerOfTwo(width) && Math::IsPowerOfTwo(height);
     DXGI_FORMAT sourceDxgiFormat = currentImage->GetMetadata().format;
-    PixelFormat targetFormat = TextureUtils::ToPixelFormat(options.Type, width, height, options.Compress);
+    PixelFormat targetFormat = TextureTool::ToPixelFormat(options.Type, width, height, options.Compress);
     if (options.sRGB)
         targetFormat = PixelFormatExtensions::TosRGB(targetFormat);
     DXGI_FORMAT targetDxgiFormat = ToDxgiFormat(targetFormat);
@@ -638,14 +637,13 @@ bool TextureTool::ImportTextureDirectXTex(ImageType type, const StringView& path
         // Keep image in the current compressed format (artist choice) so we don't have to run the slow mipmap generation
         keepAsIs = true;
         targetDxgiFormat = sourceDxgiFormat;
-        targetFormat = ToPixelFormat(currentImage->GetMetadata().format);
+        targetFormat = ::ToPixelFormat(currentImage->GetMetadata().format);
     }
 
     // Decompress if texture is compressed (next steps need decompressed input data, for eg. mip maps generation or format changing)
     if (!keepAsIs && DirectX::IsCompressed(sourceDxgiFormat))
     {
         auto& tmpImg = GET_TMP_IMG();
-
         sourceDxgiFormat = DXGI_FORMAT_R16G16B16A16_FLOAT;
         result = Decompress(currentImage->GetImages(), currentImage->GetImageCount(), currentImage->GetMetadata(), sourceDxgiFormat, tmpImg);
         if (FAILED(result))
@@ -653,14 +651,13 @@ bool TextureTool::ImportTextureDirectXTex(ImageType type, const StringView& path
             errorMsg = String::Format(TEXT("Cannot decompress texture, error: {0:x}"), static_cast<uint32>(result));
             return true;
         }
-
         SET_CURRENT_IMG(tmpImg);
     }
 
     // Fix sRGB problem
     if (!keepAsIs && DirectX::IsSRGB(sourceDxgiFormat))
     {
-        sourceDxgiFormat = ToDxgiFormat(PixelFormatExtensions::ToNonsRGB(ToPixelFormat(sourceDxgiFormat)));
+        sourceDxgiFormat = ToDxgiFormat(PixelFormatExtensions::ToNonsRGB(::ToPixelFormat(sourceDxgiFormat)));
         ((DirectX::TexMetadata&)currentImage->GetMetadata()).format = sourceDxgiFormat;
         for (size_t i = 0; i < currentImage->GetImageCount(); i++)
             ((DirectX::Image*)currentImage->GetImages())[i].format = sourceDxgiFormat;
@@ -670,12 +667,10 @@ bool TextureTool::ImportTextureDirectXTex(ImageType type, const StringView& path
     if (!keepAsIs && DirectX::HasAlpha(sourceDxgiFormat) && options.Type == TextureFormatType::ColorRGB && options.Compress)
     {
         auto& tmpImg = GET_TMP_IMG();
-
         result = TransformImage(currentImage->GetImages(), currentImage->GetImageCount(), currentImage->GetMetadata(),
                        [](DirectX::XMVECTOR* outPixels, const DirectX::XMVECTOR* inPixels, size_t width, size_t y)
                        {
                            UNREFERENCED_PARAMETER(y);
-
                            for (size_t j = 0; j < width; j++)
                            {
                                outPixels[j] = DirectX::XMVectorSelect(DirectX::g_XMOne, inPixels[j], DirectX::g_XMSelect1110);
@@ -686,8 +681,6 @@ bool TextureTool::ImportTextureDirectXTex(ImageType type, const StringView& path
             errorMsg = String::Format(TEXT("Cannot transform texture to remove unwanted alpha channel, error: {0:x}"), static_cast<uint32>(result));
             return true;
         }
-
-        // Use converted image
         SET_CURRENT_IMG(tmpImg);
     }
 
@@ -695,7 +688,6 @@ bool TextureTool::ImportTextureDirectXTex(ImageType type, const StringView& path
     if (!keepAsIs && options.FlipY)
     {
         auto& tmpImg = GET_TMP_IMG();
-
         DWORD flags = DirectX::TEX_FR_FLIP_VERTICAL;
         result = FlipRotate(currentImage->GetImages(), currentImage->GetImageCount(), currentImage->GetMetadata(), flags, tmpImg);
         if (FAILED(result))
@@ -703,8 +695,6 @@ bool TextureTool::ImportTextureDirectXTex(ImageType type, const StringView& path
             errorMsg = String::Format(TEXT("Cannot rotate/flip texture, error: {0:x}"), static_cast<uint32>(result));
             return true;
         }
-
-        // Use converted image
         SET_CURRENT_IMG(tmpImg);
     }
 
@@ -712,7 +702,6 @@ bool TextureTool::ImportTextureDirectXTex(ImageType type, const StringView& path
     if (!keepAsIs && options.InvertGreenChannel)
     {
         auto& timage = GET_TMP_IMG();
-
         result = TransformImage(currentImage->GetImages(), currentImage->GetImageCount(), currentImage->GetMetadata(),
             [&](DirectX::XMVECTOR* outPixels, const DirectX::XMVECTOR* inPixels, size_t w, size_t y)
             {
@@ -734,7 +723,6 @@ bool TextureTool::ImportTextureDirectXTex(ImageType type, const StringView& path
             errorMsg = String::Format(TEXT("Cannot invert green channel in texture, error: {0:x}"), static_cast<uint32>(result));
             return true;
         }
-        // Use converted image
         SET_CURRENT_IMG(timage);
     }
 
@@ -757,7 +745,6 @@ bool TextureTool::ImportTextureDirectXTex(ImageType type, const StringView& path
             errorMsg = String::Format(TEXT("Cannot generate texture mip maps chain, error: {1:x}"), *path, static_cast<uint32>(result));
             return true;
         }
-
         SET_CURRENT_IMG(tmpImg);
     }
 
