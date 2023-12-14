@@ -310,6 +310,10 @@ void Asset::ChangeID(const Guid& newId)
     if (!IsVirtual())
         CRASH;
 
+    // ID has to be unique
+    if (Content::GetAsset(newId) != nullptr)
+        CRASH;
+
     const Guid oldId = _id;
     ManagedScriptingObject::ChangeID(newId);
     Content::onAssetChangeId(this, oldId, newId);

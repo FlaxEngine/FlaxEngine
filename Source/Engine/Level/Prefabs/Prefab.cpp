@@ -87,17 +87,12 @@ SceneObject* Prefab::GetDefaultInstance(const Guid& objectId)
     const auto result = GetDefaultInstance();
     if (!result)
         return nullptr;
-
     if (objectId.IsValid())
     {
         SceneObject* object;
         if (ObjectsCache.TryGet(objectId, object))
-        {
-            // Actor or Script
             return object;
-        }
     }
-
     return result;
 }
 

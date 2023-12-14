@@ -934,13 +934,13 @@ bool Level::loadScene(rapidjson_flax::Value& data, int32 engineBuild, Scene** ou
 
     // Loaded scene objects list
     CollectionPoolCache<ActorsCache::SceneObjectsListType>::ScopeCache sceneObjects = ActorsCache::SceneObjectsListCache.Get();
-    const int32 objectsCount = (int32)data.Size();
-    sceneObjects->Resize(objectsCount);
+    const int32 dataCount = (int32)data.Size();
+    sceneObjects->Resize(dataCount);
     sceneObjects->At(0) = scene;
 
     // Spawn all scene objects
     SceneObjectsFactory::Context context(modifier.Value);
-    context.Async = JobSystem::GetThreadsCount() > 1 && objectsCount > 10;
+    context.Async = JobSystem::GetThreadsCount() > 1 && dataCount > 10;
     {
         PROFILE_CPU_NAMED("Spawn");
         SceneObject** objects = sceneObjects->Get();
@@ -963,12 +963,12 @@ bool Level::loadScene(rapidjson_flax::Value& data, int32 engineBuild, Scene** ou
                 }
                 else
                     SceneObjectsFactory::HandleObjectDeserializationError(stream);
-            }, objectsCount - 1);
+            }, dataCount - 1);
             ScenesLock.Lock();
         }
         else
         {
-            for (int32 i = 1; i < objectsCount; i++) // start from 1. at index [0] was scene
+            for (int32 i = 1; i < dataCount; i++) // start from 1. at index [0] was scene
             {
                 auto& stream = data[i];
                 auto obj = SceneObjectsFactory::Spawn(context, stream);
@@ -1012,13 +1012,13 @@ bool Level::loadScene(rapidjson_flax::Value& data, int32 engineBuild, Scene** ou
                     SceneObjectsFactory::Deserialize(context, obj, data[i]);
                     idMapping = nullptr;
                 }
-            }, objectsCount - 1);
+            }, dataCount - 1);
             ScenesLock.Lock();
         }
         else
         {
             Scripting::ObjectsLookupIdMapping.Set(&modifier.Value->IdsMapping);
-            for (int32 i = 1; i < objectsCount; i++) // start from 1. at index [0] was scene
+            for (int32 i = 1; i < dataCount; i++) // start from 1. at index [0] was scene
             {
                 auto& objData = data[i];
                 auto obj = objects[i];
@@ -1049,7 +1049,7 @@ bool Level::loadScene(rapidjson_flax::Value& data, int32 engineBuild, Scene** ou
         PROFILE_CPU_NAMED("Initialize");
 
         SceneObject** objects = sceneObjects->Get();
-        for (int32 i = 0; i < objectsCount; i++)
+        for (int32 i = 0; i < dataCount; i++)
         {
             SceneObject* obj = objects[i];
             if (obj)
