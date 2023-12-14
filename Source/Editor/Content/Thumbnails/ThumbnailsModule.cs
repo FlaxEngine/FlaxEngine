@@ -120,6 +120,8 @@ namespace FlaxEditor.Content.Thumbnails
 
         internal static bool HasMinimumQuality(TextureBase asset)
         {
+            if (asset.HasStreamingError)
+                return true; // Don't block thumbnails queue when texture fails to stream in (eg. unsupported format)
             var mipLevels = asset.MipLevels;
             var minMipLevels = Mathf.Min(mipLevels, 7);
             return asset.IsLoaded && asset.ResidentMipLevels >= Mathf.Max(minMipLevels, (int)(mipLevels * MinimumRequiredResourcesQuality));
@@ -499,6 +501,7 @@ namespace FlaxEditor.Content.Thumbnails
                         var request = _requests[i];
                         try
                         {
+                            request.Update();
                             if (request.IsReady)
                             {
                                 isAnyReady = true;
@@ -506,6 +509,10 @@ namespace FlaxEditor.Content.Thumbnails
                             else if (request.State == ThumbnailRequest.States.Created)
                             {
                                 request.Prepare();
+                            }
+                            else if (request.State == ThumbnailRequest.States.Failed)
+                            {
+                                _requests.RemoveAt(i--);
                             }
                         }
                         catch (Exception ex)
