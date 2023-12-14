@@ -8,8 +8,33 @@ using Real = System.Single;
 
 using FlaxEngine;
 
+#if FLAX_EDITOR
+using FlaxEditor.CustomEditors.Dedicated;
+using FlaxEditor.CustomEditors;
+#endif
+
 namespace FlaxEditor.SceneGraph.Actors
 {
+#if FLAX_EDITOR
+    /// <summary>
+    /// Dedicated custom editor for BoxCollider objects.
+    /// </summary>
+    [CustomEditor(typeof(BoxCollider)), DefaultEditor]
+    public class BoxColliderEditor : ActorEditor
+    {
+        /// <inheritdoc />
+        public override void Initialize(LayoutElementsContainer layout)
+        {
+            base.Initialize(layout);
+            layout.Space(20f);
+            var autoResizeButton = layout.Button("Resize to Fit", "Resize the box collider to fit it's parent's bounds.");
+
+            BoxCollider collider = Values[0] as BoxCollider;
+            autoResizeButton.Button.Clicked += collider.AutoResize;
+        }
+    }
+#endif
+
     /// <summary>
     /// Scene tree node for <see cref="BoxCollider"/> actor type.
     /// </summary>
@@ -36,6 +61,14 @@ namespace FlaxEditor.SceneGraph.Actors
             }
 
             return base.RayCastSelf(ref ray, out distance, out normal);
+        }
+
+        /// <inheritdoc />
+        public override void PostSpawn()
+        {
+            base.PostSpawn();
+            BoxCollider boxCollider = Actor as BoxCollider;
+            boxCollider.AutoResize();
         }
     }
 }
