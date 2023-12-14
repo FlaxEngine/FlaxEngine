@@ -625,7 +625,15 @@ bool TextureTool::ImportTextureDirectXTex(ImageType type, const StringView& path
     }
 
     bool keepAsIs = false;
-    if (!options.FlipY && !options.InvertGreenChannel && options.Compress && type == ImageType::DDS && mipLevels == sourceMipLevels && DirectX::IsCompressed(sourceDxgiFormat) && !DirectX::IsSRGB(sourceDxgiFormat))
+    if (!options.FlipY && 
+        !options.InvertGreenChannel && 
+        options.Compress && 
+        type == ImageType::DDS && 
+        mipLevels == sourceMipLevels && 
+        DirectX::IsCompressed(sourceDxgiFormat) && 
+        !DirectX::IsSRGB(sourceDxgiFormat) && 
+        width >= 4 && 
+        height >= 4)
     {
         // Keep image in the current compressed format (artist choice) so we don't have to run the slow mipmap generation
         keepAsIs = true;
