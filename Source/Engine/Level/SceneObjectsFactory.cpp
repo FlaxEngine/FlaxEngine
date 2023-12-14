@@ -317,11 +317,13 @@ void SceneObjectsFactory::HandleObjectDeserializationError(const ISerializable::
         {
 #if USE_EDITOR
             // Add dummy script
-            auto* dummyScript = parent->AddScript<MissingScript>();
             const auto typeNameMember = value.FindMember("TypeName");
             if (typeNameMember != value.MemberEnd() && typeNameMember->value.IsString())
+            {
+                auto* dummyScript = parent->AddScript<MissingScript>();
                 dummyScript->MissingTypeName = typeNameMember->value.GetString();
-            dummyScript->Data = MoveTemp(bufferStr);
+                dummyScript->Data = MoveTemp(bufferStr);
+            }
 #endif
             LOG(Warning, "Parent actor of the missing object: {0}", parent->GetName());
         }
