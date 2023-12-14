@@ -24,8 +24,6 @@
 #include <stdlib.h>
 #include <fcntl.h>
 
-#include "ThirdParty/curl/curl.h"
-
 const DateTime UnixEpoch(1970, 1, 1);
 
 bool LinuxFileSystem::ShowOpenFileDialog(Window* parentWindow, const StringView& initialDirectory, const StringView& filter, bool multiSelect, const StringView& title, Array<String, HeapAllocation>& filenames)
@@ -436,6 +434,7 @@ bool LinuxFileSystem::MoveFile(const StringView& dst, const StringView& src, boo
                 return false;
             }
         }
+        LOG(Error, "Cannot copy {} to {}", src, dst);
         return true;
     }
     return false;
@@ -518,22 +517,26 @@ bool LinuxFileSystem::MoveFileToRecycleBin(const StringView& path)
     String trashDir;
     GetSpecialFolderPath(SpecialFolder::LocalAppData, trashDir);
     trashDir += TEXT("/Trash");
-    String filesDir = trashDir + TEXT("/files");
-    String infoDir = trashDir + TEXT("/info");
+    const String filesDir = trashDir + TEXT("/files");
+    const String infoDir = trashDir + TEXT("/info");
     String trashName = getBaseName(path);
     String dst = filesDir / trashName;
 
     int fd = -1;
     if (FileExists(dst))
     {
-        String ext = GetExtension(path);
-        dst = filesDir / getNameWithoutExtension(path) / TEXT("XXXXXX.") / ext;
-        char *base = dst.ToStringAnsi().Get();
-        char *extension = GetExtension(path).ToStringAnsi().Get();
-        int templateLength = strlen(base) + 7 + strlen(extension);
-        char *templateString = dst.ToStringAnsi().Get();
-        fd = mkstemps(templateString, ext.Length());
-        dst = filesDir / String(templateString);
+        const String ext = GetExtension(path);
+        dst = filesDir / getNameWithoutExtension(path) + TEXT("XXXXXX.") + ext;
+        const char *templateString = dst.ToStringAnsi().Get();
+        char writableName[strlen(templateString) + 1];
+        strcpy(writableName, templateString);
+        fd = mkstemps(writableName, ext.Length() + 1);
+        if (fd < 0)
+        {
+            LOG(Error, "Cannot create a temporary file as {0}, errno={1}", String(writableName), errno);
+            return true;
+        }
+        dst = String(writableName);
         trashName = getBaseName(dst);
     }
     if (fd != -1)
@@ -542,16 +545,23 @@ bool LinuxFileSystem::MoveFileToRecycleBin(const StringView& path)
     if (!MoveFile(dst, path, true))
     {
         // not MoveFile means success so write the info file
-        String infoFile = infoDir / trashName + TEXT(".trashinfo");
+        const String infoFile = infoDir / trashName + TEXT(".trashinfo");
         StringBuilder trashInfo;
         const char *ansiPath = path.ToStringAnsi().Get();
-        char *encoded = curl_escape(ansiPath, strlen(ansiPath));
-        DateTime now = DateTime::Now();
-        String rfcDate = String::Format(TEXT("{0}-{1:0>2}-{2:0>2}T{3:0>2}:{4:0>2}:{5:0>2}"),
-            now.GetYear(), now.GetMonth(), now.GetDay(), now.GetHour(), now.GetMinute(), now.GetSecond());
+        // in the worst case the length will be tripled
+        const int maxLength = strlen(ansiPath) * 3 + 1;
+        char encoded[maxLength];
+        if (!UrnEncodePath(ansiPath, encoded, maxLength))
+        {
+            // unlikely but better keep something
+            strcpy(encoded, ansiPath);
+        }
+        const DateTime now = DateTime::Now();
+        const String rfcDate = String::Format(TEXT("{0}-{1:0>2}-{2:0>2}T{3:0>2}:{4:0>2}:{5:0>2}"),
+                                              now.GetYear(), now.GetMonth(), now.GetDay(), now.GetHour(), now.GetMinute(), now.GetSecond());
         trashInfo.AppendLine(TEXT("[Trash Info]")).Append(TEXT("Path=")).Append(encoded).Append(TEXT('\n'));
         trashInfo.Append(TEXT("DeletionDate=")).Append(rfcDate).Append(TEXT("\n\0"));
-        free(encoded);
+
         // a failure to write the info file is considered non-fatal according to the FreeDesktop.org specification
         FileBase::WriteAllText(infoFile, trashInfo, Encoding::ANSI);
         // return false on success as the Windows pendant does
@@ -575,6 +585,34 @@ String LinuxFileSystem::getNameWithoutExtension(const StringView& path)
     if (pos > 0)
         return baseName.Left(pos);
     return baseName;
+}
+
+bool LinuxFileSystem::UrnEncodePath(const char *path, char *result, const int maxLength)
+{
+    static auto digits = "0123456789ABCDEF";
+    const char *src = path;
+    char *dest = result;
+    while (*src)
+    {
+        if (*src <= 0x20 || *src > 0x7f || *src == '%')
+        {
+            if (dest - result + 4 > maxLength)
+                return false;
+            *dest++ = '%';
+            *dest++ = digits[*src>>4 & 0xf];
+            *dest = digits[*src & 0xf];
+        }
+        else
+        {
+            *dest = *src;
+        }
+        src++;
+        dest++;
+        if (dest - result == maxLength)
+            return false;
+    }
+    *dest = 0;
+    return true;
 }
 
 bool LinuxFileSystem::getFilesFromDirectoryTop(Array<String>& results, const char* path, const char* searchPattern)

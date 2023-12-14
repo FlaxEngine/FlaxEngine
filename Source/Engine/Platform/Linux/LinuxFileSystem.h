@@ -49,6 +49,7 @@ public:
     
 private:
 
+    static bool UrnEncodePath(const char *path, char *result, int maxLength);
     static bool getFilesFromDirectoryTop(Array<String, HeapAllocation>& results, const char* path, const char* searchPattern);
     static bool getFilesFromDirectoryAll(Array<String, HeapAllocation>& results, const char* path, const char* searchPattern);
     static String getBaseName(const StringView& path);
