@@ -136,14 +136,14 @@ namespace Flax.Deps
                 if (submodules)
                     cmdLine += " --recurse-submodules";
 
-                Utilities.Run("git", cmdLine, null, null, Utilities.RunOptions.None);
+                Utilities.Run("git", cmdLine, null, null, Utilities.RunOptions.ConsoleLogOutput);
                 if (submodules)
-                    Utilities.Run("git", "submodule update --init --recursive", null, null, Utilities.RunOptions.None);
+                    Utilities.Run("git", "submodule update --init --recursive", null, null, Utilities.RunOptions.ConsoleLogOutput);
             }
 
             if (commit != null)
             {
-                Utilities.Run("git", string.Format("reset --hard {0}", commit), null, null, Utilities.RunOptions.None);
+                Utilities.Run("git", string.Format("reset --hard {0}", commit), null, null, Utilities.RunOptions.ConsoleLogOutput);
             }
         }
 
@@ -164,9 +164,9 @@ namespace Flax.Deps
                 if (submodules)
                     cmdLine += " --recurse-submodules";
 
-                Utilities.Run("git", cmdLine, null, null, Utilities.RunOptions.None);
+                Utilities.Run("git", cmdLine, null, null, Utilities.RunOptions.ConsoleLogOutput);
                 if (submodules)
-                    Utilities.Run("git", "submodule update --init --recursive", null, null, Utilities.RunOptions.None);
+                    Utilities.Run("git", "submodule update --init --recursive", null, null, Utilities.RunOptions.ConsoleLogOutput);
             }
         }
 
@@ -191,14 +191,14 @@ namespace Flax.Deps
                 if (submodules)
                     cmdLine += " --recurse-submodules";
 
-                Utilities.Run("git", cmdLine, null, null, Utilities.RunOptions.None);
+                Utilities.Run("git", cmdLine, null, null, Utilities.RunOptions.ConsoleLogOutput);
                 if (submodules)
-                    Utilities.Run("git", "submodule update --init --recursive", null, null, Utilities.RunOptions.None);
+                    Utilities.Run("git", "submodule update --init --recursive", null, null, Utilities.RunOptions.ConsoleLogOutput);
             }
 
             if (commit != null)
             {
-                Utilities.Run("git", string.Format("reset --hard {0}", commit), null, path, Utilities.RunOptions.None);
+                Utilities.Run("git", string.Format("reset --hard {0}", commit), null, path, Utilities.RunOptions.ConsoleLogOutput);
             }
         }
 
@@ -218,13 +218,13 @@ namespace Flax.Deps
             if (submodules)
                 cmdLine += " --recurse-submodules";
 
-            Utilities.Run("git", cmdLine, null, path, Utilities.RunOptions.None);
+            Utilities.Run("git", cmdLine, null, path, Utilities.RunOptions.ConsoleLogOutput);
             if (submodules)
-                Utilities.Run("git", "submodule update --init --recursive", null, null, Utilities.RunOptions.None);
+                Utilities.Run("git", "submodule update --init --recursive", null, null, Utilities.RunOptions.ConsoleLogOutput);
 
             if (commit != null)
             {
-                Utilities.Run("git", string.Format("reset --hard {0}", commit), null, path, Utilities.RunOptions.None);
+                Utilities.Run("git", string.Format("reset --hard {0}", commit), null, path, Utilities.RunOptions.ConsoleLogOutput);
             }
         }
 
@@ -234,7 +234,7 @@ namespace Flax.Deps
         /// <param name="path">The local path that contains git repository.</param>
         public static void GitResetLocalChanges(string path)
         {
-            Utilities.Run("git", "reset --hard", null, path, Utilities.RunOptions.None);
+            Utilities.Run("git", "reset --hard", null, path, Utilities.RunOptions.ConsoleLogOutput);
         }
 
         /// <summary>
@@ -313,7 +313,7 @@ namespace Flax.Deps
             if (customArgs != null)
                 cmdLine += " " + customArgs;
 
-            Utilities.Run("cmake", cmdLine, null, path, Utilities.RunOptions.None, envVars);
+            Utilities.Run("cmake", cmdLine, null, path, Utilities.RunOptions.ConsoleLogOutput, envVars);
         }
 
         /// <summary>
