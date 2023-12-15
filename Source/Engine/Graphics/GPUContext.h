@@ -321,6 +321,12 @@ public:
     /// <param name="value">Blend factors, one for each RGBA component.</param>
     API_FUNCTION() virtual void SetBlendFactor(const Float4& value) = 0;
 
+    /// <summary>
+    /// Sets the reference value for depth stencil tests.
+    /// </summary>
+    /// <param name="value">Reference value to perform against when doing a depth-stencil test.</param>
+    API_FUNCTION() virtual void SetStencilRef(uint32 value) = 0;
+
 public:
     /// <summary>
     /// Unbinds all shader resource slots and flushes the change with the driver (used to prevent driver detection of resource hazards, eg. when down-scaling the texture).

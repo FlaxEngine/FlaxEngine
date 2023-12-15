@@ -38,15 +38,12 @@ namespace FlaxEditor.CustomEditors
         /// </summary>
         /// <param name="valueType">Type of the value.</param>
         /// <param name="getter">The value getter.</param>
-        /// <param name="setter">The value setter.</param>
+        /// <param name="setter">The value setter (can be null if value is read-only).</param>
         /// <param name="attributes">The custom type attributes used to override the value editor logic or appearance (eg. instance of <see cref="LimitAttribute"/>).</param>
-        public CustomValueContainer(ScriptType valueType, GetDelegate getter, SetDelegate setter, object[] attributes = null)
+        public CustomValueContainer(ScriptType valueType, GetDelegate getter, SetDelegate setter = null, object[] attributes = null)
         : base(ScriptMemberInfo.Null, valueType)
         {
-            if (getter == null || setter == null)
-                throw new ArgumentNullException();
-
-            _getter = getter;
+            _getter = getter ?? throw new ArgumentNullException();
             _setter = setter;
             _attributes = attributes;
         }
@@ -57,9 +54,9 @@ namespace FlaxEditor.CustomEditors
         /// <param name="valueType">Type of the value.</param>
         /// <param name="initialValue">The initial value.</param>
         /// <param name="getter">The value getter.</param>
-        /// <param name="setter">The value setter.</param>
+        /// <param name="setter">The value setter (can be null if value is read-only).</param>
         /// <param name="attributes">The custom type attributes used to override the value editor logic or appearance (eg. instance of <see cref="LimitAttribute"/>).</param>
-        public CustomValueContainer(ScriptType valueType, object initialValue, GetDelegate getter, SetDelegate setter, object[] attributes = null)
+        public CustomValueContainer(ScriptType valueType, object initialValue, GetDelegate getter, SetDelegate setter = null, object[] attributes = null)
         : this(valueType, getter, setter, attributes)
         {
             Add(initialValue);
@@ -76,7 +73,6 @@ namespace FlaxEditor.CustomEditors
         {
             if (instanceValues == null || instanceValues.Count != Count)
                 throw new ArgumentException();
-
             for (int i = 0; i < Count; i++)
             {
                 var v = instanceValues[i];
@@ -89,6 +85,8 @@ namespace FlaxEditor.CustomEditors
         {
             if (instanceValues == null || instanceValues.Count != Count)
                 throw new ArgumentException();
+            if (_setter == null)
+                return;
 
             for (int i = 0; i < Count; i++)
             {
@@ -105,6 +103,8 @@ namespace FlaxEditor.CustomEditors
                 throw new ArgumentException();
             if (values == null || values.Count != Count)
                 throw new ArgumentException();
+            if (_setter == null)
+                return;
 
             for (int i = 0; i < Count; i++)
             {
@@ -120,6 +120,8 @@ namespace FlaxEditor.CustomEditors
         {
             if (instanceValues == null || instanceValues.Count != Count)
                 throw new ArgumentException();
+            if (_setter == null)
+                return;
 
             for (int i = 0; i < Count; i++)
             {

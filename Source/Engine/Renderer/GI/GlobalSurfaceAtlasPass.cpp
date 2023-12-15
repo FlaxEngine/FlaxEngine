@@ -565,7 +565,10 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
                 _vertexBuffer->Data.EnsureCapacity(_dirtyObjectsBuffer.Count() * 6 * sizeof(AtlasTileVertex));
                 for (void* actorObject : _dirtyObjectsBuffer)
                 {
-                    const auto& object = ((const Dictionary<Actor*, GlobalSurfaceAtlasObject>&)surfaceAtlasData.Objects)[actorObject];
+                    const GlobalSurfaceAtlasObject* objectPtr = surfaceAtlasData.Objects.TryGet(actorObject);
+                    if (!objectPtr)
+                        continue;
+                    const GlobalSurfaceAtlasObject& object = *objectPtr;
                     for (int32 tileIndex = 0; tileIndex < 6; tileIndex++)
                     {
                         auto* tile = object.Tiles[tileIndex];
@@ -587,7 +590,10 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
         int32 tilesDrawn = 0;
         for (void* actorObject : _dirtyObjectsBuffer)
         {
-            const auto& object = ((const Dictionary<Actor*, GlobalSurfaceAtlasObject>&)surfaceAtlasData.Objects)[actorObject];
+            const GlobalSurfaceAtlasObject* objectPtr = surfaceAtlasData.Objects.TryGet(actorObject);
+            if (!objectPtr)
+                continue;
+            const GlobalSurfaceAtlasObject& object = *objectPtr;
 
             // Clear draw calls list
             renderContextTiles.List->DrawCalls.Clear();

@@ -24,7 +24,7 @@ enum class ImportDataTypes : int32
     None = 0,
 
     /// <summary>
-    /// Imports materials and meshes.
+    /// Imports meshes (and LODs).
     /// </summary>
     Geometry = 1 << 0,
 
@@ -55,94 +55,6 @@ enum class ImportDataTypes : int32
 };
 
 DECLARE_ENUM_OPERATORS(ImportDataTypes);
-
-/// <summary>
-/// Imported model data container. Represents unified model source file data (meshes, animations, skeleton, materials).
-/// </summary>
-class ImportedModelData
-{
-public:
-    struct LOD
-    {
-        Array<MeshData*> Meshes;
-
-        BoundingBox GetBox() const;
-    };
-
-    struct Node
-    {
-        /// <summary>
-        /// The parent node index. The root node uses value -1.
-        /// </summary>
-        int32 ParentIndex;
-
-        /// <summary>
-        /// The local transformation of the node, relative to the parent node.
-        /// </summary>
-        Transform LocalTransform;
-
-        /// <summary>
-        /// The name of this node.
-        /// </summary>
-        String Name;
-    };
-
-public:
-    /// <summary>
-    /// The import data types types.
-    /// </summary>
-    ImportDataTypes Types;
-
-    /// <summary>
-    /// The textures slots.
-    /// </summary>
-    Array<TextureEntry> Textures;
-
-    /// <summary>
-    /// The material slots.
-    /// </summary>
-    Array<MaterialSlotEntry> Materials;
-
-    /// <summary>
-    /// The level of details data.
-    /// </summary>
-    Array<LOD> LODs;
-
-    /// <summary>
-    /// The skeleton data.
-    /// </summary>
-    SkeletonData Skeleton;
-
-    /// <summary>
-    /// The scene nodes.
-    /// </summary>
-    Array<Node> Nodes;
-
-    /// <summary>
-    /// The node animations.
-    /// </summary>
-    AnimationData Animation;
-
-public:
-    /// <summary>
-    /// Initializes a new instance of the <see cref="ImportedModelData"/> class.
-    /// </summary>
-    /// <param name="types">The types.</param>
-    ImportedModelData(ImportDataTypes types)
-    {
-        Types = types;
-    }
-
-    /// <summary>
-    /// Finalizes an instance of the <see cref="ImportedModelData"/> class.
-    /// </summary>
-    ~ImportedModelData()
-    {
-        // Ensure to cleanup data
-        for (int32 i = 0; i < LODs.Count(); i++)
-            LODs[i].Meshes.ClearDelete();
-    }
-};
 
 #endif
 
@@ -202,6 +114,8 @@ public:
         SkinnedModel = 1,
         // The animation asset.
         Animation = 2,
+        // The prefab scene.
+        Prefab = 3,
     };
 
     /// <summary>
@@ -228,25 +142,25 @@ public:
 
     public: // Geometry
 
-        // Enable model normal vectors recalculating.
+        // Enable model normal vectors re-calculating.
         API_FIELD(Attributes="EditorOrder(20), EditorDisplay(\"Geometry\"), VisibleIf(nameof(ShowGeometry))")
         bool CalculateNormals = false;
-        // Specifies the maximum angle (in degrees) that may be between two face normals at the same vertex position that their are smoothed together. The default value is 175.
+        // Specifies the maximum angle (in degrees) that may be between two face normals at the same vertex position before they are smoothed together. The default value is 175.
         API_FIELD(Attributes="EditorOrder(30), EditorDisplay(\"Geometry\"), VisibleIf(nameof(ShowSmoothingNormalsAngle)), Limit(0, 175, 0.1f)")
         float SmoothingNormalsAngle = 175.0f;
         // If checked, the imported normal vectors of the mesh will be flipped (scaled by -1).
         API_FIELD(Attributes="EditorOrder(35), EditorDisplay(\"Geometry\"), VisibleIf(nameof(ShowGeometry))")
         bool FlipNormals = false;
-        // Enable model tangent vectors recalculating.
+        // Enable model tangent vectors re-calculating.
         API_FIELD(Attributes="EditorOrder(40), EditorDisplay(\"Geometry\"), VisibleIf(nameof(ShowGeometry))")
         bool CalculateTangents = false;
-        // Specifies the maximum angle (in degrees) that may be between two vertex tangents that their tangents and bi-tangents are smoothed. The default value is 45.
+        // Specifies the maximum angle (in degrees) that may be between two vertex tangents before their tangents and bi-tangents are smoothed. The default value is 45.
         API_FIELD(Attributes="EditorOrder(45), EditorDisplay(\"Geometry\"), VisibleIf(nameof(ShowSmoothingTangentsAngle)), Limit(0, 45, 0.1f)")
         float SmoothingTangentsAngle = 45.0f;
         // Enable/disable meshes geometry optimization.
         API_FIELD(Attributes="EditorOrder(50), EditorDisplay(\"Geometry\"), VisibleIf(nameof(ShowGeometry))")
         bool OptimizeMeshes = true;
-        // Enable/disable geometry merge for meshes with the same materials.
+        // Enable/disable geometry merge for meshes with the same materials. Index buffer will be reordered to improve performance and other modifications will be applied. However, importing time will be increased.
         API_FIELD(Attributes="EditorOrder(60), EditorDisplay(\"Geometry\"), VisibleIf(nameof(ShowGeometry))")
         bool MergeMeshes = true;
         // Enable/disable importing meshes Level of Details.
@@ -258,13 +172,16 @@ public:
         // Enable/disable importing blend shapes (morph targets).
         API_FIELD(Attributes="EditorOrder(85), EditorDisplay(\"Geometry\"), VisibleIf(nameof(ShowSkinnedModel))")
         bool ImportBlendShapes = false;
+        // Enable skeleton bones offset matrices re-calculating.
+        API_FIELD(Attributes="EditorOrder(86), EditorDisplay(\"Geometry\"), VisibleIf(nameof(ShowSkinnedModel))")
+        bool CalculateBoneOffsetMatrices = false;
         // The lightmap UVs source.
         API_FIELD(Attributes="EditorOrder(90), EditorDisplay(\"Geometry\", \"Lightmap UVs Source\"), VisibleIf(nameof(ShowModel))")
         ModelLightmapUVsSource LightmapUVsSource = ModelLightmapUVsSource::Disable;
-        // If specified, all meshes which name starts with this prefix will be imported as a separate collision data (excluded used for rendering).
+        // If specified, all meshes that name starts with this prefix in the name will be imported as a separate collision data asset (excluded used for rendering).
         API_FIELD(Attributes="EditorOrder(100), EditorDisplay(\"Geometry\"), VisibleIf(nameof(ShowGeometry))")
         String CollisionMeshesPrefix = TEXT("");
-        // The type of collision that should be generated if has collision prefix specified.
+        // The type of collision that should be generated if the mesh has a collision prefix specified.
         API_FIELD(Attributes = "EditorOrder(105), EditorDisplay(\"Geometry\"), VisibleIf(nameof(ShowGeometry))")
         CollisionDataType CollisionType = CollisionDataType::TriangleMesh;
 
@@ -279,25 +196,28 @@ public:
         // Custom import geometry offset.
         API_FIELD(Attributes="EditorOrder(520), EditorDisplay(\"Transform\")")
         Float3 Translation = Float3::Zero;
-        // If checked, the imported geometry will be shifted to the center of mass.
+        // If checked, the imported geometry will be shifted to its local transform origin.
         API_FIELD(Attributes="EditorOrder(530), EditorDisplay(\"Transform\")")
+        bool UseLocalOrigin = false;
+        // If checked, the imported geometry will be shifted to the center of mass.
+        API_FIELD(Attributes="EditorOrder(540), EditorDisplay(\"Transform\")")
         bool CenterGeometry = false;
 
     public: // Animation
 
-        // Imported animation duration mode. Can use the original value or overriden by settings.
+        // Imported animation duration mode. Can use the original value or be overriden by settings.
         API_FIELD(Attributes="EditorOrder(1000), EditorDisplay(\"Animation\"), VisibleIf(nameof(ShowAnimation))")
         AnimationDuration Duration = AnimationDuration::Imported;
         // Imported animation first/last frame index. Used only if Duration mode is set to Custom.
         API_FIELD(Attributes="EditorOrder(1010), EditorDisplay(\"Animation\"), VisibleIf(nameof(ShowFramesRange)), Limit(0)")
         Float2 FramesRange = Float2::Zero;
-        // The imported animation default frame rate. Can specify the default frames per second amount for imported animation. If value is 0 then the original animation frame rate will be used.
+        // The imported animation default frame rate. Can specify the default frames per second amount for imported animations. If the value is 0 then the original animation frame rate will be used.
         API_FIELD(Attributes="EditorOrder(1020), EditorDisplay(\"Animation\"), VisibleIf(nameof(ShowAnimation)), Limit(0, 1000, 0.01f)")
         float DefaultFrameRate = 0.0f;
         // The imported animation sampling rate. If value is 0 then the original animation speed will be used.
         API_FIELD(Attributes="EditorOrder(1030), EditorDisplay(\"Animation\"), VisibleIf(nameof(ShowAnimation)), Limit(0, 1000, 0.01f)")
         float SamplingRate = 0.0f;
-        // The imported animation will have removed tracks with no keyframes or unspecified data.
+        // The imported animation will have tracks with no keyframes or unspecified data removed.
         API_FIELD(Attributes="EditorOrder(1040), EditorDisplay(\"Animation\"), VisibleIf(nameof(ShowAnimation))")
         bool SkipEmptyCurves = true;
         // The imported animation channels will be optimized to remove redundant keyframes.
@@ -329,10 +249,10 @@ public:
         float TriangleReduction = 0.5f;
         // Whether to do a sloppy mesh optimization. This is faster but does not follow the topology of the original mesh.
         API_FIELD(Attributes="EditorOrder(1140), EditorDisplay(\"Level Of Detail\"), VisibleIf(nameof(ShowGeometry))")
-        bool SloppyOptimization = true;
+        bool SloppyOptimization = false;
         // Only used if Sloppy is false. Target error is an approximate measure of the deviation from the original mesh using distance normalized to [0..1] range (e.g. 1e-2f means that simplifier will try to maintain the error to be below 1% of the mesh extents).
         API_FIELD(Attributes="EditorOrder(1150), EditorDisplay(\"Level Of Detail\"), VisibleIf(nameof(SloppyOptimization), true), Limit(0.01f, 1, 0.001f)")
-        float LODTargetError = 0.1f;
+        float LODTargetError = 0.05f;
 
     public: // Materials
 
@@ -342,7 +262,7 @@ public:
         // If checked, the importer will create the model's materials as instances of a base material.
         API_FIELD(Attributes = "EditorOrder(401), EditorDisplay(\"Materials\"), VisibleIf(nameof(ImportMaterials))")
         bool ImportMaterialsAsInstances = false;
-        // The material to import the model's materials as an instance of.
+        // The material used as the base material that will be instanced as the imported model's material.
         API_FIELD(Attributes = "EditorOrder(402), EditorDisplay(\"Materials\"), VisibleIf(nameof(ImportMaterialsAsInstances))")
         AssetReference<MaterialBase> InstanceToImportAs;
         // If checked, the importer will import texture files used by the model and any embedded texture resources.
@@ -363,16 +283,31 @@ public:
 
     public: // Splitting
 
-        // If checked, the imported mesh/animations are splitted into separate assets. Used if ObjectIndex is set to -1.
-        API_FIELD(Attributes="EditorOrder(2000), EditorDisplay(\"Splitting\")")
+        // If checked, the imported mesh/animations are split into separate assets. Used if ObjectIndex is set to -1.
+        API_FIELD(Attributes="EditorOrder(2000), EditorDisplay(\"Splitting\"), VisibleIf(nameof(ShowSplitting))")
         bool SplitObjects = false;
-        // The zero-based index for the mesh/animation clip to import. If the source file has more than one mesh/animation it can be used to pick a desire object. Default -1 imports all objects.
-        API_FIELD(Attributes="EditorOrder(2010), EditorDisplay(\"Splitting\")")
+        // The zero-based index for the mesh/animation clip to import. If the source file has more than one mesh/animation it can be used to pick a desired object. Default -1 imports all objects.
+        API_FIELD(Attributes="EditorOrder(2010), EditorDisplay(\"Splitting\"), VisibleIf(nameof(ShowSplitting))")
         int32 ObjectIndex = -1;
 
-        // Runtime data for objects splitting during import (used internally)
-        void* SplitContext = nullptr;
-        Function<bool(Options& splitOptions, const String& objectName)> OnSplitImport;
+    public: // Other
+
+        // If specified, the specified folder will be used as sub-directory name for automatically imported sub assets such as textures and materials. Set to whitespace (single space) to import to the same directory.
+        API_FIELD(Attributes="EditorOrder(3030), EditorDisplay(\"Other\")")
+        String SubAssetFolder = TEXT("");
+
+    public: // Internals
+
+        // Internal flags for objects to import.
+        ImportDataTypes ImportTypes = ImportDataTypes::None;
+
+        struct CachedData
+        {
+            ModelData* Data = nullptr;
+            void* MeshesByName = nullptr;
+        };
+        // Cached model data - used when performing nested importing (eg. via objects splitting). Allows to read and process source file only once and use those results for creation of multiple assets (permutation via ObjectIndex).
+        CachedData* Cached = nullptr;
 
     public:
         // [ISerializable]
@@ -389,18 +324,18 @@ public:
     /// <param name="options">The import options.</param>
     /// <param name="errorMsg">The error message container.</param>
     /// <returns>True if fails, otherwise false.</returns>
-    static bool ImportData(const String& path, ImportedModelData& data, Options& options, String& errorMsg);
+    static bool ImportData(const String& path, ModelData& data, Options& options, String& errorMsg);
 
     /// <summary>
     /// Imports the model.
     /// </summary>
     /// <param name="path">The file path.</param>
-    /// <param name="meshData">The output data.</param>
+    /// <param name="data">The output data.</param>
     /// <param name="options">The import options.</param>
     /// <param name="errorMsg">The error message container.</param>
     /// <param name="autoImportOutput">The output folder for the additional imported data - optional. Used to auto-import textures and material assets.</param>
     /// <returns>True if fails, otherwise false.</returns>
-    static bool ImportModel(const String& path, ModelData& meshData, Options& options, String& errorMsg, const String& autoImportOutput = String::Empty);
+    static bool ImportModel(const String& path, ModelData& data, Options& options, String& errorMsg, const String& autoImportOutput = String::Empty);
 
 public:
     static int32 DetectLodIndex(const String& nodeName);
@@ -432,13 +367,13 @@ public:
 private:
     static void CalculateBoneOffsetMatrix(const Array<SkeletonNode>& nodes, Matrix& offsetMatrix, int32 nodeIndex);
 #if USE_ASSIMP
-    static bool ImportDataAssimp(const char* path, ImportedModelData& data, Options& options, String& errorMsg);
+    static bool ImportDataAssimp(const char* path, ModelData& data, Options& options, String& errorMsg);
 #endif
 #if USE_AUTODESK_FBX_SDK
-	static bool ImportDataAutodeskFbxSdk(const char* path, ImportedModelData& data, Options& options, String& errorMsg);
+	static bool ImportDataAutodeskFbxSdk(const char* path, ModelData& data, Options& options, String& errorMsg);
 #endif
 #if USE_OPEN_FBX
-    static bool ImportDataOpenFBX(const char* path, ImportedModelData& data, Options& options, String& errorMsg);
+    static bool ImportDataOpenFBX(const char* path, ModelData& data, Options& options, String& errorMsg);
 #endif
 #endif
 };

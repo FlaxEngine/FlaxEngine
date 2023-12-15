@@ -124,6 +124,7 @@ namespace FlaxEditor.Modules
                 if (!Editor.StateMachine.CurrentState.CanEditScene)
                     return;
                 undo = Editor.Undo;
+                Editor.Scene.MarkSceneEdited(actor.Scene);
             }
 
             // Record undo for prefab creating (backend links the target instance with the prefab)
@@ -133,7 +134,7 @@ namespace FlaxEditor.Modules
                     return;
                 var actorsList = new List<Actor>();
                 Utilities.Utils.GetActorsTree(actorsList, actor);
-                
+
                 var actions = new IUndoAction[actorsList.Count];
                 for (int i = 0; i < actorsList.Count; i++)
                     actions[i] = BreakPrefabLinkAction.Linked(actorsList[i]);

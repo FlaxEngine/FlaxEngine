@@ -135,13 +135,10 @@ namespace FlaxEngine
         {
             if (e.ExceptionObject is Exception exception)
             {
+                Debug.LogError($"Unhandled Exception: {exception.Message}");
+                Debug.LogException(exception);
                 if (e.IsTerminating && !System.Diagnostics.Debugger.IsAttached)
                     Platform.Fatal($"Unhandled Exception: {exception}");
-                else
-                {
-                    Debug.LogError($"Unhandled Exception: {exception.Message}");
-                    Debug.LogException(exception);
-                }
             }
         }
 
@@ -183,6 +180,8 @@ namespace FlaxEngine
 
         private static void OnLocalizationChanged()
         {
+            // iOS uses globalization-invariant mode so ignore it
+#if !PLATFORM_IOS
             var currentThread = Thread.CurrentThread;
             var language = Localization.CurrentLanguage;
             if (language != null)
@@ -190,6 +189,7 @@ namespace FlaxEngine
             var culture = Localization.CurrentCulture;
             if (culture != null)
                 currentThread.CurrentCulture = culture;
+#endif
         }
 
         /// <summary>
@@ -271,6 +271,7 @@ namespace FlaxEngine
                 Foreground = Color.FromBgra(0xFFFFFFFF),
                 ForegroundGrey = Color.FromBgra(0xFFA9A9B3),
                 ForegroundDisabled = Color.FromBgra(0xFF787883),
+                ForegroundViewport = Color.FromBgra(0xFFFFFFFF),
                 BackgroundHighlighted = Color.FromBgra(0xFF54545C),
                 BorderHighlighted = Color.FromBgra(0xFF6A6A75),
                 BackgroundSelected = Color.FromBgra(0xFF007ACC),
@@ -278,18 +279,29 @@ namespace FlaxEngine
                 BackgroundNormal = Color.FromBgra(0xFF3F3F46),
                 BorderNormal = Color.FromBgra(0xFF54545C),
                 TextBoxBackground = Color.FromBgra(0xFF333337),
-                ProgressNormal = Color.FromBgra(0xFF0ad328),
                 TextBoxBackgroundSelected = Color.FromBgra(0xFF3F3F46),
                 CollectionBackgroundColor = Color.FromBgra(0x14CCCCCC),
-                SharedTooltip = new Tooltip(),
-                Statusbar = new Style.StatusbarStyle()
+                ProgressNormal = Color.FromBgra(0xFF0ad328),
+                Statusbar = new Style.StatusbarStyle
                 {
                     PlayMode = Color.FromBgra(0xFF2F9135),
                     Failed = Color.FromBgra(0xFF9C2424),
-                    Loading = Color.FromBgra(0xFF2D2D30)
-                }
+                    Loading = Color.FromBgra(0xFF2D2D30),
+                },
+
+                SharedTooltip = new Tooltip(),
             };
             style.DragWindow = style.BackgroundSelected * 0.7f;
+
+            // Use optionally bundled default font (matches Editor)
+            var defaultFont = Content.LoadAsyncInternal<FontAsset>("Editor/Fonts/Roboto-Regular");
+            if (defaultFont)
+            {
+                style.FontTitle = defaultFont.CreateFont(18);
+                style.FontLarge = defaultFont.CreateFont(14);
+                style.FontMedium = defaultFont.CreateFont(9);
+                style.FontSmall = defaultFont.CreateFont(9);
+            }
 
             Style.Current = style;
         }

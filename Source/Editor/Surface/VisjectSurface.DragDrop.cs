@@ -151,7 +151,7 @@ namespace FlaxEditor.Surface
         /// </summary>
         /// <param name="groupId">The group ID.</param>
         /// <returns>The node archetype.</returns>
-        protected virtual NodeArchetype GetParameterGetterNodeArchetype(out ushort groupId)
+        protected internal virtual NodeArchetype GetParameterGetterNodeArchetype(out ushort groupId)
         {
             groupId = 6;
             return Archetypes.Parameters.Nodes[0];

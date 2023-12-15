@@ -23,7 +23,6 @@
 #define CHECK_INVALID_BUFFER(model, buffer) \
     if (buffer->IsValidFor(model) == false) \
 	{ \
-		LOG(Warning, "Invalid Skinned Model Instance Buffer size {0} for Skinned Model {1}. It should be {2}. Manual update to proper size.", buffer->Count(), model->ToString(), model->MaterialSlots.Count()); \
 		buffer->Setup(model); \
 	}
 
@@ -852,6 +851,7 @@ bool SkinnedModel::Init(const Span<int32>& meshesCountPerLod)
     {
         auto& lod = LODs[lodIndex];
         lod._model = this;
+        lod._lodIndex = lodIndex;
         lod.ScreenSize = 1.0f;
         const int32 meshesCount = meshesCountPerLod[lodIndex];
         if (meshesCount <= 0 || meshesCount > MODEL_MAX_MESHES)
@@ -968,6 +968,7 @@ void SkinnedModel::InitAsVirtual()
 
 void SkinnedModel::CancelStreaming()
 {
+    Asset::CancelStreaming();
     CancelStreamingTasks();
 }
 
@@ -1112,6 +1113,7 @@ Asset::LoadResult SkinnedModel::load()
     {
         auto& lod = LODs[lodIndex];
         lod._model = this;
+        lod._lodIndex = lodIndex;
 
         // Screen Size
         stream->ReadFloat(&lod.ScreenSize);

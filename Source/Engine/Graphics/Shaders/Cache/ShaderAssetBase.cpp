@@ -115,26 +115,19 @@ bool ShaderAssetBase::Save()
 bool IsValidShaderCache(DataContainer<byte>& shaderCache, Array<String>& includes)
 {
     if (shaderCache.Length() == 0)
-    {
         return false;
-    }
-
     MemoryReadStream stream(shaderCache.Get(), shaderCache.Length());
 
     // Read cache format version
     int32 version;
     stream.ReadInt32(&version);
     if (version != GPU_SHADER_CACHE_VERSION)
-    {
         return false;
-    }
 
     // Read the location of additional data that contains list of included source files
     int32 additionalDataStart;
     stream.ReadInt32(&additionalDataStart);
     stream.SetPosition(additionalDataStart);
-
-    bool result = true;
 
     // Read all includes
     int32 includesCount;
@@ -144,28 +137,16 @@ bool IsValidShaderCache(DataContainer<byte>& shaderCache, Array<String>& include
     {
         String& include = includes.AddOne();
         stream.ReadString(&include, 11);
+        include  = ShadersCompilation::ResolveShaderPath(include);
         DateTime lastEditTime;
         stream.Read(lastEditTime);
 
         // Check if included file exists locally and has been modified since last compilation
         if (FileSystem::FileExists(include) && FileSystem::GetFileLastEditTime(include) > lastEditTime)
-        {
-            result = false;
-        }
+            return false;
     }
 
-#if 0
-    // Check duplicates
-    for (int32 i = 0; i < includes.Count(); i++)
-    {
-        if (includes.FindLast(includes[i]) != i)
-        {
-            CRASH;
-        }
-    }
-#endif
-
-    return result;
+    return true;
 }
 
 #endif

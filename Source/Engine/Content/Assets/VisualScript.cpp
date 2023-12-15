@@ -187,6 +187,7 @@ void VisualScriptExecutor::ProcessGroupParameters(Box* box, Node* node, Value& v
             break;
         }
         const auto param = stack.Stack->Script->Graph.GetParameter((Guid)node->Values[0], paramIndex);
+        ScopeLock lock(stack.Stack->Script->Locker);
         const auto instanceParams = stack.Stack->Script->_instances.Find(stack.Stack->Instance->GetID());
         if (param && instanceParams)
         {
@@ -211,6 +212,7 @@ void VisualScriptExecutor::ProcessGroupParameters(Box* box, Node* node, Value& v
             break;
         }
         const auto param = stack.Stack->Script->Graph.GetParameter((Guid)node->Values[0], paramIndex);
+        ScopeLock lock(stack.Stack->Script->Locker);
         const auto instanceParams = stack.Stack->Script->_instances.Find(stack.Stack->Instance->GetID());
         if (param && instanceParams)
         {
@@ -1426,6 +1428,10 @@ Asset::LoadResult VisualScript::load()
 #if USE_EDITOR
     if (_instances.HasItems())
     {
+        // Mark as already loaded so any WaitForLoaded checks during GetDefaultInstance bellow will handle this Visual Script as ready to use
+        _loadFailed = false;
+        _isLoaded = true;
+
         // Setup scripting type
         CacheScriptingType();
 
@@ -1510,6 +1516,7 @@ void VisualScript::unload(bool isReloading)
     // Note: preserve the registered scripting type but invalidate the locally cached handle
     if (_scriptingTypeHandle)
     {
+        VisualScriptingBinaryModule::Locker.Lock();
         auto& type = VisualScriptingModule.Types[_scriptingTypeHandle.TypeIndex];
         if (type.Script.DefaultInstance)
         {
@@ -1520,6 +1527,7 @@ void VisualScript::unload(bool isReloading)
         VisualScriptingModule.Scripts[_scriptingTypeHandle.TypeIndex] = nullptr;
         _scriptingTypeHandleCached = _scriptingTypeHandle;
         _scriptingTypeHandle = ScriptingTypeHandle();
+        VisualScriptingBinaryModule::Locker.Unlock();
     }
 }
 
@@ -1530,6 +1538,7 @@ AssetChunksFlag VisualScript::getChunksToPreload() const
 
 void VisualScript::CacheScriptingType()
 {
+    ScopeLock lock(VisualScriptingBinaryModule::Locker);
     auto& binaryModule = VisualScriptingModule;
 
     // Find base type
@@ -1664,6 +1673,7 @@ ScriptingObject* VisualScriptingBinaryModule::VisualScriptObjectSpawn(const Scri
     VisualScript* visualScript = VisualScriptingModule.Scripts[params.Type.TypeIndex];
 
     // Initialize instance data
+    ScopeLock lock(visualScript->Locker);
     auto& instanceParams = visualScript->_instances[object->GetID()].Params;
     instanceParams.Resize(visualScript->Graph.Parameters.Count());
     for (int32 i = 0; i < instanceParams.Count(); i++)
@@ -1766,6 +1776,7 @@ void VisualScriptingBinaryModule::OnEvent(ScriptingObject* object, Span<Variant>
         {
             if (const auto visualScript = ScriptingObject::Cast<VisualScript>(asset.Value))
             {
+                visualScript->Locker.Lock();
                 for (auto& e : visualScript->_instances)
                 {
                     auto instance = &e.Value;
@@ -1780,6 +1791,7 @@ void VisualScriptingBinaryModule::OnEvent(ScriptingObject* object, Span<Variant>
                         called = true;
                     }
                 }
+                visualScript->Locker.Unlock();
                 if (called)
                     break;
             }
@@ -1824,6 +1836,7 @@ bool VisualScriptingBinaryModule::FindScriptingType(const StringAnsiView& typeNa
 
 void* VisualScriptingBinaryModule::FindMethod(const ScriptingTypeHandle& typeHandle, const StringAnsiView& name, int32 numParams)
 {
+    ScopeLock lock(Locker);
     return (void*)Scripts[typeHandle.TypeIndex]->FindMethod(name, numParams);
 }
 
@@ -1855,6 +1868,7 @@ void VisualScriptingBinaryModule::GetMethodSignature(void* method, ScriptingType
 
 void* VisualScriptingBinaryModule::FindField(const ScriptingTypeHandle& typeHandle, const StringAnsiView& name)
 {
+    ScopeLock lock(Locker);
     return (void*)Scripts[typeHandle.TypeIndex]->FindField(name);
 }
 
@@ -1875,6 +1889,7 @@ bool VisualScriptingBinaryModule::GetFieldValue(void* field, const Variant& inst
         LOG(Error, "Failed to get field '{0}' without object instance", vsFiled->Parameter->Name);
         return true;
     }
+    ScopeLock lock(vsFiled->Script->Locker);
     const auto instanceParams = vsFiled->Script->_instances.Find(instanceObject->GetID());
     if (!instanceParams)
     {
@@ -1894,6 +1909,7 @@ bool VisualScriptingBinaryModule::SetFieldValue(void* field, const Variant& inst
         LOG(Error, "Failed to set field '{0}' without object instance", vsFiled->Parameter->Name);
         return true;
     }
+    ScopeLock lock(vsFiled->Script->Locker);
     const auto instanceParams = vsFiled->Script->_instances.Find(instanceObject->GetID());
     if (!instanceParams)
     {
@@ -1908,9 +1924,12 @@ void VisualScriptingBinaryModule::SerializeObject(JsonWriter& stream, ScriptingO
 {
     char idName[33];
     stream.StartObject();
+    Locker.Lock();
     const auto asset = Scripts[object->GetTypeHandle().TypeIndex].Get();
+    Locker.Unlock();
     if (asset)
     {
+        ScopeLock lock(asset->Locker);
         const auto instanceParams = asset->_instances.Find(object->GetID());
         if (instanceParams)
         {
@@ -1970,9 +1989,12 @@ void VisualScriptingBinaryModule::SerializeObject(JsonWriter& stream, ScriptingO
 void VisualScriptingBinaryModule::DeserializeObject(ISerializable::DeserializeStream& stream, ScriptingObject* object, ISerializeModifier* modifier)
 {
     ASSERT(stream.IsObject());
+    Locker.Lock();
     const auto asset = Scripts[object->GetTypeHandle().TypeIndex].Get();
+    Locker.Unlock();
     if (asset)
     {
+        ScopeLock lock(asset->Locker);
         const auto instanceParams = asset->_instances.Find(object->GetID());
         if (instanceParams)
         {
@@ -1997,9 +2019,12 @@ void VisualScriptingBinaryModule::DeserializeObject(ISerializable::DeserializeSt
 
 void VisualScriptingBinaryModule::OnObjectIdChanged(ScriptingObject* object, const Guid& oldId)
 {
+    Locker.Lock();
     const auto asset = Scripts[object->GetTypeHandle().TypeIndex].Get();
+    Locker.Unlock();
     if (asset)
     {
+        ScopeLock lock(asset->Locker);
         auto& instanceParams = asset->_instances[object->GetID()];
         auto oldParams = asset->_instances.Find(oldId);
         if (oldParams)
@@ -2012,10 +2037,13 @@ void VisualScriptingBinaryModule::OnObjectIdChanged(ScriptingObject* object, con
 
 void VisualScriptingBinaryModule::OnObjectDeleted(ScriptingObject* object)
 {
+    Locker.Lock();
     const auto asset = Scripts[object->GetTypeHandle().TypeIndex].Get();
+    Locker.Unlock();
     if (asset)
     {
         // Cleanup object data
+        ScopeLock lock(asset->Locker);
         asset->_instances.Remove(object->GetID());
     }
 }
@@ -2031,10 +2059,12 @@ void VisualScriptingBinaryModule::Destroy(bool isReloading)
 
 ScriptingTypeHandle VisualScript::GetScriptingType()
 {
-    if (!_scriptingTypeHandle && !WaitForLoaded())
-    {
+    if (WaitForLoaded())
+        return ScriptingTypeHandle();
+    Locker.Lock();
+    if (!_scriptingTypeHandle)
         CacheScriptingType();
-    }
+    Locker.Unlock();
     return _scriptingTypeHandle;
 }
 
@@ -2046,7 +2076,14 @@ ScriptingObject* VisualScript::CreateInstance()
 
 VisualScript::Instance* VisualScript::GetScriptInstance(ScriptingObject* instance) const
 {
-    return instance ? _instances.TryGet(instance->GetID()) : nullptr;
+    Instance* result = nullptr;
+    if (instance)
+    {
+        Locker.Lock();
+        result = _instances.TryGet(instance->GetID());
+        Locker.Unlock();
+    }
+    return result;
 }
 
 const Variant& VisualScript::GetScriptInstanceParameterValue(const StringView& name, ScriptingObject* instance) const
@@ -2074,6 +2111,7 @@ void VisualScript::SetScriptInstanceParameterValue(const StringView& name, Scrip
     {
         if (Graph.Parameters[paramIndex].Name == name)
         {
+            ScopeLock lock(Locker);
             const auto instanceParams = _instances.Find(instance->GetID());
             if (instanceParams)
             {
@@ -2094,6 +2132,7 @@ void VisualScript::SetScriptInstanceParameterValue(const StringView& name, Scrip
     {
         if (Graph.Parameters[paramIndex].Name == name)
         {
+            ScopeLock lock(Locker);
             const auto instanceParams = _instances.Find(instance->GetID());
             if (instanceParams)
             {
@@ -2143,7 +2182,7 @@ BytesContainer VisualScript::LoadSurface()
 
 #if USE_EDITOR
 
-bool VisualScript::SaveSurface(BytesContainer& data, const Metadata& meta)
+bool VisualScript::SaveSurface(const BytesContainer& data, const Metadata& meta)
 {
     // Wait for asset to be loaded or don't if last load failed
     if (LastLoadFailed())
@@ -2163,18 +2202,16 @@ bool VisualScript::SaveSurface(BytesContainer& data, const Metadata& meta)
         ReleaseChunk(i);
 
     // Set Visject Surface data
-    auto visjectSurfaceChunk = GetOrCreateChunk(0);
-    visjectSurfaceChunk->Data.Copy(data);
+    GetOrCreateChunk(0)->Data.Copy(data);
 
     // Set metadata
-    auto metadataChunk = GetOrCreateChunk(1);
     MemoryWriteStream metaStream(512);
     {
         metaStream.WriteInt32(1);
         metaStream.WriteString(meta.BaseTypename, 31);
         metaStream.WriteInt32((int32)meta.Flags);
     }
-    metadataChunk->Data.Copy(metaStream.GetHandle(), metaStream.GetPosition());
+    GetOrCreateChunk(1)->Data.Copy(metaStream.GetHandle(), metaStream.GetPosition());
 
     // Save
     AssetInitData assetData;
@@ -2209,14 +2246,14 @@ void VisualScript::GetMethodSignature(int32 index, String& name, byte& flags, St
 Span<byte> VisualScript::GetMetaData(int32 typeID)
 {
     auto meta = Graph.Meta.GetEntry(typeID);
-    return meta ? ToSpan(meta->Data.Get(), meta->Data.Count()) : Span<byte>(nullptr, 0);
+    return meta ? ToSpan(meta->Data) : Span<byte>(nullptr, 0);
 }
 
 Span<byte> VisualScript::GetMethodMetaData(int32 index, int32 typeID)
 {
     auto& method = _methods[index];
     auto meta = method.Node->Meta.GetEntry(typeID);
-    return meta ? ToSpan(meta->Data.Get(), meta->Data.Count()) : Span<byte>(nullptr, 0);
+    return meta ? ToSpan(meta->Data) : Span<byte>(nullptr, 0);
 }
 
 #endif

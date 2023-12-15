@@ -3,7 +3,6 @@
 #include "MeshCollider.h"
 #include "Engine/Core/Math/Matrix.h"
 #include "Engine/Core/Math/Ray.h"
-#include "Engine/Serialization/Serialization.h"
 #include "Engine/Physics/Physics.h"
 #include "Engine/Physics/PhysicsScene.h"
 #if USE_EDITOR || !BUILD_RELEASE
@@ -115,24 +114,6 @@ bool MeshCollider::IntersectsItself(const Ray& ray, Real& distance, Vector3& nor
 
     // Fallback to AABB
     return _box.Intersects(ray, distance, normal);
-}
-
-void MeshCollider::Serialize(SerializeStream& stream, const void* otherObj)
-{
-    // Base
-    Collider::Serialize(stream, otherObj);
-
-    SERIALIZE_GET_OTHER_OBJ(MeshCollider);
-
-    SERIALIZE(CollisionData);
-}
-
-void MeshCollider::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)
-{
-    // Base
-    Collider::Deserialize(stream, modifier);
-
-    DESERIALIZE(CollisionData);
 }
 
 void MeshCollider::UpdateBounds()

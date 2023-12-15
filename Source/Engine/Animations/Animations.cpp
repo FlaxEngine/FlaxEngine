@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
 #include "Animations.h"
+#include "AnimEvent.h"
 #include "Engine/Engine/Engine.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Level/Actors/AnimatedModel.h"
@@ -11,6 +12,8 @@
 class AnimationsService : public EngineService
 {
 public:
+    Array<AnimatedModel*> UpdateList;
+
     AnimationsService()
         : EngineService(TEXT("Animations"), -10)
     {
@@ -24,6 +27,7 @@ class AnimationsSystem : public TaskGraphSystem
 {
 public:
     float DeltaTime, UnscaledDeltaTime, Time, UnscaledTime;
+
     void Job(int32 index);
     void Execute(TaskGraph* graph) override;
     void PostExecute(TaskGraph* graph) override;
@@ -46,11 +50,20 @@ namespace
 }
 
 AnimationsService AnimationManagerInstance;
-Array<AnimatedModel*> UpdateList;
 TaskGraphSystem* Animations::System = nullptr;
 #if USE_EDITOR
 Delegate<Asset*, ScriptingObject*, uint32, uint32> Animations::DebugFlow;
 #endif
+
+AnimEvent::AnimEvent(const SpawnParams& params)
+    : SerializableScriptingObject(params)
+{
+}
+
+AnimContinuousEvent::AnimContinuousEvent(const SpawnParams& params)
+    : AnimEvent(params)
+{
+}
 
 bool AnimationsService::Init()
 {
@@ -68,7 +81,7 @@ void AnimationsService::Dispose()
 void AnimationsSystem::Job(int32 index)
 {
     PROFILE_CPU_NAMED("Animations.Job");
-    auto animatedModel = UpdateList[index];
+    auto animatedModel = AnimationManagerInstance.UpdateList[index];
     if (CanUpdateModel(animatedModel))
     {
         auto graph = animatedModel->AnimationGraph.Get();
@@ -101,7 +114,7 @@ void AnimationsSystem::Job(int32 index)
 
 void AnimationsSystem::Execute(TaskGraph* graph)
 {
-    if (UpdateList.Count() == 0)
+    if (AnimationManagerInstance.UpdateList.Count() == 0)
         return;
 
     // Setup data for async update
@@ -120,7 +133,7 @@ void AnimationsSystem::Execute(TaskGraph* graph)
     // Schedule work to update all animated models in async
     Function<void(int32)> job;
     job.Bind<AnimationsSystem, &AnimationsSystem::Job>(this);
-    graph->DispatchJob(job, UpdateList.Count());
+    graph->DispatchJob(job, AnimationManagerInstance.UpdateList.Count());
 }
 
 void AnimationsSystem::PostExecute(TaskGraph* graph)
@@ -128,25 +141,26 @@ void AnimationsSystem::PostExecute(TaskGraph* graph)
     PROFILE_CPU_NAMED("Animations.PostExecute");
 
     // Update gameplay
-    for (int32 index = 0; index < UpdateList.Count(); index++)
+    for (int32 index = 0; index < AnimationManagerInstance.UpdateList.Count(); index++)
     {
-        auto animatedModel = UpdateList[index];
+        auto animatedModel = AnimationManagerInstance.UpdateList[index];
         if (CanUpdateModel(animatedModel))
         {
+            animatedModel->GraphInstance.InvokeAnimEvents();
             animatedModel->OnAnimationUpdated_Sync();
         }
     }
 
     // Cleanup
-    UpdateList.Clear();
+    AnimationManagerInstance.UpdateList.Clear();
 }
 
 void Animations::AddToUpdate(AnimatedModel* obj)
 {
-    UpdateList.Add(obj);
+    AnimationManagerInstance.UpdateList.Add(obj);
 }
 
 void Animations::RemoveFromUpdate(AnimatedModel* obj)
 {
-    UpdateList.Remove(obj);
+    AnimationManagerInstance.UpdateList.Remove(obj);
 }

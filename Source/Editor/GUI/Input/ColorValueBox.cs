@@ -14,6 +14,8 @@ namespace FlaxEditor.GUI.Input
     [HideInEditor]
     public class ColorValueBox : Control
     {
+        private bool _isMouseDown;
+
         /// <summary>
         /// Delegate function used for the color picker events handling.
         /// </summary>
@@ -135,10 +137,21 @@ namespace FlaxEditor.GUI.Input
         }
 
         /// <inheritdoc />
+        public override bool OnMouseDown(Float2 location, MouseButton button)
+        {
+            _isMouseDown = true;
+            return base.OnMouseDown(location, button);
+        }
+
+        /// <inheritdoc />
         public override bool OnMouseUp(Float2 location, MouseButton button)
         {
-            Focus();
-            OnSubmit();
+            if (_isMouseDown)
+            {
+                _isMouseDown = false;
+                Focus();
+                OnSubmit();
+            }
             return true;
         }
 

@@ -9,6 +9,31 @@
 #include "Engine/Core/Log.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 
+static VkStencilOp ToVulkanStencilOp(const StencilOperation value)
+{
+    switch (value)
+    {
+    case StencilOperation::Keep:
+        return VK_STENCIL_OP_KEEP;
+    case StencilOperation::Zero:
+        return VK_STENCIL_OP_ZERO;
+    case StencilOperation::Replace:
+        return VK_STENCIL_OP_REPLACE;
+    case StencilOperation::IncrementSaturated:
+        return VK_STENCIL_OP_INCREMENT_AND_CLAMP;
+    case StencilOperation::DecrementSaturated:
+        return VK_STENCIL_OP_DECREMENT_AND_CLAMP;
+    case StencilOperation::Invert:
+        return VK_STENCIL_OP_INVERT;
+    case StencilOperation::Increment:
+        return VK_STENCIL_OP_INCREMENT_AND_WRAP;
+    case StencilOperation::Decrement:
+        return VK_STENCIL_OP_DECREMENT_AND_WRAP;
+    default:
+        return VK_STENCIL_OP_KEEP;
+    }
+}
+
 GPUShaderProgramCSVulkan::~GPUShaderProgramCSVulkan()
 {
     if (_pipelineState)
@@ -239,7 +264,7 @@ bool GPUPipelineStateVulkan::Init(const Description& desc)
 
     // Input Assembly
     RenderToolsVulkan::ZeroStruct(_descInputAssembly, VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO);;
-    switch (desc.PrimitiveTopologyType)
+    switch (desc.PrimitiveTopology)
     {
     case PrimitiveTopologyType::Point:
         _descInputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_POINT_LIST;
@@ -274,7 +299,7 @@ bool GPUPipelineStateVulkan::Init(const Description& desc)
     _descDynamic.pDynamicStates = _dynamicStates;
     _dynamicStates[_descDynamic.dynamicStateCount++] = VK_DYNAMIC_STATE_VIEWPORT;
     _dynamicStates[_descDynamic.dynamicStateCount++] = VK_DYNAMIC_STATE_SCISSOR;
-    //_dynamicStates[_descDynamic.dynamicStateCount++] = VK_DYNAMIC_STATE_STENCIL_REFERENCE;
+    _dynamicStates[_descDynamic.dynamicStateCount++] = VK_DYNAMIC_STATE_STENCIL_REFERENCE;
     static_assert(ARRAY_COUNT(_dynamicStates) <= 3, "Invalid dynamic states array.");
     _desc.pDynamicState = &_descDynamic;
 
@@ -289,6 +314,14 @@ bool GPUPipelineStateVulkan::Init(const Description& desc)
     _descDepthStencil.depthTestEnable = desc.DepthEnable;
     _descDepthStencil.depthWriteEnable = desc.DepthWriteEnable;
     _descDepthStencil.depthCompareOp = RenderToolsVulkan::ToVulkanCompareOp(desc.DepthFunc);
+    _descDepthStencil.stencilTestEnable = desc.StencilEnable;
+    _descDepthStencil.front.compareMask = desc.StencilReadMask;
+    _descDepthStencil.front.writeMask = desc.StencilWriteMask;
+    _descDepthStencil.front.compareOp = RenderToolsVulkan::ToVulkanCompareOp(desc.StencilFunc);
+    _descDepthStencil.front.failOp = ToVulkanStencilOp(desc.StencilFailOp);
+    _descDepthStencil.front.depthFailOp = ToVulkanStencilOp(desc.StencilDepthFailOp);
+    _descDepthStencil.front.passOp = ToVulkanStencilOp(desc.StencilPassOp);
+    _descDepthStencil.front = _descDepthStencil.back;
     _desc.pDepthStencilState = &_descDepthStencil;
 
     // Rasterization
@@ -307,7 +340,7 @@ bool GPUPipelineStateVulkan::Init(const Description& desc)
         break;
     }
     _descRasterization.frontFace = VK_FRONT_FACE_CLOCKWISE;
-    _descRasterization.depthClampEnable = !desc.DepthClipEnable;
+    _descRasterization.depthClampEnable = !desc.DepthClipEnable && _device->Limits.HasDepthClip;
     _descRasterization.lineWidth = 1.0f;
     _desc.pRasterizationState = &_descRasterization;
 

@@ -15,6 +15,9 @@ namespace FlaxEditor.Options
     [CustomEditor(typeof(ThemeOptionsEditor))]
     public sealed class ThemeOptions
     {
+        internal const string DefaultName = "Default";
+        internal const string LightDefault = "LightDefault";
+
         internal class ThemeOptionsEditor : Editor<ThemeOptions>
         {
             private LabelElement _infoLabel;
@@ -63,13 +66,14 @@ namespace FlaxEditor.Options
             private void ReloadOptions(ComboBox obj)
             {
                 var themeOptions = (ThemeOptions)ParentEditor.Values[0];
-                var options = new string[themeOptions.Styles.Count + 1];
-                options[0] = "Default";
+                var options = new string[themeOptions.Styles.Count + 2];
+                options[0] = DefaultName;
+                options[1] = LightDefault;
 
                 int i = 0;
                 foreach (var styleName in themeOptions.Styles.Keys)
                 {
-                    options[i + 1] = styleName;
+                    options[i + 2] = styleName;
                     i++;
                 }
                 _combobox.ComboBox.SetItems(options);

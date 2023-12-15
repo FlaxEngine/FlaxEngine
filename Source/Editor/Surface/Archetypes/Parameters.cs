@@ -426,9 +426,9 @@ namespace FlaxEditor.Surface.Archetypes
             }
 
             /// <inheritdoc />
-            public override void OnLoaded()
+            public override void OnLoaded(SurfaceNodeActions action)
             {
-                base.OnLoaded();
+                base.OnLoaded(action);
 
                 if (Surface != null)
                 {
@@ -438,9 +438,9 @@ namespace FlaxEditor.Surface.Archetypes
             }
 
             /// <inheritdoc />
-            public override void OnSurfaceLoaded()
+            public override void OnSurfaceLoaded(SurfaceNodeActions action)
             {
-                base.OnSurfaceLoaded();
+                base.OnSurfaceLoaded(action);
 
                 UpdateTitle();
             }
@@ -489,6 +489,56 @@ namespace FlaxEditor.Surface.Archetypes
                     ResizeAuto();
                     _combobox.Width = Width - 30;
                 }
+            }
+
+            internal static bool IsOutputCompatible(NodeArchetype nodeArch, ScriptType inputType, ConnectionsHint hint, VisjectSurfaceContext context)
+            {
+                if (inputType == ScriptType.Object)
+                    return true;
+
+                SurfaceParameter parameter = context.GetParameter((Guid)nodeArch.DefaultValues[0]);
+                ScriptType type = parameter?.Type ?? ScriptType.Null;
+
+                if (parameter == null || type == ScriptType.Null || parameter.Type.Type == null)
+                    return false;
+                if (DefaultPrototypes == null || !DefaultPrototypes.TryGetValue(parameter.Type.Type, out var elements))
+                {
+                    return VisjectSurface.FullCastCheck(inputType, type, hint);
+                }
+                if (elements == null)
+                    return false;
+
+                for (var i = 0; i < elements.Length; i++)
+                {
+                    if (elements[i].Type != NodeElementType.Output)
+                        continue;
+
+                    if (VisjectSurface.FullCastCheck(elements[i].ConnectionsType, inputType, hint))
+                        return true;
+                }
+                return false;
+            }
+
+            internal static bool IsInputCompatible(NodeArchetype nodeArch, ScriptType outputType, ConnectionsHint hint, VisjectSurfaceContext context)
+            {
+                SurfaceParameter parameter = context.GetParameter((Guid)nodeArch.DefaultValues[0]);
+                ScriptType type = parameter?.Type ?? ScriptType.Null;
+
+                if (parameter == null || type == ScriptType.Null)
+                    return false;
+                if (parameter.Type.Type == null || DefaultPrototypes == null || !DefaultPrototypes.TryGetValue(parameter.Type.Type, out var elements))
+                    return false;
+                if (elements == null)
+                    return false;
+
+                for (var i = 0; i < elements.Length; i++)
+                {
+                    if (elements[i].Type != NodeElementType.Input)
+                        continue;
+                    if (VisjectSurface.FullCastCheck(elements[i].ConnectionsType, outputType, hint))
+                        return true;
+                }
+                return false;
             }
         }
 
@@ -675,6 +725,53 @@ namespace FlaxEditor.Surface.Archetypes
 
             /// <inheritdoc />
             protected override bool UseNormalMaps => false;
+
+            internal new static bool IsOutputCompatible(NodeArchetype nodeArch, ScriptType inputType, ConnectionsHint hint, VisjectSurfaceContext context)
+            {
+                if (inputType == ScriptType.Object)
+                    return true;
+
+                SurfaceParameter parameter = context.GetParameter((Guid)nodeArch.DefaultValues[0]);
+                ScriptType type = parameter?.Type ?? ScriptType.Null;
+
+                if (parameter == null || type == ScriptType.Null)
+                    return false;
+                if (parameter.Type.Type == null || DefaultPrototypesParticleEmitter == null || !DefaultPrototypesParticleEmitter.TryGetValue(parameter.Type.Type, out var elements))
+                    return false;
+                if (elements == null)
+                    return false;
+
+                for (var i = 0; i < elements.Length; i++)
+                {
+                    if (elements[i].Type != NodeElementType.Output)
+                        continue;
+                    if (VisjectSurface.FullCastCheck(elements[i].ConnectionsType, inputType, hint))
+                        return true;
+                }
+                return false;
+            }
+
+            internal new static bool IsInputCompatible(NodeArchetype nodeArch, ScriptType outputType, ConnectionsHint hint, VisjectSurfaceContext context)
+            {
+                SurfaceParameter parameter = context.GetParameter((Guid)nodeArch.DefaultValues[0]);
+                ScriptType type = parameter?.Type ?? ScriptType.Null;
+
+                if (parameter == null || type == ScriptType.Null)
+                    return false;
+                if (parameter.Type.Type == null || DefaultPrototypesParticleEmitter == null || !DefaultPrototypesParticleEmitter.TryGetValue(parameter.Type.Type, out var elements))
+                    return false;
+                if (elements == null)
+                    return false;
+
+                for (var i = 0; i < elements.Length; i++)
+                {
+                    if (elements[i].Type != NodeElementType.Input)
+                        continue;
+                    if (VisjectSurface.FullCastCheck(elements[i].ConnectionsType, outputType, hint))
+                        return true;
+                }
+                return false;
+            }
         }
 
         /// <summary>
@@ -692,6 +789,22 @@ namespace FlaxEditor.Surface.Archetypes
 
             /// <inheritdoc />
             protected override bool UseNormalMaps => false;
+
+            internal new static bool IsOutputCompatible(NodeArchetype nodeArch, ScriptType inputType, ConnectionsHint hint, VisjectSurfaceContext context)
+            {
+                if (inputType == ScriptType.Object)
+                    return true;
+
+                SurfaceParameter parameter = context.GetParameter((Guid)nodeArch.DefaultValues[0]);
+                ScriptType type = parameter?.Type ?? ScriptType.Null;
+
+                return VisjectSurface.FullCastCheck(inputType, type, hint);
+            }
+
+            internal new static bool IsInputCompatible(NodeArchetype nodeArch, ScriptType outputType, ConnectionsHint hint, VisjectSurfaceContext context)
+            {
+                return false;
+            }
         }
 
         /// <summary>
@@ -832,9 +945,9 @@ namespace FlaxEditor.Surface.Archetypes
             }
 
             /// <inheritdoc />
-            public override void OnLoaded()
+            public override void OnLoaded(SurfaceNodeActions action)
             {
-                base.OnLoaded();
+                base.OnLoaded(action);
 
                 if (Surface != null)
                     UpdateCombo();
@@ -842,9 +955,9 @@ namespace FlaxEditor.Surface.Archetypes
             }
 
             /// <inheritdoc />
-            public override void OnSurfaceLoaded()
+            public override void OnSurfaceLoaded(SurfaceNodeActions action)
             {
-                base.OnSurfaceLoaded();
+                base.OnSurfaceLoaded(action);
 
                 if (Surface != null)
                 {
@@ -874,6 +987,22 @@ namespace FlaxEditor.Surface.Archetypes
                     _combobox.Width = Width - 50;
                 }
             }
+
+            internal static bool IsOutputCompatible(NodeArchetype nodeArch, ScriptType inputType, ConnectionsHint hint, VisjectSurfaceContext context)
+            {
+                return inputType == ScriptType.Void;
+            }
+
+            internal static bool IsInputCompatible(NodeArchetype nodeArch, ScriptType outputType, ConnectionsHint hint, VisjectSurfaceContext context)
+            {
+                if (outputType == ScriptType.Void)
+                    return true;
+
+                SurfaceParameter parameter = context.GetParameter((Guid)nodeArch.DefaultValues[0]);
+                ScriptType type = parameter?.Type ?? ScriptType.Null;
+
+                return VisjectSurface.FullCastCheck(outputType, type, hint);
+            }
         }
 
         /// <summary>
@@ -885,6 +1014,8 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 TypeID = 1,
                 Create = (id, context, arch, groupArch) => new SurfaceNodeParamsGet(id, context, arch, groupArch),
+                IsInputCompatible = SurfaceNodeParamsGet.IsInputCompatible,
+                IsOutputCompatible = SurfaceNodeParamsGet.IsOutputCompatible,
                 Title = "Get Parameter",
                 Description = "Parameter value getter",
                 Flags = NodeFlags.MaterialGraph | NodeFlags.AnimGraph,
@@ -902,6 +1033,8 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 TypeID = 2,
                 Create = (id, context, arch, groupArch) => new SurfaceNodeParamsGetParticleEmitter(id, context, arch, groupArch),
+                IsInputCompatible = SurfaceNodeParamsGetParticleEmitter.IsInputCompatible,
+                IsOutputCompatible = SurfaceNodeParamsGetParticleEmitter.IsOutputCompatible,
                 Title = "Get Parameter",
                 Description = "Parameter value getter",
                 Flags = NodeFlags.ParticleEmitterGraph,
@@ -919,6 +1052,8 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 TypeID = 3,
                 Create = (id, context, arch, groupArch) => new SurfaceNodeParamsGetVisualScript(id, context, arch, groupArch),
+                IsInputCompatible = SurfaceNodeParamsGetVisualScript.IsInputCompatible,
+                IsOutputCompatible = SurfaceNodeParamsGetVisualScript.IsOutputCompatible,
                 Title = "Get Parameter",
                 Description = "Parameter value getter",
                 Flags = NodeFlags.VisualScriptGraph,
@@ -936,6 +1071,8 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 TypeID = 4,
                 Create = (id, context, arch, groupArch) => new SurfaceNodeParamsSet(id, context, arch, groupArch),
+                IsInputCompatible = SurfaceNodeParamsSet.IsInputCompatible,
+                IsOutputCompatible = SurfaceNodeParamsSet.IsOutputCompatible,
                 Title = "Set Parameter",
                 Description = "Parameter value setter",
                 Flags = NodeFlags.VisualScriptGraph,
@@ -947,7 +1084,7 @@ namespace FlaxEditor.Surface.Archetypes
                 },
                 Elements = new[]
                 {
-                    NodeElementArchetype.Factory.Input(0, string.Empty, true, typeof(void), 0),
+                    NodeElementArchetype.Factory.Input(0, string.Empty, false, typeof(void), 0),
                     NodeElementArchetype.Factory.Input(1, string.Empty, true, ScriptType.Null, 1, 1),
                     NodeElementArchetype.Factory.Output(0, string.Empty, typeof(void), 2, true),
                     NodeElementArchetype.Factory.ComboBox(2 + 20, 0, 116)

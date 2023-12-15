@@ -9,6 +9,7 @@
 #include "ManagedCLR/MClass.h"
 #include "ManagedCLR/MMethod.h"
 #include "ManagedCLR/MField.h"
+#include "ManagedCLR/MProperty.h"
 #include "ManagedCLR/MUtils.h"
 #include "ManagedCLR/MException.h"
 #include "FlaxEngine.Gen.h"
@@ -646,6 +647,8 @@ ScriptingTypeInitializer::ScriptingTypeInitializer(BinaryModule* module, const S
     module->TypeNameToTypeIndex[fullname] = TypeIndex;
 }
 
+CriticalSection BinaryModule::Locker;
+
 BinaryModule::BinaryModulesList& BinaryModule::GetModules()
 {
     static BinaryModulesList modules;
@@ -688,6 +691,14 @@ void BinaryModule::Destroy(bool isReloading)
             Delete(type.Script.DefaultInstance);
             type.Script.DefaultInstance = nullptr;
         }
+    }
+
+    // Remove any scripting events
+    for (auto i = ScriptingEvents::EventsTable.Begin(); i.IsNotEnd(); ++i)
+    {
+        const ScriptingTypeHandle type = i->Key.First;
+        if (type.Module == this)
+            ScriptingEvents::EventsTable.Remove(i);
     }
 
     // Unregister
@@ -903,6 +914,7 @@ void ManagedBinaryModule::OnLoaded(MAssembly* assembly)
 #if !COMPILE_WITHOUT_CSHARP
     PROFILE_CPU();
     ASSERT(ClassToTypeIndex.IsEmpty());
+    ScopeLock lock(Locker);
 
     const auto& classes = assembly->GetClasses();
 
@@ -1267,7 +1279,11 @@ bool ManagedBinaryModule::InvokeMethod(void* method, const Variant& instance, Sp
 
     // Invoke the method
     MObject* exception = nullptr;
+#if USE_NETCORE // NetCore uses the same path for both virtual and non-virtual calls
+    MObject* resultObject = mMethod->Invoke(mInstance, params, &exception);
+#else
     MObject* resultObject = withInterfaces ? mMethod->InvokeVirtual((MObject*)mInstance, params, &exception) : mMethod->Invoke(mInstance, params, &exception);
+#endif
     if (exception)
     {
         MException ex(exception);
@@ -1352,47 +1368,97 @@ void ManagedBinaryModule::GetMethodSignature(void* method, ScriptingTypeMethodSi
 #endif
 }
 
+// Pointers with the highest bit turned on are properties
+#if PLATFORM_64BITS
+#define ManagedBinaryModuleFieldIsPropertyBit (uintptr)(1ull << 63)
+#else
+#define ManagedBinaryModuleFieldIsPropertyBit (uintptr)(1ul << 31)
+#endif
+
 void* ManagedBinaryModule::FindField(const ScriptingTypeHandle& typeHandle, const StringAnsiView& name)
 {
     const ScriptingType& type = typeHandle.GetType();
-    return type.ManagedClass ? type.ManagedClass->GetField(name.Get()) : nullptr;
+    void* result = type.ManagedClass ? type.ManagedClass->GetField(name.Get()) : nullptr;
+    if (!result && type.ManagedClass)
+    {
+        result = type.ManagedClass->GetProperty(name.Get());
+        if (result)
+            result = (void*)((uintptr)result | ManagedBinaryModuleFieldIsPropertyBit);
+    }
+    return result;
 }
 
 void ManagedBinaryModule::GetFieldSignature(void* field, ScriptingTypeFieldSignature& fieldSignature)
 {
 #if USE_CSHARP
-    const auto mField = (MField*)field;
-    fieldSignature.Name = mField->GetName();
-    fieldSignature.ValueType = MoveTemp(MUtils::UnboxVariantType(mField->GetType()));
-    fieldSignature.IsStatic = mField->IsStatic();
+    if ((uintptr)field & ManagedBinaryModuleFieldIsPropertyBit)
+    {
+        const auto mProperty = (MProperty*)((uintptr)field & ~ManagedBinaryModuleFieldIsPropertyBit);
+        fieldSignature.Name = mProperty->GetName();
+        fieldSignature.ValueType = MoveTemp(MUtils::UnboxVariantType(mProperty->GetType()));
+        fieldSignature.IsStatic = mProperty->IsStatic();
+    }
+    else
+    {
+        const auto mField = (MField*)field;
+        fieldSignature.Name = mField->GetName();
+        fieldSignature.ValueType = MoveTemp(MUtils::UnboxVariantType(mField->GetType()));
+        fieldSignature.IsStatic = mField->IsStatic();
+    }
 #endif
 }
 
 bool ManagedBinaryModule::GetFieldValue(void* field, const Variant& instance, Variant& result)
 {
 #if USE_CSHARP
-    const auto mField = (MField*)field;
+    bool isStatic;
+    MClass* parentClass;
+    StringAnsiView name;
+    if ((uintptr)field & ManagedBinaryModuleFieldIsPropertyBit)
+    {
+        const auto mProperty = (MProperty*)((uintptr)field & ~ManagedBinaryModuleFieldIsPropertyBit);
+        isStatic = mProperty->IsStatic();
+        parentClass = mProperty->GetParentClass();
+        name = mProperty->GetName();
+    }
+    else
+    {
+        const auto mField = (MField*)field;
+        isStatic = mField->IsStatic();
+        parentClass = mField->GetParentClass();
+        name = mField->GetName();
+    }
 
     // Get instance object
     MObject* instanceObject = nullptr;
-    if (!mField->IsStatic())
+    if (!isStatic)
     {
         // Box instance into C# object
         instanceObject = MUtils::BoxVariant(instance);
 
         // Validate instance
-        if (!instanceObject || !MCore::Object::GetClass(instanceObject)->IsSubClassOf(mField->GetParentClass()))
+        if (!instanceObject || !MCore::Object::GetClass(instanceObject)->IsSubClassOf(parentClass))
         {
             if (!instanceObject)
-                LOG(Error, "Failed to get field '{0}.{1}' without object instance", String(mField->GetParentClass()->GetFullName()), String(mField->GetName()));
+                LOG(Error, "Failed to get '{0}.{1}' without object instance", String(parentClass->GetFullName()), String(name));
             else
-                LOG(Error, "Failed to get field '{0}.{1}' with invalid object instance of type '{2}'", String(mField->GetParentClass()->GetFullName()), String(mField->GetName()), String(MUtils::GetClassFullname(instanceObject)));
+                LOG(Error, "Failed to get '{0}.{1}' with invalid object instance of type '{2}'", String(parentClass->GetFullName()), String(name), String(MUtils::GetClassFullname(instanceObject)));
             return true;
         }
     }
 
     // Get the value
-    MObject* resultObject = mField->GetValueBoxed(instanceObject);
+    MObject* resultObject;
+    if ((uintptr)field & ManagedBinaryModuleFieldIsPropertyBit)
+    {
+        const auto mProperty = (MProperty*)((uintptr)field & ~ManagedBinaryModuleFieldIsPropertyBit);
+        resultObject = mProperty->GetValue(instanceObject, nullptr);
+    }
+    else
+    {
+        const auto mField = (MField*)field;
+        resultObject = mField->GetValueBoxed(instanceObject);
+    }
     result = MUtils::UnboxVariant(resultObject);
     return false;
 #else
@@ -1403,29 +1469,54 @@ bool ManagedBinaryModule::GetFieldValue(void* field, const Variant& instance, Va
 bool ManagedBinaryModule::SetFieldValue(void* field, const Variant& instance, Variant& value)
 {
 #if USE_CSHARP
-    const auto mField = (MField*)field;
+    bool isStatic;
+    MClass* parentClass;
+    StringAnsiView name;
+    if ((uintptr)field & ManagedBinaryModuleFieldIsPropertyBit)
+    {
+        const auto mProperty = (MProperty*)((uintptr)field & ~ManagedBinaryModuleFieldIsPropertyBit);
+        isStatic = mProperty->IsStatic();
+        parentClass = mProperty->GetParentClass();
+        name = mProperty->GetName();
+    }
+    else
+    {
+        const auto mField = (MField*)field;
+        isStatic = mField->IsStatic();
+        parentClass = mField->GetParentClass();
+        name = mField->GetName();
+    }
 
     // Get instance object
     MObject* instanceObject = nullptr;
-    if (!mField->IsStatic())
+    if (!isStatic)
     {
         // Box instance into C# object
         instanceObject = MUtils::BoxVariant(instance);
 
         // Validate instance
-        if (!instanceObject || !MCore::Object::GetClass(instanceObject)->IsSubClassOf(mField->GetParentClass()))
+        if (!instanceObject || !MCore::Object::GetClass(instanceObject)->IsSubClassOf(parentClass))
         {
             if (!instanceObject)
-                LOG(Error, "Failed to set field '{0}.{1}' without object instance", String(mField->GetParentClass()->GetFullName()), String(mField->GetName()));
+                LOG(Error, "Failed to set '{0}.{1}' without object instance", String(parentClass->GetFullName()), String(name));
             else
-                LOG(Error, "Failed to set field '{0}.{1}' with invalid object instance of type '{2}'", String(mField->GetParentClass()->GetFullName()), String(mField->GetName()), String(MUtils::GetClassFullname(instanceObject)));
+                LOG(Error, "Failed to set '{0}.{1}' with invalid object instance of type '{2}'", String(parentClass->GetFullName()), String(name), String(MUtils::GetClassFullname(instanceObject)));
             return true;
         }
     }
 
     // Set the value
     bool failed = false;
-    mField->SetValue(instanceObject, MUtils::VariantToManagedArgPtr(value, mField->GetType(), failed));
+    if ((uintptr)field & ManagedBinaryModuleFieldIsPropertyBit)
+    {
+        const auto mProperty = (MProperty*)((uintptr)field & ~ManagedBinaryModuleFieldIsPropertyBit);
+        mProperty->SetValue(instanceObject, MUtils::BoxVariant(value), nullptr);
+    }
+    else
+    {
+        const auto mField = (MField*)field;
+        mField->SetValue(instanceObject, MUtils::VariantToManagedArgPtr(value, mField->GetType(), failed));
+    }
     return failed;
 #else
     return true;

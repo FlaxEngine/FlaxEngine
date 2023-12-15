@@ -11,12 +11,16 @@
 
 class Model;
 class SkinnedModel;
+class ModelBase;
 class Mesh;
 class SkinnedMesh;
+class MeshBase;
 class ModelData;
 class ModelInstanceEntries;
 class Model;
 class SkinnedModel;
+class MeshDeformation;
+class GPUContext;
 struct RenderView;
 
 /// <summary>

@@ -61,7 +61,7 @@ public:
     /// <summary>
     /// Gets the navmesh runtime object that matches with properties.
     /// </summary>
-    NavMeshRuntime* GetRuntime(bool createIfMissing = true) const;
+    API_FUNCTION() NavMeshRuntime* GetRuntime(bool createIfMissing = true) const;
 
 private:
     void AddTiles();

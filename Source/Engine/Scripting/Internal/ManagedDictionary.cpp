@@ -1,5 +1,8 @@
+// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+
 #include "ManagedDictionary.h"
 
+#if USE_CSHARP
 Dictionary<ManagedDictionary::KeyValueType, MTypeObject*> ManagedDictionary::CachedDictionaryTypes;
 #if !USE_MONO_AOT
 ManagedDictionary::MakeGenericTypeThunk ManagedDictionary::MakeGenericType;
@@ -11,4 +14,5 @@ MMethod* ManagedDictionary::MakeGenericType;
 MMethod* ManagedDictionary::CreateInstance;
 MMethod* ManagedDictionary::AddDictionaryItem;
 MMethod* ManagedDictionary::GetDictionaryKeys;
+#endif
 #endif

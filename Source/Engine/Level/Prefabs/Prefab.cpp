@@ -43,7 +43,7 @@ Guid Prefab::GetRootObjectId() const
                 if (prefabObjectId == basePrefabRootId)
                 {
                     objectIndex = i;
-                    break;   
+                    break;
                 }
             }
         }
@@ -76,7 +76,7 @@ Actor* Prefab::GetDefaultInstance()
     _isCreatingDefaultInstance = true;
 
     // Instantiate objects from prefab (default spawning logic)
-    _defaultInstance = PrefabManager::SpawnPrefab(this, nullptr, &ObjectsCache);
+    _defaultInstance = PrefabManager::SpawnPrefab(this, Transform(Vector3::Minimum), nullptr, &ObjectsCache);
 
     _isCreatingDefaultInstance = false;
     return _defaultInstance;
@@ -90,11 +90,11 @@ SceneObject* Prefab::GetDefaultInstance(const Guid& objectId)
 
     if (objectId.IsValid())
     {
-        const void* object;
+        SceneObject* object;
         if (ObjectsCache.TryGet(objectId, object))
         {
             // Actor or Script
-            return (SceneObject*)object;
+            return object;
         }
     }
 

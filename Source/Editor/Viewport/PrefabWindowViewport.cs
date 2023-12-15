@@ -5,9 +5,7 @@ using System.Collections.Generic;
 using FlaxEditor.Content;
 using FlaxEditor.Gizmo;
 using FlaxEditor.GUI.ContextMenu;
-using FlaxEditor.GUI.Drag;
 using FlaxEditor.SceneGraph;
-using FlaxEditor.SceneGraph.Actors;
 using FlaxEditor.Scripting;
 using FlaxEditor.Viewport.Cameras;
 using FlaxEditor.Viewport.Previews;
@@ -56,9 +54,11 @@ namespace FlaxEditor.Viewport
 
         private readonly ViewportDebugDrawData _debugDrawData = new ViewportDebugDrawData(32);
         private PrefabSpritesRenderer _spritesRenderer;
-        private readonly DragAssets _dragAssets;
-        private readonly DragActorType _dragActorType = new DragActorType(ValidateDragActorType);
-        private readonly DragHandlers _dragHandlers = new DragHandlers();
+
+        /// <summary>
+        /// Drag and drop handlers
+        /// </summary>
+        public readonly ViewportDragHandlers DragHandlers;
 
         /// <summary>
         /// The transform gizmo.
@@ -81,9 +81,10 @@ namespace FlaxEditor.Viewport
             _window.SelectionChanged += OnSelectionChanged;
             Undo = window.Undo;
             ViewportCamera = new FPSCamera();
-            _dragAssets = new DragAssets(ValidateDragItem);
+            DragHandlers = new ViewportDragHandlers(this, this, ValidateDragItem, ValidateDragActorType);
             ShowDebugDraw = true;
             ShowEditorPrimitives = true;
+            Gizmos = new GizmosCollection(this);
             var inputOptions = window.Editor.Options.Options.Input;
 
             // Prepare rendering task
@@ -227,14 +228,15 @@ namespace FlaxEditor.Viewport
             _gizmoModeScale.Toggled += OnGizmoModeToggle;
             gizmoMode.Parent = this;
 
-            _dragHandlers.Add(_dragActorType);
-            _dragHandlers.Add(_dragAssets);
-
             // Setup input actions
             InputActions.Add(options => options.TranslateMode, () => TransformGizmo.ActiveMode = TransformGizmoBase.Mode.Translate);
             InputActions.Add(options => options.RotateMode, () => TransformGizmo.ActiveMode = TransformGizmoBase.Mode.Rotate);
             InputActions.Add(options => options.ScaleMode, () => TransformGizmo.ActiveMode = TransformGizmoBase.Mode.Scale);
-            InputActions.Add(options => options.ToggleTransformSpace, () => { OnTransformSpaceToggle(transformSpaceToggle); transformSpaceToggle.Checked = !transformSpaceToggle.Checked; });
+            InputActions.Add(options => options.ToggleTransformSpace, () =>
+            {
+                OnTransformSpaceToggle(transformSpaceToggle);
+                transformSpaceToggle.Checked = !transformSpaceToggle.Checked;
+            });
             InputActions.Add(options => options.FocusSelection, ShowSelectedActors);
 
             SetUpdate(ref _update, OnUpdate);
@@ -266,6 +268,7 @@ namespace FlaxEditor.Viewport
 
         private void OnCollectDrawCalls(ref RenderContext renderContext)
         {
+            DragHandlers.CollectDrawCalls(_debugDrawData, ref renderContext);
             _debugDrawData.OnDraw(ref renderContext);
         }
 
@@ -302,12 +305,15 @@ namespace FlaxEditor.Viewport
         /// </summary>
         public void ShowSelectedActors()
         {
-            var orient = Viewport.ViewOrientation;
+            var orient = ViewOrientation;
             ((FPSCamera)ViewportCamera).ShowActors(TransformGizmo.SelectedParents, ref orient);
         }
 
         /// <inheritdoc />
-        public GizmosCollection Gizmos { get; } = new GizmosCollection();
+        public EditorViewport Viewport => this;
+
+        /// <inheritdoc />
+        public GizmosCollection Gizmos { get; }
 
         /// <inheritdoc />
         public SceneRenderTask RenderTask => Task;
@@ -346,7 +352,16 @@ namespace FlaxEditor.Viewport
         public RootNode SceneGraphRoot => _window.Graph.Root;
 
         /// <inheritdoc />
-        public EditorViewport Viewport => this;
+        public void Select(List<SceneGraphNode> nodes)
+        {
+            _window.Select(nodes);
+        }
+
+        /// <inheritdoc />
+        public void Spawn(Actor actor)
+        {
+            _window.Spawn(actor);
+        }
 
         /// <inheritdoc />
         protected override bool IsControllingMouse => Gizmos.Active?.IsControllingMouse ?? false;
@@ -663,11 +678,11 @@ namespace FlaxEditor.Viewport
         /// <inheritdoc />
         public override DragDropEffect OnDragEnter(ref Float2 location, DragData data)
         {
+            DragHandlers.ClearDragEffects();
             var result = base.OnDragEnter(ref location, data);
             if (result != DragDropEffect.None)
                 return result;
-
-            return _dragHandlers.OnDragEnter(data);
+            return DragHandlers.DragEnter(ref location, data);
         }
 
         private bool ValidateDragItem(ContentItem contentItem)
@@ -679,7 +694,6 @@ namespace FlaxEditor.Viewport
                 if (assetItem.IsOfType<MaterialBase>())
                     return true;
             }
-
             return false;
         }
 
@@ -691,84 +705,19 @@ namespace FlaxEditor.Viewport
         /// <inheritdoc />
         public override DragDropEffect OnDragMove(ref Float2 location, DragData data)
         {
+            DragHandlers.ClearDragEffects();
             var result = base.OnDragMove(ref location, data);
             if (result != DragDropEffect.None)
                 return result;
-
-            return _dragHandlers.Effect;
+            return DragHandlers.DragEnter(ref location, data);
         }
 
         /// <inheritdoc />
         public override void OnDragLeave()
         {
-            _dragHandlers.OnDragLeave();
-
+            DragHandlers.ClearDragEffects();
+            DragHandlers.OnDragLeave();
             base.OnDragLeave();
-        }
-
-        private Vector3 PostProcessSpawnedActorLocation(Actor actor, ref Vector3 hitLocation)
-        {
-            // Place the object
-            //var location = hitLocation - (box.Size.Length * 0.5f) * ViewDirection;
-            var location = hitLocation;
-
-            // Apply grid snapping if enabled
-            if (UseSnapping || TransformGizmo.TranslationSnapEnable)
-            {
-                float snapValue = TransformGizmo.TranslationSnapValue;
-                location = new Vector3(
-                                       (int)(location.X / snapValue) * snapValue,
-                                       (int)(location.Y / snapValue) * snapValue,
-                                       (int)(location.Z / snapValue) * snapValue);
-            }
-
-            return location;
-        }
-
-        private void Spawn(AssetItem item, SceneGraphNode hit, ref Float2 location, ref Vector3 hitLocation)
-        {
-            if (item is BinaryAssetItem binaryAssetItem)
-            {
-                if (typeof(MaterialBase).IsAssignableFrom(binaryAssetItem.Type))
-                {
-                    if (hit is StaticModelNode staticModelNode)
-                    {
-                        var staticModel = (StaticModel)staticModelNode.Actor;
-                        var ray = ConvertMouseToRay(ref location);
-                        if (staticModel.IntersectsEntry(ref ray, out _, out _, out var entryIndex))
-                        {
-                            var material = FlaxEngine.Content.LoadAsync<MaterialBase>(item.ID);
-                            using (new UndoBlock(Undo, staticModel, "Change material"))
-                                staticModel.SetMaterial(entryIndex, material);
-                        }
-                    }
-                    return;
-                }
-            }
-            {
-                var actor = item.OnEditorDrop(this);
-                actor.Name = item.ShortName;
-                Spawn(actor, ref hitLocation);
-            }
-        }
-
-        private void Spawn(Actor actor, ref Vector3 hitLocation)
-        {
-            actor.Position = PostProcessSpawnedActorLocation(actor, ref hitLocation);
-            _window.Spawn(actor);
-            Focus();
-        }
-
-        private void Spawn(ScriptType item, SceneGraphNode hit, ref Vector3 hitLocation)
-        {
-            var actor = item.CreateInstance() as Actor;
-            if (actor == null)
-            {
-                Editor.LogWarning("Failed to spawn actor of type " + item.TypeName);
-                return;
-            }
-            actor.Name = item.Name;
-            Spawn(actor, ref hitLocation);
         }
 
         /// <summary>
@@ -808,57 +757,11 @@ namespace FlaxEditor.Viewport
         /// <inheritdoc />
         public override DragDropEffect OnDragDrop(ref Float2 location, DragData data)
         {
+            DragHandlers.ClearDragEffects();
             var result = base.OnDragDrop(ref location, data);
             if (result != DragDropEffect.None)
                 return result;
-
-            // Check if drag sth
-            Vector3 hitLocation = ViewPosition;
-            SceneGraphNode hit = null;
-            if (_dragHandlers.HasValidDrag)
-            {
-                // Get mouse ray and try to hit any object
-                var ray = ConvertMouseToRay(ref location);
-                var view = new Ray(ViewPosition, ViewDirection);
-                hit = _window.Graph.Root.RayCast(ref ray, ref view, out var closest, SceneGraphNode.RayCastData.FlagTypes.SkipColliders);
-                if (hit != null)
-                {
-                    // Use hit location
-                    hitLocation = ray.Position + ray.Direction * closest;
-                }
-                else
-                {
-                    // Use area in front of the viewport
-                    hitLocation = ViewPosition + ViewDirection * 100;
-                }
-            }
-
-            // Drag assets
-            if (_dragAssets.HasValidDrag)
-            {
-                result = _dragAssets.Effect;
-
-                // Process items
-                for (int i = 0; i < _dragAssets.Objects.Count; i++)
-                {
-                    var item = _dragAssets.Objects[i];
-                    Spawn(item, hit, ref location, ref hitLocation);
-                }
-            }
-            // Drag actor type
-            else if (_dragActorType.HasValidDrag)
-            {
-                result = _dragActorType.Effect;
-
-                // Process items
-                for (int i = 0; i < _dragActorType.Objects.Count; i++)
-                {
-                    var item = _dragActorType.Objects[i];
-                    Spawn(item, hit, ref hitLocation);
-                }
-            }
-
-            return result;
+            return DragHandlers.DragDrop(ref location, data);
         }
 
         /// <inheritdoc />

@@ -323,8 +323,6 @@ namespace FlaxEditor.Content
         /// <param name="value">The new path.</param>
         internal virtual void UpdatePath(string value)
         {
-            Assert.AreNotEqual(Path, value);
-
             // Set path
             Path = StringUtils.NormalizePath(value);
             FileName = System.IO.Path.GetFileName(value);

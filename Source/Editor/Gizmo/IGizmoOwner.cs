@@ -1,5 +1,6 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
+using System.Collections.Generic;
 using FlaxEngine;
 
 namespace FlaxEditor.Gizmo
@@ -10,6 +11,11 @@ namespace FlaxEditor.Gizmo
     [HideInEditor]
     public interface IGizmoOwner
     {
+        /// <summary>
+        /// Gets the gizmos collection.
+        /// </summary>
+        FlaxEditor.Viewport.EditorViewport Viewport { get; }
+
         /// <summary>
         /// Gets the gizmos collection.
         /// </summary>
@@ -94,5 +100,17 @@ namespace FlaxEditor.Gizmo
         /// Gets the root tree node for the scene graph.
         /// </summary>
         SceneGraph.RootNode SceneGraphRoot { get; }
+
+        /// <summary>
+        /// Selects the scene objects.
+        /// </summary>
+        /// <param name="nodes">The nodes to select</param>
+        void Select(List<SceneGraph.SceneGraphNode> nodes);
+
+        /// <summary>
+        /// Spawns the actor in the viewport hierarchy.
+        /// </summary>
+        /// <param name="actor">The new actor to spawn.</param>
+        void Spawn(Actor actor);
     }
 }

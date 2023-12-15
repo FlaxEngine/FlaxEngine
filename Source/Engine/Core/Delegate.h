@@ -2,45 +2,56 @@
 
 #pragma once
 
+// Toggles Delegate implementation type (mutex+hashset or atomic+table)
+// [Deprecated on 12.09.2023, expires on 12.09.2024]
+#define DELEGATE_USE_ATOMIC 0
+
 #include "Engine/Core/Memory/Allocation.h"
+#include "Engine/Core/Collections/HashFunctions.h"
+#if !DELEGATE_USE_ATOMIC
+#include "Engine/Threading/Threading.h"
+#include "Engine/Core/Collections/HashSet.h"
+#endif
 
 /// <summary>
 /// The function object that supports binding static, member and lambda functions.
 /// </summary>
 template<typename ReturnType, typename... Params>
-class Function<ReturnType(Params ...)>
+class Function<ReturnType(Params...)>
 {
-    friend Delegate<Params...>;
 public:
+    friend Delegate<Params...>;
+
+    template<typename... TParams>
+    friend uint32 GetHash(const Function<void(TParams...)>& key);
 
     /// <summary>
     /// Signature of the function to call.
     /// </summary>
-    typedef ReturnType (*Signature)(Params ...);
+    typedef ReturnType (*Signature)(Params...);
 
 private:
+    typedef ReturnType (*StubSignature)(void*, Params...);
 
-    typedef ReturnType (*StubSignature)(void*, Params ...);
-
-    template<ReturnType(*Method)(Params ...)>
-    static ReturnType StaticMethodStub(void*, Params ... params)
+    template<ReturnType(*Method)(Params...)>
+    static ReturnType StaticMethodStub(void*, Params... params)
     {
         return (Method)(Forward<Params>(params)...);
     }
 
-    static ReturnType StaticPointerMethodStub(void* callee, Params ... params)
+    static ReturnType StaticPointerMethodStub(void* callee, Params... params)
     {
         return reinterpret_cast<Signature>(callee)(Forward<Params>(params)...);
     }
 
-    template<class T, ReturnType(T::*Method)(Params ...)>
-    static ReturnType ClassMethodStub(void* callee, Params ... params)
+    template<class T, ReturnType(T::*Method)(Params...)>
+    static ReturnType ClassMethodStub(void* callee, Params... params)
     {
         return (reinterpret_cast<T*>(callee)->*Method)(Forward<Params>(params)...);
     }
 
-    template<class T, ReturnType(T::*Method)(Params ...) const>
-    static ReturnType ClassMethodStub(void* callee, Params ... params)
+    template<class T, ReturnType(T::*Method)(Params...) const>
+    static ReturnType ClassMethodStub(void* callee, Params... params)
     {
         return (reinterpret_cast<T*>(callee)->*Method)(Forward<Params>(params)...);
     }
@@ -59,6 +70,7 @@ private:
     {
         Platform::InterlockedIncrement((int64 volatile*)&_lambda->Refs);
     }
+
     FORCE_INLINE void LambdaDtor()
     {
         if (Platform::InterlockedDecrement(&_lambda->Refs) == 0)
@@ -67,8 +79,8 @@ private:
             Allocator::Free(_lambda);
         }
     }
-public:
 
+public:
     /// <summary>
     /// Initializes a new instance of the <see cref="Function"/> class.
     /// </summary>
@@ -119,15 +131,14 @@ public:
     ~Function()
     {
         if (_lambda)
-            LambdaDtor();  
+            LambdaDtor();
     }
 
 public:
-
     /// <summary>
     /// Binds a static function.
     /// </summary>
-    template<ReturnType (*Method)(Params ...)>
+    template<ReturnType (*Method)(Params...)>
     void Bind()
     {
         if (_lambda)
@@ -141,7 +152,7 @@ public:
     /// Binds a member function.
     /// </summary>
     /// <param name="callee">The object instance.</param>
-    template<class T, ReturnType(T::*Method)(Params ...)>
+    template<class T, ReturnType(T::*Method)(Params...)>
     void Bind(T* callee)
     {
         if (_lambda)
@@ -175,8 +186,14 @@ public:
             LambdaDtor();
         _lambda = (Lambda*)Allocator::Allocate(sizeof(Lambda) + sizeof(T));
         _lambda->Refs = 1;
-        _lambda->Dtor = [](void* callee) -> void { static_cast<T*>(callee)->~T(); };
-        _function = [](void* callee, Params ... params) -> ReturnType { return (*static_cast<T*>(callee))(Forward<Params>(params)...); };
+        _lambda->Dtor = [](void* callee) -> void
+        {
+            static_cast<T*>(callee)->~T();
+        };
+        _function = [](void* callee, Params... params) -> ReturnType
+        {
+            return (*static_cast<T*>(callee))(Forward<Params>(params)...);
+        };
         _callee = (byte*)_lambda + sizeof(Lambda);
         new(_callee) T(lambda);
     }
@@ -194,9 +211,8 @@ public:
     }
 
 public:
-
     /// <summary>
-    /// Returns true if any function has been binded.
+    /// Returns true if any function has been bound.
     /// </summary>
     FORCE_INLINE bool IsBinded() const
     {
@@ -204,13 +220,13 @@ public:
     }
 
     /// <summary>
-    /// Calls the binded function (it must be assigned).
+    /// Calls the bound function (it must be assigned).
     /// </summary>
     /// <param name="params">A list of parameters for the function invocation.</param>
     /// <returns>Function result</returns>
-    FORCE_INLINE ReturnType operator()(Params ... params) const
+    FORCE_INLINE ReturnType operator()(Params... params) const
     {
-        ASSERT(_function);
+        ASSERT_LOW_LAYER(_function);
         return _function(_callee, Forward<Params>(params)...);
     }
 
@@ -251,58 +267,149 @@ public:
 };
 
 /// <summary>
-/// Delegate object that can be used to bind and call multiply functions. Thread-safe to register/unregister during the call.
+/// Delegate object that can be used to bind and call multiply functions. Thread-safe to register/unregister during the call. Execution order of bound functions is not stable.
 /// </summary>
 template<typename... Params>
 class Delegate
 {
 public:
-
     /// <summary>
     /// Signature of the function to call.
     /// </summary>
-    typedef void (*Signature)(Params ...);
+    typedef void (*Signature)(Params...);
 
     /// <summary>
     /// Template for the function.
     /// </summary>
-    using FunctionType = Function<void(Params ...)>;
+    using FunctionType = Function<void(Params...)>;
 
 protected:
-
+#if DELEGATE_USE_ATOMIC
     // Single allocation for list of binded functions. Thread-safe access via atomic operations. Removing binded function simply clears the entry to handle function unregister during invocation.
     intptr volatile _ptr = 0;
     intptr volatile _size = 0;
-    typedef void (*StubSignature)(void*, Params ...);
+#else
+    struct Data
+    {
+        HashSet<FunctionType> Functions;
+        CriticalSection Locker;
+    };
+    // Holds pointer to Data with Functions and Locker. Thread-safe access via atomic operations.
+    intptr volatile _data = 0;
+#endif
+    typedef void (*StubSignature)(void*, Params...);
 
 public:
-    NON_COPYABLE(Delegate);
-
     Delegate()
     {
     }
 
+    Delegate(const Delegate& other)
+    {
+#if DELEGATE_USE_ATOMIC
+        const intptr newSize = other._size;
+        auto newBindings = (FunctionType*)Allocator::Allocate(newSize * sizeof(FunctionType));
+        Platform::MemoryCopy((void*)newBindings, (const void*)other._ptr, newSize * sizeof(FunctionType));
+        for (intptr i = 0; i < newSize; i++)
+        {
+            FunctionType& f = newBindings[i];
+            if (f._function && f._lambda)
+                f.LambdaCtor();
+        }
+        _ptr = (intptr)newBindings;
+        _size = newSize;
+#else
+        Data* otherData = (Data*)Platform::AtomicRead(&_data);
+        if (otherData == nullptr)
+            return;
+        ScopeLock lock(otherData->Locker);
+        for (auto i = otherData->Functions.Begin(); i.IsNotEnd(); ++i)
+            Bind(i->Item);
+#endif
+    }
+
+    Delegate(Delegate&& other) noexcept
+    {
+#if DELEGATE_USE_ATOMIC
+        _ptr = other._ptr;
+        _size = other._size;
+        other._ptr = 0;
+        other._size = 0;
+#else
+        _data = other._data;
+        other._data = 0;
+#endif
+    }
+
     ~Delegate()
     {
+#if DELEGATE_USE_ATOMIC
         auto ptr = (FunctionType*)_ptr;
         if (ptr)
         {
             while (_size--)
             {
                 if (ptr->_lambda)
-                    ptr->LambdaDtor();  
+                    ptr->LambdaDtor();
                 ++ptr;
             }
             Allocator::Free((void*)_ptr);
         }
+#else
+        Data* data = (Data*)_data;
+        if (data)
+        {
+            _data = 0;
+            Delete(data);
+        }
+#endif
+    }
+
+    Delegate& operator=(const Delegate& other)
+    {
+        if (this != &other)
+        {
+            UnbindAll();
+#if DELEGATE_USE_ATOMIC
+            const intptr size = Platform::AtomicRead((intptr volatile*)&other._size);
+            FunctionType* bindings = (FunctionType*)Platform::AtomicRead((intptr volatile*)&other._ptr);
+            for (intptr i = 0; i < size; i++)
+                Bind(bindings[i]);
+#else
+            Data* otherData = (Data*)Platform::AtomicRead(&_data);
+            if (otherData != nullptr)
+            {
+                ScopeLock lock(otherData->Locker);
+                for (auto i = otherData->Functions.Begin(); i.IsNotEnd(); ++i)
+                    Bind(i->Item);
+            }
+#endif
+        }
+        return *this;
+    }
+
+    Delegate& operator=(Delegate&& other) noexcept
+    {
+        if (this != &other)
+        {
+#if DELEGATE_USE_ATOMIC
+            _ptr = other._ptr;
+            _size = other._size;
+            other._ptr = 0;
+            other._size = 0;
+#else
+            _data = other._data;
+            other._data = 0;
+#endif
+        }
+        return *this;
     }
 
 public:
-
     /// <summary>
     /// Binds a static function.
     /// </summary>
-    template<void(*Method)(Params ...)>
+    template<void(*Method)(Params...)>
     void Bind()
     {
         FunctionType f;
@@ -314,7 +421,7 @@ public:
     /// Binds a member function.
     /// </summary>
     /// <param name="callee">The object instance.</param>
-    template<class T, void(T::*Method)(Params ...)>
+    template<class T, void(T::*Method)(Params...)>
     void Bind(T* callee)
     {
         FunctionType f;
@@ -350,6 +457,7 @@ public:
     /// <param name="f">The function to bind.</param>
     void Bind(const FunctionType& f)
     {
+#if DELEGATE_USE_ATOMIC
         const intptr size = Platform::AtomicRead(&_size);
         FunctionType* bindings = (FunctionType*)Platform::AtomicRead(&_ptr);
         if (bindings)
@@ -392,12 +500,28 @@ public:
             // TODO: what is someone read this value before and is using the old table?
             Allocator::Free(bindings);
         }
+#else
+        Data* data = (Data*)Platform::AtomicRead(&_data);
+        while (!data)
+        {
+            Data* newData = New<Data>();
+            Data* oldData = (Data*)Platform::InterlockedCompareExchange(&_data, (intptr)newData, (intptr)data);
+            if (oldData != data)
+            {
+                // Other thread already set the new data so free it and try again
+                Delete(newData);
+            }
+            data = (Data*)Platform::AtomicRead(&_data);
+        }
+        ScopeLock lock(data->Locker);
+        data->Functions.Add(f);
+#endif
     }
 
     /// <summary>
-    /// Binds a static function (if not binded yet).
+    /// Binds a static function (if not bound yet).
     /// </summary>
-    template<void(*Method)(Params ...)>
+    template<void(*Method)(Params...)>
     void BindUnique()
     {
         FunctionType f;
@@ -406,10 +530,10 @@ public:
     }
 
     /// <summary>
-    /// Binds a member function (if not binded yet).
+    /// Binds a member function (if not bound yet).
     /// </summary>
     /// <param name="callee">The object instance.</param>
-    template<class T, void(T::*Method)(Params ...)>
+    template<class T, void(T::*Method)(Params...)>
     void BindUnique(T* callee)
     {
         FunctionType f;
@@ -418,7 +542,7 @@ public:
     }
 
     /// <summary>
-    /// Binds a function (if not binded yet).
+    /// Binds a function (if not bound yet).
     /// </summary>
     /// <param name="method">The method.</param>
     void BindUnique(Signature method)
@@ -428,29 +552,46 @@ public:
     }
 
     /// <summary>
-    /// Binds a function (if not binded yet).
+    /// Binds a function (if not bound yet).
     /// </summary>
     /// <param name="f">The function to bind.</param>
     void BindUnique(const FunctionType& f)
     {
+        // Skip if already bound
+#if DELEGATE_USE_ATOMIC
         const intptr size = Platform::AtomicRead(&_size);
         FunctionType* bindings = (FunctionType*)Platform::AtomicRead(&_ptr);
         if (bindings)
         {
-            // Skip if already binded
             for (intptr i = 0; i < size; i++)
             {
                 if (Platform::AtomicRead((intptr volatile*)&bindings[i]._callee) == (intptr)f._callee && Platform::AtomicRead((intptr volatile*)&bindings[i]._function) == (intptr)f._function)
                     return;
             }
         }
+#else
+        Data* data = (Data*)Platform::AtomicRead(&_data);
+        if (data)
+        {
+            data->Locker.Lock();
+            if (data->Functions.Contains(f))
+            {
+                data->Locker.Unlock();
+                return;
+            }
+        }
+#endif
         Bind(f);
+#if !DELEGATE_USE_ATOMIC
+        if (data)
+            data->Locker.Unlock();
+#endif
     }
 
     /// <summary>
     /// Unbinds a static function.
     /// </summary>
-    template<void(*Method)(Params ...)>
+    template<void(*Method)(Params...)>
     void Unbind()
     {
         FunctionType f;
@@ -462,7 +603,7 @@ public:
     /// Unbinds a member function.
     /// </summary>
     /// <param name="callee">The object instance.</param>
-    template<class T, void(T::*Method)(Params ...)>
+    template<class T, void(T::*Method)(Params...)>
     void Unbind(T* callee)
     {
         FunctionType f;
@@ -484,8 +625,9 @@ public:
     /// Unbinds the specified function.
     /// </summary>
     /// <param name="f">The function to unbind.</param>
-    void Unbind(FunctionType& f)
+    void Unbind(const FunctionType& f)
     {
+#if DELEGATE_USE_ATOMIC
         // Find slot with that function
         const intptr size = Platform::AtomicRead(&_size);
         FunctionType* bindings = (FunctionType*)Platform::AtomicRead(&_ptr);
@@ -508,6 +650,13 @@ public:
             // Someone changed the bindings list so retry unbind from the new one
             Unbind(f);
         }
+#else
+        Data* data = (Data*)Platform::AtomicRead(&_data);
+        if (!data)
+            return;
+        ScopeLock lock(data->Locker);
+        data->Functions.Remove(f);
+#endif
     }
 
     /// <summary>
@@ -515,6 +664,7 @@ public:
     /// </summary>
     void UnbindAll()
     {
+#if DELEGATE_USE_ATOMIC
         const intptr size = Platform::AtomicRead(&_size);
         FunctionType* bindings = (FunctionType*)Platform::AtomicRead(&_ptr);
         for (intptr i = 0; i < size; i++)
@@ -527,23 +677,39 @@ public:
             Platform::AtomicStore((intptr volatile*)&bindings[i]._function, 0);
             Platform::AtomicStore((intptr volatile*)&bindings[i]._callee, 0);
         }
+#else
+        Data* data = (Data*)Platform::AtomicRead(&_data);
+        if (!data)
+            return;
+        ScopeLock lock(data->Locker);
+        data->Functions.Clear();
+#endif
     }
 
     /// <summary>
-    /// Counts the amount of binded functions.
+    /// Counts the amount of bound functions.
     /// </summary>
-    /// <returns>The binded functions count.</returns>
+    /// <returns>The bound functions count.</returns>
     int32 Count() const
     {
-        int32 count = 0;
+        int32 result = 0;
+#if DELEGATE_USE_ATOMIC
         const intptr size = Platform::AtomicRead((intptr volatile*)&_size);
         FunctionType* bindings = (FunctionType*)Platform::AtomicRead((intptr volatile*)&_ptr);
         for (intptr i = 0; i < size; i++)
         {
             if (Platform::AtomicRead((intptr volatile*)&bindings[i]._function) != 0)
-                count++;
+                result++;
         }
-        return count;
+#else
+        Data* data = (Data*)Platform::AtomicRead((intptr volatile*)&_data);
+        if (data)
+        {
+            ScopeLock lock(data->Locker);
+            result = data->Functions.Count();
+        }
+#endif
+        return result;
     }
 
     /// <summary>
@@ -551,15 +717,27 @@ public:
     /// </summary>
     int32 Capacity() const
     {
+#if DELEGATE_USE_ATOMIC
         return (int32)Platform::AtomicRead((intptr volatile*)&_size);
+#else
+        int32 result = 0;
+        Data* data = (Data*)Platform::AtomicRead((intptr volatile*)&_data);
+        if (data)
+        {
+            ScopeLock lock(data->Locker);
+            result = data->Functions.Capacity();
+        }
+        return result;
+#endif
     }
 
     /// <summary>
-    /// Determines whether any function is binded.
+    /// Determines whether any function is bound.
     /// </summary>
-    /// <returns><c>true</c> if any function is binded; otherwise, <c>false</c>.</returns>
+    /// <returns><c>true</c> if any function is bound; otherwise, <c>false</c>.</returns>
     bool IsBinded() const
     {
+#if DELEGATE_USE_ATOMIC
         const intptr size = Platform::AtomicRead((intptr volatile*)&_size);
         FunctionType* bindings = (FunctionType*)Platform::AtomicRead((intptr volatile*)&_ptr);
         for (intptr i = 0; i < size; i++)
@@ -568,10 +746,20 @@ public:
                 return true;
         }
         return false;
+#else
+        bool result = false;
+        Data* data = (Data*)Platform::AtomicRead((intptr volatile*)&_data);
+        if (data)
+        {
+            ScopeLock lock(data->Locker);
+            result = data->Functions.Count() != 0;
+        }
+        return result;
+#endif
     }
 
     /// <summary>
-    /// Gets all the binded functions.
+    /// Gets all the bound functions.
     /// </summary>
     /// <param name="buffer">The result bindings functions memory.</param>
     /// <param name="bufferSize">The result bindings functions memory size.</param>
@@ -579,6 +767,7 @@ public:
     int32 GetBindings(FunctionType* buffer, int32 bufferSize) const
     {
         int32 count = 0;
+#if DELEGATE_USE_ATOMIC
         const intptr size = Platform::AtomicRead((intptr volatile*)&_size);
         FunctionType* bindings = (FunctionType*)Platform::AtomicRead((intptr volatile*)&_ptr);
         for (intptr i = 0; i < size && i < bufferSize; i++)
@@ -593,15 +782,28 @@ public:
                 count++;
             }
         }
+#else
+        Data* data = (Data*)Platform::AtomicRead((intptr volatile*)&_data);
+        if (data)
+        {
+            ScopeLock lock(data->Locker);
+            for (auto i = data->Functions.Begin(); i.IsNotEnd(); ++i)
+            {
+                new(buffer + count) FunctionType((const FunctionType&)i->Item);
+                count++;
+            }
+        }
+#endif
         return count;
     }
 
     /// <summary>
-    /// Calls all the binded functions. Supports unbinding of the called functions during invocation.
+    /// Calls all the bound functions. Supports unbinding of the called functions during invocation.
     /// </summary>
     /// <param name="params">A list of parameters for the function invocation.</param>
-    void operator()(Params ... params) const
+    void operator()(Params... params) const
     {
+#if DELEGATE_USE_ATOMIC
         const intptr size = Platform::AtomicRead((intptr volatile*)&_size);
         FunctionType* bindings = (FunctionType*)Platform::AtomicRead((intptr volatile*)&_ptr);
         for (intptr i = 0; i < size; i++)
@@ -612,8 +814,28 @@ public:
                 function(callee, Forward<Params>(params)...);
             ++bindings;
         }
+#else
+        Data* data = (Data*)Platform::AtomicRead((intptr volatile*)&_data);
+        if (!data)
+            return;
+        ScopeLock lock(data->Locker);
+        for (auto i = data->Functions.Begin(); i.IsNotEnd(); ++i)
+        {
+            const FunctionType& item = i->Item;
+            ASSERT_LOW_LAYER(item._function);
+            item._function(item._callee, Forward<Params>(params)...);
+        }
+#endif
     }
 };
+
+template<typename... Params>
+inline uint32 GetHash(const Function<void(Params...)>& key)
+{
+    uint32 hash = GetHash((void*)key._callee);
+    CombineHash(hash, GetHash((void*)key._function));
+    return hash;
+}
 
 /// <summary>
 /// Action delegate.

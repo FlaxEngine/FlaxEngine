@@ -188,7 +188,7 @@ namespace FlaxEngine.Interop
         internal static void RegisterNativeLibrary(IntPtr moduleNamePtr, IntPtr modulePathPtr)
         {
             string moduleName = Marshal.PtrToStringAnsi(moduleNamePtr);
-            string modulePath = Marshal.PtrToStringAnsi(modulePathPtr);
+            string modulePath = Marshal.PtrToStringUni(modulePathPtr);
             libraryPaths[moduleName] = modulePath;
         }
 
@@ -857,36 +857,25 @@ namespace FlaxEngine.Interop
         }
 
         [UnmanagedCallersOnly]
-        internal static void FieldGetValueReference(ManagedHandle fieldOwnerHandle, ManagedHandle fieldHandle, IntPtr valuePtr)
+        internal static void FieldGetValueReference(ManagedHandle fieldOwnerHandle, ManagedHandle fieldHandle, int fieldOffset, IntPtr valuePtr)
         {
             object fieldOwner = fieldOwnerHandle.Target;
+            IntPtr fieldRef;
+#if USE_AOT
             FieldHolder field = Unsafe.As<FieldHolder>(fieldHandle.Target);
+            fieldRef = IntPtr.Zero;
+            Debug.LogError("Not supported FieldGetValueReference");
+#else
             if (fieldOwner.GetType().IsValueType)
             {
-                ref IntPtr fieldRef = ref FieldHelper.GetValueTypeFieldReference<object, IntPtr>(field.fieldOffset, ref fieldOwner);
-                Unsafe.Write<IntPtr>(valuePtr.ToPointer(), fieldRef);
+                fieldRef = FieldHelper.GetValueTypeFieldReference<object, IntPtr>(fieldOffset, ref fieldOwner);
             }
             else
             {
-                ref IntPtr fieldRef = ref FieldHelper.GetReferenceTypeFieldReference<object, IntPtr>(field.fieldOffset, ref fieldOwner);
-                Unsafe.Write<IntPtr>(valuePtr.ToPointer(), fieldRef);
+                fieldRef = FieldHelper.GetReferenceTypeFieldReference<object, IntPtr>(fieldOffset, ref fieldOwner);
             }
-        }
-
-        [UnmanagedCallersOnly]
-        internal static void FieldGetValueReferenceWithOffset(ManagedHandle fieldOwnerHandle, int fieldOffset, IntPtr valuePtr)
-        {
-            object fieldOwner = fieldOwnerHandle.Target;
-            if (fieldOwner.GetType().IsValueType)
-            {
-                ref IntPtr fieldRef = ref FieldHelper.GetValueTypeFieldReference<object, IntPtr>(fieldOffset, ref fieldOwner);
-                Unsafe.Write<IntPtr>(valuePtr.ToPointer(), fieldRef);
-            }
-            else
-            {
-                ref IntPtr fieldRef = ref FieldHelper.GetReferenceTypeFieldReference<object, IntPtr>(fieldOffset, ref fieldOwner);
-                Unsafe.Write<IntPtr>(valuePtr.ToPointer(), fieldRef);
-            }
+#endif
+            Unsafe.Write<IntPtr>(valuePtr.ToPointer(), fieldRef);
         }
 
         [UnmanagedCallersOnly]
@@ -1032,6 +1021,8 @@ namespace FlaxEngine.Interop
             foreach (var pair in classAttributesCacheCollectible)
                 pair.Value.Free();
             classAttributesCacheCollectible.Clear();
+
+            FlaxEngine.Json.JsonSerializer.ResetCache();
 
             // Unload the ALC
             bool unloading = true;
@@ -1278,6 +1269,9 @@ namespace FlaxEngine.Interop
                 monoType = MTypes.String;
                 break;
             case Type _ when type == typeof(IntPtr):
+                monoType = MTypes.Ptr;
+                break;
+            case Type _ when type.IsPointer:
                 monoType = MTypes.Ptr;
                 break;
             case Type _ when type.IsEnum:

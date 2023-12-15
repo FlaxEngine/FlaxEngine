@@ -31,7 +31,7 @@ public:
         , _buffer(buffer)
         , _offset(offset)
     {
-        _buffer.OnUnload.Bind<GPUUploadBufferTask, &GPUUploadBufferTask::OnResourceUnload>(this);
+        _buffer.Released.Bind<GPUUploadBufferTask, &GPUUploadBufferTask::OnResourceReleased>(this);
 
         if (copyData)
             _data.Copy(data);
@@ -40,7 +40,7 @@ public:
     }
 
 private:
-    void OnResourceUnload(BufferReference* ref)
+    void OnResourceReleased()
     {
         Cancel();
     }
@@ -56,14 +56,11 @@ protected:
     // [GPUTask]
     Result run(GPUTasksContext* context) override
     {
-        if (_buffer.IsMissing())
+        if (!_buffer)
             return Result::MissingResources;
-
         context->GPU->UpdateBuffer(_buffer, _data.Get(), _data.Length(), _offset);
-
         return Result::Ok;
     }
-
     void OnEnd() override
     {
         _buffer.Unlink();

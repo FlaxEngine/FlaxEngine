@@ -55,9 +55,7 @@ public:
         for (int32 i = 0; i < obj.Count(); i++)
         {
             if (predicate(obj[i]))
-            {
                 return i;
-            }
         }
         return INVALID_INDEX;
     }
@@ -74,9 +72,7 @@ public:
         for (int32 i = 0; i < obj.Count(); i++)
         {
             if (predicate(obj[i]))
-            {
                 return true;
-            }
         }
         return false;
     }
@@ -93,11 +89,99 @@ public:
         for (int32 i = 0; i < obj.Count(); i++)
         {
             if (!predicate(obj[i]))
-            {
                 return false;
-            }
         }
         return true;
+    }
+
+    /// <summary>
+    /// Filters a sequence of values based on a predicate.
+    /// </summary>
+    /// <param name="obj">The target collection.</param>
+    /// <param name="predicate">The prediction function. Return true for elements that should be included in result list.</param>
+    /// <param name="result">The result list with items that passed the predicate.</param>
+    template<typename T, typename AllocationType>
+    static void Where(const Array<T, AllocationType>& obj, const Function<bool(const T&)>& predicate, Array<T, AllocationType>& result)
+    {
+        for (const T& i : obj)
+        {
+            if (predicate(i))
+                result.Add(i);
+        }
+    }
+
+    /// <summary>
+    /// Filters a sequence of values based on a predicate.
+    /// </summary>
+    /// <param name="obj">The target collection.</param>
+    /// <param name="predicate">The prediction function. Return true for elements that should be included in result list.</param>
+    /// <returns>The result list with items that passed the predicate.</returns>
+    template<typename T, typename AllocationType>
+    static Array<T, AllocationType> Where(const Array<T, AllocationType>& obj, const Function<bool(const T&)>& predicate)
+    {
+        Array<T, AllocationType> result;
+        Where(obj, predicate, result);
+        return result;
+    }
+
+    /// <summary>
+    /// Projects each element of a sequence into a new form.
+    /// </summary>
+    /// <param name="obj">The target collection.</param>
+    /// <param name="selector">A transform function to apply to each source element; the second parameter of the function represents the index of the source element.</param>
+    /// <param name="result">The result list whose elements are the result of invoking the transform function on each element of source.</param>
+    template<typename TResult, typename TSource, typename AllocationType>
+    static void Select(const Array<TSource, AllocationType>& obj, const Function<TResult(const TSource&)>& selector, Array<TResult, AllocationType>& result)
+    {
+        for (const TSource& i : obj)
+            result.Add(MoveTemp(selector(i)));
+    }
+
+    /// <summary>
+    /// Projects each element of a sequence into a new form.
+    /// </summary>
+    /// <param name="obj">The target collection.</param>
+    /// <param name="selector">A transform function to apply to each source element; the second parameter of the function represents the index of the source element.</param>
+    /// <returns>The result list whose elements are the result of invoking the transform function on each element of source.</returns>
+    template<typename TResult, typename TSource, typename AllocationType>
+    static Array<TResult, AllocationType> Select(const Array<TSource, AllocationType>& obj, const Function<TResult(const TSource&)>& selector)
+    {
+        Array<TResult, AllocationType> result;
+        Select(obj, selector, result);
+        return result;
+    }
+
+    /// <summary>
+    /// Removes all the elements that match the conditions defined by the specified predicate.
+    /// </summary>
+    /// <param name="obj">The target collection to modify.</param>
+    /// <param name="predicate">A transform function that defines the conditions of the elements to remove.</param>
+    template<typename T, typename AllocationType>
+    static void RemoveAll(Array<T, AllocationType>& obj, const Function<bool(const T&)>& predicate)
+    {
+        for (int32 i = obj.Count() - 1; i >= 0; i--)
+        {
+            if (predicate(obj[i]))
+                obj.RemoveAtKeepOrder(i);
+        }
+    }
+
+    /// <summary>
+    /// Removes all the elements that match the conditions defined by the specified predicate.
+    /// </summary>
+    /// <param name="obj">The target collection to process.</param>
+    /// <param name="predicate">A transform function that defines the conditions of the elements to remove.</param>
+    /// <returns>The result list whose elements are the result of invoking the transform function on each element of source.</returns>
+    template<typename T, typename AllocationType>
+    static Array<T, AllocationType> RemoveAll(const Array<T, AllocationType>& obj, const Function<bool(const T&)>& predicate)
+    {
+        Array<T, AllocationType> result;
+        for (const T& i : obj)
+        {
+            if (!predicate(i))
+                result.Ass(i);
+        }
+        return result;
     }
 
     /// <summary>
@@ -109,7 +193,7 @@ public:
     template<typename TSource, typename TKey, typename AllocationType>
     static void GroupBy(const Array<TSource, AllocationType>& obj, const Function<TKey(TSource const&)>& keySelector, Array<IGrouping<TKey, TSource>, AllocationType>& result)
     {
-        Dictionary<TKey, IGrouping<TKey, TSource>> data(static_cast<int32>(obj.Count() * 3.0f));
+        Dictionary<TKey, IGrouping<TKey, TSource>> data;
         for (int32 i = 0; i < obj.Count(); i++)
         {
             const TKey key = keySelector(obj[i]);

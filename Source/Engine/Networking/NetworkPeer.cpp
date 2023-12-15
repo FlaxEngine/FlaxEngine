@@ -134,7 +134,7 @@ void NetworkPeer::Disconnect(const NetworkConnection& connection)
 bool NetworkPeer::PopEvent(NetworkEvent& eventRef)
 {
     PROFILE_CPU();
-    return NetworkDriver->PopEvent(&eventRef);
+    return NetworkDriver->PopEvent(eventRef);
 }
 
 NetworkMessage NetworkPeer::CreateMessage()

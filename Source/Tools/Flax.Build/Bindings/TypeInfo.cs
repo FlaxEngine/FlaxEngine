@@ -16,6 +16,7 @@ namespace Flax.Build.Bindings
         public string Type;
         public bool IsConst;
         public bool IsRef;
+        public bool IsMoveRef;
         public bool IsPtr;
         public bool IsArray;
         public bool IsBitField;
@@ -56,6 +57,7 @@ namespace Flax.Build.Bindings
             Type = other.Type;
             IsConst = other.IsConst;
             IsRef = other.IsRef;
+            IsMoveRef = other.IsMoveRef;
             IsPtr = other.IsPtr;
             IsArray = other.IsArray;
             IsBitField = other.IsBitField;
@@ -122,6 +124,7 @@ namespace Flax.Build.Bindings
             // TODO: pack as flags
             writer.Write(IsConst);
             writer.Write(IsRef);
+            writer.Write(IsMoveRef);
             writer.Write(IsPtr);
             writer.Write(IsArray);
             writer.Write(IsBitField);
@@ -136,6 +139,7 @@ namespace Flax.Build.Bindings
             // TODO: convert into flags
             IsConst = reader.ReadBoolean();
             IsRef = reader.ReadBoolean();
+            IsMoveRef = reader.ReadBoolean();
             IsPtr = reader.ReadBoolean();
             IsArray = reader.ReadBoolean();
             IsBitField = reader.ReadBoolean();
@@ -176,7 +180,7 @@ namespace Flax.Build.Bindings
             return sb.ToString();
         }
 
-        public override string ToString()
+        public string ToString(bool canRef = true)
         {
             var sb = new StringBuilder(64);
             if (IsConst)
@@ -195,9 +199,16 @@ namespace Flax.Build.Bindings
             }
             if (IsPtr)
                 sb.Append('*');
-            if (IsRef)
+            if (IsRef && canRef)
+                sb.Append('&');
+            if (IsMoveRef && canRef)
                 sb.Append('&');
             return sb.ToString();
+        }
+
+        public override string ToString()
+        {
+            return ToString(true);
         }
 
         public static bool Equals(List<TypeInfo> a, List<TypeInfo> b)
@@ -217,6 +228,7 @@ namespace Flax.Build.Bindings
             return string.Equals(Type, other.Type) &&
                    IsConst == other.IsConst &&
                    IsRef == other.IsRef &&
+                   IsMoveRef == other.IsMoveRef &&
                    IsPtr == other.IsPtr &&
                    IsArray == other.IsArray &&
                    IsBitField == other.IsBitField &&
@@ -237,6 +249,7 @@ namespace Flax.Build.Bindings
                 var hashCode = (Type != null ? Type.GetHashCode() : 0);
                 hashCode = (hashCode * 397) ^ IsConst.GetHashCode();
                 hashCode = (hashCode * 397) ^ IsRef.GetHashCode();
+                hashCode = (hashCode * 397) ^ IsMoveRef.GetHashCode();
                 hashCode = (hashCode * 397) ^ IsPtr.GetHashCode();
                 hashCode = (hashCode * 397) ^ IsArray.GetHashCode();
                 hashCode = (hashCode * 397) ^ IsBitField.GetHashCode();

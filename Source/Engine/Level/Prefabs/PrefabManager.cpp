@@ -29,7 +29,7 @@ class PrefabManagerService : public EngineService
 {
 public:
     PrefabManagerService()
-        : EngineService(TEXT("Prefab Manager"), 110)
+        : EngineService(TEXT("Prefab Manager"))
     {
     }
 };
@@ -39,42 +39,49 @@ PrefabManagerService PrefabManagerServiceInstance;
 Actor* PrefabManager::SpawnPrefab(Prefab* prefab)
 {
     Actor* parent = Level::Scenes.Count() != 0 ? Level::Scenes.Get()[0] : nullptr;
-    return SpawnPrefab(prefab, parent, nullptr);
+    return SpawnPrefab(prefab, Transform(Vector3::Minimum), parent, nullptr);
 }
 
 Actor* PrefabManager::SpawnPrefab(Prefab* prefab, const Vector3& position)
 {
-    auto instance = SpawnPrefab(prefab);
-    if (instance)
-        instance->SetPosition(position);
-    return instance;
+    Actor* parent = Level::Scenes.Count() != 0 ? Level::Scenes.Get()[0] : nullptr;
+    return SpawnPrefab(prefab, Transform(position), parent, nullptr);
 }
 
 Actor* PrefabManager::SpawnPrefab(Prefab* prefab, const Vector3& position, const Quaternion& rotation)
 {
-    auto instance = SpawnPrefab(prefab);
-    if (instance)
-        instance->SetTransform(Transform(position, rotation, instance->GetScale()));
-    return instance;
+    Actor* parent = Level::Scenes.Count() != 0 ? Level::Scenes.Get()[0] : nullptr;
+    return SpawnPrefab(prefab, Transform(position, rotation), parent, nullptr);
 }
 
 Actor* PrefabManager::SpawnPrefab(Prefab* prefab, const Vector3& position, const Quaternion& rotation, const Vector3& scale)
 {
-    auto instance = SpawnPrefab(prefab);
-    if (instance)
-        instance->SetTransform(Transform(position, rotation, scale));
-    return instance;
+    Actor* parent = Level::Scenes.Count() != 0 ? Level::Scenes.Get()[0] : nullptr;
+    return SpawnPrefab(prefab, Transform(position, rotation, scale), parent, nullptr);
 }
 
 Actor* PrefabManager::SpawnPrefab(Prefab* prefab, const Transform& transform)
 {
-    auto instance = SpawnPrefab(prefab);
-    if (instance)
-        instance->SetTransform(transform);
-    return instance;
+    Actor* parent = Level::Scenes.Count() != 0 ? Level::Scenes.Get()[0] : nullptr;
+    return SpawnPrefab(prefab, transform, parent, nullptr);
 }
 
-Actor* PrefabManager::SpawnPrefab(Prefab* prefab, Actor* parent, Dictionary<Guid, const void*>* objectsCache, bool withSynchronization)
+Actor* PrefabManager::SpawnPrefab(Prefab* prefab, Actor* parent, const Transform& transform)
+{
+    return SpawnPrefab(prefab, transform, parent, nullptr);
+}
+
+Actor* PrefabManager::SpawnPrefab(Prefab* prefab, Actor* parent)
+{
+    return SpawnPrefab(prefab, Transform(Vector3::Minimum), parent, nullptr);
+}
+
+Actor* PrefabManager::SpawnPrefab(Prefab* prefab, Actor* parent, Dictionary<Guid, SceneObject*>* objectsCache, bool withSynchronization)
+{
+    return SpawnPrefab(prefab, Transform(Vector3::Minimum), parent, objectsCache, withSynchronization);
+}
+
+Actor* PrefabManager::SpawnPrefab(Prefab* prefab, const Transform& transform, Actor* parent, Dictionary<Guid, SceneObject*>* objectsCache, bool withSynchronization)
 {
     PROFILE_CPU_NAMED("Prefab.Spawn");
     if (prefab == nullptr)
@@ -182,6 +189,10 @@ Actor* PrefabManager::SpawnPrefab(Prefab* prefab, Actor* parent, Dictionary<Guid
     root->_parent = parent;
     if (parent)
         parent->Children.Add(root);
+
+    // Move root to the right location
+    if (transform.Translation != Vector3::Minimum)
+        root->SetTransform(transform);
 
     // Link actors hierarchy
     for (int32 i = 0; i < sceneObjects->Count(); i++)
@@ -363,13 +374,13 @@ bool PrefabManager::CreatePrefab(Actor* targetActor, const StringView& outputPat
     if (targetActor->HasParent())
     {
         // Unlink from parent actor
-        objectInstanceIdToPrefabObjectId.Add(targetActor->GetParent()->GetID(), Guid::Empty);
+        objectInstanceIdToPrefabObjectId[targetActor->GetParent()->GetID()] = Guid::Empty;
     }
     for (int32 i = 0; i < sceneObjects->Count(); i++)
     {
         // Generate new IDs for the prefab objects (other than reference instance used to create prefab)
         const SceneObject* obj = sceneObjects->At(i);
-        objectInstanceIdToPrefabObjectId.Add(obj->GetSceneObjectId(), Guid::New());
+        objectInstanceIdToPrefabObjectId[obj->GetSceneObjectId()] = Guid::New();
     }
     {
         // Parse json to DOM document

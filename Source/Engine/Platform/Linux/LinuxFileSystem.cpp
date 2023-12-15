@@ -9,6 +9,7 @@
 #include "Engine/Core/Types/StringBuilder.h"
 #include "Engine/Core/Types/StringView.h"
 #include "Engine/Core/Types/TimeSpan.h"
+#include "Engine/Core/Collections/Array.h"
 #include "Engine/Core/Math/Math.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Utilities/StringConverter.h"
@@ -69,7 +70,30 @@ bool LinuxFileSystem::ShowOpenFileDialog(Window* parentWindow, const StringView&
     }
     FILE* f = popen(cmd, "r");
     char buf[2048];
-    fgets(buf, ARRAY_COUNT(buf), f); 
+    char* writePointer = buf;
+    int remainingCapacity = ARRAY_COUNT(buf);
+    // make sure we read all output from kdialog
+    while (remainingCapacity > 0 && fgets(writePointer, remainingCapacity, f))
+    {
+        int r = strlen(writePointer);
+        writePointer += r;
+        remainingCapacity -= r;
+    }
+    if (remainingCapacity <= 0)
+    {
+        LOG(Error, "You selected more files than an internal buffer can hold. Try selecting fewer files at a time.");
+        // in case of an overflow we miss the closing null byte, add it after the rightmost linefeed
+        while (*writePointer != '\n')
+        {
+            writePointer--;
+            if (writePointer == buf)
+            {
+                *buf = 0;
+                break;
+            }
+        }
+        *(++writePointer) = 0;
+    }
     int result = pclose(f);
     if (result != 0)
     {
@@ -655,8 +679,14 @@ void LinuxFileSystem::GetSpecialFolderPath(const SpecialFolder type, String& res
         result = TEXT("/usr/share");
         break;
     case SpecialFolder::LocalAppData:
-        result = home;
+    {
+        String dataHome;
+        if (!Platform::GetEnvironmentVariable(TEXT("XDG_DATA_HOME"), dataHome))
+            result = dataHome;
+        else
+            result = home / TEXT(".local/share");
         break;
+    }
     case SpecialFolder::ProgramData:
         result = String::Empty;
         break;

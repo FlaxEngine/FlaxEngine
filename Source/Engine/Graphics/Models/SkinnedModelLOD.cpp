@@ -1,16 +1,12 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
 #include "SkinnedModelLOD.h"
+#include "MeshDeformation.h"
 #include "Engine/Core/Log.h"
+#include "Engine/Core/Math/Transform.h"
 #include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Content/Assets/Model.h"
 #include "Engine/Serialization/MemoryReadStream.h"
-
-bool SkinnedModelLOD::HasAnyMeshInitialized() const
-{
-    // Note: we initialize all meshes at once so the last one can be used to check it.
-    return Meshes.HasItems() && Meshes.Last().IsInitialized();
-}
 
 bool SkinnedModelLOD::Load(MemoryReadStream& stream)
 {
@@ -144,6 +140,27 @@ BoundingBox SkinnedModelLOD::GetBox(const Matrix& world) const
         }
     }
 
+    return BoundingBox(min, max);
+}
+
+BoundingBox SkinnedModelLOD::GetBox(const Transform& transform, const MeshDeformation* deformation) const
+{
+    Vector3 tmp, min = Vector3::Maximum, max = Vector3::Minimum;
+    Vector3 corners[8];
+    for (int32 meshIndex = 0; meshIndex < Meshes.Count(); meshIndex++)
+    {
+        const auto& mesh = Meshes[meshIndex];
+        BoundingBox box = mesh.GetBox();
+        if (deformation)
+            deformation->GetBounds(_lodIndex, meshIndex, box);
+        box.GetCorners(corners);
+        for (int32 i = 0; i < 8; i++)
+        {
+            transform.LocalToWorld(corners[i], tmp);
+            min = Vector3::Min(min, tmp);
+            max = Vector3::Max(max, tmp);
+        }
+    }
     return BoundingBox(min, max);
 }
 

@@ -1,5 +1,11 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
+#if USE_LARGE_WORLDS
+using Real = System.Double;
+#else
+using Real = System.Single;
+#endif
+
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -8,7 +14,6 @@ using System.IO;
 using FlaxEditor.Scripting;
 using FlaxEditor.Utilities;
 #endif
-using FlaxEngine;
 using Newtonsoft.Json;
 
 namespace FlaxEngine.Utilities
@@ -18,6 +23,78 @@ namespace FlaxEngine.Utilities
     /// </summary>
     public static class VariantUtils
     {
+        /// <summary>
+        /// Casts the generic value to a given type. Matches native Variant casting logic that favors returning null/zero value rather than error.
+        /// </summary>
+        /// <typeparam name="T">The destination value type.</typeparam>
+        /// <param name="value">The input value to cast.</param>
+        /// <returns>The result value.</returns>
+        internal static T Cast<T>(object value)
+        {
+            if (value == null)
+                return default;
+            var type = value.GetType();
+            if (type != typeof(T))
+            {
+                if (typeof(T) == typeof(Vector2))
+                {
+                    if (value is Float2 asFloat2)
+                        return (T)(object)new Vector2((Real)asFloat2.X, (Real)asFloat2.Y);
+                    if (value is Float3 asFloat3)
+                        return (T)(object)new Vector2((Real)asFloat3.X, (Real)asFloat3.Y);
+                    if (value is Float4 asFloat4)
+                        return (T)(object)new Vector2((Real)asFloat4.X, (Real)asFloat4.Y);
+                }
+                else if (typeof(T) == typeof(Vector3))
+                {
+                    if (value is Float2 asFloat2)
+                        return (T)(object)new Vector3((Real)asFloat2.X, (Real)asFloat2.Y, (Real)0);
+                    if (value is Float3 asFloat3)
+                        return (T)(object)new Vector3((Real)asFloat3.X, (Real)asFloat3.Y, (Real)asFloat3.Z);
+                    if (value is Float4 asFloat4)
+                        return (T)(object)new Vector3((Real)asFloat4.X, (Real)asFloat4.Y, (Real)asFloat4.Z);
+                }
+                else if (typeof(T) == typeof(Vector4))
+                {
+                    if (value is Float2 asFloat2)
+                        return (T)(object)new Vector4((Real)asFloat2.X, (Real)asFloat2.Y, (Real)0, (Real)0);
+                    if (value is Float3 asFloat3)
+                        return (T)(object)new Vector4((Real)asFloat3.X, (Real)asFloat3.Y, (Real)asFloat3.Z, (Real)0);
+                    if (value is Vector4 asFloat4)
+                        return (T)(object)new Vector4((Real)asFloat4.X, (Real)asFloat4.Y, (Real)asFloat4.Z, (Real)asFloat4.W);
+                }
+                else if (typeof(T) == typeof(Float2))
+                {
+                    if (value is Vector2 asVector2)
+                        return (T)(object)new Float2((float)asVector2.X, (float)asVector2.Y);
+                    if (value is Vector3 asVector3)
+                        return (T)(object)new Float2((float)asVector3.X, (float)asVector3.Y);
+                    if (value is Vector4 asVector4)
+                        return (T)(object)new Float2((float)asVector4.X, (float)asVector4.Y);
+                }
+                else if (typeof(T) == typeof(Float3))
+                {
+                    if (value is Vector2 asVector2)
+                        return (T)(object)new Float3((float)asVector2.X, (float)asVector2.Y, (float)0);
+                    if (value is Vector3 asVector3)
+                        return (T)(object)new Float3((float)asVector3.X, (float)asVector3.Y, (float)asVector3.Z);
+                    if (value is Vector4 asFloat4)
+                        return (T)(object)new Float3((float)asFloat4.X, (float)asFloat4.Y, (float)asFloat4.Z);
+                }
+                else if (typeof(T) == typeof(Float4))
+                {
+                    if (value is Vector2 asVector2)
+                        return (T)(object)new Float4((float)asVector2.X, (float)asVector2.Y, (float)0, (float)0);
+                    if (value is Vector3 asVector3)
+                        return (T)(object)new Float4((float)asVector3.X, (float)asVector3.Y, (float)asVector3.Z, (float)0);
+                    if (value is Vector4 asVector4)
+                        return (T)(object)new Float4((float)asVector4.X, (float)asVector4.Y, (float)asVector4.Z, (float)asVector4.W);
+                }
+                return (T)Convert.ChangeType(value, typeof(T));
+            }
+            return (T)value;
+        }
+
         internal enum VariantType
         {
             Null = 0,

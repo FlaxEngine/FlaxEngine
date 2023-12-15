@@ -174,17 +174,17 @@ namespace FlaxEditor.Surface.Archetypes
             }
 
             /// <inheritdoc />
-            public override void OnSurfaceLoaded()
+            public override void OnSurfaceLoaded(SurfaceNodeActions action)
             {
-                base.OnSurfaceLoaded();
+                base.OnSurfaceLoaded(action);
 
                 UpdateUI();
             }
 
             /// <inheritdoc />
-            public override void OnSpawned()
+            public override void OnSpawned(SurfaceNodeActions action)
             {
-                base.OnSpawned();
+                base.OnSpawned(action);
 
                 // Ensure to have unique name
                 var title = StateMachineTitle;
@@ -484,7 +484,7 @@ namespace FlaxEditor.Surface.Archetypes
                     var startPos = PointToParent(ref center);
                     targetState.GetConnectionEndPoint(ref startPos, out var endPos);
                     var color = style.Foreground;
-                    StateMachineState.DrawConnection(Surface, ref startPos, ref endPos, ref color);
+                    StateMachineState.DrawConnection(ref startPos, ref endPos, ref color);
                 }
             }
 
@@ -514,7 +514,7 @@ namespace FlaxEditor.Surface.Archetypes
             /// <inheritdoc />
             public void DrawConnectingLine(ref Float2 startPos, ref Float2 endPos, ref Color color)
             {
-                StateMachineState.DrawConnection(Surface, ref startPos, ref endPos, ref color);
+                StateMachineState.DrawConnection(ref startPos, ref endPos, ref color);
             }
 
             /// <inheritdoc />
@@ -680,11 +680,10 @@ namespace FlaxEditor.Surface.Archetypes
             /// <summary>
             /// Draws the connection between two state machine nodes.
             /// </summary>
-            /// <param name="surface">The surface.</param>
             /// <param name="startPos">The start position.</param>
             /// <param name="endPos">The end position.</param>
             /// <param name="color">The line color.</param>
-            public static void DrawConnection(VisjectSurface surface, ref Float2 startPos, ref Float2 endPos, ref Color color)
+            public static void DrawConnection(ref Float2 startPos, ref Float2 endPos, ref Color color)
             {
                 var sub = endPos - startPos;
                 var length = sub.Length;
@@ -695,11 +694,14 @@ namespace FlaxEditor.Surface.Archetypes
                     float rotation = Float2.Dot(dir, Float2.UnitY);
                     if (endPos.X < startPos.X)
                         rotation = 2 - rotation;
-                    // TODO: make it look better (fix the math)
-                    var arrowTransform = Matrix3x3.Translation2D(new Float2(-16.0f, -8.0f)) * Matrix3x3.RotationZ(rotation * Mathf.PiOverTwo) * Matrix3x3.Translation2D(endPos);
+                    var sprite = Editor.Instance.Icons.VisjectArrowClosed32;
+                    var arrowTransform =
+                        Matrix3x3.Translation2D(-6.5f, -8) *
+                        Matrix3x3.RotationZ(rotation * Mathf.PiOverTwo) * 
+                        Matrix3x3.Translation2D(endPos - dir * 8);
 
                     Render2D.PushTransform(ref arrowTransform);
-                    Render2D.DrawSprite(Editor.Instance.Icons.VisjectArrowClosed32, arrowRect, color);
+                    Render2D.DrawSprite(sprite, arrowRect, color);
                     Render2D.PopTransform();
 
                     endPos -= dir * 4.0f;
@@ -742,9 +744,9 @@ namespace FlaxEditor.Surface.Archetypes
             }
 
             /// <inheritdoc />
-            public override void OnSurfaceLoaded()
+            public override void OnSurfaceLoaded(SurfaceNodeActions action)
             {
-                base.OnSurfaceLoaded();
+                base.OnSurfaceLoaded(action);
 
                 LoadTransitions();
 
@@ -1293,7 +1295,7 @@ namespace FlaxEditor.Surface.Archetypes
                         isMouseOver = Float2.DistanceSquared(ref mousePosition, ref point) < 25.0f;
                     }
                     var color = isMouseOver ? Color.Wheat : t.LineColor;
-                    DrawConnection(Surface, ref t.StartPos, ref t.EndPos, ref color);
+                    DrawConnection(ref t.StartPos, ref t.EndPos, ref color);
                 }
             }
 
@@ -1322,7 +1324,7 @@ namespace FlaxEditor.Surface.Archetypes
             /// <inheritdoc />
             public void DrawConnectingLine(ref Float2 startPos, ref Float2 endPos, ref Color color)
             {
-                DrawConnection(Surface, ref startPos, ref endPos, ref color);
+                DrawConnection(ref startPos, ref endPos, ref color);
             }
 
             /// <inheritdoc />
@@ -1333,6 +1335,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Surface?.AddBatchedUndoAction(action);
                 action.Do();
                 Surface?.OnNodesConnected(this, other);
+                Surface?.MarkAsEdited();
             }
         }
 
@@ -1433,9 +1436,9 @@ namespace FlaxEditor.Surface.Archetypes
             public override int TransitionsDataIndex => 2;
 
             /// <inheritdoc />
-            public override void OnSpawned()
+            public override void OnSpawned(SurfaceNodeActions action)
             {
-                base.OnSpawned();
+                base.OnSpawned(action);
 
                 // Ensure to have unique name
                 var title = StateTitle;
@@ -1453,9 +1456,9 @@ namespace FlaxEditor.Surface.Archetypes
             }
 
             /// <inheritdoc />
-            public override void OnSurfaceLoaded()
+            public override void OnSurfaceLoaded(SurfaceNodeActions action)
             {
-                base.OnSurfaceLoaded();
+                base.OnSurfaceLoaded(action);
 
                 UpdateTitle();
             }
@@ -1909,6 +1912,7 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 var action = new StateMachineStateBase.AddRemoveTransitionAction(this);
                 SourceState.Surface?.AddBatchedUndoAction(action);
+                SourceState.Surface?.MarkAsEdited();
                 action.Do();
             }
 

@@ -32,6 +32,7 @@ private:
     Windows::HANDLE _monitor = nullptr;
     Windows::LONG _clipCursorRect[4];
     int32 _regionWidth = 0, _regionHeight = 0;
+    Float2 _minimizedScreenPosition = Float2::Zero;
 
 public:
 

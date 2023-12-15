@@ -4,6 +4,7 @@
 
 #include "Engine/Core/Config/Settings.h"
 #include "Engine/Serialization/Serialization.h"
+#include "Engine/Core/Collections/Array.h"
 #include "Engine/Content/Asset.h"
 #include "Engine/Content/AssetReference.h"
 #include "Engine/Content/SceneReference.h"
@@ -77,6 +78,12 @@ public:
     bool ShadersGenerateDebugData = false;
 
     /// <summary>
+    /// If checked, skips bundling default engine fonts for UI. Use if to reduce build size if you don't use default engine fonts but custom ones only.
+    /// </summary>
+    API_FIELD(Attributes="EditorOrder(2100), EditorDisplay(\"Content\")")
+    bool SkipDefaultFonts = false;
+
+    /// <summary>
     /// If checked, .NET Runtime won't be packaged with a game and will be required by user to be installed on system upon running game build. Available only on supported platforms such as Windows, Linux and macOS.
     /// </summary>
     API_FIELD(Attributes="EditorOrder(3000), EditorDisplay(\"Scripting\", \"Skip .NET Runtime Packaging\")")
@@ -106,6 +113,7 @@ public:
         DESERIALIZE(AdditionalAssetFolders);
         DESERIALIZE(ShadersNoOptimize);
         DESERIALIZE(ShadersGenerateDebugData);
+        DESERIALIZE(SkipDefaultFonts);
         DESERIALIZE(SkipDotnetPackaging);
         DESERIALIZE(SkipUnusedDotnetLibsPackaging);
     }

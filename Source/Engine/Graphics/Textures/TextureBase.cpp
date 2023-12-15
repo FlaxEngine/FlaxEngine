@@ -660,6 +660,7 @@ uint64 TextureBase::GetMemoryUsage() const
 
 void TextureBase::CancelStreaming()
 {
+    Asset::CancelStreaming();
     _texture.CancelStreamingTasks();
 }
 

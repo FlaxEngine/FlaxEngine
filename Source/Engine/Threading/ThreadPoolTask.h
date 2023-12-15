@@ -55,7 +55,7 @@ public:
     /// </summary>
     /// <param name="action">The action.</param>
     /// <param name="target">The target object.</param>
-    ThreadPoolActionTask(Function<void()>& action, Object* target = nullptr)
+    ThreadPoolActionTask(const Function<void()>& action, Object* target = nullptr)
         : ThreadPoolTask()
         , _action1(action)
         , _target(target)
@@ -79,7 +79,7 @@ public:
     /// </summary>
     /// <param name="action">The action.</param>
     /// <param name="target">The target object.</param>
-    ThreadPoolActionTask(Function<bool()>& action, Object* target = nullptr)
+    ThreadPoolActionTask(const Function<bool()>& action, Object* target = nullptr)
         : ThreadPoolTask()
         , _action2(action)
         , _target(target)

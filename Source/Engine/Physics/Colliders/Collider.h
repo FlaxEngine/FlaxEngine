@@ -17,6 +17,7 @@ class RigidBody;
 /// <seealso cref="PhysicsColliderActor" />
 API_CLASS(Abstract) class FLAXENGINE_API Collider : public PhysicsColliderActor
 {
+    API_AUTO_SERIALIZATION();
     DECLARE_SCENE_OBJECT_ABSTRACT(Collider);
 protected:
     Vector3 _center;
@@ -35,11 +36,8 @@ public:
     void* GetPhysicsShape() const;
 
     /// <summary>
-    /// Gets the 'IsTrigger' flag.
+    /// Gets the 'IsTrigger' flag. A trigger doesn't register a collision with an incoming Rigidbody. Instead, it sends OnTriggerEnter and OnTriggerExit message when a rigidbody enters or exits the trigger volume.
     /// </summary>
-    /// <remarks>
-    /// A trigger doesn't register a collision with an incoming Rigidbody. Instead, it sends OnTriggerEnter, OnTriggerExit and OnTriggerStay message when a rigidbody enters or exits the trigger volume.
-    /// </remarks>
     API_PROPERTY(Attributes="EditorOrder(0), DefaultValue(false), EditorDisplay(\"Collider\")")
     FORCE_INLINE bool GetIsTrigger() const
     {
@@ -47,11 +45,8 @@ public:
     }
 
     /// <summary>
-    /// Sets the `IsTrigger` flag. A trigger doesn't register a collision with an incoming Rigidbody. Instead, it sends OnTriggerEnter, OnTriggerExit and OnTriggerStay message when a rigidbody enters or exits the trigger volume.
+    /// Sets the `IsTrigger` flag. A trigger doesn't register a collision with an incoming Rigidbody. Instead, it sends OnTriggerEnter and OnTriggerExit message when a rigidbody enters or exits the trigger volume.
     /// </summary>
-    /// <remarks>
-    /// A trigger doesn't register a collision with an incoming Rigidbody. Instead, it sends OnTriggerEnter, OnTriggerExit and OnTriggerStay message when a rigidbody enters or exits the trigger volume.
-    /// </remarks>
     API_PROPERTY() void SetIsTrigger(bool value);
 
     /// <summary>
@@ -69,23 +64,17 @@ public:
     API_PROPERTY() void SetCenter(const Vector3& value);
 
     /// <summary>
-    /// Gets the contact offset.
+    /// Gets the contact offset. Colliders whose distance is less than the sum of their ContactOffset values will generate contacts. The contact offset must be positive. Contact offset allows the collision detection system to predictively enforce the contact constraint even when the objects are slightly separated.
     /// </summary>
-    /// <remarks>
-    /// Colliders whose distance is less than the sum of their ContactOffset values will generate contacts. The contact offset must be positive. Contact offset allows the collision detection system to predictively enforce the contact constraint even when the objects are slightly separated.
-    /// </remarks>
-    API_PROPERTY(Attributes="EditorOrder(1), DefaultValue(10.0f), Limit(0, 100), EditorDisplay(\"Collider\")")
+    API_PROPERTY(Attributes="EditorOrder(1), DefaultValue(2.0f), Limit(0, 100), EditorDisplay(\"Collider\")")
     FORCE_INLINE float GetContactOffset() const
     {
         return _contactOffset;
     }
 
     /// <summary>
-    /// Sets the contact offset.
+    /// Sets the contact offset. Colliders whose distance is less than the sum of their ContactOffset values will generate contacts. The contact offset must be positive. Contact offset allows the collision detection system to predictively enforce the contact constraint even when the objects are slightly separated.
     /// </summary>
-    /// <remarks>
-    /// Colliders whose distance is less than the sum of their ContactOffset values will generate contacts. The contact offset must be positive. Contact offset allows the collision detection system to predictively enforce the contact constraint even when the objects are slightly separated.
-    /// </remarks>
     API_PROPERTY() void SetContactOffset(float value);
 
     /// <summary>
@@ -208,8 +197,6 @@ private:
 
 public:
     // [PhysicsColliderActor]
-    void Serialize(SerializeStream& stream, const void* otherObj) override;
-    void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) override;
     RigidBody* GetAttachedRigidBody() const override;
 
 protected:

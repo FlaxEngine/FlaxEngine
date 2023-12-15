@@ -1,10 +1,8 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
 #include "Half.h"
-#include "Rectangle.h"
-#include "Vector2.h"
-#include "Vector3.h"
 #include "Vector4.h"
+#include "Rectangle.h"
 #include "Color.h"
 
 static_assert(sizeof(Half) == 2, "Invalid Half type size.");
@@ -16,11 +14,46 @@ Half2 Half2::Zero(0.0f, 0.0f);
 Half3 Half3::Zero(0.0f, 0.0f, 0.0f);
 Half4 Half4::Zero(0.0f, 0.0f, 0.0f, 0.0f);
 
-Half2::Half2(const Float2& v)
+#if !USE_SSE_HALF_CONVERSION
+
+Half Float16Compressor::Compress(float value)
 {
-    X = Float16Compressor::Compress(v.X);
-    Y = Float16Compressor::Compress(v.Y);
+    Bits v, s;
+    v.f = value;
+    uint32 sign = v.si & signN;
+    v.si ^= sign;
+    sign >>= shiftSign; // logical shift
+    s.si = mulN;
+    s.si = static_cast<int32>(s.f * v.f); // correct subnormals
+    v.si ^= (s.si ^ v.si) & -(minN > v.si);
+    v.si ^= (infN ^ v.si) & -((infN > v.si) & (v.si > maxN));
+    v.si ^= (nanN ^ v.si) & -((nanN > v.si) & (v.si > infN));
+    v.ui >>= shift; // logical shift
+    v.si ^= ((v.si - maxD) ^ v.si) & -(v.si > maxC);
+    v.si ^= ((v.si - minD) ^ v.si) & -(v.si > subC);
+    return v.ui | sign;
 }
+
+float Float16Compressor::Decompress(Half value)
+{
+    Bits v;
+    v.ui = value;
+    int32 sign = v.si & signC;
+    v.si ^= sign;
+    sign <<= shiftSign;
+    v.si ^= ((v.si + minD) ^ v.si) & -(v.si > subC);
+    v.si ^= ((v.si + maxD) ^ v.si) & -(v.si > maxC);
+    Bits s;
+    s.si = mulC;
+    s.f *= v.si;
+    const int32 mask = -(norC > v.si);
+    v.si <<= shift;
+    v.si ^= (s.si ^ v.si) & mask;
+    v.si |= sign;
+    return v.f;
+}
+
+#endif
 
 Float2 Half2::ToFloat2() const
 {
@@ -28,13 +61,6 @@ Float2 Half2::ToFloat2() const
         Float16Compressor::Decompress(X),
         Float16Compressor::Decompress(Y)
     );
-}
-
-Half3::Half3(const Float3& v)
-{
-    X = Float16Compressor::Compress(v.X);
-    Y = Float16Compressor::Compress(v.Y);
-    Z = Float16Compressor::Compress(v.Z);
 }
 
 Float3 Half3::ToFloat3() const

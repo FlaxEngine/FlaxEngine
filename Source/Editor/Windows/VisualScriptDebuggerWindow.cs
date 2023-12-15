@@ -7,7 +7,6 @@ using FlaxEditor.GUI;
 using FlaxEditor.GUI.ContextMenu;
 using FlaxEditor.GUI.Tabs;
 using FlaxEditor.GUI.Tree;
-using FlaxEditor.Scripting;
 using FlaxEditor.Surface;
 using FlaxEditor.Windows.Assets;
 using FlaxEngine;
@@ -63,11 +62,7 @@ namespace FlaxEditor.Windows
                             }
                         }
                         if (vsWindow == null)
-                        {
-                            var item = Editor.Instance.ContentDatabase.FindAsset(nodeInfo.Script.ID);
-                            if (item != null)
-                                vsWindow = Editor.Instance.ContentEditing.Open(item) as VisualScriptWindow;
-                        }
+                            vsWindow = Editor.Instance.ContentEditing.Open(nodeInfo.Script) as VisualScriptWindow;
                         return vsWindow?.Surface.FindNode(nodeInfo.NodeId);
                     }
                     return null;
@@ -404,6 +399,8 @@ namespace FlaxEditor.Windows
         {
             Title = "Visual Script Debugger";
 
+            var inputOptions = editor.Options.Options.Input;
+
             var toolstrip = new ToolStrip
             {
                 Parent = this
@@ -412,7 +409,7 @@ namespace FlaxEditor.Windows
             _debugToolstripControls = new[]
             {
                 toolstrip.AddSeparator(),
-                toolstrip.AddButton(editor.Icons.Play64, OnDebuggerContinue).LinkTooltip("Continue (F5)"),
+                toolstrip.AddButton(editor.Icons.Play64, OnDebuggerContinue).LinkTooltip($"Continue ({inputOptions.DebuggerContinue})"),
                 toolstrip.AddButton(editor.Icons.Search64, OnDebuggerNavigateToCurrentNode).LinkTooltip("Navigate to the current stack trace node"),
                 toolstrip.AddButton(editor.Icons.Stop64, OnDebuggerStop).LinkTooltip("Stop debugging"),
             };

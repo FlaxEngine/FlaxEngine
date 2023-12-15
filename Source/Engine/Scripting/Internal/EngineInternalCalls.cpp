@@ -108,6 +108,7 @@ namespace
     };
 
     ChunkedArray<Location, 256> ManagedSourceLocations;
+    ThreadLocal<uint32> ManagedEventsCount;
 #endif
 #endif
 }
@@ -145,7 +146,9 @@ DEFINE_INTERNAL_CALL(void) ProfilerInternal_BeginEvent(MString* nameObj)
         srcLoc->color = 0;
     }
     //static constexpr tracy::SourceLocationData tracySrcLoc{ nullptr, __FUNCTION__, __FILE__, (uint32_t)__LINE__, 0 };
-    tracy::ScopedZone::Begin(srcLoc);
+    const bool tracyActive = tracy::ScopedZone::Begin(srcLoc);
+    if (tracyActive)
+        ManagedEventsCount.Get()++;
 #endif
 #endif
 #endif
@@ -155,7 +158,12 @@ DEFINE_INTERNAL_CALL(void) ProfilerInternal_EndEvent()
 {
 #if COMPILE_WITH_PROFILER
 #if TRACY_ENABLE
-    tracy::ScopedZone::End();
+    uint32& tracyActive = ManagedEventsCount.Get();
+    if (tracyActive > 0)
+    {
+        tracyActive--;
+        tracy::ScopedZone::End();
+    }
 #endif
     ProfilerCPU::EndEvent();
 #endif
@@ -190,7 +198,6 @@ DEFINE_INTERNAL_CALL(bool) ScriptingInternal_IsTypeFromGameScripts(MTypeObject* 
 
 DEFINE_INTERNAL_CALL(void) ScriptingInternal_FlushRemovedObjects()
 {
-    ASSERT(IsInMainThread());
     ObjectsRemovalService::Flush();
 }
 

@@ -50,18 +50,7 @@ bool GPUDeviceNull::Init()
     // Init device limits
     {
         auto& limits = Limits;
-        limits.HasCompute = false;
-        limits.HasTessellation = false;
-        limits.HasGeometryShaders = false;
-        limits.HasInstancing = false;
-        limits.HasVolumeTextureRendering = false;
-        limits.HasDrawIndirect = false;
-        limits.HasAppendConsumeBuffers = false;
-        limits.HasSeparateRenderTargetBlendState = false;
-        limits.HasDepthAsSRV = false;
-        limits.HasReadOnlyDepth = false;
-        limits.HasMultisampleDepthAsSRV = false;
-        limits.HasTypedUAVLoad = false;
+        Platform::MemoryClear(&limits, sizeof(limits));
         limits.MaximumMipLevelsCount = 14;
         limits.MaximumTexture1DSize = 8192;
         limits.MaximumTexture1DArraySize = 512;
@@ -70,11 +59,8 @@ bool GPUDeviceNull::Init()
         limits.MaximumTexture3DSize = 2048;
         limits.MaximumTextureCubeSize = 16384;
         limits.MaximumSamplerAnisotropy = 1;
-
         for (int32 i = 0; i < static_cast<int32>(PixelFormat::MAX); i++)
-        {
             FeaturesPerFormat[i] = FormatFeatures(static_cast<PixelFormat>(i), MSAALevel::None, FormatSupport::None);
-        }
     }
 
     // Create main context

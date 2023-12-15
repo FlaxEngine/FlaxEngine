@@ -72,7 +72,10 @@ namespace FlaxEditor.Content
         {
             if (_preview == null)
             {
-                _preview = new ModelPreview(false);
+                _preview = new ModelPreview(false)
+                {
+                    ScaleToFit = false,
+                };
                 InitAssetPreview(_preview);
             }
 
@@ -82,12 +85,7 @@ namespace FlaxEditor.Content
         /// <inheritdoc />
         public override bool CanDrawThumbnail(ThumbnailRequest request)
         {
-            if (!_preview.HasLoadedAssets)
-                return false;
-
-            // Check if asset is streamed enough
-            var asset = (Model)request.Asset;
-            return asset.LoadedLODs >= Mathf.Max(1, (int)(asset.LODs.Length * ThumbnailsModule.MinimumRequiredResourcesQuality));
+            return _preview.HasLoadedAssets && ThumbnailsModule.HasMinimumQuality((Model)request.Asset);
         }
 
         /// <inheritdoc />
@@ -96,6 +94,7 @@ namespace FlaxEditor.Content
             _preview.Model = (Model)request.Asset;
             _preview.Parent = guiRoot;
             _preview.SyncBackbufferSize();
+            _preview.ViewportCamera.SetArcBallView(_preview.Model.GetBox());
 
             _preview.Task.OnDraw();
         }

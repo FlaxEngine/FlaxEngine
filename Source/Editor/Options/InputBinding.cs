@@ -259,10 +259,7 @@ namespace FlaxEditor.Options
         public override bool CanConvertFrom(ITypeDescriptorContext context, Type sourceType)
         {
             if (sourceType == typeof(string))
-            {
                 return true;
-            }
-
             return base.CanConvertFrom(context, sourceType);
         }
 
@@ -270,9 +267,7 @@ namespace FlaxEditor.Options
         public override bool CanConvertTo(ITypeDescriptorContext context, Type destinationType)
         {
             if (destinationType == typeof(string))
-            {
                 return false;
-            }
             return base.CanConvertTo(context, destinationType);
         }
 
@@ -284,7 +279,6 @@ namespace FlaxEditor.Options
                 InputBinding.TryParse(str, out var result);
                 return result;
             }
-
             return base.ConvertFrom(context, culture, value);
         }
 
@@ -295,7 +289,6 @@ namespace FlaxEditor.Options
             {
                 return ((InputBinding)value).ToString();
             }
-
             return base.ConvertTo(context, culture, value, destinationType);
         }
     }

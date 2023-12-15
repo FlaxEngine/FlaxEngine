@@ -125,7 +125,7 @@ namespace FlaxEditor.CustomEditors.Editors
             }
 
             // Value
-            var values = new CustomValueContainer(type, (instance, index) => instance, (instance, index, value) => { });
+            var values = new CustomValueContainer(type, (instance, index) => instance);
             values.AddRange(Values);
             var editor = CustomEditorsUtil.CreateEditor(type);
             var style = editor.Style;

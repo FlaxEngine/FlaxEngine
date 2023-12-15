@@ -109,8 +109,9 @@ public:
     /// Get model bounding box in transformed world.
     /// </summary>
     /// <param name="transform">The instance transformation.</param>
+    /// <param name="deformation">The meshes deformation container (optional).</param>
     /// <returns>Bounding box</returns>
-    BoundingBox GetBox(const Transform& transform) const;
+    BoundingBox GetBox(const Transform& transform, const MeshDeformation* deformation = nullptr) const;
 
     /// <summary>
     /// Gets the bounding box combined for all meshes in this model LOD.

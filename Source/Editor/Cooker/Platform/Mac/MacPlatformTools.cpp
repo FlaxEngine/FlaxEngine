@@ -17,9 +17,7 @@
 #include "Editor/ProjectInfo.h"
 #include "Editor/Cooker/GameCooker.h"
 #include "Editor/Utilities/EditorUtilities.h"
-
-#include "pugixml/pugixml_extra.hpp"
-
+#include <ThirdParty/pugixml/pugixml_extra.hpp>
 using namespace pugi;
 
 IMPLEMENT_SETTINGS_GETTER(MacPlatformSettings, MacPlatform);
@@ -249,6 +247,21 @@ bool MacPlatformTools::OnPostProcess(CookingData& data)
     }
 
     return false;
+}
+
+void MacPlatformTools::OnRun(CookingData& data, String& executableFile, String& commandLineFormat, String& workingDir)
+{
+    // Pick the first executable file
+    Array<String> files;
+    FileSystem::DirectoryGetFiles(files, data.NativeCodeOutputPath, TEXT("*"), DirectorySearchOption::TopDirectoryOnly);
+    for (auto& file : files)
+    {
+        if (FileSystem::GetExtension(file).IsEmpty())
+        {
+            executableFile = file;
+            break;
+        }
+    }
 }
 
 #endif

@@ -96,13 +96,13 @@ Task* Task::ContinueWith(const Action& action, Object* target)
     return result;
 }
 
-Task* Task::ContinueWith(Function<void()> action, Object* target)
+Task* Task::ContinueWith(const Function<void()>& action, Object* target)
 {
     ASSERT(action.IsBinded());
     return ContinueWith(New<ThreadPoolActionTask>(action, target));
 }
 
-Task* Task::ContinueWith(Function<bool()> action, Object* target)
+Task* Task::ContinueWith(const Function<bool()>& action, Object* target)
 {
     ASSERT(action.IsBinded());
     return ContinueWith(New<ThreadPoolActionTask>(action, target));
@@ -116,17 +116,17 @@ Task* Task::StartNew(Task* task)
     return task;
 }
 
-Task* Task::StartNew(Function<void()>& action, Object* target)
+Task* Task::StartNew(const Function<void()>& action, Object* target)
 {
     return StartNew(New<ThreadPoolActionTask>(action, target));
 }
 
-Task* Task::StartNew(Function<void()>::Signature action, Object* target)
+Task* Task::StartNew(const Function<void()>::Signature action, Object* target)
 {
     return StartNew(New<ThreadPoolActionTask>(action, target));
 }
 
-Task* Task::StartNew(Function<bool()>& action, Object* target)
+Task* Task::StartNew(const Function<bool()>& action, Object* target)
 {
     return StartNew(New<ThreadPoolActionTask>(action, target));
 }

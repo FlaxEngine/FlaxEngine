@@ -12,6 +12,13 @@
 class GameCooker;
 class PlatformTools;
 
+#if OFFICIAL_BUILD
+// Use the fixed .NET SDK version in packaged builds for compatibility (FlaxGame is precompiled with it)
+#define GAME_BUILD_DOTNET_VER TEXT("-dotnet=7")
+#else
+#define GAME_BUILD_DOTNET_VER TEXT("")
+#endif
+
 /// <summary>
 /// Game building options. Used as flags.
 /// </summary>

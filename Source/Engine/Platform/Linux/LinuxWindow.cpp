@@ -41,8 +41,10 @@ extern Dictionary<StringAnsi, X11::KeyCode> KeyNameMap;
 extern Array<KeyboardKeys> KeyCodeMap;
 extern X11::Cursor Cursors[(int32)CursorType::MAX];
 
-static const uint32 MouseDoubleClickTime = 500;
+static constexpr uint32 MouseDoubleClickTime = 500;
+static constexpr uint32 MaxDoubleClickDistanceSquared = 10;
 static X11::Time MouseLastButtonPressTime = 0;
+static Float2 OldMouseClickPosition;
 
 LinuxWindow::LinuxWindow(const CreateWindowSettings& settings)
 	: WindowBase(settings)
@@ -148,9 +150,9 @@ LinuxWindow::LinuxWindow(const CreateWindowSettings& settings)
 	{
 		// Set resizing range
 		hints.min_width = (int)settings.MinimumSize.X;
-		hints.max_width = (int)settings.MaximumSize.X;
+		hints.max_width = settings.MaximumSize.X > 0 ? (int)settings.MaximumSize.X : MAX_uint16;
 		hints.min_height = (int)settings.MinimumSize.Y;
-		hints.max_height = (int)settings.MaximumSize.Y;
+		hints.max_height = settings.MaximumSize.Y > 0 ? (int)settings.MaximumSize.Y : MAX_uint16;
 		hints.flags |= USSize;
 	}
     // honor the WM placement except for manual (overriding) placements
@@ -378,6 +380,8 @@ void LinuxWindow::SetClientBounds(const Rectangle& clientArea)
 		X11::XSetNormalHints(display, window, &hints);
 	}
 
+	X11::XMapWindow(display, window);
+
 	_clientSize = Float2((float)width, (float)height);
 	X11::XResizeWindow(display, window, width, height);
 	X11::XMoveWindow(display, window, x, y);
@@ -590,6 +594,12 @@ void LinuxWindow::OnButtonPress(void* event)
 	case Button3:
 		mouseButton = MouseButton::Right;
 		break;
+	case 8:
+		mouseButton = MouseButton::Extended2;
+		break;
+	case 9:
+		mouseButton = MouseButton::Extended1;
+		break;
 	default:
 		return;
 	}
@@ -597,15 +607,19 @@ void LinuxWindow::OnButtonPress(void* event)
 	// Handle double-click
 	if (buttonEvent->button == Button1)
 	{
-		if (buttonEvent->time < (MouseLastButtonPressTime + MouseDoubleClickTime))
+		if (
+			buttonEvent->time < (MouseLastButtonPressTime + MouseDoubleClickTime) &&
+			Float2::DistanceSquared(mousePos, OldMouseClickPosition) < MaxDoubleClickDistanceSquared)
 		{
 			Input::Mouse->OnMouseDoubleClick(ClientToScreen(mousePos), mouseButton, this);
 			MouseLastButtonPressTime = 0;
+			OldMouseClickPosition = mousePos;
 			return;
 		}
 		else
 		{
 			MouseLastButtonPressTime = buttonEvent->time;
+			OldMouseClickPosition = mousePos;
 		}
 	}
 
@@ -632,6 +646,12 @@ void LinuxWindow::OnButtonRelease(void* event)
 		break;
 	case Button5:
 		Input::Mouse->OnMouseWheel(ClientToScreen(mousePos), -1.0f, this);
+		break;
+	case 8:
+		Input::Mouse->OnMouseUp(ClientToScreen(mousePos), MouseButton::Extended2, this);
+		break;
+	case 9:
+		Input::Mouse->OnMouseUp(ClientToScreen(mousePos), MouseButton::Extended1, this);
 		break;
 	default:
 		return;

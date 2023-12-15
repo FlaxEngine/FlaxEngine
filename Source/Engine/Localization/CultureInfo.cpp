@@ -30,6 +30,20 @@ typedef struct
 } MonoCultureInfo;
 #endif
 
+namespace
+{
+    const CultureInfoEntry* FindEntry(const StringAnsiView& name)
+    {
+        for (int32 i = 0; i < NUM_CULTURE_ENTRIES; i++)
+        {
+            const CultureInfoEntry& e = culture_entries[i];
+            if (name == idx2string(e.name))
+                return &e;
+        }
+        return nullptr;
+    }
+};
+
 CultureInfo::CultureInfo(int32 lcid)
 {
     _lcid = lcid;
@@ -80,23 +94,24 @@ CultureInfo::CultureInfo(const StringAnsiView& name)
         _englishName = TEXT("Invariant Culture");
         return;
     }
-    for (int32 i = 0; i < NUM_CULTURE_ENTRIES; i++)
+    const CultureInfoEntry* e = FindEntry(name);
+    if (!e && name.Find('-') != -1)
     {
-        auto& e = culture_entries[i];
-        if (name == idx2string(e.name))
-        {
-            _data = (void*)&e;
-            _lcid = (int32)e.lcid;
-            _lcidParent = (int32)e.parent_lcid;
-            _name.SetUTF8(name.Get(), name.Length());
-            const char* nativename = idx2string(e.nativename);
-            _nativeName.SetUTF8(nativename, StringUtils::Length(nativename));
-            const char* englishname = idx2string(e.englishname);
-            _englishName.SetUTF8(englishname, StringUtils::Length(englishname));
-            break;
-        }
+        e = FindEntry(name.Substring(0, name.Find('-')));
     }
-    if (!_data)
+    if (e)
+    {
+        _data = (void*)e;
+        _lcid = (int32)e->lcid;
+        _lcidParent = (int32)e->parent_lcid;
+        const char* ename = idx2string(e->name);
+        _name.SetUTF8(ename, StringUtils::Length(ename));
+        const char* nativename = idx2string(e->nativename);
+        _nativeName.SetUTF8(nativename, StringUtils::Length(nativename));
+        const char* englishname = idx2string(e->englishname);
+        _englishName.SetUTF8(englishname, StringUtils::Length(englishname));
+    }
+    else
     {
         _lcid = 127;
         _lcidParent = 0;

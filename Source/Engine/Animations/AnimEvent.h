@@ -2,8 +2,7 @@
 
 #pragma once
 
-#include "Engine/Scripting/ScriptingObject.h"
-#include "Engine/Core/ISerializable.h"
+#include "Engine/Scripting/SerializableScriptingObject.h"
 #if USE_EDITOR
 #include "Engine/Core/Math/Color.h"
 #endif
@@ -14,9 +13,14 @@ class Animation;
 /// <summary>
 /// The animation notification event triggered during animation playback.
 /// </summary>
-API_CLASS(Abstract) class FLAXENGINE_API AnimEvent : public ScriptingObject, public ISerializable
+API_CLASS(Abstract) class FLAXENGINE_API AnimEvent : public SerializableScriptingObject
 {
     DECLARE_SCRIPTING_TYPE(AnimEvent);
+
+    /// <summary>
+    /// Indicates whether the event can be executed in async from a thread that updates the animated model. Otherwise, event execution will be delayed until the sync point of the animated model and called from the main thread. Async events need to precisely handle data access, especially when it comes to editing scene objects with multi-threading.
+    /// </summary>
+    API_FIELD(Attributes="HideInEditor, NoSerialize") bool Async = false;
 
 #if USE_EDITOR
     /// <summary>
@@ -35,10 +39,6 @@ API_CLASS(Abstract) class FLAXENGINE_API AnimEvent : public ScriptingObject, pub
     API_FUNCTION() virtual void OnEvent(AnimatedModel* actor, Animation* anim, float time, float deltaTime)
     {
     }
-
-    // [ISerializable]
-    void Serialize(SerializeStream& stream, const void* otherObj) override;
-    void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) override;
 };
 
 /// <summary>

@@ -119,6 +119,11 @@ public:
     static const String CreateAnimationTag;
 
     /// <summary>
+    /// The create Behavior Tree asset tag.
+    /// </summary>
+    static const String CreateBehaviorTreeTag;
+
+    /// <summary>
     /// The create visual script asset tag.
     /// </summary>
     static const String CreateVisualScriptTag;
@@ -230,6 +235,9 @@ public:
         Guid id = Guid::Empty;
         return ImportIfEdited(inputPath, outputPath, id, arg);
     }
+
+    // Converts source files path into the relative format if enabled by the project settings. Result path can be stored in asset for reimports.
+    static String GetImportPath(const String& path);
 
 private:
     static bool Create(const CreateAssetFunction& callback, const StringView& inputPath, const StringView& outputPath, Guid& assetId, void* arg);

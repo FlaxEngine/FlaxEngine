@@ -40,11 +40,15 @@ ShaderGraphValue::ShaderGraphValue(const Variant& v)
         break;
     case VariantType::Float:
         Type = VariantType::Types::Float;
-        Value = String::Format(TEXT("{:.8f}"), v.AsFloat);
+        Value = String::Format(TEXT("{}"), v.AsFloat);
+        if (Value.Find('.') == -1)
+            Value = String::Format(TEXT("{:.1f}"), v.AsFloat);
         break;
     case VariantType::Double:
         Type = VariantType::Types::Float;
-        Value = String::Format(TEXT("{:.8f}"), (float)v.AsDouble);
+        Value = String::Format(TEXT("{}"), (float)v.AsDouble);
+        if (Value.Find('.') == -1)
+            Value = String::Format(TEXT("{:.1f}"), (float)v.AsDouble);
         break;
     case VariantType::Float2:
     {
@@ -129,6 +133,29 @@ bool ShaderGraphValue::IsOne() const
     case VariantType::Types::Uint:
     case VariantType::Types::Float:
         return Value == TEXT("1") || Value == TEXT("1.0");
+    default:
+        return false;
+    }
+}
+
+bool ShaderGraphValue::IsLiteral() const
+{
+    switch (Type)
+    {
+    case VariantType::Types::Bool:
+    case VariantType::Types::Int:
+    case VariantType::Types::Uint:
+    case VariantType::Types::Float:
+        if (Value.HasChars())
+        {
+            for (int32 i = 0; i < Value.Length(); i++)
+            {
+                const Char c = Value[i];
+                if (!StringUtils::IsDigit(c) && c != '.')
+                    return false;
+            }
+            return true;
+        }
     default:
         return false;
     }
@@ -242,6 +269,48 @@ ShaderGraphValue ShaderGraphValue::InitForOne(VariantType::Types type)
         v = nullptr;
     }
     return ShaderGraphValue(type, String(v));
+}
+
+ShaderGraphValue ShaderGraphValue::GetY() const
+{
+    switch (Type)
+    {
+    case VariantType::Float2:
+    case VariantType::Float3:
+    case VariantType::Float4:
+    case VariantType::Double2:
+    case VariantType::Double3:
+    case VariantType::Double4:
+        return ShaderGraphValue(VariantType::Types::Float, Value + _subs[1]);
+    default:
+        return Zero;
+    }
+}
+
+ShaderGraphValue ShaderGraphValue::GetZ() const
+{
+    switch (Type)
+    {
+    case VariantType::Float3:
+    case VariantType::Float4:
+    case VariantType::Double3:
+    case VariantType::Double4:
+        return ShaderGraphValue(VariantType::Types::Float, Value + _subs[2]);
+    default:
+        return Zero;
+    }
+}
+
+ShaderGraphValue ShaderGraphValue::GetW() const
+{
+    switch (Type)
+    {
+    case VariantType::Float4:
+    case VariantType::Double4:
+        return ShaderGraphValue(VariantType::Types::Float, Value + _subs[3]);
+    default:
+        return One;
+    }
 }
 
 ShaderGraphValue ShaderGraphValue::Cast(const ShaderGraphValue& v, VariantType::Types to)

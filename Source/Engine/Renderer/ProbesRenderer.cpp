@@ -105,7 +105,7 @@ class ProbesRendererService : public EngineService
 {
 public:
     ProbesRendererService()
-        : EngineService(TEXT("Probes Renderer"), 70)
+        : EngineService(TEXT("Probes Renderer"), 500)
     {
     }
 

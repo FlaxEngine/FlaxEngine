@@ -121,6 +121,14 @@ public:
     API_FUNCTION() Sprite GetSprite(int32 index) const;
 
     /// <summary>
+    /// Gets the sprite area.
+    /// </summary>
+    /// <param name="index">The index.</param>
+    /// <param name="result">The output sprite area.</param>
+    /// <returns>The sprite data.</returns>
+    API_FUNCTION() void GetSpriteArea(int32 index, API_PARAM(Out) Rectangle& result) const;
+
+    /// <summary>
     /// Sets the sprite data.
     /// </summary>
     /// <param name="index">The index.</param>

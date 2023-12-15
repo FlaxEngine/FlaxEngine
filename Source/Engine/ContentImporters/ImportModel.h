@@ -9,14 +9,9 @@
 #include "Engine/Tools/ModelTool/ModelTool.h"
 
 /// <summary>
-/// Enable/disable caching model import options
-/// </summary>
-#define IMPORT_MODEL_CACHE_OPTIONS 1
-
-/// <summary>
 /// Importing models utility
 /// </summary>
-class ImportModelFile
+class ImportModel
 {
 public:
     typedef ModelTool::Options Options;
@@ -45,9 +40,10 @@ public:
     static CreateAssetResult Create(CreateAssetContext& context);
 
 private:
-    static CreateAssetResult ImportModel(CreateAssetContext& context, ModelData& modelData, const Options* options = nullptr);
-    static CreateAssetResult ImportSkinnedModel(CreateAssetContext& context, ModelData& modelData, const Options* options = nullptr);
-    static CreateAssetResult ImportAnimation(CreateAssetContext& context, ModelData& modelData, const Options* options = nullptr);
+    static CreateAssetResult CreateModel(CreateAssetContext& context, ModelData& data, const Options* options = nullptr);
+    static CreateAssetResult CreateSkinnedModel(CreateAssetContext& context, ModelData& data, const Options* options = nullptr);
+    static CreateAssetResult CreateAnimation(CreateAssetContext& context, ModelData& data, const Options* options = nullptr);
+    static CreateAssetResult CreatePrefab(CreateAssetContext& context, ModelData& data, const Options& options, const Array<struct PrefabObject>& prefabObjects);
 };
 
 #endif

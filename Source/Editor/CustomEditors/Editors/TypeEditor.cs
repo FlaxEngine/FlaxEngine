@@ -464,6 +464,11 @@ namespace FlaxEditor.CustomEditors.Editors
     /// </summary>
     public class TypeNameEditor : TypeEditorBase
     {
+        /// <summary>
+        /// Prevents spamming log if Value contains missing type to skip research in subsequential Refresh ticks.
+        /// </summary>
+        private string _lastTypeNameError;
+
         /// <inheritdoc />
         public override void Initialize(LayoutElementsContainer layout)
         {
@@ -484,8 +489,19 @@ namespace FlaxEditor.CustomEditors.Editors
         {
             base.Refresh();
 
-            if (!HasDifferentValues && Values[0] is string asTypename)
-                _element.CustomControl.Value = TypeUtils.GetType(asTypename);
+            if (!HasDifferentValues && Values[0] is string asTypename &&
+                !string.Equals(asTypename, _lastTypeNameError, StringComparison.Ordinal))
+            {
+                try
+                {
+                    _element.CustomControl.Value = TypeUtils.GetType(asTypename);
+                }
+                finally
+                {
+                    if (_element.CustomControl.Value == null && asTypename.Length != 0)
+                        _lastTypeNameError = asTypename;
+                }
+            }
         }
     }
 }

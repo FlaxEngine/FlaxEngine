@@ -382,9 +382,8 @@ void Quaternion::GetRotationFromTo(const Float3& from, const Float3& to, Quatern
     v0.Normalize();
     v1.Normalize();
 
-    const float d = Float3::Dot(v0, v1);
-
     // If dot == 1, vectors are the same
+    const float d = Float3::Dot(v0, v1);
     if (d >= 1.0f)
     {
         result = Identity;

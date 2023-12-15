@@ -11,29 +11,6 @@ String SceneInfo::ToString() const
     return TEXT("SceneInfo");
 }
 
-const int32 lightmapAtlasSizes[] =
-{
-    32,
-    64,
-    128,
-    256,
-    512,
-    1024,
-    2048,
-    4096
-};
-DECLARE_ENUM_8(LightmapAtlasSize, _32, _64, _128, _256, _512, _1024, _2048, _4096);
-
-LightmapAtlasSize getLightmapAtlasSize(int32 size)
-{
-    for (int32 i = 0; i < LightmapAtlasSize_Count; i++)
-    {
-        if (lightmapAtlasSizes[i] == size)
-            return (LightmapAtlasSize)i;
-    }
-    return LightmapAtlasSize::_1024;
-}
-
 void SceneInfo::Serialize(SerializeStream& stream, const void* otherObj)
 {
     SERIALIZE_GET_OTHER_OBJ(SceneInfo);

@@ -20,6 +20,20 @@ namespace FlaxEditor.Modules
         }
 
         /// <summary>
+        /// Opens the specified asset in dedicated editor window.
+        /// </summary>
+        /// <param name="asset">The asset.</param>
+        /// <param name="disableAutoShow">True if disable automatic window showing. Used during workspace layout loading to deserialize it faster.</param>
+        /// <returns>Opened window or null if cannot open item.</returns>
+        public EditorWindow Open(Asset asset, bool disableAutoShow = false)
+        {
+            if (asset == null)
+                throw new ArgumentNullException();
+            var item = Editor.ContentDatabase.FindAsset(asset.ID);
+            return item != null ? Open(item) : null;
+        }
+
+        /// <summary>
         /// Opens the specified item in dedicated editor window.
         /// </summary>
         /// <param name="item">The content item.</param>
@@ -90,7 +104,7 @@ namespace FlaxEditor.Modules
                     hint = "Too long name.";
                     return false;
                 }
-                
+
                 if (item.IsFolder && shortName.EndsWith("."))
                 {
                     hint = "Name cannot end with '.'";

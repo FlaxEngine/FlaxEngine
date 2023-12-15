@@ -71,7 +71,7 @@ namespace FlaxEditor.CustomEditors.Editors
                 {
                     // Generic file picker
                     assetType = ScriptType.Null;
-                    Picker.FileExtension = assetReference.TypeName;
+                    Picker.Validator.FileExtension = assetReference.TypeName;
                 }
                 else
                 {
@@ -85,7 +85,7 @@ namespace FlaxEditor.CustomEditors.Editors
                 }
             }
 
-            Picker.AssetType = assetType;
+            Picker.Validator.AssetType = assetType;
             Picker.Height = height;
             Picker.SelectedItemChanged += OnSelectedItemChanged;
         }
@@ -95,15 +95,15 @@ namespace FlaxEditor.CustomEditors.Editors
             if (_isRefreshing)
                 return;
             if (typeof(AssetItem).IsAssignableFrom(_valueType.Type))
-                SetValue(Picker.SelectedItem);
+                SetValue(Picker.Validator.SelectedItem);
             else if (_valueType.Type == typeof(Guid))
-                SetValue(Picker.SelectedID);
+                SetValue(Picker.Validator.SelectedID);
             else if (_valueType.Type == typeof(SceneReference))
-                SetValue(new SceneReference(Picker.SelectedID));
+                SetValue(new SceneReference(Picker.Validator.SelectedID));
             else if (_valueType.Type == typeof(string))
-                SetValue(Picker.SelectedPath);
+                SetValue(Picker.Validator.SelectedPath);
             else
-                SetValue(Picker.SelectedAsset);
+                SetValue(Picker.Validator.SelectedAsset);
         }
 
         /// <inheritdoc />
@@ -115,15 +115,15 @@ namespace FlaxEditor.CustomEditors.Editors
             {
                 _isRefreshing = true;
                 if (Values[0] is AssetItem assetItem)
-                    Picker.SelectedItem = assetItem;
+                    Picker.Validator.SelectedItem = assetItem;
                 else if (Values[0] is Guid guid)
-                    Picker.SelectedID = guid;
+                    Picker.Validator.SelectedID = guid;
                 else if (Values[0] is SceneReference sceneAsset)
-                    Picker.SelectedItem = Editor.Instance.ContentDatabase.FindAsset(sceneAsset.ID);
+                    Picker.Validator.SelectedItem = Editor.Instance.ContentDatabase.FindAsset(sceneAsset.ID);
                 else if (Values[0] is string path)
-                    Picker.SelectedPath = path;
+                    Picker.Validator.SelectedPath = path;
                 else
-                    Picker.SelectedAsset = Values[0] as Asset;
+                    Picker.Validator.SelectedAsset = Values[0] as Asset;
                 _isRefreshing = false;
             }
         }

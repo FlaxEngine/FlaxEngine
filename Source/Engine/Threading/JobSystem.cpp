@@ -105,7 +105,7 @@ namespace
     CriticalSection WaitMutex;
     CriticalSection JobsLocker;
 #if JOB_SYSTEM_USE_MUTEX
-    RingBuffer<JobData, InlinedAllocation<256>> Jobs;
+    RingBuffer<JobData> Jobs;
 #else
     ConcurrentQueue<JobData> Jobs;
 #endif
@@ -228,6 +228,7 @@ int32 JobSystemThread::Run()
 
 void JobSystem::Execute(const Function<void(int32)>& job, int32 jobCount)
 {
+#if JOB_SYSTEM_ENABLED
     // TODO: disable async if called on job thread? or maybe Wait should handle waiting in job thread to do the processing?
     if (jobCount > 1)
     {
@@ -235,7 +236,8 @@ void JobSystem::Execute(const Function<void(int32)>& job, int32 jobCount)
         const int64 jobWaitHandle = Dispatch(job, jobCount);
         Wait(jobWaitHandle);
     }
-    else if (jobCount > 0)
+    else
+#endif
     {
         // Sync
         for (int32 i = 0; i < jobCount; i++)

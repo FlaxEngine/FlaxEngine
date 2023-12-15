@@ -49,7 +49,16 @@ namespace FlaxEditor.Actions
             _scriptTypeName = script.TypeName;
             _prefabId = script.PrefabID;
             _prefabObjectId = script.PrefabObjectID;
-            _scriptData = FlaxEngine.Json.JsonSerializer.Serialize(script);
+            try
+            {
+                _scriptData = FlaxEngine.Json.JsonSerializer.Serialize(script);
+            }
+            catch (Exception ex)
+            {
+                _scriptData = null;
+                Debug.LogError("Failed to serialize script data for Undo due to exception");
+                Debug.LogException(ex);
+            }
             _parentId = script.Actor.ID;
             _orderInParent = script.OrderInParent;
             _enabled = script.Enabled;
@@ -64,6 +73,11 @@ namespace FlaxEditor.Actions
             _parentId = parentActor.ID;
             _orderInParent = -1;
             _enabled = true;
+        }
+
+        public int GetOrderInParent()
+        {
+            return _orderInParent;
         }
 
         /// <summary>
@@ -175,6 +189,7 @@ namespace FlaxEditor.Actions
             script.Parent = parentActor;
             if (_orderInParent != -1)
                 script.OrderInParent = _orderInParent;
+            _orderInParent = script.OrderInParent; // Ensure order is correct for script that want to use it later
             if (_prefabObjectId != Guid.Empty)
                 SceneObject.Internal_LinkPrefab(Object.GetUnmanagedPtr(script), ref _prefabId, ref _prefabObjectId);
             Editor.Instance.Scene.MarkSceneEdited(parentActor.Scene);

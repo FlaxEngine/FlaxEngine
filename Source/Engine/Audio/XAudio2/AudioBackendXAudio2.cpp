@@ -27,7 +27,15 @@
 #define MAX_INPUT_CHANNELS 2
 #define MAX_OUTPUT_CHANNELS 8
 #define MAX_CHANNELS_MATRIX_SIZE (MAX_INPUT_CHANNELS*MAX_OUTPUT_CHANNELS)
-
+#if ENABLE_ASSERTION
+#define XAUDIO2_CHECK_ERROR(method) \
+    if (hr != 0) \
+    { \
+        LOG(Error, "XAudio2 method {0} failed with error 0x{1:X} (at line {2})", TEXT(#method), (uint32)hr, __LINE__ - 1); \
+    }
+#else
+#define XAUDIO2_CHECK_ERROR(method)
+#endif
 #define FLAX_COORD_SCALE 0.01f // units are meters
 #define FLAX_DST_TO_XAUDIO(x) x * FLAX_COORD_SCALE
 #define FLAX_POS_TO_XAUDIO(vec) X3DAUDIO_VECTOR(vec.X * FLAX_COORD_SCALE,  vec.Y * FLAX_COORD_SCALE, vec.Z * FLAX_COORD_SCALE)
@@ -104,7 +112,9 @@ namespace XAudio2
 
         COM_DECLSPEC_NOTHROW void STDMETHODCALLTYPE OnVoiceError(THIS_ void* pBufferContext, HRESULT Error) override
         {
+#if ENABLE_ASSERTION
             LOG(Warning, "IXAudio2VoiceCallback::OnVoiceError! Error: 0x{0:x}", Error);
+#endif
         }
 
     public:
@@ -121,7 +131,8 @@ namespace XAudio2
         XAUDIO2_SEND_DESCRIPTOR Destination;
         float Pitch;
         float Pan;
-        float StartTime;
+        float StartTimeForQueueBuffer;
+        float LastBufferStartTime;
         float DopplerFactor;
         uint64 LastBufferStartSamplesPlayed;
         int32 BuffersProcessed;
@@ -145,7 +156,8 @@ namespace XAudio2
             Destination.pOutputVoice = nullptr;
             Pitch = 1.0f;
             Pan = 0.0f;
-            StartTime = 0.0f;
+            StartTimeForQueueBuffer = 0.0f;
+            LastBufferStartTime = 0.0f;
             IsDirty = false;
             Is3D = false;
             IsPlaying = false;
@@ -255,18 +267,18 @@ namespace XAudio2
         buffer.pAudioData = aBuffer->Data.Get();
         buffer.AudioBytes = aBuffer->Data.Count();
 
-        if (aSource->StartTime > ZeroTolerance)
+        if (aSource->StartTimeForQueueBuffer > ZeroTolerance)
         {
-            buffer.PlayBegin = (UINT32)(aSource->StartTime * (aBuffer->Info.SampleRate * aBuffer->Info.NumChannels));
-            buffer.PlayLength = aBuffer->Info.NumSamples / aBuffer->Info.NumChannels - buffer.PlayBegin;
-            aSource->StartTime = 0;
+            // Offset start position when playing buffer with a custom time offset
+            const uint32 bytesPerSample = aBuffer->Info.BitDepth / 8 * aBuffer->Info.NumChannels;
+            buffer.PlayBegin = (UINT32)(aSource->StartTimeForQueueBuffer * aBuffer->Info.SampleRate);
+            buffer.PlayLength = (buffer.AudioBytes / bytesPerSample) - buffer.PlayBegin;
+            aSource->LastBufferStartTime = aSource->StartTimeForQueueBuffer;
+            aSource->StartTimeForQueueBuffer = 0;
         }
 
         const HRESULT hr = aSource->Voice->SubmitSourceBuffer(&buffer);
-        if (FAILED(hr))
-        {
-            LOG(Warning, "XAudio2: Failed to submit source buffer (error: 0x{0:x})", hr);
-        }
+        XAUDIO2_CHECK_ERROR(SubmitSourceBuffer);
     }
 
     void VoiceCallback::OnBufferEnd(void* pBufferContext)
@@ -375,7 +387,7 @@ void AudioBackendXAudio2::Source_OnAdd(AudioSource* source)
     const auto& header = clip->AudioHeader;
     auto& format = aSource->Format;
     format.wFormatTag = WAVE_FORMAT_PCM;
-    format.nChannels = source->Is3D() ? 1 : header.Info.NumChannels; // 3d audio is always mono (AudioClip auto-converts before buffer write)
+    format.nChannels = clip->Is3D() ? 1 : header.Info.NumChannels; // 3d audio is always mono (AudioClip auto-converts before buffer write)
     format.nSamplesPerSec = header.Info.SampleRate;
     format.wBitsPerSample = header.Info.BitDepth;
     format.nBlockAlign = (WORD)(format.nChannels * (format.wBitsPerSample / 8));
@@ -391,12 +403,10 @@ void AudioBackendXAudio2::Source_OnAdd(AudioSource* source)
         1,
         &aSource->Destination
     };
-    const HRESULT hr = XAudio2::Instance->CreateSourceVoice(&aSource->Voice, &aSource->Format, 0, 2.0f, &aSource->Callback, &sendList);
+    HRESULT hr = XAudio2::Instance->CreateSourceVoice(&aSource->Voice, &aSource->Format, 0, 2.0f, &aSource->Callback, &sendList);
+    XAUDIO2_CHECK_ERROR(CreateSourceVoice);
     if (FAILED(hr))
-    {
-        LOG(Error, "Failed to create XAudio2 voice. Error: 0x{0:x}", hr);
         return;
-    }
 
     // Prepare source state
     aSource->Callback.Source = source;
@@ -410,7 +420,8 @@ void AudioBackendXAudio2::Source_OnAdd(AudioSource* source)
     aSource->DopplerFactor = source->GetDopplerFactor();
     aSource->UpdateTransform(source);
     aSource->UpdateVelocity(source);
-    aSource->Voice->SetVolume(source->GetVolume());
+    hr = aSource->Voice->SetVolume(source->GetVolume());
+    XAUDIO2_CHECK_ERROR(SetVolume);
 
     // 0 is invalid ID so shift them
     sourceID++;
@@ -451,7 +462,8 @@ void AudioBackendXAudio2::Source_VolumeChanged(AudioSource* source)
     auto aSource = XAudio2::GetSource(source);
     if (aSource && aSource->Voice)
     {
-        aSource->Voice->SetVolume(source->GetVolume());
+        const HRESULT hr = aSource->Voice->SetVolume(source->GetVolume());
+        XAUDIO2_CHECK_ERROR(SetVolume);
     }
 }
 
@@ -494,12 +506,18 @@ void AudioBackendXAudio2::Source_IsLoopingChanged(AudioSource* source)
     XAudio2::Buffer* aBuffer = XAudio2::Buffers[bufferId - 1];
     XAudio2::Locker.Unlock();
 
+    HRESULT hr;
     const bool isPlaying = source->IsActuallyPlayingSth();
     if (isPlaying)
-        aSource->Voice->Stop();
+    {
+        hr = aSource->Voice->Stop();
+        XAUDIO2_CHECK_ERROR(Stop);
+    }
 
-    aSource->Voice->FlushSourceBuffers();
+    hr = aSource->Voice->FlushSourceBuffers();
+    XAUDIO2_CHECK_ERROR(FlushSourceBuffers);
     aSource->LastBufferStartSamplesPlayed = 0;
+    aSource->LastBufferStartTime = 0;
     aSource->BuffersProcessed = 0;
 
     XAUDIO2_BUFFER buffer = { 0 };
@@ -512,12 +530,15 @@ void AudioBackendXAudio2::Source_IsLoopingChanged(AudioSource* source)
     const UINT32 totalSamples = aBuffer->Info.NumSamples / aBuffer->Info.NumChannels;
     buffer.PlayBegin = state.SamplesPlayed % totalSamples;
     buffer.PlayLength = totalSamples - buffer.PlayBegin;
-    aSource->StartTime = 0;
+    aSource->StartTimeForQueueBuffer = 0;
 
     XAudio2::QueueBuffer(aSource, source, bufferId, buffer);
 
     if (isPlaying)
-        aSource->Voice->Start();
+    {
+        hr = aSource->Voice->Start();
+        XAUDIO2_CHECK_ERROR(Start);
+    }
 }
 
 void AudioBackendXAudio2::Source_SpatialSetupChanged(AudioSource* source)
@@ -572,7 +593,8 @@ void AudioBackendXAudio2::Source_Play(AudioSource* source)
     if (aSource && aSource->Voice && !aSource->IsPlaying)
     {
         // Play
-        aSource->Voice->Start();
+        const HRESULT hr = aSource->Voice->Start();
+        XAUDIO2_CHECK_ERROR(Start);
         aSource->IsPlaying = true;
     }
 }
@@ -583,7 +605,8 @@ void AudioBackendXAudio2::Source_Pause(AudioSource* source)
     if (aSource && aSource->Voice && aSource->IsPlaying)
     {
         // Pause
-        aSource->Voice->Stop();
+        const HRESULT hr = aSource->Voice->Stop();
+        XAUDIO2_CHECK_ERROR(Stop);
         aSource->IsPlaying = false;
     }
 }
@@ -593,14 +616,18 @@ void AudioBackendXAudio2::Source_Stop(AudioSource* source)
     auto aSource = XAudio2::GetSource(source);
     if (aSource && aSource->Voice)
     {
-        aSource->StartTime = 0.0f;
+        aSource->StartTimeForQueueBuffer = 0.0f;
+        aSource->LastBufferStartTime = 0.0f;
 
         // Pause
-        aSource->Voice->Stop();
+        HRESULT hr = aSource->Voice->Stop();
+        XAUDIO2_CHECK_ERROR(Stop);
         aSource->IsPlaying = false;
 
         // Unset streaming buffers to rewind
-        aSource->Voice->FlushSourceBuffers();
+        hr = aSource->Voice->FlushSourceBuffers();
+        XAUDIO2_CHECK_ERROR(FlushSourceBuffers);
+        Platform::Sleep(10); // TODO: find a better way to handle case when VoiceCallback::OnBufferEnd is called after source was stopped thus BuffersProcessed != 0, probably via buffers contexts ptrs
         aSource->BuffersProcessed = 0;
         aSource->Callback.PeekSamples();
     }
@@ -612,7 +639,7 @@ void AudioBackendXAudio2::Source_SetCurrentBufferTime(AudioSource* source, float
     if (aSource)
     {
         // Store start time so next buffer submitted will start from here (assumes audio is stopped)
-        aSource->StartTime = value;
+        aSource->StartTimeForQueueBuffer = value;
     }
 }
 
@@ -628,8 +655,9 @@ float AudioBackendXAudio2::Source_GetCurrentBufferTime(const AudioSource* source
         aSource->Voice->GetState(&state);
         const uint32 numChannels = clipInfo.NumChannels;
         const uint32 totalSamples = clipInfo.NumSamples / numChannels;
+        const uint32 sampleRate = clipInfo.SampleRate;// / clipInfo.NumChannels;
         state.SamplesPlayed -= aSource->LastBufferStartSamplesPlayed % totalSamples; // Offset by the last buffer start to get time relative to its begin
-        time = aSource->StartTime + (state.SamplesPlayed % totalSamples) / static_cast<float>(Math::Max(1U, clipInfo.SampleRate));
+        time = aSource->LastBufferStartTime + (state.SamplesPlayed % totalSamples) / static_cast<float>(Math::Max(1U, sampleRate));
     }
     return time;
 }
@@ -697,10 +725,7 @@ void AudioBackendXAudio2::Source_DequeueProcessedBuffers(AudioSource* source)
     if (aSource && aSource->Voice)
     {
         const HRESULT hr = aSource->Voice->FlushSourceBuffers();
-        if (FAILED(hr))
-        {
-            LOG(Warning, "XAudio2: FlushSourceBuffers failed. Error: 0x{0:x}", hr);
-        }
+        XAUDIO2_CHECK_ERROR(FlushSourceBuffers);
         aSource->BuffersProcessed = 0;
     }
 }
@@ -749,8 +774,7 @@ void AudioBackendXAudio2::Buffer_Write(uint32 bufferId, byte* samples, const Aud
     XAudio2::Buffer* aBuffer = XAudio2::Buffers[bufferId - 1];
     XAudio2::Locker.Unlock();
 
-    const uint32 bytesPerSample = info.BitDepth / 8;
-    const int32 samplesLength = info.NumSamples * bytesPerSample;
+    const uint32 samplesLength = info.NumSamples * info.BitDepth / 8;
 
     aBuffer->Info = info;
     aBuffer->Data.Set(samples, samplesLength);
@@ -779,7 +803,8 @@ void AudioBackendXAudio2::Base_SetVolume(float value)
 {
     if (XAudio2::MasteringVoice)
     {
-        XAudio2::MasteringVoice->SetVolume(value);
+        const HRESULT hr = XAudio2::MasteringVoice->SetVolume(value);
+        XAUDIO2_CHECK_ERROR(SetVolume);
     }
 }
 

@@ -7,10 +7,12 @@
 #include "Engine/Graphics/Async/GPUTask.h"
 #include "Engine/Graphics/Models/MeshBase.h"
 #include "Engine/Threading/Threading.h"
+#include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Core/Log.h"
 
 bool CollisionCooking::CookCollision(const Argument& arg, CollisionData::SerializedOptions& outputOptions, BytesContainer& outputData)
 {
+    PROFILE_CPU();
     int32 convexVertexLimit = Math::Clamp(arg.ConvexVertexLimit, CONVEX_VERTEX_MIN, CONVEX_VERTEX_MAX);
     if (arg.ConvexVertexLimit == 0)
         convexVertexLimit = CONVEX_VERTEX_MAX;
@@ -127,6 +129,8 @@ bool CollisionCooking::CookCollision(const Argument& arg, CollisionData::Seriali
                 const auto& mesh = *meshes[i];
                 if ((arg.MaterialSlotsMask & (1 << mesh.GetMaterialSlotIndex())) == 0)
                     continue;
+                if (mesh.GetVertexCount() == 0)
+                    continue;
 
                 int32 count;
                 if (mesh.DownloadDataCPU(MeshBufferType::Vertex0, vertexBuffers[i], count))
@@ -158,6 +162,8 @@ bool CollisionCooking::CookCollision(const Argument& arg, CollisionData::Seriali
             {
                 const auto& mesh = *meshes[i];
                 if ((arg.MaterialSlotsMask & (1 << mesh.GetMaterialSlotIndex())) == 0)
+                    continue;
+                if (mesh.GetVertexCount() == 0)
                     continue;
 
                 auto task = mesh.DownloadDataGPUAsync(MeshBufferType::Vertex0, vertexBuffers[i]);
@@ -208,6 +214,8 @@ bool CollisionCooking::CookCollision(const Argument& arg, CollisionData::Seriali
 
             const int32 firstVertexIndex = vertexCounter;
             const int32 vertexCount = vertexCounts[i];
+            if (vertexCount == 0)
+                continue;
             Platform::MemoryCopy(finalVertexData.Get() + firstVertexIndex, vData.Get(), vertexCount * sizeof(Float3));
             vertexCounter += vertexCount;
 

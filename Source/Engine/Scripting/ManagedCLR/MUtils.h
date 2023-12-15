@@ -64,8 +64,8 @@ struct MConverter<T, typename TEnableIf<TAnd<TIsPODType<T>, TNot<TIsBaseOf<class
 
     void Unbox(T& result, MObject* data)
     {
-        CHECK(data);
-        Platform::MemoryCopy(&result, MCore::Object::Unbox(data), sizeof(T));
+        if (data)
+            Platform::MemoryCopy(&result, MCore::Object::Unbox(data), sizeof(T));
     }
 
     void ToManagedArray(MArray* result, const Span<T>& data)
@@ -118,7 +118,7 @@ struct MConverter<String>
     {
         MString** dataPtr = MCore::Array::GetAddress<MString*>(data);
         for (int32 i = 0; i < result.Length(); i++)
-            MUtils::ToString(dataPtr[i], result[i]);
+            MUtils::ToString(dataPtr[i], result.Get()[i]);
     }
 };
 
@@ -151,7 +151,7 @@ struct MConverter<StringAnsi>
     {
         MString** dataPtr = MCore::Array::GetAddress<MString*>(data);
         for (int32 i = 0; i < result.Length(); i++)
-            MUtils::ToString(dataPtr[i], result[i]);
+            MUtils::ToString(dataPtr[i], result.Get()[i]);
     }
 };
 
@@ -184,7 +184,7 @@ struct MConverter<StringView>
     {
         MString** dataPtr = MCore::Array::GetAddress<MString*>(data);
         for (int32 i = 0; i < result.Length(); i++)
-            MUtils::ToString(dataPtr[i], result[i]);
+            MUtils::ToString(dataPtr[i], result.Get()[i]);
     }
 };
 
@@ -217,7 +217,7 @@ struct MConverter<Variant>
     {
         MObject** dataPtr = MCore::Array::GetAddress<MObject*>(data);
         for (int32 i = 0; i < result.Length(); i++)
-            result[i] = MUtils::UnboxVariant(dataPtr[i]);
+            result.Get()[i] = MUtils::UnboxVariant(dataPtr[i]);
     }
 };
 
@@ -250,7 +250,7 @@ struct MConverter<T*, typename TEnableIf<TIsBaseOf<class ScriptingObject, T>::Va
     {
         MObject** dataPtr = MCore::Array::GetAddress<MObject*>(data);
         for (int32 i = 0; i < result.Length(); i++)
-            result[i] = (T*)ScriptingObject::ToNative(dataPtr[i]);
+            result.Get()[i] = (T*)ScriptingObject::ToNative(dataPtr[i]);
     }
 };
 
@@ -307,7 +307,7 @@ struct MConverter<ScriptingObjectReference<T>>
     {
         MObject** dataPtr = MCore::Array::GetAddress<MObject*>(data);
         for (int32 i = 0; i < result.Length(); i++)
-            result[i] = (T*)ScriptingObject::ToNative(dataPtr[i]);
+            result.Get()[i] = (T*)ScriptingObject::ToNative(dataPtr[i]);
     }
 };
 
@@ -343,7 +343,7 @@ struct MConverter<AssetReference<T>>
     {
         MObject** dataPtr = MCore::Array::GetAddress<MObject*>(data);
         for (int32 i = 0; i < result.Length(); i++)
-            result[i] = (T*)ScriptingObject::ToNative(dataPtr[i]);
+            result.Get()[i] = (T*)ScriptingObject::ToNative(dataPtr[i]);
     }
 };
 

@@ -441,6 +441,23 @@ void MaterialGenerator::ProcessGroupTextures(Box* box, Node* node, Value& value)
             break;
         }
         }
+
+        // Channel masking
+        switch (box->ID)
+        {
+        case 2:
+            value = value.GetX();
+            break;
+        case 3:
+            value = value.GetY();
+            break;
+        case 4:
+            value = value.GetZ();
+            break;
+        case 5:
+            value = value.GetW();
+            break;
+        }
         break;
     }
     // Scene Color
