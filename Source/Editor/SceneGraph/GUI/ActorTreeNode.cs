@@ -112,6 +112,17 @@ namespace FlaxEditor.SceneGraph.GUI
         public virtual void UpdateText()
         {
             Text = _actorNode.Name;
+            if (_actorNode.Actor && _actorNode.Actor.IsPrefabRoot)
+            {
+                Guid prefabID = _actorNode.Actor.PrefabID;
+                if (FlaxEngine.Content.GetAssetInfo(prefabID, out AssetInfo info))
+                {
+                    string path = info.Path;
+                    Text += " (";
+                    Text += System.IO.Path.GetFileNameWithoutExtension(path);
+                    Text += ")";
+                }
+            }
         }
 
         /// <summary>

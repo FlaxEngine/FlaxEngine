@@ -68,6 +68,7 @@ namespace FlaxEditor.Modules
             if (selection.Count == 1 && selection[0] is ActorNode actorNode && actorNode.CanCreatePrefab)
             {
                 CreatePrefab(actorNode.Actor, true, prefabWindow);
+                actorNode.TreeNode.UpdateText();
             }
         }
 
@@ -165,18 +166,23 @@ namespace FlaxEditor.Modules
             {
                 if (selection.Count == 1)
                 {
-                    var action = BreakPrefabLinkAction.Break(((ActorNode)selection[0]).Actor);
+                    var actorNode = (ActorNode)selection[0];
+                    var action = BreakPrefabLinkAction.Break(actorNode.Actor);
                     Undo.AddAction(action);
                     action.Do();
+                    actorNode.TreeNode.UpdateText();
                 }
                 else
                 {
                     var actions = new IUndoAction[selection.Count];
                     for (int i = 0; i < selection.Count; i++)
                     {
-                        var action = BreakPrefabLinkAction.Break(((ActorNode)selection[i]).Actor);
+                        var actorNode = (ActorNode)selection[i];
+                        var action = BreakPrefabLinkAction.Break(actorNode.Actor);
+
                         actions[i] = action;
                         action.Do();
+                        actorNode.TreeNode.UpdateText();
                     }
                     Undo.AddAction(new MultiUndoAction(actions));
                 }
