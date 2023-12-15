@@ -666,7 +666,7 @@ bool TextureTool::ConvertStb(TextureData& dst, const TextureData& src, const Pix
     else if (PixelFormatExtensions::IsCompressedASTC(dstFormat))
     {
 #if COMPILE_WITH_ASTC
-        if (ConvertAstc(dst, src, dstFormat))
+        if (ConvertAstc(dst, *textureData, dstFormat))
 #endif
         {
             return true;

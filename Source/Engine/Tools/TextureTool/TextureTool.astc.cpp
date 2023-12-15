@@ -39,6 +39,11 @@ bool TextureTool::ConvertAstc(TextureData& dst, const TextureData& src, const Pi
         return true;
     }
 	astcenc_swizzle astcSwizzle = { ASTCENC_SWZ_R, ASTCENC_SWZ_G, ASTCENC_SWZ_B, ASTCENC_SWZ_A };
+    if (!PixelFormatExtensions::HasAlpha(src.Format))
+    {
+        // No alpha channel in use so fill with 1
+        astcSwizzle.a = ASTCENC_SWZ_1;
+    }
 
     // Allocate working state given config and thread_count
     astcenc_context* astcContext;
@@ -48,21 +53,30 @@ bool TextureTool::ConvertAstc(TextureData& dst, const TextureData& src, const Pi
         LOG(Warning, "Cannot compress image. ASTC failed with error: {}", String(astcenc_get_error_string(astcError)));
         return true;
     }
-
-    // When converting from non-sRGB to sRGB we need to change the color-space manually (otherwise image is dark)
     TextureData const* textureData = &src;
     TextureData converted;
+
+    // Encoder uses full 4-component RGBA input image so convert it if needed
+    if (PixelFormatExtensions::ComputeComponentsCount(src.Format) != 4)
+    {
+        if (textureData != &src)
+            converted = src;
+        const PixelFormat tempFormat = isHDR ? PixelFormat::R16G16B16A16_Float : (PixelFormatExtensions::IsSRGB(src.Format) ? PixelFormat::R8G8B8A8_UNorm_sRGB : PixelFormat::R8G8B8A8_UNorm);
+        if (!TextureTool::Convert(converted, *textureData, tempFormat))
+            textureData = &converted;
+    }
+
+    // When converting from non-sRGB to sRGB we need to change the color-space manually (otherwise image is dark)
     if (PixelFormatExtensions::IsSRGB(src.Format) != isSRGB)
     {
-        converted = src;
+        if (textureData != &src)
+            converted = src;
         Function<void(Color&)> transform = [](Color& c)
         {
             c = Color::LinearToSrgb(c);
         };
         if (!TextureTool::Transform(converted, transform))
-        {
             textureData = &converted;
-        }
     }
 
     // Compress all array slices
@@ -77,12 +91,13 @@ bool TextureTool::ConvertAstc(TextureData& dst, const TextureData& src, const Pi
         for (int32 mipIndex = 0; mipIndex < mipLevels && astcError == ASTCENC_SUCCESS; mipIndex++)
         {
             const auto& srcMip = srcSlice.Mips[mipIndex];
-            // TODO: validate if source mip data is row and pitch aligned (astcenc_image operates on whole pixel count withotu a slack)
             auto& dstMip = dstSlice.Mips[mipIndex];
             auto mipWidth = Math::Max(textureData->Width >> mipIndex, 1);
             auto mipHeight = Math::Max(textureData->Height >> mipIndex, 1);
             auto blocksWidth = Math::Max(Math::DivideAndRoundUp(mipWidth, blockSize), 1);
             auto blocksHeight = Math::Max(Math::DivideAndRoundUp(mipHeight, blockSize), 1);
+            ASSERT(srcMip.RowPitch == mipWidth * PixelFormatExtensions::SizeInBytes(textureData->Format));
+            ASSERT(srcMip.Lines == mipHeight);
 
             // Allocate memory
             dstMip.RowPitch = blocksWidth * bytesPerBlock;
