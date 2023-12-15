@@ -81,8 +81,8 @@ namespace preprocesors
 
 #if ENABLE_ASSERTION && USE_EDITOR
 //Performs soft assertion of the expression. crashes the engine if is not used with editor, inserts debugger break in case of expression fail, logs the massage to the file.
-//[optional returncode to execute if assert fails]
-#define SOFT_ASSERT(expression,Massage,returncode)                                                          \
+//[optional Fallback Code to execute if assert fails]
+#define SOFT_ASSERT(expression,Massage,FallbackCode)                                                        \
 if (expression)                                                                                             \
 {                                                                                                           \
     if (Platform::IsDebuggerPresent())                                                                      \
@@ -96,12 +96,12 @@ if (expression)                                                                 
     "\nReport a bug at https://github.com/FlaxEngine/FlaxEngine/issues if this is engine issue"             \
     "\nInfo:"                                                                                               \
     "\n" FILE_LINE));                                                                                       \
-    returncode                                                                                              \
+    FallbackCode                                                                                            \
 }
 #else
 #if ENABLE_ASSERTION
-#define SOFT_ASSERT(expression,Massage,returncode) ASSERT(!(expression))
+#define SOFT_ASSERT(expression,Massage,FallbackCode) ASSERT(!(expression))
 #else
-#define SOFT_ASSERT(expression,Massage,returncode)
+#define SOFT_ASSERT(expression,Massage,FallbackCode)
 #endif
 #endif
