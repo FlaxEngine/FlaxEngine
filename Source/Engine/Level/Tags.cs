@@ -45,7 +45,7 @@ namespace FlaxEngine
         /// <returns>True if both values are not equal, otherwise false.</returns>
         public static bool operator !=(Tag left, Tag right)
         {
-            return left.Index == right.Index;
+            return left.Index != right.Index;
         }
 
         /// <summary>
