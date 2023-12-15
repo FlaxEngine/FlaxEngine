@@ -7,9 +7,8 @@ using FlaxEditor.CustomEditors.GUI;
 using FlaxEditor.Scripting;
 using FlaxEngine;
 using FlaxEngine.GUI;
+using FlaxEngine.Json;
 using FlaxEngine.Utilities;
-using Newtonsoft.Json;
-using JsonSerializer = FlaxEngine.Json.JsonSerializer;
 
 namespace FlaxEditor.CustomEditors
 {
@@ -386,22 +385,22 @@ namespace FlaxEditor.CustomEditors
             LinkedLabel = label;
         }
 
-        private void RevertDiffToDefault(CustomEditor editor)
-        {
-            if (editor.ChildrenEditors.Count == 0)
-            {
-                // Skip if no change detected
-                if (!editor.Values.IsDefaultValueModified)
-                    return;
+        /// <summary>
+        /// If true, the value reverting to default/reference will be handled via iteration over children editors, instead of for a whole object at once.
+        /// </summary>
+        public virtual bool RevertValueWithChildren => ChildrenEditors.Count != 0;
 
-                editor.SetValueToDefault();
+        private void RevertDiffToDefault()
+        {
+            if (RevertValueWithChildren)
+            {
+                foreach (var child in ChildrenEditors)
+                    child.RevertDiffToDefault();
             }
             else
             {
-                for (int i = 0; i < editor.ChildrenEditors.Count; i++)
-                {
-                    RevertDiffToDefault(editor.ChildrenEditors[i]);
-                }
+                if (Values.IsDefaultValueModified)
+                    SetValueToDefault();
             }
         }
 
@@ -414,11 +413,6 @@ namespace FlaxEditor.CustomEditors
             {
                 if (!Values.IsDefaultValueModified)
                     return false;
-
-                // Skip array items (show diff only on a bottom level properties and fields)
-                if (ParentEditor is Editors.ArrayEditor)
-                    return false;
-
                 return true;
             }
         }
@@ -430,7 +424,7 @@ namespace FlaxEditor.CustomEditors
         {
             if (!Values.HasDefaultValue)
                 return;
-            RevertDiffToDefault(this);
+            RevertDiffToDefault();
         }
 
         /// <summary>
@@ -468,22 +462,17 @@ namespace FlaxEditor.CustomEditors
             }
         }
 
-        private void RevertDiffToReference(CustomEditor editor)
+        private void RevertDiffToReference()
         {
-            if (editor.ChildrenEditors.Count == 0)
+            if (RevertValueWithChildren)
             {
-                // Skip if no change detected
-                if (!editor.Values.IsReferenceValueModified)
-                    return;
-
-                editor.SetValueToReference();
+                foreach (var child in ChildrenEditors)
+                    child.RevertDiffToReference();
             }
             else
             {
-                for (int i = 0; i < editor.ChildrenEditors.Count; i++)
-                {
-                    RevertDiffToReference(editor.ChildrenEditors[i]);
-                }
+                if (Values.IsReferenceValueModified)
+                    SetValueToReference();
             }
         }
 
@@ -496,11 +485,6 @@ namespace FlaxEditor.CustomEditors
             {
                 if (!Values.IsReferenceValueModified)
                     return false;
-
-                // Skip array items (show diff only on a bottom level properties and fields)
-                if (ParentEditor is Editors.ArrayEditor)
-                    return false;
-
                 return true;
             }
         }
@@ -512,7 +496,7 @@ namespace FlaxEditor.CustomEditors
         {
             if (!Values.HasReferenceValue)
                 return;
-            RevertDiffToReference(this);
+            RevertDiffToReference();
         }
 
         /// <summary>
@@ -657,7 +641,7 @@ namespace FlaxEditor.CustomEditors
                 // Default
                 try
                 {
-                    obj = JsonConvert.DeserializeObject(text, TypeUtils.GetType(Values.Type), JsonSerializer.Settings);
+                    obj = Newtonsoft.Json.JsonConvert.DeserializeObject(text, TypeUtils.GetType(Values.Type), JsonSerializer.Settings);
                 }
                 catch
                 {
@@ -762,7 +746,7 @@ namespace FlaxEditor.CustomEditors
         /// </summary>
         public void SetValueToDefault()
         {
-            SetValue(Values.DefaultValue);
+            SetValueCloned(Values.DefaultValue);
         }
 
         /// <summary>
@@ -799,7 +783,19 @@ namespace FlaxEditor.CustomEditors
                 return;
             }
 
-            SetValue(Values.ReferenceValue);
+            SetValueCloned(Values.ReferenceValue);
+        }
+
+        private void SetValueCloned(object value)
+        {
+            // For objects (eg. arrays) we need to clone them to prevent editing default/reference value within editor
+            if (value != null && !value.GetType().IsValueType)
+            {
+                var json = JsonSerializer.Serialize(value);
+                value = JsonSerializer.Deserialize(json, value.GetType());
+            }
+
+            SetValue(value);
         }
 
         /// <summary>
@@ -811,7 +807,6 @@ namespace FlaxEditor.CustomEditors
         {
             if (_isSetBlocked)
                 return;
-
             if (OnDirty(this, value, token))
             {
                 _hasValueDirty = true;

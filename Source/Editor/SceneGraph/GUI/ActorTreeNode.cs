@@ -709,6 +709,10 @@ namespace FlaxEditor.SceneGraph.GUI
             if (thisHasScene != otherHasScene)
                 return false;
 
+            // Reject dragging actors between prefab windows (different roots)
+            if (!thisHasScene && ActorNode.Root != actorNode.Root)
+                return false;
+
             // Reject dragging parents and itself
             return actorNode.Actor != null && actorNode != ActorNode && actorNode.Find(Actor) == null;
         }
