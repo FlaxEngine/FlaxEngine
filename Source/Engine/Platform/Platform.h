@@ -89,7 +89,7 @@ if (!(expression))                                                              
     {                                                                                                       \
         PLATFORM_DEBUG_BREAK;                                                                               \
     }                                                                                                       \
-    LOG_STR(Fatal,                                                                                          \
+    LOG_STR(Error,                                                                                          \
     TEXT(                                                                                                   \
     "\n[Soft Assert Triggered]"                                                                             \
     "\n" Massage                                                                                            \
