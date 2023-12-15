@@ -562,7 +562,7 @@ bool TextureTool::ConvertStb(TextureData& dst, const TextureData& src, const Pix
     }
 
 #if USE_EDITOR
-    if (PixelFormatExtensions::IsCompressed(dstFormat))
+    if (PixelFormatExtensions::IsCompressedBC(dstFormat))
     {
         int32 bytesPerBlock;
         switch (dstFormat)
@@ -661,6 +661,15 @@ bool TextureTool::ConvertStb(TextureData& dst, const TextureData& src, const Pix
                     }
                 }
             }
+        }
+    }
+    else if (PixelFormatExtensions::IsCompressedASTC(dstFormat))
+    {
+#if COMPILE_WITH_ASTC
+        if (ConvertAstc(dst, src, dstFormat))
+#endif
+        {
+            return true;
         }
     }
     else

@@ -58,6 +58,11 @@ public class TextureTool : EngineModule
                 options.PrivateDependencies.Add("bc7enc16");
             }
         }
+        if (options.Target.IsEditor)
+        {
+            options.SourceFiles.Add(Path.Combine(FolderPath, "TextureTool.astc.cpp"));
+            options.PrivateDependencies.Add("astc");
+        }
 
         options.PublicDefinitions.Add("COMPILE_WITH_TEXTURE_TOOL");
     }

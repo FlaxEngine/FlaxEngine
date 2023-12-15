@@ -1,0 +1,117 @@
+// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+
+#if COMPILE_WITH_TEXTURE_TOOL && COMPILE_WITH_ASTC
+
+#include "TextureTool.h"
+#include "Engine/Core/Log.h"
+#include "Engine/Core/Math/Math.h"
+#include "Engine/Core/Math/Color32.h"
+#include "Engine/Graphics/Textures/TextureData.h"
+#include "Engine/Graphics/PixelFormatExtensions.h"
+#include <ThirdParty/astc/astcenc.h>
+
+bool TextureTool::ConvertAstc(TextureData& dst, const TextureData& src, const PixelFormat dstFormat)
+{
+    int32 blockSize, bytesPerBlock = 16;
+    // TODO: use block size from PixelFormatExtensions
+    switch (dstFormat)
+    {
+    case PixelFormat::ASTC_4x4_UNorm:
+    case PixelFormat::ASTC_4x4_UNorm_sRGB:
+        blockSize = 4;
+        break;
+    default:
+        LOG(Warning, "Cannot compress image. Unsupported format {0}", static_cast<int32>(dstFormat));
+        return true;
+    }
+
+    // Configure the compressor run
+    const bool isSRGB = PixelFormatExtensions::IsSRGB(dstFormat);
+    const bool isHDR = PixelFormatExtensions::IsHDR(src.Format);
+    astcenc_profile astcProfile = isHDR ? ASTCENC_PRF_HDR_RGB_LDR_A : (isSRGB ? ASTCENC_PRF_LDR_SRGB : ASTCENC_PRF_LDR);
+    float astcQuality = ASTCENC_PRE_MEDIUM;
+    unsigned int astcFlags = 0; // TODO: add custom flags support for converter to handle ASTCENC_FLG_MAP_NORMAL
+    astcenc_config astcConfig;
+	astcenc_error astcError = astcenc_config_init(astcProfile, blockSize, blockSize, 1, astcQuality, astcFlags, &astcConfig);
+    if (astcError != ASTCENC_SUCCESS)
+    {
+        LOG(Warning, "Cannot compress image. ASTC failed with error: {}", String(astcenc_get_error_string(astcError)));
+        return true;
+    }
+	astcenc_swizzle astcSwizzle = { ASTCENC_SWZ_R, ASTCENC_SWZ_G, ASTCENC_SWZ_B, ASTCENC_SWZ_A };
+
+    // Allocate working state given config and thread_count
+    astcenc_context* astcContext;
+    astcError = astcenc_context_alloc(&astcConfig, 1, &astcContext);
+    if (astcError != ASTCENC_SUCCESS)
+    {
+        LOG(Warning, "Cannot compress image. ASTC failed with error: {}", String(astcenc_get_error_string(astcError)));
+        return true;
+    }
+
+    // When converting from non-sRGB to sRGB we need to change the color-space manually (otherwise image is dark)
+    TextureData const* textureData = &src;
+    TextureData converted;
+    if (PixelFormatExtensions::IsSRGB(src.Format) != isSRGB)
+    {
+        converted = src;
+        Function<void(Color&)> transform = [](Color& c)
+        {
+            c = Color::LinearToSrgb(c);
+        };
+        if (!TextureTool::Transform(converted, transform))
+        {
+            textureData = &converted;
+        }
+    }
+
+    // Compress all array slices
+    for (int32 arrayIndex = 0; arrayIndex < textureData->Items.Count() && astcError == ASTCENC_SUCCESS; arrayIndex++)
+    {
+        const auto& srcSlice = textureData->Items[arrayIndex];
+        auto& dstSlice = dst.Items[arrayIndex];
+        auto mipLevels = srcSlice.Mips.Count();
+        dstSlice.Mips.Resize(mipLevels, false);
+
+        // Compress all mip levels
+        for (int32 mipIndex = 0; mipIndex < mipLevels && astcError == ASTCENC_SUCCESS; mipIndex++)
+        {
+            const auto& srcMip = srcSlice.Mips[mipIndex];
+            // TODO: validate if source mip data is row and pitch aligned (astcenc_image operates on whole pixel count withotu a slack)
+            auto& dstMip = dstSlice.Mips[mipIndex];
+            auto mipWidth = Math::Max(textureData->Width >> mipIndex, 1);
+            auto mipHeight = Math::Max(textureData->Height >> mipIndex, 1);
+            auto blocksWidth = Math::Max(Math::DivideAndRoundUp(mipWidth, blockSize), 1);
+            auto blocksHeight = Math::Max(Math::DivideAndRoundUp(mipHeight, blockSize), 1);
+
+            // Allocate memory
+            dstMip.RowPitch = blocksWidth * bytesPerBlock;
+            dstMip.DepthPitch = dstMip.RowPitch * blocksHeight;
+            dstMip.Lines = blocksHeight;
+            dstMip.Data.Allocate(dstMip.DepthPitch);
+
+            // Compress image
+            astcenc_image astcInput;
+            astcInput.dim_x = mipWidth;
+            astcInput.dim_y = mipHeight;
+            astcInput.dim_z = 1;
+            astcInput.data_type = isHDR ? ASTCENC_TYPE_F16 : ASTCENC_TYPE_U8;
+            void* srcData = (void*)srcMip.Data.Get();
+            astcInput.data = &srcData;
+            astcError = astcenc_compress_image(astcContext, &astcInput, &astcSwizzle, dstMip.Data.Get(), dstMip.Data.Length(), 0);
+            if (astcError == ASTCENC_SUCCESS)
+                astcError = astcenc_compress_reset(astcContext);
+        }
+    }
+
+    // Clean up
+    if (astcError != ASTCENC_SUCCESS)
+    {
+        LOG(Warning, "Cannot compress image. ASTC failed with error: {}", String(astcenc_get_error_string(astcError)));
+        return true;
+    }
+    astcenc_context_free(astcContext);
+    return astcError != ASTCENC_SUCCESS;
+}
+
+#endif

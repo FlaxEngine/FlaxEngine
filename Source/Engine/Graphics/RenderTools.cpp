@@ -306,7 +306,6 @@ void RenderTools::ComputePitch(PixelFormat format, int32 width, int32 height, ui
             slicePitch = rowPitch * nbh;
         }
         break;
-
     case PixelFormat::BC2_Typeless:
     case PixelFormat::BC2_UNorm:
     case PixelFormat::BC2_UNorm_sRGB:
@@ -330,14 +329,22 @@ void RenderTools::ComputePitch(PixelFormat format, int32 width, int32 height, ui
             slicePitch = rowPitch * nbh;
         }
         break;
-
+    case PixelFormat::ASTC_4x4_UNorm:
+    case PixelFormat::ASTC_4x4_UNorm_sRGB:
+        {
+            const int32 blockSize = 4; // TODO: use PixelFormatExtensions to get block size for a format and handle different astc
+            uint32 nbw = Math::Max<uint32>(1, Math::DivideAndRoundUp(width, blockSize));
+            uint32 nbh = Math::Max<uint32>(1, Math::DivideAndRoundUp(height, blockSize));
+            rowPitch = nbw * 16;
+            slicePitch = rowPitch * nbh;
+        }
+        break;
     case PixelFormat::R8G8_B8G8_UNorm:
     case PixelFormat::G8R8_G8B8_UNorm:
         ASSERT(PixelFormatExtensions::IsPacked(format));
         rowPitch = ((width + 1) >> 1) * 4;
         slicePitch = rowPitch * height;
         break;
-
     default:
         ASSERT(PixelFormatExtensions::IsValid(format));
         ASSERT(!PixelFormatExtensions::IsCompressed(format) && !PixelFormatExtensions::IsPacked(format) && !PixelFormatExtensions::IsPlanar(format));
