@@ -81,7 +81,7 @@ namespace preprocesors
 
 #if ENABLE_ASSERTION && USE_EDITOR
 //Performs soft assertion of the expression. crashes the engine if is not used with editor, inserts debugger break in case of expression fail, logs the massage to the file.
-//[opcional returncode if funcion needs to return somfing]
+//[optional returncode to execute if assert fails]
 #define SOFT_ASSERT(expression,Massage,returncode)                                                          \
 if (expression)                                                                                             \
 {                                                                                                           \
