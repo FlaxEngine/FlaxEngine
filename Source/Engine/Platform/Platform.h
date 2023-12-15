@@ -81,7 +81,7 @@ namespace preprocesors
 
 #if ENABLE_ASSERTION && USE_EDITOR
 //Performs soft assertion of the expression. crashes the engine if is not used with editor, inserts debugger break in case of expression fail, logs the massage to the file.
-//[optional fallback code executed if assert "expression" ,is evaluated to true]
+//[optional fallback code executed in case of expression faills]
 #define SOFT_ASSERT(expression,Massage,FallbackCode)                                                        \
 if (!(expression))                                                                                          \
 {                                                                                                           \
