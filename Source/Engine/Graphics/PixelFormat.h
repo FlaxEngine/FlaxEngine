@@ -514,6 +514,16 @@ API_ENUM() enum class PixelFormat : uint32
     BC7_UNorm_sRGB = 99,
 
     /// <summary>
+    /// A four-component ASTC (4x4 pixel block in 128 bits) block-compression format that supports RGBA channels.
+    /// </summary>
+    ASTC_4x4_UNorm = 100,
+
+    /// <summary>
+    /// A four-component ASTC (4x4 pixel block in 128 bits) block-compression format that supports RGBA channels.
+    /// </summary>
+    ASTC_4x4_UNorm_sRGB = 101,
+
+    /// <summary>
     /// The maximum format value (for internal use only).
     /// </summary>
     MAX
