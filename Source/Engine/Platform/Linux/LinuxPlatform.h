@@ -139,8 +139,6 @@ public:
     static String GetWorkingDirectory();
     static bool SetWorkingDirectory(const String& path);
     static Window* CreateWindow(const CreateWindowSettings& settings);
-    static void StartTrackingMouse(const Window* window);
-    static void EndTrackingMouse(const Window *window);
     static void GetEnvironmentVariables(Dictionary<String, String, HeapAllocation>& result);
     static bool GetEnvironmentVariable(const String& name, String& value);
     static bool SetEnvironmentVariable(const String& name, const String& value);

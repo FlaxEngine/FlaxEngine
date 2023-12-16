@@ -40,6 +40,7 @@ extern X11::Atom xAtomWmName;
 extern Dictionary<StringAnsi, X11::KeyCode> KeyNameMap;
 extern Array<KeyboardKeys> KeyCodeMap;
 extern X11::Cursor Cursors[(int32)CursorType::MAX];
+extern Window* MouseTrackingWindow;
 
 static constexpr uint32 MouseDoubleClickTime = 500;
 static constexpr uint32 MaxDoubleClickDistanceSquared = 10;
@@ -822,12 +823,13 @@ void LinuxWindow::SetTitle(const StringView& title)
 
 void LinuxWindow::StartTrackingMouse(bool useMouseScreenOffset)
 {
-	LinuxPlatform::StartTrackingMouse(this);
+    MouseTrackingWindow = this;
 }
 
 void LinuxWindow::EndTrackingMouse()
 {
-	LinuxPlatform::EndTrackingMouse(this);
+    if (MouseTrackingWindow == this)
+        MouseTrackingWindow = nullptr;
 }
 
 void LinuxWindow::SetCursor(CursorType type)
