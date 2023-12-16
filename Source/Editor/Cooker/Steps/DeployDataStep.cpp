@@ -116,7 +116,7 @@ bool DeployDataStep::Perform(CookingData& data)
                 for (String& version : versions)
                 {
                     version = String(StringUtils::GetFileName(version));
-                    if (!version.StartsWith(TEXT("7.")))
+                    if (!version.StartsWith(TEXT("7.")) && !version.StartsWith(TEXT("8."))) // .NET 7 or .NET 8
                         version.Clear();
                 }
                 Sorting::QuickSort(versions);
