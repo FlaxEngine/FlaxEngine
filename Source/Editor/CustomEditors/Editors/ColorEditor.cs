@@ -60,13 +60,13 @@ namespace FlaxEditor.CustomEditors.Editors
                 if (value is Color asColor)
                     element.CustomControl.Value = asColor;
                 else if (value is Color32 asColor32)
-                    element.CustomControl.Value = new Color(asColor32.R, asColor32.G, asColor32.B, asColor32.A);
+                    element.CustomControl.Value = asColor32;
                 else if (value is Float4 asFloat4)
-                    element.CustomControl.Value = new Color(asFloat4.X, asFloat4.Y, asFloat4.Z, asFloat4.W);
+                    element.CustomControl.Value = asFloat4;
                 else if (value is Double4 asDouble4)
-                    element.CustomControl.Value = new Color((float)asDouble4.X, (float)asDouble4.Y, (float)asDouble4.Z, (float)asDouble4.W);
+                    element.CustomControl.Value = (Float4)asDouble4;
                 else if (value is Vector4 asVector4)
-                    element.CustomControl.Value = new Color(asVector4.X, asVector4.Y, asVector4.Z, asVector4.W);
+                    element.CustomControl.Value = asVector4;
             }
         }
     }
