@@ -91,11 +91,6 @@ namespace Flax.Build.Projects.VisualStudio
             var baseConfiguration = project.Configurations.First();
             var baseOutputDir = Utilities.MakePathRelativeTo(project.CSharp.OutputPath ?? baseConfiguration.TargetBuildOptions.OutputFolder, projectDirectory);
             var baseIntermediateOutputPath = Utilities.MakePathRelativeTo(project.CSharp.IntermediateOutputPath ?? Path.Combine(baseConfiguration.TargetBuildOptions.IntermediateFolder, "CSharp"), projectDirectory);
-            
-            bool isMainProject = Globals.Project.ProjectFolderPath == project.WorkspaceRootPath && project.Name != "BuildScripts" && (Globals.Project.Name != "Flax" || project.Name != "FlaxEngine");
-            var flaxBuildTargetsFilename = isMainProject ? "Flax.Build.CSharp.targets" : "Flax.Build.CSharp.SkipBuild.targets";
-            var cacheProjectsPath = Utilities.MakePathRelativeTo(Path.Combine(Globals.Root, "Cache", "Projects"), projectDirectory);
-            var flaxBuildTargetsPath = !string.IsNullOrEmpty(cacheProjectsPath) ? Path.Combine(cacheProjectsPath, flaxBuildTargetsFilename) : flaxBuildTargetsFilename;
 
             csProjectFileContent.AppendLine($"    <TargetFramework>net{dotnetSdk.Version.Major}.{dotnetSdk.Version.Minor}</TargetFramework>");
             csProjectFileContent.AppendLine("    <ImplicitUsings>disable</ImplicitUsings>");
@@ -114,7 +109,11 @@ namespace Flax.Build.Projects.VisualStudio
 
             //csProjectFileContent.AppendLine("    <CopyLocalLockFileAssemblies>false</CopyLocalLockFileAssemblies>"); // TODO: use it to reduce burden of framework libs
 
-            // Custom .targets file for overriding MSBuild build tasks
+            // Custom .targets file for overriding MSBuild build tasks, only invoke Flax.Build once per Flax project
+            bool isMainProject = Globals.Project.IsCSharpOnlyProject && Globals.Project.ProjectFolderPath == project.WorkspaceRootPath && project.Name != "BuildScripts" && (Globals.Project.Name != "Flax" || project.Name != "FlaxEngine");
+            var flaxBuildTargetsFilename = isMainProject ? "Flax.Build.CSharp.targets" : "Flax.Build.CSharp.SkipBuild.targets";
+            var cacheProjectsPath = Utilities.MakePathRelativeTo(Path.Combine(Globals.Root, "Cache", "Projects"), projectDirectory);
+            var flaxBuildTargetsPath = !string.IsNullOrEmpty(cacheProjectsPath) ? Path.Combine(cacheProjectsPath, flaxBuildTargetsFilename) : flaxBuildTargetsFilename;
             csProjectFileContent.AppendLine(string.Format("    <CustomAfterMicrosoftCommonTargets>$(MSBuildThisFileDirectory){0}</CustomAfterMicrosoftCommonTargets>", flaxBuildTargetsPath));
 
             // Hide annoying warnings during build
