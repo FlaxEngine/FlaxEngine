@@ -123,7 +123,7 @@ namespace FlaxEditor.Surface
                         BoxId = box.ID,
                     };
                     var script = ((Windows.Assets.VisualScriptWindow)box.Surface.Owner).Asset;
-                    if (Editor.Internal_EvaluateVisualScriptLocal(Object.GetUnmanagedPtr(script), ref local))
+                    if (Editor.EvaluateVisualScriptLocal(script, ref local))
                     {
                         text = $"{local.Value ?? string.Empty} ({local.ValueTypeName})";
                         return true;
