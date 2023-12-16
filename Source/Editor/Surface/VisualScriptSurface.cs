@@ -144,7 +144,7 @@ namespace FlaxEditor.Surface
                             var connections = box.Connections;
                             if (connections.Count == 0 && box.Archetype.ValueIndex >= 0 && box.ParentNode.Values != null && box.Archetype.ValueIndex < box.ParentNode.Values.Length)
                             {
-                                // Special case when there is no value but the box has no connection and uses
+                                // Special case when there is no value but the box has no connection and uses default value
                                 var defaultValue = box.ParentNode.Values[box.Archetype.ValueIndex];
                                 if (defaultValue != null)
                                 {
