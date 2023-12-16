@@ -73,7 +73,11 @@ namespace FlaxEditor.Content
         /// <inheritdoc />
         public override void OnContentWindowContextMenu(ContextMenu menu, ContentItem item)
         {
-            menu.AddButton("Open additionally", () => { Editor.Instance.Scene.OpenScene(((SceneItem)item).ID, true); });
+            var id = ((SceneItem)item).ID;
+            if (Level.FindScene(id) == null)
+            {
+                menu.AddButton("Open (additive)", () => { Editor.Instance.Scene.OpenScene(id, true); });
+            }
         }
     }
 }
