@@ -192,6 +192,9 @@ bool RenderBuffers::Init(int32 width, int32 height)
     _viewport = Viewport(0, 0, static_cast<float>(width), static_cast<float>(height));
     LastEyeAdaptationTime = 0;
 
+    // Flush any pool render targets to prevent over-allocating GPU memory when resizing game viewport
+    RenderTargetPool::Flush(false, 4);
+
     return result;
 }
 

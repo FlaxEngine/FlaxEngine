@@ -84,6 +84,8 @@ void TerrainChunk::Draw(const RenderContext& renderContext) const
     DrawCall drawCall;
     if (TerrainManager::GetChunkGeometry(drawCall, chunkSize, lod))
         return;
+    if (!_neighbors[0])
+        const_cast<TerrainChunk*>(this)->CacheNeighbors();
     drawCall.InstanceCount = 1;
     drawCall.Material = _cachedDrawMaterial;
     renderContext.View.GetWorldMatrix(_transform, drawCall.World);

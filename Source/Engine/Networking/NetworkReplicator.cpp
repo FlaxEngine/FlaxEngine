@@ -817,7 +817,7 @@ void InvokeObjectSpawn(const NetworkMessageObjectSpawn& msgData, const NetworkMe
                 NETWORK_REPLICATOR_LOG(Error, "[NetworkReplicator] Failed to find prefab {}", msgData.PrefabId.ToString());
                 return;
             }
-            prefabInstance = PrefabManager::SpawnPrefab(prefab, Transform::Identity, nullptr, nullptr);
+            prefabInstance = PrefabManager::SpawnPrefab(prefab, nullptr, nullptr);
             if (!prefabInstance)
             {
                 NETWORK_REPLICATOR_LOG(Error, "[NetworkReplicator] Failed to spawn object type {}", msgData.PrefabId.ToString());

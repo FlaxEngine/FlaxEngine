@@ -702,7 +702,7 @@ namespace Flax.Build.Projects.VisualStudio
             // Override MSBuild build tasks to run Flax.Build in C#-only projects
             {
                 // Build command for the build tool
-                var buildToolPath = Path.ChangeExtension(Utilities.MakePathRelativeTo(typeof(Builder).Assembly.Location, Path.GetDirectoryName(solution.MainProject.Path)), null);
+                var buildToolPath = Path.ChangeExtension(typeof(Builder).Assembly.Location, null);
                 
                 var targetsFileContent = new StringBuilder();
                 targetsFileContent.AppendLine("<Project>");
@@ -724,16 +724,16 @@ namespace Flax.Build.Projects.VisualStudio
                 {
                     foreach (var configuration in solution.MainProject.Configurations)
                     {
-                        var cmdLine = string.Format("{0} -log -mutex -workspace={1} -arch={2} -configuration={3} -platform={4} -buildTargets={5}",
-                                                FixPath(buildToolPath),
-                                                FixPath(solution.MainProject.WorkspaceRootPath),
+                        var cmdLine = string.Format("\"{0}\" -log -mutex -workspace=\"{1}\" -arch={2} -configuration={3} -platform={4} -buildTargets={5}",
+                                                buildToolPath,
+                                                solution.MainProject.WorkspaceRootPath,
                                                 configuration.Architecture,
                                                 configuration.Configuration,
                                                 configuration.Platform,
                                                 configuration.Target);
                         Configuration.PassArgs(ref cmdLine);
 
-                        str.AppendLine(string.Format("    <Exec Command=\"{0} {1}\" Condition=\"'$(Configuration)|$(Platform)'=='{2}'\"/>", cmdLine, extraArgs, configuration.Name));
+                        str.AppendLine(string.Format("    <Exec Command='{0} {1}' Condition=\"'$(Configuration)|$(Platform)'=='{2}'\"/>", cmdLine, extraArgs, configuration.Name));
                     }
                 }
             }
@@ -773,15 +773,6 @@ namespace Flax.Build.Projects.VisualStudio
                 };
                 projects.Add(project);
             }
-        }
-
-        private static string FixPath(string path)
-        {
-            if (path.Contains(' '))
-            {
-                path = "\"" + path + "\"";
-            }
-            return path;
         }
     }
 }

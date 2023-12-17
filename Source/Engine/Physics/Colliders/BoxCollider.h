@@ -43,6 +43,11 @@ public:
         return _bounds;
     }
 
+    /// <summary>
+    /// Resizes the collider based on the bounds of it's parent to contain it whole (including any siblings).
+    /// </summary>
+    API_FUNCTION() void AutoResize();
+
 public:
     // [Collider]
 #if USE_EDITOR

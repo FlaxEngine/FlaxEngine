@@ -837,7 +837,7 @@ namespace FlaxEditor.Surface
                         actions.Add(action);
                     }
 
-                    Undo.AddAction(new MultiUndoAction(actions, nodes.Count == 1 ? "Remove node" : "Remove nodes"));
+                    AddBatchedUndoAction(new MultiUndoAction(actions, nodes.Count == 1 ? "Remove node" : "Remove nodes"));
                 }
             }
 
