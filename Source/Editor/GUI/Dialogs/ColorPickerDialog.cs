@@ -248,6 +248,7 @@ namespace FlaxEditor.GUI.Dialogs
                 // Set color of button to current value;
                 button.BackgroundColor = _value;
                 button.BackgroundColorHighlighted = _value;
+                button.BackgroundColorSelected = _value.RGBMultiplied(0.8f);
                 button.Text = "";
                 button.Tag = _value;
 
@@ -486,6 +487,7 @@ namespace FlaxEditor.GUI.Dialogs
                     Tag = savedColor,
                     BackgroundColor = savedColor,
                     BackgroundColorHighlighted = savedColor,
+                    BackgroundColorSelected = savedColor.RGBMultiplied(0.8f),
                 };
                 savedColorButton.ButtonClicked += (b) => OnSavedColorButtonClicked(b);
                 _savedColorButtons.Add(savedColorButton);
