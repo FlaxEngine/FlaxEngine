@@ -67,9 +67,9 @@ namespace FlaxEditor.SceneGraph.Actors
             }
 
             // Setup for default values
-            var text = (SpriteRender)Actor;
-            text.Material = FlaxEngine.Content.LoadAsyncInternal<MaterialBase>(EditorAssets.DefaultSpriteMaterial);
-            text.Image = FlaxEngine.Content.LoadAsyncInternal<Texture>(EditorAssets.FlaxIconTexture);
+            var sprite = (SpriteRender)Actor;
+            sprite.Material = FlaxEngine.Content.LoadAsyncInternal<MaterialBase>(EditorAssets.DefaultSpriteMaterial);
+            sprite.Image = FlaxEngine.Content.LoadAsyncInternal<Texture>(EditorAssets.FlaxIconTexture);
         }
     }
 }
