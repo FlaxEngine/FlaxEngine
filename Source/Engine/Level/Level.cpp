@@ -439,7 +439,7 @@ public:
 
     bool Do() const override
     {
-        auto scene = Scripting::FindObject<Scene>(TargetScene);
+        auto scene = Level::FindScene(TargetScene);
         if (!scene)
             return true;
         return unloadScene(scene);

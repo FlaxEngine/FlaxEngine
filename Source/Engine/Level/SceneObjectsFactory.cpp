@@ -445,6 +445,8 @@ void SceneObjectsFactory::SetupPrefabInstances(Context& context, const PrefabSyn
         const SceneObject* obj = data.SceneObjects[i];
         const Guid id = obj ? obj->GetID() : JsonTools::GetGuid(stream, "ID");
         auto prefab = Content::LoadAsync<Prefab>(prefabId);
+        if (!prefab)
+            continue;
 
         // Check if it's parent is in the same prefab
         int32 index;

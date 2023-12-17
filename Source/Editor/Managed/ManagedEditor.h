@@ -210,6 +210,31 @@ public:
     API_FUNCTION() static bool TryRestoreImportOptions(API_PARAM(Ref) AudioTool::Options& options, String assetPath);
 #endif
 
+public:
+    API_STRUCT(Internal, NoDefault) struct VisualScriptStackFrame
+    {
+        DECLARE_SCRIPTING_TYPE_MINIMAL(VisualScriptStackFrame);
+
+        API_FIELD() class VisualScript* Script;
+        API_FIELD() uint32 NodeId;
+        API_FIELD() int32 BoxId;
+    };
+
+    API_STRUCT(Internal, NoDefault) struct VisualScriptLocal
+    {
+        DECLARE_SCRIPTING_TYPE_MINIMAL(VisualScriptLocal);
+
+        API_FIELD() String Value;
+        API_FIELD() String ValueTypeName;
+        API_FIELD() uint32 NodeId;
+        API_FIELD() int32 BoxId;
+    };
+
+    API_FUNCTION(Internal) static Array<VisualScriptStackFrame> GetVisualScriptStackFrames();
+    API_FUNCTION(Internal) static VisualScriptStackFrame GetVisualScriptPreviousScopeFrame();
+    API_FUNCTION(Internal) static Array<VisualScriptLocal> GetVisualScriptLocals();
+    API_FUNCTION(Internal) static bool EvaluateVisualScriptLocal(VisualScript* script, API_PARAM(Ref) VisualScriptLocal& local);
+
 private:
     void OnEditorAssemblyLoaded(MAssembly* assembly);
 
