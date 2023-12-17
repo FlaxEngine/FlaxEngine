@@ -61,14 +61,15 @@ namespace FlaxEditor.SceneGraph.Actors
         {
             base.PostSpawn();
 
+            if (Actor.HasPrefabLink)
+            {
+                return;
+            }
+
             // Setup for default values
             var text = (SpriteRender)Actor;
-
-            if (!Actor.HasPrefabLink)
-            {
-                text.Material = FlaxEngine.Content.LoadAsyncInternal<MaterialBase>(EditorAssets.DefaultSpriteMaterial);
-                text.Image = FlaxEngine.Content.LoadAsyncInternal<Texture>(EditorAssets.FlaxIconTexture);
-            }
+            text.Material = FlaxEngine.Content.LoadAsyncInternal<MaterialBase>(EditorAssets.DefaultSpriteMaterial);
+            text.Image = FlaxEngine.Content.LoadAsyncInternal<Texture>(EditorAssets.FlaxIconTexture);
         }
     }
 }

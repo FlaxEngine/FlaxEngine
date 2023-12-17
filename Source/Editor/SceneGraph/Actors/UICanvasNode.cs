@@ -29,6 +29,11 @@ namespace FlaxEditor.SceneGraph.Actors
         {
             base.PostSpawn();
 
+            if (Actor.HasPrefabLink)
+            {
+                return;
+            }
+
             // Rotate to match the space (GUI uses upper left corner as a root)
             Actor.LocalOrientation = Quaternion.Euler(0, -180, -180);
             bool canSpawn = true;
