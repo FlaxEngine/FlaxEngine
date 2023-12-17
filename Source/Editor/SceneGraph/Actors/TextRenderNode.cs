@@ -22,6 +22,11 @@ namespace FlaxEditor.SceneGraph.Actors
         {
             base.PostSpawn();
 
+            if (Actor.HasPrefabLink)
+            {
+                return;
+            }
+
             // Setup for default values
             var text = (TextRender)Actor;
             text.Text = "My Text";

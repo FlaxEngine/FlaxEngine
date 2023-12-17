@@ -71,6 +71,11 @@ namespace FlaxEditor.SceneGraph.Actors
         {
             base.PostSpawn();
 
+            if (Actor.HasPrefabLink)
+            {
+                return;
+            }
+
             ((BoxCollider)Actor).AutoResize();
         }
     }
