@@ -892,6 +892,11 @@ void VisualScriptExecutor::ProcessGroupFunction(Box* boxBase, Node* node, Value&
             PrintStack(LogType::Error);
             break;
         }
+        if (boxBase->ID == 1)
+        {
+            value = instance;
+            break;
+        }
         // TODO: check if instance is of event type (including inheritance)
 
         // Add Visual Script method to the event bindings table

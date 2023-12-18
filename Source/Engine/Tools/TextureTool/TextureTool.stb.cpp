@@ -9,7 +9,6 @@
 #include "Engine/Serialization/FileWriteStream.h"
 #include "Engine/Graphics/RenderTools.h"
 #include "Engine/Graphics/Textures/TextureData.h"
-#include "Engine/Graphics/Textures/TextureUtils.h"
 #include "Engine/Graphics/PixelFormatExtensions.h"
 #include "Engine/Platform/File.h"
 
@@ -459,7 +458,7 @@ bool TextureTool::ImportTextureStb(ImageType type, const StringView& path, Textu
     // Cache data
     float alphaThreshold = 0.3f;
     bool isPowerOfTwo = Math::IsPowerOfTwo(width) && Math::IsPowerOfTwo(height);
-    PixelFormat targetFormat = TextureUtils::ToPixelFormat(options.Type, width, height, options.Compress);
+    PixelFormat targetFormat = ToPixelFormat(options.Type, width, height, options.Compress);
     if (options.sRGB)
         targetFormat = PixelFormatExtensions::TosRGB(targetFormat);
 

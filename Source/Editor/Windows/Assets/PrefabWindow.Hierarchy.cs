@@ -368,7 +368,7 @@ namespace FlaxEditor.Windows.Assets
                 actor.Layer = parentActor.Layer;
 
                 // Rename actor to identify it easily
-                actor.Name = Utilities.Utils.IncrementNameNumber(actor.GetType().Name, x => parentActor.GetChild(x) == null);
+                actor.Name = Utilities.Utils.IncrementNameNumber(actor.Name, x => parentActor.GetChild(x) == null);
             }
 
             // Spawn it

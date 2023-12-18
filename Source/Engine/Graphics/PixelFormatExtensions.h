@@ -181,6 +181,13 @@ public:
     API_FUNCTION() static int32 ComputeComponentsCount(PixelFormat format);
 
     /// <summary>
+    /// Computes the amount of pixels per-axis stored in the a single block of the format (eg. 4 for BC-family). Returns 1 for uncompressed formats.
+    /// </summary>
+    /// <param name="format">The <see cref="PixelFormat"/>.</param>
+    /// <returns>The block pixels count.</returns>
+    API_FUNCTION() static int32 ComputeBlockSize(PixelFormat format);
+
+    /// <summary>
     /// Finds the equivalent sRGB format to the provided format.
     /// </summary>
     /// <param name="format">The non sRGB format.</param>

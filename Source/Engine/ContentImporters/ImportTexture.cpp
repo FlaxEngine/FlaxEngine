@@ -8,7 +8,6 @@
 #include "Engine/Serialization/MemoryWriteStream.h"
 #include "Engine/Serialization/MemoryReadStream.h"
 #include "Engine/Graphics/Textures/TextureData.h"
-#include "Engine/Graphics/Textures/TextureUtils.h"
 #include "Engine/Graphics/PixelFormatExtensions.h"
 #include "Engine/Content/Storage/ContentStorageManager.h"
 #include "Engine/ContentImporters/ImportIES.h"
