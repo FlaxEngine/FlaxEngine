@@ -613,6 +613,9 @@ private:
 	dtNavMesh(const dtNavMesh&);
 	dtNavMesh& operator=(const dtNavMesh&);
 
+    /// Clears all tiles from memory. Can be called before init to rebuild navigation mesh with different parameters.
+    void purge();
+
 	/// Returns pointer to tile in the tile array.
 	dtMeshTile* getTile(int i);
 

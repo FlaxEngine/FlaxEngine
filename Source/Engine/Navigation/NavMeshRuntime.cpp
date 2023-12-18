@@ -36,7 +36,7 @@ NavMeshRuntime::NavMeshRuntime(const NavMeshProperties& properties)
 
 NavMeshRuntime::~NavMeshRuntime()
 {
-    dtFreeNavMesh(_navMesh);
+    Dispose();
     dtFreeNavMeshQuery(_navMeshQuery);
 }
 
@@ -336,9 +336,7 @@ void NavMeshRuntime::SetTileSize(float tileSize)
     // Dispose the existing mesh (its invalid)
     if (_navMesh)
     {
-        dtFreeNavMesh(_navMesh);
-        _navMesh = nullptr;
-        _tiles.Clear();
+        Dispose();
     }
 
     _tileSize = tileSize;
@@ -363,14 +361,9 @@ void NavMeshRuntime::EnsureCapacity(int32 tilesToAddCount)
     // Ensure to have size assigned
     ASSERT(_tileSize != 0);
 
-    // Fre previous data (if any)
-    if (_navMesh)
-    {
-        dtFreeNavMesh(_navMesh);
-    }
-
-    // Allocate new navmesh
-    _navMesh = dtAllocNavMesh();
+    // Allocate navmesh and initialize the default query
+    if (!_navMesh)
+        _navMesh = dtAllocNavMesh();
     if (dtStatusFailed(_navMeshQuery->init(_navMesh, MAX_NODES)))
     {
         LOG(Error, "Failed to initialize navmesh {0}.", Properties.Name);
@@ -517,7 +510,7 @@ void NavMeshRuntime::RemoveTile(int32 x, int32 y, int32 layer)
     }
 }
 
-void NavMeshRuntime::RemoveTiles(bool (* prediction)(const NavMeshRuntime* navMesh, const NavMeshTile& tile, void* customData), void* userData)
+void NavMeshRuntime::RemoveTiles(bool (*prediction)(const NavMeshRuntime* navMesh, const NavMeshTile& tile, void* customData), void* userData)
 {
     ScopeLock lock(Locker);
     ASSERT(prediction);
