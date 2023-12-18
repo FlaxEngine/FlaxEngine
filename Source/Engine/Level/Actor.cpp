@@ -206,10 +206,18 @@ void Actor::OnDeleteObject()
 #endif
     for (int32 i = 0; i < Scripts.Count(); i++)
     {
-        auto e = Scripts[i];
-        ASSERT(e->_parent == this);
-        e->_parent = nullptr;
-        e->DeleteObject();
+        auto script = Scripts[i];
+        ASSERT(script->_parent == this);
+        if (script->_wasAwakeCalled)
+        {
+            script->_wasAwakeCalled = false;
+            CHECK_EXECUTE_IN_EDITOR
+            {
+                script->OnDestroy();
+            }
+        }
+        script->_parent = nullptr;
+        script->DeleteObject();
     }
 #if BUILD_DEBUG
     ASSERT(callsCheck == Scripts.Count());
@@ -889,9 +897,13 @@ void Actor::EndPlay()
 
     for (auto* script : Scripts)
     {
-        CHECK_EXECUTE_IN_EDITOR
+        if (script->_wasAwakeCalled)
         {
-            script->OnDestroy();
+            script->_wasAwakeCalled = false;
+            CHECK_EXECUTE_IN_EDITOR
+            {
+                script->OnDestroy();
+            }
         }
     }
 
