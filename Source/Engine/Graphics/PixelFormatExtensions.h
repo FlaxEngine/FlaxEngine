@@ -166,14 +166,6 @@ public:
     API_FUNCTION() static bool IsInteger(PixelFormat format);
 
     /// <summary>
-    /// Computes the scanline count (number of scanlines).
-    /// </summary>
-    /// <param name="format">The <see cref="PixelFormat"/>.</param>
-    /// <param name="height">The height.</param>
-    /// <returns>The scanline count.</returns>
-    API_FUNCTION() static int32 ComputeScanlineCount(PixelFormat format, int32 height);
-
-    /// <summary>
     /// Computes the format components count (number of R, G, B, A channels).
     /// </summary>
     /// <param name="format">The <see cref="PixelFormat"/>.</param>
