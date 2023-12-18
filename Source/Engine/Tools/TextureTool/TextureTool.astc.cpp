@@ -12,18 +12,9 @@
 
 bool TextureTool::ConvertAstc(TextureData& dst, const TextureData& src, const PixelFormat dstFormat)
 {
-    int32 blockSize, bytesPerBlock = 16;
-    // TODO: use block size from PixelFormatExtensions
-    switch (dstFormat)
-    {
-    case PixelFormat::ASTC_4x4_UNorm:
-    case PixelFormat::ASTC_4x4_UNorm_sRGB:
-        blockSize = 4;
-        break;
-    default:
-        LOG(Warning, "Cannot compress image. Unsupported format {0}", static_cast<int32>(dstFormat));
-        return true;
-    }
+    ASSERT(PixelFormatExtensions::IsCompressedASTC(dstFormat));
+    const int32 blockSize = PixelFormatExtensions::ComputeBlockSize(dstFormat);
+    const int32 bytesPerBlock = 16; // All ASTC blocks use 128 bits
 
     // Configure the compressor run
     const bool isSRGB = PixelFormatExtensions::IsSRGB(dstFormat);

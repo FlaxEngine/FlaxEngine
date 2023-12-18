@@ -332,10 +332,10 @@ void RenderTools::ComputePitch(PixelFormat format, int32 width, int32 height, ui
     case PixelFormat::ASTC_4x4_UNorm:
     case PixelFormat::ASTC_4x4_UNorm_sRGB:
         {
-            const int32 blockSize = 4; // TODO: use PixelFormatExtensions to get block size for a format and handle different astc
+            const int32 blockSize = PixelFormatExtensions::ComputeBlockSize(format);
             uint32 nbw = Math::Max<uint32>(1, Math::DivideAndRoundUp(width, blockSize));
             uint32 nbh = Math::Max<uint32>(1, Math::DivideAndRoundUp(height, blockSize));
-            rowPitch = nbw * 16;
+            rowPitch = nbw * 16; // All ASTC blocks use 128 bits
             slicePitch = rowPitch * nbh;
         }
         break;

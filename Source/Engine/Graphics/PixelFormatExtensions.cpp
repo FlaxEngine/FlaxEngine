@@ -666,6 +666,8 @@ int32 PixelFormatExtensions::ComputeBlockSize(PixelFormat format)
     case PixelFormat::BC7_Typeless:
     case PixelFormat::BC7_UNorm:
     case PixelFormat::BC7_UNorm_sRGB:
+    case PixelFormat::ASTC_4x4_UNorm:
+    case PixelFormat::ASTC_4x4_UNorm_sRGB:
         return 4;
     default:
         return 1;
