@@ -20,7 +20,7 @@ namespace FlaxEditor.Modules
         private bool _updateOrFixedUpdateWasCalled;
         private long _breakpointHangFlag;
         private EditorWindow _enterPlayFocusedWindow;
-        private Scene[] _scenesToReload;
+        private Guid[] _scenesToReload;
 
         internal SimulationModule(Editor editor)
         : base(editor)
@@ -138,8 +138,15 @@ namespace FlaxEditor.Modules
                     Editor.Simulation.RequestStartPlayScenes();
                 return;
             }
+            if (!FlaxEngine.Content.GetAssetInfo(firstScene.ID, out var info))
+            {
+                Editor.LogWarning("Invalid First Scene in Game Settings.");
+            }
 
-            _scenesToReload = Level.Scenes;
+            // Load scenes after entering the play mode
+            _scenesToReload = new Guid[Level.ScenesCount];
+            for (int i = 0; i < _scenesToReload.Length; i++)
+                _scenesToReload[i] = Level.GetScene(i).ID;
             Level.UnloadAllScenes();
             Level.LoadScene(firstScene);
 
@@ -153,8 +160,8 @@ namespace FlaxEditor.Modules
 
             Level.UnloadAllScenes();
 
-            foreach (var scene in _scenesToReload)
-                Level.LoadScene(scene.ID);
+            foreach (var sceneId in _scenesToReload)
+                Level.LoadScene(sceneId);
         }
 
         /// <summary>
