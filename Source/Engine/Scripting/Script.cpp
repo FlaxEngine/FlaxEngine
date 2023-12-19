@@ -288,11 +288,13 @@ void Script::Initialize()
         RegisterObject();
 
     // Call OnAwake
-    ASSERT(!_wasAwakeCalled);
-    _wasAwakeCalled = true;
-    CHECK_EXECUTE_IN_EDITOR
+    if (!_wasAwakeCalled)
     {
-        OnAwake();
+        _wasAwakeCalled = true;
+        CHECK_EXECUTE_IN_EDITOR
+        {
+            OnAwake();
+        }
     }
 }
 
