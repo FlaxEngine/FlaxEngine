@@ -535,6 +535,38 @@ namespace FlaxEditor.Modules
         }
 
         /// <summary>
+        /// Create parent for selected actors.
+        /// </summary>
+        public void CreateParentForSelectedActors()
+        {
+            Actor actor = new EmptyActor();
+            Editor.SceneEditing.Spawn(actor, null, false);
+            List<SceneGraphNode> selection = Editor.SceneEditing.Selection;
+            for (int i = 0; i < selection.Count; i++)
+            {
+                if (selection[i] is ActorNode node)
+                {
+                    if (node.ParentNode != node.ParentScene) // if parent node is not Scene
+                    {
+                        if (selection.Contains(node.ParentNode))
+                        {
+                            return; // if parent and child nodes selected together, don't touch child nodes
+                        }
+                        else
+                        {   // put created node as child of the Parent Node of node
+                            int parentOrder = node.Actor.OrderInParent;
+                            actor.Parent = node.Actor.Parent;
+                            actor.OrderInParent = parentOrder;
+                        }
+                    }
+                    node.Actor.Parent = actor;
+                }
+            }
+            Editor.SceneEditing.Select(actor);
+            Editor.Scene.GetActorNode(actor).TreeNode.StartRenaming(Editor.Windows.SceneWin, Editor.Windows.SceneWin.SceneTreePanel);
+        }
+
+        /// <summary>
         /// Duplicates the selected objects. Supports undo/redo.
         /// </summary>
         public void Duplicate()

@@ -23,6 +23,8 @@ namespace FlaxEditor.Windows
     /// <seealso cref="FlaxEditor.Windows.SceneEditorWindow" />
     public partial class SceneTreeWindow : SceneEditorWindow
     {
+        public Panel SceneTreePanel => _sceneTreePanel;
+
         private TextBox _searchBox;
         private Tree _tree;
         private Panel _sceneTreePanel;
