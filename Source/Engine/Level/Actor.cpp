@@ -439,6 +439,7 @@ Array<Actor*> Actor::GetChildren(const MClass* type) const
 
 void Actor::DestroyChildren(float timeLeft)
 {
+    PROFILE_CPU();
     Array<Actor*> children = Children;
     const bool useGameTime = timeLeft > ZeroTolerance;
     for (Actor* child : children)
