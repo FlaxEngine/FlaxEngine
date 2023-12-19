@@ -734,9 +734,7 @@ public:
         }
         else
         {
-            Array tmp = MoveTemp(other);
-            other = *this;
-            *this = MoveTemp(tmp);
+            ::Swap(other, *this);
         }
     }
 

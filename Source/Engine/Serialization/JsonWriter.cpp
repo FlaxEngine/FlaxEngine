@@ -481,7 +481,7 @@ void JsonWriter::SceneObject(::SceneObject* obj)
         }
         else
         {
-            LOG(Warning, "Missing prefab with id={0}.", obj->GetPrefabID());
+            LOG(Warning, "Missing prefab {0}.", obj->GetPrefabID());
         }
     }
 

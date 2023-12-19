@@ -405,12 +405,22 @@ int32 Editor::LoadProduct()
     // Create new project option
     if (CommandLine::Options.NewProject)
     {
+        Array<String> projectFiles;
+        FileSystem::DirectoryGetFiles(projectFiles, projectPath, TEXT("*.flaxproj"), DirectorySearchOption::TopDirectoryOnly);
+        if (projectFiles.Count() == 1)
+        {
+            // Skip creating new project if it already exists
+            LOG(Info, "Skip creatinng new project because it already exists");
+            CommandLine::Options.NewProject.Reset();
+        }
+    }
+    if (CommandLine::Options.NewProject)
+    {
         if (projectPath.IsEmpty())
             projectPath = Platform::GetWorkingDirectory();
         else if (!FileSystem::DirectoryExists(projectPath))
             FileSystem::CreateDirectory(projectPath);
         FileSystem::NormalizePath(projectPath);
-
         String folderName = StringUtils::GetFileName(projectPath);
         String tmpName;
         for (int32 i = 0; i < folderName.Length(); i++)

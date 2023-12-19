@@ -1305,6 +1305,8 @@ FileReadStream* FlaxStorage::OpenFile()
 
 bool FlaxStorage::CloseFileHandles()
 {
+    PROFILE_CPU();
+
     // Note: this is usually called by the content manager when this file is not used or on exit
     // In those situations all the async tasks using this storage should be cancelled externally
 

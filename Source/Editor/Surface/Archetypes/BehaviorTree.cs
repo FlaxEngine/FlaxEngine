@@ -755,6 +755,29 @@ namespace FlaxEditor.Surface.Archetypes
                 }
             }
 
+            /// <inheritdoc />
+            public override void OnDeleted(SurfaceNodeActions action)
+            {
+                // Unlink from the current parent (when deleted by user)
+                var node = Node;
+                if (node != null)
+                {
+                    if (action == SurfaceNodeActions.User)
+                    {
+                        var decorators = node.DecoratorIds;
+                        decorators.Remove(ID);
+                        node.DecoratorIds = decorators;
+                    }
+                    else
+                    {
+                        node._decorators = null;
+                        node.ResizeAuto();
+                    }
+                }
+
+                base.OnDeleted(action);
+            }
+
             public override void OnSurfaceCanEditChanged(bool canEdit)
             {
                 base.OnSurfaceCanEditChanged(canEdit);

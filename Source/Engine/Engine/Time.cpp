@@ -104,7 +104,7 @@ bool Time::TickData::OnTickBegin(float targetFps, float maxDeltaTime)
 
         if (targetFps > ZeroTolerance)
         {
-            int skip = (int)(1 + (time - NextBegin) / (1.0 / targetFps));
+            int skip = (int)(1 + (time - NextBegin) * targetFps);
             NextBegin += (1.0 / targetFps) * skip;
         }
     }
@@ -160,7 +160,7 @@ bool Time::FixedStepTickData::OnTickBegin(float targetFps, float maxDeltaTime)
 
         if (targetFps > ZeroTolerance)
         {
-            int skip = (int)(1 + (time - NextBegin) / (1.0 / targetFps));
+            int skip = (int)(1 + (time - NextBegin) * targetFps);
             NextBegin += (1.0 / targetFps) * skip;
         }
     }

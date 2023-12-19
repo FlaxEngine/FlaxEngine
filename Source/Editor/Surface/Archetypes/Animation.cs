@@ -493,7 +493,15 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 TypeID = 10,
                 Title = "Blend Additive",
-                Description = "Blend animation poses (with additive mode)",
+                Description = 
+                "Blend animation poses (with additive mode)" +
+                "\n" +
+                "\nNote: " +
+                "\nOrder of nodes matters, because Additive animation is appplayed on top of curent frame." +
+                "\n" +
+                "\nTip for blender users:" +
+                "\nInside NLA the the order is bottom (first node in flax) to the top (last node in flax)" +
+                "\n​u need to place it in this order to get correct resoults",
                 Flags = NodeFlags.AnimGraph,
                 Size = new Float2(170, 80),
                 DefaultValues = new object[]
