@@ -12,6 +12,7 @@
 API_CLASS(Attributes="ActorContextMenu(\"New/Physics/Colliders/Box Collider\"), ActorToolbox(\"Physics\")")
 class FLAXENGINE_API BoxCollider : public Collider
 {
+    API_AUTO_SERIALIZATION();
     DECLARE_SCENE_OBJECT(BoxCollider);
 private:
     Float3 _size;
@@ -42,6 +43,11 @@ public:
         return _bounds;
     }
 
+    /// <summary>
+    /// Resizes the collider based on the bounds of it's parent to contain it whole (including any siblings).
+    /// </summary>
+    API_FUNCTION() void AutoResize();
+
 public:
     // [Collider]
 #if USE_EDITOR
@@ -49,8 +55,6 @@ public:
     void OnDebugDrawSelected() override;
 #endif
     bool IntersectsItself(const Ray& ray, Real& distance, Vector3& normal) override;
-    void Serialize(SerializeStream& stream, const void* otherObj) override;
-    void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) override;
 
 protected:
     // [Collider]

@@ -36,7 +36,7 @@ public:
     /// </summary>
     /// <param name="sourceSkeleton">The source model skeleton.</param>
     /// <param name="targetSkeleton">The target skeleton. May be null to disable nodes mapping.</param>
-    SkeletonMapping(Items& sourceSkeleton, Items* targetSkeleton)
+    SkeletonMapping(const Items& sourceSkeleton, const Items* targetSkeleton)
     {
         Size = sourceSkeleton.Count();
         SourceToTarget.Resize(Size); // model => skeleton mapping

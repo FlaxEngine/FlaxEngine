@@ -480,6 +480,16 @@ bool GPUTexture::Init(const GPUTextureDescription& desc)
         break;
     }
     }
+    const bool isCompressed = PixelFormatExtensions::IsCompressed(desc.Format);
+    if (isCompressed)
+    {
+        const int32 blockSize = PixelFormatExtensions::ComputeBlockSize(desc.Format);
+        if (desc.Width < blockSize || desc.Height < blockSize)
+        {
+            LOG(Warning, "Cannot create texture. Invalid dimensions. Description: {0}", desc.ToString());
+            return true;
+        }
+    }
 
     // Release previous data
     ReleaseGPU();
@@ -487,7 +497,7 @@ bool GPUTexture::Init(const GPUTextureDescription& desc)
     // Initialize
     _desc = desc;
     _sRGB = PixelFormatExtensions::IsSRGB(desc.Format);
-    _isBlockCompressed = PixelFormatExtensions::IsCompressed(desc.Format);
+    _isBlockCompressed = isCompressed;
     if (OnInit())
     {
         ReleaseGPU();

@@ -22,6 +22,7 @@
 #include "Engine/ContentImporters/CreateJson.h"
 #include "Engine/Debug/Exceptions/ArgumentNullException.h"
 #include "Engine/Profiler/ProfilerCPU.h"
+#include "Engine/Threading/MainThreadTask.h"
 #include "Editor/Editor.h"
 
 // Apply flow:
@@ -174,6 +175,12 @@ public:
     /// <param name="newObjectIds">Collection with ids of the objects (actors and scripts) from the prefab after changes apply. Used to find new objects or old objects and use this information during changes sync (eg. generate ids for the new objects to prevent ids collisions).</param>
     /// <returns>True if failed, otherwise false.</returns>
     static bool SynchronizePrefabInstances(PrefabInstancesData& prefabInstancesData, Actor* defaultInstance, SceneObjectsListCacheType& sceneObjects, const Guid& prefabId, rapidjson_flax::StringBuffer& tmpBuffer, const Array<Guid>& oldObjectsIds, const Array<Guid>& newObjectIds);
+
+    static void DeletePrefabObject(SceneObject* obj)
+    {
+        obj->SetParent(nullptr);
+        obj->DeleteObject();
+    }
 };
 
 void PrefabInstanceData::CollectPrefabInstances(PrefabInstancesData& prefabInstancesData, const Guid& prefabId, Actor* defaultInstance, Actor* targetActor)
@@ -302,14 +309,10 @@ bool PrefabInstanceData::SynchronizePrefabInstances(PrefabInstancesData& prefabI
                 {
                     // Remove object
                     LOG(Info, "Removing object {0} from instance {1} (prefab: {2})", obj->GetSceneObjectId(), instance.TargetActor->ToString(), prefabId);
-
-                    obj->DeleteObject();
-                    obj->SetParent(nullptr);
-
+                    DeletePrefabObject(obj);
                     sceneObjects.Value->RemoveAtKeepOrder(i);
                     existingObjectsCount--;
                     i--;
-
                     continue;
                 }
 
@@ -358,10 +361,7 @@ bool PrefabInstanceData::SynchronizePrefabInstances(PrefabInstancesData& prefabI
                 {
                     // Remove object removed from the prefab
                     LOG(Info, "Removing prefab instance object {0} from instance {1} (prefab object: {2}, prefab: {3})", obj->GetSceneObjectId(), instance.TargetActor->ToString(), obj->GetPrefabObjectID(), prefabId);
-
-                    obj->DeleteObject();
-                    obj->SetParent(nullptr);
-
+                    DeletePrefabObject(obj);
                     sceneObjects.Value->RemoveAtKeepOrder(i);
                     deserializeSceneObjectIndex--;
                     existingObjectsCount--;
@@ -632,6 +632,19 @@ bool Prefab::ApplyAll(Actor* targetActor)
                 return true;
             }
         }
+    }
+    if (!IsInMainThread())
+    {
+        // Prefabs cannot be updated on async thread so sync it with a Main Thread
+        bool result = true;
+        Function<void()> action = [&]
+        {
+            result = ApplyAll(targetActor);
+        };
+        const auto task = Task::StartNew(New<MainThreadActionTask>(action));
+        if (task->Wait(TimeSpan::FromSeconds(10)))
+            result = true;
+        return result;
     }
 
     // Prevent cyclic references
@@ -921,9 +934,7 @@ bool Prefab::ApplyAllInternal(Actor* targetActor, bool linkTargetActorObjectToPr
             {
                 // Remove object removed from the prefab
                 LOG(Info, "Removing object {0} from prefab default instance", obj->GetSceneObjectId());
-
-                obj->DeleteObject();
-                obj->SetParent(nullptr);
+                PrefabInstanceData::DeletePrefabObject(obj);
                 sceneObjects->At(i) = nullptr;
             }
         }
@@ -1219,14 +1230,14 @@ bool Prefab::SyncChangesInternal(PrefabInstancesData& prefabInstancesData)
     {
         ScopeLock lock(Locker);
         _isCreatingDefaultInstance = true;
-        _defaultInstance = PrefabManager::SpawnPrefab(this, Transform::Identity, nullptr, &ObjectsCache, true);
+        _defaultInstance = PrefabManager::SpawnPrefab(this, nullptr, &ObjectsCache, true);
         _isCreatingDefaultInstance = false;
     }
 
     // Instantiate prefab instance from prefab (default spawning logic)
     // Note: it will get any added or removed objects from the nested prefabs
     // TODO: try to optimize by using recreated default instance to ApplyAllInternal (will need special path there if apply is done with default instance to unlink it instead of destroying)
-    const auto targetActor = PrefabManager::SpawnPrefab(this, Transform::Identity, nullptr, nullptr, true);
+    const auto targetActor = PrefabManager::SpawnPrefab(this, nullptr, nullptr, true);
     if (targetActor == nullptr)
     {
         LOG(Warning, "Failed to instantiate default prefab instance from changes synchronization.");

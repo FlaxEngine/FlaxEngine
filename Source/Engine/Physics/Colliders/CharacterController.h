@@ -12,6 +12,7 @@
 API_CLASS(Attributes="ActorContextMenu(\"New/Physics/Character Controller\"), ActorToolbox(\"Physics\")")
 class FLAXENGINE_API CharacterController : public Collider, public IPhysicsActor
 {
+    API_AUTO_SERIALIZATION();
     DECLARE_SCENE_OBJECT(CharacterController);
 public:
     /// <summary>
@@ -198,8 +199,6 @@ public:
 #if USE_EDITOR
     void OnDebugDrawSelected() override;
 #endif
-    void Serialize(SerializeStream& stream, const void* otherObj) override;
-    void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) override;
     void CreateShape() override;
     void UpdateBounds() override;
     void AddMovement(const Vector3& translation, const Quaternion& rotation) override;

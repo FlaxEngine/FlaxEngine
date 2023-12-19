@@ -53,7 +53,7 @@ bool CreateJson::Create(const StringView& path, const StringAnsiView& data, cons
         {
             if (FileSystem::CreateDirectory(directory))
             {
-                LOG(Warning, "Failed to create directory");
+                LOG(Warning, "Failed to create directory '{}'", directory);
                 return true;
             }
         }

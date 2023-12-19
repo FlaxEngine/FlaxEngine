@@ -18,7 +18,7 @@ class CreateAssetContext;
 /// <summary>
 /// Create/Import new asset callback result
 /// </summary>
-DECLARE_ENUM_7(CreateAssetResult, Ok, Abort, Error, CannotSaveFile, InvalidPath, CannotAllocateChunk, InvalidTypeID);
+DECLARE_ENUM_8(CreateAssetResult, Ok, Abort, Error, CannotSaveFile, InvalidPath, CannotAllocateChunk, InvalidTypeID, Skip);
 
 /// <summary>
 /// Create/Import new asset callback function

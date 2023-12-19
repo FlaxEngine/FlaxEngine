@@ -84,8 +84,9 @@ void StreamableResource::RequestStreamingUpdate()
     Streaming.LastUpdate = 0;
 }
 
-void StreamableResource::ResetStreaming()
+void StreamableResource::ResetStreaming(bool error)
 {
+    Streaming.Error = error;
     Streaming.TargetResidency = 0;
     Streaming.LastUpdate = DateTime::MaxValue().Ticks;
 }

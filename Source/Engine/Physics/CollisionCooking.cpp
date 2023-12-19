@@ -7,10 +7,12 @@
 #include "Engine/Graphics/Async/GPUTask.h"
 #include "Engine/Graphics/Models/MeshBase.h"
 #include "Engine/Threading/Threading.h"
+#include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Core/Log.h"
 
 bool CollisionCooking::CookCollision(const Argument& arg, CollisionData::SerializedOptions& outputOptions, BytesContainer& outputData)
 {
+    PROFILE_CPU();
     int32 convexVertexLimit = Math::Clamp(arg.ConvexVertexLimit, CONVEX_VERTEX_MIN, CONVEX_VERTEX_MAX);
     if (arg.ConvexVertexLimit == 0)
         convexVertexLimit = CONVEX_VERTEX_MAX;
