@@ -6,7 +6,7 @@
 #include "Engine/Core/Types/StringBuilder.h"
 #include "Engine/Core/Log.h"
 
-VkFormat RenderToolsVulkan::PixelFormatToVkFormat[102] =
+VkFormat RenderToolsVulkan::PixelFormatToVkFormat[108] =
 {
     VK_FORMAT_UNDEFINED,
     VK_FORMAT_R32G32B32A32_SFLOAT,
@@ -110,6 +110,12 @@ VkFormat RenderToolsVulkan::PixelFormatToVkFormat[102] =
     VK_FORMAT_BC7_SRGB_BLOCK,
     VK_FORMAT_ASTC_4x4_UNORM_BLOCK,
     VK_FORMAT_ASTC_4x4_SRGB_BLOCK,
+    VK_FORMAT_ASTC_6x6_UNORM_BLOCK,
+    VK_FORMAT_ASTC_6x6_SRGB_BLOCK,
+    VK_FORMAT_ASTC_8x8_UNORM_BLOCK,
+    VK_FORMAT_ASTC_8x8_SRGB_BLOCK,
+    VK_FORMAT_ASTC_10x10_UNORM_BLOCK,
+    VK_FORMAT_ASTC_10x10_SRGB_BLOCK,
 };
 
 VkBlendFactor RenderToolsVulkan::BlendToVkBlendFactor[20] =

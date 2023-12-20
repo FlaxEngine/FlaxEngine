@@ -331,6 +331,12 @@ void RenderTools::ComputePitch(PixelFormat format, int32 width, int32 height, ui
         break;
     case PixelFormat::ASTC_4x4_UNorm:
     case PixelFormat::ASTC_4x4_UNorm_sRGB:
+    case PixelFormat::ASTC_6x6_UNorm:
+    case PixelFormat::ASTC_6x6_UNorm_sRGB:
+    case PixelFormat::ASTC_8x8_UNorm:
+    case PixelFormat::ASTC_8x8_UNorm_sRGB:
+    case PixelFormat::ASTC_10x10_UNorm:
+    case PixelFormat::ASTC_10x10_UNorm_sRGB:
         {
             const int32 blockSize = PixelFormatExtensions::ComputeBlockSize(format);
             uint32 nbw = Math::Max<uint32>(1, Math::DivideAndRoundUp(width, blockSize));

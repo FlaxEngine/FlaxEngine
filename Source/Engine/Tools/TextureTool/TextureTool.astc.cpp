@@ -8,6 +8,7 @@
 #include "Engine/Core/Math/Color32.h"
 #include "Engine/Graphics/Textures/TextureData.h"
 #include "Engine/Graphics/PixelFormatExtensions.h"
+#include "Engine/Graphics/RenderTools.h"
 #include <ThirdParty/astc/astcenc.h>
 
 bool TextureTool::ConvertAstc(TextureData& dst, const TextureData& src, const PixelFormat dstFormat)
@@ -87,7 +88,10 @@ bool TextureTool::ConvertAstc(TextureData& dst, const TextureData& src, const Pi
             auto mipHeight = Math::Max(textureData->Height >> mipIndex, 1);
             auto blocksWidth = Math::Max(Math::DivideAndRoundUp(mipWidth, blockSize), 1);
             auto blocksHeight = Math::Max(Math::DivideAndRoundUp(mipHeight, blockSize), 1);
-            ASSERT(srcMip.RowPitch == mipWidth * PixelFormatExtensions::SizeInBytes(textureData->Format));
+            uint32 mipRowPitch, mipSlicePitch;
+            RenderTools::ComputePitch(textureData->Format, mipWidth, mipHeight, mipRowPitch, mipSlicePitch);
+            ASSERT(srcMip.RowPitch == mipRowPitch);
+            ASSERT(srcMip.DepthPitch == mipSlicePitch);
             ASSERT(srcMip.Lines == mipHeight);
 
             // Allocate memory

@@ -29,6 +29,21 @@ void PixelFormatExtensions::Init()
         PixelFormat::R8_Typeless,
         PixelFormat::R8_UInt,
         PixelFormat::R8_UNorm,
+        PixelFormat::BC2_Typeless,
+        PixelFormat::BC2_UNorm,
+        PixelFormat::BC2_UNorm_sRGB,
+        PixelFormat::BC3_Typeless,
+        PixelFormat::BC3_UNorm,
+        PixelFormat::BC3_UNorm_sRGB,
+        PixelFormat::BC5_SNorm,
+        PixelFormat::BC5_Typeless,
+        PixelFormat::BC5_UNorm,
+        PixelFormat::BC6H_Sf16,
+        PixelFormat::BC6H_Typeless,
+        PixelFormat::BC6H_Uf16,
+        PixelFormat::BC7_Typeless,
+        PixelFormat::BC7_UNorm,
+        PixelFormat::BC7_UNorm_sRGB,
         PixelFormat::ASTC_4x4_UNorm,
         PixelFormat::ASTC_4x4_UNorm_sRGB,
     };
@@ -134,25 +149,6 @@ void PixelFormatExtensions::Init()
         PixelFormat::BC4_UNorm,
     };
     InitFormat(formats8, 4);
-
-    PixelFormat formats9[] = {
-        PixelFormat::BC2_Typeless,
-        PixelFormat::BC2_UNorm,
-        PixelFormat::BC2_UNorm_sRGB,
-        PixelFormat::BC3_Typeless,
-        PixelFormat::BC3_UNorm,
-        PixelFormat::BC3_UNorm_sRGB,
-        PixelFormat::BC5_SNorm,
-        PixelFormat::BC5_Typeless,
-        PixelFormat::BC5_UNorm,
-        PixelFormat::BC6H_Sf16,
-        PixelFormat::BC6H_Typeless,
-        PixelFormat::BC6H_Uf16,
-        PixelFormat::BC7_Typeless,
-        PixelFormat::BC7_UNorm,
-        PixelFormat::BC7_UNorm_sRGB,
-    };
-    InitFormat(formats9, 8);
 }
 
 int32 PixelFormatExtensions::SizeInBits(PixelFormat format)
@@ -315,6 +311,12 @@ bool PixelFormatExtensions::IsCompressed(const PixelFormat format)
     case PixelFormat::BC7_UNorm_sRGB:
     case PixelFormat::ASTC_4x4_UNorm:
     case PixelFormat::ASTC_4x4_UNorm_sRGB:
+    case PixelFormat::ASTC_6x6_UNorm:
+    case PixelFormat::ASTC_6x6_UNorm_sRGB:
+    case PixelFormat::ASTC_8x8_UNorm:
+    case PixelFormat::ASTC_8x8_UNorm_sRGB:
+    case PixelFormat::ASTC_10x10_UNorm:
+    case PixelFormat::ASTC_10x10_UNorm_sRGB:
         return true;
     default:
         return false;
@@ -358,6 +360,12 @@ bool PixelFormatExtensions::IsCompressedASTC(PixelFormat format)
     {
     case PixelFormat::ASTC_4x4_UNorm:
     case PixelFormat::ASTC_4x4_UNorm_sRGB:
+    case PixelFormat::ASTC_6x6_UNorm:
+    case PixelFormat::ASTC_6x6_UNorm_sRGB:
+    case PixelFormat::ASTC_8x8_UNorm:
+    case PixelFormat::ASTC_8x8_UNorm_sRGB:
+    case PixelFormat::ASTC_10x10_UNorm:
+    case PixelFormat::ASTC_10x10_UNorm_sRGB:
         return true;
     default:
         return false;
@@ -391,6 +399,9 @@ bool PixelFormatExtensions::IsSRGB(const PixelFormat format)
     case PixelFormat::B8G8R8X8_UNorm_sRGB:
     case PixelFormat::BC7_UNorm_sRGB:
     case PixelFormat::ASTC_4x4_UNorm_sRGB:
+    case PixelFormat::ASTC_6x6_UNorm_sRGB:
+    case PixelFormat::ASTC_8x8_UNorm_sRGB:
+    case PixelFormat::ASTC_10x10_UNorm_sRGB:
         return true;
     default:
         return false;
@@ -580,6 +591,12 @@ int32 PixelFormatExtensions::ComputeComponentsCount(const PixelFormat format)
     case PixelFormat::B8G8R8X8_UNorm_sRGB:
     case PixelFormat::ASTC_4x4_UNorm:
     case PixelFormat::ASTC_4x4_UNorm_sRGB:
+    case PixelFormat::ASTC_6x6_UNorm:
+    case PixelFormat::ASTC_6x6_UNorm_sRGB:
+    case PixelFormat::ASTC_8x8_UNorm:
+    case PixelFormat::ASTC_8x8_UNorm_sRGB:
+    case PixelFormat::ASTC_10x10_UNorm:
+    case PixelFormat::ASTC_10x10_UNorm_sRGB:
         return 4;
     case PixelFormat::R32G32B32_Typeless:
     case PixelFormat::R32G32B32_Float:
@@ -669,6 +686,15 @@ int32 PixelFormatExtensions::ComputeBlockSize(PixelFormat format)
     case PixelFormat::ASTC_4x4_UNorm:
     case PixelFormat::ASTC_4x4_UNorm_sRGB:
         return 4;
+    case PixelFormat::ASTC_6x6_UNorm:
+    case PixelFormat::ASTC_6x6_UNorm_sRGB:
+        return 6;
+    case PixelFormat::ASTC_8x8_UNorm:
+    case PixelFormat::ASTC_8x8_UNorm_sRGB:
+        return 8;
+    case PixelFormat::ASTC_10x10_UNorm:
+    case PixelFormat::ASTC_10x10_UNorm_sRGB:
+        return 10;
     default:
         return 1;
     }
@@ -694,6 +720,12 @@ PixelFormat PixelFormatExtensions::TosRGB(const PixelFormat format)
         return PixelFormat::BC7_UNorm_sRGB;
     case PixelFormat::ASTC_4x4_UNorm:
         return PixelFormat::ASTC_4x4_UNorm_sRGB;
+    case PixelFormat::ASTC_6x6_UNorm:
+        return PixelFormat::ASTC_6x6_UNorm_sRGB;
+    case PixelFormat::ASTC_8x8_UNorm:
+        return PixelFormat::ASTC_8x8_UNorm_sRGB;
+    case PixelFormat::ASTC_10x10_UNorm:
+        return PixelFormat::ASTC_10x10_UNorm_sRGB;
     default:
         return format;
     }
@@ -719,6 +751,12 @@ PixelFormat PixelFormatExtensions::ToNonsRGB(const PixelFormat format)
         return PixelFormat::BC7_UNorm;
     case PixelFormat::ASTC_4x4_UNorm_sRGB:
         return PixelFormat::ASTC_4x4_UNorm;
+    case PixelFormat::ASTC_6x6_UNorm_sRGB:
+        return PixelFormat::ASTC_6x6_UNorm;
+    case PixelFormat::ASTC_8x8_UNorm_sRGB:
+        return PixelFormat::ASTC_8x8_UNorm;
+    case PixelFormat::ASTC_10x10_UNorm_sRGB:
+        return PixelFormat::ASTC_10x10_UNorm;
     default:
         return format;
     }
