@@ -294,9 +294,6 @@ namespace FlaxEditor.SceneGraph
         /// </summary>
         public virtual void PostSpawn()
         {
-            _actor.LocalPosition = Vector3.Zero;
-            _actor.LocalEulerAngles = Vector3.Zero;
-            _actor.LocalScale = Vector3.One;
         }
 
         /// <summary>
