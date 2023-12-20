@@ -15,6 +15,7 @@ class Spline;
 /// <seealso cref="Spline" />
 API_CLASS() class FLAXENGINE_API SplineCollider : public Collider
 {
+    API_AUTO_SERIALIZATION();
     DECLARE_SCENE_OBJECT(SplineCollider);
 private:
     Spline* _spline = nullptr;
@@ -61,8 +62,6 @@ public:
     void OnDebugDrawSelected() override;
 #endif
     bool IntersectsItself(const Ray& ray, Real& distance, Vector3& normal) override;
-    void Serialize(SerializeStream& stream, const void* otherObj) override;
-    void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) override;
     void OnParentChanged() override;
     void EndPlay() override;
 

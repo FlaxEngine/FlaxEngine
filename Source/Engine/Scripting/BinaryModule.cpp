@@ -1235,17 +1235,17 @@ bool ManagedBinaryModule::InvokeMethod(void* method, const Variant& instance, Sp
     const bool withInterfaces = !mMethod->IsStatic() && mMethod->GetParentClass()->IsInterface();
     if (!mMethod->IsStatic())
     {
-        // Box instance into C# object
+        // Box instance into C# object (and validate the type)
         MObject* instanceObject = MUtils::BoxVariant(instance);
-        const MClass* instanceObjectClass = MCore::Object::GetClass(instanceObject);
-
-        // Validate instance
-        if (!instanceObject || !instanceObjectClass->IsSubClassOf(mMethod->GetParentClass(), withInterfaces))
+        if (!instanceObject)
         {
-            if (!instanceObject)
-                LOG(Error, "Failed to call method '{0}.{1}' (args count: {2}) without object instance", String(mMethod->GetParentClass()->GetFullName()), String(mMethod->GetName()), parametersCount);
-            else
-                LOG(Error, "Failed to call method '{0}.{1}' (args count: {2}) with invalid object instance of type '{3}'", String(mMethod->GetParentClass()->GetFullName()), String(mMethod->GetName()), parametersCount, String(MUtils::GetClassFullname(instanceObject)));
+            LOG(Error, "Failed to call method '{0}.{1}' (args count: {2}) without object instance", String(mMethod->GetParentClass()->GetFullName()), String(mMethod->GetName()), parametersCount);
+            return true;
+        }
+        const MClass* instanceObjectClass = MCore::Object::GetClass(instanceObject);
+        if (!instanceObjectClass->IsSubClassOf(mMethod->GetParentClass(), withInterfaces))
+        {
+            LOG(Error, "Failed to call method '{0}.{1}' (args count: {2}) with invalid object instance of type '{3}'", String(mMethod->GetParentClass()->GetFullName()), String(mMethod->GetName()), parametersCount, String(MUtils::GetClassFullname(instanceObject)));
             return true;
         }
 

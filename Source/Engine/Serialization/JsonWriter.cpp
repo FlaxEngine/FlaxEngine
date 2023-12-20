@@ -466,7 +466,7 @@ void JsonWriter::SceneObject(::SceneObject* obj)
             prefab->GetDefaultInstance();
 
             // Get prefab object instance from the prefab
-            const void* prefabObject;
+            ::SceneObject* prefabObject;
             if (prefab->ObjectsCache.TryGet(obj->GetPrefabObjectID(), prefabObject))
             {
                 // Serialize modified properties compared with the default object from prefab
@@ -481,7 +481,7 @@ void JsonWriter::SceneObject(::SceneObject* obj)
         }
         else
         {
-            LOG(Warning, "Missing prefab with id={0}.", obj->GetPrefabID());
+            LOG(Warning, "Missing prefab {0}.", obj->GetPrefabID());
         }
     }
 

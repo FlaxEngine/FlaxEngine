@@ -87,6 +87,7 @@ namespace FlaxEditor.CustomEditors.Editors
         protected bool NotNullItems;
 
         private IntegerValueElement _size;
+        private PropertyNameLabel _sizeLabel;
         private Color _background;
         private int _elementsCount;
         private bool _readOnly;
@@ -108,6 +109,9 @@ namespace FlaxEditor.CustomEditors.Editors
                 return type.IsGenericType ? new ScriptType(type.GetGenericArguments()[0]) : type.GetElementType();
             }
         }
+
+        /// <inheritdoc />
+        public override bool RevertValueWithChildren => false; // Always revert value for a whole collection
 
         /// <inheritdoc />
         public override void Initialize(LayoutElementsContainer layout)
@@ -174,7 +178,9 @@ namespace FlaxEditor.CustomEditors.Editors
             }
             else
             {
-                _size = dragArea.IntegerValue("Size");
+                var sizeProperty = dragArea.AddPropertyItem("Size");
+                _sizeLabel = sizeProperty.Labels.Last();
+                _size = sizeProperty.IntegerValue();
                 _size.IntValue.MinValue = 0;
                 _size.IntValue.MaxValue = ushort.MaxValue;
                 _size.IntValue.Value = size;
@@ -274,6 +280,15 @@ namespace FlaxEditor.CustomEditors.Editors
             }
         }
 
+        /// <inheritdoc />
+        protected override void Deinitialize()
+        {
+            _size = null;
+            _sizeLabel = null;
+
+            base.Deinitialize();
+        }
+
         /// <summary>
         /// Rebuilds the parent layout if its collection.
         /// </summary>
@@ -296,7 +311,6 @@ namespace FlaxEditor.CustomEditors.Editors
         {
             if (IsSetBlocked)
                 return;
-
             Resize(_size.IntValue.Value);
         }
 
@@ -311,11 +325,9 @@ namespace FlaxEditor.CustomEditors.Editors
                 return;
 
             var cloned = CloneValues();
-
             var tmp = cloned[dstIndex];
             cloned[dstIndex] = cloned[srcIndex];
             cloned[srcIndex] = tmp;
-
             SetValue(cloned);
         }
 
@@ -370,6 +382,17 @@ namespace FlaxEditor.CustomEditors.Editors
             // No support for different collections for now
             if (HasDifferentValues || HasDifferentTypes)
                 return;
+
+            // Update reference/default value indicator
+            if (_sizeLabel != null)
+            {
+                var color = Color.Transparent;
+                if (Values.HasReferenceValue && Values.ReferenceValue is IList referenceValue && referenceValue.Count != Count)
+                    color = FlaxEngine.GUI.Style.Current.BackgroundSelected;
+                else if (Values.HasDefaultValue && Values.DefaultValue is IList defaultValue && defaultValue.Count != Count)
+                    color = Color.Yellow * 0.8f;
+                _sizeLabel.HighlightStripColor = color;
+            }
 
             // Check if collection has been resized (by UI or from external source)
             if (Count != _elementsCount)

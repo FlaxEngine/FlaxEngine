@@ -89,7 +89,7 @@ API_CLASS(Static) class FLAXENGINE_API PrefabManager
     /// <param name="objectsCache">The options output objects cache that can be filled with prefab object id mapping to deserialized object (actor or script).</param>
     /// <param name="withSynchronization">True if perform prefab changes synchronization for the spawned objects. It will check if need to add new objects due to nested prefab modifications.</param>
     /// <returns>The created actor (root) or null if failed.</returns>
-    static Actor* SpawnPrefab(Prefab* prefab, Actor* parent, Dictionary<Guid, const void*, HeapAllocation>* objectsCache, bool withSynchronization = false);
+    static Actor* SpawnPrefab(Prefab* prefab, Actor* parent, Dictionary<Guid, SceneObject*, HeapAllocation>* objectsCache, bool withSynchronization = true);
 
     /// <summary>
     /// Spawns the instance of the prefab objects. If parent actor is specified then created actors are fully initialized (OnLoad event and BeginPlay is called if parent actor is already during gameplay).
@@ -100,7 +100,7 @@ API_CLASS(Static) class FLAXENGINE_API PrefabManager
     /// <param name="objectsCache">The options output objects cache that can be filled with prefab object id mapping to deserialized object (actor or script).</param>
     /// <param name="withSynchronization">True if perform prefab changes synchronization for the spawned objects. It will check if need to add new objects due to nested prefab modifications.</param>
     /// <returns>The created actor (root) or null if failed.</returns>
-    static Actor* SpawnPrefab(Prefab* prefab, const Transform& transform, Actor* parent, Dictionary<Guid, const void*, HeapAllocation>* objectsCache, bool withSynchronization = false);
+    static Actor* SpawnPrefab(Prefab* prefab, const Transform& transform, Actor* parent, Dictionary<Guid, SceneObject*, HeapAllocation>* objectsCache, bool withSynchronization = true);
 
 #if USE_EDITOR
 

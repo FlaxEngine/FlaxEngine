@@ -1420,7 +1420,7 @@ void VisjectExecutor::ProcessGroupCollections(Box* box, Node* node, Value& value
         }
         // Sort
         case 12:
-            Sorting::QuickSort(array.Get(), array.Count());
+            Sorting::QuickSort(array);
             value = MoveTemp(v);
             break;
         // Reverse

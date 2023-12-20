@@ -23,7 +23,6 @@
 #define CHECK_INVALID_BUFFER(model, buffer) \
     if (buffer->IsValidFor(model) == false) \
 	{ \
-		LOG(Warning, "Invalid Skinned Model Instance Buffer size {0} for Skinned Model {1}. It should be {2}. Manual update to proper size.", buffer->Count(), model->ToString(), model->MaterialSlots.Count()); \
 		buffer->Setup(model); \
 	}
 

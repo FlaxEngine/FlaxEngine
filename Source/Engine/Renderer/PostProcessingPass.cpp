@@ -434,6 +434,10 @@ void PostProcessingPass::Render(RenderContext& renderContext, GPUTexture* input,
         // Set lens flares output
         context->BindSR(3, bloomTmp2->View(0, 1));
     }
+    else
+    {
+        context->BindSR(3, (GPUResourceView*)nullptr);
+    }
 
     ////////////////////////////////////////////////////////////////////////////////////
     // Final composite

@@ -146,6 +146,7 @@ void AnimationsSystem::PostExecute(TaskGraph* graph)
         auto animatedModel = AnimationManagerInstance.UpdateList[index];
         if (CanUpdateModel(animatedModel))
         {
+            animatedModel->GraphInstance.InvokeAnimEvents();
             animatedModel->OnAnimationUpdated_Sync();
         }
     }

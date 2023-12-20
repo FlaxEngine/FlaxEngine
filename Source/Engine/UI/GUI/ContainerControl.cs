@@ -448,6 +448,8 @@ namespace FlaxEngine.GUI
         internal virtual void AddChildInternal(Control child)
         {
             Assert.IsNotNull(child, "Invalid control.");
+            if (Parent == child)
+                throw new InvalidOperationException();
 
             // Add child
             _children.Add(child);
@@ -820,13 +822,14 @@ namespace FlaxEngine.GUI
         protected virtual void DrawChildren()
         {
             // Draw all visible child controls
+            var children = _children;
             if (_cullChildren)
             {
                 Render2D.PeekClip(out var globalClipping);
                 Render2D.PeekTransform(out var globalTransform);
-                for (int i = 0; i < _children.Count; i++)
+                for (int i = 0; i < children.Count; i++)
                 {
-                    var child = _children[i];
+                    var child = children[i];
                     if (child.Visible)
                     {
                         Matrix3x3.Multiply(ref child._cachedTransform, ref globalTransform, out var globalChildTransform);
@@ -842,9 +845,9 @@ namespace FlaxEngine.GUI
             }
             else
             {
-                for (int i = 0; i < _children.Count; i++)
+                for (int i = 0; i < children.Count; i++)
                 {
-                    var child = _children[i];
+                    var child = children[i];
                     if (child.Visible)
                     {
                         Render2D.PushTransform(ref child._cachedTransform);

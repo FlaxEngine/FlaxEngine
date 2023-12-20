@@ -221,7 +221,7 @@ public:
     /// <param name="action">Action to run.</param>
     /// <param name="target">The action target object.</param>
     /// <returns>Enqueued task.</returns>
-    Task* ContinueWith(Function<void()> action, Object* target = nullptr);
+    Task* ContinueWith(const Function<void()>& action, Object* target = nullptr);
 
     /// <summary>
     /// Continues that task execution with a given action (will spawn new async action).
@@ -229,7 +229,7 @@ public:
     /// <param name="action">Action to run.</param>
     /// <param name="target">The action target object.</param>
     /// <returns>Enqueued task.</returns>
-    Task* ContinueWith(Function<bool()> action, Object* target = nullptr);
+    Task* ContinueWith(const Function<bool()>& action, Object* target = nullptr);
 
 public:
 
@@ -246,7 +246,7 @@ public:
     /// <param name="action">The action.</param>
     /// <param name="target">The action target object.</param>
     /// <returns>Task</returns>
-    static Task* StartNew(Function<void()>& action, Object* target = nullptr);
+    static Task* StartNew(const Function<void()>& action, Object* target = nullptr);
 
     /// <summary>
     /// Starts the new task.
@@ -275,7 +275,7 @@ public:
     /// <param name="action">The action.</param>
     /// <param name="target">The action target object.</param>
     /// <returns>Task</returns>
-    static Task* StartNew(Function<bool()>& action, Object* target = nullptr);
+    static Task* StartNew(const Function<bool()>& action, Object* target = nullptr);
 
     /// <summary>
     /// Starts the new task.

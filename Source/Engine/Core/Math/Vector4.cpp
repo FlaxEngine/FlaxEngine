@@ -17,6 +17,8 @@ const Float4 Float4::Zero(0.0f);
 template<>
 const Float4 Float4::One(1.0f);
 template<>
+const Float4 Float4::Half(0.5f);
+template<>
 const Float4 Float4::UnitX(1.0f, 0.0f, 0.0f, 0.0f);
 template<>
 const Float4 Float4::UnitY(0.0f, 1.0f, 0.0f, 0.0f);

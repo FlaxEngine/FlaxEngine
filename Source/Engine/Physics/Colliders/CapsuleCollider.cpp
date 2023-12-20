@@ -1,7 +1,6 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
 #include "CapsuleCollider.h"
-#include "Engine/Serialization/Serialization.h"
 
 CapsuleCollider::CapsuleCollider(const SpawnParams& params)
     : Collider(params)
@@ -79,26 +78,6 @@ void CapsuleCollider::OnDebugDrawSelected()
 bool CapsuleCollider::IntersectsItself(const Ray& ray, Real& distance, Vector3& normal)
 {
     return _orientedBox.Intersects(ray, distance, normal);
-}
-
-void CapsuleCollider::Serialize(SerializeStream& stream, const void* otherObj)
-{
-    // Base
-    Collider::Serialize(stream, otherObj);
-
-    SERIALIZE_GET_OTHER_OBJ(CapsuleCollider);
-
-    SERIALIZE_MEMBER(Radius, _radius);
-    SERIALIZE_MEMBER(Height, _height);
-}
-
-void CapsuleCollider::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)
-{
-    // Base
-    Collider::Deserialize(stream, modifier);
-
-    DESERIALIZE_MEMBER(Radius, _radius);
-    DESERIALIZE_MEMBER(Height, _height);
 }
 
 void CapsuleCollider::UpdateBounds()

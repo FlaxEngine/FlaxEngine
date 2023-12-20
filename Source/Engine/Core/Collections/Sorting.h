@@ -48,6 +48,16 @@ public:
     /// <summary>
     /// Sorts the linear data array using Quick Sort algorithm (non recursive version, uses temporary stack collection).
     /// </summary>
+    /// <param name="data">The data container.</param>
+    template<typename T, typename AllocationType = HeapAllocation>
+    FORCE_INLINE static void QuickSort(Array<T, AllocationType>& data)
+    {
+        QuickSort(data.Get(), data.Count());
+    }
+
+    /// <summary>
+    /// Sorts the linear data array using Quick Sort algorithm (non recursive version, uses temporary stack collection).
+    /// </summary>
     /// <param name="data">The data pointer.</param>
     /// <param name="count">The elements count.</param>
     template<typename T>

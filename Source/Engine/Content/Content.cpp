@@ -230,6 +230,7 @@ bool Content::GetAssetInfo(const Guid& id, AssetInfo& info)
     // Find asset in registry
     if (Cache.FindAsset(id, info))
         return true;
+    PROFILE_CPU();
 
     // Locking injects some stalls but we need to make it safe (only one thread can pass though it at once)
     ScopeLock lock(WorkspaceDiscoveryLocker);
@@ -276,6 +277,7 @@ bool Content::GetAssetInfo(const StringView& path, AssetInfo& info)
     // Find asset in registry
     if (Cache.FindAsset(path, info))
         return true;
+    PROFILE_CPU();
 
     const auto extension = FileSystem::GetExtension(path).ToLower();
 
@@ -538,6 +540,8 @@ void Content::DeleteAsset(Asset* asset)
 
 void Content::DeleteAsset(const StringView& path)
 {
+    PROFILE_CPU();
+
     // Try to delete already loaded asset
     Asset* asset = GetAsset(path);
     if (asset != nullptr)
@@ -566,12 +570,12 @@ void Content::DeleteAsset(const StringView& path)
 
 void Content::deleteFileSafety(const StringView& path, const Guid& id)
 {
-    // Check if given id is invalid
     if (!id.IsValid())
     {
         LOG(Warning, "Cannot remove file \'{0}\'. Given ID is invalid.", path);
         return;
     }
+    PROFILE_CPU();
 
     // Ensure that file has the same ID (prevent from deleting different assets)
     auto storage = ContentStorageManager::TryGetStorage(path);
@@ -678,6 +682,7 @@ bool Content::FastTmpAssetClone(const StringView& path, String& resultPath)
 
 bool Content::CloneAssetFile(const StringView& dstPath, const StringView& srcPath, const Guid& dstId)
 {
+    PROFILE_CPU();
     ASSERT(FileSystem::AreFilePathsEqual(srcPath, dstPath) == false && dstId.IsValid());
 
     LOG(Info, "Cloning asset \'{0}\' to \'{1}\'({2}).", srcPath, dstPath, dstId);
@@ -796,6 +801,7 @@ Asset* Content::CreateVirtualAsset(MClass* type)
 
 Asset* Content::CreateVirtualAsset(const ScriptingTypeHandle& type)
 {
+    PROFILE_CPU();
     auto& assetType = type.GetType();
 
     // Init mock asset info

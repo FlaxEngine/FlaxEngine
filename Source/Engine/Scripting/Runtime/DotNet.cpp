@@ -1657,7 +1657,7 @@ bool InitHostfxr()
 
     // Get path to hostfxr library
     get_hostfxr_parameters get_hostfxr_params;
-    get_hostfxr_params.size = sizeof(hostfxr_initialize_parameters);
+    get_hostfxr_params.size = sizeof(get_hostfxr_parameters);
     get_hostfxr_params.assembly_path = libraryPath.Get();
 #if PLATFORM_MAC
     ::String macOSDotnetRoot = TEXT("/usr/local/share/dotnet");

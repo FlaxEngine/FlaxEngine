@@ -223,6 +223,11 @@ void TextureBase::SetTextureGroup(int32 textureGroup)
     }
 }
 
+bool TextureBase::HasStreamingError() const
+{
+    return _texture.Streaming.Error;
+}
+
 BytesContainer TextureBase::GetMipData(int32 mipIndex, int32& rowPitch, int32& slicePitch)
 {
     BytesContainer result;

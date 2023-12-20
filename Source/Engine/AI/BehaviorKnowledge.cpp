@@ -144,7 +144,10 @@ BehaviorKnowledge::~BehaviorKnowledge()
 
 void BehaviorKnowledge::InitMemory(BehaviorTree* tree)
 {
-    ASSERT_LOW_LAYER(!Tree && tree);
+    if (Tree)
+        FreeMemory();
+    if (!tree)
+        return;
     Tree = tree;
     Blackboard = Variant::NewValue(tree->Graph.Root->BlackboardType);
     RelevantNodes.Resize(tree->Graph.NodesCount, false);

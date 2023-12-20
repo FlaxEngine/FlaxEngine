@@ -208,21 +208,13 @@ dtNavMesh::dtNavMesh() :
 
 dtNavMesh::~dtNavMesh()
 {
-	for (int i = 0; i < m_maxTiles; ++i)
-	{
-		if (m_tiles[i].flags & DT_TILE_FREE_DATA)
-		{
-			dtFree(m_tiles[i].data);
-			m_tiles[i].data = 0;
-			m_tiles[i].dataSize = 0;
-		}
-	}
-	dtFree(m_posLookup);
-	dtFree(m_tiles);
+	purge();
 }
 		
 dtStatus dtNavMesh::init(const dtNavMeshParams* params)
 {
+    if (m_tiles)
+        purge();
 	memcpy(&m_params, params, sizeof(dtNavMeshParams));
 	dtVcopy(m_orig, params->orig);
 	m_tileWidth = params->tileWidth;
@@ -1176,6 +1168,24 @@ const dtMeshTile* dtNavMesh::getTileByRef(dtTileRef ref) const
 int dtNavMesh::getMaxTiles() const
 {
 	return m_maxTiles;
+}
+
+void dtNavMesh::purge()
+{
+	for (int i = 0; i < m_maxTiles; ++i)
+	{
+		if (m_tiles[i].flags & DT_TILE_FREE_DATA)
+		{
+			dtFree(m_tiles[i].data);
+			m_tiles[i].data = 0;
+			m_tiles[i].dataSize = 0;
+		}
+	}
+    m_maxTiles = 0;
+	dtFree(m_posLookup);
+    m_posLookup = 0;
+	dtFree(m_tiles);
+    m_tiles = 0;
 }
 
 dtMeshTile* dtNavMesh::getTile(int i)

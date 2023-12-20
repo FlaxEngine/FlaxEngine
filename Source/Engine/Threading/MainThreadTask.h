@@ -66,7 +66,7 @@ public:
     /// </summary>
     /// <param name="action">The action.</param>
     /// <param name="target">The target object.</param>
-    MainThreadActionTask(Function<void()>& action, Object* target = nullptr)
+    MainThreadActionTask(const Function<void()>& action, Object* target = nullptr)
         : MainThreadTask()
         , _action1(action)
         , _target(target)
@@ -90,7 +90,7 @@ public:
     /// </summary>
     /// <param name="action">The action.</param>
     /// <param name="target">The target object.</param>
-    MainThreadActionTask(Function<bool()>& action, Object* target = nullptr)
+    MainThreadActionTask(const Function<bool()>& action, Object* target = nullptr)
         : MainThreadTask()
         , _action2(action)
         , _target(target)
