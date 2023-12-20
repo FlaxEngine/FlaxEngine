@@ -366,9 +366,7 @@ namespace FlaxEditor.Windows.Assets
                 actor.Transform = parentActor.Transform;
                 actor.StaticFlags = parentActor.StaticFlags;
                 actor.Layer = parentActor.Layer;
-                actor.LocalPosition = Vector3.Zero;
-                actor.LocalEulerAngles = Vector3.Zero;
-                actor.LocalScale = Vector3.One;
+                actor.LocalTransform = Transform.Identity;
 
                 // Rename actor to identify it easily
                 actor.Name = Utilities.Utils.IncrementNameNumber(actor.Name, x => parentActor.GetChild(x) == null);
