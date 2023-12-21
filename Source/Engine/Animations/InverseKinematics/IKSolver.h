@@ -19,7 +19,7 @@ public:
     /// </summary>
     /// <param name="Actors">The actors.</param>
     /// <returns></returns>
-    API_FUNCTION() static Array<IKBone> ConstructChainFrom(const Array<Actor>& Actors);
+    API_FUNCTION() static Array<IKBone> ConstructChainFrom(const Span<Actor>& Actors);
 
     /// <summary>
     /// Constructs the IKChain.
@@ -47,7 +47,7 @@ public:
     /// <param name="DebugDraw">if set to <c>true</c> [debug draw].</param>
     API_FUNCTION() static void ForwardAndBackwardReachingInverseKinematic
     (
-        API_PARAM(Ref) Array<IKBone>& InOutBones,
+        API_PARAM(Ref) Span<IKBone>& InOutBones,
         int MaxIturation,
         const Transform& Base,
         const Transform& Target,
@@ -66,7 +66,7 @@ public:
     /// <param name="DebugDraw">if set to <c>true</c> [debug draw].</param>
     API_FUNCTION() static void ForwardReachingInverseKinematic
     (
-        API_PARAM(Ref) Array<IKBone>& InOutBones,
+        API_PARAM(Ref) Span<IKBone>& InOutBones,
         int MaxIturation,
         const Transform& Target,
         const Vector3& PullTargetDirection,
@@ -84,7 +84,7 @@ public:
     /// <param name="DebugDraw">if set to <c>true</c> [debug draw].</param>
     API_FUNCTION() static void BackwardReachingInverseKinematic
     (
-        API_PARAM(Ref) Array<IKBone>& InOutBones,
+        API_PARAM(Ref) Span<IKBone>& InOutBones,
         int MaxIturation,
         const Transform& Target,
         const Vector3& PullTargetDirection,
@@ -92,6 +92,6 @@ public:
     );
 
 protected:
-    static void HandleBonesDrawAndZeroLenghtBones(Array<IKBone>& InOutBones, bool DebugDraw);
-    static void FinalizeSolveInduration(Array<IKBone>& InOutBones, const Transform& Target);
+    static void HandleBonesDrawAndZeroLenghtBones(Span<IKBone>& InOutBones, bool DebugDraw);
+    static void FinalizeSolveInduration(Span<IKBone>& InOutBones, const Transform& Target);
 };

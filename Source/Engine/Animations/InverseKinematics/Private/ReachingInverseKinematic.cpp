@@ -4,7 +4,7 @@
 
 void IKSolver::ForwardAndBackwardReachingInverseKinematic
 (
-    Array<IKBone>& InOutBones,
+    Span<IKBone>& InOutBones,
     int MaxIturation,
     const Transform& Base,
     const Transform& Target,
@@ -12,7 +12,7 @@ void IKSolver::ForwardAndBackwardReachingInverseKinematic
     bool DebugDraw
 )
 {
-    if (InOutBones.Count() < 1)
+    if (InOutBones.Length() < 1)
         return;
 
     HandleBonesDrawAndZeroLenghtBones(InOutBones, DebugDraw);
@@ -21,19 +21,22 @@ void IKSolver::ForwardAndBackwardReachingInverseKinematic
     Vector3 refTarget = Target.Translation;
     Vector3 LastBoneTaill = Vector3::Zero;
     Vector3 FirstBoneHead = Vector3::Zero;
+
+    auto lastbone = &InOutBones[InOutBones.Length() - 1];
+    auto bonescount = InOutBones.Length();
     for (int itur = 0; itur < MaxIturation; itur++)
     {
-        if (InOutBones.Last().Taill == Target.Translation && Base.Translation == InOutBones[0].Head)
+        if (lastbone->Taill == Target.Translation && Base.Translation == InOutBones[0].Head)
             break;
-        if (LastBoneTaill == InOutBones.Last().Taill)
+        if (LastBoneTaill == lastbone->Taill)
             break;
 
-        LastBoneTaill = InOutBones.Last().Taill;
+        LastBoneTaill = lastbone->Taill;
 
         //backward pass
-        for (int i = InOutBones.Count() - 1; i >= 1; i--)
+        for (int i = bonescount - 1; i >= 1; i--)
         {
-            if (i < InOutBones.Count() - 1)
+            if (i < bonescount - 1)
             {
                 InOutBones[i].SetOrientationUnconstrained(Quaternion::FromDirection((InOutBones[i + 1].Head - InOutBones[i].Head - PullTargetDirection).GetNormalized()));
                 InOutBones[i].SnapTaillTo(InOutBones[i + 1].Head);
@@ -47,7 +50,7 @@ void IKSolver::ForwardAndBackwardReachingInverseKinematic
         }
 
         //forward pass
-        for (int i = 1; i < InOutBones.Count(); i++)
+        for (int i = 1; i < bonescount; i++)
         {
             InOutBones[i - 1].SetOrientation(Quaternion::FromDirection((InOutBones[i].Head - InOutBones[i - 1].Head).GetNormalized()));
             InOutBones[i].SnapHeadTo(InOutBones[i - 1].Taill);
@@ -63,30 +66,40 @@ void IKSolver::ForwardAndBackwardReachingInverseKinematic
 
 void IKSolver::BackwardReachingInverseKinematic
 (
-    Array<IKBone>& InOutBones,
+    Span<IKBone>& InOutBones,
     int MaxIturation,
     const Transform& Target,
     const Vector3& PullTargetDirection,
     bool DebugDraw
 )
 {
-    if (InOutBones.Count() < 1)
+    if (InOutBones.Length() < 1)
         return;
 
     HandleBonesDrawAndZeroLenghtBones(InOutBones, DebugDraw);
 
+
     Vector3 refTarget = Target.Translation;
+    Vector3 LastBoneTaill = Vector3::Zero;
+    Vector3 FirstBoneHead = Vector3::Zero;
+
+    auto lastbone = &InOutBones[InOutBones.Length() - 1];
+    auto bonescount = InOutBones.Length();
     for (int itur = 0; itur < MaxIturation; itur++)
     {
         if (Target.Translation == InOutBones[0].Head)
             break;
+        if (LastBoneTaill == lastbone->Taill)
+            break;
+
+        LastBoneTaill = lastbone->Taill;
 
         //backward pass
-        for (int i = InOutBones.Count() - 1; i >= 1; i--)
+        for (int i = bonescount - 1; i >= 1; i--)
         {
-            if (i < InOutBones.Count() - 1)
+            if (i < bonescount - 1)
             {
-                InOutBones[i].SetOrientation(Quaternion::FromDirection((InOutBones[i + 1].Head - InOutBones[i].Head - PullTargetDirection).GetNormalized()));
+                InOutBones[i].SetOrientationUnconstrained(Quaternion::FromDirection((InOutBones[i + 1].Head - InOutBones[i].Head - PullTargetDirection).GetNormalized()));
                 InOutBones[i].SnapTaillTo(InOutBones[i + 1].Head);
             }
             else
@@ -102,33 +115,38 @@ void IKSolver::BackwardReachingInverseKinematic
 
 void IKSolver::ForwardReachingInverseKinematic
 (
-    Array<IKBone>& InOutBones,
+    Span<IKBone>& InOutBones,
     int MaxIturation,
     const Transform& Target,
     const Vector3& PullTargetDirection,
     bool DebugDraw
 )
 {
-    if (InOutBones.Count() < 1)
+    if (InOutBones.Length() < 1)
         return;
 
     HandleBonesDrawAndZeroLenghtBones(InOutBones, DebugDraw);
 
+
     Vector3 refTarget = Target.Translation;
     Vector3 LastBoneTaill = Vector3::Zero;
+    Vector3 FirstBoneHead = Vector3::Zero;
+
+    auto lastbone = &InOutBones[InOutBones.Length() - 1];
+    auto bonescount = InOutBones.Length();
     for (int itur = 0; itur < MaxIturation; itur++)
     {
-        if (InOutBones.Last().Taill == Target.Translation)
+        if (lastbone->Taill == Target.Translation)
             break;
-        if (LastBoneTaill == InOutBones.Last().Taill)
+        if (LastBoneTaill == lastbone->Taill)
             break;
 
-        LastBoneTaill = InOutBones.Last().Taill;
+        LastBoneTaill = lastbone->Taill;
 
         //forward pass
-        for (int i = 1; i < InOutBones.Count(); i++)
+        for (int i = 1; i < bonescount; i++)
         {
-            InOutBones[i - 1].SetOrientation(Quaternion::FromDirection((InOutBones[i].Head - InOutBones[i - 1].Head - PullTargetDirection).GetNormalized()));
+            InOutBones[i - 1].SetOrientation(Quaternion::FromDirection((InOutBones[i].Head - InOutBones[i - 1].Head).GetNormalized()));
             InOutBones[i].SnapHeadTo(InOutBones[i - 1].Taill);
         }
 

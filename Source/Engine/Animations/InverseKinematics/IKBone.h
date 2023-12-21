@@ -10,13 +10,26 @@
 API_CLASS() class FLAXENGINE_API IKBone : public ScriptingObject
 {
     DECLARE_SCRIPTING_TYPE(IKBone);
-public:
+public:    
+    /// <summary>
+    /// 
+    /// </summary>
     API_STRUCT() struct Limits
     {
         DECLARE_SCRIPTING_TYPE_STRUCTURE(Limits);
-    public:
+    public:        
+        /// <summary>
+        /// The active
+        /// </summary>
         API_FIELD() bool Active;
+        /// <summary>
+        /// Determines the minimum angle.
+        /// </summary>
         API_FIELD() float Min;
+
+        /// <summary>
+        /// Determines the maximum angle.
+        /// </summary>
         API_FIELD() float Max;
     };
 protected:
@@ -88,7 +101,6 @@ public:
     /// Sets the orientation constrained version.
     /// </summary>
     /// <param name="Oritentacion">The oritentacion.</param>
-    /// <param name="Target">The target.</param>
     API_FUNCTION() void SetOrientation(const Quaternion& Oritentacion);
 
     /// <summary>

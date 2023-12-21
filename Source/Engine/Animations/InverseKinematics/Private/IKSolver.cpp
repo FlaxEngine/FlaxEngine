@@ -2,23 +2,23 @@
 
 #include "Engine/Animations/InverseKinematics/IKSolver.h"
 
-Array<IKBone> IKSolver::ConstructChainFrom(const Array<Actor>& Actors)
+Array<IKBone> IKSolver::ConstructChainFrom(const Span<Actor>& Actors)
 {
     Array<IKBone> out;
     //cheak if there is enough actors to create bone's
-    if (Actors.Count() < 2)
+    if (Actors.Length() < 2)
         return out;
 
-    //resize the Array to Actors count - 1 element
-    out.Resize(Actors.Count() - 2);
+    //resize the Array to Actors Length - 1 element
+    out.Resize(Actors.Length() - 2);
     // as a exmaple 4 actors makes 3 bones
     //  0
     //o---o
     //     \ 
     //      \ 1
     //       \
-        //        o----o
-        //          2
+    //        o----o
+    //          2
 
     for (auto i = 0; i < out.Count(); i++)
     {
@@ -42,8 +42,8 @@ Array<IKBone> IKSolver::ConstructChainFrom(const Array<Transform>& Transforms)
     //     \ 
     //      \ 1
     //       \
-        //        o----o
-        //          2
+    //        o----o
+    //          2
 
     for (auto i = 0; i < out.Count(); i++)
     {
@@ -67,8 +67,8 @@ Array<IKBone> IKSolver::ConstructChainFrom(const Array<Vector3>& Locations)
     //     \ 
     //      \ 1
     //       \
-        //        o----o
-        //          2
+    //        o----o
+    //          2
 
     for (auto i = 0; i < out.Count(); i++)
     {
@@ -77,11 +77,11 @@ Array<IKBone> IKSolver::ConstructChainFrom(const Array<Vector3>& Locations)
     }
     return out;
 }
-void IKSolver::HandleBonesDrawAndZeroLenghtBones(Array<IKBone>& InOutBones, bool DebugDraw)
+void IKSolver::HandleBonesDrawAndZeroLenghtBones(Span<IKBone>& InOutBones, bool DebugDraw)
 {
     if (DebugDraw)
     {
-        for (int i = 0; i < InOutBones.Count(); i++)
+        for (int i = 0; i < InOutBones.Length(); i++)
         {
             //handle debugdraw
             InOutBones[i].DebugDraw();
@@ -96,7 +96,7 @@ void IKSolver::HandleBonesDrawAndZeroLenghtBones(Array<IKBone>& InOutBones, bool
     else
     {
         //see comment above
-        for (int i = 0; i < InOutBones.Count(); i++)
+        for (int i = 0; i < InOutBones.Length(); i++)
         {
             if (InOutBones[i].Lenght == 0)
             {
@@ -105,9 +105,9 @@ void IKSolver::HandleBonesDrawAndZeroLenghtBones(Array<IKBone>& InOutBones, bool
         }
     }
 }
-void IKSolver::FinalizeSolveInduration(Array<IKBone>& InOutBones, const Transform& Target)
+void IKSolver::FinalizeSolveInduration(Span<IKBone>& InOutBones, const Transform& Target)
 {
-    for (int i = 1; i < InOutBones.Count(); i++)
+    for (int i = 1; i < InOutBones.Length(); i++)
     {
         //project 
         auto v = Vector3::ProjectOnPlane(Target.Translation, InOutBones[i - 1].GetDirection().GetNormalized());
