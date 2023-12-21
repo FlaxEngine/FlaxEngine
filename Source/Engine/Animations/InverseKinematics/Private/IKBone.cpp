@@ -25,7 +25,7 @@ void IKBone::SnapHeadTo(const Vector3& newLocation)
 void IKBone::SetOrientation(const Quaternion& Oritentacion)
 {
     this->Oritentacion = Oritentacion * Quaternion::Invert(ParentOritentacion);
-    Vector3 e = this->Oritentacion.GetEuler();
+    Float3 e = this->Oritentacion.GetEuler();
     if (X.Active)
         e.X = Math::Clamp(e.X, X.Min, X.Max);
     if (Y.Active)
