@@ -9,7 +9,7 @@
 /// utility class.
 /// types of solvers
 /// </summary>
-API_CLASS(Static) class FLAXENGINE_API IKSolver
+API_CLASS(Static, Namespace = "FlaxEngine.Experimental.Animation.IK") class FLAXENGINE_API IKSolver
 {
     DECLARE_SCRIPTING_TYPE_NO_SPAWN(IKSolver)
 public:
