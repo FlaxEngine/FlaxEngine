@@ -115,6 +115,8 @@ public:
     /// <returns></returns>
     API_FUNCTION() Vector3 GetDirection();
 
+#if USE_EDITOR
+
     /// <summary>
     /// Debugs the draw.
     /// </summary>
@@ -128,6 +130,10 @@ public:
     /// <param name="Roll">The roll.</param>
     /// <param name="Color">The color.</param>
     API_FUNCTION() static void DrawOctahedralBone(const Vector3& Head, const Vector3& Taill, float Roll, const Color& Color);
+#else
+    API_FUNCTION() void DebugDraw() {};
+    API_FUNCTION() static void DrawOctahedralBone(const Vector3& Head, const Vector3& Taill, float Roll, const Color& Color) {};
+#endif
 
     /// <summary>
     /// Gets the transform.
