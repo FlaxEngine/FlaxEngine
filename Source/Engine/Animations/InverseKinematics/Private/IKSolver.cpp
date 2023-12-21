@@ -14,9 +14,7 @@ Array<IKBone> IKSolver::ConstructChainFrom(const Span<Actor>& Actors)
     // as a exmaple 4 actors makes 3 bones
     //  0
     //o---o
-    //     \ 
     //      \ 1
-    //       \
     //        o----o
     //          2
 
@@ -39,9 +37,7 @@ Array<IKBone> IKSolver::ConstructChainFrom(const Array<Transform>& Transforms)
     // as a exmaple 4 Transforms makes 3 bones
     //  0
     //o---o
-    //     \ 
     //      \ 1
-    //       \
     //        o----o
     //          2
 
@@ -64,9 +60,7 @@ Array<IKBone> IKSolver::ConstructChainFrom(const Array<Vector3>& Locations)
     // as a exmaple 4 Locations makes 3 bones
     //  0
     //o---o
-    //     \ 
     //      \ 1
-    //       \
     //        o----o
     //          2
 

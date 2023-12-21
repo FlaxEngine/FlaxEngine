@@ -48,6 +48,7 @@ Vector3 IKBone::GetDirection()
 
 void IKBone::Draw()
 {
+#if USE_EDITOR
     auto v = Lenght * 0.075f;
     auto pe = ParentOritentacion.GetEuler();
     //var e = Oritentacion.EulerAngles;
@@ -74,11 +75,13 @@ void IKBone::Draw()
         DebugDraw::DrawWireArc(Head, zq, v, a, Color::Blue);
     }
     DrawOctahedralBone(Head, Taill, Roll, DebugColor);
+#endif
 }
 
 
 void IKBone::DrawOctahedralBone(const Vector3& Head, const Vector3& Taill, float Roll,const Color& Color)
 {
+#if USE_EDITOR
     auto distance = Vector3::Distance(Head, Taill);
     auto v = distance * 0.05f;
     DebugDraw::DrawWireSphere(BoundingSphere(Head, v), Color);
@@ -104,4 +107,5 @@ void IKBone::DrawOctahedralBone(const Vector3& Head, const Vector3& Taill, float
     DebugDraw::DrawWireTriangle(p2, p4, Head, Color);
     DebugDraw::DrawWireTriangle(p3, p4, Head, Color);
     DebugDraw::DrawWireTriangle(p1, p3, Head, Color);
+#endif
 }
