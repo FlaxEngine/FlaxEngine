@@ -46,7 +46,7 @@ Vector3 IKBone::GetDirection()
     return Taill - Head;
 }
 
-void IKBone::DebugDraw()
+void IKBone::Draw()
 {
     auto v = Lenght * 0.075f;
     auto pe = ParentOritentacion.GetEuler();

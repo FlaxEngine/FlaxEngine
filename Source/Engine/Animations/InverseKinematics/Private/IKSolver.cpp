@@ -84,7 +84,7 @@ void IKSolver::HandleBonesDrawAndZeroLenghtBones(Span<IKBone>& InOutBones, bool 
         for (int i = 0; i < InOutBones.Length(); i++)
         {
             //handle debugdraw
-            InOutBones[i].DebugDraw();
+            InOutBones[i].Draw();
             //just in case cheak it Length of the bones is acualy set if is 0 set the Lenght of the bone
             //this is needed or else the bones will start to resize on it own
             if (InOutBones[i].Lenght == 0)

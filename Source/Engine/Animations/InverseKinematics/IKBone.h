@@ -120,7 +120,7 @@ public:
     /// <summary>
     /// Debugs the draw.
     /// </summary>
-    API_FUNCTION() void DebugDraw();
+    API_FUNCTION() void Draw();
 
     /// <summary>
     /// Draws the octahedral bone.
