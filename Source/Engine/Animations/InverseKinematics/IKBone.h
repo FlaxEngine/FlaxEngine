@@ -7,7 +7,7 @@
 #include "Engine/Core/Math/Color.h"
 #include "Engine/Scripting/ScriptingObject.h"
 
-API_CLASS() class FLAXENGINE_API IKBone : public ScriptingObject
+API_CLASS(Namespace="FlaxEngine.Experimental.Animation.IK") class FLAXENGINE_API IKBone : public ScriptingObject
 {
     DECLARE_SCRIPTING_TYPE(IKBone);
 public:    
