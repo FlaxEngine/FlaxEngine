@@ -131,7 +131,7 @@ public:
     /// <param name="Color">The color.</param>
     API_FUNCTION() static void DrawOctahedralBone(const Vector3& Head, const Vector3& Taill, float Roll, const Color& Color);
 #else
-    API_FUNCTION() void DebugDraw() {};
+    API_FUNCTION() void Draw() {};
     API_FUNCTION() static void DrawOctahedralBone(const Vector3& Head, const Vector3& Taill, float Roll, const Color& Color) {};
 #endif
 
