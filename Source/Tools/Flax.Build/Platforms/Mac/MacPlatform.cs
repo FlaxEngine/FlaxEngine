@@ -73,6 +73,19 @@ namespace Flax.Build.Platforms
             Utilities.Run("codesign", cmdLine, null, null, Utilities.RunOptions.Default | Utilities.RunOptions.ThrowExceptionOnError);
         }
 
+        internal static bool BuildingForx64
+        {
+            get
+            {
+                // We need to support two paths here:
+                // 1. We are running an x64 binary and we are running on an arm64 host machine
+                // 2. We are running an Arm64 binary and we are targeting an x64 host machine
+                var architecture = Platform.BuildTargetArchitecture;
+                bool isRunningOnArm64Targetx64 = architecture == TargetArchitecture.ARM64 && (Configuration.BuildArchitectures != null && Configuration.BuildArchitectures[0] == TargetArchitecture.x64);
+                return GetProcessIsTranslated() || isRunningOnArm64Targetx64;
+            }
+        }
+
         /// <summary>
         /// Returns true if running an x64 binary an arm64 host machine.
         /// </summary>

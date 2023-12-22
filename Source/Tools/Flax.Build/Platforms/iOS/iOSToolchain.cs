@@ -65,8 +65,11 @@ namespace Flax.Build.Platforms
             switch (options.Action)
             {
             case CSharpOptions.ActionTypes.GetPlatformTools:
-                options.PlatformToolsPath = Path.Combine(DotNetSdk.SelectVersionFolder(Path.Combine(DotNetSdk.Instance.RootPath, "packs/Microsoft.NETCore.App.Runtime.AOT.osx-x64.Cross.ios-arm64")), "tools");
+            {
+                var arch = Flax.Build.Platforms.MacPlatform.BuildingForx64 ? "x64" : "arm64";
+                options.PlatformToolsPath = Path.Combine(DotNetSdk.SelectVersionFolder(Path.Combine(DotNetSdk.Instance.RootPath, $"packs/Microsoft.NETCore.App.Runtime.AOT.osx-{arch}.Cross.ios-arm64")), "tools");
                 return false;
+            }
             case CSharpOptions.ActionTypes.MonoCompile:
             {
                 var aotCompilerPath = Path.Combine(options.PlatformToolsPath, "mono-aot-cross");
