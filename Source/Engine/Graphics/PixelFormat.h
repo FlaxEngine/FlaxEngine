@@ -514,6 +514,46 @@ API_ENUM() enum class PixelFormat : uint32
     BC7_UNorm_sRGB = 99,
 
     /// <summary>
+    /// A four-component ASTC (4x4 pixel block in 128 bits) block-compression format that supports RGBA channels.
+    /// </summary>
+    ASTC_4x4_UNorm = 100,
+
+    /// <summary>
+    /// A four-component ASTC (4x4 pixel block in 128 bits) block-compression format that supports RGBA channels. Data in sRGB color space.
+    /// </summary>
+    ASTC_4x4_UNorm_sRGB = 101,
+
+    /// <summary>
+    /// A four-component ASTC (6x6 pixel block in 128 bits) block-compression format that supports RGBA channels.
+    /// </summary>
+    ASTC_6x6_UNorm = 102,
+
+    /// <summary>
+    /// A four-component ASTC (6x6 pixel block in 128 bits) block-compression format that supports RGBA channels. Data in sRGB color space.
+    /// </summary>
+    ASTC_6x6_UNorm_sRGB = 103,
+
+    /// <summary>
+    /// A four-component ASTC (8x8 pixel block in 128 bits) block-compression format that supports RGBA channels.
+    /// </summary>
+    ASTC_8x8_UNorm = 104,
+
+    /// <summary>
+    /// A four-component ASTC (8x8 pixel block in 128 bits) block-compression format that supports RGBA channels. Data in sRGB color space.
+    /// </summary>
+    ASTC_8x8_UNorm_sRGB = 105,
+
+    /// <summary>
+    /// A four-component ASTC (10x10 pixel block in 128 bits) block-compression format that supports RGBA channels.
+    /// </summary>
+    ASTC_10x10_UNorm = 106,
+
+    /// <summary>
+    /// A four-component ASTC (10x10 pixel block in 128 bits) block-compression format that supports RGBA channels. Data in sRGB color space.
+    /// </summary>
+    ASTC_10x10_UNorm_sRGB = 107,
+
+    /// <summary>
     /// The maximum format value (for internal use only).
     /// </summary>
     MAX

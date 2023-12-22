@@ -775,4 +775,30 @@ bool TextureTool::GetImageType(const StringView& path, ImageType& type)
     return false;
 }
 
+bool TextureTool::Transform(TextureData& texture, const Function<void(Color&)>& transformation)
+{   
+    auto sampler = TextureTool::GetSampler(texture.Format);
+    if (!sampler)
+        return true;
+    for (auto& slice : texture.Items)
+    {
+        for (int32 mipIndex = 0; mipIndex < slice.Mips.Count(); mipIndex++)
+        {
+            auto& mip = slice.Mips[mipIndex];
+            auto mipWidth = Math::Max(texture.Width >> mipIndex, 1);
+            auto mipHeight = Math::Max(texture.Height >> mipIndex, 1);
+            for (int32 y = 0; y < mipHeight; y++)
+            {
+                for (int32 x = 0; x < mipWidth; x++)
+                {    
+                    Color color = TextureTool::SamplePoint(sampler, x, y, mip.Data.Get(), mip.RowPitch);
+                    transformation(color);
+                    TextureTool::Store(sampler, x, y, mip.Data.Get(), mip.RowPitch, color);
+                }
+            }
+        }
+    }
+    return false;
+}
+
 #endif

@@ -919,6 +919,10 @@ bool TextureTool::ConvertDirectXTex(TextureData& dst, const TextureData& src, co
             return true;
         }
     }
+    else if (PixelFormatExtensions::IsCompressedASTC(dstFormat))
+    {
+        todo_astc_compression_on_windows;
+    }
     // Check if convert data
     else if (inImage->GetMetadata().format != dstFormatDxgi)
     {

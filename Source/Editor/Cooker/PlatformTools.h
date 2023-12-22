@@ -9,6 +9,37 @@
 class TextureBase;
 
 /// <summary>
+/// The game cooker cache interface.
+/// </summary>
+class FLAXENGINE_API IBuildCache
+{
+public:
+    /// <summary>
+    /// Removes all cached entries for assets that contain a given asset type. This forces rebuild for them.
+    /// </summary>
+    virtual void InvalidateCachePerType(const StringView& typeName) = 0;
+
+    /// <summary>
+    /// Removes all cached entries for assets that contain a given asset type. This forces rebuild for them.
+    /// </summary>
+    template<typename T>
+    FORCE_INLINE void InvalidateCachePerType()
+    {
+        InvalidateCachePerType(T::TypeName);
+    }
+
+    /// <summary>
+    /// Removes all cached entries for assets that contain a shader. This forces rebuild for them.
+    /// </summary>
+    void InvalidateCacheShaders();
+
+    /// <summary>
+    /// Removes all cached entries for assets that contain a texture. This forces rebuild for them.
+    /// </summary>
+    void InvalidateCacheTextures();
+};
+
+/// <summary>
 /// The platform support tools base interface.
 /// </summary>
 class FLAXENGINE_API PlatformTools
@@ -76,6 +107,27 @@ public:
     virtual bool IsNativeCodeFile(CookingData& data, const String& file);
 
 public:
+    /// <summary>
+    /// Loads the build cache. Allows to invalidate any cached asset types based on the build settings for incremental builds (eg. invalidate textures/shaders).
+    /// </summary>
+    /// <param name="data">The cooking data.</param>
+    /// <param name="data">The build cache interface.</param>
+    /// <param name="data">The loaded cache data. Can be empty when starting a fresh build.</param>
+    virtual void LoadCache(CookingData& data, IBuildCache* cache, const Span<byte>& bytes)
+    {
+    }
+
+    /// <summary>
+    /// Saves the build cache. Allows to store any build settings to be used for cache invalidation on incremental builds.
+    /// </summary>
+    /// <param name="data">The cooking data.</param>
+    /// <param name="data">The build cache interface.</param>
+    /// <returns>Data to cache, will be restored during next incremental build.<returns>
+    virtual Array<byte> SaveCache(CookingData& data, IBuildCache* cache)
+    {
+        return Array<byte>();
+    }
+
     /// <summary>
     /// Called when game building starts.
     /// </summary>
