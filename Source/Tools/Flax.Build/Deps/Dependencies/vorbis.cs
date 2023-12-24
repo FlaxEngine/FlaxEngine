@@ -331,7 +331,7 @@ namespace Flax.Deps.Dependencies
                     Utilities.Run("cmake", "--build . --target install", null, oggBuildDir, Utilities.RunOptions.ConsoleLogOutput);
                     SetupDirectory(buildDir, true);
                     RunCmake(buildDir, platform, TargetArchitecture.ARM64, string.Format(".. -DCMAKE_BUILD_TYPE=Release  -DOGG_INCLUDE_DIR=\"{0}/install/include\" -DOGG_LIBRARY=\"{0}/install/lib\"", oggRoot));
-                    Utilities.Run("cmake", "--build .", null, buildDir, Utilities.RunOptions.ConsoleLogOutput);
+                    BuildCmake(buildDir);
                     var depsFolder = GetThirdPartyFolder(options, platform, TargetArchitecture.ARM64);
                     foreach (var file in binariesToCopyUnix)
                         Utilities.FileCopy(Path.Combine(buildDir, file.SrcFolder, file.Filename), Path.Combine(depsFolder, file.Filename));
@@ -358,7 +358,7 @@ namespace Flax.Deps.Dependencies
                     Utilities.FileCopy(Path.Combine(GetBinariesFolder(options, platform), "ogg", "include", "ogg", "config_types.h"), Path.Combine(oggRoot, "install", "include", "ogg", "config_types.h"));
                     SetupDirectory(buildDir, true);
                     RunCmake(buildDir, platform, TargetArchitecture.ARM64, string.Format(".. -DCMAKE_BUILD_TYPE=Release -DOGG_INCLUDE_DIR=\"{0}/install/include\" -DOGG_LIBRARY=\"{0}/install/lib\"", oggRoot));
-                    Utilities.Run("cmake", "--build .", null, buildDir, Utilities.RunOptions.ConsoleLogOutput);
+                    BuildCmake(buildDir);
                     var depsFolder = GetThirdPartyFolder(options, platform, TargetArchitecture.ARM64);
                     foreach (var file in binariesToCopyUnix)
                         Utilities.FileCopy(Path.Combine(buildDir, file.SrcFolder, file.Filename), Path.Combine(depsFolder, file.Filename));
@@ -383,7 +383,7 @@ namespace Flax.Deps.Dependencies
                         Utilities.Run("cmake", "--build . --target install", null, oggBuildDir, Utilities.RunOptions.ConsoleLogOutput);
                         SetupDirectory(buildDir, true);
                         RunCmake(buildDir, platform, architecture, string.Format(".. -DCMAKE_BUILD_TYPE=Release  -DOGG_INCLUDE_DIR=\"{0}/install/include\" -DOGG_LIBRARY=\"{0}/install/lib\"", oggRoot));
-                        Utilities.Run("cmake", "--build .", null, buildDir, Utilities.RunOptions.ConsoleLogOutput);
+                        BuildCmake(buildDir);
                         var depsFolder = GetThirdPartyFolder(options, platform, architecture);
                         foreach (var file in binariesToCopyUnix)
                             Utilities.FileCopy(Path.Combine(buildDir, file.SrcFolder, file.Filename), Path.Combine(depsFolder, file.Filename));
@@ -407,7 +407,7 @@ namespace Flax.Deps.Dependencies
                     Utilities.Run("cmake", "--build . --target install", null, oggBuildDir, Utilities.RunOptions.ConsoleLogOutput);
                     SetupDirectory(buildDir, true);
                     RunCmake(buildDir, platform, TargetArchitecture.ARM64, string.Format(".. -DCMAKE_BUILD_TYPE=Release  -DOGG_INCLUDE_DIR=\"{0}/install/include\" -DOGG_LIBRARY=\"{0}/install/lib\"", oggRoot));
-                    Utilities.Run("cmake", "--build .", null, buildDir, Utilities.RunOptions.ConsoleLogOutput);
+                    BuildCmake(buildDir);
                     var depsFolder = GetThirdPartyFolder(options, platform, TargetArchitecture.ARM64);
                     foreach (var file in binariesToCopyUnix)
                         Utilities.FileCopy(Path.Combine(buildDir, file.SrcFolder, file.Filename), Path.Combine(depsFolder, file.Filename));

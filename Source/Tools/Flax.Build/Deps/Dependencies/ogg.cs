@@ -196,7 +196,7 @@ namespace Flax.Deps.Dependencies
                     // Build for Android
                     SetupDirectory(buildDir, true);
                     RunCmake(buildDir, platform, TargetArchitecture.ARM64, ".. -DCMAKE_BUILD_TYPE=Release");
-                    Utilities.Run("cmake", "--build .", null, buildDir, Utilities.RunOptions.ConsoleLogOutput);
+                    BuildCmake(buildDir);
                     var depsFolder = GetThirdPartyFolder(options, platform, TargetArchitecture.ARM64);
                     Utilities.FileCopy(Path.Combine(buildDir, libraryFileName), Path.Combine(depsFolder, libraryFileName));
                     break;
@@ -209,7 +209,7 @@ namespace Flax.Deps.Dependencies
                     // Build for Switch
                     SetupDirectory(buildDir, true);
                     RunCmake(buildDir, platform, TargetArchitecture.ARM64, ".. -DCMAKE_BUILD_TYPE=Release");
-                    Utilities.Run("cmake", "--build .", null, buildDir, Utilities.RunOptions.ConsoleLogOutput);
+                    BuildCmake(buildDir);
                     var depsFolder = GetThirdPartyFolder(options, platform, TargetArchitecture.ARM64);
                     Utilities.FileCopy(Path.Combine(buildDir, libraryFileName), Path.Combine(depsFolder, libraryFileName));
                     break;
@@ -221,7 +221,7 @@ namespace Flax.Deps.Dependencies
                     {
                         SetupDirectory(buildDir, true);
                         RunCmake(buildDir, platform, architecture, ".. -DCMAKE_BUILD_TYPE=Release");
-                        Utilities.Run("cmake", "--build .", null, buildDir, Utilities.RunOptions.ConsoleLogOutput);
+                        BuildCmake(buildDir);
                         var depsFolder = GetThirdPartyFolder(options, platform, architecture);
                         Utilities.FileCopy(Path.Combine(buildDir, libraryFileName), Path.Combine(depsFolder, libraryFileName));
                     }
@@ -231,7 +231,7 @@ namespace Flax.Deps.Dependencies
                 {
                     SetupDirectory(buildDir, true);
                     RunCmake(buildDir, platform, TargetArchitecture.ARM64, ".. -DCMAKE_BUILD_TYPE=Release");
-                    Utilities.Run("cmake", "--build .", null, buildDir, Utilities.RunOptions.ConsoleLogOutput);
+                    BuildCmake(buildDir);
                     var depsFolder = GetThirdPartyFolder(options, platform, TargetArchitecture.ARM64);
                     Utilities.FileCopy(Path.Combine(buildDir, libraryFileName), Path.Combine(depsFolder, libraryFileName));
                     break;

@@ -147,7 +147,7 @@ namespace Flax.Deps.Dependencies
 
                     // Build
                     RunCmake(buildDir, platform, TargetArchitecture.ARM64, ".. -DLIBTYPE=STATIC -DCMAKE_BUILD_TYPE=Release " + config);
-                    Utilities.Run("cmake", "--build .", null, buildDir, Utilities.RunOptions.ConsoleLogOutput);
+                    BuildCmake(buildDir);
                     var depsFolder = GetThirdPartyFolder(options, platform, TargetArchitecture.ARM64);
                     foreach (var file in binariesToCopy)
                         Utilities.FileCopy(Path.Combine(buildDir, file), Path.Combine(depsFolder, file));
@@ -176,7 +176,7 @@ namespace Flax.Deps.Dependencies
                     {
                         SetupDirectory(buildDir, true);
                         RunCmake(buildDir, platform, architecture, ".. -DLIBTYPE=STATIC -DCMAKE_BUILD_TYPE=Release " + config);
-                        Utilities.Run("cmake", "--build .", null, buildDir, Utilities.RunOptions.ConsoleLogOutput);
+                        BuildCmake(buildDir);
                         var depsFolder = GetThirdPartyFolder(options, platform, architecture);
                         foreach (var file in binariesToCopy)
                             Utilities.FileCopy(Path.Combine(buildDir, file), Path.Combine(depsFolder, file));
@@ -206,7 +206,7 @@ namespace Flax.Deps.Dependencies
                     // Build for iOS
                     SetupDirectory(buildDir, true);
                     RunCmake(buildDir, platform, TargetArchitecture.ARM64, ".. -DCMAKE_SYSTEM_NAME=iOS -DALSOFT_OSX_FRAMEWORK=ON -DLIBTYPE=STATIC -DCMAKE_BUILD_TYPE=Release " + config);
-                    Utilities.Run("cmake", "--build .", null, buildDir, Utilities.RunOptions.ConsoleLogOutput);
+                    BuildCmake(buildDir);
                     var depsFolder = GetThirdPartyFolder(options, platform, TargetArchitecture.ARM64);
                     foreach (var file in binariesToCopy)
                         Utilities.FileCopy(Path.Combine(buildDir, file), Path.Combine(depsFolder, file));

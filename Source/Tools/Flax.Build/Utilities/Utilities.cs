@@ -324,6 +324,11 @@ namespace Flax.Build
             /// The default options.
             /// </summary>
             Default = AppMustExist,
+
+            /// <summary>
+            /// The default options for tools execution in build tool.
+            /// </summary>
+            DefaultTool = ConsoleLogOutput | ThrowExceptionOnError,
         }
 
         private static void StdLogInfo(object sender, DataReceivedEventArgs e)

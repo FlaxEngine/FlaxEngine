@@ -49,7 +49,7 @@ namespace Flax.Deps.Dependencies
                         var lib = architecture == TargetArchitecture.ARM64 ? "libastcenc-neon-static.a" : "libastcenc-sse2-static.a";
                         SetupDirectory(buildDir, true);
                         RunCmake(buildDir, platform, architecture, ".. -DCMAKE_BUILD_TYPE=Release -DASTCENC_UNIVERSAL_BUILD=OFF -DASTCENC_UNIVERSAL_BINARY=OFF " + isa);
-                        Utilities.Run("cmake", "--build .", null, buildDir, Utilities.RunOptions.ConsoleLogOutput);
+                        BuildCmake(buildDir);
                         var depsFolder = GetThirdPartyFolder(options, platform, architecture);
                         Utilities.FileCopy(Path.Combine(buildDir, "Source", lib), Path.Combine(depsFolder, "libastcenc.a"));
                     }
