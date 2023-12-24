@@ -834,6 +834,16 @@ bool TextureTool::ImportTextureDirectXTex(ImageType type, const StringView& path
 
 bool TextureTool::ConvertDirectXTex(TextureData& dst, const TextureData& src, const PixelFormat dstFormat)
 {
+    if (PixelFormatExtensions::IsCompressedASTC(dstFormat))
+    {
+        // TODO: decompress if need to
+#if COMPILE_WITH_ASTC
+        return ConvertAstc(dst, *textureData, dstFormat);
+#else
+        return true;
+#endif
+    }
+
     HRESULT result;
     DirectX::ScratchImage dstImage;
     DirectX::ScratchImage tmpImage;
@@ -918,10 +928,6 @@ bool TextureTool::ConvertDirectXTex(TextureData& dst, const TextureData& src, co
             LOG(Warning, "Cannot compress image. Error: {0:x}", static_cast<uint32>(result));
             return true;
         }
-    }
-    else if (PixelFormatExtensions::IsCompressedASTC(dstFormat))
-    {
-        todo_astc_compression_on_windows;
     }
     // Check if convert data
     else if (inImage->GetMetadata().format != dstFormatDxgi)

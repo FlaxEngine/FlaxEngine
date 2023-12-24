@@ -58,8 +58,9 @@ public class TextureTool : EngineModule
                 options.PrivateDependencies.Add("bc7enc16");
             }
         }
-        if (options.Target.IsEditor)
+        if (options.Target.IsEditor && options.Platform.Target == TargetPlatform.Mac) // TODO: add ASTC for Editor on Linux and Windows
         {
+            // ASTC for mobile (iOS and Android)
             options.SourceFiles.Add(Path.Combine(FolderPath, "TextureTool.astc.cpp"));
             options.PrivateDependencies.Add("astc");
         }
