@@ -63,12 +63,9 @@ namespace FlaxEditor.GUI.Docking
         public bool IsHidden => !Visible || _dockedTo == null;
 
         /// <summary>
-        /// Gets the default window size.
+        /// Gets the default window size (in UI units, unscaled by DPI which is handled by windowing system).
         /// </summary>
-        /// <remarks>
-        /// Scaled by the DPI, because the window should be large enough for its content on every monitor
-        /// </remarks>
-        public virtual Float2 DefaultSize => new Float2(900, 580) * DpiScale;
+        public virtual Float2 DefaultSize => new Float2(900, 580);
 
         /// <summary>
         /// Gets the serialization typename.

@@ -676,7 +676,9 @@ namespace FlaxEditor.Modules
             if (newLocation == DockState.Float)
             {
                 // Check if there is a floating window that has the same size
-                var defaultSize = window.DefaultSize;
+                var dpi = (float)Platform.Dpi / 96.0f;
+                var dpiScale = Platform.CustomDpiScale;
+                var defaultSize = window.DefaultSize * dpi;
                 for (var i = 0; i < Editor.UI.MasterPanel.FloatingPanels.Count; i++)
                 {
                     var win = Editor.UI.MasterPanel.FloatingPanels[i];
@@ -688,7 +690,7 @@ namespace FlaxEditor.Modules
                     }
                 }
 
-                window.ShowFloating(defaultSize);
+                window.ShowFloating(defaultSize * dpiScale);
             }
             else
             {
