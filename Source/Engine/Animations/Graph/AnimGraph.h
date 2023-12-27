@@ -197,6 +197,7 @@ struct FLAXENGINE_API AnimGraphSlot
     float BlendOutTime = 0.0f;
     int32 LoopCount = 0;
     bool Pause = false;
+    bool Reset = false;
 };
 
 /// <summary>

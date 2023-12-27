@@ -2098,6 +2098,12 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
         auto& slot = slots[bucket.Index];
         Animation* anim = slot.Animation;
         ASSERT(slot.Animation && slot.Animation->IsLoaded());
+        if (slot.Reset)
+        {
+            // Start from the begining
+            slot.Reset = false;
+            bucket.TimePosition = 0.0f;
+        }
         const float deltaTime = slot.Pause ? 0.0f : context.DeltaTime * slot.Speed;
         const float length = anim->GetLength();
         const bool loop = bucket.LoopsLeft != 0;
