@@ -517,7 +517,7 @@ DateTime AndroidFileSystem::GetFileLastEditTime(const StringView& path)
     const StringAsANSI<> pathANSI(*path, path.Length());
     if (stat(pathANSI.Get(), &fileInfo) == -1)
         return DateTime::MinValue();
-    const TimeSpan timeSinceEpoch(0, 0, fileInfo.st_mtime);
+    const TimeSpan timeSinceEpoch(0, 0, 0, fileInfo.st_mtime);
     const DateTime UnixEpoch(1970, 1, 1);
     return UnixEpoch + timeSinceEpoch;
 }
