@@ -43,7 +43,7 @@ API_STRUCT(Namespace="FlaxEngine.Networking") struct FLAXENGINE_API NetworkConfi
     /// </summary>
     /// <remarks>Object is managed by the created network peer (will be deleted on peer shutdown).</remarks>
     API_FIELD()
-    ScriptingObject* NetworkDriver;
+    ScriptingObject* NetworkDriver = nullptr;
 
     /// <summary>
     /// The upper limit on how many peers can join when we're listening.
