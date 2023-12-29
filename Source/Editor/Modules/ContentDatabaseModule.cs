@@ -196,6 +196,25 @@ namespace FlaxEditor.Modules
 
             return null;
         }
+        /// <summary>
+        /// Gets the virtual proxy object from given path.
+        /// <br></br>use case if the asset u trying to display is not a flax asset but u like to add custom functionality
+        /// <br></br>to context menu,or display it the asset
+        /// </summary>
+        /// <param name="path">The asset path.</param>
+        /// <returns>Asset proxy or null if cannot find.</returns>
+        public AssetProxy GetAssetVirtuallProxy(string path)
+        {
+            for (int i = 0; i < Proxy.Count; i++)
+            {
+                if (Proxy[i] is AssetProxy proxy && proxy.IsVirtualProxy() && path.EndsWith(proxy.FileExtension, StringComparison.OrdinalIgnoreCase))
+                {
+                    return proxy;
+                }
+            }
+
+            return null;
+        }
 
         /// <summary>
         /// Refreshes the given item folder. Tries to find new content items and remove not existing ones.
@@ -996,7 +1015,14 @@ namespace FlaxEditor.Modules
                         item = proxy?.ConstructItem(path, assetInfo.TypeName, ref assetInfo.ID);
                     }
                     if (item == null)
-                        item = new FileItem(path);
+                    {
+                        var proxy = GetAssetVirtuallProxy(path);
+                        item = proxy?.ConstructItem(path, assetInfo.TypeName, ref assetInfo.ID);
+                        if (item == null)
+                        {
+                            item = new FileItem(path);
+                        }
+                    }
 
                     // Link
                     item.ParentFolder = parent.Folder;
