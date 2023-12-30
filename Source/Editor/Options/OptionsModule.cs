@@ -3,6 +3,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using FlaxEditor.Content;
 using FlaxEditor.Modules;
 using FlaxEngine;
 using FlaxEngine.GUI;
@@ -53,6 +54,7 @@ namespace FlaxEditor.Options
 
             _optionsFilePath = Path.Combine(Editor.LocalCachePath, "EditorOptions.json");
         }
+        private bool IsLoaded = false;
 
         /// <summary>
         /// Adds the custom settings factory.
@@ -131,6 +133,12 @@ namespace FlaxEditor.Options
 
                     // Scale interface relative to the current value (eg. when using system-provided Dpi Scale)
                     Platform.CustomDpiScale *= Options.Interface.InterfaceScale / prevInterfaceScale;
+
+                    //load editor default material override for current project
+                    var m = FlaxEngine.Content.Load<MaterialInstance>(Globals.ProjectContentFolder + "/Settings/DefaultMaterialOverride.flax");
+                    GPUDevice.Instance.DefaultMaterialOverride = m;
+                    Options.General.DefaultMaterialOverride = m?.BaseMaterial;
+                    IsLoaded = true;
                 }
                 else
                 {
@@ -152,6 +160,10 @@ namespace FlaxEditor.Options
         {
             Options = options;
             OnOptionsChanged();
+
+            var DMOMaterialInstance = FlaxEngine.Content.Load<MaterialInstance>(Globals.ProjectContentFolder + "/Settings/DefaultMaterialOverride.flax");
+            GPUDevice.Instance.DefaultMaterialOverride = DMOMaterialInstance;
+
             Save();
         }
 
@@ -195,6 +207,36 @@ namespace FlaxEditor.Options
             internalOptions.AutoRebuildNavMesh = (byte)(Options.General.AutoRebuildNavMesh ? 1 : 0);
             internalOptions.AutoRebuildNavMeshTimeoutMs = Options.General.AutoRebuildNavMeshTimeoutMs;
             Editor.Internal_SetOptions(ref internalOptions);
+
+            if(IsLoaded)
+            {
+                var path = Globals.ProjectContentFolder + "/Settings/DefaultMaterialOverride.flax";
+                var DMOMaterialInstance = FlaxEngine.Content.Load<MaterialInstance>(path);
+                if (DMOMaterialInstance)
+                {
+                    if (!Options.General.DefaultMaterialOverride)
+                    {
+                        FlaxEngine.Content.DeleteAsset(DMOMaterialInstance);
+                    }
+                    else if (DMOMaterialInstance.BaseMaterial != Options.General.DefaultMaterialOverride)
+                    {
+                        //there is a need for safe guard in this place ?
+                        DMOMaterialInstance.BaseMaterial = Options.General.DefaultMaterialOverride;
+                        DMOMaterialInstance.Save();
+                    }
+                }
+                else
+                {
+                    if (Options.General.DefaultMaterialOverride)
+                    {
+                        Editor.CreateAsset(Editor.NewAssetType.MaterialInstance, path);
+                        DMOMaterialInstance = FlaxEngine.Content.Load<MaterialInstance>(path);
+                        DMOMaterialInstance.BaseMaterial = Options.General.DefaultMaterialOverride;
+                        DMOMaterialInstance.Save();
+                    }
+                }
+            }
+            
 
             EditorAssets.Cache.OnEditorOptionsChanged(Options);
 

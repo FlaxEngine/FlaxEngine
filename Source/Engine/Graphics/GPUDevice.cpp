@@ -298,6 +298,7 @@ struct GPUDevice::PrivateData
     GPUPipelineState* PS_Clear = nullptr;
     GPUBuffer* FullscreenTriangleVB = nullptr;
     AssetReference<Material> DefaultMaterial;
+    AssetReference<MaterialBase> DefaultMaterialOverride;
     SoftAssetReference<Material> DefaultDeformableMaterial;
     AssetReference<Texture> DefaultNormalMap;
     AssetReference<Texture> DefaultWhiteTexture;
@@ -665,12 +666,31 @@ GPUTasksManager* GPUDevice::GetTasksManager() const
 {
     return &_res->TasksManager;
 }
-
-MaterialBase* GPUDevice::GetDefaultMaterial() const
+MaterialBase* GPUDevice::GetEngineDefaultMaterial() const
 {
     return _res->DefaultMaterial;
 }
-
+MaterialBase* GPUDevice::GetDefaultMaterial() const
+{
+    if (_res->DefaultMaterialOverride)
+        return _res->DefaultMaterialOverride;
+    return _res->DefaultMaterial;
+}
+MaterialBase* GPUDevice::GetDefaultMaterialOverride() const
+{
+    return _res->DefaultMaterialOverride;
+}
+void GPUDevice::SetDefaultMaterialOverride(MaterialBase* material)
+{
+    if (material)
+    {
+        MaterialBase* m = Content::Load<MaterialBase>(material->GetID());
+        if (m)
+        {
+            _res->DefaultMaterialOverride = m;
+        }
+    }
+}
 MaterialBase* GPUDevice::GetDefaultDeformableMaterial() const
 {
     return _res->DefaultDeformableMaterial.Get();
