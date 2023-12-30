@@ -36,6 +36,17 @@ namespace FlaxEditor.Modules
         {
             public string AssemblyName;
             public string TypeName;
+            
+            public DockState DockState;
+            public DockPanel DockedTo;
+            public float? SplitterValue = null;
+
+            public bool SelectOnShow = false;
+
+            // Constructor, to allow for default values
+            public WindowRestoreData()
+            {
+            }
         }
 
         private readonly List<WindowRestoreData> _restoreWindows = new List<WindowRestoreData>();
@@ -802,10 +813,33 @@ namespace FlaxEditor.Modules
             if (constructor == null || type.IsGenericType)
                 return;
 
-            WindowRestoreData winData;
+            var winData = new WindowRestoreData();
+            var panel = win.Window.ParentDockPanel;
+
+            // Ensure that this window is only selected following recompilation
+            // if it was the active tab in its dock panel. Otherwise, there is a
+            // risk of interrupting the user's workflow by potentially selecting
+            // background tabs.
+            winData.SelectOnShow = panel.SelectedTab == win.Window;
+            if (panel is FloatWindowDockPanel)
+            {
+                winData.DockState = DockState.Float;
+            }
+            else
+            {
+                if (panel.TabsCount > 1)
+                {
+                    winData.DockState = DockState.DockFill;
+                    winData.DockedTo = panel;
+                }else
+                {
+                    winData.DockState = panel.TryGetDockState(out var splitterValue);
+                    winData.DockedTo = panel.ParentDockPanel;
+                    winData.SplitterValue = splitterValue;
+                }
+            }
             winData.AssemblyName = type.Assembly.GetName().Name;
             winData.TypeName = type.FullName;
-            // TODO: cache and restore docking info
             _restoreWindows.Add(winData);
         }
 
@@ -824,7 +858,7 @@ namespace FlaxEditor.Modules
                         if (type != null)
                         {
                             var win = (CustomEditorWindow)Activator.CreateInstance(type);
-                            win.Show();
+                            win.Show(winData.DockState, winData.DockedTo, winData.SelectOnShow, winData.SplitterValue);
                         }
                     }
                 }
