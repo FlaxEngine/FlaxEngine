@@ -43,6 +43,11 @@ namespace FlaxEditor.Modules
 
             public bool SelectOnShow = false;
 
+            public bool Maximize;
+            public bool Minimize;
+            public Float2 FloatSize;
+            public Float2 FloatPosition;
+
             // Constructor, to allow for default values
             public WindowRestoreData()
             {
@@ -824,6 +829,11 @@ namespace FlaxEditor.Modules
             if (panel is FloatWindowDockPanel)
             {
                 winData.DockState = DockState.Float;
+                var window = win.Window.RootWindow.Window;
+                winData.FloatPosition = window.Position;
+                winData.FloatSize = window.ClientSize;
+                winData.Maximize = window.IsMaximized;
+                winData.Minimize = window.IsMinimized;
             }
             else
             {
@@ -859,6 +869,23 @@ namespace FlaxEditor.Modules
                         {
                             var win = (CustomEditorWindow)Activator.CreateInstance(type);
                             win.Show(winData.DockState, winData.DockedTo, winData.SelectOnShow, winData.SplitterValue);
+                            if (winData.DockState == DockState.Float)
+                            {
+                                var window = win.Window.RootWindow.Window;
+                                window.Position = winData.FloatPosition;
+                                if (winData.Maximize)
+                                {
+                                    window.Maximize();
+                                }
+                                else if (winData.Minimize)
+                                {
+                                    window.Minimize();
+                                }
+                                else 
+                                {
+                                    window.ClientSize = winData.FloatSize;
+                                }
+                            }
                         }
                     }
                 }
