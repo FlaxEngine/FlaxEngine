@@ -38,6 +38,7 @@ namespace FlaxEditor.Windows.Profiler
                 if (value != LiveRecording)
                 {
                     _liveRecordingButton.Checked = value;
+                    OnLiveRecordingChanged();
                 }
             }
         }
