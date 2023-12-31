@@ -92,12 +92,12 @@ namespace FlaxEditor.CustomEditors.Editors
         public override void Refresh()
         {
             base.Refresh();
-
+            _isRefreshing = true;
             if (HasDifferentValues)
             {
                 if (_isReference)
                 {
-                    //_picker.Validator.SelectedID = (Guid)Values[0];
+                    // Not supported
                 }
                 else
                 {
@@ -117,6 +117,7 @@ namespace FlaxEditor.CustomEditors.Editors
                     _element.TextBox.WatermarkText = string.Empty;
                 }
             }
+            _isRefreshing = false;
         }
     }
 }
