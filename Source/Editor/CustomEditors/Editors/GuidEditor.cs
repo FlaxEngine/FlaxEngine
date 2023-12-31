@@ -27,7 +27,6 @@ namespace FlaxEditor.CustomEditors.Editors
         /// <inheritdoc />
         public override void Initialize(LayoutElementsContainer layout)
         {
-
             var attributes = Values.GetAttributes();
             var assetReference = (AssetReferenceAttribute)attributes?.FirstOrDefault(x => x is AssetReferenceAttribute);
             if (assetReference != null)
@@ -64,7 +63,6 @@ namespace FlaxEditor.CustomEditors.Editors
                 _picker.Height = height;
                 _picker.SelectedItemChanged += OnSelectedItemChanged;
                 _isReference = true;
-
             }
             else
             {
