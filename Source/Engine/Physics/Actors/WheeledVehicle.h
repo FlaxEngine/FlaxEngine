@@ -26,6 +26,18 @@ API_CLASS(Attributes="ActorContextMenu(\"New/Physics/Wheeled Vehicle\"), ActorTo
         DriveNW,
         // Non-drivable vehicle.
         NoDrive,
+        Tank,
+    };
+    /// <summary>
+    /// Vehicle driving types.
+    /// Used only on tanks to specify the drive mode.   
+    /// </summary>
+    API_ENUM() enum class DriveModes
+    {
+        // Drive turning the vehicle using only one track
+        Standard,
+        // Drive turning the vehicle using all tracks inverse direction.
+        Special
     };
 
     /// <summary>
@@ -127,6 +139,11 @@ API_CLASS(Attributes="ActorContextMenu(\"New/Physics/Wheeled Vehicle\"), ActorTo
         /// If enabled the vehicle gears will be changes automatically, otherwise it's fully manual.
         /// </summary>
         API_FIELD() bool AutoGear = true;
+
+        /// <summary>
+        /// Number of gears to move to forward
+        /// </summary>
+        API_FIELD(Attributes = "Limit(1, 30)") int ForwardGearsRatios = 5;
 
         /// <summary>
         /// Time it takes to switch gear. Specified in seconds (s).
@@ -322,8 +339,9 @@ private:
 
     void* _vehicle = nullptr;
     DriveTypes _driveType = DriveTypes::Drive4W, _driveTypeCurrent;
+    DriveModes _driveMode = DriveModes::Standard;
     Array<WheelData, FixedAllocation<20>> _wheelsData;
-    float _throttle = 0.0f, _steering = 0.0f, _brake = 0.0f, _handBrake = 0.0f;
+    float _throttle = 0.0f, _steering = 0.0f, _brake = 0.0f, _handBrake = 0.0f, _tankLeftThrottle, _tankRightThrottle, _tankLeftBrake, _tankRightBrake;
     Array<Wheel> _wheels;
     EngineSettings _engine;
     DifferentialSettings _differential;
@@ -347,7 +365,7 @@ public:
     /// <summary>
     /// Gets the vehicle driving model type.
     /// </summary>
-    API_PROPERTY(Attributes="EditorOrder(1), EditorDisplay(\"Vehicle\")") DriveTypes GetDriveType() const;
+    API_PROPERTY(Attributes="EditorOrder(2), EditorDisplay(\"Vehicle\")") DriveTypes GetDriveType() const;
 
     /// <summary>
     /// Sets the vehicle driving model type.
@@ -355,9 +373,19 @@ public:
     API_PROPERTY() void SetDriveType(DriveTypes value);
 
     /// <summary>
+    /// Used only for tanks, set the drive mode.
+    /// </summary>
+    API_PROPERTY() void SetDriveMode(DriveModes value);
+
+    /// <summary>
+    /// Gets the vehicle driving mode. Used only on tanks
+    /// </summary>
+    API_PROPERTY(Attributes="EditorOrder(3), EditorDisplay(\"Vehicle\")") DriveModes GetDriveMode() const;
+
+    /// <summary>
     /// Gets the vehicle wheels settings.
     /// </summary>
-    API_PROPERTY(Attributes="EditorOrder(2), EditorDisplay(\"Vehicle\")") const Array<Wheel>& GetWheels() const;
+    API_PROPERTY(Attributes="EditorOrder(4), EditorDisplay(\"Vehicle\")") const Array<Wheel>& GetWheels() const;
 
     /// <summary>
     /// Sets the vehicle wheels settings.
@@ -367,7 +395,7 @@ public:
     /// <summary>
     /// Gets the vehicle engine settings.
     /// </summary>
-    API_PROPERTY(Attributes="EditorOrder(3), EditorDisplay(\"Vehicle\")") EngineSettings GetEngine() const;
+    API_PROPERTY(Attributes="EditorOrder(5), EditorDisplay(\"Vehicle\")") EngineSettings GetEngine() const;
 
     /// <summary>
     /// Sets the vehicle engine settings.
@@ -377,7 +405,7 @@ public:
     /// <summary>
     /// Gets the vehicle differential settings.
     /// </summary>
-    API_PROPERTY(Attributes="EditorOrder(4), EditorDisplay(\"Vehicle\")") DifferentialSettings GetDifferential() const;
+    API_PROPERTY(Attributes="EditorOrder(6), EditorDisplay(\"Vehicle\")") DifferentialSettings GetDifferential() const;
 
     /// <summary>
     /// Sets the vehicle differential settings.
@@ -387,7 +415,7 @@ public:
     /// <summary>
     /// Gets the vehicle gearbox settings.
     /// </summary>
-    API_PROPERTY(Attributes="EditorOrder(5), EditorDisplay(\"Vehicle\")") GearboxSettings GetGearbox() const;
+    API_PROPERTY(Attributes="EditorOrder(7), EditorDisplay(\"Vehicle\")") GearboxSettings GetGearbox() const;
 
     /// <summary>
     /// Sets the vehicle gearbox settings.
@@ -418,6 +446,32 @@ public:
     /// </summary>
     /// <param name="value">The value (0,1 range).</param>
     API_FUNCTION() void SetHandbrake(float value);
+
+    /// <summary>
+    /// Sets the input for tank left track throttle. It is the analog accelerator pedal value in range (-1,1) where 1 represents the pedal fully pressed to move to forward, 0 to represents the 
+    /// pedal in its rest state and -1 represents the pedal fully pressed to move to backward. The track direction will be inverted if the vehicle current gear is rear.
+    /// </summary>
+    /// <param name="value">The value (-1,1 range).</param>
+    API_FUNCTION() void SetTankLeftThrottle(float value);
+
+    /// <summary>
+    /// Sets the input for tank right track throttle. It is the analog accelerator pedal value in range (-1,1) where 1 represents the pedal fully pressed to move to forward, 0 to represents the
+    /// pedal in its rest state and -1 represents the pedal fully pressed to move to backward. The track direction will be inverted if the vehicle current gear is rear.
+    /// </summary>
+    /// <param name="value">The value (-1,1 range).</param>
+    API_FUNCTION() void SetTankRightThrottle(float value);
+
+    /// <summary>
+    /// Sets the input for tank brakes the left track. Brake is the analog brake pedal value in range (0,1) where 1 represents the pedal fully pressed and 0 represents the pedal in its rest state.
+    /// </summary>
+    /// <param name="value">The value (0,1 range).</param>
+    API_FUNCTION() void SetTankLeftBrake(float value);
+
+    /// <summary>
+    /// Sets the input for tank brakes the right track. Brake is the analog brake pedal value in range (0,1) where 1 represents the pedal fully pressed and 0 represents the pedal in its rest state.
+    /// </summary>
+    /// <param name="value">The value (0,1 range).</param>
+    API_FUNCTION() void SetTankRightBrake(float value);
 
     /// <summary>
     /// Clears all the vehicle control inputs to the default values (throttle, steering, breaks).
