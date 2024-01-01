@@ -84,6 +84,55 @@ API_CLASS(Attributes="ActorContextMenu(\"New/Physics/Wheeled Vehicle\"), ActorTo
     };
 
     /// <summary>
+    /// Vehicle drive control settings.
+    /// </summary>
+    API_STRUCT() struct DriveControlSettings : ISerializable
+    {
+        DECLARE_SCRIPTING_TYPE_MINIMAL(DriveControlSettings);
+        API_AUTO_SERIALIZATION();
+
+        /// <summary>
+        /// Acceleration input sensitive.
+        /// </summary>
+        API_FIELD(Attributes="Limit(0), EditorDisplay(\"Inputs\"), EditorOrder(10)") float RiseRateAcceleration = 6.0f;
+
+        /// <summary>
+        /// Deceleration input sensitive.
+        /// </summary>
+        API_FIELD(Attributes="Limit(0), EditorDisplay(\"Inputs\"), EditorOrder(11)") float FallRateAcceleration = 10.0f;
+
+        /// <summary>
+        /// Brake input sensitive.
+        /// </summary>
+        API_FIELD(Attributes="Limit(0), EditorDisplay(\"Inputs\"), EditorOrder(12)") float RiseRateBrake = 6.0f;
+
+        /// <summary>
+        /// Release brake sensitive.
+        /// </summary>
+        API_FIELD(Attributes="Limit(0), EditorDisplay(\"Inputs\"), EditorOrder(13)") float FallRateBrake = 10.0f;
+
+        /// <summary>
+        /// Brake input sensitive.
+        /// </summary>
+        API_FIELD(Attributes="Limit(0), EditorDisplay(\"Inputs\"), EditorOrder(14)") float RiseRateHandBrake = 12.0f;
+
+        /// <summary>
+        /// Release handbrake sensitive.
+        /// </summary>
+        API_FIELD(Attributes="Limit(0), EditorDisplay(\"Inputs\"), EditorOrder(15)") float FallRateHandBrake = 12.0f;
+
+        /// <summary>
+        /// Steer input sensitive.
+        /// </summary>
+        API_FIELD(Attributes="Limit(0), EditorDisplay(\"Inputs\"), EditorOrder(16)") float RiseRateSteer = 2.5f;
+
+        /// <summary>
+        /// Release steer input sensitive.
+        /// </summary>
+        API_FIELD(Attributes="Limit(0), EditorDisplay(\"Inputs\"), EditorOrder(17)") float FallRateSteer = 5.0f;
+    };
+
+    /// <summary>
     /// Vehicle differential settings.
     /// </summary>
     API_STRUCT() struct DifferentialSettings : ISerializable
@@ -321,6 +370,7 @@ private:
     Array<WheelData, FixedAllocation<20>> _wheelsData;
     float _throttle = 0.0f, _steering = 0.0f, _brake = 0.0f, _handBrake = 0.0f, _tankLeftThrottle, _tankRightThrottle, _tankLeftBrake, _tankRightBrake;
     Array<Wheel> _wheels;
+    DriveControlSettings _driveControl;
     EngineSettings _engine;
     DifferentialSettings _differential;
     GearboxSettings _gearbox;
@@ -366,6 +416,16 @@ public:
     API_PROPERTY(Attributes="EditorOrder(4), EditorDisplay(\"Vehicle\")") const Array<Wheel>& GetWheels() const;
 
     /// <summary>
+    /// Gets the vehicle drive control settings.
+    /// </summary>
+    API_PROPERTY(Attributes = "EditorOrder(5), EditorDisplay(\"Vehicle\")") DriveControlSettings GetDriveControl() const;
+
+    /// <summary>
+    /// Sets the vehicle drive control settings.
+    /// </summary>
+    API_PROPERTY() void SetDriveControl(DriveControlSettings& value);
+
+    /// <summary>
     /// Sets the vehicle wheels settings.
     /// </summary>
     API_PROPERTY() void SetWheels(const Array<Wheel>& value);
@@ -373,7 +433,7 @@ public:
     /// <summary>
     /// Gets the vehicle engine settings.
     /// </summary>
-    API_PROPERTY(Attributes="EditorOrder(5), EditorDisplay(\"Vehicle\")") EngineSettings GetEngine() const;
+    API_PROPERTY(Attributes="EditorOrder(6), EditorDisplay(\"Vehicle\")") EngineSettings GetEngine() const;
 
     /// <summary>
     /// Sets the vehicle engine settings.
@@ -383,7 +443,7 @@ public:
     /// <summary>
     /// Gets the vehicle differential settings.
     /// </summary>
-    API_PROPERTY(Attributes="EditorOrder(6), EditorDisplay(\"Vehicle\")") DifferentialSettings GetDifferential() const;
+    API_PROPERTY(Attributes="EditorOrder(7), EditorDisplay(\"Vehicle\")") DifferentialSettings GetDifferential() const;
 
     /// <summary>
     /// Sets the vehicle differential settings.
@@ -393,7 +453,7 @@ public:
     /// <summary>
     /// Gets the vehicle gearbox settings.
     /// </summary>
-    API_PROPERTY(Attributes="EditorOrder(7), EditorDisplay(\"Vehicle\")") GearboxSettings GetGearbox() const;
+    API_PROPERTY(Attributes="EditorOrder(8), EditorDisplay(\"Vehicle\")") GearboxSettings GetGearbox() const;
 
     /// <summary>
     /// Sets the vehicle gearbox settings.

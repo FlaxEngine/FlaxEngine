@@ -1557,38 +1557,38 @@ void PhysicsBackend::EndSimulateScene(void* scene)
             // @formatter:off
             // Reference: PhysX SDK docs
             // TODO: expose input control smoothing data
-            static constexpr PxVehiclePadSmoothingData padSmoothing =
-            {
-	            {
-		            6.0f,  // rise rate eANALOG_INPUT_ACCEL
-		            6.0f,  // rise rate eANALOG_INPUT_BRAKE
-		            12.0f, // rise rate eANALOG_INPUT_HANDBRAKE
-		            2.5f,  // rise rate eANALOG_INPUT_STEER_LEFT
-		            2.5f,  // rise rate eANALOG_INPUT_STEER_RIGHT
-	            },
-	            {
-		            10.0f, // fall rate eANALOG_INPUT_ACCEL
-		            10.0f, // fall rate eANALOG_INPUT_BRAKE
-		            12.0f, // fall rate eANALOG_INPUT_HANDBRAKE
-		            5.0f,  // fall rate eANALOG_INPUT_STEER_LEFT
-		            5.0f,  // fall rate eANALOG_INPUT_STEER_RIGHT
-	            }
-            };
-            static constexpr PxVehicleKeySmoothingData keySmoothing =
+            PxVehiclePadSmoothingData padSmoothing =
+                {
+                    {
+                        wheelVehicle->_driveControl.RiseRateAcceleration, // rise rate eANALOG_INPUT_ACCEL
+                        wheelVehicle->_driveControl.RiseRateBrake,        // rise rate eANALOG_INPUT_BRAKE
+                        wheelVehicle->_driveControl.RiseRateHandBrake,    // rise rate eANALOG_INPUT_HANDBRAKE
+                        wheelVehicle->_driveControl.RiseRateSteer,        // rise rate eANALOG_INPUT_STEER_LEFT
+                        wheelVehicle->_driveControl.RiseRateSteer,        // rise rate eANALOG_INPUT_STEER_RIGHT
+                    },
+                    {
+                        wheelVehicle->_driveControl.FallRateAcceleration, // fall rate eANALOG_INPUT_ACCEL
+                        wheelVehicle->_driveControl.FallRateBrake,        // fall rate eANALOG_INPUT_BRAKE
+                        wheelVehicle->_driveControl.FallRateHandBrake,    // fall rate eANALOG_INPUT_HANDBRAKE
+                        wheelVehicle->_driveControl.FallRateSteer,        // fall rate eANALOG_INPUT_STEER_LEFT
+                        wheelVehicle->_driveControl.FallRateSteer,        // fall rate eANALOG_INPUT_STEER_RIGHT
+                    }
+                };
+            PxVehicleKeySmoothingData keySmoothing =
             {
                 {
-                    3.0f,  // rise rate eANALOG_INPUT_ACCEL
-                    3.0f,  // rise rate eANALOG_INPUT_BRAKE
-                    10.0f, // rise rate eANALOG_INPUT_HANDBRAKE
-                    2.5f,  // rise rate eANALOG_INPUT_STEER_LEFT
-                    2.5f,  // rise rate eANALOG_INPUT_STEER_RIGHT
+                    wheelVehicle->_driveControl.RiseRateAcceleration, // rise rate eANALOG_INPUT_ACCEL
+                    wheelVehicle->_driveControl.RiseRateBrake,        // rise rate eANALOG_INPUT_BRAKE
+                    wheelVehicle->_driveControl.RiseRateHandBrake,    // rise rate eANALOG_INPUT_HANDBRAKE
+                    wheelVehicle->_driveControl.RiseRateSteer,        // rise rate eANALOG_INPUT_STEER_LEFT
+                    wheelVehicle->_driveControl.RiseRateSteer,        // rise rate eANALOG_INPUT_STEER_RIGHT
                 },
                 {
-                    5.0f,  // fall rate eANALOG_INPUT__ACCEL
-                    5.0f,  // fall rate eANALOG_INPUT__BRAKE
-                    10.0f, // fall rate eANALOG_INPUT__HANDBRAKE
-                    5.0f,  // fall rate eANALOG_INPUT_STEER_LEFT
-                    5.0f   // fall rate eANALOG_INPUT_STEER_RIGHT
+                    wheelVehicle->_driveControl.FallRateAcceleration, // fall rate eANALOG_INPUT_ACCEL
+                    wheelVehicle->_driveControl.FallRateBrake,        // fall rate eANALOG_INPUT_BRAKE
+                    wheelVehicle->_driveControl.FallRateHandBrake,    // fall rate eANALOG_INPUT_HANDBRAKE
+                    wheelVehicle->_driveControl.FallRateSteer,        // fall rate eANALOG_INPUT_STEER_LEFT
+                    wheelVehicle->_driveControl.FallRateSteer,        // fall rate eANALOG_INPUT_STEER_RIGHT
                 }
             };
             // Reference: PhysX SDK docs
