@@ -1403,8 +1403,8 @@ void PhysicsBackend::EndSimulateScene(void* scene)
                 // Converting default vehicle controls to tank controls.
                 if (throttle != 0 || steering != 0)
                 {
-                    leftThrottle = throttle + steering;
-                    rightThrottle = throttle - steering;
+                    leftThrottle = Math::Clamp(throttle + steering, -1.0f, 1.0f);
+                    rightThrottle = Math::Clamp(throttle - steering, -1.0f, 1.0f);
                 }
             }
 
@@ -1418,10 +1418,12 @@ void PhysicsBackend::EndSimulateScene(void* scene)
                 if (leftThrottle < -deadZone && rightThrottle > deadZone)
                 {
                     leftThrottle = 0;
+                    leftBrake = 1;
                 }
                 else if (leftThrottle > deadZone && rightThrottle < -deadZone)
                 {
                     rightThrottle = 0;
+                    rightBrake = 1;
                 }
             }
 
