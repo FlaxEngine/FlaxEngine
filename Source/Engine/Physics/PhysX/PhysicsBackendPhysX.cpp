@@ -58,7 +58,9 @@
 #if WITH_PVD
 #include <ThirdParty/PhysX/pvd/PxPvd.h>
 #endif
-
+#if USE_EDITOR
+#include "Editor/Editor.h"
+#endif
 // Temporary memory size used by the PhysX during the simulation. Must be multiply of 4kB and 16bit aligned.
 #define PHYSX_SCRATCH_BLOCK_SIZE (1024 * 128)
 
@@ -3367,18 +3369,42 @@ PxVehicleAckermannGeometryData CreatePxVehicleAckermannGeometryData(PxVehicleWhe
     return ackermann;
 }
 
-bool SortWheels(WheeledVehicle::Wheel const& a, WheeledVehicle::Wheel const& b)
+bool SortWheelsFrontToBack(WheeledVehicle::Wheel const& a, WheeledVehicle::Wheel const& b)
 {
-    return (int32)a.Type < (int32)b.Type;
+    return a.Collider && b.Collider && a.Collider->GetLocalPosition().Z > b.Collider->GetLocalPosition().Z;
 }
 
 void* PhysicsBackend::CreateVehicle(WheeledVehicle* actor)
 {
-    // TODO: handle PxVehicleDrive4WWheelOrder internally rather than sorting wheels directly on the vehicle
-    if (actor->_driveType == WheeledVehicle::DriveTypes::Drive4W)
+#if USE_EDITOR
+    if (Editor::IsPlayMode)
+#endif
     {
-        // Drive4W requires wheels to match order from PxVehicleDrive4WWheelOrder enum
-        Sorting::QuickSort(actor->_wheels.Get(), actor->_wheels.Count(), SortWheels);
+        // Physx vehicles needs to have all wheels sorted to apply controls correctly.
+        // Its needs to know what wheels are on front to turn wheel to correctly side
+        // and needs to know wheel side to apply throttle to correctly direction for each track when using tanks.
+        
+        if (actor->_driveType == WheeledVehicle::DriveTypes::Drive4W)
+            Sorting::QuickSort(actor->_wheels.Get(), actor->_wheels.Count(), SortWheelsFrontToBack);
+
+        // sort wheels by side
+        if (actor->_driveType == WheeledVehicle::DriveTypes::Tank)
+        {
+            for (int i = 0; i < actor->_wheels.Count() - 1; i += 2)
+            {
+                auto a = actor->_wheels[i];
+                auto b = actor->_wheels[i + 1];
+
+                if (!a.Collider || !b.Collider)
+                    continue;
+
+                if (a.Collider->GetLocalPosition().X > b.Collider->GetLocalPosition().X)
+                {
+                    actor->_wheels[i] = b;
+                    actor->_wheels[i + 1] = a;
+                }
+            }
+        }
     }
 
     // Get wheels

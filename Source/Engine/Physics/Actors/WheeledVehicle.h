@@ -159,34 +159,12 @@ API_CLASS(Attributes="ActorContextMenu(\"New/Physics/Wheeled Vehicle\"), ActorTo
     };
 
     /// <summary>
-    /// Vehicle wheel types.
-    /// </summary>
-    API_ENUM() enum class WheelTypes
-    {
-        // Left wheel of the front axle.
-        FrontLeft,
-        // Right wheel of the front axle.
-        FrontRight,
-        // Left wheel of the rear axle.
-        RearLeft,
-        // Right wheel of the rear axle.
-        RearRight,
-        // Non-drivable wheel.
-        NoDrive,
-    };
-
-    /// <summary>
     /// Vehicle wheel settings.
     /// </summary>
     API_STRUCT() struct Wheel : ISerializable
     {
         DECLARE_SCRIPTING_TYPE_MINIMAL(Wheel);
         API_AUTO_SERIALIZATION();
-
-        /// <summary>
-        /// Wheel placement type.
-        /// </summary>
-        API_FIELD(Attributes="EditorOrder(0)") WheelTypes Type = WheelTypes::FrontLeft;
 
         /// <summary>
         /// Combined mass of the wheel and the tire in kg. Typically, a wheel has mass between 20Kg and 80Kg but can be lower and higher depending on the vehicle.

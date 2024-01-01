@@ -59,9 +59,7 @@ void WheeledVehicle::SetWheels(const Array<Wheel> &value)
         {
             auto &oldWheel = _wheels.Get()[wheelIndex];
             auto &newWheel = value.Get()[wheelIndex];
-            if (oldWheel.Type != newWheel.Type ||
-                Math::NotNearEqual(oldWheel.SuspensionForceOffset, newWheel.SuspensionForceOffset) ||
-                oldWheel.Collider != newWheel.Collider)
+            if (Math::NotNearEqual(oldWheel.SuspensionForceOffset, newWheel.SuspensionForceOffset) || oldWheel.Collider != newWheel.Collider)
             {
                 softUpdate = false;
                 break;
@@ -352,6 +350,9 @@ void WheeledVehicle::OnDebugDrawSelected()
         // Draw wheels axes
         if (wheelIndex % 2 == 0 && wheelIndex + 1 < _wheels.Count())
         {
+            if (!_wheels[wheelIndex].Collider || !_wheels[wheelIndex + 1].Collider)
+                continue;
+
             const Vector3 wheelPos = _wheels[wheelIndex].Collider->GetPosition();
             const Vector3 nextWheelPos = _wheels[wheelIndex + 1].Collider->GetPosition();
             DEBUG_DRAW_LINE(wheelPos, nextWheelPos, Color::Yellow, 0, false);
