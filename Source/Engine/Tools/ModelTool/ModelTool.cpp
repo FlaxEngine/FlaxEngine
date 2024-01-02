@@ -1292,7 +1292,7 @@ bool ModelTool::ImportModel(const String& path, ModelData& data, Options& option
         !
 #endif
     }
-    if (EnumHasAnyFlags(options.ImportTypes, ImportDataTypes::Geometry) && options.Type != ModelType::Prefab)
+    if (EnumHasAnyFlags(options.ImportTypes, ImportDataTypes::Geometry))
     {
         // Perform simple nodes mapping to single node (will transform meshes to model local space)
         SkeletonMapping<ModelDataNode> skeletonMapping(data.Nodes, nullptr);
@@ -1312,7 +1312,13 @@ bool ModelTool::ImportModel(const String& path, ModelData& data, Options& option
                 if (skeletonMapping.SourceToSource[mesh.NodeIndex] != mesh.NodeIndex)
                 {
                     // Transform vertices
-                    const auto transformationMatrix = hierarchyUpdater.CombineMatricesFromNodeIndices(skeletonMapping.SourceToSource[mesh.NodeIndex], mesh.NodeIndex);
+                    auto transformationMatrix = hierarchyUpdater.CombineMatricesFromNodeIndices(skeletonMapping.SourceToSource[mesh.NodeIndex], mesh.NodeIndex);
+                    if (options.Type == ModelType::Prefab)
+                    {
+                        // Cancel out translation during mesh transformation, to set translation during prefab generation time.
+                        transformationMatrix = transformationMatrix * transformationMatrix.Translation(transformationMatrix.GetTranslation() * -1.0f);
+                    }
+
                     if (!transformationMatrix.IsIdentity())
                         mesh.TransformBuffer(transformationMatrix);
                 }

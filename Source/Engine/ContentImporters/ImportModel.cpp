@@ -665,7 +665,9 @@ CreateAssetResult ImportModel::CreatePrefab(CreateAssetContext& context, ModelDa
         // Setup node in hierarchy
         nodeToActor.Add(nodeIndex, nodeActor);
         nodeActor->SetName(node.Name);
-        nodeActor->SetLocalTransform(node.LocalTransform);
+
+        // Only set translation, since scale and rotation is applied earlier.
+        nodeActor->SetLocalTransform(Transform(node.LocalTransform.Translation));
         if (nodeIndex == 0)
         {
             // Special case for root actor to link any unlinked nodes
