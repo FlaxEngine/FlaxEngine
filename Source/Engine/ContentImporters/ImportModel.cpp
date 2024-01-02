@@ -316,7 +316,9 @@ CreateAssetResult ImportModel::Import(CreateAssetContext& context)
             auto& animation = data->Animations[i];
             splitOptions.Type = ModelTool::ModelType::Animation;
             splitOptions.ObjectIndex = i;
-            splitImport(splitOptions, animation.Name, prefabObject.AssetPath, MeshData::MeshData());
+
+            MeshData empty;
+            splitImport(splitOptions, animation.Name, prefabObject.AssetPath, empty);
         }
     }
     else if (options.SplitObjects)
