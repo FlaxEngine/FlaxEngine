@@ -44,7 +44,7 @@ namespace FlaxEditor.CustomEditors.Editors
             panel.CustomControl.SlotsHorizontally = 2;
             panel.CustomControl.SlotsVertically = 1;
 
-            var button = panel.Button("Listen");
+            var button = panel.Button("Listen", "Press to listen for input events");
             _button = button.Button;
             _button.Clicked += OnButtonClicked;
             ResetButton();
