@@ -269,7 +269,7 @@ CreateAssetResult ImportModel::Import(CreateAssetContext& context)
 
         // Import all of the objects recursive but use current model data to skip loading file again
         options.Cached = &cached;
-        Function<bool(Options& splitOptions, const StringView& objectName, String& outputPath)> splitImport = [&context, &autoImportOutput](Options& splitOptions, const StringView& objectName, String& outputPath)
+        Function<bool(Options& splitOptions, const StringView& objectName, String& outputPath, MeshData& meshData)> splitImport = [&context, &autoImportOutput](Options& splitOptions, const StringView& objectName, String& outputPath, MeshData& meshData)
         {
             // Recursive importing of the split object
             String postFix = objectName;
@@ -279,6 +279,17 @@ CreateAssetResult ImportModel::Import(CreateAssetContext& context)
             // TODO: check for name collisions with material/texture assets
             outputPath = autoImportOutput / String(StringUtils::GetFileNameWithoutExtension(context.TargetAssetPath)) + TEXT(" ") + postFix + TEXT(".flax");
             splitOptions.SubAssetFolder = TEXT(" "); // Use the same folder as asset as they all are imported to the subdir for the prefab (see SubAssetFolder usage above)
+
+            if (splitOptions.Type == ModelTool::ModelType::Model)
+            {
+                // These settings interfere with submesh reimporting.
+                splitOptions.CenterGeometry = false;
+                splitOptions.UseLocalOrigin = false;
+
+                // This properly sets the transformation of the mesh during reimport.
+                splitOptions.Translation = meshData.OriginTranslation * -1.0f;
+            }
+
             return AssetsImportingManager::Import(context.InputPath, outputPath, &splitOptions);
         };
         auto splitOptions = options;
@@ -294,7 +305,7 @@ CreateAssetResult ImportModel::Import(CreateAssetContext& context)
 
             splitOptions.Type = ModelTool::ModelType::Model;
             splitOptions.ObjectIndex = groupIndex;
-            if (!splitImport(splitOptions, group.GetKey(), prefabObject.AssetPath))
+            if (!splitImport(splitOptions, group.GetKey(), prefabObject.AssetPath, *group.First()))
             {
                 prefabObjects.Add(prefabObject);
             }
@@ -305,7 +316,7 @@ CreateAssetResult ImportModel::Import(CreateAssetContext& context)
             auto& animation = data->Animations[i];
             splitOptions.Type = ModelTool::ModelType::Animation;
             splitOptions.ObjectIndex = i;
-            splitImport(splitOptions, animation.Name, prefabObject.AssetPath);
+            splitImport(splitOptions, animation.Name, prefabObject.AssetPath, MeshData());
         }
     }
     else if (options.SplitObjects)
