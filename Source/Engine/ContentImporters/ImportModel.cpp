@@ -666,11 +666,20 @@ CreateAssetResult ImportModel::CreatePrefab(CreateAssetContext& context, ModelDa
         nodeToActor.Add(nodeIndex, nodeActor);
         nodeActor->SetName(node.Name);
 
-        Transform positionOffset = Transform::Identity;
-        positionOffset.Translation = node.LocalTransform.Translation;
-        LOG(Warning, "node name: {0}, offset transform: {1}", node.Name, positionOffset);
-        // Only set translation, since scale and rotation is applied earlier.
-        nodeActor->SetLocalTransform(positionOffset);
+        // When use local origin is checked, it shifts everything over the same amount, including the root. This tries to work around that.
+        if (!(nodeIndex == 0 && options.UseLocalOrigin))
+        {
+            // Only set translation, since scale and rotation is applied earlier.
+            Transform positionOffset = Transform::Identity;
+            positionOffset.Translation = node.LocalTransform.Translation;
+            if (options.UseLocalOrigin)
+            {
+                positionOffset.Translation += data.Nodes[0].LocalTransform.Translation;
+            }
+
+            nodeActor->SetLocalTransform(positionOffset);
+        }
+
         if (nodeIndex == 0)
         {
             // Special case for root actor to link any unlinked nodes
