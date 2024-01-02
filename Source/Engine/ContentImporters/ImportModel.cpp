@@ -666,8 +666,11 @@ CreateAssetResult ImportModel::CreatePrefab(CreateAssetContext& context, ModelDa
         nodeToActor.Add(nodeIndex, nodeActor);
         nodeActor->SetName(node.Name);
 
+        Transform positionOffset = Transform::Identity;
+        positionOffset.Translation = node.LocalTransform.Translation;
+        LOG(Warning, "node name: {0}, offset transform: {1}", node.Name, positionOffset);
         // Only set translation, since scale and rotation is applied earlier.
-        nodeActor->SetLocalTransform(Transform(node.LocalTransform.Translation));
+        nodeActor->SetLocalTransform(positionOffset);
         if (nodeIndex == 0)
         {
             // Special case for root actor to link any unlinked nodes

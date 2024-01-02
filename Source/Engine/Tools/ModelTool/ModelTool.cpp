@@ -1292,7 +1292,7 @@ bool ModelTool::ImportModel(const String& path, ModelData& data, Options& option
         !
 #endif
     }
-    if (EnumHasAnyFlags(options.ImportTypes, ImportDataTypes::Geometry))
+    if (EnumHasAnyFlags(options.ImportTypes, ImportDataTypes::Geometry) && !(options.Type == ModelType::Prefab))
     {
         // Perform simple nodes mapping to single node (will transform meshes to model local space)
         SkeletonMapping<ModelDataNode> skeletonMapping(data.Nodes, nullptr);
@@ -1313,11 +1313,6 @@ bool ModelTool::ImportModel(const String& path, ModelData& data, Options& option
                 {
                     // Transform vertices
                     auto transformationMatrix = hierarchyUpdater.CombineMatricesFromNodeIndices(skeletonMapping.SourceToSource[mesh.NodeIndex], mesh.NodeIndex);
-                    if (options.Type == ModelType::Prefab)
-                    {
-                        // Cancel out translation during mesh transformation, to set translation during prefab generation time.
-                        transformationMatrix = transformationMatrix * transformationMatrix.Translation(transformationMatrix.GetTranslation() * -1.0f);
-                    }
 
                     if (!transformationMatrix.IsIdentity())
                         mesh.TransformBuffer(transformationMatrix);
@@ -1325,6 +1320,29 @@ bool ModelTool::ImportModel(const String& path, ModelData& data, Options& option
 
                 // Update new node index using real asset skeleton
                 mesh.NodeIndex = skeletonMapping.SourceToTarget[mesh.NodeIndex];
+            }
+        }
+    }
+    if (EnumHasAnyFlags(options.ImportTypes, ImportDataTypes::Geometry) && options.Type == ModelType::Prefab)
+    {
+        // Apply just the scale and rotations.
+        for (int32 lodIndex = 0; lodIndex < data.LODs.Count(); lodIndex++)
+        {
+            for (int32 meshIndex = 0; meshIndex < data.LODs[lodIndex].Meshes.Count(); meshIndex++)
+            {
+                auto& mesh = *data.LODs[lodIndex].Meshes[meshIndex];
+                auto& node = data.Nodes[mesh.NodeIndex];
+
+                // Transform vertices
+                auto transformationMatrix = Matrix::Identity;
+                transformationMatrix.SetScaleVector(node.LocalTransform.Scale);
+
+                Matrix rotation;
+                node.LocalTransform.GetRotation(rotation);
+                transformationMatrix = transformationMatrix * rotation;
+
+                if (!transformationMatrix.IsIdentity())
+                    mesh.TransformBuffer(transformationMatrix);
             }
         }
     }
