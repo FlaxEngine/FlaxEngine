@@ -282,9 +282,9 @@ API_CLASS(Attributes="ActorContextMenu(\"New/Physics/Wheeled Vehicle\"), ActorTo
         API_FIELD(Attributes="EditorOrder(3)") float Width = 20.0f;
 
         /// <summary>
-        /// Max steer angle that can be achieved by the wheel (in degrees).
+        /// Max steer angle that can be achieved by the wheel (in degrees, -180 to 180).
         /// </summary>
-        API_FIELD(Attributes="Limit(0), EditorDisplay(\"Steering\"), EditorOrder(10)") float MaxSteerAngle = 0.0f;
+        API_FIELD(Attributes="Limit(-180, 180), EditorDisplay(\"Steering\"), EditorOrder(10)") float MaxSteerAngle = 0.0f;
 
         /// <summary>
         /// Damping rate applied to wheel. Specified in kilograms metres-squared per second (kg m^2 s^-1).
