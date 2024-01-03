@@ -8,10 +8,12 @@
 #include "Engine/Graphics/Textures/TextureData.h"
 #include "Engine/Graphics/PixelFormatExtensions.h"
 #include "Engine/Graphics/RenderTools.h"
+#include "Engine/Profiler/ProfilerCPU.h"
 #include <ThirdParty/astc/astcenc.h>
 
 bool TextureTool::ConvertAstc(TextureData& dst, const TextureData& src, const PixelFormat dstFormat)
 {
+    PROFILE_CPU();
     ASSERT(PixelFormatExtensions::IsCompressedASTC(dstFormat));
     const int32 blockSize = PixelFormatExtensions::ComputeBlockSize(dstFormat);
     const int32 bytesPerBlock = 16; // All ASTC blocks use 128 bits
