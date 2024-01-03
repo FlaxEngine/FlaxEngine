@@ -41,6 +41,45 @@ API_CLASS(Attributes="ActorContextMenu(\"New/Physics/Wheeled Vehicle\"), ActorTo
     };
 
     /// <summary>
+    /// Storage the relationship between speed and steer.
+    /// </summary>
+    API_STRUCT() struct SteerControl : ISerializable
+    {
+        DECLARE_SCRIPTING_TYPE_MINIMAL(SteerControl);
+        API_AUTO_SERIALIZATION();
+
+        /// <summary>
+        /// The vehicle speed.
+        /// </summary>
+        API_FIELD(Attributes = "Limit(0)") float Speed;
+
+        /// <summary>
+        /// The target max steer of the speed.
+        /// </summary>
+        API_FIELD(Attributes = "Limit(0, 1)") float Steer;
+
+        /// <summary>
+        /// Create a Steer/Speed relationship structure.
+        /// </summary>
+        SteerControl()
+        {
+            Speed = 1000;
+            Steer = 1;
+        }
+
+        /// <summary>
+        /// Create a Steer/Speed relationship structure.
+        /// <param name="speed">The vehicle speed.</param>
+        /// <param name="steer">The target max steer of the speed.</param>
+        /// </summary>
+        SteerControl(float speed, float steer)
+        {
+            Speed = speed;
+            Steer = steer;
+        }
+    };
+
+    /// <summary>
     /// Vehicle engine settings.
     /// </summary>
     API_STRUCT() struct EngineSettings : ISerializable
@@ -94,42 +133,54 @@ API_CLASS(Attributes="ActorContextMenu(\"New/Physics/Wheeled Vehicle\"), ActorTo
         /// <summary>
         /// Acceleration input sensitive.
         /// </summary>
-        API_FIELD(Attributes="Limit(0), EditorDisplay(\"Inputs\"), EditorOrder(10)") float RiseRateAcceleration = 6.0f;
+        API_FIELD(Attributes="Limit(0), EditorOrder(10)") float RiseRateAcceleration = 6.0f;
 
         /// <summary>
         /// Deceleration input sensitive.
         /// </summary>
-        API_FIELD(Attributes="Limit(0), EditorDisplay(\"Inputs\"), EditorOrder(11)") float FallRateAcceleration = 10.0f;
+        API_FIELD(Attributes="Limit(0), EditorOrder(11)") float FallRateAcceleration = 10.0f;
 
         /// <summary>
         /// Brake input sensitive.
         /// </summary>
-        API_FIELD(Attributes="Limit(0), EditorDisplay(\"Inputs\"), EditorOrder(12)") float RiseRateBrake = 6.0f;
+        API_FIELD(Attributes="Limit(0), EditorOrder(12)") float RiseRateBrake = 6.0f;
 
         /// <summary>
         /// Release brake sensitive.
         /// </summary>
-        API_FIELD(Attributes="Limit(0), EditorDisplay(\"Inputs\"), EditorOrder(13)") float FallRateBrake = 10.0f;
+        API_FIELD(Attributes="Limit(0), EditorOrder(13)") float FallRateBrake = 10.0f;
 
         /// <summary>
         /// Brake input sensitive.
         /// </summary>
-        API_FIELD(Attributes="Limit(0), EditorDisplay(\"Inputs\"), EditorOrder(14)") float RiseRateHandBrake = 12.0f;
+        API_FIELD(Attributes="Limit(0), EditorOrder(14)") float RiseRateHandBrake = 12.0f;
 
         /// <summary>
         /// Release handbrake sensitive.
         /// </summary>
-        API_FIELD(Attributes="Limit(0), EditorDisplay(\"Inputs\"), EditorOrder(15)") float FallRateHandBrake = 12.0f;
+        API_FIELD(Attributes="Limit(0), EditorOrder(15)") float FallRateHandBrake = 12.0f;
 
         /// <summary>
         /// Steer input sensitive.
         /// </summary>
-        API_FIELD(Attributes="Limit(0), EditorDisplay(\"Inputs\"), EditorOrder(16)") float RiseRateSteer = 2.5f;
+        API_FIELD(Attributes="Limit(0), EditorOrder(16)") float RiseRateSteer = 2.5f;
 
         /// <summary>
         /// Release steer input sensitive.
         /// </summary>
-        API_FIELD(Attributes="Limit(0), EditorDisplay(\"Inputs\"), EditorOrder(17)") float FallRateSteer = 5.0f;
+        API_FIELD(Attributes="Limit(0), EditorOrder(17)") float FallRateSteer = 5.0f;
+
+        /// <summary>
+        /// Vehicle control relationship between speed and steer. The higher is the speed, 
+        /// decrease steer to make vehicle more maneuverable (limited only 4 relationships).
+        /// </summary>
+        API_FIELD() Array<WheeledVehicle::SteerControl> SteerVsSpeed = Array<WheeledVehicle::SteerControl>
+        {
+            SteerControl(800, 1.0f),
+            SteerControl(1500, 0.7f),
+            SteerControl(2500, 0.5f),
+            SteerControl(5000, 0.2f),
+        };
     };
 
     /// <summary>

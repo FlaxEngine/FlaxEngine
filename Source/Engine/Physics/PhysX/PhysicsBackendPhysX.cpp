@@ -1554,9 +1554,7 @@ void PhysicsBackend::EndSimulateScene(void* scene)
                 leftBrake = 1.0f;
             }
 
-            // @formatter:off
-            // Reference: PhysX SDK docs
-            // TODO: expose input control smoothing data
+            // Smooth input controls 
             PxVehiclePadSmoothingData padSmoothing =
                 {
                     {
@@ -1591,20 +1589,31 @@ void PhysicsBackend::EndSimulateScene(void* scene)
                     wheelVehicle->_driveControl.FallRateSteer,        // fall rate eANALOG_INPUT_STEER_RIGHT
                 }
             };
-            // Reference: PhysX SDK docs
-            // TODO: expose steer vs forward curve into per-vehicle (up to 8 points, values clamped into 0/1 range)
-            static constexpr PxF32 steerVsForwardSpeedData[] =
+
+            // Reduce steer by speed to make vehicle more easier to maneuver 
+
+            constexpr int steerVsSpeedN = 8;
+            PxF32 steerVsForwardSpeedData[steerVsSpeedN];
+            const int lastSteerVsSpeedIndex = wheelVehicle->_driveControl.SteerVsSpeed.Count() - 1;
+            int steerVsSpeedIndex = 0;
+
+            // Steer vs speed data structure example:
+            // array:
+            // speed,   steer
+            // 1000,    1.0,
+            // 2000,    0.7,
+            // 5000,    0.5,
+            // ..
+
+            // fill the steerVsForwardSpeedData with the speed and steer
+            for (int i = 0; i < 8; i += 2)
             {
-	            0.0f,		1.0f,
-	            20.0f,		0.9f,
-	            65.0f,		0.8f,
-	            120.0f,		0.7f,
-	            PX_MAX_F32, PX_MAX_F32,
-	            PX_MAX_F32, PX_MAX_F32,
-	            PX_MAX_F32, PX_MAX_F32,
-	            PX_MAX_F32, PX_MAX_F32,
-            };
-            const PxFixedSizeLookupTable<8> steerVsForwardSpeed(steerVsForwardSpeedData, 4);
+                steerVsForwardSpeedData[i] = wheelVehicle->_driveControl.SteerVsSpeed[steerVsSpeedIndex].Speed;
+                steerVsForwardSpeedData[i + 1] = wheelVehicle->_driveControl.SteerVsSpeed[steerVsSpeedIndex].Steer;
+                steerVsSpeedIndex = Math::Min(steerVsSpeedIndex + 1, lastSteerVsSpeedIndex);
+            }
+            const PxFixedSizeLookupTable<steerVsSpeedN> steerVsForwardSpeed(steerVsForwardSpeedData, 4);
+
             // @formatter:on
             if (wheelVehicle->UseAnalogSteering)
             {

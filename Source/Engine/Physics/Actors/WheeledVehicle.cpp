@@ -55,6 +55,48 @@ WheeledVehicle::DriveControlSettings WheeledVehicle::GetDriveControl() const
 
 void WheeledVehicle::SetDriveControl(DriveControlSettings &value)
 {
+    // Don't let have an invalid steer vs speed list.
+    if (&value.SteerVsSpeed == nullptr)
+        value.SteerVsSpeed = Array<WheeledVehicle::SteerControl>();
+
+    if (value.SteerVsSpeed.Count() < 1)
+        value.SteerVsSpeed.Add(WheeledVehicle::SteerControl());
+    else // physx backend requires the max of 4 values only
+        while (value.SteerVsSpeed.Count() > 4)
+            value.SteerVsSpeed.RemoveLast();
+
+    // Maintain all values clamped to have a ordened speed list
+    int steerVsSpeedCount = value.SteerVsSpeed.Count();
+    for (int i = 0; i < steerVsSpeedCount; i++)
+    {
+        // Apply only on changed value
+        if (_driveControl.SteerVsSpeed[i].Speed != value.SteerVsSpeed[i].Speed || _driveControl.SteerVsSpeed[i].Steer != value.SteerVsSpeed[i].Steer)
+        {
+            WheeledVehicle::SteerControl &steerVsSpeed = value.SteerVsSpeed[i];
+            steerVsSpeed.Steer = Math::Saturate(steerVsSpeed.Steer);
+            steerVsSpeed.Speed = Math::Max(steerVsSpeed.Speed, 10.0f);
+
+            // Clamp speeds to have an ordened list.
+            if (i >= 1)
+            {
+                WheeledVehicle::SteerControl &lastSteerVsSpeed = value.SteerVsSpeed[i - 1];
+                WheeledVehicle::SteerControl &nextSteerVsSpeed = value.SteerVsSpeed[Math::Clamp(i + 1, 0, steerVsSpeedCount - 1)];
+                float minSpeed = lastSteerVsSpeed.Speed;
+                float maxSpeed = nextSteerVsSpeed.Speed;
+
+                if (i + 1 < steerVsSpeedCount - 1)
+                    steerVsSpeed.Speed = Math::Clamp(steerVsSpeed.Speed, minSpeed, maxSpeed);
+                else
+                    steerVsSpeed.Speed = Math::Max(steerVsSpeed.Speed, minSpeed);
+            }
+            else if (steerVsSpeedCount > 1)
+            {
+                WheeledVehicle::SteerControl &nextSteerVsSpeed = value.SteerVsSpeed[i + 1];
+                steerVsSpeed.Speed = Math::Min(steerVsSpeed.Speed, nextSteerVsSpeed.Speed);
+            }
+        }
+    }
+
     _driveControl = value;
 }
 
@@ -392,7 +434,6 @@ void WheeledVehicle::Serialize(SerializeStream &stream, const void *otherObj)
     SERIALIZE_MEMBER(Engine, _engine);
     SERIALIZE_MEMBER(Differential, _differential);
     SERIALIZE_MEMBER(Gearbox, _gearbox);
-    
 }
 
 void WheeledVehicle::Deserialize(DeserializeStream &stream, ISerializeModifier *modifier)
