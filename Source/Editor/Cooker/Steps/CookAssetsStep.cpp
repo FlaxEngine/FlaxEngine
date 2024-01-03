@@ -31,6 +31,7 @@
 #include "Engine/Graphics/Shaders/GPUShader.h"
 #include "Engine/Graphics/Textures/TextureData.h"
 #include "Engine/Graphics/Materials/MaterialShader.h"
+#include "Engine/Graphics/PixelFormatExtensions.h"
 #include "Engine/Particles/Graph/GPU/ParticleEmitterGraph.GPU.h"
 #include "Engine/Engine/Base/GameBase.h"
 #include "Engine/Engine/Globals.h"
@@ -643,6 +644,7 @@ bool ProcessTextureBase(CookAssetsStep::AssetCookData& data)
     const auto& assetHeader = asset->StreamingTexture()->GetHeader();
     const auto format = asset->Format();
     const auto targetFormat = data.Data.Tools->GetTextureFormat(data.Data, asset, format);
+    CHECK_RETURN(!PixelFormatExtensions::IsTypeless(targetFormat), true);
     const auto streamingSettings = StreamingSettings::Get();
     int32 mipLevelsMax = GPU_MAX_TEXTURE_MIP_LEVELS;
     if (assetHeader->TextureGroup >= 0 && assetHeader->TextureGroup < streamingSettings->TextureGroups.Count())

@@ -915,9 +915,9 @@ PixelFormat PixelFormatExtensions::MakeTypelessUNorm(const PixelFormat format)
     }
 }
 
-PixelFormat PixelFormatExtensions::FindShaderResourceFormat(const PixelFormat format, bool isSRGB)
+PixelFormat PixelFormatExtensions::FindShaderResourceFormat(const PixelFormat format, bool sRGB)
 {
-    if (isSRGB)
+    if (sRGB)
     {
         switch (format)
         {
@@ -999,4 +999,56 @@ PixelFormat PixelFormatExtensions::FindDepthStencilFormat(const PixelFormat form
         return PixelFormat::D16_UNorm;
     }
     return format;
+}
+
+PixelFormat PixelFormatExtensions::FindUncompressedFormat(PixelFormat format)
+{
+    switch (format)
+    {
+    case PixelFormat::BC1_Typeless:
+    case PixelFormat::BC2_Typeless:
+    case PixelFormat::BC3_Typeless:
+        return PixelFormat::R8G8B8A8_Typeless;
+    case PixelFormat::BC1_UNorm:
+    case PixelFormat::BC2_UNorm:
+    case PixelFormat::BC3_UNorm:
+        return PixelFormat::R8G8B8A8_UNorm;
+    case PixelFormat::BC1_UNorm_sRGB:
+    case PixelFormat::BC2_UNorm_sRGB:
+    case PixelFormat::BC3_UNorm_sRGB:
+        return PixelFormat::R8G8B8A8_UNorm_sRGB;
+    case PixelFormat::BC4_Typeless:
+        return PixelFormat::R8_Typeless;
+    case PixelFormat::BC4_UNorm:
+        return PixelFormat::R8_UNorm;
+    case PixelFormat::BC4_SNorm:
+        return PixelFormat::R8_SNorm;
+    case PixelFormat::BC5_Typeless:
+        return PixelFormat::R16G16_Typeless;
+    case PixelFormat::BC5_UNorm:
+        return PixelFormat::R16G16_UNorm;
+    case PixelFormat::BC5_SNorm:
+        return PixelFormat::R16G16_SNorm;
+    case PixelFormat::BC7_Typeless:
+    case PixelFormat::BC6H_Typeless:
+        return PixelFormat::R16G16B16A16_Typeless;
+    case PixelFormat::BC7_UNorm:
+    case PixelFormat::BC6H_Uf16:
+    case PixelFormat::BC6H_Sf16:
+        return PixelFormat::R16G16B16A16_Float;
+    case PixelFormat::BC7_UNorm_sRGB:
+        return PixelFormat::R16G16B16A16_UNorm;
+    case PixelFormat::ASTC_4x4_UNorm:
+    case PixelFormat::ASTC_6x6_UNorm:
+    case PixelFormat::ASTC_8x8_UNorm:
+    case PixelFormat::ASTC_10x10_UNorm:
+        return PixelFormat::R8G8B8A8_UNorm;
+    case PixelFormat::ASTC_4x4_UNorm_sRGB:
+    case PixelFormat::ASTC_6x6_UNorm_sRGB:
+    case PixelFormat::ASTC_8x8_UNorm_sRGB:
+    case PixelFormat::ASTC_10x10_UNorm_sRGB:
+        return PixelFormat::R8G8B8A8_UNorm_sRGB;
+    default:
+        return format;
+    }
 }

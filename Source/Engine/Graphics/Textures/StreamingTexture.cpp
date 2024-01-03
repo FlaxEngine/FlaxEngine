@@ -297,7 +297,7 @@ Task* StreamingTexture::UpdateAllocation(int32 residency)
         if (texture->Init(desc))
         {
             Streaming.Error = true;
-            LOG(Error, "Cannot allocate texture {0}.", ToString());
+            LOG(Error, "Cannot allocate texture {0}.", texture->GetName());
         }
         if (allocatedResidency != 0)
         {

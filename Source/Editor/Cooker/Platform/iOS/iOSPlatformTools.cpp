@@ -66,11 +66,13 @@ namespace
         return result;
     }
 
-    PixelFormat GetQualityTextureFormat(bool sRGB)
+    PixelFormat GetQualityTextureFormat(bool sRGB, PixelFormat format)
     {
         const auto platformSettings = iOSPlatformSettings::Get();
         switch (platformSettings->TexturesQuality)
         {
+        case iOSPlatformSettings::TextureQuality::Uncompressed:
+            return PixelFormatExtensions::FindUncompressedFormat(format);
         case iOSPlatformSettings::TextureQuality::ASTC_High:
             return sRGB ? PixelFormat::ASTC_4x4_UNorm_sRGB : PixelFormat::ASTC_4x4_UNorm;
         case iOSPlatformSettings::TextureQuality::ASTC_Medium:
@@ -78,7 +80,7 @@ namespace
         case iOSPlatformSettings::TextureQuality::ASTC_Low:
             return sRGB ? PixelFormat::ASTC_8x8_UNorm_sRGB : PixelFormat::ASTC_8x8_UNorm;
         default:
-            CRASH;
+            return format;
         }
     }
 }
@@ -122,12 +124,12 @@ PixelFormat iOSPlatformTools::GetTextureFormat(CookingData& data, TextureBase* t
     case PixelFormat::BC3_UNorm:
     case PixelFormat::BC4_UNorm:
     case PixelFormat::BC5_UNorm:
-        return GetQualityTextureFormat(false);
+        return GetQualityTextureFormat(false, format);
     case PixelFormat::BC1_UNorm_sRGB:
     case PixelFormat::BC2_UNorm_sRGB:
     case PixelFormat::BC3_UNorm_sRGB:
     case PixelFormat::BC7_UNorm_sRGB:
-        return GetQualityTextureFormat(true);
+        return GetQualityTextureFormat(true, format);
     case PixelFormat::BC4_SNorm:
         return PixelFormat::R8_SNorm;
     case PixelFormat::BC5_SNorm:
@@ -137,7 +139,7 @@ PixelFormat iOSPlatformTools::GetTextureFormat(CookingData& data, TextureBase* t
     case PixelFormat::BC6H_Sf16:
     case PixelFormat::BC7_Typeless:
     case PixelFormat::BC7_UNorm:
-        return PixelFormat::R16G16B16A16_Typeless; // TODO: ASTC HDR
+        return PixelFormat::R16G16B16A16_Float; // TODO: ASTC HDR
     default:
         return format;
     }

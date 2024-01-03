@@ -49,6 +49,24 @@ API_CLASS(sealed, Namespace="FlaxEditor.Content.Settings") class FLAXENGINE_API 
     };
 
     /// <summary>
+    /// The output textures quality (compression).
+    /// </summary>
+    API_ENUM() enum class TextureQuality
+    {
+        // Raw image data without any compression algorithm. Mostly for testing or compatibility.
+        Uncompressed,
+        // ASTC 4x4 block compression.
+        API_ENUM(Attributes="EditorDisplay(null, \"ASTC High\")")
+        ASTC_High,
+        // ASTC 6x6 block compression.
+        API_ENUM(Attributes="EditorDisplay(null, \"ASTC Medium\")")
+        ASTC_Medium,
+        // ASTC 8x8 block compression.
+        API_ENUM(Attributes="EditorDisplay(null, \"ASTC Low\")")
+        ASTC_Low,
+    };
+
+    /// <summary>
     /// The application package name (eg. com.company.product). Custom tokens: ${PROJECT_NAME}, ${COMPANY_NAME}.
     /// </summary>
     API_FIELD(Attributes="EditorOrder(0), EditorDisplay(\"General\")")
@@ -65,6 +83,12 @@ API_CLASS(sealed, Namespace="FlaxEditor.Content.Settings") class FLAXENGINE_API 
     /// </summary>
     API_FIELD(Attributes = "EditorOrder(110), EditorDisplay(\"General\")")
     ScreenOrientation DefaultOrientation = ScreenOrientation::AutoRotation;
+
+    /// <summary>
+    /// The output textures quality (compression).
+    /// </summary>
+    API_FIELD(Attributes="EditorOrder(500), EditorDisplay(\"General\")")
+    TextureQuality TexturesQuality = TextureQuality::ASTC_Medium;
 
     /// <summary>
     /// Custom icon texture to use for the application (overrides the default one).

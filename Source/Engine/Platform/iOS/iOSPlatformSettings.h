@@ -51,15 +51,17 @@ API_CLASS(Sealed, Namespace="FlaxEditor.Content.Settings") class FLAXENGINE_API 
     /// </summary>
     API_ENUM() enum class TextureQuality
     {
+        // Raw image data without any compression algorithm. Mostly for testing or compatibility.
+        Uncompressed,
         // ASTC 4x4 block compression.
         API_ENUM(Attributes="EditorDisplay(null, \"ASTC High\")")
-        ASTC_High = 0,
+        ASTC_High,
         // ASTC 6x6 block compression.
         API_ENUM(Attributes="EditorDisplay(null, \"ASTC Medium\")")
-        ASTC_Medium = 1,
+        ASTC_Medium,
         // ASTC 8x8 block compression.
         API_ENUM(Attributes="EditorDisplay(null, \"ASTC Low\")")
-        ASTC_Low = 2,
+        ASTC_Low,
     };
 
     /// <summary>

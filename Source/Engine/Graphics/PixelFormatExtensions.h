@@ -72,7 +72,7 @@ public:
     /// <param name="format">The <see cref="PixelFormat"/>.</param>
     /// <param name="partialTypeless">Enable/disable partially typeless formats.</param>
     /// <returns><c>true</c> if the specified <see cref="PixelFormat"/> is Typeless; otherwise, <c>false</c>.</returns>
-    API_FUNCTION() static bool IsTypeless(PixelFormat format, bool partialTypeless);
+    API_FUNCTION() static bool IsTypeless(PixelFormat format, bool partialTypeless = true);
 
     /// <summary>
     /// Returns true if the <see cref="PixelFormat"/> is valid.
@@ -215,7 +215,8 @@ public:
     API_FUNCTION() static PixelFormat MakeTypelessUNorm(PixelFormat format);
 
 public:
-    static PixelFormat FindShaderResourceFormat(PixelFormat format, bool bSRGB);
+    static PixelFormat FindShaderResourceFormat(PixelFormat format, bool sRGB);
     static PixelFormat FindUnorderedAccessFormat(PixelFormat format);
     static PixelFormat FindDepthStencilFormat(PixelFormat format);
+    static PixelFormat FindUncompressedFormat(PixelFormat format);
 };
