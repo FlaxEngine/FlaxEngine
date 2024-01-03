@@ -42,7 +42,7 @@ namespace FlaxEngine.GUI
         /// <summary>
         /// Default height of the text box
         /// </summary>
-        public static float DefaultHeight = 18;
+        public static float DefaultHeight = 22;
 
         /// <summary>
         /// Left and right margin for text inside the text box bounds rectangle
@@ -298,7 +298,7 @@ namespace FlaxEngine.GUI
         /// </summary>
         [EditorDisplay("Border Style"), EditorOrder(2013), Tooltip("The color of the border when control is focused (Transparent if not used)")]
         public Color BorderSelectedColor { get; set; }
-
+        
         /// <summary>
         /// Gets the size of the text (cached).
         /// </summary>

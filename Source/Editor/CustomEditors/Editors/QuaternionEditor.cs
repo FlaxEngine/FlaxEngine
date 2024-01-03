@@ -30,6 +30,21 @@ namespace FlaxEditor.CustomEditors.Editors
         /// The Z component element
         /// </summary>
         protected FloatValueElement ZElement;
+        
+        /// <summary>
+        /// The X label.
+        /// </summary>
+        protected LabelElement XLabel;
+        
+        /// <summary>
+        /// The Y label.
+        /// </summary>
+        protected LabelElement YLabel;
+        
+        /// <summary>
+        /// The Z label.
+        /// </summary>
+        protected LabelElement ZLabel;
 
         /// <inheritdoc />
         public override DisplayStyle Style => DisplayStyle.Inline;
@@ -44,15 +59,24 @@ namespace FlaxEditor.CustomEditors.Editors
             gridControl.SlotsHorizontally = 3;
             gridControl.SlotsVertically = 1;
 
-            XElement = grid.FloatValue();
+            var xContainer = CustomEditorUtils.CreateGridContainer(grid, "X", out var xLabel);
+            XLabel = xLabel;
+            
+            XElement = xContainer.FloatValue();
             XElement.ValueBox.ValueChanged += OnValueChanged;
             XElement.ValueBox.SlidingEnd += ClearToken;
 
-            YElement = grid.FloatValue();
+            var yContainer = CustomEditorUtils.CreateGridContainer(grid, "Y", out var yLabel);
+            YLabel = yLabel;
+            
+            YElement = yContainer.FloatValue();
             YElement.ValueBox.ValueChanged += OnValueChanged;
             YElement.ValueBox.SlidingEnd += ClearToken;
 
-            ZElement = grid.FloatValue();
+            var zContainer = CustomEditorUtils.CreateGridContainer(grid, "Z", out var zLabel);
+            ZLabel = zLabel;
+            
+            ZElement = zContainer.FloatValue();
             ZElement.ValueBox.ValueChanged += OnValueChanged;
             ZElement.ValueBox.SlidingEnd += ClearToken;
 
