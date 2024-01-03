@@ -666,6 +666,8 @@ bool TextureTool::ConvertStb(TextureData& dst, const TextureData& src, const Pix
     {
 #if COMPILE_WITH_ASTC
         if (ConvertAstc(dst, *textureData, dstFormat))
+#else
+        LOG(Error, "Missing ASTC texture format compression lib.");
 #endif
         {
             return true;

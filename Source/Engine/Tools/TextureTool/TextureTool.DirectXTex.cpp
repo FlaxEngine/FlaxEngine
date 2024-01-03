@@ -836,10 +836,10 @@ bool TextureTool::ConvertDirectXTex(TextureData& dst, const TextureData& src, co
 {
     if (PixelFormatExtensions::IsCompressedASTC(dstFormat))
     {
-        // TODO: decompress if need to
 #if COMPILE_WITH_ASTC
-        return ConvertAstc(dst, *textureData, dstFormat);
+        return ConvertAstc(dst, src, dstFormat);
 #else
+        LOG(Error, "Missing ASTC texture format compression lib.");
         return true;
 #endif
     }

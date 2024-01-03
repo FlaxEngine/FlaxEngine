@@ -18,6 +18,11 @@ namespace Flax.Deps.Dependencies
             {
                 switch (BuildPlatform)
                 {
+                case TargetPlatform.Windows:
+                    return new[]
+                    {
+                        TargetPlatform.Windows,
+                    };
                 case TargetPlatform.Mac:
                     return new[]
                     {
@@ -42,6 +47,18 @@ namespace Flax.Deps.Dependencies
             {
                 switch (platform)
                 {
+                case TargetPlatform.Windows:
+                    foreach (var architecture in new []{ TargetArchitecture.x64 })
+                    {
+                        var isa = "-DASTCENC_ISA_SSE2=ON";
+                        var lib = "astcenc-sse2-static.lib";
+                        SetupDirectory(buildDir, true);
+                        RunCmake(buildDir, platform, architecture, ".. -DCMAKE_BUILD_TYPE=Release -DASTCENC_CLI=OFF -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreadedDLL " + isa);
+                        BuildCmake(buildDir);
+                        var depsFolder = GetThirdPartyFolder(options, platform, architecture);
+                        Utilities.FileCopy(Path.Combine(buildDir, "Source/Release", lib), Path.Combine(depsFolder, "astcenc.lib"));
+                    }
+                    break;
                 case TargetPlatform.Mac:
                     foreach (var architecture in new []{ TargetArchitecture.x64, TargetArchitecture.ARM64 })
                     {

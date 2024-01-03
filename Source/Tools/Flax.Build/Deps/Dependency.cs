@@ -244,7 +244,7 @@ namespace Flax.Deps
         /// <param name="envVars">Custom environment variables to pass to the child process.</param>
         public static void BuildCmake(string path, Dictionary<string, string> envVars = null)
         {
-            Utilities.Run("cmake", "--build .", null, path, Utilities.RunOptions.DefaultTool, envVars);
+            Utilities.Run("cmake", "--build .  --config Release", null, path, Utilities.RunOptions.DefaultTool, envVars);
         }
 
         /// <summary>

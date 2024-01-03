@@ -5,7 +5,6 @@
 #include "TextureTool.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Math/Math.h"
-#include "Engine/Core/Math/Color32.h"
 #include "Engine/Graphics/Textures/TextureData.h"
 #include "Engine/Graphics/PixelFormatExtensions.h"
 #include "Engine/Graphics/RenderTools.h"
@@ -49,7 +48,9 @@ bool TextureTool::ConvertAstc(TextureData& dst, const TextureData& src, const Pi
     TextureData converted;
 
     // Encoder uses full 4-component RGBA input image so convert it if needed
-    if (PixelFormatExtensions::ComputeComponentsCount(src.Format) != 4)
+    if (PixelFormatExtensions::ComputeComponentsCount(src.Format) != 4 || 
+        PixelFormatExtensions::IsCompressed(textureData->Format) ||
+        !PixelFormatExtensions::IsRgbAOrder(textureData->Format))
     {
         if (textureData != &src)
             converted = src;
@@ -70,6 +71,13 @@ bool TextureTool::ConvertAstc(TextureData& dst, const TextureData& src, const Pi
         if (!TextureTool::Transform(converted, transform))
             textureData = &converted;
     }
+
+    // Setup output
+    dst.Items.Resize(textureData->Items.Count());
+    dst.Width = textureData->Width;
+    dst.Height = textureData->Height;
+    dst.Depth = 1;
+    dst.Format = dstFormat;
 
     // Compress all array slices
     for (int32 arrayIndex = 0; arrayIndex < textureData->Items.Count() && astcError == ASTCENC_SUCCESS; arrayIndex++)
