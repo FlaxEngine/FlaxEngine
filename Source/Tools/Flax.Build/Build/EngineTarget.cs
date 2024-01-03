@@ -58,6 +58,7 @@ namespace Flax.Build
         /// <summary>
         /// True if target is built as monolithic executable with Main module inside, otherwise built as shared library with separate executable made of Main module only.
         /// </summary>
+        /// <remarks>Some platforms might not support modular build and enforce monolithic executable. See <see cref="Platform.HasModularBuildSupport"/></remarks>
         public bool IsMonolithicExecutable = true;
 
         /// <inheritdoc />
@@ -147,6 +148,8 @@ namespace Flax.Build
         {
             if (OutputType == TargetOutputType.Executable && !Configuration.BuildBindingsOnly)
             {
+                if (!buildOptions.Platform.HasModularBuildSupport)
+                    return false;
                 return !IsMonolithicExecutable || (!buildOptions.Platform.HasExecutableFileReferenceSupport && UseSymbolsExports);
             }
             return false;
