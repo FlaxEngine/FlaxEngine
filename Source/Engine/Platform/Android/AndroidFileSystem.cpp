@@ -244,7 +244,7 @@ bool AndroidFileSystem::FileExists(const StringView& path)
 bool AndroidFileSystem::DeleteFile(const StringView& path)
 {
     const StringAsANSI<> pathANSI(*path, path.Length());
-    return unlink(pathANSI.Get()) == 0;
+    return unlink(pathANSI.Get()) != 0;
 }
 
 uint64 AndroidFileSystem::GetFileSize(const StringView& path)

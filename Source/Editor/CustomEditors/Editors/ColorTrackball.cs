@@ -3,6 +3,7 @@
 using System.Linq;
 using FlaxEditor.CustomEditors.Elements;
 using FlaxEditor.GUI.Dialogs;
+using FlaxEditor.GUI.Input;
 using FlaxEngine;
 using FlaxEngine.GUI;
 
@@ -17,6 +18,7 @@ namespace FlaxEditor.CustomEditors.Editors
         private FloatValueElement _yElement;
         private FloatValueElement _zElement;
         private FloatValueElement _wElement;
+        private ColorValueBox _colorBox;
         private CustomElement<ColorSelector> _trackball;
 
         /// <inheritdoc />
@@ -53,7 +55,7 @@ namespace FlaxEditor.CustomEditors.Editors
                 gridControl.SlotPadding = new Margin(4, 2, 2, 2);
                 gridControl.ClipChildren = false;
                 gridControl.SlotsHorizontally = 1;
-                gridControl.SlotsVertically = 4;
+                gridControl.SlotsVertically = 5;
 
                 LimitAttribute limit = null;
                 var attributes = Values.GetAttributes();
@@ -61,7 +63,8 @@ namespace FlaxEditor.CustomEditors.Editors
                 {
                     limit = (LimitAttribute)attributes.FirstOrDefault(x => x is LimitAttribute);
                 }
-
+                _colorBox = grid.Custom<ColorValueBox>().CustomControl;
+                _colorBox.ValueChanged += OnColorBoxChanged;
                 _xElement = CreateFloatEditor(grid, limit, Color.Red);
                 _yElement = CreateFloatEditor(grid, limit, Color.Green);
                 _zElement = CreateFloatEditor(grid, limit, Color.Blue);
@@ -91,6 +94,13 @@ namespace FlaxEditor.CustomEditors.Editors
             var token = isSliding ? this : null;
             var value = new Float4(color.R, color.G, color.B, _wElement.ValueBox.Value);
             SetValue(value, token);
+        }
+
+        private void OnColorBoxChanged()
+        {
+            var token = _colorBox.IsSliding ? this : null;
+            var color = _colorBox.Value;
+            SetValue(new Float4(color.R, color.G, color.B, color.A), token);
         }
 
         private void OnValueChanged()
@@ -130,6 +140,7 @@ namespace FlaxEditor.CustomEditors.Editors
                 _yElement.Value = color.Y;
                 _zElement.Value = color.Z;
                 _wElement.Value = scale;
+                _colorBox.Value = new Color(color.X, color.Y, color.Z, scale);
                 _trackball.CustomControl.Color = Float3.Abs(color);
             }
         }
