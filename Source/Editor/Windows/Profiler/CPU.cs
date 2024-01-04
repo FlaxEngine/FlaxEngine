@@ -452,7 +452,6 @@ namespace FlaxEditor.Windows.Profiler
             var data = _events.Get(_mainChart.SelectedSampleIndex);
             if (data == null || data.Length == 0)
                 return;
-
             float totalTimeMs = _mainChart.SelectedSample;
 
             // Add rows
@@ -501,17 +500,24 @@ namespace FlaxEditor.Windows.Profiler
                         row = new Row
                         {
                             Values = new object[6],
+                            BackgroundColors = new Color[6],
                         };
+                        for (int k = 0; k < row.BackgroundColors.Length; k++)
+                            row.BackgroundColors[k] = Color.Transparent;
                     }
                     {
                         // Event
                         row.Values[0] = name;
 
                         // Total (%)
-                        row.Values[1] = (int)(time / totalTimeMs * 1000.0f) / 10.0f;
+                        float rowTotalTimePerc = (float)(time / totalTimeMs);
+                        row.Values[1] = (int)(rowTotalTimePerc * 1000.0f) / 10.0f;
+                        row.BackgroundColors[1] = Color.Red.AlphaMultiplied(Mathf.Min(1, rowTotalTimePerc) * 0.5f);
 
                         // Self (%)
-                        row.Values[2] = (int)((time - subEventsTimeTotal) / time * 1000.0f) / 10.0f;
+                        float rowSelfTimePerc = (float)((time - subEventsTimeTotal) / totalTimeMs);
+                        row.Values[2] = (int)(rowSelfTimePerc * 1000.0f) / 10.0f;
+                        row.BackgroundColors[2] = Color.Red.AlphaMultiplied(Mathf.Min(1, rowSelfTimePerc) * 0.5f);
 
                         // Time ms
                         row.Values[3] = (float)((time * 10000.0f) / 10000.0f);

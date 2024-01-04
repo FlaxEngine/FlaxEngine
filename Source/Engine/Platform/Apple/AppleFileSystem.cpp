@@ -218,7 +218,7 @@ bool AppleFileSystem::FileExists(const StringView& path)
 bool AppleFileSystem::DeleteFile(const StringView& path)
 {
     const StringAsANSI<> pathANSI(*path, path.Length());
-    return unlink(pathANSI.Get()) == 0;
+    return unlink(pathANSI.Get()) != 0;
 }
 
 uint64 AppleFileSystem::GetFileSize(const StringView& path)

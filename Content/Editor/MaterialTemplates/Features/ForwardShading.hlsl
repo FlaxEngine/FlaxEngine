@@ -133,6 +133,8 @@ void PS_Forward(
 	// Add lighting (apply ambient occlusion)
 	output.rgb += light.rgb * gBuffer.AO;
 
+#endif
+
 #if USE_FOG
 	// Calculate exponential height fog
 	float4 fog = GetExponentialHeightFog(ExponentialHeightFog, materialInput.WorldPosition, ViewPos, 0);
@@ -148,7 +150,5 @@ void PS_Forward(
 	output = float4(lerp(float3(1, 1, 1), output.rgb, fog.aaa * fog.aaa), output.a);
 #endif
 
-#endif
-	
 #endif
 }
