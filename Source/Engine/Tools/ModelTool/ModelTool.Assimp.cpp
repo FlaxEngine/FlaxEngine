@@ -484,6 +484,26 @@ bool ProcessMesh(ModelData& result, AssimpImporterData& data, const aiMesh* aMes
         }
     }
 
+    AssimpNode* curNode = &data.Nodes[mesh.NodeIndex];
+    Vector3 translation = Vector3::Zero;
+    Vector3 scale = Vector3::One;
+    Quaternion rotation = Quaternion::Identity;
+
+    while(true)
+    {
+        translation += curNode->LocalTransform.Translation;
+        scale *= curNode->LocalTransform.Scale;
+        rotation *= curNode->LocalTransform.Orientation;
+
+        if (curNode->ParentIndex == -1)
+            break;
+        curNode = &data.Nodes[curNode->ParentIndex];
+    }
+
+    mesh.OriginTranslation = translation;
+    mesh.OriginOrientation = rotation;
+    mesh.Scaling = scale;
+
     return false;
 }
 
@@ -624,6 +644,7 @@ bool ImportMesh(int32 index, ModelData& result, AssimpImporterData& data, String
 
     // Import mesh data
     MeshData* meshData = New<MeshData>();
+    meshData->NodeIndex = data.MeshIndexToNodeIndex[index][0];
     if (ProcessMesh(result, data, aMesh, *meshData, errorMsg))
     {
         Delete(meshData);
@@ -648,59 +669,6 @@ bool ImportMesh(int32 index, ModelData& result, AssimpImporterData& data, String
         if (result.LODs.Count() <= lodIndex)
             result.LODs.Resize(lodIndex + 1);
         result.LODs[lodIndex].Meshes.Add(meshData);
-    }
-
-    auto root = data.Scene->mRootNode;
-    Array<Transform> points;
-    if (root->mNumChildren == 0)
-    {
-        aiQuaternion aiQuat;
-        aiVector3D aiPos;
-        aiVector3D aiScale;
-        root->mTransformation.Decompose(aiScale, aiQuat, aiPos);
-        auto quat = ToQuaternion(aiQuat);
-        auto pos = ToFloat3(aiPos);
-        auto scale = ToFloat3(aiScale);
-        Transform trans = Transform(pos, quat, scale);
-        points.Add(trans);
-    }
-    else
-    {
-        for (unsigned int j = 0; j < root->mNumChildren; j++)
-        {
-            aiQuaternion aiQuat;
-            aiVector3D aiPos;
-            aiVector3D aiScale;
-            root->mChildren[j]->mTransformation.Decompose(aiScale, aiQuat, aiPos);
-            auto quat = ToQuaternion(aiQuat);
-            auto pos = ToFloat3(aiPos);
-            auto scale = ToFloat3(aiScale);
-            Transform trans = Transform(pos, quat, scale);
-            points.Add(trans);
-        }
-    }
-
-    Float3 translation = Float3::Zero;
-    Float3 scale = Float3::Zero;
-    Quaternion orientation = Quaternion::Identity;
-    for (auto point : points)
-    {
-        translation += point.Translation;
-        scale += point.Scale;
-        orientation *= point.Orientation;
-    }
-
-    if (points.Count() > 0)
-    {
-        meshData->OriginTranslation = translation / (float)points.Count();
-        meshData->OriginOrientation = Quaternion::Invert(orientation);
-        meshData->Scaling = scale / (float)points.Count();
-    }
-    else
-    {
-        meshData->OriginTranslation = translation;
-        meshData->OriginOrientation = Quaternion::Invert(orientation);
-        meshData->Scaling = Float3(1);
     }
 
     return false;

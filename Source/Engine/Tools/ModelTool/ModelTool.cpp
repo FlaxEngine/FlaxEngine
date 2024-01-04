@@ -1333,13 +1333,26 @@ bool ModelTool::ImportModel(const String& path, ModelData& data, Options& option
                 auto& mesh = *data.LODs[lodIndex].Meshes[meshIndex];
                 auto& node = data.Nodes[mesh.NodeIndex];
 
+                auto currentNode = &data.Nodes[mesh.NodeIndex];
+
+                Vector3 scale = Vector3::One;
+                Quaternion rotation = Quaternion::Identity;
+                while (true)
+                {
+                    scale *= currentNode->LocalTransform.Scale;
+                    rotation *= currentNode->LocalTransform.Orientation;
+
+                    if (currentNode->ParentIndex == -1)
+                    {
+                        break;
+                    }
+                    currentNode = &data.Nodes[currentNode->ParentIndex];
+                }
+
                 // Transform vertices
                 auto transformationMatrix = Matrix::Identity;
-                transformationMatrix.SetScaleVector(node.LocalTransform.Scale);
-
-                Matrix rotation;
-                node.LocalTransform.GetRotation(rotation);
-                transformationMatrix = transformationMatrix * rotation;
+                transformationMatrix.SetScaleVector(scale);
+                transformationMatrix = transformationMatrix * Matrix::RotationQuaternion(rotation);
 
                 if (!transformationMatrix.IsIdentity())
                     mesh.TransformBuffer(transformationMatrix);
