@@ -483,27 +483,6 @@ bool ProcessMesh(ModelData& result, AssimpImporterData& data, const aiMesh* aMes
             }
         }
     }
-
-    AssimpNode* curNode = &data.Nodes[mesh.NodeIndex];
-    Vector3 translation = Vector3::Zero;
-    Vector3 scale = Vector3::One;
-    Quaternion rotation = Quaternion::Identity;
-
-    while(true)
-    {
-        translation += curNode->LocalTransform.Translation;
-        scale *= curNode->LocalTransform.Scale;
-        rotation *= curNode->LocalTransform.Orientation;
-
-        if (curNode->ParentIndex == -1)
-            break;
-        curNode = &data.Nodes[curNode->ParentIndex];
-    }
-
-    mesh.OriginTranslation = translation;
-    mesh.OriginOrientation = rotation;
-    mesh.Scaling = scale;
-
     return false;
 }
 
@@ -644,7 +623,6 @@ bool ImportMesh(int32 index, ModelData& result, AssimpImporterData& data, String
 
     // Import mesh data
     MeshData* meshData = New<MeshData>();
-    meshData->NodeIndex = data.MeshIndexToNodeIndex[index][0];
     if (ProcessMesh(result, data, aMesh, *meshData, errorMsg))
     {
         Delete(meshData);
@@ -666,6 +644,26 @@ bool ImportMesh(int32 index, ModelData& result, AssimpImporterData& data, String
 
         // Link mesh
         meshData->NodeIndex = nodeIndex;
+        AssimpNode* curNode = &data.Nodes[meshData->NodeIndex];
+        Vector3 translation = Vector3::Zero;
+        Vector3 scale = Vector3::One;
+        Quaternion rotation = Quaternion::Identity;
+
+        while (true)
+        {
+            translation += curNode->LocalTransform.Translation;
+            scale *= curNode->LocalTransform.Scale;
+            rotation *= curNode->LocalTransform.Orientation;
+
+            if (curNode->ParentIndex == -1)
+                break;
+            curNode = &data.Nodes[curNode->ParentIndex];
+        }
+
+        meshData->OriginTranslation = translation;
+        meshData->OriginOrientation = rotation;
+        meshData->Scaling = scale;
+
         if (result.LODs.Count() <= lodIndex)
             result.LODs.Resize(lodIndex + 1);
         result.LODs[lodIndex].Meshes.Add(meshData);
