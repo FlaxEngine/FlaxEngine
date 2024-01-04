@@ -287,7 +287,23 @@ CreateAssetResult ImportModel::Import(CreateAssetContext& context)
                 splitOptions.UseLocalOrigin = false;
 
                 // This properly sets the transformation of the mesh during reimport.
-                splitOptions.Translation = meshData.OriginTranslation * -1.0f;
+                auto* nodes = &splitOptions.Cached->Data->Nodes;
+                Vector3 scale = Vector3::One;
+
+                // TODO: Improve this hack.
+                // This is the same hack as in ImportModel::CreatePrefab(), and it is documented further there.
+                auto* currentNode = &(*nodes)[meshData.NodeIndex];
+                while (true)
+                {
+                    if (currentNode->ParentIndex == -1)
+                    {
+                        scale *= currentNode->LocalTransform.Scale;
+                        break;
+                    }
+                    currentNode = &(*nodes)[currentNode->ParentIndex];
+                }
+
+                splitOptions.Translation = meshData.OriginTranslation * scale * -1.0f;
             }
 
             return AssetsImportingManager::Import(context.InputPath, outputPath, &splitOptions);
@@ -682,9 +698,30 @@ CreateAssetResult ImportModel::CreatePrefab(CreateAssetContext& context, ModelDa
         // When use local origin is checked, it shifts everything over the same amount, including the root. This tries to work around that.
         if (!(nodeIndex == 0 && options.UseLocalOrigin))
         {
+            // TODO: Improve this hack.
+            // Assimp importer has the meter -> centimeter conversion scale applied to the local transform of
+            // the root node, and only the root node. The OpenFBX importer has the same scale applied
+            // to each node, *except* the root node. This difference makes it hard to calculate the
+            // global scale properly. Position offsets are not calculated properly from Assimp without summing up
+            // the global scale because translations from Assimp don't get scaled with the global scaler option,
+            // but the OpenFBX importer does scale them. So this hack will end up only applying the global scale
+            // change if its using Assimp due to the difference in where the nodes' local transform scales are set.
+            auto* currentNode = &node;
+            Vector3 scale = Vector3::One;
+            while (true)
+            {
+                if (currentNode->ParentIndex == -1)
+                {
+                    scale *= currentNode->LocalTransform.Scale;
+                    break;
+                }
+                currentNode = &data.Nodes[currentNode->ParentIndex];
+            }
+
             // Only set translation, since scale and rotation is applied earlier.
             Transform positionOffset = Transform::Identity;
-            positionOffset.Translation = node.LocalTransform.Translation;
+            positionOffset.Translation = node.LocalTransform.Translation * scale;
+
             if (options.UseLocalOrigin)
             {
                 positionOffset.Translation += data.Nodes[0].LocalTransform.Translation;

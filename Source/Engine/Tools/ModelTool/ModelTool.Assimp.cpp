@@ -797,14 +797,14 @@ bool ModelTool::ImportDataAssimp(const char* path, ModelData& data, Options& opt
     }
 
     // Create root node
-    AssimpNode& rootNode = context.Nodes.AddOne();
+    /*AssimpNode& rootNode = context.Nodes.AddOne();
     rootNode.ParentIndex = -1;
     rootNode.LodIndex = 0;
-    rootNode.Name = TEXT("Root");
     rootNode.LocalTransform = Transform::Identity;
+    rootNode.Name = TEXT("Root");*/
 
     // Process imported scene nodes
-    ProcessNodes(context, context.Scene->mRootNode, 0);
+    ProcessNodes(context, context.Scene->mRootNode, -1);
 
     // Import materials
     if (ImportMaterials(data, context, errorMsg))
