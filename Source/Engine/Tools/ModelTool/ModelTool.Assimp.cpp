@@ -790,6 +790,7 @@ bool ModelTool::ImportDataAssimp(const char* path, ModelData& data, Options& opt
             aiProcess_GenUVCoords |
             aiProcess_FindDegenerates |
             aiProcess_FindInvalidData |
+            aiProcess_GlobalScale |
             //aiProcess_ValidateDataStructure |
             aiProcess_ConvertToLeftHanded;
     if (importMeshes)
@@ -807,6 +808,7 @@ bool ModelTool::ImportDataAssimp(const char* path, ModelData& data, Options& opt
     // Setup import options
     context.AssimpImporter.SetPropertyFloat(AI_CONFIG_PP_GSN_MAX_SMOOTHING_ANGLE, options.SmoothingNormalsAngle);
     context.AssimpImporter.SetPropertyFloat(AI_CONFIG_PP_CT_MAX_SMOOTHING_ANGLE, options.SmoothingTangentsAngle);
+    context.AssimpImporter.SetPropertyFloat(AI_CONFIG_GLOBAL_SCALE_FACTOR_KEY, 100.0f); // Convert to cm?
     //context.AssimpImporter.SetPropertyInteger(AI_CONFIG_PP_SLM_TRIANGLE_LIMIT, MAX_uint16);
     context.AssimpImporter.SetPropertyBool(AI_CONFIG_IMPORT_FBX_READ_CAMERAS, false);
     context.AssimpImporter.SetPropertyBool(AI_CONFIG_IMPORT_FBX_READ_LIGHTS, false);
