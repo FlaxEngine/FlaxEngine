@@ -128,7 +128,7 @@ namespace Flax.Build
             base.PostBuild(graph, buildOptions);
 
             // If building engine executable for platform doesn't support referencing it when linking game shared libraries
-            if (UseSeparateMainExecutable(buildOptions) && !BuildAsLibrary(buildOptions))
+            if (UseSeparateMainExecutable(buildOptions))
             {
                 // Build additional executable with Main module only that uses shared library
                 using (new ProfileEventScope("BuildExecutable"))
@@ -148,6 +148,8 @@ namespace Flax.Build
         {
             if (OutputType == TargetOutputType.Executable && !Configuration.BuildBindingsOnly)
             {
+                if (buildOptions.Platform.Target == TargetPlatform.Android)
+                    return false;
                 if (!buildOptions.Platform.HasModularBuildSupport)
                     return false;
                 return !IsMonolithicExecutable || (!buildOptions.Platform.HasExecutableFileReferenceSupport && UseSymbolsExports);
@@ -159,8 +161,7 @@ namespace Flax.Build
         {
             switch (buildOptions.Platform.Target)
             {
-            case TargetPlatform.UWP:
-            case TargetPlatform.Android: return true;
+            case TargetPlatform.UWP: return true;
             default: return false;
             }
         }

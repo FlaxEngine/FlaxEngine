@@ -44,7 +44,7 @@ public class GameActivity extends NativeActivity {
     static {
         try {
             // Load native libraries
-            System.loadLibrary("FlaxEngine");
+            System.loadLibrary("FlaxGame");
         } catch (UnsatisfiedLinkError error) {
             Log.e("Flax", error.getMessage());
         }
