@@ -396,6 +396,16 @@ namespace FlaxEditor.Windows.Assets
         /// <inheritdoc />
         public override void OnUpdate()
         {
+            // Extract animations playback state from the events tracing
+            var debugActor = _debugPicker.Value as AnimatedModel;
+            if (debugActor == null)
+                debugActor = _preview.PreviewActor;
+            if (debugActor != null)
+            {
+                debugActor.EnableTracing = true;
+                Surface.LastTraceEvents = debugActor.TraceEvents;
+            }
+
             base.OnUpdate();
 
             // Update graph execution flow debugging visualization
@@ -416,6 +426,8 @@ namespace FlaxEditor.Windows.Assets
         /// <inheritdoc />
         public override void OnDestroy()
         {
+            if (IsDisposing)
+                return;
             Animations.DebugFlow -= OnDebugFlow;
 
             _properties = null;

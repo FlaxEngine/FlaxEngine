@@ -36,6 +36,7 @@ namespace FlaxEditor.Surface.Archetypes
         {
             private AssetSelect _assetSelect;
             private Box _assetBox;
+            private ProgressBar _playbackPos;
 
             /// <inheritdoc />
             public Sample(uint id, VisjectSurfaceContext context, NodeArchetype nodeArch, GroupArchetype groupArch)
@@ -92,6 +93,36 @@ namespace FlaxEditor.Surface.Archetypes
 
                 _assetSelect.Visible = !box.HasAnyConnection;
                 UpdateTitle();
+            }
+
+            /// <inheritdoc />
+            public override void Update(float deltaTime)
+            {
+                // Debug current playback position
+                if (((AnimGraphSurface)Surface).TryGetTraceEvent(this, out var traceEvent) && traceEvent.Asset is FlaxEngine.Animation anim)
+                {
+                    if (_playbackPos == null)
+                    {
+                        _playbackPos = new ProgressBar
+                        {
+                            SmoothingScale = 0.0f,
+                            Offsets = Margin.Zero,
+                            AnchorPreset = AnchorPresets.HorizontalStretchBottom,
+                            Parent = this,
+                            Height = 12.0f,
+                        };
+                        _playbackPos.Y -= 16.0f;
+                    }
+                    _playbackPos.Visible = true;
+                    _playbackPos.Maximum = anim.Duration;
+                    _playbackPos.Value = traceEvent.Value; // AnimGraph reports position in animation frames, not time
+                }
+                else if (_playbackPos != null)
+                {
+                    _playbackPos.Visible = false;
+                }
+
+                base.Update(deltaTime);
             }
         }
 
