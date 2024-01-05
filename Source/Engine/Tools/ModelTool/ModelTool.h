@@ -268,9 +268,12 @@ public:
         // If checked, the importer will import texture files used by the model and any embedded texture resources.
         API_FIELD(Attributes="EditorOrder(410), EditorDisplay(\"Materials\"), VisibleIf(nameof(ShowGeometry))")
         bool ImportTextures = true;
-        // If checked, the importer will try to keep the model's current material slots, instead of importing materials from the source file.
-        API_FIELD(Attributes="EditorOrder(420), EditorDisplay(\"Materials\", \"Keep Material Slots on Reimport\"), VisibleIf(nameof(ShowGeometry))")
+        // If checked, the importer will try to keep the model's current overridden material slots, instead of importing materials from the source file.
+        API_FIELD(Attributes="EditorOrder(420), EditorDisplay(\"Materials\", \"Keep Overridden Materials\"), VisibleIf(nameof(ShowGeometry))")
         bool RestoreMaterialsOnReimport = true;
+        // If checked, the importer will not reimport any material from this model which already exist in the sub-asset folder.
+        API_FIELD(Attributes = "EditorOrder(421), EditorDisplay(\"Materials\", \"Skip Existing Materials\"), VisibleIf(nameof(ShowGeometry))")
+        bool SkipExistingMaterialsOnReimport = true;
 
     public: // SDF
 
