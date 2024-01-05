@@ -46,6 +46,12 @@ struct RendererDirectionalLightData
 
     float ShadowsDistance;
     int32 CascadeCount;
+    float Cascade1Spacing;
+    float Cascade2Spacing;
+    float Cascade3Spacing;
+    float Cascade4Spacing;
+
+    PartitionMode PartitionMode;
     float ContactShadowsLength;
     ShadowsCastingMode ShadowsMode;
 

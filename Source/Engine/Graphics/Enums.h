@@ -237,6 +237,27 @@ API_ENUM(Attributes="Flags") enum class ShadowsCastingMode
 DECLARE_ENUM_OPERATORS(ShadowsCastingMode);
 
 /// <summary>
+/// The partitioning mode for shadow cascades.
+/// </summary>
+API_ENUM() enum class PartitionMode
+{
+    /// <summary>
+    /// Internally defined cascade splits.
+    /// </summary>
+    Manual = 0,
+
+    /// <summary>
+    /// Logarithmic cascade splits.
+    /// </summary>
+    Logarithmic = 1,
+
+    /// <summary>
+    /// PSSM cascade splits.
+    /// </summary>
+    PSSM = 2,
+};
+
+/// <summary>
 /// Identifies expected GPU resource use during rendering. The usage directly reflects whether a resource is accessible by the CPU and/or the GPU.	
 /// </summary>
 API_ENUM() enum class GPUResourceUsage
