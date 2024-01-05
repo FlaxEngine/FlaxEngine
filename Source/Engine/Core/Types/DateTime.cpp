@@ -35,8 +35,7 @@ void DateTime::GetDate(int32& year, int32& month, int32& day) const
     // Based on:
     // Fliegel, H. F. and van Flandern, T. C.,
     // Communications of the ACM, Vol. 11, No. 10 (October 1968).
-
-    int32 l = Math::FloorToInt(static_cast<float>(GetJulianDay() + 0.5)) + 68569;
+    int32 l = Math::FloorToInt((float)(GetDate().GetJulianDay() + 0.5)) + 68569;
     const int32 n = 4 * l / 146097;
     l = l - (146097 * n + 3) / 4;
     int32 i = 4000 * (l + 1) / 1461001;
@@ -46,7 +45,6 @@ void DateTime::GetDate(int32& year, int32& month, int32& day) const
     l = j / 11;
     j = j + 2 - 12 * l;
     i = 100 * (n - 49) + i + l;
-
     year = i;
     month = j;
     day = k;
