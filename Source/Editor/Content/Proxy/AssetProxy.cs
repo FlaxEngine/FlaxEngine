@@ -23,6 +23,22 @@ namespace FlaxEditor.Content
         public abstract string TypeName { get; }
 
         /// <summary>
+        /// Gets a value indicating whether this instance is virtual Proxy not linked to any asset.
+        /// </summary>
+        protected virtual bool IsVirtual { get; }
+
+        /// <summary>
+        /// Determines whether [is virtual proxy].
+        /// </summary>
+        /// <returns>
+        ///   <c>true</c> if [is virtual proxy]; otherwise, <c>false</c>.
+        /// </returns>
+        public bool IsVirtualProxy()
+        {
+            return IsVirtual && CanExport == false;
+        }
+
+        /// <summary>
         /// Checks if this proxy supports the given asset type id at the given path.
         /// </summary>
         /// <param name="typeName">The asset type identifier.</param>

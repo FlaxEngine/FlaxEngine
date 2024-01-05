@@ -1367,33 +1367,29 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
                         }
 
                         // Use 1D blend if points are on the same line (degenerated triangle)
-                        // TODO: simplify this code
+                        struct BlendData
+                        {
+                            float AlphaX, AlphaY;
+                            Animation* AnimA, *AnimB;
+                            const Float4* AnimAd, *AnimBd;
+                        };
+                        BlendData blendData;
                         if (v1.Y >= v0.Y)
                         {
                             if (p.Y < v0.Y && v1.Y >= v0.Y)
-                            {
-                                const float alpha = p.Y / v0.Y;
-                                value = SampleAnimationsWithBlend(node, loop, data.Length, startTimePos, bucket.TimePosition, newTimePos, aAnim, bAnim, aData.W, bData.W, alpha);
-                            }
+                                blendData = { p.Y, v0.Y, aAnim, bAnim, &aData, &bData };
                             else
-                            {
-                                const float alpha = (p.Y - v0.Y) / (v1.Y - v0.Y);
-                                value = SampleAnimationsWithBlend(node, loop, data.Length, startTimePos, bucket.TimePosition, newTimePos, bAnim, cAnim, bData.W, cData.W, alpha);
-                            }
+                                blendData = { p.Y - v0.Y, v1.Y - v0.Y, bAnim, cAnim, &bData, &cData };
                         }
                         else
                         {
                             if (p.Y < v1.Y)
-                            {
-                                const float alpha = p.Y / v1.Y;
-                                value = SampleAnimationsWithBlend(node, loop, data.Length, startTimePos, bucket.TimePosition, newTimePos, aAnim, cAnim, aData.W, cData.W, alpha);
-                            }
+                                blendData = { p.Y, v1.Y, aAnim, cAnim, &aData, &cData };
                             else
-                            {
-                                const float alpha = (p.Y - v1.Y) / (v0.Y - v1.Y);
-                                value = SampleAnimationsWithBlend(node, loop, data.Length, startTimePos, bucket.TimePosition, newTimePos, cAnim, bAnim, cData.W, bData.W, alpha);
-                            }
+                                blendData = { p.Y - v1.Y, v0.Y - v1.Y, cAnim, bAnim, &cData, &bData };
                         }
+                        const float alpha = Math::IsZero(blendData.AlphaY) ? 0.0f : blendData.AlphaX / blendData.AlphaY;
+                        value = SampleAnimationsWithBlend(node, loop, data.Length, startTimePos, bucket.TimePosition, newTimePos, blendData.AnimA, blendData.AnimB, blendData.AnimAd->W, blendData.AnimBd->W, alpha);
                     }
                     else
                     {
@@ -2102,6 +2098,12 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
         auto& slot = slots[bucket.Index];
         Animation* anim = slot.Animation;
         ASSERT(slot.Animation && slot.Animation->IsLoaded());
+        if (slot.Reset)
+        {
+            // Start from the begining
+            slot.Reset = false;
+            bucket.TimePosition = 0.0f;
+        }
         const float deltaTime = slot.Pause ? 0.0f : context.DeltaTime * slot.Speed;
         const float length = anim->GetLength();
         const bool loop = bucket.LoopsLeft != 0;
