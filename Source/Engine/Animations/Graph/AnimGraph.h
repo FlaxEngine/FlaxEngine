@@ -201,6 +201,21 @@ struct FLAXENGINE_API AnimGraphSlot
 };
 
 /// <summary>
+/// The animation graph state container for a single node playback trace (eg. animation sample info or state transition). Can be used by Anim Graph debugging or custom scripting.
+/// </summary>
+API_STRUCT() struct FLAXENGINE_API AnimGraphTraceEvent
+{
+    DECLARE_SCRIPTING_TYPE_MINIMAL(AnimGraphTraceEvent);
+
+    // Contextual asset used. For example, sampled animation.
+    API_FIELD() Asset* Asset = nullptr;
+    // Generic value contextual to playback type (eg. animation sample position).
+    API_FIELD() float Value = 0;
+    // Identifier of the node in the graph.
+    API_FIELD() uint32 NodeId = 0;
+};
+
+/// <summary>
 /// The animation graph instance data storage. Required to update the animation graph.
 /// </summary>
 class FLAXENGINE_API AnimGraphInstanceData
@@ -357,6 +372,12 @@ public:
     /// Invokes any outgoing AnimEvent and AnimContinuousEvent collected during the last animation update. When called from non-main thread only Async events will be invoked.
     /// </summary>
     void InvokeAnimEvents();
+
+public:
+    // Anim Graph logic tracing feature that allows to collect insights of animations sampling and skeleton poses operations.
+    bool EnableTracing = false;
+    // Trace events collected when using EnableTracing option.
+    Array<AnimGraphTraceEvent> TraceEvents;
 
 private:
     struct OutgoingEvent

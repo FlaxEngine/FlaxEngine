@@ -219,6 +219,16 @@ void AnimGraphExecutor::ProcessAnimation(AnimGraphImpulse* nodes, AnimGraphNode*
     const float animPos = GetAnimSamplePos(length, anim, pos, speed);
     const float animPrevPos = GetAnimSamplePos(length, anim, prevPos, speed);
 
+    // Add to trace
+    auto& context = Context.Get();
+    if (context.Data->EnableTracing)
+    {
+        auto& trace = context.Data->TraceEvents.AddOne();
+        trace.Asset = anim;
+        trace.Value = animPos;
+        trace.NodeId = node->ID;
+    }
+    
     // Evaluate nested animations
     bool hasNested = false;
     if (anim->NestedAnims.Count() != 0)
