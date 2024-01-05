@@ -12,22 +12,22 @@ const int32 CachedDaysToMonth[] = { 0, 31, 59, 90, 120, 151, 181, 212, 243, 273,
 DateTime::DateTime(int32 year, int32 month, int32 day, int32 hour, int32 minute, int32 second, int32 millisecond)
 {
     ASSERT_LOW_LAYER(Validate(year, month, day, hour, minute, second, millisecond));
-    int32 totalDays = 0;
+    int32 daysSum = 0;
     if (month > 2 && IsLeapYear(year))
-        totalDays++;
+        daysSum++;
     year--;
     month--;
-    totalDays += year * 365 + year / 4 - year / 100 + year / 400 + CachedDaysToMonth[month] + day - 1;
-    Ticks = totalDays * Constants::TicksPerDay
-            + hour * Constants::TicksPerHour
-            + minute * Constants::TicksPerMinute
-            + second * Constants::TicksPerSecond
-            + millisecond * Constants::TicksPerMillisecond;
+    daysSum += year * 365 + year / 4 - year / 100 + year / 400 + CachedDaysToMonth[month] + day - 1;
+    Ticks = daysSum * TimeSpan::TicksPerDay
+            + hour * TimeSpan::TicksPerHour
+            + minute * TimeSpan::TicksPerMinute
+            + second * TimeSpan::TicksPerSecond
+            + millisecond * TimeSpan::TicksPerMillisecond;
 }
 
 DateTime DateTime::GetDate() const
 {
-    return DateTime(Ticks - Ticks % Constants::TicksPerDay);
+    return DateTime(Ticks - Ticks % TimeSpan::TicksPerDay);
 }
 
 void DateTime::GetDate(int32& year, int32& month, int32& day) const
@@ -59,7 +59,7 @@ int32 DateTime::GetDay() const
 
 DayOfWeek DateTime::GetDayOfWeek() const
 {
-    return static_cast<DayOfWeek>((Ticks / Constants::TicksPerDay) % 7);
+    return static_cast<DayOfWeek>((Ticks / TimeSpan::TicksPerDay) % 7);
 }
 
 int32 DateTime::GetDayOfYear() const
@@ -73,7 +73,7 @@ int32 DateTime::GetDayOfYear() const
 
 int32 DateTime::GetHour() const
 {
-    return static_cast<int32>(Ticks / Constants::TicksPerHour % 24);
+    return static_cast<int32>(Ticks / TimeSpan::TicksPerHour % 24);
 }
 
 int32 DateTime::GetHour12() const
@@ -88,7 +88,7 @@ int32 DateTime::GetHour12() const
 
 double DateTime::GetJulianDay() const
 {
-    return 1721425.5 + static_cast<double>(Ticks) / Constants::TicksPerDay;
+    return 1721425.5 + static_cast<double>(Ticks) / TimeSpan::TicksPerDay;
 }
 
 double DateTime::GetModifiedJulianDay() const
@@ -98,12 +98,12 @@ double DateTime::GetModifiedJulianDay() const
 
 int32 DateTime::GetMillisecond() const
 {
-    return static_cast<int32>(Ticks / Constants::TicksPerMillisecond % 1000);
+    return static_cast<int32>(Ticks / TimeSpan::TicksPerMillisecond % 1000);
 }
 
 int32 DateTime::GetMinute() const
 {
-    return static_cast<int32>(Ticks / Constants::TicksPerMinute % 60);
+    return static_cast<int32>(Ticks / TimeSpan::TicksPerMinute % 60);
 }
 
 int32 DateTime::GetMonth() const
@@ -120,12 +120,12 @@ MonthOfYear DateTime::GetMonthOfYear() const
 
 int32 DateTime::GetSecond() const
 {
-    return static_cast<int32>(Ticks / Constants::TicksPerSecond % 60);
+    return static_cast<int32>(Ticks / TimeSpan::TicksPerSecond % 60);
 }
 
 TimeSpan DateTime::GetTimeOfDay() const
 {
-    return TimeSpan(Ticks % Constants::TicksPerDay);
+    return TimeSpan(Ticks % TimeSpan::TicksPerDay);
 }
 
 int32 DateTime::GetYear() const
@@ -133,11 +133,6 @@ int32 DateTime::GetYear() const
     int32 year, month, day;
     GetDate(year, month, day);
     return year;
-}
-
-int32 DateTime::ToUnixTimestamp() const
-{
-    return static_cast<int32>((Ticks - DateTime(1970, 1, 1).Ticks) / Constants::TicksPerSecond);
 }
 
 int32 DateTime::DaysInMonth(int32 year, int32 month)
@@ -153,16 +148,6 @@ int32 DateTime::DaysInYear(int32 year)
     return IsLeapYear(year) ? 366 : 365;
 }
 
-DateTime DateTime::FromJulianDay(double julianDay)
-{
-    return DateTime(static_cast<int64>((julianDay - 1721425.5) * Constants::TicksPerDay));
-}
-
-DateTime DateTime::FromUnixTimestamp(int32 unixTime)
-{
-    return DateTime(1970, 1, 1) + TimeSpan(static_cast<int64>(unixTime) * Constants::TicksPerSecond);
-}
-
 bool DateTime::IsLeapYear(int32 year)
 {
     if ((year % 4) == 0)
@@ -174,7 +159,7 @@ bool DateTime::IsLeapYear(int32 year)
 
 DateTime DateTime::MaxValue()
 {
-    return DateTime(3652059 * Constants::TicksPerDay - 1);
+    return DateTime(3652059 * TimeSpan::TicksPerDay - 1);
 }
 
 DateTime DateTime::Now()
