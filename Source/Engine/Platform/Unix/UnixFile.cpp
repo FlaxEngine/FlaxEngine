@@ -137,7 +137,7 @@ DateTime UnixFile::GetLastWriteTime() const
     {
         return DateTime::MinValue();
     }
-    const TimeSpan timeSinceEpoch(0, 0, fileInfo.st_mtime);
+    const TimeSpan timeSinceEpoch(0, 0, 0, fileInfo.st_mtime);
     const DateTime unixEpoch(1970, 1, 1);
     return unixEpoch + timeSinceEpoch;
 }
