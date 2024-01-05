@@ -584,7 +584,6 @@ void MaterialGenerator::ProcessGroupTextures(Box* box, Node* node, Value& value)
         {
             // Procedural Texture Sample
             textureBox->Cache = writeLocal(Value::InitForZero(ValueType::Float4), node);
-            // createGradients(node); //PE: Not needed should always use the scaled or not scaled uv.
             auto proceduralSample = String::Format(TEXT(
                 "   {{\n"
                 "   float3 weights;\n"
