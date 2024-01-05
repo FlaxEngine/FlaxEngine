@@ -498,7 +498,7 @@ DateTime AppleFileSystem::GetFileLastEditTime(const StringView& path)
         return DateTime::MinValue();
     }
 
-    const TimeSpan timeSinceEpoch(0, 0, fileInfo.st_mtime);
+    const TimeSpan timeSinceEpoch(0, 0, 0, fileInfo.st_mtime);
     return UnixEpoch + timeSinceEpoch;
 }
 
