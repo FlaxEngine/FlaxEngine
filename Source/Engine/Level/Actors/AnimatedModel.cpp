@@ -549,33 +549,7 @@ void AnimatedModel::ApplyRootMotion(const Transform& rootMotionDelta)
 
     // Apply movement
     Actor* target = RootMotionTarget ? RootMotionTarget.Get() : this;
-    // filter rotation according to constraints if the target is a rigidbody
-    const auto rigidBody = dynamic_cast<RigidBody*>(target);
-    auto rotation = rootMotionDelta.Orientation;
-    if (rigidBody)
-    {
-        if (static_cast<unsigned int>(rigidBody->GetConstraints()) & static_cast<unsigned int>(RigidbodyConstraints::LockRotation))
-            rotation = Quaternion::Identity;
-        else
-        {
-            Float3 euler = rotation.GetEuler();
-            const auto constraints = static_cast<unsigned int>(rigidBody->GetConstraints());
-            if (constraints & static_cast<unsigned int>(RigidbodyConstraints::LockRotationX))
-            {
-                euler.X = 0;
-            }
-            if (constraints & static_cast<unsigned int>(RigidbodyConstraints::LockRotationY))
-            {
-                euler.Y = 0;
-            }
-            if (constraints & static_cast<unsigned int>(RigidbodyConstraints::LockRotationZ))
-            {
-                euler.Z = 0;
-            }
-            rotation = Quaternion::Euler(euler);
-        }
-    }
-    target->AddMovement(translation, rotation);
+    target->AddMovement(translation, rootMotionDelta.Orientation);
 }
 
 void AnimatedModel::SyncParameters()

@@ -300,6 +300,46 @@ void RigidBody::ClosestPoint(const Vector3& position, Vector3& result) const
     }
 }
 
+void RigidBody::AddMovement(const Vector3& translation, const Quaternion& rotation)
+{
+    // filter rotation according to constraints
+    Quaternion allowedRotation;
+    if (static_cast<unsigned int>(GetConstraints()) & static_cast<unsigned int>(RigidbodyConstraints::LockRotation))
+        allowedRotation = Quaternion::Identity;
+    else
+    {
+        Float3 euler = rotation.GetEuler();
+        const auto constraints = static_cast<unsigned int>(GetConstraints());
+        if (constraints & static_cast<unsigned int>(RigidbodyConstraints::LockRotationX))
+            euler.X = 0;
+        if (constraints & static_cast<unsigned int>(RigidbodyConstraints::LockRotationY))
+            euler.Y = 0;
+        if (constraints & static_cast<unsigned int>(RigidbodyConstraints::LockRotationZ))
+            euler.Z = 0;
+        allowedRotation = Quaternion::Euler(euler);
+    }
+
+    // filter translation according to the constraints
+    auto allowedTranslation = translation;
+    if (static_cast<unsigned int>(GetConstraints()) & static_cast<unsigned int>(RigidbodyConstraints::LockPosition))
+        allowedTranslation = Vector3::Zero;
+    else
+    {
+        const auto constraints = static_cast<unsigned int>(GetConstraints());
+        if (constraints & static_cast<unsigned int>(RigidbodyConstraints::LockPositionX))
+            allowedTranslation.X = 0;
+        if (constraints & static_cast<unsigned int>(RigidbodyConstraints::LockPositionY))
+            allowedTranslation.Y = 0;
+        if (constraints & static_cast<unsigned int>(RigidbodyConstraints::LockPositionZ))
+            allowedTranslation.Z = 0;
+    }
+    Transform t;
+    t.Translation = _transform.Translation + allowedTranslation;
+    t.Orientation = _transform.Orientation * allowedRotation;
+    t.Scale = _transform.Scale;
+    SetTransform(t);
+}
+
 void RigidBody::OnCollisionEnter(const Collision& c)
 {
     CollisionEnter(c);
