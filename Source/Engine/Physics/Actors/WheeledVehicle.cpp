@@ -56,9 +56,6 @@ WheeledVehicle::DriveControlSettings WheeledVehicle::GetDriveControl() const
 void WheeledVehicle::SetDriveControl(DriveControlSettings &value)
 {
     // Don't let have an invalid steer vs speed list.
-    if (&value.SteerVsSpeed == nullptr)
-        value.SteerVsSpeed = Array<WheeledVehicle::SteerControl>();
-
     if (value.SteerVsSpeed.Count() < 1)
         value.SteerVsSpeed.Add(WheeledVehicle::SteerControl());
     else // physx backend requires the max of 4 values only
@@ -169,6 +166,20 @@ void WheeledVehicle::SetGearbox(const GearboxSettings &value)
         PhysicsBackend::SetVehicleGearbox(_vehicle, &value);
 #endif
     _gearbox = value;
+}
+
+void WheeledVehicle::SetAntiRollBars(const Array<AntiRollBar> &value)
+{
+    _antiRollBars = value;
+#if WITH_VEHICLE
+    if (_vehicle)
+        PhysicsBackend::UpdateVehicleAntiRollBars(this);
+#endif
+}
+
+const Array<WheeledVehicle::AntiRollBar> &WheeledVehicle::GetAntiRollBars() const
+{
+    return _antiRollBars;
 }
 
 void WheeledVehicle::SetThrottle(float value)
@@ -398,20 +409,24 @@ void WheeledVehicle::OnDebugDrawSelected()
                 DEBUG_DRAW_WIRE_SPHERE(BoundingSphere(data.State.TireContactPoint, 5.0f), Color::Green, 0, false);
             }
         }
-
-        // Draw wheels axes
-        if (wheelIndex % 2 == 0 && wheelIndex + 1 < _wheels.Count())
-        {
-            if (!_wheels[wheelIndex].Collider || !_wheels[wheelIndex + 1].Collider)
-                continue;
-
-            const Vector3 wheelPos = _wheels[wheelIndex].Collider->GetPosition();
-            const Vector3 nextWheelPos = _wheels[wheelIndex + 1].Collider->GetPosition();
-            DEBUG_DRAW_LINE(wheelPos, nextWheelPos, Color::Yellow, 0, false);
-        }
     }
 
-    // Center of mass
+    // Draw anti roll bars axes
+    int wheelsCount = _wheels.Count();
+    for (int i = 0; i < GetAntiRollBars().Count(); i++)
+    {
+        int axleIndex = GetAntiRollBars()[i].Axle;
+        int leftWheelIndex = axleIndex * 2;
+        int rightWheelIndex = leftWheelIndex + 1;
+
+        if (leftWheelIndex >= wheelsCount || rightWheelIndex >= wheelsCount)
+            continue;
+        if (!_wheels[leftWheelIndex].Collider || !_wheels[rightWheelIndex].Collider)
+            continue;
+        
+        DEBUG_DRAW_LINE(_wheels[leftWheelIndex].Collider->GetPosition(), _wheels[rightWheelIndex].Collider->GetPosition(), Color::Yellow, 0, false);
+    }
+        // Center of mass
     DEBUG_DRAW_WIRE_SPHERE(BoundingSphere(_transform.LocalToWorld(_centerOfMassOffset), 10.0f), Color::Blue, 0, false);
 
     RigidBody::OnDebugDrawSelected();
@@ -434,6 +449,7 @@ void WheeledVehicle::Serialize(SerializeStream &stream, const void *otherObj)
     SERIALIZE_MEMBER(Engine, _engine);
     SERIALIZE_MEMBER(Differential, _differential);
     SERIALIZE_MEMBER(Gearbox, _gearbox);
+    SERIALIZE_MEMBER(AntiRollBars, _antiRollBars);
 }
 
 void WheeledVehicle::Deserialize(DeserializeStream &stream, ISerializeModifier *modifier)
@@ -449,6 +465,7 @@ void WheeledVehicle::Deserialize(DeserializeStream &stream, ISerializeModifier *
     DESERIALIZE_MEMBER(Engine, _engine);
     DESERIALIZE_MEMBER(Differential, _differential);
     DESERIALIZE_MEMBER(Gearbox, _gearbox);
+    DESERIALIZE_MEMBER(AntiRollBars, _antiRollBars);
 
     // [Deprecated on 13.06.2023, expires on 13.06.2025]
     _fixInvalidForwardDir |= modifier->EngineBuild < 6341;

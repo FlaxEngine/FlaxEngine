@@ -39,6 +39,7 @@
 #include <ThirdParty/PhysX/vehicle/PxVehicleDriveNW.h>
 #include <ThirdParty/PhysX/vehicle/PxVehicleDriveTank.h>
 #include <ThirdParty/PhysX/vehicle/PxVehicleUtilSetup.h>
+#include <ThirdParty/PhysX/vehicle/PxVehicleComponents.h>
 #include <ThirdParty/PhysX/PxFiltering.h>
 #endif
 #if WITH_CLOTH
@@ -3333,7 +3334,7 @@ PxVehicleSuspensionData CreatePxVehicleSuspensionData(const WheeledVehicle::Whee
     const float suspensionFrequency = 7.0f;
     suspensionData.mMaxCompression = settings.SuspensionMaxRaise;
     suspensionData.mMaxDroop = settings.SuspensionMaxDrop;
-    suspensionData.mSprungMass = wheelSprungMass;
+    suspensionData.mSprungMass = wheelSprungMass * settings.SprungMassMultiplier;
     suspensionData.mSpringStrength = Math::Square(suspensionFrequency) * suspensionData.mSprungMass;
     suspensionData.mSpringDamperRate = settings.SuspensionDampingRate * 2.0f * Math::Sqrt(suspensionData.mSpringStrength * suspensionData.mSprungMass);
     return suspensionData;
@@ -3380,23 +3381,29 @@ PxVehicleAckermannGeometryData CreatePxVehicleAckermannGeometryData(PxVehicleWhe
     return ackermann;
 }
 
-bool SortWheelsFrontToBack(WheeledVehicle::Wheel const& a, WheeledVehicle::Wheel const& b)
+PxVehicleAntiRollBarData CreatePxPxVehicleAntiRollBarData(const WheeledVehicle::AntiRollBar& settings, int leftWheelIndex, int rightWheelIndex)
+{
+    PxVehicleAntiRollBarData antiRollBar;
+    antiRollBar.mWheel0 = leftWheelIndex;
+    antiRollBar.mWheel1 = rightWheelIndex;
+    antiRollBar.mStiffness = settings.Stiffness;
+    return antiRollBar;
+}
+
+bool SortWheelsFrontToBack(WheeledVehicle::Wheel const &a, WheeledVehicle::Wheel const &b)
 {
     return a.Collider && b.Collider && a.Collider->GetLocalPosition().Z > b.Collider->GetLocalPosition().Z;
 }
 
 void* PhysicsBackend::CreateVehicle(WheeledVehicle* actor)
 {
-#if USE_EDITOR
-    if (Editor::IsPlayMode)
-#endif
+    // Physx vehicles needs to have all wheels sorted to apply controls correctly.
+    // Its needs to know what wheels are on front to turn wheel to correctly side
+    // and needs to know wheel side to apply throttle to correctly direction for each track when using tanks.
+    // Anti roll bars needs to have all wheels sorted to get correctly wheel index too.
+    if (actor->_driveType != WheeledVehicle::DriveTypes::NoDrive)
     {
-        // Physx vehicles needs to have all wheels sorted to apply controls correctly.
-        // Its needs to know what wheels are on front to turn wheel to correctly side
-        // and needs to know wheel side to apply throttle to correctly direction for each track when using tanks.
-        
-        if (actor->_driveType == WheeledVehicle::DriveTypes::Drive4W)
-            Sorting::QuickSort(actor->_wheels.Get(), actor->_wheels.Count(), SortWheelsFrontToBack);
+        Sorting::QuickSort(actor->_wheels.Get(), actor->_wheels.Count(), SortWheelsFrontToBack);
 
         // sort wheels by side
         if (actor->_driveType == WheeledVehicle::DriveTypes::Tank)
@@ -3468,7 +3475,8 @@ void* PhysicsBackend::CreateVehicle(WheeledVehicle* actor)
     // TODO: get gravityDirection from scenePhysX->Scene->getGravity()
     PxVehicleComputeSprungMasses(wheels.Count(), offsets, centerOfMassOffset.p, mass, 1, sprungMasses);
     PxVehicleWheelsSimData* wheelsSimData = PxVehicleWheelsSimData::allocate(wheels.Count());
-    for (int32 i = 0; i < wheels.Count(); i++)
+    int wheelsCount = wheels.Count();
+    for (int32 i = 0; i < wheelsCount; i++)
     {
         auto& wheel = *wheels[i];
 
@@ -3513,6 +3521,19 @@ void* PhysicsBackend::CreateVehicle(WheeledVehicle* actor)
             wheelsSimData->setWheelShapeMapping(i, -1);
             wheelsSimData->disableWheel(i);
         }
+    }
+    // Add Anti roll bars for wheels axles
+    for (int i = 0; i < actor->GetAntiRollBars().Count(); i++)
+    {
+        int axleIndex = actor->GetAntiRollBars()[i].Axle;
+        int leftWheelIndex = axleIndex * 2;
+        int rightWheelIndex = leftWheelIndex + 1;
+
+        if (leftWheelIndex >= wheelsCount || rightWheelIndex >= wheelsCount)
+            continue;
+
+        const PxVehicleAntiRollBarData &antiRollBar = CreatePxPxVehicleAntiRollBarData(actor->GetAntiRollBars()[i], leftWheelIndex, rightWheelIndex);
+        wheelsSimData->addAntiRollBarData(antiRollBar);
     }
     for (auto child : actor->Children)
     {
@@ -3673,6 +3694,34 @@ void PhysicsBackend::UpdateVehicleWheels(WheeledVehicle* actor)
         wheelsSimData->setSuspensionData(i, suspensionData);
         wheelsSimData->setTireData(i, tireData);
         wheelsSimData->setWheelData(i, wheelData);
+    }
+}
+
+void PhysicsBackend::UpdateVehicleAntiRollBars(WheeledVehicle *actor)
+{
+    int wheelsCount = actor->_wheels.Count();
+    auto drive = (PxVehicleWheels *)actor->_vehicle;
+    PxVehicleWheelsSimData *wheelsSimData = &drive->mWheelsSimData;
+
+    // Update Anti roll bars for wheels axles
+    for (int i = 0; i < actor->GetAntiRollBars().Count(); i++)
+    {
+        int axleIndex = actor->GetAntiRollBars()[i].Axle;
+        int leftWheelIndex = axleIndex * 2;
+        int rightWheelIndex = leftWheelIndex + 1;
+
+        if (leftWheelIndex >= wheelsCount || rightWheelIndex >= wheelsCount)
+            continue;
+
+        const PxVehicleAntiRollBarData &antiRollBar = CreatePxPxVehicleAntiRollBarData(actor->GetAntiRollBars()[i], leftWheelIndex, rightWheelIndex);
+        if (wheelsSimData->getNbAntiRollBarData() - 1 < i)
+        {
+            wheelsSimData->addAntiRollBarData(antiRollBar);
+        }
+        else
+        {
+            wheelsSimData->setAntiRollBarData(axleIndex, antiRollBar);
+        }
     }
 }
 

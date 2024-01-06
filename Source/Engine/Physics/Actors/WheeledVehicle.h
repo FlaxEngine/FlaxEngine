@@ -307,6 +307,11 @@ API_CLASS(Attributes="ActorContextMenu(\"New/Physics/Wheeled Vehicle\"), ActorTo
         API_FIELD(Attributes="EditorOrder(4)") ScriptingObjectReference<Collider> Collider;
 
         /// <summary>
+        /// Spring sprung mass force multiplier.
+        /// </summary>
+        API_FIELD(Attributes="Limit(0.01f), EditorDisplay(\"Suspension\"), EditorOrder(19)") float SprungMassMultiplier = 1.0f;
+
+        /// <summary>
         /// Spring damper rate of suspension unit.
         /// </summary>
         API_FIELD(Attributes="Limit(0), EditorDisplay(\"Suspension\"), EditorOrder(20)") float SuspensionDampingRate = 1.0f;
@@ -407,6 +412,25 @@ API_CLASS(Attributes="ActorContextMenu(\"New/Physics/Wheeled Vehicle\"), ActorTo
 #endif
     };
 
+    /// <summary>
+    /// Vehicle axle anti roll bar.
+    /// </summary>
+    API_STRUCT() struct AntiRollBar : ISerializable
+    {
+        DECLARE_SCRIPTING_TYPE_MINIMAL(AntiRollBar);
+        API_AUTO_SERIALIZATION();
+
+        /// <summary>
+        /// The specific axle with wheels to apply anti roll.
+        /// </summary>
+        API_FIELD() int Axle;
+
+        /// <summary>
+        /// The anti roll stiffness.
+        /// </summary>
+        API_FIELD() float Stiffness;
+    };
+
 private:
     struct WheelData
     {
@@ -420,7 +444,8 @@ private:
     DriveModes _driveMode = DriveModes::Standard;
     Array<WheelData, FixedAllocation<20>> _wheelsData;
     float _throttle = 0.0f, _steering = 0.0f, _brake = 0.0f, _handBrake = 0.0f, _tankLeftThrottle, _tankRightThrottle, _tankLeftBrake, _tankRightBrake;
-    Array<Wheel> _wheels;
+    Array<WheeledVehicle::Wheel> _wheels;
+    Array<WheeledVehicle::AntiRollBar> _antiRollBars;
     DriveControlSettings _driveControl;
     EngineSettings _engine;
     DifferentialSettings _differential;
@@ -510,6 +535,16 @@ public:
     /// Sets the vehicle gearbox settings.
     /// </summary>
     API_PROPERTY() void SetGearbox(const GearboxSettings& value);
+
+    // <summary>
+    /// Sets axles anti roll bars to increase vehicle estability.
+    /// </summary>
+    API_PROPERTY() void SetAntiRollBars(const Array<AntiRollBar>& value);
+
+    // <summary>
+    /// Gets axles anti roll bars.
+    /// </summary>
+    API_PROPERTY() const Array<AntiRollBar>& GetAntiRollBars() const;
 
 public:
     /// <summary>
