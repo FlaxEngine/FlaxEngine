@@ -129,6 +129,8 @@ public:
         UseDefaultRule = 4,
         InterruptionRuleRechecking = 8,
         InterruptionInstant = 16,
+        InterruptionSourceState = 32,
+        InterruptionDestinationState = 64,
     };
 
 public:
@@ -256,7 +258,10 @@ public:
         uint64 LastUpdateFrame;
         AnimGraphNode* CurrentState;
         AnimGraphStateTransition* ActiveTransition;
+        AnimGraphStateTransition* BaseTransition;
+        AnimGraphNode* BaseTransitionState;
         float TransitionPosition;
+        float BaseTransitionPosition;
     };
 
     struct SlotBucket
@@ -858,7 +863,7 @@ public:
     }
 
     /// <summary>
-    /// Resets all the state bucket used by the given graph including sub-graphs (total). Can eb used to reset the animation state of the nested graph (including children).
+    /// Resets all the state bucket used by the given graph including sub-graphs (total). Can be used to reset the animation state of the nested graph (including children).
     /// </summary>
     void ResetBuckets(AnimGraphContext& context, AnimGraphBase* graph);
 
@@ -887,5 +892,7 @@ private:
     Variant SampleAnimationsWithBlend(AnimGraphNode* node, bool loop, float length, float startTimePos, float prevTimePos, float& newTimePos, Animation* animA, Animation* animB, Animation* animC, float speedA, float speedB, float speedC, float alphaA, float alphaB, float alphaC);
     Variant Blend(AnimGraphNode* node, const Value& poseA, const Value& poseB, float alpha, AlphaBlendMode alphaMode);
     Variant SampleState(AnimGraphNode* state);
+    void InitStateTransition(AnimGraphContext& context, AnimGraphInstanceData::StateMachineBucket& stateMachineBucket, AnimGraphStateTransition* transition = nullptr);
+    AnimGraphStateTransition* UpdateStateTransitions(AnimGraphContext& context, const AnimGraphNode::StateMachineData& stateMachineData, AnimGraphNode* state, AnimGraphNode* ignoreState = nullptr);
     void UpdateStateTransitions(AnimGraphContext& context, const AnimGraphNode::StateMachineData& stateMachineData, AnimGraphInstanceData::StateMachineBucket& stateMachineBucket, const AnimGraphNode::StateBaseData& stateData);
 };
