@@ -45,6 +45,16 @@ WheeledVehicle::DriveControlSettings WheeledVehicle::GetDriveControl() const
 
 void WheeledVehicle::SetDriveControl(DriveControlSettings &value)
 {
+    value.RiseRateAcceleration = Math::Max(value.RiseRateAcceleration, 0.01f);
+    value.RiseRateBrake = Math::Max(value.RiseRateBrake, 0.01f);
+    value.RiseRateHandBrake = Math::Max(value.RiseRateHandBrake, 0.01f);
+    value.RiseRateSteer = Math::Max(value.RiseRateSteer, 0.01f);
+
+    value.FallRateAcceleration = Math::Max(value.FallRateAcceleration, 0.01f);
+    value.FallRateBrake = Math::Max(value.FallRateBrake, 0.01f);
+    value.FallRateHandBrake = Math::Max(value.FallRateHandBrake, 0.01f);
+    value.FallRateSteer = Math::Max(value.FallRateSteer, 0.01f);
+
     // Don't let have an invalid steer vs speed list.
     if (value.SteerVsSpeed.Count() < 1)
         value.SteerVsSpeed.Add(WheeledVehicle::SteerControl());

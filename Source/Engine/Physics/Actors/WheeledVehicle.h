@@ -138,42 +138,42 @@ API_CLASS(Attributes="ActorContextMenu(\"New/Physics/Wheeled Vehicle\"), ActorTo
         /// <summary>
         /// Acceleration input sensitive.
         /// </summary>
-        API_FIELD(Attributes="Limit(0), EditorOrder(10)") float RiseRateAcceleration = 6.0f;
+        API_FIELD(Attributes="EditorOrder(10)") float RiseRateAcceleration = 6.0f;
 
         /// <summary>
         /// Deceleration input sensitive.
         /// </summary>
-        API_FIELD(Attributes="Limit(0), EditorOrder(11)") float FallRateAcceleration = 10.0f;
+        API_FIELD(Attributes="EditorOrder(11)") float FallRateAcceleration = 10.0f;
 
         /// <summary>
         /// Brake input sensitive.
         /// </summary>
-        API_FIELD(Attributes="Limit(0), EditorOrder(12)") float RiseRateBrake = 6.0f;
+        API_FIELD(Attributes="EditorOrder(12)") float RiseRateBrake = 6.0f;
 
         /// <summary>
         /// Release brake sensitive.
         /// </summary>
-        API_FIELD(Attributes="Limit(0), EditorOrder(13)") float FallRateBrake = 10.0f;
+        API_FIELD(Attributes="EditorOrder(13)") float FallRateBrake = 10.0f;
 
         /// <summary>
         /// Brake input sensitive.
         /// </summary>
-        API_FIELD(Attributes="Limit(0), EditorOrder(14)") float RiseRateHandBrake = 12.0f;
+        API_FIELD(Attributes="EditorOrder(14)") float RiseRateHandBrake = 12.0f;
 
         /// <summary>
         /// Release handbrake sensitive.
         /// </summary>
-        API_FIELD(Attributes="Limit(0), EditorOrder(15)") float FallRateHandBrake = 12.0f;
+        API_FIELD(Attributes="EditorOrder(15)") float FallRateHandBrake = 12.0f;
 
         /// <summary>
         /// Steer input sensitive.
         /// </summary>
-        API_FIELD(Attributes="Limit(0), EditorOrder(16)") float RiseRateSteer = 2.5f;
+        API_FIELD(Attributes="EditorOrder(16)") float RiseRateSteer = 2.5f;
 
         /// <summary>
         /// Release steer input sensitive.
         /// </summary>
-        API_FIELD(Attributes="Limit(0), EditorOrder(17)") float FallRateSteer = 5.0f;
+        API_FIELD(Attributes="EditorOrder(17)") float FallRateSteer = 5.0f;
 
         /// <summary>
         /// Vehicle control relationship between speed and steer. The higher is the speed, 
