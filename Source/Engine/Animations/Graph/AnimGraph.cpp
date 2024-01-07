@@ -39,6 +39,7 @@ void AnimGraphImpulse::SetNodeModelTransformation(SkeletonData& skeleton, int32 
 void AnimGraphInstanceData::Clear()
 {
     ClearState();
+    Slots.Clear();
     Parameters.Resize(0);
 }
 
@@ -55,7 +56,6 @@ void AnimGraphInstanceData::ClearState()
     RootMotion = Transform::Identity;
     State.Resize(0);
     NodesPose.Resize(0);
-    Slots.Clear();
     TraceEvents.Clear();
 }
 
