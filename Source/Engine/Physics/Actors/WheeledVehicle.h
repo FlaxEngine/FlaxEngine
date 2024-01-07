@@ -131,6 +131,11 @@ API_CLASS(Attributes="ActorContextMenu(\"New/Physics/Wheeled Vehicle\"), ActorTo
         API_AUTO_SERIALIZATION();
 
         /// <summary>
+        /// Gets or sets the drive mode, used by vehicles specify the way of the tracks control.
+        /// </summary>
+        API_FIELD(Attributes="EditorOrder(0), EditorDisplay(\"Tanks\")") WheeledVehicle::DriveModes DriveMode;
+
+        /// <summary>
         /// Acceleration input sensitive.
         /// </summary>
         API_FIELD(Attributes="Limit(0), EditorOrder(10)") float RiseRateAcceleration = 6.0f;
@@ -441,7 +446,6 @@ private:
 
     void* _vehicle = nullptr;
     DriveTypes _driveType = DriveTypes::Drive4W, _driveTypeCurrent;
-    DriveModes _driveMode = DriveModes::Standard;
     Array<WheelData, FixedAllocation<20>> _wheelsData;
     float _throttle = 0.0f, _steering = 0.0f, _brake = 0.0f, _handBrake = 0.0f, _tankLeftThrottle, _tankRightThrottle, _tankLeftBrake, _tankRightBrake;
     Array<WheeledVehicle::Wheel> _wheels;
@@ -475,16 +479,6 @@ public:
     /// Sets the vehicle driving model type.
     /// </summary>
     API_PROPERTY() void SetDriveType(DriveTypes value);
-
-    /// <summary>
-    /// Used only for tanks, set the drive mode.
-    /// </summary>
-    API_PROPERTY() void SetDriveMode(DriveModes value);
-
-    /// <summary>
-    /// Gets the vehicle driving mode. Used only on tanks
-    /// </summary>
-    API_PROPERTY(Attributes="EditorOrder(3), EditorDisplay(\"Vehicle\")") DriveModes GetDriveMode() const;
 
     /// <summary>
     /// Gets the vehicle wheels settings.

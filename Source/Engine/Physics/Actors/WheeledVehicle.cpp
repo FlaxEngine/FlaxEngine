@@ -33,16 +33,6 @@ void WheeledVehicle::SetDriveType(DriveTypes value)
     Setup();
 }
 
-void WheeledVehicle::SetDriveMode(DriveModes value)
-{
-    _driveMode = value;
-}
-
-WheeledVehicle::DriveModes WheeledVehicle::GetDriveMode() const
-{
-    return _driveMode;
-}
-
 const Array<WheeledVehicle::Wheel> &WheeledVehicle::GetWheels() const
 {
     return _wheels;
@@ -441,7 +431,6 @@ void WheeledVehicle::Serialize(SerializeStream &stream, const void *otherObj)
     SERIALIZE_GET_OTHER_OBJ(WheeledVehicle);
 
     SERIALIZE_MEMBER(DriveType, _driveType);
-    SERIALIZE_MEMBER(DriveModes, _driveMode);
     SERIALIZE_MEMBER(Wheels, _wheels);
     SERIALIZE_MEMBER(DriveControl, _driveControl);
     SERIALIZE(UseReverseAsBrake);
@@ -457,7 +446,6 @@ void WheeledVehicle::Deserialize(DeserializeStream &stream, ISerializeModifier *
     RigidBody::Deserialize(stream, modifier);
 
     DESERIALIZE_MEMBER(DriveType, _driveType);
-    DESERIALIZE_MEMBER(DriveModes, _driveMode);
     DESERIALIZE_MEMBER(Wheels, _wheels);
     DESERIALIZE_MEMBER(DriveControl, _driveControl);
     DESERIALIZE(UseReverseAsBrake);

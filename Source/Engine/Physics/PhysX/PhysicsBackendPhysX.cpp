@@ -1397,7 +1397,7 @@ void PhysicsBackend::EndSimulateScene(void* scene)
             float leftBrake = Math::Max(wheelVehicle->_tankLeftBrake, wheelVehicle->_handBrake);
             float rightBrake = Math::Max(wheelVehicle->_tankRightBrake, wheelVehicle->_handBrake);
 
-            WheeledVehicle::DriveModes vehicleDriveMode = wheelVehicle->_driveMode;
+            WheeledVehicle::DriveModes vehicleDriveMode = wheelVehicle->_driveControl.DriveMode;
 
             if (isTank)
             {
