@@ -138,7 +138,7 @@ namespace FlaxEditor.GUI.ContextMenu
             if (!string.IsNullOrEmpty(ShortKeys))
             {
                 // Draw short keys
-                Render2D.DrawText(style.FontMedium, ShortKeys, new Rectangle(ExtraAdjustmentAmount, textRect.Y, textRect.Width, textRect.Height), textColor, TextAlignment.Far, TextAlignment.Center);
+                Render2D.DrawText(style.FontMedium, ShortKeys, new Rectangle(textRect.X + ExtraAdjustmentAmount, textRect.Y, textRect.Width, textRect.Height), textColor, TextAlignment.Far, TextAlignment.Center);
             }
 
             // Draw icon
