@@ -296,7 +296,7 @@ namespace Flax.Build.Projects.VisualStudio
                     var folderIdMatches = new Regex("Project\\(\"{2150E333-8FDC-42A3-9474-1A3956D46DE8}\"\\) = \"(.*?)\", \"(.*?)\", \"{(.*?)}\"").Matches(contents);
                     foreach (Match match in folderIdMatches)
                     {
-                        var folder = match.Groups[1].Value;
+                        var folder = match.Groups[2].Value;
                         var folderId = Guid.ParseExact(match.Groups[3].Value, "D");
                         folderIds[folder] = folderId;
                     }
@@ -385,8 +385,7 @@ namespace Flax.Build.Projects.VisualStudio
                         {
                             if (!folderIds.TryGetValue(folderPath, out project.FolderGuid))
                             {
-                                if (!folderIds.TryGetValue(folderParents[i], out project.FolderGuid))
-                                    project.FolderGuid = Guid.NewGuid();
+                                project.FolderGuid = Guid.NewGuid();
                                 folderIds.Add(folderPath, project.FolderGuid);
                             }
                             folderNames.Add(folderPath);
@@ -401,7 +400,7 @@ namespace Flax.Build.Projects.VisualStudio
                     var lastSplit = folder.LastIndexOf('\\');
                     var name = lastSplit != -1 ? folder.Substring(lastSplit + 1) : folder;
 
-                    vcSolutionFileContent.AppendLine(string.Format("Project(\"{0}\") = \"{1}\", \"{2}\", \"{3}\"", typeGuid, name, name, folderGuid));
+                    vcSolutionFileContent.AppendLine(string.Format("Project(\"{0}\") = \"{1}\", \"{2}\", \"{3}\"", typeGuid, name, folder, folderGuid));
                     vcSolutionFileContent.AppendLine("EndProject");
                 }
             }
