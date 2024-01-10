@@ -19,7 +19,8 @@ namespace FlaxEditor.SceneGraph.Actors
     [CustomEditor(typeof(BoxCollider)), DefaultEditor]
     public class BoxColliderEditor : ActorEditor
     {
-        private bool _keepLocalOrientation = false;
+        private bool _keepLocalOrientation = true;
+
         /// <inheritdoc />
         public override void Initialize(LayoutElementsContainer layout)
         {
