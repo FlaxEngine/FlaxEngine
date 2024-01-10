@@ -3985,15 +3985,32 @@ void Variant::CopyStructure(void* src)
 {
     if (AsBlob.Data && src)
     {
-        const ScriptingTypeHandle typeHandle = Scripting::FindScriptingType(StringAnsiView(Type.TypeName));
+        const StringAnsiView typeName(Type.TypeName);
+        const ScriptingTypeHandle typeHandle = Scripting::FindScriptingType(typeName);
         if (typeHandle)
         {
             auto& type = typeHandle.GetType();
             type.Struct.Copy(AsBlob.Data, src);
         }
+#if USE_CSHARP
+        else if (const auto mclass = Scripting::FindClass(typeName))
+        {
+            // Fallback to C#-only types
+            MCore::Thread::Attach();
+            if (MANAGED_GC_HANDLE && mclass->IsValueType())
+            {
+                MObject* instance = MCore::GCHandle::GetTarget(MANAGED_GC_HANDLE);
+                void* data = MCore::Object::Unbox(instance);
+                Platform::MemoryCopy(data, src, mclass->GetInstanceSize());
+            }
+        }
+#endif
         else
         {
-            Platform::MemoryCopy(AsBlob.Data, src, AsBlob.Length);
+            if (typeName.Length() != 0)
+            {
+                LOG(Warning, "Missing scripting type \'{0}\'", String(typeName));
+            }
         }
     }
 }
