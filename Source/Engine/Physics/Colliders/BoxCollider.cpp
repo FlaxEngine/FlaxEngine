@@ -20,7 +20,7 @@ void BoxCollider::SetSize(const Float3& value)
     UpdateBounds();
 }
 
-void BoxCollider::AutoResize()
+void BoxCollider::AutoResize(bool globalOrientation = true)
 {
     Actor* parent = GetParent();
     if (Cast<Scene>(parent))
@@ -43,7 +43,8 @@ void BoxCollider::AutoResize()
     SetLocalPosition(Vector3::Zero);
     SetSize(parentSize / parentScale);
     SetCenter(parentCenter / parentScale);
-    SetOrientation(GetOrientation() * Quaternion::Invert(GetOrientation()));
+    if (globalOrientation)
+        SetOrientation(GetOrientation() * Quaternion::Invert(GetOrientation()));
 }
 
 #if USE_EDITOR
