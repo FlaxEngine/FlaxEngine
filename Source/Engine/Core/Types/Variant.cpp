@@ -139,6 +139,24 @@ VariantType::VariantType(const StringAnsiView& typeName)
             return;
         }
     }
+    {
+        // Aliases
+        if (typeName == "FlaxEngine.Vector2")
+        {
+            new(this) VariantType(Vector2);
+            return;
+        }
+        if (typeName == "FlaxEngine.Vector3")
+        {
+            new(this) VariantType(Vector3);
+            return;
+        }
+        if (typeName == "FlaxEngine.Vector4")
+        {
+            new(this) VariantType(Vector4);
+            return;
+        }
+    }
 
     // Check case for array
     if (typeName.EndsWith(StringAnsiView("[]"), StringSearchCase::CaseSensitive))
