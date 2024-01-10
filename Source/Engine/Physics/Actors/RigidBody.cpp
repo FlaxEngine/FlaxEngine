@@ -304,33 +304,31 @@ void RigidBody::AddMovement(const Vector3& translation, const Quaternion& rotati
 {
     // filter rotation according to constraints
     Quaternion allowedRotation;
-    if (static_cast<unsigned int>(GetConstraints()) & static_cast<unsigned int>(RigidbodyConstraints::LockRotation))
+    if (EnumHasAllFlags(GetConstraints(), RigidbodyConstraints::LockRotation))
         allowedRotation = Quaternion::Identity;
     else
     {
         Float3 euler = rotation.GetEuler();
-        const auto constraints = static_cast<unsigned int>(GetConstraints());
-        if (constraints & static_cast<unsigned int>(RigidbodyConstraints::LockRotationX))
+        if (EnumHasAnyFlags(GetConstraints(), RigidbodyConstraints::LockRotationX))
             euler.X = 0;
-        if (constraints & static_cast<unsigned int>(RigidbodyConstraints::LockRotationY))
+        if (EnumHasAnyFlags(GetConstraints(), RigidbodyConstraints::LockRotationY))
             euler.Y = 0;
-        if (constraints & static_cast<unsigned int>(RigidbodyConstraints::LockRotationZ))
+        if (EnumHasAnyFlags(GetConstraints(), RigidbodyConstraints::LockRotationZ))
             euler.Z = 0;
         allowedRotation = Quaternion::Euler(euler);
     }
 
     // filter translation according to the constraints
     auto allowedTranslation = translation;
-    if (static_cast<unsigned int>(GetConstraints()) & static_cast<unsigned int>(RigidbodyConstraints::LockPosition))
+    if (EnumHasAllFlags(GetConstraints(), RigidbodyConstraints::LockPosition))
         allowedTranslation = Vector3::Zero;
     else
     {
-        const auto constraints = static_cast<unsigned int>(GetConstraints());
-        if (constraints & static_cast<unsigned int>(RigidbodyConstraints::LockPositionX))
+        if (EnumHasAnyFlags(GetConstraints(), RigidbodyConstraints::LockPositionX))
             allowedTranslation.X = 0;
-        if (constraints & static_cast<unsigned int>(RigidbodyConstraints::LockPositionY))
+        if (EnumHasAnyFlags(GetConstraints(), RigidbodyConstraints::LockPositionY))
             allowedTranslation.Y = 0;
-        if (constraints & static_cast<unsigned int>(RigidbodyConstraints::LockPositionZ))
+        if (EnumHasAnyFlags(GetConstraints(), RigidbodyConstraints::LockPositionZ))
             allowedTranslation.Z = 0;
     }
     Transform t;
