@@ -430,12 +430,6 @@ public:
     /// <param name="result">The result point on the rigidbody shape that is closest to the specified location.</param>
     API_FUNCTION() void ClosestPoint(const Vector3& position, API_PARAM(Out) Vector3& result) const;
 
-    /// <summary>
-    /// Moves and rotates the rigidbody in world space within the limits of defined constraints.
-    /// </summary>
-    /// <param name="translation">The translation vector.</param>
-    /// <param name="rotation">The rotation quaternion.</param>
-    API_FUNCTION() void AddMovement(const Vector3& translation, const Quaternion& rotation) override;
 public:
     /// <summary>
     /// Occurs when a collision start gets registered for this rigidbody (it collides with something).
@@ -492,6 +486,7 @@ public:
     // [Actor]
     void Serialize(SerializeStream& stream, const void* otherObj) override;
     void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) override;
+    void AddMovement(const Vector3& translation, const Quaternion& rotation) override;
 
     // [IPhysicsActor]
     void* GetPhysicsActor() const override;
