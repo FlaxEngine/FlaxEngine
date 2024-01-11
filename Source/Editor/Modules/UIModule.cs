@@ -535,6 +535,7 @@ namespace FlaxEditor.Modules
             _menuFileRecompileScripts = cm.AddButton("Recompile scripts", inputOptions.RecompileScripts, ScriptsBuilder.Compile);
             cm.AddSeparator();
             cm.AddButton("Open project...", OpenProject);
+            cm.AddButton("Reload project", ReloadProject);
             cm.AddSeparator();
             cm.AddButton("Exit", "Alt+F4", () => Editor.Windows.MainWindow.Close(ClosingReason.User));
 
@@ -820,6 +821,13 @@ namespace FlaxEditor.Modules
             {
                 Editor.OpenProject(files[0]);
             }
+        }
+
+        private void ReloadProject()
+        {
+            // Open project, then close it
+            Editor.OpenProject(Editor.GameProject.ProjectPath);
+            Editor.Windows.MainWindow.Close(ClosingReason.User);
         }
 
         private void OnMenuFileShowHide(Control control)
