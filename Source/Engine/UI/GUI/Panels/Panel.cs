@@ -132,6 +132,22 @@ namespace FlaxEngine.GUI
                 if (_alwaysShowScrollbars != value)
                 {
                     _alwaysShowScrollbars = value;
+                    switch (_scrollBars)
+                    {
+                    case ScrollBars.None:
+                        break;
+                    case ScrollBars.Horizontal:
+                        HScrollBar.Enabled = true;
+                        break;
+                    case ScrollBars.Vertical:
+                        VScrollBar.Enabled = true;
+                        break;
+                    case ScrollBars.Both:
+                        HScrollBar.Enabled = true;
+                        VScrollBar.Enabled = true;
+                        break;
+                    default: break;
+                    }
                     PerformLayout();
                 }
             }
