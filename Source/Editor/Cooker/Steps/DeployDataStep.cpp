@@ -229,6 +229,8 @@ bool DeployDataStep::Perform(CookingData& data)
                         srcDotnetLibs /= TEXT("../lib/net8.0");
                     }
                 }
+                LOG(Info, "Copying .NET files from {} to {}", packFolder, dstDotnet);
+                LOG(Info, "Copying .NET files from {} to {}", srcDotnetLibs, dstDotnetLibs);
                 FileSystem::CopyFile(dstDotnet / TEXT("LICENSE.TXT"), packFolder / TEXT("LICENSE.txt"));
                 FileSystem::CopyFile(dstDotnet / TEXT("LICENSE.TXT"), packFolder / TEXT("LICENSE.TXT"));
                 FileSystem::CopyFile(dstDotnet / TEXT("THIRD-PARTY-NOTICES.TXT"), packFolder / TEXT("ThirdPartyNotices.txt"));

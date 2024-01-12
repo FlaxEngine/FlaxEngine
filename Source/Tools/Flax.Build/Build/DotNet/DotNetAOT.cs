@@ -309,7 +309,7 @@ namespace Flax.Build
                 // Peek class library folder
                 var coreLibPaths = Directory.GetFiles(aotAssembliesPath, "System.Private.CoreLib.dll", SearchOption.AllDirectories);
                 if (coreLibPaths.Length != 1)
-                    throw new Exception("Invalid C# class library setup in " + aotAssembliesPath);
+                    throw new Exception($"Invalid C# class library setup in '{aotAssembliesPath}' (missing C# dll files)");
                 var dotnetLibPath = Utilities.NormalizePath(Path.GetDirectoryName(coreLibPaths[0]));
                 Log.Info("Class library found in: " + dotnetLibPath);
 

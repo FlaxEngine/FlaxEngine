@@ -30,6 +30,7 @@ namespace Flax.Deps.Dependencies
                     return new[]
                     {
                         TargetPlatform.PS4,
+                        TargetPlatform.Switch,
                     };
                 case TargetPlatform.Linux:
                     return new[]
@@ -254,7 +255,8 @@ namespace Flax.Deps.Dependencies
             Utilities.Run("cmake", "--version", null, null, Utilities.RunOptions.ThrowExceptionOnError);
 
             // Get the source
-            CloneGitRepo(root, "https://github.com/FlaxEngine/dotnet-runtime.git", "flax-master", null, true);
+            CloneGitRepo(root, "https://github.com/FlaxEngine/dotnet-runtime.git", null, null, true);
+            GitCheckout(root, "flax-master");
             SetupDirectory(Path.Combine(root, "src", "external"), false);
 
             /*
@@ -283,6 +285,9 @@ namespace Flax.Deps.Dependencies
                     Build(options, platform, TargetArchitecture.x64);
                     break;
                 case TargetPlatform.Android:
+                    Build(options, platform, TargetArchitecture.ARM64);
+                    break;
+                case TargetPlatform.Switch:
                     Build(options, platform, TargetArchitecture.ARM64);
                     break;
                 }

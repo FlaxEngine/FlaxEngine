@@ -140,11 +140,8 @@ namespace Flax.Deps
                 if (submodules)
                     Utilities.Run("git", "submodule update --init --recursive", null, null, Utilities.RunOptions.DefaultTool);
             }
-
             if (commit != null)
-            {
                 Utilities.Run("git", string.Format("reset --hard {0}", commit), null, null, Utilities.RunOptions.DefaultTool);
-            }
         }
 
         /// <summary>
