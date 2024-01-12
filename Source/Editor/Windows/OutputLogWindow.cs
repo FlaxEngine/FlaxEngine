@@ -276,7 +276,9 @@ namespace FlaxEditor.Windows
                 _output.DefaultStyle.Font == options.Interface.OutputLogTextFont &&
                 _output.DefaultStyle.Color == options.Interface.OutputLogTextColor &&
                 _output.DefaultStyle.ShadowColor == options.Interface.OutputLogTextShadowColor &&
-                _output.DefaultStyle.ShadowOffset == options.Interface.OutputLogTextShadowOffset)
+                _output.DefaultStyle.ShadowOffset == options.Interface.OutputLogTextShadowOffset &&
+                _output.WarningStyle.Color == options.Interface.OutputLogWarningTextColor &&
+                _output.ErrorStyle.Color == options.Interface.OutputLogErrorTextColor)
                 return;
 
             _output.DefaultStyle = new TextBlockStyle
@@ -287,10 +289,11 @@ namespace FlaxEditor.Windows
                 ShadowOffset = options.Interface.OutputLogTextShadowOffset,
                 BackgroundSelectedBrush = new SolidColorBrush(Style.Current.BackgroundSelected),
             };
+
             _output.WarningStyle = _output.DefaultStyle;
-            _output.WarningStyle.Color = Color.Yellow;
+            _output.WarningStyle.Color = options.Interface.OutputLogWarningTextColor;
             _output.ErrorStyle = _output.DefaultStyle;
-            _output.ErrorStyle.Color = Color.Red;
+            _output.ErrorStyle.Color = options.Interface.OutputLogErrorTextColor;
 
             _timestampsFormats = options.Interface.OutputLogTimestampsFormat;
             _showLogType = options.Interface.OutputLogShowLogType;
