@@ -650,7 +650,10 @@ namespace FlaxEditor.SceneGraph.GUI
                         }
                     }
                     actor.Name = item.ShortName;
-                    actor.Transform = spawnParent.Transform;
+                    if (_dragAssets.Objects[i] is PrefabItem p)
+                        actor.Transform = spawnParent.Transform + actor.Transform;
+                    else
+                        actor.Transform = spawnParent.Transform;
                     ActorNode.Root.Spawn(actor, spawnParent);
                     actor.OrderInParent = newOrder;
                 }
