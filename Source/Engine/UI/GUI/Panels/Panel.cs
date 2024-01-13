@@ -137,14 +137,14 @@ namespace FlaxEngine.GUI
                     case ScrollBars.None:
                         break;
                     case ScrollBars.Horizontal:
-                        HScrollBar.Enabled = true;
+                        HScrollBar.Visible = value;
                         break;
                     case ScrollBars.Vertical:
-                        VScrollBar.Enabled = true;
+                        VScrollBar.Visible = value;
                         break;
                     case ScrollBars.Both:
-                        HScrollBar.Enabled = true;
-                        VScrollBar.Enabled = true;
+                        HScrollBar.Visible = value;
+                        VScrollBar.Visible = value;
                         break;
                     default: break;
                     }
