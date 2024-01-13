@@ -671,11 +671,11 @@ namespace FlaxEditor.Windows
             Editor.Log($"Using plugin code type name: {pluginCodeName}");
 
             var oldPluginPath = Path.Combine(extractPath, "ExamplePlugin-master");
-            var newPluginPath = Path.Combine(extractPath, pluginName);
+            var newPluginPath = Path.Combine(extractPath, pluginCodeName);
             Directory.Move(oldPluginPath, newPluginPath);
 
             var oldFlaxProjFile = Path.Combine(newPluginPath, "ExamplePlugin.flaxproj");
-            var newFlaxProjFile = Path.Combine(newPluginPath, $"{pluginName}.flaxproj");
+            var newFlaxProjFile = Path.Combine(newPluginPath, $"{pluginCodeName}.flaxproj");
             File.Move(oldFlaxProjFile, newFlaxProjFile);
 
             var readme = Path.Combine(newPluginPath, "README.md");
@@ -687,7 +687,7 @@ namespace FlaxEditor.Windows
 
             // Flax plugin project file
             var flaxPluginProjContents = JsonSerializer.Deserialize<ProjectInfo>(await File.ReadAllTextAsync(newFlaxProjFile));
-            flaxPluginProjContents.Name = pluginName;
+            flaxPluginProjContents.Name = pluginCodeName;
             if (!string.IsNullOrEmpty(pluginVersion))
                 flaxPluginProjContents.Version = new Version(pluginVersion);
             if (!string.IsNullOrEmpty(companyName))
@@ -751,7 +751,7 @@ namespace FlaxEditor.Windows
             }
             Editor.Log($"Plugin project {pluginName} has successfully been created.");
 
-            await AddReferenceToProject(pluginName, pluginName);
+            await AddReferenceToProject(pluginCodeName, pluginCodeName);
             MessageBox.Show($"{pluginName} has been successfully created. Restart editor for changes to take effect.", "Plugin Project Created", MessageBoxButtons.OK);
         }
 
