@@ -26,6 +26,7 @@ API_CLASS(Attributes="ActorContextMenu(\"New/Physics/Wheeled Vehicle\"), ActorTo
         DriveNW,
         // Non-drivable vehicle.
         NoDrive,
+        // Tank Drive. Can have more than 4 wheel. Not use steer, control acceleration for each tank track.
         Tank,
     };
     /// <summary>
@@ -447,7 +448,7 @@ private:
     void* _vehicle = nullptr;
     DriveTypes _driveType = DriveTypes::Drive4W, _driveTypeCurrent;
     Array<WheelData, FixedAllocation<20>> _wheelsData;
-    float _throttle = 0.0f, _steering = 0.0f, _brake = 0.0f, _handBrake = 0.0f, _tankLeftThrottle, _tankRightThrottle, _tankLeftBrake, _tankRightBrake;
+    float _throttle = 0.0f, _steering = 0.0f, _brake = 0.0f, _handBrake = 0.0f, _tankLeftThrottle = 0.0f, _tankRightThrottle = 0.0f, _tankLeftBrake = 0.0f, _tankRightBrake = 0.0f;
     Array<WheeledVehicle::Wheel> _wheels;
     Array<WheeledVehicle::AntiRollBar> _antiRollBars;
     DriveControlSettings _driveControl;
