@@ -95,6 +95,7 @@ namespace FlaxEditor.Windows
                     Bounds = new Rectangle(nameLabel.X, tmp1, nameLabel.Width, Height - tmp1 - margin),
                 };
 
+                var xOffset = nameLabel.X + nameLabel.Width;
                 string versionString = string.Empty;
                 if (desc.IsAlpha)
                     versionString = "ALPHA ";
@@ -109,7 +110,7 @@ namespace FlaxEditor.Windows
                     AnchorPreset = AnchorPresets.TopRight,
                     Text = versionString,
                     Parent = this,
-                    Bounds = new Rectangle(Width - 140 - margin, margin, 140, 14),
+                    Bounds = new Rectangle(Width - 140 - margin - xOffset, margin, 140, 14),
                 };
 
                 string url = null;
@@ -129,7 +130,7 @@ namespace FlaxEditor.Windows
                     AnchorPreset = AnchorPresets.TopRight,
                     Text = desc.Author,
                     Parent = this,
-                    Bounds = new Rectangle(Width - authorWidth - margin, versionLabel.Bottom + margin, authorWidth, 14),
+                    Bounds = new Rectangle(Width - authorWidth - margin - xOffset, versionLabel.Bottom + margin, authorWidth, 14),
                 };
                 if (url != null)
                 {
