@@ -1891,6 +1891,13 @@ void OnLogCallback(const char* logDomain, const char* logLevel, const char* mess
     {
         LOG(Info, "Message: {0} | Domain: {1}", msg, currentDomain);
     }
+#if DOTNET_HOST_MONO && !BUILD_RELEASE
+    if (errorLevel <= 2)
+    {
+        // Mono backend ends with fatal assertions so capture crash info (eg. stack trace)
+        CRASH;
+    }
+#endif
 }
 
 void OnPrintCallback(const char* string, mono_bool isStdout)

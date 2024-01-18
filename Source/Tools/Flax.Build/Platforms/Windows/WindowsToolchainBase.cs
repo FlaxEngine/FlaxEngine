@@ -633,6 +633,7 @@ namespace Flax.Build.Platforms
                 var pchSourceFile = Path.Combine(options.IntermediateFolder, Path.ChangeExtension(pchFilName, "cpp"));
                 var contents = Bindings.BindingsGenerator.GetStringBuilder();
                 contents.AppendLine("// This code was auto-generated. Do not modify it.");
+                // TODO: write compiler version to properly rebuild pch on Visual Studio updates
                 contents.Append("// Compiler: ").AppendLine(_compilerPath);
                 contents.Append("#include \"").Append(pchSource).AppendLine("\"");
                 Utilities.WriteFileIfChanged(pchSourceFile, contents.ToString());
