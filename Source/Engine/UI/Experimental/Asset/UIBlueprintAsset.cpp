@@ -1,3 +1,6 @@
+//                                                        UI System
+//                                                    writen by Nori_SC
+//                                                https://github.com/NoriteSC
 #include "UIBlueprintAsset.h"
 #include "Engine/Serialization/JsonTools.h"
 #include "Engine/Content/Content.h"
@@ -40,18 +43,6 @@ void UIBlueprintAsset::OnGetData(rapidjson_flax::StringBuffer& buffer) const
     Final.JKEY("Tree");
     Final.RawValue(dataBuffer.GetString(), (int32)dataBuffer.GetSize());
     Final.EndObject();
-
-    //const auto TypeNames = SERIALIZE_FIND_MEMBER(Document, "TypeNames");
-    //if (TypeNames != Document.MemberEnd())
-    //{
-    //    const auto elements = TypeNames->value.GetArray();
-    //    ISerializable::SerializeStream& stream = (ISerializable::SerializeStream&)TypeNames->value.GetArray();
-    //    for (unsigned int i = 0; i < elements.Size(); i++)
-    //    {
-    //        stream.String(Types[i]);
-    //    }
-    //    //TypeNames->value Types
-    //}
 }
 Asset::LoadResult UIBlueprintAsset::loadAsset()
 {
@@ -89,42 +80,7 @@ Asset::LoadResult UIBlueprintAsset::loadAsset()
     }
     return result;
 }
-//void UIBlueprintAsset::DeseralizeSlots(ISerializable::DeserializeStream& obj, ISerializeModifier* modifier, UIPanelComponent* parent)
-//{
-//    
-//    const auto e = SERIALIZE_FIND_MEMBER(obj, "TypeName");
-//    if (e != obj.MemberEnd())
-//    {
-//        auto klass = Scripting::FindScriptingType(e->value.GetString());
-//        if (klass)
-//        {
-//            auto so = ScriptingObject::NewObject(klass);
-//            auto component = ScriptingObject::Cast<UIComponent>(so);
-//            if (component)
-//            {
-//                if (parent)
-//                {
-//                    component->Deserialize(obj, modifier);
-//                    parent->AddChild(component);
-//                }
-//                const auto e = obj.FindMember(rapidjson_flax::Value("Slots", (sizeof("Slots") / sizeof("Slots"[0])) - 1));
-//
-//                if (e != obj.MemberEnd())
-//                {
-//                    auto panelComponent = ScriptingObject::Cast<UIPanelComponent>(so);
-//                    if (panelComponent)
-//                    {
-//                        auto ar = e->value.GetArray();
-//                        for (unsigned int i = 0; i < ar.Size(); i++)
-//                        {
-//                            DeseralizeSlots((ISerializable::DeserializeStream)ar[i].GetObject(), modifier, panelComponent);
-//                        }
-//                    }
-//                }
-//            }
-//        }
-//    }
-//}
+
 void UIBlueprintAsset::unload(bool isReloading)
 {
     // Base

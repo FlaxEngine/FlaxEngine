@@ -1,3 +1,6 @@
+//                                                        UI System
+//                                                    writen by Nori_SC
+//                                                https://github.com/NoriteSC
 #include "Engine/UI/Experimental/Types/UIComponent.h"
 #include "Engine/UI/Experimental/Types/UIPanelSlot.h"
 #include "Engine/UI/Experimental/Types/UIPanelOrderedSlot.h"

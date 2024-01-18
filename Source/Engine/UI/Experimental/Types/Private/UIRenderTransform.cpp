@@ -1,4 +1,6 @@
-// Writen by Nori_SC
+//                                                        UI System
+//                                                    writen by Nori_SC
+//                                                https://github.com/NoriteSC
 
 #include "Engine/Render2D/Render2D.h"
 #include "Engine/Core/Math/Rectangle.h"

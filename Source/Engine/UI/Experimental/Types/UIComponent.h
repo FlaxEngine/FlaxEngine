@@ -1,8 +1,9 @@
-// Writen by Nori_SC
+//                                                        UI System
+//                                                    writen by Nori_SC
+//                                                https://github.com/NoriteSC
 #pragma once
 #include "Engine/Platform/Base/WindowBase.h"
 #include "Engine/Core/Math/Rectangle.h"
-#include "Engine/Core/Math/Matrix3x3.h"
 #include "Engine/Core/Math/Vector2.h"
 #include "Engine/Scripting/ScriptingObject.h"
 #include "Engine/Scripting/ScriptingType.h"
@@ -28,8 +29,6 @@ private:
 protected:
 
     UIComponentClipping Clipping;
-    Matrix3x3 CachedTransform;
-    Matrix3x3 CachedTransformInv;
 
     /// <summary>
     /// name of UIComponent can be empty

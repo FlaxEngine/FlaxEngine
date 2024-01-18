@@ -1,4 +1,6 @@
-// Writen by Nori_SC
+//                                                        UI System
+//                                                    writen by Nori_SC
+//                                                https://github.com/NoriteSC
 #include "Engine/Scripting/ScriptingObject.h"
 #include "Engine/UI/Experimental/Types/UIPanelSlot.h"
 #include "Engine/UI/Experimental/Types/UIComponent.h"
