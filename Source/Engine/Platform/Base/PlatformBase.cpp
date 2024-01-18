@@ -269,7 +269,6 @@ void PlatformBase::Fatal(const Char* msg, void* context)
     Globals::ExitCode = -1;
 
     // Collect crash info (platform-dependant implementation that might collect stack trace and/or create memory dump)
-    if (Log::Logger::LogFilePath.HasChars())
     {
         // Log separation for crash info
         Log::Logger::WriteFloor();
@@ -320,7 +319,9 @@ void PlatformBase::Fatal(const Char* msg, void* context)
             LOG(Error, "Process Used Physical Memory: {0}", Utilities::BytesToText(processMemoryStats.UsedPhysicalMemory));
             LOG(Error, "Process Used Virtual Memory: {0}", Utilities::BytesToText(processMemoryStats.UsedVirtualMemory));
         }
-
+    }
+    if (Log::Logger::LogFilePath.HasChars())
+    {
         // Create separate folder with crash info
         const String crashDataFolder = String(StringUtils::GetDirectoryName(Log::Logger::LogFilePath)) / TEXT("Crash_") + StringUtils::GetFileNameWithoutExtension(Log::Logger::LogFilePath).Substring(4);
         FileSystem::CreateDirectory(crashDataFolder);
