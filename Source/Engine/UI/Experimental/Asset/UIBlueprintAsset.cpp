@@ -24,7 +24,7 @@ void UIBlueprintAsset::OnGetData(rapidjson_flax::StringBuffer& buffer) const
     rapidjson_flax::StringBuffer dataBuffer;
     PrettyJsonWriter writerObj(dataBuffer);
     ISerializable::SerializeStream& stream = writerObj;
-    Array<StringAnsiView> Types{};
+    Array<String> Types{};
     SerializeComponent(stream,Component, Types);
 
 
@@ -34,7 +34,7 @@ void UIBlueprintAsset::OnGetData(rapidjson_flax::StringBuffer& buffer) const
     Final.StartArray();
     for (auto i = 0; i < Types.Count(); i++)
     {
-        Final.String(Types[i].GetText(), Types[i].Length());
+        Final.String(Types[i].ToStringAnsi().GetText(), Types[i].Length());
     }
     Final.EndArray();
     Final.JKEY("Tree");
@@ -69,10 +69,10 @@ Asset::LoadResult UIBlueprintAsset::loadAsset()
                 if (TypeNames->value.IsArray()) 
                 {
                     const auto rTypes = TypeNames->value.GetArray();
-                    Array<StringAnsiView>& Types = Array<StringAnsiView>(rTypes.Size());
-                    for (unsigned int i = 0; i < rTypes.Size(); i++)
+                    Array<String>& Types = Array<String>(rTypes.Size()+1);
+                    for (auto i = 0; i < Types.Count(); i++)
                     {
-                        Types[i] = rTypes[i].GetStringAnsiView();
+                        Types[i] = rTypes[i].GetString();
                     }
                     const auto Tree = SERIALIZE_FIND_MEMBER(stream, "Tree");
                     if (Tree != Document.MemberEnd())
@@ -133,41 +133,49 @@ void UIBlueprintAsset::unload(bool isReloading)
         Delete(Component);
 }
 
-UIComponent* UIBlueprintAsset::DeserializeComponent(ISerializable::DeserializeStream& stream, ISerializeModifier* modifier, Array<StringAnsiView>& Types)
+UIComponent* UIBlueprintAsset::DeserializeComponent(ISerializable::DeserializeStream& stream, ISerializeModifier* modifier, Array<String>& Types)
 {
     UIComponent* component = nullptr;
-    const auto typeName  = SERIALIZE_FIND_MEMBER(stream,"TypeName");
+    const auto typeName  = SERIALIZE_FIND_MEMBER(stream,"ID");
     if (typeName != stream.MemberEnd())
     {
-        auto scriptingType = Scripting::FindScriptingType(typeName->value.GetString());
-        if (scriptingType)
+        auto id = typeName->value.GetInt();
+        if (Types.IsValidIndex(id))
         {
-            auto object = ScriptingObject::NewObject(scriptingType);
-            if(object)
+            auto scriptingType = Scripting::FindScriptingType(Types[id].ToStringAnsi());
+            if (scriptingType)
             {
-                component = ScriptingObject::Cast<UIComponent>(object);
-                if(component)
+                auto object = ScriptingObject::NewObject(scriptingType);
+                if (object)
                 {
-                    component->Deserialize(stream, modifier);
+                    component = ScriptingObject::Cast<UIComponent>(object);
+                    if (component)
+                    {
+                        component->Deserialize(stream, modifier);
+                    }
+                    else
+                    {
+                        LOG(Error, "[UIBlueprint] Found incompatible type {0} with {1} during deserializesion", scriptingType.GetType().Fullname.ToString(), UIComponent::TypeInitializer.GetType().Fullname.ToString());
+                    }
                 }
                 else
                 {
-                    LOG(Error, "[UIBlueprint] Found incompatible type {0} with {1} during deserializesion", scriptingType.GetType().Fullname.ToString(), UIComponent::TypeInitializer.GetType().Fullname.ToString());
+                    LOG(Error, "[UIBlueprint] Faled to create type {0} during deserializesion", scriptingType.GetType().Fullname.ToString());
                 }
             }
             else
             {
-                LOG(Error, "[UIBlueprint] Faled to create type {0} during deserializesion", scriptingType.GetType().Fullname.ToString());
+                LOG(Error, "[UIBlueprint] Found unkonw type {0} during deserializesion", scriptingType.GetType().Fullname.ToString());
             }
         }
         else
         {
-            LOG(Error, "[UIBlueprint] Found unkonw type {0} during deserializesion", scriptingType.GetType().Fullname.ToString());
+            LOG(Error, "[UIBlueprint] Found unkonw type ID {0} during deserializesion", id);
         }
     }
     else
     {
-        LOG(Error, "[UIBlueprint] can't find TypeName field");
+        LOG(Error, "[UIBlueprint] can't find ID field");
     }
 
     auto panelComponent = ScriptingObject::Cast<UIPanelComponent>(component);
@@ -187,32 +195,21 @@ UIComponent* UIBlueprintAsset::DeserializeComponent(ISerializable::DeserializeSt
     return nullptr;
 }
 
-void UIBlueprintAsset::SerializeComponent(ISerializable::SerializeStream& stream, UIComponent* component, Array<StringAnsiView>& Types)
+void UIBlueprintAsset::SerializeComponent(ISerializable::SerializeStream& stream, UIComponent* component, Array<String>& Types)
 {
     stream.StartObject();
     //type
     stream.JKEY("ID");
-    const auto typeName = component->GetType().Fullname;
-    int32 ID = -1;
-    for (int32 i = 0; i < Types.Count(); i++)
+    const String& typeName = component->GetType().Fullname.ToString();
+    int32 ID = Types.Find(typeName);
+    if(ID == -1)
     {
-        if (typeName.Length() != Types[i].Length())
-        {
-            if (typeName.Compare(Types[i]))
-            {
-                ID = i;
-                break;
-            }
-        }
-    }
-    if(ID != -1)
-    {
-        stream.Int(ID);
+        Types.Add(typeName);
+        stream.Int(Types.Count() - 1);
     }
     else
     {
-        Types.Add(typeName);
-        stream.Int(Types.Count()-1);
+        stream.Int(ID);
     }
     //stream.String();
     //data

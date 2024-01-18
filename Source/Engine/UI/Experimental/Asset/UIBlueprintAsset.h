@@ -21,6 +21,6 @@ protected:
     void unload(bool isReloading) override;
 
 private:
-    static UIComponent* DeserializeComponent(ISerializable::DeserializeStream& stream, ISerializeModifier* modifier, Array<StringAnsiView>& Types);
-    static void SerializeComponent(ISerializable::SerializeStream& stream, UIComponent* component, Array<StringAnsiView>& Types);
+    static UIComponent* DeserializeComponent(ISerializable::DeserializeStream& stream, ISerializeModifier* modifier, Array<String>& Types);
+    static void SerializeComponent(ISerializable::SerializeStream& stream, UIComponent* component, Array<String>& Types);
 };
