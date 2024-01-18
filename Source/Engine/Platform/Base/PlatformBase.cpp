@@ -283,24 +283,32 @@ void PlatformBase::Fatal(const Char* msg, void* context)
             LOG(Error, "Stack trace:");
             for (const auto& frame : stackFrames)
             {
-                char chr = 0;
+                // Remove any path from the module name
                 int32 num = StringUtils::Length(frame.ModuleName);
-                while (num > 0 && chr != '\\' && chr != '/' && chr != ':')
-                    chr = frame.ModuleName[--num];
-                StringAsUTF16<ARRAY_COUNT(StackFrame::ModuleName)> moduleName(frame.ModuleName + num + 1);
+                while (num > 0 && frame.ModuleName[num - 1] != '\\' && frame.ModuleName[num - 1] != '/' && frame.ModuleName[num - 1] != ':')
+                    num--;
+                StringAsUTF16<ARRAY_COUNT(StackFrame::ModuleName)> moduleName(frame.ModuleName + num);
+                num = moduleName.Length();
+                if (num != 0 && num < ARRAY_COUNT(StackFrame::ModuleName) - 2)
+                {
+                    // Append separator between module name and the function name
+                    ((Char*)moduleName.Get())[num++] = '!';
+                    ((Char*)moduleName.Get())[num] = 0;
+                }
+
                 StringAsUTF16<ARRAY_COUNT(StackFrame::FunctionName)> functionName(frame.FunctionName);
                 if (StringUtils::Length(frame.FileName) != 0)
                 {
                     StringAsUTF16<ARRAY_COUNT(StackFrame::FileName)> fileName(frame.FileName);
-                    LOG(Error, "    at {0}!{1}() in {2}:line {3}", moduleName.Get(), functionName.Get(), fileName.Get(), frame.LineNumber);
+                    LOG(Error, "    at {0}{1}() in {2}:line {3}", moduleName.Get(), functionName.Get(), fileName.Get(), frame.LineNumber);
                 }
                 else if (StringUtils::Length(frame.FunctionName) != 0)
                 {
-                    LOG(Error, "    at {0}!{1}()", moduleName.Get(), functionName.Get());
+                    LOG(Error, "    at {0}{1}()", moduleName.Get(), functionName.Get());
                 }
                 else if (StringUtils::Length(frame.ModuleName) != 0)
                 {
-                    LOG(Error, "    at {0} 0x{1:x}", moduleName.Get(), (uint64)frame.ProgramCounter);
+                    LOG(Error, "    at {0}0x{1:x}", moduleName.Get(), (uint64)frame.ProgramCounter);
                 }
                 else
                 {
