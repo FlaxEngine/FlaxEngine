@@ -12,5 +12,5 @@ void UIPanelSlot::Layout()
 
 const Rectangle& UIPanelSlot::GetBounds()
 {
-    return Content->Bounds;
+    return Content->Transform.Rect;
 }

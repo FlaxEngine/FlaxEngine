@@ -8,7 +8,7 @@
 /// UI action event's: keyboard, gamepay buttons, etc.
 /// </summary>
 API_STRUCT(Namespace = "FlaxEngine.Experimental.UI") 
-struct UIActionEvent
+struct FLAXENGINE_API UIActionEvent
 {
     DECLARE_SCRIPTING_TYPE_STRUCTURE(UIActionEvent)
 public:

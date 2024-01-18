@@ -8,24 +8,30 @@
 API_ENUM(Namespace = "FlaxEngine.Experimental.UI")
 enum UIComponentVisibility
 {
+    //-------------DONT EDIT VALUES OR ADD ANY----------
+    //it will break the serialisation
+    //the UI component is packing it in to one int value
+    //--------------------------------------------------
+
+
     /// <summary>
     /// Visable on the screen
     /// </summary>
-    Visible = 1,
+    Visible = 0,
     /// <summary>
     /// Hiden on the screen
     /// </summary>
-    Hiden = 2,
+    Hiden = 1,
     /// <summary>
     /// if Events will fire on this 
     /// </summary>
-    HitSelf = 4,
+    HitSelf = 2,
     /// <summary>
     /// if Events will fire on children
     /// </summary>
-    HitChildren = 8,
+    HitChildren = 4,
     /// <summary>
     /// not visible not hittable and takes up no space in the UI
     /// </summary>
-    Collapsed = 16
+    Collapsed = 8
 };

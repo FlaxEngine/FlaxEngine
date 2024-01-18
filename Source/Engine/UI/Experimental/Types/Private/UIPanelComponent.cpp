@@ -7,7 +7,10 @@
 #include "Engine/Core/Collections/Array.h"
 #include "Engine/Render2D/Render2D.h"
 
-UIPanelComponent::UIPanelComponent(const SpawnParams& params) : UIComponent(params) {}
+UIPanelComponent::UIPanelComponent(const SpawnParams& params) : UIComponent(params) 
+{
+    CanHaveMultipleChildren = true;
+}
 
 int32 UIPanelComponent::GetChildrenCount() const
 {
@@ -151,7 +154,7 @@ bool UIPanelComponent::RemoveChild(UIComponent* Content)
 
 bool UIPanelComponent::HasAnyChildren() const
 {
-    return false;
+    return GetChildrenCount() != 0;;
 }
 
 void UIPanelComponent::ClearChildren()
@@ -221,7 +224,7 @@ void UIPanelComponent::Render()
     }
     if (Clipping == ClipToBounds)
     {
-        Render2D::PushClip(Bounds);
+        Render2D::PushClip(Transform.Rect);
         for (auto i = 0; i < slots.Count(); i++)
         {
             if (!slots[i]->Content->IsVisible()) // faster skip 

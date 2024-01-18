@@ -1,6 +1,8 @@
 
-
+using System;
+using FlaxEditor.Content;
 using FlaxEngine.GUI;
+
 namespace FlaxEngine.Experimental.UI
 {
     //note this is temporary solution
@@ -8,9 +10,19 @@ namespace FlaxEngine.Experimental.UI
     /// <summary>
     /// host for Native UI
     /// </summary>
-    /// <seealso cref="FlaxEngine.GUI.Panel" />
-    public class NativeUIHost : Panel
+    /// <seealso cref="FlaxEngine.GUI.Control" />
+    public class NativeUIHost : Control
     {
+        /// <summary>
+        /// The panel component
+        /// </summary>
+        [EditorOrder(0)]
+        public JsonAsset Asset;
+
+        /// <summary>
+        /// The panel component
+        /// </summary>
+        [HideInEditor]
         public UIPanelComponent PanelComponent = new UIPanelComponent();
         UIActionEvent LastAction = new UIActionEvent();
         UIActionEvent Action = new UIActionEvent();
@@ -33,8 +45,7 @@ namespace FlaxEngine.Experimental.UI
         {
             PanelComponent.Transform = new UIComponentTransform()
             {
-                Translation = Bounds.Location,
-                Size = Bounds.Size,
+                Rect = Bounds,
                 Shear = Shear,
                 Angle = Rotation,
                 Pivot = Pivot,
@@ -51,13 +62,16 @@ namespace FlaxEngine.Experimental.UI
             base.Update(deltaTime);
             
         }
+        /// <inheritdoc/>
         public override bool OnKeyDown(KeyboardKeys key)
         {
             return base.OnKeyDown(key);
         }
+        /// <inheritdoc/>
         public override void OnKeyUp(KeyboardKeys key)
         {
             base.OnKeyUp(key);
         }
     }
+
 }

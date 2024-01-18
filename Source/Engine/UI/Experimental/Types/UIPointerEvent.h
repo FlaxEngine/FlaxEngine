@@ -9,7 +9,7 @@
 /// UI pointer event's: mouse, touch, stylus, gamepad emulated mouse, etc.
 /// </summary>
 API_STRUCT(Namespace = "FlaxEngine.Experimental.UI")
-struct UIPointerEvent
+struct FLAXENGINE_API UIPointerEvent
 {
     DECLARE_SCRIPTING_TYPE_STRUCTURE(UIPointerEvent)
 public:

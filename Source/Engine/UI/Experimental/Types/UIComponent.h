@@ -5,6 +5,9 @@
 #include "Engine/Core/Math/Matrix3x3.h"
 #include "Engine/Core/Math/Vector2.h"
 #include "Engine/Scripting/ScriptingObject.h"
+#include "Engine/Scripting/ScriptingType.h"
+#include "Engine/Core/ISerializable.h"
+
 #include "UIComponentDesignFlags.h"
 #include "UIComponentVisibility.h"
 #include "UIComponentTransform.h"
@@ -16,17 +19,15 @@
 /// Base class for any UI element
 /// </summary>
 API_CLASS(Namespace = "FlaxEngine.Experimental.UI")
-class FLAXENGINE_API UIComponent : public ScriptingObject
+class FLAXENGINE_API UIComponent : public ScriptingObject, public ISerializable
 {
     DECLARE_SCRIPTING_TYPE(UIComponent);
-
 private:
     class UIPanelSlot* Slot;
     friend class UIPanelComponent;
 protected:
 
     UIComponentClipping Clipping;
-    Rectangle Bounds;
     Matrix3x3 CachedTransform;
     Matrix3x3 CachedTransformInv;
 
@@ -51,6 +52,11 @@ protected:
     UIComponentVisibility Visibility;
 
     /// <summary>
+    /// Cursor Type
+    /// </summary>
+    CursorType Cursor;
+
+    /// <summary>
     /// If true prevents the UI Component or its child's geometry or layout information from being cached. If this UI Component
     /// changes every frame, but you want it to still be in an invalidation panel you should make it as volatile
     /// instead of invalidating it every frame, which would prevent the invalidation panel from actually
@@ -68,7 +74,7 @@ protected:
     /// Flag if the UI Component was created from a UIBlueprint
     /// </summary>
     API_FIELD() bool CreatedByUIBlueprint = false;
-public:
+
 
     /// <summary>
     /// Flag for if the UI Component need to change cursor when entering the UI Component
@@ -79,7 +85,6 @@ public:
     /// The opacity of the UI Component
     /// </summary>
     API_FIELD() float RenderOpacity;
-
 public:
    
     /// <summary>
@@ -441,7 +446,7 @@ public:
 public:
     virtual Vector2 ComputeDesiredSize(float scale = 1)
     {
-        return Bounds.Size * scale;
+        return Transform.Rect.Size * scale;
     }
 
 
@@ -467,4 +472,7 @@ protected:
     void DrawInternal();
 public: // exposed for Native UI host on c# side
     virtual void InvalidateLayout(const UIPanelSlot* InFor);
+    FORCE_INLINE int GetCompactedFlags();
+    void Serialize(SerializeStream& stream, const void* otherObj) override;
+    void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) override;
 };

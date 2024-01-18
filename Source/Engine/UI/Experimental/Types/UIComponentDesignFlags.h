@@ -7,7 +7,7 @@
 /// The design flags use by editor
 /// </summary>
 API_ENUM(Namespace = "FlaxEngine.Experimental.UI.Editor")
-enum class UIComponentDesignFlags
+enum class FLAXENGINE_API UIComponentDesignFlags
 {
     None = 0,
     Designing = 1 << 0,
