@@ -78,6 +78,7 @@ public class nethost : ThirdPartyModule
             options.OutputFiles.Add(Path.Combine(hostRuntime.Path, "libSystem.Native.a"));
             options.OutputFiles.Add(Path.Combine(hostRuntime.Path, "libSystem.IO.Ports.Native.a"));
             options.OutputFiles.Add(Path.Combine(hostRuntime.Path, "libSystem.IO.Compression.Native.a"));
+            options.OutputFiles.Add(Path.Combine(hostRuntime.Path, "libSystem.Globalization.Native.a"));
             break;
         case TargetPlatform.Android:
             options.PublicDefinitions.Add("USE_MONO_DYNAMIC_LIB");
