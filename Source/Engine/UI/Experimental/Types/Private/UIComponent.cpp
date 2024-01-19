@@ -30,6 +30,8 @@ UIComponent::UIComponent(const SpawnParams& params) : ScriptingObject(params)
     Cursor = CursorType::Default;
     //compute defaultflagsvalue for seralization discard
     defaultflagsvalue = GetCompactedFlags();
+
+    DesignerFlags = UIComponentDesignFlags::None;
 }
 FORCE_INLINE int UIComponent::GetCompactedFlags()
 {
@@ -402,12 +404,16 @@ bool UIComponent::IsVisibleInDesigner() const
 
 void UIComponent::SelectByDesigner()
 {
+    //SetFlag
+    DesignerFlags = (UIComponentDesignFlags)((int)DesignerFlags | (int)UIComponentDesignFlags::ShowOutline);
     //[ToDo] Enable Outlide
     OnSelectedByDesigner();
 }
 
 void UIComponent::DeselectByDesigner()
 {
+    //UnsetFlag
+    DesignerFlags = (UIComponentDesignFlags)((int)DesignerFlags & ~(int)UIComponentDesignFlags::ShowOutline);
     //[ToDo] Disable Outlide
     OnDeselectedByDesigner();
 }
@@ -418,6 +424,11 @@ void UIComponent::DeselectByDesigner()
 //---------------------------------------------------------------------------------------------------
 
 
+void UIComponent::OnDraw() 
+{
+    Render2D::FillRectangle(Transform.Rect, Color::White);
+}
+
 void UIComponent::DrawInternal()
 {
     if (IsVolatile)
@@ -426,7 +437,13 @@ void UIComponent::DrawInternal()
         //there are computed every frame
         UpdateTransform();
     }
-    Render2D::PushTransform(CachedTransform);
+    Render2D::PushTransform(Transform.CachedTransform);
+#if USE_EDITOR
+    if (HasAnyDesignerFlags(UIComponentDesignFlags::ShowOutline))
+    {
+        Render2D::DrawRectangle(Transform.Rect, Color::Green);
+    }
+#endif
     OnDraw();
     Render2D::PopTransform();
 }

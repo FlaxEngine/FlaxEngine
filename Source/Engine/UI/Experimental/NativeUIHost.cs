@@ -17,48 +17,67 @@ namespace FlaxEngine.Experimental.UI
         /// The panel component
         /// </summary>
         [EditorOrder(0)]
-        public JsonAsset Asset;
+        public UIBlueprintAsset Asset;
 
         /// <summary>
         /// The panel component
         /// </summary>
-        [HideInEditor]
-        public UIPanelComponent PanelComponent = new UIPanelComponent();
+        //[HideInEditor]
+        public UIPanelComponent PanelComponent;
         UIActionEvent LastAction = new UIActionEvent();
         UIActionEvent Action = new UIActionEvent();
         /// <inheritdoc />
         public override void Draw()
         {
-            PanelComponent.Render();
+            PanelComponent?.Render();
             base.Draw();
         }
         /// <inheritdoc />
         public override void PerformLayout(bool force = false)
         {
-            if( PanelComponent == null)
-                PanelComponent = new UIPanelComponent();
-            PanelComponent.Layout();
+            if (PanelComponent != null)
+            {
+                PanelComponent.Layout();
+            }
             base.PerformLayout(force);
         }
         /// <inheritdoc />
         public override void Update(float deltaTime)
         {
-            PanelComponent.Transform = new UIComponentTransform()
+            if (PanelComponent != null)
             {
-                Rect = Bounds,
-                Shear = Shear,
-                Angle = Rotation,
-                Pivot = Pivot,
-            };
-            Action = new UIActionEvent()
+                PanelComponent.Transform = new UIComponentTransform()
+                {
+                    Rect = Bounds,
+                    Shear = Shear,
+                    Angle = Rotation,
+                    Pivot = Pivot,
+                };
+                Action = new UIActionEvent()
+                {
+                    Button = GamepadButton.None,
+                    State = InputActionState.None,
+                    Chars = Input.InputText,
+                    Key = KeyboardKeys.None,
+                    Value = 0,
+                };
+                PanelComponent?.OnActionInputChaneged(Action);
+            }
+            else if (Asset != null)
             {
-                Button = GamepadButton.None,
-                State = InputActionState.None,
-                Chars = Input.InputText,
-                Key = KeyboardKeys.None,
-                Value = 0,
-            };
-            PanelComponent.OnActionInputChaneged(Action);
+                if (Asset.IsLoaded)
+                {
+                    if (Asset.Component != null)
+                    {
+                        PanelComponent = (UIPanelComponent)Asset.Component;
+                    }
+                    else
+                    {
+                        Asset.Reload();
+                        Asset.WaitForLoaded();
+                    }
+                }
+            }
             base.Update(deltaTime);
             
         }
@@ -73,5 +92,4 @@ namespace FlaxEngine.Experimental.UI
             base.OnKeyUp(key);
         }
     }
-
 }

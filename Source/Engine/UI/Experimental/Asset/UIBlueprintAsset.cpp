@@ -55,18 +55,24 @@ Asset::LoadResult UIBlueprintAsset::loadAsset()
         const auto TypeNames = SERIALIZE_FIND_MEMBER(stream, "TypeNames");
         if (TypeNames)
         {
-            if (TypeNames != Document.MemberEnd())
+            if (TypeNames != stream.MemberEnd())
             {
-                if (TypeNames->value.IsArray()) 
+                if (TypeNames->value.IsArray())
                 {
-                    const auto rTypes = TypeNames->value.GetArray();
-                    Array<String>& Types = Array<String>(rTypes.Size()+1);
+                    const auto& streamArray = TypeNames->value.GetArray();
+                    Array<String> Types {};
+                    Types.Resize(streamArray.Size());
                     for (auto i = 0; i < Types.Count(); i++)
                     {
-                        Types[i] = rTypes[i].GetString();
+                        Types[i] = streamArray[i].GetText();
+                    }
+                    if (Types.IsEmpty())
+                    {
+                        LOG(Error, "[UIBlueprint] Invalid Data Structure the TypeNames are missing");
+                        return LoadResult::MissingDataChunk;
                     }
                     const auto Tree = SERIALIZE_FIND_MEMBER(stream, "Tree");
-                    if (Tree != Document.MemberEnd())
+                    if (Tree != stream.MemberEnd())
                     {
                         auto comp = DeserializeComponent((ISerializable::DeserializeStream)Tree->value.GetObject(), modifier.Value, Types);
                         if (comp)
@@ -144,11 +150,15 @@ UIComponent* UIBlueprintAsset::DeserializeComponent(ISerializable::DeserializeSt
             for (unsigned int  i = 0; i < elements.Size(); i++)
             {
                 ISerializable::DeserializeStream& slotstream = (ISerializable::DeserializeStream)elements[i].GetObject();
-                DeserializeComponent(slotstream, modifier, Types);
+                const auto childComponent = DeserializeComponent(slotstream, modifier, Types);
+                if (childComponent)
+                {
+                    panelComponent->AddChild(childComponent);
+                }
             }
         }
     }
-    return nullptr;
+    return component;
 }
 
 void UIBlueprintAsset::SerializeComponent(ISerializable::SerializeStream& stream, UIComponent* component, Array<String>& Types)

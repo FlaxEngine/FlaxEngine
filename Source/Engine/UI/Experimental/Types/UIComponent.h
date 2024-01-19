@@ -334,13 +334,13 @@ public:
     /// Is this UI Component locked in the designer
     /// </summary>
     /// <returns>Lock value</returns>
-    bool IsLockedInDesigner() const;
+    API_FUNCTION() bool IsLockedInDesigner() const;
 
     /// <summary>
     /// LockedInDesigner should this UI Component be locked
     /// </summary>
     /// <param name="NewLockedInDesigner">New lock value</param>
-    virtual void SetLockedInDesigner(bool NewLockedInDesigner);
+    API_FUNCTION() virtual void SetLockedInDesigner(bool NewLockedInDesigner);
 
     /// <summary>
     /// Gets the visibility in designer.
@@ -348,7 +348,7 @@ public:
     /// regardless of the actual visibility state set by the user.
     /// </summary>
     /// <returns></returns>
-    UIComponentVisibility GetVisibilityInDesigner() const;
+    API_FUNCTION() UIComponentVisibility GetVisibilityInDesigner() const;
 
     /// <summary>
     /// Determines whether this is Editor UI component.
@@ -356,49 +356,49 @@ public:
     /// <returns>
     ///   <c>true</c> if is editor UI component otherwise, <c>false</c>.
     /// </returns>
-    bool IsEditorUIComponent() const;
+    API_FUNCTION() bool IsEditorUIComponent() const;
 
     /// <summary>
     /// </summary>
     /// <returns>if the UI Component is currently being displayed in the designer, it may want to display different data.</returns>
-    FORCE_INLINE bool IsDesignTime() const;
+    API_FUNCTION() FORCE_INLINE bool IsDesignTime() const;
 
     /// <summary>
     /// Determines whether [has any designer flags] [the specified flags to check].
     /// </summary>
     /// <param name="FlagsToCheck">The flags to check.</param>
     /// <returns></returns>
-    FORCE_INLINE bool HasAnyDesignerFlags(UIComponentDesignFlags FlagsToCheck) const;
+    API_FUNCTION() FORCE_INLINE bool HasAnyDesignerFlags(UIComponentDesignFlags FlagsToCheck) const;
 
     /// <summary>
     /// Determines whether [is preview time].
     /// </summary>
     /// <returns></returns>
-    FORCE_INLINE bool IsPreviewTime() const;
+    API_FUNCTION() FORCE_INLINE bool IsPreviewTime() const;
 
     /// <summary>
     /// Gets the display label.
     /// </summary>
     /// <returns></returns>
-    const String& GetDisplayLabel() const;
+    API_FUNCTION() const String& GetDisplayLabel() const;
 
     /// <summary>
     /// Sets the display label.
     /// </summary>
     /// <param name="DisplayLabel">The display label.</param>
-    void SetDisplayLabel(const String& InDisplayLabel);
+    API_FUNCTION() void SetDisplayLabel(const String& InDisplayLabel);
 
     /// <summary>
     /// Is the label generated or provided by the user?
     /// </summary>
     /// <returns></returns>
-    bool IsGeneratedName() const;
+    API_FUNCTION() bool IsGeneratedName() const;
 
     /// <summary>
     /// Gets the label to display to the user for this UI Component.
     /// </summary>
     /// <returns></returns>
-    String GetLabel() const;
+    API_FUNCTION() String GetLabel() const;
 
     /// <summary>
     /// Determines whether is visible in designer.
@@ -406,17 +406,17 @@ public:
     /// <returns>
     ///   <c>true</c> if is visible in designer, otherwise <c>false</c>.
     /// </returns>
-    bool IsVisibleInDesigner() const;
+    API_FUNCTION() bool IsVisibleInDesigner() const;
 
     /// <summary>
     /// Selects the by designer.
     /// </summary>
-    void SelectByDesigner();
+    API_FUNCTION() void SelectByDesigner();
 
     /// <summary>
     /// Deselects the by designer.
     /// </summary>
-    void DeselectByDesigner();
+    API_FUNCTION() void DeselectByDesigner();
 
     /// <summary>
     /// Called when [selected by designer].
@@ -449,7 +449,7 @@ public:
     }
 
 
-    virtual void OnDraw(){}
+    virtual void OnDraw();
 
 public:
 

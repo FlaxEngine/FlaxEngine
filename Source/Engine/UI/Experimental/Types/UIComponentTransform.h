@@ -19,6 +19,7 @@ struct FLAXENGINE_API UIComponentTransform
 private:
     Matrix3x3 CachedTransform = Matrix3x3::Identity;
     Matrix3x3 CachedTransformInv = Matrix3x3::Identity;
+    friend class UIComponent;
 public:
     /// <summary>
     /// the Rectangle Constans Translation and Size
@@ -45,7 +46,7 @@ public:
     /// Initializes a new instance of the <see cref="UIComponentTransform"/> struct.
     /// </summary>
     UIComponentTransform()
-        : Rect(Rectangle::Empty)
+        : Rect(Rectangle(Float2::Zero,Float2::One))
         , Shear(Vector2::Zero)
         , Pivot(Vector2::One * 0.5f)
         , Angle(0){}    
