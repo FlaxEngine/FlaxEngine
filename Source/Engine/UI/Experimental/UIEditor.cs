@@ -58,6 +58,8 @@ namespace FlaxEditor.Experimental.UI
             {
                 if (_asset.Component is UIPanelComponent panelComponent)
                 {
+                    if (_asset.Component == null)
+                        return base.OnMouseDown(location, button);
                     if (_asset.Component.Transform.Rect.Contains(location) && Selection != panelComponent && !panelComponent.IsLockedInDesigner())
                     {
                         SetSelection(panelComponent);
