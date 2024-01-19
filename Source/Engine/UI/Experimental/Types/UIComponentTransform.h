@@ -17,8 +17,8 @@ struct FLAXENGINE_API UIComponentTransform
 {
     DECLARE_SCRIPTING_TYPE_STRUCTURE(UIComponentTransform);
 private:
-    Matrix3x3 CachedTransform = Matrix3x3::Identity;
-    Matrix3x3 CachedTransformInv = Matrix3x3::Identity;
+    API_FIELD() Matrix3x3 CachedTransform = Matrix3x3::Identity;
+    API_FIELD() Matrix3x3 CachedTransformInv = Matrix3x3::Identity;
     friend class UIComponent;
 public:
     /// <summary>
