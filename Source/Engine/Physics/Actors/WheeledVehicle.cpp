@@ -194,7 +194,10 @@ void WheeledVehicle::SetSteering(float value)
 
 void WheeledVehicle::SetBrake(float value)
 {
-    _brake = Math::Saturate(value);
+    value = Math::Saturate(value);
+    _brake = value;
+    _tankLeftBrake = value;
+    _tankRightBrake = value;
 }
 
 void WheeledVehicle::SetHandbrake(float value)
@@ -227,11 +230,11 @@ void WheeledVehicle::ClearInput()
     _throttle = 0;
     _steering = 0;
     _brake = 0;
+    _handBrake = 0;
     _tankLeftThrottle = 0;
     _tankRightThrottle = 0;
     _tankLeftBrake = 0;
     _tankRightBrake = 0;
-    _handBrake = 0;
 }
 
 float WheeledVehicle::GetForwardSpeed() const
@@ -423,10 +426,10 @@ void WheeledVehicle::OnDebugDrawSelected()
             continue;
         if (!_wheels[leftWheelIndex].Collider || !_wheels[rightWheelIndex].Collider)
             continue;
-        
+
         DEBUG_DRAW_LINE(_wheels[leftWheelIndex].Collider->GetPosition(), _wheels[rightWheelIndex].Collider->GetPosition(), Color::Yellow, 0, false);
     }
-        // Center of mass
+    // Center of mass
     DEBUG_DRAW_WIRE_SPHERE(BoundingSphere(_transform.LocalToWorld(_centerOfMassOffset), 10.0f), Color::Blue, 0, false);
 
     RigidBody::OnDebugDrawSelected();
