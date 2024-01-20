@@ -2423,15 +2423,19 @@ namespace Flax.Build.Bindings
             // Getter for structure field
             contents.AppendLine("    static void GetField(void* ptr, const String& name, Variant& value)");
             contents.AppendLine("    {");
+            bool HasIf = false;
             for (var i = 0; i < structureInfo.Fields.Count; i++)
             {
                 var fieldInfo = structureInfo.Fields[i];
                 if (fieldInfo.IsReadOnly || fieldInfo.IsStatic || fieldInfo.IsConstexpr || fieldInfo.Access == AccessLevel.Private)
                     continue;
-                if (i == 0)
-                    contents.AppendLine($"        if (name == TEXT(\"{fieldInfo.Name}\"))");
-                else
+                if (HasIf)
                     contents.AppendLine($"        else if (name == TEXT(\"{fieldInfo.Name}\"))");
+                else
+                {
+                    contents.AppendLine($"        if (name == TEXT(\"{fieldInfo.Name}\"))");
+                    HasIf = true;
+                }
                 contents.AppendLine($"            value = {GenerateCppWrapperNativeToVariant(buildData, fieldInfo.Type, structureInfo, $"(({structureTypeNameNative}*)ptr)->{fieldInfo.Name}")};");
             }
             contents.AppendLine("    }").AppendLine();
@@ -2439,15 +2443,20 @@ namespace Flax.Build.Bindings
             // Setter for structure field
             contents.AppendLine("    static void SetField(void* ptr, const String& name, const Variant& value)");
             contents.AppendLine("    {");
+
+            HasIf = false;
             for (var i = 0; i < structureInfo.Fields.Count; i++)
             {
                 var fieldInfo = structureInfo.Fields[i];
                 if (fieldInfo.IsReadOnly || fieldInfo.IsStatic || fieldInfo.IsConstexpr || fieldInfo.Access == AccessLevel.Private)
                     continue;
-                if (i == 0)
-                    contents.AppendLine($"        if (name == TEXT(\"{fieldInfo.Name}\"))");
-                else
+                if (HasIf)
                     contents.AppendLine($"        else if (name == TEXT(\"{fieldInfo.Name}\"))");
+                else
+                {
+                    contents.AppendLine($"        if (name == TEXT(\"{fieldInfo.Name}\"))");
+                    HasIf = true;
+                }
                 if (fieldInfo.Type.IsArray)
                 {
                     // Fixed-size array need a special converting to unpack from Variant
