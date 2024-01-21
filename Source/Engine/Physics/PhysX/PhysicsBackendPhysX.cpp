@@ -3588,7 +3588,6 @@ void* PhysicsBackend::CreateVehicle(WheeledVehicle* actor)
         // Create vehicle drive
         auto drive4W = PxVehicleDrive4W::allocate(wheels.Count());
         drive4W->setup(PhysX, actorPhysX, *wheelsSimData, driveSimData, Math::Max(wheels.Count() - 4, 0));
-        drive4W->setToRestState();
         drive4W->mDriveDynData.forceGearChange(PxVehicleGearsData::eFIRST);
         drive4W->mDriveDynData.setUseAutoGears(gearbox.AutoGear);
         vehicle = drive4W;
@@ -3613,7 +3612,6 @@ void* PhysicsBackend::CreateVehicle(WheeledVehicle* actor)
         // Create vehicle drive
         auto driveNW = PxVehicleDriveNW::allocate(wheels.Count());
         driveNW->setup(PhysX, actorPhysX, *wheelsSimData, driveSimData, wheels.Count());
-        driveNW->setToRestState();
         driveNW->mDriveDynData.forceGearChange(PxVehicleGearsData::eFIRST);
         driveNW->mDriveDynData.setUseAutoGears(gearbox.AutoGear);
         vehicle = driveNW;
@@ -3624,7 +3622,6 @@ void* PhysicsBackend::CreateVehicle(WheeledVehicle* actor)
         // Create vehicle drive
         auto driveNo = PxVehicleNoDrive::allocate(wheels.Count());
         driveNo->setup(PhysX, actorPhysX, *wheelsSimData);
-        driveNo->setToRestState();
         vehicle = driveNo;
         break;
     }
@@ -3648,7 +3645,6 @@ void* PhysicsBackend::CreateVehicle(WheeledVehicle* actor)
         // Create vehicle drive
         auto driveTank = PxVehicleDriveTank::allocate(wheels.Count());
         driveTank->setup(PhysX, actorPhysX, *wheelsSimData, driveSimData, wheels.Count());
-        driveTank->setToRestState();
         driveTank->mDriveDynData.forceGearChange(PxVehicleGearsData::eFIRST);
         driveTank->mDriveDynData.setUseAutoGears(gearbox.AutoGear);
         vehicle = driveTank;
