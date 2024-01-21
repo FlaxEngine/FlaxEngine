@@ -59,9 +59,6 @@
 #if WITH_PVD
 #include <ThirdParty/PhysX/pvd/PxPvd.h>
 #endif
-#if USE_EDITOR
-#include "Editor/Editor.h"
-#endif
 // Temporary memory size used by the PhysX during the simulation. Must be multiply of 4kB and 16bit aligned.
 #define PHYSX_SCRATCH_BLOCK_SIZE (1024 * 128)
 
