@@ -374,6 +374,7 @@ void ModelTool::Options::Serialize(SerializeStream& stream, const void* otherObj
     SERIALIZE(InstanceToImportAs);
     SERIALIZE(ImportTextures);
     SERIALIZE(RestoreMaterialsOnReimport);
+    SERIALIZE(SkipExistingMaterialsOnReimport);
     SERIALIZE(GenerateSDF);
     SERIALIZE(SDFResolution);
     SERIALIZE(SplitObjects);
@@ -422,6 +423,7 @@ void ModelTool::Options::Deserialize(DeserializeStream& stream, ISerializeModifi
     DESERIALIZE(InstanceToImportAs);
     DESERIALIZE(ImportTextures);
     DESERIALIZE(RestoreMaterialsOnReimport);
+    DESERIALIZE(SkipExistingMaterialsOnReimport);
     DESERIALIZE(GenerateSDF);
     DESERIALIZE(SDFResolution);
     DESERIALIZE(SplitObjects);
@@ -1152,6 +1154,18 @@ bool ModelTool::ImportModel(const String& path, ModelData& data, Options& option
             if (Content::GetAssetInfo(assetPath, info))
                 material.AssetID = info.ID;
             continue;
+        }
+
+        // Skip any materials that already exist from the model.
+        // This allows the use of "import as material instances" without material properties getting overridden on each import.
+        if (options.SkipExistingMaterialsOnReimport)
+        {
+            AssetInfo info;
+            if (Content::GetAssetInfo(assetPath, info))
+            {
+                material.AssetID = info.ID;
+                continue;
+            }
         }
 
         if (options.ImportMaterialsAsInstances)

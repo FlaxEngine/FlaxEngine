@@ -129,6 +129,8 @@ public:
         UseDefaultRule = 4,
         InterruptionRuleRechecking = 8,
         InterruptionInstant = 16,
+        InterruptionSourceState = 32,
+        InterruptionDestinationState = 64,
     };
 
 public:
@@ -197,6 +199,22 @@ struct FLAXENGINE_API AnimGraphSlot
     float BlendOutTime = 0.0f;
     int32 LoopCount = 0;
     bool Pause = false;
+    bool Reset = false;
+};
+
+/// <summary>
+/// The animation graph state container for a single node playback trace (eg. animation sample info or state transition). Can be used by Anim Graph debugging or custom scripting.
+/// </summary>
+API_STRUCT() struct FLAXENGINE_API AnimGraphTraceEvent
+{
+    DECLARE_SCRIPTING_TYPE_MINIMAL(AnimGraphTraceEvent);
+
+    // Contextual asset used. For example, sampled animation.
+    API_FIELD() Asset* Asset = nullptr;
+    // Generic value contextual to playback type (eg. animation sample position).
+    API_FIELD() float Value = 0;
+    // Identifier of the node in the graph.
+    API_FIELD() uint32 NodeId = 0;
 };
 
 /// <summary>
@@ -240,7 +258,10 @@ public:
         uint64 LastUpdateFrame;
         AnimGraphNode* CurrentState;
         AnimGraphStateTransition* ActiveTransition;
+        AnimGraphStateTransition* BaseTransition;
+        AnimGraphNode* BaseTransitionState;
         float TransitionPosition;
+        float BaseTransitionPosition;
     };
 
     struct SlotBucket
@@ -356,6 +377,12 @@ public:
     /// Invokes any outgoing AnimEvent and AnimContinuousEvent collected during the last animation update. When called from non-main thread only Async events will be invoked.
     /// </summary>
     void InvokeAnimEvents();
+
+public:
+    // Anim Graph logic tracing feature that allows to collect insights of animations sampling and skeleton poses operations.
+    bool EnableTracing = false;
+    // Trace events collected when using EnableTracing option.
+    Array<AnimGraphTraceEvent> TraceEvents;
 
 private:
     struct OutgoingEvent
@@ -836,7 +863,7 @@ public:
     }
 
     /// <summary>
-    /// Resets all the state bucket used by the given graph including sub-graphs (total). Can eb used to reset the animation state of the nested graph (including children).
+    /// Resets all the state bucket used by the given graph including sub-graphs (total). Can be used to reset the animation state of the nested graph (including children).
     /// </summary>
     void ResetBuckets(AnimGraphContext& context, AnimGraphBase* graph);
 
@@ -865,5 +892,7 @@ private:
     Variant SampleAnimationsWithBlend(AnimGraphNode* node, bool loop, float length, float startTimePos, float prevTimePos, float& newTimePos, Animation* animA, Animation* animB, Animation* animC, float speedA, float speedB, float speedC, float alphaA, float alphaB, float alphaC);
     Variant Blend(AnimGraphNode* node, const Value& poseA, const Value& poseB, float alpha, AlphaBlendMode alphaMode);
     Variant SampleState(AnimGraphNode* state);
+    void InitStateTransition(AnimGraphContext& context, AnimGraphInstanceData::StateMachineBucket& stateMachineBucket, AnimGraphStateTransition* transition = nullptr);
+    AnimGraphStateTransition* UpdateStateTransitions(AnimGraphContext& context, const AnimGraphNode::StateMachineData& stateMachineData, AnimGraphNode* state, AnimGraphNode* ignoreState = nullptr);
     void UpdateStateTransitions(AnimGraphContext& context, const AnimGraphNode::StateMachineData& stateMachineData, AnimGraphInstanceData::StateMachineBucket& stateMachineBucket, const AnimGraphNode::StateBaseData& stateData);
 };

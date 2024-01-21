@@ -225,6 +225,17 @@ void AnimatedModel::SetMasterPoseModel(AnimatedModel* masterPose)
         _masterPose->AnimationUpdated.Bind<AnimatedModel, &AnimatedModel::OnAnimationUpdated>(this);
 }
 
+const Array<AnimGraphTraceEvent>& AnimatedModel::GetTraceEvents() const
+{
+#if !BUILD_RELEASE
+    if (!GetEnableTracing())
+    {
+        LOG(Warning, "Accessing AnimatedModel.TraceEvents with tracing disabled.");
+    }
+#endif
+    return GraphInstance.TraceEvents;
+}
+
 #define CHECK_ANIM_GRAPH_PARAM_ACCESS() \
     if (!AnimationGraph) \
     { \
@@ -494,6 +505,7 @@ void AnimatedModel::StopSlotAnimation(const StringView& slotName, Animation* ani
         if (slot.Animation == anim && slot.Name == slotName)
         {
             slot.Animation = nullptr;
+            slot.Reset = true;
             break;
         }
     }

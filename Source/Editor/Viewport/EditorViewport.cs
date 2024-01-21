@@ -1113,7 +1113,7 @@ namespace FlaxEditor.Viewport
         private void OnFarPlaneChanged(FloatValueBox control)
         {
             _farPlane = control.Value;
-            _editor.ProjectCache.SetCustomData("CameraNearPlaneValue", _farPlane.ToString());
+            _editor.ProjectCache.SetCustomData("CameraFarPlaneValue", _farPlane.ToString());
         }
 
         /// <summary>

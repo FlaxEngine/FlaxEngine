@@ -214,7 +214,9 @@ namespace FlaxEditor.GUI.Docking
         /// </summary>
         /// <param name="state">Initial window state.</param>
         /// <param name="toDock">Panel to dock to it.</param>
-        public void Show(DockState state = DockState.Float, DockPanel toDock = null)
+        /// <param name="autoSelect">Only used if <paramref name="toDock"/> is set. If true the window will be selected after docking it.</param>
+        /// <param name="splitterValue">Only used if <paramref name="toDock"/> is set. The splitter value to use. If not specified, a default value will be used.</param>
+        public void Show(DockState state = DockState.Float, DockPanel toDock = null, bool autoSelect = true, float? splitterValue = null)
         {
             if (state == DockState.Hidden)
             {
@@ -232,7 +234,7 @@ namespace FlaxEditor.GUI.Docking
                 Undock();
 
                 // Then dock
-                (toDock ?? _masterPanel).DockWindowInternal(state, this);
+                (toDock ?? _masterPanel).DockWindowInternal(state, this, autoSelect, splitterValue);
                 OnShow();
                 PerformLayout();
             }

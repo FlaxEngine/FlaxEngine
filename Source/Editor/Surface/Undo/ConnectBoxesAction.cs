@@ -24,6 +24,8 @@ namespace FlaxEditor.Surface.Undo
 
         public ConnectBoxesAction(InputBox iB, OutputBox oB, bool connect)
         {
+            if (iB == null || oB == null || iB.ParentNode == null || oB.ParentNode == null)
+                throw new System.ArgumentNullException();
             _surface = iB.Surface;
             _context = new ContextHandle(iB.ParentNode.Context);
             _connect = connect;

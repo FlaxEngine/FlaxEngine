@@ -113,6 +113,25 @@ namespace FlaxEditor.Surface
             ScriptsBuilder.ScriptsReloadBegin += OnScriptsReloadBegin;
         }
 
+        internal AnimGraphTraceEvent[] LastTraceEvents;
+
+        internal bool TryGetTraceEvent(SurfaceNode node, out AnimGraphTraceEvent traceEvent)
+        {
+            if (LastTraceEvents != null)
+            {
+                foreach (var e in LastTraceEvents)
+                {
+                    if (e.NodeId == node.ID)
+                    {
+                        traceEvent = e;
+                        return true;
+                    }
+                }
+            }
+            traceEvent = default;
+            return false;
+        }
+
         private static SurfaceStyle CreateStyle()
         {
             var editor = Editor.Instance;
@@ -383,6 +402,7 @@ namespace FlaxEditor.Surface
             }
             ScriptsBuilder.ScriptsReloadBegin -= OnScriptsReloadBegin;
             _nodesCache.Wait();
+            LastTraceEvents = null;
 
             base.OnDestroy();
         }
