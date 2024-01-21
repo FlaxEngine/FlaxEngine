@@ -134,7 +134,7 @@ API_CLASS(Attributes="ActorContextMenu(\"New/Physics/Wheeled Vehicle\"), ActorTo
         /// <summary>
         /// Gets or sets the drive mode, used by vehicles specify the way of the tracks control.
         /// </summary>
-        API_FIELD(Attributes="EditorOrder(0), EditorDisplay(\"Tanks\")") WheeledVehicle::DriveModes DriveMode;
+        API_FIELD(Attributes="EditorOrder(0), EditorDisplay(\"Tanks\")") WheeledVehicle::DriveModes DriveMode = WheeledVehicle::DriveModes::Standard;
 
         /// <summary>
         /// Acceleration input sensitive.
