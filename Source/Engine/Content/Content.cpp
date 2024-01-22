@@ -406,17 +406,21 @@ Asset* Content::LoadAsyncInternal(const StringView& internalPath, MClass* type)
 
 Asset* Content::LoadAsyncInternal(const StringView& internalPath, const ScriptingTypeHandle& type)
 {
-#if USE_EDITOR
-    const String path = Globals::EngineContentFolder / internalPath + ASSET_FILES_EXTENSION_WITH_DOT;
-    if (!FileSystem::FileExists(path))
-    {
-        LOG(Error, "Missing file \'{0}\'", path);
-        return nullptr;
-    }
-#else
-    const String path = Globals::ProjectContentFolder / internalPath + ASSET_FILES_EXTENSION_WITH_DOT;
-#endif
+    // hard coded ASSET_FILES_EXTENSION_WITH_DOT is worng in case of needing to give a custom extention it will never load
+    // old code
+    // const String path = (EngineContentFolder or ProjectContentFolder) / internalPath + ASSET_FILES_EXTENSION_WITH_DOT;
 
+    const String path =
+#if USE_EDITOR
+        Globals::EngineContentFolder
+#else
+        Globals::ProjectContentFolder
+#endif
+        / internalPath + 
+        //if there is no Extension specified,let's assume user is trying to load .flax
+        (FileSystem::GetExtension(internalPath).Length() == 0 ? ASSET_FILES_EXTENSION_WITH_DOT : L"");
+
+    
     const auto asset = LoadAsync(path, type);
     if (asset == nullptr)
     {
