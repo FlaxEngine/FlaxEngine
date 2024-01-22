@@ -181,17 +181,9 @@ protected:
     /// Can this panel allow for multiple children?
     /// </summary>
     bool CanHaveMultipleChildren;
+protected:
+    virtual void Layout(const Rectangle& InNewBounds) override;
+    virtual void Layout(const Rectangle& InSlotNewBounds, UIPanelSlot* InFor);
 public: // exposed for Native UI host on c# side
     API_FUNCTION() void Render();
-
-    API_FUNCTION() virtual void InvalidateLayout(const UIPanelSlot* InFor) override
-    {
-        if (IsVolatile) //as stated in IsVolatile comment the Layout is not cached layout is refreshed evry frame
-            return;
-
-        Layout();
-    }
-    API_FUNCTION() virtual void Layout()
-    {
-    }
 };

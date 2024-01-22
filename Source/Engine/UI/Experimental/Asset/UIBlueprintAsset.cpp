@@ -23,25 +23,28 @@ UIBlueprintAsset::UIBlueprintAsset(const SpawnParams& params, const AssetInfo* i
 }
 void UIBlueprintAsset::OnGetData(rapidjson_flax::StringBuffer& buffer) const
 {
+
     PrettyJsonWriter Final(buffer);
     rapidjson_flax::StringBuffer dataBuffer;
     PrettyJsonWriter writerObj(dataBuffer);
     ISerializable::SerializeStream& stream = writerObj;
     Array<String> Types{};
-    SerializeComponent(stream,Component, Types);
-
 
     Final.StartObject();
-    Final.JKEY("TypeNames");
-    //writer.RawValue(dataBuffer.GetString(), (int32)dataBuffer.GetSize());
-    Final.StartArray();
-    for (auto i = 0; i < Types.Count(); i++)
+    if (Component != nullptr)
     {
-        Final.String(Types[i].ToStringAnsi().GetText(), Types[i].Length());
+        SerializeComponent(stream, Component, Types);
+        Final.JKEY("TypeNames");
+        //writer.RawValue(dataBuffer.GetString(), (int32)dataBuffer.GetSize());
+        Final.StartArray();
+        for (auto i = 0; i < Types.Count(); i++)
+        {
+            Final.String(Types[i].ToStringAnsi().GetText(), Types[i].Length());
+        }
+        Final.EndArray();
+        Final.JKEY("Tree");
+        Final.RawValue(dataBuffer.GetString(), (int32)dataBuffer.GetSize());
     }
-    Final.EndArray();
-    Final.JKEY("Tree");
-    Final.RawValue(dataBuffer.GetString(), (int32)dataBuffer.GetSize());
     Final.EndObject();
 }
 Asset::LoadResult UIBlueprintAsset::loadAsset()

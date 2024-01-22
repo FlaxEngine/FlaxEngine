@@ -15,11 +15,21 @@
 API_STRUCT(Namespace = "FlaxEngine.Experimental.UI")
 struct FLAXENGINE_API UIComponentTransform
 {
-    DECLARE_SCRIPTING_TYPE_STRUCTURE(UIComponentTransform);
+    DECLARE_SCRIPTING_TYPE_MINIMAL(UIComponentTransform);
 private:
-    API_FIELD() Matrix3x3 CachedTransform = Matrix3x3::Identity;
-    API_FIELD() Matrix3x3 CachedTransformInv = Matrix3x3::Identity;
     friend class UIComponent;
+    friend class UIPanelSlot;
+
+    /// <summary>
+    /// Cached Matrix3x3
+    /// </summary>
+    API_FIELD(Attributes = "HideInEditor, NoSerialize") Matrix3x3 CachedTransform = Matrix3x3::Identity;
+
+    /// <summary>
+    /// Cached Inverse Matrix3x3
+    /// </summary>
+    API_FIELD(Attributes = "HideInEditor, NoSerialize") Matrix3x3 CachedTransformInv = Matrix3x3::Identity;
+
 public:
     /// <summary>
     /// the Rectangle Constans Translation and Size
@@ -46,7 +56,7 @@ public:
     /// Initializes a new instance of the <see cref="UIComponentTransform"/> struct.
     /// </summary>
     UIComponentTransform()
-        : Rect(Rectangle(Float2::Zero,Float2::One))
+        : Rect(Rectangle(Float2::Zero, Float2(100)))
         , Shear(Vector2::Zero)
         , Pivot(Vector2::One * 0.5f)
         , Angle(0){}    

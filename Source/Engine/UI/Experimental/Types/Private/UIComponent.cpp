@@ -20,7 +20,7 @@ UIComponent::UIComponent(const SpawnParams& params) : ScriptingObject(params)
     Transform = UIComponentTransform();
     RenderOpacity = 1.0f;
     Slot = nullptr;
-
+    sizeof(UIComponent);
     //flags
     IsEnabled = true;
     Visibility = (UIComponentVisibility)(Visible | HitSelf);
@@ -149,7 +149,12 @@ const UIComponentClipping& UIComponent::GetClipping() const
 
 void UIComponent::SetTransform(const UIComponentTransform& InTransform)
 {
-    Transform = InTransform; if (!IsVolatile) {
+    Layout(InTransform.Rect);
+    Transform.Shear = InTransform.Shear;
+    Transform.Angle = InTransform.Angle;
+    Transform.Pivot = InTransform.Pivot;
+    if (!IsVolatile) 
+    {
         UpdateTransform();
     }
 }
@@ -161,7 +166,7 @@ const UIComponentTransform& UIComponent::GetTransform() const
 
 void UIComponent::SetTranslation(const Vector2& InTranslation)
 {
-    Transform.Rect.Location = InTranslation;
+    Layout(Rectangle(InTranslation, Transform.Rect.Size));
     if (!IsVolatile)
         UpdateTransform();
 }
@@ -173,7 +178,7 @@ const Vector2& UIComponent::GetTranslation() const
 
 void UIComponent::SetSize(const Vector2& InSize)
 {
-    Transform.Rect.Size = InSize;
+    Layout(Rectangle(Transform.Rect.Location, InSize));
     if (!IsVolatile)
         UpdateTransform();
 }
@@ -342,11 +347,6 @@ UIComponentVisibility UIComponent::GetVisibilityInDesigner() const
     return HiddenInDesigner ? UIComponentVisibility::Collapsed : UIComponentVisibility::Visible;
 }
 
-bool UIComponent::IsEditorUIComponent() const
-{
-    return false;
-}
-
 bool UIComponent::IsDesignTime() const
 {
     return HasAnyDesignerFlags(UIComponentDesignFlags::Designing);
@@ -426,7 +426,16 @@ void UIComponent::DeselectByDesigner()
 
 void UIComponent::OnDraw() 
 {
-    Render2D::FillRectangle(Transform.Rect, Color::White);
+    //Render2D::FillRectangle(Transform.Rect, Color::White);
+}
+void UIComponent::Layout(const Rectangle& InNewBounds)
+{
+    if (GetParent())
+    {
+        //Call to parent to update the layout for this element
+        //in some ceses it might just set the InNewSize value
+        GetParent()->Layout(InNewBounds, Slot);
+    }
 }
 
 void UIComponent::DrawInternal()
@@ -438,19 +447,20 @@ void UIComponent::DrawInternal()
         UpdateTransform();
     }
     Render2D::PushTransform(Transform.CachedTransform);
+    OnDraw();
 #if USE_EDITOR
-    if (HasAnyDesignerFlags(UIComponentDesignFlags::ShowOutline))
+    if (IsDesignTime())
     {
-        Render2D::DrawRectangle(Transform.Rect, Color::Green);
+        if (HasAnyDesignerFlags(UIComponentDesignFlags::ShowOutline))
+        {
+            Render2D::DrawRectangle(Transform.Rect, Color::Green, 2);
+        }
+        else
+        {
+            Render2D::DrawRectangle(Transform.Rect, Color::Gray, 2);
+        }
     }
 #endif
-    OnDraw();
     Render2D::PopTransform();
-}
-void UIComponent::InvalidateLayout(const UIPanelSlot* InFor)
-{
-    if (IsVolatile) //as stated in IsVolatile comment the Layout is not cached layout is refreshed evry frame
-        return;
-    //Call to parent to update layout
-    GetParent()->InvalidateLayout(Slot);
+
 }

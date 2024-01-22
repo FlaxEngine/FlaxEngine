@@ -9,28 +9,27 @@
 
 class UIPanelComponent;
 
-API_CLASS(Namespace = "FlaxEngine.Experimental.UI") 
+/// <summary>
+/// this class is light weight link betwine parent and child
+/// perpes of it is to be a Layout controler and hold data needed to preform the Layout on the child
+/// </summary>
+API_CLASS(Namespace = "FlaxEngine.Experimental.UI")
 class FLAXENGINE_API UIPanelSlot : public ScriptingObject
 {
     DECLARE_SCRIPTING_TYPE(UIPanelSlot);
 public:
 
     //API_FIELD()
-        class UIPanelComponent* Parent;
+    class UIPanelComponent* Parent;
 
     //API_FIELD()
-        class UIComponent* Content;
+    class UIComponent* Content;
 
-#if WITH_EDITOR
-    bool IsDesignTime() const
-    {
-        return Parent->IsDesignTime();
-    }
+    virtual void Layout(const Rectangle& InSlotNewBounds);
+#if USE_EDITOR
+    FORCE_INLINE bool IsDesignTime() const;
 #else
     FORCE_INLINE bool IsDesignTime() const { return false; }
 #endif
-
-    virtual void Layout();
-    virtual const Rectangle& GetBounds();
 };
 

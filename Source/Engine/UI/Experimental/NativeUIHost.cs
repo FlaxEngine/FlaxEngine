@@ -26,6 +26,7 @@ namespace FlaxEngine.Experimental.UI
         public UIPanelComponent PanelComponent;
         UIActionEvent LastAction = new UIActionEvent();
         UIActionEvent Action = new UIActionEvent();
+
         /// <inheritdoc />
         public override void Draw()
         {
@@ -37,7 +38,8 @@ namespace FlaxEngine.Experimental.UI
         {
             if (PanelComponent != null)
             {
-                PanelComponent.Layout();
+                //fore update layout on c++ side
+                PanelComponent.Transform = PanelComponent.Transform;
             }
             base.PerformLayout(force);
         }
@@ -46,13 +48,13 @@ namespace FlaxEngine.Experimental.UI
         {
             if (PanelComponent != null)
             {
-                PanelComponent.Transform = new UIComponentTransform()
-                {
-                    Rect = Bounds,
-                    Shear = Shear,
-                    Angle = Rotation,
-                    Pivot = Pivot,
-                };
+                //PanelComponent.Transform = new UIComponentTransform()
+                //{
+                //    Rect = Bounds,
+                //    Shear = Shear,
+                //    Angle = Rotation,
+                //    Pivot = Pivot,
+                //};
                 Action = new UIActionEvent()
                 {
                     Button = GamepadButton.None,
@@ -70,11 +72,6 @@ namespace FlaxEngine.Experimental.UI
                     if (Asset.Component != null)
                     {
                         PanelComponent = (UIPanelComponent)Asset.Component;
-                    }
-                    else
-                    {
-                        Asset.Reload();
-                        Asset.WaitForLoaded();
                     }
                 }
             }

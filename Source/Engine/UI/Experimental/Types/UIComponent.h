@@ -16,10 +16,12 @@
 #include "UIPointerEvent.h"
 #include "UIActionEvent.h"
 
+
+
 /// <summary>
 /// Base class for any UI element
 /// </summary>
-API_CLASS(Namespace = "FlaxEngine.Experimental.UI")
+API_CLASS(Namespace = "FlaxEngine.Experimental.UI",Attributes = "UIDesigner(DisplayLabel=\"DisplayLabel\",CategoryName=\"CategoryName\",EditorComponent=true,HiddenInDesigner=true)")
 class FLAXENGINE_API UIComponent : public ScriptingObject, public ISerializable
 {
     DECLARE_SCRIPTING_TYPE(UIComponent);
@@ -303,22 +305,22 @@ public:
     /// <summary>
     /// Any flags used by the designer at edit time.
     /// </summary>
-    UIComponentDesignFlags DesignerFlags;
+    API_FIELD() UIComponentDesignFlags DesignerFlags;
 
     /// <summary>
     /// The friendly name for this UI Component displayed in the designer.
     /// </summary>
-    String DisplayLabel;
+    API_FIELD() String DisplayLabel;
 
     /// <summary>
     /// Category name used in the UI Component designer for sorting purpose
     /// </summary>
-    String CategoryName = L"Unknown";
+    API_FIELD() String CategoryName;
 
     /// <summary>
     /// Stores the design time flag setting if the UI Component is hidden inside the designer
     /// </summary>
-    bool HiddenInDesigner = true;
+    bool HiddenInDesigner = false;
 
     /// <summary>
     /// Stores the design time flag setting if the UI Component is expanded inside the designer
@@ -328,7 +330,7 @@ public:
     /// <summary>
     /// Stores the design time flag setting if the UI Component is locked inside the designer
     /// </summary>
-    bool LockedInDesigner = true;
+    bool LockedInDesigner = false;
 
     /// <summary>
     /// Is this UI Component locked in the designer
@@ -349,14 +351,6 @@ public:
     /// </summary>
     /// <returns></returns>
     API_FUNCTION() UIComponentVisibility GetVisibilityInDesigner() const;
-
-    /// <summary>
-    /// Determines whether this is Editor UI component.
-    /// </summary>
-    /// <returns>
-    ///   <c>true</c> if is editor UI component otherwise, <c>false</c>.
-    /// </returns>
-    API_FUNCTION() bool IsEditorUIComponent() const;
 
     /// <summary>
     /// </summary>
@@ -467,10 +461,19 @@ public:
 protected:
     friend class UIPanelOrderedSlot;
     friend class UIPanelSlot;
+    
+    /// <summary>
+    /// Layouts the UI Component in new size.
+    /// </summary>
+    /// <param name="InNewSize">New size of the in.</param>
+    virtual void Layout(const Rectangle& InNewBounds);
 
+protected:
     void DrawInternal();
-public: // exposed for Native UI host on c# side
-    virtual void InvalidateLayout(const UIPanelSlot* InFor);
+protected:
+    // UIBlueprintAsset stuff
+
+    friend class UIBlueprintAsset;
     FORCE_INLINE int GetCompactedFlags();
     void Serialize(SerializeStream& stream, const void* otherObj) override;
     void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) override;

@@ -9,6 +9,7 @@
 #include "Engine/Core/Collections/Sorting.h"
 #include "Engine/Core/Collections/Array.h"
 #include "Engine/Render2D/Render2D.h"
+#include <Engine/UI/Experimental/Types/Anchor.h>
 
 UIPanelComponent::UIPanelComponent(const SpawnParams& params) : UIComponent(params) 
 {
@@ -194,11 +195,33 @@ bool UIPanelComponent::CanAddMoreChildren() const
     return CanHaveMultipleChildren || GetChildrenCount() == 0;
 }
 
+void UIPanelComponent::Layout(const Rectangle& InNewBounds)
+{
+    Rectangle parentRect    = Transform.Rect;
+    Rectangle newParentRect = InNewBounds;
+
+    Vector2 sizeDiff     = newParentRect.Size      - parentRect.Size     ;
+    Vector2 locationDiff = newParentRect.Location  - parentRect.Location ;
+
+    for (auto i = 0; i < Slots.Count(); i++)
+    {
+        Rectangle& newr =Slots[i]->Content->Transform.Rect.MakeOffsetted(locationDiff);
+        newr.Size += sizeDiff;
+        Slots[i]->Layout(newr);
+    }
+    Transform.Rect = InNewBounds;
+}
+void UIPanelComponent::Layout(const Rectangle& InSlotNewBounds, UIPanelSlot* InFor)
+{
+    InFor->Layout(InSlotNewBounds);
+}
+
 void UIPanelComponent::Render()
 {
     if (!IsVisible())
         return;
     
+    DrawInternal();
 
     //get all slots
     Array<UIPanelSlot*> slots = GetSlots();

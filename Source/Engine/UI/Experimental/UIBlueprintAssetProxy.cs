@@ -46,7 +46,7 @@ namespace FlaxEditor.Experimental.UI
         /// <inheritdoc />
         public override EditorWindow Open(Editor editor, ContentItem item)
         {
-            return new UIEditor(editor, (UIBlueprintAssetItem)item);
+            return new UIDesignerEditor(editor, (UIBlueprintAssetItem)item);
         }
 
         /// <inheritdoc />

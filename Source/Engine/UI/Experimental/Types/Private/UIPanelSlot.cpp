@@ -4,15 +4,13 @@
 #include "Engine/Scripting/ScriptingObject.h"
 #include "Engine/UI/Experimental/Types/UIPanelSlot.h"
 #include "Engine/UI/Experimental/Types/UIComponent.h"
+#include "Engine/UI/Experimental/Types/UIPanelComponent.h"
 
 UIPanelSlot::UIPanelSlot(const SpawnParams& params) : ScriptingObject(params) {}
 
-void UIPanelSlot::Layout()
-{
+FORCE_INLINE bool UIPanelSlot::IsDesignTime() const {   return Parent->IsDesignTime();  }
 
-}
-
-const Rectangle& UIPanelSlot::GetBounds()
+void UIPanelSlot::Layout(const Rectangle& InSlotNewBounds)
 {
-    return Content->Transform.Rect;
+    Content->Transform.Rect = InSlotNewBounds;
 }
