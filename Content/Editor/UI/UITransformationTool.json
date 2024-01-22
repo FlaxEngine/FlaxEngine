@@ -1,0 +1,49 @@
+{
+	"ID": "fad54a044b2c0ac8ce08dba9611ed852",
+	"TypeName": "FlaxEngine.UIBlueprintAsset",
+	"EngineBuild": 6407,
+	"Data": {
+	"TypeNames": [
+		"FlaxEngine.Experimental.UI.UIPanelComponent",
+		"FlaxEngine.Experimental.UI.UIComponent"
+	],
+	"Tree": {
+	"ID": 0,
+	"Transform": "AABfQwAA3kIAAGFEAAAERAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+	"Slots": [
+		{
+			"ID": 1,
+			"Transform": "AAD2QgCAuEMAAMhCAADIQgAAAAAAAAAAAAAAAAAAAAAAAAAA"
+		},
+		{
+			"ID": 1,
+			"Transform": "AAAaRAAAMEEAAMhCAADIQgAAAAAAAAAAAAAAAAAAAAAAAAAA"
+		},
+		{
+			"ID": 1,
+			"Transform": "AADwQgAAIEEAAMhCAADIQgAAAAAAAAAAAAAAAAAAAAAAAAAA"
+		},
+		{
+			"ID": 1,
+			"Transform": "AACMRAAAMEEAAMhCAADIQgAAAAAAAAAAAAAAAAAAAAAAAAAA"
+		},
+		{
+			"ID": 1,
+			"Transform": "AECMRAAApUMAAMhCAADIQgAAAAAAAAAAAAAAAAAAAAAAAAAA"
+		},
+		{
+			"ID": 1,
+			"Transform": "AMAcRACAH0QAAMhCAADIQgAAAAAAAAAAAAAAAAAAAAAAAAAA"
+		},
+		{
+			"ID": 1,
+			"Transform": "AAD6QgBAH0QAAMhCAADIQgAAAAAAAAAAAAAAAAAAAAAAAAAA"
+		},
+		{
+			"ID": 1,
+			"Transform": "AECMRADAH0QAAMhCAADIQgAAAAAAAAAAAAAAAAAAAAAAAAAA"
+		}
+	]
+}
+}
+}
