@@ -281,17 +281,18 @@ bool MCore::LoadEngine()
         flaxLibraryPath = ::String(StringUtils::GetDirectoryName(Platform::GetExecutableFilePath())) / StringUtils::GetFileName(flaxLibraryPath);
     }
 #endif
+#if !PLATFORM_SWITCH
     if (!FileSystem::FileExists(flaxLibraryPath))
     {
         LOG(Error, "Flax Engine native library file is missing ({0})", flaxLibraryPath);
     }
+#endif
     RegisterNativeLibrary("FlaxEngine", flaxLibraryPath.Get());
 
     MRootDomain = New<MDomain>("Root");
     MDomains.Add(MRootDomain);
 
-    void* GetRuntimeInformationPtr = GetStaticMethodPointer(TEXT("GetRuntimeInformation"));
-    char* buildInfo = CallStaticMethod<char*>(GetRuntimeInformationPtr);
+    char* buildInfo = CallStaticMethod<char*>(GetStaticMethodPointer(TEXT("GetRuntimeInformation")));
     LOG(Info, ".NET runtime version: {0}", ::String(buildInfo));
     MCore::GC::FreeMemory(buildInfo);
 
@@ -2047,7 +2048,7 @@ bool InitHostfxr()
 #endif
     
     // Platform-specific setup
-#if PLATFORM_IOS
+#if PLATFORM_IOS || PLATFORM_SWITCH
     setenv("MONO_AOT_MODE", "aot", 1);
     setenv("DOTNET_SYSTEM_GLOBALIZATION_INVARIANT", "1", 1);
 #endif

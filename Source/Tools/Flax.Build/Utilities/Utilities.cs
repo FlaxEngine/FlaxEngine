@@ -353,6 +353,16 @@ namespace Flax.Build
         }
 
         /// <summary>
+        /// Calls <see cref="Type.GetType()"/> within Flax.Build context - can be used by build scripts to properly find a type by name. 
+        /// </summary>
+        /// <param name="name">The full name (namespace with class name).</param>
+        /// <returns>Type or null if not found.</returns>
+        public static Type GetType(string name)
+        {
+            return Type.GetType(name);
+        }
+
+        /// <summary>
         /// Runs the external program.
         /// </summary>
         /// <param name="app">Program filename.</param>
