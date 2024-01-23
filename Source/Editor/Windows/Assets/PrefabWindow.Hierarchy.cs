@@ -213,6 +213,7 @@ namespace FlaxEditor.Windows.Assets
                 _window = null;
                 _dragAssets = null;
                 _dragActorType = null;
+                _dragScriptItems = null;
                 _dragHandlers?.Clear();
                 _dragHandlers = null;
 

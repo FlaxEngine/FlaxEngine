@@ -814,6 +814,7 @@ namespace FlaxEditor.SceneGraph.GUI
             _dragScripts = null;
             _dragAssets = null;
             _dragActorType = null;
+            _dragScriptItems = null;
             _dragHandlers?.Clear();
             _dragHandlers = null;
             _highlights = null;
