@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using FlaxEditor.Content;
 using FlaxEditor.GUI.ContextMenu;
 using FlaxEditor.GUI.Drag;
@@ -64,6 +65,7 @@ namespace FlaxEditor.Windows.Assets
             private PrefabWindow _window;
             private DragAssets _dragAssets;
             private DragActorType _dragActorType;
+            private DragScriptItems _dragScriptItems;
             private DragHandlers _dragHandlers;
 
             public SceneTreePanel(PrefabWindow window)
@@ -82,6 +84,14 @@ namespace FlaxEditor.Windows.Assets
             private static bool ValidateDragActorType(ScriptType actorType)
             {
                 return true;
+            }
+            
+            private static bool ValidateDragScriptItem(ScriptItem script)
+            {
+                var actors = Editor.Instance.CodeEditing.Actors.Get();
+                if (actors.Any(x => x.ContentItem == script))
+                    return true;
+                return false;
             }
 
             /// <inheritdoc />
@@ -106,6 +116,13 @@ namespace FlaxEditor.Windows.Assets
                     }
                     if (_dragActorType.OnDragEnter(data))
                         return _dragActorType.Effect;
+                    if (_dragScriptItems == null)
+                    {
+                        _dragScriptItems = new DragScriptItems(ValidateDragScriptItem);
+                        _dragHandlers.Add(_dragScriptItems);
+                    }
+                    if (_dragScriptItems.OnDragEnter(data))
+                        return _dragScriptItems.Effect;
                 }
                 return result;
             }
@@ -162,7 +179,30 @@ namespace FlaxEditor.Windows.Assets
                         }
                         result = DragDropEffect.Move;
                     }
+                    // Drag script item
+                    else if (_dragScriptItems != null && _dragScriptItems.HasValidDrag)
+                    {
+                        for (int i = 0; i < _dragScriptItems.Objects.Count; i++)
+                        {
+                            var item = _dragScriptItems.Objects[i];
+                            // Find actors with the same content item and spawn them.
+                            foreach (var actorType in Editor.Instance.CodeEditing.Actors.Get())
+                            {
+                                if (actorType.ContentItem != item)
+                                    continue;
 
+                                var actor = actorType.CreateInstance() as Actor;
+                                if (actor == null)
+                                {
+                                    Editor.LogWarning("Failed to spawn actor of type " + actorType.TypeName);
+                                    continue;
+                                }
+                                actor.Name = actorType.Name;
+                                _window.Spawn(actor);
+                            }
+                        }
+                        result = DragDropEffect.Move;
+                    }
                     _dragHandlers.OnDragDrop(null);
                 }
                 return result;
