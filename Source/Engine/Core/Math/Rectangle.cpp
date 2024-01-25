@@ -10,6 +10,122 @@ String Rectangle::ToString() const
     return String::Format(TEXT("{}"), *this);
 }
 
+// Returns width of the rectangle
+
+inline float Rectangle::GetWidth() const
+{
+    return Size.X;
+}
+
+// Returns height of the rectangle
+
+inline float Rectangle::GetHeight() const
+{
+	return Size.Y;
+}
+
+// Gets Y coordinate of the top edge of the rectangle
+
+inline float Rectangle::GetY() const
+{
+    return Location.Y;
+}
+
+// Gets Y coordinate of the top edge of the rectangle
+
+inline float Rectangle::GetTop() const
+{
+    return Location.Y;
+}
+
+// Gets Y coordinate of the bottom edge of the rectangle
+
+inline float Rectangle::GetBottom() const
+{
+    return Location.Y + Size.Y;
+}
+
+// Gets X coordinate of the left edge of the rectangle
+
+inline float Rectangle::GetX() const
+{
+    return Location.X;
+}
+
+// Gets X coordinate of the left edge of the rectangle
+
+inline float Rectangle::GetLeft() const
+{
+    return Location.X;
+}
+
+// Gets X coordinate of the right edge of the rectangle
+
+inline float Rectangle::GetRight() const
+{
+    return Location.X + Size.X;
+}
+
+// Gets position of the upper left corner of the rectangle
+
+inline Float2 Rectangle::GetUpperLeft() const
+{
+    return Location;
+}
+
+// Gets position of the upper right corner of the rectangle
+
+inline Float2 Rectangle::GetUpperRight() const
+{
+    return Location + Float2(Size.X, 0);
+}
+
+// Gets position of the bottom right corner of the rectangle
+
+inline Float2 Rectangle::GetBottomRight() const
+{
+    return Location + Size;
+}
+
+// Gets position of the bottom left corner of the rectangle
+
+inline Float2 Rectangle::GetBottomLeft() const
+{
+    return Location + Float2(0, Size.Y);
+}
+
+inline Float2 Rectangle::GetCenter() const
+{
+    return Location + Size * 0.5f;
+}
+
+inline void Rectangle::SetCenter(const Float2& value)
+{
+    Location = value - Size * 0.5f;
+}
+
+inline void Rectangle::SetTop(float value)
+{
+    Location.X = value;
+    Size.X = GetBottom() - Location.X;
+}
+
+inline void Rectangle::SetLeft(float value)
+{
+    Location.Y = value;
+    Size.Y = GetLeft() - Location.Y;
+}
+
+inline void Rectangle::SetRight(float value)
+{
+    Size.X = value - Location.X;
+}
+
+inline void Rectangle::SetBottom(float value)
+{
+	Size.Y = value - Location.Y;
+}
+
 bool Rectangle::Contains(const Float2& location) const
 {
     return location.X >= Location.X && location.Y >= Location.Y && (location.X <= Location.X + Size.X && location.Y <= Location.Y + Size.Y);
@@ -110,4 +226,20 @@ Rectangle Rectangle::FromPoints(Float2* points, int32 pointsCount)
         rightBottom = Float2::Max(rightBottom, points[i]);
     }
     return Rectangle(upperLeft, Math::Max(rightBottom - upperLeft, Float2::Zero));
+}
+
+Float2 Rectangle::NormalizedToPoint(const Rectangle& rectangle, const Float2& normalizedRectangleCoordinates)
+{
+    return Float2(
+        Math::Lerp(rectangle.GetLeft(), rectangle.GetRight(), normalizedRectangleCoordinates.X),
+        Math::Lerp(rectangle.GetTop(), rectangle.GetBottom(), normalizedRectangleCoordinates.Y)
+    );
+}
+
+Float2 Rectangle::PointToNormalized(const Rectangle& rectangle, const Float2& point)
+{
+    auto val = Math::Clamp(point, Float2::Zero, rectangle.Size);
+    val.X = Math::IsZero(val.X) ? 0 : val.X /= rectangle.Size.X;
+    val.Y = Math::IsZero(val.Y) ? 0 : val.Y /= rectangle.Size.Y;
+    return val;
 }

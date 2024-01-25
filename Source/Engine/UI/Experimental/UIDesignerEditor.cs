@@ -16,14 +16,14 @@ namespace FlaxEditor.Experimental.UI
 
 
         private UIBlueprintAsset _asset;
-        private UIBlueprintAsset _UITransformationToolAsset;
+        private NativeUIHost UITransformationTool;
         ToolStripButton _saveButton;
         ToolStripButton _addComponentButton;
 
         public UIDesignerEditor(Editor editor, UIBlueprintAssetItem item) : base(editor, item)
         {
             _asset = FlaxEngine.Content.Load<UIBlueprintAsset>(item.Path);
-            _UITransformationToolAsset = FlaxEngine.Content.LoadAsyncInternal<UIBlueprintAsset>("Editor\\UI\\UITransformationTool.json");
+            var _UITransformationToolAsset = FlaxEngine.Content.LoadAsyncInternal<UIBlueprintAsset>("Editor\\UI\\UITransformationTool.json");
             _UITransformationToolAsset.WaitForLoaded();
             // Toolstrip
             _saveButton = (ToolStripButton)_toolstrip.AddButton(editor.Icons.Save64, Save).LinkTooltip("Save");
@@ -35,12 +35,13 @@ namespace FlaxEditor.Experimental.UI
             host.Height -= _toolstrip.Size.Y;
             host.Location = new Float2(Location.X, _toolstrip.Size.Y);
 
-            NativeUIHost UITransformationToolhost = AddChild<NativeUIHost>();
-            UITransformationToolhost.AnchorPreset = FlaxEngine.GUI.AnchorPresets.StretchAll;
-            UITransformationToolhost.Asset = _UITransformationToolAsset;
-            UITransformationToolhost.Height -= _toolstrip.Size.Y;
-            UITransformationToolhost.Location = new Float2(Location.X, _toolstrip.Size.Y);
+            UITransformationTool = AddChild<NativeUIHost>();
+            UITransformationTool.AnchorPreset = FlaxEngine.GUI.AnchorPresets.StretchAll;
+            UITransformationTool.PanelComponent = _UITransformationToolAsset.CreateInstance() as UIPanelComponent;
+            UITransformationTool.Height -= _toolstrip.Size.Y;
+            UITransformationTool.Location = new Float2(Location.X, _toolstrip.Size.Y);
 
+            
             //System.Linq madnes :D
             Attributes = typeof(UIComponent).Assembly.GetTypes().
                 Where(t => t.IsSubclassOf(typeof(UIComponent)) && !t.IsAbstract).
@@ -53,19 +54,21 @@ namespace FlaxEditor.Experimental.UI
                 }).Where(t => t.Item2 != null).ToArray();
             
             UIBlueprintAsset.SetDesinerFlags(_asset.Component, UIComponentDesignFlags.Designing);
-
         }
         public void AddComponent()
         {
             if(_asset.Component == null)
             {
-                var rootcomp = new UIComponent();
+                var rootcomp = new UIPanelComponent();
                 UIBlueprintAsset.SetDesinerFlags(rootcomp, UIComponentDesignFlags.Designing);
                 _asset.Component = rootcomp;
+                rootcomp.CreatedByUIBlueprint = true;
+                return;
             }
             var comp = new UIComponent();
             UIBlueprintAsset.SetDesinerFlags(comp, UIComponentDesignFlags.Designing);
             (_asset.Component as UIPanelComponent)?.AddChild(comp);
+            comp.CreatedByUIBlueprint = true;
         }
         public override void Save()
         {
@@ -79,17 +82,18 @@ namespace FlaxEditor.Experimental.UI
         Vector2 mouseloc;
         Vector2 Offset;
         bool Drag;
+        bool Resize;
         UIComponent Selection;
         private void SetSelection(UIComponent NewSelection)
         {
             if (Selection != null)
-                Selection.DeselectByDesigner();
+                Selection.Deselect();
             Selection = NewSelection;
             if (Selection != null)
             {
-                Selection.SelectByDesigner();
+                Selection.Select();
                 Offset = mouseloc - Selection.Translation;
-                _UITransformationToolAsset.Component.Transform = Selection.Transform;
+                UITransformationTool.PanelComponent.Transform = Selection.Transform;
                 Drag = true;
             }
         }
@@ -102,6 +106,10 @@ namespace FlaxEditor.Experimental.UI
 
                 SelectElement(_asset.Component, mouseloc);
             }
+            if(Selection != null && button == MouseButton.Right) 
+            {
+                Resize = true;
+            }
             return base.OnMouseDown(location, button);
         }
 
@@ -111,7 +119,7 @@ namespace FlaxEditor.Experimental.UI
             if (comp == null)
                 return false;
 
-            if (comp.Transform.Rect.Contains(location) && Selection != comp && !comp.IsLockedInDesigner())
+            if (comp.Transform.Contains(location) && Selection != comp && !comp.IsLockedInDesigner())
             {
                 SetSelection(comp);
                 GotSelection = true;
@@ -121,7 +129,7 @@ namespace FlaxEditor.Experimental.UI
                 var children = panelComponent.GetAllChildren();
                 for (int i = 0; i < children.Length; i++)
                 {
-                    if (children[i].Transform.Rect.Contains(location) && Selection != children[i] && !children[i].IsLockedInDesigner())
+                    if (children[i].Transform.Contains(location) && Selection != children[i] && !children[i].IsLockedInDesigner())
                     {
                         if (SelectElement(children[i], location))
                         {
@@ -143,6 +151,11 @@ namespace FlaxEditor.Experimental.UI
             if (button == MouseButton.Left)
             {
                 Drag = false;
+                Resize = false;
+            }
+            if(button == MouseButton.Right)
+            {
+                Resize = false;
             }
             return base.OnMouseUp(location, button);
         }
