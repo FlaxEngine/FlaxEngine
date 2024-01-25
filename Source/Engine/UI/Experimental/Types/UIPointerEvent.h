@@ -6,6 +6,7 @@
 #include "Engine/Core/Math/Vector2.h"
 #include "Engine/Input/Enums.h"
 #include "Engine/Input/KeyboardKeys.h"
+#include "Engine/Core/Collections/Array.h"
 
 /// <summary>
 /// UI pointer event's: mouse, touch, stylus, gamepad emulated mouse, etc.
@@ -17,24 +18,24 @@ struct FLAXENGINE_API UIPointerEvent
 public:
 
     /// <summary>
-    /// The value
+    /// The locations it can be 1 or more if using user is on mobile phone
     /// </summary>
-    API_FIELD() Float2 Value;
+    API_FIELD() Array<Float2> Locations;
 
     /// <summary>
-    /// The state
+    /// The imput state
     /// </summary>
     API_FIELD() InputActionState State;
 
     /// <summary>
     /// The mouse button state
     /// </summary>
-    API_FIELD() MouseButton MouseButtonState;
+    API_FIELD() MouseButton MouseButton;
 
     /// <summary>
     /// The gamepad axis state
     /// </summary>
-    API_FIELD() GamepadAxis GamepadAxisState;
+    API_FIELD() GamepadAxis GamepadAxis;
 
     /// <summary>
     /// The is touch

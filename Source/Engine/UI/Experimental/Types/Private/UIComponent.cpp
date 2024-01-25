@@ -118,10 +118,10 @@ void UIComponent::Deserialize(DeserializeStream& stream, ISerializeModifier* mod
         //custom unpacking for transform
         float floats[9] = { 0,0,0,0,0,0,0,0,0 };
         Encryption::Base64Decode(transform->value.GetString(), sizeof(floats), (byte*)&floats[0]);
-        Transform.Rect.Location.X = floats[0];
-        Transform.Rect.Location.Y = floats[1];
-        Transform.Rect.Size.X = floats[2];
-        Transform.Rect.Size.Y = floats[3];
+        Transform.Rect.Location.X =(floats[0]);
+        Transform.Rect.Location.Y=(floats[1]);
+        Transform.Rect.Size.X=(floats[2]);
+        Transform.Rect.Size.Y=(floats[3]);
         Transform.Shear.X = floats[4];
         Transform.Shear.Y = floats[5];
         Transform.Angle = floats[6];
@@ -130,21 +130,41 @@ void UIComponent::Deserialize(DeserializeStream& stream, ISerializeModifier* mod
     }
     DESERIALIZE(RenderOpacity);
 
-    UpdateTransform();
+    Transform.UpdateTransform();
     CreatedByUIBlueprint = true;
 }
 
 
 #pragma region GettersSetters
+inline bool UIComponent::GetIsEnabled() const {return IsEnabled;}
+inline const UIComponentClipping& UIComponent::GetClipping() const{return Clipping;}
+inline const UIComponentTransform& UIComponent::GetTransform() const {return Transform;}
+inline float UIComponent::GetTop() const { return Transform.Rect.GetTop(); }
+inline float UIComponent::GetBottom() const { return Transform.Rect.GetBottom(); }
+inline float UIComponent::GetLeft() const { return Transform.Rect.GetLeft(); }
+inline float UIComponent::GetRight() const { return Transform.Rect.GetRight(); }
+inline Float2 UIComponent::GetCenter() const { return Transform.Rect.GetCenter(); }
+inline const Rectangle& UIComponent::GetRect() const { return Transform.Rect; }
+inline const Vector2& UIComponent::GetTranslation() const { return Transform.Rect.Location; }
+inline const Vector2& UIComponent::GetSize() const { return Transform.Rect.Size; }
+inline const Vector2& UIComponent::GetShear() const { return Transform.Shear; }
+inline float UIComponent::GetAngle() const { return Transform.Angle; }
+inline const Vector2& UIComponent::GetPivot() const { return Transform.Pivot; }
+inline const CursorType& UIComponent::GetCursor() const { return Cursor; }
+inline const UIComponentVisibility& UIComponent::GetVisibility() const { return Visibility; }
+
+void UIComponent::SetRect(const Rectangle& InRectangle)
+{
+    Layout(InRectangle);
+    if (!IsVolatile)
+    {
+        Transform.UpdateTransform();
+    }
+}
 
 void UIComponent::SetClipping(const UIComponentClipping& InClipping)
 {
     Clipping = InClipping;
-}
-
-const UIComponentClipping& UIComponent::GetClipping() const
-{
-    return Clipping;
 }
 
 void UIComponent::SetTransform(const UIComponentTransform& InTransform)
@@ -153,84 +173,94 @@ void UIComponent::SetTransform(const UIComponentTransform& InTransform)
     Transform.Shear = InTransform.Shear;
     Transform.Angle = InTransform.Angle;
     Transform.Pivot = InTransform.Pivot;
-    if (!IsVolatile) 
+    if (!IsVolatile)
     {
-        UpdateTransform();
+        Transform.UpdateTransform();
     }
 }
 
-const UIComponentTransform& UIComponent::GetTransform() const
+void UIComponent::SetCenter(const Float2& value)
 {
-    return Transform;
+    auto& r = Rectangle(Transform.Rect);
+    r.SetCenter(value);
+    Layout(r);
+    if (!IsVolatile)
+        Transform.UpdateTransform();
+}
+
+void UIComponent::SetTop(float value)
+{
+    auto& r = Rectangle(Transform.Rect);
+    r.SetTop(value);
+    Layout(r);
+    if (!IsVolatile)
+        Transform.UpdateTransform();
+}
+
+void UIComponent::SetLeft(float value)
+{
+    auto& r = Rectangle(Transform.Rect);
+    r.SetLeft(value);
+    Layout(r);
+    if (!IsVolatile)
+        Transform.UpdateTransform();
+}
+
+void UIComponent::SetBottom(float value)
+{
+    auto& r = Rectangle(Transform.Rect);
+    r.SetBottom(value);
+    Layout(r);
+    if (!IsVolatile)
+        Transform.UpdateTransform();
+}
+
+void UIComponent::SetRight(float value)
+{
+    auto& r = Rectangle(Transform.Rect);
+    r.SetRight(value);
+    Layout(r);
+    if (!IsVolatile)
+        Transform.UpdateTransform();
 }
 
 void UIComponent::SetTranslation(const Vector2& InTranslation)
 {
     Layout(Rectangle(InTranslation, Transform.Rect.Size));
     if (!IsVolatile)
-        UpdateTransform();
-}
-
-const Vector2& UIComponent::GetTranslation() const
-{
-    return Transform.Rect.Location;
+        Transform.UpdateTransform();
 }
 
 void UIComponent::SetSize(const Vector2& InSize)
 {
     Layout(Rectangle(Transform.Rect.Location, InSize));
     if (!IsVolatile)
-        UpdateTransform();
-}
-
-const Vector2& UIComponent::GetSize() const
-{
-    return Transform.Rect.Size;
+        Transform.UpdateTransform();
 }
 
 void UIComponent::SetShear(const Vector2& InShear)
 {
     Transform.Shear = InShear;
     if (!IsVolatile)
-        UpdateTransform();
-}
-
-const Vector2& UIComponent::GetShear() const
-{
-    return Transform.Shear;
+        Transform.UpdateTransform();
 }
 
 void UIComponent::SetAngle(float InAngle) {
     Transform.Angle = InAngle; 
     if (!IsVolatile) 
-        UpdateTransform();
-}
-
-float UIComponent::GetAngle() const
-{
-    return Transform.Angle;
+        Transform.UpdateTransform();
 }
 
 void UIComponent::SetPivot(const Vector2& InPivot)
 {
     Transform.Pivot = InPivot; 
     if (!IsVolatile) 
-        UpdateTransform();
-}
-
-const Vector2& UIComponent::GetPivot() const
-{
-    return Transform.Pivot;
+        Transform.UpdateTransform();
 }
 
 void UIComponent::SetIsEnabled(bool InIsEnabled)
 {
     IsEnabled = InIsEnabled;
-} 
-
-bool UIComponent::GetIsEnabled() const
-{
-    return IsEnabled;
 }
 
 void UIComponent::SetToolTipText(const String& InToolTipText)
@@ -260,16 +290,6 @@ void UIComponent::SetCursor(const CursorType& InCursor)
     Cursor = InCursor;
 }
 
-const CursorType& UIComponent::GetCursor() const
-{
-    throw "Not implemented yet";
-}
-
-const UIComponentVisibility& UIComponent::GetVisibility() const
-{
-    return Visibility;
-}
-
 void UIComponent::SetVisibility(const UIComponentVisibility& InVisibility)
 {
     Visibility = InVisibility;
@@ -289,25 +309,6 @@ bool UIComponent::IsRendered() const
 bool UIComponent::IsVisible() const
 {
     return EnumHasAnyFlags(Visibility,(UIComponentVisibility)(Visible | HitChildren | HitSelf));
-}
-
-Object* UIComponent::GetSourceAssetOrClass() const
-{
-    return nullptr;
-}
-UIComponent* UIComponent::RebuildUIComponent()
-{
-    DebugLog::LogError(String(L"The Rebuild UI Component is on implemented by Parent class\n").Append(DebugLog::GetStackTrace()));
-    return nullptr;
-}
-
-void UIComponent::OnUIComponentRebuilt()
-{
-}
-
-void UIComponent::UpdateTransform()
-{
-    Transform.UpdateTransform();
 }
 
 UIPanelComponent* UIComponent::GetParent() const
@@ -332,6 +333,7 @@ void UIComponent::RemoveFromParent()
 }
 
 #if USE_EDITOR
+
 bool UIComponent::IsLockedInDesigner() const
 {
     return LockedInDesigner;
@@ -360,15 +362,6 @@ bool UIComponent::HasAnyDesignerFlags(UIComponentDesignFlags FlagsToCheck) const
 bool UIComponent::IsPreviewTime() const
 {
     return HasAnyDesignerFlags(UIComponentDesignFlags::Previewing);
-}
-const String& UIComponent::GetDisplayLabel() const
-{
-    return DisplayLabel;
-}
-
-void UIComponent::SetDisplayLabel(const String& InDisplayLabel)
-{
-    DisplayLabel = InDisplayLabel;
 }
 
 bool UIComponent::IsGeneratedName() const
@@ -402,7 +395,7 @@ bool UIComponent::IsVisibleInDesigner() const
     return true;
 }
 
-void UIComponent::SelectByDesigner()
+void UIComponent::Select()
 {
     //SetFlag
     DesignerFlags = (UIComponentDesignFlags)((int)DesignerFlags | (int)UIComponentDesignFlags::ShowOutline);
@@ -410,7 +403,7 @@ void UIComponent::SelectByDesigner()
     OnSelectedByDesigner();
 }
 
-void UIComponent::DeselectByDesigner()
+void UIComponent::Deselect()
 {
     //UnsetFlag
     DesignerFlags = (UIComponentDesignFlags)((int)DesignerFlags & ~(int)UIComponentDesignFlags::ShowOutline);
@@ -418,16 +411,14 @@ void UIComponent::DeselectByDesigner()
     OnDeselectedByDesigner();
 }
 #endif
+void UIComponent::OnDraw(){}
 
 //---------------------------------------------------------------------------------------------------
 //--------------------------------------------Internal-----------------------------------------------
 //---------------------------------------------------------------------------------------------------
 
 
-void UIComponent::OnDraw() 
-{
-    //Render2D::FillRectangle(Transform.Rect, Color::White);
-}
+
 void UIComponent::Layout(const Rectangle& InNewBounds)
 {
     if (GetParent())
@@ -442,9 +433,9 @@ void UIComponent::DrawInternal()
 {
     if (IsVolatile)
     {
-        //as stated in IsVolatile comment the Matrix3x3 are not cached
+        //as stated in IsVolatile comment the Matrix3x3 are not 'cached'
         //there are computed every frame
-        UpdateTransform();
+        Transform.UpdateTransform();
     }
     Render2D::PushTransform(Transform.CachedTransform);
     OnDraw();

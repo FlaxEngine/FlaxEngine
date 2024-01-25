@@ -171,11 +171,12 @@ protected:
     /// <param name="InSlot">The slot.</param>
     virtual void OnSlotRemoved(UIPanelSlot* InSlot)
     {
-
     }
 
 protected:
     friend class UIComponent;
+    friend class UIPanelSlot;
+    friend class UIBlueprintAsset;
 
     /// <summary>
     /// Can this panel allow for multiple children?
@@ -185,5 +186,5 @@ protected:
     virtual void Layout(const Rectangle& InNewBounds) override;
     virtual void Layout(const Rectangle& InSlotNewBounds, UIPanelSlot* InFor);
 public: // exposed for Native UI host on c# side
-    API_FUNCTION() void Render();
+    API_FUNCTION(internal) void Render();
 };

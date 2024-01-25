@@ -7,8 +7,9 @@
 /// the Anchor
 /// </summary>
 API_STRUCT(Namespace = "FlaxEngine.Experimental.UI")
-struct FLAXENGINE_API Anchor
+struct FLAXENGINE_API Anchor : ISerializable
 {
+    API_AUTO_SERIALIZATION();
     DECLARE_SCRIPTING_TYPE_MINIMAL(Anchor);
 public:
     /// <summary>

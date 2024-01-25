@@ -30,7 +30,6 @@ private:
     /// </summary>
     API_FIELD(Attributes = "HideInEditor, NoSerialize") Matrix3x3 CachedTransformInv = Matrix3x3::Identity;
 
-public:
     /// <summary>
     /// the Rectangle Constans Translation and Size
     /// </summary>
@@ -51,7 +50,7 @@ public:
     /// This value is a normalized coordinate about which things like rotations will occur.
     /// </summary>
     API_FIELD() Vector2 Pivot;
-public:    
+public:
     /// <summary>
     /// Initializes a new instance of the <see cref="UIComponentTransform"/> struct.
     /// </summary>
@@ -95,6 +94,6 @@ public:
         return !(*this == Other);
     }
 
-
+protected:
     void UpdateTransform();
 };

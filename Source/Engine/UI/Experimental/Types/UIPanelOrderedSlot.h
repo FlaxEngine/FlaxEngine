@@ -19,4 +19,8 @@ public:
     /// The z order
     /// </summary>
     int32 ZOrder;
+protected:
+
+    void Serialize(SerializeStream& stream, const void* otherObj) override;
+    void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) override;
 };

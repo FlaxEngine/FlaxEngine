@@ -14,22 +14,29 @@ class UIPanelComponent;
 /// perpes of it is to be a Layout controler and hold data needed to preform the Layout on the child
 /// </summary>
 API_CLASS(Namespace = "FlaxEngine.Experimental.UI")
-class FLAXENGINE_API UIPanelSlot : public ScriptingObject
+class FLAXENGINE_API UIPanelSlot : public ScriptingObject, public ISerializable
 {
     DECLARE_SCRIPTING_TYPE(UIPanelSlot);
 public:
 
-    //API_FIELD()
-    class UIPanelComponent* Parent;
+    API_FIELD(internal)
+        class UIPanelComponent* Parent;
 
-    //API_FIELD()
-    class UIComponent* Content;
+    API_FIELD(internal)
+        class UIComponent* Content;
 
-    virtual void Layout(const Rectangle& InSlotNewBounds);
+
 #if USE_EDITOR
     FORCE_INLINE bool IsDesignTime() const;
 #else
     FORCE_INLINE bool IsDesignTime() const { return false; }
 #endif
+protected:
+    friend class UIPanelComponent;
+    friend class UIBlueprintAsset;
+    virtual void Layout(const Rectangle& InSlotNewBounds);
+
+    void Serialize(SerializeStream& stream, const void* otherObj) override;
+    void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) override;
 };
 

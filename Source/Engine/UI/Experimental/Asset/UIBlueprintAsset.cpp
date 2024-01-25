@@ -54,7 +54,8 @@ Asset::LoadResult UIBlueprintAsset::loadAsset()
     if (result == LoadResult::Ok)
     {
         auto modifier = Cache::ISerializeModifier.Get();
-        ISerializable::DeserializeStream& stream = *Data;
+        ISerializable::DeserializeStream& stream = (*Data);
+        //if(stream == Data.mem)
         const auto TypeNames = SERIALIZE_FIND_MEMBER(stream, "TypeNames");
         if (TypeNames)
         {
@@ -63,7 +64,7 @@ Asset::LoadResult UIBlueprintAsset::loadAsset()
                 if (TypeNames->value.IsArray())
                 {
                     const auto& streamArray = TypeNames->value.GetArray();
-                    Array<String> Types {};
+                    Array<String> Types{};
                     Types.Resize(streamArray.Size());
                     for (auto i = 0; i < Types.Count(); i++)
                     {
@@ -77,7 +78,7 @@ Asset::LoadResult UIBlueprintAsset::loadAsset()
                     const auto Tree = SERIALIZE_FIND_MEMBER(stream, "Tree");
                     if (Tree != stream.MemberEnd())
                     {
-                        auto comp = DeserializeComponent((ISerializable::DeserializeStream)Tree->value.GetObject(), modifier.Value, Types);
+                        auto comp = DeserializeComponent((ISerializable::DeserializeStream)Tree->value.GetObject(), modifier.Value, Types, Variables);
                         if (comp)
                         {
                             Component = comp;
@@ -98,10 +99,10 @@ void UIBlueprintAsset::unload(bool isReloading)
         Delete(Component);
 }
 
-UIComponent* UIBlueprintAsset::DeserializeComponent(ISerializable::DeserializeStream& stream, ISerializeModifier* modifier, Array<String>& Types)
+UIComponent* UIBlueprintAsset::DeserializeComponent(ISerializable::DeserializeStream& stream, ISerializeModifier* modifier, Array<String>& Types, Array<Variable>& Variables)
 {
     UIComponent* component = nullptr;
-    const auto typeName  = SERIALIZE_FIND_MEMBER(stream,"ID");
+    const auto typeName = SERIALIZE_FIND_MEMBER(stream, "ID");
     if (typeName != stream.MemberEnd())
     {
         auto id = typeName->value.GetInt();
@@ -117,6 +118,11 @@ UIComponent* UIBlueprintAsset::DeserializeComponent(ISerializable::DeserializeSt
                     if (component)
                     {
                         component->Deserialize(stream, modifier);
+                        if (component->IsVariable)
+                        {
+                            Variables.Add(Variable(component->Label,component));
+                            component->CreatedByUIBlueprint = true;
+                        }
                     }
                     else
                     {
@@ -147,16 +153,18 @@ UIComponent* UIBlueprintAsset::DeserializeComponent(ISerializable::DeserializeSt
     if (panelComponent)
     {
         const auto slots = SERIALIZE_FIND_MEMBER(stream, "Slots");
-        if (slots != stream.MemberEnd()) 
+        if (slots != stream.MemberEnd())
         {
             const auto elements = slots->value.GetArray();
-            for (unsigned int  i = 0; i < elements.Size(); i++)
+            for (unsigned int i = 0; i < elements.Size(); i++)
             {
                 ISerializable::DeserializeStream& slotstream = (ISerializable::DeserializeStream)elements[i].GetObject();
-                const auto childComponent = DeserializeComponent(slotstream, modifier, Types);
+                const auto childComponent = DeserializeComponent(slotstream, modifier, Types, Variables);
                 if (childComponent)
                 {
                     panelComponent->AddChild(childComponent);
+                    if (childComponent->Slot != nullptr)
+                        childComponent->Slot->Deserialize(slotstream, modifier);
                 }
             }
         }
@@ -166,39 +174,96 @@ UIComponent* UIBlueprintAsset::DeserializeComponent(ISerializable::DeserializeSt
 
 void UIBlueprintAsset::SerializeComponent(ISerializable::SerializeStream& stream, UIComponent* component, Array<String>& Types)
 {
-    stream.StartObject();
-    //type
-    stream.JKEY("ID");
-    const String& typeName = component->GetType().Fullname.ToString();
-    int32 ID = Types.Find(typeName);
-    if(ID == -1)
+    if (component->CreatedByUIBlueprint) 
     {
-        Types.Add(typeName);
-        stream.Int(Types.Count() - 1);
-    }
-    else
-    {
-        stream.Int(ID);
-    }
-    //stream.String();
-    //data
-    component->Serialize(stream, nullptr);
-    
-    auto panelComponent = ScriptingObject::Cast<UIPanelComponent>(component);
-    if(panelComponent)
-    {
-        if (panelComponent->HasAnyChildren()) 
+        stream.StartObject();
+        //type
+        stream.JKEY("ID");
+        const String& typeName = component->GetType().Fullname.ToString();
+        int32 ID = Types.Find(typeName);
+        if (ID == -1)
         {
-            Array<UIComponent*> children = panelComponent->GetAllChildren();
-            stream.JKEY("Slots");
-            stream.StartArray();
-            for (auto i = 0; i < children.Count(); i++)
+            Types.Add(typeName);
+            stream.Int(Types.Count() - 1);
+        }
+        else
+        {
+            stream.Int(ID);
+        }
+        //stream.String();
+        //data
+        component->Serialize(stream, nullptr);
+        if (component->Slot != nullptr)
+            component->Slot->Serialize(stream, nullptr);
+
+        auto panelComponent = ScriptingObject::Cast<UIPanelComponent>(component);
+        if (panelComponent)
+        {
+            if (panelComponent->HasAnyChildren())
             {
-                SerializeComponent(stream, children[i], Types);
+                Array<UIComponent*> children = panelComponent->GetAllChildren();
+                stream.JKEY("Slots");
+                stream.StartArray();
+                for (auto i = 0; i < children.Count(); i++)
+                {
+                    SerializeComponent(stream, children[i], Types);
+                }
+                stream.EndArray();
             }
-            stream.EndArray();
+        }
+        stream.EndObject();
+    }
+}
+
+UIComponent* UIBlueprintAsset::CreateInstance()
+{
+    auto c = Component;
+    loadAsset();
+    return c;
+}
+
+void UIBlueprintAsset::SendEvent(UIComponent* InFromUIComponent, const UIPointerEvent& InEvent, const UIComponent*& OutHit, UIEventResponse& OutEventResponse)
+{
+    if(EnumHasAnyFlags(InFromUIComponent->Visibility, UIComponentVisibility::Collapsed))
+    {
+        OutHit = nullptr;
+        OutEventResponse = UIEventResponse::None;
+        return;
+    }
+
+    if (EnumHasAnyFlags(InFromUIComponent->Visibility, UIComponentVisibility::HitSelf))
+    {
+        for (auto loc : InEvent.Locations)
+        {
+            if (InFromUIComponent->Contains(loc))
+            {
+                auto eventResponse = InFromUIComponent->OnPointerInput(InEvent);
+                if (eventResponse != UIEventResponse::None)
+                {
+                    OutHit = InFromUIComponent;
+                    OutEventResponse = eventResponse;
+                    return;
+                }
+                if (EnumHasAnyFlags(InFromUIComponent->Visibility, UIComponentVisibility::HitChildren))
+                {
+                    if (auto uipc = InFromUIComponent->Cast<UIPanelComponent>())
+                    {
+                        for (auto slot : uipc->Slots)
+                        {
+                            SendEvent(slot->Content, InEvent, OutHit, OutEventResponse);
+                            if (OutEventResponse != UIEventResponse::None)
+                            {
+                                return;
+                            }
+                        }
+                    }
+                }
+                break;
+            }
         }
     }
-    stream.EndObject();
+    OutHit = nullptr;
+    OutEventResponse = UIEventResponse::None;
+    return;
 }
 

@@ -10,7 +10,16 @@ UIPanelSlot::UIPanelSlot(const SpawnParams& params) : ScriptingObject(params) {}
 
 FORCE_INLINE bool UIPanelSlot::IsDesignTime() const {   return Parent->IsDesignTime();  }
 
-void UIPanelSlot::Layout(const Rectangle& InSlotNewBounds)
+void UIPanelSlot::Layout(const Rectangle& InNewBounds)
 {
-    Content->Transform.Rect = InSlotNewBounds;
+    Content->Transform.Rect = InNewBounds;
+    Content->Transform.UpdateTransform();
+}
+
+void UIPanelSlot::Serialize(SerializeStream& stream, const void* otherObj)
+{
+}
+
+void UIPanelSlot::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)
+{
 }

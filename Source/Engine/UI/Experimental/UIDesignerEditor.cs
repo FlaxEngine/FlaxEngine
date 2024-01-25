@@ -22,9 +22,9 @@ namespace FlaxEditor.Experimental.UI
 
         public UIDesignerEditor(Editor editor, UIBlueprintAssetItem item) : base(editor, item)
         {
-            _asset = FlaxEngine.Content.Load<UIBlueprintAsset>(item.Path);
             var _UITransformationToolAsset = FlaxEngine.Content.LoadAsyncInternal<UIBlueprintAsset>("Editor\\UI\\UITransformationTool.json");
             _UITransformationToolAsset.WaitForLoaded();
+            _asset = FlaxEngine.Content.Load<UIBlueprintAsset>(item.Path);
             // Toolstrip
             _saveButton = (ToolStripButton)_toolstrip.AddButton(editor.Icons.Save64, Save).LinkTooltip("Save");
             _addComponentButton = (ToolStripButton)_toolstrip.AddButton(editor.Icons.Folder32, AddComponent).LinkTooltip("Add Component");
@@ -119,7 +119,7 @@ namespace FlaxEditor.Experimental.UI
             if (comp == null)
                 return false;
 
-            if (comp.Transform.Contains(location) && Selection != comp && !comp.IsLockedInDesigner())
+            if (comp.Contains(location) && Selection != comp && !comp.IsLockedInDesigner())
             {
                 SetSelection(comp);
                 GotSelection = true;
@@ -129,7 +129,7 @@ namespace FlaxEditor.Experimental.UI
                 var children = panelComponent.GetAllChildren();
                 for (int i = 0; i < children.Length; i++)
                 {
-                    if (children[i].Transform.Contains(location) && Selection != children[i] && !children[i].IsLockedInDesigner())
+                    if (children[i].Contains(location) && Selection != children[i] && !children[i].IsLockedInDesigner())
                     {
                         if (SelectElement(children[i], location))
                         {

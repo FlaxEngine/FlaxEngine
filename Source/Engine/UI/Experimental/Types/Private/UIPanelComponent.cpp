@@ -197,23 +197,16 @@ bool UIPanelComponent::CanAddMoreChildren() const
 
 void UIPanelComponent::Layout(const Rectangle& InNewBounds)
 {
-    Rectangle parentRect    = Transform.Rect;
-    Rectangle newParentRect = InNewBounds;
-
-    Vector2 sizeDiff     = newParentRect.Size      - parentRect.Size     ;
-    Vector2 locationDiff = newParentRect.Location  - parentRect.Location ;
-
+    Vector2 locationDiff = GetTranslation() - InNewBounds.Location;
     for (auto i = 0; i < Slots.Count(); i++)
     {
-        Rectangle& newr =Slots[i]->Content->Transform.Rect.MakeOffsetted(locationDiff);
-        newr.Size += sizeDiff;
+        Rectangle& newr = Rectangle(Slots[i]->Content->GetTranslation()+ locationDiff, Slots[i]->Content->GetSize());
         Slots[i]->Layout(newr);
     }
-    Transform.Rect = InNewBounds;
 }
-void UIPanelComponent::Layout(const Rectangle& InSlotNewBounds, UIPanelSlot* InFor)
+void UIPanelComponent::Layout(const Rectangle& InSlotOldBounds, UIPanelSlot* InFor)
 {
-    InFor->Layout(InSlotNewBounds);
+    InFor->Layout(InSlotOldBounds);
 }
 
 void UIPanelComponent::Render()
@@ -250,7 +243,7 @@ void UIPanelComponent::Render()
     }
     if (Clipping == ClipToBounds)
     {
-        Render2D::PushClip(Transform.Rect);
+        Render2D::PushClip(GetRect());
         for (auto i = 0; i < slots.Count(); i++)
         {
             if (!slots[i]->Content->IsVisible()) // faster skip 
