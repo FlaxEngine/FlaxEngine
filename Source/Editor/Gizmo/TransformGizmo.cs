@@ -111,7 +111,8 @@ namespace FlaxEditor.Gizmo
                     if (isSelected)
                     {
                         GetSelectedObjectsBounds(out var selectionBounds, out _);
-                        ray.Position = ray.GetPoint(selectionBounds.Size.Y * 0.5f);
+                        var offset = Mathf.Max(selectionBounds.Size.Y * 0.5f, 1.0f);
+                        ray.Position = ray.GetPoint(offset);
                         continue;
                     }
 
@@ -200,7 +201,21 @@ namespace FlaxEditor.Gizmo
                     ActorNode prefabRoot = GetPrefabRootInParent(actorNode);
                     if (prefabRoot != null && actorNode != prefabRoot)
                     {
-                        hit = WalkUpAndFindActorNodeBeforeSelection(actorNode, prefabRoot);
+                        bool isPrefabInSelection = false;
+                        foreach (var e in sceneEditing.Selection)
+                        {
+                            if (e is ActorNode ae && GetPrefabRootInParent(ae) == prefabRoot)
+                            {
+                                isPrefabInSelection = true;
+                                break;
+                            }
+                        }
+
+                        // Skip selecting prefab root if we already had object from that prefab selected
+                        if (!isPrefabInSelection)
+                        {
+                            hit = WalkUpAndFindActorNodeBeforeSelection(actorNode, prefabRoot);
+                        }
                     }
                 }
 

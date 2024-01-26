@@ -633,14 +633,21 @@ String PlatformBase::GetStackTrace(int32 skipCount, int32 maxDepth, void* contex
     for (const auto& frame : stackFrames)
     {
         StringAsUTF16<ARRAY_COUNT(StackFrame::FunctionName)> functionName(frame.FunctionName);
+        const StringView functionNameStr(functionName.Get());
         if (StringUtils::Length(frame.FileName) != 0)
         {
             StringAsUTF16<ARRAY_COUNT(StackFrame::FileName)> fileName(frame.FileName);
-            result.AppendFormat(TEXT("   at {0}() in {1}:line {2}\n"), functionName.Get(), fileName.Get(), frame.LineNumber);
+            result.Append(TEXT("   at ")).Append(functionNameStr);
+            if (!functionNameStr.EndsWith(')'))
+                result.Append(TEXT("()"));
+            result.AppendFormat(TEXT("in {0}:line {1}\n"),fileName.Get(), frame.LineNumber);
         }
         else if (StringUtils::Length(frame.FunctionName) != 0)
         {
-            result.AppendFormat(TEXT("   at {0}()\n"), functionName.Get());
+            result.Append(TEXT("   at ")).Append(functionNameStr);
+            if (!functionNameStr.EndsWith(')'))
+                result.Append(TEXT("()"));
+            result.Append('\n');
         }
         else
         {

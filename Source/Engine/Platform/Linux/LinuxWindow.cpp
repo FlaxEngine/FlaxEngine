@@ -40,6 +40,7 @@ extern X11::Atom xAtomWmName;
 extern Dictionary<StringAnsi, X11::KeyCode> KeyNameMap;
 extern Array<KeyboardKeys> KeyCodeMap;
 extern X11::Cursor Cursors[(int32)CursorType::MAX];
+extern Window* MouseTrackingWindow;
 
 static constexpr uint32 MouseDoubleClickTime = 500;
 static constexpr uint32 MaxDoubleClickDistanceSquared = 10;
@@ -54,7 +55,7 @@ LinuxWindow::LinuxWindow(const CreateWindowSettings& settings)
         return;
 	auto screen = XDefaultScreen(display);
 
-	// Cache data
+    // Cache data
 	int32 width = Math::TruncToInt(settings.Size.X);
 	int32 height = Math::TruncToInt(settings.Size.Y);
 	_clientSize = Float2((float)width, (float)height);
@@ -111,6 +112,12 @@ LinuxWindow::LinuxWindow(const CreateWindowSettings& settings)
 	windowAttributes.border_pixel = XBlackPixel(display, screen);
 	windowAttributes.event_mask = KeyPressMask | KeyReleaseMask | StructureNotifyMask | ExposureMask;
 
+    if (!settings.IsRegularWindow)
+    {
+        windowAttributes.save_under = true;
+        windowAttributes.override_redirect = true;
+    }
+
 	// TODO: implement all window settings
 	/*
 	bool Fullscreen;
@@ -118,11 +125,16 @@ LinuxWindow::LinuxWindow(const CreateWindowSettings& settings)
 	bool AllowMaximize;
 	*/
 
+    unsigned long valueMask = CWBackPixel | CWBorderPixel | CWEventMask | CWColormap;
+    if (!settings.IsRegularWindow)
+    {
+        valueMask |= CWOverrideRedirect | CWSaveUnder;
+    }
 	const X11::Window window = X11::XCreateWindow(
 		display, X11::XRootWindow(display, screen), x, y,
 		width, height, 0, visualInfo->depth, InputOutput,
 		visualInfo->visual,
-		CWBackPixel | CWBorderPixel | CWEventMask | CWColormap, &windowAttributes);
+		valueMask, &windowAttributes);
 	_window = window;
 	LinuxWindow::SetTitle(settings.Title);
 
@@ -150,9 +162,9 @@ LinuxWindow::LinuxWindow(const CreateWindowSettings& settings)
 	{
 		// Set resizing range
 		hints.min_width = (int)settings.MinimumSize.X;
-		hints.max_width = (int)settings.MaximumSize.X;
+		hints.max_width = settings.MaximumSize.X > 0 ? (int)settings.MaximumSize.X : MAX_uint16;
 		hints.min_height = (int)settings.MinimumSize.Y;
-		hints.max_height = (int)settings.MaximumSize.Y;
+		hints.max_height = settings.MaximumSize.Y > 0 ? (int)settings.MaximumSize.Y : MAX_uint16;
 		hints.flags |= USSize;
 	}
     // honor the WM placement except for manual (overriding) placements
@@ -594,6 +606,12 @@ void LinuxWindow::OnButtonPress(void* event)
 	case Button3:
 		mouseButton = MouseButton::Right;
 		break;
+	case 8:
+		mouseButton = MouseButton::Extended2;
+		break;
+	case 9:
+		mouseButton = MouseButton::Extended1;
+		break;
 	default:
 		return;
 	}
@@ -640,6 +658,12 @@ void LinuxWindow::OnButtonRelease(void* event)
 		break;
 	case Button5:
 		Input::Mouse->OnMouseWheel(ClientToScreen(mousePos), -1.0f, this);
+		break;
+	case 8:
+		Input::Mouse->OnMouseUp(ClientToScreen(mousePos), MouseButton::Extended2, this);
+		break;
+	case 9:
+		Input::Mouse->OnMouseUp(ClientToScreen(mousePos), MouseButton::Extended1, this);
 		break;
 	default:
 		return;
@@ -799,12 +823,13 @@ void LinuxWindow::SetTitle(const StringView& title)
 
 void LinuxWindow::StartTrackingMouse(bool useMouseScreenOffset)
 {
-	// TODO: impl this
+    MouseTrackingWindow = this;
 }
 
 void LinuxWindow::EndTrackingMouse()
 {
-	// TODO: impl this
+    if (MouseTrackingWindow == this)
+        MouseTrackingWindow = nullptr;
 }
 
 void LinuxWindow::SetCursor(CursorType type)

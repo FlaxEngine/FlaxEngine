@@ -74,6 +74,8 @@ namespace FlaxEngine.GUI
             return false;
         }
 
+        private bool SkipEvents => !_canvas.ReceivesEvents || !_canvas.IsVisible();
+
         /// <inheritdoc />
         public override CursorType Cursor
         {
@@ -196,19 +198,18 @@ namespace FlaxEngine.GUI
         /// <inheritdoc />
         public override void Update(float deltaTime)
         {
-            // UI navigation
-            if (_canvas.ReceivesEvents)
+            // Update navigation
+            if (SkipEvents)
+            {
+                _navigationHeldTimeUp = _navigationHeldTimeDown = _navigationHeldTimeLeft = _navigationHeldTimeRight = 0;
+                _navigationRateTimeUp = _navigationRateTimeDown = _navigationRateTimeLeft = _navigationRateTimeRight = 0;
+            }
             {
                 UpdateNavigation(deltaTime, _canvas.NavigateUp.Name, NavDirection.Up, ref _navigationHeldTimeUp, ref _navigationRateTimeUp);
                 UpdateNavigation(deltaTime, _canvas.NavigateDown.Name, NavDirection.Down, ref _navigationHeldTimeDown, ref _navigationRateTimeDown);
                 UpdateNavigation(deltaTime, _canvas.NavigateLeft.Name, NavDirection.Left, ref _navigationHeldTimeLeft, ref _navigationRateTimeLeft);
                 UpdateNavigation(deltaTime, _canvas.NavigateRight.Name, NavDirection.Right, ref _navigationHeldTimeRight, ref _navigationRateTimeRight);
                 UpdateNavigation(deltaTime, _canvas.NavigateSubmit.Name, ref _navigationHeldTimeSubmit, ref _navigationRateTimeSubmit, SubmitFocused);
-            }
-            else
-            {
-                _navigationHeldTimeUp = _navigationHeldTimeDown = _navigationHeldTimeLeft = _navigationHeldTimeRight = 0;
-                _navigationRateTimeUp = _navigationRateTimeDown = _navigationRateTimeLeft = _navigationRateTimeRight = 0;
             }
 
             base.Update(deltaTime);
@@ -267,7 +268,7 @@ namespace FlaxEngine.GUI
         /// <inheritdoc />
         public override bool OnCharInput(char c)
         {
-            if (!_canvas.ReceivesEvents)
+            if (SkipEvents)
                 return false;
 
             return base.OnCharInput(c);
@@ -276,7 +277,7 @@ namespace FlaxEngine.GUI
         /// <inheritdoc />
         public override DragDropEffect OnDragDrop(ref Float2 location, DragData data)
         {
-            if (!_canvas.ReceivesEvents)
+            if (SkipEvents)
                 return DragDropEffect.None;
 
             return base.OnDragDrop(ref location, data);
@@ -285,7 +286,7 @@ namespace FlaxEngine.GUI
         /// <inheritdoc />
         public override DragDropEffect OnDragEnter(ref Float2 location, DragData data)
         {
-            if (!_canvas.ReceivesEvents)
+            if (SkipEvents)
                 return DragDropEffect.None;
 
             return base.OnDragEnter(ref location, data);
@@ -294,7 +295,7 @@ namespace FlaxEngine.GUI
         /// <inheritdoc />
         public override void OnDragLeave()
         {
-            if (!_canvas.ReceivesEvents)
+            if (SkipEvents)
                 return;
 
             base.OnDragLeave();
@@ -303,7 +304,7 @@ namespace FlaxEngine.GUI
         /// <inheritdoc />
         public override DragDropEffect OnDragMove(ref Float2 location, DragData data)
         {
-            if (!_canvas.ReceivesEvents)
+            if (SkipEvents)
                 return DragDropEffect.None;
 
             return base.OnDragMove(ref location, data);
@@ -312,7 +313,7 @@ namespace FlaxEngine.GUI
         /// <inheritdoc />
         public override bool OnKeyDown(KeyboardKeys key)
         {
-            if (!_canvas.ReceivesEvents)
+            if (SkipEvents)
                 return false;
 
             return base.OnKeyDown(key);
@@ -321,7 +322,7 @@ namespace FlaxEngine.GUI
         /// <inheritdoc />
         public override void OnKeyUp(KeyboardKeys key)
         {
-            if (!_canvas.ReceivesEvents)
+            if (SkipEvents)
                 return;
 
             base.OnKeyUp(key);
@@ -330,7 +331,7 @@ namespace FlaxEngine.GUI
         /// <inheritdoc />
         public override bool OnMouseDoubleClick(Float2 location, MouseButton button)
         {
-            if (!_canvas.ReceivesEvents)
+            if (SkipEvents)
                 return false;
 
             return base.OnMouseDoubleClick(location, button);
@@ -339,7 +340,7 @@ namespace FlaxEngine.GUI
         /// <inheritdoc />
         public override bool OnMouseDown(Float2 location, MouseButton button)
         {
-            if (!_canvas.ReceivesEvents)
+            if (SkipEvents)
                 return false;
 
             return base.OnMouseDown(location, button);
@@ -348,7 +349,7 @@ namespace FlaxEngine.GUI
         /// <inheritdoc />
         public override void OnMouseEnter(Float2 location)
         {
-            if (!_canvas.ReceivesEvents)
+            if (SkipEvents)
                 return;
 
             _mousePosition = location;
@@ -359,8 +360,7 @@ namespace FlaxEngine.GUI
         public override void OnMouseLeave()
         {
             _mousePosition = Float2.Zero;
-
-            if (!_canvas.ReceivesEvents)
+            if (SkipEvents)
                 return;
 
             base.OnMouseLeave();
@@ -369,7 +369,7 @@ namespace FlaxEngine.GUI
         /// <inheritdoc />
         public override void OnMouseMove(Float2 location)
         {
-            if (!_canvas.ReceivesEvents)
+            if (SkipEvents)
                 return;
 
             _mousePosition = location;
@@ -379,7 +379,7 @@ namespace FlaxEngine.GUI
         /// <inheritdoc />
         public override bool OnMouseUp(Float2 location, MouseButton button)
         {
-            if (!_canvas.ReceivesEvents)
+            if (SkipEvents)
                 return false;
 
             return base.OnMouseUp(location, button);
@@ -388,7 +388,7 @@ namespace FlaxEngine.GUI
         /// <inheritdoc />
         public override bool OnMouseWheel(Float2 location, float delta)
         {
-            if (!_canvas.ReceivesEvents)
+            if (SkipEvents)
                 return false;
 
             return base.OnMouseWheel(location, delta);
@@ -397,7 +397,7 @@ namespace FlaxEngine.GUI
         /// <inheritdoc />
         public override void OnTouchEnter(Float2 location, int pointerId)
         {
-            if (!_canvas.ReceivesEvents)
+            if (SkipEvents)
                 return;
 
             base.OnTouchEnter(location, pointerId);
@@ -406,7 +406,7 @@ namespace FlaxEngine.GUI
         /// <inheritdoc />
         public override bool OnTouchDown(Float2 location, int pointerId)
         {
-            if (!_canvas.ReceivesEvents)
+            if (SkipEvents)
                 return false;
 
             return base.OnTouchDown(location, pointerId);
@@ -415,7 +415,7 @@ namespace FlaxEngine.GUI
         /// <inheritdoc />
         public override void OnTouchMove(Float2 location, int pointerId)
         {
-            if (!_canvas.ReceivesEvents)
+            if (SkipEvents)
                 return;
 
             base.OnTouchMove(location, pointerId);
@@ -424,7 +424,7 @@ namespace FlaxEngine.GUI
         /// <inheritdoc />
         public override bool OnTouchUp(Float2 location, int pointerId)
         {
-            if (!_canvas.ReceivesEvents)
+            if (SkipEvents)
                 return false;
 
             return base.OnTouchUp(location, pointerId);
@@ -433,7 +433,7 @@ namespace FlaxEngine.GUI
         /// <inheritdoc />
         public override void OnTouchLeave(int pointerId)
         {
-            if (!_canvas.ReceivesEvents)
+            if (SkipEvents)
                 return;
 
             base.OnTouchLeave(pointerId);

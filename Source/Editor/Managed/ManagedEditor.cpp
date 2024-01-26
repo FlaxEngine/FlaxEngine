@@ -330,13 +330,14 @@ bool ManagedEditor::CanReloadScripts()
 
 bool ManagedEditor::CanAutoBuildCSG()
 {
+    if (!ManagedEditorOptions.AutoRebuildCSG)
+        return false;
+
     // Skip calls from non-managed thread (eg. physics worker)
     if (!MCore::Thread::IsAttached())
         return false;
 
     if (!HasManagedInstance())
-        return false;
-    if (!ManagedEditorOptions.AutoRebuildCSG)
         return false;
     if (Internal_CanAutoBuildCSG == nullptr)
     {
@@ -348,13 +349,14 @@ bool ManagedEditor::CanAutoBuildCSG()
 
 bool ManagedEditor::CanAutoBuildNavMesh()
 {
+    if (!ManagedEditorOptions.AutoRebuildNavMesh)
+        return false;
+
     // Skip calls from non-managed thread (eg. physics worker)
     if (!MCore::Thread::IsAttached())
         return false;
 
     if (!HasManagedInstance())
-        return false;
-    if (!ManagedEditorOptions.AutoRebuildNavMesh)
         return false;
     if (Internal_CanAutoBuildNavMesh == nullptr)
     {
@@ -485,6 +487,95 @@ void ManagedEditor::RequestStartPlayOnEditMode()
         ASSERT(Internal_RequestStartPlayOnEditMode);
     }
     Internal_RequestStartPlayOnEditMode->Invoke(GetManagedInstance(), nullptr, nullptr);
+}
+
+Array<ManagedEditor::VisualScriptStackFrame> ManagedEditor::GetVisualScriptStackFrames()
+{
+    Array<VisualScriptStackFrame> result;
+    const auto stack = VisualScripting::GetThreadStackTop();
+    auto s = stack;
+    while (s)
+    {
+        VisualScriptStackFrame& frame = result.AddOne();
+        frame.Script = s->Script;
+        frame.NodeId = s->Node->ID;
+        frame.BoxId = s->Box ? s->Box->ID : MAX_uint32;
+        s = s->PreviousFrame;
+    }
+    return result;
+}
+
+ManagedEditor::VisualScriptStackFrame ManagedEditor::GetVisualScriptPreviousScopeFrame()
+{
+    VisualScriptStackFrame frame;
+    Platform::MemoryClear(&frame, sizeof(frame));
+    const auto stack = VisualScripting::GetThreadStackTop();
+    if (stack)
+    {
+        auto s = stack;
+        while (s->PreviousFrame && s->PreviousFrame->Scope == stack->Scope)
+            s = s->PreviousFrame;
+        if (s && s->PreviousFrame)
+        {
+            s = s->PreviousFrame;
+            frame.Script = s->Script;
+            frame.NodeId = s->Node->ID;
+            frame.BoxId = s->Box ? s->Box->ID : MAX_uint32;
+        }
+    }
+    return frame;
+}
+
+Array<ManagedEditor::VisualScriptLocal> ManagedEditor::GetVisualScriptLocals()
+{
+    Array<VisualScriptLocal> result;
+    const auto stack = VisualScripting::GetThreadStackTop();
+    if (stack && stack->Scope)
+    {
+        const int32 count = stack->Scope->Parameters.Length() + stack->Scope->ReturnedValues.Count();
+        result.Resize(count);
+        VisualScriptLocal local;
+        local.NodeId = MAX_uint32;
+        if (stack->Scope->Parameters.Length() != 0)
+        {
+            auto s = stack;
+            while (s->PreviousFrame && s->PreviousFrame->Scope == stack->Scope)
+                s = s->PreviousFrame;
+            if (s)
+                local.NodeId = s->Node->ID;
+        }
+        for (int32 i = 0; i < stack->Scope->Parameters.Length(); i++)
+        {
+            auto& v = stack->Scope->Parameters[i];
+            local.BoxId = i + 1;
+            local.Value = v.ToString();
+            local.ValueTypeName = v.Type.GetTypeName();
+            result[i] = local;
+        }
+        for (int32 i = 0; i < stack->Scope->ReturnedValues.Count(); i++)
+        {
+            auto& v = stack->Scope->ReturnedValues[i];
+            local.NodeId = v.NodeId;
+            local.BoxId = v.BoxId;
+            local.Value = v.Value.ToString();
+            local.ValueTypeName = v.Value.Type.GetTypeName();
+            result[stack->Scope->Parameters.Length() + i] = local;
+        }
+    }
+    return result;
+}
+
+bool ManagedEditor::EvaluateVisualScriptLocal(VisualScript* script, VisualScriptLocal& local)
+{
+    Variant v;
+    const auto stack = VisualScripting::GetThreadStackTop();
+    if (stack && VisualScripting::Evaluate(script, stack->Instance, local.NodeId, local.BoxId, v))
+    {
+        local.Value = v.ToString();
+        local.ValueTypeName = v.Type.GetTypeName();
+        return true;
+    }
+    return false;
 }
 
 void ManagedEditor::OnEditorAssemblyLoaded(MAssembly* assembly)

@@ -339,7 +339,7 @@ namespace FlaxEditor.Windows.Assets
             {
                 if (selection.Count != 0)
                     Select(actor);
-                actor.TreeNode.StartRenaming(this);
+                actor.TreeNode.StartRenaming(this, _treePanel);
             }
         }
 
@@ -368,7 +368,7 @@ namespace FlaxEditor.Windows.Assets
                 actor.Layer = parentActor.Layer;
 
                 // Rename actor to identify it easily
-                actor.Name = Utilities.Utils.IncrementNameNumber(actor.GetType().Name, x => parentActor.GetChild(x) == null);
+                actor.Name = Utilities.Utils.IncrementNameNumber(actor.Name, x => parentActor.GetChild(x) == null);
             }
 
             // Spawn it
@@ -386,6 +386,7 @@ namespace FlaxEditor.Windows.Assets
 
             // Spawn it
             Spawn(actor);
+            Rename();
         }
 
         /// <summary>
@@ -415,6 +416,7 @@ namespace FlaxEditor.Windows.Assets
             // Create undo action
             var action = new CustomDeleteActorsAction(new List<SceneGraphNode>(1) { actorNode }, true);
             Undo.AddAction(action);
+            Select(actorNode);
         }
 
         private void OnTreeRightClick(TreeNode node, Float2 location)
@@ -428,11 +430,9 @@ namespace FlaxEditor.Windows.Assets
 
         private void Update(ActorNode actorNode)
         {
-            if (actorNode.Actor)
-            {
-                actorNode.TreeNode.UpdateText();
-                actorNode.TreeNode.OnOrderInParentChanged();
-            }
+            actorNode.TreeNode.UpdateText();
+            if (actorNode.TreeNode.IsCollapsed)
+                return;
 
             for (int i = 0; i < actorNode.ChildNodes.Count; i++)
             {

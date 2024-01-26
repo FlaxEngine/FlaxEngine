@@ -6,6 +6,7 @@
 #include "Engine/Core/Log.h"
 #include "Engine/Engine/Engine.h"
 #include "Engine/Engine/EngineService.h"
+#include "Engine/Engine/Globals.h"
 #include "Engine/Platform/FileSystem.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Threading/TaskGraph.h"
@@ -183,6 +184,16 @@ void ContentStorageManager::EnsureUnlocked()
 {
     Locker.Lock();
     Locker.Unlock();
+}
+
+void ContentStorageManager::FormatPath(String& path)
+{
+    StringUtils::PathRemoveRelativeParts(path);
+    if (FileSystem::IsRelative(path))
+    {
+        // Convert local-project paths into absolute format which is used by Content Storage system
+        path = Globals::ProjectFolder / path;
+    }
 }
 
 bool ContentStorageManager::IsFlaxStoragePath(const String& path)

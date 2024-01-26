@@ -105,7 +105,7 @@ namespace
     CriticalSection WaitMutex;
     CriticalSection JobsLocker;
 #if JOB_SYSTEM_USE_MUTEX
-    RingBuffer<JobData, InlinedAllocation<256>> Jobs;
+    RingBuffer<JobData> Jobs;
 #else
     ConcurrentQueue<JobData> Jobs;
 #endif

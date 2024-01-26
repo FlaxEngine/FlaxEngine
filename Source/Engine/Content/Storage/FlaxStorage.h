@@ -405,7 +405,7 @@ public:
     /// <summary>
     /// Closes the file handles (it can be modified from the outside).
     /// </summary>
-    void CloseFileHandles();
+    bool CloseFileHandles();
 
     /// <summary>
 	/// Releases storage resources and closes handle to the file.

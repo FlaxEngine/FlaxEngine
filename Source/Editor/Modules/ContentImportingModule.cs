@@ -126,27 +126,33 @@ namespace FlaxEditor.Modules
         {
             if (item != null && !item.GetImportPath(out string importPath))
             {
-                // Check if input file is missing
-                if (!System.IO.File.Exists(importPath))
-                {
-                    Editor.LogWarning(string.Format("Cannot reimport asset \'{0}\'. File \'{1}\' does not exist.", item.Path, importPath));
-                    if (skipSettingsDialog)
-                        return;
-
-                    // Ask user to select new file location
-                    var title = string.Format("Please find missing \'{0}\' file for asset \'{1}\'", importPath, item.ShortName);
-                    if (FileSystem.ShowOpenFileDialog(Editor.Windows.MainWindow, null, "All files (*.*)\0*.*\0", false, title, out var files))
-                        return;
-                    if (files != null && files.Length > 0)
-                        importPath = files[0];
-
-                    // Validate file path again
-                    if (!System.IO.File.Exists(importPath))
-                        return;
-                }
-
+                if (GetReimportPath(item.ShortName, ref importPath, skipSettingsDialog))
+                    return;
                 Import(importPath, item.Path, true, skipSettingsDialog, settings);
             }
+        }
+
+        internal bool GetReimportPath(string contextName, ref string importPath, bool skipSettingsDialog = false)
+        {
+            // Check if input file is missing
+            if (!System.IO.File.Exists(importPath))
+            {
+                Editor.LogWarning(string.Format("Cannot reimport asset \'{0}\'. File \'{1}\' does not exist.", contextName, importPath));
+                if (skipSettingsDialog)
+                    return true;
+
+                // Ask user to select new file location
+                var title = string.Format("Please find missing \'{0}\' file for asset \'{1}\'", importPath, contextName);
+                if (FileSystem.ShowOpenFileDialog(Editor.Windows.MainWindow, null, "All files (*.*)\0*.*\0", false, title, out var files))
+                    return true;
+                if (files != null && files.Length > 0)
+                    importPath = files[0];
+
+                // Validate file path again
+                if (!System.IO.File.Exists(importPath))
+                    return true;
+            }
+            return false;
         }
 
         /// <summary>

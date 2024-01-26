@@ -218,7 +218,7 @@ bool AppleFileSystem::FileExists(const StringView& path)
 bool AppleFileSystem::DeleteFile(const StringView& path)
 {
     const StringAsANSI<> pathANSI(*path, path.Length());
-    return unlink(pathANSI.Get()) == 0;
+    return unlink(pathANSI.Get()) != 0;
 }
 
 uint64 AppleFileSystem::GetFileSize(const StringView& path)
@@ -498,7 +498,7 @@ DateTime AppleFileSystem::GetFileLastEditTime(const StringView& path)
         return DateTime::MinValue();
     }
 
-    const TimeSpan timeSinceEpoch(0, 0, fileInfo.st_mtime);
+    const TimeSpan timeSinceEpoch(0, 0, 0, fileInfo.st_mtime);
     return UnixEpoch + timeSinceEpoch;
 }
 

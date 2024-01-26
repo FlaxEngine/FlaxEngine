@@ -16,11 +16,13 @@
 
 AssetReferenceBase::~AssetReferenceBase()
 {
-    if (_asset)
+    Asset* asset = _asset;
+    if (asset)
     {
-        _asset->OnLoaded.Unbind<AssetReferenceBase, &AssetReferenceBase::OnLoaded>(this);
-        _asset->OnUnloaded.Unbind<AssetReferenceBase, &AssetReferenceBase::OnUnloaded>(this);
-        _asset->RemoveReference();
+        _asset = nullptr;
+        asset->OnLoaded.Unbind<AssetReferenceBase, &AssetReferenceBase::OnLoaded>(this);
+        asset->OnUnloaded.Unbind<AssetReferenceBase, &AssetReferenceBase::OnUnloaded>(this);
+        asset->RemoveReference();
     }
 }
 
@@ -70,8 +72,12 @@ void AssetReferenceBase::OnUnloaded(Asset* asset)
 
 WeakAssetReferenceBase::~WeakAssetReferenceBase()
 {
-    if (_asset)
-        _asset->OnUnloaded.Unbind<WeakAssetReferenceBase, &WeakAssetReferenceBase::OnUnloaded>(this);
+    Asset* asset = _asset;
+    if (asset)
+    {
+        _asset = nullptr;
+        asset->OnUnloaded.Unbind<WeakAssetReferenceBase, &WeakAssetReferenceBase::OnUnloaded>(this);
+    }
 }
 
 String WeakAssetReferenceBase::ToString() const
@@ -99,6 +105,20 @@ void WeakAssetReferenceBase::OnUnloaded(Asset* asset)
     Unload();
     asset->OnUnloaded.Unbind<WeakAssetReferenceBase, &WeakAssetReferenceBase::OnUnloaded>(this);
     _asset = nullptr;
+}
+
+SoftAssetReferenceBase::~SoftAssetReferenceBase()
+{
+    Asset* asset = _asset;
+    if (asset)
+    {
+        _asset = nullptr;
+        asset->OnUnloaded.Unbind<SoftAssetReferenceBase, &SoftAssetReferenceBase::OnUnloaded>(this);
+        asset->RemoveReference();
+    }
+#if !BUILD_RELEASE
+    _id = Guid::Empty;
+#endif
 }
 
 String SoftAssetReferenceBase::ToString() const
@@ -290,6 +310,10 @@ void Asset::ChangeID(const Guid& newId)
     if (!IsVirtual())
         CRASH;
 
+    // ID has to be unique
+    if (Content::GetAsset(newId) != nullptr)
+        CRASH;
+
     const Guid oldId = _id;
     ManagedScriptingObject::ChangeID(newId);
     Content::onAssetChangeId(this, oldId, newId);
@@ -418,12 +442,15 @@ bool Asset::WaitForLoaded(double timeoutInMilliseconds) const
         // Note: to reproduce this case just include material into material (use layering).
         // So during loading first material it will wait for child materials loaded calling this function
 
+        const double timeoutInSeconds = timeoutInMilliseconds * 0.001;
+        const double startTime = Platform::GetTimeSeconds();
         Task* task = loadingTask;
         Array<ContentLoadTask*, InlinedAllocation<64>> localQueue;
-        while (!Engine::ShouldExit())
+#define CHECK_CONDITIONS() (!Engine::ShouldExit() && (timeoutInSeconds <= 0.0 || Platform::GetTimeSeconds() - startTime < timeoutInSeconds))
+        do
         {
             // Try to execute content tasks
-            while (task->IsQueued() && !Engine::ShouldExit())
+            while (task->IsQueued() && CHECK_CONDITIONS())
             {
                 // Dequeue task from the loading queue
                 ContentLoadTask* tmp;
@@ -474,7 +501,8 @@ bool Asset::WaitForLoaded(double timeoutInMilliseconds) const
                     break;
                 }
             }
-        }
+        } while (CHECK_CONDITIONS());
+#undef CHECK_CONDITIONS
     }
     else
     {
@@ -502,6 +530,14 @@ void Asset::InitAsVirtual()
 
 void Asset::CancelStreaming()
 {
+    // Cancel loading task but go over asset locker to prevent case if other load threads still loads asset while it's reimported on other thread
+    Locker.Lock();
+    ContentLoadTask* loadTask = _loadingTask;
+    Locker.Unlock();
+    if (loadTask)
+    {
+        loadTask->Cancel();
+    }
 }
 
 #if USE_EDITOR
@@ -538,11 +574,7 @@ ContentLoadTask* Asset::createLoadingTask()
 
 void Asset::startLoading()
 {
-    // Check if is already loaded
-    if (IsLoaded())
-        return;
-
-    // Start loading (using async tasks)
+    ASSERT(!IsLoaded());
     ASSERT(_loadingTask == nullptr);
     _loadingTask = createLoadingTask();
     ASSERT(_loadingTask != nullptr);

@@ -33,6 +33,10 @@ namespace FlaxEditor.Surface.Elements
             Archetype = archetype;
 
             ParentNode.ValuesChanged += OnNodeValuesChanged;
+
+            // Disable slider if surface doesn't allow it
+            if (!ParentNode.Surface.CanLivePreviewValueChanges)
+                _slideSpeed = 0.0f;
         }
 
         private void OnNodeValuesChanged()

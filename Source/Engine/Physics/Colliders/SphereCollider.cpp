@@ -1,7 +1,6 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
 #include "SphereCollider.h"
-#include "Engine/Serialization/Serialization.h"
 
 SphereCollider::SphereCollider(const SpawnParams& params)
     : Collider(params)
@@ -40,6 +39,13 @@ void SphereCollider::OnDebugDrawSelected()
 {
     DEBUG_DRAW_WIRE_SPHERE(_sphere, Color::GreenYellow, 0, false);
 
+    if (_contactOffset > 0)
+    {
+        BoundingSphere contactBounds = _sphere;
+        contactBounds.Radius += _contactOffset;
+        DEBUG_DRAW_WIRE_SPHERE(contactBounds, Color::Blue.AlphaMultiplied(0.2f), 0, false);
+    }
+
     // Base
     Collider::OnDebugDrawSelected();
 }
@@ -49,24 +55,6 @@ void SphereCollider::OnDebugDrawSelected()
 bool SphereCollider::IntersectsItself(const Ray& ray, Real& distance, Vector3& normal)
 {
     return _sphere.Intersects(ray, distance, normal);
-}
-
-void SphereCollider::Serialize(SerializeStream& stream, const void* otherObj)
-{
-    // Base
-    Collider::Serialize(stream, otherObj);
-
-    SERIALIZE_GET_OTHER_OBJ(SphereCollider);
-
-    SERIALIZE_MEMBER(Radius, _radius);
-}
-
-void SphereCollider::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)
-{
-    // Base
-    Collider::Deserialize(stream, modifier);
-
-    DESERIALIZE_MEMBER(Radius, _radius);
 }
 
 void SphereCollider::UpdateBounds()

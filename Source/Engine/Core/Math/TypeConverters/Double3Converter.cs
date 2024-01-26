@@ -7,34 +7,14 @@ using System.Globalization;
 
 namespace FlaxEngine.TypeConverters
 {
-    internal class Double3Converter : TypeConverter
+    internal class Double3Converter : VectorConverter
     {
-        /// <inheritdoc />
-        public override bool CanConvertFrom(ITypeDescriptorContext context, Type sourceType)
-        {
-            if (sourceType == typeof(string))
-            {
-                return true;
-            }
-            return base.CanConvertFrom(context, sourceType);
-        }
-
-        /// <inheritdoc />
-        public override bool CanConvertTo(ITypeDescriptorContext context, Type destinationType)
-        {
-            if (destinationType == typeof(string))
-            {
-                return false;
-            }
-            return base.CanConvertTo(context, destinationType);
-        }
-
         /// <inheritdoc />
         public override object ConvertFrom(ITypeDescriptorContext context, CultureInfo culture, object value)
         {
             if (value is string str)
             {
-                string[] v = str.Split(',');
+                string[] v = GetParts(str);
                 return new Double3(double.Parse(v[0], culture), double.Parse(v[1], culture), double.Parse(v[2], culture));
             }
             return base.ConvertFrom(context, culture, value);

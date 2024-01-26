@@ -334,6 +334,11 @@ namespace FlaxEditor.SceneGraph.Actors
         {
             base.PostSpawn();
 
+            if (Actor.HasPrefabLink)
+            {
+                return;
+            }
+
             // Setup for an initial spline
             var spline = (Spline)Actor;
             spline.AddSplineLocalPoint(Vector3.Zero, false);

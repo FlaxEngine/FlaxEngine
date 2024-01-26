@@ -206,10 +206,18 @@ void Actor::OnDeleteObject()
 #endif
     for (int32 i = 0; i < Scripts.Count(); i++)
     {
-        auto e = Scripts[i];
-        ASSERT(e->_parent == this);
-        e->_parent = nullptr;
-        e->DeleteObject();
+        auto script = Scripts[i];
+        ASSERT(script->_parent == this);
+        if (script->_wasAwakeCalled)
+        {
+            script->_wasAwakeCalled = false;
+            CHECK_EXECUTE_IN_EDITOR
+            {
+                script->OnDestroy();
+            }
+        }
+        script->_parent = nullptr;
+        script->DeleteObject();
     }
 #if BUILD_DEBUG
     ASSERT(callsCheck == Scripts.Count());
@@ -239,14 +247,8 @@ const Guid& Actor::GetSceneObjectId() const
 
 void Actor::SetParent(Actor* value, bool worldPositionsStays, bool canBreakPrefabLink)
 {
-    // Check if value won't change
     if (_parent == value)
         return;
-    if (IsDuringPlay() && !IsInMainThread())
-    {
-        LOG(Error, "Editing scene hierarchy is only allowed on a main thread.");
-        return;
-    }
 #if USE_EDITOR || !BUILD_RELEASE
     if (Is<Scene>())
     {
@@ -264,6 +266,13 @@ void Actor::SetParent(Actor* value, bool worldPositionsStays, bool canBreakPrefa
 
     // Detect it actor is not in a game but new parent is already in a game (we should spawn it)
     const bool isBeingSpawned = !IsDuringPlay() && newScene && value->IsDuringPlay();
+
+    // Actors system doesn't support editing scene hierarchy from multiple threads
+    if (!IsInMainThread() && (IsDuringPlay() || isBeingSpawned))
+    {
+        LOG(Error, "Editing scene hierarchy is only allowed on a main thread.");
+        return;
+    }
 
     // Handle changing scene (unregister from it)
     const bool isSceneChanging = prevScene != newScene;
@@ -430,6 +439,7 @@ Array<Actor*> Actor::GetChildren(const MClass* type) const
 
 void Actor::DestroyChildren(float timeLeft)
 {
+    PROFILE_CPU();
     Array<Actor*> children = Children;
     const bool useGameTime = timeLeft > ZeroTolerance;
     for (Actor* child : children)
@@ -888,9 +898,13 @@ void Actor::EndPlay()
 
     for (auto* script : Scripts)
     {
-        CHECK_EXECUTE_IN_EDITOR
+        if (script->_wasAwakeCalled)
         {
-            script->OnDestroy();
+            script->_wasAwakeCalled = false;
+            CHECK_EXECUTE_IN_EDITOR
+            {
+                script->OnDestroy();
+            }
         }
     }
 
@@ -1033,7 +1047,10 @@ void Actor::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)
             }
             else if (!parent && parentId.IsValid())
             {
-                LOG(Warning, "Missing parent actor {0} for \'{1}\'", parentId, ToString());
+                if (_prefabObjectID.IsValid())
+                    LOG(Warning, "Missing parent actor {0} for \'{1}\', prefab object {2}", parentId, ToString(), _prefabObjectID);
+                else
+                    LOG(Warning, "Missing parent actor {0} for \'{1}\'", parentId, ToString());
             }
         }
     }
@@ -1342,7 +1359,7 @@ bool Actor::IsPrefabRoot() const
 Actor* Actor::FindActor(const StringView& name) const
 {
     Actor* result = nullptr;
-    if (StringUtils::Compare(*_name, *name) == 0)
+    if (_name == name)
     {
         result = const_cast<Actor*>(this);
     }
@@ -1376,7 +1393,7 @@ Actor* Actor::FindActor(const MClass* type) const
 Actor* Actor::FindActor(const MClass* type, const StringView& name) const
 {
     CHECK_RETURN(type, nullptr);
-    if (GetClass()->IsSubClassOf(type) && StringUtils::Compare(*_name, *name) == 0)
+    if (GetClass()->IsSubClassOf(type) && _name == name)
         return const_cast<Actor*>(this);
     for (auto child : Children)
     {
@@ -1406,7 +1423,7 @@ Script* Actor::FindScript(const MClass* type) const
     CHECK_RETURN(type, nullptr);
     for (auto script : Scripts)
     {
-        if (script->GetClass()->IsSubClassOf(type))
+        if (script->GetClass()->IsSubClassOf(type) || script->GetClass()->HasInterface(type))
             return script;
     }
     for (auto child : Children)

@@ -1270,7 +1270,7 @@ bool CookAssetsStep::Perform(CookingData& data)
     {
         Array<CookingData::AssetTypeStatistics> assetTypes;
         data.Stats.AssetStats.GetValues(assetTypes);
-        Sorting::QuickSort(assetTypes.Get(), assetTypes.Count());
+        Sorting::QuickSort(assetTypes);
 
         LOG(Info, "");
         LOG(Info, "Top assets types stats:");

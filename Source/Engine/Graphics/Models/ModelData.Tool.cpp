@@ -10,6 +10,7 @@
 #include "Engine/Core/Collections/BitArray.h"
 #include "Engine/Tools/ModelTool/ModelTool.h"
 #include "Engine/Tools/ModelTool/VertexTriangleAdjacency.h"
+#include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Platform/Platform.h"
 #define USE_MIKKTSPACE 1
 #include "ThirdParty/MikkTSpace/mikktspace.h"
@@ -78,6 +79,7 @@ void RemapArrayHelper(Array<T>& target, const std::vector<uint32_t>& remap)
 
 bool MeshData::GenerateLightmapUVs()
 {
+    PROFILE_CPU();
 #if PLATFORM_WINDOWS
     // Prepare
     HRESULT hr;
@@ -235,6 +237,7 @@ void RemapBuffer(Array<T>& src, Array<T>& dst, const Array<int32>& mapping, int3
 
 void MeshData::BuildIndexBuffer()
 {
+    PROFILE_CPU();
     const auto startTime = Platform::GetTimeSeconds();
 
     const int32 vertexCount = Positions.Count();
@@ -318,7 +321,9 @@ void MeshData::BuildIndexBuffer()
     }
 
     const auto endTime = Platform::GetTimeSeconds();
-    LOG(Info, "Generated index buffer for mesh in {0}s ({1} vertices, {2} indices)", Utilities::RoundTo2DecimalPlaces(endTime - startTime), Positions.Count(), Indices.Count());
+    const double time = Utilities::RoundTo2DecimalPlaces(endTime - startTime);
+    if (time > 0.5f) // Don't log if generation was fast enough
+        LOG(Info, "Generated {3} for mesh in {0}s ({1} vertices, {2} indices)", time, vertexCount, Indices.Count(), TEXT("indices"));
 }
 
 void MeshData::FindPositions(const Float3& position, float epsilon, Array<int32>& result)
@@ -339,6 +344,7 @@ bool MeshData::GenerateNormals(float smoothingAngle)
         LOG(Warning, "Missing vertex or index data to generate normals.");
         return true;
     }
+    PROFILE_CPU();
 
     const auto startTime = Platform::GetTimeSeconds();
 
@@ -449,7 +455,9 @@ bool MeshData::GenerateNormals(float smoothingAngle)
     }
 
     const auto endTime = Platform::GetTimeSeconds();
-    LOG(Info, "Generated tangents for mesh in {0}s ({1} vertices, {2} indices)", Utilities::RoundTo2DecimalPlaces(endTime - startTime), vertexCount, indexCount);
+    const double time = Utilities::RoundTo2DecimalPlaces(endTime - startTime);
+    if (time > 0.5f) // Don't log if generation was fast enough
+        LOG(Info, "Generated {3} for mesh in {0}s ({1} vertices, {2} indices)", time, vertexCount, indexCount, TEXT("normals"));
 
     return false;
 }
@@ -516,6 +524,7 @@ bool MeshData::GenerateTangents(float smoothingAngle)
         LOG(Warning, "Missing normals or texcoors data to generate tangents.");
         return true;
     }
+    PROFILE_CPU();
 
     const auto startTime = Platform::GetTimeSeconds();
     const int32 vertexCount = Positions.Count();
@@ -685,7 +694,10 @@ bool MeshData::GenerateTangents(float smoothingAngle)
 #endif
 
     const auto endTime = Platform::GetTimeSeconds();
-    LOG(Info, "Generated tangents for mesh in {0}s ({1} vertices, {2} indices)", Utilities::RoundTo2DecimalPlaces(endTime - startTime), vertexCount, indexCount);
+    const double time = Utilities::RoundTo2DecimalPlaces(endTime - startTime);
+    if (time > 0.5f) // Don't log if generation was fast enough
+        LOG(Info, "Generated {3} for mesh in {0}s ({1} vertices, {2} indices)", time, vertexCount, indexCount, TEXT("tangents"));
+
     return false;
 }
 
@@ -699,6 +711,7 @@ void MeshData::ImproveCacheLocality()
 
     if (Positions.IsEmpty() || Indices.IsEmpty() || Positions.Count() <= VertexCacheSize)
         return;
+    PROFILE_CPU();
 
     const auto startTime = Platform::GetTimeSeconds();
 
@@ -872,11 +885,14 @@ void MeshData::ImproveCacheLocality()
     Allocator::Free(piCandidates);
 
     const auto endTime = Platform::GetTimeSeconds();
-    LOG(Info, "Cache relevant optimize for {0} vertices and {1} indices. Average output ACMR is {2}. Time: {3}s", vertexCount, indexCount, (float)iCacheMisses / indexCount / 3, Utilities::RoundTo2DecimalPlaces(endTime - startTime));
+    const double time = Utilities::RoundTo2DecimalPlaces(endTime - startTime);
+    if (time > 0.5f) // Don't log if generation was fast enough
+        LOG(Info, "Generated {3} for mesh in {0}s ({1} vertices, {2} indices)", time, vertexCount, indexCount, TEXT("optimized indices"));
 }
 
 float MeshData::CalculateTrianglesArea() const
 {
+    PROFILE_CPU();
     float sum = 0;
     // TODO: use SIMD
     for (int32 i = 0; i + 2 < Indices.Count(); i += 3)

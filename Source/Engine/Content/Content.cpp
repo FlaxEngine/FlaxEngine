@@ -54,8 +54,7 @@ namespace
     // Assets
     CriticalSection AssetsLocker;
     Dictionary<Guid, Asset*> Assets(2048);
-    CriticalSection LoadCallAssetsLocker;
-    Array<Guid> LoadCallAssets(64);
+    Array<Guid> LoadCallAssets(PLATFORM_THREADS_LIMIT);
     CriticalSection LoadedAssetsToInvokeLocker;
     Array<Asset*> LoadedAssetsToInvoke(64);
     Array<Asset*> ToUnload;
@@ -154,7 +153,7 @@ void ContentService::LateUpdate()
     // Unload marked assets
     for (int32 i = 0; i < ToUnload.Count(); i++)
     {
-        Asset*  asset = ToUnload[i];
+        Asset* asset = ToUnload[i];
 
         // Check if has no references
         if (asset->GetReferencesCount() <= 0)
@@ -231,6 +230,7 @@ bool Content::GetAssetInfo(const Guid& id, AssetInfo& info)
     // Find asset in registry
     if (Cache.FindAsset(id, info))
         return true;
+    PROFILE_CPU();
 
     // Locking injects some stalls but we need to make it safe (only one thread can pass though it at once)
     ScopeLock lock(WorkspaceDiscoveryLocker);
@@ -277,6 +277,7 @@ bool Content::GetAssetInfo(const StringView& path, AssetInfo& info)
     // Find asset in registry
     if (Cache.FindAsset(path, info))
         return true;
+    PROFILE_CPU();
 
     const auto extension = FileSystem::GetExtension(path).ToLower();
 
@@ -449,18 +450,19 @@ Asset* Content::LoadAsync(const StringView& path, const ScriptingTypeHandle& typ
 {
     // Ensure path is in a valid format
     String pathNorm(path);
-    StringUtils::PathRemoveRelativeParts(pathNorm);
+    ContentStorageManager::FormatPath(pathNorm);
+    const StringView filePath = pathNorm;
 
 #if USE_EDITOR
-    if (!FileSystem::FileExists(pathNorm))
+    if (!FileSystem::FileExists(filePath))
     {
-        LOG(Error, "Missing file \'{0}\'", pathNorm);
+        LOG(Error, "Missing file \'{0}\'", filePath);
         return nullptr;
     }
 #endif
 
     AssetInfo assetInfo;
-    if (GetAssetInfo(pathNorm, assetInfo))
+    if (GetAssetInfo(filePath, assetInfo))
     {
         return LoadAsync(assetInfo.ID, type);
     }
@@ -538,6 +540,8 @@ void Content::DeleteAsset(Asset* asset)
 
 void Content::DeleteAsset(const StringView& path)
 {
+    PROFILE_CPU();
+
     // Try to delete already loaded asset
     Asset* asset = GetAsset(path);
     if (asset != nullptr)
@@ -566,12 +570,12 @@ void Content::DeleteAsset(const StringView& path)
 
 void Content::deleteFileSafety(const StringView& path, const Guid& id)
 {
-    // Check if given id is invalid
     if (!id.IsValid())
     {
         LOG(Warning, "Cannot remove file \'{0}\'. Given ID is invalid.", path);
         return;
     }
+    PROFILE_CPU();
 
     // Ensure that file has the same ID (prevent from deleting different assets)
     auto storage = ContentStorageManager::TryGetStorage(path);
@@ -678,6 +682,7 @@ bool Content::FastTmpAssetClone(const StringView& path, String& resultPath)
 
 bool Content::CloneAssetFile(const StringView& dstPath, const StringView& srcPath, const Guid& dstId)
 {
+    PROFILE_CPU();
     ASSERT(FileSystem::AreFilePathsEqual(srcPath, dstPath) == false && dstId.IsValid());
 
     LOG(Info, "Cloning asset \'{0}\' to \'{1}\'({2}).", srcPath, dstPath, dstId);
@@ -697,13 +702,11 @@ bool Content::CloneAssetFile(const StringView& dstPath, const StringView& srcPat
             LOG(Warning, "Cannot copy file to destination.");
             return true;
         }
-
         if (JsonStorageProxy::ChangeId(dstPath, dstId))
         {
             LOG(Warning, "Cannot change asset ID.");
             return true;
         }
-
         return false;
     }
 
@@ -768,12 +771,9 @@ bool Content::CloneAssetFile(const StringView& dstPath, const StringView& srcPat
         FileSystem::DeleteFile(tmpPath);
 
         // Reload storage
+        if (auto storage = ContentStorageManager::GetStorage(dstPath))
         {
-            auto storage = ContentStorageManager::GetStorage(dstPath);
-            if (storage)
-            {
-                storage->Reload();
-            }
+            storage->Reload();
         }
     }
 
@@ -801,6 +801,7 @@ Asset* Content::CreateVirtualAsset(MClass* type)
 
 Asset* Content::CreateVirtualAsset(const ScriptingTypeHandle& type)
 {
+    PROFILE_CPU();
     auto& assetType = type.GetType();
 
     // Init mock asset info
@@ -911,84 +912,62 @@ bool Content::IsAssetTypeIdInvalid(const ScriptingTypeHandle& type, const Script
 
 Asset* Content::LoadAsync(const Guid& id, const ScriptingTypeHandle& type)
 {
-    // Early out
     if (!id.IsValid())
-    {
-        // Back
         return nullptr;
-    }
 
     // Check if asset has been already loaded
-    Asset* result = GetAsset(id);
+    Asset* result = nullptr;
+    AssetsLocker.Lock();
+    Assets.TryGet(id, result);
     if (result)
     {
+        AssetsLocker.Unlock();
+
         // Validate type
         if (IsAssetTypeIdInvalid(type, result->GetTypeHandle()) && !result->Is(type))
         {
             LOG(Warning, "Different loaded asset type! Asset: \'{0}\'. Expected type: {1}", result->ToString(), type.ToString());
             return nullptr;
         }
-
         return result;
     }
 
     // Check if that asset is during loading
-    LoadCallAssetsLocker.Lock();
     if (LoadCallAssets.Contains(id))
     {
-        LoadCallAssetsLocker.Unlock();
+        AssetsLocker.Unlock();
 
-        // Wait for load end
-        // TODO: dont use active waiting and prevent deadlocks if running on a main thread
-        //while (!Engine::ShouldExit())
-        while (true)
+        // Wait for loading end by other thread
+        bool contains = true;
+        while (contains)
         {
-            LoadCallAssetsLocker.Lock();
-            const bool contains = LoadCallAssets.Contains(id);
-            LoadCallAssetsLocker.Unlock();
-
-            if (!contains)
-            {
-                return GetAsset(id);
-            }
-
             Platform::Sleep(1);
+            AssetsLocker.Lock();
+            contains = LoadCallAssets.Contains(id);
+            AssetsLocker.Unlock();
         }
-    }
-    else
-    {
-        // Mark asset as loading
-        LoadCallAssets.Add(id);
-
-        LoadCallAssetsLocker.Unlock();
+        Assets.TryGet(id, result);
+        return result;
     }
 
-    // Load asset
-    AssetInfo assetInfo;
-    result = load(id, type, assetInfo);
+    // Mark asset as loading and release lock so other threads can load other assets
+    LoadCallAssets.Add(id);
+    AssetsLocker.Unlock();
 
-    // End loading
-    LoadCallAssetsLocker.Lock();
-    LoadCallAssets.Remove(id);
-    LoadCallAssetsLocker.Unlock();
+#define LOAD_FAILED() AssetsLocker.Lock(); LoadCallAssets.Remove(id); AssetsLocker.Unlock(); return nullptr
 
-    return result;
-}
-
-Asset* Content::load(const Guid& id, const ScriptingTypeHandle& type, AssetInfo& assetInfo)
-{
     // Get cached asset info (from registry)
+    AssetInfo assetInfo;
     if (!GetAssetInfo(id, assetInfo))
     {
-        LOG(Warning, "Invalid or missing asset ({0}, {1}).", id.ToString(Guid::FormatType::N), type.ToString());
-        return nullptr;
+        LOG(Warning, "Invalid or missing asset ({0}, {1}).", id, type.ToString());
+        LOAD_FAILED();
     }
-
 #if ASSETS_LOADING_EXTRA_VERIFICATION
     if (!FileSystem::FileExists(assetInfo.Path))
     {
         LOG(Error, "Cannot find file '{0}'", assetInfo.Path);
-        return nullptr;
+        LOAD_FAILED();
     }
 #endif
 
@@ -997,37 +976,41 @@ Asset* Content::load(const Guid& id, const ScriptingTypeHandle& type, AssetInfo&
     if (factory == nullptr)
     {
         LOG(Error, "Cannot find asset factory. Info: {0}", assetInfo.ToString());
-        return nullptr;
+        LOAD_FAILED();
     }
 
     // Create asset object
-    auto result = factory->New(assetInfo);
+    result = factory->New(assetInfo);
     if (result == nullptr)
     {
         LOG(Error, "Cannot create asset object. Info: {0}", assetInfo.ToString());
-        return nullptr;
+        LOAD_FAILED();
     }
-
+    ASSERT(result->GetID() == id);
 #if ASSETS_LOADING_EXTRA_VERIFICATION
     if (IsAssetTypeIdInvalid(type, result->GetTypeHandle()) && !result->Is(type))
     {
-        LOG(Error, "Different loaded asset type! Asset: '{0}'. Expected type: {1}", assetInfo.ToString(), type.ToString());
+        LOG(Warning, "Different loaded asset type! Asset: '{0}'. Expected type: {1}", assetInfo.ToString(), type.ToString());
         result->DeleteObject();
-        return nullptr;
+        LOAD_FAILED();
     }
 #endif
 
     // Register asset
-    ASSERT(result->GetID() == id);
     AssetsLocker.Lock();
 #if ASSETS_LOADING_EXTRA_VERIFICATION
     ASSERT(!Assets.ContainsKey(id));
 #endif
     Assets.Add(id, result);
-    AssetsLocker.Unlock();
 
     // Start asset loading
     result->startLoading();
+
+    // Remove from the loading queue and release lock
+    LoadCallAssets.Remove(id);
+    AssetsLocker.Unlock();
+
+#undef LOAD_FAILED
 
     return result;
 }

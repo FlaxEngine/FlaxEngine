@@ -12,6 +12,8 @@ template<int Capacity>
 class FixedAllocation
 {
 public:
+    enum { HasSwap = false };
+
     template<typename T>
     class Data
     {
@@ -43,14 +45,14 @@ public:
             return Capacity;
         }
 
-        FORCE_INLINE void Allocate(uint64 capacity)
+        FORCE_INLINE void Allocate(int32 capacity)
         {
 #if ENABLE_ASSERTION_LOW_LAYERS
             ASSERT(capacity <= Capacity);
 #endif
         }
 
-        FORCE_INLINE void Relocate(uint64 capacity, int32 oldCount, int32 newCount)
+        FORCE_INLINE void Relocate(int32 capacity, int32 oldCount, int32 newCount)
         {
 #if ENABLE_ASSERTION_LOW_LAYERS
             ASSERT(capacity <= Capacity);
@@ -61,12 +63,9 @@ public:
         {
         }
 
-        FORCE_INLINE void Swap(Data& other)
+        void Swap(Data& other)
         {
-            byte tmp[Capacity * sizeof(T)];
-            Platform::MemoryCopy(tmp, _data, Capacity * sizeof(T));
-            Platform::MemoryCopy(_data, other._data, Capacity * sizeof(T));
-            Platform::MemoryCopy(other._data, tmp, Capacity * sizeof(T));
+            // Not supported
         }
     };
 };
@@ -77,6 +76,8 @@ public:
 class HeapAllocation
 {
 public:
+    enum { HasSwap = true };
+
     template<typename T>
     class Data
     {
@@ -120,12 +121,15 @@ public:
                 capacity |= capacity >> 4;
                 capacity |= capacity >> 8;
                 capacity |= capacity >> 16;
-                capacity = (capacity + 1) * 2;
+                uint64 capacity64 = (uint64)(capacity + 1) * 2;
+                if (capacity64 > MAX_int32)
+                    capacity64 = MAX_int32;
+                capacity = (int32)capacity64;
             }
             return capacity;
         }
 
-        FORCE_INLINE void Allocate(uint64 capacity)
+        FORCE_INLINE void Allocate(int32 capacity)
         {
 #if  ENABLE_ASSERTION_LOW_LAYERS
             ASSERT(!_data);
@@ -137,7 +141,7 @@ public:
 #endif
         }
 
-        FORCE_INLINE void Relocate(uint64 capacity, int32 oldCount, int32 newCount)
+        FORCE_INLINE void Relocate(int32 capacity, int32 oldCount, int32 newCount)
         {
             T* newData = capacity != 0 ? (T*)Allocator::Allocate(capacity * sizeof(T)) : nullptr;
 #if !BUILD_RELEASE
@@ -176,6 +180,8 @@ template<int Capacity, typename OtherAllocator = HeapAllocation>
 class InlinedAllocation
 {
 public:
+    enum { HasSwap = false };
+
     template<typename T>
     class Data
     {
@@ -210,7 +216,7 @@ public:
             return minCapacity <= Capacity ? Capacity : _other.CalculateCapacityGrow(capacity, minCapacity);
         }
 
-        FORCE_INLINE void Allocate(uint64 capacity)
+        FORCE_INLINE void Allocate(int32 capacity)
         {
             if (capacity > Capacity)
             {
@@ -219,7 +225,7 @@ public:
             }
         }
 
-        FORCE_INLINE void Relocate(uint64 capacity, int32 oldCount, int32 newCount)
+        FORCE_INLINE void Relocate(int32 capacity, int32 oldCount, int32 newCount)
         {
             // Check if the new allocation will fit into inlined storage
             if (capacity <= Capacity)
@@ -264,14 +270,9 @@ public:
             }
         }
 
-        FORCE_INLINE void Swap(Data& other)
+        void Swap(Data& other)
         {
-            byte tmp[Capacity * sizeof(T)];
-            Platform::MemoryCopy(tmp, _data, Capacity * sizeof(T));
-            Platform::MemoryCopy(_data, other._data, Capacity * sizeof(T));
-            Platform::MemoryCopy(other._data, tmp, Capacity * sizeof(T));
-            ::Swap(_useOther, other._useOther);
-            _other.Swap(other._other);
+            // Not supported
         }
     };
 };

@@ -57,11 +57,15 @@ API_CLASS(Namespace="FlaxEngine.Tools", Static) class FLAXENGINE_API TextureTool
         API_FIELD(Attributes="EditorOrder(70)")
         bool FlipY = false;
 
-        // Texture size scale. Default is 1.
+        // True if to invert the green channel on a normal map. Good for OpenGL to DirectX conversion.
+        API_FIELD(Attributes = "EditorOrder(71)")
+        bool InvertGreenChannel = false;
+
+        // Texture size scale. Allows increasing or decreasing the imported texture resolution. Default is 1.
         API_FIELD(Attributes="EditorOrder(80), Limit(0.0001f, 1000.0f, 0.01f)")
         float Scale = 1.0f;
 
-        // Maximum size of the texture (for both width and height). Higher resolution textures will be resized during importing process.
+        // Maximum size of the texture (for both width and height). Higher resolution textures will be resized during importing process. Used to clip textures that are too big.
         API_FIELD(Attributes="HideInEditor")
         int32 MaxSize = 8192;
 
@@ -69,11 +73,11 @@ API_CLASS(Namespace="FlaxEngine.Tools", Static) class FLAXENGINE_API TextureTool
         API_FIELD(Attributes="EditorOrder(100)")
         bool Resize = false;
 
-        // The width of the imported texture. If Resize property is set to true then texture will be resized during the import to this value. Otherwise it will be ignored.
+        // The width of the imported texture. If Resize property is set to true then texture will be resized during the import to this value during the import, otherwise it will be ignored.
         API_FIELD(Attributes="HideInEditor")
         int32 SizeX = 1024;
 
-        // The height of the imported texture. If Resize property is set to true then texture will be resized during the import to this value. Otherwise it will be ignored.
+        // The height of the imported texture. If Resize property is set to true then texture will be resized during the import to this value during the import, otherwise it will be ignored.
         API_FIELD(Attributes="HideInEditor")
         int32 SizeY = 1024;
 
@@ -85,7 +89,7 @@ API_CLASS(Namespace="FlaxEngine.Tools", Static) class FLAXENGINE_API TextureTool
         API_FIELD(Attributes="EditorOrder(210), VisibleIf(\"PreserveAlphaCoverage\")")
         float PreserveAlphaCoverageReference = 0.5f;
 
-        // Texture group for streaming (negative if unused). See Streaming Settings.
+        // The texture group for streaming (negative if unused). See Streaming Settings.
         API_FIELD(Attributes="EditorOrder(300), CustomEditorAlias(\"FlaxEditor.CustomEditors.Dedicated.TextureGroupEditor\")")
         int32 TextureGroup = -1;
 
@@ -106,14 +110,12 @@ API_CLASS(Namespace="FlaxEngine.Tools", Static) class FLAXENGINE_API TextureTool
 
 public:
 #if USE_EDITOR
-
     /// <summary>
     /// Checks whenever the given texture file contains alpha channel data with values different than solid fill of 1 (non fully opaque).
     /// </summary>
     /// <param name="path">The file path.</param>
     /// <returns>True if has alpha channel, otherwise false.</returns>
     static bool HasAlpha(const StringView& path);
-
 #endif
 
     /// <summary>
@@ -235,6 +237,8 @@ public:
     /// <param name="rowPitch">The row pitch (in bytes). The offset between each image rows.</param>
     /// <returns>The sampled color (linear).</returns>
     static Color SampleLinear(const PixelFormatSampler* sampler, const Float2& uv, const void* data, const Int2& size, int32 rowPitch);
+
+    static PixelFormat ToPixelFormat(TextureFormatType format, int32 width, int32 height, bool canCompress);
 
 private:
     enum class ImageType

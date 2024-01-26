@@ -15,6 +15,8 @@ const Float2 Float2::Zero(0.0f);
 template<>
 const Float2 Float2::One(1.0f);
 template<>
+const Float2 Float2::Half(0.5f);
+template<>
 const Float2 Float2::UnitX(1.0f, 0.0f);
 template<>
 const Float2 Float2::UnitY(0.0f, 1.0f);

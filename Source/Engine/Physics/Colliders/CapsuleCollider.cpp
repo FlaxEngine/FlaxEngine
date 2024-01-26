@@ -1,7 +1,6 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
 #include "CapsuleCollider.h"
-#include "Engine/Serialization/Serialization.h"
 
 CapsuleCollider::CapsuleCollider(const SpawnParams& params)
     : Collider(params)
@@ -42,27 +41,33 @@ void CapsuleCollider::DrawPhysicsDebug(RenderView& view)
     const BoundingSphere sphere(_sphere.Center - view.Origin, _sphere.Radius);
     if (!view.CullingFrustum.Intersects(sphere))
         return;
-    Quaternion rot;
-    Quaternion::Multiply(_transform.Orientation, Quaternion::Euler(0, 90, 0), rot);
+    Quaternion rotation;
+    Quaternion::Multiply(_transform.Orientation, Quaternion::Euler(0, 90, 0), rotation);
     const float scaling = _cachedScale.GetAbsolute().MaxValue();
     const float minSize = 0.001f;
     const float radius = Math::Max(Math::Abs(_radius) * scaling, minSize);
     const float height = Math::Max(Math::Abs(_height) * scaling, minSize);
     if (view.Mode == ViewMode::PhysicsColliders && !GetIsTrigger())
-        DEBUG_DRAW_TUBE(_transform.LocalToWorld(_center), rot, radius, height, _staticActor ? Color::CornflowerBlue : Color::Orchid, 0, true);
+        DEBUG_DRAW_TUBE(_transform.LocalToWorld(_center), rotation, radius, height, _staticActor ? Color::CornflowerBlue : Color::Orchid, 0, true);
     else
-        DEBUG_DRAW_WIRE_TUBE(_transform.LocalToWorld(_center), rot, radius, height, Color::GreenYellow * 0.8f, 0, true);
+        DEBUG_DRAW_WIRE_TUBE(_transform.LocalToWorld(_center), rotation, radius, height, Color::GreenYellow * 0.8f, 0, true);
 }
 
 void CapsuleCollider::OnDebugDrawSelected()
 {
-    Quaternion rot;
-    Quaternion::Multiply(_transform.Orientation, Quaternion::Euler(0, 90, 0), rot);
+    Quaternion rotation;
+    Quaternion::Multiply(_transform.Orientation, Quaternion::Euler(0, 90, 0), rotation);
     const float scaling = _cachedScale.GetAbsolute().MaxValue();
     const float minSize = 0.001f;
     const float radius = Math::Max(Math::Abs(_radius) * scaling, minSize);
     const float height = Math::Max(Math::Abs(_height) * scaling, minSize);
-    DEBUG_DRAW_WIRE_TUBE(_transform.LocalToWorld(_center), rot, radius, height, Color::GreenYellow, 0, false);
+    const Vector3 position = _transform.LocalToWorld(_center);
+    DEBUG_DRAW_WIRE_TUBE(position, rotation, radius, height, Color::GreenYellow, 0, false);
+
+    if (_contactOffset > 0)
+    {
+        DEBUG_DRAW_WIRE_TUBE(position, rotation, radius + _contactOffset, height, Color::Blue.AlphaMultiplied(0.2f), 0, false);
+    }
 
     // Base
     Collider::OnDebugDrawSelected();
@@ -73,26 +78,6 @@ void CapsuleCollider::OnDebugDrawSelected()
 bool CapsuleCollider::IntersectsItself(const Ray& ray, Real& distance, Vector3& normal)
 {
     return _orientedBox.Intersects(ray, distance, normal);
-}
-
-void CapsuleCollider::Serialize(SerializeStream& stream, const void* otherObj)
-{
-    // Base
-    Collider::Serialize(stream, otherObj);
-
-    SERIALIZE_GET_OTHER_OBJ(CapsuleCollider);
-
-    SERIALIZE_MEMBER(Radius, _radius);
-    SERIALIZE_MEMBER(Height, _height);
-}
-
-void CapsuleCollider::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)
-{
-    // Base
-    Collider::Deserialize(stream, modifier);
-
-    DESERIALIZE_MEMBER(Radius, _radius);
-    DESERIALIZE_MEMBER(Height, _height);
 }
 
 void CapsuleCollider::UpdateBounds()

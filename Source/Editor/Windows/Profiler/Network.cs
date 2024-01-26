@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using FlaxEditor.GUI;
 using FlaxEngine;
 using FlaxEngine.GUI;
+using FlaxEngine.Networking;
 
 namespace FlaxEngine
 {
@@ -37,11 +38,14 @@ namespace FlaxEditor.Windows.Profiler
     {
         private readonly SingleChart _dataSentChart;
         private readonly SingleChart _dataReceivedChart;
+        private readonly SingleChart _dataSentRateChart;
+        private readonly SingleChart _dataReceivedRateChart;
         private readonly Table _tableRpc;
         private readonly Table _tableRep;
-        private SamplesBuffer<ProfilingTools.NetworkEventStat[]> _events;
         private List<Row> _tableRowsCache;
-        private FlaxEngine.Networking.NetworkDriverStats _prevStats;
+        private SamplesBuffer<ProfilingTools.NetworkEventStat[]> _events;
+        private NetworkDriverStats _prevStats;
+        private List<NetworkDriverStats> _stats;
 
         public Network()
         : base("Network")
@@ -76,6 +80,20 @@ namespace FlaxEditor.Windows.Profiler
                 Parent = layout,
             };
             _dataReceivedChart.SelectedSampleChanged += OnSelectedSampleChanged;
+            _dataSentRateChart = new SingleChart
+            {
+                Title = "Data Sent Rate",
+                FormatSample = FormatSampleBytesRate,
+                Parent = layout,
+            };
+            _dataSentRateChart.SelectedSampleChanged += OnSelectedSampleChanged;
+            _dataReceivedRateChart = new SingleChart
+            {
+                Title = "Data Received Rate",
+                FormatSample = FormatSampleBytesRate,
+                Parent = layout,
+            };
+            _dataReceivedRateChart.SelectedSampleChanged += OnSelectedSampleChanged;
 
             // Tables
             _tableRpc = InitTable(layout, "RPC Name");
@@ -87,24 +105,52 @@ namespace FlaxEditor.Windows.Profiler
         {
             _dataSentChart.Clear();
             _dataReceivedChart.Clear();
+            _dataSentRateChart.Clear();
+            _dataReceivedRateChart.Clear();
             _events?.Clear();
+            _stats?.Clear();
+            _prevStats = new NetworkDriverStats();
         }
 
         /// <inheritdoc />
         public override void Update(ref SharedUpdateData sharedData)
         {
             // Gather peer stats
-            var peers = FlaxEngine.Networking.NetworkPeer.Peers;
-            var stats = new FlaxEngine.Networking.NetworkDriverStats();
+            var peers = NetworkPeer.Peers;
+            var thisStats = new NetworkDriverStats();
+            thisStats.RTT = Time.UnscaledGameTime; // Store sample time in RTT
             foreach (var peer in peers)
             {
                 var peerStats = peer.NetworkDriver.GetStats();
-                stats.TotalDataSent += peerStats.TotalDataSent;
-                stats.TotalDataReceived += peerStats.TotalDataReceived;
+                thisStats.TotalDataSent += peerStats.TotalDataSent;
+                thisStats.TotalDataReceived += peerStats.TotalDataReceived;
             }
-            _dataSentChart.AddSample(Mathf.Max((long)stats.TotalDataSent - (long)_prevStats.TotalDataSent, 0));
-            _dataReceivedChart.AddSample(Mathf.Max((long)stats.TotalDataReceived - (long)_prevStats.TotalDataReceived, 0));
-            _prevStats = stats;
+            var stats = thisStats;
+            stats.TotalDataSent = (uint)Mathf.Max((long)thisStats.TotalDataSent - (long)_prevStats.TotalDataSent, 0);
+            stats.TotalDataReceived = (uint)Mathf.Max((long)thisStats.TotalDataReceived - (long)_prevStats.TotalDataReceived, 0);
+            _dataSentChart.AddSample(stats.TotalDataSent);
+            _dataReceivedChart.AddSample(stats.TotalDataReceived);
+            _prevStats = thisStats;
+            if (_stats == null)
+                _stats = new List<NetworkDriverStats>();
+            _stats.Add(stats);
+
+            // Remove all stats older than 1 second
+            while (_stats.Count > 0 && thisStats.RTT - _stats[0].RTT >= 1.0f)
+                _stats.RemoveAt(0);
+
+            // Calculate average data rates (from last second)
+            var avgStats = new NetworkDriverStats();
+            foreach (var e in _stats)
+            {
+                avgStats.TotalDataSent += e.TotalDataSent;
+                avgStats.TotalDataReceived += e.TotalDataReceived;
+            }
+            avgStats.TotalDataSent /= (uint)_stats.Count;
+            avgStats.TotalDataReceived /= (uint)_stats.Count;
+            _dataSentRateChart.AddSample(avgStats.TotalDataSent);
+            _dataReceivedRateChart.AddSample(avgStats.TotalDataReceived);
+
 
             // Gather network events
             var events = ProfilingTools.EventsNetwork;
@@ -118,6 +164,8 @@ namespace FlaxEditor.Windows.Profiler
         {
             _dataSentChart.SelectedSampleIndex = selectedFrame;
             _dataReceivedChart.SelectedSampleIndex = selectedFrame;
+            _dataSentRateChart.SelectedSampleIndex = selectedFrame;
+            _dataReceivedRateChart.SelectedSampleIndex = selectedFrame;
 
             // Update events tables
             if (_events != null)
@@ -204,7 +252,9 @@ namespace FlaxEditor.Windows.Profiler
 
         private static Table InitTable(ContainerControl parent, string name)
         {
-            var headerColor = Style.Current.LightBackground;
+            var style = Style.Current;
+            var headerColor = style.LightBackground;
+            var textColor = style.Foreground;
             var table = new Table
             {
                 Columns = new[]
@@ -215,28 +265,33 @@ namespace FlaxEditor.Windows.Profiler
                         CellAlignment = TextAlignment.Near,
                         Title = name,
                         TitleBackgroundColor = headerColor,
+                        TitleColor = textColor,
                     },
                     new ColumnDefinition
                     {
                         Title = "Count",
                         TitleBackgroundColor = headerColor,
+                        TitleColor = textColor,
                     },
                     new ColumnDefinition
                     {
                         Title = "Data Size",
                         TitleBackgroundColor = headerColor,
+                        TitleColor = textColor,
                         FormatValue = FormatCellBytes,
                     },
                     new ColumnDefinition
                     {
                         Title = "Message Size",
                         TitleBackgroundColor = headerColor,
+                        TitleColor = textColor,
                         FormatValue = FormatCellBytes,
                     },
                     new ColumnDefinition
                     {
                         Title = "Receivers",
                         TitleBackgroundColor = headerColor,
+                        TitleColor = textColor,
                     },
                 },
                 Splits = new[]
@@ -255,6 +310,11 @@ namespace FlaxEditor.Windows.Profiler
         private static string FormatSampleBytes(float v)
         {
             return Utilities.Utils.FormatBytesCount((ulong)v);
+        }
+
+        private static string FormatSampleBytesRate(float v)
+        {
+            return Utilities.Utils.FormatBytesCount((ulong)v) + "/s";
         }
 
         private static string FormatCellBytes(object x)

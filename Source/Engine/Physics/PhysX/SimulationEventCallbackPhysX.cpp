@@ -117,9 +117,7 @@ void SimulationEventCallback::onContact(const PxContactPairHeader& pairHeader, c
 {
     // Skip sending events to removed actors
     if (pairHeader.flags & (PxContactPairHeaderFlag::eREMOVED_ACTOR_0 | PxContactPairHeaderFlag::eREMOVED_ACTOR_1))
-    {
         return;
-    }
 
     Collision c;
     PxContactPairExtraDataIterator j(pairHeader.extraDataStream, pairHeader.extraDataStreamSize);
@@ -132,13 +130,18 @@ void SimulationEventCallback::onContact(const PxContactPairHeader& pairHeader, c
 
         const PxReal* impulses = pair.contactImpulses;
         //const PxU32 flippedContacts = (pair.flags & PxContactPairFlag::eINTERNAL_CONTACTS_ARE_FLIPPED);
-        const PxU32 hasImpulses = (pair.flags & PxContactPairFlag::eINTERNAL_HAS_IMPULSES);
+        const bool hasImpulses = pair.flags.isSet(PxContactPairFlag::eINTERNAL_HAS_IMPULSES);
+        const bool hasPostVelocities = !pair.flags.isSet(PxContactPairFlag::eACTOR_PAIR_LOST_TOUCH);
         PxU32 nbContacts = 0;
         PxVec3 totalImpulse(0.0f);
 
         c.ThisActor = static_cast<PhysicsColliderActor*>(pair.shapes[0]->userData);
         c.OtherActor = static_cast<PhysicsColliderActor*>(pair.shapes[1]->userData);
-        ASSERT_LOW_LAYER(c.ThisActor && c.OtherActor);
+        if (c.ThisActor == nullptr || c.OtherActor == nullptr)
+        {
+            // One of the actors was deleted (eg. via RigidBody destroyed by gameplay) then skip processing this collision
+            continue;
+        }
 
         // Extract contact points
         while (i.hasNextPatch())
@@ -166,7 +169,8 @@ void SimulationEventCallback::onContact(const PxContactPairHeader& pairHeader, c
         }
 
         // Extract velocities
-        if (j.nextItemSet())
+        c.ThisVelocity = c.OtherVelocity = Vector3::Zero;
+        if (hasPostVelocities && j.nextItemSet())
         {
             ASSERT(j.contactPairIndex == pairIndex);
             if (j.postSolverVelocity)
@@ -176,10 +180,6 @@ void SimulationEventCallback::onContact(const PxContactPairHeader& pairHeader, c
 
                 c.ThisVelocity = P2C(linearVelocityActor0);
                 c.OtherVelocity = P2C(linearVelocityActor1);
-            }
-            else
-            {
-                c.ThisVelocity = c.OtherVelocity = Vector3::Zero;
             }
         }
 
@@ -195,6 +195,7 @@ void SimulationEventCallback::onContact(const PxContactPairHeader& pairHeader, c
             RemovedCollisions.Add(c);
         }
     }
+    //ASSERT(!j.nextItemSet());
 }
 
 void SimulationEventCallback::onTrigger(PxTriggerPair* pairs, PxU32 count)

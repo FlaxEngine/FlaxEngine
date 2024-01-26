@@ -1335,6 +1335,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Surface?.AddBatchedUndoAction(action);
                 action.Do();
                 Surface?.OnNodesConnected(this, other);
+                Surface?.MarkAsEdited();
             }
         }
 
@@ -1582,14 +1583,24 @@ namespace FlaxEditor.Surface.Archetypes
                 None = 0,
 
                 /// <summary>
-                /// Transition rule will be rechecked during active transition with option to interrupt transition.
+                /// Transition rule will be rechecked during active transition with option to interrupt transition (to go back to the source state).
                 /// </summary>
                 RuleRechecking = 1,
 
                 /// <summary>
-                /// Interrupted transition is immediately stopped without blending out.
+                /// Interrupted transition is immediately stopped without blending out (back to the source/destination state).
                 /// </summary>
                 Instant = 2,
+
+                /// <summary>
+                /// Enables checking other transitions in the source state that might interrupt this one.
+                /// </summary>
+                SourceState = 4,
+
+                /// <summary>
+                /// Enables checking transitions in the destination state that might interrupt this one.
+                /// </summary>
+                DestinationState = 8,
             }
 
             /// <summary>
@@ -1612,6 +1623,8 @@ namespace FlaxEditor.Surface.Archetypes
                     UseDefaultRule = 4,
                     InterruptionRuleRechecking = 8,
                     InterruptionInstant = 16,
+                    InterruptionSourceState = 32,
+                    InterruptionDestinationState = 64,
                 }
 
                 /// <summary>
@@ -1772,7 +1785,7 @@ namespace FlaxEditor.Surface.Archetypes
             }
 
             /// <summary>
-            /// Transition interruption options.
+            /// Transition interruption options (flags, can select multiple values).
             /// </summary>
             [EditorOrder(70), DefaultValue(InterruptionFlags.None)]
             public InterruptionFlags Interruption
@@ -1784,12 +1797,18 @@ namespace FlaxEditor.Surface.Archetypes
                         flags |= InterruptionFlags.RuleRechecking;
                     if (_data.HasFlag(Data.FlagTypes.InterruptionInstant))
                         flags |= InterruptionFlags.Instant;
+                    if (_data.HasFlag(Data.FlagTypes.InterruptionSourceState))
+                        flags |= InterruptionFlags.SourceState;
+                    if (_data.HasFlag(Data.FlagTypes.InterruptionDestinationState))
+                        flags |= InterruptionFlags.DestinationState;
                     return flags;
                 }
                 set
                 {
                     _data.SetFlag(Data.FlagTypes.InterruptionRuleRechecking, value.HasFlag(InterruptionFlags.RuleRechecking));
                     _data.SetFlag(Data.FlagTypes.InterruptionInstant, value.HasFlag(InterruptionFlags.Instant));
+                    _data.SetFlag(Data.FlagTypes.InterruptionSourceState, value.HasFlag(InterruptionFlags.SourceState));
+                    _data.SetFlag(Data.FlagTypes.InterruptionDestinationState, value.HasFlag(InterruptionFlags.DestinationState));
                     SourceState.SaveTransitions(true);
                 }
             }
@@ -1911,6 +1930,7 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 var action = new StateMachineStateBase.AddRemoveTransitionAction(this);
                 SourceState.Surface?.AddBatchedUndoAction(action);
+                SourceState.Surface?.MarkAsEdited();
                 action.Do();
             }
 

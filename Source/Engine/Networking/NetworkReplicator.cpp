@@ -817,7 +817,7 @@ void InvokeObjectSpawn(const NetworkMessageObjectSpawn& msgData, const NetworkMe
                 NETWORK_REPLICATOR_LOG(Error, "[NetworkReplicator] Failed to find prefab {}", msgData.PrefabId.ToString());
                 return;
             }
-            prefabInstance = PrefabManager::SpawnPrefab(prefab, Transform::Identity, nullptr, nullptr);
+            prefabInstance = PrefabManager::SpawnPrefab(prefab, nullptr, nullptr);
             if (!prefabInstance)
             {
                 NETWORK_REPLICATOR_LOG(Error, "[NetworkReplicator] Failed to spawn object type {}", msgData.PrefabId.ToString());
@@ -2151,6 +2151,18 @@ void NetworkInternal::OnNetworkMessageObjectRpc(NetworkEvent& event, NetworkClie
     NetworkMessageObjectRpc msgData;
     event.Message.ReadStructure(msgData);
     ScopeLock lock(ObjectsLock);
+
+    // Find RPC info
+    NetworkRpcName name;
+    name.First = Scripting::FindScriptingType(msgData.RpcTypeName);
+    name.Second = msgData.RpcName;
+    const NetworkRpcInfo* info = NetworkRpcInfo::RPCsTable.TryGet(name);
+    if (!info)
+    {
+        NETWORK_REPLICATOR_LOG(Error, "[NetworkReplicator] Unknown RPC {}::{} for object {}", String(msgData.RpcTypeName), String(msgData.RpcName), msgData.ObjectId);
+        return;
+    }
+
     NetworkReplicatedObject* e = ResolveObject(msgData.ObjectId, msgData.ParentId, msgData.ObjectTypeName);
     if (e)
     {
@@ -2159,17 +2171,7 @@ void NetworkInternal::OnNetworkMessageObjectRpc(NetworkEvent& event, NetworkClie
         if (!obj)
             return;
 
-        // Find RPC info
-        NetworkRpcName name;
-        name.First = Scripting::FindScriptingType(msgData.RpcTypeName);
-        name.Second = msgData.RpcName;
-        const NetworkRpcInfo* info = NetworkRpcInfo::RPCsTable.TryGet(name);
-        if (!info)
-        {
-            NETWORK_REPLICATOR_LOG(Error, "[NetworkReplicator] Unknown RPC {}::{} for object {}", String(msgData.RpcTypeName), String(msgData.RpcName), msgData.ObjectId);
-            return;
-        }
-
+        
         // Validate RPC
         if (info->Server && NetworkManager::IsClient())
         {
@@ -2192,7 +2194,7 @@ void NetworkInternal::OnNetworkMessageObjectRpc(NetworkEvent& event, NetworkClie
         // Execute RPC
         info->Execute(obj, stream, info->Tag);
     }
-    else
+    else if(info->Channel != static_cast<uint8>(NetworkChannelType::Unreliable) && info->Channel != static_cast<uint8>(NetworkChannelType::UnreliableOrdered))
     {
         NETWORK_REPLICATOR_LOG(Error, "[NetworkReplicator] Unknown object {} RPC {}::{}", msgData.ObjectId, String(msgData.RpcTypeName), String(msgData.RpcName));
     }

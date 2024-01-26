@@ -46,6 +46,7 @@
 #include <mono/metadata/metadata.h>
 #include <mono/metadata/threads.h>
 #include <mono/metadata/reflection.h>
+#include <mono/metadata/mono-gc.h>
 #include <mono/metadata/mono-private-unstable.h>
 typedef char char_t;
 #define DOTNET_HOST_MONO_DEBUG 0
@@ -183,21 +184,14 @@ Dictionary<void*, MAssembly*> CachedAssemblyHandles;
 void* GetStaticMethodPointer(const String& methodName);
 
 /// <summary>
-/// Calls the managed static method in NativeInterop class with given parameters.
-/// </summary>
-template<typename RetType, typename... Args>
-FORCE_INLINE RetType CallStaticMethodByName(const String& methodName, Args... args)
-{
-    typedef RetType (CORECLR_DELEGATE_CALLTYPE* fun)(Args...);
-    return ((fun)GetStaticMethodPointer(methodName))(args...);
-}
-
-/// <summary>
 /// Calls the managed static method with given parameters.
 /// </summary>
 template<typename RetType, typename... Args>
 FORCE_INLINE RetType CallStaticMethod(void* methodPtr, Args... args)
 {
+#if DOTNET_HOST_MONO
+    ASSERT_LOW_LAYER(mono_domain_get()); // Ensure that Mono runtime has been attached to this thread
+#endif
     typedef RetType (CORECLR_DELEGATE_CALLTYPE* fun)(Args...);
     return ((fun)methodPtr)(args...);
 }
@@ -273,7 +267,7 @@ bool MCore::LoadEngine()
         return true;
 
     // Prepare managed side
-    CallStaticMethodByName<void>(TEXT("Init"));
+    CallStaticMethod<void>(GetStaticMethodPointer(TEXT("Init")));
 #ifdef MCORE_MAIN_MODULE_NAME
     // MCORE_MAIN_MODULE_NAME define is injected by Scripting.Build.cs on platforms that use separate shared library for engine symbols
     ::String flaxLibraryPath(Platform::GetMainDirectory() / TEXT(MACRO_TO_STR(MCORE_MAIN_MODULE_NAME)));
@@ -292,7 +286,8 @@ bool MCore::LoadEngine()
     MRootDomain = New<MDomain>("Root");
     MDomains.Add(MRootDomain);
 
-    char* buildInfo = CallStaticMethodByName<char*>(TEXT("GetRuntimeInformation"));
+    void* GetRuntimeInformationPtr = GetStaticMethodPointer(TEXT("GetRuntimeInformation"));
+    char* buildInfo = CallStaticMethod<char*>(GetRuntimeInformationPtr);
     LOG(Info, ".NET runtime version: {0}", ::String(buildInfo));
     MCore::GC::FreeMemory(buildInfo);
 
@@ -304,7 +299,7 @@ void MCore::UnloadEngine()
     if (!MRootDomain)
         return;
     PROFILE_CPU();
-    CallStaticMethodByName<void>(TEXT("Exit"));
+    CallStaticMethod<void>(GetStaticMethodPointer(TEXT("Exit")));
     MDomains.ClearDelete();
     MRootDomain = nullptr;
     ShutdownHostfxr();
@@ -724,6 +719,7 @@ void GetAssemblyName(void* assemblyHandle, StringAnsi& name, StringAnsi& fullnam
 
 DEFINE_INTERNAL_CALL(void) NativeInterop_CreateClass(NativeClassDefinitions* managedClass, void* assemblyHandle)
 {
+    ScopeLock lock(BinaryModule::Locker);
     MAssembly* assembly = GetAssembly(assemblyHandle);
     if (assembly == nullptr)
     {
@@ -737,7 +733,18 @@ DEFINE_INTERNAL_CALL(void) NativeInterop_CreateClass(NativeClassDefinitions* man
     MClass* klass = New<MClass>(assembly, managedClass->typeHandle, managedClass->name, managedClass->fullname, managedClass->namespace_, managedClass->typeAttributes);
     if (assembly != nullptr)
     {
-        const_cast<MAssembly::ClassesDictionary&>(assembly->GetClasses()).Add(klass->GetFullName(), klass);
+        auto& classes = const_cast<MAssembly::ClassesDictionary&>(assembly->GetClasses());
+        MClass* oldKlass;
+        if (classes.TryGet(klass->GetFullName(), oldKlass))
+        {
+            LOG(Warning, "Class '{0}' was already added to assembly '{1}'", String(klass->GetFullName()), String(assembly->GetName()));
+            Delete(klass);
+            klass = oldKlass;
+        }
+        else
+        {
+            classes.Add(klass->GetFullName(), klass);
+        }
     }
     managedClass->nativePointer = klass;
 }
@@ -829,7 +836,7 @@ bool MAssembly::UnloadImage(bool isReloading)
 MClass::MClass(const MAssembly* parentAssembly, void* handle, const char* name, const char* fullname, const char* namespace_, MTypeAttributes attributes)
     : _handle(handle)
     , _name(name)
-    , _namespace_(namespace_)
+    , _namespace(namespace_)
     , _assembly(parentAssembly)
     , _fullname(fullname)
     , _hasCachedProperties(false)
@@ -878,7 +885,7 @@ MClass::MClass(const MAssembly* parentAssembly, void* handle, const char* name, 
     static void* TypeIsEnumPtr = GetStaticMethodPointer(TEXT("TypeIsEnum"));
     _isEnum = CallStaticMethod<bool, void*>(TypeIsEnumPtr, handle);
 
-    CachedClassHandles.Add(handle, this);
+    CachedClassHandles[handle] = this;
 }
 
 bool MAssembly::ResolveMissingFile(String& assemblyPath) const
@@ -908,7 +915,7 @@ StringAnsiView MClass::GetName() const
 
 StringAnsiView MClass::GetNamespace() const
 {
-    return _namespace_;
+    return _namespace;
 }
 
 MType* MClass::GetType() const
@@ -1556,6 +1563,7 @@ const Array<MObject*>& MProperty::GetAttributes() const
 
 MAssembly* GetAssembly(void* assemblyHandle)
 {
+    ScopeLock lock(BinaryModule::Locker);
     MAssembly* assembly;
     if (CachedAssemblyHandles.TryGet(assemblyHandle, assembly))
         return assembly;
@@ -1564,6 +1572,7 @@ MAssembly* GetAssembly(void* assemblyHandle)
 
 MClass* GetClass(MType* typeHandle)
 {
+    ScopeLock lock(BinaryModule::Locker);
     MClass* klass = nullptr;
     CachedClassHandles.TryGet(typeHandle, klass);
     return nullptr;
@@ -1573,6 +1582,7 @@ MClass* GetOrCreateClass(MType* typeHandle)
 {
     if (!typeHandle)
         return nullptr;
+    ScopeLock lock(BinaryModule::Locker);
     MClass* klass;
     if (!CachedClassHandles.TryGet(typeHandle, klass))
     {
@@ -1584,7 +1594,12 @@ MClass* GetOrCreateClass(MType* typeHandle)
         klass = New<MClass>(assembly, classInfo.typeHandle, classInfo.name, classInfo.fullname, classInfo.namespace_, classInfo.typeAttributes);
         if (assembly != nullptr)
         {
-            const_cast<MAssembly::ClassesDictionary&>(assembly->GetClasses()).Add(klass->GetFullName(), klass);
+            auto& classes = const_cast<MAssembly::ClassesDictionary&>(assembly->GetClasses());
+            if (classes.ContainsKey(klass->GetFullName()))
+            {
+                LOG(Warning, "Class '{0}' was already added to assembly '{1}'", String(klass->GetFullName()), String(assembly->GetName()));
+            }
+            classes[klass->GetFullName()] = klass;
         }
 
         if (typeHandle != classInfo.typeHandle)
@@ -1635,14 +1650,14 @@ bool InitHostfxr()
     const ::String csharpLibraryPath = Globals::BinariesFolder / TEXT("FlaxEngine.CSharp.dll");
     const ::String csharpRuntimeConfigPath = Globals::BinariesFolder / TEXT("FlaxEngine.CSharp.runtimeconfig.json");
     if (!FileSystem::FileExists(csharpLibraryPath))
-        LOG(Fatal, "Failed to initialize managed runtime, missing file: {0}", csharpLibraryPath);
+        LOG(Fatal, "Failed to initialize .NET runtime, missing file: {0}", csharpLibraryPath);
     if (!FileSystem::FileExists(csharpRuntimeConfigPath))
-        LOG(Fatal, "Failed to initialize managed runtime, missing file: {0}", csharpRuntimeConfigPath);
+        LOG(Fatal, "Failed to initialize .NET runtime, missing file: {0}", csharpRuntimeConfigPath);
     const FLAX_CORECLR_STRING& libraryPath = FLAX_CORECLR_STRING(csharpLibraryPath);
 
     // Get path to hostfxr library
     get_hostfxr_parameters get_hostfxr_params;
-    get_hostfxr_params.size = sizeof(hostfxr_initialize_parameters);
+    get_hostfxr_params.size = sizeof(get_hostfxr_parameters);
     get_hostfxr_params.assembly_path = libraryPath.Get();
 #if PLATFORM_MAC
     ::String macOSDotnetRoot = TEXT("/usr/local/share/dotnet");
@@ -1688,9 +1703,9 @@ bool InitHostfxr()
         Platform::OpenUrl(TEXT("https://dotnet.microsoft.com/en-us/download/dotnet/7.0"));
 #endif
 #if USE_EDITOR
-        LOG(Fatal, "Missing .NET 7 SDK installation required to run Flax Editor.");
+        LOG(Fatal, "Missing .NET 7 or later SDK installation required to run Flax Editor.");
 #else
-        LOG(Fatal, "Missing .NET 7 Runtime installation required to run this application.");
+        LOG(Fatal, "Missing .NET 7 or later Runtime installation required to run this application.");
 #endif
         return true;
     }
@@ -1720,14 +1735,13 @@ bool InitHostfxr()
         return true;
     }
 
-    // TODO: Implement picking different version of hostfxr, currently prefers highest available version.
-    // Allow future and preview versions of .NET
-    String dotnetRollForward;
+    // TODO: Implement support for picking RC/beta updates of .NET runtime
+    // Uncomment for enabling support for upcoming .NET major release candidates
+#if 0
     String dotnetRollForwardPr;
-    if (Platform::GetEnvironmentVariable(TEXT("DOTNET_ROLL_FORWARD"), dotnetRollForward))
-        Platform::SetEnvironmentVariable(TEXT("DOTNET_ROLL_FORWARD"), TEXT("LatestMajor"));
     if (Platform::GetEnvironmentVariable(TEXT("DOTNET_ROLL_FORWARD_TO_PRERELEASE"), dotnetRollForwardPr))
         Platform::SetEnvironmentVariable(TEXT("DOTNET_ROLL_FORWARD_TO_PRERELEASE"), TEXT("1"));
+#endif
 
     // Initialize hosting component
     const char_t* argv[1] = { libraryPath.Get() };
@@ -1791,9 +1805,10 @@ void* GetStaticMethodPointer(const String& methodName)
     void* fun;
     if (CachedFunctions.TryGet(methodName, fun))
         return fun;
+    PROFILE_CPU();
     const int rc = get_function_pointer(NativeInteropTypeName, FLAX_CORECLR_STRING(methodName).Get(), UNMANAGEDCALLERSONLY_METHOD, nullptr, nullptr, &fun);
     if (rc != 0)
-        LOG(Fatal, "Failed to get unmanaged function pointer for method {0}: 0x{1:x}", methodName.Get(), (unsigned int)rc);
+        LOG(Fatal, "Failed to get unmanaged function pointer for method '{0}': 0x{1:x}", methodName, (unsigned int)rc);
     CachedFunctions.Add(methodName, fun);
     return fun;
 }
@@ -2012,6 +2027,9 @@ bool InitHostfxr()
     //Platform::SetEnvironmentVariable(TEXT("MONO_GC_DEBUG"), TEXT("6:gc-log.txt,check-remset-consistency,nursery-canaries"));
 #endif
 
+    // Adjust GC threads suspending mode to not block attached native threads (eg. Job System)
+    Platform::SetEnvironmentVariable(TEXT("MONO_THREADS_SUSPEND"), TEXT("preemptive"));
+
 #if defined(USE_MONO_AOT_MODE)
     // Enable AOT mode (per-platform)
     mono_jit_set_aot_mode(USE_MONO_AOT_MODE);
@@ -2056,7 +2074,7 @@ bool InitHostfxr()
     // Setup debugger
     {
         int32 debuggerLogLevel = 0;
-        if (CommandLine::Options.MonoLog.IsTrue())
+        if (CommandLine::Options.MonoLog.IsTrue() || DOTNET_HOST_MONO_DEBUG)
         {
             LOG(Info, "Using detailed Mono logging");
             mono_trace_set_level_string("debug");
@@ -2139,6 +2157,7 @@ bool InitHostfxr()
         LOG(Fatal, "Failed to initialize Mono.");
         return true;
     }
+    mono_gc_init_finalizer_thread();
 
     // Log info
     char* buildInfo = mono_get_runtime_build_info();
@@ -2163,6 +2182,7 @@ void* GetStaticMethodPointer(const String& methodName)
     void* fun;
     if (CachedFunctions.TryGet(methodName, fun))
         return fun;
+    PROFILE_CPU();
 
     static MonoClass* nativeInteropClass = nullptr;
     if (!nativeInteropClass)
@@ -2187,7 +2207,7 @@ void* GetStaticMethodPointer(const String& methodName)
     {
         const unsigned short errorCode = mono_error_get_error_code(&error);
         const char* errorMessage = mono_error_get_message(&error);
-        LOG(Fatal, "mono_method_get_unmanaged_callers_only_ftnptr failed with error code 0x{0:x}, {1}", errorCode, String(errorMessage));
+        LOG(Fatal, "Failed to get unmanaged function pointer for method '{0}': 0x{1:x}, {2}", methodName, errorCode, String(errorMessage));
     }
     mono_error_cleanup(&error);
 

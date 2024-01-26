@@ -99,10 +99,7 @@ void BlendPoseBucketInit(AnimGraphInstanceData::Bucket& bucket)
 
 void StateMachineBucketInit(AnimGraphInstanceData::Bucket& bucket)
 {
-    bucket.StateMachine.LastUpdateFrame = 0;
-    bucket.StateMachine.CurrentState = nullptr;
-    bucket.StateMachine.ActiveTransition = nullptr;
-    bucket.StateMachine.TransitionPosition = 0.0f;
+    Platform::MemoryClear(&bucket.StateMachine, sizeof(bucket.StateMachine));
 }
 
 void SlotBucketInit(AnimGraphInstanceData::Bucket& bucket)

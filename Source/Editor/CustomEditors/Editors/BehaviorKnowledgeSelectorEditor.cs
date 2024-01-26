@@ -171,11 +171,13 @@ namespace FlaxEditor.CustomEditors.Editors
                 tree.Select(typeNode);
             if (addItems)
             {
-                var items = GenericEditor.GetItemsForType(type, type.IsClass, true);
+                var items = GenericEditor.GetItemsForType(type, type.IsClass, true, true);
                 foreach (var item in items)
                 {
                     if (typed && !typed.IsAssignableFrom(item.Info.ValueType))
                         continue;
+                    if (item.Info.DeclaringType.Type == typeof(FlaxEngine.Object))
+                        continue; // Skip engine internals
                     var itemPath = typePath + item.Info.Name;
                     var node = new TreeNode
                     {

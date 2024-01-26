@@ -296,7 +296,7 @@ namespace Flax.Build.Projects.VisualStudio
                     var folderIdMatches = new Regex("Project\\(\"{2150E333-8FDC-42A3-9474-1A3956D46DE8}\"\\) = \"(.*?)\", \"(.*?)\", \"{(.*?)}\"").Matches(contents);
                     foreach (Match match in folderIdMatches)
                     {
-                        var folder = match.Groups[1].Value;
+                        var folder = match.Groups[2].Value;
                         var folderId = Guid.ParseExact(match.Groups[3].Value, "D");
                         folderIds[folder] = folderId;
                     }
@@ -385,8 +385,7 @@ namespace Flax.Build.Projects.VisualStudio
                         {
                             if (!folderIds.TryGetValue(folderPath, out project.FolderGuid))
                             {
-                                if (!folderIds.TryGetValue(folderParents[i], out project.FolderGuid))
-                                    project.FolderGuid = Guid.NewGuid();
+                                project.FolderGuid = Guid.NewGuid();
                                 folderIds.Add(folderPath, project.FolderGuid);
                             }
                             folderNames.Add(folderPath);
@@ -401,7 +400,7 @@ namespace Flax.Build.Projects.VisualStudio
                     var lastSplit = folder.LastIndexOf('\\');
                     var name = lastSplit != -1 ? folder.Substring(lastSplit + 1) : folder;
 
-                    vcSolutionFileContent.AppendLine(string.Format("Project(\"{0}\") = \"{1}\", \"{2}\", \"{3}\"", typeGuid, name, name, folderGuid));
+                    vcSolutionFileContent.AppendLine(string.Format("Project(\"{0}\") = \"{1}\", \"{2}\", \"{3}\"", typeGuid, name, folder, folderGuid));
                     vcSolutionFileContent.AppendLine("EndProject");
                 }
             }
@@ -518,7 +517,15 @@ namespace Flax.Build.Projects.VisualStudio
                             else if (firstFullMatch != -1)
                             {
                                 projectConfiguration = configuration;
-                                build = solution.MainProject == project || (solution.MainProject == null && project.Name == solution.Name);
+
+                                // Always build the main project
+                                build = solution.MainProject == project;
+
+                                // Build C# projects (needed for Rider solution wide analysis)
+                                build |= project.Type == TargetType.DotNetCore;
+
+                                // Always build the project named after solution if main project was not set
+                                build |= solution.MainProject == null && project.Name == solution.Name;
                             }
                             else if (firstPlatformMatch != -1 && !configuration.Name.StartsWith("Editor."))
                             {
@@ -678,6 +685,56 @@ namespace Flax.Build.Projects.VisualStudio
                 }
 
                 Utilities.WriteFileIfChanged(dotSettingsUserFilePath, dotSettingsFileContent.ToString());
+            }
+
+            // Custom MSBuild .targets file to prevent building Flax C#-projects directly with MSBuild
+            {
+                var targetsFileContent = new StringBuilder();
+                targetsFileContent.AppendLine("<Project>");
+                targetsFileContent.AppendLine("  <!-- Prevent building projects with MSBuild, let Flax.Build handle the building process -->");
+                targetsFileContent.AppendLine("  <Target Name=\"Build\" Condition=\"'false' == 'true'\" />");
+                targetsFileContent.AppendLine("</Project>");
+
+                Utilities.WriteFileIfChanged(Path.Combine(Globals.Root, "Cache", "Projects", "Flax.Build.CSharp.SkipBuild.targets"), targetsFileContent.ToString());
+            }
+
+            // Override MSBuild build tasks to run Flax.Build in C#-only projects
+            {
+                // Build command for the build tool
+                var buildToolPath = Path.ChangeExtension(typeof(Builder).Assembly.Location, null);
+                
+                var targetsFileContent = new StringBuilder();
+                targetsFileContent.AppendLine("<Project>");
+                targetsFileContent.AppendLine("  <!-- Custom Flax.Build scripts for C# projects. -->");
+                targetsFileContent.AppendLine("  <Target Name=\"Build\">");
+                AppendBuildToolCommands(targetsFileContent, "-build");
+                targetsFileContent.AppendLine("  </Target>");
+                targetsFileContent.AppendLine("  <Target Name=\"Rebuild\">");
+                AppendBuildToolCommands(targetsFileContent, "-rebuild");
+                targetsFileContent.AppendLine("  </Target>");
+                targetsFileContent.AppendLine("  <Target Name=\"Clean\">");
+                AppendBuildToolCommands(targetsFileContent, "-clean");
+                targetsFileContent.AppendLine("  </Target>");
+                targetsFileContent.AppendLine("</Project>");
+
+                Utilities.WriteFileIfChanged(Path.Combine(Globals.Root, "Cache", "Projects", "Flax.Build.CSharp.targets"), targetsFileContent.ToString());
+
+                void AppendBuildToolCommands(StringBuilder str, string extraArgs)
+                {
+                    foreach (var configuration in solution.MainProject.Configurations)
+                    {
+                        var cmdLine = string.Format("\"{0}\" -log -mutex -workspace=\"{1}\" -arch={2} -configuration={3} -platform={4} -buildTargets={5}",
+                                                buildToolPath,
+                                                solution.MainProject.WorkspaceRootPath,
+                                                configuration.Architecture,
+                                                configuration.Configuration,
+                                                configuration.Platform,
+                                                configuration.Target);
+                        Configuration.PassArgs(ref cmdLine);
+
+                        str.AppendLine(string.Format("    <Exec Command='{0} {1}' Condition=\"'$(Configuration)|$(Platform)'=='{2}'\"/>", cmdLine, extraArgs, configuration.Name));
+                    }
+                }
             }
         }
 

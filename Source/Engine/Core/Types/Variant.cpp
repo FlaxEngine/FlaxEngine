@@ -139,6 +139,24 @@ VariantType::VariantType(const StringAnsiView& typeName)
             return;
         }
     }
+    {
+        // Aliases
+        if (typeName == "FlaxEngine.Vector2")
+        {
+            new(this) VariantType(Vector2);
+            return;
+        }
+        if (typeName == "FlaxEngine.Vector3")
+        {
+            new(this) VariantType(Vector3);
+            return;
+        }
+        if (typeName == "FlaxEngine.Vector4")
+        {
+            new(this) VariantType(Vector4);
+            return;
+        }
+    }
 
     // Check case for array
     if (typeName.EndsWith(StringAnsiView("[]"), StringSearchCase::CaseSensitive))
@@ -2821,7 +2839,10 @@ void Variant::Inline()
                 type = VariantType::Types::Vector4;
         }
         if (type != VariantType::Null)
+        {
+            ASSERT(sizeof(data) >= AsBlob.Length);
             Platform::MemoryCopy(data, AsBlob.Data, AsBlob.Length);
+        }
     }
     if (type != VariantType::Null)
     {
@@ -2910,6 +2931,60 @@ void Variant::Inline()
             break;
         }
     }
+}
+
+void Variant::InvertInline()
+{
+    byte data[sizeof(Matrix)];
+    switch (Type.Type)
+    {
+    case VariantType::Bool:
+    case VariantType::Int:
+    case VariantType::Uint:
+    case VariantType::Int64:
+    case VariantType::Uint64:
+    case VariantType::Float:
+    case VariantType::Double:
+    case VariantType::Pointer:
+    case VariantType::String:
+    case VariantType::Float2:
+    case VariantType::Float3:
+    case VariantType::Float4:
+    case VariantType::Color:
+#if !USE_LARGE_WORLDS
+    case VariantType::BoundingSphere:
+    case VariantType::BoundingBox:
+    case VariantType::Ray:
+#endif
+    case VariantType::Guid:
+    case VariantType::Quaternion:
+    case VariantType::Rectangle:
+    case VariantType::Int2:
+    case VariantType::Int3:
+    case VariantType::Int4:
+    case VariantType::Int16:
+    case VariantType::Uint16:
+    case VariantType::Double2:
+    case VariantType::Double3:
+    case VariantType::Double4:
+        static_assert(sizeof(data) >= sizeof(AsData), "Invalid memory size.");
+        Platform::MemoryCopy(data, AsData, sizeof(AsData));
+        break;
+#if USE_LARGE_WORLDS
+    case VariantType::BoundingSphere:
+    case VariantType::BoundingBox:
+    case VariantType::Ray:
+#endif
+    case VariantType::Transform:
+    case VariantType::Matrix:
+        ASSERT(sizeof(data) >= AsBlob.Length);
+        Platform::MemoryCopy(data, AsBlob.Data, AsBlob.Length);
+        break;
+    default:
+        return; // Not used
+    }
+    SetType(VariantType(VariantType::Structure, InBuiltTypesTypeNames[Type.Type]));
+    CopyStructure(data);
 }
 
 Variant Variant::NewValue(const StringAnsiView& typeName)
@@ -3928,15 +4003,32 @@ void Variant::CopyStructure(void* src)
 {
     if (AsBlob.Data && src)
     {
-        const ScriptingTypeHandle typeHandle = Scripting::FindScriptingType(StringAnsiView(Type.TypeName));
+        const StringAnsiView typeName(Type.TypeName);
+        const ScriptingTypeHandle typeHandle = Scripting::FindScriptingType(typeName);
         if (typeHandle)
         {
             auto& type = typeHandle.GetType();
             type.Struct.Copy(AsBlob.Data, src);
         }
+#if USE_CSHARP
+        else if (const auto mclass = Scripting::FindClass(typeName))
+        {
+            // Fallback to C#-only types
+            MCore::Thread::Attach();
+            if (MANAGED_GC_HANDLE && mclass->IsValueType())
+            {
+                MObject* instance = MCore::GCHandle::GetTarget(MANAGED_GC_HANDLE);
+                void* data = MCore::Object::Unbox(instance);
+                Platform::MemoryCopy(data, src, mclass->GetInstanceSize());
+            }
+        }
+#endif
         else
         {
-            Platform::MemoryCopy(AsBlob.Data, src, AsBlob.Length);
+            if (typeName.Length() != 0)
+            {
+                LOG(Warning, "Missing scripting type \'{0}\'", String(typeName));
+            }
         }
     }
 }

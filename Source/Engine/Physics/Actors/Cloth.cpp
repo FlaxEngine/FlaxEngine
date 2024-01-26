@@ -95,14 +95,17 @@ void Cloth::SetFabric(const FabricSettings& value)
 void Cloth::Rebuild()
 {
 #if WITH_CLOTH
-    // Remove old
-    if (IsDuringPlay())
-        PhysicsBackend::RemoveCloth(GetPhysicsScene()->GetPhysicsScene(), _cloth);
-    DestroyCloth();
+    if (_cloth)
+    {
+        // Remove old
+        if (IsDuringPlay())
+            PhysicsBackend::RemoveCloth(GetPhysicsScene()->GetPhysicsScene(), _cloth);
+        DestroyCloth();
+    }
 
     // Create new
     CreateCloth();
-    if (IsDuringPlay())
+    if (IsDuringPlay() && _cloth)
         PhysicsBackend::AddCloth(GetPhysicsScene()->GetPhysicsScene(), _cloth);
 #endif
 }

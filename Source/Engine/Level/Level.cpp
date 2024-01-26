@@ -132,7 +132,7 @@ class LevelService : public EngineService
 {
 public:
     LevelService()
-        : EngineService(TEXT("Scene Manager"), 30)
+        : EngineService(TEXT("Scene Manager"), 200)
     {
     }
 
@@ -416,7 +416,7 @@ public:
         }
 
         // Load scene
-        if (Level::loadScene(SceneAsset.Get()))
+        if (Level::loadScene(SceneAsset))
         {
             LOG(Error, "Failed to deserialize scene {0}", SceneId);
             CallSceneEvent(SceneEventType::OnSceneLoadError, nullptr, SceneId);
@@ -439,7 +439,7 @@ public:
 
     bool Do() const override
     {
-        auto scene = Scripting::FindObject<Scene>(TargetScene);
+        auto scene = Level::FindScene(TargetScene);
         if (!scene)
             return true;
         return unloadScene(scene);
@@ -816,40 +816,10 @@ bool LevelImpl::unloadScenes()
     return false;
 }
 
-bool Level::loadScene(const Guid& sceneId)
-{
-    const auto sceneAsset = Content::LoadAsync<JsonAsset>(sceneId);
-    return loadScene(sceneAsset);
-}
-
-bool Level::loadScene(const String& scenePath)
-{
-    LOG(Info, "Loading scene from file. Path: \'{0}\'", scenePath);
-
-    // Check for missing file
-    if (!FileSystem::FileExists(scenePath))
-    {
-        LOG(Error, "Missing scene file.");
-        return true;
-    }
-
-    // Load file
-    BytesContainer sceneData;
-    if (File::ReadAllBytes(scenePath, sceneData))
-    {
-        LOG(Error, "Cannot load data from file.");
-        return true;
-    }
-
-    return loadScene(sceneData);
-}
-
 bool Level::loadScene(JsonAsset* sceneAsset)
 {
     // Keep reference to the asset (prevent unloading during action)
     AssetReference<JsonAsset> ref = sceneAsset;
-
-    // Wait for loaded
     if (sceneAsset == nullptr || sceneAsset->WaitForLoaded())
     {
         LOG(Error, "Cannot load scene asset.");
@@ -879,6 +849,7 @@ bool Level::loadScene(const BytesContainer& sceneData, Scene** outScene)
         return true;
     }
 
+    ScopeLock lock(ScenesLock);
     return loadScene(document, outScene);
 }
 
@@ -963,18 +934,19 @@ bool Level::loadScene(rapidjson_flax::Value& data, int32 engineBuild, Scene** ou
 
     // Loaded scene objects list
     CollectionPoolCache<ActorsCache::SceneObjectsListType>::ScopeCache sceneObjects = ActorsCache::SceneObjectsListCache.Get();
-    const int32 objectsCount = (int32)data.Size();
-    sceneObjects->Resize(objectsCount);
+    const int32 dataCount = (int32)data.Size();
+    sceneObjects->Resize(dataCount);
     sceneObjects->At(0) = scene;
 
     // Spawn all scene objects
     SceneObjectsFactory::Context context(modifier.Value);
-    context.Async = JobSystem::GetThreadsCount() > 1 && objectsCount > 10;
+    context.Async = JobSystem::GetThreadsCount() > 1 && dataCount > 10;
     {
         PROFILE_CPU_NAMED("Spawn");
         SceneObject** objects = sceneObjects->Get();
         if (context.Async)
         {
+            ScenesLock.Unlock(); // Unlock scenes from Main Thread so Job Threads can use it to safely setup actors hierarchy (see Actor::Deserialize)
             JobSystem::Execute([&](int32 i)
             {
                 i++; // Start from 1. at index [0] was scene
@@ -991,11 +963,12 @@ bool Level::loadScene(rapidjson_flax::Value& data, int32 engineBuild, Scene** ou
                 }
                 else
                     SceneObjectsFactory::HandleObjectDeserializationError(stream);
-            }, objectsCount - 1);
+            }, dataCount - 1);
+            ScenesLock.Lock();
         }
         else
         {
-            for (int32 i = 1; i < objectsCount; i++) // start from 1. at index [0] was scene
+            for (int32 i = 1; i < dataCount; i++) // start from 1. at index [0] was scene
             {
                 auto& stream = data[i];
                 auto obj = SceneObjectsFactory::Spawn(context, stream);
@@ -1039,13 +1012,13 @@ bool Level::loadScene(rapidjson_flax::Value& data, int32 engineBuild, Scene** ou
                     SceneObjectsFactory::Deserialize(context, obj, data[i]);
                     idMapping = nullptr;
                 }
-            }, objectsCount - 1);
+            }, dataCount - 1);
             ScenesLock.Lock();
         }
         else
         {
             Scripting::ObjectsLookupIdMapping.Set(&modifier.Value->IdsMapping);
-            for (int32 i = 1; i < objectsCount; i++) // start from 1. at index [0] was scene
+            for (int32 i = 1; i < dataCount; i++) // start from 1. at index [0] was scene
             {
                 auto& objData = data[i];
                 auto obj = objects[i];
@@ -1076,7 +1049,7 @@ bool Level::loadScene(rapidjson_flax::Value& data, int32 engineBuild, Scene** ou
         PROFILE_CPU_NAMED("Initialize");
 
         SceneObject** objects = sceneObjects->Get();
-        for (int32 i = 0; i < objectsCount; i++)
+        for (int32 i = 0; i < dataCount; i++)
         {
             SceneObject* obj = objects[i];
             if (obj)
@@ -1091,6 +1064,7 @@ bool Level::loadScene(rapidjson_flax::Value& data, int32 engineBuild, Scene** ou
                 }
             }
         }
+        prefabSyncData.InitNewObjects();
     }
 
     // /\ all above this has to be done on an any thread
@@ -1135,7 +1109,7 @@ bool LevelImpl::saveScene(Scene* scene)
 
 bool LevelImpl::saveScene(Scene* scene, const String& path)
 {
-    ASSERT(scene);
+    ASSERT(scene && EnumHasNoneFlags(scene->Flags, ObjectFlags::WasMarkedToDelete));
     auto sceneId = scene->GetID();
 
     LOG(Info, "Saving scene {0} to \'{1}\'", scene->GetName(), path);
@@ -1330,6 +1304,7 @@ bool Level::LoadScene(const Guid& id)
     }
 
     // Load scene
+    ScopeLock lock(ScenesLock);
     if (loadScene(sceneAsset))
     {
         LOG(Error, "Failed to deserialize scene {0}", id);

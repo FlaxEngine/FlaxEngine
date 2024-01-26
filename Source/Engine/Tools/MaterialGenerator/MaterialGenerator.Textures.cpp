@@ -441,6 +441,23 @@ void MaterialGenerator::ProcessGroupTextures(Box* box, Node* node, Value& value)
             break;
         }
         }
+
+        // Channel masking
+        switch (box->ID)
+        {
+        case 2:
+            value = value.GetX();
+            break;
+        case 3:
+            value = value.GetY();
+            break;
+        case 4:
+            value = value.GetZ();
+            break;
+        case 5:
+            value = value.GetW();
+            break;
+        }
         break;
     }
     // Scene Color
@@ -567,7 +584,6 @@ void MaterialGenerator::ProcessGroupTextures(Box* box, Node* node, Value& value)
         {
             // Procedural Texture Sample
             textureBox->Cache = writeLocal(Value::InitForZero(ValueType::Float4), node);
-            createGradients(node);
             auto proceduralSample = String::Format(TEXT(
                 "   {{\n"
                 "   float3 weights;\n"
@@ -596,19 +612,19 @@ void MaterialGenerator::ProcessGroupTextures(Box* box, Node* node, Value& value)
                 "   uv1 = {0} + frac(sin(mul(float2x2(127.1, 311.7, 269.5, 183.3), vertex1)) * 43758.5453);\n"
                 "   uv2 = {0} + frac(sin(mul(float2x2(127.1, 311.7, 269.5, 183.3), vertex2)) * 43758.5453);\n"
                 "   uv3 = {0} + frac(sin(mul(float2x2(127.1, 311.7, 269.5, 183.3), vertex3)) * 43758.5453);\n"
-                "   float4 tex1 = {1}.SampleGrad({4}, uv1, {2}, {3}, {6}) * weights.x;\n"
-                "   float4 tex2 = {1}.SampleGrad({4}, uv2, {2}, {3}, {6}) * weights.y;\n"
-                "   float4 tex3 = {1}.SampleGrad({4}, uv3, {2}, {3}, {6}) * weights.z;\n"
-                "   {5} = tex1 + tex2 + tex3;\n"
+                "   float2 fdx = ddx({0});\n"
+                "   float2 fdy = ddy({0});\n"
+                "   float4 tex1 = {1}.SampleGrad({2}, uv1, fdx, fdy, {4}) * weights.x;\n"
+                "   float4 tex2 = {1}.SampleGrad({2}, uv2, fdx, fdy, {4}) * weights.y;\n"
+                "   float4 tex3 = {1}.SampleGrad({2}, uv3, fdx, fdy, {4}) * weights.z;\n"
+                "   {3} = tex1 + tex2 + tex3;\n"
                 "   }}\n"
             ),
                                                    uvs.Value, // {0}
                                                    texture.Value, // {1}
-                                                   _ddx.Value, // {2}
-                                                   _ddy.Value, // {3}
-                                                   samplerName, // {4}
-                                                   textureBox->Cache.Value, // {5}
-                                                   offset.Value // {6}
+                                                   samplerName, // {2}
+                                                   textureBox->Cache.Value, // {3}
+                                                   offset.Value // {4}
             );
 
             _writer.Write(*proceduralSample);

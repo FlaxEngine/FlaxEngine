@@ -34,7 +34,7 @@
 		<Expand>
 			<Item Name="[Size]" ExcludeView="simple">_count</Item>
 			<Item Name="[Capacity]" ExcludeView="simple">_capacity</Item>
-      <ArrayItems Condition="_count &lt;= _capacity">
+            <ArrayItems Condition="_count &lt;= _capacity">
 				<Size>_count</Size>
 				<ValuePointer>_allocation._data</ValuePointer>
 			</ArrayItems>
@@ -153,22 +153,22 @@
 			</ArrayItems>
 		</Expand>
 	</Type>
-	
+
   <!-- Vector2/Float2/Double2/Int2 -->
 	<Type Name="Vector2Base&lt;*&gt;">
 		<DisplayString>{{ X={X}, Y={Y} }}</DisplayString>
 	</Type>
-	
+
   <!-- Vector3/Float3/Double3/Int3 -->
 	<Type Name="Vector3Base&lt;*&gt;">
 		<DisplayString>{{ X={X}, Y={Y}, Z={Z} }}</DisplayString>
 	</Type>
-	
+
   <!-- Vector4/Float4/Double4/Int4 -->
 	<Type Name="Vector4Base&lt;*&gt;">
 		<DisplayString>{{ X={X}, Y={Y}, Z={Z}, W={W} }}</DisplayString>
 	</Type>
-    
+
   <!-- Quaternion -->
   <Type Name="Quaternion">
 		<DisplayString>{{ X={X}, Y={Y}, Z={Z}, W={W} }}</DisplayString>
@@ -231,7 +231,7 @@
 		<DisplayString>{{ Length={_length} }}</DisplayString>
 		<Expand>
 			<Item Name="[Length]" ExcludeView="simple">_length</Item>
-      <ArrayItems Condition="_data != nullptr">
+            <ArrayItems Condition="_data != nullptr">
 				<Size>_length</Size>
 				<ValuePointer>_data</ValuePointer>
 			</ArrayItems>

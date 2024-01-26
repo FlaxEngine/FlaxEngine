@@ -54,6 +54,9 @@ public:
     // Vector with all components equal 1
     static FLAXENGINE_API const Vector4Base<T> One;
 
+    // Vector with all components equal 0.5
+    static FLAXENGINE_API const Vector4Base<T> Half;
+
     // Vector X=1, Y=0, Z=0, W=0
     static FLAXENGINE_API const Vector4Base<T> UnitX;
 
@@ -550,6 +553,12 @@ template<typename T>
 inline Vector4Base<T> operator/(typename TOtherFloat<T>::Type a, const Vector4Base<T>& b)
 {
     return Vector4Base<T>(a) / b;
+}
+
+template<typename T>
+inline uint32 GetHash(const Vector4Base<T>& key)
+{
+    return (((((*(uint32*)&key.X * 397) ^ *(uint32*)&key.Y) * 397) ^ *(uint32*)&key.Z) * 397) ^*(uint32*)&key.W;
 }
 
 namespace Math

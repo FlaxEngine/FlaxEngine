@@ -7,6 +7,7 @@ using Real = System.Single;
 #endif
 
 using FlaxEngine;
+using FlaxEngine.GUI;
 
 namespace FlaxEditor.SceneGraph.Actors
 {
@@ -28,8 +29,33 @@ namespace FlaxEditor.SceneGraph.Actors
         {
             base.PostSpawn();
 
+            if (Actor.HasPrefabLink)
+            {
+                return;
+            }
+
             // Rotate to match the space (GUI uses upper left corner as a root)
             Actor.LocalOrientation = Quaternion.Euler(0, -180, -180);
+            bool canSpawn = true;
+            foreach (var uiControl in Actor.GetChildren<UIControl>())
+            {
+                if (uiControl.Get<CanvasScaler>() == null)
+                    continue;
+                canSpawn = false;
+                break;
+            }
+
+            if (canSpawn)
+            {
+                var uiControl = new UIControl
+                {
+                    Name = "Canvas Scalar",
+                    Transform = Actor.Transform,
+                    Control = new CanvasScaler()
+                };
+                Root.Spawn(uiControl, Actor);
+            }
+            _treeNode.Expand();
         }
 
         /// <inheritdoc />

@@ -148,6 +148,11 @@ public:
     /// </summary>
     API_PROPERTY() void SetTextureGroup(int32 textureGroup);
 
+    /// <summary>
+    /// Returns true if texture streaming failed (eg. pixel format is unsupported or texture data cannot be uploaded to GPU due to memory limit).
+    /// </summary>
+    API_PROPERTY() bool HasStreamingError() const;
+
 public:
     /// <summary>
     /// Gets the mip data.

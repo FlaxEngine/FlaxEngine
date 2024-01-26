@@ -68,7 +68,7 @@ public:
     bool Connect() override;
     void Disconnect() override;
     void Disconnect(const NetworkConnection& connection) override;
-    bool PopEvent(NetworkEvent* eventPtr) override;
+    bool PopEvent(NetworkEvent& eventPtr) override;
     void SendMessage(NetworkChannelType channelType, const NetworkMessage& message) override;
     void SendMessage(NetworkChannelType channelType, const NetworkMessage& message, NetworkConnection target) override;
     void SendMessage(NetworkChannelType channelType, const NetworkMessage& message, const Array<NetworkConnection, HeapAllocation>& targets) override;

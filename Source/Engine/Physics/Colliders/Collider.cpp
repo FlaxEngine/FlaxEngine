@@ -5,7 +5,6 @@
 #if USE_EDITOR
 #include "Engine/Level/Scene/SceneRendering.h"
 #endif
-#include "Engine/Serialization/Serialization.h"
 #include "Engine/Physics/PhysicsSettings.h"
 #include "Engine/Physics/Physics.h"
 #include "Engine/Physics/PhysicsBackend.h"
@@ -19,7 +18,7 @@ Collider::Collider(const SpawnParams& params)
     , _shape(nullptr)
     , _staticActor(nullptr)
     , _cachedScale(1.0f)
-    , _contactOffset(10.0f)
+    , _contactOffset(2.0f)
 {
     Material.Changed.Bind<Collider, &Collider::OnMaterialChanged>(this);
 }
@@ -290,30 +289,6 @@ void Collider::OnMaterialChanged()
     // Update the shape material
     if (_shape)
         PhysicsBackend::SetShapeMaterial(_shape, Material.Get());
-}
-
-void Collider::Serialize(SerializeStream& stream, const void* otherObj)
-{
-    // Base
-    PhysicsColliderActor::Serialize(stream, otherObj);
-
-    SERIALIZE_GET_OTHER_OBJ(Collider);
-
-    SERIALIZE_MEMBER(IsTrigger, _isTrigger);
-    SERIALIZE_MEMBER(Center, _center);
-    SERIALIZE_MEMBER(ContactOffset, _contactOffset);
-    SERIALIZE(Material);
-}
-
-void Collider::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)
-{
-    // Base
-    PhysicsColliderActor::Deserialize(stream, modifier);
-
-    DESERIALIZE_MEMBER(IsTrigger, _isTrigger);
-    DESERIALIZE_MEMBER(Center, _center);
-    DESERIALIZE_MEMBER(ContactOffset, _contactOffset);
-    DESERIALIZE(Material);
 }
 
 void Collider::BeginPlay(SceneBeginData* data)

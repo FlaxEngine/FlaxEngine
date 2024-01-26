@@ -108,19 +108,19 @@ DECLARE_SCRIPTING_TYPE_MINIMAL(LightmapSettings);
     };
 
     /// <summary>
-    /// Controls how much all lights will contribute indirect lighting.
+    /// Controls how much all lights will contribute to indirect lighting.
     /// </summary>
     API_FIELD(Attributes="EditorOrder(0), Limit(0, 100.0f, 0.1f)")
     float IndirectLightingIntensity = 1.0f;
 
     /// <summary>
-    /// Global scale for objects in lightmap to increase quality
+    /// Global scale for objects in the lightmap to increase quality
     /// </summary>
     API_FIELD(Attributes="EditorOrder(10), Limit(0, 100.0f, 0.1f)")
     float GlobalObjectsScale = 1.0f;
 
     /// <summary>
-    /// Amount of pixels space between charts in lightmap atlas
+    /// Amount of pixel space between charts in lightmap atlas
     /// </summary>
     API_FIELD(Attributes="EditorOrder(20), Limit(0, 16, 0.1f)")
     int32 ChartsPadding = 3;

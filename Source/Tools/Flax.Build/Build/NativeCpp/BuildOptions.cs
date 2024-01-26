@@ -225,7 +225,7 @@ namespace Flax.Build.NativeCpp
             public CSharpNullableReferences CSharpNullableReferences = CSharpNullableReferences.Disable;
 
             /// <summary>
-            /// Enable code optimization.
+            /// Enable code optimizations for the managed module assembly.
             /// </summary>
             public bool? Optimization;
 
@@ -237,19 +237,13 @@ namespace Flax.Build.NativeCpp
             /// Adds the other options into this.
             /// </summary>
             /// <param name="other">The other.</param>
-            public void Add(ScriptingAPIOptions other, bool addBuildOptions = true)
+            public void Add(ScriptingAPIOptions other)
             {
                 Defines.AddRange(other.Defines);
                 SystemReferences.AddRange(other.SystemReferences);
                 FileReferences.AddRange(other.FileReferences);
                 Analyzers.AddRange(other.Analyzers);
                 IgnoreMissingDocumentationWarnings |= other.IgnoreMissingDocumentationWarnings;
-
-                if (addBuildOptions)
-                {
-                    if (other.Optimization.HasValue)
-                        Optimization |= other.Optimization;
-                }
             }
         }
 

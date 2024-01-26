@@ -25,6 +25,11 @@ namespace FlaxEditor.GUI
         public object[] Values { get; set; }
 
         /// <summary>
+        /// Gets or sets the cell background colors. Null if unused, transparent values are ignored.
+        /// </summary>
+        public Color[] BackgroundColors { get; set; }
+
+        /// <summary>
         /// Gets or sets the row depth level.
         /// </summary>
         public int Depth { get; set; }
@@ -58,6 +63,7 @@ namespace FlaxEditor.GUI
             {
                 float x = 0;
                 int end = Mathf.Min(Values.Length, _table.Columns.Length);
+                var backgroundColors = BackgroundColors;
                 for (int i = 0; i < end; i++)
                 {
                     var column = _table.Columns[i];
@@ -98,7 +104,9 @@ namespace FlaxEditor.GUI
                     rect.Width -= leftDepthMargin;
 
                     Render2D.PushClip(rect);
-                    Render2D.DrawText(style.FontMedium, text, rect, Color.White, column.CellAlignment, TextAlignment.Center);
+                    if (backgroundColors != null && backgroundColors[i].A > 0)
+                        Render2D.FillRectangle(rect, backgroundColors[i]);
+                    Render2D.DrawText(style.FontMedium, text, rect, style.Foreground, column.CellAlignment, TextAlignment.Center);
                     Render2D.PopClip();
 
                     x += width;

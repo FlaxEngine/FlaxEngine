@@ -271,8 +271,6 @@ namespace FlaxEditor.Windows
             Title = "Game";
             AutoFocus = true;
 
-            FlaxEditor.Utilities.Utils.SetupCommonInputActions(this);
-
             var task = MainRenderTask.Instance;
 
             // Setup viewport
@@ -304,6 +302,12 @@ namespace FlaxEditor.Windows
             // Link editor options
             Editor.Options.OptionsChanged += OnOptionsChanged;
             OnOptionsChanged(Editor.Options.Options);
+
+            InputActions.Add(options => options.TakeScreenshot, () => Screenshot.Capture(string.Empty));
+            InputActions.Add(options => options.DebuggerUnlockMouse, UnlockMouseInPlay);
+            InputActions.Add(options => options.ToggleFullscreen, () => { if (Editor.IsPlayMode) IsMaximized = !IsMaximized; });
+
+            FlaxEditor.Utilities.Utils.SetupCommonInputActions(this);
         }
 
         private void ChangeViewportRatio(ViewportScaleOptions v)
@@ -382,6 +386,7 @@ namespace FlaxEditor.Windows
             {
                 _viewport.Bounds = new Rectangle(Width * (1 - scaleWidth) / 2, 0, Width * scaleWidth, Height);
             }
+            _viewport.SyncBackbufferSize();
             PerformLayout();
         }
 
@@ -945,27 +950,6 @@ namespace FlaxEditor.Windows
         /// <inheritdoc />
         public override bool OnKeyDown(KeyboardKeys key)
         {
-            switch (key)
-            {
-            case KeyboardKeys.F12:
-                Screenshot.Capture(string.Empty);
-                return true;
-            case KeyboardKeys.F11:
-                if (Root.GetKey(KeyboardKeys.Shift))
-                {
-                    // Unlock mouse in game mode
-                    UnlockMouseInPlay();
-                    return true;
-                }
-                else if (Editor.IsPlayMode)
-                {
-                    // Maximized game window toggle
-                    IsMaximized = !IsMaximized;
-                    return true;
-                }
-                break;
-            }
-
             // Prevent closing the game window tab during a play session
             if (Editor.StateMachine.IsPlayMode && Editor.Options.Options.Input.CloseTab.Process(this, key))
             {

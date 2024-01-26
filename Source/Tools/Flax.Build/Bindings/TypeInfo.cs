@@ -180,7 +180,7 @@ namespace Flax.Build.Bindings
             return sb.ToString();
         }
 
-        public override string ToString()
+        public string ToString(bool canRef = true)
         {
             var sb = new StringBuilder(64);
             if (IsConst)
@@ -199,11 +199,16 @@ namespace Flax.Build.Bindings
             }
             if (IsPtr)
                 sb.Append('*');
-            if (IsRef)
+            if (IsRef && canRef)
                 sb.Append('&');
-            if (IsMoveRef)
+            if (IsMoveRef && canRef)
                 sb.Append('&');
             return sb.ToString();
+        }
+
+        public override string ToString()
+        {
+            return ToString(true);
         }
 
         public static bool Equals(List<TypeInfo> a, List<TypeInfo> b)

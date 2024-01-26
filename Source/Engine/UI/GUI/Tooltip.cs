@@ -207,18 +207,19 @@ namespace FlaxEngine.GUI
         /// <inheritdoc />
         public override void Update(float deltaTime)
         {
-            // Move window with mouse location
             var mousePos = Input.MouseScreenPosition;
-            WrapPosition(ref mousePos, 10);
-            if (_window)
-                _window.Position = mousePos + new Float2(15, 10);
-
-            // Auto hide if mouse leaves control area
             var location = _showTarget.PointFromScreen(mousePos);
             if (!_showTarget.OnTestTooltipOverControl(ref location))
             {
-                // Mouse left or sth
+                // Auto hide if mouse leaves control area
                 Hide();
+            }
+            else
+            {
+                // Position tooltip when mouse moves
+                WrapPosition(ref mousePos, 10);
+                if (_window)
+                    _window.Position = mousePos + new Float2(15, 10);
             }
 
             base.Update(deltaTime);

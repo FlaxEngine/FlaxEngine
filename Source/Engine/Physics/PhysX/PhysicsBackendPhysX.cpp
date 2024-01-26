@@ -961,6 +961,7 @@ void PhysicalMaterial::UpdatePhysicsMaterial()
 
 bool CollisionCooking::CookConvexMesh(CookingInput& input, BytesContainer& output)
 {
+    PROFILE_CPU();
     ENSURE_CAN_COOK;
     if (input.VertexCount == 0)
         LOG(Warning, "Empty mesh data for collision cooking.");
@@ -1004,6 +1005,7 @@ bool CollisionCooking::CookConvexMesh(CookingInput& input, BytesContainer& outpu
 
 bool CollisionCooking::CookTriangleMesh(CookingInput& input, BytesContainer& output)
 {
+    PROFILE_CPU();
     ENSURE_CAN_COOK;
     if (input.VertexCount == 0 || input.IndexCount == 0)
         LOG(Warning, "Empty mesh data for collision cooking.");
@@ -1038,6 +1040,7 @@ bool CollisionCooking::CookTriangleMesh(CookingInput& input, BytesContainer& out
 
 bool CollisionCooking::CookHeightField(int32 cols, int32 rows, const PhysicsBackend::HeightFieldSample* data, WriteStream& stream)
 {
+    PROFILE_CPU();
     ENSURE_CAN_COOK;
 
     PxHeightFieldDesc heightFieldDesc;
@@ -2257,7 +2260,13 @@ void PhysicsBackend::SetRigidActorPose(void* actor, const Vector3& position, con
     if (kinematic)
     {
         auto actorPhysX = (PxRigidDynamic*)actor;
-        actorPhysX->setKinematicTarget(trans);
+        if (actorPhysX->getActorFlags() & PxActorFlag::eDISABLE_SIMULATION)
+        {
+            // Ensures the disabled kinematic actor ends up in the correct pose after enabling simulation
+            actorPhysX->setGlobalPose(trans, wakeUp);
+        }
+        else
+            actorPhysX->setKinematicTarget(trans); 
     }
     else
     {
@@ -2800,7 +2809,7 @@ void PhysicsBackend::SetHingeJointLimit(void* joint, const LimitAngularRange& va
 void PhysicsBackend::SetHingeJointDrive(void* joint, const HingeJointDrive& value)
 {
     auto jointPhysX = (PxRevoluteJoint*)joint;
-    jointPhysX->setDriveVelocity(Math::Max(value.Velocity, 0.0f));
+    jointPhysX->setDriveVelocity(value.Velocity);
     jointPhysX->setDriveForceLimit(Math::Max(value.ForceLimit, 0.0f));
     jointPhysX->setDriveGearRatio(Math::Max(value.GearRatio, 0.0f));
     jointPhysX->setRevoluteJointFlag(PxRevoluteJointFlag::eDRIVE_FREESPIN, value.FreeSpin);
@@ -3303,7 +3312,6 @@ void* PhysicsBackend::CreateVehicle(WheeledVehicle* actor)
         // Create vehicle drive
         auto drive4W = PxVehicleDrive4W::allocate(wheels.Count());
         drive4W->setup(PhysX, actorPhysX, *wheelsSimData, driveSimData, Math::Max(wheels.Count() - 4, 0));
-        drive4W->setToRestState();
         drive4W->mDriveDynData.forceGearChange(PxVehicleGearsData::eFIRST);
         drive4W->mDriveDynData.setUseAutoGears(gearbox.AutoGear);
         vehicle = drive4W;
@@ -3346,7 +3354,6 @@ void* PhysicsBackend::CreateVehicle(WheeledVehicle* actor)
         // Create vehicle drive
         auto driveNW = PxVehicleDriveNW::allocate(wheels.Count());
         driveNW->setup(PhysX, actorPhysX, *wheelsSimData, driveSimData, wheels.Count());
-        driveNW->setToRestState();
         driveNW->mDriveDynData.forceGearChange(PxVehicleGearsData::eFIRST);
         driveNW->mDriveDynData.setUseAutoGears(gearbox.AutoGear);
         vehicle = driveNW;
@@ -3357,7 +3364,6 @@ void* PhysicsBackend::CreateVehicle(WheeledVehicle* actor)
         // Create vehicle drive
         auto driveNo = PxVehicleNoDrive::allocate(wheels.Count());
         driveNo->setup(PhysX, actorPhysX, *wheelsSimData);
-        driveNo->setToRestState();
         vehicle = driveNo;
         break;
     }

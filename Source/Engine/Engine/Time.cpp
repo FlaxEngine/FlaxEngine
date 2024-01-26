@@ -67,7 +67,7 @@ void Time::TickData::OnBeforeRun(float targetFps, double currentTime)
 {
     Time = UnscaledTime = TimeSpan::Zero();
     DeltaTime = UnscaledDeltaTime = targetFps > ZeroTolerance ? TimeSpan::FromSeconds(1.0f / targetFps) : TimeSpan::Zero();
-    LastLength = static_cast<double>(DeltaTime.Ticks) / Constants::TicksPerSecond;
+    LastLength = static_cast<double>(DeltaTime.Ticks) / TimeSpan::TicksPerSecond;
     LastBegin = currentTime - LastLength;
     LastEnd = currentTime;
     NextBegin = targetFps > ZeroTolerance ? LastBegin + (1.0f / targetFps) : 0.0;
@@ -76,7 +76,7 @@ void Time::TickData::OnBeforeRun(float targetFps, double currentTime)
 void Time::TickData::OnReset(float targetFps, double currentTime)
 {
     DeltaTime = UnscaledDeltaTime = targetFps > ZeroTolerance ? TimeSpan::FromSeconds(1.0f / targetFps) : TimeSpan::Zero();
-    LastLength = static_cast<double>(DeltaTime.Ticks) / Constants::TicksPerSecond;
+    LastLength = static_cast<double>(DeltaTime.Ticks) / TimeSpan::TicksPerSecond;
     LastBegin = currentTime - LastLength;
     LastEnd = currentTime;
 }
@@ -104,7 +104,7 @@ bool Time::TickData::OnTickBegin(float targetFps, float maxDeltaTime)
 
         if (targetFps > ZeroTolerance)
         {
-            int skip = (int)(1 + (time - NextBegin) / (1.0 / targetFps));
+            int skip = (int)(1 + (time - NextBegin) * targetFps);
             NextBegin += (1.0 / targetFps) * skip;
         }
     }
@@ -160,7 +160,7 @@ bool Time::FixedStepTickData::OnTickBegin(float targetFps, float maxDeltaTime)
 
         if (targetFps > ZeroTolerance)
         {
-            int skip = (int)(1 + (time - NextBegin) / (1.0 / targetFps));
+            int skip = (int)(1 + (time - NextBegin) * targetFps);
             NextBegin += (1.0 / targetFps) * skip;
         }
     }

@@ -2,6 +2,7 @@
 
 using System;
 using System.IO;
+using System.Linq;
 using FlaxEditor.Content;
 using FlaxEditor.GUI.ContextMenu;
 using FlaxEditor.Scripting;
@@ -113,18 +114,32 @@ namespace FlaxEditor.Windows
                     }
                 }
 
-                cm.AddButton("Delete", () => Delete(item));
+                if (isFolder && folder.Node is MainContentTreeNode)
+                {
+                    cm.AddSeparator();
+                }
+                else
+                {
+                    cm.AddButton("Delete", () => Delete(item));
 
-                cm.AddSeparator();
+                    cm.AddSeparator();
 
-                cm.AddButton("Duplicate", _view.Duplicate);
+                    cm.AddButton("Duplicate", _view.Duplicate);
 
-                cm.AddButton("Copy", _view.Copy);
+                    cm.AddButton("Copy", _view.Copy);
+                }
 
                 b = cm.AddButton("Paste", _view.Paste);
                 b.Enabled = _view.CanPaste();
 
-                cm.AddButton("Rename", () => Rename(item));
+                if (isFolder && folder.Node is MainContentTreeNode)
+                {
+                    // Do nothing
+                }
+                else
+                {
+                    cm.AddButton("Rename", () => Rename(item));
+                }
 
                 // Custom options
                 ContextMenuShow?.Invoke(cm, item);
@@ -186,12 +201,12 @@ namespace FlaxEditor.Windows
                     continue;
 
                 // Get context proxy
-                ContentProxy p;
+                ContentProxy p = null;
                 if (type.Type.IsSubclassOf(typeof(ContentProxy)))
                 {
                     p = Editor.ContentDatabase.Proxy.Find(x => x.GetType() == type.Type);
                 }
-                else
+                else if (type.CanCreateInstance)
                 {
                     // User can use attribute to put their own assets into the content context menu
                     var generic = typeof(SpawnableJsonAssetProxy<>).MakeGenericType(type.Type);
@@ -248,6 +263,10 @@ namespace FlaxEditor.Windows
                     Editor.ContentImporting.ShowImportFileDialog(CurrentViewFolder);
                 });
             }
+
+            // Remove any leftover separator
+            if (cm.ItemsContainer.Children.LastOrDefault() is ContextMenuSeparator)
+                cm.ItemsContainer.Children.Last().Dispose();
 
             // Show it
             cm.Show(this, location);
@@ -364,7 +383,7 @@ namespace FlaxEditor.Windows
                 }
 
                 var pluginPath = Path.Combine(Globals.ProjectFolder, "Source", nameTextBox.Text);
-                if (Directory.Exists(pluginPath))
+                if (!IsValidModuleName(nameTextBox.Text) || Directory.Exists(pluginPath))
                 {
                     nameTextBox.BorderColor = Color.Red;
                     nameTextBox.BorderSelectedColor = Color.Red;
@@ -424,6 +443,12 @@ namespace FlaxEditor.Windows
             submitButton.Clicked += () =>
             {
                 // TODO: Check all modules in project including plugins
+                if (!IsValidModuleName(nameTextBox.Text))
+                {
+                    Editor.LogWarning("Invalid module name. Module names cannot contain spaces, start with a number or contain non-alphanumeric characters.");
+                    return;
+                }
+                
                 if (Directory.Exists(Path.Combine(Globals.ProjectFolder, "Source", nameTextBox.Text)))
                 {
                     Editor.LogWarning("Cannot create module due to name conflict.");
@@ -454,6 +479,17 @@ namespace FlaxEditor.Windows
                 popup.Hide();
                 button.ParentContextMenu.Hide();
             };
+        }
+
+        private static bool IsValidModuleName(string text)
+        {
+            if (text.Contains(' '))
+                return false;
+            if (char.IsDigit(text[0]))
+                return false;
+            if (text.Any(c => !char.IsLetterOrDigit(c) && c != '_'))
+                return false;
+            return true;
         }
     }
 }

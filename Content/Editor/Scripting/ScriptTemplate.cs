@@ -33,4 +33,3 @@ public class %class% : Script
         // Here you can add code that needs to be called every frame
     }
 }
-

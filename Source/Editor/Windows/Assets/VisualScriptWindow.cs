@@ -561,6 +561,7 @@ namespace FlaxEditor.Windows.Assets
         : base(editor, item)
         {
             var isPlayMode = Editor.IsPlayMode;
+            var inputOptions = Editor.Options.Options.Input;
 
             // Undo
             _undo = new Undo();
@@ -598,21 +599,21 @@ namespace FlaxEditor.Windows.Assets
             // Toolstrip
             _saveButton = (ToolStripButton)_toolstrip.AddButton(Editor.Icons.Save64, Save).LinkTooltip("Save");
             _toolstrip.AddSeparator();
-            _undoButton = (ToolStripButton)_toolstrip.AddButton(Editor.Icons.Undo64, _undo.PerformUndo).LinkTooltip("Undo (Ctrl+Z)");
-            _redoButton = (ToolStripButton)_toolstrip.AddButton(Editor.Icons.Redo64, _undo.PerformRedo).LinkTooltip("Redo (Ctrl+Y)");
+            _undoButton = (ToolStripButton)_toolstrip.AddButton(Editor.Icons.Undo64, _undo.PerformUndo).LinkTooltip($"Undo ({inputOptions.Undo})");
+            _redoButton = (ToolStripButton)_toolstrip.AddButton(Editor.Icons.Redo64, _undo.PerformRedo).LinkTooltip($"Redo ({inputOptions.Redo})");
             _toolstrip.AddSeparator();
-            _toolstrip.AddButton(Editor.Icons.Search64, Editor.ContentFinding.ShowSearch).LinkTooltip("Open content search tool (Ctrl+F)");
+            _toolstrip.AddButton(Editor.Icons.Search64, Editor.ContentFinding.ShowSearch).LinkTooltip($"Open content search tool ({inputOptions.Search})");
             _toolstrip.AddButton(editor.Icons.CenterView64, ShowWholeGraph).LinkTooltip("Show whole graph");
             _toolstrip.AddSeparator();
             _toolstrip.AddButton(editor.Icons.Docs64, () => Platform.OpenUrl(Utilities.Constants.DocsUrl + "manual/scripting/visual/index.html")).LinkTooltip("See documentation to learn more");
             _debugToolstripControls = new[]
             {
                 _toolstrip.AddSeparator(),
-                _toolstrip.AddButton(editor.Icons.Play64, OnDebuggerContinue).LinkTooltip("Continue (F5)"),
+                _toolstrip.AddButton(editor.Icons.Play64, OnDebuggerContinue).LinkTooltip($"Continue ({inputOptions.DebuggerContinue})"),
                 _toolstrip.AddButton(editor.Icons.Search64, OnDebuggerNavigateToCurrentNode).LinkTooltip("Navigate to the current stack trace node"),
-                _toolstrip.AddButton(editor.Icons.Right64, OnDebuggerStepOver).LinkTooltip("Step Over (F10)"),
-                _toolstrip.AddButton(editor.Icons.Down64, OnDebuggerStepInto).LinkTooltip("Step Into (F11)"),
-                _toolstrip.AddButton(editor.Icons.Up64, OnDebuggerStepOut).LinkTooltip("Step Out (Shift+F11)"),
+                _toolstrip.AddButton(editor.Icons.Right64, OnDebuggerStepOver).LinkTooltip($"Step Over ({inputOptions.DebuggerStepOver})"),
+                _toolstrip.AddButton(editor.Icons.Down64, OnDebuggerStepInto).LinkTooltip($"Step Into ({inputOptions.DebuggerStepInto})"),
+                _toolstrip.AddButton(editor.Icons.Up64, OnDebuggerStepOut).LinkTooltip($"Step Out ({inputOptions.DebuggerStepOut})"),
                 _toolstrip.AddButton(editor.Icons.Stop64, OnDebuggerStop).LinkTooltip("Stop debugging"),
             };
             foreach (var control in _debugToolstripControls)
@@ -796,11 +797,12 @@ namespace FlaxEditor.Windows.Assets
             }
 
             // Check if any breakpoint was hit
-            for (int i = 0; i < Surface.Breakpoints.Count; i++)
+            var breakpoints = Surface.Breakpoints;
+            for (int i = 0; i < breakpoints.Count; i++)
             {
-                if (Surface.Breakpoints[i].ID == flowInfo.NodeId)
+                if (breakpoints[i].ID == flowInfo.NodeId)
                 {
-                    OnDebugBreakpointHit(ref flowInfo, Surface.Breakpoints[i]);
+                    OnDebugBreakpointHit(ref flowInfo, breakpoints[i]);
                     break;
                 }
             }
@@ -819,7 +821,7 @@ namespace FlaxEditor.Windows.Assets
             var state = (BreakpointHangState)Editor.Instance.Simulation.BreakpointHangTag;
             if (state.Locals == null)
             {
-                state.Locals = Editor.Internal_GetVisualScriptLocals(out var _);
+                state.Locals = Editor.GetVisualScriptLocals();
                 Editor.Instance.Simulation.BreakpointHangTag = state;
             }
             return state;
@@ -830,7 +832,7 @@ namespace FlaxEditor.Windows.Assets
             var state = (BreakpointHangState)Editor.Instance.Simulation.BreakpointHangTag;
             if (state.StackFrames == null)
             {
-                state.StackFrames = Editor.Internal_GetVisualScriptStackFrames(out var _);
+                state.StackFrames = Editor.GetVisualScriptStackFrames();
                 Editor.Instance.Simulation.BreakpointHangTag = state;
             }
             return state;
@@ -975,7 +977,7 @@ namespace FlaxEditor.Windows.Assets
                 return;
 
             // Break on any of the output connects from the previous scope node
-            var frame = Editor.Internal_GetVisualScriptPreviousScopeFrame();
+            var frame = Editor.GetVisualScriptPreviousScopeFrame();
             if (frame.Script != null)
             {
                 if (_debugStepOutNodesIds == null)

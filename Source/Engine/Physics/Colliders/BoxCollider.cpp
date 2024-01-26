@@ -1,8 +1,8 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
 #include "BoxCollider.h"
-#include "Engine/Serialization/Serialization.h"
 #include "Engine/Physics/PhysicsBackend.h"
+#include "Engine/Level/Scene/Scene.h"
 
 BoxCollider::BoxCollider(const SpawnParams& params)
     : Collider(params)
@@ -18,6 +18,32 @@ void BoxCollider::SetSize(const Float3& value)
 
     UpdateGeometry();
     UpdateBounds();
+}
+
+void BoxCollider::AutoResize()
+{
+    Actor* parent = GetParent();
+    if (Cast<Scene>(parent))
+        return;
+
+    // Get bounds of all siblings (excluding itself)
+    const Vector3 parentScale = parent->GetScale();
+    if (parentScale.IsAnyZero())
+        return; // Avoid division by zero
+    BoundingBox parentBox = parent->GetBox();
+    for (const Actor* sibling : parent->Children)
+    {
+        if (sibling != this)
+            BoundingBox::Merge(parentBox, sibling->GetBoxWithChildren(), parentBox);
+    }
+    const Vector3 parentSize = parentBox.GetSize();
+    const Vector3 parentCenter = parentBox.GetCenter() - parent->GetPosition();
+
+    // Update bounds
+    SetLocalPosition(Vector3::Zero);
+    SetSize(parentSize / parentScale);
+    SetCenter(parentCenter / parentScale);
+    SetOrientation(GetOrientation() * Quaternion::Invert(GetOrientation()));
 }
 
 #if USE_EDITOR
@@ -81,6 +107,13 @@ void BoxCollider::OnDebugDrawSelected()
     const Color color = Color::GreenYellow;
     DEBUG_DRAW_WIRE_BOX(_bounds, color * 0.3f, 0, false);
 
+    if (_contactOffset > 0)
+    {
+        OrientedBoundingBox contactBounds = _bounds;
+        contactBounds.Extents += Vector3(_contactOffset) / contactBounds.Transformation.Scale;
+        DEBUG_DRAW_WIRE_BOX(contactBounds, Color::Blue.AlphaMultiplied(0.2f), 0, false);
+    }
+
     Vector3 corners[8];
     _bounds.GetCorners(corners);
     const float margin = 1.0f;
@@ -107,24 +140,6 @@ void BoxCollider::OnDebugDrawSelected()
 bool BoxCollider::IntersectsItself(const Ray& ray, Real& distance, Vector3& normal)
 {
     return _bounds.Intersects(ray, distance, normal);
-}
-
-void BoxCollider::Serialize(SerializeStream& stream, const void* otherObj)
-{
-    // Base
-    Collider::Serialize(stream, otherObj);
-
-    SERIALIZE_GET_OTHER_OBJ(BoxCollider);
-
-    SERIALIZE_MEMBER(Size, _size);
-}
-
-void BoxCollider::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)
-{
-    // Base
-    Collider::Deserialize(stream, modifier);
-
-    DESERIALIZE_MEMBER(Size, _size);
 }
 
 void BoxCollider::UpdateBounds()

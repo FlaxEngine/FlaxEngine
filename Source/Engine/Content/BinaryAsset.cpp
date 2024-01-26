@@ -150,9 +150,7 @@ void BinaryAsset::ClearDependencies()
     {
         auto asset = Cast<BinaryAsset>(Content::GetAsset(e.First));
         if (asset)
-        {
             asset->_dependantAssets.Remove(this);
-        }
     }
     Dependencies.Clear();
 }
@@ -323,26 +321,29 @@ bool BinaryAsset::SaveToAsset(const StringView& path, AssetInitData& data, bool 
 {
     // Ensure path is in a valid format
     String pathNorm(path);
-    FileSystem::NormalizePath(pathNorm);
+    ContentStorageManager::FormatPath(pathNorm);
+    const StringView filePath = pathNorm;
 
     // Find target storage container and the asset
-    auto storage = ContentStorageManager::TryGetStorage(pathNorm);
-    auto asset = Content::GetAsset(pathNorm);
+    auto storage = ContentStorageManager::TryGetStorage(filePath);
+    auto asset = Content::GetAsset(filePath);
     auto binaryAsset = dynamic_cast<BinaryAsset*>(asset);
     if (asset && !binaryAsset)
     {
         LOG(Warning, "Cannot write to the non-binary asset location.");
         return true;
     }
+    if (!binaryAsset && !storage && FileSystem::FileExists(filePath))
+    {
+        // Force-resolve storage (asset at that path could be not yet loaded into registry)
+        storage = ContentStorageManager::GetStorage(filePath);
+    }
 
     // Check if can perform write operation to the asset container
-    if (storage)
+    if (storage && !storage->AllowDataModifications())
     {
-        if (!storage->AllowDataModifications())
-        {
-            LOG(Warning, "Cannot write to the asset storage container.");
-            return true;
-        }
+        LOG(Warning, "Cannot write to the asset storage container.");
+        return true;
     }
 
     // Initialize data container
@@ -351,6 +352,11 @@ bool BinaryAsset::SaveToAsset(const StringView& path, AssetInitData& data, bool 
     {
         // Use the same asset ID
         data.Header.ID = binaryAsset->GetID();
+    }
+    else if (storage && storage->GetEntriesCount())
+    {
+        // Use the same file ID
+        data.Header.ID = storage->GetEntry(0).ID;
     }
     else
     {
@@ -373,11 +379,21 @@ bool BinaryAsset::SaveToAsset(const StringView& path, AssetInitData& data, bool 
     }
     else
     {
-        ASSERT(pathNorm.HasChars());
-        result = FlaxStorage::Create(pathNorm, data, silentMode);
+        ASSERT(filePath.HasChars());
+        result = FlaxStorage::Create(filePath, data, silentMode);
     }
     if (binaryAsset)
         binaryAsset->_isSaving = false;
+
+    if (binaryAsset)
+    {
+        // Inform dependant asset (use cloned version because it might be modified by assets when they got reloaded)
+        auto dependantAssets = binaryAsset->_dependantAssets;
+        for (auto& e : dependantAssets)
+        {
+            e->OnDependencyModified(binaryAsset);
+        }
+    }
 
     return result;
 }

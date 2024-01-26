@@ -85,6 +85,8 @@ BehaviorUpdateResult BehaviorTreeNode::InvokeUpdate(const BehaviorUpdateContext&
         result = BehaviorUpdateResult::Failed;
     else
         result = Update(context);
+    if ((int32)result < 0 ||  (int32)result > (int32)BehaviorUpdateResult::Failed)
+        result = BehaviorUpdateResult::Failed; // Invalid value is a failure
 
     // Post-process result from decorators
     for (BehaviorTreeDecorator* decorator : _decorators)
@@ -622,8 +624,10 @@ void BehaviorTreeLoopDecorator::PostUpdate(const BehaviorUpdateContext& context,
     if (result == BehaviorUpdateResult::Success)
     {
         auto state = GetState<State>(context.Memory);
-        state->Loops--;
-        if (state->Loops > 0)
+        if (!InfiniteLoop)
+            state->Loops--;
+
+        if (state->Loops > 0 || InfiniteLoop)
         {
             // Keep running in a loop but reset node's state (preserve self state)
             result = BehaviorUpdateResult::Running;

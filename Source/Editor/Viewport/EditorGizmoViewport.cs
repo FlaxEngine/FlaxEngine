@@ -41,6 +41,8 @@ namespace FlaxEditor.Viewport
                 Gizmos[i].Update(deltaTime);
             }
         }
+        /// <inheritdoc />
+        public EditorViewport Viewport => this;
 
         /// <inheritdoc />
         public GizmosCollection Gizmos { get; }
@@ -83,6 +85,9 @@ namespace FlaxEditor.Viewport
 
         /// <inheritdoc />
         public abstract void Select(List<SceneGraphNode> nodes);
+
+        /// <inheritdoc />
+        public abstract void Spawn(Actor actor);
 
         /// <inheritdoc />
         protected override bool IsControllingMouse => Gizmos.Active?.IsControllingMouse ?? false;

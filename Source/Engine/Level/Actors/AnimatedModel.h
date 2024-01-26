@@ -12,7 +12,7 @@
 /// <summary>
 /// Performs an animation and renders a skinned model.
 /// </summary>
-API_CLASS(Attributes="ActorContextMenu(\"New/Other/Animated Model\"), ActorToolbox(\"Other\")")
+API_CLASS(Attributes="ActorContextMenu(\"New/Other/Animated Model\"), ActorToolbox(\"Visuals\")")
 class FLAXENGINE_API AnimatedModel : public ModelInstanceActor
 {
     DECLARE_SCENE_OBJECT(AnimatedModel);
@@ -230,6 +230,22 @@ public:
     API_FUNCTION() void GetNodeTransformation(const StringView& nodeName, API_PARAM(Out) Matrix& nodeTransformation, bool worldSpace = false) const;
 
     /// <summary>
+    /// Sets the node final transformation. If multiple nodes are to be set within a frame, do not use set worldSpace to true, and do the conversion yourself to avoid recalculation of inv matrices. 
+    /// </summary>
+    /// <param name="nodeIndex">The index of the skinned model skeleton node.</param>
+    /// <param name="nodeTransformation">The final node transformation matrix.</param>
+    /// <param name="worldSpace">True if convert matrices from world-space, otherwise values will be in local-space of the actor.</param>
+    API_FUNCTION() void SetNodeTransformation(int32 nodeIndex, const Matrix& nodeTransformation, bool worldSpace = false);
+
+    /// <summary>
+    /// Sets the node final transformation. If multiple nodes are to be set within a frame, do not use set worldSpace to true, and do the conversion yourself to avoid recalculation of inv matrices. 
+    /// </summary>
+    /// <param name="nodeName">The name of the skinned model skeleton node.</param>
+    /// <param name="nodeTransformation">The final node transformation matrix.</param>
+    /// <param name="worldSpace">True if convert matrices from world-space, otherwise values will be in local-space of the actor.</param>
+    API_FUNCTION() void SetNodeTransformation(const StringView& nodeName, const Matrix& nodeTransformation, bool worldSpace = false);
+
+    /// <summary>
     /// Finds the closest node to a given location.
     /// </summary>
     /// <param name="location">The text location (in local-space of the actor or world-space depending on <paramref name="worldSpace"/>).</param>
@@ -242,6 +258,27 @@ public:
     /// </summary>
     /// <param name="masterPose">The master pose actor to use.</param>
     API_FUNCTION() void SetMasterPoseModel(AnimatedModel* masterPose);
+
+    /// <summary>
+    /// Enables extracting animation playback insights for debugging or custom scripting.
+    /// </summary>
+    API_PROPERTY(Attributes="HideInEditor, NoSerialize") bool GetEnableTracing() const
+    {
+        return GraphInstance.EnableTracing;
+    }
+
+    /// <summary>
+    /// Enables extracting animation playback insights for debugging or custom scripting.
+    /// </summary>
+    API_PROPERTY() void SetEnableTracing(bool value)
+    {
+        GraphInstance.EnableTracing = value;
+    }
+
+    /// <summary>
+    /// Gets the trace events from the last animation update. Valid only when EnableTracing is active.
+    /// </summary>
+    API_PROPERTY(Attributes="HideInEditor, NoSerialize") const Array<AnimGraphTraceEvent>& GetTraceEvents() const;
 
 public:
     /// <summary>

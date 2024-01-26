@@ -237,6 +237,27 @@ API_ENUM(Attributes="Flags") enum class ShadowsCastingMode
 DECLARE_ENUM_OPERATORS(ShadowsCastingMode);
 
 /// <summary>
+/// The partitioning mode for shadow cascades.
+/// </summary>
+API_ENUM() enum class PartitionMode
+{
+    /// <summary>
+    /// Internally defined cascade splits.
+    /// </summary>
+    Manual = 0,
+
+    /// <summary>
+    /// Logarithmic cascade splits.
+    /// </summary>
+    Logarithmic = 1,
+
+    /// <summary>
+    /// PSSM cascade splits.
+    /// </summary>
+    PSSM = 2,
+};
+
+/// <summary>
 /// Identifies expected GPU resource use during rendering. The usage directly reflects whether a resource is accessible by the CPU and/or the GPU.	
 /// </summary>
 API_ENUM() enum class GPUResourceUsage
@@ -591,37 +612,37 @@ API_ENUM() enum class Quality : byte
 API_ENUM() enum class MaterialPostFxLocation : byte
 {
     /// <summary>
-    /// The 'after' post processing pass using LDR input frame.
+    /// Render the material after the post processing pass using *LDR* input frame.
     /// </summary>
     AfterPostProcessingPass = 0,
 
     /// <summary>
-    /// The 'before' post processing pass using HDR input frame.
+    /// Render the material before the post processing pass using *HDR* input frame.
     /// </summary>
     BeforePostProcessingPass = 1,
 
     /// <summary>
-    /// The 'before' forward pass but after GBuffer with HDR input frame.
+    /// Render the material before the forward pass but after *GBuffer* with *HDR* input frame.
     /// </summary>
     BeforeForwardPass = 2,
 
     /// <summary>
-    /// The 'after' custom post effects.
+    /// Render the material after custom post effects (scripted).
     /// </summary>
     AfterCustomPostEffects = 3,
 
     /// <summary>
-    /// The 'before' Reflections pass. After the Light pass. Can be used to implement a custom light types that accumulate lighting to the light buffer.
+    /// Render the material before the reflections pass but after the lighting pass using *HDR* input frame. It can be used to implement a custom light types that accumulate lighting to the light buffer.
     /// </summary>
     BeforeReflectionsPass = 4,
 
     /// <summary>
-    /// The 'after' AA filter pass. Rendering is done to the output backbuffer.
+    /// Render the material after anti-aliasing into the output backbuffer.
     /// </summary>
     AfterAntiAliasingPass = 5,
 
     /// <summary>
-    /// The 'after' forward pass but before any post processing.
+    /// Render the material after the forward pass but before any post processing.
     /// </summary>
     AfterForwardPass = 6,
 

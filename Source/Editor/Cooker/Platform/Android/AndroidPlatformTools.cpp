@@ -169,6 +169,30 @@ bool AndroidPlatformTools::OnPostProcess(CookingData& data)
         permissions += String::Format(TEXT("\n    <uses-permission android:name=\"{0}\" />"), e.Item);
     }
 
+    // Setup default Android screen orientation
+    auto defaultOrienation = platformSettings->DefaultOrientation;
+    String orientation = String("fullSensor");
+    switch (defaultOrienation)
+    {
+    case AndroidPlatformSettings::ScreenOrientation::Portrait:
+        orientation = String("portrait");
+        break;
+    case AndroidPlatformSettings::ScreenOrientation::PortraitReverse:
+        orientation = String("reversePortrait");
+        break;
+    case AndroidPlatformSettings::ScreenOrientation::LandscapeRight:
+        orientation = String("landscape");
+        break;
+    case AndroidPlatformSettings::ScreenOrientation::LandscapeLeft:
+        orientation = String("reverseLandscape");
+        break;
+    case AndroidPlatformSettings::ScreenOrientation::AutoRotation:
+        orientation = String("fullSensor");
+        break;
+    default:
+        break;
+    }
+
     // Setup Android application attributes
     String attributes;
     if (data.Configuration != BuildConfiguration::Release)
@@ -223,6 +247,7 @@ bool AndroidPlatformTools::OnPostProcess(CookingData& data)
     EditorUtilities::ReplaceInFile(manifestPath, TEXT("${PackageName}"), packageName);
     EditorUtilities::ReplaceInFile(manifestPath, TEXT("${ProjectVersion}"), projectVersion);
     EditorUtilities::ReplaceInFile(manifestPath, TEXT("${AndroidPermissions}"), permissions);
+    EditorUtilities::ReplaceInFile(manifestPath, TEXT("${DefaultOrientation}"), orientation);
     EditorUtilities::ReplaceInFile(manifestPath, TEXT("${AndroidAttributes}"), attributes);
     const String stringsPath = data.OriginalOutputPath / TEXT("app/src/main/res/values/strings.xml");
     EditorUtilities::ReplaceInFile(stringsPath, TEXT("${ProjectName}"), gameSettings->ProductName);
@@ -280,17 +305,25 @@ bool AndroidPlatformTools::OnPostProcess(CookingData& data)
     const Char* gradlew = TEXT("gradlew");
 #endif
 #if PLATFORM_LINUX
-    Platform::RunProcess(String::Format(TEXT("chmod +x \"{0}/gradlew\""), data.OriginalOutputPath), data.OriginalOutputPath, Dictionary<String, String>(), true);
+    {
+        CreateProcessSettings procSettings;
+        procSettings.FileName = String::Format(TEXT("chmod +x \"{0}/gradlew\""), data.OriginalOutputPath);
+        procSettings.WorkingDirectory = data.OriginalOutputPath;
+        procSettings.HiddenWindow = true;
+        Platform::CreateProcess(procSettings);
+    }
 #endif
     const bool distributionPackage = buildSettings->ForDistribution;
-    CreateProcessSettings procSettings;
-    procSettings.FileName = String::Format(TEXT("\"{0}\" {1}"), data.OriginalOutputPath / gradlew, distributionPackage ? TEXT("assemble") : TEXT("assembleDebug"));
-    procSettings.WorkingDirectory = data.OriginalOutputPath;
-    const int32 result = Platform::CreateProcess(procSettings);
-    if (result != 0)
     {
-        data.Error(String::Format(TEXT("Failed to build Gradle project into package (result code: {0}). See log for more info."), result));
-        return true;
+        CreateProcessSettings procSettings;
+        procSettings.FileName = String::Format(TEXT("\"{0}\" {1}"), data.OriginalOutputPath / gradlew, distributionPackage ? TEXT("assemble") : TEXT("assembleDebug"));
+        procSettings.WorkingDirectory = data.OriginalOutputPath;
+        const int32 result = Platform::CreateProcess(procSettings);
+        if (result != 0)
+        {
+            data.Error(String::Format(TEXT("Failed to build Gradle project into package (result code: {0}). See log for more info."), result));
+            return true;
+        }
     }
 
     // Copy result package

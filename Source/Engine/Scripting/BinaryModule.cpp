@@ -693,6 +693,14 @@ void BinaryModule::Destroy(bool isReloading)
         }
     }
 
+    // Remove any scripting events
+    for (auto i = ScriptingEvents::EventsTable.Begin(); i.IsNotEnd(); ++i)
+    {
+        const ScriptingTypeHandle type = i->Key.First;
+        if (type.Module == this)
+            ScriptingEvents::EventsTable.Remove(i);
+    }
+
     // Unregister
     GetModules().RemoveKeepOrder(this);
 }
@@ -906,6 +914,7 @@ void ManagedBinaryModule::OnLoaded(MAssembly* assembly)
 #if !COMPILE_WITHOUT_CSHARP
     PROFILE_CPU();
     ASSERT(ClassToTypeIndex.IsEmpty());
+    ScopeLock lock(Locker);
 
     const auto& classes = assembly->GetClasses();
 
@@ -1226,17 +1235,17 @@ bool ManagedBinaryModule::InvokeMethod(void* method, const Variant& instance, Sp
     const bool withInterfaces = !mMethod->IsStatic() && mMethod->GetParentClass()->IsInterface();
     if (!mMethod->IsStatic())
     {
-        // Box instance into C# object
+        // Box instance into C# object (and validate the type)
         MObject* instanceObject = MUtils::BoxVariant(instance);
-        const MClass* instanceObjectClass = MCore::Object::GetClass(instanceObject);
-
-        // Validate instance
-        if (!instanceObject || !instanceObjectClass->IsSubClassOf(mMethod->GetParentClass(), withInterfaces))
+        if (!instanceObject)
         {
-            if (!instanceObject)
-                LOG(Error, "Failed to call method '{0}.{1}' (args count: {2}) without object instance", String(mMethod->GetParentClass()->GetFullName()), String(mMethod->GetName()), parametersCount);
-            else
-                LOG(Error, "Failed to call method '{0}.{1}' (args count: {2}) with invalid object instance of type '{3}'", String(mMethod->GetParentClass()->GetFullName()), String(mMethod->GetName()), parametersCount, String(MUtils::GetClassFullname(instanceObject)));
+            LOG(Error, "Failed to call method '{0}.{1}' (args count: {2}) without object instance", String(mMethod->GetParentClass()->GetFullName()), String(mMethod->GetName()), parametersCount);
+            return true;
+        }
+        const MClass* instanceObjectClass = MCore::Object::GetClass(instanceObject);
+        if (!instanceObjectClass->IsSubClassOf(mMethod->GetParentClass(), withInterfaces))
+        {
+            LOG(Error, "Failed to call method '{0}.{1}' (args count: {2}) with invalid object instance of type '{3}'", String(mMethod->GetParentClass()->GetFullName()), String(mMethod->GetName()), parametersCount, String(MUtils::GetClassFullname(instanceObject)));
             return true;
         }
 
@@ -1270,7 +1279,11 @@ bool ManagedBinaryModule::InvokeMethod(void* method, const Variant& instance, Sp
 
     // Invoke the method
     MObject* exception = nullptr;
+#if USE_NETCORE // NetCore uses the same path for both virtual and non-virtual calls
+    MObject* resultObject = mMethod->Invoke(mInstance, params, &exception);
+#else
     MObject* resultObject = withInterfaces ? mMethod->InvokeVirtual((MObject*)mInstance, params, &exception) : mMethod->Invoke(mInstance, params, &exception);
+#endif
     if (exception)
     {
         MException ex(exception);

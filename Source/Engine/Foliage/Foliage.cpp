@@ -634,15 +634,12 @@ void Foliage::RemoveFoliageType(int32 index)
 int32 Foliage::GetFoliageTypeInstancesCount(int32 index) const
 {
     PROFILE_CPU();
-
     int32 result = 0;
-
-    for (auto i = Instances.Begin(); i.IsNotEnd(); i++)
+    for (auto i = Instances.Begin(); i.IsNotEnd(); ++i)
     {
         if (i->Type == index)
             result++;
     }
-
     return result;
 }
 

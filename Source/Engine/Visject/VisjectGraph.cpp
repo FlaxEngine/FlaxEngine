@@ -685,9 +685,9 @@ void VisjectExecutor::ProcessGroupPacking(Box* box, Node* node, Value& value)
     case 36:
     {
         // Get value with structure data
-        const Variant structureValue = eatBox(node, node->GetBox(0)->FirstConnection());
         if (!node->GetBox(0)->HasConnection())
             return;
+        Variant structureValue = eatBox(node, node->GetBox(0)->FirstConnection());
 
         // Find type
         const StringView typeName(node->Values[0]);
@@ -741,7 +741,15 @@ void VisjectExecutor::ProcessGroupPacking(Box* box, Node* node, Value& value)
             return;
         }
         const ScriptingType& type = typeHandle.GetType();
-        if (structureValue.Type.Type != VariantType::Structure || StringUtils::Compare(typeNameAnsi.Get(), structureValue.Type.TypeName) != 0)
+        if (structureValue.Type.Type != VariantType::Structure) // If structureValue is eg. Float we can try to cast it to a required structure type
+        {
+            VariantType typeVariantType(typeNameAnsiView);
+            if (Variant::CanCast(structureValue, typeVariantType))
+                structureValue = Variant::Cast(structureValue, typeVariantType);
+        }
+        structureValue.InvertInline(); // Extract any Float3/Int32 into Structure type from inlined format
+        const ScriptingTypeHandle structureValueTypeHandle = Scripting::FindScriptingType(structureValue.Type.GetTypeName());
+        if (structureValue.Type.Type != VariantType::Structure || typeHandle != structureValueTypeHandle)
         {
             OnError(node, box, String::Format(TEXT("Cannot unpack value of type {0} to structure of type {1}"), structureValue.Type, typeName));
             return;
@@ -1418,7 +1426,7 @@ void VisjectExecutor::ProcessGroupCollections(Box* box, Node* node, Value& value
         }
         // Sort
         case 12:
-            Sorting::QuickSort(array.Get(), array.Count());
+            Sorting::QuickSort(array);
             value = MoveTemp(v);
             break;
         // Reverse

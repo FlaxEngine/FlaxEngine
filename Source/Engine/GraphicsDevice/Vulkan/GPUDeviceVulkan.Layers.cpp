@@ -247,7 +247,7 @@ void GPUDeviceVulkan::GetInstanceLayersAndExtensions(Array<const char*>& outInst
     if (foundUniqueLayers.HasItems())
     {
         LOG(Info, "Found instance layers:");
-        Sorting::QuickSort(foundUniqueLayers.Get(), foundUniqueLayers.Count());
+        Sorting::QuickSort(foundUniqueLayers);
         for (const StringAnsi& name : foundUniqueLayers)
         {
             LOG(Info, "- {0}", String(name));
@@ -257,7 +257,7 @@ void GPUDeviceVulkan::GetInstanceLayersAndExtensions(Array<const char*>& outInst
     if (foundUniqueExtensions.HasItems())
     {
         LOG(Info, "Found instance extensions:");
-        Sorting::QuickSort(foundUniqueExtensions.Get(), foundUniqueExtensions.Count());
+        Sorting::QuickSort(foundUniqueExtensions);
         for (const StringAnsi& name : foundUniqueExtensions)
         {
             LOG(Info, "- {0}", String(name));
@@ -455,7 +455,7 @@ void GPUDeviceVulkan::GetDeviceExtensionsAndLayers(VkPhysicalDevice gpu, Array<c
     if (foundUniqueLayers.HasItems())
     {
         LOG(Info, "Found device layers:");
-        Sorting::QuickSort(foundUniqueLayers.Get(), foundUniqueLayers.Count());
+        Sorting::QuickSort(foundUniqueLayers);
         for (const StringAnsi& name : foundUniqueLayers)
         {
             LOG(Info, "- {0}", String(name));
@@ -465,7 +465,7 @@ void GPUDeviceVulkan::GetDeviceExtensionsAndLayers(VkPhysicalDevice gpu, Array<c
     if (foundUniqueExtensions.HasItems())
     {
         LOG(Info, "Found device extensions:");
-        Sorting::QuickSort(foundUniqueExtensions.Get(), foundUniqueExtensions.Count());
+        Sorting::QuickSort(foundUniqueExtensions);
         for (const StringAnsi& name : foundUniqueExtensions)
         {
             LOG(Info, "- {0}", String(name));

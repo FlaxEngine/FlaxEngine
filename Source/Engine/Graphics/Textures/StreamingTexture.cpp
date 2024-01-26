@@ -22,10 +22,10 @@ TextureHeader::TextureHeader()
     TextureGroup = -1;
 }
 
-TextureHeader::TextureHeader(TextureHeader_Deprecated& old)
+TextureHeader::TextureHeader(const TextureHeader_Deprecated& old)
 {
     Platform::MemoryClear(this, sizeof(*this));
-    Width = old.Width;;
+    Width = old.Width;
     Height = old.Height;
     MipLevels = old.MipLevels;
     Format = old.Format;
@@ -49,7 +49,7 @@ StreamingTexture::StreamingTexture(ITextureOwner* parent, const String& name)
     , _texture(nullptr)
     , _isBlockCompressed(false)
 {
-    ASSERT(_owner != nullptr);
+    ASSERT(parent != nullptr);
 
     // Always have created texture object
     ASSERT(GPUDevice::Instance);
@@ -63,7 +63,6 @@ StreamingTexture::~StreamingTexture()
 {
     UnloadTexture();
     SAFE_DELETE(_texture);
-    ASSERT(_streamingTasks.Count() == 0);
 }
 
 Float2 StreamingTexture::Size() const
@@ -115,9 +114,9 @@ bool StreamingTexture::Create(const TextureHeader& header)
     {
         // Ensure that streaming doesn't go too low because the hardware expects the texture to be min in size of compressed texture block
         int32 lastMip = header.MipLevels - 1;
-        while ((header.Width >> lastMip) < 4 && (header.Height >> lastMip) < 4)
+        while ((header.Width >> lastMip) < 4 && (header.Height >> lastMip) < 4 && lastMip > 0)
             lastMip--;
-        _minMipCountBlockCompressed = header.MipLevels - lastMip + 1;
+        _minMipCountBlockCompressed = Math::Min(header.MipLevels - lastMip + 1, header.MipLevels);
     }
 
     // Request resource streaming
@@ -134,11 +133,9 @@ bool StreamingTexture::Create(const TextureHeader& header)
 void StreamingTexture::UnloadTexture()
 {
     ScopeLock lock(_owner->GetOwnerLocker());
-
-    // Release
+    CancelStreamingTasks();
     _texture->ReleaseGPU();
     _header.MipLevels = 0;
-
     ASSERT(_streamingTasks.Count() == 0);
 }
 
@@ -299,6 +296,7 @@ Task* StreamingTexture::UpdateAllocation(int32 residency)
         // Setup texture
         if (texture->Init(desc))
         {
+            Streaming.Error = true;
             LOG(Error, "Cannot allocate texture {0}.", ToString());
         }
         if (allocatedResidency != 0)
@@ -329,11 +327,11 @@ public:
         , _dataLock(_streamingTexture->GetOwner()->LockData())
     {
         _streamingTexture->_streamingTasks.Add(this);
-        _texture.OnUnload.Bind<StreamTextureMipTask, &StreamTextureMipTask::onResourceUnload2>(this);
+        _texture.Released.Bind<StreamTextureMipTask, &StreamTextureMipTask::OnResourceReleased2>(this);
     }
 
 private:
-    void onResourceUnload2(GPUTextureReference* ref)
+    void OnResourceReleased2()
     {
         // Unlink texture
         if (_streamingTexture)

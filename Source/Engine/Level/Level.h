@@ -541,8 +541,8 @@ private:
     };
 
     static void callActorEvent(ActorEventType eventType, Actor* a, Actor* b);
-    static bool loadScene(const Guid& sceneId);
-    static bool loadScene(const String& scenePath);
+
+    // All loadScene assume that ScenesLock has been taken by the calling thread
     static bool loadScene(JsonAsset* sceneAsset);
     static bool loadScene(const BytesContainer& sceneData, Scene** outScene = nullptr);
     static bool loadScene(rapidjson_flax::Document& document, Scene** outScene = nullptr);

@@ -513,7 +513,9 @@ DEFINE_INTERNAL_CALL(void) EditorInternal_RunVisualScriptBreakpointLoopTick(floa
         WindowsManager::WindowsLocker.Unlock();
     }
     WindowsManager::WindowsLocker.Lock();
-    for (auto& win : WindowsManager::Windows)
+    Array<Window*, InlinedAllocation<32>> windows;
+    windows.Add(WindowsManager::Windows);
+    for (Window* win : windows)
     {
         if (win->IsVisible())
             win->OnUpdate(deltaTime);
@@ -522,133 +524,6 @@ DEFINE_INTERNAL_CALL(void) EditorInternal_RunVisualScriptBreakpointLoopTick(floa
 
     // Draw
     Engine::OnDraw();
-}
-
-struct VisualScriptLocalManaged
-{
-    MString* Value;
-    MString* ValueTypeName;
-    uint32 NodeId;
-    int32 BoxId;
-};
-
-DEFINE_INTERNAL_CALL(MArray*) EditorInternal_GetVisualScriptLocals(int* localsCount)
-{
-    MArray* result = nullptr;
-    *localsCount = 0;
-    const auto stack = VisualScripting::GetThreadStackTop();
-    if (stack && stack->Scope)
-    {
-        const int32 count = stack->Scope->Parameters.Length() + stack->Scope->ReturnedValues.Count();
-        const MClass* mclass = ((NativeBinaryModule*)GetBinaryModuleFlaxEngine())->Assembly->GetClass("FlaxEditor.Editor+VisualScriptLocal");
-        ASSERT(mclass);
-        result = MCore::Array::New(mclass, count);
-        VisualScriptLocalManaged local;
-        local.NodeId = MAX_uint32;
-        if (stack->Scope->Parameters.Length() != 0)
-        {
-            auto s = stack;
-            while (s->PreviousFrame && s->PreviousFrame->Scope == stack->Scope)
-                s = s->PreviousFrame;
-            if (s)
-                local.NodeId = s->Node->ID;
-        }
-        VisualScriptLocalManaged* resultPtr = MCore::Array::GetAddress<VisualScriptLocalManaged>(result);
-        for (int32 i = 0; i < stack->Scope->Parameters.Length(); i++)
-        {
-            auto& v = stack->Scope->Parameters[i];
-            local.BoxId = i + 1;
-            local.Value = MUtils::ToString(v.ToString());
-            local.ValueTypeName = MUtils::ToString(v.Type.GetTypeName());
-            resultPtr[i] = local;
-        }
-        for (int32 i = 0; i < stack->Scope->ReturnedValues.Count(); i++)
-        {
-            auto& v = stack->Scope->ReturnedValues[i];
-            local.NodeId = v.NodeId;
-            local.BoxId = v.BoxId;
-            local.Value = MUtils::ToString(v.Value.ToString());
-            local.ValueTypeName = MUtils::ToString(v.Value.Type.GetTypeName());
-            resultPtr[stack->Scope->Parameters.Length() + i] = local;
-        }
-        *localsCount = count;
-    }
-    return result;
-}
-
-struct VisualScriptStackFrameManaged
-{
-    MObject* Script;
-    uint32 NodeId;
-    int32 BoxId;
-};
-
-DEFINE_INTERNAL_CALL(MArray*) EditorInternal_GetVisualScriptStackFrames(int* stackFramesCount)
-{
-    MArray* result = nullptr;
-    *stackFramesCount = 0;
-    const auto stack = VisualScripting::GetThreadStackTop();
-    if (stack)
-    {
-        int32 count = 0;
-        auto s = stack;
-        while (s)
-        {
-            s = s->PreviousFrame;
-            count++;
-        }
-        const MClass* mclass = ((NativeBinaryModule*)GetBinaryModuleFlaxEngine())->Assembly->GetClass("FlaxEditor.Editor+VisualScriptStackFrame");
-        ASSERT(mclass);
-        result = MCore::Array::New(mclass, count);
-        VisualScriptStackFrameManaged* resultPtr = MCore::Array::GetAddress<VisualScriptStackFrameManaged>(result);
-        s = stack;
-        count = 0;
-        while (s)
-        {
-            VisualScriptStackFrameManaged frame;
-            frame.Script = s->Script->GetOrCreateManagedInstance();
-            frame.NodeId = s->Node->ID;
-            frame.BoxId = s->Box ? s->Box->ID : MAX_uint32;
-            resultPtr[count] = frame;
-            s = s->PreviousFrame;
-            count++;
-        }
-        *stackFramesCount = count;
-    }
-    return result;
-}
-
-DEFINE_INTERNAL_CALL(VisualScriptStackFrameManaged) EditorInternal_GetVisualScriptPreviousScopeFrame()
-{
-    VisualScriptStackFrameManaged frame;
-    Platform::MemoryClear(&frame, sizeof(frame));
-    const auto stack = VisualScripting::GetThreadStackTop();
-    if (stack)
-    {
-        auto s = stack;
-        while (s->PreviousFrame && s->PreviousFrame->Scope == stack->Scope)
-            s = s->PreviousFrame;
-        if (s && s->PreviousFrame)
-        {
-            s = s->PreviousFrame;
-            frame.Script = s->Script->GetOrCreateManagedInstance();
-            frame.NodeId = s->Node->ID;
-            frame.BoxId = s->Box ? s->Box->ID : MAX_uint32;
-        }
-    }
-    return frame;
-}
-
-DEFINE_INTERNAL_CALL(bool) EditorInternal_EvaluateVisualScriptLocal(VisualScript* script, VisualScriptLocalManaged* local)
-{
-    Variant v;
-    if (VisualScripting::Evaluate(script, VisualScripting::GetThreadStackTop()->Instance, local->NodeId, local->BoxId, v))
-    {
-        local->Value = MUtils::ToString(v.ToString());
-        local->ValueTypeName = MUtils::ToString(v.Type.GetTypeName());
-        return true;
-    }
-    return false;
 }
 
 DEFINE_INTERNAL_CALL(void) EditorInternal_DeserializeSceneObject(SceneObject* sceneObject, MString* jsonObj)
@@ -767,7 +642,7 @@ bool ManagedEditor::TryRestoreImportOptions(ModelTool::Options& options, String 
 
     // Get options from model
     FileSystem::NormalizePath(assetPath);
-    return ImportModelFile::TryGetImportOptions(assetPath, options);
+    return ImportModel::TryGetImportOptions(assetPath, options);
 }
 
 bool ManagedEditor::Import(const String& inputPath, const String& outputPath, const AudioTool::Options& options)

@@ -63,7 +63,9 @@ namespace FlaxEditor.Windows.Profiler
             };
 
             // Table
-            var headerColor = Style.Current.LightBackground;
+            var style = Style.Current;
+            var headerColor = style.LightBackground;
+            var textColor = style.Foreground;
             _table = new Table
             {
                 Columns = new[]
@@ -74,35 +76,41 @@ namespace FlaxEditor.Windows.Profiler
                         CellAlignment = TextAlignment.Near,
                         Title = "Event",
                         TitleBackgroundColor = headerColor,
+                        TitleColor = textColor,
                     },
                     new ColumnDefinition
                     {
                         Title = "Total",
                         TitleBackgroundColor = headerColor,
+                        TitleColor = textColor,
                         FormatValue = (x) => ((float)x).ToString("0.0") + '%',
                     },
                     new ColumnDefinition
                     {
                         Title = "GPU ms",
                         TitleBackgroundColor = headerColor,
+                        TitleColor = textColor,
                         FormatValue = (x) => ((float)x).ToString("0.000"),
                     },
                     new ColumnDefinition
                     {
                         Title = "Draw Calls",
                         TitleBackgroundColor = headerColor,
+                        TitleColor = textColor,
                         FormatValue = FormatCountLong,
                     },
                     new ColumnDefinition
                     {
                         Title = "Triangles",
                         TitleBackgroundColor = headerColor,
+                        TitleColor = textColor,
                         FormatValue = FormatCountLong,
                     },
                     new ColumnDefinition
                     {
                         Title = "Vertices",
                         TitleBackgroundColor = headerColor,
+                        TitleColor = textColor,
                         FormatValue = FormatCountLong,
                     },
                 },
@@ -313,8 +321,7 @@ namespace FlaxEditor.Windows.Profiler
             var data = _events.Get(_drawTimeCPU.SelectedSampleIndex);
             if (data == null || data.Length == 0)
                 return;
-
-            float totalTimeMs = _drawTimeCPU.SelectedSample;
+            float totalTimeMs = _drawTimeGPU.SelectedSample;
 
             // Add rows
             var rowColor2 = Style.Current.Background * 1.4f;
@@ -335,14 +342,19 @@ namespace FlaxEditor.Windows.Profiler
                     row = new Row
                     {
                         Values = new object[6],
+                        BackgroundColors = new Color[6],
                     };
+                    for (int k = 0; k < row.BackgroundColors.Length; k++)
+                        row.BackgroundColors[k] = Color.Transparent;
                 }
                 {
                     // Event
                     row.Values[0] = name;
 
                     // Total (%)
-                    row.Values[1] = (int)(e.Time / totalTimeMs * 1000.0f) / 10.0f;
+                    float rowTimePerc = (float)(e.Time / totalTimeMs);
+                    row.Values[1] = (int)(rowTimePerc * 1000.0f) / 10.0f;
+                    row.BackgroundColors[1] = Color.Red.AlphaMultiplied(Mathf.Min(1, rowTimePerc) * 0.5f);
 
                     // GPU ms
                     row.Values[2] = (e.Time * 10000.0f) / 10000.0f;
