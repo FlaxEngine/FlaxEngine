@@ -1131,6 +1131,17 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
     {
         const float alpha = Math::Saturate((float)tryGetValue(node->GetBox(3), node->Values[0]));
         auto mask = node->Assets[0].As<SkeletonMask>();
+        auto maskAssetBox = node->GetBox(4); // 4 is the id of skeleton mask parameter node.
+
+        // Check if have some mask asset conected with the mask node
+        if (maskAssetBox->HasConnection())
+        {
+            const Value assetBoxValue = tryGetValue(maskAssetBox, Value::Null);
+
+            // Use the mask conected with this node instead of default mask asset 
+            if (assetBoxValue != Value::Null)
+                mask = (SkeletonMask *)assetBoxValue.AsAsset;
+        }
 
         // Only A or missing/invalid mask
         if (Math::NearEqual(alpha, 0.0f, ANIM_GRAPH_BLEND_THRESHOLD) || mask == nullptr || mask->WaitForLoaded())
