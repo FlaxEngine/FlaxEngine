@@ -11,23 +11,23 @@ namespace FlaxEngine
     /// <seealso cref="System.Attribute" />
     [Serializable]
     [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property)]
-    public sealed class ValueCategoryAttribute : Attribute
+    public sealed class NumberCategoryAttribute : Attribute
     {
         /// <summary>
         /// The value category used for formatting.
         /// </summary>
-        public FlaxEditor.Utilities.Utils.ValueCategory Category;
+        public Utils.ValueCategory Category;
 
-        private ValueCategoryAttribute()
+        private NumberCategoryAttribute()
         {
-            Category = FlaxEditor.Utilities.Utils.ValueCategory.None;
+            Category = Utils.ValueCategory.None;
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="ValueCategoryAttribute"/> class.
+        /// Initializes a new instance of the <see cref="NumberCategoryAttribute"/> class.
         /// </summary>
         /// <param name="category">The value category.</param>
-        public ValueCategoryAttribute(FlaxEditor.Utilities.Utils.ValueCategory category)
+        public NumberCategoryAttribute(Utils.ValueCategory category)
         {
             Category = category;
         }

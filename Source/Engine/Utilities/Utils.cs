@@ -1038,5 +1038,15 @@ namespace FlaxEngine
                 parameterTypes = Array.Empty<Type>();
             return parameterTypes;
         }
+
+        /// <summary>
+        /// A category of number values used for formatting and input boxes
+        /// </summary>
+        public enum ValueCategory
+        {
+            None,
+            Distance,
+            Angle
+        }
     }
 }

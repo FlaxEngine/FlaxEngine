@@ -59,16 +59,6 @@ namespace FlaxEditor.Utilities
         public static readonly string FlaxEngineAssemblyName = "FlaxEngine.CSharp";
 
         /// <summary>
-        /// A category of number values used for formatting and input boxes
-        /// </summary>
-        public enum ValueCategory
-        {
-            None,
-            Distance,
-            Angle
-        }
-
-        /// <summary>
         /// Tries to parse number in the name brackets at the end of the value and then increment it to create a new name.
         /// Supports numbers at the end without brackets.
         /// </summary>
@@ -1187,11 +1177,11 @@ namespace FlaxEditor.Utilities
         /// <param name="value">the value to format</param>
         /// <param name="category">the value type: none means just a number, distance will format in cm/m/km, angle with an appended degree sign</param>
         /// <returns>the formatted string</returns>
-        public static string FormatFloat(float value, ValueCategory category)
+        public static string FormatFloat(float value, FlaxEngine.Utils.ValueCategory category)
         {
             switch (category)
             {
-                case ValueCategory.Distance:
+                case FlaxEngine.Utils.ValueCategory.Distance:
                     var absValue = Mathf.Abs(value);
                     // in case a unit != cm this would be (value / Maters2Units * 100)
                     if (absValue < Units.Meters2Units)
@@ -1199,8 +1189,8 @@ namespace FlaxEditor.Utilities
                     if (absValue < Units.Meters2Units * 1000)
                         return (value / Units.Meters2Units).ToString("g7", CultureInfo.InvariantCulture) + "m";
                     return (value / 1000 / Units.Meters2Units).ToString("g7", CultureInfo.InvariantCulture) + "km";
-                case ValueCategory.Angle: return value.ToString("g7", CultureInfo.InvariantCulture) + "°";
-                case ValueCategory.None:
+                case FlaxEngine.Utils.ValueCategory.Angle: return value.ToString("g7", CultureInfo.InvariantCulture) + "°";
+                case FlaxEngine.Utils.ValueCategory.None:
                 default:
                     return FormatFloat(value);
             }
@@ -1212,11 +1202,11 @@ namespace FlaxEditor.Utilities
         /// <param name="value">the value to format</param>
         /// <param name="category">the value type: none means just a number, distance will format in cm/m/km, angle with an appended degree sign</param>
         /// <returns>the formatted string</returns>
-        public static string FormatFloat(double value, ValueCategory category)
+        public static string FormatFloat(double value, FlaxEngine.Utils.ValueCategory category)
         {
             switch (category)
             {
-            case ValueCategory.Distance:
+            case FlaxEngine.Utils.ValueCategory.Distance:
                 var absValue = Mathf.Abs(value);
                 // in case a unit != cm this would be (value / Maters2Units * 100)
                 if (absValue < Units.Meters2Units)
@@ -1224,8 +1214,8 @@ namespace FlaxEditor.Utilities
                 if (absValue < Units.Meters2Units * 1000)
                     return (value / Units.Meters2Units).ToString("g17", CultureInfo.InvariantCulture) + "m";
                 return (value / 1000 / Units.Meters2Units).ToString("g17", CultureInfo.InvariantCulture) + "km";
-            case ValueCategory.Angle: return value.ToString("g17", CultureInfo.InvariantCulture) + "°";
-            case ValueCategory.None:
+            case FlaxEngine.Utils.ValueCategory.Angle: return value.ToString("g17", CultureInfo.InvariantCulture) + "°";
+            case FlaxEngine.Utils.ValueCategory.None:
             default:
                 return FormatFloat(value);
             }

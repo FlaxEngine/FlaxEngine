@@ -243,6 +243,11 @@ namespace FlaxEditor.Utilities
                 }
                 else if (type == TokenType.Variable)
                 {
+                    if (previous == TokenType.Number)
+                    {
+                        previous = TokenType.Operator;
+                        yield return new Token(TokenType.Operator, "*");
+                    }
                     // Continue till the end of the variable
                     while (i + 1 < text.Length && DetermineType(text[i + 1]) == TokenType.Variable)
                     {
@@ -379,10 +384,7 @@ namespace FlaxEditor.Utilities
             // we assume the remaining values are all factors to be multiplied
             if (stack.Count > 1)
             {
-                var stackContent = string.Join(",", stack.ToList());
-                Debug.Log($"parsing numbers, stack is {stackContent}");
                 var v1 = stack.Pop();
-                Debug.Log($"first on stack: {v1}");
                 while (stack.Count > 0)
                     v1 *= stack.Pop();
                 return v1;

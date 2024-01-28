@@ -4,7 +4,7 @@ using System;
 using System.Globalization;
 using FlaxEditor.Utilities;
 using FlaxEngine;
-using Utils = FlaxEditor.Utilities.Utils;
+using Utils = FlaxEngine.Utils;
 
 namespace FlaxEditor.GUI.Input
 {

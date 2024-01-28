@@ -5,7 +5,7 @@ using System.Reflection;
 using FlaxEditor.GUI.Input;
 using FlaxEngine;
 using FlaxEngine.GUI;
-using Utils = FlaxEditor.Utilities.Utils;
+using Utils = FlaxEngine.Utils;
 
 namespace FlaxEditor.CustomEditors.Elements
 {
