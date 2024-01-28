@@ -2,6 +2,7 @@
 
 #include "Screenshot.h"
 #include "Engine/Core/Log.h"
+#include "Engine/Core/Types/DateTime.h"
 #include "Engine/Core/Math/Math.h"
 #include "Engine/Graphics/RenderTask.h"
 #include "Engine/Platform/FileSystem.h"

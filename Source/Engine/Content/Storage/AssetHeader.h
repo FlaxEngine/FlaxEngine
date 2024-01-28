@@ -6,6 +6,7 @@
 #include "Engine/Core/Types/Pair.h"
 #include "Engine/Core/Types/String.h"
 #if USE_EDITOR
+#include "Engine/Core/Types/DateTime.h"
 #include "Engine/Core/Collections/Array.h"
 #endif
 #include "FlaxChunk.h"

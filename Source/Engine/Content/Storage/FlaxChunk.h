@@ -78,9 +78,9 @@ public:
     FlaxChunkFlags Flags = FlaxChunkFlags::None;
 
     /// <summary>
-    /// The last usage time (atomic, ticks of DateTime in UTC).
+    /// The last usage time.
     /// </summary>
-    int64 LastAccessTime = 0;
+    double LastAccessTime = 0.0;
 
     /// <summary>
     /// The chunk data.

@@ -11,7 +11,7 @@
 #include "Engine/Audio/Audio.h"
 #include "Engine/Audio/AudioSource.h"
 
-float TexturesStreamingHandler::CalculateTargetQuality(StreamableResource* resource, DateTime now, double currentTime)
+float TexturesStreamingHandler::CalculateTargetQuality(StreamableResource* resource, double currentTime)
 {
     ASSERT(resource);
     auto& texture = *(StreamingTexture*)resource;
@@ -93,7 +93,7 @@ int32 TexturesStreamingHandler::CalculateRequestedResidency(StreamableResource* 
     return residency;
 }
 
-float ModelsStreamingHandler::CalculateTargetQuality(StreamableResource* resource, DateTime now, double currentTime)
+float ModelsStreamingHandler::CalculateTargetQuality(StreamableResource* resource, double currentTime)
 {
     // TODO: calculate a proper quality levels for models based on render time and streaming enable/disable options
     return 1.0f;
@@ -132,7 +132,7 @@ int32 ModelsStreamingHandler::CalculateRequestedResidency(StreamableResource* re
     return residency;
 }
 
-float SkinnedModelsStreamingHandler::CalculateTargetQuality(StreamableResource* resource, DateTime now, double currentTime)
+float SkinnedModelsStreamingHandler::CalculateTargetQuality(StreamableResource* resource, double currentTime)
 {
     // TODO: calculate a proper quality levels for models based on render time and streaming enable/disable options
     return 1.0f;
@@ -171,7 +171,7 @@ int32 SkinnedModelsStreamingHandler::CalculateRequestedResidency(StreamableResou
     return residency;
 }
 
-float AudioStreamingHandler::CalculateTargetQuality(StreamableResource* resource, DateTime now, double currentTime)
+float AudioStreamingHandler::CalculateTargetQuality(StreamableResource* resource, double currentTime)
 {
     // Audio clips don't use quality but only residency
     return 1.0f;

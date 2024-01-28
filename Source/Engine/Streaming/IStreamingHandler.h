@@ -13,19 +13,15 @@ class StreamableResource;
 class FLAXENGINE_API IStreamingHandler
 {
 public:
-
     virtual ~IStreamingHandler() = default;
-
-public:
 
     /// <summary>
     /// Calculates target quality level (0-1) for the given resource.
     /// </summary>
     /// <param name="resource">The resource.</param>
-    /// <param name="now">The current time and date.</param>
     /// <param name="currentTime">The current platform time (seconds).</param>
     /// <returns>Target quality (0-1).</returns>
-    virtual float CalculateTargetQuality(StreamableResource* resource, DateTime now, double currentTime) = 0;
+    virtual float CalculateTargetQuality(StreamableResource* resource, double currentTime) = 0;
 
     /// <summary>
     /// Calculates the residency level for a given resource and quality level.

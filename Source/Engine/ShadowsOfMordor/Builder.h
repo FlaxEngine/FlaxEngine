@@ -4,6 +4,7 @@
 
 #include "Engine/Content/Assets/Model.h"
 #include "Engine/Content/Assets/Shader.h"
+#include "Engine/Core/Types/DateTime.h"
 #include "Engine/CSG/CSGMesh.h"
 #include "Builder.Config.h"
 

@@ -141,7 +141,7 @@ void AssetsCache::Init()
     }
 
     stopwatch.Stop();
-    LOG(Info, "Asset Cache loaded {0} entries in {1} ms ({2} rejected)", _registry.Count(), stopwatch.GetMilliseconds(), rejectedCount);
+    LOG(Info, "Asset Cache loaded {0} entries in {1}ms ({2} rejected)", _registry.Count(), stopwatch.GetMilliseconds(), rejectedCount);
 }
 
 bool AssetsCache::Save()
