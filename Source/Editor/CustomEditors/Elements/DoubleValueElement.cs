@@ -5,6 +5,7 @@ using System.Reflection;
 using FlaxEditor.GUI.Input;
 using FlaxEngine;
 using FlaxEngine.GUI;
+using Utils = FlaxEditor.Utilities.Utils;
 
 namespace FlaxEditor.CustomEditors.Elements
 {
@@ -49,6 +50,15 @@ namespace FlaxEditor.CustomEditors.Elements
                     ValueBox.SetLimits((LimitAttribute)limit);
                 }
             }
+        }
+
+        /// <summary>
+        /// Set the value category of this float element
+        /// </summary>
+        /// <param name="category"></param>
+        public void SetCategory(Utils.ValueCategory category)
+        {
+            ValueBox.Category = category;
         }
 
         /// <summary>

@@ -4,6 +4,7 @@ using System;
 using System.Linq;
 using FlaxEditor.CustomEditors.Elements;
 using FlaxEngine;
+using Utils = FlaxEditor.Utilities.Utils;
 
 namespace FlaxEditor.CustomEditors.Editors
 {
@@ -25,6 +26,8 @@ namespace FlaxEditor.CustomEditors.Editors
 
             // Try get limit attribute for value min/max range setting and slider speed
             var attributes = Values.GetAttributes();
+            var categoryAttribute = attributes.FirstOrDefault(x => x is ValueCategoryAttribute);
+            var valueCategory = ((ValueCategoryAttribute)categoryAttribute)?.Category ?? Utils.ValueCategory.None;
             if (attributes != null)
             {
                 var limit = attributes.FirstOrDefault(x => x is LimitAttribute);
@@ -32,6 +35,7 @@ namespace FlaxEditor.CustomEditors.Editors
                 {
                     // Use double value editor with limit
                     var doubleValue = layout.DoubleValue();
+                    doubleValue.SetCategory(valueCategory);
                     doubleValue.SetLimits((LimitAttribute)limit);
                     doubleValue.ValueBox.ValueChanged += OnValueChanged;
                     doubleValue.ValueBox.SlidingEnd += ClearToken;
@@ -43,6 +47,7 @@ namespace FlaxEditor.CustomEditors.Editors
             {
                 // Use double value editor
                 var doubleValue = layout.DoubleValue();
+                doubleValue.SetCategory(valueCategory);
                 doubleValue.ValueBox.ValueChanged += OnValueChanged;
                 doubleValue.ValueBox.SlidingEnd += ClearToken;
                 _element = doubleValue;

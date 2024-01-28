@@ -59,6 +59,16 @@ namespace FlaxEditor.Utilities
         public static readonly string FlaxEngineAssemblyName = "FlaxEngine.CSharp";
 
         /// <summary>
+        /// A category of number values used for formatting and input boxes
+        /// </summary>
+        public enum ValueCategory
+        {
+            None,
+            Distance,
+            Angle
+        }
+
+        /// <summary>
         /// Tries to parse number in the name brackets at the end of the value and then increment it to create a new name.
         /// Supports numbers at the end without brackets.
         /// </summary>
@@ -1172,6 +1182,56 @@ namespace FlaxEditor.Utilities
         }
 
         /// <summary>
+        /// Format a float value either as-is, with a distance unit or with a degree sign
+        /// </summary>
+        /// <param name="value">the value to format</param>
+        /// <param name="category">the value type: none means just a number, distance will format in cm/m/km, angle with an appended degree sign</param>
+        /// <returns>the formatted string</returns>
+        public static string FormatFloat(float value, ValueCategory category)
+        {
+            switch (category)
+            {
+                case ValueCategory.Distance:
+                    var absValue = Mathf.Abs(value);
+                    // in case a unit != cm this would be (value / Maters2Units * 100)
+                    if (absValue < Units.Meters2Units)
+                        return value.ToString("g7", CultureInfo.InvariantCulture) + "cm";
+                    if (absValue < Units.Meters2Units * 1000)
+                        return (value / Units.Meters2Units).ToString("g7", CultureInfo.InvariantCulture) + "m";
+                    return (value / 1000 / Units.Meters2Units).ToString("g7", CultureInfo.InvariantCulture) + "km";
+                case ValueCategory.Angle: return value.ToString("g7", CultureInfo.InvariantCulture) + "°";
+                case ValueCategory.None:
+                default:
+                    return FormatFloat(value);
+            }
+        }
+
+        /// <summary>
+        /// Format a double value either as-is, with a distance unit or with a degree sign
+        /// </summary>
+        /// <param name="value">the value to format</param>
+        /// <param name="category">the value type: none means just a number, distance will format in cm/m/km, angle with an appended degree sign</param>
+        /// <returns>the formatted string</returns>
+        public static string FormatFloat(double value, ValueCategory category)
+        {
+            switch (category)
+            {
+            case ValueCategory.Distance:
+                var absValue = Mathf.Abs(value);
+                // in case a unit != cm this would be (value / Maters2Units * 100)
+                if (absValue < Units.Meters2Units)
+                    return value.ToString("g17", CultureInfo.InvariantCulture) + "cm";
+                if (absValue < Units.Meters2Units * 1000)
+                    return (value / Units.Meters2Units).ToString("g17", CultureInfo.InvariantCulture) + "m";
+                return (value / 1000 / Units.Meters2Units).ToString("g17", CultureInfo.InvariantCulture) + "km";
+            case ValueCategory.Angle: return value.ToString("g17", CultureInfo.InvariantCulture) + "°";
+            case ValueCategory.None:
+            default:
+                return FormatFloat(value);
+            }
+        }
+
+        /// <summary>
         /// Formats the floating point value (double precision) into the readable text representation.
         /// </summary>
         /// <param name="value">The value.</param>
@@ -1182,7 +1242,7 @@ namespace FlaxEditor.Utilities
                 return "Infinity";
             if (float.IsNegativeInfinity(value) || value == float.MinValue)
                 return "-Infinity";
-            string str = value.ToString("r", CultureInfo.InvariantCulture);
+            string str = value.ToString("g7", CultureInfo.InvariantCulture);
             return FormatFloat(str, value < 0);
         }
 
@@ -1197,7 +1257,7 @@ namespace FlaxEditor.Utilities
                 return "Infinity";
             if (double.IsNegativeInfinity(value) || value == double.MinValue)
                 return "-Infinity";
-            string str = value.ToString("r", CultureInfo.InvariantCulture);
+            string str = value.ToString("g17", CultureInfo.InvariantCulture);
             return FormatFloat(str, value < 0);
         }
 

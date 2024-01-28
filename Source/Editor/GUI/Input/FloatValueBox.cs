@@ -4,6 +4,7 @@ using System;
 using System.Globalization;
 using FlaxEditor.Utilities;
 using FlaxEngine;
+using Utils = FlaxEditor.Utilities.Utils;
 
 namespace FlaxEditor.GUI.Input
 {
@@ -137,10 +138,15 @@ namespace FlaxEditor.GUI.Input
             Value = Value;
         }
 
+        /// <summary>
+        /// Get or set the category of the value. This can either be none for just a number, a distance or an angle.
+        /// </summary>
+        public Utils.ValueCategory Category = Utils.ValueCategory.None;
+
         /// <inheritdoc />
         protected sealed override void UpdateText()
         {
-            SetText(Utilities.Utils.FormatFloat(_value));
+            SetText(Utilities.Utils.FormatFloat(_value, Category));
         }
 
         /// <inheritdoc />

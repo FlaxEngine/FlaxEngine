@@ -121,6 +121,9 @@ namespace FlaxEditor.Utilities
             ["e"] = Math.E,
             ["infinity"] = double.MaxValue,
             ["-infinity"] = -double.MaxValue,
+            ["m"] = Units.Meters2Units,
+            ["cm"] = Units.Meters2Units / 100,
+            ["km"] = Units.Meters2Units * 1000
         };
 
         /// <summary>
@@ -170,7 +173,7 @@ namespace FlaxEditor.Utilities
         public static IEnumerable<Token> Tokenize(string text)
         {
             // Prepare text
-            text = text.Replace(',', '.');
+            text = text.Replace(',', '.').Replace("°", "");
 
             // Necessary to correctly parse negative numbers
             var previous = TokenType.WhiteSpace;
@@ -372,6 +375,18 @@ namespace FlaxEditor.Utilities
                 }
             }
 
+            // if stack has more than one item we're not finished with evaluating
+            // we assume the remaining values are all factors to be multiplied
+            if (stack.Count > 1)
+            {
+                var stackContent = string.Join(",", stack.ToList());
+                Debug.Log($"parsing numbers, stack is {stackContent}");
+                var v1 = stack.Pop();
+                Debug.Log($"first on stack: {v1}");
+                while (stack.Count > 0)
+                    v1 *= stack.Pop();
+                return v1;
+            }
             return stack.Pop();
         }
 
