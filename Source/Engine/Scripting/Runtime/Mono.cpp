@@ -7,6 +7,7 @@
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Types/DateTime.h"
 #include "Engine/Core/Types/TimeSpan.h"
+#include "Engine/Core/Types/Stopwatch.h"
 #include "Engine/Platform/File.h"
 #include "Engine/Platform/FileSystem.h"
 #include "Engine/Engine/Globals.h"
@@ -1089,7 +1090,7 @@ bool MAssembly::Load(MonoImage* monoImage)
     Unload();
 
     // Start
-    const auto startTime = DateTime::NowUTC();
+    Stopwatch stopwatch;
     OnLoading();
 
     // Load
@@ -1103,7 +1104,7 @@ bool MAssembly::Load(MonoImage* monoImage)
     _hasCachedClasses = false;
 
     // End
-    OnLoaded(startTime);
+    OnLoaded(stopwatch);
     return false;
 }
 

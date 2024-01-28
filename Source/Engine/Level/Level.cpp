@@ -12,6 +12,7 @@
 #include "Engine/Core/ObjectsRemovalService.h"
 #include "Engine/Core/Config/LayersTagsSettings.h"
 #include "Engine/Core/Types/LayersMask.h"
+#include "Engine/Core/Types/Stopwatch.h"
 #include "Engine/Debug/Exceptions/ArgumentException.h"
 #include "Engine/Debug/Exceptions/ArgumentNullException.h"
 #include "Engine/Debug/Exceptions/InvalidOperationException.h"
@@ -868,13 +869,11 @@ bool Level::loadScene(rapidjson_flax::Document& document, Scene** outScene)
 bool Level::loadScene(rapidjson_flax::Value& data, int32 engineBuild, Scene** outScene)
 {
     PROFILE_CPU_NAMED("Level.LoadScene");
-
     if (outScene)
         *outScene = nullptr;
-
     LOG(Info, "Loading scene...");
-    const DateTime startTime = DateTime::NowUTC();
-    _lastSceneLoadTime = startTime;
+    Stopwatch stopwatch;
+    _lastSceneLoadTime = DateTime::Now();
 
     // Here whole scripting backend should be loaded for current project
     // Later scripts will setup attached scripts and restore initial vars
@@ -1083,7 +1082,8 @@ bool Level::loadScene(rapidjson_flax::Value& data, int32 engineBuild, Scene** ou
     // Fire event
     CallSceneEvent(SceneEventType::OnSceneLoaded, scene, sceneId);
 
-    LOG(Info, "Scene loaded in {0} ms", (int32)(DateTime::NowUTC() - startTime).GetTotalMilliseconds());
+    stopwatch.Stop();
+    LOG(Info, "Scene loaded in {0}ms", stopwatch.GetMilliseconds());
     if (outScene)
         *outScene = scene;
     return false;
@@ -1112,7 +1112,7 @@ bool LevelImpl::saveScene(Scene* scene, const String& path)
     auto sceneId = scene->GetID();
 
     LOG(Info, "Saving scene {0} to \'{1}\'", scene->GetName(), path);
-    const DateTime startTime = DateTime::NowUTC();
+    Stopwatch stopwatch;
 
     // Serialize to json
     rapidjson_flax::StringBuffer buffer;
@@ -1130,7 +1130,8 @@ bool LevelImpl::saveScene(Scene* scene, const String& path)
         return true;
     }
 
-    LOG(Info, "Scene saved! Time {0} ms", Math::CeilToInt((float)(DateTime::NowUTC() - startTime).GetTotalMilliseconds()));
+    stopwatch.Stop();
+    LOG(Info, "Scene saved! Time {0}ms", stopwatch.GetMilliseconds());
 
 #if USE_EDITOR
     // Reload asset at the target location if is loaded
@@ -1210,9 +1211,8 @@ bool Level::SaveSceneToBytes(Scene* scene, rapidjson_flax::StringBuffer& outData
 {
     ASSERT(scene);
     ScopeLock lock(_sceneActionsLocker);
-
+    Stopwatch stopwatch;
     LOG(Info, "Saving scene {0} to bytes", scene->GetName());
-    const DateTime startTime = DateTime::NowUTC();
 
     // Serialize to json
     if (saveScene(scene, outData, prettyJson))
@@ -1221,8 +1221,8 @@ bool Level::SaveSceneToBytes(Scene* scene, rapidjson_flax::StringBuffer& outData
         return true;
     }
 
-    // Info
-    LOG(Info, "Scene saved! Time {0} ms", Math::CeilToInt(static_cast<float>((DateTime::NowUTC() - startTime).GetTotalMilliseconds())));
+    stopwatch.Stop();
+    LOG(Info, "Scene saved! Time {0}ms", stopwatch.GetMilliseconds());
 
     // Fire event
     CallSceneEvent(SceneEventType::OnSceneSaved, scene, scene->GetID());

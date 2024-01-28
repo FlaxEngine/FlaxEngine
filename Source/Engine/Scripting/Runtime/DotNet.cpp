@@ -9,6 +9,7 @@
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Types/DateTime.h"
 #include "Engine/Core/Types/TimeSpan.h"
+#include "Engine/Core/Types/Stopwatch.h"
 #include "Engine/Core/Collections/Dictionary.h"
 #include "Engine/Platform/Platform.h"
 #include "Engine/Platform/File.h"
@@ -663,7 +664,7 @@ const MAssembly::ClassesDictionary& MAssembly::GetClasses() const
     if (_hasCachedClasses || !IsLoaded())
         return _classes;
     PROFILE_CPU();
-    const auto startTime = DateTime::NowUTC();
+    Stopwatch stopwatch;
 
 #if TRACY_ENABLE
     ZoneText(*_name, _name.Length());
@@ -698,8 +699,8 @@ const MAssembly::ClassesDictionary& MAssembly::GetClasses() const
 
     MCore::GC::FreeMemory(managedClasses);
 
-    const auto endTime = DateTime::NowUTC();
-    LOG(Info, "Caching classes for assembly {0} took {1}ms", String(_name), (int32)(endTime - startTime).GetTotalMilliseconds());
+    stopwatch.Stop();
+    LOG(Info, "Caching classes for assembly {0} took {1}ms", String(_name), stopwatch.GetMilliseconds());
 
 #if 0
     for (auto i = _classes.Begin(); i.IsNotEnd(); ++i)
@@ -768,7 +769,7 @@ bool MAssembly::LoadCorlib()
     Unload();
 
     // Start
-    const auto startTime = DateTime::NowUTC();
+    Stopwatch stopwatch;
     OnLoading();
 
     // Load
@@ -786,7 +787,7 @@ bool MAssembly::LoadCorlib()
     CachedAssemblyHandles.Add(_handle, this);
 
     // End
-    OnLoaded(startTime);
+    OnLoaded(stopwatch);
     return false;
 }
 
@@ -2051,7 +2052,7 @@ bool InitHostfxr()
 
 #ifdef USE_MONO_AOT_MODULE
     // Load AOT module
-    const DateTime aotModuleLoadStartTime = DateTime::Now();
+    Stopwatch aotModuleLoadStopwatch;
     LOG(Info, "Loading Mono AOT module...");
     void* libAotModule = Platform::LoadLibrary(TEXT(USE_MONO_AOT_MODULE));
     if (libAotModule == nullptr)
@@ -2076,7 +2077,8 @@ bool InitHostfxr()
         mono_aot_register_module((void**)modules[i]);
     }
     Allocator::Free(modules);
-    LOG(Info, "Mono AOT module loaded in {0}ms", (int32)(DateTime::Now() - aotModuleLoadStartTime).GetTotalMilliseconds());
+    aotModuleLoadStopwatch.Stop();
+    LOG(Info, "Mono AOT module loaded in {0}ms", aotModuleLoadStopwatch.GetMilliseconds());
 #endif
 
     // Setup debugger

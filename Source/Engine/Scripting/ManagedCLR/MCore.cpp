@@ -10,6 +10,7 @@
 #include "MProperty.h"
 #include "Engine/Core/Math/Math.h"
 #include "Engine/Core/Types/DateTime.h"
+#include "Engine/Core/Types/Stopwatch.h"
 #include "Engine/Core/Types/TimeSpan.h"
 #include "Engine/Platform/FileSystem.h"
 #include "Engine/Profiler/ProfilerCPU.h"
@@ -80,6 +81,7 @@ bool MAssembly::Load(const String& assemblyPath, const StringView& nativePath)
         return false;
     PROFILE_CPU();
     ZoneText(*assemblyPath, assemblyPath.Length());
+    Stopwatch stopwatch;
 
     const String* pathPtr = &assemblyPath;
     String path;
@@ -94,7 +96,6 @@ bool MAssembly::Load(const String& assemblyPath, const StringView& nativePath)
         }
     }
 
-    const auto startTime = DateTime::NowUTC();
     OnLoading();
 
     if (LoadImage(*pathPtr, nativePath))
@@ -103,7 +104,7 @@ bool MAssembly::Load(const String& assemblyPath, const StringView& nativePath)
         return true;
     }
 
-    OnLoaded(startTime);
+    OnLoaded(stopwatch);
     return false;
 }
 
@@ -173,7 +174,7 @@ void MAssembly::OnLoading()
         _domain = MCore::GetActiveDomain();
 }
 
-void MAssembly::OnLoaded(const DateTime& startTime)
+void MAssembly::OnLoaded(Stopwatch& stopwatch)
 {
     // Register in domain
     _domain->_assemblies[_name] = this;
@@ -181,8 +182,8 @@ void MAssembly::OnLoaded(const DateTime& startTime)
     _isLoaded = true;
     _isLoading = false;
 
-    const auto endTime = DateTime::NowUTC();
-    LOG(Info, "Assembly {0} loaded in {1}ms", String(_name), (int32)(endTime - startTime).GetTotalMilliseconds());
+    stopwatch.Stop();
+    LOG(Info, "Assembly {0} loaded in {1}ms", String(_name), stopwatch.GetMilliseconds());
 
     // Pre-cache classes
     GetClasses();
