@@ -84,7 +84,7 @@ namespace Flax.Build.Platforms
                 // Setup options
                 var monoAotMode = "full";
                 var monoDebugMode = options.EnableDebugSymbols ? "soft-debug" : "nodebug";
-                var aotCompilerArgs = $"--aot={monoAotMode},asmonly,verbose,stats,print-skipped,{monoDebugMode} -O=all";
+                var aotCompilerArgs = $"--aot={monoAotMode},asmonly,verbose,stats,print-skipped,{monoDebugMode} -O=float32";
                 if (options.EnableDebugSymbols || options.EnableToolDebug)
                     aotCompilerArgs = "--debug " + aotCompilerArgs;
                 var envVars = new Dictionary<string, string>();
@@ -97,13 +97,7 @@ namespace Flax.Build.Platforms
                 // Run cross-compiler compiler (outputs assembly code)
                 int result = Utilities.Run(aotCompilerPath, $"{aotCompilerArgs} \"{inputFile}\"", null, inputFileFolder, Utilities.RunOptions.AppMustExist | Utilities.RunOptions.ConsoleLogOutput, envVars);
                 if (result != 0)
-                {
-                    // Try without optimizations as a fallback
-                    aotCompilerArgs = aotCompilerArgs.Replace("-O=all", "");
-                    result = Utilities.Run(aotCompilerPath, $"{aotCompilerArgs} \"{inputFile}\"", null, inputFileFolder, Utilities.RunOptions.AppMustExist | Utilities.RunOptions.ConsoleLogOutput, envVars);
-                    if (result != 0)
-                        return true;
-                }
+                    return true;
 
                 // Get build args for iOS
                 var clangArgs = new List<string>();
