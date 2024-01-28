@@ -1179,9 +1179,13 @@ namespace FlaxEditor.Utilities
         /// <returns>the formatted string</returns>
         public static string FormatFloat(float value, FlaxEngine.Utils.ValueCategory category)
         {
+            if (!Units.UseUnitsFormatting)
+                return FormatFloat(value);
             switch (category)
             {
                 case FlaxEngine.Utils.ValueCategory.Distance:
+                    if (!Units.AutomaticUnitsFormatting)
+                        return (value / Units.Meters2Units).ToString("g7", CultureInfo.InvariantCulture) + "m";
                     var absValue = Mathf.Abs(value);
                     // in case a unit != cm this would be (value / Maters2Units * 100)
                     if (absValue < Units.Meters2Units)
@@ -1204,9 +1208,13 @@ namespace FlaxEditor.Utilities
         /// <returns>the formatted string</returns>
         public static string FormatFloat(double value, FlaxEngine.Utils.ValueCategory category)
         {
+            if (!Units.UseUnitsFormatting)
+                return FormatFloat(value);
             switch (category)
             {
             case FlaxEngine.Utils.ValueCategory.Distance:
+                if (!Units.AutomaticUnitsFormatting)
+                    return (value / Units.Meters2Units).ToString("g17", CultureInfo.InvariantCulture) + "m";
                 var absValue = Mathf.Abs(value);
                 // in case a unit != cm this would be (value / Maters2Units * 100)
                 if (absValue < Units.Meters2Units)
