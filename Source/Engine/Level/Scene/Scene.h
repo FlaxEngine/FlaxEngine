@@ -33,16 +33,6 @@ public:
     SceneInfo Info;
 
     /// <summary>
-    /// The last load time.
-    /// </summary>
-    DateTime LoadTime;
-
-    /// <summary>
-    /// The last save time.
-    /// </summary>
-    DateTime SaveTime;
-
-    /// <summary>
     /// The scene rendering manager.
     /// </summary>
     SceneRendering Rendering;

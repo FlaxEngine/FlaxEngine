@@ -925,7 +925,6 @@ bool Level::loadScene(rapidjson_flax::Value& data, int32 engineBuild, Scene** ou
     // Create scene actor
     // Note: the first object in the scene file data is a Scene Actor
     auto scene = New<Scene>(ScriptingObjectSpawnParams(sceneId, Scene::TypeInitializer));
-    scene->LoadTime = startTime;
     scene->RegisterObject();
     scene->Deserialize(data[0], modifier.Value);
 
@@ -1114,7 +1113,6 @@ bool LevelImpl::saveScene(Scene* scene, const String& path)
 
     LOG(Info, "Saving scene {0} to \'{1}\'", scene->GetName(), path);
     const DateTime startTime = DateTime::NowUTC();
-    scene->SaveTime = startTime;
 
     // Serialize to json
     rapidjson_flax::StringBuffer buffer;
@@ -1215,7 +1213,6 @@ bool Level::SaveSceneToBytes(Scene* scene, rapidjson_flax::StringBuffer& outData
 
     LOG(Info, "Saving scene {0} to bytes", scene->GetName());
     const DateTime startTime = DateTime::NowUTC();
-    scene->SaveTime = startTime;
 
     // Serialize to json
     if (saveScene(scene, outData, prettyJson))
