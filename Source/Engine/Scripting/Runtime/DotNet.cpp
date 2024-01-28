@@ -1876,11 +1876,7 @@ void OnLogCallback(const char* logDomain, const char* logLevel, const char* mess
 	}
 #endif
 
-    if (errorLevel == 0)
-    {
-        Log::CLRInnerException(String::Format(TEXT("Message: {0} | Domain: {1}"), msg, currentDomain)).SetLevel(LogType::Error);
-    }
-    else if (errorLevel <= 2)
+    if (errorLevel <= 2)
     {
         Log::CLRInnerException(String::Format(TEXT("Message: {0} | Domain: {1}"), msg, currentDomain)).SetLevel(LogType::Error);
     }
