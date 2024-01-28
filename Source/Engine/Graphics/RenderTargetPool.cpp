@@ -4,6 +4,7 @@
 #include "GPUDevice.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Engine/Engine.h"
+#include "Engine/Profiler/ProfilerCPU.h"
 
 struct Entry
 {
@@ -20,9 +21,11 @@ namespace
 
 void RenderTargetPool::Flush(bool force, int32 framesOffset)
 {
+    PROFILE_CPU();
     if (framesOffset < 0)
         framesOffset = 3 * 60; // For how many frames RTs should be cached (by default)
-    const uint64 maxReleaseFrame = Engine::FrameCount - framesOffset;
+    const uint64 frameCount = Engine::FrameCount;
+    const uint64 maxReleaseFrame = frameCount - Math::Min<uint64>(frameCount, framesOffset);
     force |= Engine::ShouldExit();
 
     for (int32 i = 0; i < TemporaryRTs.Count(); i++)
@@ -40,6 +43,8 @@ void RenderTargetPool::Flush(bool force, int32 framesOffset)
 
 GPUTexture* RenderTargetPool::Get(const GPUTextureDescription& desc)
 {
+    PROFILE_CPU();
+
     // Find free render target with the same properties
     const uint32 descHash = GetHash(desc);
     for (int32 i = 0; i < TemporaryRTs.Count(); i++)
@@ -85,7 +90,6 @@ void RenderTargetPool::Release(GPUTexture* rt)
 {
     if (!rt)
         return;
-
     for (int32 i = 0; i < TemporaryRTs.Count(); i++)
     {
         auto& e = TemporaryRTs[i];
@@ -98,6 +102,5 @@ void RenderTargetPool::Release(GPUTexture* rt)
             return;
         }
     }
-
     LOG(Error, "Trying to release temporary render target which has not been registered in service!");
 }

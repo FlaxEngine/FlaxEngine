@@ -63,19 +63,15 @@ class FenceVulkan
     friend FenceManagerVulkan;
 
 private:
-
     VkFence _handle;
     bool _signaled;
     FenceManagerVulkan* _owner;
 
 public:
-
     FenceVulkan(GPUDeviceVulkan* device, FenceManagerVulkan* owner, bool createSignaled);
-
     ~FenceVulkan();
 
 public:
-
     inline VkFence GetHandle() const
     {
         return _handle;
@@ -220,7 +216,7 @@ public:
         EnqueueGenericResource(type, (uint64)handle, allocation);
     }
 
-    auto ReleaseResources(bool deleteImmediately = false) -> void;
+    void ReleaseResources(bool deleteImmediately = false);
 
 private:
 
@@ -629,11 +625,9 @@ public:
         // Try to use pool with available space inside
         for (int32 i = 0; i < pools.Count(); i++)
         {
-            auto pool = pools[i];
+            auto pool = pools.Get()[i];
             if (pool->HasRoom())
-            {
                 return pool;
-            }
         }
 
         // Create new pool

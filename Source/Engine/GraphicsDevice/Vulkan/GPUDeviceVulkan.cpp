@@ -356,14 +356,12 @@ DeferredDeletionQueueVulkan::~DeferredDeletionQueueVulkan()
 
 void DeferredDeletionQueueVulkan::ReleaseResources(bool deleteImmediately)
 {
-    ScopeLock lock(_locker);
     const uint64 checkFrame = Engine::FrameCount - VULKAN_RESOURCE_DELETE_SAFE_FRAMES_COUNT;
+    ScopeLock lock(_locker);
     for (int32 i = 0; i < _entries.Count(); i++)
     {
-        Entry* e = &_entries[i];
-
-        if (deleteImmediately || (checkFrame > e->FrameNumber && (e->CmdBuffer == nullptr || e->FenceCounter < e->CmdBuffer->GetFenceSignaledCounter()))
-        )
+        Entry* e = &_entries.Get()[i];
+        if (deleteImmediately || (checkFrame > e->FrameNumber && (e->CmdBuffer == nullptr || e->FenceCounter < e->CmdBuffer->GetFenceSignaledCounter())))
         {
             if (e->AllocationHandle == VK_NULL_HANDLE)
             {
@@ -402,14 +400,15 @@ void DeferredDeletionQueueVulkan::ReleaseResources(bool deleteImmediately)
                 {
                     vmaDestroyBuffer(_device->Allocator, (VkBuffer)e->Handle, e->AllocationHandle);
                 }
+#if !BUILD_RELEASE
                 else
                 {
                     CRASH;
                 }
+#endif
             }
 
             _entries.RemoveAt(i--);
-
             if (_entries.IsEmpty())
                 break;
         }
@@ -418,19 +417,17 @@ void DeferredDeletionQueueVulkan::ReleaseResources(bool deleteImmediately)
 
 void DeferredDeletionQueueVulkan::EnqueueGenericResource(Type type, uint64 handle, VmaAllocation allocation)
 {
-    ASSERT(handle != 0);
-    const auto queue = _device->GraphicsQueue;
+    ASSERT_LOW_LAYER(handle != 0);
 
     Entry entry;
-    queue->GetLastSubmittedInfo(entry.CmdBuffer, entry.FenceCounter);
+    _device->GraphicsQueue->GetLastSubmittedInfo(entry.CmdBuffer, entry.FenceCounter);
     entry.Handle = handle;
     entry.AllocationHandle = allocation;
     entry.StructureType = type;
     entry.FrameNumber = Engine::FrameCount;
 
     ScopeLock lock(_locker);
-
-#if BUILD_DEBUG
+#if BUILD_DEBUG && 0
     const Function<bool(const Entry&)> ContainsHandle = [handle](const Entry& e)
     {
         return e.Handle == handle;
