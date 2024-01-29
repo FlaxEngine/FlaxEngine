@@ -7,7 +7,7 @@
 /// <summary>
 /// Visability flags
 /// </summary>
-API_ENUM(Namespace = "FlaxEngine.Experimental.UI")
+API_ENUM(Namespace = "FlaxEngine.Experimental.UI", Attributes = "System.Flags")
 enum UIComponentVisibility
 {
     //-------------DONT EDIT VALUES OR ADD ANY----------
@@ -25,15 +25,15 @@ enum UIComponentVisibility
     /// </summary>
     Hiden = 1,
     /// <summary>
-    /// if Events will fire on this 
+    /// Ignores the raycast on self
     /// </summary>
-    HitSelf = 2,
+    IgnoreRaycastSelf = 2,
     /// <summary>
-    /// if Events will fire on children
+    /// Ignres raycast on choldren
     /// </summary>
-    HitChildren = 4,
+    IgnoreRaycastChildren = 4,
     /// <summary>
-    /// not visible not hittable and takes up no space in the UI
+    /// takes up no space in the UI [Hiden | IgnoreRaycastSelf | IgnoreRaycastChildren]
     /// </summary>
-    Collapsed = 8
+    Collapsed = Hiden | IgnoreRaycastSelf | IgnoreRaycastChildren
 };

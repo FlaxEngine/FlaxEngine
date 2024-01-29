@@ -7,41 +7,76 @@ using System;
 using FlaxEngine.Json;
 using System.Text;
 using FlaxEngine.Experimental.UI.Editor;
+using FlaxEngine.GUI;
+using FlaxEditor.Windows;
+using FlaxEditor.CustomEditors;
+
 namespace FlaxEditor.Experimental.UI
 {
+    internal class UITransformationTool : UIBlueprint 
+    {
+        UIButton LeftHandle;
+        UIButton RightHandle;
+        UIButton TopHandle;
+        UIButton TopRightHandle;
+        UIButton TopLeftHandle;
+        UIButton BottomHandle;
+        UIButton BottomLeftHandle;
+        UIButton BottomRightHandle;
+        protected override void OnInitialized()
+        {
+            LeftHandle        = GetVariable<UIButton>("LeftHandle");
+            RightHandle       = GetVariable<UIButton>("RightHandle");
+            TopHandle         = GetVariable<UIButton>("TopHandle");
+            TopRightHandle    = GetVariable<UIButton>("TopRightHandle");
+            TopLeftHandle     = GetVariable<UIButton>("TopLeftHandle");
+            BottomHandle      = GetVariable<UIButton>("BottomHandle");
+            BottomLeftHandle  = GetVariable<UIButton>("BottomLeftHandle");
+            BottomRightHandle = GetVariable<UIButton>("BottomRightHandle");
+        }
+    }
+
+
     internal class UIDesignerEditor : AssetEditorWindow
     {
-
         (Type,UIDesignerAttribute)[] Attributes;
+        CustomEditorPresenter Presenter;
 
-
-        private UIBlueprintAsset _asset;
+        private UIBlueprint EditedBluprint;
         private NativeUIHost UITransformationTool;
         ToolStripButton _saveButton;
         ToolStripButton _addComponentButton;
 
+        UIBlueprint TransformationTool;
         public UIDesignerEditor(Editor editor, UIBlueprintAssetItem item) : base(editor, item)
         {
-            var _UITransformationToolAsset = FlaxEngine.Content.LoadAsyncInternal<UIBlueprintAsset>("Editor\\UI\\UITransformationTool.json");
-            _UITransformationToolAsset.WaitForLoaded();
-            _asset = FlaxEngine.Content.Load<UIBlueprintAsset>(item.Path);
+            TransformationTool = UISystem.LoadEditorBlueprintAsset("Editor\\UI\\UITransformationTool.json");
+            EditedBluprint = UISystem.CreateFromBlueprintAsset(FlaxEngine.Content.Load<UIBlueprintAsset>(item.Path));
+            Presenter = new CustomEditorPresenter(editor.Undo, null, null);
+            Presenter.Panel.Parent = this;
+            
+
             // Toolstrip
             _saveButton = (ToolStripButton)_toolstrip.AddButton(editor.Icons.Save64, Save).LinkTooltip("Save");
             _addComponentButton = (ToolStripButton)_toolstrip.AddButton(editor.Icons.Folder32, AddComponent).LinkTooltip("Add Component");
             _toolstrip.AddSeparator();
+            AddChild<Label>();
             NativeUIHost host = AddChild<NativeUIHost>();
             host.AnchorPreset = FlaxEngine.GUI.AnchorPresets.StretchAll;
-            host.Asset = _asset;
+            host.Blueprint = EditedBluprint;
             host.Height -= _toolstrip.Size.Y;
             host.Location = new Float2(Location.X, _toolstrip.Size.Y);
 
             UITransformationTool = AddChild<NativeUIHost>();
             UITransformationTool.AnchorPreset = FlaxEngine.GUI.AnchorPresets.StretchAll;
-            UITransformationTool.PanelComponent = _UITransformationToolAsset.CreateInstance() as UIPanelComponent;
+            UITransformationTool.Blueprint = TransformationTool;
             UITransformationTool.Height -= _toolstrip.Size.Y;
             UITransformationTool.Location = new Float2(Location.X, _toolstrip.Size.Y);
 
-            
+            TransformationTool.SetDesinerFlags(UIComponentDesignFlags.None);
+
+
+
             //System.Linq madnes :D
             Attributes = typeof(UIComponent).Assembly.GetTypes().
                 Where(t => t.IsSubclassOf(typeof(UIComponent)) && !t.IsAbstract).
@@ -52,49 +87,50 @@ namespace FlaxEditor.Experimental.UI
                         return (t,(UIDesignerAttribute)o[0]);
                     return (t, null);
                 }).Where(t => t.Item2 != null).ToArray();
-            
-            UIBlueprintAsset.SetDesinerFlags(_asset.Component, UIComponentDesignFlags.Designing);
+
+            EditedBluprint.SetDesinerFlags(UIComponentDesignFlags.Designing);
         }
         public void AddComponent()
         {
-            if(_asset.Component == null)
+            if (EditedBluprint.Component == null)
             {
                 var rootcomp = new UIPanelComponent();
-                UIBlueprintAsset.SetDesinerFlags(rootcomp, UIComponentDesignFlags.Designing);
-                _asset.Component = rootcomp;
+                UISystem.SetDesinerFlags(rootcomp, UIComponentDesignFlags.Designing);
+                EditedBluprint.Component = rootcomp;
                 rootcomp.CreatedByUIBlueprint = true;
                 return;
             }
             var comp = new UIComponent();
-            UIBlueprintAsset.SetDesinerFlags(comp, UIComponentDesignFlags.Designing);
-            (_asset.Component as UIPanelComponent)?.AddChild(comp);
+            UISystem.SetDesinerFlags(comp, UIComponentDesignFlags.Designing);
+            (EditedBluprint.Component as UIPanelComponent)?.AddChild(comp);
             comp.CreatedByUIBlueprint = true;
         }
         public override void Save()
         {
-            if (_asset.Save(_item.Path))
-            {
-                Editor.LogError("Cannot save asset.");
-                return;
-            }
+            UISystem.SaveBlueprint(EditedBluprint);
             ClearEditedFlag();
         }
-        Vector2 mouseloc;
-        Vector2 Offset;
-        bool Drag;
-        bool Resize;
-        UIComponent Selection;
+        Data dat = new Data();
+        struct Data 
+        {
+            public Vector2 mouseloc;
+            public Vector2 Offset;
+            public bool Drag;
+            public bool Resize;
+            public UIComponent Selection;
+        }
         private void SetSelection(UIComponent NewSelection)
         {
-            if (Selection != null)
-                Selection.Deselect();
-            Selection = NewSelection;
-            if (Selection != null)
+            if (dat.Selection != null)
+                dat.Selection.Deselect();
+            dat.Selection = NewSelection;
+            if (dat.Selection != null)
             {
-                Selection.Select();
-                Offset = mouseloc - Selection.Translation;
-                UITransformationTool.PanelComponent.Transform = Selection.Transform;
-                Drag = true;
+                dat.Selection.Select();
+                dat.Offset = dat.mouseloc - dat.Selection.Translation;
+                UITransformationTool.PanelComponent.Transform = dat.Selection.Transform;
+                dat.Drag = true;
+                Presenter.Select(dat.Selection);
             }
         }
 
@@ -102,13 +138,14 @@ namespace FlaxEditor.Experimental.UI
         {
             if (button == MouseButton.Left)
             {
-                mouseloc = location - new Float2(0, _toolstrip.Size.Y);
+                dat.mouseloc = location - new Float2(0, _toolstrip.Size.Y);
 
-                SelectElement(_asset.Component, mouseloc);
+                SelectElement(EditedBluprint.Component, dat.mouseloc);
+                
             }
-            if(Selection != null && button == MouseButton.Right) 
+            if(dat.Selection != null && button == MouseButton.Right) 
             {
-                Resize = true;
+                dat.Resize = true;
             }
             return base.OnMouseDown(location, button);
         }
@@ -119,7 +156,7 @@ namespace FlaxEditor.Experimental.UI
             if (comp == null)
                 return false;
 
-            if (comp.Contains(location) && Selection != comp && !comp.IsLockedInDesigner())
+            if (comp.Contains(location) && dat.Selection != comp && !comp.IsLockedInDesigner())
             {
                 SetSelection(comp);
                 GotSelection = true;
@@ -129,7 +166,7 @@ namespace FlaxEditor.Experimental.UI
                 var children = panelComponent.GetAllChildren();
                 for (int i = 0; i < children.Length; i++)
                 {
-                    if (children[i].Contains(location) && Selection != children[i] && !children[i].IsLockedInDesigner())
+                    if (children[i].Contains(location) && dat.Selection != children[i] && !children[i].IsLockedInDesigner())
                     {
                         if (SelectElement(children[i], location))
                         {
@@ -150,21 +187,22 @@ namespace FlaxEditor.Experimental.UI
         {
             if (button == MouseButton.Left)
             {
-                Drag = false;
-                Resize = false;
+                dat.Drag = false;
+                dat.Resize = false;
             }
             if(button == MouseButton.Right)
             {
-                Resize = false;
+                dat.Resize = false;
             }
             return base.OnMouseUp(location, button);
         }
         public override void OnMouseMove(Float2 location)
         {
-            if (Selection != null && Drag)
+            
+            dat.mouseloc = (location - new Float2(0, _toolstrip.Size.Y)) - dat.Offset;
+            if (dat.Selection != null && dat.Drag)
             {
-                mouseloc = (location - new Float2(0, _toolstrip.Size.Y)) - Offset;
-                Selection.Translation = mouseloc;
+                dat.Selection.Translation = dat.mouseloc;
                 Debug.Log("Got selection");
             }
             base.OnMouseMove(location);

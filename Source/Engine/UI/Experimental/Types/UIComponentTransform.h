@@ -33,23 +33,23 @@ private:
     /// <summary>
     /// the Rectangle Constans Translation and Size
     /// </summary>
-    API_FIELD() Rectangle Rect;
+    API_FIELD(Attributes = "HideInEditor, NoSerialize") Rectangle Rect;
 
     /// <summary>
     /// The amount to shear the UIComponent
     /// </summary>
-    API_FIELD() Vector2 Shear;
+    API_FIELD(Attributes = "HideInEditor, NoSerialize") Vector2 Shear;
 
     /// <summary>
     /// The angle in degrees to rotate
     /// </summary>
-    API_FIELD() float Angle;
+    API_FIELD(Attributes = "HideInEditor, NoSerialize") float Angle;
 
     /// <summary>
     /// The render transform pivot controls the location about which transforms are applied.
     /// This value is a normalized coordinate about which things like rotations will occur.
     /// </summary>
-    API_FIELD() Vector2 Pivot;
+    API_FIELD(Attributes = "HideInEditor, NoSerialize") Vector2 Pivot;
 public:
     /// <summary>
     /// Initializes a new instance of the <see cref="UIComponentTransform"/> struct.

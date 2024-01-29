@@ -197,12 +197,13 @@ bool UIPanelComponent::CanAddMoreChildren() const
 
 void UIPanelComponent::Layout(const Rectangle& InNewBounds)
 {
-    Vector2 locationDiff = GetTranslation() - InNewBounds.Location;
+    Vector2 locationDiff = InNewBounds.Location - GetTranslation();
     for (auto i = 0; i < Slots.Count(); i++)
     {
         Rectangle& newr = Rectangle(Slots[i]->Content->GetTranslation()+ locationDiff, Slots[i]->Content->GetSize());
         Slots[i]->Layout(newr);
     }
+    SetRect_Internal(InNewBounds);
 }
 void UIPanelComponent::Layout(const Rectangle& InSlotOldBounds, UIPanelSlot* InFor)
 {

@@ -75,9 +75,7 @@ namespace FlaxEditor.Experimental.UI
         public override void Create(string outputPath, object arg)
         {
             var asset = FlaxEngine.Content.CreateVirtualAsset<UIBlueprintAsset>();
-            asset.Component = new UIPanelComponent();
             Editor.SaveJsonAsset(outputPath, asset);
-            //Asset.Destroy(asset);
         }
     }
 }

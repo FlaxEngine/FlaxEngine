@@ -21,7 +21,7 @@
 /// <summary>
 /// Base class for any UI element
 /// </summary>
-API_CLASS(Namespace = "FlaxEngine.Experimental.UI",Attributes = "UIDesigner(DisplayLabel=\"DisplayLabel\",CategoryName=\"CategoryName\",EditorComponent=true,HiddenInDesigner=true)")
+API_CLASS(Namespace = "FlaxEngine.Experimental.UI",Attributes = "UIDesigner(DisplayLabel=\"UI Component\",CategoryName=\"Unkown\",EditorComponent=false,HiddenInDesigner=true)")
 class FLAXENGINE_API UIComponent : public ScriptingObject, public ISerializable
 {
     DECLARE_SCRIPTING_TYPE(UIComponent);
@@ -35,7 +35,13 @@ private:
     /// <summary>
     /// name of UIComponent can be empty
     /// </summary>
-    String Label;
+    API_FIELD(public) String Label;
+
+    /// <summary>
+    /// Allows controls to be exposed as variables in a UIBlueprint.  Not all controls need to be exposed
+    /// as variables, so this allows only the most useful ones to end up being exposed.
+    /// </summary>
+    API_FIELD(public) bool IsVariable = true;
 
     /// <summary>
     /// Sets whether this UI Component can be modified interactively by the user
@@ -43,11 +49,12 @@ private:
     bool IsEnabled = true;
 protected:
     friend class UIPanelSlot;
+    void SetRect_Internal(const Rectangle& InRectangle);
+//private:
     /// <summary>
     /// The transform of the UI Component allows for arbitrary 2D transforms to be applied to the UI Component.
     /// </summary>
     UIComponentTransform Transform;
-private:
     /// <summary>
     /// The visibility of the UI Component
     /// </summary>
@@ -67,12 +74,6 @@ private:
     API_FIELD(internal) bool IsVolatile = false;
 
     /// <summary>
-    /// Allows controls to be exposed as variables in a UIBlueprint.  Not all controls need to be exposed
-    /// as variables, so this allows only the most useful ones to end up being exposed.
-    /// </summary>
-    API_FIELD(internal) bool IsVariable = true;
-
-    /// <summary>
     /// Flag if the UI Component was created from a UIBlueprint
     /// </summary>
     API_FIELD(internal) bool CreatedByUIBlueprint = false;
@@ -88,7 +89,7 @@ private:
     /// </summary>
     API_FIELD(internal) float RenderOpacity;
 public:
-
+    
     /// <summary>
     /// Controls how the clipping behavior of this UI Component.                           
     /// Normally content that overflows the bounds of the UI Component continues rendering.
@@ -103,39 +104,39 @@ public:
     /// Gets the transform.
     /// </summary>
     /// <returns></returns>
-    API_PROPERTY() const UIComponentTransform& GetTransform() const;
+    API_PROPERTY(Attributes = "HideInEditor, NoSerialize") const UIComponentTransform& GetTransform() const;
     
     /// <summary>
     /// Gets Y coordinate of the top edge of the rectangle
     /// </summary>
     /// <returns></returns>
-    API_PROPERTY() float GetTop() const;
+    API_PROPERTY(Attributes = "NoSerialize") float GetTop() const;
 
     /// <summary>
     /// Gets Y coordinate of the bottom edge of the rectangle
     /// </summary>
     /// <returns></returns>
-    API_PROPERTY() float GetBottom() const;
+    API_PROPERTY(Attributes = "NoSerialize") float GetBottom() const;
     
     /// <summary>
     /// Gets X coordinate of the left edge of the rectangle
     /// </summary>
     /// <returns></returns>
-    API_PROPERTY() float GetLeft() const;
+    API_PROPERTY(Attributes = "NoSerialize") float GetLeft() const;
     
     /// <summary>
     /// Gets X coordinate of the right edge of the rectangle
     /// </summary>
     /// <returns></returns>
-    API_PROPERTY() float GetRight() const;
+    API_PROPERTY(Attributes = "NoSerialize") float GetRight() const;
 
     /// <summary>
     /// Gets center position of the rectangle
     /// </summary>
     /// <returns>Center point</returns>
-    API_PROPERTY() Float2 GetCenter() const;
+    API_PROPERTY(Attributes = "NoSerialize") Float2 GetCenter() const;
 
-    API_PROPERTY() const Rectangle& GetRect() const;
+    API_PROPERTY(Attributes = "HideInEditor, NoSerialize") const Rectangle& GetRect() const;
 
     /// <summary>
     /// Gets the translation.
@@ -200,43 +201,43 @@ public:
     /// </summary>
     /// <param name="InTransform">The in transform.</param>
     /// <returns></returns>
-    API_PROPERTY() void SetTransform(const UIComponentTransform& InTransform);
+    API_PROPERTY(Attributes = "HideInEditor, NoSerialize") void SetTransform(const UIComponentTransform& InTransform);
 
     /// <summary>
     /// Sets the rect.
     /// </summary>
     /// <param name="InRectangle">The in rectangle.</param>
-    API_PROPERTY() void SetRect(const Rectangle& InRectangle);
+    API_PROPERTY(Attributes = "HideInEditor, NoSerialize") void SetRect(const Rectangle& InRectangle);
 
     /// <summary>
     /// Sets the center.
     /// </summary>
     /// <param name="value">The value.</param>
-    API_PROPERTY() void SetCenter(const Float2& value);
+    API_PROPERTY(Attributes = "NoSerialize") void SetCenter(const Float2& value);
 
     /// <summary>
     /// Sets the top.
     /// </summary>
     /// <param name="value">The value.</param>
-    API_PROPERTY() void SetTop(float value);
+    API_PROPERTY(Attributes = "NoSerialize") void SetTop(float value);
 
     /// <summary>
     /// Sets the left.
     /// </summary>
     /// <param name="value">The value.</param>
-    API_PROPERTY() void SetLeft(float value);
+    API_PROPERTY(Attributes = "NoSerialize") void SetLeft(float value);
 
     /// <summary>
     /// Sets the bottom.
     /// </summary>
     /// <param name="value">The value.</param>
-    API_PROPERTY() void SetBottom(float value);
+    API_PROPERTY(Attributes = "NoSerialize") void SetBottom(float value);
 
     /// <summary>
     /// Sets the right.
     /// </summary>
     /// <param name="value">The value.</param>
-    API_PROPERTY() void SetRight(float value);
+    API_PROPERTY(Attributes = "NoSerialize") void SetRight(float value);
 
     /// <summary>
     /// Sets the translation.
@@ -362,6 +363,8 @@ public:
 
 #if USE_EDITOR
 private:
+    friend class UISystem;
+
     /// <summary>
     /// Any flags used by the designer at edit time.
     /// </summary>
@@ -505,9 +508,7 @@ protected:
 protected:
     void DrawInternal();
 protected:
-    // UIBlueprintAsset stuff
-
-    friend class UIBlueprintAsset;
+    friend class UIBlueprint;
     FORCE_INLINE int GetCompactedFlags();
     void Serialize(SerializeStream& stream, const void* otherObj) override;
     void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) override;

@@ -23,7 +23,7 @@ UIComponent::UIComponent(const SpawnParams& params) : ScriptingObject(params)
     sizeof(UIComponent);
     //flags
     IsEnabled = true;
-    Visibility = (UIComponentVisibility)(Visible | HitSelf);
+    Visibility = Visible;
     IsVariable = false;
     IsVolatile = false;
     OverrideCursor = false;
@@ -161,7 +161,14 @@ void UIComponent::SetRect(const Rectangle& InRectangle)
         Transform.UpdateTransform();
     }
 }
-
+void UIComponent::SetRect_Internal(const Rectangle& InRectangle)
+{
+    Transform.Rect = InRectangle;
+    if (!IsVolatile)
+    {
+        Transform.UpdateTransform();
+    }
+}
 void UIComponent::SetClipping(const UIComponentClipping& InClipping)
 {
     Clipping = InClipping;
@@ -308,7 +315,7 @@ bool UIComponent::IsRendered() const
 
 bool UIComponent::IsVisible() const
 {
-    return EnumHasAnyFlags(Visibility,(UIComponentVisibility)(Visible | HitChildren | HitSelf));
+    return !EnumHasAnyFlags(Visibility,(UIComponentVisibility)(Hiden));
 }
 
 UIPanelComponent* UIComponent::GetParent() const

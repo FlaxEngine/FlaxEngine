@@ -176,7 +176,7 @@ protected:
 protected:
     friend class UIComponent;
     friend class UIPanelSlot;
-    friend class UIBlueprintAsset;
+    friend class UIBlueprint;
 
     /// <summary>
     /// Can this panel allow for multiple children?

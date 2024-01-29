@@ -33,7 +33,7 @@ public:
 #endif
 protected:
     friend class UIPanelComponent;
-    friend class UIBlueprintAsset;
+    friend class UISystem;
     virtual void Layout(const Rectangle& InSlotNewBounds);
 
     void Serialize(SerializeStream& stream, const void* otherObj) override;

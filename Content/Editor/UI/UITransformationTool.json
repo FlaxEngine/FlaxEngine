@@ -3,47 +3,65 @@
 	"TypeName": "FlaxEngine.UIBlueprintAsset",
 	"EngineBuild": 6407,
 	"Data": {
+	"UIBlueprint": "FlaxEditor.Experimental.UI.UITransformationTool",
 	"TypeNames": [
 		"FlaxEngine.Experimental.UI.UIPanelComponent",
-		"FlaxEngine.Experimental.UI.UIComponent"
+		"FlaxEngine.Experimental.UI.UIButton"
 	],
 	"Tree": {
-	"ID": 0,
-	"Transform": "AADZQwAAZ0MAAGFEAAAERAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-	"Slots": [
-		{
-			"ID": 1,
-			"Transform": "AACnQwCA2EMAAMhCAADIQgAAAAAAAAAAAAAAAAAAAAAAAAAA"
-		},
-		{
-			"ID": 1,
-			"Transform": "AMBORAAAA0MAAMhCAADIQgAAAAAAAAAAAAAAAAAAAAAAAAAA"
-		},
-		{
-			"ID": 1,
-			"Transform": "AACmQwAAAkMAAMhCAADIQgAAAAAAAAAAAAAAAAAAAAAAAAAA"
-		},
-		{
-			"ID": 1,
-			"Transform": "AKCmRAAAA0MAAMhCAADIQgAAAAAAAAAAAAAAAAAAAAAAAAAA"
-		},
-		{
-			"ID": 1,
-			"Transform": "AMCmRAAA2kMAAMhCAADIQgAAAAAAAAAAAAAAAAAAAAAAAAAA"
-		},
-		{
-			"ID": 1,
-			"Transform": "AIBRRACAPUQAAMhCAADIQgAAAAAAAAAAAAAAAAAAAAAAAAAA"
-		},
-		{
-			"ID": 1,
-			"Transform": "AACoQwBAPUQAAMhCAADIQgAAAAAAAAAAAAAAAAAAAAAAAAAA"
-		},
-		{
-			"ID": 1,
-			"Transform": "AKCmRADAPUQAAMhCAADIQgAAAAAAAAAAAAAAAAAAAAAAAAAA"
-		}
-	]
-}
+		"ID": 0,
+		"Flags": 136,
+		"Transform": "AADqQwCA3UMAAMhDAADIQwAAAAAAAAAAAAAAAAAAAAAAAAAA",
+		"Slots": [
+			{
+				"ID": 1,
+				"Label": "LeftHandle",
+				"Flags": 10,
+				"Transform": "AADgQwCAIEQAAKBBAACgQQAAAAAAAAAAAAAAAAAAAAAAAAAA"
+			},
+			{
+				"ID": 1,
+				"Label": "TopRightHandle",
+				"Flags": 10,
+				"Transform": "AABZRACA1EMAAKBBAACgQQAAAAAAAAAAAAAAAAAAAAAAAAAA"
+			},
+			{
+				"ID": 1,
+				"Label": "TopLeftHandle",
+				"Flags": 10,
+				"Transform": "AADgQwCA1EMAAKBBAACgQQAAAAAAAAAAAAAAAAAAAAAAAAAA"
+			},
+			{
+				"ID": 1,
+				"Label": "TopHandle",
+				"Flags": 10,
+				"Transform": "AAAnRACA00MAAKBBAACgQQAAAAAAAAAAAAAAAAAAAAAAAAAA"
+			},
+			{
+				"ID": 1,
+				"Label": "RightHandle",
+				"Flags": 10,
+				"Transform": "AABZRACAIkQAAKBBAACgQQAAAAAAAAAAAAAAAAAAAAAAAAAA"
+			},
+			{
+				"ID": 1,
+				"Label": "BottomHandle",
+				"Flags": 10,
+				"Transform": "AEAkRACAUkQAAKBBAACgQQAAAAAAAAAAAAAAAAAAAAAAAAAA"
+			},
+			{
+				"ID": 1,
+				"Label": "BottomLeftHandle",
+				"Flags": 10,
+				"Transform": "AIDfQwDAUUQAAKBBAACgQQAAAAAAAAAAAAAAAAAAAAAAAAAA"
+			},
+			{
+				"ID": 1,
+				"Label": "BottomRightHandle",
+				"Flags": 10,
+				"Transform": "AABZRACAUkQAAKBBAACgQQAAAAAAAAAAAAAAAAAAAAAAAAAA"
+			}
+		]
+	}
 }
 }

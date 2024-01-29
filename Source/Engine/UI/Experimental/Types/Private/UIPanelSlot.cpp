@@ -6,14 +6,13 @@
 #include "Engine/UI/Experimental/Types/UIComponent.h"
 #include "Engine/UI/Experimental/Types/UIPanelComponent.h"
 
-UIPanelSlot::UIPanelSlot(const SpawnParams& params) : ScriptingObject(params) {}
+UIPanelSlot::UIPanelSlot(const SpawnParams& params) : ScriptingObject(params) , Content(nullptr) , Parent(nullptr) {}
 
 FORCE_INLINE bool UIPanelSlot::IsDesignTime() const {   return Parent->IsDesignTime();  }
 
 void UIPanelSlot::Layout(const Rectangle& InNewBounds)
 {
-    Content->Transform.Rect = InNewBounds;
-    Content->Transform.UpdateTransform();
+    Content->SetRect_Internal(InNewBounds);
 }
 
 void UIPanelSlot::Serialize(SerializeStream& stream, const void* otherObj)

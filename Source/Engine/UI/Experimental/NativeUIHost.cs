@@ -14,11 +14,41 @@ namespace FlaxEngine.Experimental.UI
     /// <seealso cref="FlaxEngine.GUI.Control" />
     public class NativeUIHost : Control
     {
+        UIBlueprintAsset m_Asset;
+        UIBlueprint m_Blueprint;
+
         /// <summary>
-        /// The panel component
+        /// Gets or sets the blueprint.
         /// </summary>
-        [EditorOrder(0)]
-        public UIBlueprintAsset Asset;
+        /// <value>
+        /// The blueprint.
+        /// </value>
+        [EditorOrder(0), NoSerialize]
+        public UIBlueprint Blueprint
+        {
+            get => m_Blueprint;
+            set
+            {
+                m_Blueprint = value;
+                PanelComponent = m_Blueprint.Component as UIPanelComponent;
+            }
+        }
+        /// <summary>
+        /// Gets or sets the asset.
+        /// </summary>
+        /// <value>
+        /// The asset.
+        /// </value>
+        [EditorOrder(1)]
+        public UIBlueprintAsset Asset 
+        { 
+            get => m_Asset;
+            set 
+            { 
+                m_Asset = value;
+                Blueprint = UISystem.CreateFromBlueprintAsset(m_Asset);
+            } 
+        }
 
         /// <summary>
         /// The panel component
@@ -39,33 +69,7 @@ namespace FlaxEngine.Experimental.UI
             PanelComponent?.Render();
             base.Draw();
         }
-        /// <inheritdoc />
-        public override void PerformLayout(bool force = false)
-        {
-            if (PanelComponent != null)
-            {
-                //fore update layout on c++ side
-                PanelComponent.Transform = PanelComponent.Transform;
-            }
-            base.PerformLayout(force);
-        }
-        /// <inheritdoc />
-        public override void Update(float deltaTime)
-        {
-            if (PanelComponent != null)
-            {
-            }
-            else if (Asset != null)
-            {
-                if (Asset.IsLoaded)
-                {
-                    if (Asset.Component != null)
-                    {
-                        PanelComponent = (UIPanelComponent)Asset.Component;
-                    }
-                }
-            }
-        }
+
         /// <summary>
         /// The focused
         /// </summary>
@@ -84,9 +88,12 @@ namespace FlaxEngine.Experimental.UI
         public List<Float2> Locations = new List<Float2>();
         void SendPointerEvent(Float2 point, int id, InputActionState state)
         {
+            if (PanelComponent == null)
+                return;
+
             if (PanelComponent.DesignerFlags == Editor.UIComponentDesignFlags.None)
             {
-                if (Locations.Count < id)
+                if (Locations.Count <= id)
                 {
                     Locations.Add(point);
                 }
@@ -96,11 +103,16 @@ namespace FlaxEngine.Experimental.UI
                     {
                         Locations.RemoveAt(id);
                     }
+                    else
+                    {
+                        Locations[id] = point;
+                    }
                 }
+                pointerEvent.State = state;
                 pointerEvent.Locations = Locations.ToArray();
                 if (focused == null)
                 {
-                    UIBlueprintAsset.SendEvent(PanelComponent, pointerEvent, out var hit, out var response);
+                    var response = Blueprint.SendEvent(pointerEvent, out var hit);
                     if (response.HasFlag(UIEventResponse.Focus))
                     {
                         focused = hit;
@@ -121,6 +133,12 @@ namespace FlaxEngine.Experimental.UI
                             PointerEventHasCapture = response.HasFlag(UIEventResponse.Capture);
                             break;
                         }
+                        else
+                        {
+                            pointerEvent.State = InputActionState.None;
+                            focused.OnPointerInput(pointerEvent);
+                            focused = null;
+                        }
                     }
                 }
             }
@@ -131,7 +149,7 @@ namespace FlaxEngine.Experimental.UI
         {
             pointerEvent.IsTouch = false;
             pointerEvent.MouseButton = button;
-            SendPointerEvent(MouseLocation = location, 0, InputActionState.Press);
+            SendPointerEvent(MouseLocation = location, 0, InputActionState.Release);
             return base.OnMouseUp(location, button);
         }
         /// <inheritdoc/>
@@ -139,7 +157,7 @@ namespace FlaxEngine.Experimental.UI
         {
             pointerEvent.IsTouch = false;
             pointerEvent.MouseButton = button;
-            SendPointerEvent(MouseLocation = location, 0, InputActionState.Release);
+            SendPointerEvent(MouseLocation = location, 0, InputActionState.Press);
             return base.OnMouseDown(location, button);
         }
         /// <inheritdoc/>

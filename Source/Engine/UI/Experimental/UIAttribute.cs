@@ -9,7 +9,7 @@ namespace FlaxEngine.Experimental.UI
     /// <summary>
     /// </summary>
     /// <seealso cref="System.Attribute" />
-    [AttributeUsage(AttributeTargets.Class,AllowMultiple= true,Inherited=true)]
+    [AttributeUsage(AttributeTargets.Class, AllowMultiple= true,Inherited=true)]
     public class UIDesignerAttribute : Attribute
     {
         /// <summary>
