@@ -42,10 +42,13 @@ namespace FlaxEditor.CustomEditors.Editors
                 var grayOutFactor = 0.6f;
                 XElement.ValueBox.BorderColor = Color.Lerp(AxisColorX, back, grayOutFactor);
                 XElement.ValueBox.BorderSelectedColor = AxisColorX;
+                XElement.ValueBox.Category = Utils.ValueCategory.Distance;
                 YElement.ValueBox.BorderColor = Color.Lerp(AxisColorY, back, grayOutFactor);
                 YElement.ValueBox.BorderSelectedColor = AxisColorY;
+                YElement.ValueBox.Category = Utils.ValueCategory.Distance;
                 ZElement.ValueBox.BorderColor = Color.Lerp(AxisColorZ, back, grayOutFactor);
                 ZElement.ValueBox.BorderSelectedColor = AxisColorZ;
+                ZElement.ValueBox.Category = Utils.ValueCategory.Distance;
             }
         }
 
@@ -65,10 +68,13 @@ namespace FlaxEditor.CustomEditors.Editors
                 var grayOutFactor = 0.6f;
                 XElement.ValueBox.BorderColor = Color.Lerp(AxisColorX, back, grayOutFactor);
                 XElement.ValueBox.BorderSelectedColor = AxisColorX;
+                XElement.ValueBox.Category = Utils.ValueCategory.Angle;
                 YElement.ValueBox.BorderColor = Color.Lerp(AxisColorY, back, grayOutFactor);
                 YElement.ValueBox.BorderSelectedColor = AxisColorY;
+                YElement.ValueBox.Category = Utils.ValueCategory.Angle;
                 ZElement.ValueBox.BorderColor = Color.Lerp(AxisColorZ, back, grayOutFactor);
                 ZElement.ValueBox.BorderSelectedColor = AxisColorZ;
+                ZElement.ValueBox.Category = Utils.ValueCategory.Angle;
             }
         }
 
