@@ -1046,7 +1046,14 @@ namespace FlaxEngine
         {
             None,
             Distance,
-            Angle
+            Area,
+            Volume,
+            Mass,
+            Angle,
+            Speed,
+            Acceleration,
+            Time,
+            Force
         }
     }
 }

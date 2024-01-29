@@ -123,7 +123,34 @@ namespace FlaxEditor.Utilities
             ["-infinity"] = -double.MaxValue,
             ["m"] = Units.Meters2Units,
             ["cm"] = Units.Meters2Units / 100,
-            ["km"] = Units.Meters2Units * 1000
+            ["km"] = Units.Meters2Units * 1000,
+            ["s"] = 1,
+            ["ms"] = 0.001,
+            ["min"] = 60,
+            ["h"] = 3600,
+            ["cm²"] = (Units.Meters2Units / 100) * (Units.Meters2Units / 100),
+            ["cm³"] = (Units.Meters2Units / 100) * (Units.Meters2Units / 100) * (Units.Meters2Units / 100),
+            ["dm²"] = (Units.Meters2Units / 10) * (Units.Meters2Units / 10),
+            ["dm³"] = (Units.Meters2Units / 10) * (Units.Meters2Units / 10) * (Units.Meters2Units / 10),
+            ["l"] = (Units.Meters2Units / 10) * (Units.Meters2Units / 10) * (Units.Meters2Units / 10),
+            ["m²"] = Units.Meters2Units * Units.Meters2Units,
+            ["m³"] = Units.Meters2Units * Units.Meters2Units * Units.Meters2Units,
+            ["kg"] = 1,
+            ["g"] = 0.001,
+            ["N"] = Units.Meters2Units
+        };
+
+        /// <summary>
+        /// List known units which cannot be handled as a variable easily because they contain operator
+        /// symbols (mostly a forward slash). The value is the factor to calculate game units. 
+        /// </summary>
+        private static readonly IDictionary<string, double> UnitSymbols = new Dictionary<string, double>
+        {
+            ["cm/s"] = Units.Meters2Units / 100,
+            ["cm/s²"] = Units.Meters2Units / 100,
+            ["m/s"] = Units.Meters2Units,
+            ["m/s²"] = Units.Meters2Units,
+            ["km/h"] = 1/3.6 * Units.Meters2Units
         };
 
         /// <summary>
@@ -174,6 +201,23 @@ namespace FlaxEditor.Utilities
         {
             // Prepare text
             text = text.Replace(',', '.').Replace("°", "");
+            foreach (var kv in UnitSymbols)
+            {
+                int idx;
+                do
+                {
+                    idx = text.IndexOf(kv.Key, StringComparison.InvariantCulture);
+                    if (idx > 0)
+                    {
+                        if (DetermineType(text[idx - 1]) != TokenType.Number)
+                            throw new ParsingException($"unit found without a number: {kv.Key} at {idx} in {text}");
+                        if (Mathf.Abs(kv.Value - 1) < Mathf.Epsilon)
+                            text = text.Remove(idx, kv.Key.Length);
+                        else
+                            text = text.Replace(kv.Key, "*" + kv.Value);
+                    }
+                } while (idx > 0);
+            }
 
             // Necessary to correctly parse negative numbers
             var previous = TokenType.WhiteSpace;

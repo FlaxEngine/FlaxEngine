@@ -1179,21 +1179,30 @@ namespace FlaxEditor.Utilities
         /// <returns>the formatted string</returns>
         public static string FormatFloat(float value, FlaxEngine.Utils.ValueCategory category)
         {
+            const string format = "g7"; 
             if (!Units.UseUnitsFormatting)
                 return FormatFloat(value);
             switch (category)
             {
                 case FlaxEngine.Utils.ValueCategory.Distance:
                     if (!Units.AutomaticUnitsFormatting)
-                        return (value / Units.Meters2Units).ToString("g7", CultureInfo.InvariantCulture) + "m";
+                        return (value / Units.Meters2Units).ToString(format, CultureInfo.InvariantCulture) + "m";
                     var absValue = Mathf.Abs(value);
-                    // in case a unit != cm this would be (value / Maters2Units * 100)
+                    // in case a unit != cm this would be (value / Meters2Units * 100)
                     if (absValue < Units.Meters2Units)
-                        return value.ToString("g7", CultureInfo.InvariantCulture) + "cm";
+                        return value.ToString(format, CultureInfo.InvariantCulture) + "cm";
                     if (absValue < Units.Meters2Units * 1000)
-                        return (value / Units.Meters2Units).ToString("g7", CultureInfo.InvariantCulture) + "m";
-                    return (value / 1000 / Units.Meters2Units).ToString("g7", CultureInfo.InvariantCulture) + "km";
-                case FlaxEngine.Utils.ValueCategory.Angle: return value.ToString("g7", CultureInfo.InvariantCulture) + "°";
+                        return (value / Units.Meters2Units).ToString(format, CultureInfo.InvariantCulture) + "m";
+                    return (value / 1000 / Units.Meters2Units).ToString(format, CultureInfo.InvariantCulture) + "km";
+                case FlaxEngine.Utils.ValueCategory.Angle: return value.ToString(format, CultureInfo.InvariantCulture) + "°";
+                case FlaxEngine.Utils.ValueCategory.Time: return value.ToString(format, CultureInfo.InvariantCulture) + "s";
+                // some fonts have a symbol for that: "\u33A7"
+                case FlaxEngine.Utils.ValueCategory.Speed: return (value / Units.Meters2Units).ToString(format, CultureInfo.InvariantCulture) + "m/s";
+                case FlaxEngine.Utils.ValueCategory.Acceleration: return (value / Units.Meters2Units).ToString(format, CultureInfo.InvariantCulture) + "m/s²";
+                case FlaxEngine.Utils.ValueCategory.Area: return (value / Units.Meters2Units / Units.Meters2Units).ToString(format, CultureInfo.InvariantCulture) + "m²";
+                case FlaxEngine.Utils.ValueCategory.Volume: return (value / Units.Meters2Units / Units.Meters2Units / Units.Meters2Units).ToString(format, CultureInfo.InvariantCulture) + "m³";
+                case FlaxEngine.Utils.ValueCategory.Mass: return value.ToString(format, CultureInfo.InvariantCulture) + "kg";
+                case FlaxEngine.Utils.ValueCategory.Force: return (value / Units.Meters2Units).ToString(format, CultureInfo.InvariantCulture) + "N";
                 case FlaxEngine.Utils.ValueCategory.None:
                 default:
                     return FormatFloat(value);
