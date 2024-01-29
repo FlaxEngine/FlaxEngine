@@ -1214,15 +1214,15 @@ namespace FlaxEditor.Utilities
             {
             case FlaxEngine.Utils.ValueCategory.Distance:
                 if (!Units.AutomaticUnitsFormatting)
-                    return (value / Units.Meters2Units).ToString("g17", CultureInfo.InvariantCulture) + "m";
+                    return (value / Units.Meters2Units).ToString("g15", CultureInfo.InvariantCulture) + "m";
                 var absValue = Mathf.Abs(value);
                 // in case a unit != cm this would be (value / Maters2Units * 100)
                 if (absValue < Units.Meters2Units)
-                    return value.ToString("g17", CultureInfo.InvariantCulture) + "cm";
+                    return value.ToString("g15", CultureInfo.InvariantCulture) + "cm";
                 if (absValue < Units.Meters2Units * 1000)
-                    return (value / Units.Meters2Units).ToString("g17", CultureInfo.InvariantCulture) + "m";
-                return (value / 1000 / Units.Meters2Units).ToString("g17", CultureInfo.InvariantCulture) + "km";
-            case FlaxEngine.Utils.ValueCategory.Angle: return value.ToString("g17", CultureInfo.InvariantCulture) + "°";
+                    return (value / Units.Meters2Units).ToString("g15", CultureInfo.InvariantCulture) + "m";
+                return (value / 1000 / Units.Meters2Units).ToString("g15", CultureInfo.InvariantCulture) + "km";
+            case FlaxEngine.Utils.ValueCategory.Angle: return value.ToString("g15", CultureInfo.InvariantCulture) + "°";
             case FlaxEngine.Utils.ValueCategory.None:
             default:
                 return FormatFloat(value);
@@ -1255,7 +1255,7 @@ namespace FlaxEditor.Utilities
                 return "Infinity";
             if (double.IsNegativeInfinity(value) || value == double.MinValue)
                 return "-Infinity";
-            string str = value.ToString("g17", CultureInfo.InvariantCulture);
+            string str = value.ToString("g15", CultureInfo.InvariantCulture);
             return FormatFloat(str, value < 0);
         }
 
