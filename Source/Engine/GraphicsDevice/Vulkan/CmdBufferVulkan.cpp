@@ -129,15 +129,13 @@ void CmdBufferVulkan::RefreshFenceStatus()
 {
     if (_state == State::Submitted)
     {
-        auto fenceManager = _fence->GetOwner();
-        if (fenceManager->IsFenceSignaled(_fence))
+        if (_device->FenceManager.IsFenceSignaled(_fence))
         {
             _state = State::ReadyForBegin;
-
             _submittedWaitSemaphores.Clear();
 
             vkResetCommandBuffer(_commandBuffer, VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT);
-            _fence->GetOwner()->ResetFence(_fence);
+            _device->FenceManager.ResetFence(_fence);
             _fenceSignaledCounter++;
 
             if (_descriptorPoolSetContainer)
@@ -149,7 +147,7 @@ void CmdBufferVulkan::RefreshFenceStatus()
     }
     else
     {
-        ASSERT(!_fence->IsSignaled());
+        ASSERT(!_fence->IsSignaled);
     }
 }
 
@@ -158,8 +156,8 @@ CmdBufferVulkan::CmdBufferVulkan(GPUDeviceVulkan* device, CmdBufferPoolVulkan* p
     , _commandBuffer(VK_NULL_HANDLE)
     , _state(State::ReadyForBegin)
     , _fence(nullptr)
-    , _fenceSignaledCounter(0)
     , _submittedFenceCounter(0)
+    , _fenceSignaledCounter(0)
     , _commandBufferPool(pool)
 {
     VkCommandBufferAllocateInfo createCmdBufInfo;
@@ -167,7 +165,6 @@ CmdBufferVulkan::CmdBufferVulkan(GPUDeviceVulkan* device, CmdBufferPoolVulkan* p
     createCmdBufInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
     createCmdBufInfo.commandBufferCount = 1;
     createCmdBufInfo.commandPool = _commandBufferPool->GetHandle();
-
     VALIDATE_VULKAN_RESULT(vkAllocateCommandBuffers(_device->Device, &createCmdBufInfo, &_commandBuffer));
     _fence = _device->FenceManager.AllocateFence();
 }
@@ -217,17 +214,16 @@ CmdBufferPoolVulkan::~CmdBufferPoolVulkan()
 {
     for (int32 i = 0; i < _cmdBuffers.Count(); i++)
     {
-        Delete(_cmdBuffers[i]);
+        Delete(_cmdBuffers.Get()[i]);
     }
-
     vkDestroyCommandPool(_device->Device, _handle, nullptr);
 }
 
-void CmdBufferPoolVulkan::RefreshFenceStatus(CmdBufferVulkan* skipCmdBuffer)
+void CmdBufferPoolVulkan::RefreshFenceStatus(const CmdBufferVulkan* skipCmdBuffer)
 {
     for (int32 i = 0; i < _cmdBuffers.Count(); i++)
     {
-        auto cmdBuffer = _cmdBuffers[i];
+        const auto cmdBuffer = _cmdBuffers.Get()[i];
         if (cmdBuffer != skipCmdBuffer)
         {
             cmdBuffer->RefreshFenceStatus();
@@ -250,9 +246,8 @@ void CmdBufferManagerVulkan::SubmitActiveCmdBuffer(SemaphoreVulkan* signalSemaph
     if (!_activeCmdBuffer->IsSubmitted() && _activeCmdBuffer->HasBegun())
     {
         if (_activeCmdBuffer->IsInsideRenderPass())
-        {
             _activeCmdBuffer->EndRenderPass();
-        }
+
 
 #if VULKAN_USE_QUERIES
         // Pause all active queries

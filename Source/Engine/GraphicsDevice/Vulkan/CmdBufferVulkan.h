@@ -21,7 +21,6 @@ class CmdBufferVulkan
     friend QueueVulkan;
 
 public:
-
     enum class State
     {
         ReadyForBegin,
@@ -32,7 +31,6 @@ public:
     };
 
 private:
-
     GPUDeviceVulkan* _device;
     VkCommandBuffer _commandBuffer;
     State _state;
@@ -57,13 +55,11 @@ private:
     DescriptorPoolSetContainerVulkan* _descriptorPoolSetContainer = nullptr;
 
 public:
-
     CmdBufferVulkan(GPUDeviceVulkan* device, CmdBufferPoolVulkan* pool);
 
     ~CmdBufferVulkan();
 
 public:
-
     CmdBufferPoolVulkan* GetOwner() const
     {
         return _commandBufferPool;
@@ -120,7 +116,6 @@ public:
     }
 
 public:
-
     void AddWaitSemaphore(VkPipelineStageFlags waitFlags, SemaphoreVulkan* waitSemaphore);
 
     void Begin();
@@ -147,8 +142,8 @@ public:
 class CmdBufferPoolVulkan
 {
     friend class CmdBufferManagerVulkan;
-private:
 
+private:
     GPUDeviceVulkan* _device;
     VkCommandPool _handle;
     Array<CmdBufferVulkan*> _cmdBuffers;
@@ -158,25 +153,22 @@ private:
     void Create(uint32 queueFamilyIndex);
 
 public:
-
     CmdBufferPoolVulkan(GPUDeviceVulkan* device);
     ~CmdBufferPoolVulkan();
 
 public:
-
     inline VkCommandPool GetHandle() const
     {
         ASSERT(_handle != VK_NULL_HANDLE);
         return _handle;
     }
 
-    void RefreshFenceStatus(CmdBufferVulkan* skipCmdBuffer = nullptr);
+    void RefreshFenceStatus(const CmdBufferVulkan* skipCmdBuffer = nullptr);
 };
 
 class CmdBufferManagerVulkan
 {
 private:
-
     GPUDeviceVulkan* _device;
     CmdBufferPoolVulkan _pool;
     QueueVulkan* _queue;
@@ -184,11 +176,9 @@ private:
     Array<GPUTimerQueryVulkan*> _queriesInProgress;
 
 public:
-
     CmdBufferManagerVulkan(GPUDeviceVulkan* device, GPUContextVulkan* context);
 
 public:
-
     FORCE_INLINE VkCommandPool GetHandle() const
     {
         return _pool.GetHandle();
@@ -217,7 +207,6 @@ public:
     }
 
 public:
-
     void SubmitActiveCmdBuffer(SemaphoreVulkan* signalSemaphore = nullptr);
 
     void WaitForCmdBuffer(CmdBufferVulkan* cmdBuffer, float timeInSecondsToWait = 1.0f);

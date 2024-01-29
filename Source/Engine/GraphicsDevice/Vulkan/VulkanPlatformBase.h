@@ -23,7 +23,6 @@ enum class VulkanValidationLevel
 class VulkanPlatformBase
 {
 public:
-
     static void GetInstanceExtensions(Array<const char*>& extensions, Array<const char*>& layers)
     {
     }

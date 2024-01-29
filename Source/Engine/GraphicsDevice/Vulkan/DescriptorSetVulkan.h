@@ -54,106 +54,62 @@ namespace DescriptorSet
 class DescriptorSetLayoutInfoVulkan
 {
 public:
+    typedef Array<VkDescriptorSetLayoutBinding> SetLayout;
 
-    struct SetLayout
-    {
-        Array<VkDescriptorSetLayoutBinding> LayoutBindings;
-    };
-
-protected:
-
-    uint32 _layoutTypes[VULKAN_DESCRIPTOR_TYPE_END];
-    Array<SetLayout> _setLayouts;
-    uint32 _hash = 0;
-    uint32 _typesUsageID = ~0;
+    uint32 Hash = 0;
+    uint32 TypesUsageID = ~0;
+    Array<SetLayout> SetLayouts;
+    uint32 LayoutTypes[VULKAN_DESCRIPTOR_TYPE_END];
 
     void CacheTypesUsageID();
 
 public:
-
     DescriptorSetLayoutInfoVulkan()
     {
-        Platform::MemoryClear(_layoutTypes, sizeof(_layoutTypes));
+        Platform::MemoryClear(LayoutTypes, sizeof(LayoutTypes));
     }
-
-public:
-
-    inline uint32 GetTypesUsed(VkDescriptorType type) const
-    {
-        return _layoutTypes[type];
-    }
-
-    const Array<SetLayout>& GetLayouts() const
-    {
-        return _setLayouts;
-    }
-
-    inline uint32 GetTypesUsageID() const
-    {
-        return _typesUsageID;
-    }
-
-public:
 
     void AddBindingsForStage(VkShaderStageFlagBits stageFlags, DescriptorSet::Stage descSet, const SpirvShaderDescriptorInfo* descriptorInfo);
 
     void CopyFrom(const DescriptorSetLayoutInfoVulkan& info)
     {
-        Platform::MemoryCopy(_layoutTypes, info._layoutTypes, sizeof(_layoutTypes));
-        _hash = info._hash;
-        _typesUsageID = info._typesUsageID;
-        _setLayouts = info._setLayouts;
+        Platform::MemoryCopy(LayoutTypes, info.LayoutTypes, sizeof(LayoutTypes));
+        Hash = info.Hash;
+        TypesUsageID = info.TypesUsageID;
+        SetLayouts = info.SetLayouts;
     }
 
     bool operator==(const DescriptorSetLayoutInfoVulkan& other) const;
 
     friend inline uint32 GetHash(const DescriptorSetLayoutInfoVulkan& key)
     {
-        return key._hash;
+        return key.Hash;
     }
 };
 
 class DescriptorSetLayoutVulkan : public DescriptorSetLayoutInfoVulkan
 {
 public:
+    typedef Array<VkDescriptorSetLayout, FixedAllocation<DescriptorSet::Max>> HandlesArray;
 
-    typedef Array<VkDescriptorSetLayout, FixedAllocation<DescriptorSet::Max>> DescriptorSetLayoutHandlesArray;
-
-private:
-
-    GPUDeviceVulkan* _device;
-    DescriptorSetLayoutHandlesArray _handles;
-    VkDescriptorSetAllocateInfo _allocateInfo;
-
-public:
+    GPUDeviceVulkan* Device;
+    HandlesArray Handles;
+    VkDescriptorSetAllocateInfo AllocateInfo;
 
     DescriptorSetLayoutVulkan(GPUDeviceVulkan* device);
     ~DescriptorSetLayoutVulkan();
 
-public:
-
-    inline const DescriptorSetLayoutHandlesArray& GetHandles() const
-    {
-        return _handles;
-    }
-
-    inline const VkDescriptorSetAllocateInfo& GetAllocateInfo() const
-    {
-        return _allocateInfo;
-    }
+    void Compile();
 
     friend inline uint32 GetHash(const DescriptorSetLayoutVulkan& key)
     {
-        return key._hash;
+        return key.Hash;
     }
-
-    void Compile();
 };
 
 class DescriptorPoolVulkan
 {
 private:
-
     GPUDeviceVulkan* _device;
     VkDescriptorPool _handle;
 
@@ -164,12 +120,10 @@ private:
     const DescriptorSetLayoutVulkan& _layout;
 
 public:
-
     DescriptorPoolVulkan(GPUDeviceVulkan* device, const DescriptorSetLayoutVulkan& layout);
     ~DescriptorPoolVulkan();
 
 public:
-
     inline VkDescriptorPool GetHandle() const
     {
         return _handle;
@@ -182,7 +136,7 @@ public:
 
     inline bool CanAllocate(const DescriptorSetLayoutVulkan& layout) const
     {
-        return _descriptorSetsMax > _allocatedDescriptorSetsCount + layout.GetLayouts().Count();
+        return _descriptorSetsMax > _allocatedDescriptorSetsCount + layout.SetLayouts.Count();
     }
 
     inline uint32 GetAllocatedDescriptorSetsCount() const
@@ -191,7 +145,6 @@ public:
     }
 
 public:
-
     void Track(const DescriptorSetLayoutVulkan& layout);
     void TrackRemoveUsage(const DescriptorSetLayoutVulkan& layout);
     void Reset();
@@ -205,7 +158,6 @@ class TypedDescriptorPoolSetVulkan
     friend DescriptorPoolSetContainerVulkan;
 
 private:
-
     GPUDeviceVulkan* _device;
     const DescriptorPoolSetContainerVulkan* _owner;
     const DescriptorSetLayoutVulkan& _layout;
@@ -213,7 +165,6 @@ private:
     class PoolList
     {
     public:
-
         DescriptorPoolVulkan* Element;
         PoolList* Next;
 
@@ -228,7 +179,6 @@ private:
     PoolList* _poolListCurrent = nullptr;
 
 public:
-
     TypedDescriptorPoolSetVulkan(GPUDeviceVulkan* device, const DescriptorPoolSetContainerVulkan* owner, const DescriptorSetLayoutVulkan& layout)
         : _device(device)
         , _owner(owner)
@@ -247,7 +197,6 @@ public:
     }
 
 private:
-
     DescriptorPoolVulkan* GetFreePool(bool forceNewPool = false);
     DescriptorPoolVulkan* PushNewPool();
     void Reset();
@@ -256,20 +205,16 @@ private:
 class DescriptorPoolSetContainerVulkan
 {
 private:
-
     GPUDeviceVulkan* _device;
     Dictionary<uint32, TypedDescriptorPoolSetVulkan*> _typedDescriptorPools;
     uint64 _lastFrameUsed;
     bool _used;
 
 public:
-
     DescriptorPoolSetContainerVulkan(GPUDeviceVulkan* device);
-
     ~DescriptorPoolSetContainerVulkan();
 
 public:
-
     TypedDescriptorPoolSetVulkan* AcquireTypedPoolSet(const DescriptorSetLayoutVulkan& layout);
     void Reset();
     void SetUsed(bool used);
@@ -288,13 +233,11 @@ public:
 class DescriptorPoolsManagerVulkan
 {
 private:
-
     GPUDeviceVulkan* _device = nullptr;
     CriticalSection _locker;
     Array<DescriptorPoolSetContainerVulkan*> _poolSets;
 
 public:
-
     DescriptorPoolsManagerVulkan(GPUDeviceVulkan* device);
     ~DescriptorPoolsManagerVulkan();
 
@@ -306,24 +249,19 @@ public:
 class PipelineLayoutVulkan
 {
 private:
-
     GPUDeviceVulkan* _device;
     VkPipelineLayout _handle;
     DescriptorSetLayoutVulkan _descriptorSetLayout;
 
 public:
-
     PipelineLayoutVulkan(GPUDeviceVulkan* device, const DescriptorSetLayoutInfoVulkan& layout);
     ~PipelineLayoutVulkan();
 
 public:
-
     inline VkPipelineLayout GetHandle() const
     {
         return _handle;
     }
-
-public:
 
     inline const DescriptorSetLayoutVulkan& GetDescriptorSetLayout() const
     {
@@ -332,7 +270,7 @@ public:
 
     inline bool HasDescriptors() const
     {
-        return _descriptorSetLayout.GetLayouts().HasItems();
+        return _descriptorSetLayout.SetLayouts.HasItems();
     }
 };
 
@@ -357,14 +295,12 @@ struct DescriptorSetWriteContainerVulkan
 class DescriptorSetWriterVulkan
 {
 public:
-
     VkWriteDescriptorSet* WriteDescriptors = nullptr;
     byte* BindingToDynamicOffset = nullptr;
     uint32* DynamicOffsets = nullptr;
     uint32 WritesCount = 0;
 
 public:
-
     uint32 SetupDescriptorWrites(const SpirvShaderDescriptorInfo& info, VkWriteDescriptorSet* writeDescriptors, VkDescriptorImageInfo* imageInfo, VkDescriptorBufferInfo* bufferInfo, VkBufferView* texelBufferView, byte* bindingToDynamicOffset);
 
     bool WriteUniformBuffer(uint32 descriptorIndex, VkBuffer buffer, VkDeviceSize offset, VkDeviceSize range, uint32 index = 0) const
@@ -451,9 +387,7 @@ public:
     void SetDescriptorSet(VkDescriptorSet descriptorSet) const
     {
         for (uint32 i = 0; i < WritesCount; i++)
-        {
             WriteDescriptors[i].dstSet = descriptorSet;
-        }
     }
 };
 

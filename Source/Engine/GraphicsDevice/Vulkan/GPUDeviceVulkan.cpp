@@ -250,23 +250,18 @@ void SetupDebugLayerCallback()
             {
             default:
                 createInfo.messageSeverity |= VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT;
-                // Fall-through...
             case 4:
                 createInfo.messageSeverity |= VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT;
-                // Fall-through...
             case 3:
                 createInfo.messageType |= VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
-                // Fall-through...
             case 2:
                 createInfo.messageSeverity |= VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT;
                 createInfo.messageType |= VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT;
-                // Fall-through...
             case 1:
                 createInfo.messageSeverity |= VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
                 createInfo.messageType |= VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT;
                 break;
             case 0:
-                // Nothing to do
                 break;
             }
             const VkResult result = vkCreateDebugUtilsMessengerEXT(GPUDeviceVulkan::Instance, &createInfo, nullptr, &Messenger);
@@ -288,21 +283,16 @@ void SetupDebugLayerCallback()
             {
             default:
                 createInfo.flags |= VK_DEBUG_REPORT_DEBUG_BIT_EXT;
-                // Fall-through...
             case 4:
                 createInfo.flags |= VK_DEBUG_REPORT_INFORMATION_BIT_EXT;
-                // Fall-through...
             case 3:
                 createInfo.flags |= VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT;
-                // Fall-through...
             case 2:
                 createInfo.flags |= VK_DEBUG_REPORT_WARNING_BIT_EXT;
-                // Fall-through...
             case 1:
                 createInfo.flags |= VK_DEBUG_REPORT_ERROR_BIT_EXT;
                 break;
             case 0:
-                // Nothing to do
                 break;
             }
             const VkResult result = vkCreateDebugReportCallbackEXT(GPUDeviceVulkan::Instance, &createInfo, nullptr, &MsgCallback);
@@ -354,14 +344,14 @@ DeferredDeletionQueueVulkan::~DeferredDeletionQueueVulkan()
     ASSERT(_entries.IsEmpty());
 }
 
-void DeferredDeletionQueueVulkan::ReleaseResources(bool deleteImmediately)
+void DeferredDeletionQueueVulkan::ReleaseResources(bool immediately)
 {
     const uint64 checkFrame = Engine::FrameCount - VULKAN_RESOURCE_DELETE_SAFE_FRAMES_COUNT;
     ScopeLock lock(_locker);
     for (int32 i = 0; i < _entries.Count(); i++)
     {
         Entry* e = &_entries.Get()[i];
-        if (deleteImmediately || (checkFrame > e->FrameNumber && (e->CmdBuffer == nullptr || e->FenceCounter < e->CmdBuffer->GetFenceSignaledCounter())))
+        if (immediately || (checkFrame > e->FrameNumber && (e->CmdBuffer == nullptr || e->FenceCounter < e->CmdBuffer->GetFenceSignaledCounter())))
         {
             if (e->AllocationHandle == VK_NULL_HANDLE)
             {
@@ -2077,7 +2067,6 @@ GPUConstantBuffer* GPUDeviceVulkan::CreateConstantBuffer(uint32 size, const Stri
 SemaphoreVulkan::SemaphoreVulkan(GPUDeviceVulkan* device)
     : _device(device)
 {
-    // Create semaphore
     VkSemaphoreCreateInfo info;
     RenderToolsVulkan::ZeroStruct(info, VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO);
     VALIDATE_VULKAN_RESULT(vkCreateSemaphore(device->Device, &info, nullptr, &_semaphoreHandle));
@@ -2090,21 +2079,6 @@ SemaphoreVulkan::~SemaphoreVulkan()
     _semaphoreHandle = VK_NULL_HANDLE;
 }
 
-FenceVulkan::~FenceVulkan()
-{
-    ASSERT(_handle == VK_NULL_HANDLE);
-}
-
-FenceVulkan::FenceVulkan(GPUDeviceVulkan* device, FenceManagerVulkan* owner, bool createSignaled)
-    : _signaled(createSignaled)
-    , _owner(owner)
-{
-    VkFenceCreateInfo info;
-    RenderToolsVulkan::ZeroStruct(info, VK_STRUCTURE_TYPE_FENCE_CREATE_INFO);
-    info.flags = createSignaled ? VK_FENCE_CREATE_SIGNALED_BIT : 0;
-    VALIDATE_VULKAN_RESULT(vkCreateFence(device->Device, &info, nullptr, &_handle));
-}
-
 FenceManagerVulkan::~FenceManagerVulkan()
 {
     ASSERT(_usedFences.IsEmpty());
@@ -2113,68 +2087,63 @@ FenceManagerVulkan::~FenceManagerVulkan()
 void FenceManagerVulkan::Dispose()
 {
     ScopeLock lock(_device->_fenceLock);
-
     ASSERT(_usedFences.IsEmpty());
     for (FenceVulkan* fence : _freeFences)
-    {
         DestroyFence(fence);
-    }
     _freeFences.Clear();
 }
 
 FenceVulkan* FenceManagerVulkan::AllocateFence(bool createSignaled)
 {
     ScopeLock lock(_device->_fenceLock);
-
     FenceVulkan* fence;
     if (_freeFences.HasItems())
     {
         fence = _freeFences.Last();
         _freeFences.RemoveLast();
         _usedFences.Add(fence);
-
         if (createSignaled)
-        {
-            fence->_signaled = true;
-        }
-
-        return fence;
+            fence->IsSignaled = true;
     }
-
-    fence = New<FenceVulkan>(_device, this, createSignaled);
-    _usedFences.Add(fence);
+    else
+    {
+        fence = New<FenceVulkan>();
+        fence->IsSignaled = createSignaled;
+        VkFenceCreateInfo info;
+        RenderToolsVulkan::ZeroStruct(info, VK_STRUCTURE_TYPE_FENCE_CREATE_INFO);
+        info.flags = createSignaled ? VK_FENCE_CREATE_SIGNALED_BIT : 0;
+        VALIDATE_VULKAN_RESULT(vkCreateFence(_device->Device, &info, nullptr, &fence->Handle));
+        _usedFences.Add(fence);
+    }
     return fence;
 }
 
-bool FenceManagerVulkan::WaitForFence(FenceVulkan* fence, uint64 timeInNanoseconds)
+bool FenceManagerVulkan::WaitForFence(FenceVulkan* fence, uint64 timeInNanoseconds) const
 {
     ASSERT(_usedFences.Contains(fence));
-    ASSERT(!fence->_signaled);
-
-    const VkResult result = vkWaitForFences(_device->Device, 1, &fence->_handle, true, timeInNanoseconds);
+    ASSERT(!fence->IsSignaled);
+    const VkResult result = vkWaitForFences(_device->Device, 1, &fence->Handle, true, timeInNanoseconds);
     LOG_VULKAN_RESULT(result);
     if (result == VK_SUCCESS)
     {
-        fence->_signaled = true;
+        fence->IsSignaled = true;
         return false;
     }
-
     return true;
 }
 
-void FenceManagerVulkan::ResetFence(FenceVulkan* fence)
+void FenceManagerVulkan::ResetFence(FenceVulkan* fence) const
 {
-    if (fence->_signaled)
+    if (fence->IsSignaled)
     {
-        VALIDATE_VULKAN_RESULT(vkResetFences(_device->Device, 1, &fence->_handle));
-        fence->_signaled = false;
+        VALIDATE_VULKAN_RESULT(vkResetFences(_device->Device, 1, &fence->Handle));
+        fence->IsSignaled = false;
     }
 }
 
 void FenceManagerVulkan::ReleaseFence(FenceVulkan*& fence)
 {
     ScopeLock lock(_device->_fenceLock);
-
     ResetFence(fence);
     _usedFences.Remove(fence);
     _freeFences.Add(fence);
@@ -2184,37 +2153,31 @@ void FenceManagerVulkan::ReleaseFence(FenceVulkan*& fence)
 void FenceManagerVulkan::WaitAndReleaseFence(FenceVulkan*& fence, uint64 timeInNanoseconds)
 {
     ScopeLock lock(_device->_fenceLock);
-
-    if (!fence->IsSignaled())
-    {
+    if (!fence->IsSignaled)
         WaitForFence(fence, timeInNanoseconds);
-    }
-
     ResetFence(fence);
     _usedFences.Remove(fence);
     _freeFences.Add(fence);
     fence = nullptr;
 }
 
-bool FenceManagerVulkan::CheckFenceState(FenceVulkan* fence)
+bool FenceManagerVulkan::CheckFenceState(FenceVulkan* fence) const
 {
     ASSERT(_usedFences.Contains(fence));
-    ASSERT(!fence->_signaled);
-
-    const VkResult result = vkGetFenceStatus(_device->Device, fence->GetHandle());
+    ASSERT(!fence->IsSignaled);
+    const VkResult result = vkGetFenceStatus(_device->Device, fence->Handle);
     if (result == VK_SUCCESS)
     {
-        fence->_signaled = true;
+        fence->IsSignaled = true;
         return true;
     }
-
     return false;
 }
 
-void FenceManagerVulkan::DestroyFence(FenceVulkan* fence)
+void FenceManagerVulkan::DestroyFence(FenceVulkan* fence) const
 {
-    vkDestroyFence(_device->Device, fence->GetHandle(), nullptr);
-    fence->_handle = VK_NULL_HANDLE;
+    vkDestroyFence(_device->Device, fence->Handle, nullptr);
+    fence->Handle = VK_NULL_HANDLE;
     Delete(fence);
 }
 

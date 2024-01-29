@@ -23,7 +23,7 @@
 /// <summary>
 /// Default amount of frames to wait until resource delete.
 /// </summary>
-#define VULKAN_RESOURCE_DELETE_SAFE_FRAMES_COUNT 10
+#define VULKAN_RESOURCE_DELETE_SAFE_FRAMES_COUNT 20
 
 #define VULKAN_ENABLE_API_DUMP 0
 #define VULKAN_RESET_QUERY_POOLS 0

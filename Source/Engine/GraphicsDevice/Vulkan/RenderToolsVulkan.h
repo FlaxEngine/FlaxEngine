@@ -34,14 +34,12 @@
 class RenderToolsVulkan
 {
 private:
-
     static VkFormat PixelFormatToVkFormat[static_cast<int32>(PixelFormat::MAX)];
     static VkBlendFactor BlendToVkBlendFactor[static_cast<int32>(BlendingMode::Blend::MAX)];
     static VkBlendOp OperationToVkBlendOp[static_cast<int32>(BlendingMode::Operation::MAX)];
     static VkCompareOp ComparisonFuncToVkCompareOp[static_cast<int32>(ComparisonFunc::MAX)];
 
 public:
-
 #if GPU_ENABLE_RESOURCE_NAMING
     static void SetObjectName(VkDevice device, uint64 objectHandle, VkObjectType objectType, const String& name);
     static void SetObjectName(VkDevice device, uint64 objectHandle, VkObjectType objectType, const char* name);
@@ -80,13 +78,13 @@ public:
             stageFlags = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
             break;
 #if VK_KHR_maintenance2
-		case VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT:
-		case VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT:
-			stageFlags = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
-			break;
+        case VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT:
+        case VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT:
+            stageFlags = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
+            break;
 #endif
         default:
-        CRASH;
+            CRASH;
             break;
         }
         return stageFlags;
@@ -130,17 +128,17 @@ public:
             stageFlags = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
             break;
 #if VK_KHR_maintenance2
-		case VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL_KHR:
-			accessFlags = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-			stageFlags = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
-			break;
+        case VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL_KHR:
+            accessFlags = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+            stageFlags = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
+            break;
 #endif
         case VK_IMAGE_LAYOUT_GENERAL:
             accessFlags = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT;
             stageFlags = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
             break;
         default:
-        CRASH;
+            CRASH;
             break;
         }
         return stageFlags;
@@ -213,7 +211,7 @@ public:
             result = VK_SAMPLER_MIPMAP_MODE_LINEAR;
             break;
         default:
-        CRASH;
+            CRASH;
             break;
         }
         return result;
@@ -237,7 +235,7 @@ public:
             result = VK_FILTER_LINEAR;
             break;
         default:
-        CRASH;
+            CRASH;
             break;
         }
         return result;
@@ -261,7 +259,7 @@ public:
             result = VK_FILTER_LINEAR;
             break;
         default:
-        CRASH;
+            CRASH;
             break;
         }
         return result;
@@ -285,7 +283,7 @@ public:
             result = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
             break;
         default:
-        CRASH;
+            CRASH;
             break;
         }
         return result;
@@ -303,7 +301,7 @@ public:
             result = VK_COMPARE_OP_NEVER;
             break;
         default:
-        CRASH;
+            CRASH;
             break;
         }
         return result;

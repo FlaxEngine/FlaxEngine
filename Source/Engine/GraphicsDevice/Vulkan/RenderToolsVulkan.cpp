@@ -6,6 +6,8 @@
 #include "Engine/Core/Types/StringBuilder.h"
 #include "Engine/Core/Log.h"
 
+// @formatter:off
+
 VkFormat RenderToolsVulkan::PixelFormatToVkFormat[108] =
 {
     VK_FORMAT_UNDEFINED,
@@ -162,6 +164,8 @@ VkCompareOp RenderToolsVulkan::ComparisonFuncToVkCompareOp[9] =
     VK_COMPARE_OP_GREATER_OR_EQUAL, // GratherEqual
     VK_COMPARE_OP_ALWAYS, // Always
 };
+
+// @formatter:on
 
 #define VKERR(x) case x: sb.Append(TEXT(#x)); break
 

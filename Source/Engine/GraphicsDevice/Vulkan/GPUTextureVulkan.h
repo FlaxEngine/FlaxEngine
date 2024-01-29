@@ -15,7 +15,6 @@
 class GPUTextureViewVulkan : public GPUTextureView, public DescriptorOwnerResourceVulkan
 {
 public:
-
     GPUTextureViewVulkan()
     {
     }
@@ -44,7 +43,6 @@ public:
 #endif
 
 public:
-
     GPUDeviceVulkan* Device = nullptr;
     ResourceOwnerVulkan* Owner = nullptr;
     VkImage Image = VK_NULL_HANDLE;
@@ -58,7 +56,6 @@ public:
     VkImageLayout LayoutSRV;
 
 public:
-
     void Init(GPUDeviceVulkan* device, ResourceOwnerVulkan* owner, VkImage image, int32 totalMipLevels, PixelFormat format, MSAALevel msaa, VkExtent3D extent, VkImageViewType viewType, int32 mipLevels = 1, int32 firstMipIndex = 0, int32 arraySize = 1, int32 firstArraySlice = 0, bool readOnlyDepth = false);
 
     VkImageView GetFramebufferView();
@@ -66,7 +63,6 @@ public:
     void Release();
 
 public:
-
     // [GPUResourceView]
     void* GetNativePtr() const override
     {
@@ -84,7 +80,6 @@ public:
 class GPUTextureVulkan : public GPUResourceVulkan<GPUTexture>, public ResourceOwnerVulkan, public DescriptorOwnerResourceVulkan
 {
 private:
-
     VkImage _image = VK_NULL_HANDLE;
     VmaAllocation _allocation = VK_NULL_HANDLE;
     GPUTextureViewVulkan _handleArray;
@@ -95,7 +90,6 @@ private:
     Array<Array<GPUTextureViewVulkan>> _handlesPerMip; // [slice][mip]
 
 public:
-
     /// <summary>
     /// Initializes a new instance of the <see cref="GPUTextureVulkan"/> class.
     /// </summary>
@@ -107,7 +101,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Gets the Vulkan image handle.
     /// </summary>
@@ -127,11 +120,9 @@ public:
     VkImageAspectFlags DefaultAspectMask;
 
 private:
-
     void initHandles();
 
 public:
-
     // [GPUTexture]
     GPUTextureView* View(int32 arrayOrDepthIndex) const override
     {
@@ -178,7 +169,6 @@ public:
     void DescriptorAsStorageImage(GPUContextVulkan* context, VkImageView& imageView, VkImageLayout& layout) override;
 
 protected:
-
     // [GPUTexture]
     bool OnInit() override;
     void OnResidentMipsChanged() override;

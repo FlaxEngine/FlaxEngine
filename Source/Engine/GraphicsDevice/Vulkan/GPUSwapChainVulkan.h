@@ -14,7 +14,6 @@
 class BackBufferVulkan : public ResourceOwnerVulkan
 {
 public:
-
     /// <summary>
     /// The device.
     /// </summary>
@@ -36,12 +35,10 @@ public:
     GPUTextureViewVulkan Handle;
 
 public:
-
     void Setup(GPUSwapChainVulkan* window, VkImage backbuffer, PixelFormat format, VkExtent3D extent);
     void Release();
 
 public:
-
     // [ResourceOwnerVulkan]
     GPUResource* AsGPUResource() const override
     {
@@ -58,7 +55,6 @@ class GPUSwapChainVulkan : public GPUResourceVulkan<GPUSwapChain>, public Resour
     friend GPUDeviceVulkan;
 
 private:
-
     VkSurfaceKHR _surface;
     VkSwapchainKHR _swapChain;
     int32 _currentImageIndex;
@@ -68,11 +64,9 @@ private:
     SemaphoreVulkan* _acquiredSemaphore;
 
 public:
-
     GPUSwapChainVulkan(GPUDeviceVulkan* device, Window* window);
 
 public:
-
     /// <summary>
     /// Gets the Vulkan surface.
     /// </summary>
@@ -92,7 +86,6 @@ public:
     }
 
 public:
-
     enum class Status
     {
         Ok = 0,
@@ -108,12 +101,10 @@ public:
     int32 AcquireNextImage(SemaphoreVulkan** outSemaphore);
 
 private:
-
     void ReleaseBackBuffer();
     bool CreateSwapChain(int32 width, int32 height);
 
 public:
-
     // [GPUSwapChain]
     bool IsFullscreen() override;
     void SetFullscreen(bool isFullscreen) override;
@@ -129,7 +120,6 @@ public:
     }
 
 protected:
-
     // [GPUResourceVulkan]
     void OnReleaseGPU() override;
 };

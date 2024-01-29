@@ -13,7 +13,6 @@
 class GPUBufferViewVulkan : public GPUBufferView, public DescriptorOwnerResourceVulkan
 {
 public:
-
     GPUBufferViewVulkan()
     {
     }
@@ -26,7 +25,6 @@ public:
 #endif
 
 public:
-
     GPUDeviceVulkan* Device = nullptr;
     GPUBufferVulkan* Owner = nullptr;
     VkBuffer Buffer = VK_NULL_HANDLE;
@@ -34,13 +32,10 @@ public:
     VkDeviceSize Size = 0;
 
 public:
-
     void Init(GPUDeviceVulkan* device, GPUBufferVulkan* owner, VkBuffer buffer, VkDeviceSize size, VkBufferUsageFlags usage, PixelFormat format);
-
     void Release();
 
 public:
-
     // [GPUResourceView]
     void* GetNativePtr() const override
     {
@@ -59,13 +54,11 @@ public:
 class GPUBufferVulkan : public GPUResourceVulkan<GPUBuffer>
 {
 private:
-
     VkBuffer _buffer = VK_NULL_HANDLE;
     VmaAllocation _allocation = VK_NULL_HANDLE;
     GPUBufferViewVulkan _view;
 
 public:
-
     /// <summary>
     /// Initializes a new instance of the <see cref="GPUBufferVulkan"/> class.
     /// </summary>
@@ -77,7 +70,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Gets the Vulkan buffer handle.
     /// </summary>
@@ -105,14 +97,12 @@ public:
     GPUBufferVulkan* Counter = nullptr;
 
 public:
-
     // [GPUBuffer]
     GPUBufferView* View() const override;
     void* Map(GPUResourceMapMode mode) override;
     void Unmap() override;
 
 protected:
-
     // [GPUBuffer]
     bool OnInit() override;
     void OnReleaseGPU() override;

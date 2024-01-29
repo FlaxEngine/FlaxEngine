@@ -18,11 +18,9 @@ template<typename BaseType>
 class GPUShaderProgramVulkan : public BaseType
 {
 protected:
-
     GPUDeviceVulkan* _device;
 
 public:
-
     /// <summary>
     /// Initializes a new instance of the <see cref="GPUShaderProgramVulkan"/> class.
     /// </summary>
@@ -50,7 +48,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// The Vulkan shader module.
     /// </summary>
@@ -62,7 +59,6 @@ public:
     SpirvShaderDescriptorInfo DescriptorInfo;
 
 public:
-
     // [BaseType]
     uint32 GetBufferSize() const override
     {
@@ -81,7 +77,6 @@ public:
 class GPUShaderProgramVSVulkan : public GPUShaderProgramVulkan<GPUShaderProgramVS>
 {
 public:
-
     /// <summary>
     /// Initializes a new instance of the <see cref="GPUShaderProgramVSVulkan"/> class.
     /// </summary>
@@ -95,13 +90,11 @@ public:
     }
 
 public:
-
     VkPipelineVertexInputStateCreateInfo VertexInputState;
     VkVertexInputBindingDescription VertexBindingDescriptions[VERTEX_SHADER_MAX_INPUT_ELEMENTS];
     VkVertexInputAttributeDescription VertexAttributeDescriptions[VERTEX_SHADER_MAX_INPUT_ELEMENTS];
 
 public:
-
     // [GPUShaderProgramVulkan]
     void* GetInputLayout() const override
     {
@@ -120,7 +113,6 @@ public:
 class GPUShaderProgramHSVulkan : public GPUShaderProgramVulkan<GPUShaderProgramHS>
 {
 public:
-
     /// <summary>
     /// Initializes a new instance of the <see cref="GPUShaderProgramHSVulkan"/> class.
     /// </summary>
@@ -142,7 +134,6 @@ public:
 class GPUShaderProgramDSVulkan : public GPUShaderProgramVulkan<GPUShaderProgramDS>
 {
 public:
-
     /// <summary>
     /// Initializes a new instance of the <see cref="GPUShaderProgramDSVulkan"/> class.
     /// </summary>
@@ -162,7 +153,6 @@ public:
 class GPUShaderProgramGSVulkan : public GPUShaderProgramVulkan<GPUShaderProgramGS>
 {
 public:
-
     /// <summary>
     /// Initializes a new instance of the <see cref="GPUShaderProgramGSVulkan"/> class.
     /// </summary>
@@ -182,7 +172,6 @@ public:
 class GPUShaderProgramPSVulkan : public GPUShaderProgramVulkan<GPUShaderProgramPS>
 {
 public:
-
     /// <summary>
     /// Initializes a new instance of the <see cref="GPUShaderProgramPSVulkan"/> class.
     /// </summary>
@@ -202,11 +191,9 @@ public:
 class GPUShaderProgramCSVulkan : public GPUShaderProgramVulkan<GPUShaderProgramCS>
 {
 private:
-
     ComputePipelineStateVulkan* _pipelineState;
 
 public:
-
     /// <summary>
     /// Initializes a new instance of the <see cref="GPUShaderProgramCSVulkan"/> class.
     /// </summary>
@@ -226,7 +213,6 @@ public:
     ~GPUShaderProgramCSVulkan();
 
 public:
-
     /// <summary>
     /// Gets the state of the pipeline for the compute shader execution or creates a new one if missing.
     /// </summary>

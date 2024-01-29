@@ -73,7 +73,7 @@ ComputePipelineStateVulkan* GPUShaderProgramCSVulkan::GetOrCreateState()
     _pipelineState = New<ComputePipelineStateVulkan>(_device, pipeline, layout);
     _pipelineState->DescriptorInfo = &DescriptorInfo;
     _pipelineState->DescriptorSetsLayout = &layout->GetDescriptorSetLayout();
-    _pipelineState->DescriptorSetHandles.AddZeroed(_pipelineState->DescriptorSetsLayout->GetHandles().Count());
+    _pipelineState->DescriptorSetHandles.AddZeroed(_pipelineState->DescriptorSetsLayout->Handles.Count());
     uint32 dynamicOffsetsCount = 0;
     if (DescriptorInfo.DescriptorTypesCount != 0)
     {
@@ -136,9 +136,7 @@ PipelineLayoutVulkan* GPUPipelineStateVulkan::GetLayout()
 
 #define INIT_SHADER_STAGE(set, bit) \
 	if (DescriptorInfoPerStage[DescriptorSet::set]) \
-	{ \
-		descriptorSetLayoutInfo.AddBindingsForStage(bit, DescriptorSet::set, DescriptorInfoPerStage[DescriptorSet::set]); \
-	}
+		descriptorSetLayoutInfo.AddBindingsForStage(bit, DescriptorSet::set, DescriptorInfoPerStage[DescriptorSet::set])
     INIT_SHADER_STAGE(Vertex, VK_SHADER_STAGE_VERTEX_BIT);
     INIT_SHADER_STAGE(Hull, VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT);
     INIT_SHADER_STAGE(Domain, VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT);
@@ -149,7 +147,7 @@ PipelineLayoutVulkan* GPUPipelineStateVulkan::GetLayout()
     _layout = _device->GetOrCreateLayout(descriptorSetLayoutInfo);
     ASSERT(_layout);
     DescriptorSetsLayout = &_layout->GetDescriptorSetLayout();
-    DescriptorSetHandles.AddZeroed(DescriptorSetsLayout->GetHandles().Count());
+    DescriptorSetHandles.AddZeroed(DescriptorSetsLayout->Handles.Count());
 
     return _layout;
 }

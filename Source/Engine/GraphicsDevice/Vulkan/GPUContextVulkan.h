@@ -41,7 +41,6 @@ class DescriptorSetLayoutVulkan;
 struct PipelineBarrierVulkan
 {
 public:
-
     VkPipelineStageFlags SourceStage = 0;
     VkPipelineStageFlags DestStage = 0;
     Array<VkImageMemoryBarrier, FixedAllocation<VK_BARRIER_BUFFER_SIZE>> ImageBarriers;
@@ -51,7 +50,6 @@ public:
 #endif
 
 public:
-
     inline void Reset()
     {
         SourceStage = 0;
@@ -85,7 +83,6 @@ public:
 class GPUContextVulkan : public GPUContext
 {
 private:
-
     GPUDeviceVulkan* _device;
     QueueVulkan* _queue;
     CmdBufferManagerVulkan* _cmdBufferManager;
@@ -116,7 +113,6 @@ private:
     Dictionary<uint32, DescriptorPoolArray> _descriptorPools;
 
 public:
-
     /// <summary>
     /// Initializes a new instance of the <see cref="GPUContextVulkan"/> class.
     /// </summary>
@@ -130,7 +126,6 @@ public:
     ~GPUContextVulkan();
 
 public:
-
     QueueVulkan* GetQueue() const
     {
         return _queue;
@@ -157,14 +152,12 @@ public:
     void EndRenderPass();
 
 private:
-
     void UpdateDescriptorSets(const struct SpirvShaderDescriptorInfo& descriptorInfo, class DescriptorSetWriterVulkan& dsWriter, bool& needsWrite);
     void UpdateDescriptorSets(GPUPipelineStateVulkan* pipelineState);
     void UpdateDescriptorSets(ComputePipelineStateVulkan* pipelineState);
     void OnDrawCall();
 
 public:
-
     // [GPUContext]
     void FrameBegin() override;
     void FrameEnd() override;
