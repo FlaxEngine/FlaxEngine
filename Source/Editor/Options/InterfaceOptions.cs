@@ -175,7 +175,7 @@ namespace FlaxEditor.Options
         /// </summary>
         [DefaultValue(ValueFormattingType.None)]
         [EditorDisplay("Interface"), EditorOrder(300), Tooltip("Formatting of numeric values.")]
-        public ValueFormattingType ValueFormating {
+        public ValueFormattingType ValueFormatting {
             get => _valueFormatting;
             set
             {
