@@ -1823,7 +1823,6 @@ void* GetStaticMethodPointer(const String& methodName)
 
 void OnLogCallback(const char* logDomain, const char* logLevel, const char* message, mono_bool fatal, void* userData)
 {
-    String currentDomain(logDomain);
     String msg(message);
     msg.Replace('\n', ' ');
 
@@ -1851,19 +1850,6 @@ void OnLogCallback(const char* logDomain, const char* logLevel, const char* mess
         }
     }
 
-    if (currentDomain.IsEmpty())
-    {
-        auto domain = MCore::GetActiveDomain();
-        if (domain != nullptr)
-        {
-            currentDomain = domain->GetName().Get();
-        }
-        else
-        {
-            currentDomain = "null";
-        }
-    }
-
 #if 0
 	// Print C# stack trace (crash may be caused by the managed code)
 	if (mono_domain_get() && Assemblies::FlaxEngine.Assembly->IsLoaded())
@@ -1879,15 +1865,15 @@ void OnLogCallback(const char* logDomain, const char* logLevel, const char* mess
 
     if (errorLevel <= 2)
     {
-        Log::CLRInnerException(String::Format(TEXT("Message: {0} | Domain: {1}"), msg, currentDomain)).SetLevel(LogType::Error);
+        Log::CLRInnerException(String::Format(TEXT("[Mono] {0}"), msg)).SetLevel(LogType::Error);
     }
     else if (errorLevel <= 3)
     {
-        LOG(Warning, "Message: {0} | Domain: {1}", msg, currentDomain);
+        LOG(Warning, "[Mono] {0}", msg);
     }
     else
     {
-        LOG(Info, "Message: {0} | Domain: {1}", msg, currentDomain);
+        LOG(Info, "[Mono] {0}", msg);
     }
 #if DOTNET_HOST_MONO && !BUILD_RELEASE
     if (errorLevel <= 2)
