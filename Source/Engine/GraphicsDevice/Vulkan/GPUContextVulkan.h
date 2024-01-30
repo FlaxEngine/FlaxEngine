@@ -126,12 +126,12 @@ public:
     ~GPUContextVulkan();
 
 public:
-    QueueVulkan* GetQueue() const
+    FORCE_INLINE QueueVulkan* GetQueue() const
     {
         return _queue;
     }
 
-    CmdBufferManagerVulkan* GetCmdBufferManager() const
+    FORCE_INLINE CmdBufferManagerVulkan* GetCmdBufferManager() const
     {
         return _cmdBufferManager;
     }

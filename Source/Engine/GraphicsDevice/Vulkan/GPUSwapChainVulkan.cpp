@@ -11,6 +11,7 @@
 #include "Engine/Core/Log.h"
 #include "Engine/Graphics/GPULimits.h"
 #include "Engine/Scripting/Enums.h"
+#include "Engine/Profiler/ProfilerCPU.h"
 
 void BackBufferVulkan::Setup(GPUSwapChainVulkan* window, VkImage backbuffer, PixelFormat format, VkExtent3D extent)
 {
@@ -103,6 +104,7 @@ GPUTextureView* GPUSwapChainVulkan::GetBackBufferView()
 {
     if (_acquiredImageIndex == -1)
     {
+        PROFILE_CPU();
         if (TryPresent(DoAcquireImageIndex) < 0)
         {
             LOG(Fatal, "Swapchain acquire image index failed!");
@@ -125,7 +127,6 @@ GPUTextureView* GPUSwapChainVulkan::GetBackBufferView()
         cmdBufferManager->PrepareForNewActiveCommandBuffer();
         ASSERT(cmdBufferManager->HasPendingActiveCmdBuffer() && cmdBufferManager->GetActiveCmdBuffer()->GetState() == CmdBufferVulkan::State::IsInsideBegin);
     }
-
     return &_backBuffers[_acquiredImageIndex].Handle;
 }
 
@@ -174,7 +175,7 @@ bool GPUSwapChainVulkan::CreateSwapChain(int32 width, int32 height)
     auto windowHandle = _window->GetNativePtr();
     if (!windowHandle)
         return false;
-
+    PROFILE_CPU();
     GPUDeviceLock lock(_device);
     const auto device = _device->Device;
 
@@ -411,9 +412,7 @@ bool GPUSwapChainVulkan::CreateSwapChain(int32 width, int32 height)
 GPUSwapChainVulkan::Status GPUSwapChainVulkan::Present(QueueVulkan* presentQueue, SemaphoreVulkan* backBufferRenderingDoneSemaphore)
 {
     if (_currentImageIndex == -1)
-    {
         return Status::Ok;
-    }
 
     VkPresentInfoKHR presentInfo;
     RenderToolsVulkan::ZeroStruct(presentInfo, VK_STRUCTURE_TYPE_PRESENT_INFO_KHR);
@@ -429,7 +428,6 @@ GPUSwapChainVulkan::Status GPUSwapChainVulkan::Present(QueueVulkan* presentQueue
     presentInfo.pImageIndices = (uint32*)&_currentImageIndex;
 
     const VkResult presentResult = vkQueuePresentKHR(presentQueue->GetHandle(), &presentInfo);
-
     if (presentResult == VK_ERROR_OUT_OF_DATE_KHR)
     {
         return Status::Outdated;
@@ -450,7 +448,7 @@ GPUSwapChainVulkan::Status GPUSwapChainVulkan::Present(QueueVulkan* presentQueue
 
 int32 GPUSwapChainVulkan::DoAcquireImageIndex(GPUSwapChainVulkan* viewport, void* customData)
 {
-    return viewport->_acquiredImageIndex = viewport->AcquireNextImage(&viewport->_acquiredSemaphore);
+    return viewport->_acquiredImageIndex = viewport->AcquireNextImage(viewport->_acquiredSemaphore);
 }
 
 int32 GPUSwapChainVulkan::DoPresent(GPUSwapChainVulkan* viewport, void* customData)
@@ -462,7 +460,6 @@ int32 GPUSwapChainVulkan::TryPresent(Function<int32(GPUSwapChainVulkan*, void*)>
 {
     int32 attemptsPending = 4;
     int32 status = job(this, customData);
-
     while (status < 0 && attemptsPending > 0)
     {
         if (status == (int32)Status::Outdated)
@@ -491,18 +488,17 @@ int32 GPUSwapChainVulkan::TryPresent(Function<int32(GPUSwapChainVulkan*, void*)>
         _device->WaitForGPU();
 
         status = job(this, customData);
-
         attemptsPending--;
     }
-
     return status;
 }
 
-int32 GPUSwapChainVulkan::AcquireNextImage(SemaphoreVulkan** outSemaphore)
+int32 GPUSwapChainVulkan::AcquireNextImage(SemaphoreVulkan*& outSemaphore)
 {
+    PROFILE_CPU();
     ASSERT(_swapChain && _backBuffers.HasItems());
 
-    uint32 imageIndex = 0;
+    uint32 imageIndex = _currentImageIndex;
     const int32 prevSemaphoreIndex = _semaphoreIndex;
     _semaphoreIndex = (_semaphoreIndex + 1) % _backBuffers.Count();
     const auto semaphore = _backBuffers[_semaphoreIndex].ImageAcquiredSemaphore;
@@ -514,21 +510,17 @@ int32 GPUSwapChainVulkan::AcquireNextImage(SemaphoreVulkan** outSemaphore)
         semaphore->GetHandle(),
         VK_NULL_HANDLE,
         &imageIndex);
-
     if (result == VK_ERROR_OUT_OF_DATE_KHR)
     {
         _semaphoreIndex = prevSemaphoreIndex;
         return (int32)Status::Outdated;
     }
-
     if (result == VK_ERROR_SURFACE_LOST_KHR)
     {
         _semaphoreIndex = prevSemaphoreIndex;
         return (int32)Status::LostSurface;
     }
-
-    *outSemaphore = semaphore;
-
+    outSemaphore = semaphore;
     if (result == VK_ERROR_VALIDATION_FAILED_EXT)
     {
         LOG(Fatal, "vkAcquireNextImageKHR failed with validation error");
@@ -549,6 +541,7 @@ void GPUSwapChainVulkan::Present(bool vsync)
     // Skip if there was no rendering to the backbuffer
     if (_acquiredImageIndex == -1)
         return;
+    PROFILE_CPU();
 
     // Ensure that backbuffer has been acquired before presenting it to the window
     const auto backBuffer = (GPUTextureViewVulkan*)GetBackBufferView();

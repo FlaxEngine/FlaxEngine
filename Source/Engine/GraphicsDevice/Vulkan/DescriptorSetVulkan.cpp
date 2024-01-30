@@ -312,7 +312,6 @@ DescriptorPoolsManagerVulkan::~DescriptorPoolsManagerVulkan()
 DescriptorPoolSetContainerVulkan& DescriptorPoolsManagerVulkan::AcquirePoolSetContainer()
 {
     ScopeLock lock(_locker);
-
     for (auto* poolSet : _poolSets)
     {
         if (poolSet->IsUnused())
@@ -322,7 +321,6 @@ DescriptorPoolSetContainerVulkan& DescriptorPoolsManagerVulkan::AcquirePoolSetCo
             return *poolSet;
         }
     }
-
     const auto poolSet = New<DescriptorPoolSetContainerVulkan>(_device);
     _poolSets.Add(poolSet);
     return *poolSet;

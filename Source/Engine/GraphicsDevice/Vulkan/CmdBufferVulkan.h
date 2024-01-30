@@ -199,7 +199,7 @@ public:
         return _queriesInProgress.Count() != 0;
     }
 
-    CmdBufferVulkan* GetCmdBuffer()
+    FORCE_INLINE CmdBufferVulkan* GetCmdBuffer()
     {
         if (!_activeCmdBuffer)
             PrepareForNewActiveCommandBuffer();

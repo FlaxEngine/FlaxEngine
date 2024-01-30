@@ -2020,6 +2020,7 @@ void GPUDeviceVulkan::WaitForGPU()
 {
     if (Device != VK_NULL_HANDLE)
     {
+        PROFILE_CPU();
         VALIDATE_VULKAN_RESULT(vkDeviceWaitIdle(Device));
     }
 }

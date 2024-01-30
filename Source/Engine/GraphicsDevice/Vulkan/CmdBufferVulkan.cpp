@@ -6,8 +6,11 @@
 #include "RenderToolsVulkan.h"
 #include "QueueVulkan.h"
 #include "GPUContextVulkan.h"
+#if VULKAN_USE_QUERIES
 #include "GPUTimerQueryVulkan.h"
+#endif
 #include "DescriptorSetVulkan.h"
+#include "Engine/Profiler/ProfilerCPU.h"
 
 void CmdBufferVulkan::AddWaitSemaphore(VkPipelineStageFlags waitFlags, SemaphoreVulkan* waitSemaphore)
 {
@@ -18,6 +21,7 @@ void CmdBufferVulkan::AddWaitSemaphore(VkPipelineStageFlags waitFlags, Semaphore
 
 void CmdBufferVulkan::Begin()
 {
+    PROFILE_CPU();
     ASSERT(_state == State::ReadyForBegin);
 
     VkCommandBufferBeginInfo beginInfo;
@@ -41,6 +45,7 @@ void CmdBufferVulkan::Begin()
 
 void CmdBufferVulkan::End()
 {
+    PROFILE_CPU();
     ASSERT(IsOutsideRenderPass());
 
 #if GPU_ALLOW_PROFILE_EVENTS && VK_EXT_debug_utils
@@ -242,12 +247,12 @@ CmdBufferManagerVulkan::CmdBufferManagerVulkan(GPUDeviceVulkan* device, GPUConte
 
 void CmdBufferManagerVulkan::SubmitActiveCmdBuffer(SemaphoreVulkan* signalSemaphore)
 {
+    PROFILE_CPU();
     ASSERT(_activeCmdBuffer);
     if (!_activeCmdBuffer->IsSubmitted() && _activeCmdBuffer->HasBegun())
     {
         if (_activeCmdBuffer->IsInsideRenderPass())
             _activeCmdBuffer->EndRenderPass();
-
 
 #if VULKAN_USE_QUERIES
         // Pause all active queries
@@ -268,12 +273,12 @@ void CmdBufferManagerVulkan::SubmitActiveCmdBuffer(SemaphoreVulkan* signalSemaph
             _queue->Submit(_activeCmdBuffer);
         }
     }
-
     _activeCmdBuffer = nullptr;
 }
 
 void CmdBufferManagerVulkan::WaitForCmdBuffer(CmdBufferVulkan* cmdBuffer, float timeInSecondsToWait)
 {
+    PROFILE_CPU();
     ASSERT(cmdBuffer->IsSubmitted());
     const bool failed = _device->FenceManager.WaitForFence(cmdBuffer->GetFence(), (uint64)(timeInSecondsToWait * 1e9));
     ASSERT(!failed);
@@ -282,6 +287,7 @@ void CmdBufferManagerVulkan::WaitForCmdBuffer(CmdBufferVulkan* cmdBuffer, float 
 
 void CmdBufferManagerVulkan::PrepareForNewActiveCommandBuffer()
 {
+    PROFILE_CPU();
     for (int32 i = 0; i < _pool._cmdBuffers.Count(); i++)
     {
         auto cmdBuffer = _pool._cmdBuffers[i];

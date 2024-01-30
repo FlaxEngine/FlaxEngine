@@ -98,7 +98,7 @@ public:
     static int32 DoAcquireImageIndex(GPUSwapChainVulkan* viewport, void* customData);
     static int32 DoPresent(GPUSwapChainVulkan* viewport, void* customData);
     int32 TryPresent(Function<int32(GPUSwapChainVulkan*, void*)> job, void* customData = nullptr, bool skipOnOutOfDate = false);
-    int32 AcquireNextImage(SemaphoreVulkan** outSemaphore);
+    int32 AcquireNextImage(SemaphoreVulkan*& outSemaphore);
 
 private:
     void ReleaseBackBuffer();
