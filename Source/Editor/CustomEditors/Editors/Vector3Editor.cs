@@ -97,6 +97,18 @@ namespace FlaxEditor.CustomEditors.Editors
             ZElement.SetCategory(category);
             ZElement.ValueBox.ValueChanged += OnZValueChanged;
             ZElement.ValueBox.SlidingEnd += ClearToken;
+            LinkedLabel.SetupContextMenu += (label, menu, editor) =>
+            {
+                menu.AddSeparator();
+                var mb = menu.AddButton("Show formatted", bt =>
+                {
+                    XElement.SetCategory(bt.Checked ? category : Utils.ValueCategory.None);
+                    YElement.SetCategory(bt.Checked ? category : Utils.ValueCategory.None);
+                    ZElement.SetCategory(bt.Checked ? category : Utils.ValueCategory.None);
+                });
+                mb.AutoCheck = true;
+                mb.Checked = XElement.ValueBox.Category != Utils.ValueCategory.None;
+            };
         }
 
         private void OnXValueChanged()
@@ -283,6 +295,18 @@ namespace FlaxEditor.CustomEditors.Editors
             ZElement.SetCategory(category);
             ZElement.ValueBox.ValueChanged += OnValueChanged;
             ZElement.ValueBox.SlidingEnd += ClearToken;
+            LinkedLabel.SetupContextMenu += (label, menu, editor) =>
+            {
+                menu.AddSeparator();
+                var mb = menu.AddButton("Show formatted", bt =>
+                {
+                    XElement.SetCategory(bt.Checked ? category : Utils.ValueCategory.None);
+                    YElement.SetCategory(bt.Checked ? category : Utils.ValueCategory.None);
+                    ZElement.SetCategory(bt.Checked ? category : Utils.ValueCategory.None);
+                });
+                mb.AutoCheck = true;
+                mb.Checked = XElement.ValueBox.Category != Utils.ValueCategory.None;
+            };
         }
 
         private void OnValueChanged()

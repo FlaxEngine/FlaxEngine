@@ -3,6 +3,7 @@
 using System;
 using System.Linq;
 using FlaxEditor.CustomEditors.Elements;
+using FlaxEditor.GUI.ContextMenu;
 using FlaxEngine;
 using Utils = FlaxEngine.Utils;
 
@@ -56,6 +57,13 @@ namespace FlaxEditor.CustomEditors.Editors
                     floatValue.ValueBox.ValueChanged += OnValueChanged;
                     floatValue.ValueBox.SlidingEnd += ClearToken;
                     _element = floatValue;
+                    LinkedLabel.SetupContextMenu += (label, menu, editor) =>
+                    {
+                        menu.AddSeparator();
+                        var mb = menu.AddButton("Show formatted", bt => { floatValue.SetCategory(bt.Checked ? valueCategory : Utils.ValueCategory.None);});
+                        mb.AutoCheck = true;
+                        mb.Checked = floatValue.ValueBox.Category != Utils.ValueCategory.None;
+                    };
                     return;
                 }
             }
@@ -67,6 +75,13 @@ namespace FlaxEditor.CustomEditors.Editors
                 floatValue.ValueBox.ValueChanged += OnValueChanged;
                 floatValue.ValueBox.SlidingEnd += ClearToken;
                 _element = floatValue;
+                LinkedLabel.SetupContextMenu += (label, menu, editor) =>
+                {
+                    menu.AddSeparator();
+                    var mb = menu.AddButton("Show formatted", bt => { floatValue.SetCategory(bt.Checked ? valueCategory : Utils.ValueCategory.None);});
+                    mb.AutoCheck = true;
+                    mb.Checked = floatValue.ValueBox.Category != Utils.ValueCategory.None;
+                };
             }
         }
 

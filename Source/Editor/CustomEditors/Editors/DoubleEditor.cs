@@ -40,6 +40,13 @@ namespace FlaxEditor.CustomEditors.Editors
                     doubleValue.ValueBox.ValueChanged += OnValueChanged;
                     doubleValue.ValueBox.SlidingEnd += ClearToken;
                     _element = doubleValue;
+                    LinkedLabel.SetupContextMenu += (label, menu, editor) =>
+                    {
+                        menu.AddSeparator();
+                        var mb = menu.AddButton("Show formatted", bt => { doubleValue.SetCategory(bt.Checked ? valueCategory : Utils.ValueCategory.None);});
+                        mb.AutoCheck = true;
+                        mb.Checked = doubleValue.ValueBox.Category != Utils.ValueCategory.None;
+                    };
                     return;
                 }
             }
@@ -50,6 +57,13 @@ namespace FlaxEditor.CustomEditors.Editors
                 doubleValue.SetCategory(valueCategory);
                 doubleValue.ValueBox.ValueChanged += OnValueChanged;
                 doubleValue.ValueBox.SlidingEnd += ClearToken;
+                LinkedLabel.SetupContextMenu += (label, menu, editor) =>
+                {
+                    menu.AddSeparator();
+                    var mb = menu.AddButton("Show formatted", bt => { doubleValue.SetCategory(bt.Checked ? valueCategory : Utils.ValueCategory.None);});
+                    mb.AutoCheck = true;
+                    mb.Checked = doubleValue.ValueBox.Category != Utils.ValueCategory.None;
+                };
                 _element = doubleValue;
             }
         }
