@@ -2,6 +2,7 @@
 
 using System.ComponentModel;
 using FlaxEditor.GUI.Docking;
+using FlaxEditor.Utilities;
 using FlaxEngine;
 
 namespace FlaxEditor.Options
@@ -91,6 +92,25 @@ namespace FlaxEditor.Options
         }
 
         /// <summary>
+        /// Options for formatting numerical values
+        /// </summary>
+        public enum ValueFormattingType
+        {
+            /// <summary>
+            /// No formatting
+            /// </summary>
+            None,
+            /// <summary>
+            /// Format using the base SI unit
+            /// </summary>
+            BaseUnit,
+            /// <summary>
+            /// Format using a unit that matches the value best
+            /// </summary>
+            AutoUnit
+        }
+
+        /// <summary>
         /// Gets or sets the Editor User Interface scale. Applied to all UI elements, windows and text. Can be used to scale the interface up on a bigger display. Editor restart required.
         /// </summary>
         [DefaultValue(1.0f), Limit(0.1f, 10.0f)]
@@ -147,6 +167,23 @@ namespace FlaxEditor.Options
         [DefaultValue(FlaxEngine.GUI.Orientation.Horizontal)]
         [EditorDisplay("Interface"), EditorOrder(280), Tooltip("Editor content window orientation.")]
         public FlaxEngine.GUI.Orientation ContentWindowOrientation { get; set; } = FlaxEngine.GUI.Orientation.Horizontal;
+
+        private ValueFormattingType _valueFormatting = ValueFormattingType.None;
+
+        /// <summary>
+        /// Gets or sets the formatting option for numeric values in the editor.
+        /// </summary>
+        [DefaultValue(ValueFormattingType.None)]
+        [EditorDisplay("Interface"), EditorOrder(300), Tooltip("Formatting of numeric values.")]
+        public ValueFormattingType ValueFormating {
+            get => _valueFormatting;
+            set
+            {
+                _valueFormatting = value;
+                Units.UseUnitsFormatting = _valueFormatting != ValueFormattingType.None;
+                Units.AutomaticUnitsFormatting = _valueFormatting == ValueFormattingType.AutoUnit;
+            }
+        }
 
         /// <summary>
         /// Gets or sets the timestamps prefix mode for output log messages.
