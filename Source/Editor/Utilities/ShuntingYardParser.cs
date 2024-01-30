@@ -137,7 +137,7 @@ namespace FlaxEditor.Utilities
             ["m³"] = Units.Meters2Units * Units.Meters2Units * Units.Meters2Units,
             ["kg"] = 1,
             ["g"] = 0.001,
-            ["N"] = Units.Meters2Units
+            ["n"] = Units.Meters2Units
         };
 
         /// <summary>
@@ -387,7 +387,7 @@ namespace FlaxEditor.Utilities
                     }
                     else
                     {
-                        throw new ParsingException("unknown variable");
+                        throw new ParsingException($"unknown variable : {token.Value}");
                     }
                 }
                 else
