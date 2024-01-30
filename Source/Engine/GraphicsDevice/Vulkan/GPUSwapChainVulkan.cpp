@@ -208,8 +208,6 @@ bool GPUSwapChainVulkan::CreateSwapChain(int32 width, int32 height)
     {
         uint32 surfaceFormatsCount;
         VALIDATE_VULKAN_RESULT(vkGetPhysicalDeviceSurfaceFormatsKHR(gpu, _surface, &surfaceFormatsCount, nullptr));
-        ASSERT(surfaceFormatsCount > 0);
-
         Array<VkSurfaceFormatKHR, InlinedAllocation<16>> surfaceFormats;
         surfaceFormats.AddZeroed(surfaceFormatsCount);
         VALIDATE_VULKAN_RESULT(vkGetPhysicalDeviceSurfaceFormatsKHR(gpu, _surface, &surfaceFormatsCount, surfaceFormats.Get()));
@@ -229,7 +227,6 @@ bool GPUSwapChainVulkan::CreateSwapChain(int32 width, int32 height)
                         break;
                     }
                 }
-
                 if (!found)
                 {
                     LOG(Warning, "Requested pixel format {0} not supported by this swapchain. Falling back to supported swapchain formats...", ScriptingEnum::ToString(resultFormat));
@@ -255,22 +252,18 @@ bool GPUSwapChainVulkan::CreateSwapChain(int32 width, int32 height)
                     {
                         resultFormat = static_cast<PixelFormat>(pixelFormat);
                         result = surfaceFormats[i];
-                        LOG(Info, "No swapchain format requested, picking up Vulkan format {0}", (uint32)result.format);
+                        LOG(Info, "No swapchain format requested, picking up format {} (vk={})", ScriptingEnum::ToString(resultFormat), (int32)result.format);
                         break;
                     }
                 }
-
                 if (resultFormat != PixelFormat::Unknown)
-                {
                     break;
-                }
             }
         }
 
         if (resultFormat == PixelFormat::Unknown)
         {
             LOG(Warning, "Can't find a proper pixel format for the swapchain, trying to pick up the first available");
-
             const VkFormat format = RenderToolsVulkan::ToVulkanFormat(resultFormat);
             bool supported = false;
             for (int32 i = 0; i < surfaceFormats.Count(); i++)
@@ -283,24 +276,14 @@ bool GPUSwapChainVulkan::CreateSwapChain(int32 width, int32 height)
                 }
             }
             ASSERT(supported);
-
             String msg;
             for (int32 index = 0; index < surfaceFormats.Count(); index++)
             {
-                if (index == 0)
-                {
-                    msg += TEXT("(");
-                }
-                else
-                {
-                    msg += TEXT(", ");
-                }
+                msg += index == 0 ? TEXT("(") : TEXT(", ");
                 msg += StringUtils::ToString((int32)surfaceFormats[index].format);
             }
             if (surfaceFormats.HasItems())
-            {
                 msg += TEXT(")");
-            }
             LOG(Error, "Unable to find a pixel format for the swapchain; swapchain returned {0} Vulkan formats {1}", surfaceFormats.Count(), *msg);
         }
     }
@@ -315,16 +298,12 @@ bool GPUSwapChainVulkan::CreateSwapChain(int32 width, int32 height)
     {
         uint32 presentModesCount = 0;
         VALIDATE_VULKAN_RESULT(vkGetPhysicalDeviceSurfacePresentModesKHR(gpu, _surface, &presentModesCount, nullptr));
-        ASSERT(presentModesCount > 0);
-
         Array<VkPresentModeKHR, InlinedAllocation<4>> presentModes;
         presentModes.Resize(presentModesCount);
         VALIDATE_VULKAN_RESULT(vkGetPhysicalDeviceSurfacePresentModesKHR(gpu, _surface, &presentModesCount, presentModes.Get()));
-
         bool foundPresentModeMailbox = false;
         bool foundPresentModeImmediate = false;
         bool foundPresentModeFifo = false;
-
         for (size_t i = 0; i < presentModesCount; i++)
         {
             switch (presentModes[(int32)i])
@@ -340,7 +319,6 @@ bool GPUSwapChainVulkan::CreateSwapChain(int32 width, int32 height)
                 break;
             }
         }
-
         if (foundPresentModeMailbox)
         {
             presentMode = VK_PRESENT_MODE_MAILBOX_KHR;
