@@ -113,6 +113,11 @@ extern "C" typedef BOOL (WINAPI *t_GetLogicalProcessorInformationEx)( LOGICAL_PR
 #  include <mutex>
 #endif
 
+#if !defined _WIN32 && !defined __linux__ && !defined __APPLE__
+#include "Engine/Core/Types/String.h"
+#include "Engine/Platform/MemoryStats.h"
+#endif
+
 namespace tracy
 {
 
@@ -383,7 +388,7 @@ static int64_t SetupHwTimer()
 
 static const char* GetProcessName()
 {
-    const char* processName = "unknown";
+    const char* processName = "FlaxEngine";
 #ifdef _WIN32
     static char buf[_MAX_PATH];
     GetModuleFileNameA( nullptr, buf, _MAX_PATH );
@@ -518,7 +523,10 @@ static const char* GetHostInfo()
 #elif defined __OpenBSD__
     ptr += sprintf( ptr, "OS: BSD (OpenBSD)\n" );
 #else
-    ptr += sprintf( ptr, "OS: unknown\n" );
+    String computerName = Platform::GetComputerName();
+    char computerNameBuf[60];
+    StringUtils::ConvertUTF162ANSI(computerName.Get(), computerNameBuf, computerName.Length());
+    ptr += sprintf( ptr, "OS: %s\n", computerNameBuf );
 #endif
 
 #if defined _MSC_VER
@@ -690,7 +698,7 @@ static const char* GetHostInfo()
     sysctlbyname( "hw.physmem", &memSize, &sz, nullptr, 0 );
     ptr += sprintf( ptr, "RAM: %zu MB\n", memSize / 1024 / 1024 );
 #else
-    ptr += sprintf( ptr, "RAM: unknown\n" );
+    ptr += sprintf( ptr, "RAM: %zu MB\n", (size_t)Platform::GetMemoryStats().TotalPhysicalMemory / 1024 / 1024 );
 #endif
 
     return buf;

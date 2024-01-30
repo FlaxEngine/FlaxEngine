@@ -34,6 +34,7 @@ public class Profiler : EngineModule
         case TargetPlatform.Android:
         case TargetPlatform.Linux:
         case TargetPlatform.Windows:
+        case TargetPlatform.Switch:
             options.PublicDependencies.Add("tracy");
             break;
         }
