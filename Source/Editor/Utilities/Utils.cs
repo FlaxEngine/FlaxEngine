@@ -1203,6 +1203,7 @@ namespace FlaxEditor.Utilities
                 case FlaxEngine.Utils.ValueCategory.Volume: return (value / Units.Meters2Units / Units.Meters2Units / Units.Meters2Units).ToString(format, CultureInfo.InvariantCulture) + "m³";
                 case FlaxEngine.Utils.ValueCategory.Mass: return value.ToString(format, CultureInfo.InvariantCulture) + "kg";
                 case FlaxEngine.Utils.ValueCategory.Force: return (value / Units.Meters2Units).ToString(format, CultureInfo.InvariantCulture) + "N";
+                case FlaxEngine.Utils.ValueCategory.Torque: return (value / Units.Meters2Units / Units.Meters2Units).ToString(format, CultureInfo.InvariantCulture) + "Nm";
                 case FlaxEngine.Utils.ValueCategory.None:
                 default:
                     return FormatFloat(value);

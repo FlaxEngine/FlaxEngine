@@ -1053,7 +1053,8 @@ namespace FlaxEngine
             Speed,
             Acceleration,
             Time,
-            Force
+            Force,
+            Torque
         }
     }
 }
