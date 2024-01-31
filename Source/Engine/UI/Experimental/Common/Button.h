@@ -30,9 +30,9 @@ public:
         Release = 4,
     };
     /// <summary>
-    /// Called when Button changes state yhr <bool> is true if 
+    /// Called when Button changes state
     /// </summary>
-    API_EVENT() Delegate<State> ButtonStateChanged;
+    API_EVENT() Delegate<UIButton*,State> StateChanged;
 private:
 
     State ButtonState;

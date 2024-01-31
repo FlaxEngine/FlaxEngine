@@ -270,9 +270,6 @@ void UIPanelComponent::Render()
     {
         for (auto i = 0; i < slots.Count(); i++)
         {
-            if (!slots[i]->Content->IsVisible())
-                continue;
-
             if (CanCast(slots[i]->Content->GetStaticClass(), UIPanelComponent::GetStaticClass()))
             {
                 UIPanelComponent* panel = ((UIPanelComponent*)slots[i]->Content);

@@ -51,9 +51,9 @@ void UIButton::SetState(State InNewState)
     if (InNewState != ButtonState)
     {
         ButtonState = InNewState;
-        if (ButtonStateChanged.IsBinded())
+        if (StateChanged.IsBinded())
         {
-            ButtonStateChanged(ButtonState);
+            StateChanged(this,ButtonState);
         }
     }
 }

@@ -21,8 +21,4 @@ enum class UIEventResponse
 	/// The captures the events and consumes the event
 	/// </summary>
 	Capture = 2,
-	/// <summary>
-	/// The turns on the drag and drop on this element to turn it off send <b>UIEventResponse::None </b>
-	/// </summary>
-	Drag = 4 | Focus | Capture
 };

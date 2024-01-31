@@ -13,26 +13,189 @@ using FlaxEditor.CustomEditors;
 
 namespace FlaxEditor.Experimental.UI
 {
-    internal class UITransformationTool : UIBlueprint 
+    internal class UITransformationToolBlueprint: UIBlueprint 
     {
-        UIButton LeftHandle;
-        UIButton RightHandle;
-        UIButton TopHandle;
-        UIButton TopRightHandle;
-        UIButton TopLeftHandle;
-        UIButton BottomHandle;
-        UIButton BottomLeftHandle;
-        UIButton BottomRightHandle;
+        internal enum Selection
+        {
+            Center = 0,
+            Top = 1,
+            Bottom = 2,
+            Left = 4,
+            Right = 8
+        }
+        internal Selection SelectedHandle = Selection.Center;
+        internal Vector2 PointerLocation;
+        private UIComponent Selected = null;
+        private Vector2 Offset;
+        private UIButton LeftHandle;
+        private UIButton RightHandle;
+        private UIButton TopHandle;
+        private UIButton TopRightHandle;
+        private UIButton TopLeftHandle;
+        private UIButton BottomHandle;
+        private UIButton BottomLeftHandle;
+        private UIButton BottomRightHandle;
+        private InputEventHook CenterHandle;
+
+        private UIComponent SelectedComponent;
+
+        internal UIComponent EditedComponent;
+        internal CustomEditorPresenter Presenter;
         protected override void OnInitialized()
         {
-            LeftHandle        = GetVariable<UIButton>("LeftHandle");
-            RightHandle       = GetVariable<UIButton>("RightHandle");
-            TopHandle         = GetVariable<UIButton>("TopHandle");
-            TopRightHandle    = GetVariable<UIButton>("TopRightHandle");
-            TopLeftHandle     = GetVariable<UIButton>("TopLeftHandle");
-            BottomHandle      = GetVariable<UIButton>("BottomHandle");
-            BottomLeftHandle  = GetVariable<UIButton>("BottomLeftHandle");
+            LeftHandle = GetVariable<UIButton>("LeftHandle");
+            RightHandle = GetVariable<UIButton>("RightHandle");
+            TopHandle = GetVariable<UIButton>("TopHandle");
+            TopRightHandle = GetVariable<UIButton>("TopRightHandle");
+            TopLeftHandle = GetVariable<UIButton>("TopLeftHandle");
+            BottomHandle = GetVariable<UIButton>("BottomHandle");
+            BottomLeftHandle = GetVariable<UIButton>("BottomLeftHandle");
             BottomRightHandle = GetVariable<UIButton>("BottomRightHandle");
+            CenterHandle = GetVariable<InputEventHook>("CenterHandle");
+
+            LeftHandle.StateChanged += HandlesStateChanged;
+            RightHandle.StateChanged += HandlesStateChanged;
+            TopHandle.StateChanged += HandlesStateChanged;
+            TopRightHandle.StateChanged += HandlesStateChanged;
+            TopLeftHandle.StateChanged += HandlesStateChanged;
+            BottomHandle.StateChanged += HandlesStateChanged;
+            BottomLeftHandle.StateChanged += HandlesStateChanged;
+            BottomRightHandle.StateChanged += HandlesStateChanged;
+
+            CenterHandle.PointerInput = CenterHandlePointerInputHook;
+        }
+        UIButton.State State;
+        private UIEventResponse CenterHandlePointerInputHook(UIPointerEvent InEvent)
+        {
+            if (InEvent.Locations.Length == 0)
+                return UIEventResponse.None;
+            bool IsInside = false;
+            foreach (var Location in InEvent.Locations)
+            {
+                if (CenterHandle.Contains(Location))
+                {
+                    IsInside = true;
+                    PointerLocation = Location;
+                }
+            }
+            if (!IsInside)
+            {
+                PointerLocation = InEvent.Locations[0];
+                State = UIButton.State.None;
+            }
+            else
+            {
+                var newState = (UIButton.State)InEvent.State;
+                if (State != newState)
+                {
+                    HandlesStateChanged(CenterHandle, newState);
+                    return UIEventResponse.Focus;
+                }
+            }
+            return UIEventResponse.None;
+        }
+        private void HandlesStateChanged(UIComponent button, UIButton.State state)
+        {
+            if (state == UIButton.State.Press)
+            {
+                switch (button.Label)
+                {
+                    case "CenterHandle": Selected = CenterHandle; SelectedHandle = Selection.Center; break;
+                    case "LeftHandle": Selected = LeftHandle; SelectedHandle = Selection.Left; break;
+                    case "RightHandle": Selected = RightHandle; SelectedHandle = Selection.Right; break;
+                    case "TopHandle": Selected = TopHandle; SelectedHandle = Selection.Top; break;
+                    case "TopRightHandle": Selected = TopRightHandle; SelectedHandle = Selection.Top | Selection.Right; break;
+                    case "TopLeftHandle": Selected = TopLeftHandle; SelectedHandle = Selection.Top | Selection.Left; break;
+                    case "BottomHandle": Selected = BottomHandle; SelectedHandle = Selection.Bottom; break;
+                    case "BottomLeftHandle": Selected = BottomLeftHandle; SelectedHandle = Selection.Bottom | Selection.Left; break;
+                    case "BottomRightHandle": Selected = BottomRightHandle; SelectedHandle = Selection.Bottom | Selection.Right; break;
+                    default:
+                        Debug.Log("Emm the UITransformationTool cant select handle");
+                        break;
+                }
+                if (Selected)
+                {
+                    SelectElement(EditedComponent, PointerLocation);
+                }
+            }
+            else
+            {
+                Debug.Log(state.ToString());
+                Selected = null;
+            }
+        }
+
+        internal void SelectForDrag(UIComponent Element)
+        {
+            Offset = PointerLocation - Element.Translation;
+            SelectedComponent = Element;
+
+            //coppy the simple transform
+            Component.Rect = Element.Rect;
+        }
+        internal void UpdateDragedObject() 
+        {
+            if (SelectedComponent == null)
+                return;
+            if (SelectedHandle == Selection.Center)
+            {
+                SelectedComponent.Translation = PointerLocation - Offset;
+                Component.Rect = SelectedComponent.Rect;
+            }
+            else
+            {
+                //resize the component
+
+            }
+        }
+        internal void EndDrag()
+        {
+            SelectedComponent = null;
+            SelectedHandle = Selection.Center;
+        }
+
+        private void SetSelection(UIComponent NewSelection)
+        {
+            if (SelectedComponent != null) SelectedComponent.Deselect();
+            SelectedComponent = NewSelection;
+            if (SelectedComponent != null)
+            {
+                SelectedComponent.Select();
+                SelectForDrag(SelectedComponent);
+                Presenter.Select(SelectedComponent);
+            }
+        }
+        private bool SelectElement(UIComponent comp, Float2 location)
+        {
+            bool GotSelection = false;
+            if (comp == null)
+                return false;
+
+            if (comp.Contains(location) && SelectedComponent != comp && !comp.IsLockedInDesigner())
+            {
+                SetSelection(comp);
+                GotSelection = true;
+            }
+            if (comp is UIPanelComponent panelComponent)
+            {
+                var children = panelComponent.GetAllChildren();
+                for (int i = 0; i < children.Length; i++)
+                {
+                    if (children[i].Contains(location) && SelectedComponent != children[i] && !children[i].IsLockedInDesigner())
+                    {
+                        if (SelectElement(children[i], location))
+                        {
+                            GotSelection = true;
+                            break;
+                        }
+                    }
+                }
+            }
+            if (!GotSelection)
+            {
+                SetSelection(null);
+            }
+            return GotSelection;
         }
     }
 
@@ -40,20 +203,20 @@ namespace FlaxEditor.Experimental.UI
     internal class UIDesignerEditor : AssetEditorWindow
     {
         (Type,UIDesignerAttribute)[] Attributes;
-        CustomEditorPresenter Presenter;
+        
 
         private UIBlueprint EditedBluprint;
         private NativeUIHost UITransformationTool;
         ToolStripButton _saveButton;
         ToolStripButton _addComponentButton;
 
-        UIBlueprint TransformationTool;
+        UITransformationToolBlueprint TransformationTool;
         public UIDesignerEditor(Editor editor, UIBlueprintAssetItem item) : base(editor, item)
         {
-            TransformationTool = UISystem.LoadEditorBlueprintAsset("Editor\\UI\\UITransformationTool.json");
+            TransformationTool = UISystem.LoadEditorBlueprintAsset("Editor\\UI\\UITransformationTool.json") as UITransformationToolBlueprint;
             EditedBluprint = UISystem.CreateFromBlueprintAsset(FlaxEngine.Content.Load<UIBlueprintAsset>(item.Path));
-            Presenter = new CustomEditorPresenter(editor.Undo, null, null);
-            Presenter.Panel.Parent = this;
+            TransformationTool.Presenter = new CustomEditorPresenter(editor.Undo, null, null);
+            TransformationTool.Presenter.Panel.Parent = this;
             
 
             // Toolstrip
@@ -75,7 +238,8 @@ namespace FlaxEditor.Experimental.UI
 
             TransformationTool.SetDesinerFlags(UIComponentDesignFlags.None);
 
-
+            EditedBluprint.SetDesinerFlags(UIComponentDesignFlags.Designing);
+            TransformationTool.EditedComponent = EditedBluprint.Component;
 
             //System.Linq madnes :D
             Attributes = typeof(UIComponent).Assembly.GetTypes().
@@ -88,7 +252,7 @@ namespace FlaxEditor.Experimental.UI
                     return (t, null);
                 }).Where(t => t.Item2 != null).ToArray();
 
-            EditedBluprint.SetDesinerFlags(UIComponentDesignFlags.Designing);
+            
         }
         public void AddComponent()
         {
@@ -109,103 +273,6 @@ namespace FlaxEditor.Experimental.UI
         {
             UISystem.SaveBlueprint(EditedBluprint);
             ClearEditedFlag();
-        }
-        Data dat = new Data();
-        struct Data 
-        {
-            public Vector2 mouseloc;
-            public Vector2 Offset;
-            public bool Drag;
-            public bool Resize;
-            public UIComponent Selection;
-        }
-        private void SetSelection(UIComponent NewSelection)
-        {
-            if (dat.Selection != null)
-                dat.Selection.Deselect();
-            dat.Selection = NewSelection;
-            if (dat.Selection != null)
-            {
-                dat.Selection.Select();
-                dat.Offset = dat.mouseloc - dat.Selection.Translation;
-                UITransformationTool.PanelComponent.Transform = dat.Selection.Transform;
-                dat.Drag = true;
-                Presenter.Select(dat.Selection);
-            }
-        }
-
-        public override bool OnMouseDown(Float2 location, MouseButton button)
-        {
-            if (button == MouseButton.Left)
-            {
-                dat.mouseloc = location - new Float2(0, _toolstrip.Size.Y);
-
-                SelectElement(EditedBluprint.Component, dat.mouseloc);
-                
-            }
-            if(dat.Selection != null && button == MouseButton.Right) 
-            {
-                dat.Resize = true;
-            }
-            return base.OnMouseDown(location, button);
-        }
-
-        private bool SelectElement(UIComponent comp, Float2 location)
-        {
-            bool GotSelection = false;
-            if (comp == null)
-                return false;
-
-            if (comp.Contains(location) && dat.Selection != comp && !comp.IsLockedInDesigner())
-            {
-                SetSelection(comp);
-                GotSelection = true;
-            }
-            if (comp is UIPanelComponent panelComponent)
-            {
-                var children = panelComponent.GetAllChildren();
-                for (int i = 0; i < children.Length; i++)
-                {
-                    if (children[i].Contains(location) && dat.Selection != children[i] && !children[i].IsLockedInDesigner())
-                    {
-                        if (SelectElement(children[i], location))
-                        {
-                            GotSelection = true;
-                            break;
-                        }
-                    }
-                }
-            }
-            if (!GotSelection)
-            {
-                SetSelection(null);
-            }
-            return GotSelection;
-        }
-
-        public override bool OnMouseUp(Float2 location, MouseButton button)
-        {
-            if (button == MouseButton.Left)
-            {
-                dat.Drag = false;
-                dat.Resize = false;
-            }
-            if(button == MouseButton.Right)
-            {
-                dat.Resize = false;
-            }
-            return base.OnMouseUp(location, button);
-        }
-        public override void OnMouseMove(Float2 location)
-        {
-            
-            dat.mouseloc = (location - new Float2(0, _toolstrip.Size.Y)) - dat.Offset;
-            if (dat.Selection != null && dat.Drag)
-            {
-                dat.Selection.Translation = dat.mouseloc;
-                Debug.Log("Got selection");
-            }
-            base.OnMouseMove(location);
         }
     }
 }

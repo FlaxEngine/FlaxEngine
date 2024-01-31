@@ -444,9 +444,10 @@ void UIComponent::DrawInternal()
         //there are computed every frame
         Transform.UpdateTransform();
     }
-    Render2D::PushTransform(Transform.CachedTransform);
-    OnDraw();
 #if USE_EDITOR
+    Render2D::PushTransform(Transform.CachedTransform);
+    if (IsVisible())
+        OnDraw();
     if (IsDesignTime())
     {
         if (HasAnyDesignerFlags(UIComponentDesignFlags::ShowOutline))
@@ -458,7 +459,11 @@ void UIComponent::DrawInternal()
             Render2D::DrawRectangle(Transform.Rect, Color::Gray, 2);
         }
     }
-#endif
     Render2D::PopTransform();
-
+#else
+    Render2D::PushTransform(Transform.CachedTransform);
+    if (IsVisible())
+        OnDraw();
+    Render2D::PopTransform();
+#endif
 }
