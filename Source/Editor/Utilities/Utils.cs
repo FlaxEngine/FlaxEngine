@@ -1179,6 +1179,10 @@ namespace FlaxEditor.Utilities
         /// <returns>the formatted string</returns>
         public static string FormatFloat(float value, FlaxEngine.Utils.ValueCategory category)
         {
+            if (float.IsPositiveInfinity(value) || value == float.MaxValue)
+                return "Infinity";
+            if (float.IsNegativeInfinity(value) || value == float.MinValue)
+                return "-Infinity";
             const string format = "g7";
             if (!Units.UseUnitsFormatting)
                 return FormatFloat(value);
@@ -1218,6 +1222,10 @@ namespace FlaxEditor.Utilities
         /// <returns>the formatted string</returns>
         public static string FormatFloat(double value, FlaxEngine.Utils.ValueCategory category)
         {
+            if (double.IsPositiveInfinity(value) || value == double.MaxValue)
+                return "Infinity";
+            if (double.IsNegativeInfinity(value) || value == double.MinValue)
+                return "-Infinity";
             const string format = "g15";
             if (!Units.UseUnitsFormatting)
                 return FormatFloat(value);
