@@ -189,7 +189,7 @@ namespace FlaxEditor.Utilities
             if (Operators.ContainsKey(str))
                 return TokenType.Operator;
 
-            if (char.IsLetter(c))
+            if (char.IsLetter(c) || c=='²' || c=='³')
                 return TokenType.Variable;
 
             throw new ParsingException("wrong character");
