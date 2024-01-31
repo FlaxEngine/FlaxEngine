@@ -185,6 +185,21 @@ namespace FlaxEditor.Options
             }
         }
 
+        private bool _spaceNumberAndUnits = false;
+
+        /// <summary>
+        /// Gets or sets the option to put a space between numbers and units for unit formatting
+        /// </summary>
+        [DefaultValue(false)]
+        [EditorDisplay("Interface"), EditorOrder(310), Tooltip("Put a space between numbers and units.")]
+        public bool SpaceNumberAndUnits { get => _spaceNumberAndUnits;
+            set
+            {
+                _spaceNumberAndUnits = value;
+                Units.SpaceNumberAndUnits = _spaceNumberAndUnits;
+            }
+        }
+
         /// <summary>
         /// Gets or sets the timestamps prefix mode for output log messages.
         /// </summary>
