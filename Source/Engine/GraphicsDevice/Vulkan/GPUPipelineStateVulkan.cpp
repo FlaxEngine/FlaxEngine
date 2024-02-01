@@ -174,7 +174,7 @@ VkPipeline GPUPipelineStateVulkan::GetState(RenderPassVulkan* renderPass)
     // Update description to match the pipeline
     _descColorBlend.attachmentCount = renderPass->Layout.RTsCount;
     _descMultisample.rasterizationSamples = (VkSampleCountFlagBits)renderPass->Layout.MSAA;
-    _desc.renderPass = renderPass->GetHandle();
+    _desc.renderPass = renderPass->Handle;
 
     // Check if has missing layout
     if (_desc.layout == VK_NULL_HANDLE)
@@ -321,6 +321,10 @@ bool GPUPipelineStateVulkan::Init(const Description& desc)
     _descDepthStencil.front.passOp = ToVulkanStencilOp(desc.StencilPassOp);
     _descDepthStencil.front = _descDepthStencil.back;
     _desc.pDepthStencilState = &_descDepthStencil;
+    DepthReadEnable = desc.DepthEnable && desc.DepthFunc != ComparisonFunc::Always;
+    DepthWriteEnable = _descDepthStencil.depthWriteEnable;
+    StencilReadEnable = desc.StencilEnable && desc.StencilReadMask != 0 && desc.StencilFunc != ComparisonFunc::Always;
+    StencilWriteEnable = desc.StencilEnable && desc.StencilWriteMask != 0;
 
     // Rasterization
     RenderToolsVulkan::ZeroStruct(_descRasterization, VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO);

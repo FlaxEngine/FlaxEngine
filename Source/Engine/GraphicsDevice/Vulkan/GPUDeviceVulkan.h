@@ -173,21 +173,28 @@ private:
     void EnqueueGenericResource(Type type, uint64 handle, VmaAllocation allocation);
 };
 
-class RenderTargetLayoutVulkan
+struct RenderTargetLayoutVulkan
 {
-public:
-    int32 RTsCount;
+    union
+    {
+        struct
+        {
+            uint32 Layers : 10; // Limited by GPU_MAX_TEXTURE_ARRAY_SIZE
+            uint32 RTsCount : 3; // Limited by GPU_MAX_RT_BINDED
+            uint32 ReadDepth : 1;
+            uint32 WriteDepth : 1;
+            uint32 ReadStencil : 1;
+            uint32 WriteStencil : 1;
+            uint32 BlendEnable : 1;
+        };
+        uint32 Flags;
+    };
     MSAALevel MSAA;
-    bool ReadDepth;
-    bool WriteDepth;
-    bool BlendEnable;
     PixelFormat DepthFormat;
     PixelFormat RTVsFormats[GPU_MAX_RT_BINDED];
     VkExtent2D Extent;
-    uint32 Layers;
 
-public:
-    bool operator==(const RenderTargetLayoutVulkan& other) const
+    FORCE_INLINE bool operator==(const RenderTargetLayoutVulkan& other) const
     {
         return Platform::MemoryCompare(this, &other, sizeof(RenderTargetLayoutVulkan)) == 0;
     }
@@ -204,31 +211,20 @@ public:
         int32 AttachmentCount;
         VkImageView Attachments[GPU_MAX_RT_BINDED + 1];
 
-    public:
-        bool operator==(const Key& other) const
+        FORCE_INLINE bool operator==(const Key& other) const
         {
             return Platform::MemoryCompare(this, &other, sizeof(Key)) == 0;
         }
     };
 
-private:
-    GPUDeviceVulkan* _device;
-    VkFramebuffer _handle;
-
-public:
-    FramebufferVulkan(GPUDeviceVulkan* device, Key& key, VkExtent2D& extent, uint32 layers);
+    FramebufferVulkan(GPUDeviceVulkan* device, const Key& key, const VkExtent2D& extent, uint32 layers);
     ~FramebufferVulkan();
 
-public:
+    GPUDeviceVulkan* Device;
+    VkFramebuffer Handle;
     VkImageView Attachments[GPU_MAX_RT_BINDED + 1];
     VkExtent2D Extent;
     uint32 Layers;
-
-public:
-    inline VkFramebuffer GetHandle()
-    {
-        return _handle;
-    }
 
     bool HasReference(VkImageView imageView) const;
 };
@@ -237,22 +233,16 @@ uint32 GetHash(const FramebufferVulkan::Key& key);
 
 class RenderPassVulkan
 {
-private:
-    GPUDeviceVulkan* _device;
-    VkRenderPass _handle;
-
 public:
+    GPUDeviceVulkan* Device;
+    VkRenderPass Handle;
     RenderTargetLayoutVulkan Layout;
+#if VULKAN_USE_DEBUG_DATA
+    VkRenderPassCreateInfo DebugCreateInfo;
+#endif
 
-public:
     RenderPassVulkan(GPUDeviceVulkan* device, const RenderTargetLayoutVulkan& layout);
     ~RenderPassVulkan();
-
-public:
-    inline VkRenderPass GetHandle() const
-    {
-        return _handle;
-    }
 };
 
 class QueryPoolVulkan

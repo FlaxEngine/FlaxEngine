@@ -32,7 +32,7 @@ void CmdBufferVulkan::Begin()
     // Acquire a descriptor pool set on
     if (_descriptorPoolSetContainer == nullptr)
     {
-        AcquirePoolSet();
+        _descriptorPoolSetContainer = &_device->DescriptorPoolsManager->AcquirePoolSetContainer();
     }
 
     _state = State::IsInsideBegin;
@@ -61,18 +61,16 @@ void CmdBufferVulkan::End()
 void CmdBufferVulkan::BeginRenderPass(RenderPassVulkan* renderPass, FramebufferVulkan* framebuffer, uint32 clearValueCount, VkClearValue* clearValues)
 {
     ASSERT(IsOutsideRenderPass());
-
     VkRenderPassBeginInfo info;
     RenderToolsVulkan::ZeroStruct(info, VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO);
-    info.renderPass = renderPass->GetHandle();
-    info.framebuffer = framebuffer->GetHandle();
+    info.renderPass = renderPass->Handle;
+    info.framebuffer = framebuffer->Handle;
     info.renderArea.offset.x = 0;
     info.renderArea.offset.y = 0;
     info.renderArea.extent.width = framebuffer->Extent.width;
     info.renderArea.extent.height = framebuffer->Extent.height;
     info.clearValueCount = clearValueCount;
     info.pClearValues = clearValues;
-
     vkCmdBeginRenderPass(_commandBuffer, &info, VK_SUBPASS_CONTENTS_INLINE);
     _state = State::IsInsideRenderPass;
 }
@@ -82,12 +80,6 @@ void CmdBufferVulkan::EndRenderPass()
     ASSERT(IsInsideRenderPass());
     vkCmdEndRenderPass(_commandBuffer);
     _state = State::IsInsideBegin;
-}
-
-void CmdBufferVulkan::AcquirePoolSet()
-{
-    ASSERT(!_descriptorPoolSetContainer);
-    _descriptorPoolSetContainer = &_device->DescriptorPoolsManager->AcquirePoolSetContainer();
 }
 
 #if GPU_ALLOW_PROFILE_EVENTS
@@ -134,6 +126,7 @@ void CmdBufferVulkan::RefreshFenceStatus()
 {
     if (_state == State::Submitted)
     {
+        PROFILE_CPU();
         if (_device->FenceManager.IsFenceSignaled(_fence))
         {
             _state = State::ReadyForBegin;
@@ -258,7 +251,7 @@ void CmdBufferManagerVulkan::SubmitActiveCmdBuffer(SemaphoreVulkan* signalSemaph
         // Pause all active queries
         for (int32 i = 0; i < _queriesInProgress.Count(); i++)
         {
-            _queriesInProgress[i]->Interrupt(_activeCmdBuffer);
+            _queriesInProgress.Get()[i]->Interrupt(_activeCmdBuffer);
         }
 #endif
 
@@ -290,7 +283,7 @@ void CmdBufferManagerVulkan::PrepareForNewActiveCommandBuffer()
     PROFILE_CPU();
     for (int32 i = 0; i < _pool._cmdBuffers.Count(); i++)
     {
-        auto cmdBuffer = _pool._cmdBuffers[i];
+        auto cmdBuffer = _pool._cmdBuffers.Get()[i];
         cmdBuffer->RefreshFenceStatus();
         if (cmdBuffer->GetState() == CmdBufferVulkan::State::ReadyForBegin)
         {
@@ -312,7 +305,7 @@ void CmdBufferManagerVulkan::PrepareForNewActiveCommandBuffer()
     // Resume any paused queries with the new command buffer
     for (int32 i = 0; i < _queriesInProgress.Count(); i++)
     {
-        _queriesInProgress[i]->Resume(_activeCmdBuffer);
+        _queriesInProgress.Get()[i]->Resume(_activeCmdBuffer);
     }
 #endif
 }

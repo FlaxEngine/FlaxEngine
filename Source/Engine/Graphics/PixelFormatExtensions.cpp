@@ -236,6 +236,7 @@ bool PixelFormatExtensions::HasStencil(const PixelFormat format)
     switch (format)
     {
     case PixelFormat::D24_UNorm_S8_UInt:
+    case PixelFormat::D32_Float_S8X24_UInt:
         return true;
     default:
         return false;
@@ -848,6 +849,10 @@ PixelFormat PixelFormatExtensions::MakeTypeless(const PixelFormat format)
     case PixelFormat::BC7_UNorm:
     case PixelFormat::BC7_UNorm_sRGB:
         return PixelFormat::BC7_Typeless;
+    case PixelFormat::D24_UNorm_S8_UInt:
+        return PixelFormat::R24G8_Typeless;
+    case PixelFormat::D32_Float_S8X24_UInt:
+        return PixelFormat::R32G8X24_Typeless;
     default:
         return format;
     }

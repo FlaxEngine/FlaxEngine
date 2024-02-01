@@ -24,6 +24,10 @@ void GPUTextureViewVulkan::Init(GPUDeviceVulkan* device, ResourceOwnerVulkan* ow
     Extent.height = Math::Max<uint32_t>(1, extent.height >> firstMipIndex);
     Extent.depth = Math::Max<uint32_t>(1, extent.depth >> firstMipIndex);
     Layers = arraySize;
+#if VULKAN_USE_DEBUG_DATA
+    Format = format;
+    ReadOnlyDepth = readOnlyDepth;
+#endif
 
     RenderToolsVulkan::ZeroStruct(Info, VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO);
     Info.image = image;
@@ -56,12 +60,26 @@ void GPUTextureViewVulkan::Init(GPUDeviceVulkan* device, ResourceOwnerVulkan* ow
     if (PixelFormatExtensions::IsDepthStencil(format))
     {
         range.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+#if 0
+        // TODO: enable extension and use separateDepthStencilLayouts from Vulkan 1.2
         if (PixelFormatExtensions::HasStencil(format))
         {
             range.aspectMask |= VK_IMAGE_ASPECT_STENCIL_BIT;
+            LayoutRTV = readOnlyDepth ? VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL : VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+            LayoutSRV = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
         }
+        else
+        {
+            LayoutRTV = readOnlyDepth ? VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_OPTIMAL : VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL;
+            LayoutSRV = VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_OPTIMAL;
+        }
+#else
+
+        if (PixelFormatExtensions::HasStencil(format))
+            range.aspectMask |= VK_IMAGE_ASPECT_STENCIL_BIT;
         LayoutRTV = readOnlyDepth ? VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL : VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-        LayoutSRV = readOnlyDepth ? VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL : VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        LayoutSRV = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
+#endif
     }
     else
     {
@@ -113,13 +131,18 @@ void GPUTextureViewVulkan::Release()
         {
             Device->OnImageViewDestroy(ViewFramebuffer);
             Device->DeferredDeletionQueue.EnqueueResource(DeferredDeletionQueueVulkan::Type::ImageView, ViewFramebuffer);
+            ViewFramebuffer = VK_NULL_HANDLE;
+        }
+        if (ViewSRV != View && ViewSRV != VK_NULL_HANDLE)
+        {
+            Device->OnImageViewDestroy(ViewSRV);
+            Device->DeferredDeletionQueue.EnqueueResource(DeferredDeletionQueueVulkan::Type::ImageView, ViewSRV);
+            ViewSRV = VK_NULL_HANDLE;
         }
 
         Device->OnImageViewDestroy(View);
         Device->DeferredDeletionQueue.EnqueueResource(DeferredDeletionQueueVulkan::Type::ImageView, View);
-
         View = VK_NULL_HANDLE;
-        ViewFramebuffer = VK_NULL_HANDLE;
 
 #if BUILD_DEBUG
         Device = nullptr;
@@ -133,15 +156,26 @@ void GPUTextureViewVulkan::DescriptorAsImage(GPUContextVulkan* context, VkImageV
 {
     imageView = View;
     layout = LayoutSRV;
-
+    const VkImageAspectFlags aspectMask = Info.subresourceRange.aspectMask;
+    if (aspectMask == (VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT))
+    {
+        // Transition depth-only when binding depth buffer with stencil
+        if (ViewSRV == VK_NULL_HANDLE)
+        {
+            VkImageViewCreateInfo createInfo = Info;
+            createInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+            VALIDATE_VULKAN_RESULT(vkCreateImageView(Device->Device, &createInfo, nullptr, &ViewSRV));
+        }
+        imageView = ViewSRV;
+    }
     context->AddImageBarrier(this, LayoutSRV);
+    Info.subresourceRange.aspectMask = aspectMask;
 }
 
 void GPUTextureViewVulkan::DescriptorAsStorageImage(GPUContextVulkan* context, VkImageView& imageView, VkImageLayout& layout)
 {
     imageView = View;
     layout = VK_IMAGE_LAYOUT_GENERAL;
-
     context->AddImageBarrier(this, VK_IMAGE_LAYOUT_GENERAL);
 }
 
@@ -152,7 +186,6 @@ bool GPUTextureVulkan::GetData(int32 arrayOrDepthSliceIndex, int32 mipMapIndex, 
         LOG(Warning, "Texture::GetData is valid only for staging resources.");
         return true;
     }
-
     GPUDeviceLock lock(_device);
 
     // Internally it's a buffer, so adapt resource index and offset
@@ -209,7 +242,6 @@ void GPUTextureVulkan::DescriptorAsStorageImage(GPUContextVulkan* context, VkIma
     ASSERT(_handleUAV.Owner == this);
     imageView = _handleUAV.View;
     layout = VK_IMAGE_LAYOUT_GENERAL;
-
     context->AddImageBarrier(this, VK_IMAGE_LAYOUT_GENERAL);
 }
 

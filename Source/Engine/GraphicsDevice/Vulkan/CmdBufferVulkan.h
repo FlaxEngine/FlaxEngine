@@ -124,12 +124,10 @@ public:
     void BeginRenderPass(RenderPassVulkan* renderPass, FramebufferVulkan* framebuffer, uint32 clearValueCount, VkClearValue* clearValues);
     void EndRenderPass();
 
-    DescriptorPoolSetContainerVulkan* GetDescriptorPoolSet() const
+    FORCE_INLINE DescriptorPoolSetContainerVulkan* GetDescriptorPoolSet() const
     {
         return _descriptorPoolSetContainer;
     }
-
-    void AcquirePoolSet();
 
 #if GPU_ALLOW_PROFILE_EVENTS
     void BeginEvent(const Char* name);

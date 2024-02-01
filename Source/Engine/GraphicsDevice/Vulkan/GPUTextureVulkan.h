@@ -48,12 +48,17 @@ public:
     VkImage Image = VK_NULL_HANDLE;
     VkImageView View = VK_NULL_HANDLE;
     VkImageView ViewFramebuffer = VK_NULL_HANDLE;
+    VkImageView ViewSRV = VK_NULL_HANDLE;
     VkExtent3D Extent;
     uint32 Layers;
     VkImageViewCreateInfo Info;
     int32 SubresourceIndex;
     VkImageLayout LayoutRTV;
     VkImageLayout LayoutSRV;
+#if VULKAN_USE_DEBUG_DATA
+    PixelFormat Format;
+    bool ReadOnlyDepth;
+#endif
 
 public:
     void Init(GPUDeviceVulkan* device, ResourceOwnerVulkan* owner, VkImage image, int32 totalMipLevels, PixelFormat format, MSAALevel msaa, VkExtent3D extent, VkImageViewType viewType, int32 mipLevels = 1, int32 firstMipIndex = 0, int32 arraySize = 1, int32 firstArraySlice = 0, bool readOnlyDepth = false);

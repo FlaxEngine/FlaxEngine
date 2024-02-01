@@ -430,14 +430,10 @@ void DeferredDeletionQueueVulkan::EnqueueGenericResource(Type type, uint64 handl
 uint32 GetHash(const RenderTargetLayoutVulkan& key)
 {
     uint32 hash = (int32)key.MSAA * 11;
-    CombineHash(hash, (uint32)key.ReadDepth);
-    CombineHash(hash, (uint32)key.WriteDepth);
-    CombineHash(hash, (uint32)key.BlendEnable);
+    CombineHash(hash, key.Flags);
     CombineHash(hash, (uint32)key.DepthFormat * 93473262);
-    CombineHash(hash, key.RTsCount * 136);
     CombineHash(hash, key.Extent.width);
     CombineHash(hash, key.Extent.height);
-    CombineHash(hash, key.Layers);
     for (int32 i = 0; i < ARRAY_COUNT(key.RTVsFormats); i++)
         CombineHash(hash, (uint32)key.RTVsFormats[i]);
     return hash;
@@ -452,9 +448,9 @@ uint32 GetHash(const FramebufferVulkan::Key& key)
     return hash;
 }
 
-FramebufferVulkan::FramebufferVulkan(GPUDeviceVulkan* device, Key& key, VkExtent2D& extent, uint32 layers)
-    : _device(device)
-    , _handle(VK_NULL_HANDLE)
+FramebufferVulkan::FramebufferVulkan(GPUDeviceVulkan* device, const Key& key, const VkExtent2D& extent, uint32 layers)
+    : Device(device)
+    , Handle(VK_NULL_HANDLE)
     , Extent(extent)
     , Layers(layers)
 {
@@ -462,18 +458,18 @@ FramebufferVulkan::FramebufferVulkan(GPUDeviceVulkan* device, Key& key, VkExtent
 
     VkFramebufferCreateInfo createInfo;
     RenderToolsVulkan::ZeroStruct(createInfo, VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO);
-    createInfo.renderPass = key.RenderPass->GetHandle();
+    createInfo.renderPass = key.RenderPass->Handle;
     createInfo.attachmentCount = key.AttachmentCount;
     createInfo.pAttachments = key.Attachments;
     createInfo.width = extent.width;
     createInfo.height = extent.height;
     createInfo.layers = layers;
-    VALIDATE_VULKAN_RESULT(vkCreateFramebuffer(device->Device, &createInfo, nullptr, &_handle));
+    VALIDATE_VULKAN_RESULT(vkCreateFramebuffer(device->Device, &createInfo, nullptr, &Handle));
 }
 
 FramebufferVulkan::~FramebufferVulkan()
 {
-    _device->DeferredDeletionQueue.EnqueueResource(DeferredDeletionQueueVulkan::Type::Framebuffer, _handle);
+    Device->DeferredDeletionQueue.EnqueueResource(DeferredDeletionQueueVulkan::Type::Framebuffer, Handle);
 }
 
 bool FramebufferVulkan::HasReference(VkImageView imageView) const
@@ -487,8 +483,8 @@ bool FramebufferVulkan::HasReference(VkImageView imageView) const
 }
 
 RenderPassVulkan::RenderPassVulkan(GPUDeviceVulkan* device, const RenderTargetLayoutVulkan& layout)
-    : _device(device)
-    , _handle(VK_NULL_HANDLE)
+    : Device(device)
+    , Handle(VK_NULL_HANDLE)
     , Layout(layout)
 {
     const int32 colorAttachmentsCount = layout.RTsCount;
@@ -531,23 +527,48 @@ RenderPassVulkan::RenderPassVulkan(GPUDeviceVulkan* device, const RenderTargetLa
     if (hasDepthStencilAttachment)
     {
         VkImageLayout depthStencilLayout;
-        if (layout.ReadDepth && !layout.WriteDepth)
+#if 0
+        // TODO: enable extension and use separateDepthStencilLayouts from Vulkan 1.2
+        if (layout.ReadStencil || layout.WriteStencil)
+        {
+            if (layout.WriteDepth && layout.WriteStencil)
+                depthStencilLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+            else if (layout.WriteDepth && !layout.WriteStencil)
+                depthStencilLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL;
+            else if (layout.WriteStencil && !layout.WriteDepth)
+                depthStencilLayout = VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL;
+            else if (layout.ReadDepth)
+                depthStencilLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
+            else
+                depthStencilLayout = VK_IMAGE_LAYOUT_STENCIL_READ_ONLY_OPTIMAL;
+        }
+        else
+        {
+            // Depth-only
+            if (layout.ReadDepth && !layout.WriteDepth)
+                depthStencilLayout = VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_OPTIMAL;
+            else
+                depthStencilLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL;
+        }
+#else
+        if ((layout.ReadDepth || layout.ReadStencil) && !(layout.WriteDepth || layout.WriteStencil))
             depthStencilLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
         else
             depthStencilLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+#endif
 
         // Use last slot for depth stencil attachment
-        VkAttachmentDescription& depthAttachment = attachments[colorAttachmentsCount];
-        depthAttachment.flags = 0;
-        depthAttachment.format = RenderToolsVulkan::ToVulkanFormat(layout.DepthFormat);
-        depthAttachment.samples = (VkSampleCountFlagBits)layout.MSAA;
-        // TODO: fix those operations for load and store
-        depthAttachment.loadOp = layout.ReadDepth || true ? VK_ATTACHMENT_LOAD_OP_LOAD : VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-        depthAttachment.storeOp = layout.WriteDepth || true ? VK_ATTACHMENT_STORE_OP_STORE : VK_ATTACHMENT_STORE_OP_DONT_CARE;
-        depthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE; // TODO: Handle stencil
-        depthAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-        depthAttachment.initialLayout = depthStencilLayout;
-        depthAttachment.finalLayout = depthStencilLayout;
+        VkAttachmentDescription& attachment = attachments[colorAttachmentsCount];
+        attachment.flags = 0;
+        attachment.format = RenderToolsVulkan::ToVulkanFormat(layout.DepthFormat);
+        attachment.samples = (VkSampleCountFlagBits)layout.MSAA;
+        attachment.loadOp = layout.ReadDepth || layout.ReadStencil ? VK_ATTACHMENT_LOAD_OP_LOAD : VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+        //attachment.storeOp = layout.WriteDepth || layout.WriteStencil ? VK_ATTACHMENT_STORE_OP_STORE : VK_ATTACHMENT_STORE_OP_DONT_CARE;
+        attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE; // For some reason, read-only depth results in artifacts
+        attachment.stencilLoadOp = layout.ReadStencil ? VK_ATTACHMENT_LOAD_OP_LOAD : VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+        attachment.stencilStoreOp = layout.WriteStencil ? VK_ATTACHMENT_STORE_OP_STORE : VK_ATTACHMENT_STORE_OP_DONT_CARE;
+        attachment.initialLayout = depthStencilLayout;
+        attachment.finalLayout = depthStencilLayout;
         depthStencilReference.attachment = colorAttachmentsCount;
         depthStencilReference.layout = depthStencilLayout;
         subpassDesc.pDepthStencilAttachment = &depthStencilReference;
@@ -559,12 +580,15 @@ RenderPassVulkan::RenderPassVulkan(GPUDeviceVulkan* device, const RenderTargetLa
     createInfo.pAttachments = attachments;
     createInfo.subpassCount = 1;
     createInfo.pSubpasses = &subpassDesc;
-    VALIDATE_VULKAN_RESULT(vkCreateRenderPass(device->Device, &createInfo, nullptr, &_handle));
+    VALIDATE_VULKAN_RESULT(vkCreateRenderPass(device->Device, &createInfo, nullptr, &Handle));
+#if VULKAN_USE_DEBUG_DATA
+    DebugCreateInfo = createInfo;
+#endif
 }
 
 RenderPassVulkan::~RenderPassVulkan()
 {
-    _device->DeferredDeletionQueue.EnqueueResource(DeferredDeletionQueueVulkan::Type::RenderPass, _handle);
+    Device->DeferredDeletionQueue.EnqueueResource(DeferredDeletionQueueVulkan::Type::RenderPass, Handle);
 }
 
 QueryPoolVulkan::QueryPoolVulkan(GPUDeviceVulkan* device, int32 capacity, VkQueryType type)

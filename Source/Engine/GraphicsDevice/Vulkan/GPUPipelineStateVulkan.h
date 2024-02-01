@@ -117,7 +117,11 @@ public:
     /// </summary>
     uint32 UsedStagesMask;
 
-    bool BlendEnable;
+    uint32 BlendEnable : 1;
+    uint32 DepthReadEnable : 1;
+    uint32 DepthWriteEnable : 1;
+    uint32 StencilReadEnable : 1;
+    uint32 StencilWriteEnable : 1;
 
     /// <summary>
     /// The bitmask of stages that have descriptors.
@@ -146,40 +150,23 @@ public:
     TypedDescriptorPoolSetVulkan* CurrentTypedDescriptorPoolSet = nullptr;
     Array<VkDescriptorSet> DescriptorSetHandles;
 
+    Array<uint32> DynamicOffsets;
+
+public:
     inline bool AcquirePoolSet(CmdBufferVulkan* cmdBuffer)
     {
+        // Lazy init
+        if (!DescriptorSetsLayout)
+            GetLayout();
+
         // Pipeline state has no current descriptor pools set or set owner is not current - acquire a new pool set
         DescriptorPoolSetContainerVulkan* cmdBufferPoolSet = cmdBuffer->GetDescriptorPoolSet();
         if (CurrentTypedDescriptorPoolSet == nullptr || CurrentTypedDescriptorPoolSet->GetOwner() != cmdBufferPoolSet)
         {
-            ASSERT(cmdBufferPoolSet);
             CurrentTypedDescriptorPoolSet = cmdBufferPoolSet->AcquireTypedPoolSet(*DescriptorSetsLayout);
             return true;
         }
-
         return false;
-    }
-
-    inline bool AllocateDescriptorSets()
-    {
-        ASSERT(CurrentTypedDescriptorPoolSet);
-        return CurrentTypedDescriptorPoolSet->AllocateDescriptorSets(*DescriptorSetsLayout, DescriptorSetHandles.Get());
-    }
-
-    Array<uint32> DynamicOffsets;
-
-public:
-    void Bind(CmdBufferVulkan* cmdBuffer)
-    {
-        vkCmdBindDescriptorSets(
-            cmdBuffer->GetHandle(),
-            VK_PIPELINE_BIND_POINT_GRAPHICS,
-            GetLayout()->GetHandle(),
-            0,
-            DescriptorSetHandles.Count(),
-            DescriptorSetHandles.Get(),
-            DynamicOffsets.Count(),
-            DynamicOffsets.Get());
     }
 
     /// <summary>
