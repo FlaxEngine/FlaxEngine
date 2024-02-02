@@ -19,7 +19,7 @@ namespace FlaxEditor.GUI.Tree
         /// <summary>
         /// The key updates timeout in seconds.
         /// </summary>
-        public static float KeyUpdateTimeout = 0.12f;
+        public static float KeyUpdateTimeout = 0.25f;
 
         /// <summary>
         /// Delegate for selected tree nodes collection change.
@@ -349,8 +349,8 @@ namespace FlaxEditor.GUI.Tree
                 var window = Root;
                 if (_keyUpdateTime >= KeyUpdateTimeout && window is WindowRootControl windowRoot && windowRoot.Window.IsFocused)
                 {
-                    bool keyUpArrow = window.GetKeyDown(KeyboardKeys.ArrowUp);
-                    bool keyDownArrow = window.GetKeyDown(KeyboardKeys.ArrowDown);
+                    bool keyUpArrow = window.GetKey(KeyboardKeys.ArrowUp);
+                    bool keyDownArrow = window.GetKey(KeyboardKeys.ArrowDown);
 
                     // Check if arrow flags are different
                     if (keyDownArrow != keyUpArrow)
