@@ -387,7 +387,7 @@ void AudioBackendXAudio2::Source_OnAdd(AudioSource* source)
     const auto& header = clip->AudioHeader;
     auto& format = aSource->Format;
     format.wFormatTag = WAVE_FORMAT_PCM;
-    format.nChannels = clip->Is3D() ? 1 : header.Info.NumChannels; // 3d audio is always mono (AudioClip auto-converts before buffer write)
+    format.nChannels = clip->Is3D() ? 1 : header.Info.NumChannels; // 3d audio is always mono (AudioClip auto-converts before buffer write if FeatureFlags::SpatialMultiChannel is unset)
     format.nSamplesPerSec = header.Info.SampleRate;
     format.wBitsPerSample = header.Info.BitDepth;
     format.nBlockAlign = (WORD)(format.nChannels * (format.wBitsPerSample / 8));
