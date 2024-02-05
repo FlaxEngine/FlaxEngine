@@ -14,6 +14,8 @@ namespace FlaxEditor.Windows
     /// <seealso cref="DockWindow" />
     public abstract class EditorWindow : DockWindow
     {
+        private bool _mouseDown;
+
         /// <summary>
         /// Gets the editor object.
         /// </summary>
@@ -221,6 +223,41 @@ namespace FlaxEditor.Windows
                 break;
             }
             return false;
+        }
+
+        /// <inheritdoc />
+        public override bool OnMouseDown(Float2 location, MouseButton button)
+        {
+            if (base.OnMouseDown(location, button))
+                return true;
+            if (button == MouseButton.Left)
+            {
+                _mouseDown = true;
+                return true;
+            }
+            return false;
+        }
+
+        /// <inheritdoc />
+        public override bool OnMouseUp(Float2 location, MouseButton button)
+        {
+            if (base.OnMouseUp(location, button))
+                return true;
+            if (button == MouseButton.Left && _mouseDown)
+            {
+                _mouseDown = false;
+                Focus();
+                return true;
+            }
+            return false;
+        }
+
+        /// <inheritdoc />
+        public override void OnMouseLeave()
+        {
+            _mouseDown = false;
+
+            base.OnMouseLeave();
         }
 
         /// <inheritdoc />
