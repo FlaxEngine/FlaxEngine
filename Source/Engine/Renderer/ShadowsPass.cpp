@@ -89,7 +89,7 @@ bool ShadowsPass::Init()
         const auto formatTexture = PixelFormatExtensions::FindShaderResourceFormat(format, false);
         const auto formatFeaturesDepth = GPUDevice::Instance->GetFormatFeatures(format);
         const auto formatFeaturesTexture = GPUDevice::Instance->GetFormatFeatures(formatTexture);
-        if (EnumHasAllFlags(formatFeaturesDepth.Support, FormatSupport::DepthStencil | FormatSupport::Texture2D) &&
+        if (EnumHasAllFlags(formatFeaturesDepth.Support, FormatSupport::DepthStencil | FormatSupport::Texture2D | FormatSupport::TextureCube) &&
             EnumHasAllFlags(formatFeaturesTexture.Support, FormatSupport::ShaderSample | FormatSupport::ShaderSampleComparison))
         {
             _shadowMapFormat = format;
