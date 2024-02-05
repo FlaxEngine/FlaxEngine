@@ -400,8 +400,6 @@ public:
         uint32 HasKHRMaintenance1 : 1;
         uint32 HasKHRMaintenance2 : 1;
         uint32 HasMirrorClampToEdge : 1;
-        uint32 HasKHRExternalMemoryCapabilities : 1;
-        uint32 HasKHRGetPhysicalDeviceProperties2 : 1;
         uint32 HasEXTValidationCache : 1;
     };
 

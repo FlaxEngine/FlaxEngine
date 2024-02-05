@@ -998,11 +998,10 @@ void StagingManagerVulkan::ProcessPendingFree()
     }
 
     // Free staging buffers that has not been used for a few frames
-    const uint64 SafeFramesCount = 30;
     for (int32 i = _freeBuffers.Count() - 1; i >= 0; i--)
     {
-        auto& e = _freeBuffers[i];
-        if (e.FrameNumber + SafeFramesCount < Engine::FrameCount)
+        auto& e = _freeBuffers.Get()[i];
+        if (e.FrameNumber + VULKAN_RESOURCE_DELETE_SAFE_FRAMES_COUNT < Engine::FrameCount)
         {
             auto buffer = e.Buffer;
 
@@ -1027,7 +1026,7 @@ void StagingManagerVulkan::Dispose()
 {
     ScopeLock lock(_locker);
 
-#if !BUILD_RELEASE
+#if BUILD_DEBUG
     LOG(Info, "Vulkan staging buffers peek memory usage: {0}, allocs: {1}, frees: {2}", Utilities::BytesToText(_allBuffersPeekSize), Utilities::BytesToText(_allBuffersAllocSize), Utilities::BytesToText(_allBuffersFreeSize));
 #endif
 
@@ -1078,7 +1077,7 @@ GPUDevice* GPUDeviceVulkan::Create()
 #endif
 
     // Engine registration
-    const StringAsANSI<256> appName(*Globals::ProductName);
+    const StringAsANSI<> appName(*Globals::ProductName);
     VkApplicationInfo appInfo;
     RenderToolsVulkan::ZeroStruct(appInfo, VK_STRUCTURE_TYPE_APPLICATION_INFO);
     appInfo.pApplicationName = appName.Get();
@@ -1093,24 +1092,13 @@ GPUDevice* GPUDeviceVulkan::Create()
     instInfo.flags |= VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR;
 #endif
     instInfo.pApplicationInfo = &appInfo;
-
     GetInstanceLayersAndExtensions(InstanceExtensions, InstanceLayers, SupportsDebugUtilsExt);
-
-    const auto hasExtension = [](const Array<const char*>& extensions, const char* name) -> bool
-    {
-        const Function<bool(const char* const&)> callback = [&name](const char* const& extension) -> bool
-        {
-            return extension && StringUtils::Compare(extension, name) == 0;
-        };
-        return ArrayExtensions::Any(extensions, callback);
-    };
-
     instInfo.enabledExtensionCount = InstanceExtensions.Count();
     instInfo.ppEnabledExtensionNames = instInfo.enabledExtensionCount > 0 ? static_cast<const char* const*>(InstanceExtensions.Get()) : nullptr;
     instInfo.enabledLayerCount = InstanceLayers.Count();
     instInfo.ppEnabledLayerNames = instInfo.enabledLayerCount > 0 ? InstanceLayers.Get() : nullptr;
 #if VULKAN_USE_DEBUG_LAYER
-    SupportsDebugCallbackExt = !SupportsDebugUtilsExt && hasExtension(InstanceExtensions, VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
+    SupportsDebugCallbackExt = !SupportsDebugUtilsExt && RenderToolsVulkan::HasExtension(InstanceExtensions, VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
 #endif
 
     // Create Vulkan instance
@@ -1658,9 +1646,7 @@ bool GPUDeviceVulkan::Init()
         queue.pQueuePriorities = currentPriority;
         const VkQueueFamilyProperties& properties = QueueFamilyProps[queue.queueFamilyIndex];
         for (int32 queueIndex = 0; queueIndex < (int32)properties.queueCount; queueIndex++)
-        {
             *currentPriority++ = 1.0f;
-        }
     }
     deviceInfo.queueCreateInfoCount = queueFamilyInfos.Count();
     deviceInfo.pQueueCreateInfos = queueFamilyInfos.Get();
@@ -1847,12 +1833,17 @@ bool GPUDeviceVulkan::Init()
         INIT_FUNC(vkDestroyImage);
         INIT_FUNC(vkCmdCopyBuffer);
 #if VMA_DEDICATED_ALLOCATION
+#if PLATFORM_SWITCH
+        vulkanFunctions.vkGetBufferMemoryRequirements2KHR = vkGetBufferMemoryRequirements2;
+        vulkanFunctions.vkGetImageMemoryRequirements2KHR = vkGetImageMemoryRequirements2;
+#else
         INIT_FUNC(vkGetBufferMemoryRequirements2KHR);
         INIT_FUNC(vkGetImageMemoryRequirements2KHR);
 #endif
+#endif
 #undef INIT_FUNC
         VmaAllocatorCreateInfo allocatorInfo = {};
-        allocatorInfo.vulkanApiVersion = VK_API_VERSION_1_0;
+        allocatorInfo.vulkanApiVersion = VULKAN_API_VERSION;
         allocatorInfo.physicalDevice = gpu;
         allocatorInfo.instance = Instance;
         allocatorInfo.device = Device;

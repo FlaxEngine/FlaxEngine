@@ -307,6 +307,8 @@ public:
         }
         return result;
     }
+
+    static bool HasExtension(const Array<const char*, HeapAllocation>& extensions, const char* name);
 };
 
 #endif

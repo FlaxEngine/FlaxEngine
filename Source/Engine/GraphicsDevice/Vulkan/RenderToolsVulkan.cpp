@@ -277,4 +277,15 @@ void RenderToolsVulkan::LogVkResult(VkResult result)
     LogVkResult(result, "", 0);
 }
 
+bool RenderToolsVulkan::HasExtension(const Array<const char*>& extensions, const char* name)
+{
+    for (int32 i = 0; i < extensions.Count(); i++)
+    {
+        const char* extension = extensions[i];
+        if (extension && StringUtils::Compare(extension, name) == 0)
+            return true;
+    }
+    return false;
+}
+
 #endif

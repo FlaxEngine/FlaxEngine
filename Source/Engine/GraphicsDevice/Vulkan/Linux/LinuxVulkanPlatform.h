@@ -6,8 +6,6 @@
 
 #if GRAPHICS_API_VULKAN && PLATFORM_LINUX
 
-#define VULKAN_HAS_PHYSICAL_DEVICE_PROPERTIES2 1
-
 /// <summary>
 /// The implementation for the Vulkan API support for Linux platform.
 /// </summary>

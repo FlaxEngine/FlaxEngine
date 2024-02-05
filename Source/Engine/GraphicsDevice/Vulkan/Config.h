@@ -18,7 +18,7 @@
 #ifndef VULKAN_BACK_BUFFERS_COUNT
 #define VULKAN_BACK_BUFFERS_COUNT 2
 #endif
-#define VULKAN_BACK_BUFFERS_COUNT_MAX 16
+#define VULKAN_BACK_BUFFERS_COUNT_MAX 4
 
 /// <summary>
 /// Default amount of frames to wait until resource delete.
@@ -33,9 +33,6 @@
 
 #ifndef VULKAN_USE_QUERIES
 #define VULKAN_USE_QUERIES 1
-#endif
-#ifndef VULKAN_HAS_PHYSICAL_DEVICE_PROPERTIES2
-#define VULKAN_HAS_PHYSICAL_DEVICE_PROPERTIES2 0
 #endif
 
 #endif
