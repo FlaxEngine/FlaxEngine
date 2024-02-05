@@ -78,7 +78,6 @@ public:
             // Calculate panning
             // Ramy Sadek and Chris Kyriakakis, 2004, "A Novel Multichannel Panning Method for Standard and Arbitrary Loudspeaker Configurations"
             // [https://www.researchgate.net/publication/235080603_A_Novel_Multichannel_Panning_Method_for_Standard_and_Arbitrary_Loudspeaker_Configurations]
-            //TODO: hardcoded main speaker directions for 2, 3.1, 5.1 and 7.1 setups - these are simplified and could also be made configurable
             static const Float3 ChannelDirections[(int32)Channels::MAX] =
             {
                 Float3(-1.0, 0.0, -1.0).GetNormalized(),
