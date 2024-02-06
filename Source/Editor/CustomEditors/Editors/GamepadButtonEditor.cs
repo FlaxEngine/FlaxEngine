@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using FlaxEngine;
 
 namespace FlaxEditor.CustomEditors.Editors
@@ -15,17 +15,17 @@ namespace FlaxEditor.CustomEditors.Editors
         public override void Initialize(LayoutElementsContainer layout)
         {
             base.Initialize(layout);
-            FlaxEngine.Scripting.Update += ScriptingOnUpdate;
+            FlaxEngine.Scripting.Update += OnUpdate;
         }
 
         /// <inheritdoc />
         protected override void Deinitialize()
         {
-            FlaxEngine.Scripting.Update -= ScriptingOnUpdate;
+            FlaxEngine.Scripting.Update -= OnUpdate;
             base.Deinitialize();
         }
 
-        private void ScriptingOnUpdate()
+        private void OnUpdate()
         {
             if (!IsListeningForInput)
                 return;

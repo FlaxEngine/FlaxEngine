@@ -1,4 +1,4 @@
-﻿using FlaxEngine;
+using FlaxEngine;
 
 namespace FlaxEditor.CustomEditors.Editors
 {
@@ -14,17 +14,17 @@ namespace FlaxEditor.CustomEditors.Editors
         public override void Initialize(LayoutElementsContainer layout)
         {
             base.Initialize(layout);
-            Window.KeyUp += WindowOnKeyUp;
+            Window.KeyUp += OnKeyUp;
         }
 
         /// <inheritdoc />
         protected override void Deinitialize()
         {
-            Window.KeyUp -= WindowOnKeyUp;
+            Window.KeyUp -= OnKeyUp;
             base.Deinitialize();
         }
 
-        private void WindowOnKeyUp(KeyboardKeys key)
+        private void OnKeyUp(KeyboardKeys key)
         {
             if (!IsListeningForInput)
                 return;

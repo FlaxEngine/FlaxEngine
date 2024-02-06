@@ -1,4 +1,4 @@
-﻿using FlaxEngine;
+using FlaxEngine;
 
 namespace FlaxEditor.CustomEditors.Editors
 {
@@ -14,17 +14,17 @@ namespace FlaxEditor.CustomEditors.Editors
         public override void Initialize(LayoutElementsContainer layout)
         {
             base.Initialize(layout);
-            Window.MouseUp += WindowOnMouseUp;
+            Window.MouseUp += OnMouseUp;
         }
 
         /// <inheritdoc />
         protected override void Deinitialize()
         {
-            Window.MouseUp -= WindowOnMouseUp;
+            Window.MouseUp -= OnMouseUp;
             base.Deinitialize();
         }
 
-        private void WindowOnMouseUp(ref Float2 mouse, MouseButton button, ref bool handled)
+        private void OnMouseUp(ref Float2 mouse, MouseButton button, ref bool handled)
         {
             if (!IsListeningForInput)
                 return;

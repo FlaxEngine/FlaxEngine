@@ -1,4 +1,4 @@
-﻿using FlaxEditor.GUI;
+using FlaxEditor.GUI;
 using FlaxEngine;
 using FlaxEngine.GUI;
 
