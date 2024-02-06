@@ -1937,7 +1937,7 @@ namespace Flax.Build.Bindings
             var useCSharp = EngineConfiguration.WithCSharp(buildData.TargetOptions);
             var hasInterface = classInfo.Interfaces != null && classInfo.Interfaces.Any(x => x.Access == AccessLevel.Public);
             CppInternalCalls.Clear();
-            
+
             if (classInfo.IsAutoSerialization)
                 GenerateCppAutoSerialization(buildData, contents, moduleInfo, classInfo, classTypeNameNative);
             GenerateCppTypeInternalsStatics?.Invoke(buildData, classInfo, contents);
@@ -1955,7 +1955,7 @@ namespace Flax.Build.Bindings
                 var paramsCount = eventInfo.Type.GenericArgs?.Count ?? 0;
                 CppIncludeFiles.Add("Engine/Profiler/ProfilerCPU.h");
                 var bindPrefix = eventInfo.IsStatic ? classTypeNameNative + "::" : "__obj->";
-                //eventInfo.
+
                 if (useCSharp)
                 {
                     // C# event invoking wrapper (calls C# event from C++ delegate)
@@ -1965,12 +1965,12 @@ namespace Flax.Build.Bindings
                     contents.Append("    ");
                     if (eventInfo.IsStatic)
                         contents.Append("static ");
-                    contents.AppendFormat("void {0}_ManagedWrapper(", eventInfo.Name); 
+                    contents.AppendFormat("void {0}_ManagedWrapper(", eventInfo.Name);
                     for (var i = 0; i < paramsCount; i++)
                     {
                         if (i != 0)
                             contents.Append(", ");
-                        contents.Append(eventInfo.Type.GenericArgs[i].GetFullNameNative(buildData,classInfo)).Append(" arg" + i);
+                        contents.Append(eventInfo.Type.GenericArgs[i].GetFullNameNative(buildData, classInfo)).Append(" arg" + i);
                     }
                     contents.Append(')').AppendLine();
                     contents.Append("    {").AppendLine();
