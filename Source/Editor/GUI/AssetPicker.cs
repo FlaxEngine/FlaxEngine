@@ -75,6 +75,9 @@ namespace FlaxEditor.GUI
         /// </summary>
         protected virtual void OnSelectedItemChanged()
         {
+            if (IsDisposing)
+                return;
+
             // Update tooltip
             string tooltip;
             if (Validator.SelectedItem is AssetItem assetItem)

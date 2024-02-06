@@ -76,7 +76,7 @@ namespace FlaxEditor.CustomEditors.Editors
 
         private void OnSelectedMaterialChanged()
         {
-            if (_isRefreshing)
+            if (_isRefreshing || _modelInstance == null)
                 return;
             _isRefreshing = true;
             var slots = _modelInstance.MaterialSlots;
