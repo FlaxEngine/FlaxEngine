@@ -2,7 +2,6 @@
 
 using System.Collections.Generic;
 using FlaxEngine;
-using FlaxEditor.Tools.Terrain.Brushes;
 using System;
 
 namespace FlaxEditor.Tools.Terrain.Sculpt
@@ -29,15 +28,9 @@ namespace FlaxEditor.Tools.Terrain.Sculpt
             var heightmapSize = affectedPatches[0].HeightmapSize;
             var radius = Mathf.Max(Mathf.CeilToInt(FilterRadius * 0.01f * affectedPatches[0].Brush.Size), 2);
 
-
-            /////
-            /// Calculate bounding coordinates of the total affected area
-            /// 
-
-
+            // Calculate bounding coordinates of the total affected area
             Int2 modifieedAreaMinCoord = Int2.Maximum;
             Int2 modifiedAreaMaxCoord = Int2.Minimum;
-
             for (int i = 0; i < affectedPatches.Count; i++)
             {
                 var patch = affectedPatches[i];
@@ -46,27 +39,14 @@ namespace FlaxEditor.Tools.Terrain.Sculpt
                 var br = tl + patch.ModifiedSize;
 
                 if (tl.X <= modifieedAreaMinCoord.X && tl.Y <= modifieedAreaMinCoord.Y)
-                {
                     modifieedAreaMinCoord = tl;
-                }
-
                 if (br.X >= modifiedAreaMaxCoord.X && br.Y >= modifiedAreaMaxCoord.Y)
-                {
                     modifiedAreaMaxCoord = br;
-                }
             }
-
-
             var totalModifiedSize = modifiedAreaMaxCoord - modifieedAreaMinCoord;
 
-
-            /////
-            /// Build map of heights in affected area
-            /// 
-
-
+            // Build map of heights in affected area
             var modifiedHeights = new float[totalModifiedSize.X * totalModifiedSize.Y];
-
             for (int i = 0; i < affectedPatches.Count; i++)
             {
                 var patch = affectedPatches[i];
@@ -75,32 +55,26 @@ namespace FlaxEditor.Tools.Terrain.Sculpt
                 {
                     for (int x = 0; x < patch.ModifiedSize.X; x++)
                     {
-                        // read height from current patch
+                        // Read height from current patch
                         var localCoordX = (x + patch.ModifiedOffset.X);
                         var localCoordY = (z + patch.ModifiedOffset.Y);
                         var coordHeight = patch.SourceHeightMap[(localCoordY * heightmapSize) + localCoordX];
 
-                        // calculate the absolute coordinate of the terrain point
+                        // Calculate the absolute coordinate of the terrain point
                         var absoluteCurrentPointCoord = patch.PatchCoord * (heightmapSize - 1) + patch.ModifiedOffset + new Int2(x, z);
                         var currentPointCoordRelativeToModifiedArea = absoluteCurrentPointCoord - modifieedAreaMinCoord;
 
-                        // store height
+                        // Store height
                         var index = (currentPointCoordRelativeToModifiedArea.Y * totalModifiedSize.X) + currentPointCoordRelativeToModifiedArea.X;
                         modifiedHeights[index] = coordHeight;
                     }
                 }
             }
 
-
-            /////
-            /// Iterate through modified points and smooth now that we have height information for all necessary points
-            /// 
-
-
+            // Iterate through modified points and smooth now that we have height information for all necessary points
             for (int i = 0; i < affectedPatches.Count; i++)
             {
                 var patch = affectedPatches[i];
-
                 var brushPosition = patch.Gizmo.CursorPosition;
                 var strength = Mathf.Saturate(patch.Strength);
 
@@ -108,16 +82,16 @@ namespace FlaxEditor.Tools.Terrain.Sculpt
                 {
                     for (int x = 0; x < patch.ModifiedSize.X; x++)
                     {
-                        // read height from current patch
+                        // Read height from current patch
                         var localCoordX = (x + patch.ModifiedOffset.X);
                         var localCoordY = (z + patch.ModifiedOffset.Y);
                         var coordHeight = patch.SourceHeightMap[(localCoordY * heightmapSize) + localCoordX];
 
-                        // calculate the absolute coordinate of the terrain point
+                        // Calculate the absolute coordinate of the terrain point
                         var absoluteCurrentPointCoord = patch.PatchCoord * (heightmapSize - 1) + patch.ModifiedOffset + new Int2(x, z);
                         var currentPointCoordRelativeToModifiedArea = absoluteCurrentPointCoord - modifieedAreaMinCoord;
 
-                        // calculate brush influence at the current position
+                        // Calculate brush influence at the current position
                         var samplePositionLocal = patch.PatchPositionLocal + new Vector3(localCoordX * FlaxEngine.Terrain.UnitsPerVertex, coordHeight, localCoordY * FlaxEngine.Terrain.UnitsPerVertex);
                         Vector3.Transform(ref samplePositionLocal, ref patch.TerrainWorld, out Vector3 samplePositionWorld);
                         var paintAmount = patch.Brush.Sample(ref brushPosition, ref samplePositionWorld) * strength;
@@ -149,7 +123,6 @@ namespace FlaxEditor.Tools.Terrain.Sculpt
                             {
                                 var coordIndex = (dz * totalModifiedSize.X) + dx;
                                 var height = modifiedHeights[coordIndex];
-
                                 smoothValue += height;
                                 smoothValueSamples++;
                             }

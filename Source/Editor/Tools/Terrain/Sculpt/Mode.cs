@@ -53,11 +53,11 @@ namespace FlaxEditor.Tools.Terrain.Sculpt
         /// <summary>
         /// Gets all patches that will be affected by the brush
         /// </summary>
-        /// <param name="brush"></param>
-        /// <param name="options"></param>
-        /// <param name="gizmo"></param>
-        /// <param name="terrain"></param>
-        public unsafe virtual List<ApplyParams> GetAffectedPatches(Brush brush, ref Options options, SculptTerrainGizmoMode gizmo, FlaxEngine.Terrain terrain)
+        /// <param name="brush">The brush.</param>
+        /// <param name="options">The options.</param>
+        /// <param name="gizmo">The gizmo.</param>
+        /// <param name="terrain">The terrain.</param>
+        public virtual unsafe List<ApplyParams> GetAffectedPatches(Brush brush, ref Options options, SculptTerrainGizmoMode gizmo, FlaxEngine.Terrain terrain)
         {
             List<ApplyParams> affectedPatches = new();
 
@@ -155,7 +155,7 @@ namespace FlaxEditor.Tools.Terrain.Sculpt
         /// <param name="options">The options.</param>
         /// <param name="gizmo">The gizmo.</param>
         /// <param name="terrain">The terrain.</param>
-        public unsafe void Apply(Brush brush, ref Options options, SculptTerrainGizmoMode gizmo, FlaxEngine.Terrain terrain)
+        public void Apply(Brush brush, ref Options options, SculptTerrainGizmoMode gizmo, FlaxEngine.Terrain terrain)
         {
             var affectedPatches = GetAffectedPatches(brush, ref options, gizmo, terrain);
 
@@ -176,7 +176,7 @@ namespace FlaxEditor.Tools.Terrain.Sculpt
         /// </summary>
         /// <param name="gizmo"></param>
         /// <param name="affectedPatches"></param>
-        public unsafe virtual void ApplyBrush(SculptTerrainGizmoMode gizmo, List<ApplyParams> affectedPatches)
+        public virtual void ApplyBrush(SculptTerrainGizmoMode gizmo, List<ApplyParams> affectedPatches)
         {
             for (int i = 0; i < affectedPatches.Count; i++)
             {
