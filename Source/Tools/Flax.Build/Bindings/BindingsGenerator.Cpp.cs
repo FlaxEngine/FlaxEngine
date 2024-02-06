@@ -1970,7 +1970,7 @@ namespace Flax.Build.Bindings
                     {
                         if (i != 0)
                             contents.Append(", ");
-                        contents.Append(eventInfo.Type.GenericArgs[i]).Append(" arg" + i);
+                        contents.Append(eventInfo.Type.GenericArgs[i].GetFullNameNative(buildData, classInfo)).Append(" arg" + i);
                     }
                     contents.Append(')').AppendLine();
                     contents.Append("    {").AppendLine();
@@ -2058,7 +2058,7 @@ namespace Flax.Build.Bindings
                     {
                         if (i != 0)
                             contents.Append(", ");
-                        contents.Append(eventInfo.Type.GenericArgs[i]);
+                        contents.Append(eventInfo.Type.GenericArgs[i].GetFullNameNative(buildData, classInfo));
                     }
                     contents.Append(")> f;").AppendLine();
                     if (eventInfo.IsStatic)
@@ -2084,7 +2084,7 @@ namespace Flax.Build.Bindings
                 {
                     if (i != 0)
                         contents.Append(", ");
-                    contents.Append(eventInfo.Type.GenericArgs[i]).Append(" arg" + i);
+                    contents.Append(eventInfo.Type.GenericArgs[i].GetFullNameNative(buildData, classInfo)).Append(" arg" + i);
                 }
                 contents.Append(')').AppendLine();
                 contents.Append("    {").AppendLine();
@@ -2111,7 +2111,7 @@ namespace Flax.Build.Bindings
                 {
                     if (i != 0)
                         contents.Append(", ");
-                    contents.Append(eventInfo.Type.GenericArgs[i]);
+                    contents.Append(eventInfo.Type.GenericArgs[i].GetFullNameNative(buildData, classInfo));
                 }
                 contents.Append(")> f;").AppendLine();
                 if (eventInfo.IsStatic)
