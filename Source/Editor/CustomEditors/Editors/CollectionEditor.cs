@@ -55,11 +55,11 @@ namespace FlaxEditor.CustomEditors.Editors
             private void OnSetupContextMenu(PropertyNameLabel label, ContextMenu menu, CustomEditor linkedEditor)
             {
                 menu.ItemsContainer.RemoveChildren();
-                
+
                 menu.AddButton("Copy", linkedEditor.Copy);
                 var paste = menu.AddButton("Paste", linkedEditor.Paste);
                 paste.Enabled = linkedEditor.CanPaste;
-                
+
                 menu.AddSeparator();
                 var moveUpButton = menu.AddButton("Move up", OnMoveUpClicked);
                 moveUpButton.Enabled = Index > 0;
@@ -118,7 +118,7 @@ namespace FlaxEditor.CustomEditors.Editors
                 Editor = editor;
                 Index = index;
                 Offsets = new Margin(7, 7, 0, 0);
-                
+
                 MouseButtonRightClicked += OnMouseButtonRightClicked;
                 if (_canReorder)
                 {
@@ -173,6 +173,7 @@ namespace FlaxEditor.CustomEditors.Editors
         /// Determines if value of collection can be null.
         /// </summary>
         protected bool NotNullItems;
+
         private IntValueBox _sizeBox;
         private Color _background;
         private int _elementsCount;
