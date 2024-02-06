@@ -606,14 +606,15 @@ namespace FlaxEngine.GUI
             _popup.LostFocus += DestroyPopup;
 
             // Show dropdown popup
-            var locationRootSpace = Location + new Float2(0, Height);
+            var locationRootSpace = Location + new Float2(0, Height - Height * (1 - Scale.Y) / 2);
             var parent = Parent;
             while (parent != null && parent != root)
             {
                 locationRootSpace = parent.PointToParent(ref locationRootSpace);
                 parent = parent.Parent;
             }
-            _popup.Location = locationRootSpace;
+            _popup.Scale = Scale;
+            _popup.Location = locationRootSpace - new Float2(0, _popup.Height * (1 - _popup.Scale.Y) / 2);
             _popup.Parent = root;
             _popup.Focus();
             _popup.StartMouseCapture();
