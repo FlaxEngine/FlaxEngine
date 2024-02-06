@@ -46,6 +46,21 @@ namespace FlaxEditor.Modules.SourceCodeEditing
         }
 
         /// <summary>
+        /// Gets the type matching the certain Script.
+        /// </summary>
+        /// <param name="script">The content item.</param>
+        /// <returns>The type matching that item, or null if not found.</returns>
+        public ScriptType Get(Content.ScriptItem script)
+        {
+            foreach (var type in Get())
+            {
+                if (type.ContentItem == script)
+                    return type;
+            }
+            return ScriptType.Null;
+        }
+
+        /// <summary>
         /// Gets all the types from the all loaded assemblies (including project scripts and scripts from the plugins).
         /// </summary>
         /// <returns>The types collection (readonly).</returns>

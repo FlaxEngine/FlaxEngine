@@ -29,6 +29,7 @@ namespace FlaxEditor.SceneGraph.GUI
         private DragScripts _dragScripts;
         private DragAssets _dragAssets;
         private DragActorType _dragActorType;
+        private DragScriptItems _dragScriptItems;
         private DragHandlers _dragHandlers;
         private List<Rectangle> _highlights;
         private bool _hasSearchFilter;
@@ -395,6 +396,13 @@ namespace FlaxEditor.SceneGraph.GUI
             }
             if (_dragActorType.OnDragEnter(data))
                 return _dragActorType.Effect;
+            if (_dragScriptItems == null)
+            {
+                _dragScriptItems = new DragScriptItems(ValidateDragScriptItem);
+                _dragHandlers.Add(_dragScriptItems);
+            }
+            if (_dragScriptItems.OnDragEnter(data))
+                return _dragScriptItems.Effect;
 
             return DragDropEffect.None;
         }
@@ -673,7 +681,34 @@ namespace FlaxEditor.SceneGraph.GUI
                     actor.Transform = Actor.Transform;
                     ActorNode.Root.Spawn(actor, Actor);
                 }
+                result = DragDropEffect.Move;
+            }
+            // Drag script item
+            else if (_dragScriptItems != null && _dragScriptItems.HasValidDrag)
+            {
+                var spawnParent = myActor;
+                if (DragOverMode == DragItemPositioning.Above || DragOverMode == DragItemPositioning.Below)
+                    spawnParent = newParent;
 
+                for (int i = 0; i < _dragScriptItems.Objects.Count; i++)
+                {
+                    var item = _dragScriptItems.Objects[i];
+                    var actorType = Editor.Instance.CodeEditing.Actors.Get(item);
+                    if (actorType != ScriptType.Null)
+                    {
+                        var actor = actorType.CreateInstance() as Actor;
+                        if (actor == null)
+                        {
+                            Editor.LogWarning("Failed to spawn actor of type " + actorType.TypeName);
+                            continue;
+                        }
+                        actor.StaticFlags = spawnParent.StaticFlags;
+                        actor.Name = actorType.Name;
+                        actor.Transform = spawnParent.Transform;
+                        ActorNode.Root.Spawn(actor, spawnParent);
+                        actor.OrderInParent = newOrder;
+                    }
+                }
                 result = DragDropEffect.Move;
             }
 
@@ -728,6 +763,11 @@ namespace FlaxEditor.SceneGraph.GUI
             return true;
         }
 
+        private static bool ValidateDragScriptItem(ScriptItem script)
+        {
+            return Editor.Instance.CodeEditing.Actors.Get(script) != ScriptType.Null;
+        }
+
         /// <inheritdoc />
         protected override void DoDragDrop()
         {
@@ -768,6 +808,7 @@ namespace FlaxEditor.SceneGraph.GUI
             _dragScripts = null;
             _dragAssets = null;
             _dragActorType = null;
+            _dragScriptItems = null;
             _dragHandlers?.Clear();
             _dragHandlers = null;
             _highlights = null;
