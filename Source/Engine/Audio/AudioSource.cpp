@@ -546,8 +546,9 @@ void AudioSource::BeginPlay(SceneBeginData* data)
 #if USE_EDITOR
         if (Time::GetGamePaused())
             return;
-#endif      
+#endif
         Play();
-        SetTime(GetStartTime());
+        if (GetStartTime() > 0)
+            SetTime(GetStartTime());
     }
 }
