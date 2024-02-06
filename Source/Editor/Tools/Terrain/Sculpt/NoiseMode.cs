@@ -29,7 +29,7 @@ namespace FlaxEditor.Tools.Terrain.Sculpt
         public override bool SupportsNegativeApply => true;
 
         /// <inheritdoc />
-        public override unsafe void Apply(ref ApplyParams p)
+        public override unsafe void ApplyBrushToPatch(ref ApplyParams p)
         {
             // Prepare
             var brushPosition = p.Gizmo.CursorPosition;
