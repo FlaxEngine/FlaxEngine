@@ -2423,28 +2423,29 @@ namespace Flax.Build.Bindings
             // Getter for structure field
             contents.AppendLine("    static void GetField(void* ptr, const String& name, Variant& value)");
             contents.AppendLine("    {");
-            for (var i = 0; i < structureInfo.Fields.Count; i++)
+            for (int i = 0, count = 0; i < structureInfo.Fields.Count; i++)
             {
                 var fieldInfo = structureInfo.Fields[i];
                 if (fieldInfo.IsReadOnly || fieldInfo.IsStatic || fieldInfo.IsConstexpr || fieldInfo.Access == AccessLevel.Private)
                     continue;
-                if (i == 0)
+                if (count == 0)
                     contents.AppendLine($"        if (name == TEXT(\"{fieldInfo.Name}\"))");
                 else
                     contents.AppendLine($"        else if (name == TEXT(\"{fieldInfo.Name}\"))");
                 contents.AppendLine($"            value = {GenerateCppWrapperNativeToVariant(buildData, fieldInfo.Type, structureInfo, $"(({structureTypeNameNative}*)ptr)->{fieldInfo.Name}")};");
+                count++;
             }
             contents.AppendLine("    }").AppendLine();
 
             // Setter for structure field
             contents.AppendLine("    static void SetField(void* ptr, const String& name, const Variant& value)");
             contents.AppendLine("    {");
-            for (var i = 0; i < structureInfo.Fields.Count; i++)
+            for (int i = 0, count = 0; i < structureInfo.Fields.Count; i++)
             {
                 var fieldInfo = structureInfo.Fields[i];
                 if (fieldInfo.IsReadOnly || fieldInfo.IsStatic || fieldInfo.IsConstexpr || fieldInfo.Access == AccessLevel.Private)
                     continue;
-                if (i == 0)
+                if (count == 0)
                     contents.AppendLine($"        if (name == TEXT(\"{fieldInfo.Name}\"))");
                 else
                     contents.AppendLine($"        else if (name == TEXT(\"{fieldInfo.Name}\"))");
@@ -2460,6 +2461,7 @@ namespace Flax.Build.Bindings
                 }
                 else
                     contents.AppendLine($"            (({structureTypeNameNative}*)ptr)->{fieldInfo.Name} = {GenerateCppWrapperVariantToNative(buildData, fieldInfo.Type, structureInfo, "value")};");
+                count++;
             }
             contents.AppendLine("    }");
 
