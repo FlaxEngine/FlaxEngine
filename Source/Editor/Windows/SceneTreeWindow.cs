@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using FlaxEditor.Gizmo;
 using FlaxEditor.Content;
 using FlaxEditor.GUI.Tree;
@@ -31,6 +32,7 @@ namespace FlaxEditor.Windows
 
         private DragAssets _dragAssets;
         private DragActorType _dragActorType;
+        private DragScriptItems _dragScriptItems;
         private DragHandlers _dragHandlers;
 
         /// <summary>
@@ -272,6 +274,14 @@ namespace FlaxEditor.Windows
         {
             return true;
         }
+        
+        private static bool ValidateDragScriptItem(ScriptItem script)
+        {
+            var actors = Editor.Instance.CodeEditing.Actors.Get();
+            if (actors.Any(x => x.ContentItem == script))
+                return true;
+            return false;
+        }
 
         /// <inheritdoc />
         public override void Draw()
@@ -380,6 +390,13 @@ namespace FlaxEditor.Windows
                 }
                 if (_dragActorType.OnDragEnter(data) && result == DragDropEffect.None)
                     return _dragActorType.Effect;
+                if (_dragScriptItems == null)
+                {
+                    _dragScriptItems = new DragScriptItems(ValidateDragScriptItem);
+                    _dragHandlers.Add(_dragScriptItems);
+                }
+                if (_dragScriptItems.OnDragEnter(data) && result == DragDropEffect.None)
+                    return _dragScriptItems.Effect;
             }
             return result;
         }
@@ -445,6 +462,31 @@ namespace FlaxEditor.Windows
                     }
                     result = DragDropEffect.Move;
                 }
+                // Drag script item
+                else if (_dragScriptItems != null && _dragScriptItems.HasValidDrag)
+                {
+                    for (int i = 0; i < _dragScriptItems.Objects.Count; i++)
+                    {
+                        var item = _dragScriptItems.Objects[i];
+                        // Find actors with the same content item and spawn them.
+                        foreach (var actorType in Editor.Instance.CodeEditing.Actors.Get())
+                        {
+                            if (actorType.ContentItem != item)
+                                continue;
+
+                            var actor = actorType.CreateInstance() as Actor;
+                            if (actor == null)
+                            {
+                                Editor.LogWarning("Failed to spawn actor of type " + actorType.TypeName);
+                                continue;
+                            }
+                            actor.Name = actorType.Name;
+                            Level.SpawnActor(actor);
+                            Editor.Scene.MarkSceneEdited(actor.Scene);
+                        }
+                    }
+                    result = DragDropEffect.Move;
+                }
 
                 _dragHandlers.OnDragDrop(null);
             }
@@ -456,6 +498,7 @@ namespace FlaxEditor.Windows
         {
             _dragAssets = null;
             _dragActorType = null;
+            _dragScriptItems = null;
             _dragHandlers?.Clear();
             _dragHandlers = null;
             _tree = null;

@@ -39,17 +39,19 @@ namespace FlaxEditor.Viewport
         private readonly EditorViewport _viewport;
         private readonly DragAssets<DragDropEventArgs> _dragAssets;
         private readonly DragActorType<DragDropEventArgs> _dragActorType;
+        private readonly DragScriptItems<DragDropEventArgs> _dragScriptItem;
 
         private StaticModel _previewStaticModel;
         private int _previewModelEntryIndex;
         private BrushSurface _previewBrushSurface;
 
-        internal ViewportDragHandlers(IGizmoOwner owner, EditorViewport viewport, Func<AssetItem, bool> validateAsset, Func<ScriptType, bool> validateDragActorType)
+        internal ViewportDragHandlers(IGizmoOwner owner, EditorViewport viewport, Func<AssetItem, bool> validateAsset, Func<ScriptType, bool> validateDragActorType, Func<ScriptItem, bool> validateDragScriptItem)
         {
             _owner = owner;
             _viewport = viewport;
             Add(_dragAssets = new DragAssets<DragDropEventArgs>(validateAsset));
             Add(_dragActorType = new DragActorType<DragDropEventArgs>(validateDragActorType));
+            Add(_dragScriptItem = new DragScriptItems<DragDropEventArgs>(validateDragScriptItem));
         }
 
         internal void ClearDragEffects()
@@ -102,7 +104,13 @@ namespace FlaxEditor.Viewport
                 foreach (var actorType in _dragActorType.Objects)
                     Spawn(actorType, hit, ref location, ref hitLocation, ref hitNormal);
             }
-
+            else if (_dragScriptItem.HasValidDrag)
+            {
+                result = _dragScriptItem.Effect;
+                foreach (var scripItem in _dragScriptItem.Objects)
+                    Spawn(scripItem, hit, ref location, ref hitLocation, ref hitNormal);
+            }
+            Debug.Log("Hit");
             OnDragDrop(new DragDropEventArgs { Hit = hit, HitLocation = hitLocation });
 
             return result;
@@ -191,6 +199,18 @@ namespace FlaxEditor.Viewport
             actor.Position = PostProcessSpawnedActorLocation(actor, ref hitLocation);
             _owner.Spawn(actor);
             _viewport.Focus();
+        }
+
+        private void Spawn(ScriptItem item, SceneGraphNode hit, ref Float2 location, ref Vector3 hitLocation, ref Vector3 hitNormal)
+        {
+            // Find actors with the same content item and spawn them.
+            foreach (var actorType in Editor.Instance.CodeEditing.Actors.Get())
+            {
+                if (actorType.ContentItem != item)
+                    continue;
+
+                Spawn(actorType, hit, ref location, ref hitLocation, ref hitNormal);
+            }
         }
 
         private void Spawn(ScriptType item, SceneGraphNode hit, ref Float2 location, ref Vector3 hitLocation, ref Vector3 hitNormal)
