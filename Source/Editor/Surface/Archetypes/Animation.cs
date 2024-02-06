@@ -69,7 +69,6 @@ namespace FlaxEditor.Surface.Archetypes
                     return;
                 if (box.ID != _assetBox.ID)
                     return;
-
                 _assetSelect.Visible = !box.HasAnyConnection;
             }
         }
@@ -122,7 +121,7 @@ namespace FlaxEditor.Surface.Archetypes
                     Title = _assetBox.HasAnyConnection || asset == null ? "Animation" : asset.ShortName;
                 else
                     Title = asset?.ShortName ?? "Animation";
-                
+
                 var style = Style.Current;
                 Resize(Mathf.Max(230, style.FontLarge.MeasureText(Title).X + 30), 160);
             }
@@ -570,7 +569,7 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 TypeID = 10,
                 Title = "Blend Additive",
-                Description = 
+                Description =
                 "Blend animation poses (with additive mode)" +
                 "\n" +
                 "\nNote: " +
@@ -598,7 +597,7 @@ namespace FlaxEditor.Surface.Archetypes
                 TypeID = 11,
                 Title = "Blend with Mask",
                 Description = "Blend animation poses using skeleton mask",
-                Create =  (id, context, arch, groupArch) => new SkeletonMaskSample(id, context, arch, groupArch),
+                Create = (id, context, arch, groupArch) => new SkeletonMaskSample(id, context, arch, groupArch),
                 Flags = NodeFlags.AnimGraph,
                 Size = new Float2(180, 140),
                 DefaultValues = new object[]

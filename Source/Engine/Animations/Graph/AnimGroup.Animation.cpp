@@ -228,7 +228,7 @@ void AnimGraphExecutor::ProcessAnimation(AnimGraphImpulse* nodes, AnimGraphNode*
         trace.Value = animPos;
         trace.NodeId = node->ID;
     }
-    
+
     // Evaluate nested animations
     bool hasNested = false;
     if (anim->NestedAnims.Count() != 0)
@@ -1133,14 +1133,14 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
         auto mask = node->Assets[0].As<SkeletonMask>();
         auto maskAssetBox = node->GetBox(4); // 4 is the id of skeleton mask parameter node.
 
-        // Check if have some mask asset conected with the mask node
+        // Check if have some mask asset connected with the mask node
         if (maskAssetBox->HasConnection())
         {
             const Value assetBoxValue = tryGetValue(maskAssetBox, Value::Null);
 
-            // Use the mask conected with this node instead of default mask asset 
+            // Use the mask connected with this node instead of default mask asset 
             if (assetBoxValue != Value::Null)
-                mask = (SkeletonMask *)assetBoxValue.AsAsset;
+                mask = (SkeletonMask*)assetBoxValue.AsAsset;
         }
 
         // Only A or missing/invalid mask
