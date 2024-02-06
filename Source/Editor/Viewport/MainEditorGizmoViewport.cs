@@ -943,10 +943,7 @@ namespace FlaxEditor.Viewport
 
         private static bool ValidateDragScriptItem(ScriptItem script)
         {
-            var actors = Editor.Instance.CodeEditing.Actors.Get();
-            if (actors.Any(x => x.ContentItem == script))
-                return true;
-            return false;
+            return Editor.Instance.CodeEditing.Actors.Get(script) != ScriptType.Null;
         }
 
         /// <inheritdoc />

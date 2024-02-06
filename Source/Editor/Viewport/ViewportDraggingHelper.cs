@@ -203,12 +203,9 @@ namespace FlaxEditor.Viewport
 
         private void Spawn(ScriptItem item, SceneGraphNode hit, ref Float2 location, ref Vector3 hitLocation, ref Vector3 hitNormal)
         {
-            // Find actors with the same content item and spawn them.
-            foreach (var actorType in Editor.Instance.CodeEditing.Actors.Get())
+            var actorType = Editor.Instance.CodeEditing.Actors.Get(item);
+            if (actorType != ScriptType.Null)
             {
-                if (actorType.ContentItem != item)
-                    continue;
-
                 Spawn(actorType, hit, ref location, ref hitLocation, ref hitNormal);
             }
         }

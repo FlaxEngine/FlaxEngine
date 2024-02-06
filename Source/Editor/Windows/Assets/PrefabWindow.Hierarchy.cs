@@ -85,13 +85,10 @@ namespace FlaxEditor.Windows.Assets
             {
                 return true;
             }
-            
+
             private static bool ValidateDragScriptItem(ScriptItem script)
             {
-                var actors = Editor.Instance.CodeEditing.Actors.Get();
-                if (actors.Any(x => x.ContentItem == script))
-                    return true;
-                return false;
+                return Editor.Instance.CodeEditing.Actors.Get(script);
             }
 
             /// <inheritdoc />
@@ -185,12 +182,9 @@ namespace FlaxEditor.Windows.Assets
                         for (int i = 0; i < _dragScriptItems.Objects.Count; i++)
                         {
                             var item = _dragScriptItems.Objects[i];
-                            // Find actors with the same content item and spawn them.
-                            foreach (var actorType in Editor.Instance.CodeEditing.Actors.Get())
+                            var actorType = Editor.Instance.CodeEditing.Actors.Get(item);
+                            if (actorType != ScriptType.Null)
                             {
-                                if (actorType.ContentItem != item)
-                                    continue;
-
                                 var actor = actorType.CreateInstance() as Actor;
                                 if (actor == null)
                                 {
