@@ -105,7 +105,7 @@ namespace FlaxEditor.Surface
 
                 if (node != null)
                 {
-                    args.SurfaceLocation.X += node.Width + 10;
+                    args.SurfaceLocation.Y += node.Height + 10;
                 }
             }
 
