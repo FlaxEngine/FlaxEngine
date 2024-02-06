@@ -95,7 +95,7 @@ namespace FlaxEditor.Windows
                     Bounds = new Rectangle(nameLabel.X, tmp1, nameLabel.Width, Height - tmp1 - margin),
                 };
 
-                var xOffset = nameLabel.X + nameLabel.Width;
+                var xOffset = nameLabel.Width;
                 string versionString = string.Empty;
                 if (desc.IsAlpha)
                     versionString = "ALPHA ";
