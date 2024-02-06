@@ -110,7 +110,6 @@ namespace FlaxEditor.Viewport
                 foreach (var scripItem in _dragScriptItem.Objects)
                     Spawn(scripItem, hit, ref location, ref hitLocation, ref hitNormal);
             }
-            Debug.Log("Hit");
             OnDragDrop(new DragDropEventArgs { Hit = hit, HitLocation = hitLocation });
 
             return result;
