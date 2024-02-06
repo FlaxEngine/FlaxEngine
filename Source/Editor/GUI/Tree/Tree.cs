@@ -113,7 +113,7 @@ namespace FlaxEditor.GUI.Tree
             AutoFocus = false;
 
             _supportMultiSelect = supportMultiSelect;
-            _keyUpdateTime = KeyUpdateTimeout * 10;
+            _keyUpdateTime = KeyUpdateTimeout;
         }
 
         internal void OnRightClickInternal(TreeNode node, ref Float2 location)
@@ -347,6 +347,8 @@ namespace FlaxEditor.GUI.Tree
             if (ContainsFocus && node != null && node.AutoFocus)
             {
                 var window = Root;
+                if (window.GetKeyDown(KeyboardKeys.ArrowUp) || window.GetKeyDown(KeyboardKeys.ArrowDown))
+                    _keyUpdateTime = KeyUpdateTimeout;
                 if (_keyUpdateTime >= KeyUpdateTimeout && window is WindowRootControl windowRoot && windowRoot.Window.IsFocused)
                 {
                     bool keyUpArrow = window.GetKey(KeyboardKeys.ArrowUp);
