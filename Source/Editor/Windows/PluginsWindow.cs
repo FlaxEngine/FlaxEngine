@@ -775,8 +775,12 @@ namespace FlaxEditor.Windows
                         var pluginModuleScriptPath = Path.Combine(subDir, pluginModuleName + ".Build.cs");
                         if (File.Exists(pluginModuleScriptPath))
                         {
-                            gameScriptContents = gameScriptContents.Insert(insertLocation, $"\n        options.PublicDependencies.Add(\"{pluginModuleName}\");");
-                            modifiedAny = true;
+                            var text = await File.ReadAllTextAsync(pluginModuleScriptPath);
+                            if (!text.Contains("GameEditorModule", StringComparison.OrdinalIgnoreCase))
+                            {
+                                gameScriptContents = gameScriptContents.Insert(insertLocation, $"\n        options.PublicDependencies.Add(\"{pluginModuleName}\");");
+                                modifiedAny = true;
+                            }
                         }
                     }
 
