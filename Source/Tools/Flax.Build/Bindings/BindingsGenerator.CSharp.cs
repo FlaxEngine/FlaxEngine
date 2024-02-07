@@ -90,6 +90,15 @@ namespace Flax.Build.Bindings
             "Int4",
         };
 
+        private static bool GenerateCSharpUseFixedBuffer(string managedType)
+        {
+            return managedType == "byte" || managedType == "char" ||
+                   managedType == "short" || managedType == "ushort" ||
+                   managedType == "int" || managedType == "uint" ||
+                   managedType == "long" || managedType == "ulong" ||
+                   managedType == "float" || managedType == "double";
+        }
+
         private static string GenerateCSharpDefaultValueNativeToManaged(BuildData buildData, string value, ApiTypeInfo caller, TypeInfo valueType = null, bool attribute = false, string managedType = null)
         {
             if (string.IsNullOrEmpty(value))
@@ -1453,10 +1462,9 @@ namespace Flax.Build.Bindings
                     contents.Append(indent + "{");
                     indent += "    ";
 
-                    toNativeContent.Append($"return new {structureInfo.Name}Internal() {{ ");
-                    toManagedContent.Append($"return new {structureInfo.Name}() {{ ");
+                    toNativeContent.Append($"var unmanaged = new {structureInfo.Name}Internal();").AppendLine();
+                    toManagedContent.Append($"var managed = new {structureInfo.Name}();").AppendLine();
 
-                    bool useSeparator = false;
                     contents.AppendLine();
                     foreach (var fieldInfo in structureInfo.Fields)
                     {
@@ -1474,11 +1482,7 @@ namespace Flax.Build.Bindings
                         else
                             originalType = type = GenerateCSharpNativeToManaged(buildData, fieldInfo.Type, structureInfo);
 
-                        contents.Append(indent).Append(GenerateCSharpAccessLevel(fieldInfo.Access));
-                        if (fieldInfo.IsConstexpr)
-                            contents.Append("const ");
-                        else if (fieldInfo.IsStatic)
-                            contents.Append("static ");
+                        contents.Append(indent).Append("public ");
 
                         var apiType = FindApiTypeInfo(buildData, fieldInfo.Type, structureInfo);
                         bool internalType = apiType is StructureInfo fieldStructureInfo && UseCustomMarshalling(buildData, fieldStructureInfo, structureInfo);
@@ -1486,16 +1490,43 @@ namespace Flax.Build.Bindings
 
                         if (fieldInfo.Type.IsArray && (fieldInfo.NoArray || structureInfo.IsPod))
                         {
-                            contents.Append(type).Append(' ').Append(fieldInfo.Name + "0;").AppendLine();
-                            for (int i = 1; i < fieldInfo.Type.ArraySize; i++)
+#if USE_NETCORE
+                            if (GenerateCSharpUseFixedBuffer(originalType))
                             {
-                                contents.AppendLine();
-                                GenerateCSharpAttributes(buildData, contents, indent, structureInfo, fieldInfo, fieldInfo.IsStatic);
-                                contents.Append(indent).Append(GenerateCSharpAccessLevel(fieldInfo.Access));
-                                if (fieldInfo.IsStatic)
-                                    contents.Append("static ");
-                                contents.Append(type).Append(' ').Append(fieldInfo.Name + i).Append(';').AppendLine();
+                                // Use fixed statement with primitive types of buffers
+                                contents.Append($"fixed {originalType} {fieldInfo.Name}0[{fieldInfo.Type.ArraySize}];").AppendLine();
+
+                                // Copy fixed-size array
+                                toManagedContent.AppendLine($"FlaxEngine.Utils.MemoryCopy(new IntPtr(managed.{fieldInfo.Name}0), new IntPtr(unmanaged.{fieldInfo.Name}0), sizeof({originalType}) * {fieldInfo.Type.ArraySize}ul);");
+                                toNativeContent.AppendLine($"FlaxEngine.Utils.MemoryCopy(new IntPtr(unmanaged.{fieldInfo.Name}0), new IntPtr(managed.{fieldInfo.Name}0), sizeof({originalType}) * {fieldInfo.Type.ArraySize}ul);");
                             }
+                            else
+#endif
+                            {
+                                // Padding in structs for fixed-size array
+                                contents.Append(type).Append(' ').Append(fieldInfo.Name).Append("0;").AppendLine();
+                                for (int i = 1; i < fieldInfo.Type.ArraySize; i++)
+                                {
+                                    GenerateCSharpAttributes(buildData, contents, indent, structureInfo, fieldInfo, fieldInfo.IsStatic);
+                                    contents.Append(indent).Append("public ");
+                                    contents.Append(type).Append(' ').Append(fieldInfo.Name + i).Append(';').AppendLine();
+                                }
+
+                                // Copy fixed-size array item one-by-one
+                                if (fieldInfo.Access == AccessLevel.Public || fieldInfo.Access == AccessLevel.Internal)
+                                {
+                                    for (int i = 0; i < fieldInfo.Type.ArraySize; i++)
+                                    {
+                                        toManagedContent.AppendLine($"managed.{fieldInfo.Name}{i} = unmanaged.{fieldInfo.Name}{i};");
+                                        toNativeContent.AppendLine($"unmanaged.{fieldInfo.Name}{i} = managed.{fieldInfo.Name}{i};");
+                                    }
+                                }
+                                else
+                                {
+                                    throw new NotImplementedException("TODO: generate utility method to copy private/protected array data items");
+                                }
+                            }
+                            continue;
                         }
                         else
                         {
@@ -1525,34 +1556,17 @@ namespace Flax.Build.Bindings
                             //else if (type == "Guid")
                             //    type = "GuidNative";
 
-                            contents.Append(type).Append(' ').Append(fieldInfo.Name);
-                            contents.Append(';').AppendLine();
+                            contents.Append(type).Append(' ').Append(fieldInfo.Name).Append(';').AppendLine();
                         }
 
                         // Generate struct constructor/getter and deconstructor/setter function
-                        if (fieldInfo.NoArray && fieldInfo.Type.IsArray)
-                            continue;
-
-                        if (useSeparator)
-                        {
-                            toManagedContent.Append(", ");
-                            toNativeContent.Append(", ");
-                            freeContents2.Append("");
-                            freeContents.Append("");
-                        }
-                        useSeparator = true;
-
-                        toManagedContent.Append(fieldInfo.Name);
-                        toManagedContent.Append(" = ");
-
-                        toNativeContent.Append(fieldInfo.Name);
-                        toNativeContent.Append(" = ");
-
+                        toManagedContent.Append("managed.").Append(fieldInfo.Name).Append(" = ");
+                        toNativeContent.Append("unmanaged.").Append(fieldInfo.Name).Append(" = ");
                         if (fieldInfo.Type.IsObjectRef)
                         {
                             var managedType = GenerateCSharpNativeToManaged(buildData, fieldInfo.Type.GenericArgs[0], structureInfo);
-                            toManagedContent.Append($"managed.{fieldInfo.Name} != IntPtr.Zero ? Unsafe.As<{managedType}>(ManagedHandle.FromIntPtr(managed.{fieldInfo.Name}).Target) : null");
-                            toNativeContent.Append($"managed.{fieldInfo.Name} != null ? ManagedHandle.ToIntPtr(managed.{fieldInfo.Name}, GCHandleType.Weak) : IntPtr.Zero");
+                            toManagedContent.AppendLine($"unmanaged.{fieldInfo.Name} != IntPtr.Zero ? Unsafe.As<{managedType}>(ManagedHandle.FromIntPtr(unmanaged.{fieldInfo.Name}).Target) : null;");
+                            toNativeContent.AppendLine($"managed.{fieldInfo.Name} != null ? ManagedHandle.ToIntPtr(managed.{fieldInfo.Name}, GCHandleType.Weak) : IntPtr.Zero;");
                             freeContents.AppendLine($"if (unmanaged.{fieldInfo.Name} != IntPtr.Zero) {{ ManagedHandle.FromIntPtr(unmanaged.{fieldInfo.Name}).Free(); }}");
 
                             // Permanent ScriptingObject handle is passed from native side, do not release it
@@ -1560,8 +1574,8 @@ namespace Flax.Build.Bindings
                         }
                         else if (fieldInfo.Type.Type == "ScriptingObject")
                         {
-                            toManagedContent.Append($"managed.{fieldInfo.Name} != IntPtr.Zero ? Unsafe.As<FlaxEngine.Object>(ManagedHandle.FromIntPtr(managed.{fieldInfo.Name}).Target) : null");
-                            toNativeContent.Append($"managed.{fieldInfo.Name} != null ? ManagedHandle.ToIntPtr(managed.{fieldInfo.Name}, GCHandleType.Weak) : IntPtr.Zero");
+                            toManagedContent.AppendLine($"unmanaged.{fieldInfo.Name} != IntPtr.Zero ? Unsafe.As<FlaxEngine.Object>(ManagedHandle.FromIntPtr(unmanaged.{fieldInfo.Name}).Target) : null;");
+                            toNativeContent.AppendLine($"managed.{fieldInfo.Name} != null ? ManagedHandle.ToIntPtr(managed.{fieldInfo.Name}, GCHandleType.Weak) : IntPtr.Zero;");
                             freeContents.AppendLine($"if (unmanaged.{fieldInfo.Name} != IntPtr.Zero) {{ ManagedHandle.FromIntPtr(unmanaged.{fieldInfo.Name}).Free(); }}");
 
                             // Permanent ScriptingObject handle is passed from native side, do not release it
@@ -1569,8 +1583,8 @@ namespace Flax.Build.Bindings
                         }
                         else if (fieldInfo.Type.IsPtr && originalType != "IntPtr" && !originalType.EndsWith("*"))
                         {
-                            toManagedContent.Append($"managed.{fieldInfo.Name} != IntPtr.Zero ? Unsafe.As<{originalType}>(ManagedHandle.FromIntPtr(managed.{fieldInfo.Name}).Target) : null");
-                            toNativeContent.Append($"managed.{fieldInfo.Name} != null ? ManagedHandle.ToIntPtr(managed.{fieldInfo.Name}, GCHandleType.Weak) : IntPtr.Zero");
+                            toManagedContent.AppendLine($"unmanaged.{fieldInfo.Name} != IntPtr.Zero ? Unsafe.As<{originalType}>(ManagedHandle.FromIntPtr(unmanaged.{fieldInfo.Name}).Target) : null;");
+                            toNativeContent.AppendLine($"managed.{fieldInfo.Name} != null ? ManagedHandle.ToIntPtr(managed.{fieldInfo.Name}, GCHandleType.Weak) : IntPtr.Zero;");
                             freeContents.AppendLine($"if (unmanaged.{fieldInfo.Name} != IntPtr.Zero) {{ ManagedHandle.FromIntPtr(unmanaged.{fieldInfo.Name}).Free(); }}");
 
                             // Permanent ScriptingObject handle is passed from native side, do not release it
@@ -1578,8 +1592,8 @@ namespace Flax.Build.Bindings
                         }
                         else if (fieldInfo.Type.Type == "Dictionary")
                         {
-                            toManagedContent.Append($"managed.{fieldInfo.Name} != IntPtr.Zero ? Unsafe.As<{originalType}>(ManagedHandle.FromIntPtr(managed.{fieldInfo.Name}).Target) : null");
-                            toNativeContent.Append($"ManagedHandle.ToIntPtr(managed.{fieldInfo.Name}, GCHandleType.Weak)");
+                            toManagedContent.AppendLine($"unmanaged.{fieldInfo.Name} != IntPtr.Zero ? Unsafe.As<{originalType}>(ManagedHandle.FromIntPtr(unmanaged.{fieldInfo.Name}).Target) : null;");
+                            toNativeContent.AppendLine($"ManagedHandle.ToIntPtr(managed.{fieldInfo.Name}, GCHandleType.Weak);");
                             freeContents.AppendLine($"if (unmanaged.{fieldInfo.Name} != IntPtr.Zero) {{ ManagedHandle.FromIntPtr(unmanaged.{fieldInfo.Name}).Free(); }}");
                             freeContents2.AppendLine($"if (unmanaged.{fieldInfo.Name} != IntPtr.Zero) {{ ManagedHandle.FromIntPtr(unmanaged.{fieldInfo.Name}).Free(); }}");
                         }
@@ -1591,16 +1605,16 @@ namespace Flax.Build.Bindings
                                 // Marshal blittable array elements back to original non-blittable elements
                                 string originalElementTypeMarshaller = originalElementType + "Marshaller";
                                 string internalElementType = $"{originalElementTypeMarshaller}.{originalElementType}Internal";
-                                toManagedContent.Append($"managed.{fieldInfo.Name} != IntPtr.Zero ? NativeInterop.ConvertArray((Unsafe.As<ManagedArray>(ManagedHandle.FromIntPtr(managed.{fieldInfo.Name}).Target)).ToSpan<{internalElementType}>(), {originalElementTypeMarshaller}.ToManaged) : null");
-                                toNativeContent.Append($"managed.{fieldInfo.Name}?.Length > 0 ? ManagedHandle.ToIntPtr(ManagedArray.WrapNewArray(NativeInterop.ConvertArray(managed.{fieldInfo.Name}, {originalElementTypeMarshaller}.ToNative)), GCHandleType.Weak) : IntPtr.Zero");
+                                toManagedContent.AppendLine($"unmanaged.{fieldInfo.Name} != IntPtr.Zero ? NativeInterop.ConvertArray((Unsafe.As<ManagedArray>(ManagedHandle.FromIntPtr(unmanaged.{fieldInfo.Name}).Target)).ToSpan<{internalElementType}>(), {originalElementTypeMarshaller}.ToManaged) : null;");
+                                toNativeContent.AppendLine($"managed.{fieldInfo.Name}?.Length > 0 ? ManagedHandle.ToIntPtr(ManagedArray.WrapNewArray(NativeInterop.ConvertArray(managed.{fieldInfo.Name}, {originalElementTypeMarshaller}.ToNative)), GCHandleType.Weak) : IntPtr.Zero;");
                                 freeContents.AppendLine($"if (unmanaged.{fieldInfo.Name} != IntPtr.Zero) {{ ManagedHandle handle = ManagedHandle.FromIntPtr(unmanaged.{fieldInfo.Name}); Span<{internalElementType}> values = (Unsafe.As<ManagedArray>(handle.Target)).ToSpan<{internalElementType}>(); foreach (var value in values) {{ {originalElementTypeMarshaller}.Free(value); }} (Unsafe.As<ManagedArray>(handle.Target)).Free(); handle.Free(); }}");
                                 freeContents2.AppendLine($"if (unmanaged.{fieldInfo.Name} != IntPtr.Zero) {{ ManagedHandle handle = ManagedHandle.FromIntPtr(unmanaged.{fieldInfo.Name}); Span<{internalElementType}> values = (Unsafe.As<ManagedArray>(handle.Target)).ToSpan<{internalElementType}>(); foreach (var value in values) {{ {originalElementTypeMarshaller}.Free(value); }} (Unsafe.As<ManagedArray>(handle.Target)).Free(); handle.Free(); }}");
                             }
                             else if (fieldInfo.Type.GenericArgs[0].IsObjectRef)
                             {
                                 // Array elements passed as GCHandles
-                                toManagedContent.Append($"managed.{fieldInfo.Name} != IntPtr.Zero ? NativeInterop.GCHandleArrayToManagedArray<{originalElementType}>(Unsafe.As<ManagedArray>(ManagedHandle.FromIntPtr(managed.{fieldInfo.Name}).Target)) : null");
-                                toNativeContent.Append($"managed.{fieldInfo.Name}?.Length > 0 ? ManagedHandle.ToIntPtr(NativeInterop.ManagedArrayToGCHandleWrappedArray(managed.{fieldInfo.Name}), GCHandleType.Weak) : IntPtr.Zero");
+                                toManagedContent.AppendLine($"unmanaged.{fieldInfo.Name} != IntPtr.Zero ? NativeInterop.GCHandleArrayToManagedArray<{originalElementType}>(Unsafe.As<ManagedArray>(ManagedHandle.FromIntPtr(unmanaged.{fieldInfo.Name}).Target)) : null;");
+                                toNativeContent.AppendLine($"managed.{fieldInfo.Name}?.Length > 0 ? ManagedHandle.ToIntPtr(NativeInterop.ManagedArrayToGCHandleWrappedArray(managed.{fieldInfo.Name}), GCHandleType.Weak) : IntPtr.Zero;");
                                 freeContents.AppendLine($"if (unmanaged.{fieldInfo.Name} != IntPtr.Zero) {{ ManagedHandle handle = ManagedHandle.FromIntPtr(unmanaged.{fieldInfo.Name}); Span<IntPtr> ptrs = (Unsafe.As<ManagedArray>(handle.Target)).ToSpan<IntPtr>(); foreach (var ptr in ptrs) {{ if (ptr != IntPtr.Zero) {{ ManagedHandle.FromIntPtr(ptr).Free(); }} }} (Unsafe.As<ManagedArray>(handle.Target)).Free(); handle.Free(); }}");
 
                                 // Permanent ScriptingObject handle is passed from native side, do not release it
@@ -1609,53 +1623,53 @@ namespace Flax.Build.Bindings
                             else
                             {
                                 // Blittable array elements
-                                toManagedContent.Append($"managed.{fieldInfo.Name} != IntPtr.Zero ? (Unsafe.As<ManagedArray>(ManagedHandle.FromIntPtr(managed.{fieldInfo.Name}).Target)).ToArray<{originalElementType}>() : null");
-                                toNativeContent.Append($"managed.{fieldInfo.Name}?.Length > 0 ? ManagedHandle.ToIntPtr(ManagedArray.WrapNewArray(managed.{fieldInfo.Name}), GCHandleType.Weak) : IntPtr.Zero");
+                                toManagedContent.AppendLine($"unmanaged.{fieldInfo.Name} != IntPtr.Zero ? (Unsafe.As<ManagedArray>(ManagedHandle.FromIntPtr(unmanaged.{fieldInfo.Name}).Target)).ToArray<{originalElementType}>() : null;");
+                                toNativeContent.AppendLine($"managed.{fieldInfo.Name}?.Length > 0 ? ManagedHandle.ToIntPtr(ManagedArray.WrapNewArray(managed.{fieldInfo.Name}), GCHandleType.Weak) : IntPtr.Zero;");
                                 freeContents.AppendLine($"if (unmanaged.{fieldInfo.Name} != IntPtr.Zero) {{ ManagedHandle handle = ManagedHandle.FromIntPtr(unmanaged.{fieldInfo.Name}); (Unsafe.As<ManagedArray>(handle.Target)).Free(); handle.Free(); }}");
                                 freeContents2.AppendLine($"if (unmanaged.{fieldInfo.Name} != IntPtr.Zero) {{ ManagedHandle handle = ManagedHandle.FromIntPtr(unmanaged.{fieldInfo.Name}); (Unsafe.As<ManagedArray>(handle.Target)).Free(); handle.Free(); }}");
                             }
                         }
                         else if (fieldInfo.Type.Type == "Version")
                         {
-                            toManagedContent.Append($"managed.{fieldInfo.Name} != IntPtr.Zero ? Unsafe.As<{originalType}>(ManagedHandle.FromIntPtr(managed.{fieldInfo.Name}).Target) : null");
-                            toNativeContent.Append($"ManagedHandle.ToIntPtr(managed.{fieldInfo.Name}, GCHandleType.Weak)");
+                            toManagedContent.AppendLine($"unmanaged.{fieldInfo.Name} != IntPtr.Zero ? Unsafe.As<{originalType}>(ManagedHandle.FromIntPtr(unmanaged.{fieldInfo.Name}).Target) : null;");
+                            toNativeContent.AppendLine($"ManagedHandle.ToIntPtr(managed.{fieldInfo.Name}, GCHandleType.Weak);");
                             freeContents.AppendLine($"if (unmanaged.{fieldInfo.Name} != IntPtr.Zero) {{ ManagedHandle.FromIntPtr(unmanaged.{fieldInfo.Name}).Free(); }}");
                             freeContents2.AppendLine($"if (unmanaged.{fieldInfo.Name} != IntPtr.Zero) {{ ManagedHandle.FromIntPtr(unmanaged.{fieldInfo.Name}).Free(); }}");
                         }
                         else if (originalType == "string")
                         {
-                            toManagedContent.Append($"ManagedString.ToManaged(managed.{fieldInfo.Name})");
-                            toNativeContent.Append($"ManagedString.ToNative(managed.{fieldInfo.Name})");
+                            toManagedContent.AppendLine($"ManagedString.ToManaged(unmanaged.{fieldInfo.Name});");
+                            toNativeContent.AppendLine($"ManagedString.ToNative(managed.{fieldInfo.Name});");
                             freeContents.AppendLine($"ManagedString.Free(unmanaged.{fieldInfo.Name});");
                             freeContents2.AppendLine($"ManagedString.Free(unmanaged.{fieldInfo.Name});");
                         }
                         else if (originalType == "bool")
                         {
-                            toManagedContent.Append($"managed.{fieldInfo.Name} != 0");
-                            toNativeContent.Append($"managed.{fieldInfo.Name} ? (byte)1 : (byte)0");
+                            toManagedContent.AppendLine($"unmanaged.{fieldInfo.Name} != 0;");
+                            toNativeContent.AppendLine($"managed.{fieldInfo.Name} ? (byte)1 : (byte)0;");
                         }
                         else if (fieldInfo.Type.Type == "Variant")
                         {
                             // Variant passed as boxed object handle
-                            toManagedContent.Append($"ManagedHandleMarshaller.NativeToManaged.ConvertToManaged(managed.{fieldInfo.Name})");
-                            toNativeContent.Append($"ManagedHandleMarshaller.NativeToManaged.ConvertToUnmanaged(managed.{fieldInfo.Name})");
+                            toManagedContent.AppendLine($"ManagedHandleMarshaller.NativeToManaged.ConvertToManaged(unmanaged.{fieldInfo.Name});");
+                            toNativeContent.AppendLine($"ManagedHandleMarshaller.NativeToManaged.ConvertToUnmanaged(managed.{fieldInfo.Name});");
                         }
                         else if (internalType)
                         {
-                            toManagedContent.Append($"{internalTypeMarshaller}.ToManaged(managed.{fieldInfo.Name})");
-                            toNativeContent.Append($"{internalTypeMarshaller}.ToNative(managed.{fieldInfo.Name})");
+                            toManagedContent.AppendLine($"{internalTypeMarshaller}.ToManaged(unmanaged.{fieldInfo.Name});");
+                            toNativeContent.AppendLine($"{internalTypeMarshaller}.ToNative(managed.{fieldInfo.Name});");
                             freeContents.AppendLine($"{internalTypeMarshaller}.Free(unmanaged.{fieldInfo.Name});");
                             freeContents2.AppendLine($"{internalTypeMarshaller}.Free(unmanaged.{fieldInfo.Name});");
                         }
                         /*else if (originalType == "Guid")
                         {
-                            toManagedContent.Append("(Guid)managed.").Append(fieldInfo.Name);
+                            toManagedContent.Append("(Guid)unmanaged.").Append(fieldInfo.Name);
                             toNativeContent.Append("(GuidNative)managed.").Append(fieldInfo.Name);
                         }*/
                         else
                         {
-                            toManagedContent.Append("managed.").Append(fieldInfo.Name);
-                            toNativeContent.Append("managed.").Append(fieldInfo.Name);
+                            toManagedContent.Append("unmanaged.").Append(fieldInfo.Name).AppendLine(";");
+                            toNativeContent.Append("managed.").Append(fieldInfo.Name).AppendLine(";");
                         }
                     }
 
@@ -1663,8 +1677,8 @@ namespace Flax.Build.Bindings
                     indent = indent.Substring(0, indent.Length - 4);
                     contents.AppendLine(indent + "}").AppendLine();
 
-                    toManagedContent.AppendLine(" };");
-                    toNativeContent.AppendLine(" };");
+                    toNativeContent.Append("return unmanaged;");
+                    toManagedContent.Append("return managed;");
                 }
 
                 var indent2 = indent + "    ";
@@ -1712,7 +1726,7 @@ namespace Flax.Build.Bindings
                 contents.Append(indent).AppendLine("{").Append(indent2).AppendLine(freeContents.Replace("\n", "\n" + indent2).ToString().TrimEnd()).Append(indent).AppendLine("}");
 
                 // Managed/native converters
-                contents.Append(indent).AppendLine($"internal static {structureInfo.Name} ToManaged({structureInfo.Name}Internal managed)");
+                contents.Append(indent).AppendLine($"internal static {structureInfo.Name} ToManaged({structureInfo.Name}Internal unmanaged)");
                 contents.Append(indent).AppendLine("{").Append(indent2).AppendLine(toManagedContent.Replace("\n", "\n" + indent2).ToString().TrimEnd()).Append(indent).AppendLine("}");
                 contents.Append(indent).AppendLine($"internal static {structureInfo.Name}Internal ToNative({structureInfo.Name} managed)");
                 contents.Append(indent).AppendLine("{").Append(indent2).AppendLine(toNativeContent.Replace("\n", "\n" + indent2).ToString().TrimEnd()).Append(indent).AppendLine("}");
@@ -1767,15 +1781,12 @@ namespace Flax.Build.Bindings
                     managedType = GenerateCSharpNativeToManaged(buildData, fieldInfo.Type, structureInfo);
                     fieldInfo.Type.IsArray = true;
 #if USE_NETCORE
-                    // Use fixed statement with primitive types of buffers
-                    if (managedType == "char")
+                    if (GenerateCSharpUseFixedBuffer(managedType))
                     {
-                        // char's are not blittable, store as short instead
-                        contents.Append($"fixed short {fieldInfo.Name}0[{fieldInfo.Type.ArraySize}]; // {managedType}*").AppendLine();
-                    }
-                    else if (managedType == "byte")
-                    {
-                        contents.Append($"fixed byte {fieldInfo.Name}0[{fieldInfo.Type.ArraySize}]; // {managedType}*").AppendLine();
+                        // Use fixed statement with primitive types of buffers
+                        if (managedType == "char")
+                            managedType = "short"; // char's are not blittable, store as short instead
+                        contents.Append($"fixed {managedType} {fieldInfo.Name}0[{fieldInfo.Type.ArraySize}];").AppendLine();
                     }
                     else
 #endif
@@ -1785,7 +1796,6 @@ namespace Flax.Build.Bindings
                         for (int i = 1; i < fieldInfo.Type.ArraySize; i++)
                         {
                             contents.AppendLine();
-                            GenerateCSharpComment(contents, indent, fieldInfo.Comment);
                             GenerateCSharpAttributes(buildData, contents, indent, structureInfo, fieldInfo, fieldInfo.IsStatic);
                             contents.Append(indent).Append(GenerateCSharpAccessLevel(fieldInfo.Access));
                             if (fieldInfo.IsStatic)
