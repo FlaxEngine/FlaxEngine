@@ -9,8 +9,9 @@
 /// <summary>
 /// Represents a 3x3 mathematical matrix.
 /// </summary>
-API_STRUCT(InBuild) struct FLAXENGINE_API Matrix3x3
+API_STRUCT() struct FLAXENGINE_API Matrix3x3
 {
+    DECLARE_SCRIPTING_TYPE_MINIMAL(Matrix3x3);
 public:
     union
     {

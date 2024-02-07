@@ -203,8 +203,11 @@ void Physics::Simulate(float dt)
 
 void Physics::CollectResults()
 {
-    if (DefaultScene)
-        DefaultScene->CollectResults();
+    for (PhysicsScene* scene : Scenes)
+    {
+        if (scene->GetAutoSimulation())
+            scene->CollectResults();
+    }
 }
 
 bool Physics::IsDuringSimulation()

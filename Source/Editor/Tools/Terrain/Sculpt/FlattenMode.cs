@@ -18,7 +18,7 @@ namespace FlaxEditor.Tools.Terrain.Sculpt
         public float TargetHeight = 0.0f;
 
         /// <inheritdoc />
-        public override unsafe void Apply(ref ApplyParams p)
+        public override unsafe void ApplyBrushToPatch(ref ApplyParams p)
         {
             // If used with invert mode pick the target height level
             if (p.Options.Invert)
