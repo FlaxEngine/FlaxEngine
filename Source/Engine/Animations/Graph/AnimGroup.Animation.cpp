@@ -87,7 +87,7 @@ void AnimGraphExecutor::ProcessAnimEvents(AnimGraphNode* node, bool loop, float 
     if (anim->Events.Count() == 0)
         return;
     ANIM_GRAPH_PROFILE_EVENT("Events");
-    auto& context = Context.Get();
+    auto& context = *Context.Get();
     float eventTimeMin = animPrevPos;
     float eventTimeMax = animPos;
     if (loop && context.DeltaTime * speed < 0)
@@ -231,7 +231,7 @@ void AnimGraphExecutor::ProcessAnimation(AnimGraphImpulse* nodes, AnimGraphNode*
     const float animPrevPos = GetAnimSamplePos(length, anim, prevPos, speed);
 
     // Add to trace
-    auto& context = Context.Get();
+    auto& context = *Context.Get();
     if (context.Data->EnableTracing)
     {
         auto& trace = context.AddTraceEvent(node);
@@ -655,7 +655,7 @@ void ComputeMultiBlendLength(float& length, AnimGraphNode* node)
 
 void AnimGraphExecutor::ProcessGroupParameters(Box* box, Node* node, Value& value)
 {
-    auto& context = Context.Get();
+    auto& context = *Context.Get();
     switch (node->TypeID)
     {
     // Get
@@ -766,7 +766,7 @@ void AnimGraphExecutor::ProcessGroupParameters(Box* box, Node* node, Value& valu
 
 void AnimGraphExecutor::ProcessGroupTools(Box* box, Node* nodeBase, Value& value)
 {
-    auto& context = Context.Get();
+    auto& context = *Context.Get();
     auto node = (AnimGraphNode*)nodeBase;
     switch (node->TypeID)
     {
@@ -790,7 +790,7 @@ void AnimGraphExecutor::ProcessGroupTools(Box* box, Node* nodeBase, Value& value
 
 void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Value& value)
 {
-    auto& context = Context.Get();
+    auto& context = *Context.Get();
     if (context.ValueCache.TryGet(boxBase, value))
         return;
     auto box = (AnimGraphBox*)boxBase;
@@ -2272,7 +2272,7 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
 
 void AnimGraphExecutor::ProcessGroupFunction(Box* boxBase, Node* node, Value& value)
 {
-    auto& context = Context.Get();
+    auto& context = *Context.Get();
     if (context.ValueCache.TryGet(boxBase, value))
         return;
     switch (node->TypeID)

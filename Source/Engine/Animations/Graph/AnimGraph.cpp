@@ -9,7 +9,7 @@
 
 extern void RetargetSkeletonNode(const SkeletonData& sourceSkeleton, const SkeletonData& targetSkeleton, const SkinnedModel::SkeletonMapping& sourceMapping, Transform& node, int32 i);
 
-ThreadLocal<AnimGraphContext> AnimGraphExecutor::Context;
+ThreadLocal<AnimGraphContext*> AnimGraphExecutor::Context;
 
 Transform AnimGraphImpulse::GetNodeModelTransformation(SkeletonData& skeleton, int32 nodeIndex) const
 {
@@ -104,7 +104,7 @@ AnimGraphInstanceData::OutgoingEvent AnimGraphInstanceData::ActiveEvent::End(Ani
 
 AnimGraphImpulse* AnimGraphNode::GetNodes(AnimGraphExecutor* executor)
 {
-    auto& context = AnimGraphExecutor::Context.Get();
+    auto& context = *AnimGraphExecutor::Context.Get();
     const int32 count = executor->_skeletonNodesCount;
     if (context.PoseCacheSize == context.PoseCache.Count())
         context.PoseCache.AddOne();
@@ -204,7 +204,10 @@ void AnimGraphExecutor::Update(AnimGraphInstanceData& data, float dt)
 
     // Initialize
     auto& skeleton = _graph.BaseModel->Skeleton;
-    auto& context = Context.Get();
+    auto& contextPtr = Context.Get();
+    if (!contextPtr)
+        contextPtr = New<AnimGraphContext>();
+    auto& context = *contextPtr;
     {
         ANIM_GRAPH_PROFILE_EVENT("Init");
 
@@ -378,12 +381,12 @@ void AnimGraphExecutor::GetInputValue(Box* box, Value& result)
 
 AnimGraphImpulse* AnimGraphExecutor::GetEmptyNodes()
 {
-    return &Context.Get().EmptyNodes;
+    return &Context.Get()->EmptyNodes;
 }
 
 void AnimGraphExecutor::InitNodes(AnimGraphImpulse* nodes) const
 {
-    const auto& emptyNodes = Context.Get().EmptyNodes;
+    const auto& emptyNodes = Context.Get()->EmptyNodes;
     Platform::MemoryCopy(nodes->Nodes.Get(), emptyNodes.Nodes.Get(), sizeof(Transform) * _skeletonNodesCount);
     nodes->RootMotion = emptyNodes.RootMotion;
     nodes->Position = emptyNodes.Position;
@@ -405,7 +408,7 @@ void AnimGraphExecutor::ResetBuckets(AnimGraphContext& context, AnimGraphBase* g
 
 VisjectExecutor::Value AnimGraphExecutor::eatBox(Node* caller, Box* box)
 {
-    auto& context = Context.Get();
+    auto& context = *Context.Get();
 
     // Check if graph is looped or is too deep
     if (context.CallStack.Count() >= ANIM_GRAPH_MAX_CALL_STACK)
@@ -450,6 +453,6 @@ VisjectExecutor::Value AnimGraphExecutor::eatBox(Node* caller, Box* box)
 
 VisjectExecutor::Graph* AnimGraphExecutor::GetCurrentGraph() const
 {
-    auto& context = Context.Get();
+    auto& context = *Context.Get();
     return context.GraphStack.Peek();
 }

@@ -211,7 +211,10 @@ FlaxStorage::~FlaxStorage()
 
 #if USE_EDITOR
     // Ensure to close any outstanding file handles to prevent file locking in case it failed to load
-    _file.DeleteAll();
+    Array<FileReadStream*> streams;
+    _file.GetValues(streams);
+    for (FileReadStream* stream : streams)
+        Delete(stream);
 #endif
 }
 
@@ -1264,7 +1267,6 @@ bool FlaxStorage::LoadAssetHeader(const Entry& e, AssetInitData& data)
     }
 
 #if ASSETS_LOADING_EXTRA_VERIFICATION
-
     // Validate loaded header (asset ID and type ID must be the same)
     if (e.ID != data.Header.ID)
     {
@@ -1274,7 +1276,6 @@ bool FlaxStorage::LoadAssetHeader(const Entry& e, AssetInitData& data)
     {
         LOG(Error, "Loading asset header data mismatch! Expected Type Name: {0}, loaded header: {1}.\nSource: {2}", e.TypeName, data.Header.ToString(), ToString());
     }
-
 #endif
 
     return false;
@@ -1337,7 +1338,11 @@ bool FlaxStorage::CloseFileHandles()
         return true; // Failed, someone is still accessing the file
 
     // Close file handles (from all threads)
-    _file.DeleteAll();
+    Array<FileReadStream*> streams;
+    _file.GetValues(streams);
+    for (FileReadStream* stream : streams)
+        Delete(stream);
+    _file.Clear();
     return false;
 }
 

@@ -819,7 +819,7 @@ private:
     int32 _skeletonNodesCount = 0;
 
     // Per-thread context to allow async execution
-    static ThreadLocal<AnimGraphContext> Context;
+    static ThreadLocal<AnimGraphContext*> Context;
 
 public:
     /// <summary>

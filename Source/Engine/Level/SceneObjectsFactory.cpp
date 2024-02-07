@@ -63,7 +63,7 @@ SceneObjectsFactory::Context::~Context()
 {
     if (Async)
     {
-        Array<ISerializeModifier*, FixedAllocation<PLATFORM_THREADS_LIMIT>> modifiers;
+        Array<ISerializeModifier*, InlinedAllocation<PLATFORM_THREADS_LIMIT>> modifiers;
         Modifiers.GetValues(modifiers);
         for (ISerializeModifier* e : modifiers)
         {
