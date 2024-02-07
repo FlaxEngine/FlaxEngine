@@ -335,13 +335,12 @@ DescriptorPoolVulkan* GPUContextVulkan::AllocateDescriptorSets(const VkDescripto
     VkDescriptorSetAllocateInfo allocateInfo = descriptorSetAllocateInfo;
     DescriptorPoolVulkan* pool = nullptr;
 
-    const uint32 hash = VULKAN_HASH_POOLS_WITH_TYPES_USAGE_ID ? layout.TypesUsageID : layout.Hash;
+    const uint32 hash = VULKAN_HASH_POOLS_WITH_LAYOUT_TYPES ? layout.SetLayoutsHash : GetHash(layout);
     DescriptorPoolArray* typedDescriptorPools = _descriptorPools.TryGet(hash);
 
     if (typedDescriptorPools != nullptr)
     {
         pool = typedDescriptorPools->HasItems() ? typedDescriptorPools->Last() : nullptr;
-
         if (pool && pool->CanAllocate(layout))
         {
             allocateInfo.descriptorPool = pool->GetHandle();
@@ -361,7 +360,6 @@ DescriptorPoolVulkan* GPUContextVulkan::AllocateDescriptorSets(const VkDescripto
         }
         else
         {
-            // Spec says any negative value could be due to fragmentation, so create a new Pool. If it fails here then we really are out of memory!
             pool = New<DescriptorPoolVulkan>(_device, layout);
             typedDescriptorPools->Add(pool);
             allocateInfo.descriptorPool = pool->GetHandle();
@@ -689,7 +687,7 @@ void GPUContextVulkan::OnDrawCall()
         vkCmdBindDescriptorSets(
             cmdBuffer->GetHandle(),
             VK_PIPELINE_BIND_POINT_GRAPHICS,
-            pipelineState->GetLayout()->GetHandle(),
+            pipelineState->GetLayout()->Handle,
             0,
             pipelineState->DescriptorSetHandles.Count(),
             pipelineState->DescriptorSetHandles.Get(),

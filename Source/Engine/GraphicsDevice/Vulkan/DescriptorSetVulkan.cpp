@@ -30,7 +30,7 @@ void DescriptorSetLayoutInfoVulkan::AddBindingsForStage(VkShaderStageFlagBits st
         binding.descriptorCount = descriptor.Count;
 
         LayoutTypes[binding.descriptorType]++;
-        descSetLayout.Add(binding);
+        descSetLayout.LayoutBindings.Add(binding);
         Hash = Crc::MemCrc32(&binding, sizeof(binding), Hash);
     }
 }
@@ -39,19 +39,18 @@ bool DescriptorSetLayoutInfoVulkan::operator==(const DescriptorSetLayoutInfoVulk
 {
     if (other.SetLayouts.Count() != SetLayouts.Count())
         return false;
-    if (other.TypesUsageID != TypesUsageID)
+#if VULKAN_HASH_POOLS_WITH_LAYOUT_TYPES
+    if (other.SetLayoutsHash != SetLayoutsHash)
         return false;
-
+#endif
     for (int32 index = 0; index < other.SetLayouts.Count(); index++)
     {
-        auto& setLayout = SetLayouts[index];
-        auto& setLayoutOther = other.SetLayouts[index];
-        if (setLayoutOther.Count() != setLayout.Count())
+        const int32 bindingsCount = SetLayouts[index].LayoutBindings.Count();
+        if (other.SetLayouts[index].LayoutBindings.Count() != bindingsCount)
             return false;
-        if (setLayout.Count() != 0 && Platform::MemoryCompare(setLayoutOther.Get(), setLayout.Get(), setLayout.Count() * sizeof(VkDescriptorSetLayoutBinding)))
+        if (bindingsCount != 0 && Platform::MemoryCompare(other.SetLayouts[index].LayoutBindings.Get(), SetLayouts[index].LayoutBindings.Get(), bindingsCount * sizeof(VkDescriptorSetLayoutBinding)))
             return false;
     }
-
     return true;
 }
 
@@ -63,16 +62,13 @@ DescriptorSetLayoutVulkan::DescriptorSetLayoutVulkan(GPUDeviceVulkan* device)
 DescriptorSetLayoutVulkan::~DescriptorSetLayoutVulkan()
 {
     for (VkDescriptorSetLayout& handle : Handles)
-    {
         Device->DeferredDeletionQueue.EnqueueResource(DeferredDeletionQueueVulkan::Type::DescriptorSetLayout, handle);
-    }
 }
 
 void DescriptorSetLayoutVulkan::Compile()
 {
+#if !BUILD_RELEASE
     ASSERT(Handles.IsEmpty());
-
-    // Validate device limits for the engine
     const VkPhysicalDeviceLimits& limits = Device->PhysicalDeviceLimits;
     ASSERT(LayoutTypes[VK_DESCRIPTOR_TYPE_SAMPLER] + LayoutTypes[VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER] < limits.maxDescriptorSetSamplers);
     ASSERT(LayoutTypes[VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER]+ LayoutTypes[VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC] < limits.maxDescriptorSetUniformBuffers);
@@ -81,34 +77,23 @@ void DescriptorSetLayoutVulkan::Compile()
     ASSERT(LayoutTypes[VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC] < limits.maxDescriptorSetStorageBuffersDynamic);
     ASSERT(LayoutTypes[VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER] + LayoutTypes[VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE] + LayoutTypes[VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER] < limits.maxDescriptorSetSampledImages);
     ASSERT(LayoutTypes[VK_DESCRIPTOR_TYPE_STORAGE_IMAGE] + LayoutTypes[VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER]< limits.maxDescriptorSetStorageImages);
+#endif
 
     Handles.Resize(SetLayouts.Count());
     for (int32 i = 0; i < SetLayouts.Count(); i++)
     {
-        auto& layout = SetLayouts[i];
+        auto& layout = SetLayouts.Get()[i];
         VkDescriptorSetLayoutCreateInfo layoutInfo;
         RenderToolsVulkan::ZeroStruct(layoutInfo, VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO);
-        layoutInfo.bindingCount = layout.Count();
-        layoutInfo.pBindings = layout.Get();
+        layoutInfo.bindingCount = layout.LayoutBindings.Count();
+        layoutInfo.pBindings = layout.LayoutBindings.Get();
         VALIDATE_VULKAN_RESULT(vkCreateDescriptorSetLayout(Device->Device, &layoutInfo, nullptr, &Handles[i]));
     }
 
-    if (TypesUsageID == ~0)
-    {
-        // Cache usage ID
-        static uint32 uniqueID = 1;
-        static Dictionary<uint32, uint32> typesUsageHashMap;
-        const uint32 typesUsageHash = Crc::MemCrc32(LayoutTypes, sizeof(LayoutTypes));
-        uint32 id;
-        Device->Locker.Lock();
-        if (!typesUsageHashMap.TryGet(typesUsageHash, id))
-        {
-            id = uniqueID++;
-            typesUsageHashMap.Add(typesUsageHash, id);
-        }
-        Device->Locker.Unlock();
-        TypesUsageID = id;
-    }
+#if VULKAN_HASH_POOLS_WITH_LAYOUT_TYPES
+    if (SetLayoutsHash == 0)
+        SetLayoutsHash = Crc::MemCrc32(LayoutTypes, sizeof(LayoutTypes));
+#endif
 
     RenderToolsVulkan::ZeroStruct(AllocateInfo, VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO);
     AllocateInfo.descriptorSetCount = Handles.Count();
@@ -127,7 +112,7 @@ DescriptorPoolVulkan::DescriptorPoolVulkan(GPUDeviceVulkan* device, const Descri
 
     // The maximum amount of descriptor sets layout allocations to hold
     const uint32 MaxSetsAllocations = 256;
-    _descriptorSetsMax = MaxSetsAllocations * (VULKAN_HASH_POOLS_WITH_TYPES_USAGE_ID ? 1 : _layout.SetLayouts.Count());
+    _descriptorSetsMax = MaxSetsAllocations * (VULKAN_HASH_POOLS_WITH_LAYOUT_TYPES ? 1 : _layout.SetLayouts.Count());
     for (uint32 typeIndex = VULKAN_DESCRIPTOR_TYPE_BEGIN; typeIndex <= VULKAN_DESCRIPTOR_TYPE_END; typeIndex++)
     {
         const VkDescriptorType descriptorType = (VkDescriptorType)typeIndex;
@@ -274,7 +259,7 @@ DescriptorPoolSetContainerVulkan::~DescriptorPoolSetContainerVulkan()
 
 TypedDescriptorPoolSetVulkan* DescriptorPoolSetContainerVulkan::AcquireTypedPoolSet(const DescriptorSetLayoutVulkan& layout)
 {
-    const uint32 hash = VULKAN_HASH_POOLS_WITH_TYPES_USAGE_ID ? layout.TypesUsageID : layout.Hash;
+    const uint32 hash = VULKAN_HASH_POOLS_WITH_LAYOUT_TYPES ? layout.SetLayoutsHash : GetHash(layout);
     TypedDescriptorPoolSetVulkan* typedPool;
     if (!_typedDescriptorPools.TryGet(hash, typedPool))
     {
@@ -347,26 +332,24 @@ void DescriptorPoolsManagerVulkan::GC()
 }
 
 PipelineLayoutVulkan::PipelineLayoutVulkan(GPUDeviceVulkan* device, const DescriptorSetLayoutInfoVulkan& layout)
-    : _device(device)
-    , _handle(VK_NULL_HANDLE)
-    , _descriptorSetLayout(device)
+    : Device(device)
+    , Handle(VK_NULL_HANDLE)
+    , DescriptorSetLayout(device)
 {
-    _descriptorSetLayout.CopyFrom(layout);
-    _descriptorSetLayout.Compile();
+    DescriptorSetLayout.CopyFrom(layout);
+    DescriptorSetLayout.Compile();
 
     VkPipelineLayoutCreateInfo createInfo;
     RenderToolsVulkan::ZeroStruct(createInfo, VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO);
-    createInfo.setLayoutCount = _descriptorSetLayout.Handles.Count();
-    createInfo.pSetLayouts = _descriptorSetLayout.Handles.Get();
-    VALIDATE_VULKAN_RESULT(vkCreatePipelineLayout(_device->Device, &createInfo, nullptr, &_handle));
+    createInfo.setLayoutCount = DescriptorSetLayout.Handles.Count();
+    createInfo.pSetLayouts = DescriptorSetLayout.Handles.Get();
+    VALIDATE_VULKAN_RESULT(vkCreatePipelineLayout(device->Device, &createInfo, nullptr, &Handle));
 }
 
 PipelineLayoutVulkan::~PipelineLayoutVulkan()
 {
-    if (_handle != VK_NULL_HANDLE)
-    {
-        _device->DeferredDeletionQueue.EnqueueResource(DeferredDeletionQueueVulkan::Type::PipelineLayout, _handle);
-    }
+    if (Handle != VK_NULL_HANDLE)
+        Device->DeferredDeletionQueue.EnqueueResource(DeferredDeletionQueueVulkan::Type::PipelineLayout, Handle);
 }
 
 uint32 DescriptorSetWriterVulkan::SetupDescriptorWrites(const SpirvShaderDescriptorInfo& info, VkWriteDescriptorSet* writeDescriptors, VkDescriptorImageInfo* imageInfo, VkDescriptorBufferInfo* bufferInfo, VkBufferView* texelBufferView, uint8* bindingToDynamicOffset)

@@ -54,7 +54,7 @@ ComputePipelineStateVulkan* GPUShaderProgramCSVulkan::GetOrCreateState()
     VkComputePipelineCreateInfo desc;
     RenderToolsVulkan::ZeroStruct(desc, VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO);
     desc.basePipelineIndex = -1;
-    desc.layout = layout->GetHandle();
+    desc.layout = layout->Handle;
     RenderToolsVulkan::ZeroStruct(desc.stage, VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO);
     auto& stage = desc.stage;
     RenderToolsVulkan::ZeroStruct(stage, VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO);
@@ -72,7 +72,7 @@ ComputePipelineStateVulkan* GPUShaderProgramCSVulkan::GetOrCreateState()
     // Setup the state
     _pipelineState = New<ComputePipelineStateVulkan>(_device, pipeline, layout);
     _pipelineState->DescriptorInfo = &DescriptorInfo;
-    _pipelineState->DescriptorSetsLayout = &layout->GetDescriptorSetLayout();
+    _pipelineState->DescriptorSetsLayout = &layout->DescriptorSetLayout;
     _pipelineState->DescriptorSetHandles.AddZeroed(_pipelineState->DescriptorSetsLayout->Handles.Count());
     uint32 dynamicOffsetsCount = 0;
     if (DescriptorInfo.DescriptorTypesCount != 0)
@@ -146,7 +146,7 @@ PipelineLayoutVulkan* GPUPipelineStateVulkan::GetLayout()
 
     _layout = _device->GetOrCreateLayout(descriptorSetLayoutInfo);
     ASSERT(_layout);
-    DescriptorSetsLayout = &_layout->GetDescriptorSetLayout();
+    DescriptorSetsLayout = &_layout->DescriptorSetLayout;
     DescriptorSetHandles.AddZeroed(DescriptorSetsLayout->Handles.Count());
 
     return _layout;
@@ -179,7 +179,7 @@ VkPipeline GPUPipelineStateVulkan::GetState(RenderPassVulkan* renderPass)
     // Check if has missing layout
     if (_desc.layout == VK_NULL_HANDLE)
     {
-        _desc.layout = GetLayout()->GetHandle();
+        _desc.layout = GetLayout()->Handle;
     }
 
     // Create object

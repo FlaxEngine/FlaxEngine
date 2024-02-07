@@ -21,7 +21,6 @@ QueueVulkan::QueueVulkan(GPUDeviceVulkan* device, uint32 familyIndex)
 void QueueVulkan::Submit(CmdBufferVulkan* cmdBuffer, uint32 signalSemaphoresCount, const VkSemaphore* signalSemaphores)
 {
     ASSERT(cmdBuffer->HasEnded());
-
     auto fence = cmdBuffer->GetFence();
     ASSERT(!fence->IsSignaled);
 

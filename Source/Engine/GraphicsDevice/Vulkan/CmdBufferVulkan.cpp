@@ -211,9 +211,7 @@ CmdBufferPoolVulkan::CmdBufferPoolVulkan(GPUDeviceVulkan* device)
 CmdBufferPoolVulkan::~CmdBufferPoolVulkan()
 {
     for (int32 i = 0; i < _cmdBuffers.Count(); i++)
-    {
-        Delete(_cmdBuffers.Get()[i]);
-    }
+        Delete(_cmdBuffers[i]);
     vkDestroyCommandPool(_device->Device, _handle, nullptr);
 }
 
@@ -221,7 +219,7 @@ void CmdBufferPoolVulkan::RefreshFenceStatus(const CmdBufferVulkan* skipCmdBuffe
 {
     for (int32 i = 0; i < _cmdBuffers.Count(); i++)
     {
-        const auto cmdBuffer = _cmdBuffers.Get()[i];
+        auto cmdBuffer = _cmdBuffers[i];
         if (cmdBuffer != skipCmdBuffer)
         {
             cmdBuffer->RefreshFenceStatus();

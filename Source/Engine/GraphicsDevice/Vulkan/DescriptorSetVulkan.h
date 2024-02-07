@@ -54,14 +54,15 @@ namespace DescriptorSet
 class DescriptorSetLayoutInfoVulkan
 {
 public:
-    typedef Array<VkDescriptorSetLayoutBinding> SetLayout;
+    struct SetLayout
+    {
+        Array<VkDescriptorSetLayoutBinding> LayoutBindings;
+    };
 
     uint32 Hash = 0;
-    uint32 TypesUsageID = ~0;
-    Array<SetLayout> SetLayouts;
+    uint32 SetLayoutsHash = 0;
     uint32 LayoutTypes[VULKAN_DESCRIPTOR_TYPE_END];
-
-    void CacheTypesUsageID();
+    Array<SetLayout> SetLayouts;
 
 public:
     DescriptorSetLayoutInfoVulkan()
@@ -75,7 +76,7 @@ public:
     {
         Platform::MemoryCopy(LayoutTypes, info.LayoutTypes, sizeof(LayoutTypes));
         Hash = info.Hash;
-        TypesUsageID = info.TypesUsageID;
+        SetLayoutsHash = info.SetLayoutsHash;
         SetLayouts = info.SetLayouts;
     }
 
@@ -248,30 +249,13 @@ public:
 
 class PipelineLayoutVulkan
 {
-private:
-    GPUDeviceVulkan* _device;
-    VkPipelineLayout _handle;
-    DescriptorSetLayoutVulkan _descriptorSetLayout;
-
 public:
+    GPUDeviceVulkan* Device;
+    VkPipelineLayout Handle;
+    DescriptorSetLayoutVulkan DescriptorSetLayout;
+
     PipelineLayoutVulkan(GPUDeviceVulkan* device, const DescriptorSetLayoutInfoVulkan& layout);
     ~PipelineLayoutVulkan();
-
-public:
-    inline VkPipelineLayout GetHandle() const
-    {
-        return _handle;
-    }
-
-    inline const DescriptorSetLayoutVulkan& GetDescriptorSetLayout() const
-    {
-        return _descriptorSetLayout;
-    }
-
-    inline bool HasDescriptors() const
-    {
-        return _descriptorSetLayout.SetLayouts.HasItems();
-    }
 };
 
 struct DescriptorSetWriteContainerVulkan

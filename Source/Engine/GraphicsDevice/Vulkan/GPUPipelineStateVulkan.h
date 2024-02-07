@@ -63,7 +63,7 @@ public:
         vkCmdBindDescriptorSets(
             cmdBuffer->GetHandle(),
             VK_PIPELINE_BIND_POINT_COMPUTE,
-            GetLayout()->GetHandle(),
+            GetLayout()->Handle,
             0,
             DescriptorSetHandles.Count(),
             DescriptorSetHandles.Get(),
