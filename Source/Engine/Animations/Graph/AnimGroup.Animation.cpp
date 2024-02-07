@@ -227,6 +227,9 @@ void AnimGraphExecutor::ProcessAnimation(AnimGraphImpulse* nodes, AnimGraphNode*
         trace.Asset = anim;
         trace.Value = animPos;
         trace.NodeId = node->ID;
+        auto* nodePath = context.NodePath.Get();
+        for (int32 i = 0; i < context.NodePath.Count(); i++)
+            trace.NodePath[i] = nodePath[i];
     }
 
     // Evaluate nested animations
@@ -494,14 +497,17 @@ Variant AnimGraphExecutor::Blend(AnimGraphNode* node, const Value& poseA, const 
     return nodes;
 }
 
-Variant AnimGraphExecutor::SampleState(AnimGraphNode* state)
+Variant AnimGraphExecutor::SampleState(AnimGraphContext& context, const AnimGraphNode* state)
 {
     auto& data = state->Data.State;
     if (data.Graph == nullptr || data.Graph->GetRootNode() == nullptr)
         return Value::Null;
     ANIM_GRAPH_PROFILE_EVENT("Evaluate State");
+    context.NodePath.Add(state->ID);
     auto rootNode = data.Graph->GetRootNode();
-    return eatBox((Node*)rootNode, &rootNode->Boxes[0]);
+    auto result = eatBox((Node*)rootNode, &rootNode->Boxes[0]);
+    context.NodePath.Pop();
+    return result;
 }
 
 void AnimGraphExecutor::InitStateTransition(AnimGraphContext& context, AnimGraphInstanceData::StateMachineBucket& stateMachineBucket, AnimGraphStateTransition* transition)
@@ -537,7 +543,7 @@ AnimGraphStateTransition* AnimGraphExecutor::UpdateStateTransitions(AnimGraphCon
         }
 
         // Evaluate source state transition data (position, length, etc.)
-        const Value sourceStatePtr = SampleState(state);
+        const Value sourceStatePtr = SampleState(context, state);
         auto& transitionData = context.TransitionData; // Note: this could support nested transitions but who uses state machine inside transition rule?
         if (ANIM_GRAPH_IS_VALID_PTR(sourceStatePtr))
         {
@@ -1660,6 +1666,8 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
     bucket.CurrentState = bucket.ActiveTransition->Destination; \
     InitStateTransition(context, bucket)
 
+        context.NodePath.Push(node->ID);
+
         // Update the active transition
         if (bucket.ActiveTransition)
         {
@@ -1767,11 +1775,11 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
         if (bucket.BaseTransitionState)
         {
             // Sample the other state (eg. when blending from interrupted state to the another state from the old destination)
-            value = SampleState(bucket.BaseTransitionState);
+            value = SampleState(context, bucket.BaseTransitionState);
             if (bucket.BaseTransition)
             {
                 // Evaluate the base pose from the time when transition was interrupted
-                const auto destinationState = SampleState(bucket.BaseTransition->Destination);
+                const auto destinationState = SampleState(context, bucket.BaseTransition->Destination);
                 const float alpha = bucket.BaseTransitionPosition / bucket.BaseTransition->BlendDuration;
                 value = Blend(node, value, destinationState, alpha, bucket.BaseTransition->BlendMode);
             }
@@ -1779,14 +1787,14 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
         else
         {
             // Sample the current state
-            value = SampleState(bucket.CurrentState);
+            value = SampleState(context, bucket.CurrentState);
         }
 
         // Handle active transition blending
         if (bucket.ActiveTransition)
         {
             // Sample the active transition destination state
-            const auto destinationState = SampleState(bucket.ActiveTransition->Destination);
+            const auto destinationState = SampleState(context, bucket.ActiveTransition->Destination);
 
             // Perform blending
             const float alpha = bucket.TransitionPosition / bucket.ActiveTransition->BlendDuration;
@@ -1794,6 +1802,7 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
         }
 
         bucket.LastUpdateFrame = context.CurrentFrameIndex;
+        context.NodePath.Pop();
 #undef END_TRANSITION
         break;
     }

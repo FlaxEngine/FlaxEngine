@@ -62,6 +62,8 @@ namespace FlaxEditor.Surface
                 surfaceContext = CreateContext(_context, context);
                 _context?.Children.Add(surfaceContext);
                 _contextCache.Add(contextHandle, surfaceContext);
+                if (context is SurfaceNode asNode)
+                    surfaceContext.OwnerNodeID = asNode.ID;
 
                 context.OnContextCreated(surfaceContext);
 

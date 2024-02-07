@@ -215,6 +215,7 @@ void AnimGraphExecutor::Update(AnimGraphInstanceData& data, float dt)
         // Prepare context data for the evaluation
         context.GraphStack.Clear();
         context.GraphStack.Push((Graph*)&_graph);
+        context.NodePath.Clear();
         context.Data = &data;
         context.DeltaTime = dt;
         context.CurrentFrameIndex = ++data.CurrentFrame;

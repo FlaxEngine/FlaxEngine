@@ -215,6 +215,8 @@ API_STRUCT(NoDefault) struct FLAXENGINE_API AnimGraphTraceEvent
     API_FIELD() float Value = 0;
     // Identifier of the node in the graph.
     API_FIELD() uint32 NodeId = 0;
+    // Ids of graph nodes (call of hierarchy).
+    API_FIELD(Internal, NoArray) uint32 NodePath[8] = {};
 };
 
 /// <summary>
@@ -796,6 +798,7 @@ struct AnimGraphContext
     AnimGraphTransitionData TransitionData;
     Array<VisjectExecutor::Node*, FixedAllocation<ANIM_GRAPH_MAX_CALL_STACK>> CallStack;
     Array<VisjectExecutor::Graph*, FixedAllocation<32>> GraphStack;
+    Array<uint32, FixedAllocation<ANIM_GRAPH_MAX_CALL_STACK> > NodePath;
     Dictionary<VisjectExecutor::Node*, VisjectExecutor::Graph*> Functions;
     ChunkedArray<AnimGraphImpulse, 256> PoseCache;
     int32 PoseCacheSize;
@@ -891,7 +894,7 @@ private:
     Variant SampleAnimationsWithBlend(AnimGraphNode* node, bool loop, float length, float startTimePos, float prevTimePos, float& newTimePos, Animation* animA, Animation* animB, float speedA, float speedB, float alpha);
     Variant SampleAnimationsWithBlend(AnimGraphNode* node, bool loop, float length, float startTimePos, float prevTimePos, float& newTimePos, Animation* animA, Animation* animB, Animation* animC, float speedA, float speedB, float speedC, float alphaA, float alphaB, float alphaC);
     Variant Blend(AnimGraphNode* node, const Value& poseA, const Value& poseB, float alpha, AlphaBlendMode alphaMode);
-    Variant SampleState(AnimGraphNode* state);
+    Variant SampleState(AnimGraphContext& context, const AnimGraphNode* state);
     void InitStateTransition(AnimGraphContext& context, AnimGraphInstanceData::StateMachineBucket& stateMachineBucket, AnimGraphStateTransition* transition = nullptr);
     AnimGraphStateTransition* UpdateStateTransitions(AnimGraphContext& context, const AnimGraphNode::StateMachineData& stateMachineData, AnimGraphNode* state, AnimGraphNode* ignoreState = nullptr);
     void UpdateStateTransitions(AnimGraphContext& context, const AnimGraphNode::StateMachineData& stateMachineData, AnimGraphInstanceData::StateMachineBucket& stateMachineBucket, const AnimGraphNode::StateBaseData& stateData);

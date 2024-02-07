@@ -115,16 +115,36 @@ namespace FlaxEditor.Surface
 
         internal AnimGraphTraceEvent[] LastTraceEvents;
 
-        internal bool TryGetTraceEvent(SurfaceNode node, out AnimGraphTraceEvent traceEvent)
+        internal unsafe bool TryGetTraceEvent(SurfaceNode node, out AnimGraphTraceEvent traceEvent)
         {
             if (LastTraceEvents != null)
             {
                 foreach (var e in LastTraceEvents)
                 {
+                    // Node IDs must match
                     if (e.NodeId == node.ID)
                     {
-                        traceEvent = e;
-                        return true;
+                        uint* nodePath = e.NodePath0;
+
+                        // Get size of the path
+                        int nodePathSize = 0;
+                        while (nodePathSize < 8 && nodePath[nodePathSize] != 0)
+                            nodePathSize++;
+
+                        // Follow input node contexts path to verify if it matches with the path in the event
+                        var c = node.Context;
+                        for (int i = nodePathSize - 1; i >= 0 && c != null; i--)
+                        {
+                            if (c.OwnerNodeID != nodePath[i])
+                                c = null;
+                            else
+                                c = c.Parent;
+                        }
+                        if (c != null)
+                        {
+                            traceEvent = e;
+                            return true;
+                        }
                     }
                 }
             }
