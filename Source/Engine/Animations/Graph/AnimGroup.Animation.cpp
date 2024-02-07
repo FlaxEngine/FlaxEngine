@@ -506,7 +506,7 @@ Variant AnimGraphExecutor::SampleState(AnimGraphNode* state)
 
 void AnimGraphExecutor::InitStateTransition(AnimGraphContext& context, AnimGraphInstanceData::StateMachineBucket& stateMachineBucket, AnimGraphStateTransition* transition)
 {
-    // Reset transiton
+    // Reset transition
     stateMachineBucket.ActiveTransition = transition;
     stateMachineBucket.TransitionPosition = 0.0f;
 

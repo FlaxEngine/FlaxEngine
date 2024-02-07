@@ -191,9 +191,7 @@ namespace FlaxEditor.Surface.Archetypes
                 var value = title;
                 int count = 1;
                 while (!OnRenameValidate(null, value))
-                {
                     value = title + " " + count++;
-                }
                 Values[0] = value;
                 Title = value;
 

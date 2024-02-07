@@ -205,7 +205,7 @@ struct FLAXENGINE_API AnimGraphSlot
 /// <summary>
 /// The animation graph state container for a single node playback trace (eg. animation sample info or state transition). Can be used by Anim Graph debugging or custom scripting.
 /// </summary>
-API_STRUCT() struct FLAXENGINE_API AnimGraphTraceEvent
+API_STRUCT(NoDefault) struct FLAXENGINE_API AnimGraphTraceEvent
 {
     DECLARE_SCRIPTING_TYPE_MINIMAL(AnimGraphTraceEvent);
 
