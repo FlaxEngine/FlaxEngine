@@ -1444,10 +1444,10 @@ namespace Flax.Build.Bindings
 
                 indent += "    ";
 
-                StringBuilder toManagedContent = new StringBuilder();
-                StringBuilder toNativeContent = new StringBuilder();
-                StringBuilder freeContents = new StringBuilder();
-                StringBuilder freeContents2 = new StringBuilder();
+                var toManagedContent = GetStringBuilder();
+                var toNativeContent = GetStringBuilder();
+                var freeContents = GetStringBuilder();
+                var freeContents2 = GetStringBuilder();
 
                 {
                     // Native struct begin
@@ -1734,6 +1734,11 @@ namespace Flax.Build.Bindings
                 contents.AppendLine("#pragma warning restore 1591");
                 indent = indent.Substring(0, indent.Length - 4);
                 contents.Append(indent).AppendLine("}").AppendLine();
+
+                PutStringBuilder(toManagedContent);
+                PutStringBuilder(toNativeContent);
+                PutStringBuilder(freeContents);
+                PutStringBuilder(freeContents2);
             }
 #endif
             // Struct docs
