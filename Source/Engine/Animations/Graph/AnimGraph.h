@@ -803,6 +803,8 @@ struct AnimGraphContext
     ChunkedArray<AnimGraphImpulse, 256> PoseCache;
     int32 PoseCacheSize;
     Dictionary<VisjectExecutor::Box*, Variant> ValueCache;
+
+    AnimGraphTraceEvent& AddTraceEvent(const AnimGraphNode* node);
 };
 
 /// <summary>

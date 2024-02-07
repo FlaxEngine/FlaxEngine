@@ -653,6 +653,7 @@ namespace FlaxEditor.Surface.Archetypes
             protected Rectangle _renameButtonRect;
             private bool _cursorChanged = false;
             private bool _textRectHovered = false;
+            private bool _debugActive;
 
             /// <summary>
             /// The transitions list from this state to the others.
@@ -1090,6 +1091,16 @@ namespace FlaxEditor.Surface.Archetypes
 
                 // TODO: maybe update only on actual transitions change?
                 UpdateTransitions();
+
+                // Debug current state
+                if (((AnimGraphSurface)Surface).TryGetTraceEvent(this, out var traceEvent))
+                {
+                    _debugActive = true;
+                }
+                else
+                {
+                    _debugActive = false;
+                }
             }
 
             /// <inheritdoc />
@@ -1130,6 +1141,10 @@ namespace FlaxEditor.Surface.Archetypes
 
                 // Close button
                 Render2D.DrawSprite(style.Cross, _closeButtonRect, _closeButtonRect.Contains(_mousePosition) ? style.Foreground : style.ForegroundGrey);
+
+                // Debug outline
+                if (_debugActive)
+                    Render2D.DrawRectangle(_textRect.MakeExpanded(1.0f), style.ProgressNormal);
             }
 
             /// <inheritdoc />

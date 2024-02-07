@@ -52,6 +52,17 @@ void RetargetSkeletonNode(const SkeletonData& sourceSkeleton, const SkeletonData
     node = value;
 }
 
+AnimGraphTraceEvent& AnimGraphContext::AddTraceEvent(const AnimGraphNode* node)
+{
+    auto& trace = Data->TraceEvents.AddOne();
+    trace.Value = 0.0f;
+    trace.NodeId = node->ID;
+    const auto* nodePath = NodePath.Get();
+    for (int32 i = 0; i < NodePath.Count(); i++)
+        trace.NodePath[i] = nodePath[i];
+    return trace;
+}
+
 int32 AnimGraphExecutor::GetRootNodeIndex(Animation* anim)
 {
     // TODO: cache the root node index (use dictionary with Animation* -> int32 for fast lookups)
@@ -223,13 +234,9 @@ void AnimGraphExecutor::ProcessAnimation(AnimGraphImpulse* nodes, AnimGraphNode*
     auto& context = Context.Get();
     if (context.Data->EnableTracing)
     {
-        auto& trace = context.Data->TraceEvents.AddOne();
+        auto& trace = context.AddTraceEvent(node);
         trace.Asset = anim;
         trace.Value = animPos;
-        trace.NodeId = node->ID;
-        const auto* nodePath = context.NodePath.Get();
-        for (int32 i = 0; i < context.NodePath.Count(); i++)
-            trace.NodePath[i] = nodePath[i];
     }
 
     // Evaluate nested animations
@@ -502,11 +509,19 @@ Variant AnimGraphExecutor::SampleState(AnimGraphContext& context, const AnimGrap
     auto& data = state->Data.State;
     if (data.Graph == nullptr || data.Graph->GetRootNode() == nullptr)
         return Value::Null;
+
+    // Add to trace
+    if (context.Data->EnableTracing)
+    {
+        auto& trace = context.AddTraceEvent(state);
+    }
+
     ANIM_GRAPH_PROFILE_EVENT("Evaluate State");
     context.NodePath.Add(state->ID);
     auto rootNode = data.Graph->GetRootNode();
     auto result = eatBox((Node*)rootNode, &rootNode->Boxes[0]);
     context.NodePath.Pop();
+
     return result;
 }
 
