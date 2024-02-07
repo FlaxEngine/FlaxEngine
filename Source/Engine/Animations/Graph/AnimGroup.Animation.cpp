@@ -227,7 +227,7 @@ void AnimGraphExecutor::ProcessAnimation(AnimGraphImpulse* nodes, AnimGraphNode*
         trace.Asset = anim;
         trace.Value = animPos;
         trace.NodeId = node->ID;
-        auto* nodePath = context.NodePath.Get();
+        const auto* nodePath = context.NodePath.Get();
         for (int32 i = 0; i < context.NodePath.Count(); i++)
             trace.NodePath[i] = nodePath[i];
     }

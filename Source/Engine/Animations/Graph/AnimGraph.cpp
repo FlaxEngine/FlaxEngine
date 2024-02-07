@@ -425,7 +425,15 @@ VisjectExecutor::Value AnimGraphExecutor::eatBox(Node* caller, Box* box)
     context.CallStack.Add(caller);
 
 #if USE_EDITOR
-    Animations::DebugFlow(_graph._owner, context.Data->Object, box->GetParent<Node>()->ID, box->ID);
+    Animations::DebugFlowInfo flowInfo;
+    flowInfo.Asset = _graph._owner;
+    flowInfo.Instance = context.Data->Object;
+    flowInfo.NodeId = box->GetParent<Node>()->ID;
+    flowInfo.BoxId = box->ID;
+    const auto* nodePath = context.NodePath.Get();
+    for (int32 i = 0; i < context.NodePath.Count(); i++)
+        flowInfo.NodePath[i] = nodePath[i];
+    Animations::DebugFlow(flowInfo);
 #endif
 
     // Call per group custom processing event

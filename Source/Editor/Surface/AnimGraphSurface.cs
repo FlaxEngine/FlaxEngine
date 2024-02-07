@@ -134,12 +134,7 @@ namespace FlaxEditor.Surface
                         // Follow input node contexts path to verify if it matches with the path in the event
                         var c = node.Context;
                         for (int i = nodePathSize - 1; i >= 0 && c != null; i--)
-                        {
-                            if (c.OwnerNodeID != nodePath[i])
-                                c = null;
-                            else
-                                c = c.Parent;
-                        }
+                            c = c.OwnerNodeID == nodePath[i] ? c.Parent : null;
                         if (c != null)
                         {
                             traceEvent = e;
