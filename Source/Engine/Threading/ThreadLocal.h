@@ -5,6 +5,8 @@
 #include "Engine/Core/Types/BaseTypes.h"
 #include "Engine/Platform/Platform.h"
 
+#define THREAD_LOCAL_USE_DYNAMIC_BUCKETS (PLATFORM_DESKTOP)
+
 /// <summary>
 /// Per-thread local variable storage for basic types (POD). Implemented using atomic with per-thread storage indexed via thread id hashing. Consider using 'THREADLOCAL' define before the variable instead.
 /// </summary>
@@ -12,7 +14,6 @@ template<typename T, int32 MaxThreads = PLATFORM_THREADS_LIMIT>
 class ThreadLocal
 {
 protected:
-    constexpr static int32 DynamicMaxThreads = 1024;
     static_assert(TIsPODType<T>::Value, "Only POD types are supported");
 
     struct Bucket
@@ -22,7 +23,10 @@ protected:
     };
 
     Bucket _staticBuckets[MaxThreads];
+#if THREAD_LOCAL_USE_DYNAMIC_BUCKETS
     Bucket* _dynamicBuckets = nullptr;
+    constexpr static int32 DynamicMaxThreads = 1024;
+#endif
 
 public:
     ThreadLocal()
@@ -30,10 +34,12 @@ public:
         Platform::MemoryClear(_staticBuckets, sizeof(_staticBuckets));
     }
 
+#if THREAD_LOCAL_USE_DYNAMIC_BUCKETS
     ~ThreadLocal()
     {
         Platform::Free(_dynamicBuckets);
     }
+#endif
 
 public:
     FORCE_INLINE T& Get()
@@ -54,6 +60,7 @@ public:
             if (Platform::AtomicRead((int64 volatile*)&_staticBuckets[i].ThreadID) != 0)
                 result++;
         }
+#if THREAD_LOCAL_USE_DYNAMIC_BUCKETS
         if (auto dynamicBuckets = (Bucket*)Platform::AtomicRead((intptr volatile*)&_dynamicBuckets))
         {
             for (int32 i = 0; i < MaxThreads; i++)
@@ -62,6 +69,7 @@ public:
                     result++;
             }
         }
+#endif
         return result;
     }
 
@@ -73,6 +81,7 @@ public:
             if (Platform::AtomicRead((int64 volatile*)&_staticBuckets[i].ThreadID) != 0)
                 result.Add(_staticBuckets[i].Value);
         }
+#if THREAD_LOCAL_USE_DYNAMIC_BUCKETS
         if (auto dynamicBuckets = (Bucket*)Platform::AtomicRead((intptr volatile*)&_dynamicBuckets))
         {
             for (int32 i = 0; i < MaxThreads; i++)
@@ -81,13 +90,16 @@ public:
                     result.Add(dynamicBuckets[i].Value);
             }
         }
+#endif
     }
 
     void Clear()
     {
         Platform::MemoryClear(_staticBuckets, sizeof(_staticBuckets));
+#if THREAD_LOCAL_USE_DYNAMIC_BUCKETS
         Platform::Free(_dynamicBuckets);
         _dynamicBuckets = nullptr;
+#endif
     }
 
 protected:
@@ -109,6 +121,7 @@ protected:
             spaceLeft--;
         }
 
+#if THREAD_LOCAL_USE_DYNAMIC_BUCKETS
         // Allocate dynamic buckets if missing
     DYNAMIC:
         auto dynamicBuckets = (Bucket*)Platform::AtomicRead((intptr volatile*)&_dynamicBuckets);
@@ -136,6 +149,8 @@ protected:
             index = (index + 1) & (DynamicMaxThreads - 1);
             spaceLeft--;
         }
+#endif
+
         return *(Bucket*)nullptr;
     }
 };
