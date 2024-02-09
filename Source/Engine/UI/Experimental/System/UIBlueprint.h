@@ -12,11 +12,11 @@
 /// Game user interface blueprint class
 /// </summary>
 API_CLASS(Namespace = "FlaxEngine.Experimental.UI")
-class UIBlueprint : public ScriptingObject
+class UIBlueprint : public UIComponent
 {
     DECLARE_SCRIPTING_TYPE(UIBlueprint);
 protected:
-
+     
     /// <summary>
     /// This is called only once for the UIBlueprint.
     /// After deserialization when components of UIBlueprint are ready for use 

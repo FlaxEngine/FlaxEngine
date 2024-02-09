@@ -47,7 +47,7 @@ UIEventResponse UIBlueprint::SendEvent(const UIPointerEvent& InEvent, const UICo
     return OutEventResponse;
 }
 
-UIBlueprint::UIBlueprint(const SpawnParams& params) : ScriptingObject(params) 
+UIBlueprint::UIBlueprint(const SpawnParams& params) : UIComponent(params)
 {
     IsReady = false;
     Variables = Array<Variable>();
