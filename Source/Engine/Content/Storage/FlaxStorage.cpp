@@ -214,7 +214,10 @@ FlaxStorage::~FlaxStorage()
     Array<FileReadStream*> streams;
     _file.GetValues(streams);
     for (FileReadStream* stream : streams)
-        Delete(stream);
+    {
+        if (stream)
+            Delete(stream);
+    }
 #endif
 }
 
@@ -1341,7 +1344,10 @@ bool FlaxStorage::CloseFileHandles()
     Array<FileReadStream*> streams;
     _file.GetValues(streams);
     for (FileReadStream* stream : streams)
-        Delete(stream);
+    {
+        if (stream)
+            Delete(stream);
+    }
     _file.Clear();
     return false;
 }
