@@ -15,15 +15,23 @@ public:
         /// <summary>
         /// The the default if is triggered the button has lot the focus none
         /// </summary>
-        None = 0,        
+        None = 0,
+
         /// <summary>
         /// The hover state
         /// </summary>
-        Hover = 1,        
+        Hover = 1,
+
+        /// <summary>
+        /// User is pressing the button.
+        /// </summary>
+        Pressing = 2,
+
         /// <summary>
         /// The press
         /// </summary>
-        Press = 3,        
+        Press = 3,
+
         /// <summary>
         /// The release
         /// </summary>
@@ -33,6 +41,12 @@ public:
     /// Called when Button changes state
     /// </summary>
     API_EVENT() Delegate<UIButton*,State> StateChanged;
+    
+    /// <summary>
+    /// The Event Response for raycaster allows to ignore raycast but still receive the event
+    /// </summary>
+    API_FIELD()
+    UIEventResponse Response = UIEventResponse::Focus;
 private:
 
     State ButtonState;
@@ -41,4 +55,8 @@ private:
     virtual UIEventResponse OnPointerInput(const UIPointerEvent& InEvent) override;
 private:
     void SetState(State InNewState);
+
+protected:
+    void Serialize(SerializeStream& stream, const void* otherObj) override;
+    void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) override;
 };
