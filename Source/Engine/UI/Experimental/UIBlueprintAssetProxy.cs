@@ -21,7 +21,7 @@ namespace FlaxEditor.Experimental.UI
         }
     }
     /// <inheritdoc />
-    [ContentContextMenu("New/UI/Blueprint")]
+    [ContentContextMenu("New/Experimental/UI/Blueprint")]
     public sealed class UIBlueprintAssetProxy : JsonAssetProxy
     {
         /// <inheritdoc />

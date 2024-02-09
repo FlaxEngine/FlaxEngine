@@ -12,61 +12,69 @@
 	"Tree": {
 		"ID": 0,
 		"Flags": 136,
-		"Transform": "AICeQwCAy0MAAMhDAADIQwAAAAAAAAAAAAAAAAAAAAAAAAAA",
+		"Transform": "AIAQRAAAxkMAAMdDAADHQwAAAAAAAAAAAAAAAAAAAAAAAAAA",
 		"Slots": [
 			{
 				"ID": 1,
 				"Label": "LeftHandle",
 				"Flags": 10,
-				"Transform": "AICUQwCAF0QAAKBBAACgQQAAAAAAAAAAAAAAAAAAAAAAAAAA"
+				"Transform": "AMALRADAFUQAAKBBAACgQQAAAAAAAAAAAAAAAAAAAAAAAAAA",
+				"Response": 0
 			},
 			{
 				"ID": 1,
 				"Label": "TopRightHandle",
 				"Flags": 10,
-				"Transform": "AEAzRACAwkMAAKBBAACgQQAAAAAAAAAAAAAAAAAAAAAAAAAA"
+				"Transform": "AIB0RAAAvUMAAKBBAACgQQAAAAAAAAAAAAAAAAAAAAAAAAAA",
+				"Response": 0
 			},
 			{
 				"ID": 1,
 				"Label": "TopLeftHandle",
 				"Flags": 10,
-				"Transform": "AICUQwCAwkMAAKBBAACgQQAAAAAAAAAAAAAAAAAAAAAAAAAA"
+				"Transform": "AIALRAAAvUMAAKBBAACgQQAAAAAAAAAAAAAAAAAAAAAAAAAA",
+				"Response": 0
 			},
 			{
 				"ID": 1,
 				"Label": "TopHandle",
 				"Flags": 10,
-				"Transform": "AEABRACAwUMAAKBBAACgQQAAAAAAAAAAAAAAAAAAAAAAAAAA"
+				"Transform": "AIBCRAAAvEMAAKBBAACgQQAAAAAAAAAAAAAAAAAAAAAAAAAA",
+				"Response": 0
 			},
 			{
 				"ID": 1,
 				"Label": "RightHandle",
 				"Flags": 10,
-				"Transform": "AAAzRABAGUQAAKBBAACgQQAAAAAAAAAAAAAAAAAAAAAAAAAA"
+				"Transform": "AEB0RACAFkQAAKBBAACgQQAAAAAAAAAAAAAAAAAAAAAAAAAA",
+				"Response": 0
 			},
 			{
 				"ID": 1,
 				"Label": "BottomHandle",
 				"Flags": 10,
-				"Transform": "AAD9QwCASUQAAKBBAACgQQAAAAAAAAAAAAAAAAAAAAAAAAAA"
+				"Transform": "AAA/RACARkQAAKBBAACgQQAAAAAAAAAAAAAAAAAAAAAAAAAA",
+				"Response": 0
 			},
 			{
 				"ID": 1,
 				"Label": "BottomLeftHandle",
 				"Flags": 10,
-				"Transform": "AACUQwDASEQAAKBBAACgQQAAAAAAAAAAAAAAAAAAAAAAAAAA"
+				"Transform": "AIALRADARkQAAKBBAACgQQAAAAAAAAAAAAAAAAAAAAAAAAAA",
+				"Response": 0
 			},
 			{
 				"ID": 1,
 				"Label": "BottomRightHandle",
 				"Flags": 10,
-				"Transform": "AEAzRACASUQAAKBBAACgQQAAAAAAAAAAAAAAAAAAAAAAAAAA"
+				"Transform": "AIB0RAAAR0QAAKBBAACgQQAAAAAAAAAAAAAAAAAAAAAAAAAA",
+				"Response": 0
 			},
 			{
 				"ID": 2,
 				"Label": "CenterHandle",
 				"Flags": 74,
-				"Transform": "AABgRACAxEMAAMhDAADIQwAAAAAAAAAAAAAAAAAAAAAAAAAA"
+				"Transform": "AIAQRACAxEMAAMhDAADIQwAAAAAAAAAAAAAAAAAAAAAAAAAA"
 			}
 		]
 	}

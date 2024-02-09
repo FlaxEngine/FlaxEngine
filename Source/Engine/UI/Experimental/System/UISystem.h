@@ -23,4 +23,6 @@ private:
     friend class UIBlueprintAsset;
     static UIComponent* DeserializeComponent(ISerializable::DeserializeStream& stream, ISerializeModifier* modifier, Array<String>& Types, Array<UIBlueprint::Variable>& Variables);
     static void SerializeComponent(ISerializable::SerializeStream& stream, UIComponent* component, Array<String>& Types);
+
+    static UIBlueprint* CreateFromAsset(UIBlueprintAsset& Asset,bool ForEditor);
 };

@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace FlaxEngine.Experimental.UI
 {
-    public partial class InputEventHook
+    public partial class UIInputEventHook
     {
         public Func<UIActionEvent, UIEventResponse> ActionInput
         {

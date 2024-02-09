@@ -3,9 +3,9 @@
 #include "Engine/Core/Collections/Array.h"
 #include "Engine/Content/AssetReference.h"
 #include "Engine/Core/Log.h"
+#include "../Asset/UIBlueprintAsset.h"
 #include "../Types/UIComponent.h"
 #include "../Types/UIPanelComponent.h"
-#include "../Asset/UIBlueprintAsset.h"
 #include "Engine\Scripting\ManagedCLR\MClass.h"
 
 /// <summary>

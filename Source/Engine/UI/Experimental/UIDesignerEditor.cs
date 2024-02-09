@@ -13,20 +13,8 @@ using FlaxEditor.CustomEditors;
 
 namespace FlaxEditor.Experimental.UI
 {
-    internal class UITransformationToolBlueprint: UIBlueprint 
+    internal class UITransformationToolBlueprint : UIBlueprint 
     {
-        internal enum Selection
-        {
-            Center = 0,
-            Top = 1,
-            Bottom = 2,
-            Left = 4,
-            Right = 8
-        }
-        internal Selection SelectedHandle = Selection.Center;
-        internal Vector2 PointerLocation;
-        private UIComponent Selected = null;
-        private Vector2 Offset;
         private UIButton LeftHandle;
         private UIButton RightHandle;
         private UIButton TopHandle;
@@ -35,10 +23,21 @@ namespace FlaxEditor.Experimental.UI
         private UIButton BottomHandle;
         private UIButton BottomLeftHandle;
         private UIButton BottomRightHandle;
-        private InputEventHook CenterHandle;
-
+        private UIInputEventHook CenterHandle;
+        internal enum Selection
+        {
+            None = 0,
+            Center = 1,
+            Top = 2,
+            Bottom = 4,
+            Left = 8,
+            Right = 16
+        }
+        internal Selection SelectedHandle = Selection.Center;
+        internal Vector2 PointerLocation;
+        private UIComponent Selected = null;
+        private Vector2 Offset;
         private UIComponent SelectedComponent;
-
         internal UIComponent EditedComponent;
         internal CustomEditorPresenter Presenter;
         protected override void OnInitialized()
@@ -51,7 +50,7 @@ namespace FlaxEditor.Experimental.UI
             BottomHandle = GetVariable<UIButton>("BottomHandle");
             BottomLeftHandle = GetVariable<UIButton>("BottomLeftHandle");
             BottomRightHandle = GetVariable<UIButton>("BottomRightHandle");
-            CenterHandle = GetVariable<InputEventHook>("CenterHandle");
+            CenterHandle = GetVariable<UIInputEventHook>("CenterHandle");
 
             LeftHandle.StateChanged += HandlesStateChanged;
             RightHandle.StateChanged += HandlesStateChanged;
@@ -63,12 +62,24 @@ namespace FlaxEditor.Experimental.UI
             BottomRightHandle.StateChanged += HandlesStateChanged;
 
             CenterHandle.PointerInput = CenterHandlePointerInputHook;
+
+
+            Component.Visibility |= UIComponentVisibility.Hiden;
         }
         UIButton.State State;
         private UIEventResponse CenterHandlePointerInputHook(UIPointerEvent InEvent)
         {
             if (InEvent.Locations.Length == 0)
                 return UIEventResponse.None;
+            PointerLocation = InEvent.Locations[0];
+            var newState = (UIButton.State)InEvent.State;
+            if (newState == UIButton.State.Pressing)
+            {
+                Debug.Log("UpdateDragedObject !!");
+                UpdateDragedObject();
+                return UIEventResponse.None;
+            }
+
             bool IsInside = false;
             foreach (var Location in InEvent.Locations)
             {
@@ -78,58 +89,92 @@ namespace FlaxEditor.Experimental.UI
                     PointerLocation = Location;
                 }
             }
-            if (!IsInside)
+            if (State != newState)
             {
-                PointerLocation = InEvent.Locations[0];
-                State = UIButton.State.None;
-            }
-            else
-            {
-                var newState = (UIButton.State)InEvent.State;
-                if (State != newState)
+                HandlesStateChanged(CenterHandle, newState);
+                State = newState;
+                if (IsInside)
                 {
-                    HandlesStateChanged(CenterHandle, newState);
                     return UIEventResponse.Focus;
                 }
             }
+            
             return UIEventResponse.None;
         }
         private void HandlesStateChanged(UIComponent button, UIButton.State state)
         {
-            if (state == UIButton.State.Press)
+            if (state == UIButton.State.Press && Selected == null)
             {
-                switch (button.Label)
+                if (SelectedHandle == Selection.None)
                 {
-                    case "CenterHandle": Selected = CenterHandle; SelectedHandle = Selection.Center; break;
-                    case "LeftHandle": Selected = LeftHandle; SelectedHandle = Selection.Left; break;
-                    case "RightHandle": Selected = RightHandle; SelectedHandle = Selection.Right; break;
-                    case "TopHandle": Selected = TopHandle; SelectedHandle = Selection.Top; break;
-                    case "TopRightHandle": Selected = TopRightHandle; SelectedHandle = Selection.Top | Selection.Right; break;
-                    case "TopLeftHandle": Selected = TopLeftHandle; SelectedHandle = Selection.Top | Selection.Left; break;
-                    case "BottomHandle": Selected = BottomHandle; SelectedHandle = Selection.Bottom; break;
-                    case "BottomLeftHandle": Selected = BottomLeftHandle; SelectedHandle = Selection.Bottom | Selection.Left; break;
-                    case "BottomRightHandle": Selected = BottomRightHandle; SelectedHandle = Selection.Bottom | Selection.Right; break;
-                    default:
-                        Debug.Log("Emm the UITransformationTool cant select handle");
-                        break;
-                }
-                if (Selected)
-                {
-                    SelectElement(EditedComponent, PointerLocation);
+                    switch (button.Label)
+                    {
+                        case "CenterHandle":
+                            Selected = CenterHandle;
+                            SelectedHandle = Selection.Center;
+                            SelectElement(EditedComponent, PointerLocation);
+                            break;
+                        case "LeftHandle": Selected = LeftHandle; SelectedHandle = Selection.Left; break;
+                        case "RightHandle": Selected = RightHandle; SelectedHandle = Selection.Right; break;
+                        case "TopHandle": Selected = TopHandle; SelectedHandle = Selection.Top; break;
+                        case "TopRightHandle": Selected = TopRightHandle; SelectedHandle = Selection.Top | Selection.Right; break;
+                        case "TopLeftHandle": Selected = TopLeftHandle; SelectedHandle = Selection.Top | Selection.Left; break;
+                        case "BottomHandle": Selected = BottomHandle; SelectedHandle = Selection.Bottom; break;
+                        case "BottomLeftHandle": Selected = BottomLeftHandle; SelectedHandle = Selection.Bottom | Selection.Left; break;
+                        case "BottomRightHandle": Selected = BottomRightHandle; SelectedHandle = Selection.Bottom | Selection.Right; break;
+                        default:
+                            Debug.Log("Emm the UITransformationTool cant select handle");
+                            break;
+                    }
+                    if (SelectedComponent != null)
+                    {
+                        if (SelectedHandle == Selection.Center)
+                        {
+                            Offset = PointerLocation - SelectedComponent.Translation;
+                            return;
+                        }
+                        Offset = Vector2.Zero;
+
+                        if (SelectedHandle.HasFlag(Selection.Top))
+                        {
+                            Offset.Y = SelectedComponent.Top - PointerLocation.Y;
+                        }
+                        if (SelectedHandle.HasFlag(Selection.Bottom))
+                        {
+                            Offset.Y = PointerLocation.Y - SelectedComponent.Bottom;
+                        }
+                        if (SelectedHandle.HasFlag(Selection.Left))
+                        {
+                            Offset.X = SelectedComponent.Left - PointerLocation.X;
+                        }
+                        if (SelectedHandle.HasFlag(Selection.Right))
+                        {
+                            Offset.X = PointerLocation.X - SelectedComponent.Right;
+                        }
+                    }
                 }
             }
             else
             {
-                Debug.Log(state.ToString());
-                Selected = null;
+                if (state == UIButton.State.Release)
+                {
+                    EndDrag();
+                }
             }
         }
 
         internal void SelectForDrag(UIComponent Element)
         {
-            Offset = PointerLocation - Element.Translation;
             SelectedComponent = Element;
 
+            if (SelectedComponent == null)
+            {
+                Component.Visibility |= UIComponentVisibility.Hiden;
+            }
+            else 
+            {
+                Component.Visibility &= ~UIComponentVisibility.Hiden;
+            }
             //coppy the simple transform
             Component.Rect = Element.Rect;
         }
@@ -137,21 +182,37 @@ namespace FlaxEditor.Experimental.UI
         {
             if (SelectedComponent == null)
                 return;
+
+            var Point = PointerLocation - Offset;
             if (SelectedHandle == Selection.Center)
             {
-                SelectedComponent.Translation = PointerLocation - Offset;
-                Component.Rect = SelectedComponent.Rect;
+                SelectedComponent.Translation = Point;
             }
             else
             {
-                //resize the component
-
+                if (SelectedHandle.HasFlag(Selection.Top))
+                {
+                    SelectedComponent.Top = Point.Y;
+                }
+                if (SelectedHandle.HasFlag(Selection.Bottom))
+                {
+                    SelectedComponent.Bottom = Point.Y;
+                }
+                if (SelectedHandle.HasFlag(Selection.Left))
+                {
+                    SelectedComponent.Left = Point.X;
+                }
+                if (SelectedHandle.HasFlag(Selection.Right))
+                {
+                    SelectedComponent.Right = Point.X;
+                }
             }
+            Component.Rect = SelectedComponent.Rect;
         }
         internal void EndDrag()
         {
-            SelectedComponent = null;
-            SelectedHandle = Selection.Center;
+            Selected = null;
+            SelectedHandle = Selection.None;
         }
 
         private void SetSelection(UIComponent NewSelection)
@@ -197,6 +258,7 @@ namespace FlaxEditor.Experimental.UI
             }
             return GotSelection;
         }
+
     }
 
 

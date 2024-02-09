@@ -15,27 +15,8 @@
 #include "Engine/Core/ISerializable.h"
 #include "Engine/Serialization/JsonWriters.h"
 #include "Engine/Serialization/Serialization.h"
-
-class UISystemService : public EngineService
-{
-public:
-    UISystemService() : EngineService(TEXT("UISystem"), -20) {}
-    Delegate<float> Tick;
-
-    bool Init() override { return false; };
-    void Update() override 
-    {
-        //Engine
-        //LOG(Info, "The UISystemService Update !");
-    }
-    void LateUpdate() override {};
-    void FixedUpdate() override {};
-    void LateFixedUpdate() override {};
-    void Draw() override {};
-    void BeforeExit() override {};
-    void Dispose() override {};
-};
-UISystemService UISystemServiceInstance;
+#include <Editor/Editor.h>
+#include <Engine/Engine/Time.h>
 
 UIBlueprint* UISystem::CreateBlueprint()
 {
@@ -44,93 +25,7 @@ UIBlueprint* UISystem::CreateBlueprint()
 }
 UIBlueprint* UISystem::CreateFromBlueprintAsset(UIBlueprintAsset& InAsset)
 {
-    UIBlueprint* bp = nullptr;
-    const auto result = InAsset.loadAsset();
-    if (result == UIBlueprintAsset::LoadResult::Ok)
-    {
-        auto modifier = Cache::ISerializeModifier.Get();
-        ISerializable::DeserializeStream& stream = (*InAsset.Data);
-        const auto bluprintTypeName = SERIALIZE_FIND_MEMBER(stream, "UIBlueprint");
-        if (bluprintTypeName)
-        {
-            if (bluprintTypeName != stream.MemberEnd())
-            {
-                auto type = bluprintTypeName->value.GetStringAnsiView();
-                auto scriptingType = Scripting::FindScriptingType(type);
-                if (scriptingType)
-                {
-                    auto object = ScriptingObject::NewObject(scriptingType);
-                    if (object)
-                    {
-                        if (auto casted = object->Cast<UIBlueprint>())
-                        {
-                            bp = casted;
-                        }
-                        else
-                        {
-                            LOG(Error, "[UIBlueprint] Cast of {0} to UIBlueprint Type has faled", type.ToString());
-                            return nullptr;
-                        }
-                    }
-                    else
-                    {
-                        LOG(Error, "[UIBlueprint] Cant create UIBlueprint Type: {0}", type.ToString());
-                        return nullptr;
-                    }
-                }
-                else
-                {
-                    LOG(Error, "[UIBlueprint] Unkown UIBlueprint Type: {0}", type.ToString());
-                    return nullptr;
-                }
-            }
-        }
-        else
-        {
-            LOG(Warning, "[UIBlueprint] Missing UIBlueprint Script");
-        }
-
-
-
-        const auto TypeNames = SERIALIZE_FIND_MEMBER(stream, "TypeNames");
-        if (TypeNames)
-        {
-            if (TypeNames != stream.MemberEnd())
-            {
-                if (TypeNames->value.IsArray())
-                {
-                    const auto& streamArray = TypeNames->value.GetArray();
-                    Array<String> Types{};
-                    Types.Resize(streamArray.Size());
-                    for (auto i = 0; i < Types.Count(); i++)
-                    {
-                        Types[i] = streamArray[i].GetText();
-                    }
-                    if (Types.IsEmpty())
-                    {
-                        LOG(Error, "[UIBlueprint] Invalid Data Structure the TypeNames are missing");
-                        return nullptr;
-                    }
-                    const auto Tree = SERIALIZE_FIND_MEMBER(stream, "Tree");
-                    if (Tree != stream.MemberEnd())
-                    {
-                        if (bp == nullptr)
-                        {
-                            bp = ScriptingObject::NewObject<UIBlueprint>();
-                        }
-                        bp->Component = DeserializeComponent((ISerializable::DeserializeStream)Tree->value.GetObject(), modifier.Value, Types, bp->Variables);
-                        bp->Asset.Set(&InAsset);
-                        bp->OnInitialized();
-                    }
-                }
-            }
-        }
-        else
-        {
-            LOG(Warning, "[UIBlueprint] Missing UIBlueprint TypeNames field");
-        }
-    }
-    return bp;
+    return CreateFromAsset(InAsset,false);
 }
 
 void UISystem::SaveBlueprint(UIBlueprint& InUIBlueprint)
@@ -196,7 +91,7 @@ UIBlueprint* UISystem::LoadEditorBlueprintAsset(const StringView& InPath)
         if (bpasset)
         {
             asset->WaitForLoaded();
-            return CreateFromBlueprintAsset(*bpasset);
+            return CreateFromAsset(*bpasset,true);
         }
         else
         {
@@ -360,4 +255,116 @@ UIBlueprint* UISystem::LoadEditorBlueprintAsset(const StringView& InPath)
          }
          stream.EndObject();
      }
+ }
+
+ UIBlueprint* UISystem::CreateFromAsset(UIBlueprintAsset& InAsset, bool ForEditor)
+ {
+     UIBlueprint* bp = nullptr;
+     const auto result = InAsset.loadAsset();
+     if (result == UIBlueprintAsset::LoadResult::Ok)
+     {
+         auto modifier = Cache::ISerializeModifier.Get();
+         ISerializable::DeserializeStream& stream = (*InAsset.Data);
+         const auto bluprintTypeName = SERIALIZE_FIND_MEMBER(stream, "UIBlueprint");
+         if (bluprintTypeName)
+         {
+             if (bluprintTypeName != stream.MemberEnd())
+             {
+                 auto type = bluprintTypeName->value.GetStringAnsiView();
+                 auto scriptingType = Scripting::FindScriptingType(type);
+                 if (scriptingType)
+                 {
+                     auto object = ScriptingObject::NewObject(scriptingType);
+                     if (object)
+                     {
+                         if (auto casted = object->Cast<UIBlueprint>())
+                         {
+                             bp = casted;
+                         }
+                         else
+                         {
+                             LOG(Error, "[UIBlueprint] Cast of {0} to UIBlueprint Type has faled", type.ToString());
+                             return nullptr;
+                         }
+                     }
+                     else
+                     {
+                         LOG(Error, "[UIBlueprint] Cant create UIBlueprint Type: {0}", type.ToString());
+                         return nullptr;
+                     }
+                 }
+                 else
+                 {
+                     LOG(Error, "[UIBlueprint] Unkown UIBlueprint Type: {0}", type.ToString());
+                     return nullptr;
+                 }
+             }
+         }
+         else
+         {
+             LOG(Warning, "[UIBlueprint] Missing UIBlueprint Script");
+         }
+
+
+
+         const auto TypeNames = SERIALIZE_FIND_MEMBER(stream, "TypeNames");
+         if (TypeNames)
+         {
+             if (TypeNames != stream.MemberEnd())
+             {
+                 if (TypeNames->value.IsArray())
+                 {
+                     const auto& streamArray = TypeNames->value.GetArray();
+                     Array<String> Types{};
+                     Types.Resize(streamArray.Size());
+                     for (auto i = 0; i < Types.Count(); i++)
+                     {
+                         Types[i] = streamArray[i].GetText();
+                     }
+                     if (Types.IsEmpty())
+                     {
+                         LOG(Error, "[UIBlueprint] Invalid Data Structure the TypeNames are missing");
+                         return nullptr;
+                     }
+                     const auto Tree = SERIALIZE_FIND_MEMBER(stream, "Tree");
+                     if (Tree != stream.MemberEnd())
+                     {
+                         if (bp == nullptr)
+                         {
+                             bp = ScriptingObject::NewObject<UIBlueprint>();
+                         }
+                         bp->Component = DeserializeComponent((ISerializable::DeserializeStream)Tree->value.GetObject(), modifier.Value, Types, bp->Variables);
+                         bp->Asset.Set(&InAsset);
+                         bp->OnInitialized();
+                     }
+                 }
+             }
+         }
+         else
+         {
+             LOG(Warning, "[UIBlueprint] Missing UIBlueprint TypeNames field");
+         }
+     }
+     //if (ForEditor)
+     //{
+     //    UISystemService::EditorTick.Bind<UIBlueprint, &UIBlueprint::Tick>(bp);
+     //    bp->Deleted.Bind(
+     //        [bp](ScriptingObject* obj) 
+     //        {
+     //            UISystemService::EditorTick.Unbind<UIBlueprint, &UIBlueprint::Tick>(bp);
+     //        }
+     //    );
+     //}
+     //else
+     //{
+     //    UISystemService::GameTick.Bind<UIBlueprint, &UIBlueprint::Tick>(bp);
+     //    bp->Deleted.Bind(
+     //        [bp](ScriptingObject* obj)
+     //        {
+     //            UISystemService::GameTick.Unbind<UIBlueprint, &UIBlueprint::Tick>(bp);
+     //        }
+     //    );
+     //}
+     
+     return bp;
  }

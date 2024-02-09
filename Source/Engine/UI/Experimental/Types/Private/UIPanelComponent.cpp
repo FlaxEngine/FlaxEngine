@@ -212,9 +212,6 @@ void UIPanelComponent::Layout(const Rectangle& InSlotOldBounds, UIPanelSlot* InF
 
 void UIPanelComponent::Render()
 {
-    if (!IsVisible())
-        return;
-    
     DrawInternal();
 
     //get all slots
@@ -247,9 +244,10 @@ void UIPanelComponent::Render()
         Render2D::PushClip(GetRect());
         for (auto i = 0; i < slots.Count(); i++)
         {
+#if !USE_EDITOR
             if (!slots[i]->Content->IsVisible()) // faster skip 
                 continue;
-
+#endif
             if (CanCast(slots[i]->Content->GetStaticClass(), UIPanelComponent::GetStaticClass()))
             {
                 UIPanelComponent* panel = ((UIPanelComponent*)slots[i]->Content);
