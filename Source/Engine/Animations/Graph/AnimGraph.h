@@ -92,9 +92,9 @@ enum class BoneTransformMode
 };
 
 /// <summary>
-/// The animated model root motion mode.
+/// The animated model root motion extraction modes.
 /// </summary>
-enum class RootMotionMode
+enum class RootMotionExtraction
 {
     /// <summary>
     /// Don't extract nor apply the root motion.
@@ -815,7 +815,7 @@ class AnimGraphExecutor : public VisjectExecutor
     friend AnimGraphNode;
 private:
     AnimGraph& _graph;
-    RootMotionMode _rootMotionMode = RootMotionMode::NoExtraction;
+    RootMotionExtraction _rootMotionMode = RootMotionExtraction::NoExtraction;
     int32 _skeletonNodesCount = 0;
 
     // Per-thread context to allow async execution

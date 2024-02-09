@@ -213,7 +213,7 @@ void AnimGraphExecutor::Update(AnimGraphInstanceData& data, float dt)
 
         // Init data from base model
         _skeletonNodesCount = skeleton.Nodes.Count();
-        _rootMotionMode = (RootMotionMode)(int32)_graph._rootNode->Values[0];
+        _rootMotionMode = (RootMotionExtraction)(int32)_graph._rootNode->Values[0];
 
         // Prepare context data for the evaluation
         context.GraphStack.Clear();

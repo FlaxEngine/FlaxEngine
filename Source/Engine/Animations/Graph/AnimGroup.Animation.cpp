@@ -21,13 +21,13 @@ namespace
         base += additive;
     }
 
-    FORCE_INLINE void NormalizeRotations(AnimGraphImpulse* nodes, RootMotionMode rootMotionMode)
+    FORCE_INLINE void NormalizeRotations(AnimGraphImpulse* nodes, RootMotionExtraction rootMotionMode)
     {
         for (int32 i = 0; i < nodes->Nodes.Count(); i++)
         {
             nodes->Nodes[i].Orientation.Normalize();
         }
-        if (rootMotionMode != RootMotionMode::NoExtraction)
+        if (rootMotionMode != RootMotionExtraction::NoExtraction)
         {
             nodes->RootMotion.Orientation.Normalize();
         }
@@ -323,16 +323,21 @@ void AnimGraphExecutor::ProcessAnimation(AnimGraphImpulse* nodes, AnimGraphNode*
     }
 
     // Handle root motion
-    if (_rootMotionMode != RootMotionMode::NoExtraction && anim->Data.EnableRootMotion)
+    if (_rootMotionMode != RootMotionExtraction::NoExtraction && anim->Data.RootMotionFlags != AnimationRootMotionFlags::None)
     {
         // Calculate the root motion node transformation
+        const bool motionPositionXZ = EnumHasAnyFlags(anim->Data.RootMotionFlags, AnimationRootMotionFlags::RootPositionXZ);
+        const bool motionPositionY = EnumHasAnyFlags(anim->Data.RootMotionFlags, AnimationRootMotionFlags::RootPositionY);
+        const bool motionRotation = EnumHasAnyFlags(anim->Data.RootMotionFlags, AnimationRootMotionFlags::RootRotation);
+        const Vector3 motionPositionMask(motionPositionXZ ? 1.0f : 0.0f, motionPositionY ? 1.0f : 0.0f, motionPositionXZ ? 1.0f : 0.0f);
+        const bool motionPosition = motionPositionXZ | motionPositionY;
         const int32 rootNodeIndex = GetRootNodeIndex(anim);
         const Transform& refPose = emptyNodes->Nodes[rootNodeIndex];
         Transform& rootNode = nodes->Nodes[rootNodeIndex];
         Transform& dstNode = nodes->RootMotion;
         Transform srcNode = Transform::Identity;
         const int32 nodeToChannel = mapping.NodesMapping[rootNodeIndex];
-        if (_rootMotionMode == RootMotionMode::Enable && nodeToChannel != -1)
+        if (_rootMotionMode == RootMotionExtraction::Enable && nodeToChannel != -1)
         {
             // Get the root bone transformation
             Transform rootBefore = refPose;
@@ -356,16 +361,20 @@ void AnimGraphExecutor::ProcessAnimation(AnimGraphImpulse* nodes, AnimGraphNode*
                 // Complex motion calculation to preserve the looped movement
                 // (end - before + now - begin)
                 // It sums the motion since the last update to anim end and since the start to now
-                srcNode.Translation = rootEnd.Translation - rootBefore.Translation + rootNode.Translation - rootBegin.Translation;
-                srcNode.Orientation = rootEnd.Orientation * rootBefore.Orientation.Conjugated() * (rootNode.Orientation * rootBegin.Orientation.Conjugated());
+                if (motionPosition)
+                    srcNode.Translation = (rootEnd.Translation - rootBefore.Translation + rootNode.Translation - rootBegin.Translation) * motionPositionMask;
+                if (motionRotation)
+                    srcNode.Orientation = rootEnd.Orientation * rootBefore.Orientation.Conjugated() * (rootNode.Orientation * rootBegin.Orientation.Conjugated());
                 //srcNode.Orientation = Quaternion::Identity;
             }
             else
             {
                 // Simple motion delta
                 // (now - before)
-                srcNode.Translation = rootNode.Translation - rootBefore.Translation;
-                srcNode.Orientation = rootBefore.Orientation.Conjugated() * rootNode.Orientation;
+                if (motionPosition)
+                    srcNode.Translation = (rootNode.Translation - rootBefore.Translation) * motionPositionMask;
+                if (motionRotation)
+                    srcNode.Orientation = rootBefore.Orientation.Conjugated() * rootNode.Orientation;
             }
 
             // Convert root motion from local-space to the actor-space (eg. if root node is not actually a root and its parents have rotation/scale)
@@ -379,28 +388,40 @@ void AnimGraphExecutor::ProcessAnimation(AnimGraphImpulse* nodes, AnimGraphNode*
             }
         }
 
-        // Remove root node motion after extraction
-        rootNode = refPose;
+        // Remove root node motion after extraction (only extracted components)
+        if (motionPosition)
+            rootNode.Translation = refPose.Translation * motionPositionMask + rootNode.Translation * (Vector3::One - motionPositionMask);
+        if (motionRotation)
+            rootNode.Orientation = refPose.Orientation;
 
         // Blend root motion
         if (mode == ProcessAnimationMode::BlendAdditive)
         {
-            dstNode.Translation += srcNode.Translation * weight;
-            BlendAdditiveWeightedRotation(dstNode.Orientation, srcNode.Orientation, weight);
+            if (motionPosition)
+                dstNode.Translation += srcNode.Translation * weight * motionPositionMask;
+            if (motionRotation)
+                BlendAdditiveWeightedRotation(dstNode.Orientation, srcNode.Orientation, weight);
         }
         else if (mode == ProcessAnimationMode::Add)
         {
-            dstNode.Translation += srcNode.Translation * weight;
-            dstNode.Orientation += srcNode.Orientation * weight;
+            if (motionPosition)
+                dstNode.Translation += srcNode.Translation * weight * motionPositionMask;
+            if (motionRotation)
+                dstNode.Orientation += srcNode.Orientation * weight;
         }
         else if (weighted)
         {
-            dstNode.Translation = srcNode.Translation * weight;
-            dstNode.Orientation = srcNode.Orientation * weight;
+            if (motionPosition)
+                dstNode.Translation = srcNode.Translation * weight * motionPositionMask;
+            if (motionRotation)
+                dstNode.Orientation = srcNode.Orientation * weight;
         }
         else
         {
-            dstNode = srcNode;
+            if (motionPosition)
+                dstNode.Translation = srcNode.Translation * motionPositionMask;
+            if (motionRotation)
+                dstNode.Orientation = srcNode.Orientation;
         }
     }
 

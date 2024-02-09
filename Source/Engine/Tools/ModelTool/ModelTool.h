@@ -130,6 +130,19 @@ public:
     };
 
     /// <summary>
+    /// Declares the imported animation Root Motion modes.
+    /// </summary>
+    API_ENUM(Attributes="HideInEditor") enum class RootMotionMode
+    {
+        // Root Motion feature is disabled.
+        None = 0,
+        // Motion is extracted from the root node (or node specified by name).
+        ExtractNode = 1,
+        // Motion is extracted from the center of mass movement (estimated based on the skeleton pose animation).
+        ExtractCenterOfMass = 2,
+    };
+
+    /// <summary>
     /// Model import options.
     /// </summary>
     API_STRUCT(Attributes="HideInEditor") struct FLAXENGINE_API Options : public ISerializable
@@ -228,9 +241,12 @@ public:
         bool ImportScaleTracks = false;
         // Enables root motion extraction support from this animation.
         API_FIELD(Attributes="EditorOrder(1060), EditorDisplay(\"Animation\"), VisibleIf(nameof(ShowAnimation))")
-        bool EnableRootMotion = false;
+        RootMotionMode RootMotion = RootMotionMode::None;
+        // Adjusts root motion applying flags. Can customize how root node animation can affect target actor movement (eg. apply both position and rotation changes).
+        API_FIELD(Attributes="EditorOrder(1060), EditorDisplay(\"Animation\"), VisibleIf(nameof(ShowRootMotion))")
+        AnimationRootMotionFlags RootMotionFlags = AnimationRootMotionFlags::RootPositionXZ;
         // The custom node name to be used as a root motion source. If not specified the actual root node will be used.
-        API_FIELD(Attributes="EditorOrder(1070), EditorDisplay(\"Animation\"), VisibleIf(nameof(ShowAnimation))")
+        API_FIELD(Attributes="EditorOrder(1070), EditorDisplay(\"Animation\"), VisibleIf(nameof(ShowRootMotion))")
         String RootNodeName = TEXT("");
 
     public: // Level Of Detail
