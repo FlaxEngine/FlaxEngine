@@ -1,4 +1,3 @@
-
 using System;
 using System.Collections.Generic;
 using FlaxEditor.Content;
@@ -40,28 +39,30 @@ namespace FlaxEngine.Experimental.UI
         /// The asset.
         /// </value>
         [EditorOrder(1)]
-        public UIBlueprintAsset Asset 
-        { 
+        public UIBlueprintAsset Asset
+        {
             get => m_Asset;
-            set 
-            { 
+            set
+            {
                 m_Asset = value;
                 Blueprint = UISystem.CreateFromBlueprintAsset(m_Asset);
-            } 
+            }
         }
 
         /// <summary>
         /// The panel component
         /// </summary>
-        //[HideInEditor]
+        [HideInEditor]
         public UIPanelComponent PanelComponent;
         /// <summary>
         /// The action
         /// </summary>
+        [HideInEditor]
         public UIActionEvent Action = new UIActionEvent();
         /// <summary>
         /// The pointer event
         /// </summary>
+        [HideInEditor]
         public UIPointerEvent pointerEvent = new UIPointerEvent();
         /// <inheritdoc />
         public override void Draw()
@@ -109,6 +110,7 @@ namespace FlaxEngine.Experimental.UI
                     }
                 }
                 pointerEvent.State = state;
+
                 pointerEvent.Locations = Locations.ToArray();
                 if (focused == null)
                 {
@@ -164,7 +166,8 @@ namespace FlaxEngine.Experimental.UI
         public override void OnMouseMove(Float2 location)
         {
             pointerEvent.IsTouch = false;
-            SendPointerEvent(MouseLocation = location, 0, InputActionState.Waiting);
+
+            SendPointerEvent(MouseLocation = location, 0, (pointerEvent.State == InputActionState.Press || pointerEvent.State == InputActionState.Pressing) ? InputActionState.Pressing : InputActionState.Waiting);
             base.OnMouseMove(location);
         }
         /// <inheritdoc/>
@@ -222,7 +225,7 @@ namespace FlaxEngine.Experimental.UI
         public override void OnTouchEnter(Float2 location, int pointerId)
         {
             pointerEvent.IsTouch = true;
-            SendPointerEvent(location,pointerId, InputActionState.Waiting);
+            SendPointerEvent(location, pointerId, InputActionState.Waiting);
             base.OnTouchEnter(location, pointerId);
         }
         /// <inheritdoc/>
@@ -243,7 +246,7 @@ namespace FlaxEngine.Experimental.UI
         public override void OnTouchMove(Float2 location, int pointerId)
         {
             pointerEvent.IsTouch = true;
-            SendPointerEvent(location, pointerId, InputActionState.Waiting);
+            SendPointerEvent(location, pointerId, (pointerEvent.State == InputActionState.Press || pointerEvent.State == InputActionState.Pressing) ? InputActionState.Pressing : InputActionState.Waiting);
             base.OnTouchMove(location, pointerId);
         }
         /// <inheritdoc/>
@@ -254,4 +257,5 @@ namespace FlaxEngine.Experimental.UI
             return base.OnTouchUp(location, pointerId);
         }
     }
+
 }
