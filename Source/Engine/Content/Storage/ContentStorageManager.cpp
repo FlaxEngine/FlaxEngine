@@ -58,8 +58,8 @@ FlaxStorageReference ContentStorageManager::GetStorage(const StringView& path, b
     Locker.Lock();
 
     // Try fast lookup
-    FlaxStorage* result;
-    if (!StorageMap.TryGet(path, result))
+    FlaxStorage* storage;
+    if (!StorageMap.TryGet(path, storage))
     {
         // Detect storage type and create object
         const bool isPackage = path.EndsWith(StringView(PACKAGE_FILES_EXTENSION));
@@ -67,39 +67,42 @@ FlaxStorageReference ContentStorageManager::GetStorage(const StringView& path, b
         {
             auto package = New<FlaxPackage>(path);
             Packages.Add(package);
-            result = package;
+            storage = package;
         }
         else
         {
             auto file = New<FlaxFile>(path);
             Files.Add(file);
-            result = file;
+            storage = file;
         }
 
         // Register storage container
-        StorageMap.Add(path, result);
+        StorageMap.Add(path, storage);
     }
+
+    // Build reference (before releasing the lock so ContentStorageSystem::Job won't delete it when running from async thread)
+    FlaxStorageReference result(storage);
 
     Locker.Unlock();
 
     if (loadIt)
     {
         // Initialize storage container
-        result->LockChunks();
-        const bool loadFailed = result->Load();
-        result->UnlockChunks();
+        storage->LockChunks();
+        const bool loadFailed = storage->Load();
+        storage->UnlockChunks();
         if (loadFailed)
         {
             LOG(Error, "Failed to load {0}.", path);
             Locker.Lock();
             StorageMap.Remove(path);
-            if (result->IsPackage())
-                Packages.Remove((FlaxPackage*)result);
+            if (storage->IsPackage())
+                Packages.Remove((FlaxPackage*)storage);
             else
-                Files.Remove((FlaxFile*)result);
+                Files.Remove((FlaxFile*)storage);
             Locker.Unlock();
-            Delete(result);
-            return nullptr;
+            result = nullptr;
+            Delete(storage);
         }
     }
 
