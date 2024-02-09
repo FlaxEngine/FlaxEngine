@@ -106,14 +106,16 @@ inline void Rectangle::SetCenter(const Float2& value)
 
 inline void Rectangle::SetTop(float value)
 {
-    Location.X = value;
-    Size.X = GetBottom() - Location.X;
+    float bottom = GetBottom();
+    Location.Y = value;
+    Size.Y = bottom - Location.Y;
 }
 
 inline void Rectangle::SetLeft(float value)
 {
-    Location.Y = value;
-    Size.Y = GetLeft() - Location.Y;
+    float right = GetRight();
+    Location.X = value;
+    Size.X = right - Location.X;
 }
 
 inline void Rectangle::SetRight(float value)
