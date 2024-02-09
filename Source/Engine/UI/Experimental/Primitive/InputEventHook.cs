@@ -8,37 +8,104 @@ namespace FlaxEngine.Experimental.UI
 {
     public partial class InputEventHook
     {
-        //Func<UIActionEvent, UIEventResponse> eActionInput
-        //{
-        //    set { };
-        //    get { };
-        //}
-        ///// <summary>
-        ///// Called when input has event's: mouse, touch, stylus, gamepad emulated mouse, etc. and value has changed
-        ///// </summary>
-        //public Func<UIActionEvent, UIEventResponse> ActionInput;
-        ///// <summary>
-        ///// Called when input has event's: keyboard, gamepay buttons, etc. and value has changed
-        ///// Note: keyboard can have action keys where value is from 0 to 1
-        ///// </summary>
-        //public Func<UIPointerEvent, UIEventResponse> PointerInput;
+        public Func<UIActionEvent, UIEventResponse> ActionInput
+        {
+            get => m_ActionInput;
+            set
+            {
+                m_ActionInput = value;
+                HandleActionInputCPPBindings();
+            }
+        }
 
+        public Func<UIPointerEvent, UIEventResponse> PointerInput
+        {
+            get => m_PointerInput;
+            set
+            {
+                m_PointerInput = value;
+                HandlePointerInputCPPBindings();
+            }
+        }
 
-        //internal override UIEventResponse OnActionInput(UIActionEvent InEvent)
-        //{
-        //    if (ActionInput == null)
-        //    {
-        //        return base.OnActionInput(InEvent);
-        //    }
-        //    return ActionInput.Invoke(InEvent);
-        //}
-        //internal override UIEventResponse OnPointerInput(UIPointerEvent InEvent)
-        //{
-        //    if (PointerInput == null)
-        //    {
-        //        return base.OnPointerInput(InEvent);
-        //    }
-        //    return PointerInput.Invoke(InEvent);
-        //}
+        #region CSHACK
+
+        private Func<UIPointerEvent, UIEventResponse> m_PointerInput;
+        private Action<UIPointerEvent> m_PointerInputAction;
+        private Func<UIActionEvent, UIEventResponse> m_ActionInput;
+        private Action<UIActionEvent> m_ActionInputAction;
+        private void HandlePointerInputCPPBindings()
+        {
+            if (m_PointerInput == null)
+            {
+                CSHACK_PointerInput -= m_PointerInputAction;
+                CSHACK_UnBindPointerInput();
+                m_PointerInputAction = null;
+            }
+
+            if (CSHACK_IsBindedPointerInput())
+            {
+                CSHACK_PointerInput -= m_PointerInputAction;
+                m_PointerInputAction = (UIPointerEvent InEvent) =>
+                {
+                    if (m_PointerInput != null)
+                    {
+                        CSHACK_SetPointerInputUIEventResponse(m_PointerInput(InEvent));
+                    }
+                };
+                CSHACK_BindPointerInput();
+                CSHACK_PointerInput += m_PointerInputAction;
+            }
+            else
+            {
+                m_PointerInputAction = (UIPointerEvent InEvent) =>
+                {
+                    if (m_PointerInput != null)
+                    {
+                        CSHACK_SetPointerInputUIEventResponse(m_PointerInput(InEvent));
+                    }
+                };
+                CSHACK_BindPointerInput();
+                CSHACK_PointerInput += m_PointerInputAction;
+            }
+        }
+
+        private void HandleActionInputCPPBindings()
+        {
+            if (m_ActionInput == null)
+            {
+                CSHACK_ActionInput -= m_ActionInputAction;
+                CSHACK_UnBindActionInput();
+                m_ActionInputAction = null;
+            }
+
+            if (CSHACK_IsBindedActionInput())
+            {
+                CSHACK_ActionInput -= m_ActionInputAction;
+                m_ActionInputAction = (UIActionEvent InEvent) =>
+                {
+                    if (m_ActionInput != null)
+                    {
+                        CSHACK_SetActionInputUIEventResponse(m_ActionInput(InEvent));
+                    }
+                };
+                CSHACK_BindActionInput();
+                CSHACK_ActionInput += m_ActionInputAction;
+            }
+            else
+            {
+                m_ActionInputAction = (UIActionEvent InEvent) =>
+                {
+                    if (m_ActionInput != null)
+                    {
+                        CSHACK_SetActionInputUIEventResponse(m_ActionInput(InEvent));
+                    }
+                };
+                CSHACK_BindActionInput();
+                CSHACK_ActionInput += m_ActionInputAction;
+            }
+        }
+
+        #endregion
     }
 }
