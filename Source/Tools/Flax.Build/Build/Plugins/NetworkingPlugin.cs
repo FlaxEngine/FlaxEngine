@@ -805,6 +805,9 @@ namespace Flax.Build.Plugins
                 GenerateSerializeCallback(module, il, type.BaseType, serialize);
             }
 
+            if (type.HasGenericParameters) // TODO: implement network replication for generic classes
+                MonoCecil.CompilationError($"Not supported generic type '{type.FullName}' for network replication.");
+
             var ildContext = new DotnetIlContext(il);
 
             // Serialize all type fields marked with NetworkReplicated attribute
