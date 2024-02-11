@@ -69,7 +69,7 @@ namespace FlaxEditor.Windows
         {
             OnlyName,
             UsePrefix,
-            UseSufix
+            UseSuffix
         }
 
         private string _newActorsName;
@@ -84,7 +84,7 @@ namespace FlaxEditor.Windows
             Size = new Float2(300, 110);
 
             _newActorsName = "Actor ";
-            _renameOption = RenameOptions.UseSufix;
+            _renameOption = RenameOptions.UseSuffix;
             _actorsToRename = actorsToRename;
 
             var container = new VerticalPanel
@@ -213,7 +213,7 @@ namespace FlaxEditor.Windows
                     newName.Append(i);
                     newName.Append(_newActorsName);
                 }
-                else if (_renameOption == RenameOptions.UseSufix)
+                else if (_renameOption == RenameOptions.UseSuffix)
                     newName.Append(i.ToString());
 
                 var newNameStr = newName.ToString();
