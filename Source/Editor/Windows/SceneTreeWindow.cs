@@ -148,7 +148,7 @@ namespace FlaxEditor.Windows
                     if (selection[i] is ActorNode actorNode)
                         selectedActors[i] = actorNode.Actor;
 
-                new RenameWindow(selectedActors, Editor).Show();
+                RenameWindow.Show(selectedActors, Editor);
                 return;
             }
 

@@ -1,9 +1,7 @@
 using System.Text;
-using FlaxEditor.CustomEditors;
-using FlaxEditor.GUI;
-using FlaxEditor.Windows.Assets;
 using FlaxEngine;
 using FlaxEngine.GUI;
+using FlaxEditor.GUI;
 
 namespace FlaxEditor.Windows
 {
@@ -74,21 +72,19 @@ namespace FlaxEditor.Windows
             UseSufix
         }
 
-        private Label _label;
-        private TextBox _textBox;
-        private EnumComboBox _renameOptions;
-        private Button _renameButton;
-
+        private string _newActorsName;
+        private RenameOptions _renameOption;
         private Actor[] _actorsToRename;
 
-        /// <summary>
-        /// Create an instance of the <see cref="RenameWindow"/> to rename actors.
-        /// </summary>
-        /// <param name="actorsToRename">All actors to rename</param>
-        /// <param name="editor">The editor.</param>
-        public RenameWindow(Actor[] actorsToRename, Editor editor) : base(editor, true, FlaxEngine.GUI.ScrollBars.None)
+        private static RenameWindow _currentOpenedWindow;
+
+        private RenameWindow(Actor[] actorsToRename, Editor editor) : base(editor, true, FlaxEngine.GUI.ScrollBars.None)
         {
             Title = "Rename";
+            Size = new Float2(300, 110);
+
+            _newActorsName = "Actor ";
+            _renameOption = RenameOptions.UseSufix;
             _actorsToRename = actorsToRename;
 
             var container = new VerticalPanel
@@ -96,82 +92,155 @@ namespace FlaxEditor.Windows
                 Parent = this,
                 AnchorPreset = AnchorPresets.StretchAll,
                 Offset = Vector2.Zero,
-
+                AutoSize = false,
+                Bounds = Rectangle.Empty
             };
 
-            _label = new Label
+            var nameContainer = new HorizontalPanel
+            {
+                Parent = container,
+                AnchorPreset = AnchorPresets.TopLeft,
+                Bounds = new Rectangle(0, 0, 300, 22),
+                Offset = Vector2.Zero,
+                AutoSize = false,
+                Spacing = 2,
+                CullChildren = false,
+                ClipChildren = false,
+            };
+
+            var optionsContainer = new HorizontalPanel
+            {
+                Parent = container,
+                AnchorPreset = AnchorPresets.TopLeft,
+                Bounds = new Rectangle(0, 22, 300, 22),
+                Offset = Vector2.Zero,
+                AutoSize = false,
+                Spacing = 2,
+                CullChildren = false,
+                ClipChildren = false,
+            };
+
+            var renameLabel = new Label
             {
                 Text = "New Name",
-                AnchorPreset = AnchorPresets.TopLeft,
-                Parent = container,
-                Size = new Float2(100, 25)
+                AnchorPreset = AnchorPresets.Custom,
+                AnchorMin = Float2.Zero,
+                AnchorMax = new Float2(0.5f, 0),
+                Parent = nameContainer,
+                HorizontalAlignment = TextAlignment.Near,
+                Size = new Float2(150, 22),
+                Offsets = Margin.Zero,
             };
 
-            _textBox = new TextBox
+            var newNameTextBox = new TextBox
             {
-                Text = "Actor",
-                AnchorPreset = AnchorPresets.TopLeft,
-                Parent = container,
-                Size = new Float2(200, 25)
+                Text = _newActorsName,
+                AnchorPreset = AnchorPresets.Custom,
+                AnchorMin = new Float2(0.5f, 0),
+                AnchorMax = new Float2(1, 0),
+                Parent = nameContainer,
+                Size = new Float2(150, 22),
+                Offsets = Margin.Zero,
             };
 
-            var renameOptionLabel = new Label
+            var optionNameLabel = new Label
             {
                 Text = "Rename Option",
-                AnchorPreset = AnchorPresets.TopLeft,
-                Parent = container,
-                Size = new Float2(100, 25)
+                HorizontalAlignment = TextAlignment.Near,
+                AnchorPreset = AnchorPresets.Custom,
+                AnchorMin = Float2.Zero,
+                AnchorMax = new Float2(0.5f, 0),
+                Parent = optionsContainer,
+                Size = new Float2(150, 22),
+                Offsets = Margin.Zero,
             };
 
-            _renameOptions = new EnumComboBox(typeof(RenameOptions))
+            var renameOptions = new EnumComboBox(typeof(RenameOptions))
             {
-                Parent = container,
-                Value = 0
+                Parent = optionsContainer,
+                Value = (int)_renameOption,
+                AnchorPreset = AnchorPresets.Custom,
+                AnchorMin = new Float2(0.5f, 0f),
+                AnchorMax = new Float2(1, 0),
+                Size = new Float2(150, 22),
+                Offsets = Margin.Zero,
             };
 
-            _renameButton = new Button
+            var renameButton = new Button
             {
                 Text = "Rename",
                 AnchorPreset = AnchorPresets.TopLeft,
                 Parent = container,
-                Size = new Float2(200, 25),
             };
 
-            _renameButton.Clicked += () =>
+            newNameTextBox.TextBoxEditEnd += textBox =>
             {
-                var renameUndoAction = new RenameUndoAction(_actorsToRename);
-                Editor.Instance.SceneEditing.Undo.AddAction(renameUndoAction);
-                renameUndoAction.NewNames = new string[_actorsToRename.Length];
-                for (int i = 0; i < _actorsToRename.Length; i++)
-                {
-                    var actor = _actorsToRename[i];
-                    if (!actor)
-                        continue;
-                    var newName = new StringBuilder(_textBox.Text);
-                    if (_renameOptions.Value == (int)RenameOptions.UsePrefix)
-                    {
-                        newName = new StringBuilder();
-                        newName.Append(i);
-                        newName.Append(_textBox.Text);
-                    }
-                    else if (_renameOptions.Value == (int)RenameOptions.UseSufix)
-                        newName.Append(i.ToString());
-                    var newNameStr = newName.ToString();
-                    actor.Name = newNameStr;
-                    renameUndoAction.NewNames[i] = newNameStr;
-                }
-                Editor.Instance.Scene.MarkAllScenesEdited();
-                Close();
+                _newActorsName = textBox.Text;
             };
+
+            renameOptions.EnumValueChanged += combo =>
+            {
+                _renameOption = (RenameOptions)combo.Value;
+            };
+
+            newNameTextBox.Focus();
+            newNameTextBox.KeyDown += k =>
+            {
+                if (k == KeyboardKeys.Return)
+                {
+                    _newActorsName = newNameTextBox.Text;
+                    RenameActors();
+                }
+            };
+
+            renameButton.Clicked += RenameActors;
         }
 
-        ~RenameWindow()
+        private void RenameActors()
         {
-            _actorsToRename = null;
-            _renameButton = null;
-            _label = null;
-            _textBox = null;
-            _renameOptions = null;
+            var renameUndoAction = new RenameUndoAction(_actorsToRename);
+            Editor.Instance.SceneEditing.Undo.AddAction(renameUndoAction);
+            renameUndoAction.NewNames = new string[_actorsToRename.Length];
+            for (int i = 0; i < _actorsToRename.Length; i++)
+            {
+                var actor = _actorsToRename[i];
+                if (!actor)
+                    continue;
+                var newName = new StringBuilder(_newActorsName);
+                if (_renameOption == RenameOptions.UsePrefix)
+                {
+                    newName = new StringBuilder();
+                    newName.Append(i);
+                    newName.Append(_newActorsName);
+                }
+                else if (_renameOption == RenameOptions.UseSufix)
+                    newName.Append(i.ToString());
+
+                var newNameStr = newName.ToString();
+                actor.Name = newNameStr;
+                renameUndoAction.NewNames[i] = newNameStr;
+            }
+            Editor.Instance.Scene.MarkAllScenesEdited();
+            Close();
+        }
+
+        /// <summary>
+        /// Create an instance of the <see cref="RenameWindow"/> to rename actors and show the window.
+        /// </summary>
+        /// <param name="actorsToRename">All actors to rename</param>
+        /// <param name="editor">The editor.</param>
+        public static void Show(Actor[] actorsToRename, Editor editor)
+        {
+            // Can only one window opened.
+            if (_currentOpenedWindow != null)
+                _currentOpenedWindow.Close(ClosingReason.CloseEvent);
+
+            _currentOpenedWindow = new RenameWindow(actorsToRename, editor);
+            _currentOpenedWindow.ShowFloating(new Float2(300, 110));
+            _currentOpenedWindow.RootWindow.Window.Closed += () =>
+            {
+                _currentOpenedWindow = null;
+            };
         }
     }
 }
