@@ -3,9 +3,9 @@
 using System;
 using System.Collections;
 using System.Linq;
-using FlaxEditor.Content;
-using FlaxEditor.CustomEditors.Elements;
 using FlaxEditor.CustomEditors.GUI;
+using FlaxEditor.GUI.Input;
+using FlaxEditor.Content;
 using FlaxEditor.GUI.ContextMenu;
 using FlaxEditor.GUI.Drag;
 using FlaxEditor.SceneGraph;
@@ -54,8 +54,13 @@ namespace FlaxEditor.CustomEditors.Editors
 
             private void OnSetupContextMenu(PropertyNameLabel label, ContextMenu menu, CustomEditor linkedEditor)
             {
-                menu.AddSeparator();
+                menu.ItemsContainer.RemoveChildren();
 
+                menu.AddButton("Copy", linkedEditor.Copy);
+                var paste = menu.AddButton("Paste", linkedEditor.Paste);
+                paste.Enabled = linkedEditor.CanPaste;
+
+                menu.AddSeparator();
                 var moveUpButton = menu.AddButton("Move up", OnMoveUpClicked);
                 moveUpButton.Enabled = Index > 0;
 
@@ -65,17 +70,100 @@ namespace FlaxEditor.CustomEditors.Editors
                 menu.AddButton("Remove", OnRemoveClicked);
             }
 
-            private void OnMoveUpClicked(ContextMenuButton button)
+            private void OnMoveUpClicked()
             {
                 Editor.Move(Index, Index - 1);
             }
 
-            private void OnMoveDownClicked(ContextMenuButton button)
+            private void OnMoveDownClicked()
             {
                 Editor.Move(Index, Index + 1);
             }
 
-            private void OnRemoveClicked(ContextMenuButton button)
+            private void OnRemoveClicked()
+            {
+                Editor.Remove(Index);
+            }
+        }
+
+        private class CollectionDropPanel : DropPanel
+        {
+            /// <summary>
+            /// The collection editor.
+            /// </summary>
+            public CollectionEditor Editor;
+
+            /// <summary>
+            /// The index of the item (zero-based).
+            /// </summary>
+            public int Index { get; private set; }
+
+            /// <summary>
+            /// The linked editor.
+            /// </summary>
+            public CustomEditor LinkedEditor;
+
+            private bool _canReorder = true;
+
+            public void Setup(CollectionEditor editor, int index, bool canReorder = true)
+            {
+                HeaderHeight = 18;
+                _canReorder = canReorder;
+                EnableDropDownIcon = true;
+                var icons = FlaxEditor.Editor.Instance.Icons;
+                ArrowImageClosed = new SpriteBrush(icons.ArrowRight12);
+                ArrowImageOpened = new SpriteBrush(icons.ArrowDown12);
+                HeaderText = $"Element {index}";
+                IsClosed = false;
+                Editor = editor;
+                Index = index;
+                Offsets = new Margin(7, 7, 0, 0);
+
+                MouseButtonRightClicked += OnMouseButtonRightClicked;
+                if (_canReorder)
+                {
+                    // TODO: Drag drop
+                }
+            }
+
+            private void OnMouseButtonRightClicked(DropPanel panel, Float2 location)
+            {
+                if (LinkedEditor == null)
+                    return;
+                var linkedEditor = LinkedEditor;
+                var menu = new ContextMenu();
+
+                menu.AddButton("Copy", linkedEditor.Copy);
+                var paste = menu.AddButton("Paste", linkedEditor.Paste);
+                paste.Enabled = linkedEditor.CanPaste;
+
+                if (_canReorder)
+                {
+                    menu.AddSeparator();
+
+                    var moveUpButton = menu.AddButton("Move up", OnMoveUpClicked);
+                    moveUpButton.Enabled = Index > 0;
+
+                    var moveDownButton = menu.AddButton("Move down", OnMoveDownClicked);
+                    moveDownButton.Enabled = Index + 1 < Editor.Count;
+                }
+
+                menu.AddButton("Remove", OnRemoveClicked);
+
+                menu.Show(panel, location);
+            }
+
+            private void OnMoveUpClicked()
+            {
+                Editor.Move(Index, Index - 1);
+            }
+
+            private void OnMoveDownClicked()
+            {
+                Editor.Move(Index, Index + 1);
+            }
+
+            private void OnRemoveClicked()
             {
                 Editor.Remove(Index);
             }
@@ -86,12 +174,12 @@ namespace FlaxEditor.CustomEditors.Editors
         /// </summary>
         protected bool NotNullItems;
 
-        private IntegerValueElement _size;
-        private PropertyNameLabel _sizeLabel;
+        private IntValueBox _sizeBox;
         private Color _background;
         private int _elementsCount;
         private bool _readOnly;
         private bool _canReorderItems;
+        private CollectionAttribute.DisplayType _displayType;
 
         /// <summary>
         /// Gets the length of the collection.
@@ -124,12 +212,13 @@ namespace FlaxEditor.CustomEditors.Editors
             _readOnly = false;
             _canReorderItems = true;
             _background = FlaxEngine.GUI.Style.Current.CollectionBackgroundColor;
+            _displayType = CollectionAttribute.DisplayType.Header;
             NotNullItems = false;
 
             // Try get CollectionAttribute for collection editor meta
             var attributes = Values.GetAttributes();
             Type overrideEditorType = null;
-            float spacing = 10.0f;
+            float spacing = 1.0f;
             var collection = (CollectionAttribute)attributes?.FirstOrDefault(x => x is CollectionAttribute);
             if (collection != null)
             {
@@ -140,6 +229,7 @@ namespace FlaxEditor.CustomEditors.Editors
                     _background = collection.BackgroundColor.Value;
                 overrideEditorType = TypeUtils.GetType(collection.OverrideEditorTypeName).Type;
                 spacing = collection.Spacing;
+                _displayType = collection.Display;
             }
 
             var dragArea = layout.CustomContainer<DragAreaControl>();
@@ -172,76 +262,77 @@ namespace FlaxEditor.CustomEditors.Editors
             }
 
             // Size
-            if (_readOnly || (NotNullItems && size == 0))
+            if (layout.ContainerControl is DropPanel dropPanel)
             {
-                dragArea.Label("Size", size.ToString());
-            }
-            else
-            {
-                var sizeProperty = dragArea.AddPropertyItem("Size");
-                _sizeLabel = sizeProperty.Labels.Last();
-                _size = sizeProperty.IntegerValue();
-                _size.IntValue.MinValue = 0;
-                _size.IntValue.MaxValue = ushort.MaxValue;
-                _size.IntValue.Value = size;
-                _size.IntValue.EditEnd += OnSizeChanged;
+                var height = dropPanel.HeaderHeight - dropPanel.HeaderTextMargin.Height;
+                var y = -dropPanel.HeaderHeight + dropPanel.HeaderTextMargin.Top;
+                _sizeBox = new IntValueBox(size)
+                {
+                    MinValue = 0,
+                    MaxValue = ushort.MaxValue,
+                    AnchorPreset = AnchorPresets.TopRight,
+                    Bounds = new Rectangle(-40 - dropPanel.ItemsMargin.Right, y, 40, height),
+                    Parent = dropPanel,
+                };
+
+                var label = new Label
+                {
+                    Text = "Size",
+                    AnchorPreset = AnchorPresets.TopRight,
+                    Bounds = new Rectangle(-_sizeBox.Width - 40 - dropPanel.ItemsMargin.Right - 2, y, 40, height),
+                    Parent = dropPanel
+                };
+
+                if (_readOnly || (NotNullItems && size == 0))
+                {
+                    _sizeBox.IsReadOnly = true;
+                    _sizeBox.Enabled = false;
+                }
+                else
+                {
+                    _sizeBox.EditEnd += OnSizeChanged;
+                }
             }
 
             // Elements
             if (size > 0)
             {
                 var panel = dragArea.VerticalPanel();
+                panel.Panel.Offsets = new Margin(7, 7, 0, 0);
                 panel.Panel.BackgroundColor = _background;
                 var elementType = ElementType;
+                bool single = elementType.IsPrimitive ||
+                              elementType.Equals(new ScriptType(typeof(string))) ||
+                              elementType.IsEnum ||
+                              (elementType.GetFields().Length == 1 && elementType.GetProperties().Length == 0) ||
+                              (elementType.GetProperties().Length == 1 && elementType.GetFields().Length == 0) ||
+                              elementType.Equals(new ScriptType(typeof(JsonAsset))) ||
+                              elementType.Equals(new ScriptType(typeof(SettingsBase)));
 
-                // Use separate layout cells for each collection items to improve layout updates for them in separation
-                var useSharedLayout = elementType.IsPrimitive || elementType.IsEnum;
-
-                if (_canReorderItems)
+                for (int i = 0; i < size; i++)
                 {
-                    for (int i = 0; i < size; i++)
-                    {
-                        if (i != 0 && spacing > 0f)
-                        {
-                            if (panel.Children.Count > 0 && panel.Children[panel.Children.Count - 1] is PropertiesListElement propertiesListElement)
-                            {
-                                if (propertiesListElement.Labels.Count > 0)
-                                {
-                                    var label = propertiesListElement.Labels[propertiesListElement.Labels.Count - 1];
-                                    var margin = label.Margin;
-                                    margin.Bottom += spacing;
-                                    label.Margin = margin;
-                                }
-                                propertiesListElement.Space(spacing);
-                            }
-                            else
-                            {
-                                panel.Space(spacing);
-                            }
-                        }
+                    // Apply spacing
+                    if (i > 0 && i < size && spacing > 0 && !single)
+                        panel.Space(spacing);
 
-                        var overrideEditor = overrideEditorType != null ? (CustomEditor)Activator.CreateInstance(overrideEditorType) : null;
-                        var property = panel.AddPropertyItem(new CollectionItemLabel(this, i));
-                        var itemLayout = useSharedLayout ? (LayoutElementsContainer)property : property.VerticalPanel();
-                        itemLayout.Object(new ListValueContainer(elementType, i, Values, attributes), overrideEditor);
+                    var overrideEditor = overrideEditorType != null ? (CustomEditor)Activator.CreateInstance(overrideEditorType) : null;
+                    if (_displayType == CollectionAttribute.DisplayType.Inline || (collection == null && single) || (_displayType == CollectionAttribute.DisplayType.Default && single))
+                    {
+                        PropertyNameLabel itemLabel;
+                        if (_canReorderItems)
+                            itemLabel = new CollectionItemLabel(this, i);
+                        else
+                            itemLabel = new PropertyNameLabel("Element " + i);
+                        var property = panel.AddPropertyItem(itemLabel);
+                        var itemLayout = (LayoutElementsContainer)property;
+                        itemLabel.LinkedEditor = itemLayout.Object(new ListValueContainer(elementType, i, Values, attributes), overrideEditor);
                     }
-                }
-                else
-                {
-                    for (int i = 0; i < size; i++)
+                    else if (_displayType == CollectionAttribute.DisplayType.Header || (_displayType == CollectionAttribute.DisplayType.Default && !single))
                     {
-                        if (i != 0 && spacing > 0f)
-                        {
-                            if (panel.Children.Count > 0 && panel.Children[panel.Children.Count - 1] is PropertiesListElement propertiesListElement)
-                                propertiesListElement.Space(spacing);
-                            else
-                                panel.Space(spacing);
-                        }
-
-                        var overrideEditor = overrideEditorType != null ? (CustomEditor)Activator.CreateInstance(overrideEditorType) : null;
-                        var property = panel.AddPropertyItem("Element " + i);
-                        var itemLayout = useSharedLayout ? (LayoutElementsContainer)property : property.VerticalPanel();
-                        itemLayout.Object(new ListValueContainer(elementType, i, Values, attributes), overrideEditor);
+                        var cdp = panel.CustomContainer<CollectionDropPanel>();
+                        cdp.CustomControl.Setup(this, i, _canReorderItems);
+                        var itemLayout = cdp.VerticalPanel();
+                        cdp.CustomControl.LinkedEditor = itemLayout.Object(new ListValueContainer(elementType, i, Values, attributes), overrideEditor);
                     }
                 }
             }
@@ -283,8 +374,7 @@ namespace FlaxEditor.CustomEditors.Editors
         /// <inheritdoc />
         protected override void Deinitialize()
         {
-            _size = null;
-            _sizeLabel = null;
+            _sizeBox = null;
 
             base.Deinitialize();
         }
@@ -311,7 +401,8 @@ namespace FlaxEditor.CustomEditors.Editors
         {
             if (IsSetBlocked)
                 return;
-            Resize(_size.IntValue.Value);
+
+            Resize(_sizeBox.Value);
         }
 
         /// <summary>
@@ -384,14 +475,14 @@ namespace FlaxEditor.CustomEditors.Editors
                 return;
 
             // Update reference/default value indicator
-            if (_sizeLabel != null)
+            if (_sizeBox != null)
             {
                 var color = Color.Transparent;
                 if (Values.HasReferenceValue && Values.ReferenceValue is IList referenceValue && referenceValue.Count != Count)
                     color = FlaxEngine.GUI.Style.Current.BackgroundSelected;
                 else if (Values.HasDefaultValue && Values.DefaultValue is IList defaultValue && defaultValue.Count != Count)
                     color = Color.Yellow * 0.8f;
-                _sizeLabel.HighlightStripColor = color;
+                _sizeBox.BorderColor = color;
             }
 
             // Check if collection has been resized (by UI or from external source)

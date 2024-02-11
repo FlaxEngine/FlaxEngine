@@ -191,9 +191,7 @@ namespace FlaxEditor.Surface.Archetypes
                 var value = title;
                 int count = 1;
                 while (!OnRenameValidate(null, value))
-                {
                     value = title + " " + count++;
-                }
                 Values[0] = value;
                 Title = value;
 
@@ -655,6 +653,7 @@ namespace FlaxEditor.Surface.Archetypes
             protected Rectangle _renameButtonRect;
             private bool _cursorChanged = false;
             private bool _textRectHovered = false;
+            private bool _debugActive;
 
             /// <summary>
             /// The transitions list from this state to the others.
@@ -1092,6 +1091,16 @@ namespace FlaxEditor.Surface.Archetypes
 
                 // TODO: maybe update only on actual transitions change?
                 UpdateTransitions();
+
+                // Debug current state
+                if (((AnimGraphSurface)Surface).TryGetTraceEvent(this, out var traceEvent))
+                {
+                    _debugActive = true;
+                }
+                else
+                {
+                    _debugActive = false;
+                }
             }
 
             /// <inheritdoc />
@@ -1132,6 +1141,10 @@ namespace FlaxEditor.Surface.Archetypes
 
                 // Close button
                 Render2D.DrawSprite(style.Cross, _closeButtonRect, _closeButtonRect.Contains(_mousePosition) ? style.Foreground : style.ForegroundGrey);
+
+                // Debug outline
+                if (_debugActive)
+                    Render2D.DrawRectangle(_textRect.MakeExpanded(1.0f), style.ProgressNormal);
             }
 
             /// <inheritdoc />
@@ -1583,14 +1596,24 @@ namespace FlaxEditor.Surface.Archetypes
                 None = 0,
 
                 /// <summary>
-                /// Transition rule will be rechecked during active transition with option to interrupt transition.
+                /// Transition rule will be rechecked during active transition with option to interrupt transition (to go back to the source state).
                 /// </summary>
                 RuleRechecking = 1,
 
                 /// <summary>
-                /// Interrupted transition is immediately stopped without blending out.
+                /// Interrupted transition is immediately stopped without blending out (back to the source/destination state).
                 /// </summary>
                 Instant = 2,
+
+                /// <summary>
+                /// Enables checking other transitions in the source state that might interrupt this one.
+                /// </summary>
+                SourceState = 4,
+
+                /// <summary>
+                /// Enables checking transitions in the destination state that might interrupt this one.
+                /// </summary>
+                DestinationState = 8,
             }
 
             /// <summary>
@@ -1613,6 +1636,8 @@ namespace FlaxEditor.Surface.Archetypes
                     UseDefaultRule = 4,
                     InterruptionRuleRechecking = 8,
                     InterruptionInstant = 16,
+                    InterruptionSourceState = 32,
+                    InterruptionDestinationState = 64,
                 }
 
                 /// <summary>
@@ -1773,7 +1798,7 @@ namespace FlaxEditor.Surface.Archetypes
             }
 
             /// <summary>
-            /// Transition interruption options.
+            /// Transition interruption options (flags, can select multiple values).
             /// </summary>
             [EditorOrder(70), DefaultValue(InterruptionFlags.None)]
             public InterruptionFlags Interruption
@@ -1785,12 +1810,18 @@ namespace FlaxEditor.Surface.Archetypes
                         flags |= InterruptionFlags.RuleRechecking;
                     if (_data.HasFlag(Data.FlagTypes.InterruptionInstant))
                         flags |= InterruptionFlags.Instant;
+                    if (_data.HasFlag(Data.FlagTypes.InterruptionSourceState))
+                        flags |= InterruptionFlags.SourceState;
+                    if (_data.HasFlag(Data.FlagTypes.InterruptionDestinationState))
+                        flags |= InterruptionFlags.DestinationState;
                     return flags;
                 }
                 set
                 {
                     _data.SetFlag(Data.FlagTypes.InterruptionRuleRechecking, value.HasFlag(InterruptionFlags.RuleRechecking));
                     _data.SetFlag(Data.FlagTypes.InterruptionInstant, value.HasFlag(InterruptionFlags.Instant));
+                    _data.SetFlag(Data.FlagTypes.InterruptionSourceState, value.HasFlag(InterruptionFlags.SourceState));
+                    _data.SetFlag(Data.FlagTypes.InterruptionDestinationState, value.HasFlag(InterruptionFlags.DestinationState));
                     SourceState.SaveTransitions(true);
                 }
             }

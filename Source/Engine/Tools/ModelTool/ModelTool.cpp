@@ -19,15 +19,15 @@
 #include "Engine/Content/Content.h"
 #include "Engine/Serialization/MemoryWriteStream.h"
 #if USE_EDITOR
+#include "Engine/Core/Utilities.h"
+#include "Engine/Core/Types/StringView.h"
 #include "Engine/Core/Types/DateTime.h"
 #include "Engine/Core/Types/TimeSpan.h"
 #include "Engine/Core/Types/Pair.h"
 #include "Engine/Core/Types/Variant.h"
+#include "Engine/Platform/FileSystem.h"
 #include "Engine/Graphics/Models/SkeletonUpdater.h"
 #include "Engine/Graphics/Models/SkeletonMapping.h"
-#include "Engine/Core/Utilities.h"
-#include "Engine/Core/Types/StringView.h"
-#include "Engine/Platform/FileSystem.h"
 #include "Engine/Tools/TextureTool/TextureTool.h"
 #include "Engine/ContentImporters/AssetsImportingManager.h"
 #include "Engine/ContentImporters/CreateMaterial.h"
@@ -35,6 +35,7 @@
 #include "Engine/ContentImporters/CreateCollisionData.h"
 #include "Engine/Serialization/Serialization.h"
 #include "Editor/Utilities/EditorUtilities.h"
+#include "Engine/Animations/Graph/AnimGraph.h"
 #include <ThirdParty/meshoptimizer/meshoptimizer.h>
 #endif
 
@@ -361,7 +362,8 @@ void ModelTool::Options::Serialize(SerializeStream& stream, const void* otherObj
     SERIALIZE(SkipEmptyCurves);
     SERIALIZE(OptimizeKeyframes);
     SERIALIZE(ImportScaleTracks);
-    SERIALIZE(EnableRootMotion);
+    SERIALIZE(RootMotion);
+    SERIALIZE(RootMotionFlags);
     SERIALIZE(RootNodeName);
     SERIALIZE(GenerateLODs);
     SERIALIZE(BaseLOD);
@@ -374,6 +376,7 @@ void ModelTool::Options::Serialize(SerializeStream& stream, const void* otherObj
     SERIALIZE(InstanceToImportAs);
     SERIALIZE(ImportTextures);
     SERIALIZE(RestoreMaterialsOnReimport);
+    SERIALIZE(SkipExistingMaterialsOnReimport);
     SERIALIZE(GenerateSDF);
     SERIALIZE(SDFResolution);
     SERIALIZE(SplitObjects);
@@ -409,7 +412,8 @@ void ModelTool::Options::Deserialize(DeserializeStream& stream, ISerializeModifi
     DESERIALIZE(SkipEmptyCurves);
     DESERIALIZE(OptimizeKeyframes);
     DESERIALIZE(ImportScaleTracks);
-    DESERIALIZE(EnableRootMotion);
+    DESERIALIZE(RootMotion);
+    DESERIALIZE(RootMotionFlags);
     DESERIALIZE(RootNodeName);
     DESERIALIZE(GenerateLODs);
     DESERIALIZE(BaseLOD);
@@ -422,6 +426,7 @@ void ModelTool::Options::Deserialize(DeserializeStream& stream, ISerializeModifi
     DESERIALIZE(InstanceToImportAs);
     DESERIALIZE(ImportTextures);
     DESERIALIZE(RestoreMaterialsOnReimport);
+    DESERIALIZE(SkipExistingMaterialsOnReimport);
     DESERIALIZE(GenerateSDF);
     DESERIALIZE(SDFResolution);
     DESERIALIZE(SplitObjects);
@@ -433,6 +438,15 @@ void ModelTool::Options::Deserialize(DeserializeStream& stream, ISerializeModifi
     DESERIALIZE(AnimationIndex);
     if (AnimationIndex != -1)
         ObjectIndex = AnimationIndex;
+
+    // [Deprecated on 08.02.2024, expires on 08.02.2026]
+    bool EnableRootMotion = false;
+    DESERIALIZE(EnableRootMotion);
+    if (EnableRootMotion)
+    {
+        RootMotion = RootMotionMode::ExtractNode;
+        RootMotionFlags = AnimationRootMotionFlags::RootPositionXZ;
+    }
 }
 
 void RemoveNamespace(String& name)
@@ -807,6 +821,8 @@ bool ModelTool::ImportModel(const String& path, ModelData& data, Options& option
         break;
     case ModelType::Animation:
         options.ImportTypes = ImportDataTypes::Animations;
+        if (options.RootMotion == RootMotionMode::ExtractCenterOfMass)
+            options.ImportTypes |= ImportDataTypes::Skeleton;
         break;
     case ModelType::Prefab:
         options.ImportTypes = ImportDataTypes::Geometry | ImportDataTypes::Nodes | ImportDataTypes::Animations;
@@ -1154,6 +1170,18 @@ bool ModelTool::ImportModel(const String& path, ModelData& data, Options& option
             continue;
         }
 
+        // Skip any materials that already exist from the model.
+        // This allows the use of "import as material instances" without material properties getting overridden on each import.
+        if (options.SkipExistingMaterialsOnReimport)
+        {
+            AssetInfo info;
+            if (Content::GetAssetInfo(assetPath, info))
+            {
+                material.AssetID = info.ID;
+                continue;
+            }
+        }
+
         if (options.ImportMaterialsAsInstances)
         {
             // Create material instance
@@ -1396,6 +1424,129 @@ bool ModelTool::ImportModel(const String& path, ModelData& data, Options& option
                 }
             }
 
+            // Process root motion setup
+            animation.RootMotionFlags = options.RootMotion != RootMotionMode::None ? options.RootMotionFlags : AnimationRootMotionFlags::None;
+            animation.RootNodeName = options.RootNodeName.TrimTrailing();
+            if (animation.RootMotionFlags != AnimationRootMotionFlags::None && animation.Channels.HasItems())
+            {
+                if (options.RootMotion == RootMotionMode::ExtractNode)
+                {
+                    if (animation.RootNodeName.HasChars() && animation.GetChannel(animation.RootNodeName) == nullptr)
+                    {
+                        LOG(Warning, "Missing Root Motion node '{}'", animation.RootNodeName);
+                    }
+                }
+                else if (options.RootMotion == RootMotionMode::ExtractCenterOfMass && data.Skeleton.Nodes.HasItems()) // TODO: finish implementing this
+                {
+                    // Setup root node animation track
+                    const auto& rootName = data.Skeleton.Nodes.First().Name;
+                    auto rootChannelPtr = animation.GetChannel(rootName);
+                    if (!rootChannelPtr)
+                    {
+                        animation.Channels.Insert(0, NodeAnimationData());
+                        rootChannelPtr = &animation.Channels[0];
+                        rootChannelPtr->NodeName = rootName;
+                    }
+                    animation.RootNodeName = rootName;
+                    auto& rootChannel = *rootChannelPtr;
+                    rootChannel.Position.Clear();
+
+                    // Calculate skeleton center of mass position over the animation frames
+                    const int32 frames = (int32)animation.Duration;
+                    const int32 nodes = data.Skeleton.Nodes.Count();
+                    Array<Float3> centerOfMass;
+                    centerOfMass.Resize(frames);
+                    for (int32 frame = 0; frame < frames; frame++)
+                    {
+                        auto& key = centerOfMass[frame];
+
+                        // Evaluate skeleton pose at the animation frame
+                        AnimGraphImpulse pose;
+                        pose.Nodes.Resize(nodes);
+                        for (int32 nodeIndex = 0; nodeIndex < nodes; nodeIndex++)
+                        {
+                            Transform srcNode = data.Skeleton.Nodes[nodeIndex].LocalTransform;
+                            auto& node = data.Skeleton.Nodes[nodeIndex];
+                            if (auto* channel = animation.GetChannel(node.Name))
+                                channel->Evaluate(frame, &srcNode, false);
+                            pose.Nodes[nodeIndex] = srcNode;
+                        }
+
+                        // Calculate average location of the pose (center of mass)
+                        key = Float3::Zero;
+                        for (int32 nodeIndex = 0; nodeIndex < nodes; nodeIndex++)
+                            key += pose.GetNodeModelTransformation(data.Skeleton, nodeIndex).Translation;
+                        key /= nodes;
+                    }
+
+                    // Calculate skeleton center of mass movement over the animation frames
+                    rootChannel.Position.Resize(frames);
+                    const Float3 centerOfMassRefPose = centerOfMass[0];
+                    for (int32 frame = 0; frame < frames; frame++)
+                    {
+                        auto& key = rootChannel.Position[frame];
+                        key.Time = frame;
+                        key.Value = centerOfMass[frame] - centerOfMassRefPose;
+                    }
+
+                    // Remove root motion from the children (eg. if Root moves, then Hips should skip that movement delta)
+                    Float3 maxMotion = Float3::Zero;
+                    for (int32 i = 0; i < animation.Channels.Count(); i++)
+                    {
+                        auto& anim = animation.Channels[i];
+                        const int32 animNodeIndex = data.Skeleton.FindNode(anim.NodeName);
+
+                        // Skip channels that have one of their parents already animated
+                        {
+                            int32 nodeIndex = animNodeIndex;
+                            nodeIndex = data.Skeleton.Nodes[nodeIndex].ParentIndex;
+                            while (nodeIndex > 0)
+                            {
+                                const String& nodeName = data.Skeleton.Nodes[nodeIndex].Name;
+                                if (animation.GetChannel(nodeName) != nullptr)
+                                    break;
+                                nodeIndex = data.Skeleton.Nodes[nodeIndex].ParentIndex;
+                            }
+                            if (nodeIndex > 0 || &anim == rootChannelPtr)
+                                continue;
+                        }
+
+                        // Remove motion
+                        auto& animPos = anim.Position.GetKeyframes();
+                        for (int32 frame = 0; frame < animPos.Count(); frame++)
+                        {
+                            auto& key = animPos[frame];
+
+                            // Evaluate root motion at the keyframe location
+                            Float3 rootMotion;
+                            rootChannel.Position.Evaluate(rootMotion, key.Time, false);
+                            Float3::Max(maxMotion, rootMotion, maxMotion);
+
+                            // Evaluate skeleton pose at the animation frame
+                            AnimGraphImpulse pose;
+                            pose.Nodes.Resize(nodes);
+                            pose.Nodes[0] = data.Skeleton.Nodes[0].LocalTransform; // Use ref pose of root
+                            for (int32 nodeIndex = 1; nodeIndex < nodes; nodeIndex++) // Skip new root
+                            {
+                                Transform srcNode = data.Skeleton.Nodes[nodeIndex].LocalTransform;
+                                auto& node = data.Skeleton.Nodes[nodeIndex];
+                                if (auto* channel = animation.GetChannel(node.Name))
+                                    channel->Evaluate(frame, &srcNode, false);
+                                pose.Nodes[nodeIndex] = srcNode;
+                            }
+
+                            // Convert root motion to the local space of this node so the node stays at the same location after adding new root channel
+                            Transform parentNodeTransform = pose.GetNodeModelTransformation(data.Skeleton, data.Skeleton.Nodes[animNodeIndex].ParentIndex);
+                            rootMotion = parentNodeTransform.WorldToLocal(rootMotion);
+
+                            // Remove motion
+                            key.Value -= rootMotion;
+                        }
+                    }
+                    LOG(Info, "Calculated root motion: {}", maxMotion);
+                }
+            }
+
             // Optimize the keyframes
             if (options.OptimizeKeyframes)
             {
@@ -1418,9 +1569,6 @@ bool ModelTool::ImportModel(const String& path, ModelData& data, Options& option
                 const int32 after = animation.GetKeyframesCount();
                 LOG(Info, "Optimized {0} animation keyframe(s). Before: {1}, after: {2}, Ratio: {3}%", before - after, before, after, Utilities::RoundTo2DecimalPlaces((float)after / before));
             }
-
-            animation.EnableRootMotion = options.EnableRootMotion;
-            animation.RootNodeName = options.RootNodeName;
         }
     }
 

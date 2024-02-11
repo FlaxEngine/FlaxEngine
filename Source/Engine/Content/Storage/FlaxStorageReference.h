@@ -58,17 +58,17 @@ public:
         return _storage != nullptr;
     }
 
-    FORCE_INLINE bool operator ==(const FlaxStorageReference& other) const
+    FORCE_INLINE bool operator==(const FlaxStorageReference& other) const
     {
         return _storage == other._storage;
     }
 
-    FORCE_INLINE bool operator !=(const FlaxStorageReference& other) const
+    FORCE_INLINE bool operator!=(const FlaxStorageReference& other) const
     {
         return _storage != other._storage;
     }
 
-    FORCE_INLINE FlaxStorage* operator ->() const
+    FORCE_INLINE FlaxStorage* operator->() const
     {
         return _storage;
     }

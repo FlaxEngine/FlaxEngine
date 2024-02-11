@@ -408,9 +408,9 @@ namespace FlaxEditor.GUI.ContextMenu
             {
                 foreach (var child in _panel.Children)
                 {
-                    if (child is ContextMenuChildMenu item && item.Visible)
+                    if (child is ContextMenuButton item && item.Visible)
                     {
-                        item.AdjustArrowAmount = -_panel.VScrollBar.Width;
+                        item.ExtraAdjustmentAmount = -_panel.VScrollBar.Width;
                     }
                 }
             }

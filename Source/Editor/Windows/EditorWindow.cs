@@ -226,6 +226,8 @@ namespace FlaxEditor.Windows
         /// <inheritdoc />
         public override void OnDestroy()
         {
+            if (IsDisposing)
+                return;
             OnExit();
 
             // Unregister

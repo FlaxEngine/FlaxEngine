@@ -1359,7 +1359,7 @@ bool Actor::IsPrefabRoot() const
 Actor* Actor::FindActor(const StringView& name) const
 {
     Actor* result = nullptr;
-    if (StringUtils::Compare(*_name, *name) == 0)
+    if (_name == name)
     {
         result = const_cast<Actor*>(this);
     }
@@ -1393,7 +1393,7 @@ Actor* Actor::FindActor(const MClass* type) const
 Actor* Actor::FindActor(const MClass* type, const StringView& name) const
 {
     CHECK_RETURN(type, nullptr);
-    if (GetClass()->IsSubClassOf(type) && StringUtils::Compare(*_name, *name) == 0)
+    if (GetClass()->IsSubClassOf(type) && _name == name)
         return const_cast<Actor*>(this);
     for (auto child : Children)
     {

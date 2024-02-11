@@ -130,6 +130,19 @@ public:
     };
 
     /// <summary>
+    /// Declares the imported animation Root Motion modes.
+    /// </summary>
+    API_ENUM(Attributes="HideInEditor") enum class RootMotionMode
+    {
+        // Root Motion feature is disabled.
+        None = 0,
+        // Motion is extracted from the root node (or node specified by name).
+        ExtractNode = 1,
+        // Motion is extracted from the center of mass movement (estimated based on the skeleton pose animation).
+        ExtractCenterOfMass = 2,
+    };
+
+    /// <summary>
     /// Model import options.
     /// </summary>
     API_STRUCT(Attributes="HideInEditor") struct FLAXENGINE_API Options : public ISerializable
@@ -228,9 +241,12 @@ public:
         bool ImportScaleTracks = false;
         // Enables root motion extraction support from this animation.
         API_FIELD(Attributes="EditorOrder(1060), EditorDisplay(\"Animation\"), VisibleIf(nameof(ShowAnimation))")
-        bool EnableRootMotion = false;
+        RootMotionMode RootMotion = RootMotionMode::None;
+        // Adjusts root motion applying flags. Can customize how root node animation can affect target actor movement (eg. apply both position and rotation changes).
+        API_FIELD(Attributes="EditorOrder(1060), EditorDisplay(\"Animation\"), VisibleIf(nameof(ShowRootMotion))")
+        AnimationRootMotionFlags RootMotionFlags = AnimationRootMotionFlags::RootPositionXZ;
         // The custom node name to be used as a root motion source. If not specified the actual root node will be used.
-        API_FIELD(Attributes="EditorOrder(1070), EditorDisplay(\"Animation\"), VisibleIf(nameof(ShowAnimation))")
+        API_FIELD(Attributes="EditorOrder(1070), EditorDisplay(\"Animation\"), VisibleIf(nameof(ShowRootMotion))")
         String RootNodeName = TEXT("");
 
     public: // Level Of Detail
@@ -251,7 +267,7 @@ public:
         API_FIELD(Attributes="EditorOrder(1140), EditorDisplay(\"Level Of Detail\"), VisibleIf(nameof(ShowGeometry))")
         bool SloppyOptimization = false;
         // Only used if Sloppy is false. Target error is an approximate measure of the deviation from the original mesh using distance normalized to [0..1] range (e.g. 1e-2f means that simplifier will try to maintain the error to be below 1% of the mesh extents).
-        API_FIELD(Attributes="EditorOrder(1150), EditorDisplay(\"Level Of Detail\"), VisibleIf(nameof(SloppyOptimization), true), Limit(0.01f, 1, 0.001f)")
+        API_FIELD(Attributes="EditorOrder(1150), EditorDisplay(\"Level Of Detail\"), VisibleIf(nameof(SloppyOptimization), true), VisibleIf(nameof(ShowGeometry)), Limit(0.01f, 1, 0.001f)")
         float LODTargetError = 0.05f;
 
     public: // Materials
@@ -260,17 +276,20 @@ public:
         API_FIELD(Attributes="EditorOrder(400), EditorDisplay(\"Materials\"), VisibleIf(nameof(ShowGeometry))")
         bool ImportMaterials = true;
         // If checked, the importer will create the model's materials as instances of a base material.
-        API_FIELD(Attributes = "EditorOrder(401), EditorDisplay(\"Materials\"), VisibleIf(nameof(ImportMaterials))")
+        API_FIELD(Attributes = "EditorOrder(401), EditorDisplay(\"Materials\"), VisibleIf(nameof(ImportMaterials)), VisibleIf(nameof(ShowGeometry))")
         bool ImportMaterialsAsInstances = false;
         // The material used as the base material that will be instanced as the imported model's material.
-        API_FIELD(Attributes = "EditorOrder(402), EditorDisplay(\"Materials\"), VisibleIf(nameof(ImportMaterialsAsInstances))")
+        API_FIELD(Attributes = "EditorOrder(402), EditorDisplay(\"Materials\"), VisibleIf(nameof(ImportMaterialsAsInstances)), VisibleIf(nameof(ShowGeometry))")
         AssetReference<MaterialBase> InstanceToImportAs;
         // If checked, the importer will import texture files used by the model and any embedded texture resources.
         API_FIELD(Attributes="EditorOrder(410), EditorDisplay(\"Materials\"), VisibleIf(nameof(ShowGeometry))")
         bool ImportTextures = true;
-        // If checked, the importer will try to keep the model's current material slots, instead of importing materials from the source file.
-        API_FIELD(Attributes="EditorOrder(420), EditorDisplay(\"Materials\", \"Keep Material Slots on Reimport\"), VisibleIf(nameof(ShowGeometry))")
+        // If checked, the importer will try to keep the model's current overridden material slots, instead of importing materials from the source file.
+        API_FIELD(Attributes="EditorOrder(420), EditorDisplay(\"Materials\", \"Keep Overridden Materials\"), VisibleIf(nameof(ShowGeometry))")
         bool RestoreMaterialsOnReimport = true;
+        // If checked, the importer will not reimport any material from this model which already exist in the sub-asset folder.
+        API_FIELD(Attributes = "EditorOrder(421), EditorDisplay(\"Materials\", \"Skip Existing Materials\"), VisibleIf(nameof(ShowGeometry))")
+        bool SkipExistingMaterialsOnReimport = true;
 
     public: // SDF
 

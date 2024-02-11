@@ -89,7 +89,7 @@ void AnimGraphExecutor::initRuntime()
 void AnimGraphExecutor::ProcessGroupCustom(Box* boxBase, Node* nodeBase, Value& value)
 {
 #if USE_CSHARP
-    auto& context = Context.Get();
+    auto& context = *Context.Get();
     if (context.ValueCache.TryGet(boxBase, value))
         return;
     auto box = (AnimGraphBox*)boxBase;

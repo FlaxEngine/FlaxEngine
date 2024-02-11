@@ -56,13 +56,7 @@ using System.Runtime.InteropServices;
 
 namespace FlaxEngine
 {
-    /// <summary>
-    /// Represents a 3x3 Matrix ( contains only Scale and Rotation ).
-    /// </summary>
-    [Serializable]
-    [StructLayout(LayoutKind.Sequential, Pack = 4)]
-    // ReSharper disable once InconsistentNaming
-    public struct Matrix3x3 : IEquatable<Matrix3x3>, IFormattable
+    partial struct Matrix3x3 : IEquatable<Matrix3x3>, IFormattable
     {
         /// <summary>
         /// The size of the <see cref="Matrix3x3"/> type, in bytes.
@@ -135,9 +129,7 @@ namespace FlaxEngine
         /// <param name="value">The value that will be assigned to all components.</param>
         public Matrix3x3(float value)
         {
-            M11 = M12 = M13 =
-                        M21 = M22 = M23 =
-                                    M31 = M32 = M33 = value;
+            M11 = M12 = M13 = M21 = M22 = M23 = M31 = M32 = M33 = value;
         }
 
         /// <summary>
