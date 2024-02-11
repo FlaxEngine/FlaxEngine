@@ -796,6 +796,7 @@ struct AnimGraphContext
     AnimGraphInstanceData* Data;
     AnimGraphImpulse EmptyNodes;
     AnimGraphTransitionData TransitionData;
+    bool StackOverFlow;
     Array<VisjectExecutor::Node*, FixedAllocation<ANIM_GRAPH_MAX_CALL_STACK>> CallStack;
     Array<VisjectExecutor::Graph*, FixedAllocation<32>> GraphStack;
     Array<uint32, FixedAllocation<ANIM_GRAPH_MAX_CALL_STACK> > NodePath;
