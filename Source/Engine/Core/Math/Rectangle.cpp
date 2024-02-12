@@ -104,6 +104,26 @@ inline void Rectangle::SetCenter(const Float2& value)
     Location = value - Size * 0.5f;
 }
 
+inline void Rectangle::SetCenterX(const Float2& value)
+{
+    Location.X = value.X - Size.X * 0.5f;
+}
+
+inline void Rectangle::SetCenterY(const Float2& value)
+{
+    Location.Y = value.Y - Size.Y * 0.5f;
+}
+
+inline void Rectangle::SetCenterX(float value)
+{
+    Location.X = value - Size.X * 0.5f;
+}
+
+inline void Rectangle::SetCenterY(float value)
+{
+    Location.Y = value - Size.Y * 0.5f;
+}
+
 inline void Rectangle::SetTop(float value)
 {
     float bottom = GetBottom();

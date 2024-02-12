@@ -106,6 +106,30 @@ public:
     inline void SetCenter(const Float2& value);
 
     /// <summary>
+    /// Sets the center.
+    /// </summary>
+    /// <param name="value">The value.</param>
+    inline void SetCenterX(const Float2& value);
+
+    /// <summary>
+    /// Sets the center.
+    /// </summary>
+    /// <param name="value">The value.</param>
+    inline void SetCenterY(const Float2& value);
+
+    /// <summary>
+    /// Sets the center.
+    /// </summary>
+    /// <param name="value">The value.</param>
+    inline void SetCenterX(float value);
+
+    /// <summary>
+    /// Sets the center.
+    /// </summary>
+    /// <param name="value">The value.</param>
+    inline void SetCenterY(float value);
+
+    /// <summary>
     /// Sets the top.
     /// </summary>
     /// <param name="value">The value.</param>

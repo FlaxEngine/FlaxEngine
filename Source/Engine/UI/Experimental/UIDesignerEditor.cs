@@ -282,17 +282,21 @@ namespace FlaxEditor.Experimental.UI
             TransformationTool.Presenter = new CustomEditorPresenter(editor.Undo, null, null);
             TransformationTool.SlotPresenter = new CustomEditorPresenter(editor.Undo, null, null);
             var p = new SplitPanel();
-            //var p2 = new SplitPanel(Orientation.Vertical);
+            var p2 = new SplitPanel(Orientation.Vertical);
 
             AddChild(p);
             p.AnchorPreset = FlaxEngine.GUI.AnchorPresets.StretchAll;
             p.Height -= _toolstrip.Size.Y;
             p.Location = new Float2(Location.X, _toolstrip.Size.Y);
             TransformationTool.SlotPresenter.Panel.SizeChanged += (Control _) => { TransformationTool.Presenter.Panel.Proxy_Offset_Top = TransformationTool.SlotPresenter.Panel.Bottom; };
-            //p.AddChild(p2);
-            TransformationTool.Presenter.Panel.Parent = p.Panel2;
-            TransformationTool.SlotPresenter.Panel.Parent = p.Panel2;
-            //p2.AnchorPreset = FlaxEngine.GUI.AnchorPresets.StretchAll;
+            p.Panel2.AddChild(p2);
+
+            var UIComponentPaletePanel = p2.Panel1.AddChild<TilesPanel>();
+            UIComponentPaletePanel.AnchorPreset = AnchorPresets.StretchAll;
+
+            TransformationTool.Presenter.Panel.Parent = p2.Panel2;
+            TransformationTool.SlotPresenter.Panel.Parent = p2.Panel2;
+            p2.AnchorPreset = FlaxEngine.GUI.AnchorPresets.StretchAll;
 
             // Toolstrip
             _saveButton = (ToolStripButton)_toolstrip.AddButton(editor.Icons.Save64, Save).LinkTooltip("Save");
@@ -325,6 +329,13 @@ namespace FlaxEditor.Experimental.UI
                         return (t,(UIDesignerAttribute)o[0]);
                     return (t, null);
                 }).Where(t => t.Item2 != null).ToArray();
+
+            for (int i = 0; i < Attributes.Length; i++)
+            {
+                var button = UIComponentPaletePanel.AddChild<Button>();
+                button.Tag = i;
+                button.Text = Attributes[i].Item2.DisplayLabel;
+            }
         }
         public void AddComponent()
         {

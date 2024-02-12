@@ -11,6 +11,8 @@
 #include "Engine/Serialization/ISerializeModifier.h"
 #include "Engine/Serialization/Serialization.h"
 #include "Engine/Serialization/JsonWriters.h"
+
+#include "../../System/UISerializationConfig.h"
 int defaultflagsvalue;
 
 UIComponent::UIComponent(const SpawnParams& params) : ScriptingObject(params)
@@ -77,6 +79,9 @@ void UIComponent::Serialize(SerializeStream& stream, const void* otherObj)
             Transform.Pivot.X,
             Transform.Pivot.Y
         };
+#if UI_USE_COMPACT_SERIALIZATION
+        stream.Blob(&floats[0], sizeof(floats));
+#else
         stream.JKEY("Transform");
         stream.StartArray();
         for (size_t i = 0; i < 9; i++)
@@ -84,7 +89,7 @@ void UIComponent::Serialize(SerializeStream& stream, const void* otherObj)
             stream.Float(floats[i]);
         }
         stream.EndArray();
-        //stream.Blob(&floats[0], sizeof(floats));
+#endif
     }
     if (RenderOpacity != 1.0f) 
     {
@@ -483,4 +488,14 @@ void UIComponent::DrawInternal()
     if (IsVisible())
         OnDraw();
     Render2D::PopTransform();
+}
+
+void UIComponent::InvalidateLayout()
+{
+    if (GetParent())
+    {
+        //Call to parent to update the layout for this element
+        //in some ceses it might just set the InNewSize value
+        GetParent()->Layout(GetRect(), GetPivot(), Slot);
+    }
 }

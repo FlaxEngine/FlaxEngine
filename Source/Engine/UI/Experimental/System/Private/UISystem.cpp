@@ -204,6 +204,12 @@ UIBlueprint* UISystem::LoadEditorBlueprintAsset(const StringView& InPath)
  }
  void UISystem::SerializeComponent(ISerializable::SerializeStream& stream, UIComponent* component, Array<String>& Types)
  {
+     if (component == nullptr) 
+     {
+         LOG(Warning, "[UIBlueprint] The root Component is missing");
+         return;
+     }
+
      if (component->CreatedByUIBlueprint)
      {
          stream.StartObject();
@@ -271,25 +277,33 @@ UIBlueprint* UISystem::LoadEditorBlueprintAsset(const StringView& InPath)
                          else
                          {
                              LOG(Error, "[UIBlueprint] Cast of {0} to UIBlueprint Type has faled", type.ToString());
-                             return nullptr;
+                             bp = CreateBlueprint();
+                             return bp;
                          }
                      }
                      else
                      {
                          LOG(Error, "[UIBlueprint] Cant create UIBlueprint Type: {0}", type.ToString());
-                         return nullptr;
+                         bp = CreateBlueprint();
+                         bp->Asset.Set(&InAsset);
+                         return bp;
                      }
                  }
                  else
                  {
                      LOG(Error, "[UIBlueprint] Unkown UIBlueprint Type: {0}", type.ToString());
-                     return nullptr;
+                     bp = CreateBlueprint();
+                     bp->Asset.Set(&InAsset);
+                     return bp;
                  }
              }
          }
          else
          {
              LOG(Warning, "[UIBlueprint] Missing UIBlueprint Script");
+             bp = CreateBlueprint();
+             bp->Asset.Set(&InAsset);
+             return bp;
          }
 
 

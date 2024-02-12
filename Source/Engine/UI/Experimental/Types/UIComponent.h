@@ -364,6 +364,8 @@ public:
     /// </summary>
     API_FUNCTION() void RemoveFromParent();
 
+    void InvalidateLayout();
+
 #if USE_EDITOR
 private:
     friend class UISystem;
@@ -483,9 +485,9 @@ public:
     FORCE_INLINE bool IsPreviewTime() const { return false; }
 #endif
 
-    virtual Vector2 ComputeDesiredSize(float scale = 1)
+    virtual Vector2 ComputeDesiredSize()
     {
-        return Transform.Rect.Size * scale;
+        return Transform.Rect.Size;
     }
 
     virtual void OnDraw();

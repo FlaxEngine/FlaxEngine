@@ -14,4 +14,5 @@ protected:
     friend class UISystem;
     // [Asset]
     LoadResult loadAsset() override;
+    virtual void OnGetData(rapidjson_flax::StringBuffer& buffer) const override;
 };

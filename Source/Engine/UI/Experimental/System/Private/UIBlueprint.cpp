@@ -57,6 +57,7 @@ UIBlueprint::UIBlueprint(const SpawnParams& params) : UIComponent(params)
 {
     IsReady = false;
     Variables = Array<Variable>();
+    Component = nullptr;
 }
 
 void UIBlueprint::OnInitialized(){}
