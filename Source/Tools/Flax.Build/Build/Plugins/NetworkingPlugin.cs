@@ -802,8 +802,11 @@ namespace Flax.Build.Plugins
             // Serialize base type
             if (type.BaseType != null && type.BaseType.FullName != "System.ValueType" && type.BaseType.FullName != "FlaxEngine.Object" && type.BaseType.CanBeResolved())
             {
-                GenerateSerializeCallback(module, il, type.BaseType.Resolve(), serialize);
+                GenerateSerializeCallback(module, il, type.BaseType, serialize);
             }
+
+            if (type.HasGenericParameters) // TODO: implement network replication for generic classes
+                MonoCecil.CompilationError($"Not supported generic type '{type.FullName}' for network replication.");
 
             var ildContext = new DotnetIlContext(il);
 
@@ -874,12 +877,13 @@ namespace Flax.Build.Plugins
             return m;
         }
 
-        private static void GenerateSerializeCallback(ModuleDefinition module, ILProcessor il, TypeDefinition type, bool serialize)
+        private static void GenerateSerializeCallback(ModuleDefinition module, ILProcessor il, TypeReference type, bool serialize)
         {
             if (type.IsScriptingObject())
             {
                 // NetworkReplicator.InvokeSerializer(typeof(<type>), instance, stream, <serialize>)
-                il.Emit(OpCodes.Ldtoken, module.ImportReference(type));
+                module.ImportReference(type);
+                il.Emit(OpCodes.Ldtoken, type);
                 module.GetType("System.Type", out var typeType);
                 var getTypeFromHandle = typeType.Resolve().GetMethod("GetTypeFromHandle");
                 il.Emit(OpCodes.Call, module.ImportReference(getTypeFromHandle));

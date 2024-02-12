@@ -11,6 +11,32 @@ namespace FlaxEngine
     public sealed class CollectionAttribute : Attribute
     {
         /// <summary>
+        /// The display type for collections.
+        /// </summary>
+        public enum DisplayType
+        {
+            /// <summary>
+            /// Displays the default display type.
+            /// </summary>
+            Default,
+            
+            /// <summary>
+            /// Displays a header.
+            /// </summary>
+            Header,
+            
+            /// <summary>
+            /// Displays inline.
+            /// </summary>
+            Inline,
+        }
+
+        /// <summary>
+        /// Gets or sets the display type.
+        /// </summary>
+        public DisplayType Display;
+        
+        /// <summary>
         /// Gets or sets whether this collection is read-only. If <c>true</c>, applications using this collection should not allow to add or remove items.
         /// </summary>
         public bool ReadOnly;

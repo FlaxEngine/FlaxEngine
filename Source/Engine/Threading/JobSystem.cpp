@@ -93,7 +93,7 @@ struct TIsPODType<JobContext>
 namespace
 {
     JobSystemService JobSystemInstance;
-    Thread* Threads[PLATFORM_THREADS_LIMIT] = {};
+    Thread* Threads[PLATFORM_THREADS_LIMIT / 2] = {};
     int32 ThreadsCount = 0;
     bool JobStartingOnDispatch = true;
     volatile int64 ExitFlag = 0;

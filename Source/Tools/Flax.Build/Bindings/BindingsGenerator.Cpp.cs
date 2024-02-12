@@ -1937,7 +1937,7 @@ namespace Flax.Build.Bindings
             var useCSharp = EngineConfiguration.WithCSharp(buildData.TargetOptions);
             var hasInterface = classInfo.Interfaces != null && classInfo.Interfaces.Any(x => x.Access == AccessLevel.Public);
             CppInternalCalls.Clear();
-            
+
             if (classInfo.IsAutoSerialization)
                 GenerateCppAutoSerialization(buildData, contents, moduleInfo, classInfo, classTypeNameNative);
             GenerateCppTypeInternalsStatics?.Invoke(buildData, classInfo, contents);
@@ -1955,7 +1955,7 @@ namespace Flax.Build.Bindings
                 var paramsCount = eventInfo.Type.GenericArgs?.Count ?? 0;
                 CppIncludeFiles.Add("Engine/Profiler/ProfilerCPU.h");
                 var bindPrefix = eventInfo.IsStatic ? classTypeNameNative + "::" : "__obj->";
-                //eventInfo.
+
                 if (useCSharp)
                 {
                     // C# event invoking wrapper (calls C# event from C++ delegate)
@@ -1965,12 +1965,12 @@ namespace Flax.Build.Bindings
                     contents.Append("    ");
                     if (eventInfo.IsStatic)
                         contents.Append("static ");
-                    contents.AppendFormat("void {0}_ManagedWrapper(", eventInfo.Name); 
+                    contents.AppendFormat("void {0}_ManagedWrapper(", eventInfo.Name);
                     for (var i = 0; i < paramsCount; i++)
                     {
                         if (i != 0)
                             contents.Append(", ");
-                        contents.Append(eventInfo.Type.GenericArgs[i].GetFullNameNative(buildData,classInfo)).Append(" arg" + i);
+                        contents.Append(eventInfo.Type.GenericArgs[i].GetFullNameNative(buildData, classInfo)).Append(" arg" + i);
                     }
                     contents.Append(')').AppendLine();
                     contents.Append("    {").AppendLine();
@@ -2423,40 +2423,32 @@ namespace Flax.Build.Bindings
             // Getter for structure field
             contents.AppendLine("    static void GetField(void* ptr, const String& name, Variant& value)");
             contents.AppendLine("    {");
-            bool HasIf = false;
-            for (var i = 0; i < structureInfo.Fields.Count; i++)
+            for (int i = 0, count = 0; i < structureInfo.Fields.Count; i++)
             {
                 var fieldInfo = structureInfo.Fields[i];
                 if (fieldInfo.IsReadOnly || fieldInfo.IsStatic || fieldInfo.IsConstexpr || fieldInfo.Access == AccessLevel.Private)
                     continue;
-                if (HasIf)
-                    contents.AppendLine($"        else if (name == TEXT(\"{fieldInfo.Name}\"))");
-                else
-                {
+                if (count == 0)
                     contents.AppendLine($"        if (name == TEXT(\"{fieldInfo.Name}\"))");
-                    HasIf = true;
-                }
+                else
+                    contents.AppendLine($"        else if (name == TEXT(\"{fieldInfo.Name}\"))");
                 contents.AppendLine($"            value = {GenerateCppWrapperNativeToVariant(buildData, fieldInfo.Type, structureInfo, $"(({structureTypeNameNative}*)ptr)->{fieldInfo.Name}")};");
+                count++;
             }
             contents.AppendLine("    }").AppendLine();
 
             // Setter for structure field
             contents.AppendLine("    static void SetField(void* ptr, const String& name, const Variant& value)");
             contents.AppendLine("    {");
-
-            HasIf = false;
-            for (var i = 0; i < structureInfo.Fields.Count; i++)
+            for (int i = 0, count = 0; i < structureInfo.Fields.Count; i++)
             {
                 var fieldInfo = structureInfo.Fields[i];
                 if (fieldInfo.IsReadOnly || fieldInfo.IsStatic || fieldInfo.IsConstexpr || fieldInfo.Access == AccessLevel.Private)
                     continue;
-                if (HasIf)
-                    contents.AppendLine($"        else if (name == TEXT(\"{fieldInfo.Name}\"))");
-                else
-                {
+                if (count == 0)
                     contents.AppendLine($"        if (name == TEXT(\"{fieldInfo.Name}\"))");
-                    HasIf = true;
-                }
+                else
+                    contents.AppendLine($"        else if (name == TEXT(\"{fieldInfo.Name}\"))");
                 if (fieldInfo.Type.IsArray)
                 {
                     // Fixed-size array need a special converting to unpack from Variant
@@ -2469,6 +2461,7 @@ namespace Flax.Build.Bindings
                 }
                 else
                     contents.AppendLine($"            (({structureTypeNameNative}*)ptr)->{fieldInfo.Name} = {GenerateCppWrapperVariantToNative(buildData, fieldInfo.Type, structureInfo, "value")};");
+                count++;
             }
             contents.AppendLine("    }");
 

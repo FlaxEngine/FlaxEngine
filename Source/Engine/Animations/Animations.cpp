@@ -52,7 +52,7 @@ namespace
 AnimationsService AnimationManagerInstance;
 TaskGraphSystem* Animations::System = nullptr;
 #if USE_EDITOR
-Delegate<Asset*, ScriptingObject*, uint32, uint32> Animations::DebugFlow;
+Delegate<Animations::DebugFlowInfo> Animations::DebugFlow;
 #endif
 
 AnimEvent::AnimEvent(const SpawnParams& params)
@@ -127,7 +127,7 @@ void AnimationsSystem::Execute(TaskGraph* graph)
 #if USE_EDITOR
     // If debug flow is registered, then warm it up (eg. static cached method inside DebugFlow_ManagedWrapper) so it doesn't crash on highly multi-threaded code
     if (Animations::DebugFlow.IsBinded())
-        Animations::DebugFlow(nullptr, nullptr, 0, 0);
+        Animations::DebugFlow(Animations::DebugFlowInfo());
 #endif
 
     // Schedule work to update all animated models in async

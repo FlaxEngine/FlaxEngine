@@ -428,6 +428,13 @@ namespace FlaxEditor.GUI
                 // Show dropdown list
                 _popupMenu.MinimumWidth = Width;
                 _popupMenu.Show(this, new Float2(1, Height));
+
+                // Adjust menu position if it is not the down direction
+                if (_popupMenu.Direction == ContextMenuDirection.RightUp)
+                {
+                    var position = _popupMenu.RootWindow.Window.Position;
+                    _popupMenu.RootWindow.Window.Position = new Float2(position.X, position.Y - Height);
+                }
             }
         }
 

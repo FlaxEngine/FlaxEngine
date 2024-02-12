@@ -730,7 +730,7 @@ public:
     void TransformTime(float timeScale, float timeOffset)
     {
         for (int32 i = 0; i < _keyframes.Count(); i++)
-            _keyframes[i].Time = _keyframes[i].Time * timeScale + timeOffset;;
+            _keyframes[i].Time = _keyframes[i].Time * timeScale + timeOffset;
     }
 
     uint64 GetMemoryUsage() const

@@ -725,9 +725,7 @@ namespace FlaxEditor.Modules
             for (int i = 0; i < Windows.Count; i++)
             {
                 if (string.Equals(Windows[i].SerializationTypename, typename, StringComparison.OrdinalIgnoreCase))
-                {
                     return Windows[i];
-                }
             }
 
             // Check if it's an asset ID

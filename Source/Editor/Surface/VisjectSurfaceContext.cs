@@ -157,6 +157,11 @@ namespace FlaxEditor.Surface
         public event Action<SurfaceControl> ControlDeleted;
 
         /// <summary>
+        /// Identifier of the node that 'owns' this context (eg. State Machine which created this graph of state nodes).
+        /// </summary>
+        public uint OwnerNodeID;
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="VisjectSurfaceContext"/> class.
         /// </summary>
         /// <param name="surface">The Visject surface using this context.</param>

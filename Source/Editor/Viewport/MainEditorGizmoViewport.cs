@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using FlaxEditor.Content;
 using FlaxEditor.Gizmo;
 using FlaxEditor.GUI.ContextMenu;
@@ -194,7 +195,7 @@ namespace FlaxEditor.Viewport
         : base(Object.New<SceneRenderTask>(), editor.Undo, editor.Scene.Root)
         {
             _editor = editor;
-            DragHandlers = new ViewportDragHandlers(this, this, ValidateDragItem, ValidateDragActorType);
+            DragHandlers = new ViewportDragHandlers(this, this, ValidateDragItem, ValidateDragActorType, ValidateDragScriptItem);
             var inputOptions = editor.Options.Options.Input;
 
             // Prepare rendering task
@@ -938,6 +939,11 @@ namespace FlaxEditor.Viewport
         private static bool ValidateDragActorType(ScriptType actorType)
         {
             return Level.IsAnySceneLoaded;
+        }
+
+        private static bool ValidateDragScriptItem(ScriptItem script)
+        {
+            return Editor.Instance.CodeEditing.Actors.Get(script) != ScriptType.Null;
         }
 
         /// <inheritdoc />

@@ -486,6 +486,7 @@ public:
     // [Actor]
     void Serialize(SerializeStream& stream, const void* otherObj) override;
     void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) override;
+    void AddMovement(const Vector3& translation, const Quaternion& rotation) override;
 
     // [IPhysicsActor]
     void* GetPhysicsActor() const override;

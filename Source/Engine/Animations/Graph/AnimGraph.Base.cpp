@@ -157,7 +157,7 @@ bool AnimGraphBase::onNodeLoaded(Node* n)
             if (_rootNode->Values.Count() < 1)
             {
                 _rootNode->Values.Resize(1);
-                _rootNode->Values[0] = (int32)RootMotionMode::NoExtraction;
+                _rootNode->Values[0] = (int32)RootMotionExtraction::NoExtraction;
             }
             break;
         // Animation

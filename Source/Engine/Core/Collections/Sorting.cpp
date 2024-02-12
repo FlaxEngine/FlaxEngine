@@ -5,11 +5,14 @@
 #include "Engine/Threading/ThreadLocal.h"
 
 // Use a cached storage for the sorting (one per thread to reduce locking)
-ThreadLocal<Sorting::SortingStack> SortingStacks;
+ThreadLocal<Sorting::SortingStack*> SortingStacks;
 
 Sorting::SortingStack& Sorting::SortingStack::Get()
 {
-    return SortingStacks.Get();
+    SortingStack*& stack = SortingStacks.Get();
+    if (!stack)
+        stack = New<SortingStack>();
+    return *stack;
 }
 
 Sorting::SortingStack::SortingStack()

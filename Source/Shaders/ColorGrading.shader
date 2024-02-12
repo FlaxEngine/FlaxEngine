@@ -243,7 +243,7 @@ float4 CombineLUTs(float2 uv, uint layerIndex)
 
 	// Apply LDR LUT color grading
 	{
-		float3 uvw = color * (15.0 / 16.0) + (0.5f / 16.0);
+		float3 uvw = saturate(color) * (15.0 / 16.0) + (0.5f / 16.0);
 		float3 lutColor = SampleUnwrappedTexture3D(LutTexture, SamplerLinearClamp, uvw, 16).rgb;
 		color = lerp(color, lutColor, LutWeight);
 	}
