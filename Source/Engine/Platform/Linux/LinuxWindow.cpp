@@ -55,6 +55,8 @@ LinuxWindow::LinuxWindow(const CreateWindowSettings& settings)
         return;
 	auto screen = XDefaultScreen(display);
 
+    // default to false
+    _isHorizontalFlippingMouse = false;
     // Cache data
 	int32 width = Math::TruncToInt(settings.Size.X);
 	int32 height = Math::TruncToInt(settings.Size.Y);
