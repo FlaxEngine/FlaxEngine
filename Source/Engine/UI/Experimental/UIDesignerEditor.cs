@@ -330,13 +330,25 @@ namespace FlaxEditor.Experimental.UI
                     return (t, null);
                 }).Where(t => t.Item2 != null).ToArray();
 
+            UIComponentPaletePanel.TileSize = Float2.One * 64;
             for (int i = 0; i < Attributes.Length; i++)
             {
                 var button = UIComponentPaletePanel.AddChild<Button>();
                 button.Tag = i;
-                button.Text = Attributes[i].Item2.DisplayLabel;
+                button.ButtonClicked += AddComponentToSelected;
+                var lable = button.AddChild<Label>();
+                lable.AnchorPreset = AnchorPresets.HorizontalStretchBottom;
+                lable.AutoHeight = true;
+                lable.AutoFitText = true;
             }
         }
+
+        private void AddComponentToSelected(Button obj)
+        {
+            var ID = (int)obj.Tag;
+            Debug.Log(ID);
+        }
+
         public void AddComponent()
         {
             if (EditedBluprint.Component == null)
