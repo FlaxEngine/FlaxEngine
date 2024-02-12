@@ -5,76 +5,84 @@
 	"Data": {
 	"UIBlueprint": "FlaxEditor.Experimental.UI.UITransformationToolBlueprint",
 	"TypeNames": [
-		"FlaxEngine.Experimental.UI.UIPanelComponent",
+		"FlaxEngine.Experimental.UI.UICanvasPanel",
 		"FlaxEngine.Experimental.UI.UIButton",
-		"FlaxEngine.Experimental.UI.InputEventHook"
+		"FlaxEngine.Experimental.UI.UIInputEventHook"
 	],
 	"Tree": {
 		"ID": 0,
-		"Flags": 136,
-		"Transform": "AIAQRAAAxkMAAMdDAADHQwAAAAAAAAAAAAAAAAAAAAAAAAAA",
-		"Slots": [
-			{
+		"Flags": 200,
+		"Transform": [454.0,116.0,391.0,266.0,0.0,0.0,0.0,0.0,0.0],
+		"Slots": [{
 				"ID": 1,
 				"Label": "LeftHandle",
 				"Flags": 10,
-				"Transform": "AMALRADAFUQAAKBBAACgQQAAAAAAAAAAAAAAAAAAAAAAAAAA",
-				"Response": 0
+				"Transform": [437.0,244.0,20.0,20.0,0.0,0.0,0.0,0.0,0.0],
+				"Response": 0,
+				"Anchor": {"Min": {"X": 0.0,"Y": 0.5},"Max": {"X": 0.0,"Y": 0.5}}
 			},
 			{
 				"ID": 1,
 				"Label": "TopRightHandle",
 				"Flags": 10,
-				"Transform": "AIB0RAAAvUMAAKBBAACgQQAAAAAAAAAAAAAAAAAAAAAAAAAA",
-				"Response": 0
+				"Transform": [845.0,97.0,20.0,20.0,0.0,0.0,0.0,0.0,0.0],
+				"Response": 0,
+				"Anchor": {"Min": {"X": 1.0,"Y": 0.0},"Max": {"X": 1.0,"Y": 0.0}}
 			},
 			{
 				"ID": 1,
 				"Label": "TopLeftHandle",
 				"Flags": 10,
-				"Transform": "AIALRAAAvUMAAKBBAACgQQAAAAAAAAAAAAAAAAAAAAAAAAAA",
-				"Response": 0
+				"Transform": [433.0,94.0,20.0,20.0,0.0,0.0,0.0,1.0,1.0],
+				"Response": 0,
+				"Anchor": {"Min": {"X": 0.0,"Y": 0.0},"Max": {"X": 0.0,"Y": 0.0}}
 			},
 			{
 				"ID": 1,
 				"Label": "TopHandle",
 				"Flags": 10,
-				"Transform": "AIBCRAAAvEMAAKBBAACgQQAAAAAAAAAAAAAAAAAAAAAAAAAA",
-				"Response": 0
+				"Transform": [646.0,92.0,20.0,20.0,0.0,0.0,0.0,0.0,0.0],
+				"Response": 0,
+				"Anchor": {"Min": {"X": 0.5,"Y": 0.0},"Max": {"X": 0.5,"Y": 0.0}}
 			},
 			{
 				"ID": 1,
 				"Label": "RightHandle",
 				"Flags": 10,
-				"Transform": "AEB0RACAFkQAAKBBAACgQQAAAAAAAAAAAAAAAAAAAAAAAAAA",
-				"Response": 0
+				"Transform": [848.0,254.0,20.0,20.0,0.0,0.0,0.0,0.0,0.0],
+				"Response": 0,
+				"Anchor": {"Min": {"X": 1.0,"Y": 0.5},"Max": {"X": 1.0,"Y": 0.5}}
 			},
 			{
 				"ID": 1,
 				"Label": "BottomHandle",
 				"Flags": 10,
-				"Transform": "AAA/RACARkQAAKBBAACgQQAAAAAAAAAAAAAAAAAAAAAAAAAA",
-				"Response": 0
+				"Transform": [632.0,388.0,20.0,20.0,0.0,0.0,0.0,0.0,0.0],
+				"Response": 0,
+				"Anchor": {"Min": {"X": 0.5,"Y": 1.0},"Max": {"X": 0.5,"Y": 1.0}}
 			},
 			{
 				"ID": 1,
 				"Label": "BottomLeftHandle",
 				"Flags": 10,
-				"Transform": "AIALRADARkQAAKBBAACgQQAAAAAAAAAAAAAAAAAAAAAAAAAA",
-				"Response": 0
+				"Transform": [435.0,384.0,20.0,20.0,0.0,0.0,0.0,0.0,0.0],
+				"Response": 0,
+				"Anchor": {"Min": {"X": 0.0,"Y": 1.0},"Max": {"X": 0.0,"Y": 1.0}}
 			},
 			{
 				"ID": 1,
 				"Label": "BottomRightHandle",
 				"Flags": 10,
-				"Transform": "AIB0RAAAR0QAAKBBAACgQQAAAAAAAAAAAAAAAAAAAAAAAAAA",
-				"Response": 0
+				"Transform": [848.0,386.0,20.0,20.0,0.0,0.0,0.0,0.0,0.0],
+				"Response": 0,
+				"Anchor": {"Min": {"X": 1.0,"Y": 1.0},"Max": {"X": 1.0,"Y": 1.0}}
 			},
 			{
 				"ID": 2,
 				"Label": "CenterHandle",
 				"Flags": 74,
-				"Transform": "AIAQRACAxEMAAMhDAADIQwAAAAAAAAAAAAAAAAAAAAAAAAAA"
+				"Transform": [453.0,114.0,391.28662109375,266.9833984375,0.0,0.0,0.0,0.0,0.0],
+				"Anchor": {"Min": {"X": 0.0,"Y": 0.0},"Max": {"X": 1.0,"Y": 1.0}}
 			}
 		]
 	}

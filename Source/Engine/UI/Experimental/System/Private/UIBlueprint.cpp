@@ -4,6 +4,12 @@
 #include "../UIBlueprint.h"
 #include "Engine/Scripting/Scripting.h"
 
+#include "Engine/Core/ISerializable.h"
+#include "Engine/Serialization/JsonWriters.h"
+#include "Engine/Serialization/Serialization.h"
+#include <Engine/Core/Cache.h>
+
+
 void SendEventRecursive(UIComponent* InFromUIComponent, const UIPointerEvent& InEvent, const UIComponent*& OutHit, UIEventResponse& OutEventResponse)
 {
     if (InFromUIComponent->GetVisibility() == UIComponentVisibility::Collapsed)
@@ -53,10 +59,16 @@ UIBlueprint::UIBlueprint(const SpawnParams& params) : UIComponent(params)
     Variables = Array<Variable>();
 }
 
-void UIBlueprint::OnInitialized()
-{
-}
+void UIBlueprint::OnInitialized(){}
 void UIBlueprint::PreConstruct(bool IsDesignTime) {}
 void UIBlueprint::Construct() {}
 void UIBlueprint::Tick(float DeltaTime) {}
 void UIBlueprint::Destruct() {}
+
+void UIBlueprint::Serialize(SerializeStream& stream, const void* otherObj)
+{
+}
+
+void UIBlueprint::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)
+{
+}

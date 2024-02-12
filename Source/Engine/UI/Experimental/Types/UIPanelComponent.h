@@ -183,8 +183,9 @@ protected:
     /// </summary>
     bool CanHaveMultipleChildren;
 protected:
-    virtual void Layout(const Rectangle& InNewBounds) override;
-    virtual void Layout(const Rectangle& InSlotNewBounds, UIPanelSlot* InFor);
+    virtual void Layout(const Rectangle& InNewBounds, const Float2& InNewPoivt) override;
+    virtual void Layout(const Rectangle& InNewBounds, const Float2& InNewPoivt, const Rectangle& InNewParentBounds, UIPanelSlot* InFor);
+    void Layout(const Rectangle& InNewBounds, const Float2& InNewPoivt, UIPanelSlot* InFor);
 public: // exposed for Native UI host on c# side
     API_FUNCTION(internal) void Render();
 };

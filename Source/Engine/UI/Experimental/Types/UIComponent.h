@@ -50,6 +50,9 @@ private:
 protected:
     friend class UIPanelSlot;
     void SetRect_Internal(const Rectangle& InRectangle);
+    void SetPivot_Internal(const Vector2& InRectangle);
+    API_FUNCTION(internal) UIPanelSlot* GetSlot() { return Slot; }
+
 //private:
     /// <summary>
     /// The transform of the UI Component allows for arbitrary 2D transforms to be applied to the UI Component.
@@ -504,7 +507,7 @@ protected:
     /// Layouts the UI Component in new size.
     /// </summary>
     /// <param name="InNewSize">New size of the in.</param>
-    virtual void Layout(const Rectangle& InNewBounds);
+    virtual void Layout(const Rectangle& InNewBounds, const Float2& InNewPoivt);
 protected:
     void DrawInternal();
 protected:

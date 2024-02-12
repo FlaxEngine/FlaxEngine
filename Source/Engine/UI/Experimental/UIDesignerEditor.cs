@@ -40,6 +40,7 @@ namespace FlaxEditor.Experimental.UI
         private UIComponent SelectedComponent;
         internal UIComponent EditedComponent;
         internal CustomEditorPresenter Presenter;
+        internal CustomEditorPresenter SlotPresenter;
         protected override void OnInitialized()
         {
             LeftHandle = GetVariable<UIButton>("LeftHandle");
@@ -224,6 +225,7 @@ namespace FlaxEditor.Experimental.UI
                 SelectedComponent.Select();
                 SelectForDrag(SelectedComponent);
                 Presenter.Select(SelectedComponent);
+                SlotPresenter.Select(SelectedComponent.GetSlot());
             }
         }
         private bool SelectElement(UIComponent comp, Float2 location)
@@ -278,25 +280,35 @@ namespace FlaxEditor.Experimental.UI
             TransformationTool = UISystem.LoadEditorBlueprintAsset("Editor\\UI\\UITransformationTool.json") as UITransformationToolBlueprint;
             EditedBluprint = UISystem.CreateFromBlueprintAsset(FlaxEngine.Content.Load<UIBlueprintAsset>(item.Path));
             TransformationTool.Presenter = new CustomEditorPresenter(editor.Undo, null, null);
-            TransformationTool.Presenter.Panel.Parent = this;
-            
+            TransformationTool.SlotPresenter = new CustomEditorPresenter(editor.Undo, null, null);
+            var p = new SplitPanel();
+            //var p2 = new SplitPanel(Orientation.Vertical);
+
+            AddChild(p);
+            p.AnchorPreset = FlaxEngine.GUI.AnchorPresets.StretchAll;
+            p.Height -= _toolstrip.Size.Y;
+            p.Location = new Float2(Location.X, _toolstrip.Size.Y);
+            TransformationTool.SlotPresenter.Panel.SizeChanged += (Control _) => { TransformationTool.Presenter.Panel.Proxy_Offset_Top = TransformationTool.SlotPresenter.Panel.Bottom; };
+            //p.AddChild(p2);
+            TransformationTool.Presenter.Panel.Parent = p.Panel2;
+            TransformationTool.SlotPresenter.Panel.Parent = p.Panel2;
+            //p2.AnchorPreset = FlaxEngine.GUI.AnchorPresets.StretchAll;
 
             // Toolstrip
             _saveButton = (ToolStripButton)_toolstrip.AddButton(editor.Icons.Save64, Save).LinkTooltip("Save");
             _addComponentButton = (ToolStripButton)_toolstrip.AddButton(editor.Icons.Folder32, AddComponent).LinkTooltip("Add Component");
             _toolstrip.AddSeparator();
-            AddChild<Label>();
-            NativeUIHost host = AddChild<NativeUIHost>();
+            NativeUIHost host = p.Panel1.AddChild<NativeUIHost>();
             host.AnchorPreset = FlaxEngine.GUI.AnchorPresets.StretchAll;
             host.Blueprint = EditedBluprint;
-            host.Height -= _toolstrip.Size.Y;
-            host.Location = new Float2(Location.X, _toolstrip.Size.Y);
+            //host.Height -= _toolstrip.Size.Y;
+            //host.Location = new Float2(Location.X, _toolstrip.Size.Y);
 
-            UITransformationTool = AddChild<NativeUIHost>();
+            UITransformationTool = p.Panel1.AddChild<NativeUIHost>();
             UITransformationTool.AnchorPreset = FlaxEngine.GUI.AnchorPresets.StretchAll;
             UITransformationTool.Blueprint = TransformationTool;
-            UITransformationTool.Height -= _toolstrip.Size.Y;
-            UITransformationTool.Location = new Float2(Location.X, _toolstrip.Size.Y);
+            //UITransformationTool.Height -= _toolstrip.Size.Y;
+            //UITransformationTool.Location = new Float2(Location.X, _toolstrip.Size.Y);
 
             TransformationTool.SetDesinerFlags(UIComponentDesignFlags.None);
 
@@ -313,8 +325,6 @@ namespace FlaxEditor.Experimental.UI
                         return (t,(UIDesignerAttribute)o[0]);
                     return (t, null);
                 }).Where(t => t.Item2 != null).ToArray();
-
-            
         }
         public void AddComponent()
         {

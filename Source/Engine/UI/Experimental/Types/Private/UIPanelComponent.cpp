@@ -195,19 +195,27 @@ bool UIPanelComponent::CanAddMoreChildren() const
     return CanHaveMultipleChildren || GetChildrenCount() == 0;
 }
 
-void UIPanelComponent::Layout(const Rectangle& InNewBounds)
+void UIPanelComponent::Layout(const Rectangle& InNewBounds, const Float2& InNewPoivt)
 {
     Vector2 locationDiff = InNewBounds.Location - GetTranslation();
+
     for (auto i = 0; i < Slots.Count(); i++)
     {
-        Rectangle& newr = Rectangle(Slots[i]->Content->GetTranslation()+ locationDiff, Slots[i]->Content->GetSize());
-        Slots[i]->Layout(newr);
+        Rectangle& newr = Rectangle(Slots[i]->Content->GetTranslation() + locationDiff, Slots[i]->Content->GetSize());
+        UIPanelComponent::Layout(newr, Slots[i]->Content->GetPivot(), InNewBounds, Slots[i]);
     }
+
     SetRect_Internal(InNewBounds);
+    SetPivot_Internal(InNewPoivt);
 }
-void UIPanelComponent::Layout(const Rectangle& InSlotOldBounds, UIPanelSlot* InFor)
+void UIPanelComponent::Layout(const Rectangle& InNewBounds, const Float2& InNewPoivt, const Rectangle& InNewParentBounds, UIPanelSlot* InFor)
 {
-    InFor->Layout(InSlotOldBounds);
+    InFor->Layout(InNewBounds, InNewPoivt, InNewParentBounds);
+}
+
+void UIPanelComponent::Layout(const Rectangle& InNewBounds, const Float2& InNewPoivt, UIPanelSlot* InFor)
+{
+    InFor->Layout(InNewBounds, InNewPoivt,GetRect());
 }
 
 void UIPanelComponent::Render()

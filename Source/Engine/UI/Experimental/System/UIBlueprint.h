@@ -125,6 +125,9 @@ private:
     }
 
 protected:
+    void Serialize(SerializeStream& stream, const void* otherObj) override;
+    void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) override;
+
     friend class UISystem;
     AssetReference<UIBlueprintAsset> Asset;
     API_FUNCTION(internal) UIEventResponse SendEvent(const UIPointerEvent& InEvent,API_PARAM(out) const UIComponent*& OutHit);

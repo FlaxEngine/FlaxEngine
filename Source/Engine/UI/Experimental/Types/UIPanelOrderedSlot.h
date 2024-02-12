@@ -18,7 +18,7 @@ public:
     /// <summary>
     /// The z order
     /// </summary>
-    int32 ZOrder;
+    API_FIELD() int32 ZOrder;
 protected:
 
     void Serialize(SerializeStream& stream, const void* otherObj) override;

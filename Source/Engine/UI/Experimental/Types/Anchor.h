@@ -108,13 +108,13 @@ public:
     /// min value
     /// </summary>
     API_FIELD()
-        Float2 Min;
+        Float2 Min = Float2(0.5f, 0.5f);
 
     /// <summary>
     /// max value
     /// </summary>
     API_FIELD()
-        Float2 Max;
+        Float2 Max = Float2(0.5f, 0.5f);
 
     /// <summary>
     /// sets the preset for anchor

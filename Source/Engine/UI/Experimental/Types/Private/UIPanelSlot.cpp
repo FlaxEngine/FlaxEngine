@@ -10,15 +10,14 @@ UIPanelSlot::UIPanelSlot(const SpawnParams& params) : ScriptingObject(params) , 
 
 FORCE_INLINE bool UIPanelSlot::IsDesignTime() const {   return Parent->IsDesignTime();  }
 
-void UIPanelSlot::Layout(const Rectangle& InNewBounds)
+void UIPanelSlot::Layout(const Rectangle& InNewBounds, const Vector2& InNewPoivt, const Rectangle& InNewParentBounds)
+{
+    Applay(InNewBounds, InNewPoivt);
+}
+inline void UIPanelSlot::Applay(const Rectangle& InNewBounds, const Vector2& InNewPoivt)
 {
     Content->SetRect_Internal(InNewBounds);
+    Content->SetPivot_Internal(InNewPoivt);
 }
-
-void UIPanelSlot::Serialize(SerializeStream& stream, const void* otherObj)
-{
-}
-
-void UIPanelSlot::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)
-{
-}
+void UIPanelSlot::Serialize(SerializeStream& stream, const void* otherObj){}
+void UIPanelSlot::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier){}

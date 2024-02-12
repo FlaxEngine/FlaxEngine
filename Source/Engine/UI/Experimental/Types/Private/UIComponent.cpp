@@ -77,7 +77,14 @@ void UIComponent::Serialize(SerializeStream& stream, const void* otherObj)
             Transform.Pivot.X,
             Transform.Pivot.Y
         };
-        stream.JKEY("Transform"); stream.Blob(&floats[0], sizeof(floats));
+        stream.JKEY("Transform");
+        stream.StartArray();
+        for (size_t i = 0; i < 9; i++)
+        {
+            stream.Float(floats[i]);
+        }
+        stream.EndArray();
+        //stream.Blob(&floats[0], sizeof(floats));
     }
     if (RenderOpacity != 1.0f) 
     {
@@ -117,11 +124,24 @@ void UIComponent::Deserialize(DeserializeStream& stream, ISerializeModifier* mod
     {
         //custom unpacking for transform
         float floats[9] = { 0,0,0,0,0,0,0,0,0 };
-        Encryption::Base64Decode(transform->value.GetString(), sizeof(floats), (byte*)&floats[0]);
-        Transform.Rect.Location.X =(floats[0]);
-        Transform.Rect.Location.Y=(floats[1]);
-        Transform.Rect.Size.X=(floats[2]);
-        Transform.Rect.Size.Y=(floats[3]);
+        if (transform->value.IsString()) 
+        {
+
+            Encryption::Base64Decode(transform->value.GetString(), sizeof(floats), (byte*)&floats[0]);
+
+        }
+        else
+        {
+            auto ar = transform->value.GetArray();
+            for (size_t i = 0; i < ar.Size(); i++)
+            {
+                floats[i] = ar[i].GetFloat();
+            }
+        }
+        Transform.Rect.Location.X = (floats[0]);
+        Transform.Rect.Location.Y = (floats[1]);
+        Transform.Rect.Size.X = (floats[2]);
+        Transform.Rect.Size.Y = (floats[3]);
         Transform.Shear.X = floats[4];
         Transform.Shear.Y = floats[5];
         Transform.Angle = floats[6];
@@ -155,20 +175,22 @@ inline const UIComponentVisibility& UIComponent::GetVisibility() const { return 
 
 void UIComponent::SetRect(const Rectangle& InRectangle)
 {
-    Layout(InRectangle);
+    Layout(InRectangle, Transform.Pivot);
     if (!IsVolatile)
     {
         Transform.UpdateTransform();
     }
 }
+
 void UIComponent::SetRect_Internal(const Rectangle& InRectangle)
 {
     Transform.Rect = InRectangle;
-    if (!IsVolatile)
-    {
-        Transform.UpdateTransform();
-    }
 }
+void UIComponent::SetPivot_Internal(const Vector2& InNewPoivt)
+{
+    Transform.Pivot = InNewPoivt;
+}
+
 void UIComponent::SetClipping(const UIComponentClipping& InClipping)
 {
     Clipping = InClipping;
@@ -176,7 +198,7 @@ void UIComponent::SetClipping(const UIComponentClipping& InClipping)
 
 void UIComponent::SetTransform(const UIComponentTransform& InTransform)
 {
-    Layout(InTransform.Rect);
+    Layout(InTransform.Rect, Transform.Pivot);
     Transform.Shear = InTransform.Shear;
     Transform.Angle = InTransform.Angle;
     Transform.Pivot = InTransform.Pivot;
@@ -190,7 +212,7 @@ void UIComponent::SetCenter(const Float2& value)
 {
     auto& r = Rectangle(Transform.Rect);
     r.SetCenter(value);
-    Layout(r);
+    Layout(r, Transform.Pivot);
     if (!IsVolatile)
         Transform.UpdateTransform();
 }
@@ -199,7 +221,7 @@ void UIComponent::SetTop(float value)
 {
     auto& r = Rectangle(Transform.Rect);
     r.SetTop(value);
-    Layout(r);
+    Layout(r, Transform.Pivot);
     if (!IsVolatile)
         Transform.UpdateTransform();
 }
@@ -208,7 +230,7 @@ void UIComponent::SetLeft(float value)
 {
     auto& r = Rectangle(Transform.Rect);
     r.SetLeft(value);
-    Layout(r);
+    Layout(r, Transform.Pivot);
     if (!IsVolatile)
         Transform.UpdateTransform();
 }
@@ -217,7 +239,7 @@ void UIComponent::SetBottom(float value)
 {
     auto& r = Rectangle(Transform.Rect);
     r.SetBottom(value);
-    Layout(r);
+    Layout(r, Transform.Pivot);
     if (!IsVolatile)
         Transform.UpdateTransform();
 }
@@ -226,21 +248,21 @@ void UIComponent::SetRight(float value)
 {
     auto& r = Rectangle(Transform.Rect);
     r.SetRight(value);
-    Layout(r);
+    Layout(r, Transform.Pivot);
     if (!IsVolatile)
         Transform.UpdateTransform();
 }
 
 void UIComponent::SetTranslation(const Vector2& InTranslation)
 {
-    Layout(Rectangle(InTranslation, Transform.Rect.Size));
+    Layout(Rectangle(InTranslation, Transform.Rect.Size), Transform.Pivot);
     if (!IsVolatile)
         Transform.UpdateTransform();
 }
 
 void UIComponent::SetSize(const Vector2& InSize)
 {
-    Layout(Rectangle(Transform.Rect.Location, InSize));
+    Layout(Rectangle(Transform.Rect.Location, InSize),Transform.Pivot);
     if (!IsVolatile)
         Transform.UpdateTransform();
 }
@@ -260,7 +282,7 @@ void UIComponent::SetAngle(float InAngle) {
 
 void UIComponent::SetPivot(const Vector2& InPivot)
 {
-    Transform.Pivot = InPivot; 
+    Layout(Transform.Rect, InPivot);
     if (!IsVolatile) 
         Transform.UpdateTransform();
 }
@@ -426,13 +448,13 @@ void UIComponent::OnDraw(){}
 
 
 
-void UIComponent::Layout(const Rectangle& InNewBounds)
+void UIComponent::Layout(const Rectangle& InNewBounds, const Vector2& InNewPoivt)
 {
     if (GetParent())
     {
         //Call to parent to update the layout for this element
         //in some ceses it might just set the InNewSize value
-        GetParent()->Layout(InNewBounds, Slot);
+        GetParent()->Layout(InNewBounds, InNewPoivt, Slot);
     }
 }
 

@@ -39,20 +39,7 @@ void UISystem::SaveBlueprint(UIBlueprint& InUIBlueprint)
         PrettyJsonWriter writerObj(dataBuffer);
         ISerializable::SerializeStream& stream = writerObj;
         Array<String> Types{};
-        //Final.StartObject();
         {
-            // Json resource header
-            //Final.JKEY("ID");
-            //Final.Guid(asset->GetID());
-            //Final.JKEY("TypeName");
-            //String DataType = asset->DataTypeName;
-            //Final.String(DataType.ToStringAnsi().GetText(), DataType.Length());
-            //Final.JKEY("EngineBuild");
-            //Final.Int(FLAXENGINE_VERSION_BUILD);
-
-            // Json resource data
-            //Final.JKEY("Data");
-
             Final.StartObject();
             UISystem::SerializeComponent(stream, InUIBlueprint.Component, Types);
             Final.JKEY("UIBlueprint");
@@ -180,7 +167,7 @@ UIBlueprint* UISystem::LoadEditorBlueprintAsset(const StringView& InPath)
              }
              else
              {
-                 LOG(Error, "[UIBlueprint] Found unkonw type {0} during deserializesion", scriptingType.GetType().Fullname.ToString());
+                 LOG(Error, "[UIBlueprint] Found unkonw scriptingType at {0} during deserializesion", id);
              }
          }
          else

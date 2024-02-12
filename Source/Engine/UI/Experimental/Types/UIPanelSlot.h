@@ -34,7 +34,8 @@ public:
 protected:
     friend class UIPanelComponent;
     friend class UISystem;
-    virtual void Layout(const Rectangle& InSlotNewBounds);
+    virtual void Layout(const Rectangle& InNewBounds, const Vector2& InNewPoivt, const Rectangle& InNewParentBounds);
+    inline void Applay(const Rectangle& InNewBounds, const Vector2& InNewPoivt);
 
     void Serialize(SerializeStream& stream, const void* otherObj) override;
     void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) override;
