@@ -214,9 +214,6 @@ int32 Engine::Main(const Char* cmdLine)
             Time::OnEndDraw();
             FrameMark;
         }
-
-        // Collect physics simulation results (does nothing if Simulate hasn't been called in the previous loop step)
-        Physics::CollectResults();
     }
 
     // Call on exit event
@@ -288,6 +285,9 @@ void Engine::OnLateFixedUpdate()
 
     // Update services
     EngineService::OnLateFixedUpdate();
+
+    // Collect physics simulation results (does nothing if Simulate hasn't been called in the previous loop step)
+    Physics::CollectResults();
 }
 
 void Engine::OnUpdate()
