@@ -71,14 +71,16 @@ public:
 	void Hide() override;
 	void Minimize() override;
 	void Maximize() override;
-	void Restore() override;
+    void SetBorderless(bool isBorderless, bool maximized = false) override;
+    void Restore() override;
 	bool IsClosed() const override;
     bool IsForegroundWindow() const override;
 	void BringToFront(bool force = false) override;
 	void SetClientBounds(const Rectangle& clientArea) override;
 	void SetPosition(const Float2& position) override;
 	void SetClientPosition(const Float2& position) override;
-	Float2 GetPosition() const override;
+    void SetIsFullscreen(bool isFullscreen) override;
+    Float2 GetPosition() const override;
 	Float2 GetSize() const override;
 	Float2 GetClientSize() const override;
 	Float2 ScreenToClient(const Float2& screenPos) const override;
