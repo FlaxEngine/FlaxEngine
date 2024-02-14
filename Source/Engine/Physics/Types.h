@@ -152,15 +152,15 @@ API_STRUCT() struct RayCastHit
     API_FIELD() float Distance;
 
     /// <summary>
+    /// The point in the world space where ray hit the collider.
+    /// </summary>
+    API_FIELD() Vector3 Point;
+
+    /// <summary>
     /// The index of the face that was hit. Valid only for convex mesh (polygon index), triangle mesh (triangle index) and height field (triangle index).
     /// </summary>
     /// <seealso cref="CollisionData.GetModelTriangle" />
     API_FIELD() uint32 FaceIndex;
-
-    /// <summary>
-    /// The point in the world space where ray hit the collider.
-    /// </summary>
-    API_FIELD() Vector3 Point;
 
     /// <summary>
     /// The barycentric coordinates of hit triangle. Valid only for triangle mesh and height field.

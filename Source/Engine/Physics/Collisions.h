@@ -58,9 +58,7 @@ API_STRUCT(NoDefault) struct FLAXENGINE_API Collision
     /// <summary>
     /// The total impulse applied to this contact pair to resolve the collision.
     /// </summary>
-    /// <remarks>
-    /// The total impulse is obtained by summing up impulses applied at all contact points in this collision pair.
-    /// </remarks>
+    /// <remarks>The total impulse is obtained by summing up impulses applied at all contact points in this collision pair.</remarks>
     API_FIELD() Vector3 Impulse;
 
     /// <summary>
@@ -87,9 +85,7 @@ public:
     /// <summary>
     /// Gets the relative linear velocity of the two colliding objects.
     /// </summary>
-    /// <remarks>
-    /// Can be used to detect stronger collisions.
-    /// </remarks>
+    /// <remarks>Can be used to detect stronger collisions. </remarks>
     Vector3 GetRelativeVelocity() const
     {
         return ThisVelocity - OtherVelocity;
