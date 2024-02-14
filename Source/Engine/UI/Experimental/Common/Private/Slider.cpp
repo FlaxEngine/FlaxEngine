@@ -1,6 +1,5 @@
 //                                                        UI System
 //                                                    writen by Nori_SC
 //                                                https://github.com/NoriteSC
-
-#include "../Brush.h"
-#include "Engine/Render2D/Render2D.h"
+#include "../Slider.h"
+UISlider::UISlider(const SpawnParams& params) : UIComponent(params) {}

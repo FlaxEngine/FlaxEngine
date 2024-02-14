@@ -22,7 +22,7 @@ UIComponent::UIComponent(const SpawnParams& params) : ScriptingObject(params)
     Transform = UIComponentTransform();
     RenderOpacity = 1.0f;
     Slot = nullptr;
-    sizeof(UIComponent);
+
     //flags
     IsEnabled = true;
     Visibility = Visible;
@@ -138,7 +138,7 @@ void UIComponent::Deserialize(DeserializeStream& stream, ISerializeModifier* mod
         else
         {
             auto ar = transform->value.GetArray();
-            for (size_t i = 0; i < ar.Size(); i++)
+            for (uint32 i = 0; i < ar.Size(); i++)
             {
                 floats[i] = ar[i].GetFloat();
             }
@@ -299,24 +299,24 @@ void UIComponent::SetIsEnabled(bool InIsEnabled)
 
 void UIComponent::SetToolTipText(const String& InToolTipText)
 {
-    throw "Not implemented yet";
+    LOG(Warning, "Not implemented yet");
 }
 
 const String& UIComponent::GetToolTipText() const
 {
-    throw "Not implemented yet";
-    return String();
+    LOG(Warning,"Not implemented yet");
+    return TEXT("");
 }
 
 UIComponent* UIComponent::GetToolTip() const
 {
-    throw "Not implemented yet";
+    LOG(Warning, "Not implemented yet");
     return nullptr;
 }
 
 void UIComponent::SetToolTip(UIComponent* UIComponent)
 {
-    throw "Not implemented yet";
+    LOG(Warning, "Not implemented yet");
 }
 
 void UIComponent::SetCursor(const CursorType& InCursor)
@@ -332,7 +332,7 @@ void UIComponent::SetVisibility(const UIComponentVisibility& InVisibility)
 
 void UIComponent::ResetCursor()
 {
-    throw "Not implemented yet";
+    LOG(Warning, "Not implemented yet");
 }
 
 bool UIComponent::IsRendered() const
@@ -362,6 +362,7 @@ void UIComponent::RemoveFromParent()
         if (Slot->Parent) 
         {
             Slot->Parent->RemoveChild(this);
+            
         }
     }
 }

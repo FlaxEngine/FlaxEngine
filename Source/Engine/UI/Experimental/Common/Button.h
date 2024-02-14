@@ -3,6 +3,7 @@
 //                                                https://github.com/NoriteSC
 #pragma once
 #include "../Types/UIComponent.h"
+#include "../Brushes/Brush.h"
 
 API_CLASS(Namespace = "FlaxEngine.Experimental.UI", Attributes = "UIDesigner(DisplayLabel=\"Button\",CategoryName=\"Common\",EditorComponent=false,HiddenInDesigner=false)")
 class UIButton : public UIComponent
@@ -47,6 +48,14 @@ public:
     /// </summary>
     API_FIELD()
     UIEventResponse Response = UIEventResponse::Focus;
+
+    API_FIELD(Attributes = "CustomEditor(typeof(FlaxEditor.CustomEditors.Editors.UIBrushEditor)), DefaultEditor")
+        UIBrush* BrushNormal;
+    API_FIELD(Attributes = "CustomEditor(typeof(FlaxEditor.CustomEditors.Editors.UIBrushEditor)), DefaultEditor")
+        UIBrush* BrushHover;
+    API_FIELD(Attributes = "CustomEditor(typeof(FlaxEditor.CustomEditors.Editors.UIBrushEditor)), DefaultEditor")
+        UIBrush* BrushPressed;
+
 private:
 
     State ButtonState;
@@ -55,8 +64,10 @@ private:
     virtual UIEventResponse OnPointerInput(const UIPointerEvent& InEvent) override;
 private:
     void SetState(State InNewState);
-
+    
 protected:
     void Serialize(SerializeStream& stream, const void* otherObj) override;
     void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) override;
+private:
+    void OnDeleteObject() override;
 };

@@ -10,6 +10,7 @@ using FlaxEngine.Experimental.UI.Editor;
 using FlaxEngine.GUI;
 using FlaxEditor.Windows;
 using FlaxEditor.CustomEditors;
+using FlaxEditor.CustomEditors.Editors;
 
 namespace FlaxEditor.Experimental.UI
 {
@@ -37,7 +38,7 @@ namespace FlaxEditor.Experimental.UI
         internal Vector2 PointerLocation;
         private UIComponent Selected = null;
         private Vector2 Offset;
-        private UIComponent SelectedComponent;
+        internal UIComponent SelectedComponent;
         internal UIComponent EditedComponent;
         internal CustomEditorPresenter Presenter;
         internal CustomEditorPresenter SlotPresenter;
@@ -263,7 +264,6 @@ namespace FlaxEditor.Experimental.UI
 
     }
 
-
     internal class UIDesignerEditor : AssetEditorWindow
     {
         (Type,UIDesignerAttribute)[] Attributes;
@@ -330,7 +330,7 @@ namespace FlaxEditor.Experimental.UI
                     return (t, null);
                 }).Where(t => t.Item2 != null).ToArray();
 
-            UIComponentPaletePanel.TileSize = Float2.One * 64;
+            UIComponentPaletePanel.TileSize = Float2.One * 75;
             for (int i = 0; i < Attributes.Length; i++)
             {
                 var button = UIComponentPaletePanel.AddChild<Button>();
@@ -340,6 +340,16 @@ namespace FlaxEditor.Experimental.UI
                 lable.AnchorPreset = AnchorPresets.HorizontalStretchBottom;
                 lable.AutoHeight = true;
                 lable.AutoFitText = true;
+                lable.Text = Attributes[i].Item2.DisplayLabel;
+            }
+            InputActions.Add(options => options.Delete, DeleteComponentFromSelected);
+        }
+
+        private void DeleteComponentFromSelected()
+        {
+            if (TransformationTool.SelectedComponent)
+            {
+                TransformationTool.SelectedComponent.RemoveFromParent();
             }
         }
 
@@ -347,6 +357,20 @@ namespace FlaxEditor.Experimental.UI
         {
             var ID = (int)obj.Tag;
             Debug.Log(ID);
+            if (TransformationTool.SelectedComponent)
+            {
+                if(TransformationTool.SelectedComponent is UIPanelComponent panel)
+                {
+                    if (panel.CanAddMoreChildren())
+                    {
+                        var comp = (UIComponent)Activator.CreateInstance(Attributes[ID].Item1);
+                        panel.AddChild(comp);
+                        comp.Translation = panel.Rect.Center;
+                        UISystem.SetDesinerFlags(comp, UIComponentDesignFlags.Designing);
+                        comp.CreatedByUIBlueprint = true;
+                    }
+                }
+            }
         }
 
         public void AddComponent()

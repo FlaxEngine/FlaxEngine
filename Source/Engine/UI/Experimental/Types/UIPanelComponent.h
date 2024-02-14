@@ -103,7 +103,8 @@ public:
     /// </summary>
     /// <param name="Index"></param>
     /// <param name="Child"></param>
-    API_FUNCTION() void ShiftChild(int32 Index, UIComponent* Child);
+    /// <returns></returns>
+    API_FUNCTION() bool ShiftChild(int32 Index, UIComponent* Child);
 
     /// <summary>
     ///  Removes a specific UIComponent from the container.

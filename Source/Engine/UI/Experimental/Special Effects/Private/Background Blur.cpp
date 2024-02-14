@@ -29,34 +29,34 @@ void UIBackgroundBlurSlot::Layout(const Rectangle& InNewBounds, const Vector2& I
         break;
     case UIVerticalAlignment::Top:
         bounds.SetTop(InNewParentBounds.GetTop());
-        bounds.Size.Y = contentDesiredSize.Y;
+        bounds.Size.Y = bounds.Size.Y;
         break;
     case UIVerticalAlignment::Center:
-        bounds.Size.Y = contentDesiredSize.Y;
+        bounds.Size.Y = bounds.Size.Y;
         bounds.SetCenterY(InNewParentBounds.GetCenter());
         break;
     case UIVerticalAlignment::Bottom:
         bounds.SetBottom(InNewParentBounds.GetBottom());
-        bounds.SetTop(InNewParentBounds.GetBottom() - contentDesiredSize.Y);
+        bounds.SetTop(InNewParentBounds.GetBottom() - bounds.Size.Y);
         break;
     }
     switch (HorizontalAlignment)
     {
     case UIHorizontalAlignment::Fill:
-        bounds.SetLeft(InNewParentBounds.GetTop());
-        bounds.SetRight(InNewParentBounds.GetTop());
+        bounds.SetLeft(InNewParentBounds.GetLeft());
+        bounds.SetRight(InNewParentBounds.GetRight());
         break;
     case UIHorizontalAlignment::Left:
         bounds.SetLeft(InNewParentBounds.GetLeft());
-        bounds.Size.X = contentDesiredSize.X;
+        bounds.Size.X = bounds.Size.X;
         break;
     case UIHorizontalAlignment::Center:
-        bounds.Size.X = contentDesiredSize.X;
+        bounds.Size.X = bounds.Size.X;
         bounds.SetCenterX(InNewParentBounds.GetCenter());
         break;
     case UIHorizontalAlignment::Right:
         bounds.SetLeft(InNewParentBounds.GetLeft());
-        bounds.SetRight(InNewParentBounds.GetRight() - contentDesiredSize.Y);
+        bounds.SetRight(InNewParentBounds.GetRight() - bounds.Size.Y);
         break;
     }
 
@@ -148,12 +148,18 @@ void UIBackgroundBlurSlot::Deserialize(DeserializeStream& stream, ISerializeModi
 
 UIBackgroundBlur::UIBackgroundBlur(const SpawnParams& params) : UIPanelComponent(params)
 {
+    BlurStrength = 0;
     CanHaveMultipleChildren = false;
 }
 
 void UIBackgroundBlur::OnDraw()
 {
     Render2D::DrawBlur(GetRect(), BlurStrength);
+}
+
+ScriptingTypeInitializer& UIBackgroundBlur::GetSlotClass() const
+{
+    return UIBackgroundBlurSlot::TypeInitializer;
 }
 
 void UIBackgroundBlur::Serialize(SerializeStream& stream, const void* otherObj)

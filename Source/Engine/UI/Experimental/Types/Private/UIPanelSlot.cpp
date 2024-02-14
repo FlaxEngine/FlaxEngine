@@ -18,6 +18,7 @@ inline void UIPanelSlot::Applay(const Rectangle& InNewBounds, const Vector2& InN
 {
     Content->SetRect_Internal(InNewBounds);
     Content->SetPivot_Internal(InNewPoivt);
+    //Content->Layout(InNewBounds, InNewPoivt);
 }
 void UIPanelSlot::Serialize(SerializeStream& stream, const void* otherObj){}
 void UIPanelSlot::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier){}

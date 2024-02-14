@@ -31,7 +31,7 @@ protected:
 };
 
 
-API_CLASS(Namespace = "FlaxEngine.Experimental.UI")
+API_CLASS(Namespace = "FlaxEngine.Experimental.UI", Attributes = "UIDesigner(DisplayLabel=\"Background Blur\",CategoryName=\"Special Effects\",EditorComponent=false,HiddenInDesigner=false)")
 class FLAXENGINE_API UIBackgroundBlur : public UIPanelComponent
 {
     DECLARE_SCRIPTING_TYPE(UIBackgroundBlur);
@@ -39,7 +39,7 @@ public:
     API_FIELD() float BlurStrength;
 private:
     virtual void OnDraw() override;
-
+    virtual ScriptingTypeInitializer& GetSlotClass() const;
 protected:
     void Serialize(SerializeStream& stream, const void* otherObj) override;
     void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) override;

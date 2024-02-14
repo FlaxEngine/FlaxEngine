@@ -10,6 +10,7 @@
 #include "Engine/Core/Collections/Array.h"
 #include "Engine/Render2D/Render2D.h"
 #include <Engine/UI/Experimental/Types/Anchor.h>
+#include <Engine/Core/Log.h>
 
 UIPanelComponent::UIPanelComponent(const SpawnParams& params) : UIComponent(params) 
 {
@@ -80,22 +81,21 @@ bool UIPanelComponent::HasChild(UIComponent* Content) const
 
 bool UIPanelComponent::RemoveChildAt(int32 Index)
 {
-    if (Index < 0 || Index >= Slots.Count())
+    if (Slots.IsValidIndex(Index))
     {
-        return false;
+        UIPanelSlot* PanelSlot = Slots[Index];
+        if (PanelSlot->Content)
+        {
+            PanelSlot->Content->Slot = nullptr;
+        }
+
+        Slots.RemoveAt(Index);
+
+        OnSlotRemoved(PanelSlot);
+
+        return true;
     }
-
-    UIPanelSlot* PanelSlot = Slots[Index];
-    if (PanelSlot->Content)
-    {
-        PanelSlot->Content->Slot = nullptr;
-    }
-
-    Slots.RemoveAt(Index);
-
-    OnSlotRemoved(PanelSlot);
-
-    return true;
+    return false;
 }
 
 /// <summary>
@@ -107,10 +107,9 @@ bool UIPanelComponent::RemoveChildAt(int32 Index)
 
 UIPanelSlot* UIPanelComponent::AddChild(UIComponent* Content)
 {
-
     if (Content == nullptr)
         return nullptr;
-    if (!CanHaveMultipleChildren && GetChildrenCount() > 0)
+    if (!CanAddMoreChildren())
         return nullptr;
 
     Content->RemoveFromParent();
@@ -134,25 +133,85 @@ ScriptingTypeInitializer& UIPanelComponent::GetSlotClass() const
 
 bool UIPanelComponent::ReplaceChildAt(int32 Index, UIComponent* Content)
 {
+    throw "Not implemented yet";
     return false;
 }
 
 bool UIPanelComponent::ReplaceChild(UIComponent* CurrentChild, UIComponent* NewChild)
 {
+    throw "Not implemented yet";
     return false;
 }
 
 UIPanelSlot* UIPanelComponent::InsertChildAt(int32 Index, UIComponent* Content)
 {
-    return nullptr;
+    if (Content == nullptr)
+        return nullptr;
+    if (!CanAddMoreChildren())
+        return nullptr;
+
+    Content->RemoveFromParent();
+    UIPanelSlot* PanelSlot = (UIPanelSlot*)ScriptingObject::NewObject(GetSlotClass());
+    PanelSlot->Content = Content;
+    PanelSlot->Parent = this;
+
+    Content->Slot = PanelSlot;
+
+    Slots.Insert(Index,PanelSlot);
+
+    OnSlotAdded(PanelSlot);
+    return PanelSlot;
 }
 
-void UIPanelComponent::ShiftChild(int32 Index, UIComponent* Child)
+bool UIPanelComponent::ShiftChild(int32 Index, UIComponent* Child)
 {
+    if (Child == nullptr) 
+    {
+        LOG(Warning, "Child {0} is null");
+        return false;
+    }
+
+    if (HasChild(Child))
+    {
+        if (Slots.IsValidIndex(Index))
+        {
+            if (Slots[Index]->Content == nullptr) 
+            {
+                return true;
+            }
+            else
+            {
+                LOG(Warning, "Slot {0} is occupied on parent {1}", Index, Label);
+            }
+        }
+        else
+        {
+            LOG(Warning, "Can't shift child index is {0} out of range", Index);
+        }
+    }
+    else
+    {
+        LOG(Warning, "Can't shift child the child {0} with has different parent", Child->Label);
+    }
+    return false;
 }
 
-bool UIPanelComponent::RemoveChild(UIComponent* Content)
+bool UIPanelComponent::RemoveChild(UIComponent* Child)
 {
+    if (Child == nullptr)
+    {
+        LOG(Warning, "Child {0} is null");
+        return false;
+    }
+
+    if (HasChild(Child))
+    {
+        return RemoveChildAt(Slots.Find(Child->Slot));
+    }
+    else
+    {
+        LOG(Warning, "Can't remove child {0} with has different parent", Child->Label);
+    }
     return false;
 }
 
@@ -163,7 +222,10 @@ bool UIPanelComponent::HasAnyChildren() const
 
 void UIPanelComponent::ClearChildren()
 {
-    
+    while (!Slots.IsEmpty())
+    {
+        Slots.Peek()->Content->RemoveFromParent();
+    }
 }
 
 const Array<UIPanelSlot*> UIPanelComponent::GetSlots() const
@@ -256,7 +318,7 @@ void UIPanelComponent::Render()
             if (!slots[i]->Content->IsVisible()) // faster skip 
                 continue;
 #endif
-            if (CanCast(slots[i]->Content->GetStaticClass(), UIPanelComponent::GetStaticClass()))
+            if (CanCast(slots[i]->Content->GetClass(), UIPanelComponent::GetStaticClass()))
             {
                 UIPanelComponent* panel = ((UIPanelComponent*)slots[i]->Content);
                 //panels are not Drawable by design so there is no call to DrawInternal
@@ -276,7 +338,7 @@ void UIPanelComponent::Render()
     {
         for (auto i = 0; i < slots.Count(); i++)
         {
-            if (CanCast(slots[i]->Content->GetStaticClass(), UIPanelComponent::GetStaticClass()))
+            if (CanCast(slots[i]->Content->GetClass(), UIPanelComponent::GetStaticClass()))
             {
                 UIPanelComponent* panel = ((UIPanelComponent*)slots[i]->Content);
                 //panelds are not Drawable so there is no DrawInternalCall

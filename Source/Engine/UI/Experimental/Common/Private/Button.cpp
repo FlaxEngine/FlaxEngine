@@ -7,20 +7,26 @@
 UIButton::UIButton(const SpawnParams& params) : UIComponent(params)
 {
     ButtonState = None;
+    BrushHover = nullptr;
+    BrushPressed = nullptr;
+    BrushNormal = nullptr;
 }
 void UIButton::OnDraw()
 {
     switch (ButtonState)
     {
-    case UIButton::Hover:
-        Render2D::FillRectangle(GetRect(), Color::Gray);
+    case UIButton::State::Hover:
+        if (BrushHover)
+            BrushHover->Draw(GetRect());
         break;
-    case UIButton::Press:
-    case UIButton::Pressing:
-        Render2D::FillRectangle(GetRect(), Color::DarkGray);
+    case UIButton::State::Press:
+    case UIButton::State::Pressing:
+        if (BrushPressed)
+            BrushPressed->Draw(GetRect());
         break;
     default:
-        Render2D::FillRectangle(GetRect(), Color::White);
+        if (BrushNormal)
+            BrushNormal->Draw(GetRect());
         break;
     }
 }
@@ -65,15 +71,26 @@ void UIButton::SetState(State InNewState)
 void UIButton::Serialize(SerializeStream& stream, const void* otherObj)
 {
     UIComponent::Serialize(stream, otherObj);
+    SERIALIZE_GET_OTHER_OBJ(UIButton);
     if (Response != UIEventResponse::Focus) 
     {
-        SERIALIZE_GET_OTHER_OBJ(UIButton);
         SERIALIZE(Response);
     }
+    SERIALIZE(BrushNormal);
+    SERIALIZE(BrushHover);
+    SERIALIZE(BrushPressed);
 }
 
 void UIButton::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)
 {
     UIComponent::Deserialize(stream, modifier);
     DESERIALIZE(Response);
+    DESERIALIZE(BrushNormal);
+    DESERIALIZE(BrushHover);
+    DESERIALIZE(BrushPressed);
+}
+
+void UIButton::OnDeleteObject()
+{
+    UIComponent::OnDeleteObject();
 }
