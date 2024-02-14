@@ -81,7 +81,7 @@ if (IAssetFactory::Get().ContainsKey(type::TypeName)) \
         return; \
 }
 #define INTERNAL_FACTORY_UNREGISTER_CHEAK(type)\
-if (IAssetFactory::Get().ContainsKey(type::TypeName)) \
+if (!IAssetFactory::Get().ContainsKey(type::TypeName)) \
 { \
     if (Platform::IsDebuggerPresent()) \
     { \
