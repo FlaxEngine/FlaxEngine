@@ -56,6 +56,9 @@ namespace FlaxEditor.Content.GUI
 
         private float _viewScale = 1.0f;
         private ContentViewType _viewType = ContentViewType.Tiles;
+        private bool _isRubberBandSpanning = false;
+        private Float2 _mousePresslocation;
+        private Rectangle _rubberBandRectangle;
 
         #region External Events
 
@@ -607,7 +610,49 @@ namespace FlaxEditor.Content.GUI
         {
             if (base.OnMouseDown(location, button))
                 return true;
+            if (button == MouseButton.Left)
+            {
+                _mousePresslocation = location;
+                _rubberBandRectangle = new Rectangle(_mousePresslocation, 0, 0);
+                _isRubberBandSpanning = true;
+                StartMouseCapture();
+            }
             return AutoFocus && Focus(this);
+        }
+
+        /// <inheritdoc />
+        public override void OnMouseMove(Float2 location)
+        {
+            if (_isRubberBandSpanning)
+            {
+                _rubberBandRectangle.Width = location.X - _mousePresslocation.X;
+                _rubberBandRectangle.Height = location.Y - _mousePresslocation.Y;
+            }
+            base.OnMouseMove(location);
+        }
+
+        /// <inheritdoc />
+        public override bool OnMouseUp(Float2 location, MouseButton button)
+        {
+            if (_isRubberBandSpanning)
+            {
+                _isRubberBandSpanning = false;
+                EndMouseCapture();
+                if (_rubberBandRectangle.Width < 0 || _rubberBandRectangle.Height < 0)
+                {
+                    // make sure we have a well-formed rectangle i.e. size is positive and X/Y is upper left corner
+                    var size = _rubberBandRectangle.Size;
+                    _rubberBandRectangle.X = Mathf.Min(_rubberBandRectangle.X, _rubberBandRectangle.X + _rubberBandRectangle.Width);
+                    _rubberBandRectangle.Y = Mathf.Min(_rubberBandRectangle.Y, _rubberBandRectangle.Y + _rubberBandRectangle.Height);
+                    size.X = Mathf.Abs(size.X);
+                    size.Y = Mathf.Abs(size.Y);
+                    _rubberBandRectangle.Size = size;
+                }
+                var itemsInRectangle = _items.Where(t => _rubberBandRectangle.Intersects(t.Bounds)).ToList();
+                Select(itemsInRectangle, Input.GetKey(KeyboardKeys.Shift));
+                return true;
+            }
+            return base.OnMouseUp(location, button);
         }
 
         /// <inheritdoc />
@@ -712,6 +757,16 @@ namespace FlaxEditor.Content.GUI
             }
 
             return false;
+        }
+
+        /// <inheritdoc />
+        public override void DrawSelf()
+        {
+            base.DrawSelf();
+            if (_isRubberBandSpanning)
+            {
+                Render2D.DrawRectangle(_rubberBandRectangle, Color.White);
+            }
         }
 
         /// <inheritdoc />
