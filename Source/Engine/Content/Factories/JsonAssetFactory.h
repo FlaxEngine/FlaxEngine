@@ -49,7 +49,20 @@ protected:
 	class CONCAT_MACROS(Factory, type) : public JsonAssetFactory<type> \
 	{ \
 		public: \
-		CONCAT_MACROS(Factory, type)() { IAssetFactory::Get().Add(type::TypeName, this); } \
+		CONCAT_MACROS(Factory, type)() \
+        { \
+            if (IAssetFactory::Get().ContainsKey(type::TypeName)) \
+            { \
+                if (Platform::IsDebuggerPresent()) \
+                { \
+                    PLATFORM_DEBUG_BREAK; \
+                } \
+                Platform::Assert("[IAssetFactory] Can't Register "#type \
+                " it is already registered", __FILE__, __LINE__); \
+                return; \
+            } \
+            IAssetFactory::Get().Add(type::TypeName, this); \
+        } \
 		~CONCAT_MACROS(Factory, type)() { IAssetFactory::Get().Remove(type::TypeName); } \
 		bool SupportsVirtualAssets() const override { return supportsVirtualAssets; } \
 	}; \
