@@ -606,7 +606,8 @@ namespace FlaxEditor.Content.GUI
 
             if (_isRubberBandSpanning)
             {
-                Render2D.DrawRectangle(_rubberBandRectangle, Color.White);
+                Render2D.FillRectangle(_rubberBandRectangle, Color.Orange * 0.4f);
+                Render2D.DrawRectangle(_rubberBandRectangle, Color.Orange);
             }
         }
 
