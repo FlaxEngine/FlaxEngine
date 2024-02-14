@@ -603,6 +603,11 @@ namespace FlaxEditor.Content.GUI
             {
                 Render2D.DrawText(style.FontSmall, IsSearching ? "No results" : "Empty", new Rectangle(Float2.Zero, Size), style.ForegroundDisabled, TextAlignment.Center, TextAlignment.Center);
             }
+
+            if (_isRubberBandSpanning)
+            {
+                Render2D.DrawRectangle(_rubberBandRectangle, Color.White);
+            }
         }
 
         /// <inheritdoc />
@@ -757,16 +762,6 @@ namespace FlaxEditor.Content.GUI
             }
 
             return false;
-        }
-
-        /// <inheritdoc />
-        public override void DrawSelf()
-        {
-            base.DrawSelf();
-            if (_isRubberBandSpanning)
-            {
-                Render2D.DrawRectangle(_rubberBandRectangle, Color.White);
-            }
         }
 
         /// <inheritdoc />
