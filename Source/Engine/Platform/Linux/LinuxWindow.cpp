@@ -42,15 +42,6 @@ extern Array<KeyboardKeys> KeyCodeMap;
 extern X11::Cursor Cursors[(int32)CursorType::MAX];
 extern Window* MouseTrackingWindow;
 
-typedef struct XDisplayHints
-{
-    unsigned long flags;
-    unsigned long functions;
-    unsigned long decorations;
-    long inputMode;
-    unsigned long status;
-} XDisplayHints;
-
 static constexpr uint32 MouseDoubleClickTime = 500;
 static constexpr uint32 MaxDoubleClickDistanceSquared = 10;
 static X11::Time MouseLastButtonPressTime = 0;
@@ -339,33 +330,6 @@ void LinuxWindow::Minimize()
 void LinuxWindow::Maximize()
 {
 	Maximize(true);
-}
-
-void LinuxWindow::SetBorderless(bool isBorderless, bool maximized)
-{
-    LINUX_WINDOW_PROLOG;
-    if (!display)
-        return;
-    XDisplayHints hints;
-    hints.flags = 2;
-    hints.decorations = isBorderless ? 0 : 1;
-    const X11::Atom property = X11::XInternAtom(display, "_MOTIF_WM_HINTS", true);
-    if (property != 0) {
-        X11::XChangeProperty(display, window, property, property, 32, PropModeReplace, (unsigned char *)&hints, 5);
-    }
-}
-
-void LinuxWindow::SetIsFullscreen(bool isFullscreen)
-{
-    if (isFullscreen)
-    {
-        SetBorderless(true);
-        Maximize(false);
-    } else
-    {
-        SetBorderless(false);
-        Restore();
-    }
 }
 
 void LinuxWindow::Restore()
