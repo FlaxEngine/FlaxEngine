@@ -305,7 +305,7 @@ namespace Flax.Build.Bindings
         private static string GenerateCppGetMClass(BuildData buildData, TypeInfo typeInfo, ApiTypeInfo caller, FunctionInfo functionInfo)
         {
             // Optimal path for in-build types
-            var managedType = GenerateCSharpNativeToManaged(buildData, typeInfo, caller);
+            var managedType = GenerateCSharpNativeToManaged(buildData, typeInfo, caller, true);
             switch (managedType)
             {
             // In-built types (cached by the engine on startup)
@@ -388,7 +388,7 @@ namespace Flax.Build.Bindings
             CppIncludeFiles.Add("Engine/Scripting/ManagedCLR/MClass.h");
 
             // Optimal path for in-build types
-            var managedType = GenerateCSharpNativeToManaged(buildData, typeInfo, caller);
+            var managedType = GenerateCSharpNativeToManaged(buildData, typeInfo, caller, true);
             switch (managedType)
             {
             case "bool":
@@ -519,16 +519,28 @@ namespace Flax.Build.Bindings
                 // Array or DataContainer
                 if ((typeInfo.Type == "Array" || typeInfo.Type == "Span" || typeInfo.Type == "DataContainer") && typeInfo.GenericArgs != null)
                 {
+                    var arrayTypeInfo = typeInfo.GenericArgs[0];
 #if USE_NETCORE
                     // Boolean arrays does not support custom marshalling for some unknown reason
-                    if (typeInfo.GenericArgs[0].Type == "bool")
+                    if (arrayTypeInfo.Type == "bool")
                     {
                         type = "bool*";
                         return "MUtils::ToBoolArray({0})";
                     }
+                    var arrayApiType = FindApiTypeInfo(buildData, arrayTypeInfo, caller);
 #endif
                     type = "MArray*";
-                    return "MUtils::ToArray({0}, " + GenerateCppGetMClass(buildData, typeInfo.GenericArgs[0], caller, functionInfo) + ")";
+                    if (arrayApiType != null && arrayApiType.MarshalAs != null)
+                    {
+                        // Convert array that uses different type for marshalling
+                        if (arrayApiType != null && arrayApiType.MarshalAs != null)
+                            arrayTypeInfo = arrayApiType.MarshalAs; // Convert array that uses different type for marshalling
+                        var genericArgs = arrayApiType.MarshalAs.GetFullNameNative(buildData, caller);
+                        if (typeInfo.GenericArgs.Count != 1)
+                            genericArgs += ", " + typeInfo.GenericArgs[1];
+                        return "MUtils::ToArray(Array<" + genericArgs + ">({0}), " + GenerateCppGetMClass(buildData, arrayTypeInfo, caller, functionInfo) + ")";
+                    }
+                    return "MUtils::ToArray({0}, " + GenerateCppGetMClass(buildData, arrayTypeInfo, caller, functionInfo) + ")";
                 }
 
                 // Span
@@ -719,11 +731,26 @@ namespace Flax.Build.Bindings
                 // Array
                 if (typeInfo.Type == "Array" && typeInfo.GenericArgs != null)
                 {
-                    var T = typeInfo.GenericArgs[0].GetFullNameNative(buildData, caller);
-                    type = "MArray*";
+                    var arrayTypeInfo = typeInfo.GenericArgs[0];
+                    var arrayApiType = FindApiTypeInfo(buildData, arrayTypeInfo, caller);
+                    if (arrayApiType != null && arrayApiType.MarshalAs != null)
+                        arrayTypeInfo = arrayApiType.MarshalAs;
+                    var genericArgs = arrayTypeInfo.GetFullNameNative(buildData, caller);
                     if (typeInfo.GenericArgs.Count != 1)
-                        return "MUtils::ToArray<" + T + ", " + typeInfo.GenericArgs[1] + ">({0})";
-                    return "MUtils::ToArray<" + T + ">({0})";
+                        genericArgs += ", " + typeInfo.GenericArgs[1];
+
+                    type = "MArray*";
+                    var result = "MUtils::ToArray<" + genericArgs + ">({0})";
+
+                    if (arrayApiType != null && arrayApiType.MarshalAs != null)
+                    {
+                        // Convert array that uses different type for marshalling
+                        genericArgs = typeInfo.GenericArgs[0].GetFullNameNative(buildData, caller);
+                        if (typeInfo.GenericArgs.Count != 1)
+                            genericArgs += ", " + typeInfo.GenericArgs[1];
+                        result = $"Array<{genericArgs}>({result})";
+                    }
+                    return result;
                 }
 
                 // Span or DataContainer
