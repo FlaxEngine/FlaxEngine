@@ -300,6 +300,18 @@ namespace FlaxEngine.Utilities
             var randomRadius = (float)random.NextDouble() * radius;
             return new Vector2((float)Math.Cos(random.NextDouble()) * randomRadius, (float)Math.Sin(random.NextDouble()) * randomRadius);
         }
+        
+        /// <summary>
+        /// Generates a random <see cref="Vector2"/> point on a circle of a given radius.
+        /// </summary>
+        /// <param name="random">An instance of <see cref="Random"/>.</param>
+        /// <param name="radius">Radius of circle. Default 1.0f./>.</param>
+        /// <returns>A random <see cref="Vector2"/>.</returns>
+        public static Vector2 NextUnitCircleVector2(this Random random, float radius = 1.0f)
+        {
+            double randomDegree = random.NextDouble() * 360;
+            return new Vector2((float)Math.Cos(randomDegree) * radius, (float)Math.Sin(randomDegree) * radius);
+        }
 
         /// <summary>
         /// Generates a uniformly distributed random unit length vector point on a unit sphere.
