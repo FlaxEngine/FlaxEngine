@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
 using System;
+using System.Runtime.CompilerServices;
 
 namespace FlaxEngine
 {
@@ -19,13 +20,9 @@ namespace FlaxEngine
         public JsonAsset Asset;
 
         /// <summary>
-        /// Gets the instance of the Json Asset. Null if unset.
+        /// Gets the instance of the serialized object from the json asset data. Cached internally.
         /// </summary>
-        /// <returns>instance of the Json Asset or null if unset.</returns>
-        public T Get()
-        {
-            return (T)Asset?.Instance;
-        }
+        public T Instance => (T)Asset?.Instance;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="JsonAssetReference{T}"/> structure.
@@ -66,6 +63,35 @@ namespace FlaxEngine
         public static implicit operator JsonAssetReference<T>(IntPtr valuePtr)
         {
             return new JsonAssetReference<T>(Object.FromUnmanagedPtr(valuePtr) as JsonAsset);
+        }
+
+        /// <summary>
+        /// Checks if the object exists (reference is not null and the unmanaged object pointer is valid).
+        /// </summary>
+        /// <param name="obj">The object to check.</param>
+        /// <returns>True if object is valid, otherwise false.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static implicit operator bool(JsonAssetReference<T> obj)
+        {
+            return obj.Asset;
+        }
+
+        /// <summary>
+        /// Checks whether the two objects are equal.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool operator ==(JsonAssetReference<T> left, JsonAssetReference<T> right)
+        {
+            return left.Asset == right.Asset;
+        }
+
+        /// <summary>
+        /// Checks whether the two objects are not equal.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool operator !=(JsonAssetReference<T> left, JsonAssetReference<T> right)
+        {
+            return left.Asset != right.Asset;
         }
 
         /// <inheritdoc />
