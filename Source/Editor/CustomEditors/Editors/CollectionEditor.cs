@@ -176,8 +176,8 @@ namespace FlaxEditor.CustomEditors.Editors
 
         private IntValueBox _sizeBox;
         private Color _background;
-        private int _elementsCount;
-        private bool _readOnly;
+        private int _elementsCount, _minCount, _maxCount;
+        private bool _canResize;
         private bool _canReorderItems;
         private CollectionAttribute.DisplayType _displayType;
 
@@ -209,8 +209,10 @@ namespace FlaxEditor.CustomEditors.Editors
                 return;
 
             var size = Count;
-            _readOnly = false;
+            _canResize = true;
             _canReorderItems = true;
+            _minCount = 0;
+            _maxCount = 0;
             _background = FlaxEngine.GUI.Style.Current.CollectionBackgroundColor;
             _displayType = CollectionAttribute.DisplayType.Header;
             NotNullItems = false;
@@ -222,7 +224,9 @@ namespace FlaxEditor.CustomEditors.Editors
             var collection = (CollectionAttribute)attributes?.FirstOrDefault(x => x is CollectionAttribute);
             if (collection != null)
             {
-                _readOnly = collection.ReadOnly;
+                _canResize = !collection.ReadOnly;
+                _minCount = collection.MinCount;
+                _maxCount = collection.MaxCount;
                 _canReorderItems = collection.CanReorderItems;
                 NotNullItems = collection.NotNullItems;
                 if (collection.BackgroundColor.HasValue)
@@ -231,6 +235,9 @@ namespace FlaxEditor.CustomEditors.Editors
                 spacing = collection.Spacing;
                 _displayType = collection.Display;
             }
+            if (_maxCount == 0)
+                _maxCount = ushort.MaxValue;
+            _canResize &= _minCount < _maxCount;
 
             var dragArea = layout.CustomContainer<DragAreaControl>();
             dragArea.CustomControl.Editor = this;
@@ -268,8 +275,8 @@ namespace FlaxEditor.CustomEditors.Editors
                 var y = -dropPanel.HeaderHeight + dropPanel.HeaderTextMargin.Top;
                 _sizeBox = new IntValueBox(size)
                 {
-                    MinValue = 0,
-                    MaxValue = ushort.MaxValue,
+                    MinValue = _minCount,
+                    MaxValue = _maxCount,
                     AnchorPreset = AnchorPresets.TopRight,
                     Bounds = new Rectangle(-40 - dropPanel.ItemsMargin.Right, y, 40, height),
                     Parent = dropPanel,
@@ -283,7 +290,7 @@ namespace FlaxEditor.CustomEditors.Editors
                     Parent = dropPanel
                 };
 
-                if (_readOnly || (NotNullItems && size == 0))
+                if (!_canResize || (NotNullItems && size == 0))
                 {
                     _sizeBox.IsReadOnly = true;
                     _sizeBox.Enabled = false;
@@ -339,7 +346,7 @@ namespace FlaxEditor.CustomEditors.Editors
             _elementsCount = size;
 
             // Add/Remove buttons
-            if (!_readOnly)
+            if (_canResize)
             {
                 var panel = dragArea.HorizontalPanel();
                 panel.Panel.Size = new Float2(0, 20);
@@ -347,25 +354,23 @@ namespace FlaxEditor.CustomEditors.Editors
 
                 var removeButton = panel.Button("-", "Remove last item");
                 removeButton.Button.Size = new Float2(16, 16);
-                removeButton.Button.Enabled = size > 0;
+                removeButton.Button.Enabled = size > _minCount;
                 removeButton.Button.AnchorPreset = AnchorPresets.TopRight;
                 removeButton.Button.Clicked += () =>
                 {
                     if (IsSetBlocked)
                         return;
-
                     Resize(Count - 1);
                 };
 
                 var addButton = panel.Button("+", "Add new item");
                 addButton.Button.Size = new Float2(16, 16);
-                addButton.Button.Enabled = !NotNullItems || size > 0;
+                addButton.Button.Enabled = (!NotNullItems || size > 0) && size < _maxCount;
                 addButton.Button.AnchorPreset = AnchorPresets.TopRight;
                 addButton.Button.Clicked += () =>
                 {
                     if (IsSetBlocked)
                         return;
-
                     Resize(Count + 1);
                 };
             }
