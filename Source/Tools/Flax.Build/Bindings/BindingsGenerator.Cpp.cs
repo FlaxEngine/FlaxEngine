@@ -167,11 +167,7 @@ namespace Flax.Build.Bindings
                 return $"Variant(StringView({value}))";
             if (typeInfo.Type == "StringAnsi")
                 return $"Variant(StringAnsiView({value}))";
-            if (typeInfo.Type == "AssetReference" ||
-                typeInfo.Type == "WeakAssetReference" ||
-                typeInfo.Type == "SoftAssetReference" ||
-                typeInfo.Type == "ScriptingObjectReference" ||
-                typeInfo.Type == "SoftObjectReference")
+            if (typeInfo.IsObjectRef)
                 return $"Variant({value}.Get())";
             if (typeInfo.IsArray)
             {
@@ -227,10 +223,10 @@ namespace Flax.Build.Bindings
                 return $"(StringAnsiView){value}";
             if (typeInfo.IsPtr && typeInfo.IsConst && typeInfo.Type == "Char")
                 return $"((StringView){value}).GetText()"; // (StringView)Variant, if not empty, is guaranteed to point to a null-terminated buffer.
-            if (typeInfo.Type == "AssetReference" || typeInfo.Type == "WeakAssetReference" || typeInfo.Type == "SoftAssetReference")
-                return $"ScriptingObject::Cast<{typeInfo.GenericArgs[0].Type}>((Asset*){value})";
             if (typeInfo.Type == "ScriptingObjectReference" || typeInfo.Type == "SoftObjectReference")
                 return $"ScriptingObject::Cast<{typeInfo.GenericArgs[0].Type}>((ScriptingObject*){value})";
+            if (typeInfo.IsObjectRef)
+                return $"ScriptingObject::Cast<{typeInfo.GenericArgs[0].Type}>((Asset*){value})";
             if (typeInfo.IsArray)
                 throw new Exception($"Not supported type to convert from the Variant to fixed-size array '{typeInfo}[{typeInfo.ArraySize}]'.");
             if (typeInfo.Type == "Array" && typeInfo.GenericArgs != null)
@@ -514,11 +510,7 @@ namespace Flax.Build.Bindings
                 return "MUtils::ToManaged({0})";
             default:
                 // Object reference property
-                if ((typeInfo.Type == "ScriptingObjectReference" ||
-                     typeInfo.Type == "AssetReference" ||
-                     typeInfo.Type == "WeakAssetReference" ||
-                     typeInfo.Type == "SoftAssetReference" ||
-                     typeInfo.Type == "SoftObjectReference") && typeInfo.GenericArgs != null)
+                if (typeInfo.IsObjectRef)
                 {
                     type = "MObject*";
                     return "{0}.GetManagedInstance()";
@@ -704,11 +696,7 @@ namespace Flax.Build.Bindings
                 return "MUtils::ToNative({0})";
             default:
                 // Object reference property
-                if ((typeInfo.Type == "ScriptingObjectReference" ||
-                     typeInfo.Type == "AssetReference" ||
-                     typeInfo.Type == "WeakAssetReference" ||
-                     typeInfo.Type == "SoftAssetReference" ||
-                     typeInfo.Type == "SoftObjectReference") && typeInfo.GenericArgs != null)
+                if (typeInfo.IsObjectRef)
                 {
                     // For non-pod types converting only, other API converts managed to unmanaged object in C# wrapper code)
                     if (CppNonPodTypesConvertingGeneration)
