@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "Engine/Content/JsonAsset.h"
+#include "Engine/Content/JsonAssetReference.h"
 #include "Engine/Content/Assets/MaterialBase.h"
 #include "Engine/Physics/Actors/PhysicsColliderActor.h"
 
@@ -79,8 +79,8 @@ public:
     /// <summary>
     /// The physical material used to define the terrain collider physical properties.
     /// </summary>
-    API_FIELD(Attributes="EditorOrder(520), DefaultValue(null), Limit(-1, 100, 0.1f), EditorDisplay(\"Collision\"), AssetReference(typeof(PhysicalMaterial), true)")
-    AssetReference<JsonAsset> PhysicalMaterial;
+    API_FIELD(Attributes="EditorOrder(520), DefaultValue(null), Limit(-1, 100, 0.1f), EditorDisplay(\"Collision\")")
+    JsonAssetReference<::PhysicalMaterial> PhysicalMaterial;
 
     /// <summary>
     /// The draw passes to use for rendering this object.

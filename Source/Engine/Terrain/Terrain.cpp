@@ -239,7 +239,7 @@ void Terrain::OnPhysicalMaterialChanged()
         const auto patch = _patches[pathIndex];
         if (patch->HasCollision())
         {
-            PhysicsBackend::SetShapeMaterial(patch->_physicsShape, PhysicalMaterial.Get());
+            PhysicsBackend::SetShapeMaterial(patch->_physicsShape, PhysicalMaterial);
         }
     }
 }

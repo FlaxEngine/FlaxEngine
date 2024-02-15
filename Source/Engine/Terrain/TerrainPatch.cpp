@@ -2125,7 +2125,7 @@ void TerrainPatch::CreateCollision()
     shape.SetHeightField(_physicsHeightField, heightScale, rowScale, columnScale);
 
     // Create shape
-    _physicsShape = PhysicsBackend::CreateShape(_terrain, shape, _terrain->PhysicalMaterial.Get(), _terrain->IsActiveInHierarchy(), false);
+    _physicsShape = PhysicsBackend::CreateShape(_terrain, shape, _terrain->PhysicalMaterial, _terrain->IsActiveInHierarchy(), false);
     PhysicsBackend::SetShapeLocalPose(_physicsShape, Vector3(0, _yOffset * terrainTransform.Scale.Y, 0), Quaternion::Identity);
 
     // Create static actor

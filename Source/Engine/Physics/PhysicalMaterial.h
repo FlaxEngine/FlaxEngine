@@ -15,17 +15,9 @@ class FLAXENGINE_API PhysicalMaterial final : public ISerializable
     API_AUTO_SERIALIZATION();
     DECLARE_SCRIPTING_TYPE_MINIMAL(PhysicalMaterial);
 private:
-    void* _material;
+    void* _material = nullptr;
 
 public:
-    /// <summary>
-    /// Initializes a new instance of the <see cref="PhysicalMaterial"/> class.
-    /// </summary>
-    PhysicalMaterial();
-
-    /// <summary>
-    /// Finalizes an instance of the <see cref="PhysicalMaterial"/> class.
-    /// </summary>
     ~PhysicalMaterial();
 
 public:

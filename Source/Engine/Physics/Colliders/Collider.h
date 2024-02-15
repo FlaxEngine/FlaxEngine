@@ -4,7 +4,7 @@
 
 #include "Engine/Physics/Types.h"
 #include "Engine/Content/JsonAsset.h"
-#include "Engine/Content/AssetReference.h"
+#include "Engine/Content/JsonAssetReference.h"
 #include "Engine/Physics/Actors/PhysicsColliderActor.h"
 
 struct RayCastHit;
@@ -80,8 +80,8 @@ public:
     /// <summary>
     /// The physical material used to define the collider physical properties.
     /// </summary>
-    API_FIELD(Attributes="EditorOrder(2), DefaultValue(null), AssetReference(typeof(PhysicalMaterial), true), EditorDisplay(\"Collider\")")
-    AssetReference<JsonAsset> Material;
+    API_FIELD(Attributes="EditorOrder(2), DefaultValue(null), EditorDisplay(\"Collider\")")
+    JsonAssetReference<PhysicalMaterial> Material;
 
 public:
     /// <summary>
