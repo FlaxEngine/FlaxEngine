@@ -439,7 +439,7 @@ namespace Flax.Build.Bindings
                 }
 
                 if (apiType.MarshalAs != null)
-                    return GenerateCSharpManagedToNativeType(buildData, new TypeInfo(apiType.MarshalAs), caller);
+                    return GenerateCSharpManagedToNativeType(buildData, apiType.MarshalAs, caller);
                 if (apiType.IsScriptingObject || apiType.IsInterface)
                     return "IntPtr";
             }
@@ -531,7 +531,7 @@ namespace Flax.Build.Bindings
             {
                 var apiType = FindApiTypeInfo(buildData, functionInfo.ReturnType, caller);
                 if (apiType != null && apiType.MarshalAs != null)
-                    returnValueType = GenerateCSharpNativeToManaged(buildData, new TypeInfo(apiType.MarshalAs), caller);
+                    returnValueType = GenerateCSharpNativeToManaged(buildData, apiType.MarshalAs, caller);
                 else
                     returnValueType = GenerateCSharpNativeToManaged(buildData, functionInfo.ReturnType, caller);
             }

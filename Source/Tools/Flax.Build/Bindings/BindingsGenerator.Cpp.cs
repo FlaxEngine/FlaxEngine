@@ -597,7 +597,7 @@ namespace Flax.Build.Bindings
                     CppReferencesFiles.Add(apiType.File);
 
                     if (apiType.MarshalAs != null)
-                        return GenerateCppWrapperNativeToManaged(buildData, new TypeInfo(apiType.MarshalAs), caller, out type, functionInfo);
+                        return GenerateCppWrapperNativeToManaged(buildData, apiType.MarshalAs, caller, out type, functionInfo);
 
                     // Scripting Object
                     if (apiType.IsScriptingObject)
@@ -801,7 +801,7 @@ namespace Flax.Build.Bindings
                 if (apiType != null)
                 {
                     if (apiType.MarshalAs != null)
-                        return GenerateCppWrapperManagedToNative(buildData, new TypeInfo(apiType.MarshalAs), caller, out type, out apiType, functionInfo, out needLocalVariable);
+                        return GenerateCppWrapperManagedToNative(buildData, apiType.MarshalAs, caller, out type, out apiType, functionInfo, out needLocalVariable);
 
                     // Scripting Object (for non-pod types converting only, other API converts managed to unmanaged object in C# wrapper code)
                     if (CppNonPodTypesConvertingGeneration && apiType.IsScriptingObject && typeInfo.IsPtr)
