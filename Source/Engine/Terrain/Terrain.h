@@ -24,10 +24,7 @@ struct RenderView;
 #define TERRAIN_EDITING 1
 
 // Enable/disable terrain heightmap samples modification and gather. Used by the editor to modify the terrain with the brushes.
-#define TERRAIN_UPDATING (USE_EDITOR)
-
-// Enable/disable precise terrain geometry collision testing (with in-build vertex buffer caching, this will increase memory usage)
-#define USE_PRECISE_TERRAIN_INTERSECTS (USE_EDITOR)
+#define TERRAIN_UPDATING 1
 
 // Enable/disable terrain physics collision drawing
 #define TERRAIN_USE_PHYSICS_DEBUG (USE_EDITOR && 1)
