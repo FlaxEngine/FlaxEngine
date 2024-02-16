@@ -44,6 +44,22 @@ API_CLASS(Sealed) class FLAXENGINE_API Terrain : public PhysicsColliderActor
     friend TerrainPatch;
     friend TerrainChunk;
 
+    /// <summary>
+    /// Various defines regarding terrain configuration.
+    /// </summary>
+    API_ENUM() enum Config
+    {
+        /// <summary>
+        /// The maximum allowed amount of chunks per patch.
+        /// </summary>
+        ChunksCount = 16,
+
+        /// <summary>
+        /// The maximum allowed amount of chunks per chunk.
+        /// </summary>
+        ChunksCountEdge = 4,
+    };
+
 private:
     char _lodBias;
     char _forcedLod;
@@ -223,7 +239,7 @@ public:
     /// </summary>
     /// <param name="patchCoord">The patch location (x and z).</param>
     /// <returns>The patch.</returns>
-    TerrainPatch* GetPatch(const Int2& patchCoord) const;
+    API_FUNCTION() TerrainPatch* GetPatch(API_PARAM(Ref) const Int2& patchCoord) const;
 
     /// <summary>
     /// Gets the patch at the given location.
@@ -231,7 +247,7 @@ public:
     /// <param name="x">The patch location x.</param>
     /// <param name="z">The patch location z.</param>
     /// <returns>The patch.</returns>
-    TerrainPatch* GetPatch(int32 x, int32 z) const;
+    API_FUNCTION() TerrainPatch* GetPatch(int32 x, int32 z) const;
 
     /// <summary>
     /// Gets the zero-based index of the terrain patch in the terrain patches collection.
@@ -245,7 +261,7 @@ public:
     /// </summary>
     /// <param name="index">The index.</param>
     /// <returns>The patch.</returns>
-    FORCE_INLINE TerrainPatch* GetPatch(int32 index) const
+    API_FUNCTION() FORCE_INLINE TerrainPatch* GetPatch(int32 index) const
     {
         return _patches[index];
     }
@@ -316,7 +332,6 @@ public:
 
 public:
 #if TERRAIN_EDITING
-
     /// <summary>
     /// Setups the terrain. Clears the existing data.
     /// </summary>
@@ -341,7 +356,6 @@ public:
     /// </summary>
     /// <param name="patchCoord">The patch location (x and z).</param>
     API_FUNCTION() void RemovePatch(API_PARAM(Ref) const Int2& patchCoord);
-
 #endif
 
     /// <summary>
@@ -374,7 +388,7 @@ public:
     /// <param name="resultChunk">The raycast result hit chunk. Valid only if raycast hits anything.</param>
     /// <param name="maxDistance">The maximum distance the ray should check for collisions.</param>
     /// <returns>True if ray hits an object, otherwise false.</returns>
-    bool RayCast(const Vector3& origin, const Vector3& direction, float& resultHitDistance, TerrainChunk*& resultChunk, float maxDistance = MAX_float) const;
+    API_FUNCTION() bool RayCast(const Vector3& origin, const Vector3& direction, API_PARAM(Out) float& resultHitDistance, API_PARAM(Out) TerrainChunk*& resultChunk, float maxDistance = MAX_float) const;
 
     /// <summary>
     /// Performs a raycast against this terrain collision shape. Returns the hit chunk.

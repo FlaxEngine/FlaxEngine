@@ -165,7 +165,7 @@ void ShadowsOfMordor::Builder::onJobRender(GPUContext* context)
                 Matrix::Transpose(world, shaderData.WorldMatrix);
                 shaderData.LightmapArea = chunk->Lightmap.UVsArea;
                 shaderData.TerrainChunkSizeLOD0 = TERRAIN_UNITS_PER_VERTEX * chunkSize;
-                chunk->GetHeightmapUVScaleBias(&shaderData.HeightmapUVScaleBias);
+                shaderData.HeightmapUVScaleBias = chunk->GetHeightmapUVScaleBias();
 
                 // Extract per axis scales from LocalToWorld transform
                 const float scaleX = Float3(world.M11, world.M12, world.M13).Length();
