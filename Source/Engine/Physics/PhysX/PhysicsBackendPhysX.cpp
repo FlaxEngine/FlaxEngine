@@ -644,6 +644,19 @@ void GetShapeGeometry(const CollisionShape& shape, PxGeometryHolder& geometry)
     }
 }
 
+void GetShapeMaterials(Array<PxMaterial*, InlinedAllocation<1>>& materialsPhysX, Span<JsonAsset*> materials)
+{
+    materialsPhysX.Resize(materials.Length());
+    for (int32 i = 0; i < materials.Length(); i++)
+    {
+        PxMaterial* materialPhysX = DefaultMaterial;
+        const JsonAsset* material = materials.Get()[i];
+        if (material && !material->WaitForLoaded() && material->Instance)
+            materialPhysX = (PxMaterial*)((PhysicalMaterial*)material->Instance)->GetPhysicsMaterial();
+        materialsPhysX.Get()[i] = materialPhysX;
+    }
+}
+
 PxFilterFlags FilterShader(
     PxFilterObjectAttributes attributes0, PxFilterData filterData0,
     PxFilterObjectAttributes attributes1, PxFilterData filterData1,
@@ -2449,17 +2462,14 @@ void PhysicsBackend::AddRigidDynamicActorTorque(void* actor, const Vector3& torq
     actorPhysX->addTorque(C2P(torque), static_cast<PxForceMode::Enum>(mode));
 }
 
-void* PhysicsBackend::CreateShape(PhysicsColliderActor* collider, const CollisionShape& geometry, JsonAsset* material, bool enabled, bool trigger)
+void* PhysicsBackend::CreateShape(PhysicsColliderActor* collider, const CollisionShape& geometry, Span<JsonAsset*> materials, bool enabled, bool trigger)
 {
     const PxShapeFlags shapeFlags = GetShapeFlags(trigger, enabled);
-    PxMaterial* materialPhysX = DefaultMaterial;
-    if (material && !material->WaitForLoaded() && material->Instance)
-    {
-        materialPhysX = (PxMaterial*)((PhysicalMaterial*)material->Instance)->GetPhysicsMaterial();
-    }
+    Array<PxMaterial*, InlinedAllocation<1>> materialsPhysX;
+    GetShapeMaterials(materialsPhysX, materials);
     PxGeometryHolder geometryPhysX;
     GetShapeGeometry(geometry, geometryPhysX);
-    PxShape* shapePhysX = PhysX->createShape(geometryPhysX.any(), *materialPhysX, true, shapeFlags);
+    PxShape* shapePhysX = PhysX->createShape(geometryPhysX.any(), materialsPhysX.Get(), materialsPhysX.Count(), true, shapeFlags);
     shapePhysX->userData = collider;
 #if PHYSX_DEBUG_NAMING
     shapePhysX->setName("Shape");
@@ -2549,15 +2559,12 @@ void PhysicsBackend::SetShapeContactOffset(void* shape, float value)
     shapePhysX->setContactOffset(Math::Max(shapePhysX->getRestOffset() + ZeroTolerance, value));
 }
 
-void PhysicsBackend::SetShapeMaterial(void* shape, JsonAsset* material)
+void PhysicsBackend::SetShapeMaterials(void* shape, Span<JsonAsset*> materials)
 {
     auto shapePhysX = (PxShape*)shape;
-    PxMaterial* materialPhysX = DefaultMaterial;
-    if (material && !material->WaitForLoaded() && material->Instance)
-    {
-        materialPhysX = (PxMaterial*)((PhysicalMaterial*)material->Instance)->GetPhysicsMaterial();
-    }
-    shapePhysX->setMaterials(&materialPhysX, 1);
+    Array<PxMaterial*, InlinedAllocation<1>> materialsPhysX;
+    GetShapeMaterials(materialsPhysX, materials);
+    shapePhysX->setMaterials(materialsPhysX.Get(), materialsPhysX.Count());
 }
 
 void PhysicsBackend::SetShapeGeometry(void* shape, const CollisionShape& geometry)
@@ -4077,10 +4084,17 @@ void PhysicsBackend::GetHeightFieldSize(void* heightField, int32& rows, int32& c
     columns = (int32)heightFieldPhysX->getNbColumns();
 }
 
-float PhysicsBackend::GetHeightFieldHeight(void* heightField, float x, float z)
+float PhysicsBackend::GetHeightFieldHeight(void* heightField, int32 x, int32 z)
 {
     auto heightFieldPhysX = (PxHeightField*)heightField;
-    return heightFieldPhysX->getHeight(x, z);
+    return heightFieldPhysX->getHeight((float)x, (float)z);
+}
+
+PhysicsBackend::HeightFieldSample PhysicsBackend::GetHeightFieldSample(void* heightField, int32 x, int32 z)
+{
+    auto heightFieldPhysX = (PxHeightField*)heightField;
+    auto sample = heightFieldPhysX->getSample(x, z);
+    return { sample.height, sample.materialIndex0, sample.materialIndex1 };
 }
 
 bool PhysicsBackend::ModifyHeightField(void* heightField, int32 startCol, int32 startRow, int32 cols, int32 rows, const HeightFieldSample* data)

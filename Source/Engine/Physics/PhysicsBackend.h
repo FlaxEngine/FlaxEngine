@@ -4,6 +4,7 @@
 
 #include "Physics.h"
 #include "PhysicsSettings.h"
+#include "Engine/Core/Types/Span.h"
 
 struct HingeJointDrive;
 struct SpringParameters;
@@ -182,7 +183,7 @@ public:
     static void AddRigidDynamicActorTorque(void* actor, const Vector3& torque, ForceMode mode);
 
     // Shapes
-    static void* CreateShape(PhysicsColliderActor* collider, const CollisionShape& geometry, JsonAsset* material, bool enabled, bool trigger);
+    static void* CreateShape(PhysicsColliderActor* collider, const CollisionShape& geometry, Span<JsonAsset*> materials, bool enabled, bool trigger);
     static void SetShapeState(void* shape, bool enabled, bool trigger);
     static void SetShapeFilterMask(void* shape, uint32 mask0, uint32 mask1);
     static void* GetShapeActor(void* shape);
@@ -191,7 +192,7 @@ public:
     static void GetShapeLocalPose(void* shape, Vector3& position, Quaternion& orientation);
     static void SetShapeLocalPose(void* shape, const Vector3& position, const Quaternion& orientation);
     static void SetShapeContactOffset(void* shape, float value);
-    static void SetShapeMaterial(void* shape, JsonAsset* material);
+    static void SetShapeMaterials(void* shape, Span<JsonAsset*> materials);
     static void SetShapeGeometry(void* shape, const CollisionShape& geometry);
     static void AttachShape(void* shape, void* actor);
     static void DetachShape(void* shape, void* actor);
@@ -303,7 +304,8 @@ public:
     static void GetTriangleMeshTriangles(void* triangleMesh, Array<Float3, HeapAllocation>& vertexBuffer, Array<int32, HeapAllocation>& indexBuffer);
     static const uint32* GetTriangleMeshRemap(void* triangleMesh, uint32& count);
     static void GetHeightFieldSize(void* heightField, int32& rows, int32& columns);
-    static float GetHeightFieldHeight(void* heightField, float x, float z);
+    static float GetHeightFieldHeight(void* heightField, int32 x, int32 z);
+    static HeightFieldSample GetHeightFieldSample(void* heightField, int32 x, int32 z);
     static bool ModifyHeightField(void* heightField, int32 startCol, int32 startRow, int32 cols, int32 rows, const HeightFieldSample* data);
     static void FlushRequests();
     static void FlushRequests(void* scene);
@@ -329,6 +331,14 @@ public:
         auto flags = GetRigidDynamicActorFlags(actor);
         flags = (RigidDynamicFlags)(((uint32)flags & ~(uint32)flag) | (value ? (uint32)flag : 0));
         SetRigidDynamicActorFlags(actor, flags);
+    }
+    FORCE_INLINE static void* CreateShape(PhysicsColliderActor* collider, const CollisionShape& geometry, JsonAsset* material, bool enabled, bool trigger)
+    {
+        return CreateShape(collider, geometry, Span<JsonAsset*>(&material, 1), enabled, trigger);
+    }
+    FORCE_INLINE static void SetShapeMaterial(void* shape, JsonAsset* material)
+    {
+        SetShapeMaterials(shape, Span<JsonAsset*>(&material, 1));
     }
 };
 

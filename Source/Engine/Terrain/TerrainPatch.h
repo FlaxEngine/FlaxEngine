@@ -22,7 +22,6 @@ class FLAXENGINE_API TerrainPatch : public ISerializable
     friend TerrainChunk;
 
 public:
-
     enum
     {
         CHUNKS_COUNT = 16,
@@ -30,7 +29,6 @@ public:
     };
 
 private:
-
     Terrain* _terrain;
     int16 _x, _z;
     float _yOffset, _yHeight;
@@ -52,7 +50,7 @@ private:
     TextureBase::InitData* _dataSplatmap[TERRAIN_MAX_SPLATMAPS_COUNT] = {};
 #endif
 #if TERRAIN_USE_PHYSICS_DEBUG
-	Array<Vector3> _debugLines; // TODO: large-worlds
+    Array<Vector3> _debugLines; // TODO: large-worlds
 #endif
 #if USE_EDITOR
     Array<Vector3> _collisionTriangles; // TODO: large-worlds
@@ -62,14 +60,12 @@ private:
     void Init(Terrain* terrain, int16 x, int16 z);
 
 public:
-
     /// <summary>
     /// Finalizes an instance of the <see cref="TerrainPatch"/> class.
     /// </summary>
     ~TerrainPatch();
 
 public:
-
     /// <summary>
     /// The chunks contained within the patch. Organized in 4x4 square.
     /// </summary>
@@ -86,11 +82,9 @@ public:
     AssetReference<Texture> Splatmap[TERRAIN_MAX_SPLATMAPS_COUNT];
 
 public:
-
     /// <summary>
     /// Gets the Y axis heightmap offset from terrain origin.
     /// </summary>
-    /// <returns>The offset.</returns>
     FORCE_INLINE float GetOffsetY() const
     {
         return _yOffset;
@@ -99,7 +93,6 @@ public:
     /// <summary>
     /// Gets the Y axis heightmap height.
     /// </summary>
-    /// <returns>The height.</returns>
     FORCE_INLINE float GetHeightY() const
     {
         return _yHeight;
@@ -108,7 +101,6 @@ public:
     /// <summary>
     /// Gets the x coordinate.
     /// </summary>
-    /// <returns>The x position.</returns>
     FORCE_INLINE int32 GetX() const
     {
         return _x;
@@ -117,7 +109,6 @@ public:
     /// <summary>
     /// Gets the z coordinate.
     /// </summary>
-    /// <returns>The z position.</returns>
     FORCE_INLINE int32 GetZ() const
     {
         return _z;
@@ -126,7 +117,6 @@ public:
     /// <summary>
     /// Gets the terrain.
     /// </summary>
-    /// <returns>The terrain,</returns>
     FORCE_INLINE Terrain* GetTerrain() const
     {
         return _terrain;
@@ -168,14 +158,12 @@ public:
     /// <summary>
     /// Gets the patch world bounds.
     /// </summary>
-    /// <returns>The bounding box.</returns>
     FORCE_INLINE const BoundingBox& GetBounds() const
     {
         return _bounds;
     }
 
 public:
-
     /// <summary>
     /// Removes the lightmap data from the terrain patch.
     /// </summary>
@@ -192,7 +180,6 @@ public:
     void UpdateTransform();
 
 #if TERRAIN_EDITING
-
     /// <summary>
     /// Initializes the patch heightmap and collision to the default flat level.
     /// </summary>
@@ -218,11 +205,9 @@ public:
     /// <param name="forceUseVirtualStorage">If set to <c>true</c> patch will use virtual storage by force. Otherwise it can use normal texture asset storage on drive (valid only during Editor). Runtime-created terrain can only use virtual storage (in RAM).</param>
     /// <returns>True if failed, otherwise false.</returns>
     bool SetupSplatMap(int32 index, int32 splatMapLength, const Color32* splatMap, bool forceUseVirtualStorage = false);
-
 #endif
 
 #if TERRAIN_UPDATING
-
     /// <summary>
     /// Gets the raw pointer to the heightmap data.
     /// </summary>
@@ -291,18 +276,15 @@ public:
     bool ModifySplatMap(int32 index, const Color32* samples, const Int2& modifiedOffset, const Int2& modifiedSize);
 
 private:
-
-    bool UpdateHeightData(const struct TerrainDataUpdateInfo& info, const Int2& modifiedOffset, const Int2& modifiedSize, bool wasHeightRangeChanged);
+    bool UpdateHeightData(struct TerrainDataUpdateInfo& info, const Int2& modifiedOffset, const Int2& modifiedSize, bool wasHeightRangeChanged, bool wasHeightChanged);
     void SaveHeightData();
     void CacheHeightData();
     void SaveSplatData();
     void SaveSplatData(int32 index);
     void CacheSplatData();
-
 #endif
 
 public:
-
     /// <summary>
     /// Performs a raycast against this terrain collision shape.
     /// </summary>
@@ -353,18 +335,14 @@ public:
     void ClosestPoint(const Vector3& position, Vector3& result) const;
 
 #if USE_EDITOR
-
     /// <summary>
     /// Updates the patch data after manual deserialization called at runtime (eg. by editor undo).
     /// </summary>
     void UpdatePostManualDeserialization();
-
 #endif
 
 public:
-
 #if USE_EDITOR
-
     /// <summary>
     /// Gets the collision mesh triangles array (3 vertices per triangle in linear list). Cached internally to reuse data.
     /// </summary>
@@ -377,7 +355,6 @@ public:
     /// <param name="bounds">The world-space bounds to find terrain triangles that intersect with it.</param>
     /// <param name="result">The result triangles that intersect with the given bounds (in world-space).</param>
     void GetCollisionTriangles(const BoundingSphere& bounds, Array<Vector3>& result);
-
 #endif
 
     /// <summary>
@@ -388,7 +365,6 @@ public:
     void ExtractCollisionGeometry(Array<Float3>& vertexBuffer, Array<int32>& indexBuffer);
 
 private:
-
     /// <summary>
     /// Determines whether this patch has created collision representation.
     /// </summary>
@@ -419,8 +395,8 @@ private:
     void DestroyCollision();
 
 #if TERRAIN_USE_PHYSICS_DEBUG
-	void CacheDebugLines();
-	void DrawPhysicsDebug(RenderView& view);
+    void CacheDebugLines();
+    void DrawPhysicsDebug(RenderView& view);
 #endif
 
     /// <summary>
@@ -430,8 +406,8 @@ private:
     bool UpdateCollision();
 
     void OnPhysicsSceneChanged(PhysicsScene* previous);
-public:
 
+public:
     // [ISerializable]
     void Serialize(SerializeStream& stream, const void* otherObj) override;
     void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) override;

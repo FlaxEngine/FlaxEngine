@@ -29,7 +29,7 @@ Terrain::Terrain(const SpawnParams& params)
     , _cachedScale(1.0f)
 {
     _drawCategory = SceneRendering::SceneDrawAsync;
-    PhysicalMaterial.Changed.Bind<Terrain, &Terrain::OnPhysicalMaterialChanged>(this);
+    _physicalMaterials.Resize(8);
 }
 
 Terrain::~Terrain()
@@ -228,22 +228,6 @@ void Terrain::DrawChunk(const RenderContext& renderContext, const Int2& patchCoo
     }
 }
 
-void Terrain::OnPhysicalMaterialChanged()
-{
-    if (_patches.IsEmpty())
-        return;
-
-    // Update the shapes material
-    for (int32 pathIndex = 0; pathIndex < _patches.Count(); pathIndex++)
-    {
-        const auto patch = _patches[pathIndex];
-        if (patch->HasCollision())
-        {
-            PhysicsBackend::SetShapeMaterial(patch->_physicsShape, PhysicalMaterial);
-        }
-    }
-}
-
 #if TERRAIN_USE_PHYSICS_DEBUG
 
 void Terrain::DrawPhysicsDebug(RenderView& view)
@@ -293,6 +277,21 @@ void Terrain::SetCollisionLOD(int32 value)
         }
     }
 #endif
+}
+
+void Terrain::SetPhysicalMaterials(const Array<JsonAssetReference<PhysicalMaterial>, FixedAllocation<8>>& value)
+{
+    _physicalMaterials = value;
+    _physicalMaterials.Resize(8);
+    JsonAsset* materials[8];
+    for (int32 i = 0;i<8;i++)
+        materials[i] = _physicalMaterials[i];
+    for (int32 pathIndex = 0; pathIndex < _patches.Count(); pathIndex++)
+    {
+        const auto patch = _patches.Get()[pathIndex];
+        if (patch->HasCollision())
+            PhysicsBackend::SetShapeMaterials(patch->_physicsShape, ToSpan(materials, 8));
+    }
 }
 
 TerrainPatch* Terrain::GetPatch(const Int2& patchCoord) const
@@ -667,8 +666,8 @@ void Terrain::Serialize(SerializeStream& stream, const void* otherObj)
     SERIALIZE_MEMBER(ScaleInLightmap, _scaleInLightmap);
     SERIALIZE_MEMBER(BoundsExtent, _boundsExtent);
     SERIALIZE_MEMBER(CollisionLOD, _collisionLod);
+    SERIALIZE_MEMBER(PhysicalMaterials, _physicalMaterials);
     SERIALIZE(Material);
-    SERIALIZE(PhysicalMaterial);
     SERIALIZE(DrawModes);
 
     SERIALIZE_MEMBER(LODCount, _lodCount);
@@ -714,8 +713,8 @@ void Terrain::Deserialize(DeserializeStream& stream, ISerializeModifier* modifie
     DESERIALIZE_MEMBER(LODDistribution, _lodDistribution);
     DESERIALIZE_MEMBER(ScaleInLightmap, _scaleInLightmap);
     DESERIALIZE_MEMBER(BoundsExtent, _boundsExtent);
+    DESERIALIZE_MEMBER(PhysicalMaterials, _physicalMaterials);
     DESERIALIZE(Material);
-    DESERIALIZE(PhysicalMaterial);
     DESERIALIZE(DrawModes);
 
     member = stream.FindMember("LODCount");
@@ -780,6 +779,15 @@ void Terrain::Deserialize(DeserializeStream& stream, ISerializeModifier* modifie
     // [Deprecated on 27.04.2022, expires on 27.04.2024]
     if (modifier->EngineBuild <= 6331)
         DrawModes |= DrawPass::GlobalSurfaceAtlas;
+
+    // [Deprecated on 15.02.2024, expires on 15.02.2026]
+    JsonAssetReference<PhysicalMaterial> PhysicalMaterial;
+    DESERIALIZE(PhysicalMaterial);
+    if (PhysicalMaterial)
+    {
+        for (auto& e : _physicalMaterials)
+            e = PhysicalMaterial;
+    }
 }
 
 RigidBody* Terrain::GetAttachedRigidBody() const

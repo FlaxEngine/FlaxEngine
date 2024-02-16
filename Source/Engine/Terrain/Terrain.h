@@ -41,13 +41,12 @@ struct RenderView;
 /// <seealso cref="PhysicsColliderActor" />
 API_CLASS(Sealed) class FLAXENGINE_API Terrain : public PhysicsColliderActor
 {
-DECLARE_SCENE_OBJECT(Terrain);
+    DECLARE_SCENE_OBJECT(Terrain);
     friend Terrain;
     friend TerrainPatch;
     friend TerrainChunk;
 
 private:
-
     char _lodBias;
     char _forcedLod;
     char _collisionLod;
@@ -60,27 +59,20 @@ private:
     Float3 _cachedScale;
     Array<TerrainPatch*, InlinedAllocation<64>> _patches;
     Array<TerrainChunk*> _drawChunks;
+    Array<JsonAssetReference<PhysicalMaterial>, FixedAllocation<8>> _physicalMaterials;
 
 public:
-
     /// <summary>
     /// Finalizes an instance of the <see cref="Terrain"/> class.
     /// </summary>
     ~Terrain();
 
 public:
-
     /// <summary>
     /// The default material used for terrain rendering (chunks can override this).
     /// </summary>
     API_FIELD(Attributes="EditorOrder(100), DefaultValue(null), EditorDisplay(\"Terrain\")")
     AssetReference<MaterialBase> Material;
-
-    /// <summary>
-    /// The physical material used to define the terrain collider physical properties.
-    /// </summary>
-    API_FIELD(Attributes="EditorOrder(520), DefaultValue(null), Limit(-1, 100, 0.1f), EditorDisplay(\"Collision\")")
-    JsonAssetReference<::PhysicalMaterial> PhysicalMaterial;
 
     /// <summary>
     /// The draw passes to use for rendering this object.
@@ -89,7 +81,6 @@ public:
     DrawPass DrawModes = DrawPass::Default;
 
 public:
-
     /// <summary>
     /// Gets the terrain Level Of Detail bias value. Allows to increase or decrease rendered terrain quality.
     /// </summary>
@@ -179,6 +170,21 @@ public:
     /// Sets the terrain geometry LOD index used for collision.
     /// </summary>
     API_PROPERTY() void SetCollisionLOD(int32 value);
+
+    /// <summary>
+    /// Gets the list with physical materials used to define the terrain collider physical properties - each for terrain layer (layer index matches index in this array).
+    /// </summary>
+    API_PROPERTY(Attributes="EditorOrder(520), EditorDisplay(\"Collision\"), Collection(MinCount = 8, MaxCount = 8)")
+    FORCE_INLINE const Array<JsonAssetReference<PhysicalMaterial>, FixedAllocation<8>>& GetPhysicalMaterials() const
+    {
+        return _physicalMaterials;
+    }
+
+    /// <summary>
+    /// Sets the list with physical materials used to define the terrain collider physical properties - each for terrain layer (layer index matches index in this array).
+    /// </summary>
+    API_PROPERTY()
+    void SetPhysicalMaterials(const Array<JsonAssetReference<PhysicalMaterial>, FixedAllocation<8>>& value);
 
     /// <summary>
     /// Gets the terrain Level Of Detail count.
@@ -311,7 +317,6 @@ public:
 #endif
 
 public:
-
 #if TERRAIN_EDITING
 
     /// <summary>
@@ -362,7 +367,6 @@ public:
     void RemoveLightmap();
 
 public:
-
     /// <summary>
     /// Performs a raycast against this terrain collision shape.
     /// </summary>
@@ -432,14 +436,11 @@ public:
     API_FUNCTION() void DrawChunk(API_PARAM(Ref) const RenderContext& renderContext, API_PARAM(Ref) const Int2& patchCoord, API_PARAM(Ref) const Int2& chunkCoord, MaterialBase* material, int32 lodIndex = 0) const;
 
 private:
-
-    void OnPhysicalMaterialChanged();
 #if TERRAIN_USE_PHYSICS_DEBUG
-	void DrawPhysicsDebug(RenderView& view);
+    void DrawPhysicsDebug(RenderView& view);
 #endif
 
 public:
-
     // [PhysicsColliderActor]
     void Draw(RenderContext& renderContext) override;
 #if USE_EDITOR
@@ -452,7 +453,6 @@ public:
     RigidBody* GetAttachedRigidBody() const override;
 
 protected:
-
     // [PhysicsColliderActor]
     void OnEnable() override;
     void OnDisable() override;
