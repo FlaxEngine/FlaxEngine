@@ -12,6 +12,13 @@
 template<typename T>
 API_STRUCT(NoDefault, Template, MarshalAs=JsonAsset*) struct JsonAssetReference : AssetReference<JsonAsset>
 {
+    JsonAssetReference() = default;
+
+    JsonAssetReference(JsonAsset* asset)
+    {
+        OnSet(asset);
+    }
+
     /// <summary>
     /// Gets the deserialized native object instance of the given type. Returns null if asset is not loaded or loaded object has different type.
     /// </summary>

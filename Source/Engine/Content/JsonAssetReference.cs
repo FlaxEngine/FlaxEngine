@@ -12,7 +12,7 @@ namespace FlaxEngine
 #if FLAX_EDITOR
     [CustomEditor(typeof(FlaxEditor.CustomEditors.Editors.AssetRefEditor))]
 #endif
-    public struct JsonAssetReference<T>
+    public struct JsonAssetReference<T> : IComparable, IComparable<JsonAssetReference<T>>, IEquatable<JsonAssetReference<T>>
     {
         /// <summary>
         /// Gets or sets the referenced asset.
@@ -95,15 +95,39 @@ namespace FlaxEngine
         }
 
         /// <inheritdoc />
+        public bool Equals(JsonAssetReference<T> other)
+        {
+            return Asset == other.Asset;
+        }
+
+        /// <inheritdoc />
+        public int CompareTo(JsonAssetReference<T> other)
+        {
+            return Object.GetUnmanagedPtr(Asset).CompareTo(Object.GetUnmanagedPtr(other.Asset));
+        }
+
+        /// <inheritdoc />
+        public override bool Equals(object obj)
+        {
+            return obj is JsonAssetReference<T> other && Asset == other.Asset;
+        }
+
+        /// <inheritdoc />
         public override string ToString()
         {
             return Asset?.ToString();
         }
 
         /// <inheritdoc />
+        public int CompareTo(object obj)
+        {
+            return obj is JsonAssetReference<T> other ? CompareTo(other) : 1;
+        }
+
+        /// <inheritdoc />
         public override int GetHashCode()
         {
-            return Asset?.GetHashCode() ?? 0;
+            return (Asset != null ? Asset.GetHashCode() : 0);
         }
     }
 }
