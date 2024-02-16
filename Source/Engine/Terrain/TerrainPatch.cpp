@@ -44,6 +44,11 @@ struct TerrainCollisionDataHeader
     float ScaleXZ;
 };
 
+TerrainPatch::TerrainPatch(const SpawnParams& params)
+    : ScriptingObject(params)
+{
+}
+
 void TerrainPatch::Init(Terrain* terrain, int16 x, int16 z)
 {
     ScopeLock lock(_collisionLocker);
@@ -54,13 +59,13 @@ void TerrainPatch::Init(Terrain* terrain, int16 x, int16 z)
     _physicsHeightField = nullptr;
     _x = x;
     _z = z;
-    const float size = _terrain->_chunkSize * TERRAIN_UNITS_PER_VERTEX * CHUNKS_COUNT_EDGE;
+    const float size = _terrain->_chunkSize * TERRAIN_UNITS_PER_VERTEX * Terrain::Terrain::ChunksCountEdge;
     _offset = Float3(_x * size, 0.0f, _z * size);
     _yOffset = 0.0f;
     _yHeight = 1.0f;
-    for (int32 i = 0; i < CHUNKS_COUNT; i++)
+    for (int32 i = 0; i < Terrain::ChunksCount; i++)
     {
-        Chunks[i].Init(this, i % CHUNKS_COUNT_EDGE, i / CHUNKS_COUNT_EDGE);
+        Chunks[i].Init(this, i % Terrain::Terrain::ChunksCountEdge, i / Terrain::Terrain::ChunksCountEdge);
     }
     Heightmap = nullptr;
     for (int32 i = 0; i < TERRAIN_MAX_SPLATMAPS_COUNT; i++)
@@ -111,7 +116,7 @@ void TerrainPatch::UpdateBounds()
     PROFILE_CPU();
     Chunks[0].UpdateBounds();
     _bounds = Chunks[0]._bounds;
-    for (int32 i = 1; i < CHUNKS_COUNT; i++)
+    for (int32 i = 1; i < Terrain::ChunksCount; i++)
     {
         Chunks[i].UpdateBounds();
         BoundingBox::Merge(_bounds, Chunks[i]._bounds, _bounds);
@@ -130,7 +135,7 @@ void TerrainPatch::UpdateTransform()
     }
 
     // Update chunks cache
-    for (int32 i = 0; i < CHUNKS_COUNT; i++)
+    for (int32 i = 0; i < Terrain::ChunksCount; i++)
     {
         Chunks[i].UpdateTransform();
     }
@@ -168,9 +173,9 @@ struct TerrainDataUpdateInfo
     {
         ChunkSize = patch->GetTerrain()->GetChunkSize();
         VertexCountEdge = ChunkSize + 1;
-        HeightmapSize = ChunkSize * TerrainPatch::CHUNKS_COUNT_EDGE + 1;
+        HeightmapSize = ChunkSize * Terrain::ChunksCountEdge + 1;
         HeightmapLength = HeightmapSize * HeightmapSize;
-        TextureSize = VertexCountEdge * TerrainPatch::CHUNKS_COUNT_EDGE;
+        TextureSize = VertexCountEdge * Terrain::ChunksCountEdge;
     }
 
     bool UsePhysicalMaterials() const
@@ -231,7 +236,7 @@ FORCE_INLINE bool ReadIsHole(const Color32& raw)
     return (raw.B + raw.A) >= (int32)(1.9f * MAX_uint8);
 }
 
-void CalculateHeightmapRange(Terrain* terrain, TerrainDataUpdateInfo& info, const float* heightmap, float chunkOffsets[TerrainPatch::CHUNKS_COUNT], float chunkHeights[TerrainPatch::CHUNKS_COUNT])
+void CalculateHeightmapRange(Terrain* terrain, TerrainDataUpdateInfo& info, const float* heightmap, float chunkOffsets[Terrain::ChunksCount], float chunkHeights[Terrain::ChunksCount])
 {
     PROFILE_CPU_NAMED("Terrain.CalculateRange");
 
@@ -240,10 +245,10 @@ void CalculateHeightmapRange(Terrain* terrain, TerrainDataUpdateInfo& info, cons
     float minPatchHeight = MAX_float;
     float maxPatchHeight = MIN_float;
 
-    for (int32 chunkIndex = 0; chunkIndex < TerrainPatch::CHUNKS_COUNT; chunkIndex++)
+    for (int32 chunkIndex = 0; chunkIndex < Terrain::ChunksCount; chunkIndex++)
     {
-        const int32 chunkX = (chunkIndex % TerrainPatch::CHUNKS_COUNT_EDGE) * info.ChunkSize;
-        const int32 chunkZ = (chunkIndex / TerrainPatch::CHUNKS_COUNT_EDGE) * info.ChunkSize;
+        const int32 chunkX = (chunkIndex % Terrain::ChunksCountEdge) * info.ChunkSize;
+        const int32 chunkZ = (chunkIndex / Terrain::ChunksCountEdge) * info.ChunkSize;
 
         float minHeight = MAX_float;
         float maxHeight = MIN_float;
@@ -286,10 +291,10 @@ void UpdateHeightMap(const TerrainDataUpdateInfo& info, const float* heightmap, 
     const auto heightmapPtr = heightmap;
     const auto ptr = (Color32*)data;
 
-    for (int32 chunkIndex = 0; chunkIndex < TerrainPatch::CHUNKS_COUNT; chunkIndex++)
+    for (int32 chunkIndex = 0; chunkIndex < Terrain::ChunksCount; chunkIndex++)
     {
-        const int32 chunkX = (chunkIndex % TerrainPatch::CHUNKS_COUNT_EDGE);
-        const int32 chunkZ = (chunkIndex / TerrainPatch::CHUNKS_COUNT_EDGE);
+        const int32 chunkX = (chunkIndex % Terrain::ChunksCountEdge);
+        const int32 chunkZ = (chunkIndex / Terrain::ChunksCountEdge);
 
         const int32 chunkTextureX = chunkX * info.VertexCountEdge;
         const int32 chunkTextureZ = chunkZ * info.VertexCountEdge;
@@ -328,10 +333,10 @@ void UpdateSplatMap(const TerrainDataUpdateInfo& info, const Color32* splatMap, 
 
     const auto splatPtr = splatMap;
     const auto ptr = (Color32*)data;
-    for (int32 chunkIndex = 0; chunkIndex < TerrainPatch::CHUNKS_COUNT; chunkIndex++)
+    for (int32 chunkIndex = 0; chunkIndex < Terrain::ChunksCount; chunkIndex++)
     {
-        const int32 chunkX = (chunkIndex % TerrainPatch::CHUNKS_COUNT_EDGE);
-        const int32 chunkZ = (chunkIndex / TerrainPatch::CHUNKS_COUNT_EDGE);
+        const int32 chunkX = (chunkIndex % Terrain::ChunksCountEdge);
+        const int32 chunkZ = (chunkIndex / Terrain::ChunksCountEdge);
 
         const int32 chunkTextureX = chunkX * info.VertexCountEdge;
         const int32 chunkTextureZ = chunkZ * info.VertexCountEdge;
@@ -450,10 +455,10 @@ void UpdateNormalsAndHoles(const TerrainDataUpdateInfo& info, const float* heigh
 
     // Write back to the data container
     const auto ptr = (Color32*)data;
-    for (int32 chunkIndex = 0; chunkIndex < TerrainPatch::CHUNKS_COUNT; chunkIndex++)
+    for (int32 chunkIndex = 0; chunkIndex < Terrain::ChunksCount; chunkIndex++)
     {
-        const int32 chunkX = (chunkIndex % TerrainPatch::CHUNKS_COUNT_EDGE);
-        const int32 chunkZ = (chunkIndex / TerrainPatch::CHUNKS_COUNT_EDGE);
+        const int32 chunkX = (chunkIndex % Terrain::ChunksCountEdge);
+        const int32 chunkZ = (chunkIndex / Terrain::ChunksCountEdge);
 
         const int32 chunkTextureX = chunkX * info.VertexCountEdge;
         const int32 chunkTextureZ = chunkZ * info.VertexCountEdge;
@@ -543,9 +548,9 @@ void FixMips(const TerrainDataUpdateInfo& info, TextureBase::InitData* initData,
         const int32 textureSizeMipHigher = textureSizeMip << 1;
 
         // Make heightmap values on left edge the same as the left edge of the chunk on the higher LOD
-        for (int32 chunkX = 0; chunkX < TerrainPatch::CHUNKS_COUNT_EDGE; chunkX++)
+        for (int32 chunkX = 0; chunkX < Terrain::ChunksCountEdge; chunkX++)
         {
-            for (int32 chunkZ = 0; chunkZ < TerrainPatch::CHUNKS_COUNT_EDGE; chunkZ++)
+            for (int32 chunkZ = 0; chunkZ < Terrain::ChunksCountEdge; chunkZ++)
             {
                 const int32 chunkTextureX = chunkX * vertexCountEdgeMip;
                 const int32 chunkTextureZ = chunkZ * vertexCountEdgeMip;
@@ -558,11 +563,11 @@ void FixMips(const TerrainDataUpdateInfo& info, TextureBase::InitData* initData,
                 int32 x = 0, xCount = vertexCountEdgeMip;
                 if (chunkX == 0)
                     x = 1;
-                else if (chunkX == TerrainPatch::CHUNKS_COUNT_EDGE - 1)
+                else if (chunkX == Terrain::ChunksCountEdge - 1)
                     xCount--;
                 if (chunkZ == 0)
                     z = 1;
-                else if (chunkZ == TerrainPatch::CHUNKS_COUNT_EDGE - 1)
+                else if (chunkZ == Terrain::ChunksCountEdge - 1)
                     zCount--;
 
                 for (; z < zCount; z++)
@@ -638,7 +643,7 @@ bool CookCollision(TerrainDataUpdateInfo& info, TextureBase::InitData* initData,
     const int32 collisionLOD = Math::Clamp<int32>(collisionLod, 0, initData->Mips.Count() - 1);
     const int32 collisionLODInv = (int32)Math::Pow(2.0f, (float)collisionLOD);
     const int32 heightFieldChunkSize = ((info.ChunkSize + 1) >> collisionLOD) - 1;
-    const int32 heightFieldSize = heightFieldChunkSize * TerrainPatch::CHUNKS_COUNT_EDGE + 1;
+    const int32 heightFieldSize = heightFieldChunkSize * Terrain::ChunksCountEdge + 1;
     const int32 heightFieldLength = heightFieldSize * heightFieldSize;
     GET_TERRAIN_SCRATCH_BUFFER(heightFieldData, heightFieldLength, PhysicsBackend::HeightFieldSample);
     PhysicsBackend::HeightFieldSample sample;
@@ -649,11 +654,11 @@ bool CookCollision(TerrainDataUpdateInfo& info, TextureBase::InitData* initData,
     const auto& mip = initData->Mips[collisionLOD];
     const int32 vertexCountEdgeMip = info.VertexCountEdge >> collisionLOD;
     const int32 textureSizeMip = info.TextureSize >> collisionLOD;
-    for (int32 chunkX = 0; chunkX < TerrainPatch::CHUNKS_COUNT_EDGE; chunkX++)
+    for (int32 chunkX = 0; chunkX < Terrain::ChunksCountEdge; chunkX++)
     {
         const int32 chunkTextureX = chunkX * vertexCountEdgeMip;
         const int32 chunkStartX = chunkX * heightFieldChunkSize;
-        for (int32 chunkZ = 0; chunkZ < TerrainPatch::CHUNKS_COUNT_EDGE; chunkZ++)
+        for (int32 chunkZ = 0; chunkZ < Terrain::ChunksCountEdge; chunkZ++)
         {
             const int32 chunkTextureZ = chunkZ * vertexCountEdgeMip;
             const int32 chunkStartZ = chunkZ * heightFieldChunkSize;
@@ -709,7 +714,7 @@ bool ModifyCollision(TerrainDataUpdateInfo& info, TextureBase::InitData* initDat
     const int32 collisionLOD = Math::Clamp<int32>(collisionLod, 0, initData->Mips.Count() - 1);
     const int32 collisionLODInv = (int32)Math::Pow(2.0f, (float)collisionLOD);
     const int32 heightFieldChunkSize = ((info.ChunkSize + 1) >> collisionLOD) - 1;
-    const int32 heightFieldSize = heightFieldChunkSize * TerrainPatch::CHUNKS_COUNT_EDGE + 1;
+    const int32 heightFieldSize = heightFieldChunkSize * Terrain::ChunksCountEdge + 1;
     const Int2 samplesOffset(Vector2::Floor(modifiedOffsetRatio * (float)heightFieldSize));
     Int2 samplesSize(Vector2::Ceil(modifiedSizeRatio * (float)heightFieldSize));
     samplesSize.X = Math::Max(samplesSize.X, 1);
@@ -729,14 +734,14 @@ bool ModifyCollision(TerrainDataUpdateInfo& info, TextureBase::InitData* initDat
     const auto& mip = initData->Mips[collisionLOD];
     const int32 vertexCountEdgeMip = info.VertexCountEdge >> collisionLOD;
     const int32 textureSizeMip = info.TextureSize >> collisionLOD;
-    for (int32 chunkX = 0; chunkX < TerrainPatch::CHUNKS_COUNT_EDGE; chunkX++)
+    for (int32 chunkX = 0; chunkX < Terrain::ChunksCountEdge; chunkX++)
     {
         const int32 chunkTextureX = chunkX * vertexCountEdgeMip;
         const int32 chunkStartX = chunkX * heightFieldChunkSize;
         if (chunkStartX >= samplesEnd.X || chunkStartX + vertexCountEdgeMip < samplesOffset.X)
             continue; // Skip unmodified chunks
 
-        for (int32 chunkZ = 0; chunkZ < TerrainPatch::CHUNKS_COUNT_EDGE; chunkZ++)
+        for (int32 chunkZ = 0; chunkZ < Terrain::ChunksCountEdge; chunkZ++)
         {
             const int32 chunkTextureZ = chunkZ * vertexCountEdgeMip;
             const int32 chunkStartZ = chunkZ * heightFieldChunkSize;
@@ -806,15 +811,15 @@ bool TerrainPatch::SetupHeightMap(int32 heightMapLength, const float* heightMap,
     const int32 lodCount = Math::Min<int32>(_terrain->_lodCount, MipLevelsCount(info.VertexCountEdge) - 2);
 
     // Process heightmap to get per-patch height normalization values
-    float chunkOffsets[CHUNKS_COUNT];
-    float chunkHeights[CHUNKS_COUNT];
+    float chunkOffsets[Terrain::ChunksCount];
+    float chunkHeights[Terrain::ChunksCount];
     CalculateHeightmapRange(_terrain, info, heightMap, chunkOffsets, chunkHeights);
 
     // Prepare
 #if USE_EDITOR
     const bool useVirtualStorage = Editor::IsPlayMode || forceUseVirtualStorage;
 #else
-	const bool useVirtualStorage = true;
+    const bool useVirtualStorage = true;
 #endif
 #if USE_EDITOR
     String heightMapPath, heightFieldPath;
@@ -910,11 +915,11 @@ bool TerrainPatch::SetupHeightMap(int32 heightMapLength, const float* heightMap,
         }
     }
 #else
-	else
-	{
-		// Not supported
-		CRASH;
-	}
+    else
+    {
+        // Not supported
+        CRASH;
+    }
 #endif
 
     // Prepare collision data destination container
@@ -975,7 +980,7 @@ bool TerrainPatch::SetupHeightMap(int32 heightMapLength, const float* heightMap,
     // Update data
     _yOffset = info.PatchOffset;
     _yHeight = info.PatchHeight;
-    for (int32 chunkIndex = 0; chunkIndex < CHUNKS_COUNT; chunkIndex++)
+    for (int32 chunkIndex = 0; chunkIndex < Terrain::ChunksCount; chunkIndex++)
     {
         auto& chunk = Chunks[chunkIndex];
         chunk._yOffset = chunkOffsets[chunkIndex];
@@ -1031,7 +1036,7 @@ bool TerrainPatch::SetupSplatMap(int32 index, int32 splatMapLength, const Color3
 #if USE_EDITOR
     const bool useVirtualStorage = Editor::IsPlayMode || forceUseVirtualStorage;
 #else
-	const bool useVirtualStorage = true;
+    const bool useVirtualStorage = true;
 #endif
 #if USE_EDITOR
     String splatMapPath;
@@ -1126,11 +1131,11 @@ bool TerrainPatch::SetupSplatMap(int32 index, int32 splatMapLength, const Color3
         }
     }
 #else
-	else
-	{
-		// Not supported
-		CRASH;
-	}
+    else
+    {
+        // Not supported
+        CRASH;
+    }
 #endif
 
 #if TERRAIN_UPDATING
@@ -1147,7 +1152,7 @@ bool TerrainPatch::SetupSplatMap(int32 index, int32 splatMapLength, const Color3
 bool TerrainPatch::InitializeHeightMap()
 {
     PROFILE_CPU_NAMED("Terrain.InitializeHeightMap");
-    const auto heightmapSize = _terrain->GetChunkSize() * TerrainPatch::CHUNKS_COUNT_EDGE + 1;
+    const auto heightmapSize = _terrain->GetChunkSize() * Terrain::ChunksCountEdge + 1;
     Array<float> heightmap;
     heightmap.Resize(heightmapSize * heightmapSize);
     heightmap.SetAll(0.0f);
@@ -1242,7 +1247,7 @@ void TerrainPatch::CacheHeightData()
     const float patchHeight = _yHeight;
     const auto heightmapPtr = _cachedHeightMap.Get();
     const auto holesMaskPtr = _cachedHolesMask.Get();
-    for (int32 chunkIndex = 0; chunkIndex < CHUNKS_COUNT; chunkIndex++)
+    for (int32 chunkIndex = 0; chunkIndex < Terrain::ChunksCount; chunkIndex++)
     {
         const int32 chunkTextureX = Chunks[chunkIndex]._x * info.VertexCountEdge;
         const int32 chunkTextureZ = Chunks[chunkIndex]._z * info.VertexCountEdge;
@@ -1315,7 +1320,7 @@ void TerrainPatch::CacheSplatData()
 
         // Extract splatmap data
         const auto splatMapPtr = static_cast<Color32*>(_cachedSplatMap[index].Get());
-        for (int32 chunkIndex = 0; chunkIndex < CHUNKS_COUNT; chunkIndex++)
+        for (int32 chunkIndex = 0; chunkIndex < Terrain::ChunksCount; chunkIndex++)
         {
             const int32 chunkTextureX = Chunks[chunkIndex]._x * info.VertexCountEdge;
             const int32 chunkTextureZ = Chunks[chunkIndex]._z * info.VertexCountEdge;
@@ -1394,8 +1399,8 @@ bool TerrainPatch::ModifyHeightMap(const float* samples, const Int2& modifiedOff
     }
 
     // Process heightmap to get per-patch height normalization values
-    float chunkOffsets[CHUNKS_COUNT];
-    float chunkHeights[CHUNKS_COUNT];
+    float chunkOffsets[Terrain::ChunksCount];
+    float chunkHeights[Terrain::ChunksCount];
     CalculateHeightmapRange(_terrain, info, heightMap, chunkOffsets, chunkHeights);
     // TODO: maybe calculate chunk ranges for only modified chunks
     const bool wasHeightRangeChanged = Math::NotNearEqual(_yOffset, info.PatchOffset) || Math::NotNearEqual(_yHeight, info.PatchHeight);
@@ -1425,7 +1430,7 @@ bool TerrainPatch::ModifyHeightMap(const float* samples, const Int2& modifiedOff
     // Update all the stuff
     _yOffset = info.PatchOffset;
     _yHeight = info.PatchHeight;
-    for (int32 chunkIndex = 0; chunkIndex < CHUNKS_COUNT; chunkIndex++)
+    for (int32 chunkIndex = 0; chunkIndex < Terrain::ChunksCount; chunkIndex++)
     {
         auto& chunk = Chunks[chunkIndex];
         chunk._yOffset = chunkOffsets[chunkIndex];
@@ -1631,7 +1636,7 @@ bool TerrainPatch::ModifySplatMap(int32 index, const Color32* samples, const Int
 #if USE_EDITOR
         const bool useVirtualStorage = Editor::IsPlayMode || Heightmap->IsVirtual();
 #else
-		const bool useVirtualStorage = true;
+        const bool useVirtualStorage = true;
 #endif
 
         // Save the splatmap data to the asset
@@ -1675,11 +1680,11 @@ bool TerrainPatch::ModifySplatMap(int32 index, const Color32* samples, const Int
             }
         }
 #else
-	else
-	{
-		// Not supported
-		CRASH;
-	}
+        else
+        {
+            // Not supported
+            CRASH;
+        }
 #endif
     }
 
@@ -1987,7 +1992,7 @@ bool TerrainPatch::RayCast(const Vector3& origin, const Vector3& direction, floa
         // Find hit chunk
         resultChunk = nullptr;
         const auto hitPoint = origin + direction * hitDistance;
-        for (int32 chunkIndex = 0; chunkIndex < CHUNKS_COUNT; chunkIndex++)
+        for (int32 chunkIndex = 0; chunkIndex < Terrain::ChunksCount; chunkIndex++)
         {
             const auto box = Chunks[chunkIndex]._bounds;
             if (box.Minimum.X <= hitPoint.X && box.Maximum.X >= hitPoint.X &&
@@ -2042,7 +2047,7 @@ void TerrainPatch::ClosestPoint(const Vector3& position, Vector3& result) const
 void TerrainPatch::UpdatePostManualDeserialization()
 {
     // Update data
-    for (int32 chunkIndex = 0; chunkIndex < CHUNKS_COUNT; chunkIndex++)
+    for (int32 chunkIndex = 0; chunkIndex < Terrain::ChunksCount; chunkIndex++)
     {
         auto& chunk = Chunks[chunkIndex];
         chunk.UpdateTransform();
@@ -2101,7 +2106,7 @@ void TerrainPatch::CreateCollision()
 
     // Create shape
     JsonAsset* materials[8];
-    for (int32 i = 0;i<8;i++)
+    for (int32 i = 0; i < 8; i++)
         materials[i] = _terrain->GetPhysicalMaterials()[i];
     _physicsShape = PhysicsBackend::CreateShape(_terrain, shape, ToSpan(materials, 8), _terrain->IsActiveInHierarchy(), false);
     PhysicsBackend::SetShapeLocalPose(_physicsShape, Vector3(0, _yOffset * terrainTransform.Scale.Y, 0), Quaternion::Identity);
@@ -2295,7 +2300,7 @@ const Array<Vector3>& TerrainPatch::GetCollisionTriangles()
 
 #define GET_VERTEX(x, y) Vector3 v##x##y((float)(row + (x)), PhysicsBackend::GetHeightFieldHeight(_physicsHeightField, row + (x), col + (y)) / TERRAIN_PATCH_COLLISION_QUANTIZATION, (float)(col + (y))); Vector3::Transform(v##x##y, world, v##x##y)
 
-    const float size = _terrain->_chunkSize * TERRAIN_UNITS_PER_VERTEX * CHUNKS_COUNT_EDGE;
+    const float size = _terrain->_chunkSize * TERRAIN_UNITS_PER_VERTEX * Terrain::Terrain::ChunksCountEdge;
     const Transform terrainTransform = _terrain->_transform;
     Transform localTransform(Vector3(_x * size, _yOffset, _z * size), Quaternion::Identity, Vector3(_collisionScaleXZ, _yHeight, _collisionScaleXZ));
     const Matrix world = localTransform.GetWorld() * terrainTransform.GetWorld();
@@ -2344,7 +2349,7 @@ void TerrainPatch::GetCollisionTriangles(const BoundingSphere& bounds, Array<Vec
 
     // Prepare
     const auto& triangles = GetCollisionTriangles();
-    const float size = _terrain->_chunkSize * TERRAIN_UNITS_PER_VERTEX * CHUNKS_COUNT_EDGE;
+    const float size = _terrain->_chunkSize * TERRAIN_UNITS_PER_VERTEX * Terrain::Terrain::ChunksCountEdge;
     Transform transform;
     transform.Translation = _offset + Vector3(0, _yOffset, 0);
     transform.Orientation = Quaternion::Identity;
@@ -2450,7 +2455,7 @@ void TerrainPatch::ExtractCollisionGeometry(Array<Float3>& vertexBuffer, Array<i
         ScopeLock lock(Level::ScenesLock);
         if (_collisionVertices.IsEmpty())
         {
-            const float size = _terrain->_chunkSize * TERRAIN_UNITS_PER_VERTEX * CHUNKS_COUNT_EDGE;
+            const float size = _terrain->_chunkSize * TERRAIN_UNITS_PER_VERTEX * Terrain::Terrain::ChunksCountEdge;
             const Transform terrainTransform = _terrain->_transform;
             const Transform localTransform(Vector3(_x * size, _yOffset, _z * size), Quaternion::Identity, Float3(_collisionScaleXZ, _yHeight, _collisionScaleXZ));
             const Matrix world = localTransform.GetWorld() * terrainTransform.GetWorld();
@@ -2512,7 +2517,7 @@ void TerrainPatch::Serialize(SerializeStream& stream, const void* otherObj)
 
     stream.JKEY("Chunks");
     stream.StartArray();
-    for (int32 i = 0; i < CHUNKS_COUNT; i++)
+    for (int32 i = 0; i < Terrain::Terrain::ChunksCount; i++)
     {
         stream.StartObject();
         Chunks[i].Serialize(stream, other ? &other->Chunks[i] : nullptr);
@@ -2539,15 +2544,14 @@ void TerrainPatch::Deserialize(DeserializeStream& stream, ISerializeModifier* mo
     DESERIALIZE_MEMBER(Heightfield, _heightfield);
 
     // Update offset (x or/and z may be modified)
-    const float size = _terrain->_chunkSize * TERRAIN_UNITS_PER_VERTEX * CHUNKS_COUNT_EDGE;
+    const float size = _terrain->_chunkSize * TERRAIN_UNITS_PER_VERTEX * Terrain::ChunksCountEdge;
     _offset = Vector3(_x * size, 0.0f, _z * size);
 
     auto member = stream.FindMember("Chunks");
     if (member != stream.MemberEnd() && member->value.IsArray())
     {
         auto& chunksData = member->value;
-        const auto chunksCount = Math::Min<int32>((int32)chunksData.Size(), CHUNKS_COUNT);
-
+        const auto chunksCount = Math::Min<int32>((int32)chunksData.Size(), Terrain::ChunksCount);
         for (int32 i = 0; i < chunksCount; i++)
         {
             Chunks[i].Deserialize(chunksData[i], modifier);

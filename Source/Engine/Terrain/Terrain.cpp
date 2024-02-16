@@ -59,7 +59,7 @@ void Terrain::CacheNeighbors()
     for (int32 pathIndex = 0; pathIndex < _patches.Count(); pathIndex++)
     {
         const auto patch = _patches[pathIndex];
-        for (int32 chunkIndex = 0; chunkIndex < TerrainPatch::CHUNKS_COUNT; chunkIndex++)
+        for (int32 chunkIndex = 0; chunkIndex < Terrain::ChunksCount; chunkIndex++)
         {
             patch->Chunks[chunkIndex].CacheNeighbors();
         }
@@ -215,7 +215,7 @@ void Terrain::DrawPatch(const RenderContext& renderContext, const Int2& patchCoo
     auto patch = GetPatch(patchCoord);
     if (patch)
     {
-        for (int32 i = 0; i < TerrainPatch::CHUNKS_COUNT; i++)
+        for (int32 i = 0; i < Terrain::ChunksCount; i++)
             patch->Chunks[i].Draw(renderContext, material, lodIndex);
     }
 }
@@ -544,7 +544,7 @@ void Terrain::Draw(RenderContext& renderContext)
             Matrix localToWorld, worldToLocal;
             BoundingSphere chunkSphere;
             BoundingBox localBounds;
-            for (int32 chunkIndex = 0; chunkIndex < TerrainPatch::CHUNKS_COUNT; chunkIndex++)
+            for (int32 chunkIndex = 0; chunkIndex < Terrain::ChunksCount; chunkIndex++)
             {
                 TerrainChunk* chunk = &patch->Chunks[chunkIndex];
                 chunk->GetTransform().GetWorld(localToWorld); // TODO: large-worlds
@@ -574,7 +574,7 @@ void Terrain::Draw(RenderContext& renderContext)
                 continue;
 
             // Frustum vs Box culling for chunks
-            for (int32 chunkIndex = 0; chunkIndex < TerrainPatch::CHUNKS_COUNT; chunkIndex++)
+            for (int32 chunkIndex = 0; chunkIndex < Terrain::ChunksCount; chunkIndex++)
             {
                 auto chunk = &patch->Chunks[chunkIndex];
                 chunk->_cachedDrawLOD = 0;
@@ -592,7 +592,7 @@ void Terrain::Draw(RenderContext& renderContext)
         else
         {
             // Reset cached LOD for chunks (prevent LOD transition from invisible chunks)
-            for (int32 chunkIndex = 0; chunkIndex < TerrainPatch::CHUNKS_COUNT; chunkIndex++)
+            for (int32 chunkIndex = 0; chunkIndex < Terrain::ChunksCount; chunkIndex++)
             {
                 auto chunk = &patch->Chunks[chunkIndex];
                 chunk->_cachedDrawLOD = 0;
@@ -620,10 +620,10 @@ void Terrain::OnDebugDrawSelected()
     for (int32 pathIndex = 0; pathIndex < _patches.Count(); pathIndex++)
     {
         const auto patch = _patches[pathIndex];
-        for (int32 chunkIndex = 0; chunkIndex < TerrainPatch::CHUNKS_COUNT; chunkIndex++)
+        for (int32 chunkIndex = 0; chunkIndex < Terrain::ChunksCount; chunkIndex++)
         {
             auto chunk = &patch->Chunks[chunkIndex];
-            DebugDraw::DrawBox(chunk->_bounds, Color(chunk->_x / (float)TerrainPatch::CHUNKS_COUNT_EDGE, 1.0f, chunk->_z / (float)TerrainPatch::CHUNKS_COUNT_EDGE));
+            DebugDraw::DrawBox(chunk->_bounds, Color(chunk->_x / (float)Terrain::ChunksCountEdge, 1.0f, chunk->_z / (float)Terrain::ChunksCountEdge));
         }
     }
     */
