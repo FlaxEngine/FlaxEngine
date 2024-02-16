@@ -10,6 +10,7 @@ class Terrain;
 class TerrainChunk;
 class TerrainPatch;
 class TerrainManager;
+class PhysicalMaterial;
 struct RayCastHit;
 struct RenderView;
 
