@@ -10,6 +10,7 @@
 struct PhysicsStatistics;
 class PhysicsColliderActor;
 class PhysicsScene;
+class PhysicalMaterial;
 class Joint;
 class Collider;
 class CollisionData;
@@ -132,7 +133,7 @@ DECLARE_ENUM_OPERATORS(RigidbodyConstraints);
 /// <summary>
 /// Raycast hit result data.
 /// </summary>
-API_STRUCT() struct RayCastHit
+API_STRUCT(NoDefault) struct RayCastHit
 {
     DECLARE_SCRIPTING_TYPE_NO_SPAWN(RayCastHit);
 
@@ -140,6 +141,11 @@ API_STRUCT() struct RayCastHit
     /// The collider that was hit.
     /// </summary>
     API_FIELD() PhysicsColliderActor* Collider = nullptr;
+
+    /// <summary>
+    /// The physical material of the surface that was hit.
+    /// </summary>
+    API_FIELD() PhysicalMaterial* Material = nullptr;
 
     /// <summary>
     /// The normal of the surface the ray hit.

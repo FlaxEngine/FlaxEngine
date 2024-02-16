@@ -4,16 +4,17 @@
 
 #include "Types.h"
 #include "Engine/Core/ISerializable.h"
+#include "Engine/Scripting/ScriptingObject.h"
 #include "Engine/Level/Tags.h"
 
 /// <summary>
 /// Physical materials are used to define the response of a physical object when interacting dynamically with the world.
 /// </summary>
 API_CLASS(Attributes = "ContentContextMenu(\"New/Physics/Physical Material\")")
-class FLAXENGINE_API PhysicalMaterial final : public ISerializable
+class FLAXENGINE_API PhysicalMaterial final : public ScriptingObject, public ISerializable
 {
     API_AUTO_SERIALIZATION();
-    DECLARE_SCRIPTING_TYPE_MINIMAL(PhysicalMaterial);
+    DECLARE_SCRIPTING_TYPE_WITH_CONSTRUCTOR_IMPL(PhysicalMaterial, ScriptingObject);
 private:
     void* _material = nullptr;
 
