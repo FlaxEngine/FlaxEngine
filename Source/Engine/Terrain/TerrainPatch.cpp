@@ -27,7 +27,7 @@
 #include "Engine/ContentImporters/AssetsImportingManager.h"
 #endif
 #endif
-#if TERRAIN_UPDATING
+#if TERRAIN_EDITING || TERRAIN_UPDATING
 #include "Engine/Core/Collections/ArrayExtensions.h"
 #endif
 #if USE_EDITOR
@@ -181,6 +181,7 @@ struct TerrainDataUpdateInfo
     // When using physical materials, then get splatmaps data required for per-triangle material indices
     void GetSplatMaps()
     {
+#if TERRAIN_UPDATING
         if (SplatMaps[0])
             return;
         if (UsePhysicalMaterials())
@@ -188,6 +189,9 @@ struct TerrainDataUpdateInfo
             for (int32 i = 0; i < TERRAIN_MAX_SPLATMAPS_COUNT; i++)
                 SplatMaps[i] = Patch->GetSplatMapData(i);
         }
+#else
+        LOG(Warning, "Splatmaps reading not implemented for physical layers updating.");
+#endif
     }
 };
 
