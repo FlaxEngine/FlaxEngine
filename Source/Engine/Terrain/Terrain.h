@@ -368,16 +368,6 @@ public:
 
 public:
     /// <summary>
-    /// Performs a raycast against this terrain collision shape.
-    /// </summary>
-    /// <param name="origin">The origin of the ray.</param>
-    /// <param name="direction">The normalized direction of the ray.</param>
-    /// <param name="resultHitDistance">The raycast result hit position distance from the ray origin. Valid only if raycast hits anything.</param>
-    /// <param name="maxDistance">The maximum distance the ray should check for collisions.</param>
-    /// <returns>True if ray hits an object, otherwise false.</returns>
-    API_FUNCTION() bool RayCast(const Vector3& origin, const Vector3& direction, float& resultHitDistance, float maxDistance = MAX_float) const;
-
-    /// <summary>
     /// Performs a raycast against this terrain collision shape. Returns the hit chunk.
     /// </summary>
     /// <param name="origin">The origin of the ray.</param>
@@ -398,23 +388,6 @@ public:
     /// <param name="maxDistance">The maximum distance the ray should check for collisions.</param>
     /// <returns>True if ray hits an object, otherwise false.</returns>
     API_FUNCTION() bool RayCast(const Ray& ray, API_PARAM(Out) float& resultHitDistance, API_PARAM(Out) Int2& resultPatchCoord, API_PARAM(Out) Int2& resultChunkCoord, float maxDistance = MAX_float) const;
-
-    /// <summary>
-    /// Performs a raycast against terrain collision, returns results in a RayCastHit structure.
-    /// </summary>
-    /// <param name="origin">The origin of the ray.</param>
-    /// <param name="direction">The normalized direction of the ray.</param>
-    /// <param name="hitInfo">The result hit information. Valid only when method returns true.</param>
-    /// <param name="maxDistance">The maximum distance the ray should check for collisions.</param>
-    /// <returns>True if ray hits an object, otherwise false.</returns>
-    API_FUNCTION() bool RayCast(const Vector3& origin, const Vector3& direction, API_PARAM(Out) RayCastHit& hitInfo, float maxDistance = MAX_float) const;
-
-    /// <summary>
-    /// Gets a point on the terrain collider that is closest to a given location. Can be used to find a hit location or position to apply explosion force or any other special effects.
-    /// </summary>
-    /// <param name="position">The position to find the closest point to it.</param>
-    /// <param name="result">The result point on the collider that is closest to the specified location.</param>
-    API_FUNCTION() void ClosestPoint(const Vector3& position, API_PARAM(Out) Vector3& result) const;
 
     /// <summary>
     /// Draws the terrain patch.
@@ -451,6 +424,10 @@ public:
     void Serialize(SerializeStream& stream, const void* otherObj) override;
     void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) override;
     RigidBody* GetAttachedRigidBody() const override;
+    bool RayCast(const Vector3& origin, const Vector3& direction, float& resultHitDistance, float maxDistance = MAX_float) const final;
+    bool RayCast(const Vector3& origin, const Vector3& direction, RayCastHit& hitInfo, float maxDistance = MAX_float) const final;
+    void ClosestPoint(const Vector3& point, Vector3& result) const final;
+    bool ContainsPoint(const Vector3& point) const final;
 
 protected:
     // [PhysicsColliderActor]

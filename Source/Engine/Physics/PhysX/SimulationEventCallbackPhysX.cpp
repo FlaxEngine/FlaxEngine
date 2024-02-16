@@ -163,14 +163,11 @@ void SimulationEventCallback::onContact(const PxContactPairHeader& pairHeader, c
         c.ThisVelocity = c.OtherVelocity = Vector3::Zero;
         if (hasPostVelocities && j.nextItemSet())
         {
-            ASSERT(j.contactPairIndex == pairIndex);
+            ASSERT_LOW_LAYER(j.contactPairIndex == pairIndex);
             if (j.postSolverVelocity)
             {
-                const PxVec3 linearVelocityActor0 = j.postSolverVelocity->linearVelocity[0];
-                const PxVec3 linearVelocityActor1 = j.postSolverVelocity->linearVelocity[1];
-
-                c.ThisVelocity = P2C(linearVelocityActor0);
-                c.OtherVelocity = P2C(linearVelocityActor1);
+                c.ThisVelocity = P2C(j.postSolverVelocity->linearVelocity[0]);
+                c.OtherVelocity = P2C(j.postSolverVelocity->linearVelocity[1]);
             }
         }
 

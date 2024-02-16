@@ -2630,6 +2630,7 @@ bool PhysicsBackend::RayCastShape(void* shape, const Vector3& position, const Qu
     PxRaycastHit hit;
     if (PxGeometryQuery::raycast(C2P(origin - sceneOrigin), C2P(direction), shapePhysX->getGeometry(), trans, maxDistance, SCENE_QUERY_FLAGS, 1, &hit) == 0)
         return false;
+    hit.shape = shapePhysX;
     P2C(hit, hitInfo);
     hitInfo.Point += sceneOrigin;
     return true;

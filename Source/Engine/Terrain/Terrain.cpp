@@ -185,7 +185,7 @@ bool Terrain::RayCast(const Vector3& origin, const Vector3& direction, RayCastHi
     return result;
 }
 
-void Terrain::ClosestPoint(const Vector3& position, Vector3& result) const
+void Terrain::ClosestPoint(const Vector3& point, Vector3& result) const
 {
     Real minDistance = MAX_Real;
     Vector3 tmp;
@@ -194,8 +194,8 @@ void Terrain::ClosestPoint(const Vector3& position, Vector3& result) const
         const auto patch = _patches[pathIndex];
         if (patch->HasCollision())
         {
-            patch->ClosestPoint(position, tmp);
-            const auto distance = Vector3::DistanceSquared(position, tmp);
+            patch->ClosestPoint(point, tmp);
+            const auto distance = Vector3::DistanceSquared(point, tmp);
             if (distance < minDistance)
             {
                 minDistance = distance;
@@ -203,6 +203,11 @@ void Terrain::ClosestPoint(const Vector3& position, Vector3& result) const
             }
         }
     }
+}
+
+bool Terrain::ContainsPoint(const Vector3& point) const
+{
+    return false;
 }
 
 void Terrain::DrawPatch(const RenderContext& renderContext, const Int2& patchCoord, MaterialBase* material, int32 lodIndex) const
