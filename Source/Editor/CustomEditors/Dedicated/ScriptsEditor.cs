@@ -591,14 +591,14 @@ namespace FlaxEditor.CustomEditors.Dedicated
                 var group = layout.Group(title, editor);
                 if ((Presenter.Features & FeatureFlags.CacheExpandedGroups) != 0)
                 {
-                    if (Editor.Instance.ProjectCache.IsCollapsedGroup(title))
-                        group.Panel.Close(false);
+                    if (Editor.Instance.ProjectCache.IsGroupToggled(title))
+                        group.Panel.Close();
                     else
-                        group.Panel.Open(false);
-                    group.Panel.IsClosedChanged += panel => Editor.Instance.ProjectCache.SetCollapsedGroup(panel.HeaderText, panel.IsClosed);
+                        group.Panel.Open();
+                    group.Panel.IsClosedChanged += panel => Editor.Instance.ProjectCache.SetGroupToggle(panel.HeaderText, panel.IsClosed);
                 }
                 else
-                    group.Panel.Open(false);
+                    group.Panel.Open();
 
                 // Customize
                 group.Panel.TooltipText = Editor.Instance.CodeDocs.GetTooltip(scriptType);
