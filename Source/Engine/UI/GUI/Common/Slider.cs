@@ -1,4 +1,6 @@
-﻿using System;
+// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+
+using System;
 
 namespace FlaxEngine.GUI;
 
@@ -81,14 +83,14 @@ public class Slider : ContainerControl
     /// Gets or sets the slider direction.
     /// </summary>
     [EditorOrder(40), Tooltip("Slider Direction.")]
-    public SliderDirection Direction 
-    { 
+    public SliderDirection Direction
+    {
         get => _direction;
         set
         {
             _direction = value;
             UpdateThumb();
-        } 
+        }
     }
 
     private SliderDirection _direction = SliderDirection.HorizontalRight;
@@ -138,14 +140,10 @@ public class Slider : ContainerControl
         {
             switch (Direction)
             {
-            case SliderDirection.HorizontalRight:
-                return new Float2(_thumbSize.X / 2, Height / 2);
-            case SliderDirection.HorizontalLeft:
-                return new Float2(Width - _thumbSize.X / 2, Height / 2);
-            case SliderDirection.VerticalUp:
-                return new Float2(Width / 2, Height - _thumbSize.Y / 2);
-            case SliderDirection.VerticalDown:
-                return new Float2(Width / 2, _thumbSize.Y / 2);
+            case SliderDirection.HorizontalRight: return new Float2(_thumbSize.X / 2, Height / 2);
+            case SliderDirection.HorizontalLeft: return new Float2(Width - _thumbSize.X / 2, Height / 2);
+            case SliderDirection.VerticalUp: return new Float2(Width / 2, Height - _thumbSize.Y / 2);
+            case SliderDirection.VerticalDown: return new Float2(Width / 2, _thumbSize.Y / 2);
             default: break;
             }
             return Float2.Zero;
@@ -162,14 +160,10 @@ public class Slider : ContainerControl
         {
             switch (Direction)
             {
-            case SliderDirection.HorizontalRight:
-                return new Float2(Width - _thumbSize.X / 2, Height / 2);
-            case SliderDirection.HorizontalLeft:
-                return new Float2(_thumbSize.X / 2, Height / 2);
-            case SliderDirection.VerticalUp:
-                return new Float2(Width / 2, _thumbSize.Y / 2);
-            case SliderDirection.VerticalDown:
-                return new Float2(Width / 2, Height - _thumbSize.Y / 2);
+            case SliderDirection.HorizontalRight: return new Float2(Width - _thumbSize.X / 2, Height / 2);
+            case SliderDirection.HorizontalLeft: return new Float2(_thumbSize.X / 2, Height / 2);
+            case SliderDirection.VerticalUp: return new Float2(Width / 2, _thumbSize.Y / 2);
+            case SliderDirection.VerticalDown: return new Float2(Width / 2, Height - _thumbSize.Y / 2);
             default: break;
             }
             return Float2.Zero;
@@ -186,7 +180,8 @@ public class Slider : ContainerControl
     /// The thumb size.
     /// </summary>
     [EditorOrder(41), Tooltip("The size of the thumb.")]
-    public Float2 ThumbSize {  
+    public Float2 ThumbSize
+    {
         get => _thumbSize;
         set
         {
@@ -200,7 +195,7 @@ public class Slider : ContainerControl
     /// </summary>
     [EditorOrder(42), Tooltip("Fill the track.")]
     public bool FillTrack = true;
-    
+
     /// <summary>
     /// Whether to use whole numbers.
     /// </summary>
@@ -223,7 +218,7 @@ public class Slider : ContainerControl
     /// Gets the width of the track.
     /// </summary>
     private float TrackWidth => (Direction is SliderDirection.HorizontalLeft or SliderDirection.HorizontalRight) ? Width - _thumbSize.X : TrackThickness;
-    
+
     /// <summary>
     /// Gets the height of the track.
     /// </summary>
@@ -246,7 +241,7 @@ public class Slider : ContainerControl
     /// </summary>
     [EditorDisplay("Thumb Style"), EditorOrder(2030), Tooltip("The color of the slider thumb when it's not selected."), ExpandGroups]
     public Color ThumbColor { get; set; }
-    
+
     /// <summary>
     /// The color of the slider thumb when it's highlighted.
     /// </summary>
@@ -280,12 +275,12 @@ public class Slider : ContainerControl
     /// Occurs when sliding ends.
     /// </summary>
     public event Action SlidingEnd;
-    
+
     /// <summary>
     /// Occurs when value gets changed.
     /// </summary>
     public event Action ValueChanged;
-    
+
     /// <summary>
     /// Initializes a new instance of the <see cref="Slider"/> class.
     /// </summary>
@@ -359,17 +354,16 @@ public class Slider : ContainerControl
         var fillLineRect = new Rectangle(_thumbSize.X / 2 - 1, (Height - TrackThickness - 2) / 2, Width - (Width - _thumbCenter) - _thumbSize.X / 2 + 1, TrackThickness + 2);
         switch (Direction)
         {
-        case SliderDirection.HorizontalRight:
-            break;
+        case SliderDirection.HorizontalRight: break;
         case SliderDirection.VerticalDown:
-            lineRect = new Rectangle((Width - TrackThickness) / 2 , _thumbSize.Y / 2, TrackThickness,  Height - _thumbSize.Y);
+            lineRect = new Rectangle((Width - TrackThickness) / 2, _thumbSize.Y / 2, TrackThickness, Height - _thumbSize.Y);
             fillLineRect = new Rectangle((Width - TrackThickness - 2) / 2, _thumbSize.Y / 2 - 1, TrackThickness + 2, Height - (Height - _thumbCenter) - _thumbSize.Y / 2 + 1);
             break;
         case SliderDirection.HorizontalLeft:
             fillLineRect = new Rectangle(Width - (Width - _thumbCenter) - 1, (Height - TrackThickness - 2) / 2, Width - _thumbCenter + 1, TrackThickness + 2);
             break;
         case SliderDirection.VerticalUp:
-            lineRect = new Rectangle((Width - TrackThickness) / 2 , _thumbSize.Y / 2, TrackThickness,  Height - _thumbSize.Y);
+            lineRect = new Rectangle((Width - TrackThickness) / 2, _thumbSize.Y / 2, TrackThickness, Height - _thumbSize.Y);
             fillLineRect = new Rectangle((Width - TrackThickness - 2) / 2, Height - (Height - _thumbCenter) - 1, TrackThickness + 2, Height - _thumbCenter + 1);
             break;
         default: break;
@@ -379,7 +373,7 @@ public class Slider : ContainerControl
         if (TrackBrush != null)
             TrackBrush.Draw(lineRect, TrackLineColor);
         else
-            Render2D.FillRectangle(lineRect, TrackLineColor); 
+            Render2D.FillRectangle(lineRect, TrackLineColor);
 
         // Draw track fill
         if (FillTrack)
