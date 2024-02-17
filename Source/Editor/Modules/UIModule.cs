@@ -549,13 +549,11 @@ namespace FlaxEditor.Modules
             _menuEditCut = cm.AddButton("Cut", inputOptions.Cut, Editor.SceneEditing.Cut);
             _menuEditCopy = cm.AddButton("Copy", inputOptions.Copy, Editor.SceneEditing.Copy);
             _menuEditPaste = cm.AddButton("Paste", inputOptions.Paste, Editor.SceneEditing.Paste);
-            cm.AddSeparator();
-            _menuCreateParentForSelectedActors = cm.AddButton("Create parent for selected actors", Editor.SceneEditing.CreateParentForSelectedActors);
-            cm.AddSeparator();
             _menuEditDelete = cm.AddButton("Delete", inputOptions.Delete, Editor.SceneEditing.Delete);
             _menuEditDuplicate = cm.AddButton("Duplicate", inputOptions.Duplicate, Editor.SceneEditing.Duplicate);
             cm.AddSeparator();
             _menuEditSelectAll = cm.AddButton("Select all", inputOptions.SelectAll, Editor.SceneEditing.SelectAllScenes);
+            _menuCreateParentForSelectedActors = cm.AddButton("Create parent for selected actors", Editor.SceneEditing.CreateParentForSelectedActors);
             _menuEditFind = cm.AddButton("Find", inputOptions.Search, Editor.Windows.SceneWin.Search);
             cm.AddSeparator();
             cm.AddButton("Game Settings", () =>
