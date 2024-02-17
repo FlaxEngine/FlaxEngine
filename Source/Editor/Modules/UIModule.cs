@@ -50,6 +50,7 @@ namespace FlaxEditor.Modules
         private ContextMenuButton _menuEditCut;
         private ContextMenuButton _menuEditCopy;
         private ContextMenuButton _menuEditPaste;
+        private ContextMenuButton _menuCreateParentForSelectedActors;
         private ContextMenuButton _menuEditDelete;
         private ContextMenuButton _menuEditDuplicate;
         private ContextMenuButton _menuEditSelectAll;
@@ -548,11 +549,11 @@ namespace FlaxEditor.Modules
             _menuEditCut = cm.AddButton("Cut", inputOptions.Cut, Editor.SceneEditing.Cut);
             _menuEditCopy = cm.AddButton("Copy", inputOptions.Copy, Editor.SceneEditing.Copy);
             _menuEditPaste = cm.AddButton("Paste", inputOptions.Paste, Editor.SceneEditing.Paste);
-            cm.AddSeparator();
             _menuEditDelete = cm.AddButton("Delete", inputOptions.Delete, Editor.SceneEditing.Delete);
             _menuEditDuplicate = cm.AddButton("Duplicate", inputOptions.Duplicate, Editor.SceneEditing.Duplicate);
             cm.AddSeparator();
             _menuEditSelectAll = cm.AddButton("Select all", inputOptions.SelectAll, Editor.SceneEditing.SelectAllScenes);
+            _menuCreateParentForSelectedActors = cm.AddButton("Create parent for selected actors", Editor.SceneEditing.CreateParentForSelectedActors);
             _menuEditFind = cm.AddButton("Find", inputOptions.Search, Editor.Windows.SceneWin.Search);
             cm.AddSeparator();
             cm.AddButton("Game Settings", () =>
@@ -858,6 +859,7 @@ namespace FlaxEditor.Modules
             _menuEditCut.Enabled = hasSthSelected;
             _menuEditCopy.Enabled = hasSthSelected;
             _menuEditPaste.Enabled = canEditScene;
+            _menuCreateParentForSelectedActors.Enabled = canEditScene && hasSthSelected;
             _menuEditDelete.Enabled = hasSthSelected;
             _menuEditDuplicate.Enabled = hasSthSelected;
             _menuEditSelectAll.Enabled = Level.IsAnySceneLoaded;
