@@ -36,35 +36,26 @@ namespace FlaxEditor.Tools.Terrain
             "Layer 7",
         };
 
-        private class SplatmapData
+        private struct SplatmapData
         {
-            public IntPtr DataPtr { get; set; } = IntPtr.Zero;
-            public int Size { get; set; } = 0;
-
-            public SplatmapData(int size)
-            {
-                EnsureCapacity(size);
-            }
+            public IntPtr DataPtr;
+            public int Size;
 
             public void EnsureCapacity(int size)
             {
                 if (Size < size)
                 {
                     if (DataPtr != IntPtr.Zero)
-                    {
                         Marshal.FreeHGlobal(DataPtr);
-                    }
                     DataPtr = Marshal.AllocHGlobal(size);
                     Size = size;
                 }
             }
 
-            /// <inheritdoc />
             public void Free()
             {
                 if (DataPtr == IntPtr.Zero)
                     return;
-                
                 Marshal.FreeHGlobal(DataPtr);
                 DataPtr = IntPtr.Zero;
                 Size = 0;
@@ -72,7 +63,7 @@ namespace FlaxEditor.Tools.Terrain
         }
 
         private EditTerrainMapAction _activeAction;
-        private List<SplatmapData> _cachedSplatmapData = new();
+        private SplatmapData[] _cachedSplatmapData = new SplatmapData[2];
 
         /// <summary>
         /// The terrain painting gizmo.
@@ -268,14 +259,9 @@ namespace FlaxEditor.Tools.Terrain
         /// <returns>The allocated memory using <see cref="Marshal"/> interface.</returns>
         public IntPtr GetSplatmapTempBuffer(int size, int splatmapIndex)
         {
-            if (_cachedSplatmapData.Count <= splatmapIndex)
-            {
-                _cachedSplatmapData.Add(new SplatmapData(size));
-                return _cachedSplatmapData[splatmapIndex].DataPtr;
-            }
-
-            _cachedSplatmapData[splatmapIndex].EnsureCapacity(size);
-            return _cachedSplatmapData[splatmapIndex].DataPtr;
+            ref var splatmapData = ref _cachedSplatmapData[splatmapIndex];
+            splatmapData.EnsureCapacity(size);
+            return splatmapData.DataPtr;
         }
 
         /// <summary>
@@ -309,9 +295,7 @@ namespace FlaxEditor.Tools.Terrain
 
             // Free temporary memory buffer
             foreach (var splatmapData in _cachedSplatmapData)
-            {
                 splatmapData.Free();
-            }
         }
 
         /// <summary>
