@@ -3008,7 +3008,7 @@ void* PhysicsBackend::CreateController(void* scene, IPhysicsActor* actor, Physic
         desc.material = DefaultMaterial;
     const float minSize = 0.001f;
     desc.height = Math::Max(height, minSize);
-    desc.radius = Math::Max(radius - desc.contactOffset, minSize);
+    desc.radius = Math::Max(radius - Math::Max(contactOffset, 0.0f), minSize);
     desc.stepOffset = Math::Min(stepOffset, desc.height + desc.radius * 2.0f - minSize);
     auto controllerPhysX = (PxCapsuleController*)scenePhysX->ControllerManager->createController(desc);
     PxRigidActor* actorPhysX = controllerPhysX->getActor();

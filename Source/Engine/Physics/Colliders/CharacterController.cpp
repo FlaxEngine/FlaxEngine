@@ -280,12 +280,8 @@ void CharacterController::OnActiveTransformChanged()
     // Change actor transform (but with locking)
     ASSERT(!_isUpdatingTransform);
     _isUpdatingTransform = true;
-    Transform transform;
-    PhysicsBackend::GetRigidActorPose(PhysicsBackend::GetShapeActor(_shape), transform.Translation, transform.Orientation);
-    transform.Translation -= _center;
-    transform.Orientation = _transform.Orientation;
-    transform.Scale = _transform.Scale;
-    SetTransform(transform);
+    const Vector3 position = PhysicsBackend::GetControllerPosition(_controller) - _center;
+    SetPosition(position);
     _isUpdatingTransform = false;
 
     UpdateBounds();
