@@ -132,6 +132,13 @@ namespace FlaxEditor.Windows
             b = contextMenu.AddButton("Cut", inputOptions.Cut, Editor.SceneEditing.Cut);
             b.Enabled = canEditScene;
 
+            // Create a new hierarchy from selected actors 
+
+            contextMenu.AddSeparator();
+
+            b = contextMenu.AddButton("Create parent for selected actors", Editor.SceneEditing.CreateParentForSelectedActors);
+            b.Enabled = canEditScene && hasSthSelected;
+
             // Prefab options
 
             contextMenu.AddSeparator();
