@@ -25,7 +25,7 @@ API_STRUCT(NoDefault, Template, MarshalAs=JsonAsset*) struct JsonAssetReference 
     /// <returns>The asset instance object or null.</returns>
     FORCE_INLINE T* GetInstance() const
     {
-        return _asset ? Get()->GetInstance<T>() : nullptr;
+        return _asset ? Get()->template GetInstance<T>() : nullptr;
     }
 
     JsonAssetReference& operator=(JsonAsset* asset) noexcept
