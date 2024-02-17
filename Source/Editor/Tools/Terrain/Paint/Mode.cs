@@ -209,8 +209,7 @@ namespace FlaxEditor.Tools.Terrain.Paint
             public int SplatmapIndex;
             
             /// <summary>
-            /// The splatmap texture index. If <see cref="SplatmapIndex"/> is 0, this will be 1.
-            /// If <see cref="SplatmapIndex"/> is 1, this will be 0.
+            /// The splatmap texture index. If <see cref="SplatmapIndex"/> is 0, this will be 1. If <see cref="SplatmapIndex"/> is 1, this will be 0.
             /// </summary>
             public int SplatmapIndexOther;
 
@@ -220,8 +219,7 @@ namespace FlaxEditor.Tools.Terrain.Paint
             public Color32* TempBuffer;
             
             /// <summary>
-            /// The 'other" temporary data buffer (for modified data). If <see cref="TempBuffer"/> refers
-            /// to the splatmap with index 0, this one will refer to the one with index 1.
+            /// The 'other' temporary data buffer (for modified data). If <see cref="TempBuffer"/> refersto the splatmap with index 0, this one will refer to the one with index 1.
             /// </summary>
             public Color32* TempBufferOther;
 
