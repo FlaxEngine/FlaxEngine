@@ -228,9 +228,7 @@ class QueryFilterPhysX : public PxQueryFilterCallback
         // Check mask
         const PxFilterData shapeFilter = shape->getQueryFilterData();
         if ((filterData.word0 & shapeFilter.word0) == 0)
-        {
             return PxQueryHitType::eNONE;
-        }
 
         // Check if skip triggers
         const bool hitTriggers = filterData.word2 != 0;
@@ -483,8 +481,10 @@ protected:
     }
 };
 
+#define PxHitFlagEmpty (PxHitFlags)0
+#define SCENE_QUERY_FLAGS (PxHitFlag::ePOSITION | PxHitFlag::eNORMAL | PxHitFlag::eFACE_INDEX | PxHitFlag::eUV)
+
 #define SCENE_QUERY_SETUP(blockSingle) auto scenePhysX = (ScenePhysX*)scene; if (scene == nullptr) return false; \
-		const PxHitFlags hitFlags = PxHitFlag::ePOSITION | PxHitFlag::eNORMAL | PxHitFlag::eUV; \
 		PxQueryFilterData filterData; \
 		filterData.flags |=  PxQueryFlag::ePREFILTER; \
 		filterData.data.word0 = layerMask; \
@@ -641,6 +641,19 @@ void GetShapeGeometry(const CollisionShape& shape, PxGeometryHolder& geometry)
     case CollisionShape::Types::HeightField:
         geometry.storeAny(PxHeightFieldGeometry((PxHeightField*)shape.HeightField.HeightField, PxMeshGeometryFlags(0), Math::Max(shape.HeightField.HeightScale, PX_MIN_HEIGHTFIELD_Y_SCALE), Math::Max(shape.HeightField.RowScale, PX_MIN_HEIGHTFIELD_XZ_SCALE), Math::Max(shape.HeightField.ColumnScale, PX_MIN_HEIGHTFIELD_XZ_SCALE)));
         break;
+    }
+}
+
+void GetShapeMaterials(Array<PxMaterial*, InlinedAllocation<1>>& materialsPhysX, Span<JsonAsset*> materials)
+{
+    materialsPhysX.Resize(materials.Length());
+    for (int32 i = 0; i < materials.Length(); i++)
+    {
+        PxMaterial* materialPhysX = DefaultMaterial;
+        const JsonAsset* material = materials.Get()[i];
+        if (material && !material->WaitForLoaded() && material->Instance)
+            materialPhysX = (PxMaterial*)((PhysicalMaterial*)material->Instance)->GetPhysicsMaterial();
+        materialsPhysX.Get()[i] = materialPhysX;
     }
 }
 
@@ -1735,8 +1748,6 @@ void PhysicsBackend::EndSimulateScene(void* scene)
 
     {
         PROFILE_CPU_NAMED("Physics.SendEvents");
-
-        scenePhysX->EventsCallback.CollectResults();
         scenePhysX->EventsCallback.SendTriggerEvents();
         scenePhysX->EventsCallback.SendCollisionEvents();
         scenePhysX->EventsCallback.SendJointEvents();
@@ -1880,14 +1891,14 @@ bool PhysicsBackend::RayCast(void* scene, const Vector3& origin, const Vector3& 
 {
     SCENE_QUERY_SETUP(true);
     PxRaycastBuffer buffer;
-    return scenePhysX->Scene->raycast(C2P(origin - scenePhysX->Origin), C2P(direction), maxDistance, buffer, hitFlags, filterData, &QueryFilter);
+    return scenePhysX->Scene->raycast(C2P(origin - scenePhysX->Origin), C2P(direction), maxDistance, buffer, PxHitFlagEmpty, filterData, &QueryFilter);
 }
 
 bool PhysicsBackend::RayCast(void* scene, const Vector3& origin, const Vector3& direction, RayCastHit& hitInfo, const float maxDistance, uint32 layerMask, bool hitTriggers)
 {
     SCENE_QUERY_SETUP(true);
     PxRaycastBuffer buffer;
-    if (!scenePhysX->Scene->raycast(C2P(origin - scenePhysX->Origin), C2P(direction), maxDistance, buffer, hitFlags, filterData, &QueryFilter))
+    if (!scenePhysX->Scene->raycast(C2P(origin - scenePhysX->Origin), C2P(direction), maxDistance, buffer, SCENE_QUERY_FLAGS, filterData, &QueryFilter))
         return false;
     SCENE_QUERY_COLLECT_SINGLE();
     return true;
@@ -1897,7 +1908,7 @@ bool PhysicsBackend::RayCastAll(void* scene, const Vector3& origin, const Vector
 {
     SCENE_QUERY_SETUP(false);
     DynamicHitBuffer<PxRaycastHit> buffer;
-    if (!scenePhysX->Scene->raycast(C2P(origin - scenePhysX->Origin), C2P(direction), maxDistance, buffer, hitFlags, filterData, &QueryFilter))
+    if (!scenePhysX->Scene->raycast(C2P(origin - scenePhysX->Origin), C2P(direction), maxDistance, buffer, SCENE_QUERY_FLAGS, filterData, &QueryFilter))
         return false;
     SCENE_QUERY_COLLECT_ALL();
     return true;
@@ -1908,7 +1919,7 @@ bool PhysicsBackend::BoxCast(void* scene, const Vector3& center, const Vector3& 
     SCENE_QUERY_SETUP_SWEEP_1();
     const PxTransform pose(C2P(center - scenePhysX->Origin), C2P(rotation));
     const PxBoxGeometry geometry(C2P(halfExtents));
-    return scenePhysX->Scene->sweep(geometry, pose, C2P(direction), maxDistance, buffer, hitFlags, filterData, &QueryFilter);
+    return scenePhysX->Scene->sweep(geometry, pose, C2P(direction), maxDistance, buffer, PxHitFlagEmpty, filterData, &QueryFilter);
 }
 
 bool PhysicsBackend::BoxCast(void* scene, const Vector3& center, const Vector3& halfExtents, const Vector3& direction, RayCastHit& hitInfo, const Quaternion& rotation, const float maxDistance, uint32 layerMask, bool hitTriggers)
@@ -1916,7 +1927,7 @@ bool PhysicsBackend::BoxCast(void* scene, const Vector3& center, const Vector3& 
     SCENE_QUERY_SETUP_SWEEP_1();
     const PxTransform pose(C2P(center - scenePhysX->Origin), C2P(rotation));
     const PxBoxGeometry geometry(C2P(halfExtents));
-    if (!scenePhysX->Scene->sweep(geometry, pose, C2P(direction), maxDistance, buffer, hitFlags, filterData, &QueryFilter))
+    if (!scenePhysX->Scene->sweep(geometry, pose, C2P(direction), maxDistance, buffer, SCENE_QUERY_FLAGS, filterData, &QueryFilter))
         return false;
     SCENE_QUERY_COLLECT_SINGLE();
     return true;
@@ -1927,7 +1938,7 @@ bool PhysicsBackend::BoxCastAll(void* scene, const Vector3& center, const Vector
     SCENE_QUERY_SETUP_SWEEP();
     const PxTransform pose(C2P(center - scenePhysX->Origin), C2P(rotation));
     const PxBoxGeometry geometry(C2P(halfExtents));
-    if (!scenePhysX->Scene->sweep(geometry, pose, C2P(direction), maxDistance, buffer, hitFlags, filterData, &QueryFilter))
+    if (!scenePhysX->Scene->sweep(geometry, pose, C2P(direction), maxDistance, buffer, SCENE_QUERY_FLAGS, filterData, &QueryFilter))
         return false;
     SCENE_QUERY_COLLECT_ALL();
     return true;
@@ -1938,7 +1949,7 @@ bool PhysicsBackend::SphereCast(void* scene, const Vector3& center, const float 
     SCENE_QUERY_SETUP_SWEEP_1();
     const PxTransform pose(C2P(center - scenePhysX->Origin));
     const PxSphereGeometry geometry(radius);
-    return scenePhysX->Scene->sweep(geometry, pose, C2P(direction), maxDistance, buffer, hitFlags, filterData, &QueryFilter);
+    return scenePhysX->Scene->sweep(geometry, pose, C2P(direction), maxDistance, buffer, PxHitFlagEmpty, filterData, &QueryFilter);
 }
 
 bool PhysicsBackend::SphereCast(void* scene, const Vector3& center, const float radius, const Vector3& direction, RayCastHit& hitInfo, const float maxDistance, uint32 layerMask, bool hitTriggers)
@@ -1946,7 +1957,7 @@ bool PhysicsBackend::SphereCast(void* scene, const Vector3& center, const float 
     SCENE_QUERY_SETUP_SWEEP_1();
     const PxTransform pose(C2P(center - scenePhysX->Origin));
     const PxSphereGeometry geometry(radius);
-    if (!scenePhysX->Scene->sweep(geometry, pose, C2P(direction), maxDistance, buffer, hitFlags, filterData, &QueryFilter))
+    if (!scenePhysX->Scene->sweep(geometry, pose, C2P(direction), maxDistance, buffer, SCENE_QUERY_FLAGS, filterData, &QueryFilter))
         return false;
     SCENE_QUERY_COLLECT_SINGLE();
     return true;
@@ -1957,7 +1968,7 @@ bool PhysicsBackend::SphereCastAll(void* scene, const Vector3& center, const flo
     SCENE_QUERY_SETUP_SWEEP();
     const PxTransform pose(C2P(center - scenePhysX->Origin));
     const PxSphereGeometry geometry(radius);
-    if (!scenePhysX->Scene->sweep(geometry, pose, C2P(direction), maxDistance, buffer, hitFlags, filterData, &QueryFilter))
+    if (!scenePhysX->Scene->sweep(geometry, pose, C2P(direction), maxDistance, buffer, SCENE_QUERY_FLAGS, filterData, &QueryFilter))
         return false;
     SCENE_QUERY_COLLECT_ALL();
     return true;
@@ -1968,7 +1979,7 @@ bool PhysicsBackend::CapsuleCast(void* scene, const Vector3& center, const float
     SCENE_QUERY_SETUP_SWEEP_1();
     const PxTransform pose(C2P(center - scenePhysX->Origin), C2P(rotation));
     const PxCapsuleGeometry geometry(radius, height * 0.5f);
-    return scenePhysX->Scene->sweep(geometry, pose, C2P(direction), maxDistance, buffer, hitFlags, filterData, &QueryFilter);
+    return scenePhysX->Scene->sweep(geometry, pose, C2P(direction), maxDistance, buffer, PxHitFlagEmpty, filterData, &QueryFilter);
 }
 
 bool PhysicsBackend::CapsuleCast(void* scene, const Vector3& center, const float radius, const float height, const Vector3& direction, RayCastHit& hitInfo, const Quaternion& rotation, const float maxDistance, uint32 layerMask, bool hitTriggers)
@@ -1976,7 +1987,7 @@ bool PhysicsBackend::CapsuleCast(void* scene, const Vector3& center, const float
     SCENE_QUERY_SETUP_SWEEP_1();
     const PxTransform pose(C2P(center - scenePhysX->Origin), C2P(rotation));
     const PxCapsuleGeometry geometry(radius, height * 0.5f);
-    if (!scenePhysX->Scene->sweep(geometry, pose, C2P(direction), maxDistance, buffer, hitFlags, filterData, &QueryFilter))
+    if (!scenePhysX->Scene->sweep(geometry, pose, C2P(direction), maxDistance, buffer, SCENE_QUERY_FLAGS, filterData, &QueryFilter))
         return false;
     SCENE_QUERY_COLLECT_SINGLE();
     return true;
@@ -1987,7 +1998,7 @@ bool PhysicsBackend::CapsuleCastAll(void* scene, const Vector3& center, const fl
     SCENE_QUERY_SETUP_SWEEP();
     const PxTransform pose(C2P(center - scenePhysX->Origin), C2P(rotation));
     const PxCapsuleGeometry geometry(radius, height * 0.5f);
-    if (!scenePhysX->Scene->sweep(geometry, pose, C2P(direction), maxDistance, buffer, hitFlags, filterData, &QueryFilter))
+    if (!scenePhysX->Scene->sweep(geometry, pose, C2P(direction), maxDistance, buffer, SCENE_QUERY_FLAGS, filterData, &QueryFilter))
         return false;
     SCENE_QUERY_COLLECT_ALL();
     return true;
@@ -1999,7 +2010,7 @@ bool PhysicsBackend::ConvexCast(void* scene, const Vector3& center, const Collis
     SCENE_QUERY_SETUP_SWEEP_1();
     const PxTransform pose(C2P(center - scenePhysX->Origin), C2P(rotation));
     const PxConvexMeshGeometry geometry((PxConvexMesh*)convexMesh->GetConvex(), PxMeshScale(C2P(scale)));
-    return scenePhysX->Scene->sweep(geometry, pose, C2P(direction), maxDistance, buffer, hitFlags, filterData, &QueryFilter);
+    return scenePhysX->Scene->sweep(geometry, pose, C2P(direction), maxDistance, buffer, PxHitFlagEmpty, filterData, &QueryFilter);
 }
 
 bool PhysicsBackend::ConvexCast(void* scene, const Vector3& center, const CollisionData* convexMesh, const Vector3& scale, const Vector3& direction, RayCastHit& hitInfo, const Quaternion& rotation, const float maxDistance, uint32 layerMask, bool hitTriggers)
@@ -2008,7 +2019,7 @@ bool PhysicsBackend::ConvexCast(void* scene, const Vector3& center, const Collis
     SCENE_QUERY_SETUP_SWEEP_1();
     const PxTransform pose(C2P(center - scenePhysX->Origin), C2P(rotation));
     const PxConvexMeshGeometry geometry((PxConvexMesh*)convexMesh->GetConvex(), PxMeshScale(C2P(scale)));
-    if (!scenePhysX->Scene->sweep(geometry, pose, C2P(direction), maxDistance, buffer, hitFlags, filterData, &QueryFilter))
+    if (!scenePhysX->Scene->sweep(geometry, pose, C2P(direction), maxDistance, buffer, SCENE_QUERY_FLAGS, filterData, &QueryFilter))
         return false;
     SCENE_QUERY_COLLECT_SINGLE();
     return true;
@@ -2020,7 +2031,7 @@ bool PhysicsBackend::ConvexCastAll(void* scene, const Vector3& center, const Col
     SCENE_QUERY_SETUP_SWEEP();
     const PxTransform pose(C2P(center - scenePhysX->Origin), C2P(rotation));
     const PxConvexMeshGeometry geometry((PxConvexMesh*)convexMesh->GetConvex(), PxMeshScale(C2P(scale)));
-    if (!scenePhysX->Scene->sweep(geometry, pose, C2P(direction), maxDistance, buffer, hitFlags, filterData, &QueryFilter))
+    if (!scenePhysX->Scene->sweep(geometry, pose, C2P(direction), maxDistance, buffer, SCENE_QUERY_FLAGS, filterData, &QueryFilter))
         return false;
     SCENE_QUERY_COLLECT_ALL();
     return true;
@@ -2451,17 +2462,14 @@ void PhysicsBackend::AddRigidDynamicActorTorque(void* actor, const Vector3& torq
     actorPhysX->addTorque(C2P(torque), static_cast<PxForceMode::Enum>(mode));
 }
 
-void* PhysicsBackend::CreateShape(PhysicsColliderActor* collider, const CollisionShape& geometry, JsonAsset* material, bool enabled, bool trigger)
+void* PhysicsBackend::CreateShape(PhysicsColliderActor* collider, const CollisionShape& geometry, Span<JsonAsset*> materials, bool enabled, bool trigger)
 {
     const PxShapeFlags shapeFlags = GetShapeFlags(trigger, enabled);
-    PxMaterial* materialPhysX = DefaultMaterial;
-    if (material && !material->WaitForLoaded() && material->Instance)
-    {
-        materialPhysX = (PxMaterial*)((PhysicalMaterial*)material->Instance)->GetPhysicsMaterial();
-    }
+    Array<PxMaterial*, InlinedAllocation<1>> materialsPhysX;
+    GetShapeMaterials(materialsPhysX, materials);
     PxGeometryHolder geometryPhysX;
     GetShapeGeometry(geometry, geometryPhysX);
-    PxShape* shapePhysX = PhysX->createShape(geometryPhysX.any(), *materialPhysX, true, shapeFlags);
+    PxShape* shapePhysX = PhysX->createShape(geometryPhysX.any(), materialsPhysX.Get(), materialsPhysX.Count(), true, shapeFlags);
     shapePhysX->userData = collider;
 #if PHYSX_DEBUG_NAMING
     shapePhysX->setName("Shape");
@@ -2551,15 +2559,12 @@ void PhysicsBackend::SetShapeContactOffset(void* shape, float value)
     shapePhysX->setContactOffset(Math::Max(shapePhysX->getRestOffset() + ZeroTolerance, value));
 }
 
-void PhysicsBackend::SetShapeMaterial(void* shape, JsonAsset* material)
+void PhysicsBackend::SetShapeMaterials(void* shape, Span<JsonAsset*> materials)
 {
     auto shapePhysX = (PxShape*)shape;
-    PxMaterial* materialPhysX = DefaultMaterial;
-    if (material && !material->WaitForLoaded() && material->Instance)
-    {
-        materialPhysX = (PxMaterial*)((PhysicalMaterial*)material->Instance)->GetPhysicsMaterial();
-    }
-    shapePhysX->setMaterials(&materialPhysX, 1);
+    Array<PxMaterial*, InlinedAllocation<1>> materialsPhysX;
+    GetShapeMaterials(materialsPhysX, materials);
+    shapePhysX->setMaterials(materialsPhysX.Get(), materialsPhysX.Count());
 }
 
 void PhysicsBackend::SetShapeGeometry(void* shape, const CollisionShape& geometry)
@@ -2608,9 +2613,8 @@ bool PhysicsBackend::RayCastShape(void* shape, const Vector3& position, const Qu
     auto shapePhysX = (PxShape*)shape;
     const Vector3 sceneOrigin = SceneOrigins[shapePhysX->getActor() ? shapePhysX->getActor()->getScene() : nullptr];
     const PxTransform trans(C2P(position - sceneOrigin), C2P(orientation));
-    const PxHitFlags hitFlags = (PxHitFlags)0;
     PxRaycastHit hit;
-    if (PxGeometryQuery::raycast(C2P(origin - sceneOrigin), C2P(direction), shapePhysX->getGeometry(), trans, maxDistance, hitFlags, 1, &hit) != 0)
+    if (PxGeometryQuery::raycast(C2P(origin - sceneOrigin), C2P(direction), shapePhysX->getGeometry(), trans, maxDistance, PxHitFlagEmpty, 1, &hit) != 0)
     {
         resultHitDistance = hit.distance;
         return true;
@@ -2623,10 +2627,10 @@ bool PhysicsBackend::RayCastShape(void* shape, const Vector3& position, const Qu
     auto shapePhysX = (PxShape*)shape;
     const Vector3 sceneOrigin = SceneOrigins[shapePhysX->getActor() ? shapePhysX->getActor()->getScene() : nullptr];
     const PxTransform trans(C2P(position - sceneOrigin), C2P(orientation));
-    const PxHitFlags hitFlags = PxHitFlag::ePOSITION | PxHitFlag::eNORMAL | PxHitFlag::eFACE_INDEX | PxHitFlag::eUV;
     PxRaycastHit hit;
-    if (PxGeometryQuery::raycast(C2P(origin - sceneOrigin), C2P(direction), shapePhysX->getGeometry(), trans, maxDistance, hitFlags, 1, &hit) == 0)
+    if (PxGeometryQuery::raycast(C2P(origin - sceneOrigin), C2P(direction), shapePhysX->getGeometry(), trans, maxDistance, SCENE_QUERY_FLAGS, 1, &hit) == 0)
         return false;
+    hit.shape = shapePhysX;
     P2C(hit, hitInfo);
     hitInfo.Point += sceneOrigin;
     return true;
@@ -3004,7 +3008,7 @@ void* PhysicsBackend::CreateController(void* scene, IPhysicsActor* actor, Physic
         desc.material = DefaultMaterial;
     const float minSize = 0.001f;
     desc.height = Math::Max(height, minSize);
-    desc.radius = Math::Max(radius - desc.contactOffset, minSize);
+    desc.radius = Math::Max(radius - Math::Max(contactOffset, 0.0f), minSize);
     desc.stepOffset = Math::Min(stepOffset, desc.height + desc.radius * 2.0f - minSize);
     auto controllerPhysX = (PxCapsuleController*)scenePhysX->ControllerManager->createController(desc);
     PxRigidActor* actorPhysX = controllerPhysX->getActor();
@@ -4081,10 +4085,17 @@ void PhysicsBackend::GetHeightFieldSize(void* heightField, int32& rows, int32& c
     columns = (int32)heightFieldPhysX->getNbColumns();
 }
 
-float PhysicsBackend::GetHeightFieldHeight(void* heightField, float x, float z)
+float PhysicsBackend::GetHeightFieldHeight(void* heightField, int32 x, int32 z)
 {
     auto heightFieldPhysX = (PxHeightField*)heightField;
-    return heightFieldPhysX->getHeight(x, z);
+    return heightFieldPhysX->getHeight((float)x, (float)z);
+}
+
+PhysicsBackend::HeightFieldSample PhysicsBackend::GetHeightFieldSample(void* heightField, int32 x, int32 z)
+{
+    auto heightFieldPhysX = (PxHeightField*)heightField;
+    auto sample = heightFieldPhysX->getSample(x, z);
+    return { sample.height, sample.materialIndex0, sample.materialIndex1 };
 }
 
 bool PhysicsBackend::ModifyHeightField(void* heightField, int32 startCol, int32 startRow, int32 cols, int32 rows, const HeightFieldSample* data)

@@ -201,7 +201,7 @@ void Collider::CreateShape()
 
     // Create shape
     const bool isTrigger = _isTrigger && CanBeTrigger();
-    _shape = PhysicsBackend::CreateShape(this, shape, Material.Get(), IsActiveInHierarchy(), isTrigger);
+    _shape = PhysicsBackend::CreateShape(this, shape, Material, IsActiveInHierarchy(), isTrigger);
     PhysicsBackend::SetShapeContactOffset(_shape, _contactOffset);
     UpdateLayerBits();
 }
@@ -288,7 +288,7 @@ void Collider::OnMaterialChanged()
 {
     // Update the shape material
     if (_shape)
-        PhysicsBackend::SetShapeMaterial(_shape, Material.Get());
+        PhysicsBackend::SetShapeMaterial(_shape, Material);
 }
 
 void Collider::BeginPlay(SceneBeginData* data)

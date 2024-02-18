@@ -234,7 +234,6 @@ namespace FlaxEditor.Viewport
                         LocalOrientation = RootNode.RaycastNormalRotation(ref hitNormal),
                         Name = item.ShortName
                     };
-                    DebugDraw.DrawWireArrow(PostProcessSpawnedActorLocation(actor, ref hitNormal), actor.LocalOrientation, 1.0f, Color.Red, 1000000);
                     Spawn(actor, ref hitLocation, ref hitNormal);
                 }
                 else if (hit is StaticModelNode staticModelNode)

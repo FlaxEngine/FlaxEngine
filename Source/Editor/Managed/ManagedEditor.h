@@ -210,6 +210,13 @@ public:
     API_FUNCTION() static bool TryRestoreImportOptions(API_PARAM(Ref) AudioTool::Options& options, String assetPath);
 #endif
 
+    /// <summary>
+    /// Creates a new asset at the target location.
+    /// </summary>
+    /// <param name="tag">New asset type.</param>
+    /// <param name="outputPath">Output asset path.</param>
+    API_FUNCTION() static bool CreateAsset(const String& tag, String outputPath);
+
 public:
     API_STRUCT(Internal, NoDefault) struct VisualScriptStackFrame
     {

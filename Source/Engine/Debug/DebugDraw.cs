@@ -218,10 +218,11 @@ namespace FlaxEngine
         /// <param name="position">The arrow origin position.</param>
         /// <param name="orientation">The orientation (defines the arrow direction).</param>
         /// <param name="scale">The arrow scale (used to adjust the arrow size).</param>
+        /// <param name="capScale">The arrow cap scale.</param>
         /// <param name="color">The color.</param>
         /// <param name="duration">The duration (in seconds). Use 0 to draw it only once.</param>
         /// <param name="depthTest">If set to <c>true</c> depth test will be performed, otherwise depth will be ignored.</param>
-        public static void DrawWireArrow(Vector3 position, Quaternion orientation, float scale, Color color, float duration = 0.0f, bool depthTest = true)
+        public static void DrawWireArrow(Vector3 position, Quaternion orientation, float scale, float capScale, Color color, float duration = 0.0f, bool depthTest = true)
         {
         }
 

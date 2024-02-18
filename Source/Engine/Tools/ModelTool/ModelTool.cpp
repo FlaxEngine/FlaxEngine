@@ -1468,7 +1468,7 @@ bool ModelTool::ImportModel(const String& path, ModelData& data, Options& option
                             Transform srcNode = data.Skeleton.Nodes[nodeIndex].LocalTransform;
                             auto& node = data.Skeleton.Nodes[nodeIndex];
                             if (auto* channel = animation.GetChannel(node.Name))
-                                channel->Evaluate(frame, &srcNode, false);
+                                channel->Evaluate((float)frame, &srcNode, false);
                             pose.Nodes[nodeIndex] = srcNode;
                         }
 
@@ -1476,7 +1476,7 @@ bool ModelTool::ImportModel(const String& path, ModelData& data, Options& option
                         key = Float3::Zero;
                         for (int32 nodeIndex = 0; nodeIndex < nodes; nodeIndex++)
                             key += pose.GetNodeModelTransformation(data.Skeleton, nodeIndex).Translation;
-                        key /= nodes;
+                        key /= (float)nodes;
                     }
 
                     // Calculate skeleton center of mass movement over the animation frames
@@ -1485,7 +1485,7 @@ bool ModelTool::ImportModel(const String& path, ModelData& data, Options& option
                     for (int32 frame = 0; frame < frames; frame++)
                     {
                         auto& key = rootChannel.Position[frame];
-                        key.Time = frame;
+                        key.Time = (float)frame;
                         key.Value = centerOfMass[frame] - centerOfMassRefPose;
                     }
 
@@ -1531,7 +1531,7 @@ bool ModelTool::ImportModel(const String& path, ModelData& data, Options& option
                                 Transform srcNode = data.Skeleton.Nodes[nodeIndex].LocalTransform;
                                 auto& node = data.Skeleton.Nodes[nodeIndex];
                                 if (auto* channel = animation.GetChannel(node.Name))
-                                    channel->Evaluate(frame, &srcNode, false);
+                                    channel->Evaluate((float)frame, &srcNode, false);
                                 pose.Nodes[nodeIndex] = srcNode;
                             }
 

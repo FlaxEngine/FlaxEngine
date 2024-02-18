@@ -15,6 +15,7 @@
 #include "Engine/Graphics/GPULimits.h"
 #include "Engine/Threading/ThreadPoolTask.h"
 #include "Engine/Graphics/GPUDevice.h"
+#include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Scripting/Enums.h"
 
 namespace
@@ -158,29 +159,6 @@ bool GPUTextureDescription::Equals(const GPUTextureDescription& other) const
 
 String GPUTextureDescription::ToString() const
 {
-    // TODO: add tool to Format to string
-
-    String flags;
-    if (Flags == GPUTextureFlags::None)
-    {
-        flags = TEXT("None");
-    }
-    else
-    {
-        // TODO: create tool to auto convert flag enums to string
-
-#define CONVERT_FLAGS_FLAGS_2_STR(value) if (EnumHasAnyFlags(Flags, GPUTextureFlags::value)) { if (flags.HasChars()) flags += TEXT('|'); flags += TEXT(#value); }
-        CONVERT_FLAGS_FLAGS_2_STR(ShaderResource);
-        CONVERT_FLAGS_FLAGS_2_STR(RenderTarget);
-        CONVERT_FLAGS_FLAGS_2_STR(UnorderedAccess);
-        CONVERT_FLAGS_FLAGS_2_STR(DepthStencil);
-        CONVERT_FLAGS_FLAGS_2_STR(PerMipViews);
-        CONVERT_FLAGS_FLAGS_2_STR(PerSliceViews);
-        CONVERT_FLAGS_FLAGS_2_STR(ReadOnlyDepthView);
-        CONVERT_FLAGS_FLAGS_2_STR(BackBuffer);
-#undef CONVERT_FLAGS_FLAGS_2_STR
-    }
-
     return String::Format(TEXT("Size: {0}x{1}x{2}[{3}], Type: {4}, Mips: {5}, Format: {6}, MSAA: {7}, Flags: {8}, Usage: {9}"),
                           Width,
                           Height,
@@ -190,7 +168,7 @@ String GPUTextureDescription::ToString() const
                           MipLevels,
                           ScriptingEnum::ToString(Format),
                           ::ToString(MultiSampleLevel),
-                          flags,
+                          ScriptingEnum::ToStringFlags(Flags),
                           (int32)Usage);
 }
 
@@ -544,7 +522,7 @@ GPUTexture* GPUTexture::ToStagingUpload() const
 
 bool GPUTexture::Resize(int32 width, int32 height, int32 depth, PixelFormat format)
 {
-    // Validate texture is created
+    PROFILE_CPU();
     if (!IsAllocated())
     {
         LOG(Warning, "Cannot resize not created textures.");
@@ -608,6 +586,7 @@ GPUTask* GPUTexture::UploadMipMapAsync(const BytesContainer& data, int32 mipInde
 
 GPUTask* GPUTexture::UploadMipMapAsync(const BytesContainer& data, int32 mipIndex, int32 rowPitch, int32 slicePitch, bool copyData)
 {
+    PROFILE_CPU();
     ASSERT(IsAllocated());
     ASSERT(mipIndex < MipLevels() && data.IsValid());
     ASSERT(data.Length() >= slicePitch);
@@ -699,6 +678,7 @@ bool GPUTexture::DownloadData(TextureData& result)
     {
         MISSING_CODE("support volume texture data downloading.");
     }
+    PROFILE_CPU();
 
     // Use faster path for staging resources
     if (IsStaging())
@@ -780,6 +760,7 @@ Task* GPUTexture::DownloadDataAsync(TextureData& result)
     {
         MISSING_CODE("support volume texture data downloading.");
     }
+    PROFILE_CPU();
 
     // Use faster path for staging resources
     if (IsStaging())

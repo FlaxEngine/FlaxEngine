@@ -221,6 +221,7 @@ void AnimGraphExecutor::Update(AnimGraphInstanceData& data, float dt)
         context.NodePath.Clear();
         context.Data = &data;
         context.DeltaTime = dt;
+        context.StackOverFlow = false;
         context.CurrentFrameIndex = ++data.CurrentFrame;
         context.CallStack.Clear();
         context.Functions.Clear();
@@ -411,9 +412,12 @@ VisjectExecutor::Value AnimGraphExecutor::eatBox(Node* caller, Box* box)
     auto& context = *Context.Get();
 
     // Check if graph is looped or is too deep
+    if (context.StackOverFlow)
+        return Value::Zero;
     if (context.CallStack.Count() >= ANIM_GRAPH_MAX_CALL_STACK)
     {
         OnError(caller, box, TEXT("Graph is looped or too deep!"));
+        context.StackOverFlow = true;
         return Value::Zero;
     }
 #if !BUILD_RELEASE

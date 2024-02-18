@@ -249,7 +249,7 @@ namespace FlaxEngine.Interop
         /// <param name="src">The input array.</param>
         /// <param name="convertFunc">Converter callback.</param>
         /// <returns>The output array.</returns>
-        public static TDst[] ConvertArray<TSrc, TDst>(Span<TSrc> src, Func<TSrc, TDst> convertFunc)
+        public static TDst[] ConvertArray<TSrc, TDst>(this Span<TSrc> src, Func<TSrc, TDst> convertFunc)
         {
             TDst[] dst = new TDst[src.Length];
             for (int i = 0; i < src.Length; i++)
@@ -265,7 +265,7 @@ namespace FlaxEngine.Interop
         /// <param name="src">The input array.</param>
         /// <param name="convertFunc">Converter callback.</param>
         /// <returns>The output array.</returns>
-        public static TDst[] ConvertArray<TSrc, TDst>(TSrc[] src, Func<TSrc, TDst> convertFunc)
+        public static TDst[] ConvertArray<TSrc, TDst>(this TSrc[] src, Func<TSrc, TDst> convertFunc)
         {
             TDst[] dst = new TDst[src.Length];
             for (int i = 0; i < src.Length; i++)

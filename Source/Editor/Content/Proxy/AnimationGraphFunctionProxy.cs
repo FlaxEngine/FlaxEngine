@@ -38,7 +38,7 @@ namespace FlaxEditor.Content
         /// <inheritdoc />
         public override void Create(string outputPath, object arg)
         {
-            if (Editor.CreateAsset(Editor.NewAssetType.AnimationGraphFunction, outputPath))
+            if (Editor.CreateAsset("AnimationGraphFunction", outputPath))
                 throw new Exception("Failed to create new asset.");
         }
     }

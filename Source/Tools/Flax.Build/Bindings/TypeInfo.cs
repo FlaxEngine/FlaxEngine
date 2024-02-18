@@ -180,6 +180,17 @@ namespace Flax.Build.Bindings
             return sb.ToString();
         }
 
+        public static TypeInfo FromString(string text)
+        {
+            var result = new TypeInfo(text);
+            if (result.Type.EndsWith('*'))
+            {
+                result.IsPtr = true;
+                result.Type = result.Type.Substring(0, result.Type.Length - 1);
+            }
+            return result;
+        }
+
         public string ToString(bool canRef = true)
         {
             var sb = new StringBuilder(64);

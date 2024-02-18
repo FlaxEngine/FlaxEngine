@@ -269,7 +269,7 @@ namespace FlaxEngine
         {
             return FindActor(typeof(T), name) as T;
         }
-        
+
         /// <summary>
         /// Tries to find actor of the given type and tag in this actor hierarchy (checks this actor and all children hierarchy).
         /// </summary>
@@ -386,5 +386,9 @@ namespace FlaxEngine
         {
             return $"{Name} ({GetType().Name})";
         }
+
+#if FLAX_EDITOR
+        internal bool ShowTransform => !(this is UIControl);
+#endif
     }
 }

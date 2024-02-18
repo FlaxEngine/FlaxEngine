@@ -44,7 +44,7 @@ namespace FlaxEditor.Content
         /// <inheritdoc />
         public override void Create(string outputPath, object arg)
         {
-            if (Editor.CreateAsset(Editor.NewAssetType.Material, outputPath))
+            if (Editor.CreateAsset("Material", outputPath))
                 throw new Exception("Failed to create new asset.");
         }
 

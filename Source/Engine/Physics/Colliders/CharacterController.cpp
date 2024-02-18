@@ -206,7 +206,7 @@ void CharacterController::CreateController()
     _cachedScale = GetScale();
     const float scaling = _cachedScale.GetAbsolute().MaxValue();
     const Vector3 position = _transform.LocalToWorld(_center);
-    _controller = PhysicsBackend::CreateController(GetPhysicsScene()->GetPhysicsScene(), this, this, _contactOffset, position, _slopeLimit, (int32)_nonWalkableMode, Material.Get(), Math::Abs(_radius) * scaling, Math::Abs(_height) * scaling, _stepOffset, _shape);
+    _controller = PhysicsBackend::CreateController(GetPhysicsScene()->GetPhysicsScene(), this, this, _contactOffset, position, _slopeLimit, (int32)_nonWalkableMode, Material, Math::Abs(_radius) * scaling, Math::Abs(_height) * scaling, _stepOffset, _shape);
 
     // Setup
     PhysicsBackend::SetControllerUpDirection(_controller, _upDirection);
@@ -280,12 +280,8 @@ void CharacterController::OnActiveTransformChanged()
     // Change actor transform (but with locking)
     ASSERT(!_isUpdatingTransform);
     _isUpdatingTransform = true;
-    Transform transform;
-    PhysicsBackend::GetRigidActorPose(PhysicsBackend::GetShapeActor(_shape), transform.Translation, transform.Orientation);
-    transform.Translation -= _center;
-    transform.Orientation = _transform.Orientation;
-    transform.Scale = _transform.Scale;
-    SetTransform(transform);
+    const Vector3 position = PhysicsBackend::GetControllerPosition(_controller) - _center;
+    SetPosition(position);
     _isUpdatingTransform = false;
 
     UpdateBounds();

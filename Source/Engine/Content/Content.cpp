@@ -277,6 +277,8 @@ bool Content::GetAssetInfo(const StringView& path, AssetInfo& info)
     // Find asset in registry
     if (Cache.FindAsset(path, info))
         return true;
+    if (!FileSystem::FileExists(path))
+        return false;
     PROFILE_CPU();
 
     const auto extension = FileSystem::GetExtension(path).ToLower();

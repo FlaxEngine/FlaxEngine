@@ -146,7 +146,7 @@ namespace FlaxEngine
         public string Path;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="BehaviorKnowledgeSelectorAny"/> structure.
+        /// Initializes a new instance of the <see cref="BehaviorKnowledgeSelector{T}"/> structure.
         /// </summary>
         /// <param name="path">The selector path.</param>
         public BehaviorKnowledgeSelector(string path)
@@ -155,7 +155,7 @@ namespace FlaxEngine
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="BehaviorKnowledgeSelectorAny"/> structure.
+        /// Initializes a new instance of the <see cref="BehaviorKnowledgeSelector{T}"/> structure.
         /// </summary>
         /// <param name="other">The other selector.</param>
         public BehaviorKnowledgeSelector(BehaviorKnowledgeSelectorAny other)

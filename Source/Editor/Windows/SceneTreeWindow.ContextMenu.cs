@@ -132,9 +132,12 @@ namespace FlaxEditor.Windows
             b = contextMenu.AddButton("Cut", inputOptions.Cut, Editor.SceneEditing.Cut);
             b.Enabled = canEditScene;
 
-            // Prefab options
+            // Create option
 
             contextMenu.AddSeparator();
+
+            b = contextMenu.AddButton("Create parent for selected actors", Editor.SceneEditing.CreateParentForSelectedActors);
+            b.Enabled = canEditScene && hasSthSelected;
 
             b = contextMenu.AddButton("Create Prefab", Editor.Prefabs.CreatePrefab);
             b.Enabled = isSingleActorSelected &&

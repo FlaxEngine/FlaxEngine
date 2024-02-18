@@ -139,7 +139,8 @@ public:
     T* GetInstance() const
     {
         const_cast<JsonAsset*>(this)->CreateInstance();
-        return Instance && InstanceType.IsAssignableFrom(T::TypeInitializer) ? (T*)Instance : nullptr;
+        const ScriptingTypeHandle& type = T::TypeInitializer;
+        return Instance && type.IsAssignableFrom(InstanceType) ? (T*)Instance : nullptr;
     }
 
 public:
