@@ -54,7 +54,10 @@ namespace FlaxEditor
         /// </summary>
         public static string PrimaryFont = "Editor/Fonts/Roboto-Regular";
 
-        public static string CjkFont = "Editor/Fonts/NotoSansSC-Regular";
+        /// <summary>
+        /// The secondary (fallback) font to use for missing characters rendering (CJK - Chinese/Japanese/Korean characters).
+        /// </summary>
+        public static string FallbackFont = "Editor/Fonts/NotoSansSC-Regular";
 
         /// <summary>
         /// The Inconsolata Regular font.

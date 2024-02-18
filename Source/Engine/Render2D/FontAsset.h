@@ -93,6 +93,7 @@ API_CLASS(NoSpawn) class FLAXENGINE_API FontAsset : public BinaryAsset
 {
     DECLARE_BINARY_ASSET_HEADER(FontAsset, 3);
     friend Font;
+
 private:
     FT_Face _face;
     FontOptions _options;
@@ -175,7 +176,7 @@ public:
 #endif
 
     /// <summary>
-    /// Check if the font contains the glyph of a char
+    /// Check if the font contains the glyph of a char.
     /// </summary>
     /// <param name="c">The char to test.</param>
     /// <returns>True if the font contains the glyph of the char, otherwise false.</returns>
@@ -185,6 +186,10 @@ public:
     /// Invalidates all cached dynamic font atlases using this font. Can be used to reload font characters after changing font asset options.
     /// </summary>
     API_FUNCTION() void Invalidate();
+
+public:
+    // [BinaryAsset]
+    uint64 GetMemoryUsage() const override;
 
 protected:
     // [BinaryAsset]

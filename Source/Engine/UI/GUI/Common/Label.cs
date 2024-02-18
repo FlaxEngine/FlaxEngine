@@ -183,12 +183,6 @@ namespace FlaxEngine.GUI
         }
 
         /// <summary>
-        /// Gets or sets whether to fallback when the primary font cannot render a char.
-        /// </summary>
-        [EditorOrder(120), DefaultValue(true), Tooltip("Whether to fallback when the font cannot render a char.")]
-        public bool EnableFontFallback { get; set; } = true;
-
-        /// <summary>
         /// Initializes a new instance of the <see cref="Label"/> class.
         /// </summary>
         public Label()
@@ -239,23 +233,7 @@ namespace FlaxEngine.GUI
                 }
             }
 
-            if (EnableFontFallback)
-            {
-                Render2D.DrawText(_font.GetFont(), Material, _text, rect, color, hAlignment, wAlignment, Wrapping, BaseLinesGapScale, scale);
-            }
-            else
-            {
-                var layout = new TextLayoutOptions
-                {
-                    Bounds = rect,
-                    HorizontalAlignment = hAlignment,
-                    VerticalAlignment = wAlignment,
-                    TextWrapping = Wrapping,
-                    Scale = scale,
-                    BaseLinesGapScale = BaseLinesGapScale,
-                };
-                Render2D.DrawTextInternal(_font.GetFont(), _text, color, ref layout, Material);
-            }
+            Render2D.DrawText(_font.GetFont(), Material, _text, rect, color, hAlignment, wAlignment, Wrapping, BaseLinesGapScale, scale);
 
             if (ClipText)
                 Render2D.PopClip();
@@ -276,8 +254,7 @@ namespace FlaxEngine.GUI
                         layout.Bounds.Size.X = Width - Margin.Width;
                     else if (_autoWidth && !_autoHeight)
                         layout.Bounds.Size.Y = Height - Margin.Height;
-                    _textSize = EnableFontFallback ?
-                        font.MeasureText(_text, ref layout) : font.MeasureTextInternal(_text, ref layout);
+                    _textSize = font.MeasureText(_text, ref layout);
                     _textSize.Y *= BaseLinesGapScale;
 
                     // Check if size is controlled via text

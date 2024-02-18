@@ -1,13 +1,11 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
-using FlaxEngine.GUI;
 using System;
 
 namespace FlaxEngine
 {
     partial class Render2D
     {
-
         /// <summary>
         /// Pushes transformation layer.
         /// </summary>
@@ -102,7 +100,7 @@ namespace FlaxEngine
         }
 
         /// <summary>
-        /// Draws a text, follows the font fallback settings defined in <see cref="Render2D"/>.
+        /// Draws a text.
         /// </summary>
         /// <param name="font">The font to use.</param>
         /// <param name="text">The text to render.</param>
@@ -128,7 +126,7 @@ namespace FlaxEngine
         }
 
         /// <summary>
-        /// Draws a text using a custom material shader. Given material must have GUI domain and a public parameter named Font (texture parameter used for a font atlas sampling). Follows the font fallback settings defined in <see cref="Render2D"/>.
+        /// Draws a text using a custom material shader. Given material must have GUI domain and a public parameter named Font (texture parameter used for a font atlas sampling).
         /// </summary>
         /// <param name="font">The font to use.</param>
         /// <param name="customMaterial">Custom material for font characters rendering. It must contain texture parameter named Font used to sample font texture.</param>

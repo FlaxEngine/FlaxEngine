@@ -27,7 +27,6 @@ using namespace FontManagerImpl;
 class FontManagerService : public EngineService
 {
 public:
-
     FontManagerService()
         : EngineService(TEXT("Font Manager"), -700)
     {
@@ -155,9 +154,12 @@ bool FontManager::AddNewEntry(Font* font, Char c, FontCharacterEntry& entry)
 
     // Get the index to the glyph in the font face
     const FT_UInt glyphIndex = FT_Get_Char_Index(face, c);
-    if (glyphIndex == 0) {
+#if !BUILD_RELEASE
+    if (glyphIndex == 0)
+    {
         LOG(Warning, "Font `{}` doesn't contain character `\\u{:x}`, consider choosing another font. ", String(face->family_name), c);
     }
+#endif
 
     // Load the glyph
     const FT_Error error = FT_Load_Glyph(face, glyphIndex, glyphFlags);
@@ -287,6 +289,7 @@ bool FontManager::AddNewEntry(Font* font, Char c, FontCharacterEntry& entry)
     entry.UVSize.X = static_cast<float>(slot->Width - 2 * padding);
     entry.UVSize.Y = static_cast<float>(slot->Height - 2 * padding);
     entry.Slot = slot;
+    entry.Font = font;
 
     return false;
 }

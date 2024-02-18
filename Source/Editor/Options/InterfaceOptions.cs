@@ -172,9 +172,9 @@ namespace FlaxEditor.Options
             set
             {
                 if (value == null)
-                    _outputLogFont = new FontReference(FlaxEngine.Content.LoadAsyncInternal<FontAsset>(EditorAssets.InconsolataRegularFont), 10);
+                    _outputLogFont = new FontReference(ConsoleFont, 10);
                 else if (!value.Font)
-                    _outputLogFont.Font = FlaxEngine.Content.LoadAsyncInternal<FontAsset>(EditorAssets.InconsolataRegularFont);
+                    _outputLogFont.Font = ConsoleFont;
                 else
                     _outputLogFont = value;
             }
@@ -237,8 +237,7 @@ namespace FlaxEditor.Options
         public int NumberOfGameClientsToLaunch = 1;
 
         private static FontAsset DefaultFont => FlaxEngine.Content.LoadAsyncInternal<FontAsset>(EditorAssets.PrimaryFont);
-
-        private static FontAsset ConsoleFont => FlaxEngine.Content.LoadAsyncInternal<FontAsset>(EditorAssets.PrimaryFont);
+        private static FontAsset ConsoleFont => FlaxEngine.Content.LoadAsyncInternal<FontAsset>(EditorAssets.InconsolataRegularFont);
 
         private FontReference _titleFont = new FontReference(DefaultFont, 18);
         private FontReference _largeFont = new FontReference(DefaultFont, 14);
@@ -247,9 +246,10 @@ namespace FlaxEditor.Options
         private FontReference _outputLogFont = new FontReference(ConsoleFont, 10);
 
         /// <summary>
-        /// The fallback fonts.
+        /// The list of fallback fonts to use when main text font is missing certain characters. Empty to use fonts from GraphicsSettings.
         /// </summary>
-        public FontAsset[] Fallbacks = [FlaxEngine.Content.LoadAsyncInternal<FontAsset>(EditorAssets.CjkFont)];
+        [EditorDisplay("Fonts"), EditorOrder(650)]
+        public FontAsset[] FallbackFonts = [FlaxEngine.Content.LoadAsyncInternal<FontAsset>(EditorAssets.FallbackFont)];
 
         /// <summary>
         /// Gets or sets the title font for editor UI.

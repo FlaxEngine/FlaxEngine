@@ -6,7 +6,7 @@
 #include "Engine/Graphics/Enums.h"
 #include "Engine/Graphics/PostProcessSettings.h"
 
-class FontFallbackList;
+class FontAsset;
 
 /// <summary>
 /// Graphics rendering settings.
@@ -15,6 +15,7 @@ API_CLASS(sealed, Namespace="FlaxEditor.Content.Settings", NoConstructor) class 
 {
     API_AUTO_SERIALIZATION();
     DECLARE_SCRIPTING_TYPE_MINIMAL(GraphicsSettings);
+
 public:
     /// <summary>
     /// Enables rendering synchronization with the refresh rate of the display device to avoid "tearing" artifacts.
@@ -121,16 +122,10 @@ public:
     PostProcessSettings PostProcessSettings;
 
     /// <summary>
-    /// Whether to enable font fallbacking globally. 
+    /// The list of fallback fonts used for text rendering. Ignored if empty.
     /// </summary>
-    API_FIELD(Attributes = "EditorOrder(12000), EditorDisplay(\"Text Render Settings\", EditorDisplayAttribute.InlineStyle)")
-    bool EnableFontFallback = true;
-
-    /// <summary>
-    /// The fallback fonts used for text rendering, ignored if null.
-    /// </summary>
-    API_FIELD(Attributes = "EditorOrder(12005), EditorDisplay(\"Text Render Settings\", EditorDisplayAttribute.InlineStyle)")
-    FontFallbackList* FallbackFonts;
+    API_FIELD(Attributes="EditorOrder(5000), EditorDisplay(\"Text\")")
+    Array<AssetReference<FontAsset>> FallbackFonts;
 
 private:
     /// <summary>

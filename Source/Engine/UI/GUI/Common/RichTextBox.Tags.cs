@@ -213,18 +213,18 @@ namespace FlaxEngine.GUI
                     style.Alignment &= ~TextBlockStyle.Alignments.VerticalMask;
                     switch (valign)
                     {
-                        case "top":
-                            style.Alignment = TextBlockStyle.Alignments.Top;
-                            break;
-                        case "bottom":
-                            style.Alignment = TextBlockStyle.Alignments.Bottom;
-                            break;
-                        case "middle":
-                            style.Alignment = TextBlockStyle.Alignments.Middle;
-                            break;
-                        case "baseline":
-                            style.Alignment = TextBlockStyle.Alignments.Baseline;
-                            break;
+                    case "top":
+                        style.Alignment = TextBlockStyle.Alignments.Top;
+                        break;
+                    case "bottom":
+                        style.Alignment = TextBlockStyle.Alignments.Bottom;
+                        break;
+                    case "middle":
+                        style.Alignment = TextBlockStyle.Alignments.Middle;
+                        break;
+                    case "baseline":
+                        style.Alignment = TextBlockStyle.Alignments.Baseline;
+                        break;
                     }
                 }
                 context.StyleStack.Push(style);
@@ -245,15 +245,15 @@ namespace FlaxEngine.GUI
                     style.Alignment &= ~TextBlockStyle.Alignments.VerticalMask;
                     switch (valign)
                     {
-                        case "left":
-                            style.Alignment = TextBlockStyle.Alignments.Left;
-                            break;
-                        case "right":
-                            style.Alignment = TextBlockStyle.Alignments.Right;
-                            break;
-                        case "center":
-                            style.Alignment = TextBlockStyle.Alignments.Center;
-                            break;
+                    case "left":
+                        style.Alignment = TextBlockStyle.Alignments.Left;
+                        break;
+                    case "right":
+                        style.Alignment = TextBlockStyle.Alignments.Right;
+                        break;
+                    case "center":
+                        style.Alignment = TextBlockStyle.Alignments.Center;
+                        break;
                     }
                 }
                 context.StyleStack.Push(style);

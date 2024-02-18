@@ -7,8 +7,6 @@
 #include "Engine/Core/Types/String.h"
 #include "Engine/Core/Collections/Dictionary.h"
 
-class FontFallbackList;
-
 /// <summary>
 /// The main game engine configuration service. Loads and applies game configuration.
 /// </summary>

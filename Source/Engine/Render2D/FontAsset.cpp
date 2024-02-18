@@ -199,25 +199,29 @@ bool FontAsset::Save(const StringView& path)
 
 #endif
 
-
-/// <summary>
-/// Check if the font contains the glyph of a char
-/// </summary>
-/// <param name="c">The char to test.</param>
-/// <returns>True if the font contains the glyph of the char, otherwise false.</returns>
-
-bool FontAsset::ContainsChar(Char c) const {
-    return FT_Get_Char_Index(GetFTFace(), c) > 0;
+bool FontAsset::ContainsChar(Char c) const
+{
+    return FT_Get_Char_Index(_face, c) > 0;
 }
 
 void FontAsset::Invalidate()
 {
     ScopeLock lock(Locker);
-
     for (auto font : _fonts)
-    {
         font->Invalidate();
-    }
+}
+
+uint64 FontAsset::GetMemoryUsage() const
+{
+    Locker.Lock();
+    uint64 result = BinaryAsset::GetMemoryUsage();
+    result += sizeof(FontAsset) - sizeof(BinaryAsset);
+    result += sizeof(FT_FaceRec);
+    result += _fontFile.Length();
+    for (auto font : _fonts)
+        result += sizeof(Font);
+    Locker.Unlock();
+    return result;
 }
 
 bool FontAsset::init(AssetInitData& initData)
