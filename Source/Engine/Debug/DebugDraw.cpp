@@ -1940,15 +1940,15 @@ void DebugDraw::DrawWireArc(const Vector3& position, const Quaternion& orientati
         DrawLine(prevPos, world.GetTranslation(), color, duration, depthTest);
 }
 
-void DebugDraw::DrawWireArrow(const Vector3& position, const Quaternion& orientation, float scale, const Color& color, float duration, bool depthTest)
+void DebugDraw::DrawWireArrow(const Vector3& position, const Quaternion& orientation, float scale, float capScale, const Color& color, float duration, bool depthTest)
 {
     Float3 direction, up, right;
     Float3::Transform(Float3::Forward, orientation, direction);
     Float3::Transform(Float3::Up, orientation, up);
     Float3::Transform(Float3::Right, orientation, right);
     const Vector3 end = position + direction * (100.0f * scale);
-    const Vector3 capEnd = position + direction * (70.0f * scale);
-    const float arrowSidesRatio = scale * 30.0f;
+    const Vector3 capEnd = end - (direction * (100 * Math::Min(capScale, scale * 0.5f)));
+    const float arrowSidesRatio = Math::Min(capScale, scale * 0.5f) * 30.0f;
 
     DrawLine(position, end, color, duration, depthTest);
     DrawLine(end, capEnd + up * arrowSidesRatio, color, duration, depthTest);
