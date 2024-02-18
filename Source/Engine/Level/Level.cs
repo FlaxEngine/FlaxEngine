@@ -119,10 +119,11 @@ namespace FlaxEngine
         /// Finds all the actors of the given type in all the loaded scenes.
         /// </summary>
         /// <typeparam name="T">Type of the object.</typeparam>
+        /// <typeparam name="activeOnly">Finds only active actors.</typeparam>
         /// <returns>Found actors list.</returns>
-        public static T[] GetActors<T>() where T : Actor
+        public static T[] GetActors<T>(bool activeOnly = false) where T : Actor
         {
-            var actors = GetActors(typeof(T));
+            var actors = GetActors(typeof(T), activeOnly);
             var result = new T[actors.Length];
             for (int i = 0; i < actors.Length; i++)
                 result[i] = actors[i] as T;

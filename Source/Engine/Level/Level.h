@@ -460,8 +460,9 @@ public:
     /// Finds all the actors of the given type in all the loaded scenes.
     /// </summary>
     /// <param name="type">Type of the actor to search for. Includes any actors derived from the type.</param>
+    /// <param name="activeOnly">Finds only active actors in the scene.</param>
     /// <returns>Found actors list.</returns>
-    API_FUNCTION() static Array<Actor*> GetActors(API_PARAM(Attributes="TypeReference(typeof(Actor))") const MClass* type);
+    API_FUNCTION() static Array<Actor*> GetActors(API_PARAM(Attributes="TypeReference(typeof(Actor))") const MClass* type, bool activeOnly = false);
 
     /// <summary>
     /// Finds all the scripts of the given type in all the loaded scenes.
