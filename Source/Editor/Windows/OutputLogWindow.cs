@@ -562,12 +562,12 @@ namespace FlaxEditor.Windows
                                 {
                                     switch (match.Groups["level"].Value)
                                     {
-                                    case "error":
-                                        textBlock.Style = _output.ErrorStyle;
-                                        break;
-                                    case "warning":
-                                        textBlock.Style = _output.WarningStyle;
-                                        break;
+                                        case "error":
+                                            textBlock.Style = _output.ErrorStyle;
+                                            break;
+                                        case "warning":
+                                            textBlock.Style = _output.WarningStyle;
+                                            break;
                                     }
                                     textBlock.Tag = new TextBlockTag
                                     {

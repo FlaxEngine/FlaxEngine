@@ -1,5 +1,8 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
+
+using System.ComponentModel;
+
 namespace FlaxEngine.GUI
 {
     /// <summary>
@@ -65,6 +68,12 @@ namespace FlaxEngine.GUI
         public Color SelectionColor { get; set; }
 
         /// <summary>
+        /// Gets or sets whether to fallback when the primary font cannot render a char.
+        /// </summary>
+        [EditorOrder(120), DefaultValue(true), Tooltip("Whether to fallback when the font cannot render a char.")]
+        public bool EnableFontFallback { get; set; } = true;
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="TextBox"/> class.
         /// </summary>
         public TextBox()
@@ -103,7 +112,8 @@ namespace FlaxEngine.GUI
                 return Float2.Zero;
             }
 
-            return font.MeasureText(_text, ref _layout);
+            return EnableFontFallback ? font.MeasureText(_text, ref _layout) :
+                font.MeasureTextInternal(_text, ref _layout);
         }
 
         /// <inheritdoc />
@@ -116,8 +126,9 @@ namespace FlaxEngine.GUI
                 return Float2.Zero;
             }
 
-            height = font.Height / DpiScale;
-            return font.GetCharPosition(_text, index, ref _layout);
+            height = (EnableFontFallback ? font.GetMaxHeight() : font.Height) / DpiScale;
+            return EnableFontFallback ? font.GetCharPosition(_text, index, ref _layout) :
+                font.GetCharPositionInternal(_text, index, ref _layout);
         }
 
         /// <inheritdoc />
@@ -129,7 +140,8 @@ namespace FlaxEngine.GUI
                 return 0;
             }
 
-            return font.HitTestText(_text, location, ref _layout);
+            return EnableFontFallback ? font.HitTestText(_text, location, ref _layout) :
+                font.HitTestTextInternal(_text, location, ref _layout);
         }
 
         /// <inheritdoc />
@@ -168,9 +180,13 @@ namespace FlaxEngine.GUI
             // Check if sth is selected to draw selection
             if (HasSelection)
             {
-                var leftEdge = font.GetCharPosition(_text, SelectionLeft, ref _layout);
-                var rightEdge = font.GetCharPosition(_text, SelectionRight, ref _layout);
-                float fontHeight = font.Height / DpiScale;
+                var leftEdge = EnableFontFallback ?
+                    font.GetCharPosition(_text, SelectionLeft, ref _layout) :
+                    font.GetCharPositionInternal(_text, SelectionLeft, ref _layout);
+                var rightEdge = EnableFontFallback ?
+                    font.GetCharPosition(_text, SelectionRight, ref _layout) :
+                    font.GetCharPositionInternal(_text, SelectionRight, ref _layout);
+                float fontHeight = font.GetMaxHeight() / DpiScale;
 
                 // Draw selection background
                 float alpha = Mathf.Min(1.0f, Mathf.Cos(_animateTime * BackgroundSelectedFlashSpeed) * 0.5f + 1.3f);
@@ -210,11 +226,19 @@ namespace FlaxEngine.GUI
                 var color = TextColor;
                 if (!enabled)
                     color *= 0.6f;
-                Render2D.DrawText(font, _text, color, ref _layout, TextMaterial);
+                if (EnableFontFallback)
+                    Render2D.DrawText(font, _text, color, ref _layout, TextMaterial);
+                else
+                    // Draw without fallback
+                    Render2D.DrawTextInternal(font, _text, color, ref _layout, TextMaterial);
             }
             else if (!string.IsNullOrEmpty(_watermarkText) && !IsFocused)
             {
-                Render2D.DrawText(font, _watermarkText, WatermarkTextColor, ref _layout, TextMaterial);
+                if (EnableFontFallback)
+                    Render2D.DrawText(font, _watermarkText, WatermarkTextColor, ref _layout, TextMaterial);
+                else
+                    // Draw without fallback
+                    Render2D.DrawTextInternal(font, _watermarkText, WatermarkTextColor, ref _layout, TextMaterial);
             }
 
             // Caret

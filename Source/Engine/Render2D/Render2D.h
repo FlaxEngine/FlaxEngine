@@ -15,6 +15,7 @@ struct Matrix3x3;
 struct Viewport;
 struct TextRange;
 class Font;
+class FontFallbackList;
 class GPUPipelineState;
 class GPUTexture;
 class GPUTextureView;
@@ -33,7 +34,7 @@ API_CLASS(Static) class FLAXENGINE_API Render2D
     /// <summary>
     /// The rendering features and options flags.
     /// </summary>
-    API_ENUM(Attributes="Flags") enum class RenderingFeatures
+    API_ENUM(Attributes = "Flags") enum class RenderingFeatures
     {
         /// <summary>
         /// The none.
@@ -53,6 +54,7 @@ API_CLASS(Static) class FLAXENGINE_API Render2D
     };
 
 public:
+
     /// <summary>
     /// Checks if interface is during rendering phrase (Draw calls may be performed without failing).
     /// </summary>
@@ -67,6 +69,10 @@ public:
     /// The active rendering features flags.
     /// </summary>
     API_FIELD() static RenderingFeatures Features;
+
+    API_FIELD() static bool EnableFontFallback;
+
+    API_FIELD() static FontFallbackList* FallbackFonts;
 
     /// <summary>
     /// Called when frame rendering begins by the graphics device.
@@ -174,17 +180,17 @@ public:
 
 public:
     /// <summary>
-    /// Draws a text.
+    /// Draws a text, with font fallbacking disabled.
     /// </summary>
     /// <param name="font">The font to use.</param>
     /// <param name="text">The text to render.</param>
     /// <param name="color">The text color.</param>
     /// <param name="location">The text location.</param>
     /// <param name="customMaterial">The custom material for font characters rendering. It must contain texture parameter named Font used to sample font texture.</param>
-    API_FUNCTION() static void DrawText(Font* font, const StringView& text, const Color& color, const Float2& location, MaterialBase* customMaterial = nullptr);
+    API_FUNCTION() static void DrawTextInternal(Font* font, const StringView& text, const Color& color, const Float2& location, MaterialBase* customMaterial = nullptr);
 
     /// <summary>
-    /// Draws a text.
+    /// Draws a text, with font fallbacking disabled.
     /// </summary>
     /// <param name="font">The font to use.</param>
     /// <param name="text">The text to render.</param>
@@ -192,20 +198,20 @@ public:
     /// <param name="color">The text color.</param>
     /// <param name="location">The text location.</param>
     /// <param name="customMaterial">The custom material for font characters rendering. It must contain texture parameter named Font used to sample font texture.</param>
-    API_FUNCTION() static void DrawText(Font* font, const StringView& text, API_PARAM(Ref) const TextRange& textRange, const Color& color, const Float2& location, MaterialBase* customMaterial = nullptr);
+    API_FUNCTION() static void DrawTextInternal(Font* font, const StringView& text, API_PARAM(Ref) const TextRange& textRange, const Color& color, const Float2& location, MaterialBase* customMaterial = nullptr);
 
     /// <summary>
-    /// Draws a text with formatting.
+    /// Draws a text with formatting, with font fallbacking disabled.
     /// </summary>
     /// <param name="font">The font to use.</param>
     /// <param name="text">The text to render.</param>
     /// <param name="color">The text color.</param>
     /// <param name="layout">The text layout properties.</param>
     /// <param name="customMaterial">The custom material for font characters rendering. It must contain texture parameter named Font used to sample font texture.</param>
-    API_FUNCTION() static void DrawText(Font* font, const StringView& text, const Color& color, API_PARAM(Ref) const TextLayoutOptions& layout, MaterialBase* customMaterial = nullptr);
+    API_FUNCTION() static void DrawTextInternal(Font* font, const StringView& text, const Color& color, API_PARAM(Ref) const TextLayoutOptions& layout, MaterialBase* customMaterial = nullptr);
 
     /// <summary>
-    /// Draws a text with formatting.
+    /// Draws a text with formatting, with font fallbacking disabled.
     /// </summary>
     /// <param name="font">The font to use.</param>
     /// <param name="text">The text to render.</param>
@@ -213,7 +219,120 @@ public:
     /// <param name="color">The text color.</param>
     /// <param name="layout">The text layout properties.</param>
     /// <param name="customMaterial">The custom material for font characters rendering. It must contain texture parameter named Font used to sample font texture.</param>
-    API_FUNCTION() static void DrawText(Font* font, const StringView& text, API_PARAM(Ref) const TextRange& textRange, const Color& color, API_PARAM(Ref) const TextLayoutOptions& layout, MaterialBase* customMaterial = nullptr);
+    API_FUNCTION() static void DrawTextInternal(Font* font, const StringView& text, API_PARAM(Ref) const TextRange& textRange, const Color& color, API_PARAM(Ref) const TextLayoutOptions& layout, MaterialBase* customMaterial = nullptr);
+
+    /// <summary>
+    /// Draws a text, using custom fallback options.
+    /// </summary>
+    /// <param name="fonts">The fonts to use, ordered by priority.</param>
+    /// <param name="text">The text to render.</param>
+    /// <param name="textRange">The input text range (substring range of the input text parameter).</param>
+    /// <param name="color">The text color.</param>
+    /// <param name="location">The text location.</param>
+    /// <param name="customMaterial">The custom material for font characters rendering. It must contain texture parameter named Font used to sample font texture.</param>
+    API_FUNCTION() static void DrawTextInternal(Font* font, FontFallbackList* fallbacks, const StringView& text, const Color& color, const Float2& location, MaterialBase* customMaterial = nullptr);
+
+    /// <summary>
+    /// Draws a text with formatting, using custom fallback options.
+    /// </summary>
+    /// <param name="fonts">The fonts to use, ordered by priority.</param>
+    /// <param name="text">The text to render.</param>
+    /// <param name="color">The text color.</param>
+    /// <param name="layout">The text layout properties.</param>
+    /// <param name="customMaterial">The custom material for font characters rendering. It must contain texture parameter named Font used to sample font texture.</param>
+    API_FUNCTION() static void DrawTextInternal(Font* font, FontFallbackList* fallbacks, const StringView& text, API_PARAM(Ref) const TextRange& textRange, const Color& color, const Float2& location, MaterialBase* customMaterial = nullptr);
+
+    /// <summary>
+    /// Draws a text with formatting, using custom fallback options.
+    /// </summary>
+    /// <param name="fonts">The fonts to use, ordered by priority.</param>
+    /// <param name="text">The text to render.</param>
+    /// <param name="textRange">The input text range (substring range of the input text parameter).</param>
+    /// <param name="color">The text color.</param>
+    /// <param name="layout">The text layout properties.</param>
+    /// <param name="customMaterial">The custom material for font characters rendering. It must contain texture parameter named Font used to sample font texture.</param>
+    API_FUNCTION() static void DrawTextInternal(Font* font, FontFallbackList* fallbacks, const StringView& text, const Color& color, API_PARAM(Ref) const TextLayoutOptions& layout, MaterialBase* customMaterial = nullptr);
+
+    /// <summary>
+    /// Draws a text with formatting, using custom fallback options.
+    /// </summary>
+    /// <param name="fonts">The fonts to use, ordered by priority.</param>
+    /// <param name="text">The text to render.</param>
+    /// <param name="textRange">The input text range (substring range of the input text parameter).</param>
+    /// <param name="color">The text color.</param>
+    /// <param name="layout">The text layout properties.</param>
+    /// <param name="customMaterial">The custom material for font characters rendering. It must contain texture parameter named Font used to sample font texture.</param>
+    API_FUNCTION() static void DrawTextInternal(Font* font, FontFallbackList* fallbacks, const StringView& text, API_PARAM(Ref) const TextRange& textRange, const Color& color, API_PARAM(Ref) const TextLayoutOptions& layout, MaterialBase* customMaterial = nullptr);
+
+    /// <summary>
+    /// Draws a text, follows the fallback settings defined in <see cref="Render2D" />.
+    /// </summary>
+    /// <param name="font">The font to use.</param>
+    /// <param name="text">The text to render.</param>
+    /// <param name="color">The text color.</param>
+    /// <param name="location">The text location.</param>
+    /// <param name="customMaterial">The custom material for font characters rendering. It must contain texture parameter named Font used to sample font texture.</param>
+    API_FUNCTION() FORCE_INLINE static void DrawText(Font* font, const StringView& text, const Color& color, const Float2& location, MaterialBase* customMaterial = nullptr) {
+        if (EnableFontFallback && FallbackFonts) {
+            DrawTextInternal(font, FallbackFonts, text, color, location, customMaterial);
+        }
+        else {
+            DrawTextInternal(font, text, color, location, customMaterial);
+        }
+    }
+
+    /// <summary>
+    /// Draws a text, follows the fallback settings defined in <see cref="Render2D" />.
+    /// </summary>
+    /// <param name="font">The font to use.</param>
+    /// <param name="text">The text to render.</param>
+    /// <param name="textRange">The input text range (substring range of the input text parameter).</param>
+    /// <param name="color">The text color.</param>
+    /// <param name="location">The text location.</param>
+    /// <param name="customMaterial">The custom material for font characters rendering. It must contain texture parameter named Font used to sample font texture.</param>
+    API_FUNCTION() FORCE_INLINE static void DrawText(Font* font, const StringView& text, API_PARAM(Ref) const TextRange& textRange, const Color& color, const Float2& location, MaterialBase* customMaterial = nullptr) {
+        if (EnableFontFallback && FallbackFonts) {
+            DrawTextInternal(font, FallbackFonts, text, textRange, color, location, customMaterial);
+        }
+        else {
+            DrawTextInternal(font, text, textRange, color, location, customMaterial);
+        }
+    }
+
+    /// <summary>
+    /// Draws a text with formatting, follows the fallback settings defined in <see cref="Render2D" />.
+    /// </summary>
+    /// <param name="font">The font to use.</param>
+    /// <param name="text">The text to render.</param>
+    /// <param name="color">The text color.</param>
+    /// <param name="layout">The text layout properties.</param>
+    /// <param name="customMaterial">The custom material for font characters rendering. It must contain texture parameter named Font used to sample font texture.</param>
+    API_FUNCTION() FORCE_INLINE static void DrawText(Font* font, const StringView& text, const Color& color, API_PARAM(Ref) const TextLayoutOptions& layout, MaterialBase* customMaterial = nullptr) {
+        if (EnableFontFallback && FallbackFonts) {
+            DrawTextInternal(font, FallbackFonts, text, color, layout, customMaterial);
+        }
+        else {
+            DrawTextInternal(font, text, color, layout, customMaterial);
+        }
+    }
+
+    /// <summary>
+    /// Draws a text with formatting, follows the fallback settings defined in <see cref="Render2D" />.
+    /// </summary>
+    /// <param name="font">The font to use.</param>
+    /// <param name="text">The text to render.</param>
+    /// <param name="textRange">The input text range (substring range of the input text parameter).</param>
+    /// <param name="color">The text color.</param>
+    /// <param name="layout">The text layout properties.</param>
+    /// <param name="customMaterial">The custom material for font characters rendering. It must contain texture parameter named Font used to sample font texture.</param>
+    API_FUNCTION() FORCE_INLINE static void DrawText(Font* font, const StringView& text, API_PARAM(Ref) const TextRange& textRange, const Color& color, API_PARAM(Ref) const TextLayoutOptions& layout, MaterialBase* customMaterial = nullptr) {
+        if (EnableFontFallback && FallbackFonts) {
+            DrawTextInternal(font, FallbackFonts, text, textRange, color, layout, customMaterial);
+        }
+        else {
+            DrawTextInternal(font, text, textRange, color, layout, customMaterial);
+        }
+    }
 
     /// <summary>
     /// Fills a rectangle area.

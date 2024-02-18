@@ -3,6 +3,7 @@
 #include "Render2D.h"
 #include "Font.h"
 #include "FontManager.h"
+#include "FallbackFonts.h"
 #include "FontTextureAtlas.h"
 #include "RotatedRectangle.h"
 #include "SpriteAtlas.h"
@@ -27,11 +28,11 @@
 
 #if USE_EDITOR
 #define RENDER2D_CHECK_RENDERING_STATE \
-	if (!Render2D::IsRendering()) \
-	{ \
-		LOG(Error, "Calling Render2D is only valid during rendering."); \
-		return; \
-	}
+    if (!Render2D::IsRendering()) \
+    { \
+        LOG(Error, "Calling Render2D is only valid during rendering."); \
+        return; \
+    }
 #else
 #define RENDER2D_CHECK_RENDERING_STATE
 #endif
@@ -54,7 +55,7 @@ const bool DownsampleForBlur = false;
 
 PACK_STRUCT(struct Data {
     Matrix ViewProjection;
-    });
+});
 
 PACK_STRUCT(struct BlurData {
     Float2 InvBufferSize;
@@ -62,7 +63,7 @@ PACK_STRUCT(struct BlurData {
     float Dummy0;
     Float4 Bounds;
     Float4 WeightAndOffsets[RENDER2D_BLUR_MAX_SAMPLES / 2];
-    });
+});
 
 enum class DrawCallType : byte
 {
@@ -181,6 +182,8 @@ struct ClipMask
 };
 
 Render2D::RenderingFeatures Render2D::Features = RenderingFeatures::VertexSnapping;
+bool Render2D::EnableFontFallback = true;
+FontFallbackList* Render2D::FallbackFonts = nullptr;
 
 namespace
 {
@@ -194,6 +197,7 @@ namespace
     // Drawing
     Array<Render2DDrawCall> DrawCalls;
     Array<FontLineCache> Lines;
+    Array<BlockedTextLineCache> BlockedTextLines;
     Array<Float2> Lines2;
     bool IsScissorsRectEmpty;
     bool IsScissorsRectEnabled;
@@ -1142,7 +1146,7 @@ void DrawBatch(int32 startIndex, int32 count)
     Context->DrawIndexed(countIb, 0, d.StartIB);
 }
 
-void Render2D::DrawText(Font* font, const StringView& text, const Color& color, const Float2& location, MaterialBase* customMaterial)
+void Render2D::DrawTextInternal(Font* font, const StringView& text, const Color& color, const Float2& location, MaterialBase* customMaterial)
 {
     RENDER2D_CHECK_RENDERING_STATE;
 
@@ -1174,7 +1178,7 @@ void Render2D::DrawText(Font* font, const StringView& text, const Color& color, 
         drawCall.AsChar.Mat = nullptr;
     }
     Float2 pointer = location;
-    for (int32 currentIndex = 0; currentIndex <= text.Length(); currentIndex++)
+    for (int32 currentIndex = 0; currentIndex < text.Length(); currentIndex++)
     {
         // Cache current character
         const Char currentChar = text[currentIndex];
@@ -1250,12 +1254,12 @@ void Render2D::DrawText(Font* font, const StringView& text, const Color& color, 
     }
 }
 
-void Render2D::DrawText(Font* font, const StringView& text, const TextRange& textRange, const Color& color, const Float2& location, MaterialBase* customMaterial)
+void Render2D::DrawTextInternal(Font* font, const StringView& text, const TextRange& textRange, const Color& color, const Float2& location, MaterialBase* customMaterial)
 {
-    DrawText(font, textRange.Substring(text), color, location, customMaterial);
+    DrawTextInternal(font, textRange.Substring(text), color, location, customMaterial);
 }
 
-void Render2D::DrawText(Font* font, const StringView& text, const Color& color, const TextLayoutOptions& layout, MaterialBase* customMaterial)
+void Render2D::DrawTextInternal(Font* font, const StringView& text, const Color& color, const TextLayoutOptions& layout, MaterialBase* customMaterial)
 {
     RENDER2D_CHECK_RENDERING_STATE;
 
@@ -1363,9 +1367,317 @@ void Render2D::DrawText(Font* font, const StringView& text, const Color& color, 
     }
 }
 
-void Render2D::DrawText(Font* font, const StringView& text, const TextRange& textRange, const Color& color, const TextLayoutOptions& layout, MaterialBase* customMaterial)
+void Render2D::DrawTextInternal(Font* font, const StringView& text, const TextRange& textRange, const Color& color, const TextLayoutOptions& layout, MaterialBase* customMaterial)
 {
-    DrawText(font, textRange.Substring(text), color, layout, customMaterial);
+    DrawTextInternal(font, textRange.Substring(text), color, layout, customMaterial);
+}
+
+void Render2D::DrawTextInternal(Font* font, FontFallbackList* fallbacks, const StringView& text, const Color& color, const Float2& location, MaterialBase* customMaterial)
+{
+    RENDER2D_CHECK_RENDERING_STATE;
+
+    // Check if there is no need to do anything
+    if (font == nullptr || text.Length() < 0)
+        return;
+
+    // Temporary data
+    const Array<Font*>& fallbackFonts = fallbacks->GetFontList(font->GetSize());
+    uint32 fontAtlasIndex = 0;
+    FontTextureAtlas* fontAtlas = nullptr;
+    Float2 invAtlasSize = Float2::One;
+    FontCharacterEntry previous;
+    int32 kerning;
+    float scale = 1.0f / FontManager::FontScale;
+
+    // Process text to get lines
+    Array<float> maxAscenders;
+
+    // Render all characters
+    FontCharacterEntry entry;
+    Render2DDrawCall drawCall;
+    if (customMaterial)
+    {
+        drawCall.Type = DrawCallType::DrawCharMaterial;
+        drawCall.AsChar.Mat = customMaterial;
+    }
+    else
+    {
+        drawCall.Type = DrawCallType::DrawChar;
+        drawCall.AsChar.Mat = nullptr;
+    }
+
+    int32 lineIndex = 0;
+    maxAscenders.Add(0);
+
+    auto getFont = [&](int32 index)->Font* {
+        return index >= 0 ? fallbackFonts[index] : font;
+        };
+
+    // Preprocess the text to determine vertical offset of blocks
+    for (int32 currentIndex = 0; currentIndex < text.Length(); currentIndex++)
+    {
+        const Char c = text[currentIndex];
+        if (c != '\n') {
+            int32 fontIndex = fallbacks->GetCharFallbackIndex(c, font);
+            maxAscenders[lineIndex] = Math::Max(maxAscenders[lineIndex],
+                static_cast<float>(getFont(fontIndex)->GetAscender()));
+        }
+        else {
+            lineIndex++;
+            maxAscenders.Add(0);
+        }
+    }
+
+    lineIndex = 0;
+    // The following code cut the text into blocks, according to the font used to render
+    Float2 pointer = location;
+    // The starting index of the current block
+    int32 startIndex = 0;
+    // The index of the font used by the current block
+    int32 currentFontIndex = fallbacks->GetCharFallbackIndex(text[0], font);
+    // The maximum font height of the current line
+    float maxHeight = 0;
+    for (int32 currentIndex = 0; currentIndex < text.Length(); currentIndex++)
+    {
+        // Cache current character
+        const Char currentChar = text[currentIndex];
+        int32 nextCharIndex = currentIndex + 1;
+        bool moveBlock = false;
+        bool moveLine = false;
+        int32 nextFontIndex = currentFontIndex;
+
+        // Submit block if text ends
+        if (nextCharIndex == text.Length()) {
+            moveBlock = true;
+        }
+
+        // Check if it isn't a newline character
+        if (currentChar != '\n')
+        {
+            // Get character entry
+            if (nextCharIndex < text.Length()) {
+                nextFontIndex = fallbacks->GetCharFallbackIndex(text[nextCharIndex], font);
+            }
+
+            if (nextFontIndex != currentFontIndex) {
+                moveBlock = true;
+            }
+        }
+        else
+        {
+            // Move
+            moveLine = moveBlock = true;
+        }
+
+        if (moveBlock) {
+            // Render the pending block before beginning the new block
+            auto fontHeight = getFont(currentFontIndex)->GetHeight();
+            maxHeight = Math::Max(maxHeight, static_cast<float>(fontHeight));
+            auto fontDescender = getFont(currentFontIndex)->GetDescender();
+            for (int32 renderIndex = startIndex; renderIndex <= currentIndex; renderIndex++)
+            {
+                // Get character entry
+                getFont(currentFontIndex)->GetCharacter(text[renderIndex], entry);
+
+                // Check if need to select/change font atlas (since characters even in the same font may be located in different atlases)
+                if (fontAtlas == nullptr || entry.TextureIndex != fontAtlasIndex)
+                {
+                    // Get texture atlas that contains current character
+                    fontAtlasIndex = entry.TextureIndex;
+                    fontAtlas = FontManager::GetAtlas(fontAtlasIndex);
+                    if (fontAtlas)
+                    {
+                        fontAtlas->EnsureTextureCreated();
+                        drawCall.AsChar.Tex = fontAtlas->GetTexture();
+                        invAtlasSize = 1.0f / fontAtlas->GetSize();
+                    }
+                    else
+                    {
+                        drawCall.AsChar.Tex = nullptr;
+                        invAtlasSize = 1.0f;
+                    }
+                }
+
+                // Check if character is a whitespace
+                const bool isWhitespace = StringUtils::IsWhitespace(text[renderIndex]);
+
+                // Get kerning
+                if (!isWhitespace && previous.IsValid)
+                {
+                    kerning = getFont(currentFontIndex)->GetKerning(previous.Character, entry.Character);
+                }
+                else
+                {
+                    kerning = 0;
+                }
+                pointer.X += kerning * scale;
+                previous = entry;
+
+                // Omit whitespace characters
+                if (!isWhitespace)
+                {
+                    // Calculate character size and atlas coordinates
+                    const float x = pointer.X + entry.OffsetX * scale;
+                    const float y = pointer.Y + (fontHeight + fontDescender - entry.OffsetY) * scale;
+
+                    Rectangle charRect(x, y + (maxAscenders[lineIndex] - getFont(currentFontIndex)->GetAscender()) / 2, entry.UVSize.X * scale, entry.UVSize.Y * scale);
+
+                    Float2 upperLeftUV = entry.UV * invAtlasSize;
+                    Float2 rightBottomUV = (entry.UV + entry.UVSize) * invAtlasSize;
+
+                    // Add draw call
+                    drawCall.StartIB = IBIndex;
+                    drawCall.CountIB = 6;
+                    DrawCalls.Add(drawCall);
+                    WriteRect(charRect, color, upperLeftUV, rightBottomUV);
+                }
+
+                // Move
+                pointer.X += entry.AdvanceX * scale;
+            }
+
+            if (moveLine) {
+                pointer.X = location.X;
+                pointer.Y += maxHeight * scale;
+                // Clear max height
+                maxHeight = 0;
+                lineIndex++;
+            }
+
+            // Start new block
+            startIndex = nextCharIndex;
+            currentFontIndex = nextFontIndex;
+        }
+    }
+}
+
+void Render2D::DrawTextInternal(Font* font, FontFallbackList* fallbacks, const StringView& text, const TextRange& textRange, const Color& color, const Float2& location, MaterialBase* customMaterial)
+{
+    DrawTextInternal(font, fallbacks, textRange.Substring(text), color, location, customMaterial);
+}
+
+void Render2D::DrawTextInternal(Font* font, FontFallbackList* fallbacks, const StringView& text, const Color& color, const TextLayoutOptions& layout, MaterialBase* customMaterial)
+{
+    RENDER2D_CHECK_RENDERING_STATE;
+
+    // Check if there is no need to do anything
+    if (font == nullptr || text.IsEmpty() || layout.Scale <= ZeroTolerance)
+        return;
+
+    // Temporary data
+    const Array<Font*>& fallbackFonts = fallbacks->GetFontList(font->GetSize());
+    uint32 fontAtlasIndex = 0;
+    FontTextureAtlas* fontAtlas = nullptr;
+    Float2 invAtlasSize = Float2::One;
+    FontCharacterEntry previous;
+    int32 kerning;
+    float scale = layout.Scale / FontManager::FontScale;
+
+    // Process text to get lines
+    BlockedTextLines.Clear();
+    font->ProcessText(fallbacks, text, BlockedTextLines, layout);
+
+    // Render all lines
+    FontCharacterEntry entry;
+    Render2DDrawCall drawCall;
+    if (customMaterial)
+    {
+        drawCall.Type = DrawCallType::DrawCharMaterial;
+        drawCall.AsChar.Mat = customMaterial;
+    }
+    else
+    {
+        drawCall.Type = DrawCallType::DrawChar;
+        drawCall.AsChar.Mat = nullptr;
+    }
+
+    auto getFont = [&](int32 index)->Font* {
+        return index >= 0 ? fallbackFonts[index] : font;
+        };
+
+    for (int32 lineIndex = 0; lineIndex < BlockedTextLines.Count(); lineIndex++)
+    {
+        const BlockedTextLineCache& line = BlockedTextLines[lineIndex];
+        for (int32 blockIndex = 0; blockIndex < line.Blocks.Count(); blockIndex++)
+        {
+            const FontBlockCache& block = BlockedTextLines[lineIndex].Blocks[blockIndex];
+            auto fontHeight = getFont(block.FallbackFontIndex)->GetHeight();
+            auto fontDescender = getFont(block.FallbackFontIndex)->GetDescender();
+            Float2 pointer = line.Location + block.Location;
+
+            for (int32 charIndex = block.FirstCharIndex; charIndex <= block.LastCharIndex; charIndex++)
+            {
+                Char c = text[charIndex];
+                if (c == '\n')
+                {
+                    continue;
+                }
+
+                // Get character entry
+                getFont(block.FallbackFontIndex)->GetCharacter(c, entry);
+
+                // Check if need to select/change font atlas (since characters even in the same font may be located in different atlases)
+                if (fontAtlas == nullptr || entry.TextureIndex != fontAtlasIndex)
+                {
+                    // Get texture atlas that contains current character
+                    fontAtlasIndex = entry.TextureIndex;
+                    fontAtlas = FontManager::GetAtlas(fontAtlasIndex);
+                    if (fontAtlas)
+                    {
+                        fontAtlas->EnsureTextureCreated();
+                        invAtlasSize = 1.0f / fontAtlas->GetSize();
+                        drawCall.AsChar.Tex = fontAtlas->GetTexture();
+                    }
+                    else
+                    {
+                        invAtlasSize = 1.0f;
+                        drawCall.AsChar.Tex = nullptr;
+                    }
+                }
+
+                // Get kerning
+                const bool isWhitespace = StringUtils::IsWhitespace(c);
+                if (!isWhitespace && previous.IsValid)
+                {
+                    kerning = getFont(block.FallbackFontIndex)->GetKerning(previous.Character, entry.Character);
+                }
+                else
+                {
+                    kerning = 0;
+                }
+                pointer.X += (float)kerning * scale;
+                previous = entry;
+
+                // Omit whitespace characters
+                if (!isWhitespace)
+                {
+                    // Calculate character size and atlas coordinates
+                    const float x = pointer.X + entry.OffsetX * scale;
+                    const float y = pointer.Y - entry.OffsetY * scale + Math::Ceil((fontHeight + fontDescender) * scale);
+
+                    Rectangle charRect(x, y, entry.UVSize.X * scale, entry.UVSize.Y * scale);
+                    charRect.Offset(layout.Bounds.Location);
+
+                    Float2 upperLeftUV = entry.UV * invAtlasSize;
+                    Float2 rightBottomUV = (entry.UV + entry.UVSize) * invAtlasSize;
+
+                    // Add draw call
+                    drawCall.StartIB = IBIndex;
+                    drawCall.CountIB = 6;
+                    DrawCalls.Add(drawCall);
+                    WriteRect(charRect, color, upperLeftUV, rightBottomUV);
+                }
+
+                // Move
+                pointer.X += entry.AdvanceX * scale;
+            }
+        }
+    }
+}
+
+void Render2D::DrawTextInternal(Font* font, FontFallbackList* fallbacks, const StringView& text, const TextRange& textRange, const Color& color, const TextLayoutOptions& layout, MaterialBase* customMaterial)
+{
+    DrawTextInternal(font, fallbacks, textRange.Substring(text), color, layout, customMaterial);
 }
 
 FORCE_INLINE bool NeedAlphaWithTint(const Color& color)
@@ -1869,22 +2181,22 @@ void Render2D::DrawBezier(const Float2& p1, const Float2& p2, const Float2& p3, 
 {
     RENDER2D_CHECK_RENDERING_STATE;
 
-    // Find amount of segments to use
+    // Find amount of blocks to use
     const Float2 d1 = p2 - p1;
     const Float2 d2 = p3 - p2;
     const Float2 d3 = p4 - p3;
     const float len = d1.Length() + d2.Length() + d3.Length();
-    const int32 segmentCount = Math::Clamp(Math::CeilToInt(len * 0.05f), 1, 100);
-    const float segmentCountInv = 1.0f / segmentCount;
+    const int32 blockCount = Math::Clamp(Math::CeilToInt(len * 0.05f), 1, 100);
+    const float blockCountInv = 1.0f / blockCount;
 
-    // Draw segmented curve
+    // Draw blocked curve
     Float2 p;
     AnimationUtils::Bezier(p1, p2, p3, p4, 0, p);
     Lines2.Clear();
     Lines2.Add(p);
-    for (int32 i = 1; i <= segmentCount; i++)
+    for (int32 i = 1; i <= blockCount; i++)
     {
-        const float t = i * segmentCountInv;
+        const float t = i * blockCountInv;
         AnimationUtils::Bezier(p1, p2, p3, p4, t, p);
         Lines2.Add(p);
     }
@@ -1931,7 +2243,7 @@ void Render2D::DrawBlur(const Rectangle& rect, float blurStrength)
 void Render2D::DrawTexturedTriangles(GPUTexture* t, const Span<Float2>& vertices, const Span<Float2>& uvs)
 {
     RENDER2D_CHECK_RENDERING_STATE;
-    CHECK(vertices.Length() == uvs.Length())
+    CHECK(vertices.Length() == uvs.Length());
 
     Render2DDrawCall& drawCall = DrawCalls.AddOne();
     drawCall.Type = DrawCallType::FillTexture;
@@ -1977,7 +2289,7 @@ void Render2D::DrawTexturedTriangles(GPUTexture* t, const Span<uint16>& indices,
     drawCall.StartIB = IBIndex;
     drawCall.CountIB = indices.Length();
     drawCall.AsTexture.Ptr = t;
-    
+
     for (int32 i = 0; i < indices.Length();)
     {
         const uint16 i0 = indices.Get()[i++];

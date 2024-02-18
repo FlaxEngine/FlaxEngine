@@ -294,14 +294,12 @@ namespace FlaxEngine
             style.DragWindow = style.BackgroundSelected * 0.7f;
 
             // Use optionally bundled default font (matches Editor)
-            var defaultFont = Content.LoadAsyncInternal<FontAsset>("Editor/Fonts/Roboto-Regular");
-            if (defaultFont)
-            {
-                style.FontTitle = defaultFont.CreateFont(18);
-                style.FontLarge = defaultFont.CreateFont(14);
-                style.FontMedium = defaultFont.CreateFont(9);
-                style.FontSmall = defaultFont.CreateFont(9);
-            }
+            FontAsset defaultFont = Content.LoadAsyncInternal<FontAsset>("Editor/Fonts/Roboto-Regular");
+
+            style.FontTitle = new FontReference(defaultFont, 18).GetFont();
+            style.FontLarge = new FontReference(defaultFont, 14).GetFont();
+            style.FontMedium = new FontReference(defaultFont, 9).GetFont();
+            style.FontSmall = new FontReference(defaultFont, 9).GetFont();
 
             Style.Current = style;
         }

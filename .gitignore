@@ -157,3 +157,4 @@ obj/
 .idea/
 *.code-workspace
 omnisharp.json
+Content/Editor/Fonts/NotoSansSC-Regular.flax
