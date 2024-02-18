@@ -174,7 +174,10 @@ namespace FlaxEditor.Viewport.Cameras
             }
             else
             {
-                position = sphere.Center - Vector3.Forward * orientation * (sphere.Radius * 2.5f);
+                // calculate the min. distance so that the sphere fits roughly 70% in FOV
+                // clip to far plane as a disappearing big object might be confusing
+                var distance = Mathf.Min(1.4f * sphere.Radius / Mathf.Tan(Mathf.DegreesToRadians * Viewport.FieldOfView / 2), Viewport.FarPlane);
+                position = sphere.Center - Vector3.Forward * orientation * distance;
             }
             TargetPoint = sphere.Center;
             MoveViewport(position, orientation);
