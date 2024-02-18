@@ -113,7 +113,7 @@ private:
 /// <summary>
 /// Asset importer entry
 /// </summary>
-struct AssetImporter
+struct FLAXENGINE_API AssetImporter
 {
 public:
     /// <summary>
@@ -135,7 +135,7 @@ public:
 /// <summary>
 /// Asset creator entry
 /// </summary>
-struct AssetCreator
+struct FLAXENGINE_API AssetCreator
 {
 public:
     /// <summary>

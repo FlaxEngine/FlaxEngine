@@ -75,7 +75,7 @@ namespace FlaxEditor.Content
         /// <inheritdoc />
         public override void Create(string outputPath, object arg)
         {
-            if (Editor.CreateAsset(Editor.NewAssetType.ParticleSystem, outputPath))
+            if (Editor.CreateAsset("ParticleSystem", outputPath))
                 throw new Exception("Failed to create new asset.");
         }
 

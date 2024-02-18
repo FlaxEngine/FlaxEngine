@@ -170,78 +170,6 @@ DEFINE_INTERNAL_CALL(bool) EditorInternal_CloneAssetFile(MString* dstPathObj, MS
     return Content::CloneAssetFile(dstPath, srcPath, *dstId);
 }
 
-enum class NewAssetType
-{
-    Material = 0,
-    MaterialInstance = 1,
-    CollisionData = 2,
-    AnimationGraph = 3,
-    SkeletonMask = 4,
-    ParticleEmitter = 5,
-    ParticleSystem = 6,
-    SceneAnimation = 7,
-    MaterialFunction = 8,
-    ParticleEmitterFunction = 9,
-    AnimationGraphFunction = 10,
-    Animation = 11,
-    BehaviorTree = 12,
-};
-
-DEFINE_INTERNAL_CALL(bool) EditorInternal_CreateAsset(NewAssetType type, MString* outputPathObj)
-{
-    String tag;
-    switch (type)
-    {
-    case NewAssetType::Material:
-        tag = AssetsImportingManager::CreateMaterialTag;
-        break;
-    case NewAssetType::MaterialInstance:
-        tag = AssetsImportingManager::CreateMaterialInstanceTag;
-        break;
-    case NewAssetType::CollisionData:
-        tag = AssetsImportingManager::CreateCollisionDataTag;
-        break;
-    case NewAssetType::AnimationGraph:
-        tag = AssetsImportingManager::CreateAnimationGraphTag;
-        break;
-    case NewAssetType::SkeletonMask:
-        tag = AssetsImportingManager::CreateSkeletonMaskTag;
-        break;
-    case NewAssetType::ParticleEmitter:
-        tag = AssetsImportingManager::CreateParticleEmitterTag;
-        break;
-    case NewAssetType::ParticleSystem:
-        tag = AssetsImportingManager::CreateParticleSystemTag;
-        break;
-    case NewAssetType::SceneAnimation:
-        tag = AssetsImportingManager::CreateSceneAnimationTag;
-        break;
-    case NewAssetType::MaterialFunction:
-        tag = AssetsImportingManager::CreateMaterialFunctionTag;
-        break;
-    case NewAssetType::ParticleEmitterFunction:
-        tag = AssetsImportingManager::CreateParticleEmitterFunctionTag;
-        break;
-    case NewAssetType::AnimationGraphFunction:
-        tag = AssetsImportingManager::CreateAnimationGraphFunctionTag;
-        break;
-    case NewAssetType::Animation:
-        tag = AssetsImportingManager::CreateAnimationTag;
-        break;
-    case NewAssetType::BehaviorTree:
-        tag = AssetsImportingManager::CreateBehaviorTreeTag;
-        break;
-    default:
-        return true;
-    }
-
-    String outputPath;
-    MUtils::ToString(outputPathObj, outputPath);
-    FileSystem::NormalizePath(outputPath);
-
-    return AssetsImportingManager::Create(tag, outputPath);
-}
-
 DEFINE_INTERNAL_CALL(bool) EditorInternal_CreateVisualScript(MString* outputPathObj, MString* baseTypenameObj)
 {
     String outputPath;
@@ -634,13 +562,11 @@ bool ManagedEditor::Import(const String& inputPath, const String& outputPath, co
 
 bool ManagedEditor::TryRestoreImportOptions(ModelTool::Options& options, String assetPath)
 {
-    // Initialize defaults   
+    // Initialize defaults
     if (const auto* graphicsSettings = GraphicsSettings::Get())
     {
         options.GenerateSDF = graphicsSettings->GenerateSDFOnModelImport;
     }
-
-    // Get options from model
     FileSystem::NormalizePath(assetPath);
     return ImportModel::TryGetImportOptions(assetPath, options);
 }
@@ -652,7 +578,12 @@ bool ManagedEditor::Import(const String& inputPath, const String& outputPath, co
 
 bool ManagedEditor::TryRestoreImportOptions(AudioTool::Options& options, String assetPath)
 {
-    // Get options from model
     FileSystem::NormalizePath(assetPath);
     return ImportAudio::TryGetImportOptions(assetPath, options);
+}
+
+bool ManagedEditor::CreateAsset(const String& tag, String outputPath)
+{
+    FileSystem::NormalizePath(outputPath);
+    return AssetsImportingManager::Create(tag, outputPath);
 }
