@@ -11,7 +11,6 @@ Source/*.Gen.*
 Source/*.csproj
 /Package_*/
 !Source/Engine/Debug
-/Source/Platforms/Editor/Linux/Mono/etc/mono/registry
 PackageEditor_Cert.command
 PackageEditor_Cert.bat
 PackagePlatforms_Cert.bat

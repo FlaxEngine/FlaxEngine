@@ -239,7 +239,7 @@ void TextRender::UpdateLayout()
                 const bool isWhitespace = StringUtils::IsWhitespace(c);
                 if (!isWhitespace && previous.IsValid)
                 {
-                    kerning = font->GetKerning(previous.Character, entry.Character);
+                    kerning = entry.Font->GetKerning(previous.Character, entry.Character);
                 }
                 else
                 {
