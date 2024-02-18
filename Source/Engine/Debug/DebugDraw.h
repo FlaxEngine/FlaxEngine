@@ -570,10 +570,11 @@ API_CLASS(Static) class FLAXENGINE_API DebugDraw
     /// <param name="position">The arrow origin position.</param>
     /// <param name="orientation">The orientation (defines the arrow direction).</param>
     /// <param name="scale">The arrow scale (used to adjust the arrow size).</param>
+    /// <param name="capScale">The arrow cap scale.</param>
     /// <param name="color">The color.</param>
     /// <param name="duration">The duration (in seconds). Use 0 to draw it only once.</param>
     /// <param name="depthTest">If set to <c>true</c> depth test will be performed, otherwise depth will be ignored.</param>
-    API_FUNCTION() static void DrawWireArrow(const Vector3& position, const Quaternion& orientation, float scale, const Color& color, float duration = 0.0f, bool depthTest = true);
+    API_FUNCTION() static void DrawWireArrow(const Vector3& position, const Quaternion& orientation, float scale, float capScale, const Color& color, float duration = 0.0f, bool depthTest = true);
 
     /// <summary>
     /// Draws the box.
@@ -650,7 +651,7 @@ API_CLASS(Static) class FLAXENGINE_API DebugDraw
 #define DEBUG_DRAW_WIRE_CYLINDER(position, orientation, radius, height, color, duration, depthTest) DebugDraw::DrawWireCylinder(position, orientation, radius, height, color, duration, depthTest)
 #define DEBUG_DRAW_WIRE_CONE(position, orientation, radius, angleXY, angleXZ, color, duration, depthTest) DebugDraw::DrawWireCone(position, orientation, radius, angleXY, angleXZ, color, duration, depthTest)
 #define DEBUG_DRAW_WIRE_ARC(position, orientation, radius, angle, color, duration, depthTest) DebugDraw::DrawWireArc(position, orientation, radius, angle, color, duration, depthTest)
-#define DEBUG_DRAW_WIRE_ARROW(position, orientation, scale, color, duration, depthTest) DebugDraw::DrawWireArrow(position, orientation, scale, color, duration, depthTest)
+#define DEBUG_DRAW_WIRE_ARROW(position, orientation, scale, capScale, color, duration, depthTest) DebugDraw::DrawWireArrow(position, orientation, scale, capScale, color, duration, depthTest)
 #define DEBUG_DRAW_TEXT(text, position, color, size, duration) DebugDraw::DrawText(text, position, color, size, duration)
 
 #else
@@ -679,7 +680,7 @@ API_CLASS(Static) class FLAXENGINE_API DebugDraw
 #define DEBUG_DRAW_WIRE_CYLINDER(position, orientation, radius, height, color, duration, depthTest)
 #define DEBUG_DRAW_WIRE_CONE(position, orientation, radius, angleXY, angleXZ, color, duration, depthTest)
 #define DEBUG_DRAW_WIRE_ARC(position, orientation, radius, angle, color, duration, depthTest)
-#define DEBUG_DRAW_WIRE_ARROW(position, orientation, scale, color, duration, depthTest)
+#define DEBUG_DRAW_WIRE_ARROW(position, orientation, scale, capScale, color, duration, depthTest)
 #define DEBUG_DRAW_TEXT(text, position, color, size, duration)
 
 #endif
