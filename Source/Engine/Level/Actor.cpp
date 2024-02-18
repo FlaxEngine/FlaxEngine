@@ -1356,6 +1356,16 @@ bool Actor::IsPrefabRoot() const
     return _isPrefabRoot != 0;
 }
 
+Actor* Actor::GetPrefabRoot()
+{
+    if (!HasPrefabLink())
+        return nullptr;
+    Actor* result = this;
+    while (result && !result->IsPrefabRoot())
+        result = result->GetParent();
+    return result;
+}
+
 Actor* Actor::FindActor(const StringView& name) const
 {
     Actor* result = nullptr;
