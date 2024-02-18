@@ -253,7 +253,21 @@ namespace FlaxEditor.Gizmo
                     _intersectPosition = ray.Position + ray.Direction * intersection;
                     if (_lastIntersectionPosition != Vector3.Zero)
                         _tDelta = _intersectPosition - _lastIntersectionPosition;
-                    delta = new Vector3(0, _tDelta.Y, _tDelta.Z);
+                    if (isScaling)
+                    {
+                        var tDeltaAbs = Vector3.Abs(_tDelta);
+                        var maxDelta = Mathf.Max(tDeltaAbs.Y, tDeltaAbs.Z);
+                        float sign = 0;
+                        if (tDeltaAbs.Y > tDeltaAbs.Z)
+                            sign = Mathf.Sign(_tDelta.Y);
+                        else if (tDeltaAbs.Z > tDeltaAbs.Y)
+                            sign = Mathf.Sign(_tDelta.Z);
+                        delta = new Vector3(0, maxDelta * sign, maxDelta * sign);
+                    }
+                    else
+                    {
+                        delta = new Vector3(0, _tDelta.Y, _tDelta.Z);
+                    }
                 }
                 break;
             }
@@ -264,7 +278,21 @@ namespace FlaxEditor.Gizmo
                     _intersectPosition = ray.Position + ray.Direction * intersection;
                     if (_lastIntersectionPosition != Vector3.Zero)
                         _tDelta = _intersectPosition - _lastIntersectionPosition;
-                    delta = new Vector3(_tDelta.X, _tDelta.Y, 0);
+                    if (isScaling)
+                    {
+                        var tDeltaAbs = Vector3.Abs(_tDelta);
+                        var maxDelta = Mathf.Max(tDeltaAbs.X, tDeltaAbs.Y);
+                        float sign = 0;
+                        if (tDeltaAbs.X > tDeltaAbs.Y)
+                            sign = Mathf.Sign(_tDelta.X);
+                        else if (tDeltaAbs.Y > tDeltaAbs.X)
+                            sign = Mathf.Sign(_tDelta.Y);
+                        delta = new Vector3(maxDelta * sign, maxDelta * sign, 0);
+                    }
+                    else
+                    {
+                        delta = new Vector3(_tDelta.X, _tDelta.Y, 0);
+                    }
                 }
                 break;
             }
@@ -275,7 +303,21 @@ namespace FlaxEditor.Gizmo
                     _intersectPosition = ray.Position + ray.Direction * intersection;
                     if (_lastIntersectionPosition != Vector3.Zero)
                         _tDelta = _intersectPosition - _lastIntersectionPosition;
-                    delta = new Vector3(_tDelta.X, 0, _tDelta.Z);
+                    if (isScaling)
+                    {
+                        var tDeltaAbs = Vector3.Abs(_tDelta);
+                        var maxDelta = Mathf.Max(tDeltaAbs.X, tDeltaAbs.Z);
+                        float sign = 0;
+                        if (tDeltaAbs.X > tDeltaAbs.Z)
+                            sign = Mathf.Sign(_tDelta.X);
+                        else if (tDeltaAbs.Z > tDeltaAbs.X)
+                            sign = Mathf.Sign(_tDelta.Z);
+                        delta = new Vector3(maxDelta * sign, 0, maxDelta * sign);
+                    }
+                    else
+                    {
+                        delta = new Vector3(_tDelta.X, 0, _tDelta.Z);
+                    }
                 }
                 break;
             }
@@ -289,7 +331,23 @@ namespace FlaxEditor.Gizmo
                     if (_lastIntersectionPosition != Vector3.Zero)
                         _tDelta = _intersectPosition - _lastIntersectionPosition;
                 }
-                delta = _tDelta;
+                if (isScaling)
+                {
+                    var tDeltaAbs = Vector3.Abs(_tDelta);
+                    var maxDelta = Mathf.Max(new[] { tDeltaAbs.X, tDeltaAbs.Y, tDeltaAbs.Z });
+                    float sign = 0;
+                    if (Mathf.NearEqual(maxDelta, tDeltaAbs.X))
+                        sign = Mathf.Sign(_tDelta.X);
+                    else if (Mathf.NearEqual(maxDelta, tDeltaAbs.Y))
+                        sign = Mathf.Sign(_tDelta.Y);
+                    else if (Mathf.NearEqual(maxDelta, tDeltaAbs.Z))
+                        sign = Mathf.Sign(_tDelta.Z);
+                    delta = new Vector3(maxDelta * sign);
+                }
+                else
+                {
+                    delta = _tDelta;
+                }
                 break;
             }
             }
