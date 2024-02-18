@@ -553,7 +553,7 @@ namespace FlaxEditor.Modules
                         {
                             if (selection.Contains(node.ParentNode))
                             {
-                                return; // If parent and child nodes selected together, don't touch child nodes
+                                continue; // If parent and child nodes selected together, don't touch child nodes
                             }
 
                             // Put created node as child of the Parent Node of node
