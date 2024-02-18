@@ -101,7 +101,7 @@ public:
 /// Visject graph parameter.
 /// </summary>
 /// <seealso cref="GraphParameter" />
-API_CLASS() class VisjectGraphParameter : public GraphParameter
+API_CLASS() class FLAXENGINE_API VisjectGraphParameter : public GraphParameter
 {
     DECLARE_SCRIPTING_TYPE_WITH_CONSTRUCTOR_IMPL(VisjectGraphParameter, GraphParameter);
 public:

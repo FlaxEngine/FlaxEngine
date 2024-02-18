@@ -5,10 +5,6 @@
 #include "Engine/Serialization/ReadStream.h"
 #include "Engine/Serialization/WriteStream.h"
 
-VisjectMeta::VisjectMeta()
-{
-}
-
 bool VisjectMeta::Load(ReadStream* stream, bool loadData)
 {
     Release();

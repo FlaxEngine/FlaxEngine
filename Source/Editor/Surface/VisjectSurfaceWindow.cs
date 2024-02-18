@@ -25,7 +25,7 @@ namespace FlaxEditor.Surface
     /// The base interface for editor windows that use <see cref="FlaxEditor.Surface.VisjectSurface"/> for content editing. 
     /// </summary>
     /// <seealso cref="FlaxEditor.Surface.IVisjectSurfaceOwner" />
-    interface IVisjectSurfaceWindow : IVisjectSurfaceOwner
+    public interface IVisjectSurfaceWindow : IVisjectSurfaceOwner
     {
         /// <summary>
         /// Gets the asset edited by the window.
