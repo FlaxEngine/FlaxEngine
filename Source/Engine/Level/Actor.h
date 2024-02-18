@@ -794,7 +794,7 @@ public:
     {
         return (T*)FindActor(T::GetStaticClass(), name);
     }
-    
+
     /// <summary>
     /// Tries to find the actor of the given type and tag in this actor hierarchy (checks this actor and all children hierarchy).
     /// </summary>

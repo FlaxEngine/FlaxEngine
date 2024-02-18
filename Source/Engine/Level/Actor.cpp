@@ -1358,16 +1358,11 @@ bool Actor::IsPrefabRoot() const
 
 Actor* Actor::GetPrefabRoot()
 {
-    if (!this->HasPrefabLink())
-    {
-        return NULL;
-    }
-
+    if (!HasPrefabLink())
+        return nullptr;
     Actor* result = this;
-    while (!result == NULL && !result->IsPrefabRoot())
-    {
+    while (result && !result->IsPrefabRoot())
         result = result->GetParent();
-    }
     return result;
 }
 
