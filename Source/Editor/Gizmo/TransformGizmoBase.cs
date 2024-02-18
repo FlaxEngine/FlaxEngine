@@ -257,11 +257,7 @@ namespace FlaxEditor.Gizmo
                     {
                         var tDeltaAbs = Vector3.Abs(_tDelta);
                         var maxDelta = Mathf.Max(tDeltaAbs.Y, tDeltaAbs.Z);
-                        float sign = 0;
-                        if (tDeltaAbs.Y > tDeltaAbs.Z)
-                            sign = Mathf.Sign(_tDelta.Y);
-                        else if (tDeltaAbs.Z > tDeltaAbs.Y)
-                            sign = Mathf.Sign(_tDelta.Z);
+                        float sign = Mathf.Sign(tDeltaAbs.Y > tDeltaAbs.Z ? _tDelta.Y : _tDelta.Z);
                         delta = new Vector3(0, maxDelta * sign, maxDelta * sign);
                     }
                     else
@@ -282,11 +278,7 @@ namespace FlaxEditor.Gizmo
                     {
                         var tDeltaAbs = Vector3.Abs(_tDelta);
                         var maxDelta = Mathf.Max(tDeltaAbs.X, tDeltaAbs.Y);
-                        float sign = 0;
-                        if (tDeltaAbs.X > tDeltaAbs.Y)
-                            sign = Mathf.Sign(_tDelta.X);
-                        else if (tDeltaAbs.Y > tDeltaAbs.X)
-                            sign = Mathf.Sign(_tDelta.Y);
+                        float sign = Mathf.Sign(tDeltaAbs.X > tDeltaAbs.Y ? _tDelta.X : _tDelta.Y);
                         delta = new Vector3(maxDelta * sign, maxDelta * sign, 0);
                     }
                     else
@@ -307,11 +299,7 @@ namespace FlaxEditor.Gizmo
                     {
                         var tDeltaAbs = Vector3.Abs(_tDelta);
                         var maxDelta = Mathf.Max(tDeltaAbs.X, tDeltaAbs.Z);
-                        float sign = 0;
-                        if (tDeltaAbs.X > tDeltaAbs.Z)
-                            sign = Mathf.Sign(_tDelta.X);
-                        else if (tDeltaAbs.Z > tDeltaAbs.X)
-                            sign = Mathf.Sign(_tDelta.Z);
+                        float sign = Mathf.Sign(tDeltaAbs.X > tDeltaAbs.Z ? _tDelta.X : _tDelta.Z);
                         delta = new Vector3(maxDelta * sign, 0, maxDelta * sign);
                     }
                     else
