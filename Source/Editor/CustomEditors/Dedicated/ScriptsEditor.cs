@@ -224,16 +224,67 @@ namespace FlaxEditor.CustomEditors.Dedicated
 
         private void AddScripts(List<ScriptType> items)
         {
-            var actions = new List<IUndoAction>(4);
+            var actions = new List<IUndoAction>();
 
             for (int i = 0; i < items.Count; i++)
             {
                 var scriptType = items[i];
+                RequireScriptAttribute scriptAttribute = null;
+                if (scriptType.HasAttribute(typeof(RequireScriptAttribute), false))
+                {
+                    foreach (var e in scriptType.GetAttributes(false))
+                    {
+                        if (e is not RequireScriptAttribute requireScriptAttribute)
+                            continue;
+                        scriptAttribute = requireScriptAttribute;
+                        break;
+                    }
+                }
+
+                // See if script requires a specific actor type
+                RequireActorAttribute actorAttribute = null;
+                if (scriptType.HasAttribute(typeof(RequireActorAttribute), false))
+                {
+                    foreach (var e in scriptType.GetAttributes(false))
+                    {
+                        if (e is not RequireActorAttribute requireActorAttribute)
+                            continue;
+                        actorAttribute = requireActorAttribute;
+                        break;
+                    }
+                }
+
                 var actors = ScriptsEditor.ParentEditor.Values;
                 for (int j = 0; j < actors.Count; j++)
                 {
                     var actor = (Actor)actors[j];
+
+                    // If required actor exists but is not this actor type then skip adding to actor 
+                    if (actorAttribute != null)
+                    {
+                        if (actor.GetType() != actorAttribute.RequiredType && !actor.GetType().IsSubclassOf(actorAttribute.RequiredType))
+                        {
+                            Editor.LogWarning($"`{Utilities.Utils.GetPropertyNameUI(scriptType.Name)}` not added to `{actor}` due to script requiring an Actor type of `{actorAttribute.RequiredType}`.");
+                            continue;
+                        }
+                    }
+
                     actions.Add(AddRemoveScript.Add(actor, scriptType));
+                    // Check if actor has required scripts and add them if the actor does not.
+                    if (scriptAttribute != null)
+                    {
+                        foreach (var type in scriptAttribute.RequiredTypes)
+                        {
+                            if (!type.IsSubclassOf(typeof(Script)))
+                            {
+                                Editor.LogWarning($"`{Utilities.Utils.GetPropertyNameUI(type.Name)}` not added to `{actor}` due to the class not being a subclass of Script.");
+                                continue;
+                            }
+                            if (actor.GetScript(type) != null)
+                                continue;
+                            actions.Add(AddRemoveScript.Add(actor, new ScriptType(type)));
+                        }
+                    }
                 }
             }
 
@@ -585,10 +636,62 @@ namespace FlaxEditor.CustomEditors.Dedicated
                 var values = new ScriptsContainer(elementType, i, Values);
                 var scriptType = TypeUtils.GetObjectType(script);
                 var editor = CustomEditorsUtil.CreateEditor(scriptType, false);
+                
+                // Check if actor has all the required scripts
+                bool hasAllRequirements = true;
+                if (scriptType.HasAttribute(typeof(RequireScriptAttribute), false))
+                {
+                    RequireScriptAttribute scriptAttribute = null;
+                    foreach (var e in scriptType.GetAttributes(false))
+                    {
+                        if (e is not RequireScriptAttribute requireScriptAttribute)
+                            continue;
+                        scriptAttribute = requireScriptAttribute;
+                    }
+
+                    if (scriptAttribute != null)
+                    {
+                        foreach (var type in scriptAttribute.RequiredTypes)
+                        {
+                            if (!type.IsSubclassOf(typeof(Script)))
+                                continue;
+                            var requiredScript = script.Actor.GetScript(type);
+                            if (requiredScript == null)
+                            {
+                                Editor.LogWarning($"`{Utilities.Utils.GetPropertyNameUI(scriptType.Name)}` on `{script.Actor}` is missing a required Script of type `{type}`.");
+                                hasAllRequirements = false;
+                            }
+                        }
+                    }
+                }
+                if (scriptType.HasAttribute(typeof(RequireActorAttribute), false))
+                {
+                    RequireActorAttribute attribute = null;
+                    foreach (var e in scriptType.GetAttributes(false))
+                    {
+                        if (e is not RequireActorAttribute requireActorAttribute)
+                            continue;
+                        attribute = requireActorAttribute;
+                        break;
+                    }
+
+                    if (attribute != null)
+                    {
+                        var actor = script.Actor;
+                        if (actor.GetType() != attribute.RequiredType && !actor.GetType().IsSubclassOf(attribute.RequiredType))
+                        {
+                            Editor.LogWarning($"`{Utilities.Utils.GetPropertyNameUI(scriptType.Name)}` on `{script.Actor}` is missing a required Actor of type `{attribute.RequiredType}`.");
+                            hasAllRequirements = false;
+                            // Maybe call to remove script here?
+                        }
+                    }
+                }
 
                 // Create group
                 var title = Utilities.Utils.GetPropertyNameUI(scriptType.Name);
                 var group = layout.Group(title, editor);
+                if (!hasAllRequirements)
+                    group.Panel.HeaderTextColor = FlaxEngine.GUI.Style.Current.Statusbar.Failed;
                 if ((Presenter.Features & FeatureFlags.CacheExpandedGroups) != 0)
                 {
                     if (Editor.Instance.ProjectCache.IsGroupToggled(title))
