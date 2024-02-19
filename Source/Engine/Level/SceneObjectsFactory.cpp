@@ -475,7 +475,7 @@ void SceneObjectsFactory::SetupPrefabInstances(Context& context, const PrefabSyn
         const ISerializable::DeserializeStream* prefabData;
         if (prefab->ObjectsDataCache.TryGet(prefabObjectId, prefabData) && JsonTools::GetGuidIfValid(prefabObjectId, *prefabData, "PrefabObjectID"))
         {
-            prefabId = JsonTools::GetGuid(stream, "PrefabID");
+            prefabId = JsonTools::GetGuid(*prefabData, "PrefabID");
             prefab = Content::LoadAsync<Prefab>(prefabId);
             if (prefab && !prefab->WaitForLoaded())
             {
