@@ -72,11 +72,10 @@ API_CLASS(Static) class FLAXENGINE_API DebugDraw
     /// </summary>
     /// <param name="origin">The origin of the line.</param>
     /// <param name="direction">The direction of the line.</param>
-    /// <param name="color">The color.</param>
-    /// <param name="Size">The size of the axis.</param>
+    /// <param name="size">The size of the axis.</param>
     /// <param name="duration">The duration (in seconds). Use 0 to draw it only once.</param>
     /// <param name="depthTest">If set to <c>true</c> depth test will be performed, otherwise depth will be ignored.</param>
-    API_FUNCTION() static void DrawAxisFromDirection(const Vector3& origin, const Vector3& direction, const Color& color = Color::White, float Size = 100.0f, float duration = 0.0f, bool depthTest = true);
+    API_FUNCTION() static void DrawAxisFromDirection(const Vector3& origin, const Vector3& direction, float size = 100.0f, float duration = 0.0f, bool depthTest = true);
 
     /// <summary>
     /// Draws the line in a direction.
@@ -656,7 +655,7 @@ API_CLASS(Static) class FLAXENGINE_API DebugDraw
     API_FUNCTION() static void DrawText(const StringView& text, const Transform& transform, const Color& color = Color::White, int32 size = 32, float duration = 0.0f);
 };
 
-#define DEBUG_DRAW_AXIS_FROM_DIRECTION(origin, direction, color, size, duration, depthTest)                 DebugDraw::DrawAxisFromDirection(origin, direction, color, size, duration, depthTest);
+#define DEBUG_DRAW_AXIS_FROM_DIRECTION(origin, direction, size, duration, depthTest)                 DebugDraw::DrawAxisFromDirection(origin, direction, size, duration, depthTest);
 #define DEBUG_DRAW_DIRECTION(origin, direction, color, duration, depthTest)                                 DebugDraw::DrawDirection(origin, direction, color, duration, depthTest);
 #define DEBUG_DRAW_RAY(origin, direction, color, length, duration, depthTest)                               DebugDraw::DrawRay(origin, direction, color, length, duration, depthTest);
 #define DEBUG_DRAW_RAY(ray, color, length, duration, depthTest)                                             DebugDraw::DrawRay(ray, color, length, duration, depthTest);
@@ -689,7 +688,7 @@ API_CLASS(Static) class FLAXENGINE_API DebugDraw
 
 #else
 
-#define DEBUG_DRAW_AXIS_FROM_DIRECTION(origin, direction, color, size, duration, depthTest)
+#define DEBUG_DRAW_AXIS_FROM_DIRECTION(origin, direction, size, duration, depthTest)
 #define DEBUG_DRAW_DIRECTION(origin, direction,color,duration, depthTest)
 #define DEBUG_DRAW_RAY(ray, color, length, duration, depthTest)
 #define DEBUG_DRAW_LINE(start, end, color, duration, depthTest)

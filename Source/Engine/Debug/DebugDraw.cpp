@@ -923,16 +923,16 @@ void DebugDraw::DrawActors(Actor** selectedActors, int32 selectedActorsCount, bo
     }
 }
 
-void DebugDraw::DrawAxisFromDirection(const Vector3& origin, const Vector3& direction, const Color& color , float Size, float duration, bool depthTest)
+void DebugDraw::DrawAxisFromDirection(const Vector3& origin, const Vector3& direction, float size, float duration, bool depthTest)
 {
-    auto rot = Quaternion::FromDirection(direction.GetNormalized());
-    Vector3 Up =      (rot * Vector3::Up     );
-    Vector3 Forward = (rot * Vector3::Forward);
-    Vector3 Right =   (rot * Vector3::Right  );
-    
-    DrawLine(origin, origin + (Up      * (Size * 0.5f)) + Up     , Color::Green ,duration, depthTest);
-    DrawLine(origin, origin + (Forward * (Size * 0.5f)) + Forward, Color::Blue  ,duration, depthTest);
-    DrawLine(origin, origin + (Right   * (Size * 0.5f)) + Right  , Color::Red   ,duration, depthTest);
+    const auto rot = Quaternion::FromDirection(direction.GetNormalized());
+    const Vector3 up = (rot * Vector3::Up);
+    const Vector3 forward = (rot * Vector3::Forward);
+    const Vector3 right = (rot * Vector3::Right);
+    const float sizeHalf = size * 0.5f;
+    DrawLine(origin, origin + up * sizeHalf + up, Color::Green, duration, depthTest);
+    DrawLine(origin, origin + forward * sizeHalf + forward, Color::Blue, duration, depthTest);
+    DrawLine(origin, origin + right * sizeHalf + right, Color::Red, duration, depthTest);
 }
 
 void DebugDraw::DrawDirection(const Vector3& origin, const Vector3& direction, const Color& color, float duration, bool depthTest)
@@ -942,14 +942,15 @@ void DebugDraw::DrawDirection(const Vector3& origin, const Vector3& direction, c
         return;
     DrawLine(origin, origin + direction, color, duration, depthTest);
 }
-void DebugDraw::DrawRay(const Vector3& origin, const Vector3& direction,const Color& color, float length, float duration, bool depthTest)
+
+void DebugDraw::DrawRay(const Vector3& origin, const Vector3& direction, const Color& color, float length, float duration, bool depthTest)
 {
     if (isnan(length) || isinf(length))
         return;
     DrawLine(origin, origin + (direction.GetNormalized() * length), color, duration, depthTest);
 }
 
-void DebugDraw::DrawRay(const Ray& ray,const Color& color, float length, float duration, bool depthTest)
+void DebugDraw::DrawRay(const Ray& ray, const Color& color, float length, float duration, bool depthTest)
 {
     if (isnan(length) || isinf(length))
         return;
