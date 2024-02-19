@@ -189,6 +189,9 @@ namespace FlaxEditor.GUI
         /// </summary>
         public event Action<Item> ItemClicked;
 
+        /// <summary>
+        /// Event fired when search text in this popup menu gets changed.
+        /// </summary>
         public event Action<string> TextChanged;
 
         /// <summary>
@@ -442,6 +445,7 @@ namespace FlaxEditor.GUI
                 Hide();
                 return true;
             case KeyboardKeys.ArrowDown:
+            {
                 if (RootWindow.FocusedControl == null)
                 {
                     // Focus search box if nothing is focused
@@ -450,20 +454,19 @@ namespace FlaxEditor.GUI
                 }
 
                 //  Focus the first visible item or then next one
+                var items = GetVisibleItems();
+                var focusedIndex = items.IndexOf(focusedItem);
+                if (focusedIndex == -1)
+                    focusedIndex = -1;
+                if (focusedIndex + 1 < items.Count)
                 {
-                    var items = GetVisibleItems();
-                    var focusedIndex = items.IndexOf(focusedItem);
-                    if (focusedIndex == -1)
-                        focusedIndex = -1;
-                    if (focusedIndex + 1 < items.Count)
-                    {
-                        var item = items[focusedIndex + 1];
-                        item.Focus();
-                        _scrollPanel.ScrollViewTo(item);
-                        return true;
-                    }
+                    var item = items[focusedIndex + 1];
+                    item.Focus();
+                    _scrollPanel.ScrollViewTo(item);
+                    return true;
                 }
                 break;
+            }
             case KeyboardKeys.ArrowUp:
                 if (focusedItem != null)
                 {
