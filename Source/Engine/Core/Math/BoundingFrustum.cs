@@ -105,6 +105,16 @@ namespace FlaxEngine
         }
 
         /// <summary>
+        /// Creates a new instance of BoundingFrustum.
+        /// </summary>
+        /// <param name="matrix">Combined matrix that usually takes view × projection matrix.</param>
+        public BoundingFrustum(ref Matrix matrix)
+        {
+            pMatrix = matrix;
+            GetPlanesFromMatrix(ref pMatrix, out pNear, out pFar, out pLeft, out pRight, out pTop, out pBottom);
+        }
+
+        /// <summary>
         /// Returns a hash code for this instance.
         /// </summary>
         /// <returns>A hash code for this instance, suitable for use in hashing algorithms and data structures like a hash table.</returns>

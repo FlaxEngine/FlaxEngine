@@ -450,7 +450,7 @@ namespace FlaxEngine
                 {
                     camera.GetMatrices(out tmp1, out var tmp3, ref viewport);
                     Matrix.Multiply(ref tmp1, ref tmp3, out tmp2);
-                    var frustum = new BoundingFrustum(tmp2);
+                    var frustum = new BoundingFrustum(ref tmp2);
                     _guiRoot.Size = new Float2(frustum.GetWidthAtDepth(Distance), frustum.GetHeightAtDepth(Distance));
                 }
                 else

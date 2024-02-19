@@ -69,8 +69,7 @@ namespace FlaxEditor.Content
         /// <inheritdoc />
         public override bool IsFileNameValid(string filename)
         {
-            // Scripts cannot start with digit. 
-            if (Char.IsDigit(filename[0]))
+            if (char.IsDigit(filename[0]))
                 return false;
             if (filename.Equals("Script"))
                 return false;

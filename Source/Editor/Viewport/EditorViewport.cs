@@ -335,6 +335,22 @@ namespace FlaxEditor.Viewport
         }
 
         /// <summary>
+        /// Gets the bounding frustum of the current viewport camera.
+        /// </summary>
+        public BoundingFrustum ViewFrustum
+        {
+            get
+            {
+                Vector3 viewOrigin = Task.View.Origin;
+                Float3 position = ViewPosition - viewOrigin;
+                CreateViewMatrix(position, out var view);
+                CreateProjectionMatrix(out var projection);
+                Matrix.Multiply(ref view, ref projection, out var viewProjection);
+                return new BoundingFrustum(ref viewProjection);
+            }
+        }
+
+        /// <summary>
         /// Gets or sets the yaw angle (in degrees).
         /// </summary>
         public float Yaw

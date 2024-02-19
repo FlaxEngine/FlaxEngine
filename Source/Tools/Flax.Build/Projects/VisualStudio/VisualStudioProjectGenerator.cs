@@ -702,7 +702,7 @@ namespace Flax.Build.Projects.VisualStudio
             {
                 // Build command for the build tool
                 var buildToolPath = Path.ChangeExtension(typeof(Builder).Assembly.Location, null);
-                
+
                 var targetsFileContent = new StringBuilder();
                 targetsFileContent.AppendLine("<Project>");
                 targetsFileContent.AppendLine("  <!-- Custom Flax.Build scripts for C# projects. -->");

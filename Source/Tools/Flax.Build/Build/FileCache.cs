@@ -9,32 +9,30 @@ namespace Flax.Build
     /// </summary>
     public static class FileCache
     {
-        private static Dictionary<string, FileInfo> fileInfoCache = new Dictionary<string, FileInfo>();
+        private static readonly Dictionary<string, FileInfo> _cache = new();
 
         public static void FileRemoveFromCache(string path)
         {
-            //fileInfoCache[path].Refresh();
-            fileInfoCache.Remove(path);
+            _cache.Remove(path);
         }
-        
+
         public static bool Exists(string path)
         {
-            if (fileInfoCache.TryGetValue(path, out var fileInfo))
+            if (_cache.TryGetValue(path, out var fileInfo))
                 return fileInfo.Exists;
 
             fileInfo = new FileInfo(path);
-            fileInfoCache.Add(path, fileInfo);
+            _cache.Add(path, fileInfo);
             return fileInfo.Exists;
         }
 
         public static DateTime GetLastWriteTime(string path)
         {
-
-            if (fileInfoCache.TryGetValue(path, out var fileInfo))
+            if (_cache.TryGetValue(path, out var fileInfo))
                 return fileInfo.LastWriteTime;
 
             fileInfo = new FileInfo(path);
-            fileInfoCache.Add(path, fileInfo);
+            _cache.Add(path, fileInfo);
             return fileInfo.LastWriteTime;
         }
     }

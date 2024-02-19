@@ -79,8 +79,7 @@ namespace Flax.Build
                     }
                 }
                 break;
-            default:
-                throw new InvalidPlatformException(buildData.Platform.Target);
+            default: throw new InvalidPlatformException(buildData.Platform.Target);
             }
             var result = sb.ToString();
             BindingsGenerator.PutStringBuilder(sb);

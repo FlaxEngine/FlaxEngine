@@ -1356,6 +1356,16 @@ bool Actor::IsPrefabRoot() const
     return _isPrefabRoot != 0;
 }
 
+Actor* Actor::GetPrefabRoot()
+{
+    if (!HasPrefabLink())
+        return nullptr;
+    Actor* result = this;
+    while (result && !result->IsPrefabRoot())
+        result = result->GetParent();
+    return result;
+}
+
 Actor* Actor::FindActor(const StringView& name) const
 {
     Actor* result = nullptr;
@@ -1376,14 +1386,16 @@ Actor* Actor::FindActor(const StringView& name) const
     return result;
 }
 
-Actor* Actor::FindActor(const MClass* type) const
+Actor* Actor::FindActor(const MClass* type, bool activeOnly) const
 {
     CHECK_RETURN(type, nullptr);
+    if (activeOnly && !_isActive)
+        return nullptr;
     if (GetClass()->IsSubClassOf(type))
         return const_cast<Actor*>(this);
     for (auto child : Children)
     {
-        const auto actor = child->FindActor(type);
+        const auto actor = child->FindActor(type, activeOnly);
         if (actor)
             return actor;
     }
@@ -1404,14 +1416,16 @@ Actor* Actor::FindActor(const MClass* type, const StringView& name) const
     return nullptr;
 }
 
-Actor* Actor::FindActor(const MClass* type, const Tag& tag) const
+Actor* Actor::FindActor(const MClass* type, const Tag& tag, bool activeOnly) const
 {
     CHECK_RETURN(type, nullptr);
+    if (activeOnly && !_isActive)
+        return nullptr;
     if (GetClass()->IsSubClassOf(type) && HasTag(tag))
         return const_cast<Actor*>(this);
     for (auto child : Children)
     {
-        const auto actor = child->FindActor(type, tag);
+        const auto actor = child->FindActor(type, tag, activeOnly);
         if (actor)
             return actor;
     }
