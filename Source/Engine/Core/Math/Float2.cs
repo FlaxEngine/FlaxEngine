@@ -1274,6 +1274,33 @@ namespace FlaxEngine
         }
 
         /// <summary>
+        /// funcion for grid snaping snap to absolute world grid 
+        /// <br>desined for snaping using a ray / draging object</br>
+        /// </summary>
+        /// <param name="Translation"></param>
+        /// <param name="GridSize"></param>
+        /// <returns>out = Ceil(((A - (GridSize * 0.5f)) / GridSize) * GridSize</returns>
+        public static Float2 SnapToGrid(Float2 translation, Float2 gridSize)
+        {
+            translation.X = Mathf.Ceil((translation.X - (gridSize.X * 0.5f)) / gridSize.Y) * gridSize.X;
+            translation.Y = Mathf.Ceil((translation.Y - (gridSize.Y * 0.5f)) / gridSize.X) * gridSize.Y;
+            return translation;
+        }
+        /// <summary>
+        /// funcion for grid snaping snap to absolute world grid 
+        /// <br>desined for snaping using a ray / draging object</br>
+        /// </summary>
+        /// <param name="Translation"></param>
+        /// <param name="GridSize"></param>
+        /// <returns>out = Ceil(((A - (GridSize * 0.5f)) / GridSize) * GridSize</returns>
+        public static Float2 SnapToGrid(Float2 translation, float gridSize)
+        {
+            translation.X = Mathf.Ceil((translation.X - (gridSize * 0.5f)) / gridSize) * gridSize;
+            translation.Y = Mathf.Ceil((translation.Y - (gridSize * 0.5f)) / gridSize) * gridSize;
+            return translation;
+        }
+
+        /// <summary>
         /// Adds two vectors.
         /// </summary>
         /// <param name="left">The first vector to add.</param>

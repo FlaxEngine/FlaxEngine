@@ -1672,6 +1672,35 @@ namespace FlaxEngine
         }
 
         /// <summary>
+        /// funcion for grid snaping snap to absolute world grid 
+        /// <br>desined for snaping using a ray / draging object</br>
+        /// </summary>
+        /// <param name="Translation"></param>
+        /// <param name="GridSize"></param>
+        /// <returns>out = Ceil(((A - (GridSize * 0.5f)) / GridSize) * GridSize</returns>
+        public static Vector3 SnapToGrid(Vector3 translation, float gridSize)
+        {
+            translation.X = Mathr.Ceil((translation.X - (gridSize * 0.5f)) / gridSize) * gridSize;
+            translation.Y = Mathr.Ceil((translation.Y - (gridSize * 0.5f)) / gridSize) * gridSize;
+            translation.Z = Mathr.Ceil((translation.Z - (gridSize * 0.5f)) / gridSize) * gridSize;
+            return translation;
+        }
+        /// <summary>
+        /// funcion for grid snaping snap to absolute world grid 
+        /// <br>desined for snaping using a ray / draging object</br>
+        /// </summary>
+        /// <param name="Translation"></param>
+        /// <param name="GridSize"></param>
+        /// <returns>out = Ceil(((A - (GridSize * 0.5f)) / GridSize) * GridSize</returns>
+        public static Vector3 SnapToGrid(Vector3 translation, Float3 gridSize)
+        {
+            translation.X = Mathr.Ceil((translation.X - (gridSize.X * 0.5f)) / gridSize.X) * gridSize.X;
+            translation.Y = Mathr.Ceil((translation.Y - (gridSize.Y * 0.5f)) / gridSize.Y) * gridSize.Y;
+            translation.Z = Mathr.Ceil((translation.Z - (gridSize.Z * 0.5f)) / gridSize.Z) * gridSize.Z;
+            return translation;
+        }
+
+        /// <summary>
         /// Adds two vectors.
         /// </summary>
         /// <param name="left">The first vector to add.</param>
