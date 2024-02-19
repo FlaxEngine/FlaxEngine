@@ -400,10 +400,10 @@ DebugDrawCall WriteList(int32& vertexCounter, const Array<DebugLine>& list)
     drawCall.StartVertex = vertexCounter;
     drawCall.VertexCount = list.Count() * 2;
     vertexCounter += drawCall.VertexCount;
-    Vertex* dst = DebugDrawVB->WriteReserve<Vertex>(drawCall.VertexCount);
+    Vertex* dst = DebugDrawVB->WriteReserve<Vertex>(list.Count() * 2);
     for (int32 i = 0, j = 0; i < list.Count(); i++)
     {
-        const DebugLine& l = list[i];
+        const DebugLine& l = list.Get()[i];
         dst[j++] = { l.Start, l.Color };
         dst[j++] = { l.End, l.Color };
     }
@@ -416,10 +416,10 @@ DebugDrawCall WriteList(int32& vertexCounter, const Array<DebugTriangle>& list)
     drawCall.StartVertex = vertexCounter;
     drawCall.VertexCount = list.Count() * 3;
     vertexCounter += drawCall.VertexCount;
-    Vertex* dst = DebugDrawVB->WriteReserve<Vertex>(drawCall.VertexCount);
+    Vertex* dst = DebugDrawVB->WriteReserve<Vertex>(list.Count() * 3);
     for (int32 i = 0, j = 0; i < list.Count(); i++)
     {
-        const DebugTriangle& l = list[i];
+        const DebugTriangle& l = list.Get()[i];
         dst[j++] = { l.V0, l.Color };
         dst[j++] = { l.V1, l.Color };
         dst[j++] = { l.V2, l.Color };
