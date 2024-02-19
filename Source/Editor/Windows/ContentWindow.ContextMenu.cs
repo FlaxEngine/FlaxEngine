@@ -79,7 +79,14 @@ namespace FlaxEditor.Windows
 
                 if (item.HasDefaultThumbnail == false)
                 {
-                    cm.AddButton("Refresh thumbnail", item.RefreshThumbnail);
+                    if (_view.SelectedCount > 1)
+                        cm.AddButton("Refresh thumbnails", () =>
+                        {
+                            foreach (var e in _view.Selection)
+                                e.RefreshThumbnail();
+                        });
+                    else
+                        cm.AddButton("Refresh thumbnail", item.RefreshThumbnail);
                 }
 
                 if (!isFolder)
