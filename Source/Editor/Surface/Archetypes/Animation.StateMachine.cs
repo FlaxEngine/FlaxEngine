@@ -191,9 +191,7 @@ namespace FlaxEditor.Surface.Archetypes
                 var value = title;
                 int count = 1;
                 while (!OnRenameValidate(null, value))
-                {
                     value = title + " " + count++;
-                }
                 Values[0] = value;
                 Title = value;
 
@@ -484,7 +482,7 @@ namespace FlaxEditor.Surface.Archetypes
                     var startPos = PointToParent(ref center);
                     targetState.GetConnectionEndPoint(ref startPos, out var endPos);
                     var color = style.Foreground;
-                    StateMachineState.DrawConnection(ref startPos, ref endPos, ref color);
+                    SurfaceStyle.DrawStraightConnection(startPos, endPos, color);
                 }
             }
 
@@ -514,7 +512,7 @@ namespace FlaxEditor.Surface.Archetypes
             /// <inheritdoc />
             public void DrawConnectingLine(ref Float2 startPos, ref Float2 endPos, ref Color color)
             {
-                StateMachineState.DrawConnection(ref startPos, ref endPos, ref color);
+                SurfaceStyle.DrawStraightConnection(startPos, endPos, color);
             }
 
             /// <inheritdoc />
@@ -655,6 +653,7 @@ namespace FlaxEditor.Surface.Archetypes
             protected Rectangle _renameButtonRect;
             private bool _cursorChanged = false;
             private bool _textRectHovered = false;
+            private bool _debugActive;
 
             /// <summary>
             /// The transitions list from this state to the others.
@@ -675,38 +674,6 @@ namespace FlaxEditor.Surface.Archetypes
             protected StateMachineStateBase(uint id, VisjectSurfaceContext context, NodeArchetype nodeArch, GroupArchetype groupArch)
             : base(id, context, nodeArch, groupArch)
             {
-            }
-
-            /// <summary>
-            /// Draws the connection between two state machine nodes.
-            /// </summary>
-            /// <param name="startPos">The start position.</param>
-            /// <param name="endPos">The end position.</param>
-            /// <param name="color">The line color.</param>
-            public static void DrawConnection(ref Float2 startPos, ref Float2 endPos, ref Color color)
-            {
-                var sub = endPos - startPos;
-                var length = sub.Length;
-                if (length > Mathf.Epsilon)
-                {
-                    var dir = sub / length;
-                    var arrowRect = new Rectangle(0, 0, 16.0f, 16.0f);
-                    float rotation = Float2.Dot(dir, Float2.UnitY);
-                    if (endPos.X < startPos.X)
-                        rotation = 2 - rotation;
-                    var sprite = Editor.Instance.Icons.VisjectArrowClosed32;
-                    var arrowTransform =
-                        Matrix3x3.Translation2D(-6.5f, -8) *
-                        Matrix3x3.RotationZ(rotation * Mathf.PiOverTwo) * 
-                        Matrix3x3.Translation2D(endPos - dir * 8);
-
-                    Render2D.PushTransform(ref arrowTransform);
-                    Render2D.DrawSprite(sprite, arrowRect, color);
-                    Render2D.PopTransform();
-
-                    endPos -= dir * 4.0f;
-                }
-                Render2D.DrawLine(startPos, endPos, color);
             }
 
             /// <summary>
@@ -1092,6 +1059,16 @@ namespace FlaxEditor.Surface.Archetypes
 
                 // TODO: maybe update only on actual transitions change?
                 UpdateTransitions();
+
+                // Debug current state
+                if (((AnimGraphSurface)Surface).TryGetTraceEvent(this, out var traceEvent))
+                {
+                    _debugActive = true;
+                }
+                else
+                {
+                    _debugActive = false;
+                }
             }
 
             /// <inheritdoc />
@@ -1132,6 +1109,10 @@ namespace FlaxEditor.Surface.Archetypes
 
                 // Close button
                 Render2D.DrawSprite(style.Cross, _closeButtonRect, _closeButtonRect.Contains(_mousePosition) ? style.Foreground : style.ForegroundGrey);
+
+                // Debug outline
+                if (_debugActive)
+                    Render2D.DrawRectangle(_textRect.MakeExpanded(1.0f), style.ProgressNormal);
             }
 
             /// <inheritdoc />
@@ -1295,7 +1276,7 @@ namespace FlaxEditor.Surface.Archetypes
                         isMouseOver = Float2.DistanceSquared(ref mousePosition, ref point) < 25.0f;
                     }
                     var color = isMouseOver ? Color.Wheat : t.LineColor;
-                    DrawConnection(ref t.StartPos, ref t.EndPos, ref color);
+                    SurfaceStyle.DrawStraightConnection(t.StartPos, t.EndPos, color);
                 }
             }
 
@@ -1324,7 +1305,7 @@ namespace FlaxEditor.Surface.Archetypes
             /// <inheritdoc />
             public void DrawConnectingLine(ref Float2 startPos, ref Float2 endPos, ref Color color)
             {
-                DrawConnection(ref startPos, ref endPos, ref color);
+                SurfaceStyle.DrawStraightConnection(startPos, endPos, color);
             }
 
             /// <inheritdoc />

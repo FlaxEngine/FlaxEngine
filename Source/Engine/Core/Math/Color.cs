@@ -93,6 +93,21 @@ namespace FlaxEngine
         public float MaxColorComponent => Mathf.Max(Mathf.Max(R, G), B);
 
         /// <summary>
+        /// Gets a minimum component value (max of r,g,b,a).
+        /// </summary>
+        public float MinValue => Math.Min(R, Math.Min(G, Math.Min(B, A)));
+
+        /// <summary>
+        /// Gets a maximum component value (min of r,g,b,a).
+        /// </summary>
+        public float MaxValue => Math.Max(R, Math.Max(G, Math.Max(B, A)));
+
+        /// <summary>
+        /// Gets a sum of the component values.
+        /// </summary>
+        public float ValuesSum => R + G + B + A;
+
+        /// <summary>
         /// Constructs a new Color with given r,g,b,a component.
         /// </summary>
         /// <param name="rgba">RGBA component.</param>

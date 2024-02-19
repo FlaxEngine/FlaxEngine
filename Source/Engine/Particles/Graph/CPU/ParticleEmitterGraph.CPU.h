@@ -133,7 +133,7 @@ private:
     ParticleEmitterGraphCPU& _graph;
 
     // Per-thread context to allow async execution
-    static ThreadLocal<ParticleEmitterGraphCPUContext> Context;
+    static ThreadLocal<ParticleEmitterGraphCPUContext*> Context;
 
 public:
     /// <summary>

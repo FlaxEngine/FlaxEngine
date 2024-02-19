@@ -251,6 +251,16 @@ public:
     }
 
     /// <summary>
+    /// Determines if given index is valid.
+    /// </summary>
+    /// <param name="index">The index.</param>
+    /// <returns><c>true</c> if is valid a index; otherwise, <c>false</c>.</returns>
+    bool IsValidIndex(int32 index) const
+    {
+        return index < _count && index >= 0;
+    }
+
+    /// <summary>
     /// Gets the pointer to the first item in the collection (linear allocation).
     /// </summary>
     FORCE_INLINE T* Get()

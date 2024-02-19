@@ -22,7 +22,7 @@ namespace Flax.Build.Bindings
         public string[] Comment;
         public bool IsInBuild;
         public bool IsDeprecated;
-        public string MarshalAs;
+        public TypeInfo MarshalAs;
         internal bool IsInited;
         internal TypedefInfo Instigator;
 

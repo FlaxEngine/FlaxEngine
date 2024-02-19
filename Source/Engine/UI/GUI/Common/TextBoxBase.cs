@@ -280,13 +280,13 @@ namespace FlaxEngine.GUI
         /// </summary>
         [EditorDisplay("Border Style"), EditorOrder(2010), Tooltip("Whether to have a border."), ExpandGroups]
         public bool HasBorder { get; set; } = true;
-        
+
         /// <summary>
         /// Gets or sets the border thickness.
         /// </summary>
         [EditorDisplay("Border Style"), EditorOrder(2011), Tooltip("The thickness of the border."), Limit(0)]
         public float BorderThickness { get; set; } = 1.0f;
-        
+
         /// <summary>
         /// Gets or sets the color of the border (Transparent if not used).
         /// </summary>

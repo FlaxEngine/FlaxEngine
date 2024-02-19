@@ -18,7 +18,7 @@ namespace Flax.Build.Platforms
         public static readonly AndroidSdk Instance = new AndroidSdk();
 
         /// <inheritdoc />
-        public override TargetPlatform[] Platforms => new []
+        public override TargetPlatform[] Platforms => new[]
         {
             TargetPlatform.Windows,
             TargetPlatform.Linux,

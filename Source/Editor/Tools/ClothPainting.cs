@@ -43,6 +43,19 @@ namespace FlaxEngine.Tools
         /// Enables continuous painting, otherwise single paint on click.
         /// </summary>
         public bool ContinuousPaint;
+
+        /// <summary>
+        /// Enables drawing cloth paint debugging with Depth Test enabled (skips occluded vertices).
+        /// </summary>
+        public bool DebugDrawDepthTest
+        {
+            get => Gizmo.Cloth?.DebugDrawDepthTest ?? true;
+            set
+            {
+                if (Gizmo.Cloth != null)
+                    Gizmo.Cloth.DebugDrawDepthTest = value;
+            }
+        }
 #pragma warning restore CS0649
 
         public override void Init(IGizmoOwner owner)
@@ -62,6 +75,7 @@ namespace FlaxEngine.Tools
         public override void Dispose()
         {
             Owner.Gizmos.Remove(Gizmo);
+            Gizmo = null;
 
             base.Dispose();
         }
@@ -83,6 +97,7 @@ namespace FlaxEngine.Tools
         private EditClothPaintAction _undoAction;
 
         public bool IsPainting => _isPainting;
+        public Cloth Cloth => _cloth;
 
         public ClothPaintingGizmo(IGizmoOwner owner, ClothPaintingGizmoMode mode)
         : base(owner)

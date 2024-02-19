@@ -78,11 +78,6 @@ void PhysicsSettings::Deserialize(DeserializeStream& stream, ISerializeModifier*
     }
 }
 
-PhysicalMaterial::PhysicalMaterial()
-    : _material(nullptr)
-{
-}
-
 PhysicalMaterial::~PhysicalMaterial()
 {
     if (_material)

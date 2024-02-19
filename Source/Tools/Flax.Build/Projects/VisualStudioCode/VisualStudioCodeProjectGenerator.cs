@@ -410,8 +410,7 @@ namespace Flax.Build.Projects.VisualStudioCode
                                         json.AddField("stopAtEntry", false);
                                         json.AddField("externalConsole", true);
                                         break;
-                                    case TargetPlatform.Linux:
-                                        break;
+                                    case TargetPlatform.Linux: break;
                                     }
                                 }
                                 json.EndObject();
@@ -622,7 +621,7 @@ namespace Flax.Build.Projects.VisualStudioCode
                 json.AddField("**/Output", true);
                 json.AddField("**/*.flax", true);
                 json.EndObject();
-                
+
                 // Extension settings
                 json.AddField("omnisharp.useModernNet", true);
 

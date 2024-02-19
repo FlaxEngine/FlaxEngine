@@ -62,6 +62,16 @@ namespace FlaxEngine
         public float Spacing;
 
         /// <summary>
+        /// The minimum size of the collection.
+        /// </summary>
+        public int MinCount;
+
+        /// <summary>
+        /// The maximum size of the collection. Zero if unlimited.
+        /// </summary>
+        public int MaxCount;
+
+        /// <summary>
         /// The collection background color.
         /// </summary>
         public Color? BackgroundColor;

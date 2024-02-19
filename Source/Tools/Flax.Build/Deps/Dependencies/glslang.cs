@@ -130,7 +130,7 @@ namespace Flax.Deps.Dependencies
                     };
 
                     // Build for Mac
-                    foreach (var architecture in new []{ TargetArchitecture.x64, TargetArchitecture.ARM64 })
+                    foreach (var architecture in new[] { TargetArchitecture.x64, TargetArchitecture.ARM64 })
                     {
                         RunCmake(root, platform, architecture, cmakeArgs);
                         Utilities.Run("cmake", string.Format("--build . --config {0} --target install", configuration), null, buildDir, Utilities.RunOptions.ConsoleLogOutput);

@@ -332,6 +332,11 @@ public:
     bool OnPreUpdate();
     void OnPostUpdate();
 
+private:
+#if USE_EDITOR
+    API_FIELD(Internal) bool DebugDrawDepthTest = true;
+#endif
+
 public:
     // [Actor]
     void Draw(RenderContext& renderContext) override;

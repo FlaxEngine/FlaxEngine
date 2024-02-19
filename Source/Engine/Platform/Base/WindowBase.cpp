@@ -100,9 +100,6 @@ WindowBase::WindowBase(const CreateWindowSettings& settings)
     , _dpi(96)
     , _dpiScale(1.0f)
     , _trackingMouseOffset(Float2::Zero)
-    , _isUsingMouseOffset(false)
-    , _isTrackingMouse(false)
-    , _isClippingCursor(false)
     , RenderTask(nullptr)
 {
     // Update window location based on start location

@@ -93,7 +93,7 @@ protected:
     CriticalSection _loadLocker;
 
     // Storage
-    ThreadLocalObject<FileReadStream> _file;
+    ThreadLocal<FileReadStream*> _file;
     Array<FlaxChunk*> _chunks;
 
     // Metadata

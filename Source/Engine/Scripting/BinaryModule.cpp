@@ -533,7 +533,12 @@ void ScriptingType::HackObjectVTable(void* object, ScriptingTypeHandle baseTypeH
     if (!Script.VTable)
     {
         // Ensure to have valid Script VTable hacked
-        SetupScriptObjectVTable(object, baseTypeHandle, wrapperIndex);
+        BinaryModule::Locker.Lock();
+        if (!Script.VTable)
+        {
+            SetupScriptObjectVTable(object, baseTypeHandle, wrapperIndex);
+        }
+        BinaryModule::Locker.Unlock();
     }
 
     // Override object vtable with hacked one that has calls to overriden scripting functions

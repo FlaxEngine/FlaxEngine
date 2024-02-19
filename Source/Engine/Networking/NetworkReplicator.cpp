@@ -714,6 +714,7 @@ void InvokeObjectReplication(NetworkReplicatedObject& item, uint32 ownerFrame, b
     stream->SenderId = senderClientId;
 
     // Deserialize object
+    Scripting::ObjectsLookupIdMapping.Set(&IdsRemappingTable);
     const bool failed = NetworkReplicator::InvokeSerializer(obj->GetTypeHandle(), obj, stream, false);
     if (failed)
     {

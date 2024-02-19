@@ -408,7 +408,7 @@ void PhysicsBackend::AddRigidDynamicActorTorque(void* actor, const Vector3& torq
 {
 }
 
-void* PhysicsBackend::CreateShape(PhysicsColliderActor* collider, const CollisionShape& geometry, JsonAsset* material, bool enabled, bool trigger)
+void* PhysicsBackend::CreateShape(PhysicsColliderActor* collider, const CollisionShape& geometry, Span<JsonAsset*> materials, bool enabled, bool trigger)
 {
     return DUMY_HANDLE;
 }
@@ -447,7 +447,7 @@ void PhysicsBackend::SetShapeContactOffset(void* shape, float value)
 {
 }
 
-void PhysicsBackend::SetShapeMaterial(void* shape, JsonAsset* material)
+void PhysicsBackend::SetShapeMaterials(void* shape, Span<JsonAsset*> materials)
 {
 }
 
@@ -826,9 +826,14 @@ void PhysicsBackend::GetHeightFieldSize(void* heightField, int32& rows, int32& c
     columns = 0;
 }
 
-float PhysicsBackend::GetHeightFieldHeight(void* heightField, float x, float z)
+float PhysicsBackend::GetHeightFieldHeight(void* heightField, int32 x, int32 z)
 {
     return 0.0f;
+}
+
+PhysicsBackend::HeightFieldSample PhysicsBackend::GetHeightFieldSample(void* heightField, int32 x, int32 z)
+{
+    return HeightFieldSample();
 }
 
 bool PhysicsBackend::ModifyHeightField(void* heightField, int32 startCol, int32 startRow, int32 cols, int32 rows, const HeightFieldSample* data)

@@ -45,9 +45,6 @@ namespace FlaxEditor.Tools.Terrain
             [EditorOrder(130), EditorDisplay("Layout"), DefaultValue(null), Tooltip("The default material used for terrain rendering (chunks can override this). It must have Domain set to terrain.")]
             public MaterialBase Material;
 
-            [EditorOrder(200), EditorDisplay("Collision"), DefaultValue(null), AssetReference(typeof(PhysicalMaterial), true), Tooltip("Terrain default physical material used to define the collider physical properties.")]
-            public JsonAsset PhysicalMaterial;
-
             [EditorOrder(210), EditorDisplay("Collision", "Collision LOD"), DefaultValue(-1), Limit(-1, 100, 0.1f), Tooltip("Terrain geometry LOD index used for collision.")]
             public int CollisionLOD = -1;
 
@@ -152,7 +149,6 @@ namespace FlaxEditor.Tools.Terrain
             terrain.Setup(_options.LODCount, (int)_options.ChunkSize);
             terrain.Transform = new Transform(_options.Position, _options.Orientation, _options.Scale);
             terrain.Material = _options.Material;
-            terrain.PhysicalMaterial = _options.PhysicalMaterial;
             terrain.CollisionLOD = _options.CollisionLOD;
             if (_options.Heightmap)
                 terrain.Position -= new Vector3(0, _options.HeightmapScale * 0.5f, 0);

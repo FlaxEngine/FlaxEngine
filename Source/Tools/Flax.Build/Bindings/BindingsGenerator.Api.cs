@@ -197,7 +197,7 @@ namespace Flax.Build.Bindings
             if (apiType != null)
             {
                 if (apiType.MarshalAs != null)
-                    return UsePassByReference(buildData, new TypeInfo(apiType.MarshalAs), caller);
+                    return UsePassByReference(buildData, apiType.MarshalAs, caller);
 
                 // Skip for scripting objects
                 if (apiType.IsScriptingObject)

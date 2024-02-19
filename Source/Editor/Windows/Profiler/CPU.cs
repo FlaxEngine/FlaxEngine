@@ -20,9 +20,7 @@ namespace FlaxEngine
                 get
                 {
                     fixed (short* name = Name0)
-                    {
                         return new string((char*)name);
-                    }
                 }
             }
 
@@ -31,9 +29,7 @@ namespace FlaxEngine
                 fixed (short* name = Name0)
                 {
                     fixed (char* p = prefix)
-                    {
                         return Utils.MemoryCompare(new IntPtr(name), new IntPtr(p), (ulong)(prefix.Length * 2)) == 0;
-                    }
                 }
             }
         }

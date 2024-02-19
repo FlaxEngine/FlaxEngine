@@ -84,7 +84,7 @@ bool cacheStaticGeometryTree(Actor* actor, ShadowsOfMordor::Builder::SceneBuildC
         {
             auto patch = terrain->GetPatch(patchIndex);
             entry.AsTerrain.PatchIndex = patchIndex;
-            for (int32 chunkIndex = 0; chunkIndex < TerrainPatch::CHUNKS_COUNT; chunkIndex++)
+            for (int32 chunkIndex = 0; chunkIndex < Terrain::ChunksCount; chunkIndex++)
             {
                 auto chunk = patch->Chunks[chunkIndex];
                 entry.AsTerrain.ChunkIndex = chunkIndex;

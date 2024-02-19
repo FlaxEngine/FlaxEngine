@@ -185,6 +185,11 @@ namespace Flax.Build.Bindings
                             tag.Value = tag.Value.Substring(1, tag.Value.Length - 2);
                         if (tag.Value.Contains("\\\""))
                             tag.Value = tag.Value.Replace("\\\"", "\"");
+                        token = context.Tokenizer.NextToken();
+                        if (token.Type == TokenType.Multiply)
+                            tag.Value += token.Value;
+                        else
+                            context.Tokenizer.PreviousToken();
                         parameters.Add(tag);
                         break;
                     case TokenType.Whitespace:
@@ -647,7 +652,7 @@ namespace Flax.Build.Bindings
                     desc.Namespace = tag.Value;
                     break;
                 case "marshalas":
-                    desc.MarshalAs = tag.Value;
+                    desc.MarshalAs = TypeInfo.FromString(tag.Value);
                     break;
                 case "tag":
                     ParseTag(ref desc.Tags, tag);
@@ -1236,7 +1241,7 @@ namespace Flax.Build.Bindings
                     desc.Namespace = tag.Value;
                     break;
                 case "marshalas":
-                    desc.MarshalAs = tag.Value;
+                    desc.MarshalAs = TypeInfo.FromString(tag.Value);
                     break;
                 case "tag":
                     ParseTag(ref desc.Tags, tag);

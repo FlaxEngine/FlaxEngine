@@ -911,10 +911,10 @@ bool ModelData::Pack2AnimationHeader(WriteStream* stream, int32 animIndex) const
     }
 
     // Info
-    stream->WriteInt32(100); // Header version (for fast version upgrades without serialization format change)
+    stream->WriteInt32(103); // Header version (for fast version upgrades without serialization format change)
     stream->WriteDouble(anim.Duration);
     stream->WriteDouble(anim.FramesPerSecond);
-    stream->WriteBool(anim.EnableRootMotion);
+    stream->WriteByte((byte)anim.RootMotionFlags);
     stream->WriteString(anim.RootNodeName, 13);
 
     // Animation channels
@@ -927,6 +927,12 @@ bool ModelData::Pack2AnimationHeader(WriteStream* stream, int32 animIndex) const
         Serialization::Serialize(*stream, channel.Rotation);
         Serialization::Serialize(*stream, channel.Scale);
     }
+
+    // Animation events
+    stream->WriteInt32(0);
+
+    // Nested animations
+    stream->WriteInt32(0);
 
     return false;
 }

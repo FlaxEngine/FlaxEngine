@@ -1393,13 +1393,13 @@ Actor* Level::FindActor(const StringView& name)
     return result;
 }
 
-Actor* Level::FindActor(const MClass* type)
+Actor* Level::FindActor(const MClass* type, bool activeOnly)
 {
     CHECK_RETURN(type, nullptr);
     Actor* result = nullptr;
     ScopeLock lock(ScenesLock);
     for (int32 i = 0; result == nullptr && i < Scenes.Count(); i++)
-        result = Scenes[i]->FindActor(type);
+        result = Scenes[i]->FindActor(type, activeOnly);
     return result;
 }
 
@@ -1413,29 +1413,33 @@ Actor* Level::FindActor(const MClass* type, const StringView& name)
     return result;
 }
 
-Actor* FindActorRecursive(Actor* node, const Tag& tag)
+Actor* FindActorRecursive(Actor* node, const Tag& tag, bool activeOnly)
 {
+    if (activeOnly && !node->GetIsActive())
+        return nullptr;
     if (node->HasTag(tag))
         return node;
     Actor* result = nullptr;
     for (Actor* child : node->Children)
     {
-        result = FindActorRecursive(child, tag);
+        result = FindActorRecursive(child, tag, activeOnly);
         if (result)
             break;
     }
     return result;
 }
 
-Actor* FindActorRecursiveByType(Actor* node, const MClass* type, const Tag& tag)
+Actor* FindActorRecursiveByType(Actor* node, const MClass* type, const Tag& tag, bool activeOnly)
 {
     CHECK_RETURN(type, nullptr);
+    if (activeOnly && !node->GetIsActive())
+        return nullptr;
     if (node->HasTag(tag) && node->GetClass()->IsSubClassOf(type))
         return node;
     Actor* result = nullptr;
     for (Actor* child : node->Children)
     {
-        result = FindActorRecursiveByType(child, type, tag);
+        result = FindActorRecursiveByType(child, type, tag, activeOnly);
         if (result)
             break;
     }
@@ -1468,30 +1472,30 @@ void FindActorsRecursiveByParentTags(Actor* node, const Array<Tag>& tags, const 
         FindActorsRecursiveByParentTags(child, tags, activeOnly, result);
 }
 
-Actor* Level::FindActor(const Tag& tag, Actor* root)
+Actor* Level::FindActor(const Tag& tag, bool activeOnly, Actor* root)
 {
     PROFILE_CPU();
     if (root)
-        return FindActorRecursive(root, tag);
+        return FindActorRecursive(root, tag, activeOnly);
     Actor* result = nullptr;
     for (Scene* scene : Scenes)
     {
-        result = FindActorRecursive(scene, tag);
+        result = FindActorRecursive(scene, tag, activeOnly);
         if (result)
             break;
     }
     return result;
 }
 
-Actor* Level::FindActor(const MClass* type, const Tag& tag, Actor* root)
+Actor* Level::FindActor(const MClass* type, const Tag& tag, bool activeOnly, Actor* root)
 {
     CHECK_RETURN(type, nullptr);
     if (root)
-        return FindActorRecursiveByType(root, type, tag);
+        return FindActorRecursiveByType(root, type, tag, activeOnly);
     Actor* result = nullptr;
     ScopeLock lock(ScenesLock);
     for (int32 i = 0; result == nullptr && i < Scenes.Count(); i++)
-        result = Scenes[i]->FindActor(type, tag);
+        result = Scenes[i]->FindActor(type, tag, activeOnly);
     return result;
 }
 
@@ -1562,12 +1566,14 @@ Script* Level::FindScript(const MClass* type)
 
 namespace
 {
-    void GetActors(const MClass* type, Actor* actor, Array<Actor*>& result)
+    void GetActors(const MClass* type, Actor* actor, bool activeOnly, Array<Actor*>& result)
     {
+        if (activeOnly && !actor->GetIsActive())
+            return;
         if (actor->GetClass()->IsSubClassOf(type))
             result.Add(actor);
         for (auto child : actor->Children)
-            GetActors(type, child, result);
+            GetActors(type, child, activeOnly, result);
     }
 
     void GetScripts(const MClass* type, Actor* actor, Array<Script*>& result)
@@ -1580,13 +1586,13 @@ namespace
     }
 }
 
-Array<Actor*> Level::GetActors(const MClass* type)
+Array<Actor*> Level::GetActors(const MClass* type, bool activeOnly)
 {
     Array<Actor*> result;
     CHECK_RETURN(type, result);
     ScopeLock lock(ScenesLock);
     for (int32 i = 0; i < Scenes.Count(); i++)
-        ::GetActors(type, Scenes[i], result);
+        ::GetActors(type, Scenes[i], activeOnly, result);
     return result;
 }
 

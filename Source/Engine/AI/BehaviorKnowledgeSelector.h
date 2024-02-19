@@ -91,6 +91,13 @@ API_STRUCT(InBuild, Template, MarshalAs=StringAnsi) struct FLAXENGINE_API Behavi
         return false;
     }
 
+    BehaviorKnowledgeSelector() = default;
+
+    BehaviorKnowledgeSelector(const StringAnsi& other)
+    {
+        Path = other;
+    }
+
     BehaviorKnowledgeSelector& operator=(const StringAnsiView& other) noexcept
     {
         Path = other;

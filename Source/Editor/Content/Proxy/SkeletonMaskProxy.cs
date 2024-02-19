@@ -38,7 +38,7 @@ namespace FlaxEditor.Content
         /// <inheritdoc />
         public override void Create(string outputPath, object arg)
         {
-            if (Editor.CreateAsset(Editor.NewAssetType.SkeletonMask, outputPath))
+            if (Editor.CreateAsset("SkeletonMask", outputPath))
                 throw new Exception("Failed to create new asset.");
         }
     }

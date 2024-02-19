@@ -22,14 +22,6 @@ public:
         SplashScreen,
     };
 
-    /// <summary>
-    /// Updates the Win32 executable file icon.
-    /// </summary>
-    /// <param name="path">The exe path.</param>
-    /// <param name="icon">The icon image data.</param>
-    /// <returns>True if fails, otherwise false.</returns>
-    static bool UpdateExeIcon(const String& path, const TextureData& icon);
-
     static String GetOutputName();
     static bool FormatAppPackageName(String& packageName);
     static bool GetApplicationImage(const Guid& imageId, TextureData& imageData, ApplicationImageType type = ApplicationImageType::Icon);

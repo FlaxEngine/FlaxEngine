@@ -280,7 +280,7 @@ namespace FlaxEngine.GUI
             foreach (var id in ids)
             {
                 var path = Content.GetEditorAssetPath(id);
-                if (!string.IsNullOrEmpty(path) && 
+                if (!string.IsNullOrEmpty(path) &&
                     string.Equals(name, System.IO.Path.GetFileNameWithoutExtension(path), System.StringComparison.OrdinalIgnoreCase))
                 {
                     return Content.LoadAsync(id, type);

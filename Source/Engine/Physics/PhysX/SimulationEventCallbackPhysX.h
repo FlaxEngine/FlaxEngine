@@ -50,11 +50,6 @@ public:
     void Clear();
 
     /// <summary>
-    /// Generates the new/old/removed collisions and a valid trigger pairs.
-    /// </summary>
-    void CollectResults();
-
-    /// <summary>
     /// Sends the collision events to the managed objects.
     /// </summary>
     void SendCollisionEvents();

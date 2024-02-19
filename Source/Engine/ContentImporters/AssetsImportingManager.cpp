@@ -234,7 +234,6 @@ bool AssetsImportingManager::Create(const String& tag, const StringView& outputP
         LOG(Warning, "Cannot find asset creator object for tag \'{0}\'.", tag);
         return true;
     }
-
     return Create(creator->Callback, outputPath, assetId, arg);
 }
 

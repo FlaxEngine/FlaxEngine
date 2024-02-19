@@ -77,14 +77,10 @@ namespace Flax.Build
                 var architectureId = RuntimeInformation.ProcessArchitecture;
                 switch (architectureId)
                 {
-                case Architecture.X86:
-                    return TargetArchitecture.x86;
-                case Architecture.X64:
-                    return TargetArchitecture.x64;
-                case Architecture.Arm:
-                    return TargetArchitecture.ARM;
-                case Architecture.Arm64:
-                    return TargetArchitecture.ARM64;
+                case Architecture.X86: return TargetArchitecture.x86;
+                case Architecture.X64: return TargetArchitecture.x64;
+                case Architecture.Arm: return TargetArchitecture.ARM;
+                case Architecture.Arm64: return TargetArchitecture.ARM64;
                 default: throw new NotImplementedException(string.Format("Unsupported build platform {0}.", architectureId));
                 }
             }
@@ -290,12 +286,9 @@ namespace Flax.Build
             var subdir = "Binaries/Editor/";
             switch (Platform.BuildTargetPlatform)
             {
-                case TargetPlatform.Windows:
-                    return subdir + "Win64";
-                case TargetPlatform.Linux:
-                    return subdir + "Linux";
-                case TargetPlatform.Mac:
-                    return subdir + "Mac";
+            case TargetPlatform.Windows: return subdir + "Win64";
+            case TargetPlatform.Linux: return subdir + "Linux";
+            case TargetPlatform.Mac: return subdir + "Mac";
             }
             throw new NotImplementedException();
         }

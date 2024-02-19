@@ -247,7 +247,7 @@ namespace Flax.Deps.Dependencies
                 case TargetPlatform.Mac:
                 {
                     // Build for Mac
-                    foreach (var architecture in new []{ TargetArchitecture.x64, TargetArchitecture.ARM64 })
+                    foreach (var architecture in new[] { TargetArchitecture.x64, TargetArchitecture.ARM64 })
                     {
                         SetupDirectory(buildDir, true);
                         RunCmake(buildDir, platform, architecture, ".. -DCMAKE_BUILD_TYPE=Release");
