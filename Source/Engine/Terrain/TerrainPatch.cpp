@@ -610,6 +610,7 @@ FORCE_INLINE byte GetPhysicalMaterial(const Color32& raw, const TerrainDataUpdat
         uint8 layer = 0;
         uint8 layerWeight = 0;
         const int32 splatmapTextureIndex = (chunkZ * info.ChunkSize + z) * info.HeightmapSize + chunkX * info.ChunkSize + x;
+        ASSERT(splatmapTextureIndex < info.HeightmapLength);
         for (int32 splatIndex = 0; splatIndex < TERRAIN_MAX_SPLATMAPS_COUNT; splatIndex++)
         {
             for (int32 channelIndex = 0; channelIndex < 4; channelIndex++)
