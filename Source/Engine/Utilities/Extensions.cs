@@ -298,8 +298,8 @@ namespace FlaxEngine.Utilities
         public static Vector2 NextUnitVector2(this Random random, float radius = 1.0f)
         {
             float magnitude = (float)random.NextDouble() * radius;
-            double randomDegree = random.NextDouble() * 360;
-            return new Vector2((float)Math.Cos(randomDegree) * magnitude, (float)Math.Sin(randomDegree) * magnitude);
+            double randomRadian = random.NextDouble() * Mathf.RevolutionsToRadians;
+            return new Vector2((float)Math.Cos(randomRadian) * magnitude, (float)Math.Sin(randomRadian) * magnitude);
         }
 
         /// <summary>
