@@ -161,6 +161,12 @@ bool FontManager::AddNewEntry(Font* font, Char c, FontCharacterEntry& entry)
     }
 #endif
 
+    // Init the character data
+    Platform::MemoryClear(&entry, sizeof(entry));
+    entry.Character = c;
+    entry.Font = font;
+    entry.IsValid = false;
+
     // Load the glyph
     const FT_Error error = FT_Load_Glyph(face, glyphIndex, glyphFlags);
     if (error)
@@ -195,8 +201,6 @@ bool FontManager::AddNewEntry(Font* font, Char c, FontCharacterEntry& entry)
     ASSERT(bitmap && bitmap->pixel_mode == FT_PIXEL_MODE_GRAY);
 
     // Fill the character data
-    Platform::MemoryClear(&entry, sizeof(entry));
-    entry.Character = c;
     entry.AdvanceX = Convert26Dot6ToRoundedPixel<int16>(glyph->advance.x);
     entry.OffsetY = glyph->bitmap_top;
     entry.OffsetX = glyph->bitmap_left;
@@ -289,7 +293,6 @@ bool FontManager::AddNewEntry(Font* font, Char c, FontCharacterEntry& entry)
     entry.UVSize.X = static_cast<float>(slot->Width - 2 * padding);
     entry.UVSize.Y = static_cast<float>(slot->Height - 2 * padding);
     entry.Slot = slot;
-    entry.Font = font;
 
     return false;
 }

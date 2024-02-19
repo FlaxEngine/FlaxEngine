@@ -62,6 +62,7 @@ void Font::GetCharacter(Char c, FontCharacterEntry& result, bool enableFallback)
 
         // Create character cache
         FontManager::AddNewEntry(this, c, result);
+        ASSERT(result.Font);
 
         // Add to the dictionary
         _characters.Add(c, result);
