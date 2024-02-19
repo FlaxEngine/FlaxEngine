@@ -249,7 +249,7 @@ namespace FlaxEditor.Options
         /// The list of fallback fonts to use when main text font is missing certain characters. Empty to use fonts from GraphicsSettings.
         /// </summary>
         [EditorDisplay("Fonts"), EditorOrder(650)]
-        public FontAsset[] FallbackFonts = [FlaxEngine.Content.LoadAsyncInternal<FontAsset>(EditorAssets.FallbackFont)];
+        public FontAsset[] FallbackFonts = new FontAsset[1] { FlaxEngine.Content.LoadAsyncInternal<FontAsset>(EditorAssets.FallbackFont) };
 
         /// <summary>
         /// Gets or sets the title font for editor UI.
