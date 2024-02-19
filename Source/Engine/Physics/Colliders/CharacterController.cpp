@@ -210,7 +210,7 @@ void CharacterController::CreateController()
 
     // Setup
     PhysicsBackend::SetControllerUpDirection(_controller, _upDirection);
-    PhysicsBackend::SetShapeLocalPose(_shape, _center, Quaternion::Identity);
+    PhysicsBackend::SetShapeLocalPose(_shape, Vector3.Zero, Quaternion::Identity);
     UpdateLayerBits();
     UpdateBounds();
 }
