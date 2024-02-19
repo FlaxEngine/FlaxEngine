@@ -1672,6 +1672,20 @@ namespace FlaxEngine
         }
 
         /// <summary>
+        /// Snaps the input position into the grid.
+        /// </summary>
+        /// <param name="pos">The position to snap.</param>
+        /// <param name="gridSize">The size of the grid.</param>
+        /// <returns>The position snapped to the grid.</returns>
+        public static Vector3 SnapToGrid(Vector3 pos, Vector3 gridSize)
+        {
+            pos.X = Mathr.Ceil((pos.X - (gridSize.X * 0.5f)) / gridSize.X) * gridSize.X;
+            pos.Y = Mathr.Ceil((pos.Y - (gridSize.Y * 0.5f)) / gridSize.Y) * gridSize.Y;
+            pos.Z = Mathr.Ceil((pos.Z - (gridSize.Z * 0.5f)) / gridSize.Z) * gridSize.Z;
+            return pos;
+        }
+
+        /// <summary>
         /// Adds two vectors.
         /// </summary>
         /// <param name="left">The first vector to add.</param>

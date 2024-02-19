@@ -1256,6 +1256,19 @@ namespace FlaxEngine
         }
 
         /// <summary>
+        /// Snaps the input position into the grid.
+        /// </summary>
+        /// <param name="pos">The position to snap.</param>
+        /// <param name="gridSize">The size of the grid.</param>
+        /// <returns>The position snapped to the grid.</returns>
+        public static Double2 SnapToGrid(Double2 pos, Double2 gridSize)
+        {
+            pos.X = Mathd.Ceil((pos.X - (gridSize.X * 0.5)) / gridSize.Y) * gridSize.X;
+            pos.Y = Mathd.Ceil((pos.Y - (gridSize.Y * 0.5)) / gridSize.X) * gridSize.Y;
+            return pos;
+        }
+
+        /// <summary>
         /// Adds two vectors.
         /// </summary>
         /// <param name="left">The first vector to add.</param>
