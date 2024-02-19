@@ -767,6 +767,24 @@ void GPUContextDX11::CopyTexture(GPUTexture* dstResource, uint32 dstSubresource,
 
     _context->CopySubresourceRegion(dstResourceDX11->GetResource(), dstSubresource, dstX, dstY, dstZ, srcResourceDX11->GetResource(), srcSubresource, nullptr);
 }
+void GPUContextDX11::CopyTexture(GPUTexture* dstResource, uint32 dstSubresource, uint32 dstX, uint32 dstY, uint32 dstZ, GPUTexture* srcResource, uint32 srcSubresource,Rectangle& rect)
+{
+    ASSERT(dstResource && srcResource);
+
+    auto dstResourceDX11 = static_cast<GPUTextureDX11*>(dstResource);
+    auto srcResourceDX11 = static_cast<GPUTextureDX11*>(srcResource);
+    const int32 srcMipIndex = srcSubresource % srcResourceDX11->MipLevels();
+    int32 mipWidth, mipHeight, mipDepth;
+    srcResourceDX11->GetMipSize(srcMipIndex, mipWidth, mipHeight, mipDepth);
+
+    D3D11_BOX sector = D3D11_BOX();
+    sector.top      = (uint32)rect.GetTop();
+    sector.bottom   = (uint32)rect.GetBottom();
+    sector.left     = (uint32)rect.GetLeft();
+    sector.right    = (uint32)rect.GetRight();
+    sector.back     = mipDepth;//for 2D
+    _context->CopySubresourceRegion(dstResourceDX11->GetResource(), dstSubresource, dstX, dstY, dstZ, srcResourceDX11->GetResource(), srcSubresource, &sector);
+}
 
 void GPUContextDX11::ResetCounter(GPUBuffer* buffer)
 {

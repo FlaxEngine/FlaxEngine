@@ -55,6 +55,15 @@ namespace FlaxEditor
         public SpriteHandle Bone32;
         public SpriteHandle BoneFull32;
 
+        //panel (9 slice) 
+        public SpriteHandle Panel32;
+        public SpriteHandle PanelLeft32;
+        public SpriteHandle PanelRight32;
+        public SpriteHandle PanelTop32;
+        public SpriteHandle PanelBottom32;
+        public SpriteHandle PanelVertical32;
+        public SpriteHandle PanelHrizontal32;
+
         // Visject
         public SpriteHandle VisjectBoxOpen32;
         public SpriteHandle VisjectBoxClosed32;

@@ -1274,6 +1274,40 @@ void GPUContextDX12::CopyTexture(GPUTexture* dstResource, uint32 dstSubresource,
     _commandList->CopyTextureRegion(&dst, dstX, dstY, dstZ, &src, nullptr);
 }
 
+void GPUContextDX12::CopyTexture(GPUTexture* dstResource, uint32 dstSubresource, uint32 dstX, uint32 dstY, uint32 dstZ, GPUTexture* srcResource, uint32 srcSubresource, Rectangle& rect)
+{
+    auto dstTextureDX12 = (GPUTextureDX12*)dstResource;
+    auto srcTextureDX12 = (GPUTextureDX12*)srcResource;
+
+    SetResourceState(dstTextureDX12, D3D12_RESOURCE_STATE_COPY_DEST);
+    SetResourceState(srcTextureDX12, D3D12_RESOURCE_STATE_COPY_SOURCE);
+    flushRBs();
+
+    // Get destination copy location
+    D3D12_TEXTURE_COPY_LOCATION dst;
+    dst.pResource = dstTextureDX12->GetResource();
+    dst.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
+    dst.SubresourceIndex = dstSubresource;
+
+    // Get source copy location
+    D3D12_TEXTURE_COPY_LOCATION src;
+    src.pResource = srcTextureDX12->GetResource();
+    src.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
+    src.SubresourceIndex = srcSubresource;
+
+    D3D12_BOX sector = D3D12_BOX();
+    sector.top    = (uint32)rect.GetTop();
+    sector.bottom = (uint32)rect.GetBottom();
+    sector.left   = (uint32)rect.GetLeft();
+    sector.right  = (uint32)rect.GetRight();
+    sector.back = 1;//for 2D
+
+    // Copy
+    _commandList->CopyTextureRegion(&dst, dstX, dstY, dstZ, &src, &sector);
+
+
+}
+
 void GPUContextDX12::ResetCounter(GPUBuffer* buffer)
 {
     ASSERT(buffer);

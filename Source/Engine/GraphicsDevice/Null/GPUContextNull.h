@@ -205,6 +205,10 @@ public:
     {
     }
 
+    void CopyTexture(GPUTexture* dstResource, uint32 dstSubresource, uint32 dstX, uint32 dstY, uint32 dstZ, GPUTexture* srcResource, uint32 srcSubresource, Rectangle& rect) override
+    {
+    }
+
     void ResetCounter(GPUBuffer* buffer) override
     {
     }

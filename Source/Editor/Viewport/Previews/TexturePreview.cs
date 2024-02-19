@@ -17,9 +17,11 @@ namespace FlaxEditor.Viewport.Previews
     public abstract class TexturePreviewBase : ContainerControl
     {
         private Rectangle _textureRect;
-        private Float2 _lastMousePos, _viewPos;
-        private float _viewScale = 1.0f;
+        private Float2 _lastMousePos;
         private bool _isMouseDown;
+
+        internal float _viewScale = 1.0f;
+        internal Float2 _viewPos;
 
         /// <inheritdoc />
         protected TexturePreviewBase()
@@ -84,7 +86,7 @@ namespace FlaxEditor.Viewport.Previews
         /// <summary>
         /// Gets the texture view rect (scaled and offseted).
         /// </summary>
-        protected Rectangle TextureViewRect => (_textureRect + _viewPos) * _viewScale;
+        internal Rectangle TextureViewRect => (_textureRect + _viewPos) * _viewScale;
 
         /// <inheritdoc />
         public override void Draw()
@@ -173,28 +175,28 @@ namespace FlaxEditor.Viewport.Previews
         /// <inheritdoc />
         public override bool OnMouseDown(Float2 location, MouseButton button)
         {
-            if (base.OnMouseDown(location, button))
-                return true;
-
             // Set flag
-            _isMouseDown = true;
-            _lastMousePos = location;
-            Cursor = CursorType.SizeAll;
-
-            return true;
+            if (button == MouseButton.Middle)
+            {
+                _isMouseDown = true;
+                _lastMousePos = location;
+                Cursor = CursorType.SizeAll;
+                return true;
+            }
+            return base.OnMouseDown(location, button);
         }
 
         /// <inheritdoc />
         public override bool OnMouseUp(Float2 location, MouseButton button)
         {
-            if (base.OnMouseUp(location, button))
-                return true;
-
             // Clear flag
-            _isMouseDown = false;
-            Cursor = CursorType.Default;
-
-            return true;
+            if (button == MouseButton.Middle)
+            {
+                _isMouseDown = false;
+                Cursor = CursorType.Default;
+                return true;
+            }
+            return base.OnMouseDown(location, button);
         }
 
         /// <inheritdoc />
@@ -329,34 +331,44 @@ namespace FlaxEditor.Viewport.Previews
                 // Channels widget
                 var channelsWidget = new ViewportWidgetsContainer(ViewportWidgetLocation.UpperLeft);
                 //
+                
                 var channelR = new ViewportWidgetButton("R", SpriteHandle.Invalid, null, true)
                 {
                     Checked = true,
                     TooltipText = "Show/hide texture red channel",
-                    Parent = channelsWidget
                 };
                 channelR.Toggled += button => ViewChannels = button.Checked ? ViewChannels | ChannelFlags.Red : (ViewChannels & ~ChannelFlags.Red);
                 var channelG = new ViewportWidgetButton("G", SpriteHandle.Invalid, null, true)
                 {
                     Checked = true,
                     TooltipText = "Show/hide texture green channel",
-                    Parent = channelsWidget
                 };
                 channelG.Toggled += button => ViewChannels = button.Checked ? ViewChannels | ChannelFlags.Green : (ViewChannels & ~ChannelFlags.Green);
                 var channelB = new ViewportWidgetButton("B", SpriteHandle.Invalid, null, true)
                 {
                     Checked = true,
                     TooltipText = "Show/hide texture blue channel",
-                    Parent = channelsWidget
                 };
                 channelB.Toggled += button => ViewChannels = button.Checked ? ViewChannels | ChannelFlags.Blue : (ViewChannels & ~ChannelFlags.Blue);
                 var channelA = new ViewportWidgetButton("A", SpriteHandle.Invalid, null, true)
                 {
                     Checked = true,
                     TooltipText = "Show/hide texture alpha channel",
-                    Parent = channelsWidget
                 };
                 channelA.Toggled += button => ViewChannels = button.Checked ? ViewChannels | ChannelFlags.Alpha : (ViewChannels & ~ChannelFlags.Alpha);
+
+                //Groupe the buttons
+                var ButtonGroupe = new ViewportWidgetButtonHorizontalGroup
+                    (
+                    new ViewportWidgetButton[]
+                    {
+                        channelR,
+                        channelG,
+                        channelB,
+                        channelA,
+                    }
+                );
+                ButtonGroupe.Parent = channelsWidget;
                 //
                 channelsWidget.Parent = this;
 

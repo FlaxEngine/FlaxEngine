@@ -1672,6 +1672,21 @@ namespace FlaxEngine
         }
 
         /// <summary>
+        /// funcion for grid snaping snap to absolute world grid 
+        /// <br>desined for snaping using a ray / draging object</br>
+        /// </summary>
+        /// <param name="Translation"></param>
+        /// <param name="GridSize"></param>
+        /// <returns>out = Ceil(((A - (GridSize * 0.5f)) / GridSize) * GridSize</returns>
+        public static Vector3 SnapToGrid(Vector3 Translation, float GridSize)
+        {
+            Translation.X = Mathr.Ceil((Translation.X - (GridSize * 0.5f)) / GridSize) * GridSize;
+            Translation.Y = Mathr.Ceil((Translation.Y - (GridSize * 0.5f)) / GridSize) * GridSize;
+            Translation.Z = Mathr.Ceil((Translation.Z - (GridSize * 0.5f)) / GridSize) * GridSize;
+            return Translation;
+        }
+
+        /// <summary>
         /// Adds two vectors.
         /// </summary>
         /// <param name="left">The first vector to add.</param>
