@@ -376,7 +376,7 @@ namespace Flax.Deps.Dependencies
                     GitCheckout(oggRoot, "master", "4380566a44b8d5e85ad511c9c17eb04197863ec5");
 
                     // Build for Mac
-                    foreach (var architecture in new []{ TargetArchitecture.x64, TargetArchitecture.ARM64 })
+                    foreach (var architecture in new[] { TargetArchitecture.x64, TargetArchitecture.ARM64 })
                     {
                         SetupDirectory(oggBuildDir, true);
                         RunCmake(oggBuildDir, platform, architecture, ".. -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=\"../install\"");

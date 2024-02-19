@@ -105,8 +105,7 @@ namespace Flax.Deps
                                     if (totalBytes.HasValue)
                                         progress.Update(totalBytesRead, totalBytes.Value);
                                 }
-                            }
-                            while (hasMoreToRead);
+                            } while (hasMoreToRead);
                         }
                     }
                 }

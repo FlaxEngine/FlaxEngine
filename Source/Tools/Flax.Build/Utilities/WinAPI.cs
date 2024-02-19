@@ -130,7 +130,7 @@ namespace Flax.Build
                 System = 0x00001000,
                 Task = 0x00002000
             }
-            
+
             public enum Icon : uint
             {
                 Warning = 0x00000030,
