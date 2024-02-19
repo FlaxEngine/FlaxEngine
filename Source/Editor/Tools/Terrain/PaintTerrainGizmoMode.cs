@@ -48,6 +48,7 @@ namespace FlaxEditor.Tools.Terrain
                     if (DataPtr != IntPtr.Zero)
                         Marshal.FreeHGlobal(DataPtr);
                     DataPtr = Marshal.AllocHGlobal(size);
+                    Utils.MemoryClear(DataPtr, (ulong)size);
                     Size = size;
                 }
             }
@@ -294,7 +295,7 @@ namespace FlaxEditor.Tools.Terrain
             base.OnDeactivated();
 
             // Free temporary memory buffer
-            foreach (var splatmapData in _cachedSplatmapData)
+            foreach (ref var splatmapData in _cachedSplatmapData.AsSpan())
                 splatmapData.Free();
         }
 
