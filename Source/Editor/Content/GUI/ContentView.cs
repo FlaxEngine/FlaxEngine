@@ -616,6 +616,7 @@ namespace FlaxEditor.Content.GUI
         {
             if (base.OnMouseDown(location, button))
                 return true;
+
             if (button == MouseButton.Left)
             {
                 _mousePresslocation = location;
@@ -634,6 +635,7 @@ namespace FlaxEditor.Content.GUI
                 _rubberBandRectangle.Width = location.X - _mousePresslocation.X;
                 _rubberBandRectangle.Height = location.Y - _mousePresslocation.Y;
             }
+
             base.OnMouseMove(location);
         }
 
@@ -655,9 +657,10 @@ namespace FlaxEditor.Content.GUI
                     _rubberBandRectangle.Size = size;
                 }
                 var itemsInRectangle = _items.Where(t => _rubberBandRectangle.Intersects(t.Bounds)).ToList();
-                Select(itemsInRectangle, Input.GetKey(KeyboardKeys.Shift));
+                Select(itemsInRectangle, Input.GetKey(KeyboardKeys.Shift) || Input.GetKey(KeyboardKeys.Control));
                 return true;
             }
+
             return base.OnMouseUp(location, button);
         }
 
