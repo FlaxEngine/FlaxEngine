@@ -1320,7 +1320,7 @@ bool ModelTool::ImportModel(const String& path, ModelData& data, Options& option
         !
 #endif
     }
-    if (EnumHasAnyFlags(options.ImportTypes, ImportDataTypes::Geometry) && options.Type != ModelType::Prefab)
+    if (EnumHasAnyFlags(options.ImportTypes, ImportDataTypes::Geometry) && !(options.Type == ModelType::Prefab))
     {
         // Perform simple nodes mapping to single node (will transform meshes to model local space)
         SkeletonMapping<ModelDataNode> skeletonMapping(data.Nodes, nullptr);
@@ -1340,13 +1340,50 @@ bool ModelTool::ImportModel(const String& path, ModelData& data, Options& option
                 if (skeletonMapping.SourceToSource[mesh.NodeIndex] != mesh.NodeIndex)
                 {
                     // Transform vertices
-                    const auto transformationMatrix = hierarchyUpdater.CombineMatricesFromNodeIndices(skeletonMapping.SourceToSource[mesh.NodeIndex], mesh.NodeIndex);
+                    auto transformationMatrix = hierarchyUpdater.CombineMatricesFromNodeIndices(skeletonMapping.SourceToSource[mesh.NodeIndex], mesh.NodeIndex);
+
                     if (!transformationMatrix.IsIdentity())
                         mesh.TransformBuffer(transformationMatrix);
                 }
 
                 // Update new node index using real asset skeleton
                 mesh.NodeIndex = skeletonMapping.SourceToTarget[mesh.NodeIndex];
+            }
+        }
+    }
+    if (EnumHasAnyFlags(options.ImportTypes, ImportDataTypes::Geometry) && options.Type == ModelType::Prefab)
+    {
+        // Apply just the scale and rotations.
+        for (int32 lodIndex = 0; lodIndex < data.LODs.Count(); lodIndex++)
+        {
+            for (int32 meshIndex = 0; meshIndex < data.LODs[lodIndex].Meshes.Count(); meshIndex++)
+            {
+                auto& mesh = *data.LODs[lodIndex].Meshes[meshIndex];
+                auto& node = data.Nodes[mesh.NodeIndex];
+
+                auto currentNode = &data.Nodes[mesh.NodeIndex];
+
+                Vector3 scale = Vector3::One;
+                Quaternion rotation = Quaternion::Identity;
+                while (true)
+                {
+                    scale *= currentNode->LocalTransform.Scale;
+                    rotation *= currentNode->LocalTransform.Orientation;
+
+                    if (currentNode->ParentIndex == -1)
+                    {
+                        break;
+                    }
+                    currentNode = &data.Nodes[currentNode->ParentIndex];
+                }
+
+                // Transform vertices
+                auto transformationMatrix = Matrix::Identity;
+                transformationMatrix.SetScaleVector(scale);
+                transformationMatrix = transformationMatrix * Matrix::RotationQuaternion(rotation);
+
+                if (!transformationMatrix.IsIdentity())
+                    mesh.TransformBuffer(transformationMatrix);
             }
         }
     }
