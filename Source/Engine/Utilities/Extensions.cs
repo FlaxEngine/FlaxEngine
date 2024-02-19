@@ -309,8 +309,8 @@ namespace FlaxEngine.Utilities
         /// <returns>A random <see cref="Vector2"/>.</returns>
         public static Vector2 NextUnitCircleVector2(this Random random, float radius = 1.0f)
         {
-            double randomDegree = random.NextDouble() * 360;
-            return new Vector2((float)Math.Cos(randomDegree) * radius, (float)Math.Sin(randomDegree) * radius);
+            double randomRadian = random.NextDouble() * Mathf.RevolutionsToRadians;
+            return new Vector2((float)Math.Cos(randomRadian) * radius, (float)Math.Sin(randomRadian) * radius);
         }
 
         /// <summary>
