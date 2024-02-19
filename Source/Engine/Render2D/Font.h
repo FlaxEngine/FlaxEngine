@@ -18,7 +18,7 @@ struct FontTextureAtlasSlot;
 /// <summary>
 /// The text range.
 /// </summary>
-API_STRUCT(NoDefault) struct TextRange
+API_STRUCT(NoDefault) struct FLAXENGINE_API TextRange
 {
     DECLARE_SCRIPTING_TYPE_MINIMAL(TextRange);
 
@@ -88,7 +88,7 @@ struct TIsPODType<TextRange>
 /// <summary>
 /// The font line info generated during text processing.
 /// </summary>
-API_STRUCT(NoDefault) struct FontLineCache
+API_STRUCT(NoDefault) struct FLAXENGINE_API FontLineCache
 {
     DECLARE_SCRIPTING_TYPE_MINIMAL(FontLineCache);
 
@@ -152,7 +152,7 @@ struct TIsPODType<FontLineCache>
 /// <summary>
 /// The cached font character entry (read for rendering and further processing).
 /// </summary>
-API_STRUCT(NoDefault) struct FontCharacterEntry
+API_STRUCT(NoDefault) struct FLAXENGINE_API FontCharacterEntry
 {
     DECLARE_SCRIPTING_TYPE_MINIMAL(FontCharacterEntry);
 
