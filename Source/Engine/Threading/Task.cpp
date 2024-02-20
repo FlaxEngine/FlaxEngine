@@ -7,6 +7,7 @@
 #include "Engine/Core/Types/DateTime.h"
 #include "Engine/Core/Collections/Array.h"
 #include "Engine/Core/Math/Math.h"
+#include "Engine/Profiler/ProfilerCPU.h"
 
 void Task::Start()
 {
@@ -37,6 +38,7 @@ void Task::Cancel()
 
 bool Task::Wait(double timeoutMilliseconds) const
 {
+    PROFILE_CPU();
     double startTime = Platform::GetTimeSeconds() * 0.001;
 
     // TODO: no active waiting! use a semaphore!
@@ -73,12 +75,9 @@ bool Task::Wait(double timeoutMilliseconds) const
 Task* Task::ContinueWith(Task* task)
 {
     ASSERT(task != nullptr && task != this);
-
     if (_continueWith)
         return _continueWith->ContinueWith(task);
-
     _continueWith = task;
-
     return task;
 }
 
