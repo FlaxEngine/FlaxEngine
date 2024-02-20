@@ -15,7 +15,7 @@ void JsonWriter::Blob(const void* data, int32 length)
 {
     ::Array<char> base64;
     base64.Resize(Encryption::Base64EncodeLength(length));
-    Encryption::Base64Encode((byte*)data, length, base64.Get());
+    Encryption::Base64Encode((const byte*)data, length, base64.Get());
     String(base64.Get(), base64.Count());
 }
 

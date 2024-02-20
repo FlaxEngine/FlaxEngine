@@ -479,7 +479,7 @@ void Serialization::Deserialize(ISerializable::DeserializeStream& stream, Versio
                 const auto mBuild = SERIALIZE_FIND_MEMBER(stream, "Build");
                 if (mBuild != stream.MemberEnd())
                 {
-                    const auto mRevision = SERIALIZE_FIND_MEMBER(stream, "mRevision");
+                    const auto mRevision = SERIALIZE_FIND_MEMBER(stream, "Revision");
                     if (mRevision != stream.MemberEnd())
                         v = Version(mMajor->value.GetInt(), mMinor->value.GetInt(), mBuild->value.GetInt(), mRevision->value.GetInt());
                     else
