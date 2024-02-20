@@ -747,9 +747,21 @@ bool Serialization::ShouldSerialize(const Transform& v, const void* otherObj)
 
 void Serialization::Deserialize(ISerializable::DeserializeStream& stream, Transform& v, ISerializeModifier* modifier)
 {
-    DESERIALIZE_HELPER(stream, "Translation", v.Translation, Vector3::Zero);
-    DESERIALIZE_HELPER(stream, "Scale", v.Scale, Vector3::One);
-    DESERIALIZE_HELPER(stream, "Orientation", v.Orientation, Quaternion::Identity);
+    {
+        const auto m = SERIALIZE_FIND_MEMBER(stream, "Translation");
+        if (m != stream.MemberEnd())
+            Deserialize(m->value, v.Translation, modifier);
+    }
+    {
+        const auto m = SERIALIZE_FIND_MEMBER(stream, "Scale");
+        if (m != stream.MemberEnd())
+            Deserialize(m->value, v.Scale, modifier);
+    }
+    {
+        const auto m = SERIALIZE_FIND_MEMBER(stream, "Orientation");
+        if (m != stream.MemberEnd())
+            Deserialize(m->value, v.Orientation, modifier);
+    }
 }
 
 bool Serialization::ShouldSerialize(const Matrix& v, const void* otherObj)

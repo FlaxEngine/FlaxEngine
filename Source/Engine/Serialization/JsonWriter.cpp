@@ -343,18 +343,30 @@ void JsonWriter::Transform(const ::Transform& value)
 void JsonWriter::Transform(const ::Transform& value, const ::Transform* other)
 {
     StartObject();
-    if (!other || !Vector3::NearEqual(value.Translation, other->Translation))
+    if (other)
+    {
+        if (!Vector3::NearEqual(value.Translation, other->Translation))
+        {
+            JKEY("Translation");
+            Vector3(value.Translation);
+        }
+        if (!Quaternion::NearEqual(value.Orientation, other->Orientation))
+        {
+            JKEY("Orientation");
+            Quaternion(value.Orientation);
+        }
+        if (!Float3::NearEqual(value.Scale, other->Scale))
+        {
+            JKEY("Scale");
+            Float3(value.Scale);
+        }
+    }
+    else
     {
         JKEY("Translation");
         Vector3(value.Translation);
-    }
-    if (!other || !Quaternion::NearEqual(value.Orientation, other->Orientation))
-    {
         JKEY("Orientation");
         Quaternion(value.Orientation);
-    }
-    if (!other || !Float3::NearEqual(value.Scale, other->Scale))
-    {
         JKEY("Scale");
         Float3(value.Scale);
     }

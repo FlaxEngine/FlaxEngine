@@ -393,7 +393,7 @@ namespace Serialization
     FLAXENGINE_API bool ShouldSerialize(const Transform& v, const void* otherObj);
     inline void Serialize(ISerializable::SerializeStream& stream, const Transform& v, const void* otherObj)
     {
-        stream.Transform(v);
+        stream.Transform(v, (const Transform*)otherObj);
     }
     FLAXENGINE_API void Deserialize(ISerializable::DeserializeStream& stream, Transform& v, ISerializeModifier* modifier);
 
