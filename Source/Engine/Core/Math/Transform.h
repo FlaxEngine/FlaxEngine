@@ -90,18 +90,12 @@ public:
     /// <summary>
     /// Checks if transform is an identity transformation.
     /// </summary>
-    bool IsIdentity() const
-    {
-        return Translation.IsZero() && Orientation.IsIdentity() && Scale.IsOne();
-    }
+    bool IsIdentity() const;
 
     /// <summary>
     /// Returns true if transform has one or more components equal to +/- infinity or NaN.
     /// </summary>
-    bool IsNanOrInfinity() const
-    {
-        return Translation.IsNanOrInfinity() || Orientation.IsNanOrInfinity() || Scale.IsNanOrInfinity();
-    }
+    bool IsNanOrInfinity() const;
 
     /// <summary>
     /// Calculates the determinant of this transformation.
@@ -275,6 +269,25 @@ public:
     {
         Vector3 result;
         WorldToLocalVector(vector, result);
+        return result;
+    }
+
+    /// <summary>
+    /// Performs transformation of the given rotation in world space to the local space of this transform.
+    /// </summary>
+    /// <param name="rotation">The world space rotation.</param>
+    /// <param name="result">The local space rotation.</param>
+    void WorldToLocal(const Quaternion& rotation, Quaternion& result) const;
+
+    /// <summary>
+    /// Performs transformation of the given rotation in world space to the local space of this transform.
+    /// </summary>
+    /// <param name="rotation">The world space rotation.</param>
+    /// <returns>The local space rotation.</returns>
+    Quaternion WorldToLocal(const Quaternion& rotation) const
+    {
+        Quaternion result;
+        WorldToLocal(rotation, result);
         return result;
     }
 

@@ -319,13 +319,9 @@ void Actor::SetParent(Actor* value, bool worldPositionsStays, bool canBreakPrefa
     if (worldPositionsStays)
     {
         if (_parent)
-        {
-            _parent->GetTransform().WorldToLocal(prevTransform, _localTransform);
-        }
+            _parent->_transform.WorldToLocal(prevTransform, _localTransform);
         else
-        {
             _localTransform = prevTransform;
-        }
     }
 
     // Fire events
@@ -622,7 +618,7 @@ void Actor::SetTransform(const Transform& value)
     if (!(Vector3::NearEqual(_transform.Translation, value.Translation) && Quaternion::NearEqual(_transform.Orientation, value.Orientation, ACTOR_ORIENTATION_EPSILON) && Float3::NearEqual(_transform.Scale, value.Scale)))
     {
         if (_parent)
-            _parent->GetTransform().WorldToLocal(value, _localTransform);
+            _parent->_transform.WorldToLocal(value, _localTransform);
         else
             _localTransform = value;
         OnTransformChanged();
@@ -635,7 +631,7 @@ void Actor::SetPosition(const Vector3& value)
     if (!Vector3::NearEqual(_transform.Translation, value))
     {
         if (_parent)
-            _localTransform.Translation = _parent->GetTransform().WorldToLocal(value);
+            _localTransform.Translation = _parent->_transform.WorldToLocal(value);
         else
             _localTransform.Translation = value;
         OnTransformChanged();
@@ -648,16 +644,9 @@ void Actor::SetOrientation(const Quaternion& value)
     if (!Quaternion::NearEqual(_transform.Orientation, value, ACTOR_ORIENTATION_EPSILON))
     {
         if (_parent)
-        {
-            _localTransform.Orientation = _parent->GetOrientation();
-            _localTransform.Orientation.Invert();
-            Quaternion::Multiply(_localTransform.Orientation, value, _localTransform.Orientation);
-            _localTransform.Orientation.Normalize();
-        }
+            _parent->_transform.WorldToLocal(value, _localTransform.Orientation);
         else
-        {
             _localTransform.Orientation = value;
-        }
         OnTransformChanged();
     }
 }

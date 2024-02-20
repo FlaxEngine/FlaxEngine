@@ -18,6 +18,16 @@ String Transform::ToString() const
     return String::Format(TEXT("{}"), *this);
 }
 
+bool Transform::IsIdentity() const
+{
+    return Translation.IsZero() && Orientation.IsIdentity() && Scale.IsOne();
+}
+
+bool Transform::IsNanOrInfinity() const
+{
+    return Translation.IsNanOrInfinity() || Orientation.IsNanOrInfinity() || Scale.IsNanOrInfinity();
+}
+
 Matrix Transform::GetRotation() const
 {
     Matrix result;
@@ -186,6 +196,15 @@ void Transform::WorldToLocalVector(const Vector3& vector, Vector3& result) const
     const Quaternion invRotation = Orientation.Conjugated();
     Vector3::Transform(vector, invRotation, result);
     result *= invScale;
+}
+
+void Transform::WorldToLocal(const Quaternion& rotation, Quaternion& result) const
+{
+    Quaternion orientation = Orientation;
+    orientation.Conjugate();
+    Quaternion::Multiply(orientation, rotation, orientation);
+    orientation.Normalize();
+    result = orientation;
 }
 
 Float3 Transform::GetRight() const
