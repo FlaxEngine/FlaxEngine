@@ -1320,7 +1320,7 @@ bool ModelTool::ImportModel(const String& path, ModelData& data, Options& option
         !
 #endif
     }
-    if (EnumHasAnyFlags(options.ImportTypes, ImportDataTypes::Geometry) && !(options.Type == ModelType::Prefab))
+    if (EnumHasAnyFlags(options.ImportTypes, ImportDataTypes::Geometry) && options.Type != ModelType::Prefab)
     {
         // Perform simple nodes mapping to single node (will transform meshes to model local space)
         SkeletonMapping<ModelDataNode> skeletonMapping(data.Nodes, nullptr);
@@ -1340,7 +1340,7 @@ bool ModelTool::ImportModel(const String& path, ModelData& data, Options& option
                 if (skeletonMapping.SourceToSource[mesh.NodeIndex] != mesh.NodeIndex)
                 {
                     // Transform vertices
-                    auto transformationMatrix = hierarchyUpdater.CombineMatricesFromNodeIndices(skeletonMapping.SourceToSource[mesh.NodeIndex], mesh.NodeIndex);
+                    const Matrix transformationMatrix = hierarchyUpdater.CombineMatricesFromNodeIndices(skeletonMapping.SourceToSource[mesh.NodeIndex], mesh.NodeIndex);
 
                     if (!transformationMatrix.IsIdentity())
                         mesh.TransformBuffer(transformationMatrix);
@@ -1360,7 +1360,6 @@ bool ModelTool::ImportModel(const String& path, ModelData& data, Options& option
             {
                 auto& mesh = *data.LODs[lodIndex].Meshes[meshIndex];
                 auto& node = data.Nodes[mesh.NodeIndex];
-
                 auto currentNode = &data.Nodes[mesh.NodeIndex];
 
                 Vector3 scale = Vector3::One;
@@ -1369,11 +1368,8 @@ bool ModelTool::ImportModel(const String& path, ModelData& data, Options& option
                 {
                     scale *= currentNode->LocalTransform.Scale;
                     rotation *= currentNode->LocalTransform.Orientation;
-
                     if (currentNode->ParentIndex == -1)
-                    {
                         break;
-                    }
                     currentNode = &data.Nodes[currentNode->ParentIndex];
                 }
 

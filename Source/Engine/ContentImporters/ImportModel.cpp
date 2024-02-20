@@ -269,7 +269,7 @@ CreateAssetResult ImportModel::Import(CreateAssetContext& context)
 
         // Import all of the objects recursive but use current model data to skip loading file again
         options.Cached = &cached;
-        Function<bool(Options& splitOptions, const StringView& objectName, String& outputPath, MeshData& meshData)> splitImport = [&context, &autoImportOutput](Options& splitOptions, const StringView& objectName, String& outputPath, MeshData& meshData)
+        Function<bool(Options& splitOptions, const StringView& objectName, String& outputPath, MeshData* meshData)> splitImport = [&context, &autoImportOutput](Options& splitOptions, const StringView& objectName, String& outputPath, MeshData* meshData)
         {
             // Recursive importing of the split object
             String postFix = objectName;
@@ -280,19 +280,19 @@ CreateAssetResult ImportModel::Import(CreateAssetContext& context)
             outputPath = autoImportOutput / String(StringUtils::GetFileNameWithoutExtension(context.TargetAssetPath)) + TEXT(" ") + postFix + TEXT(".flax");
             splitOptions.SubAssetFolder = TEXT(" "); // Use the same folder as asset as they all are imported to the subdir for the prefab (see SubAssetFolder usage above)
 
-            if (splitOptions.Type == ModelTool::ModelType::Model)
+            if (splitOptions.Type == ModelTool::ModelType::Model && meshData)
             {
-                // These settings interfere with submesh reimporting.
+                // These settings interfere with submesh reimporting
                 splitOptions.CenterGeometry = false;
                 splitOptions.UseLocalOrigin = false;
 
-                // This properly sets the transformation of the mesh during reimport.
+                // This properly sets the transformation of the mesh during reimport
                 auto* nodes = &splitOptions.Cached->Data->Nodes;
                 Vector3 scale = Vector3::One;
 
                 // TODO: Improve this hack.
-                // This is the same hack as in ImportModel::CreatePrefab(), and it is documented further there.
-                auto* currentNode = &(*nodes)[meshData.NodeIndex];
+                // This is the same hack as in ImportModel::CreatePrefab(), and it is documented further there
+                auto* currentNode = &(*nodes)[meshData->NodeIndex];
                 while (true)
                 {
                     if (currentNode->ParentIndex == -1)
@@ -303,7 +303,7 @@ CreateAssetResult ImportModel::Import(CreateAssetContext& context)
                     currentNode = &(*nodes)[currentNode->ParentIndex];
                 }
 
-                splitOptions.Translation = meshData.OriginTranslation * scale * -1.0f;
+                splitOptions.Translation = meshData->OriginTranslation * scale * -1.0f;
             }
 
             return AssetsImportingManager::Import(context.InputPath, outputPath, &splitOptions);
@@ -321,7 +321,7 @@ CreateAssetResult ImportModel::Import(CreateAssetContext& context)
 
             splitOptions.Type = ModelTool::ModelType::Model;
             splitOptions.ObjectIndex = groupIndex;
-            if (!splitImport(splitOptions, group.GetKey(), prefabObject.AssetPath, *group.First()))
+            if (!splitImport(splitOptions, group.GetKey(), prefabObject.AssetPath, group.First()))
             {
                 prefabObjects.Add(prefabObject);
             }
@@ -332,9 +332,7 @@ CreateAssetResult ImportModel::Import(CreateAssetContext& context)
             auto& animation = data->Animations[i];
             splitOptions.Type = ModelTool::ModelType::Animation;
             splitOptions.ObjectIndex = i;
-
-            MeshData empty;
-            splitImport(splitOptions, animation.Name, prefabObject.AssetPath, empty);
+            splitImport(splitOptions, animation.Name, prefabObject.AssetPath, nullptr);
         }
     }
     else if (options.SplitObjects)
@@ -390,7 +388,7 @@ CreateAssetResult ImportModel::Import(CreateAssetContext& context)
         auto& group = meshesByName[options.ObjectIndex];
         if (&dataThis == data)
         {
-            // Use meshes only from the the grouping (others will be removed manually)
+            // Use meshes only from the grouping (others will be removed manually)
             {
                 auto& lod = dataThis.LODs[0];
                 meshesToDelete.Add(lod.Meshes);
