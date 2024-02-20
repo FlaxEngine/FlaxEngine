@@ -398,7 +398,7 @@ namespace FlaxEditor.Windows.Assets
             if (parentActor != null)
             {
                 // Match the parent
-                actor.Transform = parentActor.Transform;
+                actor.LocalTransform = Transform.Identity;
                 actor.StaticFlags = parentActor.StaticFlags;
                 actor.Layer = parentActor.Layer;
 
