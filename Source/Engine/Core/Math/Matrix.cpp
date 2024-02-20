@@ -101,7 +101,7 @@ void Matrix::Decompose(Float3& scale, Float3& translation) const
 
 void Matrix::Decompose(Transform& transform) const
 {
-    Matrix rotationMatrix;
+    Matrix3x3 rotationMatrix;
     Float3 translation;
     Decompose(transform.Scale, rotationMatrix, translation);
     transform.Translation = translation;
@@ -110,12 +110,12 @@ void Matrix::Decompose(Transform& transform) const
 
 void Matrix::Decompose(Float3& scale, Quaternion& rotation, Float3& translation) const
 {
-    Matrix rotationMatrix;
+    Matrix3x3 rotationMatrix;
     Decompose(scale, rotationMatrix, translation);
     Quaternion::RotationMatrix(rotationMatrix, rotation);
 }
 
-void Matrix::Decompose(Float3& scale, Matrix& rotation, Float3& translation) const
+void Matrix::Decompose(Float3& scale, Matrix3x3& rotation, Float3& translation) const
 {
     // Get the translation
     translation = Float3(M41, M42, M43);
@@ -127,7 +127,7 @@ void Matrix::Decompose(Float3& scale, Matrix& rotation, Float3& translation) con
         Math::Sqrt(M31 * M31 + M32 * M32 + M33 * M33));
 
     // If any of the scaling factors are zero, than the rotation matrix can not exist
-    rotation = Identity;
+    rotation = Matrix3x3::Identity;
     if (scale.IsAnyZero())
         return;
 
@@ -143,6 +143,14 @@ void Matrix::Decompose(Float3& scale, Matrix& rotation, Float3& translation) con
     scale.X = Float3::Dot(right, GetRight()) > 0.0f ? scale.X : -scale.X;
     scale.Y = Float3::Dot(up, GetUp()) > 0.0f ? scale.Y : -scale.Y;
     scale.Z = Float3::Dot(at, GetBackward()) > 0.0f ? scale.Z : -scale.Z;
+}
+
+void Matrix::Decompose(Float3& scale, Matrix& rotation, Float3& translation) const
+{
+    // [Deprecated on 20.02.2024, expires on 20.02.2026]
+    Matrix3x3 r;
+    Decompose(scale, r, translation);
+    rotation = Matrix(r);
 }
 
 Matrix Matrix::Transpose(const Matrix& value)

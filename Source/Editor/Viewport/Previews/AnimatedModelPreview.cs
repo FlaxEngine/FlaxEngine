@@ -342,7 +342,7 @@ namespace FlaxEditor.Viewport.Previews
                             if (nodesMask != null && !nodesMask[nodeIndex])
                                 continue;
                             var transform = pose[nodeIndex];
-                            transform.Decompose(out var scale, out Matrix _, out _);
+                            transform.Decompose(out var scale, out Matrix3x3 _, out _);
                             transform = Matrix.Invert(Matrix.Scaling(scale)) * transform;
                             var box = localBox * transform;
                             DebugDraw.DrawWireBox(box, Color.Green, 0, false);

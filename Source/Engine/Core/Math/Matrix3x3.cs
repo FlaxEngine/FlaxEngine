@@ -186,6 +186,23 @@ namespace FlaxEngine
         }
 
         /// <summary>
+        /// Initializes a new instance of the <see cref="Matrix3x3" /> struct.
+        /// </summary>
+        /// <param name="m">The rotation/scale matrix.</param>
+        public Matrix3x3(Matrix m)
+        {
+            M11 = m.M11;
+            M12 = m.M12;
+            M13 = m.M13;
+            M21 = m.M21;
+            M22 = m.M22;
+            M23 = m.M23;
+            M31 = m.M31;
+            M32 = m.M32;
+            M33 = m.M33;
+        }
+
+        /// <summary>
         /// Gets or sets the first row in the Matrix3x3; that is M11, M12, M13
         /// </summary>
         public Float3 Row1

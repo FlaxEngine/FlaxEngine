@@ -18,17 +18,20 @@ API_STRUCT() struct FLAXENGINE_API Transform
     /// <summary>
     /// The translation vector of the transform.
     /// </summary>
-    API_FIELD(Attributes="EditorOrder(10), EditorDisplay(null, \"Position\")") Vector3 Translation;
+    API_FIELD(Attributes="EditorOrder(10), EditorDisplay(null, \"Position\")")
+    Vector3 Translation;
 
     /// <summary>
     /// The rotation of the transform.
     /// </summary>
-    API_FIELD(Attributes="EditorOrder(20), EditorDisplay(null, \"Rotation\")") Quaternion Orientation;
+    API_FIELD(Attributes="EditorOrder(20), EditorDisplay(null, \"Rotation\")")
+    Quaternion Orientation;
 
     /// <summary>
     /// The scale vector of the transform.
     /// </summary>
-    API_FIELD(Attributes="EditorOrder(30), Limit(float.MinValue, float.MaxValue, 0.01f)") Float3 Scale;
+    API_FIELD(Attributes="EditorOrder(30), Limit(float.MinValue, float.MaxValue, 0.01f)")
+    Float3 Scale;
 
 public:
     /// <summary>
