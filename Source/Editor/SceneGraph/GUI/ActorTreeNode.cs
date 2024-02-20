@@ -658,8 +658,11 @@ namespace FlaxEditor.SceneGraph.GUI
                         }
                     }
                     actor.Name = item.ShortName;
-                    actor.Transform = spawnParent.Transform;
+                    if (_dragAssets.Objects[i] is not PrefabItem p)
+                        actor.Transform = Transform.Identity;
+                    var previousTrans = actor.Transform;
                     ActorNode.Root.Spawn(actor, spawnParent);
+                    actor.LocalTransform = previousTrans;
                     actor.OrderInParent = newOrder;
                 }
                 result = DragDropEffect.Move;
