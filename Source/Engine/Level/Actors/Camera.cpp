@@ -378,7 +378,7 @@ void Camera::UpdateCache()
 
     // Update editor preview model cache
     Matrix rot, tmp, world;
-    _transform.GetWorld(tmp);
+    GetLocalToWorldMatrix(tmp);
     Matrix::RotationY(PI * -0.5f, rot);
     Matrix::Multiply(rot, tmp, world);
 

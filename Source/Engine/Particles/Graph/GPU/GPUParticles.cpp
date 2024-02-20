@@ -233,11 +233,9 @@ void GPUParticles::Execute(GPUContext* context, ParticleEmitter* emitter, Partic
         else
         {
             Matrix worldMatrix;
-            const Transform transform = effect->GetTransform();
+            effect->GetLocalToWorldMatrix(worldMatrix);
             if (viewTask)
-                viewTask->View.GetWorldMatrix(transform, worldMatrix);
-            else
-                transform.GetWorld(worldMatrix);
+                viewTask->View.GetWorldMatrix(worldMatrix);
             Matrix::Transpose(worldMatrix, cbData->WorldMatrix);
             worldMatrix.Invert();
             Matrix::Transpose(worldMatrix, cbData->InvWorldMatrix);

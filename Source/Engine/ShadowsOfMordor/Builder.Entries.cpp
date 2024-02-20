@@ -64,7 +64,7 @@ bool cacheStaticGeometryTree(Actor* actor, ShadowsOfMordor::Builder::SceneBuildC
             if (useLightmap && anyValid && entry.Scale > ZeroTolerance)
             {
                 Matrix worldMatrix;
-                staticModel->GetTransform().GetWorld(worldMatrix);
+                staticModel->GetLocalToWorldMatrix(worldMatrix);
                 entry.Box = model->GetBox(worldMatrix);
                 results.Add(entry);
             }

@@ -657,7 +657,7 @@ void Actor::SetScale(const Float3& value)
     if (!Float3::NearEqual(_transform.Scale, value))
     {
         if (_parent)
-            Float3::Divide(value, _parent->GetScale(), _localTransform.Scale);
+            Float3::Divide(value, _parent->_transform.Scale, _localTransform.Scale);
         else
             _localTransform.Scale = value;
         OnTransformChanged();
@@ -753,8 +753,23 @@ void Actor::AddMovement(const Vector3& translation, const Quaternion& rotation)
 
 void Actor::GetWorldToLocalMatrix(Matrix& worldToLocal) const
 {
-    _transform.GetWorld(worldToLocal);
+    GetLocalToWorldMatrix(worldToLocal);
     worldToLocal.Invert();
+}
+
+void Actor::GetLocalToWorldMatrix(Matrix& localToWorld) const
+{
+#if 0
+    _transform.GetWorld(localToWorld);
+#else
+    _localTransform.GetWorld(localToWorld);
+    if (_parent)
+    {
+        Matrix parentToWorld;
+        _parent->GetLocalToWorldMatrix(parentToWorld);
+        localToWorld = localToWorld * parentToWorld;
+    }
+#endif
 }
 
 void Actor::LinkPrefab(const Guid& prefabId, const Guid& prefabObjectId)

@@ -658,7 +658,7 @@ namespace FlaxEditor.SceneGraph.GUI
                         }
                     }
                     actor.Name = item.ShortName;
-                    if (_dragAssets.Objects[i] is not PrefabItem p)
+                    if (_dragAssets.Objects[i] is not PrefabItem)
                         actor.Transform = Transform.Identity;
                     var previousTrans = actor.Transform;
                     ActorNode.Root.Spawn(actor, spawnParent);

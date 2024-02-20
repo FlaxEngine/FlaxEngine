@@ -467,7 +467,7 @@ void Spline::UpdateSpline()
     for (int32 i = 1; i < count; i++)
         _localBounds.Merge(keyframes[i].Value.Translation);
     Matrix world;
-    _transform.GetWorld(world);
+    GetLocalToWorldMatrix(world);
     BoundingBox::Transform(_localBounds, world, _box);
 
     SplineUpdated();
@@ -542,7 +542,7 @@ void Spline::OnTransformChanged()
     Actor::OnTransformChanged();
 
     Matrix world;
-    _transform.GetWorld(world);
+    GetLocalToWorldMatrix(world);
     BoundingBox::Transform(_localBounds, world, _box);
     BoundingSphere::FromBox(_box, _sphere);
 }
@@ -560,7 +560,7 @@ void Spline::Initialize()
     for (int32 i = 1; i < count; i++)
         _localBounds.Merge(keyframes[i].Value.Translation);
     Matrix world;
-    _transform.GetWorld(world);
+    GetLocalToWorldMatrix(world);
     BoundingBox::Transform(_localBounds, world, _box);
 }
 

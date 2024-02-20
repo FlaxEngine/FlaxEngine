@@ -213,7 +213,7 @@ void SpriteRender::OnTransformChanged()
 
     const BoundingSphere localSphere(Vector3::Zero, _size.Length());
     Matrix world;
-    _transform.GetWorld(world);
+    GetLocalToWorldMatrix(world);
     BoundingSphere::Transform(localSphere, world, _sphere);
     BoundingBox::FromSphere(_sphere, _box);
     if (_sceneRenderingKey != -1)
