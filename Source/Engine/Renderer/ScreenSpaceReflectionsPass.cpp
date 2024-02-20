@@ -176,6 +176,8 @@ void ScreenSpaceReflectionsPass::Render(RenderContext& renderContext, GPUTexture
     // Prepare resolutions for passes
     const int32 width = buffers->GetWidth();
     const int32 height = buffers->GetHeight();
+    if (width < 4 || height < 4)
+        return;
     const int32 traceWidth = width / static_cast<int32>(settings.RayTracePassResolution);
     const int32 traceHeight = height / static_cast<int32>(settings.RayTracePassResolution);
     const int32 resolveWidth = width / static_cast<int32>(settings.RayTracePassResolution);
