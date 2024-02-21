@@ -134,9 +134,13 @@ namespace FlaxEditor.GUI
                         Render2D.FillRectangle(rect, color);
                     }
                 }
+                // Indent for drop panel items is handled by drop panel margin
+                var indent = Float2.Zero;
+                if (Parent is not DropPanel)
+                    indent = new Float2(Editor.Instance.Icons.ArrowRight12.Size.X + 2, 0);
 
                 // Draw name
-                Render2D.DrawText(style.FontSmall, Name, textRect, TintColor * (Enabled ? style.Foreground : style.ForegroundDisabled), TextAlignment.Near, TextAlignment.Center);
+                Render2D.DrawText(style.FontSmall, Name, textRect + indent, TintColor * (Enabled ? style.Foreground : style.ForegroundDisabled), TextAlignment.Near, TextAlignment.Center);
             }
 
             /// <inheritdoc />
@@ -338,9 +342,14 @@ namespace FlaxEditor.GUI
                     var categoryPanel = new DropPanel
                     {
                         HeaderText = item.Category,
+                        ArrowImageOpened = new SpriteBrush(Editor.Instance.Icons.ArrowDown12),
+                        ArrowImageClosed = new SpriteBrush(Editor.Instance.Icons.ArrowRight12),
+                        EnableDropDownIcon = true,
+                        ItemsMargin = new Margin(28, 0, 2, 2),
+                        HeaderColor = Style.Current.Background,
                         Parent = parent,
                     };
-                    categoryPanel.Open(false);
+                    categoryPanel.Close(false);
                     _categoryPanels.Add(categoryPanel);
                     parent = categoryPanel;
                 }

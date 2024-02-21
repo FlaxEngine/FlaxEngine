@@ -10,7 +10,7 @@
 /// Actor script component that synchronizes the Transform over the network.
 /// </summary>
 /// <remarks>Interpolation and prediction logic based on https://www.gabrielgambetta.com/client-server-game-architecture.html.</remarks>
-API_CLASS(Namespace="FlaxEngine.Networking") class FLAXENGINE_API NetworkTransform : public Script, public INetworkSerializable
+API_CLASS(Namespace="FlaxEngine.Networking", Attributes="Category(\"Flax Engine\")") class FLAXENGINE_API NetworkTransform : public Script, public INetworkSerializable
 {
     API_AUTO_SERIALIZATION();
     DECLARE_SCRIPTING_TYPE(NetworkTransform);
