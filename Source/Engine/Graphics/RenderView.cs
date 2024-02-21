@@ -30,6 +30,7 @@ namespace FlaxEngine
             Frustum = new BoundingFrustum(ref viewProjection);
             Matrix.Invert(ref viewProjection, out IVP);
             CullingFrustum = Frustum;
+            NonJitteredProjection = Projection;
         }
 
         /// <summary>
