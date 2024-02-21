@@ -557,7 +557,21 @@ namespace FlaxEditor.Surface
                 _middleMouseDown = false;
                 EndMouseCapture();
                 Cursor = CursorType.Default;
-                _mouseMoveAmount = 0;
+                if (_mouseMoveAmount > 0)
+                    _mouseMoveAmount = 0;
+                else if (CanEdit)
+                {
+                    // Surface was not moved with MMB so try to remove connection underneath
+                    var mousePos = _rootControl.PointFromParent(ref location);
+                    if (IntersectsConnection(mousePos, out InputBox inputBox, out OutputBox outputBox))
+                    {
+                        var action = new EditNodeConnections(inputBox.ParentNode.Context, inputBox.ParentNode);
+                        inputBox.BreakConnection(outputBox);
+                        action.End();
+                        AddBatchedUndoAction(action);
+                        MarkAsEdited();
+                    }
+                }
             }
 
             // Base
