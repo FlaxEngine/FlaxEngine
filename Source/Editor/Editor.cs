@@ -1395,7 +1395,7 @@ namespace FlaxEditor
         internal void BuildCommand(string arg)
         {
             if (TryBuildCommand(arg))
-                Engine.RequestExit();
+                Engine.RequestExit(1);
         }
 
         private bool TryBuildCommand(string arg)

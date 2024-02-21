@@ -1006,7 +1006,12 @@ namespace FlaxEditor.Windows
                     _preBuildAction = target.PreBuildAction;
                     _postBuildAction = target.PostBuildAction;
 
-                    GameCooker.Build(target.Platform, target.Mode, target.Output, item.Options, target.CustomDefines, item.PresetName, target.Name);
+                    bool failed = GameCooker.Build(target.Platform, target.Mode, target.Output, item.Options, target.CustomDefines, item.PresetName, target.Name);
+                    if (failed && _exitOnBuildEnd)
+                    {
+                        _exitOnBuildEnd = false;
+                        Engine.RequestExit(1);
+                    }
                 }
                 else if (_exitOnBuildEnd)
                 {

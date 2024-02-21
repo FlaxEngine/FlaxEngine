@@ -241,6 +241,8 @@ void Engine::Exit(int32 exitCode)
 
 void Engine::RequestExit(int32 exitCode)
 {
+    if (Globals::IsRequestingExit)
+        return;
 #if USE_EDITOR
     // Send to editor (will leave play mode if need to)
     if (Editor::Managed->OnAppExit())
