@@ -207,12 +207,11 @@ void PostFxMaterialsSettings::BlendWith(PostFxMaterialsSettings& other, float we
     if (isHalf)
     {
         int32 indexSrc = 0;
-        const AssetReference<MaterialBase>* materialsSrc = other.Materials.Get();
+        const SoftAssetReference<MaterialBase>* materialsSrc = other.Materials.Get();
         while (Materials.Count() != POST_PROCESS_SETTINGS_MAX_MATERIALS && indexSrc < other.Materials.Count())
         {
-            MaterialBase* mat = materialsSrc[indexSrc].Get();
-            if (mat && !Materials.Contains(mat))
-                Materials.Add(mat);
+            if (!Materials.Contains(materialsSrc[indexSrc].GetID()))
+                Materials.Add(materialsSrc[indexSrc]);
             indexSrc++;
         }
     }

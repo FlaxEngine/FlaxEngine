@@ -347,6 +347,31 @@ struct MConverter<AssetReference<T>>
     }
 };
 
+// TODO: use MarshalAs=Guid on SoftAssetReference to pass guid over bindings and not load asset in glue code
+template<typename T>
+class SoftAssetReference;
+template<typename T>
+struct MConverter<SoftAssetReference<T>>
+{
+    void ToManagedArray(MArray* result, const Span<SoftAssetReference<T>>& data)
+    {
+        if (data.Length() == 0)
+            return;
+        MObject** objects = (MObject**)Allocator::Allocate(data.Length() * sizeof(MObject*));
+        for (int32 i = 0; i < data.Length(); i++)
+            objects[i] = data[i].GetManagedInstance();
+        MCore::GC::WriteArrayRef(result, Span<MObject*>(objects, data.Length()));
+        Allocator::Free(objects);
+    }
+
+    void ToNativeArray(Span<SoftAssetReference<T>>& result, const MArray* data)
+    {
+        MObject** dataPtr = MCore::Array::GetAddress<MObject*>(data);
+        for (int32 i = 0; i < result.Length(); i++)
+            result.Get()[i] = (T*)ScriptingObject::ToNative(dataPtr[i]);
+    }
+};
+
 // Converter for Array.
 template<typename T>
 struct MConverter<Array<T>>
