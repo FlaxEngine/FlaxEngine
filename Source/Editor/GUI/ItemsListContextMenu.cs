@@ -266,6 +266,10 @@ namespace FlaxEditor.GUI
                         }
                     }
                     category.Visible = anyVisible;
+                    if (string.IsNullOrEmpty(_searchBox.Text))
+                        category.Close(false);
+                    else
+                        category.Open(false);
                 }
             }
 
@@ -391,6 +395,7 @@ namespace FlaxEditor.GUI
                             item2.UpdateFilter(null);
                     }
                     category.Visible = true;
+                    category.Close(false);
                 }
             }
 
