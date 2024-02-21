@@ -68,7 +68,7 @@ public:
     }
 };
 
-#if NDEBUG
+#if !BUILD_RELEASE // cheak it in none relise builds
 #define INTERNAL_FACTORY_REGISTER_CHEAK(type)\
 if (IAssetFactory::Get().ContainsKey(type::TypeName)) \
 { \
