@@ -912,6 +912,8 @@ bool Content::IsAssetTypeIdInvalid(const ScriptingTypeHandle& type, const Script
     return true;
 }
 
+Dictionary<StringView, IAssetFactory*> IAssetFactory::Factories;
+
 Asset* Content::LoadAsync(const Guid& id, const ScriptingTypeHandle& type)
 {
     if (!id.IsValid())
