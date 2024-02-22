@@ -38,6 +38,65 @@ const Array<WheeledVehicle::Wheel>& WheeledVehicle::GetWheels() const
     return _wheels;
 }
 
+WheeledVehicle::DriveControlSettings WheeledVehicle::GetDriveControl() const
+{
+    return _driveControl;
+}
+
+void WheeledVehicle::SetDriveControl(DriveControlSettings& value)
+{
+    value.RiseRateAcceleration = Math::Max(value.RiseRateAcceleration, 0.01f);
+    value.RiseRateBrake = Math::Max(value.RiseRateBrake, 0.01f);
+    value.RiseRateHandBrake = Math::Max(value.RiseRateHandBrake, 0.01f);
+    value.RiseRateSteer = Math::Max(value.RiseRateSteer, 0.01f);
+
+    value.FallRateAcceleration = Math::Max(value.FallRateAcceleration, 0.01f);
+    value.FallRateBrake = Math::Max(value.FallRateBrake, 0.01f);
+    value.FallRateHandBrake = Math::Max(value.FallRateHandBrake, 0.01f);
+    value.FallRateSteer = Math::Max(value.FallRateSteer, 0.01f);
+
+    // Don't let have an invalid steer vs speed list.
+    if (value.SteerVsSpeed.Count() < 1)
+        value.SteerVsSpeed.Add(WheeledVehicle::SteerControl());
+    else // physx backend requires the max of 4 values only
+        while (value.SteerVsSpeed.Count() > 4)
+            value.SteerVsSpeed.RemoveLast();
+
+    // Maintain all values clamped to have a ordened speed list
+    int steerVsSpeedCount = value.SteerVsSpeed.Count();
+    for (int i = 0; i < steerVsSpeedCount; i++)
+    {
+        // Apply only on changed value
+        if (_driveControl.SteerVsSpeed[i].Speed != value.SteerVsSpeed[i].Speed || _driveControl.SteerVsSpeed[i].Steer != value.SteerVsSpeed[i].Steer)
+        {
+            WheeledVehicle::SteerControl& steerVsSpeed = value.SteerVsSpeed[i];
+            steerVsSpeed.Steer = Math::Saturate(steerVsSpeed.Steer);
+            steerVsSpeed.Speed = Math::Max(steerVsSpeed.Speed, 10.0f);
+
+            // Clamp speeds to have an ordened list.
+            if (i >= 1)
+            {
+                WheeledVehicle::SteerControl& lastSteerVsSpeed = value.SteerVsSpeed[i - 1];
+                WheeledVehicle::SteerControl& nextSteerVsSpeed = value.SteerVsSpeed[Math::Clamp(i + 1, 0, steerVsSpeedCount - 1)];
+                float minSpeed = lastSteerVsSpeed.Speed;
+                float maxSpeed = nextSteerVsSpeed.Speed;
+
+                if (i + 1 < steerVsSpeedCount - 1)
+                    steerVsSpeed.Speed = Math::Clamp(steerVsSpeed.Speed, minSpeed, maxSpeed);
+                else
+                    steerVsSpeed.Speed = Math::Max(steerVsSpeed.Speed, minSpeed);
+            }
+            else if (steerVsSpeedCount > 1)
+            {
+                WheeledVehicle::SteerControl& nextSteerVsSpeed = value.SteerVsSpeed[i + 1];
+                steerVsSpeed.Speed = Math::Min(steerVsSpeed.Speed, nextSteerVsSpeed.Speed);
+            }
+        }
+    }
+
+    _driveControl = value;
+}
+
 void WheeledVehicle::SetWheels(const Array<Wheel>& value)
 {
 #if WITH_VEHICLE
@@ -49,9 +108,7 @@ void WheeledVehicle::SetWheels(const Array<Wheel>& value)
         {
             auto& oldWheel = _wheels.Get()[wheelIndex];
             auto& newWheel = value.Get()[wheelIndex];
-            if (oldWheel.Type != newWheel.Type ||
-                Math::NotNearEqual(oldWheel.SuspensionForceOffset, newWheel.SuspensionForceOffset) ||
-                oldWheel.Collider != newWheel.Collider)
+            if (Math::NotNearEqual(oldWheel.SuspensionForceOffset, newWheel.SuspensionForceOffset) || oldWheel.Collider != newWheel.Collider)
             {
                 softUpdate = false;
                 break;
@@ -111,6 +168,20 @@ void WheeledVehicle::SetGearbox(const GearboxSettings& value)
     _gearbox = value;
 }
 
+void WheeledVehicle::SetAntiRollBars(const Array<AntiRollBar>& value)
+{
+    _antiRollBars = value;
+#if WITH_VEHICLE
+    if (_vehicle)
+        PhysicsBackend::UpdateVehicleAntiRollBars(this);
+#endif
+}
+
+const Array<WheeledVehicle::AntiRollBar>& WheeledVehicle::GetAntiRollBars() const
+{
+    return _antiRollBars;
+}
+
 void WheeledVehicle::SetThrottle(float value)
 {
     _throttle = Math::Clamp(value, -1.0f, 1.0f);
@@ -123,12 +194,35 @@ void WheeledVehicle::SetSteering(float value)
 
 void WheeledVehicle::SetBrake(float value)
 {
-    _brake = Math::Saturate(value);
+    value = Math::Saturate(value);
+    _brake = value;
+    _tankLeftBrake = value;
+    _tankRightBrake = value;
 }
 
 void WheeledVehicle::SetHandbrake(float value)
 {
     _handBrake = Math::Saturate(value);
+}
+
+void WheeledVehicle::SetTankLeftThrottle(float value)
+{
+    _tankLeftThrottle = Math::Clamp(value, -1.0f, 1.0f);
+}
+
+void WheeledVehicle::SetTankRightThrottle(float value)
+{
+    _tankRightThrottle = Math::Clamp(value, -1.0f, 1.0f);
+}
+
+void WheeledVehicle::SetTankLeftBrake(float value)
+{
+    _tankLeftBrake = Math::Saturate(value);
+}
+
+void WheeledVehicle::SetTankRightBrake(float value)
+{
+    _tankRightBrake = Math::Saturate(value);
 }
 
 void WheeledVehicle::ClearInput()
@@ -137,6 +231,10 @@ void WheeledVehicle::ClearInput()
     _steering = 0;
     _brake = 0;
     _handBrake = 0;
+    _tankLeftThrottle = 0;
+    _tankRightThrottle = 0;
+    _tankLeftBrake = 0;
+    _tankRightBrake = 0;
 }
 
 float WheeledVehicle::GetForwardSpeed() const
@@ -223,7 +321,7 @@ void WheeledVehicle::Setup()
         return;
 
     // Release previous
-    void* scene = GetPhysicsScene()->GetPhysicsScene();
+    void *scene = GetPhysicsScene()->GetPhysicsScene();
     if (_vehicle)
     {
         PhysicsBackend::RemoveVehicle(scene, this);
@@ -316,6 +414,21 @@ void WheeledVehicle::OnDebugDrawSelected()
         }
     }
 
+    // Draw anti roll bars axes
+    int wheelsCount = _wheels.Count();
+    for (int i = 0; i < GetAntiRollBars().Count(); i++)
+    {
+        int axleIndex = GetAntiRollBars()[i].Axle;
+        int leftWheelIndex = axleIndex * 2;
+        int rightWheelIndex = leftWheelIndex + 1;
+
+        if (leftWheelIndex >= wheelsCount || rightWheelIndex >= wheelsCount)
+            continue;
+        if (!_wheels[leftWheelIndex].Collider || !_wheels[rightWheelIndex].Collider)
+            continue;
+
+        DEBUG_DRAW_LINE(_wheels[leftWheelIndex].Collider->GetPosition(), _wheels[rightWheelIndex].Collider->GetPosition(), Color::Yellow, 0, false);
+    }
     // Center of mass
     DEBUG_DRAW_WIRE_SPHERE(BoundingSphere(_transform.LocalToWorld(_centerOfMassOffset), 10.0f), Color::Blue, 0, false);
 
@@ -324,7 +437,7 @@ void WheeledVehicle::OnDebugDrawSelected()
 
 #endif
 
-void WheeledVehicle::Serialize(SerializeStream& stream, const void* otherObj)
+void WheeledVehicle::Serialize(SerializeStream& stream, const void *otherObj)
 {
     RigidBody::Serialize(stream, otherObj);
 
@@ -332,30 +445,34 @@ void WheeledVehicle::Serialize(SerializeStream& stream, const void* otherObj)
 
     SERIALIZE_MEMBER(DriveType, _driveType);
     SERIALIZE_MEMBER(Wheels, _wheels);
+    SERIALIZE_MEMBER(DriveControl, _driveControl);
     SERIALIZE(UseReverseAsBrake);
     SERIALIZE(UseAnalogSteering);
     SERIALIZE_MEMBER(Engine, _engine);
     SERIALIZE_MEMBER(Differential, _differential);
     SERIALIZE_MEMBER(Gearbox, _gearbox);
+    SERIALIZE_MEMBER(AntiRollBars, _antiRollBars);
 }
 
-void WheeledVehicle::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)
+void WheeledVehicle::Deserialize(DeserializeStream& stream, ISerializeModifier *modifier)
 {
     RigidBody::Deserialize(stream, modifier);
 
     DESERIALIZE_MEMBER(DriveType, _driveType);
     DESERIALIZE_MEMBER(Wheels, _wheels);
+    DESERIALIZE_MEMBER(DriveControl, _driveControl);
     DESERIALIZE(UseReverseAsBrake);
     DESERIALIZE(UseAnalogSteering);
     DESERIALIZE_MEMBER(Engine, _engine);
     DESERIALIZE_MEMBER(Differential, _differential);
     DESERIALIZE_MEMBER(Gearbox, _gearbox);
+    DESERIALIZE_MEMBER(AntiRollBars, _antiRollBars);
 
     // [Deprecated on 13.06.2023, expires on 13.06.2025]
     _fixInvalidForwardDir |= modifier->EngineBuild < 6341;
 }
 
-void WheeledVehicle::OnColliderChanged(Collider* c)
+void WheeledVehicle::OnColliderChanged(Collider *c)
 {
     RigidBody::OnColliderChanged(c);
 
@@ -378,7 +495,7 @@ void WheeledVehicle::OnActiveInTreeChanged()
         Setup();
 }
 
-void WheeledVehicle::OnPhysicsSceneChanged(PhysicsScene* previous)
+void WheeledVehicle::OnPhysicsSceneChanged(PhysicsScene *previous)
 {
     RigidBody::OnPhysicsSceneChanged(previous);
 
@@ -401,9 +518,10 @@ void WheeledVehicle::OnTransformChanged()
         // Transform all vehicle children around the vehicle origin to fix the vehicle facing direction
         const Quaternion rotationDelta(0.0f, -0.7071068f, 0.0f, 0.7071068f);
         const Vector3 origin = GetPosition();
-        for (Actor* child : Children)
+        for (Actor *child : Children)
         {
-            Transform trans = child->GetTransform();;
+            Transform trans = child->GetTransform();
+            ;
             const Vector3 pivotOffset = trans.Translation - origin;
             if (pivotOffset.IsZero())
             {
@@ -423,7 +541,7 @@ void WheeledVehicle::OnTransformChanged()
     }
 }
 
-void WheeledVehicle::BeginPlay(SceneBeginData* data)
+void WheeledVehicle::BeginPlay(SceneBeginData *data)
 {
     RigidBody::BeginPlay(data);
 
@@ -432,14 +550,14 @@ void WheeledVehicle::BeginPlay(SceneBeginData* data)
 #endif
 
 #if USE_EDITOR
-    GetSceneRendering()->AddPhysicsDebug<WheeledVehicle, &WheeledVehicle::DrawPhysicsDebug>(this);
+    GetSceneRendering()->AddPhysicsDebug<WheeledVehicle,& WheeledVehicle::DrawPhysicsDebug>(this);
 #endif
 }
 
 void WheeledVehicle::EndPlay()
 {
 #if USE_EDITOR
-    GetSceneRendering()->RemovePhysicsDebug<WheeledVehicle, &WheeledVehicle::DrawPhysicsDebug>(this);
+    GetSceneRendering()->RemovePhysicsDebug<WheeledVehicle,& WheeledVehicle::DrawPhysicsDebug>(this);
 #endif
 
 #if WITH_VEHICLE
