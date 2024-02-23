@@ -382,17 +382,17 @@ public:
             return PxQueryHitType::eNONE;
         const PxFilterData shapeFilter = shape->getQueryFilterData();
 
+        // Let triggers through
+        if (shape->getFlags() & PxShapeFlag::eTRIGGER_SHAPE)
+            return PxQueryHitType::eNONE;
+
         // Hardcoded id for vehicle shapes masking
         if (filterData.word3 == shapeFilter.word3)
-        {
             return PxQueryHitType::eNONE;
-        }
 
         // Collide for pairs (A,B) where the filtermask of A contains the ID of B and vice versa
         if ((filterData.word0 & shapeFilter.word1) && (shapeFilter.word0 & filterData.word1))
-        {
             return PxQueryHitType::eBLOCK;
-        }
 
         return PxQueryHitType::eNONE;
     }
@@ -1410,7 +1410,6 @@ void PhysicsBackend::EndSimulateScene(void* scene)
             float rightThrottle = wheelVehicle->_tankRightThrottle;
             float leftBrake = Math::Max(wheelVehicle->_tankLeftBrake, wheelVehicle->_handBrake);
             float rightBrake = Math::Max(wheelVehicle->_tankRightBrake, wheelVehicle->_handBrake);
-
             WheeledVehicle::DriveModes vehicleDriveMode = wheelVehicle->_driveControl.DriveMode;
 
             if (isTank)
@@ -1559,7 +1558,7 @@ void PhysicsBackend::EndSimulateScene(void* scene)
                 throttle = Math::Max(throttle, 0.0f);
             }
 
-            // Force brake the another side track to turn more faster.
+            // Force brake the another side track to turn faster
             if (Math::Abs(leftThrottle) > deadZone && Math::Abs(rightThrottle) < deadZone)
             {
                 rightBrake = 1.0f;
@@ -1607,8 +1606,7 @@ void PhysicsBackend::EndSimulateScene(void* scene)
             };
             // @formatter:on
 
-            // Reduce steer by speed to make vehicle more easier to maneuver 
-
+            // Reduce steer by speed to make vehicle easier to maneuver 
             constexpr int steerVsSpeedN = 8;
             PxF32 steerVsForwardSpeedData[steerVsSpeedN];
             const int lastSteerVsSpeedIndex = wheelVehicle->_driveControl.SteerVsSpeed.Count() - 1;
@@ -1623,7 +1621,7 @@ void PhysicsBackend::EndSimulateScene(void* scene)
             // ..
 
             // fill the steerVsForwardSpeedData with the speed and steer
-            for (int i = 0; i < 8; i += 2)
+            for (int32 i = 0; i < 8; i += 2)
             {
                 steerVsForwardSpeedData[i] = wheelVehicle->_driveControl.SteerVsSpeed[steerVsSpeedIndex].Speed;
                 steerVsForwardSpeedData[i + 1] = wheelVehicle->_driveControl.SteerVsSpeed[steerVsSpeedIndex].Steer;
@@ -1631,7 +1629,6 @@ void PhysicsBackend::EndSimulateScene(void* scene)
             }
             const PxFixedSizeLookupTable<steerVsSpeedN> steerVsForwardSpeed(steerVsForwardSpeedData, 4);
 
-            // @formatter:on
             if (wheelVehicle->UseAnalogSteering)
             {
                 switch (wheelVehicle->_driveTypeCurrent)
