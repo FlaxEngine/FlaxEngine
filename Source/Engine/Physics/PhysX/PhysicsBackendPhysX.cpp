@@ -59,6 +59,7 @@
 #if WITH_PVD
 #include <ThirdParty/PhysX/pvd/PxPvd.h>
 #endif
+
 // Temporary memory size used by the PhysX during the simulation. Must be multiply of 4kB and 16bit aligned.
 #define PHYSX_SCRATCH_BLOCK_SIZE (1024 * 128)
 
@@ -975,6 +976,7 @@ void PhysicalMaterial::UpdatePhysicsMaterial()
 
 bool CollisionCooking::CookConvexMesh(CookingInput& input, BytesContainer& output)
 {
+    PROFILE_CPU();
     ENSURE_CAN_COOK;
     if (input.VertexCount == 0)
         LOG(Warning, "Empty mesh data for collision cooking.");
@@ -1018,6 +1020,7 @@ bool CollisionCooking::CookConvexMesh(CookingInput& input, BytesContainer& outpu
 
 bool CollisionCooking::CookTriangleMesh(CookingInput& input, BytesContainer& output)
 {
+    PROFILE_CPU();
     ENSURE_CAN_COOK;
     if (input.VertexCount == 0 || input.IndexCount == 0)
         LOG(Warning, "Empty mesh data for collision cooking.");
@@ -1052,6 +1055,7 @@ bool CollisionCooking::CookTriangleMesh(CookingInput& input, BytesContainer& out
 
 bool CollisionCooking::CookHeightField(int32 cols, int32 rows, const PhysicsBackend::HeightFieldSample* data, WriteStream& stream)
 {
+    PROFILE_CPU();
     ENSURE_CAN_COOK;
 
     PxHeightFieldDesc heightFieldDesc;
@@ -1444,45 +1448,45 @@ void PhysicsBackend::EndSimulateScene(void* scene)
                 const float breakThreshold = 8.0f;
                 const float forwardSpeed = wheelVehicle->GetForwardSpeed();
                 int currentGear = wheelVehicle->GetCurrentGear();
-                                                                                            // Tank tracks direction: 1 forward -1 backward 0 neutral
+                // Tank tracks direction: 1 forward -1 backward 0 neutral
                 bool toForward = false;
                 toForward |= throttle > deadZone;
-                toForward |= (leftThrottle > deadZone) && (rightThrottle > deadZone);       // 1  1
+                toForward |= (leftThrottle > deadZone) && (rightThrottle > deadZone); // 1  1
 
                 bool toBackward = false;
                 toBackward |= throttle < -deadZone;
-                toBackward |= (leftThrottle < -deadZone) && (rightThrottle < -deadZone);    // -1 -1
-                toBackward |= (leftThrottle < -deadZone) && (rightThrottle < deadZone);     // -1  0
-                toBackward |= (leftThrottle < deadZone) && (rightThrottle < -deadZone);     //  0 -1
+                toBackward |= (leftThrottle < -deadZone) && (rightThrottle < -deadZone); // -1 -1
+                toBackward |= (leftThrottle < -deadZone) && (rightThrottle < deadZone); // -1  0
+                toBackward |= (leftThrottle < deadZone) && (rightThrottle < -deadZone); //  0 -1
 
                 bool isTankTurning = false;
 
                 if (isTank)
-                {                                                                          
-                    isTankTurning |= leftThrottle > deadZone && rightThrottle < -deadZone;  //  1 -1
-                    isTankTurning |= leftThrottle < -deadZone && rightThrottle > deadZone;  // -1  1
-                    isTankTurning |= leftThrottle < deadZone && rightThrottle > deadZone;   //  0  1
-                    isTankTurning |= leftThrottle > deadZone && rightThrottle < deadZone;   //  1  0
-                    isTankTurning |= leftThrottle < -deadZone && rightThrottle < deadZone;  // -1  0
-                    isTankTurning |= leftThrottle < deadZone && rightThrottle < -deadZone;  //  0 -1
+                {
+                    isTankTurning |= leftThrottle > deadZone && rightThrottle < -deadZone; //  1 -1
+                    isTankTurning |= leftThrottle < -deadZone && rightThrottle > deadZone; // -1  1
+                    isTankTurning |= leftThrottle < deadZone && rightThrottle > deadZone; //  0  1
+                    isTankTurning |= leftThrottle > deadZone && rightThrottle < deadZone; //  1  0
+                    isTankTurning |= leftThrottle < -deadZone && rightThrottle < deadZone; // -1  0
+                    isTankTurning |= leftThrottle < deadZone && rightThrottle < -deadZone; //  0 -1
 
                     if (toForward || toBackward)
                     {
                         isTankTurning = false;
                     }
                 }
-                
+
                 // Automatic gear change when changing driving direction
                 if (Math::Abs(forwardSpeed) < invalidDirectionThreshold)
                 {
-                    int targetGear =  wheelVehicle->GetTargetGear();
+                    int targetGear = wheelVehicle->GetTargetGear();
                     if (toBackward && currentGear > 0 && targetGear >= 0)
                     {
                         currentGear = -1;
                     }
                     else if (!toBackward && currentGear <= 0 && targetGear <= 0)
                     {
-                       currentGear = 1;
+                        currentGear = 1;
                     }
                     else if (isTankTurning && currentGear <= 0)
                     {
@@ -1565,24 +1569,25 @@ void PhysicsBackend::EndSimulateScene(void* scene)
                 leftBrake = 1.0f;
             }
 
-            // Smooth input controls 
+            // Smooth input controls
+            // @formatter:off
             PxVehiclePadSmoothingData padSmoothing =
+            {
                 {
-                    {
-                        wheelVehicle->_driveControl.RiseRateAcceleration, // rise rate eANALOG_INPUT_ACCEL
-                        wheelVehicle->_driveControl.RiseRateBrake,        // rise rate eANALOG_INPUT_BRAKE
-                        wheelVehicle->_driveControl.RiseRateHandBrake,    // rise rate eANALOG_INPUT_HANDBRAKE
-                        wheelVehicle->_driveControl.RiseRateSteer,        // rise rate eANALOG_INPUT_STEER_LEFT
-                        wheelVehicle->_driveControl.RiseRateSteer,        // rise rate eANALOG_INPUT_STEER_RIGHT
-                    },
-                    {
-                        wheelVehicle->_driveControl.FallRateAcceleration, // fall rate eANALOG_INPUT_ACCEL
-                        wheelVehicle->_driveControl.FallRateBrake,        // fall rate eANALOG_INPUT_BRAKE
-                        wheelVehicle->_driveControl.FallRateHandBrake,    // fall rate eANALOG_INPUT_HANDBRAKE
-                        wheelVehicle->_driveControl.FallRateSteer,        // fall rate eANALOG_INPUT_STEER_LEFT
-                        wheelVehicle->_driveControl.FallRateSteer,        // fall rate eANALOG_INPUT_STEER_RIGHT
-                    }
-                };
+                    wheelVehicle->_driveControl.RiseRateAcceleration, // rise rate eANALOG_INPUT_ACCEL
+                    wheelVehicle->_driveControl.RiseRateBrake,        // rise rate eANALOG_INPUT_BRAKE
+                    wheelVehicle->_driveControl.RiseRateHandBrake,    // rise rate eANALOG_INPUT_HANDBRAKE
+                    wheelVehicle->_driveControl.RiseRateSteer,        // rise rate eANALOG_INPUT_STEER_LEFT
+                    wheelVehicle->_driveControl.RiseRateSteer,        // rise rate eANALOG_INPUT_STEER_RIGHT
+                },
+                {
+                    wheelVehicle->_driveControl.FallRateAcceleration, // fall rate eANALOG_INPUT_ACCEL
+                    wheelVehicle->_driveControl.FallRateBrake,        // fall rate eANALOG_INPUT_BRAKE
+                    wheelVehicle->_driveControl.FallRateHandBrake,    // fall rate eANALOG_INPUT_HANDBRAKE
+                    wheelVehicle->_driveControl.FallRateSteer,        // fall rate eANALOG_INPUT_STEER_LEFT
+                    wheelVehicle->_driveControl.FallRateSteer,        // fall rate eANALOG_INPUT_STEER_RIGHT
+                }
+            };
             PxVehicleKeySmoothingData keySmoothing =
             {
                 {
@@ -1600,6 +1605,7 @@ void PhysicsBackend::EndSimulateScene(void* scene)
                     wheelVehicle->_driveControl.FallRateSteer,        // fall rate eANALOG_INPUT_STEER_RIGHT
                 }
             };
+            // @formatter:on
 
             // Reduce steer by speed to make vehicle more easier to maneuver 
 
@@ -1659,14 +1665,13 @@ void PhysicsBackend::EndSimulateScene(void* scene)
                     rawInputData.setAnalogRightBrake(rightBrake);
                     rawInputData.setAnalogLeftThrust(leftThrottle);
                     rawInputData.setAnalogRightThrust(rightThrottle);
-
                     PxVehicleDriveTankSmoothAnalogRawInputsAndSetAnalogInputs(padSmoothing, rawInputData, scenePhysX->LastDeltaTime, *(PxVehicleDriveTank*)drive);
                     break;
                 }
                 }
             }
             else
-            {                
+            {
                 switch (wheelVehicle->_driveTypeCurrent)
                 {
                 case WheeledVehicle::DriveTypes::Drive4W:
@@ -1693,7 +1698,7 @@ void PhysicsBackend::EndSimulateScene(void* scene)
                 }
                 case WheeledVehicle::DriveTypes::Tank:
                 {
-                    // Convert analogic inputs to digital inputs.
+                    // Convert analog inputs to digital inputs
                     leftThrottle = Math::Round(leftThrottle);
                     rightThrottle = Math::Round(rightThrottle);
                     leftBrake = Math::Round(leftBrake);
@@ -1707,8 +1712,8 @@ void PhysicsBackend::EndSimulateScene(void* scene)
                     rawInputData.setAnalogLeftThrust(leftThrottle);
                     rawInputData.setAnalogRightThrust(rightThrottle);
 
-                    // Needs to pass analogic values to vehicle to maintein current moviment direction because digital inputs accept only true/false values to tracks thrust instead of -1 to 1 
-                    PxVehicleDriveTankSmoothAnalogRawInputsAndSetAnalogInputs(padSmoothing, rawInputData, scenePhysX->LastDeltaTime, *(PxVehicleDriveTank *)drive);
+                    // Needs to pass analog values to vehicle to maintain current movement direction because digital inputs accept only true/false values to tracks thrust instead of -1 to 1 
+                    PxVehicleDriveTankSmoothAnalogRawInputsAndSetAnalogInputs(padSmoothing, rawInputData, scenePhysX->LastDeltaTime, *(PxVehicleDriveTank*)drive);
                     break;
                 }
                 }
@@ -2428,7 +2433,7 @@ void PhysicsBackend::SetRigidActorPose(void* actor, const Vector3& position, con
             actorPhysX->setGlobalPose(trans, wakeUp);
         }
         else
-            actorPhysX->setKinematicTarget(trans); 
+            actorPhysX->setKinematicTarget(trans);
     }
     else
     {
@@ -2964,7 +2969,7 @@ void PhysicsBackend::SetHingeJointLimit(void* joint, const LimitAngularRange& va
 void PhysicsBackend::SetHingeJointDrive(void* joint, const HingeJointDrive& value)
 {
     auto jointPhysX = (PxRevoluteJoint*)joint;
-    jointPhysX->setDriveVelocity(Math::Max(value.Velocity, 0.0f));
+    jointPhysX->setDriveVelocity(value.Velocity);
     jointPhysX->setDriveForceLimit(Math::Max(value.ForceLimit, 0.0f));
     jointPhysX->setDriveGearRatio(Math::Max(value.GearRatio, 0.0f));
     jointPhysX->setRevoluteJointFlag(PxRevoluteJointFlag::eDRIVE_FREESPIN, value.FreeSpin);
@@ -3265,7 +3270,6 @@ PxVehicleDifferentialNWData CreatePxVehicleDifferentialNWData(const WheeledVehic
     PxVehicleDifferentialNWData differentialNwData;
     for (int32 i = 0; i < wheels.Count(); i++)
         differentialNwData.setDrivenWheel(i, true);
-
     return differentialNwData;
 }
 
@@ -3286,7 +3290,7 @@ PxVehicleGearsData CreatePxVehicleGearsData(const WheeledVehicle::GearboxSetting
     PxVehicleGearsData gears;
 
     // Total gears is forward gears + neutral/rear gears
-    int gearsAmount = settings.ForwardGearsRatios + 2;
+    const int32 gearsCount = Math::Clamp<int32>(settings.ForwardGearsRatios + 2, 2, PxVehicleGearsData::eGEARSRATIO_COUNT);
 
     // Setup gears torque/top speed relations
     // Higher torque = less speed
@@ -3302,24 +3306,23 @@ PxVehicleGearsData CreatePxVehicleGearsData(const WheeledVehicle::GearboxSetting
     // Gear4 = 1.8
     // Gear5 = 1
 
-    gears.mRatios[0] = -(gearsAmount - 2);  // reverse
-    gears.mRatios[1] = 0;                   // neutral
+    gears.mRatios[0] = (float)-(gearsCount - 2); // Reverse
+    gears.mRatios[1] = 0; // Neutral
 
     // Setup all gears except neutral and reverse
-    for (int i = gearsAmount; i > 2; i--) {
-
-        float gearsRatios = settings.ForwardGearsRatios;
-        float currentGear = i - 2;
-
-        gears.mRatios[i] = Math::Lerp(gearsRatios, 1.0f, (currentGear / gearsRatios));
+    for (int32 i = gearsCount; i > 2; i--)
+    {
+        float gearsRatios = (float)settings.ForwardGearsRatios;
+        float currentGear = i - 2.0f;
+        gears.mRatios[i] = Math::Lerp(gearsRatios, 1.0f, currentGear / gearsRatios);
     }
 
-    // reset unused gears
-    for (int i = gearsAmount; i < PxVehicleGearsData::eGEARSRATIO_COUNT; i++) 
+    // Reset unused gears
+    for (int32 i = gearsCount; i < PxVehicleGearsData::eGEARSRATIO_COUNT; i++)
         gears.mRatios[i] = 0;
 
     gears.mSwitchTime = Math::Max(settings.SwitchTime, 0.0f);
-    gears.mNbRatios = Math::Clamp(gearsAmount, 2, (int)PxVehicleGearsData::eGEARSRATIO_COUNT);
+    gears.mNbRatios = gearsCount;
     return gears;
 }
 
@@ -3388,7 +3391,7 @@ PxVehicleAckermannGeometryData CreatePxVehicleAckermannGeometryData(PxVehicleWhe
     return ackermann;
 }
 
-PxVehicleAntiRollBarData CreatePxPxVehicleAntiRollBarData(const WheeledVehicle::AntiRollBar& settings, int leftWheelIndex, int rightWheelIndex)
+PxVehicleAntiRollBarData CreatePxPxVehicleAntiRollBarData(const WheeledVehicle::AntiRollBar& settings, int32 leftWheelIndex, int32 rightWheelIndex)
 {
     PxVehicleAntiRollBarData antiRollBar;
     antiRollBar.mWheel0 = leftWheelIndex;
@@ -3397,7 +3400,7 @@ PxVehicleAntiRollBarData CreatePxPxVehicleAntiRollBarData(const WheeledVehicle::
     return antiRollBar;
 }
 
-bool SortWheelsFrontToBack(WheeledVehicle::Wheel const &a, WheeledVehicle::Wheel const &b)
+bool SortWheelsFrontToBack(WheeledVehicle::Wheel const& a, WheeledVehicle::Wheel const& b)
 {
     return a.Collider && b.Collider && a.Collider->GetLocalPosition().Z > b.Collider->GetLocalPosition().Z;
 }
@@ -3412,17 +3415,15 @@ void* PhysicsBackend::CreateVehicle(WheeledVehicle* actor)
     {
         Sorting::QuickSort(actor->_wheels.Get(), actor->_wheels.Count(), SortWheelsFrontToBack);
 
-        // sort wheels by side
+        // Sort wheels by side
         if (actor->_driveType == WheeledVehicle::DriveTypes::Tank)
         {
-            for (int i = 0; i < actor->_wheels.Count() - 1; i += 2)
+            for (int32 i = 0; i < actor->_wheels.Count() - 1; i += 2)
             {
                 auto a = actor->_wheels[i];
                 auto b = actor->_wheels[i + 1];
-
                 if (!a.Collider || !b.Collider)
                     continue;
-
                 if (a.Collider->GetLocalPosition().X > b.Collider->GetLocalPosition().X)
                 {
                     actor->_wheels[i] = b;
@@ -3482,7 +3483,7 @@ void* PhysicsBackend::CreateVehicle(WheeledVehicle* actor)
     // TODO: get gravityDirection from scenePhysX->Scene->getGravity()
     PxVehicleComputeSprungMasses(wheels.Count(), offsets, centerOfMassOffset.p, mass, 1, sprungMasses);
     PxVehicleWheelsSimData* wheelsSimData = PxVehicleWheelsSimData::allocate(wheels.Count());
-    int wheelsCount = wheels.Count();
+    int32 wheelsCount = wheels.Count();
     for (int32 i = 0; i < wheelsCount; i++)
     {
         auto& wheel = *wheels[i];
@@ -3498,7 +3499,7 @@ void* PhysicsBackend::CreateVehicle(WheeledVehicle* actor)
         const PxVehicleWheelData& wheelData = CreatePxVehicleWheelData(wheel);
         const PxVehicleSuspensionData& suspensionData = CreatePxVehicleSuspensionData(wheel, sprungMasses[i]);
 
-        wheelsSimData->setTireData(i,tireData);
+        wheelsSimData->setTireData(i, tireData);
         wheelsSimData->setWheelData(i, wheelData);
         wheelsSimData->setSuspensionData(i, suspensionData);
         wheelsSimData->setSuspTravelDirection(i, centerOfMassOffset.rotate(PxVec3(0.0f, -1.0f, 0.0f)));
@@ -3530,16 +3531,15 @@ void* PhysicsBackend::CreateVehicle(WheeledVehicle* actor)
         }
     }
     // Add Anti roll bars for wheels axles
-    for (int i = 0; i < actor->GetAntiRollBars().Count(); i++)
+    for (int32 i = 0; i < actor->GetAntiRollBars().Count(); i++)
     {
-        int axleIndex = actor->GetAntiRollBars()[i].Axle;
-        int leftWheelIndex = axleIndex * 2;
-        int rightWheelIndex = leftWheelIndex + 1;
-
+        int32 axleIndex = actor->GetAntiRollBars()[i].Axle;
+        int32 leftWheelIndex = axleIndex * 2;
+        int32 rightWheelIndex = leftWheelIndex + 1;
         if (leftWheelIndex >= wheelsCount || rightWheelIndex >= wheelsCount)
             continue;
 
-        const PxVehicleAntiRollBarData &antiRollBar = CreatePxPxVehicleAntiRollBarData(actor->GetAntiRollBars()[i], leftWheelIndex, rightWheelIndex);
+        const PxVehicleAntiRollBarData& antiRollBar = CreatePxPxVehicleAntiRollBarData(actor->GetAntiRollBars()[i], leftWheelIndex, rightWheelIndex);
         wheelsSimData->addAntiRollBarData(antiRollBar);
     }
     for (auto child : actor->Children)
@@ -3582,14 +3582,14 @@ void* PhysicsBackend::CreateVehicle(WheeledVehicle* actor)
         const PxVehicleEngineData& engineData = CreatePxVehicleEngineData(engine);
         const PxVehicleGearsData& gearsData = CreatePxVehicleGearsData(gearbox);
         const PxVehicleAutoBoxData& autoBoxData = CreatePxVehicleAutoBoxData();
-        const PxVehicleClutchData& cluchData = CreatePxVehicleClutchData(gearbox);
+        const PxVehicleClutchData& clutchData = CreatePxVehicleClutchData(gearbox);
         const PxVehicleAckermannGeometryData& geometryData = CreatePxVehicleAckermannGeometryData(wheelsSimData);
 
         driveSimData.setDiffData(differentialData);
         driveSimData.setEngineData(engineData);
         driveSimData.setGearsData(gearsData);
         driveSimData.setAutoBoxData(autoBoxData);
-        driveSimData.setClutchData(cluchData);
+        driveSimData.setClutchData(clutchData);
         driveSimData.setAckermannGeometryData(geometryData);
 
         // Create vehicle drive
@@ -3607,14 +3607,13 @@ void* PhysicsBackend::CreateVehicle(WheeledVehicle* actor)
         const PxVehicleEngineData& engineData = CreatePxVehicleEngineData(engine);
         const PxVehicleGearsData& gearsData = CreatePxVehicleGearsData(gearbox);
         const PxVehicleAutoBoxData& autoBoxData = CreatePxVehicleAutoBoxData();
-        const PxVehicleClutchData& cluchData = CreatePxVehicleClutchData(gearbox);
-        const PxVehicleAckermannGeometryData& geometryData = CreatePxVehicleAckermannGeometryData(wheelsSimData);
+        const PxVehicleClutchData& clutchData = CreatePxVehicleClutchData(gearbox);
 
         driveSimData.setDiffData(differentialData);
         driveSimData.setEngineData(engineData);
         driveSimData.setGearsData(gearsData);
         driveSimData.setAutoBoxData(autoBoxData);
-        driveSimData.setClutchData(cluchData);
+        driveSimData.setClutchData(clutchData);
 
         // Create vehicle drive
         auto driveNW = PxVehicleDriveNW::allocate(wheels.Count());
@@ -3635,18 +3634,18 @@ void* PhysicsBackend::CreateVehicle(WheeledVehicle* actor)
     case WheeledVehicle::DriveTypes::Tank:
     {
         PxVehicleDriveSimData4W driveSimData;
-        const PxVehicleDifferential4WData &differentialData = CreatePxVehicleDifferential4WData(differential);
-        const PxVehicleEngineData &engineData = CreatePxVehicleEngineData(engine);
-        const PxVehicleGearsData &gearsData = CreatePxVehicleGearsData(gearbox);
-        const PxVehicleAutoBoxData &autoBoxData = CreatePxVehicleAutoBoxData();
-        const PxVehicleClutchData &cluchData = CreatePxVehicleClutchData(gearbox);
-        const PxVehicleAckermannGeometryData &geometryData = CreatePxVehicleAckermannGeometryData(wheelsSimData);
+        const PxVehicleDifferential4WData& differentialData = CreatePxVehicleDifferential4WData(differential);
+        const PxVehicleEngineData& engineData = CreatePxVehicleEngineData(engine);
+        const PxVehicleGearsData& gearsData = CreatePxVehicleGearsData(gearbox);
+        const PxVehicleAutoBoxData& autoBoxData = CreatePxVehicleAutoBoxData();
+        const PxVehicleClutchData& clutchData = CreatePxVehicleClutchData(gearbox);
+        const PxVehicleAckermannGeometryData& geometryData = CreatePxVehicleAckermannGeometryData(wheelsSimData);
 
         driveSimData.setDiffData(differentialData);
         driveSimData.setEngineData(engineData);
         driveSimData.setGearsData(gearsData);
         driveSimData.setAutoBoxData(autoBoxData);
-        driveSimData.setClutchData(cluchData);
+        driveSimData.setClutchData(clutchData);
         driveSimData.setAckermannGeometryData(geometryData);
 
         // Create vehicle drive
@@ -3700,24 +3699,24 @@ void PhysicsBackend::UpdateVehicleWheels(WheeledVehicle* actor)
     }
 }
 
-void PhysicsBackend::UpdateVehicleAntiRollBars(WheeledVehicle *actor)
+void PhysicsBackend::UpdateVehicleAntiRollBars(WheeledVehicle* actor)
 {
     int wheelsCount = actor->_wheels.Count();
-    auto drive = (PxVehicleWheels *)actor->_vehicle;
-    PxVehicleWheelsSimData *wheelsSimData = &drive->mWheelsSimData;
+    auto drive = (PxVehicleWheels*)actor->_vehicle;
+    PxVehicleWheelsSimData* wheelsSimData = &drive->mWheelsSimData;
 
-    // Update Anti roll bars for wheels axles
-    for (int i = 0; i < actor->GetAntiRollBars().Count(); i++)
+    // Update anti roll bars for wheels axles
+    const auto& antiRollBars = actor->GetAntiRollBars();
+    for (int32 i = 0; i < antiRollBars.Count(); i++)
     {
-        int axleIndex = actor->GetAntiRollBars()[i].Axle;
-        int leftWheelIndex = axleIndex * 2;
-        int rightWheelIndex = leftWheelIndex + 1;
-
+        const int32 axleIndex = antiRollBars.Get()[i].Axle;
+        const int32 leftWheelIndex = axleIndex * 2;
+        const int32 rightWheelIndex = leftWheelIndex + 1;
         if (leftWheelIndex >= wheelsCount || rightWheelIndex >= wheelsCount)
             continue;
 
-        const PxVehicleAntiRollBarData &antiRollBar = CreatePxPxVehicleAntiRollBarData(actor->GetAntiRollBars()[i], leftWheelIndex, rightWheelIndex);
-        if (wheelsSimData->getNbAntiRollBarData() - 1 < i)
+        const PxVehicleAntiRollBarData& antiRollBar = CreatePxPxVehicleAntiRollBarData(antiRollBars.Get()[i], leftWheelIndex, rightWheelIndex);
+        if ((int32)wheelsSimData->getNbAntiRollBarData() - 1 < i)
         {
             wheelsSimData->addAntiRollBarData(antiRollBar);
         }
@@ -3753,8 +3752,8 @@ void PhysicsBackend::SetVehicleEngine(void* vehicle, const void* value)
     case PxVehicleTypes::eDRIVETANK:
     {
         auto driveTank = (PxVehicleDriveTank*)drive;
-        const PxVehicleEngineData &engineData = CreatePxVehicleEngineData(engine);
-        PxVehicleDriveSimData &driveSimData = driveTank->mDriveSimData;
+        const PxVehicleEngineData& engineData = CreatePxVehicleEngineData(engine);
+        PxVehicleDriveSimData& driveSimData = driveTank->mDriveSimData;
         driveSimData.setEngineData(engineData);
         break;
     }
@@ -3812,11 +3811,11 @@ void PhysicsBackend::SetVehicleGearbox(void* vehicle, const void* value)
     }
     case PxVehicleTypes::eDRIVETANK:
     {
-        auto driveTank = (PxVehicleDriveTank *)drive;
-        const PxVehicleGearsData &gearData = CreatePxVehicleGearsData(gearbox);
-        const PxVehicleClutchData &clutchData = CreatePxVehicleClutchData(gearbox);
-        const PxVehicleAutoBoxData &autoBoxData = CreatePxVehicleAutoBoxData();
-        PxVehicleDriveSimData &driveSimData = driveTank->mDriveSimData;
+        auto driveTank = (PxVehicleDriveTank*)drive;
+        const PxVehicleGearsData& gearData = CreatePxVehicleGearsData(gearbox);
+        const PxVehicleClutchData& clutchData = CreatePxVehicleClutchData(gearbox);
+        const PxVehicleAutoBoxData& autoBoxData = CreatePxVehicleAutoBoxData();
+        PxVehicleDriveSimData& driveSimData = driveTank->mDriveSimData;
         driveSimData.setGearsData(gearData);
         driveSimData.setAutoBoxData(autoBoxData);
         driveSimData.setClutchData(clutchData);

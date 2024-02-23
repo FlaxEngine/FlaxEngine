@@ -29,16 +29,16 @@ API_CLASS(Attributes="ActorContextMenu(\"New/Physics/Wheeled Vehicle\"), ActorTo
         // Tank Drive. Can have more than 4 wheel. Not use steer, control acceleration for each tank track.
         Tank,
     };
+
     /// <summary>
-    /// Vehicle driving types.
-    /// Used only on tanks to specify the drive mode.   
+    /// Vehicle driving types. Used only on tanks to specify the drive mode.   
     /// </summary>
     API_ENUM() enum class DriveModes
     {
-        // Drive turning the vehicle using only one track
+        // Drive turning the vehicle using only one track.
         Standard,
         // Drive turning the vehicle using all tracks inverse direction.
-        Special
+        Special,
     };
 
     /// <summary>
@@ -52,21 +52,14 @@ API_CLASS(Attributes="ActorContextMenu(\"New/Physics/Wheeled Vehicle\"), ActorTo
         /// <summary>
         /// The vehicle speed.
         /// </summary>
-        API_FIELD(Attributes = "Limit(0)") float Speed;
+        API_FIELD(Attributes = "Limit(0)") float Speed = 1000;
 
         /// <summary>
         /// The target max steer of the speed.
         /// </summary>
-        API_FIELD(Attributes = "Limit(0, 1)") float Steer;
+        API_FIELD(Attributes = "Limit(0, 1)") float Steer = 1;
 
-        /// <summary>
-        /// Create a Steer/Speed relationship structure.
-        /// </summary>
-        SteerControl()
-        {
-            Speed = 1000;
-            Steer = 1;
-        }
+        SteerControl() = default;
 
         /// <summary>
         /// Create a Steer/Speed relationship structure.
@@ -177,8 +170,7 @@ API_CLASS(Attributes="ActorContextMenu(\"New/Physics/Wheeled Vehicle\"), ActorTo
         API_FIELD(Attributes="EditorOrder(17)") float FallRateSteer = 5.0f;
 
         /// <summary>
-        /// Vehicle control relationship between speed and steer. The higher is the speed, 
-        /// decrease steer to make vehicle more maneuverable (limited only 4 relationships).
+        /// Vehicle control relationship between speed and steer. The higher is the speed, decrease steer to make vehicle more maneuverable (limited only 4 relationships).
         /// </summary>
         API_FIELD() Array<WheeledVehicle::SteerControl> SteerVsSpeed = Array<WheeledVehicle::SteerControl>
         {
@@ -249,7 +241,7 @@ API_CLASS(Attributes="ActorContextMenu(\"New/Physics/Wheeled Vehicle\"), ActorTo
         /// <summary>
         /// Number of gears to move to forward
         /// </summary>
-        API_FIELD(Attributes = "Limit(1, 30)") int ForwardGearsRatios = 5;
+        API_FIELD(Attributes = "Limit(1, 30)") int32 ForwardGearsRatios = 5;
 
         /// <summary>
         /// Time it takes to switch gear. Specified in seconds (s).
@@ -429,7 +421,7 @@ API_CLASS(Attributes="ActorContextMenu(\"New/Physics/Wheeled Vehicle\"), ActorTo
         /// <summary>
         /// The specific axle with wheels to apply anti roll.
         /// </summary>
-        API_FIELD() int Axle;
+        API_FIELD() int32 Axle;
 
         /// <summary>
         /// The anti roll stiffness.
@@ -449,8 +441,8 @@ private:
     DriveTypes _driveType = DriveTypes::Drive4W, _driveTypeCurrent;
     Array<WheelData, FixedAllocation<20>> _wheelsData;
     float _throttle = 0.0f, _steering = 0.0f, _brake = 0.0f, _handBrake = 0.0f, _tankLeftThrottle = 0.0f, _tankRightThrottle = 0.0f, _tankLeftBrake = 0.0f, _tankRightBrake = 0.0f;
-    Array<WheeledVehicle::Wheel> _wheels;
-    Array<WheeledVehicle::AntiRollBar> _antiRollBars;
+    Array<Wheel> _wheels;
+    Array<AntiRollBar> _antiRollBars;
     DriveControlSettings _driveControl;
     EngineSettings _engine;
     DifferentialSettings _differential;
@@ -494,7 +486,7 @@ public:
     /// <summary>
     /// Sets the vehicle drive control settings.
     /// </summary>
-    API_PROPERTY() void SetDriveControl(DriveControlSettings& value);
+    API_PROPERTY() void SetDriveControl(DriveControlSettings value);
 
     /// <summary>
     /// Sets the vehicle wheels settings.
@@ -532,7 +524,7 @@ public:
     API_PROPERTY() void SetGearbox(const GearboxSettings& value);
 
     // <summary>
-    /// Sets axles anti roll bars to increase vehicle estability.
+    /// Sets axles anti roll bars to increase vehicle stability.
     /// </summary>
     API_PROPERTY() void SetAntiRollBars(const Array<AntiRollBar>& value);
 
