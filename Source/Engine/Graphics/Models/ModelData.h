@@ -358,12 +358,19 @@ struct FLAXENGINE_API MaterialSlotEntry
 
     struct
     {
+        float Value = 0.5f;
+        int32 TextureIndex = -1;
+    } Roughness;
+
+    struct
+    {
         int32 TextureIndex = -1;
     } Normals;
 
     bool TwoSided = false;
 
     bool UsesProperties() const;
+    static float ShininessToRoughness(float shininess);
 };
 
 /// <summary>

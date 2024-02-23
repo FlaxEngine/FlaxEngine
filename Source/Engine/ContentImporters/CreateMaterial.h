@@ -39,6 +39,12 @@ public:
 
         struct
         {
+            float Value = 0.5f;
+            Guid Texture = Guid::Empty;
+        } Roughness;
+
+        struct
+        {
             Guid Texture = Guid::Empty;
         } Normals;
 

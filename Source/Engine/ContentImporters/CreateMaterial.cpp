@@ -12,9 +12,13 @@
 #include "Engine/Tools/MaterialGenerator/MaterialGenerator.h"
 #include "Engine/Serialization/MemoryWriteStream.h"
 
+#define SET_POS(node, pos) meta.Position = pos; node->Meta.AddEntry(11, (byte*)&meta, sizeof(meta));
+#define CONNECT(boxA, boxB) boxA.Connections.Add(&boxB); boxB.Connections.Add(&boxA)
+
 namespace
 {
-    ShaderGraphNode<>* AddFloatValue(MaterialLayer* layer, const float& value, const float& defaultValue)
+    template<typename T>
+    ShaderGraphNode<>* AddValueNode(MaterialLayer* layer, const float& value, const float& defaultValue)
     {
         if (Math::NearEqual(value, defaultValue))
             return nullptr;
@@ -28,7 +32,8 @@ namespace
         return &node;
     }
 
-    ShaderGraphNode<>* AddColorNode(MaterialLayer* layer, const Color& value, const Color& defaultValue)
+    template<typename T>
+    ShaderGraphNode<>* AddValueNode(MaterialLayer* layer, const Color& value, const Color& defaultValue)
     {
         if (value == defaultValue)
             return nullptr;
@@ -86,6 +91,35 @@ namespace
         Float2 Position;
         bool Selected;
     };
+
+    template<typename T>
+    void AddInput(MaterialLayer* layer, Meta11 meta, MaterialGraphBoxes box, const Guid& texture, const T& value, const T& defaultValue, const Float2& pos, ShaderGraphNode<>** outTextureNode = nullptr)
+    {
+        auto textureNode = AddTextureNode(layer, texture);
+        auto valueNode = AddValueNode<T>(layer, value, defaultValue);
+        if (textureNode && valueNode)
+        {
+            auto diffuseMultiply = AddMultiplyNode(layer);
+            CONNECT(diffuseMultiply->Boxes[0], textureNode->Boxes[1]);
+            CONNECT(diffuseMultiply->Boxes[1], valueNode->Boxes[0]);
+            CONNECT(layer->Root->Boxes[static_cast<int32>(box)], diffuseMultiply->Boxes[2]);
+            SET_POS(valueNode, pos + Float2(-467.7404, 91.41332));
+            SET_POS(textureNode, pos + Float2(-538.096, -103.9724));
+            SET_POS(diffuseMultiply, pos + Float2(-293.5272f, -2.926111f));
+        }
+        else if (textureNode)
+        {
+            CONNECT(layer->Root->Boxes[static_cast<int32>(box)], textureNode->Boxes[1]);
+            SET_POS(textureNode, pos + Float2(-293.5272f, -2.926111f));
+        }
+        else if (valueNode)
+        {
+            CONNECT(layer->Root->Boxes[static_cast<int32>(box)], valueNode->Boxes[0]);
+            SET_POS(valueNode, pos + Float2(-293.5272f, -2.926111f));
+        }
+        if (outTextureNode)
+            *outTextureNode = textureNode;
+    }
 }
 
 CreateMaterial::Options::Options()
@@ -129,85 +163,32 @@ CreateAssetResult CreateMaterial::Create(CreateAssetContext& context)
             box.Parent = layer->Root;
         Meta11 meta;
         meta.Selected = false;
-#define SET_POS(node, pos) meta.Position = pos; node->Meta.AddEntry(11, (byte*)&meta, sizeof(meta));
-#define CONNECT(boxA, boxB) boxA.Connections.Add(&boxB); boxB.Connections.Add(&boxA)
-        auto diffuseTexture = AddTextureNode(layer, options.Diffuse.Texture);
-        auto diffuseColor = AddColorNode(layer, options.Diffuse.Color, Color::White);
-        if (diffuseTexture && diffuseColor)
+
+        // Diffuse + Mask
+        ShaderGraphNode<>* diffuseTextureNode;
+        AddInput(layer, meta, MaterialGraphBoxes::Color, options.Diffuse.Texture, options.Diffuse.Color, Color::White, Float2::Zero, &diffuseTextureNode);
+        if (diffuseTextureNode && options.Diffuse.HasAlphaMask)
         {
-            auto diffuseMultiply = AddMultiplyNode(layer);
-            CONNECT(diffuseMultiply->Boxes[0], diffuseTexture->Boxes[1]);
-            CONNECT(diffuseMultiply->Boxes[1], diffuseColor->Boxes[0]);
-            CONNECT(layer->Root->Boxes[static_cast<int32>(MaterialGraphBoxes::Color)], diffuseMultiply->Boxes[2]);
-            SET_POS(diffuseColor, Float2(-467.7404, 91.41332));
-            SET_POS(diffuseTexture, Float2(-538.096, -103.9724));
-            SET_POS(diffuseMultiply, Float2(-293.5272f, -2.926111f));
+            CONNECT(layer->Root->Boxes[static_cast<int32>(MaterialGraphBoxes::Mask)], diffuseTextureNode->Boxes[5]);
         }
-        else if (diffuseTexture)
-        {
-            CONNECT(layer->Root->Boxes[static_cast<int32>(MaterialGraphBoxes::Color)], diffuseTexture->Boxes[1]);
-            SET_POS(diffuseTexture, Float2(-293.5272f, -2.926111f));
-        }
-        else if (diffuseColor)
-        {
-            CONNECT(layer->Root->Boxes[static_cast<int32>(MaterialGraphBoxes::Color)], diffuseColor->Boxes[0]);
-            SET_POS(diffuseColor, Float2(-293.5272f, -2.926111f));
-        }
-        if (diffuseTexture && options.Diffuse.HasAlphaMask)
-        {
-            CONNECT(layer->Root->Boxes[static_cast<int32>(MaterialGraphBoxes::Mask)], diffuseTexture->Boxes[5]);
-        }
-        auto emissiveTexture = AddTextureNode(layer, options.Emissive.Texture);
-        auto emissiveColor = AddColorNode(layer, options.Emissive.Color, Color::Transparent);
-        if (emissiveTexture && emissiveColor)
-        {
-            auto emissiveMultiply = AddMultiplyNode(layer);
-            CONNECT(emissiveMultiply->Boxes[0], emissiveTexture->Boxes[1]);
-            CONNECT(emissiveMultiply->Boxes[1], emissiveColor->Boxes[0]);
-            CONNECT(layer->Root->Boxes[static_cast<int32>(MaterialGraphBoxes::Emissive)], emissiveMultiply->Boxes[2]);
-            SET_POS(emissiveTexture, Float2(-667.7404, 91.41332));
-            SET_POS(emissiveTexture, Float2(-738.096, -103.9724));
-            SET_POS(emissiveMultiply, Float2(-493.5272f, -2.926111f));
-        }
-        else if (emissiveTexture)
-        {
-            CONNECT(layer->Root->Boxes[static_cast<int32>(MaterialGraphBoxes::Emissive)], emissiveTexture->Boxes[1]);
-            SET_POS(emissiveTexture, Float2(-493.5272f, -2.926111f));
-        }
-        else if (emissiveColor)
-        {
-            CONNECT(layer->Root->Boxes[static_cast<int32>(MaterialGraphBoxes::Emissive)], emissiveColor->Boxes[0]);
-            SET_POS(emissiveColor, Float2(-493.5272f, -2.926111f));
-        }
+
+        // Emissive
+        AddInput(layer, meta, MaterialGraphBoxes::Emissive, options.Emissive.Texture, options.Emissive.Color, Color::Transparent, Float2(0, 200));
+
+        // Opacity
+        AddInput(layer, meta, MaterialGraphBoxes::Opacity, options.Opacity.Texture, options.Opacity.Value, 1.0f, Float2(0, 400));
+
+        // Opacity
+        AddInput(layer, meta, MaterialGraphBoxes::Roughness, options.Roughness.Texture, options.Roughness.Value, 0.5f, Float2(200, 400));
+
+        // Normal
         auto normalMap = AddTextureNode(layer, options.Normals.Texture, true);
         if (normalMap)
         {
             CONNECT(layer->Root->Boxes[static_cast<int32>(MaterialGraphBoxes::Normal)], normalMap->Boxes[1]);
             SET_POS(normalMap, Float2(-893.5272f, -200.926111f));
         }
-        auto opacityTexture = AddTextureNode(layer, options.Opacity.Texture);
-        auto opacityValue = AddFloatValue(layer, options.Opacity.Value, 1.0f);
-        if (opacityTexture && opacityValue)
-        {
-            auto opacityMultiply = AddMultiplyNode(layer);
-            CONNECT(opacityMultiply->Boxes[0], opacityTexture->Boxes[1]);
-            CONNECT(opacityMultiply->Boxes[1], opacityValue->Boxes[0]);
-            CONNECT(layer->Root->Boxes[static_cast<int32>(MaterialGraphBoxes::Opacity)], opacityMultiply->Boxes[2]);
-            SET_POS(opacityTexture, Float2(-867.7404, 91.41332));
-            SET_POS(opacityTexture, Float2(-938.096, -103.9724));
-            SET_POS(opacityMultiply, Float2(-693.5272f, -2.926111f));
-        }
-        else if (opacityTexture)
-        {
-            CONNECT(layer->Root->Boxes[static_cast<int32>(MaterialGraphBoxes::Opacity)], opacityTexture->Boxes[1]);
-            SET_POS(opacityTexture, Float2(-693.5272f, -2.926111f));
-        }
-        else if (opacityValue)
-        {
-            CONNECT(layer->Root->Boxes[static_cast<int32>(MaterialGraphBoxes::Opacity)], opacityValue->Boxes[0]);
-            SET_POS(opacityValue, Float2(-693.5272f, -2.926111f));
-        }
-#undef CONNECT
+
         MemoryWriteStream stream(512);
         layer->Graph.Save(&stream, true);
         context.Data.Header.Chunks[SHADER_FILE_CHUNK_VISJECT_SURFACE]->Data.Copy(stream.GetHandle(), stream.GetPosition());
@@ -223,5 +204,8 @@ CreateAssetResult CreateMaterial::Create(CreateAssetContext& context)
 
     return CreateAssetResult::Ok;
 }
+
+#undef CONNECT
+#undef SET_POS
 
 #endif

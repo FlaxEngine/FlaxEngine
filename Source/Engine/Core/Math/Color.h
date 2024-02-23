@@ -237,9 +237,10 @@ public:
 
     Color& operator*=(const float b)
     {
-        R = Math::Saturate(R * b);
-        G = Math::Saturate(G * b);
-        B = Math::Saturate(B * b);
+        R = R * b;
+        G = G * b;
+        B = B * b;
+        A = A * b;
         return *this;
     }
 

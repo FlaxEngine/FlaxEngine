@@ -1219,6 +1219,9 @@ bool ModelTool::ImportModel(const String& path, ModelData& data, Options& option
             materialOptions.Opacity.Value = material.Opacity.Value;
             if (material.Opacity.TextureIndex != -1)
                 materialOptions.Opacity.Texture = data.Textures[material.Opacity.TextureIndex].AssetID;
+            materialOptions.Roughness.Value = material.Roughness.Value;
+            if (material.Roughness.TextureIndex != -1)
+                materialOptions.Roughness.Texture = data.Textures[material.Roughness.TextureIndex].AssetID;
             if (material.Normals.TextureIndex != -1)
                 materialOptions.Normals.Texture = data.Textures[material.Normals.TextureIndex].AssetID;
             if (material.TwoSided || material.Diffuse.HasAlphaMask)
