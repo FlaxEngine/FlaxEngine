@@ -591,7 +591,7 @@ void Content::deleteFileSafety(const StringView& path, const Guid& id)
         }
     }
 
-#if PLATFORM_WINDOWS
+#if PLATFORM_WINDOWS || PLATFORM_LINUX
     // Safety way - move file to the recycle bin
     if (FileSystem::MoveFileToRecycleBin(path))
     {
