@@ -434,7 +434,6 @@ bool LinuxFileSystem::MoveFile(const StringView& dst, const StringView& src, boo
                 return false;
             }
         }
-        LOG(Error, "Cannot copy {} to {}", src, dst);
         return true;
     }
     return false;
@@ -544,12 +543,11 @@ bool LinuxFileSystem::MoveFileToRecycleBin(const StringView& path)
 
     if (!MoveFile(dst, path, true))
     {
-        // not MoveFile means success so write the info file
+        // Not MoveFile means success so write the info file
         const String infoFile = infoDir / trashName + TEXT(".trashinfo");
         StringBuilder trashInfo;
         const char *ansiPath = path.ToStringAnsi().Get();
-        // in the worst case the length will be tripled
-        const int maxLength = strlen(ansiPath) * 3 + 1;
+        const int maxLength = strlen(ansiPath) * 3 + 1; // in the worst case the length will be tripled
         char encoded[maxLength];
         if (!UrnEncodePath(ansiPath, encoded, maxLength))
         {
@@ -557,8 +555,7 @@ bool LinuxFileSystem::MoveFileToRecycleBin(const StringView& path)
             strcpy(encoded, ansiPath);
         }
         const DateTime now = DateTime::Now();
-        const String rfcDate = String::Format(TEXT("{0}-{1:0>2}-{2:0>2}T{3:0>2}:{4:0>2}:{5:0>2}"),
-                                              now.GetYear(), now.GetMonth(), now.GetDay(), now.GetHour(), now.GetMinute(), now.GetSecond());
+        const String rfcDate = String::Format(TEXT("{0}-{1:0>2}-{2:0>2}T{3:0>2}:{4:0>2}:{5:0>2}"), now.GetYear(), now.GetMonth(), now.GetDay(), now.GetHour(), now.GetMinute(), now.GetSecond());
         trashInfo.AppendLine(TEXT("[Trash Info]")).Append(TEXT("Path=")).Append(encoded).Append(TEXT('\n'));
         trashInfo.Append(TEXT("DeletionDate=")).Append(rfcDate).Append(TEXT("\n\0"));
 
