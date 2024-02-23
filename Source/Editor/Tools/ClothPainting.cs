@@ -154,7 +154,7 @@ namespace FlaxEngine.Tools
             if (IsPainting)
                 return;
 
-            if (Editor.Instance.Undo.Enabled)
+            if (Owner.Undo.Enabled)
                 _undoAction = new EditClothPaintAction(_cloth);
             _isPainting = true;
             _paintUpdateCount = 0;
@@ -221,7 +221,7 @@ namespace FlaxEngine.Tools
             if (_undoAction != null)
             {
                 _undoAction.RecordEnd();
-                Editor.Instance.Undo.AddAction(_undoAction);
+                Owner.Undo.AddAction(_undoAction);
                 _undoAction = null;
             }
             _isPainting = false;
