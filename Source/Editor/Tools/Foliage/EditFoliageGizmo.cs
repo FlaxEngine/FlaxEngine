@@ -3,6 +3,7 @@
 using System;
 using FlaxEditor.Gizmo;
 using FlaxEditor.SceneGraph;
+using FlaxEditor.SceneGraph.Actors;
 using FlaxEditor.Tools.Foliage.Undo;
 using FlaxEngine;
 
@@ -69,7 +70,7 @@ namespace FlaxEditor.Tools.Foliage
         }
 
         /// <inheritdoc />
-        protected override Transform GetSelectedObject(int index)
+        protected override SceneGraphNode GetSelectedObject(int index)
         {
             var foliage = GizmoMode.SelectedFoliage;
             if (!foliage)
@@ -77,8 +78,7 @@ namespace FlaxEditor.Tools.Foliage
             var instanceIndex = GizmoMode.SelectedInstanceIndex;
             if (instanceIndex < 0 || instanceIndex >= foliage.InstancesCount)
                 throw new InvalidOperationException("No foliage instance selected.");
-            var instance = foliage.GetInstance(instanceIndex);
-            return foliage.Transform.LocalToWorld(instance.Transform);
+            return new FoliageNode(foliage, instanceIndex);
         }
 
         /// <inheritdoc />

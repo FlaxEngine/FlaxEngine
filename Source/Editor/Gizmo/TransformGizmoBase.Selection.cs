@@ -27,7 +27,7 @@ namespace FlaxEditor.Gizmo
             // Get center point
             Vector3 center = Vector3.Zero;
             for (int i = 0; i < count; i++)
-                center += GetSelectedObject(i).Translation;
+                center += GetSelectedObject(i).Transform.Translation;
 
             // Return arithmetic average or whatever it means
             return center / count;
@@ -47,6 +47,11 @@ namespace FlaxEditor.Gizmo
 
         private void SelectAxis()
         {
+            if (Owner.IsControlDown)
+            {
+
+            }
+
             // Get mouse ray
             Ray ray = Owner.MouseRay;
 
