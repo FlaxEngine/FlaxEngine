@@ -32,17 +32,17 @@ namespace FlaxEditor.Gizmo
             /// <summary>
             /// The XY plane.
             /// </summary>
-            XY = X|Y,
+            XY = X | Y,
 
             /// <summary>
             /// The ZX plane.
             /// </summary>
-            ZX = Z|X,
+            ZX = Z | X,
 
             /// <summary>
             /// The YZ plane.
             /// </summary>
-            YZ = Y|Z,
+            YZ = Y | Z,
 
             /// <summary>
             /// The center point.

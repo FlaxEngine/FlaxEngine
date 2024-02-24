@@ -275,6 +275,12 @@ namespace FlaxEditor.Gizmo
         }
 
         /// <inheritdoc />
+        protected override Transform GetSelectedTransform(int index)
+        {
+            return _selectionParents[index].Transform;
+        }
+
+        /// <inheritdoc />
         protected override void GetSelectedObjectsBounds(out BoundingBox bounds, out bool navigationDirty)
         {
             bounds = BoundingBox.Empty;

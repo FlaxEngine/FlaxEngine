@@ -112,6 +112,10 @@ namespace FlaxEditor.Options
         [EditorDisplay("Scene", "Snap To Ground"), EditorOrder(500)]
         public InputBinding SnapToGround = new InputBinding(KeyboardKeys.End);
 
+        [DefaultValue(typeof(InputBinding), "End")]
+        [EditorDisplay("Scene", "Vertex Snapping"), EditorOrder(550)]
+        public InputBinding SnapToVertex = new InputBinding(KeyboardKeys.V);
+
         [DefaultValue(typeof(InputBinding), "F5")]
         [EditorDisplay("Scene", "Play/Stop"), EditorOrder(510)]
         public InputBinding Play = new InputBinding(KeyboardKeys.F5);

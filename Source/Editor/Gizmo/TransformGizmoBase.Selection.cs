@@ -27,7 +27,7 @@ namespace FlaxEditor.Gizmo
             // Get center point
             Vector3 center = Vector3.Zero;
             for (int i = 0; i < count; i++)
-                center += GetSelectedObject(i).Transform.Translation;
+                center += GetSelectedTransform(i).Translation;
 
             // Return arithmetic average or whatever it means
             return center / count;
@@ -36,22 +36,15 @@ namespace FlaxEditor.Gizmo
         private bool IntersectsRotateCircle(Vector3 normal, ref Ray ray, out Real distance)
         {
             var plane = new Plane(Vector3.Zero, normal);
-
             if (!plane.Intersects(ref ray, out distance))
                 return false;
             Vector3 hitPoint = ray.Position + ray.Direction * distance;
-
             Real distanceNormalized = hitPoint.Length / RotateRadiusRaw;
             return Mathf.IsInRange(distanceNormalized, 0.9f, 1.1f);
         }
 
         private void SelectAxis()
         {
-            if (Owner.IsControlDown)
-            {
-
-            }
-
             // Get mouse ray
             Ray ray = Owner.MouseRay;
 

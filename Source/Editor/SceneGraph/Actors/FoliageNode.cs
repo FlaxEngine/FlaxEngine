@@ -10,21 +10,68 @@ namespace FlaxEditor.SceneGraph.Actors
     [HideInEditor]
     public sealed class FoliageNode : ActorNode
     {
-        private FoliageInstance instance;
-        /// <summary>
-        /// The selected instance index
-        /// </summary>
-        public int SelectedInstanceIndex;
-
         /// <inheritdoc />
-        public FoliageNode(Foliage actor, int selectedInstanceIndex = -1)
+        public FoliageNode(Actor actor)
         : base(actor)
         {
-            SelectedInstanceIndex = selectedInstanceIndex;
-            if (selectedInstanceIndex != -1)
+        }
+    }
+
+    /// <summary>
+    /// Scene tree node for instance of <see cref="Foliage"/>.
+    /// </summary>
+    [HideInEditor]
+    public sealed class FoliageInstanceNode : SceneGraphNode
+    {
+        /// <summary>
+        /// The foliage actor that owns this instance.
+        /// </summary>
+        public Foliage Actor;
+
+        /// <summary>
+        /// Index of the foliage instance.
+        /// </summary>
+        public int Index;
+
+        /// <inheritdoc />
+        public FoliageInstanceNode(Foliage actor, int index)
+        : base(GetSubID(actor.ID, index))
+        {
+            Actor = actor;
+            Index = index;
+        }
+
+        /// <inheritdoc />
+        public override string Name => "Foliage Instance";
+
+        /// <inheritdoc />
+        public override SceneNode ParentScene
+        {
+            get
             {
-                instance = actor.GetInstance(selectedInstanceIndex);
+                var scene = Actor ? Actor.Scene : null;
+                return scene != null ? SceneGraphFactory.FindNode(scene.ID) as SceneNode : null;
             }
+        }
+
+        /// <inheritdoc />
+        public override Transform Transform
+        {
+            get => Actor.GetInstance(Index).Transform;
+            set => Actor.SetInstanceTransform(Index, ref value);
+        }
+
+        /// <inheritdoc />
+        public override bool IsActive => Actor.IsActive;
+
+        /// <inheritdoc />
+        public override bool IsActiveInHierarchy => Actor.IsActiveInHierarchy;
+
+        /// <inheritdoc />
+        public override int OrderInParent
+        {
+            get => Index;
+            set { }
         }
     }
 }

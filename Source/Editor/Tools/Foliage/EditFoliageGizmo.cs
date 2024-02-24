@@ -78,7 +78,20 @@ namespace FlaxEditor.Tools.Foliage
             var instanceIndex = GizmoMode.SelectedInstanceIndex;
             if (instanceIndex < 0 || instanceIndex >= foliage.InstancesCount)
                 throw new InvalidOperationException("No foliage instance selected.");
-            return new FoliageNode(foliage, instanceIndex);
+            return new FoliageInstanceNode(foliage, instanceIndex);
+        }
+
+        /// <inheritdoc />
+        protected override Transform GetSelectedTransform(int index)
+        {
+            var foliage = GizmoMode.SelectedFoliage;
+            if (!foliage)
+                throw new InvalidOperationException("No foliage selected.");
+            var instanceIndex = GizmoMode.SelectedInstanceIndex;
+            if (instanceIndex < 0 || instanceIndex >= foliage.InstancesCount)
+                throw new InvalidOperationException("No foliage instance selected.");
+            var instance = foliage.GetInstance(instanceIndex);
+            return foliage.Transform.LocalToWorld(instance.Transform);
         }
 
         /// <inheritdoc />
