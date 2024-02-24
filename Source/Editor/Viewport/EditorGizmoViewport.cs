@@ -69,6 +69,9 @@ namespace FlaxEditor.Viewport
         public bool SnapToGround => Editor.Instance.Options.Options.Input.SnapToGround.Process(Root);
 
         /// <inheritdoc />
+        public bool SnapToVertex => Editor.Instance.Options.Options.Input.SnapToVertex.Process(Root);
+
+        /// <inheritdoc />
         public Float2 MouseDelta => _mouseDelta * 1000;
 
         /// <inheritdoc />

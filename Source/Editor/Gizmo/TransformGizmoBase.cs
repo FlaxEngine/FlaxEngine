@@ -53,6 +53,15 @@ namespace FlaxEditor.Gizmo
         private Vector3 _translationDelta;
         private Vector3 _translationScaleSnapDelta;
 
+        //vertex snaping stff
+        private Mesh.Vertex[] verts;
+        private Mesh.Vertex[] otherVerts;
+        private Transform otherTransform;
+        private StaticModel SelectedModel;
+        private bool hasSelectedVertex;
+        private int selectedvert;
+        private int otherSelectedvert;
+
         /// <summary>
         /// Gets the gizmo position.
         /// </summary>
@@ -108,7 +117,7 @@ namespace FlaxEditor.Gizmo
                 _startTransforms.Capacity = Mathf.NextPowerOfTwo(count);
             for (var i = 0; i < count; i++)
             {
-                _startTransforms.Add(GetSelectedObject(i));
+                _startTransforms.Add(GetSelectedTransform(i));
             }
             GetSelectedObjectsBounds(out _startBounds, out _navigationDirty);
 
@@ -135,11 +144,12 @@ namespace FlaxEditor.Gizmo
 
         private void UpdateGizmoPosition()
         {
+            // Get gizmo pivot
             switch (_activePivotType)
             {
             case PivotType.ObjectCenter:
                 if (SelectionCount > 0)
-                    Position = GetSelectedObject(0).Translation;
+                    Position = GetSelectedTransform(0).Translation;
                 break;
             case PivotType.SelectionCenter:
                 Position = GetSelectionCenter();
@@ -148,6 +158,16 @@ namespace FlaxEditor.Gizmo
                 Position = Vector3.Zero;
                 break;
             }
+
+            // Apply vertex snapping
+            if (verts != null && SelectedModel != null)
+            {
+                Transform t = SelectedModel.Transform;
+                Vector3 selected = ((verts[selectedvert].Position * t.Orientation) * t.Scale) + t.Translation;
+                Position += -(Position - selected);
+            }
+
+            // Apply current movement
             Position += _translationDelta;
         }
 
@@ -179,8 +199,9 @@ namespace FlaxEditor.Gizmo
                 float gizmoSize = Editor.Instance.Options.Options.Visual.GizmoSize;
                 _screenScale = (float)(vLength.Length / GizmoScaleFactor * gizmoSize);
             }
+
             // Setup world
-            Quaternion orientation = GetSelectedObject(0).Orientation;
+            Quaternion orientation = GetSelectedTransform(0).Orientation;
             _gizmoWorld = new Transform(position, orientation, new Float3(_screenScale));
             if (_activeTransformSpace == TransformSpace.World && _activeMode != Mode.Scale)
             {
@@ -421,8 +442,12 @@ namespace FlaxEditor.Gizmo
                 {
                     switch (_activeMode)
                     {
-                    case Mode.Scale:
                     case Mode.Translate:
+                        UpdateTranslateScale();
+                        if (Owner.SnapToVertex)
+                            UpdateVertexSnapping();
+                        break;
+                    case Mode.Scale:
                         UpdateTranslateScale();
                         break;
                     case Mode.Rotate:
@@ -434,7 +459,12 @@ namespace FlaxEditor.Gizmo
                 {
                     // If nothing selected, try to select any axis
                     if (!isLeftBtnDown && !Owner.IsRightMouseButtonDown)
-                        SelectAxis();
+                    {
+                        if (Owner.SnapToVertex)
+                            SelectVertexSnapping();
+                        else
+                            SelectAxis();
+                    }
                 }
 
                 // Set positions of the gizmo
@@ -503,6 +533,7 @@ namespace FlaxEditor.Gizmo
                 // Deactivate
                 _isActive = false;
                 _activeAxis = Axis.None;
+                EndVertexSnapping();
                 return;
             }
 
@@ -515,6 +546,137 @@ namespace FlaxEditor.Gizmo
 
             // Update
             UpdateMatrices();
+        }
+
+        private void SelectVertexSnapping()
+        {
+            // Find the closest object in selection that is hit by the mouse ray
+            var ray = new SceneGraphNode.RayCastData
+            {
+                Ray = Owner.MouseRay,
+            };
+            var closestDistance = Real.MaxValue;
+            StaticModel closestModel = null;
+            for (int i = 0; i < SelectionCount; i++)
+            {
+                var obj = GetSelectedObject(i);
+                if (obj.EditableObject is StaticModel model)
+                {
+                    if (obj.RayCastSelf(ref ray, out var distance, out var normal) && distance < closestDistance)
+                    {
+                        closestDistance = distance;
+                        closestModel = model;
+                    }
+                }
+            }
+            if (closestModel == null)
+            {
+                // Find the closest object in selection (in case ray didn't hit anything)
+                for (int i = 0; i < SelectionCount; i++)
+                {
+                    var obj = GetSelectedObject(i);
+                    if (obj.EditableObject is StaticModel model)
+                    {
+                        var bounds = model.Box;
+                        CollisionsHelper.ClosestPointBoxPoint(ref bounds, ref ray.Ray.Position, out var point);
+                        var distance = Vector3.Distance(ref point, ref ray.Ray.Position);
+                        if (distance < closestDistance)
+                        {
+                            closestDistance = distance;
+                            closestModel = model;
+                        }
+                    }
+                }
+            }
+            SelectedModel = closestModel;
+            if (closestModel == null)
+                return;
+
+            // Find the closest vertex to bounding box point (collision detection approximation)
+            // TODO: replace this with collision detection which supports concave shapes (compute shader) 
+            var hitPoint = SelectedModel.Transform.WorldToLocal(ray.Ray.GetPoint(closestDistance));
+            // TODO: support multi-mesh models
+            verts = closestModel.Model.LODs[0].Meshes[0].DownloadVertexBuffer();
+            closestDistance = Vector3.Distance(hitPoint, verts[0].Position);
+            for (int j = 0; j < verts.Length; j++)
+            {
+                var distance = Vector3.Distance(hitPoint, verts[j].Position);
+                if (distance <= closestDistance)
+                {
+                    closestDistance = distance;
+                    selectedvert = j;
+                }
+            }
+        }
+
+        private void EndVertexSnapping()
+        {
+            // Clear current vertex snapping data
+            SelectedModel = null;
+            verts = null;
+            otherVerts = null;
+        }
+
+        private void UpdateVertexSnapping()
+        {
+            if (Owner.SceneGraphRoot == null)
+                return;
+            Profiler.BeginEvent("VertexSnap");
+
+            // Ray cast others
+            if (verts != null)
+            {
+                var ray = Owner.MouseRay;
+                var rayCast = new SceneGraphNode.RayCastData
+                {
+                    Ray = ray,
+                    Flags = SceneGraphNode.RayCastData.FlagTypes.SkipColliders | SceneGraphNode.RayCastData.FlagTypes.SkipEditorPrimitives,
+                    ExcludeObjects = new(),
+                };
+                for (int i = 0; i < SelectionCount; i++)
+                    rayCast.ExcludeObjects.Add(GetSelectedObject(i));
+
+                // Raycast objects
+                var hit = Owner.SceneGraphRoot.RayCast(ref rayCast, out var distance, out var _);
+                if (hit != null && hit.EditableObject is StaticModel model)
+                {
+                    otherTransform = model.Transform;
+                    Vector3 point = rayCast.Ray.Position + (rayCast.Ray.Direction * distance);
+
+                    //[To Do] comlite this  there is not suport for multy mesh model
+                    otherVerts = model.Model.LODs[0].Meshes[0].DownloadVertexBuffer();
+
+                    //find closest vertex to bounding box point (collision detection approximation)
+                    //[ToDo] replace this with collision detection with is suporting concave shapes (compute shader)
+                    point = hit.Transform.WorldToLocal(point);
+                    var closestDistance = Vector3.Distance(point, otherVerts[0].Position);
+                    for (int i = 0; i < otherVerts.Length; i++)
+                    {
+                        distance = Vector3.Distance(point, otherVerts[i].Position);
+                        if (distance < closestDistance)
+                        {
+                            closestDistance = distance;
+                            otherSelectedvert = i;
+                        }
+                    }
+
+                    if (closestDistance > 25)
+                    {
+                        otherSelectedvert = -1;
+                        otherVerts = null;
+                    }
+                }
+            }
+
+            if (verts != null && SelectedModel != null && otherVerts != null)
+            {
+                // Snap current vertex to the other vertex
+                Vector3 selected = SelectedModel.Transform.LocalToWorld(verts[selectedvert].Position);
+                Vector3 other = otherTransform.LocalToWorld(otherVerts[otherSelectedvert].Position);
+                _translationDelta = other - selected;
+            }
+
+            Profiler.EndEvent();
         }
 
         /// <summary>
@@ -533,10 +695,18 @@ namespace FlaxEditor.Gizmo
         protected abstract int SelectionCount { get; }
 
         /// <summary>
+        /// Gets the selected object.
+        /// </summary>
+        /// <param name="index">The selected object index.</param>
+        /// <returns>The selected object (eg. actor node).</returns>
+        protected abstract SceneGraphNode GetSelectedObject(int index);
+
+        /// <summary>
         /// Gets the selected object transformation.
         /// </summary>
         /// <param name="index">The selected object index.</param>
-        protected abstract Transform GetSelectedObject(int index);
+        /// <returns>The transformation of the selected object.</returns>
+        protected abstract Transform GetSelectedTransform(int index);
 
         /// <summary>
         /// Gets the selected objects bounding box (contains the whole selection).

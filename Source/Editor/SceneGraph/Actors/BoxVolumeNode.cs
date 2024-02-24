@@ -169,12 +169,8 @@ namespace FlaxEditor.SceneGraph.Actors
         : base(actor)
         {
             var id = ID;
-            var bytes = id.ToByteArray();
             for (int i = 0; i < 6; i++)
-            {
-                bytes[0] += 1;
-                AddChildNode(new SideLinkNode(this, new Guid(bytes), i));
-            }
+                AddChildNode(new SideLinkNode(this, GetSubID(id, i), i));
         }
 
         /// <inheritdoc />

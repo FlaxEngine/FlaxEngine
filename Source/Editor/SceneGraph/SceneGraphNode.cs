@@ -146,7 +146,6 @@ namespace FlaxEditor.SceneGraph
         {
             if (ChildNodes.Contains(node))
                 return true;
-
             return ChildNodes.Any(x => x.ContainsInHierarchy(node));
         }
 
@@ -216,6 +215,18 @@ namespace FlaxEditor.SceneGraph
             /// The flags.
             /// </summary>
             public FlagTypes Flags;
+
+            /// <summary>
+            /// The list of objects to exclude from tracing against. Null if unused.
+            /// </summary>
+            public List<object> ExcludeObjects;
+
+            /// <summary>
+            /// Initializes a new instance of the <see cref="RayCastData"/> struct.
+            /// </summary>
+            public RayCastData()
+            {
+            }
         }
 
         /// <summary>
@@ -276,7 +287,7 @@ namespace FlaxEditor.SceneGraph
             SceneGraphNode minTarget = null;
             Real minDistance = Real.MaxValue;
             Vector3 minDistanceNormal = Vector3.Up;
-            if (RayCastSelf(ref ray, out distance, out normal))
+            if (RayMask(ref ray) && RayCastSelf(ref ray, out distance, out normal))
             {
                 minTarget = this;
                 minDistance = distance;
@@ -299,6 +310,25 @@ namespace FlaxEditor.SceneGraph
             distance = minDistance;
             normal = minDistanceNormal;
             return minTarget;
+        }
+
+        private bool RayMask(ref RayCastData ray)
+        {
+            if (ray.ExcludeObjects != null)
+            {
+                for (int j = 0; j < ray.ExcludeObjects.Count; j++)
+                {
+                    if (ray.ExcludeObjects[j] == EditableObject)
+                    {
+                        // Remove form exclude because it is passed by ref and function is recursive it will slowly shrink the list until nothing is left as a micro optimization
+                        ray.ExcludeObjects.RemoveAt(j);
+                        if (ray.ExcludeObjects.Count == 0)
+                            ray.ExcludeObjects = null;
+                        return false;
+                    }
+                }
+            }
+            return true;
         }
 
         /// <summary>
@@ -438,6 +468,21 @@ namespace FlaxEditor.SceneGraph
         /// </summary>
         protected virtual void OnParentChanged()
         {
+        }
+
+        /// <summary>
+        /// Randomizes the owner node identifier.
+        /// </summary>
+        /// <param name="ownerId">The owner node ID.</param>
+        /// <param name="index">The sub-object index.</param>
+        /// <returns>The sub-object ID.</returns>
+        protected static unsafe Guid GetSubID(Guid ownerId, int index)
+        {
+            var id = ownerId;
+            var idPtr = (FlaxEngine.Json.JsonSerializer.GuidInterop*)&id;
+            idPtr->B ^= (uint)(index * 387);
+            idPtr->D += (uint)(index + 1);
+            return id;
         }
     }
 }

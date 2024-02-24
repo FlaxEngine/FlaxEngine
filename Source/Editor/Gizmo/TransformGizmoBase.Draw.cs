@@ -72,6 +72,12 @@ namespace FlaxEditor.Gizmo
 
             const float gizmoModelsScale2RealGizmoSize = 0.075f;
             Mesh sphereMesh, cubeMesh;
+
+            Matrix.Scaling(gizmoModelsScale2RealGizmoSize, out m3);
+            Matrix.Multiply(ref m3, ref world, out m1);
+            mx1 = m1;
+            mx1.M41 += 0.05f;
+
             switch (_activeMode)
             {
             case Mode.Translate:
@@ -81,10 +87,6 @@ namespace FlaxEditor.Gizmo
                 var transAxisMesh = _modelTranslationAxis.LODs[0].Meshes[0];
                 cubeMesh = _modelCube.LODs[0].Meshes[0];
                 sphereMesh = _modelSphere.LODs[0].Meshes[0];
-                Matrix.Scaling(gizmoModelsScale2RealGizmoSize, out m3);
-                Matrix.Multiply(ref m3, ref world, out m1);
-                mx1 = m1;
-                mx1.M41 += 0.05f;
 
                 // X axis
                 Matrix.RotationY(-Mathf.PiOverTwo, out m2);
@@ -130,10 +132,6 @@ namespace FlaxEditor.Gizmo
                     break;
                 var rotationAxisMesh = _modelRotationAxis.LODs[0].Meshes[0];
                 sphereMesh = _modelSphere.LODs[0].Meshes[0];
-                Matrix.Scaling(gizmoModelsScale2RealGizmoSize, out m3);
-                Matrix.Multiply(ref m3, ref world, out m1);
-                mx1 = m1;
-                mx1.M41 += 0.05f;
 
                 // X axis
                 Matrix.RotationZ(Mathf.PiOverTwo, out m2);
@@ -163,10 +161,6 @@ namespace FlaxEditor.Gizmo
                 var scaleAxisMesh = _modelScaleAxis.LODs[0].Meshes[0];
                 cubeMesh = _modelCube.LODs[0].Meshes[0];
                 sphereMesh = _modelSphere.LODs[0].Meshes[0];
-                Matrix.Scaling(gizmoModelsScale2RealGizmoSize, out m3);
-                Matrix.Multiply(ref m3, ref world, out m1);
-                mx1 = m1;
-                mx1.M41 -= 0.05f;
 
                 // X axis
                 Matrix.RotationY(-Mathf.PiOverTwo, out m2);
@@ -205,6 +199,26 @@ namespace FlaxEditor.Gizmo
 
                 break;
             }
+            }
+
+            // Vertex snapping
+            if (verts != null && SelectedModel != null && selectedvert != -1)
+            {
+                if (!_modelCube || !_modelCube.IsLoaded)
+                    return;
+                cubeMesh = _modelCube.LODs[0].Meshes[0];
+
+                Transform t = SelectedModel.Transform;
+                Vector3 selected = ((verts[selectedvert].Position * t.Orientation) * t.Scale) + t.Translation;
+                Matrix matrix = new Transform(selected, t.Orientation, new Float3(gizmoModelsScale2RealGizmoSize)).GetWorld();
+                cubeMesh.Draw(ref renderContext, _materialSphere, ref matrix);
+
+                if (otherVerts != null && otherSelectedvert != -1)
+                {
+                    t = otherTransform;
+                    matrix = new Transform(selected, t.Orientation, new Float3(gizmoModelsScale2RealGizmoSize)).GetWorld();
+                    cubeMesh.Draw(ref renderContext, _materialSphere, ref matrix);
+                }
             }
         }
     }

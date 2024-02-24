@@ -269,7 +269,13 @@ namespace FlaxEditor.Gizmo
         protected override int SelectionCount => _selectionParents.Count;
 
         /// <inheritdoc />
-        protected override Transform GetSelectedObject(int index)
+        protected override SceneGraphNode GetSelectedObject(int index)
+        {
+            return _selectionParents[index];
+        }
+
+        /// <inheritdoc />
+        protected override Transform GetSelectedTransform(int index)
         {
             return _selectionParents[index].Transform;
         }
