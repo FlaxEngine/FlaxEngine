@@ -202,21 +202,22 @@ namespace FlaxEditor.Gizmo
             }
 
             // Vertex snapping
-            if (verts != null && SelectedModel != null && selectedvert != -1)
+            if (_vertexSnapObject != null)
             {
                 if (!_modelCube || !_modelCube.IsLoaded)
                     return;
                 cubeMesh = _modelCube.LODs[0].Meshes[0];
 
-                Transform t = SelectedModel.Transform;
-                Vector3 selected = ((verts[selectedvert].Position * t.Orientation) * t.Scale) + t.Translation;
-                Matrix matrix = new Transform(selected, t.Orientation, new Float3(gizmoModelsScale2RealGizmoSize)).GetWorld();
+                Transform t = _vertexSnapObject.Transform;
+                Vector3 p = t.LocalToWorld(_vertexSnapPoint);
+                Matrix matrix = new Transform(p, t.Orientation, new Float3(gizmoModelsScale2RealGizmoSize)).GetWorld();
                 cubeMesh.Draw(ref renderContext, _materialSphere, ref matrix);
 
-                if (otherVerts != null && otherSelectedvert != -1)
+                if (_vertexSnapObjectTo != null)
                 {
-                    t = otherTransform;
-                    matrix = new Transform(selected, t.Orientation, new Float3(gizmoModelsScale2RealGizmoSize)).GetWorld();
+                    t = _vertexSnapObjectTo.Transform;
+                    p = t.LocalToWorld(_vertexSnapPointTo);
+                    matrix = new Transform(p, t.Orientation, new Float3(gizmoModelsScale2RealGizmoSize)).GetWorld();
                     cubeMesh.Draw(ref renderContext, _materialSphere, ref matrix);
                 }
             }

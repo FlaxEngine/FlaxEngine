@@ -53,14 +53,8 @@ namespace FlaxEditor.Gizmo
         private Vector3 _translationDelta;
         private Vector3 _translationScaleSnapDelta;
 
-        //vertex snaping stff
-        private Mesh.Vertex[] verts;
-        private Mesh.Vertex[] otherVerts;
-        private Transform otherTransform;
-        private StaticModel SelectedModel;
-        private bool hasSelectedVertex;
-        private int selectedvert;
-        private int otherSelectedvert;
+        private SceneGraphNode _vertexSnapObject, _vertexSnapObjectTo;
+        private Vector3 _vertexSnapPoint, _vertexSnapPointTo;
 
         /// <summary>
         /// Gets the gizmo position.
@@ -160,11 +154,10 @@ namespace FlaxEditor.Gizmo
             }
 
             // Apply vertex snapping
-            if (verts != null && SelectedModel != null)
+            if (_vertexSnapObject != null)
             {
-                Transform t = SelectedModel.Transform;
-                Vector3 selected = ((verts[selectedvert].Position * t.Orientation) * t.Scale) + t.Translation;
-                Position += -(Position - selected);
+                Vector3 vertexSnapPoint = _vertexSnapObject.Transform.LocalToWorld(_vertexSnapPoint);
+                Position += vertexSnapPoint - Position;
             }
 
             // Apply current movement
@@ -556,124 +549,91 @@ namespace FlaxEditor.Gizmo
                 Ray = Owner.MouseRay,
             };
             var closestDistance = Real.MaxValue;
-            StaticModel closestModel = null;
+            SceneGraphNode closestObject = null;
             for (int i = 0; i < SelectionCount; i++)
             {
                 var obj = GetSelectedObject(i);
-                if (obj.EditableObject is StaticModel model)
+                if (obj.CanVertexSnap && obj.RayCastSelf(ref ray, out var distance, out _) && distance < closestDistance)
                 {
-                    if (obj.RayCastSelf(ref ray, out var distance, out var normal) && distance < closestDistance)
-                    {
-                        closestDistance = distance;
-                        closestModel = model;
-                    }
+                    closestDistance = distance;
+                    closestObject = obj;
                 }
             }
-            if (closestModel == null)
+            if (closestObject == null)
             {
                 // Find the closest object in selection (in case ray didn't hit anything)
                 for (int i = 0; i < SelectionCount; i++)
                 {
                     var obj = GetSelectedObject(i);
-                    if (obj.EditableObject is StaticModel model)
+                    if (obj.CanVertexSnap)
                     {
-                        var bounds = model.Box;
+                        GetSelectedObjectsBounds(out var bounds, out _);
                         CollisionsHelper.ClosestPointBoxPoint(ref bounds, ref ray.Ray.Position, out var point);
                         var distance = Vector3.Distance(ref point, ref ray.Ray.Position);
                         if (distance < closestDistance)
                         {
                             closestDistance = distance;
-                            closestModel = model;
+                            closestObject = obj;
                         }
                     }
                 }
             }
-            SelectedModel = closestModel;
-            if (closestModel == null)
+            _vertexSnapObject = closestObject;
+            if (closestObject == null)
                 return;
 
             // Find the closest vertex to bounding box point (collision detection approximation)
-            // TODO: replace this with collision detection which supports concave shapes (compute shader) 
-            var hitPoint = SelectedModel.Transform.WorldToLocal(ray.Ray.GetPoint(closestDistance));
-            // TODO: support multi-mesh models
-            verts = closestModel.Model.LODs[0].Meshes[0].DownloadVertexBuffer();
-            closestDistance = Vector3.Distance(hitPoint, verts[0].Position);
-            for (int j = 0; j < verts.Length; j++)
+            var closestPoint = ray.Ray.GetPoint(closestDistance);
+            if (!closestObject.OnVertexSnap(ref closestPoint, out _vertexSnapPoint))
             {
-                var distance = Vector3.Distance(hitPoint, verts[j].Position);
-                if (distance <= closestDistance)
-                {
-                    closestDistance = distance;
-                    selectedvert = j;
-                }
+                // Failed to get the closest point
+                _vertexSnapPoint = closestPoint;
             }
+
+            // Transform back to the local space of the object to work when moving it
+            _vertexSnapPoint = closestObject.Transform.WorldToLocal(_vertexSnapPoint);
         }
 
         private void EndVertexSnapping()
         {
             // Clear current vertex snapping data
-            SelectedModel = null;
-            verts = null;
-            otherVerts = null;
+            _vertexSnapObject = null;
+            _vertexSnapObjectTo = null;
+            _vertexSnapPoint = _vertexSnapPointTo = Vector3.Zero;
         }
 
         private void UpdateVertexSnapping()
         {
-            if (Owner.SceneGraphRoot == null)
+            _vertexSnapObjectTo = null;
+            if (Owner.SceneGraphRoot == null || _vertexSnapObject == null)
                 return;
             Profiler.BeginEvent("VertexSnap");
 
-            // Ray cast others
-            if (verts != null)
+            // Raycast nearby objects to snap to (excluding selection)
+            var rayCast = new SceneGraphNode.RayCastData
             {
-                var ray = Owner.MouseRay;
-                var rayCast = new SceneGraphNode.RayCastData
+                Ray = Owner.MouseRay,
+                Flags = SceneGraphNode.RayCastData.FlagTypes.SkipColliders | SceneGraphNode.RayCastData.FlagTypes.SkipEditorPrimitives,
+                ExcludeObjects = new(),
+            };
+            for (int i = 0; i < SelectionCount; i++)
+                rayCast.ExcludeObjects.Add(GetSelectedObject(i));
+            var hit = Owner.SceneGraphRoot.RayCast(ref rayCast, out var distance, out var _);
+            if (hit != null && hit.CanVertexSnap)
+            {
+                var point = rayCast.Ray.GetPoint(distance);
+                if (hit.OnVertexSnap(ref point, out var pointSnapped) 
+                    //&& Vector3.Distance(point, pointSnapped) <= 25.0f
+                    )
                 {
-                    Ray = ray,
-                    Flags = SceneGraphNode.RayCastData.FlagTypes.SkipColliders | SceneGraphNode.RayCastData.FlagTypes.SkipEditorPrimitives,
-                    ExcludeObjects = new(),
-                };
-                for (int i = 0; i < SelectionCount; i++)
-                    rayCast.ExcludeObjects.Add(GetSelectedObject(i));
+                    _vertexSnapObjectTo = hit;
+                    _vertexSnapPointTo = hit.Transform.WorldToLocal(pointSnapped);
 
-                // Raycast objects
-                var hit = Owner.SceneGraphRoot.RayCast(ref rayCast, out var distance, out var _);
-                if (hit != null && hit.EditableObject is StaticModel model)
-                {
-                    otherTransform = model.Transform;
-                    Vector3 point = rayCast.Ray.Position + (rayCast.Ray.Direction * distance);
-
-                    //[To Do] comlite this  there is not suport for multy mesh model
-                    otherVerts = model.Model.LODs[0].Meshes[0].DownloadVertexBuffer();
-
-                    //find closest vertex to bounding box point (collision detection approximation)
-                    //[ToDo] replace this with collision detection with is suporting concave shapes (compute shader)
-                    point = hit.Transform.WorldToLocal(point);
-                    var closestDistance = Vector3.Distance(point, otherVerts[0].Position);
-                    for (int i = 0; i < otherVerts.Length; i++)
-                    {
-                        distance = Vector3.Distance(point, otherVerts[i].Position);
-                        if (distance < closestDistance)
-                        {
-                            closestDistance = distance;
-                            otherSelectedvert = i;
-                        }
-                    }
-
-                    if (closestDistance > 25)
-                    {
-                        otherSelectedvert = -1;
-                        otherVerts = null;
-                    }
+                    // Snap current vertex to the other vertex
+                    Vector3 selected = _vertexSnapObject.Transform.LocalToWorld(_vertexSnapPoint);
+                    Vector3 other = _vertexSnapObjectTo.Transform.LocalToWorld(_vertexSnapPointTo);
+                    _translationDelta = other - selected;
                 }
-            }
-
-            if (verts != null && SelectedModel != null && otherVerts != null)
-            {
-                // Snap current vertex to the other vertex
-                Vector3 selected = SelectedModel.Transform.LocalToWorld(verts[selectedvert].Position);
-                Vector3 other = otherTransform.LocalToWorld(otherVerts[otherSelectedvert].Position);
-                _translationDelta = other - selected;
             }
 
             Profiler.EndEvent();

@@ -95,6 +95,18 @@ namespace FlaxEditor.SceneGraph
         public virtual bool CanTransform => true;
 
         /// <summary>
+        /// Gets a value indicating whether this node can be used for the vertex snapping feature.
+        /// </summary>
+        public bool CanVertexSnap
+        {
+            get
+            {
+                var v = Vector3.Zero;
+                return OnVertexSnap(ref v, out _);
+            }
+        }
+
+        /// <summary>
         /// Gets a value indicating whether this <see cref="SceneGraphNode"/> is active.
         /// </summary>
         public abstract bool IsActive { get; }
@@ -357,6 +369,18 @@ namespace FlaxEditor.SceneGraph
                 ChildNodes[i].GetEditorSphere(out var childSphere);
                 BoundingSphere.Merge(ref sphere, ref childSphere, out sphere);
             }
+        }
+
+        /// <summary>
+        /// Performs the vertex snapping of a given point on the object surface that is closest to a given location.
+        /// </summary>
+        /// <param name="point">The position to snap.</param>
+        /// <param name="result">The result point on the object mesh that is closest to the specified location.</param>
+        /// <returns>True if got a valid result value, otherwise false (eg. if missing data or not initialized).</returns>
+        public virtual bool OnVertexSnap(ref Vector3 point, out Vector3 result)
+        {
+            result = point;
+            return false;
         }
 
         /// <summary>

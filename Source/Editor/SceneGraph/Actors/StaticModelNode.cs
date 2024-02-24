@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
 
 using System;
+using System.Collections.Generic;
 using FlaxEditor.Content;
 using FlaxEditor.GUI.ContextMenu;
 using FlaxEditor.Windows;
@@ -15,10 +16,59 @@ namespace FlaxEditor.SceneGraph.Actors
     [HideInEditor]
     public sealed class StaticModelNode : ActorNode
     {
+        private Dictionary<IntPtr, Mesh.Vertex[]> _vertices;
+
         /// <inheritdoc />
         public StaticModelNode(Actor actor)
         : base(actor)
         {
+        }
+
+        /// <inheritdoc />
+        public override bool OnVertexSnap(ref Vector3 point, out Vector3 result)
+        {
+            result = point;
+            var model = ((StaticModel)Actor).Model;
+            if (model && !model.WaitForLoaded())
+            {
+                // TODO: move to C++ and use cached vertex buffer internally inside the Mesh
+                if (_vertices == null)
+                    _vertices = new();
+                var pointLocal = (Float3)Actor.Transform.WorldToLocal(point);
+                var minDistance = float.MaxValue;
+                foreach (var lod in model.LODs)
+                {
+                    var hit = false;
+                    foreach (var mesh in lod.Meshes)
+                    {
+                        var key = FlaxEngine.Object.GetUnmanagedPtr(mesh);
+                        if (!_vertices.TryGetValue(key, out var verts))
+                        {
+                            verts = mesh.DownloadVertexBuffer();
+                            if (verts == null)
+                                continue;
+                            _vertices.Add(key, verts);
+                        }
+                        for (int i = 0; i < verts.Length; i++)
+                        {
+                            var v = verts[i].Position;
+                            var distance = Float3.DistanceSquared(ref pointLocal, ref v);
+                            if (distance <= minDistance)
+                            {
+                                hit = true;
+                                minDistance = distance;
+                                result = v;
+                            }
+                        }
+                    }
+                    if (hit)
+                    {
+                        result = Actor.Transform.LocalToWorld(result);
+                        return true;
+                    }
+                }
+            }
+            return false;
         }
 
         /// <inheritdoc />
