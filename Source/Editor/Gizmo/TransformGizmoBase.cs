@@ -605,7 +605,7 @@ namespace FlaxEditor.Gizmo
         private void UpdateVertexSnapping()
         {
             _vertexSnapObjectTo = null;
-            if (Owner.SceneGraphRoot == null || _vertexSnapObject == null)
+            if (Owner.SceneGraphRoot == null)
                 return;
             Profiler.BeginEvent("VertexSnap");
 
@@ -629,10 +629,8 @@ namespace FlaxEditor.Gizmo
                     _vertexSnapObjectTo = hit;
                     _vertexSnapPointTo = hit.Transform.WorldToLocal(pointSnapped);
 
-                    // Snap current vertex to the other vertex
-                    Vector3 selected = _vertexSnapObject.Transform.LocalToWorld(_vertexSnapPoint);
-                    Vector3 other = _vertexSnapObjectTo.Transform.LocalToWorld(_vertexSnapPointTo);
-                    _translationDelta = other - selected;
+                    // Snap current vertex to the target vertex
+                    _translationDelta = pointSnapped - Position;
                 }
             }
 

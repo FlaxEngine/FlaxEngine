@@ -231,7 +231,7 @@ namespace FlaxEditor.SceneGraph
             /// <summary>
             /// The list of objects to exclude from tracing against. Null if unused.
             /// </summary>
-            public List<object> ExcludeObjects;
+            public List<SceneGraphNode> ExcludeObjects;
 
             /// <summary>
             /// Initializes a new instance of the <see cref="RayCastData"/> struct.
@@ -326,19 +326,12 @@ namespace FlaxEditor.SceneGraph
 
         private bool RayMask(ref RayCastData ray)
         {
-            if (ray.ExcludeObjects != null)
+            if (ray.ExcludeObjects != null && ray.ExcludeObjects.Remove(this))
             {
-                for (int j = 0; j < ray.ExcludeObjects.Count; j++)
-                {
-                    if (ray.ExcludeObjects[j] == EditableObject)
-                    {
-                        // Remove form exclude because it is passed by ref and function is recursive it will slowly shrink the list until nothing is left as a micro optimization
-                        ray.ExcludeObjects.RemoveAt(j);
-                        if (ray.ExcludeObjects.Count == 0)
-                            ray.ExcludeObjects = null;
-                        return false;
-                    }
-                }
+                // Remove form exclude because it is passed by ref and function is recursive it will slowly shrink the list until nothing is left as a micro optimization
+                if (ray.ExcludeObjects.Count == 0)
+                    ray.ExcludeObjects = null;
+                return false;
             }
             return true;
         }
