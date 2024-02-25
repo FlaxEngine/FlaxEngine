@@ -1679,6 +1679,8 @@ namespace FlaxEngine.Interop
         /// </summary>
         internal static ManagedHandle GetTypeManagedHandle(Type type)
         {
+            if (type.IsInterface && type.IsGenericType)
+                type = type.GetGenericTypeDefinition(); // Generic type to use type definition handle
             if (managedTypes.TryGetValue(type, out (TypeHolder typeHolder, ManagedHandle handle) tuple))
                 return tuple.handle;
 #if FLAX_EDITOR
