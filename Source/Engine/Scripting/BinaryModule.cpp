@@ -349,6 +349,20 @@ void ScriptingType::DefaultInitRuntime()
 
 ScriptingObject* ScriptingType::DefaultSpawn(const ScriptingObjectSpawnParams& params)
 {
+#if !BUILD_RELEASE
+    // Provide more context information on object spawn failure in development builds
+    if (params.Type)
+    {
+        auto& type = params.Type.GetType();
+        if (type.ManagedClass)
+        {
+            if (type.ManagedClass->IsAbstract())
+                LOG(Error, "Cannot spawn abstract type '{}'", type.ToString());
+            if (type.ManagedClass->IsStatic())
+                LOG(Error, "Cannot spawn static type '{}'", type.ToString());
+        }
+    }
+#endif
     return nullptr;
 }
 
@@ -1040,18 +1054,11 @@ void ManagedBinaryModule::InitType(MClass* mclass)
         baseType.Module->TypeNameToTypeIndex.TryGet(genericClassName, *(int32*)&baseType.TypeIndex);
     }
 
-    if (!baseType)
-    {
-        LOG(Error, "Missing base class for managed class {0} from assembly {1}.", String(typeName), Assembly->ToString());
-        return;
-    }
-
-    if (baseType.TypeIndex == -1)
+    if (baseType.TypeIndex == -1 || baseType.Module == nullptr)
     {
         if (baseType.Module)
             LOG(Error, "Missing base class for managed class {0} from assembly {1}.", String(baseClass->GetFullName()), baseType.Module->GetName().ToString());
         else
-            // Not sure this can happen but never hurts to account for it
             LOG(Error, "Missing base class for managed class {0} from unknown assembly.", String(baseClass->GetFullName()));
         return;
     }
@@ -1112,7 +1119,8 @@ void ManagedBinaryModule::InitType(MClass* mclass)
     // Create scripting type descriptor for managed-only type based on the native base class
     const int32 typeIndex = Types.Count();
     Types.AddUninitialized();
-    new(Types.Get() + Types.Count() - 1)ScriptingType(typeName, this, baseType.GetType().Size, ScriptingType::DefaultInitRuntime, ManagedObjectSpawn, baseType, nullptr, nullptr, interfaces);
+    const ScriptingType::SpawnHandler spawner = mclass->IsAbstract() ? ScriptingType::DefaultSpawn : ManagedObjectSpawn;
+    new(Types.Get() + Types.Count() - 1)ScriptingType(typeName, this, baseType.GetType().Size, ScriptingType::DefaultInitRuntime, spawner, baseType, nullptr, nullptr, interfaces);
     TypeNameToTypeIndex[typeName] = typeIndex;
     auto& type = Types[typeIndex];
     type.ManagedClass = mclass;

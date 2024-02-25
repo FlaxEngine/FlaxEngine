@@ -551,8 +551,16 @@ namespace FlaxEngine.Interop
         internal static ManagedHandle NewObject(ManagedHandle typeHandle)
         {
             TypeHolder typeHolder = Unsafe.As<TypeHolder>(typeHandle.Target);
-            object value = typeHolder.CreateObject();
-            return ManagedHandle.Alloc(value);
+            try
+            {
+                object value = typeHolder.CreateObject();
+                return ManagedHandle.Alloc(value);
+            }
+            catch (Exception ex)
+            {
+                Debug.LogException(ex);
+            }
+            return new ManagedHandle();
         }
 
         [UnmanagedCallersOnly]

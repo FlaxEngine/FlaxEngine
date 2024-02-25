@@ -130,12 +130,10 @@ namespace FlaxEngine.Interop
             object obj = objectHandle.Target;
             if (obj is not Object)
                 return;
-
             {
                 ref IntPtr fieldRef = ref FieldHelper.GetReferenceTypeFieldReference<IntPtr>(unmanagedPtrFieldOffset, ref obj);
                 fieldRef = unmanagedPtr;
             }
-
             if (idPtr != IntPtr.Zero)
             {
                 ref Guid nativeId = ref Unsafe.AsRef<Guid>(idPtr.ToPointer());
@@ -148,8 +146,16 @@ namespace FlaxEngine.Interop
         internal static ManagedHandle ScriptingObjectCreate(ManagedHandle typeHandle, IntPtr unmanagedPtr, IntPtr idPtr)
         {
             TypeHolder typeHolder = Unsafe.As<TypeHolder>(typeHandle.Target);
-            object obj = typeHolder.CreateScriptingObject(unmanagedPtr, idPtr);
-            return ManagedHandle.Alloc(obj);
+            try
+            {
+                object obj = typeHolder.CreateScriptingObject(unmanagedPtr, idPtr);
+                return ManagedHandle.Alloc(obj);
+            }
+            catch (Exception ex)
+            {
+                Debug.LogException(ex);
+            }
+            return new ManagedHandle();
         }
 #endif
 
@@ -1462,7 +1468,6 @@ namespace FlaxEngine.Interop
                         ref IntPtr fieldRef = ref FieldHelper.GetReferenceTypeFieldReference<IntPtr>(unmanagedPtrFieldOffset, ref obj);
                         fieldRef = unmanagedPtr;
                     }
-
                     if (idPtr != IntPtr.Zero)
                     {
                         ref Guid nativeId = ref Unsafe.AsRef<Guid>(idPtr.ToPointer());
@@ -1470,12 +1475,10 @@ namespace FlaxEngine.Interop
                         fieldRef = nativeId;
                     }
                 }
-
                 if (ctor != null)
                     ctor.Invoke(obj, null);
                 else
-                    Debug.LogException(new Exception($"Missing empty constructor in type '{wrappedType}'."));
-
+                    throw new NativeInteropException($"Missing empty constructor in type '{wrappedType}'.");
                 return obj;
             }
 #endif
