@@ -306,8 +306,6 @@ namespace FlaxEditor.Windows
             InputActions.Add(options => options.TakeScreenshot, () => Screenshot.Capture(string.Empty));
             InputActions.Add(options => options.DebuggerUnlockMouse, UnlockMouseInPlay);
             InputActions.Add(options => options.ToggleFullscreen, () => { if (Editor.IsPlayMode) IsMaximized = !IsMaximized; });
-
-            FlaxEditor.Utilities.Utils.SetupCommonInputActions(this);
         }
 
         private void ChangeViewportRatio(ViewportScaleOptions v)
@@ -320,7 +318,7 @@ namespace FlaxEditor.Windows
                 return;
             }
 
-            if (string.Equals(v.Label, "Free Aspect") && v.Size == new Int2(1, 1))
+            if (string.Equals(v.Label, "Free Aspect", StringComparison.Ordinal) && v.Size == new Int2(1, 1))
             {
                 _freeAspect = true;
                 _useAspect = true;
