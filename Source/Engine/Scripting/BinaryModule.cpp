@@ -349,20 +349,6 @@ void ScriptingType::DefaultInitRuntime()
 
 ScriptingObject* ScriptingType::DefaultSpawn(const ScriptingObjectSpawnParams& params)
 {
-#if !BUILD_RELEASE
-    // Provide more context information on object spawn failure in development builds
-    if (params.Type)
-    {
-        auto& type = params.Type.GetType();
-        if (type.ManagedClass)
-        {
-            if (type.ManagedClass->IsAbstract())
-                LOG(Error, "Cannot spawn abstract type '{}'", type.ToString());
-            if (type.ManagedClass->IsStatic())
-                LOG(Error, "Cannot spawn static type '{}'", type.ToString());
-        }
-    }
-#endif
     return nullptr;
 }
 
@@ -777,6 +763,11 @@ ScriptingObject* ManagedBinaryModule::ManagedObjectSpawn(const ScriptingObjectSp
     // Create native object
     ScriptingTypeHandle managedTypeHandle = params.Type;
     const ScriptingType* managedTypePtr = &managedTypeHandle.GetType();
+    if (managedTypePtr->ManagedClass && managedTypePtr->ManagedClass->IsAbstract())
+    {
+        LOG(Error, "Failed to spawn abstract type '{}'", managedTypePtr->ToString());
+        return nullptr;
+    }
     while (managedTypePtr->Script.Spawn != &ManagedObjectSpawn)
     {
         managedTypeHandle = managedTypePtr->GetBaseType();
@@ -1119,8 +1110,7 @@ void ManagedBinaryModule::InitType(MClass* mclass)
     // Create scripting type descriptor for managed-only type based on the native base class
     const int32 typeIndex = Types.Count();
     Types.AddUninitialized();
-    const ScriptingType::SpawnHandler spawner = mclass->IsAbstract() ? ScriptingType::DefaultSpawn : ManagedObjectSpawn;
-    new(Types.Get() + Types.Count() - 1)ScriptingType(typeName, this, baseType.GetType().Size, ScriptingType::DefaultInitRuntime, spawner, baseType, nullptr, nullptr, interfaces);
+    new(Types.Get() + Types.Count() - 1)ScriptingType(typeName, this, baseType.GetType().Size, ScriptingType::DefaultInitRuntime, ManagedObjectSpawn, baseType, nullptr, nullptr, interfaces);
     TypeNameToTypeIndex[typeName] = typeIndex;
     auto& type = Types[typeIndex];
     type.ManagedClass = mclass;
