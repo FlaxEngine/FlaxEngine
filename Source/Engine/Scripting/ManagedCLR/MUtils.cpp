@@ -99,44 +99,50 @@ MString* MUtils::ToString(const char* str)
 
 MString* MUtils::ToString(const StringAnsi& str)
 {
-    if (str.IsEmpty())
+    const int32 len = str.Length();
+    if (len <= 0)
         return MCore::String::GetEmpty();
-    return MCore::String::New(str.Get(), str.Length());
+    return MCore::String::New(str.Get(), len);
 }
 
 MString* MUtils::ToString(const String& str)
 {
-    if (str.IsEmpty())
+    const int32 len = str.Length();
+    if (len <= 0)
         return MCore::String::GetEmpty();
-    return MCore::String::New(str.Get(), str.Length());
+    return MCore::String::New(str.Get(), len);
 }
 
 MString* MUtils::ToString(const String& str, MDomain* domain)
 {
-    if (str.IsEmpty())
+    const int32 len = str.Length();
+    if (len <= 0)
         return MCore::String::GetEmpty(domain);
-    return MCore::String::New(str.Get(), str.Length(), domain);
+    return MCore::String::New(str.Get(), len, domain);
 }
 
 MString* MUtils::ToString(const StringAnsiView& str)
 {
-    if (str.IsEmpty())
+    const int32 len = str.Length();
+    if (len <= 0)
         return MCore::String::GetEmpty();
     return MCore::String::New(str.Get(), str.Length());
 }
 
 MString* MUtils::ToString(const StringView& str)
 {
-    if (str.IsEmpty())
+    const int32 len = str.Length();
+    if (len <= 0)
         return MCore::String::GetEmpty();
-    return MCore::String::New(str.Get(), str.Length());
+    return MCore::String::New(str.Get(), len);
 }
 
 MString* MUtils::ToString(const StringView& str, MDomain* domain)
 {
-    if (str.IsEmpty())
+    const int32 len = str.Length();
+    if (len <= 0)
         return MCore::String::GetEmpty(domain);
-    return MCore::String::New(str.Get(), str.Length(), domain);
+    return MCore::String::New(str.Get(), len, domain);
 }
 
 ScriptingTypeHandle MUtils::UnboxScriptingTypeHandle(MTypeObject* value)
