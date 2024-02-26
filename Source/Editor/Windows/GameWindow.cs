@@ -856,7 +856,13 @@ namespace FlaxEditor.Windows
                     var options = Editor.Options.Options.Visual;
                     var control = controlActor.Control;
                     var bounds = control.EditorBounds;
-                    bounds = Rectangle.FromPoints(control.PointToParent(_viewport, bounds.Location), control.PointToParent(_viewport, bounds.Size));
+                    var p1 = control.PointToParent(_viewport, bounds.UpperLeft);
+                    var p2 = control.PointToParent(_viewport, bounds.UpperRight);
+                    var p3 = control.PointToParent(_viewport, bounds.BottomLeft);
+                    var p4 = control.PointToParent(_viewport, bounds.BottomRight);
+                    var min = Float2.Min(Float2.Min(p1, p2), Float2.Min(p3, p4));
+                    var max = Float2.Max(Float2.Max(p1, p2), Float2.Max(p3, p4));
+                    bounds = new Rectangle(min, Float2.Max(max - min, Float2.Zero));
                     Render2D.DrawRectangle(bounds, options.SelectionOutlineColor0, options.UISelectionOutlineSize);
                 }
             }
