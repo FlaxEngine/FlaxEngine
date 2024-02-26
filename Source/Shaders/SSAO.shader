@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 // Adaptive Screen Space Ambient Occlusion
 // https://github.com/GameTechDev/ASSAO

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 using System.Collections.Generic;
 using FlaxEngine;
@@ -50,6 +50,11 @@ namespace FlaxEditor.Gizmo
         /// Gets a value indicating whether snap selected objects to ground (check if user pressed the given input key to call action).
         /// </summary>
         bool SnapToGround { get; }
+
+        /// <summary>
+        /// Gets a value indicating whether to use vertex snapping (check if user pressed the given input key to call action).
+        /// </summary>
+        bool SnapToVertex { get; }
 
         /// <summary>
         /// Gets the view forward direction.

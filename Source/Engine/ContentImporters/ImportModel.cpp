@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #include "ImportModel.h"
 
@@ -269,7 +269,7 @@ CreateAssetResult ImportModel::Import(CreateAssetContext& context)
 
         // Import all of the objects recursive but use current model data to skip loading file again
         options.Cached = &cached;
-        Function<bool(Options& splitOptions, const StringView& objectName, String& outputPath)> splitImport = [&context, &autoImportOutput](Options& splitOptions, const StringView& objectName, String& outputPath)
+        Function<bool(Options& splitOptions, const StringView& objectName, String& outputPath, MeshData* meshData)> splitImport = [&context, &autoImportOutput](Options& splitOptions, const StringView& objectName, String& outputPath, MeshData* meshData)
         {
             // Recursive importing of the split object
             String postFix = objectName;
@@ -279,6 +279,33 @@ CreateAssetResult ImportModel::Import(CreateAssetContext& context)
             // TODO: check for name collisions with material/texture assets
             outputPath = autoImportOutput / String(StringUtils::GetFileNameWithoutExtension(context.TargetAssetPath)) + TEXT(" ") + postFix + TEXT(".flax");
             splitOptions.SubAssetFolder = TEXT(" "); // Use the same folder as asset as they all are imported to the subdir for the prefab (see SubAssetFolder usage above)
+
+            if (splitOptions.Type == ModelTool::ModelType::Model && meshData)
+            {
+                // These settings interfere with submesh reimporting
+                splitOptions.CenterGeometry = false;
+                splitOptions.UseLocalOrigin = false;
+
+                // This properly sets the transformation of the mesh during reimport
+                auto* nodes = &splitOptions.Cached->Data->Nodes;
+                Vector3 scale = Vector3::One;
+
+                // TODO: Improve this hack.
+                // This is the same hack as in ImportModel::CreatePrefab(), and it is documented further there
+                auto* currentNode = &(*nodes)[meshData->NodeIndex];
+                while (true)
+                {
+                    if (currentNode->ParentIndex == -1)
+                    {
+                        scale *= currentNode->LocalTransform.Scale;
+                        break;
+                    }
+                    currentNode = &(*nodes)[currentNode->ParentIndex];
+                }
+
+                splitOptions.Translation = meshData->OriginTranslation * scale * -1.0f;
+            }
+
             return AssetsImportingManager::Import(context.InputPath, outputPath, &splitOptions);
         };
         auto splitOptions = options;
@@ -294,7 +321,7 @@ CreateAssetResult ImportModel::Import(CreateAssetContext& context)
 
             splitOptions.Type = ModelTool::ModelType::Model;
             splitOptions.ObjectIndex = groupIndex;
-            if (!splitImport(splitOptions, group.GetKey(), prefabObject.AssetPath))
+            if (!splitImport(splitOptions, group.GetKey(), prefabObject.AssetPath, group.First()))
             {
                 prefabObjects.Add(prefabObject);
             }
@@ -305,7 +332,7 @@ CreateAssetResult ImportModel::Import(CreateAssetContext& context)
             auto& animation = data->Animations[i];
             splitOptions.Type = ModelTool::ModelType::Animation;
             splitOptions.ObjectIndex = i;
-            splitImport(splitOptions, animation.Name, prefabObject.AssetPath);
+            splitImport(splitOptions, animation.Name, prefabObject.AssetPath, nullptr);
         }
     }
     else if (options.SplitObjects)
@@ -361,7 +388,7 @@ CreateAssetResult ImportModel::Import(CreateAssetContext& context)
         auto& group = meshesByName[options.ObjectIndex];
         if (&dataThis == data)
         {
-            // Use meshes only from the the grouping (others will be removed manually)
+            // Use meshes only from the grouping (others will be removed manually)
             {
                 auto& lod = dataThis.LODs[0];
                 meshesToDelete.Add(lod.Meshes);
@@ -665,7 +692,42 @@ CreateAssetResult ImportModel::CreatePrefab(CreateAssetContext& context, ModelDa
         // Setup node in hierarchy
         nodeToActor.Add(nodeIndex, nodeActor);
         nodeActor->SetName(node.Name);
-        nodeActor->SetLocalTransform(node.LocalTransform);
+
+        // When use local origin is checked, it shifts everything over the same amount, including the root. This tries to work around that.
+        if (!(nodeIndex == 0 && options.UseLocalOrigin))
+        {
+            // TODO: Improve this hack.
+            // Assimp importer has the meter -> centimeter conversion scale applied to the local transform of
+            // the root node, and only the root node. The OpenFBX importer has the same scale applied
+            // to each node, *except* the root node. This difference makes it hard to calculate the
+            // global scale properly. Position offsets are not calculated properly from Assimp without summing up
+            // the global scale because translations from Assimp don't get scaled with the global scaler option,
+            // but the OpenFBX importer does scale them. So this hack will end up only applying the global scale
+            // change if its using Assimp due to the difference in where the nodes' local transform scales are set.
+            auto* currentNode = &node;
+            Vector3 scale = Vector3::One;
+            while (true)
+            {
+                if (currentNode->ParentIndex == -1)
+                {
+                    scale *= currentNode->LocalTransform.Scale;
+                    break;
+                }
+                currentNode = &data.Nodes[currentNode->ParentIndex];
+            }
+
+            // Only set translation, since scale and rotation is applied earlier.
+            Transform positionOffset = Transform::Identity;
+            positionOffset.Translation = node.LocalTransform.Translation * scale;
+
+            if (options.UseLocalOrigin)
+            {
+                positionOffset.Translation += data.Nodes[0].LocalTransform.Translation;
+            }
+
+            nodeActor->SetLocalTransform(positionOffset);
+        }
+
         if (nodeIndex == 0)
         {
             // Special case for root actor to link any unlinked nodes

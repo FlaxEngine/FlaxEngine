@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 using System.ComponentModel;
 using FlaxEngine;
@@ -111,6 +111,10 @@ namespace FlaxEditor.Options
         [DefaultValue(typeof(InputBinding), "End")]
         [EditorDisplay("Scene", "Snap To Ground"), EditorOrder(500)]
         public InputBinding SnapToGround = new InputBinding(KeyboardKeys.End);
+
+        [DefaultValue(typeof(InputBinding), "End")]
+        [EditorDisplay("Scene", "Vertex Snapping"), EditorOrder(550)]
+        public InputBinding SnapToVertex = new InputBinding(KeyboardKeys.V);
 
         [DefaultValue(typeof(InputBinding), "F5")]
         [EditorDisplay("Scene", "Play/Stop"), EditorOrder(510)]

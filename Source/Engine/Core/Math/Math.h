@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -901,7 +901,7 @@ namespace Math
         return length - Abs(Repeat(t, length * 2.0f) - length);
     }
 
-    // Rotates position about the given axis by the given angle, in radians, and returns the offset to position
+    // Rotates position about the input axis by the given angle (in radians), and returns the delta to position
     Vector3 FLAXENGINE_API RotateAboutAxis(const Vector3& normalizedRotationAxis, float angle, const Vector3& positionOnAxis, const Vector3& position);
 
     Vector3 FLAXENGINE_API ExtractLargestComponent(const Vector3& v);

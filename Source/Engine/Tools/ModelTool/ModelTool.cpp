@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #if COMPILE_WITH_MODEL_TOOL
 
@@ -1219,6 +1219,9 @@ bool ModelTool::ImportModel(const String& path, ModelData& data, Options& option
             materialOptions.Opacity.Value = material.Opacity.Value;
             if (material.Opacity.TextureIndex != -1)
                 materialOptions.Opacity.Texture = data.Textures[material.Opacity.TextureIndex].AssetID;
+            materialOptions.Roughness.Value = material.Roughness.Value;
+            if (material.Roughness.TextureIndex != -1)
+                materialOptions.Roughness.Texture = data.Textures[material.Roughness.TextureIndex].AssetID;
             if (material.Normals.TextureIndex != -1)
                 materialOptions.Normals.Texture = data.Textures[material.Normals.TextureIndex].AssetID;
             if (material.TwoSided || material.Diffuse.HasAlphaMask)
@@ -1340,13 +1343,46 @@ bool ModelTool::ImportModel(const String& path, ModelData& data, Options& option
                 if (skeletonMapping.SourceToSource[mesh.NodeIndex] != mesh.NodeIndex)
                 {
                     // Transform vertices
-                    const auto transformationMatrix = hierarchyUpdater.CombineMatricesFromNodeIndices(skeletonMapping.SourceToSource[mesh.NodeIndex], mesh.NodeIndex);
+                    const Matrix transformationMatrix = hierarchyUpdater.CombineMatricesFromNodeIndices(skeletonMapping.SourceToSource[mesh.NodeIndex], mesh.NodeIndex);
+
                     if (!transformationMatrix.IsIdentity())
                         mesh.TransformBuffer(transformationMatrix);
                 }
 
                 // Update new node index using real asset skeleton
                 mesh.NodeIndex = skeletonMapping.SourceToTarget[mesh.NodeIndex];
+            }
+        }
+    }
+    if (EnumHasAnyFlags(options.ImportTypes, ImportDataTypes::Geometry) && options.Type == ModelType::Prefab)
+    {
+        // Apply just the scale and rotations.
+        for (int32 lodIndex = 0; lodIndex < data.LODs.Count(); lodIndex++)
+        {
+            for (int32 meshIndex = 0; meshIndex < data.LODs[lodIndex].Meshes.Count(); meshIndex++)
+            {
+                auto& mesh = *data.LODs[lodIndex].Meshes[meshIndex];
+                auto& node = data.Nodes[mesh.NodeIndex];
+                auto currentNode = &data.Nodes[mesh.NodeIndex];
+
+                Vector3 scale = Vector3::One;
+                Quaternion rotation = Quaternion::Identity;
+                while (true)
+                {
+                    scale *= currentNode->LocalTransform.Scale;
+                    rotation *= currentNode->LocalTransform.Orientation;
+                    if (currentNode->ParentIndex == -1)
+                        break;
+                    currentNode = &data.Nodes[currentNode->ParentIndex];
+                }
+
+                // Transform vertices
+                auto transformationMatrix = Matrix::Identity;
+                transformationMatrix.SetScaleVector(scale);
+                transformationMatrix = transformationMatrix * Matrix::RotationQuaternion(rotation);
+
+                if (!transformationMatrix.IsIdentity())
+                    mesh.TransformBuffer(transformationMatrix);
             }
         }
     }

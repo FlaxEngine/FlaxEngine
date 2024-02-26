@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -1089,6 +1089,23 @@ namespace FlaxEngine.GUI
         #region Helper Functions
 
         /// <summary>
+        /// Performs a raycast against UI controls hierarchy to find any intersecting control content. Uses <see cref="ContainsPoint"/> with precise check (skips transparent surfaces and empty panels).
+        /// </summary>
+        /// <param name="location">The position to intersect UI with.</param>
+        /// <param name="hit">The result control that intersects with the raycast.</param>
+        /// <returns>True if ray hits any matching control, otherwise false.</returns>
+        public virtual bool RayCast(ref Float2 location, out Control hit)
+        {
+            if (ContainsPoint(ref location, true))
+            {
+                hit = this;
+                return true;
+            }
+            hit = null;
+            return false;
+        }
+
+        /// <summary>
         /// Checks if given location point in Parent Space intersects with the control content and calculates local position.
         /// </summary>
         /// <param name="locationParent">The location in Parent Space.</param>
@@ -1101,11 +1118,12 @@ namespace FlaxEngine.GUI
         }
 
         /// <summary>
-        /// Checks if control contains given point in local Control Space.
+        /// Checks if this control contains given point in local Control Space.
         /// </summary>
         /// <param name="location">Point location in Control Space to check</param>
+        /// <param name="precise">True if perform precise intersection test against the control content (eg. with hit mask or transparency threshold). Otherwise, only simple bounds-check will be performed.</param>
         /// <returns>True if point is inside control's area, otherwise false.</returns>
-        public virtual bool ContainsPoint(ref Float2 location)
+        public virtual bool ContainsPoint(ref Float2 location, bool precise = false)
         {
             return location.X >= 0 &&
                    location.Y >= 0 &&
@@ -1123,12 +1141,10 @@ namespace FlaxEngine.GUI
         {
             if (parent == null)
                 throw new ArgumentNullException();
-
             Control c = this;
             while (c != null)
             {
                 location = c.PointToParent(ref location);
-
                 c = c.Parent;
                 if (c == parent)
                     break;

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -46,7 +46,7 @@ public:
     /// <summary>
     /// Resizes the collider based on the bounds of it's parent to contain it whole (including any siblings).
     /// </summary>
-    API_FUNCTION() void AutoResize();
+    API_FUNCTION() void AutoResize(bool globalOrientation);
 
 public:
     // [Collider]

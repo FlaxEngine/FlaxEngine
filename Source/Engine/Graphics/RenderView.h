@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -335,4 +335,12 @@ public:
 
     // Calculates the world matrix for the given transformation instance rendering.
     void GetWorldMatrix(const Transform& transform, Matrix& world) const;
+
+    // Applies the render origin to the transformation instance matrix.
+    FORCE_INLINE void GetWorldMatrix(Matrix& world) const
+    {
+        world.M41 -= Origin.X;
+        world.M42 -= Origin.Y;
+        world.M43 -= Origin.Z;
+    }
 };

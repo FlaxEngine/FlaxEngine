@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -147,6 +147,18 @@ namespace FlaxEditor.Windows
         private class GameRoot : ContainerControl
         {
             public bool EnableEvents => !Time.GamePaused;
+
+            public override bool RayCast(ref Float2 location, out Control hit)
+            {
+                return RayCastChildren(ref location, out hit);
+            }
+
+            public override bool ContainsPoint(ref Float2 location, bool precise = false)
+            {
+                if (precise)
+                    return false;
+                return base.ContainsPoint(ref location, precise);
+            }
 
             public override bool OnCharInput(char c)
             {
@@ -306,8 +318,6 @@ namespace FlaxEditor.Windows
             InputActions.Add(options => options.TakeScreenshot, () => Screenshot.Capture(string.Empty));
             InputActions.Add(options => options.DebuggerUnlockMouse, UnlockMouseInPlay);
             InputActions.Add(options => options.ToggleFullscreen, () => { if (Editor.IsPlayMode) IsMaximized = !IsMaximized; });
-
-            FlaxEditor.Utilities.Utils.SetupCommonInputActions(this);
         }
 
         private void ChangeViewportRatio(ViewportScaleOptions v)
@@ -320,7 +330,7 @@ namespace FlaxEditor.Windows
                 return;
             }
 
-            if (string.Equals(v.Label, "Free Aspect") && v.Size == new Int2(1, 1))
+            if (string.Equals(v.Label, "Free Aspect", StringComparison.Ordinal) && v.Size == new Int2(1, 1))
             {
                 _freeAspect = true;
                 _useAspect = true;
@@ -856,7 +866,13 @@ namespace FlaxEditor.Windows
                     var options = Editor.Options.Options.Visual;
                     var control = controlActor.Control;
                     var bounds = control.EditorBounds;
-                    bounds = Rectangle.FromPoints(control.PointToParent(_viewport, bounds.Location), control.PointToParent(_viewport, bounds.Size));
+                    var p1 = control.PointToParent(_viewport, bounds.UpperLeft);
+                    var p2 = control.PointToParent(_viewport, bounds.UpperRight);
+                    var p3 = control.PointToParent(_viewport, bounds.BottomLeft);
+                    var p4 = control.PointToParent(_viewport, bounds.BottomRight);
+                    var min = Float2.Min(Float2.Min(p1, p2), Float2.Min(p3, p4));
+                    var max = Float2.Max(Float2.Max(p1, p2), Float2.Max(p3, p4));
+                    bounds = new Rectangle(min, Float2.Max(max - min, Float2.Zero));
                     Render2D.DrawRectangle(bounds, options.SelectionOutlineColor0, options.UISelectionOutlineSize);
                 }
             }

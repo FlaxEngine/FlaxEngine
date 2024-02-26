@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #include "Builder.h"
 #include "Engine/Core/Log.h"
@@ -64,7 +64,7 @@ bool cacheStaticGeometryTree(Actor* actor, ShadowsOfMordor::Builder::SceneBuildC
             if (useLightmap && anyValid && entry.Scale > ZeroTolerance)
             {
                 Matrix worldMatrix;
-                staticModel->GetTransform().GetWorld(worldMatrix);
+                staticModel->GetLocalToWorldMatrix(worldMatrix);
                 entry.Box = model->GetBox(worldMatrix);
                 results.Add(entry);
             }

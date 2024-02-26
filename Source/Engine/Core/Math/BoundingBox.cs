@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #if USE_LARGE_WORLDS
 using Real = System.Double;
@@ -171,7 +171,7 @@ namespace FlaxEngine
         /// <param name="ray">The ray to test.</param>
         /// <param name="distance">When the method completes, contains the distance of the intersection, or 0 if there was no intersection.</param>
         /// <returns>Whether the two objects intersected.</returns>
-        [Obsolete("Deprecated in 1.4")]
+        [Obsolete("Deprecated in v1.4")]
         public bool Intersects(ref Ray ray, out float distance)
         {
             var result = CollisionsHelper.RayIntersectsBox(ref ray, ref this, out Real dst);

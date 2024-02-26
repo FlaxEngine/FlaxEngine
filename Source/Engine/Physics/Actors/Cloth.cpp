@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #include "Cloth.h"
 #include "Engine/Core/Log.h"
@@ -847,7 +847,8 @@ void Cloth::OnPostUpdate()
     if (_meshDeformation)
     {
         // Mark mesh as dirty
-        const Matrix invWorld = Matrix::Invert(_transform.GetWorld());
+        Matrix invWorld;
+        GetWorldToLocalMatrix(invWorld);
         BoundingBox localBounds;
         BoundingBox::Transform(_box, invWorld, localBounds);
         _meshDeformation->Dirty(_mesh.LODIndex, _mesh.MeshIndex, MeshBufferType::Vertex0, localBounds);

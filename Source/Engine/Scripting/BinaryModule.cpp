@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #include "BinaryModule.h"
 #include "ScriptingObject.h"
@@ -763,6 +763,11 @@ ScriptingObject* ManagedBinaryModule::ManagedObjectSpawn(const ScriptingObjectSp
     // Create native object
     ScriptingTypeHandle managedTypeHandle = params.Type;
     const ScriptingType* managedTypePtr = &managedTypeHandle.GetType();
+    if (managedTypePtr->ManagedClass && managedTypePtr->ManagedClass->IsAbstract())
+    {
+        LOG(Error, "Failed to spawn abstract type '{}'", managedTypePtr->ToString());
+        return nullptr;
+    }
     while (managedTypePtr->Script.Spawn != &ManagedObjectSpawn)
     {
         managedTypeHandle = managedTypePtr->GetBaseType();
@@ -1040,18 +1045,11 @@ void ManagedBinaryModule::InitType(MClass* mclass)
         baseType.Module->TypeNameToTypeIndex.TryGet(genericClassName, *(int32*)&baseType.TypeIndex);
     }
 
-    if (!baseType)
-    {
-        LOG(Error, "Missing base class for managed class {0} from assembly {1}.", String(typeName), Assembly->ToString());
-        return;
-    }
-
-    if (baseType.TypeIndex == -1)
+    if (baseType.TypeIndex == -1 || baseType.Module == nullptr)
     {
         if (baseType.Module)
             LOG(Error, "Missing base class for managed class {0} from assembly {1}.", String(baseClass->GetFullName()), baseType.Module->GetName().ToString());
         else
-            // Not sure this can happen but never hurts to account for it
             LOG(Error, "Missing base class for managed class {0} from unknown assembly.", String(baseClass->GetFullName()));
         return;
     }

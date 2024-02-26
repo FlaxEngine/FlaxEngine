@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 using FlaxEngine;
 
@@ -93,22 +93,21 @@ namespace FlaxEditor.Tools.Terrain.Paint
                     if (paintAmount < 0.0f)
                         continue; // Skip when pixel won't be affected
 
-                    // Paint on the active splatmap texture
-                    src[c] = Mathf.Saturate(src[c] + paintAmount);
-                    src[(c + 1) % 4] = Mathf.Saturate(src[(c + 1) % 4] - paintAmount);
-                    src[(c + 2) % 4] = Mathf.Saturate(src[(c + 2) % 4] - paintAmount);
-                    src[(c + 3) % 4] = Mathf.Saturate(src[(c + 3) % 4] - paintAmount);
-                    p.TempBuffer[z * p.ModifiedSize.X + x] = src;
+                    // Other layers reduction based on their sum and current paint intensity
+                    var srcOther = (Color)p.SourceDataOther[zz * p.HeightmapSize + xx];
+                    var otherLayersSum = src.ValuesSum + srcOther.ValuesSum - src[c];
+                    var decreaseAmount = paintAmount / otherLayersSum;
 
-                    var other = (Color)p.SourceDataOther[zz * p.HeightmapSize + xx];
+                    // Paint on the active splatmap texture
+                    var srcNew = Color.Clamp(src - src * decreaseAmount, Color.Zero, Color.White);
+                    srcNew[c] = Mathf.Saturate(src[c] + paintAmount);
+                    p.TempBuffer[z * p.ModifiedSize.X + x] = srcNew;
+
                     //if (other.ValuesSum > 0.0f) // Skip editing the other splatmap if it's empty
                     {
                         // Remove 'paint' from the other splatmap texture
-                        other[c] = Mathf.Saturate(other[c] - paintAmount);
-                        other[(c + 1) % 4] = Mathf.Saturate(other[(c + 1) % 4] - paintAmount);
-                        other[(c + 2) % 4] = Mathf.Saturate(other[(c + 2) % 4] - paintAmount);
-                        other[(c + 3) % 4] = Mathf.Saturate(other[(c + 3) % 4] - paintAmount);
-                        p.TempBufferOther[z * p.ModifiedSize.X + x] = other;
+                        srcOther = Color.Clamp(srcOther - srcOther * decreaseAmount, Color.Zero, Color.White);
+                        p.TempBufferOther[z * p.ModifiedSize.X + x] = srcOther;
                         otherModified = true;
                     }
                 }

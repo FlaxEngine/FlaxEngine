@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #include "Builder.h"
 #include "Engine/Core/Log.h"
@@ -125,7 +125,7 @@ void ShadowsOfMordor::Builder::onJobRender(GPUContext* context)
                 auto& lod = staticModel->Model->LODs[0];
 
                 Matrix worldMatrix;
-                staticModel->GetTransform().GetWorld(worldMatrix);
+                staticModel->GetLocalToWorldMatrix(worldMatrix);
                 Matrix::Transpose(worldMatrix, shaderData.WorldMatrix);
                 shaderData.LightmapArea = staticModel->Lightmap.UVsArea;
 

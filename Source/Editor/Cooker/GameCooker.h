@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -82,7 +82,8 @@ public:
     /// <param name="customDefines">The list of custom defines passed to the build tool when compiling project scripts. Can be used in build scripts for configuration (Configuration.CustomDefines).</param>
     /// <param name="preset">The name of build preset used for cooking (can be used by editor and game plugins).</param>
     /// <param name="presetTarget">The name of build preset target used for cooking (can be used by editor and game plugins).</param>
-    API_FUNCTION() static void Build(BuildPlatform platform, BuildConfiguration configuration, const StringView& outputPath, BuildOptions options, const Array<String>& customDefines, const StringView& preset = StringView::Empty, const StringView& presetTarget = StringView::Empty);
+    /// <returns>True if failed to start the build, otherwise false.</returns>
+    API_FUNCTION() static bool Build(BuildPlatform platform, BuildConfiguration configuration, const StringView& outputPath, BuildOptions options, const Array<String>& customDefines, const StringView& preset = StringView::Empty, const StringView& presetTarget = StringView::Empty);
 
     /// <summary>
     /// Sends a cancel event to the game building service.

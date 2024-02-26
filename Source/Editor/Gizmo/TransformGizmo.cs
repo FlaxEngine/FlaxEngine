@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #if USE_LARGE_WORLDS
 using Real = System.Double;
@@ -269,7 +269,13 @@ namespace FlaxEditor.Gizmo
         protected override int SelectionCount => _selectionParents.Count;
 
         /// <inheritdoc />
-        protected override Transform GetSelectedObject(int index)
+        protected override SceneGraphNode GetSelectedObject(int index)
+        {
+            return _selectionParents[index];
+        }
+
+        /// <inheritdoc />
+        protected override Transform GetSelectedTransform(int index)
         {
             return _selectionParents[index].Transform;
         }

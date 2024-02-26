@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -312,10 +312,7 @@ public:
     /// <summary>
     /// Calculates the determinant of the Matrix3x3.
     /// </summary>
-    float GetDeterminant() const
-    {
-        return M11 * M22 * M33 + M12 * M23 * M31 + M13 * M21 * M32 - M13 * M22 * M31 - M12 * M21 * M33 - M11 * M23 * M32;
-    }
+    float GetDeterminant() const;
 
 public:
     /// <summary>
@@ -352,7 +349,7 @@ public:
     /// </summary>
     /// <param name="value">The Matrix3x3 whose inverse is to be calculated.</param>
     /// <returns>The inverse of the specified Matrix3x3.</returns>
-    static Matrix3x3 Invert(Matrix3x3 value)
+    static Matrix3x3 Invert(const Matrix3x3& value)
     {
         Matrix3x3 result;
         Invert(value, result);

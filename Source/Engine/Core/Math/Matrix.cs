@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 // -----------------------------------------------------------------------------
 // Original code from SharpDX project. https://github.com/sharpdx/SharpDX/
@@ -328,6 +328,30 @@ namespace FlaxEngine
             M42 = values[13];
             M43 = values[14];
             M44 = values[15];
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Matrix" /> struct.
+        /// </summary>
+        /// <param name="m">The rotation/scale matrix.</param>
+        public Matrix(Matrix3x3 m)
+        {
+            M11 = m.M11;
+            M12 = m.M12;
+            M13 = m.M13;
+            M14 = 0;
+            M21 = m.M21;
+            M22 = m.M22;
+            M23 = m.M23;
+            M24 = 0;
+            M31 = m.M31;
+            M32 = m.M32;
+            M33 = m.M33;
+            M34 = 0;
+            M41 = 0;
+            M42 = 0;
+            M43 = 0;
+            M44 = 1;
         }
 
         /// <summary>
@@ -747,7 +771,7 @@ namespace FlaxEngine
         /// <remarks>This method is designed to decompose an SRT transformation matrix only.</remarks>
         public void Decompose(out Transform transform)
         {
-            Decompose(out transform.Scale, out Matrix rotationMatrix, out Float3 translation);
+            Decompose(out transform.Scale, out Matrix3x3 rotationMatrix, out Float3 translation);
             Quaternion.RotationMatrix(ref rotationMatrix, out transform.Orientation);
             transform.Translation = translation;
         }
@@ -759,7 +783,7 @@ namespace FlaxEngine
         /// <param name="rotation">When the method completes, contains the rotation component of the decomposed matrix.</param>
         /// <param name="translation">When the method completes, contains the translation component of the decomposed matrix.</param>
         /// <remarks>This method is designed to decompose an SRT transformation matrix only.</remarks>
-        public void Decompose(out Float3 scale, out Matrix rotation, out Float3 translation)
+        public void Decompose(out Float3 scale, out Matrix3x3 rotation, out Float3 translation)
         {
             // Get the translation
             translation.X = M41;
@@ -774,12 +798,12 @@ namespace FlaxEngine
             // If any of the scaling factors are zero, than the rotation matrix can not exist
             if (Mathf.IsZero(scale.X) || Mathf.IsZero(scale.Y) || Mathf.IsZero(scale.Z))
             {
-                rotation = Identity;
+                rotation = Matrix3x3.Identity;
                 return;
             }
 
             // The rotation is the left over matrix after dividing out the scaling
-            rotation = new Matrix
+            rotation = new Matrix3x3
             {
                 M11 = M11 / scale.X,
                 M12 = M12 / scale.X,
@@ -790,8 +814,22 @@ namespace FlaxEngine
                 M31 = M31 / scale.Z,
                 M32 = M32 / scale.Z,
                 M33 = M33 / scale.Z,
-                M44 = 1f
             };
+        }
+
+        /// <summary>
+        /// Decomposes a matrix into a scale, rotation, and translation.
+        /// [Deprecated on 20.02.2024, expires on 20.02.2026]
+        /// </summary>
+        /// <param name="scale">When the method completes, contains the scaling component of the decomposed matrix.</param>
+        /// <param name="rotation">When the method completes, contains the rotation component of the decomposed matrix.</param>
+        /// <param name="translation">When the method completes, contains the translation component of the decomposed matrix.</param>
+        /// <remarks>This method is designed to decompose an SRT transformation matrix only.</remarks>
+        [Obsolete("Deprecated in v1.8")]
+        public void Decompose(out Float3 scale, out Matrix rotation, out Float3 translation)
+        {
+            Decompose(out scale, out Matrix3x3 r, out translation);
+            rotation = new Matrix(r);
         }
 
         /// <summary>
@@ -803,7 +841,7 @@ namespace FlaxEngine
         /// <remarks>This method is designed to decompose an SRT transformation matrix only.</remarks>
         public void Decompose(out Float3 scale, out Quaternion rotation, out Float3 translation)
         {
-            Decompose(out scale, out Matrix rotationMatrix, out translation);
+            Decompose(out scale, out Matrix3x3 rotationMatrix, out translation);
             Quaternion.RotationMatrix(ref rotationMatrix, out rotation);
         }
 

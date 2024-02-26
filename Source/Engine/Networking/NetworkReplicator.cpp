@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #include "NetworkReplicator.h"
 #include "NetworkClient.h"
@@ -29,6 +29,9 @@
 #include "Engine/Scripting/ScriptingObjectReference.h"
 #include "Engine/Threading/Threading.h"
 #include "Engine/Threading/ThreadLocal.h"
+#if USE_EDITOR
+#include "FlaxEngine.Gen.h"
+#endif
 
 #if !BUILD_RELEASE
 bool NetworkReplicator::EnableLog = false;
@@ -235,6 +238,33 @@ namespace
 #endif
     Array<Guid> DespawnedObjects;
     uint32 SpawnId = 0;
+
+#if USE_EDITOR
+    void OnScriptsReloading()
+    {
+        ScopeLock lock(ObjectsLock);
+        if (Objects.HasItems())
+            LOG(Warning, "Hot-reloading scripts with network objects active.");
+        if (Hierarchy)
+        {
+            Delete(Hierarchy);
+            Hierarchy = nullptr;
+        }
+
+        // Clear any references to non-engine scripts before code hot-reload
+        BinaryModule* flaxModule = GetBinaryModuleFlaxEngine();
+        for (auto i = SerializersTable.Begin(); i.IsNotEnd(); ++i)
+        {
+            if (i->Key.Module != flaxModule)
+                SerializersTable.Remove(i);
+        }
+        for (auto i = NetworkRpcInfo::RPCsTable.Begin(); i.IsNotEnd(); ++i)
+        {
+            if (i->Key.First.Module != flaxModule)
+                NetworkRpcInfo::RPCsTable.Remove(i);
+        }
+    }
+#endif
 }
 
 class NetworkReplicationService : public EngineService
@@ -245,8 +275,17 @@ public:
     {
     }
 
+    bool Init() override;
     void Dispose() override;
 };
+
+bool NetworkReplicationService::Init()
+{
+#if USE_EDITOR
+    Scripting::ScriptsReloading.Bind(OnScriptsReloading);
+#endif
+    return false;
+}
 
 void NetworkReplicationService::Dispose()
 {

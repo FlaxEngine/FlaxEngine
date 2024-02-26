@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -638,10 +638,7 @@ public:
     /// Gets the matrix that transforms a point from the local space of the actor to world space.
     /// </summary>
     /// <param name="localToWorld">The world to local matrix.</param>
-    API_FUNCTION() FORCE_INLINE void GetLocalToWorldMatrix(API_PARAM(Out) Matrix& localToWorld) const
-    {
-        _transform.GetWorld(localToWorld);
-    }
+    API_FUNCTION() void GetLocalToWorldMatrix(API_PARAM(Out) Matrix& localToWorld) const;
 
 public:
     /// <summary>

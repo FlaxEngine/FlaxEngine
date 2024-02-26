@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #include "GPUTexture.h"
 #include "GPUTextureDescription.h"
@@ -340,17 +340,16 @@ int32 GPUTexture::ComputeRowPitch(int32 mipLevel, int32 rowAlign) const
 
 bool GPUTexture::Init(const GPUTextureDescription& desc)
 {
-    ASSERT(Math::IsInRange(desc.Width, 1, GPU_MAX_TEXTURE_SIZE)
-        && Math::IsInRange(desc.Height, 1, GPU_MAX_TEXTURE_SIZE)
-        && Math::IsInRange(desc.Depth, 1, GPU_MAX_TEXTURE_SIZE)
-        && Math::IsInRange(desc.ArraySize, 1, GPU_MAX_TEXTURE_ARRAY_SIZE)
-        && Math::IsInRange(desc.MipLevels, 1, GPU_MAX_TEXTURE_MIP_LEVELS));
-
     // Validate description
     const auto device = GPUDevice::Instance;
     if (desc.Usage == GPUResourceUsage::Dynamic)
     {
         LOG(Warning, "Cannot create texture. Dynamic textures are not supported. Description: {0}", desc.ToString());
+        return true;
+    }
+    if (desc.MipLevels < 0 || desc.MipLevels > GPU_MAX_TEXTURE_MIP_LEVELS)
+    {
+        LOG(Warning, "Cannot create texture. Invalid amount of mip levels. Description: {0}", desc.ToString());
         return true;
     }
     if (desc.IsDepthStencil())
@@ -393,7 +392,8 @@ bool GPUTexture::Init(const GPUTextureDescription& desc)
             LOG(Warning, "Cannot create texture. Texture cannot have per slice views. Description: {0}", desc.ToString());
             return true;
         }
-        if (desc.Width > device->Limits.MaximumTexture2DSize
+        if (desc.Width <= 0 || desc.Height <= 0 || desc.ArraySize <= 0
+            || desc.Width > device->Limits.MaximumTexture2DSize
             || desc.Height > device->Limits.MaximumTexture2DSize
             || desc.ArraySize > device->Limits.MaximumTexture2DArraySize)
         {
@@ -430,7 +430,8 @@ bool GPUTexture::Init(const GPUTextureDescription& desc)
             LOG(Warning, "Cannot create texture. Volume texture cannot have per slice map views if is not a render target. Description: {0}", desc.ToString());
             return true;
         }
-        if (desc.Width > device->Limits.MaximumTexture3DSize
+        if (desc.Width <= 0 || desc.Height <= 0 || desc.Depth <= 0
+            || desc.Width > device->Limits.MaximumTexture3DSize
             || desc.Height > device->Limits.MaximumTexture3DSize
             || desc.Depth > device->Limits.MaximumTexture3DSize)
         {
@@ -447,7 +448,8 @@ bool GPUTexture::Init(const GPUTextureDescription& desc)
             LOG(Warning, "Cannot create texture. Cube texture cannot have per slice views. Description: {0}", desc.ToString());
             return true;
         }
-        if (desc.Width > device->Limits.MaximumTextureCubeSize
+        if (desc.Width <= 0 || desc.ArraySize <= 0
+            || desc.Width > device->Limits.MaximumTextureCubeSize
             || desc.Height > device->Limits.MaximumTextureCubeSize
             || desc.ArraySize * 6 > device->Limits.MaximumTexture2DArraySize
             || desc.Width != desc.Height)

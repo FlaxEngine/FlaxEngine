@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -336,6 +336,9 @@ namespace FlaxEditor.Viewport
 
         /// <inheritdoc />
         public bool SnapToGround => false;
+
+        /// <inheritdoc />
+        public bool SnapToVertex => Editor.Instance.Options.Options.Input.SnapToVertex.Process(Root);
 
         /// <inheritdoc />
         public Float2 MouseDelta => _mouseDelta * 1000;

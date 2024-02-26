@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -36,6 +36,12 @@ public:
             float Value = 1.0f;
             Guid Texture = Guid::Empty;
         } Opacity;
+
+        struct
+        {
+            float Value = 0.5f;
+            Guid Texture = Guid::Empty;
+        } Roughness;
 
         struct
         {

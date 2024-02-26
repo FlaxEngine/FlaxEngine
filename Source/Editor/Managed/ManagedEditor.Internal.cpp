@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #include "ManagedEditor.h"
 #include "Editor/Editor.h"
@@ -204,7 +204,7 @@ DEFINE_INTERNAL_CALL(bool) EditorInternal_SaveJsonAsset(MString* outputPathObj, 
     FileSystem::NormalizePath(outputPath);
 
     const StringView dataObjChars = MCore::String::GetChars(dataObj);
-    const StringAsANSI<> data(dataObjChars.Get(), dataObjChars.Length());
+    const StringAsUTF8<> data(dataObjChars.Get(), dataObjChars.Length());
     const StringAnsiView dataAnsi(data.Get(), data.Length());
 
     const StringView dataTypeNameObjChars = MCore::String::GetChars(dataTypeNameObj);
