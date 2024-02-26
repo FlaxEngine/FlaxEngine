@@ -61,7 +61,7 @@ void SceneObject::BreakPrefabLink()
 
 String SceneObject::GetNamePath(Char separatorChar) const
 {
-    Array<String> names;
+    Array<StringView> names;
     const Actor* a = dynamic_cast<const Actor*>(this);
     if (!a)
         a = GetParent();
@@ -75,6 +75,8 @@ String SceneObject::GetNamePath(Char separatorChar) const
     int32 length = names.Count() - 1;
     for (int32 i = 0; i < names.Count(); i++)
         length += names[i].Length();
+    if (length == 0)
+        return String::Empty;
     String result;
     result.ReserveSpace(length);
     Char* ptr = result.Get();
