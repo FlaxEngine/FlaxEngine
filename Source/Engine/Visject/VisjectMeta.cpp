@@ -1,13 +1,9 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #include "VisjectMeta.h"
 #include "Engine/Core/Types/DateTime.h"
 #include "Engine/Serialization/ReadStream.h"
 #include "Engine/Serialization/WriteStream.h"
-
-VisjectMeta::VisjectMeta()
-{
-}
 
 bool VisjectMeta::Load(ReadStream* stream, bool loadData)
 {

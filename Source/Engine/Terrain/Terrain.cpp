@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #include "Terrain.h"
 #include "TerrainPatch.h"
@@ -29,7 +29,7 @@ Terrain::Terrain(const SpawnParams& params)
     , _cachedScale(1.0f)
 {
     _drawCategory = SceneRendering::SceneDrawAsync;
-    PhysicalMaterial.Changed.Bind<Terrain, &Terrain::OnPhysicalMaterialChanged>(this);
+    _physicalMaterials.Resize(8);
 }
 
 Terrain::~Terrain()
@@ -59,7 +59,7 @@ void Terrain::CacheNeighbors()
     for (int32 pathIndex = 0; pathIndex < _patches.Count(); pathIndex++)
     {
         const auto patch = _patches[pathIndex];
-        for (int32 chunkIndex = 0; chunkIndex < TerrainPatch::CHUNKS_COUNT; chunkIndex++)
+        for (int32 chunkIndex = 0; chunkIndex < Terrain::ChunksCount; chunkIndex++)
         {
             patch->Chunks[chunkIndex].CacheNeighbors();
         }
@@ -185,7 +185,7 @@ bool Terrain::RayCast(const Vector3& origin, const Vector3& direction, RayCastHi
     return result;
 }
 
-void Terrain::ClosestPoint(const Vector3& position, Vector3& result) const
+void Terrain::ClosestPoint(const Vector3& point, Vector3& result) const
 {
     Real minDistance = MAX_Real;
     Vector3 tmp;
@@ -194,8 +194,8 @@ void Terrain::ClosestPoint(const Vector3& position, Vector3& result) const
         const auto patch = _patches[pathIndex];
         if (patch->HasCollision())
         {
-            patch->ClosestPoint(position, tmp);
-            const auto distance = Vector3::DistanceSquared(position, tmp);
+            patch->ClosestPoint(point, tmp);
+            const auto distance = Vector3::DistanceSquared(point, tmp);
             if (distance < minDistance)
             {
                 minDistance = distance;
@@ -205,12 +205,17 @@ void Terrain::ClosestPoint(const Vector3& position, Vector3& result) const
     }
 }
 
+bool Terrain::ContainsPoint(const Vector3& point) const
+{
+    return false;
+}
+
 void Terrain::DrawPatch(const RenderContext& renderContext, const Int2& patchCoord, MaterialBase* material, int32 lodIndex) const
 {
     auto patch = GetPatch(patchCoord);
     if (patch)
     {
-        for (int32 i = 0; i < TerrainPatch::CHUNKS_COUNT; i++)
+        for (int32 i = 0; i < Terrain::ChunksCount; i++)
             patch->Chunks[i].Draw(renderContext, material, lodIndex);
     }
 }
@@ -224,22 +229,6 @@ void Terrain::DrawChunk(const RenderContext& renderContext, const Int2& patchCoo
         if (chunk)
         {
             chunk->Draw(renderContext, material, lodIndex);
-        }
-    }
-}
-
-void Terrain::OnPhysicalMaterialChanged()
-{
-    if (_patches.IsEmpty())
-        return;
-
-    // Update the shapes material
-    for (int32 pathIndex = 0; pathIndex < _patches.Count(); pathIndex++)
-    {
-        const auto patch = _patches[pathIndex];
-        if (patch->HasCollision())
-        {
-            PhysicsBackend::SetShapeMaterial(patch->_physicsShape, PhysicalMaterial.Get());
         }
     }
 }
@@ -293,6 +282,21 @@ void Terrain::SetCollisionLOD(int32 value)
         }
     }
 #endif
+}
+
+void Terrain::SetPhysicalMaterials(const Array<JsonAssetReference<PhysicalMaterial>, FixedAllocation<8>>& value)
+{
+    _physicalMaterials = value;
+    _physicalMaterials.Resize(8);
+    JsonAsset* materials[8];
+    for (int32 i = 0;i<8;i++)
+        materials[i] = _physicalMaterials[i];
+    for (int32 pathIndex = 0; pathIndex < _patches.Count(); pathIndex++)
+    {
+        const auto patch = _patches.Get()[pathIndex];
+        if (patch->HasCollision())
+            PhysicsBackend::SetShapeMaterials(patch->_physicsShape, ToSpan(materials, 8));
+    }
 }
 
 TerrainPatch* Terrain::GetPatch(const Int2& patchCoord) const
@@ -540,7 +544,7 @@ void Terrain::Draw(RenderContext& renderContext)
             Matrix localToWorld, worldToLocal;
             BoundingSphere chunkSphere;
             BoundingBox localBounds;
-            for (int32 chunkIndex = 0; chunkIndex < TerrainPatch::CHUNKS_COUNT; chunkIndex++)
+            for (int32 chunkIndex = 0; chunkIndex < Terrain::ChunksCount; chunkIndex++)
             {
                 TerrainChunk* chunk = &patch->Chunks[chunkIndex];
                 chunk->GetTransform().GetWorld(localToWorld); // TODO: large-worlds
@@ -570,7 +574,7 @@ void Terrain::Draw(RenderContext& renderContext)
                 continue;
 
             // Frustum vs Box culling for chunks
-            for (int32 chunkIndex = 0; chunkIndex < TerrainPatch::CHUNKS_COUNT; chunkIndex++)
+            for (int32 chunkIndex = 0; chunkIndex < Terrain::ChunksCount; chunkIndex++)
             {
                 auto chunk = &patch->Chunks[chunkIndex];
                 chunk->_cachedDrawLOD = 0;
@@ -588,7 +592,7 @@ void Terrain::Draw(RenderContext& renderContext)
         else
         {
             // Reset cached LOD for chunks (prevent LOD transition from invisible chunks)
-            for (int32 chunkIndex = 0; chunkIndex < TerrainPatch::CHUNKS_COUNT; chunkIndex++)
+            for (int32 chunkIndex = 0; chunkIndex < Terrain::ChunksCount; chunkIndex++)
             {
                 auto chunk = &patch->Chunks[chunkIndex];
                 chunk->_cachedDrawLOD = 0;
@@ -616,10 +620,10 @@ void Terrain::OnDebugDrawSelected()
     for (int32 pathIndex = 0; pathIndex < _patches.Count(); pathIndex++)
     {
         const auto patch = _patches[pathIndex];
-        for (int32 chunkIndex = 0; chunkIndex < TerrainPatch::CHUNKS_COUNT; chunkIndex++)
+        for (int32 chunkIndex = 0; chunkIndex < Terrain::ChunksCount; chunkIndex++)
         {
             auto chunk = &patch->Chunks[chunkIndex];
-            DebugDraw::DrawBox(chunk->_bounds, Color(chunk->_x / (float)TerrainPatch::CHUNKS_COUNT_EDGE, 1.0f, chunk->_z / (float)TerrainPatch::CHUNKS_COUNT_EDGE));
+            DebugDraw::DrawBox(chunk->_bounds, Color(chunk->_x / (float)Terrain::ChunksCountEdge, 1.0f, chunk->_z / (float)Terrain::ChunksCountEdge));
         }
     }
     */
@@ -667,8 +671,8 @@ void Terrain::Serialize(SerializeStream& stream, const void* otherObj)
     SERIALIZE_MEMBER(ScaleInLightmap, _scaleInLightmap);
     SERIALIZE_MEMBER(BoundsExtent, _boundsExtent);
     SERIALIZE_MEMBER(CollisionLOD, _collisionLod);
+    SERIALIZE_MEMBER(PhysicalMaterials, _physicalMaterials);
     SERIALIZE(Material);
-    SERIALIZE(PhysicalMaterial);
     SERIALIZE(DrawModes);
 
     SERIALIZE_MEMBER(LODCount, _lodCount);
@@ -714,8 +718,8 @@ void Terrain::Deserialize(DeserializeStream& stream, ISerializeModifier* modifie
     DESERIALIZE_MEMBER(LODDistribution, _lodDistribution);
     DESERIALIZE_MEMBER(ScaleInLightmap, _scaleInLightmap);
     DESERIALIZE_MEMBER(BoundsExtent, _boundsExtent);
+    DESERIALIZE_MEMBER(PhysicalMaterials, _physicalMaterials);
     DESERIALIZE(Material);
-    DESERIALIZE(PhysicalMaterial);
     DESERIALIZE(DrawModes);
 
     member = stream.FindMember("LODCount");
@@ -780,6 +784,15 @@ void Terrain::Deserialize(DeserializeStream& stream, ISerializeModifier* modifie
     // [Deprecated on 27.04.2022, expires on 27.04.2024]
     if (modifier->EngineBuild <= 6331)
         DrawModes |= DrawPass::GlobalSurfaceAtlas;
+
+    // [Deprecated on 15.02.2024, expires on 15.02.2026]
+    JsonAssetReference<PhysicalMaterial> PhysicalMaterial;
+    DESERIALIZE(PhysicalMaterial);
+    if (PhysicalMaterial)
+    {
+        for (auto& e : _physicalMaterials)
+            e = PhysicalMaterial;
+    }
 }
 
 RigidBody* Terrain::GetAttachedRigidBody() const

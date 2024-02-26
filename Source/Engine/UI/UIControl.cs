@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Globalization;
@@ -58,10 +58,11 @@ namespace FlaxEngine
                     if (containerControl != null && IsActiveInHierarchy)
                     {
                         var children = ChildrenCount;
+                        var parent = Parent;
                         for (int i = 0; i < children; i++)
                         {
                             var child = GetChild(i) as UIControl;
-                            if (child != null && child.IsActiveInHierarchy && child.HasControl)
+                            if (child != null && child.IsActiveInHierarchy && child.HasControl && child != parent)
                             {
                                 child.Control.Parent = containerControl;
                             }

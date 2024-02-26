@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -753,6 +753,29 @@ namespace FlaxEditor.Surface.Archetypes
                         node.ResizeAuto();
                     }
                 }
+            }
+
+            /// <inheritdoc />
+            public override void OnDeleted(SurfaceNodeActions action)
+            {
+                // Unlink from the current parent (when deleted by user)
+                var node = Node;
+                if (node != null)
+                {
+                    if (action == SurfaceNodeActions.User)
+                    {
+                        var decorators = node.DecoratorIds;
+                        decorators.Remove(ID);
+                        node.DecoratorIds = decorators;
+                    }
+                    else
+                    {
+                        node._decorators = null;
+                        node.ResizeAuto();
+                    }
+                }
+
+                base.OnDeleted(action);
             }
 
             public override void OnSurfaceCanEditChanged(bool canEdit)

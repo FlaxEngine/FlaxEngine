@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 using System;
 using FlaxEngine;
@@ -239,7 +239,7 @@ namespace FlaxEditor.GUI.Tabs
         /// </summary>
         public Tab SelectedTab
         {
-            get => _selectedIndex < 0 || Children.Count <= _selectedIndex ? null : Children[_selectedIndex + 1] as Tab;
+            get => _selectedIndex < 0 || Children.Count <= (_selectedIndex+1) ? null : Children[_selectedIndex + 1] as Tab;
             set => SelectedTabIndex = value != null ? Children.IndexOf(value) - 1 : -1;
         }
 

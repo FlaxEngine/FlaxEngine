@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -13,7 +13,7 @@ struct RenderContext;
 /// Custom PostFx which can modify final image by processing it with material based filters. The base class for all post process effects used by the graphics pipeline. Allows to extend frame rendering logic and apply custom effects such as outline, night vision, contrast etc.
 /// </summary>
 /// <remarks>
-/// Override this class and implement custom post fx logic. Use <b>MainRenderTask.Instance.CustomPostFx.Add(myPostFx)</b> to attach your script to rendering or add script to camera actor.
+/// Override this class and implement custom post fx logic. Use <b>MainRenderTask.Instance.AddCustomPostFx(myPostFx)</b> to attach your script to rendering or add script to camera actor.
 /// </remarks>
 API_CLASS(Abstract) class FLAXENGINE_API PostProcessEffect : public Script
 {

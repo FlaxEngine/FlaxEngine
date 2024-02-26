@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -730,7 +730,7 @@ public:
     void TransformTime(float timeScale, float timeOffset)
     {
         for (int32 i = 0; i < _keyframes.Count(); i++)
-            _keyframes[i].Time = _keyframes[i].Time * timeScale + timeOffset;;
+            _keyframes[i].Time = _keyframes[i].Time * timeScale + timeOffset;
     }
 
     uint64 GetMemoryUsage() const

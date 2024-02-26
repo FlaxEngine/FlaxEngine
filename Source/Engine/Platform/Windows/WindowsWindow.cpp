@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #if PLATFORM_WINDOWS
 
@@ -324,7 +324,19 @@ void WindowsWindow::SetBorderless(bool isBorderless, bool maximized)
         lStyle |= WS_OVERLAPPED | WS_SYSMENU | WS_BORDER | WS_CAPTION;
 
         SetWindowLong(_handle, GWL_STYLE, lStyle);
-        SetWindowPos(_handle, nullptr, 0, 0, (int)_settings.Size.X, (int)_settings.Size.Y, SWP_FRAMECHANGED | SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
+        const Float2 clientSize = GetClientSize();
+        const Float2 desktopSize = Platform::GetDesktopSize();
+        // Move window and half size if it is larger than desktop size
+        if (clientSize.X >= desktopSize.X && clientSize.Y >= desktopSize.Y)
+        {
+            const Float2 halfSize = desktopSize * 0.5f;
+            const Float2 middlePos = halfSize * 0.5f;
+            SetWindowPos(_handle, nullptr, (int)middlePos.X, (int)middlePos.Y, (int)halfSize.X, (int)halfSize.Y, SWP_FRAMECHANGED | SWP_NOZORDER | SWP_NOACTIVATE);
+        }
+        else
+        {
+            SetWindowPos(_handle, nullptr, 0, 0, (int)clientSize.X, (int)clientSize.Y, SWP_FRAMECHANGED | SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
+        }
 
         if (maximized)
         {

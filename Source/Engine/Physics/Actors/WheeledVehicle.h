@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -26,6 +26,51 @@ API_CLASS(Attributes="ActorContextMenu(\"New/Physics/Wheeled Vehicle\"), ActorTo
         DriveNW,
         // Non-drivable vehicle.
         NoDrive,
+        // Tank Drive. Can have more than 4 wheel. Not use steer, control acceleration for each tank track.
+        Tank,
+    };
+
+    /// <summary>
+    /// Vehicle driving types. Used only on tanks to specify the drive mode.   
+    /// </summary>
+    API_ENUM() enum class DriveModes
+    {
+        // Drive turning the vehicle using only one track.
+        Standard,
+        // Drive turning the vehicle using all tracks inverse direction.
+        Special,
+    };
+
+    /// <summary>
+    /// Storage the relationship between speed and steer.
+    /// </summary>
+    API_STRUCT() struct SteerControl : ISerializable
+    {
+        DECLARE_SCRIPTING_TYPE_MINIMAL(SteerControl);
+        API_AUTO_SERIALIZATION();
+
+        /// <summary>
+        /// The vehicle speed.
+        /// </summary>
+        API_FIELD(Attributes = "Limit(0)") float Speed = 1000;
+
+        /// <summary>
+        /// The target max steer of the speed.
+        /// </summary>
+        API_FIELD(Attributes = "Limit(0, 1)") float Steer = 1;
+
+        SteerControl() = default;
+
+        /// <summary>
+        /// Create a Steer/Speed relationship structure.
+        /// <param name="speed">The vehicle speed.</param>
+        /// <param name="steer">The target max steer of the speed.</param>
+        /// </summary>
+        SteerControl(float speed, float steer)
+        {
+            Speed = speed;
+            Steer = steer;
+        }
     };
 
     /// <summary>
@@ -69,6 +114,71 @@ API_CLASS(Attributes="ActorContextMenu(\"New/Physics/Wheeled Vehicle\"), ActorTo
         OpenFrontDrive,
         // Open differential for car with rear-wheel drive.
         OpenRearDrive,
+    };
+
+    /// <summary>
+    /// Vehicle drive control settings.
+    /// </summary>
+    API_STRUCT() struct DriveControlSettings : ISerializable
+    {
+        DECLARE_SCRIPTING_TYPE_MINIMAL(DriveControlSettings);
+        API_AUTO_SERIALIZATION();
+
+        /// <summary>
+        /// Gets or sets the drive mode, used by vehicles specify the way of the tracks control.
+        /// </summary>
+        API_FIELD(Attributes="EditorOrder(0), EditorDisplay(\"Tanks\")") WheeledVehicle::DriveModes DriveMode = WheeledVehicle::DriveModes::Standard;
+
+        /// <summary>
+        /// Acceleration input sensitive.
+        /// </summary>
+        API_FIELD(Attributes="EditorOrder(10)") float RiseRateAcceleration = 6.0f;
+
+        /// <summary>
+        /// Deceleration input sensitive.
+        /// </summary>
+        API_FIELD(Attributes="EditorOrder(11)") float FallRateAcceleration = 10.0f;
+
+        /// <summary>
+        /// Brake input sensitive.
+        /// </summary>
+        API_FIELD(Attributes="EditorOrder(12)") float RiseRateBrake = 6.0f;
+
+        /// <summary>
+        /// Release brake sensitive.
+        /// </summary>
+        API_FIELD(Attributes="EditorOrder(13)") float FallRateBrake = 10.0f;
+
+        /// <summary>
+        /// Brake input sensitive.
+        /// </summary>
+        API_FIELD(Attributes="EditorOrder(14)") float RiseRateHandBrake = 12.0f;
+
+        /// <summary>
+        /// Release handbrake sensitive.
+        /// </summary>
+        API_FIELD(Attributes="EditorOrder(15)") float FallRateHandBrake = 12.0f;
+
+        /// <summary>
+        /// Steer input sensitive.
+        /// </summary>
+        API_FIELD(Attributes="EditorOrder(16)") float RiseRateSteer = 2.5f;
+
+        /// <summary>
+        /// Release steer input sensitive.
+        /// </summary>
+        API_FIELD(Attributes="EditorOrder(17)") float FallRateSteer = 5.0f;
+
+        /// <summary>
+        /// Vehicle control relationship between speed and steer. The higher is the speed, decrease steer to make vehicle more maneuverable (limited only 4 relationships).
+        /// </summary>
+        API_FIELD() Array<WheeledVehicle::SteerControl> SteerVsSpeed = Array<WheeledVehicle::SteerControl>
+        {
+            SteerControl(800, 1.0f),
+            SteerControl(1500, 0.7f),
+            SteerControl(2500, 0.5f),
+            SteerControl(5000, 0.2f),
+        };
     };
 
     /// <summary>
@@ -129,6 +239,11 @@ API_CLASS(Attributes="ActorContextMenu(\"New/Physics/Wheeled Vehicle\"), ActorTo
         API_FIELD() bool AutoGear = true;
 
         /// <summary>
+        /// Number of gears to move to forward
+        /// </summary>
+        API_FIELD(Attributes = "Limit(1, 30)") int32 ForwardGearsRatios = 5;
+
+        /// <summary>
         /// Time it takes to switch gear. Specified in seconds (s).
         /// </summary>
         API_FIELD(Attributes="Limit(0)") float SwitchTime = 0.5f;
@@ -142,34 +257,12 @@ API_CLASS(Attributes="ActorContextMenu(\"New/Physics/Wheeled Vehicle\"), ActorTo
     };
 
     /// <summary>
-    /// Vehicle wheel types.
-    /// </summary>
-    API_ENUM() enum class WheelTypes
-    {
-        // Left wheel of the front axle.
-        FrontLeft,
-        // Right wheel of the front axle.
-        FrontRight,
-        // Left wheel of the rear axle.
-        RearLeft,
-        // Right wheel of the rear axle.
-        RearRight,
-        // Non-drivable wheel.
-        NoDrive,
-    };
-
-    /// <summary>
     /// Vehicle wheel settings.
     /// </summary>
     API_STRUCT() struct Wheel : ISerializable
     {
         DECLARE_SCRIPTING_TYPE_MINIMAL(Wheel);
         API_AUTO_SERIALIZATION();
-
-        /// <summary>
-        /// Wheel placement type.
-        /// </summary>
-        API_FIELD(Attributes="EditorOrder(0)") WheelTypes Type = WheelTypes::FrontLeft;
 
         /// <summary>
         /// Combined mass of the wheel and the tire in kg. Typically, a wheel has mass between 20Kg and 80Kg but can be lower and higher depending on the vehicle.
@@ -187,9 +280,9 @@ API_CLASS(Attributes="ActorContextMenu(\"New/Physics/Wheeled Vehicle\"), ActorTo
         API_FIELD(Attributes="EditorOrder(3)") float Width = 20.0f;
 
         /// <summary>
-        /// Max steer angle that can be achieved by the wheel (in degrees).
+        /// Max steer angle that can be achieved by the wheel (in degrees, -180 to 180).
         /// </summary>
-        API_FIELD(Attributes="Limit(0), EditorDisplay(\"Steering\"), EditorOrder(10)") float MaxSteerAngle = 0.0f;
+        API_FIELD(Attributes="Limit(-180, 180), EditorDisplay(\"Steering\"), EditorOrder(10)") float MaxSteerAngle = 0.0f;
 
         /// <summary>
         /// Damping rate applied to wheel. Specified in kilograms metres-squared per second (kg m^2 s^-1).
@@ -210,6 +303,11 @@ API_CLASS(Attributes="ActorContextMenu(\"New/Physics/Wheeled Vehicle\"), ActorTo
         /// Collider that represents the wheel shape and it's placement. Has to be attached as a child to the vehicle. Triangle mesh collider is not supported (use convex mesh or basic shapes).
         /// </summary>
         API_FIELD(Attributes="EditorOrder(4)") ScriptingObjectReference<Collider> Collider;
+
+        /// <summary>
+        /// Spring sprung mass force multiplier.
+        /// </summary>
+        API_FIELD(Attributes="Limit(0.01f), EditorDisplay(\"Suspension\"), EditorOrder(19)") float SprungMassMultiplier = 1.0f;
 
         /// <summary>
         /// Spring damper rate of suspension unit.
@@ -312,6 +410,25 @@ API_CLASS(Attributes="ActorContextMenu(\"New/Physics/Wheeled Vehicle\"), ActorTo
 #endif
     };
 
+    /// <summary>
+    /// Vehicle axle anti roll bar.
+    /// </summary>
+    API_STRUCT() struct AntiRollBar : ISerializable
+    {
+        DECLARE_SCRIPTING_TYPE_MINIMAL(AntiRollBar);
+        API_AUTO_SERIALIZATION();
+
+        /// <summary>
+        /// The specific axle with wheels to apply anti roll.
+        /// </summary>
+        API_FIELD() int32 Axle;
+
+        /// <summary>
+        /// The anti roll stiffness.
+        /// </summary>
+        API_FIELD() float Stiffness;
+    };
+
 private:
     struct WheelData
     {
@@ -323,8 +440,10 @@ private:
     void* _vehicle = nullptr;
     DriveTypes _driveType = DriveTypes::Drive4W, _driveTypeCurrent;
     Array<WheelData, FixedAllocation<20>> _wheelsData;
-    float _throttle = 0.0f, _steering = 0.0f, _brake = 0.0f, _handBrake = 0.0f;
+    float _throttle = 0.0f, _steering = 0.0f, _brake = 0.0f, _handBrake = 0.0f, _tankLeftThrottle = 0.0f, _tankRightThrottle = 0.0f, _tankLeftBrake = 0.0f, _tankRightBrake = 0.0f;
     Array<Wheel> _wheels;
+    Array<AntiRollBar> _antiRollBars;
+    DriveControlSettings _driveControl;
     EngineSettings _engine;
     DifferentialSettings _differential;
     GearboxSettings _gearbox;
@@ -347,7 +466,7 @@ public:
     /// <summary>
     /// Gets the vehicle driving model type.
     /// </summary>
-    API_PROPERTY(Attributes="EditorOrder(1), EditorDisplay(\"Vehicle\")") DriveTypes GetDriveType() const;
+    API_PROPERTY(Attributes="EditorOrder(2), EditorDisplay(\"Vehicle\")") DriveTypes GetDriveType() const;
 
     /// <summary>
     /// Sets the vehicle driving model type.
@@ -357,7 +476,17 @@ public:
     /// <summary>
     /// Gets the vehicle wheels settings.
     /// </summary>
-    API_PROPERTY(Attributes="EditorOrder(2), EditorDisplay(\"Vehicle\")") const Array<Wheel>& GetWheels() const;
+    API_PROPERTY(Attributes="EditorOrder(4), EditorDisplay(\"Vehicle\")") const Array<Wheel>& GetWheels() const;
+
+    /// <summary>
+    /// Gets the vehicle drive control settings.
+    /// </summary>
+    API_PROPERTY(Attributes = "EditorOrder(5), EditorDisplay(\"Vehicle\")") DriveControlSettings GetDriveControl() const;
+
+    /// <summary>
+    /// Sets the vehicle drive control settings.
+    /// </summary>
+    API_PROPERTY() void SetDriveControl(DriveControlSettings value);
 
     /// <summary>
     /// Sets the vehicle wheels settings.
@@ -367,7 +496,7 @@ public:
     /// <summary>
     /// Gets the vehicle engine settings.
     /// </summary>
-    API_PROPERTY(Attributes="EditorOrder(3), EditorDisplay(\"Vehicle\")") EngineSettings GetEngine() const;
+    API_PROPERTY(Attributes="EditorOrder(6), EditorDisplay(\"Vehicle\")") EngineSettings GetEngine() const;
 
     /// <summary>
     /// Sets the vehicle engine settings.
@@ -377,7 +506,7 @@ public:
     /// <summary>
     /// Gets the vehicle differential settings.
     /// </summary>
-    API_PROPERTY(Attributes="EditorOrder(4), EditorDisplay(\"Vehicle\")") DifferentialSettings GetDifferential() const;
+    API_PROPERTY(Attributes="EditorOrder(7), EditorDisplay(\"Vehicle\")") DifferentialSettings GetDifferential() const;
 
     /// <summary>
     /// Sets the vehicle differential settings.
@@ -387,12 +516,22 @@ public:
     /// <summary>
     /// Gets the vehicle gearbox settings.
     /// </summary>
-    API_PROPERTY(Attributes="EditorOrder(5), EditorDisplay(\"Vehicle\")") GearboxSettings GetGearbox() const;
+    API_PROPERTY(Attributes="EditorOrder(8), EditorDisplay(\"Vehicle\")") GearboxSettings GetGearbox() const;
 
     /// <summary>
     /// Sets the vehicle gearbox settings.
     /// </summary>
     API_PROPERTY() void SetGearbox(const GearboxSettings& value);
+
+    // <summary>
+    /// Sets axles anti roll bars to increase vehicle stability.
+    /// </summary>
+    API_PROPERTY() void SetAntiRollBars(const Array<AntiRollBar>& value);
+
+    // <summary>
+    /// Gets axles anti roll bars.
+    /// </summary>
+    API_PROPERTY() const Array<AntiRollBar>& GetAntiRollBars() const;
 
 public:
     /// <summary>
@@ -418,6 +557,32 @@ public:
     /// </summary>
     /// <param name="value">The value (0,1 range).</param>
     API_FUNCTION() void SetHandbrake(float value);
+
+    /// <summary>
+    /// Sets the input for tank left track throttle. It is the analog accelerator pedal value in range (-1,1) where 1 represents the pedal fully pressed to move to forward, 0 to represents the 
+    /// pedal in its rest state and -1 represents the pedal fully pressed to move to backward. The track direction will be inverted if the vehicle current gear is rear.
+    /// </summary>
+    /// <param name="value">The value (-1,1 range).</param>
+    API_FUNCTION() void SetTankLeftThrottle(float value);
+
+    /// <summary>
+    /// Sets the input for tank right track throttle. It is the analog accelerator pedal value in range (-1,1) where 1 represents the pedal fully pressed to move to forward, 0 to represents the
+    /// pedal in its rest state and -1 represents the pedal fully pressed to move to backward. The track direction will be inverted if the vehicle current gear is rear.
+    /// </summary>
+    /// <param name="value">The value (-1,1 range).</param>
+    API_FUNCTION() void SetTankRightThrottle(float value);
+
+    /// <summary>
+    /// Sets the input for tank brakes the left track. Brake is the analog brake pedal value in range (0,1) where 1 represents the pedal fully pressed and 0 represents the pedal in its rest state.
+    /// </summary>
+    /// <param name="value">The value (0,1 range).</param>
+    API_FUNCTION() void SetTankLeftBrake(float value);
+
+    /// <summary>
+    /// Sets the input for tank brakes the right track. Brake is the analog brake pedal value in range (0,1) where 1 represents the pedal fully pressed and 0 represents the pedal in its rest state.
+    /// </summary>
+    /// <param name="value">The value (0,1 range).</param>
+    API_FUNCTION() void SetTankRightBrake(float value);
 
     /// <summary>
     /// Clears all the vehicle control inputs to the default values (throttle, steering, breaks).

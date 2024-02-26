@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #include "Prefab.h"
 
@@ -1230,14 +1230,14 @@ bool Prefab::SyncChangesInternal(PrefabInstancesData& prefabInstancesData)
     {
         ScopeLock lock(Locker);
         _isCreatingDefaultInstance = true;
-        _defaultInstance = PrefabManager::SpawnPrefab(this, Transform::Identity, nullptr, &ObjectsCache, true);
+        _defaultInstance = PrefabManager::SpawnPrefab(this, nullptr, &ObjectsCache, true);
         _isCreatingDefaultInstance = false;
     }
 
     // Instantiate prefab instance from prefab (default spawning logic)
     // Note: it will get any added or removed objects from the nested prefabs
     // TODO: try to optimize by using recreated default instance to ApplyAllInternal (will need special path there if apply is done with default instance to unlink it instead of destroying)
-    const auto targetActor = PrefabManager::SpawnPrefab(this, Transform::Identity, nullptr, nullptr, true);
+    const auto targetActor = PrefabManager::SpawnPrefab(this, nullptr, nullptr, true);
     if (targetActor == nullptr)
     {
         LOG(Warning, "Failed to instantiate default prefab instance from changes synchronization.");

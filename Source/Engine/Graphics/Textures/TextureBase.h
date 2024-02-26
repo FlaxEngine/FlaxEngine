@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -147,6 +147,11 @@ public:
     /// Sets the index of the texture group used by this texture.
     /// </summary>
     API_PROPERTY() void SetTextureGroup(int32 textureGroup);
+
+    /// <summary>
+    /// Returns true if texture streaming failed (eg. pixel format is unsupported or texture data cannot be uploaded to GPU due to memory limit).
+    /// </summary>
+    API_PROPERTY() bool HasStreamingError() const;
 
 public:
     /// <summary>

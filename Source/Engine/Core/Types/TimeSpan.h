@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -6,32 +6,30 @@
 #include "Engine/Core/Formatting.h"
 #include "Engine/Core/Templates.h"
 
-namespace Constants
-{
-    // The number of timespan ticks per day.
-    const int64 TicksPerDay = 864000000000;
-
-    // The number of timespan ticks per hour.
-    const int64 TicksPerHour = 36000000000;
-
-    // The number of timespan ticks per millisecond.
-    const int64 TicksPerMillisecond = 10000;
-
-    // The number of timespan ticks per minute.
-    const int64 TicksPerMinute = 600000000;
-
-    // The number of timespan ticks per second.
-    const int64 TicksPerSecond = 10000000;
-
-    // The number of timespan ticks per week.
-    const int64 TicksPerWeek = 6048000000000;
-}
-
 /// <summary>
 /// Represents the difference between two dates and times.
 /// </summary>
 API_STRUCT(InBuild, Namespace="System") struct FLAXENGINE_API TimeSpan
 {
+public:
+    // The number of timespan ticks per day.
+    static constexpr int64 TicksPerDay = 864000000000;
+
+    // The number of timespan ticks per hour.
+    static constexpr int64 TicksPerHour = 36000000000;
+
+    // The number of timespan ticks per millisecond.
+    static constexpr int64 TicksPerMillisecond = 10000;
+
+    // The number of timespan ticks per minute.
+    static constexpr int64 TicksPerMinute = 600000000;
+
+    // The number of timespan ticks per second.
+    static constexpr int64 TicksPerSecond = 10000000;
+
+    // The number of timespan ticks per week.
+    static constexpr int64 TicksPerWeek = 6048000000000;
+
 public:
     /// <summary>
     /// Time span in 100 nanoseconds resolution.
@@ -170,7 +168,7 @@ public:
     /// </summary>
     FORCE_INLINE int32 GetDays() const
     {
-        return (int32)(Ticks / Constants::TicksPerDay);
+        return (int32)(Ticks / TicksPerDay);
     }
 
     /// <summary>
@@ -186,7 +184,7 @@ public:
     /// </summary>
     FORCE_INLINE int32 GetHours() const
     {
-        return (int32)(Ticks / Constants::TicksPerHour % 24);
+        return (int32)(Ticks / TicksPerHour % 24);
     }
 
     /// <summary>
@@ -194,7 +192,7 @@ public:
     /// </summary>
     FORCE_INLINE int32 GetMilliseconds() const
     {
-        return (int32)(Ticks / Constants::TicksPerMillisecond % 1000);
+        return (int32)(Ticks / TicksPerMillisecond % 1000);
     }
 
     /// <summary>
@@ -202,7 +200,7 @@ public:
     /// </summary>
     FORCE_INLINE int32 GetMinutes() const
     {
-        return (int32)(Ticks / Constants::TicksPerMinute % 60);
+        return (int32)(Ticks / TicksPerMinute % 60);
     }
 
     /// <summary>
@@ -210,7 +208,7 @@ public:
     /// </summary>
     FORCE_INLINE int32 GetSeconds() const
     {
-        return (int32)(Ticks / Constants::TicksPerSecond % 60);
+        return (int32)(Ticks / TicksPerSecond % 60);
     }
 
     /// <summary>
@@ -218,7 +216,7 @@ public:
     /// </summary>
     FORCE_INLINE double GetTotalDays() const
     {
-        return (double)Ticks / Constants::TicksPerDay;
+        return (double)Ticks / TicksPerDay;
     }
 
     /// <summary>
@@ -226,7 +224,7 @@ public:
     /// </summary>
     FORCE_INLINE double GetTotalHours() const
     {
-        return (double)Ticks / Constants::TicksPerHour;
+        return (double)Ticks / TicksPerHour;
     }
 
     /// <summary>
@@ -234,7 +232,7 @@ public:
     /// </summary>
     FORCE_INLINE double GetTotalMilliseconds() const
     {
-        return (double)Ticks / Constants::TicksPerMillisecond;
+        return (double)Ticks / TicksPerMillisecond;
     }
 
     /// <summary>
@@ -242,7 +240,7 @@ public:
     /// </summary>
     FORCE_INLINE double GetTotalMinutes() const
     {
-        return (double)Ticks / Constants::TicksPerMinute;
+        return (double)Ticks / TicksPerMinute;
     }
 
     /// <summary>
@@ -250,7 +248,7 @@ public:
     /// </summary>
     FORCE_INLINE float GetTotalSeconds() const
     {
-        return static_cast<float>(Ticks) / Constants::TicksPerSecond;
+        return static_cast<float>(Ticks) / TicksPerSecond;
     }
 
 public:
@@ -293,29 +291,17 @@ public:
     /// <summary>
     /// Returns the maximum time span value.
     /// </summary>
-    /// <returns>The time span.</returns>
-    static TimeSpan MaxValue()
-    {
-        return TimeSpan(9223372036854775807);
-    }
+    static TimeSpan MaxValue();
 
     /// <summary>
     /// Returns the minimum time span value.
     /// </summary>
-    /// <returns>The time span.</returns>
-    static TimeSpan MinValue()
-    {
-        return TimeSpan(-9223372036854775807 - 1);
-    }
+    static TimeSpan MinValue();
 
     /// <summary>
     /// Returns the zero time span value.
     /// </summary>
-    /// <returns>The time span.</returns>
-    static TimeSpan Zero()
-    {
-        return TimeSpan(0);
-    }
+    static TimeSpan Zero();
 
 private:
     void Set(int32 days, int32 hours, int32 minutes, int32 seconds, int32 milliseconds);

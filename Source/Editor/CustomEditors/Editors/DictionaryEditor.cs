@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections;
@@ -7,6 +7,7 @@ using FlaxEditor.CustomEditors.Elements;
 using FlaxEditor.CustomEditors.GUI;
 using FlaxEditor.GUI;
 using FlaxEditor.GUI.ContextMenu;
+using FlaxEditor.GUI.Input;
 using FlaxEditor.Scripting;
 using FlaxEngine;
 using FlaxEngine.GUI;
@@ -149,13 +150,14 @@ namespace FlaxEditor.CustomEditors.Editors
             }
         }
 
-        private IntegerValueElement _size;
+        private IntValueBox _sizeBox;
         private Color _background;
         private int _elementsCount;
         private bool _readOnly;
         private bool _notNullItems;
         private bool _canEditKeys;
         private bool _keyEdited;
+        private CollectionAttribute.DisplayType _displayType;
 
         /// <summary>
         /// Gets the length of the collection.
@@ -178,6 +180,7 @@ namespace FlaxEditor.CustomEditors.Editors
             _background = FlaxEngine.GUI.Style.Current.CollectionBackgroundColor;
             _readOnly = false;
             _notNullItems = false;
+            _displayType = CollectionAttribute.DisplayType.Header;
 
             // Try get CollectionAttribute for collection editor meta
             var attributes = Values.GetAttributes();
@@ -192,20 +195,40 @@ namespace FlaxEditor.CustomEditors.Editors
                     _background = collection.BackgroundColor.Value;
                 overrideEditorType = TypeUtils.GetType(collection.OverrideEditorTypeName).Type;
                 spacing = collection.Spacing;
+                _displayType = collection.Display;
             }
 
             // Size
-            if (_readOnly || !_canEditKeys)
+            if (layout.ContainerControl is DropPanel dropPanel)
             {
-                layout.Label("Size", size.ToString());
-            }
-            else
-            {
-                _size = layout.IntegerValue("Size");
-                _size.IntValue.MinValue = 0;
-                _size.IntValue.MaxValue = _notNullItems ? size : ushort.MaxValue;
-                _size.IntValue.Value = size;
-                _size.IntValue.EditEnd += OnSizeChanged;
+                var height = dropPanel.HeaderHeight - dropPanel.HeaderTextMargin.Height;
+                var y = -dropPanel.HeaderHeight + dropPanel.HeaderTextMargin.Top;
+                _sizeBox = new IntValueBox(size)
+                {
+                    MinValue = 0,
+                    MaxValue = _notNullItems ? size : ushort.MaxValue,
+                    AnchorPreset = AnchorPresets.TopRight,
+                    Bounds = new Rectangle(-40 - dropPanel.ItemsMargin.Right, y, 40, height),
+                    Parent = dropPanel,
+                };
+
+                var label = new Label
+                {
+                    Text = "Size",
+                    AnchorPreset = AnchorPresets.TopRight,
+                    Bounds = new Rectangle(-_sizeBox.Width - 40 - dropPanel.ItemsMargin.Right - 2, y, 40, height),
+                    Parent = dropPanel
+                };
+
+                if (_readOnly || !_canEditKeys)
+                {
+                    _sizeBox.IsReadOnly = true;
+                    _sizeBox.Enabled = false;
+                }
+                else
+                {
+                    _sizeBox.EditEnd += OnSizeChanged;
+                }
             }
 
             // Elements
@@ -216,29 +239,23 @@ namespace FlaxEditor.CustomEditors.Editors
                 var keysEnumerable = ((IDictionary)Values[0]).Keys.OfType<object>();
                 var keys = keysEnumerable as object[] ?? keysEnumerable.ToArray();
                 var valuesType = new ScriptType(valueType);
+                
+                bool single = valuesType.IsPrimitive ||
+                              valuesType.Equals(new ScriptType(typeof(string))) ||
+                              valuesType.IsEnum ||
+                              (valuesType.GetFields().Length == 1 && valuesType.GetProperties().Length == 0) ||
+                              (valuesType.GetProperties().Length == 1 && valuesType.GetFields().Length == 0) ||
+                              valuesType.Equals(new ScriptType(typeof(JsonAsset))) ||
+                              valuesType.Equals(new ScriptType(typeof(SettingsBase)));
 
                 // Use separate layout cells for each collection items to improve layout updates for them in separation
                 var useSharedLayout = valueType.IsPrimitive || valueType.IsEnum;
 
                 for (int i = 0; i < size; i++)
                 {
-                    if (i != 0 && spacing > 0f)
+                    if (i > 0 && i < size && spacing > 0)
                     {
-                        if (panel.Children.Count > 0 && panel.Children[panel.Children.Count - 1] is PropertiesListElement propertiesListElement)
-                        {
-                            if (propertiesListElement.Labels.Count > 0)
-                            {
-                                var label = propertiesListElement.Labels[propertiesListElement.Labels.Count - 1];
-                                var margin = label.Margin;
-                                margin.Bottom += spacing;
-                                label.Margin = margin;
-                            }
-                            propertiesListElement.Space(spacing);
-                        }
-                        else
-                        {
-                            panel.Space(spacing);
-                        }
+                        panel.Space(spacing);
                     }
 
                     var key = keys.ElementAt(i);
@@ -310,7 +327,7 @@ namespace FlaxEditor.CustomEditors.Editors
             if (IsSetBlocked)
                 return;
 
-            Resize(_size.IntValue.Value);
+            Resize(_sizeBox.Value);
         }
 
         /// <summary>

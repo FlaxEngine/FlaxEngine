@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -518,9 +518,9 @@ namespace FlaxEditor.GUI.Docking
             }
         }
 
-        internal virtual void DockWindowInternal(DockState state, DockWindow window)
+        internal virtual void DockWindowInternal(DockState state, DockWindow window, bool autoSelect = true, float? splitterValue = null)
         {
-            DockWindow(state, window);
+            DockWindow(state, window, autoSelect, splitterValue);
         }
 
         /// <summary>
@@ -528,7 +528,9 @@ namespace FlaxEditor.GUI.Docking
         /// </summary>
         /// <param name="state">The state.</param>
         /// <param name="window">The window.</param>
-        protected virtual void DockWindow(DockState state, DockWindow window)
+        /// <param name="autoSelect">Whether or not to automatically select the window after docking it.</param>
+        /// <param name="splitterValue">The splitter value to use when docking to window.</param>
+        protected virtual void DockWindow(DockState state, DockWindow window, bool autoSelect = true, float? splitterValue = null)
         {
             CreateTabsProxy();
 
@@ -536,12 +538,12 @@ namespace FlaxEditor.GUI.Docking
             if (state == DockState.DockFill)
             {
                 // Add tab
-                AddTab(window);
+                AddTab(window, autoSelect);
             }
             else
             {
                 // Create child panel
-                var dockPanel = CreateChildPanel(state, DefaultSplitterValue);
+                var dockPanel = CreateChildPanel(state, splitterValue ?? DefaultSplitterValue);
 
                 // Dock window as a tab in a child panel
                 dockPanel.DockWindow(DockState.DockFill, window);

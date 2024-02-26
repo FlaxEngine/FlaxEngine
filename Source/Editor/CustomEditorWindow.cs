@@ -1,9 +1,9 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 using FlaxEditor.CustomEditors;
+using FlaxEditor.GUI.Docking;
 using FlaxEditor.Windows;
 using FlaxEngine.GUI;
-using DockState = FlaxEditor.GUI.Docking.DockState;
 
 namespace FlaxEditor
 {
@@ -97,9 +97,12 @@ namespace FlaxEditor
         /// Shows the window.
         /// </summary>
         /// <param name="state">Initial window state.</param>
-        public void Show(DockState state = DockState.Float)
+        /// <param name="toDock">The panel to dock to, if any.</param>
+        /// <param name="autoSelect">Only used if <paramref name="toDock"/> is set. If true the window will be selected after docking it.</param>
+        /// <param name="splitterValue">The splitter value to use if toDock is not null. If not specified, a default value will be used.</param>
+        public void Show(DockState state = DockState.Float, DockPanel toDock = null, bool autoSelect = true, float? splitterValue = null)
         {
-            _win.Show(state);
+            _win.Show(state, toDock, autoSelect, splitterValue);
         }
     }
 }

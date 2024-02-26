@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
@@ -18,7 +18,7 @@ namespace FlaxEditor.Content.Settings
         /// <summary>
         /// The layers names.
         /// </summary>
-        [EditorOrder(10), EditorDisplay("Layers", EditorDisplayAttribute.InlineStyle), Collection(ReadOnly = true)]
+        [EditorOrder(10), EditorDisplay("Layers", EditorDisplayAttribute.InlineStyle), Collection(ReadOnly = true, Display = CollectionAttribute.DisplayType.Inline)]
         public string[] Layers = new string[32];
 
         /// <summary>

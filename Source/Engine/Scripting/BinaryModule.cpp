@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #include "BinaryModule.h"
 #include "ScriptingObject.h"
@@ -533,7 +533,12 @@ void ScriptingType::HackObjectVTable(void* object, ScriptingTypeHandle baseTypeH
     if (!Script.VTable)
     {
         // Ensure to have valid Script VTable hacked
-        SetupScriptObjectVTable(object, baseTypeHandle, wrapperIndex);
+        BinaryModule::Locker.Lock();
+        if (!Script.VTable)
+        {
+            SetupScriptObjectVTable(object, baseTypeHandle, wrapperIndex);
+        }
+        BinaryModule::Locker.Unlock();
     }
 
     // Override object vtable with hacked one that has calls to overriden scripting functions
@@ -758,6 +763,11 @@ ScriptingObject* ManagedBinaryModule::ManagedObjectSpawn(const ScriptingObjectSp
     // Create native object
     ScriptingTypeHandle managedTypeHandle = params.Type;
     const ScriptingType* managedTypePtr = &managedTypeHandle.GetType();
+    if (managedTypePtr->ManagedClass && managedTypePtr->ManagedClass->IsAbstract())
+    {
+        LOG(Error, "Failed to spawn abstract type '{}'", managedTypePtr->ToString());
+        return nullptr;
+    }
     while (managedTypePtr->Script.Spawn != &ManagedObjectSpawn)
     {
         managedTypeHandle = managedTypePtr->GetBaseType();
@@ -1035,18 +1045,11 @@ void ManagedBinaryModule::InitType(MClass* mclass)
         baseType.Module->TypeNameToTypeIndex.TryGet(genericClassName, *(int32*)&baseType.TypeIndex);
     }
 
-    if (!baseType)
-    {
-        LOG(Error, "Missing base class for managed class {0} from assembly {1}.", String(typeName), Assembly->ToString());
-        return;
-    }
-
-    if (baseType.TypeIndex == -1)
+    if (baseType.TypeIndex == -1 || baseType.Module == nullptr)
     {
         if (baseType.Module)
             LOG(Error, "Missing base class for managed class {0} from assembly {1}.", String(baseClass->GetFullName()), baseType.Module->GetName().ToString());
         else
-            // Not sure this can happen but never hurts to account for it
             LOG(Error, "Missing base class for managed class {0} from unknown assembly.", String(baseClass->GetFullName()));
         return;
     }
@@ -1235,17 +1238,17 @@ bool ManagedBinaryModule::InvokeMethod(void* method, const Variant& instance, Sp
     const bool withInterfaces = !mMethod->IsStatic() && mMethod->GetParentClass()->IsInterface();
     if (!mMethod->IsStatic())
     {
-        // Box instance into C# object
+        // Box instance into C# object (and validate the type)
         MObject* instanceObject = MUtils::BoxVariant(instance);
-        const MClass* instanceObjectClass = MCore::Object::GetClass(instanceObject);
-
-        // Validate instance
-        if (!instanceObject || !instanceObjectClass->IsSubClassOf(mMethod->GetParentClass(), withInterfaces))
+        if (!instanceObject)
         {
-            if (!instanceObject)
-                LOG(Error, "Failed to call method '{0}.{1}' (args count: {2}) without object instance", String(mMethod->GetParentClass()->GetFullName()), String(mMethod->GetName()), parametersCount);
-            else
-                LOG(Error, "Failed to call method '{0}.{1}' (args count: {2}) with invalid object instance of type '{3}'", String(mMethod->GetParentClass()->GetFullName()), String(mMethod->GetName()), parametersCount, String(MUtils::GetClassFullname(instanceObject)));
+            LOG(Error, "Failed to call method '{0}.{1}' (args count: {2}) without object instance", String(mMethod->GetParentClass()->GetFullName()), String(mMethod->GetName()), parametersCount);
+            return true;
+        }
+        const MClass* instanceObjectClass = MCore::Object::GetClass(instanceObject);
+        if (!instanceObjectClass->IsSubClassOf(mMethod->GetParentClass(), withInterfaces))
+        {
+            LOG(Error, "Failed to call method '{0}.{1}' (args count: {2}) with invalid object instance of type '{3}'", String(mMethod->GetParentClass()->GetFullName()), String(mMethod->GetName()), parametersCount, String(MUtils::GetClassFullname(instanceObject)));
             return true;
         }
 

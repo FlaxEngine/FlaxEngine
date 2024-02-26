@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -43,6 +43,21 @@ namespace FlaxEditor.Modules.SourceCodeEditing
             _type = type;
             _checkFunc = checkFunc;
             _checkAssembly = checkAssembly;
+        }
+
+        /// <summary>
+        /// Gets the type matching the certain Script.
+        /// </summary>
+        /// <param name="script">The content item.</param>
+        /// <returns>The type matching that item, or null if not found.</returns>
+        public ScriptType Get(Content.ScriptItem script)
+        {
+            foreach (var type in Get())
+            {
+                if (type.ContentItem == script)
+                    return type;
+            }
+            return ScriptType.Null;
         }
 
         /// <summary>

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 using System.Collections.Generic;
 using FlaxEditor.GUI;
@@ -321,8 +321,7 @@ namespace FlaxEditor.Windows.Profiler
             var data = _events.Get(_drawTimeCPU.SelectedSampleIndex);
             if (data == null || data.Length == 0)
                 return;
-
-            float totalTimeMs = _drawTimeCPU.SelectedSample;
+            float totalTimeMs = _drawTimeGPU.SelectedSample;
 
             // Add rows
             var rowColor2 = Style.Current.Background * 1.4f;
@@ -343,14 +342,19 @@ namespace FlaxEditor.Windows.Profiler
                     row = new Row
                     {
                         Values = new object[6],
+                        BackgroundColors = new Color[6],
                     };
+                    for (int k = 0; k < row.BackgroundColors.Length; k++)
+                        row.BackgroundColors[k] = Color.Transparent;
                 }
                 {
                     // Event
                     row.Values[0] = name;
 
                     // Total (%)
-                    row.Values[1] = (int)(e.Time / totalTimeMs * 1000.0f) / 10.0f;
+                    float rowTimePerc = (float)(e.Time / totalTimeMs);
+                    row.Values[1] = (int)(rowTimePerc * 1000.0f) / 10.0f;
+                    row.BackgroundColors[1] = Color.Red.AlphaMultiplied(Mathf.Min(1, rowTimePerc) * 0.5f);
 
                     // GPU ms
                     row.Values[2] = (e.Time * 10000.0f) / 10000.0f;

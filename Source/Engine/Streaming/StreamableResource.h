@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -111,8 +111,9 @@ public:
     struct StreamingCache
     {
         int64 LastUpdate = 0;
-        int32 TargetResidency = 0;
         int64 TargetResidencyChange = 0;
+        int32 TargetResidency = 0;
+        bool Error = false;
         SamplesBuffer<float, 5> QualitySamples;
     };
 
@@ -131,7 +132,8 @@ public:
     /// <summary>
     /// Stops the streaming (eg. on streaming fail).
     /// </summary>
-    void ResetStreaming();
+    /// <param name="error">True if streaming failed.</param>
+    void ResetStreaming(bool error = true);
 
 protected:
 

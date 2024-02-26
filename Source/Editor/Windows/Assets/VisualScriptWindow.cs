@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -797,11 +797,12 @@ namespace FlaxEditor.Windows.Assets
             }
 
             // Check if any breakpoint was hit
-            for (int i = 0; i < Surface.Breakpoints.Count; i++)
+            var breakpoints = Surface.Breakpoints;
+            for (int i = 0; i < breakpoints.Count; i++)
             {
-                if (Surface.Breakpoints[i].ID == flowInfo.NodeId)
+                if (breakpoints[i].ID == flowInfo.NodeId)
                 {
-                    OnDebugBreakpointHit(ref flowInfo, Surface.Breakpoints[i]);
+                    OnDebugBreakpointHit(ref flowInfo, breakpoints[i]);
                     break;
                 }
             }
@@ -820,7 +821,7 @@ namespace FlaxEditor.Windows.Assets
             var state = (BreakpointHangState)Editor.Instance.Simulation.BreakpointHangTag;
             if (state.Locals == null)
             {
-                state.Locals = Editor.Internal_GetVisualScriptLocals(out var _);
+                state.Locals = Editor.GetVisualScriptLocals();
                 Editor.Instance.Simulation.BreakpointHangTag = state;
             }
             return state;
@@ -831,7 +832,7 @@ namespace FlaxEditor.Windows.Assets
             var state = (BreakpointHangState)Editor.Instance.Simulation.BreakpointHangTag;
             if (state.StackFrames == null)
             {
-                state.StackFrames = Editor.Internal_GetVisualScriptStackFrames(out var _);
+                state.StackFrames = Editor.GetVisualScriptStackFrames();
                 Editor.Instance.Simulation.BreakpointHangTag = state;
             }
             return state;
@@ -976,7 +977,7 @@ namespace FlaxEditor.Windows.Assets
                 return;
 
             // Break on any of the output connects from the previous scope node
-            var frame = Editor.Internal_GetVisualScriptPreviousScopeFrame();
+            var frame = Editor.GetVisualScriptPreviousScopeFrame();
             if (frame.Script != null)
             {
                 if (_debugStepOutNodesIds == null)

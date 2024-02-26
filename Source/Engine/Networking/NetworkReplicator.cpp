@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #include "NetworkReplicator.h"
 #include "NetworkClient.h"
@@ -29,6 +29,9 @@
 #include "Engine/Scripting/ScriptingObjectReference.h"
 #include "Engine/Threading/Threading.h"
 #include "Engine/Threading/ThreadLocal.h"
+#if USE_EDITOR
+#include "FlaxEngine.Gen.h"
+#endif
 
 #if !BUILD_RELEASE
 bool NetworkReplicator::EnableLog = false;
@@ -235,6 +238,33 @@ namespace
 #endif
     Array<Guid> DespawnedObjects;
     uint32 SpawnId = 0;
+
+#if USE_EDITOR
+    void OnScriptsReloading()
+    {
+        ScopeLock lock(ObjectsLock);
+        if (Objects.HasItems())
+            LOG(Warning, "Hot-reloading scripts with network objects active.");
+        if (Hierarchy)
+        {
+            Delete(Hierarchy);
+            Hierarchy = nullptr;
+        }
+
+        // Clear any references to non-engine scripts before code hot-reload
+        BinaryModule* flaxModule = GetBinaryModuleFlaxEngine();
+        for (auto i = SerializersTable.Begin(); i.IsNotEnd(); ++i)
+        {
+            if (i->Key.Module != flaxModule)
+                SerializersTable.Remove(i);
+        }
+        for (auto i = NetworkRpcInfo::RPCsTable.Begin(); i.IsNotEnd(); ++i)
+        {
+            if (i->Key.First.Module != flaxModule)
+                NetworkRpcInfo::RPCsTable.Remove(i);
+        }
+    }
+#endif
 }
 
 class NetworkReplicationService : public EngineService
@@ -245,8 +275,17 @@ public:
     {
     }
 
+    bool Init() override;
     void Dispose() override;
 };
+
+bool NetworkReplicationService::Init()
+{
+#if USE_EDITOR
+    Scripting::ScriptsReloading.Bind(OnScriptsReloading);
+#endif
+    return false;
+}
 
 void NetworkReplicationService::Dispose()
 {
@@ -714,6 +753,7 @@ void InvokeObjectReplication(NetworkReplicatedObject& item, uint32 ownerFrame, b
     stream->SenderId = senderClientId;
 
     // Deserialize object
+    Scripting::ObjectsLookupIdMapping.Set(&IdsRemappingTable);
     const bool failed = NetworkReplicator::InvokeSerializer(obj->GetTypeHandle(), obj, stream, false);
     if (failed)
     {
@@ -817,7 +857,7 @@ void InvokeObjectSpawn(const NetworkMessageObjectSpawn& msgData, const NetworkMe
                 NETWORK_REPLICATOR_LOG(Error, "[NetworkReplicator] Failed to find prefab {}", msgData.PrefabId.ToString());
                 return;
             }
-            prefabInstance = PrefabManager::SpawnPrefab(prefab, Transform::Identity, nullptr, nullptr);
+            prefabInstance = PrefabManager::SpawnPrefab(prefab, nullptr, nullptr);
             if (!prefabInstance)
             {
                 NETWORK_REPLICATOR_LOG(Error, "[NetworkReplicator] Failed to spawn object type {}", msgData.PrefabId.ToString());
@@ -2151,6 +2191,18 @@ void NetworkInternal::OnNetworkMessageObjectRpc(NetworkEvent& event, NetworkClie
     NetworkMessageObjectRpc msgData;
     event.Message.ReadStructure(msgData);
     ScopeLock lock(ObjectsLock);
+
+    // Find RPC info
+    NetworkRpcName name;
+    name.First = Scripting::FindScriptingType(msgData.RpcTypeName);
+    name.Second = msgData.RpcName;
+    const NetworkRpcInfo* info = NetworkRpcInfo::RPCsTable.TryGet(name);
+    if (!info)
+    {
+        NETWORK_REPLICATOR_LOG(Error, "[NetworkReplicator] Unknown RPC {}::{} for object {}", String(msgData.RpcTypeName), String(msgData.RpcName), msgData.ObjectId);
+        return;
+    }
+
     NetworkReplicatedObject* e = ResolveObject(msgData.ObjectId, msgData.ParentId, msgData.ObjectTypeName);
     if (e)
     {
@@ -2159,17 +2211,7 @@ void NetworkInternal::OnNetworkMessageObjectRpc(NetworkEvent& event, NetworkClie
         if (!obj)
             return;
 
-        // Find RPC info
-        NetworkRpcName name;
-        name.First = Scripting::FindScriptingType(msgData.RpcTypeName);
-        name.Second = msgData.RpcName;
-        const NetworkRpcInfo* info = NetworkRpcInfo::RPCsTable.TryGet(name);
-        if (!info)
-        {
-            NETWORK_REPLICATOR_LOG(Error, "[NetworkReplicator] Unknown RPC {}::{} for object {}", String(msgData.RpcTypeName), String(msgData.RpcName), msgData.ObjectId);
-            return;
-        }
-
+        
         // Validate RPC
         if (info->Server && NetworkManager::IsClient())
         {
@@ -2192,7 +2234,7 @@ void NetworkInternal::OnNetworkMessageObjectRpc(NetworkEvent& event, NetworkClie
         // Execute RPC
         info->Execute(obj, stream, info->Tag);
     }
-    else
+    else if(info->Channel != static_cast<uint8>(NetworkChannelType::Unreliable) && info->Channel != static_cast<uint8>(NetworkChannelType::UnreliableOrdered))
     {
         NETWORK_REPLICATOR_LOG(Error, "[NetworkReplicator] Unknown object {} RPC {}::{}", msgData.ObjectId, String(msgData.RpcTypeName), String(msgData.RpcName));
     }

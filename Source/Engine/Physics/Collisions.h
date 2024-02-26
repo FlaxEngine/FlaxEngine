@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -9,7 +9,7 @@ class PhysicsColliderActor;
 /// <summary>
 /// Contains a contact point data for the collision location.
 /// </summary>
-API_STRUCT() struct FLAXENGINE_API ContactPoint
+API_STRUCT(NoDefault) struct FLAXENGINE_API ContactPoint
 {
     DECLARE_SCRIPTING_TYPE_MINIMAL(ContactPoint);
 
@@ -41,7 +41,7 @@ struct TIsPODType<ContactPoint>
 /// <summary>
 /// Contains a collision information passed to the OnCollisionEnter/OnCollisionExit events.
 /// </summary>
-API_STRUCT() struct FLAXENGINE_API Collision
+API_STRUCT(NoDefault) struct FLAXENGINE_API Collision
 {
     DECLARE_SCRIPTING_TYPE_MINIMAL(Collision);
 
@@ -58,9 +58,7 @@ API_STRUCT() struct FLAXENGINE_API Collision
     /// <summary>
     /// The total impulse applied to this contact pair to resolve the collision.
     /// </summary>
-    /// <remarks>
-    /// The total impulse is obtained by summing up impulses applied at all contact points in this collision pair.
-    /// </remarks>
+    /// <remarks>The total impulse is obtained by summing up impulses applied at all contact points in this collision pair.</remarks>
     API_FIELD() Vector3 Impulse;
 
     /// <summary>
@@ -81,15 +79,13 @@ API_STRUCT() struct FLAXENGINE_API Collision
     /// <summary>
     /// The contacts locations.
     /// </summary>
-    API_FIELD(Private, NoArray) ContactPoint Contacts[COLLISION_NAX_CONTACT_POINTS];
+    API_FIELD(Internal, NoArray) ContactPoint Contacts[COLLISION_NAX_CONTACT_POINTS];
 
 public:
     /// <summary>
     /// Gets the relative linear velocity of the two colliding objects.
     /// </summary>
-    /// <remarks>
-    /// Can be used to detect stronger collisions.
-    /// </remarks>
+    /// <remarks>Can be used to detect stronger collisions. </remarks>
     Vector3 GetRelativeVelocity() const
     {
         return ThisVelocity - OtherVelocity;

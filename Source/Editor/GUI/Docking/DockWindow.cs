@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 using System.Xml;
 using System.Globalization;
@@ -63,12 +63,9 @@ namespace FlaxEditor.GUI.Docking
         public bool IsHidden => !Visible || _dockedTo == null;
 
         /// <summary>
-        /// Gets the default window size.
+        /// Gets the default window size (in UI units, unscaled by DPI which is handled by windowing system).
         /// </summary>
-        /// <remarks>
-        /// Scaled by the DPI, because the window should be large enough for its content on every monitor
-        /// </remarks>
-        public virtual Float2 DefaultSize => new Float2(900, 580) * DpiScale;
+        public virtual Float2 DefaultSize => new Float2(900, 580);
 
         /// <summary>
         /// Gets the serialization typename.
@@ -217,7 +214,9 @@ namespace FlaxEditor.GUI.Docking
         /// </summary>
         /// <param name="state">Initial window state.</param>
         /// <param name="toDock">Panel to dock to it.</param>
-        public void Show(DockState state = DockState.Float, DockPanel toDock = null)
+        /// <param name="autoSelect">Only used if <paramref name="toDock"/> is set. If true the window will be selected after docking it.</param>
+        /// <param name="splitterValue">Only used if <paramref name="toDock"/> is set. The splitter value to use. If not specified, a default value will be used.</param>
+        public void Show(DockState state = DockState.Float, DockPanel toDock = null, bool autoSelect = true, float? splitterValue = null)
         {
             if (state == DockState.Hidden)
             {
@@ -235,7 +234,7 @@ namespace FlaxEditor.GUI.Docking
                 Undock();
 
                 // Then dock
-                (toDock ?? _masterPanel).DockWindowInternal(state, this);
+                (toDock ?? _masterPanel).DockWindowInternal(state, this, autoSelect, splitterValue);
                 OnShow();
                 PerformLayout();
             }

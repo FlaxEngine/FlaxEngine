@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 //#define DEBUG_INVOKE_METHODS_SEARCHING
 //#define DEBUG_FIELDS_SEARCHING
@@ -62,6 +62,19 @@ namespace FlaxEditor.Surface
             return true;
         }
 
+        private string GetBoxDebuggerTooltip(ref Editor.VisualScriptLocal local)
+        {
+            if (string.IsNullOrEmpty(local.ValueTypeName))
+            {
+                if (string.IsNullOrEmpty(local.Value))
+                    return string.Empty;
+                return local.Value;
+            }
+            if (string.IsNullOrEmpty(local.Value))
+                return $"({local.ValueTypeName})";
+            return $"{local.Value}\n({local.ValueTypeName})";
+        }
+
         /// <inheritdoc />
         public override void OnNodeBreakpointEdited(SurfaceNode node)
         {
@@ -95,7 +108,7 @@ namespace FlaxEditor.Surface
                         ref var local = ref state.Locals[i];
                         if (local.BoxId == box.ID && local.NodeId == box.ParentNode.ID)
                         {
-                            text = $"{local.Value ?? string.Empty} ({local.ValueTypeName})";
+                            text = GetBoxDebuggerTooltip(ref local);
                             return true;
                         }
                     }
@@ -107,7 +120,7 @@ namespace FlaxEditor.Surface
                             ref var local = ref state.Locals[i];
                             if (local.BoxId == connectedBox.ID && local.NodeId == connectedBox.ParentNode.ID)
                             {
-                                text = $"{local.Value ?? string.Empty} ({local.ValueTypeName})";
+                                text = GetBoxDebuggerTooltip(ref local);
                                 return true;
                             }
                         }
@@ -123,9 +136,33 @@ namespace FlaxEditor.Surface
                         BoxId = box.ID,
                     };
                     var script = ((Windows.Assets.VisualScriptWindow)box.Surface.Owner).Asset;
-                    if (Editor.Internal_EvaluateVisualScriptLocal(Object.GetUnmanagedPtr(script), ref local))
+                    if (Editor.EvaluateVisualScriptLocal(script, ref local))
                     {
-                        text = $"{local.Value ?? string.Empty} ({local.ValueTypeName})";
+                        // Check if got no value (null)
+                        if (string.IsNullOrEmpty(local.ValueTypeName) && string.Equals(local.Value, "null", StringComparison.Ordinal))
+                        {
+                            var connections = box.Connections;
+                            if (connections.Count == 0 && box.Archetype.ValueIndex >= 0 && box.ParentNode.Values != null && box.Archetype.ValueIndex < box.ParentNode.Values.Length)
+                            {
+                                // Special case when there is no value but the box has no connection and uses default value
+                                var defaultValue = box.ParentNode.Values[box.Archetype.ValueIndex];
+                                if (defaultValue != null)
+                                {
+                                    local.Value = defaultValue.ToString();
+                                    local.ValueTypeName = defaultValue.GetType().FullName;
+                                }
+                            }
+                            else if (connections.Count == 1)
+                            {
+                                // Special case when there is no value but the box has a connection with valid value to try to use it instead
+                                box = connections[0];
+                                local.NodeId = box.ParentNode.ID;
+                                local.BoxId = box.ID;
+                                Editor.EvaluateVisualScriptLocal(script, ref local);
+                            }
+                        }
+
+                        text = GetBoxDebuggerTooltip(ref local);
                         return true;
                     }
                 }

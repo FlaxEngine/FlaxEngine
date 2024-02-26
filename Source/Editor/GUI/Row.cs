@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 using System;
 using FlaxEngine;
@@ -25,6 +25,11 @@ namespace FlaxEditor.GUI
         public object[] Values { get; set; }
 
         /// <summary>
+        /// Gets or sets the cell background colors. Null if unused, transparent values are ignored.
+        /// </summary>
+        public Color[] BackgroundColors { get; set; }
+
+        /// <summary>
         /// Gets or sets the row depth level.
         /// </summary>
         public int Depth { get; set; }
@@ -38,8 +43,9 @@ namespace FlaxEditor.GUI
         {
             Depth = -1;
 
-            if (Height < Style.Current.FontMedium.Height)
-                Height = Style.Current.FontMedium.Height + 4;
+            var fontHeight = Style.Current.FontMedium.Height;
+            if (Height < fontHeight)
+                Height = fontHeight + 4;
         }
 
         /// <inheritdoc />
@@ -58,6 +64,7 @@ namespace FlaxEditor.GUI
             {
                 float x = 0;
                 int end = Mathf.Min(Values.Length, _table.Columns.Length);
+                var backgroundColors = BackgroundColors;
                 for (int i = 0; i < end; i++)
                 {
                     var column = _table.Columns[i];
@@ -98,6 +105,8 @@ namespace FlaxEditor.GUI
                     rect.Width -= leftDepthMargin;
 
                     Render2D.PushClip(rect);
+                    if (backgroundColors != null && backgroundColors[i].A > 0)
+                        Render2D.FillRectangle(rect, backgroundColors[i]);
                     Render2D.DrawText(style.FontMedium, text, rect, style.Foreground, column.CellAlignment, TextAlignment.Center);
                     Render2D.PopClip();
 

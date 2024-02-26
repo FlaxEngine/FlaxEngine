@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #if PLATFORM_LINUX
 
@@ -40,6 +40,7 @@ extern X11::Atom xAtomWmName;
 extern Dictionary<StringAnsi, X11::KeyCode> KeyNameMap;
 extern Array<KeyboardKeys> KeyCodeMap;
 extern X11::Cursor Cursors[(int32)CursorType::MAX];
+extern Window* MouseTrackingWindow;
 
 static constexpr uint32 MouseDoubleClickTime = 500;
 static constexpr uint32 MaxDoubleClickDistanceSquared = 10;
@@ -54,7 +55,7 @@ LinuxWindow::LinuxWindow(const CreateWindowSettings& settings)
         return;
 	auto screen = XDefaultScreen(display);
 
-	// Cache data
+    // Cache data
 	int32 width = Math::TruncToInt(settings.Size.X);
 	int32 height = Math::TruncToInt(settings.Size.Y);
 	_clientSize = Float2((float)width, (float)height);
@@ -111,6 +112,12 @@ LinuxWindow::LinuxWindow(const CreateWindowSettings& settings)
 	windowAttributes.border_pixel = XBlackPixel(display, screen);
 	windowAttributes.event_mask = KeyPressMask | KeyReleaseMask | StructureNotifyMask | ExposureMask;
 
+    if (!settings.IsRegularWindow)
+    {
+        windowAttributes.save_under = true;
+        windowAttributes.override_redirect = true;
+    }
+
 	// TODO: implement all window settings
 	/*
 	bool Fullscreen;
@@ -118,11 +125,16 @@ LinuxWindow::LinuxWindow(const CreateWindowSettings& settings)
 	bool AllowMaximize;
 	*/
 
+    unsigned long valueMask = CWBackPixel | CWBorderPixel | CWEventMask | CWColormap;
+    if (!settings.IsRegularWindow)
+    {
+        valueMask |= CWOverrideRedirect | CWSaveUnder;
+    }
 	const X11::Window window = X11::XCreateWindow(
 		display, X11::XRootWindow(display, screen), x, y,
 		width, height, 0, visualInfo->depth, InputOutput,
 		visualInfo->visual,
-		CWBackPixel | CWBorderPixel | CWEventMask | CWColormap, &windowAttributes);
+		valueMask, &windowAttributes);
 	_window = window;
 	LinuxWindow::SetTitle(settings.Title);
 
@@ -811,12 +823,13 @@ void LinuxWindow::SetTitle(const StringView& title)
 
 void LinuxWindow::StartTrackingMouse(bool useMouseScreenOffset)
 {
-	// TODO: impl this
+    MouseTrackingWindow = this;
 }
 
 void LinuxWindow::EndTrackingMouse()
 {
-	// TODO: impl this
+    if (MouseTrackingWindow == this)
+        MouseTrackingWindow = nullptr;
 }
 
 void LinuxWindow::SetCursor(CursorType type)

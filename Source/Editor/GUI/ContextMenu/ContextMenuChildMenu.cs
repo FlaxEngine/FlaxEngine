@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 using FlaxEngine;
 using FlaxEngine.GUI;
@@ -16,11 +16,6 @@ namespace FlaxEditor.GUI.ContextMenu
         /// The child context menu.
         /// </summary>
         public readonly ContextMenu ContextMenu = new ContextMenu();
-
-        /// <summary>
-        /// The amount to adjust the arrow image by in x coordinates.
-        /// </summary>
-        public float AdjustArrowAmount = 0;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ContextMenuChildMenu"/> class.
@@ -49,7 +44,7 @@ namespace FlaxEditor.GUI.ContextMenu
 
             // Draw arrow
             if (ContextMenu.HasChildren)
-                Render2D.DrawSprite(style.ArrowRight, new Rectangle(Width - 15 + AdjustArrowAmount, (Height - 12) / 2, 12, 12), Enabled ? isCMopened ? style.BackgroundSelected : style.Foreground : style.ForegroundDisabled);
+                Render2D.DrawSprite(style.ArrowRight, new Rectangle(Width - 15 + ExtraAdjustmentAmount, (Height - 12) / 2, 12, 12), Enabled ? isCMopened ? style.BackgroundSelected : style.Foreground : style.ForegroundDisabled);
         }
 
         /// <inheritdoc />

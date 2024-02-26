@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 using FlaxEngine;
 
@@ -26,7 +26,7 @@ namespace FlaxEditor.Tools.Terrain.Sculpt
         }
 
         /// <inheritdoc />
-        public override unsafe void Apply(ref ApplyParams p)
+        public override unsafe void ApplyBrushToPatch(ref ApplyParams p)
         {
             var strength = p.Strength * -10.0f;
             var brushPosition = p.Gizmo.CursorPosition;

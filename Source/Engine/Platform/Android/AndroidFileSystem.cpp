@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #if PLATFORM_ANDROID
 
@@ -244,7 +244,7 @@ bool AndroidFileSystem::FileExists(const StringView& path)
 bool AndroidFileSystem::DeleteFile(const StringView& path)
 {
     const StringAsANSI<> pathANSI(*path, path.Length());
-    return unlink(pathANSI.Get()) == 0;
+    return unlink(pathANSI.Get()) != 0;
 }
 
 uint64 AndroidFileSystem::GetFileSize(const StringView& path)
@@ -517,7 +517,7 @@ DateTime AndroidFileSystem::GetFileLastEditTime(const StringView& path)
     const StringAsANSI<> pathANSI(*path, path.Length());
     if (stat(pathANSI.Get(), &fileInfo) == -1)
         return DateTime::MinValue();
-    const TimeSpan timeSinceEpoch(0, 0, fileInfo.st_mtime);
+    const TimeSpan timeSinceEpoch(0, 0, 0, fileInfo.st_mtime);
     const DateTime UnixEpoch(1970, 1, 1);
     return UnixEpoch + timeSinceEpoch;
 }

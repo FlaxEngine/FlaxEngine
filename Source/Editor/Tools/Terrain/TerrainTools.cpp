@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #include "TerrainTools.h"
 #include "Engine/Core/Log.h"
@@ -20,7 +20,7 @@ bool TerrainTools::TryGetPatchCoordToAdd(Terrain* terrain, const Ray& ray, Int2&
 {
     CHECK_RETURN(terrain, true);
     result = Int2::Zero;
-    const float patchSize = terrain->GetChunkSize() * TERRAIN_UNITS_PER_VERTEX * TerrainPatch::CHUNKS_COUNT_EDGE;
+    const float patchSize = terrain->GetChunkSize() * TERRAIN_UNITS_PER_VERTEX * Terrain::ChunksCountEdge;
 
     // Try to pick any of the patch edges
     for (int32 patchIndex = 0; patchIndex < terrain->GetPatchesCount(); patchIndex++)
@@ -179,7 +179,7 @@ bool TerrainTools::GenerateTerrain(Terrain* terrain, const Int2& numberOfPatches
     terrain->AddPatches(numberOfPatches);
 
     // Prepare data
-    const auto heightmapSize = terrain->GetChunkSize() * TerrainPatch::CHUNKS_COUNT_EDGE + 1;
+    const auto heightmapSize = terrain->GetChunkSize() * Terrain::ChunksCountEdge + 1;
     Array<float> heightmapData;
     heightmapData.Resize(heightmapSize * heightmapSize);
 
@@ -380,7 +380,7 @@ bool TerrainTools::ExportTerrain(Terrain* terrain, String outputFolder)
     const auto firstPatch = terrain->GetPatch(0);
 
     // Calculate texture size
-    const int32 patchEdgeVertexCount = terrain->GetChunkSize() * TerrainPatch::CHUNKS_COUNT_EDGE + 1;
+    const int32 patchEdgeVertexCount = terrain->GetChunkSize() * Terrain::ChunksCountEdge + 1;
     const int32 patchVertexCount = patchEdgeVertexCount * patchEdgeVertexCount;
 
     // Find size of heightmap in patches

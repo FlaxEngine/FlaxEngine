@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -29,6 +29,51 @@ namespace FlaxEditor.Surface.Archetypes
         }
 
         /// <summary>
+        /// Customized <see cref="SurfaceNode"/> for Blend with Mask node.
+        /// </summary>
+        public class SkeletonMaskSample : SurfaceNode
+        {
+            private AssetSelect _assetSelect;
+            private Box _assetBox;
+
+            /// <inheritdoc />
+            public SkeletonMaskSample(uint id, VisjectSurfaceContext context, NodeArchetype nodeArch, GroupArchetype groupArch)
+            : base(id, context, nodeArch, groupArch)
+            {
+            }
+
+            /// <inheritdoc />
+            public override void OnSurfaceLoaded(SurfaceNodeActions action)
+            {
+                base.OnSurfaceLoaded(action);
+
+                if (Surface != null)
+                {
+                    _assetSelect = GetChild<AssetSelect>();
+
+                    // 4 is the id of skeleton mask parameter node.
+                    if (TryGetBox(4, out var box))
+                    {
+                        _assetBox = box;
+                        _assetSelect.Visible = !_assetBox.HasAnyConnection;
+                    }
+                }
+            }
+
+            /// <inheritdoc />
+            public override void ConnectionTick(Box box)
+            {
+                base.ConnectionTick(box);
+
+                if (_assetBox == null)
+                    return;
+                if (box.ID != _assetBox.ID)
+                    return;
+                _assetSelect.Visible = !box.HasAnyConnection;
+            }
+        }
+
+        /// <summary>
         /// Customized <see cref="SurfaceNode"/> for the animation sampling nodes
         /// </summary>
         /// <seealso cref="FlaxEditor.Surface.SurfaceNode" />
@@ -36,6 +81,7 @@ namespace FlaxEditor.Surface.Archetypes
         {
             private AssetSelect _assetSelect;
             private Box _assetBox;
+            private ProgressBar _playbackPos;
 
             /// <inheritdoc />
             public Sample(uint id, VisjectSurfaceContext context, NodeArchetype nodeArch, GroupArchetype groupArch)
@@ -75,7 +121,7 @@ namespace FlaxEditor.Surface.Archetypes
                     Title = _assetBox.HasAnyConnection || asset == null ? "Animation" : asset.ShortName;
                 else
                     Title = asset?.ShortName ?? "Animation";
-                
+
                 var style = Style.Current;
                 Resize(Mathf.Max(230, style.FontLarge.MeasureText(Title).X + 30), 160);
             }
@@ -92,6 +138,36 @@ namespace FlaxEditor.Surface.Archetypes
 
                 _assetSelect.Visible = !box.HasAnyConnection;
                 UpdateTitle();
+            }
+
+            /// <inheritdoc />
+            public override void Update(float deltaTime)
+            {
+                // Debug current playback position
+                if (((AnimGraphSurface)Surface).TryGetTraceEvent(this, out var traceEvent) && traceEvent.Asset is FlaxEngine.Animation anim)
+                {
+                    if (_playbackPos == null)
+                    {
+                        _playbackPos = new ProgressBar
+                        {
+                            SmoothingScale = 0.0f,
+                            Offsets = Margin.Zero,
+                            AnchorPreset = AnchorPresets.HorizontalStretchBottom,
+                            Parent = this,
+                            Height = 12.0f,
+                        };
+                        _playbackPos.Y -= 16.0f;
+                    }
+                    _playbackPos.Visible = true;
+                    _playbackPos.Maximum = anim.Duration;
+                    _playbackPos.Value = traceEvent.Value; // AnimGraph reports position in animation frames, not time
+                }
+                else if (_playbackPos != null)
+                {
+                    _playbackPos.Visible = false;
+                }
+
+                base.Update(deltaTime);
             }
         }
 
@@ -493,7 +569,15 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 TypeID = 10,
                 Title = "Blend Additive",
-                Description = "Blend animation poses (with additive mode)",
+                Description =
+                "Blend animation poses (with additive mode)" +
+                "\n" +
+                "\nNote: " +
+                "\nOrder of nodes matters, because Additive animation is appplayed on top of curent frame." +
+                "\n" +
+                "\nTip for blender users:" +
+                "\nInside NLA the the order is bottom (first node in flax) to the top (last node in flax)" +
+                "\n​u need to place it in this order to get correct resoults",
                 Flags = NodeFlags.AnimGraph,
                 Size = new Float2(170, 80),
                 DefaultValues = new object[]
@@ -513,6 +597,7 @@ namespace FlaxEditor.Surface.Archetypes
                 TypeID = 11,
                 Title = "Blend with Mask",
                 Description = "Blend animation poses using skeleton mask",
+                Create = (id, context, arch, groupArch) => new SkeletonMaskSample(id, context, arch, groupArch),
                 Flags = NodeFlags.AnimGraph,
                 Size = new Float2(180, 140),
                 DefaultValues = new object[]
@@ -526,7 +611,8 @@ namespace FlaxEditor.Surface.Archetypes
                     NodeElementArchetype.Factory.Input(0, "Pose A", true, typeof(void), 1),
                     NodeElementArchetype.Factory.Input(1, "Pose B", true, typeof(void), 2),
                     NodeElementArchetype.Factory.Input(2, "Alpha", true, typeof(float), 3, 0),
-                    NodeElementArchetype.Factory.Asset(0, 70, 1, typeof(SkeletonMask)),
+                    NodeElementArchetype.Factory.Input(3, "Skeleton Mask Asset", true, typeof(SkeletonMask), 4),
+                    NodeElementArchetype.Factory.Asset(0, Surface.Constants.LayoutOffsetY * 4, 1, typeof(SkeletonMask)),
                 }
             },
             new NodeArchetype

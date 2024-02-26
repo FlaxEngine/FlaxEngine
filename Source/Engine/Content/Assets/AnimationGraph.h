@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -37,8 +37,9 @@ public:
     /// <param name="baseModel">The base model asset.</param>
     /// <param name="anim">The animation to play.</param>
     /// <param name="loop">True if play animation in a loop.</param>
+    /// <param name="rootMotion">True if apply root motion. Otherwise it will be ignored.</param>
     /// <returns>True if failed, otherwise false.</returns>
-    API_FUNCTION() bool InitAsAnimation(SkinnedModel* baseModel, Animation* anim, bool loop = true);
+    API_FUNCTION() bool InitAsAnimation(SkinnedModel* baseModel, Animation* anim, bool loop = true, bool rootMotion = false);
 
     /// <summary>
     /// Tries to load surface graph from the asset.

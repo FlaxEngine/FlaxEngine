@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #include "GPUBuffer.h"
 #include "GPUDevice.h"
@@ -12,6 +12,7 @@
 #include "Engine/Debug/Exceptions/InvalidOperationException.h"
 #include "Engine/Debug/Exceptions/ArgumentNullException.h"
 #include "Engine/Debug/Exceptions/ArgumentOutOfRangeException.h"
+#include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Scripting/Enums.h"
 #include "Engine/Threading/ThreadPoolTask.h"
 #include "Engine/Threading/Threading.h"
@@ -81,33 +82,10 @@ bool GPUBufferDescription::Equals(const GPUBufferDescription& other) const
 
 String GPUBufferDescription::ToString() const
 {
-    // TODO: add tool to Format to string
-
-    String flags;
-    if (Flags == GPUBufferFlags::None)
-    {
-        flags = TEXT("None");
-    }
-    else
-    {
-        // TODO: create tool to auto convert flag enums to string
-
-#define CONVERT_FLAGS_FLAGS_2_STR(value) if (EnumHasAnyFlags(Flags, GPUBufferFlags::value)) { if (flags.HasChars()) flags += TEXT('|'); flags += TEXT(#value); }
-        CONVERT_FLAGS_FLAGS_2_STR(ShaderResource);
-        CONVERT_FLAGS_FLAGS_2_STR(VertexBuffer);
-        CONVERT_FLAGS_FLAGS_2_STR(IndexBuffer);
-        CONVERT_FLAGS_FLAGS_2_STR(UnorderedAccess);
-        CONVERT_FLAGS_FLAGS_2_STR(Append);
-        CONVERT_FLAGS_FLAGS_2_STR(Counter);
-        CONVERT_FLAGS_FLAGS_2_STR(Argument);
-        CONVERT_FLAGS_FLAGS_2_STR(Structured);
-#undef CONVERT_FLAGS_FLAGS_2_STR
-    }
-
     return String::Format(TEXT("Size: {0}, Stride: {1}, Flags: {2}, Format: {3}, Usage: {4}"),
                           Size,
                           Stride,
-                          flags,
+                          ScriptingEnum::ToStringFlags(Flags),
                           ScriptingEnum::ToString(Format),
                           (int32)Usage);
 }
@@ -212,7 +190,7 @@ GPUBuffer* GPUBuffer::ToStagingUpload() const
 
 bool GPUBuffer::Resize(uint32 newSize)
 {
-    // Validate input
+    PROFILE_CPU();
     if (!IsAllocated())
     {
         Log::InvalidOperationException(TEXT("Buffer.Resize"));
@@ -236,12 +214,12 @@ bool GPUBuffer::DownloadData(BytesContainer& result)
         LOG(Warning, "Cannot download GPU buffer data from an empty buffer.");
         return true;
     }
-
     if (_desc.Usage == GPUResourceUsage::StagingReadback || _desc.Usage == GPUResourceUsage::Dynamic)
     {
         // Use faster path for staging resources
         return GetData(result);
     }
+    PROFILE_CPU();
 
     // Ensure not running on main thread
     if (IsInMainThread())
@@ -358,6 +336,7 @@ Task* GPUBuffer::DownloadDataAsync(BytesContainer& result)
 
 bool GPUBuffer::GetData(BytesContainer& output)
 {
+    PROFILE_CPU();
     void* mapped = Map(GPUResourceMapMode::Read);
     if (!mapped)
         return true;
@@ -368,6 +347,7 @@ bool GPUBuffer::GetData(BytesContainer& output)
 
 void GPUBuffer::SetData(const void* data, uint32 size)
 {
+    PROFILE_CPU();
     if (size == 0 || data == nullptr)
     {
         Log::ArgumentNullException(TEXT("Buffer.SetData"));

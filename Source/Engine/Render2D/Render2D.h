@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -44,6 +44,11 @@ API_CLASS(Static) class FLAXENGINE_API Render2D
         /// Enables automatic geometry vertices snapping to integer coordinates in screen space. Reduces aliasing and sampling artifacts. Might be disabled for 3D projection viewport or for complex UI transformations.
         /// </summary>
         VertexSnapping = 1,
+
+        /// <summary>
+        /// Enables automatic characters usage from fallback fonts.
+        /// </summary>
+        FallbackFonts = 2,
     };
 
     struct CustomData
@@ -452,3 +457,5 @@ public:
     /// <param name="color">The color.</param>
     API_FUNCTION() static void FillTriangle(const Float2& p0, const Float2& p1, const Float2& p2, const Color& color);
 };
+
+DECLARE_ENUM_OPERATORS(Render2D::RenderingFeatures);

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 #if !FLAX_EDITOR
 using System;
 
@@ -32,6 +32,17 @@ namespace FlaxEngine
         }
 
         /// <summary>
+        /// Draws the lines axis from direction.
+        /// </summary>
+        /// <param name="origin">The origin of the line.</param>
+        /// <param name="direction">The direction of the line.</param>
+        /// <param name="color">The color.</param>
+        /// <param name="Size">The size of the axis.</param>
+        /// <param name="duration">The duration (in seconds). Use 0 to draw it only once.</param>
+        /// <param name="depthTest">If set to <c>true</c> depth test will be performed, otherwise depth will be ignored.</param>
+        public static void DrawAxisFromDirection(Vector3 origin, Vector3 direction, Color color ,float Size = 100.0f, float duration = 0.0f, bool depthTest = true){}
+
+        /// <summary>
         /// Draws the line in a direction.
         /// </summary>
         /// <param name="origin">The origin of the line.</param>
@@ -39,7 +50,28 @@ namespace FlaxEngine
         /// <param name="color">The color.</param>
         /// <param name="duration">The duration (in seconds). Use 0 to draw it only once.</param>
         /// <param name="depthTest">If set to <c>true</c> depth test will be performed, otherwise depth will be ignored.</param>
-        public static void DrawRay(Vector3 origin, Vector3 direction, Color color, float duration = 0.0f, bool depthTest = true)
+        public static void DrawDirection(Vector3 origin, Vector3 direction, Color color, float duration = 0.0f, bool depthTest = true){}
+
+        /// <summary>
+        /// Draws the line in a direction.
+        /// </summary>
+        /// <param name="origin">The origin of the line.</param>
+        /// <param name="direction">The direction of the line.</param>
+        /// <param name="color">The color.</param>
+        /// <param name="length">The length of the ray.</param>
+        /// <param name="duration">The duration (in seconds). Use 0 to draw it only once.</param>
+        /// <param name="depthTest">If set to <c>true</c> depth test will be performed, otherwise depth will be ignored.</param>
+        public static void DrawRay(Vector3 origin, Vector3 direction, Color color, float length = 3.402823466e+38f, float duration = 0.0f, bool depthTest = true){}
+
+        /// <summary>
+        /// Draws the line in a direction.
+        /// </summary>
+        /// <param name="ray">The ray.</param>
+        /// <param name="color">The color.</param>
+        /// <param name="length">The length of the ray.</param>
+        /// <param name="duration">The duration (in seconds). Use 0 to draw it only once.</param>
+        /// <param name="depthTest">If set to <c>true</c> depth test will be performed, otherwise depth will be ignored.</param>
+        public static void DrawRay(Ray ray,Color color, float length = 3.402823466e+38f, float duration = 0.0f, bool depthTest = true)
         {
         }
 
@@ -218,10 +250,11 @@ namespace FlaxEngine
         /// <param name="position">The arrow origin position.</param>
         /// <param name="orientation">The orientation (defines the arrow direction).</param>
         /// <param name="scale">The arrow scale (used to adjust the arrow size).</param>
+        /// <param name="capScale">The arrow cap scale.</param>
         /// <param name="color">The color.</param>
         /// <param name="duration">The duration (in seconds). Use 0 to draw it only once.</param>
         /// <param name="depthTest">If set to <c>true</c> depth test will be performed, otherwise depth will be ignored.</param>
-        public static void DrawWireArrow(Vector3 position, Quaternion orientation, float scale, Color color, float duration = 0.0f, bool depthTest = true)
+        public static void DrawWireArrow(Vector3 position, Quaternion orientation, float scale, float capScale, Color color, float duration = 0.0f, bool depthTest = true)
         {
         }
 

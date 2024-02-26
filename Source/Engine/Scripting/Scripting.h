@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -6,7 +6,7 @@
 #include "Engine/Scripting/ScriptingType.h"
 #include "Types.h"
 
-template<typename T, int32 MaxThreads, bool ClearMemory>
+template<typename T, int32 MaxThreads>
 class ThreadLocal;
 
 /// <summary>
@@ -114,7 +114,7 @@ public:
     /// <summary>
     /// The objects lookup identifier mapping used to override the object ids on FindObject call (used by the object references deserialization).
     /// </summary>
-    static ThreadLocal<IdsMappingTable*, PLATFORM_THREADS_LIMIT, true> ObjectsLookupIdMapping;
+    static ThreadLocal<IdsMappingTable*, PLATFORM_THREADS_LIMIT> ObjectsLookupIdMapping;
 
     /// <summary>
     /// Finds the object by the given identifier. Searches registered scene objects and optionally assets. Logs warning if fails.

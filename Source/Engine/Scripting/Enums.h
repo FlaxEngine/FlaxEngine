@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -67,5 +67,31 @@ public:
     static EnumType FromString(const StringView& name)
     {
         return FromString<EnumType>(StringAnsi(name));
+    }
+
+    // Gets the name of the enum value as separated flags
+    template<class EnumType>
+    static String ToStringFlags(EnumType value, Char separator = '|')
+    {
+        String result;
+        if (const auto items = GetItems<EnumType>())
+        {
+            for (int32 i = 0; items[i].Name; i++)
+            {
+                const uint64 itemValue = items[i].Value;
+                if ((uint64)value == 0 && itemValue == 0)
+                {
+                    result = items[i].Name;
+                    break;
+                }
+                if (itemValue != 0 && EnumHasAllFlags<EnumType>(value, (EnumType)itemValue))
+                {
+                    if (result.HasChars())
+                        result += separator;
+                    result += items[i].Name;
+                }
+            }
+        }
+        return result;
     }
 };

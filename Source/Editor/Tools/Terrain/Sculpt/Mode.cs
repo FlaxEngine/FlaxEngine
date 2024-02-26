@@ -1,6 +1,7 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 using System;
+using System.Collections.Generic;
 using FlaxEditor.Tools.Terrain.Brushes;
 using FlaxEngine;
 
@@ -50,18 +51,20 @@ namespace FlaxEditor.Tools.Terrain.Sculpt
         public virtual bool EditHoles => false;
 
         /// <summary>
-        /// Applies the modification to the terrain.
+        /// Gets all patches that will be affected by the brush
         /// </summary>
         /// <param name="brush">The brush.</param>
         /// <param name="options">The options.</param>
         /// <param name="gizmo">The gizmo.</param>
         /// <param name="terrain">The terrain.</param>
-        public unsafe void Apply(Brush brush, ref Options options, SculptTerrainGizmoMode gizmo, FlaxEngine.Terrain terrain)
+        public virtual unsafe List<ApplyParams> GetAffectedPatches(Brush brush, ref Options options, SculptTerrainGizmoMode gizmo, FlaxEngine.Terrain terrain)
         {
+            List<ApplyParams> affectedPatches = new();
+
             // Combine final apply strength
             float strength = Strength * options.Strength * options.DeltaTime;
             if (strength <= 0.0f)
-                return;
+                return affectedPatches;
             if (options.Invert && SupportsNegativeApply)
                 strength *= -1;
 
@@ -72,20 +75,10 @@ namespace FlaxEditor.Tools.Terrain.Sculpt
             var patchSize = chunkSize * FlaxEngine.Terrain.UnitsPerVertex * FlaxEngine.Terrain.PatchEdgeChunksCount;
             var tempBuffer = (float*)gizmo.GetHeightmapTempBuffer(heightmapLength * sizeof(float)).ToPointer();
             var unitsPerVertexInv = 1.0f / FlaxEngine.Terrain.UnitsPerVertex;
-            ApplyParams p = new ApplyParams
-            {
-                Terrain = terrain,
-                Brush = brush,
-                Gizmo = gizmo,
-                Options = options,
-                Strength = strength,
-                HeightmapSize = heightmapSize,
-                TempBuffer = tempBuffer,
-            };
 
             // Get brush bounds in terrain local space
             var brushBounds = gizmo.CursorBrushBounds;
-            terrain.GetLocalToWorldMatrix(out p.TerrainWorld);
+            terrain.GetLocalToWorldMatrix(out var terrainWorld);
             terrain.GetWorldToLocalMatrix(out var terrainInvWorld);
             BoundingBox.Transform(ref brushBounds, ref terrainInvWorld, out var brushBoundsLocal);
 
@@ -131,24 +124,76 @@ namespace FlaxEditor.Tools.Terrain.Sculpt
                 if (sourceHeights == null && sourceHoles == null)
                     throw new Exception("Cannot modify terrain. Loading heightmap failed. See log for more info.");
 
-                // Record patch data before editing it
-                if (!gizmo.CurrentEditUndoAction.HashPatch(ref patch.PatchCoord))
+                ApplyParams p = new ApplyParams
                 {
-                    gizmo.CurrentEditUndoAction.AddPatch(ref patch.PatchCoord);
-                }
+                    Terrain = terrain,
+                    TerrainWorld = terrainWorld,
+                    Brush = brush,
+                    Gizmo = gizmo,
+                    Options = options,
+                    Strength = strength,
+                    HeightmapSize = heightmapSize,
+                    TempBuffer = tempBuffer,
+                    ModifiedOffset = modifiedOffset,
+                    ModifiedSize = modifiedSize,
+                    PatchCoord = patch.PatchCoord,
+                    PatchPositionLocal = patchPositionLocal,
+                    SourceHeightMap = sourceHeights,
+                    SourceHolesMask = sourceHoles,
+                };
 
-                // Apply modification
-                p.ModifiedOffset = modifiedOffset;
-                p.ModifiedSize = modifiedSize;
-                p.PatchCoord = patch.PatchCoord;
-                p.PatchPositionLocal = patchPositionLocal;
-                p.SourceHeightMap = sourceHeights;
-                p.SourceHolesMask = sourceHoles;
-                Apply(ref p);
+                affectedPatches.Add(p);
             }
 
+            return affectedPatches;
+        }
+
+        /// <summary>
+        /// Applies the modification to the terrain.
+        /// </summary>
+        /// <param name="brush">The brush.</param>
+        /// <param name="options">The options.</param>
+        /// <param name="gizmo">The gizmo.</param>
+        /// <param name="terrain">The terrain.</param>
+        public void Apply(Brush brush, ref Options options, SculptTerrainGizmoMode gizmo, FlaxEngine.Terrain terrain)
+        {
+            var affectedPatches = GetAffectedPatches(brush, ref options, gizmo, terrain);
+
+            if (affectedPatches.Count == 0)
+            {
+                return;
+            }
+
+            ApplyBrush(gizmo, affectedPatches);
+
             // Auto NavMesh rebuild
+            var brushBounds = gizmo.CursorBrushBounds;
             gizmo.CurrentEditUndoAction.AddDirtyBounds(ref brushBounds);
+        }
+
+        /// <summary>
+        /// Applies the brush to all affected patches
+        /// </summary>
+        /// <param name="gizmo"></param>
+        /// <param name="affectedPatches"></param>
+        public virtual void ApplyBrush(SculptTerrainGizmoMode gizmo, List<ApplyParams> affectedPatches)
+        {
+            for (int i = 0; i < affectedPatches.Count; i++)
+            {
+                ApplyParams patchApplyParams = affectedPatches[i];
+
+                // Record patch data before editing it
+                if (!gizmo.CurrentEditUndoAction.HashPatch(ref patchApplyParams.PatchCoord))
+                {
+                    gizmo.CurrentEditUndoAction.AddPatch(ref patchApplyParams.PatchCoord);
+                }
+
+                ApplyBrushToPatch(ref patchApplyParams);
+
+                // Auto NavMesh rebuild
+                var brushBounds = gizmo.CursorBrushBounds;
+                gizmo.CurrentEditUndoAction.AddDirtyBounds(ref brushBounds);
+            }
         }
 
         /// <summary>
@@ -231,6 +276,6 @@ namespace FlaxEditor.Tools.Terrain.Sculpt
         /// Applies the modification to the terrain.
         /// </summary>
         /// <param name="p">The parameters to use.</param>
-        public abstract void Apply(ref ApplyParams p);
+        public abstract void ApplyBrushToPatch(ref ApplyParams p);
     }
 }

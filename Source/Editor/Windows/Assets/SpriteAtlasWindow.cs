@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 using System.Linq;
 using System.Xml;
@@ -83,14 +83,14 @@ namespace FlaxEditor.Windows.Assets
                     set => Sprite.Name = value;
                 }
 
-                [EditorOrder(1), Limit(-4096, 4096)]
+                [EditorOrder(1)]
                 public Float2 Location
                 {
                     get => Sprite.Location;
                     set => Sprite.Location = value;
                 }
 
-                [EditorOrder(3), Limit(0, 4096)]
+                [EditorOrder(3), Limit(0)]
                 public Float2 Size
                 {
                     get => Sprite.Size;

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -19,7 +19,7 @@ namespace FlaxEditor.GUI.Tree
         /// <summary>
         /// The key updates timeout in seconds.
         /// </summary>
-        public static float KeyUpdateTimeout = 0.12f;
+        public static float KeyUpdateTimeout = 0.25f;
 
         /// <summary>
         /// Delegate for selected tree nodes collection change.
@@ -113,7 +113,7 @@ namespace FlaxEditor.GUI.Tree
             AutoFocus = false;
 
             _supportMultiSelect = supportMultiSelect;
-            _keyUpdateTime = KeyUpdateTimeout * 10;
+            _keyUpdateTime = KeyUpdateTimeout;
         }
 
         internal void OnRightClickInternal(TreeNode node, ref Float2 location)
@@ -347,10 +347,12 @@ namespace FlaxEditor.GUI.Tree
             if (ContainsFocus && node != null && node.AutoFocus)
             {
                 var window = Root;
+                if (window.GetKeyDown(KeyboardKeys.ArrowUp) || window.GetKeyDown(KeyboardKeys.ArrowDown))
+                    _keyUpdateTime = KeyUpdateTimeout;
                 if (_keyUpdateTime >= KeyUpdateTimeout && window is WindowRootControl windowRoot && windowRoot.Window.IsFocused)
                 {
-                    bool keyUpArrow = window.GetKeyDown(KeyboardKeys.ArrowUp);
-                    bool keyDownArrow = window.GetKeyDown(KeyboardKeys.ArrowDown);
+                    bool keyUpArrow = window.GetKey(KeyboardKeys.ArrowUp);
+                    bool keyDownArrow = window.GetKey(KeyboardKeys.ArrowDown);
 
                     // Check if arrow flags are different
                     if (keyDownArrow != keyUpArrow)

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -133,7 +133,7 @@ private:
     ParticleEmitterGraphCPU& _graph;
 
     // Per-thread context to allow async execution
-    static ThreadLocal<ParticleEmitterGraphCPUContext> Context;
+    static ThreadLocal<ParticleEmitterGraphCPUContext*> Context;
 
 public:
     /// <summary>

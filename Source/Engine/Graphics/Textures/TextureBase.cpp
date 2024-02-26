@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #include "TextureBase.h"
 #include "TextureData.h"
@@ -221,6 +221,11 @@ void TextureBase::SetTextureGroup(int32 textureGroup)
         _texture._header.TextureGroup = textureGroup;
         _texture.RequestStreamingUpdate();
     }
+}
+
+bool TextureBase::HasStreamingError() const
+{
+    return _texture.Streaming.Error;
 }
 
 BytesContainer TextureBase::GetMipData(int32 mipIndex, int32& rowPitch, int32& slicePitch)

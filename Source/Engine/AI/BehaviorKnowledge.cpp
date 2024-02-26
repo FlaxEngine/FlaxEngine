@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #include "BehaviorKnowledge.h"
 #include "BehaviorTree.h"
@@ -144,7 +144,10 @@ BehaviorKnowledge::~BehaviorKnowledge()
 
 void BehaviorKnowledge::InitMemory(BehaviorTree* tree)
 {
-    ASSERT_LOW_LAYER(!Tree && tree);
+    if (Tree)
+        FreeMemory();
+    if (!tree)
+        return;
     Tree = tree;
     Blackboard = Variant::NewValue(tree->Graph.Root->BlackboardType);
     RelevantNodes.Resize(tree->Graph.NodesCount, false);

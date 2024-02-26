@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Globalization;
@@ -48,7 +48,7 @@ namespace FlaxEditor.Windows.Assets
 
                 // Use virtual animation graph to playback the animation
                 _animGraph = FlaxEngine.Content.CreateVirtualAsset<AnimationGraph>();
-                _animGraph.InitAsAnimation(model, _window.Asset);
+                _animGraph.InitAsAnimation(model, _window.Asset, true, true);
                 PreviewActor.AnimationGraph = _animGraph;
             }
 

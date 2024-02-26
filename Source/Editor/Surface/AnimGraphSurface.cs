@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -111,6 +111,40 @@ namespace FlaxEditor.Surface
             }
 
             ScriptsBuilder.ScriptsReloadBegin += OnScriptsReloadBegin;
+        }
+
+        internal AnimGraphTraceEvent[] LastTraceEvents;
+
+        internal unsafe bool TryGetTraceEvent(SurfaceNode node, out AnimGraphTraceEvent traceEvent)
+        {
+            if (LastTraceEvents != null)
+            {
+                foreach (var e in LastTraceEvents)
+                {
+                    // Node IDs must match
+                    if (e.NodeId == node.ID)
+                    {
+                        uint* nodePath = e.NodePath0;
+
+                        // Get size of the path
+                        int nodePathSize = 0;
+                        while (nodePathSize < 8 && nodePath[nodePathSize] != 0)
+                            nodePathSize++;
+
+                        // Follow input node contexts path to verify if it matches with the path in the event
+                        var c = node.Context;
+                        for (int i = nodePathSize - 1; i >= 0 && c != null; i--)
+                            c = c.OwnerNodeID == nodePath[i] ? c.Parent : null;
+                        if (c != null)
+                        {
+                            traceEvent = e;
+                            return true;
+                        }
+                    }
+                }
+            }
+            traceEvent = default;
+            return false;
         }
 
         private static SurfaceStyle CreateStyle()
@@ -383,6 +417,7 @@ namespace FlaxEditor.Surface
             }
             ScriptsBuilder.ScriptsReloadBegin -= OnScriptsReloadBegin;
             _nodesCache.Wait();
+            LastTraceEvents = null;
 
             base.OnDestroy();
         }

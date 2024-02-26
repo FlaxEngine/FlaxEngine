@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -15,8 +15,11 @@ class FLAXENGINE_API SceneObjectsFactory
 public:
     struct PrefabInstance
     {
+        int32 StatIndex;
+        int32 RootIndex;
         Guid RootId;
         Prefab* Prefab;
+        bool FixRootParent = false;
         Dictionary<Guid, Guid> IdsMapping;
     };
 
@@ -70,6 +73,8 @@ public:
     struct PrefabSyncData
     {
         friend SceneObjectsFactory;
+        friend class PrefabManager;
+
         // The created scene objects. Collection can be modified (eg. for spawning missing objects).
         Array<SceneObject*>& SceneObjects;
         // The scene objects data.
@@ -124,5 +129,6 @@ public:
     static void SynchronizePrefabInstances(Context& context, PrefabSyncData& data);
 
 private:
+    static void SynchronizeNewPrefabInstances(Context& context, PrefabSyncData& data, Prefab* prefab, Actor* actor, const Guid& actorPrefabObjectId, int32 i, const ISerializable::DeserializeStream& stream);
     static void SynchronizeNewPrefabInstance(Context& context, PrefabSyncData& data, Prefab* prefab, Actor* actor, const Guid& prefabObjectId);
 };

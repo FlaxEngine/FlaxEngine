@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #if USE_NETCORE
 using System;
@@ -551,8 +551,16 @@ namespace FlaxEngine.Interop
         internal static ManagedHandle NewObject(ManagedHandle typeHandle)
         {
             TypeHolder typeHolder = Unsafe.As<TypeHolder>(typeHandle.Target);
-            object value = typeHolder.CreateObject();
-            return ManagedHandle.Alloc(value);
+            try
+            {
+                object value = typeHolder.CreateObject();
+                return ManagedHandle.Alloc(value);
+            }
+            catch (Exception ex)
+            {
+                Debug.LogException(ex);
+            }
+            return new ManagedHandle();
         }
 
         [UnmanagedCallersOnly]

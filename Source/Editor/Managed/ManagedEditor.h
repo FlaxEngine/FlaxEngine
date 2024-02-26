@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -209,6 +209,38 @@ public:
     /// <returns>True settings has been restored, otherwise false.</returns>
     API_FUNCTION() static bool TryRestoreImportOptions(API_PARAM(Ref) AudioTool::Options& options, String assetPath);
 #endif
+
+    /// <summary>
+    /// Creates a new asset at the target location.
+    /// </summary>
+    /// <param name="tag">New asset type.</param>
+    /// <param name="outputPath">Output asset path.</param>
+    API_FUNCTION() static bool CreateAsset(const String& tag, String outputPath);
+
+public:
+    API_STRUCT(Internal, NoDefault) struct VisualScriptStackFrame
+    {
+        DECLARE_SCRIPTING_TYPE_MINIMAL(VisualScriptStackFrame);
+
+        API_FIELD() class VisualScript* Script;
+        API_FIELD() uint32 NodeId;
+        API_FIELD() int32 BoxId;
+    };
+
+    API_STRUCT(Internal, NoDefault) struct VisualScriptLocal
+    {
+        DECLARE_SCRIPTING_TYPE_MINIMAL(VisualScriptLocal);
+
+        API_FIELD() String Value;
+        API_FIELD() String ValueTypeName;
+        API_FIELD() uint32 NodeId;
+        API_FIELD() int32 BoxId;
+    };
+
+    API_FUNCTION(Internal) static Array<VisualScriptStackFrame> GetVisualScriptStackFrames();
+    API_FUNCTION(Internal) static VisualScriptStackFrame GetVisualScriptPreviousScopeFrame();
+    API_FUNCTION(Internal) static Array<VisualScriptLocal> GetVisualScriptLocals();
+    API_FUNCTION(Internal) static bool EvaluateVisualScriptLocal(VisualScript* script, API_PARAM(Ref) VisualScriptLocal& local);
 
 private:
     void OnEditorAssemblyLoaded(MAssembly* assembly);

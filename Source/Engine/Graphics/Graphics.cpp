@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #include "Graphics.h"
 #include "GPUDevice.h"
@@ -8,6 +8,7 @@
 #include "Engine/Core/Config/GraphicsSettings.h"
 #include "Engine/Engine/CommandLine.h"
 #include "Engine/Engine/EngineService.h"
+#include "Engine/Render2D/Font.h"
 
 bool Graphics::UseVSync = false;
 Quality Graphics::AAQuality = Quality::Medium;
@@ -69,6 +70,9 @@ void GraphicsSettings::Apply()
     Graphics::GIQuality = GIQuality;
     Graphics::PostProcessSettings = ::PostProcessSettings();
     Graphics::PostProcessSettings.BlendWith(PostProcessSettings, 1.0f);
+#if !USE_EDITOR // OptionsModule handles fallback fonts in Editor
+    Font::FallbackFonts = FallbackFonts;
+#endif
 }
 
 void Graphics::DisposeDevice()

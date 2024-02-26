@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #include "StreamingTexture.h"
 #include "Engine/Core/Log.h"
@@ -114,9 +114,9 @@ bool StreamingTexture::Create(const TextureHeader& header)
     {
         // Ensure that streaming doesn't go too low because the hardware expects the texture to be min in size of compressed texture block
         int32 lastMip = header.MipLevels - 1;
-        while ((header.Width >> lastMip) < 4 && (header.Height >> lastMip) < 4)
+        while ((header.Width >> lastMip) < 4 && (header.Height >> lastMip) < 4 && lastMip > 0)
             lastMip--;
-        _minMipCountBlockCompressed = header.MipLevels - lastMip + 1;
+        _minMipCountBlockCompressed = Math::Min(header.MipLevels - lastMip + 1, header.MipLevels);
     }
 
     // Request resource streaming
@@ -296,6 +296,7 @@ Task* StreamingTexture::UpdateAllocation(int32 residency)
         // Setup texture
         if (texture->Init(desc))
         {
+            Streaming.Error = true;
             LOG(Error, "Cannot allocate texture {0}.", ToString());
         }
         if (allocatedResidency != 0)

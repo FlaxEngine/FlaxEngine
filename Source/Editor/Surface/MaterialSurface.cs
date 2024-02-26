@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -105,7 +105,7 @@ namespace FlaxEditor.Surface
 
                 if (node != null)
                 {
-                    args.SurfaceLocation.X += node.Width + 10;
+                    args.SurfaceLocation.Y += node.Height + 10;
                 }
             }
 

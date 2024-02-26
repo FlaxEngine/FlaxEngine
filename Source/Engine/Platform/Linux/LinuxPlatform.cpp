@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #if PLATFORM_LINUX
 
@@ -94,6 +94,7 @@ X11::XcursorImage* CursorsImg[(int32)CursorType::MAX];
 Dictionary<StringAnsi, X11::KeyCode> KeyNameMap;
 Array<KeyboardKeys> KeyCodeMap;
 Delegate<void*> LinuxPlatform::xEventRecieved;
+Window* MouseTrackingWindow = nullptr;
 
 // Message boxes configuration
 #define LINUX_DIALOG_MIN_BUTTON_WIDTH 64
@@ -1916,7 +1917,6 @@ bool LinuxPlatform::Init()
 {
     if (PlatformBase::Init())
         return true;
-
     char fileNameBuffer[1024];
 
     // Init timing
@@ -2398,7 +2398,7 @@ void LinuxPlatform::Tick()
 				// Update input context focus
 				X11::XSetICFocus(IC);
 				window = WindowsManager::GetByNativePtr((void*)event.xfocus.window);
-				if (window)
+				if (window && MouseTrackingWindow == nullptr)
 				{
 					window->OnGotFocus();
 				}
@@ -2407,7 +2407,7 @@ void LinuxPlatform::Tick()
 				// Update input context focus
 				X11::XUnsetICFocus(IC);
 				window = WindowsManager::GetByNativePtr((void*)event.xfocus.window);
-				if (window)
+				if (window && MouseTrackingWindow == nullptr)
 				{
 					window->OnLostFocus();
 				}
@@ -2514,23 +2514,32 @@ void LinuxPlatform::Tick()
 				break;
 			case ButtonPress:
 				window = WindowsManager::GetByNativePtr((void*)event.xbutton.window);
-				if (window)
+		        if (MouseTrackingWindow)
+		            MouseTrackingWindow->OnButtonPress(&event.xbutton);
+				else if (window)
 					window->OnButtonPress(&event.xbutton);
 				break;
 			case ButtonRelease:
 				window = WindowsManager::GetByNativePtr((void*)event.xbutton.window);
-				if (window)
+		        if (MouseTrackingWindow)
+		            MouseTrackingWindow->OnButtonRelease(&event.xbutton);
+				else if (window)
 					window->OnButtonRelease(&event.xbutton);
 				break;
 			case MotionNotify:
 				window = WindowsManager::GetByNativePtr((void*)event.xmotion.window);
-				if (window)
+		        if (MouseTrackingWindow)
+		            MouseTrackingWindow->OnMotionNotify(&event.xmotion);
+				else if (window)
 					window->OnMotionNotify(&event.xmotion);
 				break;
 			case EnterNotify:
+			    // nothing?
 				break;
 			case LeaveNotify:
 				window = WindowsManager::GetByNativePtr((void*)event.xcrossing.window);
+		        if (MouseTrackingWindow)
+		            MouseTrackingWindow->OnLeaveNotify(&event.xcrossing);
 				if (window)
 					window->OnLeaveNotify(&event.xcrossing);
 				break;

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 using System;
 using System.IO;
@@ -31,6 +31,11 @@ public class ModelPrefabEditor : GenericEditor
         _prefabId = modelPrefab.PrefabID;
         while (true)
         {
+            if (_prefabId == Guid.Empty)
+            {
+                break;
+            }
+
             var prefab = FlaxEngine.Content.Load<Prefab>(_prefabId);
             if (prefab)
             {

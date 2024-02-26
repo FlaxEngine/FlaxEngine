@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 using System;
 using FlaxEditor.Content.Thumbnails;
@@ -21,6 +21,22 @@ namespace FlaxEditor.Content
         /// Gets the full name of the asset type (stored data format).
         /// </summary>
         public abstract string TypeName { get; }
+
+        /// <summary>
+        /// Gets a value indicating whether this instance is virtual Proxy not linked to any asset.
+        /// </summary>
+        protected virtual bool IsVirtual { get; }
+
+        /// <summary>
+        /// Determines whether [is virtual proxy].
+        /// </summary>
+        /// <returns>
+        ///   <c>true</c> if [is virtual proxy]; otherwise, <c>false</c>.
+        /// </returns>
+        public bool IsVirtualProxy()
+        {
+            return IsVirtual && CanExport == false;
+        }
 
         /// <summary>
         /// Checks if this proxy supports the given asset type id at the given path.

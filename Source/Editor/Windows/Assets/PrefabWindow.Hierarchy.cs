@@ -1,7 +1,8 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using FlaxEditor.Content;
 using FlaxEditor.GUI.ContextMenu;
 using FlaxEditor.GUI.Drag;
@@ -64,6 +65,7 @@ namespace FlaxEditor.Windows.Assets
             private PrefabWindow _window;
             private DragAssets _dragAssets;
             private DragActorType _dragActorType;
+            private DragScriptItems _dragScriptItems;
             private DragHandlers _dragHandlers;
 
             public SceneTreePanel(PrefabWindow window)
@@ -82,6 +84,11 @@ namespace FlaxEditor.Windows.Assets
             private static bool ValidateDragActorType(ScriptType actorType)
             {
                 return true;
+            }
+
+            private static bool ValidateDragScriptItem(ScriptItem script)
+            {
+                return Editor.Instance.CodeEditing.Actors.Get(script);
             }
 
             /// <inheritdoc />
@@ -106,6 +113,13 @@ namespace FlaxEditor.Windows.Assets
                     }
                     if (_dragActorType.OnDragEnter(data))
                         return _dragActorType.Effect;
+                    if (_dragScriptItems == null)
+                    {
+                        _dragScriptItems = new DragScriptItems(ValidateDragScriptItem);
+                        _dragHandlers.Add(_dragScriptItems);
+                    }
+                    if (_dragScriptItems.OnDragEnter(data))
+                        return _dragScriptItems.Effect;
                 }
                 return result;
             }
@@ -162,7 +176,27 @@ namespace FlaxEditor.Windows.Assets
                         }
                         result = DragDropEffect.Move;
                     }
-
+                    // Drag script item
+                    else if (_dragScriptItems != null && _dragScriptItems.HasValidDrag)
+                    {
+                        for (int i = 0; i < _dragScriptItems.Objects.Count; i++)
+                        {
+                            var item = _dragScriptItems.Objects[i];
+                            var actorType = Editor.Instance.CodeEditing.Actors.Get(item);
+                            if (actorType != ScriptType.Null)
+                            {
+                                var actor = actorType.CreateInstance() as Actor;
+                                if (actor == null)
+                                {
+                                    Editor.LogWarning("Failed to spawn actor of type " + actorType.TypeName);
+                                    continue;
+                                }
+                                actor.Name = actorType.Name;
+                                _window.Spawn(actor);
+                            }
+                        }
+                        result = DragDropEffect.Move;
+                    }
                     _dragHandlers.OnDragDrop(null);
                 }
                 return result;
@@ -173,6 +207,7 @@ namespace FlaxEditor.Windows.Assets
                 _window = null;
                 _dragAssets = null;
                 _dragActorType = null;
+                _dragScriptItems = null;
                 _dragHandlers?.Clear();
                 _dragHandlers = null;
 
@@ -363,12 +398,12 @@ namespace FlaxEditor.Windows.Assets
             if (parentActor != null)
             {
                 // Match the parent
-                actor.Transform = parentActor.Transform;
+                actor.LocalTransform = Transform.Identity;
                 actor.StaticFlags = parentActor.StaticFlags;
                 actor.Layer = parentActor.Layer;
 
                 // Rename actor to identify it easily
-                actor.Name = Utilities.Utils.IncrementNameNumber(actor.GetType().Name, x => parentActor.GetChild(x) == null);
+                actor.Name = Utilities.Utils.IncrementNameNumber(actor.Name, x => parentActor.GetChild(x) == null);
             }
 
             // Spawn it
@@ -386,6 +421,7 @@ namespace FlaxEditor.Windows.Assets
 
             // Spawn it
             Spawn(actor);
+            Rename();
         }
 
         /// <summary>
@@ -415,6 +451,7 @@ namespace FlaxEditor.Windows.Assets
             // Create undo action
             var action = new CustomDeleteActorsAction(new List<SceneGraphNode>(1) { actorNode }, true);
             Undo.AddAction(action);
+            Select(actorNode);
         }
 
         private void OnTreeRightClick(TreeNode node, Float2 location)

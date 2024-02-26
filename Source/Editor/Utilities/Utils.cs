@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #if USE_LARGE_WORLDS
 using Real = System.Double;
@@ -1310,8 +1310,17 @@ namespace FlaxEditor.Utilities
             inputActions.Add(options => options.BuildSDF, Editor.Instance.BuildAllMeshesSDF);
             inputActions.Add(options => options.TakeScreenshot, Editor.Instance.Windows.TakeScreenshot);
             inputActions.Add(options => options.ProfilerWindow, () => Editor.Instance.Windows.ProfilerWin.FocusOrShow());
-            inputActions.Add(options => options.ProfilerStartStop, () => { Editor.Instance.Windows.ProfilerWin.LiveRecording = !Editor.Instance.Windows.ProfilerWin.LiveRecording; Editor.Instance.UI.AddStatusMessage($"Profiling {(Editor.Instance.Windows.ProfilerWin.LiveRecording ? "started" : "stopped")}."); });
-            inputActions.Add(options => options.ProfilerClear, () => { Editor.Instance.Windows.ProfilerWin.Clear(); Editor.Instance.UI.AddStatusMessage($"Profiling results cleared."); });
+            inputActions.Add(options => options.ProfilerStartStop, () =>
+            {
+                bool recording = !Editor.Instance.Windows.ProfilerWin.LiveRecording;
+                Editor.Instance.Windows.ProfilerWin.LiveRecording = recording;
+                Editor.Instance.UI.AddStatusMessage($"Profiling {(recording ? "started" : "stopped")}.");
+            });
+            inputActions.Add(options => options.ProfilerClear, () =>
+            {
+                Editor.Instance.Windows.ProfilerWin.Clear();
+                Editor.Instance.UI.AddStatusMessage($"Profiling results cleared.");
+            });
             inputActions.Add(options => options.SaveScenes, () => Editor.Instance.Scene.SaveScenes());
             inputActions.Add(options => options.CloseScenes, () => Editor.Instance.Scene.CloseAllScenes());
             inputActions.Add(options => options.OpenScriptsProject, () => Editor.Instance.CodeEditing.OpenSolution());

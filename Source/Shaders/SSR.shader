@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #include "./Flax/Common.hlsl"
 #include "./Flax/LightingCommon.hlsl"
@@ -106,17 +106,20 @@ float4 PS_RayTracePass(Quad_VS2PS input) : SV_Target0
     // SRV 7-8 Global SDF
     // SRV 9-13 Global Surface Atlas
 
+    // Base layer color with reflections from probes but empty alpha so SSR blur will have valid bacground values to smooth with
+    float4 base = float4(Texture0.SampleLevel(SamplerLinearClamp, input.TexCoord, 0).rgb, 0);
+
 	// Sample GBuffer
 	GBufferData gBufferData = GetGBufferData();
 	GBufferSample gBuffer = SampleGBuffer(gBufferData, input.TexCoord);
 
     // Reject invalid pixels
     if (gBuffer.ShadingModel == SHADING_MODEL_UNLIT || gBuffer.Roughness > RoughnessFade || gBuffer.ViewPos.z > FadeOutDistance)
-        return 0;
+        return base;
 
 	// Trace depth buffer to find intersection
 	float3 screenHit = TraceScreenSpaceReflection(input.TexCoord, gBuffer, Depth, gBufferData.ViewPos, ViewMatrix, ViewProjectionMatrix, RayTraceStep, MaxTraceSamples, TemporalEffect, TemporalTime, WorldAntiSelfOcclusionBias, BRDFBias, FadeOutDistance, RoughnessFade, EdgeFadeFactor);
-	float4 result = 0;
+	float4 result = base;
 	if (screenHit.z > 0)
 	{
 	    float3 viewVector = normalize(gBufferData.ViewPos - gBuffer.WorldPos);

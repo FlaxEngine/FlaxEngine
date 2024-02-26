@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #include "Engine/Platform/Platform.h"
 #include "Engine/Platform/CPUInfo.h"
@@ -40,6 +40,10 @@ static_assert(sizeof(char) == 1, "Invalid char type size.");
 static_assert(sizeof(bool) == 1, "Invalid bool type size.");
 static_assert(sizeof(float) == 4, "Invalid float type size.");
 static_assert(sizeof(double) == 8, "Invalid double type size.");
+
+// Check configuration
+static_assert((PLATFORM_THREADS_LIMIT & (PLATFORM_THREADS_LIMIT - 1)) == 0, "Threads limit must be power of two.");
+static_assert(PLATFORM_THREADS_LIMIT % 4 == 0, "Threads limit must be multiple of 4.");
 
 float PlatformBase::CustomDpiScale = 1.0f;
 Array<User*, FixedAllocation<8>> PlatformBase::Users;

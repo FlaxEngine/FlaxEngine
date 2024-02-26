@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -284,12 +284,12 @@ protected:
     float _dpiScale;
 
     Float2 _trackingMouseOffset;
-    bool _isUsingMouseOffset;
+    bool _isUsingMouseOffset = false;
     Rectangle _mouseOffsetScreenSize;
-    bool _isTrackingMouse;
-    bool _isHorizontalFlippingMouse;
-    bool _isVerticalFlippingMouse;
-    bool _isClippingCursor;
+    bool _isTrackingMouse = false;
+    bool _isHorizontalFlippingMouse = false;
+    bool _isVerticalFlippingMouse = false;
+    bool _isClippingCursor = false;
 
     explicit WindowBase(const CreateWindowSettings& settings);
     virtual ~WindowBase();

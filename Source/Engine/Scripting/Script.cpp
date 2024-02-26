@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #include "Script.h"
 #include "Engine/Core/Log.h"
@@ -27,6 +27,7 @@ Script::Script(const SpawnParams& params)
     , _tickUpdate(false)
     , _tickLateUpdate(false)
     , _tickLateFixedUpdate(false)
+    , _wasAwakeCalled(false)
     , _wasStartCalled(false)
     , _wasEnableCalled(false)
 {
@@ -86,7 +87,7 @@ void Script::SetParent(Actor* value, bool canBreakPrefabLink)
     // Unlink from the old one
     if (_parent)
     {
-        if (!value && _parent->IsDuringPlay() && _parent->IsActiveInHierarchy() && GetEnabled())
+        if (!value && _parent->IsDuringPlay() && _parent->IsActiveInHierarchy() && GetEnabled() && _wasEnableCalled)
         {
             // Call disable when script is removed from actor (new actor is null)
             Disable();
@@ -241,18 +242,30 @@ String Script::ToString() const
 
 void Script::OnDeleteObject()
 {
-    // Ensure to unlink from the parent (it will call Disable event if required)
-    SetParent(nullptr);
-
-    // Check if remove object from game
-    if (IsDuringPlay())
+    // Call OnDisable
+    if (_wasEnableCalled)
     {
+        Disable();
+    }
+
+    // Call OnDestroy
+    if (_wasAwakeCalled)
+    {
+        _wasAwakeCalled = false;
         CHECK_EXECUTE_IN_EDITOR
         {
             OnDestroy();
         }
+    }
+
+    // End play
+    if (IsDuringPlay())
+    {
         EndPlay();
     }
+
+    // Unlink from parent
+    SetParent(nullptr);
 
     // Base
     SceneObject::OnDeleteObject();
@@ -274,9 +287,14 @@ void Script::Initialize()
     if (!IsRegistered())
         RegisterObject();
 
-    CHECK_EXECUTE_IN_EDITOR
+    // Call OnAwake
+    if (!_wasAwakeCalled)
     {
-        OnAwake();
+        _wasAwakeCalled = true;
+        CHECK_EXECUTE_IN_EDITOR
+        {
+            OnAwake();
+        }
     }
 }
 

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #include "RenderTargetPool.h"
 #include "GPUDevice.h"
@@ -7,35 +7,31 @@
 
 struct Entry
 {
-    bool IsOccupied;
     GPUTexture* RT;
-    uint64 LastFrameTaken;
     uint64 LastFrameReleased;
     uint32 DescriptionHash;
+    bool IsOccupied;
 };
 
 namespace
 {
-    Array<Entry> TemporaryRTs(64);
+    Array<Entry> TemporaryRTs;
 }
 
-void RenderTargetPool::Flush(bool force)
+void RenderTargetPool::Flush(bool force, int32 framesOffset)
 {
-    const uint64 framesOffset = 3 * 60;
+    if (framesOffset < 0)
+        framesOffset = 3 * 60; // For how many frames RTs should be cached (by default)
     const uint64 maxReleaseFrame = Engine::FrameCount - framesOffset;
     force |= Engine::ShouldExit();
 
     for (int32 i = 0; i < TemporaryRTs.Count(); i++)
     {
-        auto& tmp = TemporaryRTs[i];
-
-        if (!tmp.IsOccupied && (force || (tmp.LastFrameReleased < maxReleaseFrame)))
+        const auto& e = TemporaryRTs[i];
+        if (!e.IsOccupied && (force || e.LastFrameReleased < maxReleaseFrame))
         {
-            // Release
-            tmp.RT->DeleteObjectNow();
-            TemporaryRTs.RemoveAt(i);
-            i--;
-
+            e.RT->DeleteObjectNow();
+            TemporaryRTs.RemoveAt(i--);
             if (TemporaryRTs.IsEmpty())
                 break;
         }
@@ -48,19 +44,14 @@ GPUTexture* RenderTargetPool::Get(const GPUTextureDescription& desc)
     const uint32 descHash = GetHash(desc);
     for (int32 i = 0; i < TemporaryRTs.Count(); i++)
     {
-        auto& tmp = TemporaryRTs[i];
-
-        if (!tmp.IsOccupied && tmp.DescriptionHash == descHash)
+        auto& e = TemporaryRTs[i];
+        if (!e.IsOccupied && e.DescriptionHash == descHash)
         {
-            ASSERT(tmp.RT);
-
             // Mark as used
-            tmp.IsOccupied = true;
-            tmp.LastFrameTaken = Engine::FrameCount;
-            return tmp.RT;
+            e.IsOccupied = true;
+            return e.RT;
         }
     }
-
 #if !BUILD_RELEASE
     if (TemporaryRTs.Count() > 2000)
     {
@@ -71,24 +62,23 @@ GPUTexture* RenderTargetPool::Get(const GPUTextureDescription& desc)
 
     // Create new rt
     const String name = TEXT("TemporaryRT_") + StringUtils::ToString(TemporaryRTs.Count());
-    auto newRenderTarget = GPUDevice::Instance->CreateTexture(name);
-    if (newRenderTarget->Init(desc))
+    GPUTexture* rt = GPUDevice::Instance->CreateTexture(name);
+    if (rt->Init(desc))
     {
-        Delete(newRenderTarget);
+        Delete(rt);
         LOG(Error, "Cannot create temporary render target. Description: {0}", desc.ToString());
         return nullptr;
     }
 
     // Create temporary rt entry
-    Entry entry;
-    entry.IsOccupied = true;
-    entry.LastFrameReleased = 0;
-    entry.LastFrameTaken = Engine::FrameCount;
-    entry.RT = newRenderTarget;
-    entry.DescriptionHash = descHash;
-    TemporaryRTs.Add(entry);
+    Entry e;
+    e.IsOccupied = true;
+    e.LastFrameReleased = 0;
+    e.RT = rt;
+    e.DescriptionHash = descHash;
+    TemporaryRTs.Add(e);
 
-    return newRenderTarget;
+    return rt;
 }
 
 void RenderTargetPool::Release(GPUTexture* rt)
@@ -98,14 +88,13 @@ void RenderTargetPool::Release(GPUTexture* rt)
 
     for (int32 i = 0; i < TemporaryRTs.Count(); i++)
     {
-        auto& tmp = TemporaryRTs[i];
-
-        if (tmp.RT == rt)
+        auto& e = TemporaryRTs[i];
+        if (e.RT == rt)
         {
             // Mark as free
-            ASSERT(tmp.IsOccupied);
-            tmp.IsOccupied = false;
-            tmp.LastFrameReleased = Engine::FrameCount;
+            ASSERT(e.IsOccupied);
+            e.IsOccupied = false;
+            e.LastFrameReleased = Engine::FrameCount;
             return;
         }
     }

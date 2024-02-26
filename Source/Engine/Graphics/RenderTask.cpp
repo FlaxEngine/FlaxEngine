@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #include "RenderTask.h"
 #include "RenderBuffers.h"
@@ -403,6 +403,9 @@ void SceneRenderTask::OnEnd(GPUContext* context)
     View.PrevView = View.View;
     View.PrevProjection = View.Projection;
     View.PrevViewProjection = View.ViewProjection();
+
+    // Remove jitter from the projection (in case it's unmodified by gameplay eg. due to missing camera)
+    View.Projection = View.NonJitteredProjection;
 }
 
 bool SceneRenderTask::Resize(int32 width, int32 height)

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #include "PostProcessingPass.h"
 #include "RenderList.h"
@@ -194,8 +194,18 @@ void PostProcessingPass::Render(RenderContext& renderContext, GPUTexture* input,
     bool useCameraArtifacts = EnumHasAnyFlags(view.Flags, ViewFlags::CameraArtifacts) && (settings.CameraArtifacts.VignetteIntensity > 0.0f || settings.CameraArtifacts.GrainAmount > 0.0f || settings.CameraArtifacts.ChromaticDistortion > 0.0f || settings.CameraArtifacts.ScreenFadeColor.A > 0.0f);
     bool useLensFlares = EnumHasAnyFlags(view.Flags, ViewFlags::LensFlares) && settings.LensFlares.Intensity > 0.0f && useBloom;
 
+    // Cache viewport sizes
+    int32 w1 = input->Width();
+    int32 w2 = w1 >> 1;
+    int32 w4 = w2 >> 1;
+    int32 w8 = w4 >> 1;
+    int32 h1 = input->Height();
+    int32 h2 = h1 >> 1;
+    int32 h4 = h2 >> 1;
+    int32 h8 = h4 >> 1;
+
     // Ensure to have valid data and if at least one effect should be applied
-    if (!(useBloom || useToneMapping || useCameraArtifacts) || checkIfSkipPass())
+    if (!(useBloom || useToneMapping || useCameraArtifacts) || checkIfSkipPass() || w8 == 0 || h8 ==0)
     {
         // Resources are missing. Do not perform rendering. Just copy raw frame
         context->SetViewportAndScissors((float)output->Width(), (float)output->Height());
@@ -208,16 +218,6 @@ void PostProcessingPass::Render(RenderContext& renderContext, GPUTexture* input,
     auto shader = _shader->GetShader();
     auto cb0 = shader->GetCB(0);
     auto cb1 = shader->GetCB(1);
-
-    // Cache viewport sizes
-    int32 w1 = input->Width();
-    int32 w2 = w1 >> 1;
-    int32 w4 = w2 >> 1;
-    int32 w8 = w4 >> 1;
-    int32 h1 = input->Height();
-    int32 h2 = h1 >> 1;
-    int32 h4 = h2 >> 1;
-    int32 h8 = h4 >> 1;
 
     ////////////////////////////////////////////////////////////////////////////////////
     // Setup shader

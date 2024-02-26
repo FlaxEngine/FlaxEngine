@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -94,7 +94,7 @@ protected:
     CriticalSection _loadLocker;
 
     // Storage
-    ThreadLocalObject<FileReadStream> _file;
+    ThreadLocal<FileReadStream*> _file;
     Array<FlaxChunk*> _chunks;
 
     // Metadata

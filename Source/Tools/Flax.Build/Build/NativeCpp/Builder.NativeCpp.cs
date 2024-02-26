@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -808,11 +808,11 @@ namespace Flax.Build
                                 foreach (var moduleName in moduleOptions.PrivateDependencies.Concat(moduleOptions.PublicDependencies))
                                 {
                                     var dependencyModule = buildData.Rules.GetModule(moduleName);
-                                    if (dependencyModule != null && 
-                                        !string.IsNullOrEmpty(dependencyModule.BinaryModuleName) && 
-                                        dependencyModule.BinaryModuleName != binaryModule.Key && 
+                                    if (dependencyModule != null &&
+                                        !string.IsNullOrEmpty(dependencyModule.BinaryModuleName) &&
+                                        dependencyModule.BinaryModuleName != binaryModule.Key &&
                                         !moduleNamesUsed.Contains(dependencyModule.BinaryModuleName) &&
-                                        GetModuleProject(dependencyModule, project) != null && 
+                                        GetModuleProject(dependencyModule, project) != null &&
                                         buildData.Modules.TryGetValue(dependencyModule, out var dependencyOptions))
                                     {
                                         // Import symbols from referenced binary module

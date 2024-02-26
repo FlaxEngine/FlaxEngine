@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 using System;
 
@@ -10,6 +10,32 @@ namespace FlaxEngine
     [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property | AttributeTargets.Class)]
     public sealed class CollectionAttribute : Attribute
     {
+        /// <summary>
+        /// The display type for collections.
+        /// </summary>
+        public enum DisplayType
+        {
+            /// <summary>
+            /// Displays the default display type.
+            /// </summary>
+            Default,
+            
+            /// <summary>
+            /// Displays a header.
+            /// </summary>
+            Header,
+            
+            /// <summary>
+            /// Displays inline.
+            /// </summary>
+            Inline,
+        }
+
+        /// <summary>
+        /// Gets or sets the display type.
+        /// </summary>
+        public DisplayType Display;
+        
         /// <summary>
         /// Gets or sets whether this collection is read-only. If <c>true</c>, applications using this collection should not allow to add or remove items.
         /// </summary>
@@ -34,6 +60,16 @@ namespace FlaxEngine
         /// The spacing amount between collection items in the UI.
         /// </summary>
         public float Spacing;
+
+        /// <summary>
+        /// The minimum size of the collection.
+        /// </summary>
+        public int MinCount;
+
+        /// <summary>
+        /// The maximum size of the collection. Zero if unlimited.
+        /// </summary>
+        public int MaxCount;
 
         /// <summary>
         /// The collection background color.

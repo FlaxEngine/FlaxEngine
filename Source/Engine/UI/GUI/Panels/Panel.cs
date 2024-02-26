@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 using System;
 
@@ -132,6 +132,22 @@ namespace FlaxEngine.GUI
                 if (_alwaysShowScrollbars != value)
                 {
                     _alwaysShowScrollbars = value;
+                    switch (_scrollBars)
+                    {
+                    case ScrollBars.None:
+                        break;
+                    case ScrollBars.Horizontal:
+                        HScrollBar.Visible = value;
+                        break;
+                    case ScrollBars.Vertical:
+                        VScrollBar.Visible = value;
+                        break;
+                    case ScrollBars.Both:
+                        HScrollBar.Visible = value;
+                        VScrollBar.Visible = value;
+                        break;
+                    default: break;
+                    }
                     PerformLayout();
                 }
             }
@@ -353,6 +369,14 @@ namespace FlaxEngine.GUI
                 HScrollBar.Draw();
                 Render2D.PopTransform();
             }
+        }
+
+        /// <inheritdoc />
+        public override bool ContainsPoint(ref Float2 location, bool precise = false)
+        {
+            if (precise && BackgroundColor.A <= 0.0f) // Go through transparency
+                return false;
+            return base.ContainsPoint(ref location, precise);
         }
 
         /// <inheritdoc />

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 using System;
 using System.IO;
@@ -75,6 +75,9 @@ namespace FlaxEditor.GUI
         /// </summary>
         protected virtual void OnSelectedItemChanged()
         {
+            if (IsDisposing)
+                return;
+
             // Update tooltip
             string tooltip;
             if (Validator.SelectedItem is AssetItem assetItem)

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #include "CreateAnimationGraph.h"
 
@@ -20,7 +20,7 @@ CreateAssetResult CreateAnimationGraph::Create(CreateAssetContext& context)
     rootNode.Type = GRAPH_NODE_MAKE_TYPE(9, 1);
     rootNode.ID = 1;
     rootNode.Values.Resize(1);
-    rootNode.Values[0] = (int32)RootMotionMode::NoExtraction;
+    rootNode.Values[0] = (int32)RootMotionExtraction::NoExtraction;
     rootNode.Boxes.Resize(1);
     rootNode.Boxes[0] = AnimGraphBox(&rootNode, 0, VariantType::Void);
 

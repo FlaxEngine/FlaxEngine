@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #include "BinaryAsset.h"
 #include "Cache/AssetsCache.h"
@@ -150,9 +150,7 @@ void BinaryAsset::ClearDependencies()
     {
         auto asset = Cast<BinaryAsset>(Content::GetAsset(e.First));
         if (asset)
-        {
             asset->_dependantAssets.Remove(this);
-        }
     }
     Dependencies.Clear();
 }
@@ -386,6 +384,16 @@ bool BinaryAsset::SaveToAsset(const StringView& path, AssetInitData& data, bool 
     }
     if (binaryAsset)
         binaryAsset->_isSaving = false;
+
+    if (binaryAsset)
+    {
+        // Inform dependant asset (use cloned version because it might be modified by assets when they got reloaded)
+        auto dependantAssets = binaryAsset->_dependantAssets;
+        for (auto& e : dependantAssets)
+        {
+            e->OnDependencyModified(binaryAsset);
+        }
+    }
 
     return result;
 }

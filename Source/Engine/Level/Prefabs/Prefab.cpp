@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #include "Prefab.h"
 #include "Engine/Serialization/JsonTools.h"
@@ -76,7 +76,7 @@ Actor* Prefab::GetDefaultInstance()
     _isCreatingDefaultInstance = true;
 
     // Instantiate objects from prefab (default spawning logic)
-    _defaultInstance = PrefabManager::SpawnPrefab(this, Transform::Identity, nullptr, &ObjectsCache);
+    _defaultInstance = PrefabManager::SpawnPrefab(this, nullptr, &ObjectsCache);
 
     _isCreatingDefaultInstance = false;
     return _defaultInstance;
@@ -87,17 +87,12 @@ SceneObject* Prefab::GetDefaultInstance(const Guid& objectId)
     const auto result = GetDefaultInstance();
     if (!result)
         return nullptr;
-
     if (objectId.IsValid())
     {
         SceneObject* object;
         if (ObjectsCache.TryGet(objectId, object))
-        {
-            // Actor or Script
             return object;
-        }
     }
-
     return result;
 }
 

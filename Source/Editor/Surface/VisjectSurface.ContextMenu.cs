@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 //#define DEBUG_SEARCH_TIME
 
@@ -20,8 +20,15 @@ namespace FlaxEditor.Surface
         /// <summary>
         /// Utility for easy nodes archetypes generation for Visject Surface based on scripting types.
         /// </summary>
-        internal class NodesCache
+        [HideInEditor]
+        public class NodesCache
         {
+            /// <summary>
+            /// Delegate for scripting types filtering into cache.
+            /// </summary>
+            /// <param name="scriptType">The input type to process.</param>
+            /// <param name="cache">Node groups cache that can be used for reusing groups for different nodes.</param>
+            /// <param name="version">The cache version number. Can be used to reject any cached data after <see cref="NodesCache"/> rebuilt.</param>
             public delegate void IterateType(ScriptType scriptType, Dictionary<KeyValuePair<string, ushort>, GroupArchetype> cache, int version);
 
             internal static readonly List<NodesCache> Caches = new List<NodesCache>(8);
@@ -33,11 +40,18 @@ namespace FlaxEditor.Surface
             private VisjectCM _taskContextMenu;
             private Dictionary<KeyValuePair<string, ushort>, GroupArchetype> _cache;
 
+            /// <summary>
+            /// Initializes a new instance of the <see cref="NodesCache"/> class.
+            /// </summary>
+            /// <param name="iterator">The iterator callback to build node types from Scripting.</param>
             public NodesCache(IterateType iterator)
             {
                 _iterator = iterator;
             }
 
+            /// <summary>
+            /// Waits for the async caching job to finish.
+            /// </summary>
             public void Wait()
             {
                 if (_task != null)
@@ -48,6 +62,9 @@ namespace FlaxEditor.Surface
                 }
             }
 
+            /// <summary>
+            /// Clears cache.
+            /// </summary>
             public void Clear()
             {
                 Wait();
@@ -62,6 +79,10 @@ namespace FlaxEditor.Surface
                 }
             }
 
+            /// <summary>
+            /// Updates the Visject Context Menu to contain current nodes.
+            /// </summary>
+            /// <param name="contextMenu">The output context menu to setup.</param>
             public void Get(VisjectCM contextMenu)
             {
                 Profiler.BeginEvent("Setup Context Menu");

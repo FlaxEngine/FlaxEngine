@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 using System.ComponentModel;
 
@@ -427,6 +427,23 @@ namespace FlaxEngine.GUI
             // Skip local PointFromParent but use base code
             location = base.PointFromParent(ref locationParent);
             return ContainsPoint(ref location);
+        }
+
+        /// <inheritdoc />
+        public override bool ContainsPoint(ref Float2 location, bool precise = false)
+        {
+            if (precise) // Ignore as utility-only element
+                return false;
+            return base.ContainsPoint(ref location, precise);
+        }
+
+        /// <inheritdoc />
+        public override bool RayCast(ref Float2 location, out Control hit)
+        {
+            var p = location / _scale;
+            if (RayCastChildren(ref p, out hit))
+                return true;
+            return base.RayCast(ref location, out hit);
         }
 
         /// <inheritdoc />

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -199,11 +199,6 @@ public:
     /// </summary>
     int32 GetYear() const;
 
-    /// <summary>
-    /// Gets this date as the number of seconds since the Unix Epoch (January 1st of 1970).
-    /// </summary>
-    int32 ToUnixTimestamp() const;
-
 public:
     /// <summary>
     /// Gets the number of days in the year and month.
@@ -219,20 +214,6 @@ public:
     /// <param name="year">The year.</param>
     /// <returns>The number of days.</returns>
     static int32 DaysInYear(int32 year);
-
-    /// <summary>
-    /// Returns the proleptic Gregorian date for the given Julian Day.
-    /// </summary>
-    /// <param name="julianDay">The Julian Day.</param>
-    /// <returns>Gregorian date and time.</returns>
-    static DateTime FromJulianDay(double julianDay);
-
-    /// <summary>
-    /// Returns the date from Unix time (seconds from midnight 1970-01-01).
-    /// </summary>
-    /// <param name="unixTime">The Unix time (seconds from midnight 1970-01-01).</param>
-    /// <returns>The Gregorian date and time.</returns>
-    static DateTime FromUnixTimestamp(int32 unixTime);
 
     /// <summary>
     /// Determines whether the specified year is a leap year.

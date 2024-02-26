@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #include "StaticModel.h"
 #include "Engine/Engine/Engine.h"
@@ -335,8 +335,8 @@ void StaticModel::Draw(RenderContext& renderContext)
         return;
     }
     Matrix world;
-    const Float3 translation = _transform.Translation - renderContext.View.Origin;
-    Matrix::Transformation(_transform.Scale, _transform.Orientation, translation, world);
+    GetLocalToWorldMatrix(world);
+    renderContext.View.GetWorldMatrix(world);
     GEOMETRY_DRAW_STATE_EVENT_BEGIN(_drawState, world);
     if (_vertexColorsDirty)
         FlushVertexColors();
@@ -369,8 +369,8 @@ void StaticModel::Draw(RenderContextBatch& renderContextBatch)
         return;
     const RenderContext& renderContext = renderContextBatch.GetMainContext();
     Matrix world;
-    const Float3 translation = _transform.Translation - renderContext.View.Origin;
-    Matrix::Transformation(_transform.Scale, _transform.Orientation, translation, world);
+    GetLocalToWorldMatrix(world);
+    renderContext.View.GetWorldMatrix(world);
     GEOMETRY_DRAW_STATE_EVENT_BEGIN(_drawState, world);
     if (_vertexColorsDirty)
         FlushVertexColors();

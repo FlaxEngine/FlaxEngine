@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 using FlaxEngine.Utilities;
 
@@ -280,7 +280,7 @@ namespace FlaxEngine.GUI
             foreach (var id in ids)
             {
                 var path = Content.GetEditorAssetPath(id);
-                if (!string.IsNullOrEmpty(path) && 
+                if (!string.IsNullOrEmpty(path) &&
                     string.Equals(name, System.IO.Path.GetFileNameWithoutExtension(path), System.StringComparison.OrdinalIgnoreCase))
                 {
                     return Content.LoadAsync(id, type);

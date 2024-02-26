@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 using System;
 
@@ -45,8 +45,9 @@ namespace FlaxEngine.GUI
         /// </summary>
         /// <param name="ray">The input ray to test (in world-space).</param>
         /// <param name="canvasLocation">Output canvas-space local position.</param>
+        /// <param name="precise">True if perform precise intersection test against the control content (eg. with hit mask or transparency threshold). Otherwise, only simple bounds-check will be performed.</param>
         /// <returns>True if canvas intersects with that point, otherwise false.</returns>
-        public bool Intersects3D(ref Ray ray, out Float2 canvasLocation)
+        public bool Intersects3D(ref Ray ray, out Float2 canvasLocation, bool precise = false)
         {
             // Inline bounds calculations (it will reuse world matrix)
             var bounds = new OrientedBoundingBox
@@ -67,7 +68,7 @@ namespace FlaxEngine.GUI
                 Vector3.Transform(ref hitPoint, ref world, out Vector3 localHitPoint);
 
                 canvasLocation = new Float2(localHitPoint);
-                return ContainsPoint(ref canvasLocation);
+                return ContainsPoint(ref canvasLocation, precise);
             }
 
             canvasLocation = Float2.Zero;
@@ -189,9 +190,9 @@ namespace FlaxEngine.GUI
         }
 
         /// <inheritdoc />
-        public override bool ContainsPoint(ref Float2 location)
+        public override bool ContainsPoint(ref Float2 location, bool precise)
         {
-            return base.ContainsPoint(ref location)
+            return base.ContainsPoint(ref location, precise)
                    && (_canvas.TestCanvasIntersection == null || _canvas.TestCanvasIntersection(ref location));
         }
 

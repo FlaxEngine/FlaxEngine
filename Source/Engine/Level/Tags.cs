@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 using System;
 using System.ComponentModel;
@@ -45,7 +45,7 @@ namespace FlaxEngine
         /// <returns>True if both values are not equal, otherwise false.</returns>
         public static bool operator !=(Tag left, Tag right)
         {
-            return left.Index == right.Index;
+            return left.Index != right.Index;
         }
 
         /// <summary>
@@ -213,11 +213,11 @@ namespace FlaxEngine
         }
 
         /// <summary>
-        /// Checks if the list of tags contains all of the given tags (including parent tags check). For example, HasAll({"A.B", "C"}, {"A", "C"}) returns true, for exact check use HasAllExact.
+        /// Checks if the list of tags contains all the given tags (including parent tags check). For example, HasAll({"A.B", "C"}, {"A", "C"}) returns true, for exact check use HasAllExact.
         /// </summary>
         /// <param name="list">The tags list to use.</param>
         /// <param name="tags">The tags to check.</param>
-        /// <returns>True if all of the given tags are contained by the list of tags. Returns true for empty list.</returns>
+        /// <returns>True if all the given tags are contained by the list of tags. Returns true for empty list.</returns>
         public static bool HasAll(this Tag[] list, Tag[] tags)
         {
             if (tags == null || tags.Length == 0)
@@ -233,11 +233,11 @@ namespace FlaxEngine
         }
 
         /// <summary>
-        /// Checks if the list of tags contains all of the given tags (exact match). For example, HasAllExact({"A.B", "C"}, {"A", "C"}) returns false, for parents check use HasAll.
+        /// Checks if the list of tags contains all the given tags (exact match). For example, HasAllExact({"A.B", "C"}, {"A", "C"}) returns false, for parents check use HasAll.
         /// </summary>
         /// <param name="list">The tags list to use.</param>
         /// <param name="tags">The tags to check.</param>
-        /// <returns>True if all of the given tags are contained by the list of tags. Returns true for empty list.</returns>
+        /// <returns>True if all the given tags are contained by the list of tags. Returns true for empty list.</returns>
         public static bool HasAllExact(this Tag[] list, Tag[] tags)
         {
             if (tags == null || tags.Length == 0)

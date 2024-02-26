@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #include "Render2D.h"
 #include "Font.h"
@@ -27,11 +27,11 @@
 
 #if USE_EDITOR
 #define RENDER2D_CHECK_RENDERING_STATE \
-	if (!Render2D::IsRendering()) \
-	{ \
-		LOG(Error, "Calling Render2D is only valid during rendering."); \
-		return; \
-	}
+    if (!Render2D::IsRendering()) \
+    { \
+        LOG(Error, "Calling Render2D is only valid during rendering."); \
+        return; \
+    }
 #else
 #define RENDER2D_CHECK_RENDERING_STATE
 #endif
@@ -180,7 +180,7 @@ struct ClipMask
     Rectangle Bounds;
 };
 
-Render2D::RenderingFeatures Render2D::Features = RenderingFeatures::VertexSnapping;
+Render2D::RenderingFeatures Render2D::Features = RenderingFeatures::VertexSnapping | RenderingFeatures::FallbackFonts;
 
 namespace
 {
@@ -1137,8 +1137,8 @@ void DrawBatch(int32 startIndex, int32 count)
     }
 
     // Draw
-    Context->BindVB(ToSpan(&vb, 1)); // TODO: reduce bindings frequency
-    Context->BindIB(ib); // TODO: reduce bindings frequency
+    Context->BindVB(ToSpan(&vb, 1));
+    Context->BindIB(ib);
     Context->DrawIndexed(countIb, 0, d.StartIB);
 }
 
@@ -1159,6 +1159,7 @@ void Render2D::DrawText(Font* font, const StringView& text, const Color& color, 
     FontCharacterEntry previous;
     int32 kerning;
     float scale = 1.0f / FontManager::FontScale;
+    const bool enableFallbackFonts = EnumHasAllFlags(Features, RenderingFeatures::FallbackFonts);
 
     // Render all characters
     FontCharacterEntry entry;
@@ -1183,7 +1184,7 @@ void Render2D::DrawText(Font* font, const StringView& text, const Color& color, 
         if (currentChar != '\n')
         {
             // Get character entry
-            font->GetCharacter(currentChar, entry);
+            font->GetCharacter(currentChar, entry, enableFallbackFonts);
 
             // Check if need to select/change font atlas (since characters even in the same font may be located in different atlases)
             if (fontAtlas == nullptr || entry.TextureIndex != fontAtlasIndex)
@@ -1210,7 +1211,7 @@ void Render2D::DrawText(Font* font, const StringView& text, const Color& color, 
             // Get kerning
             if (!isWhitespace && previous.IsValid)
             {
-                kerning = font->GetKerning(previous.Character, entry.Character);
+                kerning = entry.Font->GetKerning(previous.Character, entry.Character);
             }
             else
             {
@@ -1273,6 +1274,7 @@ void Render2D::DrawText(Font* font, const StringView& text, const Color& color, 
     FontCharacterEntry previous;
     int32 kerning;
     float scale = layout.Scale / FontManager::FontScale;
+    const bool enableFallbackFonts = EnumHasAllFlags(Features, RenderingFeatures::FallbackFonts);
 
     // Process text to get lines
     Lines.Clear();
@@ -1299,10 +1301,14 @@ void Render2D::DrawText(Font* font, const StringView& text, const Color& color, 
         // Render all characters from the line
         for (int32 charIndex = line.FirstCharIndex; charIndex <= line.LastCharIndex; charIndex++)
         {
-            const Char c = text[charIndex];
-            if (c != '\n')
+            // Cache current character
+            const Char currentChar = text[charIndex];
+
+            // Check if it isn't a newline character
+            if (currentChar != '\n')
             {
-                font->GetCharacter(c, entry);
+                // Get character entry
+                font->GetCharacter(currentChar, entry, enableFallbackFonts);
 
                 // Check if need to select/change font atlas (since characters even in the same font may be located in different atlases)
                 if (fontAtlas == nullptr || entry.TextureIndex != fontAtlasIndex)
@@ -1324,10 +1330,10 @@ void Render2D::DrawText(Font* font, const StringView& text, const Color& color, 
                 }
 
                 // Get kerning
-                const bool isWhitespace = StringUtils::IsWhitespace(c);
+                const bool isWhitespace = StringUtils::IsWhitespace(currentChar);
                 if (!isWhitespace && previous.IsValid)
                 {
-                    kerning = font->GetKerning(previous.Character, entry.Character);
+                    kerning = entry.Font->GetKerning(previous.Character, entry.Character);
                 }
                 else
                 {
@@ -1931,7 +1937,7 @@ void Render2D::DrawBlur(const Rectangle& rect, float blurStrength)
 void Render2D::DrawTexturedTriangles(GPUTexture* t, const Span<Float2>& vertices, const Span<Float2>& uvs)
 {
     RENDER2D_CHECK_RENDERING_STATE;
-    CHECK(vertices.Length() == uvs.Length())
+    CHECK(vertices.Length() == uvs.Length());
 
     Render2DDrawCall& drawCall = DrawCalls.AddOne();
     drawCall.Type = DrawCallType::FillTexture;
@@ -1977,7 +1983,7 @@ void Render2D::DrawTexturedTriangles(GPUTexture* t, const Span<uint16>& indices,
     drawCall.StartIB = IBIndex;
     drawCall.CountIB = indices.Length();
     drawCall.AsTexture.Ptr = t;
-    
+
     for (int32 i = 0; i < indices.Length();)
     {
         const uint16 i0 = indices.Get()[i++];

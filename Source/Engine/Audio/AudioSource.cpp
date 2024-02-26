@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #include "AudioSource.h"
 #include "Engine/Core/Log.h"
@@ -19,6 +19,7 @@ AudioSource::AudioSource(const SpawnParams& params)
     , _minDistance(1000.0f)
     , _loop(false)
     , _playOnStart(false)
+    , _startTime(0.0f)
     , _allowSpatialization(true)
 {
     Clip.Changed.Bind<AudioSource, &AudioSource::OnClipChanged>(this);
@@ -69,6 +70,11 @@ void AudioSource::SetIsLooping(bool value)
 void AudioSource::SetPlayOnStart(bool value)
 {
     _playOnStart = value;
+}
+
+void AudioSource::SetStartTime(float value)
+{
+    _startTime = value;
 }
 
 void AudioSource::SetMinDistance(float value)
@@ -361,6 +367,7 @@ void AudioSource::Serialize(SerializeStream& stream, const void* otherObj)
     SERIALIZE_MEMBER(DopplerFactor, _dopplerFactor);
     SERIALIZE_MEMBER(Loop, _loop);
     SERIALIZE_MEMBER(PlayOnStart, _playOnStart);
+    SERIALIZE_MEMBER(StartTime, _startTime);
     SERIALIZE_MEMBER(AllowSpatialization, _allowSpatialization);
 }
 
@@ -377,6 +384,7 @@ void AudioSource::Deserialize(DeserializeStream& stream, ISerializeModifier* mod
     DESERIALIZE_MEMBER(DopplerFactor, _dopplerFactor);
     DESERIALIZE_MEMBER(Loop, _loop);
     DESERIALIZE_MEMBER(PlayOnStart, _playOnStart);
+    DESERIALIZE_MEMBER(StartTime, _startTime);
     DESERIALIZE_MEMBER(AllowSpatialization, _allowSpatialization);
     DESERIALIZE(Clip);
 }
@@ -540,5 +548,7 @@ void AudioSource::BeginPlay(SceneBeginData* data)
             return;
 #endif
         Play();
+        if (GetStartTime() > 0)
+            SetTime(GetStartTime());
     }
 }

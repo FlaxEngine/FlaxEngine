@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #if AUDIO_API_OPENAL
 
@@ -116,7 +116,7 @@ namespace ALC
         {
             AudioBackend::Listener::TransformChanged(listener);
 
-            const Vector3 velocity = listener->GetVelocity();
+            const Float3 velocity = listener->GetVelocity();
             alListener3f(AL_VELOCITY, FLAX_VEL_TO_OAL(velocity));
             alListenerf(AL_GAIN, Audio::GetVolume());
         }
@@ -319,8 +319,6 @@ void AudioBackendOAL::Listener_OnAdd(AudioListener* listener)
     ALC::RebuildContexts(false);
 #else
     AudioBackend::Listener::TransformChanged(listener);
-    const Vector3 velocity = listener->GetVelocity();
-    alListener3f(AL_VELOCITY, FLAX_VEL_TO_OAL(velocity));
     alListenerf(AL_GAIN, Audio::GetVolume());
 #endif
 }
@@ -336,7 +334,7 @@ void AudioBackendOAL::Listener_VelocityChanged(AudioListener* listener)
 {
     ALC_GET_LISTENER_CONTEXT(listener)
 
-    const Vector3 velocity = listener->GetVelocity();
+    const Float3 velocity = listener->GetVelocity();
     alListener3f(AL_VELOCITY, FLAX_VEL_TO_OAL(velocity));
 }
 
@@ -344,15 +342,15 @@ void AudioBackendOAL::Listener_TransformChanged(AudioListener* listener)
 {
     ALC_GET_LISTENER_CONTEXT(listener)
 
-    const Vector3 position = listener->GetPosition();
+    const Float3 position = listener->GetPosition();
     const Quaternion orientation = listener->GetOrientation();
-    const Vector3 flipX(-1, 1, 1);
-    const Vector3 alOrientation[2] =
+    const Float3 flipX(-1, 1, 1);
+    const Float3 alOrientation[2] =
     {
         // Forward
-        orientation * Vector3::Forward * flipX,
+        orientation * Float3::Forward * flipX,
         // Up
-        orientation * Vector3::Up * flipX
+        orientation * Float3::Up * flipX
     };
 
     alListenerfv(AL_ORIENTATION, (float*)alOrientation);

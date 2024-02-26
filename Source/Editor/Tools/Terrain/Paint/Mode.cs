@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 using System;
 using FlaxEditor.Tools.Terrain.Brushes;
@@ -67,11 +67,13 @@ namespace FlaxEditor.Tools.Terrain.Paint
 
             // Prepare
             var splatmapIndex = ActiveSplatmapIndex;
+            var splatmapIndexOther = (splatmapIndex + 1) % 2;
             var chunkSize = terrain.ChunkSize;
             var heightmapSize = chunkSize * FlaxEngine.Terrain.PatchEdgeChunksCount + 1;
             var heightmapLength = heightmapSize * heightmapSize;
             var patchSize = chunkSize * FlaxEngine.Terrain.UnitsPerVertex * FlaxEngine.Terrain.PatchEdgeChunksCount;
-            var tempBuffer = (Color32*)gizmo.GetSplatmapTempBuffer(heightmapLength * Color32.SizeInBytes).ToPointer();
+            var tempBuffer = (Color32*)gizmo.GetSplatmapTempBuffer(heightmapLength * Color32.SizeInBytes, splatmapIndex).ToPointer();
+            var tempBufferOther = (Color32*)gizmo.GetSplatmapTempBuffer(heightmapLength * Color32.SizeInBytes, (splatmapIndex + 1) % 2).ToPointer();
             var unitsPerVertexInv = 1.0f / FlaxEngine.Terrain.UnitsPerVertex;
             ApplyParams p = new ApplyParams
             {
@@ -81,8 +83,10 @@ namespace FlaxEditor.Tools.Terrain.Paint
                 Options = options,
                 Strength = strength,
                 SplatmapIndex = splatmapIndex,
+                SplatmapIndexOther = splatmapIndexOther,
                 HeightmapSize = heightmapSize,
                 TempBuffer = tempBuffer,
+                TempBufferOther = tempBufferOther,
             };
 
             // Get brush bounds in terrain local space
@@ -131,11 +135,16 @@ namespace FlaxEditor.Tools.Terrain.Paint
                 var sourceData = TerrainTools.GetSplatMapData(terrain, ref patch.PatchCoord, splatmapIndex);
                 if (sourceData == null)
                     throw new Exception("Cannot modify terrain. Loading splatmap failed. See log for more info.");
+                
+                var sourceDataOther = TerrainTools.GetSplatMapData(terrain, ref patch.PatchCoord, splatmapIndexOther);
+                if (sourceDataOther == null)
+                    throw new Exception("Cannot modify terrain. Loading splatmap failed. See log for more info.");
 
                 // Record patch data before editing it
                 if (!gizmo.CurrentEditUndoAction.HashPatch(ref patch.PatchCoord))
                 {
                     gizmo.CurrentEditUndoAction.AddPatch(ref patch.PatchCoord, splatmapIndex);
+                    gizmo.CurrentEditUndoAction.AddPatch(ref patch.PatchCoord, splatmapIndexOther);
                 }
 
                 // Apply modification
@@ -144,6 +153,7 @@ namespace FlaxEditor.Tools.Terrain.Paint
                 p.PatchCoord = patch.PatchCoord;
                 p.PatchPositionLocal = patchPositionLocal;
                 p.SourceData = sourceData;
+                p.SourceDataOther = sourceDataOther;
                 Apply(ref p);
             }
         }
@@ -197,16 +207,32 @@ namespace FlaxEditor.Tools.Terrain.Paint
             /// The splatmap texture index.
             /// </summary>
             public int SplatmapIndex;
+            
+            /// <summary>
+            /// The splatmap texture index. If <see cref="SplatmapIndex"/> is 0, this will be 1. If <see cref="SplatmapIndex"/> is 1, this will be 0.
+            /// </summary>
+            public int SplatmapIndexOther;
 
             /// <summary>
             /// The temporary data buffer (for modified data).
             /// </summary>
             public Color32* TempBuffer;
+            
+            /// <summary>
+            /// The 'other' temporary data buffer (for modified data). If <see cref="TempBuffer"/> refersto the splatmap with index 0, this one will refer to the one with index 1.
+            /// </summary>
+            public Color32* TempBufferOther;
 
             /// <summary>
             /// The source data buffer.
             /// </summary>
             public Color32* SourceData;
+            
+            /// <summary>
+            /// The 'other' source data buffer. If <see cref="SourceData"/> refers
+            /// to the splatmap with index 0, this one will refer to the one with index 1.
+            /// </summary>
+            public Color32* SourceDataOther;
 
             /// <summary>
             /// The heightmap size (edge).

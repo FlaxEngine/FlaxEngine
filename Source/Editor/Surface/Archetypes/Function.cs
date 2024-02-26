@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -763,6 +763,17 @@ namespace FlaxEditor.Surface.Archetypes
                 public string Name;
                 public ScriptType Type;
                 public bool IsOut;
+
+                public override string ToString()
+                {
+                    var sb = new StringBuilder();
+                    if (IsOut)
+                        sb.Append("out ");
+                    sb.Append(Type.ToString());
+                    sb.Append(" ");
+                    sb.Append(Name);
+                    return sb.ToString();
+                }
             }
 
             private struct SignatureInfo
@@ -892,7 +903,7 @@ namespace FlaxEditor.Surface.Archetypes
                                 {
                                     ref var param = ref signature.Params[i];
                                     ref var paramMember = ref memberParameters[i];
-                                    if (param.Type != paramMember.Type || param.IsOut != paramMember.IsOut)
+                                    if (!SurfaceUtils.AreScriptTypesEqual(param.Type, paramMember.Type) || param.IsOut != paramMember.IsOut)
                                     {
                                         // Special case: param.Type is serialized as just a type while paramMember.Type might be a reference for output parameters (eg. `out Int32` vs `out Int32&`)
                                         var paramMemberTypeName = paramMember.Type.TypeName;
@@ -1660,7 +1671,7 @@ namespace FlaxEditor.Surface.Archetypes
                     SaveSignature();
 
                     // Check if return type has been changed
-                    if (_signature.ReturnType != prevReturnType)
+                    if (!SurfaceUtils.AreScriptTypesEqual(_signature.ReturnType, prevReturnType))
                     {
                         // Update all return nodes used by this function to match the new type
                         var usedNodes = DepthFirstTraversal(false);
@@ -2158,7 +2169,7 @@ namespace FlaxEditor.Surface.Archetypes
                     return false;
                 for (int i = 0; i < _signature.Length; i++)
                 {
-                    if (_signature[i].Type != sig.Parameters[i].Type)
+                    if (!SurfaceUtils.AreScriptTypesEqual(_signature[i].Type, sig.Parameters[i].Type))
                         return false;
                 }
                 return true;

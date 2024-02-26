@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -91,7 +91,7 @@ public:
     FORCE_INLINE SkeletonNode& RootNode()
     {
         ASSERT(Nodes.HasItems());
-        return Nodes[0];
+        return Nodes.Get()[0];
     }
 
     /// <summary>
@@ -100,52 +100,24 @@ public:
     FORCE_INLINE const SkeletonNode& RootNode() const
     {
         ASSERT(Nodes.HasItems());
-        return Nodes[0];
+        return Nodes.Get()[0];
     }
 
     /// <summary>
     /// Swaps the contents of object with the other object without copy operation. Performs fast internal data exchange.
     /// </summary>
-    void Swap(SkeletonData& other)
-    {
-        Nodes.Swap(other.Nodes);
-        Bones.Swap(other.Bones);
-    }
+    void Swap(SkeletonData& other);
 
-    int32 FindNode(const StringView& name) const
-    {
-        for (int32 i = 0; i < Nodes.Count(); i++)
-        {
-            if (Nodes[i].Name == name)
-                return i;
-        }
-        return -1;
-    }
+    Transform GetNodeTransform(int32 nodeIndex) const;
+    void SetNodeTransform(int32 nodeIndex, const Transform& value);
 
-    int32 FindBone(int32 nodeIndex) const
-    {
-        for (int32 i = 0; i < Bones.Count(); i++)
-        {
-            if (Bones[i].NodeIndex == nodeIndex)
-                return i;
-        }
-        return -1;
-    }
+    int32 FindNode(const StringView& name) const;
+    int32 FindBone(int32 nodeIndex) const;
 
-    uint64 GetMemoryUsage() const
-    {
-        uint64 result = Nodes.Capacity() * sizeof(SkeletonNode) + Bones.Capacity() * sizeof(SkeletonBone);
-        for (const auto& e : Nodes)
-            result += (e.Name.Length() + 1) * sizeof(Char);
-        return result;
-    }
+    uint64 GetMemoryUsage() const;
 
     /// <summary>
     /// Releases data.
     /// </summary>
-    void Dispose()
-    {
-        Nodes.Resize(0);
-        Bones.Resize(0);
-    }
+    void Dispose();
 };

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -237,9 +237,10 @@ public:
 
     Color& operator*=(const float b)
     {
-        R = Math::Saturate(R * b);
-        G = Math::Saturate(G * b);
-        B = Math::Saturate(B * b);
+        R = R * b;
+        G = G * b;
+        B = B * b;
+        A = A * b;
         return *this;
     }
 

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #if USE_LARGE_WORLDS
 using Real = System.Double;
@@ -77,11 +77,9 @@ namespace FlaxEditor.SceneGraph.Actors
         public NavLinkNode(Actor actor)
         : base(actor)
         {
-            var bytes = ID.ToByteArray();
-            bytes[0] += 1;
-            AddChildNode(new LinkNode(this, new Guid(bytes), true));
-            bytes[0] += 1;
-            AddChildNode(new LinkNode(this, new Guid(bytes), false));
+            var id = ID;
+            AddChildNode(new LinkNode(this, GetSubID(id, 0), true));
+            AddChildNode(new LinkNode(this, GetSubID(id, 1), false));
         }
 
         /// <inheritdoc />

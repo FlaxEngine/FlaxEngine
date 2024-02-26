@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #if USE_LARGE_WORLDS
 using Real = System.Double;
@@ -61,10 +61,15 @@ namespace FlaxEditor.SceneGraph.Actors
         {
             base.PostSpawn();
 
+            if (Actor.HasPrefabLink)
+            {
+                return;
+            }
+
             // Setup for default values
-            var text = (SpriteRender)Actor;
-            text.Material = FlaxEngine.Content.LoadAsyncInternal<MaterialBase>(EditorAssets.DefaultSpriteMaterial);
-            text.Image = FlaxEngine.Content.LoadAsyncInternal<Texture>(EditorAssets.FlaxIconTexture);
+            var sprite = (SpriteRender)Actor;
+            sprite.Material = FlaxEngine.Content.LoadAsyncInternal<MaterialBase>(EditorAssets.DefaultSpriteMaterial);
+            sprite.Image = FlaxEngine.Content.LoadAsyncInternal<Texture>(EditorAssets.FlaxIconTexture);
         }
     }
 }

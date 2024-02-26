@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -12,7 +12,6 @@
 class FLAXENGINE_API FileReadStream : public ReadStream
 {
 private:
-
     File* _file;
     uint32 _virtualPosInBuffer; // Current position in the buffer (index)
     uint32 _bufferSize; // Amount of loaded bytes from the file to the buffer
@@ -33,11 +32,9 @@ public:
     ~FileReadStream();
 
 public:
-
     /// <summary>
     /// Gets the file handle.
     /// </summary>
-    /// <returns>File</returns>
     FORCE_INLINE const File* GetFile() const
     {
         return _file;
@@ -49,7 +46,6 @@ public:
     void Unlink();
 
 public:
-
     /// <summary>
     /// Open file to write data to it
     /// </summary>
@@ -58,7 +54,6 @@ public:
     static FileReadStream* Open(const StringView& path);
 
 public:
-
     // [ReadStream]
     void Flush() final override;
     void Close() final override;

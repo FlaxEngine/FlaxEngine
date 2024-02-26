@@ -1,7 +1,8 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #include "BoxCollider.h"
 #include "Engine/Physics/PhysicsBackend.h"
+#include "Engine/Level/Scene/Scene.h"
 
 BoxCollider::BoxCollider(const SpawnParams& params)
     : Collider(params)
@@ -17,6 +18,41 @@ void BoxCollider::SetSize(const Float3& value)
 
     UpdateGeometry();
     UpdateBounds();
+}
+
+void BoxCollider::AutoResize(bool globalOrientation = true)
+{
+    Actor* parent = GetParent();
+    if (Cast<Scene>(parent))
+        return;
+
+    // Get bounds of all siblings (excluding itself)
+    const Vector3 parentScale = parent->GetScale();
+    if (parentScale.IsAnyZero())
+        return; // Avoid division by zero
+
+    // Hacky way to get unrotated bounded box of parent.
+    const Quaternion parentOrientation = parent->GetOrientation();
+    parent->SetOrientation(Quaternion::Identity);
+    BoundingBox parentBox = parent->GetBox();
+    parent->SetOrientation(parentOrientation);
+
+    for (const Actor* sibling : parent->Children)
+    {
+        if (sibling != this)
+            BoundingBox::Merge(parentBox, sibling->GetBoxWithChildren(), parentBox);
+    }
+    const Vector3 parentSize = parentBox.GetSize();
+    const Vector3 parentCenter = parentBox.GetCenter() - parent->GetPosition();
+
+    // Update bounds
+    SetLocalPosition(Vector3::Zero);
+    SetSize(parentSize / parentScale);
+    SetCenter(parentCenter / parentScale);
+    if (globalOrientation)
+        SetOrientation(GetOrientation() * Quaternion::Invert(GetOrientation()));
+    else
+        SetOrientation(parentOrientation);
 }
 
 #if USE_EDITOR

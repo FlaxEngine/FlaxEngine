@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #include "ManagedEditor.h"
 #include "Editor/Editor.h"
@@ -170,78 +170,6 @@ DEFINE_INTERNAL_CALL(bool) EditorInternal_CloneAssetFile(MString* dstPathObj, MS
     return Content::CloneAssetFile(dstPath, srcPath, *dstId);
 }
 
-enum class NewAssetType
-{
-    Material = 0,
-    MaterialInstance = 1,
-    CollisionData = 2,
-    AnimationGraph = 3,
-    SkeletonMask = 4,
-    ParticleEmitter = 5,
-    ParticleSystem = 6,
-    SceneAnimation = 7,
-    MaterialFunction = 8,
-    ParticleEmitterFunction = 9,
-    AnimationGraphFunction = 10,
-    Animation = 11,
-    BehaviorTree = 12,
-};
-
-DEFINE_INTERNAL_CALL(bool) EditorInternal_CreateAsset(NewAssetType type, MString* outputPathObj)
-{
-    String tag;
-    switch (type)
-    {
-    case NewAssetType::Material:
-        tag = AssetsImportingManager::CreateMaterialTag;
-        break;
-    case NewAssetType::MaterialInstance:
-        tag = AssetsImportingManager::CreateMaterialInstanceTag;
-        break;
-    case NewAssetType::CollisionData:
-        tag = AssetsImportingManager::CreateCollisionDataTag;
-        break;
-    case NewAssetType::AnimationGraph:
-        tag = AssetsImportingManager::CreateAnimationGraphTag;
-        break;
-    case NewAssetType::SkeletonMask:
-        tag = AssetsImportingManager::CreateSkeletonMaskTag;
-        break;
-    case NewAssetType::ParticleEmitter:
-        tag = AssetsImportingManager::CreateParticleEmitterTag;
-        break;
-    case NewAssetType::ParticleSystem:
-        tag = AssetsImportingManager::CreateParticleSystemTag;
-        break;
-    case NewAssetType::SceneAnimation:
-        tag = AssetsImportingManager::CreateSceneAnimationTag;
-        break;
-    case NewAssetType::MaterialFunction:
-        tag = AssetsImportingManager::CreateMaterialFunctionTag;
-        break;
-    case NewAssetType::ParticleEmitterFunction:
-        tag = AssetsImportingManager::CreateParticleEmitterFunctionTag;
-        break;
-    case NewAssetType::AnimationGraphFunction:
-        tag = AssetsImportingManager::CreateAnimationGraphFunctionTag;
-        break;
-    case NewAssetType::Animation:
-        tag = AssetsImportingManager::CreateAnimationTag;
-        break;
-    case NewAssetType::BehaviorTree:
-        tag = AssetsImportingManager::CreateBehaviorTreeTag;
-        break;
-    default:
-        return true;
-    }
-
-    String outputPath;
-    MUtils::ToString(outputPathObj, outputPath);
-    FileSystem::NormalizePath(outputPath);
-
-    return AssetsImportingManager::Create(tag, outputPath);
-}
-
 DEFINE_INTERNAL_CALL(bool) EditorInternal_CreateVisualScript(MString* outputPathObj, MString* baseTypenameObj)
 {
     String outputPath;
@@ -276,7 +204,7 @@ DEFINE_INTERNAL_CALL(bool) EditorInternal_SaveJsonAsset(MString* outputPathObj, 
     FileSystem::NormalizePath(outputPath);
 
     const StringView dataObjChars = MCore::String::GetChars(dataObj);
-    const StringAsANSI<> data(dataObjChars.Get(), dataObjChars.Length());
+    const StringAsUTF8<> data(dataObjChars.Get(), dataObjChars.Length());
     const StringAnsiView dataAnsi(data.Get(), data.Length());
 
     const StringView dataTypeNameObjChars = MCore::String::GetChars(dataTypeNameObj);
@@ -526,133 +454,6 @@ DEFINE_INTERNAL_CALL(void) EditorInternal_RunVisualScriptBreakpointLoopTick(floa
     Engine::OnDraw();
 }
 
-struct VisualScriptLocalManaged
-{
-    MString* Value;
-    MString* ValueTypeName;
-    uint32 NodeId;
-    int32 BoxId;
-};
-
-DEFINE_INTERNAL_CALL(MArray*) EditorInternal_GetVisualScriptLocals(int* localsCount)
-{
-    MArray* result = nullptr;
-    *localsCount = 0;
-    const auto stack = VisualScripting::GetThreadStackTop();
-    if (stack && stack->Scope)
-    {
-        const int32 count = stack->Scope->Parameters.Length() + stack->Scope->ReturnedValues.Count();
-        const MClass* mclass = ((NativeBinaryModule*)GetBinaryModuleFlaxEngine())->Assembly->GetClass("FlaxEditor.Editor+VisualScriptLocal");
-        ASSERT(mclass);
-        result = MCore::Array::New(mclass, count);
-        VisualScriptLocalManaged local;
-        local.NodeId = MAX_uint32;
-        if (stack->Scope->Parameters.Length() != 0)
-        {
-            auto s = stack;
-            while (s->PreviousFrame && s->PreviousFrame->Scope == stack->Scope)
-                s = s->PreviousFrame;
-            if (s)
-                local.NodeId = s->Node->ID;
-        }
-        VisualScriptLocalManaged* resultPtr = MCore::Array::GetAddress<VisualScriptLocalManaged>(result);
-        for (int32 i = 0; i < stack->Scope->Parameters.Length(); i++)
-        {
-            auto& v = stack->Scope->Parameters[i];
-            local.BoxId = i + 1;
-            local.Value = MUtils::ToString(v.ToString());
-            local.ValueTypeName = MUtils::ToString(v.Type.GetTypeName());
-            resultPtr[i] = local;
-        }
-        for (int32 i = 0; i < stack->Scope->ReturnedValues.Count(); i++)
-        {
-            auto& v = stack->Scope->ReturnedValues[i];
-            local.NodeId = v.NodeId;
-            local.BoxId = v.BoxId;
-            local.Value = MUtils::ToString(v.Value.ToString());
-            local.ValueTypeName = MUtils::ToString(v.Value.Type.GetTypeName());
-            resultPtr[stack->Scope->Parameters.Length() + i] = local;
-        }
-        *localsCount = count;
-    }
-    return result;
-}
-
-struct VisualScriptStackFrameManaged
-{
-    MObject* Script;
-    uint32 NodeId;
-    int32 BoxId;
-};
-
-DEFINE_INTERNAL_CALL(MArray*) EditorInternal_GetVisualScriptStackFrames(int* stackFramesCount)
-{
-    MArray* result = nullptr;
-    *stackFramesCount = 0;
-    const auto stack = VisualScripting::GetThreadStackTop();
-    if (stack)
-    {
-        int32 count = 0;
-        auto s = stack;
-        while (s)
-        {
-            s = s->PreviousFrame;
-            count++;
-        }
-        const MClass* mclass = ((NativeBinaryModule*)GetBinaryModuleFlaxEngine())->Assembly->GetClass("FlaxEditor.Editor+VisualScriptStackFrame");
-        ASSERT(mclass);
-        result = MCore::Array::New(mclass, count);
-        VisualScriptStackFrameManaged* resultPtr = MCore::Array::GetAddress<VisualScriptStackFrameManaged>(result);
-        s = stack;
-        count = 0;
-        while (s)
-        {
-            VisualScriptStackFrameManaged frame;
-            frame.Script = s->Script->GetOrCreateManagedInstance();
-            frame.NodeId = s->Node->ID;
-            frame.BoxId = s->Box ? s->Box->ID : MAX_uint32;
-            resultPtr[count] = frame;
-            s = s->PreviousFrame;
-            count++;
-        }
-        *stackFramesCount = count;
-    }
-    return result;
-}
-
-DEFINE_INTERNAL_CALL(VisualScriptStackFrameManaged) EditorInternal_GetVisualScriptPreviousScopeFrame()
-{
-    VisualScriptStackFrameManaged frame;
-    Platform::MemoryClear(&frame, sizeof(frame));
-    const auto stack = VisualScripting::GetThreadStackTop();
-    if (stack)
-    {
-        auto s = stack;
-        while (s->PreviousFrame && s->PreviousFrame->Scope == stack->Scope)
-            s = s->PreviousFrame;
-        if (s && s->PreviousFrame)
-        {
-            s = s->PreviousFrame;
-            frame.Script = s->Script->GetOrCreateManagedInstance();
-            frame.NodeId = s->Node->ID;
-            frame.BoxId = s->Box ? s->Box->ID : MAX_uint32;
-        }
-    }
-    return frame;
-}
-
-DEFINE_INTERNAL_CALL(bool) EditorInternal_EvaluateVisualScriptLocal(VisualScript* script, VisualScriptLocalManaged* local)
-{
-    Variant v;
-    if (VisualScripting::Evaluate(script, VisualScripting::GetThreadStackTop()->Instance, local->NodeId, local->BoxId, v))
-    {
-        local->Value = MUtils::ToString(v.ToString());
-        local->ValueTypeName = MUtils::ToString(v.Type.GetTypeName());
-        return true;
-    }
-    return false;
-}
-
 DEFINE_INTERNAL_CALL(void) EditorInternal_DeserializeSceneObject(SceneObject* sceneObject, MString* jsonObj)
 {
     PROFILE_CPU_NAMED("DeserializeSceneObject");
@@ -761,13 +562,11 @@ bool ManagedEditor::Import(const String& inputPath, const String& outputPath, co
 
 bool ManagedEditor::TryRestoreImportOptions(ModelTool::Options& options, String assetPath)
 {
-    // Initialize defaults   
+    // Initialize defaults
     if (const auto* graphicsSettings = GraphicsSettings::Get())
     {
         options.GenerateSDF = graphicsSettings->GenerateSDFOnModelImport;
     }
-
-    // Get options from model
     FileSystem::NormalizePath(assetPath);
     return ImportModel::TryGetImportOptions(assetPath, options);
 }
@@ -779,7 +578,12 @@ bool ManagedEditor::Import(const String& inputPath, const String& outputPath, co
 
 bool ManagedEditor::TryRestoreImportOptions(AudioTool::Options& options, String assetPath)
 {
-    // Get options from model
     FileSystem::NormalizePath(assetPath);
     return ImportAudio::TryGetImportOptions(assetPath, options);
+}
+
+bool ManagedEditor::CreateAsset(const String& tag, String outputPath)
+{
+    FileSystem::NormalizePath(outputPath);
+    return AssetsImportingManager::Create(tag, outputPath);
 }

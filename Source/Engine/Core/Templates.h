@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -304,7 +304,7 @@ template<typename T>
 inline void Swap(T& a, T& b) noexcept
 {
     T tmp = MoveTemp(a);
-    a = b;
+    a = MoveTemp(b);
     b = MoveTemp(tmp);
 }
 

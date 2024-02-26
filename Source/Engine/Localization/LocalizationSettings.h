@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -16,7 +16,7 @@ public:
     /// <summary>
     /// The list of the string localization tables used by the game.
     /// </summary>
-    API_FIELD()
+    API_FIELD(Attributes="Collection(Display = CollectionAttribute.DisplayType.Inline)")
     Array<AssetReference<LocalizedStringTable>> LocalizedStringTables;
 
     /// <summary>

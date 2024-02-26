@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #include "AnimatedModel.h"
 #include "BoneSocket.h"
@@ -127,7 +127,7 @@ void AnimatedModel::GetCurrentPose(Array<Matrix>& nodesTransformation, bool worl
     if (worldSpace)
     {
         Matrix world;
-        _transform.GetWorld(world);
+        GetLocalToWorldMatrix(world);
         for (auto& m : nodesTransformation)
             m = m * world;
     }
@@ -142,7 +142,7 @@ void AnimatedModel::SetCurrentPose(const Array<Matrix>& nodesTransformation, boo
     if (worldSpace)
     {
         Matrix world;
-        _transform.GetWorld(world);
+        GetLocalToWorldMatrix(world);
         Matrix invWorld;
         Matrix::Invert(world, invWorld);
         for (auto& m : GraphInstance.NodesPose)
@@ -162,7 +162,7 @@ void AnimatedModel::GetNodeTransformation(int32 nodeIndex, Matrix& nodeTransform
     if (worldSpace)
     {
         Matrix world;
-        _transform.GetWorld(world);
+        GetLocalToWorldMatrix(world);
         nodeTransformation = nodeTransformation * world;
     }
 }
@@ -181,7 +181,7 @@ void AnimatedModel::SetNodeTransformation(int32 nodeIndex, const Matrix& nodeTra
     if (worldSpace)
     {
         Matrix world;
-        _transform.GetWorld(world);
+        GetLocalToWorldMatrix(world);
         Matrix invWorld;
         Matrix::Invert(world, invWorld);
         GraphInstance.NodesPose[nodeIndex] = GraphInstance.NodesPose[nodeIndex] * invWorld;
@@ -223,6 +223,17 @@ void AnimatedModel::SetMasterPoseModel(AnimatedModel* masterPose)
     _masterPose = masterPose;
     if (_masterPose)
         _masterPose->AnimationUpdated.Bind<AnimatedModel, &AnimatedModel::OnAnimationUpdated>(this);
+}
+
+const Array<AnimGraphTraceEvent>& AnimatedModel::GetTraceEvents() const
+{
+#if !BUILD_RELEASE
+    if (!GetEnableTracing())
+    {
+        LOG(Warning, "Accessing AnimatedModel.TraceEvents with tracing disabled.");
+    }
+#endif
+    return GraphInstance.TraceEvents;
 }
 
 #define CHECK_ANIM_GRAPH_PARAM_ACCESS() \
@@ -494,6 +505,7 @@ void AnimatedModel::StopSlotAnimation(const StringView& slotName, Animation* ani
         if (slot.Animation == anim && slot.Name == slotName)
         {
             slot.Animation = nullptr;
+            slot.Reset = true;
             break;
         }
     }
@@ -719,7 +731,9 @@ void AnimatedModel::UpdateBounds()
     }
     else if (model && model->IsLoaded() && model->LODs.Count() != 0)
     {
-        const BoundingBox modelBox = model->GetBox(_transform.GetWorld());
+        Matrix world;
+        GetLocalToWorldMatrix(world);
+        const BoundingBox modelBox = model->GetBox(world);
         BoundingBox box = modelBox;
         if (GraphInstance.NodesPose.Count() != 0)
         {
@@ -899,8 +913,8 @@ void AnimatedModel::Draw(RenderContext& renderContext)
     if (renderContext.View.Pass == DrawPass::GlobalSurfaceAtlas)
         return; // No supported
     Matrix world;
-    const Float3 translation = _transform.Translation - renderContext.View.Origin;
-    Matrix::Transformation(_transform.Scale, _transform.Orientation, translation, world);
+    GetLocalToWorldMatrix(world);
+    renderContext.View.GetWorldMatrix(world);
     GEOMETRY_DRAW_STATE_EVENT_BEGIN(_drawState, world);
 
     _lastMinDstSqr = Math::Min(_lastMinDstSqr, Vector3::DistanceSquared(_transform.Translation, renderContext.View.WorldPosition));

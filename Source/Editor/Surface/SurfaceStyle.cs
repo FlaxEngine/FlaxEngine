@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 using System;
 using FlaxEditor.Scripting;
@@ -294,6 +294,39 @@ namespace FlaxEditor.Surface
                 },
                 Background = editor.UI.VisjectSurfaceBackground,
             };
+        }
+
+        /// <summary>
+        /// Draws a simple straight connection between two locations.
+        /// </summary>
+        /// <param name="startPos">The start position.</param>
+        /// <param name="endPos">The end position.</param>
+        /// <param name="color">The line color.</param>
+        /// <param name="thickness">The line thickness.</param>
+        public static void DrawStraightConnection(Float2 startPos, Float2 endPos, Color color, float thickness = 1.0f)
+        {
+            var sub = endPos - startPos;
+            var length = sub.Length;
+            if (length > Mathf.Epsilon)
+            {
+                var dir = sub / length;
+                var arrowRect = new Rectangle(0, 0, 16.0f, 16.0f);
+                float rotation = Float2.Dot(dir, Float2.UnitY);
+                if (endPos.X < startPos.X)
+                    rotation = 2 - rotation;
+                var sprite = Editor.Instance.Icons.VisjectArrowClosed32;
+                var arrowTransform =
+                    Matrix3x3.Translation2D(-6.5f, -8) *
+                    Matrix3x3.RotationZ(rotation * Mathf.PiOverTwo) * 
+                    Matrix3x3.Translation2D(endPos - dir * 8);
+
+                Render2D.PushTransform(ref arrowTransform);
+                Render2D.DrawSprite(sprite, arrowRect, color);
+                Render2D.PopTransform();
+
+                endPos -= dir * 4.0f;
+            }
+            Render2D.DrawLine(startPos, endPos, color);
         }
     }
 }

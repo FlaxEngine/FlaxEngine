@@ -1,6 +1,8 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using FlaxEditor.GUI.ContextMenu;
 using FlaxEditor.SceneGraph;
 using FlaxEngine;
@@ -130,9 +132,12 @@ namespace FlaxEditor.Windows
             b = contextMenu.AddButton("Cut", inputOptions.Cut, Editor.SceneEditing.Cut);
             b.Enabled = canEditScene;
 
-            // Prefab options
+            // Create option
 
             contextMenu.AddSeparator();
+
+            b = contextMenu.AddButton("Create parent for selected actors", Editor.SceneEditing.CreateParentForSelectedActors);
+            b.Enabled = canEditScene && hasSthSelected;
 
             b = contextMenu.AddButton("Create Prefab", Editor.Prefabs.CreatePrefab);
             b.Enabled = isSingleActorSelected &&
@@ -144,6 +149,31 @@ namespace FlaxEditor.Windows
             {
                 contextMenu.AddButton("Select Prefab", Editor.Prefabs.SelectPrefab);
                 contextMenu.AddButton("Break Prefab Link", Editor.Prefabs.BreakLinks);
+            }
+
+            // Load additional scenes option
+
+            if (!hasSthSelected)
+            {
+                var allScenes = FlaxEngine.Content.GetAllAssetsByType(typeof(SceneAsset));
+                var loadedSceneIds = Editor.Instance.Scene.Root.ChildNodes.Select(node => node.ID).ToList();
+                var unloadedScenes = allScenes.Where(sceneId => !loadedSceneIds.Contains(sceneId)).ToList();
+                if (unloadedScenes.Count > 0)
+                {
+                    contextMenu.AddSeparator();
+                    var childCM = contextMenu.GetOrAddChildMenu("Open Scene");
+                    foreach (var sceneGuid in unloadedScenes)
+                    {
+                        if (FlaxEngine.Content.GetAssetInfo(sceneGuid, out var unloadedScene))
+                        {
+                            var splitPath = unloadedScene.Path.Split('/');
+                            var sceneName = splitPath[^1];
+                            if (splitPath[^1].EndsWith(".scene"))
+                                sceneName = sceneName[..^6];
+                            childCM.ContextMenu.AddButton(sceneName, () => { Editor.Instance.Scene.OpenScene(sceneGuid, true); });
+                        }
+                    }
+                }
             }
 
             // Spawning actors options

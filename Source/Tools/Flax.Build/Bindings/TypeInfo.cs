@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -178,6 +178,17 @@ namespace Flax.Build.Bindings
             if (IsRef && canRef)
                 sb.Append('&');
             return sb.ToString();
+        }
+
+        public static TypeInfo FromString(string text)
+        {
+            var result = new TypeInfo(text);
+            if (result.Type.EndsWith('*'))
+            {
+                result.IsPtr = true;
+                result.Type = result.Type.Substring(0, result.Type.Length - 1);
+            }
+            return result;
         }
 
         public string ToString(bool canRef = true)

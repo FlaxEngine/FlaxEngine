@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #include "Streaming.h"
 #include "StreamableResource.h"
@@ -84,8 +84,9 @@ void StreamableResource::RequestStreamingUpdate()
     Streaming.LastUpdate = 0;
 }
 
-void StreamableResource::ResetStreaming()
+void StreamableResource::ResetStreaming(bool error)
 {
+    Streaming.Error = error;
     Streaming.TargetResidency = 0;
     Streaming.LastUpdate = DateTime::MaxValue().Ticks;
 }

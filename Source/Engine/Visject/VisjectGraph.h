@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -101,7 +101,7 @@ public:
 /// Visject graph parameter.
 /// </summary>
 /// <seealso cref="GraphParameter" />
-API_CLASS() class VisjectGraphParameter : public GraphParameter
+API_CLASS() class FLAXENGINE_API VisjectGraphParameter : public GraphParameter
 {
     DECLARE_SCRIPTING_TYPE_WITH_CONSTRUCTOR_IMPL(VisjectGraphParameter, GraphParameter);
 public:

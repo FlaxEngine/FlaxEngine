@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -155,6 +155,11 @@ namespace FlaxEditor.Surface
         /// Occurs when node gets removed from the surface as delete/cut operation (eg. remove comment or cut node).
         /// </summary>
         public event Action<SurfaceControl> ControlDeleted;
+
+        /// <summary>
+        /// Identifier of the node that 'owns' this context (eg. State Machine which created this graph of state nodes).
+        /// </summary>
+        public uint OwnerNodeID;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="VisjectSurfaceContext"/> class.

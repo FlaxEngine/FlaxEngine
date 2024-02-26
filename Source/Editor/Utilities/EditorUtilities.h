@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -21,14 +21,6 @@ public:
         Icon,
         SplashScreen,
     };
-
-    /// <summary>
-    /// Updates the Win32 executable file icon.
-    /// </summary>
-    /// <param name="path">The exe path.</param>
-    /// <param name="icon">The icon image data.</param>
-    /// <returns>True if fails, otherwise false.</returns>
-    static bool UpdateExeIcon(const String& path, const TextureData& icon);
 
     static bool FormatAppPackageName(String& packageName);
     static bool GetApplicationImage(const Guid& imageId, TextureData& imageData, ApplicationImageType type = ApplicationImageType::Icon);

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #if COMPILE_WITH_GPU_PARTICLES
 
@@ -233,11 +233,9 @@ void GPUParticles::Execute(GPUContext* context, ParticleEmitter* emitter, Partic
         else
         {
             Matrix worldMatrix;
-            const Transform transform = effect->GetTransform();
+            effect->GetLocalToWorldMatrix(worldMatrix);
             if (viewTask)
-                viewTask->View.GetWorldMatrix(transform, worldMatrix);
-            else
-                transform.GetWorld(worldMatrix);
+                viewTask->View.GetWorldMatrix(worldMatrix);
             Matrix::Transpose(worldMatrix, cbData->WorldMatrix);
             worldMatrix.Invert();
             Matrix::Transpose(worldMatrix, cbData->InvWorldMatrix);

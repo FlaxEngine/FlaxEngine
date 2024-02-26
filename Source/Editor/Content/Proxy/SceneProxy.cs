@@ -1,6 +1,7 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 using System;
+using FlaxEditor.GUI.ContextMenu;
 using FlaxEditor.Windows;
 using FlaxEngine;
 
@@ -67,6 +68,16 @@ namespace FlaxEditor.Content
         public override AssetItem ConstructItem(string path, string typeName, ref Guid id)
         {
             return new SceneItem(path, id);
+        }
+
+        /// <inheritdoc />
+        public override void OnContentWindowContextMenu(ContextMenu menu, ContentItem item)
+        {
+            var id = ((SceneItem)item).ID;
+            if (Level.FindScene(id) == null)
+            {
+                menu.AddButton("Open (additive)", () => { Editor.Instance.Scene.OpenScene(id, true); });
+            }
         }
     }
 }

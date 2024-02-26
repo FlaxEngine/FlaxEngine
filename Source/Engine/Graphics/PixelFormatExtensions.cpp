@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #include "PixelFormatExtensions.h"
 #include "Engine/Core/Math/Math.h"
@@ -657,6 +657,37 @@ int PixelFormatExtensions::ComputeComponentsCount(const PixelFormat format)
         return 1;
     default:
         return 0;
+    }
+}
+
+int32 PixelFormatExtensions::ComputeBlockSize(PixelFormat format)
+{
+    switch (format)
+    {
+    case PixelFormat::BC1_Typeless:
+    case PixelFormat::BC1_UNorm:
+    case PixelFormat::BC1_UNorm_sRGB:
+    case PixelFormat::BC2_Typeless:
+    case PixelFormat::BC2_UNorm:
+    case PixelFormat::BC2_UNorm_sRGB:
+    case PixelFormat::BC3_Typeless:
+    case PixelFormat::BC3_UNorm:
+    case PixelFormat::BC3_UNorm_sRGB:
+    case PixelFormat::BC4_Typeless:
+    case PixelFormat::BC4_UNorm:
+    case PixelFormat::BC4_SNorm:
+    case PixelFormat::BC5_Typeless:
+    case PixelFormat::BC5_UNorm:
+    case PixelFormat::BC5_SNorm:
+    case PixelFormat::BC6H_Typeless:
+    case PixelFormat::BC6H_Uf16:
+    case PixelFormat::BC6H_Sf16:
+    case PixelFormat::BC7_Typeless:
+    case PixelFormat::BC7_UNorm:
+    case PixelFormat::BC7_UNorm_sRGB:
+        return 4;
+    default:
+        return 1;
     }
 }
 

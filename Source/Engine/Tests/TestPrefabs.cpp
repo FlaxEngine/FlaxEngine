@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #include "Engine/Content/Content.h"
 #include "Engine/Content/AssetReference.h"
@@ -410,6 +410,151 @@ TEST_CASE("Prefabs")
         instanceNested->DeleteObject();
         instanceBase->DeleteObject();
         Content::DeleteAsset(prefabNested);
+        Content::DeleteAsset(prefabBase);
+    }
+    SECTION("Test Loading Nested Prefab After Changing and Deleting Root")
+    {
+        // https://github.com/FlaxEngine/FlaxEngine/issues/2050
+
+        // Create base prefab with 1 object
+        AssetReference<Prefab> prefabBase = Content::CreateVirtualAsset<Prefab>();
+        REQUIRE(prefabBase);
+        Guid id;
+        Guid::Parse("3b3334524c696dcfa93cabacd2a4f404", id);
+        prefabBase->ChangeID(id);
+        auto prefabBaseInit = prefabBase->Init(Prefab::TypeName,
+                                               "["
+                                               "{"
+                                               "\"ID\": \"82ce814f4d913e58eb35ab8b0b7e2eef\","
+                                               "\"TypeName\": \"FlaxEngine.DirectionalLight\","
+                                               "\"Name\": \"New Root\""
+                                               "},"
+                                               "{"
+                                               "\"ID\": \"f8fbee1349f749396ab6c2ad34f3afec\","
+                                               "\"TypeName\": \"FlaxEngine.Camera\","
+                                               "\"Name\": \"Child 1\","
+                                               "\"ParentID\": \"82ce814f4d913e58eb35ab8b0b7e2eef\""
+                                               "},"
+                                               "{"
+                                               "\"ID\": \"5632561847cf96fe2e8919848b7eca79\","
+                                               "\"TypeName\": \"FlaxEngine.EmptyActor\","
+                                               "\"Name\": \"Child 1.Child\","
+                                               "\"ParentID\": \"f8fbee1349f749396ab6c2ad34f3afec\""
+                                               "},"
+                                               "{"
+                                               "\"ID\": \"4e4f3a1847cf96fe2e8919848b7eca79\","
+                                               "\"TypeName\": \"FlaxEngine.UICanvas\","
+                                               "\"Name\": \"Child 2\","
+                                               "\"ParentID\": \"82ce814f4d913e58eb35ab8b0b7e2eef\""
+                                               "}"
+                                               "]");
+        REQUIRE(!prefabBaseInit);
+
+        // Create nested prefab but with 'old' state where root object is different
+        AssetReference<Prefab> prefabNested1 = Content::CreateVirtualAsset<Prefab>();
+        REQUIRE(prefabNested1);
+        Guid::Parse("671447e947cbd2deea018a8377636ce6", id);
+        prefabNested1->ChangeID(id);
+        auto prefabNestedInit1 = prefabNested1->Init(Prefab::TypeName,
+                                                   "["
+                                                   "{"
+                                                   "\"ID\": \"597ab8ea43a5c58b8d06f58f9364d261\","
+                                                   "\"PrefabID\": \"3b3334524c696dcfa93cabacd2a4f404\","
+                                                   "\"PrefabObjectID\": \"589bcfaa4bd1a53435129480e5bbdb3b\","
+                                                   "\"Name\": \"Old Root\""
+                                                   "},"
+                                                   "{"
+                                                   "\"ID\": \"1a6228d84897ff3b2f444ea263c3657e\","
+                                                   "\"PrefabID\": \"3b3334524c696dcfa93cabacd2a4f404\","
+                                                   "\"PrefabObjectID\": \"f8fbee1349f749396ab6c2ad34f3afec\","
+                                                   "\"ParentID\": \"597ab8ea43a5c58b8d06f58f9364d261\""
+                                                   "},"
+                                                   "{"
+                                                   "\"ID\": \"1212124f4d913e58eb35ab8b0b7e2eef\","
+                                                   "\"PrefabID\": \"3b3334524c696dcfa93cabacd2a4f404\","
+                                                   "\"PrefabObjectID\": \"82ce814f4d913e58eb35ab8b0b7e2eef\","
+                                                   "\"ParentID\": \"597ab8ea43a5c58b8d06f58f9364d261\","
+                                                   "\"Name\": \"New Root\""
+                                                   "},"
+                                                   "{"
+                                                   "\"ID\": \"468028d84897ff3b2f444ea263c3657e\","
+                                                   "\"PrefabID\": \"3b3334524c696dcfa93cabacd2a4f404\","
+                                                   "\"PrefabObjectID\": \"2468902349f749396ab6c2ad34f3afec\","
+                                                   "\"ParentID\": \"597ab8ea43a5c58b8d06f58f9364d261\","
+                                                   "\"Name\": \"Old Child\""
+                                                   "}"
+                                                   "]");
+        REQUIRE(!prefabNestedInit1);
+
+        // Create nested prefab but with 'old' state where root object is different and doesn't exist anymore
+        AssetReference<Prefab> prefabNested2 = Content::CreateVirtualAsset<Prefab>();
+        REQUIRE(prefabNested2);
+        Guid::Parse("b71447e947cbd2deea018a8377636ce6", id);
+        prefabNested2->ChangeID(id);
+        auto prefabNestedInit2 = prefabNested2->Init(Prefab::TypeName,
+                                                   "["
+                                                   "{"
+                                                   "\"ID\": \"597ab8ea43a5c58b8d06f58f9364d261\","
+                                                   "\"PrefabID\": \"3b3334524c696dcfa93cabacd2a4f404\","
+                                                   "\"PrefabObjectID\": \"589bcfaa4bd1a53435129480e5bbdb3b\","
+                                                   "\"Name\": \"Old Root\""
+                                                   "},"
+                                                   "{"
+                                                   "\"ID\": \"1a6228d84897ff3b2f444ea263c3657e\","
+                                                   "\"PrefabID\": \"3b3334524c696dcfa93cabacd2a4f404\","
+                                                   "\"PrefabObjectID\": \"f8fbee1349f749396ab6c2ad34f3afec\","
+                                                   "\"ParentID\": \"597ab8ea43a5c58b8d06f58f9364d261\""
+                                                   "},"
+                                                   "{"
+                                                   "\"ID\": \"468028d84897ff3b2f444ea263c3657e\","
+                                                   "\"PrefabID\": \"3b3334524c696dcfa93cabacd2a4f404\","
+                                                   "\"PrefabObjectID\": \"2468902349f749396ab6c2ad34f3afec\","
+                                                   "\"ParentID\": \"597ab8ea43a5c58b8d06f58f9364d261\","
+                                                   "\"Name\": \"Old Child\""
+                                                   "}"
+                                                   "]");
+        REQUIRE(!prefabNestedInit2);
+
+        // Spawn test instances of both prefabs
+        ScriptingObjectReference<Actor> instanceBase = PrefabManager::SpawnPrefab(prefabBase);
+        ScriptingObjectReference<Actor> instanceNested1 = PrefabManager::SpawnPrefab(prefabNested1);
+        ScriptingObjectReference<Actor> instanceNested2 = PrefabManager::SpawnPrefab(prefabNested2);
+
+        // Verify scenario
+        REQUIRE(instanceBase);
+        REQUIRE(instanceBase->GetName() == TEXT("New Root"));
+        REQUIRE(instanceBase->GetChildrenCount() == 2);
+        REQUIRE(instanceBase->Children[0]->GetName() == TEXT("Child 1"));
+        REQUIRE(instanceBase->Children[0]->GetChildrenCount() == 1);
+        REQUIRE(instanceBase->Children[1]->GetName() == TEXT("Child 2"));
+        REQUIRE(instanceBase->Children[1]->GetChildrenCount() == 0);
+        REQUIRE(instanceBase->Children[0]->Children[0]->GetName() == TEXT("Child 1.Child"));
+        REQUIRE(instanceBase->Children[0]->Children[0]->GetChildrenCount() == 0);
+        REQUIRE(instanceNested1);
+        REQUIRE(instanceNested1->GetName() == TEXT("New Root"));
+        REQUIRE(instanceNested1->GetChildrenCount() == 2);
+        REQUIRE(instanceNested1->Children[0]->GetName() == TEXT("Child 1"));
+        REQUIRE(instanceNested1->Children[0]->GetChildrenCount() == 1);
+        REQUIRE(instanceNested1->Children[1]->GetName() == TEXT("Child 2"));
+        REQUIRE(instanceNested1->Children[1]->GetChildrenCount() == 0);
+        REQUIRE(instanceNested1->Children[0]->Children[0]->GetName() == TEXT("Child 1.Child"));
+        REQUIRE(instanceNested1->Children[0]->Children[0]->GetChildrenCount() == 0);
+        REQUIRE(instanceNested2);
+        REQUIRE(instanceNested2->GetName() == TEXT("New Root"));
+        REQUIRE(instanceNested2->GetChildrenCount() == 2);
+        REQUIRE(instanceNested2->Children[0]->GetName() == TEXT("Child 1"));
+        REQUIRE(instanceNested2->Children[0]->GetChildrenCount() == 1);
+        REQUIRE(instanceNested2->Children[1]->GetName() == TEXT("Child 2"));
+        REQUIRE(instanceNested2->Children[1]->GetChildrenCount() == 0);
+        REQUIRE(instanceNested2->Children[0]->Children[0]->GetName() == TEXT("Child 1.Child"));
+        REQUIRE(instanceNested2->Children[0]->Children[0]->GetChildrenCount() == 0);
+
+        // Cleanup
+        instanceNested2->DeleteObject();
+        instanceNested1->DeleteObject();
+        instanceBase->DeleteObject();
+        Content::DeleteAsset(prefabNested2);
+        Content::DeleteAsset(prefabNested1);
         Content::DeleteAsset(prefabBase);
     }
 }

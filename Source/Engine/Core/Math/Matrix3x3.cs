@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 // -----------------------------------------------------------------------------
 // Original code from SharpDX project. https://github.com/sharpdx/SharpDX/
@@ -56,13 +56,7 @@ using System.Runtime.InteropServices;
 
 namespace FlaxEngine
 {
-    /// <summary>
-    /// Represents a 3x3 Matrix ( contains only Scale and Rotation ).
-    /// </summary>
-    [Serializable]
-    [StructLayout(LayoutKind.Sequential, Pack = 4)]
-    // ReSharper disable once InconsistentNaming
-    public struct Matrix3x3 : IEquatable<Matrix3x3>, IFormattable
+    partial struct Matrix3x3 : IEquatable<Matrix3x3>, IFormattable
     {
         /// <summary>
         /// The size of the <see cref="Matrix3x3"/> type, in bytes.
@@ -135,9 +129,7 @@ namespace FlaxEngine
         /// <param name="value">The value that will be assigned to all components.</param>
         public Matrix3x3(float value)
         {
-            M11 = M12 = M13 =
-                        M21 = M22 = M23 =
-                                    M31 = M32 = M33 = value;
+            M11 = M12 = M13 = M21 = M22 = M23 = M31 = M32 = M33 = value;
         }
 
         /// <summary>
@@ -191,6 +183,23 @@ namespace FlaxEngine
             M31 = values[6];
             M32 = values[7];
             M33 = values[8];
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Matrix3x3" /> struct.
+        /// </summary>
+        /// <param name="m">The rotation/scale matrix.</param>
+        public Matrix3x3(Matrix m)
+        {
+            M11 = m.M11;
+            M12 = m.M12;
+            M13 = m.M13;
+            M21 = m.M21;
+            M22 = m.M22;
+            M23 = m.M23;
+            M31 = m.M31;
+            M32 = m.M32;
+            M33 = m.M33;
         }
 
         /// <summary>

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -469,7 +469,13 @@ namespace FlaxEngine.GUI
 
             var itemsHeight = 20.0f;
             var itemsMargin = 20.0f;
-
+            // Scale height and margive with text height if needed
+            var textHeight = Font.GetFont().Height;
+            if (textHeight > itemsHeight)
+            {
+                itemsHeight = textHeight;
+                itemsMargin = textHeight;
+            }
             /*
             var itemsWidth = 40.0f;
             var font = Font.GetFont();
@@ -600,14 +606,15 @@ namespace FlaxEngine.GUI
             _popup.LostFocus += DestroyPopup;
 
             // Show dropdown popup
-            var locationRootSpace = Location + new Float2(0, Height);
+            var locationRootSpace = Location + new Float2(0, Height - Height * (1 - Scale.Y) / 2);
             var parent = Parent;
             while (parent != null && parent != root)
             {
                 locationRootSpace = parent.PointToParent(ref locationRootSpace);
                 parent = parent.Parent;
             }
-            _popup.Location = locationRootSpace;
+            _popup.Scale = Scale;
+            _popup.Location = locationRootSpace - new Float2(0, _popup.Height * (1 - _popup.Scale.Y) / 2);
             _popup.Parent = root;
             _popup.Focus();
             _popup.StartMouseCapture();

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -34,6 +34,30 @@ namespace FlaxEditor.Surface
         public event Action<VisjectSurfaceContext> ContextChanged;
 
         /// <summary>
+        /// Finds the surface context with the given owning nodes IDs path.
+        /// </summary>
+        /// <param name="nodePath">The node ids path.</param>
+        /// <returns>Found context or null if cannot.</returns>
+        public VisjectSurfaceContext FindContext(Span<uint> nodePath)
+        {
+            // Get size of the path
+            int nodePathSize = 0;
+            while (nodePathSize < nodePath.Length && nodePath[nodePathSize] != 0)
+                nodePathSize++;
+
+            // Follow each context path to verify if it matches with the path in the input path
+            foreach (var e in _contextCache)
+            {
+                var c = e.Value;
+                for (int i = nodePathSize - 1; i >= 0 && c != null; i--)
+                    c = c.OwnerNodeID == nodePath[i] ? c.Parent : null;
+                if (c != null)
+                    return e.Value;
+            }
+            return null;
+        }
+
+        /// <summary>
         /// Creates the Visject surface context for the given surface data source context.
         /// </summary>
         /// <param name="parent">The parent context.</param>
@@ -62,6 +86,8 @@ namespace FlaxEditor.Surface
                 surfaceContext = CreateContext(_context, context);
                 _context?.Children.Add(surfaceContext);
                 _contextCache.Add(contextHandle, surfaceContext);
+                if (context is SurfaceNode asNode)
+                    surfaceContext.OwnerNodeID = asNode.ID;
 
                 context.OnContextCreated(surfaceContext);
 

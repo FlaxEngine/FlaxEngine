@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -21,15 +21,11 @@ namespace FlaxEditor.Content.Thumbnails
         /// </summary>
         public const float MinimumRequiredResourcesQuality = 0.8f;
 
-        // TODO: free atlas slots for deleted assets
-
         private readonly List<PreviewsCache> _cache = new List<PreviewsCache>(4);
         private readonly string _cacheFolder;
-
-        private DateTime _lastFlushTime;
-
         private readonly List<ThumbnailRequest> _requests = new List<ThumbnailRequest>(128);
         private readonly PreviewRoot _guiRoot = new PreviewRoot();
+        private DateTime _lastFlushTime;
         private RenderTask _task;
         private GPUTexture _output;
 
@@ -88,7 +84,6 @@ namespace FlaxEditor.Content.Thumbnails
                         }
                     }
 
-                    // Add request
                     AddRequest(assetItem, proxy);
                 }
             }
@@ -118,15 +113,15 @@ namespace FlaxEditor.Content.Thumbnails
                 for (int i = 0; i < _cache.Count; i++)
                 {
                     if (_cache[i].ReleaseSlot(assetItem.ID))
-                    {
                         break;
-                    }
                 }
             }
         }
 
         internal static bool HasMinimumQuality(TextureBase asset)
         {
+            if (asset.HasStreamingError)
+                return true; // Don't block thumbnails queue when texture fails to stream in (eg. unsupported format)
             var mipLevels = asset.MipLevels;
             var minMipLevels = Mathf.Min(mipLevels, 7);
             return asset.IsLoaded && asset.ResidentMipLevels >= Mathf.Max(minMipLevels, (int)(mipLevels * MinimumRequiredResourcesQuality));
@@ -198,13 +193,7 @@ namespace FlaxEditor.Content.Thumbnails
         /// <inheritdoc />
         void IContentItemOwner.OnItemDeleted(ContentItem item)
         {
-            if (item is AssetItem assetItem)
-            {
-                lock (_requests)
-                {
-                    RemoveRequest(assetItem);
-                }
-            }
+            DeletePreview(item);
         }
 
         /// <inheritdoc />
@@ -494,10 +483,7 @@ namespace FlaxEditor.Content.Thumbnails
         {
             // Wait some frames before start generating previews (late init feature)
             if (Time.TimeSinceStartup < 1.0f || HasAllAtlasesLoaded() == false)
-            {
-                // Back
                 return;
-            }
 
             lock (_requests)
             {
@@ -515,6 +501,7 @@ namespace FlaxEditor.Content.Thumbnails
                         var request = _requests[i];
                         try
                         {
+                            request.Update();
                             if (request.IsReady)
                             {
                                 isAnyReady = true;
@@ -522,6 +509,10 @@ namespace FlaxEditor.Content.Thumbnails
                             else if (request.State == ThumbnailRequest.States.Created)
                             {
                                 request.Prepare();
+                            }
+                            else if (request.State == ThumbnailRequest.States.Failed)
+                            {
+                                _requests.RemoveAt(i--);
                             }
                         }
                         catch (Exception ex)

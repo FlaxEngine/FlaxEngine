@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 using FlaxEngine;
 
@@ -53,6 +53,11 @@ namespace FlaxEditor
         /// The primary font.
         /// </summary>
         public static string PrimaryFont = "Editor/Fonts/Roboto-Regular";
+
+        /// <summary>
+        /// The secondary (fallback) font to use for missing characters rendering (CJK - Chinese/Japanese/Korean characters).
+        /// </summary>
+        public static string FallbackFont = "Editor/Fonts/NotoSansSC-Regular";
 
         /// <summary>
         /// The Inconsolata Regular font.

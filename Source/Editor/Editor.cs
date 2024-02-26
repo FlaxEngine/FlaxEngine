@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -869,7 +869,9 @@ namespace FlaxEditor
 
         /// <summary>
         /// New asset types allowed to create.
+        /// [Deprecated in v1.8]
         /// </summary>
+        [Obsolete("Use CreateAsset with named tag.")]
         public enum NewAssetType
         {
             /// <summary>
@@ -1046,12 +1048,59 @@ namespace FlaxEditor
 
         /// <summary>
         /// Creates new asset at the target location.
+        /// [Deprecated in v1.8]
         /// </summary>
         /// <param name="type">New asset type.</param>
         /// <param name="outputPath">Output asset path.</param>
+        [Obsolete("Use CreateAsset with named tag.")]
         public static bool CreateAsset(NewAssetType type, string outputPath)
         {
-            return Internal_CreateAsset(type, outputPath);
+            // [Deprecated on 18.02.2024, expires on 18.02.2025]
+            string tag;
+            switch (type)
+            {
+            case NewAssetType.Material:
+                tag = "Material";
+                break;
+            case NewAssetType.MaterialInstance:
+                tag = "MaterialInstance";
+                break;
+            case NewAssetType.CollisionData:
+                tag = "CollisionData";
+                break;
+            case NewAssetType.AnimationGraph:
+                tag = "AnimationGraph";
+                break;
+            case NewAssetType.SkeletonMask:
+                tag = "SkeletonMask";
+                break;
+            case NewAssetType.ParticleEmitter:
+                tag = "ParticleEmitter";
+                break;
+            case NewAssetType.ParticleSystem:
+                tag = "ParticleSystem";
+                break;
+            case NewAssetType.SceneAnimation:
+                tag = "SceneAnimation";
+                break;
+            case NewAssetType.MaterialFunction:
+                tag = "MaterialFunction";
+                break;
+            case NewAssetType.ParticleEmitterFunction:
+                tag = "ParticleEmitterFunction";
+                break;
+            case NewAssetType.AnimationGraphFunction:
+                tag = "AnimationGraphFunction";
+                break;
+            case NewAssetType.Animation:
+                tag = "Animation";
+                break;
+            case NewAssetType.BehaviorTree:
+                tag = "BehaviorTree";
+                break;
+            default: return true;
+            }
+            return CreateAsset(tag, outputPath);
         }
 
         /// <summary>
@@ -1343,112 +1392,10 @@ namespace FlaxEditor
             public float AutoRebuildNavMeshTimeoutMs;
         }
 
-        [StructLayout(LayoutKind.Sequential)]
-        [NativeMarshalling(typeof(VisualScriptLocalMarshaller))]
-        internal struct VisualScriptLocal
-        {
-            public string Value;
-            public string ValueTypeName;
-            public uint NodeId;
-            public int BoxId;
-        }
-
-        [CustomMarshaller(typeof(VisualScriptLocal), MarshalMode.Default, typeof(VisualScriptLocalMarshaller))]
-        internal static class VisualScriptLocalMarshaller
-        {
-            [StructLayout(LayoutKind.Sequential)]
-            internal struct VisualScriptLocalNative
-            {
-                public IntPtr Value;
-                public IntPtr ValueTypeName;
-                public uint NodeId;
-                public int BoxId;
-            }
-
-            internal static VisualScriptLocal ConvertToManaged(VisualScriptLocalNative unmanaged) => ToManaged(unmanaged);
-            internal static VisualScriptLocalNative ConvertToUnmanaged(VisualScriptLocal managed) => ToNative(managed);
-
-            internal static VisualScriptLocal ToManaged(VisualScriptLocalNative managed)
-            {
-                return new VisualScriptLocal()
-                {
-                    Value = ManagedString.ToManaged(managed.Value),
-                    ValueTypeName = ManagedString.ToManaged(managed.ValueTypeName),
-                    NodeId = managed.NodeId,
-                    BoxId = managed.BoxId,
-                };
-            }
-
-            internal static VisualScriptLocalNative ToNative(VisualScriptLocal managed)
-            {
-                return new VisualScriptLocalNative()
-                {
-                    Value = ManagedString.ToNative(managed.Value),
-                    ValueTypeName = ManagedString.ToNative(managed.ValueTypeName),
-                    NodeId = managed.NodeId,
-                    BoxId = managed.BoxId,
-                };
-            }
-
-            internal static void Free(VisualScriptLocalNative unmanaged)
-            {
-                ManagedString.Free(unmanaged.Value);
-                ManagedString.Free(unmanaged.ValueTypeName);
-            }
-        }
-
-        [StructLayout(LayoutKind.Sequential)]
-        [NativeMarshalling(typeof(VisualScriptStackFrameMarshaller))]
-        internal struct VisualScriptStackFrame
-        {
-            public VisualScript Script;
-            public uint NodeId;
-            public int BoxId;
-        }
-
-        [CustomMarshaller(typeof(VisualScriptStackFrame), MarshalMode.Default, typeof(VisualScriptStackFrameMarshaller))]
-        internal static class VisualScriptStackFrameMarshaller
-        {
-            [StructLayout(LayoutKind.Sequential)]
-            internal struct VisualScriptStackFrameNative
-            {
-                public IntPtr Script;
-                public uint NodeId;
-                public int BoxId;
-            }
-
-            internal static VisualScriptStackFrame ConvertToManaged(VisualScriptStackFrameNative unmanaged) => ToManaged(unmanaged);
-            internal static VisualScriptStackFrameNative ConvertToUnmanaged(VisualScriptStackFrame managed) => ToNative(managed);
-
-            internal static VisualScriptStackFrame ToManaged(VisualScriptStackFrameNative managed)
-            {
-                return new VisualScriptStackFrame()
-                {
-                    Script = VisualScriptMarshaller.ConvertToManaged(managed.Script),
-                    NodeId = managed.NodeId,
-                    BoxId = managed.BoxId,
-                };
-            }
-
-            internal static VisualScriptStackFrameNative ToNative(VisualScriptStackFrame managed)
-            {
-                return new VisualScriptStackFrameNative()
-                {
-                    Script = VisualScriptMarshaller.ConvertToUnmanaged(managed.Script),
-                    NodeId = managed.NodeId,
-                    BoxId = managed.BoxId,
-                };
-            }
-
-            internal static void Free(VisualScriptStackFrameNative unmanaged)
-            {
-            }
-        }
-
         internal void BuildCommand(string arg)
         {
             if (TryBuildCommand(arg))
-                Engine.RequestExit();
+                Engine.RequestExit(1);
         }
 
         private bool TryBuildCommand(string arg)
@@ -1690,10 +1637,6 @@ namespace FlaxEditor
         [LibraryImport("FlaxEngine", EntryPoint = "EditorInternal_CloseSplashScreen", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(StringMarshaller))]
         internal static partial void Internal_CloseSplashScreen();
 
-        [LibraryImport("FlaxEngine", EntryPoint = "EditorInternal_CreateAsset", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(StringMarshaller))]
-        [return: MarshalAs(UnmanagedType.U1)]
-        internal static partial bool Internal_CreateAsset(NewAssetType type, string outputPath);
-
         [LibraryImport("FlaxEngine", EntryPoint = "EditorInternal_CreateVisualScript", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(StringMarshaller))]
         [return: MarshalAs(UnmanagedType.U1)]
         internal static partial bool Internal_CreateVisualScript(string outputPath, string baseTypename);
@@ -1722,21 +1665,6 @@ namespace FlaxEditor
 
         [LibraryImport("FlaxEngine", EntryPoint = "EditorInternal_RunVisualScriptBreakpointLoopTick", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(StringMarshaller))]
         internal static partial void Internal_RunVisualScriptBreakpointLoopTick(float deltaTime);
-
-        [LibraryImport("FlaxEngine", EntryPoint = "EditorInternal_GetVisualScriptLocals", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(StringMarshaller))]
-        [return: MarshalUsing(typeof(FlaxEngine.Interop.ArrayMarshaller<,>), CountElementName = "localsCount")]
-        internal static partial VisualScriptLocal[] Internal_GetVisualScriptLocals(out int localsCount);
-
-        [LibraryImport("FlaxEngine", EntryPoint = "EditorInternal_GetVisualScriptStackFrames", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(StringMarshaller))]
-        [return: MarshalUsing(typeof(FlaxEngine.Interop.ArrayMarshaller<,>), CountElementName = "stackFrameCount")]
-        internal static partial VisualScriptStackFrame[] Internal_GetVisualScriptStackFrames(out int stackFrameCount);
-
-        [LibraryImport("FlaxEngine", EntryPoint = "EditorInternal_GetVisualScriptPreviousScopeFrame", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(StringMarshaller))]
-        internal static partial VisualScriptStackFrame Internal_GetVisualScriptPreviousScopeFrame();
-
-        [LibraryImport("FlaxEngine", EntryPoint = "EditorInternal_EvaluateVisualScriptLocal", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(StringMarshaller))]
-        [return: MarshalAs(UnmanagedType.U1)]
-        internal static partial bool Internal_EvaluateVisualScriptLocal(IntPtr script, ref VisualScriptLocal local);
 
         [LibraryImport("FlaxEngine", EntryPoint = "EditorInternal_DeserializeSceneObject", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(StringMarshaller))]
         internal static partial void Internal_DeserializeSceneObject(IntPtr sceneObject, string json);

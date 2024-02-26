@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #include "EngineService.h"
 #include "Engine/Core/Log.h"
@@ -72,9 +72,6 @@ void EngineService::OnInit()
 
     // Init services from front to back
     auto& services = GetServices();
-#if TRACY_ENABLE
-    Char nameBuffer[100];
-#endif
     for (int32 i = 0; i < services.Count(); i++)
     {
         const auto service = services[i];
@@ -82,6 +79,7 @@ void EngineService::OnInit()
 #if TRACY_ENABLE
         ZoneScoped;
         int32 nameBufferLength = 0;
+        Char nameBuffer[100];
         for (int32 j = 0; j < name.Length(); j++)
             if (name[j] != ' ')
                 nameBuffer[nameBufferLength++] = name[j];
@@ -114,6 +112,18 @@ void EngineService::OnDispose()
         const auto service = services[i];
         if (service->IsInitialized)
         {
+#if TRACY_ENABLE
+            ZoneScoped;
+            const StringView name(service->Name);
+            int32 nameBufferLength = 0;
+            Char nameBuffer[100];
+            for (int32 j = 0; j < name.Length(); j++)
+                if (name[j] != ' ')
+                    nameBuffer[nameBufferLength++] = name[j];
+            Platform::MemoryCopy(nameBuffer + nameBufferLength, TEXT("::Dispose"), 10 * sizeof(Char));
+            nameBufferLength += 10;
+            ZoneName(nameBuffer, nameBufferLength);
+#endif
             service->IsInitialized = false;
             service->Dispose();
         }

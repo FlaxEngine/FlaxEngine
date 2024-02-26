@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 namespace FlaxEditor.Gizmo
 {
@@ -12,42 +12,42 @@ namespace FlaxEditor.Gizmo
             /// <summary>
             /// None.
             /// </summary>
-            None,
+            None = 0,
 
             /// <summary>
             /// The X axis.
             /// </summary>
-            X,
+            X = 1,
 
             /// <summary>
             /// The Y axis.
             /// </summary>
-            Y,
+            Y = 2,
 
             /// <summary>
             /// The Z axis.
             /// </summary>
-            Z,
+            Z = 4,
 
             /// <summary>
             /// The XY plane.
             /// </summary>
-            XY,
+            XY = X | Y,
 
             /// <summary>
             /// The ZX plane.
             /// </summary>
-            ZX,
+            ZX = Z | X,
 
             /// <summary>
             /// The YZ plane.
             /// </summary>
-            YZ,
+            YZ = Y | Z,
 
             /// <summary>
             /// The center point.
             /// </summary>
-            Center,
+            Center = 8,
         };
 
         /// <summary>

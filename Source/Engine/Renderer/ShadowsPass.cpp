@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #include "ShadowsPass.h"
 #include "GBufferPass.h"
@@ -247,19 +247,12 @@ void ShadowsPass::SetupLight(RenderContext& renderContext, RenderContextBatch& r
         minDistance = cameraNear;
         maxDistance = cameraNear + shadowsDistance;
 
-        // TODO: expose partition mode?
-        enum class PartitionMode
-        {
-            Manual = 0,
-            Logarithmic = 1,
-            PSSM = 2,
-        };
-        PartitionMode partitionMode = PartitionMode::Manual;
+        PartitionMode partitionMode = light.PartitionMode;
         float pssmFactor = 0.5f;
-        float splitDistance0 = 0.05f;
-        float splitDistance1 = 0.15f;
-        float splitDistance2 = 0.50f;
-        float splitDistance3 = 1.00f;
+        float splitDistance0 = light.Cascade1Spacing;
+        float splitDistance1 = Math::Max(splitDistance0, light.Cascade2Spacing);
+        float splitDistance2 = Math::Max(splitDistance1, light.Cascade3Spacing);
+        float splitDistance3 = Math::Max(splitDistance2, light.Cascade4Spacing);
 
         // Compute the split distances based on the partitioning mode
         if (partitionMode == PartitionMode::Manual)

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #include "AnimGraph.h"
 #include "Engine/Animations/Animations.h"
@@ -9,7 +9,7 @@
 
 extern void RetargetSkeletonNode(const SkeletonData& sourceSkeleton, const SkeletonData& targetSkeleton, const SkinnedModel::SkeletonMapping& sourceMapping, Transform& node, int32 i);
 
-ThreadLocal<AnimGraphContext> AnimGraphExecutor::Context;
+ThreadLocal<AnimGraphContext*> AnimGraphExecutor::Context;
 
 Transform AnimGraphImpulse::GetNodeModelTransformation(SkeletonData& skeleton, int32 nodeIndex) const
 {
@@ -39,6 +39,7 @@ void AnimGraphImpulse::SetNodeModelTransformation(SkeletonData& skeleton, int32 
 void AnimGraphInstanceData::Clear()
 {
     ClearState();
+    Slots.Clear();
     Parameters.Resize(0);
 }
 
@@ -55,7 +56,7 @@ void AnimGraphInstanceData::ClearState()
     RootMotion = Transform::Identity;
     State.Resize(0);
     NodesPose.Resize(0);
-    Slots.Clear();
+    TraceEvents.Clear();
 }
 
 void AnimGraphInstanceData::Invalidate()
@@ -103,7 +104,7 @@ AnimGraphInstanceData::OutgoingEvent AnimGraphInstanceData::ActiveEvent::End(Ani
 
 AnimGraphImpulse* AnimGraphNode::GetNodes(AnimGraphExecutor* executor)
 {
-    auto& context = AnimGraphExecutor::Context.Get();
+    auto& context = *AnimGraphExecutor::Context.Get();
     const int32 count = executor->_skeletonNodesCount;
     if (context.PoseCacheSize == context.PoseCache.Count())
         context.PoseCache.AddOne();
@@ -203,19 +204,24 @@ void AnimGraphExecutor::Update(AnimGraphInstanceData& data, float dt)
 
     // Initialize
     auto& skeleton = _graph.BaseModel->Skeleton;
-    auto& context = Context.Get();
+    auto& contextPtr = Context.Get();
+    if (!contextPtr)
+        contextPtr = New<AnimGraphContext>();
+    auto& context = *contextPtr;
     {
         ANIM_GRAPH_PROFILE_EVENT("Init");
 
         // Init data from base model
         _skeletonNodesCount = skeleton.Nodes.Count();
-        _rootMotionMode = (RootMotionMode)(int32)_graph._rootNode->Values[0];
+        _rootMotionMode = (RootMotionExtraction)(int32)_graph._rootNode->Values[0];
 
         // Prepare context data for the evaluation
         context.GraphStack.Clear();
         context.GraphStack.Push((Graph*)&_graph);
+        context.NodePath.Clear();
         context.Data = &data;
         context.DeltaTime = dt;
+        context.StackOverFlow = false;
         context.CurrentFrameIndex = ++data.CurrentFrame;
         context.CallStack.Clear();
         context.Functions.Clear();
@@ -238,6 +244,7 @@ void AnimGraphExecutor::Update(AnimGraphInstanceData& data, float dt)
         }
         for (auto& e : data.ActiveEvents)
             e.Hit = false;
+        data.TraceEvents.Clear();
 
         // Init empty nodes data
         context.EmptyNodes.RootMotion = Transform::Identity;
@@ -282,6 +289,20 @@ void AnimGraphExecutor::Update(AnimGraphInstanceData& data, float dt)
             }
         }
     }
+#if !BUILD_RELEASE
+    {
+        // Perform sanity check on nodes pose to prevent crashes due to NaNs
+        bool anyInvalid = animResult->RootMotion.IsNanOrInfinity();
+        for (int32 i = 0; i < animResult->Nodes.Count(); i++)
+            anyInvalid |= animResult->Nodes.Get()[i].IsNanOrInfinity();
+        if (anyInvalid)
+        {
+            LOG(Error, "Animated Model pose contains NaNs due to animations sampling/blending bug.");
+            context.Data = nullptr;
+            return;
+        }
+    }
+#endif
     SkeletonData* animResultSkeleton = &skeleton;
 
     // Retarget animation when using output pose from other skeleton
@@ -361,12 +382,12 @@ void AnimGraphExecutor::GetInputValue(Box* box, Value& result)
 
 AnimGraphImpulse* AnimGraphExecutor::GetEmptyNodes()
 {
-    return &Context.Get().EmptyNodes;
+    return &Context.Get()->EmptyNodes;
 }
 
 void AnimGraphExecutor::InitNodes(AnimGraphImpulse* nodes) const
 {
-    const auto& emptyNodes = Context.Get().EmptyNodes;
+    const auto& emptyNodes = Context.Get()->EmptyNodes;
     Platform::MemoryCopy(nodes->Nodes.Get(), emptyNodes.Nodes.Get(), sizeof(Transform) * _skeletonNodesCount);
     nodes->RootMotion = emptyNodes.RootMotion;
     nodes->Position = emptyNodes.Position;
@@ -388,12 +409,15 @@ void AnimGraphExecutor::ResetBuckets(AnimGraphContext& context, AnimGraphBase* g
 
 VisjectExecutor::Value AnimGraphExecutor::eatBox(Node* caller, Box* box)
 {
-    auto& context = Context.Get();
+    auto& context = *Context.Get();
 
     // Check if graph is looped or is too deep
+    if (context.StackOverFlow)
+        return Value::Zero;
     if (context.CallStack.Count() >= ANIM_GRAPH_MAX_CALL_STACK)
     {
         OnError(caller, box, TEXT("Graph is looped or too deep!"));
+        context.StackOverFlow = true;
         return Value::Zero;
     }
 #if !BUILD_RELEASE
@@ -408,7 +432,15 @@ VisjectExecutor::Value AnimGraphExecutor::eatBox(Node* caller, Box* box)
     context.CallStack.Add(caller);
 
 #if USE_EDITOR
-    Animations::DebugFlow(_graph._owner, context.Data->Object, box->GetParent<Node>()->ID, box->ID);
+    Animations::DebugFlowInfo flowInfo;
+    flowInfo.Asset = _graph._owner;
+    flowInfo.Instance = context.Data->Object;
+    flowInfo.NodeId = box->GetParent<Node>()->ID;
+    flowInfo.BoxId = box->ID;
+    const auto* nodePath = context.NodePath.Get();
+    for (int32 i = 0; i < context.NodePath.Count(); i++)
+        flowInfo.NodePath[i] = nodePath[i];
+    Animations::DebugFlow(flowInfo);
 #endif
 
     // Call per group custom processing event
@@ -425,6 +457,6 @@ VisjectExecutor::Value AnimGraphExecutor::eatBox(Node* caller, Box* box)
 
 VisjectExecutor::Graph* AnimGraphExecutor::GetCurrentGraph() const
 {
-    auto& context = Context.Get();
+    auto& context = *Context.Get();
     return context.GraphStack.Peek();
 }

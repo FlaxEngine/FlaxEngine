@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -531,6 +531,25 @@ namespace FlaxEditor.Surface
             else if (v is int i)
                 value = new Double4(i);
             return value;
+        }
+
+        private static bool AreScriptTypesEqualInner(ScriptType left, ScriptType right)
+        {
+            // Special case for Vector types that use typedefs and might overlap
+            if (left.Type == typeof(Vector2) && (right.Type == typeof(Float2) || right.Type == typeof(Double2)))
+                return true;
+            if (left.Type == typeof(Vector3) && (right.Type == typeof(Float3) || right.Type == typeof(Double3)))
+                return true;
+            if (left.Type == typeof(Vector4) && (right.Type == typeof(Float4) || right.Type == typeof(Double4)))
+                return true;
+            return false;
+        }
+
+        internal static bool AreScriptTypesEqual(ScriptType left, ScriptType right)
+        {
+            if (left == right)
+                return true;
+            return AreScriptTypesEqualInner(left, right) || AreScriptTypesEqualInner(right, left);
         }
     }
 }

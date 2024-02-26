@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #include "ParticleEmitterGraph.CPU.h"
 #include "Engine/Particles/ParticleEmitter.h"
@@ -12,7 +12,7 @@
 
 void ParticleEmitterGraphCPUExecutor::ProcessGroupParameters(Box* box, Node* node, Value& value)
 {
-    auto& context = Context.Get();
+    auto& context = *Context.Get();
     switch (node->TypeID)
     {
     // Get
@@ -168,7 +168,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessGroupTextures(Box* box, Node* node,
 
 void ParticleEmitterGraphCPUExecutor::ProcessGroupTools(Box* box, Node* node, Value& value)
 {
-    auto& context = Context.Get();
+    auto& context = *Context.Get();
     switch (node->TypeID)
     {
     // Linearize Depth
@@ -202,7 +202,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessGroupTools(Box* box, Node* node, Va
 
 void ParticleEmitterGraphCPUExecutor::ProcessGroupParticles(Box* box, Node* nodeBase, Value& value)
 {
-    auto& context = Context.Get();
+    auto& context = *Context.Get();
     auto node = (ParticleEmitterGraphCPUNode*)nodeBase;
     switch (node->TypeID)
     {
@@ -468,7 +468,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessGroupParticles(Box* box, Node* node
 
 void ParticleEmitterGraphCPUExecutor::ProcessGroupFunction(Box* box, Node* node, Value& value)
 {
-    auto& context = Context.Get();
+    auto& context = *Context.Get();
     switch (node->TypeID)
     {
     // Function Input

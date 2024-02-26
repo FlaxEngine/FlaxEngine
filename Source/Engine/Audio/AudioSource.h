@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -52,6 +52,7 @@ private:
     float _dopplerFactor = 1.0f;
     bool _loop;
     bool _playOnStart;
+    float _startTime;
     bool _allowSpatialization;
     bool _clipChanged = false;
 
@@ -149,9 +150,23 @@ public:
     }
 
     /// <summary>
+    /// Determines the time (in seconds) at which the audio clip starts playing if Play On Start is enabled.
+    /// </summary>
+    API_PROPERTY(Attributes = "EditorOrder(51), DefaultValue(0.0f), Limit(0, float.MaxValue, 0.01f), EditorDisplay(\"Audio Source\", \"Start Time\"), VisibleIf(nameof(PlayOnStart))")
+    FORCE_INLINE float GetStartTime() const
+    {
+        return _startTime;
+    }
+
+    /// <summary>
     /// Determines whether the audio clip should auto play on game start.
     /// </summary>
     API_PROPERTY() void SetPlayOnStart(bool value);
+
+    /// <summary>
+    /// Determines the time (in seconds) at which the audio clip starts playing if Play On Start is enabled.
+    /// </summary>
+    API_PROPERTY() void SetStartTime(float value);
 
     /// <summary>
     /// Gets the minimum distance at which audio attenuation starts. When the listener is closer to the source than this value, audio is heard at full volume. Once farther away the audio starts attenuating.

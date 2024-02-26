@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #include "ParticleEmitterGraph.CPU.h"
 #include "Engine/Core/Random.h"
@@ -52,7 +52,7 @@ namespace
 int32 ParticleEmitterGraphCPUExecutor::ProcessSpawnModule(int32 index)
 {
     const auto node = _graph.SpawnModules[index];
-    auto& context = Context.Get();
+    auto& context = *Context.Get();
     auto& data = context.Data->SpawnModulesData[index];
 
     // Accumulate the previous frame fraction
@@ -120,7 +120,7 @@ int32 ParticleEmitterGraphCPUExecutor::ProcessSpawnModule(int32 index)
 
 void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode* node, int32 particlesStart, int32 particlesEnd)
 {
-    auto& context = Context.Get();
+    auto& context = *Context.Get();
     auto stride = context.Data->Buffer->Stride;
     auto start = context.Data->Buffer->GetParticleCPU(particlesStart);
 

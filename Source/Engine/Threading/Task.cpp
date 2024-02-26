@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #include "Task.h"
 #include "ThreadPoolTask.h"
@@ -7,6 +7,7 @@
 #include "Engine/Core/Types/DateTime.h"
 #include "Engine/Core/Collections/Array.h"
 #include "Engine/Core/Math/Math.h"
+#include "Engine/Profiler/ProfilerCPU.h"
 
 void Task::Start()
 {
@@ -37,6 +38,7 @@ void Task::Cancel()
 
 bool Task::Wait(double timeoutMilliseconds) const
 {
+    PROFILE_CPU();
     double startTime = Platform::GetTimeSeconds() * 0.001;
 
     // TODO: no active waiting! use a semaphore!
@@ -73,12 +75,9 @@ bool Task::Wait(double timeoutMilliseconds) const
 Task* Task::ContinueWith(Task* task)
 {
     ASSERT(task != nullptr && task != this);
-
     if (_continueWith)
         return _continueWith->ContinueWith(task);
-
     _continueWith = task;
-
     return task;
 }
 

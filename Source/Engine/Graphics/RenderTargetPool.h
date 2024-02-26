@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -15,7 +15,8 @@ public:
     /// Flushes the temporary render targets.
     /// </summary>
     /// <param name="force">True if release unused render targets by force, otherwise will use a few frames of delay.</param>
-    static void Flush(bool force = false);
+    /// <param name="framesOffset">Amount of previous frames that should persist in the pool after flush. Resources used more than given value wil be freed. Use value of -1 to auto pick default duration.</param>
+    static void Flush(bool force = false, int32 framesOffset = -1);
 
     /// <summary>
     /// Gets a temporary render target.

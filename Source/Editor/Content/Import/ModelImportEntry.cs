@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 using System.Collections.Generic;
 using FlaxEditor.CustomEditors.Editors;
@@ -16,6 +16,7 @@ namespace FlaxEngine.Tools
             private bool ShowModel => Type == ModelType.Model || Type == ModelType.Prefab;
             private bool ShowSkinnedModel => Type == ModelType.SkinnedModel || Type == ModelType.Prefab;
             private bool ShowAnimation => Type == ModelType.Animation || Type == ModelType.Prefab;
+            private bool ShowRootMotion => ShowAnimation && RootMotion != RootMotionMode.None;
             private bool ShowSmoothingNormalsAngle => ShowGeometry && CalculateNormals;
             private bool ShowSmoothingTangentsAngle => ShowGeometry && CalculateTangents;
             private bool ShowFramesRange => ShowAnimation && Duration == AnimationDuration.Custom;

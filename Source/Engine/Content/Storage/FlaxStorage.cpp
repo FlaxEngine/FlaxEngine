@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #include "FlaxStorage.h"
 #include "FlaxFile.h"
@@ -211,7 +211,13 @@ FlaxStorage::~FlaxStorage()
 
 #if USE_EDITOR
     // Ensure to close any outstanding file handles to prevent file locking in case it failed to load
-    _file.DeleteAll();
+    Array<FileReadStream*> streams;
+    _file.GetValues(streams);
+    for (FileReadStream* stream : streams)
+    {
+        if (stream)
+            Delete(stream);
+    }
 #endif
 }
 
@@ -963,6 +969,7 @@ bool FlaxStorage::Create(WriteStream* stream, const AssetInitData* data, int32 d
         // Asset Dependencies
         stream->WriteInt32(header.Dependencies.Count());
         stream->WriteBytes(header.Dependencies.Get(), header.Dependencies.Count() * sizeof(Pair<Guid, DateTime>));
+        static_assert(sizeof(Pair<Guid, DateTime>) == sizeof(Guid) + sizeof(DateTime), "Invalid data size.");
     }
 
 #if ASSETS_LOADING_EXTRA_VERIFICATION
@@ -1263,7 +1270,6 @@ bool FlaxStorage::LoadAssetHeader(const Entry& e, AssetInitData& data)
     }
 
 #if ASSETS_LOADING_EXTRA_VERIFICATION
-
     // Validate loaded header (asset ID and type ID must be the same)
     if (e.ID != data.Header.ID)
     {
@@ -1273,7 +1279,6 @@ bool FlaxStorage::LoadAssetHeader(const Entry& e, AssetInitData& data)
     {
         LOG(Error, "Loading asset header data mismatch! Expected Type Name: {0}, loaded header: {1}.\nSource: {2}", e.TypeName, data.Header.ToString(), ToString());
     }
-
 #endif
 
     return false;
@@ -1305,6 +1310,8 @@ FileReadStream* FlaxStorage::OpenFile()
 
 bool FlaxStorage::CloseFileHandles()
 {
+    PROFILE_CPU();
+
     // Note: this is usually called by the content manager when this file is not used or on exit
     // In those situations all the async tasks using this storage should be cancelled externally
 
@@ -1334,7 +1341,14 @@ bool FlaxStorage::CloseFileHandles()
         return true; // Failed, someone is still accessing the file
 
     // Close file handles (from all threads)
-    _file.DeleteAll();
+    Array<FileReadStream*> streams;
+    _file.GetValues(streams);
+    for (FileReadStream* stream : streams)
+    {
+        if (stream)
+            Delete(stream);
+    }
+    _file.Clear();
     return false;
 }
 

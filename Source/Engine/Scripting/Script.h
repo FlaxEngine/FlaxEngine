@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -20,6 +20,7 @@ protected:
     uint16 _tickUpdate : 1;
     uint16 _tickLateUpdate : 1;
     uint16 _tickLateFixedUpdate : 1;
+    uint16 _wasAwakeCalled : 1;
     uint16 _wasStartCalled : 1;
     uint16 _wasEnableCalled : 1;
 #if USE_EDITOR

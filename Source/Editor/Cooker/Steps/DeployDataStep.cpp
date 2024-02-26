@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #include "DeployDataStep.h"
 #include "Engine/Platform/File.h"
@@ -48,21 +48,21 @@ bool DeployDataStep::Perform(CookingData& data)
     }
     if (buildSettings.SkipDotnetPackaging && data.Tools->UseSystemDotnet())
     {
-        // Use system-installed .Net Runtime
+        // Use system-installed .NET Runtime
         FileSystem::DeleteDirectory(dstDotnet);
     }
     else
     {
-        // Deploy .Net Runtime files
+        // Deploy .NET Runtime files
         FileSystem::CreateDirectory(dstDotnet);
         String srcDotnet = depsRoot / TEXT("Dotnet");
         if (FileSystem::DirectoryExists(srcDotnet))
         {
-            // Use prebuilt .Net installation for that platform
-            LOG(Info, "Using .Net Runtime {} at {}", data.Tools->GetName(), srcDotnet);
+            // Use prebuilt .NET installation for that platform
+            LOG(Info, "Using .NET Runtime {} at {}", data.Tools->GetName(), srcDotnet);
             if (EditorUtilities::CopyDirectoryIfNewer(dstDotnet, srcDotnet, true))
             {
-                data.Error(TEXT("Failed to copy .Net runtime data files."));
+                data.Error(TEXT("Failed to copy .NET runtime data files."));
                 return true;
             }
         }
@@ -85,7 +85,7 @@ bool DeployDataStep::Perform(CookingData& data)
             }
             if (canUseSystemDotnet && (aotMode == DotNetAOTModes::None || aotMode == DotNetAOTModes::ILC))
             {
-                // Ask Flax.Build to provide .Net SDK location for the current platform
+                // Ask Flax.Build to provide .NET SDK location for the current platform
                 String sdks;
                 bool failed = ScriptsBuilder::RunBuildTool(String::Format(TEXT("-log -logMessagesOnly -logFileWithConsole -logfile=SDKs.txt -printSDKs {}"), GAME_BUILD_DOTNET_VER), data.CacheDirectory);
                 failed |= File::ReadAllText(data.CacheDirectory / TEXT("SDKs.txt"), sdks);
@@ -101,7 +101,7 @@ bool DeployDataStep::Perform(CookingData& data)
                 }
                 if (failed || !FileSystem::DirectoryExists(srcDotnet))
                 {
-                    data.Error(TEXT("Failed to get .Net SDK location for a current platform."));
+                    data.Error(TEXT("Failed to get .NET SDK location for the current host platform."));
                     return true;
                 }
 
@@ -110,19 +110,25 @@ bool DeployDataStep::Perform(CookingData& data)
                 FileSystem::GetChildDirectories(versions, srcDotnet / TEXT("host/fxr"));
                 if (versions.Count() == 0)
                 {
-                    data.Error(TEXT("Failed to get .Net SDK location for a current platform."));
+                    data.Error(TEXT("Failed to find any .NET hostfxr versions for the current host platform."));
                     return true;
                 }
                 for (String& version : versions)
                 {
                     version = String(StringUtils::GetFileName(version));
-                    if (!version.StartsWith(TEXT("7.")))
+                    if (!version.StartsWith(TEXT("7.")) && !version.StartsWith(TEXT("8."))) // .NET 7 or .NET 8
                         version.Clear();
                 }
                 Sorting::QuickSort(versions);
                 const String version = versions.Last();
+                if (version.IsEmpty())
+                {
+                    data.Error(TEXT("Failed to find supported .NET hostfxr version for the current host platform."));
+                    return true;
+                }
+
                 FileSystem::NormalizePath(srcDotnet);
-                LOG(Info, "Using .Net Runtime {} at {}", version, srcDotnet);
+                LOG(Info, "Using .NET Runtime {} at {}", version, srcDotnet);
 
                 // Check if previously deployed files are valid (eg. system-installed .NET was updated from version 7.0.3 to 7.0.5)
                 {
@@ -158,13 +164,13 @@ bool DeployDataStep::Perform(CookingData& data)
                 }
                 if (failed)
                 {
-                    data.Error(TEXT("Failed to copy .Net runtime data files."));
+                    data.Error(TEXT("Failed to copy .NET runtime data files."));
                     return true;
                 }
             }
             else
             {
-                // Ask Flax.Build to provide .Net Host Runtime location for the target platform
+                // Ask Flax.Build to provide .NET Host Runtime location for the target platform
                 String sdks;
                 const Char *platformName, *archName;
                 data.GetBuildPlatformName(platformName, archName);
@@ -180,11 +186,11 @@ bool DeployDataStep::Perform(CookingData& data)
                 }
                 if (failed || !FileSystem::DirectoryExists(srcDotnet))
                 {
-                    data.Error(TEXT("Failed to get .Net SDK location for a current platform."));
+                    data.Error(TEXT("Failed to get .NET SDK location for the current host platform."));
                     return true;
                 }
                 FileSystem::NormalizePath(srcDotnet);
-                LOG(Info, "Using .Net Runtime {} at {}", TEXT("Host"), srcDotnet);
+                LOG(Info, "Using .NET Runtime {} at {}", TEXT("Host"), srcDotnet);
 
                 // Deploy runtime files
                 const Char* corlibPrivateName = TEXT("System.Private.CoreLib.dll");
@@ -249,7 +255,7 @@ bool DeployDataStep::Perform(CookingData& data)
                     DEPLOY_NATIVE_FILE("libmonosgen-2.0.dylib");
                     DEPLOY_NATIVE_FILE("libSystem.IO.Compression.Native.dylib");
                     DEPLOY_NATIVE_FILE("libSystem.Native.dylib");
-                    DEPLOY_NATIVE_FILE("libSystem.Net.Security.Native.dylib");
+                    DEPLOY_NATIVE_FILE("libSystem.NET.Security.Native.dylib");
                     DEPLOY_NATIVE_FILE("libSystem.Security.Cryptography.Native.Apple.dylib");
                     break;
 #undef DEPLOY_NATIVE_FILE
@@ -257,7 +263,7 @@ bool DeployDataStep::Perform(CookingData& data)
                 }
                 if (failed)
                 {
-                    data.Error(TEXT("Failed to copy .Net runtime data files."));
+                    data.Error(TEXT("Failed to copy .NET runtime data files."));
                     return true;
                 }
             }
@@ -278,7 +284,7 @@ bool DeployDataStep::Perform(CookingData& data)
             }
             if (ScriptsBuilder::RunBuildTool(args))
             {
-                data.Error(TEXT("Failed to optimize .Net class library."));
+                data.Error(TEXT("Failed to optimize .NET class library."));
                 return true;
             }
         }

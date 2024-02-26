@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #include "SkinnedMesh.h"
 #include "MeshDeformation.h"
@@ -17,6 +17,69 @@
 #include "Engine/Scripting/ManagedCLR/MCore.h"
 #include "Engine/Threading/Task.h"
 #include "Engine/Threading/Threading.h"
+
+void SkeletonData::Swap(SkeletonData& other)
+{
+    Nodes.Swap(other.Nodes);
+    Bones.Swap(other.Bones);
+}
+
+Transform SkeletonData::GetNodeTransform(int32 nodeIndex) const
+{
+    const int32 parentIndex = Nodes[nodeIndex].ParentIndex;
+    if (parentIndex == -1)
+    {
+        return Nodes[nodeIndex].LocalTransform;
+    }
+    const Transform parentTransform = GetNodeTransform(parentIndex);
+    return parentTransform.LocalToWorld(Nodes[nodeIndex].LocalTransform);
+}
+
+void SkeletonData::SetNodeTransform(int32 nodeIndex, const Transform& value)
+{
+    const int32 parentIndex = Nodes[nodeIndex].ParentIndex;
+    if (parentIndex == -1)
+    {
+        Nodes[nodeIndex].LocalTransform = value;
+        return;
+    }
+    const Transform parentTransform = GetNodeTransform(parentIndex);
+    parentTransform.WorldToLocal(value, Nodes[nodeIndex].LocalTransform);
+}
+
+int32 SkeletonData::FindNode(const StringView& name) const
+{
+    for (int32 i = 0; i < Nodes.Count(); i++)
+    {
+        if (Nodes[i].Name == name)
+            return i;
+    }
+    return -1;
+}
+
+int32 SkeletonData::FindBone(int32 nodeIndex) const
+{
+    for (int32 i = 0; i < Bones.Count(); i++)
+    {
+        if (Bones[i].NodeIndex == nodeIndex)
+            return i;
+    }
+    return -1;
+}
+
+uint64 SkeletonData::GetMemoryUsage() const
+{
+    uint64 result = Nodes.Capacity() * sizeof(SkeletonNode) + Bones.Capacity() * sizeof(SkeletonBone);
+    for (const auto& e : Nodes)
+        result += (e.Name.Length() + 1) * sizeof(Char);
+    return result;
+}
+
+void SkeletonData::Dispose()
+{
+    Nodes.Resize(0);
+    Bones.Resize(0);
+}
 
 void SkinnedMesh::Init(SkinnedModel* model, int32 lodIndex, int32 index, int32 materialSlotIndex, const BoundingBox& box, const BoundingSphere& sphere)
 {

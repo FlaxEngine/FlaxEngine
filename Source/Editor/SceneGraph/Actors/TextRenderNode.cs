@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 using FlaxEngine;
 
@@ -21,6 +21,11 @@ namespace FlaxEditor.SceneGraph.Actors
         public override void PostSpawn()
         {
             base.PostSpawn();
+
+            if (Actor.HasPrefabLink)
+            {
+                return;
+            }
 
             // Setup for default values
             var text = (TextRender)Actor;

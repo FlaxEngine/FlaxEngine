@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -532,6 +532,41 @@ namespace FlaxEditor.Modules
         {
             Copy();
             Delete();
+        }
+
+        /// <summary>
+        /// Create parent for selected actors.
+        /// </summary>
+        public void CreateParentForSelectedActors()
+        {
+            Actor actor = new EmptyActor();
+            Editor.SceneEditing.Spawn(actor, null, false);
+            List<SceneGraphNode> selection = Editor.SceneEditing.Selection;
+            var actors = selection.Where(x => x is ActorNode).Select(x => ((ActorNode)x).Actor);
+            using (new UndoMultiBlock(Undo, actors, "Reparent actors"))
+            {
+                for (int i = 0; i < selection.Count; i++)
+                {
+                    if (selection[i] is ActorNode node)
+                    {
+                        if (node.ParentNode != node.ParentScene) // If parent node is not a scene
+                        {
+                            if (selection.Contains(node.ParentNode))
+                            {
+                                continue; // If parent and child nodes selected together, don't touch child nodes
+                            }
+
+                            // Put created node as child of the Parent Node of node
+                            int parentOrder = node.Actor.OrderInParent;
+                            actor.Parent = node.Actor.Parent;
+                            actor.OrderInParent = parentOrder;
+                        }
+                        node.Actor.Parent = actor;
+                    }
+                }
+            }
+            Editor.SceneEditing.Select(actor);
+            Editor.Scene.GetActorNode(actor).TreeNode.StartRenaming(Editor.Windows.SceneWin, Editor.Windows.SceneWin.SceneTreePanel);
         }
 
         /// <summary>

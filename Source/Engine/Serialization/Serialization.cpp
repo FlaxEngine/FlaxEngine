@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #include "Serialization.h"
 #include "Engine/Core/Log.h"
@@ -479,7 +479,7 @@ void Serialization::Deserialize(ISerializable::DeserializeStream& stream, Versio
                 const auto mBuild = SERIALIZE_FIND_MEMBER(stream, "Build");
                 if (mBuild != stream.MemberEnd())
                 {
-                    const auto mRevision = SERIALIZE_FIND_MEMBER(stream, "mRevision");
+                    const auto mRevision = SERIALIZE_FIND_MEMBER(stream, "Revision");
                     if (mRevision != stream.MemberEnd())
                         v = Version(mMajor->value.GetInt(), mMinor->value.GetInt(), mBuild->value.GetInt(), mRevision->value.GetInt());
                     else
@@ -747,9 +747,21 @@ bool Serialization::ShouldSerialize(const Transform& v, const void* otherObj)
 
 void Serialization::Deserialize(ISerializable::DeserializeStream& stream, Transform& v, ISerializeModifier* modifier)
 {
-    DESERIALIZE_HELPER(stream, "Translation", v.Translation, Vector3::Zero);
-    DESERIALIZE_HELPER(stream, "Scale", v.Scale, Vector3::One);
-    DESERIALIZE_HELPER(stream, "Orientation", v.Orientation, Quaternion::Identity);
+    {
+        const auto m = SERIALIZE_FIND_MEMBER(stream, "Translation");
+        if (m != stream.MemberEnd())
+            Deserialize(m->value, v.Translation, modifier);
+    }
+    {
+        const auto m = SERIALIZE_FIND_MEMBER(stream, "Scale");
+        if (m != stream.MemberEnd())
+            Deserialize(m->value, v.Scale, modifier);
+    }
+    {
+        const auto m = SERIALIZE_FIND_MEMBER(stream, "Orientation");
+        if (m != stream.MemberEnd())
+            Deserialize(m->value, v.Orientation, modifier);
+    }
 }
 
 bool Serialization::ShouldSerialize(const Matrix& v, const void* otherObj)

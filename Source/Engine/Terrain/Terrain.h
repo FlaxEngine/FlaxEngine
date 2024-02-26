@@ -1,8 +1,8 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #pragma once
 
-#include "Engine/Content/JsonAsset.h"
+#include "Engine/Content/JsonAssetReference.h"
 #include "Engine/Content/Assets/MaterialBase.h"
 #include "Engine/Physics/Actors/PhysicsColliderActor.h"
 
@@ -10,6 +10,7 @@ class Terrain;
 class TerrainChunk;
 class TerrainPatch;
 class TerrainManager;
+class PhysicalMaterial;
 struct RayCastHit;
 struct RenderView;
 
@@ -23,10 +24,7 @@ struct RenderView;
 #define TERRAIN_EDITING 1
 
 // Enable/disable terrain heightmap samples modification and gather. Used by the editor to modify the terrain with the brushes.
-#define TERRAIN_UPDATING (USE_EDITOR)
-
-// Enable/disable precise terrain geometry collision testing (with in-build vertex buffer caching, this will increase memory usage)
-#define USE_PRECISE_TERRAIN_INTERSECTS (USE_EDITOR)
+#define TERRAIN_UPDATING 1
 
 // Enable/disable terrain physics collision drawing
 #define TERRAIN_USE_PHYSICS_DEBUG (USE_EDITOR && 1)
@@ -41,13 +39,28 @@ struct RenderView;
 /// <seealso cref="PhysicsColliderActor" />
 API_CLASS(Sealed) class FLAXENGINE_API Terrain : public PhysicsColliderActor
 {
-DECLARE_SCENE_OBJECT(Terrain);
+    DECLARE_SCENE_OBJECT(Terrain);
     friend Terrain;
     friend TerrainPatch;
     friend TerrainChunk;
 
-private:
+    /// <summary>
+    /// Various defines regarding terrain configuration.
+    /// </summary>
+    API_ENUM() enum Config
+    {
+        /// <summary>
+        /// The maximum allowed amount of chunks per patch.
+        /// </summary>
+        ChunksCount = 16,
 
+        /// <summary>
+        /// The maximum allowed amount of chunks per chunk.
+        /// </summary>
+        ChunksCountEdge = 4,
+    };
+
+private:
     char _lodBias;
     char _forcedLod;
     char _collisionLod;
@@ -60,27 +73,20 @@ private:
     Float3 _cachedScale;
     Array<TerrainPatch*, InlinedAllocation<64>> _patches;
     Array<TerrainChunk*> _drawChunks;
+    Array<JsonAssetReference<PhysicalMaterial>, FixedAllocation<8>> _physicalMaterials;
 
 public:
-
     /// <summary>
     /// Finalizes an instance of the <see cref="Terrain"/> class.
     /// </summary>
     ~Terrain();
 
 public:
-
     /// <summary>
     /// The default material used for terrain rendering (chunks can override this).
     /// </summary>
     API_FIELD(Attributes="EditorOrder(100), DefaultValue(null), EditorDisplay(\"Terrain\")")
     AssetReference<MaterialBase> Material;
-
-    /// <summary>
-    /// The physical material used to define the terrain collider physical properties.
-    /// </summary>
-    API_FIELD(Attributes="EditorOrder(520), DefaultValue(null), Limit(-1, 100, 0.1f), EditorDisplay(\"Collision\"), AssetReference(typeof(PhysicalMaterial), true)")
-    AssetReference<JsonAsset> PhysicalMaterial;
 
     /// <summary>
     /// The draw passes to use for rendering this object.
@@ -89,7 +95,6 @@ public:
     DrawPass DrawModes = DrawPass::Default;
 
 public:
-
     /// <summary>
     /// Gets the terrain Level Of Detail bias value. Allows to increase or decrease rendered terrain quality.
     /// </summary>
@@ -181,6 +186,21 @@ public:
     API_PROPERTY() void SetCollisionLOD(int32 value);
 
     /// <summary>
+    /// Gets the list with physical materials used to define the terrain collider physical properties - each for terrain layer (layer index matches index in this array).
+    /// </summary>
+    API_PROPERTY(Attributes="EditorOrder(520), EditorDisplay(\"Collision\"), Collection(MinCount = 8, MaxCount = 8)")
+    FORCE_INLINE const Array<JsonAssetReference<PhysicalMaterial>, FixedAllocation<8>>& GetPhysicalMaterials() const
+    {
+        return _physicalMaterials;
+    }
+
+    /// <summary>
+    /// Sets the list with physical materials used to define the terrain collider physical properties - each for terrain layer (layer index matches index in this array).
+    /// </summary>
+    API_PROPERTY()
+    void SetPhysicalMaterials(const Array<JsonAssetReference<PhysicalMaterial>, FixedAllocation<8>>& value);
+
+    /// <summary>
     /// Gets the terrain Level Of Detail count.
     /// </summary>
     API_PROPERTY() FORCE_INLINE int32 GetLODCount() const
@@ -219,7 +239,7 @@ public:
     /// </summary>
     /// <param name="patchCoord">The patch location (x and z).</param>
     /// <returns>The patch.</returns>
-    TerrainPatch* GetPatch(const Int2& patchCoord) const;
+    API_FUNCTION() TerrainPatch* GetPatch(API_PARAM(Ref) const Int2& patchCoord) const;
 
     /// <summary>
     /// Gets the patch at the given location.
@@ -227,7 +247,7 @@ public:
     /// <param name="x">The patch location x.</param>
     /// <param name="z">The patch location z.</param>
     /// <returns>The patch.</returns>
-    TerrainPatch* GetPatch(int32 x, int32 z) const;
+    API_FUNCTION() TerrainPatch* GetPatch(int32 x, int32 z) const;
 
     /// <summary>
     /// Gets the zero-based index of the terrain patch in the terrain patches collection.
@@ -241,7 +261,7 @@ public:
     /// </summary>
     /// <param name="index">The index.</param>
     /// <returns>The patch.</returns>
-    FORCE_INLINE TerrainPatch* GetPatch(int32 index) const
+    API_FUNCTION() FORCE_INLINE TerrainPatch* GetPatch(int32 index) const
     {
         return _patches[index];
     }
@@ -311,9 +331,7 @@ public:
 #endif
 
 public:
-
 #if TERRAIN_EDITING
-
     /// <summary>
     /// Setups the terrain. Clears the existing data.
     /// </summary>
@@ -338,7 +356,6 @@ public:
     /// </summary>
     /// <param name="patchCoord">The patch location (x and z).</param>
     API_FUNCTION() void RemovePatch(API_PARAM(Ref) const Int2& patchCoord);
-
 #endif
 
     /// <summary>
@@ -362,17 +379,6 @@ public:
     void RemoveLightmap();
 
 public:
-
-    /// <summary>
-    /// Performs a raycast against this terrain collision shape.
-    /// </summary>
-    /// <param name="origin">The origin of the ray.</param>
-    /// <param name="direction">The normalized direction of the ray.</param>
-    /// <param name="resultHitDistance">The raycast result hit position distance from the ray origin. Valid only if raycast hits anything.</param>
-    /// <param name="maxDistance">The maximum distance the ray should check for collisions.</param>
-    /// <returns>True if ray hits an object, otherwise false.</returns>
-    API_FUNCTION() bool RayCast(const Vector3& origin, const Vector3& direction, float& resultHitDistance, float maxDistance = MAX_float) const;
-
     /// <summary>
     /// Performs a raycast against this terrain collision shape. Returns the hit chunk.
     /// </summary>
@@ -382,7 +388,7 @@ public:
     /// <param name="resultChunk">The raycast result hit chunk. Valid only if raycast hits anything.</param>
     /// <param name="maxDistance">The maximum distance the ray should check for collisions.</param>
     /// <returns>True if ray hits an object, otherwise false.</returns>
-    bool RayCast(const Vector3& origin, const Vector3& direction, float& resultHitDistance, TerrainChunk*& resultChunk, float maxDistance = MAX_float) const;
+    API_FUNCTION() bool RayCast(const Vector3& origin, const Vector3& direction, API_PARAM(Out) float& resultHitDistance, API_PARAM(Out) TerrainChunk*& resultChunk, float maxDistance = MAX_float) const;
 
     /// <summary>
     /// Performs a raycast against this terrain collision shape. Returns the hit chunk.
@@ -394,23 +400,6 @@ public:
     /// <param name="maxDistance">The maximum distance the ray should check for collisions.</param>
     /// <returns>True if ray hits an object, otherwise false.</returns>
     API_FUNCTION() bool RayCast(const Ray& ray, API_PARAM(Out) float& resultHitDistance, API_PARAM(Out) Int2& resultPatchCoord, API_PARAM(Out) Int2& resultChunkCoord, float maxDistance = MAX_float) const;
-
-    /// <summary>
-    /// Performs a raycast against terrain collision, returns results in a RayCastHit structure.
-    /// </summary>
-    /// <param name="origin">The origin of the ray.</param>
-    /// <param name="direction">The normalized direction of the ray.</param>
-    /// <param name="hitInfo">The result hit information. Valid only when method returns true.</param>
-    /// <param name="maxDistance">The maximum distance the ray should check for collisions.</param>
-    /// <returns>True if ray hits an object, otherwise false.</returns>
-    API_FUNCTION() bool RayCast(const Vector3& origin, const Vector3& direction, API_PARAM(Out) RayCastHit& hitInfo, float maxDistance = MAX_float) const;
-
-    /// <summary>
-    /// Gets a point on the terrain collider that is closest to a given location. Can be used to find a hit location or position to apply explosion force or any other special effects.
-    /// </summary>
-    /// <param name="position">The position to find the closest point to it.</param>
-    /// <param name="result">The result point on the collider that is closest to the specified location.</param>
-    API_FUNCTION() void ClosestPoint(const Vector3& position, API_PARAM(Out) Vector3& result) const;
 
     /// <summary>
     /// Draws the terrain patch.
@@ -432,14 +421,11 @@ public:
     API_FUNCTION() void DrawChunk(API_PARAM(Ref) const RenderContext& renderContext, API_PARAM(Ref) const Int2& patchCoord, API_PARAM(Ref) const Int2& chunkCoord, MaterialBase* material, int32 lodIndex = 0) const;
 
 private:
-
-    void OnPhysicalMaterialChanged();
 #if TERRAIN_USE_PHYSICS_DEBUG
-	void DrawPhysicsDebug(RenderView& view);
+    void DrawPhysicsDebug(RenderView& view);
 #endif
 
 public:
-
     // [PhysicsColliderActor]
     void Draw(RenderContext& renderContext) override;
 #if USE_EDITOR
@@ -450,9 +436,12 @@ public:
     void Serialize(SerializeStream& stream, const void* otherObj) override;
     void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) override;
     RigidBody* GetAttachedRigidBody() const override;
+    bool RayCast(const Vector3& origin, const Vector3& direction, float& resultHitDistance, float maxDistance = MAX_float) const final;
+    bool RayCast(const Vector3& origin, const Vector3& direction, RayCastHit& hitInfo, float maxDistance = MAX_float) const final;
+    void ClosestPoint(const Vector3& point, Vector3& result) const final;
+    bool ContainsPoint(const Vector3& point) const final;
 
 protected:
-
     // [PhysicsColliderActor]
     void OnEnable() override;
     void OnDisable() override;

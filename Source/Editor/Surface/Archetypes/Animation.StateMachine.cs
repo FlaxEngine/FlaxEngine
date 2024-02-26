@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -191,9 +191,7 @@ namespace FlaxEditor.Surface.Archetypes
                 var value = title;
                 int count = 1;
                 while (!OnRenameValidate(null, value))
-                {
                     value = title + " " + count++;
-                }
                 Values[0] = value;
                 Title = value;
 
@@ -484,7 +482,7 @@ namespace FlaxEditor.Surface.Archetypes
                     var startPos = PointToParent(ref center);
                     targetState.GetConnectionEndPoint(ref startPos, out var endPos);
                     var color = style.Foreground;
-                    StateMachineState.DrawConnection(ref startPos, ref endPos, ref color);
+                    SurfaceStyle.DrawStraightConnection(startPos, endPos, color);
                 }
             }
 
@@ -514,7 +512,7 @@ namespace FlaxEditor.Surface.Archetypes
             /// <inheritdoc />
             public void DrawConnectingLine(ref Float2 startPos, ref Float2 endPos, ref Color color)
             {
-                StateMachineState.DrawConnection(ref startPos, ref endPos, ref color);
+                SurfaceStyle.DrawStraightConnection(startPos, endPos, color);
             }
 
             /// <inheritdoc />
@@ -655,6 +653,7 @@ namespace FlaxEditor.Surface.Archetypes
             protected Rectangle _renameButtonRect;
             private bool _cursorChanged = false;
             private bool _textRectHovered = false;
+            private bool _debugActive;
 
             /// <summary>
             /// The transitions list from this state to the others.
@@ -675,38 +674,6 @@ namespace FlaxEditor.Surface.Archetypes
             protected StateMachineStateBase(uint id, VisjectSurfaceContext context, NodeArchetype nodeArch, GroupArchetype groupArch)
             : base(id, context, nodeArch, groupArch)
             {
-            }
-
-            /// <summary>
-            /// Draws the connection between two state machine nodes.
-            /// </summary>
-            /// <param name="startPos">The start position.</param>
-            /// <param name="endPos">The end position.</param>
-            /// <param name="color">The line color.</param>
-            public static void DrawConnection(ref Float2 startPos, ref Float2 endPos, ref Color color)
-            {
-                var sub = endPos - startPos;
-                var length = sub.Length;
-                if (length > Mathf.Epsilon)
-                {
-                    var dir = sub / length;
-                    var arrowRect = new Rectangle(0, 0, 16.0f, 16.0f);
-                    float rotation = Float2.Dot(dir, Float2.UnitY);
-                    if (endPos.X < startPos.X)
-                        rotation = 2 - rotation;
-                    var sprite = Editor.Instance.Icons.VisjectArrowClosed32;
-                    var arrowTransform =
-                        Matrix3x3.Translation2D(-6.5f, -8) *
-                        Matrix3x3.RotationZ(rotation * Mathf.PiOverTwo) * 
-                        Matrix3x3.Translation2D(endPos - dir * 8);
-
-                    Render2D.PushTransform(ref arrowTransform);
-                    Render2D.DrawSprite(sprite, arrowRect, color);
-                    Render2D.PopTransform();
-
-                    endPos -= dir * 4.0f;
-                }
-                Render2D.DrawLine(startPos, endPos, color);
             }
 
             /// <summary>
@@ -1092,6 +1059,16 @@ namespace FlaxEditor.Surface.Archetypes
 
                 // TODO: maybe update only on actual transitions change?
                 UpdateTransitions();
+
+                // Debug current state
+                if (((AnimGraphSurface)Surface).TryGetTraceEvent(this, out var traceEvent))
+                {
+                    _debugActive = true;
+                }
+                else
+                {
+                    _debugActive = false;
+                }
             }
 
             /// <inheritdoc />
@@ -1132,6 +1109,10 @@ namespace FlaxEditor.Surface.Archetypes
 
                 // Close button
                 Render2D.DrawSprite(style.Cross, _closeButtonRect, _closeButtonRect.Contains(_mousePosition) ? style.Foreground : style.ForegroundGrey);
+
+                // Debug outline
+                if (_debugActive)
+                    Render2D.DrawRectangle(_textRect.MakeExpanded(1.0f), style.ProgressNormal);
             }
 
             /// <inheritdoc />
@@ -1295,7 +1276,7 @@ namespace FlaxEditor.Surface.Archetypes
                         isMouseOver = Float2.DistanceSquared(ref mousePosition, ref point) < 25.0f;
                     }
                     var color = isMouseOver ? Color.Wheat : t.LineColor;
-                    DrawConnection(ref t.StartPos, ref t.EndPos, ref color);
+                    SurfaceStyle.DrawStraightConnection(t.StartPos, t.EndPos, color);
                 }
             }
 
@@ -1324,7 +1305,7 @@ namespace FlaxEditor.Surface.Archetypes
             /// <inheritdoc />
             public void DrawConnectingLine(ref Float2 startPos, ref Float2 endPos, ref Color color)
             {
-                DrawConnection(ref startPos, ref endPos, ref color);
+                SurfaceStyle.DrawStraightConnection(startPos, endPos, color);
             }
 
             /// <inheritdoc />
@@ -1583,14 +1564,24 @@ namespace FlaxEditor.Surface.Archetypes
                 None = 0,
 
                 /// <summary>
-                /// Transition rule will be rechecked during active transition with option to interrupt transition.
+                /// Transition rule will be rechecked during active transition with option to interrupt transition (to go back to the source state).
                 /// </summary>
                 RuleRechecking = 1,
 
                 /// <summary>
-                /// Interrupted transition is immediately stopped without blending out.
+                /// Interrupted transition is immediately stopped without blending out (back to the source/destination state).
                 /// </summary>
                 Instant = 2,
+
+                /// <summary>
+                /// Enables checking other transitions in the source state that might interrupt this one.
+                /// </summary>
+                SourceState = 4,
+
+                /// <summary>
+                /// Enables checking transitions in the destination state that might interrupt this one.
+                /// </summary>
+                DestinationState = 8,
             }
 
             /// <summary>
@@ -1613,6 +1604,8 @@ namespace FlaxEditor.Surface.Archetypes
                     UseDefaultRule = 4,
                     InterruptionRuleRechecking = 8,
                     InterruptionInstant = 16,
+                    InterruptionSourceState = 32,
+                    InterruptionDestinationState = 64,
                 }
 
                 /// <summary>
@@ -1773,7 +1766,7 @@ namespace FlaxEditor.Surface.Archetypes
             }
 
             /// <summary>
-            /// Transition interruption options.
+            /// Transition interruption options (flags, can select multiple values).
             /// </summary>
             [EditorOrder(70), DefaultValue(InterruptionFlags.None)]
             public InterruptionFlags Interruption
@@ -1785,12 +1778,18 @@ namespace FlaxEditor.Surface.Archetypes
                         flags |= InterruptionFlags.RuleRechecking;
                     if (_data.HasFlag(Data.FlagTypes.InterruptionInstant))
                         flags |= InterruptionFlags.Instant;
+                    if (_data.HasFlag(Data.FlagTypes.InterruptionSourceState))
+                        flags |= InterruptionFlags.SourceState;
+                    if (_data.HasFlag(Data.FlagTypes.InterruptionDestinationState))
+                        flags |= InterruptionFlags.DestinationState;
                     return flags;
                 }
                 set
                 {
                     _data.SetFlag(Data.FlagTypes.InterruptionRuleRechecking, value.HasFlag(InterruptionFlags.RuleRechecking));
                     _data.SetFlag(Data.FlagTypes.InterruptionInstant, value.HasFlag(InterruptionFlags.Instant));
+                    _data.SetFlag(Data.FlagTypes.InterruptionSourceState, value.HasFlag(InterruptionFlags.SourceState));
+                    _data.SetFlag(Data.FlagTypes.InterruptionDestinationState, value.HasFlag(InterruptionFlags.DestinationState));
                     SourceState.SaveTransitions(true);
                 }
             }

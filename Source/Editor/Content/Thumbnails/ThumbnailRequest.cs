@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 using System;
 using FlaxEngine;
@@ -35,6 +35,11 @@ namespace FlaxEditor.Content.Thumbnails
             /// The finalized state.
             /// </summary>
             Disposed,
+
+            /// <summary>
+            /// The request has failed (eg. asset cannot be loaded).
+            /// </summary>
+            Failed,
         };
 
         /// <summary>
@@ -78,6 +83,14 @@ namespace FlaxEditor.Content.Thumbnails
             Proxy = proxy;
         }
 
+        internal void Update()
+        {
+            if (State == States.Prepared && (!Asset || Asset.LastLoadFailed))
+            {
+                State = States.Failed;
+            }
+        }
+
         /// <summary>
         /// Prepares this request.
         /// </summary>
@@ -85,11 +98,8 @@ namespace FlaxEditor.Content.Thumbnails
         {
             if (State != States.Created)
                 throw new InvalidOperationException();
-
-            // Prepare
             Asset = FlaxEngine.Content.LoadAsync(Item.Path);
             Proxy.OnThumbnailDrawPrepare(this);
-
             State = States.Prepared;
         }
 
@@ -101,9 +111,7 @@ namespace FlaxEditor.Content.Thumbnails
         {
             if (State != States.Prepared)
                 throw new InvalidOperationException();
-
             Item.Thumbnail = icon;
-
             State = States.Rendered;
         }
 

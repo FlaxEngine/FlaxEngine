@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Linq;
@@ -51,10 +51,13 @@ namespace FlaxEditor.CustomEditors.Editors
                 return;
             Picker = layout.Custom<AssetPicker>().CustomControl;
 
-            _valueType = Values.Type.Type != typeof(object) || Values[0] == null ? Values.Type : TypeUtils.GetObjectType(Values[0]);
+            var value = Values[0];
+            _valueType = Values.Type.Type != typeof(object) || value == null ? Values.Type : TypeUtils.GetObjectType(value);
             var assetType = _valueType;
             if (assetType == typeof(string))
                 assetType = new ScriptType(typeof(Asset));
+            else if (_valueType.Type != null && _valueType.Type.Name == typeof(JsonAssetReference<>).Name)
+                assetType = new ScriptType(_valueType.Type.GenericTypeArguments[0]);
 
             float height = 48;
             var attributes = Values.GetAttributes();
@@ -102,6 +105,12 @@ namespace FlaxEditor.CustomEditors.Editors
                 SetValue(new SceneReference(Picker.Validator.SelectedID));
             else if (_valueType.Type == typeof(string))
                 SetValue(Picker.Validator.SelectedPath);
+            else if (_valueType.Type.Name == typeof(JsonAssetReference<>).Name)
+            {
+                var value = Values[0];
+                value.GetType().GetField("Asset").SetValue(value, Picker.Validator.SelectedAsset as JsonAsset);
+                SetValue(value);
+            }
             else
                 SetValue(Picker.Validator.SelectedAsset);
         }
@@ -114,16 +123,19 @@ namespace FlaxEditor.CustomEditors.Editors
             if (!HasDifferentValues)
             {
                 _isRefreshing = true;
-                if (Values[0] is AssetItem assetItem)
+                var value = Values[0];
+                if (value is AssetItem assetItem)
                     Picker.Validator.SelectedItem = assetItem;
-                else if (Values[0] is Guid guid)
+                else if (value is Guid guid)
                     Picker.Validator.SelectedID = guid;
-                else if (Values[0] is SceneReference sceneAsset)
+                else if (value is SceneReference sceneAsset)
                     Picker.Validator.SelectedItem = Editor.Instance.ContentDatabase.FindAsset(sceneAsset.ID);
-                else if (Values[0] is string path)
+                else if (value is string path)
                     Picker.Validator.SelectedPath = path;
+                else if (value != null && value.GetType().Name == typeof(JsonAssetReference<>).Name)
+                    Picker.Validator.SelectedAsset = value.GetType().GetField("Asset").GetValue(value) as JsonAsset;
                 else
-                    Picker.Validator.SelectedAsset = Values[0] as Asset;
+                    Picker.Validator.SelectedAsset = value as Asset;
                 _isRefreshing = false;
             }
         }

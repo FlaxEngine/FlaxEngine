@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -46,6 +46,12 @@ struct RendererDirectionalLightData
 
     float ShadowsDistance;
     int32 CascadeCount;
+    float Cascade1Spacing;
+    float Cascade2Spacing;
+    float Cascade3Spacing;
+    float Cascade4Spacing;
+
+    PartitionMode PartitionMode;
     float ContactShadowsLength;
     ShadowsCastingMode ShadowsMode;
 

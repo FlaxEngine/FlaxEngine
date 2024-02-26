@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #if PLATFORM_UNIX
 
@@ -137,7 +137,7 @@ DateTime UnixFile::GetLastWriteTime() const
     {
         return DateTime::MinValue();
     }
-    const TimeSpan timeSinceEpoch(0, 0, fileInfo.st_mtime);
+    const TimeSpan timeSinceEpoch(0, 0, 0, fileInfo.st_mtime);
     const DateTime unixEpoch(1970, 1, 1);
     return unixEpoch + timeSinceEpoch;
 }

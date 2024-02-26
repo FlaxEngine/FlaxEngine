@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 namespace FlaxEngine
 {
@@ -27,9 +27,10 @@ namespace FlaxEngine
             Matrix.Invert(ref View, out IV);
             Matrix.Invert(ref Projection, out IP);
             Matrix.Multiply(ref View, ref Projection, out var viewProjection);
-            Frustum = new BoundingFrustum(viewProjection);
+            Frustum = new BoundingFrustum(ref viewProjection);
             Matrix.Invert(ref viewProjection, out IVP);
             CullingFrustum = Frustum;
+            NonJitteredProjection = Projection;
         }
 
         /// <summary>

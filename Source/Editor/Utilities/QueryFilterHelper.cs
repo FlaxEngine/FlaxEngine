@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -140,8 +140,7 @@ namespace FlaxEditor.Utilities
                         // Check if start the matching sequence
                         if (matchStartPos == -1)
                         {
-                            if (ranges == null)
-                                ranges = new List<Range>();
+                            ranges ??= new List<Range>();
                             matchStartPos = textPos;
                         }
                     }
@@ -152,7 +151,7 @@ namespace FlaxEditor.Utilities
                         {
                             var length = textPos - matchStartPos;
                             if (length >= MinLength)
-                                ranges.Add(new Range(matchStartPos, length));
+                                ranges!.Add(new Range(matchStartPos, length));
                             textPos = matchStartPos + length;
                             matchStartPos = -1;
                         }
@@ -165,13 +164,13 @@ namespace FlaxEditor.Utilities
                 {
                     var length = endPos - matchStartPos;
                     if (length >= MinLength)
-                        ranges.Add(new Range(matchStartPos, length));
+                        ranges!.Add(new Range(matchStartPos, length));
                     textPos = matchStartPos + length;
                 }
             }
 
             // Check if has any range
-            if (ranges != null && ranges.Count > 0)
+            if (ranges is { Count: > 0 })
             {
                 matches = ranges.ToArray();
                 return true;

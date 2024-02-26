@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -17,14 +17,14 @@ struct RenderContext;
 /// <summary>
 /// Represents a single terrain chunk.
 /// </summary>
-class FLAXENGINE_API TerrainChunk : public ISerializable
+API_CLASS(Sealed, NoSpawn) class FLAXENGINE_API TerrainChunk : public ScriptingObject, public ISerializable
 {
+    DECLARE_SCRIPTING_TYPE(TerrainChunk);
     friend Terrain;
     friend TerrainPatch;
     friend TerrainChunk;
 
 private:
-
     TerrainPatch* _patch;
     uint16 _x, _z;
     Float4 _heightmapUVScaleBias;
@@ -41,11 +41,10 @@ private:
     void Init(TerrainPatch* patch, uint16 x, uint16 z);
 
 public:
-
     /// <summary>
     /// The material to override the terrain default one for this chunk.
     /// </summary>
-    AssetReference<MaterialBase> OverrideMaterial;
+    API_FIELD() AssetReference<MaterialBase> OverrideMaterial;
 
     /// <summary>
     /// The baked lightmap entry info for this chunk.
@@ -53,11 +52,10 @@ public:
     LightmapEntry Lightmap;
 
 public:
-
     /// <summary>
     /// Gets the x coordinate.
     /// </summary>
-    FORCE_INLINE int32 GetX() const
+    API_FUNCTION() FORCE_INLINE int32 GetX() const
     {
         return _x;
     }
@@ -65,7 +63,7 @@ public:
     /// <summary>
     /// Gets the z coordinate.
     /// </summary>
-    FORCE_INLINE int32 GetZ() const
+    API_FUNCTION() FORCE_INLINE int32 GetZ() const
     {
         return _z;
     }
@@ -73,7 +71,7 @@ public:
     /// <summary>
     /// Gets the patch.
     /// </summary>
-    FORCE_INLINE TerrainPatch* GetPatch() const
+    API_FUNCTION() FORCE_INLINE TerrainPatch* GetPatch() const
     {
         return _patch;
     }
@@ -81,7 +79,7 @@ public:
     /// <summary>
     /// Gets the chunk world bounds.
     /// </summary>
-    FORCE_INLINE const BoundingBox& GetBounds() const
+    API_FUNCTION() FORCE_INLINE const BoundingBox& GetBounds() const
     {
         return _bounds;
     }
@@ -89,7 +87,7 @@ public:
     /// <summary>
     /// Gets the chunk transformation (world to local).
     /// </summary>
-    FORCE_INLINE const Transform& GetTransform() const
+    API_FUNCTION() FORCE_INLINE const Transform& GetTransform() const
     {
         return _transform;
     }
@@ -97,10 +95,9 @@ public:
     /// <summary>
     /// Gets the scale (in XY) and bias (in ZW) applied to the vertex UVs to get the chunk coordinates.
     /// </summary>
-    /// <param name="result">The result.</param>
-    FORCE_INLINE void GetHeightmapUVScaleBias(Float4* result) const
+    API_FUNCTION() FORCE_INLINE const Float4& GetHeightmapUVScaleBias() const
     {
-        *result = _heightmapUVScaleBias;
+        return _heightmapUVScaleBias;
     }
 
     /// <summary>
@@ -120,7 +117,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Prepares for drawing chunk. Cached LOD and material.
     /// </summary>
@@ -140,7 +136,7 @@ public:
     /// <param name="renderContext">The rendering context.</param>
     /// <param name="material">The material to use for rendering.</param>
     /// <param name="lodIndex">The LOD index.</param>
-    void Draw(const RenderContext& renderContext, MaterialBase* material, int32 lodIndex = 0) const;
+    API_FUNCTION() void Draw(API_PARAM(Ref) const RenderContext& renderContext, MaterialBase* material, int32 lodIndex = 0) const;
 
     /// <summary>
     /// Determines if there is an intersection between the terrain chunk and a point
@@ -148,7 +144,7 @@ public:
     /// <param name="ray">The ray.</param>
     /// <param name="distance">The output distance.</param>
     /// <returns>True if chunk intersects with the ray, otherwise false.</returns>
-    bool Intersects(const Ray& ray, Real& distance);
+    API_FUNCTION() bool Intersects(const Ray& ray, API_PARAM(Out) Real& distance);
 
     /// <summary>
     /// Updates the cached bounds of the chunk.
@@ -166,7 +162,6 @@ public:
     void CacheNeighbors();
 
 public:
-
     // [ISerializable]
     void Serialize(SerializeStream& stream, const void* otherObj) override;
     void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) override;

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #include "Asset.h"
 #include "Content.h"
@@ -310,6 +310,10 @@ void Asset::ChangeID(const Guid& newId)
     if (!IsVirtual())
         CRASH;
 
+    // ID has to be unique
+    if (Content::GetAsset(newId) != nullptr)
+        CRASH;
+
     const Guid oldId = _id;
     ManagedScriptingObject::ChangeID(newId);
     Content::onAssetChangeId(this, oldId, newId);
@@ -438,12 +442,15 @@ bool Asset::WaitForLoaded(double timeoutInMilliseconds) const
         // Note: to reproduce this case just include material into material (use layering).
         // So during loading first material it will wait for child materials loaded calling this function
 
+        const double timeoutInSeconds = timeoutInMilliseconds * 0.001;
+        const double startTime = Platform::GetTimeSeconds();
         Task* task = loadingTask;
         Array<ContentLoadTask*, InlinedAllocation<64>> localQueue;
-        while (!Engine::ShouldExit())
+#define CHECK_CONDITIONS() (!Engine::ShouldExit() && (timeoutInSeconds <= 0.0 || Platform::GetTimeSeconds() - startTime < timeoutInSeconds))
+        do
         {
             // Try to execute content tasks
-            while (task->IsQueued() && !Engine::ShouldExit())
+            while (task->IsQueued() && CHECK_CONDITIONS())
             {
                 // Dequeue task from the loading queue
                 ContentLoadTask* tmp;
@@ -494,7 +501,8 @@ bool Asset::WaitForLoaded(double timeoutInMilliseconds) const
                     break;
                 }
             }
-        }
+        } while (CHECK_CONDITIONS());
+#undef CHECK_CONDITIONS
     }
     else
     {

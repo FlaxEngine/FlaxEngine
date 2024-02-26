@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 using FlaxEngine;
 
@@ -23,7 +23,7 @@ namespace FlaxEditor.SceneGraph.Actors
             base.OnDebugDraw(data);
 
             var transform = Actor.Transform;
-            DebugDraw.DrawWireArrow(transform.Translation, transform.Orientation, 0.3f, Color.Red, 0.0f, false);
+            DebugDraw.DrawWireArrow(transform.Translation, transform.Orientation, 0.3f, 0.15f, Color.Red, 0.0f, false);
         }
     }
 }

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Text;
@@ -79,8 +79,7 @@ namespace Flax.Build
                     }
                 }
                 break;
-            default:
-                throw new InvalidPlatformException(buildData.Platform.Target);
+            default: throw new InvalidPlatformException(buildData.Platform.Target);
             }
             var result = sb.ToString();
             BindingsGenerator.PutStringBuilder(sb);

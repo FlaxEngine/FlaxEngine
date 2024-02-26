@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 using System;
 using System.IO;
@@ -69,8 +69,7 @@ namespace FlaxEditor.Content
         /// <inheritdoc />
         public override bool IsFileNameValid(string filename)
         {
-            // Scripts cannot start with digit. 
-            if (Char.IsDigit(filename[0]))
+            if (char.IsDigit(filename[0]))
                 return false;
             if (filename.Equals("Script"))
                 return false;

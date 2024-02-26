@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #include "AnimationGraph.h"
 #if USE_EDITOR
@@ -67,7 +67,7 @@ void AnimationGraph::OnDependencyModified(BinaryAsset* asset)
 
 #endif
 
-bool AnimationGraph::InitAsAnimation(SkinnedModel* baseModel, Animation* anim, bool loop)
+bool AnimationGraph::InitAsAnimation(SkinnedModel* baseModel, Animation* anim, bool loop, bool rootMotion)
 {
     if (!IsVirtual())
     {
@@ -89,7 +89,7 @@ bool AnimationGraph::InitAsAnimation(SkinnedModel* baseModel, Animation* anim, b
         rootNode.Type = GRAPH_NODE_MAKE_TYPE(9, 1);
         rootNode.ID = 1;
         rootNode.Values.Resize(1);
-        rootNode.Values[0] = (int32)RootMotionMode::NoExtraction;
+        rootNode.Values[0] = (int32)(rootMotion ? RootMotionExtraction::Enable : RootMotionExtraction::Ignore);
         rootNode.Boxes.Resize(1);
         rootNode.Boxes[0] = AnimGraphBox(&rootNode, 0, VariantType::Void);
         auto& animNode = graph.Nodes[1];

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #include "ImportTexture.h"
 #if COMPILE_WITH_ASSETS_IMPORTER
@@ -8,7 +8,6 @@
 #include "Engine/Serialization/MemoryWriteStream.h"
 #include "Engine/Serialization/MemoryReadStream.h"
 #include "Engine/Graphics/Textures/TextureData.h"
-#include "Engine/Graphics/Textures/TextureUtils.h"
 #include "Engine/Graphics/PixelFormatExtensions.h"
 #include "Engine/Content/Storage/ContentStorageManager.h"
 #include "Engine/ContentImporters/ImportIES.h"

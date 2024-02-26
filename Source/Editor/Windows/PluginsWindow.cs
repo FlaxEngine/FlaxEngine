@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -95,6 +95,7 @@ namespace FlaxEditor.Windows
                     Bounds = new Rectangle(nameLabel.X, tmp1, nameLabel.Width, Height - tmp1 - margin),
                 };
 
+                var xOffset = nameLabel.Width;
                 string versionString = string.Empty;
                 if (desc.IsAlpha)
                     versionString = "ALPHA ";
@@ -109,7 +110,7 @@ namespace FlaxEditor.Windows
                     AnchorPreset = AnchorPresets.TopRight,
                     Text = versionString,
                     Parent = this,
-                    Bounds = new Rectangle(Width - 140 - margin, margin, 140, 14),
+                    Bounds = new Rectangle(Width - 140 - margin - xOffset, margin, 140, 14),
                 };
 
                 string url = null;
@@ -129,7 +130,7 @@ namespace FlaxEditor.Windows
                     AnchorPreset = AnchorPresets.TopRight,
                     Text = desc.Author,
                     Parent = this,
-                    Bounds = new Rectangle(Width - authorWidth - margin, versionLabel.Bottom + margin, authorWidth, 14),
+                    Bounds = new Rectangle(Width - authorWidth - margin - xOffset, versionLabel.Bottom + margin, authorWidth, 14),
                 };
                 if (url != null)
                 {
@@ -381,6 +382,7 @@ namespace FlaxEditor.Windows
                     Arguments = $"clone {gitPath} \"{clonePath}\"",
                     ShellExecute = false,
                     LogOutput = true,
+                    WaitForEnd = true
                 };
                 Platform.CreateProcess(ref settings);
             }
@@ -402,6 +404,7 @@ namespace FlaxEditor.Windows
                     Arguments = "submodule update --init",
                     ShellExecute = false,
                     LogOutput = true,
+                    WaitForEnd = true
                 };
                 Platform.CreateProcess(ref settings);
             }
@@ -669,11 +672,11 @@ namespace FlaxEditor.Windows
             Editor.Log($"Using plugin code type name: {pluginCodeName}");
 
             var oldPluginPath = Path.Combine(extractPath, "ExamplePlugin-master");
-            var newPluginPath = Path.Combine(extractPath, pluginName);
+            var newPluginPath = Path.Combine(extractPath, pluginCodeName);
             Directory.Move(oldPluginPath, newPluginPath);
 
             var oldFlaxProjFile = Path.Combine(newPluginPath, "ExamplePlugin.flaxproj");
-            var newFlaxProjFile = Path.Combine(newPluginPath, $"{pluginName}.flaxproj");
+            var newFlaxProjFile = Path.Combine(newPluginPath, $"{pluginCodeName}.flaxproj");
             File.Move(oldFlaxProjFile, newFlaxProjFile);
 
             var readme = Path.Combine(newPluginPath, "README.md");
@@ -685,7 +688,7 @@ namespace FlaxEditor.Windows
 
             // Flax plugin project file
             var flaxPluginProjContents = JsonSerializer.Deserialize<ProjectInfo>(await File.ReadAllTextAsync(newFlaxProjFile));
-            flaxPluginProjContents.Name = pluginName;
+            flaxPluginProjContents.Name = pluginCodeName;
             if (!string.IsNullOrEmpty(pluginVersion))
                 flaxPluginProjContents.Version = new Version(pluginVersion);
             if (!string.IsNullOrEmpty(companyName))
@@ -749,7 +752,7 @@ namespace FlaxEditor.Windows
             }
             Editor.Log($"Plugin project {pluginName} has successfully been created.");
 
-            await AddReferenceToProject(pluginName, pluginName);
+            await AddReferenceToProject(pluginCodeName, pluginCodeName);
             MessageBox.Show($"{pluginName} has been successfully created. Restart editor for changes to take effect.", "Plugin Project Created", MessageBoxButtons.OK);
         }
 
@@ -773,8 +776,12 @@ namespace FlaxEditor.Windows
                         var pluginModuleScriptPath = Path.Combine(subDir, pluginModuleName + ".Build.cs");
                         if (File.Exists(pluginModuleScriptPath))
                         {
-                            gameScriptContents = gameScriptContents.Insert(insertLocation, $"\n        options.PublicDependencies.Add(\"{pluginModuleName}\");");
-                            modifiedAny = true;
+                            var text = await File.ReadAllTextAsync(pluginModuleScriptPath);
+                            if (!text.Contains("GameEditorModule", StringComparison.OrdinalIgnoreCase))
+                            {
+                                gameScriptContents = gameScriptContents.Insert(insertLocation, $"\n        options.PublicDependencies.Add(\"{pluginModuleName}\");");
+                                modifiedAny = true;
+                            }
                         }
                     }
 

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #include "VisualScript.h"
 #include "Engine/Core/Log.h"
@@ -890,6 +890,11 @@ void VisualScriptExecutor::ProcessGroupFunction(Box* boxBase, Node* node, Value&
         {
             LOG(Error, "Cannot bind event to null object.");
             PrintStack(LogType::Error);
+            break;
+        }
+        if (boxBase->ID == 1)
+        {
+            value = instance;
             break;
         }
         // TODO: check if instance is of event type (including inheritance)

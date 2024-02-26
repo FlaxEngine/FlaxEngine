@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 using System;
 using FlaxEngine;
@@ -14,6 +14,11 @@ namespace FlaxEditor.GUI.ContextMenu
     public class ContextMenuButton : ContextMenuItem
     {
         private bool _isMouseDown;
+        
+        /// <summary>
+        /// The amount to adjust the short keys and arrow image by in x coordinates.
+        /// </summary>
+        public float ExtraAdjustmentAmount = 0;
 
         /// <summary>
         /// Event fired when user clicks on the button.
@@ -133,7 +138,7 @@ namespace FlaxEditor.GUI.ContextMenu
             if (!string.IsNullOrEmpty(ShortKeys))
             {
                 // Draw short keys
-                Render2D.DrawText(style.FontMedium, ShortKeys, textRect, textColor, TextAlignment.Far, TextAlignment.Center);
+                Render2D.DrawText(style.FontMedium, ShortKeys, new Rectangle(textRect.X + ExtraAdjustmentAmount, textRect.Y, textRect.Width, textRect.Height), textColor, TextAlignment.Far, TextAlignment.Center);
             }
 
             // Draw icon

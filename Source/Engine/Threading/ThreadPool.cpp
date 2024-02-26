@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #include "ThreadPool.h"
 #include "IRunnable.h"
@@ -58,7 +58,7 @@ ThreadPoolService ThreadPoolServiceInstance;
 bool ThreadPoolService::Init()
 {
     // Spawn threads
-    const int32 numThreads = Math::Clamp<int32>(Platform::GetCPUInfo().ProcessorCoreCount - 1, 2, PLATFORM_THREADS_LIMIT);
+    const int32 numThreads = Math::Clamp<int32>(Platform::GetCPUInfo().ProcessorCoreCount - 1, 2, PLATFORM_THREADS_LIMIT / 2);
     LOG(Info, "Spawning {0} Thread Pool workers", numThreads);
     for (int32 i = ThreadPoolImpl::Threads.Count(); i < numThreads; i++)
     {

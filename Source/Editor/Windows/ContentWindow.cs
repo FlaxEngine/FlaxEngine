@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -799,7 +799,10 @@ namespace FlaxEditor.Windows
             if (proxy == null)
                 throw new ArgumentNullException(nameof(proxy));
 
+            // Setup name
             string name = initialName ?? proxy.NewItemName;
+            if (!proxy.IsFileNameValid(name) || Utilities.Utils.HasInvalidPathChar(name))
+                name = proxy.NewItemName;
 
             // If the proxy can not be created in the current folder, then navigate to the content folder
             if (!proxy.CanCreate(CurrentViewFolder))

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #include "AnimGraph.h"
 #include "Engine/Core/Types/VariantValueCast.h"
@@ -21,13 +21,13 @@ namespace
         base += additive;
     }
 
-    FORCE_INLINE void NormalizeRotations(AnimGraphImpulse* nodes, RootMotionMode rootMotionMode)
+    FORCE_INLINE void NormalizeRotations(AnimGraphImpulse* nodes, RootMotionExtraction rootMotionMode)
     {
         for (int32 i = 0; i < nodes->Nodes.Count(); i++)
         {
             nodes->Nodes[i].Orientation.Normalize();
         }
-        if (rootMotionMode != RootMotionMode::NoExtraction)
+        if (rootMotionMode != RootMotionExtraction::NoExtraction)
         {
             nodes->RootMotion.Orientation.Normalize();
         }
@@ -50,6 +50,17 @@ void RetargetSkeletonNode(const SkeletonData& sourceSkeleton, const SkeletonData
     value.Orientation = sourceToTarget.Orientation * value.Orientation; // TODO: find out why this doesn't match referenced animation when played on that skeleton originally
     value.Orientation.Normalize();
     node = value;
+}
+
+AnimGraphTraceEvent& AnimGraphContext::AddTraceEvent(const AnimGraphNode* node)
+{
+    auto& trace = Data->TraceEvents.AddOne();
+    trace.Value = 0.0f;
+    trace.NodeId = node->ID;
+    const auto* nodePath = NodePath.Get();
+    for (int32 i = 0; i < NodePath.Count(); i++)
+        trace.NodePath[i] = nodePath[i];
+    return trace;
 }
 
 int32 AnimGraphExecutor::GetRootNodeIndex(Animation* anim)
@@ -76,7 +87,7 @@ void AnimGraphExecutor::ProcessAnimEvents(AnimGraphNode* node, bool loop, float 
     if (anim->Events.Count() == 0)
         return;
     ANIM_GRAPH_PROFILE_EVENT("Events");
-    auto& context = Context.Get();
+    auto& context = *Context.Get();
     float eventTimeMin = animPrevPos;
     float eventTimeMax = animPos;
     if (loop && context.DeltaTime * speed < 0)
@@ -219,6 +230,15 @@ void AnimGraphExecutor::ProcessAnimation(AnimGraphImpulse* nodes, AnimGraphNode*
     const float animPos = GetAnimSamplePos(length, anim, pos, speed);
     const float animPrevPos = GetAnimSamplePos(length, anim, prevPos, speed);
 
+    // Add to trace
+    auto& context = *Context.Get();
+    if (context.Data->EnableTracing)
+    {
+        auto& trace = context.AddTraceEvent(node);
+        trace.Asset = anim;
+        trace.Value = animPos;
+    }
+
     // Evaluate nested animations
     bool hasNested = false;
     if (anim->NestedAnims.Count() != 0)
@@ -303,16 +323,21 @@ void AnimGraphExecutor::ProcessAnimation(AnimGraphImpulse* nodes, AnimGraphNode*
     }
 
     // Handle root motion
-    if (_rootMotionMode != RootMotionMode::NoExtraction && anim->Data.EnableRootMotion)
+    if (_rootMotionMode != RootMotionExtraction::NoExtraction && anim->Data.RootMotionFlags != AnimationRootMotionFlags::None)
     {
         // Calculate the root motion node transformation
+        const bool motionPositionXZ = EnumHasAnyFlags(anim->Data.RootMotionFlags, AnimationRootMotionFlags::RootPositionXZ);
+        const bool motionPositionY = EnumHasAnyFlags(anim->Data.RootMotionFlags, AnimationRootMotionFlags::RootPositionY);
+        const bool motionRotation = EnumHasAnyFlags(anim->Data.RootMotionFlags, AnimationRootMotionFlags::RootRotation);
+        const Vector3 motionPositionMask(motionPositionXZ ? 1.0f : 0.0f, motionPositionY ? 1.0f : 0.0f, motionPositionXZ ? 1.0f : 0.0f);
+        const bool motionPosition = motionPositionXZ | motionPositionY;
         const int32 rootNodeIndex = GetRootNodeIndex(anim);
         const Transform& refPose = emptyNodes->Nodes[rootNodeIndex];
         Transform& rootNode = nodes->Nodes[rootNodeIndex];
         Transform& dstNode = nodes->RootMotion;
         Transform srcNode = Transform::Identity;
         const int32 nodeToChannel = mapping.NodesMapping[rootNodeIndex];
-        if (_rootMotionMode == RootMotionMode::Enable && nodeToChannel != -1)
+        if (_rootMotionMode == RootMotionExtraction::Enable && nodeToChannel != -1)
         {
             // Get the root bone transformation
             Transform rootBefore = refPose;
@@ -336,16 +361,20 @@ void AnimGraphExecutor::ProcessAnimation(AnimGraphImpulse* nodes, AnimGraphNode*
                 // Complex motion calculation to preserve the looped movement
                 // (end - before + now - begin)
                 // It sums the motion since the last update to anim end and since the start to now
-                srcNode.Translation = rootEnd.Translation - rootBefore.Translation + rootNode.Translation - rootBegin.Translation;
-                srcNode.Orientation = rootEnd.Orientation * rootBefore.Orientation.Conjugated() * (rootNode.Orientation * rootBegin.Orientation.Conjugated());
+                if (motionPosition)
+                    srcNode.Translation = (rootEnd.Translation - rootBefore.Translation + rootNode.Translation - rootBegin.Translation) * motionPositionMask;
+                if (motionRotation)
+                    srcNode.Orientation = rootEnd.Orientation * rootBefore.Orientation.Conjugated() * (rootNode.Orientation * rootBegin.Orientation.Conjugated());
                 //srcNode.Orientation = Quaternion::Identity;
             }
             else
             {
                 // Simple motion delta
                 // (now - before)
-                srcNode.Translation = rootNode.Translation - rootBefore.Translation;
-                srcNode.Orientation = rootBefore.Orientation.Conjugated() * rootNode.Orientation;
+                if (motionPosition)
+                    srcNode.Translation = (rootNode.Translation - rootBefore.Translation) * motionPositionMask;
+                if (motionRotation)
+                    srcNode.Orientation = rootBefore.Orientation.Conjugated() * rootNode.Orientation;
             }
 
             // Convert root motion from local-space to the actor-space (eg. if root node is not actually a root and its parents have rotation/scale)
@@ -359,28 +388,40 @@ void AnimGraphExecutor::ProcessAnimation(AnimGraphImpulse* nodes, AnimGraphNode*
             }
         }
 
-        // Remove root node motion after extraction
-        rootNode = refPose;
+        // Remove root node motion after extraction (only extracted components)
+        if (motionPosition)
+            rootNode.Translation = refPose.Translation * motionPositionMask + rootNode.Translation * (Vector3::One - motionPositionMask);
+        if (motionRotation)
+            rootNode.Orientation = refPose.Orientation;
 
         // Blend root motion
         if (mode == ProcessAnimationMode::BlendAdditive)
         {
-            dstNode.Translation += srcNode.Translation * weight;
-            BlendAdditiveWeightedRotation(dstNode.Orientation, srcNode.Orientation, weight);
+            if (motionPosition)
+                dstNode.Translation += srcNode.Translation * weight * motionPositionMask;
+            if (motionRotation)
+                BlendAdditiveWeightedRotation(dstNode.Orientation, srcNode.Orientation, weight);
         }
         else if (mode == ProcessAnimationMode::Add)
         {
-            dstNode.Translation += srcNode.Translation * weight;
-            dstNode.Orientation += srcNode.Orientation * weight;
+            if (motionPosition)
+                dstNode.Translation += srcNode.Translation * weight * motionPositionMask;
+            if (motionRotation)
+                dstNode.Orientation += srcNode.Orientation * weight;
         }
         else if (weighted)
         {
-            dstNode.Translation = srcNode.Translation * weight;
-            dstNode.Orientation = srcNode.Orientation * weight;
+            if (motionPosition)
+                dstNode.Translation = srcNode.Translation * weight * motionPositionMask;
+            if (motionRotation)
+                dstNode.Orientation = srcNode.Orientation * weight;
         }
         else
         {
-            dstNode = srcNode;
+            if (motionPosition)
+                dstNode.Translation = srcNode.Translation * motionPositionMask;
+            if (motionRotation)
+                dstNode.Orientation = srcNode.Orientation;
         }
     }
 
@@ -460,10 +501,12 @@ Variant AnimGraphExecutor::Blend(AnimGraphNode* node, const Value& poseA, const 
 {
     ANIM_GRAPH_PROFILE_EVENT("Blend Pose");
 
+    if (isnan(alpha) || isinf(alpha))
+        alpha = 0;
+    alpha = Math::Saturate(alpha);
     alpha = AlphaBlend::Process(alpha, alphaMode);
 
     const auto nodes = node->GetNodes(this);
-
     auto nodesA = static_cast<AnimGraphImpulse*>(poseA.AsPointer);
     auto nodesB = static_cast<AnimGraphImpulse*>(poseB.AsPointer);
     if (!ANIM_GRAPH_IS_VALID_PTR(poseA))
@@ -482,34 +525,53 @@ Variant AnimGraphExecutor::Blend(AnimGraphNode* node, const Value& poseA, const 
     return nodes;
 }
 
-Variant AnimGraphExecutor::SampleState(AnimGraphNode* state)
+Variant AnimGraphExecutor::SampleState(AnimGraphContext& context, const AnimGraphNode* state)
 {
-    // Prepare
     auto& data = state->Data.State;
     if (data.Graph == nullptr || data.Graph->GetRootNode() == nullptr)
-    {
-        // Invalid state graph
         return Value::Null;
+
+    // Add to trace
+    if (context.Data->EnableTracing)
+    {
+        auto& trace = context.AddTraceEvent(state);
     }
 
     ANIM_GRAPH_PROFILE_EVENT("Evaluate State");
-
-    // Evaluate state
+    context.NodePath.Add(state->ID);
     auto rootNode = data.Graph->GetRootNode();
     auto result = eatBox((Node*)rootNode, &rootNode->Boxes[0]);
+    context.NodePath.Pop();
 
     return result;
 }
 
-void AnimGraphExecutor::UpdateStateTransitions(AnimGraphContext& context, const AnimGraphNode::StateMachineData& stateMachineData, AnimGraphInstanceData::StateMachineBucket& stateMachineBucket, const AnimGraphNode::StateBaseData& stateData)
+void AnimGraphExecutor::InitStateTransition(AnimGraphContext& context, AnimGraphInstanceData::StateMachineBucket& stateMachineBucket, AnimGraphStateTransition* transition)
+{
+    // Reset transition
+    stateMachineBucket.ActiveTransition = transition;
+    stateMachineBucket.TransitionPosition = 0.0f;
+
+    // End base transition
+    if (stateMachineBucket.BaseTransition)
+    {
+        ResetBuckets(context, stateMachineBucket.BaseTransitionState->Data.State.Graph);
+        stateMachineBucket.BaseTransition = nullptr;
+        stateMachineBucket.BaseTransitionState = nullptr;
+        stateMachineBucket.BaseTransitionPosition = 0.0f;
+    }
+}
+
+AnimGraphStateTransition* AnimGraphExecutor::UpdateStateTransitions(AnimGraphContext& context, const AnimGraphNode::StateMachineData& stateMachineData, AnimGraphNode* state, AnimGraphNode* ignoreState)
 {
     int32 transitionIndex = 0;
+    const AnimGraphNode::StateBaseData& stateData = state->Data.State;
     while (transitionIndex < ANIM_GRAPH_MAX_STATE_TRANSITIONS && stateData.Transitions[transitionIndex] != AnimGraphNode::StateData::InvalidTransitionIndex)
     {
         const uint16 idx = stateData.Transitions[transitionIndex];
         ASSERT(idx < stateMachineData.Graph->StateTransitions.Count());
         auto& transition = stateMachineData.Graph->StateTransitions[idx];
-        if (transition.Destination == stateMachineBucket.CurrentState)
+        if (transition.Destination == state || transition.Destination == ignoreState)
         {
             // Ignore transition to the current state
             transitionIndex++;
@@ -517,7 +579,7 @@ void AnimGraphExecutor::UpdateStateTransitions(AnimGraphContext& context, const 
         }
 
         // Evaluate source state transition data (position, length, etc.)
-        const Value sourceStatePtr = SampleState(stateMachineBucket.CurrentState);
+        const Value sourceStatePtr = SampleState(context, state);
         auto& transitionData = context.TransitionData; // Note: this could support nested transitions but who uses state machine inside transition rule?
         if (ANIM_GRAPH_IS_VALID_PTR(sourceStatePtr))
         {
@@ -538,6 +600,7 @@ void AnimGraphExecutor::UpdateStateTransitions(AnimGraphContext& context, const 
         if (transition.RuleGraph && !useDefaultRule)
         {
             // Execute transition rule
+            ANIM_GRAPH_PROFILE_EVENT("Rule");
             auto rootNode = transition.RuleGraph->GetRootNode();
             ASSERT(rootNode);
             if (!(bool)eatBox((Node*)rootNode, &rootNode->Boxes[0]))
@@ -560,10 +623,7 @@ void AnimGraphExecutor::UpdateStateTransitions(AnimGraphContext& context, const 
             canEnter = true;
         if (canEnter)
         {
-            // Start transition
-            stateMachineBucket.ActiveTransition = &transition;
-            stateMachineBucket.TransitionPosition = 0.0f;
-            break;
+            return &transition;
         }
 
         // Skip after Solo transition
@@ -572,6 +632,18 @@ void AnimGraphExecutor::UpdateStateTransitions(AnimGraphContext& context, const 
             break;
 
         transitionIndex++;
+    }
+
+    // No transition
+    return nullptr;
+}
+
+void AnimGraphExecutor::UpdateStateTransitions(AnimGraphContext& context, const AnimGraphNode::StateMachineData& stateMachineData, AnimGraphInstanceData::StateMachineBucket& stateMachineBucket, const AnimGraphNode::StateBaseData& stateData)
+{
+    AnimGraphStateTransition* transition = UpdateStateTransitions(context, stateMachineData, stateMachineBucket.CurrentState);
+    if (transition)
+    {
+        InitStateTransition(context, stateMachineBucket, transition);
     }
 }
 
@@ -604,7 +676,7 @@ void ComputeMultiBlendLength(float& length, AnimGraphNode* node)
 
 void AnimGraphExecutor::ProcessGroupParameters(Box* box, Node* node, Value& value)
 {
-    auto& context = Context.Get();
+    auto& context = *Context.Get();
     switch (node->TypeID)
     {
     // Get
@@ -715,7 +787,7 @@ void AnimGraphExecutor::ProcessGroupParameters(Box* box, Node* node, Value& valu
 
 void AnimGraphExecutor::ProcessGroupTools(Box* box, Node* nodeBase, Value& value)
 {
-    auto& context = Context.Get();
+    auto& context = *Context.Get();
     auto node = (AnimGraphNode*)nodeBase;
     switch (node->TypeID)
     {
@@ -739,7 +811,7 @@ void AnimGraphExecutor::ProcessGroupTools(Box* box, Node* nodeBase, Value& value
 
 void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Value& value)
 {
-    auto& context = Context.Get();
+    auto& context = *Context.Get();
     if (context.ValueCache.TryGet(boxBase, value))
         return;
     auto box = (AnimGraphBox*)boxBase;
@@ -1070,38 +1142,26 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
             else
             {
                 const auto nodes = node->GetNodes(this);
-                const auto nodesA = static_cast<AnimGraphImpulse*>(valueA.AsPointer);
-                const auto nodesB = static_cast<AnimGraphImpulse*>(valueB.AsPointer);
-                const auto& baseNodes = _graph.BaseModel.Get()->GetNodes();
-                Transform t, tA, tB;
+                const auto basePoseNodes = static_cast<AnimGraphImpulse*>(valueA.AsPointer);
+                const auto blendPoseNodes = static_cast<AnimGraphImpulse*>(valueB.AsPointer);
+                const auto& refrenceNodes = _graph.BaseModel.Get()->GetNodes();
+                Transform t, basePoseTransform, blendPoseTransform, refrenceTransform;
                 for (int32 i = 0; i < nodes->Nodes.Count(); i++)
                 {
-                    tA = nodesA->Nodes[i];
-                    tB = nodesB->Nodes[i];
-                    const auto& baseNode = baseNodes[i];
+                    basePoseTransform = basePoseNodes->Nodes[i];
+                    blendPoseTransform = blendPoseNodes->Nodes[i];
+                    refrenceTransform = refrenceNodes[i].LocalTransform;
 
-                    t.Translation = tA.Translation + (tB.Translation - baseNode.LocalTransform.Translation) * alpha;
+                    // base + (blend - refrence) = transform
+                    t.Translation = basePoseTransform.Translation + (blendPoseTransform.Translation - refrenceTransform.Translation);
+                    auto diff = Quaternion::Invert(refrenceTransform.Orientation) * blendPoseTransform.Orientation;
+                    t.Orientation = basePoseTransform.Orientation * diff;
+                    t.Scale = basePoseTransform.Scale + (blendPoseTransform.Scale - refrenceTransform.Scale);
 
-                    //auto baseOrientation = tA.Orientation;
-                    //Quaternion additiveOrientation = alpha * (tB.Orientation - baseNode.LocalTransform.Orientation);
-                    //t.Orientation = baseOrientation + additiveOrientation;
-                    auto m1 = Matrix::RotationQuaternion(tA.Orientation);
-                    auto m2 = Matrix::RotationQuaternion(alpha * tB.Orientation);
-                    auto m3 = Matrix::RotationQuaternion(alpha * baseNode.LocalTransform.Orientation);
-                    Matrix m4;
-                    Matrix::Subtract(m2, m3, m4);
-                    Matrix m5;
-                    Matrix::Add(m1, m4, m5);
-
-                    t.SetRotation(m5);
-                    t.Orientation.Normalize();
-
-                    t.Scale = tA.Scale * tB.Scale;
-                    
-                    //nodes->Nodes[i] = t;
-                    Transform::Lerp(tA, t, alpha, nodes->Nodes[i]);
+                    //lerp base and transform
+                    Transform::Lerp(basePoseTransform, t, alpha, nodes->Nodes[i]);
                 }
-                Transform::Lerp(nodesA->RootMotion, nodesA->RootMotion + nodesB->RootMotion, alpha, nodes->RootMotion);
+                Transform::Lerp(basePoseNodes->RootMotion, basePoseNodes->RootMotion + blendPoseNodes->RootMotion, alpha, nodes->RootMotion);
                 value = nodes;
             }
         }
@@ -1113,6 +1173,17 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
     {
         const float alpha = Math::Saturate((float)tryGetValue(node->GetBox(3), node->Values[0]));
         auto mask = node->Assets[0].As<SkeletonMask>();
+        auto maskAssetBox = node->GetBox(4); // 4 is the id of skeleton mask parameter node.
+
+        // Check if have some mask asset connected with the mask node
+        if (maskAssetBox->HasConnection())
+        {
+            const Value assetBoxValue = tryGetValue(maskAssetBox, Value::Null);
+
+            // Use the mask connected with this node instead of default mask asset 
+            if (assetBoxValue != Value::Null)
+                mask = (SkeletonMask*)assetBoxValue.AsAsset;
+        }
 
         // Only A or missing/invalid mask
         if (Math::NearEqual(alpha, 0.0f, ANIM_GRAPH_BLEND_THRESHOLD) || mask == nullptr || mask->WaitForLoaded())
@@ -1379,33 +1450,29 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
                         }
 
                         // Use 1D blend if points are on the same line (degenerated triangle)
-                        // TODO: simplify this code
+                        struct BlendData
+                        {
+                            float AlphaX, AlphaY;
+                            Animation* AnimA, *AnimB;
+                            const Float4* AnimAd, *AnimBd;
+                        };
+                        BlendData blendData;
                         if (v1.Y >= v0.Y)
                         {
                             if (p.Y < v0.Y && v1.Y >= v0.Y)
-                            {
-                                const float alpha = p.Y / v0.Y;
-                                value = SampleAnimationsWithBlend(node, loop, data.Length, startTimePos, bucket.TimePosition, newTimePos, aAnim, bAnim, aData.W, bData.W, alpha);
-                            }
+                                blendData = { p.Y, v0.Y, aAnim, bAnim, &aData, &bData };
                             else
-                            {
-                                const float alpha = (p.Y - v0.Y) / (v1.Y - v0.Y);
-                                value = SampleAnimationsWithBlend(node, loop, data.Length, startTimePos, bucket.TimePosition, newTimePos, bAnim, cAnim, bData.W, cData.W, alpha);
-                            }
+                                blendData = { p.Y - v0.Y, v1.Y - v0.Y, bAnim, cAnim, &bData, &cData };
                         }
                         else
                         {
                             if (p.Y < v1.Y)
-                            {
-                                const float alpha = p.Y / v1.Y;
-                                value = SampleAnimationsWithBlend(node, loop, data.Length, startTimePos, bucket.TimePosition, newTimePos, aAnim, cAnim, aData.W, cData.W, alpha);
-                            }
+                                blendData = { p.Y, v1.Y, aAnim, cAnim, &aData, &cData };
                             else
-                            {
-                                const float alpha = (p.Y - v1.Y) / (v0.Y - v1.Y);
-                                value = SampleAnimationsWithBlend(node, loop, data.Length, startTimePos, bucket.TimePosition, newTimePos, cAnim, bAnim, cData.W, bData.W, alpha);
-                            }
+                                blendData = { p.Y - v1.Y, v0.Y - v1.Y, cAnim, bAnim, &cData, &bData };
                         }
+                        const float alpha = Math::IsZero(blendData.AlphaY) ? 0.0f : blendData.AlphaX / blendData.AlphaY;
+                        value = SampleAnimationsWithBlend(node, loop, data.Length, startTimePos, bucket.TimePosition, newTimePos, blendData.AnimA, blendData.AnimB, blendData.AnimAd->W, blendData.AnimBd->W, alpha);
                     }
                     else
                     {
@@ -1517,10 +1584,9 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
 
         // Blend two animations
         {
-            const float alpha = Math::Saturate(bucket.TransitionPosition / blendDuration);
+            const float alpha = bucket.TransitionPosition / blendDuration;
             const auto valueA = tryGetValue(node->GetBox(FirstBlendPoseBoxIndex + bucket.PreviousBlendPoseIndex), Value::Null);
             const auto valueB = tryGetValue(node->GetBox(FirstBlendPoseBoxIndex + poseIndex), Value::Null);
-
             value = Blend(node, valueA, valueB, alpha, mode);
         }
 
@@ -1626,22 +1692,23 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
 
             // Enter to the first state pointed by the Entry node (without transitions)
             bucket.CurrentState = data.Graph->GetRootNode();
-            bucket.ActiveTransition = nullptr;
-            bucket.TransitionPosition = 0.0f;
+            InitStateTransition(context, bucket);
 
-            // Reset all state buckets pof the graphs and nodes included inside the state machine
+            // Reset all state buckets of the graphs and nodes included inside the state machine
             ResetBuckets(context, data.Graph);
         }
 #define END_TRANSITION() \
     ResetBuckets(context, bucket.CurrentState->Data.State.Graph); \
     bucket.CurrentState = bucket.ActiveTransition->Destination; \
-    bucket.ActiveTransition = nullptr; \
-    bucket.TransitionPosition = 0.0f
+    InitStateTransition(context, bucket)
+
+        context.NodePath.Push(node->ID);
 
         // Update the active transition
         if (bucket.ActiveTransition)
         {
             bucket.TransitionPosition += context.DeltaTime;
+            ASSERT(bucket.CurrentState);
 
             // Check for transition end
             if (bucket.TransitionPosition >= bucket.ActiveTransition->BlendDuration)
@@ -1649,38 +1716,70 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
                 END_TRANSITION();
             }
             // Check for transition interruption
-            else if (EnumHasAnyFlags(bucket.ActiveTransition->Flags, AnimGraphStateTransition::FlagTypes::InterruptionRuleRechecking))
+            else if (EnumHasAnyFlags(bucket.ActiveTransition->Flags, AnimGraphStateTransition::FlagTypes::InterruptionRuleRechecking) &&
+                    EnumHasNoneFlags(bucket.ActiveTransition->Flags, AnimGraphStateTransition::FlagTypes::UseDefaultRule) &&
+                    bucket.ActiveTransition->RuleGraph)
             {
-                const bool useDefaultRule = EnumHasAnyFlags(bucket.ActiveTransition->Flags, AnimGraphStateTransition::FlagTypes::UseDefaultRule);
-                if (bucket.ActiveTransition->RuleGraph && !useDefaultRule)
+                // Execute transition rule
+                auto rootNode = bucket.ActiveTransition->RuleGraph->GetRootNode();
+                if (!(bool)eatBox((Node*)rootNode, &rootNode->Boxes[0]))
                 {
-                    // Execute transition rule
-                    auto rootNode = bucket.ActiveTransition->RuleGraph->GetRootNode();
-                    if (!(bool)eatBox((Node*)rootNode, &rootNode->Boxes[0]))
+                    bool cancelTransition = false;
+                    if (EnumHasAnyFlags(bucket.ActiveTransition->Flags, AnimGraphStateTransition::FlagTypes::InterruptionInstant))
                     {
-                        bool cancelTransition = false;
-                        if (EnumHasAnyFlags(bucket.ActiveTransition->Flags, AnimGraphStateTransition::FlagTypes::InterruptionInstant))
+                        cancelTransition = true;
+                    }
+                    else
+                    {
+                        // Blend back to the source state (remove currently applied delta and rewind transition)
+                        bucket.TransitionPosition -= context.DeltaTime;
+                        bucket.TransitionPosition -= context.DeltaTime;
+                        if (bucket.TransitionPosition <= ZeroTolerance)
                         {
                             cancelTransition = true;
                         }
-                        else
-                        {
-                            // Blend back to the source state (remove currently applied delta and rewind transition)
-                            bucket.TransitionPosition -= context.DeltaTime;
-                            bucket.TransitionPosition -= context.DeltaTime;
-                            if (bucket.TransitionPosition <= ZeroTolerance)
-                            {
-                                cancelTransition = true;
-                            }
-                        }
-                        if (cancelTransition)
-                        {
-                            // Go back to the source state
-                            ResetBuckets(context, bucket.CurrentState->Data.State.Graph);
-                            bucket.ActiveTransition = nullptr;
-                            bucket.TransitionPosition = 0.0f;
-                        }
                     }
+                    if (cancelTransition)
+                    {
+                        // Go back to the source state
+                        ResetBuckets(context, bucket.CurrentState->Data.State.Graph);
+                        InitStateTransition(context, bucket);
+                    }
+                }
+            }
+            if (bucket.ActiveTransition && !bucket.BaseTransition && EnumHasAnyFlags(bucket.ActiveTransition->Flags, AnimGraphStateTransition::FlagTypes::InterruptionSourceState))
+            {
+                // Try to interrupt with any other transition in the source state (except the current transition)
+                if (AnimGraphStateTransition* transition = UpdateStateTransitions(context, data, bucket.CurrentState, bucket.ActiveTransition->Destination))
+                {
+                    // Change active transition to the interrupted one
+                    if (EnumHasNoneFlags(bucket.ActiveTransition->Flags, AnimGraphStateTransition::FlagTypes::InterruptionInstant))
+                    {
+                        // Cache the current blending state to be used as a base when blending towards new destination state (seamless blending after interruption)
+                        bucket.BaseTransition = bucket.ActiveTransition;
+                        bucket.BaseTransitionState = bucket.CurrentState;
+                        bucket.BaseTransitionPosition = bucket.TransitionPosition;
+                    }
+                    bucket.ActiveTransition = transition;
+                    bucket.TransitionPosition = 0.0f;
+                }
+            }
+            if (bucket.ActiveTransition && !bucket.BaseTransition && EnumHasAnyFlags(bucket.ActiveTransition->Flags, AnimGraphStateTransition::FlagTypes::InterruptionDestinationState))
+            {
+                // Try to interrupt with any other transition in the destination state (except the transition back to the current state if exists)
+                if (AnimGraphStateTransition* transition = UpdateStateTransitions(context, data, bucket.ActiveTransition->Destination, bucket.CurrentState))
+                {
+                    // Change active transition to the interrupted one
+                    if (EnumHasNoneFlags(bucket.ActiveTransition->Flags, AnimGraphStateTransition::FlagTypes::InterruptionInstant))
+                    {
+                        // Cache the current blending state to be used as a base when blending towards new destination state (seamless blending after interruption)
+                        bucket.BaseTransition = bucket.ActiveTransition;
+                        bucket.BaseTransitionState = bucket.CurrentState;
+                        bucket.BaseTransitionPosition = bucket.TransitionPosition;
+                    }
+                    bucket.CurrentState = bucket.ActiveTransition->Destination;
+                    bucket.ActiveTransition = transition;
+                    bucket.TransitionPosition = 0.0f;
                 }
             }
         }
@@ -1709,25 +1808,38 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
             }
         }
 
-        // Sample the current state
-        const auto currentState = SampleState(bucket.CurrentState);
-        value = currentState;
+        if (bucket.BaseTransitionState)
+        {
+            // Sample the other state (eg. when blending from interrupted state to the another state from the old destination)
+            value = SampleState(context, bucket.BaseTransitionState);
+            if (bucket.BaseTransition)
+            {
+                // Evaluate the base pose from the time when transition was interrupted
+                const auto destinationState = SampleState(context, bucket.BaseTransition->Destination);
+                const float alpha = bucket.BaseTransitionPosition / bucket.BaseTransition->BlendDuration;
+                value = Blend(node, value, destinationState, alpha, bucket.BaseTransition->BlendMode);
+            }
+        }
+        else
+        {
+            // Sample the current state
+            value = SampleState(context, bucket.CurrentState);
+        }
 
         // Handle active transition blending
         if (bucket.ActiveTransition)
         {
             // Sample the active transition destination state
-            const auto destinationState = SampleState(bucket.ActiveTransition->Destination);
+            const auto destinationState = SampleState(context, bucket.ActiveTransition->Destination);
 
             // Perform blending
-            const float alpha = Math::Saturate(bucket.TransitionPosition / bucket.ActiveTransition->BlendDuration);
-            value = Blend(node, currentState, destinationState, alpha, bucket.ActiveTransition->BlendMode);
+            const float alpha = bucket.TransitionPosition / bucket.ActiveTransition->BlendDuration;
+            value = Blend(node, value, destinationState, alpha, bucket.ActiveTransition->BlendMode);
         }
 
-        // Update bucket
         bucket.LastUpdateFrame = context.CurrentFrameIndex;
+        context.NodePath.Pop();
 #undef END_TRANSITION
-
         break;
     }
     // Entry
@@ -2114,6 +2226,12 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
         auto& slot = slots[bucket.Index];
         Animation* anim = slot.Animation;
         ASSERT(slot.Animation && slot.Animation->IsLoaded());
+        if (slot.Reset)
+        {
+            // Start from the begining
+            slot.Reset = false;
+            bucket.TimePosition = 0.0f;
+        }
         const float deltaTime = slot.Pause ? 0.0f : context.DeltaTime * slot.Speed;
         const float length = anim->GetLength();
         const bool loop = bucket.LoopsLeft != 0;
@@ -2142,7 +2260,7 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
             // Blend out
             auto input = tryGetValue(node->GetBox(1), Value::Null);
             bucket.BlendOutPosition += deltaTime;
-            const float alpha = Math::Saturate(bucket.BlendOutPosition / slot.BlendOutTime);
+            const float alpha = bucket.BlendOutPosition / slot.BlendOutTime;
             value = Blend(node, value, input, alpha, AlphaBlendMode::HermiteCubic);
         }
         else if (bucket.LoopsDone == 0 && slot.BlendInTime > 0.0f && bucket.BlendInPosition < slot.BlendInTime)
@@ -2150,7 +2268,7 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
             // Blend in
             auto input = tryGetValue(node->GetBox(1), Value::Null);
             bucket.BlendInPosition += deltaTime;
-            const float alpha = Math::Saturate(bucket.BlendInPosition / slot.BlendInTime);
+            const float alpha = bucket.BlendInPosition / slot.BlendInTime;
             value = Blend(node, input, value, alpha, AlphaBlendMode::HermiteCubic);
         }
         break;
@@ -2175,7 +2293,7 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
 
 void AnimGraphExecutor::ProcessGroupFunction(Box* boxBase, Node* node, Value& value)
 {
-    auto& context = Context.Get();
+    auto& context = *Context.Get();
     if (context.ValueCache.TryGet(boxBase, value))
         return;
     switch (node->TypeID)

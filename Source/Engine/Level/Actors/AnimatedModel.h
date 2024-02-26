@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -258,6 +258,27 @@ public:
     /// </summary>
     /// <param name="masterPose">The master pose actor to use.</param>
     API_FUNCTION() void SetMasterPoseModel(AnimatedModel* masterPose);
+
+    /// <summary>
+    /// Enables extracting animation playback insights for debugging or custom scripting.
+    /// </summary>
+    API_PROPERTY(Attributes="HideInEditor, NoSerialize") bool GetEnableTracing() const
+    {
+        return GraphInstance.EnableTracing;
+    }
+
+    /// <summary>
+    /// Enables extracting animation playback insights for debugging or custom scripting.
+    /// </summary>
+    API_PROPERTY() void SetEnableTracing(bool value)
+    {
+        GraphInstance.EnableTracing = value;
+    }
+
+    /// <summary>
+    /// Gets the trace events from the last animation update. Valid only when EnableTracing is active.
+    /// </summary>
+    API_PROPERTY(Attributes="HideInEditor, NoSerialize") const Array<AnimGraphTraceEvent>& GetTraceEvents() const;
 
 public:
     /// <summary>

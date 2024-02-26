@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 using System;
 using FlaxEditor.GUI;
@@ -38,6 +38,7 @@ namespace FlaxEditor.Windows.Profiler
                 if (value != LiveRecording)
                 {
                     _liveRecordingButton.Checked = value;
+                    OnLiveRecordingChanged();
                 }
             }
         }
