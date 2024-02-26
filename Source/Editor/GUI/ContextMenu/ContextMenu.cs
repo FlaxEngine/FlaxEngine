@@ -360,15 +360,15 @@ namespace FlaxEditor.GUI.ContextMenu
         }
 
         /// <inheritdoc />
-        public override bool ContainsPoint(ref Float2 location)
+        public override bool ContainsPoint(ref Float2 location, bool precise)
         {
-            if (base.ContainsPoint(ref location))
+            if (base.ContainsPoint(ref location, precise))
                 return true;
 
             var cLocation = location - Location;
             for (int i = 0; i < _panel.Children.Count; i++)
             {
-                if (_panel.Children[i].ContainsPoint(ref cLocation))
+                if (_panel.Children[i].ContainsPoint(ref cLocation, precise))
                     return true;
             }
 

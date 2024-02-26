@@ -26,5 +26,13 @@ namespace FlaxEngine.GUI
         {
             AutoFocus = false;
         }
+
+        /// <inheritdoc />
+        public override bool ContainsPoint(ref Float2 location, bool precise = false)
+        {
+            if (precise) // Ignore as visual-only element
+                return false;
+            return base.ContainsPoint(ref location, precise);
+        }
     }
 }

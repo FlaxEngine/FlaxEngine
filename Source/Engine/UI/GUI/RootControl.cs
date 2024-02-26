@@ -159,6 +159,21 @@ namespace FlaxEngine.GUI
             }
         }
 
+        /// <inheritdoc />
+        public override bool RayCast(ref Float2 location, out Control hit)
+        {
+            // Ignore self
+            return RayCastChildren(ref location, out hit);
+        }
+
+        /// <inheritdoc />
+        public override bool ContainsPoint(ref Float2 location, bool precise = false)
+        {
+            if (precise) // Ignore as utility-only element
+                return false;
+            return base.ContainsPoint(ref location, precise);
+        }
+
         /// <summary>
         /// Starts the mouse tracking. Used by the scrollbars, splitters, etc.
         /// </summary>

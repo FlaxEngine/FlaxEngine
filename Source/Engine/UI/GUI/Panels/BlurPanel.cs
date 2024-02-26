@@ -41,5 +41,13 @@ namespace FlaxEngine.GUI
                 Render2D.DrawBlur(new Rectangle(Float2.Zero, size), strength);
             }
         }
+
+        /// <inheritdoc />
+        public override bool ContainsPoint(ref Float2 location, bool precise = false)
+        {
+            if (precise) // Ignore as visual-only element
+                return false;
+            return base.ContainsPoint(ref location, precise);
+        }
     }
 }

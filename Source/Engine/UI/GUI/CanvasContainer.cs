@@ -61,6 +61,21 @@ namespace FlaxEngine.GUI
         }
 
         /// <inheritdoc />
+        public override bool RayCast(ref Float2 location, out Control hit)
+        {
+            // Ignore self
+            return RayCastChildren(ref location, out hit);
+        }
+
+        /// <inheritdoc />
+        public override bool ContainsPoint(ref Float2 location, bool precise = false)
+        {
+            if (precise) // Ignore as utility-only element
+                return false;
+            return base.ContainsPoint(ref location, precise);
+        }
+
+        /// <inheritdoc />
         public override void OnMouseEnter(Float2 location)
         {
             // 2D GUI first

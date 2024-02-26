@@ -258,6 +258,14 @@ namespace FlaxEngine.GUI
         }
 
         /// <inheritdoc />
+        public override bool ContainsPoint(ref Float2 location, bool precise = false)
+        {
+            if (precise) // Precise check for checkbox element
+                return _box.Contains(ref location);
+            return base.ContainsPoint(ref location, precise);
+        }
+
+        /// <inheritdoc />
         public override void OnMouseMove(Float2 location)
         {
             base.OnMouseMove(location);

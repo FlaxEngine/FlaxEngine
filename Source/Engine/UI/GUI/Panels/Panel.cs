@@ -372,6 +372,14 @@ namespace FlaxEngine.GUI
         }
 
         /// <inheritdoc />
+        public override bool ContainsPoint(ref Float2 location, bool precise = false)
+        {
+            if (precise && BackgroundColor.A <= 0.0f) // Go through transparency
+                return false;
+            return base.ContainsPoint(ref location, precise);
+        }
+
+        /// <inheritdoc />
         public override bool IntersectsChildContent(Control child, Float2 location, out Float2 childSpaceLocation)
         {
             // For not scroll bars we want to reject any collisions

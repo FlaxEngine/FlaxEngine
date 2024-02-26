@@ -148,6 +148,18 @@ namespace FlaxEditor.Windows
         {
             public bool EnableEvents => !Time.GamePaused;
 
+            public override bool RayCast(ref Float2 location, out Control hit)
+            {
+                return RayCastChildren(ref location, out hit);
+            }
+
+            public override bool ContainsPoint(ref Float2 location, bool precise = false)
+            {
+                if (precise)
+                    return false;
+                return base.ContainsPoint(ref location, precise);
+            }
+
             public override bool OnCharInput(char c)
             {
                 if (!EnableEvents)

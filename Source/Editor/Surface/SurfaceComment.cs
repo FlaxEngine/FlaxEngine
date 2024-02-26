@@ -231,7 +231,7 @@ namespace FlaxEditor.Surface
         }
 
         /// <inheritdoc />
-        public override bool ContainsPoint(ref Float2 location)
+        public override bool ContainsPoint(ref Float2 location, bool precise)
         {
             return _headerRect.Contains(ref location) || _resizeButtonRect.Contains(ref location);
         }

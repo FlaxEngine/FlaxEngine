@@ -430,6 +430,23 @@ namespace FlaxEngine.GUI
         }
 
         /// <inheritdoc />
+        public override bool ContainsPoint(ref Float2 location, bool precise = false)
+        {
+            if (precise) // Ignore as utility-only element
+                return false;
+            return base.ContainsPoint(ref location, precise);
+        }
+
+        /// <inheritdoc />
+        public override bool RayCast(ref Float2 location, out Control hit)
+        {
+            var p = location / _scale;
+            if (RayCastChildren(ref p, out hit))
+                return true;
+            return base.RayCast(ref location, out hit);
+        }
+
+        /// <inheritdoc />
         public override Float2 PointToParent(ref Float2 location)
         {
             var result = base.PointToParent(ref location);

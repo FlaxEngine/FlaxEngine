@@ -36,5 +36,13 @@ namespace FlaxEngine.GUI
 
             Render2D.DrawRectangle(new Rectangle(Float2.Zero, Size), BorderColor, BorderWidth);
         }
+
+        /// <inheritdoc />
+        public override bool ContainsPoint(ref Float2 location, bool precise = false)
+        {
+            if (precise) // Ignore border
+                return false;
+            return base.ContainsPoint(ref location, precise);
+        }
     }
 }

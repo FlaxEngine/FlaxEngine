@@ -880,6 +880,30 @@ namespace FlaxEngine.GUI
         }
 
         /// <inheritdoc />
+        public override bool RayCast(ref Float2 location, out Control hit)
+        {
+            if (RayCastChildren(ref location, out hit))
+                return true;
+            return base.RayCast(ref location, out hit);
+        }
+
+        internal bool RayCastChildren(ref Float2 location, out Control hit)
+        {
+            for (int i = _children.Count - 1; i >= 0 && _children.Count > 0; i--)
+            {
+                var child = _children[i];
+                if (child.Visible)
+                {
+                    IntersectsChildContent(child, location, out var childLocation);
+                    if (child.RayCast(ref childLocation, out hit))
+                        return true;
+                }
+            }
+            hit = null;
+            return false;
+        }
+
+        /// <inheritdoc />
         public override void OnMouseEnter(Float2 location)
         {
             // Check all children collisions with mouse and fire events for them
