@@ -3,6 +3,7 @@
 #include "SceneQuery.h"
 #include "Engine/Scripting/Script.h"
 #include "Engine/Profiler/Profiler.h"
+#include "Scripts/MissingScript.h"
 
 Actor* SceneQuery::RaycastScene(const Ray& ray)
 {
@@ -51,6 +52,15 @@ bool GetAllSerializableSceneObjectsQuery(Actor* actor, Array<SceneObject*>& obje
         return false;
     objects.Add(actor);
     objects.Add(reinterpret_cast<SceneObject* const*>(actor->Scripts.Get()), actor->Scripts.Count());
+#if USE_EDITOR
+    // Skip saving Missing Script instances
+    for (int32 i = 0; i < actor->Scripts.Count(); i++)
+    {
+        const int32 idx = objects.Count() - i - 1;
+        if (objects.Get()[idx]->GetTypeHandle() == MissingScript::TypeInitializer)
+            objects.RemoveAtKeepOrder(idx);
+    }
+#endif
     return true;
 }
 
