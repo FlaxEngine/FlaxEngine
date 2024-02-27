@@ -198,6 +198,12 @@ void ContentService::Dispose()
     Graphics::DisposeDevice();
 }
 
+IAssetFactory::Collection& IAssetFactory::Get()
+{
+    static Collection Factories(1024);
+    return Factories;
+}
+
 AssetsCache* Content::GetRegistry()
 {
     return &Cache;
@@ -911,8 +917,6 @@ bool Content::IsAssetTypeIdInvalid(const ScriptingTypeHandle& type, const Script
 
     return true;
 }
-
-Dictionary<StringView, IAssetFactory*> IAssetFactory::Factories;
 
 Asset* Content::LoadAsync(const Guid& id, const ScriptingTypeHandle& type)
 {

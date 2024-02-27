@@ -16,15 +16,11 @@ class FLAXENGINE_API IAssetFactory
 {
 public:
     typedef Dictionary<StringView, IAssetFactory*> Collection;
-    static Collection Factories;
 
     /// <summary>
     /// Gets the all registered assets factories. Key is asset typename, value is the factory object.
     /// </summary>
-    static Collection& Get()
-    {
-        return Factories;
-    }
+    static Collection& Get();
 
 public:
     /// <summary>
