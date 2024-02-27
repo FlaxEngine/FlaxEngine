@@ -509,6 +509,21 @@ DEFINE_INTERNAL_CALL(bool) EditorInternal_CanSetToRoot(Prefab* prefab, Actor* ta
     return true;
 }
 
+DEFINE_INTERNAL_CALL(void) EditorInternal_GetPrefabNestedObject(Guid* prefabId, Guid* prefabObjectId, Guid* outPrefabId, Guid* outPrefabObjectId)
+{
+    *outPrefabId = Guid::Empty;
+    *outPrefabObjectId = Guid::Empty;
+    const auto prefab = Content::Load<Prefab>(*prefabId);
+    if (!prefab)
+        return;
+    const ISerializable::DeserializeStream** prefabObjectDataPtr = prefab->ObjectsDataCache.TryGet(*prefabObjectId);
+    if (!prefabObjectDataPtr)
+        return;
+    const ISerializable::DeserializeStream& prefabObjectData = **prefabObjectDataPtr;
+    JsonTools::GetGuidIfValid(*outPrefabId, prefabObjectData, "PrefabID");
+    JsonTools::GetGuidIfValid(*outPrefabObjectId, prefabObjectData, "PrefabObjectID");
+}
+
 DEFINE_INTERNAL_CALL(float) EditorInternal_GetAnimationTime(AnimatedModel* animatedModel)
 {
     return animatedModel && animatedModel->GraphInstance.State.Count() == 1 ? animatedModel->GraphInstance.State[0].Animation.TimePosition : 0.0f;
