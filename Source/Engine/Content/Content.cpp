@@ -198,6 +198,12 @@ void ContentService::Dispose()
     Graphics::DisposeDevice();
 }
 
+IAssetFactory::Collection& IAssetFactory::Get()
+{
+    static Collection Factories(1024);
+    return Factories;
+}
+
 AssetsCache* Content::GetRegistry()
 {
     return &Cache;
