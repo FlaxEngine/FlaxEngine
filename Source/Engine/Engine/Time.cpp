@@ -15,8 +15,10 @@ namespace
 }
 
 bool Time::_gamePaused = false;
+bool Time::_forceDraw = false;
 float Time::_physicsMaxDeltaTime = 0.1f;
 DateTime Time::StartupTime;
+bool Time::IsDrawSyncedWithUpdate = false;
 float Time::UpdateFPS = 60.0f;
 float Time::PhysicsFPS = 60.0f;
 float Time::DrawFPS = 60.0f;
@@ -47,6 +49,7 @@ TimeService TimeServiceInstance;
 
 void TimeSettings::Apply()
 {
+    Time::IsDrawSyncedWithUpdate = UpdateMode == TimeUpdateMode::UpdateAndDrawPaired;
     Time::UpdateFPS = UpdateFPS;
     Time::PhysicsFPS = PhysicsFPS;
     Time::DrawFPS = DrawFPS;
@@ -56,6 +59,7 @@ void TimeSettings::Apply()
 
 void TimeSettings::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)
 {
+    DESERIALIZE(UpdateMode);
     DESERIALIZE(UpdateFPS);
     DESERIALIZE(PhysicsFPS);
     DESERIALIZE(DrawFPS);
@@ -81,7 +85,7 @@ void Time::TickData::OnReset(float targetFps, double currentTime)
     LastEnd = currentTime;
 }
 
-bool Time::TickData::OnTickBegin(float targetFps, float maxDeltaTime)
+bool Time::TickData::OnTickBegin(float targetFps, float maxDeltaTime, bool forceTick)
 {
     // Check if can perform a tick
     const double time = Platform::GetTimeSeconds();
@@ -92,7 +96,7 @@ bool Time::TickData::OnTickBegin(float targetFps, float maxDeltaTime)
     }
     else
     {
-        if (time < NextBegin)
+        if (!forceTick && time < NextBegin) // TODO: Make sure that we don't mess up draw DT when forcing the tick 
             return false;
 
         deltaTime = Math::Max((time - LastBegin), 0.0);
@@ -135,7 +139,7 @@ void Time::TickData::Advance(double time, double deltaTime)
     TicksCount++;
 }
 
-bool Time::FixedStepTickData::OnTickBegin(float targetFps, float maxDeltaTime)
+bool Time::FixedStepTickData::OnTickBegin(float targetFps, float maxDeltaTime, bool forceTick)
 {
     // Check if can perform a tick
     double time = Platform::GetTimeSeconds();
@@ -280,8 +284,9 @@ bool Time::OnBeginPhysics()
 
 bool Time::OnBeginDraw()
 {
-    if (Draw.OnTickBegin(DrawFPS, 1.0f))
+    if (Draw.OnTickBegin(DrawFPS, 1.0f, _forceDraw))
     {
+        _forceDraw = false;
         Current = &Draw;
         return true;
     }
@@ -292,6 +297,9 @@ void Time::OnEndUpdate()
 {
     Update.OnTickEnd();
     Current = nullptr;
+    
+    // Force to draw when draw is running in sync-with-update mode.
+    _forceDraw = IsDrawSyncedWithUpdate;
 }
 
 void Time::OnEndPhysics()
