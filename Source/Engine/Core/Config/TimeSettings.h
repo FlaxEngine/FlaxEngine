@@ -9,9 +9,10 @@
 /// </summary>
 API_CLASS(sealed, Namespace="FlaxEditor.Content.Settings") class FLAXENGINE_API TimeSettings : public SettingsBase
 {
-DECLARE_SCRIPTING_TYPE_MINIMAL(TimeSettings);
-public:
+    DECLARE_SCRIPTING_TYPE_MINIMAL(TimeSettings);
+    API_AUTO_SERIALIZATION();
 
+public:
     /// <summary>
     /// The target amount of the game logic updates per second (script updates frequency).
     /// </summary>
@@ -43,7 +44,6 @@ public:
     float MaxUpdateDeltaTime = 0.1f;
 
 public:
-
     /// <summary>
     /// Gets the instance of the settings asset (default value if missing). Object returned by this method is always loaded with valid data to use.
     /// </summary>
@@ -51,5 +51,4 @@ public:
 
     // [SettingsBase]
     void Apply() override;
-    void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) final override;
 };

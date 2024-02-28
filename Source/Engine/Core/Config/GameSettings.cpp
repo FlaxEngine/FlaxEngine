@@ -22,6 +22,7 @@
 #include "Engine/Engine/Globals.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Streaming/StreamingSettings.h"
+#include "Engine/Serialization/Serialization.h"
 #if FLAX_TESTS || USE_EDITOR
 #include "Engine/Platform/FileSystem.h"
 #endif
