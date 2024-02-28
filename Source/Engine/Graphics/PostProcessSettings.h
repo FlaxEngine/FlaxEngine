@@ -1889,13 +1889,13 @@ API_STRUCT() struct FLAXENGINE_API AntiAliasingSettings : ISerializable
     /// The diameter (in texels) inside which jitter samples are spread. Smaller values result in crisper but more aliased output, while larger values result in more stable but blurrier output.
     /// </summary>
     API_FIELD(Attributes="Limit(0.1f, 1f, 0.001f), EditorOrder(1), PostProcessSetting((int)AntiAliasingSettingsOverride.TAA_JitterSpread), EditorDisplay(null, \"TAA Jitter Spread\")")
-    float TAA_JitterSpread = 0.75f;
+    float TAA_JitterSpread = 1.0f;
 
     /// <summary>
     /// Controls the amount of sharpening applied to the color buffer. TAA can induce a slight loss of details in high frequency regions. Sharpening alleviates this issue. High values may introduce dark-border artifacts.
     /// </summary>
     API_FIELD(Attributes="Limit(0, 3f, 0.001f), EditorOrder(2), PostProcessSetting((int)AntiAliasingSettingsOverride.TAA_Sharpness), EditorDisplay(null, \"TAA Sharpness\")")
-    float TAA_Sharpness = 0.0f;
+    float TAA_Sharpness = 0.1f;
 
     /// <summary>
     /// The blend coefficient for stationary fragments. Controls the percentage of history samples blended into the final color for fragments with minimal active motion.
@@ -1907,7 +1907,7 @@ API_STRUCT() struct FLAXENGINE_API AntiAliasingSettings : ISerializable
     /// The blending coefficient for moving fragments. Controls the percentage of history samples blended into the final color for fragments with significant active motion.
     /// </summary>
     API_FIELD(Attributes="Limit(0, 0.99f, 0.001f), EditorOrder(4), PostProcessSetting((int)AntiAliasingSettingsOverride.TAA_MotionBlending), EditorDisplay(null, \"TAA Motion Blending\")")
-    float TAA_MotionBlending = 0.7f;
+    float TAA_MotionBlending = 0.85f;
 
 public:
     /// <summary>
