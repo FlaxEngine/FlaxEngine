@@ -46,6 +46,7 @@ bool NavCrowd::Init(float maxAgentRadius, int32 maxAgents, NavMeshRuntime* navMe
 {
     if (!_crowd || !navMesh)
         return true;
+    PROFILE_CPU();
 
     // This can happen on game start when no navmesh is loaded yet (eg. navmesh tiles data is during streaming) so wait for navmesh
     if (navMesh->GetNavMesh() == nullptr)
