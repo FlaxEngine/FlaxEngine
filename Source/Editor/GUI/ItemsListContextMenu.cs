@@ -122,6 +122,10 @@ namespace FlaxEditor.GUI
                 if (IsMouseOver || IsFocused)
                     Render2D.FillRectangle(new Rectangle(Float2.Zero, Size), style.BackgroundHighlighted);
 
+                // Indent for drop panel items is handled by drop panel margin
+                if (Parent is not DropPanel)
+                    textRect.Location += new Float2(Editor.Instance.Icons.ArrowRight12.Size.X + 2, 0);
+
                 // Draw all highlights
                 if (_highlights != null)
                 {
@@ -134,13 +138,9 @@ namespace FlaxEditor.GUI
                         Render2D.FillRectangle(rect, color);
                     }
                 }
-                // Indent for drop panel items is handled by drop panel margin
-                var indent = Float2.Zero;
-                if (Parent is not DropPanel)
-                    indent = new Float2(Editor.Instance.Icons.ArrowRight12.Size.X + 2, 0);
 
                 // Draw name
-                Render2D.DrawText(style.FontSmall, Name, textRect + indent, TintColor * (Enabled ? style.Foreground : style.ForegroundDisabled), TextAlignment.Near, TextAlignment.Center);
+                Render2D.DrawText(style.FontSmall, Name, textRect, TintColor * (Enabled ? style.Foreground : style.ForegroundDisabled), TextAlignment.Near, TextAlignment.Center);
             }
 
             /// <inheritdoc />
