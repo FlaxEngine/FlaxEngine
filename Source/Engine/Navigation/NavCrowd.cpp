@@ -145,6 +145,7 @@ void NavCrowd::ResetAgentMove(int32 id)
 
 void NavCrowd::RemoveAgent(int32 id)
 {
+    CHECK(id >= 0 && id < _crowd->getAgentCount());
     _crowd->removeAgent(id);
 }
 
