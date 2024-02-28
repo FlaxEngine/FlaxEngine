@@ -943,6 +943,11 @@ void DebugDraw::DrawDirection(const Vector3& origin, const Vector3& direction, c
     DrawLine(origin, origin + direction, color, duration, depthTest);
 }
 
+void DebugDraw::DrawRay(const Vector3& origin, const Vector3& direction, const Color& color, float duration, bool depthTest)
+{
+    DrawLine(origin, origin + direction, color, duration, depthTest);
+}
+
 void DebugDraw::DrawRay(const Vector3& origin, const Vector3& direction, const Color& color, float length, float duration, bool depthTest)
 {
     if (isnan(length) || isinf(length))
