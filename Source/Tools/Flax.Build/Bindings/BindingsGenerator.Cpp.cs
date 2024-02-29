@@ -3132,6 +3132,8 @@ namespace Flax.Build.Bindings
                     CppIncludeFilesList.Add(fileInfo.Name);
                 CppIncludeFilesList.AddRange(CppIncludeFiles);
                 CppIncludeFilesList.Sort();
+                if (CppIncludeFilesList.Remove("Engine/Serialization/Serialization.h"))
+                    CppIncludeFilesList.Add("Engine/Serialization/Serialization.h");
                 foreach (var path in CppIncludeFilesList)
                     header.AppendFormat("#include \"{0}\"", path).AppendLine();
                 contents.Insert(headerPos, header.ToString());
