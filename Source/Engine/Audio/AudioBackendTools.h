@@ -37,30 +37,39 @@ public:
         Quaternion Orientation;
     };
 
-    enum class Channels
+    enum Channels
     {
         FrontLeft = 0,
         FrontRight = 1,
-        Center = 2,
+        FontCenter = 2,
         BackLeft = 3,
         BackRight = 4,
         SideLeft = 5,
         SideRight = 6,
-        MAX
+        MaxChannels
     };
 
     struct SoundMix
     {
         float Pitch;
         float Volume;
-        float Channels[(int32)Channels::MAX];
+        float Channels[MaxChannels];
+
+        void VolumeIntoChannels()
+        {
+            for (float& c : Channels)
+                c *= Volume;
+            Volume = 1.0f;
+        }
     };
 
     static SoundMix CalculateSoundMix(const Settings& settings, const Listener& listener, const Source& source, int32 channelCount = 2)
     {
+        ASSERT_LOW_LAYER(channelCount <= MaxChannels);
         SoundMix mix;
         mix.Pitch = source.Pitch;
         mix.Volume = source.Volume * settings.Volume;
+        Platform::MemoryClear(mix.Channels, sizeof(mix.Channels));
         if (source.Is3D)
         {
             const Transform listenerTransform(listener.Position, listener.Orientation);
@@ -78,7 +87,7 @@ public:
             // Calculate panning
             // Ramy Sadek and Chris Kyriakakis, 2004, "A Novel Multichannel Panning Method for Standard and Arbitrary Loudspeaker Configurations"
             // [https://www.researchgate.net/publication/235080603_A_Novel_Multichannel_Panning_Method_for_Standard_and_Arbitrary_Loudspeaker_Configurations]
-            static const Float3 ChannelDirections[(int32)Channels::MAX] =
+            static const Float3 ChannelDirections[MaxChannels] =
             {
                 Float3(-1.0, 0.0, -1.0).GetNormalized(),
                 Float3(1.0, 0.0, -1.0).GetNormalized(),
@@ -117,11 +126,46 @@ public:
         }
         else
         {
-            mix.Channels[(int32)Channels::FrontLeft] = Math::Min(1.0f - source.Pan, 1.0f);
-            mix.Channels[(int32)Channels::FrontRight] = Math::Min(1.0f + source.Pan, 1.0f);
-            for (int32 i = 2; i < channelCount; i++)
-                mix.Channels[i] = 0.0f;
+            const float panLeft = Math::Min(1.0f - source.Pan, 1.0f);
+            const float panRight = Math::Min(1.0f + source.Pan, 1.0f);
+            switch (channelCount)
+            {
+            case 1:
+                mix.Channels[0] = 1.0f;
+                break;
+            case 2:
+            default: // TODO: handle other channel configuration (eg. 7.1 or 5.1)
+                mix.Channels[FrontLeft] = panLeft;
+                mix.Channels[FrontRight] = panRight;
+                break;
+            }
         }
         return mix;
+    }
+
+    static void MapChannels(int32 sourceChannels, int32 outputChannels, float channels[MaxChannels], float* outputMatrix)
+    {
+        Platform::MemoryClear(outputMatrix, sizeof(float) * sourceChannels * outputChannels);
+        switch (outputChannels)
+        {
+        case 1:
+            outputMatrix[0] = channels[FrontLeft];
+            break;
+        case 2:
+        default: // TODO: implement multi-channel support (eg. 5.1, 7.1)
+            if (sourceChannels == 1)
+            {
+                outputMatrix[0] = channels[FrontLeft];
+                outputMatrix[1] = channels[FrontRight];
+            }
+            else if (sourceChannels == 2)
+            {
+                outputMatrix[0] = channels[FrontLeft];
+                outputMatrix[1] = 0.0f;
+                outputMatrix[2] = 0.0f;
+                outputMatrix[3] = channels[FrontRight];
+            }
+            break;
+        }
     }
 };
