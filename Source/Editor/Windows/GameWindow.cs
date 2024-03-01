@@ -318,6 +318,9 @@ namespace FlaxEditor.Windows
             InputActions.Add(options => options.TakeScreenshot, () => Screenshot.Capture(string.Empty));
             InputActions.Add(options => options.DebuggerUnlockMouse, UnlockMouseInPlay);
             InputActions.Add(options => options.ToggleFullscreen, () => { if (Editor.IsPlayMode) IsMaximized = !IsMaximized; });
+            InputActions.Add(options => options.Play, Editor.Instance.Simulation.DelegatePlayOrStopPlayInEditor);
+            InputActions.Add(options => options.Pause, Editor.Instance.Simulation.RequestResumeOrPause);
+            InputActions.Add(options => options.StepFrame, Editor.Instance.Simulation.RequestPlayOneFrame);
         }
 
         private void ChangeViewportRatio(ViewportScaleOptions v)
