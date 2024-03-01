@@ -595,11 +595,6 @@ namespace FlaxEditor.Surface.Archetypes
                 {
                     var data0 = (Float4)_node.Values[0];
                     rangeX = new Float2(data0.X, data0.Y);
-                    if (_node._animationX != null)
-                    {
-                        _node._animationX.MinValue = rangeX.X;
-                        _node._animationX.MaxValue = rangeX.Y;
-                    }
                     rangeY = Float2.Zero;
                     for (int i = 0; i < MaxAnimationsCount; i++)
                     {
@@ -686,6 +681,9 @@ namespace FlaxEditor.Surface.Archetypes
                 {
                     _animationX.Value = 0.0f;
                 }
+                var ranges = (Float4)Values[0];
+                _animationX.MinValue = ranges.X;
+                _animationX.MaxValue = ranges.Y;
                 _animationXLabel.Enabled = isValid;
                 _animationX.Enabled = isValid;
             }
@@ -730,17 +728,7 @@ namespace FlaxEditor.Surface.Archetypes
                 {
                     var data0 = (Float4)_node.Values[0];
                     rangeX = new Float2(data0.X, data0.Y);
-                    if (_node._animationX != null)
-                    {
-                        _node._animationX.MinValue = rangeX.X;
-                        _node._animationX.MaxValue = rangeX.Y;
-                    }
                     rangeY = new Float2(data0.Z, data0.W);
-                    if (_node._animationY != null)
-                    {
-                        _node._animationY.MinValue = rangeY.X;
-                        _node._animationY.MaxValue = rangeY.Y;
-                    }
                     for (int i = 0; i < MaxAnimationsCount; i++)
                     {
                         var dataA = (Float4)_node.Values[4 + i * 2];
@@ -858,6 +846,11 @@ namespace FlaxEditor.Surface.Archetypes
                     _animationX.Value = 0.0f;
                     _animationY.Value = 0.0f;
                 }
+                var ranges = (Float4)Values[0];
+                _animationX.MinValue = ranges.X;
+                _animationX.MaxValue = ranges.Y;
+                _animationY.MinValue = ranges.Z;
+                _animationY.MaxValue = ranges.W;
                 _animationXLabel.Enabled = isValid;
                 _animationX.Enabled = isValid;
                 _animationYLabel.Enabled = isValid;
