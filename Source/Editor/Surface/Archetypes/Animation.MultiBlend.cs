@@ -602,7 +602,7 @@ namespace FlaxEditor.Surface.Archetypes
                         var dataB = (Guid)_node.Values[5 + i * 2];
 
                         pointsAnims[i] = dataB;
-                        pointsLocations[i] = new Float2(dataA.X, 0.0f);
+                        pointsLocations[i] = new Float2(Mathf.Clamp(dataA.X, rangeX.X, rangeX.Y), 0.0f);
                     }
                 }
 
@@ -735,7 +735,7 @@ namespace FlaxEditor.Surface.Archetypes
                         var dataB = (Guid)_node.Values[5 + i * 2];
 
                         pointsAnims[i] = dataB;
-                        pointsLocations[i] = new Float2(dataA.X, dataA.Y);
+                        pointsLocations[i] = new Float2(Mathf.Clamp(dataA.X, rangeX.X, rangeX.Y), Mathf.Clamp(dataA.Y, rangeY.X, rangeY.Y));
                     }
                 }
 
