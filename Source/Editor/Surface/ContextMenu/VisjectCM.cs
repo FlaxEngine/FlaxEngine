@@ -583,7 +583,7 @@ namespace FlaxEditor.Surface.ContextMenu
 
             // Check if surface has any parameters
             var parameters = _parametersGetter?.Invoke();
-            int count = parameters?.Count(x => x.IsPublic) ?? 0;
+            int count = parameters?.Count ?? 0;
             if (count > 0)
             {
                 // TODO: cache the allocated memory to reduce dynamic allocations
@@ -596,8 +596,6 @@ namespace FlaxEditor.Surface.ContextMenu
                 for (int i = 0; i < parameters.Count; i++)
                 {
                     var param = parameters[i];
-                    if (!param.IsPublic)
-                        continue;
 
                     var node = (NodeArchetype)_parameterGetNodeArchetype.Clone();
                     node.Title = "Get " + param.Name;
@@ -629,10 +627,6 @@ namespace FlaxEditor.Surface.ContextMenu
                 archetypeIndex = 0;
                 for (int i = 0; i < parameters.Count; i++)
                 {
-                    var param = parameters[i];
-                    if (!param.IsPublic)
-                        continue;
-
                     var item = new VisjectCMItem(group, groupArchetype, archetypes[archetypeIndex++])
                     {
                         Parent = group
