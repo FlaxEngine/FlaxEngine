@@ -592,26 +592,6 @@ namespace FlaxEditor.Surface.ContextMenu
                 var archetypes = new NodeArchetype[count];
                 int archetypeIndex = 0;
 
-                // ReSharper disable once PossibleNullReferenceException
-                for (int i = 0; i < parameters.Count; i++)
-                {
-                    var param = parameters[i];
-
-                    var node = (NodeArchetype)_parameterGetNodeArchetype.Clone();
-                    node.Title = "Get " + param.Name;
-                    node.DefaultValues[0] = param.ID;
-                    archetypes[archetypeIndex++] = node;
-
-                    if (_parameterSetNodeArchetype != null)
-                    {
-                        node = (NodeArchetype)_parameterSetNodeArchetype.Clone();
-                        node.Title = "Set " + param.Name;
-                        node.DefaultValues[0] = param.ID;
-                        node.DefaultValues[1] = TypeUtils.GetDefaultValue(param.Type);
-                        archetypes[archetypeIndex++] = node;
-                    }
-                }
-
                 var groupArchetype = new GroupArchetype
                 {
                     GroupID = 6,
@@ -624,22 +604,39 @@ namespace FlaxEditor.Surface.ContextMenu
                 group.ArrowImageOpened = new SpriteBrush(Style.Current.ArrowDown);
                 group.ArrowImageClosed = new SpriteBrush(Style.Current.ArrowRight);
                 group.Close(false);
-                archetypeIndex = 0;
+
+                // ReSharper disable once PossibleNullReferenceException
                 for (int i = 0; i < parameters.Count; i++)
                 {
-                    var item = new VisjectCMItem(group, groupArchetype, archetypes[archetypeIndex++])
+                    var param = parameters[i];
+
+                    // Define Getter node and create CM item
+                    var node = (NodeArchetype)_parameterGetNodeArchetype.Clone();
+                    node.Title = "Get " + param.Name;
+                    node.DefaultValues[0] = param.ID;
+                    archetypes[archetypeIndex++] = node;
+
+                    var item = new VisjectCMItem(group, groupArchetype, node)
                     {
                         Parent = group
                     };
 
+                    // Define Setter node and create CM item if parameter has a setter
                     if (_parameterSetNodeArchetype != null)
                     {
-                        item = new VisjectCMItem(group, groupArchetype, archetypes[archetypeIndex++])
+                        node = (NodeArchetype)_parameterSetNodeArchetype.Clone();
+                        node.Title = "Set " + param.Name;
+                        node.DefaultValues[0] = param.ID;
+                        node.DefaultValues[1] = TypeUtils.GetDefaultValue(param.Type);
+                        archetypes[archetypeIndex++] = node;
+
+                        item = new VisjectCMItem(group, groupArchetype, node)
                         {
                             Parent = group
                         };
                     }
                 }
+
                 group.SortChildren();
                 group.UnlockChildrenRecursive();
                 group.Parent = _groupsPanel;
