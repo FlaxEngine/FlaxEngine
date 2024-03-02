@@ -14,12 +14,31 @@ namespace FlaxEditor.Viewport.Widgets
     [HideInEditor]
     public class ViewportWidgetButton : Control
     {
+        const float IconOffsetFromEdge = 2;
         private string _text;
         private ContextMenu _cm;
         private bool _checked;
         private bool _autoCheck;
         private bool _isMosueDown;
         private float _forcedTextWidth;
+        private SpriteHandle _backgraundPlanel;
+
+        /// <summary>
+        /// The backgraund Planel.
+        /// </summary>
+        internal SpriteHandle BackgraundPlanel {
+            get
+            {
+                if (_backgraundPlanel.IsValid)
+                    return _backgraundPlanel;
+                else
+                    return Editor.Instance.Icons.Panel32;
+            }
+            set 
+            { 
+                _backgraundPlanel = value;
+            }
+        }
 
         /// <summary>
         /// Event fired when user toggles checked state.
@@ -48,6 +67,18 @@ namespace FlaxEditor.Viewport.Widgets
                 PerformLayout();
             }
         }
+        /// <summary>
+        /// sets consistent text with no matter the size of the text
+        /// </summary>
+        public float ConstantTextSize
+        {
+            get => _forcedTextWidth;
+            set
+            {
+                _forcedTextWidth = value;
+                PerformLayout();
+            }
+        }
 
         /// <summary>
         /// Gets or sets a value indicating whether this <see cref="ViewportWidgetButton"/> is checked.
@@ -64,17 +95,15 @@ namespace FlaxEditor.Viewport.Widgets
         /// <param name="text">The text.</param>
         /// <param name="icon">The icon.</param>
         /// <param name="contextMenu">The context menu.</param>
-        /// <param name="autoCheck">If set to <c>true</c> will be automatic checked on mouse click.</param>
+        /// <param name="autoCheck">if set to <c>true</c> will be automatic checked on mouse click.</param>
         /// <param name="textWidth">Forces the text to be drawn with the specified width.</param>
-        public ViewportWidgetButton(string text, SpriteHandle icon, ContextMenu contextMenu = null, bool autoCheck = false, float textWidth = 0.0f)
-        : base(0, 0, CalculateButtonWidth(textWidth, icon.IsValid), ViewportWidgetsContainer.WidgetsHeight)
+        public ViewportWidgetButton(string text, SpriteHandle icon, ContextMenu contextMenu = null, bool autoCheck = false)
+        : base(0, 0, CalculateButtonWidth(0, icon.IsValid), ViewportWidgetsContainer.WidgetsHeight)
         {
             _text = text;
             Icon = icon;
             _cm = contextMenu;
             _autoCheck = autoCheck;
-            _forcedTextWidth = textWidth;
-
             if (_cm != null)
                 _cm.VisibleChanged += CmOnVisibleChanged;
         }
@@ -102,14 +131,16 @@ namespace FlaxEditor.Viewport.Widgets
             // Cache data
             var style = Style.Current;
             const float iconSize = ViewportWidgetsContainer.WidgetsIconSize;
-            var iconRect = new Rectangle(0, (Height - iconSize) / 2, iconSize, iconSize);
+            var iconRect = new Rectangle(2, (Height - iconSize) / 2, iconSize, iconSize);
             var textRect = new Rectangle(0, 0, Width + 1, Height + 1);
 
             // Check if is checked or mouse is over and auto check feature is enabled
             if (_checked)
-                Render2D.FillRectangle(textRect, style.BackgroundSelected * (IsMouseOver ? 0.9f : 0.6f));
+                Render2D.DrawPanel(BackgraundPlanel, textRect, style.BackgroundSelected * (IsMouseOver ? 0.9f : 0.6f));
             else if (_autoCheck && IsMouseOver)
-                Render2D.FillRectangle(textRect, style.BackgroundHighlighted);
+                Render2D.DrawPanel(BackgraundPlanel, textRect, style.BackgroundHighlighted);
+            else
+                Render2D.DrawPanel(BackgraundPlanel, textRect, style.Background);
 
             // Check if has icon
             if (Icon.IsValid)
@@ -163,7 +194,7 @@ namespace FlaxEditor.Viewport.Widgets
             var style = Style.Current;
 
             if (style != null && style.FontMedium)
-                Width = CalculateButtonWidth(_forcedTextWidth > 0.0f ? _forcedTextWidth : style.FontMedium.MeasureText(_text).X, Icon.IsValid);
+                Width = CalculateButtonWidth(_forcedTextWidth > 0.0f ? _forcedTextWidth : style.FontMedium.MeasureText(_text).X, Icon.IsValid) + IconOffsetFromEdge;
         }
     }
 }

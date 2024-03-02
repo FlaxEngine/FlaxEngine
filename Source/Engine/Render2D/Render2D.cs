@@ -6,6 +6,21 @@ namespace FlaxEngine
 {
     partial class Render2D
     {
+#if FLAX_EDITOR
+        private static FlaxEngine.Float4 borderUVs = new Float4(0.25f);
+        /// <summary>
+        /// [Editor Only] Draws the 9 slice panel 
+        /// </summary>
+        /// <param name="spriteHandle"></param>
+        /// <param name="rect"></param>
+        /// <param name="color"></param>
+        /// <param name="borderSize"></param>
+        public static void DrawPanel(SpriteHandle spriteHandle, FlaxEngine.Rectangle rect, Color color, int borderSize = 28)
+        {
+            FlaxEngine.Render2D.Draw9SlicingSprite(spriteHandle, rect, borderUVs * borderSize, borderUVs, color);
+        }
+#endif
+
         /// <summary>
         /// Pushes transformation layer.
         /// </summary>
