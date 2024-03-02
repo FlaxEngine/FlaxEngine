@@ -759,7 +759,7 @@ void Actor::GetWorldToLocalMatrix(Matrix& worldToLocal) const
 
 void Actor::GetLocalToWorldMatrix(Matrix& localToWorld) const
 {
-#if 0
+#if 1
     _transform.GetWorld(localToWorld);
 #else
     _localTransform.GetWorld(localToWorld);
@@ -1171,7 +1171,16 @@ void Actor::OnTransformChanged()
 
     if (_parent)
     {
+#if 0
         _parent->_transform.LocalToWorld(_localTransform, _transform);
+#else
+        Matrix localToWorld;
+        _localTransform.GetWorld(localToWorld);
+        Matrix parentToWorld;
+        _parent->GetLocalToWorldMatrix(parentToWorld);
+        localToWorld = localToWorld * parentToWorld;
+        localToWorld.Decompose(_transform);
+#endif
     }
     else
     {
