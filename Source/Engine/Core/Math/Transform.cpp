@@ -110,8 +110,9 @@ void Transform::LocalToWorld(const Transform& other, Transform& result) const
         result.Orientation.W *= inv;
     }
 
-    //Vector3::Multiply(Scale, other.Scale, result.Scale);
-    result.Scale = Float3(Scale.X * other.Scale.X, Scale.Y * other.Scale.Y, Scale.Z * other.Scale.Z);
+    //Vector3::Multiply(result.Orientation * Scale, other.Scale, result.Scale);
+    Vector3 rotatedScale = result.Orientation * Scale;
+    result.Scale = Float3(rotatedScale.X * other.Scale.X, rotatedScale.Y * other.Scale.Y, rotatedScale.Z * other.Scale.Z);
 
     //Vector3 tmp; Vector3::Multiply(other.Translation, Scale, tmp);
     Vector3 tmp = Vector3(other.Translation.X * Scale.X, other.Translation.Y * Scale.Y, other.Translation.Z * Scale.Z);

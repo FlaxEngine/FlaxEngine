@@ -759,7 +759,7 @@ void Actor::GetWorldToLocalMatrix(Matrix& worldToLocal) const
 
 void Actor::GetLocalToWorldMatrix(Matrix& localToWorld) const
 {
-#if 0
+#if 1
     _transform.GetWorld(localToWorld);
 #else
     _localTransform.GetWorld(localToWorld);
