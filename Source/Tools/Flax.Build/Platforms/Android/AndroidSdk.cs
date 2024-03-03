@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 using System;
 using System.IO;
@@ -18,7 +18,7 @@ namespace Flax.Build.Platforms
         public static readonly AndroidSdk Instance = new AndroidSdk();
 
         /// <inheritdoc />
-        public override TargetPlatform[] Platforms => new []
+        public override TargetPlatform[] Platforms => new[]
         {
             TargetPlatform.Windows,
             TargetPlatform.Linux,

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 using System.Collections.Generic;
 using System.IO;
@@ -95,7 +95,7 @@ namespace Flax.Deps.Dependencies
                 case TargetPlatform.Linux:
                 {
                     // Build for Linux
-                    var settings = new []
+                    var settings = new[]
                     {
                         "--without-librtmp",
                         "--without-ssl",
@@ -126,7 +126,7 @@ namespace Flax.Deps.Dependencies
                 case TargetPlatform.Mac:
                 {
                     // Build for Mac
-                    var settings = new []
+                    var settings = new[]
                     {
                         "--with-secure-transport",
                         "--without-librtmp",
@@ -137,7 +137,7 @@ namespace Flax.Deps.Dependencies
                         "--enable-static",
                         "-disable-ldap --disable-sspi --disable-ftp --disable-file --disable-dict --disable-telnet --disable-tftp --disable-rtsp --disable-pop3 --disable-imap --disable-smtp --disable-gopher --disable-smb",
                     };
-                    foreach (var architecture in new []{ TargetArchitecture.x64, TargetArchitecture.ARM64 })
+                    foreach (var architecture in new[] { TargetArchitecture.x64, TargetArchitecture.ARM64 })
                     {
                         var arch = GetAppleArchName(architecture);
                         var archName = arch + "-apple-darwin19";
@@ -146,7 +146,7 @@ namespace Flax.Deps.Dependencies
                         var compilerFlags = string.Format("-mmacosx-version-min={0} -arch {1}", Configuration.MacOSXMinVer, arch);
                         var envVars = new Dictionary<string, string>
                         {
-                            { "CC", "clang" }, 
+                            { "CC", "clang" },
                             { "CXX", "clang" },
                             { "CFLAGS", compilerFlags },
                             { "CXXFLAGS", compilerFlags },

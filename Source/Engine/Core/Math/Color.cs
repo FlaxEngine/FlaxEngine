@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Reflection;
@@ -91,6 +91,21 @@ namespace FlaxEngine
         /// Returns the maximum color component value: Max(r,g,b).
         /// </summary>
         public float MaxColorComponent => Mathf.Max(Mathf.Max(R, G), B);
+
+        /// <summary>
+        /// Gets a minimum component value (max of r,g,b,a).
+        /// </summary>
+        public float MinValue => Math.Min(R, Math.Min(G, Math.Min(B, A)));
+
+        /// <summary>
+        /// Gets a maximum component value (min of r,g,b,a).
+        /// </summary>
+        public float MaxValue => Math.Max(R, Math.Max(G, Math.Max(B, A)));
+
+        /// <summary>
+        /// Gets a sum of the component values.
+        /// </summary>
+        public float ValuesSum => R + G + B + A;
 
         /// <summary>
         /// Constructs a new Color with given r,g,b,a component.

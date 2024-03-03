@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #if USE_LARGE_WORLDS
 using Real = System.Double;
@@ -200,12 +200,8 @@ namespace FlaxEditor.SceneGraph.Actors
         : base(actor)
         {
             var id = ID;
-            var bytes = id.ToByteArray();
             for (int i = 0; i < 6; i++)
-            {
-                bytes[0] += 1;
-                AddChildNode(new SideLinkNode(this, new Guid(bytes), i));
-            }
+                AddChildNode(new SideLinkNode(this, GetSubID(id, i), i));
         }
 
         /// <inheritdoc />

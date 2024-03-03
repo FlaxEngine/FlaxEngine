@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -480,7 +480,8 @@ public:
     /// <param name="rotation">When the method completes, contains the rotation component of the decomposed matrix.</param>
     /// <param name="translation">When the method completes, contains the translation component of the decomposed matrix.</param>
     /// <remarks>This method is designed to decompose an SRT transformation matrix only.</remarks>
-    void Decompose(Float3& scale, Matrix& rotation, Float3& translation) const;
+    void Decompose(Float3& scale, Matrix3x3& rotation, Float3& translation) const;
+    DEPRECATED void Decompose(Float3& scale, Matrix& rotation, Float3& translation) const;
 
 public:
     Matrix operator*(const float scale) const
@@ -522,24 +523,10 @@ public:
         return *this;
     }
 
-    bool operator==(const Matrix& other) const
-    {
-        for (int32 i = 0; i < 16; i++)
-        {
-            if (Math::NotNearEqual(other.Raw[i], Raw[i]))
-                return false;
-        }
-        return true;
-    }
-
+    bool operator==(const Matrix& other) const;
     bool operator!=(const Matrix& other) const
     {
-        for (int32 i = 0; i < 16; i++)
-        {
-            if (Math::NotNearEqual(other.Raw[i], Raw[i]))
-                return true;
-        }
-        return false;
+        return !operator==(other);
     }
 
 public:
@@ -547,73 +534,19 @@ public:
     // @param left The first matrix to add.
     // @param right The second matrix to add.
     // @param result When the method completes, contains the sum of the two matrices.
-    static void Add(const Matrix& left, const Matrix& right, Matrix& result)
-    {
-        result.M11 = left.M11 + right.M11;
-        result.M12 = left.M12 + right.M12;
-        result.M13 = left.M13 + right.M13;
-        result.M14 = left.M14 + right.M14;
-        result.M21 = left.M21 + right.M21;
-        result.M22 = left.M22 + right.M22;
-        result.M23 = left.M23 + right.M23;
-        result.M24 = left.M24 + right.M24;
-        result.M31 = left.M31 + right.M31;
-        result.M32 = left.M32 + right.M32;
-        result.M33 = left.M33 + right.M33;
-        result.M34 = left.M34 + right.M34;
-        result.M41 = left.M41 + right.M41;
-        result.M42 = left.M42 + right.M42;
-        result.M43 = left.M43 + right.M43;
-        result.M44 = left.M44 + right.M44;
-    }
+    static void Add(const Matrix& left, const Matrix& right, Matrix& result);
 
     // Calculates the difference between two matrices.
     // @param left The first matrix to subtract.
     // @param right The second matrix to subtract.
     // @param result When the method completes, contains the difference between the two matrices.
-    static void Subtract(const Matrix& left, const Matrix& right, Matrix& result)
-    {
-        result.M11 = left.M11 - right.M11;
-        result.M12 = left.M12 - right.M12;
-        result.M13 = left.M13 - right.M13;
-        result.M14 = left.M14 - right.M14;
-        result.M21 = left.M21 - right.M21;
-        result.M22 = left.M22 - right.M22;
-        result.M23 = left.M23 - right.M23;
-        result.M24 = left.M24 - right.M24;
-        result.M31 = left.M31 - right.M31;
-        result.M32 = left.M32 - right.M32;
-        result.M33 = left.M33 - right.M33;
-        result.M34 = left.M34 - right.M34;
-        result.M41 = left.M41 - right.M41;
-        result.M42 = left.M42 - right.M42;
-        result.M43 = left.M43 - right.M43;
-        result.M44 = left.M44 - right.M44;
-    }
+    static void Subtract(const Matrix& left, const Matrix& right, Matrix& result);
 
     // Scales a matrix by the given value.
     // @param left The matrix to scale.
     // @param right The amount by which to scale.
     // @param result When the method completes, contains the scaled matrix.
-    static void Multiply(const Matrix& left, float right, Matrix& result)
-    {
-        result.M11 = left.M11 * right;
-        result.M12 = left.M12 * right;
-        result.M13 = left.M13 * right;
-        result.M14 = left.M14 * right;
-        result.M21 = left.M21 * right;
-        result.M22 = left.M22 * right;
-        result.M23 = left.M23 * right;
-        result.M24 = left.M24 * right;
-        result.M31 = left.M31 * right;
-        result.M32 = left.M32 * right;
-        result.M33 = left.M33 * right;
-        result.M34 = left.M34 * right;
-        result.M41 = left.M41 * right;
-        result.M42 = left.M42 * right;
-        result.M43 = left.M43 * right;
-        result.M44 = left.M44 * right;
-    }
+    static void Multiply(const Matrix& left, float right, Matrix& result);
 
     // Calculates the product of two matrices.
     // @param left The first matrix to multiply.
@@ -630,124 +563,31 @@ public:
     // @param left The first matrix to multiply.
     // @param right The second matrix to multiply.
     // @param result The product of the two matrices.
-    static void Multiply(const Matrix& left, const Matrix& right, Matrix& result)
-    {
-        result.M11 = left.M11 * right.M11 + left.M12 * right.M21 + left.M13 * right.M31 + left.M14 * right.M41;
-        result.M12 = left.M11 * right.M12 + left.M12 * right.M22 + left.M13 * right.M32 + left.M14 * right.M42;
-        result.M13 = left.M11 * right.M13 + left.M12 * right.M23 + left.M13 * right.M33 + left.M14 * right.M43;
-        result.M14 = left.M11 * right.M14 + left.M12 * right.M24 + left.M13 * right.M34 + left.M14 * right.M44;
-        result.M21 = left.M21 * right.M11 + left.M22 * right.M21 + left.M23 * right.M31 + left.M24 * right.M41;
-        result.M22 = left.M21 * right.M12 + left.M22 * right.M22 + left.M23 * right.M32 + left.M24 * right.M42;
-        result.M23 = left.M21 * right.M13 + left.M22 * right.M23 + left.M23 * right.M33 + left.M24 * right.M43;
-        result.M24 = left.M21 * right.M14 + left.M22 * right.M24 + left.M23 * right.M34 + left.M24 * right.M44;
-        result.M31 = left.M31 * right.M11 + left.M32 * right.M21 + left.M33 * right.M31 + left.M34 * right.M41;
-        result.M32 = left.M31 * right.M12 + left.M32 * right.M22 + left.M33 * right.M32 + left.M34 * right.M42;
-        result.M33 = left.M31 * right.M13 + left.M32 * right.M23 + left.M33 * right.M33 + left.M34 * right.M43;
-        result.M34 = left.M31 * right.M14 + left.M32 * right.M24 + left.M33 * right.M34 + left.M34 * right.M44;
-        result.M41 = left.M41 * right.M11 + left.M42 * right.M21 + left.M43 * right.M31 + left.M44 * right.M41;
-        result.M42 = left.M41 * right.M12 + left.M42 * right.M22 + left.M43 * right.M32 + left.M44 * right.M42;
-        result.M43 = left.M41 * right.M13 + left.M42 * right.M23 + left.M43 * right.M33 + left.M44 * right.M43;
-        result.M44 = left.M41 * right.M14 + left.M42 * right.M24 + left.M43 * right.M34 + left.M44 * right.M44;
-    }
+    static void Multiply(const Matrix& left, const Matrix& right, Matrix& result);
 
     // Scales a matrix by the given value.
     // @param left The matrix to scale.
     // @param right The amount by which to scale.
     // @param result When the method completes, contains the scaled matrix.
-    static void Divide(const Matrix& left, float right, Matrix& result)
-    {
-        ASSERT(!Math::IsZero(right));
-        const float inv = 1.0f / right;
-
-        result.M11 = left.M11 * inv;
-        result.M12 = left.M12 * inv;
-        result.M13 = left.M13 * inv;
-        result.M14 = left.M14 * inv;
-        result.M21 = left.M21 * inv;
-        result.M22 = left.M22 * inv;
-        result.M23 = left.M23 * inv;
-        result.M24 = left.M24 * inv;
-        result.M31 = left.M31 * inv;
-        result.M32 = left.M32 * inv;
-        result.M33 = left.M33 * inv;
-        result.M34 = left.M34 * inv;
-        result.M41 = left.M41 * inv;
-        result.M42 = left.M42 * inv;
-        result.M43 = left.M43 * inv;
-        result.M44 = left.M44 * inv;
-    }
+    static void Divide(const Matrix& left, float right, Matrix& result);
 
     // Calculates the quotient of two matrices.
     // @param left The first matrix to divide.
     // @param right The second matrix to divide.
     // @param result When the method completes, contains the quotient of the two matrices.
-    static void Divide(const Matrix& left, const Matrix& right, Matrix& result)
-    {
-        result.M11 = left.M11 / right.M11;
-        result.M12 = left.M12 / right.M12;
-        result.M13 = left.M13 / right.M13;
-        result.M14 = left.M14 / right.M14;
-        result.M21 = left.M21 / right.M21;
-        result.M22 = left.M22 / right.M22;
-        result.M23 = left.M23 / right.M23;
-        result.M24 = left.M24 / right.M24;
-        result.M31 = left.M31 / right.M31;
-        result.M32 = left.M32 / right.M32;
-        result.M33 = left.M33 / right.M33;
-        result.M34 = left.M34 / right.M34;
-        result.M41 = left.M41 / right.M41;
-        result.M42 = left.M42 / right.M42;
-        result.M43 = left.M43 / right.M43;
-        result.M44 = left.M44 / right.M44;
-    }
+    static void Divide(const Matrix& left, const Matrix& right, Matrix& result);
 
     // Negates a matrix.
     // @param value The matrix to be negated.
     // @param result When the method completes, contains the negated matrix.
-    static void Negate(const Matrix& value, Matrix& result)
-    {
-        result.M11 = -value.M11;
-        result.M12 = -value.M12;
-        result.M13 = -value.M13;
-        result.M14 = -value.M14;
-        result.M21 = -value.M21;
-        result.M22 = -value.M22;
-        result.M23 = -value.M23;
-        result.M24 = -value.M24;
-        result.M31 = -value.M31;
-        result.M32 = -value.M32;
-        result.M33 = -value.M33;
-        result.M34 = -value.M34;
-        result.M41 = -value.M41;
-        result.M42 = -value.M42;
-        result.M43 = -value.M43;
-        result.M44 = -value.M44;
-    }
+    static void Negate(const Matrix& value, Matrix& result);
 
     // Performs a linear interpolation between two matrices.
     // @param start Start matrix.
     // @param end End matrix.
     // @param amount Value between 0 and 1 indicating the weight of end.
     // @param result When the method completes, contains the linear interpolation of the two matrices.
-    static void Lerp(const Matrix& start, const Matrix& end, float amount, Matrix& result)
-    {
-        result.M11 = Math::Lerp(start.M11, end.M11, amount);
-        result.M12 = Math::Lerp(start.M12, end.M12, amount);
-        result.M13 = Math::Lerp(start.M13, end.M13, amount);
-        result.M14 = Math::Lerp(start.M14, end.M14, amount);
-        result.M21 = Math::Lerp(start.M21, end.M21, amount);
-        result.M22 = Math::Lerp(start.M22, end.M22, amount);
-        result.M23 = Math::Lerp(start.M23, end.M23, amount);
-        result.M24 = Math::Lerp(start.M24, end.M24, amount);
-        result.M31 = Math::Lerp(start.M31, end.M31, amount);
-        result.M32 = Math::Lerp(start.M32, end.M32, amount);
-        result.M33 = Math::Lerp(start.M33, end.M33, amount);
-        result.M34 = Math::Lerp(start.M34, end.M34, amount);
-        result.M41 = Math::Lerp(start.M41, end.M41, amount);
-        result.M42 = Math::Lerp(start.M42, end.M42, amount);
-        result.M43 = Math::Lerp(start.M43, end.M43, amount);
-        result.M44 = Math::Lerp(start.M44, end.M44, amount);
-    }
+    static void Lerp(const Matrix& start, const Matrix& end, float amount, Matrix& result);
 
     // Performs a cubic interpolation between two matrices.
     // @param start Start matrix.
@@ -1130,6 +970,7 @@ public:
     static void CreateFromAxisAngle(const Float3& axis, float angle, Matrix& result);
 
 public:
+    static Vector3 TransformVector(const Matrix& m, const Vector3& v);
     static Float4 TransformPosition(const Matrix& m, const Float3& v);
     static Float4 TransformPosition(const Matrix& m, const Float4& v);
 };

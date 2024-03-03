@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -1929,8 +1929,8 @@ API_STRUCT() struct FLAXENGINE_API PostFxMaterialsSettings : ISerializable
     /// <summary>
     /// The post-process materials collection for rendering (fixed capacity).
     /// </summary>
-    API_FIELD(Attributes="EditorDisplay(null, EditorDisplayAttribute.InlineStyle)")
-    Array<AssetReference<MaterialBase>, FixedAllocation<POST_PROCESS_SETTINGS_MAX_MATERIALS>> Materials;
+    API_FIELD(Attributes="EditorDisplay(null, EditorDisplayAttribute.InlineStyle), Collection(MaxCount=8)")
+    Array<SoftAssetReference<MaterialBase>, FixedAllocation<POST_PROCESS_SETTINGS_MAX_MATERIALS>> Materials;
 
 public:
     /// <summary>

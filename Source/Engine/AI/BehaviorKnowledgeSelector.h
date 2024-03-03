@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -89,6 +89,13 @@ API_STRUCT(InBuild, Template, MarshalAs=StringAnsi) struct FLAXENGINE_API Behavi
             return true;
         }
         return false;
+    }
+
+    BehaviorKnowledgeSelector() = default;
+
+    BehaviorKnowledgeSelector(const StringAnsi& other)
+    {
+        Path = other;
     }
 
     BehaviorKnowledgeSelector& operator=(const StringAnsiView& other) noexcept

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -702,7 +702,7 @@ namespace Flax.Build.Projects.VisualStudio
             {
                 // Build command for the build tool
                 var buildToolPath = Path.ChangeExtension(typeof(Builder).Assembly.Location, null);
-                
+
                 var targetsFileContent = new StringBuilder();
                 targetsFileContent.AppendLine("<Project>");
                 targetsFileContent.AppendLine("  <!-- Custom Flax.Build scripts for C# projects. -->");

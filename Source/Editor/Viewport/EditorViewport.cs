@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Linq;
@@ -331,6 +331,22 @@ namespace FlaxEditor.Viewport
             {
                 ViewPosition = value.Position;
                 ViewDirection = value.Direction;
+            }
+        }
+
+        /// <summary>
+        /// Gets the bounding frustum of the current viewport camera.
+        /// </summary>
+        public BoundingFrustum ViewFrustum
+        {
+            get
+            {
+                Vector3 viewOrigin = Task.View.Origin;
+                Float3 position = ViewPosition - viewOrigin;
+                CreateViewMatrix(position, out var view);
+                CreateProjectionMatrix(out var projection);
+                Matrix.Multiply(ref view, ref projection, out var viewProjection);
+                return new BoundingFrustum(ref viewProjection);
             }
         }
 

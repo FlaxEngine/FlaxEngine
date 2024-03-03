@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -8,7 +8,7 @@
 /// <summary>
 /// Visject metadata container
 /// </summary>
-class VisjectMeta
+class FLAXENGINE_API VisjectMeta
 {
 public:
     /// <summary>
@@ -26,19 +26,6 @@ public:
     /// All meta entries
     /// </summary>
     Array<Entry, FixedAllocation<8>> Entries;
-
-public:
-    /// <summary>
-    /// Initializes a new instance of the <see cref="VisjectMeta"/> class.
-    /// </summary>
-    VisjectMeta();
-
-    /// <summary>
-    /// Finalizes an instance of the <see cref="VisjectMeta"/> class.
-    /// </summary>
-    ~VisjectMeta()
-    {
-    }
 
 public:
     /// <summary>

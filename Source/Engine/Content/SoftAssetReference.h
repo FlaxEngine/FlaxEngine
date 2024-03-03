@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -89,6 +89,11 @@ public:
         OnSet(other.GetID());
     }
 
+    SoftAssetReference(const Guid& id)
+    {
+        OnSet(id);
+    }
+
     SoftAssetReference(SoftAssetReference&& other)
     {
         OnSet(other.GetID());
@@ -111,6 +116,10 @@ public:
     {
         return GetID() == other.GetID();
     }
+    FORCE_INLINE bool operator==(const Guid& other) const
+    {
+        return GetID() == other;
+    }
     FORCE_INLINE bool operator!=(T* other) const
     {
         return Get() != other;
@@ -118,6 +127,10 @@ public:
     FORCE_INLINE bool operator!=(const SoftAssetReference& other) const
     {
         return GetID() != other.GetID();
+    }
+    FORCE_INLINE bool operator!=(const Guid& other) const
+    {
+        return GetID() != other;
     }
     SoftAssetReference& operator=(const SoftAssetReference& other)
     {

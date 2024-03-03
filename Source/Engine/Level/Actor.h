@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -534,9 +534,7 @@ public:
     /// <summary>
     /// Gets actor direction vector (forward vector).
     /// </summary>
-    /// <returns>The result value.</returns>
-    API_PROPERTY(Attributes="HideInEditor, NoSerialize")
-    FORCE_INLINE Float3 GetDirection() const
+    API_PROPERTY(Attributes="HideInEditor, NoSerialize") FORCE_INLINE Float3 GetDirection() const
     {
         return Float3::Transform(Float3::Forward, GetOrientation());
     }
@@ -571,7 +569,7 @@ public:
     /// <summary>
     /// Gets local position of the actor in parent actor space.
     /// </summary>
-    API_PROPERTY(Attributes="EditorDisplay(\"Transform\", \"Position\"), DefaultValue(typeof(Vector3), \"0,0,0\"), EditorOrder(-30), NoSerialize, CustomEditorAlias(\"FlaxEditor.CustomEditors.Editors.ActorTransformEditor+PositionEditor\")")
+    API_PROPERTY(Attributes="EditorDisplay(\"Transform\", \"Position\"), VisibleIf(\"ShowTransform\"), DefaultValue(typeof(Vector3), \"0,0,0\"), EditorOrder(-30), NoSerialize, CustomEditorAlias(\"FlaxEditor.CustomEditors.Editors.ActorTransformEditor+PositionEditor\")")
     FORCE_INLINE Vector3 GetLocalPosition() const
     {
         return _localTransform.Translation;
@@ -587,7 +585,7 @@ public:
     /// Gets local rotation of the actor in parent actor space.
     /// </summary>
     /// <code>Actor.LocalOrientation *= Quaternion.Euler(0, 10 * Time.DeltaTime, 0)</code>
-    API_PROPERTY(Attributes="EditorDisplay(\"Transform\", \"Rotation\"), DefaultValue(typeof(Quaternion), \"0,0,0,1\"), EditorOrder(-20), NoSerialize, CustomEditorAlias(\"FlaxEditor.CustomEditors.Editors.ActorTransformEditor+OrientationEditor\")")
+    API_PROPERTY(Attributes="EditorDisplay(\"Transform\", \"Rotation\"), VisibleIf(\"ShowTransform\"), DefaultValue(typeof(Quaternion), \"0,0,0,1\"), EditorOrder(-20), NoSerialize, CustomEditorAlias(\"FlaxEditor.CustomEditors.Editors.ActorTransformEditor+OrientationEditor\")")
     FORCE_INLINE Quaternion GetLocalOrientation() const
     {
         return _localTransform.Orientation;
@@ -602,7 +600,7 @@ public:
     /// <summary>
     /// Gets local scale vector of the actor in parent actor space.
     /// </summary>
-    API_PROPERTY(Attributes="EditorDisplay(\"Transform\", \"Scale\"), DefaultValue(typeof(Float3), \"1,1,1\"), Limit(float.MinValue, float.MaxValue, 0.01f), EditorOrder(-10), NoSerialize, CustomEditorAlias(\"FlaxEditor.CustomEditors.Editors.ActorTransformEditor+ScaleEditor\")")
+    API_PROPERTY(Attributes="EditorDisplay(\"Transform\", \"Scale\"), VisibleIf(\"ShowTransform\"), DefaultValue(typeof(Float3), \"1,1,1\"), Limit(float.MinValue, float.MaxValue, 0.01f), EditorOrder(-10), NoSerialize, CustomEditorAlias(\"FlaxEditor.CustomEditors.Editors.ActorTransformEditor+ScaleEditor\")")
     FORCE_INLINE Float3 GetLocalScale() const
     {
         return _localTransform.Scale;
@@ -640,10 +638,7 @@ public:
     /// Gets the matrix that transforms a point from the local space of the actor to world space.
     /// </summary>
     /// <param name="localToWorld">The world to local matrix.</param>
-    API_FUNCTION() FORCE_INLINE void GetLocalToWorldMatrix(API_PARAM(Out) Matrix& localToWorld) const
-    {
-        _transform.GetWorld(localToWorld);
-    }
+    API_FUNCTION() void GetLocalToWorldMatrix(API_PARAM(Out) Matrix& localToWorld) const;
 
 public:
     /// <summary>
@@ -739,6 +734,12 @@ public:
     /// </summary>
     API_PROPERTY() bool IsPrefabRoot() const;
 
+    /// <summary>
+    /// Gets the root of the prefab this actor is attached to.
+    /// </summary>
+    /// <returns>The root prefab object, or null if this actor is not a prefab.</returns>
+    API_FUNCTION() Actor* GetPrefabRoot();
+
 public:
     /// <summary>
     /// Tries to find the actor with the given name in this actor hierarchy (checks this actor and all children hierarchy).
@@ -751,8 +752,9 @@ public:
     /// Tries to find the actor of the given type in this actor hierarchy (checks this actor and all children hierarchy).
     /// </summary>
     /// <param name="type">Type of the actor to search for. Includes any actors derived from the type.</param>
+    /// <param name="activeOnly">Finds only a active actor.</param>
     /// <returns>Actor instance if found, null otherwise.</returns>
-    API_FUNCTION() Actor* FindActor(API_PARAM(Attributes="TypeReference(typeof(Actor))") const MClass* type) const;
+    API_FUNCTION() Actor* FindActor(API_PARAM(Attributes="TypeReference(typeof(Actor))") const MClass* type, bool activeOnly = false) const;
 
     /// <summary>
     /// Tries to find the actor of the given type and name in this actor hierarchy (checks this actor and all children hierarchy).
@@ -767,8 +769,9 @@ public:
     /// </summary>
     /// <param name="type">Type of the actor to search for. Includes any actors derived from the type.</param>
     /// <param name="tag">The tag of the actor to search for.</param>
+    /// <param name="activeOnly">Finds only an active actor.</param>
     /// <returns>Actor instance if found, null otherwise.</returns>
-    API_FUNCTION() Actor* FindActor(API_PARAM(Attributes="TypeReference(typeof(Actor))") const MClass* type, const Tag& tag) const;
+    API_FUNCTION() Actor* FindActor(API_PARAM(Attributes="TypeReference(typeof(Actor))") const MClass* type, const Tag& tag, bool activeOnly = false) const;
 
     /// <summary>
     /// Tries to find the actor of the given type in this actor hierarchy (checks this actor and all children hierarchy).
@@ -790,7 +793,7 @@ public:
     {
         return (T*)FindActor(T::GetStaticClass(), name);
     }
-    
+
     /// <summary>
     /// Tries to find the actor of the given type and tag in this actor hierarchy (checks this actor and all children hierarchy).
     /// </summary>

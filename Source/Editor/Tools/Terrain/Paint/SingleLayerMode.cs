@@ -1,6 +1,5 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
-using System;
 using FlaxEngine;
 
 namespace FlaxEditor.Tools.Terrain.Paint
@@ -73,53 +72,52 @@ namespace FlaxEditor.Tools.Terrain.Paint
             var strength = p.Strength;
             var layer = (int)Layer;
             var brushPosition = p.Gizmo.CursorPosition;
-            var layerComponent = layer % 4;
+            var c = layer % 4;
 
             // Apply brush modification
             Profiler.BeginEvent("Apply Brush");
+            bool otherModified = false;
             for (int z = 0; z < p.ModifiedSize.Y; z++)
             {
                 var zz = z + p.ModifiedOffset.Y;
                 for (int x = 0; x < p.ModifiedSize.X; x++)
                 {
                     var xx = x + p.ModifiedOffset.X;
-                    var src = p.SourceData[zz * p.HeightmapSize + xx];
+                    var src = (Color)p.SourceData[zz * p.HeightmapSize + xx];
 
                     var samplePositionLocal = p.PatchPositionLocal + new Vector3(xx * FlaxEngine.Terrain.UnitsPerVertex, 0, zz * FlaxEngine.Terrain.UnitsPerVertex);
                     Vector3.Transform(ref samplePositionLocal, ref p.TerrainWorld, out Vector3 samplePositionWorld);
+                    var sample = Mathf.Saturate(p.Brush.Sample(ref brushPosition, ref samplePositionWorld));
 
-                    var paintAmount = p.Brush.Sample(ref brushPosition, ref samplePositionWorld) * strength;
+                    var paintAmount = sample * strength;
+                    if (paintAmount < 0.0f)
+                        continue; // Skip when pixel won't be affected
 
-                    // Extract layer weight
-                    byte* srcPtr = &src.R;
-                    var srcWeight = *(srcPtr + layerComponent) / 255.0f;
+                    // Other layers reduction based on their sum and current paint intensity
+                    var srcOther = (Color)p.SourceDataOther[zz * p.HeightmapSize + xx];
+                    var otherLayersSum = src.ValuesSum + srcOther.ValuesSum - src[c];
+                    var decreaseAmount = paintAmount / otherLayersSum;
 
-                    // Accumulate weight
-                    float dstWeight = srcWeight + paintAmount;
+                    // Paint on the active splatmap texture
+                    var srcNew = Color.Clamp(src - src * decreaseAmount, Color.Zero, Color.White);
+                    srcNew[c] = Mathf.Saturate(src[c] + paintAmount);
+                    p.TempBuffer[z * p.ModifiedSize.X + x] = srcNew;
 
-                    // Check for solid layer case
-                    if (dstWeight >= 1.0f)
+                    //if (other.ValuesSum > 0.0f) // Skip editing the other splatmap if it's empty
                     {
-                        // Erase other layers
-                        // TODO: maybe erase only the higher layers?
-                        // TODO: need to erase also weights form the other splatmaps
-                        src = Color32.Transparent;
-
-                        // Use limit value
-                        dstWeight = 1.0f;
+                        // Remove 'paint' from the other splatmap texture
+                        srcOther = Color.Clamp(srcOther - srcOther * decreaseAmount, Color.Zero, Color.White);
+                        p.TempBufferOther[z * p.ModifiedSize.X + x] = srcOther;
+                        otherModified = true;
                     }
-
-                    // Modify packed weight
-                    *(srcPtr + layerComponent) = (byte)(dstWeight * 255.0f);
-
-                    // Write back
-                    p.TempBuffer[z * p.ModifiedSize.X + x] = src;
                 }
             }
             Profiler.EndEvent();
 
             // Update terrain patch
             TerrainTools.ModifySplatMap(p.Terrain, ref p.PatchCoord, p.SplatmapIndex, p.TempBuffer, ref p.ModifiedOffset, ref p.ModifiedSize);
+            if (otherModified)
+                TerrainTools.ModifySplatMap(p.Terrain, ref p.PatchCoord, p.SplatmapIndexOther, p.TempBufferOther, ref p.ModifiedOffset, ref p.ModifiedSize);
         }
     }
 }

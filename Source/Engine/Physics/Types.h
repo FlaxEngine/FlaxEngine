@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -10,6 +10,7 @@
 struct PhysicsStatistics;
 class PhysicsColliderActor;
 class PhysicsScene;
+class PhysicalMaterial;
 class Joint;
 class Collider;
 class CollisionData;
@@ -132,7 +133,7 @@ DECLARE_ENUM_OPERATORS(RigidbodyConstraints);
 /// <summary>
 /// Raycast hit result data.
 /// </summary>
-API_STRUCT() struct RayCastHit
+API_STRUCT(NoDefault) struct RayCastHit
 {
     DECLARE_SCRIPTING_TYPE_NO_SPAWN(RayCastHit);
 
@@ -140,6 +141,11 @@ API_STRUCT() struct RayCastHit
     /// The collider that was hit.
     /// </summary>
     API_FIELD() PhysicsColliderActor* Collider = nullptr;
+
+    /// <summary>
+    /// The physical material of the surface that was hit.
+    /// </summary>
+    API_FIELD() PhysicalMaterial* Material = nullptr;
 
     /// <summary>
     /// The normal of the surface the ray hit.
@@ -152,15 +158,15 @@ API_STRUCT() struct RayCastHit
     API_FIELD() float Distance;
 
     /// <summary>
+    /// The point in the world space where ray hit the collider.
+    /// </summary>
+    API_FIELD() Vector3 Point;
+
+    /// <summary>
     /// The index of the face that was hit. Valid only for convex mesh (polygon index), triangle mesh (triangle index) and height field (triangle index).
     /// </summary>
     /// <seealso cref="CollisionData.GetModelTriangle" />
     API_FIELD() uint32 FaceIndex;
-
-    /// <summary>
-    /// The point in the world space where ray hit the collider.
-    /// </summary>
-    API_FIELD() Vector3 Point;
 
     /// <summary>
     /// The barycentric coordinates of hit triangle. Valid only for triangle mesh and height field.

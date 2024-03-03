@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -869,7 +869,9 @@ namespace FlaxEditor
 
         /// <summary>
         /// New asset types allowed to create.
+        /// [Deprecated in v1.8]
         /// </summary>
+        [Obsolete("Use CreateAsset with named tag.")]
         public enum NewAssetType
         {
             /// <summary>
@@ -1046,12 +1048,59 @@ namespace FlaxEditor
 
         /// <summary>
         /// Creates new asset at the target location.
+        /// [Deprecated in v1.8]
         /// </summary>
         /// <param name="type">New asset type.</param>
         /// <param name="outputPath">Output asset path.</param>
+        [Obsolete("Use CreateAsset with named tag.")]
         public static bool CreateAsset(NewAssetType type, string outputPath)
         {
-            return Internal_CreateAsset(type, outputPath);
+            // [Deprecated on 18.02.2024, expires on 18.02.2025]
+            string tag;
+            switch (type)
+            {
+            case NewAssetType.Material:
+                tag = "Material";
+                break;
+            case NewAssetType.MaterialInstance:
+                tag = "MaterialInstance";
+                break;
+            case NewAssetType.CollisionData:
+                tag = "CollisionData";
+                break;
+            case NewAssetType.AnimationGraph:
+                tag = "AnimationGraph";
+                break;
+            case NewAssetType.SkeletonMask:
+                tag = "SkeletonMask";
+                break;
+            case NewAssetType.ParticleEmitter:
+                tag = "ParticleEmitter";
+                break;
+            case NewAssetType.ParticleSystem:
+                tag = "ParticleSystem";
+                break;
+            case NewAssetType.SceneAnimation:
+                tag = "SceneAnimation";
+                break;
+            case NewAssetType.MaterialFunction:
+                tag = "MaterialFunction";
+                break;
+            case NewAssetType.ParticleEmitterFunction:
+                tag = "ParticleEmitterFunction";
+                break;
+            case NewAssetType.AnimationGraphFunction:
+                tag = "AnimationGraphFunction";
+                break;
+            case NewAssetType.Animation:
+                tag = "Animation";
+                break;
+            case NewAssetType.BehaviorTree:
+                tag = "BehaviorTree";
+                break;
+            default: return true;
+            }
+            return CreateAsset(tag, outputPath);
         }
 
         /// <summary>
@@ -1346,7 +1395,7 @@ namespace FlaxEditor
         internal void BuildCommand(string arg)
         {
             if (TryBuildCommand(arg))
-                Engine.RequestExit();
+                Engine.RequestExit(1);
         }
 
         private bool TryBuildCommand(string arg)
@@ -1588,10 +1637,6 @@ namespace FlaxEditor
         [LibraryImport("FlaxEngine", EntryPoint = "EditorInternal_CloseSplashScreen", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(StringMarshaller))]
         internal static partial void Internal_CloseSplashScreen();
 
-        [LibraryImport("FlaxEngine", EntryPoint = "EditorInternal_CreateAsset", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(StringMarshaller))]
-        [return: MarshalAs(UnmanagedType.U1)]
-        internal static partial bool Internal_CreateAsset(NewAssetType type, string outputPath);
-
         [LibraryImport("FlaxEngine", EntryPoint = "EditorInternal_CreateVisualScript", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(StringMarshaller))]
         [return: MarshalAs(UnmanagedType.U1)]
         internal static partial bool Internal_CreateVisualScript(string outputPath, string baseTypename);
@@ -1630,6 +1675,9 @@ namespace FlaxEditor
         [LibraryImport("FlaxEngine", EntryPoint = "EditorInternal_CanSetToRoot", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(StringMarshaller))]
         [return: MarshalAs(UnmanagedType.U1)]
         internal static partial bool Internal_CanSetToRoot(IntPtr prefab, IntPtr newRoot);
+
+        [LibraryImport("FlaxEngine", EntryPoint = "EditorInternal_GetPrefabNestedObject", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(StringMarshaller))]
+        internal static partial void Internal_GetPrefabNestedObject(IntPtr prefabId, IntPtr prefabObjectId, IntPtr outPrefabId, IntPtr outPrefabObjectId);
 
         [LibraryImport("FlaxEngine", EntryPoint = "EditorInternal_GetAnimationTime", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(StringMarshaller))]
         internal static partial float Internal_GetAnimationTime(IntPtr animatedModel);

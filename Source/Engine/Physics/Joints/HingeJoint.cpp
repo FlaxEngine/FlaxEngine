@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #include "HingeJoint.h"
 #include "Engine/Serialization/Serialization.h"
@@ -63,8 +63,9 @@ void HingeJoint::OnDebugDrawSelected()
     const Quaternion targetRotation = GetTargetOrientation() * xRotation;
     const float size = 15.0f;
     const Color color = Color::Green.AlphaMultiplied(0.6f);
-    DEBUG_DRAW_WIRE_ARROW(source, sourceRotation, size / 100.0f * 0.5f, Color::Red, 0, false);
-    DEBUG_DRAW_WIRE_ARROW(target, targetRotation, size / 100.0f * 0.5f, Color::Blue, 0, false);
+    const float arrowSize = size / 100.0f * 0.5f;
+    DEBUG_DRAW_WIRE_ARROW(source, sourceRotation, arrowSize, arrowSize * 0.5f, Color::Red, 0, false);
+    DEBUG_DRAW_WIRE_ARROW(target, targetRotation, arrowSize, arrowSize * 0.5f, Color::Blue, 0, false);
     if (EnumHasAnyFlags(_flags, HingeJointFlag::Limit))
     {
         const float upper = Math::Max(_limit.Upper, _limit.Lower);

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #include "GameCooker.h"
 #include "PlatformTools.h"
@@ -456,18 +456,18 @@ PlatformTools* GameCooker::GetTools(BuildPlatform platform)
     return result;
 }
 
-void GameCooker::Build(BuildPlatform platform, BuildConfiguration configuration, const StringView& outputPath, BuildOptions options, const Array<String>& customDefines, const StringView& preset, const StringView& presetTarget)
+bool GameCooker::Build(BuildPlatform platform, BuildConfiguration configuration, const StringView& outputPath, BuildOptions options, const Array<String>& customDefines, const StringView& preset, const StringView& presetTarget)
 {
     if (IsRunning())
     {
         LOG(Warning, "Cannot start a build. Already running.");
-        return;
+        return true;
     }
     PlatformTools* tools = GetTools(platform);
     if (tools == nullptr)
     {
         LOG(Error, "Build platform {0} is not supported.", ::ToString(platform));
-        return;
+        return true;
     }
 
     // Setup
@@ -493,7 +493,7 @@ void GameCooker::Build(BuildPlatform platform, BuildConfiguration configuration,
         if (FileSystem::CreateDirectory(data.CacheDirectory))
         {
             LOG(Error, "Cannot setup game building cache directory.");
-            return;
+            return true;
         }
     }
 
@@ -510,13 +510,15 @@ void GameCooker::Build(BuildPlatform platform, BuildConfiguration configuration,
         {
             GameCookerImpl::IsRunning = false;
             LOG(Error, "Failed to start a build thread.");
-            return;
+            return true;
         }
     }
     else
     {
         ThreadCond.NotifyOne();
     }
+
+    return false;
 }
 
 void GameCooker::Cancel(bool waitForEnd)

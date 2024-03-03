@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #ifndef __MATH__
 #define __MATH__
@@ -241,7 +241,7 @@ float4 FindQuatBetween(float3 from, float3 to)
     return normalize(result);
 }
 
-// Rotates Position about the given axis by the given angle, in radians, and returns the offset to position
+// Rotates position about the input axis by the given angle (in radians), and returns the delta to position
 float3 RotateAboutAxis(float4 normalizedRotationAxisAndAngle, float3 positionOnAxis, float3 position)
 {
     float3 pointOnAxis = positionOnAxis + normalizedRotationAxisAndAngle.xyz * dot(normalizedRotationAxisAndAngle.xyz, position - positionOnAxis);

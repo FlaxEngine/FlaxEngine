@@ -1,8 +1,9 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 using System;
 using FlaxEditor.Gizmo;
 using FlaxEditor.SceneGraph;
+using FlaxEditor.SceneGraph.Actors;
 using FlaxEditor.Tools.Foliage.Undo;
 using FlaxEngine;
 
@@ -69,7 +70,19 @@ namespace FlaxEditor.Tools.Foliage
         }
 
         /// <inheritdoc />
-        protected override Transform GetSelectedObject(int index)
+        protected override SceneGraphNode GetSelectedObject(int index)
+        {
+            var foliage = GizmoMode.SelectedFoliage;
+            if (!foliage)
+                throw new InvalidOperationException("No foliage selected.");
+            var instanceIndex = GizmoMode.SelectedInstanceIndex;
+            if (instanceIndex < 0 || instanceIndex >= foliage.InstancesCount)
+                throw new InvalidOperationException("No foliage instance selected.");
+            return new FoliageInstanceNode(foliage, instanceIndex);
+        }
+
+        /// <inheritdoc />
+        protected override Transform GetSelectedTransform(int index)
         {
             var foliage = GizmoMode.SelectedFoliage;
             if (!foliage)

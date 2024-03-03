@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #if USE_LARGE_WORLDS
 using Real = System.Double;
@@ -19,12 +19,17 @@ namespace FlaxEditor.SceneGraph.Actors
     [CustomEditor(typeof(BoxCollider)), DefaultEditor]
     public class BoxColliderEditor : ActorEditor
     {
+        private bool _keepLocalOrientation = true;
+
         /// <inheritdoc />
         public override void Initialize(LayoutElementsContainer layout)
         {
             base.Initialize(layout);
 
             layout.Space(20f);
+            var checkbox = layout.Checkbox("Keep Local Orientation", "Keeps the local orientation when resizing.").CheckBox;
+            checkbox.Checked = _keepLocalOrientation;
+            checkbox.StateChanged += box => _keepLocalOrientation = box.Checked;
             layout.Button("Resize to Fit", Editor.Instance.CodeDocs.GetTooltip(new ScriptMemberInfo(typeof(BoxCollider).GetMethod("AutoResize")))).Button.Clicked += OnResizeClicked;
         }
 
@@ -33,7 +38,7 @@ namespace FlaxEditor.SceneGraph.Actors
             foreach (var value in Values)
             {
                 if (value is BoxCollider collider)
-                    collider.AutoResize();
+                    collider.AutoResize(!_keepLocalOrientation);
             }
         }
     }
@@ -76,7 +81,7 @@ namespace FlaxEditor.SceneGraph.Actors
                 return;
             }
 
-            ((BoxCollider)Actor).AutoResize();
+            ((BoxCollider)Actor).AutoResize(false);
         }
     }
 }

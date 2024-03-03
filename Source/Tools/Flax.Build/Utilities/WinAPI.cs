@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Runtime.InteropServices;
@@ -130,7 +130,7 @@ namespace Flax.Build
                 System = 0x00001000,
                 Task = 0x00002000
             }
-            
+
             public enum Icon : uint
             {
                 Warning = 0x00000030,

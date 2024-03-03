@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -11,7 +11,7 @@
 /// <summary>
 /// Behavior instance script that runs Behavior Tree execution.
 /// </summary>
-API_CLASS() class FLAXENGINE_API Behavior : public Script
+API_CLASS(Attributes="Category(\"Flax Engine\")") class FLAXENGINE_API Behavior : public Script
 {
     API_AUTO_SERIALIZATION();
     DECLARE_SCRIPTING_TYPE(Behavior);

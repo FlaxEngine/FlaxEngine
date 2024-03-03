@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -248,6 +248,16 @@ public:
     FORCE_INLINE bool IsEmpty() const
     {
         return _count == 0;
+    }
+
+    /// <summary>
+    /// Determines if given index is valid.
+    /// </summary>
+    /// <param name="index">The index.</param>
+    /// <returns><c>true</c> if is valid a index; otherwise, <c>false</c>.</returns>
+    bool IsValidIndex(int32 index) const
+    {
+        return index < _count && index >= 0;
     }
 
     /// <summary>

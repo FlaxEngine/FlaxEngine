@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 namespace FlaxEngine.GUI
 {
@@ -35,6 +35,14 @@ namespace FlaxEngine.GUI
             base.DrawSelf();
 
             Render2D.DrawRectangle(new Rectangle(Float2.Zero, Size), BorderColor, BorderWidth);
+        }
+
+        /// <inheritdoc />
+        public override bool ContainsPoint(ref Float2 location, bool precise = false)
+        {
+            if (precise) // Ignore border
+                return false;
+            return base.ContainsPoint(ref location, precise);
         }
     }
 }

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -25,7 +25,7 @@ namespace FlaxEditor.Surface
     /// The base interface for editor windows that use <see cref="FlaxEditor.Surface.VisjectSurface"/> for content editing. 
     /// </summary>
     /// <seealso cref="FlaxEditor.Surface.IVisjectSurfaceOwner" />
-    interface IVisjectSurfaceWindow : IVisjectSurfaceOwner
+    public interface IVisjectSurfaceWindow : IVisjectSurfaceOwner
     {
         /// <summary>
         /// Gets the asset edited by the window.

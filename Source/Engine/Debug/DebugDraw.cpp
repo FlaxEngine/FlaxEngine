@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #if COMPILE_WITH_DEBUG_DRAW
 
@@ -400,10 +400,10 @@ DebugDrawCall WriteList(int32& vertexCounter, const Array<DebugLine>& list)
     drawCall.StartVertex = vertexCounter;
     drawCall.VertexCount = list.Count() * 2;
     vertexCounter += drawCall.VertexCount;
-    Vertex* dst = DebugDrawVB->WriteReserve<Vertex>(drawCall.VertexCount);
+    Vertex* dst = DebugDrawVB->WriteReserve<Vertex>(list.Count() * 2);
     for (int32 i = 0, j = 0; i < list.Count(); i++)
     {
-        const DebugLine& l = list[i];
+        const DebugLine& l = list.Get()[i];
         dst[j++] = { l.Start, l.Color };
         dst[j++] = { l.End, l.Color };
     }
@@ -416,10 +416,10 @@ DebugDrawCall WriteList(int32& vertexCounter, const Array<DebugTriangle>& list)
     drawCall.StartVertex = vertexCounter;
     drawCall.VertexCount = list.Count() * 3;
     vertexCounter += drawCall.VertexCount;
-    Vertex* dst = DebugDrawVB->WriteReserve<Vertex>(drawCall.VertexCount);
+    Vertex* dst = DebugDrawVB->WriteReserve<Vertex>(list.Count() * 3);
     for (int32 i = 0, j = 0; i < list.Count(); i++)
     {
-        const DebugTriangle& l = list[i];
+        const DebugTriangle& l = list.Get()[i];
         dst[j++] = { l.V0, l.Color };
         dst[j++] = { l.V1, l.Color };
         dst[j++] = { l.V2, l.Color };
@@ -923,9 +923,43 @@ void DebugDraw::DrawActors(Actor** selectedActors, int32 selectedActorsCount, bo
     }
 }
 
+void DebugDraw::DrawAxisFromDirection(const Vector3& origin, const Vector3& direction, float size, float duration, bool depthTest)
+{
+    const auto rot = Quaternion::FromDirection(direction.GetNormalized());
+    const Vector3 up = (rot * Vector3::Up);
+    const Vector3 forward = (rot * Vector3::Forward);
+    const Vector3 right = (rot * Vector3::Right);
+    const float sizeHalf = size * 0.5f;
+    DrawLine(origin, origin + up * sizeHalf + up, Color::Green, duration, depthTest);
+    DrawLine(origin, origin + forward * sizeHalf + forward, Color::Blue, duration, depthTest);
+    DrawLine(origin, origin + right * sizeHalf + right, Color::Red, duration, depthTest);
+}
+
+void DebugDraw::DrawDirection(const Vector3& origin, const Vector3& direction, const Color& color, float duration, bool depthTest)
+{
+    auto dir = origin + direction;
+    if (dir.IsNanOrInfinity())
+        return;
+    DrawLine(origin, origin + direction, color, duration, depthTest);
+}
+
 void DebugDraw::DrawRay(const Vector3& origin, const Vector3& direction, const Color& color, float duration, bool depthTest)
 {
     DrawLine(origin, origin + direction, color, duration, depthTest);
+}
+
+void DebugDraw::DrawRay(const Vector3& origin, const Vector3& direction, const Color& color, float length, float duration, bool depthTest)
+{
+    if (isnan(length) || isinf(length))
+        return;
+    DrawLine(origin, origin + (direction.GetNormalized() * length), color, duration, depthTest);
+}
+
+void DebugDraw::DrawRay(const Ray& ray, const Color& color, float length, float duration, bool depthTest)
+{
+    if (isnan(length) || isinf(length))
+        return;
+    DrawLine(ray.Position, ray.Position + (ray.Direction.GetNormalized() * length), color, duration, depthTest);
 }
 
 void DebugDraw::DrawLine(const Vector3& start, const Vector3& end, const Color& color, float duration, bool depthTest)
@@ -1940,15 +1974,15 @@ void DebugDraw::DrawWireArc(const Vector3& position, const Quaternion& orientati
         DrawLine(prevPos, world.GetTranslation(), color, duration, depthTest);
 }
 
-void DebugDraw::DrawWireArrow(const Vector3& position, const Quaternion& orientation, float scale, const Color& color, float duration, bool depthTest)
+void DebugDraw::DrawWireArrow(const Vector3& position, const Quaternion& orientation, float scale, float capScale, const Color& color, float duration, bool depthTest)
 {
     Float3 direction, up, right;
     Float3::Transform(Float3::Forward, orientation, direction);
     Float3::Transform(Float3::Up, orientation, up);
     Float3::Transform(Float3::Right, orientation, right);
     const Vector3 end = position + direction * (100.0f * scale);
-    const Vector3 capEnd = position + direction * (70.0f * scale);
-    const float arrowSidesRatio = scale * 30.0f;
+    const Vector3 capEnd = end - (direction * (100 * Math::Min(capScale, scale * 0.5f)));
+    const float arrowSidesRatio = Math::Min(capScale, scale * 0.5f) * 30.0f;
 
     DrawLine(position, end, color, duration, depthTest);
     DrawLine(end, capEnd + up * arrowSidesRatio, color, duration, depthTest);

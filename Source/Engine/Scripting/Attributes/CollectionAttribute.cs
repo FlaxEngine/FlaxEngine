@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 using System;
 
@@ -60,6 +60,16 @@ namespace FlaxEngine
         /// The spacing amount between collection items in the UI.
         /// </summary>
         public float Spacing;
+
+        /// <summary>
+        /// The minimum size of the collection.
+        /// </summary>
+        public int MinCount;
+
+        /// <summary>
+        /// The maximum size of the collection. Zero if unlimited.
+        /// </summary>
+        public int MaxCount;
 
         /// <summary>
         /// The collection background color.

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -18,17 +18,20 @@ API_STRUCT() struct FLAXENGINE_API Transform
     /// <summary>
     /// The translation vector of the transform.
     /// </summary>
-    API_FIELD(Attributes="EditorOrder(10), EditorDisplay(null, \"Position\")") Vector3 Translation;
+    API_FIELD(Attributes="EditorOrder(10), EditorDisplay(null, \"Position\")")
+    Vector3 Translation;
 
     /// <summary>
     /// The rotation of the transform.
     /// </summary>
-    API_FIELD(Attributes="EditorOrder(20), EditorDisplay(null, \"Rotation\")") Quaternion Orientation;
+    API_FIELD(Attributes="EditorOrder(20), EditorDisplay(null, \"Rotation\")")
+    Quaternion Orientation;
 
     /// <summary>
     /// The scale vector of the transform.
     /// </summary>
-    API_FIELD(Attributes="EditorOrder(30), Limit(float.MinValue, float.MaxValue, 0.01f)") Float3 Scale;
+    API_FIELD(Attributes="EditorOrder(30), Limit(float.MinValue, float.MaxValue, 0.01f)")
+    Float3 Scale;
 
 public:
     /// <summary>
@@ -87,18 +90,12 @@ public:
     /// <summary>
     /// Checks if transform is an identity transformation.
     /// </summary>
-    bool IsIdentity() const
-    {
-        return Translation.IsZero() && Orientation.IsIdentity() && Scale.IsOne();
-    }
+    bool IsIdentity() const;
 
     /// <summary>
     /// Returns true if transform has one or more components equal to +/- infinity or NaN.
     /// </summary>
-    bool IsNanOrInfinity() const
-    {
-        return Translation.IsNanOrInfinity() || Orientation.IsNanOrInfinity() || Scale.IsNanOrInfinity();
-    }
+    bool IsNanOrInfinity() const;
 
     /// <summary>
     /// Calculates the determinant of this transformation.
@@ -272,6 +269,25 @@ public:
     {
         Vector3 result;
         WorldToLocalVector(vector, result);
+        return result;
+    }
+
+    /// <summary>
+    /// Performs transformation of the given rotation in world space to the local space of this transform.
+    /// </summary>
+    /// <param name="rotation">The world space rotation.</param>
+    /// <param name="result">The local space rotation.</param>
+    void WorldToLocal(const Quaternion& rotation, Quaternion& result) const;
+
+    /// <summary>
+    /// Performs transformation of the given rotation in world space to the local space of this transform.
+    /// </summary>
+    /// <param name="rotation">The world space rotation.</param>
+    /// <returns>The local space rotation.</returns>
+    Quaternion WorldToLocal(const Quaternion& rotation) const
+    {
+        Quaternion result;
+        WorldToLocal(rotation, result);
         return result;
     }
 

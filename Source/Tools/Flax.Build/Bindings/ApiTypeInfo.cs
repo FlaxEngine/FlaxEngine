@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -22,7 +22,7 @@ namespace Flax.Build.Bindings
         public string[] Comment;
         public bool IsInBuild;
         public bool IsDeprecated;
-        public string MarshalAs;
+        public TypeInfo MarshalAs;
         internal bool IsInited;
         internal TypedefInfo Instigator;
 

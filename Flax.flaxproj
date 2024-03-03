@@ -4,10 +4,10 @@
     "Major": 1,
     "Minor": 7,
     "Revision": 2,
-    "Build": 6407
+    "Build": 6408
   },
   "Company": "Flax",
-  "Copyright": "Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.",
+  "Copyright": "Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.",
   "GameTarget": "FlaxGame",
   "EditorTarget": "FlaxEditor",
   "Configuration": {

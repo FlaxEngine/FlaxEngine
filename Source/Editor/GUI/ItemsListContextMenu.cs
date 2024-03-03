@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -122,6 +122,10 @@ namespace FlaxEditor.GUI
                 if (IsMouseOver || IsFocused)
                     Render2D.FillRectangle(new Rectangle(Float2.Zero, Size), style.BackgroundHighlighted);
 
+                // Indent for drop panel items is handled by drop panel margin
+                if (Parent is not DropPanel)
+                    textRect.Location += new Float2(Editor.Instance.Icons.ArrowRight12.Size.X + 2, 0);
+
                 // Draw all highlights
                 if (_highlights != null)
                 {
@@ -188,6 +192,11 @@ namespace FlaxEditor.GUI
         /// Event fired when any item in this popup menu gets clicked.
         /// </summary>
         public event Action<Item> ItemClicked;
+
+        /// <summary>
+        /// Event fired when search text in this popup menu gets changed.
+        /// </summary>
+        public event Action<string> TextChanged;
 
         /// <summary>
         /// The panel control where you should add your items.
@@ -257,12 +266,17 @@ namespace FlaxEditor.GUI
                         }
                     }
                     category.Visible = anyVisible;
+                    if (string.IsNullOrEmpty(_searchBox.Text))
+                        category.Close(false);
+                    else
+                        category.Open(false);
                 }
             }
 
             UnlockChildrenRecursive();
             PerformLayout(true);
             _searchBox.Focus();
+            TextChanged?.Invoke(_searchBox.Text);
         }
 
         /// <summary>
@@ -332,9 +346,14 @@ namespace FlaxEditor.GUI
                     var categoryPanel = new DropPanel
                     {
                         HeaderText = item.Category,
+                        ArrowImageOpened = new SpriteBrush(Editor.Instance.Icons.ArrowDown12),
+                        ArrowImageClosed = new SpriteBrush(Editor.Instance.Icons.ArrowRight12),
+                        EnableDropDownIcon = true,
+                        ItemsMargin = new Margin(28, 0, 2, 2),
+                        HeaderColor = Style.Current.Background,
                         Parent = parent,
                     };
-                    categoryPanel.Open(false);
+                    categoryPanel.Close(false);
                     _categoryPanels.Add(categoryPanel);
                     parent = categoryPanel;
                 }
@@ -376,6 +395,7 @@ namespace FlaxEditor.GUI
                             item2.UpdateFilter(null);
                     }
                     category.Visible = true;
+                    category.Close(false);
                 }
             }
 
@@ -439,6 +459,7 @@ namespace FlaxEditor.GUI
                 Hide();
                 return true;
             case KeyboardKeys.ArrowDown:
+            {
                 if (RootWindow.FocusedControl == null)
                 {
                     // Focus search box if nothing is focused
@@ -447,20 +468,19 @@ namespace FlaxEditor.GUI
                 }
 
                 //  Focus the first visible item or then next one
+                var items = GetVisibleItems();
+                var focusedIndex = items.IndexOf(focusedItem);
+                if (focusedIndex == -1)
+                    focusedIndex = -1;
+                if (focusedIndex + 1 < items.Count)
                 {
-                    var items = GetVisibleItems();
-                    var focusedIndex = items.IndexOf(focusedItem);
-                    if (focusedIndex == -1)
-                        focusedIndex = -1;
-                    if (focusedIndex + 1 < items.Count)
-                    {
-                        var item = items[focusedIndex + 1];
-                        item.Focus();
-                        _scrollPanel.ScrollViewTo(item);
-                        return true;
-                    }
+                    var item = items[focusedIndex + 1];
+                    item.Focus();
+                    _scrollPanel.ScrollViewTo(item);
+                    return true;
                 }
                 break;
+            }
             case KeyboardKeys.ArrowUp:
                 if (focusedItem != null)
                 {

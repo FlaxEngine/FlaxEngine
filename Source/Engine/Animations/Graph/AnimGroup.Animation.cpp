@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #include "AnimGraph.h"
 #include "Engine/Core/Types/VariantValueCast.h"
@@ -564,8 +564,12 @@ void AnimGraphExecutor::InitStateTransition(AnimGraphContext& context, AnimGraph
 
 AnimGraphStateTransition* AnimGraphExecutor::UpdateStateTransitions(AnimGraphContext& context, const AnimGraphNode::StateMachineData& stateMachineData, AnimGraphNode* state, AnimGraphNode* ignoreState)
 {
+    return UpdateStateTransitions(context, stateMachineData, state->Data.State, state, ignoreState);
+}
+
+AnimGraphStateTransition* AnimGraphExecutor::UpdateStateTransitions(AnimGraphContext& context, const AnimGraphNode::StateMachineData& stateMachineData, const AnimGraphNode::StateBaseData& stateData, AnimGraphNode* state, AnimGraphNode* ignoreState)
+{
     int32 transitionIndex = 0;
-    const AnimGraphNode::StateBaseData& stateData = state->Data.State;
     while (transitionIndex < ANIM_GRAPH_MAX_STATE_TRANSITIONS && stateData.Transitions[transitionIndex] != AnimGraphNode::StateData::InvalidTransitionIndex)
     {
         const uint16 idx = stateData.Transitions[transitionIndex];
@@ -640,7 +644,7 @@ AnimGraphStateTransition* AnimGraphExecutor::UpdateStateTransitions(AnimGraphCon
 
 void AnimGraphExecutor::UpdateStateTransitions(AnimGraphContext& context, const AnimGraphNode::StateMachineData& stateMachineData, AnimGraphInstanceData::StateMachineBucket& stateMachineBucket, const AnimGraphNode::StateBaseData& stateData)
 {
-    AnimGraphStateTransition* transition = UpdateStateTransitions(context, stateMachineData, stateMachineBucket.CurrentState);
+    AnimGraphStateTransition* transition = UpdateStateTransitions(context, stateMachineData, stateData, stateMachineBucket.CurrentState);
     if (transition)
     {
         InitStateTransition(context, stateMachineBucket, transition);

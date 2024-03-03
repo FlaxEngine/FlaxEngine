@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #include "JsonAsset.h"
 #if USE_EDITOR
@@ -393,34 +393,57 @@ bool JsonAsset::CreateInstance()
     if (typeHandle)
     {
         auto& type = typeHandle.GetType();
+
+        // Ensure that object can deserialized
+        const ScriptingType::InterfaceImplementation* interface = type.GetInterface(ISerializable::TypeInitializer);
+        if (!interface)
+        {
+            LOG(Warning, "Cannot deserialize {0} from Json Asset because it doesn't implement ISerializable interface.", type.ToString());
+            return false;
+        }
+        auto modifier = Cache::ISerializeModifier.Get();
+        modifier->EngineBuild = DataEngineBuild;
+
+        // Create object
         switch (type.Type)
         {
         case ScriptingTypes::Class:
+        case ScriptingTypes::Structure:
         {
-            // Ensure that object can deserialized
-            const ScriptingType::InterfaceImplementation* interface = type.GetInterface(ISerializable::TypeInitializer);
-            if (!interface)
-            {
-                LOG(Warning, "Cannot deserialize {0} from Json Asset because it doesn't implement ISerializable interface.", type.ToString());
-                break;
-            }
-
-            // Allocate object
             const auto instance = Allocator::Allocate(type.Size);
             if (!instance)
                 return true;
             Instance = instance;
-            InstanceType = typeHandle;
-            _dtor = type.Class.Dtor;
-            type.Class.Ctor(instance);
+            if (type.Type == ScriptingTypes::Class)
+            {
+                _dtor = type.Class.Dtor;
+                type.Class.Ctor(instance);
+            }
+            else
+            {
+                _dtor = type.Struct.Dtor;
+                type.Struct.Ctor(instance);
+            }
 
             // Deserialize object
-            auto modifier = Cache::ISerializeModifier.Get();
-            modifier->EngineBuild = DataEngineBuild;
             ((ISerializable*)((byte*)instance + interface->VTableOffset))->Deserialize(*Data, modifier.Value);
             break;
         }
+        case ScriptingTypes::Script:
+        {
+            const ScriptingObjectSpawnParams params(Guid::New(), typeHandle);
+            const auto instance = type.Script.Spawn(params);
+            if (!instance)
+                return true;
+            Instance = instance;
+            _dtor = nullptr;
+
+            // Deserialize object
+            ToInterface<ISerializable>(instance)->Deserialize(*Data, modifier.Value);
+            break;
         }
+        }
+        InstanceType = typeHandle;
     }
 
     return false;
@@ -441,13 +464,20 @@ void JsonAsset::DeleteInstance()
     }
 
     // C++ instance
-    if (!Instance || !_dtor)
+    if (!Instance)
         return;
-    _dtor(Instance);
+    if (_dtor)
+    {
+        _dtor(Instance);
+        _dtor = nullptr;
+        Allocator::Free(Instance);
+    }
+    else
+    {
+        Delete((ScriptingObject*)Instance);
+    }
     InstanceType = ScriptingTypeHandle();
-    Allocator::Free(Instance);
     Instance = nullptr;
-    _dtor = nullptr;
 }
 
 #if USE_EDITOR

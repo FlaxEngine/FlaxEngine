@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #if COMPILE_WITH_PHYSX
 
@@ -36,10 +36,6 @@ void SimulationEventCallback::Clear()
     LostTriggerPairs.Clear();
 
     BrokenJoints.Clear();
-}
-
-void SimulationEventCallback::CollectResults()
-{
 }
 
 void SimulationEventCallback::SendCollisionEvents()
@@ -132,7 +128,6 @@ void SimulationEventCallback::onContact(const PxContactPairHeader& pairHeader, c
         //const PxU32 flippedContacts = (pair.flags & PxContactPairFlag::eINTERNAL_CONTACTS_ARE_FLIPPED);
         const bool hasImpulses = pair.flags.isSet(PxContactPairFlag::eINTERNAL_HAS_IMPULSES);
         const bool hasPostVelocities = !pair.flags.isSet(PxContactPairFlag::eACTOR_PAIR_LOST_TOUCH);
-        PxU32 nbContacts = 0;
         PxVec3 totalImpulse(0.0f);
 
         c.ThisActor = static_cast<PhysicsColliderActor*>(pair.shapes[0]->userData);
@@ -144,47 +139,37 @@ void SimulationEventCallback::onContact(const PxContactPairHeader& pairHeader, c
         }
 
         // Extract contact points
+        c.ContactsCount = 0;
         while (i.hasNextPatch())
         {
             i.nextPatch();
-            while (i.hasNextContact() && nbContacts < COLLISION_NAX_CONTACT_POINTS)
+            while (i.hasNextContact() && c.ContactsCount < COLLISION_NAX_CONTACT_POINTS)
             {
                 i.nextContact();
-
                 const PxVec3 point = i.getContactPoint();
                 const PxVec3 normal = i.getContactNormal();
                 if (hasImpulses)
-                    totalImpulse += normal * impulses[nbContacts];
+                    totalImpulse += normal * impulses[c.ContactsCount];
 
-                //PxU32 internalFaceIndex0 = flippedContacts ? iter.getFaceIndex1() : iter.getFaceIndex0();
-                //PxU32 internalFaceIndex1 = flippedContacts ? iter.getFaceIndex0() : iter.getFaceIndex1();
-
-                ContactPoint& contact = c.Contacts[nbContacts];
+                ContactPoint& contact = c.Contacts[c.ContactsCount++];
                 contact.Point = P2C(point);
                 contact.Normal = P2C(normal);
                 contact.Separation = i.getSeparation();
-
-                nbContacts++;
             }
         }
+        c.Impulse = P2C(totalImpulse);
 
         // Extract velocities
         c.ThisVelocity = c.OtherVelocity = Vector3::Zero;
         if (hasPostVelocities && j.nextItemSet())
         {
-            ASSERT(j.contactPairIndex == pairIndex);
+            ASSERT_LOW_LAYER(j.contactPairIndex == pairIndex);
             if (j.postSolverVelocity)
             {
-                const PxVec3 linearVelocityActor0 = j.postSolverVelocity->linearVelocity[0];
-                const PxVec3 linearVelocityActor1 = j.postSolverVelocity->linearVelocity[1];
-
-                c.ThisVelocity = P2C(linearVelocityActor0);
-                c.OtherVelocity = P2C(linearVelocityActor1);
+                c.ThisVelocity = P2C(j.postSolverVelocity->linearVelocity[0]);
+                c.OtherVelocity = P2C(j.postSolverVelocity->linearVelocity[1]);
             }
         }
-
-        c.ContactsCount = nbContacts;
-        c.Impulse = P2C(totalImpulse);
 
         if (pair.flags & PxContactPairFlag::eACTOR_PAIR_HAS_FIRST_TOUCH)
         {

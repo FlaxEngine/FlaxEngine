@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -26,6 +26,11 @@ namespace FlaxEditor.CustomEditors
         internal bool isRootGroup = true;
 
         /// <summary>
+        /// Parent container who created this one.
+        /// </summary>
+        internal LayoutElementsContainer _parent;
+
+        /// <summary>
         /// The children.
         /// </summary>
         public readonly List<LayoutElement> Children = new List<LayoutElement>();
@@ -39,6 +44,24 @@ namespace FlaxEditor.CustomEditors
         /// Gets the control represented by this element.
         /// </summary>
         public abstract ContainerControl ContainerControl { get; }
+
+        /// <summary>
+        /// Gets the Custom Editors layout presenter.
+        /// </summary>
+        internal CustomEditorPresenter Presenter
+        {
+            get
+            {
+                CustomEditorPresenter result;
+                var container = this;
+                do
+                {
+                    result = container as CustomEditorPresenter;
+                    container = container._parent;
+                } while (container != null);
+                return result;
+            }
+        }
 
         /// <summary>
         /// Adds new group element.
@@ -81,17 +104,31 @@ namespace FlaxEditor.CustomEditors
         public GroupElement Group(string title, bool useTransparentHeader = false)
         {
             var element = new GroupElement();
-            if (!isRootGroup)
+            var presenter = Presenter;
+            var isSubGroup = !isRootGroup;
+            if (isSubGroup)
+                element.Panel.Close();
+            if (presenter != null && (presenter.Features & FeatureFlags.CacheExpandedGroups) != 0)
             {
-                element.Panel.Close(false);
-            }
-            else if (this is CustomEditorPresenter presenter && (presenter.Features & FeatureFlags.CacheExpandedGroups) != 0)
-            {
-                if (Editor.Instance.ProjectCache.IsCollapsedGroup(title))
-                    element.Panel.Close(false);
-                element.Panel.IsClosedChanged += OnPanelIsClosedChanged;
+                // Build group identifier (made of path from group titles)
+                var expandPath = title;
+                var container = this;
+                while (container != null && !(container is CustomEditorPresenter))
+                {
+                    if (container.ContainerControl is DropPanel dropPanel)
+                        expandPath = dropPanel.HeaderText + "/" + expandPath;
+                    container = container._parent;
+                }
+
+                // Caching/restoring expanded groups (non-root groups cache expanded state so invert boolean expression)
+                if (Editor.Instance.ProjectCache.IsGroupToggled(expandPath) ^ isSubGroup)
+                    element.Panel.Close();
+                else
+                    element.Panel.Open();
+                element.Panel.IsClosedChanged += panel => Editor.Instance.ProjectCache.SetGroupToggle(expandPath, panel.IsClosed ^ isSubGroup);
             }
             element.isRootGroup = false;
+            element._parent = this;
             element.Panel.HeaderText = title;
             if (useTransparentHeader)
             {
@@ -101,11 +138,6 @@ namespace FlaxEditor.CustomEditors
             }
             OnAddElement(element);
             return element;
-        }
-
-        private void OnPanelIsClosedChanged(DropPanel panel)
-        {
-            Editor.Instance.ProjectCache.SetCollapsedGroup(panel.HeaderText, panel.IsClosed);
         }
 
         /// <summary>
@@ -627,7 +659,6 @@ namespace FlaxEditor.CustomEditors
             if (style == DisplayStyle.Group)
             {
                 var group = Group(name, editor, true);
-                group.Panel.Close(false);
                 group.Panel.TooltipText = tooltip;
                 return group.Object(values, editor);
             }
@@ -657,7 +688,6 @@ namespace FlaxEditor.CustomEditors
             if (style == DisplayStyle.Group)
             {
                 var group = Group(label.Text, editor, true);
-                group.Panel.Close(false);
                 group.Panel.TooltipText = tooltip;
                 return group.Object(values, editor);
             }

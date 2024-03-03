@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 using System;
 using System.IO;
@@ -105,8 +105,7 @@ namespace Flax.Deps
                                     if (totalBytes.HasValue)
                                         progress.Update(totalBytesRead, totalBytes.Value);
                                 }
-                            }
-                            while (hasMoreToRead);
+                            } while (hasMoreToRead);
                         }
                     }
                 }

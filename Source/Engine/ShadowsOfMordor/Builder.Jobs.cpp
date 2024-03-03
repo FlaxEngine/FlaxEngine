@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #include "Builder.h"
 #include "Engine/Core/Log.h"
@@ -125,7 +125,7 @@ void ShadowsOfMordor::Builder::onJobRender(GPUContext* context)
                 auto& lod = staticModel->Model->LODs[0];
 
                 Matrix worldMatrix;
-                staticModel->GetTransform().GetWorld(worldMatrix);
+                staticModel->GetLocalToWorldMatrix(worldMatrix);
                 Matrix::Transpose(worldMatrix, shaderData.WorldMatrix);
                 shaderData.LightmapArea = staticModel->Lightmap.UVsArea;
 
@@ -165,7 +165,7 @@ void ShadowsOfMordor::Builder::onJobRender(GPUContext* context)
                 Matrix::Transpose(world, shaderData.WorldMatrix);
                 shaderData.LightmapArea = chunk->Lightmap.UVsArea;
                 shaderData.TerrainChunkSizeLOD0 = TERRAIN_UNITS_PER_VERTEX * chunkSize;
-                chunk->GetHeightmapUVScaleBias(&shaderData.HeightmapUVScaleBias);
+                shaderData.HeightmapUVScaleBias = chunk->GetHeightmapUVScaleBias();
 
                 // Extract per axis scales from LocalToWorld transform
                 const float scaleX = Float3(world.M11, world.M12, world.M13).Length();

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #if USE_LARGE_WORLDS
 using Real = System.Double;
@@ -99,6 +99,16 @@ namespace FlaxEngine
         /// </summary>
         /// <param name="matrix">Combined matrix that usually takes view × projection matrix.</param>
         public BoundingFrustum(Matrix matrix)
+        {
+            pMatrix = matrix;
+            GetPlanesFromMatrix(ref pMatrix, out pNear, out pFar, out pLeft, out pRight, out pTop, out pBottom);
+        }
+
+        /// <summary>
+        /// Creates a new instance of BoundingFrustum.
+        /// </summary>
+        /// <param name="matrix">Combined matrix that usually takes view × projection matrix.</param>
+        public BoundingFrustum(ref Matrix matrix)
         {
             pMatrix = matrix;
             GetPlanesFromMatrix(ref pMatrix, out pNear, out pFar, out pLeft, out pRight, out pTop, out pBottom);

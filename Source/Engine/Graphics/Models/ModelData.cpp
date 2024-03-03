@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #include "ModelData.h"
 #include "Engine/Core/Log.h"
@@ -622,7 +622,19 @@ bool MaterialSlotEntry::UsesProperties() const
             Emissive.TextureIndex != -1 ||
             !Math::IsOne(Opacity.Value) ||
             Opacity.TextureIndex != -1 ||
+            Math::NotNearEqual(Roughness.Value, 0.5f) ||
+            Roughness.TextureIndex != -1 ||
             Normals.TextureIndex != -1;
+}
+
+float MaterialSlotEntry::ShininessToRoughness(float shininess)
+{
+    // https://github.com/assimp/assimp/issues/4573
+    const float a = -1.0f;
+    const float b = 2.0f;
+    const float c = (shininess / 100) - 1;
+    const float d = b * b - (4 * a * c);
+	return (-b + Math::Sqrt(d)) / (2 * a);
 }
 
 ModelLodData::~ModelLodData()

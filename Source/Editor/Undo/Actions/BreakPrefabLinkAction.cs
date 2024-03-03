@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -17,6 +17,30 @@ namespace FlaxEditor.Actions
     [Serializable]
     sealed class BreakPrefabLinkAction : IUndoAction
     {
+        private struct Item
+        {
+            public Guid ID;
+            public Guid PrefabID;
+            public Guid PrefabObjectID;
+
+            public unsafe Item(SceneObject obj, List<Item> nestedPrefabLinks)
+            {
+                ID = obj.ID;
+                PrefabID = obj.PrefabID;
+                PrefabObjectID = obj.PrefabObjectID;
+                if (nestedPrefabLinks != null)
+                {
+                    // Check if this object comes from another nested prefab (to break link only from the top-level prefab)
+                    Item nested;
+                    nested.ID = ID;
+                    fixed (Item* i = &this)
+                        Editor.Internal_GetPrefabNestedObject(new IntPtr(&i->PrefabID), new IntPtr(&i->PrefabObjectID), new IntPtr(&nested.PrefabID), new IntPtr(&nested.PrefabObjectID));
+                    if (nested.PrefabID != Guid.Empty && nested.PrefabObjectID != Guid.Empty)
+                        nestedPrefabLinks.Add(nested);
+                }
+            }
+        }
+
         [Serialize]
         private readonly bool _isBreak;
 
@@ -24,25 +48,18 @@ namespace FlaxEditor.Actions
         private Guid _actorId;
 
         [Serialize]
-        private Guid _prefabId;
+        private List<Item> _items = new();
 
-        [Serialize]
-        private Dictionary<Guid, Guid> _prefabObjectIds;
-
-        private BreakPrefabLinkAction(bool isBreak, Guid actorId, Guid prefabId)
+        private BreakPrefabLinkAction(bool isBreak, Guid actorId)
         {
             _isBreak = isBreak;
             _actorId = actorId;
-            _prefabId = prefabId;
         }
 
         private BreakPrefabLinkAction(bool isBreak, Actor actor)
         {
             _isBreak = isBreak;
             _actorId = actor.ID;
-            _prefabId = actor.PrefabID;
-
-            _prefabObjectIds = new Dictionary<Guid, Guid>(1024);
             CollectIds(actor);
         }
 
@@ -55,7 +72,7 @@ namespace FlaxEditor.Actions
         {
             if (actor == null)
                 throw new ArgumentNullException(nameof(actor));
-            return new BreakPrefabLinkAction(true, actor.ID, Guid.Empty);
+            return new BreakPrefabLinkAction(true, actor.ID);
         }
 
         /// <summary>
@@ -96,53 +113,45 @@ namespace FlaxEditor.Actions
         /// <inheritdoc />
         public void Dispose()
         {
-            _prefabObjectIds.Clear();
+            _items.Clear();
         }
 
         private void DoLink()
         {
-            if (_prefabObjectIds == null)
-                throw new Exception("Cannot link prefab. Missing objects Ids mapping.");
-
             var actor = Object.Find<Actor>(ref _actorId);
             if (actor == null)
                 throw new Exception("Cannot link prefab. Missing actor.");
 
-            // Restore cached links
-            foreach (var e in _prefabObjectIds)
-            {
-                var objId = e.Key;
-                var prefabObjId = e.Value;
-
-                var obj = Object.Find<Object>(ref objId);
-                if (obj is Actor)
-                {
-                    Actor.Internal_LinkPrefab(Object.GetUnmanagedPtr(obj), ref _prefabId, ref prefabObjId);
-                }
-                else if (obj is Script)
-                {
-                    Script.Internal_LinkPrefab(Object.GetUnmanagedPtr(obj), ref _prefabId, ref prefabObjId);
-                }
-            }
-
-            Editor.Instance.Scene.MarkSceneEdited(actor.Scene);
-            Editor.Instance.Windows.PropertiesWin.Presenter.BuildLayout();
+            Link(_items);
+            Refresh(actor);
         }
 
-        private void CollectIds(Actor actor)
+        private void Link(List<Item> items)
         {
-            _prefabObjectIds.Add(actor.ID, actor.PrefabObjectID);
+            for (int i = 0; i < items.Count; i++)
+            {
+                var item = items[i];
+                var obj = Object.Find<Object>(ref item.ID);
+                if (obj != null)
+                    SceneObject.Internal_LinkPrefab(Object.GetUnmanagedPtr(obj), ref item.PrefabID, ref item.PrefabObjectID);
+            }
+        }
+
+        private void CollectIds(Actor actor, List<Item> nestedPrefabLinks = null)
+        {
+            _items.Add(new Item(actor, nestedPrefabLinks));
 
             for (int i = 0; i < actor.ChildrenCount; i++)
-            {
-                CollectIds(actor.GetChild(i));
-            }
+                CollectIds(actor.GetChild(i), nestedPrefabLinks);
 
             for (int i = 0; i < actor.ScriptsCount; i++)
-            {
-                var script = actor.GetScript(i);
-                _prefabObjectIds.Add(script.ID, script.PrefabObjectID);
-            }
+                _items.Add(new Item(actor.GetScript(i), nestedPrefabLinks));
+        }
+
+        private void Refresh(Actor actor)
+        {
+            Editor.Instance.Scene.MarkSceneEdited(actor.Scene);
+            Editor.Instance.Windows.PropertiesWin.Presenter.BuildLayout();
         }
 
         private void DoBreak()
@@ -153,18 +162,18 @@ namespace FlaxEditor.Actions
             if (!actor.HasPrefabLink)
                 throw new Exception("Cannot break missing prefab link.");
 
-            if (_prefabObjectIds == null)
-                _prefabObjectIds = new Dictionary<Guid, Guid>(1024);
-            else
-                _prefabObjectIds.Clear();
-            CollectIds(actor);
+            // Cache 'prev' state and extract any nested prefab instances to remain
+            _items.Clear();
+            var nestedPrefabLinks = new List<Item>();
+            CollectIds(actor, nestedPrefabLinks);
 
-            _prefabId = actor.PrefabID;
-
+            // Break prefab linkage
             actor.BreakPrefabLink();
 
-            Editor.Instance.Scene.MarkSceneEdited(actor.Scene);
-            Editor.Instance.Windows.PropertiesWin.Presenter.BuildLayout();
+            // Restore prefab link for nested instances
+            Link(nestedPrefabLinks);
+
+            Refresh(actor);
         }
     }
 }

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #if COMPILE_WITH_MODEL_TOOL && USE_OPEN_FBX
 
@@ -232,6 +232,8 @@ struct OpenFbxImporterData
             if (mat && EnumHasAnyFlags(Options.ImportTypes, ImportDataTypes::Materials))
             {
                 material.Diffuse.Color = ToColor(mat->getDiffuseColor());
+                material.Emissive.Color = ToColor(mat->getEmissiveColor()) * (float)mat->getEmissiveFactor();
+                material.Roughness.Value = MaterialSlotEntry::ShininessToRoughness((float)mat->getShininess());
 
                 if (EnumHasAnyFlags(Options.ImportTypes, ImportDataTypes::Textures))
                 {

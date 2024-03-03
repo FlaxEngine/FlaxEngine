@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 using FlaxEngine;
 
@@ -57,6 +57,8 @@ namespace FlaxEditor.Gizmo
         {
             if (!_isActive || !IsActive)
                 return;
+            if (!_modelCube || !_modelCube.IsLoaded)
+                return;
 
             // As all axisMesh have the same pivot, add a little offset to the x axisMesh, this way SortDrawCalls is able to sort the draw order
             // https://github.com/FlaxEngine/FlaxEngine/issues/680
@@ -71,20 +73,21 @@ namespace FlaxEditor.Gizmo
             renderContext.View.GetWorldMatrix(ref _gizmoWorld, out Matrix world);
 
             const float gizmoModelsScale2RealGizmoSize = 0.075f;
-            Mesh sphereMesh, cubeMesh;
+            Mesh cubeMesh = _modelCube.LODs[0].Meshes[0];
+            Mesh sphereMesh = _modelSphere.LODs[0].Meshes[0];
+
+            Matrix.Scaling(gizmoModelsScale2RealGizmoSize, out m3);
+            Matrix.Multiply(ref m3, ref world, out m1);
+            mx1 = m1;
+            mx1.M41 += 0.05f;
+
             switch (_activeMode)
             {
             case Mode.Translate:
             {
-                if (!_modelTranslationAxis || !_modelTranslationAxis.IsLoaded || !_modelCube || !_modelCube.IsLoaded || !_modelSphere || !_modelSphere.IsLoaded)
+                if (!_modelTranslationAxis || !_modelTranslationAxis.IsLoaded)
                     break;
                 var transAxisMesh = _modelTranslationAxis.LODs[0].Meshes[0];
-                cubeMesh = _modelCube.LODs[0].Meshes[0];
-                sphereMesh = _modelSphere.LODs[0].Meshes[0];
-                Matrix.Scaling(gizmoModelsScale2RealGizmoSize, out m3);
-                Matrix.Multiply(ref m3, ref world, out m1);
-                mx1 = m1;
-                mx1.M41 += 0.05f;
 
                 // X axis
                 Matrix.RotationY(-Mathf.PiOverTwo, out m2);
@@ -126,14 +129,9 @@ namespace FlaxEditor.Gizmo
 
             case Mode.Rotate:
             {
-                if (!_modelRotationAxis || !_modelRotationAxis.IsLoaded || !_modelSphere || !_modelSphere.IsLoaded)
+                if (!_modelRotationAxis || !_modelRotationAxis.IsLoaded)
                     break;
                 var rotationAxisMesh = _modelRotationAxis.LODs[0].Meshes[0];
-                sphereMesh = _modelSphere.LODs[0].Meshes[0];
-                Matrix.Scaling(gizmoModelsScale2RealGizmoSize, out m3);
-                Matrix.Multiply(ref m3, ref world, out m1);
-                mx1 = m1;
-                mx1.M41 += 0.05f;
 
                 // X axis
                 Matrix.RotationZ(Mathf.PiOverTwo, out m2);
@@ -158,15 +156,9 @@ namespace FlaxEditor.Gizmo
 
             case Mode.Scale:
             {
-                if (!_modelScaleAxis || !_modelScaleAxis.IsLoaded || !_modelCube || !_modelCube.IsLoaded || !_modelSphere || !_modelSphere.IsLoaded)
+                if (!_modelScaleAxis || !_modelScaleAxis.IsLoaded)
                     break;
                 var scaleAxisMesh = _modelScaleAxis.LODs[0].Meshes[0];
-                cubeMesh = _modelCube.LODs[0].Meshes[0];
-                sphereMesh = _modelSphere.LODs[0].Meshes[0];
-                Matrix.Scaling(gizmoModelsScale2RealGizmoSize, out m3);
-                Matrix.Multiply(ref m3, ref world, out m1);
-                mx1 = m1;
-                mx1.M41 -= 0.05f;
 
                 // X axis
                 Matrix.RotationY(-Mathf.PiOverTwo, out m2);
@@ -205,6 +197,15 @@ namespace FlaxEditor.Gizmo
 
                 break;
             }
+            }
+
+            // Vertex snapping
+            if (_vertexSnapObject != null || _vertexSnapObjectTo != null)
+            {
+                Transform t = _vertexSnapObject?.Transform ?? _vertexSnapObjectTo.Transform;
+                Vector3 p = t.LocalToWorld(_vertexSnapObject != null ? _vertexSnapPoint : _vertexSnapPointTo);
+                Matrix matrix = new Transform(p, t.Orientation, new Float3(gizmoModelsScale2RealGizmoSize)).GetWorld();
+                cubeMesh.Draw(ref renderContext, _materialSphere, ref matrix);
             }
         }
     }

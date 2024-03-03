@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #include "JsonWriter.h"
 #include "Engine/Core/Log.h"
@@ -15,7 +15,7 @@ void JsonWriter::Blob(const void* data, int32 length)
 {
     ::Array<char> base64;
     base64.Resize(Encryption::Base64EncodeLength(length));
-    Encryption::Base64Encode((byte*)data, length, base64.Get());
+    Encryption::Base64Encode((const byte*)data, length, base64.Get());
     String(base64.Get(), base64.Count());
 }
 
@@ -343,18 +343,30 @@ void JsonWriter::Transform(const ::Transform& value)
 void JsonWriter::Transform(const ::Transform& value, const ::Transform* other)
 {
     StartObject();
-    if (!other || !Vector3::NearEqual(value.Translation, other->Translation))
+    if (other)
+    {
+        if (!Vector3::NearEqual(value.Translation, other->Translation))
+        {
+            JKEY("Translation");
+            Vector3(value.Translation);
+        }
+        if (!Quaternion::NearEqual(value.Orientation, other->Orientation))
+        {
+            JKEY("Orientation");
+            Quaternion(value.Orientation);
+        }
+        if (!Float3::NearEqual(value.Scale, other->Scale))
+        {
+            JKEY("Scale");
+            Float3(value.Scale);
+        }
+    }
+    else
     {
         JKEY("Translation");
         Vector3(value.Translation);
-    }
-    if (!other || !Quaternion::NearEqual(value.Orientation, other->Orientation))
-    {
         JKEY("Orientation");
         Quaternion(value.Orientation);
-    }
-    if (!other || !Float3::NearEqual(value.Scale, other->Scale))
-    {
         JKEY("Scale");
         Float3(value.Scale);
     }

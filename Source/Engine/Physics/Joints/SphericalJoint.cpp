@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #include "SphericalJoint.h"
 #include "Engine/Serialization/Serialization.h"
@@ -38,8 +38,9 @@ void SphericalJoint::OnDebugDrawSelected()
     const Vector3 source = GetPosition();
     const Vector3 target = GetTargetPosition();
     const float size = 15.0f;
+    const float arrowSize = size / 100.0f * 0.5f;
     const Color color = Color::Green.AlphaMultiplied(0.6f);
-    DEBUG_DRAW_WIRE_ARROW(source, GetOrientation(), size / 100.0f * 0.5f, Color::Red, 0, false);
+    DEBUG_DRAW_WIRE_ARROW(source, GetOrientation(), arrowSize, arrowSize * 0.5f, Color::Red, 0, false);
     if (EnumHasAnyFlags(_flags, SphericalJointFlag::Limit))
     {
         DEBUG_DRAW_CONE(source, GetOrientation(), size, _limit.YLimitAngle * DegreesToRadians, _limit.ZLimitAngle * DegreesToRadians, color, 0, false);

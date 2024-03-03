@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -17,6 +17,7 @@
 #include <ThirdParty/PhysX/foundation/PxBounds3.h>
 #include <ThirdParty/PhysX/characterkinematic/PxExtended.h>
 #include <ThirdParty/PhysX/PxShape.h>
+#include <ThirdParty/PhysX/PxMaterial.h>
 #include <ThirdParty/PhysX/PxQueryReport.h>
 
 namespace physx
@@ -233,12 +234,28 @@ inline float RadPerSToRpm(float v)
     return v * (30.0f / PI);
 }
 
+inline PhysicalMaterial* GetMaterial(const PxShape* shape, PxU32 faceIndex)
+{
+    if (faceIndex != 0xFFFFffff)
+    {
+        PxBaseMaterial* mat = shape->getMaterialFromInternalFaceIndex(faceIndex);
+        return mat ? (PhysicalMaterial*)mat->userData : nullptr;
+    }
+    else
+    {
+        PxMaterial* mat;
+        shape->getMaterials(&mat, 1);
+        return mat ? (PhysicalMaterial*)mat->userData : nullptr;
+    }
+}
+
 inline void P2C(const PxRaycastHit& hit, RayCastHit& result)
 {
     result.Point = P2C(hit.position);
     result.Normal = P2C(hit.normal);
     result.Distance = hit.distance;
     result.Collider = hit.shape ? static_cast<PhysicsColliderActor*>(hit.shape->userData) : nullptr;
+    result.Material = hit.shape ? GetMaterial(hit.shape, hit.faceIndex) : nullptr;
     result.FaceIndex = hit.faceIndex;
     result.UV.X = hit.u;
     result.UV.Y = hit.v;
@@ -250,6 +267,7 @@ inline void P2C(const PxSweepHit& hit, RayCastHit& result)
     result.Normal = P2C(hit.normal);
     result.Distance = hit.distance;
     result.Collider = hit.shape ? static_cast<PhysicsColliderActor*>(hit.shape->userData) : nullptr;
+    result.Material = hit.shape ? GetMaterial(hit.shape, hit.faceIndex) : nullptr;
     result.FaceIndex = hit.faceIndex;
     result.UV = Vector2::Zero;
 }

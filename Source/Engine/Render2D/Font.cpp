@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #include "Font.h"
 #include "FontAsset.h"
@@ -6,6 +6,8 @@
 #include "Engine/Core/Log.h"
 #include "Engine/Threading/Threading.h"
 #include "IncludeFreeType.h"
+
+Array<AssetReference<FontAsset>, HeapAllocation> Font::FallbackFonts;
 
 Font::Font(FontAsset* parentAsset, float size)
     : ManagedScriptingObject(SpawnParams(Guid::New(), Font::TypeInitializer))
@@ -32,7 +34,7 @@ Font::~Font()
         _asset->_fonts.Remove(this);
 }
 
-void Font::GetCharacter(Char c, FontCharacterEntry& result)
+void Font::GetCharacter(Char c, FontCharacterEntry& result, bool enableFallback)
 {
     // Try to get the character or cache it if cannot be found
     if (!_characters.TryGet(c, result))
@@ -44,8 +46,23 @@ void Font::GetCharacter(Char c, FontCharacterEntry& result)
         if (_characters.TryGet(c, result))
             return;
 
+        // Try to use fallback font if character is missing
+        if (enableFallback && !_asset->ContainsChar(c))
+        {
+            for (int32 fallbackIndex = 0; fallbackIndex < FallbackFonts.Count(); fallbackIndex++)
+            {
+                FontAsset* fallbackFont = FallbackFonts.Get()[fallbackIndex].Get();
+                if (fallbackFont && fallbackFont->ContainsChar(c))
+                {
+                    fallbackFont->CreateFont(GetSize())->GetCharacter(c, result, enableFallback);
+                    return;
+                }
+            }
+        }
+
         // Create character cache
         FontManager::AddNewEntry(this, c, result);
+        ASSERT(result.Font);
 
         // Add to the dictionary
         _characters.Add(c, result);
@@ -87,7 +104,7 @@ void Font::CacheText(const StringView& text)
     FontCharacterEntry entry;
     for (int32 i = 0; i < text.Length(); i++)
     {
-        GetCharacter(text[i], entry);
+        GetCharacter(text[i], entry, false);
     }
 }
 
@@ -104,12 +121,14 @@ void Font::Invalidate()
 
 void Font::ProcessText(const StringView& text, Array<FontLineCache>& outputLines, const TextLayoutOptions& layout)
 {
+    int32 textLength = text.Length();
+    if (textLength == 0)
+        return;
     float cursorX = 0;
     int32 kerning;
     FontLineCache tmpLine;
     FontCharacterEntry entry;
     FontCharacterEntry previous;
-    int32 textLength = text.Length();
     float scale = layout.Scale / FontManager::FontScale;
     float boundsWidth = layout.Bounds.GetWidth();
     float baseLinesDistance = static_cast<float>(_height) * layout.BaseLinesGapScale * scale;
@@ -157,7 +176,7 @@ void Font::ProcessText(const StringView& text, Array<FontLineCache>& outputLines
             // Get kerning
             if (!isWhitespace && previous.IsValid)
             {
-                kerning = GetKerning(previous.Character, entry.Character);
+                kerning = entry.Font->GetKerning(previous.Character, entry.Character);
             }
             else
             {
@@ -178,8 +197,8 @@ void Font::ProcessText(const StringView& text, Array<FontLineCache>& outputLines
                 if (lastWrapCharIndex != INVALID_INDEX)
                 {
                     // Skip moving twice for the same character
-                    int32 lastLineLasCharIndex = outputLines.HasItems() ? outputLines.Last().LastCharIndex : -10000;
-                    if (lastLineLasCharIndex == lastWrapCharIndex || lastLineLasCharIndex == lastWrapCharIndex - 1 || lastLineLasCharIndex == lastWrapCharIndex - 2)
+                    int32 lastLineLastCharIndex = outputLines.HasItems() ? outputLines.Last().LastCharIndex : -10000;
+                    if (lastLineLastCharIndex == lastWrapCharIndex || lastLineLastCharIndex == lastWrapCharIndex - 1 || lastLineLastCharIndex == lastWrapCharIndex - 2)
                     {
                         currentIndex = nextCharIndex;
                         lastMoveLine = moveLine;
@@ -238,7 +257,8 @@ void Font::ProcessText(const StringView& text, Array<FontLineCache>& outputLines
         lastMoveLine = moveLine;
     }
 
-    if (textLength != 0 && (tmpLine.LastCharIndex >= tmpLine.FirstCharIndex || text[textLength - 1] == '\n'))
+    // Check if an additional line should be created
+    if (tmpLine.LastCharIndex >= tmpLine.FirstCharIndex || text[textLength - 1] == '\n')
     {
         // Add line
         tmpLine.Size.X = cursorX;
@@ -341,7 +361,7 @@ int32 Font::HitTestText(const StringView& text, const Float2& location, const Te
         // Apply kerning
         if (!isWhitespace && previous.IsValid)
         {
-            x += GetKerning(previous.Character, entry.Character);
+            x += entry.Font->GetKerning(previous.Character, entry.Character);
         }
         previous = entry;
 
@@ -415,7 +435,7 @@ Float2 Font::GetCharPosition(const StringView& text, int32 index, const TextLayo
                 // Apply kerning
                 if (!isWhitespace && previous.IsValid)
                 {
-                    x += GetKerning(previous.Character, entry.Character);
+                    x += entry.Font->GetKerning(previous.Character, entry.Character);
                 }
                 previous = entry;
 

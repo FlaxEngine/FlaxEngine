@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -18,9 +18,9 @@ struct FontTextureAtlasSlot;
 /// <summary>
 /// The text range.
 /// </summary>
-API_STRUCT(NoDefault) struct TextRange
+API_STRUCT(NoDefault) struct FLAXENGINE_API TextRange
 {
-DECLARE_SCRIPTING_TYPE_MINIMAL(TextRange);
+    DECLARE_SCRIPTING_TYPE_MINIMAL(TextRange);
 
     /// <summary>
     /// The start index (inclusive).
@@ -35,7 +35,7 @@ DECLARE_SCRIPTING_TYPE_MINIMAL(TextRange);
     /// <summary>
     /// Gets the range length.
     /// </summary>
-    int32 Length() const
+    FORCE_INLINE int32 Length() const
     {
         return EndIndex - StartIndex;
     }
@@ -43,7 +43,7 @@ DECLARE_SCRIPTING_TYPE_MINIMAL(TextRange);
     /// <summary>
     /// Gets a value indicating whether range is empty.
     /// </summary>
-    bool IsEmpty() const
+    FORCE_INLINE bool IsEmpty() const
     {
         return (EndIndex - StartIndex) <= 0;
     }
@@ -53,7 +53,7 @@ DECLARE_SCRIPTING_TYPE_MINIMAL(TextRange);
     /// </summary>
     /// <param name="index">The index.</param>
     /// <returns><c>true</c> if range contains the specified character index; otherwise, <c>false</c>.</returns>
-    bool Contains(int32 index) const
+    FORCE_INLINE bool Contains(int32 index) const
     {
         return index >= StartIndex && index < EndIndex;
     }
@@ -88,9 +88,9 @@ struct TIsPODType<TextRange>
 /// <summary>
 /// The font line info generated during text processing.
 /// </summary>
-API_STRUCT(NoDefault) struct FontLineCache
+API_STRUCT(NoDefault) struct FLAXENGINE_API FontLineCache
 {
-DECLARE_SCRIPTING_TYPE_MINIMAL(FontLineCache);
+    DECLARE_SCRIPTING_TYPE_MINIMAL(FontLineCache);
 
     /// <summary>
     /// The root position of the line (upper left corner).
@@ -108,7 +108,7 @@ DECLARE_SCRIPTING_TYPE_MINIMAL(FontLineCache);
     API_FIELD() int32 FirstCharIndex;
 
     /// <summary>
-    /// The last character index (from the input text).
+    /// The last character index (from the input text), inclusive.
     /// </summary>
     API_FIELD() int32 LastCharIndex;
 };
@@ -152,9 +152,9 @@ struct TIsPODType<FontLineCache>
 /// <summary>
 /// The cached font character entry (read for rendering and further processing).
 /// </summary>
-API_STRUCT(NoDefault) struct FontCharacterEntry
+API_STRUCT(NoDefault) struct FLAXENGINE_API FontCharacterEntry
 {
-DECLARE_SCRIPTING_TYPE_MINIMAL(FontCharacterEntry);
+    DECLARE_SCRIPTING_TYPE_MINIMAL(FontCharacterEntry);
 
     /// <summary>
     /// The character represented by this entry.
@@ -210,6 +210,11 @@ DECLARE_SCRIPTING_TYPE_MINIMAL(FontCharacterEntry);
     /// The slot in texture atlas, containing the pixel data of the glyph.
     /// </summary>
     API_FIELD() const FontTextureAtlasSlot* Slot;
+
+    /// <summary>
+    /// The owner font.
+    /// </summary>
+    API_FIELD() const class Font* Font;
 };
 
 template<>
@@ -223,10 +228,10 @@ struct TIsPODType<FontCharacterEntry>
 /// </summary>
 API_CLASS(Sealed, NoSpawn) class FLAXENGINE_API Font : public ManagedScriptingObject
 {
-DECLARE_SCRIPTING_TYPE_NO_SPAWN(Font);
+    DECLARE_SCRIPTING_TYPE_NO_SPAWN(Font);
     friend FontAsset;
-private:
 
+private:
     FontAsset* _asset;
     float _size;
     int32 _height;
@@ -238,7 +243,6 @@ private:
     mutable Dictionary<uint32, int32> _kerningTable;
 
 public:
-
     /// <summary>
     /// Initializes a new instance of the <see cref="Font"/> class.
     /// </summary>
@@ -252,6 +256,10 @@ public:
     ~Font();
 
 public:
+    /// <summary>
+    /// The active fallback fonts.
+    /// </summary>
+    API_FIELD() static Array<AssetReference<FontAsset>, HeapAllocation> FallbackFonts;
 
     /// <summary>
     /// Gets parent font asset that contains font family used by this font.
@@ -302,13 +310,13 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Gets character entry.
     /// </summary>
     /// <param name="c">The character.</param>
     /// <param name="result">The output character entry.</param>
-    void GetCharacter(Char c, FontCharacterEntry& result);
+    /// <param name="enableFallback">True if fallback to secondary font when the primary font doesn't contains this character.</param>
+    void GetCharacter(Char c, FontCharacterEntry& result, bool enableFallback = true);
 
     /// <summary>
     /// Gets the kerning amount for a pair of characters.
@@ -330,7 +338,6 @@ public:
     API_FUNCTION() void Invalidate();
 
 public:
-
     /// <summary>
     /// Processes text to get cached lines for rendering.
     /// </summary>
@@ -524,7 +531,6 @@ public:
     void FlushFaceSize() const;
 
 public:
-
     // [Object]
     String ToString() const override;
 };

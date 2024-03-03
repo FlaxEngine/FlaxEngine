@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 using System;
 using System.IO;
@@ -81,7 +81,7 @@ namespace FlaxEditor.Content.Create
             switch (_options.Template)
             {
             case Templates.Empty:
-                return Editor.CreateAsset(Editor.NewAssetType.ParticleEmitter, ResultUrl);
+                return Editor.CreateAsset("ParticleEmitter", ResultUrl);
             case Templates.ConstantBurst:
                 templateName = "Constant Burst";
                 break;

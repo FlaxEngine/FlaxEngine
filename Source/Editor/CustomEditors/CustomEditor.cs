@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -543,10 +543,11 @@ namespace FlaxEditor.CustomEditors
             try
             {
                 string text;
+                var value = Values[0];
                 if (ParentEditor is Dedicated.ScriptsEditor)
                 {
                     // Script
-                    text = JsonSerializer.Serialize(Values[0]);
+                    text = JsonSerializer.Serialize(value);
 
                     // Remove properties that should be ignored when copy/pasting data
                     if (text == null)
@@ -576,12 +577,12 @@ namespace FlaxEditor.CustomEditors
                 else if (ScriptType.FlaxObject.IsAssignableFrom(Values.Type))
                 {
                     // Object reference
-                    text = JsonSerializer.GetStringID(Values[0] as FlaxEngine.Object);
+                    text = JsonSerializer.GetStringID(value as FlaxEngine.Object);
                 }
                 else
                 {
                     // Default
-                    text = JsonSerializer.Serialize(Values[0]);
+                    text = JsonSerializer.Serialize(value, TypeUtils.GetType(Values.Type));
                 }
                 Clipboard.Text = text;
             }

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #if COMPILE_WITH_MODEL_TOOL && USE_ASSIMP
 
@@ -483,7 +483,6 @@ bool ProcessMesh(ModelData& result, AssimpImporterData& data, const aiMesh* aMes
             }
         }
     }
-
     return false;
 }
 
@@ -645,62 +644,29 @@ bool ImportMesh(int32 index, ModelData& result, AssimpImporterData& data, String
 
         // Link mesh
         meshData->NodeIndex = nodeIndex;
+        AssimpNode* curNode = &data.Nodes[meshData->NodeIndex];
+        Vector3 translation = Vector3::Zero;
+        Vector3 scale = Vector3::One;
+        Quaternion rotation = Quaternion::Identity;
+
+        while (true)
+        {
+            translation += curNode->LocalTransform.Translation;
+            scale *= curNode->LocalTransform.Scale;
+            rotation *= curNode->LocalTransform.Orientation;
+
+            if (curNode->ParentIndex == -1)
+                break;
+            curNode = &data.Nodes[curNode->ParentIndex];
+        }
+
+        meshData->OriginTranslation = translation;
+        meshData->OriginOrientation = rotation;
+        meshData->Scaling = scale;
+
         if (result.LODs.Count() <= lodIndex)
             result.LODs.Resize(lodIndex + 1);
         result.LODs[lodIndex].Meshes.Add(meshData);
-    }
-
-    auto root = data.Scene->mRootNode;
-    Array<Transform> points;
-    if (root->mNumChildren == 0)
-    {
-        aiQuaternion aiQuat;
-        aiVector3D aiPos;
-        aiVector3D aiScale;
-        root->mTransformation.Decompose(aiScale, aiQuat, aiPos);
-        auto quat = ToQuaternion(aiQuat);
-        auto pos = ToFloat3(aiPos);
-        auto scale = ToFloat3(aiScale);
-        Transform trans = Transform(pos, quat, scale);
-        points.Add(trans);
-    }
-    else
-    {
-        for (unsigned int j = 0; j < root->mNumChildren; j++)
-        {
-            aiQuaternion aiQuat;
-            aiVector3D aiPos;
-            aiVector3D aiScale;
-            root->mChildren[j]->mTransformation.Decompose(aiScale, aiQuat, aiPos);
-            auto quat = ToQuaternion(aiQuat);
-            auto pos = ToFloat3(aiPos);
-            auto scale = ToFloat3(aiScale);
-            Transform trans = Transform(pos, quat, scale);
-            points.Add(trans);
-        }
-    }
-
-    Float3 translation = Float3::Zero;
-    Float3 scale = Float3::Zero;
-    Quaternion orientation = Quaternion::Identity;
-    for (auto point : points)
-    {
-        translation += point.Translation;
-        scale += point.Scale;
-        orientation *= point.Orientation;
-    }
-
-    if (points.Count() > 0)
-    {
-        meshData->OriginTranslation = translation / (float)points.Count();
-        meshData->OriginOrientation = Quaternion::Invert(orientation);
-        meshData->Scaling = scale / (float)points.Count();
-    }
-    else
-    {
-        meshData->OriginTranslation = translation;
-        meshData->OriginOrientation = Quaternion::Invert(orientation);
-        meshData->Scaling = Float3(1);
     }
 
     return false;
@@ -790,6 +756,7 @@ bool ModelTool::ImportDataAssimp(const char* path, ModelData& data, Options& opt
             aiProcess_GenUVCoords |
             aiProcess_FindDegenerates |
             aiProcess_FindInvalidData |
+            aiProcess_GlobalScale |
             //aiProcess_ValidateDataStructure |
             aiProcess_ConvertToLeftHanded;
     if (importMeshes)
@@ -807,6 +774,7 @@ bool ModelTool::ImportDataAssimp(const char* path, ModelData& data, Options& opt
     // Setup import options
     context.AssimpImporter.SetPropertyFloat(AI_CONFIG_PP_GSN_MAX_SMOOTHING_ANGLE, options.SmoothingNormalsAngle);
     context.AssimpImporter.SetPropertyFloat(AI_CONFIG_PP_CT_MAX_SMOOTHING_ANGLE, options.SmoothingTangentsAngle);
+    context.AssimpImporter.SetPropertyFloat(AI_CONFIG_GLOBAL_SCALE_FACTOR_KEY, 100.0f); // Convert to cm
     //context.AssimpImporter.SetPropertyInteger(AI_CONFIG_PP_SLM_TRIANGLE_LIMIT, MAX_uint16);
     context.AssimpImporter.SetPropertyBool(AI_CONFIG_IMPORT_FBX_READ_CAMERAS, false);
     context.AssimpImporter.SetPropertyBool(AI_CONFIG_IMPORT_FBX_READ_LIGHTS, false);
@@ -827,14 +795,14 @@ bool ModelTool::ImportDataAssimp(const char* path, ModelData& data, Options& opt
     }
 
     // Create root node
-    AssimpNode& rootNode = context.Nodes.AddOne();
+    /*AssimpNode& rootNode = context.Nodes.AddOne();
     rootNode.ParentIndex = -1;
     rootNode.LodIndex = 0;
-    rootNode.Name = TEXT("Root");
     rootNode.LocalTransform = Transform::Identity;
+    rootNode.Name = TEXT("Root");*/
 
     // Process imported scene nodes
-    ProcessNodes(context, context.Scene->mRootNode, 0);
+    ProcessNodes(context, context.Scene->mRootNode, -1);
 
     // Import materials
     if (ImportMaterials(data, context, errorMsg))

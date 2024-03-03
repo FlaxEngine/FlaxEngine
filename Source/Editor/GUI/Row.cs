@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 using System;
 using FlaxEngine;
@@ -43,8 +43,9 @@ namespace FlaxEditor.GUI
         {
             Depth = -1;
 
-            if (Height < Style.Current.FontMedium.Height)
-                Height = Style.Current.FontMedium.Height + 4;
+            var fontHeight = Style.Current.FontMedium.Height;
+            if (Height < fontHeight)
+                Height = fontHeight + 4;
         }
 
         /// <inheritdoc />

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -398,7 +398,7 @@ namespace FlaxEditor.Windows.Assets
             if (parentActor != null)
             {
                 // Match the parent
-                actor.Transform = parentActor.Transform;
+                actor.LocalTransform = Transform.Identity;
                 actor.StaticFlags = parentActor.StaticFlags;
                 actor.Layer = parentActor.Layer;
 

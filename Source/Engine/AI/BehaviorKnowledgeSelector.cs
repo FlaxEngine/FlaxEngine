@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 using System;
 
@@ -146,7 +146,7 @@ namespace FlaxEngine
         public string Path;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="BehaviorKnowledgeSelectorAny"/> structure.
+        /// Initializes a new instance of the <see cref="BehaviorKnowledgeSelector{T}"/> structure.
         /// </summary>
         /// <param name="path">The selector path.</param>
         public BehaviorKnowledgeSelector(string path)
@@ -155,7 +155,7 @@ namespace FlaxEngine
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="BehaviorKnowledgeSelectorAny"/> structure.
+        /// Initializes a new instance of the <see cref="BehaviorKnowledgeSelector{T}"/> structure.
         /// </summary>
         /// <param name="other">The other selector.</param>
         public BehaviorKnowledgeSelector(BehaviorKnowledgeSelectorAny other)

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #if USE_LARGE_WORLDS
 using Real = System.Double;
@@ -297,8 +297,21 @@ namespace FlaxEngine.Utilities
         /// <returns>A random <see cref="Vector2"/>.</returns>
         public static Vector2 NextUnitVector2(this Random random, float radius = 1.0f)
         {
-            var randomRadius = (float)random.NextDouble() * radius;
-            return new Vector2((float)Math.Cos(random.NextDouble()) * randomRadius, (float)Math.Sin(random.NextDouble()) * randomRadius);
+            float magnitude = (float)random.NextDouble() * radius;
+            double randomRadian = random.NextDouble() * Mathf.RevolutionsToRadians;
+            return new Vector2((float)Math.Cos(randomRadian) * magnitude, (float)Math.Sin(randomRadian) * magnitude);
+        }
+        
+        /// <summary>
+        /// Generates a random <see cref="Vector2"/> point on a circle of a given radius.
+        /// </summary>
+        /// <param name="random">An instance of <see cref="Random"/>.</param>
+        /// <param name="radius">Radius of circle. Default 1.0f./>.</param>
+        /// <returns>A random <see cref="Vector2"/>.</returns>
+        public static Vector2 NextUnitCircleVector2(this Random random, float radius = 1.0f)
+        {
+            double randomRadian = random.NextDouble() * Mathf.RevolutionsToRadians;
+            return new Vector2((float)Math.Cos(randomRadian) * radius, (float)Math.Sin(randomRadian) * radius);
         }
 
         /// <summary>

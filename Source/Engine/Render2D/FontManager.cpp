@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #include "FontManager.h"
 #include "FontTextureAtlas.h"
@@ -27,7 +27,6 @@ using namespace FontManagerImpl;
 class FontManagerService : public EngineService
 {
 public:
-
     FontManagerService()
         : EngineService(TEXT("Font Manager"), -700)
     {
@@ -155,6 +154,18 @@ bool FontManager::AddNewEntry(Font* font, Char c, FontCharacterEntry& entry)
 
     // Get the index to the glyph in the font face
     const FT_UInt glyphIndex = FT_Get_Char_Index(face, c);
+#if !BUILD_RELEASE
+    if (glyphIndex == 0)
+    {
+        LOG(Warning, "Font `{}` doesn't contain character `\\u{:x}`, consider choosing another font. ", String(face->family_name), c);
+    }
+#endif
+
+    // Init the character data
+    Platform::MemoryClear(&entry, sizeof(entry));
+    entry.Character = c;
+    entry.Font = font;
+    entry.IsValid = false;
 
     // Load the glyph
     const FT_Error error = FT_Load_Glyph(face, glyphIndex, glyphFlags);
@@ -190,8 +201,6 @@ bool FontManager::AddNewEntry(Font* font, Char c, FontCharacterEntry& entry)
     ASSERT(bitmap && bitmap->pixel_mode == FT_PIXEL_MODE_GRAY);
 
     // Fill the character data
-    Platform::MemoryClear(&entry, sizeof(entry));
-    entry.Character = c;
     entry.AdvanceX = Convert26Dot6ToRoundedPixel<int16>(glyph->advance.x);
     entry.OffsetY = glyph->bitmap_top;
     entry.OffsetX = glyph->bitmap_left;

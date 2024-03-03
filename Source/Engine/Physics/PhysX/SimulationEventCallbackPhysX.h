@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -48,11 +48,6 @@ public:
     /// Clears the data.
     /// </summary>
     void Clear();
-
-    /// <summary>
-    /// Generates the new/old/removed collisions and a valid trigger pairs.
-    /// </summary>
-    void CollectResults();
 
     /// <summary>
     /// Sends the collision events to the managed objects.

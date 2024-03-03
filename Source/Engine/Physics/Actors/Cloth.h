@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -331,6 +331,11 @@ public:
 
     bool OnPreUpdate();
     void OnPostUpdate();
+
+private:
+#if USE_EDITOR
+    API_FIELD(Internal) bool DebugDrawDepthTest = true;
+#endif
 
 public:
     // [Actor]

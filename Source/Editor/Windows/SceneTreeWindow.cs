@@ -1,8 +1,7 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using FlaxEditor.Gizmo;
 using FlaxEditor.Content;
 using FlaxEditor.GUI.Tree;
@@ -14,7 +13,6 @@ using FlaxEditor.Scripting;
 using FlaxEditor.States;
 using FlaxEngine;
 using FlaxEngine.GUI;
-using static FlaxEditor.GUI.ItemsListContextMenu;
 
 namespace FlaxEditor.Windows
 {
@@ -34,6 +32,11 @@ namespace FlaxEditor.Windows
         private DragActorType _dragActorType;
         private DragScriptItems _dragScriptItems;
         private DragHandlers _dragHandlers;
+
+        /// <summary>
+        /// Scene tree panel.
+        /// </summary>
+        public Panel SceneTreePanel => _sceneTreePanel;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SceneTreeWindow"/> class.

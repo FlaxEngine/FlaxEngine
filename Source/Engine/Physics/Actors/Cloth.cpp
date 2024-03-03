@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #include "Cloth.h"
 #include "Engine/Core/Log.h"
@@ -415,9 +415,9 @@ void Cloth::OnDebugDrawSelected()
                 c1 = Color::Lerp(Color::Red, Color::White, _paint[i1]);
                 c2 = Color::Lerp(Color::Red, Color::White, _paint[i2]);
             }
-            DebugDraw::DrawLine(v0, v1, c0, c1, 0, false);
-            DebugDraw::DrawLine(v1, v2, c1, c2, 0, false);
-            DebugDraw::DrawLine(v2, v0, c2, c0, 0, false);
+            DebugDraw::DrawLine(v0, v1, c0, c1, 0, DebugDrawDepthTest);
+            DebugDraw::DrawLine(v1, v2, c1, c2, 0, DebugDrawDepthTest);
+            DebugDraw::DrawLine(v2, v0, c2, c0, 0, DebugDrawDepthTest);
         }
         PhysicsBackend::UnlockClothParticles(_cloth);
     }
@@ -847,7 +847,8 @@ void Cloth::OnPostUpdate()
     if (_meshDeformation)
     {
         // Mark mesh as dirty
-        const Matrix invWorld = Matrix::Invert(_transform.GetWorld());
+        Matrix invWorld;
+        GetWorldToLocalMatrix(invWorld);
         BoundingBox localBounds;
         BoundingBox::Transform(_box, invWorld, localBounds);
         _meshDeformation->Dirty(_mesh.LODIndex, _mesh.MeshIndex, MeshBufferType::Vertex0, localBounds);

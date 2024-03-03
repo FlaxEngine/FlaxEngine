@@ -1,8 +1,10 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using FlaxEditor.Content.Settings;
 using FlaxEditor.Modules;
 using FlaxEngine;
 using FlaxEngine.GUI;
@@ -217,12 +219,18 @@ namespace FlaxEditor.Options
                 if (styleName == ThemeOptions.LightDefault)
                 {
                     Style.Current = CreateLightStyle();
-                } 
+                }
                 else
                 {
                     Style.Current = CreateDefaultStyle();
                 }
             }
+
+            // Set fallback fonts
+            var fallbackFonts = Options.Interface.FallbackFonts;
+            if (fallbackFonts == null || fallbackFonts.Length == 0 || fallbackFonts.All(x => x == null))
+                fallbackFonts = GameSettings.Load<GraphicsSettings>().FallbackFonts;
+            Font.FallbackFonts = fallbackFonts;
         }
 
         /// <summary>

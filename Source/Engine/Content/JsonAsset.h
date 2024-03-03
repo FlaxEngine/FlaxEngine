@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -139,7 +139,8 @@ public:
     T* GetInstance() const
     {
         const_cast<JsonAsset*>(this)->CreateInstance();
-        return Instance && InstanceType.IsAssignableFrom(T::TypeInitializer) ? (T*)Instance : nullptr;
+        const ScriptingTypeHandle& type = T::TypeInitializer;
+        return Instance && type.IsAssignableFrom(InstanceType) ? (T*)Instance : nullptr;
     }
 
 public:

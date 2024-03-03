@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #include "D6Joint.h"
 #include "Engine/Serialization/JsonTools.h"
@@ -159,7 +159,8 @@ void D6Joint::OnDebugDrawSelected()
     const float twistSize = 9.0f;
     const Color swingColor = Color::Green.AlphaMultiplied(0.6f);
     const Color twistColor = Color::Yellow.AlphaMultiplied(0.5f);
-    DEBUG_DRAW_WIRE_ARROW(target, targetRotation, swingSize / 100.0f * 0.5f, Color::Red, 0, false);
+    const float arrowSize = swingSize / 100.0f * 0.5f;
+    DEBUG_DRAW_WIRE_ARROW(target, targetRotation, arrowSize, arrowSize * 0.5f, Color::Red, 0, false);
     if (_motion[(int32)D6JointAxis::SwingY] == D6JointMotion::Locked && _motion[(int32)D6JointAxis::SwingZ] == D6JointMotion::Locked)
     {
         // Swing is locked

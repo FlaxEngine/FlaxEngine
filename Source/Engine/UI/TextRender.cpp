@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #include "TextRender.h"
 #include "Engine/Core/Math/OrientedBoundingBox.h"
@@ -239,7 +239,7 @@ void TextRender::UpdateLayout()
                 const bool isWhitespace = StringUtils::IsWhitespace(c);
                 if (!isWhitespace && previous.IsValid)
                 {
-                    kerning = font->GetKerning(previous.Character, entry.Character);
+                    kerning = entry.Font->GetKerning(previous.Character, entry.Character);
                 }
                 else
                 {

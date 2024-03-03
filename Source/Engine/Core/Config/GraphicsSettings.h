@@ -1,10 +1,12 @@
-// Copyright (c) 2012-2023 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #pragma once
 
 #include "Engine/Core/Config/Settings.h"
 #include "Engine/Graphics/Enums.h"
 #include "Engine/Graphics/PostProcessSettings.h"
+
+class FontAsset;
 
 /// <summary>
 /// Graphics rendering settings.
@@ -13,6 +15,7 @@ API_CLASS(sealed, Namespace="FlaxEditor.Content.Settings", NoConstructor) class 
 {
     API_AUTO_SERIALIZATION();
     DECLARE_SCRIPTING_TYPE_MINIMAL(GraphicsSettings);
+
 public:
     /// <summary>
     /// Enables rendering synchronization with the refresh rate of the display device to avoid "tearing" artifacts.
@@ -117,6 +120,12 @@ public:
     /// </summary>
     API_FIELD(Attributes="EditorOrder(10000), EditorDisplay(\"Post Process Settings\", EditorDisplayAttribute.InlineStyle)")
     PostProcessSettings PostProcessSettings;
+
+    /// <summary>
+    /// The list of fallback fonts used for text rendering. Ignored if empty.
+    /// </summary>
+    API_FIELD(Attributes="EditorOrder(5000), EditorDisplay(\"Text\")")
+    Array<AssetReference<FontAsset>> FallbackFonts;
 
 private:
     /// <summary>
