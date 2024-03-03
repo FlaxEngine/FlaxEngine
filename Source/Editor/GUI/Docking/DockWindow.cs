@@ -118,6 +118,9 @@ namespace FlaxEditor.GUI.Docking
         public DockWindow(MasterDockPanel masterPanel, bool hideOnClose, ScrollBars scrollBars)
         : base(scrollBars)
         {
+
+            Clipping = Clipping.ClipToBounds;
+
             _masterPanel = masterPanel;
             HideOnClose = hideOnClose;
             AnchorPreset = AnchorPresets.StretchAll;

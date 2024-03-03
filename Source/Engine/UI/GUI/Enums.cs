@@ -208,4 +208,23 @@ namespace FlaxEngine.GUI
         /// </summary>
         Previous,
     }
+
+    /// <summary>
+    /// Clipping Flags
+    /// </summary>
+    public enum Clipping
+    {
+        /// <summary>
+        /// Keeps the the last clipping space
+        /// </summary>
+        Inherit,
+        /// <summary>
+        /// Ignore clipping
+        /// </summary>
+        DontClip,
+        /// <summary>
+        /// Clip children to this element to the to size
+        /// </summary>
+        ClipToBounds,
+    };
 }

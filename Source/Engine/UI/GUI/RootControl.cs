@@ -68,6 +68,7 @@ namespace FlaxEngine.GUI
         : base(0, 0, 100, 60)
         {
             AutoFocus = false;
+            Clipping = Clipping.ClipToBounds;
         }
 
         #region Navigation

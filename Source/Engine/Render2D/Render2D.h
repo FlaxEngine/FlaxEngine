@@ -152,7 +152,8 @@ public:
     /// Peeks the current clipping rectangle mask.
     /// </summary>
     /// <param name="clipRect">The output axis aligned clipping mask rectangle combined from all the masks together (pushed into the masking stack).</param>
-    API_FUNCTION() static void PeekClip(API_PARAM(Out) Rectangle& clipRect);
+    /// <returns>count of PushClip in the stack</returns>
+    API_FUNCTION() static int32 PeekClip(API_PARAM(Out) Rectangle& clipRect);
 
     /// <summary>
     /// Pops clipping rectangle mask.

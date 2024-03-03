@@ -849,9 +849,10 @@ void Render2D::PushClip(const Rectangle& clipRect)
     OnClipScissors();
 }
 
-void Render2D::PeekClip(Rectangle& clipRect)
+int32 Render2D::PeekClip(Rectangle& clipRect)
 {
     clipRect = ClipLayersStack.Peek().Bounds;
+    return ClipLayersStack.Count();
 }
 
 void Render2D::PopClip()
