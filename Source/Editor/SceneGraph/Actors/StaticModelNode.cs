@@ -24,19 +24,22 @@ namespace FlaxEditor.SceneGraph.Actors
         {
         }
 
+
         /// <inheritdoc />
-        public override bool OnVertexSnap(ref Vector3 point, out Vector3 result)
+        public override bool OnVertexSnap(ref Ray ray, float hitDistance, out Vector3 result)
         {
-            result = point;
+            // Find the closest vertex to bounding box point (collision detection approximation)
+            result = ray.GetPoint(hitDistance);
             var model = ((StaticModel)Actor).Model;
             if (model && !model.WaitForLoaded())
             {
                 // TODO: move to C++ and use cached vertex buffer internally inside the Mesh
                 if (_vertices == null)
                     _vertices = new();
-                var pointLocal = (Float3)Actor.Transform.WorldToLocal(point);
+                var pointLocal = (Float3)Actor.Transform.WorldToLocal(result);
                 var minDistance = float.MaxValue;
-                foreach (var lod in model.LODs)
+                var lodIndex = 0; // TODO: use LOD index based on the game view
+                var lod = model.LODs[lodIndex];
                 {
                     var hit = false;
                     foreach (var mesh in lod.Meshes)
