@@ -11,7 +11,9 @@ int main(int argc, char* argv[])
     StringBuilder args;
     for (int i = 1; i < argc; i++)
     {
-        args.Append(argv[i]);
+        String arg;
+        arg.SetUTF8(argv[i], StringUtils::Length(argv[i]));
+        args.Append(arg);
 
         if (i + 1 != argc)
             args.Append(TEXT(' '));
