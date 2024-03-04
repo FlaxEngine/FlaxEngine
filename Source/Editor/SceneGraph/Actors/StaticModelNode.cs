@@ -23,13 +23,12 @@ namespace FlaxEditor.SceneGraph.Actors
         : base(actor)
         {
         }
-        
+
 
         /// <inheritdoc />
         public override bool OnVertexSnap(ref Ray ray, float hitDistance, out Vector3 result)
         {
             // Find the closest vertex to bounding box point (collision detection approximation)
-
             result = ray.GetPoint(hitDistance);
             var model = ((StaticModel)Actor).Model;
             if (model && !model.WaitForLoaded())
@@ -39,7 +38,8 @@ namespace FlaxEditor.SceneGraph.Actors
                     _vertices = new();
                 var pointLocal = (Float3)Actor.Transform.WorldToLocal(result);
                 var minDistance = float.MaxValue;
-                foreach (var lod in model.LODs) //[ToDo] fix it [Nori_SC note] this is wrong it should get current lod level going it throw all lods will create ghost snaping points
+                var lodIndex = 0; // TODO: use LOD index based on the game view
+                var lod = model.LODs[lodIndex];
                 {
                     var hit = false;
                     foreach (var mesh in lod.Meshes)

@@ -85,7 +85,6 @@ namespace FlaxEditor.Gizmo
         {
             InitDrawing();
             ModeChanged += ResetTranslationScale;
-            
         }
 
         /// <summary>
@@ -564,13 +563,13 @@ namespace FlaxEditor.Gizmo
                 return; // ignore it if there is nothing under the mouse closestObject is only null if ray caster missed everything or Selection Count == 0
 
             _vertexSnapObject = closestObject;
-
             if (!closestObject.OnVertexSnap(ref ray.Ray, closestDistance, out _vertexSnapPoint))
             {
-                //The OnVertexSnap is unimplemented or failed to get point return because there is nothing to do
+                // The OnVertexSnap is unimplemented or failed to get point return because there is nothing to do
                 _vertexSnapPoint = Vector3.Zero;
                 return;
             }
+
             // Transform back to the local space of the object to work when moving it
             _vertexSnapPoint = closestObject.Transform.WorldToLocal(_vertexSnapPoint);
         }
@@ -602,9 +601,9 @@ namespace FlaxEditor.Gizmo
             var hit = Owner.SceneGraphRoot.RayCast(ref rayCast, out var distance, out var _);
             if (hit != null)
             {
-                if (hit.OnVertexSnap(ref rayCast.Ray, distance, out var pointSnapped) 
+                if (hit.OnVertexSnap(ref rayCast.Ray, distance, out var pointSnapped)
                     //&& Vector3.Distance(point, pointSnapped) <= 25.0f
-                    )
+                   )
                 {
                     _vertexSnapObjectTo = hit;
                     _vertexSnapPointTo = hit.Transform.WorldToLocal(pointSnapped);
@@ -692,6 +691,7 @@ namespace FlaxEditor.Gizmo
         protected virtual void OnDuplicate()
         {
         }
+
         /// <inheritdoc />
         public override void OnSelectionChanged(List<SceneGraphNode> newSelection)
         {

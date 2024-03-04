@@ -355,11 +355,11 @@ namespace FlaxEditor.SceneGraph
         /// <summary>
         /// Performs the vertex snapping for a given ray and hitDistance.
         /// </summary>
-        /// <param name="ray">Raycasted ray</param>
-        /// <param name="hitDistance">Hit distance from ray to object bounding box</param>
+        /// <param name="ray">The ray to raycast.</param>
+        /// <param name="hitDistance">Hit distance from ray to object bounding box.</param>
         /// <param name="result">The result point on the object mesh that is closest to the specified location.</param>
         /// <returns>True if got a valid result value, otherwise false (eg. if missing data or not initialized).</returns>
-        public virtual bool OnVertexSnap(ref Ray ray,float hitDistance, out Vector3 result) // [NoriSC note] ray and hit Distance will be needed for a future use, in mesh types for proper collision detection
+        public virtual bool OnVertexSnap(ref Ray ray, float hitDistance, out Vector3 result)
         {
             result = Vector3.Zero;
             return false;
