@@ -38,8 +38,18 @@
 
 #define TERRAIN_PATCH_COLLISION_QUANTIZATION ((float)0x7fff)
 
+// [Deprecated on 4.03.2024, expires on 4.03.2034]
+struct TerrainCollisionDataHeaderOld
+{
+    int32 LOD;
+    float ScaleXZ;
+};
+
 struct TerrainCollisionDataHeader
 {
+    static constexpr int32 CurrentVersion = 1;
+    int32 CheckOldMagicNumber; // Used to detect if loading new header or old one
+    int32 Version;
     int32 LOD;
     float ScaleXZ;
 };
@@ -685,13 +695,13 @@ bool CookCollision(TerrainDataUpdateInfo& info, TextureBase::InitData* initData,
     // Cook height field
     MemoryWriteStream outputStream;
     if (CollisionCooking::CookHeightField(heightFieldSize, heightFieldSize, heightFieldData, outputStream))
-    {
         return true;
-    }
 
     // Write results
     collisionData->Resize(sizeof(TerrainCollisionDataHeader) + outputStream.GetPosition(), false);
     const auto header = (TerrainCollisionDataHeader*)collisionData->Get();
+    header->CheckOldMagicNumber = MAX_int32;
+    header->Version = TerrainCollisionDataHeader::CurrentVersion;
     header->LOD = collisionLOD;
     header->ScaleXZ = (float)info.HeightmapSize / heightFieldSize;
     Platform::MemoryCopy(collisionData->Get() + sizeof(TerrainCollisionDataHeader), outputStream.GetHandle(), outputStream.GetPosition());
@@ -2133,7 +2143,15 @@ bool TerrainPatch::CreateHeightField()
         return true;
     }
 
-    const auto collisionHeader = (TerrainCollisionDataHeader*)_heightfield->Data.Get();
+    // Check if the cooked collision matches the engine version
+    auto collisionHeader = (TerrainCollisionDataHeader*)_heightfield->Data.Get();
+    if (collisionHeader->CheckOldMagicNumber != MAX_int32 || collisionHeader->CurrentVersion != TerrainCollisionDataHeader::CurrentVersion)
+    {
+        // Reset height map
+        return InitializeHeightMap();
+    }
+
+    // Create heightfield object from the data
     _collisionScaleXZ = collisionHeader->ScaleXZ * TERRAIN_UNITS_PER_VERTEX;
     _physicsHeightField = PhysicsBackend::CreateHeightField(_heightfield->Data.Get() + sizeof(TerrainCollisionDataHeader), _heightfield->Data.Count() - sizeof(TerrainCollisionDataHeader));
     if (_physicsHeightField == nullptr)
