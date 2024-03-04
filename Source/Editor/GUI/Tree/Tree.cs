@@ -3,6 +3,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using FlaxEditor.Options;
 using FlaxEngine;
 using FlaxEngine.Assertions;
 using FlaxEngine.GUI;
@@ -315,10 +316,7 @@ namespace FlaxEditor.GUI.Tree
             }
         }
 
-        /// <summary>
-        /// Select all expanded nodes
-        /// </summary>
-        public void SelectAllExpanded()
+        private void BulkSelectUpdateExpanded(bool select = true)
         {
             if (_supportMultiSelect)
             {
@@ -327,7 +325,8 @@ namespace FlaxEditor.GUI.Tree
 
                 // Update selection
                 Selection.Clear();
-                WalkSelectExpandedTree(Selection, _children[0] as TreeNode);
+                if (select)
+                    WalkSelectExpandedTree(Selection, _children[0] as TreeNode);
 
                 // Check if changed
                 if (Selection.Count != prev.Count || !Selection.SequenceEqual(prev))
@@ -336,6 +335,22 @@ namespace FlaxEditor.GUI.Tree
                     SelectedChanged?.Invoke(prev, Selection);
                 }
             }
+        }
+
+        /// <summary>
+        /// Select all expanded nodes
+        /// </summary>
+        public void SelectAllExpanded()
+        {
+            BulkSelectUpdateExpanded(true);
+        }
+
+        /// <summary>
+        /// Deselect all nodes
+        /// </summary>
+        public void DeselectAll()
+        {
+            BulkSelectUpdateExpanded(false);
         }
 
         /// <inheritdoc />
@@ -472,12 +487,17 @@ namespace FlaxEditor.GUI.Tree
             // Check if can use multi selection
             if (_supportMultiSelect)
             {
-                bool isCtrlDown = Root.GetKey(KeyboardKeys.Control);
+                InputOptions options = Editor.Instance.Options.Options.Input;
 
                 // Select all expanded nodes
-                if (key == KeyboardKeys.A && isCtrlDown)
+                if (options.SelectAll.Process(this))
                 {
                     SelectAllExpanded();
+                    return true;
+                }
+                else if (options.DeselectAll.Process(this))
+                {
+                    DeselectAll();
                     return true;
                 }
             }
