@@ -69,7 +69,7 @@ uint64 RawDataAsset::GetMemoryUsage() const
     Locker.Lock();
     uint64 result = BinaryAsset::GetMemoryUsage();
     result += sizeof(RawDataAsset) - sizeof(BinaryAsset);
-    result += Data.Count();
+    result += Data.Capacity();
     Locker.Unlock();
     return result;
 }
