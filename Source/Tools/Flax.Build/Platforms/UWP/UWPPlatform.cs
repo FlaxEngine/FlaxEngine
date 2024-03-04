@@ -45,8 +45,11 @@ namespace Flax.Build.Platforms
             var toolsets = GetToolsets();
             if (!toolsets.ContainsKey(WindowsPlatformToolset.v141) &&
                 !toolsets.ContainsKey(WindowsPlatformToolset.v142) &&
-                !toolsets.ContainsKey(WindowsPlatformToolset.v143))
+                !toolsets.ContainsKey(WindowsPlatformToolset.v143) &&
+                !toolsets.ContainsKey(WindowsPlatformToolset.v144))
+            {
                 _hasRequiredSDKsInstalled = false;
+            }
         }
 
         /// <inheritdoc />
