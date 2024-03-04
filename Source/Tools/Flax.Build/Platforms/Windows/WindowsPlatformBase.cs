@@ -49,6 +49,11 @@ namespace Flax.Build.Platforms
         /// Visual Studio 2022
         /// </summary>
         v143 = 143,
+
+        /// <summary>
+        /// Visual Studio 2022 (v17.10 and later)
+        /// </summary>
+        v144 = 144,
     }
 
     /// <summary>
@@ -240,6 +245,10 @@ namespace Flax.Build.Platforms
                         _toolsets[WindowsPlatformToolset.v142] = toolset;
                     else if (version.Major == 14 && version.Minor / 10 == 3)
                         _toolsets[WindowsPlatformToolset.v143] = toolset;
+                    else if (version.Major == 14 && version.Minor / 10 == 4)
+                        _toolsets[WindowsPlatformToolset.v144] = toolset;
+                    else
+                        Log.Warning("Found Unsupported MSVC toolset version: " + version);
                 }
             }
         }
@@ -424,6 +433,7 @@ namespace Flax.Build.Platforms
             case WindowsPlatformToolset.v141:
             case WindowsPlatformToolset.v142:
             case WindowsPlatformToolset.v143:
+            case WindowsPlatformToolset.v144:
             {
                 /*
                 string crossCompilerPath = Path.Combine(vcToolChainDir, "bin", "HostX64", "x86", "cl.exe");
@@ -477,6 +487,7 @@ namespace Flax.Build.Platforms
             case WindowsPlatformToolset.v141:
             case WindowsPlatformToolset.v142:
             case WindowsPlatformToolset.v143:
+            case WindowsPlatformToolset.v144:
             {
                 string nativeCompilerPath = Path.Combine(vcToolChainDir, "bin", "HostX64", "x64", "cl.exe");
                 if (File.Exists(nativeCompilerPath))
