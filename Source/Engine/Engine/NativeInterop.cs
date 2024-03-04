@@ -48,7 +48,7 @@ namespace FlaxEngine.Interop
 #endif
         private static Dictionary<object, ManagedHandle> classAttributesCacheCollectible = new();
         private static Dictionary<Assembly, ManagedHandle> assemblyHandles = new();
-        private static Dictionary<Type, int> _typeSizeCache = new();
+        private static ConcurrentDictionary<Type, int> _typeSizeCache = new();
 
         private static Dictionary<string, IntPtr> loadedNativeLibraries = new();
         internal static Dictionary<string, string> libraryPaths = new();
@@ -1594,7 +1594,7 @@ namespace FlaxEngine.Interop
             private static IntPtr PinValue<T>(T value) where T : struct
             {
                 // Store the converted value in unmanaged memory so it will not be relocated by the garbage collector.
-                int size = GetTypeSize(typeof(T));
+                int size = TypeHelpers<T>.MarshalSize;
                 uint index = Interlocked.Increment(ref pinnedAllocationsPointer) % (uint)pinnedAllocations.Length;
                 ref (IntPtr ptr, int size) alloc = ref pinnedAllocations[index];
                 if (alloc.size < size)
@@ -1727,25 +1727,36 @@ namespace FlaxEngine.Interop
             return tuple;
         }
 
-        internal static int GetTypeSize(Type type)
+        internal static class TypeHelpers<T>
         {
-            if (!_typeSizeCache.TryGetValue(type, out var size))
+            public static readonly int MarshalSize;
+            static TypeHelpers()
             {
+                Type type = typeof(T);
                 try
                 {
                     var marshalType = type;
                     if (type.IsEnum)
                         marshalType = type.GetEnumUnderlyingType();
-                    size = Marshal.SizeOf(marshalType);
+                    MarshalSize = Marshal.SizeOf(marshalType);
                 }
                 catch
                 {
                     // Workaround the issue where structure defined within generic type instance (eg. MyType<int>.MyStruct) fails to get size
                     // https://github.com/dotnet/runtime/issues/46426
-                    var obj = Activator.CreateInstance(type);
-                    size = Marshal.SizeOf(obj);
+                    var obj = RuntimeHelpers.GetUninitializedObject(type);
+                    MarshalSize = Marshal.SizeOf(obj);
                 }
-                _typeSizeCache.Add(type, size);
+            }
+        }
+
+        internal static int GetTypeSize(Type type)
+        {
+            if (!_typeSizeCache.TryGetValue(type, out int size))
+            {
+                var marshalSizeField = typeof(TypeHelpers<>).MakeGenericType(type).GetField(nameof(TypeHelpers<int>.MarshalSize), BindingFlags.Static | BindingFlags.Public);
+                size = (int)marshalSizeField.GetValue(null);
+                _typeSizeCache.AddOrUpdate(type, size, (t, v) => size);
             }
             return size;
         }
