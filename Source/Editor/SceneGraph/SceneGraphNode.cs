@@ -95,18 +95,6 @@ namespace FlaxEditor.SceneGraph
         public virtual bool CanTransform => true;
 
         /// <summary>
-        /// Gets a value indicating whether this node can be used for the vertex snapping feature.
-        /// </summary>
-        public bool CanVertexSnap
-        {
-            get
-            {
-                var v = Vector3.Zero;
-                return OnVertexSnap(ref v, out _);
-            }
-        }
-
-        /// <summary>
         /// Gets a value indicating whether this <see cref="SceneGraphNode"/> is active.
         /// </summary>
         public abstract bool IsActive { get; }
@@ -365,14 +353,15 @@ namespace FlaxEditor.SceneGraph
         }
 
         /// <summary>
-        /// Performs the vertex snapping of a given point on the object surface that is closest to a given location.
+        /// Performs the vertex snapping for a given ray and hitDistance.
         /// </summary>
-        /// <param name="point">The position to snap.</param>
+        /// <param name="ray">Raycasted ray</param>
+        /// <param name="hitDistance">Hit distance from ray to object bounding box</param>
         /// <param name="result">The result point on the object mesh that is closest to the specified location.</param>
         /// <returns>True if got a valid result value, otherwise false (eg. if missing data or not initialized).</returns>
-        public virtual bool OnVertexSnap(ref Vector3 point, out Vector3 result)
+        public virtual bool OnVertexSnap(ref Ray ray,float hitDistance, out Vector3 result) // [NoriSC note] ray and hit Distance will be needed for a future use, in mesh types for proper collision detection
         {
-            result = point;
+            result = Vector3.Zero;
             return false;
         }
 
