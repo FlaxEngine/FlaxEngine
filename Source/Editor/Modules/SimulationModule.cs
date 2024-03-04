@@ -264,10 +264,13 @@ namespace FlaxEditor.Modules
                 _enterPlayFocusedWindow = gameWin;
 
             // Show Game widow if hidden
-            if (gameWin != null && gameWin.FocusOnPlay)
+            if (gameWin != null)
             {
-                gameWin.FocusGameViewport();
+                if (gameWin.FocusOnPlay)
+                    gameWin.FocusGameViewport();
+                gameWin.SetWindowMode(Editor.Options.Options.Interface.DefaultGameWindowMode);
             }
+
 
             Editor.Log("[PlayMode] Enter");
         }
