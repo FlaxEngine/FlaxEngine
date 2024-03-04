@@ -742,6 +742,17 @@ namespace FlaxEditor.Modules
             playActionGroup.SelectedChanged = SetPlayAction;
             Editor.Options.OptionsChanged += options => { playActionGroup.Selected = options.Interface.PlayButtonAction; };
 
+            var windowModesGroup = new ContextMenuSingleSelectGroup<InterfaceOptions.GameWindowMode>();
+            var windowTypeMenu = _toolStripPlay.ContextMenu.AddChildMenu("Game window mode");
+            windowModesGroup.AddItem("Docked", InterfaceOptions.GameWindowMode.Docked, null, "Shows the game window docked, inside the editor");
+            windowModesGroup.AddItem("Popup", InterfaceOptions.GameWindowMode.PopupWindow, null, "Shows the game window as a popup");
+            windowModesGroup.AddItem("Maximized", InterfaceOptions.GameWindowMode.MaximizedWindow, null, "Shows the game window maximized (Same as pressing F11)");
+            windowModesGroup.AddItem("Borderless", InterfaceOptions.GameWindowMode.BorderlessWindow, null, "Shows the game window borderless");
+            windowModesGroup.AddItemsToContextMenu(windowTypeMenu.ContextMenu);
+            windowModesGroup.Selected = Editor.Options.Options.Interface.DefaultGameWindowMode;
+            windowModesGroup.SelectedChanged = SetGameWindowMode;
+            Editor.Options.OptionsChanged += options => { windowModesGroup.Selected = options.Interface.DefaultGameWindowMode; };
+
             _toolStripPause = (ToolStripButton)ToolStrip.AddButton(Editor.Icons.Pause64, Editor.Simulation.RequestResumeOrPause).LinkTooltip($"Pause/Resume game ({inputOptions.Pause})");
             _toolStripStep = (ToolStripButton)ToolStrip.AddButton(Editor.Icons.Skip64, Editor.Simulation.RequestPlayOneFrame).LinkTooltip("Step one frame in game");
 
@@ -1044,6 +1055,13 @@ namespace FlaxEditor.Modules
         {
             var options = Editor.Options.Options;
             options.Interface.PlayButtonAction = newPlayAction;
+            Editor.Options.Apply(options);
+        }
+
+        private void SetGameWindowMode(InterfaceOptions.GameWindowMode newGameWindowMode)
+        {
+            var options = Editor.Options.Options;
+            options.Interface.DefaultGameWindowMode = newGameWindowMode;
             Editor.Options.Apply(options);
         }
 
