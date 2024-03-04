@@ -3469,7 +3469,8 @@ void* PhysicsBackend::CreateVehicle(WheeledVehicle* actor)
     Array<PxShape*, InlinedAllocation<8>> shapes;
     shapes.Resize(actorPhysX->getNbShapes());
     actorPhysX->getShapes(shapes.Get(), shapes.Count(), 0);
-    const PxTransform centerOfMassOffset = actorPhysX->getCMassLocalPose();
+    PxTransform centerOfMassOffset = actorPhysX->getCMassLocalPose();
+    centerOfMassOffset.q = PxQuat(PxIdentity);
 
     // Initialize wheels simulation data
     PxVec3 offsets[PX_MAX_NB_WHEELS];
