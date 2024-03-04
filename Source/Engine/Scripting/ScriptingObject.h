@@ -158,6 +158,11 @@ public:
     {
         return obj && CanCast(obj->GetClass(), T::GetStaticClass()) ? static_cast<T*>(obj) : nullptr;
     }
+    template<typename T>
+    T* Cast()
+    {
+        return this && CanCast(this->GetClass(), T::GetStaticClass()) ? static_cast<T*>(this) : nullptr;
+    }
 
     bool Is(const ScriptingTypeHandle& type) const;
 

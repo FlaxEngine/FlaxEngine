@@ -1,0 +1,272 @@
+{
+	"ID": "fad54a044b2c0ac8ce08dba9611ed852",
+	"TypeName": "FlaxEngine.UIBlueprintAsset",
+	"EngineBuild": 6407,
+	"Data": {
+	"UIBlueprint": "FlaxEditor.Experimental.UI.UITransformationToolBlueprint",
+	"TypeNames": [
+		"FlaxEngine.Experimental.UI.UICanvasPanel",
+		"FlaxEngine.Experimental.UI.UIButton",
+		"FlaxEngine.Experimental.UI.UIInputEventHook"
+	],
+	"Tree": {
+		"ID": 0,
+		"Flags": 200,
+		"Transform": [
+			253.0,
+			169.0,
+			391.0,
+			266.0,
+			0.0,
+			0.0,
+			0.0,
+			0.0,
+			0.0
+		],
+		"Slots": [
+			{
+				"ID": 1,
+				"Label": "LeftHandle",
+				"Flags": 10,
+				"Transform": [
+					236.0,
+					297.0,
+					20.0,
+					20.0,
+					0.0,
+					0.0,
+					0.0,
+					0.0,
+					0.0
+				],
+				"Response": 0,
+				"Anchor": {
+					"Min": {
+						"X": 0.0,
+						"Y": 0.5
+					},
+					"Max": {
+						"X": 0.0,
+						"Y": 0.5
+					}
+				}
+			},
+			{
+				"ID": 1,
+				"Label": "TopRightHandle",
+				"Flags": 10,
+				"Transform": [
+					644.0,
+					150.0,
+					20.0,
+					20.0,
+					0.0,
+					0.0,
+					0.0,
+					0.0,
+					0.0
+				],
+				"Response": 0,
+				"Anchor": {
+					"Min": {
+						"X": 1.0,
+						"Y": 0.0
+					},
+					"Max": {
+						"X": 1.0,
+						"Y": 0.0
+					}
+				}
+			},
+			{
+				"ID": 1,
+				"Label": "TopLeftHandle",
+				"Flags": 10,
+				"Transform": [
+					232.0,
+					147.0,
+					20.0,
+					20.0,
+					0.0,
+					0.0,
+					0.0,
+					1.0,
+					1.0
+				],
+				"Response": 0,
+				"Anchor": {
+					"Min": {
+						"X": 0.0,
+						"Y": 0.0
+					},
+					"Max": {
+						"X": 0.0,
+						"Y": 0.0
+					}
+				}
+			},
+			{
+				"ID": 1,
+				"Label": "TopHandle",
+				"Flags": 10,
+				"Transform": [
+					445.0,
+					145.0,
+					20.0,
+					20.0,
+					0.0,
+					0.0,
+					0.0,
+					0.0,
+					0.0
+				],
+				"Response": 0,
+				"Anchor": {
+					"Min": {
+						"X": 0.5,
+						"Y": 0.0
+					},
+					"Max": {
+						"X": 0.5,
+						"Y": 0.0
+					}
+				}
+			},
+			{
+				"ID": 1,
+				"Label": "RightHandle",
+				"Flags": 10,
+				"Transform": [
+					647.0,
+					307.0,
+					20.0,
+					20.0,
+					0.0,
+					0.0,
+					0.0,
+					0.0,
+					0.0
+				],
+				"Response": 0,
+				"Anchor": {
+					"Min": {
+						"X": 1.0,
+						"Y": 0.5
+					},
+					"Max": {
+						"X": 1.0,
+						"Y": 0.5
+					}
+				}
+			},
+			{
+				"ID": 1,
+				"Label": "BottomHandle",
+				"Flags": 10,
+				"Transform": [
+					431.0,
+					441.0,
+					20.0,
+					20.0,
+					0.0,
+					0.0,
+					0.0,
+					0.0,
+					0.0
+				],
+				"Response": 0,
+				"Anchor": {
+					"Min": {
+						"X": 0.5,
+						"Y": 1.0
+					},
+					"Max": {
+						"X": 0.5,
+						"Y": 1.0
+					}
+				}
+			},
+			{
+				"ID": 1,
+				"Label": "BottomLeftHandle",
+				"Flags": 10,
+				"Transform": [
+					234.0,
+					437.0,
+					20.0,
+					20.0,
+					0.0,
+					0.0,
+					0.0,
+					0.0,
+					0.0
+				],
+				"Response": 0,
+				"Anchor": {
+					"Min": {
+						"X": 0.0,
+						"Y": 1.0
+					},
+					"Max": {
+						"X": 0.0,
+						"Y": 1.0
+					}
+				}
+			},
+			{
+				"ID": 1,
+				"Label": "BottomRightHandle",
+				"Flags": 10,
+				"Transform": [
+					647.0,
+					439.0,
+					20.0,
+					20.0,
+					0.0,
+					0.0,
+					0.0,
+					0.0,
+					0.0
+				],
+				"Response": 0,
+				"Anchor": {
+					"Min": {
+						"X": 1.0,
+						"Y": 1.0
+					},
+					"Max": {
+						"X": 1.0,
+						"Y": 1.0
+					}
+				}
+			},
+			{
+				"ID": 2,
+				"Label": "CenterHandle",
+				"Flags": 74,
+				"Transform": [
+					252.0,
+					167.0,
+					391.28662109375,
+					266.9833984375,
+					0.0,
+					0.0,
+					0.0,
+					0.0,
+					0.0
+				],
+				"Anchor": {
+					"Min": {
+						"X": 0.0,
+						"Y": 0.0
+					},
+					"Max": {
+						"X": 1.0,
+						"Y": 1.0
+					}
+				}
+			}
+		]
+	}
+}
+}
