@@ -6,6 +6,7 @@ using System.Globalization;
 using System.Linq;
 using FlaxEditor.CustomEditors;
 using FlaxEditor.GUI.ContextMenu;
+using FlaxEditor.Options;
 using FlaxEngine;
 using FlaxEngine.GUI;
 
@@ -713,15 +714,28 @@ namespace FlaxEditor.GUI
             }
         }
 
+        private void BulkSelectUpdate(bool select = true)
+        {
+            for (int i = 0; i < _points.Count; i++)
+            {
+                _points[i].IsSelected = select;
+            }
+        }
+
         /// <summary>
         /// Selects all keyframes.
         /// </summary>
         public void SelectAll()
         {
-            for (int i = 0; i < _points.Count; i++)
-            {
-                _points[i].IsSelected = true;
-            }
+            BulkSelectUpdate(true);
+        }
+
+        /// <summary>
+        /// Deselects all keyframes.
+        /// </summary>
+        public void DeselectAll()
+        {
+            BulkSelectUpdate(false);
         }
 
         /// <summary>
@@ -926,34 +940,35 @@ namespace FlaxEditor.GUI
             if (base.OnKeyDown(key))
                 return true;
 
-            switch (key)
+            InputOptions options = Editor.Instance.Options.Options.Input;
+            if (options.SelectAll.Process(this))
             {
-            case KeyboardKeys.Delete:
+                SelectAll();
+                UpdateTangents();
+                return true;
+            }
+            else if (options.DeselectAll.Process(this))
+            {
+                DeselectAll();
+                UpdateTangents();
+                return true;
+            }
+            else if (options.Delete.Process(this))
+            {
                 RemoveKeyframes();
                 return true;
-            case KeyboardKeys.A:
-                if (Root.GetKey(KeyboardKeys.Control))
-                {
-                    SelectAll();
-                    UpdateTangents();
-                    return true;
-                }
-                break;
-            case KeyboardKeys.C:
-                if (Root.GetKey(KeyboardKeys.Control))
-                {
-                    CopyKeyframes();
-                    return true;
-                }
-                break;
-            case KeyboardKeys.V:
-                if (Root.GetKey(KeyboardKeys.Control))
-                {
-                    KeyframesEditorUtils.Paste(this);
-                    return true;
-                }
-                break;
             }
+            else if (options.Copy.Process(this))
+            {
+                CopyKeyframes();
+                return true;
+            }
+            else if (options.Paste.Process(this))
+            {
+                KeyframesEditorUtils.Paste(this);
+                return true;
+            }
+
             return false;
         }
 

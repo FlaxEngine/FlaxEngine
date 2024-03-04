@@ -54,6 +54,7 @@ namespace FlaxEditor.Modules
         private ContextMenuButton _menuEditDelete;
         private ContextMenuButton _menuEditDuplicate;
         private ContextMenuButton _menuEditSelectAll;
+        private ContextMenuButton _menuEditDeselectAll;
         private ContextMenuButton _menuEditFind;
         private ContextMenuButton _menuSceneMoveActorToViewport;
         private ContextMenuButton _menuSceneAlignActorWithViewport;
@@ -554,6 +555,7 @@ namespace FlaxEditor.Modules
             _menuEditDuplicate = cm.AddButton("Duplicate", inputOptions.Duplicate, Editor.SceneEditing.Duplicate);
             cm.AddSeparator();
             _menuEditSelectAll = cm.AddButton("Select all", inputOptions.SelectAll, Editor.SceneEditing.SelectAllScenes);
+            _menuEditDeselectAll = cm.AddButton("Deselect all", inputOptions.DeselectAll, Editor.SceneEditing.DeselectAllScenes);
             _menuCreateParentForSelectedActors = cm.AddButton("Create parent for selected actors", Editor.SceneEditing.CreateParentForSelectedActors);
             _menuEditFind = cm.AddButton("Find", inputOptions.Search, Editor.Windows.SceneWin.Search);
             cm.AddSeparator();
@@ -673,6 +675,7 @@ namespace FlaxEditor.Modules
             _menuEditDelete.ShortKeys = inputOptions.Delete.ToString();
             _menuEditDuplicate.ShortKeys = inputOptions.Duplicate.ToString();
             _menuEditSelectAll.ShortKeys = inputOptions.SelectAll.ToString();
+            _menuEditDeselectAll.ShortKeys = inputOptions.DeselectAll.ToString();
             _menuEditFind.ShortKeys = inputOptions.Search.ToString();
             _menuGamePlayGame.ShortKeys = inputOptions.Play.ToString();
             _menuGamePlayCurrentScenes.ShortKeys = inputOptions.PlayCurrentScenes.ToString();
@@ -871,6 +874,7 @@ namespace FlaxEditor.Modules
             _menuEditDelete.Enabled = hasSthSelected;
             _menuEditDuplicate.Enabled = hasSthSelected;
             _menuEditSelectAll.Enabled = Level.IsAnySceneLoaded;
+            _menuEditDeselectAll.Enabled = hasSthSelected;
 
             control.PerformLayout();
         }

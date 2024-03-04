@@ -60,13 +60,26 @@ namespace FlaxEditor.Modules
         {
         }
 
+        private void BulkScenesSelectUpdate(bool select = true)
+        {
+            // Blank list deselects all
+            Select(select ? Editor.Scene.Root.ChildNodes : new List<SceneGraphNode>());
+        }
+
         /// <summary>
         /// Selects all scenes.
         /// </summary>
         public void SelectAllScenes()
         {
-            // Select all scenes (linked to the root node)
-            Select(Editor.Scene.Root.ChildNodes);
+            BulkScenesSelectUpdate(true);
+        }
+
+        /// <summary>
+        /// Deselects all scenes.
+        /// </summary>
+        public void DeselectAllScenes()
+        {
+            BulkScenesSelectUpdate(false);
         }
 
         /// <summary>
