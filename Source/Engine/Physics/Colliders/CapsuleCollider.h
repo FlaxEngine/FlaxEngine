@@ -6,6 +6,27 @@
 #include "Engine/Core/Math/OrientedBoundingBox.h"
 
 /// <summary>
+/// The collider orientation direction.
+/// </summary>
+API_ENUM() enum class ColliderOrientationDirection
+{
+    /// <summary>
+    /// Orient to the X-Axis.
+    /// </summary>
+    XAxis,
+
+    /// <summary>
+    /// Orient to the Y-Axis.
+    /// </summary>
+    YAxis,
+
+    /// <summary>
+    /// Orient to the Z-Axis.
+    /// </summary>
+    ZAxis
+};
+
+/// <summary>
 /// A capsule-shaped primitive collider.
 /// </summary>
 /// <remarks>Capsules are cylinders with a half-sphere at each end centered at the origin and extending along the X axis, and two hemispherical ends.</remarks>
@@ -19,6 +40,7 @@ private:
     float _radius;
     float _height;
     OrientedBoundingBox _orientedBox;
+    ColliderOrientationDirection _direction;
 
 public:
     /// <summary>
@@ -52,6 +74,20 @@ public:
     /// </summary>
     /// <remarks>The capsule height will be scaled by the actor's world scale.</remarks>
     API_PROPERTY() void SetHeight(float value);
+
+    /// <summary>
+    /// Gets the orientation direction of the capsule collider.
+    /// </summary>
+    API_PROPERTY(Attributes="EditorOrder(111), DefaultValue(typeof(ColliderOrientationDirection), \"YAxis\"), EditorDisplay(\"Collider\")")
+    FORCE_INLINE ColliderOrientationDirection GetColliderDirection() const
+    {
+        return _direction;
+    }
+
+    /// <summary>
+    /// Sets the orientation direction of the capsule collider.
+    /// </summary>
+    API_PROPERTY() void SetColliderDirection(ColliderOrientationDirection value);
 
 public:
     // [Collider]
