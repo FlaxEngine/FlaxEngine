@@ -1,5 +1,11 @@
 // Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
+#if USE_LARGE_WORLDS
+using Real = System.Double;
+#else
+using Real = System.Single;
+#endif
+
 using System;
 using System.Collections.Generic;
 using FlaxEditor.Content;
@@ -24,9 +30,8 @@ namespace FlaxEditor.SceneGraph.Actors
         {
         }
 
-
         /// <inheritdoc />
-        public override bool OnVertexSnap(ref Ray ray, float hitDistance, out Vector3 result)
+        public override bool OnVertexSnap(ref Ray ray, Real hitDistance, out Vector3 result)
         {
             // Find the closest vertex to bounding box point (collision detection approximation)
             result = ray.GetPoint(hitDistance);
@@ -37,7 +42,7 @@ namespace FlaxEditor.SceneGraph.Actors
                 if (_vertices == null)
                     _vertices = new();
                 var pointLocal = (Float3)Actor.Transform.WorldToLocal(result);
-                var minDistance = float.MaxValue;
+                var minDistance = Real.MaxValue;
                 var lodIndex = 0; // TODO: use LOD index based on the game view
                 var lod = model.LODs[lodIndex];
                 {
