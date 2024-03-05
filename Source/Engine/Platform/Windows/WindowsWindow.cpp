@@ -772,7 +772,8 @@ void WindowsWindow::CheckForWindowResize()
 
 void WindowsWindow::UpdateCursor() const
 {
-    if (_cursor == CursorType::Hidden)
+    // Don't hide cursor when window is not focused
+    if (_cursor == CursorType::Hidden && _focused)
     {
         ::SetCursor(nullptr);
         return;
@@ -1234,6 +1235,7 @@ LRESULT WindowsWindow::WndProc(UINT msg, WPARAM wParam, LPARAM lParam)
         break;
     case WM_SETFOCUS:
         OnGotFocus();
+        UpdateCursor();
         if (_isClippingCursor && !_clipCursorSet)
         {
             _clipCursorSet = true;
@@ -1247,6 +1249,7 @@ LRESULT WindowsWindow::WndProc(UINT msg, WPARAM wParam, LPARAM lParam)
             ClipCursor(nullptr);
         }
         OnLostFocus();
+        UpdateCursor();
         break;
     case WM_ACTIVATEAPP:
         if (wParam == TRUE && !_focused)
@@ -1261,6 +1264,7 @@ LRESULT WindowsWindow::WndProc(UINT msg, WPARAM wParam, LPARAM lParam)
                 SetIsFullscreen(false);
             }
         }
+        UpdateCursor();
         break;
     case WM_MENUCHAR:
         // A menu is active and the user presses a key that does not correspond to any mnemonic or accelerator key so just ignore and don't beep
