@@ -41,7 +41,11 @@ namespace FlaxEditor.SceneGraph
         protected SceneGraphNode(Guid id)
         {
             ID = id;
-            SceneGraphFactory.Nodes.Add(id, this);
+            if (SceneGraphFactory.Nodes.TryGetValue(id, out var duplicate) && duplicate != null)
+            {
+                Editor.LogWarning($"Duplicated Scene Graph node with ID {FlaxEngine.Json.JsonSerializer.GetStringID(id)} of type '{duplicate.GetType().FullName}'");
+            }
+            SceneGraphFactory.Nodes[id] = this;
         }
 
         /// <summary>
