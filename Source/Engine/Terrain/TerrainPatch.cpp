@@ -38,7 +38,7 @@
 
 #define TERRAIN_PATCH_COLLISION_QUANTIZATION ((float)0x7fff)
 
-// [Deprecated on 4.03.2024, expires on 4.03.2034]
+// [Deprecated on 4.03.2024, expires on 4.03.2029]
 struct TerrainCollisionDataHeaderOld
 {
     int32 LOD;
@@ -2145,7 +2145,7 @@ bool TerrainPatch::CreateHeightField()
 
     // Check if the cooked collision matches the engine version
     auto collisionHeader = (TerrainCollisionDataHeader*)_heightfield->Data.Get();
-    if (collisionHeader->CheckOldMagicNumber != MAX_int32 || collisionHeader->CurrentVersion != TerrainCollisionDataHeader::CurrentVersion)
+    if (collisionHeader->CheckOldMagicNumber != MAX_int32 || collisionHeader->Version != TerrainCollisionDataHeader::CurrentVersion)
     {
         // Reset height map
         return InitializeHeightMap();
