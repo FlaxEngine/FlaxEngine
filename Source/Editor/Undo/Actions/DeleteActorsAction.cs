@@ -3,7 +3,6 @@
 using System;
 using System.Collections.Generic;
 using FlaxEditor.SceneGraph;
-using FlaxEditor.Scripting;
 using FlaxEngine;
 using FlaxEngine.Utilities;
 
@@ -26,6 +25,9 @@ namespace FlaxEditor.Actions
         private Guid[] _nodeParentsIDs;
 
         [Serialize]
+        private int[] _nodeParentsOrders;
+
+        [Serialize]
         private Guid[] _prefabIds;
 
         [Serialize]
@@ -46,9 +48,32 @@ namespace FlaxEditor.Actions
         /// <summary>
         /// Initializes a new instance of the <see cref="DeleteActorsAction"/> class.
         /// </summary>
+        /// <param name="actor">The actor.</param>
+        /// <param name="isInverted">If set to <c>true</c> action will be inverted - instead of delete it will create actors.</param>
+        /// <param name="preserveOrder">If set to <c>true</c> action will be preserve actors order when performing undo.</param>
+        internal DeleteActorsAction(Actor actor, bool isInverted = false, bool preserveOrder = true)
+        : this(new List<SceneGraphNode>(1) { SceneGraphFactory.FindNode(actor.ID) }, isInverted, preserveOrder)
+        {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="DeleteActorsAction"/> class.
+        /// </summary>
+        /// <param name="node">The object.</param>
+        /// <param name="isInverted">If set to <c>true</c> action will be inverted - instead of delete it will create actors.</param>
+        /// <param name="preserveOrder">If set to <c>true</c> action will be preserve actors order when performing undo.</param>
+        internal DeleteActorsAction(SceneGraphNode node, bool isInverted = false, bool preserveOrder = true)
+        : this(new List<SceneGraphNode>(1) { node }, isInverted, preserveOrder)
+        {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="DeleteActorsAction"/> class.
+        /// </summary>
         /// <param name="nodes">The objects.</param>
-        /// <param name="isInverted">If set to <c>true</c> action will be inverted - instead of delete it will be create actors.</param>
-        internal DeleteActorsAction(List<SceneGraphNode> nodes, bool isInverted = false)
+        /// <param name="isInverted">If set to <c>true</c> action will be inverted - instead of delete it will create actors.</param>
+        /// <param name="preserveOrder">If set to <c>true</c> action will be preserve actors order when performing undo.</param>
+        internal DeleteActorsAction(List<SceneGraphNode> nodes, bool isInverted = false, bool preserveOrder = true)
         {
             _isInverted = isInverted;
 
@@ -82,6 +107,12 @@ namespace FlaxEditor.Actions
             _nodeParentsIDs = new Guid[_nodeParents.Count];
             for (int i = 0; i < _nodeParentsIDs.Length; i++)
                 _nodeParentsIDs[i] = _nodeParents[i].ID;
+            if (preserveOrder)
+            {
+                _nodeParentsOrders = new int[_nodeParents.Count];
+                for (int i = 0; i < _nodeParentsOrders.Length; i++)
+                    _nodeParentsOrders[i] = _nodeParents[i].OrderInParent;
+            }
 
             // Serialize actors
             _actorsData = Actor.ToBytes(actors.ToArray());
@@ -122,6 +153,7 @@ namespace FlaxEditor.Actions
         {
             _actorsData = null;
             _nodeParentsIDs = null;
+            _nodeParentsOrders = null;
             _prefabIds = null;
             _prefabObjectIds = null;
             _nodeParents.Clear();
@@ -211,6 +243,8 @@ namespace FlaxEditor.Actions
                 if (foundNode is ActorNode node)
                 {
                     nodes.Add(node);
+                    if (_nodeParentsOrders != null)
+                        node.Actor.OrderInParent = _nodeParentsOrders[i];
                 }
             }
             nodes.BuildNodesParents(_nodeParents);

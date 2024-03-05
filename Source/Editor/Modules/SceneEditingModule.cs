@@ -333,7 +333,7 @@ namespace FlaxEditor.Modules
             actorNode.PostSpawn();
 
             // Create undo action
-            IUndoAction action = new DeleteActorsAction(new List<SceneGraphNode>(1) { actorNode }, true);
+            IUndoAction action = new DeleteActorsAction(actorNode, true);
             if (autoSelect)
             {
                 var before = Selection.ToArray();
