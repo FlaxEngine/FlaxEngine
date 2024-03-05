@@ -446,6 +446,27 @@ public:
 };
 
 /// <summary>
+/// Checks certain knowledge value to conditionally enter the node if the value is set (eg. not-null object reference or boolean value).
+/// </summary>
+API_CLASS(Sealed) class FLAXENGINE_API BehaviorTreeKnowledgeBooleanDecorator : public BehaviorTreeDecorator
+{
+    DECLARE_SCRIPTING_TYPE_WITH_CONSTRUCTOR_IMPL(BehaviorTreeKnowledgeBooleanDecorator, BehaviorTreeDecorator);
+    API_AUTO_SERIALIZATION();
+
+    // The value from behavior's knowledge (blackboard, goal or sensor) to check if it's set (eg. not-null object reference or boolean value).
+    API_FIELD(Attributes="EditorOrder(0)")
+    BehaviorKnowledgeSelectorAny Value;
+
+    // If checked, the condition will be inverted.
+    API_FIELD(Attributes="EditorOrder(10)")
+    bool Invert = false;
+
+public:
+    // [BehaviorTreeNode]
+    bool CanUpdate(const BehaviorUpdateContext& context) override;
+};
+
+/// <summary>
 /// Checks if certain actor (from knowledge) has a given tag assigned.
 /// </summary>
 API_CLASS(Sealed) class FLAXENGINE_API BehaviorTreeHasTagDecorator : public BehaviorTreeDecorator
