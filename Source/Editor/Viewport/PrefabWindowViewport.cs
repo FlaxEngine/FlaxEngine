@@ -545,7 +545,9 @@ namespace FlaxEditor.Viewport
         /// <param name="scaleDelta">The scale delta.</param>
         public void ApplyTransform(List<SceneGraphNode> selection, ref Vector3 translationDelta, ref Quaternion rotationDelta, ref Vector3 scaleDelta)
         {
+            bool applyTranslation = !translationDelta.IsZero;
             bool applyRotation = !rotationDelta.IsIdentity;
+            bool applyScale = !scaleDelta.IsZero;
             bool useObjCenter = TransformGizmo.ActivePivot == TransformGizmoBase.PivotType.ObjectCenter;
             Vector3 gizmoPosition = TransformGizmo.Position;
 
@@ -575,13 +577,29 @@ namespace FlaxEditor.Viewport
                 }
 
                 // Apply scale
-                const float scaleLimit = 99_999_999.0f;
-                trans.Scale = Float3.Clamp(trans.Scale + scaleDelta, new Float3(-scaleLimit), new Float3(scaleLimit));
+                if (applyScale)
+                {
+                    const float scaleLimit = 99_999_999.0f;
+                    trans.Scale = Float3.Clamp(trans.Scale + scaleDelta, new Float3(-scaleLimit), new Float3(scaleLimit));
+                }
 
                 // Apply translation
-                trans.Translation += translationDelta;
+                if (applyTranslation)
+                {
+                    trans.Translation += translationDelta;
+                }
 
-                obj.Transform = trans;
+                if (obj is ActorNode actorNode)
+                {
+                    if (applyTranslation)
+                        actorNode.Actor.Position = trans.Translation;
+                    if (applyRotation)
+                        actorNode.Actor.Orientation = trans.Orientation;
+                    if (applyScale)
+                        actorNode.Actor.Scale = trans.Scale;
+                }
+                else
+                    obj.Transform = trans;
             }
         }
 
