@@ -52,6 +52,7 @@ namespace FlaxEditor.Content.GUI
                     continue;
 
                 Editor.Instance.Prefabs.CreatePrefab(actor, false);
+                actorNode.TreeNode.UpdateText();
             }
         }
 
