@@ -239,6 +239,7 @@ namespace FlaxEditor.Surface.Archetypes
                 ConnectionsHints = ConnectionsHint.Numeric,
                 IndependentBoxes = new[] { 0, 1, 2 },
                 DependentBoxes = new[] { 3 },
+                SortScore = -1, // Lower sort score to not go above Multiply node
                 DefaultValues = new object[]
                 {
                     1.0f,
