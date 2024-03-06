@@ -317,12 +317,7 @@ void Actor::SetParent(Actor* value, bool worldPositionsStays, bool canBreakPrefa
 
     // Update the transform
     if (worldPositionsStays)
-    {
-        if (_parent)
-            _parent->_transform.WorldToLocal(prevTransform, _localTransform);
-        else
-            _localTransform = prevTransform;
-    }
+        _transform = prevTransform;
 
     // Fire events
     OnParentChanged();

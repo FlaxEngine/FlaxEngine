@@ -170,7 +170,7 @@ namespace FlaxEditor.Windows
             if (parentActor != null)
             {
                 // Use the same location
-                actor.Transform = parentActor.Transform;
+                actor.LocalTransform = Transform.Identity;
 
                 // Rename actor to identify it easily
                 actor.Name = Utilities.Utils.IncrementNameNumber(type.Name, x => parentActor.GetChild(x) == null);
