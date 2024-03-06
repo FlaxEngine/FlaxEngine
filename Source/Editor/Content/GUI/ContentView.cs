@@ -3,7 +3,9 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using FlaxEditor.GUI.Drag;
 using FlaxEditor.Options;
+using FlaxEditor.SceneGraph;
 using FlaxEditor.Windows;
 using FlaxEngine;
 using FlaxEngine.GUI;
@@ -57,8 +59,11 @@ namespace FlaxEditor.Content.GUI
         private float _viewScale = 1.0f;
         private ContentViewType _viewType = ContentViewType.Tiles;
         private bool _isRubberBandSpanning = false;
-        private Float2 _mousePresslocation;
+        private Float2 _mousePressLocation;
         private Rectangle _rubberBandRectangle;
+
+        private bool _validDragOver;
+        private DragActors _dragActors;
 
         #region External Events
 
@@ -634,8 +639,8 @@ namespace FlaxEditor.Content.GUI
 
             if (button == MouseButton.Left)
             {
-                _mousePresslocation = location;
-                _rubberBandRectangle = new Rectangle(_mousePresslocation, 0, 0);
+                _mousePressLocation = location;
+                _rubberBandRectangle = new Rectangle(_mousePressLocation, 0, 0);
                 _isRubberBandSpanning = true;
                 StartMouseCapture();
             }
@@ -647,8 +652,8 @@ namespace FlaxEditor.Content.GUI
         {
             if (_isRubberBandSpanning)
             {
-                _rubberBandRectangle.Width = location.X - _mousePresslocation.X;
-                _rubberBandRectangle.Height = location.Y - _mousePresslocation.Y;
+                _rubberBandRectangle.Width = location.X - _mousePressLocation.X;
+                _rubberBandRectangle.Height = location.Y - _mousePressLocation.Y;
             }
 
             base.OnMouseMove(location);
@@ -781,6 +786,114 @@ namespace FlaxEditor.Content.GUI
             }
 
             return false;
+        }
+
+        /// <inheritdoc />
+        public override DragDropEffect OnDragEnter(ref Float2 location, DragData data)
+        {
+            var result = base.OnDragEnter(ref location, data);
+            if (result != DragDropEffect.None)
+                return result;
+
+            // Check if drop file(s)
+            if (data is DragDataFiles)
+            {
+                _validDragOver = true;
+                return DragDropEffect.Copy;
+            }
+
+            // Check if drop actor(s)
+            if (_dragActors == null)
+                _dragActors = new DragActors(ValidateDragActors);
+            if (_dragActors.OnDragEnter(data))
+            {
+                _validDragOver = true;
+                return DragDropEffect.Move;
+            }
+
+            return DragDropEffect.None;
+        }
+
+        private bool ValidateDragActors(ActorNode actor)
+        {
+            return actor.CanCreatePrefab && Editor.Instance.Windows.ContentWin.CurrentViewFolder.CanHaveAssets;
+        }
+
+        private void ImportActors(DragActors actors, ContentFolder location)
+        {
+            foreach (var actorNode in actors.Objects)
+            {
+                var actor = actorNode.Actor;
+                if (actors.Objects.Contains(actorNode.ParentNode as ActorNode))
+                    continue;
+
+                Editor.Instance.Prefabs.CreatePrefab(actor, false);
+            }
+        }
+
+        /// <inheritdoc />
+        public override DragDropEffect OnDragMove(ref Float2 location, DragData data)
+        {
+            _validDragOver = false;
+            var result = base.OnDragMove(ref location, data);
+            if (result != DragDropEffect.None)
+                return result;
+
+            if (data is DragDataFiles)
+            {
+                _validDragOver = true;
+                result = DragDropEffect.Copy;
+            }
+            else if (_dragActors != null && _dragActors.HasValidDrag)
+            {
+                _validDragOver = true;
+                result = DragDropEffect.Move;
+            }
+
+            return result;
+        }
+
+        /// <inheritdoc />
+        public override DragDropEffect OnDragDrop(ref Float2 location, DragData data)
+        {
+            var result = base.OnDragDrop(ref location, data);
+            if (result != DragDropEffect.None)
+                return result;
+
+            // Check if drop file(s)
+            if (data is DragDataFiles files)
+            {
+                // Import files
+                var currentFolder = Editor.Instance.Windows.ContentWin.CurrentViewFolder;
+                if (currentFolder != null)
+                    Editor.Instance.ContentImporting.Import(files.Files, currentFolder);
+                result = DragDropEffect.Copy;
+            }
+            // Check if drop actor(s)
+            else if (_dragActors != null && _dragActors.HasValidDrag)
+            {
+                // Import actors
+                var currentFolder = Editor.Instance.Windows.ContentWin.CurrentViewFolder;
+                if (currentFolder != null)
+                    ImportActors(_dragActors, currentFolder);
+
+                _dragActors.OnDragDrop();
+                result = DragDropEffect.Move;
+            }
+
+            // Clear cache
+            _validDragOver = false;
+
+            return result;
+        }
+
+        /// <inheritdoc />
+        public override void OnDragLeave()
+        {
+            _validDragOver = false;
+            _dragActors?.OnDragLeave();
+
+            base.OnDragLeave();
         }
 
         /// <inheritdoc />
