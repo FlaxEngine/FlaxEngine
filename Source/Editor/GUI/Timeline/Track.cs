@@ -977,7 +977,6 @@ namespace FlaxEditor.GUI.Timeline
             // Draw drag and drop effect
             if (IsDragOver && _isDragOverHeader)
             {
-                Color dragOverColor = style.BackgroundSelected * 0.6f;
                 Rectangle rect;
                 switch (_dragOverMode)
                 {
@@ -994,7 +993,8 @@ namespace FlaxEditor.GUI.Timeline
                     rect = Rectangle.Empty;
                     break;
                 }
-                Render2D.FillRectangle(rect, dragOverColor);
+                Render2D.FillRectangle(rect, style.Selection);
+                Render2D.DrawRectangle(rect, style.SelectionBorder);
             }
 
             base.Draw();

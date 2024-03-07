@@ -304,7 +304,9 @@ namespace FlaxEditor.GUI.Timeline
                 if (IsDragOver && _currentDragEffect != DragDropEffect.None)
                 {
                     var style = Style.Current;
-                    Render2D.FillRectangle(new Rectangle(Float2.Zero, Size), style.BackgroundSelected * 0.4f);
+                    var bounds = new Rectangle(Float2.Zero, Size);
+                    Render2D.FillRectangle(bounds, style.Selection);
+                    Render2D.DrawRectangle(bounds, style.SelectionBorder);
                 }
 
                 base.Draw();

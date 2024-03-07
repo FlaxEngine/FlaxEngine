@@ -54,11 +54,11 @@ namespace FlaxEditor.Content.GUI
     public partial class ContentView : ContainerControl, IContentItemOwner
     {
         private readonly List<ContentItem> _items = new List<ContentItem>(256);
-        private readonly List<ContentItem> _selection = new List<ContentItem>(16);
+        private readonly List<ContentItem> _selection = new List<ContentItem>();
 
         private float _viewScale = 1.0f;
         private ContentViewType _viewType = ContentViewType.Tiles;
-        private bool _isRubberBandSpanning = false;
+        private bool _isRubberBandSpanning;
         private Float2 _mousePressLocation;
         private Rectangle _rubberBandRectangle;
 
@@ -615,7 +615,9 @@ namespace FlaxEditor.Content.GUI
             // Check if drag is over
             if (IsDragOver && _validDragOver)
             {
-                Render2D.FillRectangle(new Rectangle(Float2.Zero, Size), style.BackgroundSelected * 0.4f);
+                var bounds = new Rectangle(Float2.One, Size - Float2.One * 2);
+                Render2D.FillRectangle(bounds, style.Selection);
+                Render2D.DrawRectangle(bounds, style.SelectionBorder);
             }
 
             // Check if it's an empty thing
@@ -624,10 +626,11 @@ namespace FlaxEditor.Content.GUI
                 Render2D.DrawText(style.FontSmall, IsSearching ? "No results" : "Empty", new Rectangle(Float2.Zero, Size), style.ForegroundDisabled, TextAlignment.Center, TextAlignment.Center);
             }
 
+            // Selection
             if (_isRubberBandSpanning)
             {
-                Render2D.FillRectangle(_rubberBandRectangle, Color.Orange * 0.4f);
-                Render2D.DrawRectangle(_rubberBandRectangle, Color.Orange);
+                Render2D.FillRectangle(_rubberBandRectangle, style.Selection);
+                Render2D.DrawRectangle(_rubberBandRectangle, style.SelectionBorder);
             }
         }
 
@@ -961,6 +964,9 @@ namespace FlaxEditor.Content.GUI
         /// <inheritdoc />
         public override void OnDestroy()
         {
+            if (IsDisposing)
+                return;
+
             // Ensure to unlink all items
             ClearItems();
 

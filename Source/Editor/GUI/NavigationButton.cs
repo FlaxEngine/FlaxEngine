@@ -45,7 +45,8 @@ namespace FlaxEditor.GUI
             // Draw background
             if (IsDragOver && _validDragOver)
             {
-                Render2D.FillRectangle(clientRect, Style.Current.BackgroundSelected * 0.6f);
+                Render2D.FillRectangle(clientRect, style.Selection);
+                Render2D.DrawRectangle(clientRect, style.SelectionBorder);
             }
             else if (_isPressed)
             {

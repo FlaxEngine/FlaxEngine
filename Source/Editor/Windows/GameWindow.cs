@@ -968,7 +968,7 @@ namespace FlaxEditor.Windows
                 if (animTime < 0)
                 {
                     float alpha = Mathf.Saturate(-animTime / fadeOutTime);
-                    Render2D.DrawRectangle(new Rectangle(new Float2(4), Size - 8), Color.Orange * alpha);
+                    Render2D.DrawRectangle(new Rectangle(new Float2(4), Size - 8), style.SelectionBorder * alpha);
                 }
 
                 // Add overlay during debugger breakpoint hang

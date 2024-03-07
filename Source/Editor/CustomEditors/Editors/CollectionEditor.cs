@@ -542,9 +542,10 @@ namespace FlaxEditor.CustomEditors.Editors
             {
                 if (_dragHandlers is { HasValidDrag: true })
                 {
+                    var style = FlaxEngine.GUI.Style.Current;
                     var area = new Rectangle(Float2.Zero, Size);
-                    Render2D.FillRectangle(area, Color.Orange * 0.5f);
-                    Render2D.DrawRectangle(area, Color.Black);
+                    Render2D.FillRectangle(area, style.Selection);
+                    Render2D.DrawRectangle(area, style.SelectionBorder);
                 }
 
                 base.Draw();

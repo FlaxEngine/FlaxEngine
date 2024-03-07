@@ -913,8 +913,8 @@ namespace FlaxEditor.GUI
                  _mainPanel.PointToParent(_contents.PointToParent(_contents._leftMouseDownPos)),
                  _mainPanel.PointToParent(_contents.PointToParent(_contents._mousePos))
                 );
-                Render2D.FillRectangle(selectionRect, Color.Orange * 0.4f);
-                Render2D.DrawRectangle(selectionRect, Color.Orange);
+                Render2D.FillRectangle(selectionRect, style.Selection);
+                Render2D.DrawRectangle(selectionRect, style.SelectionBorder);
             }
 
             base.Draw();

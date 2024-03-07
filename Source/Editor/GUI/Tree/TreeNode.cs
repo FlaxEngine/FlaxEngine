@@ -681,27 +681,19 @@ namespace FlaxEditor.GUI.Tree
             // Draw drag and drop effect
             if (IsDragOver && _tree.DraggedOverNode == this)
             {
-                Color dragOverColor = style.BackgroundSelected;
-                Rectangle rect;
                 switch (_dragOverMode)
                 {
                 case DragItemPositioning.At:
-                    dragOverColor *= 0.6f;
-                    rect = textRect;
+                    Render2D.FillRectangle(textRect, style.Selection);
+                    Render2D.DrawRectangle(textRect, style.SelectionBorder);
                     break;
                 case DragItemPositioning.Above:
-                    dragOverColor *= 1.2f;
-                    rect = new Rectangle(textRect.X, textRect.Top - DefaultDragInsertPositionMargin - DefaultNodeOffsetY - _margin.Top, textRect.Width, DefaultDragInsertPositionMargin * 2.0f);
+                    Render2D.DrawRectangle(new Rectangle(textRect.X, textRect.Top - DefaultDragInsertPositionMargin * 0.5f - DefaultNodeOffsetY - _margin.Top, textRect.Width, DefaultDragInsertPositionMargin), style.SelectionBorder);
                     break;
                 case DragItemPositioning.Below:
-                    dragOverColor *= 1.2f;
-                    rect = new Rectangle(textRect.X, textRect.Bottom + _margin.Bottom - DefaultDragInsertPositionMargin, textRect.Width, DefaultDragInsertPositionMargin * 2.0f);
-                    break;
-                default:
-                    rect = Rectangle.Empty;
+                    Render2D.DrawRectangle(new Rectangle(textRect.X, textRect.Bottom + _margin.Bottom - DefaultDragInsertPositionMargin * 0.5f, textRect.Width, DefaultDragInsertPositionMargin), style.SelectionBorder);
                     break;
                 }
-                Render2D.FillRectangle(rect, dragOverColor);
             }
 
             // Base

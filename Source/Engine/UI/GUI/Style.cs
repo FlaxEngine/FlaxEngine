@@ -171,6 +171,18 @@ namespace FlaxEngine.GUI
         public Color ProgressNormal;
 
         /// <summary>
+        /// The selection and drag drop highlights colors.
+        /// </summary>
+        [EditorOrder(205)]
+        public Color Selection;
+
+        /// <summary>
+        /// The selection and drag drop highlights border colors.
+        /// </summary>
+        [EditorOrder(206)]
+        public Color SelectionBorder;
+
+        /// <summary>
         /// The status bar style
         /// </summary>
         [EditorOrder(210)]

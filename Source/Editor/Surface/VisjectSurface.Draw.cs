@@ -96,9 +96,10 @@ namespace FlaxEditor.Surface
         /// <remarks>Called only when user is selecting nodes using rectangle tool.</remarks>
         protected virtual void DrawSelection()
         {
+            var style = FlaxEngine.GUI.Style.Current;
             var selectionRect = Rectangle.FromPoints(_leftMouseDownPos, _mousePos);
-            Render2D.FillRectangle(selectionRect, Color.Orange * 0.4f);
-            Render2D.DrawRectangle(selectionRect, Color.Orange);
+            Render2D.FillRectangle(selectionRect, style.Selection);
+            Render2D.DrawRectangle(selectionRect, style.SelectionBorder);
         }
 
         /// <summary>

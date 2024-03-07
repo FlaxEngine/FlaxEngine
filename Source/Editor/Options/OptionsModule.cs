@@ -212,6 +212,14 @@ namespace FlaxEditor.Options
             string styleName = themeOptions.SelectedStyle;
             if (styleName != ThemeOptions.DefaultName && styleName != ThemeOptions.LightDefault && themeOptions.Styles.TryGetValue(styleName, out var style) && style != null)
             {
+                // Setup defaults for newly added components that might be missing
+                if (style.Selection == Color.Transparent && style.SelectionBorder == Color.Transparent)
+                {
+                    // [Deprecated on 6.03.2024, expires on 6.03.2026]
+                    style.Selection = Color.Orange * 0.4f;
+                    style.SelectionBorder = Color.Orange;
+                }
+
                 Style.Current = style;
             }
             else
@@ -258,6 +266,8 @@ namespace FlaxEditor.Options
                 TextBoxBackgroundSelected = Color.FromBgra(0xFF3F3F46),
                 CollectionBackgroundColor = Color.FromBgra(0x14CCCCCC),
                 ProgressNormal = Color.FromBgra(0xFF0ad328),
+                Selection = Color.Orange * 0.4f,
+                SelectionBorder = Color.Orange,
 
                 Statusbar = new Style.StatusbarStyle
                 {
@@ -318,6 +328,8 @@ namespace FlaxEditor.Options
                 TextBoxBackgroundSelected = new Color(0.73f, 0.73f, 0.80f, 1f),
                 CollectionBackgroundColor = new Color(0.85f, 0.85f, 0.88f, 1f),
                 ProgressNormal = new Color(0.03f, 0.65f, 0.12f, 1f),
+                Selection = Color.Orange * 0.4f,
+                SelectionBorder = Color.Orange,
 
                 // Fonts
                 FontTitle = options.Interface.TitleFont.GetFont(),
