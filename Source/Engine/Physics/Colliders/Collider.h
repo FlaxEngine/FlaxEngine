@@ -21,7 +21,6 @@ API_CLASS(Abstract) class FLAXENGINE_API Collider : public PhysicsColliderActor
     DECLARE_SCENE_OBJECT_ABSTRACT(Collider);
 protected:
     Vector3 _center;
-    Quaternion _colliderOrientation;
     bool _isTrigger;
     void* _shape;
     void* _staticActor;
@@ -77,19 +76,6 @@ public:
     /// Sets the contact offset. Colliders whose distance is less than the sum of their ContactOffset values will generate contacts. The contact offset must be positive. Contact offset allows the collision detection system to predictively enforce the contact constraint even when the objects are slightly separated.
     /// </summary>
     API_PROPERTY() void SetContactOffset(float value);
-
-    /// <summary>
-    /// Gets the collider's orientation, measured in the object's local space.
-    /// </summary>
-    FORCE_INLINE Quaternion GetColliderOrientation() const
-    {
-        return _colliderOrientation;
-    }
-
-    /// <summary>
-    /// Sets the orientation of the collider, measured in the object's local space.
-    /// </summary>
-    void SetColliderOrientation(const Quaternion& value);
 
     /// <summary>
     /// The physical material used to define the collider physical properties.

@@ -6,9 +6,7 @@ CapsuleCollider::CapsuleCollider(const SpawnParams& params)
     : Collider(params)
     , _radius(20.0f)
     , _height(100.0f)
-    , _direction(ColliderOrientationDirection::YAxis)
 {
-    SetColliderDirection(_direction);
 }
 
 void CapsuleCollider::SetRadius(const float value)
@@ -33,24 +31,6 @@ void CapsuleCollider::SetHeight(const float value)
     UpdateBounds();
 }
 
-void CapsuleCollider::SetColliderDirection(ColliderOrientationDirection value)
-{
-    _direction = value;
-    switch (value)
-    {
-    case ColliderOrientationDirection::XAxis:
-        SetColliderOrientation(Quaternion::Identity);
-        break;
-    case ColliderOrientationDirection::YAxis:
-        SetColliderOrientation(Quaternion::Euler(0, 0, 90));
-        break;
-    case ColliderOrientationDirection::ZAxis:
-        SetColliderOrientation(Quaternion::Euler(0, 90, 0));
-        break;
-    default: ;
-    }
-}
-
 #if USE_EDITOR
 
 #include "Engine/Debug/DebugDraw.h"
@@ -61,10 +41,8 @@ void CapsuleCollider::DrawPhysicsDebug(RenderView& view)
     const BoundingSphere sphere(_sphere.Center - view.Origin, _sphere.Radius);
     if (!view.CullingFrustum.Intersects(sphere))
         return;
-    Quaternion collRot;
-    Quaternion::Multiply( _colliderOrientation, Quaternion::Euler(0, 90, 0), collRot);
     Quaternion rotation;
-    Quaternion::Multiply(_transform.Orientation, collRot, rotation);
+    Quaternion::Multiply(_transform.Orientation, Quaternion::Euler(0, 90, 0), rotation);
     const float scaling = _cachedScale.GetAbsolute().MaxValue();
     const float minSize = 0.001f;
     const float radius = Math::Max(Math::Abs(_radius) * scaling, minSize);
@@ -77,10 +55,8 @@ void CapsuleCollider::DrawPhysicsDebug(RenderView& view)
 
 void CapsuleCollider::OnDebugDrawSelected()
 {
-    Quaternion collRot;
-    Quaternion::Multiply( _colliderOrientation, Quaternion::Euler(0, 90, 0), collRot);
     Quaternion rotation;
-    Quaternion::Multiply(_transform.Orientation, collRot, rotation);
+    Quaternion::Multiply(_transform.Orientation, Quaternion::Euler(0, 90, 0), rotation);
     const float scaling = _cachedScale.GetAbsolute().MaxValue();
     const float minSize = 0.001f;
     const float radius = Math::Max(Math::Abs(_radius) * scaling, minSize);
@@ -109,11 +85,7 @@ void CapsuleCollider::UpdateBounds()
     // Cache bounds
     const float radiusTwice = _radius * 2.0f;
     OrientedBoundingBox::CreateCentered(_center, Vector3(_height + radiusTwice, radiusTwice, radiusTwice), _orientedBox);
-    Transform transform = _transform;
-    Quaternion rot;
-    Quaternion::Multiply(transform.Orientation, _colliderOrientation, rot);
-    transform.Orientation = rot;
-    _orientedBox.Transform(transform);
+    _orientedBox.Transform(_transform);
     _orientedBox.GetBoundingBox(_box);
     BoundingSphere::FromBox(_box, _sphere);
 }
