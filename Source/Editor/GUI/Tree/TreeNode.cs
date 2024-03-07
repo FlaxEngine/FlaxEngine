@@ -42,7 +42,7 @@ namespace FlaxEditor.GUI.Tree
 
         private DragItemPositioning _dragOverMode;
         private bool _isDragOverHeader;
-        private static double _dragEndTime = -1000;
+        private static ulong _dragEndFrame;
 
         /// <summary>
         /// Gets or sets the text.
@@ -758,7 +758,7 @@ namespace FlaxEditor.GUI.Tree
             if (_mouseOverHeader)
             {
                 // Skip mouse up event right after drag drop ends
-                if (button == MouseButton.Left && Platform.TimeSeconds - _dragEndTime <= 0.1f)
+                if (button == MouseButton.Left && Engine.FrameCount - _dragEndFrame < 10)
                     return true;
 
                 // Prevent from selecting node when user is just clicking at an arrow
@@ -1029,7 +1029,7 @@ namespace FlaxEditor.GUI.Tree
             if (result == DragDropEffect.None)
             {
                 UpdateDragPositioning(ref location);
-                _dragEndTime = Platform.TimeSeconds;
+                _dragEndFrame = Engine.FrameCount;
 
                 // Check if mouse is over header
                 if (TestHeaderHit(ref location))
