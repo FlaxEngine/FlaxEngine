@@ -77,6 +77,7 @@ namespace FlaxEditor.GUI
             _startValue = value;
 
             _inputField = new TextBox(isMultiline, 0, 0, size.Y);
+            _inputField.BorderColor = _inputField.BorderSelectedColor = Style.Current.SelectionBorder;
             _inputField.TextChanged += OnTextChanged;
             _inputField.AnchorPreset = AnchorPresets.StretchAll;
             _inputField.Offsets = Margin.Zero;
