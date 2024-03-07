@@ -363,8 +363,8 @@ namespace FlaxEditor.GUI.ContextMenu
         public override void Show(Control parent, Float2 location)
         {
             // Remove last separator to make context menu look better
-            int lastIndex = Children.Count - 1;
-            if (lastIndex >= 0 && Children[lastIndex] is ContextMenuSeparator separator)
+            int lastIndex = _panel.Children.Count - 1;
+            if (lastIndex >= 0 && _panel.Children[lastIndex] is ContextMenuSeparator separator)
                 separator.Dispose();
 
             base.Show(parent, location);
