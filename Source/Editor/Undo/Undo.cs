@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using System.Linq;
 using FlaxEditor.History;
 using FlaxEditor.Utilities;
-using FlaxEngine;
 using FlaxEngine.Collections;
 
 namespace FlaxEditor
@@ -134,11 +133,9 @@ namespace FlaxEditor
         {
             if (!Enabled)
                 return;
-            Profiler.BeginEvent("Undo.RecordBegin");
 
             _snapshots.Add(snapshotInstance, new UndoInternal(snapshotInstance, actionString));
 
-            Profiler.EndEvent();
         }
 
         /// <summary>
@@ -151,7 +148,6 @@ namespace FlaxEditor
         {
             if (!Enabled)
                 return;
-            Profiler.BeginEvent("Undo.RecordEnd");
 
             if (snapshotInstance == null)
                 snapshotInstance = _snapshots.Last().Key;
@@ -178,8 +174,6 @@ namespace FlaxEditor
                 UndoOperationsStack.Push(action);
                 OnAction(action);
             }
-
-            Profiler.EndEvent();
         }
 
         /// <summary>
@@ -235,11 +229,8 @@ namespace FlaxEditor
         {
             if (!Enabled)
                 return;
-            Profiler.BeginEvent("Undo.RecordMultiBegin");
 
             _snapshots.Add(snapshotInstances, new UndoMultiInternal(snapshotInstances, actionString));
-
-            Profiler.EndEvent();
         }
 
         /// <summary>
@@ -252,7 +243,6 @@ namespace FlaxEditor
         {
             if (!Enabled)
                 return;
-            Profiler.BeginEvent("Undo.RecordMultiEnd");
 
             if (snapshotInstance == null)
                 snapshotInstance = (object[])_snapshots.Last().Key;
@@ -279,8 +269,6 @@ namespace FlaxEditor
                 UndoOperationsStack.Push(action);
                 OnAction(action);
             }
-
-            Profiler.EndEvent();
         }
 
         /// <summary>
@@ -345,14 +333,11 @@ namespace FlaxEditor
         {
             if (!Enabled || !CanUndo)
                 return;
-            Profiler.BeginEvent("Undo.PerformUndo");
 
             var action = (IUndoAction)UndoOperationsStack.PopHistory();
             action.Undo();
 
             OnUndo(action);
-
-            Profiler.EndEvent();
         }
 
         /// <summary>
@@ -362,14 +347,11 @@ namespace FlaxEditor
         {
             if (!Enabled || !CanRedo)
                 return;
-            Profiler.BeginEvent("Undo.PerformRedo");
 
             var action = (IUndoAction)UndoOperationsStack.PopReverse();
             action.Do();
 
             OnRedo(action);
-
-            Profiler.EndEvent();
         }
 
         /// <summary>
