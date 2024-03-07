@@ -346,7 +346,7 @@ bool GPUSwapChainVulkan::CreateSwapChain(int32 width, int32 height)
     height = Math::Clamp<int32>(height, surfProperties.minImageExtent.height, surfProperties.maxImageExtent.height);
     if (width <= 0 || height <= 0)
     {
-        LOG(Error, "Vulkan SwapChain dimensions are invalid {}x{} (minImageExtent={}x{}, maxImageExtent={}x{})", width, height, surfProperties.minImageExtent.width, surfProperties.minImageExtent.height, surfProperties.maxImageExtent.width, surfProperties.maxImageExtent.height);
+        LOG(Error, "Vulkan swapchain dimensions are invalid {}x{} (minImageExtent={}x{}, maxImageExtent={}x{})", width, height, surfProperties.minImageExtent.width, surfProperties.minImageExtent.height, surfProperties.maxImageExtent.width, surfProperties.maxImageExtent.height);
         return true;
     }
     VkSwapchainCreateInfoKHR swapChainInfo;
@@ -386,11 +386,12 @@ bool GPUSwapChainVulkan::CreateSwapChain(int32 width, int32 height)
     {
         uint32 imagesCount;
         VALIDATE_VULKAN_RESULT(vkGetSwapchainImagesKHR(device, _swapChain, &imagesCount, nullptr));
-        ASSERT(imagesCount >= VULKAN_BACK_BUFFERS_COUNT && imagesCount <= VULKAN_BACK_BUFFERS_COUNT_MAX);
+        imagesCount = Math::Min<uint32>(imagesCount, VULKAN_BACK_BUFFERS_COUNT_MAX);
+        if (imagesCount != VULKAN_BACK_BUFFERS_COUNT)
+            LOG(Warning, "Vulkan swapchain got less backbuffers than requried {} (instead of {})", imagesCount, VULKAN_BACK_BUFFERS_COUNT);
 
-        Array<VkImage, FixedAllocation<VULKAN_BACK_BUFFERS_COUNT_MAX>> images;
-        images.Resize(imagesCount);
-        VALIDATE_VULKAN_RESULT(vkGetSwapchainImagesKHR(device, _swapChain, &imagesCount, images.Get()));
+        VkImage images[VULKAN_BACK_BUFFERS_COUNT_MAX];
+        VALIDATE_VULKAN_RESULT(vkGetSwapchainImagesKHR(device, _swapChain, &imagesCount, images));
 
         _backBuffers.Resize(imagesCount);
         VkExtent3D extent;
@@ -399,7 +400,7 @@ bool GPUSwapChainVulkan::CreateSwapChain(int32 width, int32 height)
         extent.depth = 1;
         for (uint32 i = 0; i < imagesCount; i++)
         {
-            _backBuffers[i].Setup(this, images[i], _format, extent);
+            _backBuffers.Get()[i].Setup(this, images[i], _format, extent);
         }
     }
 
