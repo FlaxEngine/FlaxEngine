@@ -963,9 +963,7 @@ namespace FlaxEditor.GUI.Tree
 
                     // Expand node if mouse goes over arrow
                     if (ArrowRect.Contains(location) && HasAnyVisibleChild)
-                    {
                         Expand(true);
-                    }
 
                     result = OnDragEnterHeader(data);
                 }
@@ -997,10 +995,8 @@ namespace FlaxEditor.GUI.Tree
 
                     // Expand node if mouse goes over arrow
                     if (ArrowRect.Contains(location) && HasAnyVisibleChild)
-                    {
                         Expand(true);
-                    }
-
+                    
                     if (!_isDragOverHeader)
                         result = OnDragEnterHeader(data);
                     else
@@ -1008,7 +1004,6 @@ namespace FlaxEditor.GUI.Tree
                 }
                 else if (_isDragOverHeader)
                 {
-                    _isDragOverHeader = false;
                     OnDragLeaveHeader();
                 }
                 _isDragOverHeader = isDragOverHeader;

@@ -44,7 +44,7 @@ namespace FlaxEditor.GUI.Tree
         /// <summary>
         /// The TreeNode that is being dragged over. This could have a value when not dragging.
         /// </summary>
-        public TreeNode DraggedOverNode = null;
+        internal TreeNode DraggedOverNode = null;
 
         /// <summary>
         /// Action fired when tree nodes selection gets changed.
