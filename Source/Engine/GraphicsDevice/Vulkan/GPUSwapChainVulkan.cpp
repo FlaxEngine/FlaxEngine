@@ -386,8 +386,8 @@ bool GPUSwapChainVulkan::CreateSwapChain(int32 width, int32 height)
     {
         uint32 imagesCount;
         VALIDATE_VULKAN_RESULT(vkGetSwapchainImagesKHR(device, _swapChain, &imagesCount, nullptr));
-        imagesCount = Math::Min<uint32>(imagesCount, VULKAN_BACK_BUFFERS_COUNT_MAX);
-        if (imagesCount != VULKAN_BACK_BUFFERS_COUNT)
+        imagesCount = Math::Min<uint32>(imagesCount, VULKAN_BACK_BUFFERS_COUNT);
+        if (imagesCount < VULKAN_BACK_BUFFERS_COUNT)
             LOG(Warning, "Vulkan swapchain got less backbuffers than requried {} (instead of {})", imagesCount, VULKAN_BACK_BUFFERS_COUNT);
 
         VkImage images[VULKAN_BACK_BUFFERS_COUNT_MAX];
