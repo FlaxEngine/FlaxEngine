@@ -424,6 +424,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
             { typeof(Guid), KeyframesPropertyTrack.GetArchetype() },
             { typeof(DateTime), KeyframesPropertyTrack.GetArchetype() },
             { typeof(TimeSpan), KeyframesPropertyTrack.GetArchetype() },
+            { typeof(LocalizedString), KeyframesPropertyTrack.GetArchetype() },
             { typeof(string), StringPropertyTrack.GetArchetype() },
         };
     }

@@ -7,6 +7,8 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
 using FlaxEditor.GUI.Timeline.Undo;
+using FlaxEditor.Scripting;
+using FlaxEditor.Utilities;
 using FlaxEngine;
 using FlaxEngine.GUI;
 using FlaxEngine.Utilities;
@@ -56,7 +58,6 @@ namespace FlaxEditor.GUI.Timeline.Tracks
                 throw new Exception("Invalid track data.");
 
             var keyframes = new KeyframesEditor.Keyframe[keyframesCount];
-            var dataBuffer = new byte[e.ValueSize];
             var propertyType = TypeUtils.GetManagedType(e.MemberTypeName);
             if (propertyType == null)
             {
@@ -67,20 +68,40 @@ namespace FlaxEditor.GUI.Timeline.Tracks
                 return;
             }
 
-            GCHandle handle = GCHandle.Alloc(dataBuffer, GCHandleType.Pinned);
-            for (int i = 0; i < keyframesCount; i++)
+            if (e.ValueSize != 0)
             {
-                var time = stream.ReadSingle();
-                stream.Read(dataBuffer, 0, e.ValueSize);
-                var value = Marshal.PtrToStructure(handle.AddrOfPinnedObject(), propertyType);
-
-                keyframes[i] = new KeyframesEditor.Keyframe
+                // POD value type - use raw memory
+                var dataBuffer = new byte[e.ValueSize];
+                GCHandle handle = GCHandle.Alloc(dataBuffer, GCHandleType.Pinned);
+                for (int i = 0; i < keyframesCount; i++)
                 {
-                    Time = time,
-                    Value = value,
-                };
+                    var time = stream.ReadSingle();
+                    stream.Read(dataBuffer, 0, e.ValueSize);
+                    var value = Marshal.PtrToStructure(handle.AddrOfPinnedObject(), propertyType);
+
+                    keyframes[i] = new KeyframesEditor.Keyframe
+                    {
+                        Time = time,
+                        Value = value,
+                    };
+                }
+                handle.Free();
             }
-            handle.Free();
+            else
+            {
+                // Generic value - use Json storage (as UTF-8)
+                for (int i = 0; i < keyframesCount; i++)
+                {
+                    var time = stream.ReadSingle();
+                    var len = stream.ReadInt32();
+                    var value = len != 0 ? FlaxEngine.Json.JsonSerializer.Deserialize(Encoding.UTF8.GetString(stream.ReadBytes(len)), propertyType) : null;
+                    keyframes[i] = new KeyframesEditor.Keyframe
+                    {
+                        Time = time,
+                        Value = value,
+                    };
+                }
+            }
 
             e.Keyframes.DefaultValue = e.GetDefaultValue(propertyType);
             e.Keyframes.SetKeyframes(keyframes);
@@ -113,17 +134,35 @@ namespace FlaxEditor.GUI.Timeline.Tracks
             stream.Write(propertyTypeNameData);
             stream.Write('\0');
 
-            var dataBuffer = new byte[e.ValueSize];
-            IntPtr ptr = Marshal.AllocHGlobal(e.ValueSize);
-            for (int i = 0; i < keyframes.Count; i++)
+            if (e.ValueSize != 0)
             {
-                var keyframe = keyframes[i];
-                Marshal.StructureToPtr(keyframe.Value, ptr, true);
-                Marshal.Copy(ptr, dataBuffer, 0, e.ValueSize);
-                stream.Write(keyframe.Time);
-                stream.Write(dataBuffer);
+                // POD value type - use raw memory
+                var dataBuffer = new byte[e.ValueSize];
+                IntPtr ptr = Marshal.AllocHGlobal(e.ValueSize);
+                for (int i = 0; i < keyframes.Count; i++)
+                {
+                    var keyframe = keyframes[i];
+                    Marshal.StructureToPtr(keyframe.Value, ptr, true);
+                    Marshal.Copy(ptr, dataBuffer, 0, e.ValueSize);
+                    stream.Write(keyframe.Time);
+                    stream.Write(dataBuffer);
+                }
+                Marshal.FreeHGlobal(ptr);
             }
-            Marshal.FreeHGlobal(ptr);
+            else
+            {
+                // Generic value - use Json storage (as UTF-8)
+                for (int i = 0; i < keyframes.Count; i++)
+                {
+                    var keyframe = keyframes[i];
+                    stream.Write(keyframe.Time);
+                    var json = keyframe.Value != null ? FlaxEngine.Json.JsonSerializer.Serialize(keyframe.Value) : null;
+                    var len = json?.Length ?? 0;
+                    stream.Write(len);
+                    if (len > 0)
+                        stream.Write(Encoding.UTF8.GetBytes(json));
+                }
+            }
         }
 
         private byte[] _keyframesEditingStartData;
@@ -281,7 +320,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
         private void OnKeyframesEditingEnd()
         {
             var after = EditTrackAction.CaptureData(this);
-            if (!Utils.ArraysEqual(_keyframesEditingStartData, after))
+            if (!FlaxEngine.Utils.ArraysEqual(_keyframesEditingStartData, after))
                 Timeline.AddBatchedUndoAction(new EditTrackAction(Timeline, this, _keyframesEditingStartData, after));
             _keyframesEditingStartData = null;
         }
@@ -308,7 +347,10 @@ namespace FlaxEditor.GUI.Timeline.Tracks
         /// <returns>The default value.</returns>
         protected virtual object GetDefaultValue(Type propertyType)
         {
-            return Activator.CreateInstance(propertyType);
+            var value = TypeUtils.GetDefaultValue(new ScriptType(propertyType));
+            if (value == null)
+                value = Activator.CreateInstance(propertyType);
+            return value;
         }
 
         /// <inheritdoc />

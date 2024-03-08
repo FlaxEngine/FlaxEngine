@@ -7,6 +7,7 @@
 #include "Engine/Level/SceneObjectsFactory.h"
 #include "Engine/Level/Actors/Camera.h"
 #include "Engine/Serialization/Serialization.h"
+#include "Engine/Serialization/MemoryReadStream.h"
 #include "Engine/Audio/AudioClip.h"
 #include "Engine/Audio/AudioSource.h"
 #include "Engine/Graphics/RenderTask.h"
@@ -19,6 +20,7 @@
 #include "Engine/Scripting/ManagedCLR/MField.h"
 #include "Engine/Scripting/ManagedCLR/MClass.h"
 #include "Engine/Scripting/ManagedCLR/MMethod.h"
+#include "Engine/Scripting/Internal/ManagedSerialization.h"
 
 // This could be Update, LateUpdate or FixedUpdate
 #define UPDATE_POINT Update
@@ -370,47 +372,96 @@ bool SceneAnimationPlayer::TickPropertyTrack(int32 trackIndex, int32 stateIndexO
     case SceneAnimation::Track::Types::KeyframesProperty:
     case SceneAnimation::Track::Types::ObjectReferenceProperty:
     {
-        const auto trackDataKeyframes = track.GetRuntimeData<SceneAnimation::KeyframesPropertyTrack::Runtime>();
-        const int32 count = trackDataKeyframes->KeyframesCount;
+        const auto trackRuntime = track.GetRuntimeData<SceneAnimation::KeyframesPropertyTrack::Runtime>();
+        const int32 count = trackRuntime->KeyframesCount;
         if (count == 0)
             return false;
 
-        // Find the keyframe at time
-        int32 keyframeSize = sizeof(float) + trackDataKeyframes->ValueSize;
-#define GET_KEY_TIME(idx) *(float*)((byte*)trackDataKeyframes->Keyframes + keyframeSize * (idx))
-        const float keyTime = Math::Clamp(time, 0.0f, GET_KEY_TIME(count - 1));
-        int32 start = 0;
-        int32 searchLength = count;
-        while (searchLength > 0)
+        // If size is 0 then track uses Json storage for keyframes data (variable memory length of keyframes), otherwise it's optimized simple data with O(1) access
+        if (trackRuntime->ValueSize != 0)
         {
-            const int32 half = searchLength >> 1;
-            int32 mid = start + half;
-            if (keyTime < GET_KEY_TIME(mid))
+            // Find the keyframe at time (binary search)
+            int32 keyframeSize = sizeof(float) + trackRuntime->ValueSize;
+#define GET_KEY_TIME(idx) *(float*)((byte*)trackRuntime->Keyframes + keyframeSize * (idx))
+            const float keyTime = Math::Clamp(time, 0.0f, GET_KEY_TIME(count - 1));
+            int32 start = 0;
+            int32 searchLength = count;
+            while (searchLength > 0)
             {
-                searchLength = half;
+                const int32 half = searchLength >> 1;
+                int32 mid = start + half;
+                if (keyTime < GET_KEY_TIME(mid))
+                {
+                    searchLength = half;
+                }
+                else
+                {
+                    start = mid + 1;
+                    searchLength -= half + 1;
+                }
+            }
+            int32 leftKey = Math::Max(0, start - 1);
+#undef GET_KEY_TIME
+
+            // Return the value
+            void* value = (void*)((byte*)trackRuntime->Keyframes + keyframeSize * (leftKey) + sizeof(float));
+            if (track.Type == SceneAnimation::Track::Types::ObjectReferenceProperty)
+            {
+                // Object ref track uses Guid for object Id storage
+                Guid id = *(Guid*)value;
+                _objectsMapping.TryGet(id, id);
+                auto obj = Scripting::FindObject<ScriptingObject>(id);
+                value = obj ? obj->GetOrCreateManagedInstance() : nullptr;
+                *(void**)target = value;
             }
             else
             {
-                start = mid + 1;
-                searchLength -= half + 1;
+                // POD memory
+                Platform::MemoryCopy(target, value, trackRuntime->ValueSize);
             }
-        }
-        int32 leftKey = Math::Max(0, start - 1);
-#undef GET_KEY_TIME
-
-        // Return the value
-        void* value = (void*)((byte*)trackDataKeyframes->Keyframes + keyframeSize * (leftKey) + sizeof(float));
-        if (track.Type == SceneAnimation::Track::Types::ObjectReferenceProperty)
-        {
-            Guid id = *(Guid*)value;
-            _objectsMapping.TryGet(id, id);
-            auto obj = Scripting::FindObject<ScriptingObject>(id);
-            value = obj ? obj->GetOrCreateManagedInstance() : nullptr;
-            *(void**)target = value;
         }
         else
         {
-            Platform::MemoryCopy(target, value, trackDataKeyframes->ValueSize);
+            // Clear pointer
+            *(void**)target = nullptr;
+
+            // Find the keyframe at time (linear search)
+            MemoryReadStream stream((byte*)trackRuntime->Keyframes, trackRuntime->KeyframesSize);
+            int32 prevKeyPos = sizeof(float);
+            int32 jsonLen;
+            for (int32 key = 0; key < count; key++)
+            {
+                float keyTime;
+                stream.ReadFloat(&keyTime);
+                if (keyTime > time)
+                    break;
+                prevKeyPos = stream.GetPosition();
+                stream.ReadInt32(&jsonLen);
+                stream.Move(jsonLen);
+            }
+
+            // Read json text
+            stream.SetPosition(prevKeyPos);
+            stream.ReadInt32(&jsonLen);
+            const StringAnsiView json((const char*)stream.GetPositionHandle(), jsonLen);
+
+            // Create empty value of the keyframe type
+            const auto trackData = track.GetData<SceneAnimation::KeyframesPropertyTrack::Data>();
+            const StringAnsiView propertyTypeName(trackRuntime->PropertyTypeName, trackData->PropertyTypeNameLength);
+            MClass* klass = Scripting::FindClass(propertyTypeName);
+            if (!klass)
+                return false;
+            MObject* obj = MCore::Object::New(klass);
+            if (!obj)
+                return false;
+            if (!klass->IsValueType())
+                MCore::Object::Init(obj);
+
+            // Deserialize value from json
+            ManagedSerialization::Deserialize(json, obj);
+
+            // Set value
+            *(void**)target = obj;
         }
         break;
     }
@@ -479,13 +530,13 @@ bool SceneAnimationPlayer::TickPropertyTrack(int32 trackIndex, int32 stateIndexO
     }
     case SceneAnimation::Track::Types::StringProperty:
     {
-        const auto trackDataKeyframes = track.GetRuntimeData<SceneAnimation::StringPropertyTrack::Runtime>();
-        const int32 count = trackDataKeyframes->KeyframesCount;
+        const auto trackRuntime = track.GetRuntimeData<SceneAnimation::StringPropertyTrack::Runtime>();
+        const int32 count = trackRuntime->KeyframesCount;
         if (count == 0)
             return false;
-        const auto keyframesTimes = (float*)((byte*)trackDataKeyframes + sizeof(SceneAnimation::StringPropertyTrack::Runtime));
-        const auto keyframesLengths = (int32*)((byte*)keyframesTimes + sizeof(float) * trackDataKeyframes->KeyframesCount);
-        const auto keyframesValues = (Char**)((byte*)keyframesLengths + sizeof(int32) * trackDataKeyframes->KeyframesCount);
+        const auto keyframesTimes = (float*)((byte*)trackRuntime + sizeof(SceneAnimation::StringPropertyTrack::Runtime));
+        const auto keyframesLengths = (int32*)((byte*)keyframesTimes + sizeof(float) * trackRuntime->KeyframesCount);
+        const auto keyframesValues = (Char**)((byte*)keyframesLengths + sizeof(int32) * trackRuntime->KeyframesCount);
 
         // Find the keyframe at time
 #define GET_KEY_TIME(idx) keyframesTimes[idx]
@@ -522,7 +573,7 @@ bool SceneAnimationPlayer::TickPropertyTrack(int32 trackIndex, int32 stateIndexO
             auto& childTrack = anim->Tracks[childTrackIndex];
             if (childTrack.Disabled || childTrack.ParentIndex != trackIndex)
                 continue;
-            const auto childTrackRuntimeData = childTrack.GetRuntimeData<SceneAnimation::PropertyTrack::Runtime>();
+            const auto childTrackRuntime = childTrack.GetRuntimeData<SceneAnimation::PropertyTrack::Runtime>();
             auto& childTrackState = _tracks[stateIndexOffset + childTrack.TrackStateIndex];
 
             // Cache field
@@ -532,7 +583,7 @@ bool SceneAnimationPlayer::TickPropertyTrack(int32 trackIndex, int32 stateIndexO
                 if (!type)
                     continue;
                 MClass* mclass = MCore::Type::GetClass(type);
-                childTrackState.Field = mclass->GetField(childTrackRuntimeData->PropertyName);
+                childTrackState.Field = mclass->GetField(childTrackRuntime->PropertyName);
                 if (!childTrackState.Field)
                     continue;
             }
@@ -956,7 +1007,8 @@ void SceneAnimationPlayer::Tick(SceneAnimation* anim, float time, float dt, int3
             if (TickPropertyTrack(j, stateIndexOffset, anim, time, track, state, value))
             {
                 // Set the value
-                if (MCore::Type::IsPointer(valueType))
+                auto valueTypes = MCore::Type::GetType(valueType);
+                if (valueTypes == MTypes::Object || MCore::Type::IsPointer(valueType))
                     value = (void*)*(intptr*)value;
                 if (state.Property)
                 {
