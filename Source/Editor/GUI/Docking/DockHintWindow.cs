@@ -346,6 +346,10 @@ namespace FlaxEditor.GUI.Docking
         {
             if (button == MouseButton.Left)
             {
+                // Workaround to make sure the mouse down event which initiated dragging in moved window gets properly
+                // released when this window gets destroyed.
+                _toMove.Window.Window.Internal_OnMouseUp(ref location, button);
+
                 Dispose();
             }
         }
