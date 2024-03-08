@@ -575,8 +575,9 @@ namespace FlaxEngine
             }
         }
 
-        internal string Serialize()
+        internal string Serialize(UICanvas other)
         {
+            bool noOther = other == null;
             StringBuilder sb = new StringBuilder(256);
             StringWriter sw = new StringWriter(sb, CultureInfo.InvariantCulture);
             using (JsonTextWriter jsonWriter = new JsonTextWriter(sw))
@@ -587,137 +588,52 @@ namespace FlaxEngine
 
                 jsonWriter.WriteStartObject();
 
-                jsonWriter.WritePropertyName("RenderMode");
-                jsonWriter.WriteValue(_renderMode);
-
-                jsonWriter.WritePropertyName("RenderLocation");
-                jsonWriter.WriteValue(RenderLocation);
-
-                jsonWriter.WritePropertyName("Order");
-                jsonWriter.WriteValue(Order);
-
-                jsonWriter.WritePropertyName("ReceivesEvents");
-                jsonWriter.WriteValue(ReceivesEvents);
-
-                jsonWriter.WritePropertyName("IgnoreDepth");
-                jsonWriter.WriteValue(IgnoreDepth);
-
-                jsonWriter.WritePropertyName("RenderCamera");
-                jsonWriter.WriteValue(Json.JsonSerializer.GetStringID(RenderCamera));
-
-                jsonWriter.WritePropertyName("Distance");
-                jsonWriter.WriteValue(Distance);
-
-                if (RenderMode == CanvasRenderMode.WorldSpace || RenderMode == CanvasRenderMode.WorldSpaceFaceCamera)
-                {
-                    jsonWriter.WritePropertyName("Size");
-                    jsonWriter.WriteStartObject();
-                    jsonWriter.WritePropertyName("X");
-                    jsonWriter.WriteValue(Size.X);
-                    jsonWriter.WritePropertyName("Y");
-                    jsonWriter.WriteValue(Size.Y);
-                    jsonWriter.WriteEndObject();
-                }
-
-                jsonWriter.WritePropertyName("NavigationInputRepeatDelay");
-                jsonWriter.WriteValue(NavigationInputRepeatDelay);
-                jsonWriter.WritePropertyName("NavigationInputRepeatRate");
-                jsonWriter.WriteValue(NavigationInputRepeatRate);
-
-                jsonWriter.WritePropertyName("NavigateUp");
-                jsonWriter.WriteStartObject();
-                jsonWriter.WritePropertyName("Name");
-                jsonWriter.WriteValue(NavigateUp.Name);
-                jsonWriter.WriteEndObject();
-
-                jsonWriter.WritePropertyName("NavigateDown");
-                jsonWriter.WriteStartObject();
-                jsonWriter.WritePropertyName("Name");
-                jsonWriter.WriteValue(NavigateDown.Name);
-                jsonWriter.WriteEndObject();
-
-                jsonWriter.WritePropertyName("NavigateLeft");
-                jsonWriter.WriteStartObject();
-                jsonWriter.WritePropertyName("Name");
-                jsonWriter.WriteValue(NavigateLeft.Name);
-                jsonWriter.WriteEndObject();
-
-                jsonWriter.WritePropertyName("NavigateRight");
-                jsonWriter.WriteStartObject();
-                jsonWriter.WritePropertyName("Name");
-                jsonWriter.WriteValue(NavigateRight.Name);
-                jsonWriter.WriteEndObject();
-
-                jsonWriter.WritePropertyName("NavigateSubmit");
-                jsonWriter.WriteStartObject();
-                jsonWriter.WritePropertyName("Name");
-                jsonWriter.WriteValue(NavigateSubmit.Name);
-                jsonWriter.WriteEndObject();
-
-                jsonWriter.WriteEndObject();
-            }
-
-            return sw.ToString();
-        }
-
-        internal string SerializeDiff(UICanvas other)
-        {
-            StringBuilder sb = new StringBuilder(256);
-            StringWriter sw = new StringWriter(sb, CultureInfo.InvariantCulture);
-            using (JsonTextWriter jsonWriter = new JsonTextWriter(sw))
-            {
-                jsonWriter.IndentChar = '\t';
-                jsonWriter.Indentation = 1;
-                jsonWriter.Formatting = Formatting.Indented;
-
-                jsonWriter.WriteStartObject();
-
-                if (_renderMode != other._renderMode)
+                if (noOther || _renderMode != other._renderMode)
                 {
                     jsonWriter.WritePropertyName("RenderMode");
                     jsonWriter.WriteValue(_renderMode);
                 }
 
-                if (RenderLocation != other.RenderLocation)
+                if (noOther || RenderLocation != other.RenderLocation)
                 {
                     jsonWriter.WritePropertyName("RenderLocation");
                     jsonWriter.WriteValue(RenderLocation);
                 }
 
-                if (Order != other.Order)
+                if (noOther || Order != other.Order)
                 {
                     jsonWriter.WritePropertyName("Order");
                     jsonWriter.WriteValue(Order);
                 }
 
-                if (ReceivesEvents != other.ReceivesEvents)
+                if (noOther || ReceivesEvents != other.ReceivesEvents)
                 {
                     jsonWriter.WritePropertyName("ReceivesEvents");
                     jsonWriter.WriteValue(ReceivesEvents);
                 }
 
-                if (IgnoreDepth != other.IgnoreDepth)
+                if (noOther || IgnoreDepth != other.IgnoreDepth)
                 {
                     jsonWriter.WritePropertyName("IgnoreDepth");
                     jsonWriter.WriteValue(IgnoreDepth);
                 }
 
-                if (RenderCamera != other.RenderCamera)
+                if (noOther || RenderCamera != other.RenderCamera)
                 {
                     jsonWriter.WritePropertyName("RenderCamera");
                     jsonWriter.WriteValue(Json.JsonSerializer.GetStringID(RenderCamera));
                 }
 
-                if (Mathf.Abs(Distance - other.Distance) > Mathf.Epsilon)
+                if (noOther || Mathf.Abs(Distance - other.Distance) > Mathf.Epsilon)
                 {
                     jsonWriter.WritePropertyName("Distance");
                     jsonWriter.WriteValue(Distance);
                 }
 
-                if ((RenderMode == CanvasRenderMode.WorldSpace ||
-                     RenderMode == CanvasRenderMode.WorldSpaceFaceCamera ||
-                     other.RenderMode == CanvasRenderMode.WorldSpace ||
-                     other.RenderMode == CanvasRenderMode.WorldSpaceFaceCamera) && Size != other.Size)
+                bool saveSize = RenderMode == CanvasRenderMode.WorldSpace || RenderMode == CanvasRenderMode.WorldSpaceFaceCamera;
+                if (!noOther)
+                    saveSize = (saveSize || other.RenderMode == CanvasRenderMode.WorldSpace || other.RenderMode == CanvasRenderMode.WorldSpaceFaceCamera) && Size != other.Size;
+                if (saveSize)
                 {
                     jsonWriter.WritePropertyName("Size");
                     jsonWriter.WriteStartObject();
@@ -728,17 +644,17 @@ namespace FlaxEngine
                     jsonWriter.WriteEndObject();
                 }
 
-                if (!Mathf.NearEqual(NavigationInputRepeatDelay, other.NavigationInputRepeatDelay))
+                if (noOther || !Mathf.NearEqual(NavigationInputRepeatDelay, other.NavigationInputRepeatDelay))
                 {
                     jsonWriter.WritePropertyName("NavigationInputRepeatDelay");
                     jsonWriter.WriteValue(NavigationInputRepeatDelay);
                 }
-                if (!Mathf.NearEqual(NavigationInputRepeatRate, other.NavigationInputRepeatRate))
+                if (noOther || !Mathf.NearEqual(NavigationInputRepeatRate, other.NavigationInputRepeatRate))
                 {
                     jsonWriter.WritePropertyName("NavigationInputRepeatRate");
                     jsonWriter.WriteValue(NavigationInputRepeatRate);
                 }
-                if (NavigateUp.Name != other.NavigateUp.Name)
+                if (noOther || NavigateUp.Name != other.NavigateUp.Name)
                 {
                     jsonWriter.WritePropertyName("NavigateUp");
                     jsonWriter.WriteStartObject();
@@ -746,7 +662,7 @@ namespace FlaxEngine
                     jsonWriter.WriteValue(NavigateUp.Name);
                     jsonWriter.WriteEndObject();
                 }
-                if (NavigateDown.Name != other.NavigateDown.Name)
+                if (noOther || NavigateDown.Name != other.NavigateDown.Name)
                 {
                     jsonWriter.WritePropertyName("NavigateDown");
                     jsonWriter.WriteStartObject();
@@ -754,7 +670,7 @@ namespace FlaxEngine
                     jsonWriter.WriteValue(NavigateDown.Name);
                     jsonWriter.WriteEndObject();
                 }
-                if (NavigateLeft.Name != other.NavigateLeft.Name)
+                if (noOther || NavigateLeft.Name != other.NavigateLeft.Name)
                 {
                     jsonWriter.WritePropertyName("NavigateLeft");
                     jsonWriter.WriteStartObject();
@@ -762,7 +678,7 @@ namespace FlaxEngine
                     jsonWriter.WriteValue(NavigateLeft.Name);
                     jsonWriter.WriteEndObject();
                 }
-                if (NavigateRight.Name != other.NavigateRight.Name)
+                if (noOther || NavigateRight.Name != other.NavigateRight.Name)
                 {
                     jsonWriter.WritePropertyName("NavigateRight");
                     jsonWriter.WriteStartObject();
@@ -770,7 +686,7 @@ namespace FlaxEngine
                     jsonWriter.WriteValue(NavigateRight.Name);
                     jsonWriter.WriteEndObject();
                 }
-                if (NavigateSubmit.Name != other.NavigateSubmit.Name)
+                if (noOther || NavigateSubmit.Name != other.NavigateSubmit.Name)
                 {
                     jsonWriter.WritePropertyName("NavigateSubmit");
                     jsonWriter.WriteStartObject();
