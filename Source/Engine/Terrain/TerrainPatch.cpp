@@ -2580,7 +2580,7 @@ void TerrainPatch::Deserialize(DeserializeStream& stream, ISerializeModifier* mo
 
 void TerrainPatch::OnPhysicsSceneChanged(PhysicsScene* previous)
 {
-    PhysicsBackend::RemoveSceneActor(previous->GetPhysicsScene(), _physicsActor);
+    PhysicsBackend::RemoveSceneActor(previous->GetPhysicsScene(), _physicsActor, true);
     void* scene = _terrain->GetPhysicsScene()->GetPhysicsScene();
     PhysicsBackend::AddSceneActor(scene, _physicsActor);
 }
