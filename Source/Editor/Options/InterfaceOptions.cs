@@ -176,13 +176,6 @@ namespace FlaxEditor.Options
         public DockStateProxy NewWindowLocation { get; set; } = DockStateProxy.Float;
 
         /// <summary>
-        /// Gets or sets the timestamps prefix mode for debug log messages.
-        /// </summary>
-        [DefaultValue(TimestampsFormats.None)]
-        [EditorDisplay("Interface"), EditorOrder(210), Tooltip("The timestamps prefix mode for debug log messages.")]
-        public TimestampsFormats DebugLogTimestampsFormat { get; set; } = TimestampsFormats.None;
-
-        /// <summary>
         /// Gets or sets the editor icons scale. Editor restart required.
         /// </summary>
         [DefaultValue(1.0f), Limit(0.1f, 4.0f, 0.01f)]
@@ -220,21 +213,70 @@ namespace FlaxEditor.Options
         /// <summary>
         /// Gets or sets the timestamps prefix mode for output log messages.
         /// </summary>
-        [DefaultValue(TimestampsFormats.TimeSinceStartup)]
-        [EditorDisplay("Output Log", "Timestamps Format"), EditorOrder(300), Tooltip("The timestamps prefix mode for output log messages.")]
-        public TimestampsFormats OutputLogTimestampsFormat { get; set; } = TimestampsFormats.TimeSinceStartup;
+        [DefaultValue(TimestampsFormats.None)]
+        [EditorDisplay("Debug Log"), EditorOrder(350), Tooltip("The timestamps prefix mode for debug log messages.")]
+        public TimestampsFormats DebugLogTimestampsFormat { get; set; } = TimestampsFormats.None;
+
+        /// <summary>
+        /// Gets or sets the clear on play for debug log messages.
+        /// </summary>
+        [DefaultValue(true)]
+        [EditorDisplay("Debug Log", "Clear on Play"), EditorOrder(360), Tooltip("Clears all log entries on enter playmode.")]
+        public bool DebugLogClearOnPlay { get; set; } = true;
+
+        /// <summary>
+        /// Gets or sets the collapse mode for debug log messages.
+        /// </summary>
+        [DefaultValue(true)]
+        [EditorDisplay("Debug Log"), EditorOrder(361), Tooltip("Collapses similar or repeating log entries.")]
+        public bool DebugLogCollapse { get; set; } = true;
+
+        /// <summary>
+        /// Gets or sets the automatic pause on error for debug log messages.
+        /// </summary>
+        [DefaultValue(false)]
+        [EditorDisplay("Debug Log", "Pause on Error"), EditorOrder(362), Tooltip("Performs auto pause on error.")]
+        public bool DebugLogPauseOnError { get; set; } = false;
+
+        /// <summary>
+        /// Gets or sets the automatic pause on error for debug log messages.
+        /// </summary>
+        [DefaultValue(true)]
+        [EditorDisplay("Debug Log", "Show error messages"), EditorOrder(370), Tooltip("Shows/hides error messages.")]
+        public bool DebugLogShowErrorMessages { get; set; } = true;
+
+        /// <summary>
+        /// Gets or sets the automatic pause on error for debug log messages.
+        /// </summary>
+        [DefaultValue(true)]
+        [EditorDisplay("Debug Log", "Show warning messages"), EditorOrder(371), Tooltip("Shows/hides warning messages.")]
+        public bool DebugLogShowWarningMessages { get; set; } = true;
+
+        /// <summary>
+        /// Gets or sets the automatic pause on error for debug log messages.
+        /// </summary>
+        [DefaultValue(true)]
+        [EditorDisplay("Debug Log", "Show info messages"), EditorOrder(372), Tooltip("Shows/hides info messages.")]
+        public bool DebugLogShowInfoMessages { get; set; } = true;
 
         /// <summary>
         /// Gets or sets the timestamps prefix mode for output log messages.
         /// </summary>
+        [DefaultValue(TimestampsFormats.TimeSinceStartup)]
+        [EditorDisplay("Output Log", "Timestamps Format"), EditorOrder(400), Tooltip("The timestamps prefix mode for output log messages.")]
+        public TimestampsFormats OutputLogTimestampsFormat { get; set; } = TimestampsFormats.TimeSinceStartup;
+
+        /// <summary>
+        /// Gets or sets the log type prefix mode for output log messages.
+        /// </summary>
         [DefaultValue(true)]
-        [EditorDisplay("Output Log", "Show Log Type"), EditorOrder(310), Tooltip("Determines whether show log type prefix in output log messages.")]
+        [EditorDisplay("Output Log", "Show Log Type"), EditorOrder(410), Tooltip("Determines whether show log type prefix in output log messages.")]
         public bool OutputLogShowLogType { get; set; } = true;
 
         /// <summary>
         /// Gets or sets the output log text font.
         /// </summary>
-        [EditorDisplay("Output Log", "Text Font"), EditorOrder(320), Tooltip("The output log text font.")]
+        [EditorDisplay("Output Log", "Text Font"), EditorOrder(420), Tooltip("The output log text font.")]
         public FontReference OutputLogTextFont
         {
             get => _outputLogFont;
@@ -253,63 +295,70 @@ namespace FlaxEditor.Options
         /// Gets or sets the output log text color.
         /// </summary>
         [DefaultValue(typeof(Color), "1,1,1,1")]
-        [EditorDisplay("Output Log", "Text Color"), EditorOrder(330), Tooltip("The output log text color.")]
+        [EditorDisplay("Output Log", "Text Color"), EditorOrder(430), Tooltip("The output log text color.")]
         public Color OutputLogTextColor { get; set; } = Color.White;
 
         /// <summary>
         /// Gets or sets the output log text shadow color.
         /// </summary>
         [DefaultValue(typeof(Color), "0,0,0,0.5")]
-        [EditorDisplay("Output Log", "Text Shadow Color"), EditorOrder(340), Tooltip("The output log text shadow color.")]
+        [EditorDisplay("Output Log", "Text Shadow Color"), EditorOrder(440), Tooltip("The output log text shadow color.")]
         public Color OutputLogTextShadowColor { get; set; } = new Color(0, 0, 0, 0.5f);
 
         /// <summary>
         /// Gets or sets the output log text shadow offset. Set to 0 to disable this feature.
         /// </summary>
         [DefaultValue(typeof(Float2), "1,1")]
-        [EditorDisplay("Output Log", "Text Shadow Offset"), EditorOrder(340), Tooltip("The output log text shadow offset. Set to 0 to disable this feature.")]
+        [EditorDisplay("Output Log", "Text Shadow Offset"), EditorOrder(445), Tooltip("The output log text shadow offset. Set to 0 to disable this feature.")]
         public Float2 OutputLogTextShadowOffset { get; set; } = new Float2(1);
 
         /// <summary>
         /// Gets or sets a value indicating whether auto-focus output log window on code compilation error.
         /// </summary>
         [DefaultValue(true)]
-        [EditorDisplay("Output Log", "Focus Output Log On Compilation Error"), EditorOrder(350), Tooltip("Determines whether auto-focus output log window on code compilation error.")]
+        [EditorDisplay("Output Log", "Focus Output Log On Compilation Error"), EditorOrder(450), Tooltip("Determines whether auto-focus output log window on code compilation error.")]
         public bool FocusOutputLogOnCompilationError { get; set; } = true;
 
         /// <summary>
         /// Gets or sets a value indicating whether auto-focus output log window on game build error.
         /// </summary>
         [DefaultValue(true)]
-        [EditorDisplay("Output Log", "Focus Output Log On Game Build Error"), EditorOrder(360), Tooltip("Determines whether auto-focus output log window on game build error.")]
+        [EditorDisplay("Output Log", "Focus Output Log On Game Build Error"), EditorOrder(460), Tooltip("Determines whether auto-focus output log window on game build error.")]
         public bool FocusOutputLogOnGameBuildError { get; set; } = true;
+
+        /// <summary>
+        /// Gets or sets the value for automatic scroll to bottom in output log.
+        /// </summary>
+        [DefaultValue(true)]
+        [EditorDisplay("Output Log", "Scroll to bottom"), EditorOrder(470), Tooltip("Scroll the output log view to bottom automatically after new lines are added.")]
+        public bool OutputLogScrollToBottom { get; set; } = true;
 
         /// <summary>
         /// Gets or sets a value indicating whether auto-focus game window on play mode start.
         /// </summary>
         [DefaultValue(true)]
-        [EditorDisplay("Play In-Editor", "Focus Game Window On Play"), EditorOrder(400), Tooltip("Determines whether auto-focus game window on play mode start.")]
+        [EditorDisplay("Play In-Editor", "Focus Game Window On Play"), EditorOrder(500), Tooltip("Determines whether auto-focus game window on play mode start.")]
         public bool FocusGameWinOnPlay { get; set; } = true;
 
         /// <summary>
         /// Gets or sets a value indicating what action should be taken upon pressing the play button.
         /// </summary>
         [DefaultValue(PlayAction.PlayScenes)]
-        [EditorDisplay("Play In-Editor", "Play Button Action"), EditorOrder(410)]
+        [EditorDisplay("Play In-Editor", "Play Button Action"), EditorOrder(510)]
         public PlayAction PlayButtonAction { get; set; } = PlayAction.PlayScenes;
 
         /// <summary>
         /// Gets or sets a value indicating how the game window should be displayed when the game is launched.
         /// </summary>
         [DefaultValue(GameWindowMode.Docked)]
-        [EditorDisplay("Play In-Editor", "Game Window Mode"), EditorOrder(420), Tooltip("Determines how the game window is displayed when the game is launched.")]
+        [EditorDisplay("Play In-Editor", "Game Window Mode"), EditorOrder(520), Tooltip("Determines how the game window is displayed when the game is launched.")]
         public GameWindowMode DefaultGameWindowMode { get; set; } = GameWindowMode.Docked;
 
         /// <summary>
         /// Gets or sets a value indicating the number of game clients to launch when building and/or running cooked game.
         /// </summary>
         [DefaultValue(1), Range(1, 4)]
-        [EditorDisplay("Cook & Run"), EditorOrder(500)]
+        [EditorDisplay("Cook & Run"), EditorOrder(600)]
         public int NumberOfGameClientsToLaunch = 1;
 
         /// <summary>
@@ -331,13 +380,13 @@ namespace FlaxEditor.Options
         /// <summary>
         /// The list of fallback fonts to use when main text font is missing certain characters. Empty to use fonts from GraphicsSettings.
         /// </summary>
-        [EditorDisplay("Fonts"), EditorOrder(650)]
+        [EditorDisplay("Fonts"), EditorOrder(750)]
         public FontAsset[] FallbackFonts = new FontAsset[1] { FlaxEngine.Content.LoadAsyncInternal<FontAsset>(EditorAssets.FallbackFont) };
 
         /// <summary>
         /// Gets or sets the title font for editor UI.
         /// </summary>
-        [EditorDisplay("Fonts"), EditorOrder(600), Tooltip("The title font for editor UI.")]
+        [EditorDisplay("Fonts"), EditorOrder(700), Tooltip("The title font for editor UI.")]
         public FontReference TitleFont
         {
             get => _titleFont;
@@ -355,7 +404,7 @@ namespace FlaxEditor.Options
         /// <summary>
         /// Gets or sets the large font for editor UI.
         /// </summary>
-        [EditorDisplay("Fonts"), EditorOrder(610), Tooltip("The large font for editor UI.")]
+        [EditorDisplay("Fonts"), EditorOrder(710), Tooltip("The large font for editor UI.")]
         public FontReference LargeFont
         {
             get => _largeFont;
@@ -373,7 +422,7 @@ namespace FlaxEditor.Options
         /// <summary>
         /// Gets or sets the medium font for editor UI.
         /// </summary>
-        [EditorDisplay("Fonts"), EditorOrder(620), Tooltip("The medium font for editor UI.")]
+        [EditorDisplay("Fonts"), EditorOrder(720), Tooltip("The medium font for editor UI.")]
         public FontReference MediumFont
         {
             get => _mediumFont;
@@ -391,7 +440,7 @@ namespace FlaxEditor.Options
         /// <summary>
         /// Gets or sets the small font for editor UI.
         /// </summary>
-        [EditorDisplay("Fonts"), EditorOrder(630), Tooltip("The small font for editor UI.")]
+        [EditorDisplay("Fonts"), EditorOrder(730), Tooltip("The small font for editor UI.")]
         public FontReference SmallFont
         {
             get => _smallFont;
