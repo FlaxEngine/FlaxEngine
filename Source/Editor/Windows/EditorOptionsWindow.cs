@@ -235,6 +235,18 @@ namespace FlaxEditor.Windows
         }
 
         /// <inheritdoc />
+        protected override void OnShow()
+        {
+            if (!_isDataDirty)
+            {
+                // Refresh the data, skip when data is modified during window docking
+                GatherData();
+            }
+
+            base.OnShow();
+        }
+
+        /// <inheritdoc />
         protected override bool OnClosing(ClosingReason reason)
         {
             // Block closing only on user events
