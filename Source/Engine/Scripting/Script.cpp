@@ -208,7 +208,7 @@ void Script::Enable()
         // TODO: Look in to this
         // HACK: it will do for now at lest it will not crash
         // [Nori_SC note] the CheckFailed is triggering more then once in some cases im leaving the log as a reminder
-        Platform::CheckFailed("Cant enable object because was not disabled \nknown bug:\n https://github.com/FlaxEngine/FlaxEngine/issues/2311 \ntriggered at", __FILE__, __LINE__);
+        Platform::CheckFailed("Cant enable object because was not disabled \nknown bug:\n""https://github.com/FlaxEngine/FlaxEngine/issues/2311", __FILE__, __LINE__);
         return; 
     }
     
