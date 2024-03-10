@@ -314,15 +314,15 @@ namespace FlaxEngine
             return FallbackParentGetDelegate?.Invoke(this);
         }
 
-        internal string Serialize(out string controlType)
+        internal string Serialize(out string controlType, UIControl other)
         {
             if (_control == null)
             {
                 controlType = null;
                 return null;
             }
-
             var type = _control.GetType();
+            var noDiff = other._control == null || other._control.GetType() != type;
 
             JsonSerializer jsonSerializer = JsonSerializer.CreateDefault(Json.JsonSerializer.Settings);
             jsonSerializer.Formatting = Formatting.Indented;
@@ -344,47 +344,10 @@ namespace FlaxEngine
 
                 JsonSerializerInternalWriter serializerWriter = new JsonSerializerInternalWriter(jsonSerializer);
 
-                serializerWriter.Serialize(jsonWriter, _control, type);
-            }
-
-            controlType = type.FullName;
-            return sw.ToString();
-        }
-
-        internal string SerializeDiff(out string controlType, UIControl other)
-        {
-            if (_control == null)
-            {
-                controlType = null;
-                return null;
-            }
-            var type = _control.GetType();
-            if (other._control == null || other._control.GetType() != type)
-            {
-                return Serialize(out controlType);
-            }
-
-            JsonSerializer jsonSerializer = JsonSerializer.CreateDefault(Json.JsonSerializer.Settings);
-            jsonSerializer.Formatting = Formatting.Indented;
-
-            StringBuilder sb = new StringBuilder(1024);
-            StringWriter sw = new StringWriter(sb, CultureInfo.InvariantCulture);
-            using (JsonTextWriter jsonWriter = new JsonTextWriter(sw))
-            {
-                // Prepare writer settings
-                jsonWriter.IndentChar = '\t';
-                jsonWriter.Indentation = 1;
-                jsonWriter.Formatting = jsonSerializer.Formatting;
-                jsonWriter.DateFormatHandling = jsonSerializer.DateFormatHandling;
-                jsonWriter.DateTimeZoneHandling = jsonSerializer.DateTimeZoneHandling;
-                jsonWriter.FloatFormatHandling = jsonSerializer.FloatFormatHandling;
-                jsonWriter.StringEscapeHandling = jsonSerializer.StringEscapeHandling;
-                jsonWriter.Culture = jsonSerializer.Culture;
-                jsonWriter.DateFormatString = jsonSerializer.DateFormatString;
-
-                JsonSerializerInternalWriter serializerWriter = new JsonSerializerInternalWriter(jsonSerializer);
-
-                serializerWriter.SerializeDiff(jsonWriter, _control, type, other._control);
+                if (noDiff)
+                    serializerWriter.Serialize(jsonWriter, _control, type);
+                else
+                    serializerWriter.SerializeDiff(jsonWriter, _control, type, other._control);
             }
 
             controlType = string.Empty;

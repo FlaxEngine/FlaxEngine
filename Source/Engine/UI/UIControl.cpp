@@ -13,7 +13,6 @@
 #else
 // Cached methods (FlaxEngine.CSharp.dll is loaded only once)
 MMethod* UIControl_Serialize = nullptr;
-MMethod* UIControl_SerializeDiff = nullptr;
 MMethod* UIControl_Deserialize = nullptr;
 MMethod* UIControl_ParentChanged = nullptr;
 MMethod* UIControl_TransformChanged = nullptr;
@@ -39,10 +38,10 @@ UIControl::UIControl(const SpawnParams& params)
     : Actor(params)
 {
 #if !COMPILE_WITHOUT_CSHARP
+    Platform::MemoryBarrier();
     if (UIControl_Serialize == nullptr)
     {
         MClass* mclass = GetClass();
-        UIControl_SerializeDiff = mclass->GetMethod("SerializeDiff", 2);
         UIControl_Deserialize = mclass->GetMethod("Deserialize", 2);
         UIControl_ParentChanged = mclass->GetMethod("ParentChanged");
         UIControl_TransformChanged = mclass->GetMethod("TransformChanged");
@@ -50,7 +49,8 @@ UIControl::UIControl(const SpawnParams& params)
         UIControl_ActiveInTreeChanged = mclass->GetMethod("ActiveInTreeChanged");
         UIControl_BeginPlay = mclass->GetMethod("BeginPlay");
         UIControl_EndPlay = mclass->GetMethod("EndPlay");
-        UIControl_Serialize = mclass->GetMethod("Serialize", 1);
+        UIControl_Serialize = mclass->GetMethod("Serialize", 2);
+        Platform::MemoryBarrier();
     }
 #endif
 }
@@ -82,8 +82,7 @@ void UIControl::Serialize(SerializeStream& stream, const void* otherObj)
     params[0] = &controlType;
     params[1] = other ? other->GetOrCreateManagedInstance() : nullptr;
     MObject* exception = nullptr;
-    const auto method = other ? UIControl_SerializeDiff : UIControl_Serialize;
-    const auto invokeResultStr = (MString*)method->Invoke(GetOrCreateManagedInstance(), params, &exception);
+    const auto invokeResultStr = (MString*)UIControl_Serialize->Invoke(GetOrCreateManagedInstance(), params, &exception);
     if (exception)
     {
         MException ex(exception);
