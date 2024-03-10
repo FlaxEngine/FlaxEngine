@@ -145,7 +145,7 @@ namespace FlaxEditor.Windows
 
             Editor.Options.Apply(_options);
 
-            ClearDirtyFlag();
+            GatherData();
         }
 
         private void SetupCustomTabs()
