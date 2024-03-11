@@ -2,7 +2,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using FlaxEditor.Content;
 using FlaxEditor.Gizmo;
 using FlaxEditor.GUI.ContextMenu;
@@ -798,6 +797,15 @@ namespace FlaxEditor.Viewport
         protected override void OnDebugDraw(GPUContext context, ref RenderContext renderContext)
         {
             base.OnDebugDraw(context, ref renderContext);
+
+            // Collect selected objects debug shapes and visuals
+            _debugDrawData.Clear();
+            var selectedParents = TransformGizmo.SelectedParents;
+            for (int i = 0; i < selectedParents.Count; i++)
+            {
+                if (selectedParents[i].IsActiveInHierarchy)
+                    selectedParents[i].OnDebugDraw(_debugDrawData);
+            }
 
             unsafe
             {
