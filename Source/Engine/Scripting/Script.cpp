@@ -13,7 +13,6 @@
 #include "Engine/Level/Scene/Scene.h"
 #include "Engine/Serialization/Serialization.h"
 #include "Engine/Threading/Threading.h"
-#include "Engine/Debug/DebugLog.h"
 
 #if USE_EDITOR
 #define CHECK_EXECUTE_IN_EDITOR if (Editor::IsPlayMode || _executeInEditor)
