@@ -922,7 +922,7 @@ namespace FlaxEditor.Windows
             var selection = Editor.SceneEditing.Selection;
             for (var i = 0; i < selection.Count; i++)
             {
-                if (selection[i].EditableObject is UIControl controlActor && controlActor && controlActor.Control != null)
+                if (selection[i].EditableObject is UIControl controlActor && controlActor && controlActor.Control != null && controlActor.Control.VisibleInHierarchy && controlActor.Control.RootWindow != null)
                 {
                     if (!drawAnySelectedControl)
                     {

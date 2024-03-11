@@ -590,15 +590,32 @@ namespace FlaxEditor.Viewport
             base.Draw();
 
             // Selected UI controls outline
+            bool drawAnySelectedControl = false;
+            // TODO: optimize this (eg. cache list of selected UIControl's when selection gets changed)
             for (var i = 0; i < _window.Selection.Count; i++)
             {
-                if (_window.Selection[i]?.EditableObject is UIControl controlActor && controlActor && controlActor.Control != null)
+                if (_window.Selection[i]?.EditableObject is UIControl controlActor && controlActor && controlActor.Control != null && controlActor.Control.VisibleInHierarchy && controlActor.Control.RootWindow != null)
                 {
+                    if (!drawAnySelectedControl)
+                    {
+                        drawAnySelectedControl = true;
+                        Render2D.PushTransform(ref _cachedTransform);
+                    }
                     var control = controlActor.Control;
-                    var bounds = Rectangle.FromPoints(control.PointToParent(this, Float2.Zero), control.PointToParent(this, control.Size));
-                    Render2D.DrawRectangle(bounds, Editor.Instance.Options.Options.Visual.SelectionOutlineColor0, Editor.Instance.Options.Options.Visual.UISelectionOutlineSize);
+                    var bounds = control.EditorBounds;
+                    var p1 = control.PointToParent(this, bounds.UpperLeft);
+                    var p2 = control.PointToParent(this, bounds.UpperRight);
+                    var p3 = control.PointToParent(this, bounds.BottomLeft);
+                    var p4 = control.PointToParent(this, bounds.BottomRight);
+                    var min = Float2.Min(Float2.Min(p1, p2), Float2.Min(p3, p4));
+                    var max = Float2.Max(Float2.Max(p1, p2), Float2.Max(p3, p4));
+                    bounds = new Rectangle(min, Float2.Max(max - min, Float2.Zero));
+                    var options = Editor.Instance.Options.Options.Visual;
+                    Render2D.DrawRectangle(bounds, options.SelectionOutlineColor0, options.UISelectionOutlineSize);
                 }
             }
+            if (drawAnySelectedControl)
+                Render2D.PopTransform();
         }
 
         /// <inheritdoc />
@@ -798,7 +815,7 @@ namespace FlaxEditor.Viewport
         {
             base.OnDebugDraw(context, ref renderContext);
 
-            // Collect selected objects debug shapes and visuals
+            // Collect selected objects debug shapes again when DebugDraw is active with a custom context
             _debugDrawData.Clear();
             var selectedParents = TransformGizmo.SelectedParents;
             for (int i = 0; i < selectedParents.Count; i++)
