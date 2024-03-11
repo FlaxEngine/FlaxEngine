@@ -47,7 +47,7 @@ void Script::SetEnabled(bool value)
         //SetEnabled(true)
         //SetEnabled(false)
         //SetEnabled(true)
-        if (_setEnableScopeLock)
+        if (_setEnableSensiviteCodeLock)
         {
             //let the API user know abaut this
             //silence is the worst
@@ -61,9 +61,6 @@ void Script::SetEnabled(bool value)
 
             return;
         }
-        //lock the funcion from geting called from the Start
-        _setEnableScopeLock = 1;
-
 
         // Change state
         _enabled = value;
@@ -79,8 +76,14 @@ void Script::SetEnabled(bool value)
                 }
                 else
                 {
+                    //lock the funcion from geting called from the Start
+                    _setEnableSensiviteCodeLock = 1;
+
                     Start();
                     Enable();
+
+                    //unlock funcion
+                    _setEnableSensiviteCodeLock = 0;
                 }
             }
             else if (_wasEnableCalled)
@@ -88,8 +91,6 @@ void Script::SetEnabled(bool value)
                 Disable();
             }
         }
-
-        _setEnableScopeLock = 0;
     }
 }
 
