@@ -61,12 +61,12 @@ void Script::SetEnabled(bool value)
                         //let the API user know abaut this
                         //silence is the worst
                         LOG_STR(Warning, TEXT(
-                            "Can't modify Enabled state in OnStart() state was modyfaied before object got a chanse to complite the last funcion call.\n"
+                            "Can't modify Enabled state right now, state was modyfaied before object got a chanse to complite the last funcion call.\n"
                             "This might cause unexpected behavior in youre scripts.\n"
                             "See:\n"
                             "https://docs.flaxengine.com/manual/scripting/events.html?tabs=code-csharp\n"
                             "Note:\n"
-                            "If you want to force the object to be disabled when the game is started, consider using OnAwake()."));
+                            "If you want to force the object to be disabled when the game is started, try using OnAwake()."));
 
                         return;
                     }
