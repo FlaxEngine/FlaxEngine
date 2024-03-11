@@ -225,7 +225,7 @@ void Script::Start()
 
 void Script::Enable()
 {
-    ASSERT(GetEnabled())
+    ASSERT(GetEnabled());
     ASSERT(!_wasEnableCalled);
 
     if (_parent && _parent->GetScene())
