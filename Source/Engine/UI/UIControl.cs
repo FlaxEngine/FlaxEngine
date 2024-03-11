@@ -318,48 +318,30 @@ namespace FlaxEngine
         {
             if (_control == null)
             {
+                // No control assigned
                 controlType = null;
                 return null;
             }
+
             var type = _control.GetType();
-            var noDiff = other._control == null || other._control.GetType() != type;
+            var prefabDiff = other != null && other._control != null && other._control.GetType() == type;
 
-            JsonSerializer jsonSerializer = JsonSerializer.CreateDefault(Json.JsonSerializer.Settings);
-            jsonSerializer.Formatting = Formatting.Indented;
+            // Serialize control type when not using prefab diff serialization
+            controlType = prefabDiff ? string.Empty : type.FullName;
 
-            StringBuilder sb = new StringBuilder(1024);
-            StringWriter sw = new StringWriter(sb, CultureInfo.InvariantCulture);
-            using (JsonTextWriter jsonWriter = new JsonTextWriter(sw))
-            {
-                // Prepare writer settings
-                jsonWriter.IndentChar = '\t';
-                jsonWriter.Indentation = 1;
-                jsonWriter.Formatting = jsonSerializer.Formatting;
-                jsonWriter.DateFormatHandling = jsonSerializer.DateFormatHandling;
-                jsonWriter.DateTimeZoneHandling = jsonSerializer.DateTimeZoneHandling;
-                jsonWriter.FloatFormatHandling = jsonSerializer.FloatFormatHandling;
-                jsonWriter.StringEscapeHandling = jsonSerializer.StringEscapeHandling;
-                jsonWriter.Culture = jsonSerializer.Culture;
-                jsonWriter.DateFormatString = jsonSerializer.DateFormatString;
-
-                JsonSerializerInternalWriter serializerWriter = new JsonSerializerInternalWriter(jsonSerializer);
-
-                if (noDiff)
-                    serializerWriter.Serialize(jsonWriter, _control, type);
-                else
-                    serializerWriter.SerializeDiff(jsonWriter, _control, type, other._control);
-            }
-
-            controlType = string.Empty;
-            return sw.ToString();
+            string json;
+            if (prefabDiff)
+                json = Json.JsonSerializer.SerializeDiff(_control, other._control, true);
+            else
+                json = Json.JsonSerializer.Serialize(_control, type, true);
+            return json;
         }
 
         internal void Deserialize(string json, Type controlType)
         {
-            if (_control == null || _control.GetType() != controlType)
+            if ((_control == null || _control.GetType() != controlType) && controlType != null)
             {
-                if (controlType != null)
-                    Control = (Control)Activator.CreateInstance(controlType);
+                Control = (Control)Activator.CreateInstance(controlType);
             }
 
             if (_control != null)
