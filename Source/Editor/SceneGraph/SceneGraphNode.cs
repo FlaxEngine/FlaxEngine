@@ -41,7 +41,11 @@ namespace FlaxEditor.SceneGraph
         protected SceneGraphNode(Guid id)
         {
             ID = id;
-            SceneGraphFactory.Nodes.Add(id, this);
+            if (SceneGraphFactory.Nodes.TryGetValue(id, out var duplicate) && duplicate != null)
+            {
+                Editor.LogWarning($"Duplicated Scene Graph node with ID {FlaxEngine.Json.JsonSerializer.GetStringID(id)} of type '{duplicate.GetType().FullName}'");
+            }
+            SceneGraphFactory.Nodes[id] = this;
         }
 
         /// <summary>
@@ -93,18 +97,6 @@ namespace FlaxEditor.SceneGraph
         /// Gets a value indicating whether this node can be transformed by the user.
         /// </summary>
         public virtual bool CanTransform => true;
-
-        /// <summary>
-        /// Gets a value indicating whether this node can be used for the vertex snapping feature.
-        /// </summary>
-        public bool CanVertexSnap
-        {
-            get
-            {
-                var v = Vector3.Zero;
-                return OnVertexSnap(ref v, out _);
-            }
-        }
 
         /// <summary>
         /// Gets a value indicating whether this <see cref="SceneGraphNode"/> is active.
@@ -365,14 +357,15 @@ namespace FlaxEditor.SceneGraph
         }
 
         /// <summary>
-        /// Performs the vertex snapping of a given point on the object surface that is closest to a given location.
+        /// Performs the vertex snapping for a given ray and hitDistance.
         /// </summary>
-        /// <param name="point">The position to snap.</param>
+        /// <param name="ray">The ray to raycast.</param>
+        /// <param name="hitDistance">Hit distance from ray to object bounding box.</param>
         /// <param name="result">The result point on the object mesh that is closest to the specified location.</param>
         /// <returns>True if got a valid result value, otherwise false (eg. if missing data or not initialized).</returns>
-        public virtual bool OnVertexSnap(ref Vector3 point, out Vector3 result)
+        public virtual bool OnVertexSnap(ref Ray ray, Real hitDistance, out Vector3 result)
         {
-            result = point;
+            result = Vector3.Zero;
             return false;
         }
 

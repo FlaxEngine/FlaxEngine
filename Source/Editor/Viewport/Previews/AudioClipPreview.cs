@@ -184,6 +184,7 @@ namespace FlaxEditor.Viewport.Previews
                     break;
                 default: throw new ArgumentOutOfRangeException();
                 }
+                samplesPerIndex = Math.Max(samplesPerIndex, info.NumChannels);
                 const uint maxSamplesPerIndex = 64;
                 uint samplesPerIndexDiff = Math.Max(1, samplesPerIndex / Math.Min(samplesPerIndex, maxSamplesPerIndex));
 

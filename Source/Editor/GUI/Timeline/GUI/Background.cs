@@ -227,8 +227,8 @@ namespace FlaxEditor.GUI.Timeline.GUI
             if (_isSelecting)
             {
                 var selectionRect = Rectangle.FromPoints(_selectingStartPos, _mousePos);
-                Render2D.FillRectangle(selectionRect, Color.Orange * 0.4f);
-                Render2D.DrawRectangle(selectionRect, Color.Orange);
+                Render2D.FillRectangle(selectionRect, style.Selection);
+                Render2D.DrawRectangle(selectionRect, style.SelectionBorder);
             }
 
             DrawChildren();

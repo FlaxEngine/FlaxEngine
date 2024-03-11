@@ -350,7 +350,7 @@ namespace FlaxEditor.Surface.Archetypes
 
                 // Paint Background
                 if (_isSelected)
-                    Render2D.DrawRectangle(_textRect, Color.Orange);
+                    Render2D.DrawRectangle(_textRect, style.SelectionBorder);
 
                 BackgroundColor = style.BackgroundNormal;
                 var dragAreaColor = BackgroundColor / 2.0f;
@@ -1078,7 +1078,7 @@ namespace FlaxEditor.Surface.Archetypes
 
                 // Paint Background
                 if (_isSelected)
-                    Render2D.DrawRectangle(_textRect, Color.Orange);
+                    Render2D.DrawRectangle(_textRect, style.SelectionBorder);
 
                 BackgroundColor = style.BackgroundNormal;
                 var dragAreaColor = BackgroundColor / 2.0f;

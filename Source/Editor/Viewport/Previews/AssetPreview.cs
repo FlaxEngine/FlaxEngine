@@ -239,6 +239,8 @@ namespace FlaxEditor.Viewport.Previews
         /// <inheritdoc />
         public override void OnDestroy()
         {
+            if (IsDisposing)
+                return;
             Object.Destroy(ref PreviewLight);
             Object.Destroy(ref EnvProbe);
             Object.Destroy(ref Sky);

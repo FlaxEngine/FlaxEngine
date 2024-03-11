@@ -747,7 +747,7 @@ namespace FlaxEditor.CustomEditors
         /// </summary>
         public void SetValueToDefault()
         {
-            SetValueCloned(Values.DefaultValue);
+            SetValue(Utilities.Utils.CloneValue(Values.DefaultValue));
         }
 
         /// <summary>
@@ -784,19 +784,7 @@ namespace FlaxEditor.CustomEditors
                 return;
             }
 
-            SetValueCloned(Values.ReferenceValue);
-        }
-
-        private void SetValueCloned(object value)
-        {
-            // For objects (eg. arrays) we need to clone them to prevent editing default/reference value within editor
-            if (value != null && !value.GetType().IsValueType)
-            {
-                var json = JsonSerializer.Serialize(value);
-                value = JsonSerializer.Deserialize(json, value.GetType());
-            }
-
-            SetValue(value);
+            SetValue(Utilities.Utils.CloneValue(Values.ReferenceValue));
         }
 
         /// <summary>

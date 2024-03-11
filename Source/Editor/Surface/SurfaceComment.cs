@@ -181,7 +181,8 @@ namespace FlaxEditor.Surface
             if (_isResizing)
             {
                 // Draw overlay
-                Render2D.FillRectangle(_resizeButtonRect, Color.Orange * 0.3f);
+                Render2D.FillRectangle(_resizeButtonRect, style.Selection);
+                Render2D.DrawRectangle(_resizeButtonRect, style.SelectionBorder);
             }
 
             // Resize button

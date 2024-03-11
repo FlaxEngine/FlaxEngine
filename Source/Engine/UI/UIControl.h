@@ -30,7 +30,7 @@ protected:
     void OnBeginPlay() override;
     void OnEndPlay() override;
     void OnOrderInParentChanged() override;
-    void OnActiveInTreeChanged() override;
+    void OnActiveChanged() override;
 
 private:
 #if !COMPILE_WITHOUT_CSHARP

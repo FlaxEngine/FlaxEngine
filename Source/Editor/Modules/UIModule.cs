@@ -54,6 +54,7 @@ namespace FlaxEditor.Modules
         private ContextMenuButton _menuEditDelete;
         private ContextMenuButton _menuEditDuplicate;
         private ContextMenuButton _menuEditSelectAll;
+        private ContextMenuButton _menuEditDeselectAll;
         private ContextMenuButton _menuEditFind;
         private ContextMenuButton _menuSceneMoveActorToViewport;
         private ContextMenuButton _menuSceneAlignActorWithViewport;
@@ -554,6 +555,7 @@ namespace FlaxEditor.Modules
             _menuEditDuplicate = cm.AddButton("Duplicate", inputOptions.Duplicate, Editor.SceneEditing.Duplicate);
             cm.AddSeparator();
             _menuEditSelectAll = cm.AddButton("Select all", inputOptions.SelectAll, Editor.SceneEditing.SelectAllScenes);
+            _menuEditDeselectAll = cm.AddButton("Deselect all", inputOptions.DeselectAll, Editor.SceneEditing.DeselectAllScenes);
             _menuCreateParentForSelectedActors = cm.AddButton("Create parent for selected actors", Editor.SceneEditing.CreateParentForSelectedActors);
             _menuEditFind = cm.AddButton("Find", inputOptions.Search, Editor.Windows.SceneWin.Search);
             cm.AddSeparator();
@@ -673,6 +675,7 @@ namespace FlaxEditor.Modules
             _menuEditDelete.ShortKeys = inputOptions.Delete.ToString();
             _menuEditDuplicate.ShortKeys = inputOptions.Duplicate.ToString();
             _menuEditSelectAll.ShortKeys = inputOptions.SelectAll.ToString();
+            _menuEditDeselectAll.ShortKeys = inputOptions.DeselectAll.ToString();
             _menuEditFind.ShortKeys = inputOptions.Search.ToString();
             _menuGamePlayGame.ShortKeys = inputOptions.Play.ToString();
             _menuGamePlayCurrentScenes.ShortKeys = inputOptions.PlayCurrentScenes.ToString();
@@ -738,6 +741,17 @@ namespace FlaxEditor.Modules
             playActionGroup.Selected = Editor.Options.Options.Interface.PlayButtonAction;
             playActionGroup.SelectedChanged = SetPlayAction;
             Editor.Options.OptionsChanged += options => { playActionGroup.Selected = options.Interface.PlayButtonAction; };
+
+            var windowModesGroup = new ContextMenuSingleSelectGroup<InterfaceOptions.GameWindowMode>();
+            var windowTypeMenu = _toolStripPlay.ContextMenu.AddChildMenu("Game window mode");
+            windowModesGroup.AddItem("Docked", InterfaceOptions.GameWindowMode.Docked, null, "Shows the game window docked, inside the editor");
+            windowModesGroup.AddItem("Popup", InterfaceOptions.GameWindowMode.PopupWindow, null, "Shows the game window as a popup");
+            windowModesGroup.AddItem("Maximized", InterfaceOptions.GameWindowMode.MaximizedWindow, null, "Shows the game window maximized (Same as pressing F11)");
+            windowModesGroup.AddItem("Borderless", InterfaceOptions.GameWindowMode.BorderlessWindow, null, "Shows the game window borderless");
+            windowModesGroup.AddItemsToContextMenu(windowTypeMenu.ContextMenu);
+            windowModesGroup.Selected = Editor.Options.Options.Interface.DefaultGameWindowMode;
+            windowModesGroup.SelectedChanged = SetGameWindowMode;
+            Editor.Options.OptionsChanged += options => { windowModesGroup.Selected = options.Interface.DefaultGameWindowMode; };
 
             _toolStripPause = (ToolStripButton)ToolStrip.AddButton(Editor.Icons.Pause64, Editor.Simulation.RequestResumeOrPause).LinkTooltip($"Pause/Resume game ({inputOptions.Pause})");
             _toolStripStep = (ToolStripButton)ToolStrip.AddButton(Editor.Icons.Skip64, Editor.Simulation.RequestPlayOneFrame).LinkTooltip("Step one frame in game");
@@ -871,6 +885,7 @@ namespace FlaxEditor.Modules
             _menuEditDelete.Enabled = hasSthSelected;
             _menuEditDuplicate.Enabled = hasSthSelected;
             _menuEditSelectAll.Enabled = Level.IsAnySceneLoaded;
+            _menuEditDeselectAll.Enabled = hasSthSelected;
 
             control.PerformLayout();
         }
@@ -1040,6 +1055,13 @@ namespace FlaxEditor.Modules
         {
             var options = Editor.Options.Options;
             options.Interface.PlayButtonAction = newPlayAction;
+            Editor.Options.Apply(options);
+        }
+
+        private void SetGameWindowMode(InterfaceOptions.GameWindowMode newGameWindowMode)
+        {
+            var options = Editor.Options.Options;
+            options.Interface.DefaultGameWindowMode = newGameWindowMode;
             Editor.Options.Apply(options);
         }
 

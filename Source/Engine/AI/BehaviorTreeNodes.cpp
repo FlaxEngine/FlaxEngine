@@ -706,6 +706,14 @@ bool BehaviorTreeKnowledgeValuesConditionalDecorator::CanUpdate(const BehaviorUp
     return BehaviorKnowledge::CompareValues((float)ValueA.Get(context.Knowledge), (float)ValueB.Get(context.Knowledge), Comparison);
 }
 
+bool BehaviorTreeKnowledgeBooleanDecorator::CanUpdate(const BehaviorUpdateContext& context)
+{
+    Variant value = Value.Get(context.Knowledge);
+    bool result = (bool)value;
+    result ^= Invert;
+    return result;
+}
+
 bool BehaviorTreeHasTagDecorator::CanUpdate(const BehaviorUpdateContext& context)
 {
     bool result = false;

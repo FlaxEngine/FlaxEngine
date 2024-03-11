@@ -56,6 +56,10 @@ namespace FlaxEditor.Options
         [EditorDisplay("Common"), EditorOrder(190)]
         public InputBinding SelectAll = new InputBinding(KeyboardKeys.A, KeyboardKeys.Control);
 
+        [DefaultValue(typeof(InputBinding), "Ctrl+Shift+A")]
+        [EditorDisplay("Common"), EditorOrder(195)]
+        public InputBinding DeselectAll = new InputBinding(KeyboardKeys.A, KeyboardKeys.Shift, KeyboardKeys.Control);
+
         [DefaultValue(typeof(InputBinding), "F")]
         [EditorDisplay("Common"), EditorOrder(200)]
         public InputBinding FocusSelection = new InputBinding(KeyboardKeys.F);

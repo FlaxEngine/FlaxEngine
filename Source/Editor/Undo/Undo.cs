@@ -38,9 +38,6 @@ namespace FlaxEditor
         /// <summary>
         /// Gets the undo operations stack.
         /// </summary>
-        /// <value>
-        /// The undo operations stack.
-        /// </value>
         public HistoryStack UndoOperationsStack { get; }
 
         /// <summary>
@@ -138,6 +135,7 @@ namespace FlaxEditor
                 return;
 
             _snapshots.Add(snapshotInstance, new UndoInternal(snapshotInstance, actionString));
+
         }
 
         /// <summary>
@@ -152,9 +150,7 @@ namespace FlaxEditor
                 return;
 
             if (snapshotInstance == null)
-            {
                 snapshotInstance = _snapshots.Last().Key;
-            }
             var action = _snapshots[snapshotInstance].End(snapshotInstance);
             _snapshots.Remove(snapshotInstance);
 
@@ -249,9 +245,7 @@ namespace FlaxEditor
                 return;
 
             if (snapshotInstance == null)
-            {
                 snapshotInstance = (object[])_snapshots.Last().Key;
-            }
             var action = _snapshots[snapshotInstance].End(snapshotInstance);
             _snapshots.Remove(snapshotInstance);
 
@@ -325,12 +319,10 @@ namespace FlaxEditor
         {
             if (action == null)
                 throw new ArgumentNullException();
-
             if (!Enabled)
                 return;
 
             UndoOperationsStack.Push(action);
-
             OnAction(action);
         }
 

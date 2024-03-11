@@ -390,7 +390,7 @@ namespace FlaxEngine
         }
 
 #if FLAX_EDITOR
-        internal bool ShowTransform => !(this is UIControl);
+        private bool ShowTransform => !(this is UIControl);
 #endif
     }
 }

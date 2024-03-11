@@ -437,8 +437,6 @@ namespace FlaxEditor.Gizmo
                     {
                     case Mode.Translate:
                         UpdateTranslateScale();
-                        if (Owner.SnapToVertex)
-                            UpdateVertexSnapping();
                         break;
                     case Mode.Scale:
                         UpdateTranslateScale();
@@ -447,6 +445,8 @@ namespace FlaxEditor.Gizmo
                         UpdateRotate(dt);
                         break;
                     }
+                    if (Owner.SnapToVertex)
+                        UpdateVertexSnapping();
                 }
                 else
                 {
@@ -553,41 +553,21 @@ namespace FlaxEditor.Gizmo
             for (int i = 0; i < SelectionCount; i++)
             {
                 var obj = GetSelectedObject(i);
-                if (obj.CanVertexSnap && obj.RayCastSelf(ref ray, out var distance, out _) && distance < closestDistance)
+                if (obj.RayCastSelf(ref ray, out var distance, out _) && distance < closestDistance)
                 {
                     closestDistance = distance;
                     closestObject = obj;
                 }
             }
             if (closestObject == null)
-            {
-                // Find the closest object in selection (in case ray didn't hit anything)
-                for (int i = 0; i < SelectionCount; i++)
-                {
-                    var obj = GetSelectedObject(i);
-                    if (obj.CanVertexSnap)
-                    {
-                        GetSelectedObjectsBounds(out var bounds, out _);
-                        CollisionsHelper.ClosestPointBoxPoint(ref bounds, ref ray.Ray.Position, out var point);
-                        var distance = Vector3.Distance(ref point, ref ray.Ray.Position);
-                        if (distance < closestDistance)
-                        {
-                            closestDistance = distance;
-                            closestObject = obj;
-                        }
-                    }
-                }
-            }
-            _vertexSnapObject = closestObject;
-            if (closestObject == null)
-                return;
+                return; // ignore it if there is nothing under the mouse closestObject is only null if ray caster missed everything or Selection Count == 0
 
-            // Find the closest vertex to bounding box point (collision detection approximation)
-            var closestPoint = ray.Ray.GetPoint(closestDistance);
-            if (!closestObject.OnVertexSnap(ref closestPoint, out _vertexSnapPoint))
+            _vertexSnapObject = closestObject;
+            if (!closestObject.OnVertexSnap(ref ray.Ray, closestDistance, out _vertexSnapPoint))
             {
-                // Failed to get the closest point
-                _vertexSnapPoint = closestPoint;
+                // The OnVertexSnap is unimplemented or failed to get point return because there is nothing to do
+                _vertexSnapPoint = Vector3.Zero;
+                return;
             }
 
             // Transform back to the local space of the object to work when moving it
@@ -619,12 +599,11 @@ namespace FlaxEditor.Gizmo
             for (int i = 0; i < SelectionCount; i++)
                 rayCast.ExcludeObjects.Add(GetSelectedObject(i));
             var hit = Owner.SceneGraphRoot.RayCast(ref rayCast, out var distance, out var _);
-            if (hit != null && hit.CanVertexSnap)
+            if (hit != null)
             {
-                var point = rayCast.Ray.GetPoint(distance);
-                if (hit.OnVertexSnap(ref point, out var pointSnapped) 
+                if (hit.OnVertexSnap(ref rayCast.Ray, distance, out var pointSnapped)
                     //&& Vector3.Distance(point, pointSnapped) <= 25.0f
-                    )
+                   )
                 {
                     _vertexSnapObjectTo = hit;
                     _vertexSnapPointTo = hit.Transform.WorldToLocal(pointSnapped);
@@ -711,6 +690,13 @@ namespace FlaxEditor.Gizmo
         /// </summary>
         protected virtual void OnDuplicate()
         {
+        }
+
+        /// <inheritdoc />
+        public override void OnSelectionChanged(List<SceneGraphNode> newSelection)
+        {
+            EndVertexSnapping();
+            UpdateGizmoPosition();
         }
     }
 }

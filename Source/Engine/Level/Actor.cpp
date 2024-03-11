@@ -1764,14 +1764,6 @@ bool Actor::FromBytes(const Span<byte>& data, Array<Actor*>& output, ISerializeM
     }
     Scripting::ObjectsLookupIdMapping.Set(nullptr);
 
-    // Link objects
-    //for (int32 i = 0; i < objectsCount; i++)
-    {
-        //SceneObject* obj = sceneObjects->At(i);
-        // TODO: post load or post spawn?
-        //obj->PostLoad();
-    }
-
     // Update objects order
     //for (int32 i = 0; i < objectsCount; i++)
     {

@@ -852,10 +852,12 @@ void ScriptingObjectReferenceBase::OnSet(ScriptingObject* object)
 
 void ScriptingObjectReferenceBase::OnDeleted(ScriptingObject* obj)
 {
-    ASSERT(_object == obj);
-    _object->Deleted.Unbind<ScriptingObjectReferenceBase, &ScriptingObjectReferenceBase::OnDeleted>(this);
-    _object = nullptr;
-    Changed();
+    if (_object == obj)
+    {
+        _object->Deleted.Unbind<ScriptingObjectReferenceBase, &ScriptingObjectReferenceBase::OnDeleted>(this);
+        _object = nullptr;
+        Changed();
+    }
 }
 
 ScriptingObject* Scripting::FindObject(Guid id, MClass* type)

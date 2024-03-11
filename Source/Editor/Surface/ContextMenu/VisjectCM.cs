@@ -583,7 +583,7 @@ namespace FlaxEditor.Surface.ContextMenu
 
             // Check if surface has any parameters
             var parameters = _parametersGetter?.Invoke();
-            int count = parameters?.Count(x => x.IsPublic) ?? 0;
+            int count = parameters?.Count ?? 0;
             if (count > 0)
             {
                 // TODO: cache the allocated memory to reduce dynamic allocations
@@ -591,28 +591,6 @@ namespace FlaxEditor.Surface.ContextMenu
                     count *= 2;
                 var archetypes = new NodeArchetype[count];
                 int archetypeIndex = 0;
-
-                // ReSharper disable once PossibleNullReferenceException
-                for (int i = 0; i < parameters.Count; i++)
-                {
-                    var param = parameters[i];
-                    if (!param.IsPublic)
-                        continue;
-
-                    var node = (NodeArchetype)_parameterGetNodeArchetype.Clone();
-                    node.Title = "Get " + param.Name;
-                    node.DefaultValues[0] = param.ID;
-                    archetypes[archetypeIndex++] = node;
-
-                    if (_parameterSetNodeArchetype != null)
-                    {
-                        node = (NodeArchetype)_parameterSetNodeArchetype.Clone();
-                        node.Title = "Set " + param.Name;
-                        node.DefaultValues[0] = param.ID;
-                        node.DefaultValues[1] = TypeUtils.GetDefaultValue(param.Type);
-                        archetypes[archetypeIndex++] = node;
-                    }
-                }
 
                 var groupArchetype = new GroupArchetype
                 {
@@ -626,26 +604,39 @@ namespace FlaxEditor.Surface.ContextMenu
                 group.ArrowImageOpened = new SpriteBrush(Style.Current.ArrowDown);
                 group.ArrowImageClosed = new SpriteBrush(Style.Current.ArrowRight);
                 group.Close(false);
-                archetypeIndex = 0;
+
+                // ReSharper disable once PossibleNullReferenceException
                 for (int i = 0; i < parameters.Count; i++)
                 {
                     var param = parameters[i];
-                    if (!param.IsPublic)
-                        continue;
 
-                    var item = new VisjectCMItem(group, groupArchetype, archetypes[archetypeIndex++])
+                    // Define Getter node and create CM item
+                    var node = (NodeArchetype)_parameterGetNodeArchetype.Clone();
+                    node.Title = "Get " + param.Name;
+                    node.DefaultValues[0] = param.ID;
+                    archetypes[archetypeIndex++] = node;
+
+                    var item = new VisjectCMItem(group, groupArchetype, node)
                     {
                         Parent = group
                     };
 
+                    // Define Setter node and create CM item if parameter has a setter
                     if (_parameterSetNodeArchetype != null)
                     {
-                        item = new VisjectCMItem(group, groupArchetype, archetypes[archetypeIndex++])
+                        node = (NodeArchetype)_parameterSetNodeArchetype.Clone();
+                        node.Title = "Set " + param.Name;
+                        node.DefaultValues[0] = param.ID;
+                        node.DefaultValues[1] = TypeUtils.GetDefaultValue(param.Type);
+                        archetypes[archetypeIndex++] = node;
+
+                        item = new VisjectCMItem(group, groupArchetype, node)
                         {
                             Parent = group
                         };
                     }
                 }
+
                 group.SortChildren();
                 group.UnlockChildrenRecursive();
                 group.Parent = _groupsPanel;

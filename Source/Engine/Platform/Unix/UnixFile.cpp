@@ -73,7 +73,7 @@ UnixFile* UnixFile::Open(const StringView& path, FileMode mode, FileAccess acces
     if ((uint32)share & (uint32)FileShare::Delete)
         omode |= 0;
 
-    const StringAsANSI<> pathANSI(*path, path.Length());
+    const StringAsUTF8<> pathANSI(*path, path.Length());
     auto handle = open(pathANSI.Get(), flags, omode);
     if (handle == -1)
     {

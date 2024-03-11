@@ -278,13 +278,7 @@ void ManagedEditor::Update()
 void ManagedEditor::Exit()
 {
     if (WasExitCalled)
-    {
-        // Ups xD
-        LOG(Warning, "Managed Editor exit called after exit or before init.");
         return;
-    }
-
-    // Set flag
     WasExitCalled = true;
 
     // Skip if managed object is missing

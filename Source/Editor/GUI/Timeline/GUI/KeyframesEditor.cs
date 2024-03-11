@@ -7,6 +7,7 @@ using System.Linq;
 using System.Text;
 using FlaxEditor.CustomEditors;
 using FlaxEditor.GUI.ContextMenu;
+using FlaxEditor.Options;
 using FlaxEditor.Scripting;
 using FlaxEngine;
 using FlaxEngine.GUI;
@@ -432,6 +433,7 @@ namespace FlaxEditor.GUI
                         if (_editor.EnableKeyframesValueEdit)
                             cm.AddButton("Edit all keyframes", () => _editor.EditAllKeyframes(this, location));
                         cm.AddButton("Select all keyframes", _editor.SelectAll).Enabled = _editor._points.Count > 0;
+                        cm.AddButton("Deselect all keyframes", _editor.DeselectAll).Enabled = _editor._points.Count > 0;
                         cm.AddButton("Copy all keyframes", () =>
                         {
                             _editor.SelectAll();
@@ -902,7 +904,7 @@ namespace FlaxEditor.GUI
             var k = new Keyframe
             {
                 Time = keyframesPos.X,
-                Value = DefaultValue,
+                Value = Utilities.Utils.CloneValue(DefaultValue),
             };
             OnEditingStart();
             AddKeyframe(k);
@@ -1209,15 +1211,28 @@ namespace FlaxEditor.GUI
             }
         }
 
+        private void BulkSelectUpdate(bool select = true)
+        {
+            for (int i = 0; i < _points.Count; i++)
+            {
+                _points[i].IsSelected = select;
+            }
+        }
+
         /// <summary>
         /// Selects all keyframes.
         /// </summary>
         public void SelectAll()
         {
-            for (int i = 0; i < _points.Count; i++)
-            {
-                _points[i].IsSelected = true;
-            }
+            BulkSelectUpdate(true);
+        }
+
+        /// <summary>
+        /// Deselects all keyframes.
+        /// </summary>
+        public void DeselectAll()
+        {
+            BulkSelectUpdate(false);
         }
 
         /// <inheritdoc />
@@ -1241,8 +1256,8 @@ namespace FlaxEditor.GUI
                  _mainPanel.PointToParent(_contents.PointToParent(_contents._leftMouseDownPos)),
                  _mainPanel.PointToParent(_contents.PointToParent(_contents._mousePos))
                 );
-                Render2D.FillRectangle(selectionRect, Color.Orange * 0.4f);
-                Render2D.DrawRectangle(selectionRect, Color.Orange);
+                Render2D.FillRectangle(selectionRect, style.Selection);
+                Render2D.DrawRectangle(selectionRect, style.SelectionBorder);
             }
 
             base.Draw();
@@ -1268,33 +1283,33 @@ namespace FlaxEditor.GUI
             if (base.OnKeyDown(key))
                 return true;
 
-            switch (key)
+            InputOptions options = Editor.Instance.Options.Options.Input;
+            if (options.SelectAll.Process(this))
             {
-            case KeyboardKeys.Delete:
+                SelectAll();
+                return true;
+            }
+            else if (options.DeselectAll.Process(this))
+            {
+                DeselectAll();
+                return true;
+            }
+            else if (options.Delete.Process(this))
+            {
                 RemoveKeyframes();
                 return true;
-            case KeyboardKeys.A:
-                if (Root.GetKey(KeyboardKeys.Control))
-                {
-                    SelectAll();
-                    return true;
-                }
-                break;
-            case KeyboardKeys.C:
-                if (Root.GetKey(KeyboardKeys.Control))
-                {
-                    CopyKeyframes();
-                    return true;
-                }
-                break;
-            case KeyboardKeys.V:
-                if (Root.GetKey(KeyboardKeys.Control))
-                {
-                    KeyframesEditorUtils.Paste(this);
-                    return true;
-                }
-                break;
             }
+            else if (options.Copy.Process(this))
+            {
+                CopyKeyframes();
+                return true;
+            }
+            else if (options.Paste.Process(this))
+            {
+                KeyframesEditorUtils.Paste(this);
+                return true;
+            }
+
             return false;
         }
 

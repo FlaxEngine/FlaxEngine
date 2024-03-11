@@ -11,7 +11,6 @@ using System.Globalization;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -20,6 +19,7 @@ using FlaxEditor.GUI.Input;
 using FlaxEditor.GUI.Tree;
 using FlaxEditor.SceneGraph;
 using FlaxEngine;
+using FlaxEngine.Json;
 using FlaxEngine.GUI;
 using FlaxEngine.Utilities;
 using FlaxEditor.Windows;
@@ -201,6 +201,22 @@ namespace FlaxEditor.Utilities
             {
                 GetActorsTree(list, a.GetChild(i));
             }
+        }
+
+        /// <summary>
+        /// Clones the value. handles non-value types (such as arrays) that need deep value cloning.
+        /// </summary>
+        /// <param name="value">The source value to clone.</param>
+        /// <returns>The duplicated value.</returns>
+        internal static object CloneValue(object value)
+        {
+            // For objects (eg. arrays) we need to clone them to prevent editing default/reference value within editor
+            if (value != null && (!value.GetType().IsValueType || !value.GetType().IsClass))
+            {
+                var json = JsonSerializer.Serialize(value);
+                value = JsonSerializer.Deserialize(json, value.GetType());
+            }
+            return value;
         }
 
         /// <summary>
@@ -1289,6 +1305,7 @@ namespace FlaxEditor.Utilities
             inputActions.Add(options => options.Paste, Editor.Instance.SceneEditing.Paste);
             inputActions.Add(options => options.Duplicate, Editor.Instance.SceneEditing.Duplicate);
             inputActions.Add(options => options.SelectAll, Editor.Instance.SceneEditing.SelectAllScenes);
+            inputActions.Add(options => options.DeselectAll, Editor.Instance.SceneEditing.DeselectAllScenes);
             inputActions.Add(options => options.Delete, Editor.Instance.SceneEditing.Delete);
             inputActions.Add(options => options.Search, () => Editor.Instance.Windows.SceneWin.Search());
             inputActions.Add(options => options.MoveActorToViewport, Editor.Instance.UI.MoveActorToViewport);

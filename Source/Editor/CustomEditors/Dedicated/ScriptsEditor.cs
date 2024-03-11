@@ -151,8 +151,8 @@ namespace FlaxEditor.CustomEditors.Dedicated
             if (IsDragOver && _dragHandlers != null && _dragHandlers.HasValidDrag)
             {
                 var area = new Rectangle(Float2.Zero, size);
-                Render2D.FillRectangle(area, Color.Orange * 0.5f);
-                Render2D.DrawRectangle(area, Color.Black);
+                Render2D.FillRectangle(area, style.Selection);
+                Render2D.DrawRectangle(area, style.SelectionBorder);
             }
 
             base.Draw();
@@ -520,7 +520,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
         {
             base.Draw();
 
-            var color = FlaxEngine.GUI.Style.Current.BackgroundSelected * (IsDragOver ? 0.9f : 0.1f);
+            var color = Style.Current.BackgroundSelected * (IsDragOver ? 0.9f : 0.1f);
             Render2D.FillRectangle(new Rectangle(Float2.Zero, Size), color);
         }
 

@@ -774,14 +774,33 @@ namespace FlaxEditor.GUI.Timeline
         /// Updates the drag over mode based on the given mouse location.
         /// </summary>
         /// <param name="location">The location.</param>
-        private void UpdateDrawPositioning(ref Float2 location)
+        private void UpdateDragPositioning(ref Float2 location)
         {
+            // Check collision with drag areas
             if (new Rectangle(0, 0 - DefaultDragInsertPositionMargin - DefaultNodeOffsetY, Width, DefaultDragInsertPositionMargin * 2.0f).Contains(location))
                 _dragOverMode = DragItemPositioning.Above;
             else if (IsCollapsed && new Rectangle(0, Height - DefaultDragInsertPositionMargin, Width, DefaultDragInsertPositionMargin * 2.0f).Contains(location))
                 _dragOverMode = DragItemPositioning.Below;
             else
                 _dragOverMode = DragItemPositioning.At;
+
+            // Update DraggedOverTrack
+            var timeline = Timeline;
+            if (_dragOverMode == DragItemPositioning.None)
+            {
+                if (timeline != null && timeline.DraggedOverTrack == this)
+                    timeline.DraggedOverTrack = null;
+            }
+            else if (timeline != null)
+                timeline.DraggedOverTrack = this;
+        }
+
+        private void ClearDragPositioning()
+        {
+            _dragOverMode = DragItemPositioning.None;
+            var timeline = Timeline;
+            if (timeline != null && timeline.DraggedOverTrack == this)
+                timeline.DraggedOverTrack = null;
         }
 
         /// <summary>
@@ -975,26 +994,21 @@ namespace FlaxEditor.GUI.Timeline
             }
 
             // Draw drag and drop effect
-            if (IsDragOver && _isDragOverHeader)
+            if (IsDragOver && _timeline.DraggedOverTrack == this)
             {
-                Color dragOverColor = style.BackgroundSelected * 0.6f;
-                Rectangle rect;
                 switch (_dragOverMode)
                 {
                 case DragItemPositioning.At:
-                    rect = textRect;
+                    Render2D.FillRectangle(textRect, style.Selection);
+                    Render2D.DrawRectangle(textRect, style.SelectionBorder);
                     break;
                 case DragItemPositioning.Above:
-                    rect = new Rectangle(textRect.X, textRect.Y - DefaultDragInsertPositionMargin - DefaultNodeOffsetY, textRect.Width, DefaultDragInsertPositionMargin * 2.0f);
+                    Render2D.DrawRectangle(new Rectangle(textRect.X, textRect.Top - DefaultDragInsertPositionMargin * 0.5f - DefaultNodeOffsetY - _margin.Top, textRect.Width, DefaultDragInsertPositionMargin), style.SelectionBorder);
                     break;
                 case DragItemPositioning.Below:
-                    rect = new Rectangle(textRect.X, textRect.Bottom - DefaultDragInsertPositionMargin, textRect.Width, DefaultDragInsertPositionMargin * 2.0f);
-                    break;
-                default:
-                    rect = Rectangle.Empty;
+                    Render2D.DrawRectangle(new Rectangle(textRect.X, textRect.Bottom + _margin.Bottom - DefaultDragInsertPositionMargin * 0.5f, textRect.Width, DefaultDragInsertPositionMargin), style.SelectionBorder);
                     break;
                 }
-                Render2D.FillRectangle(rect, dragOverColor);
             }
 
             base.Draw();
@@ -1170,18 +1184,18 @@ namespace FlaxEditor.GUI.Timeline
             _dragOverMode = DragItemPositioning.None;
             if (result == DragDropEffect.None)
             {
-                UpdateDrawPositioning(ref location);
+                UpdateDragPositioning(ref location);
 
                 // Check if mouse is over header
                 _isDragOverHeader = TestHeaderHit(ref location);
                 if (_isDragOverHeader)
                 {
-                    // Check if mouse is over arrow
+                    if (Timeline != null)
+                        Timeline.DraggedOverTrack = this;
+
+                    // Expand node if mouse goes over arrow
                     if (_children.Count > 0 && ArrowRect.Contains(location))
-                    {
-                        // Expand track
                         Expand();
-                    }
 
                     result = OnDragEnterHeader(data);
                 }
@@ -1199,21 +1213,18 @@ namespace FlaxEditor.GUI.Timeline
             var result = base.OnDragMove(ref location, data);
 
             // Check if no children handled that event
-            _dragOverMode = DragItemPositioning.None;
+            ClearDragPositioning();
             if (result == DragDropEffect.None)
             {
-                UpdateDrawPositioning(ref location);
+                UpdateDragPositioning(ref location);
 
                 // Check if mouse is over header
                 bool isDragOverHeader = TestHeaderHit(ref location);
                 if (isDragOverHeader)
                 {
-                    // Check if mouse is over arrow
+                    // Expand node if mouse goes over arrow
                     if (_children.Count > 0 && ArrowRect.Contains(location))
-                    {
-                        // Expand track
                         Expand();
-                    }
 
                     if (!_isDragOverHeader)
                         result = OnDragEnterHeader(data);
@@ -1226,10 +1237,8 @@ namespace FlaxEditor.GUI.Timeline
                 }
                 _isDragOverHeader = isDragOverHeader;
 
-                if (result == DragDropEffect.None || !isDragOverHeader)
-                {
+                if (result == DragDropEffect.None)
                     _dragOverMode = DragItemPositioning.None;
-                }
             }
 
             return result;
@@ -1243,7 +1252,7 @@ namespace FlaxEditor.GUI.Timeline
             // Check if no children handled that event
             if (result == DragDropEffect.None)
             {
-                UpdateDrawPositioning(ref location);
+                UpdateDragPositioning(ref location);
 
                 // Check if mouse is over header
                 if (TestHeaderHit(ref location))
@@ -1254,7 +1263,7 @@ namespace FlaxEditor.GUI.Timeline
 
             // Clear cache
             _isDragOverHeader = false;
-            _dragOverMode = DragItemPositioning.None;
+            ClearDragPositioning();
 
             return result;
         }
@@ -1262,15 +1271,15 @@ namespace FlaxEditor.GUI.Timeline
         /// <inheritdoc />
         public override void OnDragLeave()
         {
-            base.OnDragLeave();
-
             // Clear cache
             if (_isDragOverHeader)
             {
                 _isDragOverHeader = false;
                 OnDragLeaveHeader();
             }
-            _dragOverMode = DragItemPositioning.None;
+            ClearDragPositioning();
+
+            base.OnDragLeave();
         }
 
         /// <inheritdoc />

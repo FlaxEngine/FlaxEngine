@@ -16,7 +16,7 @@ namespace FlaxEditor.GUI.Tree
         /// <summary>
         /// The default drag insert position margin.
         /// </summary>
-        public const float DefaultDragInsertPositionMargin = 2.0f;
+        public const float DefaultDragInsertPositionMargin = 3.0f;
 
         /// <summary>
         /// The default node offset on Y axis.
@@ -42,6 +42,7 @@ namespace FlaxEditor.GUI.Tree
 
         private DragItemPositioning _dragOverMode;
         private bool _isDragOverHeader;
+        private static ulong _dragEndFrame;
 
         /// <summary>
         /// Gets or sets the text.
@@ -546,14 +547,33 @@ namespace FlaxEditor.GUI.Tree
         /// Updates the drag over mode based on the given mouse location.
         /// </summary>
         /// <param name="location">The location.</param>
-        private void UpdateDrawPositioning(ref Float2 location)
+        private void UpdateDragPositioning(ref Float2 location)
         {
+            // Check collision with drag areas
             if (new Rectangle(_headerRect.X, _headerRect.Y - DefaultDragInsertPositionMargin - DefaultNodeOffsetY, _headerRect.Width, DefaultDragInsertPositionMargin * 2.0f).Contains(location))
                 _dragOverMode = DragItemPositioning.Above;
             else if ((IsCollapsed || !HasAnyVisibleChild) && new Rectangle(_headerRect.X, _headerRect.Bottom - DefaultDragInsertPositionMargin, _headerRect.Width, DefaultDragInsertPositionMargin * 2.0f).Contains(location))
                 _dragOverMode = DragItemPositioning.Below;
             else
                 _dragOverMode = DragItemPositioning.At;
+
+            // Update DraggedOverNode
+            var tree = ParentTree;
+            if (_dragOverMode == DragItemPositioning.None)
+            {
+                if (tree != null && tree.DraggedOverNode == this)
+                    tree.DraggedOverNode = null;
+            }
+            else if (tree != null)
+                tree.DraggedOverNode = this;
+        }
+
+        private void ClearDragPositioning()
+        {
+            _dragOverMode = DragItemPositioning.None;
+            var tree = ParentTree;
+            if (tree != null && tree.DraggedOverNode == this)
+                tree.DraggedOverNode = null;
         }
 
         /// <summary>
@@ -661,27 +681,19 @@ namespace FlaxEditor.GUI.Tree
             // Draw drag and drop effect
             if (IsDragOver && _tree.DraggedOverNode == this)
             {
-                Color dragOverColor = style.BackgroundSelected;
-                Rectangle rect;
                 switch (_dragOverMode)
                 {
                 case DragItemPositioning.At:
-                    dragOverColor *= 0.6f;
-                    rect = textRect;
+                    Render2D.FillRectangle(textRect, style.Selection);
+                    Render2D.DrawRectangle(textRect, style.SelectionBorder);
                     break;
                 case DragItemPositioning.Above:
-                    dragOverColor *= 1.2f;
-                    rect = new Rectangle(textRect.X, textRect.Top - DefaultDragInsertPositionMargin - DefaultNodeOffsetY - _margin.Top, textRect.Width, DefaultDragInsertPositionMargin * 2.0f);
+                    Render2D.DrawRectangle(new Rectangle(textRect.X, textRect.Top - DefaultDragInsertPositionMargin * 0.5f - DefaultNodeOffsetY - _margin.Top, textRect.Width, DefaultDragInsertPositionMargin), style.SelectionBorder);
                     break;
                 case DragItemPositioning.Below:
-                    dragOverColor *= 1.2f;
-                    rect = new Rectangle(textRect.X, textRect.Bottom + _margin.Bottom - DefaultDragInsertPositionMargin, textRect.Width, DefaultDragInsertPositionMargin * 2.0f);
-                    break;
-                default:
-                    rect = Rectangle.Empty;
+                    Render2D.DrawRectangle(new Rectangle(textRect.X, textRect.Bottom + _margin.Bottom - DefaultDragInsertPositionMargin * 0.5f, textRect.Width, DefaultDragInsertPositionMargin), style.SelectionBorder);
                     break;
                 }
-                Render2D.FillRectangle(rect, dragOverColor);
             }
 
             // Base
@@ -736,9 +748,8 @@ namespace FlaxEditor.GUI.Tree
             UpdateMouseOverFlags(location);
 
             // Clear flag for left button
-            if (button == MouseButton.Left)
+            if (button == MouseButton.Left && _isMouseDown)
             {
-                // Clear flag
                 _isMouseDown = false;
                 _mouseDownTime = -1;
             }
@@ -746,6 +757,10 @@ namespace FlaxEditor.GUI.Tree
             // Check if mouse hits bar and node isn't a root
             if (_mouseOverHeader)
             {
+                // Skip mouse up event right after drag drop ends
+                if (button == MouseButton.Left && Engine.FrameCount - _dragEndFrame < 10)
+                    return true;
+
                 // Prevent from selecting node when user is just clicking at an arrow
                 if (!_mouseOverArrow)
                 {
@@ -937,20 +952,18 @@ namespace FlaxEditor.GUI.Tree
             _dragOverMode = DragItemPositioning.None;
             if (result == DragDropEffect.None)
             {
-                UpdateDrawPositioning(ref location);
-                if (ParentTree != null)
-                    ParentTree.DraggedOverNode = this;
+                UpdateDragPositioning(ref location);
 
                 // Check if mouse is over header
                 _isDragOverHeader = TestHeaderHit(ref location);
                 if (_isDragOverHeader)
                 {
-                    // Check if mouse is over arrow
+                    if (ParentTree != null)
+                        ParentTree.DraggedOverNode = this;
+
+                    // Expand node if mouse goes over arrow
                     if (ArrowRect.Contains(location) && HasAnyVisibleChild)
-                    {
-                        // Expand node (no animation)
                         Expand(true);
-                    }
 
                     result = OnDragEnterHeader(data);
                 }
@@ -968,25 +981,30 @@ namespace FlaxEditor.GUI.Tree
             var result = base.OnDragMove(ref location, data);
 
             // Check if no children handled that event
-            _dragOverMode = DragItemPositioning.None;
+            ClearDragPositioning();
             if (result == DragDropEffect.None)
             {
-                UpdateDrawPositioning(ref location);
+                UpdateDragPositioning(ref location);
 
                 // Check if mouse is over header
                 bool isDragOverHeader = TestHeaderHit(ref location);
                 if (isDragOverHeader)
                 {
-                    if (ArrowRect.Contains(location) && HasAnyVisibleChild)
-                    {
-                        // Expand node (no animation)
-                        Expand(true);
-                    }
+                    if (ParentTree != null)
+                        ParentTree.DraggedOverNode = this;
 
+                    // Expand node if mouse goes over arrow
+                    if (ArrowRect.Contains(location) && HasAnyVisibleChild)
+                        Expand(true);
+                    
                     if (!_isDragOverHeader)
                         result = OnDragEnterHeader(data);
                     else
                         result = OnDragMoveHeader(data);
+                }
+                else if (_isDragOverHeader)
+                {
+                    OnDragLeaveHeader();
                 }
                 _isDragOverHeader = isDragOverHeader;
 
@@ -1005,7 +1023,8 @@ namespace FlaxEditor.GUI.Tree
             // Check if no children handled that event
             if (result == DragDropEffect.None)
             {
-                UpdateDrawPositioning(ref location);
+                UpdateDragPositioning(ref location);
+                _dragEndFrame = Engine.FrameCount;
 
                 // Check if mouse is over header
                 if (TestHeaderHit(ref location))
@@ -1016,9 +1035,7 @@ namespace FlaxEditor.GUI.Tree
 
             // Clear cache
             _isDragOverHeader = false;
-            _dragOverMode = DragItemPositioning.None;
-            if (ParentTree != null)
-                ParentTree.DraggedOverNode = null;
+            ClearDragPositioning();
 
             return result;
         }
@@ -1032,7 +1049,7 @@ namespace FlaxEditor.GUI.Tree
                 _isDragOverHeader = false;
                 OnDragLeaveHeader();
             }
-            _dragOverMode = DragItemPositioning.None;
+            ClearDragPositioning();
 
             base.OnDragLeave();
         }

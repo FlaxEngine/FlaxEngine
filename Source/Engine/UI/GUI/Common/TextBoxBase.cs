@@ -1,6 +1,9 @@
 // Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 using System;
+#if FLAX_EDITOR
+using FlaxEditor.Options;
+#endif
 using FlaxEngine.Assertions;
 using FlaxEngine.Utilities;
 
@@ -1296,6 +1299,42 @@ namespace FlaxEngine.GUI
             bool ctrDown = window.GetKey(KeyboardKeys.Control);
             KeyDown?.Invoke(key);
 
+            // Handle controls that have bindings
+#if FLAX_EDITOR
+            InputOptions options = FlaxEditor.Editor.Instance.Options.Options.Input;
+            if (options.Copy.Process(this))
+            {
+                Copy();
+                return true;
+            }
+            else if (options.Paste.Process(this))
+            {
+                Paste();
+                return true;
+            }
+            else if (options.Duplicate.Process(this))
+            {
+                Duplicate();
+                return true;
+            }
+            else if (options.Cut.Process(this))
+            {
+                Cut();
+                return true;
+            }
+            else if (options.SelectAll.Process(this))
+            {
+                SelectAll();
+                return true;
+            }
+            else if (options.DeselectAll.Process(this))
+            {
+                Deselect();
+                return true;
+            }
+#endif
+
+            // Handle controls without bindings
             switch (key)
             {
             case KeyboardKeys.ArrowRight:

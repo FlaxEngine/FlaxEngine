@@ -245,9 +245,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
         {
             // Special case for new Script added to actor
             if (editor.Values[0] is Script script && !script.HasPrefabLink)
-            {
                 return CreateDiffNode(editor);
-            }
 
             // Skip if no change detected
             var isRefEdited = editor.Values.IsReferenceValueModified;
@@ -258,9 +256,16 @@ namespace FlaxEditor.CustomEditors.Dedicated
             if (editor.ChildrenEditors.Count == 0 || (isRefEdited && editor is CollectionEditor))
                 result = CreateDiffNode(editor);
             bool isScriptEditorWithRefValue = editor is ScriptsEditor && editor.Values.HasReferenceValue;
+            bool isActorEditorInLevel = editor is ActorEditor && editor.Values[0] is Actor actor && actor.IsPrefabRoot && actor.Scene != null;
             for (int i = 0; i < editor.ChildrenEditors.Count; i++)
             {
-                var child = ProcessDiff(editor.ChildrenEditors[i], !isScriptEditorWithRefValue);
+                var childEditor = editor.ChildrenEditors[i];
+
+                // Special case for root actor transformation (can be applied only in Prefab editor, not in Level)
+                if (isActorEditorInLevel && childEditor.Values.Info.Name is "LocalPosition" or "LocalOrientation" or "LocalScale")
+                    continue;
+
+                var child = ProcessDiff(childEditor, !isScriptEditorWithRefValue);
                 if (child != null)
                 {
                     if (result == null)
@@ -276,7 +281,6 @@ namespace FlaxEditor.CustomEditors.Dedicated
                 {
                     var prefabObjectScript = prefabObjectScripts[j];
                     bool isRemoved = true;
-
                     for (int i = 0; i < editor.ChildrenEditors.Count; i++)
                     {
                         if (editor.ChildrenEditors[i].Values is ScriptsEditor.ScriptsContainer container && container.PrefabObjectId == prefabObjectScript.PrefabObjectID)
@@ -286,14 +290,12 @@ namespace FlaxEditor.CustomEditors.Dedicated
                             break;
                         }
                     }
-
                     if (isRemoved)
                     {
                         var dummy = new RemovedScriptDummy
                         {
                             PrefabObject = prefabObjectScript
                         };
-
                         var child = CreateDiffNode(dummy);
                         if (result == null)
                             result = CreateDiffNode(editor);

@@ -188,6 +188,11 @@ namespace FlaxEditor.GUI.Timeline
         private PlaybackStates _state = PlaybackStates.Disabled;
 
         /// <summary>
+        /// The Track that is being dragged over. This could have a value when not dragging.
+        /// </summary>
+        internal Track DraggedOverTrack = null;
+
+        /// <summary>
         /// Flag used to mark modified timeline data.
         /// </summary>
         protected bool _isModified;

@@ -1,12 +1,7 @@
 // Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 using System;
-using System.Globalization;
-using System.IO;
-using System.Text;
 using FlaxEngine.GUI;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Serialization;
 
 namespace FlaxEngine
 {
@@ -49,20 +44,21 @@ namespace FlaxEngine
                     var containerControl = _control as ContainerControl;
                     if (containerControl != null)
                         containerControl.UnlockChildrenRecursive();
+                    _control.Visible = IsActive;
                     _control.Parent = GetParent();
                     _control.IndexInParent = OrderInParent;
                     _control.Location = new Float2(LocalPosition);
                     _control.LocationChanged += OnControlLocationChanged;
 
                     // Link children UI controls
-                    if (containerControl != null && IsActiveInHierarchy)
+                    if (containerControl != null)
                     {
                         var children = ChildrenCount;
                         var parent = Parent;
                         for (int i = 0; i < children; i++)
                         {
                             var child = GetChild(i) as UIControl;
-                            if (child != null && child.IsActiveInHierarchy && child.HasControl && child != parent)
+                            if (child != null && child.HasControl && child != parent)
                             {
                                 child.Control.Parent = containerControl;
                             }
@@ -108,7 +104,6 @@ namespace FlaxEngine
                     p2 = c.PointToParent(ref p2);
                     p3 = c.PointToParent(ref p3);
                     p4 = c.PointToParent(ref p4);
-
                     c = c.Parent;
                 }
                 var min = Float2.Min(Float2.Min(p1, p2), Float2.Min(p3, p4));
@@ -120,7 +115,6 @@ namespace FlaxEngine
                 {
                     Extents = new Vector3(size * 0.5f, Mathf.Epsilon)
                 };
-
                 canvasRoot.Canvas.GetWorldMatrix(out Matrix world);
                 Matrix.Translation(min.X + size.X * 0.5f, min.Y + size.Y * 0.5f, 0, out Matrix offset);
                 Matrix.Multiply(ref offset, ref world, out var boxWorld);
@@ -297,15 +291,6 @@ namespace FlaxEngine
 
         private ContainerControl GetParent()
         {
-            // Don't link disabled actors
-            if (!IsActiveInHierarchy)
-                return null;
-#if FLAX_EDITOR
-            // Prefab editor doesn't fire BeginPlay so for disabled actors we don't unlink them so do it here
-            if (!IsActive)
-                return null;
-#endif
-
             var parent = Parent;
             if (parent is UIControl uiControl && uiControl.Control is ContainerControl uiContainerControl)
                 return uiContainerControl;
@@ -314,89 +299,34 @@ namespace FlaxEngine
             return FallbackParentGetDelegate?.Invoke(this);
         }
 
-        internal string Serialize(out string controlType)
+        internal string Serialize(out string controlType, UIControl other)
         {
             if (_control == null)
             {
+                // No control assigned
                 controlType = null;
                 return null;
             }
 
             var type = _control.GetType();
+            var prefabDiff = other != null && other._control != null && other._control.GetType() == type;
 
-            JsonSerializer jsonSerializer = JsonSerializer.CreateDefault(Json.JsonSerializer.Settings);
-            jsonSerializer.Formatting = Formatting.Indented;
+            // Serialize control type when not using prefab diff serialization
+            controlType = prefabDiff ? string.Empty : type.FullName;
 
-            StringBuilder sb = new StringBuilder(1024);
-            StringWriter sw = new StringWriter(sb, CultureInfo.InvariantCulture);
-            using (JsonTextWriter jsonWriter = new JsonTextWriter(sw))
-            {
-                // Prepare writer settings
-                jsonWriter.IndentChar = '\t';
-                jsonWriter.Indentation = 1;
-                jsonWriter.Formatting = jsonSerializer.Formatting;
-                jsonWriter.DateFormatHandling = jsonSerializer.DateFormatHandling;
-                jsonWriter.DateTimeZoneHandling = jsonSerializer.DateTimeZoneHandling;
-                jsonWriter.FloatFormatHandling = jsonSerializer.FloatFormatHandling;
-                jsonWriter.StringEscapeHandling = jsonSerializer.StringEscapeHandling;
-                jsonWriter.Culture = jsonSerializer.Culture;
-                jsonWriter.DateFormatString = jsonSerializer.DateFormatString;
-
-                JsonSerializerInternalWriter serializerWriter = new JsonSerializerInternalWriter(jsonSerializer);
-
-                serializerWriter.Serialize(jsonWriter, _control, type);
-            }
-
-            controlType = type.FullName;
-            return sw.ToString();
-        }
-
-        internal string SerializeDiff(out string controlType, UIControl other)
-        {
-            if (_control == null)
-            {
-                controlType = null;
-                return null;
-            }
-            var type = _control.GetType();
-            if (other._control == null || other._control.GetType() != type)
-            {
-                return Serialize(out controlType);
-            }
-
-            JsonSerializer jsonSerializer = JsonSerializer.CreateDefault(Json.JsonSerializer.Settings);
-            jsonSerializer.Formatting = Formatting.Indented;
-
-            StringBuilder sb = new StringBuilder(1024);
-            StringWriter sw = new StringWriter(sb, CultureInfo.InvariantCulture);
-            using (JsonTextWriter jsonWriter = new JsonTextWriter(sw))
-            {
-                // Prepare writer settings
-                jsonWriter.IndentChar = '\t';
-                jsonWriter.Indentation = 1;
-                jsonWriter.Formatting = jsonSerializer.Formatting;
-                jsonWriter.DateFormatHandling = jsonSerializer.DateFormatHandling;
-                jsonWriter.DateTimeZoneHandling = jsonSerializer.DateTimeZoneHandling;
-                jsonWriter.FloatFormatHandling = jsonSerializer.FloatFormatHandling;
-                jsonWriter.StringEscapeHandling = jsonSerializer.StringEscapeHandling;
-                jsonWriter.Culture = jsonSerializer.Culture;
-                jsonWriter.DateFormatString = jsonSerializer.DateFormatString;
-
-                JsonSerializerInternalWriter serializerWriter = new JsonSerializerInternalWriter(jsonSerializer);
-
-                serializerWriter.SerializeDiff(jsonWriter, _control, type, other._control);
-            }
-
-            controlType = string.Empty;
-            return sw.ToString();
+            string json;
+            if (prefabDiff)
+                json = Json.JsonSerializer.SerializeDiff(_control, other._control, true);
+            else
+                json = Json.JsonSerializer.Serialize(_control, type, true);
+            return json;
         }
 
         internal void Deserialize(string json, Type controlType)
         {
-            if (_control == null || _control.GetType() != controlType)
+            if ((_control == null || _control.GetType() != controlType) && controlType != null)
             {
-                if (controlType != null)
-                    Control = (Control)Activator.CreateInstance(controlType);
+                Control = (Control)Activator.CreateInstance(controlType);
             }
 
             if (_control != null)
@@ -412,6 +342,7 @@ namespace FlaxEngine
         {
             if (_control != null && !_blockEvents)
             {
+                _control.Visible = IsActive;
                 _control.Parent = GetParent();
                 _control.IndexInParent = OrderInParent;
             }
@@ -425,19 +356,11 @@ namespace FlaxEngine
             }
         }
 
-        internal void ActiveInTreeChanged()
+        internal void ActiveChanged()
         {
             if (_control != null && !_blockEvents)
             {
-                // Skip if this control is inactive and it's parent too (parent will unlink from hierarchy but children will stay connected while being inactive)
-                if (!IsActiveInHierarchy && Parent && !Parent.IsActive)
-                {
-                    return;
-                }
-
-                // Link or unlink control (won't modify Enable/Visible state)
-                _control.Parent = GetParent();
-                _control.IndexInParent = OrderInParent;
+                _control.Visible = IsActive;
             }
         }
 
@@ -453,6 +376,7 @@ namespace FlaxEngine
         {
             if (_control != null)
             {
+                _control.Visible = IsActive;
                 _control.Parent = GetParent();
                 _control.IndexInParent = OrderInParent;
                 Internal_GetNavTargets(__unmanagedPtr, out UIControl up, out UIControl down, out UIControl left, out UIControl right);

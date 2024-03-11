@@ -602,7 +602,7 @@ namespace FlaxEditor.Surface.Archetypes
                         var dataB = (Guid)_node.Values[5 + i * 2];
 
                         pointsAnims[i] = dataB;
-                        pointsLocations[i] = new Float2(dataA.X, 0.0f);
+                        pointsLocations[i] = new Float2(Mathf.Clamp(dataA.X, rangeX.X, rangeX.Y), 0.0f);
                     }
                 }
 
@@ -681,6 +681,9 @@ namespace FlaxEditor.Surface.Archetypes
                 {
                     _animationX.Value = 0.0f;
                 }
+                var ranges = (Float4)Values[0];
+                _animationX.MinValue = ranges.X;
+                _animationX.MaxValue = ranges.Y;
                 _animationXLabel.Enabled = isValid;
                 _animationX.Enabled = isValid;
             }
@@ -732,7 +735,7 @@ namespace FlaxEditor.Surface.Archetypes
                         var dataB = (Guid)_node.Values[5 + i * 2];
 
                         pointsAnims[i] = dataB;
-                        pointsLocations[i] = new Float2(dataA.X, dataA.Y);
+                        pointsLocations[i] = new Float2(Mathf.Clamp(dataA.X, rangeX.X, rangeX.Y), Mathf.Clamp(dataA.Y, rangeY.X, rangeY.Y));
                     }
                 }
 
@@ -843,6 +846,11 @@ namespace FlaxEditor.Surface.Archetypes
                     _animationX.Value = 0.0f;
                     _animationY.Value = 0.0f;
                 }
+                var ranges = (Float4)Values[0];
+                _animationX.MinValue = ranges.X;
+                _animationX.MaxValue = ranges.Y;
+                _animationY.MinValue = ranges.Z;
+                _animationY.MaxValue = ranges.W;
                 _animationXLabel.Enabled = isValid;
                 _animationX.Enabled = isValid;
                 _animationYLabel.Enabled = isValid;

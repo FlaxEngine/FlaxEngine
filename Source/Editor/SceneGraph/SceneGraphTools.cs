@@ -92,11 +92,12 @@ namespace FlaxEditor.SceneGraph
 
         private static void FillTree(SceneGraphNode node, List<SceneGraphNode> result)
         {
-            result.AddRange(node.ChildNodes);
-            for (int i = 0; i < node.ChildNodes.Count; i++)
-            {
-                FillTree(node.ChildNodes[i], result);
-            }
+            if (result.Contains(node))
+                return;
+            result.Add(node);
+            var children = node.ChildNodes;
+            for (int i = 0; i < children.Count; i++)
+                FillTree(children[i], result);
         }
 
         /// <summary>
@@ -109,21 +110,9 @@ namespace FlaxEditor.SceneGraph
         {
             if (nodes == null || result == null)
                 throw new ArgumentNullException();
-
             result.Clear();
-
             for (var i = 0; i < nodes.Count; i++)
-            {
-                var target = nodes[i];
-
-                // Check if has been already added
-                if (result.Contains(target))
-                    continue;
-
-                // Add whole child tree to the results
-                result.Add(target);
-                FillTree(target, result);
-            }
+                FillTree(nodes[i], result);
         }
 
         /// <summary>
@@ -150,7 +139,6 @@ namespace FlaxEditor.SceneGraph
             if (node == null || result == null)
                 throw new ArgumentNullException();
             result.Clear();
-            result.Add(node);
             FillTree(node, result);
         }
     }

@@ -75,6 +75,8 @@ namespace FlaxEditor.Content
         /// <inheritdoc />
         public override void Create(string outputPath, object arg)
         {
+            bool resetTransform = false;
+            var transform = Transform.Identity;
             if (!(arg is Actor actor))
             {
                 // Create default prefab root object
@@ -86,8 +88,17 @@ namespace FlaxEditor.Content
                 // Cleanup it after usage
                 Object.Destroy(actor, 20.0f);
             }
+            else if (actor.Scene != null)
+            {
+                // Create prefab with identity transform so the actor instance on a level will have it customized
+                resetTransform = true;
+                transform = actor.LocalTransform;
+                actor.LocalTransform = Transform.Identity;
+            }
 
             PrefabManager.CreatePrefab(actor, outputPath, true);
+            if (resetTransform)
+                actor.LocalTransform = transform;
         }
 
         /// <inheritdoc />

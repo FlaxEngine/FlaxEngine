@@ -6,6 +6,7 @@ using System.IO;
 using FlaxEditor.SceneGraph;
 using FlaxEditor.SceneGraph.Actors;
 using FlaxEngine;
+using FlaxEngine.GUI;
 using Object = FlaxEngine.Object;
 
 namespace FlaxEditor.Modules
@@ -454,6 +455,41 @@ namespace FlaxEditor.Modules
             Profiler.EndEvent();
         }
 
+        private Dictionary<ContainerControl, Float2> _uiRootSizes;
+
+        internal void OnSaveStart(ContainerControl uiRoot)
+        {
+            // Force viewport UI to have fixed size during scene/prefabs saving to result in stable data (less mess in version control diffs)
+            if (_uiRootSizes == null)
+                _uiRootSizes = new Dictionary<ContainerControl, Float2>();
+            _uiRootSizes[uiRoot] = uiRoot.Size;
+            uiRoot.Size = new Float2(1920, 1080);
+        }
+
+        internal void OnSaveEnd(ContainerControl uiRoot)
+        {
+            // Restore cached size of the UI root container
+            if (_uiRootSizes != null && _uiRootSizes.Remove(uiRoot, out var size))
+            {
+                uiRoot.Size = size;
+            }
+        }
+
+        private void OnSceneSaving(Scene scene, Guid sceneId)
+        {
+            OnSaveStart(RootControl.GameRoot);
+        }
+        
+        private void OnSceneSaved(Scene scene, Guid sceneId)
+        {
+            OnSaveEnd(RootControl.GameRoot);
+        }
+        
+        private void OnSceneSaveError(Scene scene, Guid sceneId)
+        {
+            OnSaveEnd(RootControl.GameRoot);
+        }
+
         private void OnSceneLoaded(Scene scene, Guid sceneId)
         {
             var startTime = DateTime.UtcNow;
@@ -659,6 +695,9 @@ namespace FlaxEditor.Modules
             Root = new ScenesRootNode();
 
             // Bind events
+            Level.SceneSaving += OnSceneSaving;
+            Level.SceneSaved += OnSceneSaved;
+            Level.SceneSaveError += OnSceneSaveError;
             Level.SceneLoaded += OnSceneLoaded;
             Level.SceneUnloading += OnSceneUnloading;
             Level.ActorSpawned += OnActorSpawned;
@@ -673,6 +712,9 @@ namespace FlaxEditor.Modules
         public override void OnExit()
         {
             // Unbind events
+            Level.SceneSaving -= OnSceneSaving;
+            Level.SceneSaved -= OnSceneSaved;
+            Level.SceneSaveError -= OnSceneSaveError;
             Level.SceneLoaded -= OnSceneLoaded;
             Level.SceneUnloading -= OnSceneUnloading;
             Level.ActorSpawned -= OnActorSpawned;

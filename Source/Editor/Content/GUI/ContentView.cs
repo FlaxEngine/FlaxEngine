@@ -3,7 +3,9 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using FlaxEditor.GUI.Drag;
 using FlaxEditor.Options;
+using FlaxEditor.SceneGraph;
 using FlaxEditor.Windows;
 using FlaxEngine;
 using FlaxEngine.GUI;
@@ -52,13 +54,16 @@ namespace FlaxEditor.Content.GUI
     public partial class ContentView : ContainerControl, IContentItemOwner
     {
         private readonly List<ContentItem> _items = new List<ContentItem>(256);
-        private readonly List<ContentItem> _selection = new List<ContentItem>(16);
+        private readonly List<ContentItem> _selection = new List<ContentItem>();
 
         private float _viewScale = 1.0f;
         private ContentViewType _viewType = ContentViewType.Tiles;
-        private bool _isRubberBandSpanning = false;
-        private Float2 _mousePresslocation;
+        private bool _isRubberBandSpanning;
+        private Float2 _mousePressLocation;
         private Rectangle _rubberBandRectangle;
+
+        private bool _validDragOver;
+        private DragActors _dragActors;
 
         #region External Events
 
@@ -193,6 +198,7 @@ namespace FlaxEditor.Content.GUI
                         OnDelete?.Invoke(_selection);
                 }),
                 new InputActionsContainer.Binding(options => options.SelectAll, SelectAll),
+                new InputActionsContainer.Binding(options => options.DeselectAll, DeselectAll),
                 new InputActionsContainer.Binding(options => options.Rename, () =>
                 {
                     if (HasSelection && _selection[0].CanRename)
@@ -397,10 +403,7 @@ namespace FlaxEditor.Content.GUI
             PerformLayout();
         }
 
-        /// <summary>
-        /// Selects all the items.
-        /// </summary>
-        public void SelectAll()
+        private void BulkSelectUpdate(bool select = true)
         {
             // Lock layout
             var wasLayoutLocked = IsLayoutLocked;
@@ -408,11 +411,28 @@ namespace FlaxEditor.Content.GUI
 
             // Select items
             _selection.Clear();
-            _selection.AddRange(_items);
+            if (select)
+                _selection.AddRange(_items);
 
             // Unload and perform UI layout
             IsLayoutLocked = wasLayoutLocked;
             PerformLayout();
+        }
+
+        /// <summary>
+        /// Selects all the items.
+        /// </summary>
+        public void SelectAll()
+        {
+            BulkSelectUpdate(true);
+        }
+
+        /// <summary>
+        /// Deselects all the items.
+        /// </summary>
+        public void DeselectAll()
+        {
+            BulkSelectUpdate(false);
         }
 
         /// <summary>
@@ -595,7 +615,9 @@ namespace FlaxEditor.Content.GUI
             // Check if drag is over
             if (IsDragOver && _validDragOver)
             {
-                Render2D.FillRectangle(new Rectangle(Float2.Zero, Size), style.BackgroundSelected * 0.4f);
+                var bounds = new Rectangle(Float2.One, Size - Float2.One * 2);
+                Render2D.FillRectangle(bounds, style.Selection);
+                Render2D.DrawRectangle(bounds, style.SelectionBorder);
             }
 
             // Check if it's an empty thing
@@ -604,10 +626,11 @@ namespace FlaxEditor.Content.GUI
                 Render2D.DrawText(style.FontSmall, IsSearching ? "No results" : "Empty", new Rectangle(Float2.Zero, Size), style.ForegroundDisabled, TextAlignment.Center, TextAlignment.Center);
             }
 
+            // Selection
             if (_isRubberBandSpanning)
             {
-                Render2D.FillRectangle(_rubberBandRectangle, Color.Orange * 0.4f);
-                Render2D.DrawRectangle(_rubberBandRectangle, Color.Orange);
+                Render2D.FillRectangle(_rubberBandRectangle, style.Selection);
+                Render2D.DrawRectangle(_rubberBandRectangle, style.SelectionBorder);
             }
         }
 
@@ -619,8 +642,8 @@ namespace FlaxEditor.Content.GUI
 
             if (button == MouseButton.Left)
             {
-                _mousePresslocation = location;
-                _rubberBandRectangle = new Rectangle(_mousePresslocation, 0, 0);
+                _mousePressLocation = location;
+                _rubberBandRectangle = new Rectangle(_mousePressLocation, 0, 0);
                 _isRubberBandSpanning = true;
                 StartMouseCapture();
             }
@@ -632,8 +655,8 @@ namespace FlaxEditor.Content.GUI
         {
             if (_isRubberBandSpanning)
             {
-                _rubberBandRectangle.Width = location.X - _mousePresslocation.X;
-                _rubberBandRectangle.Height = location.Y - _mousePresslocation.Y;
+                _rubberBandRectangle.Width = location.X - _mousePressLocation.X;
+                _rubberBandRectangle.Height = location.Y - _mousePressLocation.Y;
             }
 
             base.OnMouseMove(location);
@@ -769,6 +792,114 @@ namespace FlaxEditor.Content.GUI
         }
 
         /// <inheritdoc />
+        public override DragDropEffect OnDragEnter(ref Float2 location, DragData data)
+        {
+            var result = base.OnDragEnter(ref location, data);
+            if (result != DragDropEffect.None)
+                return result;
+
+            // Check if drop file(s)
+            if (data is DragDataFiles)
+            {
+                _validDragOver = true;
+                return DragDropEffect.Copy;
+            }
+
+            // Check if drop actor(s)
+            if (_dragActors == null)
+                _dragActors = new DragActors(ValidateDragActors);
+            if (_dragActors.OnDragEnter(data))
+            {
+                _validDragOver = true;
+                return DragDropEffect.Move;
+            }
+
+            return DragDropEffect.None;
+        }
+
+        private bool ValidateDragActors(ActorNode actor)
+        {
+            return actor.CanCreatePrefab && Editor.Instance.Windows.ContentWin.CurrentViewFolder.CanHaveAssets;
+        }
+
+        private void ImportActors(DragActors actors, ContentFolder location)
+        {
+            foreach (var actorNode in actors.Objects)
+            {
+                var actor = actorNode.Actor;
+                if (actors.Objects.Contains(actorNode.ParentNode as ActorNode))
+                    continue;
+
+                Editor.Instance.Prefabs.CreatePrefab(actor, false);
+            }
+        }
+
+        /// <inheritdoc />
+        public override DragDropEffect OnDragMove(ref Float2 location, DragData data)
+        {
+            _validDragOver = false;
+            var result = base.OnDragMove(ref location, data);
+            if (result != DragDropEffect.None)
+                return result;
+
+            if (data is DragDataFiles)
+            {
+                _validDragOver = true;
+                result = DragDropEffect.Copy;
+            }
+            else if (_dragActors != null && _dragActors.HasValidDrag)
+            {
+                _validDragOver = true;
+                result = DragDropEffect.Move;
+            }
+
+            return result;
+        }
+
+        /// <inheritdoc />
+        public override DragDropEffect OnDragDrop(ref Float2 location, DragData data)
+        {
+            var result = base.OnDragDrop(ref location, data);
+            if (result != DragDropEffect.None)
+                return result;
+
+            // Check if drop file(s)
+            if (data is DragDataFiles files)
+            {
+                // Import files
+                var currentFolder = Editor.Instance.Windows.ContentWin.CurrentViewFolder;
+                if (currentFolder != null)
+                    Editor.Instance.ContentImporting.Import(files.Files, currentFolder);
+                result = DragDropEffect.Copy;
+            }
+            // Check if drop actor(s)
+            else if (_dragActors != null && _dragActors.HasValidDrag)
+            {
+                // Import actors
+                var currentFolder = Editor.Instance.Windows.ContentWin.CurrentViewFolder;
+                if (currentFolder != null)
+                    ImportActors(_dragActors, currentFolder);
+
+                _dragActors.OnDragDrop();
+                result = DragDropEffect.Move;
+            }
+
+            // Clear cache
+            _validDragOver = false;
+
+            return result;
+        }
+
+        /// <inheritdoc />
+        public override void OnDragLeave()
+        {
+            _validDragOver = false;
+            _dragActors?.OnDragLeave();
+
+            base.OnDragLeave();
+        }
+
+        /// <inheritdoc />
         protected override void PerformLayoutBeforeChildren()
         {
             float width = GetClientArea().Width;
@@ -833,6 +964,9 @@ namespace FlaxEditor.Content.GUI
         /// <inheritdoc />
         public override void OnDestroy()
         {
+            if (IsDisposing)
+                return;
+
             // Ensure to unlink all items
             ClearItems();
 

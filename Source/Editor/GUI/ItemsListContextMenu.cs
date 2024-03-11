@@ -122,6 +122,10 @@ namespace FlaxEditor.GUI
                 if (IsMouseOver || IsFocused)
                     Render2D.FillRectangle(new Rectangle(Float2.Zero, Size), style.BackgroundHighlighted);
 
+                // Indent for drop panel items is handled by drop panel margin
+                if (Parent is not DropPanel)
+                    textRect.Location += new Float2(Editor.Instance.Icons.ArrowRight12.Size.X + 2, 0);
+
                 // Draw all highlights
                 if (_highlights != null)
                 {
@@ -262,6 +266,10 @@ namespace FlaxEditor.GUI
                         }
                     }
                     category.Visible = anyVisible;
+                    if (string.IsNullOrEmpty(_searchBox.Text))
+                        category.Close(false);
+                    else
+                        category.Open(false);
                 }
             }
 
@@ -338,9 +346,14 @@ namespace FlaxEditor.GUI
                     var categoryPanel = new DropPanel
                     {
                         HeaderText = item.Category,
+                        ArrowImageOpened = new SpriteBrush(Editor.Instance.Icons.ArrowDown12),
+                        ArrowImageClosed = new SpriteBrush(Editor.Instance.Icons.ArrowRight12),
+                        EnableDropDownIcon = true,
+                        ItemsMargin = new Margin(28, 0, 2, 2),
+                        HeaderColor = Style.Current.Background,
                         Parent = parent,
                     };
-                    categoryPanel.Open(false);
+                    categoryPanel.Close(false);
                     _categoryPanels.Add(categoryPanel);
                     parent = categoryPanel;
                 }
@@ -382,6 +395,7 @@ namespace FlaxEditor.GUI
                             item2.UpdateFilter(null);
                     }
                     category.Visible = true;
+                    category.Close(false);
                 }
             }
 

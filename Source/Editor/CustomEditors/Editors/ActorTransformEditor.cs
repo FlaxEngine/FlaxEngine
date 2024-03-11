@@ -27,6 +27,11 @@ namespace FlaxEditor.CustomEditors.Editors
         public static Color AxisColorZ = new Color(0.0f, 0.0235294f, 1.0f, 1.0f);
 
         /// <summary>
+        /// The axes colors grey out scale when input field is not focused.
+        /// </summary>
+        public static float AxisGreyOutFactor = 0.6f;
+
+        /// <summary>
         /// Custom editor for actor position property.
         /// </summary>
         /// <seealso cref="FlaxEditor.CustomEditors.Editors.Vector3Editor" />
@@ -39,12 +44,11 @@ namespace FlaxEditor.CustomEditors.Editors
 
                 // Override colors
                 var back = FlaxEngine.GUI.Style.Current.TextBoxBackground;
-                var grayOutFactor = 0.6f;
-                XElement.ValueBox.BorderColor = Color.Lerp(AxisColorX, back, grayOutFactor);
+                XElement.ValueBox.BorderColor = Color.Lerp(AxisColorX, back, AxisGreyOutFactor);
                 XElement.ValueBox.BorderSelectedColor = AxisColorX;
-                YElement.ValueBox.BorderColor = Color.Lerp(AxisColorY, back, grayOutFactor);
+                YElement.ValueBox.BorderColor = Color.Lerp(AxisColorY, back, AxisGreyOutFactor);
                 YElement.ValueBox.BorderSelectedColor = AxisColorY;
-                ZElement.ValueBox.BorderColor = Color.Lerp(AxisColorZ, back, grayOutFactor);
+                ZElement.ValueBox.BorderColor = Color.Lerp(AxisColorZ, back, AxisGreyOutFactor);
                 ZElement.ValueBox.BorderSelectedColor = AxisColorZ;
             }
         }
@@ -62,12 +66,11 @@ namespace FlaxEditor.CustomEditors.Editors
 
                 // Override colors
                 var back = FlaxEngine.GUI.Style.Current.TextBoxBackground;
-                var grayOutFactor = 0.6f;
-                XElement.ValueBox.BorderColor = Color.Lerp(AxisColorX, back, grayOutFactor);
+                XElement.ValueBox.BorderColor = Color.Lerp(AxisColorX, back, AxisGreyOutFactor);
                 XElement.ValueBox.BorderSelectedColor = AxisColorX;
-                YElement.ValueBox.BorderColor = Color.Lerp(AxisColorY, back, grayOutFactor);
+                YElement.ValueBox.BorderColor = Color.Lerp(AxisColorY, back, AxisGreyOutFactor);
                 YElement.ValueBox.BorderSelectedColor = AxisColorY;
-                ZElement.ValueBox.BorderColor = Color.Lerp(AxisColorZ, back, grayOutFactor);
+                ZElement.ValueBox.BorderColor = Color.Lerp(AxisColorZ, back, AxisGreyOutFactor);
                 ZElement.ValueBox.BorderSelectedColor = AxisColorZ;
             }
         }

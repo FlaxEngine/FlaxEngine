@@ -484,6 +484,7 @@ namespace FlaxEditor.GUI
                         cm.AddSeparator();
                         cm.AddButton("Edit all keyframes", () => _editor.EditAllKeyframes(this, location));
                         cm.AddButton("Select all keyframes", _editor.SelectAll);
+                        cm.AddButton("Deselect all keyframes", _editor.DeselectAll);
                         cm.AddButton("Copy all keyframes", () =>
                         {
                             _editor.SelectAll();

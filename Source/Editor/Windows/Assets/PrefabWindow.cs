@@ -355,6 +355,8 @@ namespace FlaxEditor.Windows.Assets
 
             try
             {
+                Editor.Scene.OnSaveStart(_viewport);
+
                 // Simply update changes
                 Editor.Prefabs.ApplyAll(_viewport.Instance);
 
@@ -370,6 +372,10 @@ namespace FlaxEditor.Windows.Assets
                 }
 
                 throw;
+            }
+            finally
+            {
+                Editor.Scene.OnSaveEnd(_viewport);
             }
         }
 

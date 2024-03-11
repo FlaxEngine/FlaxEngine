@@ -13,12 +13,11 @@
 #else
 // Cached methods (FlaxEngine.CSharp.dll is loaded only once)
 MMethod* UIControl_Serialize = nullptr;
-MMethod* UIControl_SerializeDiff = nullptr;
 MMethod* UIControl_Deserialize = nullptr;
 MMethod* UIControl_ParentChanged = nullptr;
 MMethod* UIControl_TransformChanged = nullptr;
 MMethod* UIControl_OrderInParentChanged = nullptr;
-MMethod* UIControl_ActiveInTreeChanged = nullptr;
+MMethod* UIControl_ActiveChanged = nullptr;
 MMethod* UIControl_BeginPlay = nullptr;
 MMethod* UIControl_EndPlay = nullptr;
 
@@ -39,18 +38,19 @@ UIControl::UIControl(const SpawnParams& params)
     : Actor(params)
 {
 #if !COMPILE_WITHOUT_CSHARP
+    Platform::MemoryBarrier();
     if (UIControl_Serialize == nullptr)
     {
         MClass* mclass = GetClass();
-        UIControl_SerializeDiff = mclass->GetMethod("SerializeDiff", 2);
         UIControl_Deserialize = mclass->GetMethod("Deserialize", 2);
         UIControl_ParentChanged = mclass->GetMethod("ParentChanged");
         UIControl_TransformChanged = mclass->GetMethod("TransformChanged");
         UIControl_OrderInParentChanged = mclass->GetMethod("OrderInParentChanged");
-        UIControl_ActiveInTreeChanged = mclass->GetMethod("ActiveInTreeChanged");
+        UIControl_ActiveChanged = mclass->GetMethod("ActiveChanged");
         UIControl_BeginPlay = mclass->GetMethod("BeginPlay");
         UIControl_EndPlay = mclass->GetMethod("EndPlay");
-        UIControl_Serialize = mclass->GetMethod("Serialize", 1);
+        UIControl_Serialize = mclass->GetMethod("Serialize", 2);
+        Platform::MemoryBarrier();
     }
 #endif
 }
@@ -82,8 +82,7 @@ void UIControl::Serialize(SerializeStream& stream, const void* otherObj)
     params[0] = &controlType;
     params[1] = other ? other->GetOrCreateManagedInstance() : nullptr;
     MObject* exception = nullptr;
-    const auto method = other ? UIControl_SerializeDiff : UIControl_Serialize;
-    const auto invokeResultStr = (MString*)method->Invoke(GetOrCreateManagedInstance(), params, &exception);
+    const auto invokeResultStr = (MString*)UIControl_Serialize->Invoke(GetOrCreateManagedInstance(), params, &exception);
     if (exception)
     {
         MException ex(exception);
@@ -208,12 +207,12 @@ void UIControl::OnOrderInParentChanged()
     UICONTROL_INVOKE(OrderInParentChanged);
 }
 
-void UIControl::OnActiveInTreeChanged()
+void UIControl::OnActiveChanged()
 {
-    UICONTROL_INVOKE(ActiveInTreeChanged);
+    UICONTROL_INVOKE(ActiveChanged);
 
     // Base
-    Actor::OnActiveInTreeChanged();
+    Actor::OnActiveChanged();
 }
 
 #if !COMPILE_WITHOUT_CSHARP

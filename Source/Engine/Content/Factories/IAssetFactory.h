@@ -20,11 +20,7 @@ public:
     /// <summary>
     /// Gets the all registered assets factories. Key is asset typename, value is the factory object.
     /// </summary>
-    static Collection& Get()
-    {
-        static Collection Factories(1024);
-        return Factories;
-    }
+    static Collection& Get();
 
 public:
     /// <summary>

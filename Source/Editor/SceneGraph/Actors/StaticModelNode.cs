@@ -1,5 +1,11 @@
 // Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
+#if USE_LARGE_WORLDS
+using Real = System.Double;
+#else
+using Real = System.Single;
+#endif
+
 using System;
 using System.Collections.Generic;
 using FlaxEditor.Content;
@@ -25,18 +31,20 @@ namespace FlaxEditor.SceneGraph.Actors
         }
 
         /// <inheritdoc />
-        public override bool OnVertexSnap(ref Vector3 point, out Vector3 result)
+        public override bool OnVertexSnap(ref Ray ray, Real hitDistance, out Vector3 result)
         {
-            result = point;
+            // Find the closest vertex to bounding box point (collision detection approximation)
+            result = ray.GetPoint(hitDistance);
             var model = ((StaticModel)Actor).Model;
             if (model && !model.WaitForLoaded())
             {
                 // TODO: move to C++ and use cached vertex buffer internally inside the Mesh
                 if (_vertices == null)
                     _vertices = new();
-                var pointLocal = (Float3)Actor.Transform.WorldToLocal(point);
-                var minDistance = float.MaxValue;
-                foreach (var lod in model.LODs)
+                var pointLocal = (Float3)Actor.Transform.WorldToLocal(result);
+                var minDistance = Real.MaxValue;
+                var lodIndex = 0; // TODO: use LOD index based on the game view
+                var lod = model.LODs[lodIndex];
                 {
                     var hit = false;
                     foreach (var mesh in lod.Meshes)

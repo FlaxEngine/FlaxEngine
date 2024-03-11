@@ -90,7 +90,14 @@ namespace Flax.Build.Platforms
             {
                 if (VisualStudioInstance.HasIDE(VisualStudioVersion.VisualStudio2022))
                 {
-                    toolsetVer = WindowsPlatformToolset.v143;
+                    if (toolsets.Keys.Contains(WindowsPlatformToolset.v144))
+                    {
+                        toolsetVer = WindowsPlatformToolset.v144;
+                    }
+                    else
+                    {
+                        toolsetVer = WindowsPlatformToolset.v143;
+                    }
                 }
                 else if (VisualStudioInstance.HasIDE(VisualStudioVersion.VisualStudio2019))
                 {
@@ -199,6 +206,7 @@ namespace Flax.Build.Platforms
             case WindowsPlatformToolset.v141:
             case WindowsPlatformToolset.v142:
             case WindowsPlatformToolset.v143:
+            case WindowsPlatformToolset.v144:
             {
                 switch (Architecture)
                 {
@@ -378,6 +386,7 @@ namespace Flax.Build.Platforms
             var vcToolChainDir = toolsets[Toolset];
             switch (Toolset)
             {
+            case WindowsPlatformToolset.v144:
             case WindowsPlatformToolset.v143:
             case WindowsPlatformToolset.v142:
             case WindowsPlatformToolset.v141: return Path.Combine(vcToolChainDir, "lib", "x86", "store", "references");

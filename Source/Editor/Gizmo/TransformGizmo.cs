@@ -263,6 +263,8 @@ namespace FlaxEditor.Gizmo
             // Note: because selection may contain objects and their children we have to split them and get only parents.
             // Later during transformation we apply translation/scale/rotation only on them (children inherit transformations)
             SceneGraphTools.BuildNodesParents(_selection, _selectionParents);
+
+            base.OnSelectionChanged(newSelection);
         }
 
         /// <inheritdoc />

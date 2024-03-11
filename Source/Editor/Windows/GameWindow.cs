@@ -23,6 +23,7 @@ namespace FlaxEditor.Windows
         private bool _showGUI = true;
         private bool _showDebugDraw = false;
         private bool _isMaximized = false, _isUnlockingMouse = false;
+        private bool _isFloating = false, _isBorderless = false;
         private bool _cursorVisible = true;
         private float _gameStartTime;
         private GUI.Docking.DockState _maximizeRestoreDockState;
@@ -68,7 +69,7 @@ namespace FlaxEditor.Windows
         }
 
         /// <summary>
-        /// Gets or sets a value indicating whether game window is maximized (only in play mode).
+        /// Gets or sets a value indicating whether the game window is maximized (only in play mode).
         /// </summary>
         private bool IsMaximized
         {
@@ -78,20 +79,42 @@ namespace FlaxEditor.Windows
                 if (_isMaximized == value)
                     return;
                 _isMaximized = value;
+                if (value)
+                {
+                    IsFloating = true;
+                    var rootWindow = RootWindow;
+                    rootWindow.Maximize();
+                }
+                else
+                {
+                    IsFloating = false;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether the game window is floating (popup, only in play mode).
+        /// </summary>
+        private bool IsFloating
+        {
+            get => _isFloating;
+            set
+            {
+                if (_isFloating == value)
+                    return;
+                _isFloating = value;
                 var rootWindow = RootWindow;
                 if (value)
                 {
-                    // Maximize
                     _maximizeRestoreDockTo = _dockedTo;
                     _maximizeRestoreDockState = _dockedTo.TryGetDockState(out _);
                     if (_maximizeRestoreDockState != GUI.Docking.DockState.Float)
                     {
                         var monitorBounds = Platform.GetMonitorBounds(PointToScreen(Size * 0.5f));
-                        ShowFloating(monitorBounds.Location + new Float2(200, 200), Float2.Zero, WindowStartPosition.Manual);
-                        rootWindow = RootWindow;
+                        var size = DefaultSize;
+                        var location = monitorBounds.Location + monitorBounds.Size * 0.5f - size * 0.5f;
+                        ShowFloating(location, size, WindowStartPosition.Manual);
                     }
-                    if (rootWindow != null && !rootWindow.IsMaximized)
-                        rootWindow.Maximize();
                 }
                 else
                 {
@@ -101,6 +124,33 @@ namespace FlaxEditor.Windows
                     if (_maximizeRestoreDockTo != null && _maximizeRestoreDockTo.IsDisposing)
                         _maximizeRestoreDockTo = null;
                     Show(_maximizeRestoreDockState, _maximizeRestoreDockTo);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether the game window is borderless (only in play mode).
+        /// </summary>
+        private bool IsBorderless
+        {
+            get => _isBorderless;
+            set
+            {
+                if (_isBorderless == value)
+                    return;
+                _isBorderless = value;
+                if (value)
+                {
+                    IsFloating = true;
+                    var rootWindow = RootWindow;
+                    var monitorBounds = Platform.GetMonitorBounds(rootWindow.RootWindow.Window.ClientPosition);
+                    rootWindow.Window.Position = monitorBounds.Location;
+                    rootWindow.Window.SetBorderless(true);
+                    rootWindow.Window.ClientSize = monitorBounds.Size;
+                }
+                else
+                {
+                    IsFloating = false;
                 }
             }
         }
@@ -318,6 +368,20 @@ namespace FlaxEditor.Windows
             InputActions.Add(options => options.TakeScreenshot, () => Screenshot.Capture(string.Empty));
             InputActions.Add(options => options.DebuggerUnlockMouse, UnlockMouseInPlay);
             InputActions.Add(options => options.ToggleFullscreen, () => { if (Editor.IsPlayMode) IsMaximized = !IsMaximized; });
+            InputActions.Add(options => options.Play, Editor.Instance.Simulation.DelegatePlayOrStopPlayInEditor);
+            InputActions.Add(options => options.Pause, Editor.Instance.Simulation.RequestResumeOrPause);
+            InputActions.Add(options => options.StepFrame, Editor.Instance.Simulation.RequestPlayOneFrame);
+            InputActions.Add(options => options.ProfilerStartStop, () =>
+            {
+                bool recording = !Editor.Instance.Windows.ProfilerWin.LiveRecording;
+                Editor.Instance.Windows.ProfilerWin.LiveRecording = recording;
+                Editor.Instance.UI.AddStatusMessage($"Profiling {(recording ? "started" : "stopped")}.");
+            });
+            InputActions.Add(options => options.ProfilerClear, () =>
+            {
+                Editor.Instance.Windows.ProfilerWin.Clear();
+                Editor.Instance.UI.AddStatusMessage($"Profiling results cleared.");
+            });
         }
 
         private void ChangeViewportRatio(ViewportScaleOptions v)
@@ -474,7 +538,9 @@ namespace FlaxEditor.Windows
         /// <inheritdoc />
         public override void OnPlayEnd()
         {
+            IsFloating = false;
             IsMaximized = false;
+            IsBorderless = false;
             Cursor = CursorType.Default;
         }
 
@@ -856,7 +922,7 @@ namespace FlaxEditor.Windows
             var selection = Editor.SceneEditing.Selection;
             for (var i = 0; i < selection.Count; i++)
             {
-                if (selection[i].EditableObject is UIControl controlActor && controlActor && controlActor.Control != null)
+                if (selection[i].EditableObject is UIControl controlActor && controlActor && controlActor.Control != null && controlActor.Control.VisibleInHierarchy && controlActor.Control.RootWindow != null)
                 {
                     if (!drawAnySelectedControl)
                     {
@@ -902,7 +968,7 @@ namespace FlaxEditor.Windows
                 if (animTime < 0)
                 {
                     float alpha = Mathf.Saturate(-animTime / fadeOutTime);
-                    Render2D.DrawRectangle(new Rectangle(new Float2(4), Size - 8), Color.Orange * alpha);
+                    Render2D.DrawRectangle(new Rectangle(new Float2(4), Size - 8), style.SelectionBorder * alpha);
                 }
 
                 // Add overlay during debugger breakpoint hang
@@ -954,6 +1020,29 @@ namespace FlaxEditor.Windows
                 RootWindow?.Window?.Focus();
             }
             Focus();
+        }
+
+        /// <summary>
+        /// Apply the selected window mode to the game window.
+        /// </summary>
+        /// <param name="mode"></param>
+        public void SetWindowMode(InterfaceOptions.GameWindowMode mode)
+        {
+            switch (mode)
+            {
+            case InterfaceOptions.GameWindowMode.Docked:
+                break;
+            case InterfaceOptions.GameWindowMode.PopupWindow:
+                IsFloating = true;
+                break;
+            case InterfaceOptions.GameWindowMode.MaximizedWindow:
+                IsMaximized = true;
+                break;
+            case InterfaceOptions.GameWindowMode.BorderlessWindow:
+                IsBorderless = true;
+                break;
+            default: throw new ArgumentOutOfRangeException(nameof(mode), mode, null);
+            }
         }
 
         /// <summary>

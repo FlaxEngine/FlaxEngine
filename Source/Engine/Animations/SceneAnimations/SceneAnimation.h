@@ -289,6 +289,7 @@ public:
             /// The keyframes array (items count is KeyframesCount). Each keyframe is represented by pair of time (of type float) and the value data (of size ValueSize).
             /// </summary>
             void* Keyframes;
+            int32 KeyframesSize;
         };
     };
 

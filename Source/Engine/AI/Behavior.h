@@ -11,7 +11,7 @@
 /// <summary>
 /// Behavior instance script that runs Behavior Tree execution.
 /// </summary>
-API_CLASS() class FLAXENGINE_API Behavior : public Script
+API_CLASS(Attributes="Category(\"Flax Engine\")") class FLAXENGINE_API Behavior : public Script
 {
     API_AUTO_SERIALIZATION();
     DECLARE_SCRIPTING_TYPE(Behavior);

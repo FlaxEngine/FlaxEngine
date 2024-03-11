@@ -168,29 +168,29 @@ namespace FlaxEditor.GUI.ContextMenu
             bool isUp = false, isLeft = false;
             if (UseAutomaticDirectionFix)
             {
+                var parentMenu = parent as ContextMenu;
                 if (monitorBounds.Bottom < rightBottomLocationSS.Y)
                 {
-                    // Direction: up
                     isUp = true;
                     locationSS.Y -= dpiSize.Y;
-
-                    // Offset to fix sub-menu location
-                    if (parent is ContextMenu menu && menu._childCM != null)
+                    if (parentMenu != null && parentMenu._childCM != null)
                         locationSS.Y += 30.0f * dpiScale;
                 }
-                if (monitorBounds.Right < rightBottomLocationSS.X || _parentCM?.Direction == ContextMenuDirection.LeftDown || _parentCM?.Direction == ContextMenuDirection.LeftUp)
+                if (parentMenu == null)
                 {
-                    // Direction: left
-                    isLeft = true;
-
-                    if (IsSubMenu && _parentCM != null)
+                    if (monitorBounds.Right < rightBottomLocationSS.X)
                     {
-                        locationSS.X -= _parentCM.Width + dpiSize.X;
-                    }
-                    else
-                    {
+                        isLeft = true;
                         locationSS.X -= dpiSize.X;
                     }
+                }
+                else if (monitorBounds.Right < rightBottomLocationSS.X || _parentCM?.Direction == ContextMenuDirection.LeftDown || _parentCM?.Direction == ContextMenuDirection.LeftUp)
+                {
+                    isLeft = true;
+                    if (IsSubMenu && _parentCM != null)
+                        locationSS.X -= _parentCM.Width + dpiSize.X;
+                    else
+                        locationSS.X -= dpiSize.X;
                 }
             }
 

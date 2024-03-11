@@ -360,6 +360,17 @@ namespace FlaxEditor.GUI.ContextMenu
         }
 
         /// <inheritdoc />
+        public override void Show(Control parent, Float2 location)
+        {
+            // Remove last separator to make context menu look better
+            int lastIndex = _panel.Children.Count - 1;
+            if (lastIndex >= 0 && _panel.Children[lastIndex] is ContextMenuSeparator separator)
+                separator.Dispose();
+
+            base.Show(parent, location);
+        }
+
+        /// <inheritdoc />
         public override bool ContainsPoint(ref Float2 location, bool precise)
         {
             if (base.ContainsPoint(ref location, precise))

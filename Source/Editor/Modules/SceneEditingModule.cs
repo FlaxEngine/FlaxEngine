@@ -60,13 +60,26 @@ namespace FlaxEditor.Modules
         {
         }
 
+        private void BulkScenesSelectUpdate(bool select = true)
+        {
+            // Blank list deselects all
+            Select(select ? Editor.Scene.Root.ChildNodes : new List<SceneGraphNode>());
+        }
+
         /// <summary>
         /// Selects all scenes.
         /// </summary>
         public void SelectAllScenes()
         {
-            // Select all scenes (linked to the root node)
-            Select(Editor.Scene.Root.ChildNodes);
+            BulkScenesSelectUpdate(true);
+        }
+
+        /// <summary>
+        /// Deselects all scenes.
+        /// </summary>
+        public void DeselectAllScenes()
+        {
+            BulkScenesSelectUpdate(false);
         }
 
         /// <summary>
@@ -320,7 +333,7 @@ namespace FlaxEditor.Modules
             actorNode.PostSpawn();
 
             // Create undo action
-            IUndoAction action = new DeleteActorsAction(new List<SceneGraphNode>(1) { actorNode }, true);
+            IUndoAction action = new DeleteActorsAction(actorNode, true);
             if (autoSelect)
             {
                 var before = Selection.ToArray();
