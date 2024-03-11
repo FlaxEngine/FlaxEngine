@@ -41,26 +41,6 @@ void Script::SetEnabled(bool value)
     // Check if value will change
     if (GetEnabled() != value)
     {
-        //this will trigger if somone calls directy to OnStart when object was never initialized or object was never initialized and OnStart contaions SetEnabled call
-        //example:
-        //SetEnabled(true)
-        //SetEnabled(false)
-        //SetEnabled(true)
-        if (_setEnableSensiviteCodeLock)
-        {
-            //let the API user know abaut this
-            //silence is the worst
-            LOG_STR(Warning, TEXT(
-                "Can't modify Enabled state in OnStart() state was modyfaied before object got a chanse to complite the last funcion call.\n"
-                "This might cause unexpected behavior in youre scripts.\n"
-                "See:\n"
-                "https://docs.flaxengine.com/manual/scripting/events.html?tabs=code-csharp\n"
-                "Note:\n"
-                "If you want to force the object to be disabled when the game is started, consider using OnAwake()."));
-
-            return;
-        }
-
         // Change state
         _enabled = value;
 
@@ -69,12 +49,27 @@ void Script::SetEnabled(bool value)
         {
             if (_enabled)
             {
-                if (_wasEnableCalled)
+                if (!_wasEnableCalled)
                 {
-                    Enable();
-                }
-                else
-                {
+                    //this will trigger if somone calls directy to OnStart when object was never initialized or object was never initialized and OnStart contaions SetEnabled call
+                    //example:
+                    //SetEnabled(true)
+                    //SetEnabled(false)
+                    //SetEnabled(true)
+                    if (_setEnableSensiviteCodeLock)
+                    {
+                        //let the API user know abaut this
+                        //silence is the worst
+                        LOG_STR(Warning, TEXT(
+                            "Can't modify Enabled state in OnStart() state was modyfaied before object got a chanse to complite the last funcion call.\n"
+                            "This might cause unexpected behavior in youre scripts.\n"
+                            "See:\n"
+                            "https://docs.flaxengine.com/manual/scripting/events.html?tabs=code-csharp\n"
+                            "Note:\n"
+                            "If you want to force the object to be disabled when the game is started, consider using OnAwake()."));
+
+                        return;
+                    }
                     //lock the funcion from geting called from the Start
                     _setEnableSensiviteCodeLock = 1;
 
