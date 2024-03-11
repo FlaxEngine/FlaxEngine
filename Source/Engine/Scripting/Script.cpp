@@ -13,6 +13,7 @@
 #include "Engine/Level/Scene/Scene.h"
 #include "Engine/Serialization/Serialization.h"
 #include "Engine/Threading/Threading.h"
+#include "Engine/Debug/DebugLog.h"
 
 #if USE_EDITOR
 #define CHECK_EXECUTE_IN_EDITOR if (Editor::IsPlayMode || _executeInEditor)
@@ -47,12 +48,33 @@ void Script::SetEnabled(bool value)
         // Call event for the script
         if (_parent == nullptr || (_parent->IsDuringPlay() && _parent->IsActiveInHierarchy()))
         {
-            if (value)
+            if (_enabled)
             {
-                if (!_wasEnableCalled)
+                if (_wasEnableCalled)
+                {
+                    Enable();
+                }
+                else
                 {
                     Start();
-                    Enable();
+                    // if start constans the SetEnabled it will finish before this code so the check is necessary
+                    if (_enabled == value)
+                    {
+                        Enable();
+                    }
+                    else
+                    {
+                        //let the API user know abaut this
+                        //silence is the worst
+                        LOG(Warning, 
+                            "Can't modify Enabled state in {0}.OnStart() because it was modyfaied before object got a chanse to complite the last funcion call.\n"
+                            "This might cause unexpected behavior in youre scripts.\n"
+                            "See:\n"
+                            "https://docs.flaxengine.com/manual/scripting/events.html?tabs=code-csharp\n"
+                            "Note:\n"
+                            "if u trying to force object state to disabled at the start of the game use OnAwake instead",
+                            this->GetClass()->GetFullName().ToString(), _enabled);
+                    }
                 }
             }
             else if (_wasEnableCalled)
@@ -203,15 +225,7 @@ void Script::Start()
 
 void Script::Enable()
 {
-    if (GetEnabled())
-    {
-        // TODO: Look in to this
-        // HACK: it will do for now at lest it will not crash
-        // [Nori_SC note] the CheckFailed is triggering more then once in some cases im leaving the log as a reminder
-        Platform::CheckFailed("Cant enable object because was not disabled \nknown bug:\n""https://github.com/FlaxEngine/FlaxEngine/issues/2311", __FILE__, __LINE__);
-        return; 
-    }
-    
+    ASSERT(GetEnabled())
     ASSERT(!_wasEnableCalled);
 
     if (_parent && _parent->GetScene())
