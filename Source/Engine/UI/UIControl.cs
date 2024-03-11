@@ -1,12 +1,7 @@
 // Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 using System;
-using System.Globalization;
-using System.IO;
-using System.Text;
 using FlaxEngine.GUI;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Serialization;
 
 namespace FlaxEngine
 {
@@ -49,20 +44,21 @@ namespace FlaxEngine
                     var containerControl = _control as ContainerControl;
                     if (containerControl != null)
                         containerControl.UnlockChildrenRecursive();
+                    _control.Visible = IsActive;
                     _control.Parent = GetParent();
                     _control.IndexInParent = OrderInParent;
                     _control.Location = new Float2(LocalPosition);
                     _control.LocationChanged += OnControlLocationChanged;
 
                     // Link children UI controls
-                    if (containerControl != null && IsActiveInHierarchy)
+                    if (containerControl != null)
                     {
                         var children = ChildrenCount;
                         var parent = Parent;
                         for (int i = 0; i < children; i++)
                         {
                             var child = GetChild(i) as UIControl;
-                            if (child != null && child.IsActiveInHierarchy && child.HasControl && child != parent)
+                            if (child != null && child.HasControl && child != parent)
                             {
                                 child.Control.Parent = containerControl;
                             }
@@ -108,7 +104,6 @@ namespace FlaxEngine
                     p2 = c.PointToParent(ref p2);
                     p3 = c.PointToParent(ref p3);
                     p4 = c.PointToParent(ref p4);
-
                     c = c.Parent;
                 }
                 var min = Float2.Min(Float2.Min(p1, p2), Float2.Min(p3, p4));
@@ -120,7 +115,6 @@ namespace FlaxEngine
                 {
                     Extents = new Vector3(size * 0.5f, Mathf.Epsilon)
                 };
-
                 canvasRoot.Canvas.GetWorldMatrix(out Matrix world);
                 Matrix.Translation(min.X + size.X * 0.5f, min.Y + size.Y * 0.5f, 0, out Matrix offset);
                 Matrix.Multiply(ref offset, ref world, out var boxWorld);
@@ -297,15 +291,6 @@ namespace FlaxEngine
 
         private ContainerControl GetParent()
         {
-            // Don't link disabled actors
-            if (!IsActiveInHierarchy)
-                return null;
-#if FLAX_EDITOR
-            // Prefab editor doesn't fire BeginPlay so for disabled actors we don't unlink them so do it here
-            if (!IsActive)
-                return null;
-#endif
-
             var parent = Parent;
             if (parent is UIControl uiControl && uiControl.Control is ContainerControl uiContainerControl)
                 return uiContainerControl;
@@ -357,6 +342,7 @@ namespace FlaxEngine
         {
             if (_control != null && !_blockEvents)
             {
+                _control.Visible = IsActive;
                 _control.Parent = GetParent();
                 _control.IndexInParent = OrderInParent;
             }
@@ -370,19 +356,11 @@ namespace FlaxEngine
             }
         }
 
-        internal void ActiveInTreeChanged()
+        internal void ActiveChanged()
         {
             if (_control != null && !_blockEvents)
             {
-                // Skip if this control is inactive and it's parent too (parent will unlink from hierarchy but children will stay connected while being inactive)
-                if (!IsActiveInHierarchy && Parent && !Parent.IsActive)
-                {
-                    return;
-                }
-
-                // Link or unlink control (won't modify Enable/Visible state)
-                _control.Parent = GetParent();
-                _control.IndexInParent = OrderInParent;
+                _control.Visible = IsActive;
             }
         }
 
@@ -398,6 +376,7 @@ namespace FlaxEngine
         {
             if (_control != null)
             {
+                _control.Visible = IsActive;
                 _control.Parent = GetParent();
                 _control.IndexInParent = OrderInParent;
                 Internal_GetNavTargets(__unmanagedPtr, out UIControl up, out UIControl down, out UIControl left, out UIControl right);

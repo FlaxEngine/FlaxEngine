@@ -17,7 +17,7 @@ MMethod* UIControl_Deserialize = nullptr;
 MMethod* UIControl_ParentChanged = nullptr;
 MMethod* UIControl_TransformChanged = nullptr;
 MMethod* UIControl_OrderInParentChanged = nullptr;
-MMethod* UIControl_ActiveInTreeChanged = nullptr;
+MMethod* UIControl_ActiveChanged = nullptr;
 MMethod* UIControl_BeginPlay = nullptr;
 MMethod* UIControl_EndPlay = nullptr;
 
@@ -46,7 +46,7 @@ UIControl::UIControl(const SpawnParams& params)
         UIControl_ParentChanged = mclass->GetMethod("ParentChanged");
         UIControl_TransformChanged = mclass->GetMethod("TransformChanged");
         UIControl_OrderInParentChanged = mclass->GetMethod("OrderInParentChanged");
-        UIControl_ActiveInTreeChanged = mclass->GetMethod("ActiveInTreeChanged");
+        UIControl_ActiveChanged = mclass->GetMethod("ActiveChanged");
         UIControl_BeginPlay = mclass->GetMethod("BeginPlay");
         UIControl_EndPlay = mclass->GetMethod("EndPlay");
         UIControl_Serialize = mclass->GetMethod("Serialize", 2);
@@ -207,12 +207,12 @@ void UIControl::OnOrderInParentChanged()
     UICONTROL_INVOKE(OrderInParentChanged);
 }
 
-void UIControl::OnActiveInTreeChanged()
+void UIControl::OnActiveChanged()
 {
-    UICONTROL_INVOKE(ActiveInTreeChanged);
+    UICONTROL_INVOKE(ActiveChanged);
 
     // Base
-    Actor::OnActiveInTreeChanged();
+    Actor::OnActiveChanged();
 }
 
 #if !COMPILE_WITHOUT_CSHARP
