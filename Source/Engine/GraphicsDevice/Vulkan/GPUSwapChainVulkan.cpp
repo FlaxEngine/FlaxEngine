@@ -352,7 +352,7 @@ bool GPUSwapChainVulkan::CreateSwapChain(int32 width, int32 height)
     VkSwapchainCreateInfoKHR swapChainInfo;
     RenderToolsVulkan::ZeroStruct(swapChainInfo, VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR);
     swapChainInfo.surface = _surface;
-    swapChainInfo.minImageCount = Math::Clamp<uint32_t>(VULKAN_BACK_BUFFERS_COUNT, surfProperties.minImageCount, Math::Min<uint32_t>(surfProperties.maxImageCount, VULKAN_BACK_BUFFERS_COUNT_MAX));
+    swapChainInfo.minImageCount = surfProperties.maxImageCount > 0 ? Math::Clamp<uint32_t>(VULKAN_BACK_BUFFERS_COUNT, surfProperties.minImageCount, Math::Min<uint32_t>(surfProperties.maxImageCount, VULKAN_BACK_BUFFERS_COUNT_MAX)) : VULKAN_BACK_BUFFERS_COUNT;
     swapChainInfo.imageFormat = result.format;
     swapChainInfo.imageColorSpace = result.colorSpace;
     swapChainInfo.imageExtent.width = width;
