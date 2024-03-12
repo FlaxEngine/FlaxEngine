@@ -1,7 +1,6 @@
 // Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 using System;
-using System.Collections.Generic;
 using FlaxEngine;
 using Object = FlaxEngine.Object;
 
@@ -13,19 +12,9 @@ namespace FlaxEditor.Viewport.Previews
     /// <seealso cref="AssetPreview" />
     public class PrefabPreview : AssetPreview
     {
-        /// <summary>
-        /// The currently spawned prefab instance owner. Used to link some actors such as UIControl to preview scene and view.
-        /// </summary>
-        internal static PrefabPreview LoadingPreview;
-
-        /// <summary>
-        /// The list of active prefab previews. Used to link some actors such as UIControl to preview scene and view.
-        /// </summary>
-        internal static List<PrefabPreview> ActivePreviews;
-
         private Prefab _prefab;
         private Actor _instance;
-        internal UIControl customControlLinked;
+        internal UIControl _uiControlLinked;
 
         /// <summary>
         /// Gets or sets the prefab asset to preview.
@@ -54,13 +43,10 @@ namespace FlaxEditor.Viewport.Previews
                     _prefab.WaitForLoaded();
 
                     // Spawn prefab
-                    LoadingPreview = this;
                     var instance = PrefabManager.SpawnPrefab(_prefab, null);
-                    LoadingPreview = null;
                     if (instance == null)
                     {
                         _prefab = null;
-                        ActivePreviews.Remove(this);
                         throw new Exception("Failed to spawn a prefab for the preview.");
                     }
 
@@ -84,11 +70,11 @@ namespace FlaxEditor.Viewport.Previews
                 if (_instance)
                 {
                     // Unlink UI control
-                    if (customControlLinked)
+                    if (_uiControlLinked)
                     {
-                        if (customControlLinked.Control?.Parent == this)
-                            customControlLinked.Control.Parent = null;
-                        customControlLinked = null;
+                        if (_uiControlLinked.Control?.Parent == this)
+                            _uiControlLinked.Control.Parent = null;
+                        _uiControlLinked = null;
                     }
 
                     // Remove for the preview
@@ -101,10 +87,24 @@ namespace FlaxEditor.Viewport.Previews
                 {
                     // Add to the preview
                     Task.AddCustomActor(_instance);
-
-                    // Link UI canvases to the preview
-                    LinkCanvas(_instance);
+                    UpdateLinkage();
                 }
+            }
+        }
+
+        private void UpdateLinkage()
+        {
+            // Link UI canvases to the preview (eg. after canvas added to the prefab)
+            LinkCanvas(_instance);
+
+            // Link UI control to the preview
+            if (_uiControlLinked == null &&
+                _instance is UIControl uiControl &&
+                uiControl.Control != null &&
+                uiControl.Control.Parent == null)
+            {
+                uiControl.Control.Parent = this;
+                _uiControlLinked = uiControl;
             }
         }
 
@@ -126,9 +126,6 @@ namespace FlaxEditor.Viewport.Previews
         public PrefabPreview(bool useWidgets)
         : base(useWidgets)
         {
-            if (ActivePreviews == null)
-                ActivePreviews = new List<PrefabPreview>();
-            ActivePreviews.Add(this);
         }
 
         /// <inheritdoc />
@@ -138,15 +135,15 @@ namespace FlaxEditor.Viewport.Previews
 
             if (_instance != null)
             {
-                // Link UI canvases to the preview (eg. after canvas added to the prefab)
-                LinkCanvas(_instance);
+                UpdateLinkage();
             }
         }
 
         /// <inheritdoc />
         public override void OnDestroy()
         {
-            ActivePreviews.Remove(this);
+            if (IsDisposing)
+                return;
             Prefab = null;
 
             base.OnDestroy();

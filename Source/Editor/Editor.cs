@@ -290,7 +290,6 @@ namespace FlaxEditor
 
             StateMachine = new EditorStateMachine(this);
             Undo = new EditorUndo(this);
-            UIControl.FallbackParentGetDelegate += OnUIControlFallbackParentGet;
 
             if (newProject)
                 InitProject();
@@ -353,27 +352,6 @@ namespace FlaxEditor
 
             // Start Editor initialization ending phrase (will wait for scripts compilation result)
             StateMachine.LoadingState.StartInitEnding(skipCompile);
-        }
-
-        private ContainerControl OnUIControlFallbackParentGet(UIControl control)
-        {
-            // Check if prefab root control is this UIControl
-            var loadingPreview = Viewport.Previews.PrefabPreview.LoadingPreview;
-            var activePreviews = Viewport.Previews.PrefabPreview.ActivePreviews;
-            if (activePreviews != null)
-            {
-                foreach (var preview in activePreviews)
-                {
-                    if (preview == loadingPreview ||
-                        (preview.Instance != null && (preview.Instance == control || preview.Instance.HasActorInHierarchy(control))))
-                    {
-                        // Link it to the prefab preview to see it in the editor
-                        preview.customControlLinked = control;
-                        return preview;
-                    }
-                }
-            }
-            return null;
         }
 
         internal void RegisterModule(EditorModule module)
