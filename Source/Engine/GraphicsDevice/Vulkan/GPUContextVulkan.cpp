@@ -1311,13 +1311,17 @@ void GPUContextVulkan::UpdateBuffer(GPUBuffer* buffer, const void* data, uint32 
     vkCmdPipelineBarrier(cmdBuffer->GetHandle(), VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 1, &barrierBefore, 0, nullptr, 0, nullptr);
 
     // Use direct update for small buffers
-    if (size <= 16 * 1024)
+    const uint32 alignedSize = Math::AlignUp<uint32>(size, 4);
+    if (alignedSize > buffer->GetSize())
+    {
+        int a= 1;
+    }
+    if (size <= 16 * 1024 && alignedSize <= buffer->GetSize())
     {
         //AddBufferBarrier(bufferVulkan, VK_ACCESS_TRANSFER_WRITE_BIT);
         //FlushBarriers();
 
-        size = Math::AlignUp<uint32>(size, 4);
-        vkCmdUpdateBuffer(cmdBuffer->GetHandle(), bufferVulkan->GetHandle(), offset, size, data);
+        vkCmdUpdateBuffer(cmdBuffer->GetHandle(), bufferVulkan->GetHandle(), offset, alignedSize, data);
     }
     else
     {
