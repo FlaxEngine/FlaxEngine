@@ -2148,7 +2148,9 @@ bool TerrainPatch::CreateHeightField()
     if (collisionHeader->CheckOldMagicNumber != MAX_int32 || collisionHeader->Version != TerrainCollisionDataHeader::CurrentVersion)
     {
         // Reset height map
-        return InitializeHeightMap();
+        PROFILE_CPU_NAMED("ResetHeightMap");
+        const float* data = GetHeightmapData();
+        return SetupHeightMap(_cachedHeightMap.Count(), data);
     }
 
     // Create heightfield object from the data
