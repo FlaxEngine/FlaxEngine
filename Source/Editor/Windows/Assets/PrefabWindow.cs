@@ -132,7 +132,7 @@ namespace FlaxEditor.Windows.Assets
                 IsScrollable = false,
                 Offsets = new Margin(0, 0, 0, 18 + 6),
             };
-            _searchBox = new SearchBox()
+            _searchBox = new SearchBox
             {
                 AnchorPreset = AnchorPresets.HorizontalStretchMiddle,
                 Parent = headerPanel,
@@ -140,7 +140,8 @@ namespace FlaxEditor.Windows.Assets
             };
             _searchBox.TextChanged += OnSearchBoxTextChanged;
 
-            _treePanel = new Panel()
+            // Prefab structure tree
+            _treePanel = new Panel
             {
                 AnchorPreset = AnchorPresets.StretchAll,
                 Offsets = new Margin(0.0f, 0.0f, headerPanel.Bottom, 0.0f),
@@ -148,8 +149,6 @@ namespace FlaxEditor.Windows.Assets
                 IsScrollable = true,
                 Parent = sceneTreePanel,
             };
-
-            // Prefab structure tree
             Graph = new LocalSceneGraph(new CustomRootNode(this));
             Graph.Root.TreeNode.Expand(true);
             _tree = new PrefabTree
@@ -316,11 +315,7 @@ namespace FlaxEditor.Windows.Assets
                 return;
 
             // Restore
-            _viewport.Prefab = _asset;
-            Graph.MainActor = _viewport.Instance;
-            Selection.Clear();
-            Select(Graph.Main);
-            Graph.Root.TreeNode.Expand(true);
+            OnPrefabOpened();
             _undo.Clear();
             ClearEditedFlag();
         }
@@ -344,6 +339,15 @@ namespace FlaxEditor.Windows.Assets
 
                 _item.RefreshThumbnail();
             }
+        }
+
+        private void OnPrefabOpened()
+        {
+            _viewport.Prefab = _asset;
+            Graph.MainActor = _viewport.Instance;
+            Selection.Clear();
+            Select(Graph.Main);
+            Graph.Root.TreeNode.Expand(true);
         }
 
         /// <inheritdoc />
@@ -417,13 +421,8 @@ namespace FlaxEditor.Windows.Assets
                 return;
             }
 
-            _viewport.Prefab = _asset;
-            Graph.MainActor = _viewport.Instance;
+            OnPrefabOpened();
             _focusCamera = true;
-            Selection.Clear();
-            Select(Graph.Main);
-            Graph.Root.TreeNode.Expand(true);
-
             _undo.Clear();
             ClearEditedFlag();
 
@@ -468,11 +467,7 @@ namespace FlaxEditor.Windows.Assets
                 _viewport.Prefab = null;
                 if (_asset.IsLoaded)
                 {
-                    _viewport.Prefab = _asset;
-                    Graph.MainActor = _viewport.Instance;
-                    Selection.Clear();
-                    Select(Graph.Main);
-                    Graph.Root.TreeNode.ExpandAll(true);
+                    OnPrefabOpened();
                 }
             }
             finally
@@ -484,7 +479,6 @@ namespace FlaxEditor.Windows.Assets
             if (_focusCamera && _viewport.Task.FrameCount > 1)
             {
                 _focusCamera = false;
-
                 Editor.GetActorEditorSphere(_viewport.Instance, out BoundingSphere bounds);
                 _viewport.ViewPosition = bounds.Center - _viewport.ViewDirection * (bounds.Radius * 1.2f);
             }

@@ -268,16 +268,14 @@ namespace FlaxEditor.Viewport
                 Parent = scaleSnappingWidget
             };
             enableScaleSnapping.Toggled += OnScaleSnappingToggle;
-
             var scaleSnappingCM = new ContextMenu();
             _scaleSnapping = new ViewportWidgetButton(TransformGizmo.ScaleSnapValue.ToString(), SpriteHandle.Invalid, scaleSnappingCM)
             {
                 TooltipText = "Scale snapping values"
             };
-
-            for (int i = 0; i < EditorViewportScaleSnapValues.Length; i++)
+            for (int i = 0; i < ScaleSnapValues.Length; i++)
             {
-                var v = EditorViewportScaleSnapValues[i];
+                var v = ScaleSnapValues[i];
                 var button = scaleSnappingCM.AddButton(v.ToString());
                 button.Tag = v;
             }
@@ -295,16 +293,14 @@ namespace FlaxEditor.Viewport
                 Parent = rotateSnappingWidget
             };
             enableRotateSnapping.Toggled += OnRotateSnappingToggle;
-
             var rotateSnappingCM = new ContextMenu();
             _rotateSnapping = new ViewportWidgetButton(TransformGizmo.RotationSnapValue.ToString(), SpriteHandle.Invalid, rotateSnappingCM)
             {
                 TooltipText = "Rotation snapping values"
             };
-
-            for (int i = 0; i < EditorViewportRotateSnapValues.Length; i++)
+            for (int i = 0; i < RotateSnapValues.Length; i++)
             {
-                var v = EditorViewportRotateSnapValues[i];
+                var v = RotateSnapValues[i];
                 var button = rotateSnappingCM.AddButton(v.ToString());
                 button.Tag = v;
             }
@@ -322,7 +318,6 @@ namespace FlaxEditor.Viewport
                 Parent = translateSnappingWidget
             };
             enableTranslateSnapping.Toggled += OnTranslateSnappingToggle;
-
             var translateSnappingCM = new ContextMenu();
             _translateSnapping = new ViewportWidgetButton(TransformGizmo.TranslationSnapValue.ToString(), SpriteHandle.Invalid, translateSnappingCM)
             {
@@ -330,16 +325,14 @@ namespace FlaxEditor.Viewport
             };
             if (TransformGizmo.TranslationSnapValue < 0.0f)
                 _translateSnapping.Text = "Bounding Box";
-
-            for (int i = 0; i < EditorViewportTranslateSnapValues.Length; i++)
+            for (int i = 0; i < TranslateSnapValues.Length; i++)
             {
-                var v = EditorViewportTranslateSnapValues[i];
+                var v = TranslateSnapValues[i];
                 var button = translateSnappingCM.AddButton(v.ToString());
                 button.Tag = v;
             }
             var buttonBB = translateSnappingCM.AddButton("Bounding Box").LinkTooltip("Snaps the selection based on it's bounding volume");
             buttonBB.Tag = -1.0f;
-
             translateSnappingCM.ButtonClicked += OnWidgetTranslateSnapClick;
             translateSnappingCM.VisibleChanged += OnWidgetTranslateSnapShowHide;
             _translateSnapping.Parent = translateSnappingWidget;
@@ -552,7 +545,7 @@ namespace FlaxEditor.Viewport
                 var task = renderContext.Task;
 
                 // Render editor primitives, gizmo and debug shapes in debug view modes
-                // Note: can use Output buffer as both input and output because EditorPrimitives is using a intermediate buffers
+                // Note: can use Output buffer as both input and output because EditorPrimitives is using an intermediate buffer
                 if (EditorPrimitives && EditorPrimitives.CanRender())
                 {
                     EditorPrimitives.Render(context, ref renderContext, task.Output, task.Output);
@@ -619,19 +612,6 @@ namespace FlaxEditor.Viewport
             _gizmoModeScale.Checked = mode == TransformGizmoBase.Mode.Scale;
         }
 
-        private static readonly float[] EditorViewportScaleSnapValues =
-        {
-            0.05f,
-            0.1f,
-            0.25f,
-            0.5f,
-            1.0f,
-            2.0f,
-            4.0f,
-            6.0f,
-            8.0f,
-        };
-
         private void OnWidgetScaleSnapClick(ContextMenuButton button)
         {
             var v = (float)button.Tag;
@@ -651,24 +631,10 @@ namespace FlaxEditor.Viewport
                 if (e is ContextMenuButton b)
                 {
                     var v = (float)b.Tag;
-                    b.Icon = Mathf.Abs(TransformGizmo.ScaleSnapValue - v) < 0.001f
-                             ? Style.Current.CheckBoxTick
-                             : SpriteHandle.Invalid;
+                    b.Icon = Mathf.Abs(TransformGizmo.ScaleSnapValue - v) < 0.001f ? Style.Current.CheckBoxTick : SpriteHandle.Invalid;
                 }
             }
         }
-
-        private static readonly float[] EditorViewportRotateSnapValues =
-        {
-            1.0f,
-            5.0f,
-            10.0f,
-            15.0f,
-            30.0f,
-            45.0f,
-            60.0f,
-            90.0f,
-        };
 
         private void OnWidgetRotateSnapClick(ContextMenuButton button)
         {
@@ -689,23 +655,10 @@ namespace FlaxEditor.Viewport
                 if (e is ContextMenuButton b)
                 {
                     var v = (float)b.Tag;
-                    b.Icon = Mathf.Abs(TransformGizmo.RotationSnapValue - v) < 0.001f
-                             ? Style.Current.CheckBoxTick
-                             : SpriteHandle.Invalid;
+                    b.Icon = Mathf.Abs(TransformGizmo.RotationSnapValue - v) < 0.001f ? Style.Current.CheckBoxTick : SpriteHandle.Invalid;
                 }
             }
         }
-
-        private static readonly float[] EditorViewportTranslateSnapValues =
-        {
-            0.1f,
-            0.5f,
-            1.0f,
-            5.0f,
-            10.0f,
-            100.0f,
-            1000.0f,
-        };
 
         private void OnWidgetTranslateSnapClick(ContextMenuButton button)
         {
@@ -729,9 +682,7 @@ namespace FlaxEditor.Viewport
                 if (e is ContextMenuButton b)
                 {
                     var v = (float)b.Tag;
-                    b.Icon = Mathf.Abs(TransformGizmo.TranslationSnapValue - v) < 0.001f
-                             ? Style.Current.CheckBoxTick
-                             : SpriteHandle.Invalid;
+                    b.Icon = Mathf.Abs(TransformGizmo.TranslationSnapValue - v) < 0.001f ? Style.Current.CheckBoxTick : SpriteHandle.Invalid;
                 }
             }
         }
