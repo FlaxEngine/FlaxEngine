@@ -54,6 +54,7 @@ namespace FlaxEditor.Viewport
 
         private readonly ViewportDebugDrawData _debugDrawData = new ViewportDebugDrawData(32);
         private PrefabSpritesRenderer _spritesRenderer;
+        private IntPtr _tempDebugDrawContext;
 
         /// <summary>
         /// Drag and drop handlers
@@ -258,11 +259,19 @@ namespace FlaxEditor.Viewport
             var selectedParents = TransformGizmo.SelectedParents;
             if (selectedParents.Count > 0)
             {
+                // Use temporary Debug Draw context to pull any debug shapes drawing in Scene Graph Nodes - those are used in OnDebugDraw down below
+                if (_tempDebugDrawContext == IntPtr.Zero)
+                    _tempDebugDrawContext = DebugDraw.AllocateContext();
+                DebugDraw.SetContext(_tempDebugDrawContext);
+                DebugDraw.UpdateContext(_tempDebugDrawContext, 1.0f);
+
                 for (int i = 0; i < selectedParents.Count; i++)
                 {
                     if (selectedParents[i].IsActiveInHierarchy)
                         selectedParents[i].OnDebugDraw(_debugDrawData);
                 }
+
+                DebugDraw.SetContext(IntPtr.Zero);
             }
         }
 
@@ -792,6 +801,13 @@ namespace FlaxEditor.Viewport
         /// <inheritdoc />
         public override void OnDestroy()
         {
+            if (IsDisposing)
+                return;
+            if (_tempDebugDrawContext != IntPtr.Zero)
+            {
+                DebugDraw.FreeContext(_tempDebugDrawContext);
+                _tempDebugDrawContext = IntPtr.Zero;
+            }
             FlaxEngine.Object.Destroy(ref SelectionOutline);
             FlaxEngine.Object.Destroy(ref _spritesRenderer);
 
