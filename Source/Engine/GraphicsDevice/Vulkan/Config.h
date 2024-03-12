@@ -18,7 +18,9 @@
 #ifndef VULKAN_BACK_BUFFERS_COUNT
 #define VULKAN_BACK_BUFFERS_COUNT 2
 #endif
+#ifndef VULKAN_BACK_BUFFERS_COUNT_MAX
 #define VULKAN_BACK_BUFFERS_COUNT_MAX 4
+#endif
 
 /// <summary>
 /// Default amount of frames to wait until resource delete.
