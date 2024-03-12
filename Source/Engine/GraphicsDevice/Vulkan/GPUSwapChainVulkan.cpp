@@ -349,10 +349,15 @@ bool GPUSwapChainVulkan::CreateSwapChain(int32 width, int32 height)
         LOG(Error, "Vulkan swapchain dimensions are invalid {}x{} (minImageExtent={}x{}, maxImageExtent={}x{})", width, height, surfProperties.minImageExtent.width, surfProperties.minImageExtent.height, surfProperties.maxImageExtent.width, surfProperties.maxImageExtent.height);
         return true;
     }
+    ASSERT(surfProperties.minImageCount <= VULKAN_BACK_BUFFERS_COUNT_MAX);
     VkSwapchainCreateInfoKHR swapChainInfo;
     RenderToolsVulkan::ZeroStruct(swapChainInfo, VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR);
     swapChainInfo.surface = _surface;
-    swapChainInfo.minImageCount = surfProperties.maxImageCount > 0 ? Math::Clamp<uint32_t>(VULKAN_BACK_BUFFERS_COUNT, surfProperties.minImageCount, Math::Min<uint32_t>(surfProperties.maxImageCount, VULKAN_BACK_BUFFERS_COUNT_MAX)) : VULKAN_BACK_BUFFERS_COUNT;
+    swapChainInfo.minImageCount = surfProperties.maxImageCount > 0 // A value of 0 means that there is no limit on the number of image
+                                      ? Math::Min<uint32_t>(VULKAN_BACK_BUFFERS_COUNT, surfProperties.maxImageCount)
+                                      : VULKAN_BACK_BUFFERS_COUNT;
+    swapChainInfo.minImageCount = Math::Max<uint32_t>(swapChainInfo.minImageCount, surfProperties.minImageCount);
+    swapChainInfo.minImageCount = Math::Min<uint32_t>(swapChainInfo.minImageCount, VULKAN_BACK_BUFFERS_COUNT_MAX);
     swapChainInfo.imageFormat = result.format;
     swapChainInfo.imageColorSpace = result.colorSpace;
     swapChainInfo.imageExtent.width = width;
@@ -386,10 +391,11 @@ bool GPUSwapChainVulkan::CreateSwapChain(int32 width, int32 height)
     {
         uint32 imagesCount;
         VALIDATE_VULKAN_RESULT(vkGetSwapchainImagesKHR(device, _swapChain, &imagesCount, nullptr));
-        imagesCount = Math::Min<uint32>(imagesCount, VULKAN_BACK_BUFFERS_COUNT);
-        if (imagesCount < VULKAN_BACK_BUFFERS_COUNT)
-            LOG(Warning, "Vulkan swapchain got less backbuffers than requried {} (instead of {})", imagesCount, VULKAN_BACK_BUFFERS_COUNT);
-
+        if (imagesCount < 1 || imagesCount > VULKAN_BACK_BUFFERS_COUNT_MAX)
+        {
+            LOG(Warning, "Vulkan swapchain got invalid amount of backbuffers  {} instead of {} (min {})", imagesCount, VULKAN_BACK_BUFFERS_COUNT, swapChainInfo.minImageCount);
+            return true;
+        }
         VkImage images[VULKAN_BACK_BUFFERS_COUNT_MAX];
         VALIDATE_VULKAN_RESULT(vkGetSwapchainImagesKHR(device, _swapChain, &imagesCount, images));
 
