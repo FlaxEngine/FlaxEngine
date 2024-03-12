@@ -584,7 +584,32 @@ Asset::LoadResult BinaryAsset::loadAsset()
     ASSERT(Storage && _header.ID.IsValid() && _header.TypeName.HasChars());
 
     auto lock = Storage->Lock();
-    return load();
+    const LoadResult result = load();
+#if !BUILD_RELEASE
+    if (result == LoadResult::MissingDataChunk)
+    {
+        // Provide more insights on potentially missing asset data chunk
+        Char chunksBitMask[ASSET_FILE_DATA_CHUNKS + 1];
+        Char chunksExistBitMask[ASSET_FILE_DATA_CHUNKS + 1];
+        Char chunksLoadBitMask[ASSET_FILE_DATA_CHUNKS + 1];
+        for (int32 i = 0; i < ASSET_FILE_DATA_CHUNKS; i++)
+        {
+            if (const FlaxChunk* chunk = _header.Chunks[i])
+            {
+                chunksBitMask[i] = '1';
+                chunksExistBitMask[i] = chunk->ExistsInFile() ? '1' : '0';
+                chunksLoadBitMask[i] = chunk->IsLoaded() ? '1' : '0';
+            }
+            else
+            {
+                chunksBitMask[i] = chunksExistBitMask[i] = chunksLoadBitMask[i] = '0';
+            }
+        }
+        chunksBitMask[ASSET_FILE_DATA_CHUNKS] = chunksExistBitMask[ASSET_FILE_DATA_CHUNKS] = chunksLoadBitMask[ASSET_FILE_DATA_CHUNKS] = 0;
+        LOG(Warning, "Asset reports missing data chunk. Chunks bitmask: {}, existing chunks: {} loaded chunks: {}. '{}'", chunksBitMask, chunksExistBitMask, chunksLoadBitMask, ToString());
+    }
+#endif
+    return result;
 }
 
 void BinaryAsset::releaseStorage()

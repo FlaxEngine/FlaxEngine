@@ -20,6 +20,30 @@
 #endif
 #include <ThirdParty/LZ4/lz4.h>
 
+int32 AssetHeader::GetChunksCount() const
+{
+    int32 result = 0;
+    for (int32 i = 0; i < ASSET_FILE_DATA_CHUNKS; i++)
+    {
+        if (Chunks[i] != nullptr)
+            result++;
+    }
+    return result;
+}
+
+void AssetHeader::DeleteChunks()
+{
+    for (int32 i = 0; i < ASSET_FILE_DATA_CHUNKS; i++)
+    {
+        SAFE_DELETE(Chunks[i]);
+    }
+}
+
+void AssetHeader::UnlinkChunks()
+{
+    Platform::MemoryClear(Chunks, sizeof(Chunks));
+}
+
 String AssetHeader::ToString() const
 {
     return String::Format(TEXT("ID: {0}, TypeName: {1}, Chunks Count: {2}"), ID, TypeName, GetChunksCount());

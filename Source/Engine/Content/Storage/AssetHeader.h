@@ -81,36 +81,17 @@ public:
     /// <summary>
     /// Gets the amount of created asset chunks.
     /// </summary>
-    /// <returns>Created asset chunks</returns>
-    int32 GetChunksCount() const
-    {
-        int32 result = 0;
-        for (int32 i = 0; i < ASSET_FILE_DATA_CHUNKS; i++)
-        {
-            if (Chunks[i] != nullptr)
-                result++;
-        }
-        return result;
-    }
+    int32 GetChunksCount() const;
 
     /// <summary>
     /// Deletes all chunks. Warning! Chunks are managed internally, use with caution!
     /// </summary>
-    void DeleteChunks()
-    {
-        for (int32 i = 0; i < ASSET_FILE_DATA_CHUNKS; i++)
-        {
-            SAFE_DELETE(Chunks[i]);
-        }
-    }
+    void DeleteChunks();
 
     /// <summary>
     /// Unlinks all chunks.
     /// </summary>
-    void UnlinkChunks()
-    {
-        Platform::MemoryClear(Chunks, sizeof(Chunks));
-    }
+    void UnlinkChunks();
 
     /// <summary>
     /// Gets string with a human-readable info about that header
