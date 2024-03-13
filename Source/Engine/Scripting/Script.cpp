@@ -51,22 +51,21 @@ void Script::SetEnabled(bool value)
             {
                 if (!_wasEnableCalled)
                 {
-                    //this will trigger if somone calls directy to OnStart when object was never initialized or object was never initialized and OnStart contaions SetEnabled call
+                    //this will trigger if somone calls in OnStart or in rere cases also applays to OnAwake 
                     //example:
                     //SetEnabled(true)
                     //SetEnabled(false)
                     //SetEnabled(true)
+                    //when object was never initialized or object was never initialized and OnStart contaions SetEnabled call
                     if (_setEnableSensiviteCodeLock)
                     {
                         //let the API user know abaut this
                         //silence is the worst
                         LOG_STR(Warning, TEXT(
-						"Modification of the Enabled state failed, state was modified before the object got a chance to call Enable().\n"
-						"This may cause unexpected behavior in your scripts.\n"
-						"See:\n"
-						"https://docs.flaxengine.com/manual/scripting/events.html?tabs=code-csharp\n"
+						"Modification of the Enabled state failed, state was modified before the object got a chance to complete Enable() call.\n"
 						"Note:\n"
-						"If you were trying to disable the object when the game starts, consider using OnAwake()."));
+						"Try to not modify the enabled state in OnStart or OnAwake, if object is disabled when is spawned. this might interupt Initialization code\n"
+						"also this may cause unexpected behavior in your scripts."));
 
                         return;
                     }
