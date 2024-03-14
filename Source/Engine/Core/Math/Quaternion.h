@@ -67,7 +67,12 @@ public:
     /// <summary>
     /// Empty constructor.
     /// </summary>
-    Quaternion() = default;
+    Quaternion() 
+        : X(0)
+        , Y(0)
+        , Z(0)
+        , W(1) 
+    {}
 
     /// <summary>
     /// Init

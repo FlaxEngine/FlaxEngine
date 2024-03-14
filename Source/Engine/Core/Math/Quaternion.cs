@@ -87,6 +87,17 @@ namespace FlaxEngine
         /// <summary>
         /// Initializes a new instance of the <see cref="Quaternion" /> struct.
         /// </summary>
+        public Quaternion()
+        {
+            X = 0;
+            Y = 0;
+            Z = 0;
+            W = 1;
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Quaternion" /> struct.
+        /// </summary>
         /// <param name="value">A vector containing the values with which to initialize the components.</param>
         public Quaternion(Float4 value)
         {
