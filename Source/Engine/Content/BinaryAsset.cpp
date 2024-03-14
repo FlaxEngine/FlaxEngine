@@ -584,6 +584,17 @@ Asset::LoadResult BinaryAsset::loadAsset()
     ASSERT(Storage && _header.ID.IsValid() && _header.TypeName.HasChars());
 
     auto lock = Storage->Lock();
+    auto chunksToPreload = getChunksToPreload();
+    if (chunksToPreload != 0)
+    {
+        // Ensure that any chunks that were requested before are loaded in memory (in case streaming flushed them out after timeout)
+        for (int32 i = 0; i < ASSET_FILE_DATA_CHUNKS; i++)
+        {
+            const auto chunk = _header.Chunks[i];
+            if (GET_CHUNK_FLAG(i) & chunksToPreload && chunk && chunk->IsMissing())
+                Storage->LoadAssetChunk(chunk);
+        }
+    }
     const LoadResult result = load();
 #if !BUILD_RELEASE
     if (result == LoadResult::MissingDataChunk)
