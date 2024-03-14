@@ -356,7 +356,7 @@ namespace FlaxEngine.GUI
             for (int i = _children.Count - 1; i >= 0; i--)
             {
                 var child = _children[i];
-                if (IntersectsChildContent(child, point, out var childLocation))
+                if (child.Visible && IntersectsChildContent(child, point, out var childLocation))
                 {
                     var containerControl = child as ContainerControl;
                     var childAtRecursive = containerControl?.GetChildAtRecursive(childLocation);

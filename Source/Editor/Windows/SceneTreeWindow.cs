@@ -221,7 +221,6 @@ namespace FlaxEditor.Windows
         {
             if (!Editor.StateMachine.CurrentState.CanEditScene)
                 return;
-
             ShowContextMenu(node, location);
         }
 
