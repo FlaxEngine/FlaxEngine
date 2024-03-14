@@ -30,6 +30,7 @@ Script::Script(const SpawnParams& params)
     , _wasAwakeCalled(false)
     , _wasStartCalled(false)
     , _wasEnableCalled(false)
+    ,_setEnableSensiviteCodeLock(false)
 {
 #if USE_EDITOR
     _executeInEditor = GetClass()->HasAttribute(StdTypesContainer::Instance()->ExecuteInEditModeAttribute);
