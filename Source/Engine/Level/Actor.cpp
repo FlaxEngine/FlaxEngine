@@ -664,7 +664,7 @@ void Actor::SetOrientation(const Quaternion& value)
             "\n""\t"    "{0}"
             "\n"        
             "\n"        "StackTrace:"
-            "\n"        "{2}",
+            "\n"        "{1}",
             value, DebugLog::GetStackTrace());
         return;
     }
