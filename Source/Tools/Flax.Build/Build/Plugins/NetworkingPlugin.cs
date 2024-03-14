@@ -839,10 +839,11 @@ namespace Flax.Build.Plugins
             module.GetType("System.IntPtr", out var intPtrType);
             module.GetType("FlaxEngine.Object", out var scriptingObjectType);
             var fromUnmanagedPtr = scriptingObjectType.Resolve().GetMethod("FromUnmanagedPtr");
+            TypeReference intPtr = module.ImportReference(intPtrType);
 
             var m = new MethodDefinition(name + "Native", MethodAttributes.Public | MethodAttributes.Static | MethodAttributes.HideBySig, context.VoidType);
-            m.Parameters.Add(new ParameterDefinition("instancePtr", ParameterAttributes.None, intPtrType));
-            m.Parameters.Add(new ParameterDefinition("streamPtr", ParameterAttributes.None, intPtrType));
+            m.Parameters.Add(new ParameterDefinition("instancePtr", ParameterAttributes.None, intPtr));
+            m.Parameters.Add(new ParameterDefinition("streamPtr", ParameterAttributes.None, intPtr));
             TypeReference networkStream = module.ImportReference(context.NetworkStreamType);
             ILProcessor il = m.Body.GetILProcessor();
             il.Emit(OpCodes.Nop);
@@ -1645,12 +1646,13 @@ namespace Flax.Build.Plugins
             module.GetType("FlaxEngine.Object", out var scriptingObjectType);
             var fromUnmanagedPtr = scriptingObjectType.Resolve().GetMethod("FromUnmanagedPtr");
             TypeReference networkStream = module.ImportReference(networkStreamType);
+            TypeReference intPtr = module.ImportReference(intPtrType);
 
             // Generate static method to execute RPC locally
             {
                 var m = new MethodDefinition(method.Name + "_Execute", MethodAttributes.Static | MethodAttributes.Assembly | MethodAttributes.HideBySig, voidType);
-                m.Parameters.Add(new ParameterDefinition("instancePtr", ParameterAttributes.None, intPtrType));
-                m.Parameters.Add(new ParameterDefinition("streamPtr", ParameterAttributes.None, module.ImportReference(intPtrType)));
+                m.Parameters.Add(new ParameterDefinition("instancePtr", ParameterAttributes.None, intPtr));
+                m.Parameters.Add(new ParameterDefinition("streamPtr", ParameterAttributes.None, intPtr));
                 ILProcessor ilp = m.Body.GetILProcessor();
                 var il = new DotnetIlContext(ilp, method);
                 il.Emit(OpCodes.Nop);
