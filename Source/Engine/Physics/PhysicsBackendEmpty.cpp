@@ -115,7 +115,7 @@ void PhysicsBackend::AddSceneActor(void* scene, void* actor)
 {
 }
 
-void PhysicsBackend::RemoveSceneActor(void* scene, void* actor)
+void PhysicsBackend::RemoveSceneActor(void* scene, void* actor, bool immediately)
 {
 }
 

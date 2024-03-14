@@ -569,7 +569,7 @@ void RigidBody::OnTransformChanged()
 
 void RigidBody::OnPhysicsSceneChanged(PhysicsScene* previous)
 {
-    PhysicsBackend::RemoveSceneActor(previous->GetPhysicsScene(), _actor);
+    PhysicsBackend::RemoveSceneActor(previous->GetPhysicsScene(), _actor, true);
     void* scene = GetPhysicsScene()->GetPhysicsScene();
     PhysicsBackend::AddSceneActor(scene, _actor);
     const bool putToSleep = !_startAwake && GetEnableSimulation() && !GetIsKinematic() && IsActiveInHierarchy();
