@@ -99,6 +99,18 @@ public:
     {
         return _targetAnchor;
     }
+    /// <summary>
+    /// Gets the target anchor.
+    /// </summary>
+    /// <remarks>
+    /// This is the relative pose which locates the joint frame relative to the target actor.
+    /// </remarks>
+    API_PROPERTY(Attributes = "EditorOrder(40), DefaultValue(typeof(Vector3), \"0,0,0\"), EditorDisplay(\"Joint\"), VisibleIf(nameof(EnableAutoAnchor), true)")
+    FORCE_INLINE Transform GetTargetAnchor()
+    {
+        return Transform(_targetAnchor,_targetAnchorRotation,Float3::One);
+    }
+
 
     /// <summary>
     /// Sets the target anchor.
@@ -107,6 +119,14 @@ public:
     /// This is the relative pose which locates the joint frame relative to the target actor.
     /// </remarks>
     API_PROPERTY() void SetTargetAnchor(const Vector3& value);
+
+    /// <summary>
+    /// Sets the target anchor.
+    /// </summary>
+    /// <remarks>
+    /// This is the relative pose which locates the joint frame relative to the target actor.
+    /// </remarks>
+    API_PROPERTY() void SetTargetAnchor(const Transform& value);
 
     /// <summary>
     /// Gets the target anchor rotation.
