@@ -309,7 +309,7 @@ namespace FlaxEditor.Viewport
         public void ShowSelectedActors()
         {
             var orient = ViewOrientation;
-            ((FPSCamera)ViewportCamera).ShowActors(TransformGizmo.SelectedParents, ref orient);
+            ViewportCamera.ShowActors(TransformGizmo.SelectedParents, ref orient);
         }
 
         /// <inheritdoc />
@@ -721,14 +721,7 @@ namespace FlaxEditor.Viewport
         /// <param name="orientation">The target view orientation.</param>
         public void FocusSelection(ref Quaternion orientation)
         {
-            if (TransformGizmo.SelectedParents.Count == 0)
-                return;
-
-            var gizmoBounds = Gizmos.Active.FocusBounds;
-            if (gizmoBounds != BoundingSphere.Empty)
-                ((FPSCamera)ViewportCamera).ShowSphere(ref gizmoBounds, ref orientation);
-            else
-                ((FPSCamera)ViewportCamera).ShowActors(TransformGizmo.SelectedParents, ref orientation);
+            ViewportCamera.FocusSelection(Gizmos, ref orientation);
         }
 
         /// <inheritdoc />
