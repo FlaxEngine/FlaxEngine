@@ -29,7 +29,6 @@ namespace FlaxEditor.Viewport
         {
             public PrefabWindowViewport Viewport;
 
-            /// <inheritdoc />
             public override bool CanRender()
             {
                 return (Task.View.Flags & ViewFlags.EditorSprites) == ViewFlags.EditorSprites && Enabled;
@@ -39,6 +38,24 @@ namespace FlaxEditor.Viewport
             {
                 ViewportIconsRenderer.DrawIcons(ref renderContext, Viewport.Instance);
             }
+        }
+
+        [HideInEditor]
+        private sealed class PrefabUIEditorRoot : UIEditorRoot
+        {
+            private readonly PrefabWindowViewport _viewport;
+
+            public PrefabUIEditorRoot(PrefabWindowViewport viewport)
+            : base(true)
+            {
+                _viewport = viewport;
+                Parent = viewport;
+            }
+
+            public override bool EnableInputs => false;
+            public override bool EnableSelecting => true;
+            public override bool EnableBackground => _viewport._hasUILinkedCached;
+            public override TransformGizmo TransformGizmo => _viewport.TransformGizmo;
         }
 
         private readonly PrefabWindow _window;
@@ -55,6 +72,9 @@ namespace FlaxEditor.Viewport
         private readonly ViewportDebugDrawData _debugDrawData = new ViewportDebugDrawData(32);
         private PrefabSpritesRenderer _spritesRenderer;
         private IntPtr _tempDebugDrawContext;
+
+        private bool _hasUILinkedCached;
+        private PrefabUIEditorRoot _uiRoot;
 
         /// <summary>
         /// Drag and drop handlers
@@ -110,6 +130,11 @@ namespace FlaxEditor.Viewport
             TransformGizmo.ModeChanged += OnGizmoModeChanged;
             TransformGizmo.Duplicate += _window.Duplicate;
             Gizmos.Active = TransformGizmo;
+
+            // Use custom root for UI controls
+            _uiRoot = new PrefabUIEditorRoot(this);
+            _uiRoot.IndexInParent = 0; // Move viewport down below other widgets in the viewport
+            _uiParentLink = _uiRoot.UIRoot;
 
             // Transform space widget
             var transformSpaceWidget = new ViewportWidgetsContainer(ViewportWidgetLocation.UpperRight);
@@ -237,8 +262,54 @@ namespace FlaxEditor.Viewport
             SetUpdate(ref _update, OnUpdate);
         }
 
+        /// <summary>
+        /// Updates the viewport's gizmos, especially to toggle between 3D and UI editing modes.
+        /// </summary>
+        internal void UpdateGizmoMode()
+        {
+            // Skip if gizmo mode was unmodified
+            if (_hasUILinked == _hasUILinkedCached)
+                return;
+            _hasUILinkedCached = _hasUILinked;
+
+            if (_hasUILinked)
+            {
+                // UI widget
+                Gizmos.Active = null;
+                ViewportCamera = new UIEditorCamera { UIEditor = _uiRoot };
+
+                // Hide 3D visuals
+                ShowEditorPrimitives = false;
+                ShowDefaultSceneActors = false;
+                ShowDebugDraw = false;
+
+                // Show whole UI on startup
+                ViewportCamera.ShowActor(Instance);
+            }
+            else
+            {
+                // Generic prefab
+                Gizmos.Active = TransformGizmo;
+                ViewportCamera = new FPSCamera();
+            }
+
+            // Update default components usage
+            bool defaultFeatures = !_hasUILinked;
+            _disableInputUpdate = _hasUILinked;
+            _spritesRenderer.Enabled = defaultFeatures;
+            SelectionOutline.Enabled = defaultFeatures;
+            _showDefaultSceneButton.Visible = defaultFeatures;
+            _cameraWidget.Visible = defaultFeatures;
+            _cameraButton.Visible = defaultFeatures;
+            _orthographicModeButton.Visible = defaultFeatures;
+            Task.Enabled = defaultFeatures;
+            UseAutomaticTaskManagement = defaultFeatures;
+            TintColor = defaultFeatures ? Color.White : Color.Transparent;
+        }
+
         private void OnUpdate(float deltaTime)
         {
+            UpdateGizmoMode();
             for (int i = 0; i < Gizmos.Count; i++)
             {
                 Gizmos[i].Update(deltaTime);
@@ -367,6 +438,13 @@ namespace FlaxEditor.Viewport
         public void Spawn(Actor actor)
         {
             _window.Spawn(actor);
+        }
+
+        /// <inheritdoc />
+        public void OpenContextMenu()
+        {
+            var mouse = PointFromWindow(Root.MousePosition);
+            _window.ShowContextMenu(this, ref mouse);
         }
 
         /// <inheritdoc />
@@ -543,40 +621,6 @@ namespace FlaxEditor.Viewport
 
                 obj.Transform = trans;
             }
-        }
-
-        /// <inheritdoc />
-        public override void Draw()
-        {
-            base.Draw();
-
-            // Selected UI controls outline
-            bool drawAnySelectedControl = false;
-            // TODO: optimize this (eg. cache list of selected UIControl's when selection gets changed)
-            for (var i = 0; i < _window.Selection.Count; i++)
-            {
-                if (_window.Selection[i]?.EditableObject is UIControl controlActor && controlActor && controlActor.Control != null && controlActor.Control.VisibleInHierarchy && controlActor.Control.RootWindow != null)
-                {
-                    if (!drawAnySelectedControl)
-                    {
-                        drawAnySelectedControl = true;
-                        Render2D.PushTransform(ref _cachedTransform);
-                    }
-                    var control = controlActor.Control;
-                    var bounds = control.EditorBounds;
-                    var p1 = control.PointToParent(this, bounds.UpperLeft);
-                    var p2 = control.PointToParent(this, bounds.UpperRight);
-                    var p3 = control.PointToParent(this, bounds.BottomLeft);
-                    var p4 = control.PointToParent(this, bounds.BottomRight);
-                    var min = Float2.Min(Float2.Min(p1, p2), Float2.Min(p3, p4));
-                    var max = Float2.Max(Float2.Max(p1, p2), Float2.Max(p3, p4));
-                    bounds = new Rectangle(min, Float2.Max(max - min, Float2.Zero));
-                    var options = Editor.Instance.Options.Options.Visual;
-                    Render2D.DrawRectangle(bounds, options.SelectionOutlineColor0, options.UISelectionOutlineSize);
-                }
-            }
-            if (drawAnySelectedControl)
-                Render2D.PopTransform();
         }
 
         /// <inheritdoc />

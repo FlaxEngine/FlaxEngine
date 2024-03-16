@@ -94,6 +94,9 @@ namespace FlaxEditor.Viewport
         public abstract void Spawn(Actor actor);
 
         /// <inheritdoc />
+        public abstract void OpenContextMenu();
+
+        /// <inheritdoc />
         protected override bool IsControllingMouse => Gizmos.Active?.IsControllingMouse ?? false;
 
         /// <inheritdoc />

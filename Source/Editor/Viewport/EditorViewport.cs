@@ -10,7 +10,6 @@ using FlaxEditor.Viewport.Cameras;
 using FlaxEditor.Viewport.Widgets;
 using FlaxEngine;
 using FlaxEngine.GUI;
-using Newtonsoft.Json;
 using JsonSerializer = FlaxEngine.Json.JsonSerializer;
 
 namespace FlaxEditor.Viewport
@@ -154,6 +153,7 @@ namespace FlaxEditor.Viewport
 
         // Input
 
+        internal bool _disableInputUpdate;
         private bool _isControllingMouse, _isViewportControllingMouse, _wasVirtualMouseRightDown, _isVirtualMouseRightDown;
         private int _deltaFilteringStep;
         private Float2 _startPos;
@@ -1495,6 +1495,9 @@ namespace FlaxEditor.Viewport
         public override void Update(float deltaTime)
         {
             base.Update(deltaTime);
+
+            if (_disableInputUpdate)
+                return;
 
             // Update camera
             bool useMovementSpeed = false;

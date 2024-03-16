@@ -3,6 +3,7 @@
 using System;
 using System.Collections.Generic;
 using System.Xml;
+using FlaxEditor.Gizmo;
 using FlaxEditor.GUI.ContextMenu;
 using FlaxEditor.GUI.Input;
 using FlaxEditor.Options;
@@ -194,133 +195,14 @@ namespace FlaxEditor.Windows
             public bool Active;
         }
 
-        private class GameRoot : ContainerControl
+        /// <summary>
+        /// Root control for game UI preview in Editor. Supports basic UI editing via <see cref="UIEditorRoot"/>.
+        /// </summary>
+        private class GameRoot : UIEditorRoot
         {
-            public bool EnableEvents => !Time.GamePaused;
-
-            public override bool RayCast(ref Float2 location, out Control hit)
-            {
-                return RayCastChildren(ref location, out hit);
-            }
-
-            public override bool ContainsPoint(ref Float2 location, bool precise = false)
-            {
-                if (precise)
-                    return false;
-                return base.ContainsPoint(ref location, precise);
-            }
-
-            public override bool OnCharInput(char c)
-            {
-                if (!EnableEvents)
-                    return false;
-
-                return base.OnCharInput(c);
-            }
-
-            public override DragDropEffect OnDragDrop(ref Float2 location, DragData data)
-            {
-                if (!EnableEvents)
-                    return DragDropEffect.None;
-
-                return base.OnDragDrop(ref location, data);
-            }
-
-            public override DragDropEffect OnDragEnter(ref Float2 location, DragData data)
-            {
-                if (!EnableEvents)
-                    return DragDropEffect.None;
-
-                return base.OnDragEnter(ref location, data);
-            }
-
-            public override void OnDragLeave()
-            {
-                if (!EnableEvents)
-                    return;
-
-                base.OnDragLeave();
-            }
-
-            public override DragDropEffect OnDragMove(ref Float2 location, DragData data)
-            {
-                if (!EnableEvents)
-                    return DragDropEffect.None;
-
-                return base.OnDragMove(ref location, data);
-            }
-
-            public override bool OnKeyDown(KeyboardKeys key)
-            {
-                if (!EnableEvents)
-                    return false;
-
-                return base.OnKeyDown(key);
-            }
-
-            public override void OnKeyUp(KeyboardKeys key)
-            {
-                if (!EnableEvents)
-                    return;
-
-                base.OnKeyUp(key);
-            }
-
-            public override bool OnMouseDoubleClick(Float2 location, MouseButton button)
-            {
-                if (!EnableEvents)
-                    return false;
-
-                return base.OnMouseDoubleClick(location, button);
-            }
-
-            public override bool OnMouseDown(Float2 location, MouseButton button)
-            {
-                if (!EnableEvents)
-                    return false;
-
-                return base.OnMouseDown(location, button);
-            }
-
-            public override void OnMouseEnter(Float2 location)
-            {
-                if (!EnableEvents)
-                    return;
-
-                base.OnMouseEnter(location);
-            }
-
-            public override void OnMouseLeave()
-            {
-                if (!EnableEvents)
-                    return;
-
-                base.OnMouseLeave();
-            }
-
-            public override void OnMouseMove(Float2 location)
-            {
-                if (!EnableEvents)
-                    return;
-
-                base.OnMouseMove(location);
-            }
-
-            public override bool OnMouseUp(Float2 location, MouseButton button)
-            {
-                if (!EnableEvents)
-                    return false;
-
-                return base.OnMouseUp(location, button);
-            }
-
-            public override bool OnMouseWheel(Float2 location, float delta)
-            {
-                if (!EnableEvents)
-                    return false;
-
-                return base.OnMouseWheel(location, delta);
-            }
+            public override bool EnableInputs => !Time.GamePaused;
+            public override bool EnableSelecting => !Editor.IsPlayMode || Time.GamePaused;
+            public override TransformGizmo TransformGizmo => Editor.Instance.MainTransformGizmo;
         }
 
         /// <summary>
@@ -348,13 +230,9 @@ namespace FlaxEditor.Windows
             // Override the game GUI root
             _guiRoot = new GameRoot
             {
-                AnchorPreset = AnchorPresets.StretchAll,
-                Offsets = Margin.Zero,
-                //Visible = false,
-                AutoFocus = false,
                 Parent = _viewport
             };
-            RootControl.GameRoot = _guiRoot;
+            RootControl.GameRoot = _guiRoot.UIRoot;
 
             SizeChanged += control => { ResizeViewport(); };
 
@@ -915,35 +793,6 @@ namespace FlaxEditor.Windows
                 var style = Style.Current;
                 Render2D.DrawText(style.FontLarge, "No camera", new Rectangle(Float2.Zero, Size), style.ForegroundDisabled, TextAlignment.Center, TextAlignment.Center);
             }
-
-            // Selected UI controls outline
-            bool drawAnySelectedControl = false;
-            // TODO: optimize this (eg. cache list of selected UIControl's when selection gets changed)
-            var selection = Editor.SceneEditing.Selection;
-            for (var i = 0; i < selection.Count; i++)
-            {
-                if (selection[i].EditableObject is UIControl controlActor && controlActor && controlActor.Control != null && controlActor.Control.VisibleInHierarchy && controlActor.Control.RootWindow != null)
-                {
-                    if (!drawAnySelectedControl)
-                    {
-                        drawAnySelectedControl = true;
-                        Render2D.PushTransform(ref _viewport._cachedTransform);
-                    }
-                    var options = Editor.Options.Options.Visual;
-                    var control = controlActor.Control;
-                    var bounds = control.EditorBounds;
-                    var p1 = control.PointToParent(_viewport, bounds.UpperLeft);
-                    var p2 = control.PointToParent(_viewport, bounds.UpperRight);
-                    var p3 = control.PointToParent(_viewport, bounds.BottomLeft);
-                    var p4 = control.PointToParent(_viewport, bounds.BottomRight);
-                    var min = Float2.Min(Float2.Min(p1, p2), Float2.Min(p3, p4));
-                    var max = Float2.Max(Float2.Max(p1, p2), Float2.Max(p3, p4));
-                    bounds = new Rectangle(min, Float2.Max(max - min, Float2.Zero));
-                    Render2D.DrawRectangle(bounds, options.SelectionOutlineColor0, options.UISelectionOutlineSize);
-                }
-            }
-            if (drawAnySelectedControl)
-                Render2D.PopTransform();
 
             // Play mode hints and overlay
             if (Editor.StateMachine.IsPlayMode)

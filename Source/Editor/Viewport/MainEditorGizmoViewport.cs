@@ -2,7 +2,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using FlaxEditor.Content;
 using FlaxEditor.Gizmo;
 using FlaxEditor.GUI.ContextMenu;
@@ -223,7 +222,7 @@ namespace FlaxEditor.Viewport
             TransformGizmo = new TransformGizmo(this);
             TransformGizmo.ApplyTransformation += ApplyTransform;
             TransformGizmo.ModeChanged += OnGizmoModeChanged;
-            TransformGizmo.Duplicate += Editor.Instance.SceneEditing.Duplicate;
+            TransformGizmo.Duplicate += _editor.SceneEditing.Duplicate;
             Gizmos.Active = TransformGizmo;
 
             // Add grid
@@ -479,7 +478,7 @@ namespace FlaxEditor.Viewport
             };
 
             // Spawn
-            Editor.Instance.SceneEditing.Spawn(actor, parent);
+            _editor.SceneEditing.Spawn(actor, parent);
         }
 
         private void OnBegin(RenderTask task, GPUContext context)
@@ -712,7 +711,7 @@ namespace FlaxEditor.Viewport
             Vector3 gizmoPosition = TransformGizmo.Position;
 
             // Rotate selected objects
-            bool isPlayMode = Editor.Instance.StateMachine.IsPlayMode;
+            bool isPlayMode = _editor.StateMachine.IsPlayMode;
             TransformGizmo.StartTransforming();
             for (int i = 0; i < selection.Count; i++)
             {
@@ -787,7 +786,7 @@ namespace FlaxEditor.Viewport
             Vector3 gizmoPosition = TransformGizmo.Position;
 
             // Transform selected objects
-            bool isPlayMode = Editor.Instance.StateMachine.IsPlayMode;
+            bool isPlayMode = _editor.StateMachine.IsPlayMode;
             for (int i = 0; i < selection.Count; i++)
             {
                 var obj = selection[i];
@@ -929,7 +928,14 @@ namespace FlaxEditor.Viewport
         {
             var parent = actor.Parent ?? Level.GetScene(0);
             actor.Name = Utilities.Utils.IncrementNameNumber(actor.Name, x => parent.GetChild(x) == null);
-            Editor.Instance.SceneEditing.Spawn(actor);
+            _editor.SceneEditing.Spawn(actor);
+        }
+
+        /// <inheritdoc />
+        public override void OpenContextMenu()
+        {
+            var mouse = PointFromWindow(Root.MousePosition);
+            _editor.Windows.SceneWin.ShowContextMenu(this, mouse);
         }
 
         /// <inheritdoc />

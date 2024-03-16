@@ -383,7 +383,7 @@ namespace FlaxEngine.GUI
         /// <summary>
         /// Gets or sets the shear transform angles (x, y). Defined in degrees. Shearing happens relative to the control pivot point.
         /// </summary>
-        [DefaultValue(0.0f)]
+        [DefaultValue(typeof(Float2), "0,0")]
         [ExpandGroups, EditorDisplay("Transform"), EditorOrder(1040), Tooltip("The shear transform angles (x, y). Defined in degrees. Shearing happens relative to the control pivot point.")]
         public Float2 Shear
         {

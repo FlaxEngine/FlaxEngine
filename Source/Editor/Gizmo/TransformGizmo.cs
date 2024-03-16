@@ -43,6 +43,11 @@ namespace FlaxEditor.Gizmo
         public Action Duplicate;
 
         /// <summary>
+        /// Gets the array of selected objects.
+        /// </summary>
+        public List<SceneGraphNode> Selection => _selection;
+
+        /// <summary>
         /// Gets the array of selected parent objects (as actors).
         /// </summary>
         public List<SceneGraphNode> SelectedParents => _selectionParents;

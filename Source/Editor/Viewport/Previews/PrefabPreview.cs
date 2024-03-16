@@ -2,6 +2,7 @@
 
 using System;
 using FlaxEngine;
+using FlaxEngine.GUI;
 using Object = FlaxEngine.Object;
 
 namespace FlaxEditor.Viewport.Previews
@@ -14,7 +15,9 @@ namespace FlaxEditor.Viewport.Previews
     {
         private Prefab _prefab;
         private Actor _instance;
-        internal UIControl _uiControlLinked;
+        private UIControl _uiControlLinked;
+        internal bool _hasUILinked;
+        internal ContainerControl _uiParentLink;
 
         /// <summary>
         /// Gets or sets the prefab asset to preview.
@@ -72,7 +75,7 @@ namespace FlaxEditor.Viewport.Previews
                     // Unlink UI control
                     if (_uiControlLinked)
                     {
-                        if (_uiControlLinked.Control?.Parent == this)
+                        if (_uiControlLinked.Control?.Parent == _uiParentLink)
                             _uiControlLinked.Control.Parent = null;
                         _uiControlLinked = null;
                     }
@@ -82,6 +85,7 @@ namespace FlaxEditor.Viewport.Previews
                 }
 
                 _instance = value;
+                _hasUILinked = false;
 
                 if (_instance)
                 {
@@ -103,20 +107,24 @@ namespace FlaxEditor.Viewport.Previews
                 uiControl.Control != null &&
                 uiControl.Control.Parent == null)
             {
-                uiControl.Control.Parent = this;
+                uiControl.Control.Parent = _uiParentLink;
                 _uiControlLinked = uiControl;
+                _hasUILinked = true;
             }
         }
 
         private void LinkCanvas(Actor actor)
         {
             if (actor is UICanvas uiCanvas)
-                uiCanvas.EditorOverride(Task, this);
+            {
+                uiCanvas.EditorOverride(Task, _uiParentLink);
+                if (uiCanvas.GUI.Parent == _uiParentLink)
+                    _hasUILinked = true;
+            }
+
             var children = actor.ChildrenCount;
             for (int i = 0; i < children; i++)
-            {
                 LinkCanvas(actor.GetChild(i));
-            }
         }
 
         /// <summary>
@@ -126,6 +134,8 @@ namespace FlaxEditor.Viewport.Previews
         public PrefabPreview(bool useWidgets)
         : base(useWidgets)
         {
+            // Link to itself by default
+            _uiParentLink = this;
         }
 
         /// <inheritdoc />
@@ -142,8 +152,6 @@ namespace FlaxEditor.Viewport.Previews
         /// <inheritdoc />
         public override void OnDestroy()
         {
-            if (IsDisposing)
-                return;
             Prefab = null;
 
             base.OnDestroy();
