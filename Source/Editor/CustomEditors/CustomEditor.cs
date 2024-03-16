@@ -650,7 +650,7 @@ namespace FlaxEditor.CustomEditors
                 }
             }
 
-            if (obj == null || Values.Type.IsInstanceOfType(obj))
+            if ((obj == null && !Values.Type.IsValueType) || Values.Type.IsInstanceOfType(obj))
             {
                 result = obj;
                 return true;
