@@ -243,6 +243,63 @@ namespace FlaxEditor.Utilities
             500000, 1000000, 5000000, 10000000, 100000000
         };
 
+        internal delegate void DrawCurveTick(float tick, float strength);
+
+        internal static Int2 DrawCurveTicks(DrawCurveTick drawTick, float[] tickSteps, ref float[] tickStrengths, float min, float max, float pixelRange, float minDistanceBetweenTicks = 20, float maxDistanceBetweenTicks = 60)
+        {
+            if (tickStrengths == null || tickStrengths.Length != tickSteps.Length)
+                tickStrengths = new float[tickSteps.Length];
+
+            // Find the strength for each modulo number tick marker
+            var pixelsInRange = pixelRange / (max - min);
+            var smallestTick = 0;
+            var biggestTick = tickSteps.Length - 1;
+            for (int i = tickSteps.Length - 1; i >= 0; i--)
+            {
+                // Calculate how far apart these modulo tick steps are spaced
+                float tickSpacing = tickSteps[i] * pixelsInRange;
+
+                // Calculate the strength of the tick markers based on the spacing
+                tickStrengths[i] = Mathf.Saturate((tickSpacing - minDistanceBetweenTicks) / (maxDistanceBetweenTicks - minDistanceBetweenTicks));
+
+                // Beyond threshold the ticks don't get any bigger or fatter
+                if (tickStrengths[i] >= 1)
+                    biggestTick = i;
+
+                // Do not show small tick markers
+                if (tickSpacing <= minDistanceBetweenTicks)
+                {
+                    smallestTick = i;
+                    break;
+                }
+            }
+            var tickLevels = biggestTick - smallestTick + 1;
+
+            // Draw all tick levels
+            for (int level = 0; level < tickLevels; level++)
+            {
+                float strength = tickStrengths[smallestTick + level];
+                if (strength <= Mathf.Epsilon)
+                    continue;
+
+                // Draw all ticks
+                int l = Mathf.Clamp(smallestTick + level, 0, tickSteps.Length - 1);
+                var lStep = tickSteps[l];
+                var lNextStep = tickSteps[l + 1];
+                int startTick = Mathf.FloorToInt(min / lStep);
+                int endTick = Mathf.CeilToInt(max / lStep);
+                for (int i = startTick; i <= endTick; i++)
+                {
+                    if (l < biggestTick && (i % Mathf.RoundToInt(lNextStep / lStep) == 0))
+                        continue;
+                    var tick = i * lStep;
+                    drawTick(tick, strength);
+                }
+            }
+
+            return new Int2(smallestTick, biggestTick);
+        }
+
         /// <summary>
         /// Determines whether the specified path string contains any invalid character.
         /// </summary>
