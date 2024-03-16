@@ -108,7 +108,11 @@ void Joint::SetJointLocation(const Vector3& location)
     }
     if (Target)
     {
-        SetTargetAnchor(Target->GetTransform().WorldToLocal(location));
+        // Place target anchor at the joint location
+        Transform t = Target->GetTransform();
+        //PhysicsBackend PxJoint expect unscaled offset, scale needs to be 1 or it will snap to incorect place
+        t.Scale = 1;
+        SetTargetAnchor(t.WorldToLocal(location));
     }
 }
 
