@@ -662,20 +662,7 @@ namespace FlaxEditor.CustomEditors
         /// <summary>
         /// Gets a value indicating whether can paste value from the system clipboard to the property value container.
         /// </summary>
-        public bool CanPaste
-        {
-            get
-            {
-                try
-                {
-                    return GetClipboardObject(out _, false);
-                }
-                catch
-                {
-                    return false;
-                }
-            }
-        }
+        public bool CanPaste => !string.IsNullOrEmpty(Clipboard.Text);
 
         /// <summary>
         /// Sets the value from the system clipboard.
