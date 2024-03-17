@@ -189,9 +189,11 @@ namespace FlaxEditor
 
         internal float ViewScale
         {
-            get => _view.Scale.X;
+            get => _view?.Scale.X ?? 1;
             set
             {
+                if (_view == null)
+                    return;
                 value = Mathf.Clamp(value, 0.1f, 4.0f);
                 _view.Scale = new Float2(value);
             }
@@ -483,7 +485,7 @@ namespace FlaxEditor
                     }
                 }
             }
-            if (EnableSelecting && !_mouseMovesControl && IsMouseOver)
+            if (EnableSelecting && !_mouseMovesControl && !_mouseMovesWidget && IsMouseOver)
             {
                 // Highlight control under mouse for easier selecting (except if already selected)
                 if (RayCastControl(ref mousePos, out var hitControl) &&
