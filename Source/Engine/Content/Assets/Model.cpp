@@ -776,18 +776,18 @@ Check_Again:
     {
         if (IsInitialized())
         {
-            LOG_STR(Error, L"Invalid LOD index"); // [TODO] it misght be use full to incude a stack trace in this place
+            LOG_STR(Error, TEXT("Invalid LOD index")); // [TODO] it misght be use full to incude a stack trace in this place
         }
         else
         {
             int i = 0;
-            LOG_STR(Warning, L"Can't get LOD Model is not initialized awaiting...");
+            LOG_STR(Warning, TEXT("Can't get LOD Model is not initialized awaiting..."));
             while (!IsInitialized()) //Wait for a model
             {
                 Platform::Sleep(1);
                 i++;
                 if (i == 1000) {//give it 1000 try's
-                    LOG_STR(Error, L"Timeout Model is now initialized in expected time of 1000ms");
+                    LOG_STR(Error, TEXT("Timeout Model is now initialized in expected time of 1000ms"));
                 }
             }
             LOG(Info, "Model is now initialized... took ~{0}ms", i);
