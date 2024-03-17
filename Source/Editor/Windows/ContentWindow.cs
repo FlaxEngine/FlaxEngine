@@ -66,6 +66,9 @@ namespace FlaxEditor.Windows
         /// </summary>
         public ContentView View => _view;
 
+        /// <inheritdoc />
+        protected override string UsageHint { get; set; }
+
         internal bool ShowEngineFiles
         {
             get => _showEngineFiles;
@@ -281,6 +284,10 @@ namespace FlaxEditor.Windows
             _view.OnDelete += Delete;
             _view.OnDuplicate += Duplicate;
             _view.OnPaste += Paste;
+
+            // Set up usage hints
+            UsageHint = Editor.Options.Options.Input.Duplicate + ": duplicate, " +
+                        Editor.Options.Options.Input.Rename + ": rename";
         }
 
         private ContextMenu OnViewDropdownPopupCreate(ComboBox comboBox)

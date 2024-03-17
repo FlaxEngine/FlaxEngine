@@ -44,6 +44,9 @@ namespace FlaxEditor.Windows
         /// </summary>
         public RenderOutputControl Viewport => _viewport;
 
+        /// <inheritdoc />
+        protected override string UsageHint => Editor.Options.Options.Input.ToggleFullscreen + ": toggle fullscreen";
+
         /// <summary>
         /// Gets or sets a value indicating whether show game GUI in the view or keep it hidden.
         /// </summary>
