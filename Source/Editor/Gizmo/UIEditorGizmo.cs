@@ -130,12 +130,25 @@ namespace FlaxEditor
             }
         }
 
-        private bool _mouseMovesControl, _mouseMovesView;
+        /// <summary>
+        /// Cached placement of the widget used to size/edit control
+        /// </summary>
+        private struct Widget
+        {
+            public UIControl UIControl;
+            public Rectangle Bounds;
+            public Float2 ResizeAxis;
+            public CursorType Cursor;
+        }
+
+        private bool _mouseMovesControl, _mouseMovesView, _mouseMovesWidget;
         private Float2 _mouseMovesPos, _moveSnapDelta;
         private float _mouseMoveSum;
         private UndoMultiBlock _undoBlock;
         private View _view;
         private float[] _gridTickSteps = Utilities.Utils.CurveTickSteps, _gridTickStrengths;
+        private List<Widget> _widgets;
+        private Widget _activeWidget;
 
         /// <summary>
         /// True if enable displaying UI editing background and grid elements.
@@ -206,6 +219,24 @@ namespace FlaxEditor
 
             var transformGizmo = TransformGizmo;
             var owner = transformGizmo?.Owner;
+            if (_widgets != null && _widgets.Count != 0 && button == MouseButton.Left)
+            {
+                foreach (var widget in _widgets)
+                {
+                    if (widget.Bounds.Contains(ref location))
+                    {
+                        // Initialize widget movement
+                        _activeWidget = widget;
+                        _mouseMovesWidget = true;
+                        _mouseMovesPos = location;
+                        Cursor = widget.Cursor;
+                        StartUndo();
+                        Focus();
+                        StartMouseCapture();
+                        return true;
+                    }
+                }
+            }
             if (EnableSelecting && owner != null && !_mouseMovesControl && button == MouseButton.Left)
             {
                 // Raycast the control under the mouse
@@ -288,10 +319,7 @@ namespace FlaxEditor
                             // Move control (handle any control transformations by moving in editor's local-space)
                             var control = uiControl.Control;
                             var localLocation = control.LocalLocation;
-                            var pointOrigin = control.Parent ?? control;
-                            var startPos = pointOrigin.PointFromParent(this, _mouseMovesPos);
-                            var endPos = pointOrigin.PointFromParent(this, moveLocation);
-                            var uiControlDelta = endPos - startPos;
+                            var uiControlDelta = GetControlDelta(control, ref _mouseMovesPos, ref moveLocation);
                             control.LocalLocation = localLocation + uiControlDelta;
 
                             // Don't move if layout doesn't allow it
@@ -311,6 +339,31 @@ namespace FlaxEditor
                         Cursor = CursorType.SizeAll;
                 }
             }
+            if (_mouseMovesWidget && _activeWidget.UIControl)
+            {
+                // Calculate transform delta
+                var resizeAxisAbs = _activeWidget.ResizeAxis.Absolute;
+                var resizeAxisPos = Float2.Clamp(_activeWidget.ResizeAxis, Float2.Zero, Float2.One);
+                var resizeAxisNeg = Float2.Clamp(-_activeWidget.ResizeAxis, Float2.Zero, Float2.One);
+                var delta = location - _mouseMovesPos;
+                // TODO: scale/size snapping?
+                delta *= resizeAxisAbs;
+
+                // Resize control via widget
+                var moveLocation = _mouseMovesPos + delta;
+                var control = _activeWidget.UIControl.Control;
+                var uiControlDelta = GetControlDelta(control, ref _mouseMovesPos, ref moveLocation);
+                control.LocalLocation += uiControlDelta * resizeAxisNeg;
+                control.Size += uiControlDelta * resizeAxisPos - uiControlDelta * resizeAxisNeg;
+
+                // Don't move if layout doesn't allow it
+                if (control.Parent != null)
+                    control.Parent.PerformLayout();
+                else
+                    control.PerformLayout();
+
+                _mouseMovesPos = location;
+            }
             if (_mouseMovesView)
             {
                 // Move view
@@ -328,6 +381,7 @@ namespace FlaxEditor
         public override bool OnMouseUp(Float2 location, MouseButton button)
         {
             EndMovingControls();
+            EndMovingWidget();
             if (_mouseMovesView)
             {
                 EndMovingView();
@@ -342,6 +396,7 @@ namespace FlaxEditor
         {
             EndMovingControls();
             EndMovingView();
+            EndMovingWidget();
 
             base.OnMouseLeave();
         }
@@ -350,6 +405,7 @@ namespace FlaxEditor
         {
             EndMovingControls();
             EndMovingView();
+            EndMovingWidget();
 
             base.OnLostFocus();
         }
@@ -406,8 +462,15 @@ namespace FlaxEditor
 
             base.Draw();
 
+            if (!_mouseMovesWidget)
+            {
+                // Clear widgets to collect them during drawing
+                _widgets?.Clear();
+            }
+
             bool drawAnySelectedControl = false;
             var transformGizmo = TransformGizmo;
+            var mousePos = PointFromWindow(RootWindow.MousePosition);
             if (transformGizmo != null)
             {
                 // Selected UI controls outline
@@ -416,19 +479,17 @@ namespace FlaxEditor
                 {
                     if (IsValidControl(selection[i], out var controlActor))
                     {
-                        DrawControlBounds(controlActor.Control, true, ref drawAnySelectedControl);
-                        // TODO: draw anchors
+                        DrawControl(controlActor, controlActor.Control, true, ref mousePos, ref drawAnySelectedControl, true);
                     }
                 }
             }
             if (EnableSelecting && !_mouseMovesControl && IsMouseOver)
             {
                 // Highlight control under mouse for easier selecting (except if already selected)
-                var mousePos = PointFromWindow(RootWindow.MousePosition);
                 if (RayCastControl(ref mousePos, out var hitControl) &&
                     (transformGizmo == null || !transformGizmo.Selection.Any(x => x.EditableObject is UIControl controlActor && controlActor.Control == hitControl)))
                 {
-                    DrawControlBounds(hitControl, false, ref drawAnySelectedControl);
+                    DrawControl(null, hitControl, false, ref mousePos, ref drawAnySelectedControl);
                 }
             }
             if (drawAnySelectedControl)
@@ -450,8 +511,17 @@ namespace FlaxEditor
                 return;
             EndMovingControls();
             EndMovingView();
+            EndMovingWidget();
 
             base.OnDestroy();
+        }
+
+        private Float2 GetControlDelta(Control control, ref Float2 start, ref Float2 end)
+        {
+            var pointOrigin = control.Parent ?? control;
+            var startPos = pointOrigin.PointFromParent(this, start);
+            var endPos = pointOrigin.PointFromParent(this, end);
+            return endPos - startPos;
         }
 
         private void DrawAxis(Float2 axis, Rectangle viewRect, float min, float max, float pixelRange)
@@ -485,7 +555,7 @@ namespace FlaxEditor
             }, _gridTickSteps, ref _gridTickStrengths, min, max, pixelRange);
         }
 
-        private void DrawControlBounds(Control control, bool selection, ref bool drawAnySelectedControl)
+        private void DrawControl(UIControl uiControl, Control control, bool selection, ref Float2 mousePos, ref bool drawAnySelectedControl, bool withWidgets = false)
         {
             if (!drawAnySelectedControl)
             {
@@ -493,6 +563,8 @@ namespace FlaxEditor
                 Render2D.PushTransform(ref _cachedTransform);
             }
             var options = Editor.Instance.Options.Options.Visual;
+
+            // Draw bounds
             var bounds = control.EditorBounds;
             var ul = control.PointToParent(this, bounds.UpperLeft);
             var ur = control.PointToParent(this, bounds.UpperRight);
@@ -512,6 +584,62 @@ namespace FlaxEditor
             Render2D.DrawLine(br, bl, color, options.UISelectionOutlineSize);
             Render2D.DrawLine(bl, ul, color, options.UISelectionOutlineSize);
 #endif
+            if (withWidgets)
+            {
+                // Draw sizing widgets
+                if (_widgets == null)
+                    _widgets = new List<Widget>();
+                var widgetSize = 8.0f;
+                var viewScale = ViewScale;
+                if (viewScale < 0.7f)
+                    widgetSize *= viewScale;
+                var controlSize = control.Size.Absolute.MinValue / 50.0f;
+                if (controlSize < 1.0f)
+                    widgetSize *= Mathf.Clamp(controlSize + 0.1f, 0.1f, 1.0f);
+                var cornerSize = new Float2(widgetSize);
+                DrawControlWidget(uiControl, ref ul, ref mousePos, ref cornerSize, new Float2(-1, -1), CursorType.SizeNWSE);
+                DrawControlWidget(uiControl, ref ur, ref mousePos, ref cornerSize, new Float2(1, -1), CursorType.SizeNESW);
+                DrawControlWidget(uiControl, ref bl, ref mousePos, ref cornerSize, new Float2(-1, 1), CursorType.SizeNESW);
+                DrawControlWidget(uiControl, ref br, ref mousePos, ref cornerSize, new Float2(1, 1), CursorType.SizeNWSE);
+                var edgeSizeV = new Float2(widgetSize * 2, widgetSize);
+                var edgeSizeH = new Float2(edgeSizeV.Y, edgeSizeV.X);
+                Float2.Lerp(ref ul, ref bl, 0.5f, out var el);
+                Float2.Lerp(ref ur, ref br, 0.5f, out var er);
+                Float2.Lerp(ref ul, ref ur, 0.5f, out var eu);
+                Float2.Lerp(ref bl, ref br, 0.5f, out var eb);
+                DrawControlWidget(uiControl, ref el, ref mousePos, ref edgeSizeH, new Float2(-1, 0), CursorType.SizeWE);
+                DrawControlWidget(uiControl, ref er, ref mousePos, ref edgeSizeH, new Float2(1, 0), CursorType.SizeWE);
+                DrawControlWidget(uiControl, ref eu, ref mousePos, ref edgeSizeV, new Float2(0, -1), CursorType.SizeNS);
+                DrawControlWidget(uiControl, ref eb, ref mousePos, ref edgeSizeV, new Float2(0, 1), CursorType.SizeNS);
+
+                // TODO: draw anchors
+            }
+        }
+
+        private void DrawControlWidget(UIControl uiControl, ref Float2 pos, ref Float2 mousePos, ref Float2 size, Float2 resizeAxis, CursorType cursor)
+        {
+            var style = Style.Current;
+            var rect = new Rectangle(pos - size * 0.5f, size);
+            if (rect.Contains(ref mousePos))
+            {
+                Render2D.FillRectangle(rect, style.Foreground);
+            }
+            else
+            {
+                Render2D.FillRectangle(rect, style.ForegroundGrey);
+                Render2D.DrawRectangle(rect, style.Foreground);
+            }
+            if (!_mouseMovesWidget && uiControl != null)
+            {
+                // Collect widget
+                _widgets.Add(new Widget
+                {
+                    UIControl = uiControl,
+                    Bounds = rect,
+                    ResizeAxis = resizeAxis,
+                    Cursor = cursor,
+                });
+            }
         }
 
         private bool IsValidControl(SceneGraphNode node, out UIControl uiControl)
@@ -591,6 +719,17 @@ namespace FlaxEditor
             _mouseMovesView = false;
             EndMouseCapture();
             Cursor = CursorType.Default;
+        }
+
+        private void EndMovingWidget()
+        {
+            if (!_mouseMovesWidget)
+                return;
+            _mouseMovesWidget = false;
+            _activeWidget = new Widget();
+            EndMouseCapture();
+            Cursor = CursorType.Default;
+            EndUndo();
         }
     }
 
