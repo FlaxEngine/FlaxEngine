@@ -168,22 +168,46 @@ Model::~Model()
 
 bool Model::Intersects(const Ray& ray, const Matrix& world, Real& distance, Vector3& normal, Mesh** mesh, int32 lodIndex)
 {
-    return LODs[lodIndex].Intersects(ray, world, distance, normal, mesh);
+    if (LODIndexFence(lodIndex))
+    {
+        return LODs[lodIndex].Intersects(ray, world, distance, normal, mesh);
+    }
+    return false;
 }
 
 bool Model::Intersects(const Ray& ray, const Transform& transform, Real& distance, Vector3& normal, Mesh** mesh, int32 lodIndex)
 {
-    return LODs[lodIndex].Intersects(ray, transform, distance, normal, mesh);
+    if (LODIndexFence(lodIndex))
+    {
+        return LODs[lodIndex].Intersects(ray, transform, distance, normal, mesh);
+    }
+    return false;
 }
 
 BoundingBox Model::GetBox(const Matrix& world, int32 lodIndex) const
 {
-    return LODs[lodIndex].GetBox(world);
+    if (LODIndexFence(lodIndex))
+    {
+        return LODs[lodIndex].GetBox(world);
+    }
+    return BoundingBox::Empty;
+}
+BoundingBox Model::GetBox(const Transform& transform, int32 lodIndex) const
+{
+    if (LODIndexFence(lodIndex))
+    {
+        return LODs[lodIndex].GetBox(transform);
+    }
+    return BoundingBox::Empty;
 }
 
 BoundingBox Model::GetBox(int32 lodIndex) const
 {
-    return LODs[lodIndex].GetBox();
+    if (LODIndexFence(lodIndex))
+    {
+        return LODs[lodIndex].GetBox();
+    }
+    return BoundingBox::Empty;
 }
 
 void Model::Draw(const RenderContext& renderContext, MaterialBase* material, const Matrix& world, StaticFlags flags, bool receiveDecals, int16 sortOrder) const
@@ -740,6 +764,40 @@ bool Model::Init(const Span<int32>& meshesCountPerLod)
 
     return false;
 }
+
+bool Model::LODIndexFence(int32 lodIndex) const
+{
+Check_Again:
+    if (LODs.IsValidIndex(lodIndex))
+    {
+        return true;
+    }
+    else
+    {
+        if (IsInitialized())
+        {
+            LOG_STR(Error, L"Invalid LOD index"); // [TODO] it misght be use full to incude a stack trace in this place
+        }
+        else
+        {
+            int i = 0;
+            LOG_STR(Warning, L"Can't get LOD Model is not initialized awaiting...");
+            while (!IsInitialized()) //Wait for a model
+            {
+                Platform::Sleep(1);
+                i++;
+                if (i == 1000) {//give it 1000 try's
+                    LOG_STR(Error, L"Timeout Model is now initialized in expected time of 1000ms");
+                }
+            }
+            LOG(Info, "Model is now initialized... took ~{0}ms", i);
+            goto Check_Again; // in case the lodIndex is invalid any way
+        }
+    }
+
+    return false;
+}
+
 
 void Model::SetupMaterialSlots(int32 slotsCount)
 {
