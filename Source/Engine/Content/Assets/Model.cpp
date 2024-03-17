@@ -8,6 +8,7 @@
 #include "Engine/Content/Upgraders/ModelAssetUpgrader.h"
 #include "Engine/Content/Factories/BinaryAssetFactory.h"
 #include "Engine/Debug/DebugDraw.h"
+#include "Engine/Debug/DebugLog.h"
 #include "Engine/Graphics/RenderTools.h"
 #include "Engine/Graphics/RenderTask.h"
 #include "Engine/Graphics/Models/ModelInstanceEntry.h"
@@ -776,7 +777,7 @@ Check_Again:
     {
         if (IsInitialized())
         {
-            LOG_STR(Error, TEXT("Invalid LOD index")); // [TODO] it misght be use full to incude a stack trace in this place
+            LOG(Error, "Invalid LOD index ""\nStackTrace:\n{0}", DebugLog::GetStackTrace());
         }
         else
         {
@@ -787,7 +788,7 @@ Check_Again:
                 Platform::Sleep(1);
                 i++;
                 if (i == 1000) {//give it 1000 try's
-                    LOG_STR(Error, TEXT("Timeout Model is now initialized in expected time of 1000ms"));
+                    LOG(Error, "Timeout Model is now initialized in expected time of 1000ms ""\nStackTrace:\n{ 0 }", DebugLog::GetStackTrace());
                 }
             }
             LOG(Info, "Model is now initialized... took ~{0}ms", i);
