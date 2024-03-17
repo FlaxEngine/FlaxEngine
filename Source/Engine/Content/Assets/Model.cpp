@@ -782,7 +782,7 @@ Check_Again:
         else
         {
             int i = 0;
-            LOG_STR(Warning, TEXT("Can't get LOD Model is not initialized awaiting..."));
+            LOG_STR(Warning, TEXT("Can't get Model LODs, Model is not initialized yet. awaiting..."));
             while (!IsInitialized()) //Wait for a model
             {
                 Platform::Sleep(1);
