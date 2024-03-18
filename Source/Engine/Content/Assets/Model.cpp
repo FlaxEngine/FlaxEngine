@@ -781,18 +781,40 @@ Check_Again:
         }
         else
         {
+            
             int i = 0;
             LOG_STR(Warning, TEXT("Can't get Model LODs, Model is not initialized yet. awaiting..."));
-            while (!IsInitialized()) //Wait for a model
+            const double startTime = Platform::GetTimeSeconds();
+            if (!WaitForLoaded())
             {
-                Platform::Sleep(1);
-                i++;
-                if (i == 1000) {//give it 1000 try's
-                    LOG(Error, "Timeout Model is now initialized in expected time of 1000ms ""\nStackTrace:\n{ 0 }", DebugLog::GetStackTrace());
+                auto timespan = (Platform::GetTimeSeconds() - startTime);
+
+                
+                //{ToDo] move this to StringUtils:: ? and do somfing like const String& StringUtils::TimeFrom(double timespan) with will return {0}{1}
+                // or replace it with existing funcion with is doing the same think 
+                {
+                    //conver it to s,ms,μs,ns
+                    String v = String("s");
+                    if (timespan < 1.0) // ms 1 / 1 000
+                    {
+                        timespan *= 1000;
+                        v = "ms";
+                        if (timespan < 1.0) // μs 1 / 1 000 000
+                        {
+                            timespan *= 1000;
+                            v = "μs";
+                            if (timespan < 1.0) // ns  1 / 1 000 000 000
+                            {
+                                timespan *= 1000;
+                                v = "ns";
+                            }
+                        }
+                    }
+                    timespan = Math::RoundToInt(timespan);
+                    LOG(Info, "Model is now initialized... took ~{0}{1}", timespan, v);
                 }
+                goto Check_Again; // in case the lodIndex is invalid any way
             }
-            LOG(Info, "Model is now initialized... took ~{0}ms", i);
-            goto Check_Again; // in case the lodIndex is invalid any way
         }
     }
 
