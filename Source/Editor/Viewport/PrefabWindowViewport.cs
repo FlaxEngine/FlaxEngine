@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using FlaxEditor.Content;
 using FlaxEditor.Gizmo;
 using FlaxEditor.GUI.ContextMenu;
@@ -285,7 +286,11 @@ namespace FlaxEditor.Viewport
                 ShowDebugDraw = false;
 
                 // Show whole UI on startup
-                ViewportCamera.ShowActor(Instance);
+                var canvas = (CanvasRootControl)_uiParentLink.Children.FirstOrDefault(x => x is CanvasRootControl);
+                if (canvas != null)
+                    ViewportCamera.ShowActor(canvas.Canvas);
+                else if (Instance is UIControl)
+                    ViewportCamera.ShowActor(Instance);
             }
             else
             {
