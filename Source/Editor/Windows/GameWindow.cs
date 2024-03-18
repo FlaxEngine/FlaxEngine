@@ -200,7 +200,7 @@ namespace FlaxEditor.Windows
         /// </summary>
         private class GameRoot : UIEditorRoot
         {
-            public override bool EnableInputs => !Time.GamePaused;
+            public override bool EnableInputs => !Time.GamePaused && Editor.IsPlayMode;
             public override bool EnableSelecting => !Editor.IsPlayMode || Time.GamePaused;
             public override TransformGizmo TransformGizmo => Editor.Instance.MainTransformGizmo;
         }
