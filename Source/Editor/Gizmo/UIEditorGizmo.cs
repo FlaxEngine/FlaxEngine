@@ -276,6 +276,11 @@ namespace FlaxEditor
                         return true;
                     }
                 }
+                // Allow deselecting if user clicks on nothing
+                else
+                {
+                    owner.Select(null);
+                }
             }
             if (EnableCamera && (button == MouseButton.Right || button == MouseButton.Middle))
             {
@@ -294,6 +299,24 @@ namespace FlaxEditor
         public override void OnMouseMove(Float2 location)
         {
             base.OnMouseMove(location);
+
+            // Change cursor if mouse is over active control widget
+            bool cursorChanged = false;
+            if (_widgets != null && _widgets.Count != 0 && !_mouseMovesControl && !_mouseMovesWidget && !_mouseMovesView)
+            {
+                foreach (var widget in _widgets)
+                {
+                    if (widget.Bounds.Contains(ref location))
+                    {
+                        Cursor = widget.Cursor;
+                        cursorChanged = true;
+                    }
+                    else if (Cursor != CursorType.Default && !cursorChanged)
+                    {
+                        Cursor = CursorType.Default;
+                    }
+                }
+            }
 
             var transformGizmo = TransformGizmo;
             if (_mouseMovesControl && transformGizmo != null)
