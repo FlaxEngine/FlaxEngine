@@ -21,9 +21,12 @@ namespace FlaxEditor
 
         public void ShowActors(IEnumerable<Actor> actors)
         {
+            var root = UIEditor.UIRoot;
+            if (root == null)
+                return;
+
             // Calculate bounds of all selected objects
             var areaRect = Rectangle.Empty;
-            var root = UIEditor.UIRoot;
             foreach (var actor in actors)
             {
                 Rectangle bounds;
@@ -163,7 +166,7 @@ namespace FlaxEditor
         /// <summary>
         /// True if enable panning and zooming the view.
         /// </summary>
-        public bool EnableCamera => _view != null;
+        public bool EnableCamera => _view != null && EnableBackground;
 
         /// <summary>
         /// Transform gizmo to use sync with (selection, snapping, transformation settings).
@@ -293,7 +296,7 @@ namespace FlaxEditor
                 return true;
             }
 
-            return false;
+            return Focus(this);
         }
 
         public override void OnMouseMove(Float2 location)
@@ -467,7 +470,7 @@ namespace FlaxEditor
 
         public override void Draw()
         {
-            if (EnableBackground)
+            if (EnableBackground && _view != null)
             {
                 // Draw background
                 Surface.VisjectSurface.DrawBackgroundDefault(Editor.Instance.UI.VisjectSurfaceBackground, Width, Height);

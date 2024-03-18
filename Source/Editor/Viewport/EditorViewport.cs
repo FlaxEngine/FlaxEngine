@@ -1537,7 +1537,7 @@ namespace FlaxEditor.Viewport
                 }
                 bool useMouse = IsControllingMouse || (Mathf.IsInRange(_viewMousePos.X, 0, Width) && Mathf.IsInRange(_viewMousePos.Y, 0, Height));
                 _prevInput = _input;
-                var hit = GetChildAt(_viewMousePos, c => c.Visible && !(c is CanvasRootControl));
+                var hit = GetChildAt(_viewMousePos, c => c.Visible && !(c is CanvasRootControl) && !(c is UIEditorRoot));
                 if (canUseInput && ContainsFocus && hit == null)
                     _input.Gather(win.Window, useMouse);
                 else
