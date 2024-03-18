@@ -186,6 +186,10 @@ namespace FlaxEditor.Windows.Assets
 
                     base.Initialize(layout);
 
+                    // Ignore import settings GUI if the type is not animation. This removes the import UI if the animation asset was not created using an import.
+                    if (proxy.ImportSettings.Settings.Type != FlaxEngine.Tools.ModelTool.ModelType.Animation)
+                        return;
+
                     // Import Settings
                     {
                         var group = layout.Group("Import Settings");
