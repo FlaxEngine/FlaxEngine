@@ -286,7 +286,28 @@ namespace FlaxEngine.Utilities
         /// <returns>A random <see cref="Quaternion"/>.</returns>
         public static Quaternion NextQuaternion(this Random random, bool randomRoll = false)
         {
-            return Quaternion.Euler(NextFloat(random, -180.0f, 180.0f), NextFloat(random, -180.0f, 180.0f), randomRoll ? NextFloat(random, -180.0f, 180.0f) : 0.0f);
+            //Based on https://msl.cs.uiuc.edu/planning/node198.html
+            float u1 = NextFloat(random);
+            float u2 = NextFloat(random);
+            float u3 = NextFloat(random);
+            float rad = 2.0f * Mathf.Pi; 
+
+            float sqrt1MinusU1 = Mathf.Sqrt(1 - u1);
+            float sqrtU1 = Mathf.Sqrt(u1);
+
+            float x = sqrt1MinusU1 * Mathf.Sin(rad * u2);
+            float y = sqrt1MinusU1 * Mathf.Cos(rad * u2);
+            float z = sqrtU1 * Mathf.Sin(rad * u3);
+            float w = sqrtU1 * Mathf.Cos(rad * u3);
+
+            Quaternion result = new Quaternion(x, y, z, w);
+
+            if (!randomRoll)
+            {
+                return Quaternion.Euler(result.EulerAngles.X, result.EulerAngles.Y, 0);
+            }
+
+            return result;
         }
 
         /// <summary>
@@ -336,6 +357,27 @@ namespace FlaxEngine.Utilities
 
             output.Normalize();
 
+            return output;
+        }
+
+        /// <summary>
+        /// Generates a uniformly distributed random unit vector point inside a unit sphere.
+        /// </summary>
+        /// <param name="random">An instance of <see cref="Random"/>.</param>
+        /// <returns>A random <see cref="Vector3"/>.</returns>
+        public static Vector3 NextInsideUnitVector3(this Random random)
+        {
+            Vector3 output;
+            Real l;
+            do
+            {
+                // Create random float with a mean of 0 and deviation of ±1
+                output.X = NextFloat(random) * 2.0f - 1.0f;
+                output.Y = NextFloat(random) * 2.0f - 1.0f;
+                output.Z = NextFloat(random) * 2.0f - 1.0f;
+
+                l = output.LengthSquared;
+            } while (l > 1);
             return output;
         }
 
@@ -442,6 +484,26 @@ namespace FlaxEngine.Utilities
         {
             Array values = Enum.GetValues(typeof(TEnum));
             return (TEnum)values.GetValue(random.Next(values.Length));
+        }
+
+        /// <summary>
+        /// Generates a random point inside a sphere with radius 1.0.
+        /// </summary>
+        /// <param name="random">An instance of <see cref="Random"/>.</param>
+        /// <returns>A random <see cref="Vector3"/> within the sphere.</returns>
+        public static Vector3 GetPointInsideSphere(this Random random)
+        {
+            return NextInsideUnitVector3(random);
+        }
+
+        /// <summary>
+        /// Generates a random point on the surface of a sphere with radius 1.0.
+        /// </summary>
+        /// <param name="random">An instance of <see cref="Random"/>.</param>
+        /// <returns>A random <see cref="Vector3"/>.</returns>
+        public static Vector3 GetPointOnSphere(this Random random)
+        {
+            return NextUnitVector3(random);
         }
     }
 }

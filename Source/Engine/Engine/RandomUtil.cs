@@ -11,18 +11,9 @@ namespace FlaxEngine
     public static class RandomUtil
     {
         /// <summary>
-        /// Random numbers generator.
+        /// A static random numbers generator.
+        /// If you need a thread safe one, or one that can be seeded, please use [`Random`].
         /// </summary>
         public static readonly Random Random = new Random();
-
-        /// <summary>
-        /// Generates a pseudo-random number from normalized range [0;1].
-        /// </summary>
-        /// <returns>The random number.</returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static float Rand()
-        {
-            return Random.Next(0, int.MaxValue) / (float)int.MaxValue;
-        }
     }
 }
