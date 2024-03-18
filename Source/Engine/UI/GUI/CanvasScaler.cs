@@ -430,6 +430,13 @@ namespace FlaxEngine.GUI
         }
 
         /// <inheritdoc />
+        public override bool IntersectsChildContent(Control child, Float2 location, out Float2 childSpaceLocation)
+        {
+            location /= _scale;
+            return base.IntersectsChildContent(child, location, out childSpaceLocation);
+        }
+
+        /// <inheritdoc />
         public override bool ContainsPoint(ref Float2 location, bool precise = false)
         {
             if (precise) // Ignore as utility-only element
