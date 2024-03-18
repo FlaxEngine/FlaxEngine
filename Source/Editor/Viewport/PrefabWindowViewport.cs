@@ -44,6 +44,7 @@ namespace FlaxEditor.Viewport
         private sealed class PrefabUIEditorRoot : UIEditorRoot
         {
             private readonly PrefabWindowViewport _viewport;
+            private bool UI => _viewport._hasUILinkedCached;
 
             public PrefabUIEditorRoot(PrefabWindowViewport viewport)
             : base(true)
@@ -52,9 +53,9 @@ namespace FlaxEditor.Viewport
                 Parent = viewport;
             }
 
-            public override bool EnableInputs => false;
-            public override bool EnableSelecting => true;
-            public override bool EnableBackground => _viewport._hasUILinkedCached;
+            public override bool EnableInputs => !UI;
+            public override bool EnableSelecting => UI;
+            public override bool EnableBackground => UI;
             public override TransformGizmo TransformGizmo => _viewport.TransformGizmo;
         }
 
