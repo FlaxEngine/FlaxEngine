@@ -260,6 +260,56 @@ namespace FlaxEditor.Windows
                 Editor.Instance.Windows.ProfilerWin.Clear();
                 Editor.Instance.UI.AddStatusMessage($"Profiling results cleared.");
             });
+            InputActions.Add(options => options.Save, () =>
+            {
+                if (Editor.IsPlayMode)
+                    return;
+                Editor.Instance.SaveAll();
+            });
+            InputActions.Add(options => options.Undo, () =>
+            {
+                if (Editor.IsPlayMode)
+                    return;
+                Editor.Instance.PerformUndo();
+                Focus();
+            });
+            InputActions.Add(options => options.Redo, () =>
+            {
+                if (Editor.IsPlayMode)
+                    return;
+                Editor.Instance.PerformRedo();
+                Focus();
+            });
+            InputActions.Add(options => options.Cut, () =>
+            {
+                if (Editor.IsPlayMode)
+                    return;
+                Editor.Instance.SceneEditing.Cut();
+            });
+            InputActions.Add(options => options.Copy, () =>
+            {
+                if (Editor.IsPlayMode)
+                    return;
+                Editor.Instance.SceneEditing.Copy();
+            });
+            InputActions.Add(options => options.Paste, () =>
+            {
+                if (Editor.IsPlayMode)
+                    return;
+                Editor.Instance.SceneEditing.Paste();
+            });
+            InputActions.Add(options => options.Duplicate, () =>
+            {
+                if (Editor.IsPlayMode)
+                    return;
+                Editor.Instance.SceneEditing.Duplicate();
+            });
+            InputActions.Add(options => options.Delete, () =>
+            {
+                if (Editor.IsPlayMode)
+                    return;
+                Editor.Instance.SceneEditing.Delete();
+            });
         }
 
         private void ChangeViewportRatio(ViewportScaleOptions v)
