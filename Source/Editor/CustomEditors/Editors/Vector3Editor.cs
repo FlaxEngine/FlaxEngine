@@ -75,7 +75,7 @@ namespace FlaxEditor.CustomEditors.Editors
             if (attributes != null)
             {
                 limit = (LimitAttribute)attributes.FirstOrDefault(x => x is LimitAttribute);
-                var categoryAttribute = (NumberCategoryAttribute)attributes.FirstOrDefault(x => x is NumberCategoryAttribute);
+                var categoryAttribute = (ValueCategoryAttribute)attributes.FirstOrDefault(x => x is ValueCategoryAttribute);
                 if (categoryAttribute != null)
                     category = categoryAttribute.Category;
             }
@@ -273,7 +273,7 @@ namespace FlaxEditor.CustomEditors.Editors
             if (attributes != null)
             {
                 limit = (LimitAttribute)attributes.FirstOrDefault(x => x is LimitAttribute);
-                var categoryAttribute = (NumberCategoryAttribute)attributes.FirstOrDefault(x => x is NumberCategoryAttribute);
+                var categoryAttribute = (ValueCategoryAttribute)attributes.FirstOrDefault(x => x is ValueCategoryAttribute);
                 if (categoryAttribute != null)
                     category = categoryAttribute.Category;
             }

@@ -26,8 +26,8 @@ namespace FlaxEditor.CustomEditors.Editors
 
             // Try get limit attribute for value min/max range setting and slider speed
             var attributes = Values.GetAttributes();
-            var categoryAttribute = attributes.FirstOrDefault(x => x is NumberCategoryAttribute);
-            var valueCategory = ((NumberCategoryAttribute)categoryAttribute)?.Category ?? Utils.ValueCategory.None;
+            var categoryAttribute = attributes.FirstOrDefault(x => x is ValueCategoryAttribute);
+            var valueCategory = ((ValueCategoryAttribute)categoryAttribute)?.Category ?? Utils.ValueCategory.None;
             if (attributes != null)
             {
                 var limit = attributes.FirstOrDefault(x => x is LimitAttribute);

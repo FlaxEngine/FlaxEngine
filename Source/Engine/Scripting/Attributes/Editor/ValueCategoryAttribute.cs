@@ -5,29 +5,28 @@ using System;
 namespace FlaxEngine
 {
     /// <summary>
-    /// Used to specify the value category of a numeric value as either as-is (a scalar), a distance (formatted as cm/m/km)
-    /// or an angle (formatted with a degree sign).
+    /// Used to specify the value category of a numeric value as either as-is (a scalar), a distance (formatted as cm/m/km) or an angle (formatted with a degree sign).
     /// </summary>
     /// <seealso cref="System.Attribute" />
     [Serializable]
     [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property)]
-    public sealed class NumberCategoryAttribute : Attribute
+    public sealed class ValueCategoryAttribute : Attribute
     {
         /// <summary>
         /// The value category used for formatting.
         /// </summary>
         public Utils.ValueCategory Category;
 
-        private NumberCategoryAttribute()
+        private ValueCategoryAttribute()
         {
             Category = Utils.ValueCategory.None;
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="NumberCategoryAttribute"/> class.
+        /// Initializes a new instance of the <see cref="ValueCategoryAttribute"/> class.
         /// </summary>
         /// <param name="category">The value category.</param>
-        public NumberCategoryAttribute(Utils.ValueCategory category)
+        public ValueCategoryAttribute(Utils.ValueCategory category)
         {
             Category = category;
         }
