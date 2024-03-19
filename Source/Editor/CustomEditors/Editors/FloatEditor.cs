@@ -3,7 +3,6 @@
 using System;
 using System.Linq;
 using FlaxEditor.CustomEditors.Elements;
-using FlaxEditor.GUI.ContextMenu;
 using FlaxEngine;
 using Utils = FlaxEngine.Utils;
 
@@ -29,59 +28,39 @@ namespace FlaxEditor.CustomEditors.Editors
         public override void Initialize(LayoutElementsContainer layout)
         {
             _element = null;
-
-            // Try get limit attribute for value min/max range setting and slider speed
             var attributes = Values.GetAttributes();
-            var categoryAttribute = attributes.FirstOrDefault(x => x is ValueCategoryAttribute);
-            var valueCategory = ((ValueCategoryAttribute)categoryAttribute)?.Category ?? Utils.ValueCategory.None;
+            var range = (RangeAttribute)attributes?.FirstOrDefault(x => x is RangeAttribute);
+            if (range != null)
+            {
+                // Use slider
+                var slider = layout.Slider();
+                slider.Slider.SetLimits(range);
+                slider.Slider.ValueChanged += OnValueChanged;
+                slider.Slider.SlidingEnd += ClearToken;
+                _element = slider;
+                return;
+            }
+            
+            var floatValue = layout.FloatValue();
+            floatValue.ValueBox.ValueChanged += OnValueChanged;
+            floatValue.ValueBox.SlidingEnd += ClearToken;
+            _element = floatValue;
             if (attributes != null)
             {
-                var range = attributes.FirstOrDefault(x => x is RangeAttribute);
-                if (range != null)
+                var limit = (LimitAttribute)attributes.FirstOrDefault(x => x is LimitAttribute);
+                floatValue.SetLimits(limit);
+                var valueCategory = ((ValueCategoryAttribute)attributes.FirstOrDefault(x => x is ValueCategoryAttribute))?.Category ?? Utils.ValueCategory.None;
+                if (valueCategory != Utils.ValueCategory.None)
                 {
-                    // Use slider
-                    var slider = layout.Slider();
-                    slider.SetLimits((RangeAttribute)range);
-                    slider.Slider.ValueChanged += OnValueChanged;
-                    slider.Slider.SlidingEnd += ClearToken;
-                    _element = slider;
-                    return;
-                }
-                var limit = attributes.FirstOrDefault(x => x is LimitAttribute);
-                if (limit != null)
-                {
-                    // Use float value editor with limit
-                    var floatValue = layout.FloatValue();
-                    floatValue.SetLimits((LimitAttribute)limit);
                     floatValue.SetCategory(valueCategory);
-                    floatValue.ValueBox.ValueChanged += OnValueChanged;
-                    floatValue.ValueBox.SlidingEnd += ClearToken;
-                    _element = floatValue;
                     LinkedLabel.SetupContextMenu += (label, menu, editor) =>
                     {
                         menu.AddSeparator();
-                        var mb = menu.AddButton("Show formatted", bt => { floatValue.SetCategory(bt.Checked ? valueCategory : Utils.ValueCategory.None);});
+                        var mb = menu.AddButton("Show formatted", bt => { floatValue.SetCategory(bt.Checked ? valueCategory : Utils.ValueCategory.None); });
                         mb.AutoCheck = true;
                         mb.Checked = floatValue.ValueBox.Category != Utils.ValueCategory.None;
                     };
-                    return;
                 }
-            }
-            if (_element == null)
-            {
-                // Use float value editor
-                var floatValue = layout.FloatValue();
-                floatValue.SetCategory(valueCategory);
-                floatValue.ValueBox.ValueChanged += OnValueChanged;
-                floatValue.ValueBox.SlidingEnd += ClearToken;
-                _element = floatValue;
-                LinkedLabel.SetupContextMenu += (label, menu, editor) =>
-                {
-                    menu.AddSeparator();
-                    var mb = menu.AddButton("Show formatted", bt => { floatValue.SetCategory(bt.Checked ? valueCategory : Utils.ValueCategory.None);});
-                    mb.AutoCheck = true;
-                    mb.Checked = floatValue.ValueBox.Category != Utils.ValueCategory.None;
-                };
             }
         }
 

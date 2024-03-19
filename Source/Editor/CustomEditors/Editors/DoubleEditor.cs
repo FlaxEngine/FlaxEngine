@@ -4,7 +4,6 @@ using System;
 using System.Linq;
 using FlaxEditor.CustomEditors.Elements;
 using FlaxEngine;
-using Utils = FlaxEngine.Utils;
 
 namespace FlaxEditor.CustomEditors.Editors
 {
@@ -22,49 +21,27 @@ namespace FlaxEditor.CustomEditors.Editors
         /// <inheritdoc />
         public override void Initialize(LayoutElementsContainer layout)
         {
-            _element = null;
-
-            // Try get limit attribute for value min/max range setting and slider speed
+            var doubleValue = layout.DoubleValue();
+            doubleValue.ValueBox.ValueChanged += OnValueChanged;
+            doubleValue.ValueBox.SlidingEnd += ClearToken;
+            _element = doubleValue;
             var attributes = Values.GetAttributes();
-            var categoryAttribute = attributes.FirstOrDefault(x => x is ValueCategoryAttribute);
-            var valueCategory = ((ValueCategoryAttribute)categoryAttribute)?.Category ?? Utils.ValueCategory.None;
             if (attributes != null)
             {
-                var limit = attributes.FirstOrDefault(x => x is LimitAttribute);
-                if (limit != null)
+                var limit = (LimitAttribute)attributes.FirstOrDefault(x => x is LimitAttribute);
+                doubleValue.SetLimits(limit);
+                var valueCategory = ((ValueCategoryAttribute)attributes.FirstOrDefault(x => x is ValueCategoryAttribute))?.Category ?? Utils.ValueCategory.None;
+                if (valueCategory != Utils.ValueCategory.None)
                 {
-                    // Use double value editor with limit
-                    var doubleValue = layout.DoubleValue();
                     doubleValue.SetCategory(valueCategory);
-                    doubleValue.SetLimits((LimitAttribute)limit);
-                    doubleValue.ValueBox.ValueChanged += OnValueChanged;
-                    doubleValue.ValueBox.SlidingEnd += ClearToken;
-                    _element = doubleValue;
                     LinkedLabel.SetupContextMenu += (label, menu, editor) =>
                     {
                         menu.AddSeparator();
-                        var mb = menu.AddButton("Show formatted", bt => { doubleValue.SetCategory(bt.Checked ? valueCategory : Utils.ValueCategory.None);});
+                        var mb = menu.AddButton("Show formatted", bt => { doubleValue.SetCategory(bt.Checked ? valueCategory : Utils.ValueCategory.None); });
                         mb.AutoCheck = true;
                         mb.Checked = doubleValue.ValueBox.Category != Utils.ValueCategory.None;
                     };
-                    return;
                 }
-            }
-            if (_element == null)
-            {
-                // Use double value editor
-                var doubleValue = layout.DoubleValue();
-                doubleValue.SetCategory(valueCategory);
-                doubleValue.ValueBox.ValueChanged += OnValueChanged;
-                doubleValue.ValueBox.SlidingEnd += ClearToken;
-                LinkedLabel.SetupContextMenu += (label, menu, editor) =>
-                {
-                    menu.AddSeparator();
-                    var mb = menu.AddButton("Show formatted", bt => { doubleValue.SetCategory(bt.Checked ? valueCategory : Utils.ValueCategory.None);});
-                    mb.AutoCheck = true;
-                    mb.Checked = doubleValue.ValueBox.Category != Utils.ValueCategory.None;
-                };
-                _element = doubleValue;
             }
         }
 
