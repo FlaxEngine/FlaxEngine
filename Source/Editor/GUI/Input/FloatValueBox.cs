@@ -1,9 +1,9 @@
 // Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 using System;
-using System.Globalization;
 using FlaxEditor.Utilities;
 using FlaxEngine;
+using Utils = FlaxEngine.Utils;
 
 namespace FlaxEditor.GUI.Input
 {
@@ -137,10 +137,20 @@ namespace FlaxEditor.GUI.Input
             Value = Value;
         }
 
+        private Utils.ValueCategory _category = Utils.ValueCategory.None;
+
+        /// <summary>
+        /// Get or set the category of the value. This can be none for just a number or a more specific one like a distance.
+        /// </summary>
+        public Utils.ValueCategory Category {
+            get => _category;
+            set { _category = value; UpdateText(); }
+        }
+
         /// <inheritdoc />
         protected sealed override void UpdateText()
         {
-            SetText(Utilities.Utils.FormatFloat(_value));
+            SetText(Utilities.Utils.FormatFloat(_value, Category));
         }
 
         /// <inheritdoc />

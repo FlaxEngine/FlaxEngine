@@ -4,6 +4,7 @@ using System.Linq;
 using FlaxEditor.CustomEditors.Elements;
 using FlaxEngine;
 using FlaxEngine.GUI;
+using Utils = FlaxEngine.Utils;
 
 namespace FlaxEditor.CustomEditors.Editors
 {
@@ -70,25 +71,44 @@ namespace FlaxEditor.CustomEditors.Editors
 
             LimitAttribute limit = null;
             var attributes = Values.GetAttributes();
+            var category = Utils.ValueCategory.None;
             if (attributes != null)
             {
                 limit = (LimitAttribute)attributes.FirstOrDefault(x => x is LimitAttribute);
+                var categoryAttribute = (NumberCategoryAttribute)attributes.FirstOrDefault(x => x is NumberCategoryAttribute);
+                if (categoryAttribute != null)
+                    category = categoryAttribute.Category;
             }
 
             XElement = grid.FloatValue();
             XElement.SetLimits(limit);
+            XElement.SetCategory(category);
             XElement.ValueBox.ValueChanged += OnXValueChanged;
             XElement.ValueBox.SlidingEnd += ClearToken;
 
             YElement = grid.FloatValue();
             YElement.SetLimits(limit);
+            YElement.SetCategory(category);
             YElement.ValueBox.ValueChanged += OnYValueChanged;
             YElement.ValueBox.SlidingEnd += ClearToken;
 
             ZElement = grid.FloatValue();
             ZElement.SetLimits(limit);
+            ZElement.SetCategory(category);
             ZElement.ValueBox.ValueChanged += OnZValueChanged;
             ZElement.ValueBox.SlidingEnd += ClearToken;
+            LinkedLabel.SetupContextMenu += (label, menu, editor) =>
+            {
+                menu.AddSeparator();
+                var mb = menu.AddButton("Show formatted", bt =>
+                {
+                    XElement.SetCategory(bt.Checked ? category : Utils.ValueCategory.None);
+                    YElement.SetCategory(bt.Checked ? category : Utils.ValueCategory.None);
+                    ZElement.SetCategory(bt.Checked ? category : Utils.ValueCategory.None);
+                });
+                mb.AutoCheck = true;
+                mb.Checked = XElement.ValueBox.Category != Utils.ValueCategory.None;
+            };
         }
 
         private void OnXValueChanged()
@@ -248,26 +268,45 @@ namespace FlaxEditor.CustomEditors.Editors
             gridControl.SlotsVertically = 1;
 
             LimitAttribute limit = null;
+            Utils.ValueCategory category = Utils.ValueCategory.None;
             var attributes = Values.GetAttributes();
             if (attributes != null)
             {
                 limit = (LimitAttribute)attributes.FirstOrDefault(x => x is LimitAttribute);
+                var categoryAttribute = (NumberCategoryAttribute)attributes.FirstOrDefault(x => x is NumberCategoryAttribute);
+                if (categoryAttribute != null)
+                    category = categoryAttribute.Category;
             }
 
             XElement = grid.DoubleValue();
             XElement.SetLimits(limit);
+            XElement.SetCategory(category);
             XElement.ValueBox.ValueChanged += OnValueChanged;
             XElement.ValueBox.SlidingEnd += ClearToken;
 
             YElement = grid.DoubleValue();
             YElement.SetLimits(limit);
+            YElement.SetCategory(category);
             YElement.ValueBox.ValueChanged += OnValueChanged;
             YElement.ValueBox.SlidingEnd += ClearToken;
 
             ZElement = grid.DoubleValue();
             ZElement.SetLimits(limit);
+            ZElement.SetCategory(category);
             ZElement.ValueBox.ValueChanged += OnValueChanged;
             ZElement.ValueBox.SlidingEnd += ClearToken;
+            LinkedLabel.SetupContextMenu += (label, menu, editor) =>
+            {
+                menu.AddSeparator();
+                var mb = menu.AddButton("Show formatted", bt =>
+                {
+                    XElement.SetCategory(bt.Checked ? category : Utils.ValueCategory.None);
+                    YElement.SetCategory(bt.Checked ? category : Utils.ValueCategory.None);
+                    ZElement.SetCategory(bt.Checked ? category : Utils.ValueCategory.None);
+                });
+                mb.AutoCheck = true;
+                mb.Checked = XElement.ValueBox.Category != Utils.ValueCategory.None;
+            };
         }
 
         private void OnValueChanged()
