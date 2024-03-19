@@ -196,37 +196,19 @@ namespace FlaxEditor.Options
         [EditorDisplay("Interface"), EditorOrder(280), Tooltip("Editor content window orientation.")]
         public FlaxEngine.GUI.Orientation ContentWindowOrientation { get; set; } = FlaxEngine.GUI.Orientation.Horizontal;
 
-        private ValueFormattingType _valueFormatting = ValueFormattingType.None;
-
         /// <summary>
         /// Gets or sets the formatting option for numeric values in the editor.
         /// </summary>
         [DefaultValue(ValueFormattingType.None)]
-        [EditorDisplay("Interface"), EditorOrder(300), Tooltip("Formatting of numeric values.")]
-        public ValueFormattingType ValueFormatting {
-            get => _valueFormatting;
-            set
-            {
-                _valueFormatting = value;
-                Units.UseUnitsFormatting = _valueFormatting != ValueFormattingType.None;
-                Units.AutomaticUnitsFormatting = _valueFormatting == ValueFormattingType.AutoUnit;
-            }
-        }
-
-        private bool _spaceNumberAndUnits = false;
+        [EditorDisplay("Interface"), EditorOrder(300)]
+        public ValueFormattingType ValueFormatting { get; set; }
 
         /// <summary>
         /// Gets or sets the option to put a space between numbers and units for unit formatting.
         /// </summary>
         [DefaultValue(false)]
-        [EditorDisplay("Interface"), EditorOrder(310), Tooltip("Put a space between numbers and units.")]
-        public bool SpaceNumberAndUnits { get => _spaceNumberAndUnits;
-            set
-            {
-                _spaceNumberAndUnits = value;
-                Units.SpaceNumberAndUnits = _spaceNumberAndUnits;
-            }
-        }
+        [EditorDisplay("Interface"), EditorOrder(310)]
+        public bool SeparateValueAndUnit { get; set; }
 
         /// <summary>
         /// Gets or sets the timestamps prefix mode for output log messages.

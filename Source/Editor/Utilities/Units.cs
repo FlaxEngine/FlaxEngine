@@ -20,7 +20,7 @@ public class Units
     /// <summary>
     /// Add a space between numbers and units for readability.
     /// </summary>
-    public static bool SpaceNumberAndUnits = true;
+    public static bool SeparateValueAndUnit = true;
 
     /// <summary>
     /// If set to true, the distance unit is chosen on the magnitude, otherwise it's meters.
@@ -34,7 +34,7 @@ public class Units
     /// <returns>The formatted text.</returns>
     public static string Unit(string unit)
     {
-        if (SpaceNumberAndUnits)
+        if (SeparateValueAndUnit)
             return $" {unit}";
         return unit;
     }

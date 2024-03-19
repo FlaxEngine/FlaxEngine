@@ -200,6 +200,27 @@ namespace FlaxEditor.Options
 
             EditorAssets.Cache.OnEditorOptionsChanged(Options);
 
+            // Units formatting options
+            bool useUnitsFormatting = Options.Interface.ValueFormatting != InterfaceOptions.ValueFormattingType.None;
+            bool automaticUnitsFormatting = Options.Interface.ValueFormatting == InterfaceOptions.ValueFormattingType.AutoUnit;
+            bool separateValueAndUnit = Options.Interface.SeparateValueAndUnit;
+            if (useUnitsFormatting != Utilities.Units.UseUnitsFormatting ||
+                automaticUnitsFormatting != Utilities.Units.AutomaticUnitsFormatting ||
+                separateValueAndUnit != Utilities.Units.SeparateValueAndUnit)
+            {
+                Utilities.Units.UseUnitsFormatting = useUnitsFormatting;
+                Utilities.Units.AutomaticUnitsFormatting = automaticUnitsFormatting;
+                Utilities.Units.SeparateValueAndUnit = separateValueAndUnit;
+
+                // Refresh UI in property panels
+                Editor.Windows.PropertiesWin?.Presenter.BuildLayoutOnUpdate();
+                foreach (var window in Editor.Windows.Windows)
+                {
+                    if (window is Windows.Assets.PrefabWindow prefabWindow)
+                        prefabWindow.Presenter.BuildLayoutOnUpdate();
+                }
+            }
+
             // Send event
             OptionsChanged?.Invoke(Options);
         }
