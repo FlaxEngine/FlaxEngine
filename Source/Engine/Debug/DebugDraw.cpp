@@ -356,6 +356,19 @@ namespace
     Float3 CircleCache[DEBUG_DRAW_CIRCLE_VERTICES];
     Array<Float3> SphereTriangleCache;
     DebugSphereCache SphereCache[3];
+
+#if COMPILE_WITH_DEV_ENV
+    void OnShaderReloading(Asset* obj)
+    {
+        DebugDrawPsLinesDefault.Release();
+        DebugDrawPsLinesDepthTest.Release();
+        DebugDrawPsWireTrianglesDefault.Release();
+        DebugDrawPsWireTrianglesDepthTest.Release();
+        DebugDrawPsTrianglesDefault.Release();
+        DebugDrawPsTrianglesDepthTest.Release();
+    }
+
+#endif
 };
 
 extern int32 BoxTrianglesIndicesCache[];
@@ -615,17 +628,19 @@ void DebugDrawService::Update()
     GlobalContext.DebugDrawDefault.Update(deltaTime);
     GlobalContext.DebugDrawDepthTest.Update(deltaTime);
 
-    // Check if need to setup a resources
+    // Lazy-init resources
     if (DebugDrawShader == nullptr)
     {
-        // Shader
         DebugDrawShader = Content::LoadAsyncInternal<Shader>(TEXT("Shaders/DebugDraw"));
         if (DebugDrawShader == nullptr)
         {
             LOG(Fatal, "Cannot load DebugDraw shader");
         }
+#if COMPILE_WITH_DEV_ENV
+        DebugDrawShader->OnReloading.Bind(&OnShaderReloading);
+#endif
     }
-    if (DebugDrawVB == nullptr && DebugDrawShader && DebugDrawShader->IsLoaded())
+    if (DebugDrawPsWireTrianglesDepthTest.Depth == nullptr && DebugDrawShader && DebugDrawShader->IsLoaded())
     {
         bool failed = false;
         const auto shader = DebugDrawShader->GetShader();
@@ -661,10 +676,11 @@ void DebugDrawService::Update()
         {
             LOG(Fatal, "Cannot setup DebugDraw service!");
         }
-
-        // Vertex buffer
-        DebugDrawVB = New<DynamicVertexBuffer>((uint32)(DEBUG_DRAW_INITIAL_VB_CAPACITY * sizeof(Vertex)), (uint32)sizeof(Vertex), TEXT("DebugDraw.VB"));
     }
+
+    // Vertex buffer
+    if (DebugDrawVB == nullptr)
+        DebugDrawVB = New<DynamicVertexBuffer>((uint32)(DEBUG_DRAW_INITIAL_VB_CAPACITY * sizeof(Vertex)), (uint32)sizeof(Vertex), TEXT("DebugDraw.VB"));
 }
 
 void DebugDrawService::Dispose()
@@ -723,7 +739,7 @@ void DebugDraw::Draw(RenderContext& renderContext, GPUTextureView* target, GPUTe
     // Ensure to have shader loaded and any lines to render
     const int32 debugDrawDepthTestCount = Context->DebugDrawDepthTest.Count();
     const int32 debugDrawDefaultCount = Context->DebugDrawDefault.Count();
-    if (DebugDrawShader == nullptr || !DebugDrawShader->IsLoaded() || debugDrawDepthTestCount + debugDrawDefaultCount == 0)
+    if (DebugDrawShader == nullptr || !DebugDrawShader->IsLoaded() || debugDrawDepthTestCount + debugDrawDefaultCount == 0 || DebugDrawPsWireTrianglesDepthTest.Depth == nullptr)
         return;
     if (renderContext.Buffers == nullptr || !DebugDrawVB)
         return;
@@ -849,6 +865,8 @@ void DebugDraw::Draw(RenderContext& renderContext, GPUTextureView* target, GPUTe
     {
         PROFILE_GPU_CPU_NAMED("Text");
         auto features = Render2D::Features;
+
+        // Disable vertex snapping when rendering 3D text
         Render2D::Features = (Render2D::RenderingFeatures)((uint32)features & ~(uint32)Render2D::RenderingFeatures::VertexSnapping);
 
         if (!DebugDrawFont)
