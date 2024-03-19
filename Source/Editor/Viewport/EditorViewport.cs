@@ -704,9 +704,9 @@ namespace FlaxEditor.Viewport
                 // Camera Viewpoints
                 {
                     var cameraView = cameraCM.AddChildMenu("Viewpoints").ContextMenu;
-                    for (int i = 0; i < EditorViewportCameraViewpointValues.Length; i++)
+                    for (int i = 0; i < CameraViewpointValues.Length; i++)
                     {
-                        var co = EditorViewportCameraViewpointValues[i];
+                        var co = CameraViewpointValues[i];
                         var button = cameraView.AddButton(co.Name);
                         button.Tag = co.Orientation;
                     }
@@ -899,9 +899,9 @@ namespace FlaxEditor.Viewport
                     viewFlags.AddButton("Reset flags", () => Task.ViewFlags = ViewFlags.DefaultEditor).Icon = Editor.Instance.Icons.Rotate32;
                     viewFlags.AddButton("Disable flags", () => Task.ViewFlags = ViewFlags.None).Icon = Editor.Instance.Icons.Rotate32;
                     viewFlags.AddSeparator();
-                    for (int i = 0; i < EditorViewportViewFlagsValues.Length; i++)
+                    for (int i = 0; i < ViewFlagsValues.Length; i++)
                     {
-                        var v = EditorViewportViewFlagsValues[i];
+                        var v = ViewFlagsValues[i];
                         var button = viewFlags.AddButton(v.Name);
                         button.CloseMenuOnClick = false;
                         button.Tag = v.Mode;
@@ -933,9 +933,9 @@ namespace FlaxEditor.Viewport
                         }
                     });
                     debugView.AddSeparator();
-                    for (int i = 0; i < EditorViewportViewModeValues.Length; i++)
+                    for (int i = 0; i < ViewModeValues.Length; i++)
                     {
-                        ref var v = ref EditorViewportViewModeValues[i];
+                        ref var v = ref ViewModeValues[i];
                         if (v.Options != null)
                         {
                             var childMenu = debugView.AddChildMenu(v.Name).ContextMenu;
@@ -989,12 +989,12 @@ namespace FlaxEditor.Viewport
                 #endregion View mode widget
             }
 
-            InputActions.Add(options => options.ViewpointTop, () => OrientViewport(Quaternion.Euler(EditorViewportCameraViewpointValues.First(vp => vp.Name == "Top").Orientation)));
-            InputActions.Add(options => options.ViewpointBottom, () => OrientViewport(Quaternion.Euler(EditorViewportCameraViewpointValues.First(vp => vp.Name == "Bottom").Orientation)));
-            InputActions.Add(options => options.ViewpointFront, () => OrientViewport(Quaternion.Euler(EditorViewportCameraViewpointValues.First(vp => vp.Name == "Front").Orientation)));
-            InputActions.Add(options => options.ViewpointBack, () => OrientViewport(Quaternion.Euler(EditorViewportCameraViewpointValues.First(vp => vp.Name == "Back").Orientation)));
-            InputActions.Add(options => options.ViewpointRight, () => OrientViewport(Quaternion.Euler(EditorViewportCameraViewpointValues.First(vp => vp.Name == "Right").Orientation)));
-            InputActions.Add(options => options.ViewpointLeft, () => OrientViewport(Quaternion.Euler(EditorViewportCameraViewpointValues.First(vp => vp.Name == "Left").Orientation)));
+            InputActions.Add(options => options.ViewpointTop, () => OrientViewport(Quaternion.Euler(CameraViewpointValues.First(vp => vp.Name == "Top").Orientation)));
+            InputActions.Add(options => options.ViewpointBottom, () => OrientViewport(Quaternion.Euler(CameraViewpointValues.First(vp => vp.Name == "Bottom").Orientation)));
+            InputActions.Add(options => options.ViewpointFront, () => OrientViewport(Quaternion.Euler(CameraViewpointValues.First(vp => vp.Name == "Front").Orientation)));
+            InputActions.Add(options => options.ViewpointBack, () => OrientViewport(Quaternion.Euler(CameraViewpointValues.First(vp => vp.Name == "Back").Orientation)));
+            InputActions.Add(options => options.ViewpointRight, () => OrientViewport(Quaternion.Euler(CameraViewpointValues.First(vp => vp.Name == "Right").Orientation)));
+            InputActions.Add(options => options.ViewpointLeft, () => OrientViewport(Quaternion.Euler(CameraViewpointValues.First(vp => vp.Name == "Left").Orientation)));
             InputActions.Add(options => options.CameraToggleRotation, () => _isVirtualMouseRightDown = !_isVirtualMouseRightDown);
             InputActions.Add(options => options.CameraIncreaseMoveSpeed, () => AdjustCameraMoveSpeed(1));
             InputActions.Add(options => options.CameraDecreaseMoveSpeed, () => AdjustCameraMoveSpeed(-1));
@@ -1870,7 +1870,7 @@ namespace FlaxEditor.Viewport
             }
         }
 
-        private readonly CameraViewpoint[] EditorViewportCameraViewpointValues =
+        private readonly CameraViewpoint[] CameraViewpointValues =
         {
             new CameraViewpoint("Front", new Float3(0, 180, 0)),
             new CameraViewpoint("Back", new Float3(0, 0, 0)),
@@ -1901,7 +1901,7 @@ namespace FlaxEditor.Viewport
             }
         }
 
-        private static readonly ViewModeOptions[] EditorViewportViewModeValues =
+        private static readonly ViewModeOptions[] ViewModeValues =
         {
             new ViewModeOptions(ViewMode.Default, "Default"),
             new ViewModeOptions(ViewMode.Unlit, "Unlit"),
@@ -1973,7 +1973,7 @@ namespace FlaxEditor.Viewport
             }
         }
 
-        private static readonly ViewFlagOptions[] EditorViewportViewFlagsValues =
+        private static readonly ViewFlagOptions[] ViewFlagsValues =
         {
             new ViewFlagOptions(ViewFlags.AntiAliasing, "Anti Aliasing"),
             new ViewFlagOptions(ViewFlags.Shadows, "Shadows"),
@@ -2008,16 +2008,13 @@ namespace FlaxEditor.Viewport
         {
             if (cm.Visible == false)
                 return;
-
             var ccm = (ContextMenu)cm;
             foreach (var e in ccm.Items)
             {
                 if (e is ContextMenuButton b && b.Tag != null)
                 {
                     var v = (ViewFlags)b.Tag;
-                    b.Icon = (Task.View.Flags & v) != 0
-                             ? Style.Current.CheckBoxTick
-                             : SpriteHandle.Invalid;
+                    b.Icon = (Task.View.Flags & v) != 0 ? Style.Current.CheckBoxTick : SpriteHandle.Invalid;
                 }
             }
         }
@@ -2026,7 +2023,6 @@ namespace FlaxEditor.Viewport
         {
             if (cm.Visible == false)
                 return;
-
             var ccm = (ContextMenu)cm;
             var layersMask = Task.ViewLayersMask;
             foreach (var e in ccm.Items)
