@@ -281,6 +281,9 @@ namespace FlaxEditor.Windows
             _view.OnDelete += Delete;
             _view.OnDuplicate += Duplicate;
             _view.OnPaste += Paste;
+
+            _view.InputActions.Add(options => options.Search, () => _itemsSearchBox.Focus());
+            InputActions.Add(options => options.Search, () => _itemsSearchBox.Focus());
         }
 
         private ContextMenu OnViewDropdownPopupCreate(ComboBox comboBox)
