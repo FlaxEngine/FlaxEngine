@@ -146,4 +146,7 @@ void TAA::Render(const RenderContext& renderContext, GPUTexture* input, GPUTextu
         context->Draw(output);
         renderContext.Buffers->TemporalAA = outputHistory;
     }
+
+    // Mark TAA jitter as resolved for future drawing
+    (bool&)renderContext.View.IsTaaResolved = true;
 }

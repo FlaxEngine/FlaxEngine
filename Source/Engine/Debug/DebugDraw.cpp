@@ -739,6 +739,7 @@ void DebugDraw::Draw(RenderContext& renderContext, GPUTextureView* target, GPUTe
     }
     Context->LastViewPos = view.Position;
     Context->LastViewProj = view.Projection;
+    TaaJitterRemoveContext taaJitterRemove(view);
 
     // Fallback to task buffers
     if (target == nullptr && renderContext.Task)
@@ -766,7 +767,7 @@ void DebugDraw::Draw(RenderContext& renderContext, GPUTextureView* target, GPUTe
     const auto cb = DebugDrawShader->GetShader()->GetCB(0);
     Data data;
     Matrix vp;
-    Matrix::Multiply(view.View, view.NonJitteredProjection, vp);
+    Matrix::Multiply(view.View, view.Projection, vp);
     Matrix::Transpose(vp, data.ViewProjection);
     data.EnableDepthTest = enableDepthTest;
     context->UpdateCB(cb, &data);
