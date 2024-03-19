@@ -507,7 +507,7 @@ namespace FlaxEditor
                 {
                     if (IsValidControl(selection[i], out var controlActor))
                     {
-                        DrawControl(controlActor, controlActor.Control, true, ref mousePos, ref drawAnySelectedControl, EnableSelecting || (!EnableSelecting && Parent?.Parent is not Windows.GameWindow));
+                        DrawControl(controlActor, controlActor.Control, true, ref mousePos, ref drawAnySelectedControl, EnableSelecting);
                     }
                 }
             }
