@@ -689,7 +689,7 @@ namespace FlaxEditor
 #else
             // Find any control under mouse (hierarchical)
             hit = GetChildAtRecursive(location);
-            if (hit is View)
+            if (hit is View || hit is CanvasContainer)
                 hit = null;
             return hit != null;
 #endif
