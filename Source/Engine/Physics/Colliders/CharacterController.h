@@ -73,7 +73,7 @@ public:
     /// <summary>
     /// Gets the radius of the sphere, measured in the object's local space. The sphere radius will be scaled by the actor's world scale.
     /// </summary>
-    API_PROPERTY(Attributes="EditorOrder(100), DefaultValue(50.0f), EditorDisplay(\"Collider\")")
+    API_PROPERTY(Attributes="EditorOrder(100), DefaultValue(50.0f), EditorDisplay(\"Collider\"), ValueCategory(Utils.ValueCategory.Distance)")
     float GetRadius() const;
 
     /// <summary>
@@ -84,7 +84,7 @@ public:
     /// <summary>
     /// Gets the height of the capsule, measured in the object's local space. The capsule height will be scaled by the actor's world scale.
     /// </summary>
-    API_PROPERTY(Attributes="EditorOrder(110), DefaultValue(150.0f), EditorDisplay(\"Collider\")")
+    API_PROPERTY(Attributes="EditorOrder(110), DefaultValue(150.0f), EditorDisplay(\"Collider\"), ValueCategory(Utils.ValueCategory.Distance)")
     float GetHeight() const;
 
     /// <summary>
@@ -95,7 +95,7 @@ public:
     /// <summary>
     /// Gets the slope limit (in degrees). Limits the collider to only climb slopes that are less steep (in degrees) than the indicated value.
     /// </summary>
-    API_PROPERTY(Attributes="EditorOrder(210), DefaultValue(45.0f), Limit(0, 100), EditorDisplay(\"Character Controller\")")
+    API_PROPERTY(Attributes="EditorOrder(210), DefaultValue(45.0f), Limit(0, 100), EditorDisplay(\"Character Controller\"), ValueCategory(Utils.ValueCategory.Angle)")
     float GetSlopeLimit() const;
 
     /// <summary>
@@ -117,7 +117,7 @@ public:
     /// <summary>
     /// Gets the step height. The character will step up a stair only if it is closer to the ground than the indicated value. This should not be greater than the Character Controller’s height or it will generate an error.
     /// </summary>
-    API_PROPERTY(Attributes="EditorOrder(220), DefaultValue(30.0f), Limit(0), EditorDisplay(\"Character Controller\")")
+    API_PROPERTY(Attributes="EditorOrder(220), DefaultValue(30.0f), Limit(0), EditorDisplay(\"Character Controller\"), ValueCategory(Utils.ValueCategory.Distance)")
     float GetStepOffset() const;
 
     /// <summary>
@@ -139,7 +139,7 @@ public:
     /// <summary>
     /// Gets the minimum move distance of the character controller. The minimum traveled distance to consider. If traveled distance is smaller, the character doesn't move. This is used to stop the recursive motion algorithm when remaining distance to travel is small.
     /// </summary>
-    API_PROPERTY(Attributes="EditorOrder(230), DefaultValue(0.0f), Limit(0, 1000), EditorDisplay(\"Character Controller\")")
+    API_PROPERTY(Attributes="EditorOrder(230), DefaultValue(0.0f), Limit(0, 1000), EditorDisplay(\"Character Controller\"), ValueCategory(Utils.ValueCategory.Distance)")
     float GetMinMoveDistance() const;
 
     /// <summary>

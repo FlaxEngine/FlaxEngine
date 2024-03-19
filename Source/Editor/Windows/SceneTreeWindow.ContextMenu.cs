@@ -1,7 +1,6 @@
 // Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using FlaxEditor.GUI.ContextMenu;
 using FlaxEditor.SceneGraph;
@@ -258,10 +257,9 @@ namespace FlaxEditor.Windows
         /// </summary>
         /// <param name="parent">The parent control.</param>
         /// <param name="location">The location (within a given control).</param>
-        private void ShowContextMenu(Control parent, Float2 location)
+        internal void ShowContextMenu(Control parent, Float2 location)
         {
             var contextMenu = CreateContextMenu();
-
             contextMenu.Show(parent, location);
         }
 

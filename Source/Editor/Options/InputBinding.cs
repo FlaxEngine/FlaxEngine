@@ -201,8 +201,8 @@ namespace FlaxEditor.Options
         /// <returns>True if input has been processed, otherwise false.</returns>
         public bool Process(Control control)
         {
-            var root = control.Root;
-            return root.GetKey(Key) && ProcessModifiers(control);
+            var root = control?.Root;
+            return root != null && root.GetKey(Key) && ProcessModifiers(control);
         }
 
         /// <summary>

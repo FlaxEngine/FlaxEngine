@@ -117,5 +117,10 @@ namespace FlaxEditor.Gizmo
         /// </summary>
         /// <param name="actor">The new actor to spawn.</param>
         void Spawn(Actor actor);
+
+        /// <summary>
+        /// Opens the context menu at the current mouse location (using current selection).
+        /// </summary>
+        void OpenContextMenu();
     }
 }

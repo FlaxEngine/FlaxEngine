@@ -6,6 +6,9 @@ using Real = System.Double;
 using Real = System.Single;
 #endif
 
+using System.Collections.Generic;
+using FlaxEditor.Gizmo;
+using FlaxEditor.SceneGraph;
 using FlaxEngine;
 
 namespace FlaxEditor.Viewport.Cameras
@@ -32,6 +35,90 @@ namespace FlaxEditor.Viewport.Cameras
         /// Gets a value indicating whether the viewport camera uses movement speed.
         /// </summary>
         public virtual bool UseMovementSpeed => true;
+
+        /// <summary>
+        /// Focuses the viewport on the current selection of the gizmo.
+        /// </summary>
+        /// <param name="gizmos">The gizmo collection (from viewport).</param>
+        /// <param name="orientation">The target view orientation.</param>
+        public virtual void FocusSelection(GizmosCollection gizmos, ref Quaternion orientation)
+        {
+            var transformGizmo = gizmos.Get<TransformGizmo>();
+            if (transformGizmo == null || transformGizmo.SelectedParents.Count == 0)
+                return;
+            if (gizmos.Active != null)
+            {
+                var gizmoBounds = gizmos.Active.FocusBounds;
+                if (gizmoBounds != BoundingSphere.Empty)
+                {
+                    ShowSphere(ref gizmoBounds, ref orientation);
+                    return;
+                }
+            }
+            ShowActors(transformGizmo.SelectedParents, ref orientation);
+        }
+
+        /// <summary>
+        /// Moves the viewport to visualize the actor.
+        /// </summary>
+        /// <param name="actor">The actor to preview.</param>
+        public virtual void ShowActor(Actor actor)
+        {
+            Editor.GetActorEditorSphere(actor, out BoundingSphere sphere);
+            ShowSphere(ref sphere);
+        }
+
+        /// <summary>
+        /// Moves the viewport to visualize selected actors.
+        /// </summary>
+        /// <param name="selection">The actors to show.</param>
+        public void ShowActors(List<SceneGraphNode> selection)
+        {
+            var q = new Quaternion(0.424461186f, -0.0940724313f, 0.0443938486f, 0.899451137f);
+            ShowActors(selection, ref q);
+        }
+
+        /// <summary>
+        /// Moves the viewport to visualize selected actors.
+        /// </summary>
+        /// <param name="selection">The actors to show.</param>
+        /// <param name="orientation">The used orientation.</param>
+        public virtual void ShowActors(List<SceneGraphNode> selection, ref Quaternion orientation)
+        {
+            if (selection.Count == 0)
+                return;
+
+            BoundingSphere mergesSphere = BoundingSphere.Empty;
+            for (int i = 0; i < selection.Count; i++)
+            {
+                selection[i].GetEditorSphere(out var sphere);
+                BoundingSphere.Merge(ref mergesSphere, ref sphere, out mergesSphere);
+            }
+
+            if (mergesSphere == BoundingSphere.Empty)
+                return;
+            ShowSphere(ref mergesSphere, ref orientation);
+        }
+
+        /// <summary>
+        /// Moves the camera to visualize given world area defined by the sphere.
+        /// </summary>
+        /// <param name="sphere">The sphere.</param>
+        public void ShowSphere(ref BoundingSphere sphere)
+        {
+            var q = new Quaternion(0.424461186f, -0.0940724313f, 0.0443938486f, 0.899451137f);
+            ShowSphere(ref sphere, ref q);
+        }
+
+        /// <summary>
+        /// Moves the camera to visualize given world area defined by the sphere.
+        /// </summary>
+        /// <param name="sphere">The sphere.</param>
+        /// <param name="orientation">The camera orientation.</param>
+        public virtual void ShowSphere(ref BoundingSphere sphere, ref Quaternion orientation)
+        {
+            SetArcBallView(orientation, sphere.Center, sphere.Radius);
+        }
 
         /// <summary>
         /// Sets view orientation and position to match the arc ball camera style view for the given target object bounds.

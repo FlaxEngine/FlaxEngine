@@ -10,6 +10,7 @@
 #include "Engine/Graphics/Shaders/GPUShader.h"
 #include "Engine/Graphics/Materials/MaterialShader.h"
 #include "Engine/Particles/Graph/GPU/ParticleEmitterGraph.GPU.h"
+#include "FlaxEngine.Gen.h"
 
 const Char* ShaderProfileCacheDirNames[] =
 {
@@ -179,6 +180,7 @@ bool ShaderCacheManagerService::Init()
     // Validate the database cache version (need to recompile all shaders on shader cache format change)
     struct CacheVersion
     {
+        int32 EngineVersion = -1;
         int32 ShaderCacheVersion = -1;
         int32 MaterialGraphVersion = -1;
         int32 ParticleGraphVersion = -1;
@@ -193,7 +195,8 @@ bool ShaderCacheManagerService::Init()
             LOG(Warning, "Failed to read the shaders cache database version file.");
         }
     }
-    if (cacheVersion.ShaderCacheVersion != GPU_SHADER_CACHE_VERSION
+    if (cacheVersion.EngineVersion != FLAXENGINE_VERSION_BUILD
+        || cacheVersion.ShaderCacheVersion != GPU_SHADER_CACHE_VERSION
         || cacheVersion.MaterialGraphVersion != MATERIAL_GRAPH_VERSION
         || cacheVersion.ParticleGraphVersion != PARTICLE_GPU_GRAPH_VERSION
     )
@@ -209,6 +212,7 @@ bool ShaderCacheManagerService::Init()
             LOG(Error, "Failed to createe the shaders cache database directory.");
         }
 
+        cacheVersion.EngineVersion = FLAXENGINE_VERSION_BUILD;
         cacheVersion.ShaderCacheVersion = GPU_SHADER_CACHE_VERSION;
         cacheVersion.MaterialGraphVersion = MATERIAL_GRAPH_VERSION;
         cacheVersion.ParticleGraphVersion = PARTICLE_GPU_GRAPH_VERSION;

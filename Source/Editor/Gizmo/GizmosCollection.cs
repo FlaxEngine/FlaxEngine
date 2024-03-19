@@ -161,5 +161,20 @@ namespace FlaxEditor.Gizmo
             }
             throw new ArgumentException("Not added mode to activate.");
         }
+
+        /// <summary>
+        /// Gets the gizmo of a given type or returns null if not added.
+        /// </summary>
+        /// <typeparam name="T">Type of the gizmo.</typeparam>
+        /// <returns>Found gizmo or null.</returns>
+        public T Get<T>() where T : GizmoBase
+        {
+            foreach (var e in this)
+            {
+                if (e is T asT)
+                    return asT;
+            }
+            return null;
+        }
     }
 }

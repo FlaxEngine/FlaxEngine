@@ -360,10 +360,9 @@ namespace FlaxEditor.Windows.Assets
         /// </summary>
         /// <param name="parent">The parent control.</param>
         /// <param name="location">The location (within a given control).</param>
-        private void ShowContextMenu(Control parent, ref Float2 location)
+        internal void ShowContextMenu(Control parent, ref Float2 location)
         {
             var contextMenu = CreateContextMenu();
-
             contextMenu.Show(parent, location);
         }
 

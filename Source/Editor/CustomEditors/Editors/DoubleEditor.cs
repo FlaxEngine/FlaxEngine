@@ -21,31 +21,27 @@ namespace FlaxEditor.CustomEditors.Editors
         /// <inheritdoc />
         public override void Initialize(LayoutElementsContainer layout)
         {
-            _element = null;
-
-            // Try get limit attribute for value min/max range setting and slider speed
+            var doubleValue = layout.DoubleValue();
+            doubleValue.ValueBox.ValueChanged += OnValueChanged;
+            doubleValue.ValueBox.SlidingEnd += ClearToken;
+            _element = doubleValue;
             var attributes = Values.GetAttributes();
             if (attributes != null)
             {
-                var limit = attributes.FirstOrDefault(x => x is LimitAttribute);
-                if (limit != null)
+                var limit = (LimitAttribute)attributes.FirstOrDefault(x => x is LimitAttribute);
+                doubleValue.SetLimits(limit);
+                var valueCategory = ((ValueCategoryAttribute)attributes.FirstOrDefault(x => x is ValueCategoryAttribute))?.Category ?? Utils.ValueCategory.None;
+                if (valueCategory != Utils.ValueCategory.None)
                 {
-                    // Use double value editor with limit
-                    var doubleValue = layout.DoubleValue();
-                    doubleValue.SetLimits((LimitAttribute)limit);
-                    doubleValue.ValueBox.ValueChanged += OnValueChanged;
-                    doubleValue.ValueBox.SlidingEnd += ClearToken;
-                    _element = doubleValue;
-                    return;
+                    doubleValue.SetCategory(valueCategory);
+                    LinkedLabel.SetupContextMenu += (label, menu, editor) =>
+                    {
+                        menu.AddSeparator();
+                        var mb = menu.AddButton("Show formatted", bt => { doubleValue.SetCategory(bt.Checked ? valueCategory : Utils.ValueCategory.None); });
+                        mb.AutoCheck = true;
+                        mb.Checked = doubleValue.ValueBox.Category != Utils.ValueCategory.None;
+                    };
                 }
-            }
-            if (_element == null)
-            {
-                // Use double value editor
-                var doubleValue = layout.DoubleValue();
-                doubleValue.ValueBox.ValueChanged += OnValueChanged;
-                doubleValue.ValueBox.SlidingEnd += ClearToken;
-                _element = doubleValue;
             }
         }
 

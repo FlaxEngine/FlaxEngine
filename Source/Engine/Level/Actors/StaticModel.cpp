@@ -553,13 +553,11 @@ const Span<MaterialSlot> StaticModel::GetMaterialSlots() const
 
 MaterialBase* StaticModel::GetMaterial(int32 entryIndex)
 {
-    if (Model)
-        Model->WaitForLoaded();
-    else
+    if (!Model || Model->WaitForLoaded())
         return nullptr;
     CHECK_RETURN(entryIndex >= 0 && entryIndex < Entries.Count(), nullptr);
     MaterialBase* material = Entries[entryIndex].Material.Get();
-    if (!material)
+    if (!material && entryIndex < Model->MaterialSlots.Count())
     {
         material = Model->MaterialSlots[entryIndex].Material.Get();
         if (!material)
