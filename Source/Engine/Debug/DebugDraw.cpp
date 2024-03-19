@@ -127,7 +127,8 @@ PACK_STRUCT(struct Vertex {
 
 PACK_STRUCT(struct Data {
     Matrix ViewProjection;
-    Float3 Padding;
+    Float2 Padding;
+    float ClipPosZBias;
     bool EnableDepthTest;
     });
 
@@ -785,6 +786,7 @@ void DebugDraw::Draw(RenderContext& renderContext, GPUTextureView* target, GPUTe
     Matrix vp;
     Matrix::Multiply(view.View, view.Projection, vp);
     Matrix::Transpose(vp, data.ViewProjection);
+    data.ClipPosZBias = -0.2f; // Reduce Z-fighting artifacts (eg. editor grid)
     data.EnableDepthTest = enableDepthTest;
     context->UpdateCB(cb, &data);
     context->BindCB(0, cb);
