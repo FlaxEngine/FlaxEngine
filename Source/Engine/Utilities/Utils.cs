@@ -257,6 +257,7 @@ namespace FlaxEngine
         {
             public static FieldInfo itemsField;
         }
+
         internal static T[] ExtractArrayFromList<T>(List<T> list)
         {
             if (list == null)
@@ -1037,6 +1038,67 @@ namespace FlaxEngine
             else
                 parameterTypes = Array.Empty<Type>();
             return parameterTypes;
+        }
+
+        /// <summary>
+        /// A category of number values used for formatting and input fields.
+        /// </summary>
+        public enum ValueCategory
+        {
+            /// <summary>
+            /// Nothing.
+            /// </summary>
+            None,
+
+            /// <summary>
+            /// Distance (eg. meters).
+            /// </summary>
+            Distance,
+
+            /// <summary>
+            /// Area (eg. m^2).
+            /// </summary>
+            Area,
+
+            /// <summary>
+            /// Volume (eg. m^3).
+            /// </summary>
+            Volume,
+
+            /// <summary>
+            /// Mass (eg. kilograms).
+            /// </summary>
+            Mass,
+
+            /// <summary>
+            /// Angle (eg. degrees).
+            /// </summary>
+            Angle,
+
+            /// <summary>
+            /// Speed (distance / time).
+            /// </summary>
+            Speed,
+
+            /// <summary>
+            /// Acceleration (distance^2 / time).
+            /// </summary>
+            Acceleration,
+
+            /// <summary>
+            /// Time (eg. seconds).
+            /// </summary>
+            Time,
+
+            /// <summary>
+            /// Force (mass * distance / time^2).
+            /// </summary>
+            Force,
+
+            /// <summary>
+            /// Torque (mass * distance^2 / time^2).
+            /// </summary>
+            Torque,
         }
     }
 }

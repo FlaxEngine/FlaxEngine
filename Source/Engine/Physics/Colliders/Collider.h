@@ -52,7 +52,7 @@ public:
     /// <summary>
     /// Gets the center of the collider, measured in the object's local space.
     /// </summary>
-    API_PROPERTY(Attributes="EditorOrder(10), DefaultValue(typeof(Vector3), \"0,0,0\"), EditorDisplay(\"Collider\")")
+    API_PROPERTY(Attributes="EditorOrder(10), DefaultValue(typeof(Vector3), \"0,0,0\"), EditorDisplay(\"Collider\"), ValueCategory(Utils.ValueCategory.Distance)")
     FORCE_INLINE Vector3 GetCenter() const
     {
         return _center;
@@ -66,7 +66,7 @@ public:
     /// <summary>
     /// Gets the contact offset. Colliders whose distance is less than the sum of their ContactOffset values will generate contacts. The contact offset must be positive. Contact offset allows the collision detection system to predictively enforce the contact constraint even when the objects are slightly separated.
     /// </summary>
-    API_PROPERTY(Attributes="EditorOrder(1), DefaultValue(2.0f), Limit(0, 100), EditorDisplay(\"Collider\")")
+    API_PROPERTY(Attributes="EditorOrder(1), DefaultValue(2.0f), Limit(0, 100), EditorDisplay(\"Collider\"), ValueCategory(Utils.ValueCategory.Distance)")
     FORCE_INLINE float GetContactOffset() const
     {
         return _contactOffset;

@@ -3,6 +3,7 @@
 using System;
 using FlaxEditor.Utilities;
 using FlaxEngine;
+using Utils = FlaxEngine.Utils;
 
 namespace FlaxEditor.GUI.Input
 {
@@ -13,6 +14,8 @@ namespace FlaxEditor.GUI.Input
     [HideInEditor]
     public class DoubleValueBox : ValueBox<double>
     {
+        private Utils.ValueCategory _category = Utils.ValueCategory.None;
+
         /// <inheritdoc />
         public override double Value
         {
@@ -129,10 +132,25 @@ namespace FlaxEditor.GUI.Input
             Value = Value;
         }
 
+        /// <summary>
+        /// Gets or sets the category of the value. This can be none for just a number or a more specific one like a distance.
+        /// </summary>
+        public Utils.ValueCategory Category
+        {
+            get => _category;
+            set
+            {
+                if (_category == value)
+                    return;
+                _category = value;
+                UpdateText();
+            }
+        }
+
         /// <inheritdoc />
         protected sealed override void UpdateText()
         {
-            SetText(Utilities.Utils.FormatFloat(_value));
+            SetText(Utilities.Utils.FormatFloat(_value, Category));
         }
 
         /// <inheritdoc />
