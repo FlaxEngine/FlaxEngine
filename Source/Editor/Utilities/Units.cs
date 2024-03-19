@@ -1,5 +1,10 @@
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+
 namespace FlaxEditor.Utilities;
 
+/// <summary>
+/// Units display utilities for Editor.
+/// </summary>
 public class Units
 {
     /// <summary>
@@ -8,7 +13,7 @@ public class Units
     public static readonly float Meters2Units = 100f;
 
     /// <summary>
-    /// Set it to false to always show game units without any postfix.
+    /// False to always show game units without any postfix.
     /// </summary>
     public static bool UseUnitsFormatting = true;
 
@@ -25,8 +30,8 @@ public class Units
     /// <summary>
     /// Return the unit according to user settings. 
     /// </summary>
-    /// <param name="unit"></param>
-    /// <returns></returns>
+    /// <param name="unit">The unit name.</param>
+    /// <returns>The formatted text.</returns>
     public static string Unit(string unit)
     {
         if (SpaceNumberAndUnits)

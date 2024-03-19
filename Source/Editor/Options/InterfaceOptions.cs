@@ -118,22 +118,24 @@ namespace FlaxEditor.Options
         }
 
         /// <summary>
-        /// Options for formatting numerical values
+        /// Options for formatting numerical values.
         /// </summary>
         public enum ValueFormattingType
         {
             /// <summary>
-            /// No formatting
+            /// No formatting.
             /// </summary>
             None,
+
             /// <summary>
-            /// Format using the base SI unit
+            /// Format using the base SI unit.
             /// </summary>
             BaseUnit,
+
             /// <summary>
-            /// Format using a unit that matches the value best
+            /// Format using a unit that matches the value best.
             /// </summary>
-            AutoUnit
+            AutoUnit,
         }
 
         /// <summary>
@@ -214,7 +216,7 @@ namespace FlaxEditor.Options
         private bool _spaceNumberAndUnits = false;
 
         /// <summary>
-        /// Gets or sets the option to put a space between numbers and units for unit formatting
+        /// Gets or sets the option to put a space between numbers and units for unit formatting.
         /// </summary>
         [DefaultValue(false)]
         [EditorDisplay("Interface"), EditorOrder(310), Tooltip("Put a space between numbers and units.")]

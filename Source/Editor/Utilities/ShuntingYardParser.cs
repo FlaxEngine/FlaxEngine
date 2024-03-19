@@ -141,19 +141,17 @@ namespace FlaxEditor.Utilities
         };
 
         /// <summary>
-        /// List known units which cannot be handled as a variable easily because they contain operator
-        /// symbols (mostly a forward slash). The value is the factor to calculate game units. 
+        /// List known units which cannot be handled as a variable easily because they contain operator symbols (mostly a forward slash). The value is the factor to calculate game units. 
         /// </summary>
-        // Nm is here because these values are compared case-sensitive and we don't want to confuse
-        // nanometers and Newtonmeters
         private static readonly IDictionary<string, double> UnitSymbols = new Dictionary<string, double>
         {
             ["cm/s"] = Units.Meters2Units / 100,
             ["cm/s²"] = Units.Meters2Units / 100,
             ["m/s"] = Units.Meters2Units,
             ["m/s²"] = Units.Meters2Units,
-            ["km/h"] = 1/3.6 * Units.Meters2Units,
-            ["Nm"] = Units.Meters2Units * Units.Meters2Units
+            ["km/h"] = 1 / 3.6 * Units.Meters2Units,
+            // Nm is here because these values are compared case-sensitive, and we don't want to confuse nanometers and Newtonmeters
+            ["Nm"] = Units.Meters2Units * Units.Meters2Units,
         };
 
         /// <summary>
@@ -189,7 +187,7 @@ namespace FlaxEditor.Utilities
             if (Operators.ContainsKey(str))
                 return TokenType.Operator;
 
-            if (char.IsLetter(c) || c=='²' || c=='³')
+            if (char.IsLetter(c) || c == '²' || c == '³')
                 return TokenType.Variable;
 
             throw new ParsingException("wrong character");

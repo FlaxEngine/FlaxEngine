@@ -14,6 +14,8 @@ namespace FlaxEditor.GUI.Input
     [HideInEditor]
     public class FloatValueBox : ValueBox<float>
     {
+        private Utils.ValueCategory _category = Utils.ValueCategory.None;
+
         /// <inheritdoc />
         public override float Value
         {
@@ -137,14 +139,19 @@ namespace FlaxEditor.GUI.Input
             Value = Value;
         }
 
-        private Utils.ValueCategory _category = Utils.ValueCategory.None;
-
         /// <summary>
-        /// Get or set the category of the value. This can be none for just a number or a more specific one like a distance.
+        /// Gets or sets the category of the value. This can be none for just a number or a more specific one like a distance.
         /// </summary>
-        public Utils.ValueCategory Category {
+        public Utils.ValueCategory Category
+        {
             get => _category;
-            set { _category = value; UpdateText(); }
+            set
+            {
+                if (_category == value)
+                    return;
+                _category = value;
+                UpdateText();
+            }
         }
 
         /// <inheritdoc />

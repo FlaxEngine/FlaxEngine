@@ -4,7 +4,6 @@ using System.Linq;
 using FlaxEditor.CustomEditors.Elements;
 using FlaxEngine;
 using FlaxEngine.GUI;
-using Utils = FlaxEngine.Utils;
 
 namespace FlaxEditor.CustomEditors.Editors
 {

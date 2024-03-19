@@ -14,6 +14,8 @@ namespace FlaxEditor.GUI.Input
     [HideInEditor]
     public class DoubleValueBox : ValueBox<double>
     {
+        private Utils.ValueCategory _category = Utils.ValueCategory.None;
+
         /// <inheritdoc />
         public override double Value
         {
@@ -131,9 +133,19 @@ namespace FlaxEditor.GUI.Input
         }
 
         /// <summary>
-        /// Get or set the category of the value. This can either be none for just a number, a distance or an angle.
+        /// Gets or sets the category of the value. This can be none for just a number or a more specific one like a distance.
         /// </summary>
-        public Utils.ValueCategory Category = Utils.ValueCategory.None;
+        public Utils.ValueCategory Category
+        {
+            get => _category;
+            set
+            {
+                if (_category == value)
+                    return;
+                _category = value;
+                UpdateText();
+            }
+        }
 
         /// <inheritdoc />
         protected sealed override void UpdateText()
