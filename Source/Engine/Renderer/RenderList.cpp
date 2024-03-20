@@ -266,6 +266,8 @@ void RenderList::RunPostFxPass(GPUContext* context, RenderContext& renderContext
         {
             if (fx->Location == locationB)
             {
+                context->ResetSR();
+                context->ResetUA();
                 if (fx->UseSingleTarget || output == nullptr)
                 {
                     fx->Render(context, renderContext, input, nullptr);
