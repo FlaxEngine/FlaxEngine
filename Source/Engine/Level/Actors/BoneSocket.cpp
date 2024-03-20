@@ -45,14 +45,14 @@ void BoneSocket::UpdateTransformation()
         }
 
         auto& nodes = parent->GraphInstance.NodesPose;
-        if (nodes.HasItems() && nodes.Count() > _index)
-        {
-            Transform t;
-            nodes[_index].Decompose(t);
-            if (!_useScale)
-                t.Scale = _localTransform.Scale;
-            SetLocalTransform(t);
-        }
+        Transform t;
+        if (nodes.IsValidIndex(_index))
+            nodes.Get()[_index].Decompose(t);
+        else
+            t = parent->SkinnedModel->Skeleton.GetNodeTransform(_index);
+        if (!_useScale)
+            t.Scale = _localTransform.Scale;
+        SetLocalTransform(t);
     }
 }
 
