@@ -4,6 +4,7 @@
 
 #include "Engine/Core/Delegate.h"
 #include "Engine/Core/Types/DateTime.h"
+#include "Engine/Core/Collections/Array.h"
 #include "Engine/Scripting/ScriptingType.h"
 
 class TaskGraph;
@@ -81,8 +82,11 @@ public:
     /// </summary>
     /// <param name="cmdLine">The input application command line arguments.</param>
     /// <returns>The application exit code.</returns>
+#if PLATFORM_LINUX | PLATFORM_MAC
+    static int32 Main(Array<String> arg);
+#else
     static int32 Main(const Char* cmdLine);
-
+#endif
     /// <summary>
     /// Exits the engine.
     /// </summary>
