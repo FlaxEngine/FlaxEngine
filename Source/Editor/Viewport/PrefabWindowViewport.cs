@@ -288,7 +288,7 @@ namespace FlaxEditor.Viewport
         public bool SnapToGround => false;
 
         /// <inheritdoc />
-        public bool SnapToVertex => Editor.Instance.Options.Options.Input.SnapToVertex.Process(Root);
+        public bool SnapToVertex => ContainsFocus && Editor.Instance.Options.Options.Input.SnapToVertex.Process(Root);
 
         /// <inheritdoc />
         public Float2 MouseDelta => _mouseDelta * 1000;

@@ -70,10 +70,10 @@ namespace FlaxEditor.Viewport
         public bool IsControlDown => _input.IsControlDown;
 
         /// <inheritdoc />
-        public bool SnapToGround => Editor.Instance.Options.Options.Input.SnapToGround.Process(Root);
+        public bool SnapToGround => ContainsFocus && Editor.Instance.Options.Options.Input.SnapToGround.Process(Root);
 
         /// <inheritdoc />
-        public bool SnapToVertex => Editor.Instance.Options.Options.Input.SnapToVertex.Process(Root);
+        public bool SnapToVertex => ContainsFocus && Editor.Instance.Options.Options.Input.SnapToVertex.Process(Root);
 
         /// <inheritdoc />
         public Float2 MouseDelta => _mouseDelta * 1000;
