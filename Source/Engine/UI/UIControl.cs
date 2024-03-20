@@ -376,7 +376,7 @@ namespace FlaxEngine
         {
             if (_control != null)
             {
-                _control.Visible = IsActive;
+                _control.Visible = IsActive && _control.Visible;
                 _control.Parent = GetParent();
                 _control.IndexInParent = OrderInParent;
                 Internal_GetNavTargets(__unmanagedPtr, out UIControl up, out UIControl down, out UIControl left, out UIControl right);
