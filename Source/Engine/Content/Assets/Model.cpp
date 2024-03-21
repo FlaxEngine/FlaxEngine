@@ -8,6 +8,7 @@
 #include "Engine/Content/Upgraders/ModelAssetUpgrader.h"
 #include "Engine/Content/Factories/BinaryAssetFactory.h"
 #include "Engine/Debug/DebugDraw.h"
+#include "Engine/Debug/DebugLog.h"
 #include "Engine/Graphics/RenderTools.h"
 #include "Engine/Graphics/RenderTask.h"
 #include "Engine/Graphics/Models/ModelInstanceEntry.h"
@@ -168,22 +169,46 @@ Model::~Model()
 
 bool Model::Intersects(const Ray& ray, const Matrix& world, Real& distance, Vector3& normal, Mesh** mesh, int32 lodIndex)
 {
-    return LODs[lodIndex].Intersects(ray, world, distance, normal, mesh);
+    if (LODIndexFence(lodIndex))
+    {
+        return LODs[lodIndex].Intersects(ray, world, distance, normal, mesh);
+    }
+    return false;
 }
 
 bool Model::Intersects(const Ray& ray, const Transform& transform, Real& distance, Vector3& normal, Mesh** mesh, int32 lodIndex)
 {
-    return LODs[lodIndex].Intersects(ray, transform, distance, normal, mesh);
+    if (LODIndexFence(lodIndex))
+    {
+        return LODs[lodIndex].Intersects(ray, transform, distance, normal, mesh);
+    }
+    return false;
 }
 
 BoundingBox Model::GetBox(const Matrix& world, int32 lodIndex) const
 {
-    return LODs[lodIndex].GetBox(world);
+    if (LODIndexFence(lodIndex))
+    {
+        return LODs[lodIndex].GetBox(world);
+    }
+    return BoundingBox::Empty;
+}
+BoundingBox Model::GetBox(const Transform& transform, int32 lodIndex) const
+{
+    if (LODIndexFence(lodIndex))
+    {
+        return LODs[lodIndex].GetBox(transform);
+    }
+    return BoundingBox::Empty;
 }
 
 BoundingBox Model::GetBox(int32 lodIndex) const
 {
-    return LODs[lodIndex].GetBox();
+    if (LODIndexFence(lodIndex))
+    {
+        return LODs[lodIndex].GetBox();
+    }
+    return BoundingBox::Empty;
 }
 
 void Model::Draw(const RenderContext& renderContext, MaterialBase* material, const Matrix& world, StaticFlags flags, bool receiveDecals, int16 sortOrder) const
@@ -740,6 +765,62 @@ bool Model::Init(const Span<int32>& meshesCountPerLod)
 
     return false;
 }
+
+bool Model::LODIndexFence(int32 lodIndex) const
+{
+Check_Again:
+    if (LODs.IsValidIndex(lodIndex))
+    {
+        return true;
+    }
+    else
+    {
+        if (IsInitialized())
+        {
+            LOG(Error, "Invalid LOD index ""\nStackTrace:\n{0}", DebugLog::GetStackTrace());
+        }
+        else
+        {
+            
+            int i = 0;
+            LOG_STR(Warning, TEXT("Can't get Model LODs, Model is not initialized yet. awaiting..."));
+            const double startTime = Platform::GetTimeSeconds();
+            if (!WaitForLoaded())
+            {
+                auto timespan = (Platform::GetTimeSeconds() - startTime);
+
+                
+                //{ToDo] move this to StringUtils:: ? and do somfing like const String& StringUtils::TimeFrom(double timespan) with will return {0}{1}
+                // or replace it with existing funcion with is doing the same think 
+                {
+                    //conver it to s,ms,μs,ns
+                    String v = String("s");
+                    if (timespan < 1.0) // ms 1 / 1 000
+                    {
+                        timespan *= 1000;
+                        v = "ms";
+                        if (timespan < 1.0) // μs 1 / 1 000 000
+                        {
+                            timespan *= 1000;
+                            v = "μs";
+                            if (timespan < 1.0) // ns  1 / 1 000 000 000
+                            {
+                                timespan *= 1000;
+                                v = "ns";
+                            }
+                        }
+                    }
+                    timespan = Math::RoundToInt(timespan);
+                    LOG(Info, "Model is now initialized... took ~{0}{1}", timespan, v);
+                }
+                goto Check_Again; // in case the lodIndex is invalid any way
+            }
+        }
+    }
+
+    return false;
+}
+
 
 void Model::SetupMaterialSlots(int32 slotsCount)
 {

@@ -150,10 +150,7 @@ public:
     /// <param name="transform">The instance transformation.</param>
     /// <param name="lodIndex">The Level Of Detail index.</param>
     /// <returns>The bounding box.</returns>
-    API_FUNCTION() BoundingBox GetBox(const Transform& transform, int32 lodIndex = 0) const
-    {
-        return LODs[lodIndex].GetBox(transform);
-    }
+    API_FUNCTION() BoundingBox GetBox(const Transform& transform, int32 lodIndex = 0) const;
 
     /// <summary>
     /// Gets the model bounding box in local space.
@@ -242,6 +239,13 @@ private:
     /// <param name="meshesCountPerLod">The meshes count per lod array (amount of meshes per LOD).</param>
     /// <returns>True if failed, otherwise false.</returns>
     bool Init(const Span<int32>& meshesCountPerLod);
+
+    /// <summary>
+    /// Cheaks the LODIndex if is valid and if object is not ready for use it will wait maximum 1000ms
+    /// </summary>
+    /// <param name="lodIndex">The Level Of Detail index.</param>
+    /// <returns>if index valid.</returns>
+    bool LODIndexFence(int32 lodIndex) const;
 
 public:
     // [ModelBase]
