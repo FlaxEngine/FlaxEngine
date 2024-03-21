@@ -30,6 +30,8 @@ namespace Flax.Deps.Dependencies
                         TargetPlatform.PS4,
                         TargetPlatform.PS5,
                         TargetPlatform.Switch,
+                        TargetPlatform.XboxOne,
+                        TargetPlatform.XboxScarlett,
                     };
                 case TargetPlatform.Linux:
                     return new[]
@@ -84,6 +86,13 @@ namespace Flax.Deps.Dependencies
             case TargetPlatform.Windows:
                 os = "windows";
                 runtimeFlavor = "CoreCLR";
+                break;
+            case TargetPlatform.XboxOne:
+            case TargetPlatform.XboxScarlett:
+                os = "windows";
+                runtimeFlavor = "Mono";
+                buildMonoAotCross = true;
+                buildArgs = $" -subset mono+libs -cmakeargs \"-DDISABLE_JIT=1-DENABLE_PERFTRACING=0-DDISABLE_REFLECTION_EMIT=1-DDISABLE_EVENTPIPE=1-DDISABLE_COM=1-DDISABLE_PROFILER=1-DDISABLE_COMPONENTS=1\" /p:FeaturePerfTracing=false /p:FeatureManagedEtw=false /p:FeatureManagedEtwChannels=false /p:FeatureEtw=false /p:ApiCompatValidateAssemblies=false";
                 break;
             case TargetPlatform.Linux:
                 os = "linux";
@@ -225,22 +234,42 @@ namespace Flax.Deps.Dependencies
                 if (!Directory.Exists(src1))
                     throw new DirectoryNotFoundException(src1);
                 var src2 = Path.Combine(artifacts, "bin", "native", $"{framework}-{os}-{configuration}-{arch}");
-                if (!Directory.Exists(src1))
+                if (!Directory.Exists(src2))
                     throw new DirectoryNotFoundException(src2);
-                foreach (var file in new[]
-                         {
-                             "libmonosgen-2.0.a",
-                             "libmono-profiler-aot.a",
-                         })
-                    Utilities.FileCopy(Path.Combine(src1, "lib", file), Path.Combine(dstBinaries, file));
-                foreach (var file in new[]
-                         {
-                             "libSystem.Globalization.Native.a",
-                             "libSystem.IO.Compression.Native.a",
-                             "libSystem.IO.Ports.Native.a",
-                             "libSystem.Native.a",
-                         })
-                    Utilities.FileCopy(Path.Combine(src2, "lib", file), Path.Combine(dstBinaries, file));
+                string[] libs1, libs2;
+                switch (targetPlatform)
+                {
+                case TargetPlatform.Windows:
+                case TargetPlatform.XboxOne:
+                case TargetPlatform.XboxScarlett:
+                    libs1 = new[]
+                    {
+                        "lib/coreclr.dll",
+                        "lib/coreclr.import.lib",
+                    };
+                    libs2 = new string[]
+                    {
+                    };
+                    break;
+                default:
+                    libs1 = new[]
+                    {
+                        "lib/libmonosgen-2.0.a",
+                        "lib/libmono-profiler-aot.a",
+                    };
+                    libs2 = new[]
+                    {
+                        "lib/libSystem.Globalization.Native.a",
+                        "lib/libSystem.IO.Compression.Native.a",
+                        "lib/libSystem.IO.Ports.Native.a",
+                        "lib/libSystem.Native.a",
+                    };
+                    break;
+                }
+                foreach (var file in libs1)
+                    Utilities.FileCopy(Path.Combine(src1, file), Path.Combine(dstBinaries, Path.GetFileName(file)));
+                foreach (var file in libs2)
+                    Utilities.FileCopy(Path.Combine(src2, file), Path.Combine(dstBinaries, Path.GetFileName(file)));
 
                 // Include headers
                 Utilities.DirectoryDelete(Path.Combine(dstBinaries, "include"));
@@ -249,11 +278,13 @@ namespace Flax.Deps.Dependencies
                 if (buildMonoAotCross)
                 {
                     // AOT compiler
-                    Utilities.FileCopy(Path.Combine(artifacts, "bin", "mono", $"{os}.x64.{configuration}", "cross", $"{os}-x64", "mono-aot-cross.exe"), Path.Combine(dstPlatform, "Binaries", "Tools", "mono-aot-cross.exe"));
+                    Utilities.FileCopy(Path.Combine(artifacts, "bin", "mono", $"{os}.x64.{configuration}", "cross", $"{(os == "windows" ? "win" : os)}-x64", "mono-aot-cross.exe"), Path.Combine(dstPlatform, "Binaries", "Tools", "mono-aot-cross.exe"));
                 }
 
                 // Class library
                 var dstDotnetLib = Path.Combine(dstPlatform, "Dotnet", "lib", framework);
+                foreach (var subDir in Directory.GetDirectories(Path.Combine(dstPlatform, "Dotnet", "lib")))
+                    Utilities.DirectoryDelete(subDir);
                 SetupDirectory(dstDotnetLib, true);
                 Utilities.FileCopy(Path.Combine(artifacts, "bin", "mono", $"{os}.{arch}.{configuration}", privateCoreLib), Path.Combine(dstDotnetLib, privateCoreLib));
                 Utilities.DirectoryCopy(Path.Combine(artifacts, "bin", "runtime", $"{framework}-{os}-{configuration}-{arch}"), dstDotnetLib, false, true, "*.dll");
@@ -300,6 +331,8 @@ namespace Flax.Deps.Dependencies
                 {
                 case TargetPlatform.PS4:
                 case TargetPlatform.PS5:
+                case TargetPlatform.XboxOne:
+                case TargetPlatform.XboxScarlett:
                     Build(options, platform, TargetArchitecture.x64);
                     break;
                 case TargetPlatform.Android:
