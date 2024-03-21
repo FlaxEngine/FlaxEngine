@@ -118,6 +118,30 @@ public:
     }
 
     // Gets position of the bottom right corner of the rectangle
+    Float2 GetLowerRight() const
+    {
+        return Location + Size;
+    }
+
+    // Gets position of the bottom left corner of the rectangle
+    Float2 GetLowerLeft() const
+    {
+        return Location + Float2(0, Size.Y);
+    }
+
+    // Gets position of the upper left corner of the rectangle
+    Float2 GetTopLeft() const
+    {
+        return Location;
+    }
+
+    // Gets position of the upper right corner of the rectangle
+    Float2 GetTopRight() const
+    {
+        return Location + Float2(Size.X, 0);
+    }
+
+    // Gets position of the bottom right corner of the rectangle
     Float2 GetBottomRight() const
     {
         return Location + Size;
