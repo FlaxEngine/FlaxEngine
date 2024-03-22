@@ -1106,6 +1106,7 @@ namespace FlaxEditor.Modules
             Proxy.Add(new VisualScriptProxy());
             Proxy.Add(new BehaviorTreeProxy());
             Proxy.Add(new LocalizedStringTableProxy());
+            Proxy.Add(new WidgetProxy());
             Proxy.Add(new FileProxy());
             Proxy.Add(new SpawnableJsonAssetProxy<PhysicalMaterial>());
 
