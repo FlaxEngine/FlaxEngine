@@ -801,6 +801,12 @@ namespace Flax.Build
             Array.Sort(paths, (a, b) =>
             {
                 Version va, vb;
+                var fa = Path.GetFileName(a);
+                var fb = Path.GetFileName(b);
+                if (!string.IsNullOrEmpty(fa))
+                    a = fa;
+                if (!string.IsNullOrEmpty(fb))
+                    b = fb;
                 if (Version.TryParse(a, out va))
                 {
                     if (Version.TryParse(b, out vb))
