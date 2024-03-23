@@ -24,6 +24,11 @@ IMPLEMENT_SETTINGS_GETTER(iOSPlatformSettings, iOSPlatform);
 
 namespace
 {
+    struct iOSPlatformCache
+    {
+        iOSPlatformSettings::TextureQuality TexturesQuality;
+    };
+
     String GetAppName()
     {
         const auto gameSettings = GameSettings::Get();
@@ -60,6 +65,24 @@ namespace
         result = result.TrimTrailing();
         return result;
     }
+
+    PixelFormat GetQualityTextureFormat(bool sRGB, PixelFormat format)
+    {
+        const auto platformSettings = iOSPlatformSettings::Get();
+        switch (platformSettings->TexturesQuality)
+        {
+        case iOSPlatformSettings::TextureQuality::Uncompressed:
+            return PixelFormatExtensions::FindUncompressedFormat(format);
+        case iOSPlatformSettings::TextureQuality::ASTC_High:
+            return sRGB ? PixelFormat::ASTC_4x4_UNorm_sRGB : PixelFormat::ASTC_4x4_UNorm;
+        case iOSPlatformSettings::TextureQuality::ASTC_Medium:
+            return sRGB ? PixelFormat::ASTC_6x6_UNorm_sRGB : PixelFormat::ASTC_6x6_UNorm;
+        case iOSPlatformSettings::TextureQuality::ASTC_Low:
+            return sRGB ? PixelFormat::ASTC_8x8_UNorm_sRGB : PixelFormat::ASTC_8x8_UNorm;
+        default:
+            return format;
+        }
+    }
 }
 
 const Char* iOSPlatformTools::GetDisplayName() const
@@ -89,51 +112,37 @@ DotNetAOTModes iOSPlatformTools::UseAOT() const
 
 PixelFormat iOSPlatformTools::GetTextureFormat(CookingData& data, TextureBase* texture, PixelFormat format)
 {
-    // TODO: add ETC compression support for iOS
-    // TODO: add ASTC compression support for iOS
-
-    if (PixelFormatExtensions::IsCompressedBC(format))
+    switch (format)
     {
-        switch (format)
-        {
-        case PixelFormat::BC1_Typeless:
-        case PixelFormat::BC2_Typeless:
-        case PixelFormat::BC3_Typeless:
-            return PixelFormat::R8G8B8A8_Typeless;
-        case PixelFormat::BC1_UNorm:
-        case PixelFormat::BC2_UNorm:
-        case PixelFormat::BC3_UNorm:
-            return PixelFormat::R8G8B8A8_UNorm;
-        case PixelFormat::BC1_UNorm_sRGB:
-        case PixelFormat::BC2_UNorm_sRGB:
-        case PixelFormat::BC3_UNorm_sRGB:
-            return PixelFormat::R8G8B8A8_UNorm_sRGB;
-        case PixelFormat::BC4_Typeless:
-            return PixelFormat::R8_Typeless;
-        case PixelFormat::BC4_UNorm:
-            return PixelFormat::R8_UNorm;
-        case PixelFormat::BC4_SNorm:
-            return PixelFormat::R8_SNorm;
-        case PixelFormat::BC5_Typeless:
-            return PixelFormat::R16G16_Typeless;
-        case PixelFormat::BC5_UNorm:
-            return PixelFormat::R16G16_UNorm;
-        case PixelFormat::BC5_SNorm:
-            return PixelFormat::R16G16_SNorm;
-        case PixelFormat::BC7_Typeless:
-        case PixelFormat::BC6H_Typeless:
-            return PixelFormat::R16G16B16A16_Typeless;
-        case PixelFormat::BC7_UNorm:
-        case PixelFormat::BC6H_Uf16:
-        case PixelFormat::BC6H_Sf16:
-            return PixelFormat::R16G16B16A16_Float;
-        case PixelFormat::BC7_UNorm_sRGB:
-            return PixelFormat::R16G16B16A16_UNorm;
-        default:
-            return format;
-        }
+    case PixelFormat::BC1_Typeless:
+    case PixelFormat::BC2_Typeless:
+    case PixelFormat::BC3_Typeless:
+    case PixelFormat::BC4_Typeless:
+    case PixelFormat::BC5_Typeless:
+    case PixelFormat::BC1_UNorm:
+    case PixelFormat::BC2_UNorm:
+    case PixelFormat::BC3_UNorm:
+    case PixelFormat::BC4_UNorm:
+    case PixelFormat::BC5_UNorm:
+        return GetQualityTextureFormat(false, format);
+    case PixelFormat::BC1_UNorm_sRGB:
+    case PixelFormat::BC2_UNorm_sRGB:
+    case PixelFormat::BC3_UNorm_sRGB:
+    case PixelFormat::BC7_UNorm_sRGB:
+        return GetQualityTextureFormat(true, format);
+    case PixelFormat::BC4_SNorm:
+        return PixelFormat::R8_SNorm;
+    case PixelFormat::BC5_SNorm:
+        return PixelFormat::R16G16_SNorm;
+    case PixelFormat::BC6H_Typeless:
+    case PixelFormat::BC6H_Uf16:
+    case PixelFormat::BC6H_Sf16:
+    case PixelFormat::BC7_Typeless:
+    case PixelFormat::BC7_UNorm:
+        return PixelFormat::R16G16B16A16_Float; // TODO: ASTC HDR
+    default:
+        return format;
     }
-
     return format;
 }
 
@@ -141,6 +150,32 @@ bool iOSPlatformTools::IsNativeCodeFile(CookingData& data, const String& file)
 {
     String extension = FileSystem::GetExtension(file);
     return extension.IsEmpty() || extension == TEXT("dylib");
+}
+
+void iOSPlatformTools::LoadCache(CookingData& data, IBuildCache* cache, const Span<byte>& bytes)
+{
+    const auto platformSettings = iOSPlatformSettings::Get();
+    bool invalidTextures = true;
+    if (bytes.Length() == sizeof(iOSPlatformCache))
+    {
+        auto* platformCache = (iOSPlatformCache*)bytes.Get();
+        invalidTextures = platformCache->TexturesQuality != platformSettings->TexturesQuality;
+    }
+    if (invalidTextures)
+    {
+        LOG(Info, "{0} option has been modified.", TEXT("TexturesQuality"));
+        cache->InvalidateCacheTextures();
+    }
+}
+
+Array<byte> iOSPlatformTools::SaveCache(CookingData& data, IBuildCache* cache)
+{
+    const auto platformSettings = iOSPlatformSettings::Get();
+    iOSPlatformCache platformCache;
+    platformCache.TexturesQuality = platformSettings->TexturesQuality;
+    Array<byte> result;
+    result.Add((const byte*)&platformCache, sizeof(platformCache));
+    return result;
 }
 
 void iOSPlatformTools::OnBuildStarted(CookingData& data)

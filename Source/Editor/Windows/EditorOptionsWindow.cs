@@ -23,6 +23,7 @@ namespace FlaxEditor.Windows
         private Tabs _tabs;
         private EditorOptions _options;
         private ToolStripButton _saveButton;
+        private readonly Undo _undo;
         private readonly List<Tab> _customTabs = new List<Tab>();
 
         /// <summary>
@@ -33,6 +34,12 @@ namespace FlaxEditor.Windows
         : base(editor, true, ScrollBars.None)
         {
             Title = "Editor Options";
+            
+            // Undo
+            _undo = new Undo();
+            _undo.UndoDone += OnUndoRedo;
+            _undo.RedoDone += OnUndoRedo;
+            _undo.ActionDone += OnUndoRedo;
 
             var toolstrip = new ToolStrip
             {
@@ -58,8 +65,18 @@ namespace FlaxEditor.Windows
             CreateTab("Visual", () => _options.Visual);
             CreateTab("Source Code", () => _options.SourceCode);
             CreateTab("Theme", () => _options.Theme);
+            
+            // Setup input actions
+            InputActions.Add(options => options.Undo, _undo.PerformUndo);
+            InputActions.Add(options => options.Redo, _undo.PerformRedo);
+            InputActions.Add(options => options.Save, SaveData);
 
             _tabs.SelectedTabIndex = 0;
+        }
+        
+        private void OnUndoRedo(IUndoAction action)
+        {
+            MarkAsEdited();
         }
 
         private Tab CreateTab(string name, Func<object> getValue)
@@ -73,7 +90,7 @@ namespace FlaxEditor.Windows
                 Parent = tab
             };
 
-            var settings = new CustomEditorPresenter(null);
+            var settings = new CustomEditorPresenter(_undo);
             settings.Panel.Parent = panel;
             settings.Panel.Tag = getValue;
             settings.Modified += MarkAsEdited;

@@ -6,8 +6,10 @@
 #include "Engine/Core/Types/StringBuilder.h"
 #include "Engine/Core/Log.h"
 
-VkFormat RenderToolsVulkan::PixelFormatToVkFormat[static_cast<int32>(PixelFormat::MAX)] = {
+// @formatter:off
 
+VkFormat RenderToolsVulkan::PixelFormatToVkFormat[108] =
+{
     VK_FORMAT_UNDEFINED,
     VK_FORMAT_R32G32B32A32_SFLOAT,
     VK_FORMAT_R32G32B32A32_SFLOAT,
@@ -27,13 +29,10 @@ VkFormat RenderToolsVulkan::PixelFormatToVkFormat[static_cast<int32>(PixelFormat
     VK_FORMAT_R32G32_SFLOAT,
     VK_FORMAT_R32G32_UINT,
     VK_FORMAT_R32G32_SINT,
-    VK_FORMAT_UNDEFINED,
-    // TODO: R32G8X24_Typeless
+    VK_FORMAT_UNDEFINED, // TODO: R32G8X24_Typeless
     VK_FORMAT_D32_SFLOAT_S8_UINT,
-    VK_FORMAT_UNDEFINED,
-    // TODO: R32_Float_X8X24_Typeless
-    VK_FORMAT_UNDEFINED,
-    // TODO: X32_Typeless_G8X24_UInt
+    VK_FORMAT_UNDEFINED, // TODO: R32_Float_X8X24_Typeless
+    VK_FORMAT_UNDEFINED, // TODO: X32_Typeless_G8X24_UInt
     VK_FORMAT_A2B10G10R10_UNORM_PACK32,
     VK_FORMAT_A2B10G10R10_UNORM_PACK32,
     VK_FORMAT_A2B10G10R10_UINT_PACK32,
@@ -76,15 +75,11 @@ VkFormat RenderToolsVulkan::PixelFormatToVkFormat[static_cast<int32>(PixelFormat
     VK_FORMAT_R8_UINT,
     VK_FORMAT_R8_SNORM,
     VK_FORMAT_R8_SINT,
-    VK_FORMAT_UNDEFINED,
-    // TODO: A8_UNorm
-    VK_FORMAT_UNDEFINED,
-    // TODO: R1_UNorm
+    VK_FORMAT_UNDEFINED, // TODO: A8_UNorm
+    VK_FORMAT_UNDEFINED, // TODO: R1_UNorm
     VK_FORMAT_E5B9G9R9_UFLOAT_PACK32,
-    VK_FORMAT_UNDEFINED,
-    // TODO: R8G8_B8G8_UNorm
-    VK_FORMAT_UNDEFINED,
-    // TODO: G8R8_G8B8_UNorm
+    VK_FORMAT_UNDEFINED, // TODO: R8G8_B8G8_UNorm
+    VK_FORMAT_UNDEFINED, // TODO: G8R8_G8B8_UNorm
     VK_FORMAT_BC1_RGBA_UNORM_BLOCK,
     VK_FORMAT_BC1_RGBA_UNORM_BLOCK,
     VK_FORMAT_BC1_RGBA_SRGB_BLOCK,
@@ -104,8 +99,7 @@ VkFormat RenderToolsVulkan::PixelFormatToVkFormat[static_cast<int32>(PixelFormat
     VK_FORMAT_B5G5R5A1_UNORM_PACK16,
     VK_FORMAT_B8G8R8A8_UNORM,
     VK_FORMAT_B8G8R8A8_UNORM,
-    VK_FORMAT_UNDEFINED,
-    // TODO: R10G10B10_Xr_Bias_A2_UNorm
+    VK_FORMAT_UNDEFINED, // TODO: R10G10B10_Xr_Bias_A2_UNorm
     VK_FORMAT_B8G8R8A8_UNORM,
     VK_FORMAT_B8G8R8A8_SRGB,
     VK_FORMAT_B8G8R8A8_UNORM,
@@ -116,82 +110,62 @@ VkFormat RenderToolsVulkan::PixelFormatToVkFormat[static_cast<int32>(PixelFormat
     VK_FORMAT_BC7_UNORM_BLOCK,
     VK_FORMAT_BC7_UNORM_BLOCK,
     VK_FORMAT_BC7_SRGB_BLOCK,
+    VK_FORMAT_ASTC_4x4_UNORM_BLOCK,
+    VK_FORMAT_ASTC_4x4_SRGB_BLOCK,
+    VK_FORMAT_ASTC_6x6_UNORM_BLOCK,
+    VK_FORMAT_ASTC_6x6_SRGB_BLOCK,
+    VK_FORMAT_ASTC_8x8_UNORM_BLOCK,
+    VK_FORMAT_ASTC_8x8_SRGB_BLOCK,
+    VK_FORMAT_ASTC_10x10_UNORM_BLOCK,
+    VK_FORMAT_ASTC_10x10_SRGB_BLOCK,
 };
 
-VkBlendFactor RenderToolsVulkan::BlendToVkBlendFactor[static_cast<int32>(BlendingMode::Blend::MAX)] =
+VkBlendFactor RenderToolsVulkan::BlendToVkBlendFactor[20] =
 {
     VK_BLEND_FACTOR_MAX_ENUM,
-    VK_BLEND_FACTOR_ZERO,
-    // Zero
-    VK_BLEND_FACTOR_ONE,
-    // One
-    VK_BLEND_FACTOR_SRC_COLOR,
-    // SrcColor
-    VK_BLEND_FACTOR_ONE_MINUS_SRC_COLOR,
-    // InvSrcColor
-    VK_BLEND_FACTOR_SRC_ALPHA,
-    // SrcAlpha
-    VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,
-    // InvSrcAlpha
-    VK_BLEND_FACTOR_DST_ALPHA,
-    // DestAlpha
-    VK_BLEND_FACTOR_ONE_MINUS_DST_ALPHA,
-    // InvDestAlpha
-    VK_BLEND_FACTOR_DST_COLOR,
-    // DestColor,
-    VK_BLEND_FACTOR_ONE_MINUS_DST_COLOR,
-    // InvDestColor
-    VK_BLEND_FACTOR_SRC_ALPHA_SATURATE,
-    // SrcAlphaSat
-    VK_BLEND_FACTOR_CONSTANT_ALPHA,
-    // BlendFactor
-    VK_BLEND_FACTOR_ONE_MINUS_DST_ALPHA,
-    // BlendInvFactor
-    VK_BLEND_FACTOR_SRC1_COLOR,
-    // Src1Color
-    VK_BLEND_FACTOR_ONE_MINUS_SRC1_COLOR,
-    // InvSrc1Color
-    VK_BLEND_FACTOR_SRC1_ALPHA,
-    // Src1Alpha
-    VK_BLEND_FACTOR_ONE_MINUS_SRC1_ALPHA,
-    // InvSrc1Alpha
+    VK_BLEND_FACTOR_ZERO, // Zero
+    VK_BLEND_FACTOR_ONE, // One
+    VK_BLEND_FACTOR_SRC_COLOR, // SrcColor
+    VK_BLEND_FACTOR_ONE_MINUS_SRC_COLOR, // InvSrcColor
+    VK_BLEND_FACTOR_SRC_ALPHA, // SrcAlpha
+    VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA, // InvSrcAlpha
+    VK_BLEND_FACTOR_DST_ALPHA, // DestAlpha
+    VK_BLEND_FACTOR_ONE_MINUS_DST_ALPHA, // InvDestAlpha
+    VK_BLEND_FACTOR_DST_COLOR, // DestColor,
+    VK_BLEND_FACTOR_ONE_MINUS_DST_COLOR, // InvDestColor
+    VK_BLEND_FACTOR_SRC_ALPHA_SATURATE, // SrcAlphaSat
+    VK_BLEND_FACTOR_CONSTANT_ALPHA, // BlendFactor
+    VK_BLEND_FACTOR_ONE_MINUS_DST_ALPHA, // BlendInvFactor
+    VK_BLEND_FACTOR_SRC1_COLOR, // Src1Color
+    VK_BLEND_FACTOR_ONE_MINUS_SRC1_COLOR, // InvSrc1Color
+    VK_BLEND_FACTOR_SRC1_ALPHA, // Src1Alpha
+    VK_BLEND_FACTOR_ONE_MINUS_SRC1_ALPHA, // InvSrc1Alpha
 };
 
-VkBlendOp RenderToolsVulkan::OperationToVkBlendOp[static_cast<int32>(BlendingMode::Operation::MAX)] =
+VkBlendOp RenderToolsVulkan::OperationToVkBlendOp[6] =
 {
     VK_BLEND_OP_MAX_ENUM,
-    VK_BLEND_OP_ADD,
-    // Add
-    VK_BLEND_OP_SUBTRACT,
-    // Subtract
-    VK_BLEND_OP_REVERSE_SUBTRACT,
-    // RevSubtract
-    VK_BLEND_OP_MIN,
-    // Min
-    VK_BLEND_OP_MAX,
-    // Max
+    VK_BLEND_OP_ADD, // Add
+    VK_BLEND_OP_SUBTRACT, // Subtract
+    VK_BLEND_OP_REVERSE_SUBTRACT, // RevSubtract
+    VK_BLEND_OP_MIN, // Min
+    VK_BLEND_OP_MAX, // Max
 };
 
-VkCompareOp RenderToolsVulkan::ComparisonFuncToVkCompareOp[static_cast<int32>(ComparisonFunc::MAX)] =
+VkCompareOp RenderToolsVulkan::ComparisonFuncToVkCompareOp[9] =
 {
     VK_COMPARE_OP_MAX_ENUM,
-    VK_COMPARE_OP_NEVER,
-    // Never
-    VK_COMPARE_OP_LESS,
-    // Less
-    VK_COMPARE_OP_EQUAL,
-    // Equal
-    VK_COMPARE_OP_LESS_OR_EQUAL,
-    // LessEqual
-    VK_COMPARE_OP_GREATER,
-    // Grather
-    VK_COMPARE_OP_NOT_EQUAL,
-    // NotEqual
-    VK_COMPARE_OP_GREATER_OR_EQUAL,
-    // GratherEqual
-    VK_COMPARE_OP_ALWAYS,
-    // Always
+    VK_COMPARE_OP_NEVER, // Never
+    VK_COMPARE_OP_LESS, // Less
+    VK_COMPARE_OP_EQUAL, // Equal
+    VK_COMPARE_OP_LESS_OR_EQUAL, // LessEqual
+    VK_COMPARE_OP_GREATER, // Grather
+    VK_COMPARE_OP_NOT_EQUAL, // NotEqual
+    VK_COMPARE_OP_GREATER_OR_EQUAL, // GratherEqual
+    VK_COMPARE_OP_ALWAYS, // Always
 };
+
+// @formatter:on
 
 #define VKERR(x) case x: sb.Append(TEXT(#x)); break
 
@@ -301,6 +275,17 @@ void RenderToolsVulkan::LogVkResult(VkResult result, const char* file, uint32 li
 void RenderToolsVulkan::LogVkResult(VkResult result)
 {
     LogVkResult(result, "", 0);
+}
+
+bool RenderToolsVulkan::HasExtension(const Array<const char*>& extensions, const char* name)
+{
+    for (int32 i = 0; i < extensions.Count(); i++)
+    {
+        const char* extension = extensions[i];
+        if (extension && StringUtils::Compare(extension, name) == 0)
+            return true;
+    }
+    return false;
 }
 
 #endif

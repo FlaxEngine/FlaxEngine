@@ -21,7 +21,7 @@ namespace FlaxEditor.Gizmo
             {
                 Order = -100;
                 UseSingleTarget = true;
-                Location = PostProcessEffectLocation.BeforeForwardPass;
+                Location = PostProcessEffectLocation.AfterAntiAliasingPass;
             }
 
             ~Renderer()
@@ -46,7 +46,8 @@ namespace FlaxEditor.Gizmo
                 var plane = new Plane(Vector3.Zero, Vector3.UnitY);
                 var dst = CollisionsHelper.DistancePlanePoint(ref plane, ref viewPos);
 
-                float space = Editor.Instance.Options.Options.Viewport.ViewportGridScale, size;
+                var options = Editor.Instance.Options.Options;
+                float space = options.Viewport.ViewportGridScale, size;
                 if (dst <= 500.0f)
                 {
                     size = 8000;
@@ -62,8 +63,12 @@ namespace FlaxEditor.Gizmo
                     size = 100000;
                 }
 
-                Color color = Color.Gray * 0.7f;
+                float bigLineIntensity = 0.8f;
+                Color bigColor = Color.Gray * bigLineIntensity;
+                Color color = bigColor * 0.8f;
                 int count = (int)(size / space);
+                int midLine = count / 2;
+                int bigLinesMod = count / 8;
 
                 Vector3 start = new Vector3(0, 0, size * -0.5f);
                 Vector3 end = new Vector3(0, 0, size * 0.5f);
@@ -71,7 +76,12 @@ namespace FlaxEditor.Gizmo
                 for (int i = 0; i <= count; i++)
                 {
                     start.X = end.X = i * space + start.Z;
-                    DebugDraw.DrawLine(start, end, color);
+                    Color lineColor = color;
+                    if (i == midLine)
+                        lineColor = Color.Blue * bigLineIntensity;
+                    else if (i % bigLinesMod == 0)
+                        lineColor = bigColor;
+                    DebugDraw.DrawLine(start, end, lineColor);
                 }
 
                 start = new Vector3(size * -0.5f, 0, 0);
@@ -80,7 +90,12 @@ namespace FlaxEditor.Gizmo
                 for (int i = 0; i <= count; i++)
                 {
                     start.Z = end.Z = i * space + start.X;
-                    DebugDraw.DrawLine(start, end, color);
+                    Color lineColor = color;
+                    if (i == midLine)
+                        lineColor = Color.Red * bigLineIntensity;
+                    else if (i % bigLinesMod == 0)
+                        lineColor = bigColor;
+                    DebugDraw.DrawLine(start, end, lineColor);
                 }
 
                 DebugDraw.Draw(ref renderContext, input.View(), null, true);

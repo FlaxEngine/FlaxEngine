@@ -356,15 +356,11 @@ void ReflectionsPass::Render(RenderContext& renderContext, GPUTextureView* light
 {
     auto device = GPUDevice::Instance;
     auto context = device->GetMainContext();
-
-    // Skip pass if resources aren't ready
     if (checkIfSkipPass())
     {
+        // Skip pass (just clear buffer when doing debug preview)
         if (renderContext.View.Mode == ViewMode::Reflections)
-        {
             context->Clear(lightBuffer, Color::Black);
-        }
-
         return;
     }
 

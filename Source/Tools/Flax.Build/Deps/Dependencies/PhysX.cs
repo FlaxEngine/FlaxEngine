@@ -283,7 +283,7 @@ namespace Flax.Deps.Dependencies
                 switch (targetPlatform)
                 {
                 case TargetPlatform.Android:
-                    Utilities.Run("cmake", "--build .", null, Path.Combine(root, "physx\\compiler\\android-" + configuration), Utilities.RunOptions.None, envVars);
+                    Utilities.Run("cmake", "--build .", null, Path.Combine(root, "physx\\compiler\\android-" + configuration), Utilities.RunOptions.ConsoleLogOutput, envVars);
                     break;
                 default:
                     VCEnvironment.BuildSolution(Path.Combine(solutionFilesRoot, preset, "PhysXSDK.sln"), configuration, buildPlatform, msBuildProps, msBuild);
@@ -291,10 +291,10 @@ namespace Flax.Deps.Dependencies
                 }
                 break;
             case TargetPlatform.Linux:
-                Utilities.Run("make", null, null, Path.Combine(projectGenDir, "compiler", "linux-" + configuration), Utilities.RunOptions.None);
+                Utilities.Run("make", null, null, Path.Combine(projectGenDir, "compiler", "linux-" + configuration), Utilities.RunOptions.ConsoleLogOutput);
                 break;
             case TargetPlatform.Mac:
-                Utilities.Run("xcodebuild", "-project PhysXSDK.xcodeproj -alltargets -configuration " + configuration, null, Path.Combine(projectGenDir, "compiler", preset), Utilities.RunOptions.None);
+                Utilities.Run("xcodebuild", "-project PhysXSDK.xcodeproj -alltargets -configuration " + configuration, null, Path.Combine(projectGenDir, "compiler", preset), Utilities.RunOptions.ConsoleLogOutput);
                 break;
             default: throw new InvalidPlatformException(BuildPlatform);
             }
@@ -321,7 +321,7 @@ namespace Flax.Deps.Dependencies
                     {
                     case TargetPlatform.Mac:
                     case TargetPlatform.Android:
-                        Utilities.Run("strip", "\"" + filename + "\"", null, dstBinaries, Utilities.RunOptions.None);
+                        Utilities.Run("strip", "\"" + filename + "\"", null, dstBinaries, Utilities.RunOptions.ConsoleLogOutput);
                         break;
                     }
                     break;

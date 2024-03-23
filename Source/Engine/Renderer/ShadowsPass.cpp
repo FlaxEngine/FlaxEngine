@@ -83,18 +83,20 @@ bool ShadowsPass::Init()
 
     // Select format for shadow maps
     _shadowMapFormat = PixelFormat::Unknown;
+#if !PLATFORM_SWITCH // TODO: fix shadows performance issue on Switch
     for (const PixelFormat format : { PixelFormat::D16_UNorm, PixelFormat::D24_UNorm_S8_UInt, PixelFormat::D32_Float })
     {
         const auto formatTexture = PixelFormatExtensions::FindShaderResourceFormat(format, false);
         const auto formatFeaturesDepth = GPUDevice::Instance->GetFormatFeatures(format);
         const auto formatFeaturesTexture = GPUDevice::Instance->GetFormatFeatures(formatTexture);
-        if (EnumHasAllFlags(formatFeaturesDepth.Support, FormatSupport::DepthStencil | FormatSupport::Texture2D) &&
+        if (EnumHasAllFlags(formatFeaturesDepth.Support, FormatSupport::DepthStencil | FormatSupport::Texture2D | FormatSupport::TextureCube) &&
             EnumHasAllFlags(formatFeaturesTexture.Support, FormatSupport::ShaderSample | FormatSupport::ShaderSampleComparison))
         {
             _shadowMapFormat = format;
             break;
         }
     }
+#endif
     if (_shadowMapFormat == PixelFormat::Unknown)
         LOG(Warning, "GPU doesn't support shadows rendering");
 
@@ -229,6 +231,9 @@ void ShadowsPass::SetupLight(RenderContext& renderContext, RenderContextBatch& r
 #if USE_EDITOR
     if (IsRunningRadiancePass)
         blendCSM = false;
+#elif PLATFORM_SWITCH || PLATFORM_IOS || PLATFORM_ANDROID
+    // Disable cascades blending on low-end platforms
+    blendCSM = false;
 #endif
 
     // Views with orthographic cameras cannot use cascades, we force it to 1 shadow map here

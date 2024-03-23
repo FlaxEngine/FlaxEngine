@@ -66,6 +66,11 @@ namespace FlaxEditor.Windows
             public OutputLogWindow Window;
 
             /// <summary>
+            /// The input actions collection to processed during user input.
+            /// </summary>
+            public InputActionsContainer InputActions = new InputActionsContainer();
+
+            /// <summary>
             /// The default text style.
             /// </summary>
             public TextBlockStyle DefaultStyle;
@@ -79,6 +84,14 @@ namespace FlaxEditor.Windows
             /// The error text style.
             /// </summary>
             public TextBlockStyle ErrorStyle;
+
+            /// <inheritdoc />
+            public override bool OnKeyDown(KeyboardKeys key)
+            {
+                if (InputActions.Process(Editor.Instance, this, key))
+                    return true;
+                return base.OnKeyDown(key);
+            }
 
             /// <inheritdoc />
             protected override void OnParseTextBlocks()
@@ -201,6 +214,9 @@ namespace FlaxEditor.Windows
             // Setup editor options
             Editor.Options.OptionsChanged += OnEditorOptionsChanged;
             OnEditorOptionsChanged(Editor.Options.Options);
+            
+            _output.InputActions.Add(options => options.Search, () => _searchBox.Focus());
+            InputActions.Add(options => options.Search, () => _searchBox.Focus());
 
             GameCooker.Event += OnGameCookerEvent;
             ScriptsBuilder.CompilationFailed += OnScriptsCompilationFailed;

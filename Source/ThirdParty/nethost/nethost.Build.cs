@@ -74,11 +74,24 @@ public class nethost : ThirdPartyModule
         case TargetPlatform.Switch:
         case TargetPlatform.PS4:
         case TargetPlatform.PS5:
-            options.OutputFiles.Add(Path.Combine(hostRuntime.Path, "libmonosgen-2.0.a"));
-            options.OutputFiles.Add(Path.Combine(hostRuntime.Path, "libSystem.Native.a"));
-            options.OutputFiles.Add(Path.Combine(hostRuntime.Path, "libSystem.IO.Ports.Native.a"));
-            options.OutputFiles.Add(Path.Combine(hostRuntime.Path, "libSystem.IO.Compression.Native.a"));
+        {
+            var type = Flax.Build.Utilities.GetType($"Flax.Build.Platforms.{options.Platform.Target}.nethost");
+            var onLink = type?.GetMethod("OnLink");
+            if (onLink != null)
+            {
+                // Custom linking logic overriden by platform tools
+                onLink.Invoke(null, new object[] { options, hostRuntime.Path });
+            }
+            else
+            {
+                options.OutputFiles.Add(Path.Combine(hostRuntime.Path, "libmonosgen-2.0.a"));
+                options.OutputFiles.Add(Path.Combine(hostRuntime.Path, "libSystem.Native.a"));
+                options.OutputFiles.Add(Path.Combine(hostRuntime.Path, "libSystem.IO.Ports.Native.a"));
+                options.OutputFiles.Add(Path.Combine(hostRuntime.Path, "libSystem.IO.Compression.Native.a"));
+                options.OutputFiles.Add(Path.Combine(hostRuntime.Path, "libSystem.Globalization.Native.a"));
+            }
             break;
+        }
         case TargetPlatform.Android:
             options.PublicDefinitions.Add("USE_MONO_DYNAMIC_LIB");
             options.DependencyFiles.Add(Path.Combine(hostRuntime.Path, "libmonosgen-2.0.so"));

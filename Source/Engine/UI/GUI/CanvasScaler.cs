@@ -430,6 +430,13 @@ namespace FlaxEngine.GUI
         }
 
         /// <inheritdoc />
+        public override bool IntersectsChildContent(Control child, Float2 location, out Float2 childSpaceLocation)
+        {
+            location /= _scale;
+            return base.IntersectsChildContent(child, location, out childSpaceLocation);
+        }
+
+        /// <inheritdoc />
         public override bool ContainsPoint(ref Float2 location, bool precise = false)
         {
             if (precise) // Ignore as utility-only element
@@ -460,97 +467,6 @@ namespace FlaxEngine.GUI
             var result = base.PointFromParent(ref location);
             result /= _scale;
             return result;
-        }
-
-        /// <inheritdoc />
-        public override DragDropEffect OnDragEnter(ref Float2 location, DragData data)
-        {
-            location /= _scale;
-            return base.OnDragEnter(ref location, data);
-        }
-
-        /// <inheritdoc />
-        public override DragDropEffect OnDragMove(ref Float2 location, DragData data)
-        {
-            location /= _scale;
-            return base.OnDragMove(ref location, data);
-        }
-
-        /// <inheritdoc />
-        public override DragDropEffect OnDragDrop(ref Float2 location, DragData data)
-        {
-            location /= _scale;
-            return base.OnDragDrop(ref location, data);
-        }
-
-        /// <inheritdoc />
-        public override void OnMouseEnter(Float2 location)
-        {
-            location /= _scale;
-            base.OnMouseEnter(location);
-        }
-
-        /// <inheritdoc />
-        public override void OnMouseMove(Float2 location)
-        {
-            location /= _scale;
-            base.OnMouseMove(location);
-        }
-
-        /// <inheritdoc />
-        public override bool OnMouseDown(Float2 location, MouseButton button)
-        {
-            location /= _scale;
-            return base.OnMouseDown(location, button);
-        }
-
-        /// <inheritdoc />
-        public override bool OnMouseUp(Float2 location, MouseButton button)
-        {
-            location /= _scale;
-            return base.OnMouseUp(location, button);
-        }
-
-        /// <inheritdoc />
-        public override bool OnMouseDoubleClick(Float2 location, MouseButton button)
-        {
-            location /= _scale;
-            return base.OnMouseDoubleClick(location, button);
-        }
-
-        /// <inheritdoc />
-        public override bool OnMouseWheel(Float2 location, float delta)
-        {
-            location /= _scale;
-            return base.OnMouseWheel(location, delta);
-        }
-
-        /// <inheritdoc />
-        public override void OnTouchEnter(Float2 location, int pointerId)
-        {
-            location /= _scale;
-            base.OnTouchEnter(location, pointerId);
-        }
-
-        /// <inheritdoc />
-        public override void OnTouchMove(Float2 location, int pointerId)
-        {
-            location /= _scale;
-            base.OnTouchMove(location, pointerId);
-        }
-
-        /// <inheritdoc />
-        public override bool OnTouchDown(Float2 location, int pointerId)
-        {
-            location /= _scale;
-            return base.OnTouchDown(location, pointerId);
-        }
-
-        /// <inheritdoc />
-        public override bool OnTouchUp(Float2 location, int pointerId)
-        {
-            location /= _scale;
-            return base.OnTouchUp(location, pointerId);
         }
 
         #endregion

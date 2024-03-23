@@ -14,28 +14,15 @@ class PipelineLayoutVulkan;
 class ComputePipelineStateVulkan
 {
 private:
-
     GPUDeviceVulkan* _device;
     VkPipeline _handle;
     PipelineLayoutVulkan* _layout;
 
 public:
-
-    /// <summary>
-    /// Initializes a new instance of the <see cref="ComputePipelineStateVulkan"/> class.
-    /// </summary>
-    /// <param name="device">The graphics device.</param>
-    /// <param name="pipeline">The pipeline object.</param>
-    /// <param name="layout">The pipeline layout.</param>
     ComputePipelineStateVulkan(GPUDeviceVulkan* device, VkPipeline pipeline, PipelineLayoutVulkan* layout);
-
-    /// <summary>
-    /// Finalizes an instance of the <see cref="GPUPipelineStateVulkan"/> class.
-    /// </summary>
     ~ComputePipelineStateVulkan();
 
 public:
-
     /// <summary>
     /// The cached shader descriptor infos for compute shader.
     /// </summary>
@@ -71,13 +58,12 @@ public:
     Array<uint32> DynamicOffsets;
 
 public:
-
     void Bind(CmdBufferVulkan* cmdBuffer)
     {
         vkCmdBindDescriptorSets(
             cmdBuffer->GetHandle(),
             VK_PIPELINE_BIND_POINT_COMPUTE,
-            GetLayout()->GetHandle(),
+            GetLayout()->Handle,
             0,
             DescriptorSetHandles.Count(),
             DescriptorSetHandles.Get(),
@@ -86,7 +72,6 @@ public:
     }
 
 public:
-
     VkPipeline GetHandle() const
     {
         return _handle;
@@ -104,7 +89,6 @@ public:
 class GPUPipelineStateVulkan : public GPUResourceVulkan<GPUPipelineState>
 {
 private:
-
     Dictionary<RenderPassVulkan*, VkPipeline> _pipelines;
     VkGraphicsPipelineCreateInfo _desc;
     VkPipelineShaderStageCreateInfo _shaderStages[ShaderStage_Count - 1];
@@ -121,7 +105,6 @@ private:
     PipelineLayoutVulkan* _layout;
 
 public:
-
     /// <summary>
     /// Initializes a new instance of the <see cref="GPUPipelineStateVulkan"/> class.
     /// </summary>
@@ -129,13 +112,16 @@ public:
     GPUPipelineStateVulkan(GPUDeviceVulkan* device);
 
 public:
-
     /// <summary>
     /// The bitmask of stages that exist in this pipeline.
     /// </summary>
     uint32 UsedStagesMask;
 
-    bool BlendEnable;
+    uint32 BlendEnable : 1;
+    uint32 DepthReadEnable : 1;
+    uint32 DepthWriteEnable : 1;
+    uint32 StencilReadEnable : 1;
+    uint32 StencilWriteEnable : 1;
 
     /// <summary>
     /// The bitmask of stages that have descriptors.
@@ -164,41 +150,23 @@ public:
     TypedDescriptorPoolSetVulkan* CurrentTypedDescriptorPoolSet = nullptr;
     Array<VkDescriptorSet> DescriptorSetHandles;
 
+    Array<uint32> DynamicOffsets;
+
+public:
     inline bool AcquirePoolSet(CmdBufferVulkan* cmdBuffer)
     {
+        // Lazy init
+        if (!DescriptorSetsLayout)
+            GetLayout();
+
         // Pipeline state has no current descriptor pools set or set owner is not current - acquire a new pool set
         DescriptorPoolSetContainerVulkan* cmdBufferPoolSet = cmdBuffer->GetDescriptorPoolSet();
         if (CurrentTypedDescriptorPoolSet == nullptr || CurrentTypedDescriptorPoolSet->GetOwner() != cmdBufferPoolSet)
         {
-            ASSERT(cmdBufferPoolSet);
             CurrentTypedDescriptorPoolSet = cmdBufferPoolSet->AcquireTypedPoolSet(*DescriptorSetsLayout);
             return true;
         }
-
         return false;
-    }
-
-    inline bool AllocateDescriptorSets()
-    {
-        ASSERT(CurrentTypedDescriptorPoolSet);
-        return CurrentTypedDescriptorPoolSet->AllocateDescriptorSets(*DescriptorSetsLayout, DescriptorSetHandles.Get());
-    }
-
-    Array<uint32> DynamicOffsets;
-
-public:
-
-    void Bind(CmdBufferVulkan* cmdBuffer)
-    {
-        vkCmdBindDescriptorSets(
-            cmdBuffer->GetHandle(),
-            VK_PIPELINE_BIND_POINT_GRAPHICS,
-            GetLayout()->GetHandle(),
-            0,
-            DescriptorSetHandles.Count(),
-            DescriptorSetHandles.Get(),
-            DynamicOffsets.Count(),
-            DynamicOffsets.Get());
     }
 
     /// <summary>
@@ -215,13 +183,11 @@ public:
     VkPipeline GetState(RenderPassVulkan* renderPass);
 
 public:
-
     // [GPUPipelineState]
     bool IsValid() const final override;
     bool Init(const Description& desc) final override;
 
 protected:
-
     // [GPUResourceVulkan]
     void OnReleaseGPU() override;
 };

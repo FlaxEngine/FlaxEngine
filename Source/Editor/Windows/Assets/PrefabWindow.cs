@@ -344,6 +344,7 @@ namespace FlaxEditor.Windows.Assets
         private void OnPrefabOpened()
         {
             _viewport.Prefab = _asset;
+            _viewport.UpdateGizmoMode();
             Graph.MainActor = _viewport.Instance;
             Selection.Clear();
             Select(Graph.Main);
@@ -359,7 +360,7 @@ namespace FlaxEditor.Windows.Assets
 
             try
             {
-                Editor.Scene.OnSaveStart(_viewport);
+                Editor.Scene.OnSaveStart(_viewport._uiParentLink);
 
                 // Simply update changes
                 Editor.Prefabs.ApplyAll(_viewport.Instance);
@@ -379,7 +380,7 @@ namespace FlaxEditor.Windows.Assets
             }
             finally
             {
-                Editor.Scene.OnSaveEnd(_viewport);
+                Editor.Scene.OnSaveEnd(_viewport._uiParentLink);
             }
         }
 

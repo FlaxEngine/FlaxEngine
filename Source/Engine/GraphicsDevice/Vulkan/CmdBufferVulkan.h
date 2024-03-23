@@ -21,7 +21,6 @@ class CmdBufferVulkan
     friend QueueVulkan;
 
 public:
-
     enum class State
     {
         ReadyForBegin,
@@ -32,7 +31,6 @@ public:
     };
 
 private:
-
     GPUDeviceVulkan* _device;
     VkCommandBuffer _commandBuffer;
     State _state;
@@ -57,13 +55,10 @@ private:
     DescriptorPoolSetContainerVulkan* _descriptorPoolSetContainer = nullptr;
 
 public:
-
     CmdBufferVulkan(GPUDeviceVulkan* device, CmdBufferPoolVulkan* pool);
-
     ~CmdBufferVulkan();
 
 public:
-
     CmdBufferPoolVulkan* GetOwner() const
     {
         return _commandBufferPool;
@@ -120,7 +115,6 @@ public:
     }
 
 public:
-
     void AddWaitSemaphore(VkPipelineStageFlags waitFlags, SemaphoreVulkan* waitSemaphore);
 
     void Begin();
@@ -129,12 +123,10 @@ public:
     void BeginRenderPass(RenderPassVulkan* renderPass, FramebufferVulkan* framebuffer, uint32 clearValueCount, VkClearValue* clearValues);
     void EndRenderPass();
 
-    DescriptorPoolSetContainerVulkan* GetDescriptorPoolSet() const
+    FORCE_INLINE DescriptorPoolSetContainerVulkan* GetDescriptorPoolSet() const
     {
         return _descriptorPoolSetContainer;
     }
-
-    void AcquirePoolSet();
 
 #if GPU_ALLOW_PROFILE_EVENTS
     void BeginEvent(const Char* name);
@@ -148,7 +140,6 @@ class CmdBufferPoolVulkan
 {
     friend class CmdBufferManagerVulkan;
 private:
-
     GPUDeviceVulkan* _device;
     VkCommandPool _handle;
     Array<CmdBufferVulkan*> _cmdBuffers;
@@ -158,25 +149,21 @@ private:
     void Create(uint32 queueFamilyIndex);
 
 public:
-
     CmdBufferPoolVulkan(GPUDeviceVulkan* device);
     ~CmdBufferPoolVulkan();
 
 public:
-
     inline VkCommandPool GetHandle() const
     {
-        ASSERT(_handle != VK_NULL_HANDLE);
         return _handle;
     }
 
-    void RefreshFenceStatus(CmdBufferVulkan* skipCmdBuffer = nullptr);
+    void RefreshFenceStatus(const CmdBufferVulkan* skipCmdBuffer = nullptr);
 };
 
 class CmdBufferManagerVulkan
 {
 private:
-
     GPUDeviceVulkan* _device;
     CmdBufferPoolVulkan _pool;
     QueueVulkan* _queue;
@@ -184,11 +171,9 @@ private:
     Array<GPUTimerQueryVulkan*> _queriesInProgress;
 
 public:
-
     CmdBufferManagerVulkan(GPUDeviceVulkan* device, GPUContextVulkan* context);
 
 public:
-
     FORCE_INLINE VkCommandPool GetHandle() const
     {
         return _pool.GetHandle();
@@ -209,7 +194,7 @@ public:
         return _queriesInProgress.Count() != 0;
     }
 
-    CmdBufferVulkan* GetCmdBuffer()
+    FORCE_INLINE CmdBufferVulkan* GetCmdBuffer()
     {
         if (!_activeCmdBuffer)
             PrepareForNewActiveCommandBuffer();
@@ -217,16 +202,12 @@ public:
     }
 
 public:
-
     void SubmitActiveCmdBuffer(SemaphoreVulkan* signalSemaphore = nullptr);
-
     void WaitForCmdBuffer(CmdBufferVulkan* cmdBuffer, float timeInSecondsToWait = 1.0f);
-
     void RefreshFenceStatus(CmdBufferVulkan* skipCmdBuffer = nullptr)
     {
         _pool.RefreshFenceStatus(skipCmdBuffer);
     }
-
     void PrepareForNewActiveCommandBuffer();
 
     void OnQueryBegin(GPUTimerQueryVulkan* query);

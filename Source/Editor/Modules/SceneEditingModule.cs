@@ -101,7 +101,10 @@ namespace FlaxEditor.Modules
         public void Select(List<SceneGraphNode> selection, bool additive = false)
         {
             if (selection == null)
-                throw new ArgumentNullException();
+            {
+                Deselect();
+                return;
+            }
 
             // Prevent from selecting null nodes
             selection.RemoveAll(x => x == null);

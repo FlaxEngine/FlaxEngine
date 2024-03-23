@@ -321,9 +321,19 @@ namespace Flax.Build
             ConsoleLogOutput = 1 << 7,
 
             /// <summary>
+            /// Enables <see cref="ProcessStartInfo.UseShellExecute"/> to run process via Shell instead of standard process startup.
+            /// </summary>
+            Shell = 1 << 8,
+
+            /// <summary>
             /// The default options.
             /// </summary>
             Default = AppMustExist,
+
+            /// <summary>
+            /// The default options for tools execution in build tool.
+            /// </summary>
+            DefaultTool = ConsoleLogOutput | ThrowExceptionOnError,
         }
 
         private static void StdLogInfo(object sender, DataReceivedEventArgs e)
@@ -340,6 +350,16 @@ namespace Flax.Build
             {
                 Log.Verbose(e.Data);
             }
+        }
+
+        /// <summary>
+        /// Calls <see cref="Type.GetType()"/> within Flax.Build context - can be used by build scripts to properly find a type by name. 
+        /// </summary>
+        /// <param name="name">The full name (namespace with class name).</param>
+        /// <returns>Type or null if not found.</returns>
+        public static Type GetType(string name)
+        {
+            return Type.GetType(name);
         }
 
         /// <summary>
@@ -393,11 +413,12 @@ namespace Flax.Build
             }
 
             bool redirectStdOut = (options & RunOptions.NoStdOutRedirect) != RunOptions.NoStdOutRedirect;
+            bool shell = options.HasFlag(RunOptions.Shell);
 
             Process proc = new Process();
             proc.StartInfo.FileName = app;
             proc.StartInfo.Arguments = commandLine != null ? commandLine : "";
-            proc.StartInfo.UseShellExecute = false;
+            proc.StartInfo.UseShellExecute = shell;
             proc.StartInfo.RedirectStandardInput = input != null;
             proc.StartInfo.CreateNoWindow = true;
 
@@ -406,7 +427,7 @@ namespace Flax.Build
                 proc.StartInfo.WorkingDirectory = workspace;
             }
 
-            if (redirectStdOut)
+            if (redirectStdOut && !shell)
             {
                 proc.StartInfo.RedirectStandardOutput = true;
                 proc.StartInfo.RedirectStandardError = true;
@@ -422,16 +443,24 @@ namespace Flax.Build
                 }
             }
 
-            if (envVars != null)
+            if (envVars != null && !shell)
             {
                 foreach (var env in envVars)
                 {
                     if (env.Key == "PATH")
                     {
+                        // Append to path
                         proc.StartInfo.EnvironmentVariables[env.Key] = env.Value + ';' + proc.StartInfo.EnvironmentVariables[env.Key];
+                    }
+                    else if (env.Value == null)
+                    {
+                        // Remove variable
+                        if (proc.StartInfo.EnvironmentVariables.ContainsKey(env.Key))
+                            proc.StartInfo.EnvironmentVariables.Remove(env.Key);
                     }
                     else
                     {
+                        // Set variable
                         proc.StartInfo.EnvironmentVariables[env.Key] = env.Value;
                     }
                 }

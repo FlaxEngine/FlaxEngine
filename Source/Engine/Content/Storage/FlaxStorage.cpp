@@ -51,7 +51,7 @@ String AssetHeader::ToString() const
 
 void FlaxChunk::RegisterUsage()
 {
-    Platform::AtomicStore(&LastAccessTime, DateTime::NowUTC().Ticks);
+    LastAccessTime = Platform::GetTimeSeconds();
 }
 
 const int32 FlaxStorage::MagicCode = 1180124739;
@@ -259,7 +259,9 @@ uint32 FlaxStorage::GetRefCount() const
 
 bool FlaxStorage::ShouldDispose() const
 {
-    return Platform::AtomicRead((int64*)&_refCount) == 0 && Platform::AtomicRead((int64*)&_chunksLock) == 0 && DateTime::NowUTC() - _lastRefLostTime >= TimeSpan::FromMilliseconds(500);
+    return Platform::AtomicRead((int64*)&_refCount) == 0 &&
+            Platform::AtomicRead((int64*)&_chunksLock) == 0 &&
+            Platform::GetTimeSeconds() - _lastRefLostTime >= 0.5; // TTL in seconds
 }
 
 uint32 FlaxStorage::GetMemoryUsage() const
@@ -1398,12 +1400,13 @@ void FlaxStorage::Tick()
     if (Platform::AtomicRead(&_chunksLock) != 0)
         return;
 
-    const auto now = DateTime::NowUTC();
+    const double now = Platform::GetTimeSeconds();
     bool wasAnyUsed = false;
+    const float unusedDataChunksLifetime = ContentStorageManager::UnusedDataChunksLifetime.GetTotalSeconds();
     for (int32 i = 0; i < _chunks.Count(); i++)
     {
-        auto chunk = _chunks[i];
-        const bool wasUsed = (now - DateTime(Platform::AtomicRead(&chunk->LastAccessTime))) < ContentStorageManager::UnusedDataChunksLifetime;
+        auto chunk = _chunks.Get()[i];
+        const bool wasUsed = (now - chunk->LastAccessTime) < unusedDataChunksLifetime;
         if (!wasUsed && chunk->IsLoaded())
         {
             chunk->Unload();

@@ -121,6 +121,37 @@ namespace FlaxEditor.Utilities
             ["e"] = Math.E,
             ["infinity"] = double.MaxValue,
             ["-infinity"] = -double.MaxValue,
+            ["m"] = Units.Meters2Units,
+            ["cm"] = Units.Meters2Units / 100,
+            ["km"] = Units.Meters2Units * 1000,
+            ["s"] = 1,
+            ["ms"] = 0.001,
+            ["min"] = 60,
+            ["h"] = 3600,
+            ["cm²"] = (Units.Meters2Units / 100) * (Units.Meters2Units / 100),
+            ["cm³"] = (Units.Meters2Units / 100) * (Units.Meters2Units / 100) * (Units.Meters2Units / 100),
+            ["dm²"] = (Units.Meters2Units / 10) * (Units.Meters2Units / 10),
+            ["dm³"] = (Units.Meters2Units / 10) * (Units.Meters2Units / 10) * (Units.Meters2Units / 10),
+            ["l"] = (Units.Meters2Units / 10) * (Units.Meters2Units / 10) * (Units.Meters2Units / 10),
+            ["m²"] = Units.Meters2Units * Units.Meters2Units,
+            ["m³"] = Units.Meters2Units * Units.Meters2Units * Units.Meters2Units,
+            ["kg"] = 1,
+            ["g"] = 0.001,
+            ["n"] = Units.Meters2Units
+        };
+
+        /// <summary>
+        /// List known units which cannot be handled as a variable easily because they contain operator symbols (mostly a forward slash). The value is the factor to calculate game units. 
+        /// </summary>
+        private static readonly IDictionary<string, double> UnitSymbols = new Dictionary<string, double>
+        {
+            ["cm/s"] = Units.Meters2Units / 100,
+            ["cm/s²"] = Units.Meters2Units / 100,
+            ["m/s"] = Units.Meters2Units,
+            ["m/s²"] = Units.Meters2Units,
+            ["km/h"] = 1 / 3.6 * Units.Meters2Units,
+            // Nm is here because these values are compared case-sensitive, and we don't want to confuse nanometers and Newtonmeters
+            ["Nm"] = Units.Meters2Units * Units.Meters2Units,
         };
 
         /// <summary>
@@ -156,7 +187,7 @@ namespace FlaxEditor.Utilities
             if (Operators.ContainsKey(str))
                 return TokenType.Operator;
 
-            if (char.IsLetter(c))
+            if (char.IsLetter(c) || c == '²' || c == '³')
                 return TokenType.Variable;
 
             throw new ParsingException("wrong character");
@@ -170,7 +201,24 @@ namespace FlaxEditor.Utilities
         public static IEnumerable<Token> Tokenize(string text)
         {
             // Prepare text
-            text = text.Replace(',', '.');
+            text = text.Replace(',', '.').Replace("°", "");
+            foreach (var kv in UnitSymbols)
+            {
+                int idx;
+                do
+                {
+                    idx = text.IndexOf(kv.Key, StringComparison.InvariantCulture);
+                    if (idx > 0)
+                    {
+                        if (DetermineType(text[idx - 1]) != TokenType.Number)
+                            throw new ParsingException($"unit found without a number: {kv.Key} at {idx} in {text}");
+                        if (Mathf.Abs(kv.Value - 1) < Mathf.Epsilon)
+                            text = text.Remove(idx, kv.Key.Length);
+                        else
+                            text = text.Replace(kv.Key, "*" + kv.Value);
+                    }
+                } while (idx > 0);
+            }
 
             // Necessary to correctly parse negative numbers
             var previous = TokenType.WhiteSpace;
@@ -240,6 +288,11 @@ namespace FlaxEditor.Utilities
                 }
                 else if (type == TokenType.Variable)
                 {
+                    if (previous == TokenType.Number)
+                    {
+                        previous = TokenType.Operator;
+                        yield return new Token(TokenType.Operator, "*");
+                    }
                     // Continue till the end of the variable
                     while (i + 1 < text.Length && DetermineType(text[i + 1]) == TokenType.Variable)
                     {
@@ -335,7 +388,7 @@ namespace FlaxEditor.Utilities
                     }
                     else
                     {
-                        throw new ParsingException("unknown variable");
+                        throw new ParsingException($"unknown variable : {token.Value}");
                     }
                 }
                 else
@@ -372,6 +425,15 @@ namespace FlaxEditor.Utilities
                 }
             }
 
+            // if stack has more than one item we're not finished with evaluating
+            // we assume the remaining values are all factors to be multiplied
+            if (stack.Count > 1)
+            {
+                var v1 = stack.Pop();
+                while (stack.Count > 0)
+                    v1 *= stack.Pop();
+                return v1;
+            }
             return stack.Pop();
         }
 

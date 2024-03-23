@@ -31,7 +31,7 @@ Follow the instructions below to compile and run the engine from source.
 * Install Visual Studio 2022 or newer
 * Install Windows 8.1 SDK or newer (via Visual Studio Installer)
 * Install Microsoft Visual C++ 2015 v140 toolset or newer (via Visual Studio Installer)
-* Install .NET 7 SDK for **Windows x64** (via Visual Studio Installer or [from web](https://dotnet.microsoft.com/en-us/download/dotnet/7.0))
+* Install .NET 8 SDK for **Windows x64** (via Visual Studio Installer or [from web](https://dotnet.microsoft.com/en-us/download/dotnet/8.0))
 * Install Git with LFS
 * Clone repo (with LFS)
 * Run **GenerateProjectFiles.bat**
@@ -44,8 +44,8 @@ Follow the instructions below to compile and run the engine from source.
 ## Linux
 
 * Install Visual Studio Code
-* Install .NET 7 SDK ([https://dotnet.microsoft.com/en-us/download/dotnet/7.0](https://dotnet.microsoft.com/en-us/download/dotnet/7.0))
-  * Ubuntu: `sudo apt install dotnet-sdk-7.0`
+* Install .NET 8 SDK ([https://dotnet.microsoft.com/en-us/download/dotnet/8.0](https://dotnet.microsoft.com/en-us/download/dotnet/8.0))
+  * Ubuntu: `sudo apt install dotnet-sdk-8.0`
 * Install Vulkan SDK ([https://vulkan.lunarg.com/](https://vulkan.lunarg.com/))
   * Ubuntu: `sudo apt install vulkan-sdk`
   * Arch: `sudo pacman -S spirv-tools vulkan-headers vulkan-tools vulkan-validation-layers`
@@ -67,7 +67,7 @@ Follow the instructions below to compile and run the engine from source.
 ## Mac
 
 * Install XCode
-* Install .NET 7 SDK ([https://dotnet.microsoft.com/en-us/download/dotnet/7.0](https://dotnet.microsoft.com/en-us/download/dotnet/7.0))
+* Install .NET 8 SDK ([https://dotnet.microsoft.com/en-us/download/dotnet/8.0](https://dotnet.microsoft.com/en-us/download/dotnet/8.0))
 * Install Vulkan SDK ([https://vulkan.lunarg.com/](https://vulkan.lunarg.com/))
 * Clone repo (with LFS)
 * Run `GenerateProjectFiles.command`
@@ -80,9 +80,9 @@ Follow the instructions below to compile and run the engine from source.
 
 Restart PC - ensure DotNet is added to PATH for command line tools execution.
 
-* `Microsoft.NET.TargetFrameworkInference.targets(141,5): error NETSDK1045: The current .NET SDK does not support targeting .NET 7.0.  Either target .NET 5.0 or lower, or use a version of the .NET SDK that supports .NET 7.0`
+* `Microsoft.NET.TargetFrameworkInference.targets(141,5): error NETSDK1045: The current .NET SDK does not support targeting .NET 8.0.  Either target .NET 5.0 or lower, or use a version of the .NET SDK that supports .NET 8.0`
 
-Use Visual Studio 2022, older versions are not supported by .NET SDK 7.
+Use Visual Studio 2022, older versions are not supported by .NET SDK 8.
 
 * `Building for Windows without Vulkan rendering backend (Vulkan SDK is missing)`
 

@@ -17,7 +17,6 @@ class CmdBufferVulkan;
 class QueueVulkan
 {
 private:
-
     VkQueue _queue;
     uint32 _familyIndex;
     uint32 _queueIndex;
@@ -25,10 +24,8 @@ private:
     CriticalSection _locker;
     CmdBufferVulkan* _lastSubmittedCmdBuffer;
     uint64 _lastSubmittedCmdBufferFenceCounter;
-    uint64 _submitCounter;
 
 public:
-
     QueueVulkan(GPUDeviceVulkan* device, uint32 familyIndex);
 
     inline uint32 GetFamilyIndex() const
@@ -36,7 +33,7 @@ public:
         return _familyIndex;
     }
 
-    void Submit(CmdBufferVulkan* cmdBuffer, uint32 numSignalSemaphores = 0, VkSemaphore* signalSemaphores = nullptr);
+    void Submit(CmdBufferVulkan* cmdBuffer, uint32 signalSemaphoresCount = 0, const VkSemaphore* signalSemaphores = nullptr);
 
     inline void Submit(CmdBufferVulkan* cmdBuffer, VkSemaphore signalSemaphore)
     {
@@ -50,13 +47,7 @@ public:
 
     void GetLastSubmittedInfo(CmdBufferVulkan*& cmdBuffer, uint64& fenceCounter) const;
 
-    inline uint64 GetSubmitCount() const
-    {
-        return _submitCounter;
-    }
-
 private:
-
     void UpdateLastSubmittedCommandBuffer(CmdBufferVulkan* cmdBuffer);
 };
 

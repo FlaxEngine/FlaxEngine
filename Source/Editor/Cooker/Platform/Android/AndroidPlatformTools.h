@@ -30,6 +30,8 @@ public:
     PlatformType GetPlatform() const override;
     ArchitectureType GetArchitecture() const override;
     PixelFormat GetTextureFormat(CookingData& data, TextureBase* texture, PixelFormat format) override;
+    void LoadCache(CookingData& data, IBuildCache* cache, const Span<byte>& bytes) override;
+    Array<byte> SaveCache(CookingData& data, IBuildCache* cache) override;
     void OnBuildStarted(CookingData& data) override;
     bool OnPostProcess(CookingData& data) override;
 };

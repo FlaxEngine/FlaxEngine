@@ -130,7 +130,7 @@ namespace Flax.Build
         /// <summary>
         /// The minimum SDK version.
         /// </summary>
-        public static Version MinimumVersion => new Version(7, 0);
+        public static Version MinimumVersion => new Version(8, 0);
 
         /// <summary>
         /// The maximum SDK version.
@@ -243,19 +243,12 @@ namespace Flax.Build
                             dotnetPath = string.Empty;
                     }
                 }
-
-                bool isRunningOnArm64Targetx64 = architecture == TargetArchitecture.ARM64 && (Configuration.BuildArchitectures != null && Configuration.BuildArchitectures[0] == TargetArchitecture.x64);
-
-                // We need to support two paths here: 
-                // 1. We are running an x64 binary and we are running on an arm64 host machine 
-                // 2. We are running an Arm64 binary and we are targeting an x64 host machine
-                if (Flax.Build.Platforms.MacPlatform.GetProcessIsTranslated() || isRunningOnArm64Targetx64)
+                if (Flax.Build.Platforms.MacPlatform.BuildingForx64)
                 {
                     rid = "osx-x64";
                     dotnetPath = Path.Combine(dotnetPath, "x64");
                     architecture = TargetArchitecture.x64;
                 }
-
                 break;
             }
             default: throw new InvalidPlatformException(platform);
@@ -472,6 +465,8 @@ namespace Flax.Build
         {
             var versions = GetVersions(root);
             var version = GetVersion(versions);
+            if (version == null)
+                throw new Exception($"Failed to select dotnet version from '{root}' ({string.Join(", ", versions)})");
             return Path.Combine(root, version);
         }
 

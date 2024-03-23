@@ -15,6 +15,7 @@
 #include "Engine/Scripting/Enums.h"
 #include "Engine/Graphics/Textures/TextureData.h"
 #include "Engine/Graphics/PixelFormatExtensions.h"
+#include "Engine/Profiler/ProfilerCPU.h"
 
 #if USE_EDITOR
 #include "Engine/Core/Collections/Dictionary.h"
@@ -183,6 +184,7 @@ bool TextureTool::HasAlpha(const StringView& path)
 
 bool TextureTool::ImportTexture(const StringView& path, TextureData& textureData)
 {
+    PROFILE_CPU();
     LOG(Info, "Importing texture from \'{0}\'", path);
     const auto startTime = DateTime::NowUTC();
 
@@ -219,6 +221,7 @@ bool TextureTool::ImportTexture(const StringView& path, TextureData& textureData
 
 bool TextureTool::ImportTexture(const StringView& path, TextureData& textureData, Options options, String& errorMsg)
 {
+    PROFILE_CPU();
     LOG(Info, "Importing texture from \'{0}\'. Options: {1}", path, options.ToString());
     const auto startTime = DateTime::NowUTC();
 
@@ -267,9 +270,9 @@ bool TextureTool::ImportTexture(const StringView& path, TextureData& textureData
 
 bool TextureTool::ExportTexture(const StringView& path, const TextureData& textureData)
 {
+    PROFILE_CPU();
     LOG(Info, "Exporting texture to \'{0}\'.", path);
     const auto startTime = DateTime::NowUTC();
-
     ImageType type;
     if (GetImageType(path, type))
         return true;
@@ -279,7 +282,6 @@ bool TextureTool::ExportTexture(const StringView& path, const TextureData& textu
         return true;
     }
 
-    // Export
 #if COMPILE_WITH_DIRECTXTEX
     const auto failed = ExportTextureDirectXTex(type, path, textureData);
 #elif COMPILE_WITH_STB
@@ -303,7 +305,6 @@ bool TextureTool::ExportTexture(const StringView& path, const TextureData& textu
 
 bool TextureTool::Convert(TextureData& dst, const TextureData& src, const PixelFormat dstFormat)
 {
-    // Validate input
     if (src.GetMipLevels() == 0)
     {
         LOG(Warning, "Missing source data.");
@@ -319,6 +320,7 @@ bool TextureTool::Convert(TextureData& dst, const TextureData& src, const PixelF
         LOG(Warning, "Converting volume texture data is not supported.");
         return true;
     }
+    PROFILE_CPU();
 
 #if COMPILE_WITH_DIRECTXTEX
     return ConvertDirectXTex(dst, src, dstFormat);
@@ -332,7 +334,6 @@ bool TextureTool::Convert(TextureData& dst, const TextureData& src, const PixelF
 
 bool TextureTool::Resize(TextureData& dst, const TextureData& src, int32 dstWidth, int32 dstHeight)
 {
-    // Validate input
     if (src.GetMipLevels() == 0)
     {
         LOG(Warning, "Missing source data.");
@@ -348,7 +349,7 @@ bool TextureTool::Resize(TextureData& dst, const TextureData& src, int32 dstWidt
         LOG(Warning, "Resizing volume texture data is not supported.");
         return true;
     }
-
+    PROFILE_CPU();
 #if COMPILE_WITH_DIRECTXTEX
     return ResizeDirectXTex(dst, src, dstWidth, dstHeight);
 #elif COMPILE_WITH_STB
@@ -772,6 +773,33 @@ bool TextureTool::GetImageType(const StringView& path, ImageType& type)
         return true;
     }
 
+    return false;
+}
+
+bool TextureTool::Transform(TextureData& texture, const Function<void(Color&)>& transformation)
+{   
+    PROFILE_CPU();
+    auto sampler = TextureTool::GetSampler(texture.Format);
+    if (!sampler)
+        return true;
+    for (auto& slice : texture.Items)
+    {
+        for (int32 mipIndex = 0; mipIndex < slice.Mips.Count(); mipIndex++)
+        {
+            auto& mip = slice.Mips[mipIndex];
+            auto mipWidth = Math::Max(texture.Width >> mipIndex, 1);
+            auto mipHeight = Math::Max(texture.Height >> mipIndex, 1);
+            for (int32 y = 0; y < mipHeight; y++)
+            {
+                for (int32 x = 0; x < mipWidth; x++)
+                {    
+                    Color color = TextureTool::SamplePoint(sampler, x, y, mip.Data.Get(), mip.RowPitch);
+                    transformation(color);
+                    TextureTool::Store(sampler, x, y, mip.Data.Get(), mip.RowPitch, color);
+                }
+            }
+        }
+    }
     return false;
 }
 

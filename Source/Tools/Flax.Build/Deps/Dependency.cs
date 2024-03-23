@@ -136,15 +136,12 @@ namespace Flax.Deps
                 if (submodules)
                     cmdLine += " --recurse-submodules";
 
-                Utilities.Run("git", cmdLine, null, null, Utilities.RunOptions.None);
+                Utilities.Run("git", cmdLine, null, null, Utilities.RunOptions.DefaultTool);
                 if (submodules)
-                    Utilities.Run("git", "submodule update --init --recursive", null, null, Utilities.RunOptions.None);
+                    Utilities.Run("git", "submodule update --init --recursive", null, null, Utilities.RunOptions.DefaultTool);
             }
-
             if (commit != null)
-            {
-                Utilities.Run("git", string.Format("reset --hard {0}", commit), null, null, Utilities.RunOptions.None);
-            }
+                Utilities.Run("git", string.Format("reset --hard {0}", commit), null, null, Utilities.RunOptions.DefaultTool);
         }
 
         /// <summary>
@@ -164,9 +161,9 @@ namespace Flax.Deps
                 if (submodules)
                     cmdLine += " --recurse-submodules";
 
-                Utilities.Run("git", cmdLine, null, null, Utilities.RunOptions.None);
+                Utilities.Run("git", cmdLine, null, null, Utilities.RunOptions.DefaultTool);
                 if (submodules)
-                    Utilities.Run("git", "submodule update --init --recursive", null, null, Utilities.RunOptions.None);
+                    Utilities.Run("git", "submodule update --init --recursive", null, null, Utilities.RunOptions.DefaultTool);
             }
         }
 
@@ -191,14 +188,14 @@ namespace Flax.Deps
                 if (submodules)
                     cmdLine += " --recurse-submodules";
 
-                Utilities.Run("git", cmdLine, null, null, Utilities.RunOptions.None);
+                Utilities.Run("git", cmdLine, null, null, Utilities.RunOptions.DefaultTool);
                 if (submodules)
-                    Utilities.Run("git", "submodule update --init --recursive", null, null, Utilities.RunOptions.None);
+                    Utilities.Run("git", "submodule update --init --recursive", null, null, Utilities.RunOptions.DefaultTool);
             }
 
             if (commit != null)
             {
-                Utilities.Run("git", string.Format("reset --hard {0}", commit), null, path, Utilities.RunOptions.None);
+                Utilities.Run("git", string.Format("reset --hard {0}", commit), null, path, Utilities.RunOptions.DefaultTool);
             }
         }
 
@@ -218,13 +215,13 @@ namespace Flax.Deps
             if (submodules)
                 cmdLine += " --recurse-submodules";
 
-            Utilities.Run("git", cmdLine, null, path, Utilities.RunOptions.None);
+            Utilities.Run("git", cmdLine, null, path, Utilities.RunOptions.DefaultTool);
             if (submodules)
-                Utilities.Run("git", "submodule update --init --recursive", null, null, Utilities.RunOptions.None);
+                Utilities.Run("git", "submodule update --init --recursive", null, null, Utilities.RunOptions.DefaultTool);
 
             if (commit != null)
             {
-                Utilities.Run("git", string.Format("reset --hard {0}", commit), null, path, Utilities.RunOptions.None);
+                Utilities.Run("git", string.Format("reset --hard {0}", commit), null, path, Utilities.RunOptions.DefaultTool);
             }
         }
 
@@ -234,7 +231,17 @@ namespace Flax.Deps
         /// <param name="path">The local path that contains git repository.</param>
         public static void GitResetLocalChanges(string path)
         {
-            Utilities.Run("git", "reset --hard", null, path, Utilities.RunOptions.None);
+            Utilities.Run("git", "reset --hard", null, path, Utilities.RunOptions.DefaultTool);
+        }
+
+        /// <summary>
+        /// Builds the cmake project.
+        /// </summary>
+        /// <param name="path">The path.</param>
+        /// <param name="envVars">Custom environment variables to pass to the child process.</param>
+        public static void BuildCmake(string path, Dictionary<string, string> envVars = null)
+        {
+            Utilities.Run("cmake", "--build .  --config Release", null, path, Utilities.RunOptions.DefaultTool, envVars);
         }
 
         /// <summary>
@@ -313,7 +320,7 @@ namespace Flax.Deps
             if (customArgs != null)
                 cmdLine += " " + customArgs;
 
-            Utilities.Run("cmake", cmdLine, null, path, Utilities.RunOptions.None, envVars);
+            Utilities.Run("cmake", cmdLine, null, path, Utilities.RunOptions.DefaultTool, envVars);
         }
 
         /// <summary>

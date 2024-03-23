@@ -35,7 +35,8 @@ void PrecompileAssembliesStep::OnBuildStarted(CookingData& data)
         if (cachedData != aotModeCacheValue)
         {
             LOG(Info, "AOT cache invalidation");
-            FileSystem::DeleteDirectory(data.ManagedCodeOutputPath);
+            FileSystem::DeleteDirectory(data.ManagedCodeOutputPath); // Remove AOT cache
+            FileSystem::DeleteDirectory(data.DataOutputPath / TEXT("Dotnet")); // Remove deployed Dotnet libs (be sure to remove any leftovers from previous build)
         }
     }
     if (!FileSystem::DirectoryExists(data.ManagedCodeOutputPath))

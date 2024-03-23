@@ -194,7 +194,7 @@ bool NavMeshRuntime::TestPath(const Vector3& startPosition, const Vector3& endPo
     return true;
 }
 
-bool NavMeshRuntime::ProjectPoint(const Vector3& point, Vector3& result) const
+bool NavMeshRuntime::FindClosestPoint(const Vector3& point, Vector3& result) const
 {
     ScopeLock lock(Locker);
     const auto query = GetNavMeshQuery();

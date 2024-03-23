@@ -6,9 +6,7 @@ using Real = System.Double;
 using Real = System.Single;
 #endif
 
-using System.Collections.Generic;
 using FlaxEditor.Gizmo;
-using FlaxEditor.SceneGraph;
 using FlaxEngine;
 
 namespace FlaxEditor.Viewport.Cameras
@@ -85,86 +83,8 @@ namespace FlaxEditor.Viewport.Cameras
             _moveStartTime = Time.UnscaledGameTime;
         }
 
-        /// <summary>
-        /// Moves the viewport to visualize the actor.
-        /// </summary>
-        /// <param name="actor">The actor to preview.</param>
-        public void ShowActor(Actor actor)
-        {
-            Editor.GetActorEditorSphere(actor, out BoundingSphere sphere);
-            ShowSphere(ref sphere);
-        }
-
-        /// <summary>
-        /// Moves the viewport to visualize selected actors.
-        /// </summary>
-        /// <param name="actor">The actors to show.</param>
-        /// <param name="orientation">The used orientation.</param>
-        public void ShowActor(Actor actor, ref Quaternion orientation)
-        {
-            Editor.GetActorEditorSphere(actor, out BoundingSphere sphere);
-            ShowSphere(ref sphere, ref orientation);
-        }
-
-        /// <summary>
-        /// Moves the viewport to visualize selected actors.
-        /// </summary>
-        /// <param name="selection">The actors to show.</param>
-        public void ShowActors(List<SceneGraphNode> selection)
-        {
-            if (selection.Count == 0)
-                return;
-
-            BoundingSphere mergesSphere = BoundingSphere.Empty;
-            for (int i = 0; i < selection.Count; i++)
-            {
-                selection[i].GetEditorSphere(out var sphere);
-                BoundingSphere.Merge(ref mergesSphere, ref sphere, out mergesSphere);
-            }
-
-            if (mergesSphere == BoundingSphere.Empty)
-                return;
-            ShowSphere(ref mergesSphere);
-        }
-
-        /// <summary>
-        /// Moves the viewport to visualize selected actors.
-        /// </summary>
-        /// <param name="selection">The actors to show.</param>
-        /// <param name="orientation">The used orientation.</param>
-        public void ShowActors(List<SceneGraphNode> selection, ref Quaternion orientation)
-        {
-            if (selection.Count == 0)
-                return;
-
-            BoundingSphere mergesSphere = BoundingSphere.Empty;
-            for (int i = 0; i < selection.Count; i++)
-            {
-                selection[i].GetEditorSphere(out var sphere);
-                BoundingSphere.Merge(ref mergesSphere, ref sphere, out mergesSphere);
-            }
-
-            if (mergesSphere == BoundingSphere.Empty)
-                return;
-            ShowSphere(ref mergesSphere, ref orientation);
-        }
-
-        /// <summary>
-        /// Moves the camera to visualize given world area defined by the sphere.
-        /// </summary>
-        /// <param name="sphere">The sphere.</param>
-        public void ShowSphere(ref BoundingSphere sphere)
-        {
-            var q = new Quaternion(0.424461186f, -0.0940724313f, 0.0443938486f, 0.899451137f);
-            ShowSphere(ref sphere, ref q);
-        }
-
-        /// <summary>
-        /// Moves the camera to visualize given world area defined by the sphere.
-        /// </summary>
-        /// <param name="sphere">The sphere.</param>
-        /// <param name="orientation">The camera orientation.</param>
-        public void ShowSphere(ref BoundingSphere sphere, ref Quaternion orientation)
+        /// <inheritdoc />
+        public override void ShowSphere(ref BoundingSphere sphere, ref Quaternion orientation)
         {
             Vector3 position;
             if (Viewport.UseOrthographicProjection)

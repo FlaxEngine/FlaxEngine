@@ -4,7 +4,8 @@
 
 META_CB_BEGIN(0, Data)
 float4x4 ViewProjection;
-float3 Padding;
+float2 Padding;
+float ClipPosZBias;
 bool EnableDepthTest;
 META_CB_END
 
@@ -23,6 +24,7 @@ VS2PS VS(float3 Position : POSITION, float4 Color : COLOR)
 {
 	VS2PS output;
 	output.Position = mul(float4(Position, 1), ViewProjection);
+	output.Position.z += ClipPosZBias;
 	output.Color = Color;
 	return output;
 }

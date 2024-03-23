@@ -256,6 +256,7 @@ private:
     };
 
     static bool GetImageType(const StringView& path, ImageType& type);
+    static bool Transform(TextureData& texture, const Function<void(Color&)>& transformation);
 
 #if COMPILE_WITH_DIRECTXTEX
     static bool ExportTextureDirectXTex(ImageType type, const StringView& path, const TextureData& textureData);
@@ -271,6 +272,9 @@ private:
     static bool ConvertStb(TextureData& dst, const TextureData& src, const PixelFormat dstFormat);
     static bool ResizeStb(PixelFormat format, TextureMipData& dstMip, const TextureMipData& srcMip, int32 dstMipWidth, int32 dstMipHeight);
     static bool ResizeStb(TextureData& dst, const TextureData& src, int32 dstWidth, int32 dstHeight);
+#endif
+#if COMPILE_WITH_ASTC
+    static bool ConvertAstc(TextureData& dst, const TextureData& src, const PixelFormat dstFormat);
 #endif
 };
 

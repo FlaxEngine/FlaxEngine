@@ -30,13 +30,11 @@ class ResourceOwnerVulkan
     friend GPUContextVulkan;
 
 public:
-
     virtual ~ResourceOwnerVulkan()
     {
     }
 
 public:
-
     /// <summary>
     /// The resource state tracking helper. Used for resource barriers.
     /// </summary>
@@ -48,7 +46,6 @@ public:
     int32 ArraySlices;
 
 public:
-
     /// <summary>
     /// Gets resource owner object as a GPUResource type or returns null if cannot perform cast.
     /// </summary>
@@ -56,7 +53,6 @@ public:
     virtual GPUResource* AsGPUResource() const = 0;
 
 protected:
-
     void initResource(VkImageLayout initialState, int32 mipLevels = 1, int32 arraySize = 1, bool usePerSubresourceTracking = false)
     {
         State.Initialize(mipLevels * arraySize, initialState, usePerSubresourceTracking);

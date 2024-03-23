@@ -8,6 +8,7 @@
 #include "Engine/Graphics/RenderBuffers.h"
 #include "Engine/Graphics/RenderTask.h"
 #include "Engine/Renderer/RenderList.h"
+#include "Engine/Renderer/GBufferPass.h"
 #include "Engine/Engine/Engine.h"
 
 PACK_STRUCT(struct Data
@@ -18,6 +19,7 @@ PACK_STRUCT(struct Data
     float StationaryBlending;
     float MotionBlending;
     float Dummy0;
+    GBufferData GBuffer;
     });
 
 bool TAA::Init()
@@ -125,6 +127,7 @@ void TAA::Render(const RenderContext& renderContext, GPUTexture* input, GPUTextu
     data.Sharpness = settings.TAA_Sharpness;
     data.StationaryBlending = settings.TAA_StationaryBlending * blendStrength;
     data.MotionBlending = settings.TAA_MotionBlending * blendStrength;
+    GBufferPass::SetInputs(renderContext.View, data.GBuffer);
     const auto cb = _shader->GetShader()->GetCB(0);
     context->UpdateCB(cb, &data);
     context->BindCB(0, cb);
@@ -146,4 +149,7 @@ void TAA::Render(const RenderContext& renderContext, GPUTexture* input, GPUTextu
         context->Draw(output);
         renderContext.Buffers->TemporalAA = outputHistory;
     }
+
+    // Mark TAA jitter as resolved for future drawing
+    (bool&)renderContext.View.IsTaaResolved = true;
 }

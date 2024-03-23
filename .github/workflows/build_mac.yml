@@ -19,7 +19,7 @@ jobs:
     - name: Setup .NET
       uses: actions/setup-dotnet@v3
       with:
-        dotnet-version: 7.0.x
+        dotnet-version: 8.0.x
     - name: Print .NET info
       run: |
         dotnet --info
@@ -30,7 +30,7 @@ jobs:
         git lfs pull
     - name: Build
       run: |
-        ./Development/Scripts/Mac/CallBuildTool.sh -build -log -printSDKs -dotnet=7 -arch=x64 -platform=Mac -configuration=Development -buildtargets=FlaxEditor
+        ./Development/Scripts/Mac/CallBuildTool.sh -build -log -printSDKs -dotnet=8 -arch=x64 -platform=Mac -configuration=Development -buildtargets=FlaxEditor
 
   # Game
   game-mac:
@@ -44,7 +44,7 @@ jobs:
     - name: Setup .NET
       uses: actions/setup-dotnet@v3
       with:
-        dotnet-version: 7.0.x
+        dotnet-version: 8.0.x
     - name: Print .NET info
       run: |
         dotnet --info
@@ -55,4 +55,4 @@ jobs:
         git lfs pull
     - name: Build
       run: |
-        ./Development/Scripts/Mac/CallBuildTool.sh -build -log -printSDKs -dotnet=7 -arch=x64 -platform=Mac -configuration=Release -buildtargets=FlaxGame
+        ./Development/Scripts/Mac/CallBuildTool.sh -build -log -printSDKs -dotnet=8 -arch=x64 -platform=Mac -configuration=Release -buildtargets=FlaxGame

@@ -41,7 +41,7 @@ public class Scripting : EngineModule
                 if (options.Target is EngineTarget engineTarget && engineTarget.UseSeparateMainExecutable(options))
                 {
                     // Build target doesn't support linking again main executable (eg. Linux) thus additional shared library is used for the engine (eg. libFlaxEditor.so)
-                    var fileName = options.Platform.GetLinkOutputFileName(engineTarget.OutputName, LinkerOutput.SharedLibrary);
+                    var fileName = options.Platform.GetLinkOutputFileName(EngineTarget.LibraryName, LinkerOutput.SharedLibrary);
                     options.CompileEnv.PreprocessorDefinitions.Add("MCORE_MAIN_MODULE_NAME=" + fileName);
                 }
             }

@@ -127,8 +127,7 @@ namespace Flax.Build.NativeCpp
                 LinkAsConsoleProgram = LinkAsConsoleProgram,
                 GenerateDocumentation = GenerateDocumentation
             };
-            foreach (var e in InputFiles)
-                clone.InputFiles.Add(e);
+            clone.InputFiles.AddRange(InputFiles);
             clone.DocumentationFiles.AddRange(DocumentationFiles);
             clone.InputLibraries.AddRange(InputLibraries);
             clone.LibraryPaths.AddRange(LibraryPaths);

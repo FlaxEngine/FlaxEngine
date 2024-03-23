@@ -22,6 +22,11 @@ IMPLEMENT_ENGINE_SETTINGS_GETTER(AndroidPlatformSettings, AndroidPlatform);
 
 namespace
 {
+    struct AndroidPlatformCache
+    {
+        AndroidPlatformSettings::TextureQuality TexturesQuality;
+    };
+
     void DeployIcon(const CookingData& data, const TextureData& iconData, const Char* subDir, int32 iconSize, int32 adaptiveIconSize)
     {
         const String mipmapPath = data.OriginalOutputPath / TEXT("app/src/main/res") / subDir;
@@ -29,6 +34,24 @@ namespace
         if (!FileSystem::DirectoryExists(mipmapPath))
             FileSystem::CreateDirectory(mipmapPath);
         EditorUtilities::ExportApplicationImage(iconData, iconSize, iconSize, PixelFormat::B8G8R8A8_UNorm, iconPath);
+    }
+
+    PixelFormat GetQualityTextureFormat(bool sRGB, PixelFormat format)
+    {
+        const auto platformSettings = AndroidPlatformSettings::Get();
+        switch (platformSettings->TexturesQuality)
+        {
+        case AndroidPlatformSettings::TextureQuality::Uncompressed:
+            return PixelFormatExtensions::FindUncompressedFormat(format);
+        case AndroidPlatformSettings::TextureQuality::ASTC_High:
+            return sRGB ? PixelFormat::ASTC_4x4_UNorm_sRGB : PixelFormat::ASTC_4x4_UNorm;
+        case AndroidPlatformSettings::TextureQuality::ASTC_Medium:
+            return sRGB ? PixelFormat::ASTC_6x6_UNorm_sRGB : PixelFormat::ASTC_6x6_UNorm;
+        case AndroidPlatformSettings::TextureQuality::ASTC_Low:
+            return sRGB ? PixelFormat::ASTC_8x8_UNorm_sRGB : PixelFormat::ASTC_8x8_UNorm;
+        default:
+            return format;
+        }
     }
 }
 
@@ -54,62 +77,67 @@ ArchitectureType AndroidPlatformTools::GetArchitecture() const
 
 PixelFormat AndroidPlatformTools::GetTextureFormat(CookingData& data, TextureBase* texture, PixelFormat format)
 {
-    // TODO: add ETC compression support for Android
-    // TODO: add ASTC compression support for Android
-
-    // BC formats are not widely supported on Android
-    if (PixelFormatExtensions::IsCompressedBC(format))
-    {
-        switch (format)
-        {
-        case PixelFormat::BC1_Typeless:
-        case PixelFormat::BC2_Typeless:
-        case PixelFormat::BC3_Typeless:
-            return PixelFormat::R8G8B8A8_Typeless;
-        case PixelFormat::BC1_UNorm:
-        case PixelFormat::BC2_UNorm:
-        case PixelFormat::BC3_UNorm:
-            return PixelFormat::R8G8B8A8_UNorm;
-        case PixelFormat::BC1_UNorm_sRGB:
-        case PixelFormat::BC2_UNorm_sRGB:
-        case PixelFormat::BC3_UNorm_sRGB:
-            return PixelFormat::R8G8B8A8_UNorm_sRGB;
-        case PixelFormat::BC4_Typeless:
-            return PixelFormat::R8_Typeless;
-        case PixelFormat::BC4_UNorm:
-            return PixelFormat::R8_UNorm;
-        case PixelFormat::BC4_SNorm:
-            return PixelFormat::R8_SNorm;
-        case PixelFormat::BC5_Typeless:
-            return PixelFormat::R16G16_Typeless;
-        case PixelFormat::BC5_UNorm:
-            return PixelFormat::R16G16_UNorm;
-        case PixelFormat::BC5_SNorm:
-            return PixelFormat::R16G16_SNorm;
-        case PixelFormat::BC7_Typeless:
-        case PixelFormat::BC6H_Typeless:
-            return PixelFormat::R16G16B16A16_Typeless;
-        case PixelFormat::BC7_UNorm:
-        case PixelFormat::BC6H_Uf16:
-        case PixelFormat::BC6H_Sf16:
-            return PixelFormat::R16G16B16A16_Float;
-        case PixelFormat::BC7_UNorm_sRGB:
-            return PixelFormat::R16G16B16A16_UNorm;
-        default:
-            return format;
-        }
-    }
-
     switch (format)
     {
-        // Not all Android devices support R11G11B10 textures (eg. M6 Note)
     case PixelFormat::R11G11B10_Float:
+        // Not all Android devices support R11G11B10 textures (eg. M6 Note)
         return PixelFormat::R16G16B16A16_UNorm;
+    case PixelFormat::BC1_Typeless:
+    case PixelFormat::BC2_Typeless:
+    case PixelFormat::BC3_Typeless:
+    case PixelFormat::BC4_Typeless:
+    case PixelFormat::BC5_Typeless:
+    case PixelFormat::BC1_UNorm:
+    case PixelFormat::BC2_UNorm:
+    case PixelFormat::BC3_UNorm:
+    case PixelFormat::BC4_UNorm:
+    case PixelFormat::BC5_UNorm:
+        return GetQualityTextureFormat(false, format);
+    case PixelFormat::BC1_UNorm_sRGB:
+    case PixelFormat::BC2_UNorm_sRGB:
+    case PixelFormat::BC3_UNorm_sRGB:
+    case PixelFormat::BC7_UNorm_sRGB:
+        return GetQualityTextureFormat(true, format);
+    case PixelFormat::BC4_SNorm:
+        return PixelFormat::R8_SNorm;
+    case PixelFormat::BC5_SNorm:
+        return PixelFormat::R16G16_SNorm;
+    case PixelFormat::BC6H_Typeless:
+    case PixelFormat::BC6H_Uf16:
+    case PixelFormat::BC6H_Sf16:
+    case PixelFormat::BC7_Typeless:
+    case PixelFormat::BC7_UNorm:
+        return PixelFormat::R16G16B16A16_Float; // TODO: ASTC HDR
     default:
         return format;
     }
 }
 
+void AndroidPlatformTools::LoadCache(CookingData& data, IBuildCache* cache, const Span<byte>& bytes)
+{
+    const auto platformSettings = AndroidPlatformSettings::Get();
+    bool invalidTextures = true;
+    if (bytes.Length() == sizeof(AndroidPlatformCache))
+    {
+        auto* platformCache = (AndroidPlatformCache*)bytes.Get();
+        invalidTextures = platformCache->TexturesQuality != platformSettings->TexturesQuality;
+    }
+    if (invalidTextures)
+    {
+        LOG(Info, "{0} option has been modified.", TEXT("TexturesQuality"));
+        cache->InvalidateCacheTextures();
+    }
+}
+
+Array<byte> AndroidPlatformTools::SaveCache(CookingData& data, IBuildCache* cache)
+{
+    const auto platformSettings = AndroidPlatformSettings::Get();
+    AndroidPlatformCache platformCache;
+    platformCache.TexturesQuality = platformSettings->TexturesQuality;
+    Array<byte> result;
+    result.Add((const byte*)&platformCache, sizeof(platformCache));
+    return result;
+}
 void AndroidPlatformTools::OnBuildStarted(CookingData& data)
 {
     // Adjust the cooking output folder to be located inside the Gradle assets directory
@@ -328,7 +356,7 @@ bool AndroidPlatformTools::OnPostProcess(CookingData& data)
 
     // Copy result package
     const String apk = data.OriginalOutputPath / (distributionPackage ? TEXT("app/build/outputs/apk/release/app-release-unsigned.apk") : TEXT("app/build/outputs/apk/debug/app-debug.apk"));
-    const String outputApk = data.OriginalOutputPath / gameSettings->ProductName + TEXT(".apk");
+    const String outputApk = data.OriginalOutputPath / EditorUtilities::GetOutputName() + TEXT(".apk");
     if (FileSystem::CopyFile(outputApk, apk))
     {
         LOG(Error, "Failed to copy package from {0} to {1}", apk, outputApk);
