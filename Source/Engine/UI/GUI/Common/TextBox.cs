@@ -170,18 +170,19 @@ namespace FlaxEngine.GUI
             {
                 var leftEdge = font.GetCharPosition(_text, SelectionLeft, ref _layout);
                 var rightEdge = font.GetCharPosition(_text, SelectionRight, ref _layout);
-                float fontHeight = font.Height / DpiScale;
+                var fontHeight = font.Height;
+                var textHeight = fontHeight / DpiScale;
 
                 // Draw selection background
                 float alpha = Mathf.Min(1.0f, Mathf.Cos(_animateTime * BackgroundSelectedFlashSpeed) * 0.5f + 1.3f);
                 alpha *= alpha;
                 Color selectionColor = SelectionColor * alpha;
                 //
-                int selectedLinesCount = 1 + Mathf.FloorToInt((rightEdge.Y - leftEdge.Y) / fontHeight);
+                int selectedLinesCount = 1 + Mathf.FloorToInt((rightEdge.Y - leftEdge.Y) / textHeight);
                 if (selectedLinesCount == 1)
                 {
                     // Selected is part of single line
-                    Rectangle r1 = new Rectangle(leftEdge.X, leftEdge.Y, rightEdge.X - leftEdge.X, fontHeight * DpiScale);
+                    Rectangle r1 = new Rectangle(leftEdge.X, leftEdge.Y, rightEdge.X - leftEdge.X, fontHeight);
                     Render2D.FillRectangle(r1, selectionColor);
                 }
                 else
@@ -189,17 +190,17 @@ namespace FlaxEngine.GUI
                     float leftMargin = _layout.Bounds.Location.X;
 
                     // Selected is more than one line
-                    Rectangle r1 = new Rectangle(leftEdge.X, leftEdge.Y, 1000000000, fontHeight * DpiScale);
+                    Rectangle r1 = new Rectangle(leftEdge.X, leftEdge.Y, 1000000000, fontHeight);
                     Render2D.FillRectangle(r1, selectionColor);
                     //
                     for (int i = 3; i <= selectedLinesCount; i++)
                     {
-                        leftEdge.Y += fontHeight;
-                        Rectangle r = new Rectangle(leftMargin, leftEdge.Y, 1000000000, fontHeight * DpiScale);
+                        leftEdge.Y += textHeight;
+                        Rectangle r = new Rectangle(leftMargin, leftEdge.Y, 1000000000, fontHeight);
                         Render2D.FillRectangle(r, selectionColor);
                     }
                     //
-                    Rectangle r2 = new Rectangle(leftMargin, rightEdge.Y, rightEdge.X - leftMargin, fontHeight * DpiScale);
+                    Rectangle r2 = new Rectangle(leftMargin, rightEdge.Y, rightEdge.X - leftMargin, fontHeight);
                     Render2D.FillRectangle(r2, selectionColor);
                 }
             }

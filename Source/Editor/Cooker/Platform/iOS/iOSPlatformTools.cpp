@@ -202,11 +202,23 @@ bool iOSPlatformTools::OnPostProcess(CookingData& data)
     if (EditorUtilities::FormatAppPackageName(appIdentifier))
         return true;
 
-    // Copy fresh Gradle project template
+    // Copy fresh XCode project template
     if (FileSystem::CopyDirectory(data.OriginalOutputPath, platformDataPath / TEXT("Project"), true))
     {
         LOG(Error, "Failed to deploy XCode project to {0} from {1}", data.OriginalOutputPath, platformDataPath);
         return true;
+    }
+
+    // Fix MoltenVK lib (copied from VulkanSDK xcframework)
+    FileSystem::MoveFile(data.DataOutputPath / TEXT("libMoltenVK.dylib"), data.DataOutputPath / TEXT("MoltenVK"), true);
+    {
+        // Fix rpath to point into dynamic library (rather than framework location)
+        CreateProcessSettings procSettings;
+        procSettings.HiddenWindow = true;
+        procSettings.WorkingDirectory = data.DataOutputPath;
+        procSettings.FileName = TEXT("/usr/bin/install_name_tool");
+        procSettings.Arguments = TEXT("-id \"@rpath/libMoltenVK.dylib\" libMoltenVK.dylib");
+        Platform::CreateProcess(procSettings);
     }
 
     // Format project template files
