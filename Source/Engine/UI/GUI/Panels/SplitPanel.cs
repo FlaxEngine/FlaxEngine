@@ -187,7 +187,7 @@ namespace FlaxEngine.GUI
                 // Start moving splitter
                 StartTracking();
                 Focus();
-                return false;
+                return true;
             }
 
             return base.OnMouseDown(location, button);
