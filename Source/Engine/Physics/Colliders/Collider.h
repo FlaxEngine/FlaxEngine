@@ -33,23 +33,9 @@ protected:
     /// <summary>
     /// To what rigidbody is this collider attached to
     /// </summary>
-    // TODO fix ReadOnly attribute allowing to change value vita reset to default or reset to prefab
-    // and enable the API_FIELD(...) then and remove API_PROPERTY GetAttachedTo and SetAttachedTo
-    // API_FIELD(public,Attributes = "EditorOrder(0), EditorDisplay(\"Collider\"),ReadOnly,NoSerialize")
-    ScriptingObjectReference<RigidBody> AttachedTo;
+    API_FIELD(public,Attributes = "EditorOrder(0), EditorDisplay(\"Collider\"),ReadOnly,NoSerialize")
+        ScriptingObjectReference<RigidBody> AttachedTo;
 
-    //HACK expose geter and dumy seter property for AttachedTo to display it in editor
-
-    /// <summary>
-    /// To what rigidbody is this collider attached to
-    /// </summary>
-    API_PROPERTY(public, Attributes = "EditorOrder(0), EditorDisplay(\"Collider\"),ReadOnly,NoSerialize")
-        ScriptingObjectReference<RigidBody> GetAttachedTo() { return AttachedTo; }
-    /// <summary>
-    /// To what rigidbody is this collider attached to
-    /// </summary>
-    API_PROPERTY(public, Attributes = "EditorOrder(0), EditorDisplay(\"Collider\"),ReadOnly,NoSerialize")
-        void SetAttachedTo(ScriptingObjectReference<RigidBody> trashvalue ) {}
 public:
 
     /// <summary>
