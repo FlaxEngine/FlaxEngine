@@ -6,6 +6,7 @@
 #include "Engine/Content/JsonAsset.h"
 #include "Engine/Content/JsonAssetReference.h"
 #include "Engine/Physics/Actors/PhysicsColliderActor.h"
+#include "Engine/Scripting/ScriptingObjectReference.h"
 
 struct RayCastHit;
 class RigidBody;
@@ -29,7 +30,14 @@ protected:
     Vector3 _cachedLocalPosePos;
     Quaternion _cachedLocalPoseRot;
 
+    /// <summary>
+    /// To what rigidbody is this collider attached to exposed to c# just for information
+    /// Don't set it directly u can break somfing, Collider has full control over it
+    /// </summary>
+    API_FIELD(public,Attributes = "EditorOrder(0), EditorDisplay(\"Collider\"),ReadOnly,NoSerialize")
+        ScriptingObjectReference<RigidBody> AttachedTo;
 public:
+
     /// <summary>
     /// Gets the native physics backend object.
     /// </summary>
@@ -117,6 +125,10 @@ public:
     /// <param name="rigidBody">The rigid body.</param>
     void Attach(RigidBody* rigidBody);
 
+    /// <summary>
+    /// Detaches collider from rigid body.
+    /// </summary>
+    void Detach();
 protected:
     /// <summary>
     /// Updates the shape actor collisions/queries layer mask bits.
@@ -160,7 +172,7 @@ protected:
 
 private:
     void OnMaterialChanged();
-
+    RigidBody* GetAttathmentRigidbody();
 public:
     // [PhysicsColliderActor]
     RigidBody* GetAttachedRigidBody() const override;
@@ -180,6 +192,7 @@ protected:
     void OnActiveInTreeChanged() override;
     void OnParentChanged() override;
     void OnTransformChanged() override;
+    void OnParentChangedInHierarchy() override;
     void OnLayerChanged() override;
     void OnPhysicsSceneChanged(PhysicsScene* previous) override;
 };

@@ -129,7 +129,7 @@ RigidBody* Collider::GetAttachedRigidBody() const
 {
     if (_shape && _staticActor == nullptr)
     {
-        return dynamic_cast<RigidBody*>(GetParent());
+        return AttachedTo;
     }
     return nullptr;
 }
@@ -157,7 +157,7 @@ void Collider::OnDisable()
 void Collider::Attach(RigidBody* rigidBody)
 {
     ASSERT(CanAttach(rigidBody));
-
+    
     // Remove static body if used
     if (_staticActor)
         RemoveStaticActor();
@@ -175,6 +175,23 @@ void Collider::Attach(RigidBody* rigidBody)
     {
         rigidBody->UpdateBounds();
         rigidBody->UpdateMass();
+    }
+    if (AttachedTo != rigidBody) 
+    {
+        AttachedTo = rigidBody;
+    }
+    rigidBody->AttathedColliders.Add(this);
+}
+void Collider::Detach()
+{
+    void* actor = PhysicsBackend::GetShapeActor(_shape);
+    RigidBody* rigidBody = GetAttachedRigidBody();
+    if (actor)
+        PhysicsBackend::DetachShape(_shape, actor);
+    if (rigidBody)
+    {
+        rigidBody->OnColliderChanged(this);
+        rigidBody->AttathedColliders.Remove(this);
     }
 }
 
@@ -291,6 +308,23 @@ void Collider::OnMaterialChanged()
         PhysicsBackend::SetShapeMaterial(_shape, Material);
 }
 
+RigidBody* Collider::GetAttathmentRigidbody()
+{
+    RigidBody* rb = nullptr;
+    Actor* p = GetParent();
+    while (p)
+    {
+        RigidBody* crb = dynamic_cast<RigidBody*>(p);
+        if (crb) 
+        {
+            rb = crb;
+            break;
+        }
+        p = p->GetParent();
+    }
+    return rb;
+}
+
 void Collider::BeginPlay(SceneBeginData* data)
 {
     // Check if has no shape created (it means no rigidbody requested it but also collider may be spawned at runtime)
@@ -299,7 +333,7 @@ void Collider::BeginPlay(SceneBeginData* data)
         CreateShape();
 
         // Check if parent is a rigidbody
-        const auto rigidBody = dynamic_cast<RigidBody*>(GetParent());
+        const auto rigidBody = GetAttathmentRigidbody();
         if (rigidBody && CanAttach(rigidBody))
         {
             // Attach to the rigidbody
@@ -324,15 +358,9 @@ void Collider::EndPlay()
     if (_shape)
     {
         // Detach from the actor
-        void* actor = PhysicsBackend::GetShapeActor(_shape);
-        RigidBody* rigidBody = GetAttachedRigidBody();
-        if (actor)
-            PhysicsBackend::DetachShape(_shape, actor);
-        if (rigidBody)
-        {
-            rigidBody->OnColliderChanged(this);
-        }
-        else if (_staticActor)
+        Detach();
+
+        if (_staticActor && GetAttachedRigidBody() == nullptr)
         {
             RemoveStaticActor();
         }
@@ -369,18 +397,13 @@ void Collider::OnParentChanged()
     // Check reparenting collider case
     if (_shape)
     {
-        // Detach from the actor
-        void* actor = PhysicsBackend::GetShapeActor(_shape);
         RigidBody* rigidBody = GetAttachedRigidBody();
-        if (actor)
-            PhysicsBackend::DetachShape(_shape, actor);
-        if (rigidBody)
-        {
-            rigidBody->OnColliderChanged(this);
-        }
+
+        // Detach from the actor
+        Detach();
 
         // Check if the new parent is a rigidbody
-        rigidBody = dynamic_cast<RigidBody*>(GetParent());
+        rigidBody = GetAttathmentRigidbody();
         if (rigidBody && CanAttach(rigidBody))
         {
             // Attach to the rigidbody
@@ -421,6 +444,12 @@ void Collider::OnTransformChanged()
     if (!Float3::NearEqual(_cachedScale, scale))
         UpdateGeometry();
     UpdateBounds();
+}
+
+void Collider::OnParentChangedInHierarchy()
+{
+    Actor::OnParentChangedInHierarchy();
+    OnParentChanged();
 }
 
 void Collider::OnLayerChanged()

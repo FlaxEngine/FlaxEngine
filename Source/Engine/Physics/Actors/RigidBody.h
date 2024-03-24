@@ -39,6 +39,8 @@ protected:
     uint32 _overrideMass : 1;
     uint32 _isUpdatingTransform : 1;
 
+    friend Collider;
+    Array<Collider*> AttathedColliders;
 public:
     /// <summary>
     /// Enables kinematic mode for the rigidbody. Kinematic rigidbodies are special dynamic actors that are not influenced by forces(such as gravity), and have no momentum. They are considered to have infinite mass and can push regular dynamic actors out of the way. Kinematics will not collide with static or other kinematic objects but are great for moving platforms or characters, where direct motion control is desired.
@@ -472,16 +474,29 @@ public:
     void UpdateScale();
 
     template<typename ColliderType = Collider, typename AllocationType = HeapAllocation>
-    void GetColliders(Array<ColliderType*, AllocationType>& result) const
+    void GetAttathedColliders(Array<ColliderType*, AllocationType>& result) const
     {
-        for (int32 i = 0; i < Children.Count(); i++)
+        for (int32 i = 0; i < AttathedColliders.Count(); i++)
         {
-            const auto collider = Cast<ColliderType>(Children.Get()[i]);
-            if (collider && collider->GetAttachedRigidBody() == this)
+            const auto collider = Cast<ColliderType>(AttathedColliders[i]);
+            if (collider)
                 result.Add(collider);
         }
     }
 
+    template<typename ColliderType = Collider>
+    ColliderType* GetAttathedColliderOfType() const
+    {
+        for (auto i = 0; i < AttathedColliders.Count(); i++)
+        {
+            const auto collider = Cast<ColliderType>(AttathedColliders[i]);
+            if (collider) 
+            {
+                return collider;
+            }
+        }
+        return nullptr;
+    }
 public:
     // [Actor]
     void Serialize(SerializeStream& stream, const void* otherObj) override;
