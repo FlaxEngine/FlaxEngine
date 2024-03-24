@@ -385,6 +385,15 @@ namespace FlaxEditor.CustomEditors
             LinkedLabel = label;
         }
 
+        internal bool CanEditValue
+        {
+            get
+            {
+                var readOnly = Values.Info.GetAttribute<ReadOnlyAttribute>();
+                return readOnly == null;
+            }
+        }
+
         /// <summary>
         /// If true, the value reverting to default/reference will be handled via iteration over children editors, instead of for a whole object at once.
         /// </summary>
@@ -413,7 +422,7 @@ namespace FlaxEditor.CustomEditors
             {
                 if (!Values.IsDefaultValueModified)
                     return false;
-                return true;
+                return CanEditValue;
             }
         }
 
@@ -422,7 +431,7 @@ namespace FlaxEditor.CustomEditors
         /// </summary>
         public void RevertToDefaultValue()
         {
-            if (!Values.HasDefaultValue)
+            if (!Values.HasDefaultValue || !CanEditValue)
                 return;
             RevertDiffToDefault();
         }
@@ -471,7 +480,7 @@ namespace FlaxEditor.CustomEditors
             }
             else
             {
-                if (Values.IsReferenceValueModified)
+                if (CanRevertReferenceValue)
                     SetValueToReference();
             }
         }
@@ -485,7 +494,7 @@ namespace FlaxEditor.CustomEditors
             {
                 if (!Values.IsReferenceValueModified)
                     return false;
-                return true;
+                return CanEditValue;
             }
         }
 
@@ -494,7 +503,7 @@ namespace FlaxEditor.CustomEditors
         /// </summary>
         public void RevertToReferenceValue()
         {
-            if (!Values.HasReferenceValue)
+            if (!Values.HasReferenceValue || !CanEditValue)
                 return;
             RevertDiffToReference();
         }
