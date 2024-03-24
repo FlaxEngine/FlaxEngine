@@ -11,6 +11,7 @@ using System.Collections.Generic;
 using FlaxEditor.Content;
 using FlaxEditor.GUI.ContextMenu;
 using FlaxEditor.Windows;
+using FlaxEditor.Windows.Assets;
 using FlaxEngine;
 
 namespace FlaxEditor.SceneGraph.Actors
@@ -84,13 +85,22 @@ namespace FlaxEditor.SceneGraph.Actors
         {
             base.OnContextMenu(contextMenu, window);
 
-            contextMenu.AddButton("Add collider", OnAddMeshCollider).Enabled = ((StaticModel)Actor).Model != null;
+            contextMenu.AddButton("Add collider", () => OnAddMeshCollider(window)).Enabled = ((StaticModel)Actor).Model != null;
         }
 
-        private void OnAddMeshCollider()
+        private void OnAddMeshCollider(EditorWindow window)
         {
             // Allow collider to be added to evey static model selection
-            var selection = Editor.Instance.SceneEditing.Selection.ToArray();
+            SceneGraphNode[] selection = Array.Empty<SceneGraphNode>();
+            if (window is SceneTreeWindow)
+            {
+                selection = Editor.Instance.SceneEditing.Selection.ToArray();
+            }
+            else if (window is PrefabWindow prefabWindow)
+            {
+                selection = prefabWindow.Selection.ToArray();
+            }
+
             var createdNodes = new List<SceneGraphNode>();
             foreach (var node in selection)
             {
@@ -111,7 +121,7 @@ namespace FlaxEditor.SceneGraph.Actors
                         Transform = staticModelNode.Actor.Transform,
                     };
                     staticModelNode.Root.Spawn(actor, staticModelNode.Actor);
-                    createdNodes.Add(Editor.Instance.Scene.GetActorNode(actor));
+                    createdNodes.Add(window is PrefabWindow pWindow ? pWindow.Graph.Root.Find(actor) : Editor.Instance.Scene.GetActorNode(actor));
                     continue;
                 }
                 if (modelPath.EndsWith("/Primitives/Sphere.flax", StringComparison.Ordinal))
@@ -122,7 +132,7 @@ namespace FlaxEditor.SceneGraph.Actors
                         Transform = staticModelNode.Actor.Transform,
                     };
                     staticModelNode.Root.Spawn(actor, staticModelNode.Actor);
-                    createdNodes.Add(Editor.Instance.Scene.GetActorNode(actor));
+                    createdNodes.Add(window is PrefabWindow pWindow ? pWindow.Graph.Root.Find(actor) : Editor.Instance.Scene.GetActorNode(actor));
                     continue;
                 }
                 if (modelPath.EndsWith("/Primitives/Plane.flax", StringComparison.Ordinal))
@@ -134,7 +144,7 @@ namespace FlaxEditor.SceneGraph.Actors
                         Size = new Float3(100.0f, 100.0f, 1.0f),
                     };
                     staticModelNode.Root.Spawn(actor, staticModelNode.Actor);
-                    createdNodes.Add(Editor.Instance.Scene.GetActorNode(actor));
+                    createdNodes.Add(window is PrefabWindow pWindow ? pWindow.Graph.Root.Find(actor) : Editor.Instance.Scene.GetActorNode(actor));
                     continue;
                 }
                 if (modelPath.EndsWith("/Primitives/Capsule.flax", StringComparison.Ordinal))
@@ -149,7 +159,7 @@ namespace FlaxEditor.SceneGraph.Actors
                     Editor.Instance.SceneEditing.Spawn(actor, staticModelNode.Actor);
                     actor.LocalPosition = new Vector3(0, 50.0f, 0);
                     actor.LocalOrientation = Quaternion.Euler(0, 0, 90.0f);
-                    createdNodes.Add(Editor.Instance.Scene.GetActorNode(actor));
+                    createdNodes.Add(window is PrefabWindow pWindow ? pWindow.Graph.Root.Find(actor) : Editor.Instance.Scene.GetActorNode(actor));
                     continue;
                 }
 
@@ -163,13 +173,21 @@ namespace FlaxEditor.SceneGraph.Actors
                         CollisionData = collisionData,
                     };
                     staticModelNode.Root.Spawn(actor, staticModelNode.Actor);
-                    createdNodes.Add(Editor.Instance.Scene.GetActorNode(actor));
+                    createdNodes.Add(window is PrefabWindow pWindow ? pWindow.Graph.Root.Find(actor) : Editor.Instance.Scene.GetActorNode(actor));
                 };
                 var collisionDataProxy = (CollisionDataProxy)Editor.Instance.ContentDatabase.GetProxy<CollisionData>();
-                collisionDataProxy.CreateCollisionDataFromModel(model, created);
+                collisionDataProxy.CreateCollisionDataFromModel(model, created, selection.Length == 1);
             }
+
             // Select all created nodes
-            Editor.Instance.SceneEditing.Select(createdNodes);
+            if (window is SceneTreeWindow)
+            {
+                Editor.Instance.SceneEditing.Select(createdNodes);
+            }
+            else if (window is PrefabWindow pWindow)
+            {
+                pWindow.Select(createdNodes);
+            }
         }
     }
 }
