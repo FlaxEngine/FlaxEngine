@@ -406,11 +406,26 @@ int32 Editor::LoadProduct()
     if (CommandLine::Options.NewProject)
     {
         Array<String> projectFiles;
-        FileSystem::DirectoryGetFiles(projectFiles, projectPath, TEXT("*"), DirectorySearchOption::TopDirectoryOnly);
-        if (projectFiles.Count() > 0)
+        FileSystem::DirectoryGetFiles(projectFiles, projectPath, TEXT("*.flaxproj"), DirectorySearchOption::TopDirectoryOnly);
+        if (projectFiles.Count() > 1)
         {
-            Platform::Fatal(String::Format(TEXT("Target project folder '{0}' is not empty."), projectPath));
-            return -1;
+            Platform::Fatal(TEXT("Too many project files."));
+            return -2;
+        }
+        else if (projectFiles.Count() == 1)
+        {
+            LOG(Info, "Skip creating new project because it already exists");
+            CommandLine::Options.NewProject.Reset();
+        }
+        else
+        {
+            Array<String> files;
+            FileSystem::DirectoryGetFiles(files, projectPath, TEXT("*"), DirectorySearchOption::TopDirectoryOnly);
+            if (files.Count() > 0)
+            {
+                Platform::Fatal(String::Format(TEXT("Target project folder '{0}' is not empty."), projectPath));
+                return -1;
+            }
         }
     }
     if (CommandLine::Options.NewProject)
