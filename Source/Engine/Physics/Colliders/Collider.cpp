@@ -474,12 +474,12 @@ bool Collider::CalculateShapeTransform()
     if (rigidBody == nullptr)
         return false;
 
-    Transform* T = &rigidBody->GetTransform().WorldToLocal(GetTransform());
-    const Vector3 localPosePos = (T->Translation + T->Orientation * _center) * rigidBody->GetScale();
-    if (_cachedLocalPosePos != localPosePos || _cachedLocalPoseRot != T->Orientation)
+    const Transform& T = rigidBody->GetTransform().WorldToLocal(GetTransform());
+    const Vector3 localPosePos = (T.Translation + T.Orientation * _center) * rigidBody->GetScale();
+    if (_cachedLocalPosePos != localPosePos || _cachedLocalPoseRot != T.Orientation)
     {
         _cachedLocalPosePos = localPosePos;
-        _cachedLocalPoseRot = T->Orientation;
+        _cachedLocalPoseRot = T.Orientation;
         return true;
     }
     return false;
