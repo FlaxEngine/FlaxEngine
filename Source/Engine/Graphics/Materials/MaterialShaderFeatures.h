@@ -27,14 +27,14 @@ struct ForwardShadingFeature : MaterialShaderFeature
 
     PACK_STRUCT(struct Data
         {
-        LightData DirectionalLight;
-        LightShadowData DirectionalLightShadow;
-        LightData SkyLight;
-        ProbeData EnvironmentProbe;
-        ExponentialHeightFogData ExponentialHeightFog;
+        ShaderLightData DirectionalLight;
+        ShaderLightShadowData DirectionalLightShadow;
+        ShaderLightData SkyLight;
+        ShaderEnvProbeData EnvironmentProbe;
+        ShaderExponentialHeightFogData ExponentialHeightFog;
         Float3 Dummy2;
         uint32 LocalLightsCount;
-        LightData LocalLights[MaxLocalLights];
+        ShaderLightData LocalLights[MaxLocalLights];
         });
 
     static void Bind(MaterialShader::BindParameters& params, Span<byte>& cb, int32& srv);

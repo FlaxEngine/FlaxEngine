@@ -263,7 +263,7 @@ GPUTextureView* VolumetricFogPass::GetLocalShadowedLightScattering(RenderContext
 }
 
 template<typename T>
-void VolumetricFogPass::RenderRadialLight(RenderContext& renderContext, GPUContext* context, T& light, LightShadowData& shadow)
+void VolumetricFogPass::RenderRadialLight(RenderContext& renderContext, GPUContext* context, T& light, ShaderLightShadowData& shadow)
 {
     // Prepare
     VolumetricFogOptions options;
@@ -387,7 +387,7 @@ void VolumetricFogPass::RenderRadialLight(RenderContext& renderContext, GPUConte
     }
 }
 
-void VolumetricFogPass::RenderLight(RenderContext& renderContext, GPUContext* context, RenderPointLightData& light, GPUTextureView* shadowMap, LightShadowData& shadow)
+void VolumetricFogPass::RenderLight(RenderContext& renderContext, GPUContext* context, RenderPointLightData& light, GPUTextureView* shadowMap, ShaderLightShadowData& shadow)
 {
     // Skip lights with no volumetric light influence or not casting volumetric shadow
     if (light.VolumetricScatteringIntensity <= ZeroTolerance || !light.CastVolumetricShadow)
@@ -401,7 +401,7 @@ void VolumetricFogPass::RenderLight(RenderContext& renderContext, GPUContext* co
     context->UnBindSR(5);
 }
 
-void VolumetricFogPass::RenderLight(RenderContext& renderContext, GPUContext* context, RenderSpotLightData& light, GPUTextureView* shadowMap, LightShadowData& shadow)
+void VolumetricFogPass::RenderLight(RenderContext& renderContext, GPUContext* context, RenderSpotLightData& light, GPUTextureView* shadowMap, ShaderLightShadowData& shadow)
 {
     // Skip lights with no volumetric light influence or not casting volumetric shadow
     if (light.VolumetricScatteringIntensity <= ZeroTolerance || !light.CastVolumetricShadow)

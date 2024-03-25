@@ -21,8 +21,8 @@ PACK_STRUCT(struct Data {
     Matrix WVP;
     Float3 ViewOffset;
     float Padding;
-    GBufferData GBuffer;
-    AtmosphericFogData Fog;
+    ShaderGBufferData GBuffer;
+    ShaderAtmosphericFogData Fog;
     });
 
 Sky::Sky(const SpawnParams& params)
@@ -52,7 +52,7 @@ Sky::~Sky()
     SAFE_DELETE_GPU_RESOURCE(_psFog);
 }
 
-void Sky::InitConfig(AtmosphericFogData& config) const
+void Sky::InitConfig(ShaderAtmosphericFogData& config) const
 {
     config.AtmosphericFogDensityScale = 1.0f;
     config.AtmosphericFogSunDiscScale = SunDiscScale;

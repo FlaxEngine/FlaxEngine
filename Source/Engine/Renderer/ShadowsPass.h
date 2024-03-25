@@ -47,7 +47,7 @@ private:
         int32 ContextIndex;
         int32 ContextCount;
         bool BlendCSM;
-        LightShadowData Constants;
+        ShaderLightShadowData Constants;
     };
 
     // Shader stuff
@@ -91,7 +91,7 @@ public:
     // TODO: use full scene shadow map atlas with dynamic slots allocation
     int32 LastDirLightIndex = -1;
     GPUTextureView* LastDirLightShadowMap = nullptr;
-    LightShadowData LastDirLight;
+    ShaderLightShadowData LastDirLight;
 
 public:
     void Prepare();

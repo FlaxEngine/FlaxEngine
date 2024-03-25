@@ -86,7 +86,7 @@ public:
     /// </summary>
     /// <param name="view">The rendering view.</param>
     /// <param name="result">The result.</param>
-    virtual void GetExponentialHeightFogData(const RenderView& view, ExponentialHeightFogData& result) const = 0;
+    virtual void GetExponentialHeightFogData(const RenderView& view, ShaderExponentialHeightFogData& result) const = 0;
 
     /// <summary>
     /// Draw fog using GBuffer inputs

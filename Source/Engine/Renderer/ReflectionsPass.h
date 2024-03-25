@@ -18,9 +18,9 @@ class ReflectionsPass : public RendererPass<ReflectionsPass>
 private:
 
     PACK_STRUCT(struct Data {
-        ProbeData PData;
+        ShaderEnvProbeData PData;
         Matrix WVP;
-        GBufferData GBuffer;
+        ShaderGBufferData GBuffer;
     });
 
     AssetReference<Shader> _shader;

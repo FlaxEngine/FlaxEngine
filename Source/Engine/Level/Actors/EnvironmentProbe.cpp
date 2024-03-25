@@ -61,7 +61,7 @@ bool EnvironmentProbe::IsUsingCustomProbe() const
     return _isUsingCustomProbe;
 }
 
-void EnvironmentProbe::SetupProbeData(const RenderContext& renderContext, ProbeData* data) const
+void EnvironmentProbe::SetupProbeData(const RenderContext& renderContext, ShaderEnvProbeData* data) const
 {
     const float radius = GetScaledRadius();
     data->Data0 = Float4(GetPosition() - renderContext.View.Origin, 0);

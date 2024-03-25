@@ -144,7 +144,7 @@ void ExponentialHeightFog::GetVolumetricFogOptions(VolumetricFogOptions& result)
     result.FogParameters = Float4(density, height, heightFalloff, 0.0f);
 }
 
-void ExponentialHeightFog::GetExponentialHeightFogData(const RenderView& view, ExponentialHeightFogData& result) const
+void ExponentialHeightFog::GetExponentialHeightFogData(const RenderView& view, ShaderExponentialHeightFogData& result) const
 {
     const float height = (float)GetPosition().Y;
     const float density = FogDensity / 1000.0f;
@@ -180,8 +180,8 @@ void ExponentialHeightFog::GetExponentialHeightFogData(const RenderView& view, E
 }
 
 PACK_STRUCT(struct Data {
-    GBufferData GBuffer;
-    ExponentialHeightFogData ExponentialHeightFog;
+    ShaderGBufferData GBuffer;
+    ShaderExponentialHeightFogData ExponentialHeightFog;
     });
 
 void ExponentialHeightFog::DrawFog(GPUContext* context, RenderContext& renderContext, GPUTextureView* output)

@@ -22,7 +22,7 @@
 #include "Engine/Engine/Engine.h"
 
 PACK_STRUCT(struct GBufferPassData{
-    GBufferData GBuffer;
+    ShaderGBufferData GBuffer;
     Float3 Dummy0;
     int32 ViewMode;
     });
@@ -393,7 +393,7 @@ bool GBufferPass::IsDebugView(ViewMode mode)
     }
 }
 
-void GBufferPass::SetInputs(const RenderView& view, GBufferData& gBuffer)
+void GBufferPass::SetInputs(const RenderView& view, ShaderGBufferData& gBuffer)
 {
     // GBuffer params:
     // ViewInfo             :  x-1/Projection[0,0]   y-1/Projection[1,1]   z-(Far / (Far - Near)   w-(-Far * Near) / (Far - Near) / Far)

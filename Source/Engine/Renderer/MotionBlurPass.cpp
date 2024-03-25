@@ -18,7 +18,7 @@
 #include "Engine/Engine/Time.h"
 
 PACK_STRUCT(struct Data {
-    GBufferData GBuffer;
+    ShaderGBufferData GBuffer;
     Matrix CurrentVP;
     Matrix PreviousVP;
     Float4 TemporalAAJitter;

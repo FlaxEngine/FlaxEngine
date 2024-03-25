@@ -27,7 +27,7 @@
 
 PACK_STRUCT(struct Data
     {
-    GBufferData GBuffer;
+    ShaderGBufferData GBuffer;
 
     float MaxColorMiplevel;
     float TraceSizeMax;

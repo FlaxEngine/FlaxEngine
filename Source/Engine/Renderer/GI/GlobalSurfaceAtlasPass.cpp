@@ -54,7 +54,7 @@ PACK_STRUCT(struct Data0
     GlobalSignDistanceFieldPass::ConstantsData GlobalSDF;
     GlobalSurfaceAtlasPass::ConstantsData GlobalSurfaceAtlas;
     DynamicDiffuseGlobalIlluminationPass::ConstantsData DDGI;
-    LightData Light;
+    ShaderLightData Light;
     });
 
 PACK_STRUCT(struct AtlasTileVertex

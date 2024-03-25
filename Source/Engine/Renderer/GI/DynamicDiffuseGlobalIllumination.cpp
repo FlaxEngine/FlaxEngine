@@ -46,7 +46,7 @@ PACK_STRUCT(struct Data0
     DynamicDiffuseGlobalIlluminationPass::ConstantsData DDGI;
     GlobalSignDistanceFieldPass::ConstantsData GlobalSDF;
     GlobalSurfaceAtlasPass::ConstantsData GlobalSurfaceAtlas;
-    GBufferData GBuffer;
+    ShaderGBufferData GBuffer;
     float Padding0;
     float ProbesDistanceLimit;
     float ResetBlend;

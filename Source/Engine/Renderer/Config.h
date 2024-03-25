@@ -10,21 +10,21 @@
 /// <summary>
 /// Structure that contains information about GBuffer for shaders.
 /// </summary>
-struct GBufferData
-{
+PACK_STRUCT(struct ShaderGBufferData
+    {
     Float4 ViewInfo;
     Float4 ScreenSize;
     Float3 ViewPos;
     float ViewFar;
     Matrix InvViewMatrix;
     Matrix InvProjectionMatrix;
-};
+    });
 
 /// <summary>
 /// Structure that contains information about exponential height fog for shaders.
 /// </summary>
-struct ExponentialHeightFogData
-{
+PACK_STRUCT(struct ShaderExponentialHeightFogData
+    {
     Float3 FogInscatteringColor;
     float FogMinOpacity;
 
@@ -43,13 +43,13 @@ struct ExponentialHeightFogData
     float VolumetricFogMaxDistance;
     float DirectionalInscatteringStartDistance;
     float StartDistance;
-};
+    });
 
 /// <summary>
 /// Structure that contains information about atmosphere fog for shaders.
 /// </summary>
-struct AtmosphericFogData
-{
+PACK_STRUCT(struct ShaderAtmosphericFogData
+    {
     float AtmosphericFogDensityScale;
     float AtmosphericFogSunDiscScale;
     float AtmosphericFogDistanceScale;
@@ -65,12 +65,12 @@ struct AtmosphericFogData
 
     Float3 AtmosphericFogSunColor;
     float AtmosphericFogDensityOffset;
-};
+    });
 
 /// <summary>
 /// Structure that contains information about light for shaders.
 /// </summary>
-PACK_STRUCT(struct LightData {
+PACK_STRUCT(struct ShaderLightData {
     Float2 SpotAngles;
     float SourceRadius;
     float SourceLength;
@@ -89,7 +89,7 @@ PACK_STRUCT(struct LightData {
 /// <summary>
 /// Structure that contains information about light for shaders.
 /// </summary>
-PACK_STRUCT(struct LightShadowData {
+PACK_STRUCT(struct ShaderLightShadowData {
     Float2 ShadowMapSize;
     float Sharpness;
     float Fade;
@@ -104,7 +104,7 @@ PACK_STRUCT(struct LightShadowData {
 /// <summary>
 /// Packed env probe data
 /// </summary>
-PACK_STRUCT(struct ProbeData {
+PACK_STRUCT(struct ShaderEnvProbeData {
     Float4 Data0; // x - Position.x,  y - Position.y,  z - Position.z,  w - unused
     Float4 Data1; // x - Radius    ,  y - 1 / Radius,  z - Brightness,  w - unused
     });

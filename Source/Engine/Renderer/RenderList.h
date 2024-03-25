@@ -61,7 +61,7 @@ struct RenderDirectionalLightData : RenderLightData
     float Cascade3Spacing;
     float Cascade4Spacing;
 
-    void SetupLightData(LightData* data, bool useShadow) const;
+    void SetupLightData(ShaderLightData* data, bool useShadow) const;
 };
 
 struct RenderSpotLightData : RenderLightData
@@ -79,7 +79,7 @@ struct RenderSpotLightData : RenderLightData
 
     GPUTexture* IESTexture;
 
-    void SetupLightData(LightData* data, bool useShadow) const;
+    void SetupLightData(ShaderLightData* data, bool useShadow) const;
 };
 
 struct RenderPointLightData : RenderLightData
@@ -93,7 +93,7 @@ struct RenderPointLightData : RenderLightData
 
     GPUTexture* IESTexture;
 
-    void SetupLightData(LightData* data, bool useShadow) const;
+    void SetupLightData(ShaderLightData* data, bool useShadow) const;
 };
 
 struct RenderSkyLightData : RenderLightData
@@ -103,7 +103,7 @@ struct RenderSkyLightData : RenderLightData
 
     CubeTexture* Image;
 
-    void SetupLightData(LightData* data, bool useShadow) const;
+    void SetupLightData(ShaderLightData* data, bool useShadow) const;
 };
 
 /// <summary>

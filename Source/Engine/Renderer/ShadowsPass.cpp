@@ -19,9 +19,9 @@
 #define PointLight_NearPlane 10.0f
 
 PACK_STRUCT(struct Data{
-    GBufferData GBuffer;
-    LightData Light;
-    LightShadowData LightShadow;
+    ShaderGBufferData GBuffer;
+    ShaderLightData Light;
+    ShaderLightShadowData LightShadow;
     Matrix WVP;
     Matrix ViewProjectionMatrix;
     Float2 Dummy0;

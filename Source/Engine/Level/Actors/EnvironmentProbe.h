@@ -95,7 +95,7 @@ public:
     /// </summary>
     /// <param name="renderContext">Rendering context</param>
     /// <param name="data">Packed probe data to set</param>
-    void SetupProbeData(const RenderContext& renderContext, struct ProbeData* data) const;
+    void SetupProbeData(const RenderContext& renderContext, struct ShaderEnvProbeData* data) const;
 
     /// <summary>
     /// Gets the custom probe (null if using baked one or none).

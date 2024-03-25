@@ -20,7 +20,7 @@ private:
 
     // Packed shader constant buffer structure (this MUST match shader code)
     PACK_STRUCT(struct ASSAOConstants {
-        GBufferData GBuffer;
+        ShaderGBufferData GBuffer;
 
         Float2 ViewportPixelSize;
         Float2 HalfViewportPixelSize;

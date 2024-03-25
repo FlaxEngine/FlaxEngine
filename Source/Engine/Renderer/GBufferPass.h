@@ -73,7 +73,7 @@ public:
     /// </summary>
     /// <param name="view">The rendering view.</param>
     /// <param name="gBuffer">GBuffer input to setup</param>
-    static void SetInputs(const RenderView& view, GBufferData& gBuffer);
+    static void SetInputs(const RenderView& view, ShaderGBufferData& gBuffer);
 
 private:
 

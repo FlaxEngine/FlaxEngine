@@ -19,7 +19,7 @@ PACK_STRUCT(struct Data
     float StationaryBlending;
     float MotionBlending;
     float Dummy0;
-    GBufferData GBuffer;
+    ShaderGBufferData GBuffer;
     });
 
 bool TAA::Init()

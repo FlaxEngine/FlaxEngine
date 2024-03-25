@@ -36,7 +36,7 @@ private:
         });
 
     PACK_STRUCT(struct Data {
-        GBufferData GBuffer;
+        ShaderGBufferData GBuffer;
 
         Float3 GlobalAlbedo;
         float GlobalExtinctionScale;
@@ -62,8 +62,8 @@ private:
 
         Float4 FrameJitterOffsets[8];
 
-        LightData DirectionalLight;
-        LightShadowData DirectionalLightShadow;
+        ShaderLightData DirectionalLight;
+        ShaderLightShadowData DirectionalLightShadow;
         SkyLightData SkyLight;
         DynamicDiffuseGlobalIlluminationPass::ConstantsData DDGI;
         });
@@ -76,8 +76,8 @@ private:
         Float4 ViewSpaceBoundingSphere;
         Matrix ViewToVolumeClip;
 
-        LightData LocalLight;
-        LightShadowData LocalLightShadow;
+        ShaderLightData LocalLight;
+        ShaderLightShadowData LocalLightShadow;
         });
 
     // Shader stuff
@@ -156,7 +156,7 @@ public:
     /// <param name="light">The light.</param>
     /// <param name="shadowMap">The shadow map.</param>
     /// <param name="shadow">The light shadow data.</param>
-    void RenderLight(RenderContext& renderContext, GPUContext* context, RenderPointLightData& light, GPUTextureView* shadowMap, LightShadowData& shadow);
+    void RenderLight(RenderContext& renderContext, GPUContext* context, RenderPointLightData& light, GPUTextureView* shadowMap, ShaderLightShadowData& shadow);
 
     /// <summary>
     /// Renders the light to the volumetric fog light scattering volume texture. Called by the light pass after shadow map rendering. Used by the shadows casting lights.
@@ -166,7 +166,7 @@ public:
     /// <param name="light">The light.</param>
     /// <param name="shadowMap">The shadow map.</param>
     /// <param name="shadow">The light shadow data.</param>
-    void RenderLight(RenderContext& renderContext, GPUContext* context, RenderSpotLightData& light, GPUTextureView* shadowMap, LightShadowData& shadow);
+    void RenderLight(RenderContext& renderContext, GPUContext* context, RenderSpotLightData& light, GPUTextureView* shadowMap, ShaderLightShadowData& shadow);
 
     /// <summary>
     /// Renders the volumetric fog (generates integrated light scattering 3D texture). Does nothing if feature is disabled or not supported.
@@ -180,7 +180,7 @@ private:
     GPUTextureView* GetLocalShadowedLightScattering(RenderContext& renderContext, GPUContext* context, VolumetricFogOptions& options) const;
     void InitCircleBuffer();
     template<typename T>
-    void RenderRadialLight(RenderContext& renderContext, GPUContext* context, T& light, LightShadowData& shadow);
+    void RenderRadialLight(RenderContext& renderContext, GPUContext* context, T& light, ShaderLightShadowData& shadow);
     template<typename T>
     void RenderRadialLight(RenderContext& renderContext, GPUContext* context, RenderView& view, VolumetricFogOptions& options, T& light, PerLight& perLight, GPUConstantBuffer* cb1);
 #if COMPILE_WITH_DEV_ENV

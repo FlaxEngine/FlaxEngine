@@ -13,12 +13,12 @@
 #include "Engine/Graphics/RenderTask.h"
 
 PACK_STRUCT(struct PerLight{
-    LightData Light;
+    ShaderLightData Light;
     Matrix WVP;
     });
 
 PACK_STRUCT(struct PerFrame{
-    GBufferData GBuffer;
+    ShaderGBufferData GBuffer;
     });
 
 String LightPass::ToString() const

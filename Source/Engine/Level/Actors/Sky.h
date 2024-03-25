@@ -54,7 +54,7 @@ private:
         _psFog = nullptr;
     }
 #endif
-    void InitConfig(AtmosphericFogData& config) const;
+    void InitConfig(ShaderAtmosphericFogData& config) const;
 
 public:
     // [Actor]
