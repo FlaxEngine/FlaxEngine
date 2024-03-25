@@ -139,7 +139,7 @@ void SpotLight::Draw(RenderContext& renderContext)
         && outerConeAngle > ZeroTolerance
         && (ViewDistance < ZeroTolerance || Vector3::DistanceSquared(renderContext.View.Position, position) < ViewDistance * ViewDistance))
     {
-        RendererSpotLightData data;
+        RenderSpotLightData data;
         data.Position = position;
         data.MinRoughness = MinRoughness;
         data.ShadowsDistance = ShadowsDistance;

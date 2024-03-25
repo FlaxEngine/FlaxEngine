@@ -8,8 +8,8 @@
 #include "GI/DynamicDiffuseGlobalIllumination.h"
 
 struct VolumetricFogOptions;
-struct RendererSpotLightData;
-struct RendererPointLightData;
+struct RenderSpotLightData;
+struct RenderPointLightData;
 
 /// <summary>
 /// Volumetric fog rendering service.
@@ -156,7 +156,7 @@ public:
     /// <param name="light">The light.</param>
     /// <param name="shadowMap">The shadow map.</param>
     /// <param name="shadow">The light shadow data.</param>
-    void RenderLight(RenderContext& renderContext, GPUContext* context, RendererPointLightData& light, GPUTextureView* shadowMap, LightShadowData& shadow);
+    void RenderLight(RenderContext& renderContext, GPUContext* context, RenderPointLightData& light, GPUTextureView* shadowMap, LightShadowData& shadow);
 
     /// <summary>
     /// Renders the light to the volumetric fog light scattering volume texture. Called by the light pass after shadow map rendering. Used by the shadows casting lights.
@@ -166,7 +166,7 @@ public:
     /// <param name="light">The light.</param>
     /// <param name="shadowMap">The shadow map.</param>
     /// <param name="shadow">The light shadow data.</param>
-    void RenderLight(RenderContext& renderContext, GPUContext* context, RendererSpotLightData& light, GPUTextureView* shadowMap, LightShadowData& shadow);
+    void RenderLight(RenderContext& renderContext, GPUContext* context, RenderSpotLightData& light, GPUTextureView* shadowMap, LightShadowData& shadow);
 
     /// <summary>
     /// Renders the volumetric fog (generates integrated light scattering 3D texture). Does nothing if feature is disabled or not supported.

@@ -387,7 +387,7 @@ void VolumetricFogPass::RenderRadialLight(RenderContext& renderContext, GPUConte
     }
 }
 
-void VolumetricFogPass::RenderLight(RenderContext& renderContext, GPUContext* context, RendererPointLightData& light, GPUTextureView* shadowMap, LightShadowData& shadow)
+void VolumetricFogPass::RenderLight(RenderContext& renderContext, GPUContext* context, RenderPointLightData& light, GPUTextureView* shadowMap, LightShadowData& shadow)
 {
     // Skip lights with no volumetric light influence or not casting volumetric shadow
     if (light.VolumetricScatteringIntensity <= ZeroTolerance || !light.CastVolumetricShadow)
@@ -401,7 +401,7 @@ void VolumetricFogPass::RenderLight(RenderContext& renderContext, GPUContext* co
     context->UnBindSR(5);
 }
 
-void VolumetricFogPass::RenderLight(RenderContext& renderContext, GPUContext* context, RendererSpotLightData& light, GPUTextureView* shadowMap, LightShadowData& shadow)
+void VolumetricFogPass::RenderLight(RenderContext& renderContext, GPUContext* context, RenderSpotLightData& light, GPUTextureView* shadowMap, LightShadowData& shadow)
 {
     // Skip lights with no volumetric light influence or not casting volumetric shadow
     if (light.VolumetricScatteringIntensity <= ZeroTolerance || !light.CastVolumetricShadow)
@@ -594,8 +594,8 @@ void VolumetricFogPass::Render(RenderContext& renderContext)
     GPUTextureView* localShadowedLightScattering = nullptr;
     {
         // Get lights to render
-        Array<const RendererPointLightData*, InlinedAllocation<64, RendererAllocation>> pointLights;
-        Array<const RendererSpotLightData*, InlinedAllocation<64, RendererAllocation>> spotLights;
+        Array<const RenderPointLightData*, InlinedAllocation<64, RendererAllocation>> pointLights;
+        Array<const RenderSpotLightData*, InlinedAllocation<64, RendererAllocation>> spotLights;
         for (int32 i = 0; i < renderContext.List->PointLights.Count(); i++)
         {
             const auto& light = renderContext.List->PointLights[i];

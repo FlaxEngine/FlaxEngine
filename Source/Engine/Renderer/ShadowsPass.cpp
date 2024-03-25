@@ -219,7 +219,7 @@ void ShadowsPass::SetupRenderContext(RenderContext& renderContext, RenderContext
     shadowContext.Task = renderContext.Task;
 }
 
-void ShadowsPass::SetupLight(RenderContext& renderContext, RenderContextBatch& renderContextBatch, RendererDirectionalLightData& light)
+void ShadowsPass::SetupLight(RenderContext& renderContext, RenderContextBatch& renderContextBatch, RenderDirectionalLightData& light)
 {
     const RenderView& view = renderContext.View;
     auto mainCache = renderContext.List;
@@ -453,7 +453,7 @@ void ShadowsPass::SetupLight(RenderContext& renderContext, RenderContextBatch& r
     shadowData.Constants.CascadeSplits = view.Near + Float4(cascadeSplits) * cameraRange;
 }
 
-void ShadowsPass::SetupLight(RenderContext& renderContext, RenderContextBatch& renderContextBatch, RendererPointLightData& light)
+void ShadowsPass::SetupLight(RenderContext& renderContext, RenderContextBatch& renderContextBatch, RenderPointLightData& light)
 {
     // Init shadow data
     light.ShadowDataIndex = _shadowData.Count();
@@ -493,7 +493,7 @@ void ShadowsPass::SetupLight(RenderContext& renderContext, RenderContextBatch& r
     shadowData.Constants.CascadeSplits = Float4::Zero;
 }
 
-void ShadowsPass::SetupLight(RenderContext& renderContext, RenderContextBatch& renderContextBatch, RendererSpotLightData& light)
+void ShadowsPass::SetupLight(RenderContext& renderContext, RenderContextBatch& renderContextBatch, RenderSpotLightData& light)
 {
     // Init shadow data
     light.ShadowDataIndex = _shadowData.Count();
@@ -585,7 +585,7 @@ void ShadowsPass::SetupShadows(RenderContext& renderContext, RenderContextBatch&
     }
 }
 
-bool ShadowsPass::CanRenderShadow(const RenderContext& renderContext, const RendererPointLightData& light)
+bool ShadowsPass::CanRenderShadow(const RenderContext& renderContext, const RenderPointLightData& light)
 {
     const Float3 lightPosition = light.Position;
     const float dstLightToView = Float3::Distance(lightPosition, renderContext.View.Position);
@@ -597,7 +597,7 @@ bool ShadowsPass::CanRenderShadow(const RenderContext& renderContext, const Rend
     return fade > ZeroTolerance && _shadowMapFormat != PixelFormat::Unknown;
 }
 
-bool ShadowsPass::CanRenderShadow(const RenderContext& renderContext, const RendererSpotLightData& light)
+bool ShadowsPass::CanRenderShadow(const RenderContext& renderContext, const RenderSpotLightData& light)
 {
     const Float3 lightPosition = light.Position;
     const float dstLightToView = Float3::Distance(lightPosition, renderContext.View.Position);
@@ -609,12 +609,12 @@ bool ShadowsPass::CanRenderShadow(const RenderContext& renderContext, const Rend
     return fade > ZeroTolerance && _shadowMapFormat != PixelFormat::Unknown;
 }
 
-bool ShadowsPass::CanRenderShadow(const RenderContext& renderContext, const RendererDirectionalLightData& light)
+bool ShadowsPass::CanRenderShadow(const RenderContext& renderContext, const RenderDirectionalLightData& light)
 {
     return _shadowMapFormat != PixelFormat::Unknown;
 }
 
-void ShadowsPass::RenderShadow(RenderContextBatch& renderContextBatch, RendererPointLightData& light, GPUTextureView* shadowMask)
+void ShadowsPass::RenderShadow(RenderContextBatch& renderContextBatch, RenderPointLightData& light, GPUTextureView* shadowMask)
 {
     if (light.ShadowDataIndex == -1)
         return;
@@ -692,7 +692,7 @@ void ShadowsPass::RenderShadow(RenderContextBatch& renderContextBatch, RendererP
     VolumetricFogPass::Instance()->RenderLight(renderContext, context, light, _shadowMapCube->ViewArray(), sperLight.LightShadow);
 }
 
-void ShadowsPass::RenderShadow(RenderContextBatch& renderContextBatch, RendererSpotLightData& light, GPUTextureView* shadowMask)
+void ShadowsPass::RenderShadow(RenderContextBatch& renderContextBatch, RenderSpotLightData& light, GPUTextureView* shadowMask)
 {
     if (light.ShadowDataIndex == -1)
         return;
@@ -770,7 +770,7 @@ void ShadowsPass::RenderShadow(RenderContextBatch& renderContextBatch, RendererS
     VolumetricFogPass::Instance()->RenderLight(renderContext, context, light, _shadowMapCube->View(faceIndex), sperLight.LightShadow);
 }
 
-void ShadowsPass::RenderShadow(RenderContextBatch& renderContextBatch, RendererDirectionalLightData& light, int32 index, GPUTextureView* shadowMask)
+void ShadowsPass::RenderShadow(RenderContextBatch& renderContextBatch, RenderDirectionalLightData& light, int32 index, GPUTextureView* shadowMask)
 {
     if (light.ShadowDataIndex == -1)
         return;

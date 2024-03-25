@@ -113,7 +113,7 @@ void SkyLight::Draw(RenderContext& renderContext)
         && brightness > ZeroTolerance
         && (ViewDistance < ZeroTolerance || Vector3::DistanceSquared(renderContext.View.Position, position) < ViewDistance * ViewDistance))
     {
-        RendererSkyLightData data;
+        RenderSkyLightData data;
         data.Position = position;
         data.Color = Color.ToFloat3() * (Color.A * brightness);
         data.VolumetricScatteringIntensity = VolumetricScatteringIntensity;

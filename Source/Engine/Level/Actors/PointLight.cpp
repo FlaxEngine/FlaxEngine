@@ -89,7 +89,7 @@ void PointLight::Draw(RenderContext& renderContext)
         && radius > ZeroTolerance
         && (ViewDistance < ZeroTolerance || Vector3::DistanceSquared(renderContext.View.Position, position) < ViewDistance * ViewDistance))
     {
-        RendererPointLightData data;
+        RenderPointLightData data;
         data.Position = position;
         data.MinRoughness = MinRoughness;
         data.ShadowsDistance = ShadowsDistance;

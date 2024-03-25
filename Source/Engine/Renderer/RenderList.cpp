@@ -39,7 +39,7 @@ namespace
     CriticalSection MemPoolLocker;
 }
 
-void RendererDirectionalLightData::SetupLightData(LightData* data, bool useShadow) const
+void RenderDirectionalLightData::SetupLightData(LightData* data, bool useShadow) const
 {
     data->SpotAngles.X = -2.0f;
     data->SpotAngles.Y = 1.0f;
@@ -56,7 +56,7 @@ void RendererDirectionalLightData::SetupLightData(LightData* data, bool useShado
     data->RadiusInv = 0;
 }
 
-void RendererSpotLightData::SetupLightData(LightData* data, bool useShadow) const
+void RenderSpotLightData::SetupLightData(LightData* data, bool useShadow) const
 {
     data->SpotAngles.X = CosOuterCone;
     data->SpotAngles.Y = InvCosConeDifference;
@@ -73,7 +73,7 @@ void RendererSpotLightData::SetupLightData(LightData* data, bool useShadow) cons
     data->RadiusInv = 1.0f / Radius;
 }
 
-void RendererPointLightData::SetupLightData(LightData* data, bool useShadow) const
+void RenderPointLightData::SetupLightData(LightData* data, bool useShadow) const
 {
     data->SpotAngles.X = -2.0f;
     data->SpotAngles.Y = 1.0f;
@@ -90,7 +90,7 @@ void RendererPointLightData::SetupLightData(LightData* data, bool useShadow) con
     data->RadiusInv = 1.0f / Radius;
 }
 
-void RendererSkyLightData::SetupLightData(LightData* data, bool useShadow) const
+void RenderSkyLightData::SetupLightData(LightData* data, bool useShadow) const
 {
     data->SpotAngles.X = AdditiveColor.X;
     data->SpotAngles.Y = AdditiveColor.Y;

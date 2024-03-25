@@ -107,7 +107,7 @@ public:
     /// <param name="renderContext">The rendering context.</param>
     /// <param name="light">The light.</param>
     /// <returns><c>true</c> if can render shadow for the specified light; otherwise, <c>false</c>.</returns>
-    bool CanRenderShadow(const RenderContext& renderContext, const RendererPointLightData& light);
+    bool CanRenderShadow(const RenderContext& renderContext, const RenderPointLightData& light);
 
     /// <summary>
     /// Determines whether can render shadow for the specified light.
@@ -115,7 +115,7 @@ public:
     /// <param name="renderContext">The rendering context.</param>
     /// <param name="light">The light.</param>
     /// <returns><c>true</c> if can render shadow for the specified light; otherwise, <c>false</c>.</returns>
-    bool CanRenderShadow(const RenderContext& renderContext, const RendererSpotLightData& light);
+    bool CanRenderShadow(const RenderContext& renderContext, const RenderSpotLightData& light);
 
     /// <summary>
     /// Determines whether can render shadow for the specified light.
@@ -123,7 +123,7 @@ public:
     /// <param name="renderContext">The rendering context.</param>
     /// <param name="light">The light.</param>
     /// <returns><c>true</c> if can render shadow for the specified light; otherwise, <c>false</c>.</returns>
-    bool CanRenderShadow(const RenderContext& renderContext, const RendererDirectionalLightData& light);
+    bool CanRenderShadow(const RenderContext& renderContext, const RenderDirectionalLightData& light);
 
     /// <summary>
     /// Renders the shadow mask for the given light.
@@ -131,7 +131,7 @@ public:
     /// <param name="renderContextBatch">The rendering context batch.</param>
     /// <param name="light">The light.</param>
     /// <param name="shadowMask">The shadow mask (output).</param>
-    void RenderShadow(RenderContextBatch& renderContextBatch, RendererPointLightData& light, GPUTextureView* shadowMask);
+    void RenderShadow(RenderContextBatch& renderContextBatch, RenderPointLightData& light, GPUTextureView* shadowMask);
 
     /// <summary>
     /// Renders the shadow mask for the given light.
@@ -139,7 +139,7 @@ public:
     /// <param name="renderContextBatch">The rendering context batch.</param>
     /// <param name="light">The light.</param>
     /// <param name="shadowMask">The shadow mask (output).</param>
-    void RenderShadow(RenderContextBatch& renderContextBatch, RendererSpotLightData& light, GPUTextureView* shadowMask);
+    void RenderShadow(RenderContextBatch& renderContextBatch, RenderSpotLightData& light, GPUTextureView* shadowMask);
 
     /// <summary>
     /// Renders the shadow mask for the given light.
@@ -148,15 +148,15 @@ public:
     /// <param name="light">The light.</param>
     /// <param name="index">The light index.</param>
     /// <param name="shadowMask">The shadow mask (output).</param>
-    void RenderShadow(RenderContextBatch& renderContextBatch, RendererDirectionalLightData& light, int32 index, GPUTextureView* shadowMask);
+    void RenderShadow(RenderContextBatch& renderContextBatch, RenderDirectionalLightData& light, int32 index, GPUTextureView* shadowMask);
 
 private:
 
     void updateShadowMapSize();
     void SetupRenderContext(RenderContext& renderContext, RenderContext& shadowContext);
-    void SetupLight(RenderContext& renderContext, RenderContextBatch& renderContextBatch, RendererDirectionalLightData& light);
-    void SetupLight(RenderContext& renderContext, RenderContextBatch& renderContextBatch, RendererPointLightData& light);
-    void SetupLight(RenderContext& renderContext, RenderContextBatch& renderContextBatch, RendererSpotLightData& light);
+    void SetupLight(RenderContext& renderContext, RenderContextBatch& renderContextBatch, RenderDirectionalLightData& light);
+    void SetupLight(RenderContext& renderContext, RenderContextBatch& renderContextBatch, RenderPointLightData& light);
+    void SetupLight(RenderContext& renderContext, RenderContextBatch& renderContextBatch, RenderSpotLightData& light);
 
 #if COMPILE_WITH_DEV_ENV
     void OnShaderReloading(Asset* obj)

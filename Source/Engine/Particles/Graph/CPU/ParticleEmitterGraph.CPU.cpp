@@ -388,7 +388,7 @@ void ParticleEmitterGraphCPUExecutor::Draw(ParticleEmitter* emitter, ParticleEff
         const auto module = emitter->Graph.LightModules[moduleIndex];
         ASSERT(module->TypeID == 401);
 
-        RendererPointLightData lightData;
+        RenderPointLightData lightData;
         lightData.MinRoughness = 0.04f;
         lightData.ShadowsDistance = 2000.0f;
         lightData.ShadowsStrength = 1.0f;

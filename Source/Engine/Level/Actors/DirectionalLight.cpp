@@ -24,7 +24,7 @@ void DirectionalLight::Draw(RenderContext& renderContext)
         && EnumHasAnyFlags(renderContext.View.Pass, DrawPass::GBuffer)
         && (ViewDistance < ZeroTolerance || Float3::DistanceSquared(renderContext.View.Position, position) < ViewDistance * ViewDistance))
     {
-        RendererDirectionalLightData data;
+        RenderDirectionalLightData data;
         data.Position = position;
         data.MinRoughness = MinRoughness;
         data.ShadowsDistance = ShadowsDistance;
@@ -45,7 +45,6 @@ void DirectionalLight::Draw(RenderContext& renderContext)
         data.Cascade2Spacing = Cascade2Spacing;
         data.Cascade3Spacing = Cascade3Spacing;
         data.Cascade4Spacing = Cascade4Spacing;
-
         data.PartitionMode = PartitionMode;
         data.ContactShadowsLength = ContactShadowsLength;
         data.StaticFlags = GetStaticFlags();
@@ -66,7 +65,6 @@ void DirectionalLight::Serialize(SerializeStream& stream, const void* otherObj)
     SERIALIZE(Cascade2Spacing);
     SERIALIZE(Cascade3Spacing);
     SERIALIZE(Cascade4Spacing);
-
     SERIALIZE(PartitionMode);
 }
 
@@ -80,7 +78,6 @@ void DirectionalLight::Deserialize(DeserializeStream& stream, ISerializeModifier
     DESERIALIZE(Cascade2Spacing);
     DESERIALIZE(Cascade3Spacing);
     DESERIALIZE(Cascade4Spacing);
-
     DESERIALIZE(PartitionMode);
 }
 

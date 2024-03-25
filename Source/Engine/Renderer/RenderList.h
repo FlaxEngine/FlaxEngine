@@ -22,8 +22,10 @@ class CubeTexture;
 struct RenderContext;
 struct RenderContextBatch;
 
-struct RendererDirectionalLightData
+struct RenderLightData
 {
+    Guid ID;
+
     Float3 Position;
     float MinRoughness;
 
@@ -36,49 +38,35 @@ struct RendererDirectionalLightData
     float ShadowsNormalOffsetScale;
     float ShadowsDepthBias;
     float ShadowsSharpness;
-    float VolumetricScatteringIntensity;
+    float ShadowsDistance;
 
     StaticFlags StaticFlags;
+    ShadowsCastingMode ShadowsMode;
     float IndirectLightingIntensity;
     int16 ShadowDataIndex = -1;
     uint8 CastVolumetricShadow : 1;
     uint8 RenderedVolumetricFog : 1;
 
-    float ShadowsDistance;
+    float VolumetricScatteringIntensity;
+    float ContactShadowsLength;
+};
+
+struct RenderDirectionalLightData : RenderLightData
+{
+    PartitionMode PartitionMode;
     int32 CascadeCount;
+
     float Cascade1Spacing;
     float Cascade2Spacing;
     float Cascade3Spacing;
     float Cascade4Spacing;
 
-    PartitionMode PartitionMode;
-    float ContactShadowsLength;
-    ShadowsCastingMode ShadowsMode;
-
-    Guid ID;
-
     void SetupLightData(LightData* data, bool useShadow) const;
 };
 
-struct RendererSpotLightData
+struct RenderSpotLightData : RenderLightData
 {
-    Float3 Position;
-    float MinRoughness;
-
-    Float3 Color;
-    float ShadowsStrength;
-
-    Float3 Direction;
-    float ShadowsFadeDistance;
-
-    float ShadowsNormalOffsetScale;
-    float ShadowsDepthBias;
-    float ShadowsSharpness;
-    float VolumetricScatteringIntensity;
-
-    float ShadowsDistance;
     float Radius;
-    float FallOffExponent;
     float SourceRadius;
 
     Float3 UpVector;
@@ -86,77 +74,34 @@ struct RendererSpotLightData
 
     float CosOuterCone;
     float InvCosConeDifference;
-    float ContactShadowsLength;
-    float IndirectLightingIntensity;
-    ShadowsCastingMode ShadowsMode;
-
-    StaticFlags StaticFlags;
-    int16 ShadowDataIndex = -1;
-    uint8 CastVolumetricShadow : 1;
-    uint8 RenderedVolumetricFog : 1;
+    float FallOffExponent;
     uint8 UseInverseSquaredFalloff : 1;
 
     GPUTexture* IESTexture;
-    Guid ID;
 
     void SetupLightData(LightData* data, bool useShadow) const;
 };
 
-struct RendererPointLightData
+struct RenderPointLightData : RenderLightData
 {
-    Float3 Position;
-    float MinRoughness;
-
-    Float3 Color;
-    float ShadowsStrength;
-
-    Float3 Direction;
-    float ShadowsFadeDistance;
-
-    float ShadowsNormalOffsetScale;
-    float ShadowsDepthBias;
-    float ShadowsSharpness;
-    float VolumetricScatteringIntensity;
-
-    float ShadowsDistance;
     float Radius;
-    float FallOffExponent;
     float SourceRadius;
 
+    float FallOffExponent;
     float SourceLength;
-    float ContactShadowsLength;
-    float IndirectLightingIntensity;
-    ShadowsCastingMode ShadowsMode;
-
-    StaticFlags StaticFlags;
-    int16 ShadowDataIndex = -1;
-    uint8 CastVolumetricShadow : 1;
-    uint8 RenderedVolumetricFog : 1;
     uint8 UseInverseSquaredFalloff : 1;
 
     GPUTexture* IESTexture;
-    Guid ID;
 
     void SetupLightData(LightData* data, bool useShadow) const;
 };
 
-struct RendererSkyLightData
+struct RenderSkyLightData : RenderLightData
 {
-    Float3 Position;
-    float VolumetricScatteringIntensity;
-
-    Float3 Color;
+    Float3 AdditiveColor;
     float Radius;
 
-    Float3 AdditiveColor;
-    float IndirectLightingIntensity;
-
-    StaticFlags StaticFlags;
-    uint8 CastVolumetricShadow : 1;
-    uint8 RenderedVolumetricFog : 1;
-
     CubeTexture* Image;
-    Guid ID;
 
     void SetupLightData(LightData* data, bool useShadow) const;
 };
@@ -318,22 +263,22 @@ public:
     /// <summary>
     /// Light pass members - directional lights
     /// </summary>
-    Array<RendererDirectionalLightData> DirectionalLights;
+    Array<RenderDirectionalLightData> DirectionalLights;
 
     /// <summary>
     /// Light pass members - point lights
     /// </summary>
-    Array<RendererPointLightData> PointLights;
+    Array<RenderPointLightData> PointLights;
 
     /// <summary>
     /// Light pass members - spot lights
     /// </summary>
-    Array<RendererSpotLightData> SpotLights;
+    Array<RenderSpotLightData> SpotLights;
 
     /// <summary>
     /// Light pass members - sky lights
     /// </summary>
-    Array<RendererSkyLightData> SkyLights;
+    Array<RenderSkyLightData> SkyLights;
 
     /// <summary>
     /// Environment probes to use for rendering reflections
