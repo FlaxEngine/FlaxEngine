@@ -46,9 +46,9 @@ void Collider::SetCenter(const Vector3& value)
     {
         PhysicsBackend::SetShapeLocalPose(_shape, _center, Quaternion::Identity);
     }
-    else if (const RigidBody* rigidBody = GetAttachedRigidBody())
+    else if (CalculateShapeTransform())
     {
-        PhysicsBackend::SetShapeLocalPose(_shape, (_localTransform.Translation + _localTransform.Orientation * _center) * rigidBody->GetScale(), _localTransform.Orientation);
+        PhysicsBackend::SetShapeLocalPose(_shape, _cachedLocalPosePos, _cachedLocalPoseRot);
     }
     UpdateBounds();
 }
@@ -168,9 +168,10 @@ void Collider::Attach(RigidBody* rigidBody)
 
     // Attach
     PhysicsBackend::AttachShape(_shape, rigidBody->GetPhysicsActor());
-    _cachedLocalPosePos = (_localTransform.Translation + _localTransform.Orientation * _center) * rigidBody->GetScale();
-    _cachedLocalPoseRot = _localTransform.Orientation;
-    PhysicsBackend::SetShapeLocalPose(_shape, _cachedLocalPosePos, _cachedLocalPoseRot);
+    if (CalculateShapeTransform()) 
+    {
+        PhysicsBackend::SetShapeLocalPose(_shape, _cachedLocalPosePos, _cachedLocalPoseRot);
+    }
     if (rigidBody->IsDuringPlay())
     {
         rigidBody->UpdateBounds();
@@ -429,15 +430,9 @@ void Collider::OnTransformChanged()
     {
         PhysicsBackend::SetRigidActorPose(_staticActor, _transform.Translation, _transform.Orientation);
     }
-    else if (const RigidBody* rigidBody = GetAttachedRigidBody())
+    else if (CalculateShapeTransform())
     {
-        const Vector3 localPosePos = (_localTransform.Translation + _localTransform.Orientation * _center) * rigidBody->GetScale();
-        if (_cachedLocalPosePos != localPosePos || _cachedLocalPoseRot != _localTransform.Orientation)
-        {
-            _cachedLocalPosePos = localPosePos;
-            _cachedLocalPoseRot = _localTransform.Orientation;
-            PhysicsBackend::SetShapeLocalPose(_shape, localPosePos, _cachedLocalPoseRot);
-        }
+        PhysicsBackend::SetShapeLocalPose(_shape, _cachedLocalPosePos, _cachedLocalPoseRot);
     }
 
     const Float3 scale = GetScale();
@@ -471,4 +466,21 @@ void Collider::OnPhysicsSceneChanged(PhysicsScene* previous)
         void* scene = GetPhysicsScene()->GetPhysicsScene();
         PhysicsBackend::AddSceneActor(scene, _staticActor);
     }
+}
+
+bool Collider::CalculateShapeTransform()
+{
+    const RigidBody* rigidBody = GetAttachedRigidBody();
+    if (rigidBody == nullptr)
+        return false;
+
+    Transform & T = rigidBody->GetTransform().WorldToLocal(GetTransform());
+    const Vector3 localPosePos = (T.Translation + T.Orientation * _center) * rigidBody->GetScale();
+    if (_cachedLocalPosePos != localPosePos || _cachedLocalPoseRot != T.Orientation)
+    {
+        _cachedLocalPosePos = localPosePos;
+        _cachedLocalPoseRot = T.Orientation;
+        return true;
+    }
+    return false;
 }

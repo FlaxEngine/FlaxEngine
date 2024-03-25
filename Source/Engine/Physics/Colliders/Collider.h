@@ -173,6 +173,12 @@ protected:
 private:
     void OnMaterialChanged();
     RigidBody* GetAttathmentRigidbody();
+
+    /// <summary>
+    /// Calculates _cachedLocalPosePos and _cachedLocalPoseRot
+    /// </summary>
+    /// <returns>true if shape transfrom needs to change, false if is not attahed to RigidBody or there was no cange</returns>
+    bool CalculateShapeTransform();
 public:
     // [PhysicsColliderActor]
     RigidBody* GetAttachedRigidBody() const override;
