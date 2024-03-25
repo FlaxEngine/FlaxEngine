@@ -1336,6 +1336,11 @@ FileReadStream* FlaxStorage::OpenFile()
 
 bool FlaxStorage::CloseFileHandles()
 {
+    // Early out if no handles are opened
+    Array<FileReadStream*> streams;
+    _file.GetValues(streams);
+    if (streams.IsEmpty() && Platform::AtomicRead(&_chunksLock) == 0)
+        return false;
     PROFILE_CPU();
 
     // Note: this is usually called by the content manager when this file is not used or on exit
@@ -1367,7 +1372,7 @@ bool FlaxStorage::CloseFileHandles()
         return true; // Failed, someone is still accessing the file
 
     // Close file handles (from all threads)
-    Array<FileReadStream*> streams;
+    streams.Clear();
     _file.GetValues(streams);
     for (FileReadStream* stream : streams)
     {
