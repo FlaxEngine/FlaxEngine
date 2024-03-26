@@ -106,6 +106,13 @@ struct RenderSkyLightData : RenderLightData
     void SetupLightData(ShaderLightData* data, bool useShadow) const;
 };
 
+struct RenderDecalData
+{
+    Matrix World;
+    MaterialBase* Material;
+    int32 SortOrder;
+};
+
 /// <summary>
 /// The draw calls list types.
 /// </summary>
@@ -288,7 +295,7 @@ public:
     /// <summary>
     /// Decals registered for the rendering.
     /// </summary>
-    Array<Decal*> Decals;
+    Array<RenderDecalData> Decals;
 
     /// <summary>
     /// Local volumetric fog particles registered for the rendering.

@@ -49,7 +49,8 @@ void QuadOverdrawPass::Render(RenderContext& renderContext, GPUContext* context,
     context->BindUA(1, overdrawTexture->View());
     context->BindUA(2, liveCountTexture->View());
     DrawCall drawCall;
-    drawCall.PerInstanceRandom = 1.0f;
+    drawCall.WorldDeterminantSign = 1.0f;
+    drawCall.PerInstanceRandom = 0.0f;
     MaterialBase::BindParameters bindParams(context, renderContext, drawCall);
     bindParams.BindViewData();
     renderContext.View.Pass = DrawPass::QuadOverdraw;
@@ -62,13 +63,8 @@ void QuadOverdrawPass::Render(RenderContext& renderContext, GPUContext* context,
         // Draw decals
         for (int32 i = 0; i < renderContext.List->Decals.Count(); i++)
         {
-            const auto decal = renderContext.List->Decals[i];
-            ASSERT(decal && decal->Material);
-            Transform transform = decal->GetTransform();
-            transform.Scale *= decal->GetSize();
-            renderContext.View.GetWorldMatrix(transform, drawCall.World);
-            drawCall.ObjectPosition = drawCall.World.GetTranslation();
-            drawCall.PerInstanceRandom = decal->GetPerInstanceRandom();
+            const RenderDecalData& decal = renderContext.List->Decals.Get()[i];
+            drawCall.World = decal.World;
             defaultMaterial->Bind(bindParams);
             boxModel->Render(context);
         }

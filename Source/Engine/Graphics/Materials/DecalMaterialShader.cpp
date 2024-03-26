@@ -34,8 +34,7 @@ void DecalMaterialShader::Bind(BindParameters& params)
     ASSERT_LOW_LAYER(cb.Length() >= sizeof(DecalMaterialShaderData));
     auto materialData = reinterpret_cast<DecalMaterialShaderData*>(cb.Get());
     cb = Span<byte>(cb.Get() + sizeof(DecalMaterialShaderData), cb.Length() - sizeof(DecalMaterialShaderData));
-    int32 srv = 0;
-    const bool isCameraInside = OrientedBoundingBox(Vector3::Half, params.FirstDrawCall->World).Contains(view.Position) == ContainmentType::Contains;
+    const bool isCameraInside = OrientedBoundingBox(Vector3::Half, drawCall.World).Contains(view.Position) == ContainmentType::Contains;
 
     // Setup parameters
     MaterialParameter::BindMeta bindMeta;
