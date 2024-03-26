@@ -106,6 +106,17 @@ struct RenderSkyLightData : RenderLightData
     void SetShaderData(ShaderLightData& data, bool useShadow) const;
 };
 
+struct RenderEnvironmentProbeData
+{
+    GPUTexture* Texture;
+    Float3 Position;
+    float Radius;
+    float Brightness;
+    uint32 HashID;
+
+    void SetShaderData(ShaderEnvProbeData& data) const;
+};
+
 struct RenderDecalData
 {
     Matrix World;
@@ -290,7 +301,7 @@ public:
     /// <summary>
     /// Environment probes to use for rendering reflections
     /// </summary>
-    Array<EnvironmentProbe*> EnvironmentProbes;
+    Array<RenderEnvironmentProbeData> EnvironmentProbes;
 
     /// <summary>
     /// Decals registered for the rendering.

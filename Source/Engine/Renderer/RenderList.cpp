@@ -106,6 +106,11 @@ void RenderSkyLightData::SetShaderData(ShaderLightData& data, bool useShadow) co
     data.InverseSquared = 0;
     data.RadiusInv = 1.0f / Radius;
 }
+
+void RenderEnvironmentProbeData::SetShaderData(ShaderEnvProbeData& data) const
+{
+    data.Data0 = Float4(Position, 0);
+    data.Data1 = Float4(Radius, 1.0f / Radius, Brightness, 0);
 }
 
 void* RendererAllocation::Allocate(uintptr size)

@@ -336,19 +336,15 @@ void ReflectionsPass::Dispose()
     _preIntegratedGF = nullptr;
 }
 
-bool sortProbes(EnvironmentProbe* const& p1, EnvironmentProbe* const& p2)
+bool SortProbes(RenderEnvironmentProbeData const& p1, RenderEnvironmentProbeData const& p2)
 {
     // Compare by radius
-    int32 res = static_cast<int32>(p2->GetScaledRadius() - p1->GetScaledRadius());
-
-    // Check if are the same
+    int32 res = static_cast<int32>(p2.Radius - p1.Radius);
     if (res == 0)
     {
         // Compare by ID to prevent flickering
-        res = GetHash(p2->GetID()) - GetHash(p1->GetID());
+        res = p2.HashID - p1.HashID;
     }
-
-    // Return result
     return res < 0;
 }
 
@@ -400,38 +396,34 @@ void ReflectionsPass::Render(RenderContext& renderContext, GPUTextureView* light
         context->SetRenderTarget(*reflectionsBuffer);
 
         // Sort probes by the radius
-        Sorting::QuickSort(renderContext.List->EnvironmentProbes.Get(), renderContext.List->EnvironmentProbes.Count(), &sortProbes);
-
-        // TODO: don't render too far probes, check area of the screen and apply culling!
+        Sorting::QuickSort(renderContext.List->EnvironmentProbes.Get(), renderContext.List->EnvironmentProbes.Count(), &SortProbes);
 
         // Render all env probes
-        for (int32 probeIndex = 0; probeIndex < probesCount; probeIndex++)
+        for (int32 i = 0; i < probesCount; i++)
         {
             // Cache data
-            auto probe = renderContext.List->EnvironmentProbes[probeIndex];
-            float probeRadius = probe->GetScaledRadius();
-            Float3 probePosition = probe->GetPosition() - renderContext.View.Origin;
+            const RenderEnvironmentProbeData& probe = renderContext.List->EnvironmentProbes.Get()[i];
 
             // Get distance from view center to light center less radius (check if view is inside a sphere)
             const float sphereModelScale = 2.0f;
-            float distance = ViewToCenterLessRadius(view, probePosition, probeRadius);
+            float distance = ViewToCenterLessRadius(view, probe.Position, probe.Radius);
             bool isViewInside = distance < 0;
 
             // Calculate world view projection matrix for the light sphere
             Matrix world, wvp, matrix;
-            Matrix::Scaling(probeRadius * sphereModelScale, wvp);
-            Matrix::Translation(probePosition, matrix);
+            Matrix::Scaling(probe.Radius * sphereModelScale, wvp);
+            Matrix::Translation(probe.Position, matrix);
             Matrix::Multiply(wvp, matrix, world);
             Matrix::Multiply(world, view.ViewProjection(), wvp);
 
             // Pack probe properties buffer
-            probe->SetupProbeData(renderContext, &data.PData);
+            probe.SetShaderData(data.PData);
             Matrix::Transpose(wvp, data.WVP);
 
             // Render reflections
             context->UpdateCB(cb, &data);
             context->BindCB(0, cb);
-            context->BindSR(4, probe->GetProbe());
+            context->BindSR(4, probe.Texture);
 
             context->SetState(isViewInside ? _psProbeInverted : _psProbeNormal);
             _sphereModel->Render(context);

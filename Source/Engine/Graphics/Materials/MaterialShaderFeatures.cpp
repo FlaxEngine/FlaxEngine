@@ -74,24 +74,21 @@ void ForwardShadingFeature::Bind(MaterialShader::BindParameters& params, Span<by
     }
 
     // Set reflection probe data
-    EnvironmentProbe* probe = nullptr;
+    bool noEnvProbe = true;
     // TODO: optimize env probe searching for a transparent material - use spatial cache for renderer to find it
-    const BoundingSphere objectBoundsWorld(drawCall.ObjectPosition + view.Origin, drawCall.ObjectRadius);
+    const BoundingSphere objectBounds(drawCall.ObjectPosition, drawCall.ObjectRadius);
     for (int32 i = 0; i < cache->EnvironmentProbes.Count(); i++)
     {
-        const auto p = cache->EnvironmentProbes[i];
-        if (CollisionsHelper::SphereIntersectsSphere(objectBoundsWorld, p->GetSphere()))
+        const RenderEnvironmentProbeData& probe = cache->EnvironmentProbes.Get()[i];
+        if (CollisionsHelper::SphereIntersectsSphere(objectBounds, BoundingSphere(probe.Position, probe.Radius)))
         {
-            probe = p;
+            noEnvProbe = false;
+            probe.SetShaderData(data.EnvironmentProbe);
+            params.GPUContext->BindSR(envProbeShaderRegisterIndex, probe.Texture);
             break;
         }
     }
-    if (probe && probe->GetProbe())
-    {
-        probe->SetupProbeData(params.RenderContext, &data.EnvironmentProbe);
-        params.GPUContext->BindSR(envProbeShaderRegisterIndex, probe->GetProbe());
-    }
-    else
+    if (noEnvProbe)
     {
         data.EnvironmentProbe.Data1 = Float4::Zero;
         params.GPUContext->UnBindSR(envProbeShaderRegisterIndex);
@@ -99,7 +96,6 @@ void ForwardShadingFeature::Bind(MaterialShader::BindParameters& params, Span<by
 
     // Set local lights
     data.LocalLightsCount = 0;
-    const BoundingSphere objectBounds(drawCall.ObjectPosition, drawCall.ObjectRadius);
     // TODO: optimize lights searching for a transparent material - use spatial cache for renderer to find it
     for (int32 i = 0; i < cache->PointLights.Count() && data.LocalLightsCount < MaxLocalLights; i++)
     {

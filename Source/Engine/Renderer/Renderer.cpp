@@ -180,6 +180,11 @@ void Renderer::Render(SceneRenderTask* task)
     RenderContextBatch renderContextBatch(task);
     renderContextBatch.Contexts.Add(renderContext);
 
+    // Pre-init render view cache early in case it's used in PreRender drawing
+    Float4 jitter = renderContext.View.TemporalAAJitter; // Preserve temporal jitter value (PrepareCache modifies it)
+    renderContext.View.PrepareCache(renderContext, viewport.Width, viewport.Height, Float2::Zero);
+    renderContext.View.TemporalAAJitter = jitter;
+
 #if USE_EDITOR
     // Turn on low quality rendering during baking lightmaps (leave more GPU power for baking)
     const auto flags = renderContext.View.Flags;
