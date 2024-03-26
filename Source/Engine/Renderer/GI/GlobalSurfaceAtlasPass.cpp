@@ -79,10 +79,7 @@ struct GlobalSurfaceAtlasTile : RectPack<GlobalSurfaceAtlasTile, uint16>
     }
 
     void OnInsert(class GlobalSurfaceAtlasCustomBuffer* buffer, void* actorObject, int32 tileIndex);
-
-    void OnFree()
-    {
-    }
+    void OnFree(GlobalSurfaceAtlasCustomBuffer* buffer);
 };
 
 struct GlobalSurfaceAtlasObject
@@ -135,6 +132,7 @@ public:
     int32 Resolution = 0;
     uint64 LastFrameAtlasInsertFail = 0;
     uint64 LastFrameAtlasDefragmentation = 0;
+    int32 AtlasPixelsUsed = 0;
     GPUTexture* AtlasDepth = nullptr;
     GPUTexture* AtlasEmissive = nullptr;
     GPUTexture* AtlasGBuffer0 = nullptr;
@@ -170,6 +168,7 @@ public:
         CulledObjectsCounterIndex = -1;
         CulledObjectsUsageHistory.Clear();
         LastFrameAtlasDefragmentation = Engine::FrameCount;
+        AtlasPixelsUsed = 0;
         SAFE_DELETE(AtlasTiles);
         Objects.Clear();
         Lights.Clear();
@@ -230,6 +229,12 @@ public:
 void GlobalSurfaceAtlasTile::OnInsert(GlobalSurfaceAtlasCustomBuffer* buffer, void* actorObject, int32 tileIndex)
 {
     buffer->Objects[actorObject].Tiles[tileIndex] = this;
+    buffer->AtlasPixelsUsed += (int32)Width * (int32)Height;
+}
+
+void GlobalSurfaceAtlasTile::OnFree(GlobalSurfaceAtlasCustomBuffer* buffer)
+{
+    buffer->AtlasPixelsUsed -= (int32)Width * (int32)Height;
 }
 
 String GlobalSurfaceAtlasPass::ToString() const
@@ -422,9 +427,10 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
     else
     {
         // Perform atlas defragmentation if needed
-        // TODO: track atlas used vs free ratio to skip defragmentation if it's nearly full (then maybe auto resize up?)
+        constexpr float maxUsageToDefrag = 0.8f;
         if (currentFrame - surfaceAtlasData.LastFrameAtlasInsertFail < 10 &&
-            currentFrame - surfaceAtlasData.LastFrameAtlasDefragmentation > 60)
+            currentFrame - surfaceAtlasData.LastFrameAtlasDefragmentation > 60 &&
+            (float)surfaceAtlasData.AtlasPixelsUsed / (resolution * resolution) < maxUsageToDefrag)
         {
             surfaceAtlasData.ClearObjects();
         }
@@ -516,7 +522,7 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
                 for (auto& tile : it->Value.Tiles)
                 {
                     if (tile)
-                        tile->Free();
+                        tile->Free(&surfaceAtlasData);
                 }
                 surfaceAtlasData.Objects.Remove(it);
             }
@@ -1217,7 +1223,7 @@ void GlobalSurfaceAtlasPass::RasterizeActor(Actor* actor, void* actorObject, con
             // Skip too small surfaces
             if (object && object->Tiles[tileIndex])
             {
-                object->Tiles[tileIndex]->Free();
+                object->Tiles[tileIndex]->Free(&surfaceAtlasData);
                 object->Tiles[tileIndex] = nullptr;
             }
             continue;
@@ -1240,7 +1246,7 @@ void GlobalSurfaceAtlasPass::RasterizeActor(Actor* actor, void* actorObject, con
                 anyTile = true;
                 continue;
             }
-            object->Tiles[tileIndex]->Free();
+            object->Tiles[tileIndex]->Free(&surfaceAtlasData);
         }
 
         // Insert tile into atlas
