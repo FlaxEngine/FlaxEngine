@@ -42,7 +42,7 @@ protected:
 
     friend Collider;
     //API_FIELD(public,Attributes = "EditorOrder(100), DefaultValue(false), EditorDisplay(\"Rigid Body\"),RadyOnly")
-        Array<ScriptingObjectReference<Collider>> AttathedColliders;
+        Array<ScriptingObjectReference<Collider>> AttatchedColliders;
 public:
     /// <summary>
     /// Enables kinematic mode for the rigidbody. Kinematic rigidbodies are special dynamic actors that are not influenced by forces(such as gravity), and have no momentum. They are considered to have infinite mass and can push regular dynamic actors out of the way. Kinematics will not collide with static or other kinematic objects but are great for moving platforms or characters, where direct motion control is desired.
@@ -478,9 +478,9 @@ public:
     template<typename ColliderType = Collider, typename AllocationType = HeapAllocation>
     void GetAttathedColliders(Array<ColliderType*, AllocationType>& result) const
     {
-        for (int32 i = 0; i < AttathedColliders.Count(); i++)
+        for (int32 i = 0; i < AttatchedColliders.Count(); i++)
         {
-            const auto collider = Cast<ColliderType>(AttathedColliders[i]);
+            const auto collider = Cast<ColliderType>(AttatchedColliders[i]);
             if (collider)
                 result.Add(collider);
         }
@@ -489,9 +489,9 @@ public:
     template<typename ColliderType = Collider>
     ColliderType* GetAttathedColliderOfType() const
     {
-        for (auto i = 0; i < AttathedColliders.Count(); i++)
+        for (auto i = 0; i < AttatchedColliders.Count(); i++)
         {
-            const auto collider = Cast<ColliderType>(AttathedColliders[i]);
+            const auto collider = Cast<ColliderType>(AttatchedColliders[i]);
             if (collider) 
             {
                 return collider;
@@ -500,6 +500,16 @@ public:
         return nullptr;
     }
 public:
+#if USE_EDITOR
+    /// <summary>
+    /// [Editor only] shows attached colliders when selected
+    /// </summary>
+    API_FIELD(Attributes = "EditorOrder(1000), EditorDisplay(\"Rigid Body\")")
+        bool DisplayAttachedColliders = true;
+
+    void OnDebugDrawSelected() override;
+#endif
+
     // [Actor]
     void Serialize(SerializeStream& stream, const void* otherObj) override;
     void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) override;

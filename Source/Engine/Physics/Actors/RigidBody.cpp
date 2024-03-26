@@ -389,6 +389,21 @@ void RigidBody::UpdateScale()
         UpdateMass();
 }
 
+void RigidBody::OnDebugDrawSelected()
+{
+    if (DisplayAttachedColliders)
+    {
+        for (auto i = 0; i < AttatchedColliders.Count(); i++)
+        {
+            if (auto c = AttatchedColliders[i])
+            {
+                c->OnDebugDrawSelected();
+            }
+        }
+    }
+    Actor::OnDebugDrawSelected();
+}
+
 void RigidBody::Serialize(SerializeStream& stream, const void* otherObj)
 {
     // Base

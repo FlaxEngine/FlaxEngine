@@ -181,7 +181,7 @@ void Collider::Attach(RigidBody* rigidBody)
     {
         AttachedTo = rigidBody;
     }
-    rigidBody->AttathedColliders.Add(this);
+    rigidBody->AttatchedColliders.Add(this);
 }
 void Collider::Detach()
 {
@@ -192,7 +192,7 @@ void Collider::Detach()
     if (rigidBody)
     {
         rigidBody->OnColliderChanged(this);
-        rigidBody->AttathedColliders.Remove(this);
+        rigidBody->AttatchedColliders.Remove(this);
         AttachedTo = nullptr;
     }
 }

@@ -84,6 +84,7 @@ bool SplineCollider::CanBeTrigger() const
 
 #include "Engine/Debug/DebugDraw.h"
 #include "Engine/Graphics/RenderView.h"
+#include "Engine/Physics/Colliders/ColliderColorConfig.h"
 
 void SplineCollider::DrawPhysicsDebug(RenderView& view)
 {
@@ -95,10 +96,23 @@ void SplineCollider::DrawPhysicsDebug(RenderView& view)
     else
         DEBUG_DRAW_WIRE_TRIANGLES_EX(_vertexBuffer, _indexBuffer, Color::GreenYellow * 0.8f, 0, true);
 }
+void SplineCollider::OnDebugDraw()
+{
+    if (DisplayCollider)
+    {
+        DEBUG_DRAW_WIRE_TRIANGLES_EX(_vertexBuffer, _indexBuffer, FlaxEngine::ColliderColors::NormalColliderOutline, 0, false);
+    }
+
+    // Base
+    Collider::OnDebugDraw();
+}
 
 void SplineCollider::OnDebugDrawSelected()
 {
-    DEBUG_DRAW_WIRE_TRIANGLES_EX(_vertexBuffer, _indexBuffer, Color::GreenYellow, 0, false);
+    if (!DisplayCollider)
+    {
+        DEBUG_DRAW_WIRE_TRIANGLES_EX(_vertexBuffer, _indexBuffer, FlaxEngine::ColliderColors::NormalColliderOutline, 0, false);
+    }
 
     // Base
     Collider::OnDebugDrawSelected();

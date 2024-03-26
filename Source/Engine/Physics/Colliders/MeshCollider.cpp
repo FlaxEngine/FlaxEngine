@@ -63,6 +63,7 @@ bool MeshCollider::CanBeTrigger() const
 
 #include "Engine/Debug/DebugDraw.h"
 #include "Engine/Graphics/RenderView.h"
+#include "Engine/Physics/Colliders/ColliderColorConfig.h"
 
 void MeshCollider::DrawPhysicsDebug(RenderView& view)
 {
@@ -84,13 +85,59 @@ void MeshCollider::DrawPhysicsDebug(RenderView& view)
         }
     }
 }
+void MeshCollider::OnDebugDraw()
+{
+    if (DisplayCollider)
+    {
+        if (CollisionData && CollisionData->IsLoaded())
+        {
+            if (GetIsTrigger())
+            {
+                const auto& debugLines = CollisionData->GetDebugLines();
+                DEBUG_DRAW_LINES(Span<Float3>(debugLines.Get(), debugLines.Count()), _transform.GetWorld(), FlaxEngine::ColliderColors::TriggerColliderOutline, 0, false);
+                Array<Float3>* vertexBuffer;
+                Array<int32>* indexBuffer;
+                CollisionData->GetDebugTriangles(vertexBuffer, indexBuffer);
+                DEBUG_DRAW_TRIANGLES_EX2(*vertexBuffer, *indexBuffer, _transform.GetWorld(), FlaxEngine::ColliderColors::TriggerCollider, 0, true);
+            }
+            else
+            {
+                const auto& debugLines = CollisionData->GetDebugLines();
+                DEBUG_DRAW_LINES(Span<Float3>(debugLines.Get(), debugLines.Count()), _transform.GetWorld(), FlaxEngine::ColliderColors::NormalColliderOutline, 0, false);
+                Array<Float3>* vertexBuffer;
+                Array<int32>* indexBuffer;
+                CollisionData->GetDebugTriangles(vertexBuffer, indexBuffer);
+                DEBUG_DRAW_TRIANGLES_EX2(*vertexBuffer, *indexBuffer, _transform.GetWorld(), FlaxEngine::ColliderColors::NormalCollider, 0, true);
+            }
+        }
+    }
+}
 
 void MeshCollider::OnDebugDrawSelected()
 {
-    if (CollisionData && CollisionData->IsLoaded())
+    if (!DisplayCollider)
     {
-        const auto& debugLines = CollisionData->GetDebugLines();
-        DEBUG_DRAW_LINES(Span<Float3>(debugLines.Get(), debugLines.Count()), _transform.GetWorld(), Color::GreenYellow, 0, false);
+        if (CollisionData && CollisionData->IsLoaded())
+        {
+            if (GetIsTrigger())
+            {
+                const auto& debugLines = CollisionData->GetDebugLines();
+                DEBUG_DRAW_LINES(Span<Float3>(debugLines.Get(), debugLines.Count()), _transform.GetWorld(), FlaxEngine::ColliderColors::TriggerColliderOutline, 0, false);
+                Array<Float3>* vertexBuffer;
+                Array<int32>* indexBuffer;
+                CollisionData->GetDebugTriangles(vertexBuffer, indexBuffer);
+                DEBUG_DRAW_TRIANGLES_EX2(*vertexBuffer, *indexBuffer, _transform.GetWorld(), FlaxEngine::ColliderColors::TriggerCollider, 0, true);
+            }
+            else
+            {
+                const auto& debugLines = CollisionData->GetDebugLines();
+                DEBUG_DRAW_LINES(Span<Float3>(debugLines.Get(), debugLines.Count()), _transform.GetWorld(), FlaxEngine::ColliderColors::NormalColliderOutline, 0, false);
+                Array<Float3>* vertexBuffer;
+                Array<int32>* indexBuffer;
+                CollisionData->GetDebugTriangles(vertexBuffer, indexBuffer);
+                DEBUG_DRAW_TRIANGLES_EX2(*vertexBuffer, *indexBuffer, _transform.GetWorld(), FlaxEngine::ColliderColors::NormalCollider, 0, true);
+            }
+        }
     }
 
     // Base
