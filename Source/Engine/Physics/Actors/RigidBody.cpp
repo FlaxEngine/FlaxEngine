@@ -389,6 +389,7 @@ void RigidBody::UpdateScale()
         UpdateMass();
 }
 
+#if USE_EDITOR
 void RigidBody::OnDebugDrawSelected()
 {
     if (DisplayAttachedColliders)
@@ -403,6 +404,7 @@ void RigidBody::OnDebugDrawSelected()
     }
     Actor::OnDebugDrawSelected();
 }
+#endif
 
 void RigidBody::Serialize(SerializeStream& stream, const void* otherObj)
 {
