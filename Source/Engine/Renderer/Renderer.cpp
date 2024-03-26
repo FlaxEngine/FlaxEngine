@@ -244,7 +244,7 @@ void Renderer::DrawSceneDepth(GPUContext* context, SceneRenderTask* task, GPUTex
     DrawActors(renderContext, customActors);
 
     // Sort draw calls
-    renderContext.List->SortDrawCalls(renderContext, false, DrawCallsListType::Depth);
+    renderContext.List->SortDrawCalls(renderContext, false, DrawCallsListType::Depth, DrawPass::Depth);
 
     // Execute draw calls
     const float width = (float)output->Width();
@@ -405,8 +405,8 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext, RenderCont
         for (int32 i = 1; i < renderContextBatch.Contexts.Count(); i++)
         {
             auto& shadowContext = renderContextBatch.Contexts[i];
-            shadowContext.List->SortDrawCalls(shadowContext, false, DrawCallsListType::Depth);
-            shadowContext.List->SortDrawCalls(shadowContext, false, shadowContext.List->ShadowDepthDrawCallsList, renderContext.List->DrawCalls);
+            shadowContext.List->SortDrawCalls(shadowContext, false, DrawCallsListType::Depth, DrawPass::Depth);
+            shadowContext.List->SortDrawCalls(shadowContext, false, shadowContext.List->ShadowDepthDrawCallsList, renderContext.List->DrawCalls, DrawPass::Depth);
         }
     }
 

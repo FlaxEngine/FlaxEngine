@@ -119,7 +119,7 @@ public:
     struct InstancingHandler
     {
         void (*GetHash)(const DrawCall& drawCall, uint32& batchKey);
-        bool (*CanBatch)(const DrawCall& a, const DrawCall& b);
+        bool (*CanBatch)(const DrawCall& a, const DrawCall& b, DrawPass pass);
         void (*WriteDrawCall)(struct InstanceData* instanceData, const DrawCall& drawCall);
     };
 

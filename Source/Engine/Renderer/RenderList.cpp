@@ -551,26 +551,21 @@ void RenderList::AddDrawCall(const RenderContextBatch& renderContextBatch, DrawP
 
 namespace
 {
-    /// <summary>
-    /// Checks if this draw call be batched together with the other one.
-    /// </summary>
-    /// <param name="a">The first draw call.</param>
-    /// <param name="b">The second draw call.</param>
-    /// <returns>True if can merge them, otherwise false.</returns>
-    FORCE_INLINE bool CanBatchWith(const DrawCall& a, const DrawCall& b)
+    FORCE_INLINE bool CanBatchWith(const DrawCall& a, const DrawCall& b, DrawPass pass)
     {
-        IMaterial::InstancingHandler handler;
-        return a.Material == b.Material &&
-                a.Material->CanUseInstancing(handler) &&
+        IMaterial::InstancingHandler handlerA, handlerB;
+        return a.Material->CanUseInstancing(handlerA) &&
+                b.Material->CanUseInstancing(handlerB) &&
                 Platform::MemoryCompare(&a.Geometry, &b.Geometry, sizeof(a.Geometry)) == 0 &&
                 a.InstanceCount != 0 &&
                 b.InstanceCount != 0 &&
-                handler.CanBatch(a, b) &&
+                handlerA.CanBatch == handlerB.CanBatch &&
+                handlerA.CanBatch(a, b, pass) &&
                 a.WorldDeterminantSign * b.WorldDeterminantSign > 0;
     }
 }
 
-void RenderList::SortDrawCalls(const RenderContext& renderContext, bool reverseDistance, DrawCallsList& list, const RenderListBuffer<DrawCall>& drawCalls)
+void RenderList::SortDrawCalls(const RenderContext& renderContext, bool reverseDistance, DrawCallsList& list, const RenderListBuffer<DrawCall>& drawCalls, DrawPass pass)
 {
     PROFILE_CPU();
     const auto* drawCallsData = drawCalls.Get();
@@ -625,7 +620,7 @@ void RenderList::SortDrawCalls(const RenderContext& renderContext, bool reverseD
         for (int32 j = i + 1; j < listSize; j++)
         {
             const DrawCall& other = drawCallsData[listData[j]];
-            if (!CanBatchWith(drawCall, other))
+            if (!CanBatchWith(drawCall, other, pass))
                 break;
             batchSize++;
             instanceCount += other.InstanceCount;
@@ -917,13 +912,29 @@ void SurfaceDrawCallHandler::GetHash(const DrawCall& drawCall, uint32& batchKey)
     batchKey = (batchKey * 397) ^ ::GetHash(drawCall.Surface.Lightmap);
 }
 
-bool SurfaceDrawCallHandler::CanBatch(const DrawCall& a, const DrawCall& b)
+bool SurfaceDrawCallHandler::CanBatch(const DrawCall& a, const DrawCall& b, DrawPass pass)
 {
     // TODO: find reason why batching static meshes with lightmap causes problems with sampling in shader (flickering when meshes in batch order gets changes due to async draw calls collection)
-    return a.Surface.Lightmap == nullptr && b.Surface.Lightmap == nullptr &&
-            //return a.Surface.Lightmap == b.Surface.Lightmap &&
-            a.Surface.Skinning == nullptr &&
-            b.Surface.Skinning == nullptr;
+    if (a.Surface.Lightmap == nullptr && b.Surface.Lightmap == nullptr &&
+        //return a.Surface.Lightmap == b.Surface.Lightmap &&
+        a.Surface.Skinning == nullptr &&
+        b.Surface.Skinning == nullptr)
+    {
+        if (a.Material != b.Material)
+        {
+            // Batch simple materials during depth-only drawing (when using default vertex shader and no pixel shader)
+            if (pass == DrawPass::Depth)
+            {
+                constexpr MaterialUsageFlags complexUsageFlags = MaterialUsageFlags::UseMask | MaterialUsageFlags::UsePositionOffset | MaterialUsageFlags::UseDisplacement;
+                const bool aIsSimple = EnumHasNoneFlags(a.Material->GetInfo().UsageFlags, complexUsageFlags);
+                const bool bIsSimple = EnumHasNoneFlags(b.Material->GetInfo().UsageFlags, complexUsageFlags);
+                return aIsSimple && bIsSimple;
+            }
+            return false;
+        }
+        return true;
+    }
+    return false;
 }
 
 void SurfaceDrawCallHandler::WriteDrawCall(InstanceData* instanceData, const DrawCall& drawCall)

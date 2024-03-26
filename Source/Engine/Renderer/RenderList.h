@@ -480,9 +480,10 @@ public:
     /// <param name="renderContext">The rendering context.</param>
     /// <param name="reverseDistance">If set to <c>true</c> reverse draw call distance to the view. Results in back to front sorting.</param>
     /// <param name="listType">The collected draw calls list type.</param>
-    API_FUNCTION() FORCE_INLINE void SortDrawCalls(API_PARAM(Ref) const RenderContext& renderContext, bool reverseDistance, DrawCallsListType listType)
+    /// <param name="pass">The draw pass (optional).</param>
+    API_FUNCTION() FORCE_INLINE void SortDrawCalls(API_PARAM(Ref) const RenderContext& renderContext, bool reverseDistance, DrawCallsListType listType, DrawPass pass = DrawPass::All)
     {
-        SortDrawCalls(renderContext, reverseDistance, DrawCallsLists[(int32)listType], DrawCalls);
+        SortDrawCalls(renderContext, reverseDistance, DrawCallsLists[(int32)listType], DrawCalls, pass);
     }
 
     /// <summary>
@@ -492,7 +493,8 @@ public:
     /// <param name="reverseDistance">If set to <c>true</c> reverse draw call distance to the view. Results in back to front sorting.</param>
     /// <param name="list">The collected draw calls indices list.</param>
     /// <param name="drawCalls">The collected draw calls list.</param>
-    void SortDrawCalls(const RenderContext& renderContext, bool reverseDistance, DrawCallsList& list, const RenderListBuffer<DrawCall>& drawCalls);
+    /// <param name="pass">The draw pass (optional).</param>
+    void SortDrawCalls(const RenderContext& renderContext, bool reverseDistance, DrawCallsList& list, const RenderListBuffer<DrawCall>& drawCalls, DrawPass pass = DrawPass::All);
 
     /// <summary>
     /// Executes the collected draw calls.
@@ -543,6 +545,6 @@ PACK_STRUCT(struct FLAXENGINE_API InstanceData
 struct SurfaceDrawCallHandler
 {
     static void GetHash(const DrawCall& drawCall, uint32& batchKey);
-    static bool CanBatch(const DrawCall& a, const DrawCall& b);
+    static bool CanBatch(const DrawCall& a, const DrawCall& b, DrawPass pass);
     static void WriteDrawCall(InstanceData* instanceData, const DrawCall& drawCall);
 };
