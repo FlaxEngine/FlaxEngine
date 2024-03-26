@@ -277,7 +277,7 @@ void LightPass::RenderLight(RenderContextBatch& renderContextBatch, GPUTextureVi
             context->UnBindSR(5);
 
         // Pack light properties buffer
-        light.SetupLightData(&perLight.Light, renderShadow);
+        light.SetShaderData(perLight.Light, renderShadow);
         Matrix::Transpose(wvp, perLight.WVP);
         if (useIES)
         {
@@ -334,7 +334,7 @@ void LightPass::RenderLight(RenderContextBatch& renderContextBatch, GPUTextureVi
             context->UnBindSR(5);
 
         // Pack light properties buffer
-        light.SetupLightData(&perLight.Light, renderShadow);
+        light.SetShaderData(perLight.Light, renderShadow);
         Matrix::Transpose(wvp, perLight.WVP);
         if (useIES)
         {
@@ -377,7 +377,7 @@ void LightPass::RenderLight(RenderContextBatch& renderContextBatch, GPUTextureVi
             context->UnBindSR(5);
 
         // Pack light properties buffer
-        light.SetupLightData(&perLight.Light, renderShadow);
+        light.SetShaderData(perLight.Light, renderShadow);
 
         // Calculate lighting
         context->UpdateCB(cb0, &perLight);
@@ -411,7 +411,7 @@ void LightPass::RenderLight(RenderContextBatch& renderContextBatch, GPUTextureVi
         Matrix::Multiply(world, view.ViewProjection(), wvp);
 
         // Pack light properties buffer
-        light.SetupLightData(&perLight.Light, false);
+        light.SetShaderData(perLight.Light, false);
         Matrix::Transpose(wvp, perLight.WVP);
 
         // Bind source image

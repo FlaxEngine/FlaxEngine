@@ -50,7 +50,7 @@ void ForwardShadingFeature::Bind(MaterialShader::BindParameters& params, Span<by
         {
             params.GPUContext->UnBindSR(dirLightShaderRegisterIndex);
         }
-        dirLight.SetupLightData(&data.DirectionalLight, useShadow);
+        dirLight.SetShaderData(data.DirectionalLight, useShadow);
     }
     else
     {
@@ -63,7 +63,7 @@ void ForwardShadingFeature::Bind(MaterialShader::BindParameters& params, Span<by
     if (cache->SkyLights.HasItems())
     {
         auto& skyLight = cache->SkyLights.First();
-        skyLight.SetupLightData(&data.SkyLight, false);
+        skyLight.SetShaderData(data.SkyLight, false);
         const auto texture = skyLight.Image ? skyLight.Image->GetTexture() : nullptr;
         params.GPUContext->BindSR(skyLightShaderRegisterIndex, GET_TEXTURE_VIEW_SAFE(texture));
     }
@@ -106,7 +106,7 @@ void ForwardShadingFeature::Bind(MaterialShader::BindParameters& params, Span<by
         const auto& light = cache->PointLights[i];
         if (CollisionsHelper::SphereIntersectsSphere(objectBounds, BoundingSphere(light.Position, light.Radius)))
         {
-            light.SetupLightData(&data.LocalLights[data.LocalLightsCount], false);
+            light.SetShaderData(data.LocalLights[data.LocalLightsCount], false);
             data.LocalLightsCount++;
         }
     }
@@ -115,7 +115,7 @@ void ForwardShadingFeature::Bind(MaterialShader::BindParameters& params, Span<by
         const auto& light = cache->SpotLights[i];
         if (CollisionsHelper::SphereIntersectsSphere(objectBounds, BoundingSphere(light.Position, light.Radius)))
         {
-            light.SetupLightData(&data.LocalLights[data.LocalLightsCount], false);
+            light.SetShaderData(data.LocalLights[data.LocalLightsCount], false);
             data.LocalLightsCount++;
         }
     }

@@ -661,7 +661,7 @@ void ShadowsPass::RenderShadow(RenderContextBatch& renderContextBatch, RenderPoi
     // Setup shader data
     Data sperLight;
     GBufferPass::SetInputs(view, sperLight.GBuffer);
-    light.SetupLightData(&sperLight.Light, true);
+    light.SetShaderData(sperLight.Light, true);
     sperLight.LightShadow = shadowData.Constants;
     Matrix::Transpose(view.ViewProjection(), sperLight.ViewProjectionMatrix);
     sperLight.ContactShadowsDistance = light.ShadowsDistance;
@@ -739,7 +739,7 @@ void ShadowsPass::RenderShadow(RenderContextBatch& renderContextBatch, RenderSpo
     // Setup shader data
     Data sperLight;
     GBufferPass::SetInputs(view, sperLight.GBuffer);
-    light.SetupLightData(&sperLight.Light, true);
+    light.SetShaderData(sperLight.Light, true);
     sperLight.LightShadow = shadowData.Constants;
     Matrix::Transpose(view.ViewProjection(), sperLight.ViewProjectionMatrix);
     sperLight.ContactShadowsDistance = light.ShadowsDistance;
@@ -809,7 +809,7 @@ void ShadowsPass::RenderShadow(RenderContextBatch& renderContextBatch, RenderDir
     Data sperLight;
     auto& view = renderContext.View;
     GBufferPass::SetInputs(view, sperLight.GBuffer);
-    light.SetupLightData(&sperLight.Light, true);
+    light.SetShaderData(sperLight.Light, true);
     sperLight.LightShadow = shadowData.Constants;
     Matrix::Transpose(view.ViewProjection(), sperLight.ViewProjectionMatrix);
     sperLight.ContactShadowsDistance = light.ShadowsDistance;
