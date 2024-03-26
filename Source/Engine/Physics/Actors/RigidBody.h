@@ -6,6 +6,7 @@
 #include "Engine/Physics/Types.h"
 #include "Engine/Physics/Actors/IPhysicsActor.h"
 #include "Engine/Physics/Collisions.h"
+#include "Engine/Scripting/ScriptingObjectReference.h"
 
 class PhysicsColliderActor;
 class Collider;
@@ -40,7 +41,8 @@ protected:
     uint32 _isUpdatingTransform : 1;
 
     friend Collider;
-    Array<Collider*> AttathedColliders;
+    //API_FIELD(public,Attributes = "EditorOrder(100), DefaultValue(false), EditorDisplay(\"Rigid Body\"),RadyOnly")
+        Array<ScriptingObjectReference<Collider>> AttathedColliders;
 public:
     /// <summary>
     /// Enables kinematic mode for the rigidbody. Kinematic rigidbodies are special dynamic actors that are not influenced by forces(such as gravity), and have no momentum. They are considered to have infinite mass and can push regular dynamic actors out of the way. Kinematics will not collide with static or other kinematic objects but are great for moving platforms or characters, where direct motion control is desired.

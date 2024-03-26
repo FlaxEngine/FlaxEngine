@@ -193,6 +193,7 @@ void Collider::Detach()
     {
         rigidBody->OnColliderChanged(this);
         rigidBody->AttathedColliders.Remove(this);
+        AttachedTo = nullptr;
     }
 }
 
@@ -316,7 +317,7 @@ RigidBody* Collider::GetAttathmentRigidbody()
     while (p)
     {
         RigidBody* crb = dynamic_cast<RigidBody*>(p);
-        if (crb) 
+        if (crb)
         {
             rb = crb;
             break;
@@ -398,13 +399,11 @@ void Collider::OnParentChanged()
     // Check reparenting collider case
     if (_shape)
     {
-        RigidBody* rigidBody = GetAttachedRigidBody();
-
         // Detach from the actor
         Detach();
 
         // Check if the new parent is a rigidbody
-        rigidBody = GetAttathmentRigidbody();
+        RigidBody* rigidBody = GetAttathmentRigidbody();
         if (rigidBody && CanAttach(rigidBody))
         {
             // Attach to the rigidbody
