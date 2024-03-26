@@ -3,6 +3,7 @@
 #include "ForwardMaterialShader.h"
 #include "MaterialShaderFeatures.h"
 #include "MaterialParams.h"
+#include "Engine/Core/Math/Matrix3x4.h"
 #include "Engine/Graphics/GPUContext.h"
 #include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Graphics/GPULimits.h"
@@ -18,8 +19,8 @@
 #endif
 
 PACK_STRUCT(struct ForwardMaterialShaderData {
-    Matrix WorldMatrix;
-    Matrix PrevWorldMatrix;
+    Matrix3x4 WorldMatrix;
+    Matrix3x4 PrevWorldMatrix;
     Float2 Dummy0;
     float LODDitherFactor;
     float PerInstanceRandom;
@@ -76,8 +77,8 @@ void ForwardMaterialShader::Bind(BindParameters& params)
 
     // Setup material constants
     {
-        Matrix::Transpose(drawCall.World, materialData->WorldMatrix);
-        Matrix::Transpose(drawCall.Surface.PrevWorld, materialData->PrevWorldMatrix);
+        materialData->WorldMatrix.SetMatrixTranspose(drawCall.World);
+        materialData->PrevWorldMatrix.SetMatrixTranspose(drawCall.Surface.PrevWorld);
         materialData->WorldDeterminantSign = drawCall.WorldDeterminantSign;
         materialData->LODDitherFactor = drawCall.Surface.LODDitherFactor;
         materialData->PerInstanceRandom = drawCall.PerInstanceRandom;

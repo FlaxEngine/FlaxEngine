@@ -230,4 +230,10 @@ float4 SampleUnwrappedTexture3D(Texture2D tex, SamplerState s, float3 uvw, float
     return lerp(rg0, rg1, fracW);
 }
 
+// Converts compact 4x3 object transformation matrix into a full 4x4 matrix.
+float4x4 ToMatrix4x4(float4x3 m)
+{
+    return float4x4(float4(m[0].xyz, 0.0f), float4(m[1].xyz, 0.0f), float4(m[2].xyz, 0.0f), float4(m._m30, m._m31, m._m32, 1.0f));
+}
+
 #endif

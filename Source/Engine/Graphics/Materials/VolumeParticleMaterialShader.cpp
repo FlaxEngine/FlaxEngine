@@ -3,6 +3,7 @@
 #include "VolumeParticleMaterialShader.h"
 #include "MaterialShaderFeatures.h"
 #include "MaterialParams.h"
+#include "Engine/Core/Math/Matrix3x4.h"
 #include "Engine/Renderer/DrawCall.h"
 #include "Engine/Renderer/VolumetricFogPass.h"
 #include "Engine/Renderer/RenderList.h"
@@ -16,8 +17,8 @@
 
 PACK_STRUCT(struct VolumeParticleMaterialShaderData {
     Matrix InverseViewProjectionMatrix;
-    Matrix WorldMatrix;
-    Matrix WorldMatrixInverseTransposed;
+    Matrix3x4 WorldMatrix;
+    Matrix3x4 WorldMatrixInverseTransposed;
     Float3 GridSize;
     float PerInstanceRandom;
     float Dummy0;
@@ -76,8 +77,10 @@ void VolumeParticleMaterialShader::Bind(BindParameters& params)
     // Setup material constants
     {
         Matrix::Transpose(view.IVP, materialData->InverseViewProjectionMatrix);
-        Matrix::Transpose(drawCall.World, materialData->WorldMatrix);
-        Matrix::Invert(drawCall.World, materialData->WorldMatrixInverseTransposed);
+        materialData->WorldMatrix.SetMatrixTranspose(drawCall.World);
+        Matrix worldMatrixInverseTransposed;
+        Matrix::Invert(drawCall.World, worldMatrixInverseTransposed);
+        materialData->WorldMatrixInverseTransposed.SetMatrix(worldMatrixInverseTransposed);
         materialData->GridSize = customData->GridSize;
         materialData->PerInstanceRandom = drawCall.PerInstanceRandom;
         materialData->VolumetricFogMaxDistance = customData->VolumetricFogMaxDistance;

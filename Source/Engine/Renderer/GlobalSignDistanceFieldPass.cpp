@@ -3,6 +3,7 @@
 #include "GlobalSignDistanceFieldPass.h"
 #include "RenderList.h"
 #include "Engine/Core/Math/Vector3.h"
+#include "Engine/Core/Math/Matrix3x4.h"
 #include "Engine/Core/Collections/HashSet.h"
 #include "Engine/Engine/Engine.h"
 #include "Engine/Content/Content.h"
@@ -39,8 +40,8 @@ static_assert(GLOBAL_SDF_RASTERIZE_MODEL_MAX_COUNT % 4 == 0, "Must be multiple o
 
 PACK_STRUCT(struct ObjectRasterizeData
     {
-    Matrix WorldToVolume; // TODO: use 3x4 matrix
-    Matrix VolumeToWorld; // TODO: use 3x4 matrix
+    Matrix3x4 WorldToVolume;
+    Matrix3x4 VolumeToWorld;
     Float3 VolumeToUVWMul;
     float MipOffset;
     Float3 VolumeToUVWAdd;
@@ -670,15 +671,15 @@ bool GlobalSignDistanceFieldPass::Render(RenderContext& renderContext, GPUContex
                         // Add object data for the GPU buffer
                         uint16 dataIndex = _objectsBufferCount++;
                         ObjectRasterizeData objectData;
-                        Matrix localToWorldM, worldToLocal, volumeToWorld;
-                        Matrix::Transformation(object.LocalToWorld.Scale, object.LocalToWorld.Orientation, object.LocalToWorld.Translation - _sdfData->Origin, localToWorldM);
-                        Matrix::Invert(localToWorldM, worldToLocal);
+                        Matrix localToWorld, worldToLocal, volumeToWorld;
+                        Matrix::Transformation(object.LocalToWorld.Scale, object.LocalToWorld.Orientation, object.LocalToWorld.Translation - _sdfData->Origin, localToWorld);
+                        Matrix::Invert(localToWorld, worldToLocal);
                         BoundingBox localVolumeBounds(object.SDF->LocalBoundsMin, object.SDF->LocalBoundsMax);
                         Float3 volumeLocalBoundsExtent = localVolumeBounds.GetSize() * 0.5f;
                         Matrix worldToVolume = worldToLocal * Matrix::Translation(-(localVolumeBounds.Minimum + volumeLocalBoundsExtent));
                         Matrix::Invert(worldToVolume, volumeToWorld);
-                        Matrix::Transpose(worldToVolume, objectData.WorldToVolume);
-                        Matrix::Transpose(volumeToWorld, objectData.VolumeToWorld);
+                        objectData.WorldToVolume.SetMatrixTranspose(worldToVolume);
+                        objectData.VolumeToWorld.SetMatrixTranspose(volumeToWorld);
                         objectData.VolumeLocalBoundsExtent = volumeLocalBoundsExtent;
                         objectData.VolumeToUVWMul = object.SDF->LocalToUVWMul;
                         objectData.VolumeToUVWAdd = object.SDF->LocalToUVWAdd + (localVolumeBounds.Minimum + volumeLocalBoundsExtent) * object.SDF->LocalToUVWMul;
@@ -702,11 +703,11 @@ bool GlobalSignDistanceFieldPass::Render(RenderContext& renderContext, GPUContex
                         // Add object data for the GPU buffer
                         uint16 dataIndex = _objectsBufferCount++;
                         ObjectRasterizeData objectData;
-                        Matrix localToWorldM, worldToLocal;
-                        Matrix::Transformation(object.LocalToWorld.Scale, object.LocalToWorld.Orientation, object.LocalToWorld.Translation - _sdfData->Origin, localToWorldM);
-                        Matrix::Invert(localToWorldM, worldToLocal);
-                        Matrix::Transpose(worldToLocal, objectData.WorldToVolume);
-                        Matrix::Transpose(localToWorldM, objectData.VolumeToWorld);
+                        Matrix localToWorld, worldToLocal;
+                        Matrix::Transformation(object.LocalToWorld.Scale, object.LocalToWorld.Orientation, object.LocalToWorld.Translation - _sdfData->Origin, localToWorld);
+                        Matrix::Invert(localToWorld, worldToLocal);
+                        objectData.WorldToVolume.SetMatrixTranspose(worldToLocal);
+                        objectData.VolumeToWorld.SetMatrixTranspose(localToWorld);
                         objectData.VolumeToUVWMul = Float3(object.LocalToUV.X, 1.0f, object.LocalToUV.Y);
                         objectData.VolumeToUVWAdd = Float3(object.LocalToUV.Z, 0.0f, object.LocalToUV.W);
                         objectData.MipOffset = (float)_cascadeIndex * 0.5f; // Use lower-quality mip for far cascades

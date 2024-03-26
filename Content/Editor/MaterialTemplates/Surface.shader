@@ -10,8 +10,8 @@
 @7
 // Primary constant buffer (with additional material parameters)
 META_CB_BEGIN(0, Data)
-float4x4 WorldMatrix;
-float4x4 PrevWorldMatrix;
+float4x3 WorldMatrix;
+float4x3 PrevWorldMatrix;
 float2 Dummy0;
 float LODDitherFactor;
 float PerInstanceRandom;
@@ -171,7 +171,7 @@ MaterialInput GetMaterialInput(PixelInput input)
 #if USE_INSTANCING
 #define CalculateInstanceTransform(input) float4x4 world = GetInstanceTransform(input); output.Geometry.InstanceTransform1 = input.InstanceTransform1.xyz; output.Geometry.InstanceTransform2 = input.InstanceTransform2.xyz; output.Geometry.InstanceTransform3 = input.InstanceTransform3.xyz;
 #else
-#define CalculateInstanceTransform(input) float4x4 world = WorldMatrix; output.Geometry.InstanceTransform1 = world[0].xyz; output.Geometry.InstanceTransform2 = world[1].xyz; output.Geometry.InstanceTransform3 = world[2].xyz;
+#define CalculateInstanceTransform(input) float4x4 world = ToMatrix4x4(WorldMatrix); output.Geometry.InstanceTransform1 = world[0].xyz; output.Geometry.InstanceTransform2 = world[1].xyz; output.Geometry.InstanceTransform3 = world[2].xyz;
 #endif
 
 // Removes the scale vector from the local to world transformation matrix (supports instancing)
@@ -328,7 +328,7 @@ VertexOutput VS(ModelInput input)
 	// Compute world space vertex position
 	CalculateInstanceTransform(input);
 	output.Geometry.WorldPosition = mul(float4(input.Position.xyz, 1), world).xyz;
-	output.Geometry.PrevWorldPosition = mul(float4(input.Position.xyz, 1), PrevWorldMatrix).xyz;
+	output.Geometry.PrevWorldPosition = mul(float4(input.Position.xyz, 1), ToMatrix4x4(PrevWorldMatrix)).xyz;
 
 	// Compute clip space position
 	output.Position = mul(float4(output.Geometry.WorldPosition, 1), ViewProjectionMatrix);
@@ -402,7 +402,7 @@ float4 VS_Depth(ModelInput_PosOnly input) : SV_Position
 #if USE_INSTANCING
 	float4x4 world = GetInstanceTransform(input);
 #else
-	float4x4 world = WorldMatrix;
+	float4x4 world = ToMatrix4x4(WorldMatrix);
 #endif
 	float3 worldPosition = mul(float4(input.Position.xyz, 1), world).xyz;
 	float4 position = mul(float4(worldPosition, 1), ViewProjectionMatrix);
@@ -511,9 +511,9 @@ VertexOutput VS_Skinned(ModelInput_Skinned input)
 	output.Geometry.WorldPosition = mul(float4(position, 1), world).xyz;
 #if PER_BONE_MOTION_BLUR
 	float3 prevPosition = SkinPrevPosition(input);
-	output.Geometry.PrevWorldPosition = mul(float4(prevPosition, 1), PrevWorldMatrix).xyz;
+	output.Geometry.PrevWorldPosition = mul(float4(prevPosition, 1), ToMatrix4x4(PrevWorldMatrix)).xyz;
 #else
-	output.Geometry.PrevWorldPosition = mul(float4(position, 1), PrevWorldMatrix).xyz;
+	output.Geometry.PrevWorldPosition = mul(float4(position, 1), ToMatrix4x4(PrevWorldMatrix)).xyz;
 #endif
 
 	// Compute clip space position

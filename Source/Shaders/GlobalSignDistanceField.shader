@@ -11,8 +11,8 @@
 
 struct ObjectRasterizeData
 {
-	float4x4 WorldToVolume; // TODO: use 3x4 matrix
-	float4x4 VolumeToWorld; // TODO: use 3x4 matrix
+	float4x3 WorldToVolume;
+	float4x3 VolumeToWorld;
 	float3 VolumeToUVWMul;
 	float MipOffset;
 	float3 VolumeToUVWAdd;
@@ -74,14 +74,15 @@ Texture3D<float> ObjectsTextures[GLOBAL_SDF_RASTERIZE_MODEL_MAX_COUNT] : registe
 float DistanceToModelSDF(float minDistance, ObjectRasterizeData modelData, Texture3D<float> modelSDFTex, float3 worldPos)
 {
     // Object scaling is the length of the rows
-    float3 volumeToWorldScale = float3(length(modelData.VolumeToWorld[0]), length(modelData.VolumeToWorld[1]), length(modelData.VolumeToWorld[2]));
+    float4x4 volumeToWorld = ToMatrix4x4(modelData.VolumeToWorld);
+    float3 volumeToWorldScale = float3(length(volumeToWorld[0]), length(volumeToWorld[1]), length(volumeToWorld[2]));
     float volumeScale = min(volumeToWorldScale.x, min(volumeToWorldScale.y, volumeToWorldScale.z));
 
 	// Compute SDF volume UVs and distance in world-space to the volume bounds
-	float3 volumePos = mul(float4(worldPos, 1), modelData.WorldToVolume).xyz;
+	float3 volumePos = mul(float4(worldPos, 1), ToMatrix4x4(modelData.WorldToVolume)).xyz;
 	float3 volumeUV = volumePos * modelData.VolumeToUVWMul + modelData.VolumeToUVWAdd;
 	float3 volumePosClamped = clamp(volumePos, -modelData.VolumeLocalBoundsExtent, modelData.VolumeLocalBoundsExtent);
-	float3 worldPosClamped = mul(float4(volumePosClamped, 1), modelData.VolumeToWorld).xyz;
+	float3 worldPosClamped = mul(float4(volumePosClamped, 1), volumeToWorld).xyz;
 	float distanceToVolume = distance(worldPos, worldPosClamped);
 	if (distanceToVolume < 0.01f)
 	    distanceToVolume = length((volumePos - volumePosClamped) * volumeToWorldScale);
@@ -152,7 +153,7 @@ void CS_RasterizeHeightfield(uint3 DispatchThreadId : SV_DispatchThreadID)
 		ObjectRasterizeData objectData = ObjectsBuffer[Objects[i / 4][i % 4]];
 
 		// Convert voxel world-space position into heightfield local-space position and get heightfield UV
-		float3 volumePos = mul(float4(voxelWorldPos, 1), objectData.WorldToVolume).xyz;
+		float3 volumePos = mul(float4(voxelWorldPos, 1), ToMatrix4x4(objectData.WorldToVolume)).xyz;
 		float3 volumeUV = volumePos * objectData.VolumeToUVWMul + objectData.VolumeToUVWAdd;
 		float2 heightfieldUV = float2(volumeUV.x, volumeUV.z);
 
@@ -168,8 +169,9 @@ void CS_RasterizeHeightfield(uint3 DispatchThreadId : SV_DispatchThreadID)
 		float height = (float)((int)(heightmapValue.x * 255.0) + ((int)(heightmapValue.y * 255) << 8)) / 65535.0;
 		float2 positionXZ = volumePos.xz;
 		float3 position = float3(positionXZ.x, height, positionXZ.y);
-		float3 heightfieldPosition = mul(float4(position, 1), objectData.VolumeToWorld).xyz;
-		float3 heightfieldNormal = normalize(float3(objectData.VolumeToWorld[0].y, objectData.VolumeToWorld[1].y, objectData.VolumeToWorld[2].y));
+		float4x4 volumeToWorld = ToMatrix4x4(objectData.VolumeToWorld);
+		float3 heightfieldPosition = mul(float4(position, 1), volumeToWorld).xyz;
+		float3 heightfieldNormal = normalize(float3(volumeToWorld[0].y, volumeToWorld[1].y, volumeToWorld[2].y));
 
 		// Calculate distance from voxel center to the heightfield
 		float objectDistance = dot(heightfieldNormal, voxelWorldPos - heightfieldPosition);

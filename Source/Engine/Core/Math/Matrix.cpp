@@ -2,6 +2,7 @@
 
 #include "Matrix.h"
 #include "Matrix3x3.h"
+#include "Matrix3x4.h"
 #include "Vector2.h"
 #include "Quaternion.h"
 #include "Transform.h"
@@ -886,4 +887,40 @@ Float4 Matrix::TransformPosition(const Matrix& m, const Float4& v)
         m.Values[0][2] * v.Raw[0] + m.Values[1][2] * v.Raw[1] + m.Values[2][2] * v.Raw[2] + m.Values[3][2] * v.Raw[3],
         m.Values[0][3] * v.Raw[0] + m.Values[1][3] * v.Raw[1] + m.Values[2][3] * v.Raw[2] + m.Values[3][3] * v.Raw[3]
     );
+}
+
+void Matrix3x4::SetMatrix(const Matrix& m)
+{
+    const float* src = m.Raw;
+    float* dst = Raw;
+    dst[0] = src[0];
+    dst[1] = src[1];
+    dst[2] = src[2];
+    dst[3] = src[3];
+    dst[4] = src[4];
+    dst[5] = src[5];
+    dst[6] = src[6];
+    dst[7] = src[7];
+    dst[8] = src[8];
+    dst[9] = src[9];
+    dst[10] = src[10];
+    dst[11] = src[11];
+}
+
+void Matrix3x4::SetMatrixTranspose(const Matrix& m)
+{
+    const float* src = m.Raw;
+    float* dst = Raw;
+    dst[0] = src[0];
+    dst[1] = src[4];
+    dst[2] = src[8];
+    dst[3] = src[12];
+    dst[4] = src[1];
+    dst[5] = src[5];
+    dst[6] = src[9];
+    dst[7] = src[13];
+    dst[8] = src[2];
+    dst[9] = src[6];
+    dst[10] = src[10];
+    dst[11] = src[14];
 }

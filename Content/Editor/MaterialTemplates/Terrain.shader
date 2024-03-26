@@ -17,7 +17,7 @@
 @7
 // Primary constant buffer (with additional material parameters)
 META_CB_BEGIN(0, Data)
-float4x4 WorldMatrix;
+float4x3 WorldMatrix;
 float3 WorldInvScale;
 float WorldDeterminantSign;
 float PerInstanceRandom;
@@ -194,7 +194,7 @@ float3 TransformViewVectorToWorld(MaterialInput input, float3 viewVector)
 // Transforms a vector from local space to world space
 float3 TransformLocalVectorToWorld(MaterialInput input, float3 localVector)
 {
-	float3x3 localToWorld = (float3x3)WorldMatrix;
+	float3x3 localToWorld = (float3x3)ToMatrix4x4(WorldMatrix);
 	//localToWorld = RemoveScaleFromLocalToWorld(localToWorld);
 	return mul(localVector, localToWorld);
 }
@@ -202,7 +202,7 @@ float3 TransformLocalVectorToWorld(MaterialInput input, float3 localVector)
 // Transforms a vector from local space to world space
 float3 TransformWorldVectorToLocal(MaterialInput input, float3 worldVector)
 {
-	float3x3 localToWorld = (float3x3)WorldMatrix;
+	float3x3 localToWorld = (float3x3)ToMatrix4x4(WorldMatrix);
 	//localToWorld = RemoveScaleFromLocalToWorld(localToWorld);
 	return mul(localToWorld, worldVector);
 }
@@ -210,7 +210,7 @@ float3 TransformWorldVectorToLocal(MaterialInput input, float3 worldVector)
 // Gets the current object position
 float3 GetObjectPosition(MaterialInput input)
 {
-	return WorldMatrix[3].xyz;
+	return ToMatrix4x4(WorldMatrix)[3].xyz;
 }
 
 // Gets the current object size
@@ -365,7 +365,8 @@ VertexOutput VS(TerrainVertexInput input)
 	float3 position = float3(positionXZ.x, height, positionXZ.y);
 
 	// Compute world space vertex position
-	output.Geometry.WorldPosition = mul(float4(position, 1), WorldMatrix).xyz;
+	float4x4 worldMatrix = ToMatrix4x4(WorldMatrix);
+	output.Geometry.WorldPosition = mul(float4(position, 1), worldMatrix).xyz;
 
 	// Compute clip space position
 	output.Position = mul(float4(output.Geometry.WorldPosition, 1), ViewProjectionMatrix);
@@ -389,7 +390,7 @@ VertexOutput VS(TerrainVertexInput input)
 
 	// Compute world space normal vector
 	float3x3 tangentToLocal = CalcTangentBasisFromWorldNormal(normal);
-	float3x3 tangentToWorld = CalcTangentToWorld(WorldMatrix, tangentToLocal);
+	float3x3 tangentToWorld = CalcTangentToWorld(worldMatrix, tangentToLocal);
 	output.Geometry.WorldNormal = tangentToWorld[2];
 
 	// Get material input params if need to evaluate any material property

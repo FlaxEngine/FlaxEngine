@@ -3,6 +3,7 @@
 #include "TerrainMaterialShader.h"
 #include "MaterialShaderFeatures.h"
 #include "MaterialParams.h"
+#include "Engine/Core/Math/Matrix3x4.h"
 #include "Engine/Graphics/GPUContext.h"
 #include "Engine/Graphics/GPULimits.h"
 #include "Engine/Graphics/GPUDevice.h"
@@ -16,7 +17,7 @@
 #include "Engine/Terrain/TerrainPatch.h"
 
 PACK_STRUCT(struct TerrainMaterialShaderData {
-    Matrix WorldMatrix;
+    Matrix3x4 WorldMatrix;
     Float3 WorldInvScale;
     float WorldDeterminantSign;
     float PerInstanceRandom;
@@ -66,7 +67,7 @@ void TerrainMaterialShader::Bind(BindParameters& params)
 
     // Setup material constants
     {
-        Matrix::Transpose(drawCall.World, materialData->WorldMatrix);
+        materialData->WorldMatrix.SetMatrixTranspose(drawCall.World);
         const float scaleX = Float3(drawCall.World.M11, drawCall.World.M12, drawCall.World.M13).Length();
         const float scaleY = Float3(drawCall.World.M21, drawCall.World.M22, drawCall.World.M23).Length();
         const float scaleZ = Float3(drawCall.World.M31, drawCall.World.M32, drawCall.World.M33).Length();
