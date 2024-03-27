@@ -162,7 +162,7 @@ namespace FlaxEditor.Windows
 
             Editor.Options.Apply(_options);
 
-            ClearDirtyFlag();
+            GatherData();
         }
 
         private void SetupCustomTabs()
@@ -232,6 +232,18 @@ namespace FlaxEditor.Windows
             _saveButton = null;
 
             base.OnDestroy();
+        }
+
+        /// <inheritdoc />
+        protected override void OnShow()
+        {
+            if (!_isDataDirty)
+            {
+                // Refresh the data, skip when data is modified during window docking
+                GatherData();
+            }
+
+            base.OnShow();
         }
 
         /// <inheritdoc />
