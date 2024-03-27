@@ -126,10 +126,11 @@ namespace FlaxEngine
         /// </summary>
         /// <param name="id">Unique ID of the object.</param>
         /// <typeparam name="T">Type of the object.</typeparam>
+        /// <param name="skipLog">Whether or not to log warnings when objects aren't found.</param>
         /// <returns>Found object or null if missing.</returns>
-        public static T Find<T>(ref Guid id) where T : Object
+        public static T Find<T>(ref Guid id, bool skipLog = false) where T : Object
         {
-            return Internal_FindObject(ref id, typeof(T)) as T;
+            return Internal_FindObject(ref id, typeof(T), skipLog) as T;
         }
 
         /// <summary>
@@ -137,10 +138,11 @@ namespace FlaxEngine
         /// </summary>
         /// <param name="id">Unique ID of the object.</param>
         /// <param name="type">Type of the object.</param>
+        /// <param name="skipLog">Whether or not to log warnings when objects aren't found.</param>
         /// <returns>Found object or null if missing.</returns>
-        public static Object Find(ref Guid id, Type type)
+        public static Object Find(ref Guid id, Type type, bool skipLog = false)
         {
-            return Internal_FindObject(ref id, type);
+            return Internal_FindObject(ref id, type, skipLog);
         }
 
         /// <summary>
@@ -335,7 +337,7 @@ namespace FlaxEngine
         internal static partial string Internal_GetTypeName(IntPtr obj);
 
         [LibraryImport("FlaxEngine", EntryPoint = "ObjectInternal_FindObject", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(Interop.StringMarshaller))]
-        internal static partial Object Internal_FindObject(ref Guid id, [MarshalUsing(typeof(Interop.SystemTypeMarshaller))] Type type);
+        internal static partial Object Internal_FindObject(ref Guid id, [MarshalUsing(typeof(Interop.SystemTypeMarshaller))] Type type, [MarshalAs(UnmanagedType.U1)] bool skipLog = false);
 
         [LibraryImport("FlaxEngine", EntryPoint = "ObjectInternal_TryFindObject", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(Interop.StringMarshaller))]
         internal static partial Object Internal_TryFindObject(ref Guid id, [MarshalUsing(typeof(Interop.SystemTypeMarshaller))] Type type);

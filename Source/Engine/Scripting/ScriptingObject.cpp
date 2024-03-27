@@ -7,6 +7,7 @@
 #include "Engine/Level/Actor.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Types/Pair.h"
+#include "Engine/Core/Types/LogContexts.h"
 #include "Engine/Utilities/StringConverter.h"
 #include "Engine/Content/Asset.h"
 #include "Engine/Content/Content.h"
@@ -708,7 +709,7 @@ DEFINE_INTERNAL_CALL(MString*) ObjectInternal_GetTypeName(ScriptingObject* obj)
     return MUtils::ToString(obj->GetType().Fullname);
 }
 
-DEFINE_INTERNAL_CALL(MObject*) ObjectInternal_FindObject(Guid* id, MTypeObject* type)
+DEFINE_INTERNAL_CALL(MObject*) ObjectInternal_FindObject(Guid* id, MTypeObject* type, bool skipLog = false)
 {
     if (!id->IsValid())
         return nullptr;
@@ -725,15 +726,20 @@ DEFINE_INTERNAL_CALL(MObject*) ObjectInternal_FindObject(Guid* id, MTypeObject* 
     {
         if (klass && !obj->Is(klass))
         {
-            LOG(Warning, "Found scripting object with ID={0} of type {1} that doesn't match type {2}.", *id, String(obj->GetType().Fullname), String(klass->GetFullName()));
+            if (!skipLog)
+                LOG(Warning, "Found scripting object with ID={0} of type {1} that doesn't match type {2}. {3}", *id, String(obj->GetType().Fullname), String(klass->GetFullName()), LogContextFormatter::Format());
             return nullptr;
         }
         return obj->GetOrCreateManagedInstance();
     }
-    if (klass)
-        LOG(Warning, "Unable to find scripting object with ID={0}. Required type {1}.", *id, String(klass->GetFullName()));
-    else
-        LOG(Warning, "Unable to find scripting object with ID={0}", *id);
+
+    if (!skipLog)
+    {
+        if (klass)
+            LOG(Warning, "Unable to find scripting object with ID={0}. Required type {1}. {2}", *id, String(klass->GetFullName()), LogContextFormatter::Format());
+        else
+            LOG(Warning, "Unable to find scripting object with ID={0}", *id);
+    }
     return nullptr;
 }
 

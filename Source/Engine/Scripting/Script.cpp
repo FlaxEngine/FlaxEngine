@@ -2,6 +2,7 @@
 
 #include "Script.h"
 #include "Engine/Core/Log.h"
+#include "Engine/Core/Types/LogContexts.h"
 #if USE_EDITOR
 #include "Internal/StdTypesContainer.h"
 #include "ManagedCLR/MClass.h"
@@ -330,6 +331,9 @@ void Script::Serialize(SerializeStream& stream, const void* otherObj)
 
 void Script::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)
 {
+    // Store Logging Context
+    LogContexts::Set(GetID());
+
     // Base
     SceneObject::Deserialize(stream, modifier);
 
@@ -364,4 +368,6 @@ void Script::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier
             }
         }
     }
+
+    LogContexts::Clear();
 }
