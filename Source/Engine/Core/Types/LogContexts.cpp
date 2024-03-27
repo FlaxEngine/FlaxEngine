@@ -1,7 +1,6 @@
 #include "LogContexts.h"
 #include "Engine/Core/Types/Guid.h"
 #include "Engine/Core/Types/String.h"
-#include "Engine/Core/Collections/Array.h"
 
 ThreadLocal<LogContextStack> LogContexts::CurrentLogContext;
 

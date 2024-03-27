@@ -2,6 +2,7 @@
 #include "Engine/Core/Config.h"
 #include "Engine/Scripting/ScriptingType.h"
 #include "Engine/Threading/ThreadLocal.h"
+#include "Engine/Core/Collections/Array.h"
 
 class String;
 struct Guid;
