@@ -182,6 +182,7 @@ void Collider::Attach(RigidBody* rigidBody)
         AttachedTo = rigidBody;
     }
     rigidBody->AttatchedColliders.Add(this);
+    rigidBody->OnColliderChanged(this);
 }
 void Collider::Detach()
 {
