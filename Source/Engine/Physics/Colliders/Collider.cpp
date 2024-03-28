@@ -172,11 +172,6 @@ void Collider::Attach(RigidBody* rigidBody)
     {
         PhysicsBackend::SetShapeLocalPose(_shape, _cachedLocalPosePos, _cachedLocalPoseRot);
     }
-    if (rigidBody->IsDuringPlay())
-    {
-        rigidBody->UpdateBounds();
-        rigidBody->UpdateMass();
-    }
     if (AttachedTo != rigidBody) 
     {
         AttachedTo = rigidBody;

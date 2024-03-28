@@ -205,9 +205,20 @@ public:
     API_PROPERTY() void SetMassScale(float value);
 
     /// <summary>
+    /// Gets the center of the mass in the local space.
+    /// </summary>
+    API_PROPERTY(Attributes="EditorOrder(200),ReadOnly, DefaultValue(typeof(Float3), \"0,0,0\"), EditorDisplay(\"Rigid Body\", \"Center Of Mass\")")
+    Float3 GetCenterOfMass() const;
+
+    /// <summary>
+    /// Sets the center of the mass in the local space.
+    /// </summary>
+    API_PROPERTY() void SetCenterOfMass(const Float3& value);
+
+    /// <summary>
     /// Gets the user specified offset for the center of mass of this object, from the calculated location.
     /// </summary>
-    API_PROPERTY(Attributes="EditorOrder(140), DefaultValue(typeof(Float3), \"0,0,0\"), EditorDisplay(\"Rigid Body\", \"Center Of Mass Offset\")")
+    API_PROPERTY(Attributes = "EditorOrder(140), DefaultValue(typeof(Float3), \"0,0,0\"), EditorDisplay(\"Rigid Body\", \"Center Of Mass Offset\")")
     FORCE_INLINE Float3 GetCenterOfMassOffset() const
     {
         return _centerOfMassOffset;
@@ -290,11 +301,6 @@ public:
     /// <remarks>Actors whose kinetic energy divided by their mass is below this threshold will be candidates for sleeping.</remarks>
     /// <param name="value">The value.</param>
     API_PROPERTY() void SetSleepThreshold(const float value) const;
-
-    /// <summary>
-    /// Gets the center of the mass in the local space.
-    /// </summary>
-    API_PROPERTY() Vector3 GetCenterOfMass() const;
 
     /// <summary>
     /// Determines whether this rigidbody is sleeping.
@@ -462,7 +468,7 @@ public:
     void OnTriggerEnter(PhysicsColliderActor* c);
     void OnTriggerExit(PhysicsColliderActor* c);
 
-    // Called when collider gets detached from this rigidbody or activated/deactivated. Used to update rigidbody mass.
+    // Called when collider gets detached from this rigidbody or activated/deactivated/removed/added. Used to update rigidbody mass.
     virtual void OnColliderChanged(Collider* c);
 
     /// <summary>

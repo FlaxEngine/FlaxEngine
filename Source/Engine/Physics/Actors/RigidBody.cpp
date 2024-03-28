@@ -16,7 +16,6 @@ RigidBody::RigidBody(const SpawnParams& params)
     , _angularDamping(0.05f)
     , _maxAngularVelocity(7.0f)
     , _massScale(1.0f)
-    , _centerOfMassOffset(Float3::Zero)
     , _constraints(RigidbodyConstraints::None)
     , _enableSimulation(true)
     , _isKinematic(false)
@@ -157,11 +156,15 @@ void RigidBody::SetMassScale(float value)
 
 void RigidBody::SetCenterOfMassOffset(const Float3& value)
 {
-    if (Float3::NearEqual(value, _centerOfMassOffset))
+    if (Float3::NearEqual(_centerOfMassOffset, value))
         return;
+
+    //get un offseted center of mass
+    auto com = GetCenterOfMass() - _centerOfMassOffset;
     _centerOfMassOffset = value;
-    if (_actor)
-        PhysicsBackend::SetRigidDynamicActorCenterOfMassOffset(_actor, _centerOfMassOffset);
+    //applay offset
+    SetCenterOfMass(com + value);
+    //set new offset
 }
 
 void RigidBody::SetConstraints(const RigidbodyConstraints value)
@@ -219,7 +222,14 @@ void RigidBody::SetSleepThreshold(const float value) const
 
 Vector3 RigidBody::GetCenterOfMass() const
 {
-    return _actor ? PhysicsBackend::GetRigidDynamicActorCenterOfMass(_actor) : Vector3::Zero;
+    return _actor ? (PhysicsBackend::GetRigidDynamicActorCenterOfMass(_actor) - _centerOfMassOffset) : Vector3::Zero;
+}
+
+void RigidBody::SetCenterOfMass(const Float3& value)
+{
+    if (_actor) {
+        PhysicsBackend::SetRigidDynamicActorCenterOfMass(_actor, value + _centerOfMassOffset);
+    }
 }
 
 bool RigidBody::IsSleeping() const
@@ -390,6 +400,9 @@ void RigidBody::UpdateScale()
 }
 
 #if USE_EDITOR
+#include "Engine/Debug/DebugDraw.h"
+#include "Engine/Graphics/RenderView.h"
+
 void RigidBody::OnDebugDrawSelected()
 {
     if (DisplayAttachedColliders)
@@ -402,6 +415,9 @@ void RigidBody::OnDebugDrawSelected()
             }
         }
     }
+    //draw center of mass
+    DEBUG_DRAW_WIRE_SPHERE(BoundingSphere(GetPosition() + (GetOrientation() * (GetCenterOfMass() - GetCenterOfMassOffset())), 5.0f), Color::Red, 0, false);
+    DEBUG_DRAW_WIRE_SPHERE(BoundingSphere(GetPosition() + (GetOrientation() * GetCenterOfMass()), 2.5f), Color::Aqua, 0, false);
     Actor::OnDebugDrawSelected();
 }
 #endif
@@ -508,8 +524,7 @@ void RigidBody::BeginPlay(SceneBeginData* data)
     UpdateMass();
 
     // Apply the Center Of Mass offset
-    if (!_centerOfMassOffset.IsZero())
-        PhysicsBackend::SetRigidDynamicActorCenterOfMassOffset(_actor, _centerOfMassOffset);
+    SetCenterOfMassOffset(_centerOfMassOffset);
 
     // Register actor
     PhysicsBackend::AddSceneActor(scene, _actor);
