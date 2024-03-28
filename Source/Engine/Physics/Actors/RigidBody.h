@@ -6,6 +6,7 @@
 #include "Engine/Physics/Types.h"
 #include "Engine/Physics/Actors/IPhysicsActor.h"
 #include "Engine/Physics/Collisions.h"
+#include "Engine/Scripting/ScriptingObjectReference.h"
 
 class PhysicsColliderActor;
 class Collider;
@@ -39,6 +40,9 @@ protected:
     uint32 _overrideMass : 1;
     uint32 _isUpdatingTransform : 1;
 
+    friend Collider;
+    //API_FIELD(public,Attributes = "EditorOrder(100), DefaultValue(false), EditorDisplay(\"Rigid Body\"),RadyOnly")
+        Array<ScriptingObjectReference<Collider>> AttatchedColliders;
 public:
     /// <summary>
     /// Enables kinematic mode for the rigidbody. Kinematic rigidbodies are special dynamic actors that are not influenced by forces(such as gravity), and have no momentum. They are considered to have infinite mass and can push regular dynamic actors out of the way. Kinematics will not collide with static or other kinematic objects but are great for moving platforms or characters, where direct motion control is desired.
@@ -201,9 +205,20 @@ public:
     API_PROPERTY() void SetMassScale(float value);
 
     /// <summary>
+    /// Gets the center of the mass in the local space.
+    /// </summary>
+    API_PROPERTY(Attributes="EditorOrder(200),ReadOnly, DefaultValue(typeof(Float3), \"0,0,0\"), EditorDisplay(\"Rigid Body\", \"Center Of Mass\")")
+    Float3 GetCenterOfMass() const;
+
+    /// <summary>
+    /// Sets the center of the mass in the local space.
+    /// </summary>
+    API_PROPERTY() void SetCenterOfMass(const Float3& value);
+
+    /// <summary>
     /// Gets the user specified offset for the center of mass of this object, from the calculated location.
     /// </summary>
-    API_PROPERTY(Attributes="EditorOrder(140), DefaultValue(typeof(Float3), \"0,0,0\"), EditorDisplay(\"Rigid Body\", \"Center Of Mass Offset\")")
+    API_PROPERTY(Attributes = "EditorOrder(140), DefaultValue(typeof(Float3), \"0,0,0\"), EditorDisplay(\"Rigid Body\", \"Center Of Mass Offset\")")
     FORCE_INLINE Float3 GetCenterOfMassOffset() const
     {
         return _centerOfMassOffset;
@@ -286,11 +301,6 @@ public:
     /// <remarks>Actors whose kinetic energy divided by their mass is below this threshold will be candidates for sleeping.</remarks>
     /// <param name="value">The value.</param>
     API_PROPERTY() void SetSleepThreshold(const float value) const;
-
-    /// <summary>
-    /// Gets the center of the mass in the local space.
-    /// </summary>
-    API_PROPERTY() Vector3 GetCenterOfMass() const;
 
     /// <summary>
     /// Determines whether this rigidbody is sleeping.
@@ -458,7 +468,7 @@ public:
     void OnTriggerEnter(PhysicsColliderActor* c);
     void OnTriggerExit(PhysicsColliderActor* c);
 
-    // Called when collider gets detached from this rigidbody or activated/deactivated. Used to update rigidbody mass.
+    // Called when collider gets detached from this rigidbody or activated/deactivated/removed/added. Used to update rigidbody mass.
     virtual void OnColliderChanged(Collider* c);
 
     /// <summary>
@@ -472,17 +482,40 @@ public:
     void UpdateScale();
 
     template<typename ColliderType = Collider, typename AllocationType = HeapAllocation>
-    void GetColliders(Array<ColliderType*, AllocationType>& result) const
+    void GetAttathedColliders(Array<ColliderType*, AllocationType>& result) const
     {
-        for (int32 i = 0; i < Children.Count(); i++)
+        for (int32 i = 0; i < AttatchedColliders.Count(); i++)
         {
-            const auto collider = Cast<ColliderType>(Children.Get()[i]);
-            if (collider && collider->GetAttachedRigidBody() == this)
+            const auto collider = Cast<ColliderType>(AttatchedColliders[i]);
+            if (collider)
                 result.Add(collider);
         }
     }
 
+    template<typename ColliderType = Collider>
+    ColliderType* GetAttathedColliderOfType() const
+    {
+        for (auto i = 0; i < AttatchedColliders.Count(); i++)
+        {
+            const auto collider = Cast<ColliderType>(AttatchedColliders[i]);
+            if (collider) 
+            {
+                return collider;
+            }
+        }
+        return nullptr;
+    }
 public:
+#if USE_EDITOR
+    /// <summary>
+    /// [Editor only] shows attached colliders when selected
+    /// </summary>
+    API_FIELD(Attributes = "EditorOrder(1000), EditorDisplay(\"Rigid Body\")")
+        bool DisplayAttachedColliders = true;
+
+    void OnDebugDrawSelected() override;
+#endif
+
     // [Actor]
     void Serialize(SerializeStream& stream, const void* otherObj) override;
     void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) override;

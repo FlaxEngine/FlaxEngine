@@ -172,6 +172,31 @@ CharacterController::CollisionFlags CharacterController::Move(const Vector3& dis
 
 #include "Engine/Debug/DebugDraw.h"
 #include "Engine/Graphics/RenderView.h"
+#include "Engine/Physics/Colliders/ColliderColorConfig.h"
+
+void CharacterController::OnDebugDraw()
+{
+    if (DisplayCollider)
+    {
+        const float scaling = _cachedScale.GetAbsolute().MaxValue();
+        const float radius = Math::Max(Math::Abs(_radius) * scaling, CC_MIN_SIZE);
+        const float height = Math::Max(Math::Abs(_height) * scaling, CC_MIN_SIZE);
+        const Vector3 position = _transform.LocalToWorld(_center);
+        if (GetIsTrigger())
+        {
+            DEBUG_DRAW_WIRE_TUBE(position, Quaternion::Euler(90, 0, 0), radius, height, FlaxEngine::ColliderColors::TriggerColliderOutline, 0, false);
+            DEBUG_DRAW_TUBE(position, Quaternion::Euler(90, 0, 0), radius, height, FlaxEngine::ColliderColors::TriggerCollider, 0, true);
+        }
+        else
+        {
+            DEBUG_DRAW_WIRE_TUBE(position, Quaternion::Euler(90, 0, 0), radius, height, FlaxEngine::ColliderColors::NormalColliderOutline, 0, false);
+            DEBUG_DRAW_TUBE(position, Quaternion::Euler(90, 0, 0), radius, height, FlaxEngine::ColliderColors::NormalCollider, 0, true);
+        }
+    }
+
+    // Base
+    Collider::OnDebugDraw();
+}
 
 void CharacterController::DrawPhysicsDebug(RenderView& view)
 {
@@ -187,11 +212,24 @@ void CharacterController::DrawPhysicsDebug(RenderView& view)
 
 void CharacterController::OnDebugDrawSelected()
 {
-    const float scaling = _cachedScale.GetAbsolute().MaxValue();
-    const float radius = Math::Max(Math::Abs(_radius) * scaling, CC_MIN_SIZE);
-    const float height = Math::Max(Math::Abs(_height) * scaling, CC_MIN_SIZE);
-    const Vector3 position = _transform.LocalToWorld(_center);
-    DEBUG_DRAW_WIRE_TUBE(position, Quaternion::Euler(90, 0, 0), radius, height, Color::GreenYellow, 0, false);
+    if (!DisplayCollider)
+    {
+        const float scaling = _cachedScale.GetAbsolute().MaxValue();
+        const float radius = Math::Max(Math::Abs(_radius) * scaling, CC_MIN_SIZE);
+        const float height = Math::Max(Math::Abs(_height) * scaling, CC_MIN_SIZE);
+        const Vector3 position = _transform.LocalToWorld(_center);
+
+        if (GetIsTrigger())
+        {
+            DEBUG_DRAW_WIRE_TUBE(position, Quaternion::Euler(90, 0, 0), radius, height, FlaxEngine::ColliderColors::TriggerColliderOutline, 0, false);
+            DEBUG_DRAW_TUBE(position, Quaternion::Euler(90, 0, 0), radius, height, FlaxEngine::ColliderColors::TriggerCollider, 0, false);
+        }
+        else
+        {
+            DEBUG_DRAW_WIRE_TUBE(position, Quaternion::Euler(90, 0, 0), radius, height, FlaxEngine::ColliderColors::NormalColliderOutline, 0, false);
+            DEBUG_DRAW_TUBE(position, Quaternion::Euler(90, 0, 0), radius, height, FlaxEngine::ColliderColors::NormalCollider, 0, false);
+        }
+    }
 
     // Base
     Collider::OnDebugDrawSelected();

@@ -23,6 +23,7 @@ void SphereCollider::SetRadius(const float value)
 
 #include "Engine/Debug/DebugDraw.h"
 #include "Engine/Graphics/RenderView.h"
+#include "Engine/Physics/Colliders/ColliderColorConfig.h"
 
 void SphereCollider::DrawPhysicsDebug(RenderView& view)
 {
@@ -34,10 +35,42 @@ void SphereCollider::DrawPhysicsDebug(RenderView& view)
     else
         DEBUG_DRAW_WIRE_SPHERE(_sphere, Color::GreenYellow * 0.8f, 0, true);
 }
+void SphereCollider::OnDebugDraw()
+{
+    if (DisplayCollider)
+    {
+        if (GetIsTrigger())
+        {
+            DEBUG_DRAW_WIRE_SPHERE(_sphere, FlaxEngine::ColliderColors::TriggerColliderOutline, 0, false);
+            DEBUG_DRAW_SPHERE(_sphere, FlaxEngine::ColliderColors::TriggerCollider, 0, true);
+        }
+        else
+        {
+            DEBUG_DRAW_WIRE_SPHERE(_sphere, FlaxEngine::ColliderColors::NormalColliderOutline, 0, false);
+            DEBUG_DRAW_SPHERE(_sphere, FlaxEngine::ColliderColors::NormalCollider, 0, true);
+        }
+    }
+
+    // Base
+    Collider::OnDebugDraw();
+
+}
 
 void SphereCollider::OnDebugDrawSelected()
 {
-    DEBUG_DRAW_WIRE_SPHERE(_sphere, Color::GreenYellow, 0, false);
+    if (!DisplayCollider)
+    {
+        if (GetIsTrigger())
+        {
+            DEBUG_DRAW_WIRE_SPHERE(_sphere, FlaxEngine::ColliderColors::TriggerColliderOutline, 0, false);
+            DEBUG_DRAW_SPHERE(_sphere, FlaxEngine::ColliderColors::TriggerCollider, 0, true);
+        }
+        else
+        {
+            DEBUG_DRAW_WIRE_SPHERE(_sphere, FlaxEngine::ColliderColors::NormalColliderOutline, 0, false);
+            DEBUG_DRAW_SPHERE(_sphere, FlaxEngine::ColliderColors::NormalCollider, 0, true);
+        }
+    }
 
     if (_contactOffset > 0)
     {

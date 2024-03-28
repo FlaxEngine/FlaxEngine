@@ -66,5 +66,6 @@ protected:
     void GetGeometry(CollisionShape& collision) override;
 #if USE_EDITOR
     void DrawPhysicsDebug(RenderView& view) override;
+    void OnDebugDraw();
 #endif
 };

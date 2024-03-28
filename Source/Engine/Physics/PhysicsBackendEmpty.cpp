@@ -353,7 +353,7 @@ Vector3 PhysicsBackend::GetRigidDynamicActorCenterOfMass(void* actor)
     return Vector3::Zero;
 }
 
-void PhysicsBackend::SetRigidDynamicActorCenterOfMassOffset(void* actor, const Float3& value)
+void PhysicsBackend::SetRigidDynamicActorCenterOfMass(void* actor, const Float3& value)
 {
 }
 

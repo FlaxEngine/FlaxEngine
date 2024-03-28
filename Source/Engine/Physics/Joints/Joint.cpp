@@ -7,7 +7,9 @@
 #include "Engine/Physics/PhysicsBackend.h"
 #include "Engine/Physics/PhysicsScene.h"
 #include "Engine/Physics/Actors/IPhysicsActor.h"
+
 #if USE_EDITOR
+#include "Engine/Debug/DebugLog.h"
 #include "Engine/Level/Scene/SceneRendering.h"
 #endif
 
@@ -68,6 +70,22 @@ void Joint::SetTargetAnchor(const Vector3& value)
         PhysicsBackend::SetJointActorPose(_joint, _targetAnchor, _targetAnchorRotation, 1);
 }
 
+void Joint::SetTargetAnchor(const Transform& value)
+{
+    if (Vector3::NearEqual(value.Translation, _targetAnchor) && Quaternion::NearEqual(value.Orientation, _targetAnchorRotation))
+        return;
+
+#if USE_EDITOR
+    if(!Vector3::NearEqual(value.Scale,Float3::One))
+        LOG(Warning,"Passed Transform.Scale value is not Float3.One this might produce unintended result", DebugLog::GetStackTrace());
+#endif
+
+    _targetAnchor = value.Translation;
+    _targetAnchorRotation = value.Orientation;
+    if (_joint && !_enableAutoAnchor)
+        PhysicsBackend::SetJointActorPose(_joint, _targetAnchor, _targetAnchorRotation, 1);
+}
+
 void Joint::SetTargetAnchorRotation(const Quaternion& value)
 {
     if (Quaternion::NearEqual(value, _targetAnchorRotation))
@@ -90,7 +108,11 @@ void Joint::SetJointLocation(const Vector3& location)
     }
     if (Target)
     {
-        SetTargetAnchor(Target->GetTransform().WorldToLocal(location));
+        // Place target anchor at the joint location
+        Transform t = Target->GetTransform();
+        //PhysicsBackend PxJoint expect unscaled offset, scale needs to be 1 or it will snap to incorect place
+        t.Scale = 1;
+        SetTargetAnchor(t.WorldToLocal(location));
     }
 }
 
@@ -146,7 +168,10 @@ void Joint::Create()
     if (_enableAutoAnchor && target)
     {
         // Place target anchor at the joint location
-        desc.Pos1 = Target->GetTransform().WorldToLocal(GetPosition());
+        Transform t = Target->GetTransform();
+        //PhysicsBackend PxJoint expect unscaled offset, scale needs to be 1 or it will snap to incorect place
+        t.Scale = 1;
+        desc.Pos1 = t.WorldToLocal(GetPosition());
         desc.Rot1 = WorldToLocal(Target->GetOrientation(), GetOrientation());
     }
     _joint = CreateJoint(desc);
@@ -196,8 +221,13 @@ Vector3 Joint::GetTargetPosition() const
     Vector3 position = _targetAnchor;
     if (Target)
     {
-        if (_enableAutoAnchor)
-            position = Target->GetTransform().WorldToLocal(GetPosition());
+        if (_enableAutoAnchor) 
+        {
+            //PhysicsBackend PxJoint expect unscaled offset
+            Transform t = Target->GetTransform();
+            t.Scale = 1;
+            position = t.WorldToLocal(GetPosition());
+        }
         position = Target->GetOrientation() * position + Target->GetPosition();
     }
     return position;
@@ -373,6 +403,10 @@ void Joint::OnTransformChanged()
 
     _box = BoundingBox(_transform.Translation);
     _sphere = BoundingSphere(_transform.Translation, 0.0f);
-    if (_joint)
-        PhysicsBackend::SetJointActorPose(_joint, _localTransform.Translation, _localTransform.Orientation, 0);
+    if (_joint) 
+    {
+        //PhysicsBackend PxJoint expect unscaled offset the _localTransform.Translation cant be used
+        auto offset = GetPosition() - _parent->GetPosition();
+        PhysicsBackend::SetJointActorPose(_joint, offset, _localTransform.Orientation, 0);
+    }
 }

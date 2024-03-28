@@ -156,6 +156,14 @@ public:
     API_FUNCTION() void GetCurrentForce(API_PARAM(Out) Vector3& linear, API_PARAM(Out) Vector3& angular) const;
 
     /// <summary>
+    /// Sets the target anchor.
+    /// </summary>
+    /// <remarks>
+    /// This is the relative pose which locates the joint frame relative to the target actor.
+    /// </remarks>
+    API_FUNCTION() void SetTargetAnchor(const Transform& value);
+
+    /// <summary>
     /// Creates native join object.
     /// </summary>
     void Create();

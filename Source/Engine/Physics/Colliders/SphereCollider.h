@@ -44,6 +44,7 @@ protected:
     // [Collider]
 #if USE_EDITOR
     void DrawPhysicsDebug(RenderView& view) override;
+    void OnDebugDraw();
 #endif
     void UpdateBounds() override;
     void GetGeometry(CollisionShape& collision) override;

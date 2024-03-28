@@ -430,9 +430,6 @@ void WheeledVehicle::OnDebugDrawSelected()
         DEBUG_DRAW_LINE(_wheels[leftWheelIndex].Collider->GetPosition(), _wheels[rightWheelIndex].Collider->GetPosition(), Color::Yellow, 0, false);
     }
 
-    // Center of mass
-    DEBUG_DRAW_WIRE_SPHERE(BoundingSphere(_transform.LocalToWorld(_centerOfMassOffset), 10.0f), Color::Blue, 0, false);
-
     RigidBody::OnDebugDrawSelected();
 }
 

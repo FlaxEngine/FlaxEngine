@@ -2496,12 +2496,10 @@ Vector3 PhysicsBackend::GetRigidDynamicActorCenterOfMass(void* actor)
     return P2C(actorPhysX->getCMassLocalPose().p);
 }
 
-void PhysicsBackend::SetRigidDynamicActorCenterOfMassOffset(void* actor, const Float3& value)
+void PhysicsBackend::SetRigidDynamicActorCenterOfMass(void* actor, const Float3& value)
 {
     auto actorPhysX = (PxRigidDynamic*)actor;
-    auto pose = actorPhysX->getCMassLocalPose();
-    pose.p += C2P(value);
-    actorPhysX->setCMassLocalPose(pose);
+    actorPhysX->setCMassLocalPose(PxTransform(C2P(value), actorPhysX->getCMassLocalPose().q));
 }
 
 bool PhysicsBackend::GetRigidDynamicActorIsSleeping(void* actor)
