@@ -59,7 +59,7 @@ int32 TexturesStreamingHandler::CalculateResidency(StreamableResource* resource,
 
     if (mipLevels > 0 && mipLevels < texture._minMipCountBlockCompressed && texture._isBlockCompressed)
     {
-        // Block compressed textures require minimum size of 4
+        // Block compressed textures require minimum size of block size (eg. 4 for BC formats)
         mipLevels = texture._minMipCountBlockCompressed;
     }
 
