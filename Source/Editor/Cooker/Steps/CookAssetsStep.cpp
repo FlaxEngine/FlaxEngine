@@ -643,7 +643,7 @@ bool ProcessTextureBase(CookAssetsStep::AssetCookData& data)
     const auto asset = static_cast<TextureBase*>(data.Asset);
     const auto& assetHeader = asset->StreamingTexture()->GetHeader();
     const auto format = asset->Format();
-    const auto targetFormat = data.Data.Tools->GetTextureFormat(data.Data, asset, format);
+    auto targetFormat = data.Data.Tools->GetTextureFormat(data.Data, asset, format);
     CHECK_RETURN(!PixelFormatExtensions::IsTypeless(targetFormat), true);
     const auto streamingSettings = StreamingSettings::Get();
     int32 mipLevelsMax = GPU_MAX_TEXTURE_MIP_LEVELS;
@@ -653,6 +653,11 @@ bool ProcessTextureBase(CookAssetsStep::AssetCookData& data)
         mipLevelsMax = group.MipLevelsMax;
         group.MipLevelsMaxPerPlatform.TryGet(data.Data.Tools->GetPlatform(), mipLevelsMax);
     }
+
+    // If texture is smaller than the block size of the target format (eg. 4x4 texture using ASTC_6x6) then fallback to uncompressed
+    int32 blockSize = PixelFormatExtensions::ComputeBlockSize(targetFormat);
+    if (assetHeader->Width < blockSize || assetHeader->Height < blockSize || (blockSize != 1 && mipLevelsMax < 4))
+        targetFormat = PixelFormatExtensions::FindUncompressedFormat(format);
 
     // Faster path if don't need to modify texture for the target platform
     if (format == targetFormat && assetHeader->MipLevels <= mipLevelsMax)
