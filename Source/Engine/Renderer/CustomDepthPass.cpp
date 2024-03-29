@@ -23,7 +23,7 @@ void CustomDepthPass::Render(RenderContext& renderContext)
     context->ClearDepth(*renderContext.Buffers->CustomDepthBuffer);
 
     // ?
-    context->SetRenderTarget(nullptr, *renderContext.Buffers->CustomDepthBuffer);
+    context->SetRenderTarget(*renderContext.Buffers->CustomDepthBuffer, static_cast<GPUTextureView*>(nullptr));
     renderContext.List->ExecuteDrawCalls(renderContext, DrawCallsListType::CustomDepth);
 
     context->ResetRenderTarget();
