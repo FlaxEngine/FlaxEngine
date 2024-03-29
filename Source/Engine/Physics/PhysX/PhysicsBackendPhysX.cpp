@@ -2490,7 +2490,7 @@ void PhysicsBackend::SetRigidDynamicActorAngularVelocity(void* actor, const Vect
     actorPhysX->setAngularVelocity(C2P(value), wakeUp);
 }
 
-Vector3 PhysicsBackend::GetRigidDynamicActorCenterOfMass(void* actor)
+Float3 PhysicsBackend::GetRigidDynamicActorCenterOfMass(void* actor)
 {
     auto actorPhysX = (PxRigidDynamic*)actor;
     return P2C(actorPhysX->getCMassLocalPose().p);
