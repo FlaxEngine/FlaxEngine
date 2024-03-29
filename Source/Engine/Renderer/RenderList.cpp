@@ -534,6 +534,10 @@ void RenderList::AddDrawCall(const RenderContextBatch& renderContextBatch, DrawP
         {
             DrawCallsLists[(int32)DrawCallsListType::MotionVectors].Indices.Add(index);
         }
+        if ((drawModes & DrawPass::CustomDepth) != DrawPass::None)
+        {
+            DrawCallsLists[(int32)DrawCallsListType::CustomDepth].Indices.Add(index);
+        }
     }
     for (int32 i = 1; i < renderContextBatch.Contexts.Count(); i++)
     {

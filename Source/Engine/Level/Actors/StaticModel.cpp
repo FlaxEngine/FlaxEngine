@@ -286,16 +286,6 @@ void StaticModel::UpdateBounds()
         GetSceneRendering()->UpdateActor(this, _sceneRenderingKey);
 }
 
-void StaticModel::SetDrawCustomDepth(bool value)
-{
-    ModelInstanceActor::SetDrawCustomDepth(value);
-
-    if (!value)
-        DrawModes &= ~(DrawPass::CustomDepth);
-    else
-        DrawModes |= DrawPass::CustomDepth;
-}
-
 void StaticModel::FlushVertexColors()
 {
     RenderContext::GPULocker.Lock();

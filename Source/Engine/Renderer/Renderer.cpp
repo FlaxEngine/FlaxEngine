@@ -441,7 +441,7 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext, RenderCont
     // Custom depth pass (can be used by materials later on)
     if (true)
     {
-        //CustomDepthPass::Instance()
+        CustomDepthPass::Instance()->Render(renderContext);
     }
 
     // Fill GBuffer
