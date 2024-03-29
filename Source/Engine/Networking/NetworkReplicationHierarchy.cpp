@@ -167,7 +167,7 @@ void NetworkReplicationGridNode::AddObject(NetworkReplicationHierarchyObject obj
         cell->MinCullDistance = obj.CullDistance;
     }
     cell->Node->AddObject(obj);
-    _objectToCell[obj.Object] = coord;
+    _objectToCell[obj.Object.Get()] = coord;
 
     // Cache minimum culling distance for a whole cell to skip it at once
     cell->MinCullDistance = Math::Min(cell->MinCullDistance, obj.CullDistance);
@@ -176,12 +176,10 @@ void NetworkReplicationGridNode::AddObject(NetworkReplicationHierarchyObject obj
 bool NetworkReplicationGridNode::RemoveObject(ScriptingObject* obj)
 {
     Int3 coord;
-
     if (!_objectToCell.TryGet(obj, coord))
     {
         return false;
     }
-
     if (_children[coord].Node->RemoveObject(obj))
     {
         _objectToCell.Remove(obj);
@@ -195,17 +193,25 @@ bool NetworkReplicationGridNode::RemoveObject(ScriptingObject* obj)
 bool NetworkReplicationGridNode::GetObject(ScriptingObject* obj, NetworkReplicationHierarchyObject& result)
 {
     Int3 coord;
-
     if (!_objectToCell.TryGet(obj, coord))
     {
         return false;
     }
-
     if (_children[coord].Node->GetObject(obj, result))
     {
         return true;
     }
     return false;
+}
+
+bool NetworkReplicationGridNode::DirtyObject(ScriptingObject* obj)
+{
+    Int3 coord;
+    if (_objectToCell.TryGet(obj, coord))
+    {
+        return _children[coord].Node->DirtyObject(obj);
+    }
+    return NetworkReplicationNode::DirtyObject(obj);
 }
 
 void NetworkReplicationGridNode::Update(NetworkReplicationHierarchyUpdateResult* result)
