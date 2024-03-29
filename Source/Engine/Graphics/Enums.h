@@ -702,7 +702,7 @@ API_ENUM() enum class PostProcessEffectLocation
 /// <summary>
 /// The objects drawing pass types. Used as a flags for objects drawing masking.
 /// </summary>
-API_ENUM(Attributes = "Flags") enum class DrawPass : int32
+API_ENUM(Attributes="Flags") enum class DrawPass : int32
 {
     /// <summary>
     /// The none.
@@ -717,7 +717,7 @@ API_ENUM(Attributes = "Flags") enum class DrawPass : int32
     /// <summary>
     /// The base pass rendering to the GBuffer (for opaque materials).
     /// </summary>
-    API_ENUM(Attributes = "EditorDisplay(name: \"GBuffer\")")
+    API_ENUM(Attributes="EditorDisplay(name: \"GBuffer\")")
     GBuffer = 1 << 1,
 
     /// <summary>
