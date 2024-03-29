@@ -23,7 +23,7 @@ void CustomDepthPass::Render(RenderContext& renderContext)
     context->ClearDepth(*renderContext.Buffers->CustomDepthBuffer);
 
     // ?
-    context->SetRenderTarget(*renderContext.Buffers->CustomDepthBuffer, nullptr);
+    context->SetRenderTarget(nullptr, *renderContext.Buffers->CustomDepthBuffer);
     renderContext.List->ExecuteDrawCalls(renderContext, DrawCallsListType::CustomDepth);
 
     context->ResetRenderTarget();

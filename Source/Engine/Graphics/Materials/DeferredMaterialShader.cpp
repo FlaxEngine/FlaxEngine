@@ -234,6 +234,7 @@ bool DeferredMaterialShader::Load()
     _cache.CustomDepth.Init(psDesc);
     psDesc.VS = instancedDepthPassVS;
     _cacheInstanced.Depth.Init(psDesc);
+    _cacheInstanced.CustomDepth.Init(psDesc);
 
     // Depth Pass with skinning
     psDesc.VS = _shader->GetVS("VS_Skinned");
