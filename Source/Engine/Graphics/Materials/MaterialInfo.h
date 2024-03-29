@@ -439,6 +439,11 @@ API_ENUM() enum class MaterialSceneTextures
     /// The scene world-space position (relative to the render view origin).
     /// </summary>
     WorldPosition = 11,
+
+    /// <summary>
+    /// The custom depth.
+    /// </summary>
+    CustomDepth = 12,
 };
 
 /// <summary>

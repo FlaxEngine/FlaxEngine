@@ -1910,6 +1910,7 @@ namespace FlaxEditor.Viewport
             new ViewModeOptions(ViewMode.LightBuffer, "Light Buffer"),
             new ViewModeOptions(ViewMode.Reflections, "Reflections Buffer"),
             new ViewModeOptions(ViewMode.Depth, "Depth Buffer"),
+            new ViewModeOptions(ViewMode.CustomDepth, "Custom Depth Buffer"),
             new ViewModeOptions("GBuffer", new[]
             {
                 new ViewModeOptions(ViewMode.Diffuse, "Diffuse"),

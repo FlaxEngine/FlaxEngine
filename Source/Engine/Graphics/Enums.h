@@ -913,6 +913,11 @@ API_ENUM() enum class ViewMode
     /// Draw Global Illumination debug preview (eg. irradiance probes).
     /// </summary>
     GlobalIllumination = 26,
+
+    /// <summary>
+    /// Draw Custom Depth
+    /// </summary>
+    CustomDepth = 27,
 };
 
 /// <summary>

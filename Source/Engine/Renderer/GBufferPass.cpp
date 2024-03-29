@@ -258,6 +258,7 @@ void GBufferPass::RenderDebug(RenderContext& renderContext)
     context->BindSR(2, renderContext.Buffers->GBuffer2);
     context->BindSR(3, renderContext.Buffers->DepthBuffer);
     context->BindSR(4, renderContext.Buffers->GBuffer3);
+    context->BindSR(5, renderContext.Buffers->CustomDepthBuffer);
 
     // Combine frame
     context->SetState(_psDebug);
@@ -387,6 +388,7 @@ bool GBufferPass::IsDebugView(ViewMode mode)
     case ViewMode::SpecularColor:
     case ViewMode::SubsurfaceColor:
     case ViewMode::ShadingModel:
+    case ViewMode::CustomDepth:
         return true;
     default:
         return false;

@@ -386,6 +386,13 @@ void MaterialParameter::Bind(BindMeta& meta) const
             case MaterialSceneTextures::Specular:
                 view = meta.CanSampleGBuffer ? meta.Buffers->GBuffer2->View() : nullptr;
                 break;
+            case MaterialSceneTextures::CustomDepth:
+                view = meta.CanSampleDepth
+                    ? EnumHasAnyFlags(meta.Buffers->CustomDepthBuffer->Flags(), GPUTextureFlags::ReadOnlyDepthView)
+                    ? meta.Buffers->CustomDepthBuffer->ViewReadOnlyDepth()
+                    : meta.Buffers->CustomDepthBuffer->View()
+                    : GPUDevice::Instance->GetDefaultWhiteTexture()->View();
+                break;
             default: ;
             }
         }
