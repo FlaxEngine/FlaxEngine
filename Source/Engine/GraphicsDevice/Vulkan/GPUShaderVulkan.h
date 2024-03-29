@@ -17,7 +17,6 @@
 class UniformBufferUploaderVulkan : public GPUResourceVulkan<GPUResource>, public ResourceOwnerVulkan
 {
 public:
-
     struct Allocation
     {
         /// <summary>
@@ -42,7 +41,6 @@ public:
     };
 
 private:
-
     VkBuffer _buffer;
     VmaAllocation _allocation;
     uint64 _size;
@@ -53,7 +51,6 @@ private:
     uint64 _fenceCounter;
 
 public:
-
     /// <summary>
     /// Initializes a new instance of the <see cref="UniformBufferUploaderVulkan"/> class.
     /// </summary>
@@ -61,11 +58,9 @@ public:
     UniformBufferUploaderVulkan(GPUDeviceVulkan* device);
 
 public:
-
     Allocation Allocate(uint64 size, uint32 alignment, GPUContextVulkan* context);
 
 public:
-
     // [GPUResourceVulkan]
     GPUResourceType GetResourceType() const final override
     {
@@ -79,7 +74,6 @@ public:
     }
 
 protected:
-
     // [GPUResourceVulkan]
     void OnReleaseGPU() override;
 };
@@ -90,7 +84,6 @@ protected:
 class GPUConstantBufferVulkan : public GPUResourceVulkan<GPUConstantBuffer>, public DescriptorOwnerResourceVulkan
 {
 public:
-
     /// <summary>
     /// Initializes a new instance of the <see cref="GPUConstantBufferVulkan"/> class.
     /// </summary>
@@ -103,14 +96,12 @@ public:
     }
 
 public:
-
     /// <summary>
     /// The last uploaded data inside the shared uniforms uploading ring buffer.
     /// </summary>
     UniformBufferUploaderVulkan::Allocation Allocation;
 
 public:
-
     // [DescriptorOwnerResourceVulkan]
     void DescriptorAsDynamicUniformBuffer(GPUContextVulkan* context, VkBuffer& buffer, VkDeviceSize& offset, VkDeviceSize& range, uint32& dynamicOffset) override
     {
@@ -127,7 +118,6 @@ public:
 class GPUShaderVulkan : public GPUResourceVulkan<GPUShader>
 {
 public:
-
     /// <summary>
     /// Initializes a new instance of the <see cref="GPUShaderVulkan"/> class.
     /// </summary>
@@ -139,7 +129,6 @@ public:
     }
 
 protected:
-
     // [GPUShader]
     GPUShaderProgram* CreateGPUShaderProgram(ShaderStage type, const GPUShaderProgramInitializer& initializer, byte* cacheBytes, uint32 cacheSize, MemoryReadStream& stream) override;
 };

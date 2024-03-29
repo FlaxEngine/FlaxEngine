@@ -64,7 +64,11 @@ namespace FlaxEditor.Surface
         /// </summary>
         protected virtual void DrawBackground()
         {
-            var background = Style.Background;
+            DrawBackgroundDefault(Style.Background, Width, Height);
+        }
+
+        internal static void DrawBackgroundDefault(Texture background, float width, float height)
+        {
             if (background && background.ResidentMipLevels > 0)
             {
                 var bSize = background.Size;
@@ -77,8 +81,8 @@ namespace FlaxEditor.Surface
                 if (pos.Y > 0)
                     pos.Y -= bh;
 
-                int maxI = Mathf.CeilToInt(Width / bw + 1.0f);
-                int maxJ = Mathf.CeilToInt(Height / bh + 1.0f);
+                int maxI = Mathf.CeilToInt(width / bw + 1.0f);
+                int maxJ = Mathf.CeilToInt(height / bh + 1.0f);
 
                 for (int i = 0; i < maxI; i++)
                 {

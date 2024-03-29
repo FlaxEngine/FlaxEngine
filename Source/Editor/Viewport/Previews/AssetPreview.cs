@@ -21,7 +21,7 @@ namespace FlaxEditor.Viewport.Previews
     /// <seealso cref="FlaxEditor.Viewport.EditorViewport" />
     public abstract class AssetPreview : EditorViewport, IEditorPrimitivesOwner
     {
-        private ContextMenuButton _showDefaultSceneButton;
+        internal ContextMenuButton _showDefaultSceneButton;
         private IntPtr _debugDrawContext;
         private bool _debugDrawEnable;
         private bool _editorPrimitivesEnable;
@@ -239,6 +239,8 @@ namespace FlaxEditor.Viewport.Previews
         /// <inheritdoc />
         public override void OnDestroy()
         {
+            if (IsDisposing)
+                return;
             Object.Destroy(ref PreviewLight);
             Object.Destroy(ref EnvProbe);
             Object.Destroy(ref Sky);

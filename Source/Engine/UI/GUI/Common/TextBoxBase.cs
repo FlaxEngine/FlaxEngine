@@ -474,7 +474,7 @@ namespace FlaxEngine.GUI
                                      caretPos.X - (caretWidth * 0.5f),
                                      caretPos.Y,
                                      caretWidth,
-                                     height);
+                                     height * DpiScale);
             }
         }
 
@@ -1265,7 +1265,7 @@ namespace FlaxEngine.GUI
             // Multiline scroll
             if (IsMultiline && _text.Length != 0 && IsMultilineScrollable)
             {
-                TargetViewOffset = Float2.Clamp(_targetViewOffset - new Float2(0, delta * 10.0f), Float2.Zero, new Float2(_targetViewOffset.X, _textSize.Y));
+                TargetViewOffset = Float2.Clamp(_targetViewOffset - new Float2(0, delta * 10.0f), Float2.Zero, new Float2(_targetViewOffset.X, _textSize.Y - Height));
                 return true;
             }
 
@@ -1456,6 +1456,7 @@ namespace FlaxEngine.GUI
                 {
                     // Insert new line
                     Insert('\n');
+                    ScrollToCaret();
                 }
                 else if (!IsNavFocused)
                 {

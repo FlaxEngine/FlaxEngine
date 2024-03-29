@@ -47,6 +47,10 @@ extern "C" typedef HRESULT (WINAPI *t_GetThreadDescription)( HANDLE, PWSTR* );
 #ifdef TRACY_ENABLE
 #  include <atomic>
 #  include "TracyAlloc.hpp"
+
+#if !defined(_WIN32) && !defined(__APPLE__) && !defined(__linux__)
+#include "Engine/Platform/Platform.h"
+#endif
 #endif
 
 namespace tracy
@@ -88,7 +92,7 @@ TRACY_API uint32_t GetThreadHandleImpl()
     // thread identifier. It is a pointer to a library-allocated data structure instead.
     // Such pointers will be reused heavily, making the pthread_t non-unique. Additionally
     // a 64-bit pointer cannot be reliably truncated to 32 bits.
-    #error "Unsupported platform!"
+    return Platform::GetCurrentThreadID();
 #endif
 
 }

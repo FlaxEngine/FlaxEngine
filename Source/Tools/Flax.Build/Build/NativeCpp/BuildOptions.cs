@@ -24,6 +24,27 @@ namespace Flax.Build.NativeCpp
     }
 
     /// <summary>
+    /// Precompiled Headers Files (PCH) usage modes.
+    /// </summary>
+    public enum PrecompiledHeaderFileUsage
+    {
+        /// <summary>
+        /// Precompiled Headers Files (PCH) feature is disabled.
+        /// </summary>
+        None,
+
+        /// <summary>
+        /// Enables creation and usage of the header file. The input source PCH will be precompiled and included.
+        /// </summary>
+        CreateManual,
+
+        /// <summary>
+        /// Enables usage of the header file. The input source PCH will be included in the build (assuming it exists).
+        /// </summary>
+        UseManual,
+    }
+
+    /// <summary>
     /// The nullable context type used with reference types (C#).
     /// </summary>
     public enum CSharpNullableReferences

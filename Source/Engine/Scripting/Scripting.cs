@@ -180,8 +180,8 @@ namespace FlaxEngine
 
         private static void OnLocalizationChanged()
         {
-            // iOS uses globalization-invariant mode so ignore it
-#if !PLATFORM_IOS
+            // Invariant-globalization only (see InitHostfxr with Mono)
+#if !(PLATFORM_IOS || PLATFORM_SWITCH)
             var currentThread = Thread.CurrentThread;
             var language = Localization.CurrentLanguage;
             if (language != null)
@@ -238,6 +238,10 @@ namespace FlaxEngine
 
         internal static ManagedHandle CultureInfoToManaged(int lcid)
         {
+#if PLATFORM_IOS || PLATFORM_SWITCH
+            // Invariant-globalization only (see InitHostfxr with Mono)
+            lcid = 0;
+#endif
             return ManagedHandle.Alloc(new CultureInfo(lcid));
         }
 

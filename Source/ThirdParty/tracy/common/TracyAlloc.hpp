@@ -3,7 +3,7 @@
 
 #include <stdlib.h>
 
-#if defined TRACY_ENABLE && !defined __EMSCRIPTEN__
+#if defined TRACY_ENABLE && !defined __EMSCRIPTEN__ && !defined TRACY_USE_MALLOC
 #  include "../client/tracy_rpmalloc.hpp"
 #  define TRACY_USE_RPMALLOC
 #endif

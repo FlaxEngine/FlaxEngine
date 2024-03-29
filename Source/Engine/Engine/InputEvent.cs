@@ -7,7 +7,7 @@ namespace FlaxEngine
     /// <summary>
     /// Virtual input action binding. Helps with listening for a selected input event.
     /// </summary>
-    public class InputEvent
+    public class InputEvent : IComparable, IComparable<InputEvent>
     {
         /// <summary>
         /// The name of the action to use. See <see cref="Input.ActionMappings"/>.
@@ -21,7 +21,7 @@ namespace FlaxEngine
         public bool Active => Input.GetAction(Name);
 
         /// <summary>
-        /// Returns the event state. Use Use <see cref="Pressed"/>, <see cref="Pressing"/>, <see cref="Released"/> to catch events without active waiting.
+        /// Returns the event state. Use <see cref="Pressed"/>, <see cref="Pressing"/>, <see cref="Released"/> to catch events without active waiting.
         /// </summary>
         public InputActionState State => Input.GetActionState(Name);
 
@@ -35,12 +35,12 @@ namespace FlaxEngine
         /// Occurs when event is pressed (e.g. user pressed a key). Called before scripts update.
         /// </summary>
         public event Action Pressed;
-        
+
         /// <summary>
         /// Occurs when event is being pressing (e.g. user pressing a key). Called before scripts update.
         /// </summary>
         public event Action Pressing;
-        
+
         /// <summary>
         /// Occurs when event is released (e.g. user releases a key). Called before scripts update.
         /// </summary>
@@ -101,6 +101,36 @@ namespace FlaxEngine
         {
             Input.ActionTriggered -= Handler;
             GC.SuppressFinalize(this);
+        }
+
+        /// <inheritdoc />
+        public int CompareTo(InputEvent other)
+        {
+            return string.Compare(Name, other.Name, StringComparison.Ordinal);
+        }
+
+        /// <inheritdoc />
+        public int CompareTo(object obj)
+        {
+            return obj is InputEvent other ? CompareTo(other) : -1;
+        }
+
+        /// <inheritdoc />
+        public override int GetHashCode()
+        {
+            return Name?.GetHashCode() ?? 0;
+        }
+
+        /// <inheritdoc />
+        public override bool Equals(object obj)
+        {
+            return obj is InputEvent other && string.Equals(Name, other.Name, StringComparison.Ordinal);
+        }
+
+        /// <inheritdoc />
+        public override string ToString()
+        {
+            return Name;
         }
     }
 }

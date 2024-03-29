@@ -1,5 +1,7 @@
 // Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
+using System;
+using System.Globalization;
 using FlaxEditor.GUI.Timeline.Undo;
 using FlaxEngine;
 using FlaxEngine.GUI;
@@ -44,6 +46,25 @@ namespace FlaxEditor.GUI.Timeline.GUI
             var thickness = 2.0f;
             var borderColor = _isMoving ? moveColor : (IsMouseOver && _canEdit ? Color.Yellow : style.BorderNormal);
             Render2D.FillRectangle(new Rectangle((Width - thickness) * 0.5f, timeAxisHeaderOffset, thickness, Height - timeAxisHeaderOffset), borderColor);
+            if (_canEdit && _isMoving)
+            {
+                // TODO: handle start
+                string labelText;
+                switch (_timeline.TimeShowMode)
+                {
+                case Timeline.TimeShowModes.Frames:
+                    labelText = _timeline.DurationFrames.ToString("###0", CultureInfo.InvariantCulture);
+                    break;
+                case Timeline.TimeShowModes.Seconds:
+                    labelText = _timeline.Duration.ToString("###0.##'s'", CultureInfo.InvariantCulture);
+                    break;
+                case Timeline.TimeShowModes.Time:
+                    labelText = TimeSpan.FromSeconds(_timeline.DurationFrames / _timeline.FramesPerSecond).ToString("g");
+                    break;
+                default: throw new ArgumentOutOfRangeException();
+                }
+                Render2D.DrawText(style.FontSmall, labelText, style.Foreground, new Float2((Width - thickness) * 0.5f + 4, timeAxisHeaderOffset));
+            }
         }
 
         /// <inheritdoc />
@@ -90,11 +111,24 @@ namespace FlaxEditor.GUI.Timeline.GUI
                 {
                     _timeline.MarkAsEdited();
                 }
+                Cursor = CursorType.SizeWE;
+            }
+            else if (IsMouseOver && _canEdit)
+            {
+                Cursor = CursorType.SizeWE;
             }
             else
             {
+                Cursor = CursorType.Default;
                 base.OnMouseMove(location);
             }
+        }
+
+        /// <inheritdoc />
+        public override void OnMouseLeave()
+        {
+            Cursor = CursorType.Default;
+            base.OnMouseLeave();
         }
 
         /// <inheritdoc />
@@ -127,6 +161,7 @@ namespace FlaxEditor.GUI.Timeline.GUI
             {
                 EndMoving();
             }
+            Cursor = CursorType.Default;
 
             base.OnLostFocus();
         }

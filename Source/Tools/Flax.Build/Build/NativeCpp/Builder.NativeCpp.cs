@@ -32,6 +32,7 @@ namespace Flax.Build
             public IGrouping<string, Module>[] BinaryModules;
             public BuildTargetInfo BuildInfo;
             public Dictionary<ProjectInfo, BuildData> ReferenceBuilds = new Dictionary<ProjectInfo, BuildData>();
+            public Dictionary<string, string> PrecompiledHeaderFiles = new();
 
             public BuildTargetBinaryModuleInfo FinReferenceBuildModule(string name)
             {
@@ -161,6 +162,30 @@ namespace Flax.Build
 
                     References[i++] = referenceInfo;
                 }
+            }
+
+            public string Serialize()
+            {
+                // Null any empty fields to exclude them from serialization
+                if (HotReloadPostfix?.Length == 0)
+                    HotReloadPostfix = null;
+                foreach (var binaryModule in BinaryModules)
+                {
+                    if (binaryModule.NativePathProcessed?.Length == 0)
+                        binaryModule.NativePathProcessed = null;
+                    if (binaryModule.ManagedPathProcessed?.Length == 0)
+                        binaryModule.ManagedPathProcessed = null;
+                }
+
+                // Convert to Json
+                var options = new JsonSerializerOptions
+                {
+                    WriteIndented = true,
+                    IncludeFields = true,
+                    DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+                    TypeInfoResolver = BuildTargetInfoSourceGenerationContext.Default,
+                };
+                return JsonSerializer.Serialize<BuildTargetInfo>(this, options);
             }
 
             public static string ProcessPath(string path, string projectPath)
@@ -484,6 +509,13 @@ namespace Flax.Build
                     }
                 }
 
+                // If the PCH was already created (eg. by other engine module) then simply reuse the same file
+                if (moduleOptions.CompileEnv.PrecompiledHeaderUsage == PrecompiledHeaderFileUsage.CreateManual && buildData.PrecompiledHeaderFiles.TryGetValue(moduleOptions.CompileEnv.PrecompiledHeaderSource, out var pch))
+                {
+                    moduleOptions.CompileEnv.PrecompiledHeaderUsage = PrecompiledHeaderFileUsage.UseManual;
+                    moduleOptions.CompileEnv.PrecompiledHeaderFile =  pch;
+                }
+
                 // Compile all source files
                 var compilationOutput = buildData.Toolchain.CompileCppFiles(buildData.Graph, moduleOptions, cppFiles, moduleOptions.OutputFolder);
                 foreach (var e in compilationOutput.ObjectFiles)
@@ -492,6 +524,11 @@ namespace Flax.Build
                 {
                     // TODO: find better way to add generated doc files to the target linker (module exports the output doc files?)
                     buildData.TargetOptions.LinkEnv.DocumentationFiles.AddRange(compilationOutput.DocumentationFiles);
+                }
+                if (moduleOptions.CompileEnv.PrecompiledHeaderUsage == PrecompiledHeaderFileUsage.CreateManual && !string.IsNullOrEmpty(compilationOutput.PrecompiledHeaderFile))
+                {
+                    // Cache PCH file to be used by other modules that reference the same file
+                    buildData.PrecompiledHeaderFiles.Add(moduleOptions.CompileEnv.PrecompiledHeaderSource, compilationOutput.PrecompiledHeaderFile);
                 }
 
                 if (buildData.Target.LinkType != TargetLinkType.Monolithic)
@@ -1004,7 +1041,7 @@ namespace Flax.Build
                 buildData.BuildInfo.AddReferencedBuilds(ref i, project.ProjectFolderPath, buildData.ReferenceBuilds);
 
                 if (!buildData.Target.IsPreBuilt)
-                    Utilities.WriteFileIfChanged(Path.Combine(outputPath, target.Name + ".Build.json"), JsonSerializer.Serialize<BuildTargetInfo>(buildData.BuildInfo, new JsonSerializerOptions() { WriteIndented = true, IncludeFields = true, TypeInfoResolver = BuildTargetInfoSourceGenerationContext.Default }));
+                    Utilities.WriteFileIfChanged(Path.Combine(outputPath, target.Name + ".Build.json"), buildData.BuildInfo.Serialize());
             }
 
             // Deploy files
@@ -1203,7 +1240,7 @@ namespace Flax.Build
                 buildData.BuildInfo.AddReferencedBuilds(ref i, project.ProjectFolderPath, buildData.ReferenceBuilds);
 
                 if (!buildData.Target.IsPreBuilt)
-                    Utilities.WriteFileIfChanged(Path.Combine(outputPath, target.Name + ".Build.json"), JsonSerializer.Serialize<BuildTargetInfo>(buildData.BuildInfo, new JsonSerializerOptions() { WriteIndented = true, IncludeFields = true, TypeInfoResolver = BuildTargetInfoSourceGenerationContext.Default }));
+                    Utilities.WriteFileIfChanged(Path.Combine(outputPath, target.Name + ".Build.json"), buildData.BuildInfo.Serialize());
             }
 
             // Deploy files

@@ -23,6 +23,9 @@ public:
     /// </summary>
     static void* Instance;
 
+    // Native exceptions handling function.
+    static long __stdcall SehExceptionHandler(struct _EXCEPTION_POINTERS* ep);
+
 public:
 
     /// <summary>

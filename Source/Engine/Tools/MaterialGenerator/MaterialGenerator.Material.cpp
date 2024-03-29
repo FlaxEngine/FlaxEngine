@@ -421,15 +421,31 @@ void MaterialGenerator::ProcessGroupMaterial(Box* box, Node* node, Value& value)
     // DDX
     case 30:
     {
-        const auto inValue = tryGetValue(node->GetBox(0), 0, Value::Zero);
-        value = writeLocal(inValue.Type, String::Format(TEXT("ddx({0})"), inValue.Value), node);
+        if (_treeType == MaterialTreeType::PixelShader)
+        {
+            const auto inValue = tryGetValue(node->GetBox(0), 0, Value::Zero);
+            value = writeLocal(inValue.Type, String::Format(TEXT("ddx({0})"), inValue.Value), node);
+        }
+        else
+        {
+            // No derivatives support in VS/DS
+            value = Value::Zero;
+        }
         break;
     }
     // DDY
     case 31:
     {
-        const auto inValue = tryGetValue(node->GetBox(0), 0, Value::Zero);
-        value = writeLocal(inValue.Type, String::Format(TEXT("ddy({0})"), inValue.Value), node);
+        if (_treeType == MaterialTreeType::PixelShader)
+        {
+            const auto inValue = tryGetValue(node->GetBox(0), 0, Value::Zero);
+            value = writeLocal(inValue.Type, String::Format(TEXT("ddy({0})"), inValue.Value), node);
+        }
+        else
+        {
+            // No derivatives support in VS/DS
+            value = Value::Zero;
+        }
         break;
     }
     // Sign

@@ -11,6 +11,7 @@ using System.Collections.Generic;
 using FlaxEditor.Content;
 using FlaxEditor.GUI.ContextMenu;
 using FlaxEditor.Windows;
+using FlaxEditor.Windows.Assets;
 using FlaxEngine;
 
 namespace FlaxEditor.SceneGraph.Actors
@@ -84,76 +85,109 @@ namespace FlaxEditor.SceneGraph.Actors
         {
             base.OnContextMenu(contextMenu, window);
 
-            contextMenu.AddButton("Add collider", OnAddMeshCollider).Enabled = ((StaticModel)Actor).Model != null;
+            contextMenu.AddButton("Add collider", () => OnAddMeshCollider(window)).Enabled = ((StaticModel)Actor).Model != null;
         }
 
-        private void OnAddMeshCollider()
+        private void OnAddMeshCollider(EditorWindow window)
         {
-            var model = ((StaticModel)Actor).Model;
-            if (!model)
-                return;
-
-            // Special case for in-built Editor models that can use analytical collision
-            var modelPath = model.Path;
-            if (modelPath.EndsWith("/Primitives/Cube.flax", StringComparison.Ordinal))
+            // Allow collider to be added to evey static model selection
+            SceneGraphNode[] selection = Array.Empty<SceneGraphNode>();
+            if (window is SceneTreeWindow)
             {
-                var actor = new BoxCollider
-                {
-                    StaticFlags = Actor.StaticFlags,
-                    Transform = Actor.Transform,
-                };
-                Root.Spawn(actor, Actor);
-                return;
+                selection = Editor.Instance.SceneEditing.Selection.ToArray();
             }
-            if (modelPath.EndsWith("/Primitives/Sphere.flax", StringComparison.Ordinal))
+            else if (window is PrefabWindow prefabWindow)
             {
-                var actor = new SphereCollider
-                {
-                    StaticFlags = Actor.StaticFlags,
-                    Transform = Actor.Transform,
-                };
-                Root.Spawn(actor, Actor);
-                return;
-            }
-            if (modelPath.EndsWith("/Primitives/Plane.flax", StringComparison.Ordinal))
-            {
-                var actor = new BoxCollider
-                {
-                    StaticFlags = Actor.StaticFlags,
-                    Transform = Actor.Transform,
-                    Size = new Float3(100.0f, 100.0f, 1.0f),
-                };
-                Root.Spawn(actor, Actor);
-                return;
-            }
-            if (modelPath.EndsWith("/Primitives/Capsule.flax", StringComparison.Ordinal))
-            {
-                var actor = new CapsuleCollider
-                {
-                    StaticFlags = Actor.StaticFlags,
-                    Transform = Actor.Transform,
-                    Radius = 25.0f,
-                    Height = 50.0f,
-                };
-                Editor.Instance.SceneEditing.Spawn(actor, Actor);
-                actor.LocalPosition = new Vector3(0, 50.0f, 0);
-                actor.LocalOrientation = Quaternion.Euler(0, 0, 90.0f);
-                return;
+                selection = prefabWindow.Selection.ToArray();
             }
 
-            // Create collision data (or reuse) and add collision actor
-            Action<CollisionData> created = collisionData =>
+            var createdNodes = new List<SceneGraphNode>();
+            foreach (var node in selection)
             {
-                var actor = new MeshCollider
+                if (node is not StaticModelNode staticModelNode)
+                    continue;
+
+                var model = ((StaticModel)staticModelNode.Actor).Model;
+                if (!model)
+                    continue;
+
+                // Special case for in-built Editor models that can use analytical collision
+                var modelPath = model.Path;
+                if (modelPath.EndsWith("/Primitives/Cube.flax", StringComparison.Ordinal))
                 {
-                    StaticFlags = Actor.StaticFlags,
-                    Transform = Actor.Transform,
-                    CollisionData = collisionData,
+                    var actor = new BoxCollider
+                    {
+                        StaticFlags = staticModelNode.Actor.StaticFlags,
+                        Transform = staticModelNode.Actor.Transform,
+                    };
+                    staticModelNode.Root.Spawn(actor, staticModelNode.Actor);
+                    createdNodes.Add(window is PrefabWindow pWindow ? pWindow.Graph.Root.Find(actor) : Editor.Instance.Scene.GetActorNode(actor));
+                    continue;
+                }
+                if (modelPath.EndsWith("/Primitives/Sphere.flax", StringComparison.Ordinal))
+                {
+                    var actor = new SphereCollider
+                    {
+                        StaticFlags = staticModelNode.Actor.StaticFlags,
+                        Transform = staticModelNode.Actor.Transform,
+                    };
+                    staticModelNode.Root.Spawn(actor, staticModelNode.Actor);
+                    createdNodes.Add(window is PrefabWindow pWindow ? pWindow.Graph.Root.Find(actor) : Editor.Instance.Scene.GetActorNode(actor));
+                    continue;
+                }
+                if (modelPath.EndsWith("/Primitives/Plane.flax", StringComparison.Ordinal))
+                {
+                    var actor = new BoxCollider
+                    {
+                        StaticFlags = staticModelNode.Actor.StaticFlags,
+                        Transform = staticModelNode.Actor.Transform,
+                        Size = new Float3(100.0f, 100.0f, 1.0f),
+                    };
+                    staticModelNode.Root.Spawn(actor, staticModelNode.Actor);
+                    createdNodes.Add(window is PrefabWindow pWindow ? pWindow.Graph.Root.Find(actor) : Editor.Instance.Scene.GetActorNode(actor));
+                    continue;
+                }
+                if (modelPath.EndsWith("/Primitives/Capsule.flax", StringComparison.Ordinal))
+                {
+                    var actor = new CapsuleCollider
+                    {
+                        StaticFlags = staticModelNode.Actor.StaticFlags,
+                        Transform = staticModelNode.Actor.Transform,
+                        Radius = 25.0f,
+                        Height = 50.0f,
+                    };
+                    Editor.Instance.SceneEditing.Spawn(actor, staticModelNode.Actor);
+                    actor.LocalPosition = new Vector3(0, 50.0f, 0);
+                    actor.LocalOrientation = Quaternion.Euler(0, 0, 90.0f);
+                    createdNodes.Add(window is PrefabWindow pWindow ? pWindow.Graph.Root.Find(actor) : Editor.Instance.Scene.GetActorNode(actor));
+                    continue;
+                }
+
+                // Create collision data (or reuse) and add collision actor
+                Action<CollisionData> created = collisionData =>
+                {
+                    var actor = new MeshCollider
+                    {
+                        StaticFlags = staticModelNode.Actor.StaticFlags,
+                        Transform = staticModelNode.Actor.Transform,
+                        CollisionData = collisionData,
+                    };
+                    staticModelNode.Root.Spawn(actor, staticModelNode.Actor);
+                    createdNodes.Add(window is PrefabWindow pWindow ? pWindow.Graph.Root.Find(actor) : Editor.Instance.Scene.GetActorNode(actor));
                 };
-                Root.Spawn(actor, Actor);
-            };
-            var collisionDataProxy = (CollisionDataProxy)Editor.Instance.ContentDatabase.GetProxy<CollisionData>();
-            collisionDataProxy.CreateCollisionDataFromModel(model, created);
+                var collisionDataProxy = (CollisionDataProxy)Editor.Instance.ContentDatabase.GetProxy<CollisionData>();
+                collisionDataProxy.CreateCollisionDataFromModel(model, created, selection.Length == 1);
+            }
+
+            // Select all created nodes
+            if (window is SceneTreeWindow)
+            {
+                Editor.Instance.SceneEditing.Select(createdNodes);
+            }
+            else if (window is PrefabWindow pWindow)
+            {
+                pWindow.Select(createdNodes);
+            }
         }
     }
 }

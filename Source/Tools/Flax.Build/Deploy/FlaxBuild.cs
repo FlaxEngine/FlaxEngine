@@ -15,7 +15,7 @@ namespace Flax.Deploy
         {
             var buildPlatform = Platform.BuildPlatform.Target;
             var flaxBuildTool = Path.Combine(Globals.EngineRoot, buildPlatform == TargetPlatform.Windows ? "Binaries/Tools/Flax.Build.exe" : "Binaries/Tools/Flax.Build");
-            var format = "-build -buildtargets={0} -log -logfile= -perf -platform={1} -arch={2} -configuration={3}";
+            var format = "-build -buildtargets={0} -log -logfile= -platform={1} -arch={2} -configuration={3}";
             var cmdLine = string.Format(format, target, platform, architecture, configuration);
             Configuration.PassArgs(ref cmdLine);
 

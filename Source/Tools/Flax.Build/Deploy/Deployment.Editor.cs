@@ -345,12 +345,12 @@ namespace Flax.Deploy
 
                     // Optimize package size
                     Utilities.Run("strip", "FlaxEditor", null, dst, Utilities.RunOptions.None);
-                    Utilities.Run("strip", "FlaxEditor.dylib", null, dst, Utilities.RunOptions.None);
+                    Utilities.Run("strip", "FlaxEngine.dylib", null, dst, Utilities.RunOptions.None);
                     Utilities.Run("strip", "libMoltenVK.dylib", null, dst, Utilities.RunOptions.None);
 
                     // Sign binaries
                     CodeSign(Path.Combine(dst, "FlaxEditor"));
-                    CodeSign(Path.Combine(dst, "FlaxEditor.dylib"));
+                    CodeSign(Path.Combine(dst, "FlaxEngine.dylib"));
                     CodeSign(Path.Combine(dst, "libMoltenVK.dylib"));
                 }
             }

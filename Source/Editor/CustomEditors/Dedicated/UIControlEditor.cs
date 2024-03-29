@@ -589,25 +589,27 @@ namespace FlaxEditor.CustomEditors.Dedicated
             LayoutElementsContainer yEl;
             LayoutElementsContainer hEl;
             LayoutElementsContainer vEl;
+            Color axisColorX = ActorTransformEditor.AxisColorX;
+            Color axisColorY = ActorTransformEditor.AxisColorY;
             if (xEq)
             {
-                xEl = UniformPanelCapsuleForObjectWithText(horUp, "X: ", xItem.GetValues(Values));
-                vEl = UniformPanelCapsuleForObjectWithText(horDown, "Width: ", widthItem.GetValues(Values));
+                xEl = UniformPanelCapsuleForObjectWithText(horUp, "X: ", xItem.GetValues(Values), axisColorX);
+                vEl = UniformPanelCapsuleForObjectWithText(horDown, "Width: ", widthItem.GetValues(Values), axisColorX);
             }
             else
             {
-                xEl = UniformPanelCapsuleForObjectWithText(horUp, "Left: ", leftItem.GetValues(Values));
-                vEl = UniformPanelCapsuleForObjectWithText(horDown, "Right: ", rightItem.GetValues(Values));
+                xEl = UniformPanelCapsuleForObjectWithText(horUp, "Left: ", leftItem.GetValues(Values), axisColorX);
+                vEl = UniformPanelCapsuleForObjectWithText(horDown, "Right: ", rightItem.GetValues(Values), axisColorX);
             }
             if (yEq)
             {
-                yEl = UniformPanelCapsuleForObjectWithText(horUp, "Y: ", yItem.GetValues(Values));
-                hEl = UniformPanelCapsuleForObjectWithText(horDown, "Height: ", heightItem.GetValues(Values));
+                yEl = UniformPanelCapsuleForObjectWithText(horUp, "Y: ", yItem.GetValues(Values), axisColorY);
+                hEl = UniformPanelCapsuleForObjectWithText(horDown, "Height: ", heightItem.GetValues(Values), axisColorY);
             }
             else
             {
-                yEl = UniformPanelCapsuleForObjectWithText(horUp, "Top: ", topItem.GetValues(Values));
-                hEl = UniformPanelCapsuleForObjectWithText(horDown, "Bottom: ", bottomItem.GetValues(Values));
+                yEl = UniformPanelCapsuleForObjectWithText(horUp, "Top: ", topItem.GetValues(Values), axisColorY);
+                hEl = UniformPanelCapsuleForObjectWithText(horDown, "Bottom: ", bottomItem.GetValues(Values), axisColorY);
             }
             xEl.Control.AnchorMin = new Float2(0, xEl.Control.AnchorMin.Y);
             xEl.Control.AnchorMax = new Float2(0.5f, xEl.Control.AnchorMax.Y);
@@ -624,28 +626,34 @@ namespace FlaxEditor.CustomEditors.Dedicated
 
         private VerticalPanelElement VerticalPanelWithoutMargin(LayoutElementsContainer cont)
         {
-            var horUp = cont.VerticalPanel();
-            horUp.Panel.Margin = Margin.Zero;
-            return horUp;
+            var panel = cont.VerticalPanel();
+            panel.Panel.Margin = Margin.Zero;
+            return panel;
         }
 
         private CustomElementsContainer<UniformGridPanel> UniformGridTwoByOne(LayoutElementsContainer cont)
         {
-            var horUp = cont.CustomContainer<UniformGridPanel>();
-            horUp.CustomControl.SlotsHorizontally = 2;
-            horUp.CustomControl.SlotsVertically = 1;
-            horUp.CustomControl.SlotPadding = Margin.Zero;
-            horUp.CustomControl.ClipChildren = false;
-            return horUp;
+            var grid = cont.CustomContainer<UniformGridPanel>();
+            grid.CustomControl.SlotsHorizontally = 2;
+            grid.CustomControl.SlotsVertically = 1;
+            grid.CustomControl.SlotPadding = Margin.Zero;
+            grid.CustomControl.ClipChildren = false;
+            return grid;
         }
 
-        private CustomElementsContainer<UniformGridPanel> UniformPanelCapsuleForObjectWithText(LayoutElementsContainer el, string text, ValueContainer values)
+        private CustomElementsContainer<UniformGridPanel> UniformPanelCapsuleForObjectWithText(LayoutElementsContainer el, string text, ValueContainer values, Color borderColor)
         {
-            CustomElementsContainer<UniformGridPanel> hor = UniformGridTwoByOne(el);
-            hor.CustomControl.SlotPadding = new Margin(5, 5, 0, 0);
-            LabelElement lab = hor.Label(text);
-            hor.Object(values);
-            return hor;
+            var grid = UniformGridTwoByOne(el);
+            grid.CustomControl.SlotPadding = new Margin(5, 5, 1, 1);
+            var label = grid.Label(text);
+            var editor = grid.Object(values);
+            if (editor is FloatEditor floatEditor && floatEditor.Element is FloatValueElement floatEditorElement)
+            {
+                var back = FlaxEngine.GUI.Style.Current.TextBoxBackground;
+                floatEditorElement.ValueBox.BorderColor = Color.Lerp(borderColor, back, ActorTransformEditor.AxisGreyOutFactor);
+                floatEditorElement.ValueBox.BorderSelectedColor = borderColor;
+            }
+            return grid;
         }
 
         private bool _cachedXEq;

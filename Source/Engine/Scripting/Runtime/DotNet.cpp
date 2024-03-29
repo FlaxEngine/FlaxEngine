@@ -9,6 +9,7 @@
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Types/DateTime.h"
 #include "Engine/Core/Types/TimeSpan.h"
+#include "Engine/Core/Types/Stopwatch.h"
 #include "Engine/Core/Collections/Dictionary.h"
 #include "Engine/Platform/Platform.h"
 #include "Engine/Platform/File.h"
@@ -281,13 +282,18 @@ bool MCore::LoadEngine()
         flaxLibraryPath = ::String(StringUtils::GetDirectoryName(Platform::GetExecutableFilePath())) / StringUtils::GetFileName(flaxLibraryPath);
     }
 #endif
+#if !PLATFORM_SWITCH
+    if (!FileSystem::FileExists(flaxLibraryPath))
+    {
+        LOG(Error, "Flax Engine native library file is missing ({0})", flaxLibraryPath);
+    }
+#endif
     RegisterNativeLibrary("FlaxEngine", flaxLibraryPath.Get());
 
     MRootDomain = New<MDomain>("Root");
     MDomains.Add(MRootDomain);
 
-    void* GetRuntimeInformationPtr = GetStaticMethodPointer(TEXT("GetRuntimeInformation"));
-    char* buildInfo = CallStaticMethod<char*>(GetRuntimeInformationPtr);
+    char* buildInfo = CallStaticMethod<char*>(GetStaticMethodPointer(TEXT("GetRuntimeInformation")));
     LOG(Info, ".NET runtime version: {0}", ::String(buildInfo));
     MCore::GC::FreeMemory(buildInfo);
 
@@ -658,7 +664,7 @@ const MAssembly::ClassesDictionary& MAssembly::GetClasses() const
     if (_hasCachedClasses || !IsLoaded())
         return _classes;
     PROFILE_CPU();
-    const auto startTime = DateTime::NowUTC();
+    Stopwatch stopwatch;
 
 #if TRACY_ENABLE
     ZoneText(*_name, _name.Length());
@@ -693,8 +699,8 @@ const MAssembly::ClassesDictionary& MAssembly::GetClasses() const
 
     MCore::GC::FreeMemory(managedClasses);
 
-    const auto endTime = DateTime::NowUTC();
-    LOG(Info, "Caching classes for assembly {0} took {1}ms", String(_name), (int32)(endTime - startTime).GetTotalMilliseconds());
+    stopwatch.Stop();
+    LOG(Info, "Caching classes for assembly {0} took {1}ms", String(_name), stopwatch.GetMilliseconds());
 
 #if 0
     for (auto i = _classes.Begin(); i.IsNotEnd(); ++i)
@@ -763,7 +769,7 @@ bool MAssembly::LoadCorlib()
     Unload();
 
     // Start
-    const auto startTime = DateTime::NowUTC();
+    Stopwatch stopwatch;
     OnLoading();
 
     // Load
@@ -781,7 +787,7 @@ bool MAssembly::LoadCorlib()
     CachedAssemblyHandles.Add(_handle, this);
 
     // End
-    OnLoaded(startTime);
+    OnLoaded(stopwatch);
     return false;
 }
 
@@ -1700,12 +1706,12 @@ bool InitHostfxr()
 
         // Warn user about missing .Net
 #if PLATFORM_DESKTOP
-        Platform::OpenUrl(TEXT("https://dotnet.microsoft.com/en-us/download/dotnet/7.0"));
+        Platform::OpenUrl(TEXT("https://dotnet.microsoft.com/en-us/download/dotnet/8.0"));
 #endif
 #if USE_EDITOR
-        LOG(Fatal, "Missing .NET 7 or later SDK installation required to run Flax Editor.");
+        LOG(Fatal, "Missing .NET 8 or later SDK installation required to run Flax Editor.");
 #else
-        LOG(Fatal, "Missing .NET 7 or later Runtime installation required to run this application.");
+        LOG(Fatal, "Missing .NET 8 or later Runtime installation required to run this application.");
 #endif
         return true;
     }
@@ -1817,7 +1823,6 @@ void* GetStaticMethodPointer(const String& methodName)
 
 void OnLogCallback(const char* logDomain, const char* logLevel, const char* message, mono_bool fatal, void* userData)
 {
-    String currentDomain(logDomain);
     String msg(message);
     msg.Replace('\n', ' ');
 
@@ -1845,19 +1850,6 @@ void OnLogCallback(const char* logDomain, const char* logLevel, const char* mess
         }
     }
 
-    if (currentDomain.IsEmpty())
-    {
-        auto domain = MCore::GetActiveDomain();
-        if (domain != nullptr)
-        {
-            currentDomain = domain->GetName().Get();
-        }
-        else
-        {
-            currentDomain = "null";
-        }
-    }
-
 #if 0
 	// Print C# stack trace (crash may be caused by the managed code)
 	if (mono_domain_get() && Assemblies::FlaxEngine.Assembly->IsLoaded())
@@ -1871,22 +1863,25 @@ void OnLogCallback(const char* logDomain, const char* logLevel, const char* mess
 	}
 #endif
 
-    if (errorLevel == 0)
+    if (errorLevel <= 2)
     {
-        Log::CLRInnerException(String::Format(TEXT("Message: {0} | Domain: {1}"), msg, currentDomain)).SetLevel(LogType::Error);
-    }
-    else if (errorLevel <= 2)
-    {
-        Log::CLRInnerException(String::Format(TEXT("Message: {0} | Domain: {1}"), msg, currentDomain)).SetLevel(LogType::Error);
+        Log::CLRInnerException(String::Format(TEXT("[Mono] {0}"), msg)).SetLevel(LogType::Error);
     }
     else if (errorLevel <= 3)
     {
-        LOG(Warning, "Message: {0} | Domain: {1}", msg, currentDomain);
+        LOG(Warning, "[Mono] {0}", msg);
     }
     else
     {
-        LOG(Info, "Message: {0} | Domain: {1}", msg, currentDomain);
+        LOG(Info, "[Mono] {0}", msg);
     }
+#if DOTNET_HOST_MONO && !BUILD_RELEASE
+    if (errorLevel <= 2)
+    {
+        // Mono backend ends with fatal assertions so capture crash info (eg. stack trace)
+        CRASH;
+    }
+#endif
 }
 
 void OnPrintCallback(const char* string, mono_bool isStdout)
@@ -2036,14 +2031,14 @@ bool InitHostfxr()
 #endif
     
     // Platform-specific setup
-#if PLATFORM_IOS
+#if PLATFORM_IOS || PLATFORM_SWITCH
     setenv("MONO_AOT_MODE", "aot", 1);
     setenv("DOTNET_SYSTEM_GLOBALIZATION_INVARIANT", "1", 1);
 #endif
 
 #ifdef USE_MONO_AOT_MODULE
     // Load AOT module
-    const DateTime aotModuleLoadStartTime = DateTime::Now();
+    Stopwatch aotModuleLoadStopwatch;
     LOG(Info, "Loading Mono AOT module...");
     void* libAotModule = Platform::LoadLibrary(TEXT(USE_MONO_AOT_MODULE));
     if (libAotModule == nullptr)
@@ -2068,7 +2063,8 @@ bool InitHostfxr()
         mono_aot_register_module((void**)modules[i]);
     }
     Allocator::Free(modules);
-    LOG(Info, "Mono AOT module loaded in {0}ms", (int32)(DateTime::Now() - aotModuleLoadStartTime).GetTotalMilliseconds());
+    aotModuleLoadStopwatch.Stop();
+    LOG(Info, "Mono AOT module loaded in {0}ms", aotModuleLoadStopwatch.GetMilliseconds());
 #endif
 
     // Setup debugger

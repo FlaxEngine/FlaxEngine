@@ -4,6 +4,8 @@
 #include "Engine/Core/Log.h"
 #include "Engine/Core/DeleteMe.h"
 #include "Engine/Core/Types/TimeSpan.h"
+#include "Engine/Core/Types/DateTime.h"
+#include "Engine/Core/Types/Stopwatch.h"
 #include "Engine/Platform/FileSystem.h"
 #include "Engine/Serialization/FileWriteStream.h"
 #include "Engine/Serialization/FileReadStream.h"
@@ -19,7 +21,7 @@ void AssetsCache::Init()
 {
     Entry e;
     int32 count;
-    const DateTime loadStartTime = DateTime::Now();
+    Stopwatch stopwatch;
 #if USE_EDITOR
     _path = Globals::ProjectCacheFolder / TEXT("AssetsCache.dat");
 #else
@@ -138,8 +140,8 @@ void AssetsCache::Init()
         }
     }
 
-    const int32 loadTimeInMs = static_cast<int32>((DateTime::Now() - loadStartTime).GetTotalMilliseconds());
-    LOG(Info, "Asset Cache loaded {0} entries in {1} ms ({2} rejected)", _registry.Count(), loadTimeInMs, rejectedCount);
+    stopwatch.Stop();
+    LOG(Info, "Asset Cache loaded {0} entries in {1}ms ({2} rejected)", _registry.Count(), stopwatch.GetMilliseconds(), rejectedCount);
 }
 
 bool AssetsCache::Save()

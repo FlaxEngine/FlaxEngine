@@ -116,7 +116,7 @@ bool DeployDataStep::Perform(CookingData& data)
                 for (String& version : versions)
                 {
                     version = String(StringUtils::GetFileName(version));
-                    if (!version.StartsWith(TEXT("7.")) && !version.StartsWith(TEXT("8."))) // .NET 7 or .NET 8
+                    if (!version.StartsWith(TEXT("8."))) // Check for major part of 8.0
                         version.Clear();
                 }
                 Sorting::QuickSort(versions);
@@ -204,14 +204,14 @@ bool DeployDataStep::Perform(CookingData& data)
                     {
                         // AOT runtime files inside Engine Platform folder
                         packFolder /= TEXT("Dotnet");
-                        dstDotnetLibs /= TEXT("lib/net7.0");
-                        srcDotnetLibs = packFolder / TEXT("lib/net7.0");
+                        dstDotnetLibs /= TEXT("lib/net8.0");
+                        srcDotnetLibs = packFolder / TEXT("lib/net8.0");
                     }
                     else
                     {
                         // Runtime files inside Dotnet SDK folder but placed for AOT
-                        dstDotnetLibs /= TEXT("lib/net7.0");
-                        srcDotnetLibs /= TEXT("../lib/net7.0");
+                        dstDotnetLibs /= TEXT("lib/net8.0");
+                        srcDotnetLibs /= TEXT("../lib/net8.0");
                     }
                 }
                 else
@@ -219,16 +219,18 @@ bool DeployDataStep::Perform(CookingData& data)
                     if (srcDotnetFromEngine)
                     {
                         // Runtime files inside Engine Platform folder
-                        dstDotnetLibs /= TEXT("lib/net7.0");
-                        srcDotnetLibs /= TEXT("lib/net7.0");
+                        dstDotnetLibs /= TEXT("lib/net8.0");
+                        srcDotnetLibs /= TEXT("lib/net8.0");
                     }
                     else
                     {
                         // Runtime files inside Dotnet SDK folder
                         dstDotnetLibs /= TEXT("shared/Microsoft.NETCore.App");
-                        srcDotnetLibs /= TEXT("../lib/net7.0");
+                        srcDotnetLibs /= TEXT("../lib/net8.0");
                     }
                 }
+                LOG(Info, "Copying .NET files from {} to {}", packFolder, dstDotnet);
+                LOG(Info, "Copying .NET files from {} to {}", srcDotnetLibs, dstDotnetLibs);
                 FileSystem::CopyFile(dstDotnet / TEXT("LICENSE.TXT"), packFolder / TEXT("LICENSE.txt"));
                 FileSystem::CopyFile(dstDotnet / TEXT("LICENSE.TXT"), packFolder / TEXT("LICENSE.TXT"));
                 FileSystem::CopyFile(dstDotnet / TEXT("THIRD-PARTY-NOTICES.TXT"), packFolder / TEXT("ThirdPartyNotices.txt"));

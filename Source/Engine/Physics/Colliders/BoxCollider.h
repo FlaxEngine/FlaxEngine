@@ -23,7 +23,7 @@ public:
     /// Gets the size of the box, measured in the object's local space.
     /// </summary>
     /// <remarks>The box size will be scaled by the actor's world scale. </remarks>
-    API_PROPERTY(Attributes="EditorOrder(100), DefaultValue(typeof(Float3), \"100,100,100\"), EditorDisplay(\"Collider\")")
+    API_PROPERTY(Attributes="EditorOrder(100), DefaultValue(typeof(Float3), \"100,100,100\"), EditorDisplay(\"Collider\"), ValueCategory(Utils.ValueCategory.Distance)")
     FORCE_INLINE Float3 GetSize() const
     {
         return _size;

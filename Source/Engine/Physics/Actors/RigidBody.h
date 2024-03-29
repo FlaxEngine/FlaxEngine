@@ -181,7 +181,7 @@ public:
     /// <summary>
     /// Gets the mass value measured in kilograms (use override value only if OverrideMass is checked).
     /// </summary>
-    API_PROPERTY(Attributes="EditorOrder(110), Limit(0), EditorDisplay(\"Rigid Body\")")
+    API_PROPERTY(Attributes="EditorOrder(110), Limit(0), EditorDisplay(\"Rigid Body\"), ValueCategory(Utils.ValueCategory.Mass)")
     float GetMass() const;
 
     /// <summary>

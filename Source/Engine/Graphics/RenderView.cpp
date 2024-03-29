@@ -18,6 +18,7 @@ void RenderView::Prepare(RenderContext& renderContext)
     // Check if use TAA (need to modify the projection matrix)
     Float2 taaJitter;
     NonJitteredProjection = Projection;
+    IsTaaResolved = false;
     if (renderContext.List->Setup.UseTemporalAAJitter)
     {
         // Move to the next frame
@@ -26,7 +27,7 @@ void RenderView::Prepare(RenderContext& renderContext)
             TaaFrameIndex = 0;
 
         // Calculate jitter
-        const float jitterSpread = renderContext.List->Settings.AntiAliasing.TAA_JitterSpread / 0.75f;
+        const float jitterSpread = renderContext.List->Settings.AntiAliasing.TAA_JitterSpread;
         const float jitterX = (RendererUtils::TemporalHalton(TaaFrameIndex + 1, 2) - 0.5f) * jitterSpread;
         const float jitterY = (RendererUtils::TemporalHalton(TaaFrameIndex + 1, 3) - 0.5f) * jitterSpread;
         taaJitter = Float2(jitterX * 2.0f / width, jitterY * 2.0f / height);
@@ -80,6 +81,18 @@ void RenderView::PrepareCache(const RenderContext& renderContext, float width, f
         mainView = this;
     MainViewProjection = mainView->ViewProjection();
     MainScreenSize = mainView->ScreenSize;
+}
+
+void RenderView::UpdateCachedData()
+{
+    Matrix::Invert(View, IV);
+    Matrix::Invert(Projection, IP);
+    Matrix viewProjection;
+    Matrix::Multiply(View, Projection, viewProjection);
+    Frustum.SetMatrix(viewProjection);
+    Matrix::Invert(viewProjection, IVP);
+    CullingFrustum = Frustum;
+    NonJitteredProjection = Projection;
 }
 
 void RenderView::SetUp(const Matrix& viewProjection)
@@ -200,4 +213,28 @@ void RenderView::GetWorldMatrix(const Transform& transform, Matrix& world) const
 {
     const Float3 translation = transform.Translation - Origin;
     Matrix::Transformation(transform.Scale, transform.Orientation, translation, world);
+}
+
+TaaJitterRemoveContext::TaaJitterRemoveContext(const RenderView& view)
+{
+    if (view.IsTaaResolved)
+    {
+        // Cancel-out sub-pixel jitter when drawing geometry after TAA has been resolved
+        _view = (RenderView*)&view;
+        _prevProjection = view.Projection;
+        _prevNonJitteredProjection = view.NonJitteredProjection;
+        _view->Projection = _prevNonJitteredProjection;
+        _view->UpdateCachedData();
+    }
+}
+
+TaaJitterRemoveContext::~TaaJitterRemoveContext()
+{
+    if (_view)
+    {
+        // Restore projection
+        _view->Projection = _prevProjection;
+        _view->UpdateCachedData();
+        _view->NonJitteredProjection = _prevNonJitteredProjection;
+    }
 }

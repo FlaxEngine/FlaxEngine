@@ -38,6 +38,7 @@ namespace FlaxEditor.Windows
         protected EditorWindow(Editor editor, bool hideOnClose, ScrollBars scrollBars)
         : base(editor.UI.MasterPanel, hideOnClose, scrollBars)
         {
+            AutoFocus = true;
             Editor = editor;
 
             InputActions.Add(options => options.ContentFinder, () =>

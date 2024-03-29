@@ -3,6 +3,7 @@
 #pragma once
 
 #include "Editor/Cooker/GameCooker.h"
+#include "Editor/Cooker/PlatformTools.h"
 #include "Engine/Core/Types/Pair.h"
 #include "Engine/Core/Types/DateTime.h"
 #include "Engine/Core/Collections/Dictionary.h"
@@ -56,7 +57,7 @@ public:
     /// <summary>
     /// Assets cooking cache data (incremental building feature).
     /// </summary>
-    struct FLAXENGINE_API CacheData
+    struct FLAXENGINE_API CacheData : public IBuildCache
     {
         /// <summary>
         /// The cache header file path.
@@ -137,16 +138,6 @@ public:
         CacheEntry& CreateEntry(const Asset* asset, String& cachedFilePath);
 
         /// <summary>
-        /// Removes all cached entries for assets that contain a shader. This forces rebuild for them.
-        /// </summary>
-        void InvalidateShaders();
-
-        /// <summary>
-        /// Removes all cached entries for assets that contain a texture. This forces rebuild for them.
-        /// </summary>
-        void InvalidateCachePerType(const StringView& typeName);
-
-        /// <summary>
         /// Loads the cache for the given cooking data.
         /// </summary>
         /// <param name="data">The data.</param>
@@ -155,7 +146,11 @@ public:
         /// <summary>
         /// Saves this cache (header file).
         /// </summary>
-        void Save();
+        /// <param name="data">The data.</param>
+        void Save(CookingData& data);
+
+        using IBuildCache::InvalidateCachePerType;
+        void InvalidateCachePerType(const StringView& typeName) override;
     };
 
     struct FLAXENGINE_API AssetCookData

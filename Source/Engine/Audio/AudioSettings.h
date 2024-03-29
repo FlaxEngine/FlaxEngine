@@ -3,7 +3,6 @@
 #pragma once
 
 #include "Engine/Core/Config/Settings.h"
-#include "Engine/Serialization/Serialization.h"
 
 /// <summary>
 /// Audio settings container.
@@ -11,6 +10,7 @@
 API_CLASS(sealed, Namespace="FlaxEditor.Content.Settings") class FLAXENGINE_API AudioSettings : public SettingsBase
 {
     DECLARE_SCRIPTING_TYPE_MINIMAL(AudioSettings);
+    API_AUTO_SERIALIZATION();
 
 public:
     /// <summary>
@@ -46,12 +46,4 @@ public:
 
     // [SettingsBase]
     void Apply() override;
-
-    void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) final override
-    {
-        DESERIALIZE(DisableAudio);
-        DESERIALIZE(DopplerFactor);
-        DESERIALIZE(MuteOnFocusLoss);
-        DESERIALIZE(EnableHRTF);
-    }
 };

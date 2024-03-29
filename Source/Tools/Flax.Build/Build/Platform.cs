@@ -211,7 +211,7 @@ namespace Flax.Build
         /// </summary>
         /// <param name="targetPlatform">The target platform.</param>
         /// <param name="nullIfMissing">True if return null platform if it's missing, otherwise will invoke an exception.</param>
-        /// <returns>The toolchain.</returns>
+        /// <returns>The platform.</returns>
         public static Platform GetPlatform(TargetPlatform targetPlatform, bool nullIfMissing = false)
         {
             if (_platforms == null)

@@ -32,6 +32,8 @@ Delegate<LogType, const StringView&> Log::Logger::OnError;
 
 bool Log::Logger::Init()
 {
+    LogStartTime = Time::StartupTime;
+
     // Skip if disabled
     if (!IsLogEnabled())
         return false;
@@ -73,7 +75,6 @@ bool Log::Logger::Init()
 #endif
 
     // Create log file path
-    LogStartTime = Time::StartupTime;
     const String filename = TEXT("Log_") + LogStartTime.ToFileNameString() + TEXT(".txt");
     LogFilePath = logsDirectory / filename;
 
@@ -198,12 +199,11 @@ void Log::Logger::WriteFloor()
 void Log::Logger::ProcessLogMessage(LogType type, const StringView& msg, fmt_flax::memory_buffer& w)
 {
     const TimeSpan time = DateTime::Now() - LogStartTime;
-    const int32 msgLength = msg.Length();
-
     fmt_flax::format(w, TEXT("[ {0} ]: [{1}] "), *time.ToString('a'), ToString(type));
 
     // On Windows convert all '\n' into '\r\n'
 #if PLATFORM_WINDOWS
+    const int32 msgLength = msg.Length();
     bool hasWindowsNewLine = false;
     for (int32 i = 1; i < msgLength && !hasWindowsNewLine; i++)
         hasWindowsNewLine |= msg.Get()[i - 1] != '\r' && msg.Get()[i] == '\n';

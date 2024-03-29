@@ -146,7 +146,7 @@ namespace FlaxEditor.Viewport
             var gridPlane = new Plane(Vector3.Zero, Vector3.Up);
             var flags = SceneGraphNode.RayCastData.FlagTypes.SkipColliders | SceneGraphNode.RayCastData.FlagTypes.SkipEditorPrimitives;
             hit = _owner.SceneGraphRoot.RayCast(ref ray, ref view, out var closest, out var normal, flags);
-            var girdGizmo = (GridGizmo)_owner.Gizmos.FirstOrDefault(x => x is GridGizmo);
+            var girdGizmo = _owner.Gizmos.Get<GridGizmo>();
             if (hit != null)
             {
                 // Use hit location
@@ -180,7 +180,7 @@ namespace FlaxEditor.Viewport
             var location = hitLocation + new Vector3(0, bottomToCenter, 0);
 
             // Apply grid snapping if enabled
-            var transformGizmo = (TransformGizmo)_owner.Gizmos.FirstOrDefault(x => x is TransformGizmo);
+            var transformGizmo = _owner.Gizmos.Get<TransformGizmo>();
             if (transformGizmo != null && (_owner.UseSnapping || transformGizmo.TranslationSnapEnable))
             {
                 float snapValue = transformGizmo.TranslationSnapValue;

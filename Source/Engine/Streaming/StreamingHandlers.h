@@ -11,7 +11,7 @@ class FLAXENGINE_API TexturesStreamingHandler : public IStreamingHandler
 {
 public:
     // [IStreamingHandler]
-    float CalculateTargetQuality(StreamableResource* resource, DateTime now, double currentTime) override;
+    float CalculateTargetQuality(StreamableResource* resource, double currentTime) override;
     int32 CalculateResidency(StreamableResource* resource, float quality) override;
     int32 CalculateRequestedResidency(StreamableResource* resource, int32 targetResidency) override;
 };
@@ -23,7 +23,7 @@ class FLAXENGINE_API ModelsStreamingHandler : public IStreamingHandler
 {
 public:
     // [IStreamingHandler]
-    float CalculateTargetQuality(StreamableResource* resource, DateTime now, double currentTime) override;
+    float CalculateTargetQuality(StreamableResource* resource, double currentTime) override;
     int32 CalculateResidency(StreamableResource* resource, float quality) override;
     int32 CalculateRequestedResidency(StreamableResource* resource, int32 targetResidency) override;
 };
@@ -35,7 +35,7 @@ class FLAXENGINE_API SkinnedModelsStreamingHandler : public IStreamingHandler
 {
 public:
     // [IStreamingHandler]
-    float CalculateTargetQuality(StreamableResource* resource, DateTime now, double currentTime) override;
+    float CalculateTargetQuality(StreamableResource* resource, double currentTime) override;
     int32 CalculateResidency(StreamableResource* resource, float quality) override;
     int32 CalculateRequestedResidency(StreamableResource* resource, int32 targetResidency) override;
 };
@@ -47,7 +47,7 @@ class FLAXENGINE_API AudioStreamingHandler : public IStreamingHandler
 {
 public:
     // [IStreamingHandler]
-    float CalculateTargetQuality(StreamableResource* resource, DateTime now, double currentTime) override;
+    float CalculateTargetQuality(StreamableResource* resource, double currentTime) override;
     int32 CalculateResidency(StreamableResource* resource, float quality) override;
     int32 CalculateRequestedResidency(StreamableResource* resource, int32 targetResidency) override;
     bool RequiresStreaming(StreamableResource* resource, int32 currentResidency, int32 targetResidency) override;

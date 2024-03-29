@@ -612,7 +612,7 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext, RenderCont
     // Color Grading LUT generation
     auto colorGradingLUT = ColorGradingPass::Instance()->RenderLUT(renderContext);
 
-    // Post processing
+    // Post-processing
     EyeAdaptationPass::Instance()->Render(renderContext, frameBuffer);
     PostProcessingPass::Instance()->Render(renderContext, frameBuffer, tempBuffer, colorGradingLUT);
     RenderTargetPool::Release(colorGradingLUT);

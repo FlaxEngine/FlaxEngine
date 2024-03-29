@@ -88,10 +88,6 @@ bool Win32Thread::Start(uint32 stackSize)
     return false;
 }
 
-#if PLATFORM_WINDOWS
-extern LONG CALLBACK SehExceptionHandler(EXCEPTION_POINTERS* ep);
-#endif
-
 unsigned long Win32Thread::ThreadProc(void* pThis)
 {
     auto thread = (Win32Thread*)pThis;
@@ -103,7 +99,7 @@ unsigned long Win32Thread::ThreadProc(void* pThis)
         return static_cast<unsigned long>(exitCode);
     }
 #if PLATFORM_WINDOWS
-    __except (SehExceptionHandler(GetExceptionInformation()))
+    __except (Platform::SehExceptionHandler(GetExceptionInformation()))
     {
         return -1;
     }

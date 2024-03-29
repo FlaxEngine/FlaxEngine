@@ -1141,17 +1141,19 @@ namespace FlaxEditor.GUI.Timeline
                 {
                     foreach (var e in _playbackNavigation)
                     {
-                        e.Enabled = false;
-                        e.Visible = false;
+                        e.Enabled = true;
+                        e.Visible = true;
                     }
                 }
                 if (_playbackStop != null)
                 {
-                    _playbackStop.Visible = false;
+                    _playbackStop.Visible = true;
+                    _playbackStop.Enabled = false;
                 }
                 if (_playbackPlay != null)
                 {
-                    _playbackPlay.Visible = false;
+                    _playbackPlay.Visible = true;
+                    _playbackPlay.Enabled = false;
                 }
                 if (_positionHandle != null)
                 {

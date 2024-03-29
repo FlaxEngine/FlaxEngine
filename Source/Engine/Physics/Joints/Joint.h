@@ -38,7 +38,7 @@ public:
     /// <summary>
     /// Gets the break force. Determines the maximum force the joint can apply before breaking. Broken joints no longer participate in physics simulation.
     /// </summary>
-    API_PROPERTY(Attributes="EditorOrder(10), DefaultValue(float.MaxValue), EditorDisplay(\"Joint\")")
+    API_PROPERTY(Attributes="EditorOrder(10), DefaultValue(float.MaxValue), EditorDisplay(\"Joint\"), ValueCategory(Utils.ValueCategory.Force)")
     FORCE_INLINE float GetBreakForce() const
     {
         return _breakForce;
@@ -52,7 +52,7 @@ public:
     /// <summary>
     /// Gets the break torque. Determines the maximum torque the joint can apply before breaking. Broken joints no longer participate in physics simulation.
     /// </summary>
-    API_PROPERTY(Attributes="EditorOrder(20), DefaultValue(float.MaxValue), EditorDisplay(\"Joint\")")
+    API_PROPERTY(Attributes="EditorOrder(20), DefaultValue(float.MaxValue), EditorDisplay(\"Joint\"), ValueCategory(Utils.ValueCategory.Torque)")
     FORCE_INLINE float GetBreakTorque() const
     {
         return _breakTorque;

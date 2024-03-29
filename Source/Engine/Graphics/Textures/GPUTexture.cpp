@@ -315,14 +315,12 @@ int32 GPUTexture::ComputeBufferOffset(int32 subresource, int32 rowAlign, int32 s
 int32 GPUTexture::ComputeBufferTotalSize(int32 rowAlign, int32 sliceAlign) const
 {
     int32 result = 0;
-
     for (int32 mipLevel = 0; mipLevel < MipLevels(); mipLevel++)
     {
         const int32 slicePitch = ComputeSlicePitch(mipLevel, rowAlign);
         const int32 depth = CalculateMipSize(Depth(), mipLevel);
         result += Math::AlignUp<int32>(slicePitch * depth, sliceAlign);
     }
-
     return result * ArraySize();
 }
 
@@ -333,8 +331,11 @@ int32 GPUTexture::ComputeSlicePitch(int32 mipLevel, int32 rowAlign) const
 
 int32 GPUTexture::ComputeRowPitch(int32 mipLevel, int32 rowAlign) const
 {
-    const int32 formatSize = PixelFormatExtensions::SizeInBytes(Format());
-    return Math::AlignUp<int32>(CalculateMipSize(Width(), mipLevel) * formatSize, rowAlign);
+    int32 mipWidth = CalculateMipSize(Width(), mipLevel);
+    int32 mipHeight = CalculateMipSize(Height(), mipLevel);
+    uint32 rowPitch, slicePitch;
+    RenderTools::ComputePitch(Format(), mipWidth, mipHeight, rowPitch, slicePitch);
+    return Math::AlignUp<int32>(rowPitch, rowAlign);
 }
 
 bool GPUTexture::Init(const GPUTextureDescription& desc)

@@ -4,6 +4,7 @@
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Types/DateTime.h"
 #include "Engine/Core/Types/TimeSpan.h"
+#include "Engine/Core/Types/Stopwatch.h"
 #include "Engine/Core/Collections/Dictionary.h"
 #include "Engine/Engine/EngineService.h"
 #include "Engine/Scripting/Scripting.h"
@@ -81,7 +82,7 @@ bool CustomEditorsUtilService::Init()
 
 void OnAssemblyLoaded(MAssembly* assembly)
 {
-    const auto startTime = DateTime::NowUTC();
+    Stopwatch stopwatch;
 
     // Prepare FlaxEngine
     auto engineAssembly = ((NativeBinaryModule*)GetBinaryModuleFlaxEngine())->Assembly;
@@ -162,8 +163,8 @@ void OnAssemblyLoaded(MAssembly* assembly)
         }
     }
 
-    const auto endTime = DateTime::NowUTC();
-    LOG(Info, "Assembly \'{0}\' scanned for custom editors in {1} ms", assembly->ToString(), (int32)(endTime - startTime).GetTotalMilliseconds());
+    stopwatch.Stop();
+    LOG(Info, "Assembly \'{0}\' scanned for custom editors in {1} ms", assembly->ToString(), stopwatch.GetMilliseconds());
 }
 
 void OnAssemblyUnloading(MAssembly* assembly)

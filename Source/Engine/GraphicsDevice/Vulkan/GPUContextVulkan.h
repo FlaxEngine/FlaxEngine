@@ -40,43 +40,25 @@ class DescriptorSetLayoutVulkan;
 /// </summary>
 struct PipelineBarrierVulkan
 {
-public:
-
     VkPipelineStageFlags SourceStage = 0;
     VkPipelineStageFlags DestStage = 0;
     Array<VkImageMemoryBarrier, FixedAllocation<VK_BARRIER_BUFFER_SIZE>> ImageBarriers;
     Array<VkBufferMemoryBarrier, FixedAllocation<VK_BARRIER_BUFFER_SIZE>> BufferBarriers;
 #if VK_ENABLE_BARRIERS_DEBUG
-	Array<GPUTextureViewVulkan*, FixedAllocation<VK_BARRIER_BUFFER_SIZE>> ImageBarriersDebug;
+    Array<GPUTextureViewVulkan*, FixedAllocation<VK_BARRIER_BUFFER_SIZE>> ImageBarriersDebug;
 #endif
 
-public:
-
-    inline void Reset()
-    {
-        SourceStage = 0;
-        DestStage = 0;
-        ImageBarriers.Clear();
-        BufferBarriers.Clear();
-#if VK_ENABLE_BARRIERS_DEBUG
-		ImageBarriersDebug.Clear();
-#endif
-    }
-
-    void AddImageBarrier(VkImage image, const VkImageSubresourceRange& range, VkImageLayout srcLayout, VkImageLayout dstLayout, GPUTextureViewVulkan* handle);
-    void AddBufferBarrier(VkBuffer buffer, VkDeviceSize offset, VkDeviceSize size, VkAccessFlags srcAccess, VkAccessFlags dstAccess);
-
-    inline bool IsFull() const
+    FORCE_INLINE bool IsFull() const
     {
         return ImageBarriers.Count() == VK_BARRIER_BUFFER_SIZE || BufferBarriers.Count() == VK_BARRIER_BUFFER_SIZE;
     }
 
-    inline bool HasBarrier() const
+    FORCE_INLINE bool HasBarrier() const
     {
         return ImageBarriers.Count() + BufferBarriers.Count() != 0;
     }
 
-    void Execute(CmdBufferVulkan* cmdBuffer);
+    void Execute(const CmdBufferVulkan* cmdBuffer);
 };
 
 /// <summary>
@@ -85,7 +67,6 @@ public:
 class GPUContextVulkan : public GPUContext
 {
 private:
-
     GPUDeviceVulkan* _device;
     QueueVulkan* _queue;
     CmdBufferManagerVulkan* _cmdBufferManager;
@@ -116,7 +97,6 @@ private:
     Dictionary<uint32, DescriptorPoolArray> _descriptorPools;
 
 public:
-
     /// <summary>
     /// Initializes a new instance of the <see cref="GPUContextVulkan"/> class.
     /// </summary>
@@ -130,18 +110,17 @@ public:
     ~GPUContextVulkan();
 
 public:
-
-    QueueVulkan* GetQueue() const
+    FORCE_INLINE QueueVulkan* GetQueue() const
     {
         return _queue;
     }
 
-    CmdBufferManagerVulkan* GetCmdBufferManager() const
+    FORCE_INLINE CmdBufferManagerVulkan* GetCmdBufferManager() const
     {
         return _cmdBufferManager;
     }
 
-    void AddImageBarrier(VkImage image, VkImageLayout srcLayout, VkImageLayout dstLayout, VkImageSubresourceRange& subresourceRange, GPUTextureViewVulkan* handle);
+    void AddImageBarrier(VkImage image, VkImageLayout srcLayout, VkImageLayout dstLayout, const VkImageSubresourceRange& subresourceRange, GPUTextureViewVulkan* handle);
     void AddImageBarrier(GPUTextureViewVulkan* handle, VkImageLayout dstLayout);
     void AddImageBarrier(GPUTextureVulkan* texture, int32 mipSlice, int32 arraySlice, VkImageLayout dstLayout);
     void AddImageBarrier(GPUTextureVulkan* texture, VkImageLayout dstLayout);
@@ -157,14 +136,11 @@ public:
     void EndRenderPass();
 
 private:
-
     void UpdateDescriptorSets(const struct SpirvShaderDescriptorInfo& descriptorInfo, class DescriptorSetWriterVulkan& dsWriter, bool& needsWrite);
-    void UpdateDescriptorSets(GPUPipelineStateVulkan* pipelineState);
     void UpdateDescriptorSets(ComputePipelineStateVulkan* pipelineState);
     void OnDrawCall();
 
 public:
-
     // [GPUContext]
     void FrameBegin() override;
     void FrameEnd() override;

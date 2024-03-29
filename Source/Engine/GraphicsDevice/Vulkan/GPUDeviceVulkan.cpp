@@ -250,23 +250,18 @@ void SetupDebugLayerCallback()
             {
             default:
                 createInfo.messageSeverity |= VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT;
-                // Fall-through...
             case 4:
                 createInfo.messageSeverity |= VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT;
-                // Fall-through...
             case 3:
                 createInfo.messageType |= VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
-                // Fall-through...
             case 2:
                 createInfo.messageSeverity |= VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT;
                 createInfo.messageType |= VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT;
-                // Fall-through...
             case 1:
                 createInfo.messageSeverity |= VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
                 createInfo.messageType |= VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT;
                 break;
             case 0:
-                // Nothing to do
                 break;
             }
             const VkResult result = vkCreateDebugUtilsMessengerEXT(GPUDeviceVulkan::Instance, &createInfo, nullptr, &Messenger);
@@ -288,21 +283,16 @@ void SetupDebugLayerCallback()
             {
             default:
                 createInfo.flags |= VK_DEBUG_REPORT_DEBUG_BIT_EXT;
-                // Fall-through...
             case 4:
                 createInfo.flags |= VK_DEBUG_REPORT_INFORMATION_BIT_EXT;
-                // Fall-through...
             case 3:
                 createInfo.flags |= VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT;
-                // Fall-through...
             case 2:
                 createInfo.flags |= VK_DEBUG_REPORT_WARNING_BIT_EXT;
-                // Fall-through...
             case 1:
                 createInfo.flags |= VK_DEBUG_REPORT_ERROR_BIT_EXT;
                 break;
             case 0:
-                // Nothing to do
                 break;
             }
             const VkResult result = vkCreateDebugReportCallbackEXT(GPUDeviceVulkan::Instance, &createInfo, nullptr, &MsgCallback);
@@ -354,16 +344,14 @@ DeferredDeletionQueueVulkan::~DeferredDeletionQueueVulkan()
     ASSERT(_entries.IsEmpty());
 }
 
-void DeferredDeletionQueueVulkan::ReleaseResources(bool deleteImmediately)
+void DeferredDeletionQueueVulkan::ReleaseResources(bool immediately)
 {
-    ScopeLock lock(_locker);
     const uint64 checkFrame = Engine::FrameCount - VULKAN_RESOURCE_DELETE_SAFE_FRAMES_COUNT;
+    ScopeLock lock(_locker);
     for (int32 i = 0; i < _entries.Count(); i++)
     {
-        Entry* e = &_entries[i];
-
-        if (deleteImmediately || (checkFrame > e->FrameNumber && (e->CmdBuffer == nullptr || e->FenceCounter < e->CmdBuffer->GetFenceSignaledCounter()))
-        )
+        Entry* e = &_entries.Get()[i];
+        if (immediately || (checkFrame > e->FrameNumber && (e->CmdBuffer == nullptr || e->FenceCounter < e->CmdBuffer->GetFenceSignaledCounter())))
         {
             if (e->AllocationHandle == VK_NULL_HANDLE)
             {
@@ -402,14 +390,15 @@ void DeferredDeletionQueueVulkan::ReleaseResources(bool deleteImmediately)
                 {
                     vmaDestroyBuffer(_device->Allocator, (VkBuffer)e->Handle, e->AllocationHandle);
                 }
+#if !BUILD_RELEASE
                 else
                 {
                     CRASH;
                 }
+#endif
             }
 
             _entries.RemoveAt(i--);
-
             if (_entries.IsEmpty())
                 break;
         }
@@ -418,19 +407,17 @@ void DeferredDeletionQueueVulkan::ReleaseResources(bool deleteImmediately)
 
 void DeferredDeletionQueueVulkan::EnqueueGenericResource(Type type, uint64 handle, VmaAllocation allocation)
 {
-    ASSERT(handle != 0);
-    const auto queue = _device->GraphicsQueue;
+    ASSERT_LOW_LAYER(handle != 0);
 
     Entry entry;
-    queue->GetLastSubmittedInfo(entry.CmdBuffer, entry.FenceCounter);
+    _device->GraphicsQueue->GetLastSubmittedInfo(entry.CmdBuffer, entry.FenceCounter);
     entry.Handle = handle;
     entry.AllocationHandle = allocation;
     entry.StructureType = type;
     entry.FrameNumber = Engine::FrameCount;
 
     ScopeLock lock(_locker);
-
-#if BUILD_DEBUG
+#if BUILD_DEBUG && 0
     const Function<bool(const Entry&)> ContainsHandle = [handle](const Entry& e)
     {
         return e.Handle == handle;
@@ -443,14 +430,10 @@ void DeferredDeletionQueueVulkan::EnqueueGenericResource(Type type, uint64 handl
 uint32 GetHash(const RenderTargetLayoutVulkan& key)
 {
     uint32 hash = (int32)key.MSAA * 11;
-    CombineHash(hash, (uint32)key.ReadDepth);
-    CombineHash(hash, (uint32)key.WriteDepth);
-    CombineHash(hash, (uint32)key.BlendEnable);
+    CombineHash(hash, key.Flags);
     CombineHash(hash, (uint32)key.DepthFormat * 93473262);
-    CombineHash(hash, key.RTsCount * 136);
     CombineHash(hash, key.Extent.width);
     CombineHash(hash, key.Extent.height);
-    CombineHash(hash, key.Layers);
     for (int32 i = 0; i < ARRAY_COUNT(key.RTVsFormats); i++)
         CombineHash(hash, (uint32)key.RTVsFormats[i]);
     return hash;
@@ -465,9 +448,9 @@ uint32 GetHash(const FramebufferVulkan::Key& key)
     return hash;
 }
 
-FramebufferVulkan::FramebufferVulkan(GPUDeviceVulkan* device, Key& key, VkExtent2D& extent, uint32 layers)
-    : _device(device)
-    , _handle(VK_NULL_HANDLE)
+FramebufferVulkan::FramebufferVulkan(GPUDeviceVulkan* device, const Key& key, const VkExtent2D& extent, uint32 layers)
+    : Device(device)
+    , Handle(VK_NULL_HANDLE)
     , Extent(extent)
     , Layers(layers)
 {
@@ -475,18 +458,18 @@ FramebufferVulkan::FramebufferVulkan(GPUDeviceVulkan* device, Key& key, VkExtent
 
     VkFramebufferCreateInfo createInfo;
     RenderToolsVulkan::ZeroStruct(createInfo, VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO);
-    createInfo.renderPass = key.RenderPass->GetHandle();
+    createInfo.renderPass = key.RenderPass->Handle;
     createInfo.attachmentCount = key.AttachmentCount;
     createInfo.pAttachments = key.Attachments;
     createInfo.width = extent.width;
     createInfo.height = extent.height;
     createInfo.layers = layers;
-    VALIDATE_VULKAN_RESULT(vkCreateFramebuffer(device->Device, &createInfo, nullptr, &_handle));
+    VALIDATE_VULKAN_RESULT(vkCreateFramebuffer(device->Device, &createInfo, nullptr, &Handle));
 }
 
 FramebufferVulkan::~FramebufferVulkan()
 {
-    _device->DeferredDeletionQueue.EnqueueResource(DeferredDeletionQueueVulkan::Type::Framebuffer, _handle);
+    Device->DeferredDeletionQueue.EnqueueResource(DeferredDeletionQueueVulkan::Type::Framebuffer, Handle);
 }
 
 bool FramebufferVulkan::HasReference(VkImageView imageView) const
@@ -500,8 +483,8 @@ bool FramebufferVulkan::HasReference(VkImageView imageView) const
 }
 
 RenderPassVulkan::RenderPassVulkan(GPUDeviceVulkan* device, const RenderTargetLayoutVulkan& layout)
-    : _device(device)
-    , _handle(VK_NULL_HANDLE)
+    : Device(device)
+    , Handle(VK_NULL_HANDLE)
     , Layout(layout)
 {
     const int32 colorAttachmentsCount = layout.RTsCount;
@@ -544,23 +527,48 @@ RenderPassVulkan::RenderPassVulkan(GPUDeviceVulkan* device, const RenderTargetLa
     if (hasDepthStencilAttachment)
     {
         VkImageLayout depthStencilLayout;
-        if (layout.ReadDepth && !layout.WriteDepth)
+#if 0
+        // TODO: enable extension and use separateDepthStencilLayouts from Vulkan 1.2
+        if (layout.ReadStencil || layout.WriteStencil)
+        {
+            if (layout.WriteDepth && layout.WriteStencil)
+                depthStencilLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+            else if (layout.WriteDepth && !layout.WriteStencil)
+                depthStencilLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL;
+            else if (layout.WriteStencil && !layout.WriteDepth)
+                depthStencilLayout = VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL;
+            else if (layout.ReadDepth)
+                depthStencilLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
+            else
+                depthStencilLayout = VK_IMAGE_LAYOUT_STENCIL_READ_ONLY_OPTIMAL;
+        }
+        else
+        {
+            // Depth-only
+            if (layout.ReadDepth && !layout.WriteDepth)
+                depthStencilLayout = VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_OPTIMAL;
+            else
+                depthStencilLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL;
+        }
+#else
+        if ((layout.ReadDepth || layout.ReadStencil) && !(layout.WriteDepth || layout.WriteStencil))
             depthStencilLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
         else
             depthStencilLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+#endif
 
         // Use last slot for depth stencil attachment
-        VkAttachmentDescription& depthAttachment = attachments[colorAttachmentsCount];
-        depthAttachment.flags = 0;
-        depthAttachment.format = RenderToolsVulkan::ToVulkanFormat(layout.DepthFormat);
-        depthAttachment.samples = (VkSampleCountFlagBits)layout.MSAA;
-        // TODO: fix those operations for load and store
-        depthAttachment.loadOp = layout.ReadDepth || true ? VK_ATTACHMENT_LOAD_OP_LOAD : VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-        depthAttachment.storeOp = layout.WriteDepth || true ? VK_ATTACHMENT_STORE_OP_STORE : VK_ATTACHMENT_STORE_OP_DONT_CARE;
-        depthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE; // TODO: Handle stencil
-        depthAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-        depthAttachment.initialLayout = depthStencilLayout;
-        depthAttachment.finalLayout = depthStencilLayout;
+        VkAttachmentDescription& attachment = attachments[colorAttachmentsCount];
+        attachment.flags = 0;
+        attachment.format = RenderToolsVulkan::ToVulkanFormat(layout.DepthFormat);
+        attachment.samples = (VkSampleCountFlagBits)layout.MSAA;
+        attachment.loadOp = layout.ReadDepth || layout.ReadStencil ? VK_ATTACHMENT_LOAD_OP_LOAD : VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+        //attachment.storeOp = layout.WriteDepth || layout.WriteStencil ? VK_ATTACHMENT_STORE_OP_STORE : VK_ATTACHMENT_STORE_OP_DONT_CARE;
+        attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE; // For some reason, read-only depth results in artifacts
+        attachment.stencilLoadOp = layout.ReadStencil ? VK_ATTACHMENT_LOAD_OP_LOAD : VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+        attachment.stencilStoreOp = layout.WriteStencil ? VK_ATTACHMENT_STORE_OP_STORE : VK_ATTACHMENT_STORE_OP_DONT_CARE;
+        attachment.initialLayout = depthStencilLayout;
+        attachment.finalLayout = depthStencilLayout;
         depthStencilReference.attachment = colorAttachmentsCount;
         depthStencilReference.layout = depthStencilLayout;
         subpassDesc.pDepthStencilAttachment = &depthStencilReference;
@@ -572,12 +580,15 @@ RenderPassVulkan::RenderPassVulkan(GPUDeviceVulkan* device, const RenderTargetLa
     createInfo.pAttachments = attachments;
     createInfo.subpassCount = 1;
     createInfo.pSubpasses = &subpassDesc;
-    VALIDATE_VULKAN_RESULT(vkCreateRenderPass(device->Device, &createInfo, nullptr, &_handle));
+    VALIDATE_VULKAN_RESULT(vkCreateRenderPass(device->Device, &createInfo, nullptr, &Handle));
+#if VULKAN_USE_DEBUG_DATA
+    DebugCreateInfo = createInfo;
+#endif
 }
 
 RenderPassVulkan::~RenderPassVulkan()
 {
-    _device->DeferredDeletionQueue.EnqueueResource(DeferredDeletionQueueVulkan::Type::RenderPass, _handle);
+    Device->DeferredDeletionQueue.EnqueueResource(DeferredDeletionQueueVulkan::Type::RenderPass, Handle);
 }
 
 QueryPoolVulkan::QueryPoolVulkan(GPUDeviceVulkan* device, int32 capacity, VkQueryType type)
@@ -987,11 +998,10 @@ void StagingManagerVulkan::ProcessPendingFree()
     }
 
     // Free staging buffers that has not been used for a few frames
-    const uint64 SafeFramesCount = 30;
     for (int32 i = _freeBuffers.Count() - 1; i >= 0; i--)
     {
-        auto& e = _freeBuffers[i];
-        if (e.FrameNumber + SafeFramesCount < Engine::FrameCount)
+        auto& e = _freeBuffers.Get()[i];
+        if (e.FrameNumber + VULKAN_RESOURCE_DELETE_SAFE_FRAMES_COUNT < Engine::FrameCount)
         {
             auto buffer = e.Buffer;
 
@@ -1016,7 +1026,7 @@ void StagingManagerVulkan::Dispose()
 {
     ScopeLock lock(_locker);
 
-#if !BUILD_RELEASE
+#if BUILD_DEBUG
     LOG(Info, "Vulkan staging buffers peek memory usage: {0}, allocs: {1}, frees: {2}", Utilities::BytesToText(_allBuffersPeekSize), Utilities::BytesToText(_allBuffersAllocSize), Utilities::BytesToText(_allBuffersFreeSize));
 #endif
 
@@ -1067,7 +1077,7 @@ GPUDevice* GPUDeviceVulkan::Create()
 #endif
 
     // Engine registration
-    const StringAsANSI<256> appName(*Globals::ProductName);
+    const StringAsANSI<> appName(*Globals::ProductName);
     VkApplicationInfo appInfo;
     RenderToolsVulkan::ZeroStruct(appInfo, VK_STRUCTURE_TYPE_APPLICATION_INFO);
     appInfo.pApplicationName = appName.Get();
@@ -1082,24 +1092,13 @@ GPUDevice* GPUDeviceVulkan::Create()
     instInfo.flags |= VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR;
 #endif
     instInfo.pApplicationInfo = &appInfo;
-
     GetInstanceLayersAndExtensions(InstanceExtensions, InstanceLayers, SupportsDebugUtilsExt);
-
-    const auto hasExtension = [](const Array<const char*>& extensions, const char* name) -> bool
-    {
-        const Function<bool(const char* const&)> callback = [&name](const char* const& extension) -> bool
-        {
-            return extension && StringUtils::Compare(extension, name) == 0;
-        };
-        return ArrayExtensions::Any(extensions, callback);
-    };
-
     instInfo.enabledExtensionCount = InstanceExtensions.Count();
     instInfo.ppEnabledExtensionNames = instInfo.enabledExtensionCount > 0 ? static_cast<const char* const*>(InstanceExtensions.Get()) : nullptr;
     instInfo.enabledLayerCount = InstanceLayers.Count();
     instInfo.ppEnabledLayerNames = instInfo.enabledLayerCount > 0 ? InstanceLayers.Get() : nullptr;
 #if VULKAN_USE_DEBUG_LAYER
-    SupportsDebugCallbackExt = !SupportsDebugUtilsExt && hasExtension(InstanceExtensions, VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
+    SupportsDebugCallbackExt = !SupportsDebugUtilsExt && RenderToolsVulkan::HasExtension(InstanceExtensions, VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
 #endif
 
     // Create Vulkan instance
@@ -1647,9 +1646,7 @@ bool GPUDeviceVulkan::Init()
         queue.pQueuePriorities = currentPriority;
         const VkQueueFamilyProperties& properties = QueueFamilyProps[queue.queueFamilyIndex];
         for (int32 queueIndex = 0; queueIndex < (int32)properties.queueCount; queueIndex++)
-        {
             *currentPriority++ = 1.0f;
-        }
     }
     deviceInfo.queueCreateInfoCount = queueFamilyInfos.Count();
     deviceInfo.pQueueCreateInfos = queueFamilyInfos.Get();
@@ -1836,12 +1833,17 @@ bool GPUDeviceVulkan::Init()
         INIT_FUNC(vkDestroyImage);
         INIT_FUNC(vkCmdCopyBuffer);
 #if VMA_DEDICATED_ALLOCATION
+#if PLATFORM_SWITCH
+        vulkanFunctions.vkGetBufferMemoryRequirements2KHR = vkGetBufferMemoryRequirements2;
+        vulkanFunctions.vkGetImageMemoryRequirements2KHR = vkGetImageMemoryRequirements2;
+#else
         INIT_FUNC(vkGetBufferMemoryRequirements2KHR);
         INIT_FUNC(vkGetImageMemoryRequirements2KHR);
 #endif
+#endif
 #undef INIT_FUNC
         VmaAllocatorCreateInfo allocatorInfo = {};
-        allocatorInfo.vulkanApiVersion = VK_API_VERSION_1_0;
+        allocatorInfo.vulkanApiVersion = VULKAN_API_VERSION;
         allocatorInfo.physicalDevice = gpu;
         allocatorInfo.instance = Instance;
         allocatorInfo.device = Device;
@@ -2033,6 +2035,7 @@ void GPUDeviceVulkan::WaitForGPU()
 {
     if (Device != VK_NULL_HANDLE)
     {
+        PROFILE_CPU();
         VALIDATE_VULKAN_RESULT(vkDeviceWaitIdle(Device));
     }
 }
@@ -2080,7 +2083,6 @@ GPUConstantBuffer* GPUDeviceVulkan::CreateConstantBuffer(uint32 size, const Stri
 SemaphoreVulkan::SemaphoreVulkan(GPUDeviceVulkan* device)
     : _device(device)
 {
-    // Create semaphore
     VkSemaphoreCreateInfo info;
     RenderToolsVulkan::ZeroStruct(info, VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO);
     VALIDATE_VULKAN_RESULT(vkCreateSemaphore(device->Device, &info, nullptr, &_semaphoreHandle));
@@ -2093,21 +2095,6 @@ SemaphoreVulkan::~SemaphoreVulkan()
     _semaphoreHandle = VK_NULL_HANDLE;
 }
 
-FenceVulkan::~FenceVulkan()
-{
-    ASSERT(_handle == VK_NULL_HANDLE);
-}
-
-FenceVulkan::FenceVulkan(GPUDeviceVulkan* device, FenceManagerVulkan* owner, bool createSignaled)
-    : _signaled(createSignaled)
-    , _owner(owner)
-{
-    VkFenceCreateInfo info;
-    RenderToolsVulkan::ZeroStruct(info, VK_STRUCTURE_TYPE_FENCE_CREATE_INFO);
-    info.flags = createSignaled ? VK_FENCE_CREATE_SIGNALED_BIT : 0;
-    VALIDATE_VULKAN_RESULT(vkCreateFence(device->Device, &info, nullptr, &_handle));
-}
-
 FenceManagerVulkan::~FenceManagerVulkan()
 {
     ASSERT(_usedFences.IsEmpty());
@@ -2116,68 +2103,63 @@ FenceManagerVulkan::~FenceManagerVulkan()
 void FenceManagerVulkan::Dispose()
 {
     ScopeLock lock(_device->_fenceLock);
-
     ASSERT(_usedFences.IsEmpty());
     for (FenceVulkan* fence : _freeFences)
-    {
         DestroyFence(fence);
-    }
     _freeFences.Clear();
 }
 
 FenceVulkan* FenceManagerVulkan::AllocateFence(bool createSignaled)
 {
     ScopeLock lock(_device->_fenceLock);
-
     FenceVulkan* fence;
     if (_freeFences.HasItems())
     {
         fence = _freeFences.Last();
         _freeFences.RemoveLast();
         _usedFences.Add(fence);
-
         if (createSignaled)
-        {
-            fence->_signaled = true;
-        }
-
-        return fence;
+            fence->IsSignaled = true;
     }
-
-    fence = New<FenceVulkan>(_device, this, createSignaled);
-    _usedFences.Add(fence);
+    else
+    {
+        fence = New<FenceVulkan>();
+        fence->IsSignaled = createSignaled;
+        VkFenceCreateInfo info;
+        RenderToolsVulkan::ZeroStruct(info, VK_STRUCTURE_TYPE_FENCE_CREATE_INFO);
+        info.flags = createSignaled ? VK_FENCE_CREATE_SIGNALED_BIT : 0;
+        VALIDATE_VULKAN_RESULT(vkCreateFence(_device->Device, &info, nullptr, &fence->Handle));
+        _usedFences.Add(fence);
+    }
     return fence;
 }
 
-bool FenceManagerVulkan::WaitForFence(FenceVulkan* fence, uint64 timeInNanoseconds)
+bool FenceManagerVulkan::WaitForFence(FenceVulkan* fence, uint64 timeInNanoseconds) const
 {
     ASSERT(_usedFences.Contains(fence));
-    ASSERT(!fence->_signaled);
-
-    const VkResult result = vkWaitForFences(_device->Device, 1, &fence->_handle, true, timeInNanoseconds);
+    ASSERT(!fence->IsSignaled);
+    const VkResult result = vkWaitForFences(_device->Device, 1, &fence->Handle, true, timeInNanoseconds);
     LOG_VULKAN_RESULT(result);
     if (result == VK_SUCCESS)
     {
-        fence->_signaled = true;
+        fence->IsSignaled = true;
         return false;
     }
-
     return true;
 }
 
-void FenceManagerVulkan::ResetFence(FenceVulkan* fence)
+void FenceManagerVulkan::ResetFence(FenceVulkan* fence) const
 {
-    if (fence->_signaled)
+    if (fence->IsSignaled)
     {
-        VALIDATE_VULKAN_RESULT(vkResetFences(_device->Device, 1, &fence->_handle));
-        fence->_signaled = false;
+        VALIDATE_VULKAN_RESULT(vkResetFences(_device->Device, 1, &fence->Handle));
+        fence->IsSignaled = false;
     }
 }
 
 void FenceManagerVulkan::ReleaseFence(FenceVulkan*& fence)
 {
     ScopeLock lock(_device->_fenceLock);
-
     ResetFence(fence);
     _usedFences.Remove(fence);
     _freeFences.Add(fence);
@@ -2187,37 +2169,31 @@ void FenceManagerVulkan::ReleaseFence(FenceVulkan*& fence)
 void FenceManagerVulkan::WaitAndReleaseFence(FenceVulkan*& fence, uint64 timeInNanoseconds)
 {
     ScopeLock lock(_device->_fenceLock);
-
-    if (!fence->IsSignaled())
-    {
+    if (!fence->IsSignaled)
         WaitForFence(fence, timeInNanoseconds);
-    }
-
     ResetFence(fence);
     _usedFences.Remove(fence);
     _freeFences.Add(fence);
     fence = nullptr;
 }
 
-bool FenceManagerVulkan::CheckFenceState(FenceVulkan* fence)
+bool FenceManagerVulkan::CheckFenceState(FenceVulkan* fence) const
 {
     ASSERT(_usedFences.Contains(fence));
-    ASSERT(!fence->_signaled);
-
-    const VkResult result = vkGetFenceStatus(_device->Device, fence->GetHandle());
+    ASSERT(!fence->IsSignaled);
+    const VkResult result = vkGetFenceStatus(_device->Device, fence->Handle);
     if (result == VK_SUCCESS)
     {
-        fence->_signaled = true;
+        fence->IsSignaled = true;
         return true;
     }
-
     return false;
 }
 
-void FenceManagerVulkan::DestroyFence(FenceVulkan* fence)
+void FenceManagerVulkan::DestroyFence(FenceVulkan* fence) const
 {
-    vkDestroyFence(_device->Device, fence->GetHandle(), nullptr);
-    fence->_handle = VK_NULL_HANDLE;
+    vkDestroyFence(_device->Device, fence->Handle, nullptr);
+    fence->Handle = VK_NULL_HANDLE;
     Delete(fence);
 }
 

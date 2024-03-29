@@ -170,14 +170,15 @@ namespace FlaxEngine.GUI
             {
                 var leftEdge = font.GetCharPosition(_text, SelectionLeft, ref _layout);
                 var rightEdge = font.GetCharPosition(_text, SelectionRight, ref _layout);
-                float fontHeight = font.Height / DpiScale;
+                var fontHeight = font.Height;
+                var textHeight = fontHeight / DpiScale;
 
                 // Draw selection background
                 float alpha = Mathf.Min(1.0f, Mathf.Cos(_animateTime * BackgroundSelectedFlashSpeed) * 0.5f + 1.3f);
                 alpha *= alpha;
                 Color selectionColor = SelectionColor * alpha;
                 //
-                int selectedLinesCount = 1 + Mathf.FloorToInt((rightEdge.Y - leftEdge.Y) / fontHeight);
+                int selectedLinesCount = 1 + Mathf.FloorToInt((rightEdge.Y - leftEdge.Y) / textHeight);
                 if (selectedLinesCount == 1)
                 {
                     // Selected is part of single line
@@ -194,7 +195,7 @@ namespace FlaxEngine.GUI
                     //
                     for (int i = 3; i <= selectedLinesCount; i++)
                     {
-                        leftEdge.Y += fontHeight;
+                        leftEdge.Y += textHeight;
                         Rectangle r = new Rectangle(leftMargin, leftEdge.Y, 1000000000, fontHeight);
                         Render2D.FillRectangle(r, selectionColor);
                     }

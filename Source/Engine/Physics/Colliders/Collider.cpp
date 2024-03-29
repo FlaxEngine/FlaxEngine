@@ -438,7 +438,7 @@ void Collider::OnPhysicsSceneChanged(PhysicsScene* previous)
 
     if (_staticActor != nullptr)
     {
-        PhysicsBackend::RemoveSceneActor(previous->GetPhysicsScene(), _staticActor);
+        PhysicsBackend::RemoveSceneActor(previous->GetPhysicsScene(), _staticActor, true);
         void* scene = GetPhysicsScene()->GetPhysicsScene();
         PhysicsBackend::AddSceneActor(scene, _staticActor);
     }

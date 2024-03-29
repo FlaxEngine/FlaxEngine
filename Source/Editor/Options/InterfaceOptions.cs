@@ -2,6 +2,7 @@
 
 using System.ComponentModel;
 using FlaxEditor.GUI.Docking;
+using FlaxEditor.Utilities;
 using FlaxEngine;
 
 namespace FlaxEditor.Options
@@ -117,6 +118,27 @@ namespace FlaxEditor.Options
         }
 
         /// <summary>
+        /// Options for formatting numerical values.
+        /// </summary>
+        public enum ValueFormattingType
+        {
+            /// <summary>
+            /// No formatting.
+            /// </summary>
+            None,
+
+            /// <summary>
+            /// Format using the base SI unit.
+            /// </summary>
+            BaseUnit,
+
+            /// <summary>
+            /// Format using a unit that matches the value best.
+            /// </summary>
+            AutoUnit,
+        }
+
+        /// <summary>
         /// Gets or sets the Editor User Interface scale. Applied to all UI elements, windows and text. Can be used to scale the interface up on a bigger display. Editor restart required.
         /// </summary>
         [DefaultValue(1.0f), Limit(0.1f, 10.0f)]
@@ -173,6 +195,20 @@ namespace FlaxEditor.Options
         [DefaultValue(FlaxEngine.GUI.Orientation.Horizontal)]
         [EditorDisplay("Interface"), EditorOrder(280), Tooltip("Editor content window orientation.")]
         public FlaxEngine.GUI.Orientation ContentWindowOrientation { get; set; } = FlaxEngine.GUI.Orientation.Horizontal;
+
+        /// <summary>
+        /// Gets or sets the formatting option for numeric values in the editor.
+        /// </summary>
+        [DefaultValue(ValueFormattingType.None)]
+        [EditorDisplay("Interface"), EditorOrder(300)]
+        public ValueFormattingType ValueFormatting { get; set; }
+
+        /// <summary>
+        /// Gets or sets the option to put a space between numbers and units for unit formatting.
+        /// </summary>
+        [DefaultValue(false)]
+        [EditorDisplay("Interface"), EditorOrder(310)]
+        public bool SeparateValueAndUnit { get; set; }
 
         /// <summary>
         /// Gets or sets the timestamps prefix mode for output log messages.

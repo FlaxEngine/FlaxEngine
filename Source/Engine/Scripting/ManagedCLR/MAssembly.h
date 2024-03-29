@@ -219,7 +219,7 @@ private:
     bool LoadImage(const String& assemblyPath, const StringView& nativePath);
     bool UnloadImage(bool isReloading);
     void OnLoading();
-    void OnLoaded(const struct DateTime& startTime);
+    void OnLoaded(struct Stopwatch& stopwatch);
     void OnLoadFailed();
     bool ResolveMissingFile(String& assemblyPath) const;
 };

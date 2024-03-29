@@ -439,6 +439,7 @@ namespace Flax.Build.Platforms
             var commonArgs = new List<string>();
             commonArgs.AddRange(options.CompileEnv.CustomArgs);
             SetupCompileCppFilesArgs(graph, options, commonArgs);
+            var useSeparatePdb = true; //compileEnvironment.PrecompiledHeaderUsage == PrecompiledHeaderFileUsage.None;
             {
                 // Suppress Startup Banner
                 commonArgs.Add("/nologo");
@@ -500,7 +501,10 @@ namespace Flax.Build.Platforms
                 if (compileEnvironment.DebugInformation)
                 {
                     // Debug Information Format
-                    commonArgs.Add("/Zi");
+                    if (useSeparatePdb)
+                        commonArgs.Add("/Zi");
+                    else
+                        commonArgs.Add("/Z7");
 
                     // Enhance Optimized Debugging
                     commonArgs.Add("/Zo");
@@ -621,8 +625,66 @@ namespace Flax.Build.Platforms
                 AddIncludePath(commonArgs, includePath);
             }
 
-            // Compile all C++ files
             var args = new List<string>();
+
+            // Create precompiled header
+            string pchFile = null, pchSource = null;
+            if (compileEnvironment.PrecompiledHeaderUsage == PrecompiledHeaderFileUsage.UseManual)
+            {
+                pchFile = compileEnvironment.PrecompiledHeaderFile;
+                pchSource = compileEnvironment.PrecompiledHeaderSource;
+            }
+            else if (compileEnvironment.PrecompiledHeaderUsage == PrecompiledHeaderFileUsage.CreateManual)
+            {
+                // Use intermediate cpp file that includes the PCH path but also contains compiler info to properly recompile when it's modified
+                pchSource = compileEnvironment.PrecompiledHeaderSource;
+                var pchFilName = Path.GetFileName(pchSource);
+                var pchSourceFile = Path.Combine(options.IntermediateFolder, Path.ChangeExtension(pchFilName, "cpp"));
+                var contents = Bindings.BindingsGenerator.GetStringBuilder();
+                contents.AppendLine("// This code was auto-generated. Do not modify it.");
+                // TODO: write compiler version to properly rebuild pch on Visual Studio updates
+                contents.Append("// Compiler: ").AppendLine(_compilerPath);
+                contents.Append("#include \"").Append(pchSource).AppendLine("\"");
+                Utilities.WriteFileIfChanged(pchSourceFile, contents.ToString());
+                Bindings.BindingsGenerator.PutStringBuilder(contents);
+
+                // Compile intermediate cpp file into actual PCH (and obj+pdb files)
+                pchFile = Path.Combine(options.IntermediateFolder, Path.ChangeExtension(pchFilName, "pch"));
+                if (pchFile.EndsWith(".pch.pch"))
+                    pchFile = pchFile.Substring(0, pchFile.Length - 4);
+                var pchPdbFile = Path.Combine(options.IntermediateFolder, Path.ChangeExtension(pchFilName, "pdb"));
+                var pchObjFile = Path.Combine(options.IntermediateFolder, Path.ChangeExtension(pchFilName, "obj"));
+                var task = graph.Add<Task>();
+                task.PrerequisiteFiles.Add(pchSourceFile);
+                task.PrerequisiteFiles.Add(pchSource);
+                task.PrerequisiteFiles.AddRange(IncludesCache.FindAllIncludedFiles(pchSource));
+                task.ProducedFiles.Add(pchFile);
+                task.ProducedFiles.Add(pchObjFile);
+                args.AddRange(commonArgs);
+                args.Add(string.Format("/Yc\"{0}\"", pchSource));
+                args.Add(string.Format("/Fp\"{0}\"", pchFile));
+                args.Add(string.Format("/Fd\"{0}\"", pchPdbFile));
+                args.Add(string.Format("/Fo\"{0}\"", pchObjFile));
+                args.Add("/FS");
+                args.Add(string.Format("\"{0}\"", pchSourceFile));
+                task.WorkingDirectory = options.WorkingDirectory;
+                task.CommandPath = _compilerPath;
+                task.CommandArguments = string.Join(" ", args);
+                task.Cost = int.MaxValue; // Run it before any other tasks
+
+                // Setup outputs
+                output.PrecompiledHeaderFile = pchFile;
+                output.ObjectFiles.Add(pchObjFile);
+            }
+            if (pchFile != null)
+            {
+                // Include PCH file
+                commonArgs.Add(string.Format("/FI\"{0}\"", pchSource));
+                commonArgs.Add(string.Format("/Yu\"{0}\"", pchSource));
+                commonArgs.Add(string.Format("/Fp\"{0}\"", pchFile));
+            }
+
+            // Compile all C++ files
             foreach (var sourceFile in sourceFiles)
             {
                 var sourceFilename = Path.GetFileNameWithoutExtension(sourceFile);
@@ -635,9 +697,25 @@ namespace Flax.Build.Platforms
                 if (compileEnvironment.DebugInformation)
                 {
                     // Program Database File Name
-                    var pdbFile = Path.Combine(outputPath, sourceFilename + ".pdb");
-                    args.Add(string.Format("/Fd\"{0}\"", pdbFile));
-                    output.DebugDataFiles.Add(pdbFile);
+                    string pdbFile = null;
+                    if (pchFile != null)
+                    {
+                        // When using PCH we need to share the same PDB file that was used when building PCH
+                        pdbFile = pchFile + ".pdb";
+
+                        // Turn on sync for file access to prevent issues when compiling on multiple threads at once
+                        if (useSeparatePdb)
+                            args.Add("/FS");
+                    }
+                    else if (useSeparatePdb)
+                    {
+                        pdbFile = Path.Combine(outputPath, sourceFilename + ".pdb");
+                    }
+                    if (pdbFile != null)
+                    {
+                        args.Add(string.Format("/Fd\"{0}\"", pdbFile));
+                        output.DebugDataFiles.Add(pdbFile);
+                    }
                 }
 
                 if (compileEnvironment.GenerateDocumentation)
@@ -660,6 +738,10 @@ namespace Flax.Build.Platforms
                 // Request included files to exist
                 var includes = IncludesCache.FindAllIncludedFiles(sourceFile);
                 task.PrerequisiteFiles.AddRange(includes);
+                if (pchFile != null)
+                {
+                    task.PrerequisiteFiles.Add(pchFile);
+                }
 
                 // Compile
                 task.WorkingDirectory = options.WorkingDirectory;
@@ -863,6 +945,13 @@ namespace Flax.Build.Platforms
             task.PrerequisiteFiles.AddRange(linkEnvironment.InputFiles);
             foreach (var file in linkEnvironment.InputFiles)
             {
+                if (file.EndsWith(".pch", StringComparison.OrdinalIgnoreCase))
+                {
+                    // PCH file
+                    args.Add(string.Format("/Yu:\"{0}\"", file));
+                    continue;
+                }
+
                 args.Add(string.Format("\"{0}\"", file));
             }
 

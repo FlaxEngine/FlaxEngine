@@ -22,6 +22,7 @@ public:
         SplashScreen,
     };
 
+    static String GetOutputName();
     static bool FormatAppPackageName(String& packageName);
     static bool GetApplicationImage(const Guid& imageId, TextureData& imageData, ApplicationImageType type = ApplicationImageType::Icon);
     static bool GetTexture(const Guid& textureId, TextureData& textureData);

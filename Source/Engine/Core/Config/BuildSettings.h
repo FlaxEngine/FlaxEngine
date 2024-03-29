@@ -3,7 +3,6 @@
 #pragma once
 
 #include "Engine/Core/Config/Settings.h"
-#include "Engine/Serialization/Serialization.h"
 #include "Engine/Core/Collections/Array.h"
 #include "Engine/Content/Asset.h"
 #include "Engine/Content/AssetReference.h"
@@ -15,8 +14,15 @@
 API_CLASS(sealed, Namespace="FlaxEditor.Content.Settings") class FLAXENGINE_API BuildSettings : public SettingsBase
 {
     DECLARE_SCRIPTING_TYPE_MINIMAL(BuildSettings);
+    API_AUTO_SERIALIZATION();
 
 public:
+    /// <summary>
+    /// Name of the output app created by the build system. Used to rename main executable (eg. MyGame.exe) or final package name (eg. MyGame.apk). Custom tokens: ${PROJECT_NAME}, ${COMPANY_NAME}.
+    /// </summary>
+    API_FIELD(Attributes="EditorOrder(0), EditorDisplay(\"General\")")
+    String OutputName = TEXT("${PROJECT_NAME}");
+
     /// <summary>
     /// The maximum amount of assets to include into a single assets package. Asset packages will split into several packages if need to.
     /// </summary>
@@ -100,21 +106,4 @@ public:
     /// Gets the instance of the settings asset (default value if missing). Object returned by this method is always loaded with valid data to use.
     /// </summary>
     static BuildSettings* Get();
-
-    // [SettingsBase]
-    void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) final override
-    {
-        DESERIALIZE(MaxAssetsPerPackage);
-        DESERIALIZE(MaxPackageSizeMB);
-        DESERIALIZE(ContentKey);
-        DESERIALIZE(ForDistribution);
-        DESERIALIZE(SkipPackaging);
-        DESERIALIZE(AdditionalAssets);
-        DESERIALIZE(AdditionalAssetFolders);
-        DESERIALIZE(ShadersNoOptimize);
-        DESERIALIZE(ShadersGenerateDebugData);
-        DESERIALIZE(SkipDefaultFonts);
-        DESERIALIZE(SkipDotnetPackaging);
-        DESERIALIZE(SkipUnusedDotnetLibsPackaging);
-    }
 };

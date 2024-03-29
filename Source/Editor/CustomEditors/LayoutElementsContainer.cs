@@ -315,9 +315,9 @@ namespace FlaxEditor.CustomEditors
         internal LabelElement Header(HeaderAttribute header)
         {
             var element = Header(header.Text);
-            if (header.FontSize != -1)
+            if (header.FontSize > 0)
                 element.Label.Font = new FontReference(element.Label.Font.Font, header.FontSize);
-            if (header.Color != 0)
+            if (header.Color > 0)
                 element.Label.TextColor = Color.FromRGBA(header.Color);
             return element;
         }
