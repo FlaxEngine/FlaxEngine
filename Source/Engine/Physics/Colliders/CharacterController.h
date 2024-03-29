@@ -216,7 +216,7 @@ protected:
     void BeginPlay(SceneBeginData* data) override;
     void EndPlay() override;
 #if USE_EDITOR
-    void OnDebugDraw();
+    void OnDebugDraw() override;
     void DrawPhysicsDebug(RenderView& view) override;
 #endif
     void OnActiveInTreeChanged() override;
