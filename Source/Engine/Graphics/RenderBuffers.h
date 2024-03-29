@@ -201,6 +201,11 @@ public:
     API_FIELD(ReadOnly) GPUTexture* DepthBuffer;
 
     /// <summary>
+    /// Gets the custom depth buffer render target allocated within this render buffers collection (read only).
+    /// </summary>
+    API_FIELD(ReadOnly) GPUTexture* CustomDepthBuffer;
+
+    /// <summary>
     /// Gets the motion vectors render target allocated within this render buffers collection (read only).
     /// </summary>
     /// <remarks>

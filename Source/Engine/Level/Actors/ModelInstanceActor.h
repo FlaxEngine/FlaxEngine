@@ -136,6 +136,25 @@ public:
     /// </summary>
     virtual void UpdateBounds() = 0;
 
+    /// <summary>
+    /// Gets if this model should draw to the custom depth buffer.
+    /// </summary>
+    /// <returns>If this model should draw to the custom depth buffer.</returns>
+    API_PROPERTY(Attributes = "Serialize")
+    FORCE_INLINE const bool GetDrawCustomDepth() const
+    {
+        return _drawCustomDepth;
+    }
+
+    /// <summary>
+    /// Sets if this model should draw to the custom depth buffer.
+    /// </summary>
+    /// <param name="value">If this model should draw to the custom depth buffer.</param>
+    API_PROPERTY() void SetDrawCustomDepth(bool value);
+
+private:
+    bool _drawCustomDepth = false;
+
 protected:
     virtual void WaitForModelLoad();
 
@@ -143,6 +162,8 @@ public:
     // [Actor]
     void OnLayerChanged() override;
     void OnTransformChanged() override;
+    void Serialize(SerializeStream& stream, const void* otherObj) override;
+    void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) override;
 
 protected:
     // [Actor]

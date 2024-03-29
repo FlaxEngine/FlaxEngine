@@ -487,6 +487,10 @@ void RenderList::AddDrawCall(const RenderContext& renderContext, DrawPass drawMo
     {
         DrawCallsLists[(int32)DrawCallsListType::MotionVectors].Indices.Add(index);
     }
+    if ((drawModes & DrawPass::CustomDepth) != DrawPass::None)
+    {
+        DrawCallsLists[(int32)DrawCallsListType::CustomDepth].Indices.Add(index);
+    }
 }
 
 void RenderList::AddDrawCall(const RenderContextBatch& renderContextBatch, DrawPass drawModes, StaticFlags staticFlags, ShadowsCastingMode shadowsMode, const BoundingSphere& bounds, DrawCall& drawCall, bool receivesDecals, int16 sortOrder)

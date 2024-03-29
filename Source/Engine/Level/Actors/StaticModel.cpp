@@ -286,6 +286,16 @@ void StaticModel::UpdateBounds()
         GetSceneRendering()->UpdateActor(this, _sceneRenderingKey);
 }
 
+void StaticModel::SetDrawCustomDepth(bool value)
+{
+    ModelInstanceActor::SetDrawCustomDepth(value);
+
+    if (!value)
+        DrawModes &= ~(DrawPass::CustomDepth);
+    else
+        DrawModes |= DrawPass::CustomDepth;
+}
+
 void StaticModel::FlushVertexColors()
 {
     RenderContext::GPULocker.Lock();
@@ -349,7 +359,7 @@ void StaticModel::Draw(RenderContext& renderContext)
     draw.Lightmap = _scene->LightmapsData.GetReadyLightmap(Lightmap.TextureIndex);
     draw.LightmapUVs = &Lightmap.UVsArea;
     draw.Flags = _staticFlags;
-    draw.DrawModes = DrawModes;
+    draw.DrawModes = DrawModes | (GetDrawCustomDepth() ? DrawPass::CustomDepth : DrawPass::None);
     draw.Bounds = _sphere;
     draw.Bounds.Center -= renderContext.View.Origin;
     draw.PerInstanceRandom = GetPerInstanceRandom();
@@ -383,7 +393,7 @@ void StaticModel::Draw(RenderContextBatch& renderContextBatch)
     draw.Lightmap = _scene->LightmapsData.GetReadyLightmap(Lightmap.TextureIndex);
     draw.LightmapUVs = &Lightmap.UVsArea;
     draw.Flags = _staticFlags;
-    draw.DrawModes = DrawModes;
+    draw.DrawModes = DrawModes | (GetDrawCustomDepth() ? DrawPass::CustomDepth : DrawPass::None);
     draw.Bounds = _sphere;
     draw.Bounds.Center -= renderContext.View.Origin;
     draw.PerInstanceRandom = GetPerInstanceRandom();

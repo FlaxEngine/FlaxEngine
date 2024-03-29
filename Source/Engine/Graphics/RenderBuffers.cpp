@@ -15,6 +15,7 @@ RenderBuffers::RenderBuffers(const SpawnParams& params)
 {
 #define CREATE_TEXTURE(name) name = GPUDevice::Instance->CreateTexture(TEXT(#name)); _resources.Add(name)
     CREATE_TEXTURE(DepthBuffer);
+    CREATE_TEXTURE(CustomDepthBuffer); // TODO(Menotdan): Lazy allocate this buffer.
     CREATE_TEXTURE(MotionVectors);
     CREATE_TEXTURE(GBuffer0);
     CREATE_TEXTURE(GBuffer1);
@@ -160,6 +161,7 @@ bool RenderBuffers::Init(int32 width, int32 height)
     if (GPUDevice::Instance->Limits.HasReadOnlyDepth)
         desc.Flags |= GPUTextureFlags::ReadOnlyDepthView;
     result |= DepthBuffer->Init(desc);
+    result |= CustomDepthBuffer->Init(desc);
 
     // MotionBlurPass initializes MotionVectors texture if needed (lazy init - not every game needs it)
     MotionVectors->ReleaseGPU();

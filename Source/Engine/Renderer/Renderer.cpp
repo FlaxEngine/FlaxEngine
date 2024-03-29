@@ -18,6 +18,7 @@
 #include "EyeAdaptationPass.h"
 #include "PostProcessingPass.h"
 #include "ColorGradingPass.h"
+#include "CustomDepthPass.h"
 #include "MotionBlurPass.h"
 #include "VolumetricFogPass.h"
 #include "HistogramPass.h"
@@ -349,7 +350,7 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext, RenderCont
     {
         PROFILE_CPU_NAMED("Collect Draw Calls");
 
-        view.Pass = DrawPass::GBuffer | DrawPass::Forward | DrawPass::Distortion;
+        view.Pass = DrawPass::GBuffer | DrawPass::Forward | DrawPass::Distortion | DrawPass::CustomDepth;
         if (setup.UseMotionVectors)
             view.Pass |= DrawPass::MotionVectors;
         renderContextBatch.GetMainContext() = renderContext; // Sync render context in batch with the current value
@@ -395,6 +396,9 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext, RenderCont
         renderContext.List->SortDrawCalls(renderContext, false, DrawCallsListType::GBufferNoDecals);
         renderContext.List->SortDrawCalls(renderContext, true, DrawCallsListType::Forward);
         renderContext.List->SortDrawCalls(renderContext, false, DrawCallsListType::Distortion);
+        renderContext.List->SortDrawCalls(renderContext, false, DrawCallsListType::CustomDepth);
+        if (!renderContext.List->DrawCallsLists[6].IsEmpty())
+            int test = 1;
         if (setup.UseMotionVectors)
             renderContext.List->SortDrawCalls(renderContext, false, DrawCallsListType::MotionVectors);
         for (int32 i = 1; i < renderContextBatch.Contexts.Count(); i++)
@@ -432,6 +436,12 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext, RenderCont
     {
         GlobalSignDistanceFieldPass::BindingData bindingData;
         GlobalSignDistanceFieldPass::Instance()->Render(renderContext, context, bindingData);
+    }
+
+    // Custom depth pass (can be used by materials later on)
+    if (true)
+    {
+        //CustomDepthPass::Instance()
     }
 
     // Fill GBuffer
