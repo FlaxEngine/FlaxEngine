@@ -34,13 +34,16 @@ namespace FlaxEditor.CustomEditors.Editors
                 if (valueCategory != Utils.ValueCategory.None)
                 {
                     doubleValue.SetCategory(valueCategory);
-                    LinkedLabel.SetupContextMenu += (label, menu, editor) =>
+                    if (LinkedLabel != null)
                     {
-                        menu.AddSeparator();
-                        var mb = menu.AddButton("Show formatted", bt => { doubleValue.SetCategory(bt.Checked ? valueCategory : Utils.ValueCategory.None); });
-                        mb.AutoCheck = true;
-                        mb.Checked = doubleValue.ValueBox.Category != Utils.ValueCategory.None;
-                    };
+                        LinkedLabel.SetupContextMenu += (label, menu, editor) =>
+                        {
+                            menu.AddSeparator();
+                            var mb = menu.AddButton("Show formatted", bt => { doubleValue.SetCategory(bt.Checked ? valueCategory : Utils.ValueCategory.None); });
+                            mb.AutoCheck = true;
+                            mb.Checked = doubleValue.ValueBox.Category != Utils.ValueCategory.None;
+                        };
+                    }
                 }
             }
         }

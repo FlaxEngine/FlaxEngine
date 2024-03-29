@@ -21,7 +21,7 @@ namespace FlaxEditor.Gizmo
             {
                 Order = -100;
                 UseSingleTarget = true;
-                Location = PostProcessEffectLocation.AfterAntiAliasingPass;
+                Location = PostProcessEffectLocation.BeforeForwardPass;
             }
 
             ~Renderer()

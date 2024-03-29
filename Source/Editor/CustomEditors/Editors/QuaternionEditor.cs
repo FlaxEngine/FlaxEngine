@@ -59,12 +59,15 @@ namespace FlaxEditor.CustomEditors.Editors
             ZElement.ValueBox.ValueChanged += OnValueChanged;
             ZElement.ValueBox.SlidingEnd += ClearToken;
 
-            LinkedLabel.SetupContextMenu += (label, menu, editor) =>
+            if (LinkedLabel != null)
             {
-                menu.AddSeparator();
-                var value = ((Quaternion)Values[0]).EulerAngles;
-                menu.AddButton("Copy Euler", () => { Clipboard.Text = JsonSerializer.Serialize(value); }).TooltipText = "Copy the Euler Angles in Degrees";
-            };
+                LinkedLabel.SetupContextMenu += (label, menu, editor) =>
+                {
+                    menu.AddSeparator();
+                    var value = ((Quaternion)Values[0]).EulerAngles;
+                    menu.AddButton("Copy Euler", () => { Clipboard.Text = JsonSerializer.Serialize(value); }).TooltipText = "Copy the Euler Angles in Degrees";
+                };
+            }
         }
 
         private void OnValueChanged()

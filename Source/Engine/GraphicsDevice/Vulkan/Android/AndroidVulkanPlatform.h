@@ -6,6 +6,9 @@
 
 #if GRAPHICS_API_VULKAN && PLATFORM_ANDROID
 
+// Support more backbuffers in case driver decides to use more
+#define VULKAN_BACK_BUFFERS_COUNT_MAX 8
+
 /// <summary>
 /// The implementation for the Vulkan API support for Android platform.
 /// </summary>

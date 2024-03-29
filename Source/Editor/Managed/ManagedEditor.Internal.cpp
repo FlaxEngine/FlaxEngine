@@ -263,22 +263,22 @@ DEFINE_INTERNAL_CALL(MString*) EditorInternal_GetShaderAssetSourceCode(BinaryAss
     INTERNAL_CALL_CHECK_RETURN(obj, nullptr);
     if (obj->WaitForLoaded())
         DebugLog::ThrowNullReference();
-
     auto lock = obj->Storage->Lock();
-
     if (obj->LoadChunk(SHADER_FILE_CHUNK_SOURCE))
         return nullptr;
 
+    // Decrypt source code
     BytesContainer data;
     obj->GetChunkData(SHADER_FILE_CHUNK_SOURCE, data);
+    auto source = data.Get<char>();
+    auto sourceLength = data.Length();
+    Encryption::DecryptBytes(data.Get(), data.Length());
+    source[sourceLength - 1] = 0;
 
-    Encryption::DecryptBytes((byte*)data.Get(), data.Length());
-
+    // Get source and encrypt it back
     const StringAnsiView srcData((const char*)data.Get(), data.Length());
-    const String source(srcData);
-    const auto str = MUtils::ToString(source);
-
-    Encryption::EncryptBytes((byte*)data.Get(), data.Length());
+    const auto str = MUtils::ToString(srcData);
+    Encryption::EncryptBytes(data.Get(), data.Length());
 
     return str;
 }
