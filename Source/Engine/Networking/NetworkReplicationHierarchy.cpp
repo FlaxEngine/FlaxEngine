@@ -80,7 +80,16 @@ bool NetworkReplicationNode::DirtyObject(ScriptingObject* obj)
     if (index != -1)
     {
         NetworkReplicationHierarchyObject& e = Objects[index];
-        e.ReplicationUpdatesLeft = 0;
+        if (e.ReplicationFPS < -ZeroTolerance) // < 0
+        {
+            // Indicate for manual sync (see logic in Update)
+            e.ReplicationUpdatesLeft = 1;
+        }
+        else
+        {
+            // Replicate it next frame
+            e.ReplicationUpdatesLeft = 0;
+        }
     }
     return index != -1;
 }
@@ -93,6 +102,12 @@ void NetworkReplicationNode::Update(NetworkReplicationHierarchyUpdateResult* res
     {
         if (obj.ReplicationFPS < -ZeroTolerance) // < 0
         {
+            if (obj.ReplicationUpdatesLeft)
+            {
+                // Marked as dirty to sync manually
+                obj.ReplicationUpdatesLeft = 0;
+                result->AddObject(obj.Object);
+            }
             continue;
         }
         else if (obj.ReplicationFPS < ZeroTolerance) // == 0
