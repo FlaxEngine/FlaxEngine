@@ -208,12 +208,12 @@ public:
     /// Gets the center of the mass in the local space.
     /// </summary>
     API_PROPERTY(Attributes="EditorOrder(200),ReadOnly, DefaultValue(typeof(Float3), \"0,0,0\"), EditorDisplay(\"Rigid Body\", \"Center Of Mass\")")
-    Float3 GetCenterOfMass() const;
+    Vector3 GetCenterOfMass() const;
 
     /// <summary>
     /// Sets the center of the mass in the local space.
     /// </summary>
-    API_PROPERTY() void SetCenterOfMass(const Float3& value);
+    API_PROPERTY() void SetCenterOfMass(const Vector3& value);
 
     /// <summary>
     /// Gets the user specified offset for the center of mass of this object, from the calculated location.

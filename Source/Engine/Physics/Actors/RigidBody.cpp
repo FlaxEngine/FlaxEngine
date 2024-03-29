@@ -221,12 +221,12 @@ void RigidBody::SetSleepThreshold(const float value) const
         PhysicsBackend::SetRigidDynamicActorSleepThreshold(_actor, value);
 }
 
-Float3 RigidBody::GetCenterOfMass() const
+Vector3  RigidBody::GetCenterOfMass() const
 {
-    return _actor ? (PhysicsBackend::GetRigidDynamicActorCenterOfMass(_actor) - _centerOfMassOffset) : Float3::Zero;
+    return _actor ? (PhysicsBackend::GetRigidDynamicActorCenterOfMass(_actor) - _centerOfMassOffset) : Vector3::Zero;
 }
 
-void RigidBody::SetCenterOfMass(const Float3& value)
+void RigidBody::SetCenterOfMass(const Vector3& value)
 {
     if (_actor) {
         PhysicsBackend::SetRigidDynamicActorCenterOfMass(_actor, value + _centerOfMassOffset);
