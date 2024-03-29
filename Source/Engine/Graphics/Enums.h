@@ -772,8 +772,6 @@ API_ENUM(Attributes = "Flags") enum class DrawPass : int32
 
 DECLARE_ENUM_OPERATORS(DrawPass);
 
-// TODO(Menotdan): Investigate these enums to add custom depth.
-
 /// <summary>
 /// Describes frame rendering modes.
 /// </summary>
