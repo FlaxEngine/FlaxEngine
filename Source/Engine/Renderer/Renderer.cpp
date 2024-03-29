@@ -440,9 +440,9 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext, RenderCont
 
     // Custom depth pass (can be used by materials later on)
     if (graphicsSettings->EnableCustomDepth)
-    {
         CustomDepthPass::Instance()->Render(renderContext);
-    }
+    else
+        CustomDepthPass::Instance()->Clear(renderContext); // This will only clear once
 
     // Fill GBuffer
     GBufferPass::Instance()->Fill(renderContext, lightBuffer);

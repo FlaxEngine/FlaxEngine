@@ -11,7 +11,7 @@ class CustomDepthPass : public RendererPass<CustomDepthPass>
 {
 public:
     void Render(RenderContext& renderContext);
-
+    void Clear(RenderContext& renderContext);
 public:
     // [RendererPass]
     String ToString() const override;

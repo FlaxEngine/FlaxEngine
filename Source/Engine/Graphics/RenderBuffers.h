@@ -89,6 +89,10 @@ public:
     GPUTexture* TemporalAA = nullptr;
     uint64 LastFrameTemporalAA = 0;
 
+    // Custom Depth State
+    bool CustomDepthClear = false;
+    uint64 LastFrameCustomDepth = 0;
+
     // Maps the custom buffer type into the object that holds the state.
     Array<CustomBuffer*, HeapAllocation> CustomBuffers;
 
