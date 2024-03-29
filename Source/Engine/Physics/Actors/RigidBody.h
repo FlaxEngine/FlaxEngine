@@ -440,6 +440,10 @@ public:
     /// <param name="result">The result point on the rigidbody shape that is closest to the specified location.</param>
     API_FUNCTION() void ClosestPoint(const Vector3& position, API_PARAM(Out) Vector3& result) const;
 
+    /// <summary>
+    /// Snaps rigidbody to center of mass
+    /// </summary>
+    API_FUNCTION() void SnapToCenterOfMass();
 public:
     /// <summary>
     /// Occurs when a collision start gets registered for this rigidbody (it collides with something).

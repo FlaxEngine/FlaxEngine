@@ -16,6 +16,7 @@ RigidBody::RigidBody(const SpawnParams& params)
     , _angularDamping(0.05f)
     , _maxAngularVelocity(7.0f)
     , _massScale(1.0f)
+    , _centerOfMassOffset(Float3::Zero)
     , _constraints(RigidbodyConstraints::None)
     , _enableSimulation(true)
     , _isKinematic(false)
@@ -156,7 +157,7 @@ void RigidBody::SetMassScale(float value)
 
 void RigidBody::SetCenterOfMassOffset(const Float3& value)
 {
-    if (Float3::NearEqual(_centerOfMassOffset, value))
+    if (Float3::NearEqual(value, _centerOfMassOffset))
         return;
 
     //get un offseted center of mass
@@ -287,6 +288,19 @@ void RigidBody::SetSolverIterationCounts(int32 minPositionIters, int32 minVeloci
 {
     if (_actor)
         PhysicsBackend::SetRigidDynamicActorSolverIterationCounts(_actor, minPositionIters, minVelocityIters);
+}
+
+void RigidBody::SnapToCenterOfMass()
+{
+    Vector3 delta = GetCenterOfMass();
+    if (Vector3::NearEqual(delta, Vector3::Zero))
+        return;
+    SetPosition(GetPosition() + delta);
+    for (auto i = 0; i < Children.Count(); i++)
+    {
+        Children[i]->SetPosition(Children[i]->GetPosition() - delta);
+    }
+    SetCenterOfMass(Float3::Zero);
 }
 
 void RigidBody::ClosestPoint(const Vector3& position, Vector3& result) const

@@ -168,13 +168,13 @@ void Collider::Attach(RigidBody* rigidBody)
 
     // Attach
     PhysicsBackend::AttachShape(_shape, rigidBody->GetPhysicsActor());
-    if (CalculateShapeTransform()) 
-    {
-        PhysicsBackend::SetShapeLocalPose(_shape, _cachedLocalPosePos, _cachedLocalPoseRot);
-    }
     if (AttachedTo != rigidBody) 
     {
         AttachedTo = rigidBody;
+    }
+    if (CalculateShapeTransform())
+    {
+        PhysicsBackend::SetShapeLocalPose(_shape, _cachedLocalPosePos, _cachedLocalPoseRot);
     }
     rigidBody->AttatchedColliders.Add(this);
     rigidBody->OnColliderChanged(this);
@@ -250,7 +250,7 @@ void Collider::UpdateGeometry()
         // Reattach again (only if can, see CanAttach function)
         if (actor)
         {
-            const auto rigidBody = dynamic_cast<RigidBody*>(GetParent());
+            const auto rigidBody = GetAttachedRigidBody();
             if (_staticActor != nullptr || (rigidBody && CanAttach(rigidBody)))
             {
                 PhysicsBackend::AttachShape(_shape, actor);
