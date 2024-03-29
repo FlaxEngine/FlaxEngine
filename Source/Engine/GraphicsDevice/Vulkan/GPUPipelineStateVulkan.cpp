@@ -54,7 +54,7 @@ ComputePipelineStateVulkan* GPUShaderProgramCSVulkan::GetOrCreateState()
     VkComputePipelineCreateInfo desc;
     RenderToolsVulkan::ZeroStruct(desc, VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO);
     desc.basePipelineIndex = -1;
-    desc.layout = layout->GetHandle();
+    desc.layout = layout->Handle;
     RenderToolsVulkan::ZeroStruct(desc.stage, VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO);
     auto& stage = desc.stage;
     RenderToolsVulkan::ZeroStruct(stage, VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO);
@@ -72,8 +72,8 @@ ComputePipelineStateVulkan* GPUShaderProgramCSVulkan::GetOrCreateState()
     // Setup the state
     _pipelineState = New<ComputePipelineStateVulkan>(_device, pipeline, layout);
     _pipelineState->DescriptorInfo = &DescriptorInfo;
-    _pipelineState->DescriptorSetsLayout = &layout->GetDescriptorSetLayout();
-    _pipelineState->DescriptorSetHandles.AddZeroed(_pipelineState->DescriptorSetsLayout->GetHandles().Count());
+    _pipelineState->DescriptorSetsLayout = &layout->DescriptorSetLayout;
+    _pipelineState->DescriptorSetHandles.AddZeroed(_pipelineState->DescriptorSetsLayout->Handles.Count());
     uint32 dynamicOffsetsCount = 0;
     if (DescriptorInfo.DescriptorTypesCount != 0)
     {
@@ -136,9 +136,7 @@ PipelineLayoutVulkan* GPUPipelineStateVulkan::GetLayout()
 
 #define INIT_SHADER_STAGE(set, bit) \
 	if (DescriptorInfoPerStage[DescriptorSet::set]) \
-	{ \
-		descriptorSetLayoutInfo.AddBindingsForStage(bit, DescriptorSet::set, DescriptorInfoPerStage[DescriptorSet::set]); \
-	}
+		descriptorSetLayoutInfo.AddBindingsForStage(bit, DescriptorSet::set, DescriptorInfoPerStage[DescriptorSet::set])
     INIT_SHADER_STAGE(Vertex, VK_SHADER_STAGE_VERTEX_BIT);
     INIT_SHADER_STAGE(Hull, VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT);
     INIT_SHADER_STAGE(Domain, VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT);
@@ -148,8 +146,8 @@ PipelineLayoutVulkan* GPUPipelineStateVulkan::GetLayout()
 
     _layout = _device->GetOrCreateLayout(descriptorSetLayoutInfo);
     ASSERT(_layout);
-    DescriptorSetsLayout = &_layout->GetDescriptorSetLayout();
-    DescriptorSetHandles.AddZeroed(DescriptorSetsLayout->GetHandles().Count());
+    DescriptorSetsLayout = &_layout->DescriptorSetLayout;
+    DescriptorSetHandles.AddZeroed(DescriptorSetsLayout->Handles.Count());
 
     return _layout;
 }
@@ -176,12 +174,12 @@ VkPipeline GPUPipelineStateVulkan::GetState(RenderPassVulkan* renderPass)
     // Update description to match the pipeline
     _descColorBlend.attachmentCount = renderPass->Layout.RTsCount;
     _descMultisample.rasterizationSamples = (VkSampleCountFlagBits)renderPass->Layout.MSAA;
-    _desc.renderPass = renderPass->GetHandle();
+    _desc.renderPass = renderPass->Handle;
 
     // Check if has missing layout
     if (_desc.layout == VK_NULL_HANDLE)
     {
-        _desc.layout = GetLayout()->GetHandle();
+        _desc.layout = GetLayout()->Handle;
     }
 
     // Create object
@@ -323,6 +321,10 @@ bool GPUPipelineStateVulkan::Init(const Description& desc)
     _descDepthStencil.front.passOp = ToVulkanStencilOp(desc.StencilPassOp);
     _descDepthStencil.front = _descDepthStencil.back;
     _desc.pDepthStencilState = &_descDepthStencil;
+    DepthReadEnable = desc.DepthEnable && desc.DepthFunc != ComparisonFunc::Always;
+    DepthWriteEnable = _descDepthStencil.depthWriteEnable;
+    StencilReadEnable = desc.StencilEnable && desc.StencilReadMask != 0 && desc.StencilFunc != ComparisonFunc::Always;
+    StencilWriteEnable = desc.StencilEnable && desc.StencilWriteMask != 0;
 
     // Rasterization
     RenderToolsVulkan::ZeroStruct(_descRasterization, VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO);

@@ -25,7 +25,7 @@ public:
     /// Gets the radius of the sphere, measured in the object's local space.
     /// </summary>
     /// <remarks>The sphere radius will be scaled by the actor's world scale.</remarks>
-    API_PROPERTY(Attributes="EditorOrder(100), DefaultValue(20.0f), EditorDisplay(\"Collider\")")
+    API_PROPERTY(Attributes="EditorOrder(100), DefaultValue(20.0f), EditorDisplay(\"Collider\"), ValueCategory(Utils.ValueCategory.Distance)")
     FORCE_INLINE float GetRadius() const
     {
         return _radius;
@@ -41,7 +41,7 @@ public:
     /// Gets the height of the capsule, measured in the object's local space between the centers of the hemispherical ends.
     /// </summary>
     /// <remarks>The capsule height will be scaled by the actor's world scale.</remarks>
-    API_PROPERTY(Attributes="EditorOrder(110), DefaultValue(100.0f), EditorDisplay(\"Collider\")")
+    API_PROPERTY(Attributes="EditorOrder(110), DefaultValue(100.0f), EditorDisplay(\"Collider\"), ValueCategory(Utils.ValueCategory.Distance)")
     FORCE_INLINE float GetHeight() const
     {
         return _height;

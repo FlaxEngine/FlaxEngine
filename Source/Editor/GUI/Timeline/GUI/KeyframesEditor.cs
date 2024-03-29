@@ -904,7 +904,7 @@ namespace FlaxEditor.GUI
             var k = new Keyframe
             {
                 Time = keyframesPos.X,
-                Value = DefaultValue,
+                Value = Utilities.Utils.CloneValue(DefaultValue),
             };
             OnEditingStart();
             AddKeyframe(k);

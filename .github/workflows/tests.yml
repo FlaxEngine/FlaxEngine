@@ -17,7 +17,7 @@ jobs:
     - name: Setup .NET
       uses: actions/setup-dotnet@v3
       with:
-        dotnet-version: 7.0.x
+        dotnet-version: 8.0.x
     - name: Print .NET info
       run: |
         dotnet --info
@@ -34,21 +34,21 @@ jobs:
         sudo apt-get install libx11-dev libxcursor-dev libxinerama-dev build-essential gettext libtool libtool-bin libpulse-dev libasound2-dev libjack-dev portaudio19-dev
     - name: Build
       run: |
-        ./GenerateProjectFiles.sh -vs2022 -log -verbose -printSDKs -dotnet=7
-        ./Development/Scripts/Linux/CallBuildTool.sh -build -log -dotnet=7 -arch=x64 -platform=Linux -configuration=Development -buildtargets=FlaxTestsTarget
+        ./GenerateProjectFiles.sh -vs2022 -log -verbose -printSDKs -dotnet=8
+        ./Development/Scripts/Linux/CallBuildTool.sh -build -log -dotnet=8 -arch=x64 -platform=Linux -configuration=Development -buildtargets=FlaxTestsTarget
         dotnet msbuild Source/Tools/Flax.Build.Tests/Flax.Build.Tests.csproj /m /t:Restore,Build /p:Configuration=Debug /p:Platform=AnyCPU /nologo
         dotnet msbuild Source/Tools/Flax.Build.Tests/Flax.Build.Tests.csproj /m /t:Restore,Build /p:Configuration=Debug /p:Platform=AnyCPU /nologo
     - name: Test
       run: |
         ${GITHUB_WORKSPACE}/Binaries/Editor/Linux/Development/FlaxTests
-        dotnet test -f net7.0 Binaries/Tests/Flax.Build.Tests.dll
+        dotnet test -f net8.0 Binaries/Tests/Flax.Build.Tests.dll
         cp Binaries/Editor/Linux/Development/FlaxEngine.CSharp.dll Binaries/Tests
         cp Binaries/Editor/Linux/Development/FlaxEngine.CSharp.runtimeconfig.json Binaries/Tests
         cp Binaries/Editor/Linux/Development/Newtonsoft.Json.dll Binaries/Tests
-        dotnet test -f net7.0 Binaries/Tests/FlaxEngine.CSharp.dll
+        dotnet test -f net8.0 Binaries/Tests/FlaxEngine.CSharp.dll
     - name: Test UseLargeWorlds
       run: |
-        ./Development/Scripts/Linux/CallBuildTool.sh -build -log -dotnet=7 -arch=x64 -platform=Linux -configuration=Development -buildtargets=FlaxTestsTarget -UseLargeWorlds=true
+        ./Development/Scripts/Linux/CallBuildTool.sh -build -log -dotnet=8 -arch=x64 -platform=Linux -configuration=Development -buildtargets=FlaxTestsTarget -UseLargeWorlds=true
         ${GITHUB_WORKSPACE}/Binaries/Editor/Linux/Development/FlaxTests
 
   # Tests on Windows
@@ -61,7 +61,7 @@ jobs:
     - name: Setup .NET
       uses: actions/setup-dotnet@v3
       with:
-        dotnet-version: 7.0.x
+        dotnet-version: 8.0.x
     - name: Print .NET info
       run: |
         dotnet --info
@@ -72,14 +72,14 @@ jobs:
         git lfs pull
     - name: Build
       run: |
-        .\GenerateProjectFiles.bat -vs2022 -log -verbose -printSDKs -dotnet=7
-        .\Development\Scripts\Windows\CallBuildTool.bat -build -log -dotnet=7 -arch=x64 -platform=Windows -configuration=Development -buildtargets=FlaxTestsTarget
+        .\GenerateProjectFiles.bat -vs2022 -log -verbose -printSDKs -dotnet=8
+        .\Development\Scripts\Windows\CallBuildTool.bat -build -log -dotnet=8 -arch=x64 -platform=Windows -configuration=Development -buildtargets=FlaxTestsTarget
         dotnet msbuild Source\Tools\Flax.Build.Tests\Flax.Build.Tests.csproj /m /t:Restore,Build /p:Configuration=Debug /p:Platform=AnyCPU /nologo
     - name: Test
       run: |
         .\Binaries\Editor\Win64\Development\FlaxTests.exe
-        dotnet test -f net7.0 Binaries\Tests\Flax.Build.Tests.dll
+        dotnet test -f net8.0 Binaries\Tests\Flax.Build.Tests.dll
         xcopy /y Binaries\Editor\Win64\Development\FlaxEngine.CSharp.dll Binaries\Tests
         xcopy /y Binaries\Editor\Win64\Development\FlaxEngine.CSharp.runtimeconfig.json Binaries\Tests
         xcopy /y Binaries\Editor\Win64\Development\Newtonsoft.Json.dll Binaries\Tests
-        dotnet test -f net7.0 Binaries\Tests\FlaxEngine.CSharp.dll
+        dotnet test -f net8.0 Binaries\Tests\FlaxEngine.CSharp.dll

@@ -24,7 +24,7 @@ namespace Flax.Build.Bindings
         private static readonly List<PropertyInfo> CppAutoSerializeProperties = new List<PropertyInfo>();
         public static readonly HashSet<string> CppIncludeFiles = new HashSet<string>();
         private static readonly List<string> CppIncludeFilesList = new List<string>();
-        private static readonly HashSet<TypeInfo> CppVariantToTypes = new HashSet<TypeInfo>();
+        private static readonly Dictionary<string, TypeInfo> CppVariantToTypes = new Dictionary<string, TypeInfo>();
         private static readonly Dictionary<string, TypeInfo> CppVariantFromTypes = new Dictionary<string, TypeInfo>();
         private static bool CppNonPodTypesConvertingGeneration = false;
         private static StringBuilder CppContentsEnd;
@@ -231,13 +231,15 @@ namespace Flax.Build.Bindings
                 throw new Exception($"Not supported type to convert from the Variant to fixed-size array '{typeInfo}[{typeInfo.ArraySize}]'.");
             if (typeInfo.Type == "Array" && typeInfo.GenericArgs != null)
             {
-                CppVariantToTypes.Add(typeInfo);
-                return $"MoveTemp(VariantTo{GenerateCppWrapperNativeToVariantMethodName(typeInfo)}({value}))";
+                var wrapperName = GenerateCppWrapperNativeToVariantMethodName(typeInfo);
+                CppVariantToTypes[wrapperName] = typeInfo;
+                return $"MoveTemp(VariantTo{wrapperName}({value}))";
             }
             if (typeInfo.Type == "Dictionary" && typeInfo.GenericArgs != null)
             {
-                CppVariantToTypes.Add(typeInfo);
-                return $"MoveTemp(VariantTo{GenerateCppWrapperNativeToVariantMethodName(typeInfo)}({value}))";
+                var wrapperName = GenerateCppWrapperNativeToVariantMethodName(typeInfo);
+                CppVariantToTypes[wrapperName] = typeInfo;
+                return $"MoveTemp(VariantTo{wrapperName}({value}))";
             }
             if (typeInfo.Type == "Span" && typeInfo.GenericArgs != null)
             {
@@ -2790,12 +2792,14 @@ namespace Flax.Build.Bindings
                 var header = GetStringBuilder();
 
                 // Variant converting helper methods
-                foreach (var typeInfo in CppVariantToTypes)
+                foreach (var e in CppVariantToTypes)
                 {
+                    var wrapperName = e.Key;
+                    var typeInfo = e.Value;
                     var name = typeInfo.ToString(false);
                     header.AppendLine();
                     header.AppendLine("namespace {");
-                    header.Append($"{name} VariantTo{GenerateCppWrapperNativeToVariantMethodName(typeInfo)}(const Variant& v)").AppendLine();
+                    header.Append($"{name} VariantTo{wrapperName}(const Variant& v)").AppendLine();
                     header.Append('{').AppendLine();
                     header.Append($"    {name} result;").AppendLine();
                     if (typeInfo.Type == "Array" && typeInfo.GenericArgs != null)
@@ -3132,6 +3136,8 @@ namespace Flax.Build.Bindings
                     CppIncludeFilesList.Add(fileInfo.Name);
                 CppIncludeFilesList.AddRange(CppIncludeFiles);
                 CppIncludeFilesList.Sort();
+                if (CppIncludeFilesList.Remove("Engine/Serialization/Serialization.h"))
+                    CppIncludeFilesList.Add("Engine/Serialization/Serialization.h");
                 foreach (var path in CppIncludeFilesList)
                     header.AppendFormat("#include \"{0}\"", path).AppendLine();
                 contents.Insert(headerPos, header.ToString());

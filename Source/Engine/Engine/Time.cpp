@@ -54,15 +54,6 @@ void TimeSettings::Apply()
     ::MaxUpdateDeltaTime = MaxUpdateDeltaTime;
 }
 
-void TimeSettings::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)
-{
-    DESERIALIZE(UpdateFPS);
-    DESERIALIZE(PhysicsFPS);
-    DESERIALIZE(DrawFPS);
-    DESERIALIZE(TimeScale);
-    DESERIALIZE(MaxUpdateDeltaTime);
-}
-
 void Time::TickData::OnBeforeRun(float targetFps, double currentTime)
 {
     Time = UnscaledTime = TimeSpan::Zero();

@@ -646,7 +646,9 @@ namespace FlaxEditor.Content.GUI
                 _rubberBandRectangle = new Rectangle(_mousePressLocation, 0, 0);
                 _isRubberBandSpanning = true;
                 StartMouseCapture();
+                return true;
             }
+
             return AutoFocus && Focus(this);
         }
 

@@ -163,7 +163,7 @@ bool ContentLoadingManagerService::Init()
 
     // Calculate amount of loading threads to use
     const CPUInfo cpuInfo = Platform::GetCPUInfo();
-    const int32 count = Math::Clamp(static_cast<int32>(LOADING_THREAD_PER_LOGICAL_CORE * (float)cpuInfo.LogicalProcessorCount), 1, 12);
+    const int32 count = Math::Clamp(Math::CeilToInt(LOADING_THREAD_PER_LOGICAL_CORE * (float)cpuInfo.LogicalProcessorCount), 1, 12);
     LOG(Info, "Creating {0} content loading threads...", count);
 
     // Create loading threads

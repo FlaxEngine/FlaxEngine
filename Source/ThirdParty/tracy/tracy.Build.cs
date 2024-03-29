@@ -40,13 +40,19 @@ public class tracy : ThirdPartyModule
         options.PublicDefinitions.Add("TRACY_ENABLE");
         options.PrivateDefinitions.Add("TRACY_NO_INVARIANT_CHECK");
         options.PrivateDefinitions.Add("TRACY_NO_FRAME_IMAGE");
-        if (options.Platform.Target == TargetPlatform.Windows)
-        {
-            options.PrivateDefinitions.Add("TRACY_DBGHELP_LOCK=DbgHelp");
-        }
         if (OnDemand)
         {
             options.PublicDefinitions.Add("TRACY_ON_DEMAND");
+        }
+        switch (options.Platform.Target)
+        {
+        case TargetPlatform.Windows:
+            options.PrivateDefinitions.Add("TRACY_DBGHELP_LOCK=DbgHelp");
+            break;
+        case TargetPlatform.Switch:
+            options.PrivateDefinitions.Add("TRACY_USE_MALLOC");
+            options.PrivateDefinitions.Add("TRACY_ONLY_IPV4");
+            break;
         }
     }
 

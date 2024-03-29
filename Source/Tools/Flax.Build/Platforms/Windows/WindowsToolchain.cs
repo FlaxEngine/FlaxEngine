@@ -43,12 +43,12 @@ namespace Flax.Build.Platforms
         }
 
         /// <inheritdoc />
-        public override void PreBuild(TaskGraph graph, BuildOptions options)
+        public override void LinkFiles(TaskGraph graph, BuildOptions options, string outputFilePath)
         {
-            base.PreBuild(graph, options);
-
             // Compile and include resource file if need to
-            if (options.Target.Win32ResourceFile != null && !options.Target.IsPreBuilt && options.Target.OutputType == TargetOutputType.Executable)
+            if (options.Target.Win32ResourceFile != null &&
+                !options.Target.IsPreBuilt &&
+                (options.LinkEnv.Output == LinkerOutput.Executable || options.LinkEnv.Output == LinkerOutput.SharedLibrary))
             {
                 var task = graph.Add<CompileCppTask>();
                 var args = new List<string>();
@@ -62,24 +62,22 @@ namespace Flax.Build.Platforms
 
                 // Add preprocessor definitions
                 foreach (var definition in options.CompileEnv.PreprocessorDefinitions)
-                {
                     args.Add(string.Format("/D \"{0}\"", definition));
-                }
+                args.Add(string.Format("/D \"ORIGINAL_FILENAME=\\\"{0}\\\"\"", Path.GetFileName(outputFilePath)));
+                args.Add(string.Format("/D \"PRODUCT_NAME=\\\"{0}\\\"\"", options.Target.ProjectName + " " + options.Target.ConfigurationName));
+                args.Add(string.Format("/D \"PRODUCT_NAME_INTERNAL=\\\"{0}\\\"\"", options.Target.Name));
 
                 // Add include paths
                 foreach (var includePath in options.CompileEnv.IncludePaths)
-                {
                     AddIncludePath(args, includePath);
-                }
 
                 // Add the resource file to the produced item list
-                var outputFile = Path.Combine(options.IntermediateFolder, Path.GetFileNameWithoutExtension(sourceFile) + ".res");
+                var outputFile = Path.Combine(options.IntermediateFolder, Path.GetFileName(outputFilePath) + ".res");
                 args.Add(string.Format("/Fo\"{0}\"", outputFile));
                 options.LinkEnv.InputFiles.Add(outputFile);
 
                 // Request included files to exist
-                var includes = IncludesCache.FindAllIncludedFiles(sourceFile);
-                task.PrerequisiteFiles.AddRange(includes);
+                task.PrerequisiteFiles.AddRange(IncludesCache.FindAllIncludedFiles(sourceFile));
 
                 // Add the source file
                 args.Add(string.Format("\"{0}\"", sourceFile));
@@ -91,6 +89,8 @@ namespace Flax.Build.Platforms
                 task.PrerequisiteFiles.Add(sourceFile);
                 task.Cost = 1;
             }
+
+            base.LinkFiles(graph, options, outputFilePath);
         }
     }
 }

@@ -12,7 +12,6 @@
 #else
 // Cached methods (FlaxEngine.CSharp.dll is loaded only once)
 MMethod* UICanvas_Serialize = nullptr;
-MMethod* UICanvas_SerializeDiff = nullptr;
 MMethod* UICanvas_Deserialize = nullptr;
 MMethod* UICanvas_PostDeserialize = nullptr;
 MMethod* UICanvas_Enable = nullptr;
@@ -45,7 +44,6 @@ UICanvas::UICanvas(const SpawnParams& params)
     if (UICanvas_Serialize == nullptr)
     {
         MClass* mclass = GetClass();
-        UICanvas_SerializeDiff = mclass->GetMethod("SerializeDiff", 1);
         UICanvas_Deserialize = mclass->GetMethod("Deserialize", 1);
         UICanvas_PostDeserialize = mclass->GetMethod("PostDeserialize");
         UICanvas_Enable = mclass->GetMethod("Enable");
@@ -55,7 +53,7 @@ UICanvas::UICanvas(const SpawnParams& params)
 #endif
         UICanvas_EndPlay = mclass->GetMethod("EndPlay");
         UICanvas_ParentChanged = mclass->GetMethod("ParentChanged");
-        UICanvas_Serialize = mclass->GetMethod("Serialize");
+        UICanvas_Serialize = mclass->GetMethod("Serialize", 1);
         Platform::MemoryBarrier();
     }
 #endif
@@ -83,8 +81,7 @@ void UICanvas::Serialize(SerializeStream& stream, const void* otherObj)
     void* params[1];
     params[0] = other ? other->GetOrCreateManagedInstance() : nullptr;
     MObject* exception = nullptr;
-    auto method = other ? UICanvas_SerializeDiff : UICanvas_Serialize;
-    auto invokeResultStr = (MString*)method->Invoke(GetOrCreateManagedInstance(), params, &exception);
+    auto invokeResultStr = (MString*)UICanvas_Serialize->Invoke(GetOrCreateManagedInstance(), params, &exception);
     if (exception)
     {
         MException ex(exception);

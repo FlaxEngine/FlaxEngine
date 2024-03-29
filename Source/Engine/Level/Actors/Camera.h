@@ -77,7 +77,7 @@ public:
     /// <summary>
     /// Gets the camera's field of view (in degrees).
     /// </summary>
-    API_PROPERTY(Attributes="EditorOrder(20), DefaultValue(60.0f), Limit(0, 179), EditorDisplay(\"Camera\", \"Field Of View\"), VisibleIf(nameof(UsePerspective))")
+    API_PROPERTY(Attributes="EditorOrder(20), DefaultValue(60.0f), Limit(0, 179), EditorDisplay(\"Camera\", \"Field Of View\"), VisibleIf(nameof(UsePerspective)), ValueCategory(Utils.ValueCategory.Angle)")
     float GetFieldOfView() const;
 
     /// <summary>
@@ -99,7 +99,7 @@ public:
     /// <summary>
     /// Gets camera's near plane distance.
     /// </summary>
-    API_PROPERTY(Attributes="EditorOrder(30), DefaultValue(10.0f), Limit(0, 1000, 0.05f), EditorDisplay(\"Camera\")")
+    API_PROPERTY(Attributes="EditorOrder(30), DefaultValue(10.0f), Limit(0, 1000, 0.05f), EditorDisplay(\"Camera\"), ValueCategory(Utils.ValueCategory.Distance)")
     float GetNearPlane() const;
 
     /// <summary>
@@ -110,7 +110,7 @@ public:
     /// <summary>
     /// Gets camera's far plane distance.
     /// </summary>
-    API_PROPERTY(Attributes="EditorOrder(40), DefaultValue(40000.0f), Limit(0, float.MaxValue, 5), EditorDisplay(\"Camera\")")
+    API_PROPERTY(Attributes="EditorOrder(40), DefaultValue(40000.0f), Limit(0, float.MaxValue, 5), EditorDisplay(\"Camera\"), ValueCategory(Utils.ValueCategory.Distance)")
     float GetFarPlane() const;
 
     /// <summary>

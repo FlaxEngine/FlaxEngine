@@ -14,7 +14,6 @@
 class GPUAdapterVulkan : public GPUAdapter
 {
 public:
-
     /// <summary>
     /// Initializes a new instance of the <see cref="GPUAdapterVulkan"/> class.
     /// </summary>
@@ -38,7 +37,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// The GPU device handle.
     /// </summary>
@@ -55,7 +53,6 @@ public:
     String Description;
 
 public:
-
     // [GPUAdapter]
     bool IsValid() const override
     {

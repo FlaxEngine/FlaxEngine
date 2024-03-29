@@ -474,8 +474,8 @@ BehaviorUpdateResult BehaviorTreeMoveToNode::Update(const BehaviorUpdateContext&
             state->NavAgentRadius = navMesh->Properties.Agent.Radius;
 
             // Place start and end on navmesh
-            navMesh->ProjectPoint(state->Path.First(), state->Path.First());
-            navMesh->ProjectPoint(state->Path.Last(), state->Path.Last());
+            navMesh->FindClosestPoint(state->Path.First(), state->Path.First());
+            navMesh->FindClosestPoint(state->Path.Last(), state->Path.Last());
 
             // Calculate offset between path and the agent (aka feet offset)
             state->AgentOffset = state->Path.First() - agentLocation;

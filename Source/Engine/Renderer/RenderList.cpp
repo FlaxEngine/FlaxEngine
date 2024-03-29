@@ -266,6 +266,8 @@ void RenderList::RunPostFxPass(GPUContext* context, RenderContext& renderContext
         {
             if (fx->Location == locationB)
             {
+                context->ResetSR();
+                context->ResetUA();
                 if (fx->UseSingleTarget || output == nullptr)
                 {
                     fx->Render(context, renderContext, input, nullptr);
@@ -652,6 +654,7 @@ void RenderList::ExecuteDrawCalls(const RenderContext& renderContext, DrawCallsL
     const auto* batchesData = list.Batches.Get();
     const auto context = GPUDevice::Instance->GetMainContext();
     bool useInstancing = list.CanUseInstancing && CanUseInstancing(renderContext.View.Pass) && GPUDevice::Instance->Limits.HasInstancing;
+    TaaJitterRemoveContext taaJitterRemove(renderContext.View);
 
     // Clear SR slots to prevent any resources binding issues (leftovers from the previous passes)
     context->ResetSR();

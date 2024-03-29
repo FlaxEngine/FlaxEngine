@@ -3,11 +3,9 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using FlaxEditor.Gizmo;
 using FlaxEditor.GUI.Tree;
 using FlaxEditor.SceneGraph;
 using FlaxEditor.SceneGraph.GUI;
-using FlaxEditor.Viewport.Cameras;
 using FlaxEngine;
 
 namespace FlaxEditor.Windows.Assets
@@ -64,8 +62,11 @@ namespace FlaxEditor.Windows.Assets
         private void OnSelectionUndo(SceneGraphNode[] toSelect)
         {
             Selection.Clear();
-            Selection.AddRange(toSelect);
-
+            foreach (var e in toSelect)
+            {
+                if (e != null)
+                    Selection.Add(e);
+            }
             OnSelectionChanges();
         }
 
@@ -118,11 +119,13 @@ namespace FlaxEditor.Windows.Assets
         /// <param name="nodes">The nodes.</param>
         public void Select(List<SceneGraphNode> nodes)
         {
+            nodes?.RemoveAll(x => x == null);
             if (nodes == null || nodes.Count == 0)
             {
                 Deselect();
                 return;
             }
+
             if (Utils.ArraysEqual(Selection, nodes))
                 return;
 

@@ -834,6 +834,16 @@ bool TextureTool::ImportTextureDirectXTex(ImageType type, const StringView& path
 
 bool TextureTool::ConvertDirectXTex(TextureData& dst, const TextureData& src, const PixelFormat dstFormat)
 {
+    if (PixelFormatExtensions::IsCompressedASTC(dstFormat))
+    {
+#if COMPILE_WITH_ASTC
+        return ConvertAstc(dst, src, dstFormat);
+#else
+        LOG(Error, "Missing ASTC texture format compression lib.");
+        return true;
+#endif
+    }
+
     HRESULT result;
     DirectX::ScratchImage dstImage;
     DirectX::ScratchImage tmpImage;

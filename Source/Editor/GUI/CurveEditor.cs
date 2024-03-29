@@ -431,7 +431,6 @@ namespace FlaxEditor.GUI
         /// </summary>
         protected CurveEditor()
         {
-            _tickStrengths = new float[TickSteps.Length];
             Accessor.GetDefaultValue(out DefaultValue);
 
             var style = Style.Current;
@@ -780,75 +779,31 @@ namespace FlaxEditor.GUI
             return _mainPanel.PointToParent(point);
         }
 
-        private void DrawAxis(Float2 axis, ref Rectangle viewRect, float min, float max, float pixelRange)
+        private void DrawAxis(Float2 axis, Rectangle viewRect, float min, float max, float pixelRange)
         {
-            int minDistanceBetweenTicks = 20;
-            int maxDistanceBetweenTicks = 60;
-            var range = max - min;
-
-            // Find the strength for each modulo number tick marker
-            int smallestTick = 0;
-            int biggestTick = TickSteps.Length - 1;
-            for (int i = TickSteps.Length - 1; i >= 0; i--)
+            Utilities.Utils.DrawCurveTicks((float tick, float strength) =>
             {
-                // Calculate how far apart these modulo tick steps are spaced
-                float tickSpacing = TickSteps[i] * pixelRange / range;
+                var p = PointFromKeyframes(axis * tick, ref viewRect);
 
-                // Calculate the strength of the tick markers based on the spacing
-                _tickStrengths[i] = Mathf.Saturate((tickSpacing - minDistanceBetweenTicks) / (maxDistanceBetweenTicks - minDistanceBetweenTicks));
+                // Draw line
+                var lineRect = new Rectangle
+                (
+                 viewRect.Location + (p - 0.5f) * axis,
+                 Float2.Lerp(viewRect.Size, Float2.One, axis)
+                );
+                Render2D.FillRectangle(lineRect, _linesColor.AlphaMultiplied(strength));
 
-                // Beyond threshold the ticks don't get any bigger or fatter
-                if (_tickStrengths[i] >= 1)
-                    biggestTick = i;
-
-                // Do not show small tick markers
-                if (tickSpacing <= minDistanceBetweenTicks)
-                {
-                    smallestTick = i;
-                    break;
-                }
-            }
-
-            // Draw all tick levels
-            int tickLevels = biggestTick - smallestTick + 1;
-            for (int level = 0; level < tickLevels; level++)
-            {
-                float strength = _tickStrengths[smallestTick + level];
-                if (strength <= Mathf.Epsilon)
-                    continue;
-
-                // Draw all ticks
-                int l = Mathf.Clamp(smallestTick + level, 0, TickSteps.Length - 1);
-                int startTick = Mathf.FloorToInt(min / TickSteps[l]);
-                int endTick = Mathf.CeilToInt(max / TickSteps[l]);
-                for (int i = startTick; i <= endTick; i++)
-                {
-                    if (l < biggestTick && (i % Mathf.RoundToInt(TickSteps[l + 1] / TickSteps[l]) == 0))
-                        continue;
-
-                    var tick = i * TickSteps[l];
-                    var p = PointFromKeyframes(axis * tick, ref viewRect);
-
-                    // Draw line
-                    var lineRect = new Rectangle
-                    (
-                     viewRect.Location + (p - 0.5f) * axis,
-                     Float2.Lerp(viewRect.Size, Float2.One, axis)
-                    );
-                    Render2D.FillRectangle(lineRect, _linesColor.AlphaMultiplied(strength));
-
-                    // Draw label
-                    string label = tick.ToString(CultureInfo.InvariantCulture);
-                    var labelRect = new Rectangle
-                    (
-                     viewRect.X + 4.0f + (p.X * axis.X),
-                     viewRect.Y - LabelsSize + (p.Y * axis.Y) + (viewRect.Size.Y * axis.X),
-                     50,
-                     LabelsSize
-                    );
-                    Render2D.DrawText(_labelsFont, label, labelRect, _labelsColor.AlphaMultiplied(strength), TextAlignment.Near, TextAlignment.Center, TextWrapping.NoWrap, 1.0f, 0.7f);
-                }
-            }
+                // Draw label
+                string label = tick.ToString(CultureInfo.InvariantCulture);
+                var labelRect = new Rectangle
+                (
+                 viewRect.X + 4.0f + (p.X * axis.X),
+                 viewRect.Y - LabelsSize + (p.Y * axis.Y) + (viewRect.Size.Y * axis.X),
+                 50,
+                 LabelsSize
+                );
+                Render2D.DrawText(_labelsFont, label, labelRect, _labelsColor.AlphaMultiplied(strength), TextAlignment.Near, TextAlignment.Center, TextWrapping.NoWrap, 1.0f, 0.7f);
+            }, TickSteps, ref _tickStrengths, min, max, pixelRange);
         }
 
         /// <summary>
@@ -890,9 +845,9 @@ namespace FlaxEditor.GUI
                 Render2D.PushClip(ref viewRect);
 
                 if ((ShowAxes & UseMode.Vertical) == UseMode.Vertical)
-                    DrawAxis(Float2.UnitX, ref viewRect, min.X, max.X, pixelRange.X);
+                    DrawAxis(Float2.UnitX, viewRect, min.X, max.X, pixelRange.X);
                 if ((ShowAxes & UseMode.Horizontal) == UseMode.Horizontal)
-                    DrawAxis(Float2.UnitY, ref viewRect, min.Y, max.Y, pixelRange.Y);
+                    DrawAxis(Float2.UnitY, viewRect, min.Y, max.Y, pixelRange.Y);
 
                 Render2D.PopClip();
             }

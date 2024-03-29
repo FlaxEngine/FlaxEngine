@@ -407,11 +407,25 @@ int32 Editor::LoadProduct()
     {
         Array<String> projectFiles;
         FileSystem::DirectoryGetFiles(projectFiles, projectPath, TEXT("*.flaxproj"), DirectorySearchOption::TopDirectoryOnly);
-        if (projectFiles.Count() == 1)
+        if (projectFiles.Count() > 1)
         {
-            // Skip creating new project if it already exists
-            LOG(Info, "Skip creatinng new project because it already exists");
+            Platform::Fatal(TEXT("Too many project files."));
+            return -2;
+        }
+        else if (projectFiles.Count() == 1)
+        {
+            LOG(Info, "Skip creating new project because it already exists");
             CommandLine::Options.NewProject.Reset();
+        }
+        else
+        {
+            Array<String> files;
+            FileSystem::DirectoryGetFiles(files, projectPath, TEXT("*"), DirectorySearchOption::TopDirectoryOnly);
+            if (files.Count() > 0)
+            {
+                Platform::Fatal(String::Format(TEXT("Target project folder '{0}' is not empty."), projectPath));
+                return -1;
+            }
         }
     }
     if (CommandLine::Options.NewProject)

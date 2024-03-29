@@ -81,14 +81,14 @@ StreamableResource::~StreamableResource()
 
 void StreamableResource::RequestStreamingUpdate()
 {
-    Streaming.LastUpdate = 0;
+    Streaming.LastUpdateTime = 0.0;
 }
 
 void StreamableResource::ResetStreaming(bool error)
 {
     Streaming.Error = error;
     Streaming.TargetResidency = 0;
-    Streaming.LastUpdate = DateTime::MaxValue().Ticks;
+    Streaming.LastUpdateTime = 3e+30f; // Very large number to skip any updates
 }
 
 void StreamableResource::StartStreaming(bool isDynamic)
@@ -115,7 +115,7 @@ void StreamableResource::StopStreaming()
     }
 }
 
-void UpdateResource(StreamableResource* resource, DateTime now, double currentTime)
+void UpdateResource(StreamableResource* resource, double currentTime)
 {
     ASSERT(resource && resource->CanBeUpdated());
 
@@ -127,7 +127,7 @@ void UpdateResource(StreamableResource* resource, DateTime now, double currentTi
     float targetQuality = 1.0f;
     if (resource->IsDynamic())
     {
-        targetQuality = handler->CalculateTargetQuality(resource, now, currentTime);
+        targetQuality = handler->CalculateTargetQuality(resource, currentTime);
         targetQuality = Math::Saturate(targetQuality);
     }
 
@@ -142,14 +142,14 @@ void UpdateResource(StreamableResource* resource, DateTime now, double currentTi
     auto allocatedResidency = resource->GetAllocatedResidency();
     auto targetResidency = handler->CalculateResidency(resource, targetQuality);
     ASSERT(allocatedResidency >= currentResidency && allocatedResidency >= 0);
-    resource->Streaming.LastUpdate = now.Ticks;
+    resource->Streaming.LastUpdateTime = currentTime;
 
     // Check if a target residency level has been changed
     if (targetResidency != resource->Streaming.TargetResidency)
     {
         // Register change
         resource->Streaming.TargetResidency = targetResidency;
-        resource->Streaming.TargetResidencyChange = now.Ticks;
+        resource->Streaming.TargetResidencyChangeTime = currentTime;
     }
 
     // Check if need to change resource current residency
@@ -224,15 +224,14 @@ void StreamingSystem::Job(int32 index)
     PROFILE_CPU_NAMED("Streaming.Job");
 
     // TODO: use streaming settings
-    TimeSpan ResourceUpdatesInterval = TimeSpan::FromMilliseconds(100);
+    const double ResourceUpdatesInterval = 0.1;
     int32 MaxResourcesPerUpdate = 50;
 
     // Start update
     ScopeLock lock(ResourcesLock);
-    auto now = DateTime::NowUTC();
     const int32 resourcesCount = Resources.Count();
     int32 resourcesUpdates = Math::Min(MaxResourcesPerUpdate, resourcesCount);
-    double currentTime = Platform::GetTimeSeconds();
+    const double currentTime = Platform::GetTimeSeconds();
 
     // Update high priority queue and then rest of the resources
     // Note: resources in the update queue are updated always, while others only between specified intervals
@@ -248,9 +247,9 @@ void StreamingSystem::Job(int32 index)
         const auto resource = Resources[LastUpdateResourcesIndex];
 
         // Try to update it
-        if (now - DateTime(resource->Streaming.LastUpdate) >= ResourceUpdatesInterval && resource->CanBeUpdated())
+        if (currentTime - resource->Streaming.LastUpdateTime >= ResourceUpdatesInterval && resource->CanBeUpdated())
         {
-            UpdateResource(resource, now, currentTime);
+            UpdateResource(resource, currentTime);
             resourcesUpdates--;
         }
     }

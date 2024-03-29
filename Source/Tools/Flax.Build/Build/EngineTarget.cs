@@ -17,6 +17,11 @@ namespace Flax.Build
         private static Version _engineVersion;
 
         /// <summary>
+        /// Name of the native engine library.
+        /// </summary>
+        public const string LibraryName = "FlaxEngine";
+
+        /// <summary>
         /// Gets the engine project.
         /// </summary>
         public static ProjectInfo EngineProject => ProjectInfo.Load(Path.Combine(Globals.EngineRoot, "Flax.flaxproj"));
@@ -50,6 +55,12 @@ namespace Flax.Build
                 defines.Add(string.Format("FLAX_{0}_{1}_OR_NEWER", engineVersion.Major, minor));
         }
 
+        /// <summary>
+        /// True if target is built as monolithic executable with Main module inside, otherwise built as shared library with separate executable made of Main module only.
+        /// </summary>
+        /// <remarks>Some platforms might not support modular build and enforce monolithic executable. See <see cref="Platform.HasModularBuildSupport"/></remarks>
+        public bool IsMonolithicExecutable = true;
+
         /// <inheritdoc />
         public override void Init()
         {
@@ -60,19 +71,29 @@ namespace Flax.Build
 
             Modules.Add("Main");
             Modules.Add("Engine");
+            Win32ResourceFile = Path.Combine(Globals.EngineRoot, "Source", "FlaxEngine.rc");
         }
 
         /// <inheritdoc />
         public override string GetOutputFilePath(BuildOptions options, TargetOutputType? outputType)
         {
+            var asLib = UseSeparateMainExecutable(options) || BuildAsLibrary(options);
+
             // If building engine executable for platform doesn't support referencing it when linking game shared libraries
-            if (outputType == null && UseSeparateMainExecutable(options))
+            if (outputType == null && asLib)
             {
                 // Build into shared library
                 outputType = TargetOutputType.Library;
             }
 
-            return base.GetOutputFilePath(options, outputType);
+            // Override output name to shared library name when building library for the separate main executable
+            var outputName = OutputName;
+            if (asLib && (outputType ?? OutputType) == TargetOutputType.Library)
+                OutputName = LibraryName;
+
+            var result = base.GetOutputFilePath(options, outputType);
+            OutputName = outputName;
+            return result;
         }
 
         /// <inheritdoc />
@@ -81,7 +102,7 @@ namespace Flax.Build
             base.SetupTargetEnvironment(options);
 
             // If building engine executable for platform doesn't support referencing it when linking game shared libraries
-            if (UseSeparateMainExecutable(options))
+            if (UseSeparateMainExecutable(options) || BuildAsLibrary(options))
             {
                 // Build into shared library
                 options.LinkEnv.Output = LinkerOutput.SharedLibrary;
@@ -123,9 +144,26 @@ namespace Flax.Build
         /// <summary>
         /// Returns true if this build target should use separate (aka main-only) executable file and separate runtime (in shared library). Used on platforms that don't support linking again executable file but only shared library (see HasExecutableFileReferenceSupport).
         /// </summary>
-        public bool UseSeparateMainExecutable(BuildOptions buildOptions)
+        public virtual bool UseSeparateMainExecutable(BuildOptions buildOptions)
         {
-            return UseSymbolsExports && OutputType == TargetOutputType.Executable && !buildOptions.Platform.HasExecutableFileReferenceSupport && !Configuration.BuildBindingsOnly;
+            if (OutputType == TargetOutputType.Executable && !Configuration.BuildBindingsOnly)
+            {
+                if (buildOptions.Platform.Target == TargetPlatform.Android)
+                    return false;
+                if (!buildOptions.Platform.HasModularBuildSupport)
+                    return false;
+                return !IsMonolithicExecutable || (!buildOptions.Platform.HasExecutableFileReferenceSupport && UseSymbolsExports);
+            }
+            return false;
+        }
+
+        private bool BuildAsLibrary(BuildOptions buildOptions)
+        {
+            switch (buildOptions.Platform.Target)
+            {
+            case TargetPlatform.UWP: return true;
+            default: return false;
+            }
         }
 
         private void BuildMainExecutable(TaskGraph graph, BuildOptions buildOptions)
@@ -171,11 +209,15 @@ namespace Flax.Build
             mainModuleOptions.SourcePaths.Add(mainModule.FolderPath);
             mainModule.Setup(mainModuleOptions);
             mainModuleOptions.MergeSourcePathsIntoSourceFiles();
+            mainModuleOptions.CompileEnv.PrecompiledHeaderUsage = PrecompiledHeaderFileUsage.None;
             mainModuleOptions.CompileEnv.PreprocessorDefinitions.Add("FLAXENGINE_API=" + buildOptions.Toolchain.DllImport);
             Builder.BuildModuleInner(buildData, mainModule, mainModuleOptions, false);
 
             // Link executable
-            exeBuildOptions.LinkEnv.InputLibraries.Add(Path.Combine(buildOptions.OutputFolder, buildOptions.Platform.GetLinkOutputFileName(OutputName, LinkerOutput.SharedLibrary)));
+            var engineLibraryType = LinkerOutput.SharedLibrary;
+            if (buildOptions.Toolchain?.Compiler == TargetCompiler.MSVC)
+                engineLibraryType = LinkerOutput.ImportLibrary; // MSVC links DLL against import library
+            exeBuildOptions.LinkEnv.InputLibraries.Add(Path.Combine(buildOptions.OutputFolder, buildOptions.Platform.GetLinkOutputFileName(LibraryName, engineLibraryType)));
             exeBuildOptions.LinkEnv.InputFiles.AddRange(mainModuleOptions.OutputFiles);
             exeBuildOptions.DependencyFiles.AddRange(mainModuleOptions.DependencyFiles);
             exeBuildOptions.OptionalDependencyFiles.AddRange(mainModuleOptions.OptionalDependencyFiles);

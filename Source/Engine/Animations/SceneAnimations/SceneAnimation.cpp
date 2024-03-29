@@ -281,10 +281,26 @@ Asset::LoadResult SceneAnimation::load()
                 track.TrackStateIndex = TrackStatesCount++;
                 trackRuntime->PropertyName = stream.Move<char>(trackData->PropertyNameLength + 1);
                 trackRuntime->PropertyTypeName = stream.Move<char>(trackData->PropertyTypeNameLength + 1);
-                const int32 keyframesDataSize = trackData->KeyframesCount * (sizeof(float) + trackData->ValueSize);
+                int32 keyframesDataSize = trackData->KeyframesCount * (sizeof(float) + trackData->ValueSize);
+                if (trackData->ValueSize == 0)
+                {
+                    // When using json data (from non-POD types) read the sum of all keyframes data
+                    const int32 keyframesDataStart = stream.GetPosition();
+                    for (int32 j = 0; j < trackData->KeyframesCount; j++)
+                    {
+                        stream.Move<float>(); // Time
+                        int32 jsonLen;
+                        stream.ReadInt32(&jsonLen);
+                        stream.Move(jsonLen);
+                    }
+                    const int32 keyframesDataEnd = stream.GetPosition();
+                    stream.SetPosition(keyframesDataStart);
+                    keyframesDataSize = keyframesDataEnd - keyframesDataStart;
+                }
                 trackRuntime->ValueSize = trackData->ValueSize;
                 trackRuntime->KeyframesCount = trackData->KeyframesCount;
                 trackRuntime->Keyframes = stream.Move(keyframesDataSize);
+                trackRuntime->KeyframesSize = keyframesDataSize;
                 needsParent = true;
                 break;
             }
@@ -298,6 +314,7 @@ Asset::LoadResult SceneAnimation::load()
                 trackRuntime->PropertyName = stream.Move<char>(trackData->PropertyNameLength + 1);
                 trackRuntime->PropertyTypeName = stream.Move<char>(trackData->PropertyTypeNameLength + 1);
                 const int32 keyframesDataSize = trackData->KeyframesCount * (sizeof(float) + trackData->ValueSize * 3);
+                ASSERT(trackData->ValueSize > 0);
                 trackRuntime->ValueSize = trackData->ValueSize;
                 trackRuntime->KeyframesCount = trackData->KeyframesCount;
                 trackRuntime->Keyframes = stream.Move(keyframesDataSize);
@@ -375,6 +392,7 @@ Asset::LoadResult SceneAnimation::load()
                 trackRuntime->PropertyName = stream.Move<char>(trackData->PropertyNameLength + 1);
                 trackRuntime->PropertyTypeName = stream.Move<char>(trackData->PropertyTypeNameLength + 1);
                 trackRuntime->ValueSize = trackData->ValueSize;
+                ASSERT(trackData->ValueSize > 0);
                 trackRuntime->KeyframesCount = trackData->KeyframesCount;
                 const auto keyframesTimes = (float*)((byte*)trackRuntime + sizeof(StringPropertyTrack::Runtime));
                 const auto keyframesLengths = (int32*)((byte*)keyframesTimes + sizeof(float) * trackData->KeyframesCount);

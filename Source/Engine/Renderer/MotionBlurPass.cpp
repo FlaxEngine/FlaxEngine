@@ -151,7 +151,6 @@ void MotionBlurPass::Dispose()
 
 void MotionBlurPass::RenderMotionVectors(RenderContext& renderContext)
 {
-    // Prepare
     auto motionVectors = renderContext.Buffers->MotionVectors;
     ASSERT(motionVectors);
     MotionBlurSettings& settings = renderContext.List->Settings.MotionBlur;
@@ -160,8 +159,6 @@ void MotionBlurPass::RenderMotionVectors(RenderContext& renderContext)
     const int32 screenHeight = renderContext.Buffers->GetHeight();
     const int32 motionVectorsWidth = screenWidth / static_cast<int32>(settings.MotionVectorsResolution);
     const int32 motionVectorsHeight = screenHeight / static_cast<int32>(settings.MotionVectorsResolution);
-
-    // Ensure to have valid data
     if (!renderContext.List->Setup.UseMotionVectors || checkIfSkipPass())
     {
         // Skip pass (just clear motion vectors if texture is allocated)

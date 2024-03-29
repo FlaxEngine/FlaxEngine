@@ -52,6 +52,15 @@ namespace FlaxEditor.CustomEditors.Elements
         }
 
         /// <summary>
+        /// Sets the editor value category.
+        /// </summary>
+        /// <param name="category">The category.</param>
+        public void SetCategory(Utils.ValueCategory category)
+        {
+            ValueBox.Category = category;
+        }
+
+        /// <summary>
         /// Sets the editor limits from member <see cref="LimitAttribute"/>.
         /// </summary>
         /// <param name="limit">The limit.</param>

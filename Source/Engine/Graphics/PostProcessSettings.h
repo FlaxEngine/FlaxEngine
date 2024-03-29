@@ -960,7 +960,7 @@ API_STRUCT() struct FLAXENGINE_API EyeAdaptationSettings : ISerializable
     /// The speed at which the exposure changes when the scene brightness moves from a bright area to a dark area (brightness goes down).
     /// </summary>
     API_FIELD(Attributes="Limit(0, 100.0f, 0.01f), EditorOrder(2), PostProcessSetting((int)EyeAdaptationSettingsOverride.SpeedDown)")
-    float SpeedDown = 1.0f;
+    float SpeedDown = 10.0f;
 
     /// <summary>
     /// The pre-exposure value applied to the scene color before performing post-processing (such as bloom, lens flares, etc.).
@@ -984,7 +984,7 @@ API_STRUCT() struct FLAXENGINE_API EyeAdaptationSettings : ISerializable
     /// The maximum brightness for the auto exposure which limits the upper brightness the eye can adapt within.
     /// </summary>
     API_FIELD(Attributes="Limit(0, 100.0f, 0.01f), EditorOrder(6), PostProcessSetting((int)EyeAdaptationSettingsOverride.MaxBrightness), EditorDisplay(null, \"Maximum Brightness\")")
-    float MaxBrightness = 2.0f;
+    float MaxBrightness = 15.0f;
 
     /// <summary>
     /// The lower bound for the luminance histogram of the scene color. This value is in percent and limits the pixels below this brightness. Use values in the range of 60-80. Used only in AutomaticHistogram mode.
@@ -996,7 +996,7 @@ API_STRUCT() struct FLAXENGINE_API EyeAdaptationSettings : ISerializable
     /// The upper bound for the luminance histogram of the scene color. This value is in percent and limits the pixels above this brightness. Use values in the range of 80-95. Used only in AutomaticHistogram mode.
     /// </summary>
     API_FIELD(Attributes="Limit(1, 99, 0.001f), EditorOrder(3), PostProcessSetting((int)EyeAdaptationSettingsOverride.HistogramHighPercent)")
-    float HistogramHighPercent = 98.0f;
+    float HistogramHighPercent = 90.0f;
 
 public:
     /// <summary>
@@ -1079,10 +1079,10 @@ API_STRUCT() struct FLAXENGINE_API CameraArtifactsSettings : ISerializable
     CameraArtifactsSettingsOverride OverrideFlags = Override::None;
 
     /// <summary>
-    /// Strength of the vignette effect. Value 0 hides it. The default value is 0.8.
+    /// Strength of the vignette effect. Value 0 hides it. The default value is 0.4.
     /// </summary>
     API_FIELD(Attributes="Limit(0, 2, 0.001f), EditorOrder(0), PostProcessSetting((int)CameraArtifactsSettingsOverride.VignetteIntensity)")
-    float VignetteIntensity = 0.8f;
+    float VignetteIntensity = 0.4f;
 
     /// <summary>
     /// Color of the vignette.
@@ -1230,25 +1230,25 @@ API_STRUCT() struct FLAXENGINE_API LensFlaresSettings : ISerializable
     /// Strength of the effect. A value of 0 disables it.
     /// </summary>
     API_FIELD(Attributes="Limit(0, 10.0f, 0.01f), EditorOrder(0), PostProcessSetting((int)LensFlaresSettingsOverride.Intensity)")
-    float Intensity = 1.0f;
+    float Intensity = 0.5f;
 
     /// <summary>
     /// Amount of lens flares ghosts.
     /// </summary>
     API_FIELD(Attributes="Limit(0, 16), EditorOrder(1), PostProcessSetting((int)LensFlaresSettingsOverride.Ghosts)")
-    int32 Ghosts = 8;
+    int32 Ghosts = 4;
 
     /// <summary>
     /// Lens flares halo width.
     /// </summary>
     API_FIELD(Attributes="EditorOrder(2), PostProcessSetting((int)LensFlaresSettingsOverride.HaloWidth)")
-    float HaloWidth = 0.16f;
+    float HaloWidth = 0.04f;
 
     /// <summary>
     /// Lens flares halo intensity.
     /// </summary>
     API_FIELD(Attributes="Limit(0, 10.0f, 0.01f), EditorOrder(3), PostProcessSetting((int)LensFlaresSettingsOverride.HaloIntensity)")
-    float HaloIntensity = 0.666f;
+    float HaloIntensity = 0.5f;
 
     /// <summary>
     /// Ghost samples dispersal parameter.
@@ -1584,7 +1584,7 @@ API_STRUCT() struct FLAXENGINE_API MotionBlurSettings : ISerializable
     /// The blur effect strength. A value of 0 disables it, while higher values increase the effect.
     /// </summary>
     API_FIELD(Attributes="Limit(0, 5, 0.01f), EditorOrder(1), PostProcessSetting((int)MotionBlurSettingsOverride.Scale)")
-    float Scale = 1.0f;
+    float Scale = 0.5f;
 
     /// <summary>
     /// The amount of sample points used during motion blur rendering. It affects blur quality and performance.
@@ -1889,13 +1889,13 @@ API_STRUCT() struct FLAXENGINE_API AntiAliasingSettings : ISerializable
     /// The diameter (in texels) inside which jitter samples are spread. Smaller values result in crisper but more aliased output, while larger values result in more stable but blurrier output.
     /// </summary>
     API_FIELD(Attributes="Limit(0.1f, 1f, 0.001f), EditorOrder(1), PostProcessSetting((int)AntiAliasingSettingsOverride.TAA_JitterSpread), EditorDisplay(null, \"TAA Jitter Spread\")")
-    float TAA_JitterSpread = 0.75f;
+    float TAA_JitterSpread = 1.0f;
 
     /// <summary>
     /// Controls the amount of sharpening applied to the color buffer. TAA can induce a slight loss of details in high frequency regions. Sharpening alleviates this issue. High values may introduce dark-border artifacts.
     /// </summary>
     API_FIELD(Attributes="Limit(0, 3f, 0.001f), EditorOrder(2), PostProcessSetting((int)AntiAliasingSettingsOverride.TAA_Sharpness), EditorDisplay(null, \"TAA Sharpness\")")
-    float TAA_Sharpness = 0.0f;
+    float TAA_Sharpness = 0.1f;
 
     /// <summary>
     /// The blend coefficient for stationary fragments. Controls the percentage of history samples blended into the final color for fragments with minimal active motion.
@@ -1907,7 +1907,7 @@ API_STRUCT() struct FLAXENGINE_API AntiAliasingSettings : ISerializable
     /// The blending coefficient for moving fragments. Controls the percentage of history samples blended into the final color for fragments with significant active motion.
     /// </summary>
     API_FIELD(Attributes="Limit(0, 0.99f, 0.001f), EditorOrder(4), PostProcessSetting((int)AntiAliasingSettingsOverride.TAA_MotionBlending), EditorDisplay(null, \"TAA Motion Blending\")")
-    float TAA_MotionBlending = 0.7f;
+    float TAA_MotionBlending = 0.85f;
 
 public:
     /// <summary>

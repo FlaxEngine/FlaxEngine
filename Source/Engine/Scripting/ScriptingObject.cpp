@@ -433,7 +433,7 @@ bool ScriptingObject::CanCast(const MClass* from, const MClass* to)
         return true;
     CHECK_RETURN(from && to, false);
 
-#if PLATFORM_LINUX || PLATFORM_MAC
+#if DOTNET_HOST_MONO
     // Cannot enter GC unsafe region if the thread is not attached
     MCore::Thread::Attach();
 #endif

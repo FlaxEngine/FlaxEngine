@@ -25,8 +25,6 @@ extern "C" {
 __declspec(dllexport) int32 AmdPowerXpressRequestHighPerformance = 1;
 }
 
-extern LONG CALLBACK SehExceptionHandler(EXCEPTION_POINTERS* ep);
-
 #if FLAX_TESTS
 int main(int argc, char* argv[])
 #else
@@ -54,7 +52,7 @@ int APIENTRY wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCmd
     {
         return Engine::Main(lpCmdLine);
     }
-    __except (SehExceptionHandler(GetExceptionInformation()))
+    __except (Platform::SehExceptionHandler(GetExceptionInformation()))
     {
         return -1;
     }

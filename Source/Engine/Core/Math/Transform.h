@@ -18,13 +18,13 @@ API_STRUCT() struct FLAXENGINE_API Transform
     /// <summary>
     /// The translation vector of the transform.
     /// </summary>
-    API_FIELD(Attributes="EditorOrder(10), EditorDisplay(null, \"Position\")")
+    API_FIELD(Attributes="EditorOrder(10), EditorDisplay(null, \"Position\"), ValueCategory(Utils.ValueCategory.Distance)")
     Vector3 Translation;
 
     /// <summary>
     /// The rotation of the transform.
     /// </summary>
-    API_FIELD(Attributes="EditorOrder(20), EditorDisplay(null, \"Rotation\")")
+    API_FIELD(Attributes="EditorOrder(20), EditorDisplay(null, \"Rotation\"), ValueCategory(Utils.ValueCategory.Angle)")
     Quaternion Orientation;
 
     /// <summary>

@@ -62,10 +62,10 @@ namespace Flax.Build.Platforms
             case TargetPlatform.UWP: return GetSDKs().FirstOrDefault(x => x.Key != WindowsPlatformSDK.v8_1).Value != null;
             case TargetPlatform.PS4: return Sdk.HasValid("PS4Sdk");
             case TargetPlatform.PS5: return Sdk.HasValid("PS5Sdk");
-            case TargetPlatform.XboxOne:
-            case TargetPlatform.XboxScarlett: return GetSDKs().ContainsKey(WindowsPlatformSDK.v10_0_19041_0) && Sdk.HasValid("GDK");
             case TargetPlatform.Android: return AndroidSdk.Instance.IsValid && AndroidNdk.Instance.IsValid;
             case TargetPlatform.Switch: return Sdk.HasValid("SwitchSdk");
+            case TargetPlatform.XboxOne:
+            case TargetPlatform.XboxScarlett: return GetPlatform(platform, true)?.HasRequiredSDKsInstalled ?? false;
             default: return false;
             }
         }

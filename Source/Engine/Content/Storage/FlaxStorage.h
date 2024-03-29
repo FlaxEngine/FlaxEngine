@@ -5,7 +5,6 @@
 #include "Engine/Core/Object.h"
 #include "Engine/Core/Delegate.h"
 #include "Engine/Core/Types/String.h"
-#include "Engine/Core/Types/DateTime.h"
 #include "Engine/Core/Collections/Array.h"
 #include "Engine/Platform/CriticalSection.h"
 #include "Engine/Serialization/FileReadStream.h"
@@ -90,7 +89,7 @@ protected:
     // State
     int64 _refCount;
     int64 _chunksLock;
-    DateTime _lastRefLostTime;
+    double _lastRefLostTime;
     CriticalSection _loadLocker;
 
     // Storage
@@ -115,7 +114,7 @@ private:
         Platform::InterlockedDecrement(&_refCount);
         if (Platform::AtomicRead(&_refCount) == 0)
         {
-            _lastRefLostTime = DateTime::NowUTC();
+            _lastRefLostTime = Platform::GetTimeSeconds();
         }
     }
 

@@ -133,6 +133,59 @@ public sealed class VulkanSdk : Sdk
         }
         return false;
     }
+
+    /// <summary>
+    /// Adds any runtime dependency files to the build that uses Vulkan SDK.
+    /// </summary>
+    /// <param name="platform">Build options.</param>
+    public void AddDependencyFiles(BuildOptions options)
+    {
+        switch (options.Platform.Target)
+        {
+        case TargetPlatform.Mac:
+        case TargetPlatform.iOS:
+        {
+            // MoltenVK
+            var platformName = options.Platform.Target == TargetPlatform.iOS ? "iOS" : "macOS";
+            var location1 = Path.Combine(RootPath, "../MoltenVK/dylib/" + platformName);
+            if (Directory.Exists(location1))
+            {
+                // Initial location
+                options.DependencyFiles.Add(Path.Combine(location1, "libMoltenVK.dylib"));
+                options.DependencyFiles.Add(Path.Combine(location1, "MoltenVK_icd.json"));
+                return;
+            }
+
+            // New location from SDK 1.3.275
+            if (options.Platform.Target == TargetPlatform.iOS)
+            {
+                var location2 = Path.Combine(RootPath, "../iOS/lib/MoltenVK.xcframework/ios-arm64/MoltenVK.framework");
+                var location3 = Path.Combine(RootPath, "../iOS/share/vulkan/icd.d");
+                if (Directory.Exists(location2) && Directory.Exists(location3))
+                {
+                    // iOS
+                    options.DependencyFiles.Add(Path.Combine(location2, "MoltenVK"));
+                    options.DependencyFiles.Add(Path.Combine(location3, "MoltenVK_icd.json"));
+                    return;
+                }
+            }
+            else
+            {
+                var location2 = Path.Combine(RootPath, "lib");
+                var location3 = Path.Combine(RootPath, "share/vulkan/icd.d");
+                if (Directory.Exists(location2) && Directory.Exists(location3))
+                {
+                    // macOS
+                    options.DependencyFiles.Add(Path.Combine(location2, "libMoltenVK.dylib"));
+                    options.DependencyFiles.Add(Path.Combine(location3, "MoltenVK_icd.json"));
+                    return;
+                }
+            }
+            Log.Error($"Missing MoltenVK files for {platformName} in VulkanSDK '{RootPath}'");
+            break;
+        }
+        }
+    }
 }
 
 /// <summary>

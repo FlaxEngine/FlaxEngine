@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include "Engine/Platform/Defines.h"
+
 // Maximum amount of binded render targets at the same time
 #define GPU_MAX_RT_BINDED 6
 
@@ -44,11 +46,10 @@
 // Enable/disable force shaders recompilation
 #define GPU_FORCE_RECOMPILE_SHADERS 0
 
-// True if use BGRA back buffer format
-#define GPU_USE_BGRA_BACK_BUFFER 1
-
 // Default back buffer pixel format
+#ifndef GPU_DEPTH_BUFFER_PIXEL_FORMAT
 #define GPU_DEPTH_BUFFER_PIXEL_FORMAT PixelFormat::D32_Float
+#endif
 
 // Enable/disable gpu resources naming
 #define GPU_ENABLE_RESOURCE_NAMING (!BUILD_RELEASE)
@@ -62,10 +63,8 @@
 #define GPU_MAX_TEXTURE_ARRAY_SIZE 1024
 
 // Define default back buffer(s) format
-#if GPU_USE_BGRA_BACK_BUFFER
+#ifndef GPU_BACK_BUFFER_PIXEL_FORMAT
 #define GPU_BACK_BUFFER_PIXEL_FORMAT PixelFormat::B8G8R8A8_UNorm
-#else
-#define GPU_BACK_BUFFER_PIXEL_FORMAT PixelFormat::R8G8B8A8_UNorm
 #endif
 
 // Validate configuration

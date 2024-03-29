@@ -31,6 +31,7 @@ public:
     ArchitectureType GetArchitecture() const override;
     bool UseSystemDotnet() const override;
     bool OnDeployBinaries(CookingData& data) override;
+    void OnBuildStarted(CookingData& data) override;
     void OnRun(CookingData& data, String& executableFile, String& commandLineFormat, String& workingDir) override;
 };
 

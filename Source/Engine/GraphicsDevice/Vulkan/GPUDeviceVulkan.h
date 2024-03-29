@@ -18,7 +18,6 @@ class GPUAdapterVulkan;
 class GPUSwapChainVulkan;
 class CmdBufferVulkan;
 class QueueVulkan;
-class FenceVulkan;
 class GPUTextureVulkan;
 class GPUBufferVulkan;
 class GPUTimerQueryVulkan;
@@ -31,12 +30,10 @@ class DescriptorPoolsManagerVulkan;
 class SemaphoreVulkan
 {
 private:
-
     GPUDeviceVulkan* _device;
     VkSemaphore _semaphoreHandle;
 
 public:
-
     /// <summary>
     /// Initializes a new instance of the <see cref="SemaphoreVulkan"/> class.
     /// </summary>
@@ -58,63 +55,23 @@ public:
     }
 };
 
-class FenceVulkan
+struct FenceVulkan
 {
-    friend FenceManagerVulkan;
-
-private:
-
-    VkFence _handle;
-    bool _signaled;
-    FenceManagerVulkan* _owner;
-
-public:
-
-    FenceVulkan(GPUDeviceVulkan* device, FenceManagerVulkan* owner, bool createSignaled);
-
-    ~FenceVulkan();
-
-public:
-
-    inline VkFence GetHandle() const
-    {
-        return _handle;
-    }
-
-    inline bool IsSignaled() const
-    {
-        return _signaled;
-    }
-
-    FenceManagerVulkan* GetOwner() const
-    {
-        return _owner;
-    }
+    VkFence Handle;
+    bool IsSignaled;
 };
 
 class FenceManagerVulkan
 {
 private:
-
-    GPUDeviceVulkan* _device;
+    GPUDeviceVulkan* _device = nullptr;
     Array<FenceVulkan*> _freeFences;
     Array<FenceVulkan*> _usedFences;
 
 public:
-
-    FenceManagerVulkan()
-        : _device(nullptr)
-    {
-    }
-
     ~FenceManagerVulkan();
 
 public:
-
-    /// <summary>
-    /// Initializes the specified device.
-    /// </summary>
-    /// <param name="device">The graphics device.</param>
     void Init(GPUDeviceVulkan* device)
     {
         _device = device;
@@ -124,20 +81,15 @@ public:
 
     FenceVulkan* AllocateFence(bool createSignaled = false);
 
-    inline bool IsFenceSignaled(FenceVulkan* fence)
+    FORCE_INLINE bool IsFenceSignaled(FenceVulkan* fence) const
     {
-        if (fence->IsSignaled())
-        {
-            return true;
-        }
-
-        return CheckFenceState(fence);
+        return fence->IsSignaled || CheckFenceState(fence);
     }
 
     // Returns true if waiting timed out or failed, false otherwise.
-    bool WaitForFence(FenceVulkan* fence, uint64 timeInNanoseconds);
+    bool WaitForFence(FenceVulkan* fence, uint64 timeInNanoseconds) const;
 
-    void ResetFence(FenceVulkan* fence);
+    void ResetFence(FenceVulkan* fence) const;
 
     // Sets the fence handle to null
     void ReleaseFence(FenceVulkan*& fence);
@@ -146,17 +98,15 @@ public:
     void WaitAndReleaseFence(FenceVulkan*& fence, uint64 timeInNanoseconds);
 
 private:
-
     // Returns true if fence was signaled, otherwise false.
-    bool CheckFenceState(FenceVulkan* fence);
+    bool CheckFenceState(FenceVulkan* fence) const;
 
-    void DestroyFence(FenceVulkan* fence);
+    void DestroyFence(FenceVulkan* fence) const;
 };
 
 class DeferredDeletionQueueVulkan
 {
 public:
-
     enum Type
     {
         RenderPass,
@@ -176,7 +126,6 @@ public:
     };
 
 private:
-
     struct Entry
     {
         uint64 FenceCounter;
@@ -192,7 +141,6 @@ private:
     Array<Entry> _entries;
 
 public:
-
     /// <summary>
     /// Initializes a new instance of the <see cref="DeferredDeletionQueueVulkan"/> class.
     /// </summary>
@@ -205,7 +153,6 @@ public:
     ~DeferredDeletionQueueVulkan();
 
 public:
-
     template<typename T>
     inline void EnqueueResource(Type type, T handle)
     {
@@ -220,30 +167,34 @@ public:
         EnqueueGenericResource(type, (uint64)handle, allocation);
     }
 
-    auto ReleaseResources(bool deleteImmediately = false) -> void;
+    void ReleaseResources(bool immediately = false);
 
 private:
-
     void EnqueueGenericResource(Type type, uint64 handle, VmaAllocation allocation);
 };
 
-class RenderTargetLayoutVulkan
+struct RenderTargetLayoutVulkan
 {
-public:
-
-    int32 RTsCount;
+    union
+    {
+        struct
+        {
+            uint32 Layers : 10; // Limited by GPU_MAX_TEXTURE_ARRAY_SIZE
+            uint32 RTsCount : 3; // Limited by GPU_MAX_RT_BINDED
+            uint32 ReadDepth : 1;
+            uint32 WriteDepth : 1;
+            uint32 ReadStencil : 1;
+            uint32 WriteStencil : 1;
+            uint32 BlendEnable : 1;
+        };
+        uint32 Flags;
+    };
     MSAALevel MSAA;
-    bool ReadDepth;
-    bool WriteDepth;
-    bool BlendEnable;
     PixelFormat DepthFormat;
     PixelFormat RTVsFormats[GPU_MAX_RT_BINDED];
     VkExtent2D Extent;
-    uint32 Layers;
 
-public:
-
-    bool operator==(const RenderTargetLayoutVulkan& other) const
+    FORCE_INLINE bool operator==(const RenderTargetLayoutVulkan& other) const
     {
         return Platform::MemoryCompare(this, &other, sizeof(RenderTargetLayoutVulkan)) == 0;
     }
@@ -254,43 +205,26 @@ uint32 GetHash(const RenderTargetLayoutVulkan& key);
 class FramebufferVulkan
 {
 public:
-
     struct Key
     {
         RenderPassVulkan* RenderPass;
         int32 AttachmentCount;
         VkImageView Attachments[GPU_MAX_RT_BINDED + 1];
 
-    public:
-
-        bool operator==(const Key& other) const
+        FORCE_INLINE bool operator==(const Key& other) const
         {
             return Platform::MemoryCompare(this, &other, sizeof(Key)) == 0;
         }
     };
 
-private:
-
-    GPUDeviceVulkan* _device;
-    VkFramebuffer _handle;
-
-public:
-
-    FramebufferVulkan(GPUDeviceVulkan* device, Key& key, VkExtent2D& extent, uint32 layers);
+    FramebufferVulkan(GPUDeviceVulkan* device, const Key& key, const VkExtent2D& extent, uint32 layers);
     ~FramebufferVulkan();
 
-public:
-
+    GPUDeviceVulkan* Device;
+    VkFramebuffer Handle;
     VkImageView Attachments[GPU_MAX_RT_BINDED + 1];
     VkExtent2D Extent;
     uint32 Layers;
-
-public:
-
-    inline VkFramebuffer GetHandle()
-    {
-        return _handle;
-    }
 
     bool HasReference(VkImageView imageView) const;
 };
@@ -299,32 +233,21 @@ uint32 GetHash(const FramebufferVulkan::Key& key);
 
 class RenderPassVulkan
 {
-private:
-
-    GPUDeviceVulkan* _device;
-    VkRenderPass _handle;
-
 public:
-
+    GPUDeviceVulkan* Device;
+    VkRenderPass Handle;
     RenderTargetLayoutVulkan Layout;
-
-public:
+#if VULKAN_USE_DEBUG_DATA
+    VkRenderPassCreateInfo DebugCreateInfo;
+#endif
 
     RenderPassVulkan(GPUDeviceVulkan* device, const RenderTargetLayoutVulkan& layout);
     ~RenderPassVulkan();
-
-public:
-
-    inline VkRenderPass GetHandle() const
-    {
-        return _handle;
-    }
 };
 
 class QueryPoolVulkan
 {
 protected:
-
     struct Range
     {
         uint32 Start;
@@ -342,12 +265,10 @@ protected:
 #endif
 
 public:
-
     QueryPoolVulkan(GPUDeviceVulkan* device, int32 capacity, VkQueryType type);
     ~QueryPoolVulkan();
 
 public:
-
     inline VkQueryPool GetHandle() const
     {
         return _handle;
@@ -361,7 +282,6 @@ public:
 class BufferedQueryPoolVulkan : public QueryPoolVulkan
 {
 private:
-
     Array<uint64> _queryOutput;
     Array<uint64> _usedQueryBits;
     Array<uint64> _startedQueryBits;
@@ -371,7 +291,6 @@ private:
     int32 _lastBeginIndex;
 
 public:
-
     BufferedQueryPoolVulkan(GPUDeviceVulkan* device, int32 capacity, VkQueryType type);
     bool AcquireQuery(uint32& resultIndex);
     void ReleaseQuery(uint32 queryIndex);
@@ -386,7 +305,6 @@ public:
 class HelperResourcesVulkan
 {
 private:
-
     GPUDeviceVulkan* _device;
     GPUTextureVulkan* _dummyTextures[6];
     GPUBufferVulkan* _dummyBuffer;
@@ -394,11 +312,9 @@ private:
     VkSampler _staticSamplers[GPU_STATIC_SAMPLERS_COUNT];
 
 public:
-
     HelperResourcesVulkan(GPUDeviceVulkan* device);
 
 public:
-
     VkSampler* GetStaticSamplers();
     GPUTextureVulkan* GetDummyTexture(SpirvShaderResourceType type);
     GPUBufferVulkan* GetDummyBuffer();
@@ -412,7 +328,6 @@ public:
 class StagingManagerVulkan
 {
 private:
-
     struct PendingEntry
     {
         GPUBuffer* Buffer;
@@ -439,7 +354,6 @@ private:
 #endif
 
 public:
-
     StagingManagerVulkan(GPUDeviceVulkan* device);
     GPUBuffer* AcquireBuffer(uint32 size, GPUResourceUsage usage);
     void ReleaseBuffer(CmdBufferVulkan* cmdBuffer, GPUBuffer*& buffer);
@@ -457,7 +371,6 @@ class GPUDeviceVulkan : public GPUDevice
     friend FenceManagerVulkan;
 
 private:
-
     CriticalSection _fenceLock;
     mutable void* _nativePtr[2];
 
@@ -467,7 +380,6 @@ private:
     // TODO: use mutex to protect those collections BUT use 2 pools per cache: one lock-free with lookup only and second protected with mutex synced on frame end!
 
 public:
-
     static GPUDevice* Create();
 
     /// <summary>
@@ -483,14 +395,11 @@ public:
     ~GPUDeviceVulkan();
 
 public:
-
     struct OptionalVulkanDeviceExtensions
     {
         uint32 HasKHRMaintenance1 : 1;
         uint32 HasKHRMaintenance2 : 1;
         uint32 HasMirrorClampToEdge : 1;
-        uint32 HasKHRExternalMemoryCapabilities : 1;
-        uint32 HasKHRGetPhysicalDeviceProperties2 : 1;
         uint32 HasEXTValidationCache : 1;
     };
 
@@ -501,7 +410,6 @@ public:
     static OptionalVulkanDeviceExtensions OptionalDeviceExtensions;
 
 public:
-
     /// <summary>
     /// The Vulkan instance.
     /// </summary>
@@ -518,7 +426,6 @@ public:
     static Array<const char*> InstanceLayers;
 
 public:
-
     /// <summary>
     /// The main Vulkan commands context.
     /// </summary>
@@ -629,11 +536,9 @@ public:
         // Try to use pool with available space inside
         for (int32 i = 0; i < pools.Count(); i++)
         {
-            auto pool = pools[i];
+            auto pool = pools.Get()[i];
             if (pool->HasRoom())
-            {
                 return pool;
-            }
         }
 
         // Create new pool
@@ -658,7 +563,6 @@ public:
     void OnImageViewDestroy(VkImageView imageView);
 
 public:
-
     /// <summary>
     /// Setups the present queue to be ready for the given window surface.
     /// </summary>
@@ -673,7 +577,7 @@ public:
     /// <param name="optimalTiling">If set to <c>true</c> the optimal tiling should be used, otherwise use linear tiling.</param>
     /// <returns>The output format.</returns>
     PixelFormat GetClosestSupportedPixelFormat(PixelFormat format, GPUTextureFlags flags, bool optimalTiling);
-    
+
     /// <summary>
     /// Saves the pipeline cache.
     /// </summary>
@@ -689,11 +593,9 @@ public:
 #endif
 
 private:
-
     bool IsVkFormatSupported(VkFormat vkFormat, VkFormatFeatureFlags wantedFeatureFlags, bool optimalTiling) const;
 
 public:
-
     // [GPUDevice]
     GPUContext* GetMainContext() override;
     GPUAdapter* GetAdapter() const override;
@@ -719,7 +621,6 @@ template<class BaseType>
 class GPUResourceVulkan : public GPUResourceBase<GPUDeviceVulkan, BaseType>
 {
 public:
-
     /// <summary>
     /// Initializes a new instance of the <see cref="GPUResourceVulkan"/> class.
     /// </summary>
@@ -737,7 +638,6 @@ public:
 class DescriptorOwnerResourceVulkan
 {
 public:
-
     /// <summary>
     /// Finalizes an instance of the <see cref="DescriptorOwnerResourceVulkan"/> class.
     /// </summary>
@@ -746,7 +646,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Gets the sampler descriptor.
     /// </summary>

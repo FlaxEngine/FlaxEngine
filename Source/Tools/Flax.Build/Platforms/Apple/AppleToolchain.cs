@@ -150,22 +150,22 @@ namespace Flax.Build.Platforms
                 if (compileEnvironment.TreatWarningsAsErrors)
                     commonArgs.Add("-Wall -Werror");
 
-                // TODO: compileEnvironment.IntrinsicFunctions
-                // TODO: compileEnvironment.FunctionLevelLinking
-                // TODO: compileEnvironment.FavorSizeOrSpeed
-                // TODO: compileEnvironment.RuntimeChecks
-                // TODO: compileEnvironment.StringPooling
-                // TODO: compileEnvironment.BufferSecurityCheck
-
                 if (compileEnvironment.DebugInformation)
                     commonArgs.Add("-gdwarf-2");
 
                 commonArgs.Add("-pthread");
 
+                if (compileEnvironment.FavorSizeOrSpeed == FavorSizeOrSpeed.FastCode)
+                    commonArgs.Add("-Ofast");
+                else if (compileEnvironment.FavorSizeOrSpeed == FavorSizeOrSpeed.SmallCode)
+                    commonArgs.Add("-Os");
                 if (compileEnvironment.Optimization)
                     commonArgs.Add("-O3");
                 else
                     commonArgs.Add("-O0");
+
+                if (compileEnvironment.BufferSecurityCheck)
+                    commonArgs.Add("-fstack-protector");
 
                 if (!compileEnvironment.Inlining)
                 {
@@ -396,7 +396,7 @@ namespace Flax.Build.Platforms
                 rpathTask.DependentTasks.Add(lastTask);
                 lastTask = rpathTask;
             }
-            // TODO: fix dylib ID: 'install_name_tool -id @rpath/FlaxGame.dylib FlaxGame.dylib'
+            // TODO: fix dylib ID: 'install_name_tool -id @rpath/FlaxEngine.dylib FlaxEngine.dylib'
             if (!options.LinkEnv.DebugInformation)
             {
                 // Strip debug symbols

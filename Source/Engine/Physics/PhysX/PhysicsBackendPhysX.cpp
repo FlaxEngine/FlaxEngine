@@ -1998,11 +1998,14 @@ void PhysicsBackend::AddSceneActor(void* scene, void* actor)
     FlushLocker.Unlock();
 }
 
-void PhysicsBackend::RemoveSceneActor(void* scene, void* actor)
+void PhysicsBackend::RemoveSceneActor(void* scene, void* actor, bool immediately)
 {
     auto scenePhysX = (ScenePhysX*)scene;
     FlushLocker.Lock();
-    scenePhysX->RemoveActors.Add((PxActor*)actor);
+    if (immediately)
+        scenePhysX->Scene->removeActor(*(PxActor*)actor);
+    else
+        scenePhysX->RemoveActors.Add((PxActor*)actor);
     FlushLocker.Unlock();
 }
 

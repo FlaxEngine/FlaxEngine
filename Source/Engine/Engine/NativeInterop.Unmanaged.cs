@@ -525,11 +525,11 @@ namespace FlaxEngine.Interop
         internal static void GetMethodParameterTypes(ManagedHandle methodHandle, IntPtr* typeHandles)
         {
             MethodHolder methodHolder = Unsafe.As<MethodHolder>(methodHandle.Target);
-            Type returnType = methodHolder.returnType;
-            IntPtr arr = (IntPtr)NativeAlloc(methodHolder.parameterTypes.Length, IntPtr.Size);
-            for (int i = 0; i < methodHolder.parameterTypes.Length; i++)
+            Type[] parameterTypes = methodHolder.parameterTypes;
+            IntPtr arr = (IntPtr)NativeAlloc(parameterTypes.Length, IntPtr.Size);
+            for (int i = 0; i < parameterTypes.Length; i++)
             {
-                ManagedHandle typeHandle = GetTypeManagedHandle(methodHolder.parameterTypes[i]);
+                ManagedHandle typeHandle = GetTypeManagedHandle(parameterTypes[i]);
                 Unsafe.Write<ManagedHandle>(IntPtr.Add(new IntPtr(arr), IntPtr.Size * i).ToPointer(), typeHandle);
             }
             *typeHandles = arr;

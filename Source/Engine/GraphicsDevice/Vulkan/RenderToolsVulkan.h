@@ -34,14 +34,12 @@
 class RenderToolsVulkan
 {
 private:
-
     static VkFormat PixelFormatToVkFormat[static_cast<int32>(PixelFormat::MAX)];
     static VkBlendFactor BlendToVkBlendFactor[static_cast<int32>(BlendingMode::Blend::MAX)];
     static VkBlendOp OperationToVkBlendOp[static_cast<int32>(BlendingMode::Operation::MAX)];
     static VkCompareOp ComparisonFuncToVkCompareOp[static_cast<int32>(ComparisonFunc::MAX)];
 
 public:
-
 #if GPU_ENABLE_RESOURCE_NAMING
     static void SetObjectName(VkDevice device, uint64 objectHandle, VkObjectType objectType, const String& name);
     static void SetObjectName(VkDevice device, uint64 objectHandle, VkObjectType objectType, const char* name);
@@ -79,14 +77,12 @@ public:
         case VK_ACCESS_SHADER_WRITE_BIT:
             stageFlags = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
             break;
-#if VK_KHR_maintenance2
-		case VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT:
-		case VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT:
-			stageFlags = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
-			break;
-#endif
+        case VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT:
+        case VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT:
+            stageFlags = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
+            break;
         default:
-        CRASH;
+            CRASH;
             break;
         }
         return stageFlags;
@@ -110,7 +106,9 @@ public:
             stageFlags = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
             break;
         case VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL:
-            accessFlags = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+        case VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL:
+        case VK_IMAGE_LAYOUT_STENCIL_ATTACHMENT_OPTIMAL:
+            accessFlags = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
             stageFlags = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
             break;
         case VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL:
@@ -126,21 +124,22 @@ public:
             stageFlags = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
             break;
         case VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL:
-            accessFlags = VK_ACCESS_SHADER_READ_BIT;
-            stageFlags = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+        case VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_OPTIMAL:
+        case VK_IMAGE_LAYOUT_STENCIL_READ_ONLY_OPTIMAL:
+            accessFlags = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT;
+            stageFlags = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
             break;
-#if VK_KHR_maintenance2
-		case VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL_KHR:
-			accessFlags = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-			stageFlags = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
-			break;
-#endif
+        case VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL:
+        case VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL:
+            accessFlags = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+            stageFlags = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
+            break;
         case VK_IMAGE_LAYOUT_GENERAL:
             accessFlags = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT;
             stageFlags = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
             break;
         default:
-        CRASH;
+            CRASH;
             break;
         }
         return stageFlags;
@@ -152,7 +151,7 @@ public:
         static_assert(!TIsPointer<T>::Value, "Don't use a pointer.");
         static_assert(OFFSET_OF(T, sType) == 0, "Assumes type is the first member in the Vulkan type.");
         data.sType = type;
-        Platform::MemoryClear(((uint8*)&data) + sizeof(VkStructureType), sizeof(T) - sizeof(VkStructureType));
+        Platform::MemoryClear((uint8*)&data + sizeof(VkStructureType), sizeof(T) - sizeof(VkStructureType));
     }
 
     /// <summary>
@@ -213,7 +212,7 @@ public:
             result = VK_SAMPLER_MIPMAP_MODE_LINEAR;
             break;
         default:
-        CRASH;
+            CRASH;
             break;
         }
         return result;
@@ -237,7 +236,7 @@ public:
             result = VK_FILTER_LINEAR;
             break;
         default:
-        CRASH;
+            CRASH;
             break;
         }
         return result;
@@ -261,7 +260,7 @@ public:
             result = VK_FILTER_LINEAR;
             break;
         default:
-        CRASH;
+            CRASH;
             break;
         }
         return result;
@@ -285,7 +284,7 @@ public:
             result = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
             break;
         default:
-        CRASH;
+            CRASH;
             break;
         }
         return result;
@@ -303,11 +302,13 @@ public:
             result = VK_COMPARE_OP_NEVER;
             break;
         default:
-        CRASH;
+            CRASH;
             break;
         }
         return result;
     }
+
+    static bool HasExtension(const Array<const char*, HeapAllocation>& extensions, const char* name);
 };
 
 #endif

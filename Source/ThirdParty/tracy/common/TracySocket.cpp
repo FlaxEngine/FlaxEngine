@@ -450,6 +450,9 @@ ListenSocket::~ListenSocket()
 
 static int addrinfo_and_socket_for_family( uint16_t port, int ai_family, struct addrinfo** res )
 {
+#if PLATFORM_SWITCH
+    Platform::GetNetworkConnectionType(); // Ensure to have network service initialized before using sockets
+#endif
     struct addrinfo hints;
     memset( &hints, 0, sizeof( hints ) );
     hints.ai_family = ai_family;

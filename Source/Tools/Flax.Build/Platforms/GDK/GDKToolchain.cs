@@ -2,7 +2,6 @@
 
 using System;
 using System.IO;
-using System.Linq;
 using Flax.Build.NativeCpp;
 
 namespace Flax.Build.Platforms
@@ -19,8 +18,9 @@ namespace Flax.Build.Platforms
         /// </summary>
         /// <param name="platform">The platform.</param>
         /// <param name="architecture">The architecture.</param>
-        protected GDKToolchain(GDKPlatform platform, TargetArchitecture architecture)
-        : base(platform, architecture, WindowsPlatformBase.GetToolsets().Keys.Where(x => x <= WindowsPlatformToolset.v142).Max(), WindowsPlatformSDK.v10_0_19041_0)
+        /// <param name="toolset">The Windows toolset to use.</param>
+        protected GDKToolchain(GDKPlatform platform, TargetArchitecture architecture, WindowsPlatformToolset toolset = WindowsPlatformToolset.Latest)
+        : base(platform, architecture, toolset, WindowsPlatformSDK.Latest)
         {
             // Setup system paths
             SystemIncludePaths.Add(Path.Combine(GDK.Instance.RootPath, "GRDK\\GameKit\\Include"));
@@ -42,7 +42,7 @@ namespace Flax.Build.Platforms
 
             options.LinkEnv.InputLibraries.Add("xgameruntime.lib");
             options.LinkEnv.InputLibraries.Add("xgameplatform.lib");
-            options.LinkEnv.InputLibraries.Add("Microsoft.Xbox.Services.142.GDK.C.lib");
+            options.LinkEnv.InputLibraries.Add($"Microsoft.Xbox.Services.{(int)Toolset}.GDK.C.lib");
 
             var toolsetPath = WindowsPlatformBase.GetToolsets()[Toolset];
             var toolsPath = WindowsPlatformBase.GetVCToolPath64(Toolset);

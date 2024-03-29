@@ -76,37 +76,37 @@ namespace FlaxEditor.Windows.Assets
 
             // Transparency
 
-            [EditorOrder(200), DefaultValue(MaterialTransparentLightingMode.Surface), EditorDisplay("Transparency"), Tooltip("Transparent material lighting mode.")]
+            [EditorOrder(200), DefaultValue(MaterialTransparentLightingMode.Surface), VisibleIf(nameof(IsStandard)), EditorDisplay("Transparency"), Tooltip("Transparent material lighting mode.")]
             public MaterialTransparentLightingMode TransparentLightingMode;
 
-            [EditorOrder(205), DefaultValue(true), EditorDisplay("Transparency"), Tooltip("Enables reflections when rendering material.")]
+            [EditorOrder(205), DefaultValue(true), VisibleIf(nameof(IsStandard)), EditorDisplay("Transparency"), Tooltip("Enables reflections when rendering material.")]
             public bool EnableReflections;
 
             [VisibleIf(nameof(EnableReflections))]
-            [EditorOrder(210), DefaultValue(false), EditorDisplay("Transparency"), Tooltip("Enables Screen Space Reflections when rendering material.")]
+            [EditorOrder(210), DefaultValue(false), VisibleIf(nameof(IsStandard)), EditorDisplay("Transparency"), Tooltip("Enables Screen Space Reflections when rendering material.")]
             public bool EnableScreenSpaceReflections;
 
-            [EditorOrder(210), DefaultValue(true), EditorDisplay("Transparency"), Tooltip("Enables fog effects when rendering material.")]
+            [EditorOrder(210), DefaultValue(true), VisibleIf(nameof(IsStandard)), EditorDisplay("Transparency"), Tooltip("Enables fog effects when rendering material.")]
             public bool EnableFog;
 
-            [EditorOrder(220), DefaultValue(true), EditorDisplay("Transparency"), Tooltip("Enables distortion effect when rendering.")]
+            [EditorOrder(220), DefaultValue(true), VisibleIf(nameof(IsStandard)), EditorDisplay("Transparency"), Tooltip("Enables distortion effect when rendering.")]
             public bool EnableDistortion;
 
-            [EditorOrder(224), DefaultValue(false), EditorDisplay("Transparency"), Tooltip("Enables sampling Global Illumination in material (eg. light probes or volumetric lightmap).")]
+            [EditorOrder(224), DefaultValue(false), VisibleIf(nameof(IsStandard)), EditorDisplay("Transparency"), Tooltip("Enables sampling Global Illumination in material (eg. light probes or volumetric lightmap).")]
             public bool EnableGlobalIllumination;
 
-            [EditorOrder(225), DefaultValue(false), EditorDisplay("Transparency"), Tooltip("Enables refraction offset based on the difference between the per-pixel normal and the per-vertex normal. Useful for large water-like surfaces.")]
+            [EditorOrder(225), DefaultValue(false), VisibleIf(nameof(IsStandard)), EditorDisplay("Transparency"), Tooltip("Enables refraction offset based on the difference between the per-pixel normal and the per-vertex normal. Useful for large water-like surfaces.")]
             public bool PixelNormalOffsetRefraction;
 
-            [EditorOrder(230), DefaultValue(0.12f), EditorDisplay("Transparency"), Tooltip("Controls opacity values clipping point."), Limit(0.0f, 1.0f, 0.01f)]
+            [EditorOrder(230), DefaultValue(0.12f), VisibleIf(nameof(IsStandard)), EditorDisplay("Transparency"), Tooltip("Controls opacity values clipping point."), Limit(0.0f, 1.0f, 0.01f)]
             public float OpacityThreshold;
 
             // Tessellation
 
-            [EditorOrder(300), DefaultValue(TessellationMethod.None), EditorDisplay("Tessellation"), Tooltip("Mesh tessellation method.")]
+            [EditorOrder(300), DefaultValue(TessellationMethod.None), VisibleIf(nameof(IsStandard)), EditorDisplay("Tessellation"), Tooltip("Mesh tessellation method.")]
             public TessellationMethod TessellationMode;
 
-            [EditorOrder(310), DefaultValue(15), EditorDisplay("Tessellation"), Tooltip("Maximum triangle tessellation factor."), Limit(1, 60, 0.01f)]
+            [EditorOrder(310), DefaultValue(15), VisibleIf(nameof(IsStandard)), EditorDisplay("Tessellation"), Tooltip("Maximum triangle tessellation factor."), Limit(1, 60, 0.01f)]
             public int MaxTessellationFactor;
 
             // Misc
@@ -120,10 +120,10 @@ namespace FlaxEditor.Windows.Assets
             [EditorOrder(420), DefaultValue(0.3f), EditorDisplay("Misc"), Tooltip("Controls mask values clipping point."), Limit(0.0f, 1.0f, 0.01f)]
             public float MaskThreshold;
 
-            [EditorOrder(430), DefaultValue(MaterialDecalBlendingMode.Translucent), EditorDisplay("Misc"), Tooltip("The decal material blending mode.")]
+            [EditorOrder(430), DefaultValue(MaterialDecalBlendingMode.Translucent), VisibleIf(nameof(IsDecal)), EditorDisplay("Misc"), Tooltip("The decal material blending mode.")]
             public MaterialDecalBlendingMode DecalBlendingMode;
 
-            [EditorOrder(440), DefaultValue(MaterialPostFxLocation.AfterPostProcessingPass), EditorDisplay("Misc"), Tooltip("The post fx material rendering location.")]
+            [EditorOrder(440), DefaultValue(MaterialPostFxLocation.AfterPostProcessingPass), VisibleIf(nameof(IsPostProcess)), EditorDisplay("Misc"), Tooltip("The post fx material rendering location.")]
             public MaterialPostFxLocation PostFxLocation;
 
             // Parameters
@@ -139,6 +139,12 @@ namespace FlaxEditor.Windows.Assets
                 get => Window.Surface.Parameters;
                 set => throw new Exception("No setter.");
             }
+
+            // Visibility conditionals
+
+            private bool IsPostProcess => Domain == MaterialDomain.PostProcess;
+            private bool IsDecal => Domain == MaterialDomain.Decal;
+            private bool IsStandard => Domain == MaterialDomain.Surface || Domain == MaterialDomain.Terrain || Domain == MaterialDomain.Particle || Domain == MaterialDomain.Deformable;
 
             /// <summary>
             /// Gathers parameters from the specified material.

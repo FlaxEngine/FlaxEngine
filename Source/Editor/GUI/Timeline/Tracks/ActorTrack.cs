@@ -204,7 +204,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
                     b.TooltipText = Utilities.Utils.GetTooltip(actorNode.Actor);
                 }
             }
-            menu.AddButton("Select...", OnClickedSelect).TooltipText = "Opens actor picker dialog to select the target actor for this track";
+            menu.AddButton("Retarget...", OnClickedSelect).TooltipText = "Opens actor picker dialog to select the target actor for this track";
         }
 
         /// <summary>

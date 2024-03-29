@@ -273,9 +273,6 @@ void Scene::Serialize(SerializeStream& stream, const void* otherObj)
 
     SERIALIZE_GET_OTHER_OBJ(Scene);
 
-    // Update scene info object
-    SaveTime = DateTime::NowUTC();
-
     LightmapsData.SaveLightmaps(Info.Lightmaps);
     Info.Serialize(stream, other ? &other->Info : nullptr);
 

@@ -22,7 +22,8 @@ namespace FlaxEditor.CustomEditors.Editors
         /// <inheritdoc />
         public override void Initialize(LayoutElementsContainer layout)
         {
-            LinkedLabel.SetupContextMenu += OnSetupContextMenu;
+            if (LinkedLabel != null)
+                LinkedLabel.SetupContextMenu += OnSetupContextMenu;
             var comboBoxElement = layout.ComboBox();
             _comboBox = comboBoxElement.ComboBox;
             var names = new List<string>();
