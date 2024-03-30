@@ -81,7 +81,7 @@ public:
     /// Sets the agent current velocity (direction * speed).
     /// </summary>
     /// <param name="id">The agent ID.</param>
-    /// <param name="position">The agent velocity (direction * speed).</param>
+    /// <param name="velocity">The agent velocity (direction * speed).</param>
     API_FUNCTION() void SetAgentVelocity(int32 id, const Vector3& velocity);
 
     /// <summary>
