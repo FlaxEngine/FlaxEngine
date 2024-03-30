@@ -28,8 +28,10 @@ namespace DescriptorSet
         Vertex,
         // Pixel shader stage
         Pixel,
+#if GPU_ALLOW_GEOMETRY_SHADERS
         // Geometry shader stage
         Geometry,
+#endif
 #if GPU_ALLOW_TESSELLATION_SHADERS
         // Hull shader stage
         Hull,

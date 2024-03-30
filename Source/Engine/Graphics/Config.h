@@ -45,6 +45,11 @@
 #define GPU_ALLOW_TESSELLATION_SHADERS 1
 #endif
 
+// True if allow geometry shaders
+#ifndef GPU_ALLOW_GEOMETRY_SHADERS
+#define GPU_ALLOW_GEOMETRY_SHADERS 1
+#endif
+
 // Enable/disable creating GPU resources on separate threads (otherwise only the main thread can be used)
 #define GPU_ENABLE_ASYNC_RESOURCES_CREATION 1
 

@@ -194,6 +194,7 @@ GPUShaderProgram* GPUShaderVulkan::CreateGPUShaderProgram(ShaderStage type, cons
 
         break;
     }
+#if GPU_ALLOW_TESSELLATION_SHADERS
     case ShaderStage::Hull:
     {
         int32 controlPointsCount;
@@ -206,11 +207,14 @@ GPUShaderProgram* GPUShaderVulkan::CreateGPUShaderProgram(ShaderStage type, cons
         shader = New<GPUShaderProgramDSVulkan>(_device, initializer, header->DescriptorInfo, shaderModule);
         break;
     }
+#endif
+#if GPU_ALLOW_GEOMETRY_SHADERS
     case ShaderStage::Geometry:
     {
         shader = New<GPUShaderProgramGSVulkan>(_device, initializer, header->DescriptorInfo, shaderModule);
         break;
     }
+#endif
     case ShaderStage::Pixel:
     {
         shader = New<GPUShaderProgramPSVulkan>(_device, initializer, header->DescriptorInfo, shaderModule);

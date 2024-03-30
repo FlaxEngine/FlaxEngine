@@ -63,12 +63,14 @@ bool DepthOfFieldPass::Init()
     {
         _psDofDepthBlurGeneration = GPUDevice::Instance->CreatePipelineState();
         _psDoNotGenerateBokeh = GPUDevice::Instance->CreatePipelineState();
+#if GPU_ALLOW_GEOMETRY_SHADERS
         if (_platformSupportsBokeh)
         {
             _psBokehGeneration = GPUDevice::Instance->CreatePipelineState();
             _psBokeh = GPUDevice::Instance->CreatePipelineState();
             _psBokehComposite = GPUDevice::Instance->CreatePipelineState();
         }
+#endif
     }
 
     // Load shaders
@@ -137,6 +139,7 @@ bool DepthOfFieldPass::setupResources()
         if (_psDoNotGenerateBokeh->Init(psDesc))
             return true;
     }
+#if GPU_ALLOW_GEOMETRY_SHADERS
     if (_platformSupportsBokeh)
     {
         if (!_psBokehGeneration->IsValid())
@@ -171,6 +174,7 @@ bool DepthOfFieldPass::setupResources()
         if (_bokehIndirectArgsBuffer->Init(GPUBufferDescription::Argument(&indirectArgsBufferInitData, sizeof(indirectArgsBufferInitData))))
             return true;
     }
+#endif
 
     return false;
 }
@@ -296,6 +300,7 @@ void DepthOfFieldPass::Render(RenderContext& renderContext, GPUTexture*& frame, 
     auto dofFormat = renderContext.Buffers->GetOutputFormat();
     tempDesc = GPUTextureDescription::New2D(dofWidth, dofHeight, dofFormat);
 
+#if GPU_ALLOW_GEOMETRY_SHADERS
     // Do the bokeh point generation, or just do a copy if disabled
     bool isBokehGenerationEnabled = dofSettings.BokehEnabled && _platformSupportsBokeh && dofSettings.BokehBrightness > 0.0f && dofSettings.BokehSize > 0.0f;
     if (isBokehGenerationEnabled)
@@ -329,6 +334,7 @@ void DepthOfFieldPass::Render(RenderContext& renderContext, GPUTexture*& frame, 
         context->DrawFullscreenTriangle();
     }
     else
+#endif
     {
         // Generate bokeh points
         context->BindSR(0, frame);
@@ -380,6 +386,7 @@ void DepthOfFieldPass::Render(RenderContext& renderContext, GPUTexture*& frame, 
         context->ResetSR();
     }
 
+#if GPU_ALLOW_GEOMETRY_SHADERS
     // Render the bokeh points
     if (isBokehGenerationEnabled)
     {
@@ -418,6 +425,7 @@ void DepthOfFieldPass::Render(RenderContext& renderContext, GPUTexture*& frame, 
         RenderTargetPool::Release(bokehTarget);
         Swap(frame, tmp);
     }
+#endif
 
     RenderTargetPool::Release(depthBlurTarget);
 }

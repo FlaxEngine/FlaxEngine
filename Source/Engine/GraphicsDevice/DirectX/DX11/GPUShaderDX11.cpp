@@ -92,6 +92,7 @@ GPUShaderProgram* GPUShaderDX11::CreateGPUShaderProgram(ShaderStage type, const 
         shader = New<GPUShaderProgramVSDX11>(initializer, buffer, inputLayout, inputLayoutSize);
         break;
     }
+#if GPU_ALLOW_TESSELLATION_SHADERS
     case ShaderStage::Hull:
     {
         // Read control points
@@ -118,6 +119,8 @@ GPUShaderProgram* GPUShaderDX11::CreateGPUShaderProgram(ShaderStage type, const 
         shader = New<GPUShaderProgramDSDX11>(initializer, buffer);
         break;
     }
+#endif
+#if GPU_ALLOW_GEOMETRY_SHADERS
     case ShaderStage::Geometry:
     {
         // Create shader
@@ -129,6 +132,7 @@ GPUShaderProgram* GPUShaderDX11::CreateGPUShaderProgram(ShaderStage type, const 
         shader = New<GPUShaderProgramGSDX11>(initializer, buffer);
         break;
     }
+#endif
     case ShaderStage::Pixel:
     {
         // Create shader

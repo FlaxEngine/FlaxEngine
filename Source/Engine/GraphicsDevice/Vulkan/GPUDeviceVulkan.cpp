@@ -1691,10 +1691,10 @@ bool GPUDeviceVulkan::Init()
 #else
         limits.HasTessellation = false;
 #endif
-#if PLATFORM_ANDROID || PLATFORM_IOS
-        limits.HasGeometryShaders = false; // Don't even try GS on mobile
+#if GPU_ALLOW_GEOMETRY_SHADERS
+        limits.HasGeometryShaders = !!PhysicalDeviceFeatures.geometryShader && PhysicalDeviceLimits.maxBoundDescriptorSets > (uint32_t)DescriptorSet::Geometry;
 #else
-        limits.HasGeometryShaders = !!PhysicalDeviceFeatures.geometryShader;
+        limits.HasGeometryShaders = false;
 #endif
         limits.HasInstancing = true;
         limits.HasVolumeTextureRendering = true;
