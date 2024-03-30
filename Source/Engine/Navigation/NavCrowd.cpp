@@ -129,7 +129,7 @@ void NavCrowd::SetAgentVelocity(int32 id, const Vector3& velocity)
     dtCrowdAgent* agent = _crowd->getEditableAgent(id);
     if (agent)
     {
-        *(Float3*)agent->nvel = Float3(velocity);
+        *(Float3*)agent->vel = Float3(velocity);
     }
 }
 
