@@ -39,8 +39,6 @@ void CustomDepthPass::Render(RenderContext& renderContext)
     renderContext.List->ExecuteDrawCalls(renderContext, DrawCallsListType::CustomDepth);
 
     context->ResetRenderTarget();
-    context->ResetSR();
-    context->FlushState();
     renderContext.Buffers->CustomDepthClear = false;
     renderContext.Buffers->LastFrameCustomDepth = Engine::FrameCount;
 }

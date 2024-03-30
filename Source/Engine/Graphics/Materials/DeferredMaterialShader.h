@@ -18,6 +18,7 @@ private:
         PipelineStateCache Depth;
         PipelineStateCache DepthSkinned;
         PipelineStateCache CustomDepth;
+        PipelineStateCache CustomDepthSkinned;
         PipelineStateCache MotionVectors;
         PipelineStateCache MotionVectorsSkinned;
         PipelineStateCache MotionVectorsSkinnedPerBone;
@@ -39,7 +40,7 @@ private:
             case DrawPass::MotionVectors:
                 return useSkinning ? (perBoneMotionBlur ? &MotionVectorsSkinnedPerBone : &MotionVectorsSkinned) : &MotionVectors;
             case DrawPass::CustomDepth:
-                return &CustomDepth;
+                return useSkinning ? &CustomDepthSkinned : &CustomDepth;
 #if USE_EDITOR
             case DrawPass::QuadOverdraw:
                 return useSkinning ? &QuadOverdrawSkinned : &QuadOverdraw;

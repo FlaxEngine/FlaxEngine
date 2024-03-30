@@ -649,7 +649,7 @@ void RenderList::SortDrawCalls(const RenderContext& renderContext, bool reverseD
 
 FORCE_INLINE bool CanUseInstancing(DrawPass pass)
 {
-    return pass == DrawPass::GBuffer || pass == DrawPass::Depth;
+    return pass == DrawPass::GBuffer || pass == DrawPass::Depth || pass == DrawPass::CustomDepth;
 }
 
 void RenderList::ExecuteDrawCalls(const RenderContext& renderContext, DrawCallsList& list, const RenderListBuffer<DrawCall>& drawCalls, GPUTextureView* input)
