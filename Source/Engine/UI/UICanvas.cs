@@ -73,6 +73,7 @@ namespace FlaxEngine
             if (renderContext.View.Frustum.Contains(bounds.GetBoundingBox()) == ContainmentType.Disjoint)
                 return;
 
+            Profiler.BeginEvent("UI Canvas");
             Profiler.BeginEventGPU("UI Canvas");
 
             // Calculate rendering matrix (world*view*projection)
@@ -90,6 +91,7 @@ namespace FlaxEngine
             Render2D.CallDrawing(Canvas.GUI, context, input, depthBuffer, ref viewProjectionMatrix);
             Render2D.Features = features;
 
+            Profiler.EndEvent();
             Profiler.EndEventGPU();
         }
     }
