@@ -1686,10 +1686,10 @@ bool GPUDeviceVulkan::Init()
 
         auto& limits = Limits;
         limits.HasCompute = GetShaderProfile() == ShaderProfile::Vulkan_SM5 && PhysicalDeviceLimits.maxComputeWorkGroupCount[0] >= GPU_MAX_CS_DISPATCH_THREAD_GROUPS && PhysicalDeviceLimits.maxComputeWorkGroupCount[1] >= GPU_MAX_CS_DISPATCH_THREAD_GROUPS;
-#if PLATFORM_MAC || PLATFORM_IOS
-        limits.HasTessellation = false; // MoltenVK has artifacts when using tess
-#else
+#if GPU_ALLOW_TESSELLATION_SHADERS
         limits.HasTessellation = !!PhysicalDeviceFeatures.tessellationShader && PhysicalDeviceLimits.maxBoundDescriptorSets > (uint32_t)DescriptorSet::Domain;
+#else
+        limits.HasTessellation = false;
 #endif
 #if PLATFORM_ANDROID || PLATFORM_IOS
         limits.HasGeometryShaders = false; // Don't even try GS on mobile

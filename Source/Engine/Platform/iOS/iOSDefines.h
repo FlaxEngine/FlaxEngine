@@ -18,4 +18,7 @@
 #define USE_MONO_AOT 1
 #define USE_MONO_AOT_MODE MONO_AOT_MODE_FULL
 
+// MoltenVK has artifacts when using tess so disable it
+#define GPU_ALLOW_TESSELLATION_SHADERS 0
+
 #endif
