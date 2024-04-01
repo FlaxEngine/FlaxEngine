@@ -388,7 +388,7 @@ namespace FlaxEngine.Interop
                 className = className.Substring(parentClassName.Length);
             }
             string marshallerName = className + "Marshaller";
-            string internalAssemblyQualifiedName = $"{@namespace}.{parentClassName}{marshallerName}+{className}Internal,{String.Join(',', splits.Skip(1))}";
+            string internalAssemblyQualifiedName = $"{@namespace}.Interop.{parentClassName}{marshallerName}+{className}Internal,{String.Join(',', splits.Skip(1))}";
             return FindType(internalAssemblyQualifiedName);
         }
 
