@@ -31,8 +31,6 @@ namespace FlaxEngine.Interop
 
         private static bool firstAssemblyLoaded = false;
 
-        private static Dictionary<string, Type> typeCache = new();
-
         private static IntPtr boolTruePtr = ManagedHandle.ToIntPtr(ManagedHandle.Alloc((int)1, GCHandleType.Pinned));
         private static IntPtr boolFalsePtr = ManagedHandle.ToIntPtr(ManagedHandle.Alloc((int)0, GCHandleType.Pinned));
 
@@ -279,44 +277,6 @@ namespace FlaxEngine.Interop
             return dst;
         }
 
-        private static Type FindType(string typeName)
-        {
-            if (typeCache.TryGetValue(typeName, out Type type))
-                return type;
-
-            type = Type.GetType(typeName, ResolveAssembly, null);
-            if (type == null)
-                type = ResolveSlow(typeName);
-
-            if (type == null)
-            {
-                string fullTypeName = typeName;
-                typeName = typeName.Substring(0, typeName.IndexOf(','));
-                type = Type.GetType(typeName, ResolveAssembly, null);
-                if (type == null)
-                    type = ResolveSlow(typeName);
-
-                typeName = fullTypeName;
-            }
-
-            typeCache.Add(typeName, type);
-
-            return type;
-
-            static Type ResolveSlow(string typeName)
-            {
-                foreach (var assembly in scriptingAssemblyLoadContext.Assemblies)
-                {
-                    var type = assembly.GetType(typeName);
-                    if (type != null)
-                        return type;
-                }
-                return null;
-            }
-
-            static Assembly ResolveAssembly(AssemblyName name) => ResolveScriptingAssemblyByName(name, allowPartial: false);
-        }
-
         /// <summary>Find <paramref name="assemblyName"/> among the scripting assemblies.</summary>
         /// <param name="assemblyName">The name to find</param>
         /// <param name="allowPartial">If true, partial names should be allowed to be resolved.</param>
@@ -378,18 +338,15 @@ namespace FlaxEngine.Interop
         /// </summary>
         internal static Type GetInternalType(Type type)
         {
-            string[] splits = type.AssemblyQualifiedName.Split(',');
-            string @namespace = string.Join('.', splits[0].Split('.').SkipLast(1));
-            string className = @namespace.Length > 0 ? splits[0].Substring(@namespace.Length + 1) : splits[0];
-            string parentClassName = "";
-            if (className.Contains('+'))
-            {
-                parentClassName = className.Substring(0, className.LastIndexOf('+') + 1);
-                className = className.Substring(parentClassName.Length);
-            }
-            string marshallerName = className + "Marshaller";
-            string internalAssemblyQualifiedName = $"{@namespace}.Interop.{parentClassName}{marshallerName}+{className}Internal,{String.Join(',', splits.Skip(1))}";
-            return FindType(internalAssemblyQualifiedName);
+            Type marshallerType = type.GetCustomAttribute<System.Runtime.InteropServices.Marshalling.NativeMarshallingAttribute>()?.NativeType;
+            if (marshallerType == null)
+                return null;
+
+            Type internalType = marshallerType.GetNestedType($"{type.Name}Internal");
+            if (internalType == null)
+                return null;
+
+            return internalType;
         }
 
         internal class ReferenceTypePlaceholder { }
@@ -1338,7 +1295,7 @@ namespace FlaxEngine.Interop
                 if (invokeDelegate == null && !method.DeclaringType.IsValueType)
                 {
                     // Thread-safe creation
-                    lock (typeCache)
+                    lock (method)
                     {
                         if (invokeDelegate == null)
                         {
