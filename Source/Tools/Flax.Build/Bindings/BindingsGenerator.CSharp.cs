@@ -1585,7 +1585,7 @@ namespace Flax.Build.Bindings
                             }
                             //else if (type == "Guid")
                             //    type = "GuidNative";
-                            structContents.Append(type).Append(' ').Append(fieldInfo.Name).Append(';').AppendLine();
+                            structContents.Append($"{type} {fieldInfo.Name};").Append(type == "IntPtr" ? $" // {originalType}" : "").AppendLine();
                         }
 
                         // Generate struct constructor/getter and deconstructor/setter function
