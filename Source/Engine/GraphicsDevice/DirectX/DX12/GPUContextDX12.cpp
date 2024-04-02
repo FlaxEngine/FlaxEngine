@@ -703,7 +703,6 @@ bool GPUContextDX12::IsDepthBufferBinded()
 void GPUContextDX12::Clear(GPUTextureView* rt, const Color& color)
 {
     auto rtDX12 = static_cast<GPUTextureViewDX12*>(rt);
-
     if (rtDX12)
     {
         SetResourceState(rtDX12->GetResourceOwner(), D3D12_RESOURCE_STATE_RENDER_TARGET, rtDX12->SubresourceIndex);
@@ -713,16 +712,15 @@ void GPUContextDX12::Clear(GPUTextureView* rt, const Color& color)
     }
 }
 
-void GPUContextDX12::ClearDepth(GPUTextureView* depthBuffer, float depthValue)
+void GPUContextDX12::ClearDepth(GPUTextureView* depthBuffer, float depthValue, uint8 stencilValue)
 {
     auto depthBufferDX12 = static_cast<GPUTextureViewDX12*>(depthBuffer);
-
     if (depthBufferDX12)
     {
         SetResourceState(depthBufferDX12->GetResourceOwner(), D3D12_RESOURCE_STATE_DEPTH_WRITE, depthBufferDX12->SubresourceIndex);
         flushRBs();
 
-        _commandList->ClearDepthStencilView(depthBufferDX12->DSV(), D3D12_CLEAR_FLAG_DEPTH, depthValue, 0xff, 0, nullptr);
+        _commandList->ClearDepthStencilView(depthBufferDX12->DSV(), D3D12_CLEAR_FLAG_DEPTH, depthValue, stencilValue, 0, nullptr);
     }
 }
 

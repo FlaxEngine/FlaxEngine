@@ -186,7 +186,8 @@ public:
     /// </summary>
     /// <param name="depthBuffer">The depth buffer to clear.</param>
     /// <param name="depthValue">The clear depth value.</param>
-    API_FUNCTION() virtual void ClearDepth(GPUTextureView* depthBuffer, float depthValue = 1.0f) = 0;
+    /// <param name="stencilValue">The clear stencil value.</param>
+    API_FUNCTION() virtual void ClearDepth(GPUTextureView* depthBuffer, float depthValue = 1.0f, uint8 stencilValue = 0) = 0;
 
     /// <summary>
     /// Clears an unordered access buffer with a float value.

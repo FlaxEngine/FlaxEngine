@@ -797,10 +797,9 @@ void GPUContextVulkan::Clear(GPUTextureView* rt, const Color& color)
     }
 }
 
-void GPUContextVulkan::ClearDepth(GPUTextureView* depthBuffer, float depthValue)
+void GPUContextVulkan::ClearDepth(GPUTextureView* depthBuffer, float depthValue, uint8 stencilValue)
 {
     const auto rtVulkan = static_cast<GPUTextureViewVulkan*>(depthBuffer);
-
     if (rtVulkan)
     {
         // TODO: detect if inside render pass and use ClearAttachments
@@ -815,7 +814,7 @@ void GPUContextVulkan::ClearDepth(GPUTextureView* depthBuffer, float depthValue)
 
         VkClearDepthStencilValue clear;
         clear.depth = depthValue;
-        clear.stencil = 0;
+        clear.stencil = stencilValue;
         vkCmdClearDepthStencilImage(cmdBuffer->GetHandle(), rtVulkan->Image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clear, 1, &rtVulkan->Info.subresourceRange);
     }
 }

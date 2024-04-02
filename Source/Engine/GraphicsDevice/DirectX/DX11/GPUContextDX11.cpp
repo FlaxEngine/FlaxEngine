@@ -151,21 +151,19 @@ bool GPUContextDX11::IsDepthBufferBinded()
 void GPUContextDX11::Clear(GPUTextureView* rt, const Color& color)
 {
     auto rtDX11 = static_cast<GPUTextureViewDX11*>(rt);
-
     if (rtDX11)
     {
         _context->ClearRenderTargetView(rtDX11->RTV(), color.Raw);
     }
 }
 
-void GPUContextDX11::ClearDepth(GPUTextureView* depthBuffer, float depthValue)
+void GPUContextDX11::ClearDepth(GPUTextureView* depthBuffer, float depthValue, uint8 stencilValue)
 {
     auto depthBufferDX11 = static_cast<GPUTextureViewDX11*>(depthBuffer);
-
     if (depthBufferDX11)
     {
         ASSERT(depthBufferDX11->DSV());
-        _context->ClearDepthStencilView(depthBufferDX11->DSV(), D3D11_CLEAR_DEPTH, depthValue, 0xff);
+        _context->ClearDepthStencilView(depthBufferDX11->DSV(), D3D11_CLEAR_DEPTH, depthValue, stencilValue);
     }
 }
 
