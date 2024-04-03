@@ -304,11 +304,8 @@ public:
     /// <param name="InReturnScale">return scale</param>
     /// InRefrenceTransform
     /// <returns>rotated and snaped transform</returns>
-    static Transform AlignRotacionToNormalAndSnapToGrid(const Vector3& InPoint, const Vector3& InNormal, float InNormalOffset, const Transform& InRelativeTo, const Float3& InReturnScale, const  Vector3& InGridSize)
-    {
-        Quaternion rot = Quaternion::GetRotacionFromNormal(InNormal, InRelativeTo);
-        return Transform(Vector3::SnapToRotatedGridWithOffset(InPoint, InRelativeTo.Translation, Vector3(0, 0, InNormalOffset), rot, InGridSize), rot, InReturnScale);
-    }
+    inline static Transform AlignRotacionToNormalAndSnapToGrid(const Vector3& InPoint, const Vector3& InNormal, float InNormalOffset, const Transform& InRelativeTo, const Float3& InReturnScale, const  Vector3& InGridSize);
+    
     /// <summary>
     /// combines funcions <br/>
     /// <see cref="SnapToRotatedGridWithOffset"/>,<br/>
@@ -321,11 +318,8 @@ public:
     /// <param name="InRelativeTo">Realative transform</param>
     /// InRefrenceTransform
     /// <returns>rotated and snaped transform with scale <see cref="Float3.One"/> </returns>
-    static Transform AlignRotacionToNormalAndSnapToGrid(const Vector3& InPoint, const Vector3& InNormal, float InNormalOffset, const Transform& InRelativeTo, const  Vector3& InGridSize)
-    {
-        Quaternion rot = Quaternion::GetRotacionFromNormal(InNormal, InRelativeTo);
-        return Transform(Vector3::SnapToRotatedGridWithOffset(InPoint, InRelativeTo.Translation, Vector3(0, 0, InNormalOffset), rot, InGridSize), rot, Float3::One);
-    }
+    inline static Transform AlignRotacionToNormalAndSnapToGrid(const Vector3& InPoint, const Vector3& InNormal, float InNormalOffset, const Transform& InRelativeTo, const  Vector3& InGridSize);
+    
     /// <summary>
     /// combines funcions <br/>
     /// <see cref="SnapToRotatedGridWithOffset"/>,<br/>
@@ -339,11 +333,8 @@ public:
     /// <param name="InReturnScale">return scale</param>
     /// InRefrenceTransform
     /// <returns>rotated and snaped transform</returns>
-    static Transform AlignRotacionToNormalAndSnapToGrid(const Vector3& InPoint, const Vector3& InNormal, const Vector3& InNormalOffset, const Transform& InRelativeTo,const Float3& InReturnScale,const Vector3& InGridSize)
-    {
-        Quaternion rot = Quaternion::GetRotacionFromNormal(InNormal, InRelativeTo);
-        return Transform(Vector3::SnapToRotatedGridWithOffset(InPoint, InRelativeTo.Translation, InNormalOffset, rot, InGridSize), rot, InReturnScale);
-    }
+    inline static Transform AlignRotacionToNormalAndSnapToGrid(const Vector3& InPoint, const Vector3& InNormal, const Vector3& InNormalOffset, const Transform& InRelativeTo,const Float3& InReturnScale,const Vector3& InGridSize);
+
     /// <summary>
     /// combines funcions <br/>
     /// <see cref="SnapToRotatedGridWithOffset"/>,<br/>
@@ -356,11 +347,7 @@ public:
     /// <param name="InRelativeTo">Realative transform</param>
     /// InRefrenceTransform
     /// <returns>rotated and snaped transform with scale <see cref="Float3.One"/> </returns>
-    static Transform AlignRotacionToNormalAndSnapToGrid(const Vector3& InPoint,const Vector3& InNormal,const Vector3& InNormalOffset, const Transform& InRelativeTo,const Vector3& InGridSize)
-    {
-        Quaternion rot = Quaternion::GetRotacionFromNormal(InNormal, InRelativeTo);
-        return Transform(Vector3::SnapToRotatedGridWithOffset(InPoint, InRelativeTo.Translation, InNormalOffset, rot, InGridSize), rot, Float3::One);
-    }
+    inline static Transform AlignRotacionToNormalAndSnapToGrid(const Vector3& InPoint,const Vector3& InNormal,const Vector3& InNormalOffset, const Transform& InRelativeTo,const Vector3& InGridSize);
 
 public:
     FORCE_INLINE Transform operator*(const Transform& other) const
