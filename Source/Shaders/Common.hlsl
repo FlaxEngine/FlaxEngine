@@ -88,42 +88,33 @@
 // Performs branching by using control flow instructions like jmp and label.
 #define BRANCH [branch]
 
-/// Performs branching by using the cnd instructions.
+// Performs branching by using the cnd instructions.
 #define FLATTEN [flatten]
 
 #endif
 
 // Compiler attribute fallback
-
 #ifndef UNROLL
 #define UNROLL
 #endif
-
 #ifndef LOOP
 #define LOOP
 #endif
-
 #ifndef BRANCH
 #define BRANCH
 #endif
-
 #ifndef FLATTEN
 #define FLATTEN
 #endif
 
-// TODO: cleanup global samplers with per-platform customization support
 #ifndef SamplerLinearClamp
-
 // Static samplers
 sampler SamplerLinearClamp : register(s0);
 sampler SamplerPointClamp : register(s1);
 sampler SamplerLinearWrap : register(s2);
 sampler SamplerPointWrap : register(s3);
-
-// TODO: use custom pipeline layouts and bind different sampler during shadows rendering
 SamplerComparisonState ShadowSampler : register(s4);
-SamplerComparisonState ShadowSamplerPCF : register(s5);
-
+SamplerComparisonState ShadowSamplerLinear : register(s5);
 #endif
 
 // General purpose macros

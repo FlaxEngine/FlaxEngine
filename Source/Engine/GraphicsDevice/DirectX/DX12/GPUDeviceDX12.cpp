@@ -568,7 +568,6 @@ bool GPUDeviceDX12::Init()
         // Static samplers
         D3D12_STATIC_SAMPLER_DESC staticSamplers[6];
         static_assert(GPU_STATIC_SAMPLERS_COUNT == ARRAY_COUNT(staticSamplers), "Update static samplers setup.");
-        // TODO: describe visibilities for the static samples, maybe use all pixel? or again pixel + all combo?
         // Linear Clamp
         staticSamplers[0].Filter = D3D12_FILTER_MIN_MAG_MIP_LINEAR;
         staticSamplers[0].AddressU = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
@@ -649,8 +648,6 @@ bool GPUDeviceDX12::Init()
         staticSamplers[5].ShaderRegister = 5;
         staticSamplers[5].RegisterSpace = 0;
         staticSamplers[5].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
-
-        // TODO: static samplers for the shadow pass change into bindable samplers or sth?
 
         // Init
         D3D12_ROOT_SIGNATURE_DESC rootSignatureDesc;

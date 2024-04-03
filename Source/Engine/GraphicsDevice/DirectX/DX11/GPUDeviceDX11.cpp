@@ -227,16 +227,7 @@ GPUDevice* GPUDeviceDX11::Create()
 
 GPUDeviceDX11::GPUDeviceDX11(IDXGIFactory* dxgiFactory, GPUAdapterDX* adapter)
     : GPUDeviceDX(getRendererType(adapter), getShaderProfile(adapter), adapter)
-    , _device(nullptr)
-    , _imContext(nullptr)
     , _factoryDXGI(dxgiFactory)
-    , _mainContext(nullptr)
-    , _samplerLinearClamp(nullptr)
-    , _samplerPointClamp(nullptr)
-    , _samplerLinearWrap(nullptr)
-    , _samplerPointWrap(nullptr)
-    , _samplerShadow(nullptr)
-    , _samplerShadowPCF(nullptr)
 {
     Platform::MemoryClear(RasterizerStates, sizeof(RasterizerStates));
     Platform::MemoryClear(DepthStencilStates, sizeof(DepthStencilStates));
@@ -450,14 +441,17 @@ bool GPUDeviceDX11::Init()
     {
         D3D11_SAMPLER_DESC samplerDesc;
         Platform::MemoryClear(&samplerDesc, sizeof(samplerDesc));
+        samplerDesc.MinLOD = 0;
+        samplerDesc.MaxLOD = D3D11_FLOAT32_MAX;
+        samplerDesc.MipLODBias = 0.0f;
+        samplerDesc.MaxAnisotropy = 1;
+        samplerDesc.ComparisonFunc = D3D11_COMPARISON_LESS_EQUAL;
 
         // Linear Clamp
         samplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
         samplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP;
         samplerDesc.AddressV = D3D11_TEXTURE_ADDRESS_CLAMP;
         samplerDesc.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;
-        samplerDesc.MinLOD = 0;
-        samplerDesc.MaxLOD = D3D11_FLOAT32_MAX;
         result = _device->CreateSamplerState(&samplerDesc, &_samplerLinearClamp);
         LOG_DIRECTX_RESULT_WITH_RETURN(result, true);
 
@@ -466,8 +460,6 @@ bool GPUDeviceDX11::Init()
         samplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP;
         samplerDesc.AddressV = D3D11_TEXTURE_ADDRESS_CLAMP;
         samplerDesc.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;
-        samplerDesc.MinLOD = 0;
-        samplerDesc.MaxLOD = D3D11_FLOAT32_MAX;
         result = _device->CreateSamplerState(&samplerDesc, &_samplerPointClamp);
         LOG_DIRECTX_RESULT_WITH_RETURN(result, true);
 
@@ -476,8 +468,6 @@ bool GPUDeviceDX11::Init()
         samplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
         samplerDesc.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
         samplerDesc.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
-        samplerDesc.MinLOD = 0;
-        samplerDesc.MaxLOD = D3D11_FLOAT32_MAX;
         result = _device->CreateSamplerState(&samplerDesc, &_samplerLinearWrap);
         LOG_DIRECTX_RESULT_WITH_RETURN(result, true);
 
@@ -486,8 +476,6 @@ bool GPUDeviceDX11::Init()
         samplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
         samplerDesc.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
         samplerDesc.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
-        samplerDesc.MinLOD = 0;
-        samplerDesc.MaxLOD = D3D11_FLOAT32_MAX;
         result = _device->CreateSamplerState(&samplerDesc, &_samplerPointWrap);
         LOG_DIRECTX_RESULT_WITH_RETURN(result, true);
 
@@ -496,26 +484,15 @@ bool GPUDeviceDX11::Init()
         samplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP;
         samplerDesc.AddressV = D3D11_TEXTURE_ADDRESS_CLAMP;
         samplerDesc.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;
-        samplerDesc.MipLODBias = 0.0f;
-        samplerDesc.MaxAnisotropy = 1;
-        samplerDesc.ComparisonFunc = D3D11_COMPARISON_LESS_EQUAL;
-        samplerDesc.MinLOD = 0;
-        samplerDesc.MaxLOD = D3D11_FLOAT32_MAX;
         result = _device->CreateSamplerState(&samplerDesc, &_samplerShadow);
         LOG_DIRECTX_RESULT_WITH_RETURN(result, true);
 
-        // Shadow PCF
+        // Shadow Linear
         samplerDesc.Filter = D3D11_FILTER_COMPARISON_MIN_MAG_MIP_LINEAR;
         samplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP;
         samplerDesc.AddressV = D3D11_TEXTURE_ADDRESS_CLAMP;
         samplerDesc.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;
-        samplerDesc.MipLODBias = 0.0f;
-        samplerDesc.MaxAnisotropy = 1;
-        samplerDesc.ComparisonFunc = D3D11_COMPARISON_LESS_EQUAL;
-        samplerDesc.BorderColor[0] = samplerDesc.BorderColor[1] = samplerDesc.BorderColor[2] = samplerDesc.BorderColor[3] = 0;
-        samplerDesc.MinLOD = 0;
-        samplerDesc.MaxLOD = D3D11_FLOAT32_MAX;
-        result = _device->CreateSamplerState(&samplerDesc, &_samplerShadowPCF);
+        result = _device->CreateSamplerState(&samplerDesc, &_samplerShadowLinear);
         LOG_DIRECTX_RESULT_WITH_RETURN(result, true);
     }
 
@@ -616,7 +593,7 @@ void GPUDeviceDX11::Dispose()
     SAFE_RELEASE(_samplerLinearWrap);
     SAFE_RELEASE(_samplerPointWrap);
     SAFE_RELEASE(_samplerShadow);
-    SAFE_RELEASE(_samplerShadowPCF);
+    SAFE_RELEASE(_samplerShadowLinear);
     //
     for (auto i = BlendStates.Begin(); i.IsNotEnd(); ++i)
     {

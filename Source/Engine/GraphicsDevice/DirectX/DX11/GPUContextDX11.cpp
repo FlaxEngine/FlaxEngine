@@ -114,7 +114,7 @@ void GPUContextDX11::FrameBegin()
         _device->_samplerLinearWrap,
         _device->_samplerPointWrap,
         _device->_samplerShadow,
-        _device->_samplerShadowPCF
+        _device->_samplerShadowLinear
     };
     _context->VSSetSamplers(0, ARRAY_COUNT(samplers), samplers);
     _context->DSSetSamplers(0, ARRAY_COUNT(samplers), samplers);
