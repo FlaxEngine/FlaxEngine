@@ -670,17 +670,7 @@ public:
     /// <param name="InNormal">the normal vector</param>
     /// <param name="InRefrenceTransform">relative to</param>
     /// <returns>normal as rotacion</returns>
-    static Quaternion GetRotacionFromNormal(const Vector3& InNormal, const Transform& InRefrenceTransform)
-    {
-        Float3 up = InRefrenceTransform.GetUp();
-        auto dot = Vector3::Dot(InNormal, up);
-        if (Math::NearEqual(Math::Abs(dot), 1))
-        {
-            up = InRefrenceTransform.GetRight();
-        }
-        return Quaternion::LookRotation(InNormal, up);
-    }
-
+    static Quaternion GetRotacionFromNormal(const Vector3& InNormal, const Transform& InRefrenceTransform);
 };
 
 /// <summary>

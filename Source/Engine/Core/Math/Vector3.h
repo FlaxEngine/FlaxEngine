@@ -934,13 +934,7 @@ public:
     /// <param name="pos">The position to snap.</param>
     /// <param name="gridSize">The size of the grid.</param>
     /// <returns>The position snapped to the grid.</returns>
-    static Vector3 SnapToGrid(const Vector3& pos, Vector3 gridSize)
-    {
-        pos.X = Math::Ceil((pos.X - (gridSize.X * 0.5f)) / gridSize.X) * gridSize.X;
-        pos.Y = Math::Ceil((pos.Y - (gridSize.Y * 0.5f)) / gridSize.Y) * gridSize.Y;
-        pos.Z = Math::Ceil((pos.Z - (gridSize.Z * 0.5f)) / gridSize.Z) * gridSize.Z;
-        return pos;
-    }
+    static Vector3Base SnapToGrid(const Vector3Base& pos,const Vector3Base& gridSize);
 
     /// <summary>
     /// Snaps the <paramref name="InPoint"/> on to rotate grid.<br/>
@@ -951,10 +945,7 @@ public:
     /// <param name="InOrientation">The rotation of the grid.</param>
     /// <param name="InGridSize">The size of the grid.</param>
     /// <returns>The position snapped to the grid.</returns>
-    static Vector3 SnapToRotatedGrid(const Vector3& InPoint, const Vector3& InCenterPoint, const Quaternion& InOrientation, const Vector3& InGridSize)
-    {
-        return (Vector3::SnapToGrid((InPoint - InCenterPoint) * InOrientation.Conjugated(), InGridSize) * InOrientation) + InCenterPoint;
-    }
+    static Vector3Base SnapToRotatedGrid(const Vector3Base& InPoint, const Vector3Base& InCenterPoint, const Quaternion& InOrientation, const Vector3Base& InGridSize);
     /// <summary>
     /// The same as <see cref="SnapToRotatedGrid"/> but with local offset applied after point is spapend
     /// </summary>
@@ -964,10 +955,7 @@ public:
     /// <param name="InGridSize">The size of the grid.</param>
     /// <param name="InOffset">The local grid offset to applay after snaping</param>
     /// <returns></returns>
-    static Vector3 SnapToRotatedGridWithOffset(const Vector3& InPoint, const Vector3& InCenterPoint, const Vector3& InOffset, const Quaternion& InOrientation, const Vector3& InGridSize)
-    {
-        return ((Vector3::SnapToGrid((InPoint - InCenterPoint) * InOrientation.Conjugated(), InGridSize) + InOffset) * InOrientation) + InCenterPoint;
-    }
+    static Vector3Base SnapToRotatedGridWithOffset(const Vector3Base& InPoint, const Vector3Base& InCenterPoint, const Vector3Base& InOffset, const Quaternion& InOrientation, const Vector3Base& InGridSize);
 };
 
 template<typename T>
