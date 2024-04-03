@@ -478,12 +478,12 @@ namespace FlaxEngine
             Float3.Lerp(ref start.Scale, ref end.Scale, amount, out result.Scale);
         }
         /// <summary>
-        /// combines funcions <br/>
+        /// Combines the functions: <br/>
         /// <see cref="Vector3.SnapToRotatedGridWithOffset"/>,<br/>
-        /// <see cref="Quaternion.GetRotacionFromNormal"/>
+        /// <see cref="Quaternion.GetRotationFromNormal"/>.
         /// <example><para><b>Example code:</b></para>
         /// <code>
-        /// <see langword="public" /> <see langword="class" /> AlignRotacionToObjectAndSnapToGridExample : <see cref="Script"/><br/>
+        /// <see langword="public" /> <see langword="class" /> AlignRotationToObjectAndSnapToGridExample : <see cref="Script"/><br/>
         ///     <see langword="public" /> <see cref="float"/> Offset = 50.0f;<br/>
         ///     <see langword="public" /> <see cref="Vector3"/> GridSize = <see cref="Vector3.One"/> * 20.0f;<br/>
         ///     <see langword="public" /> <see cref="Actor"/> RayOrgin;<br/>
@@ -495,7 +495,7 @@ namespace FlaxEngine
         ///             <see cref="Transform"/> transform = Hit.Collider.Transform;
         ///             <see cref="Vector3"/> point = Hit.Point;
         ///             <see cref="Vector3"/> normal = Hit.Normal;
-        ///             SomeObject.Transform = <see cref="Transform"/>.AlignRotacionToNormalAndSnapToGrid
+        ///             SomeObject.Transform = <see cref="Transform"/>.AlignRotationToNormalAndSnapToGrid
         ///                                     (
         ///                                         point,
         ///                                         normal,
@@ -512,24 +512,24 @@ namespace FlaxEngine
         /// </summary>
         /// <param name="InPoint">The position to snap.</param>
         /// <param name="InGridSize">The size of the grid.</param>
-        /// <param name="InNormalOffset">The local Z grid offset to applay after snaping</param>
-        /// <param name="InNormal">Normal vector</param>
-        /// <param name="InRelativeTo">Realative transform</param>
-        /// <param name="InReturnScale">return scale</param>
-        /// InRefrenceTransform
-        /// <returns>rotated and snaped transform</returns>
-        public static Transform AlignRotacionToNormalAndSnapToGrid(Vector3 InPoint, Vector3 InNormal, float InNormalOffset, Transform InRelativeTo, Float3 InReturnScale, Vector3 InGridSize)
+        /// <param name="InNormalOffset">The local Z grid offset to apply after snapping.</param>
+        /// <param name="InNormal">The normal vector.</param>
+        /// <param name="InRelativeTo">The relative transform.</param>
+        /// <param name="InReturnScale">The scale to apply to the transform.</param>
+        /// <returns>The rotated and snapped transform.</returns>
+        public static Transform AlignRotationToNormalAndSnapToGrid(Vector3 InPoint, Vector3 InNormal, float InNormalOffset, Transform InRelativeTo, Float3 InReturnScale, Vector3 InGridSize)
         {
-            Quaternion rot = Quaternion.GetRotacionFromNormal(InNormal, InRelativeTo);
+            Quaternion rot = Quaternion.GetRotationFromNormal(InNormal, InRelativeTo);
             return new Transform(Vector3.SnapToRotatedGridWithOffset(InPoint, InRelativeTo.Translation, new Vector3(0, 0, InNormalOffset), rot, InGridSize), rot, InReturnScale);
         }
+
         /// <summary>
-        /// combines funcions <br/>
+        /// Combines the functions: <br/>
         /// <see cref="Vector3.SnapToRotatedGridWithOffset"/>,<br/>
-        /// <see cref="Quaternion.GetRotacionFromNormal"/>
+        /// <see cref="Quaternion.GetRotationFromNormal"/>.
         /// <example><para><b>Example code:</b></para>
         /// <code>
-        /// <see langword="public" /> <see langword="class" /> AlignRotacionToObjectAndSnapToGridExample : <see cref="Script"/><br/>
+        /// <see langword="public" /> <see langword="class" /> AlignRotationToObjectAndSnapToGridExample : <see cref="Script"/><br/>
         ///     <see langword="public" /> <see cref="float"/> Offset = 50.0f;<br/>
         ///     <see langword="public" /> <see cref="Vector3"/> GridSize = <see cref="Vector3.One"/> * 20.0f;<br/>
         ///     <see langword="public" /> <see cref="Actor"/> RayOrgin;<br/>
@@ -541,7 +541,7 @@ namespace FlaxEngine
         ///             <see cref="Transform"/> transform = Hit.Collider.Transform;
         ///             <see cref="Vector3"/> point = Hit.Point;
         ///             <see cref="Vector3"/> normal = Hit.Normal;
-        ///             SomeObject.Transform = <see cref="Transform"/>.AlignRotacionToNormalAndSnapToGrid
+        ///             SomeObject.Transform = <see cref="Transform"/>.AlignRotationToNormalAndSnapToGrid
         ///                                     (
         ///                                         point,
         ///                                         normal,
@@ -557,23 +557,23 @@ namespace FlaxEngine
         /// </summary>
         /// <param name="InPoint">The position to snap.</param>
         /// <param name="InGridSize">The size of the grid.</param>
-        /// <param name="InNormalOffset">The local Z grid offset to applay after snaping</param>
-        /// <param name="InNormal">Normal vector</param>
-        /// <param name="InRelativeTo">Realative transform</param>
-        /// InRefrenceTransform
-        /// <returns>rotated and snaped transform with scale <see cref="Float3.One"/> </returns>
-        public static Transform AlignRotacionToNormalAndSnapToGrid(Vector3 InPoint, Vector3 InNormal, float InNormalOffset, Transform InRelativeTo, Vector3 InGridSize)
+        /// <param name="InNormalOffset">The local Z grid offset to apply after snapping.</param>
+        /// <param name="InNormal">The normal vector.</param>
+        /// <param name="InRelativeTo">The relative transform.</param>
+        /// <returns>The rotated and snapped transform with scale <see cref="Float3.One"/>.</returns>
+        public static Transform AlignRotationToNormalAndSnapToGrid(Vector3 InPoint, Vector3 InNormal, float InNormalOffset, Transform InRelativeTo, Vector3 InGridSize)
         {
-            Quaternion rot = Quaternion.GetRotacionFromNormal(InNormal, InRelativeTo);
+            Quaternion rot = Quaternion.GetRotationFromNormal(InNormal, InRelativeTo);
             return new Transform(Vector3.SnapToRotatedGridWithOffset(InPoint, InRelativeTo.Translation, new Vector3(0, 0, InNormalOffset), rot, InGridSize), rot, Float3.One);
         }
+
         /// <summary>
-        /// combines funcions <br/>
+        /// Combines the functions:<br/>
         /// <see cref="Vector3.SnapToRotatedGridWithOffset"/>,<br/>
-        /// <see cref="Quaternion.GetRotacionFromNormal"/>
+        /// <see cref="Quaternion.GetRotationFromNormal"/>.
         /// <example><para><b>Example code:</b></para>
         /// <code>
-        /// <see langword="public" /> <see langword="class" /> AlignRotacionToObjectAndSnapToGridExample : <see cref="Script"/><br/>
+        /// <see langword="public" /> <see langword="class" /> AlignRotationToObjectAndSnapToGridExample : <see cref="Script"/><br/>
         ///     <see langword="public" /> <see cref="Vector3"/> Offset = new Vector3(0, 0, 50f);<br/>
         ///     <see langword="public" /> <see cref="Vector3"/> GridSize = <see cref="Vector3.One"/> * 20.0f;<br/>
         ///     <see langword="public" /> <see cref="Actor"/> RayOrgin;<br/>
@@ -585,7 +585,7 @@ namespace FlaxEngine
         ///             <see cref="Transform"/> transform = Hit.Collider.Transform;
         ///             <see cref="Vector3"/> point = Hit.Point;
         ///             <see cref="Vector3"/> normal = Hit.Normal;
-        ///             SomeObject.Transform = <see cref="Transform"/>.AlignRotacionToNormalAndSnapToGrid
+        ///             SomeObject.Transform = <see cref="Transform"/>.AlignRotationToNormalAndSnapToGrid
         ///                                     (
         ///                                         point,
         ///                                         normal,
@@ -602,25 +602,24 @@ namespace FlaxEngine
         /// </summary>
         /// <param name="InPoint">The position to snap.</param>
         /// <param name="InGridSize">The size of the grid.</param>
-        /// <param name="InNormalOffset">The local Z grid offset to applay after snaping</param>
-        /// <param name="InNormal">Normal vector</param>
-        /// <param name="InRelativeTo">Realative transform</param>
-        /// <param name="InReturnScale">return scale</param>
-        /// InRefrenceTransform
-        /// <returns>rotated and snaped transform</returns>
-        public static Transform AlignRotacionToNormalAndSnapToGrid(Vector3 InPoint, Vector3 InNormal, Vector3 InNormalOffset, Transform InRelativeTo, Float3 InReturnScale, Vector3 InGridSize)
+        /// <param name="InNormalOffset">The local Z grid offset to apply after snapping.</param>
+        /// <param name="InNormal">The normal vector.</param>
+        /// <param name="InRelativeTo">The relative transform.</param>
+        /// <param name="InReturnScale">The scale to apply to the transform.</param>
+        /// <returns>The rotated and snapped transform.</returns>
+        public static Transform AlignRotationToNormalAndSnapToGrid(Vector3 InPoint, Vector3 InNormal, Vector3 InNormalOffset, Transform InRelativeTo, Float3 InReturnScale, Vector3 InGridSize)
         {
-            Quaternion rot = Quaternion.GetRotacionFromNormal(InNormal, InRelativeTo);
+            Quaternion rot = Quaternion.GetRotationFromNormal(InNormal, InRelativeTo);
             return new Transform(Vector3.SnapToRotatedGridWithOffset(InPoint, InRelativeTo.Translation, InNormalOffset, rot, InGridSize), rot, InReturnScale);
         }
 
         /// <summary>
-        /// combines funcions <br/>
+        /// Combines the functions:<br/>
         /// <see cref="Vector3.SnapToRotatedGridWithOffset"/>,<br/>
-        /// <see cref="Quaternion.GetRotacionFromNormal"/>
+        /// <see cref="Quaternion.GetRotationFromNormal"/>.
         /// <example><para><b>Example code:</b></para>
         /// <code>
-        /// <see langword="public" /> <see langword="class" /> AlignRotacionToObjectAndSnapToGridExample : <see cref="Script"/><br/>
+        /// <see langword="public" /> <see langword="class" /> AlignRotationToObjectAndSnapToGridExample : <see cref="Script"/><br/>
         ///     <see langword="public" /> <see cref="Vector3"/> Offset = new Vector3(0, 0, 50f);<br/>
         ///     <see langword="public" /> <see cref="Vector3"/> GridSize = <see cref="Vector3.One"/> * 20.0f;<br/>
         ///     <see langword="public" /> <see cref="Actor"/> RayOrgin;<br/>
@@ -632,7 +631,7 @@ namespace FlaxEngine
         ///             <see cref="Transform"/> transform = Hit.Collider.Transform;
         ///             <see cref="Vector3"/> point = Hit.Point;
         ///             <see cref="Vector3"/> normal = Hit.Normal;
-        ///             SomeObject.Transform = <see cref="Transform"/>.AlignRotacionToNormalAndSnapToGrid
+        ///             SomeObject.Transform = <see cref="Transform"/>.AlignRotationToNormalAndSnapToGrid
         ///                                     (
         ///                                         point,
         ///                                         normal,
@@ -648,14 +647,13 @@ namespace FlaxEngine
         /// </summary>
         /// <param name="InPoint">The position to snap.</param>
         /// <param name="InGridSize">The size of the grid.</param>
-        /// <param name="InNormalOffset">The local grid offset to applay after snaping</param>
-        /// <param name="InNormal">Normal vector</param>
-        /// <param name="InRelativeTo">Realative transform</param>
-        /// InRefrenceTransform
-        /// <returns>rotated and snaped transform with scale <see cref="Float3.One"/> </returns>
-        public static Transform AlignRotacionToNormalAndSnapToGrid(Vector3 InPoint, Vector3 InNormal, Vector3 InNormalOffset, Transform InRelativeTo, Vector3 InGridSize)
+        /// <param name="InNormalOffset">The local Z grid offset to apply after snapping.</param>
+        /// <param name="InNormal">The normal vector.</param>
+        /// <param name="InRelativeTo">The relative transform.</param>
+        /// <returns>The rotated and snapped transform with scale <see cref="Float3.One"/>.</returns>
+        public static Transform AlignRotationToNormalAndSnapToGrid(Vector3 InPoint, Vector3 InNormal, Vector3 InNormalOffset, Transform InRelativeTo, Vector3 InGridSize)
         {
-            Quaternion rot = Quaternion.GetRotacionFromNormal(InNormal, InRelativeTo);
+            Quaternion rot = Quaternion.GetRotationFromNormal(InNormal, InRelativeTo);
             return new Transform(Vector3.SnapToRotatedGridWithOffset(InPoint, InRelativeTo.Translation, InNormalOffset, rot, InGridSize), rot, Float3.One);
         }
 

@@ -1480,13 +1480,13 @@ namespace FlaxEngine
         }
 
         /// <summary>
-        /// Gets rotacion for normal in relation to transform<br/>
-        /// Funcion especially created for aligned with axis aligned faces
-        /// use full with <seealso cref="Physics.RayCast"/>
+        /// Gets rotation from a normal in relation to a transform.<br/>
+        /// This function is especially useful for axis aligned faces,
+        /// and with <seealso cref="Physics.RayCast(Vector3, Vector3, out RayCastHit, float, uint, bool)"/>.
         /// 
         /// <example><para><b>Example code:</b></para>
         /// <code>
-        /// <see langword="public" /> <see langword="class" /> GetRotacionFromNormalExample : <see cref="Script"/><br/>
+        /// <see langword="public" /> <see langword="class" /> GetRotationFromNormalExample : <see cref="Script"/><br/>
         ///     <see langword="public" /> <see cref="Actor"/> RayOrgin;<br/>
         ///     <see langword="public" /> <see cref="Actor"/> SomeObject;<br/>
         ///     <see langword="public" /> <see langword="override" /> <see langword="void" /> <see cref="Script.OnFixedUpdate"/><br/>
@@ -1497,7 +1497,7 @@ namespace FlaxEngine
         ///             <see cref="Transform"/> transform = Hit.Collider.Transform;
         ///             <see cref="Vector3"/> point = Hit.Point;
         ///             <see cref="Vector3"/> normal = Hit.Normal;
-        ///             <see cref="Quaternion"/> rot = <see cref="Quaternion"/>.GetRotacionFromNormal(normal,transform);
+        ///             <see cref="Quaternion"/> rot = <see cref="Quaternion"/>.GetRotationFromNormal(normal,transform);
         ///             SomeObject.Position = point;
         ///             SomeObject.Orientation = rot;
         ///         }
@@ -1506,18 +1506,18 @@ namespace FlaxEngine
         /// </code>
         /// </example>
         /// </summary>
-        /// <param name="InNormal">the normal vector</param>
-        /// <param name="InRefrenceTransform">relative to</param>
-        /// <returns>normal as rotacion</returns>
-        public static Quaternion GetRotacionFromNormal(Vector3 InNormal, Transform InRefrenceTransform)
+        /// <param name="InNormal">The normal vector.</param>
+        /// <param name="InReferenceTransform">The reference transform.</param>
+        /// <returns>The rotation from the normal vector.</returns>
+        public static Quaternion GetRotationFromNormal(Vector3 InNormal, Transform InReferenceTransform)
         {
-            Float3 up = InRefrenceTransform.Up;
+            Float3 up = InReferenceTransform.Up;
             var dot = Vector3.Dot(InNormal, up);
             if (Mathf.NearEqual(Math.Abs(dot), 1))
             {
-                up = InRefrenceTransform.Right;
+                up = InReferenceTransform.Right;
             }
-            return Quaternion.LookRotation(InNormal, up);
+            return LookRotation(InNormal, up);
         }
 
         /// <summary>

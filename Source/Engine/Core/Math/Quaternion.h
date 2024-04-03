@@ -663,14 +663,14 @@ public:
 
 
     /// <summary>
-    /// Gets rotacion for normal in relation to transform<br/>
-    /// Funcion especially created for aligned with axis aligned faces
-    /// use full with <seealso cref="Physics::RayCast"/>
+    /// Gets rotation from a normal in relation to a transform.<br/>
+    /// This function is especially useful for axis aligned faces,
+    /// and with <seealso cref="Physics::RayCast"/>.
     /// </summary>
-    /// <param name="InNormal">the normal vector</param>
-    /// <param name="InRefrenceTransform">relative to</param>
-    /// <returns>normal as rotacion</returns>
-    static Quaternion GetRotacionFromNormal(const Vector3& InNormal, const Transform& InRefrenceTransform);
+    /// <param name="InNormal">The normal vector.</param>
+    /// <param name="InReferenceTransform">The reference transform.</param>
+    /// <returns>The rotation from the normal vector.</returns>
+    static Quaternion GetRotationFromNormal(const Vector3& InNormal, const Transform& InReferenceTransform);
 };
 
 /// <summary>

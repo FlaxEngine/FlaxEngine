@@ -1672,7 +1672,7 @@ namespace FlaxEngine
         }
 
         /// <summary>
-        /// Snaps the input position into the grid.
+        /// Snaps the input position onto the grid.
         /// </summary>
         /// <param name="pos">The position to snap.</param>
         /// <param name="gridSize">The size of the grid.</param>
@@ -1686,8 +1686,8 @@ namespace FlaxEngine
         }
 
         /// <summary>
-        /// Snaps the <paramref name="InPoint"/> on to rotate grid.<br/>
-        /// for world aligned grid snapping use <b><see cref="Vector3.SnapToGrid"/></b> instead
+        /// Snaps the <paramref name="InPoint"/> onto the rotated grid.<br/>
+        /// For world aligned grid snapping use <b><see cref="SnapToGrid"/></b> instead.
         /// <example><para><b>Example code:</b></para>
         /// <code>
         /// <see langword="public" /> <see langword="class" /> SnapToRotatedGridExample : <see cref="Script"/><br/>
@@ -1723,7 +1723,7 @@ namespace FlaxEngine
             return (SnapToGrid(p, InGridSize) * InOrientation) + InCenterPoint;
         }
         /// <summary>
-        /// The same as <see cref="SnapToRotatedGrid"/> but with local offset applied after point is spapend
+        /// The same as <see cref="SnapToRotatedGrid"/> but with local offset applied after point is snapped.
         /// <example><para><b>Example code:</b></para>
         /// <code>
         /// <see langword="public" /> <see langword="class" /> SnapToRotatedGridWithOffsetExample : <see cref="Script"/><br/>
@@ -1739,7 +1739,7 @@ namespace FlaxEngine
         ///             <see cref="FlaxEngine.Transform"/> transform = Hit.Collider.Transform;
         ///             <see cref="Vector3"/> point = Hit.Point;
         ///             <see cref="Vector3"/> normal = Hit.Normal;
-        ///             <see cref="Quaternion"/> rot = <see cref="Quaternion"/>.GetRotacionFromNormal(normal,transform);
+        ///             <see cref="Quaternion"/> rot = <see cref="Quaternion"/>.GetRotationFromNormal(normal,transform);
         ///             point = <see cref="Vector3"/>.SnapToRotatedGridWithOffset(point,position,Offset,rot,GridSize);
         ///             SomeObject.Position = point;
         ///         }
@@ -1752,8 +1752,8 @@ namespace FlaxEngine
         /// <param name="InCenterPoint">The center point.</param>
         /// <param name="InOrientation">The rotation of the grid.</param>
         /// <param name="InGridSize">The size of the grid.</param>
-        /// <param name="InOffset">The local grid offset to applay after snaping</param>
-        /// <returns></returns>
+        /// <param name="InOffset">The local grid offset to apply after snapping.</param>
+        /// <returns>The position snapped to the grid, with offset applied.</returns>
         public static Vector3 SnapToRotatedGridWithOffset(Vector3 InPoint, Vector3 InCenterPoint, Vector3 InOffset, Quaternion InOrientation, Vector3 InGridSize)
         {
             return ((SnapToGrid((InPoint - InCenterPoint) * InOrientation.Conjugated(), InGridSize) + InOffset) * InOrientation) + InCenterPoint;

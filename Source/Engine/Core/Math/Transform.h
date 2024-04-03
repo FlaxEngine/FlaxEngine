@@ -18,20 +18,20 @@ API_STRUCT() struct FLAXENGINE_API Transform
     /// <summary>
     /// The translation vector of the transform.
     /// </summary>
-    API_FIELD(Attributes="EditorOrder(10), EditorDisplay(null, \"Position\"), ValueCategory(Utils.ValueCategory.Distance)")
-    Vector3 Translation;
+    API_FIELD(Attributes = "EditorOrder(10), EditorDisplay(null, \"Position\"), ValueCategory(Utils.ValueCategory.Distance)")
+        Vector3 Translation;
 
     /// <summary>
     /// The rotation of the transform.
     /// </summary>
-    API_FIELD(Attributes="EditorOrder(20), EditorDisplay(null, \"Rotation\"), ValueCategory(Utils.ValueCategory.Angle)")
-    Quaternion Orientation;
+    API_FIELD(Attributes = "EditorOrder(20), EditorDisplay(null, \"Rotation\"), ValueCategory(Utils.ValueCategory.Angle)")
+        Quaternion Orientation;
 
     /// <summary>
     /// The scale vector of the transform.
     /// </summary>
-    API_FIELD(Attributes="EditorOrder(30), Limit(float.MinValue, float.MaxValue, 0.01f)")
-    Float3 Scale;
+    API_FIELD(Attributes = "EditorOrder(30), Limit(float.MinValue, float.MaxValue, 0.01f)")
+        Float3 Scale;
 
 public:
     /// <summary>
@@ -291,63 +291,61 @@ public:
         return result;
     }
 
-    /// <summary>
-    /// combines funcions <br/>
-    /// <see cref="SnapToRotatedGridWithOffset"/>,<br/>
-    /// <see cref="GetRotacionFromNormal"/>
-    /// </summary>
-    /// <param name="InPoint">The position to snap.</param>
-    /// <param name="InGridSize">The size of the grid.</param>
-    /// <param name="InNormalOffset">The local Z grid offset to applay after snaping</param>
-    /// <param name="InNormal">Normal vector</param>
-    /// <param name="InRelativeTo">Realative transform</param>
-    /// <param name="InReturnScale">return scale</param>
-    /// InRefrenceTransform
-    /// <returns>rotated and snaped transform</returns>
-    inline static Transform AlignRotacionToNormalAndSnapToGrid(const Vector3& InPoint, const Vector3& InNormal, float InNormalOffset, const Transform& InRelativeTo, const Float3& InReturnScale, const  Vector3& InGridSize);
-    
-    /// <summary>
-    /// combines funcions <br/>
-    /// <see cref="SnapToRotatedGridWithOffset"/>,<br/>
-    /// <see cref="GetRotacionFromNormal"/>
-    /// </summary>
-    /// <param name="InPoint">The position to snap.</param>
-    /// <param name="InGridSize">The size of the grid.</param>
-    /// <param name="InNormalOffset">The local Z grid offset to applay after snaping</param>
-    /// <param name="InNormal">Normal vector</param>
-    /// <param name="InRelativeTo">Realative transform</param>
-    /// InRefrenceTransform
-    /// <returns>rotated and snaped transform with scale <see cref="Float3.One"/> </returns>
-    inline static Transform AlignRotacionToNormalAndSnapToGrid(const Vector3& InPoint, const Vector3& InNormal, float InNormalOffset, const Transform& InRelativeTo, const  Vector3& InGridSize);
-    
-    /// <summary>
-    /// combines funcions <br/>
-    /// <see cref="SnapToRotatedGridWithOffset"/>,<br/>
-    /// <see cref="GetRotacionFromNormal"/>
-    /// </summary>
-    /// <param name="InPoint">The position to snap.</param>
-    /// <param name="InGridSize">The size of the grid.</param>
-    /// <param name="InNormalOffset">The local Z grid offset to applay after snaping</param>
-    /// <param name="InNormal">Normal vector</param>
-    /// <param name="InRelativeTo">Realative transform</param>
-    /// <param name="InReturnScale">return scale</param>
-    /// InRefrenceTransform
-    /// <returns>rotated and snaped transform</returns>
-    inline static Transform AlignRotacionToNormalAndSnapToGrid(const Vector3& InPoint, const Vector3& InNormal, const Vector3& InNormalOffset, const Transform& InRelativeTo,const Float3& InReturnScale,const Vector3& InGridSize);
 
     /// <summary>
-    /// combines funcions <br/>
+    /// Combines the functions: <br/>
     /// <see cref="SnapToRotatedGridWithOffset"/>,<br/>
-    /// <see cref="GetRotacionFromNormal"/>
+    /// <see cref="GetRotationFromNormal"/>.
     /// </summary>
     /// <param name="InPoint">The position to snap.</param>
     /// <param name="InGridSize">The size of the grid.</param>
-    /// <param name="InNormalOffset">The local grid offset to applay after snaping</param>
-    /// <param name="InNormal">Normal vector</param>
-    /// <param name="InRelativeTo">Realative transform</param>
-    /// InRefrenceTransform
-    /// <returns>rotated and snaped transform with scale <see cref="Float3.One"/> </returns>
-    inline static Transform AlignRotacionToNormalAndSnapToGrid(const Vector3& InPoint,const Vector3& InNormal,const Vector3& InNormalOffset, const Transform& InRelativeTo,const Vector3& InGridSize);
+    /// <param name="InNormalOffset">The local Z grid offset to apply after snapping.</param>
+    /// <param name="InNormal">The normal vector.</param>
+    /// <param name="InRelativeTo">The relative transform.</param>
+    /// <param name="InReturnScale">The scale to apply to the transform.</param>
+    /// <returns>The rotated and snapped transform.</returns>
+    static Transform AlignRotationToNormalAndSnapToGrid(const Vector3& InPoint, const Vector3& InNormal, float InNormalOffset, const Transform& InRelativeTo, const Float3& InReturnScale, const  Vector3& InGridSize);
+
+    /// <summary>
+    /// Combines the functions: <br/>
+    /// <see cref="Vector3.SnapToRotatedGridWithOffset"/>,<br/>
+    /// <see cref="Quaternion.GetRotationFromNormal"/>.
+    /// </summary>
+    /// <param name="InPoint">The position to snap.</param>
+    /// <param name="InGridSize">The size of the grid.</param>
+    /// <param name="InNormalOffset">The local Z grid offset to apply after snapping.</param>
+    /// <param name="InNormal">The normal vector.</param>
+    /// <param name="InRelativeTo">The relative transform.</param>
+    /// <returns>The rotated and snapped transform with scale <see cref="Float3.One"/>.</returns>
+    static Transform AlignRotationToNormalAndSnapToGrid(const Vector3& InPoint, const Vector3& InNormal, float InNormalOffset, const Transform& InRelativeTo, const  Vector3& InGridSize);
+
+    /// <summary>
+    /// Combines the functions: <br/>
+    /// <see cref="SnapToRotatedGridWithOffset"/>,<br/>
+    /// <see cref="GetRotationFromNormal"/>.
+    /// </summary>
+    /// <param name="InPoint">The position to snap.</param>
+    /// <param name="InGridSize">The size of the grid.</param>
+    /// <param name="InNormalOffset">The local Z grid offset to apply after snapping.</param>
+    /// <param name="InNormal">The normal vector.</param>
+    /// <param name="InRelativeTo">The relative transform.</param>
+    /// <param name="InReturnScale">The scale to apply to the transform.</param>
+    /// <returns>The rotated and snapped transform.</returns>
+    static Transform AlignRotationToNormalAndSnapToGrid(const Vector3& InPoint, const Vector3& InNormal, const Vector3& InNormalOffset, const Transform& InRelativeTo, const Float3& InReturnScale, const Vector3& InGridSize);
+
+    /// <summary>
+    /// Combines the functions: <br/>
+    /// <see cref="Vector3.SnapToRotatedGridWithOffset"/>,<br/>
+    /// <see cref="Quaternion.GetRotationFromNormal"/>.
+    /// </summary>
+    /// <param name="InPoint">The position to snap.</param>
+    /// <param name="InGridSize">The size of the grid.</param>
+    /// <param name="InNormalOffset">The local Z grid offset to apply after snapping.</param>
+    /// <param name="InNormal">The normal vector.</param>
+    /// <param name="InRelativeTo">The relative transform.</param>
+    /// <returns>The rotated and snapped transform with scale <see cref="Float3.One"/>.</returns>
+    static Transform AlignRotationToNormalAndSnapToGrid(const Vector3& InPoint, const Vector3& InNormal, const Vector3& InNormalOffset, const Transform& InRelativeTo, const Vector3& InGridSize);
+
 
 public:
     FORCE_INLINE Transform operator*(const Transform& other) const

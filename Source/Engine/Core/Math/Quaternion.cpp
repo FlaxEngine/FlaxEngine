@@ -534,13 +534,13 @@ void Quaternion::RotationYawPitchRoll(float yaw, float pitch, float roll, Quater
     result.Z = cosYawOver2 * cosPitchOver2 * sinRollOver2 - sinYawOver2 * sinPitchOver2 * cosRollOver2;
 }
 
-Quaternion Quaternion::GetRotacionFromNormal(const Vector3& InNormal, const Transform& InRefrenceTransform)
+Quaternion Quaternion::GetRotationFromNormal(const Vector3& InNormal, const Transform& InReferenceTransform)
 {
-    Float3 up = InRefrenceTransform.GetUp();
+    Float3 up = InReferenceTransform.GetUp();
     auto dot = Vector3::Dot(InNormal, up);
     if (Math::NearEqual(Math::Abs(dot), 1))
     {
-        up = InRefrenceTransform.GetRight();
+        up = InReferenceTransform.GetRight();
     }
     return Quaternion::LookRotation(InNormal, up);
 }
