@@ -291,6 +291,77 @@ public:
         return result;
     }
 
+    /// <summary>
+    /// combines funcions <br/>
+    /// <see cref="SnapToRotatedGridWithOffset"/>,<br/>
+    /// <see cref="GetRotacionFromNormal"/>
+    /// </summary>
+    /// <param name="InPoint">The position to snap.</param>
+    /// <param name="InGridSize">The size of the grid.</param>
+    /// <param name="InNormalOffset">The local Z grid offset to applay after snaping</param>
+    /// <param name="InNormal">Normal vector</param>
+    /// <param name="InRelativeTo">Realative transform</param>
+    /// <param name="InReturnScale">return scale</param>
+    /// InRefrenceTransform
+    /// <returns>rotated and snaped transform</returns>
+    static Transform AlignRotacionToNormalAndSnapToGrid(const Vector3& InPoint, const Vector3& InNormal, float InNormalOffset, const Transform& InRelativeTo, const Float3& InReturnScale, const  Vector3& InGridSize)
+    {
+        Quaternion rot = Quaternion::GetRotacionFromNormal(InNormal, InRelativeTo);
+        return Transform(Vector3::SnapToRotatedGridWithOffset(InPoint, InRelativeTo.Translation, Vector3(0, 0, InNormalOffset), rot, InGridSize), rot, InReturnScale);
+    }
+    /// <summary>
+    /// combines funcions <br/>
+    /// <see cref="SnapToRotatedGridWithOffset"/>,<br/>
+    /// <see cref="GetRotacionFromNormal"/>
+    /// </summary>
+    /// <param name="InPoint">The position to snap.</param>
+    /// <param name="InGridSize">The size of the grid.</param>
+    /// <param name="InNormalOffset">The local Z grid offset to applay after snaping</param>
+    /// <param name="InNormal">Normal vector</param>
+    /// <param name="InRelativeTo">Realative transform</param>
+    /// InRefrenceTransform
+    /// <returns>rotated and snaped transform with scale <see cref="Float3.One"/> </returns>
+    static Transform AlignRotacionToNormalAndSnapToGrid(const Vector3& InPoint, const Vector3& InNormal, float InNormalOffset, const Transform& InRelativeTo, const  Vector3& InGridSize)
+    {
+        Quaternion rot = Quaternion::GetRotacionFromNormal(InNormal, InRelativeTo);
+        return Transform(Vector3::SnapToRotatedGridWithOffset(InPoint, InRelativeTo.Translation, Vector3(0, 0, InNormalOffset), rot, InGridSize), rot, Float3::One);
+    }
+    /// <summary>
+    /// combines funcions <br/>
+    /// <see cref="SnapToRotatedGridWithOffset"/>,<br/>
+    /// <see cref="GetRotacionFromNormal"/>
+    /// </summary>
+    /// <param name="InPoint">The position to snap.</param>
+    /// <param name="InGridSize">The size of the grid.</param>
+    /// <param name="InNormalOffset">The local Z grid offset to applay after snaping</param>
+    /// <param name="InNormal">Normal vector</param>
+    /// <param name="InRelativeTo">Realative transform</param>
+    /// <param name="InReturnScale">return scale</param>
+    /// InRefrenceTransform
+    /// <returns>rotated and snaped transform</returns>
+    static Transform AlignRotacionToNormalAndSnapToGrid(const Vector3& InPoint, const Vector3& InNormal, const Vector3& InNormalOffset, const Transform& InRelativeTo,const Float3& InReturnScale,const Vector3& InGridSize)
+    {
+        Quaternion rot = Quaternion::GetRotacionFromNormal(InNormal, InRelativeTo);
+        return Transform(Vector3::SnapToRotatedGridWithOffset(InPoint, InRelativeTo.Translation, InNormalOffset, rot, InGridSize), rot, InReturnScale);
+    }
+    /// <summary>
+    /// combines funcions <br/>
+    /// <see cref="SnapToRotatedGridWithOffset"/>,<br/>
+    /// <see cref="GetRotacionFromNormal"/>
+    /// </summary>
+    /// <param name="InPoint">The position to snap.</param>
+    /// <param name="InGridSize">The size of the grid.</param>
+    /// <param name="InNormalOffset">The local grid offset to applay after snaping</param>
+    /// <param name="InNormal">Normal vector</param>
+    /// <param name="InRelativeTo">Realative transform</param>
+    /// InRefrenceTransform
+    /// <returns>rotated and snaped transform with scale <see cref="Float3.One"/> </returns>
+    static Transform AlignRotacionToNormalAndSnapToGrid(const Vector3& InPoint,const Vector3& InNormal,const Vector3& InNormalOffset, const Transform& InRelativeTo,const Vector3& InGridSize)
+    {
+        Quaternion rot = Quaternion::GetRotacionFromNormal(InNormal, InRelativeTo);
+        return Transform(Vector3::SnapToRotatedGridWithOffset(InPoint, InRelativeTo.Translation, InNormalOffset, rot, InGridSize), rot, Float3::One);
+    }
+
 public:
     FORCE_INLINE Transform operator*(const Transform& other) const
     {

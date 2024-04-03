@@ -1480,6 +1480,47 @@ namespace FlaxEngine
         }
 
         /// <summary>
+        /// Gets rotacion for normal in relation to transform<br/>
+        /// Funcion especially created for aligned with axis aligned faces
+        /// use full with <seealso cref="Physics.RayCast"/>
+        /// 
+        /// <example><para><b>Example code:</b></para>
+        /// <code>
+        /// <see langword="public" /> <see langword="class" /> GetRotacionFromNormalExample : <see cref="Script"/><br/>
+        ///     <see langword="public" /> <see cref="Actor"/> RayOrgin;<br/>
+        ///     <see langword="public" /> <see cref="Actor"/> SomeObject;<br/>
+        ///     <see langword="public" /> <see langword="override" /> <see langword="void" /> <see cref="Script.OnFixedUpdate"/><br/>
+        ///     {<br/>
+        ///         <see langword="if" /> (<see cref="Physics"/>.RayCast(RayOrgin.Position, RayOrgin.Transform.Forward, out <see cref="RayCastHit"/> Hit)
+        ///         {<br/>
+        ///             <see cref="Vector3"/> position = Hit.Collider.Position;
+        ///             <see cref="Transform"/> transform = Hit.Collider.Transform;
+        ///             <see cref="Vector3"/> point = Hit.Point;
+        ///             <see cref="Vector3"/> normal = Hit.Normal;
+        ///             <see cref="Quaternion"/> rot = <see cref="Quaternion"/>.GetRotacionFromNormal(normal,transform);
+        ///             SomeObject.Position = point;
+        ///             SomeObject.Orientation = rot;
+        ///         }
+        ///     }
+        /// }
+        /// </code>
+        /// </example>
+        /// </summary>
+        /// <param name="InNormal">the normal vector</param>
+        /// <param name="InRefrenceTransform">relative to</param>
+        /// <returns>normal as rotacion</returns>
+        public static Quaternion GetRotacionFromNormal(Vector3 InNormal, Transform InRefrenceTransform)
+        {
+            Float3 up = InRefrenceTransform.Up;
+            var dot = Vector3.Dot(InNormal, up);
+            if (Mathf.NearEqual(Math.Abs(dot), 1))
+            {
+                up = InRefrenceTransform.Right;
+            }
+            return Quaternion.LookRotation(InNormal, up);
+        }
+
+        /// <summary>
         /// Adds two quaternions.
         /// </summary>
         /// <param name="left">The first quaternion to add.</param>
