@@ -119,6 +119,13 @@ GPUShaderProgram* GPUShaderDX11::CreateGPUShaderProgram(ShaderStage type, const 
         shader = New<GPUShaderProgramDSDX11>(initializer, buffer);
         break;
     }
+#else
+    case ShaderStage::Hull:
+    {
+        int32 controlPointsCount;
+        stream.ReadInt32(&controlPointsCount);
+        break;
+    }
 #endif
 #if GPU_ALLOW_GEOMETRY_SHADERS
     case ShaderStage::Geometry:

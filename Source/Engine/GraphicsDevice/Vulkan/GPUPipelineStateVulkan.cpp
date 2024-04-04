@@ -280,8 +280,10 @@ bool GPUPipelineStateVulkan::Init(const Description& desc)
         _descInputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
         break;
     }
+#if GPU_ALLOW_TESSELLATION_SHADERS
     if (desc.HS)
         _descInputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_PATCH_LIST;
+#endif
     _desc.pInputAssemblyState = &_descInputAssembly;
 
 #if GPU_ALLOW_TESSELLATION_SHADERS

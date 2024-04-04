@@ -163,9 +163,13 @@ bool GPUPipelineStateDX12::Init(const Description& desc)
             if (shader->Header.UaDimensions[i]) \
                 Header.UaDimensions[i] = shader->Header.UaDimensions[i]; \
     }
+#if GPU_ALLOW_TESSELLATION_SHADERS
     INIT_SHADER_STAGE(HS, GPUShaderProgramHSDX12);
     INIT_SHADER_STAGE(DS, GPUShaderProgramDSDX12);
+#endif
+#if GPU_ALLOW_GEOMETRY_SHADERS
     INIT_SHADER_STAGE(GS, GPUShaderProgramGSDX12);
+#endif
     INIT_SHADER_STAGE(VS, GPUShaderProgramVSDX12);
     INIT_SHADER_STAGE(PS, GPUShaderProgramPSDX12);
     const static D3D12_PRIMITIVE_TOPOLOGY_TYPE primTypes1[] =
@@ -184,11 +188,13 @@ bool GPUPipelineStateDX12::Init(const Description& desc)
     };
     psDesc.PrimitiveTopologyType = primTypes1[(int32)desc.PrimitiveTopology];
     PrimitiveTopology = primTypes2[(int32)desc.PrimitiveTopology];
+#if GPU_ALLOW_TESSELLATION_SHADERS
     if (desc.HS)
     {
         psDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_PATCH;
         PrimitiveTopology = (D3D_PRIMITIVE_TOPOLOGY)((int32)D3D_PRIMITIVE_TOPOLOGY_1_CONTROL_POINT_PATCHLIST + (desc.HS->GetControlPointsCount() - 1));
     }
+#endif
 
     // Depth State
     psDesc.DepthStencilState.DepthEnable = !!desc.DepthEnable;

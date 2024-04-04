@@ -98,6 +98,13 @@ GPUShaderProgram* GPUShaderDX12::CreateGPUShaderProgram(ShaderStage type, const 
         shader = New<GPUShaderProgramDSDX12>(initializer, header, cacheBytes, cacheSize);
         break;
     }
+#else
+    case ShaderStage::Hull:
+    {
+        int32 controlPointsCount;
+        stream.ReadInt32(&controlPointsCount);
+        break;
+    }
 #endif
 #if GPU_ALLOW_GEOMETRY_SHADERS
     case ShaderStage::Geometry:

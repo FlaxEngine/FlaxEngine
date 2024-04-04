@@ -87,7 +87,7 @@ bool ColorGradingPass::Init()
 bool ColorGradingPass::setupResources()
 {
     // Wait for shader
-    if (!_shader->IsLoaded())
+    if (!_shader || !_shader->IsLoaded())
         return true;
     const auto shader = _shader->GetShader();
 
