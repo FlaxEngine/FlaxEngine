@@ -22,7 +22,7 @@ private:
     GPUPipelineStatePermutationsPs<static_cast<int32>(Quality::MAX) * 2> _psShadowPoint;
     GPUPipelineStatePermutationsPs<static_cast<int32>(Quality::MAX) * 2> _psShadowSpot;
     PixelFormat _shadowMapFormat; // Cached on initialization
-    int32 maxShadowsQuality = 0; // Cached state for the current frame rendering (setup via Prepare)
+    int32 _maxShadowsQuality = 0; // Cached state for the current frame rendering (setup via Prepare)
 
 public:
     /// <summary>

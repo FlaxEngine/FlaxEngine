@@ -568,7 +568,7 @@ void ShadowsPass::Dispose()
 void ShadowsPass::SetupShadows(RenderContext& renderContext, RenderContextBatch& renderContextBatch)
 {
     PROFILE_CPU();
-    maxShadowsQuality = Math::Clamp(Math::Min<int32>((int32)Graphics::ShadowsQuality, (int32)renderContext.View.MaxShadowsQuality), 0, (int32)Quality::MAX - 1);
+    _maxShadowsQuality = Math::Clamp(Math::Min<int32>((int32)Graphics::ShadowsQuality, (int32)renderContext.View.MaxShadowsQuality), 0, (int32)Quality::MAX - 1);
 
     // Early out and skip shadows setup if no lights is actively casting shadows
     // RenderBuffers will automatically free any old ShadowsCustomBuffer after a few frames if we don't update LastFrameUsed
@@ -902,14 +902,20 @@ void ShadowsPass::RenderShadowMask(RenderContextBatch& renderContextBatch, Rende
     RenderContext& renderContext = renderContextBatch.GetMainContext();
     const ShadowsCustomBuffer& shadows = *renderContext.Buffers->FindCustomBuffer<ShadowsCustomBuffer>(TEXT("Shadows"));
     ASSERT(shadows.LastFrameUsed == Engine::FrameCount);
-    const ShadowAtlasLight& atlasLight = shadows.Lights.At(light.ID);
     const float sphereModelScale = 3.0f;
     auto& view = renderContext.View;
     auto shader = _shader->GetShader();
     const bool isLocalLight = light.IsPointLight || light.IsSpotLight;
-
-    // TODO: here we can use lower shadows quality based on light distance to view (LOD switching) and per light setting for max quality
-    int32 shadowQuality = maxShadowsQuality;
+    int32 shadowQuality = _maxShadowsQuality;
+    if (isLocalLight)
+    {
+        // Reduce shadows quality for smaller lights
+        if (light.ScreenSize < 0.25f)
+            shadowQuality--;
+        if (light.ScreenSize < 0.1f)
+            shadowQuality--;
+        shadowQuality = Math::Max(shadowQuality, 0);
+    }
 
     // Setup shader data
     Data sperLight;
