@@ -97,27 +97,7 @@ struct GlobalSurfaceAtlasObject
         Platform::MemoryClear(this, sizeof(GlobalSurfaceAtlasObject));
     }
 
-    GlobalSurfaceAtlasObject(const GlobalSurfaceAtlasObject& other)
-    {
-        Platform::MemoryCopy(this, &other, sizeof(GlobalSurfaceAtlasObject));
-    }
-
-    GlobalSurfaceAtlasObject(GlobalSurfaceAtlasObject&& other) noexcept
-    {
-        Platform::MemoryCopy(this, &other, sizeof(GlobalSurfaceAtlasObject));
-    }
-
-    GlobalSurfaceAtlasObject& operator=(const GlobalSurfaceAtlasObject& other)
-    {
-        Platform::MemoryCopy(this, &other, sizeof(GlobalSurfaceAtlasObject));
-        return *this;
-    }
-
-    GlobalSurfaceAtlasObject& operator=(GlobalSurfaceAtlasObject&& other) noexcept
-    {
-        Platform::MemoryCopy(this, &other, sizeof(GlobalSurfaceAtlasObject));
-        return *this;
-    }
+    POD_COPYABLE(GlobalSurfaceAtlasObject);
 };
 
 struct GlobalSurfaceAtlasLight
@@ -130,9 +110,9 @@ class GlobalSurfaceAtlasCustomBuffer : public RenderBuffers::CustomBuffer, publi
 {
 public:
     int32 Resolution = 0;
+    int32 AtlasPixelsUsed = 0;
     uint64 LastFrameAtlasInsertFail = 0;
     uint64 LastFrameAtlasDefragmentation = 0;
-    int32 AtlasPixelsUsed = 0;
     GPUTexture* AtlasDepth = nullptr;
     GPUTexture* AtlasEmissive = nullptr;
     GPUTexture* AtlasGBuffer0 = nullptr;
@@ -163,7 +143,7 @@ public:
     {
     }
 
-    FORCE_INLINE void ClearObjects()
+    void ClearObjects()
     {
         CulledObjectsCounterIndex = -1;
         CulledObjectsUsageHistory.Clear();
@@ -174,7 +154,7 @@ public:
         Lights.Clear();
     }
 
-    FORCE_INLINE void Clear()
+    void Reset()
     {
         RenderTargetPool::Release(AtlasDepth);
         RenderTargetPool::Release(AtlasEmissive);
@@ -189,7 +169,7 @@ public:
     {
         SAFE_DELETE_GPU_RESOURCE(ChunksBuffer);
         SAFE_DELETE_GPU_RESOURCE(CulledObjectsBuffer);
-        Clear();
+        Reset();
     }
 
     // [ISceneRenderingListener]
@@ -400,7 +380,7 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
     bool noCache = surfaceAtlasData.Resolution != resolution;
     if (noCache)
     {
-        surfaceAtlasData.Clear();
+        surfaceAtlasData.Reset();
 
         auto desc = GPUTextureDescription::New2D(resolution, resolution, PixelFormat::Unknown);
         uint64 memUsage = 0;
@@ -963,9 +943,9 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
             if (_vertexBuffer->Data.Count() == 0)
                 continue;
 
-            // Draw draw light
+            // Draw light
             PROFILE_GPU_CPU_NAMED("Directional Light");
-            const bool useShadow = CanRenderShadow(renderContext.View, light);
+            const bool useShadow = light.CanRenderShadow(renderContext.View);
             // TODO: test perf/quality when using Shadow Map for directional light (ShadowsPass::Instance()->LastDirLightShadowMap) instead of Global SDF trace
             light.SetShaderData(data.Light, useShadow);
             data.Light.Color *= light.IndirectLightingIntensity;
@@ -997,9 +977,9 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
             if (_vertexBuffer->Data.Count() == 0)
                 continue;
 
-            // Draw draw light
+            // Draw light
             PROFILE_GPU_CPU_NAMED("Point Light");
-            const bool useShadow = CanRenderShadow(renderContext.View, light);
+            const bool useShadow = light.CanRenderShadow(renderContext.View);
             light.SetShaderData(data.Light, useShadow);
             data.Light.Color *= light.IndirectLightingIntensity;
             data.LightShadowsStrength = 1.0f - light.ShadowsStrength;
@@ -1030,9 +1010,9 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
             if (_vertexBuffer->Data.Count() == 0)
                 continue;
 
-            // Draw draw light
+            // Draw light
             PROFILE_GPU_CPU_NAMED("Spot Light");
-            const bool useShadow = CanRenderShadow(renderContext.View, light);
+            const bool useShadow = light.CanRenderShadow(renderContext.View);
             light.SetShaderData(data.Light, useShadow);
             data.Light.Color *= light.IndirectLightingIntensity;
             data.LightShadowsStrength = 1.0f - light.ShadowsStrength;
@@ -1048,7 +1028,7 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
                 surfaceAtlasData.Lights.Remove(it);
         }
 
-        // Draw draw indirect light from Global Illumination
+        // Draw indirect light from Global Illumination
         if (EnumHasAnyFlags(renderContext.View.Flags, ViewFlags::GI))
         {
             switch (giSettings.Mode)

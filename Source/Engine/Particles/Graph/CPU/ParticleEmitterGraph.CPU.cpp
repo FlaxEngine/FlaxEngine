@@ -399,12 +399,6 @@ void ParticleEmitterGraphCPUExecutor::Draw(ParticleEmitter* emitter, ParticleEff
         lightData.ShadowsSharpness = 1.0f;
         lightData.UseInverseSquaredFalloff = false;
         lightData.VolumetricScatteringIntensity = 1.0f;
-        lightData.CastVolumetricShadow = false;
-        lightData.RenderedVolumetricFog = 0;
-        lightData.ShadowsMode = ShadowsCastingMode::None;
-        lightData.SourceRadius = 0.0f;
-        lightData.SourceLength = 0.0f;
-        lightData.IESTexture = nullptr;
 
         for (int32 particleIndex = 0; particleIndex < count; particleIndex++)
         {

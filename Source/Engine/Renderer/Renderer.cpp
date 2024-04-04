@@ -348,7 +348,6 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext, RenderCont
     // Prepare
     renderContext.View.Prepare(renderContext);
     renderContext.Buffers->Prepare();
-    ShadowsPass::Instance()->Prepare();
 
     // Build batch of render contexts (main view and shadow projections)
     {
@@ -371,6 +370,7 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext, RenderCont
             drawShadows = false;
             break;
         }
+        LightPass::Instance()->SetupLights(renderContext, renderContextBatch);
         if (drawShadows)
             ShadowsPass::Instance()->SetupShadows(renderContext, renderContextBatch);
 #if USE_EDITOR
@@ -404,7 +404,7 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext, RenderCont
             renderContext.List->SortDrawCalls(renderContext, false, DrawCallsListType::MotionVectors);
         for (int32 i = 1; i < renderContextBatch.Contexts.Count(); i++)
         {
-            auto& shadowContext = renderContextBatch.Contexts[i];
+            auto& shadowContext = renderContextBatch.Contexts.Get()[i];
             shadowContext.List->SortDrawCalls(shadowContext, false, DrawCallsListType::Depth, DrawPass::Depth);
             shadowContext.List->SortDrawCalls(shadowContext, false, shadowContext.List->ShadowDepthDrawCallsList, renderContext.List->DrawCalls, DrawPass::Depth);
         }
@@ -487,7 +487,8 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext, RenderCont
 
     // Render lighting
     renderContextBatch.GetMainContext() = renderContext; // Sync render context in batch with the current value
-    LightPass::Instance()->RenderLight(renderContextBatch, *lightBuffer);
+    ShadowsPass::Instance()->RenderShadowMaps(renderContextBatch);
+    LightPass::Instance()->RenderLights(renderContextBatch, *lightBuffer);
     if (EnumHasAnyFlags(renderContext.View.Flags, ViewFlags::GI))
     {
         switch (renderContext.List->Settings.GlobalIllumination.Mode)

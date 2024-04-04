@@ -77,28 +77,13 @@ PACK_STRUCT(struct ShaderLightData {
     Float3 Color;
     float MinRoughness;
     Float3 Position;
-    float CastShadows;
+    uint32 ShadowsBufferAddress;
     Float3 Direction;
     float Radius;
     float FalloffExponent;
     float InverseSquared;
-    float Dummy0;
     float RadiusInv;
-    });
-
-/// <summary>
-/// Structure that contains information about light for shaders.
-/// </summary>
-PACK_STRUCT(struct ShaderLightShadowData {
-    Float2 ShadowMapSize;
-    float Sharpness;
-    float Fade;
-    float NormalOffsetScale;
-    float Bias;
-    float FadeDistance;
-    uint32 NumCascades;
-    Float4 CascadeSplits;
-    Matrix ShadowVP[6];
+    float Dummy0;
     });
 
 /// <summary>

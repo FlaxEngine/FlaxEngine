@@ -159,7 +159,7 @@ float4 PS_Lighting(AtlasVertexOutput input) : SV_Target
 	float toLightDst = GLOBAL_SDF_WORLD_SIZE;
 #endif
 	float4 shadowMask = 1;
-	if (Light.CastShadows > 0)
+	if (Light.ShadowsBufferAddress != 0)
 	{
 		float NoL = dot(gBuffer.Normal, L);
 		float shadowBias = 10.0f;

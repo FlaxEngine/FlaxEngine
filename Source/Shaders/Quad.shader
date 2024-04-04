@@ -56,8 +56,6 @@ float4 PS_CopyLinear(Quad_VS2PS input) : SV_Target
 
 #endif
 
-#ifdef _PS_Clear
-
 // Pixel Shader for clearing a render target with a solid color
 META_PS(true, FEATURE_LEVEL_ES2)
 float4 PS_Clear(Quad_VS2PS input) : SV_Target
@@ -65,4 +63,9 @@ float4 PS_Clear(Quad_VS2PS input) : SV_Target
 	return Color;
 }
 
-#endif
+// Pixel Shader for clearing depth buffer
+META_PS(true, FEATURE_LEVEL_ES2)
+float PS_DepthClear(Quad_VS2PS input) : SV_Depth
+{
+	return Color.r;
+}

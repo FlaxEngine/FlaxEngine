@@ -21,7 +21,8 @@ void ForwardShadingFeature::Bind(MaterialShader::BindParameters& params, Span<by
     ASSERT_LOW_LAYER(cb.Length() >= sizeof(Data));
     const int32 envProbeShaderRegisterIndex = srv + 0;
     const int32 skyLightShaderRegisterIndex = srv + 1;
-    const int32 dirLightShaderRegisterIndex = srv + 2;
+    const int32 shadowsBufferRegisterIndex = srv + 2;
+    const int32 shadowMapShaderRegisterIndex = srv + 3;
     const bool canUseShadow = view.Pass != DrawPass::Depth;
 
     // Set fog input
@@ -39,24 +40,19 @@ void ForwardShadingFeature::Bind(MaterialShader::BindParameters& params, Span<by
     if (cache->DirectionalLights.HasItems())
     {
         const auto& dirLight = cache->DirectionalLights.First();
-        const auto shadowPass = ShadowsPass::Instance();
-        const bool useShadow = shadowPass->LastDirLightIndex == 0 && canUseShadow;
-        if (useShadow)
-        {
-            data.DirectionalLightShadow = shadowPass->LastDirLight;
-            params.GPUContext->BindSR(dirLightShaderRegisterIndex, shadowPass->LastDirLightShadowMap);
-        }
-        else
-        {
-            params.GPUContext->UnBindSR(dirLightShaderRegisterIndex);
-        }
+        GPUTexture* shadowMapAtlas;
+        GPUBufferView* shadowsBuffer;
+        ShadowsPass::GetShadowAtlas(params.RenderContext.Buffers, shadowMapAtlas, shadowsBuffer);
+        const bool useShadow = shadowMapAtlas && canUseShadow && dirLight.HasShadow;
         dirLight.SetShaderData(data.DirectionalLight, useShadow);
+        params.GPUContext->BindSR(shadowsBufferRegisterIndex, shadowsBuffer);
+        params.GPUContext->BindSR(shadowMapShaderRegisterIndex, shadowMapAtlas);
     }
     else
     {
-        data.DirectionalLight.Color = Float3::Zero;
-        data.DirectionalLight.CastShadows = 0.0f;
-        params.GPUContext->UnBindSR(dirLightShaderRegisterIndex);
+        Platform::MemoryClear(&data.DirectionalLight, sizeof(data.DirectionalLight));
+        params.GPUContext->UnBindSR(shadowsBufferRegisterIndex);
+        params.GPUContext->UnBindSR(shadowMapShaderRegisterIndex);
     }
 
     // Set sky light

@@ -38,7 +38,6 @@ void DirectionalLight::Draw(RenderContext& renderContext)
         data.VolumetricScatteringIntensity = VolumetricScatteringIntensity;
         data.IndirectLightingIntensity = IndirectLightingIntensity;
         data.CastVolumetricShadow = CastVolumetricShadow;
-        data.RenderedVolumetricFog = 0;
         data.ShadowsMode = ShadowsMode;
         data.CascadeCount = CascadeCount;
         data.Cascade1Spacing = Cascade1Spacing;
@@ -49,6 +48,7 @@ void DirectionalLight::Draw(RenderContext& renderContext)
         data.ContactShadowsLength = ContactShadowsLength;
         data.StaticFlags = GetStaticFlags();
         data.ID = GetID();
+        data.ScreenSize = 1.0f;
         renderContext.List->DirectionalLights.Add(data);
     }
 }

@@ -2,6 +2,7 @@
 
 #include "PointLight.h"
 #include "Engine/Graphics/RenderTask.h"
+#include "Engine/Graphics/RenderTools.h"
 #include "Engine/Graphics/RenderView.h"
 #include "Engine/Renderer/RenderList.h"
 #include "Engine/Serialization/Serialization.h"
@@ -102,7 +103,6 @@ void PointLight::Draw(RenderContext& renderContext)
         data.ShadowsSharpness = ShadowsSharpness;
         data.VolumetricScatteringIntensity = VolumetricScatteringIntensity;
         data.CastVolumetricShadow = CastVolumetricShadow;
-        data.RenderedVolumetricFog = 0;
         data.ShadowsMode = ShadowsMode;
         data.Radius = radius;
         data.FallOffExponent = FallOffExponent;
@@ -114,6 +114,7 @@ void PointLight::Draw(RenderContext& renderContext)
         data.IESTexture = IESTexture ? IESTexture->GetTexture() : nullptr;
         data.StaticFlags = GetStaticFlags();
         data.ID = GetID();
+        data.ScreenSize = Math::Min(1.0f, Math::Sqrt(RenderTools::ComputeBoundsScreenRadiusSquared(position, (float)_sphere.Radius, renderContext.View)));
         renderContext.List->PointLights.Add(data);
     }
 }

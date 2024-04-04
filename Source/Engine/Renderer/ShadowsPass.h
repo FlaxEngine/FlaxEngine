@@ -10,120 +10,30 @@
 #include "Engine/Graphics/RenderTask.h"
 
 /// <summary>
-/// Pixel format for fullscreen render target used for shadows calculations
-/// </summary>
-#define SHADOWS_PASS_SS_RR_FORMAT PixelFormat::R11G11B10_Float
-
-template<typename T>
-bool CanRenderShadow(const RenderView& view, const T& light)
-{
-    bool result = false;
-    switch ((ShadowsCastingMode)light.ShadowsMode)
-    {
-    case ShadowsCastingMode::StaticOnly:
-        result = view.IsOfflinePass;
-        break;
-    case ShadowsCastingMode::DynamicOnly:
-        result = !view.IsOfflinePass;
-        break;
-    case ShadowsCastingMode::All:
-        result = true;
-        break;
-    default:
-        break;
-    }
-    return result && light.ShadowsStrength > ZeroTolerance;
-}
-
-/// <summary>
 /// Shadows rendering service.
 /// </summary>
 class ShadowsPass : public RendererPass<ShadowsPass>
 {
 private:
-
-    struct ShadowData
-    {
-        int32 ContextIndex;
-        int32 ContextCount;
-        bool BlendCSM;
-        ShaderLightShadowData Constants;
-    };
-
-    // Shader stuff
     AssetReference<Shader> _shader;
-    GPUPipelineStatePermutationsPs<static_cast<int32>(Quality::MAX) * 2 * 2> _psShadowDir;
+    AssetReference<Model> _sphereModel;
+    GPUPipelineState* _psDepthClear = nullptr;
+    GPUPipelineStatePermutationsPs<static_cast<int32>(Quality::MAX) * 2> _psShadowDir;
     GPUPipelineStatePermutationsPs<static_cast<int32>(Quality::MAX) * 2> _psShadowPoint;
     GPUPipelineStatePermutationsPs<static_cast<int32>(Quality::MAX) * 2> _psShadowSpot;
-    PixelFormat _shadowMapFormat;
-
-    // Shadow maps stuff
-    int32 _shadowMapsSizeCSM;
-    int32 _shadowMapsSizeCube;
-    GPUTexture* _shadowMapCSM;
-    GPUTexture* _shadowMapCube;
-    Quality _currentShadowMapsQuality;
-
-    // Shadow map rendering stuff
-    AssetReference<Model> _sphereModel;
-    Array<ShadowData> _shadowData;
-
-    // Cached state for the current frame rendering (setup via Prepare)
-    int32 maxShadowsQuality;
+    PixelFormat _shadowMapFormat; // Cached on initialization
+    int32 maxShadowsQuality = 0; // Cached state for the current frame rendering (setup via Prepare)
 
 public:
-
-    /// <summary>
-    /// Init
-    /// </summary>
-    ShadowsPass();
-
-public:
-
-    /// <summary>
-    /// Gets current GPU memory usage by the shadow maps
-    /// </summary>
-    /// <returns>GPU memory used in bytes</returns>
-    uint64 GetShadowMapsMemoryUsage() const;
-
-public:
-
-    // TODO: use full scene shadow map atlas with dynamic slots allocation
-    int32 LastDirLightIndex = -1;
-    GPUTextureView* LastDirLightShadowMap = nullptr;
-    ShaderLightShadowData LastDirLight;
-
-public:
-    void Prepare();
-
     /// <summary>
     /// Setups the shadows rendering for batched scene drawing. Checks which lights will cast a shadow.
     /// </summary>
     void SetupShadows(RenderContext& renderContext, RenderContextBatch& renderContextBatch);
 
     /// <summary>
-    /// Determines whether can render shadow for the specified light.
+    /// Renders the shadow maps for all lights (into atlas).
     /// </summary>
-    /// <param name="renderContext">The rendering context.</param>
-    /// <param name="light">The light.</param>
-    /// <returns><c>true</c> if can render shadow for the specified light; otherwise, <c>false</c>.</returns>
-    bool CanRenderShadow(const RenderContext& renderContext, const RenderPointLightData& light);
-
-    /// <summary>
-    /// Determines whether can render shadow for the specified light.
-    /// </summary>
-    /// <param name="renderContext">The rendering context.</param>
-    /// <param name="light">The light.</param>
-    /// <returns><c>true</c> if can render shadow for the specified light; otherwise, <c>false</c>.</returns>
-    bool CanRenderShadow(const RenderContext& renderContext, const RenderSpotLightData& light);
-
-    /// <summary>
-    /// Determines whether can render shadow for the specified light.
-    /// </summary>
-    /// <param name="renderContext">The rendering context.</param>
-    /// <param name="light">The light.</param>
-    /// <returns><c>true</c> if can render shadow for the specified light; otherwise, <c>false</c>.</returns>
-    bool CanRenderShadow(const RenderContext& renderContext, const RenderDirectionalLightData& light);
+    void RenderShadowMaps(RenderContextBatch& renderContextBatch);
 
     /// <summary>
     /// Renders the shadow mask for the given light.
@@ -131,32 +41,23 @@ public:
     /// <param name="renderContextBatch">The rendering context batch.</param>
     /// <param name="light">The light.</param>
     /// <param name="shadowMask">The shadow mask (output).</param>
-    void RenderShadow(RenderContextBatch& renderContextBatch, RenderPointLightData& light, GPUTextureView* shadowMask);
+    void RenderShadowMask(RenderContextBatch& renderContextBatch, RenderLightData& light, GPUTextureView* shadowMask);
 
     /// <summary>
-    /// Renders the shadow mask for the given light.
+    /// Gets the shadow atlas texture and shadows buffer for shadow projection in shaders.
     /// </summary>
-    /// <param name="renderContextBatch">The rendering context batch.</param>
-    /// <param name="light">The light.</param>
-    /// <param name="shadowMask">The shadow mask (output).</param>
-    void RenderShadow(RenderContextBatch& renderContextBatch, RenderSpotLightData& light, GPUTextureView* shadowMask);
-
-    /// <summary>
-    /// Renders the shadow mask for the given light.
-    /// </summary>
-    /// <param name="renderContextBatch">The rendering context batch.</param>
-    /// <param name="light">The light.</param>
-    /// <param name="index">The light index.</param>
-    /// <param name="shadowMask">The shadow mask (output).</param>
-    void RenderShadow(RenderContextBatch& renderContextBatch, RenderDirectionalLightData& light, int32 index, GPUTextureView* shadowMask);
+    /// <param name="renderBuffers">The render buffers that store frame context.</param>
+    /// <param name="shadowMapAtlas">The output shadow map atlas texture or null if unused.</param>
+    /// <param name="shadowsBuffer">The output shadows buffer or null if unused.</param>
+    static void GetShadowAtlas(const RenderBuffers* renderBuffers, GPUTexture*& shadowMapAtlas, GPUBufferView*& shadowsBuffer);
 
 private:
-
-    void updateShadowMapSize();
     void SetupRenderContext(RenderContext& renderContext, RenderContext& shadowContext);
-    void SetupLight(RenderContext& renderContext, RenderContextBatch& renderContextBatch, RenderDirectionalLightData& light);
-    void SetupLight(RenderContext& renderContext, RenderContextBatch& renderContextBatch, RenderPointLightData& light);
-    void SetupLight(RenderContext& renderContext, RenderContextBatch& renderContextBatch, RenderSpotLightData& light);
+    void SetupLight(RenderContext& renderContext, RenderContextBatch& renderContextBatch, RenderLightData& light, struct ShadowAtlasLight& atlasLight);
+    void SetupLight(RenderContext& renderContext, RenderContextBatch& renderContextBatch, RenderLocalLightData& light, ShadowAtlasLight& atlasLight);
+    void SetupLight(RenderContext& renderContext, RenderContextBatch& renderContextBatch, RenderDirectionalLightData& light, ShadowAtlasLight& atlasLight);
+    void SetupLight(RenderContext& renderContext, RenderContextBatch& renderContextBatch, RenderPointLightData& light, ShadowAtlasLight& atlasLight);
+    void SetupLight(RenderContext& renderContext, RenderContextBatch& renderContextBatch, RenderSpotLightData& light, ShadowAtlasLight& atlasLight);
 
 #if COMPILE_WITH_DEV_ENV
     void OnShaderReloading(Asset* obj)
@@ -169,14 +70,12 @@ private:
 #endif
 
 public:
-
     // [RendererPass]
     String ToString() const override;
     bool Init() override;
     void Dispose() override;
 
 protected:
-
     // [RendererPass]
     bool setupResources() override;
 };

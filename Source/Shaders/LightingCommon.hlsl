@@ -27,26 +27,26 @@ struct LightData
     float MinRoughness;
 
     float3 Position;
-    float CastShadows;
+    uint ShadowsBufferAddress;
 
     float3 Direction;
     float Radius;
 
     float FalloffExponent;
     float InverseSquared;
-    float Dummy0;
     float RadiusInv;
+    float Dummy0;
 };
 
-// Structure that contains information about shadow
-struct ShadowData
+// Structure that contains information about shadow sampling result
+struct ShadowSample
 {
     float SurfaceShadow;
     float TransmissionShadow;
 };
 
 // Structure that contains information about direct lighting calculations result
-struct LightingData
+struct LightSample
 {
     float3 Diffuse;
     float3 Specular;

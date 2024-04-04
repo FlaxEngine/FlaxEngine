@@ -43,55 +43,82 @@ struct RenderLightData
     StaticFlags StaticFlags;
     ShadowsCastingMode ShadowsMode;
     float IndirectLightingIntensity;
-    int16 ShadowDataIndex = -1;
+    uint8 HasShadow : 1;
     uint8 CastVolumetricShadow : 1;
-    uint8 RenderedVolumetricFog : 1;
+    uint8 UseInverseSquaredFalloff : 1;
+    uint8 IsDirectionalLight : 1;
+    uint8 IsPointLight : 1;
+    uint8 IsSpotLight : 1;
+    uint8 IsSkyLight : 1;
 
     float VolumetricScatteringIntensity;
     float ContactShadowsLength;
+    float ScreenSize;
+    uint32 ShadowsBufferAddress;
+
+    RenderLightData()
+    {
+        Platform::MemoryClear(this, sizeof(RenderLightData));
+    }
+
+    POD_COPYABLE(RenderLightData);
+    bool CanRenderShadow(const RenderView& view) const;
 };
 
 struct RenderDirectionalLightData : RenderLightData
 {
-    PartitionMode PartitionMode;
-    int32 CascadeCount;
-
     float Cascade1Spacing;
     float Cascade2Spacing;
     float Cascade3Spacing;
     float Cascade4Spacing;
 
+    PartitionMode PartitionMode;
+    int32 CascadeCount;
+
+    RenderDirectionalLightData()
+    {
+        IsDirectionalLight = 1;
+    }
+
     void SetShaderData(ShaderLightData& data, bool useShadow) const;
 };
 
-struct RenderSpotLightData : RenderLightData
+struct RenderLocalLightData : RenderLightData
 {
+    GPUTexture* IESTexture;
+
     float Radius;
     float SourceRadius;
 
+    bool CanRenderShadow(const RenderView& view) const;
+};
+
+struct RenderSpotLightData : RenderLocalLightData
+{
     Float3 UpVector;
     float OuterConeAngle;
 
     float CosOuterCone;
     float InvCosConeDifference;
     float FallOffExponent;
-    uint8 UseInverseSquaredFalloff : 1;
 
-    GPUTexture* IESTexture;
+    RenderSpotLightData()
+    {
+        IsSpotLight = 1;
+    }
 
     void SetShaderData(ShaderLightData& data, bool useShadow) const;
 };
 
-struct RenderPointLightData : RenderLightData
+struct RenderPointLightData : RenderLocalLightData
 {
-    float Radius;
-    float SourceRadius;
-
     float FallOffExponent;
     float SourceLength;
-    uint8 UseInverseSquaredFalloff : 1;
 
-    GPUTexture* IESTexture;
+    RenderPointLightData()
+    {
+        IsPointLight = 1;
+    }
 
     void SetShaderData(ShaderLightData& data, bool useShadow) const;
 };
@@ -102,6 +129,11 @@ struct RenderSkyLightData : RenderLightData
     float Radius;
 
     CubeTexture* Image;
+
+    RenderSkyLightData()
+    {
+        IsSkyLight = 1;
+    }
 
     void SetShaderData(ShaderLightData& data, bool useShadow) const;
 };

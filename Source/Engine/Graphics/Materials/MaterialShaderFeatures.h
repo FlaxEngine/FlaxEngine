@@ -23,12 +23,11 @@ struct ForwardShadingFeature : MaterialShaderFeature
 {
     enum { MaxLocalLights = 4 };
 
-    enum { SRVs = 3 };
+    enum { SRVs = 4 };
 
     PACK_STRUCT(struct Data
         {
         ShaderLightData DirectionalLight;
-        ShaderLightShadowData DirectionalLightShadow;
         ShaderLightData SkyLight;
         ShaderEnvProbeData EnvironmentProbe;
         ShaderExponentialHeightFogData ExponentialHeightFog;

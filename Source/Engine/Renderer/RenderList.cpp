@@ -39,6 +39,24 @@ namespace
     CriticalSection MemPoolLocker;
 }
 
+bool RenderLightData::CanRenderShadow(const RenderView& view) const
+{
+    bool result = false;
+    switch (ShadowsMode)
+    {
+    case ShadowsCastingMode::StaticOnly:
+        result = view.IsOfflinePass;
+        break;
+    case ShadowsCastingMode::DynamicOnly:
+        result = !view.IsOfflinePass;
+        break;
+    case ShadowsCastingMode::All:
+        result = true;
+        break;
+    }
+    return result && ShadowsStrength > ZeroTolerance;
+}
+
 void RenderDirectionalLightData::SetShaderData(ShaderLightData& data, bool useShadow) const
 {
     data.SpotAngles.X = -2.0f;
@@ -48,12 +66,21 @@ void RenderDirectionalLightData::SetShaderData(ShaderLightData& data, bool useSh
     data.Color = Color;
     data.MinRoughness = Math::Max(MinRoughness, MIN_ROUGHNESS);
     data.Position = Float3::Zero;
-    data.CastShadows = useShadow ? 1.0f : 0.0f;
+    data.ShadowsBufferAddress = useShadow ? ShadowsBufferAddress : 0;
     data.Direction = -Direction;
     data.Radius = 0;
     data.FalloffExponent = 0;
     data.InverseSquared = 0;
     data.RadiusInv = 0;
+}
+
+bool RenderLocalLightData::CanRenderShadow(const RenderView& view) const
+{
+    // Fade shadow on distance
+    const float fadeDistance = Math::Max(ShadowsFadeDistance, 0.1f);
+    const float dstLightToView = Float3::Distance(Position, view.Position);
+    const float fade = 1 - Math::Saturate((dstLightToView - Radius - ShadowsDistance + fadeDistance) / fadeDistance);
+    return fade > ZeroTolerance && RenderLightData::CanRenderShadow(view);
 }
 
 void RenderSpotLightData::SetShaderData(ShaderLightData& data, bool useShadow) const
@@ -65,7 +92,7 @@ void RenderSpotLightData::SetShaderData(ShaderLightData& data, bool useShadow) c
     data.Color = Color;
     data.MinRoughness = Math::Max(MinRoughness, MIN_ROUGHNESS);
     data.Position = Position;
-    data.CastShadows = useShadow ? 1.0f : 0.0f;
+    data.ShadowsBufferAddress = useShadow ? ShadowsBufferAddress : 0;
     data.Direction = Direction;
     data.Radius = Radius;
     data.FalloffExponent = FallOffExponent;
@@ -82,7 +109,7 @@ void RenderPointLightData::SetShaderData(ShaderLightData& data, bool useShadow) 
     data.Color = Color;
     data.MinRoughness = Math::Max(MinRoughness, MIN_ROUGHNESS);
     data.Position = Position;
-    data.CastShadows = useShadow ? 1.0f : 0.0f;
+    data.ShadowsBufferAddress = useShadow ? ShadowsBufferAddress : 0;
     data.Direction = Direction;
     data.Radius = Radius;
     data.FalloffExponent = FallOffExponent;
@@ -99,7 +126,7 @@ void RenderSkyLightData::SetShaderData(ShaderLightData& data, bool useShadow) co
     data.Color = Color;
     data.MinRoughness = MIN_ROUGHNESS;
     data.Position = Position;
-    data.CastShadows = useShadow ? 1.0f : 0.0f;
+    data.ShadowsBufferAddress = useShadow ? ShadowsBufferAddress : 0;
     data.Direction = Float3::Forward;
     data.Radius = Radius;
     data.FalloffExponent = 0;

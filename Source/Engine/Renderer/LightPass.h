@@ -28,14 +28,18 @@ private:
 
 public:
     /// <summary>
+    /// Setups the lights rendering for batched scene drawing.
+    /// </summary>
+    void SetupLights(RenderContext& renderContext, RenderContextBatch& renderContextBatch);
+
+    /// <summary>
     /// Performs the lighting rendering for the input task.
     /// </summary>
     /// <param name="renderContextBatch">The rendering context batch.</param>
     /// <param name="lightBuffer">The light accumulation buffer (input and output).</param>
-    void RenderLight(RenderContextBatch& renderContextBatch, GPUTextureView* lightBuffer);
+    void RenderLights(RenderContextBatch& renderContextBatch, GPUTextureView* lightBuffer);
 
 private:
-
 #if COMPILE_WITH_DEV_ENV
     void OnShaderReloading(Asset* obj)
     {
@@ -51,14 +55,12 @@ private:
 #endif
 
 public:
-
     // [RendererPass]
     String ToString() const override;
     bool Init() override;
     void Dispose() override;
 
 protected:
-
     // [RendererPass]
     bool setupResources() override;
 };

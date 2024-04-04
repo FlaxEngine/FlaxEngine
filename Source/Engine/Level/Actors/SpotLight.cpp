@@ -5,6 +5,7 @@
 #include "Engine/Renderer/RenderList.h"
 #include "Engine/Content/Assets/IESProfile.h"
 #include "Engine/Graphics/RenderTask.h"
+#include "Engine/Graphics/RenderTools.h"
 #include "Engine/Serialization/Serialization.h"
 #include "Engine/Level/Scene/SceneRendering.h"
 
@@ -152,7 +153,6 @@ void SpotLight::Draw(RenderContext& renderContext)
         data.ShadowsSharpness = ShadowsSharpness;
         data.VolumetricScatteringIntensity = VolumetricScatteringIntensity;
         data.CastVolumetricShadow = CastVolumetricShadow;
-        data.RenderedVolumetricFog = 0;
         data.ShadowsMode = ShadowsMode;
         data.Radius = radius;
         data.FallOffExponent = FallOffExponent;
@@ -167,6 +167,7 @@ void SpotLight::Draw(RenderContext& renderContext)
         data.OuterConeAngle = outerConeAngle;
         data.StaticFlags = GetStaticFlags();
         data.ID = GetID();
+        data.ScreenSize = Math::Min(1.0f, Math::Sqrt(RenderTools::ComputeBoundsScreenRadiusSquared(position, (float)_sphere.Radius, renderContext.View)));
         renderContext.List->SpotLights.Add(data);
     }
 }
