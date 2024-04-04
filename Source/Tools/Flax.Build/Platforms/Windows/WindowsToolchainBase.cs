@@ -484,12 +484,6 @@ namespace Flax.Build.Platforms
                 // Remove unreferenced COMDAT
                 commonArgs.Add("/Zc:inline");
 
-                // Favor Small Code, Favor Fast Code
-                if (compileEnvironment.FavorSizeOrSpeed == FavorSizeOrSpeed.FastCode)
-                    commonArgs.Add("/Ot");
-                else if (compileEnvironment.FavorSizeOrSpeed == FavorSizeOrSpeed.SmallCode)
-                    commonArgs.Add("/Os");
-
                 // Run-Time Error Checks
                 if (compileEnvironment.RuntimeChecks && !compileEnvironment.CompileAsWinRT)
                     commonArgs.Add("/RTC1");
@@ -510,10 +504,16 @@ namespace Flax.Build.Platforms
                     commonArgs.Add("/Zo");
                 }
 
+                // Favor Small Code, Favor Fast Code
+                if (compileEnvironment.FavorSizeOrSpeed == FavorSizeOrSpeed.FastCode)
+                    commonArgs.Add("/Ot");
+                else if (compileEnvironment.FavorSizeOrSpeed == FavorSizeOrSpeed.SmallCode)
+                    commonArgs.Add("/Os");
                 if (compileEnvironment.Optimization)
                 {
                     // Enable Most Speed Optimizations
-                    commonArgs.Add("/Ox");
+                    // Commented out due to /Og causing slow build times without /GL in development builds
+                    //commonArgs.Add("/Ox");
 
                     // Generate Intrinsic Functions
                     commonArgs.Add("/Oi");
@@ -523,6 +523,9 @@ namespace Flax.Build.Platforms
 
                     if (compileEnvironment.WholeProgramOptimization)
                     {
+                        // Enable Most Speed Optimizations
+                        commonArgs.Add("/Ox");
+
                         // Whole Program Optimization
                         commonArgs.Add("/GL");
                     }
@@ -908,7 +911,7 @@ namespace Flax.Build.Platforms
                         }
                         else
                         {
-                            args.Add("/DEBUG");
+                            args.Add("/DEBUG"); // Same as /DEBUG:FULL
                         }
 
                         // Use Program Database
