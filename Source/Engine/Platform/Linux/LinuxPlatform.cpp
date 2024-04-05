@@ -2253,6 +2253,9 @@ bool LinuxPlatform::Init()
 		}
 	}
 
+	//Patch in numpad enter to normal enter, just like on windows.
+	KeyCodeMap[104] = KeyboardKeys::Return;
+
     Input::Mouse = Impl::Mouse = New<LinuxMouse>();
     Input::Keyboard = Impl::Keyboard = New<LinuxKeyboard>();
 	LinuxInput::Init();
