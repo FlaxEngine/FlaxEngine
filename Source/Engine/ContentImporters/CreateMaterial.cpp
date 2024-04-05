@@ -166,14 +166,14 @@ CreateAssetResult CreateMaterial::Create(CreateAssetContext& context)
 
         // Diffuse + Mask
         ShaderGraphNode<>* diffuseTextureNode;
-        AddInput(layer, meta, MaterialGraphBoxes::Color, options.Diffuse.Texture, options.Diffuse.Color, Color::White, Float2::Zero, &diffuseTextureNode);
+        AddInput(layer, meta, MaterialGraphBoxes::Color, options.Diffuse.Texture, options.Diffuse.Color, Color::Black, Float2::Zero, &diffuseTextureNode);
         if (diffuseTextureNode && options.Diffuse.HasAlphaMask)
         {
             CONNECT(layer->Root->Boxes[static_cast<int32>(MaterialGraphBoxes::Mask)], diffuseTextureNode->Boxes[5]);
         }
 
         // Emissive
-        AddInput(layer, meta, MaterialGraphBoxes::Emissive, options.Emissive.Texture, options.Emissive.Color, Color::Transparent, Float2(0, 200));
+        AddInput(layer, meta, MaterialGraphBoxes::Emissive, options.Emissive.Texture, options.Emissive.Color, Color::Black, Float2(0, 200));
 
         // Opacity
         AddInput(layer, meta, MaterialGraphBoxes::Opacity, options.Opacity.Texture, options.Opacity.Value, 1.0f, Float2(0, 400));
