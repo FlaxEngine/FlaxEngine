@@ -49,12 +49,14 @@ namespace FlaxEditor.SceneGraph.Actors
             {
                 get
                 {
-                    var actor = (Spline)_node.Actor;
-                    return actor.GetSplineTransform(Index);
+                    var actor = (Spline)_node?.Actor;
+                    return actor?.GetSplineTransform(Index) ?? Transform.Identity;
                 }
                 set
                 {
-                    var actor = (Spline)_node.Actor;
+                    var actor = (Spline)_node?.Actor;
+                    if (actor == null)
+                        return;
                     actor.SetSplineTransform(Index, value);
                     OnSplineEdited(actor);
                 }
