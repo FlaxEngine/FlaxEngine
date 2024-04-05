@@ -320,6 +320,10 @@ namespace FlaxEditor.Options
         [EditorDisplay("Viewport"), EditorOrder(1750)]
         public InputBinding ViewpointBottom = new InputBinding(KeyboardKeys.Numpad2);
 
+        [DefaultValue(typeof(InputBinding), "NumpadDecimal")]
+        [EditorDisplay("Viewport"), EditorOrder(1760)]
+        public InputBinding ToggleOrthographic = new InputBinding(KeyboardKeys.NumpadDecimal);
+
         #endregion
 
         #region Interface
