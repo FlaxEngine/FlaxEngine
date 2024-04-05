@@ -587,6 +587,26 @@ void RenderTools::CalculateTangentFrame(FloatR10G10B10A2& resultNormal, FloatR10
     resultTangent = Float1010102(tangent * 0.5f + 0.5f, sign);
 }
 
+void RenderTools::ComputeSphereModelDrawMatrix(const RenderView& view, const Float3& position, float radius, Matrix& resultWorld, bool& resultIsViewInside)
+{
+    // Construct world matrix
+    constexpr float sphereModelScale = 0.0202f; // Manually tweaked for 'Engine/Models/Sphere'
+    const float scaling = radius * sphereModelScale;
+    resultWorld = Matrix::Identity;
+    resultWorld.M11 = scaling;
+    resultWorld.M22 = scaling;
+    resultWorld.M33 = scaling;
+    resultWorld.M41 = position.X;
+    resultWorld.M42 = position.Y;
+    resultWorld.M43 = position.Z;
+
+    // Check if view is inside the sphere
+    float viewToCenter = Float3::Distance(view.Position, position);
+    //if (radius + viewToCenter > view.Far)
+    //    radius = view.Far - viewToCenter; // Clamp radius
+    resultIsViewInside = viewToCenter - radius < 5.0f; // Manually tweaked bias
+}
+
 int32 MipLevelsCount(int32 width, bool useMipLevels)
 {
     if (!useMipLevels)
@@ -642,22 +662,6 @@ int32 MipLevelsCount(int32 width, int32 height, int32 depth, bool useMipLevels)
     }
 
     return result;
-}
-
-float ViewToCenterLessRadius(const RenderView& view, const Float3& center, float radius)
-{
-    // Calculate distance from view to sphere center
-    float viewToCenter = Float3::Distance(view.Position, center);
-
-    // Check if need to fix the radius
-    //if (radius + viewToCenter > view.Far)
-    {
-        // Clamp radius
-        //radius = view.Far - viewToCenter;
-    }
-
-    // Calculate result
-    return viewToCenter - radius;
 }
 
 void MeshBase::SetMaterialSlotIndex(int32 value)

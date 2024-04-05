@@ -127,6 +127,8 @@ public:
 
     static void CalculateTangentFrame(FloatR10G10B10A2& resultNormal, FloatR10G10B10A2& resultTangent, const Float3& normal);
     static void CalculateTangentFrame(FloatR10G10B10A2& resultNormal, FloatR10G10B10A2& resultTangent, const Float3& normal, const Float3& tangent);
+
+    static void ComputeSphereModelDrawMatrix(const RenderView& view, const Float3& position, float radius, Matrix& resultWorld, bool& resultIsViewInside);
 };
 
 // Calculate mip levels count for a texture 1D
@@ -149,12 +151,3 @@ extern int32 MipLevelsCount(int32 width, int32 height, bool useMipLevels = true)
 // @param useMipLevels True if use mip levels, otherwise false (use only 1 mip)
 // @returns Mip levels count
 extern int32 MipLevelsCount(int32 width, int32 height, int32 depth, bool useMipLevels = true);
-
-/// <summary>
-/// Calculate distance from view center to the sphere center less sphere radius, clamped to fit view far plane
-/// </summary>
-/// <param name="view">Render View</param>
-/// <param name="center">Sphere center</param>
-/// <param name="radius">Sphere radius</param>
-/// <returns>Distance from view center to the sphere center less sphere radius</returns>
-extern float ViewToCenterLessRadius(const RenderView& view, const Float3& center, float radius);

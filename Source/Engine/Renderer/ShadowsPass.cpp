@@ -158,7 +158,7 @@ bool ShadowsPass::Init()
 
     // Load assets
     _shader = Content::LoadAsyncInternal<Shader>(TEXT("Shaders/Shadows"));
-    _sphereModel = Content::LoadAsyncInternal<Model>(TEXT("Engine/Models/SphereLowPoly"));
+    _sphereModel = Content::LoadAsyncInternal<Model>(TEXT("Engine/Models/Sphere"));
     if (_shader == nullptr || _sphereModel == nullptr)
         return true;
 
@@ -891,7 +891,6 @@ void ShadowsPass::RenderShadowMask(RenderContextBatch& renderContextBatch, Rende
     RenderContext& renderContext = renderContextBatch.GetMainContext();
     const ShadowsCustomBuffer& shadows = *renderContext.Buffers->FindCustomBuffer<ShadowsCustomBuffer>(TEXT("Shadows"));
     ASSERT(shadows.LastFrameUsed == Engine::FrameCount);
-    const float sphereModelScale = 3.0f;
     auto& view = renderContext.View;
     auto shader = _shader->GetShader();
     const bool isLocalLight = light.IsPointLight || light.IsSpotLight;
@@ -922,14 +921,12 @@ void ShadowsPass::RenderShadowMask(RenderContextBatch& renderContextBatch, Rende
     if (isLocalLight)
     {
         // Calculate world view projection matrix for the light sphere
-        Matrix world, wvp, matrix;
-        Matrix::Scaling(((RenderLocalLightData&)light).Radius * sphereModelScale, wvp);
-        Matrix::Translation(light.Position, matrix);
-        Matrix::Multiply(wvp, matrix, world);
+        Matrix world, wvp;
+        bool isInside;
+        RenderTools::ComputeSphereModelDrawMatrix(renderContext.View, light.Position, ((RenderLocalLightData&)light).Radius, world, isInside);
         Matrix::Multiply(world, view.ViewProjection(), wvp);
         Matrix::Transpose(wvp, sperLight.WVP);
     }
-    // TODO: reimplement cascades blending for directional lights (but with dithering)
 
     // Render shadow in screen space
     GPUConstantBuffer* cb0 = shader->GetCB(0);
@@ -942,12 +939,12 @@ void ShadowsPass::RenderShadowMask(RenderContextBatch& renderContextBatch, Rende
     if (light.IsPointLight)
     {
         context->SetState(_psShadowPoint.Get(permutationIndex));
-        _sphereModel->Render(context);
+        _sphereModel->LODs.Get()[0].Meshes.Get()[0].Render(context);
     }
     else if (light.IsSpotLight)
     {
         context->SetState(_psShadowSpot.Get(permutationIndex));
-        _sphereModel->Render(context);
+        _sphereModel->LODs.Get()[0].Meshes.Get()[0].Render(context);
     }
     else //if (light.IsDirectionalLight)
     {

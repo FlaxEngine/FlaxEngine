@@ -40,7 +40,7 @@ bool LightPass::Init()
 
     // Load assets
     _shader = Content::LoadAsyncInternal<Shader>(TEXT("Shaders/Lights"));
-    _sphereModel = Content::LoadAsyncInternal<Model>(TEXT("Engine/Models/SphereLowPoly"));
+    _sphereModel = Content::LoadAsyncInternal<Model>(TEXT("Engine/Models/Sphere"));
     if (_shader == nullptr || _sphereModel == nullptr)
     {
         return true;
@@ -96,7 +96,7 @@ bool LightPass::setupResources()
         psDesc.BlendMode = BlendingMode::Add;
         psDesc.BlendMode.RenderTargetWriteMask = BlendingMode::ColorWrite::RGB;
         psDesc.VS = shader->GetVS("VS_Model");
-        psDesc.CullMode = CullMode::Inverted;
+        psDesc.CullMode = CullMode::TwoSided;
         if (_psLightPointInverted.Create(psDesc, shader, "PS_Point"))
             return true;
         psDesc.CullMode = CullMode::Normal;
@@ -110,7 +110,7 @@ bool LightPass::setupResources()
         psDesc.BlendMode = BlendingMode::Add;
         psDesc.BlendMode.RenderTargetWriteMask = BlendingMode::ColorWrite::RGB;
         psDesc.VS = shader->GetVS("VS_Model");
-        psDesc.CullMode = CullMode::Inverted;
+        psDesc.CullMode = CullMode::TwoSided;
         if (_psLightSpotInverted.Create(psDesc, shader, "PS_Spot"))
             return true;
         psDesc.CullMode = CullMode::Normal;
@@ -128,7 +128,7 @@ bool LightPass::setupResources()
         psDesc.PS = shader->GetPS("PS_Sky");
         if (_psLightSkyNormal->Init(psDesc))
             return true;
-        psDesc.CullMode = CullMode::Inverted;
+        psDesc.CullMode = CullMode::TwoSided;
         if (_psLightSkyInverted->Init(psDesc))
             return true;
     }
@@ -183,7 +183,6 @@ void LightPass::SetupLights(RenderContext& renderContext, RenderContextBatch& re
 
 void LightPass::RenderLights(RenderContextBatch& renderContextBatch, GPUTextureView* lightBuffer)
 {
-    const float sphereModelScale = 3.0f;
     if (checkIfSkipPass())
         return;
     PROFILE_GPU_CPU("Lights");
@@ -230,6 +229,7 @@ void LightPass::RenderLights(RenderContextBatch& renderContextBatch, GPUTextureV
     // Temporary data
     PerLight perLight;
     PerFrame perFrame;
+    auto& sphereMesh = _sphereModel->LODs.Get()[0].Meshes.Get()[0];
 
     // Bind output
     GPUTexture* depthBuffer = renderContext.Buffers->DepthBuffer;
@@ -266,19 +266,12 @@ void LightPass::RenderLights(RenderContextBatch& renderContextBatch, GPUTextureV
     {
         PROFILE_GPU_CPU_NAMED("Point Light");
         auto& light = mainCache->PointLights[lightIndex];
-        float lightRadius = light.Radius;
-        Float3 lightPosition = light.Position;
         bool useIES = light.IESTexture != nullptr;
 
-        // Get distance from view center to light center less radius (check if view is inside a sphere)
-        float distance = ViewToCenterLessRadius(view, lightPosition, lightRadius * sphereModelScale);
-        bool isViewInside = distance < 0;
-
         // Calculate world view projection matrix for the light sphere
-        Matrix world, wvp, matrix;
-        Matrix::Scaling(lightRadius * sphereModelScale, wvp);
-        Matrix::Translation(lightPosition, matrix);
-        Matrix::Multiply(wvp, matrix, world);
+        Matrix world, wvp;
+        bool isViewInside;
+        RenderTools::ComputeSphereModelDrawMatrix(renderContext.View, light.Position, light.Radius, world, isViewInside);
         Matrix::Multiply(world, view.ViewProjection(), wvp);
 
         // Fullscreen shadow mask rendering
@@ -306,7 +299,7 @@ void LightPass::RenderLights(RenderContextBatch& renderContextBatch, GPUTextureV
         context->BindCB(1, cb1);
         int32 permutationIndex = (disableSpecular ? 1 : 0) + (useIES ? 2 : 0);
         context->SetState((isViewInside ? _psLightPointInverted : _psLightPointNormal).Get(permutationIndex));
-        _sphereModel->Render(context);
+        sphereMesh.Render(context);
     }
 
     context->UnBindCB(0);
@@ -316,19 +309,12 @@ void LightPass::RenderLights(RenderContextBatch& renderContextBatch, GPUTextureV
     {
         PROFILE_GPU_CPU_NAMED("Spot Light");
         auto& light = mainCache->SpotLights[lightIndex];
-        float lightRadius = light.Radius;
-        Float3 lightPosition = light.Position;
         bool useIES = light.IESTexture != nullptr;
 
-        // Get distance from view center to light center less radius (check if view is inside a sphere)
-        float distance = ViewToCenterLessRadius(view, lightPosition, lightRadius * sphereModelScale);
-        bool isViewInside = distance < 0;
-
         // Calculate world view projection matrix for the light sphere
-        Matrix world, wvp, matrix;
-        Matrix::Scaling(lightRadius * sphereModelScale, wvp);
-        Matrix::Translation(lightPosition, matrix);
-        Matrix::Multiply(wvp, matrix, world);
+        Matrix world, wvp;
+        bool isViewInside;
+        RenderTools::ComputeSphereModelDrawMatrix(renderContext.View, light.Position, light.Radius, world, isViewInside);
         Matrix::Multiply(world, view.ViewProjection(), wvp);
 
         // Fullscreen shadow mask rendering
@@ -356,7 +342,7 @@ void LightPass::RenderLights(RenderContextBatch& renderContextBatch, GPUTextureV
         context->BindCB(1, cb1);
         int32 permutationIndex = (disableSpecular ? 1 : 0) + (useIES ? 2 : 0);
         context->SetState((isViewInside ? _psLightSpotInverted : _psLightSpotNormal).Get(permutationIndex));
-        _sphereModel->Render(context);
+        sphereMesh.Render(context);
     }
 
     context->UnBindCB(0);
@@ -395,21 +381,12 @@ void LightPass::RenderLights(RenderContextBatch& renderContextBatch, GPUTextureV
     for (int32 lightIndex = 0; lightIndex < mainCache->SkyLights.Count(); lightIndex++)
     {
         PROFILE_GPU_CPU_NAMED("Sky Light");
-
-        // Cache data
         auto& light = mainCache->SkyLights[lightIndex];
-        float lightRadius = light.Radius;
-        Float3 lightPosition = light.Position;
-
-        // Get distance from view center to light center less radius (check if view is inside a sphere)
-        float distance = ViewToCenterLessRadius(view, lightPosition, lightRadius * sphereModelScale);
-        bool isViewInside = distance < 0;
 
         // Calculate world view projection matrix for the light sphere
-        Matrix world, wvp, matrix;
-        Matrix::Scaling(lightRadius * sphereModelScale, wvp);
-        Matrix::Translation(lightPosition, matrix);
-        Matrix::Multiply(wvp, matrix, world);
+        Matrix world, wvp;
+        bool isViewInside;
+        RenderTools::ComputeSphereModelDrawMatrix(renderContext.View, light.Position, light.Radius, world, isViewInside);
         Matrix::Multiply(world, view.ViewProjection(), wvp);
 
         // Pack light properties buffer
@@ -424,7 +401,7 @@ void LightPass::RenderLights(RenderContextBatch& renderContextBatch, GPUTextureV
         context->BindCB(0, cb0);
         context->BindCB(1, cb1);
         context->SetState(isViewInside ? _psLightSkyInverted : _psLightSkyNormal);
-        _sphereModel->Render(context);
+        sphereMesh.Render(context);
     }
 
     RenderTargetPool::Release(shadowMask);

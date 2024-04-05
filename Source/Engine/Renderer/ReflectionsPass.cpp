@@ -267,12 +267,10 @@ bool ReflectionsPass::Init()
 
     // Load assets
     _shader = Content::LoadAsyncInternal<Shader>(TEXT("Shaders/Reflections"));
-    _sphereModel = Content::LoadAsyncInternal<Model>(TEXT("Engine/Models/SphereLowPoly"));
+    _sphereModel = Content::LoadAsyncInternal<Model>(TEXT("Engine/Models/Sphere"));
     _preIntegratedGF = Content::LoadAsyncInternal<Texture>(PRE_INTEGRATED_GF_ASSET_NAME);
     if (_shader == nullptr || _sphereModel == nullptr || _preIntegratedGF == nullptr)
-    {
         return true;
-    }
 #if COMPILE_WITH_DEV_ENV
     _shader.Get()->OnReloading.Bind<ReflectionsPass, &ReflectionsPass::OnShaderReloading>(this);
 #endif
@@ -305,7 +303,7 @@ bool ReflectionsPass::setupResources()
         psDesc.PS = shader->GetPS("PS_EnvProbe");
         if (_psProbeNormal->Init(psDesc))
             return true;
-        psDesc.CullMode = CullMode::Inverted;
+        psDesc.CullMode = CullMode::TwoSided;
         if (_psProbeInverted->Init(psDesc))
             return true;
     }
@@ -399,21 +397,15 @@ void ReflectionsPass::Render(RenderContext& renderContext, GPUTextureView* light
         Sorting::QuickSort(renderContext.List->EnvironmentProbes.Get(), renderContext.List->EnvironmentProbes.Count(), &SortProbes);
 
         // Render all env probes
+        auto& sphereMesh = _sphereModel->LODs.Get()[0].Meshes.Get()[0];
         for (int32 i = 0; i < probesCount; i++)
         {
-            // Cache data
             const RenderEnvironmentProbeData& probe = renderContext.List->EnvironmentProbes.Get()[i];
 
-            // Get distance from view center to light center less radius (check if view is inside a sphere)
-            const float sphereModelScale = 2.0f;
-            float distance = ViewToCenterLessRadius(view, probe.Position, probe.Radius);
-            bool isViewInside = distance < 0;
-
             // Calculate world view projection matrix for the light sphere
-            Matrix world, wvp, matrix;
-            Matrix::Scaling(probe.Radius * sphereModelScale, wvp);
-            Matrix::Translation(probe.Position, matrix);
-            Matrix::Multiply(wvp, matrix, world);
+            Matrix world, wvp;
+            bool isViewInside;
+            RenderTools::ComputeSphereModelDrawMatrix(renderContext.View, probe.Position, probe.Radius, world, isViewInside);
             Matrix::Multiply(world, view.ViewProjection(), wvp);
 
             // Pack probe properties buffer
@@ -424,9 +416,8 @@ void ReflectionsPass::Render(RenderContext& renderContext, GPUTextureView* light
             context->UpdateCB(cb, &data);
             context->BindCB(0, cb);
             context->BindSR(4, probe.Texture);
-
             context->SetState(isViewInside ? _psProbeInverted : _psProbeNormal);
-            _sphereModel->Render(context);
+            sphereMesh.Render(context);
         }
 
         context->UnBindSR(4);
