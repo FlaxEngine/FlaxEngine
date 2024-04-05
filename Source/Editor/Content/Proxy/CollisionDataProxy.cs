@@ -135,7 +135,7 @@ namespace FlaxEditor.Content
                 }
                 Task.Run(() =>
                 {
-                    Editor.CookMeshCollision(assetItem.Path, CollisionDataType.TriangleMesh, model);
+                    Editor.CookMeshCollision(assetItem.Path, CollisionDataType.ConvexMesh, model);
                     if (created != null)
                         FlaxEngine.Scripting.InvokeOnUpdate(() => created(collisionData));
                 });

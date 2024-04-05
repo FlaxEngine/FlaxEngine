@@ -196,7 +196,7 @@ public:
         String CollisionMeshesPrefix = TEXT("");
         // The type of collision that should be generated if the mesh has a collision prefix specified.
         API_FIELD(Attributes = "EditorOrder(105), EditorDisplay(\"Geometry\"), VisibleIf(nameof(ShowGeometry))")
-        CollisionDataType CollisionType = CollisionDataType::TriangleMesh;
+        CollisionDataType CollisionType = CollisionDataType::ConvexMesh;
 
     public: // Transform
 
