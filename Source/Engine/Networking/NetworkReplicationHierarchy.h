@@ -20,11 +20,11 @@ API_STRUCT(NoDefault, Namespace = "FlaxEngine.Networking") struct FLAXENGINE_API
 
     // The object to replicate.
     API_FIELD() ScriptingObjectReference<ScriptingObject> Object;
-    // The target amount of the replication updates per second (frequency of the replication). Constrained by NetworkManager::NetworkFPS. Use 0 for 'always relevant' object and less than 0 (eg. -1) for 'never relevant' objects that would only get synched on client join once.
+    // The target amount of the replication updates per second (frequency of the replication). Constrained by NetworkManager::NetworkFPS. Use 0 for 'always relevant' object and less than 0 (eg. -1) for 'never relevant' objects that would only get synced on client join once (or upon DirtyObject).
     API_FIELD() float ReplicationFPS = 60;
     // The minimum distance from the player to the object at which it can process replication. For example, players further away won't receive object data. Use 0 if unused.
     API_FIELD() float CullDistance = 15000;
-    // Runtime value for update frames left for the next replication of this object. Matches NetworkManager::NetworkFPS calculated from ReplicationFPS.
+    // Runtime value for update frames left for the next replication of this object. Matches NetworkManager::NetworkFPS calculated from ReplicationFPS. Set to 1 if ReplicationFPS less than 0 to indicate dirty object.
     API_FIELD(Attributes="HideInEditor") uint16 ReplicationUpdatesLeft = 0;
 
     FORCE_INLINE NetworkReplicationHierarchyObject(const ScriptingObjectReference<ScriptingObject>& obj)
@@ -257,6 +257,7 @@ public:
     void AddObject(NetworkReplicationHierarchyObject obj) override;
     bool RemoveObject(ScriptingObject* obj) override;
     bool GetObject(ScriptingObject* obj, NetworkReplicationHierarchyObject& result) override;
+    bool DirtyObject(ScriptingObject* obj) override;
     void Update(NetworkReplicationHierarchyUpdateResult* result) override;
 };
 

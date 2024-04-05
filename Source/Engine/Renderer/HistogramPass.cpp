@@ -29,7 +29,6 @@ GPUBuffer* HistogramPass::Render(RenderContext& renderContext, GPUTexture* color
     auto context = device->GetMainContext();
     if (checkIfSkipPass() || !_isSupported)
         return nullptr;
-
     PROFILE_GPU_CPU("Histogram");
 
     // Setup constants

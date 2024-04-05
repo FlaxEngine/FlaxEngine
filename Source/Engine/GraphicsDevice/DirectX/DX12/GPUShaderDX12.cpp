@@ -85,6 +85,7 @@ GPUShaderProgram* GPUShaderDX12::CreateGPUShaderProgram(ShaderStage type, const 
         shader = New<GPUShaderProgramVSDX12>(initializer, header, cacheBytes, cacheSize, inputLayout, inputLayoutSize);
         break;
     }
+#if GPU_ALLOW_TESSELLATION_SHADERS
     case ShaderStage::Hull:
     {
         int32 controlPointsCount;
@@ -97,11 +98,21 @@ GPUShaderProgram* GPUShaderDX12::CreateGPUShaderProgram(ShaderStage type, const 
         shader = New<GPUShaderProgramDSDX12>(initializer, header, cacheBytes, cacheSize);
         break;
     }
+#else
+    case ShaderStage::Hull:
+    {
+        int32 controlPointsCount;
+        stream.ReadInt32(&controlPointsCount);
+        break;
+    }
+#endif
+#if GPU_ALLOW_GEOMETRY_SHADERS
     case ShaderStage::Geometry:
     {
         shader = New<GPUShaderProgramGSDX12>(initializer, header, cacheBytes, cacheSize);
         break;
     }
+#endif
     case ShaderStage::Pixel:
     {
         shader = New<GPUShaderProgramPSDX12>(initializer, header, cacheBytes, cacheSize);

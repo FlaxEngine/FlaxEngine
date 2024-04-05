@@ -49,7 +49,8 @@ GPUContextDX11::GPUContextDX11(GPUDeviceDX11* device, ID3D11DeviceContext* conte
     , _omDirtyFlag(false)
     , _rtCount(0)
     , _rtDepth(nullptr)
-    , _srDirtyFlag(false)
+    , _srMaskDirtyGraphics(0)
+    , _srMaskDirtyCompute(0)
     , _uaDirtyFlag(false)
     , _cbDirtyFlag(false)
     , _currentState(nullptr)
@@ -80,8 +81,9 @@ void GPUContextDX11::FrameBegin()
     // Setup
     _omDirtyFlag = false;
     _uaDirtyFlag = false;
-    _srDirtyFlag = false;
     _cbDirtyFlag = false;
+    _srMaskDirtyGraphics = 0;
+    _srMaskDirtyCompute = 0;
     _rtCount = 0;
     _currentState = nullptr;
     _rtDepth = nullptr;
@@ -97,9 +99,13 @@ void GPUContextDX11::FrameBegin()
     CurrentRasterizerState = nullptr;
     CurrentDepthStencilState = nullptr;
     CurrentVS = nullptr;
+#if GPU_ALLOW_TESSELLATION_SHADERS
     CurrentHS = nullptr;
     CurrentDS = nullptr;
+#endif
+#if GPU_ALLOW_GEOMETRY_SHADERS
     CurrentGS = nullptr;
+#endif
     CurrentPS = nullptr;
     CurrentCS = nullptr;
     CurrentPrimitiveTopology = D3D11_PRIMITIVE_TOPOLOGY_UNDEFINED;
@@ -117,7 +123,9 @@ void GPUContextDX11::FrameBegin()
         _device->_samplerShadowLinear
     };
     _context->VSSetSamplers(0, ARRAY_COUNT(samplers), samplers);
+#if GPU_ALLOW_TESSELLATION_SHADERS
     _context->DSSetSamplers(0, ARRAY_COUNT(samplers), samplers);
+#endif
     _context->PSSetSamplers(0, ARRAY_COUNT(samplers), samplers);
     _context->CSSetSamplers(0, ARRAY_COUNT(samplers), samplers);
 }
@@ -282,13 +290,18 @@ void GPUContextDX11::SetStencilRef(uint32 value)
 
 void GPUContextDX11::ResetSR()
 {
-    _srDirtyFlag = false;
+    _srMaskDirtyGraphics = MAX_uint32;
+    _srMaskDirtyCompute = MAX_uint32;
     Platform::MemoryClear(_srHandles, sizeof(_srHandles));
 
     _context->VSSetShaderResources(0, ARRAY_COUNT(_srHandles), _srHandles);
+#if GPU_ALLOW_TESSELLATION_SHADERS
     _context->HSSetShaderResources(0, ARRAY_COUNT(_srHandles), _srHandles);
     _context->DSSetShaderResources(0, ARRAY_COUNT(_srHandles), _srHandles);
+#endif
+#if GPU_ALLOW_GEOMETRY_SHADERS
     _context->GSSetShaderResources(0, ARRAY_COUNT(_srHandles), _srHandles);
+#endif
     _context->PSSetShaderResources(0, ARRAY_COUNT(_srHandles), _srHandles);
     _context->CSSetShaderResources(0, ARRAY_COUNT(_srHandles), _srHandles);
 }
@@ -308,9 +321,13 @@ void GPUContextDX11::ResetCB()
     Platform::MemoryClear(_cbHandles, sizeof(_cbHandles));
 
     _context->VSSetConstantBuffers(0, ARRAY_COUNT(_cbHandles), _cbHandles);
+#if GPU_ALLOW_TESSELLATION_SHADERS
     _context->HSSetConstantBuffers(0, ARRAY_COUNT(_cbHandles), _cbHandles);
     _context->DSSetConstantBuffers(0, ARRAY_COUNT(_cbHandles), _cbHandles);
+#endif
+#if GPU_ALLOW_GEOMETRY_SHADERS
     _context->GSSetConstantBuffers(0, ARRAY_COUNT(_cbHandles), _cbHandles);
+#endif
     _context->PSSetConstantBuffers(0, ARRAY_COUNT(_cbHandles), _cbHandles);
     _context->CSSetConstantBuffers(0, ARRAY_COUNT(_cbHandles), _cbHandles);
 }
@@ -339,7 +356,8 @@ void GPUContextDX11::BindSR(int32 slot, GPUResourceView* view)
     auto handle = view ? ((IShaderResourceDX11*)view->GetNativePtr())->SRV() : nullptr;
     if (_srHandles[slot] != handle)
     {
-        _srDirtyFlag = true;
+        _srMaskDirtyGraphics |= 1 << slot;
+        _srMaskDirtyCompute |= 1 << slot;
         _srHandles[slot] = handle;
         if (view)
             *view->LastRenderTime = _lastRenderTime;
@@ -397,7 +415,9 @@ void GPUContextDX11::BindSampler(int32 slot, GPUSampler* sampler)
 {
     const auto samplerDX11 = sampler ? static_cast<GPUSamplerDX11*>(sampler)->SamplerState : nullptr;
     _context->VSSetSamplers(slot, 1, &samplerDX11);
+#if GPU_ALLOW_TESSELLATION_SHADERS
     _context->DSSetSamplers(slot, 1, &samplerDX11);
+#endif
     _context->PSSetSamplers(slot, 1, &samplerDX11);
     _context->CSSetSamplers(slot, 1, &samplerDX11);
 }
@@ -536,9 +556,13 @@ void GPUContextDX11::SetState(GPUPipelineState* state)
         ID3D11RasterizerState* rasterizerState = nullptr;
         ID3D11DepthStencilState* depthStencilState = nullptr;
         GPUShaderProgramVSDX11* vs = nullptr;
+#if GPU_ALLOW_TESSELLATION_SHADERS
         GPUShaderProgramHSDX11* hs = nullptr;
         GPUShaderProgramDSDX11* ds = nullptr;
+#endif
+#if GPU_ALLOW_GEOMETRY_SHADERS
         GPUShaderProgramGSDX11* gs = nullptr;
+#endif
         GPUShaderProgramPSDX11* ps = nullptr;
         D3D11_PRIMITIVE_TOPOLOGY primitiveTopology = D3D11_PRIMITIVE_TOPOLOGY_UNDEFINED;
 
@@ -552,9 +576,13 @@ void GPUContextDX11::SetState(GPUPipelineState* state)
 
             ASSERT(_currentState->VS != nullptr);
             vs = _currentState->VS;
+#if GPU_ALLOW_TESSELLATION_SHADERS
             hs = _currentState->HS;
             ds = _currentState->DS;
+#endif
+#if GPU_ALLOW_GEOMETRY_SHADERS
             gs = _currentState->GS;
+#endif
             ps = _currentState->PS;
 
             primitiveTopology = _currentState->PrimitiveTopology;
@@ -588,6 +616,7 @@ void GPUContextDX11::SetState(GPUPipelineState* state)
             _context->VSSetShader(vs ? vs->GetBufferHandleDX11() : nullptr, nullptr, 0);
             _context->IASetInputLayout(vs ? vs->GetInputLayoutDX11() : nullptr);
         }
+#if GPU_ALLOW_TESSELLATION_SHADERS
         if (CurrentHS != hs)
         {
 #if DX11_CLEAR_SR_ON_STAGE_DISABLE
@@ -610,6 +639,8 @@ void GPUContextDX11::SetState(GPUPipelineState* state)
             CurrentDS = ds;
             _context->DSSetShader(ds ? ds->GetBufferHandleDX11() : nullptr, nullptr, 0);
         }
+#endif
+#if GPU_ALLOW_GEOMETRY_SHADERS
         if (CurrentGS != gs)
         {
 #if DX11_CLEAR_SR_ON_STAGE_DISABLE
@@ -621,6 +652,7 @@ void GPUContextDX11::SetState(GPUPipelineState* state)
             CurrentGS = gs;
             _context->GSSetShader(gs ? gs->GetBufferHandleDX11() : nullptr, nullptr, 0);
         }
+#endif
         if (CurrentPS != ps)
         {
 #if DX11_CLEAR_SR_ON_STAGE_DISABLE
@@ -667,7 +699,9 @@ void GPUContextDX11::ClearState()
         _device->_samplerShadowPCF
     };
     _context->VSSetSamplers(0, ARRAY_COUNT(samplers), samplers);
+#if GPU_ALLOW_TESSELLATION_SHADERS
     _context->DSSetSamplers(0, ARRAY_COUNT(samplers), samplers);
+#endif
     _context->PSSetSamplers(0, ARRAY_COUNT(samplers), samplers);
     _context->CSSetSamplers(0, ARRAY_COUNT(samplers), samplers);
 #endif
@@ -802,25 +836,32 @@ void GPUContextDX11::CopySubresource(GPUResource* dstResource, uint32 dstSubreso
 
 void GPUContextDX11::flushSRVs()
 {
-    if (_srDirtyFlag)
+#define FLUSH_STAGE(STAGE) if (Current##STAGE) _context->STAGE##SetShaderResources(0, ARRAY_COUNT(_srHandles), _srHandles)
+    if (CurrentCS)
     {
-        _srDirtyFlag = false;
-
-        // Flush with the driver
-        // TODO: don't bind SRV to all stages and all slots (use mask for bind diff?)
-#define FLUSH_STAGE(STAGE) \
-		if (Current##STAGE) \
-		{ \
-			_context->STAGE##SetShaderResources(0, ARRAY_COUNT(_srHandles), _srHandles); \
-		}
-        FLUSH_STAGE(VS);
-        FLUSH_STAGE(HS);
-        FLUSH_STAGE(DS);
-        FLUSH_STAGE(GS);
-        FLUSH_STAGE(PS);
-        FLUSH_STAGE(CS);
-#undef FLUSH_STAGE
+        if (_srMaskDirtyCompute)
+        {
+            _srMaskDirtyCompute = 0;
+            FLUSH_STAGE(CS);
+        }
     }
+    else
+    {
+        if (_srMaskDirtyGraphics)
+        {
+            _srMaskDirtyGraphics = 0;
+            FLUSH_STAGE(VS);
+    #if GPU_ALLOW_TESSELLATION_SHADERS
+            FLUSH_STAGE(HS);
+            FLUSH_STAGE(DS);
+    #endif
+    #if GPU_ALLOW_GEOMETRY_SHADERS
+            FLUSH_STAGE(GS);
+    #endif
+            FLUSH_STAGE(PS);
+        }
+    }
+#undef FLUSH_STAGE
 }
 
 void GPUContextDX11::flushUAVs()
@@ -846,15 +887,15 @@ void GPUContextDX11::flushCBs()
 
         // Flush with the driver
         // TODO: don't bind CBV to all stages and all slots (use mask for bind diff? eg. cache mask from last flush and check if there is a diff + include mask from diff slots?)
-#define FLUSH_STAGE(STAGE) \
-		if (Current##STAGE) \
-		{ \
-			_context->STAGE##SetConstantBuffers(0, ARRAY_COUNT(_cbHandles), _cbHandles); \
-		}
+#define FLUSH_STAGE(STAGE) if (Current##STAGE) _context->STAGE##SetConstantBuffers(0, ARRAY_COUNT(_cbHandles), _cbHandles)
         FLUSH_STAGE(VS);
+#if GPU_ALLOW_TESSELLATION_SHADERS
         FLUSH_STAGE(HS);
         FLUSH_STAGE(DS);
+#endif
+#if GPU_ALLOW_GEOMETRY_SHADERS
         FLUSH_STAGE(GS);
+#endif
         FLUSH_STAGE(PS);
         FLUSH_STAGE(CS);
 #undef FLUSH_STAGE

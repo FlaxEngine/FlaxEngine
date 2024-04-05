@@ -129,6 +129,14 @@ bool GPUShader::Create(MemoryReadStream& stream)
             GPUShaderProgram* shader = CreateGPUShaderProgram(type, initializer, cache, cacheSize, stream);
             if (shader == nullptr)
             {
+#if !GPU_ALLOW_TESSELLATION_SHADERS
+            if (type == ShaderStage::Hull || type == ShaderStage::Domain)
+                continue;
+#endif
+#if !GPU_ALLOW_GEOMETRY_SHADERS
+            if (type == ShaderStage::Geometry)
+                continue;
+#endif
                 LOG(Error, "Failed to create {} Shader program '{}' ({}).", ::ToString(type), String(initializer.Name), name);
                 return true;
             }

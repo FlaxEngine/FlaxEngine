@@ -35,4 +35,7 @@
 
 #define USE_MONO_AOT_MODE MONO_AOT_MODE_NONE
 
+#define GPU_ALLOW_TESSELLATION_SHADERS 0 // Tess on mobile is not well supported
+#define GPU_ALLOW_GEOMETRY_SHADERS 0 // Don't even try GS on mobile
+
 #endif

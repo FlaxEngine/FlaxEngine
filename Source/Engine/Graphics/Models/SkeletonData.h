@@ -11,7 +11,7 @@
 /// <summary>
 /// Describes a single skeleton node data. Used by the runtime.
 /// </summary>
-API_STRUCT() struct SkeletonNode
+API_STRUCT() struct FLAXENGINE_API SkeletonNode
 {
     DECLARE_SCRIPTING_TYPE_MINIMAL(SkeletonNode);
 
@@ -34,7 +34,7 @@ API_STRUCT() struct SkeletonNode
 /// <summary>
 /// Describes a single skeleton bone data. Used by the runtime. Skeleton bones are subset of the skeleton nodes collection that are actually used by the skinned model meshes.
 /// </summary>
-API_STRUCT() struct SkeletonBone
+API_STRUCT() struct FLAXENGINE_API SkeletonBone
 {
     DECLARE_SCRIPTING_TYPE_MINIMAL(SkeletonBone);
 
@@ -71,7 +71,7 @@ struct TIsPODType<SkeletonBone>
 /// <remarks>
 /// Bones are ordered so that parents always come first, allowing for hierarchical updates in a simple loop.
 /// </remarks>
-class SkeletonData
+class FLAXENGINE_API SkeletonData
 {
 public:
     /// <summary>

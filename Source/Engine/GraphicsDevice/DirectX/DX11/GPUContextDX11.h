@@ -32,7 +32,8 @@ private:
     ID3D11RenderTargetView* _rtHandles[GPU_MAX_RT_BINDED];
 
     // Shader Resources
-    bool _srDirtyFlag;
+    uint32 _srMaskDirtyGraphics;
+    uint32 _srMaskDirtyCompute;
     ID3D11ShaderResourceView* _srHandles[GPU_MAX_SR_BINDED];
 
     // Unordered Access
@@ -55,9 +56,13 @@ private:
     ID3D11RasterizerState* CurrentRasterizerState;
     ID3D11DepthStencilState* CurrentDepthStencilState;
     GPUShaderProgramVSDX11* CurrentVS;
+#if GPU_ALLOW_TESSELLATION_SHADERS
     GPUShaderProgramHSDX11* CurrentHS;
     GPUShaderProgramDSDX11* CurrentDS;
+#endif
+#if GPU_ALLOW_GEOMETRY_SHADERS
     GPUShaderProgramGSDX11* CurrentGS;
+#endif
     GPUShaderProgramPSDX11* CurrentPS;
     GPUShaderProgramCSDX11* CurrentCS;
     D3D11_PRIMITIVE_TOPOLOGY CurrentPrimitiveTopology;

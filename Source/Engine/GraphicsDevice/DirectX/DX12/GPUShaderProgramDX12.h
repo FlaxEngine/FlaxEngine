@@ -79,6 +79,7 @@ public:
     }
 };
 
+#if GPU_ALLOW_TESSELLATION_SHADERS
 /// <summary>
 /// Hull Shader for DirectX 12 backend.
 /// </summary>
@@ -105,7 +106,9 @@ public:
     {
     }
 };
+#endif
 
+#if GPU_ALLOW_GEOMETRY_SHADERS
 /// <summary>
 /// Geometry Shader for DirectX 12 backend.
 /// </summary>
@@ -118,6 +121,7 @@ public:
     {
     }
 };
+#endif
 
 /// <summary>
 /// Pixel Shader for DirectX 12 backend.

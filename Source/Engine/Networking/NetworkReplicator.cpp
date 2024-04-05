@@ -1203,7 +1203,7 @@ void NetworkReplicator::RemoveObject(ScriptingObject* obj)
         return;
     ScopeLock lock(ObjectsLock);
     const auto it = Objects.Find(obj->GetID());
-    if (it != Objects.End())
+    if (it == Objects.End())
         return;
 
     // Remove object from the list

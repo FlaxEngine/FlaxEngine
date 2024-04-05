@@ -49,12 +49,14 @@ namespace FlaxEditor.SceneGraph.Actors
             {
                 get
                 {
-                    var actor = (Spline)_node.Actor;
-                    return actor.GetSplineTransform(Index);
+                    var actor = (Spline)_node?.Actor;
+                    return actor?.GetSplineTransform(Index) ?? Transform.Identity;
                 }
                 set
                 {
-                    var actor = (Spline)_node.Actor;
+                    var actor = (Spline)_node?.Actor;
+                    if (actor == null)
+                        return;
                     actor.SetSplineTransform(Index, value);
                     OnSplineEdited(actor);
                 }
@@ -308,11 +310,14 @@ namespace FlaxEditor.SceneGraph.Actors
             var selection = Editor.Instance.SceneEditing.Selection;
             if (selection.Count == 1 && selection[0] is SplinePointNode selectedPoint && selectedPoint.ParentNode == this)
             {
-                if (Input.Keyboard.GetKey(KeyboardKeys.Shift))
+                var mouse = Input.Mouse;
+                var keyboard = Input.Keyboard;
+
+                if (keyboard.GetKey(KeyboardKeys.Shift))
                     EditSplineWithSnap(selectedPoint);
 
-                var canAddSplinePoint = Input.Mouse.PositionDelta == Float2.Zero && Input.Mouse.Position != Float2.Zero;
-                var requestAddSplinePoint = Input.Keyboard.GetKey(KeyboardKeys.Control) && Input.Mouse.GetButtonDown(MouseButton.Right);
+                var canAddSplinePoint = mouse.PositionDelta == Float2.Zero && mouse.Position != Float2.Zero;
+                var requestAddSplinePoint = Input.Keyboard.GetKey(KeyboardKeys.Control) && mouse.GetButtonDown(MouseButton.Right);
                 if (requestAddSplinePoint && canAddSplinePoint)
                     AddSplinePoint(selectedPoint);
             }

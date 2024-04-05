@@ -373,8 +373,8 @@ bool GPUDeviceDX12::Init()
     {
         auto& limits = Limits;
         limits.HasCompute = true;
-        limits.HasTessellation = true;
-        limits.HasGeometryShaders = true;
+        limits.HasTessellation = GPU_ALLOW_TESSELLATION_SHADERS;
+        limits.HasGeometryShaders = GPU_ALLOW_GEOMETRY_SHADERS;
         limits.HasInstancing = true;
         limits.HasVolumeTextureRendering = true;
         limits.HasDrawIndirect = true;

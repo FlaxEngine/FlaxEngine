@@ -536,7 +536,7 @@ namespace FlaxEditor.CustomEditors
         /// </summary>
         public void ClearReferenceValueAll()
         {
-            Values.ClearReferenceValue();
+            Values?.ClearReferenceValue();
 
             for (int i = 0; i < ChildrenEditors.Count; i++)
             {

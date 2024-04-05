@@ -64,11 +64,25 @@ public:
     API_FUNCTION() Vector3 GetAgentPosition(int32 id) const;
 
     /// <summary>
+    /// Sets the agent current position.
+    /// </summary>
+    /// <param name="id">The agent ID.</param>
+    /// <param name="position">The agent position.</param>
+    API_FUNCTION() void SetAgentPosition(int32 id, const Vector3& position);
+
+    /// <summary>
     /// Gets the agent current velocity (direction * speed).
     /// </summary>
     /// <param name="id">The agent ID.</param>
     /// <returns>The agent current velocity (direction * speed).</returns>
     API_FUNCTION() Vector3 GetAgentVelocity(int32 id) const;
+
+    /// <summary>
+    /// Sets the agent current velocity (direction * speed).
+    /// </summary>
+    /// <param name="id">The agent ID.</param>
+    /// <param name="velocity">The agent velocity (direction * speed).</param>
+    API_FUNCTION() void SetAgentVelocity(int32 id, const Vector3& velocity);
 
     /// <summary>
     /// Updates the agent properties.

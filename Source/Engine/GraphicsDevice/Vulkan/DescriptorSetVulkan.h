@@ -25,21 +25,25 @@ namespace DescriptorSet
     enum Stage
     {
         // Vertex shader stage
-        Vertex = 0,
+        Vertex,
         // Pixel shader stage
-        Pixel = 1,
+        Pixel,
+#if GPU_ALLOW_GEOMETRY_SHADERS
         // Geometry shader stage
-        Geometry = 2,
+        Geometry,
+#endif
+#if GPU_ALLOW_TESSELLATION_SHADERS
         // Hull shader stage
-        Hull = 3,
+        Hull,
         // Domain shader stage
-        Domain = 4,
+        Domain,
+#endif
         // Graphics pipeline stages count
-        GraphicsStagesCount = 5,
+        GraphicsStagesCount,
         // Compute pipeline slot
         Compute = 0,
         // The maximum amount of slots for all stages
-        Max = 5,
+        Max = GraphicsStagesCount,
     };
 
     template<typename T>

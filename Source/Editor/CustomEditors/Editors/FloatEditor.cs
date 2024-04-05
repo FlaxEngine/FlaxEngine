@@ -40,7 +40,7 @@ namespace FlaxEditor.CustomEditors.Editors
                 _element = slider;
                 return;
             }
-            
+
             var floatValue = layout.FloatValue();
             floatValue.ValueBox.ValueChanged += OnValueChanged;
             floatValue.ValueBox.SlidingEnd += ClearToken;
@@ -53,13 +53,16 @@ namespace FlaxEditor.CustomEditors.Editors
                 if (valueCategory != Utils.ValueCategory.None)
                 {
                     floatValue.SetCategory(valueCategory);
-                    LinkedLabel.SetupContextMenu += (label, menu, editor) =>
+                    if (LinkedLabel != null)
                     {
-                        menu.AddSeparator();
-                        var mb = menu.AddButton("Show formatted", bt => { floatValue.SetCategory(bt.Checked ? valueCategory : Utils.ValueCategory.None); });
-                        mb.AutoCheck = true;
-                        mb.Checked = floatValue.ValueBox.Category != Utils.ValueCategory.None;
-                    };
+                        LinkedLabel.SetupContextMenu += (label, menu, editor) =>
+                        {
+                            menu.AddSeparator();
+                            var mb = menu.AddButton("Show formatted", bt => { floatValue.SetCategory(bt.Checked ? valueCategory : Utils.ValueCategory.None); });
+                            mb.AutoCheck = true;
+                            mb.Checked = floatValue.ValueBox.Category != Utils.ValueCategory.None;
+                        };
+                    }
                 }
             }
         }

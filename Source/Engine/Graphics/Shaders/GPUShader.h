@@ -103,7 +103,11 @@ public:
     /// <returns>The shader object.</returns>
     API_FUNCTION() FORCE_INLINE GPUShaderProgramHS* GetHS(const StringAnsiView& name, int32 permutationIndex = 0) const
     {
+#if GPU_ALLOW_TESSELLATION_SHADERS
         return static_cast<GPUShaderProgramHS*>(GetShader(ShaderStage::Hull, name, permutationIndex));
+#else
+        return nullptr;
+#endif
     }
 
     /// <summary>
@@ -114,7 +118,11 @@ public:
     /// <returns>The shader object.</returns>
     API_FUNCTION() FORCE_INLINE GPUShaderProgramDS* GetDS(const StringAnsiView& name, int32 permutationIndex = 0) const
     {
+#if GPU_ALLOW_TESSELLATION_SHADERS
         return static_cast<GPUShaderProgramDS*>(GetShader(ShaderStage::Domain, name, permutationIndex));
+#else
+        return nullptr;
+#endif
     }
 
     /// <summary>
@@ -125,7 +133,11 @@ public:
     /// <returns>The shader object.</returns>
     API_FUNCTION() FORCE_INLINE GPUShaderProgramGS* GetGS(const StringAnsiView& name, int32 permutationIndex = 0) const
     {
+#if GPU_ALLOW_GEOMETRY_SHADERS
         return static_cast<GPUShaderProgramGS*>(GetShader(ShaderStage::Geometry, name, permutationIndex));
+#else
+        return nullptr;
+#endif
     }
 
     /// <summary>

@@ -164,7 +164,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
                 //Presenter.BuildLayoutOnUpdate();
 
                 // Better way is to just update the reference value using the new default instance of the prefab, created after changes apply
-                if (prefab && !prefab.WaitForLoaded())
+                if (Values != null && prefab && !prefab.WaitForLoaded())
                 {
                     var actor = (Actor)Values[0];
                     var prefabObjectId = actor.PrefabObjectID;

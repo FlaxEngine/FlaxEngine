@@ -16,12 +16,12 @@ class FLAXENGINE_API Win32FileSystem : public FileSystemBase
 public:
 
     // Creates a new directory
-    // @param path Drectory path
+    // @param path Directory path
     // @returns True if cannot create directory, otherwise false
     static bool CreateDirectory(const StringView& path);
 
     // Deletes an existing directory
-    // @param path Drectory path
+    // @param path Directory path
     // @param deleteSubdirectories True if delete all subdirectories and files, otherwise false
     // @returns True if cannot delete directory, otherwise false
     static bool DeleteDirectory(const String& path, bool deleteContents = true);
@@ -32,15 +32,15 @@ public:
     static bool DirectoryExists(const StringView& path);
 
     // Finds the names of files (including their paths) that match the specified search pattern in the specified directory, using a value to determine whether to search subdirectories
-    // @param results When this metod completes, this list contains list of all filenames that match the specified search pattern
+    // @param results When this method completes, this list contains list of all filenames that match the specified search pattern
     // @param path Path of the directory to search in it
-    // @param searchPattern Custo msearch pattern to use during that operation
-    // @param option Addidtional search options
+    // @param searchPattern Custom search pattern to use during that operation
+    // @param option Additional search options
     // @returns True if an error occurred, otherwise false
     static bool DirectoryGetFiles(Array<String, HeapAllocation>& results, const String& path, const Char* searchPattern, DirectorySearchOption option = DirectorySearchOption::AllDirectories);
 
     // Finds the names of directories (including their paths) that are inside the specified directory
-    // @param results When this metod completes, this list contains list of all filenames that match the specified search pattern
+    // @param results When this method completes, this list contains list of all filenames that match the specified search pattern
     // @param directory Path of the directory to search in it
     // @returns True if an error occurred, otherwise false
     static bool GetChildDirectories(Array<String, HeapAllocation>& results, const String& directory);

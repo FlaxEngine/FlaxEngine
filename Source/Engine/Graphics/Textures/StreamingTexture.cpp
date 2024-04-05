@@ -113,8 +113,9 @@ bool StreamingTexture::Create(const TextureHeader& header)
     if (_isBlockCompressed)
     {
         // Ensure that streaming doesn't go too low because the hardware expects the texture to be min in size of compressed texture block
+        const int32 blockSize = PixelFormatExtensions::ComputeBlockSize(_header.Format);
         int32 lastMip = header.MipLevels - 1;
-        while ((header.Width >> lastMip) < 4 && (header.Height >> lastMip) < 4 && lastMip > 0)
+        while ((header.Width >> lastMip) < blockSize && (header.Height >> lastMip) < blockSize && lastMip > 0)
             lastMip--;
         _minMipCountBlockCompressed = Math::Min(header.MipLevels - lastMip + 1, header.MipLevels);
     }

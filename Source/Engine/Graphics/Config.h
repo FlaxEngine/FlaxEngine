@@ -40,13 +40,28 @@
 // True if allow graphics profile events and markers
 #define GPU_ALLOW_PROFILE_EVENTS (!BUILD_RELEASE)
 
+// True if allow hardware tessellation shaders (Hull and Domain shaders)
+#ifndef GPU_ALLOW_TESSELLATION_SHADERS
+#define GPU_ALLOW_TESSELLATION_SHADERS 1
+#endif
+
+// True if allow geometry shaders
+#ifndef GPU_ALLOW_GEOMETRY_SHADERS
+#define GPU_ALLOW_GEOMETRY_SHADERS 1
+#endif
+
 // Enable/disable creating GPU resources on separate threads (otherwise only the main thread can be used)
 #define GPU_ENABLE_ASYNC_RESOURCES_CREATION 1
 
 // Enable/disable force shaders recompilation
 #define GPU_FORCE_RECOMPILE_SHADERS 0
 
-// Default back buffer pixel format
+// Define default back buffer(s) format
+#ifndef GPU_BACK_BUFFER_PIXEL_FORMAT
+#define GPU_BACK_BUFFER_PIXEL_FORMAT PixelFormat::B8G8R8A8_UNorm
+#endif
+
+// Default depth buffer pixel format
 #ifndef GPU_DEPTH_BUFFER_PIXEL_FORMAT
 #define GPU_DEPTH_BUFFER_PIXEL_FORMAT PixelFormat::D32_Float
 #endif
@@ -61,11 +76,6 @@
 #define GPU_MAX_TEXTURE_SIZE 16384
 #define GPU_MAX_TEXTURE_MIP_LEVELS 15
 #define GPU_MAX_TEXTURE_ARRAY_SIZE 1024
-
-// Define default back buffer(s) format
-#ifndef GPU_BACK_BUFFER_PIXEL_FORMAT
-#define GPU_BACK_BUFFER_PIXEL_FORMAT PixelFormat::B8G8R8A8_UNorm
-#endif
 
 // Validate configuration
 #if !ENABLE_ASSERTION
