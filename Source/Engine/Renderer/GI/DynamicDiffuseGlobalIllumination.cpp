@@ -13,13 +13,13 @@
 #include "Engine/Engine/Engine.h"
 #include "Engine/Content/Content.h"
 #include "Engine/Debug/DebugDraw.h"
-#include "Engine/Engine/Time.h"
 #include "Engine/Graphics/GPUContext.h"
 #include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Graphics/Graphics.h"
 #include "Engine/Graphics/RenderTask.h"
 #include "Engine/Graphics/RenderBuffers.h"
 #include "Engine/Graphics/RenderTargetPool.h"
+#include "Engine/Graphics/RenderTools.h"
 #include "Engine/Graphics/Shaders/GPUShader.h"
 #include "Engine/Level/Actors/BrushMode.h"
 #include "Engine/Renderer/GBufferPass.h"
@@ -480,18 +480,7 @@ bool DynamicDiffuseGlobalIlluminationPass::RenderInner(RenderContext& renderCont
             auto& cascade = ddgiData.Cascades[cascadeIndex];
             data.ProbeScrollClears[cascadeIndex] = Int4(cascade.ProbeScrollClears, 0);
         }
-        if (renderContext.List->Setup.UseTemporalAAJitter)
-        {
-            // Use temporal offset in the dithering factor (gets cleaned out by TAA)
-            const float time = Time::Draw.UnscaledTime.GetTotalSeconds();
-            const float scale = 10;
-            const float integral = roundf(time / scale) * scale;
-            data.TemporalTime = time - integral;
-        }
-        else
-        {
-            data.TemporalTime = 0.0f;
-        }
+        data.TemporalTime = renderContext.List->Setup.UseTemporalAAJitter ? RenderTools::ComputeTemporalTime() : 0.0f;
         GBufferPass::SetInputs(renderContext.View, data.GBuffer);
         context->UpdateCB(_cb0, &data);
         context->BindCB(0, _cb0);

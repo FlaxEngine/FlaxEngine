@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #define USE_GBUFFER_CUSTOM_DATA
+#define SHADOWS_CSM_BLENDING 1
 
 #include "./Flax/Common.hlsl"
 #include "./Flax/GBuffer.hlsl"
@@ -12,7 +13,8 @@ GBufferData GBuffer;
 LightData Light;
 float4x4 WVP;
 float4x4 ViewProjectionMatrix;
-float2 Dummy0;
+float Dummy0;
+float TemporalTime;
 float ContactShadowsDistance;
 float ContactShadowsLength;
 META_CB_END
@@ -115,7 +117,7 @@ float4 PS_DirLight(Quad_VS2PS input) : SV_Target0
 	GBufferSample gBuffer = SampleGBuffer(gBufferData, input.TexCoord);
 
 	// Sample shadow
-    ShadowSample shadow = SampleDirectionalLightShadow(Light, ShadowsBuffer, ShadowMap, gBuffer);
+    ShadowSample shadow = SampleDirectionalLightShadow(Light, ShadowsBuffer, ShadowMap, gBuffer, TemporalTime);
 
 #if CONTACT_SHADOWS
 	// Calculate screen-space contact shadow

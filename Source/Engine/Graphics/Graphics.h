@@ -50,8 +50,9 @@ public:
 
     /// <summary>
     /// Enables cascades splits blending for directional light shadows.
+    /// [Deprecated in v1.9]
     /// </summary>
-    API_FIELD() static bool AllowCSMBlending;
+    API_FIELD() DEPRECATED static bool AllowCSMBlending;
 
     /// <summary>
     /// The Global SDF quality. Controls the volume texture resolution and amount of cascades to use.

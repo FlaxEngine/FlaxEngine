@@ -27,7 +27,8 @@ PACK_STRUCT(struct Data{
     ShaderLightData Light;
     Matrix WVP;
     Matrix ViewProjectionMatrix;
-    Float2 Dummy0;
+    float Dummy0;
+    float TemporalTime;
     float ContactShadowsDistance;
     float ContactShadowsLength;
     });
@@ -62,7 +63,6 @@ struct ShadowAtlasLight
     int32 ContextCount;
     uint16 Resolution;
     uint16 TilesNeeded;
-    bool BlendCSM;
     float Sharpness, Fade, NormalOffsetScale, Bias, FadeDistance;
     Float4 CascadeSplits;
     ShadowsAtlasTile* Tiles[MaxTiles];
@@ -294,15 +294,7 @@ void ShadowsPass::SetupLight(RenderContext& renderContext, RenderContextBatch& r
     Float3 lightDirection = light.Direction;
     float shadowsDistance = Math::Min(view.Far, light.ShadowsDistance);
     int32 csmCount = Math::Clamp(light.CascadeCount, 0, MAX_CSM_CASCADES);
-    bool blendCSM = Graphics::AllowCSMBlending;
     const auto shadowMapsSize = (float)atlasLight.Resolution;
-#if USE_EDITOR
-    if (IsRunningRadiancePass)
-        blendCSM = false;
-#elif PLATFORM_SWITCH || PLATFORM_IOS || PLATFORM_ANDROID
-    // Disable cascades blending on low-end platforms
-    blendCSM = false;
-#endif
 
     // Views with orthographic cameras cannot use cascades, we force it to 1 shadow map here
     if (view.Projection.M44 == 1.0f)
@@ -397,7 +389,6 @@ void ShadowsPass::SetupLight(RenderContext& renderContext, RenderContextBatch& r
     // Init shadow data
     atlasLight.ContextIndex = renderContextBatch.Contexts.Count();
     atlasLight.ContextCount = csmCount;
-    atlasLight.BlendCSM = blendCSM;
     renderContextBatch.Contexts.AddDefault(atlasLight.ContextCount);
 
     // Create the different view and projection matrices for each split
@@ -413,9 +404,7 @@ void ShadowsPass::SetupLight(RenderContext& renderContext, RenderContextBatch& r
         // Calculate cascade split frustum corners in view space
         for (int32 j = 0; j < 4; j++)
         {
-            float overlap = 0;
-            if (blendCSM)
-                overlap = 0.2f * (splitMinRatio - oldSplitMinRatio);
+            float overlap = 0.1f * (splitMinRatio - oldSplitMinRatio); // CSM blending overlap
             const auto frustumRangeVS = mainCache->FrustumCornersVs[j + 4] - mainCache->FrustumCornersVs[j];
             frustumCorners[j] = mainCache->FrustumCornersVs[j] + frustumRangeVS * (splitMinRatio - overlap);
             frustumCorners[j + 4] = mainCache->FrustumCornersVs[j] + frustumRangeVS * splitMaxRatio;
@@ -927,6 +916,7 @@ void ShadowsPass::RenderShadowMask(RenderContextBatch& renderContextBatch, Rende
     else if (light.IsSpotLight)
         ((RenderSpotLightData&)light).SetShaderData(sperLight.Light, true);
     Matrix::Transpose(view.ViewProjection(), sperLight.ViewProjectionMatrix);
+    sperLight.TemporalTime = renderContext.List->Setup.UseTemporalAAJitter ? RenderTools::ComputeTemporalTime() : 0.0f;
     sperLight.ContactShadowsDistance = light.ShadowsDistance;
     sperLight.ContactShadowsLength = EnumHasAnyFlags(view.Flags, ViewFlags::ContactShadows) ? light.ContactShadowsLength : 0.0f;
     if (isLocalLight)

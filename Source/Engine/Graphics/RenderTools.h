@@ -121,6 +121,10 @@ public:
         return (frameIndex % updateFrequency == updatePhrase) || updateForce;
     }
 
+    // Calculates temporal offset in the dithering factor that gets cleaned out by TAA.
+    // Returns 0-1 value based on unscaled draw time for temporal effects to reduce artifacts from screen-space dithering when using Temporal Anti-Aliasing.
+    static float ComputeTemporalTime();
+
     static void CalculateTangentFrame(FloatR10G10B10A2& resultNormal, FloatR10G10B10A2& resultTangent, const Float3& normal);
     static void CalculateTangentFrame(FloatR10G10B10A2& resultNormal, FloatR10G10B10A2& resultTangent, const Float3& normal, const Float3& tangent);
 };

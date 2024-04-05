@@ -6,6 +6,9 @@
 #include "./Flax/ShadowsCommon.hlsl"
 #include "./Flax/GBufferCommon.hlsl"
 #include "./Flax/LightingCommon.hlsl"
+#ifdef SHADOWS_CSM_BLENDING
+#include "./Flax/Random.hlsl"
+#endif
 
 #if FEATURE_LEVEL >= FEATURE_LEVEL_SM5
 #define SAMPLE_SHADOW_MAP(shadowMap, shadowUV, sceneDepth) shadowMap.SampleCmpLevelZero(ShadowSamplerLinear, shadowUV, sceneDepth)
@@ -77,7 +80,7 @@ float SampleShadowMap(Texture2D<float> shadowMap, float2 shadowMapUV, float scen
 }
 
 // Samples the shadow for the given directional light on the material surface (supports subsurface shadowing)
-ShadowSample SampleDirectionalLightShadow(LightData light, Buffer<float4> shadowsBuffer, Texture2D<float> shadowMap, GBufferSample gBuffer)
+ShadowSample SampleDirectionalLightShadow(LightData light, Buffer<float4> shadowsBuffer, Texture2D<float> shadowMap, GBufferSample gBuffer, float dither = 0.0f)
 {
 #if !LIGHTING_NO_DIRECTIONAL
     // Skip if surface is in a full shadow
@@ -114,6 +117,19 @@ ShadowSample SampleDirectionalLightShadow(LightData light, Buffer<float4> shadow
         if (viewDepth > shadow.CascadeSplits[i])
             cascadeIndex = i + 1;
     }
+#ifdef SHADOWS_CSM_BLENDING
+	const float BlendThreshold = 0.05f;
+	float nextSplit = shadow.CascadeSplits[cascadeIndex];
+	float splitSize = cascadeIndex == 0 ? nextSplit : nextSplit - shadow.CascadeSplits[cascadeIndex - 1];
+	float splitDist = (nextSplit - viewDepth) / splitSize;
+    if (splitDist <= BlendThreshold && cascadeIndex != shadow.TilesCount - 1)
+    {
+        // Blend with the next cascade but with screen-space dithering (gets cleaned out by TAA)
+        float lerpAmount = 1 - splitDist / BlendThreshold;
+        if (step(RandN2(gBuffer.ViewPos.xy + dither).x, lerpAmount))
+            cascadeIndex++;
+    }
+#endif
     ShadowTileData shadowTile = LoadShadowsBufferTile(shadowsBuffer, light.ShadowsBufferAddress, cascadeIndex);
 
     float3 samplePosition = gBuffer.WorldPos;
@@ -241,11 +257,11 @@ GBufferSample GetDummyGBufferSample(float3 worldPosition)
 }
 
 // Samples the shadow for the given directional light at custom location
-ShadowSample SampleDirectionalLightShadow(LightData light, Buffer<float4> shadowsBuffer, Texture2D<float> shadowMap, float3 worldPosition, float viewDepth)
+ShadowSample SampleDirectionalLightShadow(LightData light, Buffer<float4> shadowsBuffer, Texture2D<float> shadowMap, float3 worldPosition, float viewDepth, float dither = 0.0f)
 {
     GBufferSample gBuffer = GetDummyGBufferSample(worldPosition);
     gBuffer.ViewPos.z = viewDepth;
-    return SampleDirectionalLightShadow(light, shadowsBuffer, shadowMap, gBuffer);
+    return SampleDirectionalLightShadow(light, shadowsBuffer, shadowMap, gBuffer, dither);
 }
 
 // Samples the shadow for the given spot light at custom location

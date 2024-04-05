@@ -11,7 +11,6 @@
 #include "Engine/Graphics/RenderTools.h"
 #include "Engine/Graphics/RenderTargetPool.h"
 #include "Engine/Graphics/RenderBuffers.h"
-#include "Engine/Engine/Time.h"
 #include "Engine/Platform/Window.h"
 #include "Utils/MultiScaler.h"
 #include "Engine/Engine/Engine.h"
@@ -247,13 +246,7 @@ void ScreenSpaceReflectionsPass::Render(RenderContext& renderContext, GPUTexture
     data.TemporalEffect = useTemporal ? 1.0f : 0.0f;
     if (useTemporal)
     {
-        const float time = Time::Draw.UnscaledTime.GetTotalSeconds();
-
-        // Keep time in smaller range to prevent temporal noise errors
-        const double scale = 10;
-        const double integral = round(time / scale) * scale;
-        data.TemporalTime = static_cast<float>(time - integral);
-
+        data.TemporalTime = RenderTools::ComputeTemporalTime();
         buffers->LastFrameTemporalSSR = Engine::FrameCount;
         if (!buffers->TemporalSSR || buffers->TemporalSSR->Width() != temporalWidth || buffers->TemporalSSR->Height() != temporalHeight)
         {

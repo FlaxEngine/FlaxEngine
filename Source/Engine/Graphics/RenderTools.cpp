@@ -552,6 +552,14 @@ void RenderTools::ComputeCascadeUpdateFrequency(int32 cascadeIndex, int32 cascad
     }
 }
 
+float RenderTools::ComputeTemporalTime()
+{
+    const float time = Time::Draw.UnscaledTime.GetTotalSeconds();
+    const float scale = 10;
+    const float integral = roundf(time / scale) * scale;
+    return time - integral;
+}
+
 void RenderTools::CalculateTangentFrame(FloatR10G10B10A2& resultNormal, FloatR10G10B10A2& resultTangent, const Float3& normal)
 {
     // Calculate tangent
