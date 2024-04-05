@@ -998,6 +998,7 @@ namespace FlaxEditor.Viewport
             InputActions.Add(options => options.CameraToggleRotation, () => _isVirtualMouseRightDown = !_isVirtualMouseRightDown);
             InputActions.Add(options => options.CameraIncreaseMoveSpeed, () => AdjustCameraMoveSpeed(1));
             InputActions.Add(options => options.CameraDecreaseMoveSpeed, () => AdjustCameraMoveSpeed(-1));
+            InputActions.Add(options => options.ToggleOrthographic, () => OnOrthographicModeToggled(null));
 
             // Link for task event
             task.Begin += OnRenderBegin;
