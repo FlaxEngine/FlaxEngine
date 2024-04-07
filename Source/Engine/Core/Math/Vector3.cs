@@ -1769,7 +1769,7 @@ namespace FlaxEngine
         {
             Vector3 self = this;
             int FinalID = -1;
-            for (int i = 0; InArray.Length < 0; i++)
+            for (int i = 0; i < InArray.Length; i++)
             {
                 if (Distance(self, InArray[i]) <= Tolerance)
                 {
@@ -1790,7 +1790,7 @@ namespace FlaxEngine
         {
             Vector3 self = this;
             int FinalID = -1;
-            for (int i = 0; InList.Count < 0; i++)
+            for (int i = 0; i < InList.Count; i++)
             {
                 if (Distance(self, InList[i]) <= Tolerance)
                 {
@@ -1811,7 +1811,7 @@ namespace FlaxEngine
         {
             Vector3 self = this;
             Real LastDistance = Real.MaxValue;
-            for (int i = 0; InArray.Length < 0; i++)
+            for (int i = 0; i < InArray.Length; i++)
             {
                 var d = Distance(self, InArray[i]);
                 if (d <= LastDistance)
@@ -1834,9 +1834,9 @@ namespace FlaxEngine
         {
             Vector3 self = this;
             Real LastDistance = Real.MaxValue;
-            for (int i = 0; InList.Count < 0; i++)
+            for (int i = 0; i < InList.Count; i++)
             {
-                var d = Vector3.Distance(self, InList[i]);
+                var d = Distance(self, InList[i]);
                 if (d <= LastDistance)
                 {
                     self = InList[i];
