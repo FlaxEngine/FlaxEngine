@@ -1765,7 +1765,7 @@ namespace FlaxEngine
         /// <param name="InArray"></param>
         /// <param name="Tolerance"></param>
         /// <returns>index or -1 if all vectors in array are outside of <paramref name="Tolerance"/></returns>
-        private int GetClosest(ref Vector3[] InArray, float Tolerance)
+        private int GetClosest(ref Vector3[] InArray, Real Tolerance)
         {
             Vector3 self = this;
             int FinalID = -1;
@@ -1786,7 +1786,7 @@ namespace FlaxEngine
         /// <param name="InList"></param>
         /// <param name="Tolerance"></param>
         /// <returns>index or -1 if all vectors in array are outside of <paramref name="Tolerance"/></returns>
-        private int GetClosest(ref System.Collections.Generic.List<Vector3> InList, float Tolerance)
+        private int GetClosest(ref System.Collections.Generic.List<Vector3> InList, Real Tolerance)
         {
             Vector3 self = this;
             int FinalID = -1;
@@ -1807,7 +1807,7 @@ namespace FlaxEngine
         /// <param name="InArray"></param>
         /// <param name="OutDistance"></param>
         /// <param name="OutVector"></param>
-        private void GetClosest(ref Vector3[] InArray, ref Vector3 OutVector, ref float OutDistance)
+        private void GetClosest(ref Vector3[] InArray, ref Vector3 OutVector, ref Real OutDistance)
         {
             Vector3 self = this;
             float LastDistance = float.MaxValue;
@@ -1830,7 +1830,7 @@ namespace FlaxEngine
         /// <param name="InList"></param>
         /// <param name="OutDistance"></param>
         /// <param name="OutVector"></param>
-        private void GetClosest(ref System.Collections.Generic.List<Vector3> InList, ref Vector3 OutVector, ref float OutDistance)
+        private void GetClosest(ref System.Collections.Generic.List<Vector3> InList, ref Vector3 OutVector, ref Real OutDistance)
         {
             Vector3 self = this;
             float LastDistance = float.MaxValue;
