@@ -129,6 +129,18 @@ public:
     float ContactShadowsLength = 0.0f;
 
     /// <summary>
+    /// Frequency of shadow updates. 1 - every frame, 0.5 - every second frame, 0 - on start or change. It's the inverse value of how many frames should happen in-between shadow map updates (eg. inverse of 0.5 is 2 thus shadow will update every 2nd frame).
+    /// </summary>
+    API_FIELD(Attributes="EditorOrder(100), EditorDisplay(\"Shadow\", \"Update Rate\"), Limit(0.0f, 1.0f)")
+    float ShadowsUpdateRate = 1.0f;
+
+    /// <summary>
+    /// Frequency of shadow updates at the maximum distance from the view at which shadows are still rendered. This value is multiplied by ShadowsUpdateRate and allows scaling the update rate in-between the shadow range. For example, if light is near view, it will get normal shadow updates but will reduce this rate when far from view. See ShadowsUpdateRate to learn more.
+    /// </summary>
+    API_FIELD(Attributes="EditorOrder(105), EditorDisplay(\"Shadow\", \"Update Rate At Distance\"), Limit(0.0f, 1.0f)")
+    float ShadowsUpdateRateAtDistance = 0.5f;
+
+    /// <summary>
     /// Describes how a visual element casts shadows.
     /// </summary>
     API_FIELD(Attributes="EditorOrder(60), EditorDisplay(\"Shadow\", \"Mode\")")

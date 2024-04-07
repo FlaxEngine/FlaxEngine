@@ -391,7 +391,9 @@ void ParticleEmitterGraphCPUExecutor::Draw(ParticleEmitter* emitter, ParticleEff
         RenderPointLightData lightData;
         lightData.MinRoughness = 0.04f;
         lightData.ShadowsDistance = 2000.0f;
-        lightData.ShadowsStrength = 1.0f;
+        lightData.ShadowsStrength = 0.0f;
+        lightData.ShadowsUpdateRate = 1.0f;
+        lightData.ShadowsUpdateRateAtDistance = 0.5f;
         lightData.Direction = Float3::Forward;
         lightData.ShadowsFadeDistance = 50.0f;
         lightData.ShadowsNormalOffsetScale = 10.0f;

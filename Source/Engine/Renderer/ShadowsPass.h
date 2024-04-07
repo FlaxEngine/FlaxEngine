@@ -52,12 +52,12 @@ public:
     static void GetShadowAtlas(const RenderBuffers* renderBuffers, GPUTexture*& shadowMapAtlas, GPUBufferView*& shadowsBuffer);
 
 private:
-    void SetupRenderContext(RenderContext& renderContext, RenderContext& shadowContext);
-    void SetupLight(RenderContext& renderContext, RenderContextBatch& renderContextBatch, RenderLightData& light, struct ShadowAtlasLight& atlasLight);
-    void SetupLight(RenderContext& renderContext, RenderContextBatch& renderContextBatch, RenderLocalLightData& light, ShadowAtlasLight& atlasLight);
-    void SetupLight(RenderContext& renderContext, RenderContextBatch& renderContextBatch, RenderDirectionalLightData& light, ShadowAtlasLight& atlasLight);
-    void SetupLight(RenderContext& renderContext, RenderContextBatch& renderContextBatch, RenderPointLightData& light, ShadowAtlasLight& atlasLight);
-    void SetupLight(RenderContext& renderContext, RenderContextBatch& renderContextBatch, RenderSpotLightData& light, ShadowAtlasLight& atlasLight);
+    static void SetupRenderContext(RenderContext& renderContext, RenderContext& shadowContext);
+    static void SetupLight(RenderContext& renderContext, RenderContextBatch& renderContextBatch, RenderLightData& light, struct ShadowAtlasLight& atlasLight);
+    static bool SetupLight(RenderContext& renderContext, RenderContextBatch& renderContextBatch, RenderLocalLightData& light, ShadowAtlasLight& atlasLight);
+    static void SetupLight(RenderContext& renderContext, RenderContextBatch& renderContextBatch, RenderDirectionalLightData& light, ShadowAtlasLight& atlasLight);
+    static void SetupLight(RenderContext& renderContext, RenderContextBatch& renderContextBatch, RenderPointLightData& light, ShadowAtlasLight& atlasLight);
+    static void SetupLight(RenderContext& renderContext, RenderContextBatch& renderContextBatch, RenderSpotLightData& light, ShadowAtlasLight& atlasLight);
 
 #if COMPILE_WITH_DEV_ENV
     void OnShaderReloading(Asset* obj)

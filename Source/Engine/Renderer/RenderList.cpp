@@ -80,7 +80,7 @@ bool RenderLocalLightData::CanRenderShadow(const RenderView& view) const
     const float fadeDistance = Math::Max(ShadowsFadeDistance, 0.1f);
     const float dstLightToView = Float3::Distance(Position, view.Position);
     const float fade = 1 - Math::Saturate((dstLightToView - Radius - ShadowsDistance + fadeDistance) / fadeDistance);
-    return fade > ZeroTolerance && RenderLightData::CanRenderShadow(view);
+    return fade > ZeroTolerance && Radius > 10 && RenderLightData::CanRenderShadow(view);
 }
 
 void RenderSpotLightData::SetShaderData(ShaderLightData& data, bool useShadow) const

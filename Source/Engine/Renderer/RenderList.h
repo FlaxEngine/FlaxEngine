@@ -56,6 +56,9 @@ struct RenderLightData
     float ScreenSize;
     uint32 ShadowsBufferAddress;
 
+    float ShadowsUpdateRate;
+    float ShadowsUpdateRateAtDistance;
+
     RenderLightData()
     {
         Platform::MemoryClear(this, sizeof(RenderLightData));

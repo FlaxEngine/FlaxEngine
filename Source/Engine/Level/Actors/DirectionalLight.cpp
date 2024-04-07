@@ -38,6 +38,8 @@ void DirectionalLight::Draw(RenderContext& renderContext)
         data.VolumetricScatteringIntensity = VolumetricScatteringIntensity;
         data.IndirectLightingIntensity = IndirectLightingIntensity;
         data.CastVolumetricShadow = CastVolumetricShadow;
+        data.ShadowsUpdateRate = ShadowsUpdateRate;
+        data.ShadowsUpdateRateAtDistance = ShadowsUpdateRateAtDistance;
         data.ShadowsMode = ShadowsMode;
         data.CascadeCount = CascadeCount;
         data.Cascade1Spacing = Cascade1Spacing;

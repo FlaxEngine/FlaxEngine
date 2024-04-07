@@ -18,7 +18,8 @@
 #include "Engine/Renderer/Lightmaps.h"
 #endif
 
-#define MaxTiles 6
+#define SHADOWS_MAX_TILES 6
+#define SHADOWS_MIN_RESOLUTION 16
 #define NormalOffsetScaleTweak 100.0f
 #define LocalLightNearPlane 10.0f
 
@@ -33,10 +34,10 @@ PACK_STRUCT(struct Data{
     float ContactShadowsLength;
     });
 
-struct ShadowsAtlasTile : RectPack<ShadowsAtlasTile, uint16>
+struct ShadowsAtlasRectTile : RectPack<ShadowsAtlasRectTile, uint16>
 {
-    ShadowsAtlasTile(uint16 x, uint16 y, uint16 width, uint16 height)
-        : RectPack<ShadowsAtlasTile, uint16>(x, y, width, height)
+    ShadowsAtlasRectTile(uint16 x, uint16 y, uint16 width, uint16 height)
+        : RectPack<ShadowsAtlasRectTile, uint16>(x, y, width, height)
     {
     }
 
@@ -56,26 +57,25 @@ uint16 QuantizeResolution(float input)
     return output;
 }
 
-struct ShadowAtlasLight
+// State for shadow projection
+struct ShadowAtlasLightTile
 {
-    uint64 LastFrameUsed;
-    int32 ContextIndex;
-    int32 ContextCount;
-    uint16 Resolution;
-    uint16 TilesNeeded;
-    float Sharpness, Fade, NormalOffsetScale, Bias, FadeDistance;
-    Float4 CascadeSplits;
-    ShadowsAtlasTile* Tiles[MaxTiles];
-    Matrix WorldToShadow[MaxTiles];
+    ShadowsAtlasRectTile* RectTile;
+    Matrix WorldToShadow;
+    float FramesToUpdate; // Amount of frames (with fraction) until the next shadow update can happen
+    bool SkipUpdate;
+    Viewport CachedViewport; // The viewport used the last time to render shadow to the atlas
 
-    ShadowAtlasLight()
+    void Free(ShadowsCustomBuffer* buffer)
     {
-        Platform::MemoryClear(this, sizeof(ShadowAtlasLight));
+        if (RectTile)
+        {
+            RectTile->Free(buffer);
+            RectTile = nullptr;
+        }
     }
 
-    POD_COPYABLE(ShadowAtlasLight);
-
-    void SetWorldToShadow(int32 index, const Matrix& shadowViewProjection)
+    void SetWorldToShadow(const Matrix& shadowViewProjection)
     {
         // Transform Clip Space [-1,+1]^2 to UV Space [0,1]^2 (saves MAD instruction in shader)
         const Matrix ClipToUV(
@@ -85,7 +85,120 @@ struct ShadowAtlasLight
             0.5f, 0.5f, 0.0f, 1.0f);
         Matrix m;
         Matrix::Multiply(shadowViewProjection, ClipToUV, m);
-        Matrix::Transpose(m, WorldToShadow[index]);
+        Matrix::Transpose(m, WorldToShadow);
+    }
+};
+
+// State for shadow cache sed to invalidate any prerendered shadow depths
+struct ShadowAtlasLightCache
+{
+    bool Valid;
+    float ShadowsUpdateRate;
+    float ShadowsUpdateRateAtDistance;
+    Float3 Position;
+    float Radius;
+    Float3 Direction;
+    float Distance;
+    Float4 CascadeSplits;
+
+    void Set(const RenderView& view, const RenderLightData& light, const Float4& cascadeSplits = Float4::Zero)
+    {
+        Valid = true;
+        Distance = light.ShadowsDistance;
+        ShadowsUpdateRate = light.ShadowsUpdateRate;
+        ShadowsUpdateRateAtDistance = light.ShadowsUpdateRateAtDistance;
+        if (light.IsDirectionalLight)
+        {
+            // Sun
+            Position = view.Position;
+            Direction = light.Direction;
+            CascadeSplits = cascadeSplits;
+        }
+        else
+        {
+            // Local light
+            const auto& localLight = (const RenderLocalLightData&)light;
+            Position = light.Position;
+            Radius = localLight.Radius;
+        }
+    }
+};
+
+// State for light's shadows rendering
+struct ShadowAtlasLight
+{
+    uint64 LastFrameUsed;
+    int32 ContextIndex;
+    int32 ContextCount;
+    uint16 Resolution;
+    uint8 TilesNeeded;
+    uint8 TilesCount;
+    float Sharpness, Fade, NormalOffsetScale, Bias, FadeDistance, Distance;
+    Float4 CascadeSplits;
+    ShadowAtlasLightTile Tiles[SHADOWS_MAX_TILES];
+    ShadowAtlasLightCache Cache;
+
+    ShadowAtlasLight()
+    {
+        Platform::MemoryClear(this, sizeof(ShadowAtlasLight));
+    }
+
+    POD_COPYABLE(ShadowAtlasLight);
+
+    float CalculateUpdateRateInv(const RenderLightData& light, float distanceFromView, bool& freezeUpdate) const
+    {
+        const float shadowsUpdateRate = light.ShadowsUpdateRate;
+        const float shadowsUpdateRateAtDistance = shadowsUpdateRate * light.ShadowsUpdateRateAtDistance;
+        float updateRate = Math::Lerp(shadowsUpdateRate, shadowsUpdateRateAtDistance, Math::Saturate(distanceFromView / Distance));
+        // TODO: add global shadows update rate scale to be adjusted per-platform
+        freezeUpdate = updateRate <= ZeroTolerance;
+        if (freezeUpdate)
+            return 0.0f;
+        return 1.0f / updateRate;
+    }
+
+    void ValidateCache(const RenderView& view, const RenderLightData& light)
+    {
+        if (!Cache.Valid)
+            return;
+        if (!Math::NearEqual(Cache.Distance, light.ShadowsDistance) ||
+            !Math::NearEqual(Cache.ShadowsUpdateRate, light.ShadowsUpdateRate) ||
+            !Math::NearEqual(Cache.ShadowsUpdateRateAtDistance, light.ShadowsUpdateRateAtDistance))
+        {
+            // Invalidate
+            Cache.Valid = false;
+        }
+        if (light.IsDirectionalLight)
+        {
+            // Sun
+            if (Float3::Dot(Cache.Direction, light.Direction) < 0.999999f ||
+                !Float3::NearEqual(Cache.Position, view.Position, 1.0f) ||
+                !Float4::NearEqual(Cache.CascadeSplits, CascadeSplits))
+            {
+                // Invalidate
+                Cache.Valid = false;
+            }
+        }
+        else
+        {
+            // Local light
+            const auto& localLight = (const RenderLocalLightData&)light;
+            if (!Float3::NearEqual(Cache.Position, light.Position, 1.0f) ||
+                !Math::NearEqual(Cache.Radius, localLight.Radius))
+            {
+                // Invalidate
+                Cache.Valid = false;
+            }
+        }
+        for (int32 i = 0; i < TilesCount && Cache.Valid; i++)
+        {
+            auto& tile = Tiles[i];
+            if (tile.CachedViewport != Viewport(tile.RectTile->X, tile.RectTile->Y, tile.RectTile->Width, tile.RectTile->Height))
+            {
+                // Invalidate
+                Cache.Valid = false;
+            }
+        }
     }
 };
 
@@ -99,7 +212,7 @@ public:
     GPUTexture* ShadowMapAtlas = nullptr;
     DynamicTypedBuffer ShadowsBuffer;
     GPUBufferView* ShadowsBufferView = nullptr;
-    ShadowsAtlasTile* AtlasTiles = nullptr; // TODO: optimize with a single allocation for atlas tiles
+    ShadowsAtlasRectTile* AtlasTiles = nullptr; // TODO: optimize with a single allocation for atlas tiles
     Dictionary<Guid, ShadowAtlasLight> Lights;
 
     ShadowsCustomBuffer()
@@ -117,6 +230,7 @@ public:
         {
             auto& atlasLight = it->Value;
             Platform::MemoryClear(atlasLight.Tiles, sizeof(atlasLight.Tiles));
+            Platform::MemoryClear(&atlasLight.Cache, sizeof(atlasLight.Cache));
         }
     }
 
@@ -134,12 +248,12 @@ public:
     }
 };
 
-void ShadowsAtlasTile::OnInsert(ShadowsCustomBuffer* buffer)
+void ShadowsAtlasRectTile::OnInsert(ShadowsCustomBuffer* buffer)
 {
     buffer->AtlasPixelsUsed += (int32)Width * (int32)Height;
 }
 
-void ShadowsAtlasTile::OnFree(ShadowsCustomBuffer* buffer)
+void ShadowsAtlasRectTile::OnFree(ShadowsCustomBuffer* buffer)
 {
     buffer->AtlasPixelsUsed -= (int32)Width * (int32)Height;
 }
@@ -262,6 +376,7 @@ void ShadowsPass::SetupRenderContext(RenderContext& renderContext, RenderContext
     shadowContext.List = RenderList::GetFromPool();
     shadowContext.Buffers = renderContext.Buffers;
     shadowContext.Task = renderContext.Task;
+    shadowContext.List->Clear();
 }
 
 void ShadowsPass::SetupLight(RenderContext& renderContext, RenderContextBatch& renderContextBatch, RenderLightData& light, ShadowAtlasLight& atlasLight)
@@ -272,17 +387,47 @@ void ShadowsPass::SetupLight(RenderContext& renderContext, RenderContextBatch& r
     atlasLight.NormalOffsetScale = light.ShadowsNormalOffsetScale * NormalOffsetScaleTweak * (1.0f / (float)atlasLight.Resolution);
     atlasLight.Bias = light.ShadowsDepthBias;
     atlasLight.FadeDistance = Math::Max(light.ShadowsFadeDistance, 0.1f);
+    atlasLight.Distance = Math::Min(renderContext.View.Far, light.ShadowsDistance);
 }
 
-void ShadowsPass::SetupLight(RenderContext& renderContext, RenderContextBatch& renderContextBatch, RenderLocalLightData& light, ShadowAtlasLight& atlasLight)
+bool ShadowsPass::SetupLight(RenderContext& renderContext, RenderContextBatch& renderContextBatch, RenderLocalLightData& light, ShadowAtlasLight& atlasLight)
 {
     SetupLight(renderContext, renderContextBatch, (RenderLightData&)light, atlasLight);
 
     // Fade shadow on distance
     const float fadeDistance = Math::Max(light.ShadowsFadeDistance, 0.1f);
-    const float dstLightToView = Float3::Distance(light.Position, renderContext.View.Position);
-    const float fade = 1 - Math::Saturate((dstLightToView - light.Radius - light.ShadowsDistance + fadeDistance) / fadeDistance);
+    const float dstLightToView = Float3::Distance(light.Position, renderContext.View.Position) - light.Radius;
+    const float fade = 1 - Math::Saturate((dstLightToView - atlasLight.Distance + fadeDistance) / fadeDistance);
     atlasLight.Fade *= fade;
+
+    // Update cached state (invalidate it if the light changed)
+    atlasLight.ValidateCache(renderContext.View, light);
+
+    // Calculate update rate based on the distance to the view
+    bool freezeUpdate;
+    const float updateRateInv = atlasLight.CalculateUpdateRateInv(light, dstLightToView, freezeUpdate);
+    float& framesToUpdate = atlasLight.Tiles[0].FramesToUpdate; // Use the first tile for all local light projections to be in sync
+    if ((framesToUpdate > 0.0f || freezeUpdate) && atlasLight.Cache.Valid)
+    {
+        // Light state matches the cached state and the update rate allows us to reuse the cached shadow map so skip update
+        if (!freezeUpdate)
+            framesToUpdate -= 1.0f;
+        for (auto& tile : atlasLight.Tiles)
+            tile.SkipUpdate = true;
+        return true;
+    }
+    framesToUpdate += updateRateInv - 1.0f;
+
+    // Cache the current state
+    atlasLight.Cache.Set(renderContext.View, light);
+    for (int32 i = 0; i < atlasLight.TilesCount; i++)
+    {
+        auto& tile = atlasLight.Tiles[i];
+        tile.SkipUpdate = false;
+        tile.CachedViewport = Viewport(tile.RectTile->X, tile.RectTile->Y, tile.RectTile->Width, tile.RectTile->Height);
+    }
+
+    return false;
 }
 
 void ShadowsPass::SetupLight(RenderContext& renderContext, RenderContextBatch& renderContextBatch, RenderDirectionalLightData& light, ShadowAtlasLight& atlasLight)
@@ -290,29 +435,16 @@ void ShadowsPass::SetupLight(RenderContext& renderContext, RenderContextBatch& r
     SetupLight(renderContext, renderContextBatch, (RenderLightData&)light, atlasLight);
 
     const RenderView& view = renderContext.View;
-    auto mainCache = renderContext.List;
-    Float3 lightDirection = light.Direction;
-    float shadowsDistance = Math::Min(view.Far, light.ShadowsDistance);
-    int32 csmCount = Math::Clamp(light.CascadeCount, 0, MAX_CSM_CASCADES);
+    const int32 csmCount = atlasLight.TilesCount;
     const auto shadowMapsSize = (float)atlasLight.Resolution;
 
-    // Views with orthographic cameras cannot use cascades, we force it to 1 shadow map here
-    if (view.Projection.M44 == 1.0f)
-        csmCount = 1;
-
     // Calculate cascade splits
-    auto cameraNear = view.Near;
-    auto cameraFar = view.Far;
-    auto cameraRange = cameraFar - cameraNear;
-    float minDistance;
-    float maxDistance;
+    const float minDistance = view.Near;
+    const float maxDistance = view.Near + atlasLight.Distance;
+    const float viewRange = view.Far - view.Near;
     float cascadeSplits[MAX_CSM_CASCADES];
     {
-        minDistance = cameraNear;
-        maxDistance = cameraNear + shadowsDistance;
-
         PartitionMode partitionMode = light.PartitionMode;
-        float pssmFactor = 0.5f;
         float splitDistance0 = light.Cascade1Spacing;
         float splitDistance1 = Math::Max(splitDistance0, light.Cascade2Spacing);
         float splitDistance2 = Math::Max(splitDistance1, light.Cascade3Spacing);
@@ -346,8 +478,8 @@ void ShadowsPass::SetupLight(RenderContext& renderContext, RenderContextBatch& r
         }
         else if (partitionMode == PartitionMode::Logarithmic || partitionMode == PartitionMode::PSSM)
         {
+            const float pssmFactor = 0.5f;
             const float lambda = partitionMode == PartitionMode::PSSM ? pssmFactor : 1.0f;
-
             const auto range = maxDistance - minDistance;
             const auto ratio = maxDistance / minDistance;
             const auto logRatio = Math::Clamp(1.0f - lambda, 0.0f, 1.0f);
@@ -355,7 +487,7 @@ void ShadowsPass::SetupLight(RenderContext& renderContext, RenderContextBatch& r
             {
                 // Compute cascade split (between znear and zfar)
                 const float distribute = static_cast<float>(cascadeLevel + 1) / csmCount;
-                float logZ = static_cast<float>(minDistance * powf(ratio, distribute));
+                float logZ = minDistance * Math::Pow(ratio, distribute);
                 float uniformZ = minDistance + range * distribute;
                 cascadeSplits[cascadeLevel] = Math::Lerp(uniformZ, logZ, logRatio);
             }
@@ -363,9 +495,44 @@ void ShadowsPass::SetupLight(RenderContext& renderContext, RenderContextBatch& r
 
         // Convert distance splits to ratios cascade in the range [0, 1]
         for (int32 i = 0; i < MAX_CSM_CASCADES; i++)
-            cascadeSplits[i] = (cascadeSplits[i] - cameraNear) / cameraRange;
+            cascadeSplits[i] = (cascadeSplits[i] - view.Near) / viewRange;
     }
-    atlasLight.CascadeSplits = view.Near + Float4(cascadeSplits) * cameraRange;
+    atlasLight.CascadeSplits = view.Near + Float4(cascadeSplits) * viewRange;
+
+    // Update cached state (invalidate it if the light changed)
+    atlasLight.ValidateCache(renderContext.View, light);
+
+    // Update cascades to check which should be updated this frame
+    atlasLight.ContextIndex = renderContextBatch.Contexts.Count();
+    atlasLight.ContextCount = 0;
+    for (int32 cascadeIndex = 0; cascadeIndex < csmCount; cascadeIndex++)
+    {
+        const float dstToCascade = atlasLight.CascadeSplits.Raw[cascadeIndex];
+        bool freezeUpdate;
+        const float updateRateInv = atlasLight.CalculateUpdateRateInv(light, dstToCascade, freezeUpdate);
+        auto& tile = atlasLight.Tiles[cascadeIndex];
+        if ((tile.FramesToUpdate > 0.0f || freezeUpdate) && atlasLight.Cache.Valid)
+        {
+            // Light state matches the cached state and the update rate allows us to reuse the cached shadow map so skip update
+            if (!freezeUpdate)
+                tile.FramesToUpdate -= 1.0f;
+            tile.SkipUpdate = true;
+            continue;
+        }
+        tile.FramesToUpdate += updateRateInv - 1.0f;
+
+        // Cache the current state
+        tile.SkipUpdate = false;
+        tile.CachedViewport = Viewport(tile.RectTile->X, tile.RectTile->Y, tile.RectTile->Width, tile.RectTile->Height);
+        atlasLight.ContextCount++;
+    }
+
+    // Init shadow data
+    atlasLight.ContextIndex = renderContextBatch.Contexts.Count();
+    if (atlasLight.ContextCount == 0)
+        return;
+    renderContextBatch.Contexts.AddDefault(atlasLight.ContextCount);
+    atlasLight.Cache.Set(renderContext.View, light, atlasLight.CascadeSplits);
 
     // Select best Up vector
     Float3 side = Float3::UnitX;
@@ -374,37 +541,34 @@ void ShadowsPass::SetupLight(RenderContext& renderContext, RenderContextBatch& r
     for (int32 i = 0; i < ARRAY_COUNT(vectorUps); i++)
     {
         const Float3 vectorUp = vectorUps[i];
-        if (Math::Abs(Float3::Dot(lightDirection, vectorUp)) < (1.0f - 0.0001f))
+        if (Math::Abs(Float3::Dot(light.Direction, vectorUp)) < (1.0f - 0.0001f))
         {
-            side = Float3::Normalize(Float3::Cross(vectorUp, lightDirection));
-            upDirection = Float3::Normalize(Float3::Cross(lightDirection, side));
+            side = Float3::Normalize(Float3::Cross(vectorUp, light.Direction));
+            upDirection = Float3::Normalize(Float3::Cross(light.Direction, side));
             break;
         }
     }
 
-    // Temporary data
-    Float3 frustumCorners[8];
-    Matrix shadowView, shadowProjection, shadowVP;
-
-    // Init shadow data
-    atlasLight.ContextIndex = renderContextBatch.Contexts.Count();
-    atlasLight.ContextCount = csmCount;
-    renderContextBatch.Contexts.AddDefault(atlasLight.ContextCount);
-
     // Create the different view and projection matrices for each split
     float splitMinRatio = 0;
-    float splitMaxRatio = (minDistance - cameraNear) / cameraRange;
+    float splitMaxRatio = (minDistance - view.Near) / viewRange;
+    int32 contextIndex = 0;
     for (int32 cascadeIndex = 0; cascadeIndex < csmCount; cascadeIndex++)
     {
-        // Cascade splits
         const auto oldSplitMinRatio = splitMinRatio;
         splitMinRatio = splitMaxRatio;
         splitMaxRatio = cascadeSplits[cascadeIndex];
 
+        auto& tile = atlasLight.Tiles[cascadeIndex];
+        if (tile.SkipUpdate)
+            continue;
+
         // Calculate cascade split frustum corners in view space
+        Float3 frustumCorners[8];
         for (int32 j = 0; j < 4; j++)
         {
             float overlap = 0.1f * (splitMinRatio - oldSplitMinRatio); // CSM blending overlap
+            const RenderList* mainCache = renderContext.List;
             const auto frustumRangeVS = mainCache->FrustumCornersVs[j + 4] - mainCache->FrustumCornersVs[j];
             frustumCorners[j] = mainCache->FrustumCornersVs[j] + frustumRangeVS * (splitMinRatio - overlap);
             frustumCorners[j + 4] = mainCache->FrustumCornersVs[j] + frustumRangeVS * splitMaxRatio;
@@ -438,8 +602,8 @@ void ShadowsPass::SetupLight(RenderContext& renderContext, RenderContextBatch& r
                 float shadowMapHalfSize = shadowMapsSize * 0.5f;
                 float x = Math::Ceil(Float3::Dot(target, upDirection) * shadowMapHalfSize / boundingVSRadius) * boundingVSRadius / shadowMapHalfSize;
                 float y = Math::Ceil(Float3::Dot(target, side) * shadowMapHalfSize / boundingVSRadius) * boundingVSRadius / shadowMapHalfSize;
-                float z = Float3::Dot(target, lightDirection);
-                target = upDirection * x + side * y + lightDirection * z;
+                float z = Float3::Dot(target, light.Direction);
+                target = upDirection * x + side * y + light.Direction * z;
             }
         }
 
@@ -447,7 +611,8 @@ void ShadowsPass::SetupLight(RenderContext& renderContext, RenderContextBatch& r
         const auto farClip = cascadeMaxBoundLS.Z - cascadeMinBoundLS.Z;
 
         // Create shadow view matrix
-        Matrix::LookAt(target - lightDirection * cascadeMaxBoundLS.Z, target, upDirection, shadowView);
+        Matrix shadowView, shadowProjection, shadowVP;
+        Matrix::LookAt(target - light.Direction * cascadeMaxBoundLS.Z, target, upDirection, shadowView);
 
         // Create viewport for culling with extended near/far planes due to culling issues
         Matrix cullingVP;
@@ -474,14 +639,13 @@ void ShadowsPass::SetupLight(RenderContext& renderContext, RenderContextBatch& r
             Matrix::Multiply(shadowView, shadowProjection, shadowVP);
         }
 
-        atlasLight.SetWorldToShadow(cascadeIndex, shadowVP);
+        tile.SetWorldToShadow(shadowVP);
 
         // Setup context for cascade
-        auto& shadowContext = renderContextBatch.Contexts[atlasLight.ContextIndex + cascadeIndex];
+        auto& shadowContext = renderContextBatch.Contexts[atlasLight.ContextIndex + contextIndex++];
         SetupRenderContext(renderContext, shadowContext);
-        shadowContext.List->Clear();
-        shadowContext.View.Position = -lightDirection * shadowsDistance + view.Position;
-        shadowContext.View.Direction = lightDirection;
+        shadowContext.View.Position = light.Direction * -atlasLight.Distance + view.Position;
+        shadowContext.View.Direction = light.Direction;
         shadowContext.View.SetUp(shadowView, shadowProjection);
         shadowContext.View.CullingFrustum.SetMatrix(cullingVP);
         shadowContext.View.PrepareCache(shadowContext, shadowMapsSize, shadowMapsSize, Float2::Zero, &view);
@@ -490,54 +654,40 @@ void ShadowsPass::SetupLight(RenderContext& renderContext, RenderContextBatch& r
 
 void ShadowsPass::SetupLight(RenderContext& renderContext, RenderContextBatch& renderContextBatch, RenderPointLightData& light, ShadowAtlasLight& atlasLight)
 {
-    SetupLight(renderContext, renderContextBatch, (RenderLocalLightData&)light, atlasLight);
+    if (SetupLight(renderContext, renderContextBatch, (RenderLocalLightData&)light, atlasLight))
+        return;
 
-    // Init shadow data
+    // Render depth to all 6 faces of the cube map
     atlasLight.ContextIndex = renderContextBatch.Contexts.Count();
     atlasLight.ContextCount = 6;
     renderContextBatch.Contexts.AddDefault(atlasLight.ContextCount);
-
-    const auto& view = renderContext.View;
-    const auto shadowMapsSize = (float)atlasLight.Resolution;
-
-    // Fade shadow on distance
-    const float fadeDistance = Math::Max(light.ShadowsFadeDistance, 0.1f);
-    const float dstLightToView = Float3::Distance(light.Position, view.Position);
-    const float fade = 1 - Math::Saturate((dstLightToView - light.Radius - light.ShadowsDistance + fadeDistance) / fadeDistance);
-    atlasLight.Fade *= fade;
-
-    // Render depth to all 6 faces of the cube map
     for (int32 faceIndex = 0; faceIndex < 6; faceIndex++)
     {
         auto& shadowContext = renderContextBatch.Contexts[atlasLight.ContextIndex + faceIndex];
         SetupRenderContext(renderContext, shadowContext);
-        shadowContext.List->Clear();
         shadowContext.View.SetUpCube(LocalLightNearPlane, light.Radius, light.Position);
         shadowContext.View.SetFace(faceIndex);
-        shadowContext.View.PrepareCache(shadowContext, shadowMapsSize, shadowMapsSize, Float2::Zero, &view);
-        atlasLight.SetWorldToShadow(faceIndex, shadowContext.View.ViewProjection());
+        const auto shadowMapsSize = (float)atlasLight.Resolution;
+        shadowContext.View.PrepareCache(shadowContext, shadowMapsSize, shadowMapsSize, Float2::Zero, &renderContext.View);
+        atlasLight.Tiles[faceIndex].SetWorldToShadow(shadowContext.View.ViewProjection());
     }
 }
 
 void ShadowsPass::SetupLight(RenderContext& renderContext, RenderContextBatch& renderContextBatch, RenderSpotLightData& light, ShadowAtlasLight& atlasLight)
 {
-    SetupLight(renderContext, renderContextBatch, (RenderLocalLightData&)light, atlasLight);
+    if (SetupLight(renderContext, renderContextBatch, (RenderLocalLightData&)light, atlasLight))
+        return;
 
-    // Init shadow data
+    // Render depth to a single projection
     atlasLight.ContextIndex = renderContextBatch.Contexts.Count();
     atlasLight.ContextCount = 1;
     renderContextBatch.Contexts.AddDefault(atlasLight.ContextCount);
-
-    const auto& view = renderContext.View;
-    const auto shadowMapsSize = (float)atlasLight.Resolution;
-
-    // Render depth to a single projection
     auto& shadowContext = renderContextBatch.Contexts[atlasLight.ContextIndex];
     SetupRenderContext(renderContext, shadowContext);
-    shadowContext.List->Clear();
     shadowContext.View.SetProjector(LocalLightNearPlane, light.Radius, light.Position, light.Direction, light.UpVector, light.OuterConeAngle * 2.0f);
-    shadowContext.View.PrepareCache(shadowContext, shadowMapsSize, shadowMapsSize, Float2::Zero, &view);
-    atlasLight.SetWorldToShadow(0, shadowContext.View.ViewProjection());
+    const auto shadowMapsSize = (float)atlasLight.Resolution;
+    shadowContext.View.PrepareCache(shadowContext, shadowMapsSize, shadowMapsSize, Float2::Zero, &renderContext.View);
+    atlasLight.Tiles[0].SetWorldToShadow(shadowContext.View.ViewProjection());
 }
 
 void ShadowsPass::Dispose()
@@ -624,7 +774,7 @@ void ShadowsPass::SetupShadows(RenderContext& renderContext, RenderContextBatch&
         shadows.ViewOrigin = renderContext.View.Origin;
     }
     if (!shadows.AtlasTiles)
-        shadows.AtlasTiles = New<ShadowsAtlasTile>(0, 0, atlasResolution, atlasResolution);
+        shadows.AtlasTiles = New<ShadowsAtlasRectTile>(0, 0, atlasResolution, atlasResolution);
 
     // Update/add lights
     for (const RenderLightData* light : shadowedLights)
@@ -637,12 +787,17 @@ void ShadowsPass::SetupShadows(RenderContext& renderContext, RenderContextBatch&
         atlasLight.Resolution = QuantizeResolution(lightResolutionFloat);
 
         // Cull too small lights
-        constexpr uint16 MinResolution = 16;
-        if (atlasLight.Resolution < MinResolution)
+        if (atlasLight.Resolution < SHADOWS_MIN_RESOLUTION)
             continue;
 
         if (light->IsDirectionalLight)
-            atlasLight.TilesNeeded = Math::Clamp(((const RenderDirectionalLightData*)light)->CascadeCount, 0, MAX_CSM_CASCADES);
+        {
+            atlasLight.TilesNeeded = Math::Clamp(((const RenderDirectionalLightData*)light)->CascadeCount, 1, MAX_CSM_CASCADES);
+
+            // Views with orthographic cameras cannot use cascades, we force it to 1 shadow map here
+            if (renderContext.View.IsOrthographicProjection())
+                atlasLight.TilesNeeded = 1;
+        }
         else if (light->IsPointLight)
             atlasLight.TilesNeeded = 6;
         else
@@ -655,11 +810,8 @@ void ShadowsPass::SetupShadows(RenderContext& renderContext, RenderContextBatch&
     {
         if (it->Value.LastFrameUsed != currentFrame)
         {
-            for (auto& tile : it->Value.Tiles)
-            {
-                if (tile)
-                    tile->Free(&shadows);
-            }
+            for (ShadowAtlasLightTile& tile : it->Value.Tiles)
+                tile.Free(&shadows);
             shadows.Lights.Remove(it);
         }
     }
@@ -696,50 +848,41 @@ RETRY_ATLAS_SETUP:
     }
 
     // Macro checks if light has proper amount of tiles already assigned and the resolution is matching
-#define IS_LIGHT_TILE_REUSABLE (atlasLight.ContextCount == atlasLight.TilesNeeded && atlasLight.Tiles[0] && atlasLight.Tiles[0]->Width == atlasLight.Resolution)
+#define IS_LIGHT_TILE_REUSABLE (atlasLight.TilesCount == atlasLight.TilesNeeded && atlasLight.Tiles[0].RectTile && atlasLight.Tiles[0].RectTile->Width == atlasLight.Resolution)
 
     // Remove incorrect tiles before allocating new ones
     for (RenderLightData* light : shadowedLights)
     {
-        auto& atlasLight = shadows.Lights[light->ID];
+        ShadowAtlasLight& atlasLight = shadows.Lights[light->ID];
         if (IS_LIGHT_TILE_REUSABLE)
             continue;
 
         // Remove existing tiles
-        for (auto& tile : atlasLight.Tiles)
-        {
-            if (tile)
-            {
-                tile->Free(&shadows);
-                tile = nullptr;
-            }
-        }
+        for (ShadowAtlasLightTile& tile : atlasLight.Tiles)
+            tile.Free(&shadows);
     }
 
     // Insert tiles into the atlas (already sorted to favor the first ones)
     for (RenderLightData* light : shadowedLights)
     {
         auto& atlasLight = shadows.Lights[light->ID];
-        if (IS_LIGHT_TILE_REUSABLE || atlasLight.Resolution < 16)
+        if (IS_LIGHT_TILE_REUSABLE || atlasLight.Resolution < SHADOWS_MIN_RESOLUTION)
             continue;
 
         // Try to insert tiles
         bool failedToInsert = false;
         for (int32 tileIndex = 0; tileIndex < atlasLight.TilesNeeded; tileIndex++)
         {
-            auto tile = shadows.AtlasTiles->Insert(atlasLight.Resolution, atlasLight.Resolution, 0, &shadows);
-            if (!tile)
+            auto rectTile = shadows.AtlasTiles->Insert(atlasLight.Resolution, atlasLight.Resolution, 0, &shadows);
+            if (!rectTile)
             {
                 // Free any previous tiles that were added
                 for (int32 i = 0; i < tileIndex; i++)
-                {
-                    atlasLight.Tiles[i]->Free(&shadows);
-                    atlasLight.Tiles[i] = nullptr;
-                }
+                    atlasLight.Tiles[i].Free(&shadows);
                 failedToInsert = true;
                 break;
             }
-            atlasLight.Tiles[tileIndex] = tile;
+            atlasLight.Tiles[tileIndex].RectTile = rectTile;
         }
         if (failedToInsert)
         {
@@ -757,7 +900,7 @@ RETRY_ATLAS_SETUP:
 
             // Rebuild atlas
             shadows.ClearTiles();
-            shadows.AtlasTiles = New<ShadowsAtlasTile>(0, 0, atlasResolution, atlasResolution);
+            shadows.AtlasTiles = New<ShadowsAtlasRectTile>(0, 0, atlasResolution, atlasResolution);
             goto RETRY_ATLAS_SETUP;
         }
     }
@@ -766,9 +909,14 @@ RETRY_ATLAS_SETUP:
     for (RenderLightData* light : shadowedLights)
     {
         auto& atlasLight = shadows.Lights[light->ID];
-        if (atlasLight.Tiles[0] && atlasLight.Tiles[0]->Width == atlasLight.Resolution)
+        if (atlasLight.Tiles[0].RectTile && atlasLight.Tiles[0].RectTile->Width == atlasLight.Resolution)
         {
+            // Invalidate cache when whole atlas will be cleared
+            if (shadows.ClearShadowMapAtlas)
+                atlasLight.Cache.Valid = false;
+
             light->HasShadow = true;
+            atlasLight.TilesCount = atlasLight.TilesNeeded;
             if (light->IsPointLight)
                 SetupLight(renderContext, renderContextBatch, *(RenderPointLightData*)light, atlasLight);
             else if (light->IsSpotLight)
@@ -787,7 +935,7 @@ RETRY_ATLAS_SETUP:
     for (RenderLightData* light : shadowedLights)
     {
         auto& atlasLight = shadows.Lights[light->ID];
-        if (atlasLight.Tiles[0] == nullptr)
+        if (atlasLight.Tiles[0].RectTile == nullptr)
         {
             light->ShadowsBufferAddress = 0; // Clear to indicate no shadow
             continue;
@@ -797,26 +945,24 @@ RETRY_ATLAS_SETUP:
         light->ShadowsBufferAddress = shadows.ShadowsBuffer.Data.Count() / sizeof(Float4);
 
         // Write shadow data (this must match HLSL)
-        const int32 tilesCount = atlasLight.ContextCount;
         {
             // Shadow info
             auto* packed = shadows.ShadowsBuffer.WriteReserve<Float4>(2);
-            Color32 packed0x((byte)(atlasLight.Sharpness * (255.0f / 10.0f)), (byte)(atlasLight.Fade * 255.0f), tilesCount, 0);
+            Color32 packed0x((byte)(atlasLight.Sharpness * (255.0f / 10.0f)), (byte)(atlasLight.Fade * 255.0f), (byte)atlasLight.TilesCount, 0);
             packed[0] = Float4(*(const float*)&packed0x, atlasLight.FadeDistance, atlasLight.NormalOffsetScale, atlasLight.Bias);
             packed[1] = atlasLight.CascadeSplits;
         }
-        for (int32 tileIndex = 0; tileIndex < tilesCount; tileIndex++)
+        for (int32 tileIndex = 0; tileIndex < atlasLight.TilesCount; tileIndex++)
         {
             // Shadow projection info
-            const ShadowsAtlasTile* tile = atlasLight.Tiles[tileIndex];
-            ASSERT(tile);
-            const Matrix& worldToShadow = atlasLight.WorldToShadow[tileIndex];
+            const ShadowAtlasLightTile& tile = atlasLight.Tiles[tileIndex];
+            ASSERT(tile.RectTile);
             auto* packed = shadows.ShadowsBuffer.WriteReserve<Float4>(5);
-            packed[0] = Float4(tile->Width, tile->Height, tile->X, tile->Y) * atlasResolutionInv; // UV to AtlasUV via a single MAD instruction
-            packed[1] = worldToShadow.GetColumn1();
-            packed[2] = worldToShadow.GetColumn2();
-            packed[3] = worldToShadow.GetColumn3();
-            packed[4] = worldToShadow.GetColumn4();
+            packed[0] = Float4(tile.RectTile->Width, tile.RectTile->Height, tile.RectTile->X, tile.RectTile->Y) * atlasResolutionInv; // UV to AtlasUV via a single MAD instruction
+            packed[1] = tile.WorldToShadow.GetColumn1();
+            packed[2] = tile.WorldToShadow.GetColumn2();
+            packed[3] = tile.WorldToShadow.GetColumn3();
+            packed[4] = tile.WorldToShadow.GetColumn4();
         }
     }
     GPUContext* context = GPUDevice::Instance->GetMainContext();
@@ -852,14 +998,18 @@ void ShadowsPass::RenderShadowMaps(RenderContextBatch& renderContextBatch)
     for (auto& e : shadows.Lights)
     {
         const ShadowAtlasLight& atlasLight = e.Value;
-        for (int32 tileIndex = 0; tileIndex < atlasLight.ContextCount; tileIndex++)
+        int32 contextIndex = 0;
+        for (int32 tileIndex = 0; tileIndex < atlasLight.TilesCount; tileIndex++)
         {
-            const ShadowsAtlasTile* tile = atlasLight.Tiles[tileIndex];
-            if (!tile)
+            const ShadowAtlasLightTile& tile = atlasLight.Tiles[tileIndex];
+            if (!tile.RectTile)
                 break;
+            if (tile.SkipUpdate)
+                continue;
 
             // Set viewport for tile
-            context->SetViewportAndScissors(Viewport(tile->X, tile->Y, tile->Width, tile->Height));
+            ASSERT_LOW_LAYER(tile.CachedViewport == Viewport(tile.RectTile->X, tile.RectTile->Y, tile.RectTile->Width, tile.RectTile->Height));
+            context->SetViewportAndScissors(tile.CachedViewport);
 
             if (!shadows.ClearShadowMapAtlas)
             {
@@ -870,7 +1020,7 @@ void ShadowsPass::RenderShadowMaps(RenderContextBatch& renderContextBatch)
             }
 
             // Draw objects depth
-            auto& shadowContext = renderContextBatch.Contexts[atlasLight.ContextIndex + tileIndex];
+            auto& shadowContext = renderContextBatch.Contexts[atlasLight.ContextIndex + contextIndex++];
             shadowContext.List->ExecuteDrawCalls(shadowContext, DrawCallsListType::Depth);
             shadowContext.List->ExecuteDrawCalls(shadowContext, shadowContext.List->ShadowDepthDrawCallsList, renderContext.List->DrawCalls, nullptr);
         }

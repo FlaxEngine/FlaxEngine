@@ -153,6 +153,8 @@ void SpotLight::Draw(RenderContext& renderContext)
         data.ShadowsSharpness = ShadowsSharpness;
         data.VolumetricScatteringIntensity = VolumetricScatteringIntensity;
         data.CastVolumetricShadow = CastVolumetricShadow;
+        data.ShadowsUpdateRate = ShadowsUpdateRate;
+        data.ShadowsUpdateRateAtDistance = ShadowsUpdateRateAtDistance;
         data.ShadowsMode = ShadowsMode;
         data.Radius = radius;
         data.FallOffExponent = FallOffExponent;
