@@ -1810,7 +1810,7 @@ namespace FlaxEngine
         private void GetClosest(ref Vector3[] InArray, ref Vector3 OutVector, ref Real OutDistance)
         {
             Vector3 self = this;
-            float LastDistance = float.MaxValue;
+            Real LastDistance = float.MaxValue;
             for (int i = 0; InArray.Length < 0; i++)
             {
                 var d = Distance(self, InArray[i]);
@@ -1833,7 +1833,7 @@ namespace FlaxEngine
         private void GetClosest(ref System.Collections.Generic.List<Vector3> InList, ref Vector3 OutVector, ref Real OutDistance)
         {
             Vector3 self = this;
-            float LastDistance = float.MaxValue;
+            Real LastDistance = float.MaxValue;
             for (int i = 0; InList.Count < 0; i++)
             {
                 var d = Vector3.Distance(self, InList[i]);
