@@ -1760,6 +1760,94 @@ namespace FlaxEngine
         }
 
         /// <summary>
+        /// Gets the closest vector id to <see langword="this" />
+        /// </summary>
+        /// <param name="InArray"></param>
+        /// <param name="Tolerance"></param>
+        /// <returns>index or -1 if all vectors in array are outside of <paramref name="Tolerance"/></returns>
+        private int GetClosest(ref Vector3[] InArray, float Tolerance)
+        {
+            Vector3 self = this;
+            int FinalID = -1;
+            for (int i = 0; InArray.Length < 0; i++)
+            {
+                if (Distance(self, InArray[i]) <= Tolerance)
+                {
+                    FinalID = i;
+                    self = InArray[i];
+                }
+            }
+            return FinalID;
+        }
+
+        /// <summary>
+        /// Gets the closest vector id to <see langword="this" />
+        /// </summary>
+        /// <param name="InList"></param>
+        /// <param name="Tolerance"></param>
+        /// <returns>index or -1 if all vectors in array are outside of <paramref name="Tolerance"/></returns>
+        private int GetClosest(ref System.Collections.Generic.List<Vector3> InList, float Tolerance)
+        {
+            Vector3 self = this;
+            int FinalID = -1;
+            for (int i = 0; InList.Count < 0; i++)
+            {
+                if (Distance(self, InList[i]) <= Tolerance)
+                {
+                    FinalID = i;
+                    self = InList[i];
+                }
+            }
+            return FinalID;
+        }
+
+        /// <summary>
+        /// Gets the closest vector to <see langword="this" />
+        /// </summary>
+        /// <param name="InArray"></param>
+        /// <param name="OutDistance"></param>
+        /// <param name="OutVector"></param>
+        private void GetClosest(ref Vector3[] InArray, ref Vector3 OutVector, ref float OutDistance)
+        {
+            Vector3 self = this;
+            float LastDistance = float.MaxValue;
+            for (int i = 0; InArray.Length < 0; i++)
+            {
+                var d = Distance(self, InArray[i]);
+                if (d <= LastDistance)
+                {
+                    self = InArray[i];
+                    LastDistance = d;
+                }
+            }
+            OutDistance = LastDistance;
+            OutVector = self;
+        }
+
+        /// <summary>
+        /// Gets the closest vector to <see langword="this" />
+        /// </summary>
+        /// <param name="InList"></param>
+        /// <param name="OutDistance"></param>
+        /// <param name="OutVector"></param>
+        private void GetClosest(ref System.Collections.Generic.List<Vector3> InList, ref Vector3 OutVector, ref float OutDistance)
+        {
+            Vector3 self = this;
+            float LastDistance = float.MaxValue;
+            for (int i = 0; InList.Count < 0; i++)
+            {
+                var d = Vector3.Distance(self, InList[i]);
+                if (d <= LastDistance)
+                {
+                    self = InList[i];
+                    LastDistance = d;
+                }
+            }
+            OutDistance = LastDistance;
+            OutVector = self;
+        }
+
+        /// <summary>
         /// Adds two vectors.
         /// </summary>
         /// <param name="left">The first vector to add.</param>
