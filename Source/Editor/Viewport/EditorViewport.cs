@@ -1663,8 +1663,7 @@ namespace FlaxEditor.Viewport
                 {
                     offset.X = offset.X > 0 ? Mathf.Floor(offset.X) : Mathf.Ceil(offset.X);
                     offset.Y = offset.Y > 0 ? Mathf.Floor(offset.Y) : Mathf.Ceil(offset.Y);
-                    _mouseDelta = offset / size;
-                    _mouseDelta.Y *= size.Y / size.X;
+                    _mouseDelta = offset;
 
                     // Update delta filtering buffer
                     _deltaFilteringBuffer[_deltaFilteringStep] = _mouseDelta;
@@ -1682,8 +1681,7 @@ namespace FlaxEditor.Viewport
                 }
                 else
                 {
-                    _mouseDelta = offset / size;
-                    _mouseDelta.Y *= size.Y / size.X;
+                    _mouseDelta = offset;
                     mouseDelta = _mouseDelta;
                 }
 
@@ -1697,7 +1695,7 @@ namespace FlaxEditor.Viewport
 
                 // Update
                 moveDelta *= dt * (60.0f * 4.0f);
-                mouseDelta *= 200.0f * MouseSpeed * _mouseSensitivity;
+                mouseDelta *= 0.1833f * MouseSpeed * _mouseSensitivity;
                 UpdateView(dt, ref moveDelta, ref mouseDelta, out var centerMouse);
 
                 // Move mouse back to the root position
@@ -1723,7 +1721,7 @@ namespace FlaxEditor.Viewport
                     var offset = _viewMousePos - _startPos;
                     offset.X = offset.X > 0 ? Mathf.Floor(offset.X) : Mathf.Ceil(offset.X);
                     offset.Y = offset.Y > 0 ? Mathf.Floor(offset.Y) : Mathf.Ceil(offset.Y);
-                    _mouseDelta = offset / size;
+                    _mouseDelta = offset;
                     _startPos = _viewMousePos;
                 }
                 else
