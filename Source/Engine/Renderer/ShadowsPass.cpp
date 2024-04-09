@@ -534,21 +534,6 @@ void ShadowsPass::SetupLight(RenderContext& renderContext, RenderContextBatch& r
     renderContextBatch.Contexts.AddDefault(atlasLight.ContextCount);
     atlasLight.Cache.Set(renderContext.View, light, atlasLight.CascadeSplits);
 
-    // Select best Up vector
-    Float3 side = Float3::UnitX;
-    Float3 upDirection = Float3::UnitX;
-    Float3 vectorUps[] = { Float3::UnitY, Float3::UnitX, Float3::UnitZ };
-    for (int32 i = 0; i < ARRAY_COUNT(vectorUps); i++)
-    {
-        const Float3 vectorUp = vectorUps[i];
-        if (Math::Abs(Float3::Dot(light.Direction, vectorUp)) < (1.0f - 0.0001f))
-        {
-            side = Float3::Normalize(Float3::Cross(vectorUp, light.Direction));
-            upDirection = Float3::Normalize(Float3::Cross(light.Direction, side));
-            break;
-        }
-    }
-
     // Create the different view and projection matrices for each split
     float splitMinRatio = 0;
     float splitMaxRatio = (minDistance - view.Near) / viewRange;
@@ -564,81 +549,71 @@ void ShadowsPass::SetupLight(RenderContext& renderContext, RenderContextBatch& r
             continue;
 
         // Calculate cascade split frustum corners in view space
-        Float3 frustumCorners[8];
+        Float3 frustumCornersVs[8];
         for (int32 j = 0; j < 4; j++)
         {
-            float overlap = 0.1f * (splitMinRatio - oldSplitMinRatio); // CSM blending overlap
+            float overlapWithPrevSplit = 0.1f * (splitMinRatio - oldSplitMinRatio); // CSM blending overlap
             const RenderList* mainCache = renderContext.List;
             const auto frustumRangeVS = mainCache->FrustumCornersVs[j + 4] - mainCache->FrustumCornersVs[j];
-            frustumCorners[j] = mainCache->FrustumCornersVs[j] + frustumRangeVS * (splitMinRatio - overlap);
-            frustumCorners[j + 4] = mainCache->FrustumCornersVs[j] + frustumRangeVS * splitMaxRatio;
+            frustumCornersVs[j] = mainCache->FrustumCornersVs[j] + frustumRangeVS * (splitMinRatio - overlapWithPrevSplit);
+            frustumCornersVs[j + 4] = mainCache->FrustumCornersVs[j] + frustumRangeVS * splitMaxRatio;
         }
 
-        // Perform stabilization
-        enum StabilizationMode
-        {
-            None,
-            ProjectionSnapping,
-            ViewSnapping,
-        };
-        const StabilizationMode stabilization = ViewSnapping; // TODO: expose to graphics settings maybe
-        Float3 cascadeMinBoundLS;
-        Float3 cascadeMaxBoundLS;
-        Float3 target;
-        {
-            // Make sure we are using the same direction when stabilizing
-            BoundingSphere boundingVS;
-            BoundingSphere::FromPoints(frustumCorners, ARRAY_COUNT(frustumCorners), boundingVS);
+        // Transform the frustum from camera view space to world-space
+        Float3 frustumCornersWs[8];
+        for (int32 i = 0; i < 8; i++)
+            Float3::Transform(frustumCornersVs[i], renderContext.View.IV, frustumCornersWs[i]);
 
-            // Compute bounding box center
-            Float3::TransformCoordinate(boundingVS.Center, view.IV, target);
-            float boundingVSRadius = (float)boundingVS.Radius;
-            cascadeMaxBoundLS = Float3(boundingVSRadius);
-            cascadeMinBoundLS = -cascadeMaxBoundLS;
+        // Calculate the centroid of the view frustum slice
+        Float3 frustumCenter = Float3::Zero;
+        for (int32 i = 0; i < 8; i++)
+            frustumCenter += frustumCornersWs[i];
+        frustumCenter *= 1.0f / 8.0f;
 
-            if (stabilization == ViewSnapping)
-            {
-                // Snap the target to the texel units (reference: ShaderX7 - Practical Cascaded Shadows Maps)
-                float shadowMapHalfSize = shadowMapsSize * 0.5f;
-                float x = Math::Ceil(Float3::Dot(target, upDirection) * shadowMapHalfSize / boundingVSRadius) * boundingVSRadius / shadowMapHalfSize;
-                float y = Math::Ceil(Float3::Dot(target, side) * shadowMapHalfSize / boundingVSRadius) * boundingVSRadius / shadowMapHalfSize;
-                float z = Float3::Dot(target, light.Direction);
-                target = upDirection * x + side * y + light.Direction * z;
-            }
-        }
+        // Calculate the radius of a bounding sphere surrounding the frustum corners
+        float frustumRadius = 0.0f;
+        for (int32 i = 0; i < 8; i++)
+            frustumRadius = Math::Max(frustumRadius, (frustumCornersWs[i] - frustumCenter).LengthSquared());
+        frustumRadius = Math::Ceil(Math::Sqrt(frustumRadius) * 16.0f) / 16.0f;
 
-        const auto nearClip = 0.0f;
-        const auto farClip = cascadeMaxBoundLS.Z - cascadeMinBoundLS.Z;
+        // Snap cascade center to the texel size
+        float texelsPerUnit = (float)atlasLight.Resolution / (frustumRadius * 2.0f);
+        frustumCenter *= texelsPerUnit;
+        frustumCenter = Float3::Floor(frustumCenter);
+        frustumCenter /= texelsPerUnit;
 
-        // Create shadow view matrix
-        Matrix shadowView, shadowProjection, shadowVP;
-        Matrix::LookAt(target - light.Direction * cascadeMaxBoundLS.Z, target, upDirection, shadowView);
+        // Cascade bounds are built around the sphere at the frustum center to reduce shadow shimmering
+        Float3 maxExtents = Float3(frustumRadius);
+        Float3 minExtents = -maxExtents;
+        Float3 cascadeExtents = maxExtents - minExtents;
 
-        // Create viewport for culling with extended near/far planes due to culling issues
-        Matrix cullingVP;
-        {
-            const float cullRangeExtent = 100000.0f;
-            Matrix::OrthoOffCenter(cascadeMinBoundLS.X, cascadeMaxBoundLS.X, cascadeMinBoundLS.Y, cascadeMaxBoundLS.Y, -cullRangeExtent, farClip + cullRangeExtent, shadowProjection);
-            Matrix::Multiply(shadowView, shadowProjection, cullingVP);
-        }
+        Matrix shadowView, shadowProjection, shadowVP, cullingVP;
 
-        // Create shadow projection matrix
-        Matrix::OrthoOffCenter(cascadeMinBoundLS.X, cascadeMaxBoundLS.X, cascadeMinBoundLS.Y, cascadeMaxBoundLS.Y, nearClip, farClip, shadowProjection);
+        // Create view matrix
+        Matrix::LookAt(frustumCenter + light.Direction * minExtents.Z, frustumCenter, Float3::Up, shadowView);
 
-        // Construct shadow matrix (View * Projection)
+        // Create viewport for culling with extended near/far planes due to culling issues (aka pancaking)
+        const float cullRangeExtent = 100000.0f;
+        Matrix::OrthoOffCenter(minExtents.X, maxExtents.X, minExtents.Y, maxExtents.Y, -cullRangeExtent, cascadeExtents.Z + cullRangeExtent, shadowProjection);
+        Matrix::Multiply(shadowView, shadowProjection, cullingVP);
+
+        // Create projection matrix
+        Matrix::OrthoOffCenter(minExtents.X, maxExtents.X, minExtents.Y, maxExtents.Y, 0.0f, cascadeExtents.Z, shadowProjection);
         Matrix::Multiply(shadowView, shadowProjection, shadowVP);
 
-        // Stabilize the shadow matrix on the projection
-        if (stabilization == ProjectionSnapping)
-        {
-            Float3 shadowPixelPosition = shadowVP.GetTranslation() * (shadowMapsSize * 0.5f);
-            shadowPixelPosition.Z = 0;
-            const Float3 shadowPixelPositionRounded(Math::Round(shadowPixelPosition.X), Math::Round(shadowPixelPosition.Y), 0.0f);
-            const Float4 shadowPixelOffset((shadowPixelPositionRounded - shadowPixelPosition) * (2.0f / shadowMapsSize), 0.0f);
-            shadowProjection.SetRow4(shadowProjection.GetRow4() + shadowPixelOffset);
-            Matrix::Multiply(shadowView, shadowProjection, shadowVP);
-        }
+        // Round the projection matrix by projecting the world-space origin and calculating the fractional offset in texel space of the shadow map
+        Float4 shadowOrigin = Float4(0.0f, 0.0f, 0.0f, 1.0f);
+        shadowOrigin = Float4::Transform(shadowOrigin, shadowVP);
+        shadowOrigin = shadowOrigin * (shadowMapsSize / 2.0f);
+        Float4 roundedOrigin = Float4::Round(shadowOrigin);
+        Float4 roundOffset = roundedOrigin - shadowOrigin;
+        roundOffset = roundOffset * (2.0f / shadowMapsSize);
+        roundOffset.Z = 0.0f;
+        roundOffset.W = 0.0f;
+        shadowProjection.SetRow4(shadowProjection.GetRow4() + roundOffset);
 
+        // Calculate view*projection matrix
+        Matrix::Multiply(shadowView, shadowProjection, shadowVP);
         tile.SetWorldToShadow(shadowVP);
 
         // Setup context for cascade
@@ -958,7 +933,7 @@ RETRY_ATLAS_SETUP:
             const ShadowAtlasLightTile& tile = atlasLight.Tiles[tileIndex];
             ASSERT(tile.RectTile);
             auto* packed = shadows.ShadowsBuffer.WriteReserve<Float4>(5);
-            packed[0] = Float4(tile.RectTile->Width, tile.RectTile->Height, tile.RectTile->X, tile.RectTile->Y) * atlasResolutionInv; // UV to AtlasUV via a single MAD instruction
+            packed[0] = Float4(tile.RectTile->Width - 1.0f, tile.RectTile->Height - 1.0f, tile.RectTile->X, tile.RectTile->Y) * atlasResolutionInv; // UV to AtlasUV via a single MAD instruction
             packed[1] = tile.WorldToShadow.GetColumn1();
             packed[2] = tile.WorldToShadow.GetColumn2();
             packed[3] = tile.WorldToShadow.GetColumn3();
