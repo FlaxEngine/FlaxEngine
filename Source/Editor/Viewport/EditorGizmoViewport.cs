@@ -76,7 +76,7 @@ namespace FlaxEditor.Viewport
         public bool SnapToVertex => ContainsFocus && Editor.Instance.Options.Options.Input.SnapToVertex.Process(Root);
 
         /// <inheritdoc />
-        public Float2 MouseDelta => _mouseDelta * 1000;
+        public Float2 MouseDelta => _mouseDelta;
 
         /// <inheritdoc />
         public bool UseSnapping => Root?.GetKey(KeyboardKeys.Control) ?? false;
