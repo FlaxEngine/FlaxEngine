@@ -3,9 +3,6 @@
 using System;
 using FlaxEditor.Content.Thumbnails;
 using FlaxEditor.GUI.ContextMenu;
-using FlaxEditor.GUI.Docking;
-using FlaxEditor.Options;
-using FlaxEditor.Surface;
 using FlaxEditor.Viewport.Previews;
 using FlaxEditor.Windows;
 using FlaxEditor.Windows.Assets;
