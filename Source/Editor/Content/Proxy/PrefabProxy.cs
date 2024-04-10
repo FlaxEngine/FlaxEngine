@@ -2,6 +2,7 @@
 
 using System;
 using System.IO;
+using FlaxEditor.Content.Create;
 using FlaxEditor.Content.Thumbnails;
 using FlaxEditor.Viewport.Previews;
 using FlaxEditor.Windows;
@@ -76,30 +77,21 @@ namespace FlaxEditor.Content
         /// <inheritdoc />
         public override void Create(string outputPath, object arg)
         {
-            bool resetTransform = false;
             var transform = Transform.Identity;
             if (!(arg is Actor actor))
             {
-                // Create default prefab root object
-                actor = new EmptyActor
-                {
-                    Name = "Root"
-                };
-
-                // Cleanup it after usage
-                Object.Destroy(actor, 20.0f);
+                Editor.Instance.ContentImporting.Create(new PrefabCreateEntry(outputPath));
+                return;
             }
             else if (actor.Scene != null)
             {
                 // Create prefab with identity transform so the actor instance on a level will have it customized
-                resetTransform = true;
                 transform = actor.LocalTransform;
                 actor.LocalTransform = Transform.Identity;
             }
 
             PrefabManager.CreatePrefab(actor, outputPath, true);
-            if (resetTransform)
-                actor.LocalTransform = transform;
+            actor.LocalTransform = transform;
         }
 
         /// <inheritdoc />
