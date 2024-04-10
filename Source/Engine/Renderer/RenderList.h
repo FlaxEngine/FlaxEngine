@@ -59,12 +59,6 @@ struct RenderLightData
     float ShadowsUpdateRate;
     float ShadowsUpdateRateAtDistance;
 
-    RenderLightData()
-    {
-        Platform::MemoryClear(this, sizeof(RenderLightData));
-    }
-
-    POD_COPYABLE(RenderLightData);
     bool CanRenderShadow(const RenderView& view) const;
 };
 
@@ -80,8 +74,11 @@ struct RenderDirectionalLightData : RenderLightData
 
     RenderDirectionalLightData()
     {
+        Platform::MemoryClear(this, sizeof(RenderDirectionalLightData));
         IsDirectionalLight = 1;
     }
+
+    POD_COPYABLE(RenderDirectionalLightData);
 
     void SetShaderData(ShaderLightData& data, bool useShadow) const;
 };
@@ -107,8 +104,11 @@ struct RenderSpotLightData : RenderLocalLightData
 
     RenderSpotLightData()
     {
+        Platform::MemoryClear(this, sizeof(RenderSpotLightData));
         IsSpotLight = 1;
     }
+
+    POD_COPYABLE(RenderSpotLightData);
 
     void SetShaderData(ShaderLightData& data, bool useShadow) const;
 };
@@ -120,8 +120,11 @@ struct RenderPointLightData : RenderLocalLightData
 
     RenderPointLightData()
     {
+        Platform::MemoryClear(this, sizeof(RenderPointLightData));
         IsPointLight = 1;
     }
+
+    POD_COPYABLE(RenderPointLightData);
 
     void SetShaderData(ShaderLightData& data, bool useShadow) const;
 };
@@ -135,8 +138,11 @@ struct RenderSkyLightData : RenderLightData
 
     RenderSkyLightData()
     {
+        Platform::MemoryClear(this, sizeof(RenderSkyLightData));
         IsSkyLight = 1;
     }
+
+    POD_COPYABLE(RenderSkyLightData);
 
     void SetShaderData(ShaderLightData& data, bool useShadow) const;
 };
