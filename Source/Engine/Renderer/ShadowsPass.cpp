@@ -133,7 +133,7 @@ struct ShadowAtlasLight
     uint16 Resolution;
     uint8 TilesNeeded;
     uint8 TilesCount;
-    float Sharpness, Fade, NormalOffsetScale, Bias, FadeDistance, Distance;
+    float Sharpness, Fade, NormalOffsetScale, Bias, FadeDistance, Distance, TileBorder;
     Float4 CascadeSplits;
     ShadowAtlasLightTile Tiles[SHADOWS_MAX_TILES];
     ShadowAtlasLightCache Cache;
@@ -205,6 +205,7 @@ struct ShadowAtlasLight
 class ShadowsCustomBuffer : public RenderBuffers::CustomBuffer
 {
 public:
+    int32 MaxShadowsQuality = 0;
     int32 Resolution = 0;
     int32 AtlasPixelsUsed = 0;
     mutable bool ClearShadowMapAtlas = true;
@@ -379,7 +380,7 @@ void ShadowsPass::SetupRenderContext(RenderContext& renderContext, RenderContext
     shadowContext.List->Clear();
 }
 
-void ShadowsPass::SetupLight(RenderContext& renderContext, RenderContextBatch& renderContextBatch, RenderLightData& light, ShadowAtlasLight& atlasLight)
+void ShadowsPass::SetupLight(ShadowsCustomBuffer& shadows, RenderContext& renderContext, RenderContextBatch& renderContextBatch, RenderLightData& light, ShadowAtlasLight& atlasLight)
 {
     // Copy light properties
     atlasLight.Sharpness = light.ShadowsSharpness;
@@ -390,9 +391,9 @@ void ShadowsPass::SetupLight(RenderContext& renderContext, RenderContextBatch& r
     atlasLight.Distance = Math::Min(renderContext.View.Far, light.ShadowsDistance);
 }
 
-bool ShadowsPass::SetupLight(RenderContext& renderContext, RenderContextBatch& renderContextBatch, RenderLocalLightData& light, ShadowAtlasLight& atlasLight)
+bool ShadowsPass::SetupLight(ShadowsCustomBuffer& shadows, RenderContext& renderContext, RenderContextBatch& renderContextBatch, RenderLocalLightData& light, ShadowAtlasLight& atlasLight)
 {
-    SetupLight(renderContext, renderContextBatch, (RenderLightData&)light, atlasLight);
+    SetupLight(shadows, renderContext, renderContextBatch, (RenderLightData&)light, atlasLight);
 
     // Fade shadow on distance
     const float fadeDistance = Math::Max(light.ShadowsFadeDistance, 0.1f);
@@ -430,9 +431,9 @@ bool ShadowsPass::SetupLight(RenderContext& renderContext, RenderContextBatch& r
     return false;
 }
 
-void ShadowsPass::SetupLight(RenderContext& renderContext, RenderContextBatch& renderContextBatch, RenderDirectionalLightData& light, ShadowAtlasLight& atlasLight)
+void ShadowsPass::SetupLight(ShadowsCustomBuffer& shadows, RenderContext& renderContext, RenderContextBatch& renderContextBatch, RenderDirectionalLightData& light, ShadowAtlasLight& atlasLight)
 {
-    SetupLight(renderContext, renderContextBatch, (RenderLightData&)light, atlasLight);
+    SetupLight(shadows, renderContext, renderContextBatch, (RenderLightData&)light, atlasLight);
 
     const RenderView& view = renderContext.View;
     const int32 csmCount = atlasLight.TilesCount;
@@ -627,10 +628,16 @@ void ShadowsPass::SetupLight(RenderContext& renderContext, RenderContextBatch& r
     }
 }
 
-void ShadowsPass::SetupLight(RenderContext& renderContext, RenderContextBatch& renderContextBatch, RenderPointLightData& light, ShadowAtlasLight& atlasLight)
+void ShadowsPass::SetupLight(ShadowsCustomBuffer& shadows, RenderContext& renderContext, RenderContextBatch& renderContextBatch, RenderPointLightData& light, ShadowAtlasLight& atlasLight)
 {
-    if (SetupLight(renderContext, renderContextBatch, (RenderLocalLightData&)light, atlasLight))
+    if (SetupLight(shadows, renderContext, renderContextBatch, (RenderLocalLightData&)light, atlasLight))
         return;
+
+    // Prevent sampling shadow map at borders that includes nearby data due to filtering of virtual cubemap sides
+    atlasLight.TileBorder = 1.0f * (shadows.MaxShadowsQuality + 1);
+    const float borderScale = (float)atlasLight.Resolution / (atlasLight.Resolution + 2 * atlasLight.TileBorder);
+    Matrix borderScaleMatrix;
+    Matrix::Scaling(borderScale, borderScale, 1.0f, borderScaleMatrix);
 
     // Render depth to all 6 faces of the cube map
     atlasLight.ContextIndex = renderContextBatch.Contexts.Count();
@@ -641,6 +648,12 @@ void ShadowsPass::SetupLight(RenderContext& renderContext, RenderContextBatch& r
         auto& shadowContext = renderContextBatch.Contexts[atlasLight.ContextIndex + faceIndex];
         SetupRenderContext(renderContext, shadowContext);
         shadowContext.View.SetUpCube(LocalLightNearPlane, light.Radius, light.Position);
+
+        // Apply border to the projection matrix
+        shadowContext.View.Projection = shadowContext.View.Projection * borderScaleMatrix;
+        shadowContext.View.NonJitteredProjection = shadowContext.View.Projection;
+        Matrix::Invert(shadowContext.View.Projection, shadowContext.View.IP);
+
         shadowContext.View.SetFace(faceIndex);
         const auto shadowMapsSize = (float)atlasLight.Resolution;
         shadowContext.View.PrepareCache(shadowContext, shadowMapsSize, shadowMapsSize, Float2::Zero, &renderContext.View);
@@ -648,9 +661,9 @@ void ShadowsPass::SetupLight(RenderContext& renderContext, RenderContextBatch& r
     }
 }
 
-void ShadowsPass::SetupLight(RenderContext& renderContext, RenderContextBatch& renderContextBatch, RenderSpotLightData& light, ShadowAtlasLight& atlasLight)
+void ShadowsPass::SetupLight(ShadowsCustomBuffer& shadows, RenderContext& renderContext, RenderContextBatch& renderContextBatch, RenderSpotLightData& light, ShadowAtlasLight& atlasLight)
 {
-    if (SetupLight(renderContext, renderContextBatch, (RenderLocalLightData&)light, atlasLight))
+    if (SetupLight(shadows, renderContext, renderContextBatch, (RenderLocalLightData&)light, atlasLight))
         return;
 
     // Render depth to a single projection
@@ -682,7 +695,6 @@ void ShadowsPass::Dispose()
 void ShadowsPass::SetupShadows(RenderContext& renderContext, RenderContextBatch& renderContextBatch)
 {
     PROFILE_CPU();
-    _maxShadowsQuality = Math::Clamp(Math::Min<int32>((int32)Graphics::ShadowsQuality, (int32)renderContext.View.MaxShadowsQuality), 0, (int32)Quality::MAX - 1);
 
     // Early out and skip shadows setup if no lights is actively casting shadows
     // RenderBuffers will automatically free any old ShadowsCustomBuffer after a few frames if we don't update LastFrameUsed
@@ -711,6 +723,7 @@ void ShadowsPass::SetupShadows(RenderContext& renderContext, RenderContextBatch&
     auto& shadows = *renderContext.Buffers->GetCustomBuffer<ShadowsCustomBuffer>(TEXT("Shadows"));
     const auto currentFrame = Engine::FrameCount;
     shadows.LastFrameUsed = currentFrame;
+    shadows.MaxShadowsQuality = Math::Clamp(Math::Min<int32>((int32)Graphics::ShadowsQuality, (int32)renderContext.View.MaxShadowsQuality), 0, (int32)Quality::MAX - 1);
     int32 atlasResolution;
     switch (Graphics::ShadowMapsQuality)
     {
@@ -893,11 +906,11 @@ RETRY_ATLAS_SETUP:
             light->HasShadow = true;
             atlasLight.TilesCount = atlasLight.TilesNeeded;
             if (light->IsPointLight)
-                SetupLight(renderContext, renderContextBatch, *(RenderPointLightData*)light, atlasLight);
+                SetupLight(shadows, renderContext, renderContextBatch, *(RenderPointLightData*)light, atlasLight);
             else if (light->IsSpotLight)
-                SetupLight(renderContext, renderContextBatch, *(RenderSpotLightData*)light, atlasLight);
+                SetupLight(shadows, renderContext, renderContextBatch, *(RenderSpotLightData*)light, atlasLight);
             else //if (light->IsDirectionalLight)
-                SetupLight(renderContext, renderContextBatch, *(RenderDirectionalLightData*)light, atlasLight);
+                SetupLight(shadows, renderContext, renderContextBatch, *(RenderDirectionalLightData*)light, atlasLight);
         }
     }
 
@@ -927,13 +940,15 @@ RETRY_ATLAS_SETUP:
             packed[0] = Float4(*(const float*)&packed0x, atlasLight.FadeDistance, atlasLight.NormalOffsetScale, atlasLight.Bias);
             packed[1] = atlasLight.CascadeSplits;
         }
+        const float tileBorder = atlasLight.TileBorder;
         for (int32 tileIndex = 0; tileIndex < atlasLight.TilesCount; tileIndex++)
         {
             // Shadow projection info
             const ShadowAtlasLightTile& tile = atlasLight.Tiles[tileIndex];
             ASSERT(tile.RectTile);
             auto* packed = shadows.ShadowsBuffer.WriteReserve<Float4>(5);
-            packed[0] = Float4(tile.RectTile->Width - 1.0f, tile.RectTile->Height - 1.0f, tile.RectTile->X, tile.RectTile->Y) * atlasResolutionInv; // UV to AtlasUV via a single MAD instruction
+            // UV to AtlasUV via a single MAD instruction
+            packed[0] = Float4(tile.RectTile->Width - tileBorder * 2, tile.RectTile->Height - tileBorder * 2, tile.RectTile->X + tileBorder, tile.RectTile->Y + tileBorder) * atlasResolutionInv;
             packed[1] = tile.WorldToShadow.GetColumn1();
             packed[2] = tile.WorldToShadow.GetColumn2();
             packed[3] = tile.WorldToShadow.GetColumn3();
@@ -1019,7 +1034,7 @@ void ShadowsPass::RenderShadowMask(RenderContextBatch& renderContextBatch, Rende
     auto& view = renderContext.View;
     auto shader = _shader->GetShader();
     const bool isLocalLight = light.IsPointLight || light.IsSpotLight;
-    int32 shadowQuality = _maxShadowsQuality;
+    int32 shadowQuality = shadows.MaxShadowsQuality;
     if (isLocalLight)
     {
         // Reduce shadows quality for smaller lights

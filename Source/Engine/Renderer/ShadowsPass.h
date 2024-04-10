@@ -22,7 +22,6 @@ private:
     GPUPipelineStatePermutationsPs<static_cast<int32>(Quality::MAX) * 2> _psShadowPoint;
     GPUPipelineStatePermutationsPs<static_cast<int32>(Quality::MAX) * 2> _psShadowSpot;
     PixelFormat _shadowMapFormat; // Cached on initialization
-    int32 _maxShadowsQuality = 0; // Cached state for the current frame rendering (setup via Prepare)
 
 public:
     /// <summary>
@@ -53,11 +52,11 @@ public:
 
 private:
     static void SetupRenderContext(RenderContext& renderContext, RenderContext& shadowContext);
-    static void SetupLight(RenderContext& renderContext, RenderContextBatch& renderContextBatch, RenderLightData& light, struct ShadowAtlasLight& atlasLight);
-    static bool SetupLight(RenderContext& renderContext, RenderContextBatch& renderContextBatch, RenderLocalLightData& light, ShadowAtlasLight& atlasLight);
-    static void SetupLight(RenderContext& renderContext, RenderContextBatch& renderContextBatch, RenderDirectionalLightData& light, ShadowAtlasLight& atlasLight);
-    static void SetupLight(RenderContext& renderContext, RenderContextBatch& renderContextBatch, RenderPointLightData& light, ShadowAtlasLight& atlasLight);
-    static void SetupLight(RenderContext& renderContext, RenderContextBatch& renderContextBatch, RenderSpotLightData& light, ShadowAtlasLight& atlasLight);
+    static void SetupLight(class ShadowsCustomBuffer& shadows, RenderContext& renderContext, RenderContextBatch& renderContextBatch, RenderLightData& light, struct ShadowAtlasLight& atlasLight);
+    static bool SetupLight(ShadowsCustomBuffer& shadows, RenderContext& renderContext, RenderContextBatch& renderContextBatch, RenderLocalLightData& light, ShadowAtlasLight& atlasLight);
+    static void SetupLight(ShadowsCustomBuffer& shadows, RenderContext& renderContext, RenderContextBatch& renderContextBatch, RenderDirectionalLightData& light, ShadowAtlasLight& atlasLight);
+    static void SetupLight(ShadowsCustomBuffer& shadows, RenderContext& renderContext, RenderContextBatch& renderContextBatch, RenderPointLightData& light, ShadowAtlasLight& atlasLight);
+    static void SetupLight(ShadowsCustomBuffer& shadows, RenderContext& renderContext, RenderContextBatch& renderContextBatch, RenderSpotLightData& light, ShadowAtlasLight& atlasLight);
 
 #if COMPILE_WITH_DEV_ENV
     void OnShaderReloading(Asset* obj)
