@@ -91,6 +91,10 @@ namespace FlaxEditor.Content
             }
 
             ParticleEmitter emitter = FlaxEngine.Content.LoadAsync<ParticleEmitter>(particleItem.ID);
+            if (emitter == null || emitter.WaitForLoaded())
+            {
+                Editor.LogError("Failed to load base particle emitter.");
+            }
 
             ParticleSystemPreview tempPreview = new ParticleSystemPreview(false);
             ParticleSystemTimeline timeline = new ParticleSystemTimeline(tempPreview);
