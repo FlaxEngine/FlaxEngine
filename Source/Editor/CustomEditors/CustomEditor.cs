@@ -377,6 +377,10 @@ namespace FlaxEditor.CustomEditors
                 else if (Values.HasDefaultValue && CanRevertDefaultValue)
                     color = Color.Yellow * 0.8f;
                 LinkedLabel.HighlightStripColor = color;
+
+                // Grey out deprecated members
+                if (Values.IsObsolete)
+                    LinkedLabel.TextColor = LinkedLabel.TextColorHighlighted = FlaxEngine.GUI.Style.Current.ForegroundGrey;
             }
         }
 
