@@ -76,7 +76,7 @@ void ForwardShadingFeature::Bind(MaterialShader::BindParameters& params, Span<by
     for (int32 i = 0; i < cache->EnvironmentProbes.Count(); i++)
     {
         const RenderEnvironmentProbeData& probe = cache->EnvironmentProbes.Get()[i];
-        if (CollisionsHelper::SphereIntersectsSphere(objectBounds, BoundingSphere(probe.Position, probe.Radius)))
+        if (objectBounds.Intersects(BoundingSphere(probe.Position, probe.Radius)))
         {
             noEnvProbe = false;
             probe.SetShaderData(data.EnvironmentProbe);
@@ -96,7 +96,7 @@ void ForwardShadingFeature::Bind(MaterialShader::BindParameters& params, Span<by
     for (int32 i = 0; i < cache->PointLights.Count() && data.LocalLightsCount < MaxLocalLights; i++)
     {
         const auto& light = cache->PointLights[i];
-        if (CollisionsHelper::SphereIntersectsSphere(objectBounds, BoundingSphere(light.Position, light.Radius)))
+        if (objectBounds.Intersects(BoundingSphere(light.Position, light.Radius)))
         {
             light.SetShaderData(data.LocalLights[data.LocalLightsCount], false);
             data.LocalLightsCount++;
@@ -105,7 +105,7 @@ void ForwardShadingFeature::Bind(MaterialShader::BindParameters& params, Span<by
     for (int32 i = 0; i < cache->SpotLights.Count() && data.LocalLightsCount < MaxLocalLights; i++)
     {
         const auto& light = cache->SpotLights[i];
-        if (CollisionsHelper::SphereIntersectsSphere(objectBounds, BoundingSphere(light.Position, light.Radius)))
+        if (objectBounds.Intersects(BoundingSphere(light.Position, light.Radius)))
         {
             light.SetShaderData(data.LocalLights[data.LocalLightsCount], false);
             data.LocalLightsCount++;
