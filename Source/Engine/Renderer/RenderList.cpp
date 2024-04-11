@@ -569,7 +569,9 @@ void RenderList::AddDrawCall(const RenderContextBatch& renderContextBatch, DrawP
         const RenderContext& renderContext = renderContextBatch.Contexts.Get()[i];
         ASSERT_LOW_LAYER(renderContext.View.Pass == DrawPass::Depth);
         drawModes = modes & renderContext.View.Pass;
-        if (drawModes != DrawPass::None && renderContext.View.CullingFrustum.Intersects(bounds))
+        if (drawModes != DrawPass::None &&
+            (staticFlags & renderContext.View.StaticFlagsMask) == renderContext.View.StaticFlagsCompare &&
+            renderContext.View.CullingFrustum.Intersects(bounds))
         {
             renderContext.List->ShadowDepthDrawCallsList.Indices.Add(index);
         }

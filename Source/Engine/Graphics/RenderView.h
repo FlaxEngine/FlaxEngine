@@ -128,6 +128,11 @@ public:
     API_FIELD() StaticFlags StaticFlagsMask = StaticFlags::None;
 
     /// <summary>
+    /// The static flags mask comparision rhs. Allows to draw objects that don't pass the static flags mask. Objects are checked with the following formula: (ObjectStaticFlags and StaticFlagsMask) == StaticFlagsMaskCompare.
+    /// </summary>
+    API_FIELD() StaticFlags StaticFlagsCompare = StaticFlags::None;
+
+    /// <summary>
     /// The view flags.
     /// </summary>
     API_FIELD() ViewFlags Flags = ViewFlags::DefaultGame;

@@ -273,7 +273,7 @@ bool ProbesRenderer::Init()
     view.Mode = ViewMode::NoPostFx;
     view.IsOfflinePass = true;
     view.IsSingleFrame = true;
-    view.StaticFlagsMask = StaticFlags::ReflectionProbe;
+    view.StaticFlagsMask = view.StaticFlagsCompare = StaticFlags::ReflectionProbe;
     view.MaxShadowsQuality = Quality::Low;
     task->IsCameraCut = true;
     task->Resize(probeResolution, probeResolution);
