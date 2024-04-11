@@ -562,7 +562,7 @@ void ShadowsPass::SetupLight(ShadowsCustomBuffer& shadows, RenderContext& render
     atlasLight.Bias = light.ShadowsDepthBias;
     atlasLight.FadeDistance = Math::Max(light.ShadowsFadeDistance, 0.1f);
     atlasLight.Distance = Math::Min(renderContext.View.Far, light.ShadowsDistance);
-    atlasLight.Bounds.Center = light.Position + renderContext.View.Position;
+    atlasLight.Bounds.Center = light.Position + renderContext.View.Origin; // Keep bounds in world-space to properly handle DirtyStaticBounds
     atlasLight.Bounds.Radius = 0.0f;
 }
 
