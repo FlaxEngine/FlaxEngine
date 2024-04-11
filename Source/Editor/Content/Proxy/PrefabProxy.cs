@@ -233,18 +233,8 @@ namespace FlaxEditor.Content
         /// <inheritdoc />
         public override void Create(string outputPath, object arg)
         {
-            // Create prefab with UI Control
-            var actor = new UIControl
-            {
-                Name = Path.GetFileNameWithoutExtension(outputPath),
-                StaticFlags = StaticFlags.None,
-            };
-            actor.Control = new Button
-            {
-                Text = "Button",
-            };
-            PrefabManager.CreatePrefab(actor, outputPath, false);
-            Object.Destroy(actor, 20.0f);
+            Editor.Instance.ContentImporting.Create(new WidgetCreateEntry(outputPath));
+            return;
         }
     }
 }
