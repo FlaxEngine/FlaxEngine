@@ -84,6 +84,11 @@ LightWithShadow::LightWithShadow(const SpawnParams& params)
 {
 }
 
+void LightWithShadow::InvalidateShadow()
+{
+    _invalidateShadowFrame++;
+}
+
 void LightWithShadow::Serialize(SerializeStream& stream, const void* otherObj)
 {
     // Base

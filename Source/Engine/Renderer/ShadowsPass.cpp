@@ -121,6 +121,7 @@ struct ShadowAtlasLightCache
     bool DynamicValid;
     float ShadowsUpdateRate;
     float ShadowsUpdateRateAtDistance;
+    uint32 ShadowFrame;
     float OuterConeAngle;
     Float3 Position;
     float Radius;
@@ -136,6 +137,7 @@ struct ShadowAtlasLightCache
         ShadowsUpdateRate = light.ShadowsUpdateRate;
         ShadowsUpdateRateAtDistance = light.ShadowsUpdateRateAtDistance;
         Direction = light.Direction;
+        ShadowFrame = light.ShadowFrame;
         if (light.IsDirectionalLight)
         {
             // Sun
@@ -229,6 +231,7 @@ struct ShadowAtlasLight
         if (!Math::NearEqual(Cache.Distance, light.ShadowsDistance) ||
             !Math::NearEqual(Cache.ShadowsUpdateRate, light.ShadowsUpdateRate) ||
             !Math::NearEqual(Cache.ShadowsUpdateRateAtDistance, light.ShadowsUpdateRateAtDistance) ||
+            Cache.ShadowFrame != light.ShadowFrame ||
             Float3::Dot(Cache.Direction, light.Direction) < 0.999999f)
         {
             // Invalidate

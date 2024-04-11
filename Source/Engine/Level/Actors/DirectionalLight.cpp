@@ -39,6 +39,7 @@ void DirectionalLight::Draw(RenderContext& renderContext)
         data.IndirectLightingIntensity = IndirectLightingIntensity;
         data.CastVolumetricShadow = CastVolumetricShadow;
         data.ShadowsUpdateRate = ShadowsUpdateRate;
+        data.ShadowFrame = _invalidateShadowFrame;
         data.ShadowsUpdateRateAtDistance = ShadowsUpdateRateAtDistance;
         data.ShadowsMode = ShadowsMode;
         data.CascadeCount = CascadeCount;

@@ -79,6 +79,9 @@ public:
 API_CLASS(Abstract) class FLAXENGINE_API LightWithShadow : public Light
 {
     DECLARE_SCENE_OBJECT_ABSTRACT(LightWithShadow);
+protected:
+    uint32 _invalidateShadowFrame = 0;
+
 public:
     /// <summary>
     /// The minimum roughness value used to clamp material surface roughness during shading pixel.
@@ -145,6 +148,11 @@ public:
     /// </summary>
     API_FIELD(Attributes="EditorOrder(60), EditorDisplay(\"Shadow\", \"Mode\")")
     ShadowsCastingMode ShadowsMode = ShadowsCastingMode::All;
+    
+    /// <summary>
+    /// Marks the light shadow to be refreshes during next drawing. Invalidates any cached shadow map and redraws static shadows of the object (if any in use).
+    /// </summary>
+    API_FUNCTION() void InvalidateShadow();
 
 public:
     // [Light]
