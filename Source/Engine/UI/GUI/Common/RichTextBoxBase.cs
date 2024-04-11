@@ -290,7 +290,7 @@ namespace FlaxEngine.GUI
                 {
                     var leftEdge = selection.StartIndex <= textBlock.Range.StartIndex ? textBlock.Bounds.UpperLeft : font.GetCharPosition(_text, selection.StartIndex);
                     var rightEdge = selection.EndIndex >= textBlock.Range.EndIndex ? textBlock.Bounds.UpperRight : font.GetCharPosition(_text, selection.EndIndex);
-                    float height = font.Height / DpiScale;
+                    float height = font.Height;
                     float alpha = Mathf.Min(1.0f, Mathf.Cos(_animateTime * BackgroundSelectedFlashSpeed) * 0.5f + 1.3f);
                     alpha *= alpha;
                     Color selectionColor = Color.White * alpha;
