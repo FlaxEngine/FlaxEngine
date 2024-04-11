@@ -10,6 +10,7 @@
 #include "Engine/Graphics/PixelFormatExtensions.h"
 #include "Engine/Content/Content.h"
 #include "Engine/Engine/Engine.h"
+#include "Engine/Engine/Units.h"
 #include "Engine/Graphics/RenderTools.h"
 #include "Engine/Level/Scene/SceneRendering.h"
 #include "Engine/Scripting/Enums.h"
@@ -21,8 +22,8 @@
 #define SHADOWS_MAX_TILES 6
 #define SHADOWS_MIN_RESOLUTION 16
 #define SHADOWS_BASE_LIGHT_RESOLUTION(atlasResolution) atlasResolution / MAX_CSM_CASCADES // Allow to store 4 CSM cascades in a single row in all cases
-#define NormalOffsetScaleTweak 100.0f
-#define LocalLightNearPlane 10.0f
+#define NormalOffsetScaleTweak METERS_TO_UNITS(1)
+#define LocalLightNearPlane METERS_TO_UNITS(0.1f)
 
 PACK_STRUCT(struct Data{
     ShaderGBufferData GBuffer;
@@ -251,7 +252,7 @@ struct ShadowAtlasLight
         {
             // Local light
             const auto& localLight = (const RenderLocalLightData&)light;
-            if (!Float3::NearEqual(Cache.Position, light.Position, 1.0f) ||
+            if (!Float3::NearEqual(Cache.Position, light.Position, METERS_TO_UNITS(0.1f)) ||
                 !Math::NearEqual(Cache.Radius, localLight.Radius))
             {
                 // Invalidate
@@ -595,7 +596,7 @@ bool ShadowsPass::SetupLight(ShadowsCustomBuffer& shadows, RenderContext& render
             // Calculate static resolution for the light based on the world-bounds, not view-dependant
             shadows.InitStaticAtlas();
             const int32 baseLightResolution = SHADOWS_BASE_LIGHT_RESOLUTION(shadows.Resolution);
-            int32 staticResolution = Math::RoundToInt(Math::Saturate(light.Radius / 1000.0f) * baseLightResolution);
+            int32 staticResolution = Math::RoundToInt(Math::Saturate(light.Radius / METERS_TO_UNITS(10)) * baseLightResolution);
             if (!Math::IsPowerOfTwo(staticResolution))
                 staticResolution = Math::RoundUpToPowerOf2(staticResolution);
             atlasLight.StaticResolution = staticResolution;
