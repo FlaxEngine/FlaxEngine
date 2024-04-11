@@ -400,13 +400,13 @@ void StaticModel::Draw(RenderContextBatch& renderContextBatch)
 bool StaticModel::IntersectsItself(const Ray& ray, Real& distance, Vector3& normal)
 {
     bool result = false;
-
     if (Model != nullptr && Model->IsLoaded())
     {
         Mesh* mesh;
-        result = Model->Intersects(ray, _transform, distance, normal, &mesh);
+        Matrix world;
+        GetLocalToWorldMatrix(world);
+        result = Model->Intersects(ray, world, distance, normal, &mesh);
     }
-
     return result;
 }
 
