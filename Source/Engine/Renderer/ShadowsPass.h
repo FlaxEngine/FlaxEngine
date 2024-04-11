@@ -18,6 +18,7 @@ private:
     AssetReference<Shader> _shader;
     AssetReference<Model> _sphereModel;
     GPUPipelineState* _psDepthClear = nullptr;
+    GPUPipelineState* _psDepthCopy = nullptr;
     GPUPipelineStatePermutationsPs<static_cast<int32>(Quality::MAX) * 2> _psShadowDir;
     GPUPipelineStatePermutationsPs<static_cast<int32>(Quality::MAX) * 2> _psShadowPoint;
     GPUPipelineStatePermutationsPs<static_cast<int32>(Quality::MAX) * 2> _psShadowSpot;
@@ -51,8 +52,8 @@ public:
     static void GetShadowAtlas(const RenderBuffers* renderBuffers, GPUTexture*& shadowMapAtlas, GPUBufferView*& shadowsBuffer);
 
 private:
-    static void SetupRenderContext(RenderContext& renderContext, RenderContext& shadowContext);
-    static void SetupLight(class ShadowsCustomBuffer& shadows, RenderContext& renderContext, RenderContextBatch& renderContextBatch, RenderLightData& light, struct ShadowAtlasLight& atlasLight);
+    static void SetupRenderContext(RenderContext& renderContext, RenderContext& shadowContext, struct ShadowAtlasLight* atlasLight = nullptr, RenderContext* dynamicContext = nullptr);
+    static void SetupLight(class ShadowsCustomBuffer& shadows, RenderContext& renderContext, RenderContextBatch& renderContextBatch, RenderLightData& light, ShadowAtlasLight& atlasLight);
     static bool SetupLight(ShadowsCustomBuffer& shadows, RenderContext& renderContext, RenderContextBatch& renderContextBatch, RenderLocalLightData& light, ShadowAtlasLight& atlasLight);
     static void SetupLight(ShadowsCustomBuffer& shadows, RenderContext& renderContext, RenderContextBatch& renderContextBatch, RenderDirectionalLightData& light, ShadowAtlasLight& atlasLight);
     static void SetupLight(ShadowsCustomBuffer& shadows, RenderContext& renderContext, RenderContextBatch& renderContextBatch, RenderPointLightData& light, ShadowAtlasLight& atlasLight);

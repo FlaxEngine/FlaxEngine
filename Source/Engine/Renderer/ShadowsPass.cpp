@@ -20,6 +20,7 @@
 
 #define SHADOWS_MAX_TILES 6
 #define SHADOWS_MIN_RESOLUTION 16
+#define SHADOWS_BASE_LIGHT_RESOLUTION(atlasResolution) atlasResolution / MAX_CSM_CASCADES // Allow to store 4 CSM cascades in a single row in all cases
 #define NormalOffsetScaleTweak 100.0f
 #define LocalLightNearPlane 10.0f
 
@@ -61,18 +62,42 @@ uint16 QuantizeResolution(float input)
 struct ShadowAtlasLightTile
 {
     ShadowsAtlasRectTile* RectTile;
+    ShadowsAtlasRectTile* StaticRectTile;
     Matrix WorldToShadow;
     float FramesToUpdate; // Amount of frames (with fraction) until the next shadow update can happen
     bool SkipUpdate;
+    bool HasStaticGeometry;
     Viewport CachedViewport; // The viewport used the last time to render shadow to the atlas
 
-    void Free(ShadowsCustomBuffer* buffer)
+    void FreeDynamic(ShadowsCustomBuffer* buffer)
     {
         if (RectTile)
         {
             RectTile->Free(buffer);
             RectTile = nullptr;
         }
+    }
+
+    void FreeStatic(ShadowsCustomBuffer* buffer)
+    {
+        if (StaticRectTile)
+        {
+            StaticRectTile->Free((ShadowsCustomBuffer*)nullptr);
+            StaticRectTile = nullptr;
+        }
+    }
+
+    void Free(ShadowsCustomBuffer* buffer)
+    {
+        FreeDynamic(buffer);
+        FreeStatic(buffer);
+    }
+
+    void ClearDynamic()
+    {
+        RectTile = nullptr;
+        FramesToUpdate = 0;
+        SkipUpdate = false;
     }
 
     void SetWorldToShadow(const Matrix& shadowViewProjection)
@@ -92,9 +117,11 @@ struct ShadowAtlasLightTile
 // State for shadow cache sed to invalidate any prerendered shadow depths
 struct ShadowAtlasLightCache
 {
-    bool Valid;
+    bool StaticValid;
+    bool DynamicValid;
     float ShadowsUpdateRate;
     float ShadowsUpdateRateAtDistance;
+    float OuterConeAngle;
     Float3 Position;
     float Radius;
     Float3 Direction;
@@ -103,15 +130,16 @@ struct ShadowAtlasLightCache
 
     void Set(const RenderView& view, const RenderLightData& light, const Float4& cascadeSplits = Float4::Zero)
     {
-        Valid = true;
+        StaticValid = true;
+        DynamicValid = true;
         Distance = light.ShadowsDistance;
         ShadowsUpdateRate = light.ShadowsUpdateRate;
         ShadowsUpdateRateAtDistance = light.ShadowsUpdateRateAtDistance;
+        Direction = light.Direction;
         if (light.IsDirectionalLight)
         {
             // Sun
             Position = view.Position;
-            Direction = light.Direction;
             CascadeSplits = cascadeSplits;
         }
         else
@@ -120,6 +148,8 @@ struct ShadowAtlasLightCache
             const auto& localLight = (const RenderLocalLightData&)light;
             Position = light.Position;
             Radius = localLight.Radius;
+            if (light.IsSpotLight)
+                OuterConeAngle = ((const RenderSpotLightData&)light).OuterConeAngle;
         }
     }
 };
@@ -127,12 +157,37 @@ struct ShadowAtlasLightCache
 // State for light's shadows rendering
 struct ShadowAtlasLight
 {
+    // Static shadow map is created in 2 passes:
+    // - once to check if any static objects are in-use per tile (ShadowAtlasLightTile::HasStaticGeometry)
+    // - then to render those objects into the shadow map.
+    // When any static objects gets modified in the light range the second step is repeated.
+    // When light is changed then both steps are repeated.
+    enum StaticStates
+    {
+        // Not using static shadow map at all.
+        Unused,
+        // Static objects are rendered separately to dynamic objects to check if light projections need to allocate static shadow map.
+        WaitForGeometryCheck,
+        // Static objects will be rendered into static shadow map.
+        UpdateStaticShadow,
+        // Static objects are up-to-date and can be copied from static shadow map.
+        CopyStaticShadow,
+        // None of the tiles has static geometry nearby.
+        NoStaticGeometry,
+        // One of the tiles failed to insert into static atlas so fallback to default dynamic logic.
+        FailedToInsertTiles,
+    };
+
     uint64 LastFrameUsed;
     int32 ContextIndex;
     int32 ContextCount;
     uint16 Resolution;
+    uint16 StaticResolution;
     uint8 TilesNeeded;
     uint8 TilesCount;
+    bool HasStaticShadowContext;
+    StaticStates StaticState;
+    BoundingSphere Bounds;
     float Sharpness, Fade, NormalOffsetScale, Bias, FadeDistance, Distance, TileBorder;
     Float4 CascadeSplits;
     ShadowAtlasLightTile Tiles[SHADOWS_MAX_TILES];
@@ -144,6 +199,16 @@ struct ShadowAtlasLight
     }
 
     POD_COPYABLE(ShadowAtlasLight);
+
+    bool HasStaticGeometry() const
+    {
+        for (auto& tile : Tiles)
+        {
+            if (tile.HasStaticGeometry)
+                return true;
+        }
+        return false;
+    }
 
     float CalculateUpdateRateInv(const RenderLightData& light, float distanceFromView, bool& freezeUpdate) const
     {
@@ -159,24 +224,24 @@ struct ShadowAtlasLight
 
     void ValidateCache(const RenderView& view, const RenderLightData& light)
     {
-        if (!Cache.Valid)
+        if (!Cache.StaticValid || !Cache.DynamicValid)
             return;
         if (!Math::NearEqual(Cache.Distance, light.ShadowsDistance) ||
             !Math::NearEqual(Cache.ShadowsUpdateRate, light.ShadowsUpdateRate) ||
-            !Math::NearEqual(Cache.ShadowsUpdateRateAtDistance, light.ShadowsUpdateRateAtDistance))
+            !Math::NearEqual(Cache.ShadowsUpdateRateAtDistance, light.ShadowsUpdateRateAtDistance) ||
+            Float3::Dot(Cache.Direction, light.Direction) < 0.999999f)
         {
             // Invalidate
-            Cache.Valid = false;
+            Cache.StaticValid = false;
         }
         if (light.IsDirectionalLight)
         {
             // Sun
-            if (Float3::Dot(Cache.Direction, light.Direction) < 0.999999f ||
-                !Float3::NearEqual(Cache.Position, view.Position, 1.0f) ||
+            if (!Float3::NearEqual(Cache.Position, view.Position, 1.0f) ||
                 !Float4::NearEqual(Cache.CascadeSplits, CascadeSplits))
             {
                 // Invalidate
-                Cache.Valid = false;
+                Cache.StaticValid = false;
             }
         }
         else
@@ -187,33 +252,43 @@ struct ShadowAtlasLight
                 !Math::NearEqual(Cache.Radius, localLight.Radius))
             {
                 // Invalidate
-                Cache.Valid = false;
+                Cache.StaticValid = false;
+            }
+            if (light.IsSpotLight && !Math::NearEqual(Cache.OuterConeAngle, ((const RenderSpotLightData&)light).OuterConeAngle))
+            {
+                // Invalidate
+                Cache.StaticValid = false;
             }
         }
-        for (int32 i = 0; i < TilesCount && Cache.Valid; i++)
+        Cache.DynamicValid &= Cache.StaticValid;
+        for (int32 i = 0; i < TilesCount && !Cache.DynamicValid; i++)
         {
             auto& tile = Tiles[i];
             if (tile.CachedViewport != Viewport(tile.RectTile->X, tile.RectTile->Y, tile.RectTile->Width, tile.RectTile->Height))
             {
                 // Invalidate
-                Cache.Valid = false;
+                Cache.DynamicValid = false;
             }
         }
     }
 };
 
-class ShadowsCustomBuffer : public RenderBuffers::CustomBuffer
+class ShadowsCustomBuffer : public RenderBuffers::CustomBuffer, public ISceneRenderingListener
 {
 public:
     int32 MaxShadowsQuality = 0;
     int32 Resolution = 0;
     int32 AtlasPixelsUsed = 0;
+    bool EnableStaticShadows = true;
     mutable bool ClearShadowMapAtlas = true;
+    mutable bool ClearStaticShadowMapAtlas = false;
     Vector3 ViewOrigin;
     GPUTexture* ShadowMapAtlas = nullptr;
+    GPUTexture* StaticShadowMapAtlas = nullptr;
     DynamicTypedBuffer ShadowsBuffer;
     GPUBufferView* ShadowsBufferView = nullptr;
     ShadowsAtlasRectTile* AtlasTiles = nullptr; // TODO: optimize with a single allocation for atlas tiles
+    ShadowsAtlasRectTile* StaticAtlasTiles = nullptr; // TODO: optimize with a single allocation for atlas tiles
     Dictionary<Guid, ShadowAtlasLight> Lights;
 
     ShadowsCustomBuffer()
@@ -222,41 +297,106 @@ public:
         ShadowMapAtlas = GPUDevice::Instance->CreateTexture(TEXT("Shadow Map Atlas"));
     }
 
-    void ClearTiles()
+    void ClearDynamic()
     {
         ClearShadowMapAtlas = true;
         AtlasPixelsUsed = 0;
-        SAFE_DELETE(AtlasTiles);
         for (auto it = Lights.Begin(); it.IsNotEnd(); ++it)
         {
             auto& atlasLight = it->Value;
-            Platform::MemoryClear(atlasLight.Tiles, sizeof(atlasLight.Tiles));
-            Platform::MemoryClear(&atlasLight.Cache, sizeof(atlasLight.Cache));
+            atlasLight.Cache.DynamicValid = false;
+            for (int32 i = 0; i < atlasLight.TilesCount; i++)
+                atlasLight.Tiles[i].ClearDynamic();
         }
+        SAFE_DELETE(AtlasTiles);
     }
 
     void Reset()
     {
         Lights.Clear();
-        ClearTiles();
+        SAFE_DELETE(StaticAtlasTiles);
+        ClearDynamic();
         ViewOrigin = Vector3::Zero;
+    }
+
+    void InitStaticAtlas()
+    {
+        if (StaticAtlasTiles)
+            return;
+        const int32 atlasResolution = Resolution * 2;
+        StaticAtlasTiles = New<ShadowsAtlasRectTile>(0, 0, atlasResolution, atlasResolution);
+        if (!StaticShadowMapAtlas)
+            StaticShadowMapAtlas = GPUDevice::Instance->CreateTexture(TEXT("Static Shadow Map Atlas"));
+        auto desc = ShadowMapAtlas->GetDescription();
+        desc.Width = desc.Height = atlasResolution;
+        if (StaticShadowMapAtlas->Init(desc))
+        {
+            LOG(Fatal, "Failed to setup shadow map of size {0}x{1} and format {2}", desc.Width, desc.Height, ScriptingEnum::ToString(desc.Format));
+            return;
+        }
+        ClearStaticShadowMapAtlas = true;
+    }
+
+    void DirtyStaticBounds(const BoundingSphere& bounds)
+    {
+        // TODO: use octree to improve bounds-testing
+        // TODO: build list of modified bounds and dirty them in batch on next frame start (ideally in async within shadows setup job)
+        for (auto& e : Lights)
+        {
+            auto& atlasLight = e.Value;
+            if (atlasLight.StaticState == ShadowAtlasLight::CopyStaticShadow && atlasLight.Bounds.Intersects(bounds))
+            {
+                // Invalidate static shadow
+                atlasLight.Cache.StaticValid = false;
+            }
+        }
     }
 
     ~ShadowsCustomBuffer()
     {
         Reset();
         SAFE_DELETE_GPU_RESOURCE(ShadowMapAtlas);
+        SAFE_DELETE_GPU_RESOURCE(StaticShadowMapAtlas);
+    }
+
+    // [ISceneRenderingListener]
+    void OnSceneRenderingAddActor(Actor* a) override
+    {
+        if (a->HasStaticFlag(StaticFlags::Shadow))
+            DirtyStaticBounds(a->GetSphere());
+    }
+
+    void OnSceneRenderingUpdateActor(Actor* a, const BoundingSphere& prevBounds) override
+    {
+        // Dirty static objects to redraw when changed (eg. material modification)
+        if (a->HasStaticFlag(StaticFlags::Shadow))
+        {
+            DirtyStaticBounds(prevBounds);
+            DirtyStaticBounds(a->GetSphere());
+        }
+    }
+
+    void OnSceneRenderingRemoveActor(Actor* a) override
+    {
+        if (a->HasStaticFlag(StaticFlags::Shadow))
+            DirtyStaticBounds(a->GetSphere());
+    }
+
+    void OnSceneRenderingClear(SceneRendering* scene) override
+    {
     }
 };
 
 void ShadowsAtlasRectTile::OnInsert(ShadowsCustomBuffer* buffer)
 {
-    buffer->AtlasPixelsUsed += (int32)Width * (int32)Height;
+    if (buffer)
+        buffer->AtlasPixelsUsed += (int32)Width * (int32)Height;
 }
 
 void ShadowsAtlasRectTile::OnFree(ShadowsCustomBuffer* buffer)
 {
-    buffer->AtlasPixelsUsed -= (int32)Width * (int32)Height;
+    if (buffer)
+        buffer->AtlasPixelsUsed -= (int32)Width * (int32)Height;
 }
 
 String ShadowsPass::ToString() const
@@ -353,11 +493,23 @@ bool ShadowsPass::setupResources()
         if (_psDepthClear->Init(psDesc))
             return true;
     }
+    if (_psDepthCopy == nullptr)
+    {
+        psDesc = GPUPipelineState::Description::DefaultFullscreenTriangle;
+        psDesc.PS = GPUDevice::Instance->QuadShader->GetPS("PS_DepthCopy");
+        psDesc.DepthEnable = true;
+        psDesc.DepthWriteEnable = true;
+        psDesc.DepthFunc = ComparisonFunc::Always;
+        psDesc.BlendMode.RenderTargetWriteMask = BlendingMode::ColorWrite::None;
+        _psDepthCopy = GPUDevice::Instance->CreatePipelineState();
+        if (_psDepthCopy->Init(psDesc))
+            return true;
+    }
 
     return false;
 }
 
-void ShadowsPass::SetupRenderContext(RenderContext& renderContext, RenderContext& shadowContext)
+void ShadowsPass::SetupRenderContext(RenderContext& renderContext, RenderContext& shadowContext, ShadowAtlasLight* atlasLight, RenderContext* dynamicContext)
 {
     const auto& view = renderContext.View;
 
@@ -366,14 +518,31 @@ void ShadowsPass::SetupRenderContext(RenderContext& renderContext, RenderContext
 
     // Prepare properties
     auto& shadowView = shadowContext.View;
-    shadowView.Flags = view.Flags;
-    shadowView.StaticFlagsMask = view.StaticFlagsMask;
-    shadowView.RenderLayersMask = view.RenderLayersMask;
-    shadowView.IsOfflinePass = view.IsOfflinePass;
-    shadowView.ModelLODBias = view.ModelLODBias;
-    shadowView.ModelLODDistanceFactor = view.ModelLODDistanceFactor;
-    shadowView.Pass = DrawPass::Depth;
-    shadowView.Origin = view.Origin;
+    if (dynamicContext)
+    {
+        // Duplicate dynamic view but with static only geometry
+        shadowView = dynamicContext->View;
+        shadowView.StaticFlagsMask = StaticFlags::Shadow;
+        shadowView.StaticFlagsCompare = StaticFlags::Shadow;
+    }
+    else
+    {
+        shadowView.Flags = view.Flags;
+        shadowView.StaticFlagsMask = view.StaticFlagsMask;
+        shadowView.StaticFlagsCompare = view.StaticFlagsCompare;
+        shadowView.RenderLayersMask = view.RenderLayersMask;
+        shadowView.IsOfflinePass = view.IsOfflinePass;
+        shadowView.ModelLODBias = view.ModelLODBias;
+        shadowView.ModelLODDistanceFactor = view.ModelLODDistanceFactor;
+        shadowView.Pass = DrawPass::Depth;
+        shadowView.Origin = view.Origin;
+        if (atlasLight && atlasLight->StaticState != ShadowAtlasLight::Unused && atlasLight->StaticState != ShadowAtlasLight::FailedToInsertTiles)
+        {
+            // Draw only dynamic geometry
+            shadowView.StaticFlagsMask = StaticFlags::Shadow;
+            shadowView.StaticFlagsCompare = StaticFlags::None;
+        }
+    }
     shadowContext.List = RenderList::GetFromPool();
     shadowContext.Buffers = renderContext.Buffers;
     shadowContext.Task = renderContext.Task;
@@ -389,11 +558,14 @@ void ShadowsPass::SetupLight(ShadowsCustomBuffer& shadows, RenderContext& render
     atlasLight.Bias = light.ShadowsDepthBias;
     atlasLight.FadeDistance = Math::Max(light.ShadowsFadeDistance, 0.1f);
     atlasLight.Distance = Math::Min(renderContext.View.Far, light.ShadowsDistance);
+    atlasLight.Bounds.Center = light.Position + renderContext.View.Position;
+    atlasLight.Bounds.Radius = 0.0f;
 }
 
 bool ShadowsPass::SetupLight(ShadowsCustomBuffer& shadows, RenderContext& renderContext, RenderContextBatch& renderContextBatch, RenderLocalLightData& light, ShadowAtlasLight& atlasLight)
 {
     SetupLight(shadows, renderContext, renderContextBatch, (RenderLightData&)light, atlasLight);
+    atlasLight.Bounds.Radius = light.Radius;
 
     // Fade shadow on distance
     const float fadeDistance = Math::Max(light.ShadowsFadeDistance, 0.1f);
@@ -404,11 +576,83 @@ bool ShadowsPass::SetupLight(ShadowsCustomBuffer& shadows, RenderContext& render
     // Update cached state (invalidate it if the light changed)
     atlasLight.ValidateCache(renderContext.View, light);
 
+    // Update static shadow logic
+    atlasLight.HasStaticShadowContext = shadows.EnableStaticShadows && EnumHasAllFlags(light.StaticFlags, StaticFlags::Shadow);
+    if (!atlasLight.HasStaticShadowContext)
+        atlasLight.StaticState = ShadowAtlasLight::Unused;
+    switch (atlasLight.StaticState)
+    {
+    case ShadowAtlasLight::Unused:
+        if (atlasLight.HasStaticShadowContext)
+            atlasLight.StaticState = ShadowAtlasLight::WaitForGeometryCheck;
+        break;
+    case ShadowAtlasLight::WaitForGeometryCheck:
+        if (atlasLight.HasStaticGeometry())
+        {
+            // Calculate static resolution for the light based on the world-bounds, not view-dependant
+            shadows.InitStaticAtlas();
+            const int32 baseLightResolution = SHADOWS_BASE_LIGHT_RESOLUTION(shadows.Resolution);
+            int32 staticResolution = Math::RoundToInt(Math::Saturate(light.Radius / 1000.0f) * baseLightResolution);
+            if (!Math::IsPowerOfTwo(staticResolution))
+                staticResolution = Math::RoundUpToPowerOf2(staticResolution);
+            atlasLight.StaticResolution = staticResolution;
+
+            // Allocate static shadow map slot for all used tiles
+            for (int32 tileIndex = 0; tileIndex < atlasLight.TilesCount; tileIndex++)
+            {
+                auto& tile = atlasLight.Tiles[tileIndex];
+                if (tile.StaticRectTile == nullptr)
+                {
+                    tile.StaticRectTile = shadows.StaticAtlasTiles->Insert(atlasLight.StaticResolution, atlasLight.StaticResolution, 0, (ShadowsCustomBuffer*)nullptr);
+                    if (!tile.StaticRectTile)
+                    {
+                        // Failed to insert tile to switch back to the default rendering
+                        atlasLight.StaticState = ShadowAtlasLight::FailedToInsertTiles;
+                        for (int32 i = 0; i < tileIndex; i++)
+                            atlasLight.Tiles[i].FreeStatic(&shadows);
+                        break;
+                    }
+                }
+            }
+            if (atlasLight.StaticState == ShadowAtlasLight::WaitForGeometryCheck)
+            {
+                // Now we know the tiles with static geometry and we can render those
+                atlasLight.StaticState = ShadowAtlasLight::UpdateStaticShadow;
+            }
+        }
+        else
+        {
+            // Not using static geometry for this light shadows
+            atlasLight.StaticState = ShadowAtlasLight::NoStaticGeometry;
+        }
+        break;
+    case ShadowAtlasLight::CopyStaticShadow:
+        // Light was modified so update the static shadows
+        if (!atlasLight.Cache.StaticValid && atlasLight.HasStaticShadowContext)
+            atlasLight.StaticState = ShadowAtlasLight::UpdateStaticShadow;
+        break;
+    }
+    switch (atlasLight.StaticState)
+    {
+    case ShadowAtlasLight::CopyStaticShadow:
+    case ShadowAtlasLight::NoStaticGeometry:
+    case ShadowAtlasLight::FailedToInsertTiles:
+        // Skip collecting static draws
+        atlasLight.HasStaticShadowContext = false;
+        break;
+    }
+    if (atlasLight.HasStaticShadowContext)
+    {
+        // If rendering finds any static draws then it's set to true
+        for (auto& tile : atlasLight.Tiles)
+            tile.HasStaticGeometry = false;
+    }
+
     // Calculate update rate based on the distance to the view
     bool freezeUpdate;
     const float updateRateInv = atlasLight.CalculateUpdateRateInv(light, dstLightToView, freezeUpdate);
     float& framesToUpdate = atlasLight.Tiles[0].FramesToUpdate; // Use the first tile for all local light projections to be in sync
-    if ((framesToUpdate > 0.0f || freezeUpdate) && atlasLight.Cache.Valid)
+    if ((framesToUpdate > 0.0f || freezeUpdate) && atlasLight.Cache.DynamicValid && !atlasLight.HasStaticShadowContext)
     {
         // Light state matches the cached state and the update rate allows us to reuse the cached shadow map so skip update
         if (!freezeUpdate)
@@ -512,7 +756,7 @@ void ShadowsPass::SetupLight(ShadowsCustomBuffer& shadows, RenderContext& render
         bool freezeUpdate;
         const float updateRateInv = atlasLight.CalculateUpdateRateInv(light, dstToCascade, freezeUpdate);
         auto& tile = atlasLight.Tiles[cascadeIndex];
-        if ((tile.FramesToUpdate > 0.0f || freezeUpdate) && atlasLight.Cache.Valid)
+        if ((tile.FramesToUpdate > 0.0f || freezeUpdate) && atlasLight.Cache.DynamicValid)
         {
             // Light state matches the cached state and the update rate allows us to reuse the cached shadow map so skip update
             if (!freezeUpdate)
@@ -639,14 +883,16 @@ void ShadowsPass::SetupLight(ShadowsCustomBuffer& shadows, RenderContext& render
     Matrix borderScaleMatrix;
     Matrix::Scaling(borderScale, borderScale, 1.0f, borderScaleMatrix);
 
-    // Render depth to all 6 faces of the cube map
     atlasLight.ContextIndex = renderContextBatch.Contexts.Count();
-    atlasLight.ContextCount = 6;
+    atlasLight.ContextCount = atlasLight.HasStaticShadowContext ? 12 : 6;
     renderContextBatch.Contexts.AddDefault(atlasLight.ContextCount);
+
+    // Render depth to all 6 faces of the cube map
+    int32 contextIndex = 0;
     for (int32 faceIndex = 0; faceIndex < 6; faceIndex++)
     {
-        auto& shadowContext = renderContextBatch.Contexts[atlasLight.ContextIndex + faceIndex];
-        SetupRenderContext(renderContext, shadowContext);
+        auto& shadowContext = renderContextBatch.Contexts[atlasLight.ContextIndex + contextIndex++];
+        SetupRenderContext(renderContext, shadowContext, &atlasLight);
         shadowContext.View.SetUpCube(LocalLightNearPlane, light.Radius, light.Position);
 
         // Apply border to the projection matrix
@@ -658,6 +904,13 @@ void ShadowsPass::SetupLight(ShadowsCustomBuffer& shadows, RenderContext& render
         const auto shadowMapsSize = (float)atlasLight.Resolution;
         shadowContext.View.PrepareCache(shadowContext, shadowMapsSize, shadowMapsSize, Float2::Zero, &renderContext.View);
         atlasLight.Tiles[faceIndex].SetWorldToShadow(shadowContext.View.ViewProjection());
+
+        // Draw static geometry separately to be cached
+        if (atlasLight.HasStaticShadowContext)
+        {
+            auto& shadowContextStatic = renderContextBatch.Contexts[atlasLight.ContextIndex + contextIndex++];
+            SetupRenderContext(renderContext, shadowContextStatic, &atlasLight, &shadowContext);
+        }
     }
 }
 
@@ -666,16 +919,23 @@ void ShadowsPass::SetupLight(ShadowsCustomBuffer& shadows, RenderContext& render
     if (SetupLight(shadows, renderContext, renderContextBatch, (RenderLocalLightData&)light, atlasLight))
         return;
 
-    // Render depth to a single projection
     atlasLight.ContextIndex = renderContextBatch.Contexts.Count();
-    atlasLight.ContextCount = 1;
+    atlasLight.ContextCount = atlasLight.HasStaticShadowContext ? 2 : 1;
     renderContextBatch.Contexts.AddDefault(atlasLight.ContextCount);
+
+    // Render depth to a single projection
     auto& shadowContext = renderContextBatch.Contexts[atlasLight.ContextIndex];
-    SetupRenderContext(renderContext, shadowContext);
+    SetupRenderContext(renderContext, shadowContext, &atlasLight);
     shadowContext.View.SetProjector(LocalLightNearPlane, light.Radius, light.Position, light.Direction, light.UpVector, light.OuterConeAngle * 2.0f);
-    const auto shadowMapsSize = (float)atlasLight.Resolution;
-    shadowContext.View.PrepareCache(shadowContext, shadowMapsSize, shadowMapsSize, Float2::Zero, &renderContext.View);
+    shadowContext.View.PrepareCache(shadowContext, atlasLight.Resolution, atlasLight.Resolution, Float2::Zero, &renderContext.View);
     atlasLight.Tiles[0].SetWorldToShadow(shadowContext.View.ViewProjection());
+
+    // Draw static geometry separately to be cached
+    if (atlasLight.HasStaticShadowContext)
+    {
+        auto& shadowContextStatic = renderContextBatch.Contexts[atlasLight.ContextIndex + 1];
+        SetupRenderContext(renderContext, shadowContextStatic, &atlasLight, &shadowContext);
+    }
 }
 
 void ShadowsPass::Dispose()
@@ -690,6 +950,7 @@ void ShadowsPass::Dispose()
     _shader = nullptr;
     _sphereModel = nullptr;
     SAFE_DELETE_GPU_RESOURCE(_psDepthClear);
+    SAFE_DELETE_GPU_RESOURCE(_psDepthCopy);
 }
 
 void ShadowsPass::SetupShadows(RenderContext& renderContext, RenderContextBatch& renderContextBatch)
@@ -724,6 +985,7 @@ void ShadowsPass::SetupShadows(RenderContext& renderContext, RenderContextBatch&
     const auto currentFrame = Engine::FrameCount;
     shadows.LastFrameUsed = currentFrame;
     shadows.MaxShadowsQuality = Math::Clamp(Math::Min<int32>((int32)Graphics::ShadowsQuality, (int32)renderContext.View.MaxShadowsQuality), 0, (int32)Quality::MAX - 1);
+    shadows.EnableStaticShadows = !renderContext.View.IsOfflinePass && !renderContext.View.IsSingleFrame;
     int32 atlasResolution;
     switch (Graphics::ShadowMapsQuality)
     {
@@ -742,7 +1004,6 @@ void ShadowsPass::SetupShadows(RenderContext& renderContext, RenderContextBatch&
     default:
         return;
     }
-    const int32 baseLightResolution = atlasResolution / MAX_CSM_CASCADES; // Allow to store 4 CSM cascades in a single row in all cases
     if (shadows.Resolution != atlasResolution)
     {
         shadows.Reset();
@@ -765,6 +1026,7 @@ void ShadowsPass::SetupShadows(RenderContext& renderContext, RenderContextBatch&
         shadows.AtlasTiles = New<ShadowsAtlasRectTile>(0, 0, atlasResolution, atlasResolution);
 
     // Update/add lights
+    const int32 baseLightResolution = SHADOWS_BASE_LIGHT_RESOLUTION(atlasResolution);
     for (const RenderLightData* light : shadowedLights)
     {
         auto& atlasLight = shadows.Lights[light->ID];
@@ -846,8 +1108,9 @@ RETRY_ATLAS_SETUP:
             continue;
 
         // Remove existing tiles
+        atlasLight.Cache.DynamicValid = false;
         for (ShadowAtlasLightTile& tile : atlasLight.Tiles)
-            tile.Free(&shadows);
+            tile.FreeDynamic(&shadows);
     }
 
     // Insert tiles into the atlas (already sorted to favor the first ones)
@@ -866,7 +1129,7 @@ RETRY_ATLAS_SETUP:
             {
                 // Free any previous tiles that were added
                 for (int32 i = 0; i < tileIndex; i++)
-                    atlasLight.Tiles[i].Free(&shadows);
+                    atlasLight.Tiles[i].FreeDynamic(&shadows);
                 failedToInsert = true;
                 break;
             }
@@ -887,7 +1150,7 @@ RETRY_ATLAS_SETUP:
             }
 
             // Rebuild atlas
-            shadows.ClearTiles();
+            shadows.ClearDynamic();
             shadows.AtlasTiles = New<ShadowsAtlasRectTile>(0, 0, atlasResolution, atlasResolution);
             goto RETRY_ATLAS_SETUP;
         }
@@ -901,7 +1164,9 @@ RETRY_ATLAS_SETUP:
         {
             // Invalidate cache when whole atlas will be cleared
             if (shadows.ClearShadowMapAtlas)
-                atlasLight.Cache.Valid = false;
+                atlasLight.Cache.DynamicValid = false;
+            if (shadows.ClearStaticShadowMapAtlas)
+                atlasLight.Cache.StaticValid = false;
 
             light->HasShadow = true;
             atlasLight.TilesCount = atlasLight.TilesNeeded;
@@ -912,6 +1177,12 @@ RETRY_ATLAS_SETUP:
             else //if (light->IsDirectionalLight)
                 SetupLight(shadows, renderContext, renderContextBatch, *(RenderDirectionalLightData*)light, atlasLight);
         }
+    }
+    if (shadows.StaticAtlasTiles)
+    {
+        // Register for active scenes changes to invalidate static shadows
+        for (SceneRendering* scene : renderContext.List->Scenes)
+            shadows.ListenSceneRendering(scene);
     }
 
 #undef IS_LIGHT_TILE_REUSABLE
@@ -970,41 +1241,110 @@ void ShadowsPass::RenderShadowMaps(RenderContextBatch& renderContextBatch)
     const ShadowsCustomBuffer& shadows = *shadowsPtr;
     GPUContext* context = GPUDevice::Instance->GetMainContext();
     context->ResetSR();
-    context->SetRenderTarget(shadows.ShadowMapAtlas->View(), (GPUTextureView*)nullptr);
-    GPUConstantBuffer* quadShaderCB;
-    if (shadows.ClearShadowMapAtlas)
+    GPUConstantBuffer* quadShaderCB = GPUDevice::Instance->QuadShader->GetCB(0);
+    QuadShaderData quadShaderData;
+
+    // Update static shadows
+    if (shadows.StaticShadowMapAtlas)
     {
-        context->ClearDepth(shadows.ShadowMapAtlas->View());
-    }
-    else
-    {
-        QuadShaderData quadShaderData;
-        quadShaderData.Color = Float4::One; // Color.r is used by PS_DepthClear in Quad shader to clear depth
-        quadShaderCB = GPUDevice::Instance->QuadShader->GetCB(0);
-        context->UpdateCB(quadShaderCB, &quadShaderData);
+        PROFILE_GPU_CPU("Static");
+        if (shadows.ClearStaticShadowMapAtlas)
+            context->ClearDepth(shadows.StaticShadowMapAtlas->View());
+        bool renderedAny = false;
+        for (auto& e : shadows.Lights)
+        {
+            ShadowAtlasLight& atlasLight = e.Value;
+            if (atlasLight.StaticState != ShadowAtlasLight::UpdateStaticShadow || !atlasLight.HasStaticShadowContext)
+                continue;
+            int32 contextIndex = 0;
+            for (int32 tileIndex = 0; tileIndex < atlasLight.TilesCount; tileIndex++)
+            {
+                ShadowAtlasLightTile& tile = atlasLight.Tiles[tileIndex];
+                if (!tile.RectTile)
+                    break;
+                if (!tile.StaticRectTile)
+                    continue;
+                if (!renderedAny)
+                {
+                    renderedAny = true;
+                    context->SetRenderTarget(shadows.StaticShadowMapAtlas->View(), (GPUTextureView*)nullptr);
+                }
+
+                // Set viewport for tile
+                context->SetViewportAndScissors(Viewport(tile.StaticRectTile->X, tile.StaticRectTile->Y, tile.StaticRectTile->Width, tile.StaticRectTile->Height));
+                if (!shadows.ClearStaticShadowMapAtlas)
+                {
+                    // Color.r is used by PS_DepthClear in Quad shader to clear depth
+                    quadShaderData.Color = Float4::One;
+                    context->UpdateCB(quadShaderCB, &quadShaderData);
+                    context->BindCB(0, quadShaderCB);
+
+                    // Clear tile depth
+                    context->SetState(_psDepthClear);
+                    context->DrawFullscreenTriangle();
+                }
+
+                // Draw objects depth
+                contextIndex++; // Skip dynamic context
+                auto& shadowContextStatic = renderContextBatch.Contexts[atlasLight.ContextIndex + contextIndex++];
+                if (!shadowContextStatic.List->DrawCallsLists[(int32)DrawCallsListType::Depth].IsEmpty() || !shadowContextStatic.List->ShadowDepthDrawCallsList.IsEmpty())
+                {
+                    shadowContextStatic.List->ExecuteDrawCalls(shadowContextStatic, DrawCallsListType::Depth);
+                    shadowContextStatic.List->ExecuteDrawCalls(shadowContextStatic, shadowContextStatic.List->ShadowDepthDrawCallsList, renderContext.List->DrawCalls, nullptr);
+                    tile.HasStaticGeometry = true;
+                }
+            }
+
+            // Go into copying shadow for the next draw
+            atlasLight.StaticState = ShadowAtlasLight::CopyStaticShadow;
+        }
+        shadows.ClearStaticShadowMapAtlas = false;
+        if (renderedAny)
+        {
+            context->ResetSR();
+            context->ResetRenderTarget();
+        }
     }
 
     // Render depth to all shadow map tiles
+    if (shadows.ClearShadowMapAtlas)
+        context->ClearDepth(shadows.ShadowMapAtlas->View());
+    context->SetRenderTarget(shadows.ShadowMapAtlas->View(), (GPUTextureView*)nullptr);
     for (auto& e : shadows.Lights)
     {
-        const ShadowAtlasLight& atlasLight = e.Value;
+        ShadowAtlasLight& atlasLight = e.Value;
         int32 contextIndex = 0;
         for (int32 tileIndex = 0; tileIndex < atlasLight.TilesCount; tileIndex++)
         {
-            const ShadowAtlasLightTile& tile = atlasLight.Tiles[tileIndex];
+            ShadowAtlasLightTile& tile = atlasLight.Tiles[tileIndex];
             if (!tile.RectTile)
                 break;
             if (tile.SkipUpdate)
                 continue;
 
             // Set viewport for tile
-            ASSERT_LOW_LAYER(tile.CachedViewport == Viewport(tile.RectTile->X, tile.RectTile->Y, tile.RectTile->Width, tile.RectTile->Height));
             context->SetViewportAndScissors(tile.CachedViewport);
-
-            if (!shadows.ClearShadowMapAtlas)
+            if (tile.StaticRectTile && atlasLight.StaticState == ShadowAtlasLight::CopyStaticShadow)
             {
-                // Clear tile depth
+                // Color.xyzw is used by PS_DepthCopy in Quad shader to scale input texture UVs
+                const float staticAtlasResolutionInv = 1.0f / shadows.StaticShadowMapAtlas->Width();
+                quadShaderData.Color = Float4(tile.StaticRectTile->Width, tile.StaticRectTile->Height, tile.StaticRectTile->X, tile.StaticRectTile->Y) * staticAtlasResolutionInv;
+                context->UpdateCB(quadShaderCB, &quadShaderData);
                 context->BindCB(0, quadShaderCB);
+
+                // Copy tile depth
+                context->BindSR(0, shadows.StaticShadowMapAtlas->View());
+                context->SetState(_psDepthCopy);
+                context->DrawFullscreenTriangle();
+            }
+            else if (!shadows.ClearShadowMapAtlas)
+            {
+                // Color.r is used by PS_DepthClear in Quad shader to clear depth
+                quadShaderData.Color = Float4::One;
+                context->UpdateCB(quadShaderCB, &quadShaderData);
+                context->BindCB(0, quadShaderCB);
+
+                // Clear tile depth
                 context->SetState(_psDepthClear);
                 context->DrawFullscreenTriangle();
             }
@@ -1013,6 +1353,20 @@ void ShadowsPass::RenderShadowMaps(RenderContextBatch& renderContextBatch)
             auto& shadowContext = renderContextBatch.Contexts[atlasLight.ContextIndex + contextIndex++];
             shadowContext.List->ExecuteDrawCalls(shadowContext, DrawCallsListType::Depth);
             shadowContext.List->ExecuteDrawCalls(shadowContext, shadowContext.List->ShadowDepthDrawCallsList, renderContext.List->DrawCalls, nullptr);
+            if (atlasLight.HasStaticShadowContext)
+            {
+                auto& shadowContextStatic = renderContextBatch.Contexts[atlasLight.ContextIndex + contextIndex++];
+                if (!shadowContextStatic.List->DrawCallsLists[(int32)DrawCallsListType::Depth].IsEmpty() || !shadowContextStatic.List->ShadowDepthDrawCallsList.IsEmpty())
+                {
+                    if (atlasLight.StaticState != ShadowAtlasLight::CopyStaticShadow)
+                    {
+                        // Draw static objects directly to the shadow map
+                        shadowContextStatic.List->ExecuteDrawCalls(shadowContextStatic, DrawCallsListType::Depth);
+                        shadowContextStatic.List->ExecuteDrawCalls(shadowContextStatic, shadowContextStatic.List->ShadowDepthDrawCallsList, renderContext.List->DrawCalls, nullptr);
+                    }
+                    tile.HasStaticGeometry = true;
+                }
+            }
         }
     }
 

@@ -69,3 +69,16 @@ float PS_DepthClear(Quad_VS2PS input) : SV_Depth
 {
 	return Color.r;
 }
+
+#ifdef _PS_DepthCopy
+
+Texture2D Source : register(t0);
+
+// Pixel Shader for copying depth buffer
+META_PS(true, FEATURE_LEVEL_ES2)
+float PS_DepthCopy(Quad_VS2PS input) : SV_Depth
+{
+	return Source.SampleLevel(SamplerPointClamp, input.TexCoord * Color.xy + Color.zw, 0).r;
+}
+
+#endif
