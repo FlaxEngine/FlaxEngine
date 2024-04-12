@@ -252,7 +252,7 @@ API_ENUM() enum class PartitionMode
     Logarithmic = 1,
 
     /// <summary>
-    /// PSSM cascade splits.
+    /// Parallel-Split Shadow Maps cascade splits.
     /// </summary>
     PSSM = 2,
 };
