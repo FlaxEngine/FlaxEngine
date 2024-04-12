@@ -582,7 +582,7 @@ namespace FlaxEditor.CustomEditors.Editors
         }
 
         /// <summary>
-        /// Evaluate the visible if cache.
+        /// Evaluate the <see cref="VisibleIfAttribute"/> cache for a given property item.
         /// </summary>
         /// <param name="itemLayout">The item layout.</param>
         /// <param name="item">The item.</param>
