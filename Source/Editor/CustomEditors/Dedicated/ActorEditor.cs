@@ -11,6 +11,7 @@ using FlaxEditor.GUI.ContextMenu;
 using FlaxEditor.GUI.Tree;
 using FlaxEditor.Scripting;
 using FlaxEditor.Windows;
+using FlaxEditor.Windows.Assets;
 using FlaxEngine;
 using FlaxEngine.GUI;
 using FlaxEngine.Json;
@@ -113,19 +114,35 @@ namespace FlaxEditor.CustomEditors.Dedicated
             var actor = (Actor)Values[0];
             var scriptType = TypeUtils.GetType(actor.TypeName);
             var item = scriptType.ContentItem;
-            if (Presenter.Owner is PropertiesWindow pw)
+            if (Presenter.Owner is PropertiesWindow propertiesWindow)
             {
-                var lockButton = cm.AddButton(pw.LockObjects ? "Unlock" : "Lock");
+                var lockButton = cm.AddButton(propertiesWindow.LockObjects ? "Unlock" : "Lock");
                 lockButton.ButtonClicked += button =>
                 {
-                    pw.LockObjects = !pw.LockObjects;
+                    propertiesWindow.LockObjects = !propertiesWindow.LockObjects;
 
                     // Reselect current selection
-                    if (!pw.LockObjects && Editor.Instance.SceneEditing.SelectionCount > 0)
+                    if (!propertiesWindow.LockObjects && Editor.Instance.SceneEditing.SelectionCount > 0)
                     {
                         var cachedSelection = Editor.Instance.SceneEditing.Selection.ToArray();
                         Editor.Instance.SceneEditing.Select(null);
                         Editor.Instance.SceneEditing.Select(cachedSelection);
+                    }
+                };
+            }
+            else if (Presenter.Owner is PrefabWindow prefabWindow)
+            {
+                var lockButton = cm.AddButton(prefabWindow.LockSelectedObjects ? "Unlock" : "Lock");
+                lockButton.ButtonClicked += button =>
+                {
+                    prefabWindow.LockSelectedObjects = !prefabWindow.LockSelectedObjects;
+
+                    // Reselect current selection
+                    if (!prefabWindow.LockSelectedObjects && prefabWindow.Selection.Count > 0)
+                    {
+                        var cachedSelection = prefabWindow.Selection.ToList();
+                        prefabWindow.Select(null);
+                        prefabWindow.Select(cachedSelection);
                     }
                 };
             }
