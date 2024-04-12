@@ -15,15 +15,13 @@ class SMAA : public RendererPass<SMAA>
 {
 private:
 
-    PACK_STRUCT(struct Data
-        {
-        Float4 RtSize;
-        });
+
 
     AssetReference<Shader> _shader;
     GPUPipelineStatePermutationsPs<static_cast<int32>(Quality::MAX)> _psEdge;
     GPUPipelineStatePermutationsPs<static_cast<int32>(Quality::MAX)> _psBlend;
     GPUPipelineState* _psNeighbor = nullptr;
+    GPUPipelineState* _psCAS = nullptr; // Added for CAS pass
     AssetReference<Texture> _areaTex;
     AssetReference<Texture> _searchTex;
 
@@ -35,9 +33,10 @@ public:
     /// <param name="renderContext">The rendering context.</param>
     /// <param name="input">The input render target.</param>
     /// <param name="output">The output render target.</param>
-    void Render(RenderContext& renderContext, GPUTexture* input, GPUTextureView* output);
+    void Render(const RenderContext& renderContext, GPUTexture* input, GPUTextureView* output);
 
 private:
+
 
 #if COMPILE_WITH_DEV_ENV
     void OnShaderReloading(Asset* obj)
@@ -45,6 +44,7 @@ private:
         _psEdge.Release();
         _psBlend.Release();
         _psNeighbor->ReleaseGPU();
+        _psCAS->ReleaseGPU(); // Added for CAS pass
         invalidateResources();
     }
 #endif

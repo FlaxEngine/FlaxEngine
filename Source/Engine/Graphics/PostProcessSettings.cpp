@@ -198,6 +198,10 @@ void AntiAliasingSettings::BlendWith(AntiAliasingSettings& other, float weight)
     BLEND_FLOAT(TAA_Sharpness);
     BLEND_FLOAT(TAA_StationaryBlending);
     BLEND_FLOAT(TAA_MotionBlending);
+    BLEND_FLOAT(CAS_SharpeningAmount);
+    BLEND_FLOAT(CAS_EdgeSharpening);
+    BLEND_FLOAT(CAS_MinEdgeThreshold);
+    BLEND_FLOAT(CAS_OverBlurLimit);
 }
 
 void PostFxMaterialsSettings::BlendWith(PostFxMaterialsSettings& other, float weight)
