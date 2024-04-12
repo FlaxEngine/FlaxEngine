@@ -32,9 +32,16 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "./Flax/Common.hlsl"
 
+
 META_CB_BEGIN(0, Data)
 float4 RtSize;// x-1/width, y-1/height, z-width, w-height
+float CAS_SharpeningAmount;
+float CAS_EdgeSharpening;
+float CAS_MinEdgeThreshold;
+float CAS_OverBlurLimit;
 META_CB_END
+
+
 
 Texture2D Input : register(t0);
 
@@ -1056,6 +1063,67 @@ float4 SMAANeighborhoodBlendingPS(float2 texcoord,
         return color;
     }
 }
+
+struct VaryingsCAS
+{
+    float4 Position : SV_POSITION;
+    float2 TexCoord : TEXCOORD0;
+};
+
+// Vertex shader for the CAS pass
+META_VS(true, FEATURE_LEVEL_ES2)
+META_VS_IN_ELEMENT(POSITION, 0, R32G32_FLOAT, 0, ALIGN, PER_VERTEX, 0, true)
+META_VS_IN_ELEMENT(TEXCOORD, 0, R32G32_FLOAT, 0, ALIGN, PER_VERTEX, 0, true)
+VaryingsCAS VS_CAS(float2 Position : POSITION0, float2 TexCoord : TEXCOORD0)
+{
+    VaryingsCAS output;
+    output.Position = float4(Position, 0.0, 1.0);
+    output.TexCoord = TexCoord;
+    return output;
+}
+
+
+// Pixel shader for the CAS pass
+META_PS(true, FEATURE_LEVEL_ES2)
+float4 PS_CAS(float4 Position : SV_POSITION, float2 TexCoord : TEXCOORD0) : SV_TARGET
+{
+
+    // Sample the color texture from the SMAA neighborhood blending pass
+    float4 color = Input.SampleLevel(LinearSampler, TexCoord, 0);
+
+    // Apply CAS
+    float3 blurred = color.rgb;
+    float3 edges = 0.0;
+
+    // Sample neighboring pixels
+    for (int x = -2; x <= 2; x++)
+    {
+        for (int y = -2; y <= 2; y++)
+        {
+            float2 offset = float2(x, y) * SMAA_RT_METRICS.xy;
+            float3 neighbor = Input.SampleLevel(LinearSampler, TexCoord + offset, 0).rgb;
+            blurred += neighbor;
+            edges += abs(neighbor - color.rgb);
+        }
+    }
+
+    blurred /= 25.0;
+    edges /= 25.0;
+
+    // Sharpen based on edge detection
+    float edgeAmount = saturate((dot(edges, edges) - CAS_MinEdgeThreshold) / (0.001 + dot(edges, edges)));
+    float sharpen = (1.0 - edgeAmount) * CAS_SharpeningAmount + edgeAmount * CAS_EdgeSharpening;
+    float3 sharpened = color.rgb + (color.rgb - blurred) * sharpen;
+
+    // Limit sharpening to avoid over-blurring
+    sharpened = lerp(color.rgb, sharpened, saturate(CAS_OverBlurLimit / (CAS_OverBlurLimit + dot(abs(sharpened - color.rgb), float3(1.0, 1.0, 1.0)))));
+
+    return float4(sharpened, color.a);
+    
+    //return float4(color,color.a);
+
+}
+
 
 //-----------------------------------------------------------------------------
 // Temporal Resolve Pixel Shader (Optional Pass)

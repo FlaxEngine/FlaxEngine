@@ -7,6 +7,18 @@
 #include "Engine/Graphics/GPUContext.h"
 #include "Engine/Graphics/RenderTargetPool.h"
 #include "Engine/Graphics/RenderTask.h"
+#include "Engine/Renderer/RenderList.h"
+
+
+PACK_STRUCT(struct Data
+{
+    Float4 RtSize;
+    float CAS_SharpeningAmount;
+    float CAS_EdgeSharpening;
+    float CAS_MinEdgeThreshold;
+    float CAS_OverBlurLimit;
+});
+
 
 bool SMAA::setupResources()
 {
@@ -53,6 +65,7 @@ bool SMAA::setupResources()
         return true;
     }
 
+
     // Create pipeline state
     GPUPipelineState::Description psDesc = GPUPipelineState::Description::DefaultFullscreenTriangle;
     if (!_psEdge.IsValid())
@@ -75,6 +88,16 @@ bool SMAA::setupResources()
             return true;
     }
 
+    if (!_psCAS)
+        _psCAS = GPUDevice::Instance->CreatePipelineState();
+    if (!_psCAS->IsValid())
+    {
+        psDesc.VS = shader->GetVS("VS_CAS");
+        psDesc.PS = shader->GetPS("PS_CAS");
+        if (_psCAS->Init(psDesc))
+            return true;
+    }
+
     return false;
 }
 
@@ -87,17 +110,19 @@ void SMAA::Dispose()
     _psEdge.Delete();
     _psBlend.Delete();
     SAFE_DELETE_GPU_RESOURCE(_psNeighbor);
+    SAFE_DELETE_GPU_RESOURCE(_psCAS);
     _shader = nullptr;
     _areaTex = nullptr;
     _searchTex = nullptr;
 }
 
-void SMAA::Render(RenderContext& renderContext, GPUTexture* input, GPUTextureView* output)
+
+void SMAA::Render(const RenderContext& renderContext, GPUTexture* input, GPUTextureView* output)
 {
     auto context = GPUDevice::Instance->GetMainContext();
     const auto qualityLevel = Math::Clamp(static_cast<int32>(Graphics::AAQuality), 0, static_cast<int32>(Quality::MAX) - 1);
 
-    // Ensure to have valid data
+    //Ensure to have valid data
     if (checkIfSkipPass())
     {
         // Resources are missing. Do not perform rendering, just copy input frame.
@@ -108,12 +133,16 @@ void SMAA::Render(RenderContext& renderContext, GPUTexture* input, GPUTextureVie
 
     PROFILE_GPU_CPU("Subpixel Morphological Antialiasing");
 
+    const auto& settings = renderContext.List->Settings.AntiAliasing;
+
     // Get temporary targets
     const auto tempDesc = GPUTextureDescription::New2D((int32)renderContext.View.ScreenSize.X, (int32)renderContext.View.ScreenSize.Y, PixelFormat::R8G8B8A8_UNorm);
     auto edges = RenderTargetPool::Get(tempDesc);
     auto weights = RenderTargetPool::Get(tempDesc);
+    auto casOutput = RenderTargetPool::Get(tempDesc);
     RENDER_TARGET_POOL_SET_NAME(edges, "SMAA.Edges");
-    RENDER_TARGET_POOL_SET_NAME(weights,"SMAA.Weights");
+    RENDER_TARGET_POOL_SET_NAME(weights, "SMAA.Weights");
+    RENDER_TARGET_POOL_SET_NAME(casOutput, "SMAA.CASOutput");
 
     // Bind constants
     Data data;
@@ -121,6 +150,10 @@ void SMAA::Render(RenderContext& renderContext, GPUTexture* input, GPUTextureVie
     data.RtSize.Y = 1.0f / tempDesc.Height;
     data.RtSize.Z = (float)tempDesc.Width;
     data.RtSize.W = (float)tempDesc.Height;
+    data.CAS_SharpeningAmount = settings.CAS_SharpeningAmount;
+    data.CAS_EdgeSharpening = settings.CAS_EdgeSharpening;
+    data.CAS_MinEdgeThreshold = settings.CAS_MinEdgeThreshold;
+    data.CAS_OverBlurLimit = settings.CAS_OverBlurLimit;
     const auto cb = _shader->GetShader()->GetCB(0);
     context->UpdateCB(cb, &data);
     context->BindCB(0, cb);
@@ -146,8 +179,15 @@ void SMAA::Render(RenderContext& renderContext, GPUTexture* input, GPUTextureVie
     context->BindSR(0, input);
     context->BindSR(1, weights);
     context->UnBindSR(2);
-    context->SetRenderTarget(output);
+    context->SetRenderTarget(*casOutput);
     context->SetState(_psNeighbor);
+    context->DrawFullscreenTriangle();
+    context->ResetRenderTarget();
+
+    // Contrast Adaptive Sharpening (CAS)
+    context->BindSR(0, casOutput);
+    context->SetRenderTarget(output);
+    context->SetState(_psCAS);
     context->DrawFullscreenTriangle();
 
     // Cleanup
@@ -156,4 +196,5 @@ void SMAA::Render(RenderContext& renderContext, GPUTexture* input, GPUTextureVie
     context->UnBindSR(2);
     RenderTargetPool::Release(edges);
     RenderTargetPool::Release(weights);
+    RenderTargetPool::Release(casOutput);
 }
