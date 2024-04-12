@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using FlaxEditor.Actions;
 using FlaxEditor.CustomEditors.Editors;
 using FlaxEditor.CustomEditors.Elements;
@@ -9,6 +10,7 @@ using FlaxEditor.GUI;
 using FlaxEditor.GUI.ContextMenu;
 using FlaxEditor.GUI.Tree;
 using FlaxEditor.Scripting;
+using FlaxEditor.Windows;
 using FlaxEngine;
 using FlaxEngine.GUI;
 using FlaxEngine.Json;
@@ -111,6 +113,22 @@ namespace FlaxEditor.CustomEditors.Dedicated
             var actor = (Actor)Values[0];
             var scriptType = TypeUtils.GetType(actor.TypeName);
             var item = scriptType.ContentItem;
+            if (Presenter.Owner is PropertiesWindow pw)
+            {
+                var lockButton = cm.AddButton(pw.LockObjects ? "Unlock" : "Lock");
+                lockButton.ButtonClicked += button =>
+                {
+                    pw.LockObjects = !pw.LockObjects;
+
+                    // Reselect current selection
+                    if (!pw.LockObjects && Editor.Instance.SceneEditing.SelectionCount > 0)
+                    {
+                        var cachedSelection = Editor.Instance.SceneEditing.Selection.ToArray();
+                        Editor.Instance.SceneEditing.Select(null);
+                        Editor.Instance.SceneEditing.Select(cachedSelection);
+                    }
+                };
+            }
             cm.AddButton("Copy ID", OnClickCopyId);
             cm.AddButton("Edit actor type", OnClickEditActorType).Enabled = item != null;
             var showButton = cm.AddButton("Show in content window", OnClickShowActorType);
