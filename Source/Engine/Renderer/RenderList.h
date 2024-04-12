@@ -212,17 +212,17 @@ struct DrawBatch
     /// <summary>
     /// The first draw call index.
     /// </summary>
-    int32 StartIndex;
+    uint16 StartIndex;
 
     /// <summary>
     /// A number of draw calls to be submitted at once.
     /// </summary>
-    int32 BatchSize;
+    uint16 BatchSize;
 
     /// <summary>
     /// The total amount of instances (sum from all draw calls in this batch).
     /// </summary>
-    int32 InstanceCount;
+    uint32 InstanceCount;
 
     bool operator<(const DrawBatch& other) const
     {
