@@ -2807,6 +2807,13 @@ void PhysicsBackend::SetJointActorPose(void* joint, const Vector3& position, con
     auto jointPhysX = (PxJoint*)joint;
     jointPhysX->setLocalPose((PxJointActorIndex::Enum)index, PxTransform(C2P(position), C2P(orientation)));
 }
+void PhysicsBackend::GetJointActorPose(void* joint, Vector3& position, Quaternion& orientation, uint8 index)
+{
+    auto jointPhysX = (PxJoint*)joint;
+    auto t = jointPhysX->getLocalPose((PxJointActorIndex::Enum)index);
+    position = P2C(t.p);
+    orientation = P2C(t.q);
+}
 
 void PhysicsBackend::SetJointBreakForce(void* joint, float force, float torque)
 {

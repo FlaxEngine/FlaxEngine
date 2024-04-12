@@ -495,7 +495,9 @@ void PhysicsBackend::SetJointActors(void* joint, void* actors0, void* actor1)
 void PhysicsBackend::SetJointActorPose(void* joint, const Vector3& position, const Quaternion& orientation, uint8 index)
 {
 }
-
+void PhysicsBackend::GetJointActorPose(void* joint, Vector3& position, Quaternion& orientation, uint8 index)
+{
+}
 void PhysicsBackend::SetJointBreakForce(void* joint, float force, float torque)
 {
 }

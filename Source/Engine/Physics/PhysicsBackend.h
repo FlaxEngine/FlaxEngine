@@ -205,6 +205,7 @@ public:
     static void SetJointFlags(void* joint, JointFlags value);
     static void SetJointActors(void* joint, void* actors0, void* actor1);
     static void SetJointActorPose(void* joint, const Vector3& position, const Quaternion& orientation, uint8 index);
+    static void GetJointActorPose(void* joint, Vector3& position, Quaternion& orientation, uint8 index);
     static void SetJointBreakForce(void* joint, float force, float torque);
     static void GetJointForce(void* joint, Vector3& linear, Vector3& angular);
     static void* CreateFixedJoint(const PhysicsJointDesc& desc);
