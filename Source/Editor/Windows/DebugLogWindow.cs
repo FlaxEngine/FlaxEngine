@@ -665,7 +665,16 @@ namespace FlaxEditor.Windows
 
                     // Scroll to the new entry (if any added to view)
                     if (scrollView && anyVisible)
+                    {
                         panelScroll.ScrollViewTo(newEntry);
+
+                        bool scrollViewNew = (panelScroll.VScrollBar.Maximum - panelScroll.VScrollBar.TargetValue) < LogEntry.DefaultHeight * 1.5f;
+                        if (scrollViewNew != scrollView)
+                        {
+                            // Make sure scrolling doesn't stop in case too many entries were added at once
+                            panelScroll.ScrollViewTo(new Float2(float.MaxValue, float.MaxValue));
+                        }
+                    }
                 }
             }
 
