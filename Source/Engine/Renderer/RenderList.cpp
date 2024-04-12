@@ -27,6 +27,7 @@ namespace
     // Cached data for the draw calls sorting
     Array<uint64> SortingKeys[2];
     Array<int32> SortingIndices;
+    Array<DrawBatch> SortingBatches;
     Array<RenderList*> FreeRenderList;
 
     struct MemPoolEntry
@@ -638,7 +639,7 @@ void RenderList::SortDrawCalls(const RenderContext& renderContext, bool reverseD
     }
 
     // Sort draw calls batches by depth
-    Sorting::QuickSort(list.Batches);
+    Sorting::MergeSort(list.Batches, &SortingBatches);
 }
 
 FORCE_INLINE bool CanUseInstancing(DrawPass pass)
