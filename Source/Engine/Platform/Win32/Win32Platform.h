@@ -63,11 +63,11 @@ public:
         return _interlockedexchangeadd64(dst, value);
 #endif
     }
-    static int32 AtomicRead(int32 volatile* dst)
+    static int32 AtomicRead(int32 const volatile* dst)
     {
         return (int32)_InterlockedCompareExchange((long volatile*)dst, 0, 0);
     }
-    static int64 AtomicRead(int64 volatile* dst)
+    static int64 AtomicRead(int64 const volatile* dst)
     {
         return _InterlockedCompareExchange64(dst, 0, 0);
     }

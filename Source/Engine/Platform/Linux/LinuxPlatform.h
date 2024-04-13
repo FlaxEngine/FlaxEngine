@@ -69,13 +69,13 @@ public:
     {
         return __sync_fetch_and_add(dst, value);
     }
-    FORCE_INLINE static int32 AtomicRead(int32 volatile* dst)
+    FORCE_INLINE static int32 AtomicRead(int32 const volatile* dst)
     {
         int32 result;
         __atomic_load(dst, &result, __ATOMIC_SEQ_CST);
         return result;
     }
-    FORCE_INLINE static int64 AtomicRead(int64 volatile* dst)
+    FORCE_INLINE static int64 AtomicRead(int64 const volatile* dst)
     {
         int64 result;
         __atomic_load(dst, &result, __ATOMIC_SEQ_CST);
