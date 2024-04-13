@@ -497,7 +497,9 @@ void ReadStream::Read(Variant& data)
         break;
     }
     default:
-        CRASH;
+        _hasError = true;
+        LOG(Error, "Invalid Variant type. Corrupted data.");
+        break;
     }
 }
 
