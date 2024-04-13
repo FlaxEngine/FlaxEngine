@@ -249,6 +249,7 @@ namespace Flax.Build
             }
 
             options.CompileEnv.EnableExceptions = true; // TODO: try to disable this!
+            options.CompileEnv.Sanitizers = Configuration.Sanitizers;
             switch (options.Configuration)
             {
             case TargetConfiguration.Debug:

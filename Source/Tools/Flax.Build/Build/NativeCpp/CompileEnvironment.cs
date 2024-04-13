@@ -27,6 +27,28 @@ namespace Flax.Build.NativeCpp
     }
 
     /// <summary>
+    /// The code sanitizers for core errors detection by compiler-supported checks.
+    /// </summary>
+    [Flags]
+    public enum Sanitizer
+    {
+        /// <summary>
+        /// No sanitizers in use.
+        /// </summary>
+        None = 0,
+
+        /// <summary>
+        /// Memory errors detector,
+        /// </summary>
+        Address = 1,
+
+        /// <summary>
+        /// Data races and deadlocks detector.
+        /// </summary>
+        Thread = 2,
+    }
+
+    /// <summary>
     /// The compilation optimization hint.
     /// </summary>
     public enum CppVersion
@@ -66,6 +88,11 @@ namespace Flax.Build.NativeCpp
         /// Selects a predefined set of options that affect the size and speed of generated code.
         /// </summary>
         public FavorSizeOrSpeed FavorSizeOrSpeed = FavorSizeOrSpeed.Neither;
+
+        /// <summary>
+        /// Selects a sanitizers to use (as flags).
+        /// </summary>
+        public Sanitizer Sanitizers = Sanitizer.None;
 
         /// <summary>
         /// Enables exceptions support.
@@ -184,6 +211,7 @@ namespace Flax.Build.NativeCpp
             {
                 CppVersion = CppVersion,
                 FavorSizeOrSpeed = FavorSizeOrSpeed,
+                Sanitizers = Sanitizers,
                 EnableExceptions = EnableExceptions,
                 RuntimeTypeInfo = RuntimeTypeInfo,
                 Inlining = Inlining,

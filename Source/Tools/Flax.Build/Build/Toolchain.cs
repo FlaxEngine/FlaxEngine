@@ -182,5 +182,18 @@ namespace Flax.Build
             }
             return true;
         }
+
+        /// <summary>
+        /// Utility that outputs the arguments for Clang with specific sanitizer.
+        /// </summary>
+        /// <param name="options">The sanitizers as flags.</param>
+        /// <param name="options">The arguments list.</param>
+        protected void AddClangSanitizerArgs(Sanitizer sanitizers, List<string> args)
+        {
+            if (sanitizers.HasFlag(Sanitizer.Address))
+                args.Add("-fsanitize=address");
+            if (sanitizers.HasFlag(Sanitizer.Thread))
+                args.Add("-fsanitize=thread");
+        }
     }
 }

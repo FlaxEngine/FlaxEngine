@@ -226,6 +226,12 @@ namespace Flax.Build
         public static string Compiler = null;
 
         /// <summary>
+        /// Selects a sanitizers to use (as flags). Options: Address, Thread.
+        /// </summary>
+        [CommandLine("sanitizers", "<name>", "Selects a sanitizers to use (as flags). Options: Address, Thread.")]
+        public static Flax.Build.NativeCpp.Sanitizer Sanitizers = Flax.Build.NativeCpp.Sanitizer.None;
+
+        /// <summary>
         /// Specifies the dotnet SDK version to use for the build. Eg. set to '7' to use .NET 7 even if .NET 8 is installed.
         /// </summary>
         [CommandLine("dotnet", "<ver>", "Specifies the dotnet SDK version to use for the build. Eg. set to '7' to use .NET 7 even if .NET 8 is installed.")]
@@ -242,6 +248,8 @@ namespace Flax.Build
                 cmdLine += " -compiler=" + Compiler;
             if (!string.IsNullOrEmpty(Dotnet))
                 cmdLine += " -dotnet=" + Dotnet;
+            if (Sanitizers != Flax.Build.NativeCpp.Sanitizer.None)
+                cmdLine += " -sanitizers=" + Sanitizers.ToString();
         }
     }
 
