@@ -112,7 +112,11 @@ ComputePipelineStateVulkan::ComputePipelineStateVulkan(GPUDeviceVulkan* device, 
 ComputePipelineStateVulkan::~ComputePipelineStateVulkan()
 {
     DSWriteContainer.Release();
-    CurrentTypedDescriptorPoolSet = nullptr;
+    if (CurrentTypedDescriptorPoolSet)
+    {
+        CurrentTypedDescriptorPoolSet->GetOwner()->Refs--;
+        CurrentTypedDescriptorPoolSet = nullptr;
+    }
     DescriptorSetsLayout = nullptr;
     DescriptorSetHandles.Resize(0);
     DynamicOffsets.Resize(0);
@@ -206,7 +210,11 @@ VkPipeline GPUPipelineStateVulkan::GetState(RenderPassVulkan* renderPass)
 void GPUPipelineStateVulkan::OnReleaseGPU()
 {
     DSWriteContainer.Release();
-    CurrentTypedDescriptorPoolSet = nullptr;
+    if (CurrentTypedDescriptorPoolSet)
+    {
+        CurrentTypedDescriptorPoolSet->GetOwner()->Refs--;
+        CurrentTypedDescriptorPoolSet = nullptr;
+    }
     DescriptorSetsLayout = nullptr;
     DescriptorSetHandles.Resize(0);
     DynamicOffsets.Resize(0);

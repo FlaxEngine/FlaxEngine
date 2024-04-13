@@ -129,7 +129,7 @@ PACK_STRUCT(struct Data {
     Matrix ViewProjection;
     Float2 Padding;
     float ClipPosZBias;
-    bool EnableDepthTest;
+    uint32 EnableDepthTest;
     });
 
 struct PsData

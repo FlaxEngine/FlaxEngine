@@ -41,17 +41,17 @@ public:
         DescriptorPoolSetContainerVulkan* cmdBufferPoolSet = cmdBuffer->GetDescriptorPoolSet();
         if (CurrentTypedDescriptorPoolSet == nullptr || CurrentTypedDescriptorPoolSet->GetOwner() != cmdBufferPoolSet)
         {
-            ASSERT(cmdBufferPoolSet);
+            if (CurrentTypedDescriptorPoolSet)
+                CurrentTypedDescriptorPoolSet->GetOwner()->Refs--;
             CurrentTypedDescriptorPoolSet = cmdBufferPoolSet->AcquireTypedPoolSet(*DescriptorSetsLayout);
+            CurrentTypedDescriptorPoolSet->GetOwner()->Refs++;
             return true;
         }
-
         return false;
     }
 
     inline bool AllocateDescriptorSets()
     {
-        ASSERT(CurrentTypedDescriptorPoolSet);
         return CurrentTypedDescriptorPoolSet->AllocateDescriptorSets(*DescriptorSetsLayout, DescriptorSetHandles.Get());
     }
 
@@ -165,7 +165,10 @@ public:
         DescriptorPoolSetContainerVulkan* cmdBufferPoolSet = cmdBuffer->GetDescriptorPoolSet();
         if (CurrentTypedDescriptorPoolSet == nullptr || CurrentTypedDescriptorPoolSet->GetOwner() != cmdBufferPoolSet)
         {
+            if (CurrentTypedDescriptorPoolSet)
+                CurrentTypedDescriptorPoolSet->GetOwner()->Refs--;
             CurrentTypedDescriptorPoolSet = cmdBufferPoolSet->AcquireTypedPoolSet(*DescriptorSetsLayout);
+            CurrentTypedDescriptorPoolSet->GetOwner()->Refs++;
             return true;
         }
         return false;
