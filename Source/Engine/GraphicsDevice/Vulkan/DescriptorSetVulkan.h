@@ -222,7 +222,7 @@ public:
     void Reset();
 
     mutable uint64 Refs = 0;
-    mutable uint32 LastFrameUsed;
+    mutable uint64 LastFrameUsed;
 };
 
 class DescriptorPoolsManagerVulkan
@@ -236,8 +236,7 @@ public:
     DescriptorPoolsManagerVulkan(GPUDeviceVulkan* device);
     ~DescriptorPoolsManagerVulkan();
 
-    DescriptorPoolSetContainerVulkan& AcquirePoolSetContainer();
-    void ReleasePoolSet(DescriptorPoolSetContainerVulkan& poolSet);
+    DescriptorPoolSetContainerVulkan* AcquirePoolSetContainer();
     void GC();
 };
 

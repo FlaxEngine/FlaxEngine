@@ -10,6 +10,7 @@
 #include "GPUTimerQueryVulkan.h"
 #endif
 #include "DescriptorSetVulkan.h"
+#include "Engine/Engine/Engine.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 
 void CmdBufferVulkan::AddWaitSemaphore(VkPipelineStageFlags waitFlags, SemaphoreVulkan* waitSemaphore)
@@ -32,7 +33,7 @@ void CmdBufferVulkan::Begin()
     // Acquire a descriptor pool set on
     if (_descriptorPoolSetContainer == nullptr)
     {
-        _descriptorPoolSetContainer = &_device->DescriptorPoolsManager->AcquirePoolSetContainer();
+        _descriptorPoolSetContainer = _device->DescriptorPoolsManager->AcquirePoolSetContainer();
     }
 
     _state = State::IsInsideBegin;
@@ -138,7 +139,7 @@ void CmdBufferVulkan::RefreshFenceStatus()
 
             if (_descriptorPoolSetContainer)
             {
-                _device->DescriptorPoolsManager->ReleasePoolSet(*_descriptorPoolSetContainer);
+                _descriptorPoolSetContainer->LastFrameUsed = Engine::FrameCount;
                 _descriptorPoolSetContainer = nullptr;
             }
         }
@@ -279,6 +280,7 @@ void CmdBufferManagerVulkan::WaitForCmdBuffer(CmdBufferVulkan* cmdBuffer, float 
 void CmdBufferManagerVulkan::PrepareForNewActiveCommandBuffer()
 {
     PROFILE_CPU();
+    ASSERT_LOW_LAYER(_activeCmdBuffer == nullptr)
     for (int32 i = 0; i < _pool._cmdBuffers.Count(); i++)
     {
         auto cmdBuffer = _pool._cmdBuffers.Get()[i];
@@ -286,8 +288,7 @@ void CmdBufferManagerVulkan::PrepareForNewActiveCommandBuffer()
         if (cmdBuffer->GetState() == CmdBufferVulkan::State::ReadyForBegin)
         {
             _activeCmdBuffer = cmdBuffer;
-            _activeCmdBuffer->Begin();
-            return;
+            break;
         }
         else
         {
@@ -295,8 +296,12 @@ void CmdBufferManagerVulkan::PrepareForNewActiveCommandBuffer()
         }
     }
 
-    // Always begin fresh command buffer for rendering
-    _activeCmdBuffer = _pool.Create();
+    if (_activeCmdBuffer == nullptr)
+    {
+        // Always begin fresh command buffer for rendering
+        _activeCmdBuffer = _pool.Create();
+    }
+
     _activeCmdBuffer->Begin();
 
 #if VULKAN_USE_QUERIES

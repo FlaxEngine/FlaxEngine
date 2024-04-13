@@ -287,7 +287,7 @@ DescriptorPoolsManagerVulkan::~DescriptorPoolsManagerVulkan()
     _poolSets.ClearDelete();
 }
 
-DescriptorPoolSetContainerVulkan& DescriptorPoolsManagerVulkan::AcquirePoolSetContainer()
+DescriptorPoolSetContainerVulkan* DescriptorPoolsManagerVulkan::AcquirePoolSetContainer()
 {
     ScopeLock lock(_locker);
     for (auto* poolSet : _poolSets)
@@ -296,17 +296,12 @@ DescriptorPoolSetContainerVulkan& DescriptorPoolsManagerVulkan::AcquirePoolSetCo
         {
             poolSet->LastFrameUsed = Engine::FrameCount;
             poolSet->Reset();
-            return *poolSet;
+            return poolSet;
         }
     }
     const auto poolSet = New<DescriptorPoolSetContainerVulkan>(_device);
     _poolSets.Add(poolSet);
-    return *poolSet;
-}
-
-void DescriptorPoolsManagerVulkan::ReleasePoolSet(DescriptorPoolSetContainerVulkan& poolSet)
-{
-    poolSet.LastFrameUsed = Engine::FrameCount;
+    return poolSet;
 }
 
 void DescriptorPoolsManagerVulkan::GC()
