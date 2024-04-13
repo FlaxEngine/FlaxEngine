@@ -7,6 +7,7 @@
 #include "Engine/Physics/PhysicsBackend.h"
 #include "Engine/Physics/PhysicsScene.h"
 #include "Engine/Physics/Actors/IPhysicsActor.h"
+#include "Engine/Physics/Actors/RigidBody.h"
 
 #if USE_EDITOR
 #include "Engine/Debug/DebugLog.h"
@@ -18,10 +19,60 @@ Joint::Joint(const SpawnParams& params)
     , _joint(nullptr)
     , _breakForce(MAX_float)
     , _breakTorque(MAX_float)
-    , _targetAnchor(Vector3::Zero)
-    , _targetAnchorRotation(Quaternion::Identity)
+    , LocalConstrainActorA()
+    , LocalConstrainActorB()
 {
-    Target.Changed.Bind<Joint, &Joint::OnTargetChanged>(this);
+    ConstraintActorA.Changed.Bind<Joint, &Joint::UpdateJointActors>(this);
+    ConstraintActorB.Changed.Bind<Joint, &Joint::UpdateJointActors>(this);
+}
+
+const PhysicsTransform& Joint::GetLocalConstrainActorA() const
+{
+    return LocalConstrainActorA;
+};
+const PhysicsTransform& Joint::GetLocalConstrainActorB() const
+{
+    return LocalConstrainActorB;
+};
+PhysicsTransform        Joint::GetWorldConstrainActorA() const
+{
+    if (ConstraintActorA)
+        return PhysicsTransform::LocalToWorld(ConstraintActorA->GetTransform(), LocalConstrainActorA);
+    return LocalConstrainActorA;
+};
+PhysicsTransform        Joint::GetWorldConstrainActorB() const
+{
+    if (ConstraintActorB)
+        return PhysicsTransform::LocalToWorld(ConstraintActorB->GetTransform(), LocalConstrainActorB);
+    return LocalConstrainActorB;
+};
+
+void                    Joint::SetLocalConstrainActorA(const PhysicsTransform& InPhysicsTransform)
+{
+    if (_joint)
+    {
+        PhysicsBackend::SetJointActorPose(_joint, LocalConstrainActorA.Translation, LocalConstrainActorA.Orientation, 1);
+    }
+    LocalConstrainActorA = InPhysicsTransform;
+};
+void                    Joint::SetLocalConstrainActorB(const PhysicsTransform& InPhysicsTransform)
+{
+    if (_joint)
+    {
+        PhysicsBackend::SetJointActorPose(_joint, LocalConstrainActorB.Translation, LocalConstrainActorB.Orientation, 1);
+    }
+    LocalConstrainActorB = InPhysicsTransform;
+};
+
+void                    Joint::SetWorldConstrainActorA(const PhysicsTransform& InPhysicsTransform)
+{
+    auto& pt = ConstraintActorA ? PhysicsTransform::WorldToLocal(ConstraintActorA->GetTransform(), InPhysicsTransform) : InPhysicsTransform;
+    SetLocalConstrainActorA(pt);
+};
+void                    Joint::SetWorldConstrainActorB(const PhysicsTransform& InPhysicsTransform)
+{
+    auto& pt = ConstraintActorB ? PhysicsTransform::WorldToLocal(ConstraintActorB->GetTransform(), InPhysicsTransform) : InPhysicsTransform;
+    SetLocalConstrainActorB(pt);
 }
 
 void Joint::SetBreakForce(float value)
@@ -59,82 +110,20 @@ bool Joint::GetEnableAutoAnchor() const
 void Joint::SetEnableAutoAnchor(bool value)
 {
     _enableAutoAnchor = value;
-}
 
-void Joint::SetTargetAnchor(const Vector3& value)
-{
-    if (Vector3::NearEqual(value, _targetAnchor))
-        return;
-    _targetAnchor = value;
-    if (_joint && !_enableAutoAnchor)
-        PhysicsBackend::SetJointActorPose(_joint, _targetAnchor, _targetAnchorRotation, 1);
-}
-
-void Joint::SetTargetAnchor(const Transform& value)
-{
-    if (Vector3::NearEqual(value.Translation, _targetAnchor) && Quaternion::NearEqual(value.Orientation, _targetAnchorRotation))
-        return;
-
-#if USE_EDITOR
-    if(!Vector3::NearEqual(value.Scale,Float3::One))
-        LOG(Warning,"Passed Transform.Scale value is not Float3.One this might produce unintended result", DebugLog::GetStackTrace());
-#endif
-
-    _targetAnchor = value.Translation;
-    _targetAnchorRotation = value.Orientation;
-    if (_joint && !_enableAutoAnchor)
-        PhysicsBackend::SetJointActorPose(_joint, _targetAnchor, _targetAnchorRotation, 1);
-}
-
-void Joint::SetTargetAnchorRotation(const Quaternion& value)
-{
-    if (Quaternion::NearEqual(value, _targetAnchorRotation))
-        return;
-    _targetAnchorRotation = value;
-    if (_joint && !_enableAutoAnchor)
-        PhysicsBackend::SetJointActorPose(_joint, _targetAnchor, _targetAnchorRotation, 1);
+    if (_enableAutoAnchor)
+    {
+        if (ConstraintActorB != nullptr)
+        {
+            SetWorldConstrainActorB(GetTransform());
+            SetWorldConstrainActorA(GetTransform());
+        }
+    }
 }
 
 void* Joint::GetPhysicsImpl() const
 {
     return _joint;
-}
-
-void Joint::SetJointLocation(const Vector3& location)
-{
-    if (GetParent())
-    {
-        SetLocalPosition(GetParent()->GetTransform().WorldToLocal(location));
-    }
-    if (Target)
-    {
-        // Place target anchor at the joint location
-        Transform t = Target->GetTransform();
-        //PhysicsBackend PxJoint expect unscaled offset, scale needs to be 1 or it will snap to incorect place
-        t.Scale = 1;
-        SetTargetAnchor(t.WorldToLocal(location));
-    }
-}
-
-FORCE_INLINE Quaternion WorldToLocal(const Quaternion& world, const Quaternion& orientation)
-{
-    Quaternion rot;
-    const Quaternion invRotation = world.Conjugated();
-    Quaternion::Multiply(invRotation, orientation, rot);
-    rot.Normalize();
-    return rot;
-}
-
-void Joint::SetJointOrientation(const Quaternion& orientation)
-{
-    if (GetParent())
-    {
-        SetLocalOrientation(WorldToLocal(GetParent()->GetOrientation(), orientation));
-    }
-    if (Target)
-    {
-        SetTargetAnchorRotation(WorldToLocal(Target->GetOrientation(), orientation));
-    }
 }
 
 void Joint::GetCurrentForce(Vector3& linear, Vector3& angular) const
@@ -148,32 +137,28 @@ void Joint::Create()
 {
     ASSERT(_joint == nullptr);
 
-    auto parent = dynamic_cast<IPhysicsActor*>(GetParent());
-    auto target = dynamic_cast<IPhysicsActor*>(Target.Get());
-    if (parent == nullptr)
+    if (ConstraintActorA == nullptr)
+        ConstraintActorA = FindRigidbody();
+    if (GetEnableAutoAnchor()) 
     {
-        // Skip creation if joint is link to the not supported actor
-        return;
+        if (ConstraintActorB != nullptr)
+        {
+            SetWorldConstrainActorB(GetTransform());
+            SetWorldConstrainActorA(GetTransform());
+        }
     }
 
     // Create joint object
     PhysicsJointDesc desc;
     desc.Joint = this;
-    desc.Actor0 = parent->GetPhysicsActor();
-    desc.Actor1 = target ? target->GetPhysicsActor() : nullptr;
-    desc.Pos0 = _localTransform.Translation;
-    desc.Rot0 = _localTransform.Orientation;
-    desc.Pos1 = _targetAnchor;
-    desc.Rot1 = _targetAnchorRotation;
-    if (_enableAutoAnchor && target)
-    {
-        // Place target anchor at the joint location
-        Transform t = Target->GetTransform();
-        //PhysicsBackend PxJoint expect unscaled offset, scale needs to be 1 or it will snap to incorect place
-        t.Scale = 1;
-        desc.Pos1 = t.WorldToLocal(GetPosition());
-        desc.Rot1 = WorldToLocal(Target->GetOrientation(), GetOrientation());
-    }
+
+    desc.Actor0 = ConstraintActorA ? ConstraintActorA->GetPhysicsActor() : nullptr;
+    desc.Actor1 = ConstraintActorB ? ConstraintActorB->GetPhysicsActor() : nullptr;
+    desc.Pos0 = LocalConstrainActorA.Translation;
+    desc.Rot0 = LocalConstrainActorA.Orientation;
+    desc.Pos1 = LocalConstrainActorB.Translation;
+    desc.Rot1 = LocalConstrainActorB.Orientation;
+
     _joint = CreateJoint(desc);
 
     // Setup joint properties
@@ -183,7 +168,23 @@ void Joint::Create()
 
 void Joint::OnJointBreak()
 {
-    JointBreak();
+    JointBreak(this);
+}
+
+void Joint::UpdateJointActors()
+{
+    if (_joint)
+    {
+        PhysicsBackend::SetJointActors
+        (
+            _joint,
+            ConstraintActorB ? ConstraintActorB->GetPhysicsActor() : nullptr,
+            ConstraintActorB ? ConstraintActorB->GetPhysicsActor() : nullptr
+        );
+        //refresh joints location
+        SetLocalConstrainActorA(LocalConstrainActorA);
+        SetLocalConstrainActorB(LocalConstrainActorB);
+    }
 }
 
 void Joint::Delete()
@@ -193,56 +194,43 @@ void Joint::Delete()
     _joint = nullptr;
 }
 
-void Joint::SetActors()
+RigidBody* Joint::FindRigidbody() const
 {
-    auto parent = dynamic_cast<IPhysicsActor*>(GetParent());
-    auto target = dynamic_cast<IPhysicsActor*>(Target.Get());
-    ASSERT(parent != nullptr);
-    PhysicsBackend::SetJointActors(_joint, parent->GetPhysicsActor(), target ? target->GetPhysicsActor() : nullptr);
+    RigidBody* rb = nullptr;
+    Actor* p = GetParent();
+    while (p)
+    {
+        RigidBody* crb = dynamic_cast<RigidBody*>(p);
+        if (crb)
+        {
+            rb = crb;
+            break;
+        }
+        p = p->GetParent();
+    }
+    return rb;
 }
 
-void Joint::OnTargetChanged()
+void Joint::Attach()
 {
-    // Validate type
-    const auto target = dynamic_cast<IPhysicsActor*>(Target.Get());
-    if (Target && target == nullptr)
+    // Check reparenting Joint case
+    if (ConstraintActorA == nullptr)
     {
-        LOG(Error, "Invalid actor. Cannot use it as joint target. Rigidbodies and character controllers are supported. Object: {0}", Target.Get()->ToString());
-        Target = nullptr;
+        if (_joint)
+        {
+            // Remove joint
+            Delete();
+        }
     }
     else if (_joint)
     {
-        SetActors();
+        UpdateJointActors();
     }
-}
-
-Vector3 Joint::GetTargetPosition() const
-{
-    Vector3 position = _targetAnchor;
-    if (Target)
+    else
     {
-        if (_enableAutoAnchor) 
-        {
-            //PhysicsBackend PxJoint expect unscaled offset
-            Transform t = Target->GetTransform();
-            t.Scale = 1;
-            position = t.WorldToLocal(GetPosition());
-        }
-        position = Target->GetOrientation() * position + Target->GetPosition();
+        // Create joint
+        Create();
     }
-    return position;
-}
-
-Quaternion Joint::GetTargetOrientation() const
-{
-    Quaternion rotation = _targetAnchorRotation;
-    if (Target)
-    {
-        if (_enableAutoAnchor)
-            rotation = WorldToLocal(Target->GetOrientation(), GetOrientation());
-        rotation = Target->GetOrientation() * rotation;
-    }
-    return rotation;
 }
 
 #if USE_EDITOR
@@ -254,15 +242,83 @@ void Joint::DrawPhysicsDebug(RenderView& view)
 {
     if (view.Mode == ViewMode::PhysicsColliders)
     {
-        DEBUG_DRAW_WIRE_SPHERE(BoundingSphere(GetPosition(), 3.0f), Color::BlueViolet * 0.8f, 0, true);
-        DEBUG_DRAW_WIRE_SPHERE(BoundingSphere(GetTargetPosition(), 4.0f), Color::AliceBlue * 0.8f, 0, true);
+        PhysicsTransform B{};
+        PhysicsTransform A{};
+        if (_joint) {
+            PhysicsBackend::GetJointActorPose(_joint, A.Translation, A.Orientation, 0);
+            PhysicsBackend::GetJointActorPose(_joint, B.Translation, B.Orientation, 1);
+        }
+        //cashe for cheak sync on A
+        PhysicsTransform& fA = LocalConstrainActorA;
+        PhysicsTransform& pxA = A;
+        //cashe for cheak sync on B
+        PhysicsTransform& fB = LocalConstrainActorB;
+        PhysicsTransform& pxB = B;
+
+        bool WarnA = false;
+        bool WarnB = false;
+
+        if (fA.Translation != pxA.Translation || fA.Orientation != pxA.Orientation)
+        {
+            WarnA = true;
+        }
+        if (fB.Translation != pxB.Translation || fB.Orientation != pxB.Orientation)
+        {
+            WarnA = true;
+        }
+
+        if (ConstraintActorA != nullptr) 
+        {
+            A = PhysicsTransform::LocalToWorld(ConstraintActorA->GetTransform(), A);
+        }
+
+        if (ConstraintActorB != nullptr) 
+        {
+            B = PhysicsTransform::LocalToWorld(ConstraintActorB->GetTransform(), B);
+        }
+
+        auto p = Vector3::Lerp(A.Translation, B.Translation, 0.5f);
+        bool d = Vector3::Distance(view.WorldPosition, p) > 500.0f;
+
+        DEBUG_DRAW_WIRE_SPHERE(BoundingSphere(A.Translation, 3.0f), Color::Red * 0.8f, 0, d);
+        DEBUG_DRAW_LINE(A.Translation, B.Translation, Color::Aqua, 0, d);
+        DEBUG_DRAW_WIRE_SPHERE(BoundingSphere(B.Translation, 4.0f), Color::Blue * 0.8f, 0, d);
+        if (d)
+        {
+            if (!WarnA && !WarnB)
+                return;
+
+            String WarnMsg{ TEXT("Warning joint is not in sync with back end\n") };
+            if (WarnA)
+            {
+                WarnMsg.Append(TEXT("A is off sync\nValues:\n"));
+                WarnMsg.Append(A.Translation.ToString());
+                WarnMsg.Append(TEXT("\n"));
+                WarnMsg.Append(A.Orientation.GetEuler().ToString());
+                WarnMsg.Append(TEXT("\n"));
+            }
+            if (WarnB)
+            {
+                WarnMsg.Append(TEXT("B is off sync\n"));
+
+                WarnMsg.Append(B.Translation.ToString());
+                WarnMsg.Append(TEXT("\n"));
+                WarnMsg.Append(B.Orientation.GetEuler().ToString());
+                WarnMsg.Append(TEXT("\n"));
+            }
+            DEBUG_DRAW_TEXT(WarnMsg, GetPosition(), Color::Yellow, 5, 0);
+
+        }
     }
 }
 
 void Joint::OnDebugDrawSelected()
 {
-    DEBUG_DRAW_WIRE_SPHERE(BoundingSphere(GetPosition(), 3.0f), Color::BlueViolet * 0.8f, 0, false);
-    DEBUG_DRAW_WIRE_SPHERE(BoundingSphere(GetTargetPosition(), 4.0f), Color::AliceBlue * 0.8f, 0, false);
+    auto wcaa = GetWorldConstrainActorA();
+    auto wcab = GetWorldConstrainActorB();
+
+    DEBUG_DRAW_WIRE_SPHERE(BoundingSphere(wcaa.Translation, 3.0f), Color::BlueViolet * 0.8f, 0, false);
+    DEBUG_DRAW_WIRE_SPHERE(BoundingSphere(wcab.Translation, 4.0f), Color::AliceBlue * 0.8f, 0, false);
 
     // Base
     Actor::OnDebugDrawSelected();
@@ -277,11 +333,16 @@ void Joint::Serialize(SerializeStream& stream, const void* otherObj)
 
     SERIALIZE_GET_OTHER_OBJ(Joint);
 
-    SERIALIZE(Target);
+    SERIALIZE_MEMBER(Source, ConstraintActorA);
+    SERIALIZE_MEMBER(SourceAnchor, LocalConstrainActorA.Translation);
+    SERIALIZE_MEMBER(SourceAnchorRotation, LocalConstrainActorA.Orientation);
+
+    SERIALIZE_MEMBER(Target, ConstraintActorB);
+    SERIALIZE_MEMBER(TargetAnchor, LocalConstrainActorB.Translation);
+    SERIALIZE_MEMBER(TargetAnchorRotation, LocalConstrainActorB.Orientation);
+
     SERIALIZE_MEMBER(BreakForce, _breakForce);
     SERIALIZE_MEMBER(BreakTorque, _breakTorque);
-    SERIALIZE_MEMBER(TargetAnchor, _targetAnchor);
-    SERIALIZE_MEMBER(TargetAnchorRotation, _targetAnchorRotation);
     SERIALIZE_MEMBER(EnableCollision, _enableCollision);
     SERIALIZE_MEMBER(EnableAutoAnchor, _enableAutoAnchor);
 }
@@ -291,11 +352,16 @@ void Joint::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)
     // Base
     Actor::Deserialize(stream, modifier);
 
-    DESERIALIZE(Target);
+    DESERIALIZE_MEMBER(Source, ConstraintActorA);
+    DESERIALIZE_MEMBER(SourceAnchor, LocalConstrainActorA.Translation);
+    DESERIALIZE_MEMBER(SourceAnchorRotation, LocalConstrainActorA.Orientation);
+
+    DESERIALIZE_MEMBER(Target, ConstraintActorB);
+    DESERIALIZE_MEMBER(TargetAnchor, LocalConstrainActorB.Translation);
+    DESERIALIZE_MEMBER(TargetAnchorRotation, LocalConstrainActorB.Orientation);
+
     DESERIALIZE_MEMBER(BreakForce, _breakForce);
     DESERIALIZE_MEMBER(BreakTorque, _breakTorque);
-    DESERIALIZE_MEMBER(TargetAnchor, _targetAnchor);
-    DESERIALIZE_MEMBER(TargetAnchorRotation, _targetAnchorRotation);
     DESERIALIZE_MEMBER(EnableCollision, _enableCollision);
     DESERIALIZE_MEMBER(EnableAutoAnchor, _enableAutoAnchor);
 }
@@ -353,7 +419,7 @@ void Joint::OnActiveInTreeChanged()
     {
         // Enable/disable joint
         if (IsActiveInHierarchy())
-            SetActors();
+            Attach();
         else
             Delete();
     }
@@ -372,26 +438,16 @@ void Joint::OnParentChanged()
     if (!IsDuringPlay())
         return;
 
-    // Check reparenting Joint case
-    const auto parent = dynamic_cast<IPhysicsActor*>(GetParent());
-    if (parent == nullptr)
-    {
-        if (_joint)
-        {
-            // Remove joint
-            Delete();
-        }
-    }
-    else if (_joint)
-    {
-        // Change target actor
-        SetActors();
-    }
-    else
-    {
-        // Create joint
-        Create();
-    }
+    Attach();
+}
+void Joint::OnParentChangedInHierarchy()
+{
+    Actor::OnParentChangedInHierarchy();
+
+    if (!IsDuringPlay())
+        return;
+
+    Attach();
 }
 
 void Joint::OnTransformChanged()
@@ -403,10 +459,31 @@ void Joint::OnTransformChanged()
 
     _box = BoundingBox(_transform.Translation);
     _sphere = BoundingSphere(_transform.Translation, 0.0f);
-    if (_joint) 
-    {
-        //PhysicsBackend PxJoint expect unscaled offset the _localTransform.Translation cant be used
-        auto offset = GetPosition() - _parent->GetPosition();
-        PhysicsBackend::SetJointActorPose(_joint, offset, _localTransform.Orientation, 0);
-    }
 }
+
+#pragma region Deprecated
+#if (FLAXENGINE_VERSION_MAJOR != 2 && (FLAXENGINE_VERSION_MINOR >= 0))
+
+void Joint::SetTargetAnchor(const Vector3& value)
+{
+}
+
+void Joint::SetTargetAnchorRotation(const Quaternion& value)
+{
+
+}
+
+void Joint::SetJointLocation(const Vector3& location)
+{
+}
+void Joint::SetJointOrientation(const Quaternion& orientation)
+{
+}
+#else
+#ifndef STRING2
+#define STRING2(x) #x
+#define STRING(x) STRING2(x)
+#endif
+#pragma message ( __FILE__ "(" STRING(__LINE__) "):" "[Code Mantening] Remove Deprecated code")
+#endif
+#pragma endregion

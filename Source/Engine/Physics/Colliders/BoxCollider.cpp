@@ -67,10 +67,17 @@ void BoxCollider::DrawPhysicsDebug(RenderView& view)
     const BoundingSphere sphere(_sphere.Center - view.Origin, _sphere.Radius);
     if (!view.CullingFrustum.Intersects(sphere))
         return;
+
+    Transform T{};
+    T.Scale = _transform.Scale;
+    PhysicsBackend::GetShapePose(_shape, T.Translation, T.Orientation);
+
+    OrientedBoundingBox bb = OrientedBoundingBox(GetSize() * 0.5f,T);
+
     if (view.Mode == ViewMode::PhysicsColliders && !GetIsTrigger())
-        DEBUG_DRAW_BOX(_bounds, _staticActor ? Color::CornflowerBlue : Color::Orchid, 0, true);
+        DEBUG_DRAW_BOX(bb, _staticActor ? Color::CornflowerBlue : Color::Orchid, 0, true);
     else
-        DEBUG_DRAW_WIRE_BOX(_bounds, Color::GreenYellow * 0.8f, 0, true);
+        DEBUG_DRAW_WIRE_BOX(bb, Color::GreenYellow * 0.8f, 0, true);
 }
 
 void BoxCollider::OnDebugDraw()

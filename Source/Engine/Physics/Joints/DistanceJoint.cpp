@@ -72,8 +72,11 @@ float DistanceJoint::GetCurrentDistance() const
 
 void DistanceJoint::OnDebugDrawSelected()
 {
-    const Vector3 source = GetPosition();
-    const Vector3 target = GetTargetPosition();
+    auto wcaa = GetWorldConstrainActorA();
+    auto wcab = GetWorldConstrainActorB();
+
+    const Vector3 source = wcaa.Translation;
+    const Vector3 target = wcab.Translation;
     Vector3 dir = target - source;
     const float len = (float)dir.Length();
     dir *= 1.0f / len;

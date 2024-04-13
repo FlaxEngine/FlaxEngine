@@ -205,19 +205,19 @@ namespace FlaxEditor.CustomEditors.Dedicated
             var bodies = ragdoll.Children.Where(x => x is RigidBody && x.IsActive);
             var joints = bodies.SelectMany(y => y.Children).Where(z => z is Joint && z.IsActive).Cast<Joint>();
             var body = bodies.First(x => x.Name == name);
-            var replacementJoint = joints.FirstOrDefault(x => x.Parent == body && x.Target != null);
+            var replacementJoint = joints.FirstOrDefault(x => x.Parent == body && x.ConstraintActorB != null);
 
             // Fix joints using this bone
             foreach (var joint in joints)
             {
-                if (joint.Target == body)
+                if (joint.ConstraintActorB == body)
                 {
                     if (replacementJoint != null)
                     {
                         // Swap the joint target to the parent of the removed body to keep ragdoll connected
                         using (new UndoBlock(Presenter.Undo, joint, "Fix joint"))
                         {
-                            joint.Target = replacementJoint.Target;
+                            joint.ConstraintActorB = replacementJoint.ConstraintActorB;
                             joint.EnableAutoAnchor = true;
                         }
                     }

@@ -150,11 +150,15 @@ float GetAngle(float angle, D6JointMotion motion)
 
 void D6Joint::OnDebugDrawSelected()
 {
-    const Vector3 source = GetPosition();
+    auto wcaa = GetWorldConstrainActorA();
+    auto wcab = GetWorldConstrainActorB();
+
+    const Vector3 source = wcaa.Translation;
     const Quaternion xRot = Quaternion::LookRotation(Vector3::UnitX, Vector3::UnitY);
-    const Quaternion sourceRotation = GetOrientation() * xRot;
-    const Vector3 target = GetTargetPosition();
-    const Quaternion targetRotation = GetTargetOrientation() * xRot;
+    const Quaternion sourceRotation = wcaa.Orientation * xRot;
+    
+    const Vector3 target = wcab.Translation;
+    const Quaternion targetRotation = wcab.Orientation * xRot;
     const float swingSize = 15.0f;
     const float twistSize = 9.0f;
     const Color swingColor = Color::Green.AlphaMultiplied(0.6f);

@@ -25,9 +25,15 @@ namespace FlaxEditor.SceneGraph.Actors
             {
                 // Preserve basic properties when changing joint type
                 var joint = (Joint)Actor;
-                joint.Target = other.Target;
-                joint.TargetAnchor = other.TargetAnchor;
-                joint.TargetAnchorRotation = other.TargetAnchorRotation;
+                joint.ConstraintActorA = other.ConstraintActorA;
+                joint.LocalConstrainActorA = other.LocalConstrainActorA;
+
+                joint.ConstraintActorB = other.ConstraintActorB;
+                joint.LocalConstrainActorB = other.LocalConstrainActorB;
+
+                joint.BreakForce = other.BreakForce;
+                joint.BreakTorque = other.BreakTorque;
+                joint.EnableAutoAnchor = other.EnableAutoAnchor;
                 joint.EnableCollision = other.EnableCollision;
             }
         }

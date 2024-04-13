@@ -73,7 +73,7 @@ float Ragdoll::InitBone(RigidBody* rigidBody, int32& nodeIndex, Transform& local
         for (auto child : rigidBody->Children)
         {
             auto joint = Cast<Joint>(child);
-            if (joint && joint->Target == nullptr && joint->IsActiveInHierarchy())
+            if (joint && joint->ConstraintActorB == nullptr && joint->IsActiveInHierarchy())
             {
                 LOG(Warning, "Ragdol joint '{0}' has missing target", joint->GetNamePath());
             }

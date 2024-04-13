@@ -203,7 +203,12 @@ void CharacterController::DrawPhysicsDebug(RenderView& view)
     const float scaling = _cachedScale.GetAbsolute().MaxValue();
     const float radius = Math::Max(Math::Abs(_radius) * scaling, CC_MIN_SIZE);
     const float height = Math::Max(Math::Abs(_height) * scaling, CC_MIN_SIZE);
-    const Vector3 position = _transform.LocalToWorld(_center);
+
+    Transform T{};
+    T.Scale = _transform.Scale;
+    PhysicsBackend::GetShapePose(_shape, T.Translation, T.Orientation);
+
+    const Vector3 position = T.LocalToWorld(_center);
     if (view.Mode == ViewMode::PhysicsColliders)
         DEBUG_DRAW_TUBE(position, Quaternion::Euler(90, 0, 0), radius, height, Color::LightYellow, 0, true);
     else

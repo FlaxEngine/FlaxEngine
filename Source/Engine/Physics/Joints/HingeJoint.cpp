@@ -56,11 +56,14 @@ float HingeJoint::GetCurrentVelocity() const
 
 void HingeJoint::OnDebugDrawSelected()
 {
-    const Vector3 source = GetPosition();
-    const Vector3 target = GetTargetPosition();
+    auto wcaa = GetWorldConstrainActorA();
+    auto wcab = GetWorldConstrainActorB();
+
+    const Vector3 source = wcaa.Translation;
+    const Vector3 target = wcab.Translation;
     const Quaternion xRotation = Quaternion::LookRotation(Vector3::UnitX, Vector3::UnitY);
-    const Quaternion sourceRotation = GetOrientation() * xRotation;
-    const Quaternion targetRotation = GetTargetOrientation() * xRotation;
+    const Quaternion sourceRotation = wcaa.Orientation * xRotation;
+    const Quaternion targetRotation = wcab.Orientation * xRotation;
     const float size = 15.0f;
     const Color color = Color::Green.AlphaMultiplied(0.6f);
     const float arrowSize = size / 100.0f * 0.5f;

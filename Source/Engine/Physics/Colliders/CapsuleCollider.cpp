@@ -36,22 +36,28 @@ void CapsuleCollider::SetHeight(const float value)
 #include "Engine/Debug/DebugDraw.h"
 #include "Engine/Graphics/RenderView.h"
 #include "Engine/Physics/Colliders/ColliderColorConfig.h"
+#include "Engine/Physics/PhysicsBackend.h"
 
 void CapsuleCollider::DrawPhysicsDebug(RenderView& view)
 {
     const BoundingSphere sphere(_sphere.Center - view.Origin, _sphere.Radius);
     if (!view.CullingFrustum.Intersects(sphere))
         return;
+
+    Transform T{};
+    T.Scale = _transform.Scale;
+    PhysicsBackend::GetShapePose(_shape, T.Translation, T.Orientation);
+
     Quaternion rotation;
-    Quaternion::Multiply(_transform.Orientation, Quaternion::Euler(0, 90, 0), rotation);
+    Quaternion::Multiply(T.Orientation, Quaternion::Euler(0, 90, 0), rotation);
     const float scaling = _cachedScale.GetAbsolute().MaxValue();
     const float minSize = 0.001f;
     const float radius = Math::Max(Math::Abs(_radius) * scaling, minSize);
     const float height = Math::Max(Math::Abs(_height) * scaling, minSize);
     if (view.Mode == ViewMode::PhysicsColliders && !GetIsTrigger())
-        DEBUG_DRAW_TUBE(_transform.LocalToWorld(_center), rotation, radius, height, _staticActor ? Color::CornflowerBlue : Color::Orchid, 0, true);
+        DEBUG_DRAW_TUBE(T.LocalToWorld(_center), rotation, radius, height, _staticActor ? Color::CornflowerBlue : Color::Orchid, 0, true);
     else
-        DEBUG_DRAW_WIRE_TUBE(_transform.LocalToWorld(_center), rotation, radius, height, Color::GreenYellow * 0.8f, 0, true);
+        DEBUG_DRAW_WIRE_TUBE(T.LocalToWorld(_center), rotation, radius, height, Color::GreenYellow * 0.8f, 0, true);
 }
 
 void CapsuleCollider::OnDebugDraw()

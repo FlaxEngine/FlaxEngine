@@ -25,41 +25,37 @@ API_STRUCT() struct FLAXENGINE_API PhysicsTransform
     API_FIELD(Attributes = "EditorOrder(20), EditorDisplay(null, \"Rotation\"), ValueCategory(Utils.ValueCategory.Angle)")
         Quaternion Orientation;
 #pragma region Constructors
-    FORCE_INLINE PhysicsTransform() :
+    PhysicsTransform() :
         Translation(Vector3::Zero),
         Orientation(Quaternion::Identity)
     {}
-    FORCE_INLINE PhysicsTransform(const Vector3& InTranslation) : 
+    PhysicsTransform(const Vector3& InTranslation) : 
         Translation(InTranslation),
         Orientation(Quaternion::Identity)
     {}
-    FORCE_INLINE PhysicsTransform(const Vector3& InTranslation, Quaternion& InOrientation) : 
+    PhysicsTransform(const Vector3& InTranslation, Quaternion& InOrientation) : 
         Translation(InTranslation),
         Orientation(InOrientation)
     {}
-    FORCE_INLINE PhysicsTransform(const Transform& InTransform) : 
+    PhysicsTransform(const Transform& InTransform) : 
         Translation(InTransform.Translation),
         Orientation(InTransform.Orientation)
     {}
 #pragma endregion
-    PhysicsTransform WorldToLocal(const PhysicsTransform& InOtherPhysicsTransform) const
+    static PhysicsTransform WorldToLocal(const PhysicsTransform& InWorld, const PhysicsTransform& InOtherWorld)
     {
-        auto& inv = Orientation.Conjugated();
-        Vector3& tmp = InOtherPhysicsTransform.Translation - Translation;
-        PhysicsTransform t{ inv * tmp ,inv * InOtherPhysicsTransform.Orientation};
-        t.Orientation.Normalize();
-        return t;
+        auto& inv = InWorld.Orientation.Conjugated();
+        auto& T = inv * (InOtherWorld.Translation - InWorld.Translation);
+        auto& Q = inv * InOtherWorld.Orientation;
+        Q.Normalize();
+        return PhysicsTransform{ T,Q };
     }
 
-    PhysicsTransform LocalToWorld(const PhysicsTransform& InOtherPhysicsTransform) const
+    static PhysicsTransform LocalToWorld(const PhysicsTransform& InWorld,const PhysicsTransform& InLocal)
     {
-        PhysicsTransform t
-        { 
-            (InOtherPhysicsTransform.Orientation * Translation) + InOtherPhysicsTransform.Translation,
-            Orientation * InOtherPhysicsTransform.Orientation
-        };
-        t.Orientation.Normalize();
-        return t;
+        auto& T = (InWorld.Orientation * InLocal.Translation) + InWorld.Translation;
+        auto& Q = InWorld.Orientation * InLocal.Orientation;
+        return PhysicsTransform{ T,Q };
     }
 
     Transform ToTransform(const Float3& InScale)
