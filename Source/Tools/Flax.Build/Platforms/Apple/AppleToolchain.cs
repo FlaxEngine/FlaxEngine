@@ -105,7 +105,7 @@ namespace Flax.Build.Platforms
                 commonArgs.Add("objective-c++");
                 commonArgs.Add("-stdlib=libc++");
                 AddArgsCommon(options, commonArgs);
-                AddClangSanitizerArgs(compileEnvironment.Sanitizers, commonArgs);
+                AddArgsSanitizer(compileEnvironment.Sanitizers, commonArgs);
 
                 switch (compileEnvironment.CppVersion)
                 {
@@ -251,7 +251,7 @@ namespace Flax.Build.Platforms
             {
                 args.Add(string.Format("-o \"{0}\"", outputFilePath));
                 AddArgsCommon(options, args);
-                AddClangSanitizerArgs(options.CompileEnv.Sanitizers, args);
+                AddArgsSanitizer(options.CompileEnv.Sanitizers, args);
 
                 if (isArchive)
                 {
@@ -437,6 +437,16 @@ namespace Flax.Build.Platforms
                 args.Add("-arch arm64");
                 break;
             }
+        }
+
+        protected void AddArgsSanitizer(Sanitizer sanitizers, List<string> args)
+        {
+            if (sanitizers.HasFlag(Sanitizer.Address))
+                args.Add("-fsanitize=address");
+            if (sanitizers.HasFlag(Sanitizer.Thread))
+                args.Add("-fsanitize=thread");
+            if (sanitizers.HasFlag(Sanitizer.Undefined))
+                args.Add("-fsanitize=undefined");
         }
     }
 }

@@ -46,6 +46,16 @@ namespace Flax.Build.NativeCpp
         /// Data races and deadlocks detector.
         /// </summary>
         Thread = 2,
+
+        /// <summary>
+        /// Uninitialized memory reads detector.
+        /// </summary>
+        Memory = 4,
+
+        /// <summary>
+        /// Undefined behavior (UB) detector.
+        /// </summary>
+        Undefined = 8,
     }
 
     /// <summary>
