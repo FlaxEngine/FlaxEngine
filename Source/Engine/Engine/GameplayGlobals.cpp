@@ -221,9 +221,7 @@ Asset::LoadResult GameplayGlobals::load()
     // Get data
     const auto chunk = GetChunk(0);
     if (!chunk || !chunk->IsLoaded())
-    {
         return LoadResult::MissingDataChunk;
-    }
     MemoryReadStream stream(chunk->Get(), chunk->Size());
 
     // Load all variables
@@ -234,14 +232,15 @@ Asset::LoadResult GameplayGlobals::load()
     for (int32 i = 0; i < count; i++)
     {
         stream.ReadString(&name, 71);
-        if (name.IsEmpty())
-        {
-            LOG(Warning, "Empty variable name");
-            return LoadResult::InvalidData;
-        }
         auto& e = Variables[name];
         stream.ReadVariant(&e.DefaultValue);
         e.Value = e.DefaultValue;
+    }
+    if (stream.HasError())
+    {
+        // Failed to load data
+        Variables.Clear();
+        return LoadResult::InvalidData;
     }
 
     return LoadResult::Ok;
