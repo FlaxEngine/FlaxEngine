@@ -15,6 +15,7 @@
 #define FORCE_NOINLINE __attribute__((noinline))
 #define NO_RETURN __attribute__((noreturn))
 #define NO_SANITIZE_ADDRESS __attribute__((no_sanitize_address))
+#define NO_SANITIZE_THREAD __attribute__((no_sanitize_thread))
 #define PACK_BEGIN()
 #define PACK_END() __attribute__((__packed__))
 #define ALIGN_BEGIN(_align)
@@ -46,6 +47,7 @@
 #define FORCE_NOINLINE __attribute__((noinline))
 #define NO_RETURN __attribute__((noreturn))
 #define NO_SANITIZE_ADDRESS __attribute__((no_sanitize_address))
+#define NO_SANITIZE_THREAD __attribute__((no_sanitize_thread))
 #define PACK_BEGIN()
 #define PACK_END() __attribute__((__packed__))
 #define ALIGN_BEGIN(_align)
@@ -72,6 +74,7 @@
 #define FORCE_NOINLINE __declspec(noinline)
 #define NO_RETURN __declspec(noreturn)
 #define NO_SANITIZE_ADDRESS
+#define NO_SANITIZE_THREAD
 #define PACK_BEGIN() __pragma(pack(push, 1))
 #define PACK_END() ; __pragma(pack(pop))
 #define ALIGN_BEGIN(_align) __declspec(align(_align))

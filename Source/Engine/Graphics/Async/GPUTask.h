@@ -115,7 +115,7 @@ public:
 
         // Rollback state and cancel
         _context = nullptr;
-        _state = TaskState::Queued;
+        SetState(TaskState::Queued);
         Cancel();
     }
 
@@ -148,8 +148,7 @@ protected:
             ASSERT(_context != nullptr);
             _context->OnCancelSync(this);
             _context = nullptr;
-
-            _state = TaskState::Canceled;
+            SetState(TaskState::Canceled);
         }
         else
         {

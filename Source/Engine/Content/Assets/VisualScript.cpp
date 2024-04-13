@@ -1434,8 +1434,7 @@ Asset::LoadResult VisualScript::load()
     if (_instances.HasItems())
     {
         // Mark as already loaded so any WaitForLoaded checks during GetDefaultInstance bellow will handle this Visual Script as ready to use
-        _loadFailed = false;
-        _isLoaded = true;
+        Platform::AtomicStore(&_loadState, (int64)LoadState::Loaded);
 
         // Setup scripting type
         CacheScriptingType();

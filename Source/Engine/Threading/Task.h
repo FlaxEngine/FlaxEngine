@@ -49,7 +49,6 @@ class FLAXENGINE_API Task : public Object, public NonCopyable
     //
 
 protected:
-
     /// <summary>
     /// The cancel flag used to indicate that there is request to cancel task operation.
     /// </summary>
@@ -65,14 +64,18 @@ protected:
     /// </summary>
     Task* _continueWith = nullptr;
 
-public:
+    void SetState(TaskState state)
+    {
+        Platform::AtomicStore((int64 volatile*)&_state, (uint64)state);
+    }
 
+public:
     /// <summary>
     /// Gets the task state.
     /// </summary>
     FORCE_INLINE TaskState GetState() const
     {
-        return static_cast<TaskState>(Platform::AtomicRead((int64 volatile*)&_state));
+        return (TaskState)Platform::AtomicRead((int64 const volatile*)&_state);
     }
 
     /// <summary>
@@ -94,7 +97,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Checks if operation failed.
     /// </summary>
@@ -153,7 +155,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Starts this task execution (and will continue with all children).
     /// </summary>
@@ -199,7 +200,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Continues that task execution with a given task (will call Start on given task after finishing that one).
     /// </summary>
@@ -232,7 +232,6 @@ public:
     Task* ContinueWith(const Function<bool()>& action, Object* target = nullptr);
 
 public:
-
     /// <summary>
     /// Starts the new task.
     /// </summary>
@@ -312,7 +311,6 @@ public:
     }
 
 protected:
-
     /// <summary>
     /// Executes this task.
     /// It should be called by the task consumer (thread pool or other executor of this task type).
@@ -328,7 +326,6 @@ protected:
     virtual bool Run() = 0;
 
 protected:
-
     virtual void Enqueue() = 0;
     virtual void OnStart();
     virtual void OnFinish();
