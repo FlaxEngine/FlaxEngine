@@ -31,6 +31,7 @@
 #pragma once
 
 #include "../common/TracyAlloc.hpp"
+#include "../common/TracyForceInline.hpp"
 #include "../common/TracySystem.hpp"
 
 #if defined(__GNUC__)

@@ -12,7 +12,7 @@
 #pragma once
 
 #include <stddef.h>
-#include "../common/TracySystem.hpp"
+#include "../common/TracyApi.h"
 
 namespace tracy
 {

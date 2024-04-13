@@ -28,6 +28,9 @@
 #  include <sys/thr.h>
 #elif defined __NetBSD__ || defined __DragonFly__
 #  include <sys/lwp.h>
+#elif defined __QNX__
+#  include <process.h>
+#  include <sys/neutrino.h>
 #endif
 
 #ifdef __MINGW32__
@@ -47,10 +50,6 @@ extern "C" typedef HRESULT (WINAPI *t_GetThreadDescription)( HANDLE, PWSTR* );
 #ifdef TRACY_ENABLE
 #  include <atomic>
 #  include "TracyAlloc.hpp"
-
-#if !defined(_WIN32) && !defined(__APPLE__) && !defined(__linux__)
-#include "Engine/Platform/Platform.h"
-#endif
 #endif
 
 namespace tracy
@@ -82,6 +81,8 @@ TRACY_API uint32_t GetThreadHandleImpl()
     return lwp_gettid();
 #elif defined __OpenBSD__
     return getthrid();
+#elif defined __QNX__
+    return (uint32_t) gettid();
 #elif defined __EMSCRIPTEN__
     // Not supported, but let it compile.
     return 0;
@@ -92,7 +93,7 @@ TRACY_API uint32_t GetThreadHandleImpl()
     // thread identifier. It is a pointer to a library-allocated data structure instead.
     // Such pointers will be reused heavily, making the pthread_t non-unique. Additionally
     // a 64-bit pointer cannot be reliably truncated to 32 bits.
-    return Platform::GetCurrentThreadID();
+    #error "Unsupported platform!"
 #endif
 
 }
@@ -109,7 +110,7 @@ struct ThreadNameData
 std::atomic<ThreadNameData*>& GetThreadNameData();
 #endif
 
-#ifdef _MSC_VER
+#if defined _MSC_VER && !defined __clang__
 #  pragma pack( push, 8 )
 struct THREADNAME_INFO
 {
@@ -148,7 +149,7 @@ TRACY_API void SetThreadName( const char* name )
     }
     else
     {
-#  if defined _MSC_VER
+#  if defined _MSC_VER && !defined __clang__
         THREADNAME_INFO info;
         info.dwType = 0x1000;
         info.szName = name;
@@ -180,6 +181,21 @@ TRACY_API void SetThreadName( const char* name )
 #endif
         }
     }
+#elif defined __QNX__
+    {
+        const auto sz = strlen( name );
+        if( sz <= _NTO_THREAD_NAME_MAX )
+        {
+            pthread_setname_np( pthread_self(), name );
+        }
+        else
+        {
+            char buf[_NTO_THREAD_NAME_MAX + 1];
+            memcpy( buf, name, _NTO_THREAD_NAME_MAX );
+            buf[_NTO_THREAD_NAME_MAX] = '\0';
+            pthread_setname_np( pthread_self(), buf );
+        }
+    };
 #endif
 #ifdef TRACY_ENABLE
     {
@@ -259,6 +275,11 @@ TRACY_API const char* GetThreadName( uint32_t id )
    pthread_setcancelstate( cs, 0 );
 # endif
   return buf;
+#elif defined __QNX__
+    static char qnxNameBuf[_NTO_THREAD_NAME_MAX + 1] = {0};
+    if (pthread_getname_np(static_cast<int>(id), qnxNameBuf, _NTO_THREAD_NAME_MAX) == 0) {
+        return qnxNameBuf;
+    };
 #endif
 
   sprintf( buf, "%" PRIu32, id );

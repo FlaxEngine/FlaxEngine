@@ -3,6 +3,8 @@
 
 #include <string.h>
 
+#include "TracyForceInline.hpp"
+
 namespace tracy
 {
 

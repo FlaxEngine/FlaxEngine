@@ -1,6 +1,9 @@
 #ifndef __TRACY_HPP__
 #define __TRACY_HPP__
 
+#include "../common/TracyColor.hpp"
+#include "../common/TracySystem.hpp"
+
 #ifndef TracyFunction
 #  define TracyFunction __FUNCTION__
 #endif
@@ -14,6 +17,8 @@
 #endif
 
 #ifndef TRACY_ENABLE
+
+#define TracyNoop
 
 #define ZoneNamed(x,y)
 #define ZoneNamedN(x,y,z)
@@ -30,8 +35,12 @@
 
 #define ZoneText(x,y)
 #define ZoneTextV(x,y,z)
+#define ZoneTextF(x,...)
+#define ZoneTextVF(x,y,...)
 #define ZoneName(x,y)
 #define ZoneNameV(x,y,z)
+#define ZoneNameF(x,...)
+#define ZoneNameVF(x,y,...)
 #define ZoneColor(x)
 #define ZoneColorV(x,y)
 #define ZoneValue(x)
@@ -41,6 +50,19 @@
 
 #define FrameMark
 #define FrameMarkNamed(x)
+#define FrameMarkStart(x)
+#define FrameMarkEnd(x)
+
+#define FrameImage(x,y,z,w,a)
+
+#define TracyLockable( type, varname ) type varname
+#define TracyLockableN( type, varname, desc ) type varname
+#define TracySharedLockable( type, varname ) type varname
+#define TracySharedLockableN( type, varname, desc ) type varname
+#define LockableBase( type ) type
+#define SharedLockableBase( type ) type
+#define LockMark(x) (void)x
+#define LockableName(x,y,z)
 
 #define TracyPlot(x,y)
 #define TracyPlotConfig(x,y,z,w,a)
@@ -93,6 +115,7 @@
 #define TracyParameterRegister(x,y)
 #define TracyParameterSetup(x,y,z,w)
 #define TracyIsConnected false
+#define TracyIsStarted false
 #define TracySetProgramName(x)
 
 #define TracyFiberEnter(x)
@@ -102,40 +125,11 @@
 
 #include <string.h>
 
-#include "../common/TracyQueue.hpp"
-#include "../common/TracySystem.hpp"
+#include "../client/TracyLock.hpp"
+#include "../client/TracyProfiler.hpp"
+#include "../client/TracyScoped.hpp"
 
-namespace tracy
-{
-class TRACY_API Profiler
-{
-public:
-    static void SendFrameMark( const char* name );
-    static void SendFrameMark( const char* name, QueueType type );
-    static void SendFrameImage( const void* image, uint16_t w, uint16_t h, uint8_t offset, bool flip );
-    static void PlotData( const char* name, int64_t val );
-    static void PlotData( const char* name, float val );
-    static void PlotData( const char* name, double val );
-    static void ConfigurePlot( const char* name, PlotFormatType type, bool step, bool fill, uint32_t color );
-    static void Message( const char* txt, size_t size, int callstack );
-    static void Message( const char* txt, int callstack );
-    static void MessageColor( const char* txt, size_t size, uint32_t color, int callstack );
-    static void MessageColor( const char* txt, uint32_t color, int callstack );
-    static void MessageAppInfo( const char* txt, size_t size );
-    static void MemAlloc( const void* ptr, size_t size, bool secure );
-    static void MemFree( const void* ptr, bool secure );
-    static void MemAllocCallstack( const void* ptr, size_t size, int depth, bool secure );
-    static void MemFreeCallstack( const void* ptr, int depth, bool secure );
-    static void MemAllocNamed( const void* ptr, size_t size, bool secure, const char* name );
-    static void MemFreeNamed( const void* ptr, bool secure, const char* name );
-    static void MemAllocCallstackNamed( const void* ptr, size_t size, int depth, bool secure, const char* name );
-    static void MemFreeCallstackNamed( const void* ptr, int depth, bool secure, const char* name );
-    static void SendCallstack( int depth );
-    static void ParameterRegister( ParameterCallback cb );
-    static void ParameterRegister( ParameterCallback cb, void* data );
-    static void ParameterSetup( uint32_t idx, const char* name, bool isBool, int32_t val );
-};
-}
+#define TracyNoop tracy::ProfilerAvailable()
 
 #if defined TRACY_HAS_CALLSTACK && defined TRACY_CALLSTACK
 #  define ZoneNamed( varname, active ) static constexpr tracy::SourceLocationData TracyConcat(__tracy_source_location,TracyLine) { nullptr, TracyFunction,  TracyFile, (uint32_t)TracyLine, 0 }; tracy::ScopedZone varname( &TracyConcat(__tracy_source_location,TracyLine), TRACY_CALLSTACK, active )
@@ -162,8 +156,12 @@ public:
 
 #define ZoneText( txt, size ) ___tracy_scoped_zone.Text( txt, size )
 #define ZoneTextV( varname, txt, size ) varname.Text( txt, size )
+#define ZoneTextF( fmt, ... ) ___tracy_scoped_zone.TextFmt( fmt, ##__VA_ARGS__ )
+#define ZoneTextVF( varname, fmt, ... ) varname.TextFmt( fmt, ##__VA_ARGS__ )
 #define ZoneName( txt, size ) ___tracy_scoped_zone.Name( txt, size )
 #define ZoneNameV( varname, txt, size ) varname.Name( txt, size )
+#define ZoneNameF( fmt, ... ) ___tracy_scoped_zone.NameFmt( fmt, ##__VA_ARGS__ )
+#define ZoneNameVF( varname, fmt, ... ) varname.NameFmt( fmt, ##__VA_ARGS__ )
 #define ZoneColor( color ) ___tracy_scoped_zone.Color( color )
 #define ZoneColorV( varname, color ) varname.Color( color )
 #define ZoneValue( value ) ___tracy_scoped_zone.Value( value )

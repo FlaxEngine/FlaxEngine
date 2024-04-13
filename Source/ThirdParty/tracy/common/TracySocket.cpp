@@ -21,6 +21,9 @@
 #    pragma warning(disable:4267)
 #  endif
 #  define poll WSAPoll
+#  ifdef _MSC_VER
+#    pragma comment(lib, "ws2_32.lib")
+#  endif
 #else
 #  include <arpa/inet.h>
 #  include <sys/socket.h>
@@ -450,9 +453,6 @@ ListenSocket::~ListenSocket()
 
 static int addrinfo_and_socket_for_family( uint16_t port, int ai_family, struct addrinfo** res )
 {
-#if PLATFORM_SWITCH
-    Platform::GetNetworkConnectionType(); // Ensure to have network service initialized before using sockets
-#endif
     struct addrinfo hints;
     memset( &hints, 0, sizeof( hints ) );
     hints.ai_family = ai_family;

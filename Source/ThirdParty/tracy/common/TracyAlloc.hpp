@@ -3,7 +3,9 @@
 
 #include <stdlib.h>
 
-#if defined TRACY_ENABLE && !defined __EMSCRIPTEN__ && !defined TRACY_USE_MALLOC
+#if defined TRACY_ENABLE && !defined __EMSCRIPTEN__
+#  include "TracyApi.h"
+#  include "TracyForceInline.hpp"
 #  include "../client/tracy_rpmalloc.hpp"
 #  define TRACY_USE_RPMALLOC
 #endif

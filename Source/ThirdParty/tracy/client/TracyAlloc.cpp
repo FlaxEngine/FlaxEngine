@@ -4,6 +4,7 @@
 
 #include <atomic>
 
+#include "../common/TracyForceInline.hpp"
 #include "../common/TracyYield.hpp"
 
 namespace tracy
