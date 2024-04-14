@@ -218,7 +218,7 @@ public:
     /// <summary>
     /// [Deprecated in v1.9, removed in v2.0]
     /// </summary>
-    API_PROPERTY() FORCE_INLINE DEPRECATED Vector3 GetTargetAnchor() const
+    API_PROPERTY() DEPRECATED Vector3 GetTargetAnchor() const
     {
         return LocalConstrainActorB.Translation;
     }
@@ -231,7 +231,7 @@ public:
     /// <summary>
     /// [Deprecated in v1.9, removed in v2.0]
     /// </summary>
-    API_PROPERTY() FORCE_INLINE DEPRECATED Quaternion GetTargetAnchorRotation() const
+    API_PROPERTY() DEPRECATED Quaternion GetTargetAnchorRotation() const
     {
         return LocalConstrainActorB.Orientation;
     }

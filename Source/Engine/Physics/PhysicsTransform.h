@@ -33,7 +33,7 @@ API_STRUCT() struct FLAXENGINE_API PhysicsTransform
         Translation(InTranslation),
         Orientation(Quaternion::Identity)
     {}
-    PhysicsTransform(const Vector3& InTranslation, Quaternion& InOrientation) : 
+    PhysicsTransform(const Vector3& InTranslation, const Quaternion& InOrientation) :
         Translation(InTranslation),
         Orientation(InOrientation)
     {}
@@ -44,17 +44,17 @@ API_STRUCT() struct FLAXENGINE_API PhysicsTransform
 #pragma endregion
     static PhysicsTransform WorldToLocal(const PhysicsTransform& InWorld, const PhysicsTransform& InOtherWorld)
     {
-        auto& inv = InWorld.Orientation.Conjugated();
-        auto& T = inv * (InOtherWorld.Translation - InWorld.Translation);
-        auto& Q = inv * InOtherWorld.Orientation;
+        const auto& inv = InWorld.Orientation.Conjugated();
+        const auto& T = inv * (InOtherWorld.Translation - InWorld.Translation);
+        const auto& Q = inv * InOtherWorld.Orientation;
         Q.Normalize();
         return PhysicsTransform{ T,Q };
     }
 
     static PhysicsTransform LocalToWorld(const PhysicsTransform& InWorld,const PhysicsTransform& InLocal)
     {
-        auto& T = (InWorld.Orientation * InLocal.Translation) + InWorld.Translation;
-        auto& Q = InWorld.Orientation * InLocal.Orientation;
+        const auto& T = (InWorld.Orientation * InLocal.Translation) + InWorld.Translation;
+        const auto& Q = InWorld.Orientation * InLocal.Orientation;
         return PhysicsTransform{ T,Q };
     }
 
