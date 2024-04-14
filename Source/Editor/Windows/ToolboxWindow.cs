@@ -196,6 +196,7 @@ namespace FlaxEditor.Windows
             {
                 if (actorType.IsAbstract)
                     continue;
+                _groupSearch.AddChild(CreateActorItem(Utilities.Utils.GetPropertyNameUI(actorType.Name), actorType));
                 ActorToolboxAttribute attribute = null;
                 foreach (var e in actorType.GetAttributes(false))
                 {
@@ -260,6 +261,10 @@ namespace FlaxEditor.Windows
                 }
 
                 var text = (attribute == null) ? actorType.Name : string.IsNullOrEmpty(attribute.Name) ? actorType.Name : attribute.Name;
+                
+                // Display all actors on no search
+                if (string.IsNullOrEmpty(filterText))
+                    _groupSearch.AddChild(CreateActorItem(Utilities.Utils.GetPropertyNameUI(text), actorType));
 
                 if (!QueryFilterHelper.Match(filterText, text, out QueryFilterHelper.Range[] ranges))
                     continue;
