@@ -139,13 +139,10 @@ void Joint::Create()
 
     if (ConstraintActorA == nullptr)
         ConstraintActorA = FindRigidbody();
-    if (GetEnableAutoAnchor()) 
+    if (GetEnableAutoAnchor())
     {
-        if (ConstraintActorB != nullptr)
-        {
-            SetWorldConstrainActorB(GetTransform());
-            SetWorldConstrainActorA(GetTransform());
-        }
+        SetWorldConstrainActorB(GetTransform());
+        SetWorldConstrainActorA(GetTransform());
     }
 
     // Create joint object
@@ -459,6 +456,17 @@ void Joint::OnTransformChanged()
 
     _box = BoundingBox(_transform.Translation);
     _sphere = BoundingSphere(_transform.Translation, 0.0f);
+#if USE_EDITOR
+    if (!IsDuringPlay())
+        return;
+
+    if (GetEnableAutoAnchor())
+    {
+        SetWorldConstrainActorB(GetTransform());
+        SetWorldConstrainActorA(GetTransform());
+    }
+#endif
+
 }
 
 #pragma region Deprecated
