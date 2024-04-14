@@ -238,24 +238,5 @@ namespace FlaxEditor.Tools.Terrain
 
             return base.CanCloseWindow(reason);
         }
-
-        /// <inheritdoc />
-        public override bool OnKeyDown(KeyboardKeys key)
-        {
-            if (_isWorking)
-                return true;
-
-            switch (key)
-            {
-            case KeyboardKeys.Escape:
-                OnCancel();
-                return true;
-            case KeyboardKeys.Return:
-                OnSubmit();
-                return true;
-            }
-
-            return base.OnKeyDown(key);
-        }
     }
 }
