@@ -32,13 +32,11 @@ protected:
 
     bool _enableCollision = true;
     bool _enableAutoAnchor = false;
-#if USE_EDITOR
     /// <summary>
     /// propery for editor dont use it
     /// </summary>
     /// <returns></returns>
     API_PROPERTY(internal) bool IsConstraintActorAValid() const { return  ConstraintActorA; }
-#endif
 public:
 
     /// <summary>
@@ -46,16 +44,12 @@ public:
     /// </summary>
     API_FIELD(Attributes = "EditorOrder(0), EditorDisplay(\"Joint\")")
         ScriptingObjectReference<RigidBody> ConstraintActorA;
-#if USE_EDITOR
     /// <summary>
     /// [todo]
     /// </summary>
     API_PROPERTY(Attributes = "EditorOrder(1), EditorDisplay(\"Joint\"),VisibleIf(nameof(IsConstraintActorAValid), false)")
-        const PhysicsTransform& GetLocalConstrainActorA() const;
-#else
-    API_PROPERTY(Attributes = "EditorOrder(1), EditorDisplay(\"Joint\")")
-        const PhysicsTransform& GetLocalConstrainActorA() const;
-#endif
+    const PhysicsTransform& GetLocalConstrainActorA() const;
+
     /// <summary>
     /// [todo]
     /// </summary>
