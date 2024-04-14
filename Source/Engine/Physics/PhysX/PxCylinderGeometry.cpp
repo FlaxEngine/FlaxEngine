@@ -1,6 +1,7 @@
 #if COMPILE_WITH_PHYSX
 #include "Engine/Debug/DebugDraw.h"
 #include "Engine\Core\Math\BoundingSphere.h"
+#include "Engine\Core\Math\Ray.h"
 
 #include "PxCylinderGeometry.h"
 #include <extensions\PxMassProperties.h>
@@ -81,8 +82,9 @@ bool CylinderCallbacks::generateContacts(const PxGeometry& geom0, const PxGeomet
 
         for (PxU32 i = 0; i < contactBuffer.count; i++)
         {
-            DebugDraw::DrawSphere(BoundingSphere(P2C(contactBuffer.contacts[i].point), Real(1)), Color::Black,1.0f / 30.0f);
-            DebugDraw::DrawRay(P2C(contactBuffer.contacts[i].point), P2C(contactBuffer.contacts[i].normal), Color::Blue,10.f, 1.0f / 30.0f);
+            
+            DEBUG_DRAW_SPHERE(BoundingSphere(P2C(contactBuffer.contacts[i].point), Real(1)), Color::Black,1.0f / 30.0f,true);
+            DEBUG_DRAW_RAY(Ray(P2C(contactBuffer.contacts[i].point), P2C(contactBuffer.contacts[i].normal)), Color::Blue,10.f, 1.0f / 30.0f, true);
         }
         return true;
         //contactRecorder.contactBuffer->contacts

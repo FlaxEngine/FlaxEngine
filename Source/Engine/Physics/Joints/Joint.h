@@ -53,7 +53,7 @@ public:
     API_PROPERTY(Attributes = "EditorOrder(1), EditorDisplay(\"Joint\"),VisibleIf(nameof(IsConstraintActorAValid), false)")
         const PhysicsTransform& GetLocalConstrainActorA() const;
 #else
-    API_PROPERTY(Attributes = "EditorOrder(1), EditorDisplay(\"Joint\"), false)")
+    API_PROPERTY(Attributes = "EditorOrder(1), EditorDisplay(\"Joint\")")
         const PhysicsTransform& GetLocalConstrainActorA() const;
 #endif
     /// <summary>
