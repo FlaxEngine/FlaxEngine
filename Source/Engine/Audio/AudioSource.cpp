@@ -152,11 +152,16 @@ void AudioSource::Play()
                 RequestStreamingBuffersUpdate();
         }
     }
-    else
+    else if (SourceIDs.HasItems())
     {
         // Play it right away
         SetNonStreamingBuffer();
         PlayInternal();
+    }
+    else
+    {
+        // Source was nt properly added to the Audio Backend
+        LOG(Warning, "Cannot play unitialized audio source.");
     }
 }
 
