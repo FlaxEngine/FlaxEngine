@@ -16,12 +16,12 @@ class LightPass : public RendererPass<LightPass>
 private:
     AssetReference<Shader> _shader;
     GPUPipelineStatePermutationsPs<2> _psLightDir;
-    GPUPipelineStatePermutationsPs<4> _psLightPointNormal;
-    GPUPipelineStatePermutationsPs<4> _psLightPointInverted;
-    GPUPipelineStatePermutationsPs<4> _psLightSpotNormal;
-    GPUPipelineStatePermutationsPs<4> _psLightSpotInverted;
-    GPUPipelineState* _psLightSkyNormal = nullptr;
-    GPUPipelineState* _psLightSkyInverted = nullptr;
+    GPUPipelineStatePermutationsPs<4> _psLightPoint;
+    GPUPipelineStatePermutationsPs<4> _psLightPointInside;
+    GPUPipelineStatePermutationsPs<4> _psLightSpot;
+    GPUPipelineStatePermutationsPs<4> _psLightSpotInside;
+    GPUPipelineState* _psLightSky = nullptr;
+    GPUPipelineState* _psLightSkyInside = nullptr;
     GPUPipelineState* _psClearDiffuse = nullptr;
     AssetReference<Model> _sphereModel;
     PixelFormat _shadowMaskFormat;
@@ -44,12 +44,12 @@ private:
     void OnShaderReloading(Asset* obj)
     {
         _psLightDir.Release();
-        _psLightPointNormal.Release();
-        _psLightPointInverted.Release();
-        _psLightSpotNormal.Release();
-        _psLightSpotInverted.Release();
-        _psLightSkyNormal->ReleaseGPU();
-        _psLightSkyInverted->ReleaseGPU();
+        _psLightPoint.Release();
+        _psLightPointInside.Release();
+        _psLightSpot.Release();
+        _psLightSpotInside.Release();
+        _psLightSky->ReleaseGPU();
+        _psLightSkyInside->ReleaseGPU();
         invalidateResources();
     }
 #endif

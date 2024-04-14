@@ -31,20 +31,18 @@ bool LightPass::Init()
 {
     // Create pipeline states
     _psLightDir.CreatePipelineStates();
-    _psLightPointNormal.CreatePipelineStates();
-    _psLightPointInverted.CreatePipelineStates();
-    _psLightSpotNormal.CreatePipelineStates();
-    _psLightSpotInverted.CreatePipelineStates();
-    _psLightSkyNormal = GPUDevice::Instance->CreatePipelineState();
-    _psLightSkyInverted = GPUDevice::Instance->CreatePipelineState();
+    _psLightPoint.CreatePipelineStates();
+    _psLightPointInside.CreatePipelineStates();
+    _psLightSpot.CreatePipelineStates();
+    _psLightSpotInside.CreatePipelineStates();
+    _psLightSky = GPUDevice::Instance->CreatePipelineState();
+    _psLightSkyInside = GPUDevice::Instance->CreatePipelineState();
 
     // Load assets
     _shader = Content::LoadAsyncInternal<Shader>(TEXT("Shaders/Lights"));
     _sphereModel = Content::LoadAsyncInternal<Model>(TEXT("Engine/Models/Sphere"));
     if (_shader == nullptr || _sphereModel == nullptr)
-    {
         return true;
-    }
 
 #if COMPILE_WITH_DEV_ENV
     _shader.Get()->OnReloading.Bind<LightPass, &LightPass::OnShaderReloading>(this);
@@ -90,46 +88,50 @@ bool LightPass::setupResources()
         if (_psLightDir.Create(psDesc, shader, "PS_Directional"))
             return true;
     }
-    if (!_psLightPointNormal.IsValid() || !_psLightPointInverted.IsValid())
+    if (!_psLightPoint.IsValid())
     {
         psDesc = GPUPipelineState::Description::DefaultNoDepth;
         psDesc.BlendMode = BlendingMode::Add;
         psDesc.BlendMode.RenderTargetWriteMask = BlendingMode::ColorWrite::RGB;
         psDesc.VS = shader->GetVS("VS_Model");
-        psDesc.CullMode = CullMode::TwoSided;
-        if (_psLightPointInverted.Create(psDesc, shader, "PS_Point"))
-            return true;
-        psDesc.CullMode = CullMode::Normal;
         psDesc.DepthEnable = true;
-        if (_psLightPointNormal.Create(psDesc, shader, "PS_Point"))
+        psDesc.CullMode = CullMode::Normal;
+        if (_psLightPoint.Create(psDesc, shader, "PS_Point"))
+            return true;
+        psDesc.DepthFunc = ComparisonFunc::Greater;
+        psDesc.CullMode = CullMode::Inverted;
+        if (_psLightPointInside.Create(psDesc, shader, "PS_Point"))
             return true;
     }
-    if (!_psLightSpotNormal.IsValid() || !_psLightSpotInverted.IsValid())
+    if (!_psLightSpot.IsValid())
     {
         psDesc = GPUPipelineState::Description::DefaultNoDepth;
         psDesc.BlendMode = BlendingMode::Add;
         psDesc.BlendMode.RenderTargetWriteMask = BlendingMode::ColorWrite::RGB;
         psDesc.VS = shader->GetVS("VS_Model");
-        psDesc.CullMode = CullMode::TwoSided;
-        if (_psLightSpotInverted.Create(psDesc, shader, "PS_Spot"))
-            return true;
-        psDesc.CullMode = CullMode::Normal;
         psDesc.DepthEnable = true;
-        if (_psLightSpotNormal.Create(psDesc, shader, "PS_Spot"))
+        psDesc.CullMode = CullMode::Normal;
+        if (_psLightSpot.Create(psDesc, shader, "PS_Spot"))
+            return true;
+        psDesc.DepthFunc = ComparisonFunc::Greater;
+        psDesc.CullMode = CullMode::Inverted;
+        if (_psLightSpotInside.Create(psDesc, shader, "PS_Spot"))
             return true;
     }
-    if (!_psLightSkyNormal->IsValid() || !_psLightSkyInverted->IsValid())
+    if (!_psLightSky->IsValid())
     {
         psDesc = GPUPipelineState::Description::DefaultNoDepth;
         psDesc.BlendMode = BlendingMode::Add;
         psDesc.BlendMode.RenderTargetWriteMask = BlendingMode::ColorWrite::RGB;
-        psDesc.CullMode = CullMode::Normal;
         psDesc.VS = shader->GetVS("VS_Model");
         psDesc.PS = shader->GetPS("PS_Sky");
-        if (_psLightSkyNormal->Init(psDesc))
+        psDesc.DepthEnable = true;
+        psDesc.CullMode = CullMode::Normal;
+        if (_psLightSky->Init(psDesc))
             return true;
-        psDesc.CullMode = CullMode::TwoSided;
-        if (_psLightSkyInverted->Init(psDesc))
+        psDesc.DepthFunc = ComparisonFunc::Greater;
+        psDesc.CullMode = CullMode::Inverted;
+        if (_psLightSkyInside->Init(psDesc))
             return true;
     }
 
@@ -143,12 +145,12 @@ void LightPass::Dispose()
 
     // Cleanup
     _psLightDir.Delete();
-    _psLightPointNormal.Delete();
-    _psLightPointInverted.Delete();
-    _psLightSpotNormal.Delete();
-    _psLightSpotInverted.Delete();
-    SAFE_DELETE_GPU_RESOURCE(_psLightSkyNormal);
-    SAFE_DELETE_GPU_RESOURCE(_psLightSkyInverted);
+    _psLightPoint.Delete();
+    _psLightPointInside.Delete();
+    _psLightSpot.Delete();
+    _psLightSpotInside.Delete();
+    SAFE_DELETE_GPU_RESOURCE(_psLightSky);
+    SAFE_DELETE_GPU_RESOURCE(_psLightSkyInside);
     SAFE_DELETE_GPU_RESOURCE(_psClearDiffuse);
     _sphereModel = nullptr;
 }
@@ -298,7 +300,7 @@ void LightPass::RenderLights(RenderContextBatch& renderContextBatch, GPUTextureV
         context->BindCB(0, cb0);
         context->BindCB(1, cb1);
         int32 permutationIndex = (disableSpecular ? 1 : 0) + (useIES ? 2 : 0);
-        context->SetState((isViewInside ? _psLightPointInverted : _psLightPointNormal).Get(permutationIndex));
+        context->SetState((isViewInside ? _psLightPointInside : _psLightPoint).Get(permutationIndex));
         sphereMesh.Render(context);
     }
 
@@ -341,7 +343,7 @@ void LightPass::RenderLights(RenderContextBatch& renderContextBatch, GPUTextureV
         context->BindCB(0, cb0);
         context->BindCB(1, cb1);
         int32 permutationIndex = (disableSpecular ? 1 : 0) + (useIES ? 2 : 0);
-        context->SetState((isViewInside ? _psLightSpotInverted : _psLightSpotNormal).Get(permutationIndex));
+        context->SetState((isViewInside ? _psLightSpotInside : _psLightSpot).Get(permutationIndex));
         sphereMesh.Render(context);
     }
 
@@ -400,7 +402,7 @@ void LightPass::RenderLights(RenderContextBatch& renderContextBatch, GPUTextureV
         context->UpdateCB(cb0, &perLight);
         context->BindCB(0, cb0);
         context->BindCB(1, cb1);
-        context->SetState(isViewInside ? _psLightSkyInverted : _psLightSkyNormal);
+        context->SetState(isViewInside ? _psLightSkyInside : _psLightSky);
         sphereMesh.Render(context);
     }
 

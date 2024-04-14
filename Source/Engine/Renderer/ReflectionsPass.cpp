@@ -13,6 +13,12 @@
 #include "Engine/Graphics/RenderTargetPool.h"
 #include "Engine/Level/Actors/EnvironmentProbe.h"
 
+PACK_STRUCT(struct Data {
+    ShaderEnvProbeData PData;
+    Matrix WVP;
+    ShaderGBufferData GBuffer;
+    });
+
 #if GENERATE_GF_CACHE
 
 // This code below (PreIntegratedGF namespace) is based on many Siggraph presentations about BRDF shading:
@@ -239,13 +245,6 @@ namespace PreIntegratedGF
 
 class Model;
 
-ReflectionsPass::ReflectionsPass()
-    : _psProbeNormal(nullptr)
-    , _psProbeInverted(nullptr)
-    , _psCombinePass(nullptr)
-{
-}
-
 String ReflectionsPass::ToString() const
 {
     return TEXT("ReflectionsPass");
@@ -254,15 +253,13 @@ String ReflectionsPass::ToString() const
 bool ReflectionsPass::Init()
 {
 #if GENERATE_GF_CACHE
-
 	// Generate cache
 	PreIntegratedGF::Generate();
-
 #endif
 
     // Create pipeline states
-    _psProbeNormal = GPUDevice::Instance->CreatePipelineState();
-    _psProbeInverted = GPUDevice::Instance->CreatePipelineState();
+    _psProbe = GPUDevice::Instance->CreatePipelineState();
+    _psProbeInside = GPUDevice::Instance->CreatePipelineState();
     _psCombinePass = GPUDevice::Instance->CreatePipelineState();
 
     // Load assets
@@ -294,17 +291,19 @@ bool ReflectionsPass::setupResources()
 
     // Create pipeline stages
     GPUPipelineState::Description psDesc;
-    if (!_psProbeNormal->IsValid() || !_psProbeInverted->IsValid())
+    if (!_psProbe->IsValid())
     {
         psDesc = GPUPipelineState::Description::DefaultNoDepth;
         psDesc.BlendMode = BlendingMode::AlphaBlend;
-        psDesc.CullMode = CullMode::Normal;
         psDesc.VS = shader->GetVS("VS_Model");
         psDesc.PS = shader->GetPS("PS_EnvProbe");
-        if (_psProbeNormal->Init(psDesc))
+        psDesc.CullMode = CullMode::Normal;
+        psDesc.DepthEnable = true;
+        if (_psProbe->Init(psDesc))
             return true;
-        psDesc.CullMode = CullMode::TwoSided;
-        if (_psProbeInverted->Init(psDesc))
+        psDesc.DepthFunc = ComparisonFunc::Greater;
+        psDesc.CullMode = CullMode::Inverted;
+        if (_psProbeInside->Init(psDesc))
             return true;
     }
     psDesc = GPUPipelineState::Description::DefaultFullscreenTriangle;
@@ -326,8 +325,8 @@ void ReflectionsPass::Dispose()
     RendererPass::Dispose();
 
     // Cleanup
-    SAFE_DELETE_GPU_RESOURCE(_psProbeNormal);
-    SAFE_DELETE_GPU_RESOURCE(_psProbeInverted);
+    SAFE_DELETE_GPU_RESOURCE(_psProbe);
+    SAFE_DELETE_GPU_RESOURCE(_psProbeInside);
     SAFE_DELETE_GPU_RESOURCE(_psCombinePass);
     _shader = nullptr;
     _sphereModel = nullptr;
@@ -416,7 +415,7 @@ void ReflectionsPass::Render(RenderContext& renderContext, GPUTextureView* light
             context->UpdateCB(cb, &data);
             context->BindCB(0, cb);
             context->BindSR(4, probe.Texture);
-            context->SetState(isViewInside ? _psProbeInverted : _psProbeNormal);
+            context->SetState(isViewInside ? _psProbeInside : _psProbe);
             sphereMesh.Render(context);
         }
 

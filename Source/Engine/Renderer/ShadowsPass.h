@@ -21,7 +21,9 @@ private:
     GPUPipelineState* _psDepthCopy = nullptr;
     GPUPipelineStatePermutationsPs<static_cast<int32>(Quality::MAX) * 2> _psShadowDir;
     GPUPipelineStatePermutationsPs<static_cast<int32>(Quality::MAX) * 2> _psShadowPoint;
+    GPUPipelineStatePermutationsPs<static_cast<int32>(Quality::MAX) * 2> _psShadowPointInside;
     GPUPipelineStatePermutationsPs<static_cast<int32>(Quality::MAX) * 2> _psShadowSpot;
+    GPUPipelineStatePermutationsPs<static_cast<int32>(Quality::MAX) * 2> _psShadowSpotInside;
     PixelFormat _shadowMapFormat; // Cached on initialization
 
 public:

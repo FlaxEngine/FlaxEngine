@@ -337,14 +337,14 @@ void RenderTools::ComputePitch(PixelFormat format, int32 width, int32 height, ui
     case PixelFormat::ASTC_8x8_UNorm_sRGB:
     case PixelFormat::ASTC_10x10_UNorm:
     case PixelFormat::ASTC_10x10_UNorm_sRGB:
-        {
-            const int32 blockSize = PixelFormatExtensions::ComputeBlockSize(format);
-            uint32 nbw = Math::Max<uint32>(1, Math::DivideAndRoundUp(width, blockSize));
-            uint32 nbh = Math::Max<uint32>(1, Math::DivideAndRoundUp(height, blockSize));
-            rowPitch = nbw * 16; // All ASTC blocks use 128 bits
-            slicePitch = rowPitch * nbh;
-        }
-        break;
+    {
+        const int32 blockSize = PixelFormatExtensions::ComputeBlockSize(format);
+        uint32 nbw = Math::Max<uint32>(1, Math::DivideAndRoundUp(width, blockSize));
+        uint32 nbh = Math::Max<uint32>(1, Math::DivideAndRoundUp(height, blockSize));
+        rowPitch = nbw * 16; // All ASTC blocks use 128 bits
+        slicePitch = rowPitch * nbh;
+    }
+    break;
     case PixelFormat::R8G8_B8G8_UNorm:
     case PixelFormat::G8R8_G8B8_UNorm:
         ASSERT(PixelFormatExtensions::IsPacked(format));
@@ -590,7 +590,7 @@ void RenderTools::CalculateTangentFrame(FloatR10G10B10A2& resultNormal, FloatR10
 void RenderTools::ComputeSphereModelDrawMatrix(const RenderView& view, const Float3& position, float radius, Matrix& resultWorld, bool& resultIsViewInside)
 {
     // Construct world matrix
-    constexpr float sphereModelScale = 0.0202f; // Manually tweaked for 'Engine/Models/Sphere'
+    constexpr float sphereModelScale = 0.0205f; // Manually tweaked for 'Engine/Models/Sphere' with some slack
     const float scaling = radius * sphereModelScale;
     resultWorld = Matrix::Identity;
     resultWorld.M11 = scaling;
@@ -601,10 +601,7 @@ void RenderTools::ComputeSphereModelDrawMatrix(const RenderView& view, const Flo
     resultWorld.M43 = position.Z;
 
     // Check if view is inside the sphere
-    float viewToCenter = Float3::Distance(view.Position, position);
-    //if (radius + viewToCenter > view.Far)
-    //    radius = view.Far - viewToCenter; // Clamp radius
-    resultIsViewInside = viewToCenter - radius < 5.0f; // Manually tweaked bias
+    resultIsViewInside = Float3::DistanceSquared(view.Position, position) < Math::Square(radius * 1.1f); // Manually tweaked bias
 }
 
 int32 MipLevelsCount(int32 width, bool useMipLevels)

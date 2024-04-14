@@ -446,7 +446,9 @@ bool ShadowsPass::Init()
     // Create pipeline states
     _psShadowDir.CreatePipelineStates();
     _psShadowPoint.CreatePipelineStates();
+    _psShadowPointInside.CreatePipelineStates();
     _psShadowSpot.CreatePipelineStates();
+    _psShadowSpotInside.CreatePipelineStates();
 
     // Load assets
     _shader = Content::LoadAsyncInternal<Shader>(TEXT("Shaders/Shadows"));
@@ -496,26 +498,39 @@ bool ShadowsPass::setupResources()
 
     // Create pipeline stages
     GPUPipelineState::Description psDesc;
-    if (!_psShadowPoint.IsValid())
-    {
-        psDesc = GPUPipelineState::Description::DefaultNoDepth;
-        psDesc.CullMode = CullMode::TwoSided;
-        psDesc.VS = shader->GetVS("VS_Model");
-        if (_psShadowPoint.Create(psDesc, shader, "PS_PointLight"))
-            return true;
-    }
     if (!_psShadowDir.IsValid())
     {
         psDesc = GPUPipelineState::Description::DefaultFullscreenTriangle;
+        psDesc.BlendMode.RenderTargetWriteMask = BlendingMode::ColorWrite::RG;
         if (_psShadowDir.Create(psDesc, shader, "PS_DirLight"))
+            return true;
+    }
+    if (!_psShadowPoint.IsValid())
+    {
+        psDesc = GPUPipelineState::Description::DefaultNoDepth;
+        psDesc.BlendMode.RenderTargetWriteMask = BlendingMode::ColorWrite::RG;
+        psDesc.VS = shader->GetVS("VS_Model");
+        psDesc.DepthEnable = true;
+        psDesc.CullMode = CullMode::Normal;
+        if (_psShadowPoint.Create(psDesc, shader, "PS_PointLight"))
+            return true;
+        psDesc.DepthFunc = ComparisonFunc::Greater;
+        psDesc.CullMode = CullMode::Inverted;
+        if (_psShadowPointInside.Create(psDesc, shader, "PS_PointLight"))
             return true;
     }
     if (!_psShadowSpot.IsValid())
     {
         psDesc = GPUPipelineState::Description::DefaultNoDepth;
-        psDesc.CullMode = CullMode::TwoSided;
+        psDesc.BlendMode.RenderTargetWriteMask = BlendingMode::ColorWrite::RG;
         psDesc.VS = shader->GetVS("VS_Model");
+        psDesc.DepthEnable = true;
+        psDesc.CullMode = CullMode::Normal;
         if (_psShadowSpot.Create(psDesc, shader, "PS_SpotLight"))
+            return true;
+        psDesc.DepthFunc = ComparisonFunc::Greater;
+        psDesc.CullMode = CullMode::Inverted;
+        if (_psShadowSpotInside.Create(psDesc, shader, "PS_SpotLight"))
             return true;
     }
     if (_psDepthClear == nullptr)
@@ -994,7 +1009,9 @@ void ShadowsPass::Dispose()
     // Cleanup
     _psShadowDir.Delete();
     _psShadowPoint.Delete();
+    _psShadowPointInside.Delete();
     _psShadowSpot.Delete();
+    _psShadowSpotInside.Delete();
     _shader = nullptr;
     _sphereModel = nullptr;
     SAFE_DELETE_GPU_RESOURCE(_psDepthClear);
@@ -1072,7 +1089,6 @@ void ShadowsPass::SetupShadows(RenderContext& renderContext, RenderContextBatch&
     }
     if (shadows.StaticAtlasTiles && (float)shadows.StaticAtlasPixelsUsed / (shadows.StaticAtlasTiles->Width * shadows.StaticAtlasTiles->Height) < SHADOWS_MAX_STATIC_ATLAS_CAPACITY_TO_DEFRAG)
     {
-        float app = (float)shadows.StaticAtlasPixelsUsed / (shadows.StaticAtlasTiles->Width * shadows.StaticAtlasTiles->Height);
         // Defragment static shadow atlas if it failed to insert any light but it's still should have space
         bool anyStaticFailed = false;
         for (auto& e : shadows.Lights)
@@ -1478,12 +1494,12 @@ void ShadowsPass::RenderShadowMask(RenderContextBatch& renderContextBatch, Rende
     sperLight.TemporalTime = renderContext.List->Setup.UseTemporalAAJitter ? RenderTools::ComputeTemporalTime() : 0.0f;
     sperLight.ContactShadowsDistance = light.ShadowsDistance;
     sperLight.ContactShadowsLength = EnumHasAnyFlags(view.Flags, ViewFlags::ContactShadows) ? light.ContactShadowsLength : 0.0f;
+    bool isViewInside;
     if (isLocalLight)
     {
         // Calculate world view projection matrix for the light sphere
         Matrix world, wvp;
-        bool isInside;
-        RenderTools::ComputeSphereModelDrawMatrix(renderContext.View, light.Position, ((RenderLocalLightData&)light).Radius, world, isInside);
+        RenderTools::ComputeSphereModelDrawMatrix(renderContext.View, light.Position, ((RenderLocalLightData&)light).Radius, world, isViewInside);
         Matrix::Multiply(world, view.ViewProjection(), wvp);
         Matrix::Transpose(wvp, sperLight.WVP);
     }
@@ -1498,12 +1514,12 @@ void ShadowsPass::RenderShadowMask(RenderContextBatch& renderContextBatch, Rende
     context->SetRenderTarget(shadowMask);
     if (light.IsPointLight)
     {
-        context->SetState(_psShadowPoint.Get(permutationIndex));
+        context->SetState((isViewInside ? _psShadowPointInside : _psShadowPoint).Get(permutationIndex));
         _sphereModel->LODs.Get()[0].Meshes.Get()[0].Render(context);
     }
     else if (light.IsSpotLight)
     {
-        context->SetState(_psShadowSpot.Get(permutationIndex));
+        context->SetState((isViewInside ? _psShadowSpotInside : _psShadowSpot).Get(permutationIndex));
         _sphereModel->LODs.Get()[0].Meshes.Get()[0].Render(context);
     }
     else //if (light.IsDirectionalLight)
