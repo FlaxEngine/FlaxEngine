@@ -1,13 +1,13 @@
 #if COMPILE_WITH_PHYSX
 #include "Engine/Debug/DebugDraw.h"
-#include "Engine\Core\Math\BoundingSphere.h"
-#include "Engine\Core\Math\Ray.h"
+#include "Engine/Core/Math/BoundingSphere.h"
+#include "Engine/Core/Math/Ray.h"
 
 #include "PxCylinderGeometry.h"
-#include <extensions\PxMassProperties.h>
+#include <extensions/PxMassProperties.h>
 #include <extensions/PxCustomGeometryExt.h>
-#include <geomutils\PxContactBuffer.h>
-#include <collision\PxCollisionDefs.h>
+#include <geomutils/PxContactBuffer.h>
+#include <collision/PxCollisionDefs.h>
 #include <PxImmediateMode.h>
 
 struct ContactRecorder : immediate::PxContactRecorder
