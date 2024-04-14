@@ -2119,6 +2119,7 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
             value = Variant(Transform::Identity);
         break;
     }
+
     // Two Bone IK
     case 31:
     {
