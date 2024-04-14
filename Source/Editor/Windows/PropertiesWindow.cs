@@ -38,6 +38,11 @@ namespace FlaxEditor.Windows
         public bool UIPivotRelative = true;
 
         /// <summary>
+        /// Indication of if the properties window is locked on specific objects.
+        /// </summary>
+        public bool LockObjects = false;
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="PropertiesWindow"/> class.
         /// </summary>
         /// <param name="editor">The editor.</param>
@@ -62,6 +67,9 @@ namespace FlaxEditor.Windows
 
         private void OnSelectionChanged()
         {
+            if (LockObjects)
+                return;
+
             // Update selected objects
             // TODO: use cached collection for less memory allocations
             undoRecordObjects = Editor.SceneEditing.Selection.ConvertAll(x => x.UndoRecordObject).Distinct();
