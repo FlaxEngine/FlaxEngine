@@ -47,7 +47,6 @@ API_STRUCT() struct FLAXENGINE_API PhysicsTransform
         const auto& inv = InWorld.Orientation.Conjugated();
         const auto& T = inv * (InOtherWorld.Translation - InWorld.Translation);
         const auto& Q = inv * InOtherWorld.Orientation;
-        Q.Normalize();
         return PhysicsTransform{ T,Q };
     }
 
