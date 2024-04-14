@@ -180,7 +180,7 @@ void NavMesh::Initialize()
     // Base
     Actor::Initialize();
 
-    if (!_navMeshActive)
+    if (!_navMeshActive && IsActiveInHierarchy())
     {
         GetScene()->Navigation.Meshes.Add(this);
         AddTiles();
