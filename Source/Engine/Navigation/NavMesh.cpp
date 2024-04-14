@@ -105,10 +105,8 @@ void NavMesh::OnDataAssetLoaded()
     if (Data.Tiles.HasItems())
         return;
 
-    const bool isEnabled = IsDuringPlay() && IsActiveInHierarchy();
-
     // Remove added tiles
-    if (isEnabled)
+    if (_navMeshActive)
     {
         RemoveTiles();
     }
@@ -120,7 +118,7 @@ void NavMesh::OnDataAssetLoaded()
     IsDataDirty = false;
 
     // Add loaded tiles
-    if (isEnabled)
+    if (_navMeshActive)
     {
         AddTiles();
     }
@@ -156,15 +154,36 @@ void NavMesh::OnEnable()
     // Base
     Actor::OnEnable();
 
-    GetScene()->Navigation.Meshes.Add(this);
-    AddTiles();
+    if (!_navMeshActive)
+    {
+        GetScene()->Navigation.Meshes.Add(this);
+        AddTiles();
+        _navMeshActive = true;
+    }
 }
 
 void NavMesh::OnDisable()
 {
-    RemoveTiles();
-    GetScene()->Navigation.Meshes.Remove(this);
+    if (_navMeshActive)
+    {
+        RemoveTiles();
+        GetScene()->Navigation.Meshes.Remove(this);
+        _navMeshActive = false;
+    }
 
     // Base
     Actor::OnDisable();
+}
+
+void NavMesh::Initialize()
+{
+    // Base
+    Actor::Initialize();
+
+    if (!_navMeshActive && IsActiveInHierarchy())
+    {
+        GetScene()->Navigation.Meshes.Add(this);
+        AddTiles();
+        _navMeshActive = true;
+    }
 }
