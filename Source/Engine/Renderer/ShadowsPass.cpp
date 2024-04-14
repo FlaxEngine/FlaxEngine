@@ -19,6 +19,8 @@
 #include "Engine/Renderer/Lightmaps.h"
 #endif
 
+#define SHADOWS_POSITION_ERROR METERS_TO_UNITS(0.1f)
+#define SHADOWS_ROTATION_ERROR 0.9999f
 #define SHADOWS_MAX_TILES 6
 #define SHADOWS_MIN_RESOLUTION 16
 #define SHADOWS_MAX_STATIC_ATLAS_CAPACITY_TO_DEFRAG 0.7f
@@ -139,6 +141,7 @@ struct ShadowAtlasLightCache
     Float3 Direction;
     float Distance;
     Float4 CascadeSplits;
+    Float3 ViewDirection;
 
     void Set(const RenderView& view, const RenderLightData& light, const Float4& cascadeSplits = Float4::Zero)
     {
@@ -153,6 +156,7 @@ struct ShadowAtlasLightCache
         {
             // Sun
             Position = view.Position;
+            ViewDirection = view.Direction;
             CascadeSplits = cascadeSplits;
         }
         else
@@ -243,7 +247,7 @@ struct ShadowAtlasLight
             !Math::NearEqual(Cache.ShadowsUpdateRate, light.ShadowsUpdateRate) ||
             !Math::NearEqual(Cache.ShadowsUpdateRateAtDistance, light.ShadowsUpdateRateAtDistance) ||
             Cache.ShadowFrame != light.ShadowFrame ||
-            Float3::Dot(Cache.Direction, light.Direction) < 0.999999f)
+            Float3::Dot(Cache.Direction, light.Direction) < SHADOWS_ROTATION_ERROR)
         {
             // Invalidate
             Cache.StaticValid = false;
@@ -251,8 +255,9 @@ struct ShadowAtlasLight
         if (light.IsDirectionalLight)
         {
             // Sun
-            if (!Float3::NearEqual(Cache.Position, view.Position, 1.0f) ||
-                !Float4::NearEqual(Cache.CascadeSplits, CascadeSplits))
+            if (!Float3::NearEqual(Cache.Position, view.Position, SHADOWS_POSITION_ERROR) ||
+                !Float4::NearEqual(Cache.CascadeSplits, CascadeSplits) ||
+                Float3::Dot(Cache.ViewDirection, view.Direction) < SHADOWS_ROTATION_ERROR)
             {
                 // Invalidate
                 Cache.StaticValid = false;
@@ -262,7 +267,7 @@ struct ShadowAtlasLight
         {
             // Local light
             const auto& localLight = (const RenderLocalLightData&)light;
-            if (!Float3::NearEqual(Cache.Position, light.Position, METERS_TO_UNITS(0.1f)) ||
+            if (!Float3::NearEqual(Cache.Position, light.Position, SHADOWS_POSITION_ERROR) ||
                 !Math::NearEqual(Cache.Radius, localLight.Radius))
             {
                 // Invalidate
