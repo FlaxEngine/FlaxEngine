@@ -1177,14 +1177,12 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
     {
         const float alpha = Math::Saturate((float)tryGetValue(node->GetBox(3), node->Values[0]));
         auto mask = node->Assets[0].As<SkeletonMask>();
-        auto maskAssetBox = node->GetBox(4); // 4 is the id of skeleton mask parameter node.
 
-        // Check if have some mask asset connected with the mask node
-        if (maskAssetBox->HasConnection())
+        // Use the mask connected with this node instead of default mask asset
+        auto maskAssetBox = node->TryGetBox(4);
+        if (maskAssetBox && maskAssetBox->HasConnection())
         {
             const Value assetBoxValue = tryGetValue(maskAssetBox, Value::Null);
-
-            // Use the mask connected with this node instead of default mask asset 
             if (assetBoxValue != Value::Null)
                 mask = (SkeletonMask*)assetBoxValue.AsAsset;
         }
@@ -2119,7 +2117,6 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
             value = Variant(Transform::Identity);
         break;
     }
-
     // Two Bone IK
     case 31:
     {
