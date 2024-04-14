@@ -187,6 +187,7 @@ struct FLAXENGINE_API CollisionShape
         ConvexMesh,
         TriangleMesh,
         HeightField,
+        Cylinder,
     };
 
     Types Type;
@@ -208,6 +209,12 @@ struct FLAXENGINE_API CollisionShape
             float Radius;
             float HalfHeight;
         } Capsule;
+
+        struct
+        {
+            float Radius;
+            float HalfHeight;
+        } Cylinder;
 
         struct
         {
@@ -249,6 +256,13 @@ struct FLAXENGINE_API CollisionShape
         Type = Types::Capsule;
         Capsule.Radius = radius;
         Capsule.HalfHeight = halfHeight;
+    }
+
+    void SetCylinder(float radius, float halfHeight)
+    {
+        Type = Types::Cylinder;
+        Cylinder.Radius = radius;
+        Cylinder.HalfHeight = halfHeight;
     }
 
     void SetConvexMesh(void* contextMesh, float scale[3])

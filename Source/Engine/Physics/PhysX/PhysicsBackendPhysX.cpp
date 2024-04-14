@@ -25,10 +25,14 @@
 #include "Engine/Platform/CriticalSection.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Serialization/WriteStream.h"
+
+#include "Engine/Physics/PhysX/PxCylinderGeometry.h"
+
 #include <ThirdParty/PhysX/PxPhysicsAPI.h>
 #include <ThirdParty/PhysX/PxQueryFiltering.h>
 #include <ThirdParty/PhysX/extensions/PxFixedJoint.h>
 #include <ThirdParty/PhysX/extensions/PxSphericalJoint.h>
+#include <ThirdParty/PhysX/geometry/PxGeometry.h>
 #if WITH_VEHICLE
 #include "Engine/Core/Collections/Sorting.h"
 #include "Engine/Physics/Actors/WheeledVehicle.h"
@@ -642,6 +646,10 @@ void GetShapeGeometry(const CollisionShape& shape, PxGeometryHolder& geometry)
         break;
     case CollisionShape::Types::HeightField:
         geometry.storeAny(PxHeightFieldGeometry((PxHeightField*)shape.HeightField.HeightField, PxMeshGeometryFlags(0), Math::Max(shape.HeightField.HeightScale, PX_MIN_HEIGHTFIELD_Y_SCALE), Math::Max(shape.HeightField.RowScale, PX_MIN_HEIGHTFIELD_XZ_SCALE), Math::Max(shape.HeightField.ColumnScale, PX_MIN_HEIGHTFIELD_XZ_SCALE)));
+        break;
+    case CollisionShape::Types::Cylinder:
+        auto gCylinderCallbacks = new CylinderCallbacks(shape.Cylinder.Radius, shape.Cylinder.HalfHeight);
+        geometry.storeAny(PxCustomGeometry(*gCylinderCallbacks));
         break;
     }
 }
@@ -2668,7 +2676,9 @@ CollisionShape::Types PhysicsBackend::GetShapeType(void* shape)
 {
     auto shapePhysX = (PxShape*)shape;
     CollisionShape::Types type;
-    switch (shapePhysX->getGeometryType())
+    const PxGeometry& geom = shapePhysX->getGeometry();
+    const PxCustomGeometry& customGeom1 = static_cast<const PxCustomGeometry&>(geom);
+    switch (geom.getType())
     {
     case PxGeometryType::eSPHERE:
         type = CollisionShape::Types::Sphere;
@@ -2688,7 +2698,13 @@ CollisionShape::Types PhysicsBackend::GetShapeType(void* shape)
     case PxGeometryType::eHEIGHTFIELD:
         type = CollisionShape::Types::HeightField;
         break;
-    default: ;
+    case PxGeometryType::eCUSTOM:
+        if (customGeom1.getCustomType() == CylinderCallbacks::TYPE())
+        {
+            type = CollisionShape::Types::Cylinder;
+        }
+    default:
+        break;
     }
     return type;
 }
