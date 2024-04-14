@@ -456,17 +456,6 @@ void Joint::OnTransformChanged()
 
     _box = BoundingBox(_transform.Translation);
     _sphere = BoundingSphere(_transform.Translation, 0.0f);
-#if USE_EDITOR
-    if (!IsDuringPlay())
-        return;
-
-    if (GetEnableAutoAnchor())
-    {
-        SetWorldConstrainActorB(GetTransform());
-        SetWorldConstrainActorA(GetTransform());
-    }
-#endif
-
 }
 
 #pragma region Deprecated
