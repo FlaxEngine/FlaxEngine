@@ -3,6 +3,7 @@
 #pragma once
 
 #include "Engine/Core/Types/String.h"
+#include "Engine/Core/Types/Pair.h"
 #include "Engine/Core/Math/Transform.h"
 #include "Engine/Animations/Curve.h"
 
@@ -69,6 +70,16 @@ public:
 };
 
 /// <summary>
+/// Single track with events.
+/// </summary>
+struct EventAnimationData
+{
+    float Duration = 0.0f;
+    StringAnsi TypeName;
+    StringAnsi JsonData;
+};
+
+/// <summary>
 /// Root Motion modes that can be applied by the animation. Used as flags for selective behavior.
 /// </summary>
 API_ENUM(Attributes="Flags") enum class AnimationRootMotionFlags : byte
@@ -120,9 +131,14 @@ struct AnimationData
     String RootNodeName;
 
     /// <summary>
-    /// The per skeleton node animation channels.
+    /// The per-skeleton node animation channels.
     /// </summary>
     Array<NodeAnimationData> Channels;
+
+    /// <summary>
+    /// The animation event tracks.
+    /// </summary>
+    Array<Pair<String, StepCurve<EventAnimationData>>> Events;
 
 public:
     /// <summary>

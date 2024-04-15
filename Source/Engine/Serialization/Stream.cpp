@@ -948,6 +948,13 @@ void WriteStream::WriteJson(ISerializable* obj, const void* otherObj)
         WriteInt32(0);
 }
 
+void WriteStream::WriteJson(const StringAnsiView& json)
+{
+    WriteInt32(FLAXENGINE_VERSION_BUILD);
+    WriteInt32((int32)json.Length());
+    WriteBytes((byte*)json.Get(), (int32)json.Length());
+}
+
 void WriteStream::WriteString(const StringView& data)
 {
     Write(data);
