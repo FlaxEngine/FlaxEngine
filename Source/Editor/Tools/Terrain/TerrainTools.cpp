@@ -80,7 +80,7 @@ struct TextureDataResult
     }
 };
 
-bool GetTextureDataForSampling(Texture* texture, TextureDataResult& data)
+bool GetTextureDataForSampling(Texture* texture, TextureDataResult& data, bool hdr = false)
 {
     // Lock asset chunks (if not virtual)
     data.Lock = texture->LockData();
@@ -103,7 +103,7 @@ bool GetTextureDataForSampling(Texture* texture, TextureDataResult& data)
 
     // Decompress or convert data if need to
     data.Mip0DataPtr = &data.Mip0Data;
-    if (PixelFormatExtensions::IsCompressed(data.Format))
+    if (PixelFormatExtensions::IsCompressed(data.Format) || TextureTool::GetSampler(data.Format) == nullptr)
     {
         PROFILE_CPU_NAMED("Decompress");
 
@@ -122,7 +122,7 @@ bool GetTextureDataForSampling(Texture* texture, TextureDataResult& data)
         srcMip.Lines = src.Height;
 
         // Decompress texture
-        if (TextureTool::Convert(data.Tmp, src, PixelFormat::R8G8B8A8_UNorm))
+        if (TextureTool::Convert(data.Tmp, src, hdr ? PixelFormat::R16G16B16A16_Float : PixelFormat::R8G8B8A8_UNorm))
         {
             LOG(Warning, "Failed to decompress data.");
             return true;
@@ -134,7 +134,6 @@ bool GetTextureDataForSampling(Texture* texture, TextureDataResult& data)
         data.SlicePitch = data.Tmp.Items[0].Mips[0].DepthPitch;
         data.Mip0DataPtr = &data.Tmp.Items[0].Mips[0].Data;
     }
-    // TODO: convert to RGBA from other formats that cannot be sampled?
 
     // Check if can even sample the given format
     const auto sampler = TextureTool::GetSampler(data.Format);
@@ -155,7 +154,6 @@ bool TerrainTools::GenerateTerrain(Terrain* terrain, const Int2& numberOfPatches
         LOG(Warning, "Cannot setup terain with no patches.");
         return false;
     }
-
     PROFILE_CPU_NAMED("Terrain.GenerateTerrain");
 
     // Wait for assets to be loaded
@@ -188,7 +186,7 @@ bool TerrainTools::GenerateTerrain(Terrain* terrain, const Int2& numberOfPatches
     {
         // Get data
         TextureDataResult dataHeightmap;
-        if (GetTextureDataForSampling(heightmap, dataHeightmap))
+        if (GetTextureDataForSampling(heightmap, dataHeightmap, true))
             return true;
         const auto sampler = TextureTool::GetSampler(dataHeightmap.Format);
 
@@ -198,7 +196,6 @@ bool TerrainTools::GenerateTerrain(Terrain* terrain, const Int2& numberOfPatches
         for (int32 patchIndex = 0; patchIndex < terrain->GetPatchesCount(); patchIndex++)
         {
             auto patch = terrain->GetPatch(patchIndex);
-
             const Vector2 uvStart = Vector2((float)patch->GetX(), (float)patch->GetZ()) * uvPerPatch;
 
             // Sample heightmap pixels with interpolation to get actual heightmap vertices locations
