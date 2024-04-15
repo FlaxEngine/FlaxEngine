@@ -236,6 +236,7 @@ namespace FlaxEditor.Windows
                 group.AddChild(string.IsNullOrEmpty(attribute.Name) ? CreateActorItem(Utilities.Utils.GetPropertyNameUI(actorType.Name), actorType) : CreateActorItem(attribute.Name, actorType));
                 group.SortChildren();
             }
+            _groupSearch.SortChildren();
         }
 
         private void OnSearchBoxTextChanged()
@@ -283,6 +284,9 @@ namespace FlaxEditor.Windows
                 }
                 item.SetHighlights(highlights);
             }
+            
+            if (string.IsNullOrEmpty(filterText))
+                _groupSearch.SortChildren();
 
             _groupSearch.UnlockChildrenRecursive();
             PerformLayout();
