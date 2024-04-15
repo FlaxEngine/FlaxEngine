@@ -1248,7 +1248,7 @@ bool ModelTool::ImportModel(const String& path, ModelData& data, Options& option
     }
 
     // Apply the import transformation
-    if (!importTransform.IsIdentity())
+    if (!importTransform.IsIdentity() && data.Nodes.HasItems())
     {
         if (options.Type == ModelType::SkinnedModel)
         {
