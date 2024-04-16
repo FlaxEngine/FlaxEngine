@@ -44,7 +44,7 @@ namespace Flax.Deps.Dependencies
 
             // Get the source
             CloneGitRepo(root, "https://github.com/Microsoft/DirectXTex.git");
-            GitCheckout(root, "master", "9a417f506c43e087b84c017260ad673abd6c64e1");
+            GitCheckout(root, "main", "5cfd711dc5d64cde1e8b27670036535df5c3f922");
 
             foreach (var platform in options.Platforms)
             {
@@ -52,60 +52,39 @@ namespace Flax.Deps.Dependencies
                 {
                 case TargetPlatform.Windows:
                 {
-                    var solutionPath = Path.Combine(root, "DirectXTex_Desktop_2015.sln");
-                    var binFolder = Path.Combine(root, "DirectXTex", "Bin", "Desktop_2015");
+                    var solutionPath = Path.Combine(root, "DirectXTex_Desktop_2022.sln");
+                    var binFolder = Path.Combine(root, "DirectXTex", "Bin", "Desktop_2022");
                     Deploy.VCEnvironment.BuildSolution(solutionPath, configuration, "x64");
                     var depsFolder = GetThirdPartyFolder(options, platform, TargetArchitecture.x64);
                     foreach (var file in outputFileNames)
-                    {
                         Utilities.FileCopy(Path.Combine(binFolder, "x64", configuration, file), Path.Combine(depsFolder, file));
-                    }
                     break;
                 }
                 case TargetPlatform.UWP:
                 {
-                    var solutionPath = Path.Combine(root, "DirectXTex_Windows10_2017.sln");
-                    var binFolder = Path.Combine(root, "DirectXTex", "Bin", "Windows10_2017");
+                    var solutionPath = Path.Combine(root, "DirectXTex_Windows10_2019.sln");
+                    var binFolder = Path.Combine(root, "DirectXTex", "Bin", "Windows10_2019");
                     Deploy.VCEnvironment.BuildSolution(solutionPath, configuration, "x64");
                     var depsFolder = GetThirdPartyFolder(options, platform, TargetArchitecture.x64);
                     foreach (var file in outputFileNames)
-                    {
                         Utilities.FileCopy(Path.Combine(binFolder, "x64", configuration, file), Path.Combine(depsFolder, file));
-                    }
                     break;
                 }
                 case TargetPlatform.XboxOne:
-                {
-                    var solutionPath = Path.Combine(root, "DirectXTex_GXDK_2017.sln");
-                    File.Copy(Path.Combine(GetBinariesFolder(options, platform), "DirectXTex_GXDK_2017.sln"), solutionPath, true);
-                    var projectFileContents = File.ReadAllText(Path.Combine(GetBinariesFolder(options, platform), "DirectXTex_GXDK_2017.vcxproj"));
-                    projectFileContents = projectFileContents.Replace("___VS_TOOLSET___", "v142");
-                    var projectPath = Path.Combine(root, "DirectXTex", "DirectXTex_GXDK_2017.vcxproj");
-                    File.WriteAllText(projectPath, projectFileContents);
-                    var binFolder = Path.Combine(root, "DirectXTex", "Bin", "GXDK_2017");
-                    Deploy.VCEnvironment.BuildSolution(solutionPath, configuration, "Gaming.Xbox.XboxOne.x64");
-                    var depsFolder = GetThirdPartyFolder(options, platform, TargetArchitecture.x64);
-                    foreach (var file in outputFileNames)
-                    {
-                        Utilities.FileCopy(Path.Combine(binFolder, "Gaming.Xbox.XboxOne.x64", configuration, file), Path.Combine(depsFolder, file));
-                    }
-                    break;
-                }
                 case TargetPlatform.XboxScarlett:
                 {
-                    var solutionPath = Path.Combine(root, "DirectXTex_GXDK_2017.sln");
-                    File.Copy(Path.Combine(GetBinariesFolder(options, platform), "DirectXTex_GXDK_2017.sln"), solutionPath, true);
-                    var projectFileContents = File.ReadAllText(Path.Combine(GetBinariesFolder(options, platform), "DirectXTex_GXDK_2017.vcxproj"));
+                    var solutionPath = Path.Combine(root, "DirectXTex_GXDK_2019.sln");
+                    File.Copy(Path.Combine(GetBinariesFolder(options, platform), "DirectXTex_GXDK_2019.sln"), solutionPath, true);
+                    var projectFileContents = File.ReadAllText(Path.Combine(GetBinariesFolder(options, platform), "DirectXTex_GXDK_2019.vcxproj"));
                     projectFileContents = projectFileContents.Replace("___VS_TOOLSET___", "v142");
-                    var projectPath = Path.Combine(root, "DirectXTex", "DirectXTex_GXDK_2017.vcxproj");
+                    var projectPath = Path.Combine(root, "DirectXTex", "DirectXTex_GXDK_2019.vcxproj");
                     File.WriteAllText(projectPath, projectFileContents);
-                    var binFolder = Path.Combine(root, "DirectXTex", "Bin", "GXDK_2017");
-                    Deploy.VCEnvironment.BuildSolution(solutionPath, configuration, "Gaming.Xbox.Scarlett.x64");
+                    var binFolder = Path.Combine(root, "DirectXTex", "Bin", "GXDK_2019");
+                    var xboxName = platform == TargetPlatform.XboxOne ? "Gaming.Xbox.XboxOne.x64" : "Gaming.Xbox.Scarlett.x64";
+                    Deploy.VCEnvironment.BuildSolution(solutionPath, configuration, xboxName);
                     var depsFolder = GetThirdPartyFolder(options, platform, TargetArchitecture.x64);
                     foreach (var file in outputFileNames)
-                    {
-                        Utilities.FileCopy(Path.Combine(binFolder, "Gaming.Xbox.Scarlett.x64", configuration, file), Path.Combine(depsFolder, file));
-                    }
+                        Utilities.FileCopy(Path.Combine(binFolder, xboxName, configuration, file), Path.Combine(depsFolder, file));
                     break;
                 }
                 }

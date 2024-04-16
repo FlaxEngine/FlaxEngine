@@ -36,7 +36,7 @@ namespace
         return static_cast<DXGI_FORMAT>(format);
     }
 
-    HRESULT Compress(const DirectX::Image* srcImages, size_t nimages, const DirectX::TexMetadata& metadata, DXGI_FORMAT format, DWORD compress, float threshold, DirectX::ScratchImage& cImages)
+    HRESULT Compress(const DirectX::Image* srcImages, size_t nimages, const DirectX::TexMetadata& metadata, DXGI_FORMAT format, DirectX::TEX_COMPRESS_FLAGS compress, float threshold, DirectX::ScratchImage& cImages)
     {
 #if USE_EDITOR
         if ((format == DXGI_FORMAT_BC7_UNORM || format == DXGI_FORMAT_BC7_UNORM_SRGB || format == DXGI_FORMAT_BC6H_UF16 || format == DXGI_FORMAT_BC6H_SF16) &&
@@ -60,12 +60,12 @@ namespace
                 size_t _nimages;
                 const DirectX::TexMetadata& _metadata;
                 DXGI_FORMAT _format;
-                DWORD _compress;
+                DirectX::TEX_COMPRESS_FLAGS _compress;
                 DirectX::ScratchImage& _cImages;
             public:
                 HRESULT CompressResult = E_FAIL;
 
-                GPUCompressTask(ConditionVariable& signal, const DirectX::Image* srcImages, size_t nimages, const DirectX::TexMetadata& metadata, DXGI_FORMAT format, DWORD compress, DirectX::ScratchImage& cImages)
+                GPUCompressTask(ConditionVariable& signal, const DirectX::Image* srcImages, size_t nimages, const DirectX::TexMetadata& metadata, DXGI_FORMAT format, DirectX::TEX_COMPRESS_FLAGS compress, DirectX::ScratchImage& cImages)
                     : GPUTask(Type::Custom)
                     , _signal(&signal)
                     , _srcImages(srcImages)
@@ -688,7 +688,7 @@ bool TextureTool::ImportTextureDirectXTex(ImageType type, const StringView& path
     if (!keepAsIs && options.FlipY)
     {
         auto& tmpImg = GET_TMP_IMG();
-        DWORD flags = DirectX::TEX_FR_FLIP_VERTICAL;
+        DirectX::TEX_FR_FLAGS flags = DirectX::TEX_FR_FLIP_VERTICAL;
         result = FlipRotate(currentImage->GetImages(), currentImage->GetImageCount(), currentImage->GetMetadata(), flags, tmpImg);
         if (FAILED(result))
         {
@@ -698,7 +698,7 @@ bool TextureTool::ImportTextureDirectXTex(ImageType type, const StringView& path
         SET_CURRENT_IMG(tmpImg);
     }
 
-    // Check if it invert green channel
+    // Check if invert green channel
     if (!keepAsIs && options.InvertGreenChannel)
     {
         auto& timage = GET_TMP_IMG();
