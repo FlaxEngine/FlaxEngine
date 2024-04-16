@@ -565,7 +565,7 @@ namespace
     }
 }
 
-void RenderList::SortDrawCalls(const RenderContext& renderContext, bool reverseDistance, DrawCallsList& list, const RenderListBuffer<DrawCall>& drawCalls)
+void RenderList::SortDrawCalls(const RenderContext& renderContext, bool reverseDistance, DrawCallsList& list, const RenderListBuffer<DrawCall>& drawCalls, bool stable)
 {
     PROFILE_CPU();
     const auto* drawCallsData = drawCalls.Get();
@@ -638,8 +638,12 @@ void RenderList::SortDrawCalls(const RenderContext& renderContext, bool reverseD
         i += batchSize;
     }
 
-    // Sort draw calls batches by depth
-    Sorting::MergeSort(list.Batches, &SortingBatches);
+    // When using depth buffer draw calls are already almost ideally sorted by Radix Sort but transparency needs more stability to prevent flickering
+    if (stable)
+    {
+        // Sort draw calls batches by depth
+        Sorting::MergeSort(list.Batches, &SortingBatches);
+    }
 }
 
 FORCE_INLINE bool CanUseInstancing(DrawPass pass)
