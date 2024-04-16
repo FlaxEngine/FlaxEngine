@@ -42,7 +42,7 @@ namespace FlaxEditor.GUI.Timeline.GUI
             var timeAxisOverlap = Timeline.HeaderTopAreaHeight * 0.5f;
             var timeAxisHeaderOffset = -_timeline.MediaBackground.ViewOffset.Y - timeAxisOverlap;
 
-            var moveColor = style.ProgressNormal;
+            var moveColor = style.SelectionBorder;
             var thickness = 2.0f;
             var borderColor = _isMoving ? moveColor : (IsMouseOver && _canEdit ? Color.Yellow : style.BorderNormal);
             Render2D.FillRectangle(new Rectangle((Width - thickness) * 0.5f, timeAxisHeaderOffset, thickness, Height - timeAxisHeaderOffset), borderColor);
