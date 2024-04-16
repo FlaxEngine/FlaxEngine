@@ -252,6 +252,7 @@ private:
         JPEG,
         HDR,
         RAW,
+        EXR,
         Internal,
     };
 

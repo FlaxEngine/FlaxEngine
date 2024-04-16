@@ -15,6 +15,7 @@
 #if USE_EDITOR
 #include "Engine/Graphics/GPUDevice.h"
 #endif
+#include "Engine/Utilities/AnsiPathTempFile.h"
 
 // Import DirectXTex library
 // Source: https://github.com/Microsoft/DirectXTex
@@ -23,6 +24,19 @@
 DECLARE_HANDLE(HMONITOR);
 #endif
 #include <ThirdParty/DirectXTex/DirectXTex.h>
+
+#if USE_EDITOR
+// Import tinyexr library
+// Source: https://github.com/syoyo/tinyexr
+#define TINYEXR_IMPLEMENTATION
+#define TINYEXR_USE_MINIZ 1
+#define TINYEXR_USE_STB_ZLIB 0
+#define TINYEXR_USE_THREAD 0
+#define TINYEXR_USE_OPENMP 0
+#undef min
+#undef max
+#include <ThirdParty/tinyexr/tinyexr.h>
+#endif
 
 namespace
 {
@@ -276,6 +290,46 @@ HRESULT LoadFromRAWFile(const StringView& path, DirectX::ScratchImage& image)
     return image.InitializeFromImage(img);
 }
 
+HRESULT LoadFromEXRFile(const StringView& path, DirectX::ScratchImage& image)
+{
+#if USE_EDITOR
+    // Load exr file
+    AnsiPathTempFile tempFile(path);
+    float* pixels;
+    int width, height;
+    const char* err = nullptr;
+    int ret = LoadEXR(&pixels, &width, &height, tempFile.Path.Get(), &err);
+    if (ret != TINYEXR_SUCCESS)
+    {
+        if (err)
+        {
+            LOG_STR(Warning, String(err));
+            FreeEXRErrorMessage(err);
+        }
+        return S_FALSE;
+    }
+
+    // Setup image
+    DirectX::Image img;
+    img.format = DXGI_FORMAT_R32G32B32A32_FLOAT;
+    img.width = width;
+    img.height = height;
+    img.rowPitch = width * sizeof(Float4);
+    img.slicePitch = img.rowPitch * height;
+
+    // Link data
+    img.pixels = (uint8_t*)pixels;
+
+    // Init
+    HRESULT result = image.InitializeFromImage(img);
+    free(pixels);
+    return result;
+#else
+    LOG(Warning, "EXR format is not supported.");
+    return S_FALSE;
+#endif
+}
+
 bool TextureTool::ImportTextureDirectXTex(ImageType type, const StringView& path, TextureData& textureData, bool& hasAlpha)
 {
     // Load image data
@@ -301,6 +355,9 @@ bool TextureTool::ImportTextureDirectXTex(ImageType type, const StringView& path
         break;
     case ImageType::RAW:
         result = LoadFromRAWFile(path, image);
+        break;
+    case ImageType::EXR:
+        result = LoadFromEXRFile(path, image);
         break;
     default:
         result = DXGI_ERROR_INVALID_CALL;
@@ -517,6 +574,9 @@ bool TextureTool::ImportTextureDirectXTex(ImageType type, const StringView& path
         break;
     case ImageType::RAW:
         result = LoadFromRAWFile(path, image1);
+        break;
+    case ImageType::EXR:
+        result = LoadFromEXRFile(path, image1);
         break;
     case ImageType::Internal:
     {

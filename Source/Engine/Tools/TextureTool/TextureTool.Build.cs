@@ -21,6 +21,7 @@ public class TextureTool : EngineModule
 
         bool useDirectXTex = false;
         bool useStb = false;
+        bool useExr = options.Target.IsEditor;
 
         switch (options.Platform.Target)
         {
@@ -57,6 +58,10 @@ public class TextureTool : EngineModule
                 options.PrivateDependencies.Add("detex");
                 options.PrivateDependencies.Add("bc7enc16");
             }
+        }
+        if (useExr)
+        {
+            options.PrivateDependencies.Add("tinyexr");
         }
         if (options.Target.IsEditor && astc.IsSupported(options))
         {

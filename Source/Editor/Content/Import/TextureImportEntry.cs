@@ -128,6 +128,11 @@ namespace FlaxEditor.Content.Import
                 _settings.Settings.Type = TextureFormatType.HdrRGBA;
                 _settings.Settings.Compress = false;
             }
+            else if (extension == ".exr")
+            {
+                // HDR image
+                _settings.Settings.Type = TextureFormatType.HdrRGBA;
+            }
             else if (extension == ".hdr")
             {
                 // HDR sky texture
