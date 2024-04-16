@@ -1030,7 +1030,7 @@ void AnimatedModel::OnDebugDraw()
         GetLocalToWorldMatrix(world);
 
         // Draw bounding box at the node locations
-        const float boxSize = Math::Min(1.0f, _sphere.Radius / 100.0f);
+        const float boxSize = Math::Min(1.0f, (float)_sphere.Radius / 100.0f);
         OrientedBoundingBox localBox(Vector3(-boxSize), Vector3(boxSize));
         for (int32 nodeIndex = 0; nodeIndex < GraphInstance.NodesPose.Count(); nodeIndex++)
         {
