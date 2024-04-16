@@ -79,7 +79,7 @@ namespace FlaxEditor.CustomEditors
                 var theFirstType = TypeUtils.GetObjectType(this[0]);
                 for (int i = 1; i < Count; i++)
                 {
-                    if (theFirstType != TypeUtils.GetObjectType(this[1]))
+                    if (theFirstType != TypeUtils.GetObjectType(this[i]))
                         return true;
                 }
                 return false;
