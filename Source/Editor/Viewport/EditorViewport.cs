@@ -66,6 +66,11 @@ namespace FlaxEditor.Viewport
             public bool IsAltDown;
 
             /// <summary>
+            /// The is alt down flag cached from the previous input. Used to make <see cref="IsControllingMouse"/> consistent when user releases Alt while orbiting with Alt+LMB.
+            /// </summary>
+            public bool WasAltDownBefore;
+
+            /// <summary>
             /// The is mouse right down flag.
             /// </summary>
             public bool IsMouseRightDown;
@@ -88,18 +93,20 @@ namespace FlaxEditor.Viewport
             /// <summary>
             /// Gets a value indicating whether use is controlling mouse.
             /// </summary>
-            public bool IsControllingMouse => IsMouseMiddleDown || IsMouseRightDown || (IsAltDown && IsMouseLeftDown) || Mathf.Abs(MouseWheelDelta) > 0.1f;
+            public bool IsControllingMouse => IsMouseMiddleDown || IsMouseRightDown || ((IsAltDown || WasAltDownBefore) && IsMouseLeftDown) || Mathf.Abs(MouseWheelDelta) > 0.1f;
 
             /// <summary>
             /// Gathers input from the specified window.
             /// </summary>
             /// <param name="window">The window.</param>
             /// <param name="useMouse">True if use mouse input, otherwise will skip mouse.</param>
-            public void Gather(Window window, bool useMouse)
+            /// <param name="prevInput">Previous input state.</param>
+            public void Gather(Window window, bool useMouse, ref Input prevInput)
             {
                 IsControlDown = window.GetKey(KeyboardKeys.Control);
                 IsShiftDown = window.GetKey(KeyboardKeys.Shift);
                 IsAltDown = window.GetKey(KeyboardKeys.Alt);
+                WasAltDownBefore = prevInput.WasAltDownBefore || prevInput.IsAltDown;
 
                 IsMouseRightDown = useMouse && window.GetMouseButton(MouseButton.Right);
                 IsMouseMiddleDown = useMouse && window.GetMouseButton(MouseButton.Middle);
@@ -114,6 +121,7 @@ namespace FlaxEditor.Viewport
                 IsControlDown = false;
                 IsShiftDown = false;
                 IsAltDown = false;
+                WasAltDownBefore = false;
 
                 IsMouseRightDown = false;
                 IsMouseMiddleDown = false;
@@ -1540,7 +1548,7 @@ namespace FlaxEditor.Viewport
                 _prevInput = _input;
                 var hit = GetChildAt(_viewMousePos, c => c.Visible && !(c is CanvasRootControl) && !(c is UIEditorRoot));
                 if (canUseInput && ContainsFocus && hit == null)
-                    _input.Gather(win.Window, useMouse);
+                    _input.Gather(win.Window, useMouse, ref _prevInput);
                 else
                     _input.Clear();
 
