@@ -5,6 +5,7 @@
 #include "Engine/Visject/VisjectGraph.h"
 #include "Engine/Content/Assets/Animation.h"
 #include "Engine/Core/Collections/ChunkedArray.h"
+#include "Engine/Core/Collections/BitArray.h"
 #include "Engine/Animations/AlphaBlend.h"
 #include "Engine/Core/Math/Matrix.h"
 #include "../Config.h"
@@ -892,7 +893,7 @@ private:
 
     int32 GetRootNodeIndex(Animation* anim);
     void ProcessAnimEvents(AnimGraphNode* node, bool loop, float length, float animPos, float animPrevPos, Animation* anim, float speed);
-    void ProcessAnimation(AnimGraphImpulse* nodes, AnimGraphNode* node, bool loop, float length, float pos, float prevPos, Animation* anim, float speed, float weight = 1.0f, ProcessAnimationMode mode = ProcessAnimationMode::Override);
+    void ProcessAnimation(AnimGraphImpulse* nodes, AnimGraphNode* node, bool loop, float length, float pos, float prevPos, Animation* anim, float speed, float weight = 1.0f, ProcessAnimationMode mode = ProcessAnimationMode::Override, BitArray<InlinedAllocation<8>>* usedNodes = nullptr);
     Variant SampleAnimation(AnimGraphNode* node, bool loop, float length, float startTimePos, float prevTimePos, float& newTimePos, Animation* anim, float speed);
     Variant SampleAnimationsWithBlend(AnimGraphNode* node, bool loop, float length, float startTimePos, float prevTimePos, float& newTimePos, Animation* animA, Animation* animB, float speedA, float speedB, float alpha);
     Variant SampleAnimationsWithBlend(AnimGraphNode* node, bool loop, float length, float startTimePos, float prevTimePos, float& newTimePos, Animation* animA, Animation* animB, Animation* animC, float speedA, float speedB, float speedC, float alphaA, float alphaB, float alphaC);
