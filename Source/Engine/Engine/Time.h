@@ -225,11 +225,13 @@ public:
     /// <param name="value">The fixed draw/update rate for the time.</param>
     API_FUNCTION() static void SetFixedDeltaTime(bool enable, float value);
 
+    /// <summary>
+    /// Synchronizes update, fixed update and draw. Resets any pending deltas for fresh ticking in sync.
+    /// </summary>
+    API_FUNCTION() static void Synchronize();
+
 private:
-
     // Methods used by the Engine class
-
-    static void OnBeforeRun();
 
     static bool OnBeginUpdate();
     static bool OnBeginPhysics();

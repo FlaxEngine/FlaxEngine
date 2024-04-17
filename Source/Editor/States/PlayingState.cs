@@ -163,6 +163,8 @@ namespace FlaxEditor.States
             Editor.OnPlayBegin();
             IsPlayModeStarting = false;
             Profiler.EndEvent();
+
+            Time.Synchronize();
         }
 
         private void SetupEditorEnvOptions()
@@ -209,6 +211,8 @@ namespace FlaxEditor.States
             Editor.OnPlayEnd();
             IsPlayModeEnding = false;
             Profiler.EndEvent();
+
+            Time.Synchronize();
         }
     }
 }

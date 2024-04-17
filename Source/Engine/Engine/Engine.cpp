@@ -156,7 +156,7 @@ int32 Engine::Main(const Char* cmdLine)
 #endif
     Log::Logger::WriteFloor();
     LOG_FLUSH();
-    Time::OnBeforeRun();
+    Time::Synchronize();
     EngineImpl::IsReady = true;
 
     // Main engine loop
@@ -465,7 +465,7 @@ void Engine::OnUnpause()
     LOG(Info, "App unpaused");
     Unpause();
 
-    Time::OnBeforeRun();
+    Time::Synchronize();
 }
 
 void Engine::OnExit()
