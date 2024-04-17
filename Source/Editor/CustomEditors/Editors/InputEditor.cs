@@ -38,7 +38,7 @@ namespace FlaxEditor.CustomEditors.Editors
             _comboBox.SelectedIndexChanged += OnSelectedIndexChanged;
         }
 
-        private void OnSetupContextMenu(PropertyNameLabel label, ContextMenu menu, CustomEditor linkededitor)
+        private void OnSetupContextMenu(PropertyNameLabel label, ContextMenu menu, CustomEditor linkedEditor)
         {
             var button = menu.AddButton("Set to null");
             button.Clicked += () => _comboBox.SelectedItem = null;
@@ -106,7 +106,7 @@ namespace FlaxEditor.CustomEditors.Editors
             _comboBox.SelectedIndexChanged += OnSelectedIndexChanged;
         }
 
-        private void OnSetupContextMenu(PropertyNameLabel label, ContextMenu menu, CustomEditor linkededitor)
+        private void OnSetupContextMenu(PropertyNameLabel label, ContextMenu menu, CustomEditor linkedEditor)
         {
             var button = menu.AddButton("Set to null");
             button.Clicked += () => _comboBox.SelectedItem = null;

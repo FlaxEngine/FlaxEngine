@@ -217,17 +217,17 @@ struct DrawBatch
     /// <summary>
     /// The first draw call index.
     /// </summary>
-    int32 StartIndex;
+    uint16 StartIndex;
 
     /// <summary>
     /// A number of draw calls to be submitted at once.
     /// </summary>
-    int32 BatchSize;
+    uint16 BatchSize;
 
     /// <summary>
     /// The total amount of instances (sum from all draw calls in this batch).
     /// </summary>
-    int32 InstanceCount;
+    uint32 InstanceCount;
 
     bool operator<(const DrawBatch& other) const
     {
@@ -525,7 +525,8 @@ public:
     /// <param name="pass">The draw pass (optional).</param>
     API_FUNCTION() FORCE_INLINE void SortDrawCalls(API_PARAM(Ref) const RenderContext& renderContext, bool reverseDistance, DrawCallsListType listType, DrawPass pass = DrawPass::All)
     {
-        SortDrawCalls(renderContext, reverseDistance, DrawCallsLists[(int32)listType], DrawCalls, pass);
+        const bool stable = listType == DrawCallsListType::Forward;
+        SortDrawCalls(renderContext, reverseDistance, DrawCallsLists[(int32)listType], DrawCalls, pass, stable);
     }
 
     /// <summary>
@@ -536,7 +537,8 @@ public:
     /// <param name="list">The collected draw calls indices list.</param>
     /// <param name="drawCalls">The collected draw calls list.</param>
     /// <param name="pass">The draw pass (optional).</param>
-    void SortDrawCalls(const RenderContext& renderContext, bool reverseDistance, DrawCallsList& list, const RenderListBuffer<DrawCall>& drawCalls, DrawPass pass = DrawPass::All);
+    /// <param name="stable">If set to <c>true</c> draw batches will be additionally sorted to prevent any flickering, otherwise Depth Buffer will smooth out any non-stability in sorting.</param>
+    void SortDrawCalls(const RenderContext& renderContext, bool reverseDistance, DrawCallsList& list, const RenderListBuffer<DrawCall>& drawCalls, DrawPass pass = DrawPass::All, bool stable = false);
 
     /// <summary>
     /// Executes the collected draw calls.

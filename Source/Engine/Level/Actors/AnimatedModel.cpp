@@ -7,6 +7,8 @@
 #include "Engine/Animations/Animations.h"
 #include "Engine/Engine/Engine.h"
 #if USE_EDITOR
+#include "Engine/Core/Math/OrientedBoundingBox.h"
+#include "Engine/Core/Math/Matrix3x3.h"
 #include "Editor/Editor.h"
 #endif
 #include "Engine/Graphics/GPUContext.h"
@@ -1016,6 +1018,45 @@ void AnimatedModel::OnDebugDrawSelected()
 
     // Base
     ModelInstanceActor::OnDebugDrawSelected();
+}
+
+void AnimatedModel::OnDebugDraw()
+{
+    if (ShowDebugDrawSkeleton && SkinnedModel && AnimationGraph)
+    {
+        if (GraphInstance.NodesPose.IsEmpty())
+            PreInitSkinningData();
+        Matrix world;
+        GetLocalToWorldMatrix(world);
+
+        // Draw bounding box at the node locations
+        const float boxSize = Math::Min(1.0f, (float)_sphere.Radius / 100.0f);
+        OrientedBoundingBox localBox(Vector3(-boxSize), Vector3(boxSize));
+        for (int32 nodeIndex = 0; nodeIndex < GraphInstance.NodesPose.Count(); nodeIndex++)
+        {
+            Matrix transform = GraphInstance.NodesPose[nodeIndex] * world;
+            Float3 scale, translation;
+            Matrix3x3 rotation;
+            transform.Decompose(scale, rotation, translation);
+            transform = Matrix::Invert(Matrix::Scaling(scale)) * transform;
+            OrientedBoundingBox box = localBox * transform;
+            DEBUG_DRAW_WIRE_BOX(box, Color::Green, 0, false);
+        }
+
+        // Nodes connections
+        for (int32 nodeIndex = 0; nodeIndex < SkinnedModel->Skeleton.Nodes.Count(); nodeIndex++)
+        {
+            int32 parentIndex = SkinnedModel->Skeleton.Nodes[nodeIndex].ParentIndex;
+            if (parentIndex != -1)
+            {
+                Float3 parentPos = (GraphInstance.NodesPose[parentIndex] * world).GetTranslation();
+                Float3 bonePos = (GraphInstance.NodesPose[nodeIndex] * world).GetTranslation();
+                DEBUG_DRAW_LINE(parentPos, bonePos, Color::Green, 0, false);
+            }
+        }
+    }
+
+    ModelInstanceActor::OnDebugDraw();
 }
 
 BoundingBox AnimatedModel::GetEditorBox() const

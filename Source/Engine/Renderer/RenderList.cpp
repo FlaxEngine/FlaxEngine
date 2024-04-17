@@ -27,6 +27,7 @@ namespace
     // Cached data for the draw calls sorting
     Array<uint64> SortingKeys[2];
     Array<int32> SortingIndices;
+    Array<DrawBatch> SortingBatches;
     Array<RenderList*> FreeRenderList;
 
     struct MemPoolEntry
@@ -594,12 +595,13 @@ namespace
     }
 }
 
-void RenderList::SortDrawCalls(const RenderContext& renderContext, bool reverseDistance, DrawCallsList& list, const RenderListBuffer<DrawCall>& drawCalls, DrawPass pass)
+void RenderList::SortDrawCalls(const RenderContext& renderContext, bool reverseDistance, DrawCallsList& list, const RenderListBuffer<DrawCall>& drawCalls, DrawPass pass, bool stable)
 {
     PROFILE_CPU();
     const auto* drawCallsData = drawCalls.Get();
     const auto* listData = list.Indices.Get();
     const int32 listSize = list.Indices.Count();
+    ZoneValue(listSize);
 
     // Peek shared memory
 #define PREPARE_CACHE(list) (list).Clear(); (list).Resize(listSize)
@@ -656,6 +658,7 @@ void RenderList::SortDrawCalls(const RenderContext& renderContext, bool reverseD
         }
 
         DrawBatch batch;
+        static_assert(sizeof(DrawBatch) == sizeof(uint64) * 2, "Fix the size of draw batch to optimize memory access.");
         batch.SortKey = sortedKeys[i];
         batch.StartIndex = i;
         batch.BatchSize = batchSize;
@@ -665,8 +668,12 @@ void RenderList::SortDrawCalls(const RenderContext& renderContext, bool reverseD
         i += batchSize;
     }
 
-    // Sort draw calls batches by depth
-    Sorting::QuickSort(list.Batches);
+    // When using depth buffer draw calls are already almost ideally sorted by Radix Sort but transparency needs more stability to prevent flickering
+    if (stable)
+    {
+        // Sort draw calls batches by depth
+        Sorting::MergeSort(list.Batches, &SortingBatches);
+    }
 }
 
 FORCE_INLINE bool CanUseInstancing(DrawPass pass)

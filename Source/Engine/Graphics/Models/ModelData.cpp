@@ -941,7 +941,19 @@ bool ModelData::Pack2AnimationHeader(WriteStream* stream, int32 animIndex) const
     }
 
     // Animation events
-    stream->WriteInt32(0);
+    stream->WriteInt32(anim.Events.Count());
+    for (auto& e : anim.Events)
+    {
+        stream->WriteString(e.First, 172);
+        stream->WriteInt32(e.Second.GetKeyframes().Count());
+        for (const auto& k : e.Second.GetKeyframes())
+        {
+            stream->WriteFloat(k.Time);
+            stream->WriteFloat(k.Value.Duration);
+            stream->WriteStringAnsi(k.Value.TypeName, 17);
+            stream->WriteJson(k.Value.JsonData);
+        }
+    }
 
     // Nested animations
     stream->WriteInt32(0);

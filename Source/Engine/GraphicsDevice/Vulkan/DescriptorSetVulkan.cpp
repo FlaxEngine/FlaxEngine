@@ -247,8 +247,7 @@ void TypedDescriptorPoolSetVulkan::Reset()
 
 DescriptorPoolSetContainerVulkan::DescriptorPoolSetContainerVulkan(GPUDeviceVulkan* device)
     : _device(device)
-    , _lastFrameUsed(Engine::FrameCount)
-    , _used(true)
+    , LastFrameUsed(Engine::FrameCount)
 {
 }
 
@@ -278,12 +277,6 @@ void DescriptorPoolSetContainerVulkan::Reset()
     }
 }
 
-void DescriptorPoolSetContainerVulkan::SetUsed(bool used)
-{
-    _used = used;
-    _lastFrameUsed = used ? Engine::FrameCount : _lastFrameUsed;
-}
-
 DescriptorPoolsManagerVulkan::DescriptorPoolsManagerVulkan(GPUDeviceVulkan* device)
     : _device(device)
 {
@@ -294,26 +287,21 @@ DescriptorPoolsManagerVulkan::~DescriptorPoolsManagerVulkan()
     _poolSets.ClearDelete();
 }
 
-DescriptorPoolSetContainerVulkan& DescriptorPoolsManagerVulkan::AcquirePoolSetContainer()
+DescriptorPoolSetContainerVulkan* DescriptorPoolsManagerVulkan::AcquirePoolSetContainer()
 {
     ScopeLock lock(_locker);
     for (auto* poolSet : _poolSets)
     {
-        if (poolSet->IsUnused())
+        if (poolSet->Refs == 0)
         {
-            poolSet->SetUsed(true);
+            poolSet->LastFrameUsed = Engine::FrameCount;
             poolSet->Reset();
-            return *poolSet;
+            return poolSet;
         }
     }
     const auto poolSet = New<DescriptorPoolSetContainerVulkan>(_device);
     _poolSets.Add(poolSet);
-    return *poolSet;
-}
-
-void DescriptorPoolsManagerVulkan::ReleasePoolSet(DescriptorPoolSetContainerVulkan& poolSet)
-{
-    poolSet.SetUsed(false);
+    return poolSet;
 }
 
 void DescriptorPoolsManagerVulkan::GC()
@@ -322,7 +310,7 @@ void DescriptorPoolsManagerVulkan::GC()
     for (int32 i = _poolSets.Count() - 1; i >= 0; i--)
     {
         const auto poolSet = _poolSets[i];
-        if (poolSet->IsUnused() && Engine::FrameCount - poolSet->GetLastFrameUsed() > VULKAN_RESOURCE_DELETE_SAFE_FRAMES_COUNT)
+        if (poolSet->Refs == 0 && Engine::FrameCount - poolSet->LastFrameUsed > VULKAN_RESOURCE_DELETE_SAFE_FRAMES_COUNT)
         {
             _poolSets.RemoveAt(i);
             Delete(poolSet);

@@ -168,6 +168,13 @@ public:
     API_FIELD(Attributes="EditorOrder(120), DefaultValue(null), EditorDisplay(\"Skinned Model\")")
     ScriptingObjectReference<Actor> RootMotionTarget;
 
+#if USE_EDITOR
+    /// <summary>
+    /// If checked, the skeleton pose will be shawn during debug shapes drawing.
+    /// </summary>
+    API_FIELD(Attributes="EditorOrder(200), EditorDisplay(\"Skinned Model\")") bool ShowDebugDrawSkeleton = false;
+#endif
+
 public:
     /// <summary>
     /// The graph instance data container. For dynamic usage only at runtime, not serialized.
@@ -416,6 +423,7 @@ public:
     void Draw(RenderContextBatch& renderContextBatch) override;
 #if USE_EDITOR
     void OnDebugDrawSelected() override;
+    void OnDebugDraw() override;
     BoundingBox GetEditorBox() const override;
 #endif
     bool IntersectsItself(const Ray& ray, Real& distance, Vector3& normal) override;

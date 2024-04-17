@@ -767,6 +767,10 @@ bool TextureTool::GetImageType(const StringView& path, ImageType& type)
     {
         type = ImageType::RAW;
     }
+    else if (extension == TEXT("exr"))
+    {
+        type = ImageType::EXR;
+    }
     else
     {
         LOG(Warning, "Unknown file type.");

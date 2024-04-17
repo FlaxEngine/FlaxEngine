@@ -324,10 +324,12 @@ void Engine::OnUpdate()
 
     // Call event
     Update();
-    UpdateGraph->Execute();
 
     // Update services
     EngineService::OnUpdate();
+
+    // Run async
+    UpdateGraph->Execute();
 }
 
 void Engine::OnLateUpdate()

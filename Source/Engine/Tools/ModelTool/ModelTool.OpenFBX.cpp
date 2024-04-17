@@ -103,7 +103,7 @@ struct OpenFbxImporterData
     Array<const ofbx::Material*> Materials;
     Array<MaterialSlotEntry> ImportedMaterials;
 
-    OpenFbxImporterData(const char* path, const ModelTool::Options& options, ofbx::IScene* scene)
+    OpenFbxImporterData(const String& path, const ModelTool::Options& options, ofbx::IScene* scene)
         : Scene(scene)
         , ScenePtr(scene)
         , Path(path)
@@ -1114,11 +1114,11 @@ static Float3 FbxVectorFromAxisAndSign(int axis, int sign)
     return { 0.f, 0.f, 0.f };
 }
 
-bool ModelTool::ImportDataOpenFBX(const char* path, ModelData& data, Options& options, String& errorMsg)
+bool ModelTool::ImportDataOpenFBX(const String& path, ModelData& data, Options& options, String& errorMsg)
 {
     // Import file
     Array<byte> fileData;
-    if (File::ReadAllBytes(String(path), fileData))
+    if (File::ReadAllBytes(path, fileData))
     {
         errorMsg = TEXT("Cannot load file.");
         return true;

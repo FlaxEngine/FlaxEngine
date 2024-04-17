@@ -2,6 +2,7 @@
 
 #include "CommandLine.h"
 #include "Engine/Core/Collections/Array.h"
+#include "Engine/Core/Utilities.h"
 #include <iostream>
 
 CommandLine::OptionsData CommandLine::Options;
@@ -81,7 +82,7 @@ bool CommandLine::Parse(const Char* cmdLine)
 		if (pos) \
 		{ \
 			len = ARRAY_COUNT(text) - 1; \
-			Platform::MemoryCopy(pos, pos + len, (end - pos - len) * 2); \
+			Utilities::UnsafeMemoryCopy(pos, pos + len, (end - pos - len) * 2); \
 			*(end - len) = 0; \
 			end -= len; \
 			Options.field = true; \
@@ -98,7 +99,7 @@ bool CommandLine::Parse(const Char* cmdLine)
 			} \
 			Options.field = String(argStart, static_cast<int32>(argEnd - argStart)); \
 			len = static_cast<int32>((argEnd - pos) + 1); \
-			Platform::MemoryCopy(pos, pos + len, (end - pos - len) * 2); \
+			Utilities::UnsafeMemoryCopy(pos, pos + len, (end - pos - len) * 2); \
 			*(end - len) = 0; \
 			end -= len; \
 		}
@@ -114,7 +115,7 @@ bool CommandLine::Parse(const Char* cmdLine)
             { \
 			    Options.field = String(argStart, static_cast<int32>(argEnd - argStart)); \
 			    len = static_cast<int32>((argEnd - pos) + 1); \
-			    Platform::MemoryCopy(pos, pos + len, (end - pos - len) * 2); \
+			    Utilities::UnsafeMemoryCopy(pos, pos + len, (end - pos - len) * 2); \
 			    *(end - len) = 0; \
 			    end -= len; \
 			} \

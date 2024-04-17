@@ -1,6 +1,5 @@
 // Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
-using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -181,6 +180,49 @@ namespace FlaxEditor.GUI.Timeline.Tracks
                 DurationFrames = IsContinuous ? Mathf.Max(DurationFrames, 2) : 1;
 
             base.OnDurationFramesChanged();
+        }
+
+        /// <inheritdoc />
+        public override bool ContainsPoint(ref Float2 location, bool precise = false)
+        {
+            if (Timeline.Zoom > 0.5f && !IsContinuous)
+            {
+                // Hit-test dot
+                var size = Height - 2.0f;
+                var rect = new Rectangle(new Float2(size * -0.5f) + Size * 0.5f, new Float2(size));
+                return rect.Contains(ref location);
+            }
+
+            return base.ContainsPoint(ref location, precise);
+        }
+
+        /// <inheritdoc />
+        public override void Draw()
+        {
+            if (Timeline.Zoom > 0.5f && !IsContinuous)
+            {
+                // Draw more visible dot for the event that maintains size even when zooming out
+                var style = Style.Current;
+                var icon = Editor.Instance.Icons.VisjectBoxClosed32;
+                var size = Height - 2.0f;
+                var rect = new Rectangle(new Float2(size * -0.5f) + Size * 0.5f, new Float2(size));
+                var outline = Color.Black; // Shadow
+                if (_isMoving)
+                    outline = style.SelectionBorder;
+                else if (IsMouseOver)
+                    outline = style.BorderHighlighted;
+                else if (Timeline.SelectedMedia.Contains(this))
+                    outline = style.BackgroundSelected;
+                Render2D.DrawSprite(icon, rect.MakeExpanded(6.0f), outline);
+                Render2D.DrawSprite(icon, rect, BackgroundColor);
+
+                DrawChildren();
+            }
+            else
+            {
+                // Default drawing
+                base.Draw();
+            }
         }
 
         /// <inheritdoc />

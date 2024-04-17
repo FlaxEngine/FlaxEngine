@@ -816,7 +816,7 @@ void BakeTransforms(FbxScene* scene)
     scene->GetRootNode()->ConvertPivotAnimationRecursive(nullptr, FbxNode::eDestinationPivot, frameRate, false);
 }
 
-bool ModelTool::ImportDataAutodeskFbxSdk(const char* path, ImportedModelData& data, Options& options, String& errorMsg)
+bool ModelTool::ImportDataAutodeskFbxSdk(const String& path, ImportedModelData& data, Options& options, String& errorMsg)
 {
     ScopeLock lock(FbxSdkManager::Locker);
 
@@ -836,7 +836,7 @@ bool ModelTool::ImportDataAutodeskFbxSdk(const char* path, ImportedModelData& da
     auto ios = FbxSdkManager::Manager->GetIOSettings();
     ios->SetBoolProp(IMP_FBX_MODEL, importMeshes);
     ios->SetBoolProp(IMP_FBX_ANIMATION, importAnimations);
-    if (!importer->Initialize(path, -1, ios))
+    if (!importer->Initialize(StringAnsi(path), -1, ios))
     {
         errorMsg = String::Format(TEXT("Failed to initialize FBX importer. {0}"), String(importer->GetStatus().GetErrorString()));
         return false;

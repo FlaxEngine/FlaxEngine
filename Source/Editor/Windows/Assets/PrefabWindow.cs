@@ -69,6 +69,11 @@ namespace FlaxEditor.Windows.Assets
         public readonly LocalSceneGraph Graph;
 
         /// <summary>
+        /// Indication of if the prefab window selection is locked on specific objects.
+        /// </summary>
+        public bool LockSelectedObjects = false;
+
+        /// <summary>
         /// Gets or sets a value indicating whether use live reloading for the prefab changes (applies prefab changes on modification by auto).
         /// </summary>
         public bool LiveReload

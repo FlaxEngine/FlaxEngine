@@ -31,12 +31,11 @@ public:
         if (Asset)
         {
             Asset->Locker.Lock();
-            if (Asset->_loadingTask == this)
+            if (Platform::AtomicRead(&Asset->_loadingTask) == (intptr)this)
             {
-                Asset->_loadFailed = true;
-                Asset->_isLoaded = false;
+                Platform::AtomicStore(&Asset->_loadState, (int64)Asset::LoadState::LoadFailed);
+                Platform::AtomicStore(&Asset->_loadingTask, 0);
                 LOG(Error, "Loading asset \'{0}\' result: {1}.", ToString(), ToString(Result::TaskFailed));
-                Asset->_loadingTask = nullptr;
             }
             Asset->Locker.Unlock();
         }
@@ -77,8 +76,8 @@ protected:
         if (Asset)
         {
             Asset->Locker.Lock();
-            if (Asset->_loadingTask == this)
-                Asset->_loadingTask = nullptr;
+            if (Platform::AtomicRead(&Asset->_loadingTask) == (intptr)this)
+                Platform::AtomicStore(&Asset->_loadingTask, 0);
             Asset->Locker.Unlock();
             Asset = nullptr;
         }
@@ -91,8 +90,8 @@ protected:
         if (Asset)
         {
             Asset->Locker.Lock();
-            if (Asset->_loadingTask == this)
-                Asset->_loadingTask = nullptr;
+            if (Platform::AtomicRead(&Asset->_loadingTask) == (intptr)this)
+                Platform::AtomicStore(&Asset->_loadingTask, 0);
             Asset->Locker.Unlock();
             Asset = nullptr;
         }

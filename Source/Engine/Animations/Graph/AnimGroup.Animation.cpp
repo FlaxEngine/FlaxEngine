@@ -25,7 +25,7 @@ namespace
     {
         for (int32 i = 0; i < nodes->Nodes.Count(); i++)
         {
-            nodes->Nodes[i].Orientation.Normalize();
+            nodes->Nodes.Get()[i].Orientation.Normalize();
         }
         if (rootMotionMode != RootMotionExtraction::NoExtraction)
         {
@@ -222,7 +222,7 @@ FORCE_INLINE void GetAnimSamplePos(bool loop, float length, float startTimePos, 
     prevPos = GetAnimPos(prevTimePos, startTimePos, loop, length);
 }
 
-void AnimGraphExecutor::ProcessAnimation(AnimGraphImpulse* nodes, AnimGraphNode* node, bool loop, float length, float pos, float prevPos, Animation* anim, float speed, float weight, ProcessAnimationMode mode)
+void AnimGraphExecutor::ProcessAnimation(AnimGraphImpulse* nodes, AnimGraphNode* node, bool loop, float length, float pos, float prevPos, Animation* anim, float speed, float weight, ProcessAnimationMode mode, BitArray<InlinedAllocation<8>>* usedNodes)
 {
     PROFILE_CPU_ASSET(anim);
 
@@ -240,9 +240,16 @@ void AnimGraphExecutor::ProcessAnimation(AnimGraphImpulse* nodes, AnimGraphNode*
     }
 
     // Evaluate nested animations
-    bool hasNested = false;
+    BitArray<InlinedAllocation<8>> usedNodesThis;
     if (anim->NestedAnims.Count() != 0)
     {
+        if (usedNodes == nullptr)
+        {
+            // Per-channel bit to indicate which channels were used by nested
+            usedNodesThis.Resize(nodes->Nodes.Count());
+            usedNodes = &usedNodesThis;
+        }
+
         for (auto& e : anim->NestedAnims)
         {
             const auto& nestedAnim = e.Second;
@@ -262,8 +269,7 @@ void AnimGraphExecutor::ProcessAnimation(AnimGraphImpulse* nodes, AnimGraphNode*
                 nestedAnimPrevPos = nestedAnimPrevPos * frameRateMatchScale;
                 GetAnimSamplePos(nestedAnim.Loop, nestedAnimLength, nestedAnim.StartTime, nestedAnimPrevPos, nestedAnimPos, nestedAnimPos, nestedAnimPrevPos);
 
-                ProcessAnimation(nodes, node, true, nestedAnimLength, nestedAnimPos, nestedAnimPrevPos, nestedAnim.Anim, 1.0f, weight, mode);
-                hasNested = true;
+                ProcessAnimation(nodes, node, true, nestedAnimLength, nestedAnimPos, nestedAnimPrevPos, nestedAnim.Anim, 1.0f, weight, mode, usedNodes);
             }
         }
     }
@@ -295,6 +301,15 @@ void AnimGraphExecutor::ProcessAnimation(AnimGraphImpulse* nodes, AnimGraphNode*
             {
                 RetargetSkeletonNode(mapping.SourceSkeleton->Skeleton, mapping.TargetSkeleton->Skeleton, sourceMapping, srcNode, i);
             }
+
+            // Mark node as used
+            if (usedNodes)
+                usedNodes->Set(i, true);
+        }
+        else if (usedNodes && usedNodes != &usedNodesThis)
+        {
+            // Skip for nested animations so other one or top-level anim will update remaining nodes
+            continue;
         }
 
         // Blend node
@@ -316,7 +331,7 @@ void AnimGraphExecutor::ProcessAnimation(AnimGraphImpulse* nodes, AnimGraphNode*
             dstNode.Scale = srcNode.Scale * weight;
             dstNode.Orientation = srcNode.Orientation * weight;
         }
-        else if (!hasNested)
+        else
         {
             dstNode = srcNode;
         }
@@ -1177,14 +1192,12 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
     {
         const float alpha = Math::Saturate((float)tryGetValue(node->GetBox(3), node->Values[0]));
         auto mask = node->Assets[0].As<SkeletonMask>();
-        auto maskAssetBox = node->GetBox(4); // 4 is the id of skeleton mask parameter node.
 
-        // Check if have some mask asset connected with the mask node
-        if (maskAssetBox->HasConnection())
+        // Use the mask connected with this node instead of default mask asset
+        auto maskAssetBox = node->TryGetBox(4);
+        if (maskAssetBox && maskAssetBox->HasConnection())
         {
             const Value assetBoxValue = tryGetValue(maskAssetBox, Value::Null);
-
-            // Use the mask connected with this node instead of default mask asset 
             if (assetBoxValue != Value::Null)
                 mask = (SkeletonMask*)assetBoxValue.AsAsset;
         }

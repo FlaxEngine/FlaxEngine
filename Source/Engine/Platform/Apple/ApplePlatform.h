@@ -45,21 +45,21 @@ public:
     {
         return __sync_fetch_and_add(dst, value);
     }
-    FORCE_INLINE static int32 AtomicRead(int32 volatile* dst)
+    FORCE_INLINE static int32 AtomicRead(int32 const volatile* dst)
     {
         return __atomic_load_n(dst, __ATOMIC_RELAXED);
     }
-    FORCE_INLINE static int64 AtomicRead(int64 volatile* dst)
+    FORCE_INLINE static int64 AtomicRead(int64 const volatile* dst)
     {
         return __atomic_load_n(dst, __ATOMIC_RELAXED);
     }
     FORCE_INLINE static void AtomicStore(int32 volatile* dst, int32 value)
     {
-        __atomic_store(dst, &value, __ATOMIC_SEQ_CST);
+        __atomic_store_n((volatile int32*)dst, value, __ATOMIC_RELAXED);
     }
     FORCE_INLINE static void AtomicStore(int64 volatile* dst, int64 value)
     {
-        __atomic_store(dst, &value, __ATOMIC_SEQ_CST);
+        __atomic_store_n((volatile int64*)dst, value, __ATOMIC_RELAXED);
     }
     FORCE_INLINE static void Prefetch(void const* ptr)
     {

@@ -212,8 +212,6 @@ class DescriptorPoolSetContainerVulkan
 private:
     GPUDeviceVulkan* _device;
     Dictionary<uint32, TypedDescriptorPoolSetVulkan*> _typedDescriptorPools;
-    uint64 _lastFrameUsed;
-    bool _used;
 
 public:
     DescriptorPoolSetContainerVulkan(GPUDeviceVulkan* device);
@@ -222,17 +220,9 @@ public:
 public:
     TypedDescriptorPoolSetVulkan* AcquireTypedPoolSet(const DescriptorSetLayoutVulkan& layout);
     void Reset();
-    void SetUsed(bool used);
 
-    bool IsUnused() const
-    {
-        return !_used;
-    }
-
-    uint64 GetLastFrameUsed() const
-    {
-        return _lastFrameUsed;
-    }
+    mutable uint64 Refs = 0;
+    mutable uint64 LastFrameUsed;
 };
 
 class DescriptorPoolsManagerVulkan
@@ -246,8 +236,7 @@ public:
     DescriptorPoolsManagerVulkan(GPUDeviceVulkan* device);
     ~DescriptorPoolsManagerVulkan();
 
-    DescriptorPoolSetContainerVulkan& AcquirePoolSetContainer();
-    void ReleasePoolSet(DescriptorPoolSetContainerVulkan& poolSet);
+    DescriptorPoolSetContainerVulkan* AcquirePoolSetContainer();
     void GC();
 };
 

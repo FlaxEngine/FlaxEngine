@@ -497,7 +497,9 @@ void ReadStream::Read(Variant& data)
         break;
     }
     default:
-        CRASH;
+        _hasError = true;
+        LOG(Error, "Invalid Variant type. Corrupted data.");
+        break;
     }
 }
 
@@ -944,6 +946,13 @@ void WriteStream::WriteJson(ISerializable* obj, const void* otherObj)
     }
     else
         WriteInt32(0);
+}
+
+void WriteStream::WriteJson(const StringAnsiView& json)
+{
+    WriteInt32(FLAXENGINE_VERSION_BUILD);
+    WriteInt32((int32)json.Length());
+    WriteBytes((byte*)json.Get(), (int32)json.Length());
 }
 
 void WriteStream::WriteString(const StringView& data)

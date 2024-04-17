@@ -9,9 +9,8 @@
 
 void GPUTask::Execute(GPUTasksContext* context)
 {
-    // Begin
     ASSERT(IsQueued() && _context == nullptr);
-    _state = TaskState::Running;
+    SetState(TaskState::Running);
 
     // Perform an operation
     const auto result = run(context);
@@ -19,7 +18,7 @@ void GPUTask::Execute(GPUTasksContext* context)
     // Process result
     if (IsCancelRequested())
     {
-        _state = TaskState::Canceled;
+        SetState(TaskState::Canceled);
     }
     else if (result != Result::Ok)
     {

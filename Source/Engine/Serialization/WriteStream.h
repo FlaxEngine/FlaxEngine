@@ -233,6 +233,7 @@ public:
     /// <param name="obj">The object to serialize.</param>
     /// <param name="otherObj">The instance of the object to compare with and serialize only the modified properties. If null, then serialize all properties.</param>
     void WriteJson(ISerializable* obj, const void* otherObj = nullptr);
+    void WriteJson(const StringAnsiView& json);
 
 public:
     // Writes String to the stream
