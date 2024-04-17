@@ -6,6 +6,7 @@ using System.IO;
 using FlaxEditor.GUI;
 using FlaxEditor.GUI.Input;
 using FlaxEditor.Scripting;
+using FlaxEditor.Surface.Undo;
 using FlaxEngine;
 using FlaxEngine.GUI;
 
@@ -18,6 +19,7 @@ namespace FlaxEditor.Surface.Archetypes
     [HideInEditor]
     public abstract class BlendPointsEditor : ContainerControl
     {
+        private readonly Animation.MultiBlend _node;
         private readonly bool _is2D;
         private Float2 _rangeX;
         private Float2 _rangeY;
@@ -34,7 +36,8 @@ namespace FlaxEditor.Surface.Archetypes
             private static Matrix3x3 _transform = Matrix3x3.RotationZ(45.0f * Mathf.DegreesToRadians) * Matrix3x3.Translation2D(4.0f, 0.5f);
             private readonly BlendPointsEditor _editor;
             private readonly int _index;
-            private bool _isMouseDown;
+            private bool _isMouseDown, _mouseMoved;
+            private object[] _mouseMoveStartValues;
 
             /// <summary>
             /// The default size for the blend points.
@@ -51,6 +54,18 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 _editor = editor;
                 _index = index;
+            }
+
+            private void EndMove()
+            {
+                _isMouseDown = false;
+                EndMouseCapture();
+                if (_mouseMoveStartValues != null)
+                {
+                    // Add undo action
+                    _editor._node.Surface.AddBatchedUndoAction(new EditNodeValuesAction(_editor._node, _mouseMoveStartValues, true));
+                    _mouseMoveStartValues = null;
+                }
             }
 
             /// <inheritdoc />
@@ -80,6 +95,8 @@ namespace FlaxEditor.Surface.Archetypes
                 {
                     Focus();
                     _isMouseDown = true;
+                    _mouseMoved = false;
+                    _mouseMoveStartValues = null;
                     StartMouseCapture();
                     return true;
                 }
@@ -92,8 +109,7 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 if (button == MouseButton.Left && _isMouseDown)
                 {
-                    _isMouseDown = false;
-                    EndMouseCapture();
+                    EndMove();
                     return true;
                 }
 
@@ -105,6 +121,13 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 if (_isMouseDown)
                 {
+                    if (!_mouseMoved)
+                    {
+                        // Capture initial state for undo
+                        _mouseMoved = true;
+                        _mouseMoveStartValues = _editor._node.Surface.Undo != null ? (object[])_editor._node.Values.Clone() : null;
+                    }
+
                     _editor.SetLocation(_index, _editor.BlendPointPosToBlendSpacePos(Location + location));
                 }
 
@@ -116,8 +139,7 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 if (_isMouseDown)
                 {
-                    _isMouseDown = false;
-                    EndMouseCapture();
+                    EndMove();
                 }
 
                 base.OnMouseLeave();
@@ -128,8 +150,7 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 if (_isMouseDown)
                 {
-                    _isMouseDown = false;
-                    EndMouseCapture();
+                    EndMove();
                 }
 
                 base.OnLostFocus();
@@ -152,14 +173,16 @@ namespace FlaxEditor.Surface.Archetypes
         /// <summary>
         /// Initializes a new instance of the <see cref="BlendPointsEditor"/> class.
         /// </summary>
+        /// <param name="MultiBlend">The node.</param>
         /// <param name="is2D">The value indicating whether blend space is 2D, otherwise it is 1D.</param>
         /// <param name="x">The X location.</param>
         /// <param name="y">The Y location.</param>
         /// <param name="width">The width.</param>
         /// <param name="height">The height.</param>
-        public BlendPointsEditor(bool is2D, float x, float y, float width, float height)
+        public BlendPointsEditor(Animation.MultiBlend node, bool is2D, float x, float y, float width, float height)
         : base(x, y, width, height)
         {
+            _node = node;
             _is2D = is2D;
         }
 
@@ -330,11 +353,10 @@ namespace FlaxEditor.Surface.Archetypes
                 Render2D.DrawLine(new Float2(1, y), new Float2(rect.Width - 2, y), gridColor);
             }
 
-            // Base
             base.Draw();
 
             // Frame
-            Render2D.DrawRectangle(new Rectangle(1, 1, rect.Width - 2, rect.Height - 2), containsFocus ? style.ProgressNormal : style.BackgroundSelected);
+            Render2D.DrawRectangle(new Rectangle(1, 1, rect.Width - 2, rect.Height - 2), containsFocus ? style.BackgroundSelected : style.ForegroundDisabled);
         }
     }
 
@@ -585,7 +607,7 @@ namespace FlaxEditor.Surface.Archetypes
                 /// <param name="width">The width.</param>
                 /// <param name="height">The height.</param>
                 public Editor(MultiBlend1D node, float x, float y, float width, float height)
-                : base(false, x, y, width, height)
+                : base(node, false, x, y, width, height)
                 {
                     _node = node;
                 }
@@ -719,7 +741,7 @@ namespace FlaxEditor.Surface.Archetypes
                 /// <param name="width">The width.</param>
                 /// <param name="height">The height.</param>
                 public Editor(MultiBlend2D node, float x, float y, float width, float height)
-                : base(true, x, y, width, height)
+                : base(node, true, x, y, width, height)
                 {
                     _node = node;
                 }
