@@ -192,8 +192,11 @@ int32 Engine::Main(const Char* cmdLine)
             OnUnpause();
         }
 
+        // Use the same time for all ticks to improve synchronization
+        const double time = Platform::GetTimeSeconds();
+
         // Update game logic
-        if (Time::OnBeginUpdate())
+        if (Time::OnBeginUpdate(time))
         {
             OnUpdate();
             OnLateUpdate();
@@ -201,7 +204,7 @@ int32 Engine::Main(const Char* cmdLine)
         }
 
         // Start physics simulation
-        if (Time::OnBeginPhysics())
+        if (Time::OnBeginPhysics(time))
         {
             OnFixedUpdate();
             OnLateFixedUpdate();
@@ -209,7 +212,7 @@ int32 Engine::Main(const Char* cmdLine)
         }
 
         // Draw frame
-        if (Time::OnBeginDraw())
+        if (Time::OnBeginDraw(time))
         {
             OnDraw();
             Time::OnEndDraw();
