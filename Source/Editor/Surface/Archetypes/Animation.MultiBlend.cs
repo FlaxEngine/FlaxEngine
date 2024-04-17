@@ -795,11 +795,12 @@ namespace FlaxEditor.Surface.Archetypes
                 };
                 _animationY.ValueChanged += OnAnimationYChanged;
 
+                var size = Width - FlaxEditor.Surface.Constants.NodeMarginX * 2.0f;
                 _editor = new Editor(this,
                                      FlaxEditor.Surface.Constants.NodeMarginX,
                                      _animationY.Bottom + 4.0f,
-                                     Width - FlaxEditor.Surface.Constants.NodeMarginX * 2.0f,
-                                     120.0f);
+                                     size,
+                                     size);
                 _editor.Parent = this;
             }
 
