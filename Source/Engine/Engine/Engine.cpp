@@ -60,6 +60,7 @@ namespace EngineImpl
 
 DateTime Engine::StartupTime;
 bool Engine::HasFocus = false;
+uint64 Engine::UpdateCount = 0;
 uint64 Engine::FrameCount = 0;
 Action Engine::FixedUpdate;
 Action Engine::Update;
@@ -295,6 +296,8 @@ void Engine::OnLateFixedUpdate()
 void Engine::OnUpdate()
 {
     PROFILE_CPU_NAMED("Update");
+
+    UpdateCount++;
 
     // Update application (will gather data and other platform related events)
     {

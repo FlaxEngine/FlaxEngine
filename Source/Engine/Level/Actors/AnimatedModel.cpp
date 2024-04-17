@@ -55,10 +55,10 @@ void AnimatedModel::UpdateAnimation()
         || !IsActiveInHierarchy()
         || SkinnedModel == nullptr
         || !SkinnedModel->IsLoaded()
-        || _lastUpdateFrame == Engine::FrameCount
+        || _lastUpdateFrame == Engine::UpdateCount
         || _masterPose)
         return;
-    _lastUpdateFrame = Engine::FrameCount;
+    _lastUpdateFrame = Engine::UpdateCount;
 
     if (AnimationGraph && AnimationGraph->IsLoaded() && AnimationGraph->Graph.IsReady())
     {
