@@ -21,8 +21,8 @@ namespace FlaxEditor.Surface.Archetypes
     {
         private readonly Animation.MultiBlend _node;
         private readonly bool _is2D;
-        private Float2 _rangeX;
-        private Float2 _rangeY;
+        private Float2 _rangeX, _rangeY;
+        private Float2 _debugPos = Float2.Minimum;
         private readonly BlendPoint[] _blendPoints = new BlendPoint[Animation.MultiBlend.MaxAnimationsCount];
         private readonly Guid[] _pointsAnims = new Guid[Animation.MultiBlend.MaxAnimationsCount];
         private readonly Float2[] _pointsLocations = new Float2[Animation.MultiBlend.MaxAnimationsCount];
@@ -419,6 +419,26 @@ namespace FlaxEditor.Surface.Archetypes
                 }
             }
 
+            // Debug current playback position
+            if (((AnimGraphSurface)_node.Surface).TryGetTraceEvent(_node, out var traceEvent))
+            {
+                if (_is2D)
+                {
+                    unsafe
+                    {
+                        // Unpack xy from 32-bits
+                        Half2 packed = *(Half2*)&traceEvent.Value;
+                        _debugPos = (Float2)packed;
+                    }
+                }
+                else
+                    _debugPos = new Float2(traceEvent.Value, 0.0f);
+            }
+            else
+            {
+                _debugPos = Float2.Minimum;
+            }
+
             base.Update(deltaTime);
         }
 
@@ -557,6 +577,19 @@ namespace FlaxEditor.Surface.Archetypes
             }
 
             base.Draw();
+
+            // Draw debug position
+            if (_debugPos.X > float.MinValue)
+            {
+                // Draw dot with outline
+                var icon = Editor.Instance.Icons.VisjectBoxOpen32;
+                var size = BlendPoint.DefaultSize;
+                var debugPos = BlendSpacePosToBlendPointPos(_debugPos);
+                var debugRect = new Rectangle(debugPos + new Float2(size * -0.5f) + size * 0.5f, new Float2(size));
+                var outline = Color.Black; // Shadow
+                Render2D.DrawSprite(icon, debugRect.MakeExpanded(2.0f), outline);
+                Render2D.DrawSprite(icon, debugRect, style.ProgressNormal);
+            }
 
             // Frame
             var frameColor = containsFocus ? style.BackgroundSelected : (IsMouseOver ? style.ForegroundGrey : style.ForegroundDisabled);

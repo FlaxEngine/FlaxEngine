@@ -1275,6 +1275,13 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
         float x = (float)tryGetValue(node->GetBox(4), Value::Zero);
         x = Math::Clamp(x, range.X, range.Y);
 
+        // Add to trace
+        if (context.Data->EnableTracing)
+        {
+            auto& trace = context.AddTraceEvent(node);
+            trace.Value = x;
+        }
+
         // Check if need to evaluate multi blend length
         if (data.Length < 0)
             ComputeMultiBlendLength(data.Length, node);
@@ -1367,6 +1374,14 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
         // Get axis Y
         float y = (float)tryGetValue(node->GetBox(5), Value::Zero);
         y = Math::Clamp(y, range.Z, range.W);
+
+        // Add to trace
+        if (context.Data->EnableTracing)
+        {
+            auto& trace = context.AddTraceEvent(node);
+            const Half2 packed(x, y); // Pack xy into 32-bits
+            *(uint32*)&trace.Value = *(uint32*)&packed;
+        }
 
         // Check if need to evaluate multi blend length
         if (data.Length < 0)

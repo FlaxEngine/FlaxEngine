@@ -174,7 +174,6 @@ bool AnimGraphBase::onNodeLoaded(Node* n)
         {
             ADD_BUCKET(MultiBlendBucketInit);
             n->Data.MultiBlend1D.Length = -1;
-            const Float4 range = n->Values[0].AsFloat4();
             for (int32 i = 0; i < ANIM_GRAPH_MULTI_BLEND_MAX_ANIMS; i++)
             {
                 n->Assets[i] = Content::LoadAsync<Animation>((Guid)n->Values[i * 2 + 5]);
@@ -192,7 +191,6 @@ bool AnimGraphBase::onNodeLoaded(Node* n)
             // Get blend points locations
             Array<Float2, FixedAllocation<ANIM_GRAPH_MULTI_BLEND_MAX_ANIMS + 3>> vertices;
             byte vertexIndexToAnimIndex[ANIM_GRAPH_MULTI_BLEND_MAX_ANIMS];
-            const Float4 range = n->Values[0].AsFloat4();
             for (int32 i = 0; i < ANIM_GRAPH_MULTI_BLEND_MAX_ANIMS; i++)
             {
                 n->Assets[i] = (Asset*)Content::LoadAsync<Animation>((Guid)n->Values[i * 2 + 5]);
