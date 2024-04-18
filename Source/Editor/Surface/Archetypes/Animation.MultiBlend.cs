@@ -66,7 +66,8 @@ namespace FlaxEditor.Surface.Archetypes
                     _editor._node.Surface.AddBatchedUndoAction(new EditNodeValuesAction(_editor._node, _mouseMoveStartValues, true));
                     _mouseMoveStartValues = null;
                 }
-                _editor._node.Surface.MarkAsEdited();
+                if (_mouseMoved)
+                    _editor._node.Surface.MarkAsEdited();
             }
 
             /// <inheritdoc />
@@ -478,14 +479,47 @@ namespace FlaxEditor.Surface.Archetypes
             SetAsset((int)b.Tag, Guid.Empty);
         }
 
+        private void DrawAxis(bool vertical, Float2 start, Float2 end, ref Color gridColor, ref Color labelColor, Font labelFont, float value, bool isLast)
+        {
+            // Draw line
+            Render2D.DrawLine(start, end, gridColor);
+
+            // Draw label
+            var labelWidth = 50.0f;
+            var labelHeight = 10.0f;
+            var labelMargin = 2.0f;
+            string label = Utils.RoundTo2DecimalPlaces(value).ToString(System.Globalization.CultureInfo.InvariantCulture);
+            var hAlign = TextAlignment.Near;
+            Rectangle labelRect;
+            if (vertical)
+            {
+                labelRect = new Rectangle(start.X + labelMargin * 2, start.Y, labelWidth, labelHeight);
+                if (isLast)
+                    return; // Don't overlap with the first horizontal label
+            }
+            else
+            {
+                labelRect = new Rectangle(start.X + labelMargin, start.Y - labelHeight - labelMargin, labelWidth, labelHeight);
+                if (isLast)
+                {
+                    labelRect.X = start.X - labelMargin - labelRect.Width;
+                    hAlign = TextAlignment.Far;
+                }
+            }
+            Render2D.DrawText(labelFont, label, labelRect, labelColor, hAlign, TextAlignment.Center, TextWrapping.NoWrap, 1.0f, 0.7f);
+        }
+
         /// <inheritdoc />
         public override void Draw()
         {
-            // Cache data
             var style = Style.Current;
             var rect = new Rectangle(Float2.Zero, Size);
             var containsFocus = ContainsFocus;
             GetPointsArea(out var pointsArea);
+            var data0 = (Float4)_node.Values[0];
+            var rangeX = new Float2(data0.X, data0.Y);
+            var rangeY = _is2D ? new Float2(data0.Z, data0.W) : Float2.One;
+            var grid = new Float2(Mathf.Abs(rangeX.Y - rangeX.X) * 0.01f, Mathf.Abs(rangeY.X - rangeY.Y) * 0.01f);
 
             // Background
             Render2D.DrawRectangle(rect, IsMouseOver ? style.TextBoxBackgroundSelected : style.TextBoxBackground);
@@ -494,19 +528,26 @@ namespace FlaxEditor.Surface.Archetypes
             // Grid
             int splits = 10;
             var gridColor = style.TextBoxBackgroundSelected * 1.1f;
+            var labelColor = style.ForegroundDisabled;
+            var labelFont = style.FontSmall;
             //var blendArea = BlendAreaRect;
             var blendArea = pointsArea;
-            for (int i = 0; i < splits; i++)
+
+            for (int i = 0; i <= splits; i++)
             {
-                float x = blendArea.Left + blendArea.Width * i / splits;
-                Render2D.DrawLine(new Float2(x, 1), new Float2(x, rect.Height - 2), gridColor);
+                float alpha = (float)i / splits;
+                float x = blendArea.Left + blendArea.Width * alpha;
+                float value = Mathf.Lerp(rangeX.X, rangeX.Y, alpha);
+                DrawAxis(false, new Float2(x, rect.Height - 2), new Float2(x, 1), ref gridColor, ref labelColor, labelFont, value, i == splits);
             }
             if (_is2D)
             {
-                for (int i = 0; i < splits; i++)
+                for (int i = 0; i <= splits; i++)
                 {
-                    float y = blendArea.Top + blendArea.Height * i / splits;
-                    Render2D.DrawLine(new Float2(1, y), new Float2(rect.Width - 2, y), gridColor);
+                    float alpha = (float)i / splits;
+                    float y = blendArea.Top + blendArea.Height * alpha;
+                    float value = Mathf.Lerp(rangeY.X, rangeY.Y, alpha);
+                    DrawAxis(true, new Float2(1, y), new Float2(rect.Width - 2, y), ref gridColor, ref labelColor, labelFont, value, i == splits);
                 }
             }
             else
