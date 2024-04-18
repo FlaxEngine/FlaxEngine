@@ -33,7 +33,6 @@ namespace FlaxEditor.Surface.Archetypes
         /// <seealso cref="FlaxEngine.GUI.Control" />
         protected class BlendPoint : Control
         {
-            private static Matrix3x3 _transform = Matrix3x3.RotationZ(45.0f * Mathf.DegreesToRadians) * Matrix3x3.Translation2D(4.0f, 0.5f);
             private readonly BlendPointsEditor _editor;
             private readonly int _index;
             private bool _isMouseDown, _mouseMoved;
@@ -79,13 +78,20 @@ namespace FlaxEditor.Surface.Archetypes
             /// <inheritdoc />
             public override void Draw()
             {
-                // Cache data
-                var isSelected = _editor._node.SelectedAnimationIndex == _index;
-
-                // Draw rotated rectangle
-                Render2D.PushTransform(ref _transform);
-                Render2D.FillRectangle(new Rectangle(0, 0, 5, 5), isSelected ? Color.Orange : Color.BlueViolet);
-                Render2D.PopTransform();
+                // Draw dot with outline
+                var style = Style.Current;
+                var icon = Editor.Instance.Icons.VisjectBoxClosed32;
+                var size = Height;
+                var rect = new Rectangle(new Float2(size * -0.5f) + Size * 0.5f, new Float2(size));
+                var outline = Color.Black; // Shadow
+                if (_isMouseDown)
+                    outline = style.SelectionBorder;
+                else if (IsMouseOver)
+                    outline = style.BorderHighlighted;
+                else if (_editor._node.SelectedAnimationIndex == _index)
+                    outline = style.BackgroundSelected;
+                Render2D.DrawSprite(icon, rect.MakeExpanded(4.0f), outline);
+                Render2D.DrawSprite(icon, rect, style.Foreground);
             }
 
             /// <inheritdoc />
