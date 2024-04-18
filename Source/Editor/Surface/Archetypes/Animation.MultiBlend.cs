@@ -275,7 +275,9 @@ namespace FlaxEditor.Surface.Archetypes
             GetData(out _rangeX, out _rangeY, _pointsAnims, _pointsLocations);
             for (int i = 0; i < Animation.MultiBlend.MaxAnimationsCount; i++)
             {
-                if (_pointsAnims[i] != Guid.Empty)
+                var animId = _pointsAnims[i];
+                var location = _pointsLocations[i];
+                if (animId != Guid.Empty)
                 {
                     if (_blendPoints[i] == null)
                     {
@@ -287,7 +289,13 @@ namespace FlaxEditor.Surface.Archetypes
                     }
 
                     // Update blend point
-                    _blendPoints[i].Location = BlendSpacePosToBlendPointPos(_pointsLocations[i]);
+                    _blendPoints[i].Location = BlendSpacePosToBlendPointPos(location);
+                    var asset = Editor.Instance.ContentDatabase.FindAsset(animId);
+                    var tooltip = asset?.ShortName ?? string.Empty;
+                    tooltip += "\nX: " + location.X;
+                    if (_is2D)
+                        tooltip += "\nY: " + location.Y;
+                    _blendPoints[i].TooltipText = tooltip;
                 }
                 else
                 {
