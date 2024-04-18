@@ -35,6 +35,7 @@ namespace FlaxEditor.Surface.Archetypes
         {
             private readonly BlendPointsEditor _editor;
             private readonly int _index;
+            private Float2 _mousePosOffset;
             private bool _isMouseDown, _mouseMoved;
             private object[] _mouseMoveStartValues;
 
@@ -65,6 +66,7 @@ namespace FlaxEditor.Surface.Archetypes
                     _editor._node.Surface.AddBatchedUndoAction(new EditNodeValuesAction(_editor._node, _mouseMoveStartValues, true));
                     _mouseMoveStartValues = null;
                 }
+                _editor._node.Surface.MarkAsEdited();
             }
 
             /// <inheritdoc />
@@ -103,6 +105,7 @@ namespace FlaxEditor.Surface.Archetypes
                     _isMouseDown = true;
                     _mouseMoved = false;
                     _mouseMoveStartValues = null;
+                    _mousePosOffset = -location;
                     StartMouseCapture();
                     return true;
                 }
@@ -134,7 +137,7 @@ namespace FlaxEditor.Surface.Archetypes
                         _mouseMoveStartValues = _editor._node.Surface.Undo != null ? (object[])_editor._node.Values.Clone() : null;
                     }
 
-                    var newLocation = Location + location;
+                    var newLocation = Location + location + _mousePosOffset;
                     newLocation = _editor.BlendPointPosToBlendSpacePos(newLocation);
                     if (Root != null && Root.GetKey(KeyboardKeys.Control))
                     {
@@ -309,7 +312,6 @@ namespace FlaxEditor.Surface.Archetypes
                 dataA.Y = Mathf.Clamp(location.Y, ranges.Z, ranges.W);
 
             _node.Values[4 + index * 2] = dataA;
-            _node.Surface.MarkAsEdited();
 
             _node.UpdateUI();
         }
