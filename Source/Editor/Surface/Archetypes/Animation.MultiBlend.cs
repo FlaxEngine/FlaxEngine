@@ -128,7 +128,17 @@ namespace FlaxEditor.Surface.Archetypes
                         _mouseMoveStartValues = _editor._node.Surface.Undo != null ? (object[])_editor._node.Values.Clone() : null;
                     }
 
-                    _editor.SetLocation(_index, _editor.BlendPointPosToBlendSpacePos(Location + location));
+                    var newLocation = Location + location;
+                    newLocation = _editor.BlendPointPosToBlendSpacePos(newLocation);
+                    if (Root != null && Root.GetKey(KeyboardKeys.Control))
+                    {
+                        var data0 = (Float4)_editor._node.Values[0];
+                        var rangeX = new Float2(data0.X, data0.Y);
+                        var rangeY = _editor._is2D ? new Float2(data0.Z, data0.W) : Float2.One;
+                        var grid = new Float2(Mathf.Abs(rangeX.Y - rangeX.X) * 0.01f, Mathf.Abs(rangeY.X - rangeY.Y) * 0.01f);
+                        newLocation = Float2.SnapToGrid(newLocation, grid);
+                    }
+                    _editor.SetLocation(_index, newLocation);
                 }
 
                 base.OnMouseMove(location);
