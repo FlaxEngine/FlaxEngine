@@ -17,7 +17,7 @@ namespace FlaxEditor.Surface.Archetypes
     /// </summary>
     /// <seealso cref="FlaxEngine.GUI.ContainerControl" />
     [HideInEditor]
-    public abstract class BlendPointsEditor : ContainerControl
+    public class BlendPointsEditor : ContainerControl
     {
         private readonly Animation.MultiBlend _node;
         private readonly bool _is2D;
@@ -73,14 +73,14 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 base.OnGotFocus();
 
-                _editor.SelectedIndex = _index;
+                _editor._node.SelectedAnimationIndex = _index;
             }
 
             /// <inheritdoc />
             public override void Draw()
             {
                 // Cache data
-                var isSelected = _editor.SelectedIndex == _index;
+                var isSelected = _editor._node.SelectedAnimationIndex == _index;
 
                 // Draw rotated rectangle
                 Render2D.PushTransform(ref _transform);
@@ -173,7 +173,7 @@ namespace FlaxEditor.Surface.Archetypes
         /// <summary>
         /// Initializes a new instance of the <see cref="BlendPointsEditor"/> class.
         /// </summary>
-        /// <param name="MultiBlend">The node.</param>
+        /// <param name="node">The node.</param>
         /// <param name="is2D">The value indicating whether blend space is 2D, otherwise it is 1D.</param>
         /// <param name="x">The X location.</param>
         /// <param name="y">The Y location.</param>
@@ -193,19 +193,110 @@ namespace FlaxEditor.Surface.Archetypes
         /// <param name="rangeY">The space range for Y axis (X-width, Y-height).</param>
         /// <param name="pointsAnims">The points anims (input array to fill of size equal 14).</param>
         /// <param name="pointsLocations">The points locations (input array to fill of size equal 14).</param>
-        public abstract void GetData(out Float2 rangeX, out Float2 rangeY, Guid[] pointsAnims, Float2[] pointsLocations);
+        public void GetData(out Float2 rangeX, out Float2 rangeY, Guid[] pointsAnims, Float2[] pointsLocations)
+        {
+            var data0 = (Float4)_node.Values[0];
+            rangeX = new Float2(data0.X, data0.Y);
+            rangeY = _is2D ? new Float2(data0.Z, data0.W) : Float2.Zero;
+            for (int i = 0; i < Animation.MultiBlend.MaxAnimationsCount; i++)
+            {
+                var dataA = (Float4)_node.Values[4 + i * 2];
+                var dataB = (Guid)_node.Values[5 + i * 2];
+
+                pointsAnims[i] = dataB;
+                pointsLocations[i] = new Float2(Mathf.Clamp(dataA.X, rangeX.X, rangeX.Y), _is2D ? Mathf.Clamp(dataA.Y, rangeY.X, rangeY.Y) : 0.0f);
+            }
+        }
+
+        private void AddAsset(Float2 location)
+        {
+            // Reuse existing animation
+            Guid id = Guid.Empty;
+            for (int i = 0; i < Animation.MultiBlend.MaxAnimationsCount; i++)
+            {
+                id = (Guid)_node.Values[5 + i * 2];
+                if (id != Guid.Empty)
+                    break;
+            }
+            if (id == Guid.Empty)
+            {
+                // Just use the first anim from project, user will change it
+                var ids = FlaxEngine.Content.GetAllAssetsByType(typeof(FlaxEngine.Animation));
+                if (ids.Length != 0)
+                    id = ids[0];
+                else
+                    return;
+            }
+
+            AddAsset(id, location);
+        }
 
         /// <summary>
-        /// Gets or sets the index of the selected blend point.
+        /// Sets the blend point asset.
         /// </summary>
-        public abstract int SelectedIndex { get; set; }
+        /// <param name="asset">The asset.</param>
+        /// <param name="location">The location.</param>
+        public void AddAsset(Guid asset, Float2 location)
+        {
+            // Find the first free slot
+            var values = (object[])_node.Values.Clone();
+            var index = 0;
+            for (; index < Animation.MultiBlend.MaxAnimationsCount; index++)
+            {
+                var dataB = (Guid)_node.Values[5 + index * 2];
+                if (dataB == Guid.Empty)
+                    break;
+            }
+            if (index == Animation.MultiBlend.MaxAnimationsCount)
+                return; // TODO: unlimited amount of blend points
+
+            values[4 + index * 2] = new Float4(location.X, _is2D ? location.Y : 0.0f, 0, 1.0f);
+            values[5 + index * 2] = asset;
+            _node.SetValues(values);
+
+            _node.UpdateUI();
+        }
+
+        /// <summary>
+        /// Sets the blend point asset.
+        /// </summary>
+        /// <param name="index">The index.</param>
+        /// <param name="asset">The asset.</param>
+        /// <param name="withUndo">True to use undo action.</param>
+        public void SetAsset(int index, Guid asset, bool withUndo = true)
+        {
+            if (withUndo)
+            {
+                _node.SetValue(5 + index * 2, asset);
+            }
+            else
+            {
+                _node.Values[5 + index * 2] = asset;
+                _node.Surface.MarkAsEdited();
+            }
+
+            _node.UpdateUI();
+        }
 
         /// <summary>
         /// Sets the blend point location.
         /// </summary>
         /// <param name="index">The index.</param>
         /// <param name="location">The location.</param>
-        public abstract void SetLocation(int index, Float2 location);
+        public void SetLocation(int index, Float2 location)
+        {
+            var dataA = (Float4)_node.Values[4 + index * 2];
+            var ranges = (Float4)_node.Values[0];
+
+            dataA.X = Mathf.Clamp(location.X, ranges.X, ranges.Y);
+            if (_is2D)
+                dataA.Y = Mathf.Clamp(location.Y, ranges.Z, ranges.W);
+
+            _node.Values[4 + index * 2] = dataA;
+            _node.Surface.MarkAsEdited();
+
+            _node.UpdateUI();
+        }
 
         /// <summary>
         /// Gets the blend points area.
@@ -284,6 +375,7 @@ namespace FlaxEditor.Surface.Archetypes
                         // Create missing blend point
                         _blendPoints[i] = new BlendPoint(this, i)
                         {
+                            Tag = i,
                             Parent = this,
                         };
                     }
@@ -322,6 +414,50 @@ namespace FlaxEditor.Surface.Archetypes
                 var bottomRight = BlendSpacePosToBlendPointPos(new Float2(_rangeX.Y, _rangeY.Y));
                 return new Rectangle(upperLeft, bottomRight - upperLeft);
             }
+        }
+
+        /// <inheritdoc />
+        public override bool OnMouseDown(Float2 location, MouseButton button)
+        {
+            if (base.OnMouseDown(location, button))
+                return true;
+
+            Focus();
+            return true;
+        }
+
+        /// <inheritdoc />
+        public override bool OnMouseUp(Float2 location, MouseButton button)
+        {
+            if (base.OnMouseUp(location, button))
+                return true;
+
+            if (button == MouseButton.Right)
+            {
+                // Show context menu
+                var menu = new FlaxEditor.GUI.ContextMenu.ContextMenu();
+                var b = menu.AddButton("Add point", OnAddPoint);
+                b.Tag = location;
+                if (GetChildAt(location) is BlendPoint blendPoint)
+                {
+                    b = menu.AddButton("Remove point", OnRemovePoint);
+                    b.Tag = blendPoint.Tag;
+                    b.TooltipText = blendPoint.TooltipText;
+                }
+                menu.Show(this, location);
+            }
+
+            return true;
+        }
+
+        private void OnAddPoint(FlaxEditor.GUI.ContextMenu.ContextMenuButton b)
+        {
+            AddAsset(BlendPointPosToBlendSpacePos((Float2)b.Tag));
+        }
+
+        private void OnRemovePoint(FlaxEditor.GUI.ContextMenu.ContextMenuButton b)
+        {
+            SetAsset((int)b.Tag, Guid.Empty);
         }
 
         /// <inheritdoc />
@@ -364,7 +500,8 @@ namespace FlaxEditor.Surface.Archetypes
             base.Draw();
 
             // Frame
-            Render2D.DrawRectangle(new Rectangle(1, 1, rect.Width - 2, rect.Height - 2), containsFocus ? style.BackgroundSelected : style.ForegroundDisabled);
+            var frameColor = containsFocus ? style.BackgroundSelected : (IsMouseOver ? style.ForegroundGrey : style.ForegroundDisabled);
+            Render2D.DrawRectangle(new Rectangle(1, 1, rect.Width - 2, rect.Height - 2), frameColor);
         }
     }
 
@@ -521,7 +658,7 @@ namespace FlaxEditor.Surface.Archetypes
             /// <param name="isValid">if set to <c>true</c> is selection valid.</param>
             /// <param name="data0">The packed data 0.</param>
             /// <param name="data1">The packed data 1.</param>
-            protected virtual void UpdateUI(int selectedIndex, bool isValid, ref Float4 data0, ref Guid data1)
+            public virtual void UpdateUI(int selectedIndex, bool isValid, ref Float4 data0, ref Guid data1)
             {
                 if (isValid)
                 {
@@ -546,7 +683,7 @@ namespace FlaxEditor.Surface.Archetypes
             /// <summary>
             /// Updates the editor UI.
             /// </summary>
-            protected void UpdateUI()
+            public void UpdateUI()
             {
                 if (_isUpdatingUI)
                     return;
@@ -596,67 +733,7 @@ namespace FlaxEditor.Surface.Archetypes
         {
             private readonly Label _animationXLabel;
             private readonly FloatValueBox _animationX;
-            private readonly Editor _editor;
-
-            /// <summary>
-            /// The Multi Blend 1D blend space editor.
-            /// </summary>
-            /// <seealso cref="FlaxEditor.Surface.Archetypes.BlendPointsEditor" />
-            protected class Editor : BlendPointsEditor
-            {
-                private MultiBlend1D _node;
-
-                /// <summary>
-                /// Initializes a new instance of the <see cref="Editor"/> class.
-                /// </summary>
-                /// <param name="node">The parent Visject Node node.</param>
-                /// <param name="x">The X location.</param>
-                /// <param name="y">The Y location.</param>
-                /// <param name="width">The width.</param>
-                /// <param name="height">The height.</param>
-                public Editor(MultiBlend1D node, float x, float y, float width, float height)
-                : base(node, false, x, y, width, height)
-                {
-                    _node = node;
-                }
-
-                /// <inheritdoc />
-                public override void GetData(out Float2 rangeX, out Float2 rangeY, Guid[] pointsAnims, Float2[] pointsLocations)
-                {
-                    var data0 = (Float4)_node.Values[0];
-                    rangeX = new Float2(data0.X, data0.Y);
-                    rangeY = Float2.Zero;
-                    for (int i = 0; i < MaxAnimationsCount; i++)
-                    {
-                        var dataA = (Float4)_node.Values[4 + i * 2];
-                        var dataB = (Guid)_node.Values[5 + i * 2];
-
-                        pointsAnims[i] = dataB;
-                        pointsLocations[i] = new Float2(Mathf.Clamp(dataA.X, rangeX.X, rangeX.Y), 0.0f);
-                    }
-                }
-
-                /// <inheritdoc />
-                public override int SelectedIndex
-                {
-                    get => _node.SelectedAnimationIndex;
-                    set => _node.SelectedAnimationIndex = value;
-                }
-
-                /// <inheritdoc />
-                public override void SetLocation(int index, Float2 location)
-                {
-                    var dataA = (Float4)_node.Values[4 + index * 2];
-                    var ranges = (Float4)_node.Values[0];
-
-                    dataA.X = Mathf.Clamp(location.X, ranges.X, ranges.Y);
-
-                    _node.Values[4 + index * 2] = dataA;
-                    _node.Surface.MarkAsEdited();
-
-                    _node.UpdateUI();
-                }
-            }
+            private readonly BlendPointsEditor _editor;
 
             /// <inheritdoc />
             public MultiBlend1D(uint id, VisjectSurfaceContext context, NodeArchetype nodeArch, GroupArchetype groupArch)
@@ -676,11 +753,8 @@ namespace FlaxEditor.Surface.Archetypes
                 };
                 _animationX.ValueChanged += OnAnimationXChanged;
 
-                _editor = new Editor(this,
-                                     FlaxEditor.Surface.Constants.NodeMarginX,
-                                     _animationX.Bottom + 4.0f,
-                                     Width - FlaxEditor.Surface.Constants.NodeMarginX * 2.0f,
-                                     120.0f);
+                var size = Width - FlaxEditor.Surface.Constants.NodeMarginX * 2.0f;
+                _editor = new BlendPointsEditor(this, false, FlaxEditor.Surface.Constants.NodeMarginX, _animationX.Bottom + 4.0f, size, 120.0f);
                 _editor.Parent = this;
             }
 
@@ -700,7 +774,7 @@ namespace FlaxEditor.Surface.Archetypes
             }
 
             /// <inheritdoc />
-            protected override void UpdateUI(int selectedIndex, bool isValid, ref Float4 data0, ref Guid data1)
+            public override void UpdateUI(int selectedIndex, bool isValid, ref Float4 data0, ref Guid data1)
             {
                 base.UpdateUI(selectedIndex, isValid, ref data0, ref data1);
 
@@ -730,68 +804,7 @@ namespace FlaxEditor.Surface.Archetypes
             private readonly FloatValueBox _animationX;
             private readonly Label _animationYLabel;
             private readonly FloatValueBox _animationY;
-            private readonly Editor _editor;
-
-            /// <summary>
-            /// The Multi Blend 2D blend space editor.
-            /// </summary>
-            /// <seealso cref="FlaxEditor.Surface.Archetypes.BlendPointsEditor" />
-            protected class Editor : BlendPointsEditor
-            {
-                private MultiBlend2D _node;
-
-                /// <summary>
-                /// Initializes a new instance of the <see cref="Editor"/> class.
-                /// </summary>
-                /// <param name="node">The parent Visject Node node.</param>
-                /// <param name="x">The X location.</param>
-                /// <param name="y">The Y location.</param>
-                /// <param name="width">The width.</param>
-                /// <param name="height">The height.</param>
-                public Editor(MultiBlend2D node, float x, float y, float width, float height)
-                : base(node, true, x, y, width, height)
-                {
-                    _node = node;
-                }
-
-                /// <inheritdoc />
-                public override void GetData(out Float2 rangeX, out Float2 rangeY, Guid[] pointsAnims, Float2[] pointsLocations)
-                {
-                    var data0 = (Float4)_node.Values[0];
-                    rangeX = new Float2(data0.X, data0.Y);
-                    rangeY = new Float2(data0.Z, data0.W);
-                    for (int i = 0; i < MaxAnimationsCount; i++)
-                    {
-                        var dataA = (Float4)_node.Values[4 + i * 2];
-                        var dataB = (Guid)_node.Values[5 + i * 2];
-
-                        pointsAnims[i] = dataB;
-                        pointsLocations[i] = new Float2(Mathf.Clamp(dataA.X, rangeX.X, rangeX.Y), Mathf.Clamp(dataA.Y, rangeY.X, rangeY.Y));
-                    }
-                }
-
-                /// <inheritdoc />
-                public override int SelectedIndex
-                {
-                    get => _node.SelectedAnimationIndex;
-                    set => _node.SelectedAnimationIndex = value;
-                }
-
-                /// <inheritdoc />
-                public override void SetLocation(int index, Float2 location)
-                {
-                    var dataA = (Float4)_node.Values[4 + index * 2];
-                    var ranges = (Float4)_node.Values[0];
-
-                    dataA.X = Mathf.Clamp(location.X, ranges.X, ranges.Y);
-                    dataA.Y = Mathf.Clamp(location.Y, ranges.Z, ranges.W);
-
-                    _node.Values[4 + index * 2] = dataA;
-                    _node.Surface.MarkAsEdited();
-
-                    _node.UpdateUI();
-                }
-            }
+            private readonly BlendPointsEditor _editor;
 
             /// <inheritdoc />
             public MultiBlend2D(uint id, VisjectSurfaceContext context, NodeArchetype nodeArch, GroupArchetype groupArch)
@@ -826,11 +839,7 @@ namespace FlaxEditor.Surface.Archetypes
                 _animationY.ValueChanged += OnAnimationYChanged;
 
                 var size = Width - FlaxEditor.Surface.Constants.NodeMarginX * 2.0f;
-                _editor = new Editor(this,
-                                     FlaxEditor.Surface.Constants.NodeMarginX,
-                                     _animationY.Bottom + 4.0f,
-                                     size,
-                                     size);
+                _editor = new BlendPointsEditor(this, true, FlaxEditor.Surface.Constants.NodeMarginX, _animationY.Bottom + 4.0f, size, size);
                 _editor.Parent = this;
             }
 
@@ -865,7 +874,7 @@ namespace FlaxEditor.Surface.Archetypes
             }
 
             /// <inheritdoc />
-            protected override void UpdateUI(int selectedIndex, bool isValid, ref Float4 data0, ref Guid data1)
+            public override void UpdateUI(int selectedIndex, bool isValid, ref Float4 data0, ref Guid data1)
             {
                 base.UpdateUI(selectedIndex, isValid, ref data0, ref data1);
 
