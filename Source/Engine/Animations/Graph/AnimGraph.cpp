@@ -119,6 +119,12 @@ AnimGraphNode::~AnimGraphNode()
         case 13:
             Allocator::Free(Data.MultiBlend2D.Triangles);
             break;
+        // State
+        case 20:
+        // Any State
+        case 34:
+            Allocator::Free(Data.State.Transitions);
+            break;
         }
         break;
     }

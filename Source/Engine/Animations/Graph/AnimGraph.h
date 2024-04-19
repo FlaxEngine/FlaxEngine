@@ -15,7 +15,6 @@
 #define ANIM_GRAPH_IS_VALID_PTR(value) (value.Type.Type == VariantType::Pointer && value.AsPointer != nullptr)
 #define ANIM_GRAPH_MULTI_BLEND_INDEX byte
 #define ANIM_GRAPH_MULTI_BLEND_INVALID 0xff
-#define ANIM_GRAPH_MAX_STATE_TRANSITIONS 64
 #define ANIM_GRAPH_MAX_CALL_STACK 100
 #define ANIM_GRAPH_MAX_EVENTS 64
 
@@ -464,15 +463,11 @@ public:
 
     struct StateBaseData
     {
-        /// <summary>
-        /// The invalid transition valid used in Transitions to indicate invalid transition linkage.
-        /// </summary>
+        // The invalid transition valid used in Transitions to indicate invalid transition linkage.
         const static uint16 InvalidTransitionIndex = MAX_uint16;
 
-        /// <summary>
-        /// The outgoing transitions from this state to the other states. Each array item contains index of the transition data from the state node graph transitions cache. Value InvalidTransitionIndex is used for last transition to indicate the transitions amount.
-        /// </summary>
-        uint16 Transitions[ANIM_GRAPH_MAX_STATE_TRANSITIONS];
+        // The outgoing transitions from this state to the other states. Each array item contains index of the transition data from the state node graph transitions cache. Value InvalidTransitionIndex is used for last transition to indicate the transitions amount.
+        uint16* Transitions;
     };
 
     struct StateData : StateBaseData

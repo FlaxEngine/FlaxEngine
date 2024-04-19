@@ -585,7 +585,7 @@ AnimGraphStateTransition* AnimGraphExecutor::UpdateStateTransitions(AnimGraphCon
 AnimGraphStateTransition* AnimGraphExecutor::UpdateStateTransitions(AnimGraphContext& context, const AnimGraphNode::StateMachineData& stateMachineData, const AnimGraphNode::StateBaseData& stateData, AnimGraphNode* state, AnimGraphNode* ignoreState)
 {
     int32 transitionIndex = 0;
-    while (transitionIndex < ANIM_GRAPH_MAX_STATE_TRANSITIONS && stateData.Transitions[transitionIndex] != AnimGraphNode::StateData::InvalidTransitionIndex)
+    while (stateData.Transitions && stateData.Transitions[transitionIndex] != AnimGraphNode::StateData::InvalidTransitionIndex)
     {
         const uint16 idx = stateData.Transitions[transitionIndex];
         ASSERT(idx < stateMachineData.Graph->StateTransitions.Count());

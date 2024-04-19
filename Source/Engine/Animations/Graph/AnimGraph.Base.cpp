@@ -380,6 +380,7 @@ bool AnimGraphBase::onNodeLoaded(Node* n)
 void AnimGraphBase::LoadStateTransitions(AnimGraphNode::StateBaseData& data, Value& transitionsData)
 {
     int32 validTransitions = 0;
+    data.Transitions = nullptr;
     if (transitionsData.Type == VariantType::Blob && transitionsData.AsBlob.Length)
     {
         MemoryReadStream stream((byte*)transitionsData.AsBlob.Data, transitionsData.AsBlob.Length);
@@ -394,8 +395,11 @@ void AnimGraphBase::LoadStateTransitions(AnimGraphNode::StateBaseData& data, Val
 
         int32 transitionsCount;
         stream.ReadInt32(&transitionsCount);
+        if (transitionsCount == 0)
+            return;
 
         StateTransitions.EnsureCapacity(StateTransitions.Count() + transitionsCount);
+        data.Transitions = (uint16*)Allocator::Allocate(transitionsCount * sizeof(uint16));
 
         AnimGraphStateTransition transition;
         for (int32 i = 0; i < transitionsCount; i++)
@@ -430,7 +434,6 @@ void AnimGraphBase::LoadStateTransitions(AnimGraphNode::StateBaseData& data, Val
                 // Skip disabled transitions
                 continue;
             }
-
             if (ruleSize != 0)
             {
                 transition.RuleGraph = LoadSubGraph(ruleBytes, ruleSize, TEXT("Rule"));
@@ -440,25 +443,19 @@ void AnimGraphBase::LoadStateTransitions(AnimGraphNode::StateBaseData& data, Val
                     continue;
                 }
             }
-
             if (transition.Destination == nullptr)
             {
                 LOG(Warning, "Missing target node for the state machine transition.");
                 continue;
             }
 
-            if (validTransitions == ANIM_GRAPH_MAX_STATE_TRANSITIONS)
-            {
-                LOG(Warning, "State uses too many transitions.");
-                continue;
-            }
-
             data.Transitions[validTransitions++] = (uint16)StateTransitions.Count();
             StateTransitions.Add(transition);
         }
-    }
-    if (validTransitions != ANIM_GRAPH_MAX_STATE_TRANSITIONS)
+
+        // Last entry is invalid to indicate end
         data.Transitions[validTransitions] = AnimGraphNode::StateData::InvalidTransitionIndex;
+    }
 
     // Release data to don't use that memory
     transitionsData = AnimGraphExecutor::Value::Null;
