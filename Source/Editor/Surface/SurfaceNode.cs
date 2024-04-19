@@ -951,15 +951,20 @@ namespace FlaxEditor.Surface
         {
             if (_isDuringValuesEditing || !Surface.CanEdit)
                 return;
-
-            if (values == null || Values == null || values.Length != Values.Length)
+            if (values == null || Values == null)
+                throw new ArgumentException();
+            bool resize = values.Length != Values.Length;
+            if (resize && (Archetype.Flags & NodeFlags.VariableValuesSize) == 0)
                 throw new ArgumentException();
 
             _isDuringValuesEditing = true;
 
             var before = Surface.Undo != null ? (object[])Values.Clone() : null;
 
-            Array.Copy(values, Values, values.Length);
+            if (resize)
+                Values = (object[])values.Clone();
+            else
+                Array.Copy(values, Values, values.Length);
             OnValuesChanged();
             Surface.MarkAsEdited(graphEdited);
 

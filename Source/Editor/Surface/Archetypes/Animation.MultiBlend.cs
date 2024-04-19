@@ -23,9 +23,7 @@ namespace FlaxEditor.Surface.Archetypes
         private readonly bool _is2D;
         private Float2 _rangeX, _rangeY;
         private Float2 _debugPos = Float2.Minimum;
-        private readonly BlendPoint[] _blendPoints = new BlendPoint[Animation.MultiBlend.MaxAnimationsCount];
-        private readonly Guid[] _pointsAnims = new Guid[Animation.MultiBlend.MaxAnimationsCount];
-        private readonly Float2[] _pointsLocations = new Float2[Animation.MultiBlend.MaxAnimationsCount];
+        private readonly List<BlendPoint> _blendPoints = new List<BlendPoint>();
 
         /// <summary>
         /// Represents single blend point.
@@ -43,6 +41,11 @@ namespace FlaxEditor.Surface.Archetypes
             /// The default size for the blend points.
             /// </summary>
             public const float DefaultSize = 8.0f;
+
+            /// <summary>
+            /// Blend point index.
+            /// </summary>
+            public int Index => _index;
 
             /// <summary>
             /// Initializes a new instance of the <see cref="BlendPoint"/> class.
@@ -191,6 +194,11 @@ namespace FlaxEditor.Surface.Archetypes
         public bool Is2D => _is2D;
 
         /// <summary>
+        /// Blend points count.
+        /// </summary>
+        public int PointsCount => (_node.Values.Length - 4) / 2; // 4 node values + 2 per blend point
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="BlendPointsEditor"/> class.
         /// </summary>
         /// <param name="node">The node.</param>
@@ -204,28 +212,6 @@ namespace FlaxEditor.Surface.Archetypes
         {
             _node = node;
             _is2D = is2D;
-        }
-
-        /// <summary>
-        /// Gets the blend space data.
-        /// </summary>
-        /// <param name="rangeX">The space range for X axis (X-width, Y-height).</param>
-        /// <param name="rangeY">The space range for Y axis (X-width, Y-height).</param>
-        /// <param name="pointsAnims">The points anims (input array to fill of size equal 14).</param>
-        /// <param name="pointsLocations">The points locations (input array to fill of size equal 14).</param>
-        public void GetData(out Float2 rangeX, out Float2 rangeY, Guid[] pointsAnims, Float2[] pointsLocations)
-        {
-            var data0 = (Float4)_node.Values[0];
-            rangeX = new Float2(data0.X, data0.Y);
-            rangeY = _is2D ? new Float2(data0.Z, data0.W) : Float2.Zero;
-            for (int i = 0; i < Animation.MultiBlend.MaxAnimationsCount; i++)
-            {
-                var dataA = (Float4)_node.Values[4 + i * 2];
-                var dataB = (Guid)_node.Values[5 + i * 2];
-
-                pointsAnims[i] = dataB;
-                pointsLocations[i] = new Float2(Mathf.Clamp(dataA.X, rangeX.X, rangeX.Y), _is2D ? Mathf.Clamp(dataA.Y, rangeY.X, rangeY.Y) : 0.0f);
-            }
         }
 
         private void AddAsset(Float2 location)
@@ -259,16 +245,22 @@ namespace FlaxEditor.Surface.Archetypes
         public void AddAsset(Guid asset, Float2 location)
         {
             // Find the first free slot
+            var count = PointsCount;
+            if (count == Animation.MultiBlend.MaxAnimationsCount)
+                return;
             var values = (object[])_node.Values.Clone();
             var index = 0;
-            for (; index < Animation.MultiBlend.MaxAnimationsCount; index++)
+            for (; index < count; index++)
             {
                 var dataB = (Guid)_node.Values[5 + index * 2];
                 if (dataB == Guid.Empty)
                     break;
             }
-            if (index == Animation.MultiBlend.MaxAnimationsCount)
-                return; // TODO: unlimited amount of blend points
+            if (index == count)
+            {
+                // Add another blend point
+                Array.Resize(ref values, values.Length + 2);
+            }
 
             values[4 + index * 2] = new Float4(location.X, _is2D ? location.Y : 0.0f, 0, 1.0f);
             values[5 + index * 2] = asset;
@@ -382,11 +374,22 @@ namespace FlaxEditor.Surface.Archetypes
         public override void Update(float deltaTime)
         {
             // Synchronize blend points collection
-            GetData(out _rangeX, out _rangeY, _pointsAnims, _pointsLocations);
-            for (int i = 0; i < Animation.MultiBlend.MaxAnimationsCount; i++)
+            var data0 = (Float4)_node.Values[0];
+            _rangeX = new Float2(data0.X, data0.Y);
+            _rangeY = _is2D ? new Float2(data0.Z, data0.W) : Float2.Zero;
+            var count = PointsCount;
+            while (_blendPoints.Count > count)
             {
-                var animId = _pointsAnims[i];
-                var location = _pointsLocations[i];
+                _blendPoints[count].Dispose();
+                _blendPoints.RemoveAt(count);
+            }
+            while (_blendPoints.Count < count)
+                _blendPoints.Add(null);
+            for (int i = 0; i < count; i++)
+            {
+                var animId = (Guid)_node.Values[5 + i * 2];
+                var dataA = (Float4)_node.Values[4 + i * 2];
+                var location = new Float2(Mathf.Clamp(dataA.X, _rangeX.X, _rangeX.Y), _is2D ? Mathf.Clamp(dataA.Y, _rangeY.X, _rangeY.Y) : 0.0f);
                 if (animId != Guid.Empty)
                 {
                     if (_blendPoints[i] == null)
@@ -394,7 +397,6 @@ namespace FlaxEditor.Surface.Archetypes
                         // Create missing blend point
                         _blendPoints[i] = new BlendPoint(this, i)
                         {
-                            Tag = i,
                             Parent = this,
                         };
                     }
@@ -477,10 +479,11 @@ namespace FlaxEditor.Surface.Archetypes
                 var menu = new FlaxEditor.GUI.ContextMenu.ContextMenu();
                 var b = menu.AddButton("Add point", OnAddPoint);
                 b.Tag = location;
+                b.Enabled = PointsCount < Animation.MultiBlend.MaxAnimationsCount;
                 if (GetChildAt(location) is BlendPoint blendPoint)
                 {
                     b = menu.AddButton("Remove point", OnRemovePoint);
-                    b.Tag = blendPoint.Tag;
+                    b.Tag = blendPoint.Index;
                     b.TooltipText = blendPoint.TooltipText;
                 }
                 menu.Show(this, location);
@@ -538,8 +541,6 @@ namespace FlaxEditor.Surface.Archetypes
             GetPointsArea(out var pointsArea);
             var data0 = (Float4)_node.Values[0];
             var rangeX = new Float2(data0.X, data0.Y);
-            var rangeY = _is2D ? new Float2(data0.Z, data0.W) : Float2.One;
-            var grid = new Float2(Mathf.Abs(rangeX.Y - rangeX.X) * 0.01f, Mathf.Abs(rangeY.X - rangeY.Y) * 0.01f);
 
             // Background
             Render2D.DrawRectangle(rect, IsMouseOver ? style.TextBoxBackgroundSelected : style.TextBoxBackground);
@@ -562,6 +563,7 @@ namespace FlaxEditor.Surface.Archetypes
             }
             if (_is2D)
             {
+                var rangeY = new Float2(data0.Z, data0.W);
                 for (int i = 0; i <= splits; i++)
                 {
                     float alpha = (float)i / splits;
@@ -606,6 +608,11 @@ namespace FlaxEditor.Surface.Archetypes
         public abstract class MultiBlend : SurfaceNode
         {
             /// <summary>
+            /// The blend space editor.
+            /// </summary>
+            protected BlendPointsEditor _editor;
+
+            /// <summary>
             /// The selected animation label.
             /// </summary>
             protected readonly Label _selectedAnimationLabel;
@@ -638,7 +645,7 @@ namespace FlaxEditor.Surface.Archetypes
             /// <summary>
             /// The maximum animations amount to blend per node.
             /// </summary>
-            public const int MaxAnimationsCount = 14;
+            public const int MaxAnimationsCount = 255;
 
             /// <summary>
             /// Gets or sets the index of the selected animation.
@@ -661,19 +668,12 @@ namespace FlaxEditor.Surface.Archetypes
                     Text = "Selected Animation:",
                     Parent = this
                 };
-
                 _selectedAnimation = new ComboBox(_selectedAnimationLabel.X, 4 * layoutOffsetY, _selectedAnimationLabel.Width)
                 {
                     Parent = this
                 };
-
                 _selectedAnimation.PopupShowing += OnSelectedAnimationPopupShowing;
                 _selectedAnimation.SelectedIndexChanged += OnSelectedAnimationChanged;
-
-                var items = new List<string>(MaxAnimationsCount);
-                while (items.Count < MaxAnimationsCount)
-                    items.Add(string.Empty);
-                _selectedAnimation.Items = items;
 
                 _animationPicker = new AssetPicker(new ScriptType(typeof(FlaxEngine.Animation)), new Float2(_selectedAnimation.Left, _selectedAnimation.Bottom + 4))
                 {
@@ -687,7 +687,6 @@ namespace FlaxEditor.Surface.Archetypes
                     Text = "Speed:",
                     Parent = this
                 };
-
                 _animationSpeed = new FloatValueBox(1.0f, _animationSpeedLabel.Right + 4, _animationSpeedLabel.Y, _selectedAnimation.Right - _animationSpeedLabel.Right - 4)
                 {
                     SlideSpeed = 0.01f,
@@ -700,7 +699,8 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 var items = comboBox.Items;
                 items.Clear();
-                for (var i = 0; i < MaxAnimationsCount; i++)
+                var count = _editor.PointsCount;
+                for (var i = 0; i < count; i++)
                 {
                     var animId = (Guid)Values[5 + i * 2];
                     var path = string.Empty;
@@ -809,6 +809,16 @@ namespace FlaxEditor.Surface.Archetypes
             }
 
             /// <inheritdoc />
+            public override void OnSpawned(SurfaceNodeActions action)
+            {
+                base.OnSpawned(action);
+
+                // Select the first animation to make setup easier
+                OnSelectedAnimationPopupShowing(_selectedAnimation);
+                _selectedAnimation.SelectedIndex = 0;
+            }
+
+            /// <inheritdoc />
             public override void OnValuesChanged()
             {
                 base.OnValuesChanged();
@@ -825,7 +835,6 @@ namespace FlaxEditor.Surface.Archetypes
         {
             private readonly Label _animationXLabel;
             private readonly FloatValueBox _animationX;
-            private readonly BlendPointsEditor _editor;
 
             /// <inheritdoc />
             public MultiBlend1D(uint id, VisjectSurfaceContext context, NodeArchetype nodeArch, GroupArchetype groupArch)
@@ -896,7 +905,6 @@ namespace FlaxEditor.Surface.Archetypes
             private readonly FloatValueBox _animationX;
             private readonly Label _animationYLabel;
             private readonly FloatValueBox _animationY;
-            private readonly BlendPointsEditor _editor;
 
             /// <inheritdoc />
             public MultiBlend2D(uint id, VisjectSurfaceContext context, NodeArchetype nodeArch, GroupArchetype groupArch)

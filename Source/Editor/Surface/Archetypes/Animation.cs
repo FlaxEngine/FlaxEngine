@@ -621,7 +621,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Create = (id, context, arch, groupArch) => new MultiBlend1D(id, context, arch, groupArch),
                 Title = "Multi Blend 1D",
                 Description = "Animation blending in 1D",
-                Flags = NodeFlags.AnimGraph,
+                Flags = NodeFlags.AnimGraph | NodeFlags.VariableValuesSize,
                 Size = new Float2(420, 300),
                 DefaultValues = new object[]
                 {
@@ -632,19 +632,6 @@ namespace FlaxEditor.Surface.Archetypes
                     0.0f,
 
                     // Per blend sample data
-                    new Float4(0, 0, 0, 1.0f), Guid.Empty,
-                    new Float4(0, 0, 0, 1.0f), Guid.Empty,
-                    new Float4(0, 0, 0, 1.0f), Guid.Empty,
-                    new Float4(0, 0, 0, 1.0f), Guid.Empty,
-                    new Float4(0, 0, 0, 1.0f), Guid.Empty,
-                    new Float4(0, 0, 0, 1.0f), Guid.Empty,
-                    new Float4(0, 0, 0, 1.0f), Guid.Empty,
-                    new Float4(0, 0, 0, 1.0f), Guid.Empty,
-                    new Float4(0, 0, 0, 1.0f), Guid.Empty,
-                    new Float4(0, 0, 0, 1.0f), Guid.Empty,
-                    new Float4(0, 0, 0, 1.0f), Guid.Empty,
-                    new Float4(0, 0, 0, 1.0f), Guid.Empty,
-                    new Float4(0, 0, 0, 1.0f), Guid.Empty,
                     new Float4(0, 0, 0, 1.0f), Guid.Empty,
                 },
                 Elements = new[]
@@ -670,7 +657,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Create = (id, context, arch, groupArch) => new MultiBlend2D(id, context, arch, groupArch),
                 Title = "Multi Blend 2D",
                 Description = "Animation blending in 2D",
-                Flags = NodeFlags.AnimGraph,
+                Flags = NodeFlags.AnimGraph | NodeFlags.VariableValuesSize,
                 Size = new Float2(420, 620),
                 DefaultValues = new object[]
                 {
@@ -681,19 +668,6 @@ namespace FlaxEditor.Surface.Archetypes
                     0.0f,
 
                     // Per blend sample data
-                    new Float4(0, 0, 0, 1.0f), Guid.Empty,
-                    new Float4(0, 0, 0, 1.0f), Guid.Empty,
-                    new Float4(0, 0, 0, 1.0f), Guid.Empty,
-                    new Float4(0, 0, 0, 1.0f), Guid.Empty,
-                    new Float4(0, 0, 0, 1.0f), Guid.Empty,
-                    new Float4(0, 0, 0, 1.0f), Guid.Empty,
-                    new Float4(0, 0, 0, 1.0f), Guid.Empty,
-                    new Float4(0, 0, 0, 1.0f), Guid.Empty,
-                    new Float4(0, 0, 0, 1.0f), Guid.Empty,
-                    new Float4(0, 0, 0, 1.0f), Guid.Empty,
-                    new Float4(0, 0, 0, 1.0f), Guid.Empty,
-                    new Float4(0, 0, 0, 1.0f), Guid.Empty,
-                    new Float4(0, 0, 0, 1.0f), Guid.Empty,
                     new Float4(0, 0, 0, 1.0f), Guid.Empty,
                 },
                 Elements = new[]
