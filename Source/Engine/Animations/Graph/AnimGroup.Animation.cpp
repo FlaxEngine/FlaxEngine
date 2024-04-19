@@ -673,19 +673,20 @@ void ComputeMultiBlendLength(float& length, AnimGraphNode* node)
     // TODO: lock graph or graph asset here? make it thread safe
 
     length = 0.0f;
-    for (int32 i = 0; i < ARRAY_COUNT(node->Assets); i++)
+    for (int32 i = 0; i < node->Assets.Count(); i++)
     {
-        if (node->Assets[i])
+        auto& asset = node->Assets[i];
+        if (asset)
         {
             // TODO: maybe don't update if not all anims are loaded? just skip the node with the bind pose?
-            if (node->Assets[i]->WaitForLoaded())
+            if (asset->WaitForLoaded())
             {
-                node->Assets[i] = nullptr;
+                asset = nullptr;
                 LOG(Warning, "Failed to load one of the animations.");
             }
             else
             {
-                const auto anim = node->Assets[i].As<Animation>();
+                const auto anim = asset.As<Animation>();
                 const auto aData = node->Values[4 + i * 2].AsFloat4();
                 length = Math::Max(length, anim->GetLength() * Math::Abs(aData.W));
             }

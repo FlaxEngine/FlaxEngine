@@ -163,10 +163,12 @@ bool AnimGraphBase::onNodeLoaded(Node* n)
         // Animation
         case 2:
             ADD_BUCKET(AnimationBucketInit);
+            n->Assets.Resize(1);
             n->Assets[0] = (Asset*)Content::LoadAsync<Animation>((Guid)n->Values[0]);
             break;
         // Blend with Mask
         case 11:
+            n->Assets.Resize(1);
             n->Assets[0] = (Asset*)Content::LoadAsync<SkeletonMask>((Guid)n->Values[1]);
             break;
         // Multi Blend 1D
@@ -174,6 +176,7 @@ bool AnimGraphBase::onNodeLoaded(Node* n)
         {
             ADD_BUCKET(MultiBlendBucketInit);
             n->Data.MultiBlend1D.Length = -1;
+            n->Assets.Resize(ANIM_GRAPH_MULTI_BLEND_MAX_ANIMS);
             for (int32 i = 0; i < ANIM_GRAPH_MULTI_BLEND_MAX_ANIMS; i++)
             {
                 n->Assets[i] = Content::LoadAsync<Animation>((Guid)n->Values[i * 2 + 5]);
@@ -191,6 +194,7 @@ bool AnimGraphBase::onNodeLoaded(Node* n)
             // Get blend points locations
             Array<Float2, FixedAllocation<ANIM_GRAPH_MULTI_BLEND_MAX_ANIMS + 3>> vertices;
             byte vertexIndexToAnimIndex[ANIM_GRAPH_MULTI_BLEND_MAX_ANIMS];
+            n->Assets.Resize(ANIM_GRAPH_MULTI_BLEND_MAX_ANIMS);
             for (int32 i = 0; i < ANIM_GRAPH_MULTI_BLEND_MAX_ANIMS; i++)
             {
                 n->Assets[i] = (Asset*)Content::LoadAsync<Animation>((Guid)n->Values[i * 2 + 5]);
@@ -305,6 +309,7 @@ bool AnimGraphBase::onNodeLoaded(Node* n)
                 data.Graph = nullptr;
                 break;
             }
+            n->Assets.Resize(1);
             n->Assets[0] = function;
 
             // Load the graph

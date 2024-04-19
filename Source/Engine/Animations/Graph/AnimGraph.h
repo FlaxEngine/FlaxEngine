@@ -427,23 +427,7 @@ struct AnimGraphTransitionData
     float Length;
 };
 
-class AnimGraphBox : public VisjectGraphBox
-{
-public:
-    AnimGraphBox()
-    {
-    }
-
-    AnimGraphBox(AnimGraphNode* parent, byte id, const VariantType::Types type)
-        : VisjectGraphBox(parent, id, type)
-    {
-    }
-
-    AnimGraphBox(AnimGraphNode* parent, byte id, const VariantType& type)
-        : VisjectGraphBox(parent, id, type)
-    {
-    }
-};
+typedef VisjectGraphBox AnimGraphBox;
 
 class AnimGraphNode : public VisjectGraphNode<AnimGraphBox>
 {
@@ -603,7 +587,7 @@ public:
     /// Gets the per-node node transformations cache (cached).
     /// </summary>
     /// <param name="executor">The Graph execution context.</param>
-    /// <returns>The modes data.</returns>
+    /// <returns>Nodes data.</returns>
     AnimGraphImpulse* GetNodes(AnimGraphExecutor* executor);
 };
 
