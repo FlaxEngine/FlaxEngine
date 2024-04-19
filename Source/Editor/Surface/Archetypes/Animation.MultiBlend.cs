@@ -132,7 +132,7 @@ namespace FlaxEditor.Surface.Archetypes
             /// <inheritdoc />
             public override void OnMouseMove(Float2 location)
             {
-                if (_isMouseDown)
+                if (_isMouseDown && (_mouseMoved || Float2.DistanceSquared(location, _mousePosOffset) > 16.0f))
                 {
                     if (!_mouseMoved)
                     {
@@ -214,11 +214,19 @@ namespace FlaxEditor.Surface.Archetypes
             _is2D = is2D;
         }
 
-        private void AddAsset(Float2 location)
+        internal void AddPoint()
+        {
+            // Add random point within range
+            var rand = new Float2(Mathf.Frac((float)Platform.TimeSeconds), (Platform.TimeCycles % 10000) / 10000.0f);
+            AddPoint(Float2.Lerp(new Float2(_rangeX.X, _rangeY.X), new Float2(_rangeX.Y, _rangeY.Y), rand));
+        }
+
+        private void AddPoint(Float2 location)
         {
             // Reuse existing animation
+            var count = PointsCount;
             Guid id = Guid.Empty;
-            for (int i = 0; i < Animation.MultiBlend.MaxAnimationsCount; i++)
+            for (int i = 0; i < count; i++)
             {
                 id = (Guid)_node.Values[5 + i * 2];
                 if (id != Guid.Empty)
@@ -234,7 +242,7 @@ namespace FlaxEditor.Surface.Archetypes
                     return;
             }
 
-            AddAsset(id, location);
+            AddPoint(id, location);
         }
 
         /// <summary>
@@ -242,7 +250,7 @@ namespace FlaxEditor.Surface.Archetypes
         /// </summary>
         /// <param name="asset">The asset.</param>
         /// <param name="location">The location.</param>
-        public void AddAsset(Guid asset, Float2 location)
+        public void AddPoint(Guid asset, Float2 location)
         {
             // Find the first free slot
             var count = PointsCount;
@@ -266,7 +274,8 @@ namespace FlaxEditor.Surface.Archetypes
             values[5 + index * 2] = asset;
             _node.SetValues(values);
 
-            _node.UpdateUI();
+            // Auto-select
+            _node.SelectedAnimationIndex = index;
         }
 
         /// <summary>
@@ -494,7 +503,7 @@ namespace FlaxEditor.Surface.Archetypes
 
         private void OnAddPoint(FlaxEditor.GUI.ContextMenu.ContextMenuButton b)
         {
-            AddAsset(BlendPointPosToBlendSpacePos((Float2)b.Tag));
+            AddPoint(BlendPointPosToBlendSpacePos((Float2)b.Tag));
         }
 
         private void OnRemovePoint(FlaxEditor.GUI.ContextMenu.ContextMenuButton b)
@@ -607,6 +616,9 @@ namespace FlaxEditor.Surface.Archetypes
         /// <seealso cref="FlaxEditor.Surface.SurfaceNode" />
         public abstract class MultiBlend : SurfaceNode
         {
+            private Button _addButton;
+            private Button _removeButton;
+
             /// <summary>
             /// The blend space editor.
             /// </summary>
@@ -653,7 +665,12 @@ namespace FlaxEditor.Surface.Archetypes
             public int SelectedAnimationIndex
             {
                 get => _selectedAnimation.SelectedIndex;
-                set => _selectedAnimation.SelectedIndex = value;
+                set
+                {
+                    OnSelectedAnimationPopupShowing(_selectedAnimation);
+                    _selectedAnimation.SelectedIndex = value;
+                    UpdateUI();
+                }
             }
 
             /// <inheritdoc />
@@ -670,6 +687,7 @@ namespace FlaxEditor.Surface.Archetypes
                 };
                 _selectedAnimation = new ComboBox(_selectedAnimationLabel.X, 4 * layoutOffsetY, _selectedAnimationLabel.Width)
                 {
+                    TooltipText = "Select blend point to view and edit it",
                     Parent = this
                 };
                 _selectedAnimation.PopupShowing += OnSelectedAnimationPopupShowing;
@@ -693,6 +711,22 @@ namespace FlaxEditor.Surface.Archetypes
                     Parent = this
                 };
                 _animationSpeed.ValueChanged += OnAnimationSpeedValueChanged;
+
+                var buttonsSize = 12;
+                _addButton = new Button(_selectedAnimation.Right - buttonsSize, _selectedAnimation.Bottom + 4, buttonsSize, buttonsSize)
+                {
+                    Text = "+",
+                    TooltipText = "Add a new blend point",
+                    Parent = this
+                };
+                _addButton.Clicked += OnAddButtonClicked;
+                _removeButton = new Button(_addButton.Left - buttonsSize - 4, _addButton.Y, buttonsSize, buttonsSize)
+                {
+                    Text = "-",
+                    TooltipText = "Remove selected blend point",
+                    Parent = this
+                };
+                _removeButton.Clicked += OnRemoveButtonClicked;
             }
 
             private void OnSelectedAnimationPopupShowing(ComboBox comboBox)
@@ -743,6 +777,16 @@ namespace FlaxEditor.Surface.Archetypes
                 }
             }
 
+            private void OnAddButtonClicked()
+            {
+                _editor.AddPoint();
+            }
+
+            private void OnRemoveButtonClicked()
+            {
+                _editor.SetAsset(SelectedAnimationIndex, Guid.Empty);
+            }
+
             /// <summary>
             /// Updates the editor UI.
             /// </summary>
@@ -770,6 +814,8 @@ namespace FlaxEditor.Surface.Archetypes
                 _animationPicker.Enabled = isValid;
                 _animationSpeedLabel.Enabled = isValid;
                 _animationSpeed.Enabled = isValid;
+                _addButton.Enabled = _editor.PointsCount < MaxAnimationsCount;
+                _removeButton.Enabled = isValid && data1 != Guid.Empty;
             }
 
             /// <summary>
@@ -782,7 +828,7 @@ namespace FlaxEditor.Surface.Archetypes
                 _isUpdatingUI = true;
 
                 var selectedIndex = _selectedAnimation.SelectedIndex;
-                var isValid = selectedIndex != -1;
+                var isValid = selectedIndex >= 0 && selectedIndex < _editor.PointsCount;
                 Float4 data0;
                 Guid data1;
                 if (isValid)
