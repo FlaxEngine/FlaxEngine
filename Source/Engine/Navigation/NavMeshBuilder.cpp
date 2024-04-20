@@ -628,6 +628,7 @@ bool GenerateTile(NavMesh* navMesh, NavMeshRuntime* runtime, int32 x, int32 y, B
         LOG(Warning, "Could not build Detour navmesh.");
         return true;
     }
+    ASSERT_LOW_LAYER(navDataSize > 4 && *(uint32*)navData == DT_NAVMESH_MAGIC); // Sanity check for Detour header
 
     {
         PROFILE_CPU_NAMED("Navigation.CreateTile");
