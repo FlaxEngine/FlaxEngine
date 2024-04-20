@@ -515,12 +515,21 @@ void MeshData::TransformBuffer(const Matrix& matrix)
         for (int32 i = 0; i < blendShape.Vertices.Count(); i++)
         {
             auto& v = vv[i];
-            Float3 p = Positions[v.VertexIndex], vp;
-            Float3::Transform(p + v.PositionDelta, matrix, vp);
+
+            Float3 p = Positions[v.VertexIndex];
+            Float3 vp = p + v.PositionDelta;
+            Float3::Transform(vp, matrix, vp);
             Float3::Transform(p, matrix, p);
             v.PositionDelta = vp - p;
-            Float3::TransformNormal(v.NormalDelta, inverseTransposeMatrix, v.NormalDelta);
-            v.NormalDelta.Normalize();
+
+            Float3 n = Normals[v.VertexIndex];
+            Float3 vn = n + v.NormalDelta;
+            vn.Normalize();
+            Float3::TransformNormal(vn, inverseTransposeMatrix, vn);
+            vn.Normalize();
+            Float3::TransformNormal(n, inverseTransposeMatrix, n);
+            n.Normalize();
+            v.NormalDelta = vn - n;
         }
     }
 

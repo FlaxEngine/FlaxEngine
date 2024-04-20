@@ -640,7 +640,7 @@ void AnimatedModel::RunBlendShapeDeformer(const MeshBase* mesh, MeshDeformationD
                 ASSERT_LOW_LAYER(blendShapeVertex.VertexIndex < vertexCount);
                 VB0SkinnedElementType& vertex = *(data + blendShapeVertex.VertexIndex);
                 vertex.Position = vertex.Position + blendShapeVertex.PositionDelta * q.Second;
-                Float3 normal = (vertex.Normal.ToFloat3() * 2.0f - 1.0f) + blendShapeVertex.NormalDelta;
+                Float3 normal = (vertex.Normal.ToFloat3() * 2.0f - 1.0f) + blendShapeVertex.NormalDelta * q.Second;
                 vertex.Normal = normal * 0.5f + 0.5f;
             }
         }

@@ -786,11 +786,13 @@ bool ProcessMesh(ModelData& result, OpenFbxImporterData& data, const ofbx::Mesh*
             auto shapeNormals = shape->getNormals();
             for (int32 i = 0; i < blendShapeData.Vertices.Count(); i++)
             {
-                /*auto delta = ToFloat3(shapeNormals[i + firstVertexOffset]) - mesh.Normals[i];
-                auto length = delta.Length();
-                if (length > ZeroTolerance)
-                    delta /= length;*/
-                auto delta = Float3::Zero; // TODO: blend shape normals deltas fix when importing from fbx
+                auto delta = ToFloat3(shapeNormals[i + firstVertexOffset]);
+                if (data.ConvertRH)
+                {
+                    // Mirror normals along the Z axis
+                    delta.Z *= -1.0f;
+                }
+                delta = delta - mesh.Normals.Get()[i];
                 blendShapeData.Vertices.Get()[i].NormalDelta = delta;
             }
         }
