@@ -346,7 +346,7 @@ void StaticModel::Draw(RenderContext& renderContext)
     draw.World = &world;
     draw.DrawState = &_drawState;
     draw.Deformation = _deformation;
-    draw.Lightmap = _scene->LightmapsData.GetReadyLightmap(Lightmap.TextureIndex);
+    draw.Lightmap = _scene ? _scene->LightmapsData.GetReadyLightmap(Lightmap.TextureIndex) : nullptr;
     draw.LightmapUVs = &Lightmap.UVsArea;
     draw.Flags = _staticFlags;
     draw.DrawModes = DrawModes;
@@ -380,7 +380,7 @@ void StaticModel::Draw(RenderContextBatch& renderContextBatch)
     draw.World = &world;
     draw.DrawState = &_drawState;
     draw.Deformation = _deformation;
-    draw.Lightmap = _scene->LightmapsData.GetReadyLightmap(Lightmap.TextureIndex);
+    draw.Lightmap = _scene ? _scene->LightmapsData.GetReadyLightmap(Lightmap.TextureIndex) : nullptr;
     draw.LightmapUVs = &Lightmap.UVsArea;
     draw.Flags = _staticFlags;
     draw.DrawModes = DrawModes;

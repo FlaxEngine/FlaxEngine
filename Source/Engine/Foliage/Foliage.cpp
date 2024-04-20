@@ -115,7 +115,7 @@ void Foliage::DrawInstance(RenderContext& renderContext, FoliageInstance& instan
             e = &result[key];
             ASSERT_LOW_LAYER(key.Mat);
             e->DrawCall.Material = key.Mat;
-            e->DrawCall.Surface.Lightmap = EnumHasAnyFlags(_staticFlags, StaticFlags::Lightmap) ? _scene->LightmapsData.GetReadyLightmap(key.Lightmap) : nullptr;
+            e->DrawCall.Surface.Lightmap = EnumHasAnyFlags(_staticFlags, StaticFlags::Lightmap) && _scene ? _scene->LightmapsData.GetReadyLightmap(key.Lightmap) : nullptr;
         }
 
         // Add instance to the draw batch
@@ -1172,7 +1172,7 @@ void Foliage::Draw(RenderContext& renderContext)
         draw.ForcedLOD = -1;
         draw.SortOrder = 0;
         draw.VertexColors = nullptr;
-        draw.Lightmap = _scene->LightmapsData.GetReadyLightmap(instance.Lightmap.TextureIndex);
+        draw.Lightmap = _scene ? _scene->LightmapsData.GetReadyLightmap(instance.Lightmap.TextureIndex) : nullptr;
         draw.LightmapUVs = &instance.Lightmap.UVsArea;
         draw.Buffer = &type.Entries;
         draw.World = &world;
