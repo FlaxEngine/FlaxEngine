@@ -589,6 +589,9 @@ bool ModelTool::ImportData(const String& path, ModelData& data, Options& options
             {
                 for (auto& n : mesh->Normals)
                     n *= -1;
+                for (auto& shape : mesh->BlendShapes)
+                    for (auto& v : shape.Vertices)
+                        v.NormalDelta *= -1;
             }
         }
     }

@@ -800,7 +800,7 @@ bool ProcessMesh(ModelData& result, OpenFbxImporterData& data, const ofbx::Mesh*
     {
         // Mirror positions along the Z axis
         for (int32 i = 0; i < vertexCount; i++)
-            mesh.Positions[i].Z *= -1.0f;
+            mesh.Positions.Get()[i].Z *= -1.0f;
         for (auto& blendShapeData : mesh.BlendShapes)
         {
             for (auto& v : blendShapeData.Vertices)
@@ -815,7 +815,7 @@ bool ProcessMesh(ModelData& result, OpenFbxImporterData& data, const ofbx::Mesh*
     {
         // Invert the order
         for (int32 i = 0; i < mesh.Indices.Count(); i += 3)
-            Swap(mesh.Indices[i], mesh.Indices[i + 2]);
+            Swap(mesh.Indices.Get()[i], mesh.Indices.Get()[i + 2]);
     }
 
     if ((data.Options.CalculateTangents || !tangents) && mesh.UVs.HasItems())

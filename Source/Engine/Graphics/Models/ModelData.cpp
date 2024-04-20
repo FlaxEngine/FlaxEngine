@@ -508,6 +508,22 @@ void MeshData::TransformBuffer(const Matrix& matrix)
     Matrix::Invert(matrix, inverseTransposeMatrix);
     Matrix::Transpose(inverseTransposeMatrix, inverseTransposeMatrix);
 
+    // Transform blend shapes
+    for (auto& blendShape : BlendShapes)
+    {
+        const auto vv = blendShape.Vertices.Get();
+        for (int32 i = 0; i < blendShape.Vertices.Count(); i++)
+        {
+            auto& v = vv[i];
+            Float3 p = Positions[v.VertexIndex], vp;
+            Float3::Transform(p + v.PositionDelta, matrix, vp);
+            Float3::Transform(p, matrix, p);
+            v.PositionDelta = vp - p;
+            Float3::TransformNormal(v.NormalDelta, inverseTransposeMatrix, v.NormalDelta);
+            v.NormalDelta.Normalize();
+        }
+    }
+
     // Transform positions
     const auto pp = Positions.Get();
     for (int32 i = 0; i < Positions.Count(); i++)
@@ -530,18 +546,6 @@ void MeshData::TransformBuffer(const Matrix& matrix)
         auto& t = tt[i];
         Float3::TransformNormal(t, inverseTransposeMatrix, t);
         t.Normalize();
-    }
-
-    // Transform blend shapes
-    for (auto& blendShape : BlendShapes)
-    {
-        for (int32 i = 0; i < blendShape.Vertices.Count(); i++)
-        {
-            auto& v = blendShape.Vertices[i];
-            Float3::Transform(v.PositionDelta, matrix, v.PositionDelta);
-            Float3::TransformNormal(v.NormalDelta, inverseTransposeMatrix, v.NormalDelta);
-            v.NormalDelta.Normalize();
-        }
     }
 }
 
