@@ -38,7 +38,6 @@ namespace FlaxEditor.GUI.Tree
         private bool _isMouseDown;
         private float _mouseDownTime;
         private Float2 _mouseDownPos;
-        private Color _cachedTextColor;
 
         private DragItemPositioning _dragOverMode;
         private bool _isDragOverHeader;
@@ -604,9 +603,6 @@ namespace FlaxEditor.GUI.Tree
         /// <inheritdoc />
         public override void Update(float deltaTime)
         {
-            // Cache text color
-            _cachedTextColor = CacheTextColor();
-
             // Drop/down animation
             if (_animationProgress < 1.0f)
             {
@@ -676,7 +672,8 @@ namespace FlaxEditor.GUI.Tree
             }
 
             // Draw text
-            Render2D.DrawText(TextFont.GetFont(), _text, textRect, _cachedTextColor, TextAlignment.Near, TextAlignment.Center);
+            Color textColor = CacheTextColor();
+            Render2D.DrawText(TextFont.GetFont(), _text, textRect, textColor, TextAlignment.Near, TextAlignment.Center);
 
             // Draw drag and drop effect
             if (IsDragOver && _tree.DraggedOverNode == this)
@@ -1169,7 +1166,6 @@ namespace FlaxEditor.GUI.Tree
             {
                 // TODO: perform layout for any non-TreeNode controls
                 _cachedHeight = _headerHeight;
-                _cachedTextColor = CacheTextColor();
                 Size = new Float2(width, _headerHeight);
             }
 
@@ -1219,7 +1215,6 @@ namespace FlaxEditor.GUI.Tree
             }
 
             _cachedHeight = height;
-            _cachedTextColor = CacheTextColor();
             Height = Mathf.Max(_headerHeight, y);
         }
 
