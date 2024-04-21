@@ -1906,12 +1906,18 @@ void DebugDraw::DrawCylinder(const Vector3& position, const Quaternion& orientat
 
 void DebugDraw::DrawWireCylinder(const Vector3& position, const Quaternion& orientation, float radius, float height, const Color& color, float duration, bool depthTest)
 {
-    Array<DebugTriangle>* list;
-    if (depthTest)
-        list = duration > 0 ? &Context->DebugDrawDepthTest.DefaultWireTriangles : &Context->DebugDrawDepthTest.OneFrameWireTriangles;
-    else
-        list = duration > 0 ? &Context->DebugDrawDefault.DefaultWireTriangles : &Context->DebugDrawDefault.OneFrameWireTriangles;
-    ::DrawCylinder(list, position, orientation, radius, height, color, duration);
+    auto up = orientation * Vector3::Up;
+    auto n = (up * (height * 0.5f));
+    auto top = position + n;
+    auto bottom = position - n;
+    auto right = orientation * Vector3(radius, 0, 0);
+    auto foroward = orientation * Vector3(0, 0, radius);
+    DebugDraw::DrawCircle(top, up, radius, color, duration, depthTest);
+    DebugDraw::DrawCircle(bottom, up, radius, color, duration, depthTest);
+    DebugDraw::DrawLine(top + right, bottom + right, color, duration, depthTest);
+    DebugDraw::DrawLine(top - right, bottom - right, color, duration, depthTest);
+    DebugDraw::DrawLine(top + foroward, bottom + foroward, color, duration, depthTest);
+    DebugDraw::DrawLine(top - foroward, bottom - foroward, color, duration, depthTest);
 }
 
 void DebugDraw::DrawCone(const Vector3& position, const Quaternion& orientation, float radius, float angleXY, float angleXZ, const Color& color, float duration, bool depthTest)

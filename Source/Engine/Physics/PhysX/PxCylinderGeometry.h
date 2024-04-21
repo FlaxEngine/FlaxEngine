@@ -1,18 +1,24 @@
 #pragma once
 #if COMPILE_WITH_PHYSX
+#include "Engine/Core/Delegate.h"
+#include "Engine/Core/Collections/Array.h"
+#include "Engine/Physics/PhysicsTransform.h"
 #include "Types.h"
+#include <PhysX\extensions\PxGjkQueryExt.h>
 
 struct CylinderCallbacks : PxCustomGeometry::Callbacks
 {
     DECLARE_CUSTOM_GEOMETRY_TYPE
 private:
+    static PxConvexMesh* LowPolyCylinder;
+
     PxReal radius;
     PxReal halfHeight;
 public:
     /**
     \brief Constructor, initializes to a capsule with passed radius and half height.
     */
-    PX_INLINE CylinderCallbacks(PxReal radius_ = 0.0f, PxReal halfHeight_ = 0.0f) : radius(radius_), halfHeight(halfHeight_) {}
+    CylinderCallbacks(PxPhysics* PhysX,PxReal radius_ = 0.0f, PxReal halfHeight_ = 0.0f);
 
 
     /**

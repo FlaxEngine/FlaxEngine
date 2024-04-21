@@ -138,9 +138,5 @@ void CylinderCollider::UpdateBounds()
 
 void CylinderCollider::GetGeometry(CollisionShape& collision)
 {
-    const float scaling = _cachedScale.GetAbsolute().MaxValue();
-    const float minSize = 0.001f;
-    const float radius = Math::Max(Math::Abs(_radius) * scaling, minSize);
-    const float height = Math::Max(Math::Abs(_height) * scaling, minSize);
-    collision.SetCylinder(radius, height * 0.5f);
+    collision.SetCylinder(_radius, _height);
 }

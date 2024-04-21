@@ -648,7 +648,7 @@ void GetShapeGeometry(const CollisionShape& shape, PxGeometryHolder& geometry)
         geometry.storeAny(PxHeightFieldGeometry((PxHeightField*)shape.HeightField.HeightField, PxMeshGeometryFlags(0), Math::Max(shape.HeightField.HeightScale, PX_MIN_HEIGHTFIELD_Y_SCALE), Math::Max(shape.HeightField.RowScale, PX_MIN_HEIGHTFIELD_XZ_SCALE), Math::Max(shape.HeightField.ColumnScale, PX_MIN_HEIGHTFIELD_XZ_SCALE)));
         break;
     case CollisionShape::Types::Cylinder:
-        auto gCylinderCallbacks = new CylinderCallbacks(shape.Cylinder.Radius, shape.Cylinder.HalfHeight);
+        auto gCylinderCallbacks = new CylinderCallbacks(PhysX,shape.Cylinder.Radius, shape.Cylinder.HalfHeight);
         geometry.storeAny(PxCustomGeometry(*gCylinderCallbacks));
         break;
     }
@@ -984,6 +984,39 @@ void PhysicalMaterial::UpdatePhysicsMaterial()
 
 bool CollisionCooking::CookConvexMesh(CookingInput& input, BytesContainer& output)
 {
+#if 0 // data extractor
+
+    String out = String::Format(L"\n static Float3* points [{0}] = ", input.VertexCount);
+    out.Append('{');
+    auto data = Array<Float3>(input.VertexData, input.VertexCount);
+    for (size_t i = 0; i < data.Count(); i++)
+    {
+        auto d = data[i];
+        out.Append(String::Format(L"\tFloat3({0},{1},{2}),\n", d.X, d.Y, d.Z));
+    }
+    out.Append(L"};");
+    if (input.Is16bitIndexData)
+    {
+        auto data2 = Array<PxU16>((PxU16*)input.IndexData, input.IndexCount);
+        for (size_t i = 0; i < data2.Count(); i++)
+        {
+            auto d = data2[i];
+            out.Append(String::Format(L"{0},\n",d));
+        }
+    }
+    else
+    {
+        auto data2 = Array<PxU32>((PxU32*)input.IndexData, input.IndexCount);
+        for (size_t i = 0; i < data2.Count(); i++)
+        {
+            auto d = data2[i];
+            out.Append(String::Format(L"{0},\n", d));
+        }
+    }
+
+    LOG_STR(Info, out.ToString());
+#endif
+
     PROFILE_CPU();
     ENSURE_CAN_COOK;
     if (input.VertexCount == 0)
