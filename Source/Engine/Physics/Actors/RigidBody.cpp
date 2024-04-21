@@ -595,8 +595,11 @@ void RigidBody::OnTransformChanged()
     // Update physics is not during physics state synchronization
     if (!_isUpdatingTransform && _actor)
     {
-        const bool kinematic = GetIsKinematic() && GetEnableSimulation();
-        PhysicsBackend::SetRigidActorPose(_actor, _transform.Translation, _transform.Orientation, kinematic, true);
+        //leaving this note as a reminder
+        //it creates phantom forces on children RigidBody, clipping colliders thru the ground and more...
+
+        //const bool kinematic = GetIsKinematic() && GetEnableSimulation();
+        //PhysicsBackend::SetRigidActorPose(_actor, _transform.Translation, _transform.Orientation, kinematic, true);
         UpdateScale();
     }
 
