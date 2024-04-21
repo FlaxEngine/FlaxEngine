@@ -36,7 +36,7 @@ protected:
     /// propery for editor dont use it
     /// </summary>
     /// <returns></returns>
-    API_PROPERTY(internal) bool IsConstraintActorAValid() const { return  ConstraintActorA; }
+    API_PROPERTY(internal) bool ShowConstrainActorA() const { return  ConstraintActorA.Get() == nullptr; }
 public:
 
     /// <summary>
@@ -47,7 +47,7 @@ public:
     /// <summary>
     /// [todo]
     /// </summary>
-    API_PROPERTY(Attributes = "EditorOrder(1), EditorDisplay(\"Joint\"),VisibleIf(nameof(IsConstraintActorAValid), false)")
+    API_PROPERTY(Attributes = "EditorOrder(1), EditorDisplay(\"Joint\"),VisibleIf(nameof(ShowConstrainActorA), false)")
     const PhysicsTransform& GetLocalConstrainActorA() const;
 
     /// <summary>
