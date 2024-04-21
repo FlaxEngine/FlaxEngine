@@ -182,6 +182,8 @@ bool ScriptingService::Init()
         return true;
     }
 
+    MCore::CreateScriptingAssemblyLoadContext();
+
     // Cache root domain
     _rootDomain = MCore::GetRootDomain();
 
@@ -710,7 +712,8 @@ void Scripting::Reload(bool canTriggerSceneReload)
     _hasGameModulesLoaded = false;
 
     // Release and create a new assembly load context for user assemblies
-    MCore::ReloadScriptingAssemblyLoadContext();
+    MCore::UnloadScriptingAssemblyLoadContext();
+    MCore::CreateScriptingAssemblyLoadContext();
 
     // Give GC a try to cleanup old user objects and the other mess
     MCore::GC::Collect();
