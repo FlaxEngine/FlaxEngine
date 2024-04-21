@@ -595,6 +595,7 @@ void RigidBody::OnTransformChanged()
     // Update physics is not during physics state synchronization
     if (!_isUpdatingTransform && _actor)
     {
+        //[Note] the PhysicsBackend::SetRigidActorPose cant exist here
         //leaving this note as a reminder
         //it creates phantom forces on children RigidBody, clipping colliders thru the ground and more...
 
