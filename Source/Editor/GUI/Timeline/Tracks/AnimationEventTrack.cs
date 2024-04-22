@@ -99,6 +99,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
             if (Type == ScriptType.Null)
             {
                 Editor.LogError("Missing anim event type " + _instanceTypeName);
+                InitMissing();
                 return;
             }
             Instance = (AnimEvent)Type.CreateInstance();
@@ -125,20 +126,37 @@ namespace FlaxEditor.GUI.Timeline.Tracks
                 _isRegisteredForScriptsReload = true;
                 ScriptsBuilder.ScriptsReloadBegin += OnScriptsReloadBegin;
             }
+            Type.TrackLifetime(OnTypeDisposing);
+        }
+
+        private void OnTypeDisposing(ScriptType type)
+        {
+            if (Type == type && !IsDisposing)
+            {
+                // Turn into missing script
+                OnScriptsReloadBegin();
+                ScriptsBuilder.ScriptsReloadEnd -= OnScriptsReloadEnd;
+                InitMissing();
+            }
+        }
+
+        private void InitMissing()
+        {
+            CanDelete = true;
+            CanSplit = false;
+            CanResize = false;
+            TooltipText = $"Missing Anim Event Type '{_instanceTypeName}'";
+            BackgroundColor = Color.Red;
+            Type = ScriptType.Null;
+            Instance = null;
         }
 
         internal void InitMissing(string typeName, byte[] data)
         {
-            Type = ScriptType.Null;
             IsContinuous = false;
-            CanDelete = true;
-            CanSplit = false;
-            CanResize = false;
-            TooltipText = $"Missing Anim Event Type '{typeName}'";
-            Instance = null;
-            BackgroundColor = Color.Red;
             _instanceTypeName = typeName;
             _instanceData = data;
+            InitMissing();
         }
 
         internal void Load(BinaryReader stream)
