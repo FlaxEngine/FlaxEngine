@@ -720,23 +720,23 @@ bool ProcessMesh(ModelData& result, OpenFbxImporterData& data, const ofbx::Mesh*
             {
                 int vtxIndex = clusterIndices[j] - firstVertexOffset;
                 float vtxWeight = (float)clusterWeights[j];
-
                 if (vtxWeight <= 0 || vtxIndex < 0 || vtxIndex >= vertexCount)
                     continue;
-
-                auto& indices = mesh.BlendIndices[vtxIndex];
-                auto& weights = mesh.BlendWeights[vtxIndex];
+                Int4& indices = mesh.BlendIndices.Get()[vtxIndex];
+                Float4& weights = mesh.BlendWeights.Get()[vtxIndex];
 
                 for (int32 k = 0; k < 4; k++)
                 {
                     if (vtxWeight >= weights.Raw[k])
                     {
+                        // Move lower weights by one down
                         for (int32 l = 2; l >= k; l--)
                         {
                             indices.Raw[l + 1] = indices.Raw[l];
                             weights.Raw[l + 1] = weights.Raw[l];
                         }
 
+                        // Set bone influence
                         indices.Raw[k] = boneIndex;
                         weights.Raw[k] = vtxWeight;
                         break;

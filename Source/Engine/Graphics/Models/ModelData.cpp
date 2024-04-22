@@ -563,9 +563,10 @@ void MeshData::NormalizeBlendWeights()
     ASSERT(Positions.Count() == BlendWeights.Count());
     for (int32 i = 0; i < Positions.Count(); i++)
     {
-        const float sum = BlendWeights[i].SumValues();
+        Float4& weights = BlendWeights.Get()[i];
+        const float sum = weights.SumValues();
         const float invSum = sum > ZeroTolerance ? 1.0f / sum : 0.0f;
-        BlendWeights[i] *= invSum;
+        weights *= invSum;
     }
 }
 

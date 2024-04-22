@@ -113,7 +113,7 @@ void AnimatedModel::PreInitSkinningData()
     for (int32 boneIndex = 0; boneIndex < bonesCount; boneIndex++)
     {
         auto& bone = skeleton.Bones[boneIndex];
-        identityMatrices[boneIndex] = bone.OffsetMatrix * GraphInstance.NodesPose[bone.NodeIndex];
+        identityMatrices.Get()[boneIndex] = bone.OffsetMatrix * GraphInstance.NodesPose[bone.NodeIndex];
     }
     _skinningData.SetData(identityMatrices.Get(), true);
 
