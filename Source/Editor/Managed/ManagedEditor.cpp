@@ -16,6 +16,7 @@
 #include "Engine/Engine/CommandLine.h"
 #include "Engine/Renderer/ProbesRenderer.h"
 #include "Engine/Animations/Graph/AnimGraph.h"
+#include "Engine/Core/ObjectsRemovalService.h"
 
 ManagedEditor::InternalOptions ManagedEditor::ManagedEditorOptions;
 
@@ -570,6 +571,29 @@ bool ManagedEditor::EvaluateVisualScriptLocal(VisualScript* script, VisualScript
         return true;
     }
     return false;
+}
+
+void ManagedEditor::WipeOutLeftoverSceneObjects()
+{
+    Array<ScriptingObject*> objects = Scripting::GetObjects();
+    bool removedAny = false;
+    for (ScriptingObject* object : objects)
+    {
+        if (EnumHasAllFlags(object->Flags, ObjectFlags::IsDuringPlay) && EnumHasNoneFlags(object->Flags, ObjectFlags::WasMarkedToDelete))
+        {
+            if (auto* sceneObject = Cast<SceneObject>(object))
+            {
+                if (sceneObject->HasParent())
+                    continue; // Skip sub-objects
+
+                LOG(Error, "Object '{}' (ID={}, Type={}) is still in memory after play end but should be destroyed (memory leak).", sceneObject->GetNamePath(), sceneObject->GetID(), sceneObject->GetType().ToString());
+                sceneObject->DeleteObject();
+                removedAny = true;
+            }
+        }
+    }
+    if (removedAny)
+        ObjectsRemovalService::Flush();
 }
 
 void ManagedEditor::OnEditorAssemblyLoaded(MAssembly* assembly)

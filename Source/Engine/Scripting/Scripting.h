@@ -80,6 +80,13 @@ public:
 public:
 
     /// <summary>
+    /// Gets all registered scripting objects.
+    /// </summary>
+    /// <remarks>Use with caution due to potentially large memory allocation.</remarks>
+    /// <returns>The collection of the objects.</returns>
+    static Array<ScriptingObject*, HeapAllocation> GetObjects();
+
+    /// <summary>
     /// Finds the class with given fully qualified name within whole assembly.
     /// </summary>
     /// <param name="fullname">The full name of the type eg: System.Int64.</param>

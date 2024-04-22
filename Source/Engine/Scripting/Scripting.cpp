@@ -721,6 +721,15 @@ void Scripting::Reload(bool canTriggerSceneReload)
 
 #endif
 
+Array<ScriptingObject*, HeapAllocation> Scripting::GetObjects()
+{
+    Array<ScriptingObject*> objects;
+    _objectsLocker.Lock();
+    _objectsDictionary.GetValues(objects);
+    _objectsLocker.Unlock();
+    return objects;
+}
+
 MClass* Scripting::FindClass(const StringAnsiView& fullname)
 {
     if (fullname.IsEmpty())
