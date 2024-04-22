@@ -1146,12 +1146,6 @@ namespace FlaxEngine.Interop
                 MethodInfo clearCacheMethod = TypeDescriptionProviderType?.Assembly.GetType("System.ComponentModel.ReflectionCachesUpdateHandler")?.GetMethod("ClearCache");
                 if (clearCacheMethod != null)
                     clearCacheMethod.Invoke(null, new object[] { null });
-                else
-                {
-                    MethodInfo beforeUpdateMethod = TypeDescriptionProviderType?.Assembly.GetType("System.ComponentModel.ReflectionCachesUpdateHandler")?.GetMethod("BeforeUpdate");
-                    if (beforeUpdateMethod != null)
-                        beforeUpdateMethod.Invoke(null, new object[] { null });
-                }
 
                 Type TypeDescriptorType = typeof(System.ComponentModel.TypeDescriptor);
 
