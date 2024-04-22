@@ -833,6 +833,14 @@ namespace FlaxEditor.CustomEditors.Editors
             OnGroupsEnd();
         }
 
+        protected override void Deinitialize()
+        {
+            _visibleIfCaches = null;
+            _visibleIfPropertiesListsCache = null;
+
+            base.Deinitialize();
+        }
+
         /// <inheritdoc />
         public override void Refresh()
         {
