@@ -112,7 +112,7 @@ VariantType::VariantType(Types type, const StringAnsiView& typeName)
     }
 }
 
-VariantType::VariantType(Types type, MClass* klass)
+VariantType::VariantType(Types type, const MClass* klass)
 {
     Type = type;
     TypeName = nullptr;

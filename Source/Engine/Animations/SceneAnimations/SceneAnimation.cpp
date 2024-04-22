@@ -35,7 +35,7 @@ const BytesContainer& SceneAnimation::LoadTimeline()
 
 #if USE_EDITOR
 
-bool SceneAnimation::SaveTimeline(BytesContainer& data)
+bool SceneAnimation::SaveTimeline(const BytesContainer& data)
 {
     // Wait for asset to be loaded or don't if last load failed (eg. by shader source compilation error)
     if (LastLoadFailed())

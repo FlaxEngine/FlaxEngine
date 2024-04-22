@@ -133,14 +133,14 @@ public:
     /// <param name="id">The object unique identifier.</param>
     /// <param name="type">The type of the object to find (optional).</param>
     /// <returns>The found object or null if missing.</returns>
-    static ScriptingObject* FindObject(Guid id, MClass* type = nullptr);
+    static ScriptingObject* FindObject(Guid id, const MClass* type = nullptr);
 
     /// <summary>
     /// Tries to find the object by the given class.
     /// </summary>
     /// <param name="type">The type of the object to find.</param>
     /// <returns>The found object or null if missing.</returns>
-    static ScriptingObject* TryFindObject(MClass* type);
+    static ScriptingObject* TryFindObject(const MClass* type);
 
     /// <summary>
     /// Tries to find the object by the given identifier.
@@ -159,7 +159,7 @@ public:
     /// <param name="id">The object unique identifier.</param>
     /// <param name="type">The type of the object to find (optional).</param>
     /// <returns>The found object or null if missing.</returns>
-    static ScriptingObject* TryFindObject(Guid id, MClass* type = nullptr);
+    static ScriptingObject* TryFindObject(Guid id, const MClass* type = nullptr);
 
     /// <summary>
     /// Finds the object by the given managed instance handle. Searches only registered scene objects.
@@ -189,7 +189,7 @@ public:
     /// <summary>
     /// Returns true if given type is from one of the game scripts assemblies.
     /// </summary>
-    static bool IsTypeFromGameScripts(MClass* type);
+    static bool IsTypeFromGameScripts(const MClass* type);
 
     static void ProcessBuildInfoPath(String& path, const String& projectFolderPath);
 

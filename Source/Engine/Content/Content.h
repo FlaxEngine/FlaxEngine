@@ -164,7 +164,7 @@ public:
     /// <param name="path">The path of the asset (absolute or relative to the current workspace directory).</param>
     /// <param name="type">The asset type. If loaded object has different type (excluding types derived from the given) the loading fails.</param>
     /// <returns>Loaded asset or null if cannot</returns>
-    API_FUNCTION(Attributes="HideInEditor") static Asset* LoadAsync(const StringView& path, MClass* type);
+    API_FUNCTION(Attributes="HideInEditor") static Asset* LoadAsync(const StringView& path, const MClass* type);
 
     /// <summary>
     /// Loads asset and holds it until it won't be referenced by any object. Returns null if asset is missing. Actual asset data loading is performed on a other thread in async.
@@ -192,7 +192,7 @@ public:
     /// <param name="internalPath">The path of the asset relative to the engine internal content (excluding the extension).</param>
     /// <param name="type">The asset type. If loaded object has different type (excluding types derived from the given) the loading fails.</param>
     /// <returns>The loaded asset or null if failed.</returns>
-    API_FUNCTION(Attributes="HideInEditor") static Asset* LoadAsyncInternal(const StringView& internalPath, MClass* type);
+    API_FUNCTION(Attributes="HideInEditor") static Asset* LoadAsyncInternal(const StringView& internalPath, const MClass* type);
 
     /// <summary>
     /// Loads internal engine asset and holds it until it won't be referenced by any object. Returns null if asset is missing. Actual asset data loading is performed on a other thread in async.
@@ -342,7 +342,7 @@ public:
     /// </summary>
     /// <param name="type">The asset type klass.</param>
     /// <returns>Created asset or null if failed.</returns>
-    API_FUNCTION() static Asset* CreateVirtualAsset(API_PARAM(Attributes="TypeReference(typeof(Asset))") MClass* type);
+    API_FUNCTION() static Asset* CreateVirtualAsset(API_PARAM(Attributes="TypeReference(typeof(Asset))") const MClass* type);
 
     /// <summary>
     /// Creates temporary and virtual asset of the given type.

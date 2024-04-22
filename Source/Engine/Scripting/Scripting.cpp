@@ -840,7 +840,7 @@ void ScriptingObjectReferenceBase::OnDeleted(ScriptingObject* obj)
     }
 }
 
-ScriptingObject* Scripting::FindObject(Guid id, MClass* type)
+ScriptingObject* Scripting::FindObject(Guid id, const MClass* type)
 {
     if (!id.IsValid())
         return nullptr;
@@ -894,7 +894,7 @@ ScriptingObject* Scripting::FindObject(Guid id, MClass* type)
     return nullptr;
 }
 
-ScriptingObject* Scripting::TryFindObject(Guid id, MClass* type)
+ScriptingObject* Scripting::TryFindObject(Guid id, const MClass* type)
 {
     if (!id.IsValid())
         return nullptr;
@@ -930,7 +930,7 @@ ScriptingObject* Scripting::TryFindObject(Guid id, MClass* type)
     return result;
 }
 
-ScriptingObject* Scripting::TryFindObject(MClass* type)
+ScriptingObject* Scripting::TryFindObject(const MClass* type)
 {
     if (type == nullptr)
         return nullptr;
@@ -1000,7 +1000,7 @@ bool Scripting::IsEveryAssemblyLoaded()
     return true;
 }
 
-bool Scripting::IsTypeFromGameScripts(MClass* type)
+bool Scripting::IsTypeFromGameScripts(const MClass* type)
 {
     const auto binaryModule = ManagedBinaryModule::GetModule(type ? type->GetAssembly() : nullptr);
     return binaryModule && binaryModule != GetBinaryModuleCorlib() && binaryModule != GetBinaryModuleFlaxEngine();
