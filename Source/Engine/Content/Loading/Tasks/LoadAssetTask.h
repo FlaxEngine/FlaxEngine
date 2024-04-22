@@ -15,38 +15,35 @@
 class LoadAssetTask : public ContentLoadTask
 {
 public:
-
     /// <summary>
     /// Initializes a new instance of the <see cref="LoadAssetTask"/> class.
     /// </summary>
     /// <param name="asset">The asset to load.</param>
     LoadAssetTask(Asset* asset)
-        : ContentLoadTask(Type::LoadAsset)
-        , Asset(asset)
+        : Asset(asset)
     {
     }
 
     ~LoadAssetTask()
     {
-        if (Asset)
+        auto asset = Asset.Get();
+        if (asset)
         {
-            Asset->Locker.Lock();
-            if (Platform::AtomicRead(&Asset->_loadingTask) == (intptr)this)
+            asset->Locker.Lock();
+            if (Platform::AtomicRead(&asset->_loadingTask) == (intptr)this)
             {
-                Platform::AtomicStore(&Asset->_loadState, (int64)Asset::LoadState::LoadFailed);
-                Platform::AtomicStore(&Asset->_loadingTask, 0);
+                Platform::AtomicStore(&asset->_loadState, (int64)Asset::LoadState::LoadFailed);
+                Platform::AtomicStore(&asset->_loadingTask, 0);
                 LOG(Error, "Loading asset \'{0}\' result: {1}.", ToString(), ToString(Result::TaskFailed));
             }
-            Asset->Locker.Unlock();
+            asset->Locker.Unlock();
         }
     }
 
 public:
-
     WeakAssetReference<Asset> Asset;
 
 public:
-
     // [ContentLoadTask]
     bool HasReference(Object* obj) const override
     {
@@ -54,7 +51,6 @@ public:
     }
 
 protected:
-
     // [ContentLoadTask]
     Result run() override
     {
@@ -68,32 +64,36 @@ protected:
         // Call loading
         if (ref->onLoad(this))
             return Result::AssetLoadError;
-
         return Result::Ok;
     }
+
     void OnFail() override
     {
-        if (Asset)
+        auto asset = Asset.Get();
+        if (asset)
         {
-            Asset->Locker.Lock();
-            if (Platform::AtomicRead(&Asset->_loadingTask) == (intptr)this)
-                Platform::AtomicStore(&Asset->_loadingTask, 0);
-            Asset->Locker.Unlock();
             Asset = nullptr;
+            asset->Locker.Lock();
+            if (Platform::AtomicRead(&asset->_loadingTask) == (intptr)this)
+                Platform::AtomicStore(&asset->_loadingTask, 0);
+            asset->Locker.Unlock();
         }
 
         // Base
         ContentLoadTask::OnFail();
     }
+
     void OnEnd() override
     {
-        if (Asset)
+        auto asset = Asset.Get();
+        if (asset)
         {
-            Asset->Locker.Lock();
-            if (Platform::AtomicRead(&Asset->_loadingTask) == (intptr)this)
-                Platform::AtomicStore(&Asset->_loadingTask, 0);
-            Asset->Locker.Unlock();
             Asset = nullptr;
+            asset->Locker.Lock();
+            if (Platform::AtomicRead(&asset->_loadingTask) == (intptr)this)
+                Platform::AtomicStore(&asset->_loadingTask, 0);
+            asset->Locker.Unlock();
+            asset = nullptr;
         }
 
         // Base

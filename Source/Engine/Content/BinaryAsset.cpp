@@ -507,8 +507,7 @@ public:
     /// </summary>
     /// <param name="asset">The asset.</param>
     InitAssetTask(BinaryAsset* asset)
-        : ContentLoadTask(Type::Custom)
-        , _asset(asset)
+        : _asset(asset)
         , _dataLock(asset->Storage->Lock())
     {
     }
@@ -527,8 +526,6 @@ protected:
         AssetReference<BinaryAsset> ref = _asset.Get();
         if (ref == nullptr)
             return Result::MissingReferences;
-
-        // Prepare
         auto storage = ref->Storage;
         auto factory = (BinaryAssetFactoryBase*)Content::GetAssetFactory(ref->GetTypeName());
         ASSERT(factory);
@@ -548,7 +545,6 @@ protected:
         _dataLock.Release();
         _asset = nullptr;
 
-        // Base
         ContentLoadTask::OnEnd();
     }
 };
