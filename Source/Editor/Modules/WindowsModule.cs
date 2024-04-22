@@ -5,10 +5,12 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Xml;
 using FlaxEditor.Content;
 using FlaxEditor.GUI.Dialogs;
+using FlaxEditor.GUI.Docking;
 using FlaxEditor.Windows;
 using FlaxEditor.Windows.Assets;
 using FlaxEditor.Windows.Profiler;
@@ -39,6 +41,7 @@ namespace FlaxEditor.Modules
             
             public DockState DockState;
             public DockPanel DockedTo;
+            public int DockedTabIndex;
             public float? SplitterValue = null;
 
             public bool SelectOnShow = false;
@@ -47,6 +50,9 @@ namespace FlaxEditor.Modules
             public bool Minimize;
             public Float2 FloatSize;
             public Float2 FloatPosition;
+
+            public AssetItem Item;
+            public AssetItem Item2;
 
             // Constructor, to allow for default values
             public WindowRestoreData()
@@ -807,6 +813,56 @@ namespace FlaxEditor.Modules
             Editor.StateMachine.StateChanged += OnEditorStateChanged;
         }
 
+        internal void AddToRestore(PrefabWindow win)
+        {
+            var type = win.GetType();
+            var winData = new WindowRestoreData();
+            var panel = win.ParentDockPanel;
+
+            // Ensure that this window is only selected following recompilation
+            // if it was the active tab in its dock panel. Otherwise, there is a
+            // risk of interrupting the user's workflow by potentially selecting
+            // background tabs.
+            var window = win.RootWindow?.Window;
+            winData.SelectOnShow = panel.SelectedTab == win;
+            winData.DockedTabIndex = 0;
+            if (panel is FloatWindowDockPanel && window != null && panel.TabsCount == 1)
+            {
+                winData.DockState = DockState.Float;
+                winData.FloatPosition = window.Position;
+                winData.FloatSize = window.ClientSize;
+                winData.Maximize = window.IsMaximized;
+                winData.Minimize = window.IsMinimized;
+                winData.DockedTo = panel;
+            }
+            else
+            {
+                for (int i = 0; i < panel.Tabs.Count; i++)
+                {
+                    if (panel.Tabs[i] == win)
+                    {
+                        winData.DockedTabIndex = i;
+                        break;
+                    }
+                }
+                if (panel.TabsCount > 1)
+                {
+                    winData.DockState = DockState.DockFill;
+                    winData.DockedTo = panel;
+                }
+                else
+                {
+                    winData.DockState = panel.TryGetDockState(out var splitterValue);
+                    winData.DockedTo = panel.ParentDockPanel;
+                    winData.SplitterValue = splitterValue;
+                }
+            }
+            winData.AssemblyName = type.Assembly.GetName().Name;
+            winData.TypeName = type.FullName;
+            winData.Item = win.Item;
+            _restoreWindows.Add(winData);
+        }
+
         internal void AddToRestore(CustomEditorWindow win)
         {
             var type = win.GetType();
@@ -839,7 +895,8 @@ namespace FlaxEditor.Modules
                 {
                     winData.DockState = DockState.DockFill;
                     winData.DockedTo = panel;
-                }else
+                }
+                else
                 {
                     winData.DockState = panel.TryGetDockState(out var splitterValue);
                     winData.DockedTo = panel.ParentDockPanel;
@@ -853,36 +910,89 @@ namespace FlaxEditor.Modules
 
         private void OnScriptsReloadEnd()
         {
-            for (int i = 0; i < _restoreWindows.Count; i++)
+            // Go in reverse order to create floating Prefab windows first before docked windows
+            for (int i = _restoreWindows.Count - 1; i >= 0; i--)
             {
                 var winData = _restoreWindows[i];
 
                 try
                 {
                     var assembly = Utils.GetAssemblyByName(winData.AssemblyName);
-                    if (assembly != null)
+                    if (assembly == null)
+                        continue;
+                    
+                    var type = assembly.GetType(winData.TypeName);
+                    if (type == null)
+                        continue;
+
+                    if (type == typeof(PrefabWindow))
                     {
-                        var type = assembly.GetType(winData.TypeName);
-                        if (type != null)
+                        var win = new PrefabWindow(Editor.Instance, winData.Item);
+                        win.Show(winData.DockState, winData.DockState != DockState.Float ? winData.DockedTo : null, winData.SelectOnShow, winData.SplitterValue);
+                        if (winData.DockState == DockState.Float)
                         {
-                            var win = (CustomEditorWindow)Activator.CreateInstance(type);
-                            win.Show(winData.DockState, winData.DockedTo, winData.SelectOnShow, winData.SplitterValue);
-                            if (winData.DockState == DockState.Float)
+                            var window = win.RootWindow.Window;
+                            window.Position = winData.FloatPosition;
+                            if (winData.Maximize)
                             {
-                                var window = win.Window.RootWindow.Window;
-                                window.Position = winData.FloatPosition;
-                                if (winData.Maximize)
-                                {
-                                    window.Maximize();
-                                }
-                                else if (winData.Minimize)
-                                {
-                                    window.Minimize();
-                                }
-                                else 
-                                {
-                                    window.ClientSize = winData.FloatSize;
-                                }
+                                window.Maximize();
+                            }
+                            else if (winData.Minimize)
+                            {
+                                window.Minimize();
+                            }
+                            else
+                            {
+                                window.ClientSize = winData.FloatSize;
+                            }
+
+                            // Update panel reference in other windows docked to this panel
+                            foreach (ref var otherData in CollectionsMarshal.AsSpan(_restoreWindows))
+                            {
+                                if (otherData.DockedTo == winData.DockedTo)
+                                    otherData.DockedTo = win.ParentDockPanel;
+                            }
+                        }
+                        var panel = win.ParentDockPanel;
+                        int currentTabIndex = 0;
+                        for (int pi = 0; pi < panel.TabsCount; pi++)
+                        {
+                            if (panel.Tabs[pi] == win)
+                            {
+                                currentTabIndex = pi;
+                                break;
+                            }
+                        }
+                        while (currentTabIndex > winData.DockedTabIndex)
+                        {
+                            win.ParentDockPanel.MoveTabLeft(currentTabIndex);
+                            currentTabIndex--;
+                        }
+                        while (currentTabIndex < winData.DockedTabIndex)
+                        {
+                            win.ParentDockPanel.MoveTabRight(currentTabIndex);
+                            currentTabIndex++;
+                        }
+                    }
+                    else
+                    {
+                        var win = (CustomEditorWindow)Activator.CreateInstance(type);
+                        win.Show(winData.DockState, winData.DockedTo, winData.SelectOnShow, winData.SplitterValue);
+                        if (winData.DockState == DockState.Float)
+                        {
+                            var window = win.Window.RootWindow.Window;
+                            window.Position = winData.FloatPosition;
+                            if (winData.Maximize)
+                            {
+                                window.Maximize();
+                            }
+                            else if (winData.Minimize)
+                            {
+                                window.Minimize();
+                            }
+                            else
+                            {
+                                window.ClientSize = winData.FloatSize;
                             }
                         }
                     }
