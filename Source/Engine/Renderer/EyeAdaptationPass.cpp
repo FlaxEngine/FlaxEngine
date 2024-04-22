@@ -42,7 +42,7 @@ void EyeAdaptationPass::Render(RenderContext& renderContext, GPUTexture* colorBu
     bool dropHistory = renderContext.Buffers->LastEyeAdaptationTime < ZeroTolerance || renderContext.Task->IsCameraCut;
     const float time = Time::Draw.UnscaledTime.GetTotalSeconds();
     //const float frameDelta = Time::ElapsedGameTime.GetTotalSeconds();
-    const float frameDelta = time - renderContext.Buffers->LastEyeAdaptationTime;
+    const float frameDelta = Math::Clamp(time - renderContext.Buffers->LastEyeAdaptationTime, 0.0f, 1.0f);
     renderContext.Buffers->LastEyeAdaptationTime = 0.0f;
     if ((view.Flags & ViewFlags::EyeAdaptation) == ViewFlags::None || settings.Mode == EyeAdaptationMode::None || checkIfSkipPass())
         return;
