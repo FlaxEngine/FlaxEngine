@@ -209,16 +209,15 @@ namespace FlaxEditor.CustomEditors.Dedicated
         public override DragDropEffect OnDragMove(ref Float2 location, DragData data)
         {
             var result = base.OnDragMove(ref location, data);
-            if (result != DragDropEffect.None)
+            if (result != DragDropEffect.None || _dragHandlers == null)
                 return result;
-
             return _dragHandlers.Effect;
         }
 
         /// <inheritdoc />
         public override void OnDragLeave()
         {
-            _dragHandlers.OnDragLeave();
+            _dragHandlers?.OnDragLeave();
 
             base.OnDragLeave();
         }
