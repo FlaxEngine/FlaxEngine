@@ -1068,7 +1068,7 @@ namespace FlaxEditor.Surface
             if (base.OnMouseDown(location, button))
                 return true;
 
-            if (button == MouseButton.Left && (Archetype.Flags & NodeFlags.NoCloseButton) == 0)
+            if (button == MouseButton.Left && (Archetype.Flags & NodeFlags.NoCloseButton) == 0 && _closeButtonRect.Contains(ref location))
                 return true;
             if (button == MouseButton.Right)
                 return true;
@@ -1083,13 +1083,10 @@ namespace FlaxEditor.Surface
                 return true;
 
             // Close
-            if (button == MouseButton.Left && (Archetype.Flags & NodeFlags.NoCloseButton) == 0)
+            if (button == MouseButton.Left && (Archetype.Flags & NodeFlags.NoCloseButton) == 0 && _closeButtonRect.Contains(ref location))
             {
-                if (_closeButtonRect.Contains(ref location))
-                {
-                    Surface.Delete(this);
-                    return true;
-                }
+                Surface.Delete(this);
+                return true;
             }
 
             // Secondary Context Menu
