@@ -1063,6 +1063,20 @@ namespace FlaxEditor.Surface
         }
 
         /// <inheritdoc />
+        public override bool OnMouseDown(Float2 location, MouseButton button)
+        {
+            if (base.OnMouseDown(location, button))
+                return true;
+
+            if (button == MouseButton.Left && (Archetype.Flags & NodeFlags.NoCloseButton) == 0)
+                return true;
+            if (button == MouseButton.Right)
+                return true;
+
+            return false;
+        }
+
+        /// <inheritdoc />
         public override bool OnMouseUp(Float2 location, MouseButton button)
         {
             if (base.OnMouseUp(location, button))
