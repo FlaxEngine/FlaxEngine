@@ -112,7 +112,7 @@ public:
     /// <param name="vb2">The third vertex buffer data.</param>
     /// <param name="ib">The index buffer in clockwise order.</param>
     /// <returns>True if failed, otherwise false.</returns>
-    FORCE_INLINE bool UpdateMesh(uint32 vertexCount, uint32 triangleCount, VB0ElementType* vb0, VB1ElementType* vb1, VB2ElementType* vb2, uint32* ib)
+    FORCE_INLINE bool UpdateMesh(uint32 vertexCount, uint32 triangleCount, const VB0ElementType* vb0, const VB1ElementType* vb1, const VB2ElementType* vb2, const uint32* ib)
     {
         return UpdateMesh(vertexCount, triangleCount, vb0, vb1, vb2, ib, false);
     }
@@ -127,7 +127,7 @@ public:
     /// <param name="vb2">The third vertex buffer data.</param>
     /// <param name="ib">The index buffer in clockwise order.</param>
     /// <returns>True if failed, otherwise false.</returns>
-    FORCE_INLINE bool UpdateMesh(uint32 vertexCount, uint32 triangleCount, VB0ElementType* vb0, VB1ElementType* vb1, VB2ElementType* vb2, uint16* ib)
+    FORCE_INLINE bool UpdateMesh(uint32 vertexCount, uint32 triangleCount, const VB0ElementType* vb0, const VB1ElementType* vb1, const VB2ElementType* vb2, const uint16* ib)
     {
         return UpdateMesh(vertexCount, triangleCount, vb0, vb1, vb2, ib, true);
     }
@@ -145,7 +145,7 @@ public:
     /// <param name="ib">The index buffer in clockwise order.</param>
     /// <param name="use16BitIndices">True if index buffer uses 16-bit index buffer, otherwise 32-bit.</param>
     /// <returns>True if failed, otherwise false.</returns>
-    bool UpdateMesh(uint32 vertexCount, uint32 triangleCount, VB0ElementType* vb0, VB1ElementType* vb1, VB2ElementType* vb2, void* ib, bool use16BitIndices);
+    bool UpdateMesh(uint32 vertexCount, uint32 triangleCount, const VB0ElementType* vb0, const VB1ElementType* vb1, const VB2ElementType* vb2, const void* ib, bool use16BitIndices);
 
     /// <summary>
     /// Updates the model mesh (used by the virtual models created with Init rather than Load).
@@ -161,7 +161,7 @@ public:
     /// <param name="uvs">The texture coordinates (per vertex).</param>
     /// <param name="colors">The vertex colors (per vertex).</param>
     /// <returns>True if failed, otherwise false.</returns>
-    bool UpdateMesh(uint32 vertexCount, uint32 triangleCount, Float3* vertices, uint16* triangles, Float3* normals = nullptr, Float3* tangents = nullptr, Float2* uvs = nullptr, Color32* colors = nullptr);
+    bool UpdateMesh(uint32 vertexCount, uint32 triangleCount, const Float3* vertices, const uint16* triangles, const Float3* normals = nullptr, const Float3* tangents = nullptr, const Float2* uvs = nullptr, const Color32* colors = nullptr);
 
     /// <summary>
     /// Updates the model mesh (used by the virtual models created with Init rather than Load).
@@ -177,7 +177,7 @@ public:
     /// <param name="uvs">The texture coordinates (per vertex).</param>
     /// <param name="colors">The vertex colors (per vertex).</param>
     /// <returns>True if failed, otherwise false.</returns>
-    bool UpdateMesh(uint32 vertexCount, uint32 triangleCount, Float3* vertices, uint32* triangles, Float3* normals = nullptr, Float3* tangents = nullptr, Float2* uvs = nullptr, Color32* colors = nullptr);
+    bool UpdateMesh(uint32 vertexCount, uint32 triangleCount, const Float3* vertices, const uint32* triangles, const Float3* normals = nullptr, const Float3* tangents = nullptr, const Float2* uvs = nullptr, const Color32* colors = nullptr);
 
 public:
     /// <summary>
@@ -186,7 +186,7 @@ public:
     /// <param name="triangleCount">The amount of triangles in the index buffer.</param>
     /// <param name="ib">The index buffer.</param>
     /// <returns>True if failed, otherwise false.</returns>
-    FORCE_INLINE bool UpdateTriangles(uint32 triangleCount, uint32* ib)
+    FORCE_INLINE bool UpdateTriangles(uint32 triangleCount, const uint32* ib)
     {
         return UpdateTriangles(triangleCount, ib, false);
     }
@@ -197,7 +197,7 @@ public:
     /// <param name="triangleCount">The amount of triangles in the index buffer.</param>
     /// <param name="ib">The index buffer.</param>
     /// <returns>True if failed, otherwise false.</returns>
-    FORCE_INLINE bool UpdateTriangles(uint32 triangleCount, uint16* ib)
+    FORCE_INLINE bool UpdateTriangles(uint32 triangleCount, const uint16* ib)
     {
         return UpdateTriangles(triangleCount, ib, true);
     }
@@ -209,7 +209,7 @@ public:
     /// <param name="ib">The index buffer.</param>
     /// <param name="use16BitIndices">True if index buffer uses 16-bit index buffer, otherwise 32-bit.</param>
     /// <returns>True if failed, otherwise false.</returns>
-    bool UpdateTriangles(uint32 triangleCount, void* ib, bool use16BitIndices);
+    bool UpdateTriangles(uint32 triangleCount, const void* ib, bool use16BitIndices);
 
 public:
     /// <summary>
@@ -235,7 +235,7 @@ public:
     /// <param name="ib">Index buffer data</param>
     /// <param name="use16BitIndexBuffer">True if use 16 bit indices for the index buffer (true: uint16, false: uint32).</param>
     /// <returns>True if cannot load data, otherwise false.</returns>
-    bool Load(uint32 vertices, uint32 triangles, void* vb0, void* vb1, void* vb2, void* ib, bool use16BitIndexBuffer);
+    bool Load(uint32 vertices, uint32 triangles, const void* vb0, const void* vb1, const void* vb2, const void* ib, bool use16BitIndexBuffer);
 
     /// <summary>
     /// Unloads the mesh data (vertex buffers and cache). The opposite to Load.
@@ -315,10 +315,10 @@ private:
     // Internal bindings
     API_FUNCTION(NoProxy) ScriptingObject* GetParentModel();
 #if !COMPILE_WITHOUT_CSHARP
-    API_FUNCTION(NoProxy) bool UpdateMeshUInt(int32 vertexCount, int32 triangleCount, MArray* verticesObj, MArray* trianglesObj, MArray* normalsObj, MArray* tangentsObj, MArray* uvObj, MArray* colorsObj);
-    API_FUNCTION(NoProxy) bool UpdateMeshUShort(int32 vertexCount, int32 triangleCount, MArray* verticesObj, MArray* trianglesObj, MArray* normalsObj, MArray* tangentsObj, MArray* uvObj, MArray* colorsObj);
-    API_FUNCTION(NoProxy) bool UpdateTrianglesUInt(int32 triangleCount, MArray* trianglesObj);
-    API_FUNCTION(NoProxy) bool UpdateTrianglesUShort(int32 triangleCount, MArray* trianglesObj);
+    API_FUNCTION(NoProxy) bool UpdateMeshUInt(int32 vertexCount, int32 triangleCount, const MArray* verticesObj, const MArray* trianglesObj, const MArray* normalsObj, const MArray* tangentsObj, const MArray* uvObj, const MArray* colorsObj);
+    API_FUNCTION(NoProxy) bool UpdateMeshUShort(int32 vertexCount, int32 triangleCount, const MArray* verticesObj, const MArray* trianglesObj, const MArray* normalsObj, const MArray* tangentsObj, const MArray* uvObj, const MArray* colorsObj);
+    API_FUNCTION(NoProxy) bool UpdateTrianglesUInt(int32 triangleCount, const MArray* trianglesObj);
+    API_FUNCTION(NoProxy) bool UpdateTrianglesUShort(int32 triangleCount, const MArray* trianglesObj);
     API_FUNCTION(NoProxy) MArray* DownloadBuffer(bool forceGpu, MTypeObject* resultType, int32 typeI);
 #endif
 };

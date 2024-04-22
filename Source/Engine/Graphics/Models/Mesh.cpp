@@ -24,7 +24,7 @@
 namespace
 {
     template<typename IndexType>
-    bool UpdateMesh(Mesh* mesh, uint32 vertexCount, uint32 triangleCount, Float3* vertices, IndexType* triangles, Float3* normals, Float3* tangents, Float2* uvs, Color32* colors)
+    bool UpdateMesh(Mesh* mesh, uint32 vertexCount, uint32 triangleCount, const Float3* vertices, const IndexType* triangles, const Float3* normals, const Float3* tangents, const Float2* uvs, const Color32* colors)
     {
         auto model = mesh->GetModel();
         CHECK_RETURN(model && model->IsVirtual(), true);
@@ -63,40 +63,39 @@ namespace
             const auto t = Float1010102(Float3::UnitX);
             for (uint32 i = 0; i < vertexCount; i++)
             {
-                vb1[i].Normal = n;
-                vb1[i].Tangent = t;
+                vb1.Get()[i].Normal = n;
+                vb1.Get()[i].Tangent = t;
             }
         }
         if (uvs)
         {
             for (uint32 i = 0; i < vertexCount; i++)
-                vb1[i].TexCoord = Half2(uvs[i]);
+                vb1.Get()[i].TexCoord = Half2(uvs[i]);
         }
         else
         {
             auto v = Half2::Zero;
             for (uint32 i = 0; i < vertexCount; i++)
-                vb1[i].TexCoord = v;
+                vb1.Get()[i].TexCoord = v;
         }
         {
             auto v = Half2::Zero;
             for (uint32 i = 0; i < vertexCount; i++)
-                vb1[i].LightmapUVs = v;
+                vb1.Get()[i].LightmapUVs = v;
         }
         if (colors)
         {
             vb2.Resize(vertexCount);
             for (uint32 i = 0; i < vertexCount; i++)
-                vb2[i].Color = colors[i];
+                vb2.Get()[i].Color = colors[i];
         }
 
         return mesh->UpdateMesh(vertexCount, triangleCount, (VB0ElementType*)vertices, vb1.Get(), vb2.HasItems() ? vb2.Get() : nullptr, triangles);
     }
 
 #if !COMPILE_WITHOUT_CSHARP
-
     template<typename IndexType>
-    bool UpdateMesh(Mesh* mesh, uint32 vertexCount, uint32 triangleCount, MArray* verticesObj, MArray* trianglesObj, MArray* normalsObj, MArray* tangentsObj, MArray* uvObj, MArray* colorsObj)
+    bool UpdateMesh(Mesh* mesh, uint32 vertexCount, uint32 triangleCount, const MArray* verticesObj, const MArray* trianglesObj, const MArray* normalsObj, const MArray* tangentsObj, const MArray* uvObj, const MArray* colorsObj)
     {
         ASSERT((uint32)MCore::Array::GetLength(verticesObj) >= vertexCount);
         ASSERT((uint32)MCore::Array::GetLength(trianglesObj) / 3 >= triangleCount);
@@ -110,7 +109,7 @@ namespace
     }
 
     template<typename IndexType>
-    bool UpdateTriangles(Mesh* mesh, int32 triangleCount, MArray* trianglesObj)
+    bool UpdateTriangles(Mesh* mesh, int32 triangleCount, const MArray* trianglesObj)
     {
         const auto model = mesh->GetModel();
         ASSERT(model && model->IsVirtual() && trianglesObj);
@@ -121,7 +120,6 @@ namespace
 
         return mesh->UpdateTriangles(triangleCount, ib);
     }
-
 #endif
 }
 
@@ -130,7 +128,7 @@ bool Mesh::HasVertexColors() const
     return _vertexBuffers[2] != nullptr && _vertexBuffers[2]->IsAllocated();
 }
 
-bool Mesh::UpdateMesh(uint32 vertexCount, uint32 triangleCount, VB0ElementType* vb0, VB1ElementType* vb1, VB2ElementType* vb2, void* ib, bool use16BitIndices)
+bool Mesh::UpdateMesh(uint32 vertexCount, uint32 triangleCount, const VB0ElementType* vb0, const VB1ElementType* vb1, const VB2ElementType* vb2, const void* ib, bool use16BitIndices)
 {
     auto model = (Model*)_model;
 
@@ -145,7 +143,7 @@ bool Mesh::UpdateMesh(uint32 vertexCount, uint32 triangleCount, VB0ElementType* 
 
         // Calculate mesh bounds
         BoundingBox bounds;
-        BoundingBox::FromPoints((Float3*)vb0, vertexCount, bounds);
+        BoundingBox::FromPoints((const Float3*)vb0, vertexCount, bounds);
         SetBounds(bounds);
 
         // Send event (actors using this model can update bounds, etc.)
@@ -155,17 +153,17 @@ bool Mesh::UpdateMesh(uint32 vertexCount, uint32 triangleCount, VB0ElementType* 
     return failed;
 }
 
-bool Mesh::UpdateMesh(uint32 vertexCount, uint32 triangleCount, Float3* vertices, uint16* triangles, Float3* normals, Float3* tangents, Float2* uvs, Color32* colors)
+bool Mesh::UpdateMesh(uint32 vertexCount, uint32 triangleCount, const Float3* vertices, const uint16* triangles, const Float3* normals, const Float3* tangents, const Float2* uvs, const Color32* colors)
 {
     return ::UpdateMesh<uint16>(this, vertexCount, triangleCount, vertices, triangles, normals, tangents, uvs, colors);
 }
 
-bool Mesh::UpdateMesh(uint32 vertexCount, uint32 triangleCount, Float3* vertices, uint32* triangles, Float3* normals, Float3* tangents, Float2* uvs, Color32* colors)
+bool Mesh::UpdateMesh(uint32 vertexCount, uint32 triangleCount, const Float3* vertices, const uint32* triangles, const Float3* normals, const Float3* tangents, const Float2* uvs, const Color32* colors)
 {
     return ::UpdateMesh<uint32>(this, vertexCount, triangleCount, vertices, triangles, normals, tangents, uvs, colors);
 }
 
-bool Mesh::UpdateTriangles(uint32 triangleCount, void* ib, bool use16BitIndices)
+bool Mesh::UpdateTriangles(uint32 triangleCount, const void* ib, bool use16BitIndices)
 {
     // Cache data
     uint32 indicesCount = triangleCount * 3;
@@ -217,7 +215,7 @@ Mesh::~Mesh()
     SAFE_DELETE_GPU_RESOURCE(_indexBuffer);
 }
 
-bool Mesh::Load(uint32 vertices, uint32 triangles, void* vb0, void* vb1, void* vb2, void* ib, bool use16BitIndexBuffer)
+bool Mesh::Load(uint32 vertices, uint32 triangles, const void* vb0, const void* vb1, const void* vb2, const void* ib, bool use16BitIndexBuffer)
 {
     // Cache data
     uint32 indicesCount = triangles * 3;
@@ -697,22 +695,22 @@ ScriptingObject* Mesh::GetParentModel()
 
 #if !COMPILE_WITHOUT_CSHARP
 
-bool Mesh::UpdateMeshUInt(int32 vertexCount, int32 triangleCount, MArray* verticesObj, MArray* trianglesObj, MArray* normalsObj, MArray* tangentsObj, MArray* uvObj, MArray* colorsObj)
+bool Mesh::UpdateMeshUInt(int32 vertexCount, int32 triangleCount, const MArray* verticesObj, const MArray* trianglesObj, const MArray* normalsObj, const MArray* tangentsObj, const MArray* uvObj, const MArray* colorsObj)
 {
     return ::UpdateMesh<uint32>(this, (uint32)vertexCount, (uint32)triangleCount, verticesObj, trianglesObj, normalsObj, tangentsObj, uvObj, colorsObj);
 }
 
-bool Mesh::UpdateMeshUShort(int32 vertexCount, int32 triangleCount, MArray* verticesObj, MArray* trianglesObj, MArray* normalsObj, MArray* tangentsObj, MArray* uvObj, MArray* colorsObj)
+bool Mesh::UpdateMeshUShort(int32 vertexCount, int32 triangleCount, const MArray* verticesObj, const MArray* trianglesObj, const MArray* normalsObj, const MArray* tangentsObj, const MArray* uvObj, const MArray* colorsObj)
 {
     return ::UpdateMesh<uint16>(this, (uint32)vertexCount, (uint32)triangleCount, verticesObj, trianglesObj, normalsObj, tangentsObj, uvObj, colorsObj);
 }
 
-bool Mesh::UpdateTrianglesUInt(int32 triangleCount, MArray* trianglesObj)
+bool Mesh::UpdateTrianglesUInt(int32 triangleCount, const MArray* trianglesObj)
 {
     return ::UpdateTriangles<uint32>(this, triangleCount, trianglesObj);
 }
 
-bool Mesh::UpdateTrianglesUShort(int32 triangleCount, MArray* trianglesObj)
+bool Mesh::UpdateTrianglesUShort(int32 triangleCount, const MArray* trianglesObj)
 {
     return ::UpdateTriangles<uint16>(this, triangleCount, trianglesObj);
 }
