@@ -1808,6 +1808,9 @@ bool TerrainPatch::UpdateHeightData(TerrainDataUpdateInfo& info, const Int2& mod
 	}
 #endif
 
+    // Mark as modified (need to save texture data during scene saving)
+    _wasHeightModified = true;
+
     if (!wasHeightChanged)
         return false;
 
@@ -1819,9 +1822,6 @@ bool TerrainPatch::UpdateHeightData(TerrainDataUpdateInfo& info, const Int2& mod
     _collisionTriangles.Resize(0);
 #endif
     _collisionVertices.Resize(0);
-
-    // Mark as modified (need to save texture data during scene saving)
-    _wasHeightModified = true;
 
     // Note: if terrain is using virtual storage then it won't be updated, we could synchronize that data...
 
