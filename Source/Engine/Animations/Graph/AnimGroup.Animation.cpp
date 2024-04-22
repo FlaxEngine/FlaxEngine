@@ -247,6 +247,7 @@ void AnimGraphExecutor::ProcessAnimation(AnimGraphImpulse* nodes, AnimGraphNode*
         {
             // Per-channel bit to indicate which channels were used by nested
             usedNodesThis.Resize(nodes->Nodes.Count());
+            usedNodesThis.SetAll(false);
             usedNodes = &usedNodesThis;
         }
 
@@ -286,11 +287,11 @@ void AnimGraphExecutor::ProcessAnimation(AnimGraphImpulse* nodes, AnimGraphNode*
     SkinnedModel::SkeletonMapping sourceMapping;
     if (retarget)
         sourceMapping = _graph.BaseModel->GetSkeletonMapping(mapping.SourceSkeleton);
-    for (int32 i = 0; i < nodes->Nodes.Count(); i++)
+    for (int32 nodeIndex = 0; nodeIndex < nodes->Nodes.Count(); nodeIndex++)
     {
-        const int32 nodeToChannel = mapping.NodesMapping[i];
-        Transform& dstNode = nodes->Nodes[i];
-        Transform srcNode = emptyNodes->Nodes[i];
+        const int32 nodeToChannel = mapping.NodesMapping[nodeIndex];
+        Transform& dstNode = nodes->Nodes[nodeIndex];
+        Transform srcNode = emptyNodes->Nodes[nodeIndex];
         if (nodeToChannel != -1)
         {
             // Calculate the animated node transformation
@@ -299,14 +300,14 @@ void AnimGraphExecutor::ProcessAnimation(AnimGraphImpulse* nodes, AnimGraphNode*
             // Optionally retarget animation into the skeleton used by the Anim Graph
             if (retarget)
             {
-                RetargetSkeletonNode(mapping.SourceSkeleton->Skeleton, mapping.TargetSkeleton->Skeleton, sourceMapping, srcNode, i);
+                RetargetSkeletonNode(mapping.SourceSkeleton->Skeleton, mapping.TargetSkeleton->Skeleton, sourceMapping, srcNode, nodeIndex);
             }
 
             // Mark node as used
             if (usedNodes)
-                usedNodes->Set(i, true);
+                usedNodes->Set(nodeIndex, true);
         }
-        else if (usedNodes && usedNodes != &usedNodesThis)
+        else if (usedNodes && (usedNodes != &usedNodesThis || usedNodes->Get(nodeIndex)))
         {
             // Skip for nested animations so other one or top-level anim will update remaining nodes
             continue;
