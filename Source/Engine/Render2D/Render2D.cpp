@@ -988,7 +988,7 @@ void DrawBatch(int32 startIndex, int32 count)
         MaterialBase::BindParameters bindParams(Context, *(RenderContext*)nullptr);
         Render2D::CustomData customData;
         customData.ViewProjection = ViewProjection;
-        customData.ViewSize = Float2(d.AsMaterial.Width, d.AsMaterial.Height);
+        customData.ViewSize = Float2::One;
         bindParams.CustomData = &customData;
         material->Bind(bindParams);
 

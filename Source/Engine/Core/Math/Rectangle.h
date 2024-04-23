@@ -287,7 +287,7 @@ public:
     // @returns Rectangle that contains both p1 and p2
     static Rectangle FromPoints(const Float2& p1, const Float2& p2);
 
-    static Rectangle FromPoints(Float2* points, int32 pointsCount);
+    static Rectangle FromPoints(const Float2* points, int32 pointsCount);
 };
 
 template<>

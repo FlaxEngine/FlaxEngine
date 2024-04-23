@@ -249,6 +249,7 @@ namespace FlaxEditor.Content
         private ScriptMemberInfo[] _parameters;
         private ScriptMemberInfo[] _methods;
         private object[] _attributes;
+        private List<Action<ScriptType>> _disposing;
 
         /// <summary>
         /// Gets the Visual Script asset that contains this type.
@@ -310,6 +311,13 @@ namespace FlaxEditor.Content
 
         internal void Dispose()
         {
+            if (_disposing != null)
+            {
+                foreach (var e in _disposing)
+                    e(new ScriptType(this));
+                _disposing.Clear();
+                _disposing = null;
+            }
             if (_parameters != null)
             {
                 OnAssetReloading(_asset);
@@ -509,6 +517,14 @@ namespace FlaxEditor.Content
                 return newArray;
             }
             return _methods;
+        }
+
+        /// <inheritdoc />
+        public void TrackLifetime(Action<ScriptType> disposing)
+        {
+            if (_disposing == null)
+                _disposing = new List<Action<ScriptType>>();
+            _disposing.Add(disposing);
         }
     }
 

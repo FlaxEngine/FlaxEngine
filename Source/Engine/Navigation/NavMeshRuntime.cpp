@@ -60,17 +60,12 @@ bool NavMeshRuntime::FindDistanceToWall(const Vector3& startPosition, NavMeshHit
     Float3::Transform(startPosition, Properties.Rotation, startPositionNavMesh);
 
     dtPolyRef startPoly = 0;
-    query->findNearestPoly(&startPositionNavMesh.X, &extent.X, &filter, &startPoly, nullptr);
-    if (!startPoly)
-    {
+    if (!dtStatusSucceed(query->findNearestPoly(&startPositionNavMesh.X, &extent.X, &filter, &startPoly, nullptr)))
         return false;
-    }
 
     Float3 hitPosition, hitNormal;
     if (!dtStatusSucceed(query->findDistanceToWall(startPoly, &startPositionNavMesh.X, maxDistance, &filter, &hitInfo.Distance, &hitPosition.X, &hitNormal.X)))
-    {
         return false;
-    }
 
     Quaternion invRotation;
     Quaternion::Invert(Properties.Rotation, invRotation);
@@ -98,17 +93,11 @@ bool NavMeshRuntime::FindPath(const Vector3& startPosition, const Vector3& endPo
     Float3::Transform(endPosition, Properties.Rotation, endPositionNavMesh);
 
     dtPolyRef startPoly = 0;
-    query->findNearestPoly(&startPositionNavMesh.X, &extent.X, &filter, &startPoly, nullptr);
-    if (!startPoly)
-    {
+    if (!dtStatusSucceed(query->findNearestPoly(&startPositionNavMesh.X, &extent.X, &filter, &startPoly, nullptr)))
         return false;
-    }
     dtPolyRef endPoly = 0;
-    query->findNearestPoly(&endPositionNavMesh.X, &extent.X, &filter, &endPoly, nullptr);
-    if (!endPoly)
-    {
+    if (!dtStatusSucceed(query->findNearestPoly(&endPositionNavMesh.X, &extent.X, &filter, &endPoly, nullptr)))
         return false;
-    }
 
     dtPolyRef path[NAV_MESH_PATH_MAX_SIZE];
     int32 pathSize;
@@ -166,30 +155,19 @@ bool NavMeshRuntime::TestPath(const Vector3& startPosition, const Vector3& endPo
     Float3::Transform(endPosition, Properties.Rotation, endPositionNavMesh);
 
     dtPolyRef startPoly = 0;
-    query->findNearestPoly(&startPositionNavMesh.X, &extent.X, &filter, &startPoly, nullptr);
-    if (!startPoly)
-    {
+    if (!dtStatusSucceed(query->findNearestPoly(&startPositionNavMesh.X, &extent.X, &filter, &startPoly, nullptr)))
         return false;
-    }
     dtPolyRef endPoly = 0;
-    query->findNearestPoly(&endPositionNavMesh.X, &extent.X, &filter, &endPoly, nullptr);
-    if (!endPoly)
-    {
+    if (!dtStatusSucceed(query->findNearestPoly(&endPositionNavMesh.X, &extent.X, &filter, &endPoly, nullptr)))
         return false;
-    }
 
     dtPolyRef path[NAV_MESH_PATH_MAX_SIZE];
     int32 pathSize;
     const auto findPathStatus = query->findPath(startPoly, endPoly, &startPositionNavMesh.X, &endPositionNavMesh.X, &filter, path, &pathSize, NAV_MESH_PATH_MAX_SIZE);
     if (dtStatusFailed(findPathStatus))
-    {
         return false;
-    }
-
     if (dtStatusDetail(findPathStatus, DT_PARTIAL_RESULT))
-    {
         return false;
-    }
 
     return true;
 }
@@ -210,11 +188,8 @@ bool NavMeshRuntime::FindClosestPoint(const Vector3& point, Vector3& result) con
 
     dtPolyRef startPoly = 0;
     Float3 nearestPt;
-    query->findNearestPoly(&pointNavMesh.X, &extent.X, &filter, &startPoly, &nearestPt.X);
-    if (!startPoly)
-    {
+    if (!dtStatusSucceed(query->findNearestPoly(&pointNavMesh.X, &extent.X, &filter, &startPoly, &nearestPt.X)))
         return false;
-    }
 
     Quaternion invRotation;
     Quaternion::Invert(Properties.Rotation, invRotation);
@@ -235,11 +210,8 @@ bool NavMeshRuntime::FindRandomPoint(Vector3& result) const
 
     dtPolyRef randomPoly = 0;
     Float3 randomPt;
-    query->findRandomPoint(&filter, Random::Rand, &randomPoly, &randomPt.X);
-    if (!randomPoly)
-    {
+    if (!dtStatusSucceed(query->findRandomPoint(&filter, Random::Rand, &randomPoly, &randomPt.X)))
         return false;
-    }
 
     Quaternion invRotation;
     Quaternion::Invert(Properties.Rotation, invRotation);
@@ -257,25 +229,19 @@ bool NavMeshRuntime::FindRandomPointAroundCircle(const Vector3& center, float ra
 
     dtQueryFilter filter;
     InitFilter(filter);
-    Float3 extent = Properties.DefaultQueryExtent;
+    Float3 extent(radius);
 
     Float3 centerNavMesh;
     Float3::Transform(center, Properties.Rotation, centerNavMesh);
 
     dtPolyRef centerPoly = 0;
-    query->findNearestPoly(&centerNavMesh.X, &extent.X, &filter, &centerPoly, nullptr);
-    if (!centerPoly)
-    {
+    if (!dtStatusSucceed(query->findNearestPoly(&centerNavMesh.X, &extent.X, &filter, &centerPoly, nullptr)))
         return false;
-    }
 
     dtPolyRef randomPoly = 0;
     Float3 randomPt;
-    query->findRandomPointAroundCircle(centerPoly, &centerNavMesh.X, radius, &filter, Random::Rand, &randomPoly, &randomPt.X);
-    if (!randomPoly)
-    {
+    if (!dtStatusSucceed(query->findRandomPointAroundCircle(centerPoly, &centerNavMesh.X, radius, &filter, Random::Rand, &randomPoly, &randomPt.X)))
         return false;
-    }
 
     Quaternion invRotation;
     Quaternion::Invert(Properties.Rotation, invRotation);
@@ -300,11 +266,8 @@ bool NavMeshRuntime::RayCast(const Vector3& startPosition, const Vector3& endPos
     Float3::Transform(endPosition, Properties.Rotation, endPositionNavMesh);
 
     dtPolyRef startPoly = 0;
-    query->findNearestPoly(&startPositionNavMesh.X, &extent.X, &filter, &startPoly, nullptr);
-    if (!startPoly)
-    {
+    if (!dtStatusSucceed(query->findNearestPoly(&startPositionNavMesh.X, &extent.X, &filter, &startPoly, nullptr)))
         return false;
-    }
 
     dtRaycastHit hit;
     hit.path = nullptr;
@@ -361,14 +324,6 @@ void NavMeshRuntime::EnsureCapacity(int32 tilesToAddCount)
     // Ensure to have size assigned
     ASSERT(_tileSize != 0);
 
-    // Allocate navmesh and initialize the default query
-    if (!_navMesh)
-        _navMesh = dtAllocNavMesh();
-    if (dtStatusFailed(_navMeshQuery->init(_navMesh, MAX_NODES)))
-    {
-        LOG(Error, "Failed to initialize navmesh {0}.", Properties.Name);
-    }
-
     // Prepare parameters
     dtNavMeshParams params;
     params.orig[0] = 0.0f;
@@ -381,10 +336,16 @@ void NavMeshRuntime::EnsureCapacity(int32 tilesToAddCount)
     params.maxPolys = 1 << (22 - tilesBits);
 
     // Initialize nav mesh
+    if (!_navMesh)
+        _navMesh = dtAllocNavMesh();
     if (dtStatusFailed(_navMesh->init(&params)))
     {
-        LOG(Error, "Navmesh {0} init failed.", Properties.Name);
+        LOG(Error, "Navmesh {0} init failed", Properties.Name);
         return;
+    }
+    if (dtStatusFailed(_navMeshQuery->init(_navMesh, MAX_NODES)))
+    {
+        LOG(Error, "Navmesh query {0} init failed", Properties.Name);
     }
 
     // Prepare tiles container
@@ -405,7 +366,7 @@ void NavMeshRuntime::EnsureCapacity(int32 tilesToAddCount)
         const auto result = _navMesh->addTile(data, dataSize, flags, 0, nullptr);
         if (dtStatusFailed(result))
         {
-            LOG(Warning, "Could not add tile to navmesh {0} (error: {1}).", Properties.Name, result & ~DT_FAILURE);
+            LOG(Warning, "Could not add tile ({2}x{3}, layer {4}) to navmesh {0} (error: {1})", Properties.Name, result & ~DT_FAILURE, tile.X, tile.Y, tile.Layer);
         }
     }
 }
@@ -490,13 +451,11 @@ void NavMeshRuntime::RemoveTile(int32 x, int32 y, int32 layer)
 
     const auto tileRef = _navMesh->getTileRefAt(x, y, layer);
     if (tileRef == 0)
-    {
         return;
-    }
 
     if (dtStatusFailed(_navMesh->removeTile(tileRef, nullptr, nullptr)))
     {
-        LOG(Warning, "Failed to remove tile from navmesh {0}.", Properties.Name);
+        LOG(Warning, "Failed to remove tile ({1}x{2}, layer {3}) from navmesh {0}", Properties.Name, x, y, layer);
     }
 
     for (int32 i = 0; i < _tiles.Count(); i++)
@@ -532,7 +491,7 @@ void NavMeshRuntime::RemoveTiles(bool (*prediction)(const NavMeshRuntime* navMes
             {
                 if (dtStatusFailed(_navMesh->removeTile(tileRef, nullptr, nullptr)))
                 {
-                    LOG(Warning, "Failed to remove tile from navmesh {0}.", Properties.Name);
+                    LOG(Warning, "Failed to remove tile ({1}x{2}, layer {3}) from navmesh {0}", Properties.Name, tile.X, tile.Y, tile.Layer);
                 }
             }
 
@@ -668,7 +627,7 @@ void NavMeshRuntime::AddTileInternal(NavMesh* navMesh, NavMeshTileData& tileData
         // Remove any existing tile at that location
         if (dtStatusFailed(_navMesh->removeTile(tileRef, nullptr, nullptr)))
         {
-            LOG(Warning, "Failed to remove tile from navmesh {0}.", Properties.Name);
+            LOG(Warning, "Failed to remove tile from navmesh {0}", Properties.Name);
         }
 
         // Reuse tile data container
@@ -712,6 +671,6 @@ void NavMeshRuntime::AddTileInternal(NavMesh* navMesh, NavMeshTileData& tileData
     const auto result = _navMesh->addTile(data, dataSize, flags, 0, nullptr);
     if (dtStatusFailed(result))
     {
-        LOG(Warning, "Could not add tile to navmesh {0} (error: {1}).", Properties.Name, result & ~DT_FAILURE);
+        LOG(Warning, "Could not add tile ({2}x{3}, layer {4}) to navmesh {0} (error: {1})", Properties.Name, result & ~DT_FAILURE, tileData.PosX, tileData.PosY, tileData.Layer);
     }
 }

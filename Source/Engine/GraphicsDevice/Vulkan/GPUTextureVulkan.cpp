@@ -131,14 +131,14 @@ void GPUTextureViewVulkan::Release()
         {
             Device->OnImageViewDestroy(ViewFramebuffer);
             Device->DeferredDeletionQueue.EnqueueResource(DeferredDeletionQueueVulkan::Type::ImageView, ViewFramebuffer);
-            ViewFramebuffer = VK_NULL_HANDLE;
         }
+        ViewFramebuffer = VK_NULL_HANDLE;
         if (ViewSRV != View && ViewSRV != VK_NULL_HANDLE)
         {
             Device->OnImageViewDestroy(ViewSRV);
             Device->DeferredDeletionQueue.EnqueueResource(DeferredDeletionQueueVulkan::Type::ImageView, ViewSRV);
-            ViewSRV = VK_NULL_HANDLE;
         }
+        ViewSRV = VK_NULL_HANDLE;
 
         Device->OnImageViewDestroy(View);
         Device->DeferredDeletionQueue.EnqueueResource(DeferredDeletionQueueVulkan::Type::ImageView, View);

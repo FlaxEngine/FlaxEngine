@@ -587,8 +587,8 @@ bool Asset::IsInternalType() const
 
 bool Asset::onLoad(LoadAssetTask* task)
 {
-    // It may fail when task is cancelled and new one is created later (don't crash but just end with an error)
     if (task->Asset.Get() != this || Platform::AtomicRead(&_loadingTask) == 0)
+    // It may fail when task is cancelled and new one was created later (don't crash but just end with an error)
         return true;
 
     Locker.Lock();
@@ -601,7 +601,6 @@ bool Asset::onLoad(LoadAssetTask* task)
     }
     const bool isLoaded = result == LoadResult::Ok;
     const bool failed = !isLoaded;
-    LoadState state = LoadState::Loaded;
     Platform::AtomicStore(&_loadState, (int64)(isLoaded ? LoadState::Loaded : LoadState::LoadFailed));
     if (failed)
     {

@@ -76,7 +76,7 @@ public:
     /// <param name="ib">Index buffer data</param>
     /// <param name="use16BitIndexBuffer">True if use 16 bit indices for the index buffer (true: uint16, false: uint32).</param>
     /// <returns>True if cannot load data, otherwise false.</returns>
-    bool Load(uint32 vertices, uint32 triangles, void* vb0, void* ib, bool use16BitIndexBuffer);
+    bool Load(uint32 vertices, uint32 triangles, const void* vb0, const void* ib, bool use16BitIndexBuffer);
 
     /// <summary>
     /// Unloads the mesh data (vertex buffers and cache). The opposite to Load.
@@ -92,7 +92,7 @@ public:
     /// <param name="vb">The vertex buffer data.</param>
     /// <param name="ib">The index buffer in clockwise order.</param>
     /// <returns>True if failed, otherwise false.</returns>
-    FORCE_INLINE bool UpdateMesh(uint32 vertexCount, uint32 triangleCount, VB0SkinnedElementType* vb, int32* ib)
+    FORCE_INLINE bool UpdateMesh(uint32 vertexCount, uint32 triangleCount, const VB0SkinnedElementType* vb, const int32* ib)
     {
         return UpdateMesh(vertexCount, triangleCount, vb, ib, false);
     }
@@ -105,7 +105,7 @@ public:
     /// <param name="vb">The vertex buffer data.</param>
     /// <param name="ib">The index buffer in clockwise order.</param>
     /// <returns>True if failed, otherwise false.</returns>
-    FORCE_INLINE bool UpdateMesh(uint32 vertexCount, uint32 triangleCount, VB0SkinnedElementType* vb, uint32* ib)
+    FORCE_INLINE bool UpdateMesh(uint32 vertexCount, uint32 triangleCount, const VB0SkinnedElementType* vb, const uint32* ib)
     {
         return UpdateMesh(vertexCount, triangleCount, vb, ib, false);
     }
@@ -118,7 +118,7 @@ public:
     /// <param name="vb">The vertex buffer data.</param>
     /// <param name="ib">The index buffer, clockwise order.</param>
     /// <returns>True if failed, otherwise false.</returns>
-    FORCE_INLINE bool UpdateMesh(uint32 vertexCount, uint32 triangleCount, VB0SkinnedElementType* vb, uint16* ib)
+    FORCE_INLINE bool UpdateMesh(uint32 vertexCount, uint32 triangleCount, const VB0SkinnedElementType* vb, const uint16* ib)
     {
         return UpdateMesh(vertexCount, triangleCount, vb, ib, true);
     }
@@ -132,7 +132,7 @@ public:
     /// <param name="ib">The index buffer in clockwise order.</param>
     /// <param name="use16BitIndices">True if index buffer uses 16-bit index buffer, otherwise 32-bit.</param>
     /// <returns>True if failed, otherwise false.</returns>
-    bool UpdateMesh(uint32 vertexCount, uint32 triangleCount, VB0SkinnedElementType* vb, void* ib, bool use16BitIndices);
+    bool UpdateMesh(uint32 vertexCount, uint32 triangleCount, const VB0SkinnedElementType* vb, const void* ib, bool use16BitIndices);
 
 public:
     /// <summary>
@@ -188,8 +188,8 @@ private:
     // Internal bindings
     API_FUNCTION(NoProxy) ScriptingObject* GetParentModel();
 #if !COMPILE_WITHOUT_CSHARP
-    API_FUNCTION(NoProxy) bool UpdateMeshUInt(MArray* verticesObj, MArray* trianglesObj, MArray* blendIndicesObj, MArray* blendWeightsObj, MArray* normalsObj, MArray* tangentsObj, MArray* uvObj);
-    API_FUNCTION(NoProxy) bool UpdateMeshUShort(MArray* verticesObj, MArray* trianglesObj, MArray* blendIndicesObj, MArray* blendWeightsObj, MArray* normalsObj, MArray* tangentsObj, MArray* uvObj);
+    API_FUNCTION(NoProxy) bool UpdateMeshUInt(const MArray* verticesObj, const MArray* trianglesObj, const MArray* blendIndicesObj, const MArray* blendWeightsObj, const MArray* normalsObj, const MArray* tangentsObj, const MArray* uvObj);
+    API_FUNCTION(NoProxy) bool UpdateMeshUShort(const MArray* verticesObj, const MArray* trianglesObj, const MArray* blendIndicesObj, const MArray* blendWeightsObj, const MArray* normalsObj, const MArray* tangentsObj, const MArray* uvObj);
     API_FUNCTION(NoProxy) MArray* DownloadBuffer(bool forceGpu, MTypeObject* resultType, int32 typeI);
 #endif
 };

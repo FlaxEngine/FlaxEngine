@@ -241,6 +241,7 @@ public:
     API_FUNCTION(Internal) static VisualScriptStackFrame GetVisualScriptPreviousScopeFrame();
     API_FUNCTION(Internal) static Array<VisualScriptLocal> GetVisualScriptLocals();
     API_FUNCTION(Internal) static bool EvaluateVisualScriptLocal(VisualScript* script, API_PARAM(Ref) VisualScriptLocal& local);
+    API_FUNCTION(Internal) static void WipeOutLeftoverSceneObjects();
 
 private:
     void OnEditorAssemblyLoaded(MAssembly* assembly);

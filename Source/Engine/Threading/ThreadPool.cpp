@@ -8,6 +8,7 @@
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Math/Math.h"
 #include "Engine/Core/Types/String.h"
+#include "Engine/Core/Collections/Array.h"
 #include "Engine/Engine/Globals.h"
 #include "Engine/Engine/EngineService.h"
 #include "Engine/Platform/ConditionVariable.h"

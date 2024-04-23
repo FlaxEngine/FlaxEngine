@@ -454,10 +454,10 @@ public:
     /// <summary>
     /// Saves the serialized timeline data to the asset.
     /// </summary>
-    /// <remarks>The cannot be used by virtual assets.</remarks>
+    /// <remarks>It cannot be used by virtual assets.</remarks>
     /// <param name="data">The timeline data container.</param>
     /// <returns><c>true</c> failed to save data; otherwise, <c>false</c>.</returns>
-    API_FUNCTION() bool SaveTimeline(BytesContainer& data);
+    API_FUNCTION() bool SaveTimeline(const BytesContainer& data);
 
 #endif
 

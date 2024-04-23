@@ -941,7 +941,7 @@ public:
     // @param rotation The rotation of the transformation.
     // @param translation The translation factor of the transformation.
     // @param result When the method completes, contains the created transformation matrix.
-    static void Transformation2D(Float2& scalingCenter, float scalingRotation, const Float2& scaling, const Float2& rotationCenter, float rotation, const Float2& translation, Matrix& result);
+    static void Transformation2D(const Float2& scalingCenter, float scalingRotation, const Float2& scaling, const Float2& rotationCenter, float rotation, const Float2& translation, Matrix& result);
 
     // Creates a world matrix with the specified parameters.
     // @param position Position of the object. This value is used in translation operations.

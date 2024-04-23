@@ -247,6 +247,7 @@ void AnimGraphExecutor::ProcessAnimation(AnimGraphImpulse* nodes, AnimGraphNode*
         {
             // Per-channel bit to indicate which channels were used by nested
             usedNodesThis.Resize(nodes->Nodes.Count());
+            usedNodesThis.SetAll(false);
             usedNodes = &usedNodesThis;
         }
 
@@ -286,11 +287,11 @@ void AnimGraphExecutor::ProcessAnimation(AnimGraphImpulse* nodes, AnimGraphNode*
     SkinnedModel::SkeletonMapping sourceMapping;
     if (retarget)
         sourceMapping = _graph.BaseModel->GetSkeletonMapping(mapping.SourceSkeleton);
-    for (int32 i = 0; i < nodes->Nodes.Count(); i++)
+    for (int32 nodeIndex = 0; nodeIndex < nodes->Nodes.Count(); nodeIndex++)
     {
-        const int32 nodeToChannel = mapping.NodesMapping[i];
-        Transform& dstNode = nodes->Nodes[i];
-        Transform srcNode = emptyNodes->Nodes[i];
+        const int32 nodeToChannel = mapping.NodesMapping[nodeIndex];
+        Transform& dstNode = nodes->Nodes[nodeIndex];
+        Transform srcNode = emptyNodes->Nodes[nodeIndex];
         if (nodeToChannel != -1)
         {
             // Calculate the animated node transformation
@@ -299,14 +300,14 @@ void AnimGraphExecutor::ProcessAnimation(AnimGraphImpulse* nodes, AnimGraphNode*
             // Optionally retarget animation into the skeleton used by the Anim Graph
             if (retarget)
             {
-                RetargetSkeletonNode(mapping.SourceSkeleton->Skeleton, mapping.TargetSkeleton->Skeleton, sourceMapping, srcNode, i);
+                RetargetSkeletonNode(mapping.SourceSkeleton->Skeleton, mapping.TargetSkeleton->Skeleton, sourceMapping, srcNode, nodeIndex);
             }
 
             // Mark node as used
             if (usedNodes)
-                usedNodes->Set(i, true);
+                usedNodes->Set(nodeIndex, true);
         }
-        else if (usedNodes && usedNodes != &usedNodesThis)
+        else if (usedNodes && (usedNodes != &usedNodesThis || usedNodes->Get(nodeIndex)))
         {
             // Skip for nested animations so other one or top-level anim will update remaining nodes
             continue;
@@ -585,7 +586,7 @@ AnimGraphStateTransition* AnimGraphExecutor::UpdateStateTransitions(AnimGraphCon
 AnimGraphStateTransition* AnimGraphExecutor::UpdateStateTransitions(AnimGraphContext& context, const AnimGraphNode::StateMachineData& stateMachineData, const AnimGraphNode::StateBaseData& stateData, AnimGraphNode* state, AnimGraphNode* ignoreState)
 {
     int32 transitionIndex = 0;
-    while (transitionIndex < ANIM_GRAPH_MAX_STATE_TRANSITIONS && stateData.Transitions[transitionIndex] != AnimGraphNode::StateData::InvalidTransitionIndex)
+    while (stateData.Transitions && stateData.Transitions[transitionIndex] != AnimGraphNode::StateData::InvalidTransitionIndex)
     {
         const uint16 idx = stateData.Transitions[transitionIndex];
         ASSERT(idx < stateMachineData.Graph->StateTransitions.Count());
@@ -673,19 +674,20 @@ void ComputeMultiBlendLength(float& length, AnimGraphNode* node)
     // TODO: lock graph or graph asset here? make it thread safe
 
     length = 0.0f;
-    for (int32 i = 0; i < ARRAY_COUNT(node->Assets); i++)
+    for (int32 i = 0; i < node->Assets.Count(); i++)
     {
-        if (node->Assets[i])
+        auto& asset = node->Assets[i];
+        if (asset)
         {
             // TODO: maybe don't update if not all anims are loaded? just skip the node with the bind pose?
-            if (node->Assets[i]->WaitForLoaded())
+            if (asset->WaitForLoaded())
             {
-                node->Assets[i] = nullptr;
+                asset = nullptr;
                 LOG(Warning, "Failed to load one of the animations.");
             }
             else
             {
-                const auto anim = node->Assets[i].As<Animation>();
+                const auto anim = asset.As<Animation>();
                 const auto aData = node->Values[4 + i * 2].AsFloat4();
                 length = Math::Max(length, anim->GetLength() * Math::Abs(aData.W));
             }
@@ -1268,12 +1270,19 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
         auto& data = node->Data.MultiBlend1D;
 
         // Check if not valid animation binded
-        if (data.IndicesSorted[0] == ANIM_GRAPH_MULTI_BLEND_MAX_ANIMS)
+        if (data.Count == 0)
             break;
 
         // Get axis X
         float x = (float)tryGetValue(node->GetBox(4), Value::Zero);
         x = Math::Clamp(x, range.X, range.Y);
+
+        // Add to trace
+        if (context.Data->EnableTracing)
+        {
+            auto& trace = context.AddTraceEvent(node);
+            trace.Value = x;
+        }
 
         // Check if need to evaluate multi blend length
         if (data.Length < 0)
@@ -1292,7 +1301,7 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
         ANIM_GRAPH_PROFILE_EVENT("Multi Blend 1D");
 
         // Find 2 animations to blend (line)
-        for (int32 i = 0; i < ANIM_GRAPH_MULTI_BLEND_MAX_ANIMS - 1; i++)
+        for (int32 i = 0; i < data.Count - 1; i++)
         {
             const auto a = data.IndicesSorted[i];
             const auto b = data.IndicesSorted[i + 1];
@@ -1302,14 +1311,14 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
             auto aData = node->Values[4 + a * 2].AsFloat4();
 
             // Check single A case or the last valid animation
-            if (x <= aData.X + ANIM_GRAPH_BLEND_THRESHOLD || b == ANIM_GRAPH_MULTI_BLEND_MAX_ANIMS)
+            if (x <= aData.X + ANIM_GRAPH_BLEND_THRESHOLD || b == ANIM_GRAPH_MULTI_BLEND_INVALID)
             {
                 value = SampleAnimation(node, loop, data.Length, startTimePos, bucket.TimePosition, newTimePos, aAnim, aData.W);
                 break;
             }
 
             // Get B animation data
-            ASSERT(b != ANIM_GRAPH_MULTI_BLEND_MAX_ANIMS);
+            ASSERT(b != ANIM_GRAPH_MULTI_BLEND_INVALID);
             const auto bAnim = node->Assets[b].As<Animation>();
             auto bData = node->Values[4 + b * 2].AsFloat4();
 
@@ -1357,7 +1366,7 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
         auto& data = node->Data.MultiBlend2D;
 
         // Check if not valid animation binded
-        if (data.TrianglesP0[0] == ANIM_GRAPH_MULTI_BLEND_MAX_ANIMS)
+        if (data.TrianglesCount == 0)
             break;
 
         // Get axis X
@@ -1367,6 +1376,14 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
         // Get axis Y
         float y = (float)tryGetValue(node->GetBox(5), Value::Zero);
         y = Math::Clamp(y, range.Z, range.W);
+
+        // Add to trace
+        if (context.Data->EnableTracing)
+        {
+            auto& trace = context.AddTraceEvent(node);
+            const Half2 packed(x, y); // Pack xy into 32-bits
+            *(uint32*)&trace.Value = *(uint32*)&packed;
+        }
 
         // Check if need to evaluate multi blend length
         if (data.Length < 0)
@@ -1390,20 +1407,20 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
         Float2 bestPoint;
         float bestWeight = 0.0f;
         byte bestAnims[2];
-        for (int32 i = 0; i < ANIM_GRAPH_MULTI_BLEND_2D_MAX_TRIS && data.TrianglesP0[i] != ANIM_GRAPH_MULTI_BLEND_MAX_ANIMS; i++)
+        for (int32 i = 0, t = 0; i < data.TrianglesCount; i++)
         {
             // Get A animation data
-            const auto a = data.TrianglesP0[i];
+            const auto a = data.Triangles[t++];
             const auto aAnim = node->Assets[a].As<Animation>();
             const auto aData = node->Values[4 + a * 2].AsFloat4();
 
             // Get B animation data
-            const auto b = data.TrianglesP1[i];
+            const auto b = data.Triangles[t++];
             const auto bAnim = node->Assets[b].As<Animation>();
             const auto bData = node->Values[4 + b * 2].AsFloat4();
 
             // Get C animation data
-            const auto c = data.TrianglesP2[i];
+            const auto c = data.Triangles[t++];
             const auto cAnim = node->Assets[c].As<Animation>();
             const auto cData = node->Values[4 + c * 2].AsFloat4();
 

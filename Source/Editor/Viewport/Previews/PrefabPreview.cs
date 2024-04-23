@@ -115,7 +115,12 @@ namespace FlaxEditor.Viewport.Previews
                 _hasUILinked = true;
             }
             else if (_uiControlLinked != null)
+            {
+                if (_uiControlLinked.Control != null && 
+                    _uiControlLinked.Control.Parent == null)
+                    _uiControlLinked.Control.Parent = _uiParentLink;
                 _hasUILinked = true;
+            }
         }
 
         private void LinkCanvas(Actor actor)

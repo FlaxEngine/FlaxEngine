@@ -29,6 +29,15 @@ namespace FlaxEditor.GUI.ContextMenu
             CloseMenuOnClick = false;
         }
 
+        private void ShowChild(ContextMenu parentContextMenu)
+        {
+            // Hide parent CM popups and set itself as child
+            var vAlign = parentContextMenu.ItemsAreaMargin.Top;
+            var location = new Float2(Width, -vAlign);
+            location = PointToParent(parentContextMenu, location);
+            parentContextMenu.ShowChild(ContextMenu, location);
+        }
+
         /// <inheritdoc />
         public override void Draw()
         {
@@ -58,14 +67,12 @@ namespace FlaxEditor.GUI.ContextMenu
             var parentContextMenu = ParentContextMenu;
             if (parentContextMenu == ContextMenu)
                 return;
-
             if (ContextMenu.IsOpened)
                 return;
 
             base.OnMouseEnter(location);
 
-            // Hide parent CM popups and set itself as child
-            parentContextMenu.ShowChild(ContextMenu, PointToParent(ParentContextMenu, new Float2(Width, 0)));
+            ShowChild(parentContextMenu);
         }
 
         /// <inheritdoc />
@@ -78,8 +85,7 @@ namespace FlaxEditor.GUI.ContextMenu
             if (ContextMenu.IsOpened)
                 return true;
 
-            // Hide parent CM popups and set itself as child
-            parentContextMenu.ShowChild(ContextMenu, PointToParent(ParentContextMenu, new Float2(Width, 0)));
+            ShowChild(parentContextMenu);
             return base.OnMouseUp(location, button);
         }
     }

@@ -35,7 +35,7 @@ public:
 
 namespace
 {
-    FORCE_INLINE bool CanUpdateModel(AnimatedModel* animatedModel)
+    FORCE_INLINE bool CanUpdateModel(const AnimatedModel* animatedModel)
     {
         auto skinnedModel = animatedModel->SkinnedModel.Get();
         auto animGraph = animatedModel->AnimationGraph.Get();

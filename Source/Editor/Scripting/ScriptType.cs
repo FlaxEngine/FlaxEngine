@@ -1395,11 +1395,21 @@ namespace FlaxEditor.Scripting
         }
 
         /// <summary>
-        /// Basic check to see if a type could be casted to another type
+        /// Registers delegate to be invoked upon script type disposal (except hot-reload in Editor via <see cref="ScriptsBuilder.ScriptsReload"/>). For example, can happen when user deleted Visual Script asset.
+        /// </summary>
+        /// <param name="disposing">Event to call when script type gets disposed (eg. removed asset).</param>
+        public void TrackLifetime(Action<ScriptType> disposing)
+        {
+            if (_custom != null)
+                _custom.TrackLifetime(disposing);
+        }
+
+        /// <summary>
+        /// Basic check to see if a type could be cast to another type
         /// </summary>
         /// <param name="from">Source type</param>
         /// <param name="to">Target type</param>
-        /// <returns>True if the type can be casted</returns>
+        /// <returns>True if the type can be cast.</returns>
         public static bool CanCast(ScriptType from, ScriptType to)
         {
             if (from == to)
@@ -1412,10 +1422,10 @@ namespace FlaxEditor.Scripting
         }
 
         /// <summary>
-        /// Basic check to see if this type could be casted to another type
+        /// Basic check to see if this type could be cast to another type
         /// </summary>
         /// <param name="to">Target type</param>
-        /// <returns>True if the type can be casted</returns>
+        /// <returns>True if the type can be cast.</returns>
         public bool CanCastTo(ScriptType to)
         {
             return CanCast(this, to);

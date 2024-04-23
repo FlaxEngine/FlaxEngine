@@ -467,7 +467,7 @@ CreateAssetResult ImportModel::Import(CreateAssetContext& context)
                             writer.StartObject();
                             eKey.Value.Instance->Serialize(writer, nullptr);
                             writer.EndObject();
-                            cloneKey.Value.JsonData.Set(buffer.GetString(), buffer.GetSize());
+                            cloneKey.Value.JsonData.Set(buffer.GetString(), (int32)buffer.GetSize());
                         }
                     }
                 }

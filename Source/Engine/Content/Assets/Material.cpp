@@ -550,7 +550,7 @@ BytesContainer Material::LoadSurface(bool createDefaultIfMissing)
 
 #if USE_EDITOR
 
-bool Material::SaveSurface(BytesContainer& data, const MaterialInfo& info)
+bool Material::SaveSurface(const BytesContainer& data, const MaterialInfo& info)
 {
     // Wait for asset to be loaded or don't if last load failed (eg. by shader source compilation error)
     if (LastLoadFailed())

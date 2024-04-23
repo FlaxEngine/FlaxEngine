@@ -430,7 +430,9 @@ float3x4 GetPrevBoneMatrix(int index)
 float3 SkinPrevPosition(ModelInput_Skinned input)
 {
 	float4 position = float4(input.Position.xyz, 1);
-	float3x4 boneMatrix = input.BlendWeights.x * GetPrevBoneMatrix(input.BlendIndices.x);
+	float weightsSum = input.BlendWeights.x + input.BlendWeights.y + input.BlendWeights.z + input.BlendWeights.w;
+	float mainWeight = input.BlendWeights.x + (1.0f - weightsSum); // Re-normalize to account for 16-bit weights encoding erros
+	float3x4 boneMatrix = mainWeight * GetPrevBoneMatrix(input.BlendIndices.x);
 	boneMatrix += input.BlendWeights.y * GetPrevBoneMatrix(input.BlendIndices.y);
 	boneMatrix += input.BlendWeights.z * GetPrevBoneMatrix(input.BlendIndices.z);
 	boneMatrix += input.BlendWeights.w * GetPrevBoneMatrix(input.BlendIndices.w);
@@ -438,12 +440,6 @@ float3 SkinPrevPosition(ModelInput_Skinned input)
 }
 
 #endif
-
-// Cached skinning data to avoid multiple calculation 
-struct SkinningData
-{
-	float3x4 BlendMatrix;
-};
 
 // Calculates the transposed transform matrix for the given bone index
 float3x4 GetBoneMatrix(int index)
@@ -457,7 +453,9 @@ float3x4 GetBoneMatrix(int index)
 // Calculates the transposed transform matrix for the given vertex (uses blending)
 float3x4 GetBoneMatrix(ModelInput_Skinned input)
 {
-	float3x4 boneMatrix = input.BlendWeights.x * GetBoneMatrix(input.BlendIndices.x);
+	float weightsSum = input.BlendWeights.x + input.BlendWeights.y + input.BlendWeights.z + input.BlendWeights.w;
+	float mainWeight = input.BlendWeights.x + (1.0f - weightsSum); // Re-normalize to account for 16-bit weights encoding erros
+	float3x4 boneMatrix = mainWeight * GetBoneMatrix(input.BlendIndices.x);
 	boneMatrix += input.BlendWeights.y * GetBoneMatrix(input.BlendIndices.y);
 	boneMatrix += input.BlendWeights.z * GetBoneMatrix(input.BlendIndices.z);
 	boneMatrix += input.BlendWeights.w * GetBoneMatrix(input.BlendIndices.w);
@@ -465,13 +463,13 @@ float3x4 GetBoneMatrix(ModelInput_Skinned input)
 }
 
 // Transforms the vertex position by weighted sum of the skinning matrices
-float3 SkinPosition(ModelInput_Skinned input, SkinningData data)
+float3 SkinPosition(ModelInput_Skinned input, float3x4 boneMatrix)
 {
-	return mul(data.BlendMatrix, float4(input.Position.xyz, 1));
+	return mul(boneMatrix, float4(input.Position.xyz, 1));
 }
 
 // Transforms the vertex position by weighted sum of the skinning matrices
-float3x3 SkinTangents(ModelInput_Skinned input, SkinningData data)
+float3x3 SkinTangents(ModelInput_Skinned input, float3x4 boneMatrix)
 {
 	// Unpack vertex tangent frame
 	float bitangentSign = input.Tangent.w ? -1.0f : +1.0f;
@@ -479,10 +477,10 @@ float3x3 SkinTangents(ModelInput_Skinned input, SkinningData data)
 	float3 tangent = input.Tangent.xyz * 2.0 - 1.0;
 
 	// Apply skinning
-	tangent = mul(data.BlendMatrix, float4(tangent, 0));
-	normal = mul(data.BlendMatrix, float4(normal, 0));
+	tangent = normalize(mul(boneMatrix, float4(tangent, 0)));
+	normal = normalize(mul(boneMatrix, float4(normal, 0)));
 
-	float3 bitangent = cross(normal, tangent) * bitangentSign;
+	float3 bitangent = normalize(cross(normal, tangent) * bitangentSign);
 	return float3x3(tangent, bitangent, normal);
 }
 
@@ -501,10 +499,9 @@ VertexOutput VS_Skinned(ModelInput_Skinned input)
 	VertexOutput output;
 	
 	// Perform skinning
-	SkinningData data;
-	data.BlendMatrix = GetBoneMatrix(input);
-	float3 position = SkinPosition(input, data);
-	float3x3 tangentToLocal = SkinTangents(input, data);
+	float3x4 boneMatrix = GetBoneMatrix(input);
+	float3 position = SkinPosition(input, boneMatrix);
+	float3x3 tangentToLocal = SkinTangents(input, boneMatrix);
 	
 	// Compute world space vertex position
 	CalculateInstanceTransform(input);

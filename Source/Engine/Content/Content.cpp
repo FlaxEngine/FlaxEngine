@@ -403,7 +403,7 @@ ContentStats Content::GetStats()
     return stats;
 }
 
-Asset* Content::LoadAsyncInternal(const StringView& internalPath, MClass* type)
+Asset* Content::LoadAsyncInternal(const StringView& internalPath, const MClass* type)
 {
     CHECK_RETURN(type, nullptr);
     const auto scriptingType = Scripting::FindScriptingType(type->GetFullName());
@@ -445,7 +445,7 @@ FLAXENGINE_API Asset* LoadAsset(const Guid& id, const ScriptingTypeHandle& type)
     return Content::LoadAsync(id, type);
 }
 
-Asset* Content::LoadAsync(const StringView& path, MClass* type)
+Asset* Content::LoadAsync(const StringView& path, const MClass* type)
 {
     CHECK_RETURN(type, nullptr);
     const auto scriptingType = Scripting::FindScriptingType(type->GetFullName());
@@ -832,7 +832,7 @@ void Content::UnloadAsset(Asset* asset)
     asset->DeleteObject();
 }
 
-Asset* Content::CreateVirtualAsset(MClass* type)
+Asset* Content::CreateVirtualAsset(const MClass* type)
 {
     CHECK_RETURN(type, nullptr);
     const auto scriptingType = Scripting::FindScriptingType(type->GetFullName());
