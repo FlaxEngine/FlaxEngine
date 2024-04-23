@@ -23,24 +23,24 @@ API_CLASS(sealed, Namespace="FlaxEditor.Content.Settings") class FLAXENGINE_API 
     API_ENUM() enum class FLAXENGINE_API ScreenOrientation
     {
         /// <summary>
-        /// "portrait" mode
+        /// "userPortrait" mode
         /// </summary>
         Portrait,
 
         /// <summary>
-        /// "reversePortrait" mode
+        /// "userLandscape" mode
         /// </summary>
-        PortraitReverse,
+        Landscape,
 
         /// <summary>
-        /// "landscape" mode
+        /// "sensorPortrait" mode
         /// </summary>
-        LandscapeRight,
+        SensorPortrait,
 
         /// <summary>
-        /// "reverseLandscape" mode
+        /// "sensorLandscape" mode
         /// </summary>
-        LandscapeLeft,
+        SensorLandscape,
 
         /// <summary>
         /// "fullSensor" mode
