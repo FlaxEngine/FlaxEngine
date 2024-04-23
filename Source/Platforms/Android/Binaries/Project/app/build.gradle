@@ -1,12 +1,12 @@
 apply plugin: 'com.android.application'
 android {
-    compileSdk ${TargetSdk}
+    compileSdkVersion 24
     namespace "${PackageName}"
     defaultConfig {
         applicationId "${PackageName}"
-        minSdk ${MinimumSdk}
-        targetSdk ${TargetSdk}
-        versionCode ${VersionCode}
+        minSdkVersion 24
+        targetSdkVersion 24
+        versionCode 1
         versionName "${ProjectVersion}"
         ndk {
             abiFilter "${PackageAbi}"
