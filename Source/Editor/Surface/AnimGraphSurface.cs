@@ -19,6 +19,8 @@ namespace FlaxEditor.Surface
     [HideInEditor]
     public class AnimGraphSurface : VisjectSurface
     {
+        private static NodesCache _nodesCache = new NodesCache(IterateNodesCache);
+
         private static readonly List<GroupArchetype> StateMachineGroupArchetypes = new List<GroupArchetype>(new[]
         {
             // Customized Animations group with special nodes to use here
@@ -86,8 +88,6 @@ namespace FlaxEditor.Surface
                 },
             }
         };
-
-        private static NodesCache _nodesCache = new NodesCache(IterateNodesCache);
 
         /// <summary>
         /// The state machine editing context menu.
@@ -158,6 +158,8 @@ namespace FlaxEditor.Surface
 
         private void OnScriptsReloadBegin()
         {
+            _nodesCache.Clear();
+
             // Check if any of the nodes comes from the game scripts - those can be reloaded at runtime so prevent crashes
             bool hasTypeFromGameScripts = Editor.Instance.CodeEditing.AnimGraphNodes.HasTypeFromGameScripts;
 
