@@ -51,7 +51,7 @@ namespace FlaxEngine
         public static PhysicsTransform WorldToLocal(PhysicsTransform InWorld, PhysicsTransform InOtherWorld)
         {
             var inv = InWorld.Orientation.Conjugated();
-            var T = inv * (InOtherWorld.Translation - InWorld.Translation);
+            var T = (InOtherWorld.Translation - InWorld.Translation) * inv;
             var Q = inv * InOtherWorld.Orientation;
             return new PhysicsTransform(T, Q);
         }
@@ -64,7 +64,7 @@ namespace FlaxEngine
         /// <returns></returns>
         public static PhysicsTransform LocalToWorld(PhysicsTransform InWorld, PhysicsTransform InLocal)
         {
-            var T = (InWorld.Orientation * InLocal.Translation) + InWorld.Translation;
+            var T = (InLocal.Translation * InWorld.Orientation) + InWorld.Translation;
             var Q = InWorld.Orientation * InLocal.Orientation;
             return new PhysicsTransform(T, Q);
         }
