@@ -103,7 +103,7 @@ struct OpenFbxImporterData
     Array<const ofbx::Material*> Materials;
     Array<MaterialSlotEntry> ImportedMaterials;
 
-    OpenFbxImporterData(const char* path, const ModelTool::Options& options, ofbx::IScene* scene)
+    OpenFbxImporterData(const String& path, const ModelTool::Options& options, ofbx::IScene* scene)
         : Scene(scene)
         , ScenePtr(scene)
         , Path(path)
@@ -720,23 +720,23 @@ bool ProcessMesh(ModelData& result, OpenFbxImporterData& data, const ofbx::Mesh*
             {
                 int vtxIndex = clusterIndices[j] - firstVertexOffset;
                 float vtxWeight = (float)clusterWeights[j];
-
                 if (vtxWeight <= 0 || vtxIndex < 0 || vtxIndex >= vertexCount)
                     continue;
-
-                auto& indices = mesh.BlendIndices[vtxIndex];
-                auto& weights = mesh.BlendWeights[vtxIndex];
+                Int4& indices = mesh.BlendIndices.Get()[vtxIndex];
+                Float4& weights = mesh.BlendWeights.Get()[vtxIndex];
 
                 for (int32 k = 0; k < 4; k++)
                 {
                     if (vtxWeight >= weights.Raw[k])
                     {
+                        // Move lower weights by one down
                         for (int32 l = 2; l >= k; l--)
                         {
                             indices.Raw[l + 1] = indices.Raw[l];
                             weights.Raw[l + 1] = weights.Raw[l];
                         }
 
+                        // Set bone influence
                         indices.Raw[k] = boneIndex;
                         weights.Raw[k] = vtxWeight;
                         break;
@@ -786,11 +786,13 @@ bool ProcessMesh(ModelData& result, OpenFbxImporterData& data, const ofbx::Mesh*
             auto shapeNormals = shape->getNormals();
             for (int32 i = 0; i < blendShapeData.Vertices.Count(); i++)
             {
-                /*auto delta = ToFloat3(shapeNormals[i + firstVertexOffset]) - mesh.Normals[i];
-                auto length = delta.Length();
-                if (length > ZeroTolerance)
-                    delta /= length;*/
-                auto delta = Float3::Zero; // TODO: blend shape normals deltas fix when importing from fbx
+                auto delta = ToFloat3(shapeNormals[i + firstVertexOffset]);
+                if (data.ConvertRH)
+                {
+                    // Mirror normals along the Z axis
+                    delta.Z *= -1.0f;
+                }
+                delta = delta - mesh.Normals.Get()[i];
                 blendShapeData.Vertices.Get()[i].NormalDelta = delta;
             }
         }
@@ -800,7 +802,7 @@ bool ProcessMesh(ModelData& result, OpenFbxImporterData& data, const ofbx::Mesh*
     {
         // Mirror positions along the Z axis
         for (int32 i = 0; i < vertexCount; i++)
-            mesh.Positions[i].Z *= -1.0f;
+            mesh.Positions.Get()[i].Z *= -1.0f;
         for (auto& blendShapeData : mesh.BlendShapes)
         {
             for (auto& v : blendShapeData.Vertices)
@@ -815,7 +817,7 @@ bool ProcessMesh(ModelData& result, OpenFbxImporterData& data, const ofbx::Mesh*
     {
         // Invert the order
         for (int32 i = 0; i < mesh.Indices.Count(); i += 3)
-            Swap(mesh.Indices[i], mesh.Indices[i + 2]);
+            Swap(mesh.Indices.Get()[i], mesh.Indices.Get()[i + 2]);
     }
 
     if ((data.Options.CalculateTangents || !tangents) && mesh.UVs.HasItems())
@@ -1114,11 +1116,11 @@ static Float3 FbxVectorFromAxisAndSign(int axis, int sign)
     return { 0.f, 0.f, 0.f };
 }
 
-bool ModelTool::ImportDataOpenFBX(const char* path, ModelData& data, Options& options, String& errorMsg)
+bool ModelTool::ImportDataOpenFBX(const String& path, ModelData& data, Options& options, String& errorMsg)
 {
     // Import file
     Array<byte> fileData;
-    if (File::ReadAllBytes(String(path), fileData))
+    if (File::ReadAllBytes(path, fileData))
     {
         errorMsg = TEXT("Cannot load file.");
         return true;

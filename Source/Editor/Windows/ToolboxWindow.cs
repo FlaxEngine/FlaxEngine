@@ -196,6 +196,7 @@ namespace FlaxEditor.Windows
             {
                 if (actorType.IsAbstract)
                     continue;
+                _groupSearch.AddChild(CreateActorItem(Utilities.Utils.GetPropertyNameUI(actorType.Name), actorType));
                 ActorToolboxAttribute attribute = null;
                 foreach (var e in actorType.GetAttributes(false))
                 {
@@ -235,6 +236,7 @@ namespace FlaxEditor.Windows
                 group.AddChild(string.IsNullOrEmpty(attribute.Name) ? CreateActorItem(Utilities.Utils.GetPropertyNameUI(actorType.Name), actorType) : CreateActorItem(attribute.Name, actorType));
                 group.SortChildren();
             }
+            _groupSearch.SortChildren();
         }
 
         private void OnSearchBoxTextChanged()
@@ -260,6 +262,10 @@ namespace FlaxEditor.Windows
                 }
 
                 var text = (attribute == null) ? actorType.Name : string.IsNullOrEmpty(attribute.Name) ? actorType.Name : attribute.Name;
+                
+                // Display all actors on no search
+                if (string.IsNullOrEmpty(filterText))
+                    _groupSearch.AddChild(CreateActorItem(Utilities.Utils.GetPropertyNameUI(text), actorType));
 
                 if (!QueryFilterHelper.Match(filterText, text, out QueryFilterHelper.Range[] ranges))
                     continue;
@@ -278,6 +284,9 @@ namespace FlaxEditor.Windows
                 }
                 item.SetHighlights(highlights);
             }
+            
+            if (string.IsNullOrEmpty(filterText))
+                _groupSearch.SortChildren();
 
             _groupSearch.UnlockChildrenRecursive();
             PerformLayout();

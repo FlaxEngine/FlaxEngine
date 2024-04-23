@@ -146,6 +146,7 @@ bool DeferredMaterialShader::Load()
             psDesc.DepthEnable = false;
     }
 
+#if GPU_ALLOW_TESSELLATION_SHADERS
     // Check if use tessellation (both material and runtime supports it)
     const bool useTess = _info.TessellationMode != TessellationMethod::None && GPUDevice::Instance->Limits.HasTessellation;
     if (useTess)
@@ -153,6 +154,7 @@ bool DeferredMaterialShader::Load()
         psDesc.HS = _shader->GetHS("HS");
         psDesc.DS = _shader->GetDS("DS");
     }
+#endif
 
     // GBuffer Pass
     psDesc.VS = _shader->GetVS("VS");

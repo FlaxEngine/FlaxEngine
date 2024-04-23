@@ -68,6 +68,9 @@ private:
     void RemoveTiles();
     void OnDataAssetLoaded();
 
+private:
+    bool _navMeshActive = false;
+
 public:
     // [Actor]
     void Serialize(SerializeStream& stream, const void* otherObj) override;
@@ -77,4 +80,5 @@ protected:
     // [Actor]
     void OnEnable() override;
     void OnDisable() override;
+    void Initialize() override;
 };

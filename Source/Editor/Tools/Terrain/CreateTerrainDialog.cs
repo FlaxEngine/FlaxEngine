@@ -66,8 +66,8 @@ namespace FlaxEditor.Tools.Terrain
             [EditorOrder(410), EditorDisplay("Transform", "Rotation"), DefaultValue(typeof(Quaternion), "0,0,0,1"), Tooltip("Orientation of the terrain")]
             public Quaternion Orientation = Quaternion.Identity;
 
-            [EditorOrder(420), EditorDisplay("Transform", "Scale"), DefaultValue(typeof(Float3), "1,1,1"), Limit(float.MinValue, float.MaxValue, 0.01f), Tooltip("Scale of the terrain")]
-            public Float3 Scale = Float3.One;
+            [EditorOrder(420), EditorDisplay("Transform", "Scale"), DefaultValue(1.0f), Limit(0.0001f, float.MaxValue, 0.01f), Tooltip("Scale of the terrain")]
+            public float Scale = 1.0f;
         }
 
         private readonly Options _options = new Options();
@@ -147,7 +147,7 @@ namespace FlaxEditor.Tools.Terrain
             // Create terrain object and setup some options
             var terrain = new FlaxEngine.Terrain();
             terrain.Setup(_options.LODCount, (int)_options.ChunkSize);
-            terrain.Transform = new Transform(_options.Position, _options.Orientation, _options.Scale);
+            terrain.Transform = new Transform(_options.Position, _options.Orientation, new Float3(_options.Scale));
             terrain.Material = _options.Material;
             terrain.CollisionLOD = _options.CollisionLOD;
             if (_options.Heightmap)
@@ -237,25 +237,6 @@ namespace FlaxEditor.Tools.Terrain
                 return false;
 
             return base.CanCloseWindow(reason);
-        }
-
-        /// <inheritdoc />
-        public override bool OnKeyDown(KeyboardKeys key)
-        {
-            if (_isWorking)
-                return true;
-
-            switch (key)
-            {
-            case KeyboardKeys.Escape:
-                OnCancel();
-                return true;
-            case KeyboardKeys.Return:
-                OnSubmit();
-                return true;
-            }
-
-            return base.OnKeyDown(key);
         }
     }
 }

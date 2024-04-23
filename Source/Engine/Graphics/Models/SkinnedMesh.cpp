@@ -105,7 +105,7 @@ SkinnedMesh::~SkinnedMesh()
     SAFE_DELETE_GPU_RESOURCE(_indexBuffer);
 }
 
-bool SkinnedMesh::Load(uint32 vertices, uint32 triangles, void* vb0, void* ib, bool use16BitIndexBuffer)
+bool SkinnedMesh::Load(uint32 vertices, uint32 triangles, const void* vb0, const void* ib, bool use16BitIndexBuffer)
 {
     // Cache data
     uint32 indicesCount = triangles * 3;
@@ -159,7 +159,7 @@ void SkinnedMesh::Unload()
     _use16BitIndexBuffer = false;
 }
 
-bool SkinnedMesh::UpdateMesh(uint32 vertexCount, uint32 triangleCount, VB0SkinnedElementType* vb, void* ib, bool use16BitIndices)
+bool SkinnedMesh::UpdateMesh(uint32 vertexCount, uint32 triangleCount, const VB0SkinnedElementType* vb, const void* ib, bool use16BitIndices)
 {
     auto model = (SkinnedModel*)_model;
 
@@ -169,7 +169,7 @@ bool SkinnedMesh::UpdateMesh(uint32 vertexCount, uint32 triangleCount, VB0Skinne
     {
         // Calculate mesh bounds
         BoundingBox bounds;
-        BoundingBox::FromPoints((Float3*)vb, vertexCount, bounds);
+        BoundingBox::FromPoints((const Float3*)vb, vertexCount, bounds);
         SetBounds(bounds);
 
         // Send event (actors using this model can update bounds, etc.)
@@ -429,7 +429,7 @@ ScriptingObject* SkinnedMesh::GetParentModel()
 #if !COMPILE_WITHOUT_CSHARP
 
 template<typename IndexType>
-bool UpdateMesh(SkinnedMesh* mesh, MArray* verticesObj, MArray* trianglesObj, MArray* blendIndicesObj, MArray* blendWeightsObj, MArray* normalsObj, MArray* tangentsObj, MArray* uvObj)
+bool UpdateMesh(SkinnedMesh* mesh, const MArray* verticesObj, const MArray* trianglesObj, const MArray* blendIndicesObj, const MArray* blendWeightsObj, const MArray* normalsObj, const MArray* tangentsObj, const MArray* uvObj)
 {
     auto model = mesh->GetSkinnedModel();
     ASSERT(model && model->IsVirtual() && verticesObj && trianglesObj && blendIndicesObj && blendWeightsObj);
@@ -505,12 +505,12 @@ bool UpdateMesh(SkinnedMesh* mesh, MArray* verticesObj, MArray* trianglesObj, MA
     return mesh->UpdateMesh(vertexCount, triangleCount, vb.Get(), ib);
 }
 
-bool SkinnedMesh::UpdateMeshUInt(MArray* verticesObj, MArray* trianglesObj, MArray* blendIndicesObj, MArray* blendWeightsObj, MArray* normalsObj, MArray* tangentsObj, MArray* uvObj)
+bool SkinnedMesh::UpdateMeshUInt(const MArray* verticesObj, const MArray* trianglesObj, const MArray* blendIndicesObj, const MArray* blendWeightsObj, const MArray* normalsObj, const MArray* tangentsObj, const MArray* uvObj)
 {
     return ::UpdateMesh<uint32>(this, verticesObj, trianglesObj, blendIndicesObj, blendWeightsObj, normalsObj, tangentsObj, uvObj);
 }
 
-bool SkinnedMesh::UpdateMeshUShort(MArray* verticesObj, MArray* trianglesObj, MArray* blendIndicesObj, MArray* blendWeightsObj, MArray* normalsObj, MArray* tangentsObj, MArray* uvObj)
+bool SkinnedMesh::UpdateMeshUShort(const MArray* verticesObj, const MArray* trianglesObj, const MArray* blendIndicesObj, const MArray* blendWeightsObj, const MArray* normalsObj, const MArray* tangentsObj, const MArray* uvObj)
 {
     return ::UpdateMesh<uint16>(this, verticesObj, trianglesObj, blendIndicesObj, blendWeightsObj, normalsObj, tangentsObj, uvObj);
 }

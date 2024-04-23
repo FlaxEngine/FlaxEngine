@@ -94,4 +94,15 @@ namespace Utilities
         return (x * 0x01010101) >> 24;
 #endif  
     }
+
+    // Copy memory region but ignoring address sanatizer checks for memory regions.
+    NO_SANITIZE_ADDRESS static void UnsafeMemoryCopy(void* dst, const void* src, uint64 size)
+    {
+#if BUILD_RELEASE
+        memcpy(dst, src, static_cast<size_t>(size));
+#else
+        for (uint64 i = 0; i < size; i++)
+            ((byte*)dst)[i] = ((byte*)src)[i];
+#endif
+    }
 }

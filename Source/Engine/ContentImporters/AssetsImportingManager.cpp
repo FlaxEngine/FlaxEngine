@@ -413,6 +413,7 @@ bool AssetsImportingManagerService::Init()
         { TEXT("jpg"), ASSET_FILES_EXTENSION, ImportTexture::Import },
         { TEXT("hdr"), ASSET_FILES_EXTENSION, ImportTexture::Import },
         { TEXT("raw"), ASSET_FILES_EXTENSION, ImportTexture::Import },
+        { TEXT("exr"), ASSET_FILES_EXTENSION, ImportTexture::Import },
 
         // IES Profiles
         { TEXT("ies"), ASSET_FILES_EXTENSION, ImportTexture::ImportIES },

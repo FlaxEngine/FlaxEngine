@@ -351,8 +351,8 @@ bool GPUDeviceDX11::Init()
             D3D11_FEATURE_DATA_D3D11_OPTIONS2 featureDataD3D11Options2 = {};
             _device->CheckFeatureSupport(D3D11_FEATURE_D3D11_OPTIONS2, &featureDataD3D11Options2, sizeof(featureDataD3D11Options2));
             limits.HasCompute = d3D10XHardwareOptions.ComputeShaders_Plus_RawAndStructuredBuffers_Via_Shader_4_x != 0;
-            limits.HasTessellation = true;
-            limits.HasGeometryShaders = true;
+            limits.HasTessellation = GPU_ALLOW_TESSELLATION_SHADERS;
+            limits.HasGeometryShaders = GPU_ALLOW_GEOMETRY_SHADERS;
             limits.HasInstancing = true;
             limits.HasVolumeTextureRendering = true;
             limits.HasDrawIndirect = true;
@@ -376,7 +376,7 @@ bool GPUDeviceDX11::Init()
         {
             limits.HasCompute = false;
             limits.HasTessellation = false;
-            limits.HasGeometryShaders = true;
+            limits.HasGeometryShaders = GPU_ALLOW_GEOMETRY_SHADERS;
             limits.HasInstancing = true;
             limits.HasVolumeTextureRendering = false;
             limits.HasDrawIndirect = false;

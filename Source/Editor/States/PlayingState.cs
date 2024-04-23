@@ -163,6 +163,8 @@ namespace FlaxEditor.States
             Editor.OnPlayBegin();
             IsPlayModeStarting = false;
             Profiler.EndEvent();
+
+            Time.Synchronize();
         }
 
         private void SetupEditorEnvOptions()
@@ -192,7 +194,7 @@ namespace FlaxEditor.States
 
             // Restore editor scene
             SceneRestoring?.Invoke();
-            _duplicateScenes.DeletedScenes();
+            _duplicateScenes.UnloadScenes();
             PluginManager.Internal_DeinitializeGamePlugins();
             Editor.Internal_SetPlayMode(false);
             _duplicateScenes.RestoreSceneData();
@@ -209,6 +211,8 @@ namespace FlaxEditor.States
             Editor.OnPlayEnd();
             IsPlayModeEnding = false;
             Profiler.EndEvent();
+
+            Time.Synchronize();
         }
     }
 }

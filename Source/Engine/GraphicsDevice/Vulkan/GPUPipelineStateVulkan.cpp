@@ -112,7 +112,11 @@ ComputePipelineStateVulkan::ComputePipelineStateVulkan(GPUDeviceVulkan* device, 
 ComputePipelineStateVulkan::~ComputePipelineStateVulkan()
 {
     DSWriteContainer.Release();
-    CurrentTypedDescriptorPoolSet = nullptr;
+    if (CurrentTypedDescriptorPoolSet)
+    {
+        CurrentTypedDescriptorPoolSet->GetOwner()->Refs--;
+        CurrentTypedDescriptorPoolSet = nullptr;
+    }
     DescriptorSetsLayout = nullptr;
     DescriptorSetHandles.Resize(0);
     DynamicOffsets.Resize(0);
@@ -133,17 +137,19 @@ PipelineLayoutVulkan* GPUPipelineStateVulkan::GetLayout()
         return _layout;
 
     DescriptorSetLayoutInfoVulkan descriptorSetLayoutInfo;
-
 #define INIT_SHADER_STAGE(set, bit) \
 	if (DescriptorInfoPerStage[DescriptorSet::set]) \
 		descriptorSetLayoutInfo.AddBindingsForStage(bit, DescriptorSet::set, DescriptorInfoPerStage[DescriptorSet::set])
     INIT_SHADER_STAGE(Vertex, VK_SHADER_STAGE_VERTEX_BIT);
+#if GPU_ALLOW_TESSELLATION_SHADERS
     INIT_SHADER_STAGE(Hull, VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT);
     INIT_SHADER_STAGE(Domain, VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT);
+#endif
+#if GPU_ALLOW_GEOMETRY_SHADERS
     INIT_SHADER_STAGE(Geometry, VK_SHADER_STAGE_GEOMETRY_BIT);
+#endif
     INIT_SHADER_STAGE(Pixel, VK_SHADER_STAGE_FRAGMENT_BIT);
 #undef INIT_SHADER_STAGE
-
     _layout = _device->GetOrCreateLayout(descriptorSetLayoutInfo);
     ASSERT(_layout);
     DescriptorSetsLayout = &_layout->DescriptorSetLayout;
@@ -204,7 +210,11 @@ VkPipeline GPUPipelineStateVulkan::GetState(RenderPassVulkan* renderPass)
 void GPUPipelineStateVulkan::OnReleaseGPU()
 {
     DSWriteContainer.Release();
-    CurrentTypedDescriptorPoolSet = nullptr;
+    if (CurrentTypedDescriptorPoolSet)
+    {
+        CurrentTypedDescriptorPoolSet->GetOwner()->Refs--;
+        CurrentTypedDescriptorPoolSet = nullptr;
+    }
     DescriptorSetsLayout = nullptr;
     DescriptorSetHandles.Resize(0);
     DynamicOffsets.Resize(0);
@@ -253,9 +263,13 @@ bool GPUPipelineStateVulkan::Init(const Description& desc)
 		stage.pName = desc.type->GetName().Get(); \
 	}
     INIT_SHADER_STAGE(VS, Vertex, VK_SHADER_STAGE_VERTEX_BIT);
+#if GPU_ALLOW_TESSELLATION_SHADERS
     INIT_SHADER_STAGE(HS, Hull, VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT);
     INIT_SHADER_STAGE(DS, Domain, VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT);
+#endif
+#if GPU_ALLOW_GEOMETRY_SHADERS
     INIT_SHADER_STAGE(GS, Geometry, VK_SHADER_STAGE_GEOMETRY_BIT);
+#endif
     INIT_SHADER_STAGE(PS, Pixel, VK_SHADER_STAGE_FRAGMENT_BIT);
 #undef INIT_SHADER_STAGE
     _desc.pStages = _shaderStages;
@@ -274,10 +288,13 @@ bool GPUPipelineStateVulkan::Init(const Description& desc)
         _descInputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
         break;
     }
+#if GPU_ALLOW_TESSELLATION_SHADERS
     if (desc.HS)
         _descInputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_PATCH_LIST;
+#endif
     _desc.pInputAssemblyState = &_descInputAssembly;
 
+#if GPU_ALLOW_TESSELLATION_SHADERS
     // Tessellation
     if (desc.HS)
     {
@@ -285,6 +302,7 @@ bool GPUPipelineStateVulkan::Init(const Description& desc)
         _descTessellation.patchControlPoints = desc.HS->GetControlPointsCount();
         _desc.pTessellationState = &_descTessellation;
     }
+#endif
 
     // Viewport
     RenderToolsVulkan::ZeroStruct(_descViewport, VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO);

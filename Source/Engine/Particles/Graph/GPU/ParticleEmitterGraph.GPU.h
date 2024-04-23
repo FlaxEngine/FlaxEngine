@@ -26,7 +26,7 @@ public:
     /// <summary>
     /// The asset references. Linked resources such as Animation assets are referenced in graph data as ID. We need to keep valid refs to them at runtime to keep data in memory.
     /// </summary>
-    AssetReference<Asset> Assets[14];
+    Array<AssetReference<Asset>> Assets;
 };
 
 /// <summary>

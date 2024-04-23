@@ -196,7 +196,7 @@ public:
         String CollisionMeshesPrefix = TEXT("");
         // The type of collision that should be generated if the mesh has a collision prefix specified.
         API_FIELD(Attributes = "EditorOrder(105), EditorDisplay(\"Geometry\"), VisibleIf(nameof(ShowGeometry))")
-        CollisionDataType CollisionType = CollisionDataType::TriangleMesh;
+        CollisionDataType CollisionType = CollisionDataType::ConvexMesh;
 
     public: // Transform
 
@@ -386,13 +386,13 @@ public:
 private:
     static void CalculateBoneOffsetMatrix(const Array<SkeletonNode>& nodes, Matrix& offsetMatrix, int32 nodeIndex);
 #if USE_ASSIMP
-    static bool ImportDataAssimp(const char* path, ModelData& data, Options& options, String& errorMsg);
+    static bool ImportDataAssimp(const String& path, ModelData& data, Options& options, String& errorMsg);
 #endif
 #if USE_AUTODESK_FBX_SDK
-	static bool ImportDataAutodeskFbxSdk(const char* path, ModelData& data, Options& options, String& errorMsg);
+	static bool ImportDataAutodeskFbxSdk(const String& path, ModelData& data, Options& options, String& errorMsg);
 #endif
 #if USE_OPEN_FBX
-    static bool ImportDataOpenFBX(const char* path, ModelData& data, Options& options, String& errorMsg);
+    static bool ImportDataOpenFBX(const String& path, ModelData& data, Options& options, String& errorMsg);
 #endif
 #endif
 };

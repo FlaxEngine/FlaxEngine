@@ -15,6 +15,7 @@
 #include "Engine/Content/Storage/ContentStorageManager.h"
 #include "Engine/Content/Assets/Animation.h"
 #include "Engine/Content/Content.h"
+#include "Engine/Animations/AnimEvent.h"
 #include "Engine/Level/Actors/EmptyActor.h"
 #include "Engine/Level/Actors/StaticModel.h"
 #include "Engine/Level/Prefabs/Prefab.h"
@@ -137,48 +138,6 @@ void RepackMeshLightmapUVs(ModelData& data)
                 }
                 break;
             }
-        }
-    }
-}
-
-void TryRestoreMaterials(CreateAssetContext& context, ModelData& modelData)
-{
-    // Skip if file is missing
-    if (!FileSystem::FileExists(context.TargetAssetPath))
-        return;
-
-    // Try to load asset that gets reimported
-    AssetReference<Asset> asset = Content::LoadAsync<Asset>(context.TargetAssetPath);
-    if (asset == nullptr)
-        return;
-    if (asset->WaitForLoaded())
-        return;
-
-    // Get model object
-    ModelBase* model = nullptr;
-    if (asset.Get()->GetTypeName() == Model::TypeName)
-    {
-        model = ((Model*)asset.Get());
-    }
-    else if (asset.Get()->GetTypeName() == SkinnedModel::TypeName)
-    {
-        model = ((SkinnedModel*)asset.Get());
-    }
-    if (!model)
-        return;
-
-    // Peek materials
-    for (int32 i = 0; i < modelData.Materials.Count(); i++)
-    {
-        auto& dstSlot = modelData.Materials[i];
-
-        if (model->MaterialSlots.Count() > i)
-        {
-            auto& srcSlot = model->MaterialSlots[i];
-
-            dstSlot.Name = srcSlot.Name;
-            dstSlot.ShadowsMode = srcSlot.ShadowsMode;
-            dstSlot.AssetID = srcSlot.Material.GetID();
         }
     }
 }
@@ -458,10 +417,62 @@ CreateAssetResult ImportModel::Import(CreateAssetContext& context)
         data = &dataThis;
     }
 
-    // Check if restore materials on model reimport
-    if (options.RestoreMaterialsOnReimport && data->Materials.HasItems())
+    // Check if restore local changes on asset reimport
+    constexpr bool RestoreAnimEventsOnReimport = true;
+    const bool restoreMaterials = options.RestoreMaterialsOnReimport && data->Materials.HasItems();
+    const bool restoreAnimEvents = RestoreAnimEventsOnReimport && options.Type == ModelTool::ModelType::Animation && data->Animations.HasItems();
+    if ((restoreMaterials || restoreAnimEvents) && FileSystem::FileExists(context.TargetAssetPath))
     {
-        TryRestoreMaterials(context, *data);
+        AssetReference<Asset> asset = Content::LoadAsync<Asset>(context.TargetAssetPath);
+        if (asset && !asset->WaitForLoaded())
+        {
+            auto* model = ScriptingObject::Cast<ModelBase>(asset);
+            auto* animation = ScriptingObject::Cast<Animation>(asset);
+            if (restoreMaterials && model)
+            {
+                // Copy material settings
+                for (int32 i = 0; i < data->Materials.Count(); i++)
+                {
+                    auto& dstSlot = data->Materials[i];
+                    if (model->MaterialSlots.Count() > i)
+                    {
+                        auto& srcSlot = model->MaterialSlots[i];
+                        dstSlot.Name = srcSlot.Name;
+                        dstSlot.ShadowsMode = srcSlot.ShadowsMode;
+                        dstSlot.AssetID = srcSlot.Material.GetID();
+                    }
+                }
+            }
+            if (restoreAnimEvents && animation)
+            {
+                // Copy anim event tracks
+                for (const auto& e : animation->Events)
+                {
+                    auto& clone = data->Animations[0].Events.AddOne();
+                    clone.First = e.First;
+                    const auto& eKeys = e.Second.GetKeyframes();
+                    auto& cloneKeys = clone.Second.GetKeyframes();
+                    clone.Second.Resize(eKeys.Count());
+                    for (int32 i = 0; i < eKeys.Count(); i++)
+                    {
+                        const auto& eKey = eKeys[i];
+                        auto& cloneKey = cloneKeys[i];
+                        cloneKey.Time = eKey.Time;
+                        cloneKey.Value.Duration = eKey.Value.Duration;
+                        if (eKey.Value.Instance)
+                        {
+                            cloneKey.Value.TypeName = eKey.Value.Instance->GetType().Fullname;
+                            rapidjson_flax::StringBuffer buffer;
+                            CompactJsonWriter writer(buffer);
+                            writer.StartObject();
+                            eKey.Value.Instance->Serialize(writer, nullptr);
+                            writer.EndObject();
+                            cloneKey.Value.JsonData.Set(buffer.GetString(), (int32)buffer.GetSize());
+                        }
+                    }
+                }
+            }
+        }
     }
 
     // When using generated lightmap UVs those coordinates needs to be moved so all meshes are in unique locations in [0-1]x[0-1] coordinates space

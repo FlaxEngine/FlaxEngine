@@ -91,15 +91,11 @@ namespace FlaxEditor.SceneGraph.Actors
         private void OnAddMeshCollider(EditorWindow window)
         {
             // Allow collider to be added to evey static model selection
-            SceneGraphNode[] selection = Array.Empty<SceneGraphNode>();
+            var selection = Array.Empty<SceneGraphNode>();
             if (window is SceneTreeWindow)
-            {
                 selection = Editor.Instance.SceneEditing.Selection.ToArray();
-            }
             else if (window is PrefabWindow prefabWindow)
-            {
                 selection = prefabWindow.Selection.ToArray();
-            }
 
             var createdNodes = new List<SceneGraphNode>();
             foreach (var node in selection)

@@ -47,7 +47,7 @@ namespace FlaxEditor.GUI.Timeline.GUI
                 break;
             default: throw new ArgumentOutOfRangeException();
             }
-            var color = (_timeline.IsMovingPositionHandle ? style.ProgressNormal : style.Foreground).AlphaMultiplied(0.6f);
+            var color = (_timeline.IsMovingPositionHandle ? style.SelectionBorder : style.Foreground).AlphaMultiplied(0.6f);
             Matrix3x3.RotationZ(Mathf.PiOverTwo, out var m1);
             var m2 = Matrix3x3.Translation2D(0, timeAxisHeaderOffset);
             Matrix3x3.Multiply(ref m1, ref m2, out var m3);
@@ -61,7 +61,8 @@ namespace FlaxEditor.GUI.Timeline.GUI
             Render2D.DrawText(style.FontSmall, labelText, style.Foreground, new Float2(2, -6));
             Render2D.PopTransform();
 
-            Render2D.FillRectangle(new Rectangle(Width * 0.5f, Height + timeAxisHeaderOffset, 1, _timeline.MediaPanel.Height - timeAxisHeaderOffset - timeAxisOverlap), _timeline.IsMovingPositionHandle ? style.ProgressNormal : style.Foreground.RGBMultiplied(0.8f));
+            color = _timeline.IsMovingPositionHandle ? style.SelectionBorder : style.Foreground.RGBMultiplied(0.8f);
+            Render2D.FillRectangle(new Rectangle(Width * 0.5f, Height + timeAxisHeaderOffset, 1, _timeline.MediaPanel.Height - timeAxisHeaderOffset - timeAxisOverlap), color);
 
             base.Draw();
         }

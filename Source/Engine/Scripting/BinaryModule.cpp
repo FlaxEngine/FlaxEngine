@@ -3,6 +3,7 @@
 #include "BinaryModule.h"
 #include "ScriptingObject.h"
 #include "Engine/Core/Log.h"
+#include "Engine/Core/Utilities.h"
 #include "Engine/Threading/Threading.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "ManagedCLR/MAssembly.h"
@@ -436,6 +437,7 @@ void ScriptingType::SetupScriptVTable(ScriptingTypeHandle baseTypeHandle)
     }
 }
 
+NO_SANITIZE_ADDRESS
 void ScriptingType::SetupScriptObjectVTable(void* object, ScriptingTypeHandle baseTypeHandle, int32 wrapperIndex)
 {
     // Analyze vtable size
@@ -475,7 +477,7 @@ void ScriptingType::SetupScriptObjectVTable(void* object, ScriptingTypeHandle ba
 
     // Duplicate vtable
     Script.VTable = (void**)((byte*)Platform::Allocate(totalSize, 16) + prefixSize);
-    Platform::MemoryCopy((byte*)Script.VTable - prefixSize, (byte*)vtable - prefixSize, prefixSize + size);
+    Utilities::UnsafeMemoryCopy((byte*)Script.VTable - prefixSize, (byte*)vtable - prefixSize, prefixSize + size);
 
     // Override vtable entries
     if (interfacesCount)
@@ -508,7 +510,7 @@ void ScriptingType::SetupScriptObjectVTable(void* object, ScriptingTypeHandle ba
                     const int32 interfaceSize = interfaceCount * sizeof(void*);
 
                     // Duplicate interface vtable
-                    Platform::MemoryCopy((byte*)Script.VTable + interfaceOffset, (byte*)vtableInterface - prefixSize, prefixSize + interfaceSize);
+                    Utilities::UnsafeMemoryCopy((byte*)Script.VTable + interfaceOffset, (byte*)vtableInterface - prefixSize, prefixSize + interfaceSize);
 
                     // Override interface vtable entries
                     const auto scriptOffset = interfaces->ScriptVTableOffset;

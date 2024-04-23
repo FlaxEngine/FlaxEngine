@@ -44,6 +44,49 @@ public:
         }
     };
 
+private:
+    template<typename T>
+    static void Merge(T* data, T* tmp, int32 start, int32 mid, int32 end)
+    {
+        int32 h = start;
+        int32 i = start;
+        int32 j = mid + 1;
+
+        while (h <= mid && j <= end)
+        {
+            if (data[h] < data[j])
+                tmp[i] = data[h++];
+            else
+                tmp[i] = data[j++];
+            i++;
+        }
+
+        if (h > mid)
+        {
+            for (int32 k = j; k <= end; k++)
+                tmp[i++] = data[k];
+        }
+        else
+        {
+            for (int32 k = h; k <= mid; k++)
+                tmp[i++] = data[k];
+        }
+
+        for (int32 k = start; k <= end; k++)
+            data[k] = tmp[k];
+    }
+
+    template<typename T>
+    static void MergeSort(T* data, T* tmp, int32 start, int32 end)
+    {
+        if (start >= end)
+            return;
+        const int32 mid = (start + end) / 2;
+        MergeSort(data, tmp, start, mid);
+        MergeSort(data, tmp, mid + 1, end);
+        Merge(data, tmp, start, mid, end);
+    }
+
 public:
     /// <summary>
     /// Sorts the linear data array using Quick Sort algorithm (non recursive version, uses temporary stack collection).
@@ -261,6 +304,33 @@ public:
                 stack.Push(right);
             }
         }
+    }
+
+    /// <summary>
+    /// Sorts the linear data array using Merge Sort algorithm (recursive version, uses temporary memory).
+    /// </summary>
+    /// <param name="data">The data pointer.</param>
+    /// <param name="count">The elements count.</param>
+    /// <param name="tmp">The additional temporary memory buffer for sorting data. If null then will be automatically allocated within this function call.</param>
+    template<typename T>
+    static void MergeSort(T* data, int32 count, T* tmp = nullptr)
+    {
+        if (count < 2)
+            return;
+        const bool alloc = tmp == nullptr;
+        if (alloc)
+            tmp = (T*)Platform::Allocate(sizeof(T) * count, 16);
+        MergeSort(data, tmp, 0, count - 1);
+        if (alloc)
+            Platform::Free(tmp);
+    }
+
+    template<typename T, typename AllocationType = HeapAllocation>
+    FORCE_INLINE static void MergeSort(Array<T, AllocationType>& data, Array<T, AllocationType>* tmp = nullptr)
+    {
+        if (tmp)
+            tmp->Resize(data.Count());
+        MergeSort(data.Get(), data.Count(), tmp ? tmp->Get() : nullptr);
     }
 
     /// <summary>

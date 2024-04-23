@@ -4,6 +4,7 @@
 #include "ContentLoadTask.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Math/Math.h"
+#include "Engine/Core/Collections/Array.h"
 #include "Engine/Platform/CPUInfo.h"
 #include "Engine/Platform/Thread.h"
 #include "Engine/Platform/ConditionVariable.h"
@@ -212,7 +213,7 @@ void ContentLoadingManagerService::Dispose()
 
 String ContentLoadTask::ToString() const
 {
-    return String::Format(TEXT("Content Load Task {0} ({1})"), ToString(GetType()), (int32)GetState());
+    return String::Format(TEXT("Content Load Task ({})"), (int32)GetState());
 }
 
 void ContentLoadTask::Enqueue()

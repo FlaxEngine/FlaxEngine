@@ -471,63 +471,36 @@ bool ModelTool::ImportData(const String& path, ModelData& data, Options& options
         options.MergeMeshes = false; // Meshes merging doesn't make sense when we want to import each mesh individually
     // TODO: maybe we could update meshes merger to collapse meshes within the same name if splitting is enabled?
 
-    // Validate path
-    // Note: Assimp/Autodesk supports only ANSI characters in imported file path
-    StringAnsi importPath;
-    String tmpPath;
-    if (path.IsANSI() == false)
-    {
-        // Use temporary file
-        LOG(Warning, "Model Tool doesn't support importing files from paths using non ASNI characters. Using temporary file.");
-        FileSystem::GetTempFilePath(tmpPath);
-        if (tmpPath.IsANSI() == false || FileSystem::CopyFile(tmpPath, path))
-        {
-            errorMsg = TEXT("Path with non ANSI characters is invalid.");
-            return true;
-        }
-        importPath = tmpPath.ToStringAnsi();
-    }
-    else
-    {
-        importPath = path.ToStringAnsi();
-    }
-
     // Call importing backend
 #if (USE_AUTODESK_FBX_SDK || USE_OPEN_FBX) && USE_ASSIMP
     if (path.EndsWith(TEXT(".fbx"), StringSearchCase::IgnoreCase))
     {
 #if USE_AUTODESK_FBX_SDK
-        if (ImportDataAutodeskFbxSdk(importPath.Get(), data, options, errorMsg))
+        if (ImportDataAutodeskFbxSdk(path, data, options, errorMsg))
             return true;
 #elif USE_OPEN_FBX
-        if (ImportDataOpenFBX(importPath.Get(), data, options, errorMsg))
+        if (ImportDataOpenFBX(path, data, options, errorMsg))
             return true;
 #endif
     }
     else
     {
-        if (ImportDataAssimp(importPath.Get(), data, options, errorMsg))
+        if (ImportDataAssimp(path, data, options, errorMsg))
             return true;
     }
 #elif USE_ASSIMP
-    if (ImportDataAssimp(importPath.Get(), data, options, errorMsg))
+    if (ImportDataAssimp(path, data, options, errorMsg))
         return true;
 #elif USE_AUTODESK_FBX_SDK
-    if (ImportDataAutodeskFbxSdk(importPath.Get(), data, options, errorMsg))
+    if (ImportDataAutodeskFbxSdk(path, data, options, errorMsg))
         return true;
 #elif USE_OPEN_FBX
-    if (ImportDataOpenFBX(importPath.Get(), data, options, errorMsg))
+    if (ImportDataOpenFBX(path, data, options, errorMsg))
         return true;
 #else
     LOG(Error, "Compiled without model importing backend.");
     return true;
 #endif
-
-    // Remove temporary file
-    if (tmpPath.HasChars() && FileSystem::FileExists(tmpPath))
-    {
-        FileSystem::DeleteFile(tmpPath);
-    }
 
     // Remove namespace prefixes from the nodes names
     {
@@ -616,6 +589,9 @@ bool ModelTool::ImportData(const String& path, ModelData& data, Options& options
             {
                 for (auto& n : mesh->Normals)
                     n *= -1;
+                for (auto& shape : mesh->BlendShapes)
+                    for (auto& v : shape.Vertices)
+                        v.NormalDelta *= -1;
             }
         }
     }
@@ -1248,7 +1224,7 @@ bool ModelTool::ImportModel(const String& path, ModelData& data, Options& option
     }
 
     // Apply the import transformation
-    if (!importTransform.IsIdentity())
+    if (!importTransform.IsIdentity() && data.Nodes.HasItems())
     {
         if (options.Type == ModelType::SkinnedModel)
         {

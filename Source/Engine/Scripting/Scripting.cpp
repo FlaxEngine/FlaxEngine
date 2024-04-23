@@ -109,6 +109,45 @@ namespace
 #if USE_EDITOR
     bool LastBinariesLoadTriggeredCompilation = false;
 #endif
+
+    void ReleaseObjects(bool gameOnly)
+    {
+        // Flush objects already enqueued objects to delete
+        ObjectsRemovalService::Flush();
+
+        // Give GC a try to cleanup old user objects and the other mess
+        MCore::GC::Collect();
+        MCore::GC::WaitForPendingFinalizers();
+
+        // Destroy objects from game assemblies (eg. not released objects that might crash if persist in memory after reload)
+        const auto flaxModule = GetBinaryModuleFlaxEngine();
+        _objectsLocker.Lock();
+        for (auto i = _objectsDictionary.Begin(); i.IsNotEnd(); ++i)
+        {
+            auto obj = i->Value;
+            if (gameOnly && obj->GetTypeHandle().Module == flaxModule)
+                continue;
+
+#if USE_OBJECTS_DISPOSE_CRASHES_DEBUGGING
+            LOG(Info, "[OnScriptingDispose] obj = 0x{0:x}, {1}", (uint64)obj.Ptr, String(obj.TypeName));
+#endif
+            obj->OnScriptingDispose();
+        }
+        _objectsLocker.Unlock();
+
+        // Release assets sourced from game assemblies
+        Array<Asset*> assets = Content::GetAssets();
+        for (auto asset : assets)
+        {
+            if (asset->GetTypeHandle().Module == flaxModule)
+            {
+                continue;
+            }
+
+            asset->DeleteObject();
+        }
+        ObjectsRemovalService::Flush();
+    }
 }
 
 Delegate<BinaryModule*> Scripting::BinaryModuleLoaded;
@@ -566,36 +605,8 @@ void Scripting::Release()
     // Fire event
     ScriptsUnload();
 
-    // Cleanup
-    ObjectsRemovalService::Flush();
-
-    // Cleanup some managed objects
-    MCore::GC::Collect();
-    MCore::GC::WaitForPendingFinalizers();
-
     // Release managed objects instances for persistent objects (assets etc.)
-    _objectsLocker.Lock();
-    {
-        for (auto i = _objectsDictionary.Begin(); i.IsNotEnd(); ++i)
-        {
-            auto obj = i->Value;
-#if USE_OBJECTS_DISPOSE_CRASHES_DEBUGGING
-            LOG(Info, "[OnScriptingDispose] obj = 0x{0:x}, {1}", (uint64)obj.Ptr, String(obj.TypeName));
-#endif
-            obj->OnScriptingDispose();
-        }
-    }
-    _objectsLocker.Unlock();
-
-    // Release assets sourced from game assemblies
-    const auto flaxModule = GetBinaryModuleFlaxEngine();
-    for (auto asset : Content::GetAssets())
-    {
-        if (asset->GetTypeHandle().Module == flaxModule)
-            continue;
-
-        asset->DeleteObjectNow();
-    }
+    ReleaseObjects(false);
 
     auto* flaxEngineModule = (NativeBinaryModule*)GetBinaryModuleFlaxEngine();
     onEngineUnloading(flaxEngineModule->Assembly);
@@ -673,39 +684,8 @@ void Scripting::Reload(bool canTriggerSceneReload)
     LOG(Info, "Start user scripts reload");
     ScriptsReloading();
 
-    // Flush cache (some objects may be deleted after reload start event)
-    ObjectsRemovalService::Flush();
-
-    // Give GC a try to cleanup old user objects and the other mess
-    MCore::GC::Collect();
-    MCore::GC::WaitForPendingFinalizers();
-
     // Destroy objects from game assemblies (eg. not released objects that might crash if persist in memory after reload)
-    const auto flaxModule = GetBinaryModuleFlaxEngine();
-    _objectsLocker.Lock();
-    {
-        for (auto i = _objectsDictionary.Begin(); i.IsNotEnd(); ++i)
-        {
-            auto obj = i->Value;
-            if (obj->GetTypeHandle().Module == flaxModule)
-                continue;
-
-#if USE_OBJECTS_DISPOSE_CRASHES_DEBUGGING
-            LOG(Info, "[OnScriptingDispose] obj = 0x{0:x}, {1}", (uint64)obj.Ptr, String(obj.TypeName));
-#endif
-            obj->OnScriptingDispose();
-        }
-    }
-    _objectsLocker.Unlock();
-
-    // Release assets sourced from game assemblies
-    for (auto asset : Content::GetAssets())
-    {
-        if (asset->GetTypeHandle().Module == flaxModule)
-            continue;
-
-        asset->DeleteObjectNow();
-    }
+    ReleaseObjects(true);
 
     // Unload all game modules
     LOG(Info, "Unloading game binary modules");
@@ -740,6 +720,15 @@ void Scripting::Reload(bool canTriggerSceneReload)
 }
 
 #endif
+
+Array<ScriptingObject*, HeapAllocation> Scripting::GetObjects()
+{
+    Array<ScriptingObject*> objects;
+    _objectsLocker.Lock();
+    _objectsDictionary.GetValues(objects);
+    _objectsLocker.Unlock();
+    return objects;
+}
 
 MClass* Scripting::FindClass(const StringAnsiView& fullname)
 {
@@ -860,7 +849,7 @@ void ScriptingObjectReferenceBase::OnDeleted(ScriptingObject* obj)
     }
 }
 
-ScriptingObject* Scripting::FindObject(Guid id, MClass* type)
+ScriptingObject* Scripting::FindObject(Guid id, const MClass* type)
 {
     if (!id.IsValid())
         return nullptr;
@@ -914,7 +903,7 @@ ScriptingObject* Scripting::FindObject(Guid id, MClass* type)
     return nullptr;
 }
 
-ScriptingObject* Scripting::TryFindObject(Guid id, MClass* type)
+ScriptingObject* Scripting::TryFindObject(Guid id, const MClass* type)
 {
     if (!id.IsValid())
         return nullptr;
@@ -950,7 +939,7 @@ ScriptingObject* Scripting::TryFindObject(Guid id, MClass* type)
     return result;
 }
 
-ScriptingObject* Scripting::TryFindObject(MClass* type)
+ScriptingObject* Scripting::TryFindObject(const MClass* type)
 {
     if (type == nullptr)
         return nullptr;
@@ -1020,7 +1009,7 @@ bool Scripting::IsEveryAssemblyLoaded()
     return true;
 }
 
-bool Scripting::IsTypeFromGameScripts(MClass* type)
+bool Scripting::IsTypeFromGameScripts(const MClass* type)
 {
     const auto binaryModule = ManagedBinaryModule::GetModule(type ? type->GetAssembly() : nullptr);
     return binaryModule && binaryModule != GetBinaryModuleCorlib() && binaryModule != GetBinaryModuleFlaxEngine();

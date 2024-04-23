@@ -270,11 +270,11 @@ void ParticleEffect::UpdateSimulation(bool singleFrame)
     if (!IsActiveInHierarchy()
         || ParticleSystem == nullptr
         || !ParticleSystem->IsLoaded()
-        || _lastUpdateFrame == Engine::FrameCount)
+        || _lastUpdateFrame == Engine::UpdateCount)
         return;
 
     // Request update
-    _lastUpdateFrame = Engine::FrameCount;
+    _lastUpdateFrame = Engine::UpdateCount;
     _lastMinDstSqr = MAX_Real;
     if (singleFrame)
         Instance.LastUpdateTime = (UseTimeScale ? Time::Update.Time : Time::Update.UnscaledTime).GetTotalSeconds();
@@ -371,7 +371,7 @@ void ParticleEffect::Sync()
 
 SceneRenderTask* ParticleEffect::GetRenderTask() const
 {
-    const uint64 minFrame = Engine::FrameCount - 2;
+    const uint64 minFrame = Engine::UpdateCount - 2;
 
     // Custom task
     const auto customViewRenderTask = CustomViewRenderTask.Get();

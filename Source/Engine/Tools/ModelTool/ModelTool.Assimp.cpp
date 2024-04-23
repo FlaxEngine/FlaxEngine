@@ -9,6 +9,7 @@
 #include "Engine/Platform/FileSystem.h"
 #include "Engine/Platform/File.h"
 #include "Engine/Tools/TextureTool/TextureTool.h"
+#include "Engine/Utilities/AnsiPathTempFile.h"
 
 // Import Assimp library
 // Source: https://github.com/assimp/assimp
@@ -157,7 +158,7 @@ struct AssimpImporterData
     Array<AssimpBone> Bones;
     Dictionary<int32, Array<int32>> MeshIndexToNodeIndex;
 
-    AssimpImporterData(const char* path, const ModelTool::Options& options)
+    AssimpImporterData(const StringView& path, const ModelTool::Options& options)
         : Path(path)
         , Options(options)
     {
@@ -735,7 +736,7 @@ void ImportAnimation(int32 index, ModelData& data, AssimpImporterData& importerD
     }
 }
 
-bool ModelTool::ImportDataAssimp(const char* path, ModelData& data, Options& options, String& errorMsg)
+bool ModelTool::ImportDataAssimp(const String& path, ModelData& data, Options& options, String& errorMsg)
 {
     static bool AssimpInited = false;
     if (!AssimpInited)
@@ -784,7 +785,10 @@ bool ModelTool::ImportDataAssimp(const char* path, ModelData& data, Options& opt
     context.AssimpImporter.SetPropertyBool(AI_CONFIG_IMPORT_FBX_OPTIMIZE_EMPTY_ANIMATION_CURVES, true);
 
     // Import file
-    context.Scene = context.AssimpImporter.ReadFile(path, flags);
+    {
+        AnsiPathTempFile tempFile(path);
+        context.Scene = context.AssimpImporter.ReadFile(tempFile.Path.Get(), flags);
+    }
     if (context.Scene == nullptr)
     {
         LOG_STR(Warning, String(context.AssimpImporter.GetErrorString()));

@@ -336,7 +336,8 @@ namespace FlaxEditor.Viewport.Previews
                     if (_showNodes)
                     {
                         // Draw bounding box at the node locations
-                        var localBox = new OrientedBoundingBox(new Vector3(-1.0f), new Vector3(1.0f));
+                        var boxSize = Mathf.Min(1.0f, _previewModel.Sphere.Radius / 100.0f);
+                        var localBox = new OrientedBoundingBox(new Vector3(-boxSize), new Vector3(boxSize));
                         for (int nodeIndex = 0; nodeIndex < pose.Length; nodeIndex++)
                         {
                             if (nodesMask != null && !nodesMask[nodeIndex])

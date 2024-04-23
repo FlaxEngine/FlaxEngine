@@ -42,11 +42,10 @@ void EyeAdaptationPass::Render(RenderContext& renderContext, GPUTexture* colorBu
     bool dropHistory = renderContext.Buffers->LastEyeAdaptationTime < ZeroTolerance || renderContext.Task->IsCameraCut;
     const float time = Time::Draw.UnscaledTime.GetTotalSeconds();
     //const float frameDelta = Time::ElapsedGameTime.GetTotalSeconds();
-    const float frameDelta = time - renderContext.Buffers->LastEyeAdaptationTime;
+    const float frameDelta = Math::Clamp(time - renderContext.Buffers->LastEyeAdaptationTime, 0.0f, 1.0f);
     renderContext.Buffers->LastEyeAdaptationTime = 0.0f;
     if ((view.Flags & ViewFlags::EyeAdaptation) == ViewFlags::None || settings.Mode == EyeAdaptationMode::None || checkIfSkipPass())
         return;
-
     PROFILE_GPU_CPU("Eye Adaptation");
 
     // Setup constants
@@ -218,14 +217,15 @@ String EyeAdaptationPass::ToString() const
 
 bool EyeAdaptationPass::Init()
 {
-    _canUseHistogram = GPUDevice::Instance->Limits.HasCompute;
+    auto device = GPUDevice::Instance;
+    _canUseHistogram = device->Limits.HasCompute;
 
     // Create pipeline states
-    _psManual = GPUDevice::Instance->CreatePipelineState();
-    _psLuminanceMap = GPUDevice::Instance->CreatePipelineState();
-    _psBlendLuminance = GPUDevice::Instance->CreatePipelineState();
-    _psApplyLuminance = GPUDevice::Instance->CreatePipelineState();
-    _psHistogram = GPUDevice::Instance->CreatePipelineState();
+    _psManual = device->CreatePipelineState();
+    _psLuminanceMap = device->CreatePipelineState();
+    _psBlendLuminance = device->CreatePipelineState();
+    _psApplyLuminance = device->CreatePipelineState();
+    _psHistogram = device->CreatePipelineState();
 
     // Load shaders
     _shader = Content::LoadAsyncInternal<Shader>(TEXT("Shaders/EyeAdaptation"));

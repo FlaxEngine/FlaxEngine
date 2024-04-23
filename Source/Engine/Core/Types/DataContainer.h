@@ -320,7 +320,7 @@ public:
     /// </summary>
     /// <param name="data">The data.</param>
     /// <param name="length">The length.</param>
-    void Append(T* data, int32 length)
+    void Append(const T* data, int32 length)
     {
         if (length <= 0)
             return;

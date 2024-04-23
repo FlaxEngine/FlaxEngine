@@ -7,7 +7,6 @@
 #include "Engine/Core/NonCopyable.h"
 #include "Engine/Core/Enums.h"
 #include "Engine/Core/Types/TimeSpan.h"
-#include "Engine/Core/Collections/Array.h"
 #include "Engine/Platform/Platform.h"
 
 /// <summary>
@@ -49,7 +48,6 @@ class FLAXENGINE_API Task : public Object, public NonCopyable
     //
 
 protected:
-
     /// <summary>
     /// The cancel flag used to indicate that there is request to cancel task operation.
     /// </summary>
@@ -65,14 +63,18 @@ protected:
     /// </summary>
     Task* _continueWith = nullptr;
 
-public:
+    void SetState(TaskState state)
+    {
+        Platform::AtomicStore((int64 volatile*)&_state, (uint64)state);
+    }
 
+public:
     /// <summary>
     /// Gets the task state.
     /// </summary>
     FORCE_INLINE TaskState GetState() const
     {
-        return static_cast<TaskState>(Platform::AtomicRead((int64 volatile*)&_state));
+        return (TaskState)Platform::AtomicRead((int64 const volatile*)&_state);
     }
 
     /// <summary>
@@ -94,7 +96,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Checks if operation failed.
     /// </summary>
@@ -153,7 +154,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Starts this task execution (and will continue with all children).
     /// </summary>
@@ -187,8 +187,8 @@ public:
     /// <param name="tasks">The tasks list to wait for.</param>
     /// <param name="timeoutMilliseconds">The maximum amount of milliseconds to wait for the task to finish it's job. Timeout smaller/equal 0 will result in infinite waiting.</param>
     /// <returns>True if any task failed or has been canceled or has timeout, otherwise false.</returns>
-    template<class T = Task>
-    static bool WaitAll(Array<T*>& tasks, double timeoutMilliseconds = -1)
+    template<class T = Task, typename AllocationType = HeapAllocation>
+    static bool WaitAll(Array<T*, AllocationType>& tasks, double timeoutMilliseconds = -1)
     {
         for (int32 i = 0; i < tasks.Count(); i++)
         {
@@ -199,7 +199,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Continues that task execution with a given task (will call Start on given task after finishing that one).
     /// </summary>
@@ -232,7 +231,6 @@ public:
     Task* ContinueWith(const Function<bool()>& action, Object* target = nullptr);
 
 public:
-
     /// <summary>
     /// Starts the new task.
     /// </summary>
@@ -301,34 +299,27 @@ public:
     /// <summary>
     /// Cancels all the tasks from the list and clears it.
     /// </summary>
-    template<class T = Task>
-    static void CancelAll(Array<T*>& tasks)
+    template<class T = Task, typename AllocationType = HeapAllocation>
+    static void CancelAll(Array<T*, AllocationType>& tasks)
     {
         for (int32 i = 0; i < tasks.Count(); i++)
-        {
             tasks[i]->Cancel();
-        }
         tasks.Clear();
     }
 
 protected:
-
     /// <summary>
-    /// Executes this task.
-    /// It should be called by the task consumer (thread pool or other executor of this task type).
-    /// It calls run() and handles result).
+    /// Executes this task. It should be called by the task consumer (thread pool or other executor of this task type). It calls run() and handles result).
     /// </summary>
     void Execute();
 
     /// <summary>
-    /// Runs the task specified operations
-    /// Does not handles any task related logic, only performs the actual job.
+    /// Runs the task specified operations. It does not handle any task related logic, but only performs the actual job.
     /// </summary>
     /// <returns>The task execution result. Returns true if failed, otherwise false.</returns>
     virtual bool Run() = 0;
 
 protected:
-
     virtual void Enqueue() = 0;
     virtual void OnStart();
     virtual void OnFinish();

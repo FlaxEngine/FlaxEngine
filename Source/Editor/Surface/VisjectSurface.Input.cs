@@ -17,6 +17,11 @@ namespace FlaxEditor.Surface
         /// </summary>
         public readonly InputActionsContainer InputActions;
 
+        /// <summary>
+        /// Optional feature.
+        /// </summary>
+        public bool PanWithMiddleMouse = false;
+
         private string _currentInputText = string.Empty;
         private Float2 _movingNodesDelta;
         private HashSet<SurfaceNode> _movingNodes;
@@ -223,15 +228,18 @@ namespace FlaxEditor.Surface
 
             if (_middleMouseDown)
             {
-                // Calculate delta
-                var delta = location - _middleMouseDownPos;
-                if (delta.LengthSquared > 0.01f)
+                if (PanWithMiddleMouse)
                 {
-                    // Move view
-                    _mouseMoveAmount += delta.Length;
-                    _rootControl.Location += delta;
-                    _middleMouseDownPos = location;
-                    Cursor = CursorType.SizeAll;
+                    // Calculate delta
+                    var delta = location - _middleMouseDownPos;
+                    if (delta.LengthSquared > 0.01f)
+                    {
+                        // Move view
+                        _mouseMoveAmount += delta.Length;
+                        _rootControl.Location += delta;
+                        _middleMouseDownPos = location;
+                        Cursor = CursorType.SizeAll;
+                    }
                 }
 
                 // Handled
@@ -300,7 +308,8 @@ namespace FlaxEditor.Surface
             if (_middleMouseDown)
             {
                 _middleMouseDown = false;
-                Cursor = CursorType.Default;
+                if (PanWithMiddleMouse)
+                    Cursor = CursorType.Default;
             }
             _isMovingSelection = false;
             ConnectingEnd(null);
@@ -483,7 +492,7 @@ namespace FlaxEditor.Surface
                     Focus();
                     return true;
                 }
-                if (_rightMouseDown || _middleMouseDown)
+                if (_rightMouseDown || (_middleMouseDown && _middleMouseDown))
                 {
                     // Start navigating
                     StartMouseCapture();
@@ -555,9 +564,12 @@ namespace FlaxEditor.Surface
             if (_middleMouseDown && button == MouseButton.Middle)
             {
                 _middleMouseDown = false;
-                EndMouseCapture();
-                Cursor = CursorType.Default;
-                if (_mouseMoveAmount > 0)
+                if (_middleMouseDown)
+                {
+                    EndMouseCapture();
+                    Cursor = CursorType.Default;
+                }
+                if (_mouseMoveAmount > 0 && _middleMouseDown)
                     _mouseMoveAmount = 0;
                 else if (CanEdit)
                 {

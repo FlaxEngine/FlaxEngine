@@ -105,7 +105,7 @@ public:
 
     explicit VariantType(Types type, const StringView& typeName);
     explicit VariantType(Types type, const StringAnsiView& typeName);
-    explicit VariantType(Types type, MClass* klass);
+    explicit VariantType(Types type, const MClass* klass);
     explicit VariantType(const StringAnsiView& typeName);
     VariantType(const VariantType& other);
     VariantType(VariantType&& other) noexcept;

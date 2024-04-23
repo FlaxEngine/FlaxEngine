@@ -99,7 +99,7 @@ Rectangle Rectangle::FromPoints(const Float2& p1, const Float2& p2)
     return Rectangle(upperLeft, Math::Max(rightBottom - upperLeft, Float2::Zero));
 }
 
-Rectangle Rectangle::FromPoints(Float2* points, int32 pointsCount)
+Rectangle Rectangle::FromPoints(const Float2* points, int32 pointsCount)
 {
     ASSERT(pointsCount > 0);
     Float2 upperLeft = points[0];

@@ -104,6 +104,15 @@ Vector3 NavCrowd::GetAgentPosition(int32 id) const
     return result;
 }
 
+void NavCrowd::SetAgentPosition(int32 id, const Vector3& position)
+{
+    dtCrowdAgent* agent = _crowd->getEditableAgent(id);
+    if (agent)
+    {
+        *(Float3*)agent->npos = Float3(position);
+    }
+}
+
 Vector3 NavCrowd::GetAgentVelocity(int32 id) const
 {
     Vector3 result = Vector3::Zero;
@@ -113,6 +122,15 @@ Vector3 NavCrowd::GetAgentVelocity(int32 id) const
         result = Float3(agent->vel);
     }
     return result;
+}
+
+void NavCrowd::SetAgentVelocity(int32 id, const Vector3& velocity)
+{
+    dtCrowdAgent* agent = _crowd->getEditableAgent(id);
+    if (agent)
+    {
+        *(Float3*)agent->vel = Float3(velocity);
+    }
 }
 
 void NavCrowd::SetAgentProperties(int32 id, const NavAgentProperties& properties)

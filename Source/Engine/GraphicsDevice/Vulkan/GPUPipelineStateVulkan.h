@@ -41,17 +41,17 @@ public:
         DescriptorPoolSetContainerVulkan* cmdBufferPoolSet = cmdBuffer->GetDescriptorPoolSet();
         if (CurrentTypedDescriptorPoolSet == nullptr || CurrentTypedDescriptorPoolSet->GetOwner() != cmdBufferPoolSet)
         {
-            ASSERT(cmdBufferPoolSet);
+            if (CurrentTypedDescriptorPoolSet)
+                CurrentTypedDescriptorPoolSet->GetOwner()->Refs--;
             CurrentTypedDescriptorPoolSet = cmdBufferPoolSet->AcquireTypedPoolSet(*DescriptorSetsLayout);
+            CurrentTypedDescriptorPoolSet->GetOwner()->Refs++;
             return true;
         }
-
         return false;
     }
 
     inline bool AllocateDescriptorSets()
     {
-        ASSERT(CurrentTypedDescriptorPoolSet);
         return CurrentTypedDescriptorPoolSet->AllocateDescriptorSets(*DescriptorSetsLayout, DescriptorSetHandles.Get());
     }
 
@@ -93,7 +93,9 @@ private:
     VkGraphicsPipelineCreateInfo _desc;
     VkPipelineShaderStageCreateInfo _shaderStages[ShaderStage_Count - 1];
     VkPipelineInputAssemblyStateCreateInfo _descInputAssembly;
+#if GPU_ALLOW_TESSELLATION_SHADERS
     VkPipelineTessellationStateCreateInfo _descTessellation;
+#endif
     VkPipelineViewportStateCreateInfo _descViewport;
     VkPipelineDynamicStateCreateInfo _descDynamic;
     VkDynamicState _dynamicStates[3];
@@ -163,7 +165,10 @@ public:
         DescriptorPoolSetContainerVulkan* cmdBufferPoolSet = cmdBuffer->GetDescriptorPoolSet();
         if (CurrentTypedDescriptorPoolSet == nullptr || CurrentTypedDescriptorPoolSet->GetOwner() != cmdBufferPoolSet)
         {
+            if (CurrentTypedDescriptorPoolSet)
+                CurrentTypedDescriptorPoolSet->GetOwner()->Refs--;
             CurrentTypedDescriptorPoolSet = cmdBufferPoolSet->AcquireTypedPoolSet(*DescriptorSetsLayout);
+            CurrentTypedDescriptorPoolSet->GetOwner()->Refs++;
             return true;
         }
         return false;

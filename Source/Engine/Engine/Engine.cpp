@@ -60,6 +60,7 @@ namespace EngineImpl
 
 DateTime Engine::StartupTime;
 bool Engine::HasFocus = false;
+uint64 Engine::UpdateCount = 0;
 uint64 Engine::FrameCount = 0;
 Action Engine::FixedUpdate;
 Action Engine::Update;
@@ -156,7 +157,7 @@ int32 Engine::Main(const Char* cmdLine)
 #endif
     Log::Logger::WriteFloor();
     LOG_FLUSH();
-    Time::OnBeforeRun();
+    Time::Synchronize();
     EngineImpl::IsReady = true;
 
     // Main engine loop
@@ -191,8 +192,11 @@ int32 Engine::Main(const Char* cmdLine)
             OnUnpause();
         }
 
+        // Use the same time for all ticks to improve synchronization
+        const double time = Platform::GetTimeSeconds();
+
         // Update game logic
-        if (Time::OnBeginUpdate())
+        if (Time::OnBeginUpdate(time))
         {
             OnUpdate();
             OnLateUpdate();
@@ -200,7 +204,7 @@ int32 Engine::Main(const Char* cmdLine)
         }
 
         // Start physics simulation
-        if (Time::OnBeginPhysics())
+        if (Time::OnBeginPhysics(time))
         {
             OnFixedUpdate();
             OnLateFixedUpdate();
@@ -208,7 +212,7 @@ int32 Engine::Main(const Char* cmdLine)
         }
 
         // Draw frame
-        if (Time::OnBeginDraw())
+        if (Time::OnBeginDraw(time))
         {
             OnDraw();
             Time::OnEndDraw();
@@ -296,6 +300,8 @@ void Engine::OnUpdate()
 {
     PROFILE_CPU_NAMED("Update");
 
+    UpdateCount++;
+
     // Update application (will gather data and other platform related events)
     {
         PROFILE_CPU_NAMED("Platform.Tick");
@@ -324,10 +330,12 @@ void Engine::OnUpdate()
 
     // Call event
     Update();
-    UpdateGraph->Execute();
 
     // Update services
     EngineService::OnUpdate();
+
+    // Run async
+    UpdateGraph->Execute();
 }
 
 void Engine::OnLateUpdate()
@@ -463,7 +471,7 @@ void Engine::OnUnpause()
     LOG(Info, "App unpaused");
     Unpause();
 
-    Time::OnBeforeRun();
+    Time::Synchronize();
 }
 
 void Engine::OnExit()

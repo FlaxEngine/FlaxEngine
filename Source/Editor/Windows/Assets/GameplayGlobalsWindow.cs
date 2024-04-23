@@ -494,6 +494,7 @@ namespace FlaxEditor.Windows.Assets
             _undo.Enabled = false;
             _undo.Clear();
             _propertiesEditor.BuildLayoutOnUpdate();
+            UpdateToolstrip();
         }
 
         /// <inheritdoc />
@@ -504,6 +505,7 @@ namespace FlaxEditor.Windows.Assets
             _undo.Enabled = true;
             _undo.Clear();
             _propertiesEditor.BuildLayoutOnUpdate();
+            UpdateToolstrip();
         }
 
         /// <inheritdoc />

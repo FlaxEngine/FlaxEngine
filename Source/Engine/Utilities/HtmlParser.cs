@@ -47,6 +47,12 @@ namespace FlaxEngine.Utilities
         /// True if this tag contained a leading or trailing forward slash.
         /// </summary>
         public bool IsSlash => IsLeadingSlash || IsEndingSlash;
+
+        /// <inheritdoc />
+        public override string ToString()
+        {
+            return Name;
+        }
     };
 
     /// <summary>
@@ -231,6 +237,9 @@ namespace FlaxEngine.Utilities
                         tag.Attributes[s] = value;
                     }
                 }
+
+                if (EOF)
+                    return false;
             }
 
             // Skip over closing '>'
@@ -264,8 +273,13 @@ namespace FlaxEngine.Utilities
         private string ParseAttributeName()
         {
             int start = _pos;
-            while (!EOF && char.IsLetterOrDigit(Peek()))
+            while (!EOF)
+            {
+                var c = Peek();
+                if (!char.IsLetterOrDigit(c) && c != '-')
+                    break;
                 Move();
+            }
             return _html.Substring(start, _pos - start);
         }
 

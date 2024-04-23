@@ -144,5 +144,11 @@ namespace FlaxEditor.Scripting
         {
             return Utils.GetEmptyArray<ScriptMemberInfo>();
         }
+
+        /// <inheritdoc />
+        public void TrackLifetime(Action<ScriptType> disposing)
+        {
+            ElementType.TrackLifetime(disposing);
+        }
     }
 }

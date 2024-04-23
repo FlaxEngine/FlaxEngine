@@ -210,12 +210,17 @@ namespace FlaxEditor.Utilities
         /// <returns>The duplicated value.</returns>
         internal static object CloneValue(object value)
         {
+            // For object references just clone it
+            if (value is FlaxEngine.Object)
+                return value;
+
             // For objects (eg. arrays) we need to clone them to prevent editing default/reference value within editor
             if (value != null && (!value.GetType().IsValueType || !value.GetType().IsClass))
             {
                 var json = JsonSerializer.Serialize(value);
                 value = JsonSerializer.Deserialize(json, value.GetType());
             }
+
             return value;
         }
 

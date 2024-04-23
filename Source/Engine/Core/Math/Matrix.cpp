@@ -773,7 +773,7 @@ void Matrix::Transformation(const Float3& scalingCenter, const Quaternion& scali
     result = Translation(-scalingCenter) * Transpose(sr) * Scaling(scaling) * sr * Translation(scalingCenter) * Translation(-rotationCenter) * RotationQuaternion(rotation) * Translation(rotationCenter) * Translation(translation);
 }
 
-void Matrix::Transformation2D(Float2& scalingCenter, float scalingRotation, const Float2& scaling, const Float2& rotationCenter, float rotation, const Float2& translation, Matrix& result)
+void Matrix::Transformation2D(const Float2& scalingCenter, float scalingRotation, const Float2& scaling, const Float2& rotationCenter, float rotation, const Float2& translation, Matrix& result)
 {
     result = Translation((Float3)-scalingCenter) * RotationZ(-scalingRotation) * Scaling((Float3)scaling) * RotationZ(scalingRotation) * Translation((Float3)scalingCenter) * Translation((Float3)-rotationCenter) * RotationZ(rotation) * Translation((Float3)rotationCenter) * Translation((Float3)translation);
     result.M33 = 1.0f;

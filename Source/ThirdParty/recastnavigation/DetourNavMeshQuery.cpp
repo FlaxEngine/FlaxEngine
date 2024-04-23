@@ -487,14 +487,37 @@ dtStatus dtNavMeshQuery::findRandomPointAroundCircle(dtPolyRef startRef, const f
     int checksLimit = 100;
     do
     {
+        // Loop until finds a point on a random poly that is in the radius
         const float s = frand();
         const float t = frand();
         dtRandomPointInConvexPoly(verts, randomPoly->vertCount, areas, s, t, pt);
     }
     while (dtDistancePtPtSqr2D(centerPos, pt) > radiusSqr && checksLimit-- > 0);
     if (checksLimit <= 0)
-        return DT_FAILURE;
-	
+    {
+        // Check nearby polygons
+        float halfExtents[3] = { maxRadius, maxRadius, maxRadius };
+        dtPolyRef polys[32];
+        int polyCount;
+        queryPolygons(centerPos, halfExtents, filter, polys, &polyCount, 32);
+        for (int i = 0; i < polyCount && checksLimit <= 0; i++)
+        {
+            checksLimit = 100;
+            randomPolyRef = polys[i];
+		    m_nav->getTileAndPolyByRefUnsafe(randomPolyRef, &randomTile, &randomPoly);
+            do
+            {
+                // Loop until finds a point on a random poly that is in the radius
+                const float s = frand();
+                const float t = frand();
+                dtRandomPointInConvexPoly(verts, randomPoly->vertCount, areas, s, t, pt);
+            }
+            while (dtDistancePtPtSqr2D(centerPos, pt) > radiusSqr && checksLimit-- > 0);
+        }
+        if (checksLimit <= 0)
+            return DT_FAILURE;
+    }
+
 	closestPointOnPoly(randomPolyRef, pt, pt, NULL);
 	
 	dtVcopy(randomPt, pt);

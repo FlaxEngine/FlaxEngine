@@ -52,7 +52,9 @@ bool ColorGradingPass::Init()
 {
     // Detect if can use volume texture (3d) for a LUT (faster, requires geometry shader)
     const auto device = GPUDevice::Instance;
+#if GPU_ALLOW_GEOMETRY_SHADERS
     _useVolumeTexture = device->Limits.HasGeometryShaders && device->Limits.HasVolumeTextureRendering;
+#endif
 
     // Pick a proper LUT pixels format
     _lutFormat = PixelFormat::R10G10B10A2_UNorm;
@@ -85,7 +87,7 @@ bool ColorGradingPass::Init()
 bool ColorGradingPass::setupResources()
 {
     // Wait for shader
-    if (!_shader->IsLoaded())
+    if (!_shader || !_shader->IsLoaded())
         return true;
     const auto shader = _shader->GetShader();
 
@@ -101,6 +103,7 @@ bool ColorGradingPass::setupResources()
     if (!_psLut.IsValid())
     {
         StringAnsiView psName;
+#if GPU_ALLOW_GEOMETRY_SHADERS
         if (_useVolumeTexture)
         {
             psDesc.VS = shader->GetVS("VS_WriteToSlice");
@@ -108,6 +111,7 @@ bool ColorGradingPass::setupResources()
             psName = "PS_Lut3D";
         }
         else
+#endif
         {
             psName = "PS_Lut2D";
         }
@@ -139,11 +143,13 @@ GPUTexture* ColorGradingPass::RenderLUT(RenderContext& renderContext)
     // For a 3D texture, the viewport is 16x16 (per slice), for a 2D texture, it's unwrapped to 256x16
     const int32 LutSize = 32; // this must match value in shader (see ColorGrading.shader and PostProcessing.shader)
     GPUTextureDescription lutDesc;
+#if GPU_ALLOW_GEOMETRY_SHADERS
     if (_useVolumeTexture)
     {
         lutDesc = GPUTextureDescription::New3D(LutSize, LutSize, LutSize, 1, _lutFormat);
     }
     else
+#endif
     {
         lutDesc = GPUTextureDescription::New2D(LutSize * LutSize, LutSize, 1, _lutFormat);
     }
@@ -192,6 +198,7 @@ GPUTexture* ColorGradingPass::RenderLUT(RenderContext& renderContext)
     context->BindSR(0, useLut ? colorGrading.LutTexture->GetTexture() : nullptr);
 
     // Draw
+#if GPU_ALLOW_GEOMETRY_SHADERS
     if (_useVolumeTexture)
     {
         context->SetRenderTarget(lut->ViewVolume());
@@ -201,6 +208,7 @@ GPUTexture* ColorGradingPass::RenderLUT(RenderContext& renderContext)
         context->DrawFullscreenTriangle(numInstances);
     }
     else
+#endif
     {
         context->SetRenderTarget(lut->View());
         context->DrawFullscreenTriangle();

@@ -15,6 +15,7 @@
 #if USE_EDITOR
 #include "Engine/Graphics/GPUDevice.h"
 #endif
+#include "Engine/Utilities/AnsiPathTempFile.h"
 
 // Import DirectXTex library
 // Source: https://github.com/Microsoft/DirectXTex
@@ -23,6 +24,19 @@
 DECLARE_HANDLE(HMONITOR);
 #endif
 #include <ThirdParty/DirectXTex/DirectXTex.h>
+
+#if USE_EDITOR
+// Import tinyexr library
+// Source: https://github.com/syoyo/tinyexr
+#define TINYEXR_IMPLEMENTATION
+#define TINYEXR_USE_MINIZ 1
+#define TINYEXR_USE_STB_ZLIB 0
+#define TINYEXR_USE_THREAD 0
+#define TINYEXR_USE_OPENMP 0
+#undef min
+#undef max
+#include <ThirdParty/tinyexr/tinyexr.h>
+#endif
 
 namespace
 {
@@ -36,7 +50,7 @@ namespace
         return static_cast<DXGI_FORMAT>(format);
     }
 
-    HRESULT Compress(const DirectX::Image* srcImages, size_t nimages, const DirectX::TexMetadata& metadata, DXGI_FORMAT format, DWORD compress, float threshold, DirectX::ScratchImage& cImages)
+    HRESULT Compress(const DirectX::Image* srcImages, size_t nimages, const DirectX::TexMetadata& metadata, DXGI_FORMAT format, DirectX::TEX_COMPRESS_FLAGS compress, float threshold, DirectX::ScratchImage& cImages)
     {
 #if USE_EDITOR
         if ((format == DXGI_FORMAT_BC7_UNORM || format == DXGI_FORMAT_BC7_UNORM_SRGB || format == DXGI_FORMAT_BC6H_UF16 || format == DXGI_FORMAT_BC6H_SF16) &&
@@ -60,12 +74,12 @@ namespace
                 size_t _nimages;
                 const DirectX::TexMetadata& _metadata;
                 DXGI_FORMAT _format;
-                DWORD _compress;
+                DirectX::TEX_COMPRESS_FLAGS _compress;
                 DirectX::ScratchImage& _cImages;
             public:
                 HRESULT CompressResult = E_FAIL;
 
-                GPUCompressTask(ConditionVariable& signal, const DirectX::Image* srcImages, size_t nimages, const DirectX::TexMetadata& metadata, DXGI_FORMAT format, DWORD compress, DirectX::ScratchImage& cImages)
+                GPUCompressTask(ConditionVariable& signal, const DirectX::Image* srcImages, size_t nimages, const DirectX::TexMetadata& metadata, DXGI_FORMAT format, DirectX::TEX_COMPRESS_FLAGS compress, DirectX::ScratchImage& cImages)
                     : GPUTask(Type::Custom)
                     , _signal(&signal)
                     , _srcImages(srcImages)
@@ -276,6 +290,46 @@ HRESULT LoadFromRAWFile(const StringView& path, DirectX::ScratchImage& image)
     return image.InitializeFromImage(img);
 }
 
+HRESULT LoadFromEXRFile(const StringView& path, DirectX::ScratchImage& image)
+{
+#if USE_EDITOR
+    // Load exr file
+    AnsiPathTempFile tempFile(path);
+    float* pixels;
+    int width, height;
+    const char* err = nullptr;
+    int ret = LoadEXR(&pixels, &width, &height, tempFile.Path.Get(), &err);
+    if (ret != TINYEXR_SUCCESS)
+    {
+        if (err)
+        {
+            LOG_STR(Warning, String(err));
+            FreeEXRErrorMessage(err);
+        }
+        return S_FALSE;
+    }
+
+    // Setup image
+    DirectX::Image img;
+    img.format = DXGI_FORMAT_R32G32B32A32_FLOAT;
+    img.width = width;
+    img.height = height;
+    img.rowPitch = width * sizeof(Float4);
+    img.slicePitch = img.rowPitch * height;
+
+    // Link data
+    img.pixels = (uint8_t*)pixels;
+
+    // Init
+    HRESULT result = image.InitializeFromImage(img);
+    free(pixels);
+    return result;
+#else
+    LOG(Warning, "EXR format is not supported.");
+    return S_FALSE;
+#endif
+}
+
 bool TextureTool::ImportTextureDirectXTex(ImageType type, const StringView& path, TextureData& textureData, bool& hasAlpha)
 {
     // Load image data
@@ -301,6 +355,9 @@ bool TextureTool::ImportTextureDirectXTex(ImageType type, const StringView& path
         break;
     case ImageType::RAW:
         result = LoadFromRAWFile(path, image);
+        break;
+    case ImageType::EXR:
+        result = LoadFromEXRFile(path, image);
         break;
     default:
         result = DXGI_ERROR_INVALID_CALL;
@@ -518,6 +575,9 @@ bool TextureTool::ImportTextureDirectXTex(ImageType type, const StringView& path
     case ImageType::RAW:
         result = LoadFromRAWFile(path, image1);
         break;
+    case ImageType::EXR:
+        result = LoadFromEXRFile(path, image1);
+        break;
     case ImageType::Internal:
     {
         if (options.InternalLoad.IsBinded())
@@ -688,7 +748,7 @@ bool TextureTool::ImportTextureDirectXTex(ImageType type, const StringView& path
     if (!keepAsIs && options.FlipY)
     {
         auto& tmpImg = GET_TMP_IMG();
-        DWORD flags = DirectX::TEX_FR_FLIP_VERTICAL;
+        DirectX::TEX_FR_FLAGS flags = DirectX::TEX_FR_FLIP_VERTICAL;
         result = FlipRotate(currentImage->GetImages(), currentImage->GetImageCount(), currentImage->GetMetadata(), flags, tmpImg);
         if (FAILED(result))
         {
@@ -698,7 +758,7 @@ bool TextureTool::ImportTextureDirectXTex(ImageType type, const StringView& path
         SET_CURRENT_IMG(tmpImg);
     }
 
-    // Check if it invert green channel
+    // Check if invert green channel
     if (!keepAsIs && options.InvertGreenChannel)
     {
         auto& timage = GET_TMP_IMG();

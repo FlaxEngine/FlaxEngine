@@ -25,21 +25,25 @@ namespace DescriptorSet
     enum Stage
     {
         // Vertex shader stage
-        Vertex = 0,
+        Vertex,
         // Pixel shader stage
-        Pixel = 1,
+        Pixel,
+#if GPU_ALLOW_GEOMETRY_SHADERS
         // Geometry shader stage
-        Geometry = 2,
+        Geometry,
+#endif
+#if GPU_ALLOW_TESSELLATION_SHADERS
         // Hull shader stage
-        Hull = 3,
+        Hull,
         // Domain shader stage
-        Domain = 4,
+        Domain,
+#endif
         // Graphics pipeline stages count
-        GraphicsStagesCount = 5,
+        GraphicsStagesCount,
         // Compute pipeline slot
         Compute = 0,
         // The maximum amount of slots for all stages
-        Max = 5,
+        Max = GraphicsStagesCount,
     };
 
     template<typename T>
@@ -208,8 +212,6 @@ class DescriptorPoolSetContainerVulkan
 private:
     GPUDeviceVulkan* _device;
     Dictionary<uint32, TypedDescriptorPoolSetVulkan*> _typedDescriptorPools;
-    uint64 _lastFrameUsed;
-    bool _used;
 
 public:
     DescriptorPoolSetContainerVulkan(GPUDeviceVulkan* device);
@@ -218,17 +220,9 @@ public:
 public:
     TypedDescriptorPoolSetVulkan* AcquireTypedPoolSet(const DescriptorSetLayoutVulkan& layout);
     void Reset();
-    void SetUsed(bool used);
 
-    bool IsUnused() const
-    {
-        return !_used;
-    }
-
-    uint64 GetLastFrameUsed() const
-    {
-        return _lastFrameUsed;
-    }
+    mutable uint64 Refs = 0;
+    mutable uint64 LastFrameUsed;
 };
 
 class DescriptorPoolsManagerVulkan
@@ -242,8 +236,7 @@ public:
     DescriptorPoolsManagerVulkan(GPUDeviceVulkan* device);
     ~DescriptorPoolsManagerVulkan();
 
-    DescriptorPoolSetContainerVulkan& AcquirePoolSetContainer();
-    void ReleasePoolSet(DescriptorPoolSetContainerVulkan& poolSet);
+    DescriptorPoolSetContainerVulkan* AcquirePoolSetContainer();
     void GC();
 };
 

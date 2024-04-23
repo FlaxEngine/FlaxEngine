@@ -182,7 +182,7 @@ public:
     /// <param name="elementsCount">The elements count.</param>
     /// <param name="data">The data.</param>
     /// <returns>The buffer description.</returns>
-    static GPUBufferDescription Vertex(int32 elementStride, int32 elementsCount, void* data)
+    static GPUBufferDescription Vertex(int32 elementStride, int32 elementsCount, const void* data)
     {
         return Buffer(elementsCount * elementStride, GPUBufferFlags::VertexBuffer, PixelFormat::Unknown, data, elementStride, GPUResourceUsage::Default);
     }
@@ -217,7 +217,7 @@ public:
     /// <param name="elementsCount">The elements count.</param>
     /// <param name="data">The data.</param>
     /// <returns>The buffer description.</returns>
-    static GPUBufferDescription Index(int32 elementStride, int32 elementsCount, void* data)
+    static GPUBufferDescription Index(int32 elementStride, int32 elementsCount, const void* data)
     {
         const auto format = elementStride == 4 ? PixelFormat::R32_UInt : PixelFormat::R16_UInt;
         return Buffer(elementsCount * elementStride, GPUBufferFlags::IndexBuffer, format, data, elementStride, GPUResourceUsage::Default);

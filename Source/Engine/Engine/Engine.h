@@ -28,7 +28,12 @@ public:
     API_FIELD(ReadOnly) static bool HasFocus;
 
     /// <summary>
-    /// Gets the current frame count since the start of the game.
+    /// Gets the current update counter since the start of the game.
+    /// </summary>
+    API_FIELD(ReadOnly) static uint64 UpdateCount;
+
+    /// <summary>
+    /// Gets the current frame (drawing) count since the start of the game.
     /// </summary>
     API_FIELD(ReadOnly) static uint64 FrameCount;
 

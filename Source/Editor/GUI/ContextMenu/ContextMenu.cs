@@ -42,15 +42,14 @@ namespace FlaxEditor.GUI.ContextMenu
 
                 // Arrange controls
                 Margin margin = _menu._itemsMargin;
-                float y = margin.Top;
-                float x = margin.Left;
+                float y = 0;
                 float width = Width - margin.Width;
                 for (int i = 0; i < _children.Count; i++)
                 {
                     if (_children[i] is ContextMenuItem item && item.Visible)
                     {
                         var height = item.Height;
-                        item.Bounds = new Rectangle(x, y, width, height);
+                        item.Bounds = new Rectangle(margin.Left, y, width, height);
                         y += height + margin.Height;
                     }
                 }
@@ -300,7 +299,6 @@ namespace FlaxEditor.GUI.ContextMenu
                 if (_panel.Children[i] is ContextMenuChildMenu menu && menu.Text == text)
                     return menu;
             }
-
             return null;
         }
 
@@ -319,7 +317,6 @@ namespace FlaxEditor.GUI.ContextMenu
                     Parent = _panel
                 };
             }
-
             return item;
         }
 
@@ -396,10 +393,12 @@ namespace FlaxEditor.GUI.ContextMenu
             float height = _itemsAreaMargin.Height;
             int itemsLeft = MaximumItemsInViewCount;
             int overflowItemCount = 0;
+            int itemsCount = 0;
             for (int i = 0; i < _panel.Children.Count; i++)
             {
                 if (_panel.Children[i] is ContextMenuItem item && item.Visible)
                 {
+                    itemsCount++;
                     if (itemsLeft > 0)
                     {
                         height += item.Height + _itemsMargin.Height;
@@ -412,6 +411,8 @@ namespace FlaxEditor.GUI.ContextMenu
                     maxWidth = Mathf.Max(maxWidth, item.MinimumWidth);
                 }
             }
+            if (itemsCount != 0)
+                height -= _itemsMargin.Height; // Remove item margin from top and bottom
             maxWidth = Mathf.Max(maxWidth + 20, MinimumWidth);
 
             // Move child arrows to accommodate scroll bar showing 

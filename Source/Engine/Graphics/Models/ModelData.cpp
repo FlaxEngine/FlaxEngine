@@ -508,6 +508,31 @@ void MeshData::TransformBuffer(const Matrix& matrix)
     Matrix::Invert(matrix, inverseTransposeMatrix);
     Matrix::Transpose(inverseTransposeMatrix, inverseTransposeMatrix);
 
+    // Transform blend shapes
+    for (auto& blendShape : BlendShapes)
+    {
+        const auto vv = blendShape.Vertices.Get();
+        for (int32 i = 0; i < blendShape.Vertices.Count(); i++)
+        {
+            auto& v = vv[i];
+
+            Float3 p = Positions[v.VertexIndex];
+            Float3 vp = p + v.PositionDelta;
+            Float3::Transform(vp, matrix, vp);
+            Float3::Transform(p, matrix, p);
+            v.PositionDelta = vp - p;
+
+            Float3 n = Normals[v.VertexIndex];
+            Float3 vn = n + v.NormalDelta;
+            vn.Normalize();
+            Float3::TransformNormal(vn, inverseTransposeMatrix, vn);
+            vn.Normalize();
+            Float3::TransformNormal(n, inverseTransposeMatrix, n);
+            n.Normalize();
+            v.NormalDelta = vn - n;
+        }
+    }
+
     // Transform positions
     const auto pp = Positions.Get();
     for (int32 i = 0; i < Positions.Count(); i++)
@@ -531,18 +556,6 @@ void MeshData::TransformBuffer(const Matrix& matrix)
         Float3::TransformNormal(t, inverseTransposeMatrix, t);
         t.Normalize();
     }
-
-    // Transform blend shapes
-    for (auto& blendShape : BlendShapes)
-    {
-        for (int32 i = 0; i < blendShape.Vertices.Count(); i++)
-        {
-            auto& v = blendShape.Vertices[i];
-            Float3::Transform(v.PositionDelta, matrix, v.PositionDelta);
-            Float3::TransformNormal(v.NormalDelta, inverseTransposeMatrix, v.NormalDelta);
-            v.NormalDelta.Normalize();
-        }
-    }
 }
 
 void MeshData::NormalizeBlendWeights()
@@ -550,9 +563,10 @@ void MeshData::NormalizeBlendWeights()
     ASSERT(Positions.Count() == BlendWeights.Count());
     for (int32 i = 0; i < Positions.Count(); i++)
     {
-        const float sum = BlendWeights[i].SumValues();
+        Float4& weights = BlendWeights.Get()[i];
+        const float sum = weights.SumValues();
         const float invSum = sum > ZeroTolerance ? 1.0f / sum : 0.0f;
-        BlendWeights[i] *= invSum;
+        weights *= invSum;
     }
 }
 
@@ -941,7 +955,19 @@ bool ModelData::Pack2AnimationHeader(WriteStream* stream, int32 animIndex) const
     }
 
     // Animation events
-    stream->WriteInt32(0);
+    stream->WriteInt32(anim.Events.Count());
+    for (auto& e : anim.Events)
+    {
+        stream->WriteString(e.First, 172);
+        stream->WriteInt32(e.Second.GetKeyframes().Count());
+        for (const auto& k : e.Second.GetKeyframes())
+        {
+            stream->WriteFloat(k.Time);
+            stream->WriteFloat(k.Value.Duration);
+            stream->WriteStringAnsi(k.Value.TypeName, 17);
+            stream->WriteJson(k.Value.JsonData);
+        }
+    }
 
     // Nested animations
     stream->WriteInt32(0);

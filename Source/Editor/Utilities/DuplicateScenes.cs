@@ -120,9 +120,9 @@ namespace FlaxEditor.Utilities
         /// <summary>
         /// Deletes the creates scenes for the simulation.
         /// </summary>
-        public void DeletedScenes()
+        public void UnloadScenes()
         {
-            Profiler.BeginEvent("DuplicateScenes.DeletedScenes");
+            Profiler.BeginEvent("DuplicateScenes.UnloadScenes");
             Editor.Log("Restoring scene data");
 
             // TODO: here we can keep changes for actors marked to keep their state after simulation
@@ -134,6 +134,8 @@ namespace FlaxEditor.Utilities
                 throw new Exception("Failed to unload scenes.");
             }
             FlaxEngine.Scripting.FlushRemovedObjects();
+            Editor.WipeOutLeftoverSceneObjects();
+
             Profiler.EndEvent();
         }
 

@@ -14,6 +14,7 @@
 #include "Engine/Engine/EngineService.h"
 #include "Engine/Platform/FileSystem.h"
 #include "Engine/Threading/Threading.h"
+#include "Engine/Threading/MainThreadTask.h"
 #include "Engine/Graphics/Graphics.h"
 #include "Engine/Engine/Time.h"
 #include "Engine/Engine/Globals.h"
@@ -402,7 +403,7 @@ ContentStats Content::GetStats()
     return stats;
 }
 
-Asset* Content::LoadAsyncInternal(const StringView& internalPath, MClass* type)
+Asset* Content::LoadAsyncInternal(const StringView& internalPath, const MClass* type)
 {
     CHECK_RETURN(type, nullptr);
     const auto scriptingType = Scripting::FindScriptingType(type->GetFullName());
@@ -444,7 +445,7 @@ FLAXENGINE_API Asset* LoadAsset(const Guid& id, const ScriptingTypeHandle& type)
     return Content::LoadAsync(id, type);
 }
 
-Asset* Content::LoadAsync(const StringView& path, MClass* type)
+Asset* Content::LoadAsync(const StringView& path, const MClass* type)
 {
     CHECK_RETURN(type, nullptr);
     const auto scriptingType = Scripting::FindScriptingType(type->GetFullName());
@@ -688,101 +689,135 @@ bool Content::FastTmpAssetClone(const StringView& path, String& resultPath)
     return false;
 }
 
-bool Content::CloneAssetFile(const StringView& dstPath, const StringView& srcPath, const Guid& dstId)
+class CloneAssetFileTask : public MainThreadTask
 {
-    PROFILE_CPU();
-    ASSERT(FileSystem::AreFilePathsEqual(srcPath, dstPath) == false && dstId.IsValid());
+public:
+    StringView dstPath;
+    StringView srcPath;
+    Guid dstId;
+    bool* output;
 
-    LOG(Info, "Cloning asset \'{0}\' to \'{1}\'({2}).", srcPath, dstPath, dstId);
-
-    // Check source file
-    if (!FileSystem::FileExists(srcPath))
+protected:
+    bool Run() override
     {
-        LOG(Warning, "Missing source file.");
-        return true;
-    }
-
-    // Special case for json resources
-    if (JsonStorageProxy::IsValidExtension(FileSystem::GetExtension(srcPath).ToLower()))
-    {
-        if (FileSystem::CopyFile(dstPath, srcPath))
-        {
-            LOG(Warning, "Cannot copy file to destination.");
-            return true;
-        }
-        if (JsonStorageProxy::ChangeId(dstPath, dstId))
-        {
-            LOG(Warning, "Cannot change asset ID.");
-            return true;
-        }
+        *output = Content::CloneAssetFile(dstPath, srcPath, dstId);
         return false;
     }
+};
 
-    // Check if destination file is missing
-    if (!FileSystem::FileExists(dstPath))
+bool Content::CloneAssetFile(const StringView& dstPath, const StringView& srcPath, const Guid& dstId)
+{
+    // Best to run this on the main thread to avoid clone conflicts.
+    if (IsInMainThread())
     {
-        // Use quick file copy
-        if (FileSystem::CopyFile(dstPath, srcPath))
+        PROFILE_CPU();
+        ASSERT(FileSystem::AreFilePathsEqual(srcPath, dstPath) == false && dstId.IsValid());
+
+        LOG(Info, "Cloning asset \'{0}\' to \'{1}\'({2}).", srcPath, dstPath, dstId);
+
+        // Check source file
+        if (!FileSystem::FileExists(srcPath))
         {
-            LOG(Warning, "Cannot copy file to destination.");
+            LOG(Warning, "Missing source file.");
             return true;
         }
 
-        // Change ID
-        auto storage = ContentStorageManager::GetStorage(dstPath);
-        FlaxStorage::Entry e;
-        storage->GetEntry(0, e);
-        if (storage == nullptr || storage->ChangeAssetID(e, dstId))
+        // Special case for json resources
+        if (JsonStorageProxy::IsValidExtension(FileSystem::GetExtension(srcPath).ToLower()))
         {
-            LOG(Warning, "Cannot change asset ID.");
-            return true;
+            if (FileSystem::CopyFile(dstPath, srcPath))
+            {
+                LOG(Warning, "Cannot copy file to destination.");
+                return true;
+            }
+            if (JsonStorageProxy::ChangeId(dstPath, dstId))
+            {
+                LOG(Warning, "Cannot change asset ID.");
+                return true;
+            }
+            return false;
+        }
+
+        // Check if destination file is missing
+        if (!FileSystem::FileExists(dstPath))
+        {
+            // Use quick file copy
+            if (FileSystem::CopyFile(dstPath, srcPath))
+            {
+                LOG(Warning, "Cannot copy file to destination.");
+                return true;
+            }
+
+            // Change ID
+            auto storage = ContentStorageManager::GetStorage(dstPath);
+            FlaxStorage::Entry e;
+            storage->GetEntry(0, e);
+            if (storage == nullptr || storage->ChangeAssetID(e, dstId))
+            {
+                LOG(Warning, "Cannot change asset ID.");
+                return true;
+            }
+        }
+        else
+        {
+            // Use temporary file
+            String tmpPath = Globals::TemporaryFolder / Guid::New().ToString(Guid::FormatType::D);
+            if (FileSystem::CopyFile(tmpPath, srcPath))
+            {
+                LOG(Warning, "Cannot copy file.");
+                return true;
+            }
+
+            // Change asset ID
+            {
+                auto storage = ContentStorageManager::GetStorage(tmpPath);
+                if (!storage)
+                {
+                    LOG(Warning, "Cannot change asset ID.");
+                    return true;
+                }
+                FlaxStorage::Entry e;
+                storage->GetEntry(0, e);
+                if (storage->ChangeAssetID(e, dstId))
+                {
+                    LOG(Warning, "Cannot change asset ID.");
+                    return true;
+                }
+            }
+
+            // Unlock destination file
+            ContentStorageManager::EnsureAccess(dstPath);
+
+            // Copy temp file to the destination
+            if (FileSystem::CopyFile(dstPath, tmpPath))
+            {
+                LOG(Warning, "Cannot copy file to destination.");
+                return true;
+            }
+
+            // Cleanup
+            FileSystem::DeleteFile(tmpPath);
+
+            // Reload storage
+            if (auto storage = ContentStorageManager::GetStorage(dstPath))
+            {
+                storage->Reload();
+            }
         }
     }
     else
     {
-        // Use temporary file
-        String tmpPath = Globals::TemporaryFolder / Guid::New().ToString(Guid::FormatType::D);
-        if (FileSystem::CopyFile(tmpPath, srcPath))
-        {
-            LOG(Warning, "Cannot copy file.");
-            return true;
-        }
+        CloneAssetFileTask* task = New<CloneAssetFileTask>();
+        task->dstId = dstId;
+        task->dstPath = dstPath;
+        task->srcPath = srcPath;
 
-        // Change asset ID
-        {
-            auto storage = ContentStorageManager::GetStorage(tmpPath);
-            if (!storage)
-            {
-                LOG(Warning, "Cannot change asset ID.");
-                return true;
-            }
-            FlaxStorage::Entry e;
-            storage->GetEntry(0, e);
-            if (storage->ChangeAssetID(e, dstId))
-            {
-                LOG(Warning, "Cannot change asset ID.");
-                return true;
-            }
-        }
+        bool result = false;
+        task->output = &result;
+        task->Start();
+        task->Wait();
 
-        // Unlock destination file
-        ContentStorageManager::EnsureAccess(dstPath);
-
-        // Copy temp file to the destination
-        if (FileSystem::CopyFile(dstPath, tmpPath))
-        {
-            LOG(Warning, "Cannot copy file to destination.");
-            return true;
-        }
-
-        // Cleanup
-        FileSystem::DeleteFile(tmpPath);
-
-        // Reload storage
-        if (auto storage = ContentStorageManager::GetStorage(dstPath))
-        {
-            storage->Reload();
-        }
+        return result;
     }
 
     return false;
@@ -797,7 +832,7 @@ void Content::UnloadAsset(Asset* asset)
     asset->DeleteObject();
 }
 
-Asset* Content::CreateVirtualAsset(MClass* type)
+Asset* Content::CreateVirtualAsset(const MClass* type)
 {
     CHECK_RETURN(type, nullptr);
     const auto scriptingType = Scripting::FindScriptingType(type->GetFullName());

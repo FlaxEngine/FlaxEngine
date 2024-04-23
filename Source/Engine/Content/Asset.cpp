@@ -184,9 +184,8 @@ void SoftAssetReferenceBase::OnUnloaded(Asset* asset)
 Asset::Asset(const SpawnParams& params, const AssetInfo* info)
     : ManagedScriptingObject(params)
     , _refCount(0)
-    , _loadingTask(nullptr)
-    , _isLoaded(false)
-    , _loadFailed(false)
+    , _loadState(0)
+    , _loadingTask(0)
     , _deleteFileOnUnload(false)
     , _isVirtual(false)
 {
@@ -225,10 +224,10 @@ void Asset::OnDeleteObject()
 
     // Unload asset data (in a safe way to protect asset data)
     Locker.Lock();
-    if (_isLoaded)
+    if (IsLoaded())
     {
         unload(false);
-        _isLoaded = false;
+        Platform::AtomicStore(&_loadState, (int64)LoadState::Unloaded);
     }
     Locker.Unlock();
 
@@ -319,11 +318,6 @@ void Asset::ChangeID(const Guid& newId)
     Content::onAssetChangeId(this, oldId, newId);
 }
 
-bool Asset::LastLoadFailed() const
-{
-    return _loadFailed != 0;
-}
-
 #if USE_EDITOR
 
 bool Asset::ShouldDeleteFileOnUnload() const
@@ -337,7 +331,7 @@ uint64 Asset::GetMemoryUsage() const
 {
     uint64 result = sizeof(Asset);
     Locker.Lock();
-    if (_loadingTask)
+    if (Platform::AtomicRead(&_loadingTask))
         result += sizeof(ContentLoadTask);
     result += (OnLoaded.Capacity() + OnReloading.Capacity() + OnUnloaded.Capacity()) * sizeof(EventType::FunctionType);
     Locker.Unlock();
@@ -368,7 +362,7 @@ void Asset::Reload()
         {
             // Unload current data
             unload(true);
-            _isLoaded = false;
+            Platform::AtomicStore(&_loadState, (int64)LoadState::Unloaded);
         }
 
         // Start reloading process
@@ -426,7 +420,7 @@ bool Asset::WaitForLoaded(double timeoutInMilliseconds) const
 
     // Check if has missing loading task
     Platform::MemoryBarrier();
-    const auto loadingTask = _loadingTask;
+    const auto loadingTask = (ContentLoadTask*)Platform::AtomicRead(&_loadingTask);
     if (loadingTask == nullptr)
     {
         LOG(Warning, "WaitForLoaded asset \'{0}\' failed. No loading task attached and asset is not loaded.", ToString());
@@ -516,7 +510,7 @@ bool Asset::WaitForLoaded(double timeoutInMilliseconds) const
         Content::tryCallOnLoaded((Asset*)this);
     }
 
-    return _isLoaded == 0;
+    return !IsLoaded();
 }
 
 void Asset::InitAsVirtual()
@@ -525,14 +519,14 @@ void Asset::InitAsVirtual()
     _isVirtual = true;
 
     // Be a loaded thing
-    _isLoaded = true;
+    Platform::AtomicStore(&_loadState, (int64)LoadState::Loaded);
 }
 
 void Asset::CancelStreaming()
 {
     // Cancel loading task but go over asset locker to prevent case if other load threads still loads asset while it's reimported on other thread
     Locker.Lock();
-    ContentLoadTask* loadTask = _loadingTask;
+    auto loadTask = (ContentLoadTask*)Platform::AtomicRead(&_loadingTask);
     Locker.Unlock();
     if (loadTask)
     {
@@ -575,10 +569,11 @@ ContentLoadTask* Asset::createLoadingTask()
 void Asset::startLoading()
 {
     ASSERT(!IsLoaded());
-    ASSERT(_loadingTask == nullptr);
-    _loadingTask = createLoadingTask();
-    ASSERT(_loadingTask != nullptr);
-    _loadingTask->Start();
+    ASSERT(Platform::AtomicRead(&_loadingTask) == 0);
+    auto loadingTask = createLoadingTask();
+    ASSERT(loadingTask != nullptr);
+    Platform::AtomicStore(&_loadingTask, (intptr)loadingTask);
+    loadingTask->Start();
 }
 
 void Asset::releaseStorage()
@@ -592,8 +587,8 @@ bool Asset::IsInternalType() const
 
 bool Asset::onLoad(LoadAssetTask* task)
 {
-    // It may fail when task is cancelled and new one is created later (don't crash but just end with an error)
-    if (task->Asset.Get() != this || _loadingTask == nullptr)
+    if (task->Asset.Get() != this || Platform::AtomicRead(&_loadingTask) == 0)
+    // It may fail when task is cancelled and new one was created later (don't crash but just end with an error)
         return true;
 
     Locker.Lock();
@@ -606,15 +601,14 @@ bool Asset::onLoad(LoadAssetTask* task)
     }
     const bool isLoaded = result == LoadResult::Ok;
     const bool failed = !isLoaded;
-    _loadFailed = failed;
-    _isLoaded = !failed;
+    Platform::AtomicStore(&_loadState, (int64)(isLoaded ? LoadState::Loaded : LoadState::LoadFailed));
     if (failed)
     {
         LOG(Error, "Loading asset \'{0}\' result: {1}.", ToString(), ToString(result));
     }
 
     // Unlink task
-    _loadingTask = nullptr;
+    Platform::AtomicStore(&_loadingTask, 0);
     ASSERT(failed || IsLoaded() == isLoaded);
 
     Locker.Unlock();
@@ -663,12 +657,12 @@ void Asset::onUnload_MainThread()
     OnUnloaded(this);
 
     // Check if is during loading
-    if (_loadingTask != nullptr)
+    auto loadingTask = (ContentLoadTask*)Platform::AtomicRead(&_loadingTask);
+    if (loadingTask != nullptr)
     {
         // Cancel loading
-        auto task = _loadingTask;
-        _loadingTask = nullptr;
+        Platform::AtomicStore(&_loadingTask, 0);
         LOG(Warning, "Cancel loading task for \'{0}\'", ToString());
-        task->Cancel();
+        loadingTask->Cancel();
     }
 }

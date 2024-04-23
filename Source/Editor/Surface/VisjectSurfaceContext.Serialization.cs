@@ -630,6 +630,15 @@ namespace FlaxEditor.Surface
                             stream.ReadCommonValue(ref node.Values[j]);
                         }
                     }
+                    else if ((node.Archetype.Flags & NodeFlags.VariableValuesSize) != 0)
+                    {
+                        node.Values = new object[valuesCnt];
+                        for (int j = firstValueReadIdx; j < valuesCnt; j++)
+                        {
+                            // ReSharper disable once PossibleNullReferenceException
+                            stream.ReadCommonValue(ref node.Values[j]);
+                        }
+                    }
                     else
                     {
                         Editor.LogWarning(string.Format("Invalid node values. Loaded: {0}, expected: {1}. Type: {2}, {3}", valuesCnt, nodeValuesCnt, node.Archetype.Title, node.Archetype.TypeID));
@@ -792,6 +801,12 @@ namespace FlaxEditor.Surface
                     int nodeValuesCnt = node.Values?.Length ?? 0;
                     if (valuesCnt == nodeValuesCnt)
                     {
+                        for (int j = firstValueReadIdx; j < valuesCnt; j++)
+                            node.Values[j] = stream.ReadVariant();
+                    }
+                    else if ((node.Archetype.Flags & NodeFlags.VariableValuesSize) != 0)
+                    {
+                        node.Values = new object[valuesCnt];
                         for (int j = firstValueReadIdx; j < valuesCnt; j++)
                             node.Values[j] = stream.ReadVariant();
                     }

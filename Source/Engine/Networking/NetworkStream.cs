@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 using System;
 using System.Text;
@@ -440,6 +440,24 @@ namespace FlaxEngine.Networking
             bool value = default;
             ReadBytes((byte*)&value, sizeof(bool));
             return value;
+        }
+
+        /// <summary>
+        /// Writes the <see cref="INetworkSerializable"/> object data to the stream. Object has to be allocated.
+        /// </summary>
+        /// <param name="obj">The serializable object.</param>
+        public void Write(INetworkSerializable obj)
+        {
+            obj.Serialize(this);
+        }
+
+        /// <summary>
+        /// Reads the <see cref="INetworkSerializable"/> object data from the stream. Object has to be allocated.
+        /// </summary>
+        /// <param name="obj">The serializable object.</param>
+        public void Read(INetworkSerializable obj)
+        {
+            obj.Deserialize(this);
         }
     }
 }

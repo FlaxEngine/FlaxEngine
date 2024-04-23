@@ -440,7 +440,7 @@ public:
     /// <param name="silentMode">In silent mode don't reload opened storage container that is using target file.</param>
     /// <param name="customData">Custom options.</param>
     /// <returns>True if cannot create package, otherwise false</returns>
-    FORCE_INLINE static bool Create(const StringView& path, AssetInitData& data, bool silentMode = false, const CustomData* customData = nullptr)
+    FORCE_INLINE static bool Create(const StringView& path, const AssetInitData& data, bool silentMode = false, const CustomData* customData = nullptr)
     {
         return Create(path, &data, 1, silentMode, customData);
     }

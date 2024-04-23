@@ -142,7 +142,8 @@ struct RectPack
     template<class... Args>
     void Free(Args&&...args)
     {
-        ASSERT(IsUsed);
+        if (!IsUsed)
+            return;
         IsUsed = false;
         ((NodeType*)this)->OnFree(Forward<Args>(args)...);
     }

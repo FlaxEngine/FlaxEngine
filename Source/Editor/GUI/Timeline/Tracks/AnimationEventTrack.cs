@@ -1,6 +1,5 @@
 // Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
-using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -100,6 +99,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
             if (Type == ScriptType.Null)
             {
                 Editor.LogError("Missing anim event type " + _instanceTypeName);
+                InitMissing();
                 return;
             }
             Instance = (AnimEvent)Type.CreateInstance();
@@ -126,20 +126,37 @@ namespace FlaxEditor.GUI.Timeline.Tracks
                 _isRegisteredForScriptsReload = true;
                 ScriptsBuilder.ScriptsReloadBegin += OnScriptsReloadBegin;
             }
+            Type.TrackLifetime(OnTypeDisposing);
+        }
+
+        private void OnTypeDisposing(ScriptType type)
+        {
+            if (Type == type && !IsDisposing)
+            {
+                // Turn into missing script
+                OnScriptsReloadBegin();
+                ScriptsBuilder.ScriptsReloadEnd -= OnScriptsReloadEnd;
+                InitMissing();
+            }
+        }
+
+        private void InitMissing()
+        {
+            CanDelete = true;
+            CanSplit = false;
+            CanResize = false;
+            TooltipText = $"Missing Anim Event Type '{_instanceTypeName}'";
+            BackgroundColor = Color.Red;
+            Type = ScriptType.Null;
+            Instance = null;
         }
 
         internal void InitMissing(string typeName, byte[] data)
         {
-            Type = ScriptType.Null;
             IsContinuous = false;
-            CanDelete = true;
-            CanSplit = false;
-            CanResize = false;
-            TooltipText = $"Missing Anim Event Type '{typeName}'";
-            Instance = null;
-            BackgroundColor = Color.Red;
             _instanceTypeName = typeName;
             _instanceData = data;
+            InitMissing();
         }
 
         internal void Load(BinaryReader stream)
@@ -181,6 +198,49 @@ namespace FlaxEditor.GUI.Timeline.Tracks
                 DurationFrames = IsContinuous ? Mathf.Max(DurationFrames, 2) : 1;
 
             base.OnDurationFramesChanged();
+        }
+
+        /// <inheritdoc />
+        public override bool ContainsPoint(ref Float2 location, bool precise = false)
+        {
+            if (Timeline.Zoom > 0.5f && !IsContinuous)
+            {
+                // Hit-test dot
+                var size = Height - 2.0f;
+                var rect = new Rectangle(new Float2(size * -0.5f) + Size * 0.5f, new Float2(size));
+                return rect.Contains(ref location);
+            }
+
+            return base.ContainsPoint(ref location, precise);
+        }
+
+        /// <inheritdoc />
+        public override void Draw()
+        {
+            if (Timeline.Zoom > 0.5f && !IsContinuous)
+            {
+                // Draw more visible dot for the event that maintains size even when zooming out
+                var style = Style.Current;
+                var icon = Editor.Instance.Icons.VisjectBoxClosed32;
+                var size = Height - 2.0f;
+                var rect = new Rectangle(new Float2(size * -0.5f) + Size * 0.5f, new Float2(size));
+                var outline = Color.Black; // Shadow
+                if (_isMoving)
+                    outline = style.SelectionBorder;
+                else if (IsMouseOver)
+                    outline = style.BorderHighlighted;
+                else if (Timeline.SelectedMedia.Contains(this))
+                    outline = style.BackgroundSelected;
+                Render2D.DrawSprite(icon, rect.MakeExpanded(6.0f), outline);
+                Render2D.DrawSprite(icon, rect, BackgroundColor);
+
+                DrawChildren();
+            }
+            else
+            {
+                // Default drawing
+                base.Draw();
+            }
         }
 
         /// <inheritdoc />

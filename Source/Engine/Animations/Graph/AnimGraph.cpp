@@ -102,6 +102,34 @@ AnimGraphInstanceData::OutgoingEvent AnimGraphInstanceData::ActiveEvent::End(Ani
     return out;
 }
 
+AnimGraphNode::~AnimGraphNode()
+{
+    // Free allocated memory
+    switch (GroupID)
+    {
+    // Animation
+    case 9:
+        switch (TypeID)
+        {
+        // Multi Blend 1D
+        case 12:
+            Allocator::Free(Data.MultiBlend1D.IndicesSorted);
+            break;
+        // Multi Blend 2D
+        case 13:
+            Allocator::Free(Data.MultiBlend2D.Triangles);
+            break;
+        // State
+        case 20:
+        // Any State
+        case 34:
+            Allocator::Free(Data.State.Transitions);
+            break;
+        }
+        break;
+    }
+}
+
 AnimGraphImpulse* AnimGraphNode::GetNodes(AnimGraphExecutor* executor)
 {
     auto& context = *AnimGraphExecutor::Context.Get();

@@ -105,6 +105,7 @@ namespace Flax.Build.Platforms
                 commonArgs.Add("objective-c++");
                 commonArgs.Add("-stdlib=libc++");
                 AddArgsCommon(options, commonArgs);
+                AddArgsSanitizer(compileEnvironment.Sanitizers, commonArgs);
 
                 switch (compileEnvironment.CppVersion)
                 {
@@ -155,14 +156,24 @@ namespace Flax.Build.Platforms
 
                 commonArgs.Add("-pthread");
 
-                if (compileEnvironment.FavorSizeOrSpeed == FavorSizeOrSpeed.FastCode)
-                    commonArgs.Add("-Ofast");
-                else if (compileEnvironment.FavorSizeOrSpeed == FavorSizeOrSpeed.SmallCode)
-                    commonArgs.Add("-Os");
-                if (compileEnvironment.Optimization)
-                    commonArgs.Add("-O3");
+                if (compileEnvironment.Sanitizers.HasFlag(Sanitizer.Address))
+                {
+					commonArgs.Add("-fno-optimize-sibling-calls");
+					commonArgs.Add("-fno-omit-frame-pointer");
+                    if (compileEnvironment.Optimization)
+                        commonArgs.Add("-O1");
+                }
                 else
-                    commonArgs.Add("-O0");
+                {
+                    if (compileEnvironment.FavorSizeOrSpeed == FavorSizeOrSpeed.FastCode)
+                        commonArgs.Add("-Ofast");
+                    else if (compileEnvironment.FavorSizeOrSpeed == FavorSizeOrSpeed.SmallCode)
+                        commonArgs.Add("-Os");
+                    if (compileEnvironment.Optimization)
+                        commonArgs.Add("-O3");
+                    else
+                        commonArgs.Add("-O0");
+                }
 
                 if (compileEnvironment.BufferSecurityCheck)
                     commonArgs.Add("-fstack-protector");
@@ -240,6 +251,7 @@ namespace Flax.Build.Platforms
             {
                 args.Add(string.Format("-o \"{0}\"", outputFilePath));
                 AddArgsCommon(options, args);
+                AddArgsSanitizer(options.CompileEnv.Sanitizers, args);
 
                 if (isArchive)
                 {
@@ -425,6 +437,16 @@ namespace Flax.Build.Platforms
                 args.Add("-arch arm64");
                 break;
             }
+        }
+
+        protected void AddArgsSanitizer(Sanitizer sanitizers, List<string> args)
+        {
+            if (sanitizers.HasFlag(Sanitizer.Address))
+                args.Add("-fsanitize=address");
+            if (sanitizers.HasFlag(Sanitizer.Thread))
+                args.Add("-fsanitize=thread");
+            if (sanitizers.HasFlag(Sanitizer.Undefined))
+                args.Add("-fsanitize=undefined");
         }
     }
 }
