@@ -25,11 +25,11 @@ namespace FlaxEditor.SceneGraph.Actors
             {
                 // Preserve basic properties when changing joint type
                 var joint = (Joint)Actor;
-                joint.ConstraintActorA = other.ConstraintActorA;
-                joint.LocalConstrainActorA = other.LocalConstrainActorA;
+                joint.Actor0 = other.Actor0;
+                joint.LocalPoseActor0 = other.LocalPoseActor0;
 
-                joint.ConstraintActorB = other.ConstraintActorB;
-                joint.LocalConstrainActorB = other.LocalConstrainActorB;
+                joint.Actor1 = other.Actor1;
+                joint.LocalPoseActor1 = other.LocalPoseActor1;
 
                 joint.BreakForce = other.BreakForce;
                 joint.BreakTorque = other.BreakTorque;

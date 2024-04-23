@@ -14,9 +14,9 @@ FixedJoint::FixedJoint(const SpawnParams& params)
 
 void FixedJoint::OnDebugDrawSelected()
 {
-    auto wcaa = GetWorldConstrainActorA();
-    auto wcab = GetWorldConstrainActorB();
-    DEBUG_DRAW_LINE(wcaa.Translation, wcab.Translation, Color::BlueViolet * 0.6f, 0, false);
+    auto p0 = GetPoseActor0();
+    auto p1 = GetPoseActor1();
+    DEBUG_DRAW_LINE(p0.Translation, p1.Translation, Color::BlueViolet * 0.6f, 0, false);
 
     // Base
     Joint::OnDebugDrawSelected();

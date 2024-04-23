@@ -341,8 +341,8 @@ namespace FlaxEditor.SceneGraph.Actors
 #if true
                     // Child -> Parent
                     joint.Name = "Joint";
-                    joint.ConstraintActorA = parentBody;
-                    joint.ConstraintActorB = body;
+                    joint.Actor0 = parentBody;
+                    joint.Actor1 = body;
                     joint.Parent = body;
                     //joint.Orientation = Quaternion.FromDirection(Float3.Normalize(parentBody.Position - body.Position));
 #else

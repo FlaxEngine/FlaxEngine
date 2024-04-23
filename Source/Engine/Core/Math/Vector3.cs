@@ -1737,6 +1737,19 @@ namespace FlaxEngine
         {
             return new Vector3(-value.X, -value.Y, -value.Z);
         }
+        
+        /// <summary>
+        /// Transforms a vector by the given rotation.
+        /// </summary>
+        /// <param name="vector">The vector to transform.</param>
+        /// <param name="rotation">The quaternion.</param>
+        /// <returns>The scaled vector.</returns>
+        [Obsolete("\nPlease use operetor Quaternion * Vector3 instead.\n[operetor will be removed in 2.0]")] //the c++ has Q * V 
+        public static Vector3 operator *(Vector3 vector, Quaternion rotation)
+        {
+            Transform(ref vector, ref rotation, out var result);
+            return result;
+        }
 
         /// <summary>
         /// Transforms a vector by the given rotation.
@@ -1744,7 +1757,7 @@ namespace FlaxEngine
         /// <param name="vector">The vector to transform.</param>
         /// <param name="rotation">The quaternion.</param>
         /// <returns>The scaled vector.</returns>
-        public static Vector3 operator *(Vector3 vector, Quaternion rotation)
+        public static Vector3 operator *(Quaternion rotation, Vector3 vector)
         {
             Transform(ref vector, ref rotation, out var result);
             return result;

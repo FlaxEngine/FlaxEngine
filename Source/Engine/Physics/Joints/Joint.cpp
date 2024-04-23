@@ -19,60 +19,111 @@ Joint::Joint(const SpawnParams& params)
     , _joint(nullptr)
     , _breakForce(MAX_float)
     , _breakTorque(MAX_float)
-    , LocalConstrainActorA()
-    , LocalConstrainActorB()
+    , LocalPoseActor0()
+    , LocalPoseActor1()
 {
-    ConstraintActorA.Changed.Bind<Joint, &Joint::UpdateJointActors>(this);
-    ConstraintActorB.Changed.Bind<Joint, &Joint::UpdateJointActors>(this);
+    Actor0.Changed.Bind<Joint, &Joint::UpdateJointActors>(this);
+    Actor1.Changed.Bind<Joint, &Joint::UpdateJointActors>(this);
 }
 
-const PhysicsTransform& Joint::GetLocalConstrainActorA() const
-{
-    return LocalConstrainActorA;
-};
-const PhysicsTransform& Joint::GetLocalConstrainActorB() const
-{
-    return LocalConstrainActorB;
-};
-PhysicsTransform        Joint::GetWorldConstrainActorA() const
-{
-    if (ConstraintActorA)
-        return PhysicsTransform::LocalToWorld(ConstraintActorA->GetTransform(), LocalConstrainActorA);
-    return LocalConstrainActorA;
-};
-PhysicsTransform        Joint::GetWorldConstrainActorB() const
-{
-    if (ConstraintActorB)
-        return PhysicsTransform::LocalToWorld(ConstraintActorB->GetTransform(), LocalConstrainActorB);
-    return LocalConstrainActorB;
-};
-
-void                    Joint::SetLocalConstrainActorA(const PhysicsTransform& InPhysicsTransform)
+void Joint::SetActors(RigidBody* Actor0, RigidBody* Actor1)
 {
     if (_joint)
     {
-        PhysicsBackend::SetJointActorPose(_joint, LocalConstrainActorA.Translation, LocalConstrainActorA.Orientation, 1);
+        PhysicsBackend::SetJointActors
+        (
+            _joint,
+            Actor0 ? Actor0->GetPhysicsActor() : nullptr,
+            Actor1 ? Actor1->GetPhysicsActor() : nullptr
+        );
     }
-    LocalConstrainActorA = InPhysicsTransform;
-};
-void                    Joint::SetLocalConstrainActorB(const PhysicsTransform& InPhysicsTransform)
-{
-    if (_joint)
-    {
-        PhysicsBackend::SetJointActorPose(_joint, LocalConstrainActorB.Translation, LocalConstrainActorB.Orientation, 1);
-    }
-    LocalConstrainActorB = InPhysicsTransform;
-};
+}
+#pragma region SheredCode
+#define ImplementSheredCodeForActor(N)\
+void Joint::SetLocalPoseActor##N##(const PhysicsTransform& LocalPose)\
+{\
+    if (_joint)\
+    {\
+        PhysicsBackend::SetJointLocalPose(_joint, N, LocalPose);\
+        LocalPoseActor##N## = LocalPose;\
+    }\
+}\
+PhysicsTransform Joint::GetLocalPoseActor##N##() const \
+{\
+    return LocalPoseActor##N##;\
+}\
+void Joint::SetPoseActor##N##(const PhysicsTransform& InPhysicsTransform)\
+{\
+    auto& pt = Actor##N## ? PhysicsTransform::WorldToLocal(Actor##N##->GetTransform(), InPhysicsTransform) : InPhysicsTransform;\
+    SetLocalPoseActor##N##(pt);\
+};\
+PhysicsTransform Joint::GetPoseActor##N##() const\
+{\
+    if (Actor##N##)\
+        return PhysicsTransform::LocalToWorld(Actor0->GetTransform(), LocalPoseActor##N##);\
+    return LocalPoseActor##N##;\
+};\
+void Joint::SetInvMassScaleActor##N##(float invMassScale) \
+{\
+    if (_joint) \
+    {\
+        PhysicsBackend::SetJointInvMassScale##N##(_joint, invMassScale);\
+        return;\
+    }\
+}\
+float Joint::GetInvMassScaleActor##N##() const \
+{\
+    if (_joint) \
+    {\
+        return PhysicsBackend::GetJointInvMassScale##N##(_joint);\
+    }\
+    return 0;\
+}\
+void Joint::SetInvInertiaScaleActor##N##(float invInertiaScale)\
+{\
+    if (_joint)\
+    {\
+        PhysicsBackend::SetJointInvInertiaScale##N##(_joint, invInertiaScale);\
+        return;\
+    }\
+}\
+float Joint::GetInvInertiaScaleActor##N##() const \
+{\
+    if (_joint)\
+    {\
+        return PhysicsBackend::GetJointInvInertiaScale##N##(_joint);\
+    }\
+    return 0;\
+}
+#pragma endregion
+ImplementSheredCodeForActor(0)
+ImplementSheredCodeForActor(1)
 
-void                    Joint::SetWorldConstrainActorA(const PhysicsTransform& InPhysicsTransform)
+PhysicsTransform Joint::GetRelativeTransform() const
 {
-    auto& pt = ConstraintActorA ? PhysicsTransform::WorldToLocal(ConstraintActorA->GetTransform(), InPhysicsTransform) : InPhysicsTransform;
-    SetLocalConstrainActorA(pt);
-};
-void                    Joint::SetWorldConstrainActorB(const PhysicsTransform& InPhysicsTransform)
+    auto v = PhysicsTransform();
+    if (_joint) PhysicsBackend::GetJointRelativeTransform(_joint, v);
+    return v;
+}
+Vector3 Joint::GetRelativeLinearVelocity() const 
 {
-    auto& pt = ConstraintActorB ? PhysicsTransform::WorldToLocal(ConstraintActorB->GetTransform(), InPhysicsTransform) : InPhysicsTransform;
-    SetLocalConstrainActorB(pt);
+    auto v = Vector3();
+    if (_joint) PhysicsBackend::GetJointRelativeLinearVelocity(_joint, v);
+    return v;
+}
+Vector3 Joint::GetRelativeAngularVelocity() const
+{
+    auto v = Vector3();
+    if (_joint) PhysicsBackend::GetJointRelativeAngularVelocity(_joint, v);
+    return v;
+}
+
+void Joint::SetBreakForce(float force, float torque)
+{
+    _breakForce = force;
+    _breakTorque = torque;
+    if (_joint)
+        PhysicsBackend::SetJointBreakForce(_joint, _breakForce, _breakTorque);
 }
 
 void Joint::SetBreakForce(float value)
@@ -113,10 +164,10 @@ void Joint::SetEnableAutoAnchor(bool value)
 
     if (_enableAutoAnchor)
     {
-        if (ConstraintActorB != nullptr)
+        if (Actor0 != nullptr)
         {
-            SetWorldConstrainActorB(GetTransform());
-            SetWorldConstrainActorA(GetTransform());
+            SetPoseActor0(GetTransform());
+            SetPoseActor1(GetTransform());
         }
     }
 }
@@ -137,24 +188,20 @@ void Joint::Create()
 {
     ASSERT(_joint == nullptr);
 
-    if (ConstraintActorA == nullptr)
-        ConstraintActorA = FindRigidbody();
     if (GetEnableAutoAnchor())
     {
-        SetWorldConstrainActorB(GetTransform());
-        SetWorldConstrainActorA(GetTransform());
+        SetPoseActor0(GetTransform());
+        SetPoseActor1(GetTransform());
     }
 
     // Create joint object
     PhysicsJointDesc desc;
     desc.Joint = this;
 
-    desc.Actor0 = ConstraintActorA ? ConstraintActorA->GetPhysicsActor() : nullptr;
-    desc.Actor1 = ConstraintActorB ? ConstraintActorB->GetPhysicsActor() : nullptr;
-    desc.Pos0 = LocalConstrainActorA.Translation;
-    desc.Rot0 = LocalConstrainActorA.Orientation;
-    desc.Pos1 = LocalConstrainActorB.Translation;
-    desc.Rot1 = LocalConstrainActorB.Orientation;
+    desc.Actor0 = Actor0 ? Actor0->GetPhysicsActor() : nullptr;
+    desc.Actor1 = Actor1 ? Actor1->GetPhysicsActor() : nullptr;
+    desc.LocalPoseActor0 = LocalPoseActor0;
+    desc.LocalPoseActor1 = LocalPoseActor1;
 
     _joint = CreateJoint(desc);
 
@@ -172,15 +219,10 @@ void Joint::UpdateJointActors()
 {
     if (_joint)
     {
-        PhysicsBackend::SetJointActors
-        (
-            _joint,
-            ConstraintActorB ? ConstraintActorB->GetPhysicsActor() : nullptr,
-            ConstraintActorB ? ConstraintActorB->GetPhysicsActor() : nullptr
-        );
+        SetActors(Actor0, Actor1);
         //refresh joints location
-        SetLocalConstrainActorA(LocalConstrainActorA);
-        SetLocalConstrainActorB(LocalConstrainActorB);
+        SetLocalPoseActor0(LocalPoseActor0);
+        SetLocalPoseActor1(LocalPoseActor1);
     }
 }
 
@@ -211,7 +253,7 @@ RigidBody* Joint::FindRigidbody() const
 void Joint::Attach()
 {
     // Check reparenting Joint case
-    if (ConstraintActorA == nullptr)
+    if (Actor0 == nullptr)
     {
         if (_joint)
         {
@@ -242,14 +284,14 @@ void Joint::DrawPhysicsDebug(RenderView& view)
         PhysicsTransform B{};
         PhysicsTransform A{};
         if (_joint) {
-            PhysicsBackend::GetJointActorPose(_joint, A.Translation, A.Orientation, 0);
-            PhysicsBackend::GetJointActorPose(_joint, B.Translation, B.Orientation, 1);
+            PhysicsBackend::GetJointLocalPose(_joint, 0, A);
+            PhysicsBackend::GetJointLocalPose(_joint, 1, B);
         }
         //cashe for cheak sync on A
-        PhysicsTransform& fA = LocalConstrainActorA;
+        PhysicsTransform& fA = LocalPoseActor0;
         PhysicsTransform& pxA = A;
         //cashe for cheak sync on B
-        PhysicsTransform& fB = LocalConstrainActorB;
+        PhysicsTransform& fB = LocalPoseActor1;
         PhysicsTransform& pxB = B;
 
         bool WarnA = false;
@@ -264,14 +306,14 @@ void Joint::DrawPhysicsDebug(RenderView& view)
             WarnA = true;
         }
 
-        if (ConstraintActorA != nullptr) 
+        if (Actor0 != nullptr) 
         {
-            A = PhysicsTransform::LocalToWorld(ConstraintActorA->GetTransform(), A);
+            A = PhysicsTransform::LocalToWorld(Actor0->GetTransform(), A);
         }
 
-        if (ConstraintActorB != nullptr) 
+        if (Actor1 != nullptr) 
         {
-            B = PhysicsTransform::LocalToWorld(ConstraintActorB->GetTransform(), B);
+            B = PhysicsTransform::LocalToWorld(Actor1->GetTransform(), B);
         }
 
         auto p = Vector3::Lerp(A.Translation, B.Translation, 0.5f);
@@ -311,11 +353,17 @@ void Joint::DrawPhysicsDebug(RenderView& view)
 
 void Joint::OnDebugDrawSelected()
 {
-    auto wcaa = GetWorldConstrainActorA();
-    auto wcab = GetWorldConstrainActorB();
-
-    DEBUG_DRAW_WIRE_SPHERE(BoundingSphere(wcaa.Translation, 3.0f), Color::BlueViolet * 0.8f, 0, false);
-    DEBUG_DRAW_WIRE_SPHERE(BoundingSphere(wcab.Translation, 4.0f), Color::AliceBlue * 0.8f, 0, false);
+    auto p0 = GetPoseActor0();
+    auto p1 = GetPoseActor1();
+    if (Actor0) {
+        DEBUG_DRAW_BOX(Actor0->GetBox(), Color::BlueViolet * 0.8f, 0, false);
+    }
+    if (Actor1) 
+    {
+        DEBUG_DRAW_BOX(Actor1->GetBox(), Color::AliceBlue * 0.8f, 0, false);
+    }
+    DEBUG_DRAW_WIRE_SPHERE(BoundingSphere(p0.Translation, 3.0f), Color::BlueViolet * 0.8f, 0, false);
+    DEBUG_DRAW_WIRE_SPHERE(BoundingSphere(p1.Translation, 4.0f), Color::AliceBlue * 0.8f, 0, false);
 
     // Base
     Actor::OnDebugDrawSelected();
@@ -330,13 +378,13 @@ void Joint::Serialize(SerializeStream& stream, const void* otherObj)
 
     SERIALIZE_GET_OTHER_OBJ(Joint);
 
-    SERIALIZE_MEMBER(Source, ConstraintActorA);
-    SERIALIZE_MEMBER(SourceAnchor, LocalConstrainActorA.Translation);
-    SERIALIZE_MEMBER(SourceAnchorRotation, LocalConstrainActorA.Orientation);
+    SERIALIZE_MEMBER(Source, Actor0);
+    SERIALIZE_MEMBER(SourceAnchor, LocalPoseActor0.Translation);
+    SERIALIZE_MEMBER(SourceAnchorRotation, LocalPoseActor0.Orientation);
 
-    SERIALIZE_MEMBER(Target, ConstraintActorB);
-    SERIALIZE_MEMBER(TargetAnchor, LocalConstrainActorB.Translation);
-    SERIALIZE_MEMBER(TargetAnchorRotation, LocalConstrainActorB.Orientation);
+    SERIALIZE_MEMBER(Target, Actor1);
+    SERIALIZE_MEMBER(TargetAnchor, LocalPoseActor1.Translation);
+    SERIALIZE_MEMBER(TargetAnchorRotation, LocalPoseActor1.Orientation);
 
     SERIALIZE_MEMBER(BreakForce, _breakForce);
     SERIALIZE_MEMBER(BreakTorque, _breakTorque);
@@ -349,13 +397,13 @@ void Joint::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)
     // Base
     Actor::Deserialize(stream, modifier);
 
-    DESERIALIZE_MEMBER(Source, ConstraintActorA);
-    DESERIALIZE_MEMBER(SourceAnchor, LocalConstrainActorA.Translation);
-    DESERIALIZE_MEMBER(SourceAnchorRotation, LocalConstrainActorA.Orientation);
+    DESERIALIZE_MEMBER(Source, Actor0);
+    DESERIALIZE_MEMBER(SourceAnchor, LocalPoseActor0.Translation);
+    DESERIALIZE_MEMBER(SourceAnchorRotation, LocalPoseActor0.Orientation);
 
-    DESERIALIZE_MEMBER(Target, ConstraintActorB);
-    DESERIALIZE_MEMBER(TargetAnchor, LocalConstrainActorB.Translation);
-    DESERIALIZE_MEMBER(TargetAnchorRotation, LocalConstrainActorB.Orientation);
+    DESERIALIZE_MEMBER(Target, Actor1);
+    DESERIALIZE_MEMBER(TargetAnchor, LocalPoseActor1.Translation);
+    DESERIALIZE_MEMBER(TargetAnchorRotation, LocalPoseActor1.Orientation);
 
     DESERIALIZE_MEMBER(BreakForce, _breakForce);
     DESERIALIZE_MEMBER(BreakTorque, _breakTorque);
@@ -463,11 +511,14 @@ void Joint::OnTransformChanged()
 
 void Joint::SetTargetAnchor(const Vector3& value)
 {
+    LocalPoseActor1.Translation = value;
+    SetLocalPoseActor1(LocalPoseActor0);
 }
 
 void Joint::SetTargetAnchorRotation(const Quaternion& value)
 {
-
+    LocalPoseActor1.Orientation = value;
+    SetLocalPoseActor1(LocalPoseActor1);
 }
 
 void Joint::SetJointLocation(const Vector3& location)

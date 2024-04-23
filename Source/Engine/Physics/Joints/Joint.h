@@ -11,6 +11,14 @@
 
 class IPhysicsActor;
 
+#define Export(...)
+#define Property
+#define Getter
+#define Setter
+#define EditorOrder(order)
+#define EditorDisplay(Category)
+#define VisibleIf(var,swich)
+
 /// <summary>
 /// A base class for all Joint types. Joints constrain how two rigidbodies move relative to one another (for example a door hinge).
 /// One of the bodies in the joint must always be movable (non-kinematic and non-static).
@@ -27,72 +35,134 @@ protected:
     float _breakForce;
     float _breakTorque;
 
-    PhysicsTransform LocalConstrainActorA;
-    PhysicsTransform LocalConstrainActorB;
+    PhysicsTransform LocalPoseActor0;
+    PhysicsTransform LocalPoseActor1;
 
     bool _enableCollision = true;
     bool _enableAutoAnchor = false;
-    /// <summary>
-    /// propery for editor dont use it
-    /// </summary>
-    /// <returns></returns>
-    API_PROPERTY(internal) bool ShowConstrainActorA() const { return  ConstraintActorA.Get() == nullptr; }
 public:
-
+#pragma region Actor0
     /// <summary>
-    /// [todo]
     /// </summary>
     API_FIELD(Attributes = "EditorOrder(0), EditorDisplay(\"Joint\")")
-        ScriptingObjectReference<RigidBody> ConstraintActorA;
-    /// <summary>
-    /// [todo]
-    /// </summary>
-    API_PROPERTY(Attributes = "EditorOrder(1), EditorDisplay(\"Joint\"),VisibleIf(nameof(ShowConstrainActorA), false)")
-    const PhysicsTransform& GetLocalConstrainActorA() const;
+        ScriptingObjectReference<RigidBody> Actor0;
 
     /// <summary>
-    /// [todo]
+    /// Set the joint local pose for an actor.
+    /// This is the relative pose which locates the joint frame relative to the actor.
     /// </summary>
-    API_PROPERTY() void SetLocalConstrainActorA(const PhysicsTransform& InPhysicsTransform);
+    /// <param name="LocalPose">localPose the local pose for the actor this joint.</param>
+    API_PROPERTY(Attributes = "EditorOrder(1), EditorDisplay(\"Joint\"),VisibleIf(nameof(EnableAutoAnchor), true)")
+        void SetLocalPoseActor0(const PhysicsTransform& LocalPose);
 
     /// <summary>
-    /// [todo]
+    /// Get the joint local pose for an actor.
     /// </summary>
-    API_FUNCTION() PhysicsTransform GetWorldConstrainActorA() const;
+    /// <returns>The local pose for this joint</returns>
+    API_PROPERTY()
+        PhysicsTransform GetLocalPoseActor0() const;
 
     /// <summary>
-    /// [todo]
+    /// Set the joint local pose for an actor.
+    /// This is the relative pose which locates the joint frame relative to the actor.
     /// </summary>
-    API_FUNCTION() void SetWorldConstrainActorA(const PhysicsTransform& InPhysicsTransform);
-
-
-    /// <summary>
-    /// [todo]
-    /// </summary>
-    API_FIELD(Attributes = "EditorOrder(2), DefaultValue(null), EditorDisplay(\"Joint\")")
-        ScriptingObjectReference<RigidBody> ConstraintActorB;
+    /// <param name="LocalPose">localPose the local pose for the actor this joint.</param>
+    API_PROPERTY()
+        void SetPoseActor0(const PhysicsTransform& LocalPose);
 
     /// <summary>
-    /// [todo]
+    /// Get the joint local pose for an actor.
     /// </summary>
+    /// <returns>The local pose for this joint</returns>
+    API_PROPERTY() 
+        PhysicsTransform GetPoseActor0() const;
+
+    /// <summary>
+    /// set the inverse mass scale for actor0.
+    /// </summary>
+    /// <param name="invMassScale">invMassScale the scale to apply to the inverse mass of actor 0 for resolving this constraint</param>
+    API_PROPERTY() 
+        void SetInvMassScaleActor0(float invMassScale);
+
+    /// <summary>
+    /// get the inverse mass scale for actor0.
+    /// </summary>
+    /// <returns>inverse mass scale for actor0</returns>
+    API_PROPERTY()
+        float GetInvMassScaleActor0() const;
+
+    /// <summary>
+    /// set the inverse inertia scale for actor0.
+    /// </summary>
+    /// <param name="invInertiaScale">invInertiaScale the scale to apply to the inverse inertia of actor0 for resolving this constraint.</param>
+    API_PROPERTY() 
+        void SetInvInertiaScaleActor0(float invInertiaScale);
+
+    /// <summary>
+    /// Get the inverse inertia scale for actor0.
+    /// </summary>
+    /// <returns>inverse inertia scale for actor0</returns>
+    API_PROPERTY() 
+        float GetInvInertiaScaleActor0() const;
+#pragma endregion
+#pragma region Actor1
+    /// <summary>
+    /// </summary>
+    API_FIELD(Attributes = "EditorOrder(2), EditorDisplay(\"Joint\")")
+        ScriptingObjectReference<RigidBody> Actor1;
+
+    /// <summary>
+    /// Set the joint local pose for an actor.
+    /// This is the relative pose which locates the joint frame relative to the actor.
+    /// </summary>
+    /// <param name="LocalPose">localPose the local pose for the actor this joint.</param>
     API_PROPERTY(Attributes = "EditorOrder(3), EditorDisplay(\"Joint\"),VisibleIf(nameof(EnableAutoAnchor), true)")
-        const PhysicsTransform& GetLocalConstrainActorB() const;
+        void SetLocalPoseActor1(const PhysicsTransform& LocalPose);
 
     /// <summary>
-    /// [todo]
+    /// Get the joint local pose for an actor.
     /// </summary>
-    API_PROPERTY() void SetLocalConstrainActorB(const PhysicsTransform& InPhysicsTransform);
+    /// <returns>The local pose for this joint</returns>
+    API_PROPERTY() PhysicsTransform GetLocalPoseActor1() const;
 
     /// <summary>
-    /// [todo]
+    /// Set the joint local pose for an actor.
+    /// This is the relative pose which locates the joint frame relative to the actor.
     /// </summary>
-    API_FUNCTION()
-        PhysicsTransform GetWorldConstrainActorB() const;
-    /// <summary>
-    /// [todo]
-    /// </summary>
-    API_FUNCTION() void SetWorldConstrainActorB(const PhysicsTransform& InPhysicsTransform);;
+    /// <param name="LocalPose">localPose the local pose for the actor this joint.</param>
+    API_PROPERTY() void SetPoseActor1(const PhysicsTransform& LocalPose);
 
+    /// <summary>
+    /// Get the joint local pose for an actor.
+    /// </summary>
+    /// <returns>The local pose for this joint</returns>
+    API_PROPERTY() PhysicsTransform GetPoseActor1() const;
+
+    /// <summary>
+    /// set the inverse mass scale for actor0.
+    /// </summary>
+    /// <param name="invMassScale">invMassScale the scale to apply to the inverse mass of actor 0 for resolving this constraint</param>
+    API_PROPERTY() void SetInvMassScaleActor1(float invMassScale);
+
+    /// <summary>
+    /// get the inverse mass scale for actor0.
+    /// </summary>
+    /// <returns>inverse mass scale for actor0</returns>
+    API_PROPERTY() float GetInvMassScaleActor1() const;
+
+    /// <summary>
+    /// set the inverse inertia scale for actor0.
+    /// </summary>
+    /// <param name="invInertiaScale">invInertiaScale the scale to apply to the inverse inertia of actor0 for resolving this constraint.</param>
+    API_PROPERTY() void SetInvInertiaScaleActor1(float invInertiaScale);
+
+    /// <summary>
+    /// Get the inverse inertia scale for actor0.
+    /// </summary>
+    /// <returns>inverse inertia scale for actor0</returns>
+    API_PROPERTY() float GetInvInertiaScaleActor1() const;
+#pragma endregion
+public:
     /// <summary>
     /// Gets the break force. Determines the maximum force the joint can apply before breaking. Broken joints no longer participate in physics simulation.
     /// </summary>
@@ -174,6 +244,49 @@ public:
     /// </summary>
     virtual void OnJointBreak();
 
+public:
+
+    /// <summary>
+    /// Set the break force for this joint.
+    /// if the constraint force or torque on the joint exceeds the specified values, the joint will break,
+    /// at which point it will not constrain the two actors 
+    /// The force and torque are measured in the joint frame of the first actor
+    /// </summary>
+    /// <param name="force">force the maximum force the joint can apply before breaking.</param>
+    /// <param name="torque">torque the maximum torque the joint can apply before breaking.</param>
+    API_FUNCTION() void SetBreakForce(float force, float torque);
+
+    /// <summary>
+    /// Set the actors for this joint.
+    /// An actor may be null to indicate the world frame. At most one of the actors may be null.
+    /// </summary>
+    /// <param name="Actor0">actor0 the first actor.</param>
+    /// <param name="Actor1">actor1 the second actor.</param>
+    API_FUNCTION() void SetActors(RigidBody* Actor0, RigidBody* Actor1);
+
+    /// <summary>
+    /// Get the relative pose for this joint
+    /// </summary>
+    /// <returns>Pose of the joint frame of actor1 relative to actor0</returns>
+    API_FUNCTION() PhysicsTransform GetRelativeTransform() const;
+
+    /// <summary>
+    /// Get the relative linear velocity of the joint
+    /// </summary>
+    /// <returns>
+    /// This function returns the linear velocity of the origin of the constraint frame of actor1, relative to the origin of the constraint
+    /// frame of actor0.The value is returned in the constraint frame of actor0
+    /// </returns>
+    API_FUNCTION() Vector3 GetRelativeLinearVelocity() const;
+
+    /// <summary>
+    /// get the relative angular velocity of the joint
+    /// </summary>
+    /// <returns>
+    /// This function returns the angular velocity of actor1 relative to actor0. The value is returned in the constraint frame of actor0
+    /// </returns>
+    API_FUNCTION() Vector3 GetRelativeAngularVelocity() const;
+
 protected:
     virtual void* CreateJoint(const struct PhysicsJointDesc& desc) = 0;
 #if USE_EDITOR
@@ -217,20 +330,20 @@ public:
     /// </summary>
     API_PROPERTY() DEPRECATED Vector3 GetTargetAnchor() const
     {
-        return LocalConstrainActorB.Translation;
+        return LocalPoseActor1.Translation;
     }
 
     /// <summary>
     /// [Deprecated in v1.9, removed in v2.0]
     /// </summary>
-    API_PROPERTY() void SetTargetAnchor(const Vector3& value);
+    API_PROPERTY() DEPRECATED void SetTargetAnchor(const Vector3& value);
 
     /// <summary>
     /// [Deprecated in v1.9, removed in v2.0]
     /// </summary>
     API_PROPERTY() DEPRECATED Quaternion GetTargetAnchorRotation() const
     {
-        return LocalConstrainActorB.Orientation;
+        return LocalPoseActor1.Orientation;
     }
 
     /// <summary>

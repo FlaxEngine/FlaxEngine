@@ -14,11 +14,6 @@
 #include <PxImmediateMode.h>
 #include <PhysX\extensions\PxDefaultStreams.h>
 
-inline PhysicsTransform P2C(const PxTransform& v)
-{
-    return PhysicsTransform(P2C(v.p), P2C(v.q));
-}
-
 struct ContactRecorder : immediate::PxContactRecorder
 {
     PxContactBuffer* contactBuffer;
@@ -189,7 +184,8 @@ CylinderCallbacks::CylinderCallbacks(PxPhysics* PhysX, PxReal radius_, PxReal ha
     data.VertexCount = pointsLenght - 1;
     if (!CollisionCooking::CookConvexMesh(data, bcout))
     {
-        LowPolyCylinder = PhysX->createConvexMesh(PxDefaultMemoryInputData(bcout.Get(), bcout.Length()));
+        auto& stream = PxDefaultMemoryInputData(bcout.Get(), bcout.Length());
+        LowPolyCylinder = PhysX->createConvexMesh(stream);
     }
 #if 0 // data extractor
 
@@ -325,7 +321,7 @@ void CylinderCallbacks::visualize(const PxGeometry& geometry, PxRenderOutput& ou
 
 void CylinderCallbacks::computeMassProperties(const PxGeometry& geometry, PxMassProperties& massProperties) const
 {
-    float H = (halfHeight * 2.0), R = radius;
+    float H = (halfHeight * 2.0f), R = radius;
     float Rsqere = R * R;
     massProperties.mass = PxPi * Rsqere * H;
     massProperties.inertiaTensor = PxMat33(PxZero);

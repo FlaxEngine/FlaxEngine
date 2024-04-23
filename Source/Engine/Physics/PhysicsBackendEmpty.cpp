@@ -492,21 +492,53 @@ void PhysicsBackend::SetJointActors(void* joint, void* actors0, void* actor1)
 {
 }
 
-void PhysicsBackend::SetJointActorPose(void* joint, const Vector3& position, const Quaternion& orientation, uint8 index)
+void PhysicsBackend::SetJointLocalPose(void* joint, uint8 actor, const PhysicsTransform& LocalPose)
 {
-}
-void PhysicsBackend::GetJointActorPose(void* joint, Vector3& position, Quaternion& orientation, uint8 index)
-{
-}
-void PhysicsBackend::SetJointBreakForce(void* joint, float force, float torque)
-{
-}
 
-void PhysicsBackend::GetJointForce(void* joint, Vector3& linear, Vector3& angular)
+};
+void PhysicsBackend::GetJointLocalPose(void* joint, uint8 actor, PhysicsTransform& physicsTransform)
 {
-    linear = Vector3::Zero;
-    angular = Vector3::Zero;
-}
+};
+void PhysicsBackend::GetJointRelativeTransform(void* joint, PhysicsTransform& physicsTransform)
+{
+};
+void PhysicsBackend::GetJointRelativeLinearVelocity(void* joint, Vector3& linearVelocity)
+{
+};
+void PhysicsBackend::GetJointRelativeAngularVelocity(void* joint, Vector3& angularVelocity)
+{
+};
+void PhysicsBackend::GetJointBreakForce(void* joint, float& force, float& torque)
+{
+};
+void PhysicsBackend::SetJointInvMassScale0(void* joint, float invMassScale)
+{
+};
+float PhysicsBackend::GetJointInvMassScale0(void* joint)
+{
+    return 0.0f;
+};
+void PhysicsBackend::SetJointInvInertiaScale0(void* joint, float invInertiaScale)
+{
+};
+float PhysicsBackend::GetJointInvInertiaScale0(void* joint)
+{
+    return 0.0f;
+};
+void PhysicsBackend::SetJointInvMassScale1(void* joint, float invMassScale)
+{
+};
+float PhysicsBackend::GetJointInvMassScale1(void* joint)
+{
+    return 0.0f;
+};
+void PhysicsBackend::SetJointInvInertiaScale1(void* joint, float invInertiaScale)
+{
+};
+float PhysicsBackend::GetJointInvInertiaScale1(void* joint)
+{
+    return 0.0f;
+};
 
 void* PhysicsBackend::CreateFixedJoint(const PhysicsJointDesc& desc)
 {
