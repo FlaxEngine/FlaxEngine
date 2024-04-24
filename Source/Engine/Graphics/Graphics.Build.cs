@@ -107,5 +107,12 @@ public class Graphics : EngineModule
         {
             options.PrivateDefinitions.Add("COMPILE_WITH_GPU_PARTICLES");
         }
+
+        // Manually include file with shared DirectX code
+        if (options.PrivateDependencies.Contains("GraphicsDeviceDX11") ||
+            options.PrivateDependencies.Contains("GraphicsDeviceDX12"))
+        {
+            options.SourceFiles.Add(Path.Combine(FolderPath, "../GraphicsDevice/DirectX/RenderToolsDX.cpp"));
+        }
     }
 }
