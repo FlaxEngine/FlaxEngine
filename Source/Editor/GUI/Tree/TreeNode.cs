@@ -38,7 +38,6 @@ namespace FlaxEditor.GUI.Tree
         private bool _isMouseDown;
         private float _mouseDownTime;
         private Float2 _mouseDownPos;
-        private Color _cachedTextColor;
 
         private DragItemPositioning _dragOverMode;
         private bool _isDragOverHeader;
@@ -604,9 +603,6 @@ namespace FlaxEditor.GUI.Tree
         /// <inheritdoc />
         public override void Update(float deltaTime)
         {
-            // Cache text color
-            _cachedTextColor = CacheTextColor();
-
             // Drop/down animation
             if (_animationProgress < 1.0f)
             {
@@ -676,7 +672,8 @@ namespace FlaxEditor.GUI.Tree
             }
 
             // Draw text
-            Render2D.DrawText(TextFont.GetFont(), _text, textRect, _cachedTextColor, TextAlignment.Near, TextAlignment.Center);
+            Color textColor = CacheTextColor();
+            Render2D.DrawText(TextFont.GetFont(), _text, textRect, textColor, TextAlignment.Near, TextAlignment.Center);
 
             // Draw drag and drop effect
             if (IsDragOver && _tree.DraggedOverNode == this)
@@ -708,6 +705,71 @@ namespace FlaxEditor.GUI.Tree
                 else
                 {
                     base.Draw();
+                }
+            }
+        }
+
+        /// <inheritdoc />
+        protected override void DrawChildren()
+        {
+            // Draw all visible child controls
+            var children = _children;
+            if (children.Count == 0)
+                return;
+
+            if (CullChildren)
+            {
+                Render2D.PeekClip(out var globalClipping);
+                Render2D.PeekTransform(out var globalTransform);
+
+                // Try to estimate the rough location of the first node, assuming the node height is constant
+                var firstChildGlobalRect = GetChildGlobalRectangle(children[0], ref globalTransform);
+                var firstVisibleChild = Math.Clamp((int)Math.Floor((globalClipping.Y - firstChildGlobalRect.Top) / firstChildGlobalRect.Height) + 1, 0, children.Count - 1);
+                if (GetChildGlobalRectangle(children[firstVisibleChild], ref globalTransform).Top > globalClipping.Top)
+                {
+                    // Overshoot...
+                    for (; firstVisibleChild > 0; firstVisibleChild--)
+                    {
+                        var child = children[firstVisibleChild];
+                        if (GetChildGlobalRectangle(child, ref globalTransform).Top < globalClipping.Top)
+                            break;
+                    }
+                }
+
+                for (int i = firstVisibleChild; i < children.Count; i++)
+                {
+                    var child = children[i];
+                    if (child.Visible)
+                    {
+                        var childGlobalRect = GetChildGlobalRectangle(child, ref globalTransform);
+                        if (globalClipping.Intersects(ref childGlobalRect))
+                        {
+                            Render2D.PushTransform(ref child._cachedTransform);
+                            child.Draw();
+                            Render2D.PopTransform();
+                        }
+                        else
+                            break;
+                    }
+                }
+
+                static Rectangle GetChildGlobalRectangle(Control control, ref Matrix3x3 globalTransform)
+                {
+                    Matrix3x3.Multiply(ref control._cachedTransform, ref globalTransform, out var globalChildTransform);
+                    return new Rectangle(globalChildTransform.M31, globalChildTransform.M32, control.Width * globalChildTransform.M11, control.Height * globalChildTransform.M22);
+                }
+            }
+            else
+            {
+                for (int i = 0; i < children.Count; i++)
+                {
+                    var child = children[i];
+                    if (child.Visible)
+                    {
+                        Render2D.PushTransform(ref child._cachedTransform);
+                        child.Draw();
+                        Render2D.PopTransform();
+                    }
                 }
             }
         }
@@ -1104,7 +1166,6 @@ namespace FlaxEditor.GUI.Tree
             {
                 // TODO: perform layout for any non-TreeNode controls
                 _cachedHeight = _headerHeight;
-                _cachedTextColor = CacheTextColor();
                 Size = new Float2(width, _headerHeight);
             }
 
@@ -1154,7 +1215,6 @@ namespace FlaxEditor.GUI.Tree
             }
 
             _cachedHeight = height;
-            _cachedTextColor = CacheTextColor();
             Height = Mathf.Max(_headerHeight, y);
         }
 

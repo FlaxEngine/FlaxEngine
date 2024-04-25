@@ -291,7 +291,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
             if (editor.ChildrenEditors.Count == 0 || (isRefEdited && editor is CollectionEditor))
                 result = CreateDiffNode(editor);
             bool isScriptEditorWithRefValue = editor is ScriptsEditor && editor.Values.HasReferenceValue;
-            bool isActorEditorInLevel = editor is ActorEditor && editor.Values[0] is Actor actor && actor.IsPrefabRoot && actor.Scene != null;
+            bool isActorEditorInLevel = editor is ActorEditor && editor.Values[0] is Actor actor && actor.IsPrefabRoot && actor.HasScene;
             for (int i = 0; i < editor.ChildrenEditors.Count; i++)
             {
                 var childEditor = editor.ChildrenEditors[i];

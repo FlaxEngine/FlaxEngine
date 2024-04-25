@@ -68,7 +68,7 @@ namespace FlaxEditor.SceneGraph.GUI
                 Visible = (actor.HideFlags & HideFlags.HideInHierarchy) == 0;
 
                 // Pick the correct id when inside a prefab window.
-                var id = actor.HasPrefabLink && actor.Scene == null ? actor.PrefabObjectID : actor.ID;
+                var id = actor.HasPrefabLink && !actor.HasScene ? actor.PrefabObjectID : actor.ID;
                 if (Editor.Instance.ProjectCache.IsExpandedActor(ref id))
                 {
                     Expand(true);
@@ -291,7 +291,7 @@ namespace FlaxEditor.SceneGraph.GUI
                         return Style.Current.ForegroundGrey;
                     }
 
-                    if (actor.Scene != null && Editor.Instance.StateMachine.IsPlayMode && actor.IsStatic)
+                    if (actor.HasScene && Editor.Instance.StateMachine.IsPlayMode && actor.IsStatic)
                     {
                         // Static
                         return color * 0.85f;
@@ -366,7 +366,7 @@ namespace FlaxEditor.SceneGraph.GUI
             if (!IsLayoutLocked && actor)
             {
                 // Pick the correct id when inside a prefab window.
-                var id = actor.HasPrefabLink && actor.Scene == null ? actor.PrefabObjectID : actor.ID;
+                var id = actor.HasPrefabLink && !actor.HasScene ? actor.PrefabObjectID : actor.ID;
                 Editor.Instance.ProjectCache.SetExpandedActor(ref id, IsExpanded);
             }
         }
@@ -640,8 +640,8 @@ namespace FlaxEditor.SceneGraph.GUI
         private bool ValidateDragScript(Script script)
         {
             // Reject dragging scripts not linked to scene (eg. from prefab) or in the opposite way
-            var thisHasScene = Actor.Scene != null;
-            var otherHasScene = script.Scene != null;
+            var thisHasScene = Actor.HasScene;
+            var otherHasScene = script.HasScene;
             if (thisHasScene != otherHasScene)
                 return false;
 

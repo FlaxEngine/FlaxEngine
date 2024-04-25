@@ -383,6 +383,15 @@ public:
     }
 
     /// <summary>
+    /// Gets value indicating if actor is in a scene.
+    /// </summary>
+    API_PROPERTY(Attributes="HideInEditor, NoSerialize")
+    FORCE_INLINE bool HasScene() const
+    {
+        return _scene != nullptr;
+    }
+
+    /// <summary>
     /// Returns true if object is fully static on the scene, otherwise false.
     /// </summary>
     FORCE_INLINE bool IsStatic() const
