@@ -9,7 +9,7 @@
 
 // @formatter:off
 
-DXGI_FORMAT PixelFormatToDXGIFormat[108] =
+DXGI_FORMAT PixelFormatToDXGIFormat[109] =
 {
     DXGI_FORMAT_UNKNOWN,
     DXGI_FORMAT_R32G32B32A32_TYPELESS,
@@ -119,6 +119,7 @@ DXGI_FORMAT PixelFormatToDXGIFormat[108] =
     DXGI_FORMAT_UNKNOWN, // ASTC_8x8_UNorm_sRGB
     DXGI_FORMAT_UNKNOWN, // ASTC_10x10_UNorm
     DXGI_FORMAT_UNKNOWN, // ASTC_10x10_UNorm_sRGB
+    DXGI_FORMAT_YUY2,
 };
 
 // @formatter:on

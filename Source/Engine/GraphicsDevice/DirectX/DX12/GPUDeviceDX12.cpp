@@ -398,14 +398,10 @@ bool GPUDeviceDX12::Init()
         {
             const PixelFormat format = static_cast<PixelFormat>(i);
             const DXGI_FORMAT dxgiFormat = RenderToolsDX::ToDxgiFormat(format);
-
             D3D12_FEATURE_DATA_FORMAT_SUPPORT formatInfo = { dxgiFormat };
             if (FAILED(_device->CheckFeatureSupport(D3D12_FEATURE_FORMAT_SUPPORT, &formatInfo, sizeof(formatInfo))))
-            {
                 formatInfo.Support1 = D3D12_FORMAT_SUPPORT1_NONE;
-            }
             const MSAALevel maximumMultisampleCount = GetMaximumMultisampleCount(_device, dxgiFormat);
-
             FeaturesPerFormat[i] = FormatFeatures(format, maximumMultisampleCount, (FormatSupport)formatInfo.Support1);
         }
     }

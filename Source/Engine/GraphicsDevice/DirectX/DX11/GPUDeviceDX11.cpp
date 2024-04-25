@@ -273,18 +273,6 @@ ID3D11BlendState* GPUDeviceDX11::GetBlendState(const BlendingMode& blending)
     return blendState;
 }
 
-static MSAALevel GetMaximumMultisampleCount(ID3D11Device* device, DXGI_FORMAT dxgiFormat)
-{
-    int32 maxCount = 1;
-    UINT numQualityLevels;
-    for (int32 i = 2; i <= 8; i *= 2)
-    {
-        if (SUCCEEDED(device->CheckMultisampleQualityLevels(dxgiFormat, i, &numQualityLevels)) && numQualityLevels > 0)
-            maxCount = i;
-    }
-    return static_cast<MSAALevel>(maxCount);
-}
-
 bool GPUDeviceDX11::Init()
 {
     HRESULT result;
@@ -392,10 +380,16 @@ bool GPUDeviceDX11::Init()
         {
             auto format = static_cast<PixelFormat>(i);
             auto dxgiFormat = RenderToolsDX::ToDxgiFormat(format);
-            auto maximumMultisampleCount = GetMaximumMultisampleCount(_device, dxgiFormat);
+            int32 maxCount = 1;
+            UINT numQualityLevels;
+            for (int32 c = 2; c <= 8; c *= 2)
+            {
+                if (SUCCEEDED(_device->CheckMultisampleQualityLevels(dxgiFormat, c, &numQualityLevels)) && numQualityLevels > 0)
+                    maxCount = c;
+            }
             UINT formatSupport = 0;
             _device->CheckFormatSupport(dxgiFormat, &formatSupport);
-            FeaturesPerFormat[i] = FormatFeatures(format, maximumMultisampleCount, (FormatSupport)formatSupport);
+            FeaturesPerFormat[i] = FormatFeatures(format, static_cast<MSAALevel>(maxCount), (FormatSupport)formatSupport);
         }
     }
 

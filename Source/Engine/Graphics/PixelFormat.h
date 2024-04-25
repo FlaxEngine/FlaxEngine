@@ -554,6 +554,11 @@ API_ENUM() enum class PixelFormat : uint32
     ASTC_10x10_UNorm_sRGB = 107,
 
     /// <summary>
+    /// Packed YUV 4:2:2 video texture format. The mapping to the view channel in shader is Y0->R8, U0->G8, Y1->B8, and V0->A8.
+    /// </summary>
+    YUY2 = 108,
+
+    /// <summary>
     /// The maximum format value (for internal use only).
     /// </summary>
     MAX
