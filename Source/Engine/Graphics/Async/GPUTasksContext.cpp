@@ -70,16 +70,16 @@ void GPUTasksContext::OnFrameBegin()
     ++_currentSyncPoint;
 
     // Try to flush done jobs
-    auto currentSyncPointGPU = _currentSyncPoint - GPU_ASYNC_LATENCY;
     for (int32 i = 0; i < _tasksDone.Count(); i++)
     {
-        if (_tasksDone[i]->GetSyncPoint() <= currentSyncPointGPU)
+        auto task = _tasksDone[i];
+        if (task->GetSyncPoint() <= _currentSyncPoint && task->GetState() != TaskState::Finished)
         {
             // TODO: add stats counter and count performed jobs, print to log on exit.
-
-            auto job = _tasksDone[i];
-            job->Sync();
-
+            task->Sync();
+        }
+        if (task->GetState() == TaskState::Finished)
+        {
             _tasksDone.RemoveAt(i);
             i--;
             _totalTasksDoneCount++;

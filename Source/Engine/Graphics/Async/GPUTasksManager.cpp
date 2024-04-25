@@ -30,6 +30,11 @@ void GPUTask::Execute(GPUTasksContext* context)
         // Save task completion point (for synchronization)
         _syncPoint = context->GetCurrentSyncPoint();
         _context = context;
+        if (_syncLatency == 0)
+        {
+            // No delay on sync
+            Sync();
+        }
     }
 }
 
