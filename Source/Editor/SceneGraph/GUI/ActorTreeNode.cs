@@ -97,7 +97,7 @@ namespace FlaxEditor.SceneGraph.GUI
                 parentTreeNode.IsLayoutLocked = false;
 
                 // Skip UI update if node won't be in a view
-                if (parentTreeNode.IsCollapsed)
+                if (parentTreeNode.IsCollapsedInHierarchy)
                 {
                     UnlockChildrenRecursive();
                 }

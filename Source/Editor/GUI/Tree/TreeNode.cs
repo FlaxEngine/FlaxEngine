@@ -91,6 +91,11 @@ namespace FlaxEditor.GUI.Tree
         }
 
         /// <summary>
+        /// Gets a value indicating whether the node is collapsed in the hierarchy (is collapsed or any of its parents is collapsed).
+        /// </summary>
+        public bool IsCollapsedInHierarchy => IsCollapsed || (Parent is TreeNode parentNode && parentNode.IsCollapsedInHierarchy);
+
+        /// <summary>
         /// Gets or sets the text margin.
         /// </summary>
         [EditorOrder(30), Tooltip("The margin of the text area.")]
@@ -1058,7 +1063,7 @@ namespace FlaxEditor.GUI.Tree
                     // Expand node if mouse goes over arrow
                     if (ArrowRect.Contains(location) && HasAnyVisibleChild)
                         Expand(true);
-                    
+
                     if (!_isDragOverHeader)
                         result = OnDragEnterHeader(data);
                     else
