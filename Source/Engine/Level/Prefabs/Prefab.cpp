@@ -8,9 +8,7 @@
 #include "Engine/Level/Prefabs/PrefabManager.h"
 #include "Engine/Level/Actor.h"
 #include "Engine/Threading/Threading.h"
-#if USE_EDITOR
 #include "Engine/Scripting/Scripting.h"
-#endif
 
 REGISTER_JSON_ASSET(Prefab, "FlaxEngine.Prefab", true);
 
@@ -163,10 +161,10 @@ Asset::LoadResult Prefab::loadAsset()
         }
     }
 
-#if USE_EDITOR
     // Register for scripts reload and unload (need to cleanup all user objects including scripts that may be attached to the default instance - it can be always restored)
-    Scripting::ScriptsReloading.Bind<Prefab, &Prefab::DeleteDefaultInstance>(this);
     Scripting::ScriptsUnload.Bind<Prefab, &Prefab::DeleteDefaultInstance>(this);
+#if USE_EDITOR
+    Scripting::ScriptsReloading.Bind<Prefab, &Prefab::DeleteDefaultInstance>(this);
 #endif
 
     return LoadResult::Ok;
@@ -174,10 +172,10 @@ Asset::LoadResult Prefab::loadAsset()
 
 void Prefab::unload(bool isReloading)
 {
-#if USE_EDITOR
     // Unlink
-    Scripting::ScriptsReloading.Unbind<Prefab, &Prefab::DeleteDefaultInstance>(this);
     Scripting::ScriptsUnload.Unbind<Prefab, &Prefab::DeleteDefaultInstance>(this);
+#if USE_EDITOR
+    Scripting::ScriptsReloading.Unbind<Prefab, &Prefab::DeleteDefaultInstance>(this);
 #endif
 
     // Base
