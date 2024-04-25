@@ -73,13 +73,8 @@ namespace Flax.Deps.Dependencies
                 case TargetPlatform.XboxOne:
                 case TargetPlatform.XboxScarlett:
                 {
-                    var solutionPath = Path.Combine(root, "DirectXTex_GXDK_2019.sln");
-                    File.Copy(Path.Combine(GetBinariesFolder(options, platform), "DirectXTex_GXDK_2019.sln"), solutionPath, true);
-                    var projectFileContents = File.ReadAllText(Path.Combine(GetBinariesFolder(options, platform), "DirectXTex_GXDK_2019.vcxproj"));
-                    projectFileContents = projectFileContents.Replace("___VS_TOOLSET___", "v142");
-                    var projectPath = Path.Combine(root, "DirectXTex", "DirectXTex_GXDK_2019.vcxproj");
-                    File.WriteAllText(projectPath, projectFileContents);
-                    var binFolder = Path.Combine(root, "DirectXTex", "Bin", "GXDK_2019");
+                    var solutionPath = Path.Combine(root, "DirectXTex_GDK_2022.sln");
+                    var binFolder = Path.Combine(root, "DirectXTex", "Bin", "GDK_2022");
                     var xboxName = platform == TargetPlatform.XboxOne ? "Gaming.Xbox.XboxOne.x64" : "Gaming.Xbox.Scarlett.x64";
                     Deploy.VCEnvironment.BuildSolution(solutionPath, configuration, xboxName);
                     var depsFolder = GetThirdPartyFolder(options, platform, TargetArchitecture.x64);
