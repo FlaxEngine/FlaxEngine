@@ -266,9 +266,33 @@ bool AndroidPlatformTools::OnPostProcess(CookingData& data)
         }
     }
 
+    String versionCode = platformSettings->VersionCode;
+    if (versionCode.IsEmpty())
+    {
+        LOG(Error, "AndroidSettings: Invalid version code");
+        return true;
+    }
+
+    String minimumSdk = platformSettings->MinimumAPILevel;
+    if (minimumSdk.IsEmpty())
+    {
+        LOG(Error, "AndroidSettings: Invalid minimum API level");
+        return true;
+    }
+
+    String targetSdk = platformSettings->TargetAPILevel;
+    if (targetSdk.IsEmpty())
+    {
+        LOG(Error, "AndroidSettings: Invalid target API level");
+        return true;
+    }
+
     // Format project template files
     const String buildGradlePath = data.OriginalOutputPath / TEXT("app/build.gradle");
     EditorUtilities::ReplaceInFile(buildGradlePath, TEXT("${PackageName}"), packageName);
+    EditorUtilities::ReplaceInFile(buildGradlePath, TEXT("${VersionCode}"), versionCode);
+    EditorUtilities::ReplaceInFile(buildGradlePath, TEXT("${MinimumSdk}"), minimumSdk);
+    EditorUtilities::ReplaceInFile(buildGradlePath, TEXT("${TargetSdk}"), targetSdk);
     EditorUtilities::ReplaceInFile(buildGradlePath, TEXT("${ProjectVersion}"), projectVersion);
     EditorUtilities::ReplaceInFile(buildGradlePath, TEXT("${PackageAbi}"), abi);
     const String manifestPath = data.OriginalOutputPath / TEXT("app/src/main/AndroidManifest.xml");

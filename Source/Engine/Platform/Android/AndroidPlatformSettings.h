@@ -73,6 +73,24 @@ API_CLASS(sealed, Namespace="FlaxEditor.Content.Settings") class FLAXENGINE_API 
     String PackageName = TEXT("com.${COMPANY_NAME}.${PROJECT_NAME}");
 
     /// <summary>
+    /// The application version code (eg. 1, 12, 123).
+    /// </summary>
+    API_FIELD(Attributes="EditorOrder(10), EditorDisplay(\"General\")")
+    String VersionCode = TEXT("1");
+
+    /// <summary>
+    /// The minimum Android API level(eg. 20, 28, 34).
+    /// </summary>
+    API_FIELD(Attributes = "EditorOrder(20), EditorDisplay(\"General\")")
+    String MinimumAPILevel = TEXT("23");
+
+    /// <summary>
+    /// The target Android API level(eg. 20, 28, 34).
+    /// </summary>
+    API_FIELD(Attributes = "EditorOrder(30), EditorDisplay(\"General\")")
+    String TargetAPILevel = TEXT("33");
+
+    /// <summary>
     /// The application permissions list (eg. android.media.action.IMAGE_CAPTURE). Added to the generated manifest file.
     /// </summary>
     API_FIELD(Attributes="EditorOrder(100), EditorDisplay(\"General\")")
