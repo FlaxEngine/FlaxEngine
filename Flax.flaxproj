@@ -3,8 +3,8 @@
   "Version": {
     "Major": 1,
     "Minor": 8,
-    "Revision": 0,
-    "Build": 6510
+    "Revision": 1,
+    "Build": 6511
   },
   "Company": "Flax",
   "Copyright": "Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.",
