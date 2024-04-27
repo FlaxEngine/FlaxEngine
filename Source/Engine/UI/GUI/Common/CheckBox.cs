@@ -29,6 +29,7 @@ namespace FlaxEngine.GUI
     /// Check box control.
     /// </summary>
     /// <seealso cref="FlaxEngine.GUI.Control" />
+    [ActorToolbox("GUI")]
     public class CheckBox : Control
     {
         /// <summary>

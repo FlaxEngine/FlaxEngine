@@ -5,6 +5,7 @@ namespace FlaxEngine.GUI
     /// <summary>
     /// Text box control which can gather text input from the user.
     /// </summary>
+    [ActorToolbox("GUI")]
     public class TextBox : TextBoxBase
     {
         private TextLayoutOptions _layout;
