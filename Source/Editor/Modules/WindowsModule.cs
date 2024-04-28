@@ -52,7 +52,6 @@ namespace FlaxEditor.Modules
             public Float2 FloatPosition;
 
             public AssetItem Item;
-            public AssetItem Item2;
 
             // Constructor, to allow for default values
             public WindowRestoreData()
