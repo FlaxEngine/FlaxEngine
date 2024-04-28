@@ -144,26 +144,6 @@ namespace FlaxEditor.Windows
 
             FlaxEditor.Utilities.Utils.SetupCommonInputActions(this);
 
-            // Content database events
-            editor.ContentDatabase.WorkspaceModified += () => _isWorkspaceDirty = true;
-            editor.ContentDatabase.ItemRemoved += OnContentDatabaseItemRemoved;
-            editor.ContentDatabase.WorkspaceRebuilding += () => { _workspaceRebuildLocation = SelectedNode?.Path; };
-            editor.ContentDatabase.WorkspaceRebuilt += () =>
-            {
-                var selected = Editor.ContentDatabase.Find(_workspaceRebuildLocation);
-                if (selected is ContentFolder selectedFolder)
-                {
-                    _navigationUnlocked = false;
-                    RefreshView(selectedFolder.Node);
-                    _tree.Select(selectedFolder.Node);
-                    UpdateItemsSearch();
-                    _navigationUnlocked = true;
-                    UpdateUI();
-                }
-                else
-                    ShowRoot();
-            };
-
             var options = Editor.Options;
             options.OptionsChanged += OnOptionsChanged;
 
@@ -1037,6 +1017,26 @@ namespace FlaxEditor.Windows
         /// <inheritdoc />
         public override void OnInit()
         {
+            // Content database events
+            Editor.ContentDatabase.WorkspaceModified += () => _isWorkspaceDirty = true;
+            Editor.ContentDatabase.ItemRemoved += OnContentDatabaseItemRemoved;
+            Editor.ContentDatabase.WorkspaceRebuilding += () => { _workspaceRebuildLocation = SelectedNode?.Path; };
+            Editor.ContentDatabase.WorkspaceRebuilt += () =>
+            {
+                var selected = Editor.ContentDatabase.Find(_workspaceRebuildLocation);
+                if (selected is ContentFolder selectedFolder)
+                {
+                    _navigationUnlocked = false;
+                    RefreshView(selectedFolder.Node);
+                    _tree.Select(selectedFolder.Node);
+                    UpdateItemsSearch();
+                    _navigationUnlocked = true;
+                    UpdateUI();
+                }
+                else if (_root != null)
+                    ShowRoot();
+            };
+
             // Setup content root node
             _root = new RootContentTreeNode
             {
