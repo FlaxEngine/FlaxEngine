@@ -29,6 +29,7 @@ namespace FlaxEditor.Windows
         private const string ProjectDataLastViewedFolder = "LastViewedFolder";
         private bool _isWorkspaceDirty;
         private string _workspaceRebuildLocation;
+        private string _lastViewedFolderBeforeReload;
         private SplitPanel _split;
         private Panel _contentViewPanel;
         private Panel _contentTreePanel;
@@ -1037,6 +1038,41 @@ namespace FlaxEditor.Windows
                     ShowRoot();
             };
 
+            Refresh();
+
+            // Load last viewed folder
+            if (Editor.ProjectCache.TryGetCustomData(ProjectDataLastViewedFolder, out string lastViewedFolder))
+            {
+                if (Editor.ContentDatabase.Find(lastViewedFolder) is ContentFolder folder)
+                    _tree.Select(folder.Node);
+            }
+
+            ScriptsBuilder.ScriptsReloadBegin += OnScriptsReloadBegin;
+            ScriptsBuilder.ScriptsReloadEnd += OnScriptsReloadEnd;
+        }
+
+        private void OnScriptsReloadBegin()
+        {
+            var lastViewedFolder = _tree.Selection.Count == 1 ? _tree.SelectedNode as ContentTreeNode : null;
+            _lastViewedFolderBeforeReload = lastViewedFolder?.Path ?? string.Empty;
+
+            _tree.RemoveChild(_root);
+            _root = null;
+        }
+
+        private void OnScriptsReloadEnd()
+        {
+            Refresh();
+
+            if (!string.IsNullOrEmpty(_lastViewedFolderBeforeReload))
+            {
+                if (Editor.ContentDatabase.Find(_lastViewedFolderBeforeReload) is ContentFolder folder)
+                    _tree.Select(folder.Node);
+            }
+        }
+
+        private void Refresh()
+        {
             // Setup content root node
             _root = new RootContentTreeNode
             {
@@ -1072,13 +1108,6 @@ namespace FlaxEditor.Windows
             // Update UI layout
             _isLayoutLocked = false;
             PerformLayout();
-
-            // Load last viewed folder
-            if (Editor.ProjectCache.TryGetCustomData(ProjectDataLastViewedFolder, out string lastViewedFolder))
-            {
-                if (Editor.ContentDatabase.Find(lastViewedFolder) is ContentFolder folder)
-                    _tree.Select(folder.Node);
-            }
         }
 
         /// <inheritdoc />
@@ -1226,6 +1255,8 @@ namespace FlaxEditor.Windows
             _viewDropdown = null;
 
             Editor.Options.OptionsChanged -= OnOptionsChanged;
+            ScriptsBuilder.ScriptsReloadBegin -= OnScriptsReloadBegin;
+            ScriptsBuilder.ScriptsReloadEnd -= OnScriptsReloadEnd;
 
             base.OnDestroy();
         }
