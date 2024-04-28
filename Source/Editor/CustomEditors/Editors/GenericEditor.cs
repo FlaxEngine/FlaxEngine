@@ -808,6 +808,7 @@ namespace FlaxEditor.CustomEditors.Editors
             OnGroupsEnd();
         }
 
+        /// <inheritdoc />
         protected override void Deinitialize()
         {
             _visibleIfCaches = null;
