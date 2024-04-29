@@ -8,6 +8,7 @@ namespace FlaxEngine.GUI
     /// Panel that arranges child controls like tiles.
     /// </summary>
     /// <seealso cref="FlaxEngine.GUI.ContainerControl" />
+    [ActorToolbox("GUI")]
     public class TilesPanel : ContainerControl
     {
         private Margin _tileMargin;
