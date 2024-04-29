@@ -466,27 +466,35 @@ namespace FlaxEditor.CustomEditors.Dedicated
             // Setup transform
             if (Presenter is LayoutElementsContainer l)
             {
-                var group = l.Group("Transform");
-                VerticalPanelElement mainHor = VerticalPanelWithoutMargin(group);
+                var transformGroup = l.Group("Transform");
+                VerticalPanelElement mainHor = VerticalPanelWithoutMargin(transformGroup);
                 CreateTransformElements(mainHor, ValuesTypes);
                 
                 ScriptMemberInfo scaleInfo = ValuesTypes[0].GetProperty("Scale");
                 ItemInfo scaleItem = new ItemInfo(scaleInfo);
-                group.Property("Scale", scaleItem.GetValues(Values));
+                transformGroup.Property("Scale", scaleItem.GetValues(Values));
                 
                 ScriptMemberInfo pivotInfo = ValuesTypes[0].GetProperty("Pivot");
                 ItemInfo pivotItem = new ItemInfo(pivotInfo);
-                group.Property("Pivot", pivotItem.GetValues(Values));
+                transformGroup.Property("Pivot", pivotItem.GetValues(Values));
                 
                 ScriptMemberInfo shearInfo = ValuesTypes[0].GetProperty("Shear");
                 ItemInfo shearItem = new ItemInfo(shearInfo);
-                group.Property("Shear", shearItem.GetValues(Values));
+                transformGroup.Property("Shear", shearItem.GetValues(Values));
                 
                 ScriptMemberInfo rotationInfo = ValuesTypes[0].GetProperty("Rotation");
                 ItemInfo rotationItem = new ItemInfo(rotationInfo);
-                group.Property("Rotation", rotationItem.GetValues(Values));
+                transformGroup.Property("Rotation", rotationItem.GetValues(Values));
                 
-                Presenter.ContainerControl.ChangeChildIndex(group.Control, 1);
+                // Get position of general tab
+                for (int i = 0; i < l.Children.Count; i++)
+                {
+                    if (l.Children[i] is GroupElement g && g.Panel.HeaderText == "General" && i + 1 <= l.Children.Count)
+                    {
+                        Presenter.ContainerControl.ChangeChildIndex(transformGroup.Control, i + 1);
+                        break;
+                    }
+                }
             }
         }
 
