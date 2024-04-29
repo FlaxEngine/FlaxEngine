@@ -213,7 +213,7 @@ namespace FlaxEngine.GUI
                     color *= 0.6f;
                 Render2D.DrawText(font, _text, color, ref _layout, TextMaterial);
             }
-            else if (!string.IsNullOrEmpty(_watermarkText) && !IsFocused)
+            else if (!string.IsNullOrEmpty(_watermarkText))
             {
                 Render2D.DrawText(font, _watermarkText, WatermarkTextColor, ref _layout, TextMaterial);
             }
