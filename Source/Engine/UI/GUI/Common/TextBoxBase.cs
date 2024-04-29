@@ -1203,7 +1203,7 @@ namespace FlaxEngine.GUI
             if (base.OnMouseDown(location, button))
                 return true;
 
-            if (button == MouseButton.Left && _text.Length > 0 && _isSelectable)
+            if (button == MouseButton.Left && _isSelectable)
             {
                 Focus();
                 OnSelectingBegin();
@@ -1218,6 +1218,10 @@ namespace FlaxEngine.GUI
                         SetSelection(hitPos, _selectionStart);
                     else
                         SetSelection(_selectionStart, hitPos);
+                }
+                else if (string.IsNullOrEmpty(_text))
+                {
+                    SetSelection(0);
                 }
                 else
                 {
