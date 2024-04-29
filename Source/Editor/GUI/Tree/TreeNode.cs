@@ -730,12 +730,15 @@ namespace FlaxEditor.GUI.Tree
                 // Try to estimate the rough location of the first node, assuming the node height is constant
                 var firstChildGlobalRect = GetChildGlobalRectangle(children[0], ref globalTransform);
                 var firstVisibleChild = Math.Clamp((int)Math.Floor((globalClipping.Y - firstChildGlobalRect.Top) / firstChildGlobalRect.Height) + 1, 0, children.Count - 1);
-                if (GetChildGlobalRectangle(children[firstVisibleChild], ref globalTransform).Top > globalClipping.Top)
+                if (GetChildGlobalRectangle(children[firstVisibleChild], ref globalTransform).Top > globalClipping.Top || !children[firstVisibleChild].Visible)
                 {
-                    // Overshoot...
+                    // Estimate overshoot, either it's partially visible or hidden in the tree
                     for (; firstVisibleChild > 0; firstVisibleChild--)
                     {
                         var child = children[firstVisibleChild];
+                        if (!child.Visible)
+                            continue;
+
                         if (GetChildGlobalRectangle(child, ref globalTransform).Top < globalClipping.Top)
                             break;
                     }
@@ -744,18 +747,16 @@ namespace FlaxEditor.GUI.Tree
                 for (int i = firstVisibleChild; i < children.Count; i++)
                 {
                     var child = children[i];
-                    if (child.Visible)
-                    {
-                        var childGlobalRect = GetChildGlobalRectangle(child, ref globalTransform);
-                        if (globalClipping.Intersects(ref childGlobalRect))
-                        {
-                            Render2D.PushTransform(ref child._cachedTransform);
-                            child.Draw();
-                            Render2D.PopTransform();
-                        }
-                        else
-                            break;
-                    }
+                    if (!child.Visible)
+                        continue;
+
+                    var childGlobalRect = GetChildGlobalRectangle(child, ref globalTransform);
+                    if (!globalClipping.Intersects(ref childGlobalRect))
+                        break;
+
+                    Render2D.PushTransform(ref child._cachedTransform);
+                    child.Draw();
+                    Render2D.PopTransform();
                 }
 
                 static Rectangle GetChildGlobalRectangle(Control control, ref Matrix3x3 globalTransform)
