@@ -575,7 +575,8 @@ namespace FlaxEditor.SceneGraph.GUI
                     actor.StaticFlags = Actor.StaticFlags;
                     actor.Name = item.Name;
                     actor.Transform = Actor.Transform;
-                    ActorNode.Root.Spawn(actor, Actor);
+                    ActorNode.Root.Spawn(actor, newParent);
+                    actor.OrderInParent = newOrder;
                 }
                 result = DragDropEffect.Move;
             }
