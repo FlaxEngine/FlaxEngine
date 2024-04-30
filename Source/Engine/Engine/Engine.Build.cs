@@ -17,6 +17,7 @@ public class Engine : EngineModule
         options.PublicDependencies.Add("AI");
         options.PublicDependencies.Add("Animations");
         options.PublicDependencies.Add("Audio");
+        options.PublicDependencies.Add("Video");
         options.PublicDependencies.Add("Content");
         options.PublicDependencies.Add("Debug");
         options.PublicDependencies.Add("Foliage");

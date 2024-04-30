@@ -271,6 +271,11 @@ public:
     GPUPipelineState* GetClearPS() const;
 
     /// <summary>
+    /// Gets the shader pipeline state object for YUY2 frame decoding to RGBA.
+    /// </summary>
+    GPUPipelineState* GetDecodeYUY2PS() const;
+
+    /// <summary>
     /// Gets the fullscreen-triangle vertex buffer.
     /// </summary>
     GPUBuffer* GetFullscreenTriangleVB() const;

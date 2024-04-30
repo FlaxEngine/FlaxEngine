@@ -34,8 +34,11 @@ GPUTasksContext::~GPUTasksContext()
     for (int32 i = 0; i < tasks.Count(); i++)
     {
         auto task = tasks[i];
-        LOG(Warning, "{0} has been canceled before a sync", task->ToString());
-        tasks[i]->CancelSync();
+        if (task->GetSyncPoint() <= _currentSyncPoint && task->GetState() != TaskState::Finished)
+        {
+            LOG(Warning, "{0} has been canceled before a sync", task->ToString());
+            task->CancelSync();
+        }
     }
 
 #if GPU_TASKS_USE_DEDICATED_CONTEXT

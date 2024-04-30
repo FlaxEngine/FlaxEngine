@@ -82,3 +82,32 @@ float PS_DepthCopy(Quad_VS2PS input) : SV_Depth
 }
 
 #endif
+
+#ifdef _PS_DecodeYUY2
+
+// Raw memory with texture of format YUY2 and size passed in Color.xy
+Buffer<uint> SourceYUY2 : register(t0);
+
+// Pixel Shader for copying depth buffer
+META_PS(true, FEATURE_LEVEL_ES2)
+float4 PS_DecodeYUY2(Quad_VS2PS input) : SV_Target
+{
+    // Read YUY2 pixel
+    uint p = (uint)input.Position.y * (uint)Color.x + (uint)input.Position.x;
+    uint data = SourceYUY2[p / 2];
+
+    // Unpack YUY components
+    uint v = (data & 0xff000000) >> 24;
+    uint y1 = (data & 0xff0000) >> 16;
+    uint u = (data & 0xff00) >> 8;
+    uint y0 = data & 0x000000FF;
+    uint y = p % 2 == 0 ? y0: y1;
+
+    // Convert yuv to rgb
+    float r  = (y + 1.402 * (v - 128.0));
+    float g =  (y - 0.344 * (u - 128.0) - 0.714 * (v - 128.0));
+    float b =  (y + 1.772 * (u - 128.0));
+    return float4(r, g, b, 256.0f) / 256.0f;
+}
+
+#endif
