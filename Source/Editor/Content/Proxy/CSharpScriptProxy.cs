@@ -30,6 +30,12 @@ namespace FlaxEditor.Content
         }
 
         /// <inheritdoc />
+        public override ContentItem ConstructItem(string path)
+        {
+            return new CSharpScriptItem(path);
+        }
+
+        /// <inheritdoc />
         public override void Create(string outputPath, object arg)
         {
             // Load template

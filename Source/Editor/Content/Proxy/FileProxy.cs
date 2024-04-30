@@ -21,6 +21,12 @@ namespace FlaxEditor.Content
         }
 
         /// <inheritdoc />
+        public override ContentItem ConstructItem(string path)
+        {
+            return new FileItem(path);
+        }
+
+        /// <inheritdoc />
         public override string FileExtension => string.Empty;
 
         /// <inheritdoc />
