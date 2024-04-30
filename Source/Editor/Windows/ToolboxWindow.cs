@@ -367,6 +367,7 @@ namespace FlaxEditor.Windows
             var tree = new Tree(false)
             {
                 AnchorPreset = AnchorPresets.HorizontalStretchTop,
+                Margin = new Margin(0, 0, 0, panel.ScrollBarsSize),
                 IsScrollable = true,
                 Parent = panel
             };
