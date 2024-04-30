@@ -456,9 +456,10 @@ namespace FlaxEditor.CustomEditors.Dedicated
 
             for (int i = 0; i < layout.Children.Count; i++)
             {
-                if (layout.Children[i] is GroupElement group && group.Panel.HeaderText == "Transform")
+                if (layout.Children[i] is GroupElement group && group.Panel.HeaderText.Equals("Transform", StringComparison.Ordinal))
                 {
                     layout.Children.Remove(group);
+                    layout.ContainerControl.Children.Remove(group.Panel);
                     break;
                 }
             }
@@ -489,7 +490,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
                 // Get position of general tab
                 for (int i = 0; i < l.Children.Count; i++)
                 {
-                    if (l.Children[i] is GroupElement g && g.Panel.HeaderText == "General" && i + 1 <= l.Children.Count)
+                    if (l.Children[i] is GroupElement g && g.Panel.HeaderText.Equals("General", StringComparison.Ordinal) && i + 1 <= l.Children.Count)
                     {
                         Presenter.ContainerControl.ChangeChildIndex(transformGroup.Control, i + 1);
                         break;
