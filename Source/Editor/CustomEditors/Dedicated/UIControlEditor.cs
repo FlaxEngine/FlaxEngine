@@ -678,7 +678,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
         {
             var grid = UniformGridTwoByOne(el);
             grid.CustomControl.SlotPadding = new Margin(5, 5, 1, 1);
-            var label = grid.Label(text);
+            var label = grid.Label(text, TextAlignment.Far);
             var editor = grid.Object(values);
             if (editor is FloatEditor floatEditor && floatEditor.Element is FloatValueElement floatEditorElement)
             {
