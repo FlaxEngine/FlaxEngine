@@ -1269,7 +1269,11 @@ namespace FlaxEngine.GUI
             // Multiline scroll
             if (IsMultiline && _text.Length != 0 && IsMultilineScrollable)
             {
-                TargetViewOffset = Float2.Clamp(_targetViewOffset - new Float2(0, delta * 10.0f), Float2.Zero, new Float2(_targetViewOffset.X, _textSize.Y - Height));
+                if (Input.GetKey(KeyboardKeys.Shift))
+                    TargetViewOffset = Float2.Clamp(_targetViewOffset - new Float2(delta * 20.0f, 0), Float2.Zero, new Float2(_textSize.X, _targetViewOffset.Y));
+                else
+                    TargetViewOffset = Float2.Clamp(_targetViewOffset - new Float2(0, delta * 10.0f), Float2.Zero, new Float2(_targetViewOffset.X, _textSize.Y - Height));
+                
                 return true;
             }
 
