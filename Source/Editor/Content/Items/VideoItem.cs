@@ -23,6 +23,6 @@ namespace FlaxEditor.Content
         public override string TypeDescription => "Video";
 
         /// <inheritdoc />
-        public override SpriteHandle DefaultThumbnail => Editor.Instance.Icons.ColorWheel128;
+        public override SpriteHandle DefaultThumbnail => Editor.Instance.Icons.Document128;
     }
 }
