@@ -355,7 +355,7 @@ namespace FlaxEditor.SceneGraph.GUI
         private void OnRenamed(RenamePopup renamePopup)
         {
             using (new UndoBlock(ActorNode.Root.Undo, Actor, "Rename"))
-                Actor.Name = renamePopup.Text;
+                Actor.Name = renamePopup.Text.Trim();
         }
 
         /// <inheritdoc />
