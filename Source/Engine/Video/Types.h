@@ -6,6 +6,7 @@
 #include "Engine/Core/Types/TimeSpan.h"
 #include "Engine/Core/Types/DataContainer.h"
 #include "Engine/Audio/Types.h"
+#include "Engine/Audio/Config.h"
 #include "Engine/Graphics/PixelFormat.h"
 
 class Video;
@@ -22,19 +23,29 @@ class GPUPipelineState;
 /// </summary>
 struct VideoBackendPlayer
 {
-    VideoBackend* Backend = nullptr;
-    GPUTexture* Frame = nullptr;
-    GPUBuffer* FrameUpload = nullptr;
-    int32 Width = 0, Height = 0, AvgBitRate = 0, FramesCount = 0;
-    int32 VideoFrameWidth = 0, VideoFrameHeight = 0;
-    PixelFormat Format = PixelFormat::Unknown;
-    float FrameRate = 0.0f;
-    TimeSpan Duration = TimeSpan(0);
-    TimeSpan VideoFrameTime = TimeSpan(0), VideoFrameDuration = TimeSpan(0);
-    AudioDataInfo AudioInfo = {};
+    VideoBackend* Backend;
+    GPUTexture* Frame;
+    GPUBuffer* FrameUpload;
+    int32 Width, Height, AvgVideoBitRate, FramesCount;
+    int32 VideoFrameWidth, VideoFrameHeight;
+    PixelFormat Format;
+    float FrameRate;
+    TimeSpan Duration;
+    TimeSpan VideoFrameTime, VideoFrameDuration;
+    TimeSpan AudioBufferTime, AudioBufferDuration;
+    AudioDataInfo AudioInfo;
     BytesContainer VideoFrameMemory;
-    class GPUUploadVideoFrameTask* UploadVideoFrameTask = nullptr;
-    uintptr BackendState[8] = {};
+    AUDIO_BUFFER_ID_TYPE AudioBuffer;
+    AUDIO_SOURCE_ID_TYPE AudioSource;
+    class GPUUploadVideoFrameTask* UploadVideoFrameTask;
+    uintptr BackendState[8];
+
+    VideoBackendPlayer()
+    {
+        Platform::MemoryClear(this, sizeof(VideoBackendPlayer));
+    }
+
+    POD_COPYABLE(VideoBackendPlayer);
 
     template<typename T>
     FORCE_INLINE T& GetBackendState()
@@ -51,6 +62,7 @@ struct VideoBackendPlayer
     }
 
     void InitVideoFrame();
-    void UpdateVideoFrame(Span<byte> frame, TimeSpan time, TimeSpan duration);
+    void UpdateVideoFrame(Span<byte> data, TimeSpan time, TimeSpan duration);
+    void UpdateAudioBuffer(Span<byte> data, TimeSpan time, TimeSpan duration);
     void ReleaseResources();
 };

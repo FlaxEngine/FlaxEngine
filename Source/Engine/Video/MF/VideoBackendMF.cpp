@@ -37,7 +37,7 @@ namespace
         bool result = true;
 
         // Find the native format of the stream
-        HRESULT hr = playerMF.SourceReader->GetNativeMediaType(MF_SOURCE_READER_FIRST_VIDEO_STREAM, MF_SOURCE_READER_CURRENT_TYPE_INDEX, &nativeType);
+        HRESULT hr = playerMF.SourceReader->GetNativeMediaType(streamIndex, MF_SOURCE_READER_CURRENT_TYPE_INDEX, &nativeType);
         if (FAILED(hr))
         {
             VIDEO_API_MF_ERROR(GetNativeMediaType, hr);
@@ -81,7 +81,7 @@ namespace
                 player.Width = videoArea.Area.cx;
                 player.Height = videoArea.Area.cy;
             }
-            player.AvgBitRate = MFGetAttributeUINT32(mediaType, MF_MT_AVG_BITRATE, 0);
+            player.AvgVideoBitRate = MFGetAttributeUINT32(mediaType, MF_MT_AVG_BITRATE, 0);
             uint64_t fpsValue;
             hr = mediaType->GetUINT64(MF_MT_FRAME_RATE, &fpsValue);
             if (SUCCEEDED(hr))
@@ -132,12 +132,182 @@ namespace
             player.AudioInfo.SampleRate = MFGetAttributeUINT32(mediaType, MF_MT_AUDIO_SAMPLES_PER_SECOND, 0);
             player.AudioInfo.NumChannels = MFGetAttributeUINT32(mediaType, MF_MT_AUDIO_NUM_CHANNELS, 0);
             player.AudioInfo.BitDepth = MFGetAttributeUINT32(mediaType, MF_MT_AUDIO_BITS_PER_SAMPLE, 16);
+            if (subtype != MFAudioFormat_PCM)
+            {
+                // Reconfigure decoder to output audio data in PCM format
+                IMFMediaType* customType = nullptr;
+                hr = MFCreateMediaType(&customType);
+                if (FAILED(hr))
+                {
+                    VIDEO_API_MF_ERROR(MFCreateMediaType, hr);
+                    goto END;
+                }
+                customType->SetGUID(MF_MT_MAJOR_TYPE, majorType);
+                customType->SetGUID(MF_MT_SUBTYPE, MFAudioFormat_PCM);
+                hr = playerMF.SourceReader->SetCurrentMediaType(streamIndex, nullptr, customType);
+                if (FAILED(hr))
+                {
+                    VIDEO_API_MF_ERROR(SetCurrentMediaType, hr);
+                    goto END;
+                }
+                customType->Release();
+            }
         }
 
         result = false;
     END:
         SAFE_RELEASE(mediaType);
         return result;
+    }
+
+    bool ReadStream(VideoBackendPlayer& player, VideoPlayerMF& playerMF, DWORD streamIndex, TimeSpan dt)
+    {
+        const bool isVideo = streamIndex == MF_SOURCE_READER_FIRST_VIDEO_STREAM;
+        const bool isAudio = streamIndex == MF_SOURCE_READER_FIRST_AUDIO_STREAM;
+        const TimeSpan lastFrameTime = isVideo ? player.VideoFrameTime : player.AudioBufferTime;
+        const TimeSpan lastFrameDuration = isVideo ? player.VideoFrameDuration : player.AudioBufferDuration;
+
+        // Check if the current frame is valid (eg. when playing 24fps video at 60fps)
+        if (lastFrameDuration.Ticks > 0 &&
+            Math::IsInRange(playerMF.Time, lastFrameTime, lastFrameTime + lastFrameDuration))
+        {
+            return false;
+        }
+
+        // Read samples until frame is matching the current time
+        int32 samplesLeft = 500;
+        HRESULT hr;
+        for (; samplesLeft > 0; samplesLeft--)
+        {
+            // Read sample
+            DWORD flags = 0;
+            LONGLONG samplePos = 0, sampleDuration = 0;
+            IMFSample* sample = nullptr;
+            {
+                PROFILE_CPU_NAMED("ReadSample");
+                hr = playerMF.SourceReader->ReadSample(streamIndex, 0, &streamIndex, &flags, &samplePos, &sample);
+                if (FAILED(hr))
+                {
+                    VIDEO_API_MF_ERROR(ReadSample, hr);
+                    break;
+                }
+            }
+            TimeSpan frameTime((int64)samplePos);
+            TimeSpan franeDuration = player.FrameRate > 0 ? TimeSpan::FromSeconds(1.0 / player.FrameRate) : dt;
+            if (sample && sample->GetSampleDuration(&sampleDuration) == S_OK && sampleDuration > 0)
+            {
+                franeDuration.Ticks = sampleDuration;
+            }
+            //const int32 framesToTime = (playerMF.Time.Ticks - frameTime.Ticks) / franeDuration.Ticks;
+            const bool isGoodSample = Math::IsInRange(playerMF.Time, frameTime, frameTime + franeDuration);
+
+            // Process sample
+            if (sample && isGoodSample)
+            {
+                PROFILE_CPU_NAMED("ProcessSample");
+
+                // Lock sample buffer memory (try to use 2D buffer for more direct memory access)
+                IMFMediaBuffer* buffer = nullptr;
+                IMF2DBuffer* buffer2D = nullptr;
+                BYTE* bufferData = nullptr;
+                LONG bufferStride = 0;
+                if (isVideo && sample->GetBufferByIndex(0, &buffer) == S_OK && buffer->QueryInterface(IID_PPV_ARGS(&buffer2D)) == S_OK)
+                {
+                    LONG bufferPitch = 0;
+                    hr = buffer2D->Lock2D(&bufferData, &bufferPitch);
+                    if (FAILED(hr))
+                    {
+                        VIDEO_API_MF_ERROR(GetCurrentLength, hr);
+                        goto PROCESS_SAMPLE_END;
+                    }
+                    if (bufferPitch < 0)
+                        bufferPitch = -bufferPitch; // Flipped image
+                    bufferStride = bufferPitch * player.VideoFrameHeight;
+                }
+                else
+                {
+                    if (buffer)
+                    {
+                        buffer->Release();
+                        buffer = nullptr;
+                    }
+                    DWORD bufferLength;
+                    hr = sample->ConvertToContiguousBuffer(&buffer);
+                    if (FAILED(hr))
+                    {
+                        VIDEO_API_MF_ERROR(ConvertToContiguousBuffer, hr);
+                        goto PROCESS_SAMPLE_END;
+                    }
+                    hr = buffer->GetCurrentLength(&bufferLength);
+                    if (FAILED(hr))
+                    {
+                        VIDEO_API_MF_ERROR(GetCurrentLength, hr);
+                        goto PROCESS_SAMPLE_END;
+                    }
+                    DWORD bufferMaxLen = 0, bufferCurrentLength = 0;
+                    hr = buffer->Lock(&bufferData, &bufferMaxLen, &bufferCurrentLength);
+                    if (FAILED(hr))
+                    {
+                        VIDEO_API_MF_ERROR(Lock, hr);
+                        goto PROCESS_SAMPLE_END;
+                    }
+                    bufferStride = bufferCurrentLength;
+                }
+
+                Span<byte> bufferSpan(bufferData, bufferStride);
+                if (isVideo)
+                {
+                    // Send pixels to the texture
+                    player.UpdateVideoFrame(bufferSpan, frameTime, franeDuration);
+                }
+                else if (isAudio)
+                {
+                    // Send PCM data
+                    player.UpdateAudioBuffer(bufferSpan, frameTime, franeDuration);
+                }
+
+                // Unlock sample buffer memory
+                if (buffer2D)
+                {
+                    hr = buffer2D->Unlock2D();
+                    if (FAILED(hr))
+                    {
+                        VIDEO_API_MF_ERROR(Unlock2D, hr);
+                    }
+                }
+                else
+                {
+                    hr = buffer->Unlock();
+                    if (FAILED(hr))
+                    {
+                        VIDEO_API_MF_ERROR(Unlock, hr);
+                    }
+                }
+
+            PROCESS_SAMPLE_END:
+                buffer->Release();
+            }
+            if (sample)
+                sample->Release();
+
+            if (flags & MF_SOURCE_READERF_ENDOFSTREAM)
+            {
+                // Media ended
+                break;
+            }
+            if (flags & MF_SOURCE_READERF_NATIVEMEDIATYPECHANGED || flags & MF_SOURCE_READERF_CURRENTMEDIATYPECHANGED)
+            {
+                // Format/metadata might have changed so update the stream
+                Configure(player, playerMF, streamIndex);
+            }
+
+            // End loop if got good sample or need to seek back
+            if (isGoodSample)
+                break;
+        }
+
+        // True if run out of samples and failed to get frame for the current time
+        return samplesLeft == 0;
     }
 }
 
@@ -278,7 +448,6 @@ void VideoBackendMF::Base_Update()
 {
     PROFILE_CPU();
     // TODO: use async Task Graph to update videos
-    HRESULT hr;
     for (auto* e : Players)
     {
         auto& player = *e;
@@ -341,140 +510,15 @@ void VideoBackendMF::Base_Update()
             // After seeking, the application should call ReadSample and advance to the desired position.
         }
 
-        // Check if the current frame is valid (eg. when playing 24fps video at 60fps)
-        if (player.VideoFrameDuration.Ticks > 0 &&
-            Math::IsInRange(playerMF.Time, player.VideoFrameTime, player.VideoFrameTime + player.VideoFrameDuration))
-        {
-            continue;
-        }
-
-        // Read samples until frame is matching the current time
-        int32 samplesLeft = 500;
-        for (; samplesLeft > 0; samplesLeft--)
-        {
-            // Read sample
-            DWORD streamIndex = 0, flags = 0;
-            LONGLONG samplePos = 0, sampleDuration = 0;
-            IMFSample* videoSample = nullptr;
-            {
-                PROFILE_CPU_NAMED("ReadSample");
-                hr = playerMF.SourceReader->ReadSample(MF_SOURCE_READER_FIRST_VIDEO_STREAM, 0, &streamIndex, &flags, &samplePos, &videoSample);
-                if (FAILED(hr))
-                {
-                    VIDEO_API_MF_ERROR(ReadSample, hr);
-                    break;
-                }
-            }
-            TimeSpan frameTime((int64)samplePos);
-            TimeSpan franeDuration = player.FrameRate > 0 ? TimeSpan::FromSeconds(1.0 / player.FrameRate) : dt;
-            if (videoSample && videoSample->GetSampleDuration(&sampleDuration) == S_OK && sampleDuration > 0)
-            {
-                franeDuration.Ticks = sampleDuration;
-            }
-            //const int32 framesToTime = (playerMF.Time.Ticks - frameTime.Ticks) / franeDuration.Ticks;
-            const bool isGoodSample = Math::IsInRange(playerMF.Time, frameTime, frameTime + franeDuration);
-
-            // Process sample
-            if (videoSample && isGoodSample)
-            {
-                PROFILE_CPU_NAMED("ProcessSample");
-
-                // Lock sample buffer memory (try to use 2D buffer for more direct memory access)
-                IMFMediaBuffer* buffer = nullptr;
-                IMF2DBuffer* buffer2D = nullptr;
-                BYTE* bufferData = nullptr;
-                LONG bufferStride = 0;
-                if (videoSample->GetBufferByIndex(0, &buffer) == S_OK && buffer->QueryInterface(IID_PPV_ARGS(&buffer2D)) == S_OK)
-                {
-                    LONG bufferPitch = 0;
-                    hr = buffer2D->Lock2D(&bufferData, &bufferPitch);
-                    if (FAILED(hr))
-                    {
-                        VIDEO_API_MF_ERROR(GetCurrentLength, hr);
-                        goto PROCESS_SAMPLE_END;
-                    }
-                    if (bufferPitch < 0)
-                        bufferPitch = -bufferPitch; // Flipped image
-                    bufferStride = bufferPitch * player.VideoFrameHeight;
-                }
-                else
-                {
-                    if (buffer)
-                    {
-                        buffer->Release();
-                        buffer = nullptr;
-                    }
-                    DWORD bufferLength;
-                    hr = videoSample->ConvertToContiguousBuffer(&buffer);
-                    if (FAILED(hr))
-                    {
-                        VIDEO_API_MF_ERROR(ConvertToContiguousBuffer, hr);
-                        goto PROCESS_SAMPLE_END;
-                    }
-                    hr = buffer->GetCurrentLength(&bufferLength);
-                    if (FAILED(hr))
-                    {
-                        VIDEO_API_MF_ERROR(GetCurrentLength, hr);
-                        goto PROCESS_SAMPLE_END;
-                    }
-                    DWORD bufferMaxLen = 0, bufferCurrentLength = 0;
-                    hr = buffer->Lock(&bufferData, &bufferMaxLen, &bufferCurrentLength);
-                    if (FAILED(hr))
-                    {
-                        VIDEO_API_MF_ERROR(Lock, hr);
-                        goto PROCESS_SAMPLE_END;
-                    }
-                    bufferStride = bufferCurrentLength;
-                }
-
-                // Send pixels to the texture
-                player.UpdateVideoFrame(Span<byte>(bufferData, bufferStride), frameTime, franeDuration);
-
-                // Unlock sample buffer memory
-                if (buffer2D)
-                {
-                    hr = buffer2D->Unlock2D();
-                    if (FAILED(hr))
-                    {
-                        VIDEO_API_MF_ERROR(Unlock2D, hr);
-                    }
-                }
-                else
-                {
-                    hr = buffer->Unlock();
-                    if (FAILED(hr))
-                    {
-                        VIDEO_API_MF_ERROR(Unlock, hr);
-                    }
-                }
-
-            PROCESS_SAMPLE_END:
-                buffer->Release();
-            }
-            if (videoSample)
-                videoSample->Release();
-
-            if (flags & MF_SOURCE_READERF_ENDOFSTREAM)
-            {
-                // Media ended
-                break;
-            }
-            if (flags & MF_SOURCE_READERF_NATIVEMEDIATYPECHANGED || flags & MF_SOURCE_READERF_CURRENTMEDIATYPECHANGED)
-            {
-                // Format/metadata might have changed so update the stream
-                Configure(player, playerMF, streamIndex);
-            }
-
-            // End loop if got good sample or need to seek back
-            if (isGoodSample)
-                break;
-        }
-        if (samplesLeft == 0 && seeks < 2)
+        // Update streams
+        if (ReadStream(player, playerMF, MF_SOURCE_READER_FIRST_VIDEO_STREAM, dt))
         {
             // Failed to pick a valid sample so try again with seeking
             playerMF.Seek = 1;
             goto SEEK_START;
         }
+        if (player.AudioInfo.BitDepth != 0)
+            ReadStream(player, playerMF, MF_SOURCE_READER_FIRST_AUDIO_STREAM, dt);
     }
 }
 

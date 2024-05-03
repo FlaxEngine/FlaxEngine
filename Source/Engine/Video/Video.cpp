@@ -2,13 +2,13 @@
 
 #include "Video.h"
 #include "VideoBackend.h"
+#include "Engine/Audio/AudioBackend.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Engine/EngineService.h"
 #include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Graphics/GPUBuffer.h"
 #include "Engine/Graphics/GPUResource.h"
-#include "Engine/Graphics/GPUPipelineState.h"
 #include "Engine/Graphics/PixelFormatExtensions.h"
 #include "Engine/Graphics/RenderTools.h"
 #include "Engine/Graphics/Async/GPUTask.h"
@@ -186,7 +186,7 @@ void VideoBackendPlayer::InitVideoFrame()
         Frame = GPUDevice::Instance->CreateTexture(TEXT("VideoFrame"));
 }
 
-void VideoBackendPlayer::UpdateVideoFrame(Span<byte> frame, TimeSpan time, TimeSpan duration)
+void VideoBackendPlayer::UpdateVideoFrame(Span<byte> data, TimeSpan time, TimeSpan duration)
 {
     PROFILE_CPU();
     VideoFrameTime = time;
@@ -197,9 +197,9 @@ void VideoBackendPlayer::UpdateVideoFrame(Span<byte> frame, TimeSpan time, TimeS
     // Ensure that sampled frame data matches the target texture size
     uint32 rowPitch, slicePitch;
     RenderTools::ComputePitch(Format, VideoFrameWidth, VideoFrameHeight, rowPitch, slicePitch);
-    if (slicePitch != frame.Length())
+    if (slicePitch != data.Length())
     {
-        LOG(Warning, "Incorrect video frame stride {}, doesn't match stride {} of video {}x{} in format {}", frame.Length(), slicePitch, Width, Height, ScriptingEnum::ToString(Format));
+        LOG(Warning, "Incorrect video frame stride {}, doesn't match stride {} of video {}x{} in format {}", data.Length(), slicePitch, Width, Height, ScriptingEnum::ToString(Format));
         return;
     }
 
@@ -213,7 +213,7 @@ void VideoBackendPlayer::UpdateVideoFrame(Span<byte> frame, TimeSpan time, TimeS
             return;
         }
     }
-    Platform::MemoryCopy(VideoFrameMemory.Get(), frame.Get(), slicePitch);
+    Platform::MemoryCopy(VideoFrameMemory.Get(), data.Get(), slicePitch);
 
     // Update output frame texture
     InitVideoFrame();
@@ -235,8 +235,32 @@ void VideoBackendPlayer::UpdateVideoFrame(Span<byte> frame, TimeSpan time, TimeS
     }
 }
 
+void VideoBackendPlayer::UpdateAudioBuffer(Span<byte> data, TimeSpan time, TimeSpan duration)
+{
+    PROFILE_CPU();
+    AudioBufferTime = time;
+    AudioBufferDuration = duration;
+    auto start = time.GetTotalMilliseconds();
+    auto dur = duration.GetTotalMilliseconds();
+    auto end = (time + duration).GetTotalMilliseconds();
+    if (!AudioBackend::Instance)
+        return;
+
+    // Update audio buffer
+    if (!AudioBuffer)
+        AudioBuffer = AudioBackend::Buffer::Create();
+    AudioDataInfo dataInfo = AudioInfo;
+    const uint32 samplesPerSecond = dataInfo.SampleRate * dataInfo.NumChannels;
+    const uint32 maxSamplesInData = (uint32)data.Length() * 8 / dataInfo.BitDepth;
+    const uint32 maxSamplesInDuration = (uint32)Math::CeilToInt(samplesPerSecond * duration.GetTotalSeconds());
+    dataInfo.NumSamples = Math::Min(maxSamplesInData, maxSamplesInDuration);
+    AudioBackend::Buffer::Write(AudioBuffer, data.Get(), dataInfo);
+}
+
 void VideoBackendPlayer::ReleaseResources()
 {
+    if (AudioBuffer)
+        AudioBackend::Buffer::Delete(AudioBuffer);
     if (UploadVideoFrameTask)
         UploadVideoFrameTask->Cancel();
     VideoFrameMemory.Release();
