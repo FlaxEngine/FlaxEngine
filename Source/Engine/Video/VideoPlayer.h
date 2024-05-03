@@ -49,7 +49,7 @@ public:
     /// <summary>
     /// The video clip Url path used as a source of the media. Can be local file (absolute or relative path), or streamed resource ('http://').
     /// </summary>
-    API_FIELD(Attributes="EditorOrder(10), DefaultValue(\"\"), EditorDisplay(\"Video Player\")")
+    API_FIELD(Attributes="EditorOrder(10), DefaultValue(\"\"), EditorDisplay(\"Video Player\"), AssetReference(\".mp4\"), CustomEditorAlias(\"FlaxEditor.CustomEditors.Editors.FilePathEditor\")")
     String Url;
 
     /// <summary>

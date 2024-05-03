@@ -1471,5 +1471,27 @@ namespace FlaxEditor.Utilities
             inputActions.Add(options => options.GenerateScriptsProject, () => Editor.Instance.ProgressReporting.GenerateScriptsProjectFiles.RunAsync());
             inputActions.Add(options => options.RecompileScripts, ScriptsBuilder.Compile);
         }
+
+        internal static string ToPathProject(string path)
+        {
+            if (path != null)
+            {
+                // Convert into path relative to the project (cross-platform)
+                var projectFolder = Globals.ProjectFolder;
+                if (path.StartsWith(projectFolder))
+                    path = path.Substring(projectFolder.Length + 1);
+            }
+            return path;
+        }
+
+        internal static string ToPathAbsolute(string path)
+        {
+            if (path != null)
+            {
+                // Convert into global path to if relative to the project
+                path = StringUtils.IsRelative(path) ? Path.Combine(Globals.ProjectFolder, path) : path;
+            }
+            return path;
+        }
     }
 }

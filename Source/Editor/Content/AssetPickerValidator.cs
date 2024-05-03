@@ -1,3 +1,5 @@
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+
 using System;
 using System.IO;
 using FlaxEditor.Scripting;
@@ -94,30 +96,8 @@ public class AssetPickerValidator : IContentItemOwner
     /// </summary>
     public string SelectedPath
     {
-        get
-        {
-            string path = _selectedItem?.Path ?? _selected?.Path;
-            if (path != null)
-            {
-                // Convert into path relative to the project (cross-platform)
-                var projectFolder = Globals.ProjectFolder;
-                if (path.StartsWith(projectFolder))
-                    path = path.Substring(projectFolder.Length + 1);
-            }
-            return path;
-        }
-        set
-        {
-            if (string.IsNullOrEmpty(value))
-            {
-                SelectedItem = null;
-            }
-            else
-            {
-                var path = StringUtils.IsRelative(value) ? Path.Combine(Globals.ProjectFolder, value) : value;
-                SelectedItem = Editor.Instance.ContentDatabase.Find(path);
-            }
-        }
+        get => Utilities.Utils.ToPathProject(_selectedItem?.Path ?? _selected?.Path);
+        set => SelectedItem = string.IsNullOrEmpty(value) ? null : Editor.Instance.ContentDatabase.Find(Utilities.Utils.ToPathAbsolute(value));
     }
 
     /// <summary>
@@ -242,7 +222,7 @@ public class AssetPickerValidator : IContentItemOwner
     /// <summary>
     /// Initializes a new instance of the <see cref="AssetPickerValidator"/> class.
     /// </summary>
-    /// <param name="assetType">The assets types that this picker accepts.</param>
+    /// <param name="assetType">The asset types that this picker accepts.</param>
     public AssetPickerValidator(ScriptType assetType)
     {
         _type = assetType;

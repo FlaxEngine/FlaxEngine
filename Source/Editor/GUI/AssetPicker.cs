@@ -5,10 +5,8 @@ using System.IO;
 using FlaxEditor.Content;
 using FlaxEditor.GUI.Drag;
 using FlaxEditor.Scripting;
-using FlaxEditor.Utilities;
 using FlaxEngine;
 using FlaxEngine.GUI;
-using FlaxEngine.Utilities;
 
 namespace FlaxEditor.GUI
 {
