@@ -15,7 +15,6 @@ class AudioBackend
     friend class AudioService;
 
 public:
-
     enum class FeatureFlags
     {
         None = 0,
@@ -26,12 +25,10 @@ public:
     static AudioBackend* Instance;
 
 private:
-
     // Listener
-    virtual void Listener_OnAdd(AudioListener* listener) = 0;
-    virtual void Listener_OnRemove(AudioListener* listener) = 0;
-    virtual void Listener_VelocityChanged(AudioListener* listener) = 0;
-    virtual void Listener_TransformChanged(AudioListener* listener) = 0;
+    virtual void Listener_Reset() = 0;
+    virtual void Listener_VelocityChanged(const Vector3& velocity) = 0;
+    virtual void Listener_TransformChanged(const Vector3& position, const Quaternion& orientation) = 0;
     virtual void Listener_ReinitializeAll() = 0;
 
     // Source
@@ -73,35 +70,27 @@ private:
     virtual void Base_Dispose() = 0;
 
 public:
-
     virtual ~AudioBackend()
     {
     }
 
 public:
-
     class Listener
     {
     public:
-
-        FORCE_INLINE static void OnAdd(AudioListener* listener)
+        FORCE_INLINE static void Reset()
         {
-            Instance->Listener_OnAdd(listener);
+            Instance->Listener_Reset();
         }
 
-        FORCE_INLINE static void OnRemove(AudioListener* listener)
+        FORCE_INLINE static void VelocityChanged(const Vector3& velocity)
         {
-            Instance->Listener_OnRemove(listener);
+            Instance->Listener_VelocityChanged(velocity);
         }
 
-        FORCE_INLINE static void VelocityChanged(AudioListener* listener)
+        FORCE_INLINE static void TransformChanged(const Vector3& position, const Quaternion& orientation)
         {
-            Instance->Listener_VelocityChanged(listener);
-        }
-
-        FORCE_INLINE static void TransformChanged(AudioListener* listener)
-        {
-            Instance->Listener_TransformChanged(listener);
+            Instance->Listener_TransformChanged(position, orientation);
         }
 
         FORCE_INLINE static void ReinitializeAll()
@@ -113,7 +102,6 @@ public:
     class Source
     {
     public:
-
         FORCE_INLINE static void OnAdd(AudioSource* source)
         {
             Instance->Source_OnAdd(source);
@@ -223,7 +211,6 @@ public:
     class Buffer
     {
     public:
-
         FORCE_INLINE static uint32 Create()
         {
             return Instance->Buffer_Create();

@@ -65,13 +65,11 @@ namespace ALC
 
     namespace Listener
     {
-        void Rebuild(AudioListener* listener)
+        void Rebuild(const AudioListener* listener)
         {
-            AudioBackend::Listener::TransformChanged(listener);
-
-            const Float3 velocity = listener->GetVelocity();
-            alListener3f(AL_VELOCITY, FLAX_VEL_TO_OAL(velocity));
-            alListenerf(AL_GAIN, Audio::GetVolume());
+            AudioBackend::Listener::Reset();
+            AudioBackend::Listener::TransformChanged(listener->GetPosition(), listener->GetOrientation());
+            AudioBackend::Listener::VelocityChanged(listener->GetVelocity());
         }
     }
 
@@ -244,35 +242,24 @@ const Char* GetOpenALErrorString(int error)
     return TEXT("???");
 }
 
-void AudioBackendOAL::Listener_OnAdd(AudioListener* listener)
+void AudioBackendOAL::Listener_Reset()
 {
-    AudioBackend::Listener::TransformChanged(listener);
     alListenerf(AL_GAIN, Audio::GetVolume());
 }
 
-void AudioBackendOAL::Listener_OnRemove(AudioListener* listener)
+void AudioBackendOAL::Listener_VelocityChanged(const Vector3& velocity)
 {
-}
-
-void AudioBackendOAL::Listener_VelocityChanged(AudioListener* listener)
-{
-    const Float3 velocity = listener->GetVelocity();
     alListener3f(AL_VELOCITY, FLAX_VEL_TO_OAL(velocity));
 }
 
-void AudioBackendOAL::Listener_TransformChanged(AudioListener* listener)
+void AudioBackendOAL::Listener_TransformChanged(const Vector3& position, const Quaternion& orientation)
 {
-    const Float3 position = listener->GetPosition();
-    const Quaternion orientation = listener->GetOrientation();
     const Float3 flipX(-1, 1, 1);
     const Float3 alOrientation[2] =
     {
-        // Forward
         orientation * Float3::Forward * flipX,
-        // Up
         orientation * Float3::Up * flipX
     };
-
     alListenerfv(AL_ORIENTATION, (float*)alOrientation);
     alListener3f(AL_POSITION, FLAX_POS_TO_OAL(position));
 }

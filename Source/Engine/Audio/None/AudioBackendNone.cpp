@@ -6,19 +6,15 @@
 #include "Engine/Audio/Audio.h"
 #include "Engine/Audio/AudioSource.h"
 
-void AudioBackendNone::Listener_OnAdd(AudioListener* listener)
+void AudioBackendNone::Listener_Reset()
 {
 }
 
-void AudioBackendNone::Listener_OnRemove(AudioListener* listener)
+void AudioBackendNone::Listener_VelocityChanged(const Vector3& velocity)
 {
 }
 
-void AudioBackendNone::Listener_VelocityChanged(AudioListener* listener)
-{
-}
-
-void AudioBackendNone::Listener_TransformChanged(AudioListener* listener)
+void AudioBackendNone::Listener_TransformChanged(const Vector3& position, const Quaternion& orientation)
 {
 }
 

@@ -9,6 +9,7 @@
 AudioListener::AudioListener(const SpawnParams& params)
     : Actor(params)
     , _velocity(Vector3::Zero)
+    , _prevPos(Vector3::Zero)
 {
 }
 
@@ -27,7 +28,7 @@ void AudioListener::Update()
     _prevPos = pos;
     if (_velocity != prevVelocity)
     {
-        AudioBackend::Listener::VelocityChanged(this);
+        AudioBackend::Listener::VelocityChanged(_velocity);
     }
 }
 
@@ -68,6 +69,6 @@ void AudioListener::OnTransformChanged()
 
     if (IsActiveInHierarchy() && IsDuringPlay())
     {
-        AudioBackend::Listener::TransformChanged(this);
+        AudioBackend::Listener::TransformChanged(GetPosition(), GetOrientation());
     }
 }

@@ -2,6 +2,7 @@
 
 #include "Audio.h"
 #include "AudioBackend.h"
+#include "AudioListener.h"
 #include "AudioSettings.h"
 #include "FlaxEngine.Gen.h"
 #include "Engine/Scripting/ScriptingType.h"
@@ -159,14 +160,15 @@ void Audio::OnAddListener(AudioListener* listener)
     }
 
     Listeners.Add(listener);
-    AudioBackend::Listener::OnAdd(listener);
+    AudioBackend::Listener::Reset();
+    AudioBackend::Listener::TransformChanged(listener->GetPosition(), listener->GetOrientation());
 }
 
 void Audio::OnRemoveListener(AudioListener* listener)
 {
     if (!Listeners.Remove(listener))
     {
-        AudioBackend::Listener::OnRemove(listener);
+        AudioBackend::Listener::Reset();
     }
 }
 

@@ -12,12 +12,10 @@
 class AudioBackendNone : public AudioBackend
 {
 public:
-
     // [AudioBackend]
-    void Listener_OnAdd(AudioListener* listener) override;
-    void Listener_OnRemove(AudioListener* listener) override;
-    void Listener_VelocityChanged(AudioListener* listener) override;
-    void Listener_TransformChanged(AudioListener* listener) override;
+    void Listener_Reset() override;
+    void Listener_VelocityChanged(const Vector3& velocity) override;
+    void Listener_TransformChanged(const Vector3& position, const Quaternion& orientation) override;
     void Listener_ReinitializeAll() override;
     void Source_OnAdd(AudioSource* source) override;
     void Source_OnRemove(AudioSource* source) override;

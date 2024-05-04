@@ -21,6 +21,13 @@ public:
         Vector3 Velocity;
         Vector3 Position;
         Quaternion Orientation;
+
+        void Reset()
+        {
+            Velocity = Vector3::Zero;
+            Position = Vector3::Zero;
+            Orientation = Quaternion::Identity;
+        }
     };
 
     struct Source

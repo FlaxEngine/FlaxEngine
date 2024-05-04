@@ -9,7 +9,6 @@
 #include "Engine/Core/Log.h"
 #include "Engine/Audio/Audio.h"
 #include "Engine/Audio/AudioSource.h"
-#include "Engine/Audio/AudioListener.h"
 #include "Engine/Threading/Threading.h"
 
 #if PLATFORM_WINDOWS
@@ -42,33 +41,6 @@ namespace XAudio2
 {
     struct Listener : AudioBackendTools::Listener
     {
-        AudioListener* AudioListener;
-
-        Listener()
-        {
-            Init();
-        }
-
-        void Init()
-        {
-            AudioListener = nullptr;
-        }
-
-        bool IsFree() const
-        {
-            return AudioListener == nullptr;
-        }
-
-        void UpdateTransform()
-        {
-            Position = AudioListener->GetPosition();
-            Orientation = AudioListener->GetOrientation();
-        }
-
-        void UpdateVelocity()
-        {
-            Velocity = AudioListener->GetVelocity();
-        }
     };
 
     class VoiceCallback : public IXAudio2VoiceCallback
@@ -188,41 +160,17 @@ namespace XAudio2
     int32 Channels;
     bool ForceDirty = true;
     AudioBackendTools::Settings Settings;
-    Listener Listeners[AUDIO_MAX_LISTENERS];
+    Listener Listener;
     CriticalSection Locker;
     ChunkedArray<Source, 32> Sources;
     ChunkedArray<Buffer*, 64> Buffers; // TODO: use ChunkedArray for better performance or use buffers pool?
     EngineCallback Callback;
 
-    Listener* GetListener()
-    {
-        for (int32 i = 0; i < AUDIO_MAX_LISTENERS; i++)
-        {
-            if (Listeners[i].AudioListener)
-                return &Listeners[i];
-        }
-
-        return nullptr;
-    }
-
-    Listener* GetListener(const AudioListener* listener)
-    {
-        for (int32 i = 0; i < AUDIO_MAX_LISTENERS; i++)
-        {
-            if (Listeners[i].AudioListener == listener)
-                return &Listeners[i];
-        }
-
-        return nullptr;
-    }
-
     Source* GetSource(const AudioSource* source)
     {
         if (source->SourceID == 0)
             return nullptr;
-        const uint32 sourceId = source->SourceID;
-        // 0 is invalid ID so shift them
-        return &Sources[sourceId - 1];
+        return &Sources[source->SourceID - 1]; // 0 is invalid ID so shift them
     }
 
     void MarkAllDirty()
@@ -266,56 +214,23 @@ namespace XAudio2
     }
 }
 
-void AudioBackendXAudio2::Listener_OnAdd(AudioListener* listener)
+void AudioBackendXAudio2::Listener_Reset()
 {
-    // Get first free listener
-    XAudio2::Listener* aListener = nullptr;
-    for (int32 i = 0; i < AUDIO_MAX_LISTENERS; i++)
-    {
-        if (XAudio2::Listeners[i].IsFree())
-        {
-            aListener = &XAudio2::Listeners[i];
-            break;
-        }
-    }
-    ASSERT(aListener);
-
-    // Setup
-    aListener->AudioListener = listener;
-    aListener->UpdateTransform();
-    aListener->UpdateVelocity();
-
+    XAudio2::Listener->Reset();
     XAudio2::MarkAllDirty();
 }
 
-void AudioBackendXAudio2::Listener_OnRemove(AudioListener* listener)
+void AudioBackendXAudio2::Listener_VelocityChanged(const Vector3& velocity)
 {
-    XAudio2::Listener* aListener = XAudio2::GetListener(listener);
-    if (aListener)
-    {
-        aListener->Init();
-        XAudio2::MarkAllDirty();
-    }
+    XAudio2::Listener.Velocity = velocity;
+    XAudio2::MarkAllDirty();
 }
 
-void AudioBackendXAudio2::Listener_VelocityChanged(AudioListener* listener)
+void AudioBackendXAudio2::Listener_TransformChanged(const Vector3& position, const Quaternion& orientation)
 {
-    XAudio2::Listener* aListener = XAudio2::GetListener(listener);
-    if (aListener)
-    {
-        aListener->UpdateVelocity();
-        XAudio2::MarkAllDirty();
-    }
-}
-
-void AudioBackendXAudio2::Listener_TransformChanged(AudioListener* listener)
-{
-    XAudio2::Listener* aListener = XAudio2::GetListener(listener);
-    if (aListener)
-    {
-        aListener->UpdateTransform();
-        XAudio2::MarkAllDirty();
-    }
+    XAudio2::Listener.Position = position;
+    XAudio2::Listener.Orientation = orientation;
+    XAudio2::MarkAllDirty();
 }
 
 void AudioBackendXAudio2::Listener_ReinitializeAll()
