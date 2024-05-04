@@ -31,7 +31,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
                 var layer = layers[i];
                 if (string.IsNullOrEmpty(layer))
                     continue;
-                var property = layout.AddPropertyItem(layer);
+                var property = layout.AddPropertyItem($"{i}: {layer}");
                 var checkbox = property.Checkbox().CheckBox;
                 UpdateCheckbox(checkbox, i);
                 checkbox.Tag = i;
