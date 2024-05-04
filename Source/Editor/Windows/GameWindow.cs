@@ -470,6 +470,10 @@ namespace FlaxEditor.Windows
             IsMaximized = false;
             IsBorderless = false;
             Cursor = CursorType.Default;
+            Screen.CursorLock = CursorLockMode.None;
+            if (Screen.MainWindow.IsMouseTracking)
+                Screen.MainWindow.EndTrackingMouse();
+            RootControl.GameRoot.EndMouseCapture();
         }
 
         /// <inheritdoc />
@@ -478,7 +482,7 @@ namespace FlaxEditor.Windows
             base.OnMouseLeave();
 
             // Remove focus from game window when mouse moves out and the cursor is hidden during game
-            if ((IsFocused || ContainsFocus) && Parent != null && Editor.IsPlayMode && !Screen.CursorVisible)
+            if (ContainsFocus && Parent != null && Editor.IsPlayMode && !Screen.CursorVisible && Screen.CursorLock == CursorLockMode.None)
             {
                 Parent.Focus();
             }
