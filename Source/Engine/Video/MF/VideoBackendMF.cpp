@@ -254,16 +254,15 @@ namespace
                     bufferStride = bufferCurrentLength;
                 }
 
-                Span<byte> bufferSpan(bufferData, bufferStride);
                 if (isVideo)
                 {
                     // Send pixels to the texture
-                    player.UpdateVideoFrame(bufferSpan, frameTime, franeDuration);
+                    player.UpdateVideoFrame(Span<byte>(bufferData, bufferStride), frameTime, franeDuration);
                 }
                 else if (isAudio)
                 {
                     // Send PCM data
-                    player.UpdateAudioBuffer(bufferSpan, frameTime, franeDuration);
+                    player.UpdateAudioBuffer(Span<byte>(bufferData, bufferStride), frameTime, franeDuration);
                 }
 
                 // Unlock sample buffer memory

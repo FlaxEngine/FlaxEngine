@@ -218,9 +218,9 @@ namespace XAudio2
 
     Source* GetSource(const AudioSource* source)
     {
-        if (source->SourceIDs.Count() == 0)
+        if (source->SourceID == 0)
             return nullptr;
-        const AUDIO_SOURCE_ID_TYPE sourceId = source->SourceIDs[0];
+        const uint32 sourceId = source->SourceID;
         // 0 is invalid ID so shift them
         return &Sources[sourceId - 1];
     }
@@ -333,7 +333,7 @@ void AudioBackendXAudio2::Source_OnAdd(AudioSource* source)
 
     // Get first free source
     XAudio2::Source* aSource = nullptr;
-    AUDIO_SOURCE_ID_TYPE sourceID;
+    uint32 sourceID;
     for (int32 i = 0; i < XAudio2::Sources.Count(); i++)
     {
         if (XAudio2::Sources[i].IsFree())
@@ -377,8 +377,7 @@ void AudioBackendXAudio2::Source_OnAdd(AudioSource* source)
     if (FAILED(hr))
         return;
 
-    sourceID++; // 0 is invalid ID so shift them
-    source->SourceIDs.Add(sourceID);
+    source->SourceID = sourceID + 1; // 0 is invalid ID so shift them
 
     // Prepare source state
     aSource->Callback.Source = source;

@@ -32,7 +32,7 @@ bool AudioClip::StreamingTask::Run()
     {
         const auto idx = queue[i];
         uint32& bufferId = clip->Buffers[idx];
-        if (bufferId == AUDIO_BUFFER_ID_INVALID)
+        if (bufferId == 0)
         {
             bufferId = AudioBackend::Buffer::Create();
         }
@@ -40,7 +40,7 @@ bool AudioClip::StreamingTask::Run()
         {
             // Release unused data
             AudioBackend::Buffer::Delete(bufferId);
-            bufferId = AUDIO_BUFFER_ID_INVALID;
+            bufferId = 0;
         }
     }
 
@@ -267,7 +267,7 @@ Task* AudioClip::CreateStreamingTask(int32 residency)
     for (int32 i = 0; i < StreamingQueue.Count(); i++)
     {
         const int32 idx = StreamingQueue[i];
-        if (Buffers[idx] == AUDIO_BUFFER_ID_INVALID)
+        if (Buffers[idx] == 0)
         {
             const auto task = (Task*)RequestChunkDataAsync(idx);
             if (task)
@@ -383,8 +383,8 @@ Asset::LoadResult AudioClip::load()
 void AudioClip::unload(bool isReloading)
 {
     bool hasAnyBuffer = false;
-    for (const AUDIO_BUFFER_ID_TYPE bufferId : Buffers)
-        hasAnyBuffer |= bufferId != AUDIO_BUFFER_ID_INVALID;
+    for (const uint32 bufferId : Buffers)
+        hasAnyBuffer |= bufferId != 0;
 
     // Stop any audio sources that are using this clip right now
     // TODO: find better way to collect audio sources using audio clip and impl it for AudioStreamingHandler too
@@ -399,9 +399,9 @@ void AudioClip::unload(bool isReloading)
     StreamingQueue.Clear();
     if (hasAnyBuffer && AudioBackend::Instance)
     {
-        for (AUDIO_BUFFER_ID_TYPE bufferId : Buffers)
+        for (uint32 bufferId : Buffers)
         {
-            if (bufferId != AUDIO_BUFFER_ID_INVALID)
+            if (bufferId != 0)
                 AudioBackend::Buffer::Delete(bufferId);
         }
     }
@@ -414,7 +414,7 @@ bool AudioClip::WriteBuffer(int32 chunkIndex)
 {
     // Ignore if buffer is not created
     const uint32 bufferId = Buffers[chunkIndex];
-    if (bufferId == AUDIO_BUFFER_ID_INVALID)
+    if (bufferId == 0)
         return false;
 
     // Ensure audio backend exists

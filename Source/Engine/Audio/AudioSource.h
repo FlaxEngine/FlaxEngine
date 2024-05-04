@@ -8,7 +8,7 @@
 #include "Config.h"
 
 /// <summary>
-/// Represents a source for emitting audio. Audio can be played spatially (gun shot), or normally (music). Each audio source must have an AudioClip to play - back, and it can also have a position in the case of spatial(3D) audio.
+/// Represents a source for emitting audio. Audio can be played spatially (gun shot), or normally (music). Each audio source must have an AudioClip to play - back, and it can also have a position in the case of spatial (3D) audio.
 /// </summary>
 /// <remarks>
 /// Whether or not an audio source is spatial is controlled by the assigned AudioClip.The volume and the pitch of a spatial audio source is controlled by its position and the AudioListener's position/direction/velocity.
@@ -19,6 +19,7 @@ class FLAXENGINE_API AudioSource : public Actor
     DECLARE_SCENE_OBJECT(AudioSource);
     friend class AudioStreamingHandler;
     friend class AudioClip;
+
 public:
     /// <summary>
     /// Valid states in which AudioSource can be in.
@@ -66,9 +67,9 @@ private:
 
 public:
     /// <summary>
-    /// The internal IDs of this audio source used by the audio backend (unique ID per context/listener).
+    /// The internal ID of this audio source used by the audio backend. Empty if 0.
     /// </summary>
-    Array<AUDIO_SOURCE_ID_TYPE, FixedAllocation<AUDIO_MAX_LISTENERS>> SourceIDs;
+    uint32 SourceID = 0;
 
     /// <summary>
     /// The audio clip asset used as a source of the sound.
@@ -260,7 +261,7 @@ public:
     API_PROPERTY() void SetTime(float time);
 
     /// <summary>
-    /// Returns true if the sound source is three dimensional (volume and pitch varies based on listener distance and velocity).
+    /// Returns true if the sound source is three-dimensional (volume and pitch varies based on listener distance and velocity).
     /// </summary>
     API_PROPERTY() bool Is3D() const;
 

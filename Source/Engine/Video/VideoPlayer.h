@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "Engine/Core/Math/Vector2.h"
 #include "Engine/Level/Actor.h"
 #include "Engine/Content/AssetReference.h"
 #include "Types.h"

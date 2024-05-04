@@ -32,7 +32,7 @@ void AudioSource::SetVolume(float value)
     if (Math::NearEqual(_volume, value))
         return;
     _volume = value;
-    if (SourceIDs.HasItems())
+    if (SourceID)
         AudioBackend::Source::VolumeChanged(this);
 }
 
@@ -42,7 +42,7 @@ void AudioSource::SetPitch(float value)
     if (Math::NearEqual(_pitch, value))
         return;
     _pitch = value;
-    if (SourceIDs.HasItems())
+    if (SourceID)
         AudioBackend::Source::PitchChanged(this);
 }
 
@@ -52,7 +52,7 @@ void AudioSource::SetPan(float value)
     if (Math::NearEqual(_pan, value))
         return;
     _pan = value;
-    if (SourceIDs.HasItems())
+    if (SourceID)
         AudioBackend::Source::PanChanged(this);
 }
 
@@ -63,7 +63,7 @@ void AudioSource::SetIsLooping(bool value)
     _loop = value;
 
     // When streaming we handle looping manually by the proper buffers submission
-    if (SourceIDs.HasItems() && !UseStreaming())
+    if (SourceID && !UseStreaming())
         AudioBackend::Source::IsLoopingChanged(this);
 }
 
@@ -83,7 +83,7 @@ void AudioSource::SetMinDistance(float value)
     if (Math::NearEqual(_minDistance, value))
         return;
     _minDistance = value;
-    if (SourceIDs.HasItems())
+    if (SourceID)
         AudioBackend::Source::SpatialSetupChanged(this);
 }
 
@@ -93,7 +93,7 @@ void AudioSource::SetAttenuation(float value)
     if (Math::NearEqual(_attenuation, value))
         return;
     _attenuation = value;
-    if (SourceIDs.HasItems())
+    if (SourceID)
         AudioBackend::Source::SpatialSetupChanged(this);
 }
 
@@ -103,7 +103,7 @@ void AudioSource::SetDopplerFactor(float value)
     if (Math::NearEqual(_dopplerFactor, value))
         return;
     _dopplerFactor = value;
-    if (SourceIDs.HasItems())
+    if (SourceID)
         AudioBackend::Source::SpatialSetupChanged(this);
 }
 
@@ -112,7 +112,7 @@ void AudioSource::SetAllowSpatialization(bool value)
     if (_allowSpatialization == value)
         return;
     _allowSpatialization = value;
-    if (SourceIDs.HasItems())
+    if (SourceID)
         AudioBackend::Source::SpatialSetupChanged(this);
 }
 
@@ -152,7 +152,7 @@ void AudioSource::Play()
                 RequestStreamingBuffersUpdate();
         }
     }
-    else if (SourceIDs.HasItems())
+    else if (SourceID)
     {
         // Play it right away
         SetNonStreamingBuffer();
@@ -187,14 +187,13 @@ void AudioSource::Stop()
     _state = States::Stopped;
     _isActuallyPlayingSth = false;
     _streamingFirstChunk = 0;
-
-    if (SourceIDs.HasItems())
+    if (SourceID)
         AudioBackend::Source::Stop(this);
 }
 
 float AudioSource::GetTime() const
 {
-    if (_state == States::Stopped || SourceIDs.IsEmpty() || !Clip->IsLoaded())
+    if (_state == States::Stopped || SourceID == 0 || !Clip->IsLoaded())
         return 0.0f;
 
     float time = AudioBackend::Source::GetCurrentBufferTime(this);
@@ -265,10 +264,10 @@ void AudioSource::Cleanup()
     _savedTime = GetTime();
     Stop();
 
-    if (SourceIDs.HasItems())
+    if (SourceID)
     {
         AudioBackend::Source::Cleanup(this);
-        SourceIDs.Clear();
+        SourceID = 0;
     }
 }
 
@@ -283,7 +282,7 @@ void AudioSource::OnClipLoaded()
     AudioBackend::Source::ClipLoaded(this);
 
     // Start playing if source was waiting for the clip to load
-    if (SourceIDs.HasItems() && _state == States::Playing && !_isActuallyPlayingSth)
+    if (SourceID && _state == States::Playing && !_isActuallyPlayingSth)
     {
         if (Clip->IsStreamable())
         {
@@ -329,7 +328,7 @@ void AudioSource::SetNonStreamingBuffer()
 
 void AudioSource::PlayInternal()
 {
-    if (_clipChanged && SourceIDs.HasItems())
+    if (_clipChanged && SourceID != 0)
     {
         // If clip was changed between source setup (OnEnable) and actual playback start then ensure to flush any runtime properties with the audio backend
         _clipChanged = false;
@@ -420,13 +419,13 @@ void AudioSource::Update()
     }
 
     // Skip other update logic if it's not valid streamable source
-    if (!UseStreaming() || SourceIDs.IsEmpty())
+    if (!UseStreaming() || SourceID == 0)
         return;
     auto clip = Clip.Get();
     clip->Locker.Lock();
 
     // Handle streaming buffers queue submit (ensure that clip has loaded the first chunk with audio data)
-    if (_needToUpdateStreamingBuffers && clip->Buffers[_streamingFirstChunk] != AUDIO_BUFFER_ID_INVALID)
+    if (_needToUpdateStreamingBuffers && clip->Buffers[_streamingFirstChunk] != 0)
     {
         // Get buffers in a queue count
         int32 numQueuedBuffers;
@@ -434,11 +433,11 @@ void AudioSource::Update()
 
         // Queue missing buffers
         uint32 bufferId;
-        if (numQueuedBuffers < 1 && (bufferId = clip->Buffers[_streamingFirstChunk]) != AUDIO_BUFFER_ID_INVALID)
+        if (numQueuedBuffers < 1 && (bufferId = clip->Buffers[_streamingFirstChunk]) != 0)
         {
             AudioBackend::Source::QueueBuffer(this, bufferId);
         }
-        if (numQueuedBuffers < 2 && _streamingFirstChunk + 1 < clip->Buffers.Count() && (bufferId = clip->Buffers[_streamingFirstChunk + 1]) != AUDIO_BUFFER_ID_INVALID)
+        if (numQueuedBuffers < 2 && _streamingFirstChunk + 1 < clip->Buffers.Count() && (bufferId = clip->Buffers[_streamingFirstChunk + 1]) != 0)
         {
             AudioBackend::Source::QueueBuffer(this, bufferId);
         }
@@ -535,7 +534,7 @@ void AudioSource::OnTransformChanged()
     _box = BoundingBox(_transform.Translation);
     _sphere = BoundingSphere(_transform.Translation, 0.0f);
 
-    if (IsActiveInHierarchy() && SourceIDs.HasItems())
+    if (IsActiveInHierarchy() && SourceID)
     {
         AudioBackend::Source::TransformChanged(this);
     }

@@ -2,11 +2,11 @@
 
 #pragma once
 
+#include "Engine/Core/Core.h"
 #include "Engine/Core/Types/BaseTypes.h"
 #include "Engine/Core/Types/TimeSpan.h"
 #include "Engine/Core/Types/DataContainer.h"
 #include "Engine/Audio/Types.h"
-#include "Engine/Audio/Config.h"
 #include "Engine/Graphics/PixelFormat.h"
 
 class Video;
@@ -35,8 +35,8 @@ struct VideoBackendPlayer
     TimeSpan AudioBufferTime, AudioBufferDuration;
     AudioDataInfo AudioInfo;
     BytesContainer VideoFrameMemory;
-    AUDIO_BUFFER_ID_TYPE AudioBuffer;
-    AUDIO_SOURCE_ID_TYPE AudioSource;
+    uint32 AudioBuffer;
+    uint32 AudioSource;
     class GPUUploadVideoFrameTask* UploadVideoFrameTask;
     uintptr BackendState[8];
 
