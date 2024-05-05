@@ -586,8 +586,17 @@ namespace FlaxEngine.Interop
         internal static ManagedHandle GetArrayTypeFromElementType(ManagedHandle elementTypeHandle)
         {
             Type elementType = Unsafe.As<TypeHolder>(elementTypeHandle.Target);
-            Type classType = ArrayFactory.GetArrayType(elementType);
-            return GetTypeManagedHandle(classType);
+            Type arrayType = ArrayFactory.GetArrayType(elementType);
+            return GetTypeManagedHandle(arrayType);
+        }
+
+        [UnmanagedCallersOnly]
+        internal static ManagedHandle GetArrayTypeFromWrappedArray(ManagedHandle arrayHandle)
+        {
+            ManagedArray managedArray = Unsafe.As<ManagedArray>(arrayHandle.Target);
+            Type elementType = managedArray.ArrayType.GetElementType();
+            Type arrayType = ArrayFactory.GetArrayType(elementType);
+            return GetTypeManagedHandle(arrayType);
         }
 
         [UnmanagedCallersOnly]
