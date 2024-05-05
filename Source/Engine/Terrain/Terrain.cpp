@@ -12,6 +12,7 @@
 #include "Engine/Graphics/RenderView.h"
 #include "Engine/Graphics/RenderTask.h"
 #include "Engine/Graphics/Textures/GPUTexture.h"
+#include "Engine/Physics/PhysicsScene.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Renderer/GlobalSignDistanceFieldPass.h"
 #include "Engine/Renderer/GI/GlobalSurfaceAtlasPass.h"
@@ -807,6 +808,15 @@ void Terrain::OnEnable()
 #if TERRAIN_USE_PHYSICS_DEBUG
     GetSceneRendering()->AddPhysicsDebug<Terrain, &Terrain::DrawPhysicsDebug>(this);
 #endif
+    void* scene = GetPhysicsScene()->GetPhysicsScene();
+    for (int32 i = 0; i < _patches.Count(); i++)
+    {
+        auto patch = _patches[i];
+        if (patch->_physicsActor)
+        {
+            PhysicsBackend::AddSceneActor(scene, patch->_physicsActor);
+        }
+    }
 
     // Base
     Actor::OnEnable();

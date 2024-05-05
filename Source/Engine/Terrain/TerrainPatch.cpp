@@ -2126,7 +2126,8 @@ void TerrainPatch::CreateCollision()
     void* scene = _terrain->GetPhysicsScene()->GetPhysicsScene();
     _physicsActor = PhysicsBackend::CreateRigidStaticActor(nullptr, terrainTransform.LocalToWorld(_offset), terrainTransform.Orientation, scene);
     PhysicsBackend::AttachShape(_physicsShape, _physicsActor);
-    PhysicsBackend::AddSceneActor(scene, _physicsActor);
+    if (_terrain->IsDuringPlay())
+        PhysicsBackend::AddSceneActor(scene, _physicsActor);
 }
 
 bool TerrainPatch::CreateHeightField()
