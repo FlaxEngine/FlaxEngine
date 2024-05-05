@@ -242,7 +242,7 @@ namespace FlaxEditor.CustomEditors.GUI
             float namesWidth = _splitterValue * Width;
             int count = _element.Labels.Count;
             float[] yStarts = new float[count + 1];
-            for (int i = 1; i < count; i++)
+            for (int i = 0; i < count; i++)
             {
                 var label = _element.Labels[i];
 
@@ -258,7 +258,7 @@ namespace FlaxEditor.CustomEditors.GUI
             {
                 var label = _element.Labels[i];
 
-                var rect = new Rectangle(0, yStarts[i] + 1, namesWidth, yStarts[i + 1] - yStarts[i] - 2);
+                var rect = new Rectangle(0, yStarts[i], namesWidth, yStarts[i + 1] - yStarts[i] - 2);
                 //label.Parent = this;
                 label.Bounds = rect;
             }
