@@ -251,14 +251,18 @@ namespace FlaxEditor.CustomEditors.GUI
                 else if (_children.Count <= label.FirstChildControlIndex)
                     yStarts[i] = y;
                 else
+                {
                     yStarts[i] = _children[label.FirstChildControlIndex].Top;
+                    if (i == count - 1)
+                        yStarts[i + 1] = _children[label.FirstChildControlIndex].Bottom;
+                }
+                   
             }
-            yStarts[count] = y;
             for (int i = 0; i < count; i++)
             {
                 var label = _element.Labels[i];
 
-                var rect = new Rectangle(0, yStarts[i], namesWidth, yStarts[i + 1] - yStarts[i] - 2);
+                var rect = new Rectangle(0, yStarts[i] + 1, namesWidth, yStarts[i + 1] - yStarts[i] - 2);
                 //label.Parent = this;
                 label.Bounds = rect;
             }
