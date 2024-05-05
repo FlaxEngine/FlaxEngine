@@ -795,6 +795,12 @@ MClass* MCore::Array::GetClass(MClass* elementKlass)
     return FindClass(monoClass);
 }
 
+MClass* MCore::Array::GetArrayClass(const MArray* obj)
+{
+    CRASH; // Not applicable
+    return nullptr;
+}
+
 int32 MCore::Array::GetLength(const MArray* obj)
 {
     return (int32)mono_array_length((MonoArray*)obj);
