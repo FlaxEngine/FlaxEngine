@@ -97,11 +97,4 @@ public:
     /// </summary>
     /// <param name="value">The value.</param>
     API_PROPERTY() static void SetEnableHRTF(bool value);
-
-public:
-    static void OnAddListener(AudioListener* listener);
-    static void OnRemoveListener(AudioListener* listener);
-
-    static void OnAddSource(AudioSource* source);
-    static void OnRemoveSource(AudioSource* source);
 };

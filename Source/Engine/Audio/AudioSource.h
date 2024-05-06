@@ -55,7 +55,6 @@ private:
     bool _playOnStart;
     float _startTime;
     bool _allowSpatialization;
-    bool _clipChanged = false;
 
     bool _isActuallyPlayingSth = false;
     bool _needToUpdateStreamingBuffers = false;
@@ -270,11 +269,6 @@ public:
     /// </summary>
     API_PROPERTY() bool UseStreaming() const;
 
-    /// <summary>
-    /// Restores the saved time position and resumes/pauses the playback based on the state before. Used to restore audio source state after data rebuild (eg. by audio backend).
-    /// </summary>
-    void Restore();
-
 public:
     /// <summary>
     /// Determines whether this audio source started playing audio via audio backend. After audio play it may wait for audio clip data to be loaded or streamed.
@@ -289,19 +283,9 @@ public:
     /// </summary>
     void RequestStreamingBuffersUpdate();
 
-    /// <summary>
-    /// Cleanups the cached data. Called by the Audio manager.
-    /// </summary>
-    void Cleanup();
-
 private:
     void OnClipChanged();
     void OnClipLoaded();
-
-    /// <summary>
-    /// Sets the single buffer from the audio clip that is not using dynamic streaming
-    /// </summary>
-    void SetNonStreamingBuffer();
 
     /// <summary>
     /// Plays the audio source. Should have buffer(s) binded before.

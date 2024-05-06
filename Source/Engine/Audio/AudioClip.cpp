@@ -31,16 +31,16 @@ bool AudioClip::StreamingTask::Run()
     for (int32 i = 0; i < queue.Count(); i++)
     {
         const auto idx = queue[i];
-        uint32& bufferId = clip->Buffers[idx];
-        if (bufferId == 0)
+        uint32& bufferID = clip->Buffers[idx];
+        if (bufferID == 0)
         {
-            bufferId = AudioBackend::Buffer::Create();
+            bufferID = AudioBackend::Buffer::Create();
         }
         else
         {
             // Release unused data
-            AudioBackend::Buffer::Delete(bufferId);
-            bufferId = 0;
+            AudioBackend::Buffer::Delete(bufferID);
+            bufferID = 0;
         }
     }
 
@@ -383,8 +383,8 @@ Asset::LoadResult AudioClip::load()
 void AudioClip::unload(bool isReloading)
 {
     bool hasAnyBuffer = false;
-    for (const uint32 bufferId : Buffers)
-        hasAnyBuffer |= bufferId != 0;
+    for (const uint32 bufferID : Buffers)
+        hasAnyBuffer |= bufferID != 0;
 
     // Stop any audio sources that are using this clip right now
     // TODO: find better way to collect audio sources using audio clip and impl it for AudioStreamingHandler too
@@ -399,10 +399,10 @@ void AudioClip::unload(bool isReloading)
     StreamingQueue.Clear();
     if (hasAnyBuffer && AudioBackend::Instance)
     {
-        for (uint32 bufferId : Buffers)
+        for (uint32 bufferID : Buffers)
         {
-            if (bufferId != 0)
-                AudioBackend::Buffer::Delete(bufferId);
+            if (bufferID != 0)
+                AudioBackend::Buffer::Delete(bufferID);
         }
     }
     Buffers.Clear();
@@ -413,8 +413,8 @@ void AudioClip::unload(bool isReloading)
 bool AudioClip::WriteBuffer(int32 chunkIndex)
 {
     // Ignore if buffer is not created
-    const uint32 bufferId = Buffers[chunkIndex];
-    if (bufferId == 0)
+    const uint32 bufferID = Buffers[chunkIndex];
+    if (bufferID == 0)
         return false;
 
     // Ensure audio backend exists
@@ -475,6 +475,6 @@ bool AudioClip::WriteBuffer(int32 chunkIndex)
     }
 
     // Write samples to the audio buffer
-    AudioBackend::Buffer::Write(bufferId, data.Get(), info);
+    AudioBackend::Buffer::Write(bufferID, data.Get(), info);
     return false;
 }

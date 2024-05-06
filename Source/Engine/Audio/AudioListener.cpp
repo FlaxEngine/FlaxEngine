@@ -3,6 +3,7 @@
 #include "AudioListener.h"
 #include "Engine/Engine/Time.h"
 #include "Engine/Level/Scene/Scene.h"
+#include "Engine/Core/Log.h"
 #include "AudioBackend.h"
 #include "Audio.h"
 
@@ -36,9 +37,18 @@ void AudioListener::OnEnable()
 {
     _prevPos = GetPosition();
     _velocity = Vector3::Zero;
-
-    Audio::OnAddListener(this);
-    GetScene()->Ticking.Update.AddTick<AudioListener, &AudioListener::Update>(this);
+    if (Audio::Listeners.Count() >= AUDIO_MAX_LISTENERS)
+    {
+        LOG(Error, "Unsupported amount of the audio listeners!");
+    }
+    else
+    {
+        ASSERT(!Audio::Listeners.Contains(this));
+        Audio::Listeners.Add(this);
+        AudioBackend::Listener::Reset();
+        AudioBackend::Listener::TransformChanged(GetPosition(), GetOrientation());
+        GetScene()->Ticking.Update.AddTick<AudioListener, &AudioListener::Update>(this);
+    }
 #if USE_EDITOR
     GetSceneRendering()->AddViewportIcon(this);
 #endif
@@ -52,8 +62,11 @@ void AudioListener::OnDisable()
 #if USE_EDITOR
     GetSceneRendering()->RemoveViewportIcon(this);
 #endif
-    GetScene()->Ticking.Update.RemoveTick(this);
-    Audio::OnRemoveListener(this);
+    if (!Audio::Listeners.Remove(this))
+    {
+        GetScene()->Ticking.Update.RemoveTick(this);
+        AudioBackend::Listener::Reset();
+    }
 
     // Base
     Actor::OnDisable();
