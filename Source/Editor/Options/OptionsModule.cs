@@ -255,6 +255,17 @@ namespace FlaxEditor.Options
                 }
             }
 
+            // Ensure custom fonts are valid, reset if not
+            var defaultInterfaceOptions = new InterfaceOptions();
+            if (Style.Current.FontTitle == null)
+                Style.Current.FontTitle = defaultInterfaceOptions.TitleFont.GetFont();
+            if (Style.Current.FontSmall == null)
+                Style.Current.FontSmall = defaultInterfaceOptions.SmallFont.GetFont();
+            if (Style.Current.FontMedium == null)
+                Style.Current.FontMedium = defaultInterfaceOptions.MediumFont.GetFont();
+            if (Style.Current.FontLarge == null)
+                Style.Current.FontLarge = defaultInterfaceOptions.LargeFont.GetFont();
+
             // Set fallback fonts
             var fallbackFonts = Options.Interface.FallbackFonts;
             if (fallbackFonts == null || fallbackFonts.Length == 0 || fallbackFonts.All(x => x == null))
