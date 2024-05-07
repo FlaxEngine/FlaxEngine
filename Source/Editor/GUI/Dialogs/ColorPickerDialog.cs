@@ -264,6 +264,7 @@ namespace FlaxEditor.GUI.Dialogs
                     {
                         Text = "+",
                         Parent = this,
+                        TooltipText = "Save Color.",
                         Tag = null,
                     };
                     savedColorButton.ButtonClicked += (b) => OnSavedColorButtonClicked(b);
@@ -498,6 +499,7 @@ namespace FlaxEditor.GUI.Dialogs
                 {
                     Text = "+",
                     Parent = this,
+                    TooltipText = "Save Color.",
                     Tag = null,
                 };
                 savedColorButton.ButtonClicked += (b) => OnSavedColorButtonClicked(b);
