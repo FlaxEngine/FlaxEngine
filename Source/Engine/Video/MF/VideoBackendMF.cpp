@@ -162,22 +162,58 @@ namespace
 
     bool ReadStream(VideoBackendPlayer& player, VideoPlayerMF& playerMF, DWORD streamIndex, TimeSpan dt)
     {
+        PROFILE_CPU_NAMED("ReadStream");
+        ZoneText(player.DebugUrl, player.DebugUrlLen);
         const bool isVideo = streamIndex == MF_SOURCE_READER_FIRST_VIDEO_STREAM;
         const bool isAudio = streamIndex == MF_SOURCE_READER_FIRST_AUDIO_STREAM;
-        const TimeSpan lastFrameTime = isVideo ? player.VideoFrameTime : player.AudioBufferTime;
-        const TimeSpan lastFrameDuration = isVideo ? player.VideoFrameDuration : player.AudioBufferDuration;
-
-        // Check if the current frame is valid (eg. when playing 24fps video at 60fps)
-        if (lastFrameDuration.Ticks > 0 &&
-            Math::IsInRange(playerMF.Time, lastFrameTime, lastFrameTime + lastFrameDuration))
+        int32 goodSamples = 1;
+        TimeSpan validTimeRangeStart(0), validTimeRangeEnd(0);
+        if (isAudio)
         {
-            return false;
+            constexpr int32 AudioFramesQueue = 10; // How many frames to read into the audio buffers queue in advance (to improve audio playback smoothness)
+            if (player.AudioBufferDuration.Ticks == 0)
+            {
+                // Read more samples for audio to enqueue multiple audio buffers for smoother playback
+                goodSamples = AudioFramesQueue;
+            }
+            else
+            {
+                // Skip reading if the last sample was already over this range (we've got enough in a queue)
+                validTimeRangeStart = player.AudioBufferTime - player.AudioBufferDuration * AudioFramesQueue;
+                validTimeRangeEnd = validTimeRangeStart + player.AudioBufferDuration;
+                if (Math::IsInRange(playerMF.Time, validTimeRangeStart, validTimeRangeEnd))
+                {
+                    return false;
+                }
+
+                // Allow to read future samples within queue range
+                validTimeRangeStart = player.AudioBufferTime - player.AudioBufferDuration;
+                validTimeRangeEnd = player.AudioBufferTime + player.AudioBufferDuration * AudioFramesQueue;
+
+                // Read more samples to keep queue at capacity
+                TimeSpan targetQueueEnd = playerMF.Time + player.AudioBufferDuration * AudioFramesQueue;
+                TimeSpan activeBufferEnd = player.AudioBufferTime + player.AudioBufferDuration;
+                TimeSpan missingQueueDuration = targetQueueEnd - activeBufferEnd;
+                goodSamples = (int32)Math::DivideAndRoundUp(missingQueueDuration.Ticks, player.AudioBufferDuration.Ticks);
+                if (goodSamples < 1)
+                    goodSamples = 1;
+            }
+        }
+        else if (isVideo)
+        {
+            // Check if the current frame is valid (eg. when playing 24fps video at 60fps)
+            if (player.VideoFrameDuration.Ticks > 0 &&
+                Math::IsInRange(playerMF.Time, player.VideoFrameTime, player.VideoFrameTime + player.VideoFrameDuration))
+            {
+                return false;
+            }
         }
 
         // Read samples until frame is matching the current time
         int32 samplesLeft = 500;
+        int32 goodSamplesLeft = goodSamples;
         HRESULT hr;
-        for (; samplesLeft > 0; samplesLeft--)
+        for (; samplesLeft > 0 && goodSamplesLeft > 0; samplesLeft--)
         {
             // Read sample
             DWORD flags = 0;
@@ -199,7 +235,11 @@ namespace
                 franeDuration.Ticks = sampleDuration;
             }
             //const int32 framesToTime = (playerMF.Time.Ticks - frameTime.Ticks) / franeDuration.Ticks;
-            const bool isGoodSample = Math::IsInRange(playerMF.Time, frameTime, frameTime + franeDuration);
+            bool isGoodSample = goodSamples != goodSamplesLeft; // If we've reached good frame, then use following frames too
+            if (validTimeRangeStart.Ticks != 0)
+                isGoodSample |= Math::IsInRange(frameTime, validTimeRangeStart, validTimeRangeEnd); // Ensure frame hits the valid range
+            else
+                isGoodSample |= Math::IsInRange(playerMF.Time, frameTime, frameTime + franeDuration); // Ensure current time hits this frame range
 
             // Process sample
             if (sample && isGoodSample)
@@ -288,6 +328,8 @@ namespace
             }
             if (sample)
                 sample->Release();
+            if (isGoodSample)
+                goodSamplesLeft--;
 
             if (flags & MF_SOURCE_READERF_ENDOFSTREAM)
             {
@@ -299,10 +341,6 @@ namespace
                 // Format/metadata might have changed so update the stream
                 Configure(player, playerMF, streamIndex);
             }
-
-            // End loop if got good sample or need to seek back
-            if (isGoodSample)
-                break;
         }
 
         // True if run out of samples and failed to get frame for the current time
@@ -354,6 +392,7 @@ bool VideoBackendMF::Player_Create(const VideoBackendPlayerInfo& info, VideoBack
     player.Backend = this;
     playerMF.Loop = info.Loop;
     playerMF.FirstFrame = 1;
+    player.Created(info);
     Players.Add(&player);
 
     return false;
@@ -493,6 +532,9 @@ void VideoBackendMF::Base_Update()
     SEEK_START:
         if (playerMF.Seek)
         {
+            // Reset cached frames timings
+            player.VideoFrameDuration = player.AudioBufferDuration = TimeSpan::Zero();
+
             seeks++;
             playerMF.Seek = 0;
             PROPVARIANT var;

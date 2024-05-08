@@ -4,6 +4,7 @@
 #include "VideoBackend.h"
 #include "Engine/Audio/AudioBackend.h"
 #include "Engine/Core/Log.h"
+#include "Engine/Core/Math/Quaternion.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Engine/EngineService.h"
 #include "Engine/Graphics/GPUDevice.h"
@@ -50,6 +51,8 @@ protected:
         GPUTexture* frame = _player->Frame;
         if (!frame->IsAllocated())
             return Result::MissingResources;
+        PROFILE_CPU();
+        ZoneText(_player->DebugUrl, _player->DebugUrlLen);
 
         if (PixelFormatExtensions::IsVideo(_player->Format))
         {
@@ -178,6 +181,15 @@ bool Video::CreatePlayerBackend(const VideoBackendPlayerInfo& info, VideoBackend
     return true;
 }
 
+void VideoBackendPlayer::Created(const VideoBackendPlayerInfo& info)
+{
+#ifdef TRACY_ENABLE
+    DebugUrlLen = info.Url.Length();
+    DebugUrl = (Char*)Allocator::Allocate(DebugUrlLen * sizeof(Char) + 2);
+    Platform::MemoryCopy(DebugUrl, *info.Url, DebugUrlLen * 2 + 2);
+#endif
+}
+
 void VideoBackendPlayer::InitVideoFrame()
 {
     if (!GPUDevice::Instance)
@@ -189,6 +201,7 @@ void VideoBackendPlayer::InitVideoFrame()
 void VideoBackendPlayer::UpdateVideoFrame(Span<byte> data, TimeSpan time, TimeSpan duration)
 {
     PROFILE_CPU();
+    ZoneText(DebugUrl, DebugUrlLen);
     VideoFrameTime = time;
     VideoFrameDuration = duration;
     if (!GPUDevice::Instance || GPUDevice::Instance->GetRendererType() == RendererType::Null)
@@ -238,32 +251,79 @@ void VideoBackendPlayer::UpdateVideoFrame(Span<byte> data, TimeSpan time, TimeSp
 void VideoBackendPlayer::UpdateAudioBuffer(Span<byte> data, TimeSpan time, TimeSpan duration)
 {
     PROFILE_CPU();
+    ZoneText(DebugUrl, DebugUrlLen);
     AudioBufferTime = time;
     AudioBufferDuration = duration;
-    auto start = time.GetTotalMilliseconds();
-    auto dur = duration.GetTotalMilliseconds();
-    auto end = (time + duration).GetTotalMilliseconds();
     if (!AudioBackend::Instance)
         return;
 
+    // Setup audio source
+    bool newSource = AudioSource == 0;
+    if (newSource)
+    {
+        // TODO: spatial video player
+        // TODO: video player volume/pan control
+        AudioSource = AudioBackend::Source::Add(AudioInfo, Vector3::Zero, Quaternion::Identity, 1.0f, 1.0f, 0.0f, false, false, 1.0f, 1000.0f, 1.0f);
+    }
+    else
+    {
+        // Get the processed buffers count
+        int32 numProcessedBuffers = 0;
+        AudioBackend::Source::GetProcessedBuffersCount(AudioSource, numProcessedBuffers);
+        if (numProcessedBuffers > 0)
+        {
+            // Unbind processed buffers from the source
+            AudioBackend::Source::DequeueProcessedBuffers(AudioSource);
+        }
+    }
+
+    // Get audio buffer
+    uint32 bufferId = AudioBuffers[NextAudioBuffer];
+    if (bufferId == 0)
+    {
+        bufferId = AudioBackend::Buffer::Create();
+        AudioBuffers[NextAudioBuffer] = bufferId;
+    }
+    NextAudioBuffer = (NextAudioBuffer + 1) % ARRAY_COUNT(AudioBuffers);
+
     // Update audio buffer
-    if (!AudioBuffer)
-        AudioBuffer = AudioBackend::Buffer::Create();
     AudioDataInfo dataInfo = AudioInfo;
     const uint32 samplesPerSecond = dataInfo.SampleRate * dataInfo.NumChannels;
     const uint32 maxSamplesInData = (uint32)data.Length() * 8 / dataInfo.BitDepth;
     const uint32 maxSamplesInDuration = (uint32)Math::CeilToInt(samplesPerSecond * duration.GetTotalSeconds());
     dataInfo.NumSamples = Math::Min(maxSamplesInData, maxSamplesInDuration);
-    AudioBackend::Buffer::Write(AudioBuffer, data.Get(), dataInfo);
+    AudioBackend::Buffer::Write(bufferId, data.Get(), dataInfo);
+
+    // Append audio buffer
+    AudioBackend::Source::QueueBuffer(AudioSource, bufferId);
+    if (newSource)
+    {
+        AudioBackend::Source::Play(AudioSource);
+    }
 }
 
 void VideoBackendPlayer::ReleaseResources()
 {
-    if (AudioBuffer)
-        AudioBackend::Buffer::Delete(AudioBuffer);
+    if (AudioSource)
+    {
+        AudioBackend::Source::Stop(AudioSource);
+        AudioBackend::Source::Remove(AudioSource);
+        AudioSource = 0;
+    }
+    for (uint32& bufferId : AudioBuffers)
+    {
+        if (bufferId)
+        {
+            AudioBackend::Buffer::Delete(bufferId);
+            bufferId = 0;
+        }
+    }
     if (UploadVideoFrameTask)
         UploadVideoFrameTask->Cancel();
     VideoFrameMemory.Release();
     SAFE_DELETE_GPU_RESOURCE(Frame);
     SAFE_DELETE_GPU_RESOURCE(FrameUpload);
+#ifdef TRACY_ENABLE
+    Allocator::Free(DebugUrl);
+#endif
 }
