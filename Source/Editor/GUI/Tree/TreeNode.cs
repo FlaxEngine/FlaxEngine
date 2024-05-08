@@ -729,7 +729,7 @@ namespace FlaxEditor.GUI.Tree
 
                 // Try to estimate the rough location of the first node, assuming the node height is constant
                 var firstChildGlobalRect = GetChildGlobalRectangle(children[0], ref globalTransform);
-                var firstVisibleChild = Math.Clamp((int)Math.Floor((globalClipping.Y - firstChildGlobalRect.Top) / firstChildGlobalRect.Height) + 1, 0, children.Count - 1);
+                var firstVisibleChild = Math.Clamp((int)Math.Floor((globalClipping.Y - firstChildGlobalRect.Top) / _headerHeight) + 1, 0, children.Count - 1);
                 if (GetChildGlobalRectangle(children[firstVisibleChild], ref globalTransform).Top > globalClipping.Top || !children[firstVisibleChild].Visible)
                 {
                     // Estimate overshoot, either it's partially visible or hidden in the tree
