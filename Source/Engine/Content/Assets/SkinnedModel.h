@@ -323,7 +323,7 @@ public:
     void InitAsVirtual() override;
     void CancelStreaming() override;
 #if USE_EDITOR
-    void GetReferences(Array<Guid>& output) const override;
+    void GetReferences(Array<Guid>& assets, Array<String>& files) const override;
 #endif
 
     // [StreamableResource]

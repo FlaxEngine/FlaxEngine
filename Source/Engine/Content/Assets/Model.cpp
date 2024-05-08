@@ -788,15 +788,13 @@ void Model::CancelStreaming()
 
 #if USE_EDITOR
 
-void Model::GetReferences(Array<Guid>& output) const
+void Model::GetReferences(Array<Guid>& assets, Array<String>& files) const
 {
     // Base
-    BinaryAsset::GetReferences(output);
+    BinaryAsset::GetReferences(assets, files);
 
     for (int32 i = 0; i < MaterialSlots.Count(); i++)
-    {
-        output.Add(MaterialSlots[i].Material.GetID());
-    }
+        assets.Add(MaterialSlots[i].Material.GetID());
 }
 
 #endif

@@ -109,20 +109,20 @@ uint64 JsonAssetBase::GetMemoryUsage() const
 
 #if USE_EDITOR
 
-void FindIds(ISerializable::DeserializeStream& node, Array<Guid>& output)
+void FindIds(ISerializable::DeserializeStream& node, Array<Guid>& output, Array<String>& files)
 {
     if (node.IsObject())
     {
         for (auto i = node.MemberBegin(); i != node.MemberEnd(); ++i)
         {
-            FindIds(i->value, output);
+            FindIds(i->value, output, files);
         }
     }
     else if (node.IsArray())
     {
         for (rapidjson::SizeType i = 0; i < node.Size(); i++)
         {
-            FindIds(node[i], output);
+            FindIds(node[i], output, files);
         }
     }
     else if (node.IsString())
@@ -137,13 +137,14 @@ void FindIds(ISerializable::DeserializeStream& node, Array<Guid>& output)
     }
 }
 
-void JsonAssetBase::GetReferences(const StringAnsiView& json, Array<Guid>& output)
+void JsonAssetBase::GetReferences(const StringAnsiView& json, Array<Guid>& assets)
 {
     ISerializable::SerializeDocument document;
     document.Parse(json.Get(), json.Length());
     if (document.HasParseError())
         return;
-    FindIds(document, output);
+    Array<String> files;
+    FindIds(document, assets, files);
 }
 
 bool JsonAssetBase::Save(const StringView& path) const
@@ -207,7 +208,7 @@ bool JsonAssetBase::Save(JsonWriter& writer) const
     return false;
 }
 
-void JsonAssetBase::GetReferences(Array<Guid>& output) const
+void JsonAssetBase::GetReferences(Array<Guid>& assets, Array<String>& files) const
 {
     if (Data == nullptr)
         return;
@@ -219,7 +220,7 @@ void JsonAssetBase::GetReferences(Array<Guid>& output) const
     // It produces many invalid ids (like refs to scene objects).
     // But it's super fast, super low-memory and doesn't involve any advanced systems integration.
 
-    FindIds(*Data, output);
+    FindIds(*Data, assets, files);
 }
 
 #endif

@@ -75,16 +75,16 @@ bool SceneAnimation::SaveTimeline(const BytesContainer& data)
 
 #if USE_EDITOR
 
-void SceneAnimation::GetReferences(Array<Guid>& output) const
+void SceneAnimation::GetReferences(Array<Guid>& assets, Array<String>& files) const
 {
     // Base
-    BinaryAsset::GetReferences(output);
+    BinaryAsset::GetReferences(assets, files);
 
     for (int32 i = 0; i < Tracks.Count(); i++)
     {
         const auto& track = Tracks[i];
         if (track.Asset)
-            output.Add(track.Asset->GetID());
+            assets.Add(track.Asset->GetID());
     }
 }
 

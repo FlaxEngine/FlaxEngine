@@ -172,12 +172,10 @@ public:
 public:
     // [BinaryAsset]
 #if USE_EDITOR
-    void GetReferences(Array<Guid>& output) const override
+    void GetReferences(Array<Guid>& assets, Array<String>& files) const override
     {
-        // Base
-        BinaryAsset::GetReferences(output);
-
-        Graph.GetReferences(output);
+        BinaryAsset::GetReferences(assets, files);
+        Graph.GetReferences(assets);
     }
 #endif
 

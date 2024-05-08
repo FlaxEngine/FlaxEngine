@@ -1042,12 +1042,12 @@ void MaterialParams::Save(BytesContainer& data, const Array<SerializedMaterialPa
 
 #if USE_EDITOR
 
-void MaterialParams::GetReferences(Array<Guid>& output) const
+void MaterialParams::GetReferences(Array<Guid>& assets) const
 {
     for (int32 i = 0; i < Count(); i++)
     {
         if (At(i)._asAsset)
-            output.Add(At(i)._asAsset->GetID());
+            assets.Add(At(i)._asAsset->GetID());
     }
 }
 

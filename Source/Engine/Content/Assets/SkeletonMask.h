@@ -68,12 +68,10 @@ private:
 public:
     // [BinaryAsset]
 #if USE_EDITOR
-    void GetReferences(Array<Guid>& output) const override
+    void GetReferences(Array<Guid>& assets, Array<String>& files) const override
     {
-        // Base
-        BinaryAsset::GetReferences(output);
-
-        output.Add(Skeleton.GetID());
+        BinaryAsset::GetReferences(assets, files);
+        assets.Add(Skeleton.GetID());
     }
 #endif
 
