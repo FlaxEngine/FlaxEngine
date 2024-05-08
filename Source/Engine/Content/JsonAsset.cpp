@@ -125,14 +125,26 @@ void FindIds(ISerializable::DeserializeStream& node, Array<Guid>& output, Array<
             FindIds(node[i], output, files);
         }
     }
-    else if (node.IsString())
+    else if (node.IsString() && node.GetStringLength() != 0)
     {
         if (node.GetStringLength() == 32)
         {
             // Try parse as Guid in format `N` (32 hex chars)
             Guid id;
             if (!Guid::Parse(node.GetStringAnsiView(), id))
+            {
                 output.Add(id);
+                return;
+            }
+        }
+        if (node.GetStringLength() < 512)
+        {
+            // Try to detect file paths
+            String path = node.GetText();
+            if (FileSystem::FileExists(path))
+            {
+                files.Add(MoveTemp(path));
+            }
         }
     }
 }

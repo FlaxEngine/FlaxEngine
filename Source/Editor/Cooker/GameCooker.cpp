@@ -202,13 +202,6 @@ bool CookingData::AssetTypeStatistics::operator<(const AssetTypeStatistics& othe
     return Count > other.Count;
 }
 
-CookingData::Statistics::Statistics()
-{
-    TotalAssets = 0;
-    CookedAssets = 0;
-    ContentSizeMB = 0;
-}
-
 CookingData::CookingData(const SpawnParams& params)
     : ScriptingObject(params)
 {

@@ -29,7 +29,7 @@ bool CollectAssetsStep::Perform(CookingData& data)
     while (assetsQueue.HasItems())
     {
         BUILD_STEP_CANCEL_CHECK;
-        const auto assetId = assetsQueue.Dequeue();
+        const Guid assetId = assetsQueue.Dequeue();
 
         // Skip already processed or invalid assets
         if (!assetId.IsValid()
@@ -68,6 +68,11 @@ bool CollectAssetsStep::Perform(CookingData& data)
         asset->GetReferences(references, files);
         asset->Locker.Unlock();
         assetsQueue.Add(references);
+        for (String& file : files)
+        {
+            if (file.HasChars())
+                data.Files.Add(MoveTemp(file));
+        }
     }
 
     data.Stats.TotalAssets = data.Assets.Count();
