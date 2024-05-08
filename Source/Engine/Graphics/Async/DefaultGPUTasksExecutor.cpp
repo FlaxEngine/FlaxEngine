@@ -5,6 +5,7 @@
 #include "GPUTask.h"
 #include "GPUTasksManager.h"
 #include "Engine/Graphics/GPUDevice.h"
+#include "Engine/Profiler/ProfilerCPU.h"
 
 DefaultGPUTasksExecutor::DefaultGPUTasksExecutor()
     : _context(nullptr)
@@ -18,6 +19,8 @@ String DefaultGPUTasksExecutor::ToString() const
 
 void DefaultGPUTasksExecutor::FrameBegin()
 {
+    PROFILE_CPU();
+
     // Ensure to have valid async context
     if (_context == nullptr)
         _context = createContext();
@@ -35,6 +38,7 @@ void DefaultGPUTasksExecutor::FrameBegin()
 
 void DefaultGPUTasksExecutor::FrameEnd()
 {
+    PROFILE_CPU();
     ASSERT(_context != nullptr);
     _context->OnFrameEnd();
 }
