@@ -365,7 +365,7 @@ bool AndroidPlatformTools::OnPostProcess(CookingData& data)
         Platform::CreateProcess(procSettings);
     }
 #endif
-    const bool distributionPackage = buildSettings->ForDistribution;
+    const bool distributionPackage = buildSettings->ForDistribution || data.Configuration == BuildConfiguration::Release;
     {
         CreateProcessSettings procSettings;
         procSettings.FileName = String::Format(TEXT("\"{0}\" {1}"), data.OriginalOutputPath / gradlew, distributionPackage ? TEXT("assemble") : TEXT("assembleDebug"));
