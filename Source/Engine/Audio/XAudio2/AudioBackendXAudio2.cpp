@@ -19,11 +19,9 @@
 // Include XAudio library
 // Documentation: https://docs.microsoft.com/en-us/windows/desktop/xaudio2/xaudio2-apis-portal
 #include <xaudio2.h>
-//#include <xaudio2fx.h>
-//#include <x3daudio.h>
 
 // TODO: implement multi-channel support (eg. 5.1, 7.1)
-#define MAX_INPUT_CHANNELS 2
+#define MAX_INPUT_CHANNELS 6
 #define MAX_OUTPUT_CHANNELS 2
 #define MAX_CHANNELS_MATRIX_SIZE (MAX_INPUT_CHANNELS*MAX_OUTPUT_CHANNELS)
 #if ENABLE_ASSERTION
@@ -151,6 +149,7 @@ namespace XAudio2
     IXAudio2* Instance = nullptr;
     IXAudio2MasteringVoice* MasteringVoice = nullptr;
     int32 Channels;
+    DWORD ChannelMask;
     bool ForceDirty = true;
     AudioBackendTools::Settings Settings;
     Listener Listener;
@@ -683,7 +682,7 @@ bool AudioBackendXAudio2::Base_Init()
     }
     XAUDIO2_VOICE_DETAILS details;
     XAudio2::MasteringVoice->GetVoiceDetails(&details);
-#if 0
+#if MAX_OUTPUT_CHANNELS > 2
     // TODO: implement multi-channel support (eg. 5.1, 7.1)
     XAudio2::Channels = details.InputChannels;
     hr = XAudio2::MasteringVoice->GetChannelMask(&XAudio2::ChannelMask);
@@ -694,6 +693,7 @@ bool AudioBackendXAudio2::Base_Init()
     }
 #else
     XAudio2::Channels = 2;
+    XAudio2::ChannelMask = SPEAKER_FRONT_LEFT | SPEAKER_FRONT_RIGHT;
 #endif
     LOG(Info, "XAudio2: {0} channels at {1} kHz", XAudio2::Channels, details.InputSampleRate / 1000.0f);
 

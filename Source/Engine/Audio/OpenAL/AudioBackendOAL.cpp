@@ -498,7 +498,7 @@ void AudioBackendOAL::Buffer_Write(uint32 bufferID, byte* samples, const AudioDa
             }
             else
             {
-                LOG(Warning, "OpenAL doesn't support bit depth larger than 16. Your audio data will be truncated.");
+                LOG(Warning, "OpenAL doesn't support bit depth larger than 16. Audio data will be truncated.");
                 const uint32 bufferSize = info.NumSamples * 2;
                 byte* sampleBuffer16 = (byte*)Allocator::Allocate(bufferSize);
                 AudioTool::ConvertBitDepth(samples, info.BitDepth, sampleBuffer16, 16, info.NumSamples);
