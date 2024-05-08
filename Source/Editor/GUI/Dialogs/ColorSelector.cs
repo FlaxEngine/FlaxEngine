@@ -311,7 +311,9 @@ namespace FlaxEditor.GUI.Dialogs
             // Alpha
             float alphaY = _slider2Rect.Height * (1 - _color.A);
             var alphaR = new Rectangle(_slider2Rect.X - slidersOffset, _slider2Rect.Y + alphaY - slidersThickness / 2, _slider2Rect.Width + slidersOffset * 2, slidersThickness);
-            Render2D.FillRectangle(_slider2Rect, _color, _color, Color.Transparent, Color.Transparent);
+            var color = _color;
+            color.A = 1; // Keep slider 2 fill rect from changing color alpha while selecting.
+            Render2D.FillRectangle(_slider2Rect, color, color, Color.Transparent, Color.Transparent);
             Render2D.DrawRectangle(_slider2Rect, _isMouseDownSlider2 ? style.BackgroundSelected : Color.Black);
             Render2D.DrawRectangle(alphaR, _isMouseDownSlider2 ? Color.White : Color.Gray);
         }
