@@ -10,5 +10,6 @@
 class Video
 {
 public:
+    static class TaskGraphSystem* System;
     static bool CreatePlayerBackend(const VideoBackendPlayerInfo& info, VideoBackendPlayer& player);
 };

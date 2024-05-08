@@ -4,6 +4,7 @@
 
 #include "VideoBackendMF.h"
 #include "Engine/Profiler/ProfilerCPU.h"
+#include "Engine/Threading/TaskGraph.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Engine/Time.h"
 #include "Engine/Audio/Types.h"
@@ -26,7 +27,7 @@ struct VideoPlayerMF
     TimeSpan Time;
 };
 
-namespace
+namespace MF
 {
     Array<VideoBackendPlayer*> Players;
 
@@ -346,6 +347,82 @@ namespace
         // True if run out of samples and failed to get frame for the current time
         return samplesLeft == 0;
     }
+
+    void UpdatePlayer(int32 index)
+    {
+        PROFILE_CPU();
+        auto& player = *Players[index];
+        ZoneText(player.DebugUrl, player.DebugUrlLen);
+        auto& playerMF = player.GetBackendState<VideoPlayerMF>();
+
+        // Skip paused player
+        if (!playerMF.Playing && !playerMF.Seek)
+            return;
+
+        bool useTimeScale = true;
+#if USE_EDITOR
+        if (!Editor::IsPlayMode)
+            useTimeScale = false;
+#endif
+        TimeSpan dt = useTimeScale ? Time::Update.DeltaTime : Time::Update.UnscaledDeltaTime;
+
+        // Update playback time
+        if (playerMF.FirstFrame)
+        {
+            playerMF.FirstFrame = 0;
+            playerMF.Seek = 1;
+        }
+        else if (playerMF.Playing)
+        {
+            playerMF.Time += dt;
+        }
+        if (playerMF.Time > player.Duration)
+        {
+            if (playerMF.Loop)
+            {
+                // Loop
+                playerMF.Time.Ticks %= player.Duration.Ticks;
+                playerMF.Seek = 1;
+            }
+            else
+            {
+                // End
+                playerMF.Time = player.Duration;
+            }
+        }
+
+        // Update current position
+    SEEK_START:
+        if (playerMF.Seek)
+        {
+            // Reset cached frames timings
+            player.VideoFrameDuration = player.AudioBufferDuration = TimeSpan::Zero();
+
+            playerMF.Seek = 0;
+            PROPVARIANT var;
+            PropVariantInit(&var);
+            var.vt = VT_I8;
+            var.hVal.QuadPart = playerMF.Time.Ticks;
+            PROFILE_CPU_NAMED("SetCurrentPosition");
+            playerMF.SourceReader->SetCurrentPosition(GUID_NULL, var);
+
+            // Note:
+            // SetCurrentPosition method does not guarantee exact seeking.
+            // The accuracy of the seek depends on the media content.
+            // If the media content contains a video stream, the SetCurrentPosition method typically seeks to the nearest key frame before the desired position.
+            // After seeking, the application should call ReadSample and advance to the desired position.
+        }
+
+        // Update streams
+        if (ReadStream(player, playerMF, MF_SOURCE_READER_FIRST_VIDEO_STREAM, dt))
+        {
+            // Failed to pick a valid sample so try again with seeking
+            playerMF.Seek = 1;
+            goto SEEK_START;
+        }
+        if (player.AudioInfo.BitDepth != 0)
+            ReadStream(player, playerMF, MF_SOURCE_READER_FIRST_AUDIO_STREAM, dt);
+    }
 }
 
 bool VideoBackendMF::Player_Create(const VideoBackendPlayerInfo& info, VideoBackendPlayer& player)
@@ -377,8 +454,8 @@ bool VideoBackendMF::Player_Create(const VideoBackendPlayerInfo& info, VideoBack
     playerMF.SourceReader = sourceReader;
 
     // Read media info
-    if (Configure(player, playerMF, MF_SOURCE_READER_FIRST_VIDEO_STREAM) ||
-        Configure(player, playerMF, MF_SOURCE_READER_FIRST_AUDIO_STREAM))
+    if (MF::Configure(player, playerMF, MF_SOURCE_READER_FIRST_VIDEO_STREAM) ||
+        MF::Configure(player, playerMF, MF_SOURCE_READER_FIRST_AUDIO_STREAM))
         return true;
     PROPVARIANT var;
     hr = sourceReader->GetPresentationAttribute(MF_SOURCE_READER_MEDIASOURCE, MF_PD_DURATION, &var);
@@ -393,7 +470,7 @@ bool VideoBackendMF::Player_Create(const VideoBackendPlayerInfo& info, VideoBack
     playerMF.Loop = info.Loop;
     playerMF.FirstFrame = 1;
     player.Created(info);
-    Players.Add(&player);
+    MF::Players.Add(&player);
 
     return false;
 }
@@ -404,7 +481,7 @@ void VideoBackendMF::Player_Destroy(VideoBackendPlayer& player)
     player.ReleaseResources();
     auto& playerMF = player.GetBackendState<VideoPlayerMF>();
     playerMF.SourceReader->Release();
-    Players.Remove(&player);
+    MF::Players.Remove(&player);
     player = VideoBackendPlayer();
 }
 
@@ -482,85 +559,12 @@ bool VideoBackendMF::Base_Init()
     return false;
 }
 
-void VideoBackendMF::Base_Update()
+void VideoBackendMF::Base_Update(TaskGraph* graph)
 {
-    PROFILE_CPU();
-    // TODO: use async Task Graph to update videos
-    for (auto* e : Players)
-    {
-        auto& player = *e;
-        auto& playerMF = player.GetBackendState<VideoPlayerMF>();
-
-        // Skip paused player
-        if (!playerMF.Playing && !playerMF.Seek)
-            continue;
-
-        bool useTimeScale = true;
-#if USE_EDITOR
-        if (!Editor::IsPlayMode)
-            useTimeScale = false;
-#endif
-        TimeSpan dt = useTimeScale ? Time::Update.DeltaTime : Time::Update.UnscaledDeltaTime;
-
-        // Update playback time
-        if (playerMF.FirstFrame)
-        {
-            playerMF.FirstFrame = 0;
-            playerMF.Seek = 1;
-        }
-        else if (playerMF.Playing)
-        {
-            playerMF.Time += dt;
-        }
-        if (playerMF.Time > player.Duration)
-        {
-            if (playerMF.Loop)
-            {
-                // Loop
-                playerMF.Time.Ticks %= player.Duration.Ticks;
-                playerMF.Seek = 1;
-            }
-            else
-            {
-                // End
-                playerMF.Time = player.Duration;
-            }
-        }
-
-        // Update current position
-        int32 seeks = 0;
-    SEEK_START:
-        if (playerMF.Seek)
-        {
-            // Reset cached frames timings
-            player.VideoFrameDuration = player.AudioBufferDuration = TimeSpan::Zero();
-
-            seeks++;
-            playerMF.Seek = 0;
-            PROPVARIANT var;
-            PropVariantInit(&var);
-            var.vt = VT_I8;
-            var.hVal.QuadPart = playerMF.Time.Ticks;
-            PROFILE_CPU_NAMED("SetCurrentPosition");
-            playerMF.SourceReader->SetCurrentPosition(GUID_NULL, var);
-
-            // Note:
-            // SetCurrentPosition method does not guarantee exact seeking.
-            // The accuracy of the seek depends on the media content.
-            // If the media content contains a video stream, the SetCurrentPosition method typically seeks to the nearest key frame before the desired position.
-            // After seeking, the application should call ReadSample and advance to the desired position.
-        }
-
-        // Update streams
-        if (ReadStream(player, playerMF, MF_SOURCE_READER_FIRST_VIDEO_STREAM, dt))
-        {
-            // Failed to pick a valid sample so try again with seeking
-            playerMF.Seek = 1;
-            goto SEEK_START;
-        }
-        if (player.AudioInfo.BitDepth != 0)
-            ReadStream(player, playerMF, MF_SOURCE_READER_FIRST_AUDIO_STREAM, dt);
-    }
+    // Schedule work to update all videos models in async
+    Function<void(int32)> job;
+    job.Bind(MF::UpdatePlayer);
+    graph->DispatchJob(job, MF::Players.Count());
 }
 
 void VideoBackendMF::Base_Dispose()

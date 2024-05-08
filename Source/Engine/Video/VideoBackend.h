@@ -38,6 +38,6 @@ public:
     // Base
     virtual const Char* Base_Name() = 0;
     virtual bool Base_Init() = 0;
-    virtual void Base_Update() = 0;
+    virtual void Base_Update(class TaskGraph* graph) = 0;
     virtual void Base_Dispose() = 0;
 };

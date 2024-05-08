@@ -6,6 +6,7 @@
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Math/Quaternion.h"
 #include "Engine/Profiler/ProfilerCPU.h"
+#include "Engine/Engine/Engine.h"
 #include "Engine/Engine/EngineService.h"
 #include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Graphics/GPUBuffer.h"
@@ -16,6 +17,7 @@
 #include "Engine/Graphics/Shaders/GPUShader.h"
 #include "Engine/Graphics/Textures/GPUTexture.h"
 #include "Engine/Scripting/Enums.h"
+#include "Engine/Threading/TaskGraph.h"
 #if VIDEO_API_MF
 #include "MF/VideoBackendMF.h"
 #endif
@@ -108,6 +110,12 @@ protected:
     }
 };
 
+class VideoSystem : public TaskGraphSystem
+{
+public:
+    void Execute(TaskGraph* graph) override;
+};
+
 class VideoService : public EngineService
 {
 public:
@@ -128,13 +136,15 @@ public:
         Backends[index] = backend;
     }
 
+    bool Init() override;
     void Update() override;
     void Dispose() override;
 };
 
 VideoService VideoServiceInstance;
+TaskGraphSystem* Video::System = nullptr;
 
-void VideoService::Update()
+void VideoSystem::Execute(TaskGraph* graph)
 {
     PROFILE_CPU_NAMED("Video.Update");
 
@@ -142,8 +152,20 @@ void VideoService::Update()
     for (VideoBackend*& backend : VideoServiceInstance.Backends)
     {
         if (backend)
-            backend->Base_Update();
+            backend->Base_Update(graph);
     }
+}
+
+bool VideoService::Init()
+{
+    Video::System = New<VideoSystem>();
+    Engine::UpdateGraph->AddSystem(Video::System);
+    return false;
+}
+
+void VideoService::Update()
+{
+    PROFILE_CPU_NAMED("Video.Update");
 }
 
 void VideoService::Dispose()
@@ -159,6 +181,8 @@ void VideoService::Dispose()
             backend = nullptr;
         }
     }
+
+    SAFE_DELETE(Video::System);
 }
 
 bool Video::CreatePlayerBackend(const VideoBackendPlayerInfo& info, VideoBackendPlayer& player)

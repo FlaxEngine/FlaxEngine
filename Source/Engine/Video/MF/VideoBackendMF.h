@@ -23,7 +23,7 @@ public:
     TimeSpan Player_GetTime(const VideoBackendPlayer& player) override;
     const Char* Base_Name() override;
     bool Base_Init() override;
-    void Base_Update() override;
+    void Base_Update(TaskGraph* graph) override;
     void Base_Dispose() override;
 };
 
