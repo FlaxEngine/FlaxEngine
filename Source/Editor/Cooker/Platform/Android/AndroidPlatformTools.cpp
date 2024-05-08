@@ -301,9 +301,7 @@ bool AndroidPlatformTools::OnPostProcess(CookingData& data)
 
     const auto buildSettings = BuildSettings::Get();
     if (buildSettings->SkipPackaging)
-    {
         return false;
-    }
     GameCooker::PackageFiles();
 
     // Validate environment variables

@@ -3,6 +3,7 @@
 #include "JsonAsset.h"
 #if USE_EDITOR
 #include "Engine/Platform/File.h"
+#include "Engine/Platform/FileSystem.h"
 #include "Engine/Core/Types/DataContainer.h"
 #include "Engine/Level/Level.h"
 #else
