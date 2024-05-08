@@ -292,10 +292,14 @@ namespace FlaxEngine.GUI
             if (base.OnMouseWheel(location, delta))
                 return true;
 
+            if (Input.GetKey(KeyboardKeys.Shift))
+            {
+                if (HScrollBar != null && HScrollBar.Enabled && HScrollBar.OnMouseWheel(HScrollBar.PointFromParent(ref location), delta))
+                    return true;
+            }
+
             // Roll back to scroll bars
             if (VScrollBar != null && VScrollBar.Enabled && VScrollBar.OnMouseWheel(VScrollBar.PointFromParent(ref location), delta))
-                return true;
-            if (HScrollBar != null && HScrollBar.Enabled && HScrollBar.OnMouseWheel(HScrollBar.PointFromParent(ref location), delta))
                 return true;
 
             // No event handled
