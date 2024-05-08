@@ -199,6 +199,8 @@ namespace FlaxEditor.Windows.Assets
         {
             if (IsDisposing)
                 return;
+            _videoPlayer.Stop();
+            Object.Destroy(ref _videoPlayer);
             _item.RemoveReference(this);
             _item = null;
 
