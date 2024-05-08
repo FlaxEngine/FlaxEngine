@@ -464,7 +464,7 @@ void GBufferPass::DrawDecals(RenderContext& renderContext, GPUTextureView* light
         transform.Scale *= decal->GetSize();
         renderContext.View.GetWorldMatrix(transform, drawCall.World);
         drawCall.ObjectPosition = drawCall.World.GetTranslation();
-        drawCall.ObjectRadius = decal->GetSphere().Radius;
+        drawCall.ObjectRadius = (float)decal->GetSphere().Radius;
 
         context->ResetRenderTarget();
 

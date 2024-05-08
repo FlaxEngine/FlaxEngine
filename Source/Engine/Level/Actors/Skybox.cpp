@@ -99,7 +99,7 @@ void Skybox::ApplySky(GPUContext* context, RenderContext& renderContext, const M
     DrawCall drawCall;
     drawCall.World = world;
     drawCall.ObjectPosition = drawCall.World.GetTranslation();
-    drawCall.ObjectRadius = _sphere.Radius;
+    drawCall.ObjectRadius = (float)_sphere.Radius;
     drawCall.Surface.GeometrySize = _box.GetSize();
     drawCall.WorldDeterminantSign = Math::FloatSelect(world.RotDeterminant(), 1, -1);
     drawCall.PerInstanceRandom = GetPerInstanceRandom();

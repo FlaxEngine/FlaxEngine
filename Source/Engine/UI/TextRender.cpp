@@ -366,7 +366,7 @@ void TextRender::Draw(RenderContext& renderContext)
         DrawCall drawCall;
         drawCall.World = world;
         drawCall.ObjectPosition = drawCall.World.GetTranslation();
-        drawCall.ObjectRadius = _sphere.Radius;
+        drawCall.ObjectRadius = (float)_sphere.Radius;
         drawCall.Surface.GeometrySize = _localBox.GetSize();
         drawCall.Surface.PrevWorld = _drawState.PrevWorld;
         drawCall.Surface.Lightmap = nullptr;

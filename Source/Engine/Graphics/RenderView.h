@@ -349,9 +349,9 @@ public:
     // Applies the render origin to the transformation instance matrix.
     FORCE_INLINE void GetWorldMatrix(Matrix& world) const
     {
-        world.M41 -= Origin.X;
-        world.M42 -= Origin.Y;
-        world.M43 -= Origin.Z;
+        world.M41 -= (float)Origin.X;
+        world.M42 -= (float)Origin.Y;
+        world.M43 -= (float)Origin.Z;
     }
 };
 
