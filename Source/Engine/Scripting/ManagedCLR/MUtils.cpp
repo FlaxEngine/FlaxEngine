@@ -394,14 +394,15 @@ Variant MUtils::UnboxVariant(MObject* value)
     case MTypes::Array:
     {
         void* ptr = MCore::Array::GetAddress((MArray*)value);
-        MClass* elementClass = klass->GetElementClass();
+        const MClass* arrayClass = klass == stdTypes.ManagedArrayClass ? MCore::Array::GetArrayClass((MArray*)value) : klass;
+        const MClass* elementClass = arrayClass->GetElementClass();
         if (elementClass == MCore::TypeCache::Byte)
         {
             Variant v;
             v.SetBlob(ptr, MCore::Array::GetLength((MArray*)value));
             return v;
         }
-        const StringAnsiView fullname = klass->GetFullName();
+        const StringAnsiView fullname = arrayClass->GetFullName();
         Variant v;
         v.SetType(MoveTemp(VariantType(VariantType::Array, fullname)));
         auto& array = v.AsArray();

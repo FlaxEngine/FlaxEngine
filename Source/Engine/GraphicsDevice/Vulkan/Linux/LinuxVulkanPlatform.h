@@ -9,6 +9,9 @@
 // Support more backbuffers in case driver decides to use more (https://gitlab.freedesktop.org/apinheiro/mesa/-/issues/9)
 #define VULKAN_BACK_BUFFERS_COUNT_MAX 8
 
+// Prevent wierd error 'Invalid VkValidationCacheEXT Object'
+#define VULKAN_USE_VALIDATION_CACHE 0
+
 /// <summary>
 /// The implementation for the Vulkan API support for Linux platform.
 /// </summary>

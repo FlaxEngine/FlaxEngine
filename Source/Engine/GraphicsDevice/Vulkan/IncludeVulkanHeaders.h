@@ -14,6 +14,7 @@
 #include <vulkan/vulkan.h>
 #undef VK_EXT_debug_utils
 #undef VK_EXT_validation_cache
+#define VULKAN_USE_VALIDATION_CACHE 0
 #pragma clang diagnostic ignored "-Wpointer-bool-conversion"
 #pragma clang diagnostic ignored "-Wtautological-pointer-compare"
 

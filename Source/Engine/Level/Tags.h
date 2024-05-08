@@ -93,6 +93,13 @@ API_CLASS(Static) class FLAXENGINE_API Tags
     API_FUNCTION() static Tag Get(const StringView& tagName);
 
     /// <summary>
+    /// Gets the tag. Returns empty one if it doesn't exist.
+    /// </summary>
+    /// <param name="tagName">The tag name.</param>
+    /// <returns>The tag (might be empty).</returns>
+    API_FUNCTION() static Tag Find(const StringView& tagName);
+
+    /// <summary>
     /// Get all subtags of the specific Tag
     /// </summary>
     /// <param name="tag"></param>

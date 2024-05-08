@@ -30,6 +30,7 @@ namespace FlaxEditor.Windows
 
         private DragAssets _dragAssets;
         private DragActorType _dragActorType;
+        private DragControlType _dragControlType;
         private DragScriptItems _dragScriptItems;
         private DragHandlers _dragHandlers;
 
@@ -275,7 +276,12 @@ namespace FlaxEditor.Windows
 
         private static bool ValidateDragActorType(ScriptType actorType)
         {
-            return true;
+            return Editor.Instance.CodeEditing.Actors.Get().Contains(actorType);
+        }
+        
+        private static bool ValidateDragControlType(ScriptType controlType)
+        {
+            return Editor.Instance.CodeEditing.Controls.Get().Contains(controlType);
         }
 
         private static bool ValidateDragScriptItem(ScriptItem script)
@@ -390,6 +396,13 @@ namespace FlaxEditor.Windows
                 }
                 if (_dragActorType.OnDragEnter(data) && result == DragDropEffect.None)
                     return _dragActorType.Effect;
+                if (_dragControlType == null)
+                {
+                    _dragControlType = new DragControlType(ValidateDragControlType);
+                    _dragHandlers.Add(_dragControlType);
+                }
+                if (_dragControlType.OnDragEnter(data) && result == DragDropEffect.None)
+                    return _dragControlType.Effect;
                 if (_dragScriptItems == null)
                 {
                     _dragScriptItems = new DragScriptItems(ValidateDragScriptItem);
@@ -462,6 +475,28 @@ namespace FlaxEditor.Windows
                     }
                     result = DragDropEffect.Move;
                 }
+                // Drag control type
+                else if (_dragControlType != null && _dragControlType.HasValidDrag)
+                {
+                    for (int i = 0; i < _dragControlType.Objects.Count; i++)
+                    {
+                        var item = _dragControlType.Objects[i];
+                        var control = item.CreateInstance() as Control;
+                        if (control == null)
+                        {
+                            Editor.LogWarning("Failed to spawn UIControl with control type " + item.TypeName);
+                            continue;
+                        }
+                        var uiControl = new UIControl
+                        {
+                            Control = control,
+                            Name = item.Name,
+                        };
+                        Level.SpawnActor(uiControl);
+                        Editor.Scene.MarkSceneEdited(uiControl.Scene);
+                    }
+                    result = DragDropEffect.Move;
+                }
                 // Drag script item
                 else if (_dragScriptItems != null && _dragScriptItems.HasValidDrag)
                 {
@@ -495,6 +530,7 @@ namespace FlaxEditor.Windows
         {
             _dragAssets = null;
             _dragActorType = null;
+            _dragControlType = null;
             _dragScriptItems = null;
             _dragHandlers?.Clear();
             _dragHandlers = null;

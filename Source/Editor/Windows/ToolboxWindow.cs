@@ -191,6 +191,52 @@ namespace FlaxEditor.Windows
             CreateGroupWithList(_actorGroups, "GUI");
             CreateGroupWithList(_actorGroups, "Other");
 
+            // Add control types to tabs
+            foreach (var controlType in Editor.Instance.CodeEditing.Controls.Get())
+            {
+                if (controlType.IsAbstract)
+                    continue;
+                _groupSearch.AddChild(CreateControlItem(Utilities.Utils.GetPropertyNameUI(controlType.Name), controlType));
+                ActorToolboxAttribute attribute = null;
+                foreach (var e in controlType.GetAttributes(false))
+                {
+                    if (e is ActorToolboxAttribute actorToolboxAttribute)
+                    {
+                        attribute = actorToolboxAttribute;
+                        break;
+                    }
+                }
+                if (attribute == null)
+                    continue;
+                var groupName = attribute.Group.Trim();
+
+                // Check if tab already exists and add it to the tab
+                var actorTabExists = false;
+                foreach (var child in _actorGroups.Children)
+                {
+                    if (child is Tab tab)
+                    {
+                        if (string.Equals(tab.Text, groupName, StringComparison.OrdinalIgnoreCase))
+                        {
+                            var tree = tab.GetChild<Panel>().GetChild<Tree>();
+                            if (tree != null)
+                            {
+                                tree.AddChild(string.IsNullOrEmpty(attribute.Name) ? CreateControlItem(Utilities.Utils.GetPropertyNameUI(controlType.Name), controlType) : CreateControlItem(attribute.Name, controlType));
+                                tree.SortChildren();
+                            }
+                            actorTabExists = true;
+                            break;
+                        }
+                    }
+                }
+                if (actorTabExists)
+                    continue;
+
+                var group = CreateGroupWithList(_actorGroups, groupName);
+                group.AddChild(string.IsNullOrEmpty(attribute.Name) ? CreateControlItem(Utilities.Utils.GetPropertyNameUI(controlType.Name), controlType) : CreateControlItem(attribute.Name, controlType));
+                group.SortChildren();
+            }
+
             // Add other actor types to respective tab based on attribute
             foreach (var actorType in Editor.CodeEditing.Actors.Get())
             {
@@ -304,6 +350,11 @@ namespace FlaxEditor.Windows
             return new ScriptTypeItem(name, type, GUI.Drag.DragActorType.GetDragData(type));
         }
 
+        private Item CreateControlItem(string name, ScriptType type)
+        {
+            return new ScriptTypeItem(name, type, GUI.Drag.DragControlType.GetDragData(type));
+        }
+
         private ContainerControl CreateGroupWithList(Tabs parentTabs, string title, float topOffset = 0)
         {
             var tab = parentTabs.AddTab(new Tab(title));
@@ -316,6 +367,7 @@ namespace FlaxEditor.Windows
             var tree = new Tree(false)
             {
                 AnchorPreset = AnchorPresets.HorizontalStretchTop,
+                Margin = new Margin(0, 0, 0, panel.ScrollBarsSize),
                 IsScrollable = true,
                 Parent = panel
             };

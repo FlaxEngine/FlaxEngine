@@ -640,7 +640,7 @@ namespace FlaxEditor.Modules
             cm.AddButton("Visual Script Debugger", Editor.Windows.VisualScriptDebuggerWin.FocusOrShow);
             cm.AddSeparator();
             cm.AddButton("Save window layout", Editor.Windows.SaveLayout);
-            _menuWindowApplyWindowLayout = cm.AddChildMenu("Apply window layout");
+            _menuWindowApplyWindowLayout = cm.AddChildMenu("Window layouts");
             cm.AddButton("Restore default layout", Editor.Windows.LoadDefaultLayout);
 
             // Help

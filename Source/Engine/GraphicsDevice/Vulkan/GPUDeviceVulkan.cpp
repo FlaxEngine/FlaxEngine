@@ -1439,7 +1439,7 @@ bool GPUDeviceVulkan::SavePipelineCache()
     return File::WriteAllBytes(path, data);
 }
 
-#if VK_EXT_validation_cache
+#if VULKAN_USE_VALIDATION_CACHE
 
 void GetValidationCachePath(String& path)
 {
@@ -1900,7 +1900,7 @@ bool GPUDeviceVulkan::Init()
         const VkResult result = vkCreatePipelineCache(Device, &pipelineCacheCreateInfo, nullptr, &PipelineCache);
         LOG_VULKAN_RESULT(result);
     }
-#if VK_EXT_validation_cache
+#if VULKAN_USE_VALIDATION_CACHE
     if (OptionalDeviceExtensions.HasEXTValidationCache && vkCreateValidationCacheEXT && vkDestroyValidationCacheEXT)
     {
         Array<uint8> data;
@@ -1915,16 +1915,16 @@ bool GPUDeviceVulkan::Init()
                 int32* dataPtr = (int32*)data.Get();
                 if (*dataPtr > 0)
                 {
-                    dataPtr++;
-                    const int32 version = *dataPtr++;
-                    const int32 versionExpected = VK_PIPELINE_CACHE_HEADER_VERSION_ONE;
-                    if (version == versionExpected)
+                    const int32 cacheSize = *dataPtr++;
+                    const int32 cacheVersion = *dataPtr++;
+                    const int32 cacheVersionExpected = VK_PIPELINE_CACHE_HEADER_VERSION_ONE;
+                    if (cacheVersion == cacheVersionExpected)
                     {
                         dataPtr += VK_UUID_SIZE / sizeof(int32);
                     }
                     else
                     {
-                        LOG(Warning, "Bad validation cache file, version: {0}, expected: {1}", version, versionExpected);
+                        LOG(Warning, "Bad validation cache file, version: {0}, expected: {1}", cacheVersion, cacheVersionExpected);
                         data.Clear();
                     }
                 }
@@ -2003,7 +2003,7 @@ void GPUDeviceVulkan::Dispose()
         vkDestroyPipelineCache(Device, PipelineCache, nullptr);
         PipelineCache = VK_NULL_HANDLE;
     }
-#if VK_EXT_validation_cache
+#if VULKAN_USE_VALIDATION_CACHE
     if (ValidationCache != VK_NULL_HANDLE)
     {
         if (SaveValidationCache())

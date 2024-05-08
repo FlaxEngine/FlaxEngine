@@ -5,9 +5,13 @@
     <application android:label="@string/app_name"${AndroidAttributes}
         android:theme="@android:style/Theme.NoTitleBar.Fullscreen"
         android:icon="@mipmap/icon"
+        android:appCategory="game"
+        android:isGame="true"
+        android:hasFragileUserData="false"
         android:extractNativeLibs="true"
         android:hasCode="true">
         <activity android:name="com.flaxengine.GameActivity"
+            android:exported="true"
             android:label="@string/app_name"
             android:configChanges="orientation|keyboardHidden|screenSize"
             android:screenOrientation="${DefaultOrientation}">

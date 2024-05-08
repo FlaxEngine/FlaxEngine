@@ -302,8 +302,17 @@ namespace FlaxEditor.Windows.Assets
                     // TODO: improve the UI
                     layout.Space(40);
                     var addParamType = layout.ComboBox().ComboBox;
-                    addParamType.Items = AllowedTypes.Select(CustomEditorsUtil.GetTypeNameUI).ToList();
-                    addParamType.SelectedIndex = 0;
+                    object lastValue = null;
+                    foreach (var e in _proxy.DefaultValues)
+                        lastValue = e.Value;
+
+                    var allowedTypes = AllowedTypes.Select(CustomEditorsUtil.GetTypeNameUI).ToList();
+                    int index = 0;
+                    if (lastValue != null)
+                        index = allowedTypes.FindIndex(x => x.Equals(CustomEditorsUtil.GetTypeNameUI(lastValue.GetType()), StringComparison.Ordinal));
+
+                    addParamType.Items = allowedTypes;
+                    addParamType.SelectedIndex = index;
                     _addParamType = addParamType;
                     var addParamButton = layout.Button("Add").Button;
                     addParamButton.Clicked += OnAddParamButtonClicked;
