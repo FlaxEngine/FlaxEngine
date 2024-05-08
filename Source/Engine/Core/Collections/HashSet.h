@@ -58,7 +58,7 @@ public:
         }
 
         template<typename ItemType>
-        FORCE_INLINE void Occupy(ItemType& item)
+        FORCE_INLINE void Occupy(ItemType&& item)
         {
             Memory::MoveItems(&Item, &item, 1);
             _state = Occupied;
