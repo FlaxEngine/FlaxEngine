@@ -405,7 +405,7 @@ namespace Flax.Build.Platforms
             options.CompileEnv.PreprocessorDefinitions.Add("_CRT_SECURE_NO_DEPRECATE");
             options.CompileEnv.PreprocessorDefinitions.Add("_CRT_SECURE_NO_WARNINGS");
             options.CompileEnv.PreprocessorDefinitions.Add("_WINDOWS");
-            if (Architecture == TargetArchitecture.x64)
+            if (Architecture == TargetArchitecture.x64 || Architecture == TargetArchitecture.ARM64)
                 options.CompileEnv.PreprocessorDefinitions.Add("WIN64");
         }
 
@@ -790,8 +790,10 @@ namespace Flax.Build.Platforms
                     args.Add("/MACHINE:x64");
                     break;
                 case TargetArchitecture.ARM:
-                case TargetArchitecture.ARM64:
                     args.Add("/MACHINE:ARM");
+                    break;
+                case TargetArchitecture.ARM64:
+                    args.Add("/MACHINE:ARM64");
                     break;
                 default: throw new InvalidArchitectureException(Architecture);
                 }
