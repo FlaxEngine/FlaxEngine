@@ -171,15 +171,14 @@ public:
 
 protected:
     // [PhysicsColliderActor]
-#if USE_EDITOR
     void OnEnable() override;
     void OnDisable() override;
-#endif
     void BeginPlay(SceneBeginData* data) override;
     void EndPlay() override;
     void OnActiveInTreeChanged() override;
     void OnParentChanged() override;
     void OnTransformChanged() override;
     void OnLayerChanged() override;
+    void OnStaticFlagsChanged() override;
     void OnPhysicsSceneChanged(PhysicsScene* previous) override;
 };

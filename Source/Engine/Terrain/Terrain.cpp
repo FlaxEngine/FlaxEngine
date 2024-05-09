@@ -12,6 +12,7 @@
 #include "Engine/Graphics/RenderView.h"
 #include "Engine/Graphics/RenderTask.h"
 #include "Engine/Graphics/Textures/GPUTexture.h"
+#include "Engine/Level/Scene/Scene.h"
 #include "Engine/Physics/PhysicsScene.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Renderer/GlobalSignDistanceFieldPass.h"
@@ -804,6 +805,7 @@ RigidBody* Terrain::GetAttachedRigidBody() const
 
 void Terrain::OnEnable()
 {
+    GetScene()->Navigation.Actors.Add(this);
     GetSceneRendering()->AddActor(this, _sceneRenderingKey);
 #if TERRAIN_USE_PHYSICS_DEBUG
     GetSceneRendering()->AddPhysicsDebug<Terrain, &Terrain::DrawPhysicsDebug>(this);
@@ -824,6 +826,7 @@ void Terrain::OnEnable()
 
 void Terrain::OnDisable()
 {
+    GetScene()->Navigation.Actors.Remove(this);
     GetSceneRendering()->RemoveActor(this, _sceneRenderingKey);
 #if TERRAIN_USE_PHYSICS_DEBUG
     GetSceneRendering()->RemovePhysicsDebug<Terrain, &Terrain::DrawPhysicsDebug>(this);

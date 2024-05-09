@@ -24,6 +24,17 @@ public:
     Array<NavMesh*> Meshes;
 
     /// <summary>
+    /// The list of registered navigation-relevant actors (on the scene).
+    /// </summary>
+    Array<Actor*> Actors;
+
+public:
+    /// <summary>
+    /// Clears this instance data.
+    /// </summary>
+    void Clear();
+
+    /// <summary>
     /// Gets the total navigation volumes bounds.
     /// </summary>
     BoundingBox GetNavigationBounds();
