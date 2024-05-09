@@ -47,7 +47,7 @@ namespace Flax.Build.Platforms
             options.LinkEnv.InputLibraries.Add($"Microsoft.Xbox.Services.{(int)xboxServicesToolset}.GDK.C.lib");
 
             var toolsetPath = WindowsPlatformBase.GetToolsets()[Toolset];
-            var toolsPath = WindowsPlatformBase.GetVCToolPath64(Toolset);
+            var toolsPath = WindowsPlatformBase.GetVCToolPath(Toolset, TargetArchitecture.x64, Architecture);
             if (options.CompileEnv.UseDebugCRT)
                 throw new Exception("Don't use debug CRT on GDK.");
             var name = Path.GetFileName(toolsetPath);

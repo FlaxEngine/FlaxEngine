@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Xml;
 using Flax.Build.Graph;
@@ -133,16 +134,12 @@ namespace Flax.Build.Platforms
                 throw new Exception(string.Format("Missing SDK {0} for platform Windows", SDK));
 
             // Get the tools paths
-            string vcToolPath;
-            if (Architecture == TargetArchitecture.x64)
-                vcToolPath = WindowsPlatformBase.GetVCToolPath64(Toolset);
-            else
-                vcToolPath = WindowsPlatformBase.GetVCToolPath32(Toolset);
-            _vcToolPath = vcToolPath;
-            _compilerPath = Path.Combine(vcToolPath, "cl.exe");
-            _linkerPath = Path.Combine(vcToolPath, "link.exe");
-            _libToolPath = Path.Combine(vcToolPath, "lib.exe");
-            _xdcmakePath = Path.Combine(vcToolPath, "xdcmake.exe");
+            var hostArchitecture = Platform.BuildTargetArchitecture;
+            _vcToolPath = WindowsPlatformBase.GetVCToolPath(Toolset, hostArchitecture, Architecture);
+            _compilerPath = Path.Combine(_vcToolPath, "cl.exe");
+            _linkerPath = Path.Combine(_vcToolPath, "link.exe");
+            _libToolPath = Path.Combine(_vcToolPath, "lib.exe");
+            _xdcmakePath = Path.Combine(_vcToolPath, "xdcmake.exe");
 
             // Add Visual C++ toolset include and library paths
             var vcToolChainDir = toolsets[Toolset];
@@ -166,7 +163,7 @@ namespace Flax.Build.Platforms
                 case TargetArchitecture.x64:
                     SystemLibraryPaths.Add(Path.Combine(vcToolChainDir, "lib", "amd64"));
                     break;
-                default: throw new InvalidArchitectureException(architecture);
+                default: throw new InvalidArchitectureException(Architecture);
                 }
 
                 // When using Visual Studio 2015 toolset and using pre-Windows 10 SDK, find a Windows 10 SDK and add the UCRT include paths
@@ -198,7 +195,7 @@ namespace Flax.Build.Platforms
                     case TargetArchitecture.x64:
                         SystemLibraryPaths.Add(Path.Combine(libraryRootDir, "ucrt", "x64"));
                         break;
-                    default: throw new InvalidArchitectureException(architecture);
+                    default: throw new InvalidArchitectureException(Architecture);
                     }
                 }
                 break;
@@ -223,7 +220,7 @@ namespace Flax.Build.Platforms
                 case TargetArchitecture.x64:
                     SystemLibraryPaths.Add(Path.Combine(vcToolChainDir, "lib", "x64"));
                     break;
-                default: throw new InvalidArchitectureException(architecture);
+                default: throw new InvalidArchitectureException(Architecture);
                 }
                 break;
             }
@@ -274,7 +271,7 @@ namespace Flax.Build.Platforms
                     _makepriPath = Path.Combine(binRootDir, "makepri.exe");
                     break;
                 }
-                default: throw new InvalidArchitectureException(architecture);
+                default: throw new InvalidArchitectureException(Architecture);
                 }
                 break;
             }
@@ -312,13 +309,16 @@ namespace Flax.Build.Platforms
                 {
                     SystemLibraryPaths.Add(Path.Combine(libraryRootDir, "ucrt", "arm64"));
                     SystemLibraryPaths.Add(Path.Combine(libraryRootDir, "um", "arm64"));
+                    var binRootDir = Path.Combine(windowsSdkDir, "bin", sdkVersionName, hostArchitecture.ToString().ToLower());
+                    _resourceCompilerPath = Path.Combine(binRootDir, "rc.exe");
+                    _makepriPath = Path.Combine(binRootDir, "makepri.exe");
                     break;
                 }
                 case TargetArchitecture.x86:
                 {
                     SystemLibraryPaths.Add(Path.Combine(libraryRootDir, "ucrt", "x86"));
                     SystemLibraryPaths.Add(Path.Combine(libraryRootDir, "um", "x86"));
-                    var binRootDir = Path.Combine(windowsSdkDir, "bin", sdkVersionName, "x86");
+                    var binRootDir = Path.Combine(windowsSdkDir, "bin", sdkVersionName, hostArchitecture.ToString().ToLower());
                     _resourceCompilerPath = Path.Combine(binRootDir, "rc.exe");
                     _makepriPath = Path.Combine(binRootDir, "makepri.exe");
                     break;
@@ -327,12 +327,12 @@ namespace Flax.Build.Platforms
                 {
                     SystemLibraryPaths.Add(Path.Combine(libraryRootDir, "ucrt", "x64"));
                     SystemLibraryPaths.Add(Path.Combine(libraryRootDir, "um", "x64"));
-                    var binRootDir = Path.Combine(windowsSdkDir, "bin", sdkVersionName, "x64");
+                    var binRootDir = Path.Combine(windowsSdkDir, "bin", sdkVersionName, hostArchitecture.ToString().ToLower());
                     _resourceCompilerPath = Path.Combine(binRootDir, "rc.exe");
                     _makepriPath = Path.Combine(binRootDir, "makepri.exe");
                     break;
                 }
-                default: throw new InvalidArchitectureException(architecture);
+                default: throw new InvalidArchitectureException(Architecture);
                 }
                 break;
             }
