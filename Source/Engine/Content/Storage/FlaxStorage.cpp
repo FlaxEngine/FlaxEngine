@@ -1336,6 +1336,8 @@ FileReadStream* FlaxStorage::OpenFile()
 
 bool FlaxStorage::CloseFileHandles()
 {
+    if (Platform::AtomicRead(&_chunksLock) == 0)
+        return false; // Early out
     PROFILE_CPU();
 
     // Note: this is usually called by the content manager when this file is not used or on exit

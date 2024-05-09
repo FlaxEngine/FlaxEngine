@@ -4265,6 +4265,7 @@ void* PhysicsBackend::CreateHeightField(byte* data, int32 dataSize)
 
 void PhysicsBackend::GetConvexMeshTriangles(void* contextMesh, Array<Float3, HeapAllocation>& vertexBuffer, Array<int, HeapAllocation>& indexBuffer)
 {
+    PROFILE_CPU();
     auto contextMeshPhysX = (PxConvexMesh*)contextMesh;
     uint32 numIndices = 0;
     uint32 numVertices = contextMeshPhysX->getNbVertices();
@@ -4304,6 +4305,7 @@ void PhysicsBackend::GetConvexMeshTriangles(void* contextMesh, Array<Float3, Hea
 
 void PhysicsBackend::GetTriangleMeshTriangles(void* triangleMesh, Array<Float3>& vertexBuffer, Array<int32, HeapAllocation>& indexBuffer)
 {
+    PROFILE_CPU();
     auto triangleMeshPhysX = (PxTriangleMesh*)triangleMesh;
     uint32 numVertices = triangleMeshPhysX->getNbVertices();
     uint32 numIndices = triangleMeshPhysX->getNbTriangles() * 3;

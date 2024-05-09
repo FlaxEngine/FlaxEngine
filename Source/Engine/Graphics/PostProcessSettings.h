@@ -4,9 +4,9 @@
 
 #include "Engine/Core/Math/Vector3.h"
 #include "Engine/Core/Math/Vector4.h"
+#include "Engine/Core/ISerializable.h"
 #include "Engine/Content/AssetReference.h"
 #include "Engine/Content/SoftAssetReference.h"
-#include "Engine/Core/ISerializable.h"
 #include "Engine/Content/Assets/Texture.h"
 #include "Engine/Content/Assets/MaterialBase.h"
 
@@ -2015,7 +2015,7 @@ API_STRUCT() struct FLAXENGINE_API PostProcessSettings : ISerializable
     ScreenSpaceReflectionsSettings ScreenSpaceReflections;
 
     /// <summary>
-    /// The anti-aliasing effect settings.
+    /// The antialiasing effect settings.
     /// </summary>
     API_FIELD(Attributes="EditorDisplay(\"Anti Aliasing\"), EditorOrder(1100), JsonProperty(\"AA\")")
     AntiAliasingSettings AntiAliasing;

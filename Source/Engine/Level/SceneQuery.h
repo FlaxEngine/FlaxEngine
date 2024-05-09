@@ -18,7 +18,7 @@ class FLAXENGINE_API SceneQuery
 {
 public:
     /// <summary>
-    /// Try to find actor hit by the given ray
+    /// Try to find actor hit by the given ray.
     /// </summary>
     /// <param name="ray">Ray to test</param>
     /// <returns>Hit actor or nothing</returns>
@@ -55,19 +55,16 @@ public:
 public:
     /// <summary>
     /// Execute custom action on actors tree.
-    /// Action should returns false to stop calling deeper.
-    /// First action argument is current actor object.
     /// </summary>
     /// <param name="action">Actor to call on every actor in the tree. Returns true if keep calling deeper.</param>
     /// <param name="args">Custom arguments for the function</param>
     template<typename... Params>
-    static void TreeExecute(Function<bool(Actor*, Params ...)>& action, Params ... args)
+    static void TreeExecute(Function<bool(Actor*, Params...)>& action, Params... args)
     {
 #if SCENE_QUERIES_WITH_LOCK
         ScopeLock lock(Level::ScenesLock);
 #endif
-
         for (int32 i = 0; i < Level::Scenes.Count(); i++)
-            Level::Scenes[i]->TreeExecute<Params...>(action, args...);
+            Level::Scenes.Get()[i]->TreeExecute<Params...>(action, args...);
     }
 };
