@@ -31,9 +31,13 @@
 
 #include "foundation/PxPreprocessor.h"
 
-#if PX_WINDOWS
+#if PX_WINDOWS_FAMILY
 #include "windows/PxWindowsTrigConstants.h"
+#if PX_NEON
+#include "windows/neon/PxWindowsNeonInlineAoS.h"
+#else
 #include "windows/PxWindowsInlineAoS.h"
+#endif
 #elif (PX_UNIX_FAMILY || PX_PS4 || PX_PS5 || PX_SWITCH)
 #include "unix/PxUnixTrigConstants.h"
 #include "unix/PxUnixInlineAoS.h"
