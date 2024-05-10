@@ -460,12 +460,12 @@ bool VideoBackendMF::Player_Create(const VideoBackendPlayerInfo& info, VideoBack
         return true;
     }
     sourceReader->SetStreamSelection(MF_SOURCE_READER_FIRST_VIDEO_STREAM, 1);
-    sourceReader->SetStreamSelection(MF_SOURCE_READER_FIRST_AUDIO_STREAM, 1);
+    bool hasAudio = sourceReader->SetStreamSelection(MF_SOURCE_READER_FIRST_AUDIO_STREAM, 1) == S_OK;
     playerMF.SourceReader = sourceReader;
 
     // Read media info
     if (MF::Configure(player, playerMF, MF_SOURCE_READER_FIRST_VIDEO_STREAM) ||
-        MF::Configure(player, playerMF, MF_SOURCE_READER_FIRST_AUDIO_STREAM))
+        hasAudio && MF::Configure(player, playerMF, MF_SOURCE_READER_FIRST_AUDIO_STREAM))
         return true;
     PROPVARIANT var;
     hr = sourceReader->GetPresentationAttribute(MF_SOURCE_READER_MEDIASOURCE, MF_PD_DURATION, &var);
