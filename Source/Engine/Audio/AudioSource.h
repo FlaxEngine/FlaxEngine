@@ -5,7 +5,6 @@
 #include "Engine/Level/Actor.h"
 #include "Engine/Content/AssetReference.h"
 #include "AudioClip.h"
-#include "Config.h"
 
 /// <summary>
 /// Represents a source for emitting audio. Audio can be played spatially (gun shot), or normally (music). Each audio source must have an AudioClip to play - back, and it can also have a position in the case of spatial (3D) audio.
@@ -141,7 +140,7 @@ public:
     API_PROPERTY() void SetIsLooping(bool value);
 
     /// <summary>
-    /// Determines whether the audio clip should auto play on level start.
+    /// Determines whether the audio clip should autoplay on level start.
     /// </summary>
     API_PROPERTY(Attributes="EditorOrder(50), DefaultValue(false), EditorDisplay(\"Audio Source\", \"Play On Start\")")
     FORCE_INLINE bool GetPlayOnStart() const
@@ -159,7 +158,7 @@ public:
     }
 
     /// <summary>
-    /// Determines whether the audio clip should auto play on game start.
+    /// Determines whether the audio clip should autoplay on game start.
     /// </summary>
     API_PROPERTY() void SetPlayOnStart(bool value);
 
@@ -211,7 +210,7 @@ public:
     API_PROPERTY() void SetDopplerFactor(float value);
 
     /// <summary>
-    /// If checked, source can play spatial 3d audio (when audio clip supports it), otherwise will always play as 2d sound. At 0, no distance attenuation ever occurs.
+    /// If checked, source can play spatial 3d audio (when audio clip supports it), otherwise will always play as 2d sound.
     /// </summary>
     API_PROPERTY(Attributes="EditorOrder(80), DefaultValue(true), EditorDisplay(\"Audio Source\")")
     FORCE_INLINE bool GetAllowSpatialization() const

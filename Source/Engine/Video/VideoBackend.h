@@ -13,6 +13,12 @@ struct VideoBackendPlayerInfo
 {
     StringView Url;
     bool Loop;
+    bool Spatial;
+    float Volume;
+    float Pan;
+    float MinDistance;
+    float Attenuation;
+    const Transform* Transform;
 };
 
 /// <summary>

@@ -31,6 +31,50 @@ void VideoPlayer::SetIsLooping(bool value)
     UpdateInfo();
 }
 
+void VideoPlayer::SetIsAudioSpatial(bool value)
+{
+    if (_isSpatial == value)
+        return;
+    _isSpatial = value;
+    UpdateInfo();
+}
+
+void VideoPlayer::SetAudioVolume(float value)
+{
+    value = Math::Saturate(value);
+    if (Math::NearEqual(_volume, value))
+        return;
+    _volume = value;
+    UpdateInfo();
+}
+
+void VideoPlayer::SetAudioPan(float value)
+{
+    value = Math::Clamp(value, -1.0f, 1.0f);
+    if (Math::NearEqual(_pan, value))
+        return;
+    _pan = value;
+    UpdateInfo();
+}
+
+void VideoPlayer::SetAudioMinDistance(float value)
+{
+    value = Math::Max(0.0f, value);
+    if (Math::NearEqual(_minDistance, value))
+        return;
+    _minDistance = value;
+    UpdateInfo();
+}
+
+void VideoPlayer::SetAudioAttenuation(float value)
+{
+    value = Math::Max(0.0f, value);
+    if (Math::NearEqual(_attenuation, value))
+        return;
+    _attenuation = value;
+    UpdateInfo();
+}
+
 void VideoPlayer::Play()
 {
     auto state = _state;
@@ -127,6 +171,12 @@ void VideoPlayer::GetInfo(VideoBackendPlayerInfo& info) const
 {
     info.Url = Url;
     info.Loop = _loop;
+    info.Spatial = _isSpatial;
+    info.Volume = _volume;
+    info.Pan = _pan;
+    info.MinDistance = _minDistance;
+    info.Attenuation = _attenuation;
+    info.Transform = &_transform;
 }
 
 void VideoPlayer::UpdateInfo()

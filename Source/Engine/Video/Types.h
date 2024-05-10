@@ -27,6 +27,7 @@ struct VideoBackendPlayer
     GPUTexture* Frame;
     GPUBuffer* FrameUpload;
     class GPUUploadVideoFrameTask* UploadVideoFrameTask;
+    const Transform* Transform;
 #ifdef TRACY_ENABLE
     Char* DebugUrl;
     int32 DebugUrlLen;
@@ -35,6 +36,11 @@ struct VideoBackendPlayer
     int32 VideoFrameWidth, VideoFrameHeight;
     PixelFormat Format;
     float FrameRate;
+    float AudioVolume;
+    float AudioPan;
+    float AudioMinDistance;
+    float AudioAttenuation;
+    uint8 IsAudioSpatial : 1;
     uint8 IsAudioPlayPending : 1;
     TimeSpan Duration;
     TimeSpan VideoFrameTime, VideoFrameDuration;
@@ -68,11 +74,13 @@ struct VideoBackendPlayer
     }
 
     void Created(const VideoBackendPlayerInfo& info);
+    void Updated(const VideoBackendPlayerInfo& info);
     void PlayAudio();
     void PauseAudio();
     void StopAudio();
     void InitVideoFrame();
     void UpdateVideoFrame(Span<byte> data, TimeSpan time, TimeSpan duration);
     void UpdateAudioBuffer(Span<byte> data, TimeSpan time, TimeSpan duration);
+    void Tick();
     void ReleaseResources();
 };

@@ -432,6 +432,8 @@ namespace MF
         }
         if (player.AudioInfo.BitDepth != 0)
             ReadStream(player, playerMF, MF_SOURCE_READER_FIRST_AUDIO_STREAM, dt);
+
+        player.Tick();
     }
 }
 
@@ -499,7 +501,8 @@ void VideoBackendMF::Player_UpdateInfo(VideoBackendPlayer& player, const VideoBa
 {
     PROFILE_CPU();
     auto& playerMF = player.GetBackendState<VideoPlayerMF>();
-    playerMF.Loop = true;
+    playerMF.Loop = info.Loop;
+    player.Updated(info);
 }
 
 void VideoBackendMF::Player_Play(VideoBackendPlayer& player)

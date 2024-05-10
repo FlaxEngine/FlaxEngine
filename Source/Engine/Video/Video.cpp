@@ -5,6 +5,7 @@
 #include "Engine/Audio/AudioBackend.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Math/Quaternion.h"
+#include "Engine/Core/Math/Transform.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Engine/Engine.h"
 #include "Engine/Engine/EngineService.h"
@@ -212,6 +213,23 @@ void VideoBackendPlayer::Created(const VideoBackendPlayerInfo& info)
     DebugUrl = (Char*)Allocator::Allocate(DebugUrlLen * sizeof(Char) + 2);
     Platform::MemoryCopy(DebugUrl, *info.Url, DebugUrlLen * 2 + 2);
 #endif
+    Updated(info);
+}
+
+void VideoBackendPlayer::Updated(const VideoBackendPlayerInfo& info)
+{
+    IsAudioSpatial = info.Spatial;
+    AudioVolume = info.Volume;
+    AudioPan = info.Pan;
+    AudioMinDistance = info.MinDistance;
+    AudioAttenuation = info.Attenuation;
+    Transform = info.Transform;
+    if (AudioSource)
+    {
+        AudioBackend::Source::VolumeChanged(AudioSource, AudioVolume);
+        AudioBackend::Source::PanChanged(AudioSource, AudioPan);
+        AudioBackend::Source::SpatialSetupChanged(AudioSource, IsAudioSpatial, AudioAttenuation, AudioMinDistance, 1.0f);
+    }
 }
 
 void VideoBackendPlayer::PlayAudio()
@@ -311,9 +329,7 @@ void VideoBackendPlayer::UpdateAudioBuffer(Span<byte> data, TimeSpan time, TimeS
     // Setup audio source
     if (AudioSource == 0)
     {
-        // TODO: spatial video player
-        // TODO: video player volume/pan control
-        AudioSource = AudioBackend::Source::Add(AudioInfo, Vector3::Zero, Quaternion::Identity, 1.0f, 1.0f, 0.0f, false, false, 1.0f, 1000.0f, 1.0f);
+        AudioSource = AudioBackend::Source::Add(AudioInfo, Vector3::Zero, Quaternion::Identity, AudioVolume, 1.0f, AudioPan, false, IsAudioSpatial, AudioAttenuation, AudioMinDistance, 1.0f);
         IsAudioPlayPending = 1;
     }
     else
@@ -351,6 +367,14 @@ void VideoBackendPlayer::UpdateAudioBuffer(Span<byte> data, TimeSpan time, TimeS
     {
         IsAudioPlayPending = 0;
         AudioBackend::Source::Play(AudioSource);
+    }
+}
+
+void VideoBackendPlayer::Tick()
+{
+    if (AudioSource && IsAudioSpatial && Transform)
+    {
+        AudioBackend::Source::TransformChanged(AudioSource, Transform->Translation, Transform->Orientation);
     }
 }
 
