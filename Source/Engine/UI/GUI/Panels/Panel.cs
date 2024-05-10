@@ -52,7 +52,7 @@ namespace FlaxEngine.GUI
         /// <summary>
         /// Gets or sets the scroll bars usage by this panel.
         /// </summary>
-        [EditorDisplay("Scrollbar Style"), EditorOrder(0), Tooltip("The scroll bars usage.")]
+        [EditorDisplay("Scrollbar Style"), EditorOrder(1500), Tooltip("The scroll bars usage.")]
         public ScrollBars ScrollBars
         {
             get => _scrollBars;
@@ -123,7 +123,7 @@ namespace FlaxEngine.GUI
         /// <summary>
         /// Gets or sets the size of the scroll bars.
         /// </summary>
-        [EditorDisplay("Scrollbar Style"), EditorOrder(5), Tooltip("Scroll bars size.")]
+        [EditorDisplay("Scrollbar Style"), EditorOrder(1501), Tooltip("Scroll bars size.")]
         public float ScrollBarsSize
         {
             get => _scrollBarsSize;
@@ -139,7 +139,7 @@ namespace FlaxEngine.GUI
         /// <summary>
         /// Gets or sets a value indicating whether always show scrollbars. Otherwise show them only if scrolling is available.
         /// </summary>
-        [EditorDisplay("Scrollbar Style"), EditorOrder(10), Tooltip("Whether always show scrollbars. Otherwise show them only if scrolling is available.")]
+        [EditorDisplay("Scrollbar Style"), EditorOrder(1502), Tooltip("Whether always show scrollbars. Otherwise show them only if scrolling is available.")]
         public bool AlwaysShowScrollbars
         {
             get => _alwaysShowScrollbars;
@@ -172,7 +172,7 @@ namespace FlaxEngine.GUI
         /// <summary>
         /// Gets or sets the scroll margin applies to the child controls area. Can be used to expand the scroll area bounds by adding a margin.
         /// </summary>
-        [EditorDisplay("Scrollbar Style"), EditorOrder(20), Tooltip("Scroll margin applies to the child controls area. Can be used to expand the scroll area bounds by adding a margin.")]
+        [EditorDisplay("Scrollbar Style"), EditorOrder(1503), Tooltip("Scroll margin applies to the child controls area. Can be used to expand the scroll area bounds by adding a margin.")]
         public Margin ScrollMargin
         {
             get => _scrollMargin;
@@ -189,7 +189,7 @@ namespace FlaxEngine.GUI
         /// <summary>
         /// The color of the scroll bar track.
         /// </summary>
-        [EditorDisplay("Scrollbar Style"), EditorOrder(30), ExpandGroups]
+        [EditorDisplay("Scrollbar Style"), EditorOrder(1600), ExpandGroups]
         public Color ScrollbarTrackColor
         {
             get => _scrollbarTrackColor;
@@ -206,7 +206,7 @@ namespace FlaxEngine.GUI
         /// <summary>
         /// The color of the scroll bar thumb.
         /// </summary>
-        [EditorDisplay("Scrollbar Style"), EditorOrder(31)]
+        [EditorDisplay("Scrollbar Style"), EditorOrder(1601)]
         public Color ScrollbarThumbColor
         {
             get => _scrollbarThumbColor;
@@ -223,7 +223,7 @@ namespace FlaxEngine.GUI
         /// <summary>
         /// The color of the scroll bar thumb when selected.
         /// </summary>
-        [EditorDisplay("Scrollbar Style"), EditorOrder(32)]
+        [EditorDisplay("Scrollbar Style"), EditorOrder(1602)]
         public Color ScrollbarThumbSelectedColor
         {
             get => _scrollbarThumbSelectedColor;
