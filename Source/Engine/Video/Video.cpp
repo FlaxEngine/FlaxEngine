@@ -75,7 +75,7 @@ protected:
             // Decompress data into RGBA texture
             auto cb = GPUDevice::Instance->QuadShader->GetCB(0);
             QuadShaderData cbData;
-            cbData.Color = Float4((float)_player->Width, (float)_player->Height, 0, 0);
+            cbData.Color = Float4((float)_player->VideoFrameWidth, (float)_player->VideoFrameHeight, 0, 0);
             context->GPU->UpdateCB(cb, &cbData);
             context->GPU->BindCB(0, cb);
             context->GPU->SetViewportAndScissors((float)_player->Width, (float)_player->Height);
