@@ -214,6 +214,33 @@ void VideoBackendPlayer::Created(const VideoBackendPlayerInfo& info)
 #endif
 }
 
+void VideoBackendPlayer::PlayAudio()
+{
+    if (AudioSource)
+    {
+        IsAudioPlayPending = 0;
+        AudioBackend::Source::Play(AudioSource);
+    }
+}
+
+void VideoBackendPlayer::PauseAudio()
+{
+    if (AudioSource)
+    {
+        IsAudioPlayPending = 0;
+        AudioBackend::Source::Pause(AudioSource);
+    }
+}
+
+void VideoBackendPlayer::StopAudio()
+{
+    if (AudioSource)
+    {
+        AudioBackend::Source::Stop(AudioSource);
+        IsAudioPlayPending = 1;
+    }
+}
+
 void VideoBackendPlayer::InitVideoFrame()
 {
     if (!GPUDevice::Instance)
@@ -282,12 +309,12 @@ void VideoBackendPlayer::UpdateAudioBuffer(Span<byte> data, TimeSpan time, TimeS
         return;
 
     // Setup audio source
-    bool newSource = AudioSource == 0;
-    if (newSource)
+    if (AudioSource == 0)
     {
         // TODO: spatial video player
         // TODO: video player volume/pan control
         AudioSource = AudioBackend::Source::Add(AudioInfo, Vector3::Zero, Quaternion::Identity, 1.0f, 1.0f, 0.0f, false, false, 1.0f, 1000.0f, 1.0f);
+        IsAudioPlayPending = 1;
     }
     else
     {
@@ -320,8 +347,9 @@ void VideoBackendPlayer::UpdateAudioBuffer(Span<byte> data, TimeSpan time, TimeS
 
     // Append audio buffer
     AudioBackend::Source::QueueBuffer(AudioSource, bufferId);
-    if (newSource)
+    if (IsAudioPlayPending)
     {
+        IsAudioPlayPending = 0;
         AudioBackend::Source::Play(AudioSource);
     }
 }

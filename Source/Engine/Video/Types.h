@@ -35,6 +35,7 @@ struct VideoBackendPlayer
     int32 VideoFrameWidth, VideoFrameHeight;
     PixelFormat Format;
     float FrameRate;
+    uint8 IsAudioPlayPending : 1;
     TimeSpan Duration;
     TimeSpan VideoFrameTime, VideoFrameDuration;
     TimeSpan AudioBufferTime, AudioBufferDuration;
@@ -67,6 +68,9 @@ struct VideoBackendPlayer
     }
 
     void Created(const VideoBackendPlayerInfo& info);
+    void PlayAudio();
+    void PauseAudio();
+    void StopAudio();
     void InitVideoFrame();
     void UpdateVideoFrame(Span<byte> data, TimeSpan time, TimeSpan duration);
     void UpdateAudioBuffer(Span<byte> data, TimeSpan time, TimeSpan duration);

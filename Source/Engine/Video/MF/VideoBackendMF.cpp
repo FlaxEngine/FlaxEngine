@@ -330,7 +330,11 @@ namespace MF
             if (sample)
                 sample->Release();
             if (isGoodSample)
+            {
                 goodSamplesLeft--;
+                if (!sample)
+                    return true; // Got good sample but without data so seek
+            }
 
             if (flags & MF_SOURCE_READERF_ENDOFSTREAM)
             {
@@ -392,6 +396,7 @@ namespace MF
         }
 
         // Update current position
+        bool canSeek = true;
     SEEK_START:
         if (playerMF.Seek)
         {
@@ -418,7 +423,12 @@ namespace MF
         {
             // Failed to pick a valid sample so try again with seeking
             playerMF.Seek = 1;
-            goto SEEK_START;
+            if (canSeek)
+            {
+                // Prevent deadlock on sync
+                canSeek = false;
+                goto SEEK_START;
+            }
         }
         if (player.AudioInfo.BitDepth != 0)
             ReadStream(player, playerMF, MF_SOURCE_READER_FIRST_AUDIO_STREAM, dt);
@@ -497,6 +507,7 @@ void VideoBackendMF::Player_Play(VideoBackendPlayer& player)
     PROFILE_CPU();
     auto& playerMF = player.GetBackendState<VideoPlayerMF>();
     playerMF.Playing = 1;
+    player.PlayAudio();
 }
 
 void VideoBackendMF::Player_Pause(VideoBackendPlayer& player)
@@ -504,6 +515,7 @@ void VideoBackendMF::Player_Pause(VideoBackendPlayer& player)
     PROFILE_CPU();
     auto& playerMF = player.GetBackendState<VideoPlayerMF>();
     playerMF.Playing = 0;
+    player.PauseAudio();
 }
 
 void VideoBackendMF::Player_Stop(VideoBackendPlayer& player)
@@ -514,14 +526,19 @@ void VideoBackendMF::Player_Stop(VideoBackendPlayer& player)
     playerMF.Playing = 0;
     playerMF.FirstFrame = 1;
     playerMF.Seek = 1;
+    player.StopAudio();
 }
 
 void VideoBackendMF::Player_Seek(VideoBackendPlayer& player, TimeSpan time)
 {
     PROFILE_CPU();
     auto& playerMF = player.GetBackendState<VideoPlayerMF>();
-    playerMF.Time = time;
-    playerMF.Seek = 1;
+    if (playerMF.Time != time)
+    {
+        playerMF.Time = time;
+        playerMF.Seek = 1;
+        player.StopAudio();
+    }
 }
 
 TimeSpan VideoBackendMF::Player_GetTime(const VideoBackendPlayer& player)
