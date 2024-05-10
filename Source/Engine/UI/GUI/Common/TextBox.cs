@@ -26,9 +26,29 @@ namespace FlaxEngine.GUI
         }
 
         /// <summary>
+        /// The vertical alignment of the text.
+        /// </summary>
+        [EditorDisplay("Text Style"), EditorOrder(2023), Tooltip("The vertical alignment of the text.")]
+        public TextAlignment VerticalAlignment
+        {
+            get => _layout.VerticalAlignment;
+            set => _layout.VerticalAlignment = value;
+        }
+        
+        /// <summary>
+        /// The vertical alignment of the text.
+        /// </summary>
+        [EditorDisplay("Text Style"), EditorOrder(2024), Tooltip("The horizontal alignment of the text.")]
+        public TextAlignment HorizontalAlignment
+        {
+            get => _layout.HorizontalAlignment;
+            set => _layout.HorizontalAlignment = value;
+        }
+
+        /// <summary>
         /// Gets or sets the text wrapping within the control bounds.
         /// </summary>
-        [EditorDisplay("Text Style"), EditorOrder(2023), Tooltip("The text wrapping within the control bounds.")]
+        [EditorDisplay("Text Style"), EditorOrder(2025), Tooltip("The text wrapping within the control bounds.")]
         public TextWrapping Wrapping
         {
             get => _layout.TextWrapping;
@@ -38,13 +58,13 @@ namespace FlaxEngine.GUI
         /// <summary>
         /// Gets or sets the font.
         /// </summary>
-        [EditorDisplay("Text Style"), EditorOrder(2024)]
+        [EditorDisplay("Text Style"), EditorOrder(2026)]
         public FontReference Font { get; set; }
 
         /// <summary>
         /// Gets or sets the custom material used to render the text. It must has domain set to GUI and have a public texture parameter named Font used to sample font atlas texture with font characters data.
         /// </summary>
-        [EditorDisplay("Text Style"), EditorOrder(2025), Tooltip("Custom material used to render the text. It must has domain set to GUI and have a public texture parameter named Font used to sample font atlas texture with font characters data.")]
+        [EditorDisplay("Text Style"), EditorOrder(2027), Tooltip("Custom material used to render the text. It must has domain set to GUI and have a public texture parameter named Font used to sample font atlas texture with font characters data.")]
         public MaterialBase TextMaterial { get; set; }
 
         /// <summary>
@@ -224,7 +244,25 @@ namespace FlaxEngine.GUI
             {
                 float alpha = Mathf.Saturate(Mathf.Cos(_animateTime * CaretFlashSpeed) * 0.5f + 0.7f);
                 alpha = alpha * alpha * alpha * alpha * alpha * alpha;
-                Render2D.FillRectangle(CaretBounds, CaretColor * alpha);
+                if (CaretPosition == 0)
+                {
+                    var bounds = CaretBounds;
+                    if (_layout.VerticalAlignment == TextAlignment.Center)
+                        bounds.Y = _layout.Bounds.Y + _layout.Bounds.Height * 0.5f - bounds.Height * 0.5f;
+                    else if (_layout.VerticalAlignment == TextAlignment.Far)
+                        bounds.Y = _layout.Bounds.Y + _layout.Bounds.Height - bounds.Height;
+
+                    if (_layout.HorizontalAlignment == TextAlignment.Center)
+                        bounds.X = _layout.Bounds.X + _layout.Bounds.Width * 0.5f - bounds.Width * 0.5f;
+                    else if (_layout.HorizontalAlignment == TextAlignment.Far)
+                        bounds.X = _layout.Bounds.X + _layout.Bounds.Width - bounds.Width;
+                    Render2D.FillRectangle(bounds, CaretColor * alpha);
+                }
+                else
+                {
+                    Render2D.FillRectangle(CaretBounds, CaretColor * alpha);
+                }
+                
             }
 
             // Restore rendering state
