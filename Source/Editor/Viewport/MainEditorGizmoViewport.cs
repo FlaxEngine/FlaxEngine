@@ -351,6 +351,8 @@ namespace FlaxEditor.Viewport
 
         private void OnCollectDrawCalls(ref RenderContext renderContext)
         {
+            if (renderContext.View.Pass == DrawPass.Depth)
+                return;
             DragHandlers.CollectDrawCalls(_debugDrawData, ref renderContext);
             if (ShowNavigation)
                 Editor.Internal_DrawNavMesh();
