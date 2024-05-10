@@ -498,7 +498,7 @@ namespace FlaxEditor.Viewport
 
         private static bool ValidateDragActorType(ScriptType actorType)
         {
-            return true;
+            return Editor.Instance.CodeEditing.Actors.Get().Contains(actorType);
         }
 
         private static bool ValidateDragScriptItem(ScriptItem script)
