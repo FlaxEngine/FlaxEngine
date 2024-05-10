@@ -453,9 +453,10 @@ void AudioBackendOAL::Source_QueueBuffer(uint32 sourceID, uint32 bufferID)
 void AudioBackendOAL::Source_DequeueProcessedBuffers(uint32 sourceID)
 {
     int32 numProcessedBuffers;
-    ALuint buffers[AUDIO_MAX_SOURCE_BUFFERS];
     alGetSourcei(sourceID, AL_BUFFERS_PROCESSED, &numProcessedBuffers);
-    alSourceUnqueueBuffers(sourceID, numProcessedBuffers, buffers);
+    Array<ALuint, InlinedAllocation<AUDIO_MAX_SOURCE_BUFFERS>> buffers;
+    buffers.Resize(numProcessedBuffers);
+    alSourceUnqueueBuffers(sourceID, numProcessedBuffers, buffers.Get());
     ALC_CHECK_ERROR(alSourceUnqueueBuffers);
 }
 
