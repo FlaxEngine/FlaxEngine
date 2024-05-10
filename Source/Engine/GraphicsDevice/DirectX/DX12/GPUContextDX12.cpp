@@ -2,6 +2,20 @@
 
 #if GRAPHICS_API_DIRECTX12
 
+#include "Engine/Graphics/Config.h"
+#if USE_PIX && GPU_ALLOW_PROFILE_EVENTS
+// Include these header files before pix3
+#define WIN32_LEAN_AND_MEAN
+#define NOMINMAX
+#define NOGDI
+#define NODRAWTEXT
+//#define NOCTLMGR
+#define NOFLATSBAPIS
+#include <Windows.h>
+#include <d3d12.h>
+#include <ThirdParty/WinPixEventRuntime/pix3.h>
+#endif
+
 #include "GPUContextDX12.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Math/Viewport.h"
@@ -22,9 +36,6 @@
 #include "Engine/Profiler/RenderStats.h"
 #include "Engine/Graphics/Shaders/GPUShader.h"
 #include "Engine/Threading/Threading.h"
-#if USE_PIX && GPU_ALLOW_PROFILE_EVENTS
-#include <pix3.h>
-#endif
 
 #define DX12_ENABLE_RESOURCE_BARRIERS_BATCHING 1
 #define DX12_ENABLE_RESOURCE_BARRIERS_DEBUGGING 0
