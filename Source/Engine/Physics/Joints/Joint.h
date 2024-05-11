@@ -67,21 +67,21 @@ public:
     /// This is the relative pose which locates the joint frame relative to the actor.
     /// </summary>
     /// <param name="LocalPose">localPose the local pose for the actor this joint.</param>
-    API_PROPERTY()
+    API_PROPERTY(Attributes = "HideInEditor")
         void SetPoseActor0(const PhysicsTransform& LocalPose);
 
     /// <summary>
     /// Get the joint local pose for an actor.
     /// </summary>
     /// <returns>The local pose for this joint</returns>
-    API_PROPERTY() 
+    API_PROPERTY()
         PhysicsTransform GetPoseActor0() const;
 
     /// <summary>
     /// set the inverse mass scale for actor0.
     /// </summary>
     /// <param name="invMassScale">invMassScale the scale to apply to the inverse mass of actor 0 for resolving this constraint</param>
-    API_PROPERTY() 
+    API_PROPERTY(Attributes = "HideInEditor")
         void SetInvMassScaleActor0(float invMassScale);
 
     /// <summary>
@@ -95,14 +95,14 @@ public:
     /// set the inverse inertia scale for actor0.
     /// </summary>
     /// <param name="invInertiaScale">invInertiaScale the scale to apply to the inverse inertia of actor0 for resolving this constraint.</param>
-    API_PROPERTY() 
+    API_PROPERTY(Attributes = "HideInEditor")
         void SetInvInertiaScaleActor0(float invInertiaScale);
 
     /// <summary>
     /// Get the inverse inertia scale for actor0.
     /// </summary>
     /// <returns>inverse inertia scale for actor0</returns>
-    API_PROPERTY() 
+    API_PROPERTY()
         float GetInvInertiaScaleActor0() const;
 #pragma endregion
 #pragma region Actor1
@@ -130,7 +130,7 @@ public:
     /// This is the relative pose which locates the joint frame relative to the actor.
     /// </summary>
     /// <param name="LocalPose">localPose the local pose for the actor this joint.</param>
-    API_PROPERTY() void SetPoseActor1(const PhysicsTransform& LocalPose);
+    API_PROPERTY(Attributes = "HideInEditor") void SetPoseActor1(const PhysicsTransform& LocalPose);
 
     /// <summary>
     /// Get the joint local pose for an actor.
@@ -142,7 +142,7 @@ public:
     /// set the inverse mass scale for actor0.
     /// </summary>
     /// <param name="invMassScale">invMassScale the scale to apply to the inverse mass of actor 0 for resolving this constraint</param>
-    API_PROPERTY() void SetInvMassScaleActor1(float invMassScale);
+    API_PROPERTY(Attributes = "HideInEditor") void SetInvMassScaleActor1(float invMassScale);
 
     /// <summary>
     /// get the inverse mass scale for actor0.
@@ -154,7 +154,7 @@ public:
     /// set the inverse inertia scale for actor0.
     /// </summary>
     /// <param name="invInertiaScale">invInertiaScale the scale to apply to the inverse inertia of actor0 for resolving this constraint.</param>
-    API_PROPERTY() void SetInvInertiaScaleActor1(float invInertiaScale);
+    API_PROPERTY(Attributes = "HideInEditor") void SetInvInertiaScaleActor1(float invInertiaScale);
 
     /// <summary>
     /// Get the inverse inertia scale for actor0.

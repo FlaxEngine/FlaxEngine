@@ -60,7 +60,7 @@ void Joint::SetPoseActor##N##(const PhysicsTransform& InPhysicsTransform)\
 PhysicsTransform Joint::GetPoseActor##N##() const\
 {\
     if (Actor##N##)\
-        return PhysicsTransform::LocalToWorld(Actor0->GetTransform(), LocalPoseActor##N##);\
+        return PhysicsTransform::LocalToWorld(Actor##N##->GetTransform(), LocalPoseActor##N##);\
     return LocalPoseActor##N##;\
 };\
 void Joint::SetInvMassScaleActor##N##(float invMassScale) \
@@ -356,14 +356,15 @@ void Joint::OnDebugDrawSelected()
     auto p0 = GetPoseActor0();
     auto p1 = GetPoseActor1();
     if (Actor0) {
-        DEBUG_DRAW_BOX(Actor0->GetBox(), Color::BlueViolet * 0.8f, 0, false);
+        DEBUG_DRAW_WIRE_BOX(Actor0->GetBox(), Color::BlueViolet * 0.8f, 0, false);
     }
     if (Actor1) 
     {
-        DEBUG_DRAW_BOX(Actor1->GetBox(), Color::AliceBlue * 0.8f, 0, false);
+        DEBUG_DRAW_WIRE_BOX(Actor1->GetBox(), Color::AliceBlue * 0.8f, 0, false);
     }
     DEBUG_DRAW_WIRE_SPHERE(BoundingSphere(p0.Translation, 3.0f), Color::BlueViolet * 0.8f, 0, false);
     DEBUG_DRAW_WIRE_SPHERE(BoundingSphere(p1.Translation, 4.0f), Color::AliceBlue * 0.8f, 0, false);
+    DEBUG_DRAW_WIRE_SPHERE(BoundingSphere(GetRelativeTransform().Translation, 4.0f), Color::AliceBlue * 0.8f, 0, false);
 
     // Base
     Actor::OnDebugDrawSelected();
