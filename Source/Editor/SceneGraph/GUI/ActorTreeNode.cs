@@ -29,6 +29,7 @@ namespace FlaxEditor.SceneGraph.GUI
         private DragScripts _dragScripts;
         private DragAssets _dragAssets;
         private DragActorType _dragActorType;
+        private DragControlType _dragControlType;
         private DragScriptItems _dragScriptItems;
         private DragHandlers _dragHandlers;
         private List<Rectangle> _highlights;
@@ -68,7 +69,7 @@ namespace FlaxEditor.SceneGraph.GUI
                 Visible = (actor.HideFlags & HideFlags.HideInHierarchy) == 0;
 
                 // Pick the correct id when inside a prefab window.
-                var id = actor.HasPrefabLink && actor.Scene == null ? actor.PrefabObjectID : actor.ID;
+                var id = actor.HasPrefabLink && !actor.HasScene ? actor.PrefabObjectID : actor.ID;
                 if (Editor.Instance.ProjectCache.IsExpandedActor(ref id))
                 {
                     Expand(true);
@@ -97,7 +98,7 @@ namespace FlaxEditor.SceneGraph.GUI
                 parentTreeNode.IsLayoutLocked = false;
 
                 // Skip UI update if node won't be in a view
-                if (parentTreeNode.IsCollapsed)
+                if (parentTreeNode.IsCollapsedInHierarchy)
                 {
                     UnlockChildrenRecursive();
                 }
@@ -291,7 +292,7 @@ namespace FlaxEditor.SceneGraph.GUI
                         return Style.Current.ForegroundGrey;
                     }
 
-                    if (actor.Scene != null && Editor.Instance.StateMachine.IsPlayMode && actor.IsStatic)
+                    if (actor.HasScene && Editor.Instance.StateMachine.IsPlayMode && actor.IsStatic)
                     {
                         // Static
                         return color * 0.85f;
@@ -354,7 +355,7 @@ namespace FlaxEditor.SceneGraph.GUI
         private void OnRenamed(RenamePopup renamePopup)
         {
             using (new UndoBlock(ActorNode.Root.Undo, Actor, "Rename"))
-                Actor.Name = renamePopup.Text;
+                Actor.Name = renamePopup.Text.Trim();
         }
 
         /// <inheritdoc />
@@ -366,7 +367,7 @@ namespace FlaxEditor.SceneGraph.GUI
             if (!IsLayoutLocked && actor)
             {
                 // Pick the correct id when inside a prefab window.
-                var id = actor.HasPrefabLink && actor.Scene == null ? actor.PrefabObjectID : actor.ID;
+                var id = actor.HasPrefabLink && !actor.HasScene ? actor.PrefabObjectID : actor.ID;
                 Editor.Instance.ProjectCache.SetExpandedActor(ref id, IsExpanded);
             }
         }
@@ -439,6 +440,17 @@ namespace FlaxEditor.SceneGraph.GUI
             }
             if (_dragActorType.OnDragEnter(data))
                 return _dragActorType.Effect;
+
+            // Check if drag control type
+            if (_dragControlType == null)
+            {
+                _dragControlType = new DragControlType(ValidateDragControlType);
+                _dragHandlers.Add(_dragControlType);
+            }
+            if (_dragControlType.OnDragEnter(data))
+                return _dragControlType.Effect;
+
+            // Check if drag script item
             if (_dragScriptItems == null)
             {
                 _dragScriptItems = new DragScriptItems(ValidateDragScriptItem);
@@ -572,10 +584,33 @@ namespace FlaxEditor.SceneGraph.GUI
                         Editor.LogWarning("Failed to spawn actor of type " + item.TypeName);
                         continue;
                     }
-                    actor.StaticFlags = Actor.StaticFlags;
+                    actor.StaticFlags = newParent.StaticFlags;
                     actor.Name = item.Name;
-                    actor.Transform = Actor.Transform;
-                    ActorNode.Root.Spawn(actor, Actor);
+                    ActorNode.Root.Spawn(actor, newParent);
+                    actor.OrderInParent = newOrder;
+                }
+                result = DragDropEffect.Move;
+            }
+            // Drag control type
+            else if (_dragControlType != null && _dragControlType.HasValidDrag)
+            {
+                for (int i = 0; i < _dragControlType.Objects.Count; i++)
+                {
+                    var item = _dragControlType.Objects[i];
+                    var control = item.CreateInstance() as Control;
+                    if (control == null)
+                    {
+                        Editor.LogWarning("Failed to spawn UIControl with control type " + item.TypeName);
+                        continue;
+                    }
+                    var uiControl = new UIControl
+                    {
+                        Control = control,
+                        StaticFlags = newParent.StaticFlags,
+                        Name = item.Name,
+                    };
+                    ActorNode.Root.Spawn(uiControl, newParent);
+                    uiControl.OrderInParent = newOrder;
                 }
                 result = DragDropEffect.Move;
             }
@@ -640,8 +675,8 @@ namespace FlaxEditor.SceneGraph.GUI
         private bool ValidateDragScript(Script script)
         {
             // Reject dragging scripts not linked to scene (eg. from prefab) or in the opposite way
-            var thisHasScene = Actor.Scene != null;
-            var otherHasScene = script.Scene != null;
+            var thisHasScene = Actor.HasScene;
+            var otherHasScene = script.HasScene;
             if (thisHasScene != otherHasScene)
                 return false;
 
@@ -656,7 +691,12 @@ namespace FlaxEditor.SceneGraph.GUI
 
         private static bool ValidateDragActorType(ScriptType actorType)
         {
-            return true;
+            return Editor.Instance.CodeEditing.Actors.Get().Contains(actorType);
+        }
+
+        private static bool ValidateDragControlType(ScriptType controlType)
+        {
+            return Editor.Instance.CodeEditing.Controls.Get().Contains(controlType);
         }
 
         private static bool ValidateDragScriptItem(ScriptItem script)
@@ -704,6 +744,7 @@ namespace FlaxEditor.SceneGraph.GUI
             _dragScripts = null;
             _dragAssets = null;
             _dragActorType = null;
+            _dragControlType = null;
             _dragScriptItems = null;
             _dragHandlers?.Clear();
             _dragHandlers = null;

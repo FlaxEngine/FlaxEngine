@@ -542,6 +542,8 @@ namespace FlaxEditor.Windows
                 return;
             }
 
+            newShortName = newShortName.Trim();
+
             // Cache data
             string extension = item.IsFolder ? "" : Path.GetExtension(item.Path);
             var newPath = StringUtils.CombinePaths(item.ParentFolder.Path, newShortName + extension);

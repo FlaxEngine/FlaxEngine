@@ -97,7 +97,7 @@ void TerrainChunk::Draw(const RenderContext& renderContext) const
     drawCall.Material = _cachedDrawMaterial;
     renderContext.View.GetWorldMatrix(_transform, drawCall.World);
     drawCall.ObjectPosition = drawCall.World.GetTranslation();
-    drawCall.ObjectRadius = _sphere.Radius;
+    drawCall.ObjectRadius = (float)_sphere.Radius;
     drawCall.Terrain.Patch = _patch;
     drawCall.Terrain.HeightmapUVScaleBias = _heightmapUVScaleBias;
     drawCall.Terrain.OffsetUV = Vector2((float)(_patch->_x * Terrain::ChunksCountEdge + _x), (float)(_patch->_z * Terrain::ChunksCountEdge + _z));
@@ -155,7 +155,7 @@ void TerrainChunk::Draw(const RenderContext& renderContext, MaterialBase* materi
     drawCall.Material = material;
     renderContext.View.GetWorldMatrix(_transform, drawCall.World);
     drawCall.ObjectPosition = drawCall.World.GetTranslation();
-    drawCall.ObjectRadius = _sphere.Radius;
+    drawCall.ObjectRadius = (float)_sphere.Radius;
     drawCall.Terrain.Patch = _patch;
     drawCall.Terrain.HeightmapUVScaleBias = _heightmapUVScaleBias;
     drawCall.Terrain.OffsetUV = Vector2((float)(_patch->_x * Terrain::ChunksCountEdge + _x), (float)(_patch->_z * Terrain::ChunksCountEdge + _z));

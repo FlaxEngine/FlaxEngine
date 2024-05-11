@@ -42,7 +42,7 @@ public:
     int32 ContentKey = 0;
 
     /// <summary>
-    /// If checked, the builds produced by the Game Cooker will be treated as for final game distribution (eg. for game store upload). Builds done this way cannot be tested on console devkits (eg. Xbox One, Xbox Scarlett).
+    /// If checked, the builds produced by the Game Cooker will be treated as for final game distribution (eg. for game store upload). Builds done this way cannot be tested on console devkits (eg. Xbox One, Xbox Scarlett). Enabled by default for `Release` builds.
     /// </summary>
     API_FIELD(Attributes="EditorOrder(40), EditorDisplay(\"General\")")
     bool ForDistribution = false;

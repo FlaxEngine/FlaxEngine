@@ -196,6 +196,10 @@ protected:
 class rcScopedTimer
 {
 public:
+#if 1
+    // Disable timer functionality
+	inline rcScopedTimer(rcContext* ctx, const rcTimerLabel label) { }
+#else
 	/// Constructs an instance and starts the timer.
 	///  @param[in]		ctx		The context to use.
 	///  @param[in]		label	The category of the timer.
@@ -209,6 +213,7 @@ private:
 	
 	rcContext* const m_ctx;
 	const rcTimerLabel m_label;
+#endif
 };
 
 /// Specifies a configuration to use when performing Recast builds.

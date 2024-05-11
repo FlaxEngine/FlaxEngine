@@ -2,6 +2,7 @@
 
 #include "Collider.h"
 #include "Engine/Core/Log.h"
+#include "Engine/Level/Scene/Scene.h"
 #if USE_EDITOR
 #include "Engine/Level/Scene/SceneRendering.h"
 #endif
@@ -35,6 +36,13 @@ void Collider::SetIsTrigger(bool value)
     _isTrigger = value;
     if (_shape)
         PhysicsBackend::SetShapeState(_shape, IsActiveInHierarchy(), _isTrigger && CanBeTrigger());
+    if (EnumHasAnyFlags(_staticFlags, StaticFlags::Navigation) && _isEnabled)
+    {
+        if (_isTrigger)
+            GetScene()->Navigation.Actors.Remove(this);
+        else
+            GetScene()->Navigation.Actors.Add(this);
+    }
 }
 
 void Collider::SetCenter(const Vector3& value)
@@ -43,13 +51,10 @@ void Collider::SetCenter(const Vector3& value)
         return;
     _center = value;
     if (_staticActor)
-    {
         PhysicsBackend::SetShapeLocalPose(_shape, _center, Quaternion::Identity);
-    }
     else if (CalculateShapeTransform())
-    {
         PhysicsBackend::SetShapeLocalPose(_shape, _cachedLocalPosePos, _cachedLocalPoseRot);
-    }
+	
     UpdateBounds();
 }
 
@@ -134,25 +139,27 @@ RigidBody* Collider::GetAttachedRigidBody() const
     return nullptr;
 }
 
-#if USE_EDITOR
-
 void Collider::OnEnable()
 {
+    if (EnumHasAnyFlags(_staticFlags, StaticFlags::Navigation) && !_isTrigger)
+        GetScene()->Navigation.Actors.Add(this);
+#if USE_EDITOR
     GetSceneRendering()->AddPhysicsDebug<Collider, &Collider::DrawPhysicsDebug>(this);
+#endif
 
-    // Base
-    Actor::OnEnable();
+    PhysicsColliderActor::OnEnable();
 }
 
 void Collider::OnDisable()
 {
-    // Base
-    Actor::OnDisable();
+    PhysicsColliderActor::OnDisable();
 
+    if (EnumHasAnyFlags(_staticFlags, StaticFlags::Navigation) && !_isTrigger)
+        GetScene()->Navigation.Actors.Remove(this);
+#if USE_EDITOR
     GetSceneRendering()->RemovePhysicsDebug<Collider, &Collider::DrawPhysicsDebug>(this);
-}
-
 #endif
+}
 
 void Collider::Attach(RigidBody* rigidBody)
 {
@@ -449,6 +456,19 @@ void Collider::OnLayerChanged()
 
     if (_shape)
         UpdateLayerBits();
+}
+
+void Collider::OnStaticFlagsChanged()
+{
+    PhysicsColliderActor::OnStaticFlagsChanged();
+
+    if (!_isTrigger && _isEnabled)
+    {
+        if (EnumHasAnyFlags(_staticFlags, StaticFlags::Navigation))
+            GetScene()->Navigation.Actors.AddUnique(this);
+        else
+            GetScene()->Navigation.Actors.Remove(this);
+    }
 }
 
 void Collider::OnPhysicsSceneChanged(PhysicsScene* previous)

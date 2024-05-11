@@ -430,7 +430,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Title = "Smoothstep",
                 Description = "Returns a smooth Hermite interpolation between 0 and 1, if value is in the range [min, max].",
                 Flags = NodeFlags.MaterialGraph,
-                Size = new Float2(120, 60),
+                Size = new Float2(200, 60),
                 ConnectionsHints = ConnectionsHint.Numeric,
                 IndependentBoxes = new[] { 0, 1, 2 },
                 DependentBoxes = new[] { 3 },

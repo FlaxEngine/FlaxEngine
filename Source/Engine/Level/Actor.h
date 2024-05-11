@@ -383,6 +383,15 @@ public:
     }
 
     /// <summary>
+    /// Gets value indicating if actor is in a scene.
+    /// </summary>
+    API_PROPERTY(Attributes="HideInEditor, NoSerialize")
+    FORCE_INLINE bool HasScene() const
+    {
+        return _scene != nullptr;
+    }
+
+    /// <summary>
     /// Returns true if object is fully static on the scene, otherwise false.
     /// </summary>
     FORCE_INLINE bool IsStatic() const
@@ -877,14 +886,12 @@ public:
     /// Gets rotation of the actor oriented towards the specified world position with upwards direction.
     /// </summary>
     /// <param name="worldPos">The world position to orient towards.</param>
-    /// <param name="worldUp">The up direction that Constrains y axis orientation to a plane this vector lies on. This rule might be broken if forward and up direction are nearly parallel.</param>
+    /// <param name="worldUp">The up direction that constrains up axis orientation to a plane this vector lies on. This rule might be broken if forward and up direction are nearly parallel.</param>
     API_FUNCTION() Quaternion LookingAt(const Vector3& worldPos, const Vector3& worldUp) const;
 
 public:
     /// <summary>
     /// Execute custom action on actors tree.
-    /// Action should returns false to stop calling deeper.
-    /// First action argument is current actor object.
     /// </summary>
     /// <param name="action">Actor to call on every actor in the tree. Returns true if keep calling deeper.</param>
     /// <param name="args">Custom arguments for the function</param>
@@ -894,14 +901,12 @@ public:
         if (action(this, args...))
         {
             for (int32 i = 0; i < Children.Count(); i++)
-                Children[i]->TreeExecute<Params...>(action, args...);
+                Children.Get()[i]->TreeExecute<Params...>(action, args...);
         }
     }
 
     /// <summary>
     /// Execute custom action on actor children tree.
-    /// Action should returns false to stop calling deeper.
-    /// First action argument is current actor object.
     /// </summary>
     /// <param name="action">Actor to call on every actor in the tree. Returns true if keep calling deeper.</param>
     /// <param name="args">Custom arguments for the function</param>
@@ -909,7 +914,7 @@ public:
     void TreeExecuteChildren(Function<bool(Actor*, Params ...)>& action, Params ... args)
     {
         for (int32 i = 0; i < Children.Count(); i++)
-            Children[i]->TreeExecute<Params...>(action, args...);
+            Children.Get()[i]->TreeExecute<Params...>(action, args...);
     }
 
 public:
@@ -1014,11 +1019,14 @@ public:
     virtual void OnOrderInParentChanged();
 
     /// <summary>
+    /// Called when actor static flag gets changed.
+    /// </summary>
+    virtual void OnStaticFlagsChanged();
+
+    /// <summary>
     /// Called when layer gets changed.
     /// </summary>
-    virtual void OnLayerChanged()
-    {
-    }
+    virtual void OnLayerChanged();
 
     /// <summary>
     /// Called when adding object to the game.

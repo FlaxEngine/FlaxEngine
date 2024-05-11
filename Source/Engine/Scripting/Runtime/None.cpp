@@ -130,6 +130,11 @@ MClass* MCore::Array::GetClass(MClass* elementKlass)
     return nullptr;
 }
 
+MClass* MCore::Array::GetArrayClass(const MArray* obj)
+{
+    return nullptr;
+}
+
 int32 MCore::Array::GetLength(const MArray* obj)
 {
     return 0;

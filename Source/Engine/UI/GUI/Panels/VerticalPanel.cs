@@ -6,6 +6,7 @@ namespace FlaxEngine.GUI
     /// This panel arranges child controls vertically.
     /// </summary>
     /// <seealso cref="FlaxEngine.GUI.PanelWithMargins" />
+    [ActorToolbox("GUI")]
     public class VerticalPanel : PanelWithMargins
     {
         /// <summary>

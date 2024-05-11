@@ -286,14 +286,14 @@ void Engine::OnLateFixedUpdate()
 {
     PROFILE_CPU_NAMED("Late Fixed Update");
 
+    // Collect physics simulation results (does nothing if Simulate hasn't been called in the previous loop step)
+    Physics::CollectResults();
+
     // Call event
     LateFixedUpdate();
 
     // Update services
     EngineService::OnLateFixedUpdate();
-
-    // Collect physics simulation results (does nothing if Simulate hasn't been called in the previous loop step)
-    Physics::CollectResults();
 }
 
 void Engine::OnUpdate()

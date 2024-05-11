@@ -89,7 +89,7 @@ namespace FlaxEditor.Content
                 // Cleanup it after usage
                 Object.Destroy(actor, 20.0f);
             }
-            else if (actor.Scene != null)
+            else if (actor.HasScene)
             {
                 // Create prefab with identity transform so the actor instance on a level will have it customized
                 resetTransform = true;

@@ -227,7 +227,7 @@ namespace FlaxEditor.Modules
 
             // When applying changes to prefab from actor in level ignore it's root transformation (see ActorEditor.ProcessDiff)
             var originalTransform = instance.LocalTransform;
-            if (instance.IsPrefabRoot && instance.Scene != null)
+            if (instance.IsPrefabRoot && instance.HasScene)
                 instance.LocalTransform = prefab.GetDefaultInstance().Transform;
 
             // Call backend
