@@ -1637,12 +1637,21 @@ namespace Flax.Build.Bindings
                         }
                         else if (fieldInfo.Type.Type == "Array" || fieldInfo.Type.Type == "Span" || fieldInfo.Type.Type == "DataContainer" || fieldInfo.Type.Type == "BytesContainer")
                         {
-                            string originalElementType = originalType.Substring(0, originalType.Length - 2);
+                            string originalElementType = originalType[0..^2];
+
                             if (internalType)
                             {
                                 // Marshal blittable array elements back to original non-blittable elements
                                 string originalElementTypeMarshaller = originalElementType + "Marshaller";
-                                string internalElementType = $"{originalElementTypeMarshaller}.{originalElementType}Internal";
+                                //[Nori_SC note]
+                                //Find all characters after last . as a example if the c++ type is Class.Struct it will generate a invalid c# code
+                                //with will look like this <Class>.<Struct>Marshaller.<Class>.<Struct>Internal
+                                //valid code looks like this <Class>.<Struct>Marshaller.<Struct>Internal
+
+                                var startindex = originalElementType.LastIndexOf('.') + 1;
+
+                                string internalElementType = $"{originalElementTypeMarshaller}.{originalElementType[startindex..]}Internal";
+
                                 toManagedContent.AppendLine($"unmanaged.{fieldInfo.Name} != IntPtr.Zero ? NativeInterop.ConvertArray((Unsafe.As<ManagedArray>(ManagedHandle.FromIntPtr(unmanaged.{fieldInfo.Name}).Target)).ToSpan<{internalElementType}>(), {originalElementTypeMarshaller}.ToManaged) : null;");
                                 toNativeContent.AppendLine($"managed.{fieldInfo.Name}?.Length > 0 ? ManagedHandle.ToIntPtr(ManagedArray.WrapNewArray(NativeInterop.ConvertArray(managed.{fieldInfo.Name}, {originalElementTypeMarshaller}.ToNative)), GCHandleType.Weak) : IntPtr.Zero;");
                                 freeContents.AppendLine($"if (unmanaged.{fieldInfo.Name} != IntPtr.Zero) {{ ManagedHandle handle = ManagedHandle.FromIntPtr(unmanaged.{fieldInfo.Name}); Span<{internalElementType}> values = (Unsafe.As<ManagedArray>(handle.Target)).ToSpan<{internalElementType}>(); foreach (var value in values) {{ {originalElementTypeMarshaller}.Free(value); }} (Unsafe.As<ManagedArray>(handle.Target)).Free(); handle.Free(); }}");
