@@ -698,6 +698,38 @@ namespace FlaxEditor.GUI.Tree
                 }
             }
 
+            // Show tree guide lines
+            if (Editor.Instance.Options.Options.Interface.ShowTreeLines)
+            {
+                TreeNode parentNode = Parent as TreeNode;
+                bool thisNodeIsLast = false;
+                while (parentNode != null && parentNode != ParentTree.Children[0])
+                {
+                    float bottomOffset = 0;
+                    float topOffset = 0;
+
+                    if (Parent == parentNode && this == Parent.Children[0])
+                        topOffset = 2;
+
+                    if (thisNodeIsLast && parentNode.Children.Count == 1)
+                        bottomOffset = topOffset != 0 ? 4 : 2;
+
+                    if (Parent == parentNode && this == Parent.Children[Parent.Children.Count - 1] && !_opened)
+                    {
+                        thisNodeIsLast = true;
+                        bottomOffset = topOffset != 0 ? 4 : 2;
+                    }
+
+                    float leftOffset = 9;
+                    // Adjust offset for icon image
+                    if (_iconCollaped.IsValid)
+                        leftOffset += 18;
+                    var lineRect1 = new Rectangle(parentNode.TextRect.Left - leftOffset, parentNode.HeaderRect.Top + topOffset, 1, parentNode.HeaderRect.Height - bottomOffset);
+                    Render2D.FillRectangle(lineRect1, isSelected ? style.ForegroundGrey : style.LightBackground);
+                    parentNode = parentNode.Parent as TreeNode;
+                }
+            }
+
             // Base
             if (_opened)
             {
