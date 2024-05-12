@@ -389,7 +389,7 @@ namespace FlaxEditor.GUI.Dialogs
                     }
                 }
             }
-            Render2D.FillRectangle(newRect, _value * _value.A);
+            Render2D.FillRectangle(newRect, _value);
         }
 
         /// <inheritdoc />
