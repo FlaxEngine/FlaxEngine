@@ -148,6 +148,8 @@ const Char* ToString(const BuildPlatform platform)
         return TEXT("Mac ARM64");
     case BuildPlatform::iOSARM64:
         return TEXT("iOS ARM64");
+    case BuildPlatform::WindowsARM64:
+        return TEXT("Windows ARM64");
     default:
         return TEXT("");
     }
@@ -300,6 +302,10 @@ void CookingData::GetBuildPlatformName(const Char*& platform, const Char*& archi
         platform = TEXT("iOS");
         architecture = TEXT("ARM64");
         break;
+    case BuildPlatform::WindowsARM64:
+        platform = TEXT("Windows");
+        architecture = TEXT("ARM64");
+        break;
     default:
         LOG(Fatal, "Unknown or unsupported build platform.");
     }
@@ -385,6 +391,9 @@ PlatformTools* GameCooker::GetTools(BuildPlatform platform)
             break;
         case BuildPlatform::Windows64:
             result = New<WindowsPlatformTools>(ArchitectureType::x64);
+            break;
+        case BuildPlatform::WindowsARM64:
+            result = New<WindowsPlatformTools>(ArchitectureType::ARM64);
             break;
 #endif
 #if PLATFORM_TOOLS_UWP
@@ -547,7 +556,12 @@ void GameCooker::GetCurrentPlatform(PlatformType& platform, BuildPlatform& build
     switch (PLATFORM_TYPE)
     {
     case PlatformType::Windows:
-        buildPlatform = PLATFORM_64BITS ? BuildPlatform::Windows64 : BuildPlatform::Windows32;
+        if (PLATFORM_ARCH == ArchitectureType::x64)
+            buildPlatform = BuildPlatform::Windows64;
+        else if (PLATFORM_ARCH == ArchitectureType::ARM64)
+            buildPlatform = BuildPlatform::WindowsARM64;
+        else
+            buildPlatform = BuildPlatform::Windows32;
         break;
     case PlatformType::XboxOne:
         buildPlatform = BuildPlatform::XboxOne;

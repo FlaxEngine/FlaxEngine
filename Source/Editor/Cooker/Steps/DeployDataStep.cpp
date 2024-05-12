@@ -73,6 +73,7 @@ bool DeployDataStep::Perform(CookingData& data)
             {
             case BuildPlatform::Windows32:
             case BuildPlatform::Windows64:
+            case BuildPlatform::WindowsARM64:
                 canUseSystemDotnet = PLATFORM_TYPE == PlatformType::Windows;
                 break;
             case BuildPlatform::LinuxX64:
