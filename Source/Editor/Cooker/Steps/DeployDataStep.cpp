@@ -160,7 +160,20 @@ bool DeployDataStep::Perform(CookingData& data)
                 }
                 else
                 {
-                    failed |= EditorUtilities::CopyDirectoryIfNewer(dstDotnet / TEXT("host/fxr") / version, srcDotnet / TEXT("host/fxr") / version, true);
+                    // TODO: hostfxr for target platform should be copied from nuget package location: microsoft.netcore.app.runtime.<RID>/<VERSION>/runtimes/<RID>/native/hostfxr.dll
+                    String dstHostfxr = dstDotnet / TEXT("host/fxr") / version;
+                    if (!FileSystem::DirectoryExists(dstHostfxr))
+                        FileSystem::CreateDirectory(dstHostfxr);
+                    const Char *platformName, *archName;
+                    data.GetBuildPlatformName(platformName, archName);
+                    if (data.Platform == BuildPlatform::Windows64 || data.Platform == BuildPlatform::WindowsARM64 || data.Platform == BuildPlatform::Windows32)
+                        failed |= FileSystem::CopyFile(dstHostfxr / TEXT("hostfxr.dll"), depsRoot / TEXT("ThirdParty") / archName / TEXT("hostfxr.dll"));
+                    else if (data.Platform == BuildPlatform::LinuxX64)
+                        failed |= FileSystem::CopyFile(dstHostfxr / TEXT("hostfxr.so"), depsRoot / TEXT("ThirdParty") / archName / TEXT("hostfxr.so"));
+                    else if (data.Platform == BuildPlatform::MacOSx64 || data.Platform == BuildPlatform::MacOSARM64)
+                        failed |= FileSystem::CopyFile(dstHostfxr / TEXT("hostfxr.dylib"), depsRoot / TEXT("ThirdParty") / archName / TEXT("hostfxr.dylib"));
+                    else
+                        failed |= true;
                     failed |= EditorUtilities::CopyDirectoryIfNewer(dstDotnet / TEXT("shared/Microsoft.NETCore.App") / version, srcDotnet / TEXT("shared/Microsoft.NETCore.App") / version, true);
                 }
                 if (failed)
