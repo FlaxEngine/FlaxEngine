@@ -469,7 +469,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
             {
                 for (int i = 0; i < l.Children.Count; i++)
                 {
-                    if (l.Children[i] is GroupElement g && g.Panel.HeaderText.Equals("Transform", StringComparison.Ordinal) && i + 1 <= l.Children.Count)
+                    if (l.Children[i] is GroupElement g && g.Panel.HeaderText.Equals("Transform", StringComparison.Ordinal))
                     {
                         l.Children.Remove(g);
                         l.ContainerControl.Children.Remove(g.Panel);
