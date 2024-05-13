@@ -22,6 +22,15 @@
 #if VIDEO_API_MF
 #include "MF/VideoBackendMF.h"
 #endif
+#if VIDEO_API_PS4
+#include "Platforms/PS4/Engine/Video/VideoBackendPS4.h"
+#endif
+#if VIDEO_API_PS5
+#include "Platforms/PS5/Engine/Video/VideoBackendPS5.h"
+#endif
+#if VIDEO_API_SWITCH
+#include "Platforms/Switch/Engine/Video/VideoBackendSwitch.h"
+#endif
 
 /// <summary>
 /// Video frame upload task to the GPU.
@@ -199,6 +208,15 @@ bool Video::CreatePlayerBackend(const VideoBackendPlayerInfo& info, VideoBackend
             return false;
 #if VIDEO_API_MF
     TRY_USE_BACKEND(VideoBackendMF);
+#endif
+#if VIDEO_API_PS4
+    TRY_USE_BACKEND(VideoBackendPS4);
+#endif
+#if VIDEO_API_PS5
+    TRY_USE_BACKEND(VideoBackendPS5);
+#endif
+#if VIDEO_API_SWITCH
+    TRY_USE_BACKEND(VideoBackendSwitch);
 #endif
 #undef TRY_USE_BACKEND
 

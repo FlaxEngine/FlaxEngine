@@ -34,6 +34,18 @@ public class Video : EngineModule
             options.OutputFiles.Add("mfreadwrite.lib");
             options.OutputFiles.Add("mfuuid.lib");
             break;
+        case TargetPlatform.PS4:
+            options.SourcePaths.Add(Path.Combine(Globals.EngineRoot, "Source", "Platforms", "PS4", "Engine", "Video"));
+            options.CompileEnv.PreprocessorDefinitions.Add("VIDEO_API_PS4");
+            break;
+        case TargetPlatform.PS5:
+            options.SourcePaths.Add(Path.Combine(Globals.EngineRoot, "Source", "Platforms", "PS5", "Engine", "Video"));
+            options.CompileEnv.PreprocessorDefinitions.Add("VIDEO_API_PS5");
+            break;
+        case TargetPlatform.Switch:
+            options.SourcePaths.Add(Path.Combine(Globals.EngineRoot, "Source", "Platforms", "Switch", "Engine", "Video"));
+            options.CompileEnv.PreprocessorDefinitions.Add("VIDEO_API_SWITCH");
+            break;
         }
     }
 
