@@ -125,7 +125,7 @@ namespace FlaxEngine.GUI
             return font.MeasureText(ConvertedText(), ref _layout);
         }
         
-        Font GetFont()
+        private Font GetFont()
         {
             Font font;
             if (Bold)
@@ -137,7 +137,7 @@ namespace FlaxEngine.GUI
             return font;
         }
 
-        string ConvertedText()
+        private string ConvertedText()
         {
             string text = _text;
             switch (CaseOption)

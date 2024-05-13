@@ -282,7 +282,7 @@ namespace FlaxEngine.GUI
                 Render2D.PopClip();
         }
 
-        Font GetFont()
+        private Font GetFont()
         {
             Font font;
             if (Bold)
@@ -294,7 +294,7 @@ namespace FlaxEngine.GUI
             return font;
         }
 
-        LocalizedString ConvertedText()
+        private LocalizedString ConvertedText()
         {
             LocalizedString text = _text;
             switch (CaseOption)
