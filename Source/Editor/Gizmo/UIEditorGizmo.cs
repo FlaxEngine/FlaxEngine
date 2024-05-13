@@ -499,6 +499,15 @@ namespace FlaxEditor
             bool drawAnySelectedControl = false;
             var transformGizmo = TransformGizmo;
             var mousePos = PointFromWindow(RootWindow.MousePosition);
+            if (EnableSelecting && !_mouseMovesControl && !_mouseMovesWidget && IsMouseOver)
+            {
+                // Highlight control under mouse for easier selecting (except if already selected)
+                if (RayCastControl(ref mousePos, out var hitControl) &&
+                    (transformGizmo == null || !transformGizmo.Selection.Any(x => x.EditableObject is UIControl controlActor && controlActor.Control == hitControl)))
+                {
+                    DrawControl(null, hitControl, false, ref mousePos, ref drawAnySelectedControl);
+                }
+            }
             if (transformGizmo != null)
             {
                 // Selected UI controls outline
@@ -509,15 +518,6 @@ namespace FlaxEditor
                     {
                         DrawControl(controlActor, controlActor.Control, true, ref mousePos, ref drawAnySelectedControl, EnableSelecting);
                     }
-                }
-            }
-            if (EnableSelecting && !_mouseMovesControl && !_mouseMovesWidget && IsMouseOver)
-            {
-                // Highlight control under mouse for easier selecting (except if already selected)
-                if (RayCastControl(ref mousePos, out var hitControl) &&
-                    (transformGizmo == null || !transformGizmo.Selection.Any(x => x.EditableObject is UIControl controlActor && controlActor.Control == hitControl)))
-                {
-                    DrawControl(null, hitControl, false, ref mousePos, ref drawAnySelectedControl);
                 }
             }
             if (drawAnySelectedControl)
