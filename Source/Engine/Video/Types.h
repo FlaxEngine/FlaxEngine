@@ -32,7 +32,7 @@ struct VideoBackendPlayer
     Char* DebugUrl;
     int32 DebugUrlLen;
 #endif
-    int32 Width, Height, AvgVideoBitRate, FramesCount;
+    int32 Width, Height, FramesCount;
     int32 VideoFrameWidth, VideoFrameHeight;
     PixelFormat Format;
     float FrameRate;

@@ -82,7 +82,6 @@ namespace MF
                 player.Width = videoArea.Area.cx;
                 player.Height = videoArea.Area.cy;
             }
-            player.AvgVideoBitRate = MFGetAttributeUINT32(mediaType, MF_MT_AVG_BITRATE, 0);
             uint64_t fpsValue;
             hr = mediaType->GetUINT64(MF_MT_FRAME_RATE, &fpsValue);
             if (SUCCEEDED(hr))
