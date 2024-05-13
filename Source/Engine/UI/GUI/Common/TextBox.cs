@@ -143,10 +143,10 @@ namespace FlaxEngine.GUI
             switch (CaseOption)
             {
             case TextCaseOptions.None: break;
-            case TextCaseOptions.UpperCase:
+            case TextCaseOptions.Uppercase:
                 text = text.ToUpper();
                 break;
-            case TextCaseOptions.LowerCase:
+            case TextCaseOptions.Lowercase:
                 text = text.ToLower();
                 break;
             default: break;

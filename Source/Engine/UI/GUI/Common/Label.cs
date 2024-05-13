@@ -18,12 +18,12 @@ namespace FlaxEngine.GUI
         /// <summary>
         /// Uppercase.
         /// </summary>
-        UpperCase,
+        Uppercase,
 
         /// <summary>
         /// Lowercase
         /// </summary>
-        LowerCase
+        Lowercase
     }
 
     /// <summary>
@@ -301,10 +301,10 @@ namespace FlaxEngine.GUI
             switch (CaseOption)
             {
             case TextCaseOptions.None: break;
-            case TextCaseOptions.UpperCase:
+            case TextCaseOptions.Uppercase:
                 text = text.ToString().ToUpper();
                 break;
-            case TextCaseOptions.LowerCase:
+            case TextCaseOptions.Lowercase:
                 text = text.ToString().ToLower();
                 break;
             default: break;
