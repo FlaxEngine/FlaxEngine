@@ -253,6 +253,41 @@ MObject* MCore::Exception::GetNotSupported(const char* msg)
     return nullptr;
 }
 
+::String MCore::Type::ToString(MType* type)
+{
+    return ::String::Empty;
+}
+
+MClass* MCore::Type::GetClass(MType* type)
+{
+    return nullptr;
+}
+
+MType* MCore::Type::GetElementType(MType* type)
+{
+    return nullptr;
+}
+
+int32 MCore::Type::GetSize(MType* type)
+{
+    return 0;
+}
+
+MTypes MCore::Type::GetType(MType* type)
+{
+    return MTypes::End;
+}
+
+bool MCore::Type::IsPointer(MType* type)
+{
+    return false;
+}
+
+bool MCore::Type::IsReference(MType* type)
+{
+    return false;
+}
+
 const MAssembly::ClassesDictionary& MAssembly::GetClasses() const
 {
     _hasCachedClasses = true;
