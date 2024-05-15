@@ -1641,8 +1641,9 @@ namespace Flax.Build.Bindings
                             if (internalType)
                             {
                                 // Marshal blittable array elements back to original non-blittable elements
-                                string originalElementTypeMarshaller = originalElementType + "Marshaller";
-                                string internalElementType = $"{originalElementTypeMarshaller}.{originalElementType}Internal";
+                                string originalElementTypeMarshaller = $"{originalElementType}Marshaller";
+                                string originalElementTypeName = originalElementType.Substring(originalElementType.LastIndexOf('.') + 1); // Strip namespace
+                                string internalElementType = $"{originalElementTypeMarshaller}.{originalElementTypeName}Internal";
                                 toManagedContent.AppendLine($"unmanaged.{fieldInfo.Name} != IntPtr.Zero ? NativeInterop.ConvertArray((Unsafe.As<ManagedArray>(ManagedHandle.FromIntPtr(unmanaged.{fieldInfo.Name}).Target)).ToSpan<{internalElementType}>(), {originalElementTypeMarshaller}.ToManaged) : null;");
                                 toNativeContent.AppendLine($"managed.{fieldInfo.Name}?.Length > 0 ? ManagedHandle.ToIntPtr(ManagedArray.WrapNewArray(NativeInterop.ConvertArray(managed.{fieldInfo.Name}, {originalElementTypeMarshaller}.ToNative)), GCHandleType.Weak) : IntPtr.Zero;");
                                 freeContents.AppendLine($"if (unmanaged.{fieldInfo.Name} != IntPtr.Zero) {{ ManagedHandle handle = ManagedHandle.FromIntPtr(unmanaged.{fieldInfo.Name}); Span<{internalElementType}> values = (Unsafe.As<ManagedArray>(handle.Target)).ToSpan<{internalElementType}>(); foreach (var value in values) {{ {originalElementTypeMarshaller}.Free(value); }} (Unsafe.As<ManagedArray>(handle.Target)).Free(); handle.Free(); }}");
