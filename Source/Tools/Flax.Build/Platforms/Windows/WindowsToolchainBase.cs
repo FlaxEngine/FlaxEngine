@@ -136,6 +136,8 @@ namespace Flax.Build.Platforms
             // Get the tools paths
             var hostArchitecture = Platform.BuildTargetArchitecture;
             _vcToolPath = WindowsPlatformBase.GetVCToolPath(Toolset, hostArchitecture, Architecture);
+            if (string.IsNullOrEmpty(_vcToolPath))
+                throw new Exception(string.Format("No {0} host compiler tools found for target architecture {1}", hostArchitecture, Architecture));
             _compilerPath = Path.Combine(_vcToolPath, "cl.exe");
             _linkerPath = Path.Combine(_vcToolPath, "link.exe");
             _libToolPath = Path.Combine(_vcToolPath, "lib.exe");

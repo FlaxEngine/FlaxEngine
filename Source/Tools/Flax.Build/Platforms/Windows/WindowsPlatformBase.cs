@@ -424,53 +424,48 @@ namespace Flax.Build.Platforms
 
             switch (toolset)
             {
-                case WindowsPlatformToolset.v140:
+            case WindowsPlatformToolset.v140:
+            {
+                if (hostArchitecture != TargetArchitecture.x86)
                 {
-                    if (hostArchitecture != TargetArchitecture.x86)
-                    {
-                        string nativeCompilerPath = Path.Combine(vcToolChainDir, "bin", "amd64", "cl.exe");
-                        if (File.Exists(nativeCompilerPath))
-                        {
-                            return Path.GetDirectoryName(nativeCompilerPath);
-                        }
-
-                        string crossCompilerPath = Path.Combine(vcToolChainDir, "bin", "x86_amd64", "cl.exe");
-                        if (File.Exists(crossCompilerPath))
-                        {
-                            return Path.GetDirectoryName(crossCompilerPath);
-                        }
-                        throw new Exception(string.Format("No {0} host compiler toolchain found in {1} or {2}", hostArchitecture.ToString(), nativeCompilerPath, crossCompilerPath));
-                    }
-                    else
-                    {
-                        string compilerPath = Path.Combine(vcToolChainDir, "bin", "cl.exe");
-                        if (File.Exists(compilerPath))
-                        {
-                            return Path.GetDirectoryName(compilerPath);
-                        }
-                        throw new Exception(string.Format("No {0} host compiler toolchain found in {1}", hostArchitecture.ToString()));
-                    }
-                }
-                case WindowsPlatformToolset.v141:
-                case WindowsPlatformToolset.v142:
-                case WindowsPlatformToolset.v143:
-                case WindowsPlatformToolset.v144:
-                {
-                    string hostFolder = hostArchitecture == TargetArchitecture.x86 ? "HostX86" : $"Host{hostArchitecture.ToString().ToLower()}";
-                    string nativeCompilerPath = Path.Combine(vcToolChainDir, "bin", hostFolder, architecture.ToString().ToLower(), "cl.exe");
+                    string nativeCompilerPath = Path.Combine(vcToolChainDir, "bin", "amd64", "cl.exe");
                     if (File.Exists(nativeCompilerPath))
-                    {
                         return Path.GetDirectoryName(nativeCompilerPath);
-                    }
 
-                    string crossCompilerPath = Path.Combine(vcToolChainDir, "bin", hostFolder, architecture.ToString().ToLower(), "cl.exe");
+                    string crossCompilerPath = Path.Combine(vcToolChainDir, "bin", "x86_amd64", "cl.exe");
                     if (File.Exists(crossCompilerPath))
-                    {
                         return Path.GetDirectoryName(crossCompilerPath);
-                    }
-                    throw new Exception(string.Format("No {0} host compiler toolchain found in {1} or {2}", hostArchitecture.ToString(), nativeCompilerPath, crossCompilerPath));
+
+                    Log.Verbose(string.Format("No {0} host compiler toolchain found in {1} or {2}", hostArchitecture.ToString(), nativeCompilerPath, crossCompilerPath));
+                    return null;
                 }
-                default: throw new ArgumentOutOfRangeException(nameof(toolset), toolset, null);
+                else
+                {
+                    string compilerPath = Path.Combine(vcToolChainDir, "bin", "cl.exe");
+                    if (File.Exists(compilerPath))
+                        return Path.GetDirectoryName(compilerPath);
+                    Log.Verbose(string.Format("No {0} host compiler toolchain found in {1}", hostArchitecture.ToString()));
+                    return null;
+                }
+            }
+            case WindowsPlatformToolset.v141:
+            case WindowsPlatformToolset.v142:
+            case WindowsPlatformToolset.v143:
+            case WindowsPlatformToolset.v144:
+            {
+                string hostFolder = hostArchitecture == TargetArchitecture.x86 ? "HostX86" : $"Host{hostArchitecture.ToString().ToLower()}";
+                string nativeCompilerPath = Path.Combine(vcToolChainDir, "bin", hostFolder, architecture.ToString().ToLower(), "cl.exe");
+                if (File.Exists(nativeCompilerPath))
+                    return Path.GetDirectoryName(nativeCompilerPath);
+
+                string crossCompilerPath = Path.Combine(vcToolChainDir, "bin", hostFolder, architecture.ToString().ToLower(), "cl.exe");
+                if (File.Exists(crossCompilerPath))
+                    return Path.GetDirectoryName(crossCompilerPath);
+
+                Log.Verbose(string.Format("No {0} host compiler toolchain found in {1} or {2}", hostArchitecture.ToString(), nativeCompilerPath, crossCompilerPath));
+                return null;
+            }
+            default: throw new ArgumentOutOfRangeException(nameof(toolset), toolset, null);
             }
         }
 

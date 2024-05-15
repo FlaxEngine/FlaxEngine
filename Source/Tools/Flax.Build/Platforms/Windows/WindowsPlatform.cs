@@ -71,6 +71,24 @@ namespace Flax.Build.Platforms
         }
 
         /// <inheritdoc />
+        public override bool CanBuildArchitecture(TargetArchitecture targetArchitecture)
+        {
+            // Prevent generating configuration data for Windows x86 (deprecated)
+            if (targetArchitecture == TargetArchitecture.x86)
+                return false;
+
+            // Check if we have a compiler for this architecture
+            var toolsets = GetToolsets();
+            foreach (var toolset in toolsets)
+            {
+                if (GetVCToolPath(toolset.Key, BuildTargetArchitecture, targetArchitecture) != null)
+                    return true;
+            }
+
+            return false;
+        }
+
+        /// <inheritdoc />
         void IVisualStudioProjectCustomizer.WriteVisualStudioBegin(VisualStudioProject project, Platform platform, StringBuilder vcProjectFileContent, StringBuilder vcFiltersFileContent, StringBuilder vcUserFileContent)
         {
         }

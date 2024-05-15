@@ -189,6 +189,16 @@ namespace Flax.Build
         }
 
         /// <summary>
+        /// Determines whether this platform can compile or cross-compile for the specified architecture.
+        /// </summary>
+        /// <param name="targetArchitecture">The architecture.</param>
+        /// <returns><c>true</c> if this platform can build the specified architecture; otherwise, <c>false</c>.</returns>
+        public virtual bool CanBuildArchitecture(TargetArchitecture targetArchitecture)
+        {
+            return IsPlatformSupported(Target, targetArchitecture);
+        }
+
+        /// <summary>
         /// Gets the path to the output file for the linker.
         /// </summary>
         /// <param name="name">The original library name.</param>
