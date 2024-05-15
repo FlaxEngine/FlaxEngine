@@ -267,13 +267,21 @@ namespace Flax.Build.Bindings
             if (value.Contains('(') && value.Contains(')'))
                 return "new " + value;
 
+            // Special case for non-strongly typed enums
+            if (valueType != null && !value.Contains('.', StringComparison.Ordinal))
+            {
+                apiType = FindApiTypeInfo(buildData, valueType, caller);
+                if (apiType is EnumInfo)
+                    return $"{apiType.Name}.{value}";
+            }
+
             return value;
         }
 
         private static string GenerateCSharpNativeToManaged(BuildData buildData, TypeInfo typeInfo, ApiTypeInfo caller, bool marshalling = false)
         {
             string result;
-            if (typeInfo?.Type == null)
+            if (typeInfo == null || typeInfo.Type == null)
                 throw new ArgumentNullException();
 
             // Use dynamic array as wrapper container for fixed-size native arrays
