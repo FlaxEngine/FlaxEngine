@@ -234,11 +234,16 @@ namespace FlaxEngine.GUI
             Render2D.FillRectangle(new Rectangle(Float2.Zero, Size), Color.Lerp(style.BackgroundSelected, style.Background, 0.6f));
             Render2D.FillRectangle(new Rectangle(1.1f, 1.1f, Width - 2, Height - 2), style.Background);
 
+            // Padding for text
+            var textRect = GetClientArea();
+            textRect.X += 5;
+            textRect.Width -= 10;
+
             // Tooltip text
             Render2D.DrawText(
                               style.FontMedium,
                               _currentText,
-                              GetClientArea(),
+                              textRect,
                               style.Foreground,
                               TextAlignment.Center,
                               TextAlignment.Center,
