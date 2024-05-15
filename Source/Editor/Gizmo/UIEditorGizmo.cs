@@ -499,6 +499,15 @@ namespace FlaxEditor
             bool drawAnySelectedControl = false;
             var transformGizmo = TransformGizmo;
             var mousePos = PointFromWindow(RootWindow.MousePosition);
+            if (EnableSelecting && !_mouseMovesControl && !_mouseMovesWidget && IsMouseOver)
+            {
+                // Highlight control under mouse for easier selecting (except if already selected)
+                if (RayCastControl(ref mousePos, out var hitControl) &&
+                    (transformGizmo == null || !transformGizmo.Selection.Any(x => x.EditableObject is UIControl controlActor && controlActor.Control == hitControl)))
+                {
+                    DrawControl(null, hitControl, false, ref mousePos, ref drawAnySelectedControl);
+                }
+            }
             if (transformGizmo != null)
             {
                 // Selected UI controls outline
@@ -509,15 +518,6 @@ namespace FlaxEditor
                     {
                         DrawControl(controlActor, controlActor.Control, true, ref mousePos, ref drawAnySelectedControl, EnableSelecting);
                     }
-                }
-            }
-            if (EnableSelecting && !_mouseMovesControl && !_mouseMovesWidget && IsMouseOver)
-            {
-                // Highlight control under mouse for easier selecting (except if already selected)
-                if (RayCastControl(ref mousePos, out var hitControl) &&
-                    (transformGizmo == null || !transformGizmo.Selection.Any(x => x.EditableObject is UIControl controlActor && controlActor.Control == hitControl)))
-                {
-                    DrawControl(null, hitControl, false, ref mousePos, ref drawAnySelectedControl);
                 }
             }
             if (drawAnySelectedControl)
@@ -617,40 +617,39 @@ namespace FlaxEditor
                 // Draw sizing widgets
                 if (_widgets == null)
                     _widgets = new List<Widget>();
-                var widgetSize = 8.0f;
+                var widgetSize = 10.0f;
                 var viewScale = ViewScale;
                 if (viewScale < 0.7f)
                     widgetSize *= viewScale;
                 var controlSize = control.Size.Absolute.MinValue / 50.0f;
                 if (controlSize < 1.0f)
                     widgetSize *= Mathf.Clamp(controlSize + 0.1f, 0.1f, 1.0f);
-                var cornerSize = new Float2(widgetSize);
-                DrawControlWidget(uiControl, ref ul, ref mousePos, ref cornerSize, new Float2(-1, -1), CursorType.SizeNWSE);
-                DrawControlWidget(uiControl, ref ur, ref mousePos, ref cornerSize, new Float2(1, -1), CursorType.SizeNESW);
-                DrawControlWidget(uiControl, ref bl, ref mousePos, ref cornerSize, new Float2(-1, 1), CursorType.SizeNESW);
-                DrawControlWidget(uiControl, ref br, ref mousePos, ref cornerSize, new Float2(1, 1), CursorType.SizeNWSE);
-                var edgeSizeV = new Float2(widgetSize * 2, widgetSize);
-                var edgeSizeH = new Float2(edgeSizeV.Y, edgeSizeV.X);
+                var widgetHandleSize = new Float2(widgetSize);
+                DrawControlWidget(uiControl, ref ul, ref mousePos, ref widgetHandleSize, viewScale, new Float2(-1, -1), CursorType.SizeNWSE);
+                DrawControlWidget(uiControl, ref ur, ref mousePos, ref widgetHandleSize, viewScale, new Float2(1, -1), CursorType.SizeNESW);
+                DrawControlWidget(uiControl, ref bl, ref mousePos, ref widgetHandleSize, viewScale, new Float2(-1, 1), CursorType.SizeNESW);
+                DrawControlWidget(uiControl, ref br, ref mousePos, ref widgetHandleSize, viewScale, new Float2(1, 1), CursorType.SizeNWSE);
                 Float2.Lerp(ref ul, ref bl, 0.5f, out var el);
                 Float2.Lerp(ref ur, ref br, 0.5f, out var er);
                 Float2.Lerp(ref ul, ref ur, 0.5f, out var eu);
                 Float2.Lerp(ref bl, ref br, 0.5f, out var eb);
-                DrawControlWidget(uiControl, ref el, ref mousePos, ref edgeSizeH, new Float2(-1, 0), CursorType.SizeWE);
-                DrawControlWidget(uiControl, ref er, ref mousePos, ref edgeSizeH, new Float2(1, 0), CursorType.SizeWE);
-                DrawControlWidget(uiControl, ref eu, ref mousePos, ref edgeSizeV, new Float2(0, -1), CursorType.SizeNS);
-                DrawControlWidget(uiControl, ref eb, ref mousePos, ref edgeSizeV, new Float2(0, 1), CursorType.SizeNS);
+                DrawControlWidget(uiControl, ref el, ref mousePos, ref widgetHandleSize, viewScale, new Float2(-1, 0), CursorType.SizeWE);
+                DrawControlWidget(uiControl, ref er, ref mousePos, ref widgetHandleSize, viewScale, new Float2(1, 0), CursorType.SizeWE);
+                DrawControlWidget(uiControl, ref eu, ref mousePos, ref widgetHandleSize, viewScale, new Float2(0, -1), CursorType.SizeNS);
+                DrawControlWidget(uiControl, ref eb, ref mousePos, ref widgetHandleSize, viewScale, new Float2(0, 1), CursorType.SizeNS);
 
                 // TODO: draw anchors
             }
         }
 
-        private void DrawControlWidget(UIControl uiControl, ref Float2 pos, ref Float2 mousePos, ref Float2 size, Float2 resizeAxis, CursorType cursor)
+        private void DrawControlWidget(UIControl uiControl, ref Float2 pos, ref Float2 mousePos, ref Float2 size,float scale, Float2 resizeAxis, CursorType cursor)
         {
             var style = Style.Current;
-            var rect = new Rectangle(pos - size * 0.5f, size);
+            var rect = new Rectangle((pos + resizeAxis * 10 * scale) - size * 0.5f, size);
             if (rect.Contains(ref mousePos))
             {
                 Render2D.FillRectangle(rect, style.Foreground);
+                Render2D.DrawRectangle(rect, style.SelectionBorder);
             }
             else
             {
