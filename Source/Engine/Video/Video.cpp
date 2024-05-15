@@ -22,6 +22,9 @@
 #if VIDEO_API_MF
 #include "MF/VideoBackendMF.h"
 #endif
+#if VIDEO_API_ANDROID
+#include "Android/VideoBackendAndroid.h"
+#endif
 #if VIDEO_API_PS4
 #include "Platforms/PS4/Engine/Video/VideoBackendPS4.h"
 #endif
@@ -219,6 +222,9 @@ bool Video::CreatePlayerBackend(const VideoBackendPlayerInfo& info, VideoBackend
             return false;
 #if VIDEO_API_MF
     TRY_USE_BACKEND(VideoBackendMF);
+#endif
+#if VIDEO_API_ANDROID
+    TRY_USE_BACKEND(VideoBackendAndroid);
 #endif
 #if VIDEO_API_PS4
     TRY_USE_BACKEND(VideoBackendPS4);

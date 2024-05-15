@@ -4,10 +4,12 @@
 #include "ShaderStorage.h"
 #include "ShaderCacheManager.h"
 #include "Engine/Core/Log.h"
-#include "Engine/Engine/CommandLine.h"
 #include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Graphics/Shaders/GPUShader.h"
+#if COMPILE_WITH_SHADER_COMPILER
+#include "Engine/Engine/CommandLine.h"
 #include "Engine/Serialization/MemoryReadStream.h"
+#endif
 #include "Engine/ShadowsOfMordor/AtlasChartsPacker.h"
 
 ShaderStorage::CachingMode ShaderStorage::CurrentCachingMode =

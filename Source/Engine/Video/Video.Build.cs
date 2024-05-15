@@ -46,6 +46,10 @@ public class Video : EngineModule
             options.SourcePaths.Add(Path.Combine(Globals.EngineRoot, "Source", "Platforms", "Switch", "Engine", "Video"));
             options.CompileEnv.PreprocessorDefinitions.Add("VIDEO_API_SWITCH");
             break;
+        case TargetPlatform.Android:
+            options.SourcePaths.Add(Path.Combine(FolderPath, "Android"));
+            options.CompileEnv.PreprocessorDefinitions.Add("VIDEO_API_ANDROID");
+            break;
         }
     }
 
