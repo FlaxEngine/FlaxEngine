@@ -297,6 +297,7 @@ struct GPUDevice::PrivateData
     GPUPipelineState* PS_CopyLinear = nullptr;
     GPUPipelineState* PS_Clear = nullptr;
     GPUPipelineState* PS_DecodeYUY2 = nullptr;
+    GPUPipelineState* PS_DecodeNV12 = nullptr;
     GPUBuffer* FullscreenTriangleVB = nullptr;
     AssetReference<Material> DefaultMaterial;
     SoftAssetReference<Material> DefaultDeformableMaterial;
@@ -713,6 +714,18 @@ GPUPipelineState* GPUDevice::GetDecodeYUY2PS() const
         _res->PS_DecodeYUY2->Init(psDesc);
     }
     return _res->PS_DecodeYUY2;
+}
+
+GPUPipelineState* GPUDevice::GetDecodeNV12PS() const
+{
+    if (_res->PS_DecodeNV12 == nullptr)
+    {
+        auto psDesc = GPUPipelineState::Description::DefaultFullscreenTriangle;
+        psDesc.PS = QuadShader->GetPS("PS_DecodeNV12");
+        _res->PS_DecodeNV12 = const_cast<GPUDevice*>(this)->CreatePipelineState();
+        _res->PS_DecodeNV12->Init(psDesc);
+    }
+    return _res->PS_DecodeNV12;
 }
 
 GPUBuffer* GPUDevice::GetFullscreenTriangleVB() const

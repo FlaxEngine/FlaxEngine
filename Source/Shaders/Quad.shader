@@ -83,12 +83,21 @@ float PS_DepthCopy(Quad_VS2PS input) : SV_Depth
 
 #endif
 
+float4 yuv2rgb(int y, int u, int v)
+{
+    u -= 128;
+    v -= 128;
+    float r = y + 1.402 * v;
+    float g = y - 0.34414 * u - 0.71414 * v;
+    float b = y + 1.772 * u;
+    return float4(r, g, b, 256.0f) / 256.0f;
+}
+
 #ifdef _PS_DecodeYUY2
 
 // Raw memory with texture of format YUY2 and size passed in Color.xy
 Buffer<uint> SourceYUY2 : register(t0);
 
-// Pixel Shader for copying depth buffer
 META_PS(true, FEATURE_LEVEL_ES2)
 float4 PS_DecodeYUY2(Quad_VS2PS input) : SV_Target
 {
@@ -97,17 +106,39 @@ float4 PS_DecodeYUY2(Quad_VS2PS input) : SV_Target
     uint data = SourceYUY2[p / 2];
 
     // Unpack YUY components
-    uint v = (data & 0xff000000) >> 24;
-    uint y1 = (data & 0xff0000) >> 16;
-    uint u = (data & 0xff00) >> 8;
-    uint y0 = data & 0x000000FF;
-    uint y = p % 2 == 0 ? y0: y1;
+    int v = ((data & 0xff000000) >> 24);
+    int y1 = (data & 0xff0000) >> 16;
+    int u = ((data & 0xff00) >> 8);
+    int y0 = data & 0xff;
+    int y = p % 2 == 0 ? y0: y1;
 
     // Convert yuv to rgb
-    float r  = (y + 1.402 * (v - 128.0));
-    float g =  (y - 0.344 * (u - 128.0) - 0.714 * (v - 128.0));
-    float b =  (y + 1.772 * (u - 128.0));
-    return float4(r, g, b, 256.0f) / 256.0f;
+    return yuv2rgb(y, u, v);
+}
+
+#endif
+
+#ifdef _PS_DecodeNV12
+
+// Raw memory with texture of format NV12 and size passed in Color.xy
+Buffer<uint> SourceNV12 : register(t0);
+
+META_PS(true, FEATURE_LEVEL_ES2)
+float4 PS_DecodeNV12(Quad_VS2PS input) : SV_Target
+{
+    // Read NV12 pixel (Y plane of size w*h, followed by interleaved UV plane is of size w*h/2)
+    uint size = (uint)(Color.x * Color.y);
+    uint p = (uint)input.Position.y * (uint)Color.x + (uint)input.Position.x;
+    uint y = (SourceNV12[p / 4] >> ((p % 4) * 8)) & 0xff;
+    p = (uint)(input.Position.y * 0.5f) * (uint)Color.x + (uint)input.Position.x;
+    p = (p / 2) * 2;
+    uint u = (SourceNV12[size / 4 + p / 4] >> ((p % 4) * 8)) & 0xff;
+    p = (uint)(input.Position.y * 0.5f) * (uint)Color.x + (uint)input.Position.x;
+    p = (p / 2) * 2 + 1;
+    uint v = (SourceNV12[size / 4 + p / 4] >> ((p % 4) * 8)) & 0xff;
+
+    // Convert yuv to rgb
+    return yuv2rgb(y, u, v);
 }
 
 #endif

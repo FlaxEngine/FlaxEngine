@@ -91,8 +91,19 @@ protected:
             context->GPU->SetViewportAndScissors((float)_player->Width, (float)_player->Height);
             context->GPU->SetRenderTarget(frame->View());
             context->GPU->BindSR(0, _player->FrameUpload->View());
-            ASSERT_LOW_LAYER(_player->Format == PixelFormat::YUY2);
-            context->GPU->SetState(GPUDevice::Instance->GetDecodeYUY2PS());
+            GPUPipelineState* pso;
+            switch (_player->Format)
+            {
+            case PixelFormat::YUY2:
+                pso = GPUDevice::Instance->GetDecodeYUY2PS();
+                break;
+            case PixelFormat::NV12:
+                pso = GPUDevice::Instance->GetDecodeNV12PS();
+                break;
+            default:
+                return Result::Failed;
+            }
+            context->GPU->SetState(pso);
             context->GPU->DrawFullscreenTriangle();
         }
         else

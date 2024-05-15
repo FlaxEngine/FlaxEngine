@@ -276,6 +276,11 @@ public:
     GPUPipelineState* GetDecodeYUY2PS() const;
 
     /// <summary>
+    /// Gets the shader pipeline state object for NV12 frame decoding to RGBA.
+    /// </summary>
+    GPUPipelineState* GetDecodeNV12PS() const;
+
+    /// <summary>
     /// Gets the fullscreen-triangle vertex buffer.
     /// </summary>
     GPUBuffer* GetFullscreenTriangleVB() const;

@@ -253,7 +253,7 @@ namespace MF
                 IMF2DBuffer* buffer2D = nullptr;
                 BYTE* bufferData = nullptr;
                 LONG bufferStride = 0;
-                if (isVideo && sample->GetBufferByIndex(0, &buffer) == S_OK && buffer->QueryInterface(IID_PPV_ARGS(&buffer2D)) == S_OK)
+                if (isVideo && player.Format != PixelFormat::NV12 && sample->GetBufferByIndex(0, &buffer) == S_OK && buffer->QueryInterface(IID_PPV_ARGS(&buffer2D)) == S_OK)
                 {
                     LONG bufferPitch = 0;
                     hr = buffer2D->Lock2D(&bufferData, &bufferPitch);
