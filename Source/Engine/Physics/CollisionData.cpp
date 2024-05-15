@@ -8,6 +8,7 @@
 #include "Engine/Physics/PhysicsScene.h"
 #include "Engine/Physics/PhysicsBackend.h"
 #include "Engine/Physics/CollisionCooking.h"
+#include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Threading/Threading.h"
 
 REGISTER_BINARY_ASSET(CollisionData, "FlaxEngine.CollisionData", true);
@@ -33,6 +34,7 @@ bool CollisionData::CookCollision(CollisionDataType type, ModelBase* modelObj, i
         LOG(Error, "Cannot cook collision data for virtual models on a main thread (virtual models data is stored on GPU only). Use thread pool or async task.");
         return true;
     }
+    PROFILE_CPU();
 
     // Prepare
     CollisionCooking::Argument arg;
@@ -61,6 +63,7 @@ bool CollisionData::CookCollision(CollisionDataType type, ModelBase* modelObj, i
 
 bool CollisionData::CookCollision(CollisionDataType type, const Span<Float3>& vertices, const Span<uint32>& triangles, ConvexMeshGenerationFlags convexFlags, int32 convexVertexLimit)
 {
+    PROFILE_CPU();
     CHECK_RETURN(vertices.Length() != 0, true);
     CHECK_RETURN(triangles.Length() != 0 && triangles.Length() % 3 == 0, true);
     ModelData modelData;
@@ -74,6 +77,7 @@ bool CollisionData::CookCollision(CollisionDataType type, const Span<Float3>& ve
 
 bool CollisionData::CookCollision(CollisionDataType type, const Span<Float3>& vertices, const Span<int32>& triangles, ConvexMeshGenerationFlags convexFlags, int32 convexVertexLimit)
 {
+    PROFILE_CPU();
     CHECK_RETURN(vertices.Length() != 0, true);
     CHECK_RETURN(triangles.Length() != 0 && triangles.Length() % 3 == 0, true);
     ModelData modelData;
@@ -89,12 +93,12 @@ bool CollisionData::CookCollision(CollisionDataType type, const Span<Float3>& ve
 
 bool CollisionData::CookCollision(CollisionDataType type, ModelData* modelData, ConvexMeshGenerationFlags convexFlags, int32 convexVertexLimit)
 {
-    // Validate state
     if (!IsVirtual())
     {
         LOG(Warning, "Only virtual assets can be modified at runtime.");
         return true;
     }
+    PROFILE_CPU();
 
     // Prepare
     CollisionCooking::Argument arg;
@@ -107,18 +111,14 @@ bool CollisionData::CookCollision(CollisionDataType type, ModelData* modelData, 
     SerializedOptions options;
     BytesContainer outputData;
     if (CollisionCooking::CookCollision(arg, options, outputData))
-    {
         return true;
-    }
 
     // Clear state
     unload(true);
 
     // Load data
     if (load(&options, outputData.Get(), outputData.Length()) != LoadResult::Ok)
-    {
         return true;
-    }
 
     // Mark as loaded (eg. Mesh Colliders using this asset will update shape for physics simulation)
     onLoaded();
@@ -133,6 +133,7 @@ bool CollisionData::GetModelTriangle(uint32 faceIndex, MeshBase*& mesh, uint32& 
     meshTriangleIndex = MAX_uint32;
     if (!IsLoaded())
         return false;
+    PROFILE_CPU();
     ScopeLock lock(Locker);
     if (_triangleMesh)
     {
@@ -178,6 +179,7 @@ bool CollisionData::GetModelTriangle(uint32 faceIndex, MeshBase*& mesh, uint32& 
 
 void CollisionData::ExtractGeometry(Array<Float3>& vertexBuffer, Array<int32>& indexBuffer) const
 {
+    PROFILE_CPU();
     vertexBuffer.Clear();
     indexBuffer.Clear();
 
@@ -194,6 +196,7 @@ const Array<Float3>& CollisionData::GetDebugLines()
 {
     if (_hasMissingDebugLines && IsLoaded())
     {
+        PROFILE_CPU();
         ScopeLock lock(Locker);
         _hasMissingDebugLines = false;
 

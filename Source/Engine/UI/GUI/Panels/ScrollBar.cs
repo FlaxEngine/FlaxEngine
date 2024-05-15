@@ -75,6 +75,21 @@ namespace FlaxEngine.GUI
         public bool EnableSmoothing { get; set; } = true;
 
         /// <summary>
+        /// The track color.
+        /// </summary>
+        public Color TrackColor;
+
+        /// <summary>
+        /// The thumb color.
+        /// </summary>
+        public Color ThumbColor;
+
+        /// <summary>
+        /// The selected thumb color.
+        /// </summary>
+        public Color ThumbSelectedColor;
+
+        /// <summary>
         /// Gets or sets the minimum value.
         /// </summary>
         public float Minimum
@@ -209,6 +224,10 @@ namespace FlaxEngine.GUI
             AutoFocus = false;
 
             _orientation = orientation;
+            var style = Style.Current;
+            TrackColor = style.BackgroundHighlighted;
+            ThumbColor = style.BackgroundNormal;
+            ThumbSelectedColor = style.BackgroundSelected;
         }
 
         /// <summary>
@@ -377,8 +396,8 @@ namespace FlaxEngine.GUI
             base.Draw();
 
             var style = Style.Current;
-            Render2D.FillRectangle(_trackRect, style.BackgroundHighlighted * _thumbOpacity);
-            Render2D.FillRectangle(_thumbRect, (_thumbClicked ? style.BackgroundSelected : style.BackgroundNormal) * _thumbOpacity);
+            Render2D.FillRectangle(_trackRect, TrackColor * _thumbOpacity);
+            Render2D.FillRectangle(_thumbRect, (_thumbClicked ? ThumbSelectedColor : ThumbColor) * _thumbOpacity);
         }
 
         /// <inheritdoc />

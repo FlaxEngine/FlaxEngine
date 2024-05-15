@@ -5,6 +5,27 @@ using System.ComponentModel;
 namespace FlaxEngine.GUI
 {
     /// <summary>
+    /// Options for text case
+    /// </summary>
+    public enum TextCaseOptions
+    {
+        /// <summary>
+        /// No text case.
+        /// </summary>
+        None,
+
+        /// <summary>
+        /// Uppercase.
+        /// </summary>
+        Uppercase,
+
+        /// <summary>
+        /// Lowercase
+        /// </summary>
+        Lowercase
+    }
+
+    /// <summary>
     /// The basic GUI label control.
     /// </summary>
     /// <seealso cref="FlaxEngine.GUI.ContainerControl" />
@@ -44,6 +65,24 @@ namespace FlaxEngine.GUI
                 }
             }
         }
+
+        /// <summary>
+        /// The text case.
+        /// </summary>
+        [EditorDisplay("Text Style"), EditorOrder(2000), Tooltip("The case of the text.")]
+        public TextCaseOptions CaseOption { get; set; } = TextCaseOptions.None;
+
+        /// <summary>
+        /// Whether to bold the text.
+        /// </summary>
+        [EditorDisplay("Text Style"), EditorOrder(2001), Tooltip("Bold the text.")]
+        public bool Bold { get; set; } = false;
+
+        /// <summary>
+        /// Whether to italicize the text.
+        /// </summary>
+        [EditorDisplay("Text Style"), EditorOrder(2002), Tooltip("Italicize the text.")]
+        public bool Italic { get; set; } = false;
 
         /// <summary>
         /// Gets or sets the color of the text.
@@ -234,10 +273,40 @@ namespace FlaxEngine.GUI
                 }
             }
 
-            Render2D.DrawText(_font.GetFont(), Material, _text, rect, color, hAlignment, wAlignment, Wrapping, BaseLinesGapScale, scale);
+            Font font = GetFont();
+            var text = ConvertedText();
+
+            Render2D.DrawText(font, Material, text, rect, color, hAlignment, wAlignment, Wrapping, BaseLinesGapScale, scale);
 
             if (ClipText)
                 Render2D.PopClip();
+        }
+
+        private Font GetFont()
+        {
+            Font font;
+            if (Bold)
+                font = Italic ? _font.GetBold().GetItalic().GetFont() : _font.GetBold().GetFont();
+            else if (Italic)
+                font = _font.GetItalic().GetFont();
+            else
+                font = _font.GetFont();
+            return font;
+        }
+
+        private LocalizedString ConvertedText()
+        {
+            LocalizedString text = _text;
+            switch (CaseOption)
+            {
+            case TextCaseOptions.Uppercase:
+                text = text.ToString().ToUpper();
+                break;
+            case TextCaseOptions.Lowercase:
+                text = text.ToString().ToLower();
+                break;
+            }
+            return text;
         }
 
         /// <inheritdoc />
@@ -245,7 +314,8 @@ namespace FlaxEngine.GUI
         {
             if (_autoWidth || _autoHeight || _autoFitText)
             {
-                var font = _font.GetFont();
+                Font font = GetFont();
+                var text = ConvertedText();
                 if (font)
                 {
                     // Calculate text size
@@ -255,7 +325,7 @@ namespace FlaxEngine.GUI
                         layout.Bounds.Size.X = Width - Margin.Width;
                     else if (_autoWidth && !_autoHeight)
                         layout.Bounds.Size.Y = Height - Margin.Height;
-                    _textSize = font.MeasureText(_text, ref layout);
+                    _textSize = font.MeasureText(text, ref layout);
                     _textSize.Y *= BaseLinesGapScale;
 
                     // Check if size is controlled via text

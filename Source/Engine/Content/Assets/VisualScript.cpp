@@ -886,7 +886,8 @@ void VisualScriptExecutor::ProcessGroupFunction(Box* boxBase, Node* node, Value&
             instance = eatBox(node, box->FirstConnection());
         else
             instance.SetObject(object);
-        if (!instance.AsObject)
+        ScriptingObject* instanceObj = (ScriptingObject*)instance;
+        if (!instanceObj)
         {
             LOG(Error, "Cannot bind event to null object.");
             PrintStack(LogType::Error);
@@ -928,13 +929,13 @@ void VisualScriptExecutor::ProcessGroupFunction(Box* boxBase, Node* node, Value&
                     }
                     eventBinding->BindedMethods.Add(method);
                     if (eventBinding->BindedMethods.Count() == 1)
-                        (*eventBinder)(instance.AsObject, object, true);
+                        (*eventBinder)(instanceObj, object, true);
                 }
                 else if (eventBinding)
                 {
                     // Unbind from the event
                     if (eventBinding->BindedMethods.Count() == 1)
-                        (*eventBinder)(instance.AsObject, object, false);
+                        (*eventBinder)(instanceObj, object, false);
                     eventBinding->BindedMethods.Remove(method);
                 }
             }

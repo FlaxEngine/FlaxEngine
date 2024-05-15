@@ -15,6 +15,7 @@ using FlaxEditor.Windows.Assets;
 using FlaxEngine;
 using FlaxEngine.GUI;
 using FlaxEngine.Utilities;
+using Object = FlaxEngine.Object;
 
 namespace FlaxEditor.SceneGraph.GUI
 {
@@ -625,6 +626,7 @@ namespace FlaxEditor.SceneGraph.GUI
                 {
                     var item = _dragScriptItems.Objects[i];
                     var actorType = Editor.Instance.CodeEditing.Actors.Get(item);
+                    var scriptType = Editor.Instance.CodeEditing.Scripts.Get(item);
                     if (actorType != ScriptType.Null)
                     {
                         var actor = actorType.CreateInstance() as Actor;
@@ -638,6 +640,18 @@ namespace FlaxEditor.SceneGraph.GUI
                         actor.Transform = spawnParent.Transform;
                         ActorNode.Root.Spawn(actor, spawnParent);
                         actor.OrderInParent = newOrder;
+                    }
+                    else if (scriptType != ScriptType.Null)
+                    {
+                        if (DragOverMode == DragItemPositioning.Above || DragOverMode == DragItemPositioning.Below)
+                        {
+                            Editor.LogWarning("Failed to spawn script of type " + actorType.TypeName);
+                            continue;
+                        }
+                        IUndoAction action = new AddRemoveScript(true, newParent, scriptType);
+                        Select();
+                        ActorNode.Root.Undo?.AddAction(action);
+                        action.Do();
                     }
                 }
                 result = DragDropEffect.Move;
@@ -699,9 +713,9 @@ namespace FlaxEditor.SceneGraph.GUI
             return Editor.Instance.CodeEditing.Controls.Get().Contains(controlType);
         }
 
-        private static bool ValidateDragScriptItem(ScriptItem script)
+        private bool ValidateDragScriptItem(ScriptItem script)
         {
-            return Editor.Instance.CodeEditing.Actors.Get(script) != ScriptType.Null;
+            return Editor.Instance.CodeEditing.Actors.Get(script) != ScriptType.Null || Editor.Instance.CodeEditing.Scripts.Get(script) != ScriptType.Null;
         }
 
         /// <inheritdoc />

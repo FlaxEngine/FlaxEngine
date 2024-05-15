@@ -134,7 +134,7 @@ public:
 
     static ScriptingObject* ToNative(MObject* obj);
 
-    static MObject* ToManaged(ScriptingObject* obj)
+    FORCE_INLINE static MObject* ToManaged(const ScriptingObject* obj)
     {
         return obj ? obj->GetOrCreateManagedInstance() : nullptr;
     }

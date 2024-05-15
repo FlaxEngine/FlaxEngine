@@ -410,7 +410,7 @@ void SplineModel::Draw(RenderContext& renderContext)
     const Transform splineTransform = GetTransform();
     renderContext.View.GetWorldMatrix(splineTransform, drawCall.World);
     drawCall.ObjectPosition = drawCall.World.GetTranslation() + drawCall.Deformable.LocalMatrix.GetTranslation();
-    drawCall.ObjectRadius = _sphere.Radius; // TODO: use radius for the spline chunk rather than whole spline
+    drawCall.ObjectRadius = (float)_sphere.Radius; // TODO: use radius for the spline chunk rather than whole spline
     const float worldDeterminantSign = drawCall.World.RotDeterminant() * drawCall.Deformable.LocalMatrix.RotDeterminant();
     for (int32 segment = 0; segment < _instances.Count(); segment++)
     {

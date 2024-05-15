@@ -98,7 +98,6 @@ namespace FlaxEditor.Viewport
             ShowDebugDraw = true;
             ShowEditorPrimitives = true;
             Gizmos = new GizmosCollection(this);
-            var inputOptions = window.Editor.Options.Options.Input;
 
             // Prepare rendering task
             Task.ActorsSource = ActorsSources.CustomActors;
@@ -219,6 +218,8 @@ namespace FlaxEditor.Viewport
 
         private void OnCollectDrawCalls(ref RenderContext renderContext)
         {
+            if (renderContext.View.Pass == DrawPass.Depth)
+                return;
             DragHandlers.CollectDrawCalls(_debugDrawData, ref renderContext);
             _debugDrawData.OnDraw(ref renderContext);
         }
@@ -498,7 +499,7 @@ namespace FlaxEditor.Viewport
 
         private static bool ValidateDragActorType(ScriptType actorType)
         {
-            return true;
+            return Editor.Instance.CodeEditing.Actors.Get().Contains(actorType);
         }
 
         private static bool ValidateDragScriptItem(ScriptItem script)

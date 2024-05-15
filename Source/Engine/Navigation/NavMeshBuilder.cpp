@@ -23,7 +23,6 @@
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Level/Scene/Scene.h"
 #include "Engine/Level/Level.h"
-#include "Engine/Level/SceneQuery.h"
 #include <ThirdParty/recastnavigation/Recast.h>
 #include <ThirdParty/recastnavigation/DetourNavMeshBuilder.h>
 #include <ThirdParty/recastnavigation/DetourNavMesh.h>
@@ -68,7 +67,7 @@ struct Modifier
     NavAreaProperties* NavArea;
 };
 
-struct NavigationSceneRasterization
+struct NavSceneRasterizer
 {
     NavMesh* NavMesh;
     BoundingBox TileBoundsNavMesh;
@@ -83,7 +82,7 @@ struct NavigationSceneRasterization
     Array<Modifier>* Modifiers;
     const bool IsWorldToNavMeshIdentity;
 
-    NavigationSceneRasterization(::NavMesh* navMesh, const BoundingBox& tileBoundsNavMesh, const Matrix& worldToNavMesh, rcContext* context, rcConfig* config, rcHeightfield* heightfield, Array<OffMeshLink>* offMeshLinks, Array<Modifier>* modifiers)
+    NavSceneRasterizer(::NavMesh* navMesh, const BoundingBox& tileBoundsNavMesh, const Matrix& worldToNavMesh, rcContext* context, rcConfig* config, rcHeightfield* heightfield, Array<OffMeshLink>* offMeshLinks, Array<Modifier>* modifiers)
         : TileBoundsNavMesh(tileBoundsNavMesh)
         , WorldToNavMesh(worldToNavMesh)
         , IsWorldToNavMeshIdentity(worldToNavMesh.IsIdentity())
@@ -103,35 +102,20 @@ struct NavigationSceneRasterization
         auto& ib = IndexBuffer;
         if (vb.IsEmpty() || ib.IsEmpty())
             return;
+        PROFILE_CPU();
 
         // Rasterize triangles
+        const Float3* vbData = vb.Get();
+        const int32* ibData = ib.Get();
+        Float3 v0, v1, v2;
         if (IsWorldToNavMeshIdentity)
         {
             // Faster path
             for (int32 i0 = 0; i0 < ib.Count();)
             {
-                auto v0 = vb[ib[i0++]];
-                auto v1 = vb[ib[i0++]];
-                auto v2 = vb[ib[i0++]];
-#if NAV_MESH_BUILD_DEBUG_DRAW_GEOMETRY
-                DEBUG_DRAW_TRIANGLE(v0, v1, v2, Color::Orange.AlphaMultiplied(0.3f), 1.0f, true);
-#endif
-
-                auto n = Float3::Cross(v0 - v1, v0 - v2);
-                n.Normalize();
-                const char area = n.Y > WalkableThreshold ? RC_WALKABLE_AREA : 0;
-                rcRasterizeTriangle(Context, &v0.X, &v1.X, &v2.X, area, *Heightfield);
-            }
-        }
-        else
-        {
-            // Transform vertices from world space into the navmesh space
-            const Matrix worldToNavMesh = WorldToNavMesh;
-            for (int32 i0 = 0; i0 < ib.Count();)
-            {
-                auto v0 = Float3::Transform(vb[ib[i0++]], worldToNavMesh);
-                auto v1 = Float3::Transform(vb[ib[i0++]], worldToNavMesh);
-                auto v2 = Float3::Transform(vb[ib[i0++]], worldToNavMesh);
+                v0 = vbData[ibData[i0++]];
+                v1 = vbData[ibData[i0++]];
+                v2 = vbData[ibData[i0++]];
 #if NAV_MESH_BUILD_DEBUG_DRAW_GEOMETRY
                 DEBUG_DRAW_TRIANGLE(v0, v1, v2, Color::Orange.AlphaMultiplied(0.3f), 1.0f, true);
 #endif
@@ -142,6 +126,29 @@ struct NavigationSceneRasterization
                 rcRasterizeTriangle(Context, &v0.X, &v1.X, &v2.X, area, *Heightfield);
             }
         }
+        else
+        {
+            // Transform vertices from world space into the navmesh space
+            const Matrix worldToNavMesh = WorldToNavMesh;
+            for (int32 i0 = 0; i0 < ib.Count();)
+            {
+                Float3::Transform(vbData[ibData[i0++]], worldToNavMesh, v0);
+                Float3::Transform(vbData[ibData[i0++]], worldToNavMesh, v1);
+                Float3::Transform(vbData[ibData[i0++]], worldToNavMesh, v2);
+#if NAV_MESH_BUILD_DEBUG_DRAW_GEOMETRY
+                DEBUG_DRAW_TRIANGLE(v0, v1, v2, Color::Orange.AlphaMultiplied(0.3f), 1.0f, true);
+#endif
+
+                auto n = Float3::Cross(v0 - v1, v0 - v2);
+                n.Normalize();
+                const char area = n.Y > WalkableThreshold ? RC_WALKABLE_AREA : RC_NULL_AREA;
+                rcRasterizeTriangle(Context, &v0.X, &v1.X, &v2.X, area, *Heightfield);
+            }
+        }
+
+        // Clear after use
+        vb.Clear();
+        ib.Clear();
     }
 
     static void TriangulateBox(Array<Float3>& vb, Array<int32>& ib, const OrientedBoundingBox& box)
@@ -215,88 +222,67 @@ struct NavigationSceneRasterization
         }
     }
 
-    static bool Walk(Actor* actor, NavigationSceneRasterization& e)
+    void Rasterize(Actor* actor)
     {
-        // Early out if object is not intersecting with the tile bounds or is not using navigation
-        if (!actor->GetIsActive() || !(actor->GetStaticFlags() & StaticFlags::Navigation))
-            return true;
-        BoundingBox actorBoxNavMesh;
-        BoundingBox::Transform(actor->GetBox(), e.WorldToNavMesh, actorBoxNavMesh);
-        if (!actorBoxNavMesh.Intersects(e.TileBoundsNavMesh))
-            return true;
-
-        // Prepare buffers (for triangles)
-        auto& vb = e.VertexBuffer;
-        auto& ib = e.IndexBuffer;
-        vb.Clear();
-        ib.Clear();
-
-        // Extract data from the actor
         if (const auto* boxCollider = dynamic_cast<BoxCollider*>(actor))
         {
             if (boxCollider->GetIsTrigger())
-                return true;
+                return;
             PROFILE_CPU_NAMED("BoxCollider");
 
             const OrientedBoundingBox box = boxCollider->GetOrientedBox();
-            TriangulateBox(vb, ib, box);
-
-            e.RasterizeTriangles();
+            TriangulateBox(VertexBuffer, IndexBuffer, box);
+            RasterizeTriangles();
         }
         else if (const auto* sphereCollider = dynamic_cast<SphereCollider*>(actor))
         {
             if (sphereCollider->GetIsTrigger())
-                return true;
+                return;
             PROFILE_CPU_NAMED("SphereCollider");
 
             const BoundingSphere sphere = sphereCollider->GetSphere();
-            TriangulateSphere(vb, ib, sphere);
-
-            e.RasterizeTriangles();
+            TriangulateSphere(VertexBuffer, IndexBuffer, sphere);
+            RasterizeTriangles();
         }
         else if (const auto* capsuleCollider = dynamic_cast<CapsuleCollider*>(actor))
         {
             if (capsuleCollider->GetIsTrigger())
-                return true;
+                return;
             PROFILE_CPU_NAMED("CapsuleCollider");
 
             const BoundingBox box = capsuleCollider->GetBox();
-            TriangulateBox(vb, ib, box);
-
-            e.RasterizeTriangles();
+            TriangulateBox(VertexBuffer, IndexBuffer, box);
+            RasterizeTriangles();
         }
         else if (const auto* meshCollider = dynamic_cast<MeshCollider*>(actor))
         {
             if (meshCollider->GetIsTrigger())
-                return true;
+                return;
             PROFILE_CPU_NAMED("MeshCollider");
 
             auto collisionData = meshCollider->CollisionData.Get();
             if (!collisionData || collisionData->WaitForLoaded())
-                return true;
+                return;
 
-            collisionData->ExtractGeometry(vb, ib);
-
+            collisionData->ExtractGeometry(VertexBuffer, IndexBuffer);
             Matrix meshColliderToWorld;
             meshCollider->GetLocalToWorldMatrix(meshColliderToWorld);
-            for (auto& v : vb)
+            for (auto& v : VertexBuffer)
                 Float3::Transform(v, meshColliderToWorld, v);
-
-            e.RasterizeTriangles();
+            RasterizeTriangles();
         }
         else if (const auto* splineCollider = dynamic_cast<SplineCollider*>(actor))
         {
             if (splineCollider->GetIsTrigger())
-                return true;
+                return;
             PROFILE_CPU_NAMED("SplineCollider");
 
             auto collisionData = splineCollider->CollisionData.Get();
             if (!collisionData || collisionData->WaitForLoaded())
-                return true;
+                return;
 
-            splineCollider->ExtractGeometry(vb, ib);
-
-            e.RasterizeTriangles();
+            splineCollider->ExtractGeometry(VertexBuffer, IndexBuffer);
+            RasterizeTriangles();
         }
         else if (const auto* terrain = dynamic_cast<Terrain*>(actor))
         {
@@ -306,13 +292,13 @@ struct NavigationSceneRasterization
             {
                 const auto patch = terrain->GetPatch(patchIndex);
                 BoundingBox patchBoundsNavMesh;
-                BoundingBox::Transform(patch->GetBounds(), e.WorldToNavMesh, patchBoundsNavMesh);
-                if (!patchBoundsNavMesh.Intersects(e.TileBoundsNavMesh))
+                BoundingBox::Transform(patch->GetBounds(), WorldToNavMesh, patchBoundsNavMesh);
+                if (!patchBoundsNavMesh.Intersects(TileBoundsNavMesh))
                     continue;
 
-                patch->ExtractCollisionGeometry(vb, ib);
-
-                e.RasterizeTriangles();
+                // TODO: get collision only from tile area
+                patch->ExtractCollisionGeometry(VertexBuffer, IndexBuffer);
+                RasterizeTriangles();
             }
         }
         else if (const auto* navLink = dynamic_cast<NavLink*>(actor))
@@ -321,43 +307,32 @@ struct NavigationSceneRasterization
 
             OffMeshLink link;
             link.Start = navLink->GetTransform().LocalToWorld(navLink->Start);
-            Float3::Transform(link.Start, e.WorldToNavMesh, link.Start);
+            Float3::Transform(link.Start, WorldToNavMesh, link.Start);
             link.End = navLink->GetTransform().LocalToWorld(navLink->End);
-            Float3::Transform(link.End, e.WorldToNavMesh, link.End);
+            Float3::Transform(link.End, WorldToNavMesh, link.End);
             link.Radius = navLink->Radius;
             link.BiDir = navLink->BiDirectional;
             link.Id = GetHash(navLink->GetID());
 
-            e.OffMeshLinks->Add(link);
+            OffMeshLinks->Add(link);
         }
         else if (const auto* navModifierVolume = dynamic_cast<NavModifierVolume*>(actor))
         {
-            if (navModifierVolume->AgentsMask.IsNavMeshSupported(e.NavMesh->Properties))
+            if (navModifierVolume->AgentsMask.IsNavMeshSupported(NavMesh->Properties))
             {
                 PROFILE_CPU_NAMED("NavModifierVolume");
 
                 Modifier modifier;
                 OrientedBoundingBox bounds = navModifierVolume->GetOrientedBox();
-                bounds.Transform(e.WorldToNavMesh);
+                bounds.Transform(WorldToNavMesh);
                 bounds.GetBoundingBox(modifier.Bounds);
                 modifier.NavArea = navModifierVolume->GetNavArea();
 
-                e.Modifiers->Add(modifier);
+                Modifiers->Add(modifier);
             }
         }
-
-        return true;
     }
 };
-
-void RasterizeGeometry(NavMesh* navMesh, const BoundingBox& tileBoundsNavMesh, const Matrix& worldToNavMesh, rcContext* context, rcConfig* config, rcHeightfield* heightfield, Array<OffMeshLink>* offMeshLinks, Array<Modifier>* modifiers)
-{
-    PROFILE_CPU_NAMED("RasterizeGeometry");
-
-    NavigationSceneRasterization rasterization(navMesh, tileBoundsNavMesh, worldToNavMesh, context, config, heightfield, offMeshLinks, modifiers);
-    Function<bool(Actor*, NavigationSceneRasterization&)> treeWalkFunction(NavigationSceneRasterization::Walk);
-    SceneQuery::TreeExecute<NavigationSceneRasterization&>(treeWalkFunction, rasterization);
-}
 
 // Builds navmesh tile bounds and check if there are any valid navmesh volumes at that tile location
 // Returns true if tile is intersecting with any navmesh bounds volume actor - which means tile is in use
@@ -455,11 +430,44 @@ bool GenerateTile(NavMesh* navMesh, NavMeshRuntime* runtime, int32 x, int32 y, B
 
     Array<OffMeshLink> offMeshLinks;
     Array<Modifier> modifiers;
-    RasterizeGeometry(navMesh, tileBoundsNavMesh, worldToNavMesh, &context, &config, heightfield, &offMeshLinks, &modifiers);
+    {
+        PROFILE_CPU_NAMED("RasterizeGeometry");
+        NavSceneRasterizer rasterizer(navMesh, tileBoundsNavMesh, worldToNavMesh, &context, &config, heightfield, &offMeshLinks, &modifiers);
 
-    rcFilterLowHangingWalkableObstacles(&context, config.walkableClimb, *heightfield);
-    rcFilterLedgeSpans(&context, config.walkableHeight, config.walkableClimb, *heightfield);
-    rcFilterWalkableLowHeightSpans(&context, config.walkableHeight, *heightfield);
+        // Collect actors to rasterize
+        Array<Actor*> actors;
+        {
+            PROFILE_CPU_NAMED("CollectActors");
+            ScopeLock lock(Level::ScenesLock);
+            for (Scene* scene : Level::Scenes)
+            {
+                for (Actor* actor : scene->Navigation.Actors)
+                {
+                    BoundingBox actorBoxNavMesh;
+                    BoundingBox::Transform(actor->GetBox(), rasterizer.WorldToNavMesh, actorBoxNavMesh);
+                    if (actorBoxNavMesh.Intersects(rasterizer.TileBoundsNavMesh) &&
+                        actor->IsActiveInHierarchy() &&
+                        EnumHasAllFlags(actor->GetStaticFlags(), StaticFlags::Navigation))
+                    {
+                        actors.Add(actor);
+                    }
+                }
+            }
+        }
+
+        // Rasterize actors
+        for (Actor* actor : actors)
+        {
+            rasterizer.Rasterize(actor);
+        }
+    }
+
+    {
+        PROFILE_CPU_NAMED("FilterHeightfield");
+        rcFilterLowHangingWalkableObstacles(&context, config.walkableClimb, *heightfield);
+        rcFilterLedgeSpans(&context, config.walkableHeight, config.walkableClimb, *heightfield);
+        rcFilterWalkableLowHeightSpans(&context, config.walkableHeight, *heightfield);
+    }
 
     rcCompactHeightfield* compactHeightfield = rcAllocCompactHeightfield();
     if (!compactHeightfield)
@@ -467,39 +475,51 @@ bool GenerateTile(NavMesh* navMesh, NavMeshRuntime* runtime, int32 x, int32 y, B
         LOG(Warning, "Could not generate navmesh: Out of memory compact heightfield.");
         return true;
     }
-    if (!rcBuildCompactHeightfield(&context, config.walkableHeight, config.walkableClimb, *heightfield, *compactHeightfield))
     {
-        LOG(Warning, "Could not generate navmesh: Could not build compact data.");
-        return true;
+        PROFILE_CPU_NAMED("CompactHeightfield");
+        if (!rcBuildCompactHeightfield(&context, config.walkableHeight, config.walkableClimb, *heightfield, *compactHeightfield))
+        {
+            LOG(Warning, "Could not generate navmesh: Could not build compact data.");
+            return true;
+        }
     }
-
     rcFreeHeightField(heightfield);
-
-    if (!rcErodeWalkableArea(&context, config.walkableRadius, *compactHeightfield))
     {
-        LOG(Warning, "Could not generate navmesh: Could not erode.");
-        return true;
+        PROFILE_CPU_NAMED("ErodeWalkableArea");
+        if (!rcErodeWalkableArea(&context, config.walkableRadius, *compactHeightfield))
+        {
+            LOG(Warning, "Could not generate navmesh: Could not erode.");
+            return true;
+        }
     }
 
     // Mark areas
-    for (auto& modifier : modifiers)
     {
-        const unsigned char areaId = modifier.NavArea ? modifier.NavArea->Id : RC_NULL_AREA;
-        Float3 bMin = modifier.Bounds.Minimum;
-        Float3 bMax = modifier.Bounds.Maximum;
-        rcMarkBoxArea(&context, &bMin.X, &bMax.X, areaId, *compactHeightfield);
+        PROFILE_CPU_NAMED("MarkModifiers");
+        for (auto& modifier : modifiers)
+        {
+            const unsigned char areaId = modifier.NavArea ? modifier.NavArea->Id : RC_NULL_AREA;
+            Float3 bMin = modifier.Bounds.Minimum;
+            Float3 bMax = modifier.Bounds.Maximum;
+            rcMarkBoxArea(&context, &bMin.X, &bMax.X, areaId, *compactHeightfield);
+        }
     }
 
-    if (!rcBuildDistanceField(&context, *compactHeightfield))
     {
-        LOG(Warning, "Could not generate navmesh: Could not build distance field.");
-        return true;
+        PROFILE_CPU_NAMED("BuildDistanceField");
+        if (!rcBuildDistanceField(&context, *compactHeightfield))
+        {
+            LOG(Warning, "Could not generate navmesh: Could not build distance field.");
+            return true;
+        }
     }
-
-    if (!rcBuildRegions(&context, *compactHeightfield, config.borderSize, config.minRegionArea, config.mergeRegionArea))
     {
-        LOG(Warning, "Could not generate navmesh: Could not build regions.");
-        return true;
+        PROFILE_CPU_NAMED("BuildRegions");
+        if (!rcBuildRegions(&context, *compactHeightfield, config.borderSize, config.minRegionArea, config.mergeRegionArea))
+        {
+            LOG(Warning, "Could not generate navmesh: Could not build regions.");
+            return true;
+        }
     }
 
     rcContourSet* contourSet = rcAllocContourSet();
@@ -508,10 +528,13 @@ bool GenerateTile(NavMesh* navMesh, NavMeshRuntime* runtime, int32 x, int32 y, B
         LOG(Warning, "Could not generate navmesh: Out of memory for contour set.");
         return true;
     }
-    if (!rcBuildContours(&context, *compactHeightfield, config.maxSimplificationError, config.maxEdgeLen, *contourSet))
     {
-        LOG(Warning, "Could not generate navmesh: Could not create contours.");
-        return true;
+        PROFILE_CPU_NAMED("BuildContours");
+        if (!rcBuildContours(&context, *compactHeightfield, config.maxSimplificationError, config.maxEdgeLen, *contourSet))
+        {
+            LOG(Warning, "Could not generate navmesh: Could not create contours.");
+            return true;
+        }
     }
 
     rcPolyMesh* polyMesh = rcAllocPolyMesh();
@@ -520,10 +543,13 @@ bool GenerateTile(NavMesh* navMesh, NavMeshRuntime* runtime, int32 x, int32 y, B
         LOG(Warning, "Could not generate navmesh: Out of memory for poly mesh.");
         return true;
     }
-    if (!rcBuildPolyMesh(&context, *contourSet, config.maxVertsPerPoly, *polyMesh))
     {
-        LOG(Warning, "Could not generate navmesh: Could not triangulate contours.");
-        return true;
+        PROFILE_CPU_NAMED("BuildPolyMesh");
+        if (!rcBuildPolyMesh(&context, *contourSet, config.maxVertsPerPoly, *polyMesh))
+        {
+            LOG(Warning, "Could not generate navmesh: Could not triangulate contours.");
+            return true;
+        }
     }
 
     rcPolyMeshDetail* detailMesh = rcAllocPolyMeshDetail();
@@ -532,20 +558,20 @@ bool GenerateTile(NavMesh* navMesh, NavMeshRuntime* runtime, int32 x, int32 y, B
         LOG(Warning, "Could not generate navmesh: Out of memory for detail mesh.");
         return true;
     }
-    if (!rcBuildPolyMeshDetail(&context, *polyMesh, *compactHeightfield, config.detailSampleDist, config.detailSampleMaxError, *detailMesh))
     {
-        LOG(Warning, "Could not generate navmesh: Could not build detail mesh.");
-        return true;
+        PROFILE_CPU_NAMED("BuildPolyMeshDetail");
+        if (!rcBuildPolyMeshDetail(&context, *polyMesh, *compactHeightfield, config.detailSampleDist, config.detailSampleMaxError, *detailMesh))
+        {
+            LOG(Warning, "Could not generate navmesh: Could not build detail mesh.");
+            return true;
+        }
     }
 
     rcFreeCompactHeightfield(compactHeightfield);
     rcFreeContourSet(contourSet);
 
     for (int i = 0; i < polyMesh->npolys; i++)
-    {
         polyMesh->flags[i] = polyMesh->areas[i] != RC_NULL_AREA ? 1 : 0;
-    }
-
     if (polyMesh->nverts == 0)
     {
         // Empty tile
@@ -623,15 +649,18 @@ bool GenerateTile(NavMesh* navMesh, NavMeshRuntime* runtime, int32 x, int32 y, B
     // Generate navmesh tile data
     unsigned char* navData = nullptr;
     int navDataSize = 0;
-    if (!dtCreateNavMeshData(&params, &navData, &navDataSize))
     {
-        LOG(Warning, "Could not build Detour navmesh.");
-        return true;
+        PROFILE_CPU_NAMED("CreateNavMeshData");
+        if (!dtCreateNavMeshData(&params, &navData, &navDataSize))
+        {
+            LOG(Warning, "Could not build Detour navmesh.");
+            return true;
+        }
     }
     ASSERT_LOW_LAYER(navDataSize > 4 && *(uint32*)navData == DT_NAVMESH_MAGIC); // Sanity check for Detour header
 
     {
-        PROFILE_CPU_NAMED("Navigation.CreateTile");
+        PROFILE_CPU_NAMED("CreateTiles");
 
         ScopeLock lock(runtime->Locker);
 
@@ -729,17 +758,13 @@ public:
     bool Run() override
     {
         PROFILE_CPU_NAMED("BuildNavMeshTile");
-
         const auto navMesh = NavMesh.Get();
         if (!navMesh)
-        {
             return false;
-        }
         if (GenerateTile(NavMesh, Runtime, X, Y, TileBoundsNavMesh, WorldToNavMesh, TileSize, Config))
         {
             LOG(Warning, "Failed to generate navmesh tile at {0}x{1}.", X, Y);
         }
-
         return false;
     }
 
@@ -776,7 +801,7 @@ void OnSceneUnloading(Scene* scene, const Guid& sceneId)
         {
             NavBuildTasksLocker.Unlock();
 
-            // Cancel task but without locking queue from this thread to prevent dead-locks
+            // Cancel task but without locking queue from this thread to prevent deadlocks
             task->Cancel();
 
             NavBuildTasksLocker.Lock();
@@ -815,7 +840,7 @@ float NavMeshBuilder::GetNavMeshBuildingProgress()
     return result;
 }
 
-void BuildTileAsync(NavMesh* navMesh, int32 x, int32 y, rcConfig& config, const BoundingBox& tileBoundsNavMesh, const Matrix& worldToNavMesh, float tileSize)
+void BuildTileAsync(NavMesh* navMesh, const int32 x, const int32 y, const rcConfig& config, const BoundingBox& tileBoundsNavMesh, const Matrix& worldToNavMesh, float tileSize)
 {
     NavMeshRuntime* runtime = navMesh->GetRuntime();
     NavBuildTasksLocker.Lock();
@@ -1108,7 +1133,7 @@ void NavMeshBuilder::Build(Scene* scene, const BoundingBox& dirtyBounds, float t
     if (!scene)
     {
         LOG(Warning, "Could not generate navmesh without scene.");
-        return;    
+        return;
     }
 
     // Early out if scene is not using navigation

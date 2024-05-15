@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #include "NavLink.h"
+#include "Engine/Level/Scene/Scene.h"
 #include "Engine/Serialization/Serialization.h"
 
 NavLink::NavLink(const SpawnParams& params)
@@ -60,6 +61,20 @@ void NavLink::Deserialize(DeserializeStream& stream, ISerializeModifier* modifie
     DESERIALIZE(End);
     DESERIALIZE(Radius);
     DESERIALIZE(BiDirectional);
+}
+
+void NavLink::OnEnable()
+{
+    GetScene()->Navigation.Actors.Add(this);
+
+    Actor::OnEnable();
+}
+
+void NavLink::OnDisable()
+{
+    Actor::OnDisable();
+
+    GetScene()->Navigation.Actors.Remove(this);
 }
 
 void NavLink::OnTransformChanged()
