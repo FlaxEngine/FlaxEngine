@@ -299,14 +299,12 @@ namespace FlaxEngine.GUI
             LocalizedString text = _text;
             switch (CaseOption)
             {
-            case TextCaseOptions.None: break;
             case TextCaseOptions.Uppercase:
                 text = text.ToString().ToUpper();
                 break;
             case TextCaseOptions.Lowercase:
                 text = text.ToString().ToLower();
                 break;
-            default: break;
             }
             return text;
         }

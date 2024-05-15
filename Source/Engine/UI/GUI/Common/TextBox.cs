@@ -162,14 +162,12 @@ namespace FlaxEngine.GUI
             string text = _text;
             switch (CaseOption)
             {
-            case TextCaseOptions.None: break;
             case TextCaseOptions.Uppercase:
                 text = text.ToUpper();
                 break;
             case TextCaseOptions.Lowercase:
                 text = text.ToLower();
                 break;
-            default: break;
             }
             return text;
         }

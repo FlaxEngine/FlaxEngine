@@ -156,7 +156,6 @@ namespace FlaxEditor.CustomEditors.Editors
         private bool _readOnly;
         private bool _notNullItems;
         private bool _canEditKeys;
-        private bool _canEditValues;
         private bool _keyEdited;
         private CollectionAttribute.DisplayType _displayType;
 
