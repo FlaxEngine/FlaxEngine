@@ -1337,9 +1337,6 @@ bool FlaxStorage::CloseFileHandles()
 {
     if (Platform::AtomicRead(&_chunksLock) == 0 && Platform::AtomicRead(&_files) == 0)
     {
-        Array<FileReadStream*, InlinedAllocation<8>> streams;
-        _file.GetValues(streams);
-        ASSERT(streams.Count() == 0);
         return false;
     }
     PROFILE_CPU();
