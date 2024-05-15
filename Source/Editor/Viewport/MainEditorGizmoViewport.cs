@@ -622,12 +622,12 @@ namespace FlaxEditor.Viewport
 
         private static bool ValidateDragActorType(ScriptType actorType)
         {
-            return Level.IsAnySceneLoaded;
+            return Level.IsAnySceneLoaded && Editor.Instance.CodeEditing.Actors.Get().Contains(actorType);
         }
 
         private static bool ValidateDragScriptItem(ScriptItem script)
         {
-            return Editor.Instance.CodeEditing.Actors.Get(script) != ScriptType.Null;
+            return Level.IsAnySceneLoaded && Editor.Instance.CodeEditing.Actors.Get(script) != ScriptType.Null;
         }
 
         /// <inheritdoc />
