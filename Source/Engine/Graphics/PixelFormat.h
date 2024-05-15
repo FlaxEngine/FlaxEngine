@@ -559,6 +559,11 @@ API_ENUM() enum class PixelFormat : uint32
     YUY2 = 108,
 
     /// <summary>
+    /// Packed YUV 4:2:0 video texture format. Texture uses separate views to access the luma (Y) plane separately from the chroma (UV) planes. For luminance data view, the mapping to the view channel is Y->R8. For chrominance data view, the mapping to the view channel is U->R8 and V->G8.
+    /// </summary>
+    NV12 = 109,
+
+    /// <summary>
     /// The maximum format value (for internal use only).
     /// </summary>
     MAX

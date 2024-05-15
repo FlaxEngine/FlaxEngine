@@ -96,6 +96,8 @@ namespace MF
                 player.Format = PixelFormat::B5G6R5_UNorm;
             else if (subtype == MFVideoFormat_RGB555)
                 player.Format = PixelFormat::B5G5R5A1_UNorm;
+            else if (subtype == MFVideoFormat_NV12)
+                player.Format = PixelFormat::NV12;
             else if (subtype == MFVideoFormat_YUY2)
                 player.Format = PixelFormat::YUY2;
 #if (WDK_NTDDI_VERSION >= NTDDI_WIN10)

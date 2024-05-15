@@ -8,7 +8,7 @@
 
 // @formatter:off
 
-VkFormat RenderToolsVulkan::PixelFormatToVkFormat[109] =
+VkFormat RenderToolsVulkan::PixelFormatToVkFormat[110] =
 {
     VK_FORMAT_UNDEFINED,
     VK_FORMAT_R32G32B32A32_SFLOAT,
@@ -119,6 +119,7 @@ VkFormat RenderToolsVulkan::PixelFormatToVkFormat[109] =
     VK_FORMAT_ASTC_10x10_UNORM_BLOCK,
     VK_FORMAT_ASTC_10x10_SRGB_BLOCK,
     VK_FORMAT_G8B8G8R8_422_UNORM, // YUY2
+    VK_FORMAT_G8_B8R8_2PLANE_420_UNORM, // NV12
 };
 
 VkBlendFactor RenderToolsVulkan::BlendToVkBlendFactor[20] =

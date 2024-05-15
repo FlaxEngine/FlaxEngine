@@ -150,6 +150,8 @@ void PixelFormatExtensions::Init()
         PixelFormat::BC4_UNorm,
     };
     InitFormat(formats8, 4);
+
+    sizeOfInBits[(int32)PixelFormat::NV12] = 12;
 }
 
 int32 PixelFormatExtensions::SizeInBits(PixelFormat format)
@@ -379,6 +381,7 @@ bool PixelFormatExtensions::IsVideo(const PixelFormat format)
     switch (format)
     {
     case PixelFormat::YUY2:
+    case PixelFormat::NV12:
         return true;
     default:
         return false;

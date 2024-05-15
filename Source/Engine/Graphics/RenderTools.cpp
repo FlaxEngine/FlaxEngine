@@ -349,6 +349,10 @@ void RenderTools::ComputePitch(PixelFormat format, int32 width, int32 height, ui
         rowPitch = ((width + 1) >> 1) * 4;
         slicePitch = rowPitch * height;
         break;
+    case PixelFormat::NV12:
+        rowPitch = width;
+        slicePitch = width * height * 3 / 2;
+        break;
     default:
         // Default byte alignment
         rowPitch = (width * PixelFormatExtensions::SizeInBits(format) + 7) / 8;
