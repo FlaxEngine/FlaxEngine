@@ -211,6 +211,13 @@ namespace FlaxEditor.Options
         public bool SeparateValueAndUnit { get; set; }
 
         /// <summary>
+        /// Gets or sets the option to put a space between numbers and units for unit formatting.
+        /// </summary>
+        [DefaultValue(true)]
+        [EditorDisplay("Interface"), EditorOrder(320)]
+        public bool ShowTreeLines { get; set; } = true;
+
+        /// <summary>
         /// Gets or sets the timestamps prefix mode for output log messages.
         /// </summary>
         [DefaultValue(TimestampsFormats.TimeSinceStartup)]
