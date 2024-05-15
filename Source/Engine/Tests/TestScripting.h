@@ -6,6 +6,59 @@
 #include "Engine/Core/Math/Vector3.h"
 #include "Engine/Core/Collections/Array.h"
 #include "Engine/Scripting/ScriptingObject.h"
+#include "Engine/Scripting/SerializableScriptingObject.h"
+
+// Test compilation with nested types.
+API_CLASS() class TestNesting : public SerializableScriptingObject
+{
+    DECLARE_SCRIPTING_TYPE(TestNesting);
+    API_AUTO_SERIALIZATION();
+
+    // Structure
+    API_STRUCT() struct TestAttribute : public ISerializable
+    {
+        DECLARE_SCRIPTING_TYPE_MINIMAL(TestAttribute);
+        API_AUTO_SERIALIZATION();
+
+        // Enumeration
+        API_ENUM() enum TestEnum
+        {
+            E1, E2,
+        };
+
+        // Enum
+        API_FIELD() TestEnum Enum = E1;
+    };
+
+    // Attributes
+    API_FIELD() Array<TestAttribute> Attributes;
+    // Enum
+    API_FIELD() TestAttribute::TestEnum Enum = TestAttribute::E1;
+};
+
+// Test compilation with nested types.
+API_CLASS() class TestNesting2 : public SerializableScriptingObject
+{
+    DECLARE_SCRIPTING_TYPE(TestNesting2);
+    API_AUTO_SERIALIZATION();
+
+    // Structure
+    API_STRUCT() struct TestAttribute
+    {
+        DECLARE_SCRIPTING_TYPE_MINIMAL(TestAttribute);
+
+        // Enumeration
+        API_ENUM() enum TestEnum
+        {
+            E1, E2,
+        };
+    };
+
+    // Attributes
+    API_FIELD() Array<TestNesting::TestAttribute> Attributes;
+    // Enum
+    API_FIELD() TestNesting::TestAttribute::TestEnum Enum = TestNesting::TestAttribute::E1;
+};
 
 // Test structure.
 API_STRUCT(NoDefault) struct TestStruct : public ISerializable
