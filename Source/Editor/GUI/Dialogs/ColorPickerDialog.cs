@@ -371,9 +371,25 @@ namespace FlaxEditor.GUI.Dialogs
             Render2D.DrawText(style.FontMedium, "Hex", hex, textColor, TextAlignment.Near, TextAlignment.Center);
 
             // Color difference
-            var newRect = new Rectangle(_cOK.X, _cHex.Bottom + PickerMargin, _cCancel.Right - _cOK.Left, 0);
-            newRect.Size.Y = _cValue.Bottom - newRect.Y;
-            Render2D.FillRectangle(newRect, _value * _value.A);
+            var newRect = new Rectangle(_cOK.X - 3, _cHex.Bottom + PickerMargin, 130, 0);
+            newRect.Size.Y = 50;
+            Render2D.FillRectangle(newRect, Color.White);
+            var smallRectSize = 10;
+            var numHor = Mathf.FloorToInt(newRect.Width / smallRectSize);
+            var numVer = Mathf.FloorToInt(newRect.Height / smallRectSize);
+            // Draw checkerboard for background of color to help with transparency
+            for (int i = 0; i < numHor; i++)
+            {
+                for (int j = 0; j < numVer; j++)
+                {
+                    if ((i + j) % 2 == 0 )
+                    {
+                        var rect = new Rectangle(newRect.X + smallRectSize * i, newRect.Y + smallRectSize * j, new Float2(smallRectSize));
+                        Render2D.FillRectangle(rect, Color.Gray);
+                    }
+                }
+            }
+            Render2D.FillRectangle(newRect, _value);
         }
 
         /// <inheritdoc />
