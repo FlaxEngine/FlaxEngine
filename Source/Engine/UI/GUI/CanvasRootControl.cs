@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 using System;
+using System.Collections.Generic;
 
 namespace FlaxEngine.GUI
 {
@@ -204,7 +205,9 @@ namespace FlaxEngine.GUI
             {
                 _navigationHeldTimeUp = _navigationHeldTimeDown = _navigationHeldTimeLeft = _navigationHeldTimeRight = 0;
                 _navigationRateTimeUp = _navigationRateTimeDown = _navigationRateTimeLeft = _navigationRateTimeRight = 0;
+                return;
             }
+            if (ContainsFocus || IndexInParent == 0)
             {
                 UpdateNavigation(deltaTime, _canvas.NavigateUp.Name, NavDirection.Up, ref _navigationHeldTimeUp, ref _navigationRateTimeUp);
                 UpdateNavigation(deltaTime, _canvas.NavigateDown.Name, NavDirection.Down, ref _navigationHeldTimeDown, ref _navigationRateTimeDown);
@@ -216,13 +219,30 @@ namespace FlaxEngine.GUI
             base.Update(deltaTime);
         }
 
+        private void ConditionalNavigate(NavDirection direction)
+        {
+            // Only currently focused canvas updates its navigation
+            if (!ContainsFocus)
+            {
+                // Special case when no canvas nor game UI is focused so let the first canvas to start the navigation into the UI
+                if (IndexInParent == 0 && Parent is CanvasContainer canvasContainer && !canvasContainer.ContainsFocus && GameRoot.ContainsFocus)
+                {
+                    // Nothing is focused so go to the first control
+                    var focused = OnNavigate(direction, Float2.Zero, this, new List<Control>());
+                    focused?.NavigationFocus();
+                    return;
+                }
+            }
+            Navigate(direction);
+        }
+
         private void UpdateNavigation(float deltaTime, string actionName, NavDirection direction, ref float heldTime, ref float rateTime)
         {
             if (Input.GetAction(actionName))
             {
                 if (heldTime <= Mathf.Epsilon)
                 {
-                    Navigate(direction);
+                    ConditionalNavigate(direction);
                 }
                 if (heldTime > _canvas.NavigationInputRepeatDelay)
                 {
@@ -230,7 +250,7 @@ namespace FlaxEngine.GUI
                 }
                 if (rateTime > _canvas.NavigationInputRepeatRate)
                 {
-                    Navigate(direction);
+                    ConditionalNavigate(direction);
                     rateTime = 0;
                 }
                 heldTime += deltaTime;
