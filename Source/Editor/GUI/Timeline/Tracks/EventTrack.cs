@@ -159,7 +159,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
             /// The parameters values.
             /// </summary>
             [EditorDisplay("Parameters", EditorDisplayAttribute.InlineStyle), ExpandGroups]
-            [Collection(CanReorderItems = false, ReadOnly = true)]
+            [Collection(CanReorderItems = false, CanResize = true)]
             public object[] Parameters;
 
             /// <inheritdoc />

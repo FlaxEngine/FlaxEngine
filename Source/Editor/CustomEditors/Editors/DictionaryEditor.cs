@@ -189,6 +189,7 @@ namespace FlaxEditor.CustomEditors.Editors
             var collection = (CollectionAttribute)attributes?.FirstOrDefault(x => x is CollectionAttribute);
             if (collection != null)
             {
+                _canEditKeys &= collection.CanReorderItems;
                 _readOnly = collection.ReadOnly;
                 _notNullItems = collection.NotNullItems;
                 if (collection.BackgroundColor.HasValue)

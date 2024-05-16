@@ -41,7 +41,7 @@ public:
     /// <summary>
     /// Gets the model entries collection. Each entry contains data how to render meshes using this entry (transformation, material, shadows casting, etc.).
     /// </summary>
-    API_PROPERTY(Attributes="Serialize, EditorOrder(1000), EditorDisplay(\"Entries\", EditorDisplayAttribute.InlineStyle), Collection(CanReorderItems=false, NotNullItems=true, ReadOnly=true, Spacing=10)")
+    API_PROPERTY(Attributes="Serialize, EditorOrder(1000), EditorDisplay(\"Entries\", EditorDisplayAttribute.InlineStyle), Collection(CanReorderItems=false, NotNullItems=true, CanResize=false, Spacing=10)")
     FORCE_INLINE const Array<ModelInstanceEntry>& GetEntries() const
     {
         return Entries;
