@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 
 namespace FlaxEngine;
 
@@ -15,7 +15,7 @@ public class WatermarkAttribute : Attribute
     public string WatermarkText;
 
     /// <summary>
-    /// The watermark color.
+    /// The watermark color (as 32-bit uint in RGB order, bottom bits contain Blue).
     /// </summary>
     public uint WatermarkColor;
 
@@ -26,7 +26,7 @@ public class WatermarkAttribute : Attribute
     public WatermarkAttribute(string text)
     {
         WatermarkText = text;
-        WatermarkColor = 0; // default color of watermark in textbox
+        WatermarkColor = 0; // Default color of watermark in textbox
     }
 
     /// <summary>

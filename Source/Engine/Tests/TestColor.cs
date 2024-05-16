@@ -37,6 +37,15 @@ namespace FlaxEngine.Tests
             Assert.AreEqual(Color.Maroon, ColorHSV.FromColor(Color.Maroon).ToColor());
             Assert.AreEqual(new Color(184, 209, 219, 255).ToRgba(), ColorHSV.FromColor(new Color(184, 209, 219, 255)).ToColor().ToRgba());
         }
+
+        [Test]
+        public void TestHexConversion()
+        {
+            String hex = Color.Blue.AlphaMultiplied(0.5f).ToHexString();
+            Color col1 = Color.FromHex(hex);
+            Color col2 = Color.FromRGBA(0x0000FF7F);
+            Assert.AreEqual((Color32)col1, (Color32)col2);
+        }
     }
 }
 #endif

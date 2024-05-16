@@ -39,7 +39,7 @@ namespace FlaxEditor.CustomEditors.Editors
             if (watermarkAttribute is WatermarkAttribute watermark)
             {
                 _watermarkText = watermark.WatermarkText;
-                var watermarkColor = watermark.WatermarkColor > 0 ? Color.FromRGBA(watermark.WatermarkColor) : FlaxEngine.GUI.Style.Current.ForegroundDisabled;
+                var watermarkColor = watermark.WatermarkColor > 0 ? Color.FromRGB(watermark.WatermarkColor) : FlaxEngine.GUI.Style.Current.ForegroundDisabled;
                 _watermarkColor = watermarkColor;
                 _element.TextBox.WatermarkText = watermark.WatermarkText;
                 _element.TextBox.WatermarkTextColor = watermarkColor;
