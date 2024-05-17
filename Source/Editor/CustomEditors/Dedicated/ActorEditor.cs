@@ -75,7 +75,11 @@ namespace FlaxEditor.CustomEditors.Dedicated
 
                         // Selecting actor prefab asset
                         var selectPrefab = panel.Button("Select Prefab");
-                        selectPrefab.Button.Clicked += () => Editor.Instance.Windows.ContentWin.Select(prefab);
+                        selectPrefab.Button.Clicked += () =>
+                        {
+                            Editor.Instance.Windows.ContentWin.ClearItemsSearch();
+                            Editor.Instance.Windows.ContentWin.Select(prefab);
+                        };
 
                         // Viewing changes applied to this actor
                         var viewChanges = panel.Button("View Changes");
