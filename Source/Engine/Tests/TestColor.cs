@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #if FLAX_TESTS
+using System;
 using NUnit.Framework;
 
 namespace FlaxEngine.Tests
@@ -41,7 +42,7 @@ namespace FlaxEngine.Tests
         [Test]
         public void TestHexConversion()
         {
-            String hex = Color.Blue.AlphaMultiplied(0.5f).ToHexString();
+            string hex = Color.Blue.AlphaMultiplied(0.5f).ToHexString();
             Color col1 = Color.FromHex(hex);
             Color col2 = Color.FromRGBA(0x0000FF7F);
             Assert.AreEqual((Color32)col1, (Color32)col2);
