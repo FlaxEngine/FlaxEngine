@@ -42,7 +42,7 @@ void RenderTask::DrawAll()
     // Sort tasks (by Order property)
     Sorting::QuickSortObj(Tasks.Get(), Tasks.Count());
 
-    // Render all that shit
+    // Render all tasks
     for (auto task : Tasks)
     {
         if (task->CanDraw())
