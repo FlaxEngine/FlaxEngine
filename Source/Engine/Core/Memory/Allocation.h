@@ -15,7 +15,7 @@ public:
     enum { HasSwap = false };
 
     template<typename T>
-    class Data
+    class alignas(sizeof(void*)) Data
     {
     private:
         byte _data[Capacity * sizeof(T)];
@@ -183,7 +183,7 @@ public:
     enum { HasSwap = false };
 
     template<typename T>
-    class Data
+    class alignas(sizeof(void*)) Data
     {
     private:
         typedef typename OtherAllocator::template Data<T> OtherData;
