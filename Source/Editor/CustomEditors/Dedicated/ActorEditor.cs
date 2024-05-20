@@ -81,6 +81,15 @@ namespace FlaxEditor.CustomEditors.Dedicated
                             Editor.Instance.Windows.ContentWin.Select(prefab);
                         };
 
+                        // Edit selected prefab asset
+                        var editPrefab = panel.Button("Edit Prefab");
+                        editPrefab.Button.Clicked += () =>
+                        {
+                            Editor.Instance.Windows.ContentWin.ClearItemsSearch();
+                            Editor.Instance.Windows.ContentWin.Select(prefab);
+                            Editor.Instance.Windows.ContentWin.Open(Editor.Instance.Windows.ContentWin.View.Selection[0]);
+                        };
+
                         // Viewing changes applied to this actor
                         var viewChanges = panel.Button("View Changes");
                         viewChanges.Button.Clicked += () => ViewChanges(viewChanges.Button, new Float2(0.0f, 20.0f));
