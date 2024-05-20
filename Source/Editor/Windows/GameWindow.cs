@@ -860,7 +860,7 @@ namespace FlaxEditor.Windows
                 {
                     var alpha = Mathf.Saturate(-animTime / fadeOutTime);
                     var rect = new Rectangle(new Float2(6), Size - 12);
-                    var text = "Press Shift+F11 to unlock the mouse";
+                    var text = $"Press {Editor.Options.Options.Input.DebuggerUnlockMouse} to unlock the mouse";
                     Render2D.DrawText(style.FontSmall, text, rect + new Float2(1.0f), style.Background * alpha, TextAlignment.Near, TextAlignment.Far);
                     Render2D.DrawText(style.FontSmall, text, rect, style.Foreground * alpha, TextAlignment.Near, TextAlignment.Far);
                 }
