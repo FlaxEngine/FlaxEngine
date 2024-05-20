@@ -71,7 +71,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
                         var panel = layout.CustomContainer<UniformGridPanel>();
                         panel.CustomControl.Height = 20.0f;
                         panel.CustomControl.SlotsVertically = 1;
-                        panel.CustomControl.SlotsHorizontally = 2;
+                        panel.CustomControl.SlotsHorizontally = 3;
 
                         // Selecting actor prefab asset
                         var selectPrefab = panel.Button("Select Prefab");
