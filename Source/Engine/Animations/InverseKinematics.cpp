@@ -113,7 +113,7 @@ void InverseKinematics::SolveTwoBoneIK(Transform& rootTransform, Transform& midJ
         newMidJointPos = rootTransform.Translation + projJointDist * toTargetDir + jointLineDist * bendDirection;
     }
     // TODO: fix the new IK impl (https://github.com/FlaxEngine/FlaxEngine/pull/2421) to properly work for character from https://github.com/PrecisionRender/CharacterControllerPro
-#define OLD 1
+#define OLD 0
     // Update root joint orientation
     {
 #if OLD
