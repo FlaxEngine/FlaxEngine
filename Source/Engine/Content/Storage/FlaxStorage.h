@@ -416,7 +416,7 @@ public:
     /// <summary>
     /// Ticks this instance.
     /// </summary>
-    void Tick();
+    void Tick(double time);
 
 #if USE_EDITOR
     void OnRename(const StringView& newPath);

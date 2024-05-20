@@ -1398,19 +1398,18 @@ void FlaxStorage::Dispose()
     _version = 0;
 }
 
-void FlaxStorage::Tick()
+void FlaxStorage::Tick(double time)
 {
-    // Check if chunks are locked
+    // Skip if file is in use
     if (Platform::AtomicRead(&_chunksLock) != 0)
         return;
 
-    const double now = Platform::GetTimeSeconds();
     bool wasAnyUsed = false;
     const float unusedDataChunksLifetime = ContentStorageManager::UnusedDataChunksLifetime.GetTotalSeconds();
     for (int32 i = 0; i < _chunks.Count(); i++)
     {
         auto chunk = _chunks.Get()[i];
-        const bool wasUsed = (now - chunk->LastAccessTime) < unusedDataChunksLifetime;
+        const bool wasUsed = (time - chunk->LastAccessTime) < unusedDataChunksLifetime;
         if (!wasUsed && chunk->IsLoaded())
         {
             chunk->Unload();
@@ -1418,7 +1417,7 @@ void FlaxStorage::Tick()
         wasAnyUsed |= wasUsed;
     }
 
-    // Release file handles in none of chunks was not used
+    // Release file handles in none of chunks is in use
     if (!wasAnyUsed && Platform::AtomicRead(&_chunksLock) == 0)
     {
         CloseFileHandles();
