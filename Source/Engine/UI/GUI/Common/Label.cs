@@ -143,7 +143,7 @@ namespace FlaxEngine.GUI
         }
 
         /// <summary>
-        /// Gets or sets the custom material used to render the text. It must has domain set to GUI and have a public texture parameter named Font used to sample font atlas texture with font characters data.
+        /// Gets or sets the custom material used to render the text. It has to have domain set to GUI and have a public texture parameter named Font used to sample font atlas texture with font characters data.
         /// </summary>
         [EditorDisplay("Text Style"), EditorOrder(2025)]
         public MaterialBase Material { get; set; }
