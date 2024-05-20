@@ -338,7 +338,7 @@ namespace FlaxEditor.CustomEditors.Editors
         protected abstract ulong GetValue(object value);
 
         /// <summary>
-        /// Gets the value from long.
+        /// Sets the value from long.
         /// </summary>
         /// <param name="value">The value from editor.</param>
         /// <returns>The value to object.</returns>
