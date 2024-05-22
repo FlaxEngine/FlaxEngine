@@ -201,6 +201,10 @@ namespace FlaxEditor.GUI.Input
                     // Update sliding
                     var slidePosition = location + Root.TrackingMouseOffset;
                     Value = Mathf.Remap(slidePosition.X, 4, TrackSize - 4, Minimum, Maximum);
+                    if (Mathf.NearEqual(Value, Maximum))
+                        Value = Maximum;
+                    else if (Mathf.NearEqual(Value, Minimum))
+                        Value = Minimum;
                 }
                 else
                 {
