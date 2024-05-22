@@ -328,7 +328,11 @@ namespace FlaxEditor.Windows
             };
             toolstrip.AddButton("Clear", Clear).LinkTooltip("Clears all log entries");
             _clearOnPlayButton = (ToolStripButton)toolstrip.AddButton("Clear on Play").SetAutoCheck(true).SetChecked(true).LinkTooltip("Clears all log entries on enter playmode");
-            _collapseLogsButton = (ToolStripButton)toolstrip.AddButton("Collapse").SetAutoCheck(true).SetChecked(true).LinkTooltip("Collapses similar logs.");
+            bool collapse = true;
+            if (Editor.ProjectCache.TryGetCustomData("DebugLogCollapse", out var collapseString))
+                if (bool.TryParse(collapseString, out var setCollapse))
+                    collapse = setCollapse;
+            _collapseLogsButton = (ToolStripButton)toolstrip.AddButton("Collapse", () => Editor.ProjectCache.SetCustomData("DebugLogCollapse", _collapseLogsButton.Checked.ToString())).SetAutoCheck(true).SetChecked(collapse).LinkTooltip("Collapses similar logs.");
             _pauseOnErrorButton = (ToolStripButton)toolstrip.AddButton("Pause on Error").SetAutoCheck(true).LinkTooltip("Performs auto pause on error");
             toolstrip.AddSeparator();
             _groupButtons[0] = (ToolStripButton)toolstrip.AddButton(editor.Icons.Error32, () => UpdateLogTypeVisibility(LogGroup.Error, _groupButtons[0].Checked)).SetAutoCheck(true).SetChecked(true).LinkTooltip("Shows/hides error messages");
