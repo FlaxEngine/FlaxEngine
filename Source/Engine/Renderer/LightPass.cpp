@@ -11,15 +11,17 @@
 #include "Engine/Content/Content.h"
 #include "Engine/Graphics/GPUContext.h"
 #include "Engine/Graphics/RenderTask.h"
+#include "Engine/Renderer/GlobalSignDistanceFieldPass.h"
 
-PACK_STRUCT(struct PerLight{
+PACK_STRUCT(struct PerLight {
     LightData Light;
     Matrix WVP;
-    });
+});
 
-PACK_STRUCT(struct PerFrame{
+PACK_STRUCT(struct PerFrame {
     GBufferData GBuffer;
-    });
+    GlobalSignDistanceFieldPass::ConstantsData GlobalSDF;
+});
 
 String LightPass::ToString() const
 {
@@ -34,8 +36,8 @@ bool LightPass::Init()
     _psLightPointInverted.CreatePipelineStates();
     _psLightSpotNormal.CreatePipelineStates();
     _psLightSpotInverted.CreatePipelineStates();
-    _psLightSkyNormal = GPUDevice::Instance->CreatePipelineState();
-    _psLightSkyInverted = GPUDevice::Instance->CreatePipelineState();
+    _psLightSkyNormal.CreatePipelineStates();
+    _psLightSkyInverted.CreatePipelineStates();
 
     // Load assets
     _shader = Content::LoadAsyncInternal<Shader>(TEXT("Shaders/Lights"));
@@ -116,7 +118,7 @@ bool LightPass::setupResources()
         if (_psLightSpotNormal.Create(psDesc, shader, "PS_Spot"))
             return true;
     }
-    if (!_psLightSkyNormal->IsValid() || !_psLightSkyInverted->IsValid())
+    if (!_psLightSkyNormal.IsValid() || !_psLightSkyInverted.IsValid())
     {
         psDesc = GPUPipelineState::Description::DefaultNoDepth;
         psDesc.BlendMode = BlendingMode::Add;
@@ -124,10 +126,10 @@ bool LightPass::setupResources()
         psDesc.CullMode = CullMode::Normal;
         psDesc.VS = shader->GetVS("VS_Model");
         psDesc.PS = shader->GetPS("PS_Sky");
-        if (_psLightSkyNormal->Init(psDesc))
+        if (_psLightSkyNormal.Create(psDesc, shader, "PS_Sky"))
             return true;
         psDesc.CullMode = CullMode::Inverted;
-        if (_psLightSkyInverted->Init(psDesc))
+        if (_psLightSkyInverted.Create(psDesc, shader, "PS_Sky"))
             return true;
     }
 
@@ -145,8 +147,8 @@ void LightPass::Dispose()
     _psLightPointInverted.Delete();
     _psLightSpotNormal.Delete();
     _psLightSpotInverted.Delete();
-    SAFE_DELETE_GPU_RESOURCE(_psLightSkyNormal);
-    SAFE_DELETE_GPU_RESOURCE(_psLightSkyInverted);
+    _psLightSkyNormal.Delete();
+    _psLightSkyInverted.Delete();
     SAFE_DELETE_GPU_RESOURCE(_psClearDiffuse);
     _sphereModel = nullptr;
 }
@@ -215,6 +217,14 @@ void LightPass::RenderLight(RenderContextBatch& renderContextBatch, GPUTextureVi
     GPUTextureView* depthBufferSRV = depthBufferReadOnly ? depthBuffer->ViewReadOnlyDepth() : depthBuffer->View();
     context->SetRenderTarget(depthBufferRTV, lightBuffer);
 
+    GlobalSignDistanceFieldPass::BindingData bindingDataSDF;
+    bool useSdfSkylightShadows = false;
+    // If SDF rendering succeeds
+    if (!GlobalSignDistanceFieldPass::Instance()->Render(renderContext, context, bindingDataSDF)) {
+        useSdfSkylightShadows = true;
+        perFrame.GlobalSDF = bindingDataSDF.Constants;
+    }
+
     // Set per frame data
     GBufferPass::SetInputs(renderContext.View, perFrame.GBuffer);
     auto cb0 = lightShader->GetCB(0);
@@ -227,6 +237,12 @@ void LightPass::RenderLight(RenderContextBatch& renderContextBatch, GPUTextureVi
     context->BindSR(2, renderContext.Buffers->GBuffer2);
     context->BindSR(3, depthBufferSRV);
     context->BindSR(4, renderContext.Buffers->GBuffer3);
+
+    // Bind SDF resources
+    if (useSdfSkylightShadows) {
+        context->BindSR(8, bindingDataSDF.Texture ? bindingDataSDF.Texture->ViewVolume() : nullptr);
+        context->BindSR(9, bindingDataSDF.TextureMip ? bindingDataSDF.TextureMip->ViewVolume() : nullptr);
+    }
 
     // Fullscreen shadow mask buffer
     GPUTexture* shadowMask = nullptr;
@@ -421,7 +437,8 @@ void LightPass::RenderLight(RenderContextBatch& renderContextBatch, GPUTextureVi
         context->UpdateCB(cb0, &perLight);
         context->BindCB(0, cb0);
         context->BindCB(1, cb1);
-        context->SetState(isViewInside ? _psLightSkyInverted : _psLightSkyNormal);
+        int permutationIndex = useSdfSkylightShadows ? 1 : 0;
+        context->SetState((isViewInside ? _psLightSkyInverted : _psLightSkyNormal).Get(permutationIndex));
         _sphereModel->Render(context);
     }
 
