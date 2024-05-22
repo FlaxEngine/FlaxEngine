@@ -467,21 +467,21 @@ void VolumetricFogPass::Render(RenderContext& renderContext)
     GPUTextureView* localShadowedLightScattering = nullptr;
     {
         // Get lights to render
-        Array<const RenderPointLightData*, InlinedAllocation<64, RendererAllocation>> pointLights;
-        Array<const RenderSpotLightData*, InlinedAllocation<64, RendererAllocation>> spotLights;
+        Array<uint16, InlinedAllocation<64, RendererAllocation>> pointLights;
+        Array<uint16, InlinedAllocation<64, RendererAllocation>> spotLights;
         for (int32 i = 0; i < renderContext.List->PointLights.Count(); i++)
         {
             const auto& light = renderContext.List->PointLights.Get()[i];
             if (light.VolumetricScatteringIntensity > ZeroTolerance &&
                 (view.Position - light.Position).LengthSquared() < Math::Square(options.Distance + light.Radius))
-                pointLights.Add(&light);
+                pointLights.Add(i);
         }
         for (int32 i = 0; i < renderContext.List->SpotLights.Count(); i++)
         {
             const auto& light = renderContext.List->SpotLights.Get()[i];
             if (light.VolumetricScatteringIntensity > ZeroTolerance &&
                 (view.Position - light.Position).LengthSquared() < Math::Square(options.Distance + light.Radius))
-                spotLights.Add(&light);
+                spotLights.Add(i);
         }
 
         // Skip if no lights to render
@@ -506,9 +506,9 @@ void VolumetricFogPass::Render(RenderContext& renderContext)
             context->BindSR(0, shadowMap);
             context->BindSR(1, shadowsBuffer);
             for (int32 i = 0; i < pointLights.Count(); i++)
-                RenderRadialLight(renderContext, context, view, options, *pointLights[i], perLight, cb1);
+                RenderRadialLight(renderContext, context, view, options, renderContext.List->PointLights[pointLights[i]], perLight, cb1);
             for (int32 i = 0; i < spotLights.Count(); i++)
-                RenderRadialLight(renderContext, context, view, options, *spotLights[i], perLight, cb1);
+                RenderRadialLight(renderContext, context, view, options, renderContext.List->SpotLights[spotLights[i]], perLight, cb1);
 
             // Cleanup
             context->UnBindCB(1);
