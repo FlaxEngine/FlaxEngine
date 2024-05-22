@@ -127,9 +127,7 @@ namespace FlaxEditor.Modules
         public void RequestStartPlayGame()
         {
             if (!Editor.StateMachine.IsEditMode)
-            {
                 return;
-            }
 
             var firstScene = Content.Settings.GameSettings.Load().FirstScene;
             if (firstScene == Guid.Empty)
@@ -141,6 +139,9 @@ namespace FlaxEditor.Modules
             if (!FlaxEngine.Content.GetAssetInfo(firstScene.ID, out var info))
             {
                 Editor.LogWarning("Invalid First Scene in Game Settings.");
+                if (Level.IsAnySceneLoaded)
+                    Editor.Simulation.RequestStartPlayScenes();
+                return;
             }
 
             // Load scenes after entering the play mode
