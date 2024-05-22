@@ -131,7 +131,7 @@ namespace FlaxEditor.Windows
         public void ClearItemsSearch()
         {
             // Skip if already cleared
-            if (_itemsSearchBox.TextLength == 0 && !_viewDropdown.HasSelection)
+            if (_itemsSearchBox.TextLength == 0)
                 return;
 
             IsLayoutLocked = true;

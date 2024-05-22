@@ -253,7 +253,11 @@ namespace FlaxEditor
                     {
                         // Select node (with additive mode)
                         var selection = new List<SceneGraphNode>();
-                        if (Root.GetKey(KeyboardKeys.Control))
+                        if (Root.GetKey(KeyboardKeys.Shift) && transformGizmo.Selection.Contains(uiControlNode))
+                        {
+                            // Move whole selection
+                        }
+                        else if (Root.GetKey(KeyboardKeys.Control))
                         {
                             // Add/remove from selection
                             selection.AddRange(transformGizmo.Selection);
@@ -261,13 +265,14 @@ namespace FlaxEditor
                                 selection.Remove(uiControlNode);
                             else
                                 selection.Add(uiControlNode);
+                            owner.Select(selection);
                         }
                         else
                         {
                             // Select
                             selection.Add(uiControlNode);
+                            owner.Select(selection);
                         }
-                        owner.Select(selection);
 
                         // Initialize control movement
                         _mouseMovesControl = true;

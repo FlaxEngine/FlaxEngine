@@ -155,9 +155,9 @@ bool FontManager::AddNewEntry(Font* font, Char c, FontCharacterEntry& entry)
     // Get the index to the glyph in the font face
     const FT_UInt glyphIndex = FT_Get_Char_Index(face, c);
 #if !BUILD_RELEASE
-    if (glyphIndex == 0)
+    if (glyphIndex == 0 && c >= '!')
     {
-        LOG(Warning, "Font `{}` doesn't contain character `\\u{:x}`, consider choosing another font. ", String(face->family_name), c);
+        LOG(Warning, "Font `{}` doesn't contain character `\\u{:x}`, consider choosing another font.", String(face->family_name), c);
     }
 #endif
 

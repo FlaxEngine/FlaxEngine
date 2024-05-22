@@ -227,7 +227,7 @@ namespace FlaxEditor.CustomEditors.Editors
             var collection = (CollectionAttribute)attributes?.FirstOrDefault(x => x is CollectionAttribute);
             if (collection != null)
             {
-                _canResize = !collection.ReadOnly;
+                _canResize = collection.CanResize;
                 _readOnly = collection.ReadOnly;
                 _minCount = collection.MinCount;
                 _maxCount = collection.MaxCount;

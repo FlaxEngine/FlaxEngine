@@ -80,7 +80,6 @@ void InverseKinematics::SolveTwoBoneIK(Transform& rootTransform, Transform& midJ
     // Calculate new positions for joint and end effector
     Vector3 newEndEffectorPos = targetPosition;
     Vector3 newMidJointPos = midJointPos;
-
     if (toTargetLength >= totalLimbLength)
     {
         // Target is beyond the reach of the limb
@@ -90,13 +89,9 @@ void InverseKinematics::SolveTwoBoneIK(Transform& rootTransform, Transform& midJ
         Vector3 rootToPole = (poleVector - rootTransform.Translation).GetNormalized();
         Vector3 slightBendDirection = Vector3::Cross(rootToEnd, rootToPole);
         if (slightBendDirection.LengthSquared() < ZeroTolerance * ZeroTolerance)
-        {
             slightBendDirection = Vector3::Up;
-        }
         else
-        {
             slightBendDirection.Normalize();
-        }
 
         // Calculate the direction from root to mid joint with a slight offset towards the pole vector
         Vector3 midJointDirection = Vector3::Cross(slightBendDirection, rootToEnd).GetNormalized();
@@ -117,9 +112,16 @@ void InverseKinematics::SolveTwoBoneIK(Transform& rootTransform, Transform& midJ
             projJointDist *= -1.0f;
         newMidJointPos = rootTransform.Translation + projJointDist * toTargetDir + jointLineDist * bendDirection;
     }
-
+    // TODO: fix the new IK impl (https://github.com/FlaxEngine/FlaxEngine/pull/2421) to properly work for character from https://github.com/PrecisionRender/CharacterControllerPro
+#define OLD 0
     // Update root joint orientation
     {
+#if OLD
+        const Vector3 oldDir = (midJointPos - rootTransform.Translation).GetNormalized();
+        const Vector3 newDir = (newMidJointPos - rootTransform.Translation).GetNormalized();
+        const Quaternion deltaRotation = Quaternion::FindBetween(oldDir, newDir);
+        rootTransform.Orientation = deltaRotation * rootTransform.Orientation;
+#else
         // Vector from root joint to mid joint (local Y-axis direction)
         Vector3 localY = (newMidJointPos - rootTransform.Translation).GetNormalized();
 
@@ -136,20 +138,23 @@ void InverseKinematics::SolveTwoBoneIK(Transform& rootTransform, Transform& midJ
         localZ = Vector3::Cross(localX, localY).GetNormalized();
 
         // Construct a rotation from the orthogonal basis vectors
-        Quaternion newRootJointOrientation = Quaternion::LookRotation(localZ, localY);
-
-        // Apply the new rotation to the root joint
-        rootTransform.Orientation = newRootJointOrientation;
+        rootTransform.Orientation = Quaternion::LookRotation(localZ, localY);
+#endif
     }
 
     // Update mid joint orientation to point Y-axis towards the end effector and Z-axis perpendicular to the IK plane
     {
+#if OLD
+        const Vector3 oldDir = (endEffectorTransform.Translation - midJointPos).GetNormalized();
+        const Vector3 newDir = (newEndEffectorPos - newMidJointPos).GetNormalized();
+        const Quaternion deltaRotation = Quaternion::FindBetween(oldDir, newDir);
+        midJointTransform.Orientation = deltaRotation * midJointTransform.Orientation;
+#else
         // Vector from mid joint to end effector (local Y-axis direction after rotation)
         Vector3 midToEnd = (newEndEffectorPos - newMidJointPos).GetNormalized();
 
         // Calculate the plane normal using the root, mid joint, and end effector positions (will be the local Z-axis direction)
         Vector3 rootToMid = (newMidJointPos - rootTransform.Translation).GetNormalized();
-        Vector3 planeNormal = Vector3::Cross(rootToMid, midToEnd).GetNormalized();
 
         // Vector from mid joint to end effector (local Y-axis direction)
         Vector3 localY = (newEndEffectorPos - newMidJointPos).GetNormalized();
@@ -157,21 +162,18 @@ void InverseKinematics::SolveTwoBoneIK(Transform& rootTransform, Transform& midJ
         // Calculate the plane normal using the root, mid joint, and end effector positions (local Z-axis direction)
         Vector3 localZ = Vector3::Cross(rootToMid, localY).GetNormalized();
 
-        //// Calculate the local X-axis direction, should be perpendicular to the Y and Z axes
+        // Calculate the local X-axis direction, should be perpendicular to the Y and Z axes
         Vector3 localX = Vector3::Cross(localY, localZ).GetNormalized();
 
         // Correct the local Z-axis direction based on the cross product of X and Y to ensure orthogonality
         localZ = Vector3::Cross(localX, localY).GetNormalized();
 
         // Construct a rotation from the orthogonal basis vectors
-        // The axes are used differently here than a standard LookRotation to align Z towards the end and Y perpendicular
-        Quaternion newMidJointOrientation = Quaternion::LookRotation(localZ, localY); // Assuming FromLookRotation creates a rotation with the first vector as forward and the second as up
-
-        // Apply the new rotation to the mid joint
-        midJointTransform.Orientation = newMidJointOrientation;
-        midJointTransform.Translation = newMidJointPos;
+        midJointTransform.Orientation = Quaternion::LookRotation(localZ, localY);
+#endif
     }
 
-    // Update end effector transform
+    // Update mid and end locations
+    midJointTransform.Translation = newMidJointPos;
     endEffectorTransform.Translation = newEndEffectorPos;
 }

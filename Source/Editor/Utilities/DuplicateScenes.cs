@@ -155,8 +155,8 @@ namespace FlaxEditor.Utilities
                 var scene = Level.LoadSceneFromBytes(data.Bytes);
                 if (scene == null)
                 {
-                    Profiler.EndEvent();
-                    throw new Exception("Failed to deserialize scene");
+                    Editor.LogError("Failed to restore scene");
+                    continue;
                 }
 
                 // Restore `dirty` state

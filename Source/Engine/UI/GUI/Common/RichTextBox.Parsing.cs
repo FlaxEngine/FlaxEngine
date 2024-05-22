@@ -197,7 +197,7 @@ namespace FlaxEngine.GUI
                 textBlock.Range = new TextRange
                 {
                     StartIndex = start + line.FirstCharIndex,
-                    EndIndex = start + line.LastCharIndex,
+                    EndIndex = start + line.LastCharIndex + 1,
                 };
                 if (i != 0)
                 {

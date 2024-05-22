@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #if FLAX_TESTS
+using System;
 using NUnit.Framework;
 
 namespace FlaxEngine.Tests
@@ -36,6 +37,15 @@ namespace FlaxEngine.Tests
             Assert.AreEqual(Color.Silver, ColorHSV.FromColor(Color.Silver).ToColor());
             Assert.AreEqual(Color.Maroon, ColorHSV.FromColor(Color.Maroon).ToColor());
             Assert.AreEqual(new Color(184, 209, 219, 255).ToRgba(), ColorHSV.FromColor(new Color(184, 209, 219, 255)).ToColor().ToRgba());
+        }
+
+        [Test]
+        public void TestHexConversion()
+        {
+            string hex = Color.Blue.AlphaMultiplied(0.5f).ToHexString();
+            Color col1 = Color.FromHex(hex);
+            Color col2 = Color.FromRGBA(0x0000FF7F);
+            Assert.AreEqual((Color32)col1, (Color32)col2);
         }
     }
 }
