@@ -22,6 +22,9 @@
 #if VIDEO_API_MF
 #include "MF/VideoBackendMF.h"
 #endif
+#if VIDEO_API_AV
+#include "AV/VideoBackendAV.h"
+#endif
 #if VIDEO_API_ANDROID
 #include "Android/VideoBackendAndroid.h"
 #endif
@@ -109,12 +112,16 @@ protected:
             context->GPU->SetState(pso);
             context->GPU->DrawFullscreenTriangle();
         }
-        else
+        else if (frame->Format() == _player->Format)
         {
             // Raw texture data upload
             uint32 rowPitch, slicePitch;
             frame->ComputePitch(0, rowPitch, slicePitch);
             context->GPU->UpdateTexture(frame, 0, 0, _player->VideoFrameMemory.Get(), rowPitch, slicePitch);
+        }
+        else
+        {
+            LOG(Warning, "Incorrect video player data format {} for player texture format {}", ScriptingEnum::ToString(_player->Format), ScriptingEnum::ToString(_player->Frame->Format()));
         }
 
         // Frame has been updated
@@ -161,7 +168,6 @@ public:
     }
 
     bool Init() override;
-    void Update() override;
     void Dispose() override;
 };
 
@@ -185,11 +191,6 @@ bool VideoService::Init()
     Video::System = New<VideoSystem>();
     Engine::UpdateGraph->AddSystem(Video::System);
     return false;
-}
-
-void VideoService::Update()
-{
-    PROFILE_CPU_NAMED("Video.Update");
 }
 
 void VideoService::Dispose()
@@ -222,6 +223,9 @@ bool Video::CreatePlayerBackend(const VideoBackendPlayerInfo& info, VideoBackend
             return false;
 #if VIDEO_API_MF
     TRY_USE_BACKEND(VideoBackendMF);
+#endif
+#if VIDEO_API_AV
+    TRY_USE_BACKEND(VideoBackendAV);
 #endif
 #if VIDEO_API_ANDROID
     TRY_USE_BACKEND(VideoBackendAndroid);
@@ -335,6 +339,8 @@ void VideoBackendPlayer::UpdateVideoFrame(Span<byte> data, TimeSpan time, TimeSp
     // Update output frame texture
     InitVideoFrame();
     auto desc = GPUTextureDescription::New2D(Width, Height, PixelFormat::R8G8B8A8_UNorm, GPUTextureFlags::ShaderResource | GPUTextureFlags::RenderTarget);
+    if (!PixelFormatExtensions::IsVideo(Format))
+        desc.Format = Format; // Use raw format reported by the backend (eg. BGRA)
     if (Frame->GetDescription() != desc)
     {
         if (Frame->Init(desc))

@@ -574,7 +574,7 @@ bool VideoBackendAndroid::Base_Init()
 
 void VideoBackendAndroid::Base_Update(TaskGraph* graph)
 {
-    // Schedule work to update all videos models in async
+    // Schedule work to update all videos in async
     Function<void(int32)> job;
     job.Bind(Android::UpdatePlayer);
     graph->DispatchJob(job, Android::Players.Count());

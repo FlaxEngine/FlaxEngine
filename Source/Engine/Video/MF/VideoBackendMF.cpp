@@ -582,7 +582,7 @@ bool VideoBackendMF::Base_Init()
 
 void VideoBackendMF::Base_Update(TaskGraph* graph)
 {
-    // Schedule work to update all videos models in async
+    // Schedule work to update all videos in async
     Function<void(int32)> job;
     job.Bind(MF::UpdatePlayer);
     graph->DispatchJob(job, MF::Players.Count());

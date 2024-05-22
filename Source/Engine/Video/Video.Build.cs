@@ -34,6 +34,12 @@ public class Video : EngineModule
             options.OutputFiles.Add("mfreadwrite.lib");
             options.OutputFiles.Add("mfuuid.lib");
             break;
+        case TargetPlatform.Mac:
+        case TargetPlatform.iOS:
+            // AVFoundation
+            options.SourcePaths.Add(Path.Combine(FolderPath, "AV"));
+            options.CompileEnv.PreprocessorDefinitions.Add("VIDEO_API_AV");
+            break;
         case TargetPlatform.PS4:
             options.SourcePaths.Add(Path.Combine(Globals.EngineRoot, "Source", "Platforms", "PS4", "Engine", "Video"));
             options.CompileEnv.PreprocessorDefinitions.Add("VIDEO_API_PS4");
