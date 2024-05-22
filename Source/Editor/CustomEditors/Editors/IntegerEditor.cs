@@ -83,6 +83,22 @@ namespace FlaxEditor.CustomEditors.Editors
                     _element.Value = asInt;
                 else if (value is float asFloat)
                     _element.Value = (int)asFloat;
+                else if (value is double asDouble)
+                    _element.Value = (int)asDouble;
+                else if (value is uint asUint)
+                    _element.Value = (int)asUint;
+                else if (value is long asLong)
+                    _element.Value = (int)asLong;
+                else if (value is ulong asULong)
+                    _element.Value = (int)asULong;
+                else if (value is short asShort)
+                    _element.Value = asShort;
+                else if (value is ushort asUshort)
+                    _element.Value = asUshort;
+                else if (value is byte asByte)
+                    _element.Value = asByte;
+                else if (value is sbyte asSbyte)
+                    _element.Value = asSbyte;
                 else
                     throw new Exception(string.Format("Invalid value type {0}.", value?.GetType().ToString() ?? "<null>"));
             }
