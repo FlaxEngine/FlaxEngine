@@ -281,10 +281,10 @@ namespace Flax.Build
                 options.CompileEnv.IntrinsicFunctions = true;
                 options.CompileEnv.BufferSecurityCheck = true;
                 options.CompileEnv.Inlining = true;
-                options.CompileEnv.WholeProgramOptimization = false;
+                options.CompileEnv.WholeProgramOptimization = true;
 
                 options.LinkEnv.DebugInformation = true;
-                options.LinkEnv.LinkTimeCodeGeneration = false;
+                options.LinkEnv.LinkTimeCodeGeneration = true;
                 options.LinkEnv.UseIncrementalLinking = true;
                 options.LinkEnv.Optimization = true;
                 break;

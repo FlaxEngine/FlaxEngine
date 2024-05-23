@@ -511,16 +511,13 @@ namespace Flax.Build.Platforms
                     commonArgs.Add("/Os");
                 if (compileEnvironment.Optimization)
                 {
-                    // Enable Most Speed Optimizations
-                    // Commented out due to /Og causing slow build times without /GL in development builds
-                    //commonArgs.Add("/Ox");
-
                     // Generate Intrinsic Functions
                     commonArgs.Add("/Oi");
 
                     // Frame-Pointer Omission
                     commonArgs.Add("/Oy");
 
+                    // Only use /Ox with /GL to prevent too long build times
                     if (compileEnvironment.WholeProgramOptimization)
                     {
                         // Enable Most Speed Optimizations
@@ -889,7 +886,7 @@ namespace Flax.Build.Platforms
                     }
 
                     // Link Incrementally
-                    if (linkEnvironment.UseIncrementalLinking)
+                    if (linkEnvironment.UseIncrementalLinking && !linkEnvironment.LinkTimeCodeGeneration)
                     {
                         args.Add("/INCREMENTAL");
                     }
