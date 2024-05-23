@@ -66,7 +66,9 @@ private:
     {
         _psShadowDir.Release();
         _psShadowPoint.Release();
+        _psShadowPointInside.Release();
         _psShadowSpot.Release();
+        _psShadowSpotInside.Release();
         invalidateResources();
     }
 #endif

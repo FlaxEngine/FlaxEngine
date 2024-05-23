@@ -266,8 +266,8 @@ ShadowSample SampleDirectionalLightShadow(LightData light, Buffer<float4> shadow
     result.SurfaceShadow = SampleShadowMapOptimizedPCF(shadowMap, shadowMapUV, shadowPosition.z);
 
     // Increase the sharpness for higher cascades to match the filter radius
-    //const float SharpnessScale[MaxNumCascades] = { 1.0f, 1.5f, 3.0f, 3.5f };
-    //shadow.Sharpness *= SharpnessScale[cascadeIndex];
+    const float SharpnessScale[MaxNumCascades] = { 1.0f, 1.5f, 3.0f, 3.5f };
+    shadow.Sharpness *= SharpnessScale[cascadeIndex];
     
 #if defined(USE_GBUFFER_CUSTOM_DATA)
 	// Subsurface shadowing
