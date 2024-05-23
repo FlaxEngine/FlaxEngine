@@ -167,9 +167,6 @@ float4 PS_Lighting(AtlasVertexOutput input) : SV_Target
 		BRANCH
 		if (NoL > 0)
 		{
-			// TODO: try using shadow map for on-screen pixels
-			// TODO: try using cone trace with Global SDF for smoother shadow (eg. for sun shadows or for area lights)
-
 			// Shot a ray from texel into the light to see if there is any occluder
 			GlobalSDFTrace trace;
 			trace.Init(gBuffer.WorldPos + gBuffer.Normal * shadowBias, L, bias, toLightDst - bias);

@@ -946,8 +946,8 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
             // Draw light
             PROFILE_GPU_CPU_NAMED("Directional Light");
             const bool useShadow = light.CanRenderShadow(renderContext.View);
-            // TODO: test perf/quality when using Shadow Map for directional light (ShadowsPass::Instance()->LastDirLightShadowMap) instead of Global SDF trace
             light.SetShaderData(data.Light, useShadow);
+            data.Light.ShadowsBufferAddress = useShadow; // Use this to indicate if trace shadow (SDF trace)
             data.Light.Color *= light.IndirectLightingIntensity;
             data.LightShadowsStrength = 1.0f - light.ShadowsStrength;
             context->UpdateCB(_cb0, &data);
@@ -981,6 +981,7 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
             PROFILE_GPU_CPU_NAMED("Point Light");
             const bool useShadow = light.CanRenderShadow(renderContext.View);
             light.SetShaderData(data.Light, useShadow);
+            data.Light.ShadowsBufferAddress = useShadow; // Use this to indicate if trace shadow (SDF trace)
             data.Light.Color *= light.IndirectLightingIntensity;
             data.LightShadowsStrength = 1.0f - light.ShadowsStrength;
             context->UpdateCB(_cb0, &data);
@@ -1014,6 +1015,7 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
             PROFILE_GPU_CPU_NAMED("Spot Light");
             const bool useShadow = light.CanRenderShadow(renderContext.View);
             light.SetShaderData(data.Light, useShadow);
+            data.Light.ShadowsBufferAddress = useShadow; // Use this to indicate if trace shadow (SDF trace)
             data.Light.Color *= light.IndirectLightingIntensity;
             data.LightShadowsStrength = 1.0f - light.ShadowsStrength;
             context->UpdateCB(_cb0, &data);
