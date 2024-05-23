@@ -108,7 +108,7 @@ public:
     API_PROPERTY() void SetAudioVolume(float value);
 
     /// <summary>
-    /// Gets the stereo pan of the played audio (-1 is left speaker, 1 is right speaker, 0 is balanced). The default is 1. Used by non-spatial audio only.
+    /// Gets the stereo pan of the played audio (-1 is left speaker, 1 is right speaker, 0 is balanced). The default is 0. Used by non-spatial audio only.
     /// </summary>
     API_PROPERTY(Attributes="EditorOrder(110), DefaultValue(0.0f), Limit(-1.0f, 1.0f), EditorDisplay(\"Video Player\"), VisibleIf(nameof(IsAudioSpatial), true)")
     FORCE_INLINE float GetAudioPan() const
@@ -122,7 +122,7 @@ public:
     API_PROPERTY() void SetAudioPan(float value);
 
     /// <summary>
-    /// Gets the minimum distance at which audio attenuation starts. When the listener is closer to the video player than this value, audio is heard at full volume. Once farther away the audio starts attenuating.
+    /// Gets the minimum distance at which audio attenuation starts. When the listener is closer to the video player than this value, audio is heard at full volume. Once farther away the audio starts attenuating. Used by spatial audio only.
     /// </summary>
     API_PROPERTY(Attributes="EditorOrder(120), DefaultValue(1000.0f), Limit(0, float.MaxValue, 0.1f), EditorDisplay(\"Video Player\"), VisibleIf(nameof(IsAudioSpatial))")
     FORCE_INLINE float GetAudioMinDistance() const
@@ -131,12 +131,12 @@ public:
     }
 
     /// <summary>
-    /// Sets the minimum distance at which audio attenuation starts. When the listener is closer to the video player than this value, audio is heard at full volume. Once farther away the audio starts attenuating.
+    /// Sets the minimum distance at which audio attenuation starts. When the listener is closer to the video player than this value, audio is heard at full volume. Once farther away the audio starts attenuating. Used by spatial audio only.
     /// </summary>
     API_PROPERTY() void SetAudioMinDistance(float value);
 
     /// <summary>
-    /// Gets the attenuation that controls how quickly does audio volume drop off as the listener moves further from the video player.
+    /// Gets the attenuation that controls how quickly does audio volume drop off as the listener moves further from the video player. Used by spatial audio only.
     /// </summary>
     API_PROPERTY(Attributes="EditorOrder(130), DefaultValue(1.0f), Limit(0, float.MaxValue, 0.1f), EditorDisplay(\"Video Player\"), VisibleIf(nameof(IsAudioSpatial))")
     FORCE_INLINE float GetAudioAttenuation() const
@@ -145,7 +145,7 @@ public:
     }
 
     /// <summary>
-    /// Sets the attenuation that controls how quickly does audio volume drop off as the listener moves further from the video player. At 0, no distance attenuation ever occurs.
+    /// Sets the attenuation that controls how quickly does audio volume drop off as the listener moves further from the video player. At 0, no distance attenuation ever occurs. Used by spatial audio only.
     /// </summary>
     API_PROPERTY() void SetAudioAttenuation(float value);
 
@@ -174,33 +174,33 @@ public:
     }
 
     /// <summary>
-    /// Gets the current time of playback. If playback has not yet started, it specifies the time at which playback will start at. The time is in seconds, in range [0, Duration].
+    /// Gets the current time of playback. The time is in seconds, in range [0, Duration].
     /// </summary>
     API_PROPERTY(Attributes="HideInEditor, NoSerialize") float GetTime() const;
 
     /// <summary>
-    /// Sets the current time of playback. If playback has not yet started, it specifies the time at which playback will start at. The time is in seconds, in range [0, Duration].
+    /// Sets the current time of playback. The time is in seconds, in range [0, Duration].
     /// </summary>
     /// <param name="time">The time.</param>
     API_PROPERTY() void SetTime(float time);
 
     /// <summary>
-    /// Gets the media duration of playback (in seconds).
+    /// Gets the media duration of playback (in seconds). Valid only when media was loaded by the video backend.
     /// </summary>
     API_PROPERTY() float GetDuration() const;
 
     /// <summary>
-    /// Gets the media frame rate of playback (amount of frames to be played per second).
+    /// Gets the media frame rate of playback (amount of frames to be played per second). Valid only when media was loaded by the video backend.
     /// </summary>
     API_PROPERTY() float GetFrameRate() const;
 
     /// <summary>
-    /// Gets the amount of video frames decoded and send to GPU during playback. Can be used to detect if video has started playback with any visible changes (for video frame texture contents).
+    /// Gets the amount of video frames decoded and send to GPU during playback. Can be used to detect if video has started playback with any visible changes (for video frame texture contents). Valid only when media was loaded by the video backend.
     /// </summary>
     API_PROPERTY() int32 GetFramesCount() const;
 
     /// <summary>
-    /// Gets the video frame dimensions (in pixels).
+    /// Gets the video frame dimensions (in pixels). Valid only when media was loaded by the video backend.
     /// </summary>
     API_PROPERTY() Int2 GetSize() const;
 
