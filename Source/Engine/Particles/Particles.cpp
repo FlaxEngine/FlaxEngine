@@ -569,7 +569,7 @@ void DrawEmitterCPU(RenderContext& renderContext, ParticleBuffer* buffer, DrawCa
 
 #if COMPILE_WITH_GPU_PARTICLES
 
-PACK_STRUCT(struct GPUParticlesSortingData {
+PACK_STRUCT(struct alignas(GPU_SHADER_DATA_ALIGNMENT) GPUParticlesSortingData {
     Float3 ViewPosition;
     uint32 ParticleCounterOffset;
     uint32 ParticleStride;

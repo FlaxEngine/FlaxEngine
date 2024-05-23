@@ -13,7 +13,7 @@
 #include "Engine/Graphics/Shaders/GPUShader.h"
 #include "Engine/Graphics/Shaders/GPUConstantBuffer.h"
 
-PACK_STRUCT(struct GPUParticlesData {
+PACK_STRUCT(struct alignas(GPU_SHADER_DATA_ALIGNMENT) GPUParticlesData {
     Matrix ViewProjectionMatrix;
     Matrix InvViewProjectionMatrix;
     Matrix InvViewMatrix;

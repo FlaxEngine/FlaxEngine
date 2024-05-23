@@ -6,11 +6,12 @@
 #include "Engine/Core/Math/Vector2.h"
 #include "Engine/Core/Math/Vector3.h"
 #include "Engine/Core/Math/Vector4.h"
+#include "Engine/Graphics/Config.h"
 
 /// <summary>
 /// Structure that contains information about GBuffer for shaders.
 /// </summary>
-PACK_STRUCT(struct ShaderGBufferData
+PACK_STRUCT(struct alignas(GPU_SHADER_DATA_ALIGNMENT) ShaderGBufferData
     {
     Float4 ViewInfo;
     Float4 ScreenSize;
@@ -23,7 +24,7 @@ PACK_STRUCT(struct ShaderGBufferData
 /// <summary>
 /// Structure that contains information about exponential height fog for shaders.
 /// </summary>
-PACK_STRUCT(struct ShaderExponentialHeightFogData
+PACK_STRUCT(struct alignas(GPU_SHADER_DATA_ALIGNMENT) ShaderExponentialHeightFogData
     {
     Float3 FogInscatteringColor;
     float FogMinOpacity;
@@ -48,7 +49,7 @@ PACK_STRUCT(struct ShaderExponentialHeightFogData
 /// <summary>
 /// Structure that contains information about atmosphere fog for shaders.
 /// </summary>
-PACK_STRUCT(struct ShaderAtmosphericFogData
+PACK_STRUCT(struct alignas(GPU_SHADER_DATA_ALIGNMENT) ShaderAtmosphericFogData
     {
     float AtmosphericFogDensityScale;
     float AtmosphericFogSunDiscScale;
@@ -70,7 +71,7 @@ PACK_STRUCT(struct ShaderAtmosphericFogData
 /// <summary>
 /// Structure that contains information about light for shaders.
 /// </summary>
-PACK_STRUCT(struct ShaderLightData {
+PACK_STRUCT(struct alignas(GPU_SHADER_DATA_ALIGNMENT) ShaderLightData {
     Float2 SpotAngles;
     float SourceRadius;
     float SourceLength;
@@ -89,7 +90,7 @@ PACK_STRUCT(struct ShaderLightData {
 /// <summary>
 /// Packed env probe data
 /// </summary>
-PACK_STRUCT(struct ShaderEnvProbeData {
+PACK_STRUCT(struct alignas(GPU_SHADER_DATA_ALIGNMENT) ShaderEnvProbeData {
     Float4 Data0; // x - Position.x,  y - Position.y,  z - Position.z,  w - unused
     Float4 Data1; // x - Radius    ,  y - 1 / Radius,  z - Brightness,  w - unused
     });

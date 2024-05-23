@@ -12,7 +12,7 @@
 #include "Engine/Graphics/RenderTask.h"
 #include "Engine/Renderer/DrawCall.h"
 
-PACK_STRUCT(struct VertexColorsMaterialShaderData {
+PACK_STRUCT(struct alignas(GPU_SHADER_DATA_ALIGNMENT) VertexColorsMaterialShaderData {
     Matrix ViewProjectionMatrix;
     Matrix WorldMatrix;
     });

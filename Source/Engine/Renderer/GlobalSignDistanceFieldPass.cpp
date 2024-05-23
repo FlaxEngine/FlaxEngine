@@ -38,7 +38,7 @@ static_assert(GLOBAL_SDF_RASTERIZE_MODEL_MAX_COUNT % 4 == 0, "Must be multiple o
 #include "Engine/Debug/DebugDraw.h"
 #endif
 
-PACK_STRUCT(struct ObjectRasterizeData
+PACK_STRUCT(struct alignas(GPU_SHADER_DATA_ALIGNMENT) ObjectRasterizeData
     {
     Matrix3x4 WorldToVolume;
     Matrix3x4 VolumeToWorld;
@@ -50,7 +50,7 @@ PACK_STRUCT(struct ObjectRasterizeData
     float DecodeAdd;
     });
 
-PACK_STRUCT(struct Data
+PACK_STRUCT(struct alignas(GPU_SHADER_DATA_ALIGNMENT) Data
     {
     Float3 ViewWorldPos;
     float ViewNearPlane;
@@ -60,7 +60,7 @@ PACK_STRUCT(struct Data
     GlobalSignDistanceFieldPass::ConstantsData GlobalSDF;
     });
 
-PACK_STRUCT(struct ModelsRasterizeData
+PACK_STRUCT(struct alignas(GPU_SHADER_DATA_ALIGNMENT) ModelsRasterizeData
     {
     Int3 ChunkCoord;
     float MaxDistance;

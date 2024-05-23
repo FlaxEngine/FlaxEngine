@@ -15,7 +15,7 @@ class PostProcessingPass : public RendererPass<PostProcessingPass>
 {
 private:
 
-    PACK_STRUCT(struct Data {
+    PACK_STRUCT(struct alignas(GPU_SHADER_DATA_ALIGNMENT) Data {
         float BloomLimit;
         float BloomThreshold;
         float BloomMagnitude;
@@ -56,7 +56,7 @@ private:
         Matrix LensFlareStarMat;
         });
 
-    PACK_STRUCT(struct GaussianBlurData {
+    PACK_STRUCT(struct alignas(GPU_SHADER_DATA_ALIGNMENT) GaussianBlurData {
         Float2 Size;
         float Dummy3;
         float Dummy4;

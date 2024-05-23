@@ -15,7 +15,7 @@ struct Item
     uint32 Value;
 };
 
-PACK_STRUCT(struct Data {
+PACK_STRUCT(struct alignas(GPU_SHADER_DATA_ALIGNMENT) Data {
     Item NullItem;
     uint32 CounterOffset;
     uint32 MaxIterations;

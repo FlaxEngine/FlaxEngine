@@ -125,7 +125,7 @@ PACK_STRUCT(struct Vertex {
     Color32 Color;
     });
 
-PACK_STRUCT(struct Data {
+PACK_STRUCT(struct alignas(GPU_SHADER_DATA_ALIGNMENT) Data {
     Matrix ViewProjection;
     Float2 Padding;
     float ClipPosZBias;

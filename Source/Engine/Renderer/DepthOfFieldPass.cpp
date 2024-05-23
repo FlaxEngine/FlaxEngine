@@ -18,7 +18,7 @@
 #define DOF_GRID_SIZE 450
 #define DOF_DEPTH_BLUR_FORMAT PixelFormat::R16G16_Float
 
-PACK_STRUCT(struct Data {
+PACK_STRUCT(struct alignas(GPU_SHADER_DATA_ALIGNMENT) Data {
     Float2 ProjectionAB;
     float BokehDepthCullThreshold;
     float BokehDepthCutoff;

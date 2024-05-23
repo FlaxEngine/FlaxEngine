@@ -8,7 +8,7 @@
 #include "Engine/Graphics/RenderTargetPool.h"
 #include "Engine/Graphics/RenderTask.h"
 
-PACK_STRUCT(struct Data {
+PACK_STRUCT(struct alignas(GPU_SHADER_DATA_ALIGNMENT) Data {
     Float4 ColorSaturationShadows;
     Float4 ColorContrastShadows;
     Float4 ColorGammaShadows;

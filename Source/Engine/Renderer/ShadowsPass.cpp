@@ -28,7 +28,7 @@
 #define NormalOffsetScaleTweak METERS_TO_UNITS(1)
 #define LocalLightNearPlane METERS_TO_UNITS(0.1f)
 
-PACK_STRUCT(struct Data{
+PACK_STRUCT(struct alignas(GPU_SHADER_DATA_ALIGNMENT) Data{
     ShaderGBufferData GBuffer;
     ShaderLightData Light;
     Matrix WVP;

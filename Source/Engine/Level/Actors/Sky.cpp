@@ -17,7 +17,7 @@
 #include "Engine/Serialization/Serialization.h"
 #include "Engine/Level/Scene/SceneRendering.h"
 
-PACK_STRUCT(struct Data {
+PACK_STRUCT(struct alignas(GPU_SHADER_DATA_ALIGNMENT) Data {
     Matrix WVP;
     Float3 ViewOffset;
     float Padding;

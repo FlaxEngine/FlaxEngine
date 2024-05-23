@@ -13,12 +13,12 @@
 #include "Engine/Content/Assets/CubeTexture.h"
 #include "Engine/Content/Content.h"
 
-PACK_STRUCT(struct PerLight{
+PACK_STRUCT(struct alignas(GPU_SHADER_DATA_ALIGNMENT) PerLight{
     ShaderLightData Light;
     Matrix WVP;
     });
 
-PACK_STRUCT(struct PerFrame{
+PACK_STRUCT(struct alignas(GPU_SHADER_DATA_ALIGNMENT) PerFrame{
     ShaderGBufferData GBuffer;
     });
 

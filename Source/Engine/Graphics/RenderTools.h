@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "Config.h"
 #include "PixelFormat.h"
 #include "RenderView.h"
 #include "Engine/Scripting/ScriptingType.h"
@@ -11,7 +12,7 @@ class SkinnedModel;
 struct RenderContext;
 struct FloatR10G10B10A2;
 
-PACK_STRUCT(struct QuadShaderData
+PACK_STRUCT(struct alignas(GPU_SHADER_DATA_ALIGNMENT) QuadShaderData
     {
     Float4 Color;
     });

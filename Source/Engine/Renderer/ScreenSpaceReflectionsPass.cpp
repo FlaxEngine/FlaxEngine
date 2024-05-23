@@ -24,7 +24,7 @@
 #define TEXTURE1 5
 #define TEXTURE2 6
 
-PACK_STRUCT(struct Data
+PACK_STRUCT(struct alignas(GPU_SHADER_DATA_ALIGNMENT) Data
     {
     ShaderGBufferData GBuffer;
 

@@ -52,11 +52,11 @@
 // True if enable downscaling when rendering blur
 const bool DownsampleForBlur = false;
 
-PACK_STRUCT(struct Data {
+PACK_STRUCT(struct alignas(GPU_SHADER_DATA_ALIGNMENT) Data {
     Matrix ViewProjection;
     });
 
-PACK_STRUCT(struct BlurData {
+PACK_STRUCT(struct alignas(GPU_SHADER_DATA_ALIGNMENT) BlurData {
     Float2 InvBufferSize;
     uint32 SampleCount;
     float Dummy0;

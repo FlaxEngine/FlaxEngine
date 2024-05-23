@@ -28,6 +28,9 @@
 // Maximum amount of thread groups per dimension for compute dispatch
 #define GPU_MAX_CS_DISPATCH_THREAD_GROUPS 65535
 
+// Alignment of the shader data structures (16-byte boundaries) to improve memory copies efficiency.
+#define GPU_SHADER_DATA_ALIGNMENT 16
+
 // Enable/disable assertion for graphics layers
 #define GPU_ENABLE_ASSERTION 1
 
