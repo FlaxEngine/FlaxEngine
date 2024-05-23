@@ -11,6 +11,15 @@
 #if USE_EDITOR
 #include "Editor/Editor.h"
 #endif
+#include <sdkddkver.h>
+#if WINVER >= _WIN32_WINNT_WINBLUE && WINVER < _WIN32_WINNT_WIN10
+// Fix compilation for Windows 8.1 on the latest Windows SDK
+typedef enum _MFVideoSphericalFormat { } MFVideoSphericalFormat;
+#endif
+#ifndef MF_SOURCE_READER_CURRENT_TYPE_INDEX
+// Fix compilation for Windows 7 on the latest Windows SDK
+#define MF_SOURCE_READER_CURRENT_TYPE_INDEX 0xFFFFFFFF
+#endif
 #include <mfapi.h>
 #include <mfidl.h>
 #include <mfreadwrite.h>

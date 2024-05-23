@@ -1,9 +1,22 @@
 // Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
+using System;
 using System.Collections.Generic;
 using System.IO;
 using Flax.Build.Graph;
 using Flax.Build.NativeCpp;
+
+namespace Flax.Build
+{
+    partial class Configuration
+    {
+        /// <summary>
+        /// Specifies the minimum Windows version to use (eg. 10).
+        /// </summary>
+        [CommandLine("winMinVer", "<version>", "Specifies the minimum Windows version to use (eg. 10).")]
+        public static string WindowsMinVer = "7";
+    }
+}
 
 namespace Flax.Build.Platforms
 {
@@ -30,6 +43,25 @@ namespace Flax.Build.Platforms
             base.SetupEnvironment(options);
 
             options.CompileEnv.PreprocessorDefinitions.Add("PLATFORM_WINDOWS");
+
+            // Select minimum Windows version
+            if (!Version.TryParse(Configuration.WindowsMinVer, out var winMinVer))
+            {
+                if (int.TryParse(Configuration.WindowsMinVer, out var winMinVerMajor))
+                    winMinVer = new Version(winMinVerMajor, 0);
+                else
+                    winMinVer = new Version(7, 0);
+            }
+            int winVer;
+            if (winMinVer.Major >= 10)
+                winVer = 0x0A00; // Windows 10
+            else if (winMinVer.Major == 8 && winMinVer.Minor >= 1)
+                winVer = 0x0603; // Windows 8.1
+            else if (winMinVer.Major == 8)
+                winVer = 0x0602; // Windows 8
+            else
+                winVer = 0x0601; // Windows 7
+            options.CompileEnv.PreprocessorDefinitions.Add($"WINVER=0x{winVer:X4}");
 
             options.LinkEnv.InputLibraries.Add("dwmapi.lib");
             options.LinkEnv.InputLibraries.Add("kernel32.lib");
