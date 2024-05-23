@@ -142,6 +142,7 @@ struct ShadowAtlasLightCache
     float Distance;
     Float4 CascadeSplits;
     Float3 ViewDirection;
+    int32 ShadowsResolution;
 
     void Set(const RenderView& view, const RenderLightData& light, const Float4& cascadeSplits = Float4::Zero)
     {
@@ -152,6 +153,7 @@ struct ShadowAtlasLightCache
         ShadowsUpdateRateAtDistance = light.ShadowsUpdateRateAtDistance;
         Direction = light.Direction;
         ShadowFrame = light.ShadowFrame;
+        ShadowsResolution = light.ShadowsResolution;
         if (light.IsDirectionalLight)
         {
             // Sun
@@ -247,6 +249,7 @@ struct ShadowAtlasLight
             !Math::NearEqual(Cache.ShadowsUpdateRate, light.ShadowsUpdateRate) ||
             !Math::NearEqual(Cache.ShadowsUpdateRateAtDistance, light.ShadowsUpdateRateAtDistance) ||
             Cache.ShadowFrame != light.ShadowFrame ||
+            Cache.ShadowsResolution != light.ShadowsResolution ||
             Float3::Dot(Cache.Direction, light.Direction) < SHADOWS_ROTATION_ERROR)
         {
             // Invalidate
@@ -1119,9 +1122,12 @@ void ShadowsPass::SetupShadows(RenderContext& renderContext, RenderContextBatch&
         auto& atlasLight = shadows.Lights[light->ID];
 
         // Calculate resolution for this light
-        // TODO: add support for fixed shadow map resolution assigned per-light
-        float lightResolutionFloat = baseLightResolution * light->ScreenSize;
-        atlasLight.Resolution = QuantizeResolution(lightResolutionFloat);
+        atlasLight.Resolution = light->ShadowsResolution;
+        if (atlasLight.Resolution == 0)
+        {
+            // ScreenSize-based automatic shadowmap resolution
+            atlasLight.Resolution = QuantizeResolution(baseLightResolution * light->ScreenSize);
+        }
 
         // Cull too small lights
         if (atlasLight.Resolution < SHADOWS_MIN_RESOLUTION)

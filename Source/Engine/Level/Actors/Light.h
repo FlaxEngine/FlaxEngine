@@ -66,7 +66,7 @@ public:
         const Vector3 size(50);
         return BoundingBox(_transform.Translation - size, _transform.Translation + size);
     }
-    
+
     virtual void DrawLightsDebug(RenderView& view);
 #endif
     void Serialize(SerializeStream& stream, const void* otherObj) override;
@@ -79,6 +79,26 @@ public:
 API_CLASS(Abstract) class FLAXENGINE_API LightWithShadow : public Light
 {
     DECLARE_SCENE_OBJECT_ABSTRACT(LightWithShadow);
+
+    /// <summary>
+    /// List of fixed resolutions for light shadow map.
+    /// </summary>
+    API_ENUM() enum class ShadowMapResolution
+    {
+        // Use automatic dynamic resolution based on distance to view.
+        Dynamic = 0,
+        // Shadow map of size 128x128.
+        _128 = 128,
+        // Shadow map of size 256x256.
+        _256 = 256,
+        // Shadow map of size 512x512.
+        _512 = 512,
+        // Shadow map of size 1024x1024.
+        _1024 = 1024,
+        // Shadow map of size 2048x2048.
+        _2048 = 2048,
+    };
+
 protected:
     uint32 _invalidateShadowFrame = 0;
 
@@ -144,11 +164,17 @@ public:
     float ShadowsUpdateRateAtDistance = 0.5f;
 
     /// <summary>
+    /// Defines the resolution of the shadow map texture used to draw objects projection from light-point-of-view. Higher values increase shadow quality at cost of performance.
+    /// </summary>
+    API_FIELD(Attributes="EditorOrder(105), EditorDisplay(\"Shadow\", \"Resolution\")")
+    ShadowMapResolution ShadowsResolution = ShadowMapResolution::Dynamic;
+
+    /// <summary>
     /// Describes how a visual element casts shadows.
     /// </summary>
     API_FIELD(Attributes="EditorOrder(60), EditorDisplay(\"Shadow\", \"Mode\")")
     ShadowsCastingMode ShadowsMode = ShadowsCastingMode::All;
-    
+
     /// <summary>
     /// Marks the light shadow to be refreshes during next drawing. Invalidates any cached shadow map and redraws static shadows of the object (if any in use).
     /// </summary>

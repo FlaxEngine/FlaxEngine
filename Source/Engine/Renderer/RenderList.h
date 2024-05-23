@@ -59,6 +59,7 @@ struct RenderLightData
     float ShadowsUpdateRate;
     float ShadowsUpdateRateAtDistance;
     uint32 ShadowFrame;
+    int32 ShadowsResolution;
 
     bool CanRenderShadow(const RenderView& view) const;
 };

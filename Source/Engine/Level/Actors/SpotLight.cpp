@@ -156,6 +156,7 @@ void SpotLight::Draw(RenderContext& renderContext)
         data.ShadowsUpdateRate = ShadowsUpdateRate;
         data.ShadowsUpdateRateAtDistance = ShadowsUpdateRateAtDistance;
         data.ShadowFrame = _invalidateShadowFrame;
+        data.ShadowsResolution = (int32)ShadowsResolution;
         data.ShadowsMode = ShadowsMode;
         data.Radius = radius;
         data.FallOffExponent = FallOffExponent;
