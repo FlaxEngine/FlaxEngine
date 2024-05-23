@@ -778,7 +778,7 @@ void WindowsWindow::UpdateCursor()
         if (!_lastCursorHidden)
         {
             _lastCursorHidden = true;
-            ::ShowCursor(FALSE);
+            while(::ShowCursor(FALSE) >= 0);
         }
         ::SetCursor(nullptr);
         return;
@@ -786,7 +786,7 @@ void WindowsWindow::UpdateCursor()
     else if (_lastCursorHidden)
     {
         _lastCursorHidden = false;
-        ::ShowCursor(TRUE);
+        while(::ShowCursor(TRUE) < 0);
     }
 
     int32 index = 0;
