@@ -526,6 +526,12 @@ namespace Flax.Build.Platforms
                         // Whole Program Optimization
                         commonArgs.Add("/GL");
                     }
+                    else
+                    {
+                        // Enable SEE2 and other code optimizations but without breaking incremental linking
+                        //commonArgs.Add("/Og"); // Results in D9035 warning
+                        commonArgs.Add("/O2");
+                    }
                 }
                 else
                 {
