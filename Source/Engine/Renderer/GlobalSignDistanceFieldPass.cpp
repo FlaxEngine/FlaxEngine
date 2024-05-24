@@ -660,8 +660,9 @@ bool GlobalSignDistanceFieldPass::Render(RenderContext& renderContext, GPUContex
 
                         // Pick the SDF mip for the cascade
                         int32 mipLevelIndex = 1;
-                        float worldUnitsPerVoxel = object.SDF->WorldUnitsPerVoxel * object.LocalToWorld.Scale.MaxValue() * 2;
-                        while (_voxelSize > worldUnitsPerVoxel && mipLevelIndex < object.SDF->Texture->MipLevels())
+                        float worldUnitsPerVoxel = object.SDF->WorldUnitsPerVoxel * object.LocalToWorld.Scale.MaxValue() * 4;
+                        const int32 mipLevels = object.SDF->Texture->MipLevels();
+                        while (_voxelSize > worldUnitsPerVoxel && mipLevelIndex < mipLevels)
                         {
                             mipLevelIndex++;
                             worldUnitsPerVoxel *= 2.0f;
