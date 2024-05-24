@@ -38,66 +38,106 @@ void Joint::SetActors(RigidBody* Actor0, RigidBody* Actor1)
         );
     }
 }
-#pragma region SheredCode
-#define ImplementShearedCodeForActor(N)\
-void Joint::SetLocalPoseActor##N##(const PhysicsTransform& LocalPose)\
-{\
-    if (_joint)\
-    {\
-        PhysicsBackend::SetJointLocalPose(_joint, N, LocalPose);\
-        LocalPoseActor##N## = LocalPose;\
-    }\
-}\
-PhysicsTransform Joint::GetLocalPoseActor##N##() const \
-{\
-    return LocalPoseActor##N##;\
-}\
-void Joint::SetPoseActor##N##(const PhysicsTransform& InPhysicsTransform)\
-{\
-    auto& pt = Actor##N## ? PhysicsTransform::WorldToLocal(Actor##N##->GetTransform(), InPhysicsTransform) : InPhysicsTransform;\
-    SetLocalPoseActor##N##(pt);\
-};\
-PhysicsTransform Joint::GetPoseActor##N##() const\
-{\
-    if (Actor##N##)\
-        return PhysicsTransform::LocalToWorld(Actor##N##->GetTransform(), LocalPoseActor##N##);\
-    return LocalPoseActor##N##;\
-};\
-void Joint::SetInvMassScaleActor##N##(float invMassScale) \
-{\
-    if (_joint) \
-    {\
-        PhysicsBackend::SetJointInvMassScale##N##(_joint, invMassScale);\
-        return;\
-    }\
-}\
-float Joint::GetInvMassScaleActor##N##() const \
-{\
-    if (_joint) \
-    {\
-        return PhysicsBackend::GetJointInvMassScale##N##(_joint);\
-    }\
-    return 0;\
-}\
-void Joint::SetInvInertiaScaleActor##N##(float invInertiaScale)\
-{\
-    if (_joint)\
-    {\
-        PhysicsBackend::SetJointInvInertiaScale##N##(_joint, invInertiaScale);\
-        return;\
-    }\
-}\
-float Joint::GetInvInertiaScaleActor##N##() const \
-{\
-    if (_joint)\
-    {\
-        return PhysicsBackend::GetJointInvInertiaScale##N##(_joint);\
-    }\
-    return 0;\
+void Joint::SetLocalPoseActor0(const PhysicsTransform& LocalPose)
+{
+    if (_joint)
+    {
+        PhysicsBackend::SetJointLocalPose(_joint, 0, LocalPose); LocalPoseActor0 = LocalPose;
+    }
 }
-#pragma endregion
-ImplementShearedCodeForActor(0)
-ImplementShearedCodeForActor(1)
+PhysicsTransform Joint::GetLocalPoseActor0() const
+{
+    return LocalPoseActor0;
+}
+void Joint::SetPoseActor0(const PhysicsTransform& InPhysicsTransform)
+{
+    auto& pt = Actor0 ? PhysicsTransform::WorldToLocal(Actor0->GetTransform(), InPhysicsTransform) : InPhysicsTransform; SetLocalPoseActor0(pt);
+}
+PhysicsTransform Joint::GetPoseActor0() const
+{
+    if (Actor0) 
+        return PhysicsTransform::LocalToWorld(Actor0->GetTransform(), LocalPoseActor0);
+    return LocalPoseActor0;
+}
+void Joint::SetInvMassScaleActor0(float invMassScale)
+{
+    if (_joint)
+    {
+        PhysicsBackend::SetJointInvMassScale0(_joint, invMassScale); return;
+    }
+}
+float Joint::GetInvMassScaleActor0() const
+{
+    if (_joint)
+    {
+        return PhysicsBackend::GetJointInvMassScale0(_joint);
+    }
+    return 0;
+}
+void Joint::SetInvInertiaScaleActor0(float invInertiaScale)
+{
+    if (_joint)
+    {
+        PhysicsBackend::SetJointInvInertiaScale0(_joint, invInertiaScale);
+        return;
+    }
+}
+float Joint::GetInvInertiaScaleActor0() const
+{
+    if (_joint)
+    {
+        return PhysicsBackend::GetJointInvInertiaScale0(_joint);
+    } return 0;
+}
+void Joint::SetLocalPoseActor1(const PhysicsTransform& LocalPose) 
+{
+    if (_joint)
+    {
+        PhysicsBackend::SetJointLocalPose(_joint, 1, LocalPose); LocalPoseActor1 = LocalPose;
+    }
+}
+PhysicsTransform Joint::GetLocalPoseActor1() const
+{
+    return LocalPoseActor1;
+}
+void Joint::SetPoseActor1(const PhysicsTransform& InPhysicsTransform) 
+{
+    auto& pt = Actor1 ? PhysicsTransform::WorldToLocal(Actor1->GetTransform(), InPhysicsTransform) : InPhysicsTransform; SetLocalPoseActor1(pt);
+}
+PhysicsTransform Joint::GetPoseActor1() const 
+{
+    if (Actor1)
+        return PhysicsTransform::LocalToWorld(Actor1->GetTransform(), LocalPoseActor1);
+    return LocalPoseActor1;
+}
+void Joint::SetInvMassScaleActor1(float invMassScale)
+{
+    if (_joint) 
+    {
+        PhysicsBackend::SetJointInvMassScale1(_joint, invMassScale); return;
+    }
+}
+float Joint::GetInvMassScaleActor1() const 
+{
+    if (_joint) 
+    {
+        return PhysicsBackend::GetJointInvMassScale1(_joint);
+    } 
+    return 0;
+}
+void Joint::SetInvInertiaScaleActor1(float invInertiaScale) 
+{
+    if (_joint) {
+        PhysicsBackend::SetJointInvInertiaScale1(_joint, invInertiaScale); return;
+    }
+}
+float Joint::GetInvInertiaScaleActor1() const 
+{
+    if (_joint)
+    {
+        return PhysicsBackend::GetJointInvInertiaScale1(_joint);
+    } return 0;
+}
 
 PhysicsTransform Joint::GetRelativeTransform() const
 {
