@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #define USE_GBUFFER_CUSTOM_DATA
+#define SDF_SKYLIGHT_SHADOW_RAYS_COUNT 40
 
 #include "./Flax/Common.hlsl"
 #include "./Flax/MaterialCommon.hlsl"
@@ -9,6 +10,8 @@
 #include "./Flax/GBuffer.hlsl"
 #include "./Flax/Lighting.hlsl"
 #include "./Flax/GlobalSignDistanceField.hlsl"
+#include "./Flax/MonteCarlo.hlsl"
+#include "./Flax/Random.hlsl"
 
 // Per light data
 META_CB_BEGIN(0, PerLight)
@@ -185,14 +188,29 @@ float4 PS_Sky(Model_VS2PS input) : SV_Target0
 
 	// SDF soft-shadows implementation reference: https://iquilezles.org/articles/rmshadows/
 #if USE_SDF_SKYLIGHT_SHADOWS
-    GlobalSDFTrace sdfTrace;
-    float maxDistance = 50;
-    float selfOcclusionBias = GlobalSDF.CascadeVoxelSize[0];
-    sdfTrace.Init(gBuffer.WorldPos + gBuffer.Normal * selfOcclusionBias, gBuffer.Normal, 0.0f, maxDistance);
-    GlobalSDFHit sdfHit = RayTraceGlobalSDF(GlobalSDF, GlobalSDFTex, GlobalSDFMip, sdfTrace);
-    // Assume that the gbuffer normal is normalized, so that hit time is hit distance
-	float hitDistance = sdfHit.HitTime >= 0 ? sdfHit.HitTime : maxDistance;
-	output *= saturate(hitDistance / maxDistance);
+	// Matrix used to sample directions from the hemisphere around the normal
+	float3x3 rotMat = MakeRotationMatrix(gBuffer.Normal);
+	float maxDistance = 100;
+	float selfOcclusionBias = GlobalSDF.CascadeVoxelSize[0];
+	float totalVis = 0;
+	for (int i = 0; i < SDF_SKYLIGHT_SHADOW_RAYS_COUNT; i++){
+#if SDF_SKYLIGHT_SHADOW_RAYS_COUNT <= 1
+		// Trace along the normal
+		float3 dir = gBuffer.Normal;
+#else
+		// Trace along a random direction on the hemisphere
+		float3 dir = mul(CosineSampleHemisphere(RandN2(uv)).xyz, rotMat);
+#endif
+		GlobalSDFTrace sdfTrace;
+		sdfTrace.Init(gBuffer.WorldPos + gBuffer.Normal * selfOcclusionBias, dir, 0.0f, maxDistance);
+		GlobalSDFHit sdfHit = RayTraceGlobalSDF(GlobalSDF, GlobalSDFTex, GlobalSDFMip, sdfTrace);
+		// Assume that the gbuffer normal is normalized, so that hit time is hit distance
+		float hitDistance = sdfHit.HitTime >= 0 ? sdfHit.HitTime : maxDistance;
+		totalVis += hitDistance / maxDistance;
+	}
+    
+	// TODO: use a AO factor to replace hardcoded `3`
+	output *= min(3 * totalVis / SDF_SKYLIGHT_SHADOW_RAYS_COUNT, 1);
 #endif
 
 	return output;
