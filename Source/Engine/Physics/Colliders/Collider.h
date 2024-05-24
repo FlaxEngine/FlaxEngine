@@ -178,7 +178,7 @@ protected:
 
 private:
     void OnMaterialChanged();
-    RigidBody* GetAttathmentRigidbody();
+    RigidBody* GetAttachmentRigidbody();
 
     /// <summary>
     /// Calculates _cachedLocalPosePos and _cachedLocalPoseRot

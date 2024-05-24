@@ -313,7 +313,7 @@ void Collider::OnMaterialChanged()
         PhysicsBackend::SetShapeMaterial(_shape, Material);
 }
 
-RigidBody* Collider::GetAttathmentRigidbody()
+RigidBody* Collider::GetAttachmentRigidbody()
 {
     RigidBody* rb = nullptr;
     Actor* p = GetParent();

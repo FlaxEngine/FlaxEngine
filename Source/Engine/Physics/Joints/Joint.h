@@ -45,7 +45,7 @@ public:
     /// <summary>
     /// </summary>
     API_FIELD(Attributes = "EditorOrder(0), EditorDisplay(\"Joint\")")
-        ScriptingObjectReference<RigidBody> Actor0;
+    ScriptingObjectReference<RigidBody> Actor0;
 
     /// <summary>
     /// Set the joint local pose for an actor.
@@ -53,14 +53,14 @@ public:
     /// </summary>
     /// <param name="LocalPose">localPose the local pose for the actor this joint.</param>
     API_PROPERTY(Attributes = "EditorOrder(1), EditorDisplay(\"Joint\"),VisibleIf(nameof(EnableAutoAnchor), true)")
-        void SetLocalPoseActor0(const PhysicsTransform& LocalPose);
+    void SetLocalPoseActor0(const PhysicsTransform& LocalPose);
 
     /// <summary>
     /// Get the joint local pose for an actor.
     /// </summary>
     /// <returns>The local pose for this joint</returns>
     API_PROPERTY()
-        PhysicsTransform GetLocalPoseActor0() const;
+    PhysicsTransform GetLocalPoseActor0() const;
 
     /// <summary>
     /// Set the joint local pose for an actor.
@@ -68,48 +68,48 @@ public:
     /// </summary>
     /// <param name="LocalPose">localPose the local pose for the actor this joint.</param>
     API_PROPERTY(Attributes = "HideInEditor")
-        void SetPoseActor0(const PhysicsTransform& LocalPose);
+    void SetPoseActor0(const PhysicsTransform& LocalPose);
 
     /// <summary>
     /// Get the joint local pose for an actor.
     /// </summary>
     /// <returns>The local pose for this joint</returns>
     API_PROPERTY()
-        PhysicsTransform GetPoseActor0() const;
+    PhysicsTransform GetPoseActor0() const;
 
     /// <summary>
     /// set the inverse mass scale for actor0.
     /// </summary>
     /// <param name="invMassScale">invMassScale the scale to apply to the inverse mass of actor 0 for resolving this constraint</param>
     API_PROPERTY(Attributes = "HideInEditor")
-        void SetInvMassScaleActor0(float invMassScale);
+    void SetInvMassScaleActor0(float invMassScale);
 
     /// <summary>
     /// get the inverse mass scale for actor0.
     /// </summary>
     /// <returns>inverse mass scale for actor0</returns>
     API_PROPERTY()
-        float GetInvMassScaleActor0() const;
+    float GetInvMassScaleActor0() const;
 
     /// <summary>
     /// set the inverse inertia scale for actor0.
     /// </summary>
     /// <param name="invInertiaScale">invInertiaScale the scale to apply to the inverse inertia of actor0 for resolving this constraint.</param>
     API_PROPERTY(Attributes = "HideInEditor")
-        void SetInvInertiaScaleActor0(float invInertiaScale);
+    void SetInvInertiaScaleActor0(float invInertiaScale);
 
     /// <summary>
     /// Get the inverse inertia scale for actor0.
     /// </summary>
     /// <returns>inverse inertia scale for actor0</returns>
     API_PROPERTY()
-        float GetInvInertiaScaleActor0() const;
+    float GetInvInertiaScaleActor0() const;
 #pragma endregion
 #pragma region Actor1
     /// <summary>
     /// </summary>
     API_FIELD(Attributes = "EditorOrder(2), EditorDisplay(\"Joint\")")
-        ScriptingObjectReference<RigidBody> Actor1;
+    ScriptingObjectReference<RigidBody> Actor1;
 
     /// <summary>
     /// Set the joint local pose for an actor.
@@ -117,7 +117,7 @@ public:
     /// </summary>
     /// <param name="LocalPose">localPose the local pose for the actor this joint.</param>
     API_PROPERTY(Attributes = "EditorOrder(3), EditorDisplay(\"Joint\"),VisibleIf(nameof(EnableAutoAnchor), true)")
-        void SetLocalPoseActor1(const PhysicsTransform& LocalPose);
+    void SetLocalPoseActor1(const PhysicsTransform& LocalPose);
 
     /// <summary>
     /// Get the joint local pose for an actor.
@@ -167,7 +167,7 @@ public:
     /// Gets the break force. Determines the maximum force the joint can apply before breaking. Broken joints no longer participate in physics simulation.
     /// </summary>
     API_PROPERTY(Attributes = "EditorOrder(10), DefaultValue(float.MaxValue), EditorDisplay(\"Joint\"), ValueCategory(Utils.ValueCategory.Force)")
-        FORCE_INLINE float GetBreakForce() const
+    FORCE_INLINE float GetBreakForce() const
     {
         return _breakForce;
     }
@@ -181,7 +181,7 @@ public:
     /// Gets the break torque. Determines the maximum torque the joint can apply before breaking. Broken joints no longer participate in physics simulation.
     /// </summary>
     API_PROPERTY(Attributes = "EditorOrder(20), DefaultValue(float.MaxValue), EditorDisplay(\"Joint\"), ValueCategory(Utils.ValueCategory.Torque)")
-        FORCE_INLINE float GetBreakTorque() const
+    FORCE_INLINE float GetBreakTorque() const
     {
         return _breakTorque;
     }
@@ -195,7 +195,7 @@ public:
     /// Determines whether collision between the two bodies managed by the joint are enabled.
     /// </summary>
     API_PROPERTY(Attributes = "EditorOrder(30), DefaultValue(true), EditorDisplay(\"Joint\")")
-        FORCE_INLINE bool GetEnableCollision() const
+    FORCE_INLINE bool GetEnableCollision() const
     {
         return _enableCollision;
     }
@@ -209,7 +209,7 @@ public:
     /// Determines whether use automatic target anchor position and rotation based on the joint world-space frame (computed when creating joint).
     /// </summary>
     API_PROPERTY(Attributes = "EditorOrder(39), DefaultValue(false), EditorDisplay(\"Joint\")")
-        bool GetEnableAutoAnchor() const;
+    bool GetEnableAutoAnchor() const;
 
     /// <summary>
     /// Determines whether use automatic target anchor position and rotation based on the joint world-space frame (computed when creating joint).

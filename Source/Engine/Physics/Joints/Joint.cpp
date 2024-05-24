@@ -39,7 +39,7 @@ void Joint::SetActors(RigidBody* Actor0, RigidBody* Actor1)
     }
 }
 #pragma region SheredCode
-#define ImplementSheredCodeForActor(N)\
+#define ImplementShearedCodeForActor(N)\
 void Joint::SetLocalPoseActor##N##(const PhysicsTransform& LocalPose)\
 {\
     if (_joint)\
@@ -96,8 +96,8 @@ float Joint::GetInvInertiaScaleActor##N##() const \
     return 0;\
 }
 #pragma endregion
-ImplementSheredCodeForActor(0)
-ImplementSheredCodeForActor(1)
+ImplementShearedCodeForActor(0)
+ImplementShearedCodeForActor(1)
 
 PhysicsTransform Joint::GetRelativeTransform() const
 {
@@ -355,7 +355,8 @@ void Joint::OnDebugDrawSelected()
 {
     auto p0 = GetPoseActor0();
     auto p1 = GetPoseActor1();
-    if (Actor0) {
+    if (Actor0) 
+    {
         DEBUG_DRAW_WIRE_BOX(Actor0->GetBox(), Color::BlueViolet * 0.8f, 0, false);
     }
     if (Actor1) 
