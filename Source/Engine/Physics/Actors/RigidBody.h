@@ -512,10 +512,10 @@ public:
 public:
 #if USE_EDITOR
     /// <summary>
-    /// [Editor only] shows attached colliders when selected
+    /// [Editor only] shows attached colliders when selected (value is not saved safety guard, debug draw is kinda slow :D )
     /// </summary>
     API_FIELD(Attributes = "EditorOrder(1000), EditorDisplay(\"Rigid Body\")")
-        bool DisplayAttachedColliders = true;
+        bool DisplayAttachedColliders = false;
 
     void OnDebugDrawSelected() override;
 #endif
