@@ -5,6 +5,7 @@
 #include "Engine/Platform/Platform.h"
 #include "Engine/Core/Math/Vector3.h"
 #include "Engine/Core/Math/Quaternion.h"
+#include "Engine/Core/Math/Transform.h"
 
 /// <summary>
 /// Describes transformation in a 3D space.
