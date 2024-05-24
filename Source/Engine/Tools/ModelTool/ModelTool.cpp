@@ -205,8 +205,11 @@ bool ModelTool::GenerateModelSDF(Model* inputModel, ModelData* modelData, float 
                 for (int32 sample = 0; sample < sampleCount; sample++)
                 {
                     Ray sampleRay(voxelPos, sampleDirections[sample]);
+                    sampleRay.Position -= sampleRay.Direction * 0.0001f; // Apply small margin
                     if (scene.RayCast(sampleRay, hitDistance, hitNormal, hitTriangle))
                     {
+                        if (hitDistance < minDistance)
+                            minDistance = hitDistance;
                         hitCount++;
                         const bool backHit = Float3::Dot(sampleRay.Direction, hitTriangle.GetNormal()) > 0;
                         if (backHit)
