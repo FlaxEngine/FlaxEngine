@@ -18,6 +18,7 @@
 #include "Engine/Content/Assets/Model.h"
 #include "Engine/Content/Content.h"
 #include "Engine/Serialization/MemoryWriteStream.h"
+#include "Engine/Engine/Units.h"
 #if USE_EDITOR
 #include "Engine/Core/Utilities.h"
 #include "Engine/Core/Types/StringView.h"
@@ -85,7 +86,7 @@ bool ModelTool::GenerateModelSDF(Model* inputModel, ModelData* modelData, float 
         return true;
     Float3 size = bounds.GetSize();
     ModelBase::SDFData sdf;
-    sdf.WorldUnitsPerVoxel = 10 / Math::Max(resolutionScale, 0.0001f);
+    sdf.WorldUnitsPerVoxel = METERS_TO_UNITS(0.1f) / Math::Max(resolutionScale, 0.0001f); // 1 voxel per 10 centimeters
     Int3 resolution(Float3::Ceil(Float3::Clamp(size / sdf.WorldUnitsPerVoxel, 4, 256)));
     Float3 uvwToLocalMul = size;
     Float3 uvwToLocalAdd = bounds.Minimum;
@@ -96,7 +97,6 @@ bool ModelTool::GenerateModelSDF(Model* inputModel, ModelData* modelData, float 
     sdf.LocalBoundsMax = bounds.Maximum;
     sdf.ResolutionScale = resolutionScale;
     sdf.LOD = lodIndex;
-    // TODO: maybe apply 1 voxel margin around the geometry?
     const int32 maxMips = 3;
     const int32 mipCount = Math::Min(MipLevelsCount(resolution.X, resolution.Y, resolution.Z, true), maxMips);
     PixelFormat format = PixelFormat::R16_UNorm;
@@ -169,21 +169,20 @@ bool ModelTool::GenerateModelSDF(Model* inputModel, ModelData* modelData, float 
     // https://www.cse.chalmers.se/~uffe/HighResolutionSparseVoxelDAGs.pdf
 
     // Brute-force for each voxel to calculate distance to the closest triangle with point query and distance sign by raycasting around the voxel
-    const int32 sampleCount = 12;
-    Array<Float3> sampleDirections;
-    sampleDirections.Resize(sampleCount);
+    constexpr int32 sampleCount = 12;
+    Float3 sampleDirections[sampleCount];
     {
         RandomStream rand;
-        sampleDirections.Get()[0] = Float3::Up;
-        sampleDirections.Get()[1] = Float3::Down;
-        sampleDirections.Get()[2] = Float3::Left;
-        sampleDirections.Get()[3] = Float3::Right;
-        sampleDirections.Get()[4] = Float3::Forward;
-        sampleDirections.Get()[5] = Float3::Backward;
+        sampleDirections[0] = Float3::Up;
+        sampleDirections[1] = Float3::Down;
+        sampleDirections[2] = Float3::Left;
+        sampleDirections[3] = Float3::Right;
+        sampleDirections[4] = Float3::Forward;
+        sampleDirections[5] = Float3::Backward;
         for (int32 i = 6; i < sampleCount; i++)
-            sampleDirections.Get()[i] = rand.GetUnitVector();
+            sampleDirections[i] = rand.GetUnitVector();
     }
-    Function<void(int32)> sdfJob = [&sdf, &resolution, &backfacesThreshold, &sampleDirections, &scene, &voxels, &xyzToLocalMul, &xyzToLocalAdd, &encodeMAD, &formatStride, &formatWrite](int32 z)
+    Function<void(int32)> sdfJob = [&sdf, &resolution, &backfacesThreshold, sampleDirections, &sampleCount, &scene, &voxels, &xyzToLocalMul, &xyzToLocalAdd, &encodeMAD, &formatStride, &formatWrite](int32 z)
     {
         PROFILE_CPU_NAMED("Model SDF Job");
         Real hitDistance;
@@ -203,7 +202,7 @@ bool ModelTool::GenerateModelSDF(Model* inputModel, ModelData* modelData, float 
 
                 // Raycast samples around voxel to count triangle backfaces hit
                 int32 hitBackCount = 0, hitCount = 0;
-                for (int32 sample = 0; sample < sampleDirections.Count(); sample++)
+                for (int32 sample = 0; sample < sampleCount; sample++)
                 {
                     Ray sampleRay(voxelPos, sampleDirections[sample]);
                     if (scene.RayCast(sampleRay, hitDistance, hitNormal, hitTriangle))
@@ -218,7 +217,7 @@ bool ModelTool::GenerateModelSDF(Model* inputModel, ModelData* modelData, float 
                 float distance = (float)minDistance;
                 // TODO: surface thickness threshold? shift reduce distance for all voxels by something like 0.01 to enlarge thin geometry
                 // if ((float)hitBackCount > (float)hitCount * 0.3f && hitCount != 0)
-                if ((float)hitBackCount > (float)sampleDirections.Count() * backfacesThreshold && hitCount != 0)
+                if ((float)hitBackCount > (float)sampleCount * backfacesThreshold && hitCount != 0)
                 {
                     // Voxel is inside the geometry so turn it into negative distance to the surface
                     distance *= -1;

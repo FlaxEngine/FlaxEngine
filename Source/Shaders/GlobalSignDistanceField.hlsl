@@ -223,7 +223,6 @@ GlobalSDFHit RayTraceGlobalSDF(const GlobalSDFData data, Texture3D<float> tex, T
         float4 cascadePosDistance = data.CascadePosDistance[cascade];
         float voxelSize = data.CascadeVoxelSize[cascade];
         float voxelExtent = voxelSize * 0.5f;
-        float cascadeMinStep = voxelSize;
         float3 worldPosition = trace.WorldPosition + trace.WorldDirection * (voxelSize * cascadeTraceStartBias);
 
         // Hit the cascade bounds to find the intersection points
@@ -270,7 +269,7 @@ GlobalSDFHit RayTraceGlobalSDF(const GlobalSDFData data, Texture3D<float> tex, T
             stepDistance *= cascadeMaxDistance;
 
             // Detect surface hit
-            float minSurfaceThickness = voxelExtent * saturate(stepTime / (voxelExtent * 2.0f));
+            float minSurfaceThickness = voxelExtent * saturate(stepTime / voxelSize);
             if (stepDistance < minSurfaceThickness)
             {
                 // Surface hit
@@ -293,7 +292,7 @@ GlobalSDFHit RayTraceGlobalSDF(const GlobalSDFData data, Texture3D<float> tex, T
             }
 
             // Move forward
-            stepTime += max(stepDistance * trace.StepScale, cascadeMinStep);
+            stepTime += max(stepDistance * trace.StepScale, voxelSize);
         }
         hit.StepsCount += step;
     }

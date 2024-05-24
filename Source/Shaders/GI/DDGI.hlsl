@@ -213,11 +213,11 @@ float3 SampleDDGIIrradiance(DDGIData data, Texture2D<snorm float4> probesData, T
         float2 uv = GetDDGIProbeUV(data, cascadeIndex, probeIndex, octahedralCoords, DDGI_PROBE_RESOLUTION_DISTANCE);
         float2 probeDistance = probesDistance.SampleLevel(SamplerLinearClamp, uv, 0).rg * 2.0f;
         float probeDistanceMean = probeDistance.x;
-        float probeDistanceMean2 = probeDistance.y;
 
         // Visibility weight (Chebyshev)
         if (biasedPosToProbeDist > probeDistanceMean)
         {
+            float probeDistanceMean2 = probeDistance.y;
             float probeDistanceVariance = abs(Square(probeDistanceMean) - probeDistanceMean2);
             float chebyshevWeight = probeDistanceVariance / (probeDistanceVariance + Square(biasedPosToProbeDist - probeDistanceMean));
             weight *= max(chebyshevWeight * chebyshevWeight * chebyshevWeight, 0.05f);
