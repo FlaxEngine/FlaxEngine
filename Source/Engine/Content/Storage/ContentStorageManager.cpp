@@ -252,6 +252,7 @@ void ContentStorageSystem::Job(int32 index)
 {
     PROFILE_CPU_NAMED("ContentStorage.Job");
 
+    const double time = Platform::GetTimeSeconds();
     ScopeLock lock(Locker);
     for (auto i = StorageMap.Begin(); i.IsNotEnd(); ++i)
     {
@@ -271,7 +272,7 @@ void ContentStorageSystem::Job(int32 index)
         }
         else
         {
-            storage->Tick();
+            storage->Tick(time);
         }
     }
 }

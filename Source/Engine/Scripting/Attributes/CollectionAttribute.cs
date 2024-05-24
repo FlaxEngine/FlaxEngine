@@ -47,6 +47,11 @@ namespace FlaxEngine
         public bool CanReorderItems = true;
 
         /// <summary>
+        /// Gets or sets whether items can be added or removed from this collection.
+        /// </summary>
+        public bool CanResize = true;
+
+        /// <summary>
         /// Gets or sets whether the items of this collection can be null. If <c>true</c>, applications using this collection should prevent user to add null items to the collection.
         /// </summary>
         public bool NotNullItems;

@@ -163,7 +163,10 @@ namespace Serialization
         {
             const auto& keyframesArray = mKeyframes->value.GetArray();
             auto& keyframes = v.GetKeyframes();
+            const int32 newCount = keyframesArray.Size() - keyframes.Count();
             keyframes.Resize(keyframesArray.Size());
+            for (int32 i = 0; i < newCount; i++)
+                keyframes[keyframes.Count() + i - newCount] = KeyFrame(0.0f, AnimationUtils::GetZero<T>());
             for (rapidjson::SizeType i = 0; i < keyframesArray.Size(); i++)
                 Deserialize(keyframesArray[i], keyframes[i], modifier);
         }

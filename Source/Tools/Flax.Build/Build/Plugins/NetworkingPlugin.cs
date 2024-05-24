@@ -1590,14 +1590,18 @@ namespace Flax.Build.Plugins
                 context.Failed = true;
                 return;
             }
-
             if (method.IsVirtual)
             {
                 MonoCecil.CompilationError($"Not supported virtual RPC method '{method.FullName}'.", method);
                 context.Failed = true;
                 return;
             }
-
+            if (method.CustomAttributes.FirstOrDefault(x => x.AttributeType.FullName == "System.Runtime.CompilerServices.AsyncStateMachineAttribute") != null)
+            {
+                MonoCecil.CompilationError($"Not supported async RPC method '{method.FullName}'.", method);
+                context.Failed = true;
+                return;
+            }
             ModuleDefinition module = type.Module;
             var voidType = module.TypeSystem.Void;
             if (method.ReturnType != voidType)
@@ -1606,7 +1610,6 @@ namespace Flax.Build.Plugins
                 context.Failed = true;
                 return;
             }
-
             if (method.IsStatic)
             {
                 MonoCecil.CompilationError($"Not supported static RPC method '{method.FullName}'.", method);
@@ -1634,7 +1637,6 @@ namespace Flax.Build.Plugins
                 context.Failed = true;
                 return;
             }
-
             if (!methodRPC.IsServer && !methodRPC.IsClient)
             {
                 MonoCecil.CompilationError($"Network RPC {method.Name} in {type.FullName} needs to have Server or Client specifier.", method);

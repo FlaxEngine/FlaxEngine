@@ -349,6 +349,11 @@ void Camera::Draw(RenderContext& renderContext)
             _previewModel->Draw(renderContext, draw);
         }
     }
+    // Load preview model if it doesnt exist. Ex: prefabs
+    else if (EnumHasAnyFlags(renderContext.View.Flags, ViewFlags::EditorSprites) && !_previewModel)
+    {
+        _previewModel = Content::LoadAsyncInternal<Model>(TEXT("Editor/Camera/O_Camera"));
+    }
 }
 
 #include "Engine/Debug/DebugDraw.h"

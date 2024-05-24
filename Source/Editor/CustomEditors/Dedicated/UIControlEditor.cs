@@ -467,26 +467,36 @@ namespace FlaxEditor.CustomEditors.Dedicated
             // Setup transform
             if (Presenter is LayoutElementsContainer l)
             {
+                for (int i = 0; i < l.Children.Count; i++)
+                {
+                    if (l.Children[i] is GroupElement g && g.Panel.HeaderText.Equals("Transform", StringComparison.Ordinal))
+                    {
+                        l.Children.Remove(g);
+                        l.ContainerControl.Children.Remove(g.Panel);
+                        break;
+                    }
+                }
+
                 var transformGroup = l.Group("Transform");
                 VerticalPanelElement mainHor = VerticalPanelWithoutMargin(transformGroup);
                 CreateTransformElements(mainHor, ValuesTypes);
-                
+
                 ScriptMemberInfo scaleInfo = ValuesTypes[0].GetProperty("Scale");
                 ItemInfo scaleItem = new ItemInfo(scaleInfo);
                 transformGroup.Property("Scale", scaleItem.GetValues(Values));
-                
+
                 ScriptMemberInfo pivotInfo = ValuesTypes[0].GetProperty("Pivot");
                 ItemInfo pivotItem = new ItemInfo(pivotInfo);
                 transformGroup.Property("Pivot", pivotItem.GetValues(Values));
-                
+
                 ScriptMemberInfo shearInfo = ValuesTypes[0].GetProperty("Shear");
                 ItemInfo shearItem = new ItemInfo(shearInfo);
                 transformGroup.Property("Shear", shearItem.GetValues(Values));
-                
+
                 ScriptMemberInfo rotationInfo = ValuesTypes[0].GetProperty("Rotation");
                 ItemInfo rotationItem = new ItemInfo(rotationInfo);
                 transformGroup.Property("Rotation", rotationItem.GetValues(Values));
-                
+
                 // Get position of general tab
                 for (int i = 0; i < l.Children.Count; i++)
                 {

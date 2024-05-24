@@ -7,6 +7,16 @@
 #include "Engine/Scripting/ManagedCLR/MUtils.h"
 #include <ThirdParty/catch2/catch.hpp>
 
+TestNesting::TestNesting(const SpawnParams& params)
+    : SerializableScriptingObject(params)
+{
+}
+
+TestNesting2::TestNesting2(const SpawnParams& params)
+    : SerializableScriptingObject(params)
+{
+}
+
 TestClassNative::TestClassNative(const SpawnParams& params)
     : ScriptingObject(params)
 {

@@ -371,7 +371,7 @@ void ParticleEffect::Sync()
 
 SceneRenderTask* ParticleEffect::GetRenderTask() const
 {
-    const uint64 minFrame = Engine::UpdateCount - 2;
+    const uint64 minFrame = Engine::FrameCount - 2;
 
     // Custom task
     const auto customViewRenderTask = CustomViewRenderTask.Get();

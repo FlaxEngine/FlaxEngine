@@ -230,36 +230,93 @@ namespace FlaxEngine
         }
 
         /// <summary>
-        /// Creates <see cref="Color"/> from the RGB value and separate alpha channel.
+        /// Creates <see cref="Color"/> from the RGB value (bottom bits contain Blue) and separate alpha channel.
         /// </summary>
-        /// <param name="rgb">The packed RGB value.</param>
+        /// <param name="rgb">The packed RGB value (bottom bits contain Blue).</param>
         /// <param name="a">The alpha channel value.</param>
         /// <returns>The color.</returns>
         public static Color FromRGB(uint rgb, float a = 1.0f)
         {
-            return new Color(
-                             ((rgb >> 16) & 0xff) / 255.0f,
-                             ((rgb >> 8) & 0xff) / 255.0f,
-                             (rgb & 0xff) / 255.0f,
-                             a);
+            return new Color(((rgb >> 16) & 0xff) / 255.0f, ((rgb >> 8) & 0xff) / 255.0f, (rgb & 0xff) / 255.0f, a);
         }
 
         /// <summary>
-        /// Creates <see cref="Color"/> from the RGBA value.
+        /// Creates <see cref="Color"/> from the ARGB value (bottom bits contain Blue).
         /// </summary>
-        /// <param name="rgb">The packed RGBA value.</param>
+        /// <param name="argb">The packed ARGB value (bottom bits contain Blue).</param>
         /// <returns>The color.</returns>
-        public static Color FromRGBA(uint rgb)
+        public static Color FromARGB(uint argb)
         {
-            return new Color(
-                             ((rgb >> 16) & 0xff) / 255.0f,
-                             ((rgb >> 8) & 0xff) / 255.0f,
-                             (rgb & 0xff) / 255.0f,
-                             ((rgb >> 24) & 0xff) / 255.0f);
+            return new Color(((argb >> 16) & 0xff) / 255.0f, ((argb >> 8) & 0xff) / 255.0f, ((argb >> 0) & 0xff) / 255.0f, ((argb >> 24) & 0xff) / 255.0f);
         }
 
         /// <summary>
-        /// Gets the color value as the hexadecimal string.
+        /// Creates <see cref="Color"/> from the RGBA value (bottom bits contain Alpha).
+        /// </summary>
+        /// <param name="rgba">The packed RGBA value (bottom bits Alpha Red).</param>
+        /// <returns>The color.</returns>
+        public static Color FromRGBA(uint rgba)
+        {
+            return new Color(((rgba >> 24) & 0xff) / 255.0f, ((rgba >> 16) & 0xff) / 255.0f, ((rgba >> 8) & 0xff) / 255.0f, ((rgba >> 0) & 0xff) / 255.0f);
+        }
+
+        /// <summary>
+        /// Creates <see cref="Color"/> from the Hex string.
+        /// </summary>
+        /// <param name="hex">The hexadecimal color string.</param>
+        /// <returns>The output color value.</returns>
+        public static Color FromHex(string hex)
+        {
+            FromHex(hex, out var color);
+            return color;
+        }
+
+        /// <summary>
+        /// Creates <see cref="Color"/> from the Hex string.
+        /// </summary>
+        /// <param name="hex">The hexadecimal color string.</param>
+        /// <param name="color">The output color value. Valid if method returns true.</param>
+        /// <returns>True if method was able to convert color, otherwise false.</returns>
+        public static bool FromHex(string hex, out Color color)
+        {
+            int r, g, b, a = 255;
+            bool isValid = true;
+
+            int startIndex = hex.Length != 0 && hex[0] == '#' ? 1 : 0;
+            if (hex.Length == 3 + startIndex)
+            {
+                r = StringUtils.HexDigit(hex[startIndex++]);
+                g = StringUtils.HexDigit(hex[startIndex++]);
+                b = StringUtils.HexDigit(hex[startIndex]);
+                r = (r << 4) + r;
+                g = (g << 4) + g;
+                b = (b << 4) + b;
+            }
+            else if (hex.Length == 6 + startIndex)
+            {
+                r = (StringUtils.HexDigit(hex[startIndex + 0]) << 4) + StringUtils.HexDigit(hex[startIndex + 1]);
+                g = (StringUtils.HexDigit(hex[startIndex + 2]) << 4) + StringUtils.HexDigit(hex[startIndex + 3]);
+                b = (StringUtils.HexDigit(hex[startIndex + 4]) << 4) + StringUtils.HexDigit(hex[startIndex + 5]);
+            }
+            else if (hex.Length == 8 + startIndex)
+            {
+                r = (StringUtils.HexDigit(hex[startIndex + 0]) << 4) + StringUtils.HexDigit(hex[startIndex + 1]);
+                g = (StringUtils.HexDigit(hex[startIndex + 2]) << 4) + StringUtils.HexDigit(hex[startIndex + 3]);
+                b = (StringUtils.HexDigit(hex[startIndex + 4]) << 4) + StringUtils.HexDigit(hex[startIndex + 5]);
+                a = (StringUtils.HexDigit(hex[startIndex + 6]) << 4) + StringUtils.HexDigit(hex[startIndex + 7]);
+            }
+            else
+            {
+                r = g = b = 0;
+                isValid = false;
+            }
+
+            color = new Color(r, g, b, a);
+            return isValid;
+        }
+
+        /// <summary>
+        /// Gets the color value as the hexadecimal string (in RGBA order).
         /// </summary>
         /// <returns>Hex string.</returns>
         public string ToHexString()
@@ -287,7 +344,7 @@ namespace FlaxEngine
 
             return new string(result);
         }
-        
+
         /// <summary>
         /// Creates <see cref="Color"/> from the text string (hex or color name).
         /// </summary>

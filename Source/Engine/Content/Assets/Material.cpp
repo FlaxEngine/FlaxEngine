@@ -187,6 +187,9 @@ Asset::LoadResult Material::load()
 #endif
     )
     {
+        // Guard file with the lock during shader generation (prevents FlaxStorage::Tick from messing with the file)
+        auto lock = Storage->Lock();
+
         // Prepare
         MaterialGenerator generator;
         generator.Error.Bind(&OnGeneratorError);

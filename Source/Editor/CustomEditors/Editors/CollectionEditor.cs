@@ -57,17 +57,18 @@ namespace FlaxEditor.CustomEditors.Editors
                 menu.ItemsContainer.RemoveChildren();
 
                 menu.AddButton("Copy", linkedEditor.Copy);
-                var paste = menu.AddButton("Paste", linkedEditor.Paste);
-                paste.Enabled = linkedEditor.CanPaste;
+                var b = menu.AddButton("Paste", linkedEditor.Paste);
+                b.Enabled = linkedEditor.CanPaste && !Editor._readOnly;
 
                 menu.AddSeparator();
-                var moveUpButton = menu.AddButton("Move up", OnMoveUpClicked);
-                moveUpButton.Enabled = Index > 0;
+                b = menu.AddButton("Move up", OnMoveUpClicked);
+                b.Enabled = Index > 0 && !Editor._readOnly;
 
-                var moveDownButton = menu.AddButton("Move down", OnMoveDownClicked);
-                moveDownButton.Enabled = Index + 1 < Editor.Count;
-
-                menu.AddButton("Remove", OnRemoveClicked);
+                b = menu.AddButton("Move down", OnMoveDownClicked);
+                b.Enabled = Index + 1 < Editor.Count && !Editor._readOnly;
+                
+                b = menu.AddButton("Remove", OnRemoveClicked);
+                b.Enabled = !Editor._readOnly;
             }
 
             private void OnMoveUpClicked()
@@ -177,6 +178,7 @@ namespace FlaxEditor.CustomEditors.Editors
         private IntValueBox _sizeBox;
         private Color _background;
         private int _elementsCount, _minCount, _maxCount;
+        private bool _readOnly;
         private bool _canResize;
         private bool _canReorderItems;
         private CollectionAttribute.DisplayType _displayType;
@@ -209,6 +211,7 @@ namespace FlaxEditor.CustomEditors.Editors
                 return;
 
             var size = Count;
+            _readOnly = false;
             _canResize = true;
             _canReorderItems = true;
             _minCount = 0;
@@ -224,7 +227,8 @@ namespace FlaxEditor.CustomEditors.Editors
             var collection = (CollectionAttribute)attributes?.FirstOrDefault(x => x is CollectionAttribute);
             if (collection != null)
             {
-                _canResize = !collection.ReadOnly;
+                _canResize = collection.CanResize;
+                _readOnly = collection.ReadOnly;
                 _minCount = collection.MinCount;
                 _maxCount = collection.MaxCount;
                 _canReorderItems = collection.CanReorderItems;
@@ -235,6 +239,12 @@ namespace FlaxEditor.CustomEditors.Editors
                 spacing = collection.Spacing;
                 _displayType = collection.Display;
             }
+            if (attributes != null && attributes.Any(x => x is ReadOnlyAttribute))
+            {
+                _readOnly = true;
+                _canResize = false;
+                _canReorderItems = false;
+            }
             if (_maxCount == 0)
                 _maxCount = ushort.MaxValue;
             _canResize &= _minCount < _maxCount;
@@ -243,8 +253,7 @@ namespace FlaxEditor.CustomEditors.Editors
             dragArea.CustomControl.Editor = this;
             dragArea.CustomControl.ElementType = ElementType;
 
-            // Check for the AssetReferenceAttribute. In JSON assets, it can be used to filter
-            // which scripts can be dragged over and dropped on this collection editor.
+            // Check for the AssetReferenceAttribute. In JSON assets, it can be used to filter which scripts can be dragged over and dropped on this collection editor
             var assetReference = (AssetReferenceAttribute)attributes?.FirstOrDefault(x => x is AssetReferenceAttribute);
             if (assetReference != null)
             {
@@ -333,6 +342,8 @@ namespace FlaxEditor.CustomEditors.Editors
                         var property = panel.AddPropertyItem(itemLabel);
                         var itemLayout = (LayoutElementsContainer)property;
                         itemLabel.LinkedEditor = itemLayout.Object(new ListValueContainer(elementType, i, Values, attributes), overrideEditor);
+                        if (_readOnly && itemLayout.Children.Count > 0)
+                            GenericEditor.OnReadOnlyProperty(itemLayout);
                     }
                     else if (_displayType == CollectionAttribute.DisplayType.Header || (_displayType == CollectionAttribute.DisplayType.Default && !single))
                     {
@@ -340,13 +351,15 @@ namespace FlaxEditor.CustomEditors.Editors
                         cdp.CustomControl.Setup(this, i, _canReorderItems);
                         var itemLayout = cdp.VerticalPanel();
                         cdp.CustomControl.LinkedEditor = itemLayout.Object(new ListValueContainer(elementType, i, Values, attributes), overrideEditor);
+                        if (_readOnly && itemLayout.Children.Count > 0)
+                            GenericEditor.OnReadOnlyProperty(itemLayout);
                     }
                 }
             }
             _elementsCount = size;
 
             // Add/Remove buttons
-            if (_canResize)
+            if (_canResize && !_readOnly)
             {
                 var panel = dragArea.HorizontalPanel();
                 panel.Panel.Size = new Float2(0, 20);

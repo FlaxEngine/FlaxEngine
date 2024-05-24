@@ -47,7 +47,8 @@ namespace FlaxEditor.Surface.Archetypes
                 base.OnShowSecondaryContextMenu(menu, location);
 
                 menu.AddSeparator();
-                menu.AddButton("Convert to Parameter", OnConvertToParameter);
+                var b = menu.AddButton("Convert to Parameter", OnConvertToParameter);
+                b.Enabled = Surface.Owner is IVisjectSurfaceWindow window && Surface.Owner.SurfaceAsset && window.NewParameterTypes.Contains(_type);
             }
 
             private void OnConvertToParameter()
@@ -122,8 +123,7 @@ namespace FlaxEditor.Surface.Archetypes
 
             private bool OnParameterRenameValidate(string value)
             {
-                if (Surface.Owner is not IVisjectSurfaceWindow window)
-                    throw new Exception("Surface owner is not a Visject Surface Window");
+                var window = (IVisjectSurfaceWindow)Surface.Owner;
                 return !string.IsNullOrWhiteSpace(value) && window.VisjectSurface.Parameters.All(x => x.Name != value);
             }
         }

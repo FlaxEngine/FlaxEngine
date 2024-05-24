@@ -565,6 +565,7 @@ namespace FlaxEditor.Modules
                 if (item != null)
                     Editor.ContentEditing.Open(item);
             });
+            cm.AddButton("Editor Options", () => Editor.Windows.EditorOptionsWin.Show());
 
             // Scene
             MenuScene = MainMenu.AddButton("Scene");
@@ -619,7 +620,6 @@ namespace FlaxEditor.Modules
             _menuToolsTakeScreenshot = cm.AddButton("Take screenshot", inputOptions.TakeScreenshot, Editor.Windows.TakeScreenshot);
             cm.AddSeparator();
             cm.AddButton("Plugins", () => Editor.Windows.PluginsWin.Show());
-            cm.AddButton("Options", () => Editor.Windows.EditorOptionsWin.Show());
 
             // Window
             MenuWindow = MainMenu.AddButton("Window");

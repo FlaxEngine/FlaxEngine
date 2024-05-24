@@ -880,6 +880,13 @@ namespace FlaxEditor.CustomEditors.Dedicated
 
                 group.Panel.HeaderTextMargin = new Margin(scriptDrag.Right - 12, 15, 2, 2);
                 group.Object(values, editor);
+                // Remove drop down arrows and containment lines if no objects in the group
+                if (group.Children.Count == 0)
+                {
+                    group.Panel.ArrowImageOpened = null;
+                    group.Panel.ArrowImageClosed = null;
+                    group.Panel.EnableContainmentLines = false;
+                }
 
                 // Scripts arrange bar
                 dragBar = layout.Custom<ScriptArrangeBar>();

@@ -1991,13 +1991,8 @@ namespace Flax.Build.Bindings
                     }
                     contents.Append(')').AppendLine();
                     contents.Append("    {").AppendLine();
-                    if (buildData.Target.IsEditor && false)
-                        contents.Append("        MMethod* method = nullptr;").AppendLine(); // TODO: find a better way to cache event method in editor and handle C# hot-reload
-                    else
-                        contents.Append("        static MMethod* method = nullptr;").AppendLine();
-                    contents.Append("        if (!method)").AppendLine();
-                    contents.AppendFormat("            method = {1}::TypeInitializer.GetClass()->GetMethod(\"Internal_{0}_Invoke\", {2});", eventInfo.Name, classTypeNameNative, paramsCount).AppendLine();
-                    contents.Append("        CHECK(method);").AppendLine();
+                    contents.Append("        static MMethod* method = nullptr;").AppendLine();
+                    contents.AppendFormat("        if (!method) {{ method = {1}::TypeInitializer.GetClass()->GetMethod(\"Internal_{0}_Invoke\", {2}); CHECK(method); }}", eventInfo.Name, classTypeNameNative, paramsCount).AppendLine();
                     contents.Append("        MObject* exception = nullptr;").AppendLine();
                     if (paramsCount == 0)
                         contents.AppendLine("        void** params = nullptr;");
