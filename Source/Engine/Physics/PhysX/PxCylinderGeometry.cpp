@@ -1,4 +1,7 @@
-#if COMPILE_WITH_PHYSX
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+
+//see coment in PxCylinderGeometry.h
+#if COMPILE_WITH_PHYSX && INDEVELOPMENT && EXPERIMENTAL
 #include "Engine/Debug/DebugDraw.h"
 #include "Engine/Core/Math/BoundingSphere.h"
 #include "Engine/Core/Math/Ray.h"
@@ -12,7 +15,7 @@
 #include <geomutils/PxContactBuffer.h>
 #include <collision/PxCollisionDefs.h>
 #include <PxImmediateMode.h>
-#include <PhysX\extensions\PxDefaultStreams.h>
+#include "PhysX\extensions\PxDefaultStreams.h"
 
 struct ContactRecorder : immediate::PxContactRecorder
 {
@@ -266,42 +269,52 @@ bool CylinderCallbacks::generateContacts(const PxGeometry& geom0, const PxGeomet
 
 PxU32 CylinderCallbacks::raycast(const PxVec3& origin, const PxVec3& unitDir, const PxGeometry& geom, const PxTransform& pose, PxReal maxDist, PxHitFlags hitFlags, PxU32 maxHits, PxGeomRaycastHit* rayHits, PxU32 stride, PxRaycastThreadContext* threadContext) const
 {
+    //immediate::
     //[todo]
     //refrence
     //https://github.com/NVIDIA-Omniverse/PhysX/blob/main/physx/source/physxextensions/src/ExtCustomGeometryExt.cpp
-
 
     // When FLT_MAX is used as maxDist, it works bad with GJK algorithm.
     // Here I compute the maximum needed distance (wiseDist) as the diagonal
     // of the bounding box of both the geometry and the ray origin.
 
-    //PxBounds3 bounds = PxBounds3::transformFast(pose, getLocalBounds(geom));
-    //bounds.include(origin);
-    //PxReal wiseDist = PxMin(maxDist, bounds.getDimensions().magnitude());
-    //PxReal t;
-    //PxVec3 n, p;
-    //if (PxGjkQuery::raycast(*this, pose, origin, unitDir, wiseDist, t, n, p))
-    //{
-    //    PxGeomRaycastHit& hit = *rayHits;
-    //    hit.distance = t;
-    //    hit.position = p;
-    //    hit.normal = n;
-    //    return 1;
-    //}
-
-
+    PxBounds3 bounds = PxBounds3::transformFast(pose, getLocalBounds(geom));
+    bounds.include(origin);
+    PxReal wiseDist = PxMin(maxDist, bounds.getDimensions().magnitude());
+    PxReal t;
+    PxVec3 n, p;
+    if (PxGjkQuery::raycast(*this, pose, origin, unitDir, wiseDist, t, n, p))
+    {
+        PxGeomRaycastHit& hit = *rayHits;
+        hit.distance = t;
+        hit.position = p;
+        hit.normal = n;
+        return 1;
+    }
 
     return 0;
 }
 
 bool CylinderCallbacks::overlap(const PxGeometry& geom0, const PxTransform& pose0, const PxGeometry& geom1, const PxTransform& pose1, PxOverlapThreadContext* threadContext) const
 {
-    //[todo]
     //refrence
     //https://github.com/NVIDIA-Omniverse/PhysX/blob/main/physx/source/physxextensions/src/ExtCustomGeometryExt.cpp
 
-    //PxGjkQueryExt::ConvexGeomSupport geomSupport(geom1);
-    //return PxGjkQuery::overlap(*this, geomSupport, pose0, pose1);
+    switch (geom1.getType())
+    {
+    case PxGeometryType::eSPHERE:
+    case PxGeometryType::eCAPSULE:
+    case PxGeometryType::eBOX:
+    case PxGeometryType::eCONVEXMESH:
+    {
+        PxGjkQueryExt::ConvexGeomSupport geomSupport(geom1);
+        if (PxGjkQuery::overlap(*this, geomSupport, pose0, pose1))
+            return true;
+        break;
+    }
+    default:
+        break;
+    }
 
     return false;
 }
@@ -312,6 +325,8 @@ bool CylinderCallbacks::sweep(const PxVec3& unitDir, const PxReal maxDist, const
     //refrence
     //https://github.com/NVIDIA-Omniverse/PhysX/blob/main/physx/source/physxextensions/src/ExtCustomGeometryExt.cpp
 
+    PxGjkQueryExt::ConvexGeomSupport geomSupport(geom1);
+    return PxGjkQuery::sweep(*this, geomSupport, pose0, pose1);
     return false;
 }
 

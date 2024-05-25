@@ -26,7 +26,12 @@
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Serialization/WriteStream.h"
 
-#include "Engine/Physics/PhysX/PxCylinderGeometry.h"
+#if INDEVELOPMENT && EXPERIMENTAL
+#include <Engine/Physics/PhysX/PxCylinderGeometry.h>
+#else
+#include <PhysX/extensions/PxCustomGeometryExt.h>
+#endif
+
 
 #include <ThirdParty/PhysX/PxPhysicsAPI.h>
 #include <ThirdParty/PhysX/PxQueryFiltering.h>
@@ -648,7 +653,11 @@ void GetShapeGeometry(const CollisionShape& shape, PxGeometryHolder& geometry)
         geometry.storeAny(PxHeightFieldGeometry((PxHeightField*)shape.HeightField.HeightField, PxMeshGeometryFlags(0), Math::Max(shape.HeightField.HeightScale, PX_MIN_HEIGHTFIELD_Y_SCALE), Math::Max(shape.HeightField.RowScale, PX_MIN_HEIGHTFIELD_XZ_SCALE), Math::Max(shape.HeightField.ColumnScale, PX_MIN_HEIGHTFIELD_XZ_SCALE)));
         break;
     case CollisionShape::Types::Cylinder:
-        auto gCylinderCallbacks = new CylinderCallbacks(PhysX,shape.Cylinder.Radius, shape.Cylinder.HalfHeight);
+#if INDEVELOPMENT && EXPERIMENTAL
+        auto gCylinderCallbacks = new CylinderCallbacks(shape.Cylinder.Radius, shape.Cylinder.HalfHeight);
+#else
+        auto gCylinderCallbacks = new physx::PxCustomGeometryExt::CylinderCallbacks(shape.Cylinder.HalfHeight, shape.Cylinder.Radius);
+#endif
         geometry.storeAny(PxCustomGeometry(*gCylinderCallbacks));
         break;
     }
@@ -2732,8 +2741,13 @@ CollisionShape::Types PhysicsBackend::GetShapeType(void* shape)
         type = CollisionShape::Types::HeightField;
         break;
     case PxGeometryType::eCUSTOM:
+#if INDEVELOPMENT && EXPERIMENTAL
         if (customGeom1.getCustomType() == CylinderCallbacks::TYPE())
         {
+#else
+        if (customGeom1.getCustomType() == physx::PxCustomGeometryExt::CylinderCallbacks::TYPE())
+        {
+#endif
             type = CollisionShape::Types::Cylinder;
         }
     default:

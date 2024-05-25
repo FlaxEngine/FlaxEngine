@@ -1,12 +1,60 @@
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+
+// DO NOT REMOVE THIS
+// Writen by https://github.com/cNori (25.05.2024) (note for someone reading this might be some spelling mistakes :])
+// (part of https://github.com/FlaxEngine/FlaxEngine/pull/2325)
+// 
+// Disabled if there will be an issues with physx::PxCustomGeometryExt::CylinderCallbacks implementacion it will be worked on
+// for now it is disabled because it is incomplete i don't have brain power to do it correctly or even compilite it
+// the GjkQuery needs to be worked on and generateContacts needs to use correct code not a hack so it is a inf resoluction
+// Cylinder collider
+// 
+// why this is even needed ?
+// A. need of making cylinder colliders of different resolution per object sucks,
+// B. if there is a need to have multiple wheels sizes in game and if resolution is to low it will be bumpy or just off
+// C. objects losing the energy because of imperfect collider
+// D. 128 resolution cylinder trialange convex mesh will teak very a long time to compue 0.05ms to 0.01ms per one collider
+// lest say there is a 100 of those colliders just a good luck having a smooth experience in large game
+// 
+// [To Do]
+// Collison:
+// best resource
+// - none good luck :D (but this is general way i will do it look at comment below [The Idea])
+// [-] 1.Cylinder vs plane
+// [-] 2.Cylinder vs box
+// [-] 3.Cylinder vs sphere
+// [-] 4.Cylinder vs capsule
+// [-] 5.Cylinder vs concave mesh
+// [-] 6.Cylinder vs convex mesh
+// [-] 7.Cylinder vs height filed
+// GJK: 
+// best resource
+// (https://www.youtube.com/watch?v=Qupqu1xe7Io)
+// [-] 1.Local Suport Funcion
+// 
+// raycast:
+// best resource
+// - none good luck :D (i didn't found anything use full)
+// [o] Cylinder vs Ray
+
+//[The Idea]
+//so what is the Cylinder it is just a rounded box collider,on XY planes
+//do the collisions can be implemented like a box vs other but the rule is the XY needs to be face only detection
+//and any detected collision outside the radius shall be ignored
+//this is the idea for side collisions
+//now the top and buttom it is more enoing
+//the XY are raounded so it is a edge to edge detecion
+//where the Z + and Z - are vertex to face detecion
+
 #pragma once
-#if COMPILE_WITH_PHYSX
+#if COMPILE_WITH_PHYSX && INDEVELOPMENT && EXPERIMENTAL
 #include "Engine/Core/Delegate.h"
 #include "Engine/Core/Collections/Array.h"
 #include "Engine/Physics/PhysicsTransform.h"
 #include "Types.h"
 #include <PhysX\extensions\PxGjkQueryExt.h>
 
-struct CylinderCallbacks : PxCustomGeometry::Callbacks
+struct CylinderCallbacks : PxCustomGeometry::Callbacks , PxGjkQuery::Support
 {
     DECLARE_CUSTOM_GEOMETRY_TYPE
 private:
