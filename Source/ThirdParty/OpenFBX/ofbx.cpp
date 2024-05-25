@@ -47,12 +47,11 @@ struct Allocator {
 	Page* first = nullptr;
 
 	~Allocator() {
-		Page* p = first;
-		while (p) {
-			Page* n = p->header.next;
-			delete p;
-			p = n;
-		}
+        while (first) {
+            Page* page = first;
+            first = first->header.next;
+            delete page;
+        }
 	}
 
 	template <typename T, typename... Args> T* allocate(Args&&... args)
@@ -1940,6 +1939,7 @@ struct Scene : IScene
 	int getGeometryCount() const override { return (int)m_geometries.size(); }
 	int getMeshCount() const override { return (int)m_meshes.size(); }
 	float getSceneFrameRate() const override { return m_scene_frame_rate; }
+    const GlobalInfo* getGlobalInfo() const override { return &m_info; }
 	const GlobalSettings* getGlobalSettings() const override { return &m_settings; }
 
 	const Object* const* getAllObjects() const override { return m_all_objects.empty() ? nullptr : &m_all_objects[0]; }
@@ -2043,6 +2043,7 @@ struct Scene : IScene
 	Element* m_root_element = nullptr;
 	Root* m_root = nullptr;
 	float m_scene_frame_rate = -1;
+	GlobalInfo m_info;
 	GlobalSettings m_settings;
 
 	std::unordered_map<std::string, u64> m_fake_ids;
@@ -3373,6 +3374,51 @@ static void parseGlobalSettings(const Element& root, Scene* scene)
 	}
 }
 
+
+static void parseGlobalInfo(const Element& root, Scene* scene)
+{
+    for (Element* header = root.child; header; header = header->sibling)
+    {
+        if (header->id != "FBXHeaderExtension")
+            continue;
+        for (Element* info = header->child; info; info = info->sibling)
+        {
+            if (info->id != "SceneInfo")
+                continue;
+            for (Element* props70 = info->child; props70; props70 = props70->sibling)
+            {
+                if (props70->id != "Properties70")
+                    continue;
+                for (Element* node = props70->child; node; node = node->sibling)
+                {
+                    if (!node->first_property)
+                        continue;
+
+                    #define get_text_property(name, field) if (node->first_property->value == name) \
+                    { \
+                        IElementProperty* prop = node->getProperty(4); \
+                        if (prop) \
+                        { \
+	                        DataView value = prop->getValue(); \
+                            value.toString(field); \
+                        } \
+                    }
+
+                    get_text_property("Original|ApplicationVendor", scene->m_info.AppVendor);
+                    get_text_property("Original|ApplicationName", scene->m_info.AppName);
+                    get_text_property("Original|ApplicationVersion", scene->m_info.AppVersion);
+
+                    #undef get_text_property
+                }
+                break;
+            }
+            break;
+        }
+        break;
+    }
+}
+
+
 void sync_job_processor(JobFunction fn, void*, void* data, u32 size, u32 count) {
 	u8* ptr = (u8*)data;
 	for(u32 i = 0; i < count; ++i) {
@@ -4088,6 +4134,7 @@ IScene* load(const u8* data, usize size, u16 flags, JobProcessor job_processor, 
 	if (!parseConnections(*root.getValue(), *scene.get())) return nullptr;
 	if (!parseTakes(*scene.get())) return nullptr;
 	if (!parseObjects(*root.getValue(), *scene.get(), flags, scene->m_allocator, job_processor, job_user_ptr)) return nullptr;
+    parseGlobalInfo(*root.getValue(), scene.get());
 	parseGlobalSettings(*root.getValue(), scene.get());
 	if (!scene->finalize()) return nullptr;
 
