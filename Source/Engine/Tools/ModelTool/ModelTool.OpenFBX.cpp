@@ -49,7 +49,7 @@ Quaternion ToQuaternion(const ofbx::Quat& v)
     return Quaternion((float)v.x, (float)v.y, (float)v.z, (float)v.w);
 }
 
-Matrix ToMatrix(const ofbx::Matrix& mat)
+Matrix ToMatrix(const ofbx::DMatrix& mat)
 {
     Matrix result;
     for (int32 i = 0; i < 16; i++)
@@ -445,7 +445,7 @@ Matrix GetOffsetMatrix(OpenFbxImporterData& data, const ofbx::Mesh* mesh, const 
 
 bool IsMeshInvalid(const ofbx::Mesh* aMesh)
 {
-    return aMesh->getGeometry()->getVertexCount() == 0;
+    return aMesh->getGeometry()->getGeometryData().getPositions().count == 0;
 }
 
 bool ImportBones(OpenFbxImporterData& data, String& errorMsg)
@@ -524,56 +524,56 @@ bool ImportBones(OpenFbxImporterData& data, String& errorMsg)
     return false;
 }
 
-bool ProcessMesh(ModelData& result, OpenFbxImporterData& data, const ofbx::Mesh* aMesh, MeshData& mesh, String& errorMsg, int32 triangleStart, int32 triangleEnd)
+bool ProcessMesh(ModelData& result, OpenFbxImporterData& data, const ofbx::Mesh* aMesh, MeshData& mesh, String& errorMsg, int partitionIndex)
 {
     PROFILE_CPU();
     mesh.Name = aMesh->name;
     ZoneText(*mesh.Name, mesh.Name.Length());
-    const int32 firstVertexOffset = triangleStart * 3;
-    const int32 lastVertexOffset = triangleEnd * 3;
     const ofbx::Geometry* aGeometry = aMesh->getGeometry();
-    const int vertexCount = lastVertexOffset - firstVertexOffset + 3;
-    ASSERT(firstVertexOffset + vertexCount <= aGeometry->getVertexCount());
-    const ofbx::Vec3* vertices = aGeometry->getVertices();
-    const ofbx::Vec3* normals = aGeometry->getNormals();
-    const ofbx::Vec3* tangents = aGeometry->getTangents();
-    const ofbx::Vec4* colors = aGeometry->getColors();
-    const ofbx::Vec2* uvs = aGeometry->getUVs();
+    const ofbx::GeometryData& geometryData = aMesh->getGeometryData();
+    const ofbx::GeometryPartition& partition = geometryData.getPartition(partitionIndex);
+    const int vertexCount = partition.triangles_count * 3;
+    const ofbx::Vec3Attributes& positions = geometryData.getPositions();
+    const ofbx::Vec2Attributes& uvs = geometryData.getUVs();
+    const ofbx::Vec3Attributes& normals = geometryData.getNormals();
+    const ofbx::Vec3Attributes& tangents = geometryData.getTangents();
+    const ofbx::Vec4Attributes& colors = geometryData.getColors();
     const ofbx::Skin* skin = aGeometry->getSkin();
     const ofbx::BlendShape* blendShape = aGeometry->getBlendShape();
+
+    static Array<int> triangulatedIndices;
+    triangulatedIndices.Resize(vertexCount, false);
 
     // Properties
     const ofbx::Material* aMaterial = nullptr;
     if (aMesh->getMaterialCount() > 0)
-    {
-        if (aGeometry->getMaterials())
-            aMaterial = aMesh->getMaterial(aGeometry->getMaterials()[triangleStart]);
-        else
-            aMaterial = aMesh->getMaterial(0);
-    }
+        aMaterial = aMesh->getMaterial(partitionIndex);
     mesh.MaterialSlotIndex = data.AddMaterial(result, aMaterial);
 
     // Vertex positions
     mesh.Positions.Resize(vertexCount, false);
-    for (int i = 0; i < vertexCount; i++)
-        mesh.Positions.Get()[i] = ToFloat3(vertices[i + firstVertexOffset]);
+    {
+        int numVertsProcessed = 0;
+        for (int i = 0; i < partition.polygon_count; i++)
+        {
+            int numVerts = ofbx::triangulate(geometryData, partition.polygons[i], &triangulatedIndices[numVertsProcessed]);
+            for (int j = numVertsProcessed; j < numVertsProcessed + numVerts; j++)
+                mesh.Positions.Get()[j] = ToFloat3(positions.get(triangulatedIndices[j]));
+            numVertsProcessed += numVerts;
+        }
+    }
 
     // Indices (dummy index buffer)
-    if (vertexCount % 3 != 0)
-    {
-        errorMsg = TEXT("Invalid vertex count. It must be multiple of 3.");
-        return true;
-    }
     mesh.Indices.Resize(vertexCount, false);
     for (int i = 0; i < vertexCount; i++)
         mesh.Indices.Get()[i] = i;
 
     // Texture coordinates
-    if (uvs)
+    if (uvs.values)
     {
         mesh.UVs.Resize(vertexCount, false);
         for (int i = 0; i < vertexCount; i++)
-            mesh.UVs.Get()[i] = ToFloat2(uvs[i + firstVertexOffset]);
+            mesh.UVs.Get()[i] = ToFloat2(uvs.get(triangulatedIndices[i]));
         if (data.ConvertRH)
         {
             for (int32 v = 0; v < vertexCount; v++)
@@ -582,7 +582,7 @@ bool ProcessMesh(ModelData& result, OpenFbxImporterData& data, const ofbx::Mesh*
     }
 
     // Normals
-    if (data.Options.CalculateNormals || !normals)
+    if (data.Options.CalculateNormals || !normals.values)
     {
         if (mesh.GenerateNormals(data.Options.SmoothingNormalsAngle))
         {
@@ -590,11 +590,11 @@ bool ProcessMesh(ModelData& result, OpenFbxImporterData& data, const ofbx::Mesh*
             return true;
         }
     }
-    else if (normals)
+    else if (normals.values)
     {
         mesh.Normals.Resize(vertexCount, false);
         for (int i = 0; i < vertexCount; i++)
-            mesh.Normals.Get()[i] = ToFloat3(normals[i + firstVertexOffset]);
+            mesh.Normals.Get()[i] = ToFloat3(normals.get(triangulatedIndices[i]));
         if (data.ConvertRH)
         {
             // Mirror normals along the Z axis
@@ -604,15 +604,15 @@ bool ProcessMesh(ModelData& result, OpenFbxImporterData& data, const ofbx::Mesh*
     }
 
     // Tangents
-    if ((data.Options.CalculateTangents || !tangents) && mesh.UVs.HasItems())
+    if ((data.Options.CalculateTangents || !tangents.values) && mesh.UVs.HasItems())
     {
         // Generated after full mesh data conversion
     }
-    else if (tangents)
+    else if (tangents.values)
     {
         mesh.Tangents.Resize(vertexCount, false);
         for (int i = 0; i < vertexCount; i++)
-            mesh.Tangents.Get()[i] = ToFloat3(tangents[i + firstVertexOffset]);
+            mesh.Tangents.Get()[i] = ToFloat3(tangents.get(triangulatedIndices[i]));
         if (data.ConvertRH)
         {
             // Mirror tangents along the Z axis
@@ -658,12 +658,12 @@ bool ProcessMesh(ModelData& result, OpenFbxImporterData& data, const ofbx::Mesh*
         }
 
         // Check if has that channel texcoords
-        const auto lightmapUVs = aGeometry->getUVs(inputChannelIndex);
-        if (lightmapUVs)
+        const auto lightmapUVs = geometryData.getUVs(inputChannelIndex);
+        if (lightmapUVs.values)
         {
             mesh.LightmapUVs.Resize(vertexCount, false);
             for (int i = 0; i < vertexCount; i++)
-                mesh.LightmapUVs.Get()[i] = ToFloat2(lightmapUVs[i + firstVertexOffset]);
+                mesh.LightmapUVs.Get()[i] = ToFloat2(lightmapUVs.get(triangulatedIndices[i]));
             if (data.ConvertRH)
             {
                 for (int32 v = 0; v < vertexCount; v++)
@@ -677,11 +677,11 @@ bool ProcessMesh(ModelData& result, OpenFbxImporterData& data, const ofbx::Mesh*
     }
 
     // Vertex Colors
-    if (data.Options.ImportVertexColors && colors)
+    if (data.Options.ImportVertexColors && colors.values)
     {
         mesh.Colors.Resize(vertexCount, false);
         for (int i = 0; i < vertexCount; i++)
-            mesh.Colors.Get()[i] = ToColor(colors[i + firstVertexOffset]);
+            mesh.Colors.Get()[i] = ToColor(colors.get(triangulatedIndices[i]));
     }
 
     // Blend Indices and Blend Weights
@@ -718,7 +718,7 @@ bool ProcessMesh(ModelData& result, OpenFbxImporterData& data, const ofbx::Mesh*
             const double* clusterWeights = cluster->getWeights();
             for (int j = 0; j < cluster->getIndicesCount(); j++)
             {
-                int vtxIndex = clusterIndices[j] - firstVertexOffset;
+                int vtxIndex = clusterIndices[j];
                 float vtxWeight = (float)clusterWeights[j];
                 if (vtxWeight <= 0 || vtxIndex < 0 || vtxIndex >= vertexCount)
                     continue;
@@ -762,9 +762,9 @@ bool ProcessMesh(ModelData& result, OpenFbxImporterData& data, const ofbx::Mesh*
                 continue;
             const ofbx::Shape* shape = channel->getShape(targetShapeCount - 1);
 
-            if (shape->getVertexCount() != aGeometry->getVertexCount())
+            if (shape->getVertexCount() != vertexCount)
             {
-                LOG(Error, "Blend shape '{0}' in mesh '{1}' has different amount of vertices ({2}) than mesh ({3})", String(shape->name), mesh.Name, shape->getVertexCount(), aGeometry->getVertexCount());
+                LOG(Error, "Blend shape '{0}' in mesh '{1}' has different amount of vertices ({2}) than mesh ({3})", String(shape->name), mesh.Name, shape->getVertexCount(), vertexCount);
                 continue;
             }
 
@@ -779,14 +779,14 @@ bool ProcessMesh(ModelData& result, OpenFbxImporterData& data, const ofbx::Mesh*
             auto shapeVertices = shape->getVertices();
             for (int32 i = 0; i < blendShapeData.Vertices.Count(); i++)
             {
-                auto delta = ToFloat3(shapeVertices[i + firstVertexOffset]) - mesh.Positions.Get()[i];
+                auto delta = ToFloat3(shapeVertices[i]) - mesh.Positions.Get()[i];
                 blendShapeData.Vertices.Get()[i].PositionDelta = delta;
             }
 
             auto shapeNormals = shape->getNormals();
             for (int32 i = 0; i < blendShapeData.Vertices.Count(); i++)
             {
-                auto delta = ToFloat3(shapeNormals[i + firstVertexOffset]);
+                auto delta = ToFloat3(shapeNormals[i]);
                 if (data.ConvertRH)
                 {
                     // Mirror normals along the Z axis
@@ -820,7 +820,7 @@ bool ProcessMesh(ModelData& result, OpenFbxImporterData& data, const ofbx::Mesh*
             Swap(mesh.Indices.Get()[i], mesh.Indices.Get()[i + 2]);
     }
 
-    if ((data.Options.CalculateTangents || !tangents) && mesh.UVs.HasItems())
+    if ((data.Options.CalculateTangents || !tangents.values) && mesh.UVs.HasItems())
     {
         if (mesh.GenerateTangents(data.Options.SmoothingTangentsAngle))
         {
@@ -858,7 +858,7 @@ bool ProcessMesh(ModelData& result, OpenFbxImporterData& data, const ofbx::Mesh*
     return false;
 }
 
-bool ImportMesh(ModelData& result, OpenFbxImporterData& data, const ofbx::Mesh* aMesh, String& errorMsg, int32 triangleStart, int32 triangleEnd)
+bool ImportMesh(ModelData& result, OpenFbxImporterData& data, const ofbx::Mesh* aMesh, String& errorMsg, int partitionIndex)
 {
     PROFILE_CPU();
 
@@ -899,7 +899,7 @@ bool ImportMesh(ModelData& result, OpenFbxImporterData& data, const ofbx::Mesh* 
 
     // Import mesh data
     MeshData* meshData = New<MeshData>();
-    if (ProcessMesh(result, data, aMesh, *meshData, errorMsg, triangleStart, triangleEnd))
+    if (ProcessMesh(result, data, aMesh, *meshData, errorMsg, partitionIndex))
         return true;
 
     // Link mesh
@@ -917,35 +917,17 @@ bool ImportMesh(int32 index, ModelData& result, OpenFbxImporterData& data, Strin
 {
     const auto aMesh = data.Scene->getMesh(index);
     const auto aGeometry = aMesh->getGeometry();
-    const auto trianglesCount = aGeometry->getVertexCount() / 3;
     if (IsMeshInvalid(aMesh))
         return false;
 
-    if (aMesh->getMaterialCount() < 2 || !aGeometry->getMaterials())
+    const auto& geomData = aMesh->getGeometryData();
+    for (int i = 0; i < geomData.getPartitionCount(); i++)
     {
-        // Fast path if mesh is using single material for all triangles
-        if (ImportMesh(result, data, aMesh, errorMsg, 0, trianglesCount - 1))
-            return true;
-    }
-    else
-    {
-        // Create mesh for each sequence of triangles that share the same material
-        const auto materials = aGeometry->getMaterials();
-        int32 rangeStart = 0;
-        int32 rangeStartVal = materials[rangeStart];
-        for (int32 triangleIndex = 1; triangleIndex < trianglesCount; triangleIndex++)
-        {
-            if (rangeStartVal != materials[triangleIndex])
-            {
-                if (ImportMesh(result, data, aMesh, errorMsg, rangeStart, triangleIndex - 1))
-                    return true;
+        const auto& partition = geomData.getPartition(i);
+        if (partition.polygon_count == 0)
+            continue;
 
-                // Start a new range
-                rangeStart = triangleIndex;
-                rangeStartVal = materials[triangleIndex];
-            }
-        }
-        if (ImportMesh(result, data, aMesh, errorMsg, rangeStart, trianglesCount - 1))
+        if (ImportMesh(result, data, aMesh, errorMsg, i))
             return true;
     }
     return false;
@@ -962,24 +944,24 @@ struct AnimInfo
 
 struct Frame
 {
-    ofbx::Vec3 Translation;
-    ofbx::Vec3 Rotation;
-    ofbx::Vec3 Scaling;
+    ofbx::DVec3 Translation;
+    ofbx::DVec3 Rotation;
+    ofbx::DVec3 Scaling;
 };
 
-void ExtractKeyframePosition(const ofbx::Object* bone, ofbx::Vec3& trans, const Frame& localFrame, Float3& keyframe)
+void ExtractKeyframePosition(const ofbx::Object* bone, ofbx::DVec3& trans, const Frame& localFrame, Float3& keyframe)
 {
     const Matrix frameTrans = ToMatrix(bone->evalLocal(trans, localFrame.Rotation, localFrame.Scaling));
     keyframe = frameTrans.GetTranslation();
 }
 
-void ExtractKeyframeRotation(const ofbx::Object* bone, ofbx::Vec3& trans, const Frame& localFrame, Quaternion& keyframe)
+void ExtractKeyframeRotation(const ofbx::Object* bone, ofbx::DVec3& trans, const Frame& localFrame, Quaternion& keyframe)
 {
     const Matrix frameTrans = ToMatrix(bone->evalLocal(localFrame.Translation, trans, { 1.0, 1.0, 1.0 }));
     Quaternion::RotationMatrix(frameTrans, keyframe);
 }
 
-void ExtractKeyframeScale(const ofbx::Object* bone, ofbx::Vec3& trans, const Frame& localFrame, Float3& keyframe)
+void ExtractKeyframeScale(const ofbx::Object* bone, ofbx::DVec3& trans, const Frame& localFrame, Float3& keyframe)
 {
     // Fix empty scale case
     if (Math::IsZero(trans.x) && Math::IsZero(trans.y) && Math::IsZero(trans.z))
@@ -990,7 +972,7 @@ void ExtractKeyframeScale(const ofbx::Object* bone, ofbx::Vec3& trans, const Fra
 }
 
 template<typename T>
-void ImportCurve(const ofbx::AnimationCurveNode* curveNode, LinearCurve<T>& curve, AnimInfo& info, void (*ExtractKeyframe)(const ofbx::Object*, ofbx::Vec3&, const Frame&, T&))
+void ImportCurve(const ofbx::AnimationCurveNode* curveNode, LinearCurve<T>& curve, AnimInfo& info, void (*ExtractKeyframe)(const ofbx::Object*, ofbx::DVec3&, const Frame&, T&))
 {
     if (curveNode == nullptr)
         return;
@@ -1008,7 +990,7 @@ void ImportCurve(const ofbx::AnimationCurveNode* curveNode, LinearCurve<T>& curv
 
         key.Time = (float)i;
 
-        ofbx::Vec3 trans = curveNode->getNodeLocalTransform(t);
+        ofbx::DVec3 trans = curveNode->getNodeLocalTransform(t);
         ExtractKeyframe(bone, trans, localFrame, key.Value);
     }
 }
@@ -1125,10 +1107,9 @@ bool ModelTool::ImportDataOpenFBX(const String& path, ModelData& data, Options& 
         errorMsg = TEXT("Cannot load file.");
         return true;
     }
-    ofbx::u64 loadFlags = 0;
+    ofbx::u16 loadFlags = 0;
     if (EnumHasAnyFlags(options.ImportTypes, ImportDataTypes::Geometry))
     {
-        loadFlags |= (ofbx::u64)ofbx::LoadFlags::TRIANGULATE;
         if (!options.ImportBlendShapes)
             loadFlags |= (ofbx::u64)ofbx::LoadFlags::IGNORE_BLEND_SHAPES;
     }
