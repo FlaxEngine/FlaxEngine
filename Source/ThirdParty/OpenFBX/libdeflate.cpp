@@ -2231,13 +2231,13 @@ FUNCNAME(struct libdeflate_decompressor * restrict d,
 	 void * restrict out, size_t out_nbytes_avail,
 	 size_t *actual_in_nbytes_ret, size_t *actual_out_nbytes_ret)
 {
-	u8 *out_next = out;
+	u8 *out_next = (u8*)out;
 	u8 * const out_end = out_next + out_nbytes_avail;
 	u8 * const out_fastloop_end =
 		out_end - MIN(out_nbytes_avail, FASTLOOP_MAX_BYTES_WRITTEN);
 
 	/* Input bitstream state; see deflate_decompress.c for documentation */
-	const u8 *in_next = in;
+	const u8 *in_next = (u8*)in;
 	const u8 * const in_end = in_next + in_nbytes;
 	const u8 * const in_fastloop_end =
 		in_end - MIN(in_nbytes, FASTLOOP_MAX_BYTES_READ);
@@ -3047,13 +3047,13 @@ FUNCNAME(struct libdeflate_decompressor * restrict d,
 	 void * restrict out, size_t out_nbytes_avail,
 	 size_t *actual_in_nbytes_ret, size_t *actual_out_nbytes_ret)
 {
-	u8 *out_next = out;
+	u8 *out_next = (u8*)out;
 	u8 * const out_end = out_next + out_nbytes_avail;
 	u8 * const out_fastloop_end =
 		out_end - MIN(out_nbytes_avail, FASTLOOP_MAX_BYTES_WRITTEN);
 
 	/* Input bitstream state; see deflate_decompress.c for documentation */
-	const u8 *in_next = in;
+	const u8 *in_next = (u8*)in;
 	const u8 * const in_end = in_next + in_nbytes;
 	const u8 * const in_fastloop_end =
 		in_end - MIN(in_nbytes, FASTLOOP_MAX_BYTES_READ);
@@ -3873,7 +3873,7 @@ libdeflate_alloc_decompressor_ex(const struct libdeflate_options *options)
 	if (options->sizeof_options != sizeof(*options))
 		return NULL;
 
-	d = (options->malloc_func ? options->malloc_func :
+	d = (libdeflate_decompressor*)(options->malloc_func ? options->malloc_func :
 	     libdeflate_default_malloc_func)(sizeof(*d));
 	if (d == NULL)
 		return NULL;
@@ -3904,7 +3904,7 @@ LIBDEFLATEAPI struct libdeflate_decompressor *
 libdeflate_alloc_decompressor(void)
 {
 	static const struct libdeflate_options defaults = {
-		.sizeof_options = sizeof(defaults),
+		/*.sizeof_options = */sizeof(defaults),
 	};
 	return libdeflate_alloc_decompressor_ex(&defaults);
 }
