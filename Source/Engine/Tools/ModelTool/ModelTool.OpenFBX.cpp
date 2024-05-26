@@ -6,6 +6,7 @@
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Math/Mathd.h"
 #include "Engine/Core/Math/Matrix.h"
+#include "Engine/Core/Math/Plane.h"
 #include "Engine/Core/Collections/Sorting.h"
 #include "Engine/Platform/FileSystem.h"
 #include "Engine/Tools/TextureTool/TextureTool.h"
@@ -524,6 +525,151 @@ bool ImportBones(OpenFbxImporterData& data, String& errorMsg)
     return false;
 }
 
+int Triangulate(const ofbx::GeometryData& geom, const ofbx::GeometryPartition::Polygon& polygon, int* triangulatedIndices)
+{
+    if (polygon.vertex_count < 3)
+        return 0;
+    else if (polygon.vertex_count == 3)
+    {
+        triangulatedIndices[0] = polygon.from_vertex;
+        triangulatedIndices[1] = polygon.from_vertex + 1;
+        triangulatedIndices[2] = polygon.from_vertex + 2;
+        return 3;
+    }
+    else if (polygon.vertex_count == 4)
+    {
+        triangulatedIndices[0] = polygon.from_vertex + 0;
+        triangulatedIndices[1] = polygon.from_vertex + 1;
+        triangulatedIndices[2] = polygon.from_vertex + 2;
+        triangulatedIndices[3] = polygon.from_vertex + 0;
+        triangulatedIndices[4] = polygon.from_vertex + 2;
+        triangulatedIndices[5] = polygon.from_vertex + 3;
+        return 6;
+    }
+
+    const ofbx::Vec3Attributes& positions = geom.getPositions();
+    Float3 normal = *(Float3*)&geom.getNormals().get(polygon.from_vertex);
+
+    // Check if the polygon is convex
+    int lastSign = 0;
+    bool isConvex = true;
+    for (int i = 0; i < polygon.vertex_count; i++)
+    {
+        Float3 v1 = *(Float3*)&positions.get(polygon.from_vertex + i);
+        Float3 v2 = *(Float3*)&positions.get(polygon.from_vertex + (i + 1) % polygon.vertex_count);
+        Float3 v3 = *(Float3*)&positions.get(polygon.from_vertex + (i + 2) % polygon.vertex_count);
+
+        // The winding order of all triangles must be same for polygon to be considered convex
+        int sign;
+        Float3 c = Float3::Cross(v1 - v2, v3 - v2);
+        if (c.LengthSquared() == 0.0f)
+            continue;
+        else if (Math::NotSameSign(c.X, normal.X) || Math::NotSameSign(c.Y, normal.Y) || Math::NotSameSign(c.Z, normal.Z))
+            sign = 1;
+        else
+            sign = -1;
+        if ((sign < 0 && lastSign > 0) || (sign > 0 && lastSign < 0))
+        {
+            isConvex = false;
+            break;
+        }
+        lastSign += sign;
+    }
+
+    // Fast-path for convex case
+    if (isConvex)
+    {
+        for (int i = 0; i < polygon.vertex_count - 2; i++)
+        {
+            triangulatedIndices[i * 3 + 0] = polygon.from_vertex;
+            triangulatedIndices[i * 3 + 1] = polygon.from_vertex + (i + 1) % polygon.vertex_count;
+            triangulatedIndices[i * 3 + 2] = polygon.from_vertex + (i + 2) % polygon.vertex_count;
+        }
+        return 3 * (polygon.vertex_count - 2);
+    }
+
+    // Setup arrays for temporary data (TODO: maybe double-linked list is more optimal?)
+    static Array<Float2> points;
+    static Array<int> indices;
+    static Array<int> earIndices;
+    points.Clear();
+    indices.Clear();
+    earIndices.Clear();
+    points.EnsureCapacity(polygon.vertex_count, false);
+    indices.EnsureCapacity(polygon.vertex_count, false);
+    earIndices.EnsureCapacity(3 * (polygon.vertex_count - 2), false);
+
+    // Project points to a plane, choose two arbitrary axises
+    const Float3 u = Float3::Cross(normal, Math::Abs(normal.X) > Math::Abs(normal.Y) ? Float3::Up : Float3::Right).GetNormalized();
+    const Float3 v = Float3::Cross(normal, u).GetNormalized();
+    for (int i = 0; i < polygon.vertex_count; i++)
+    {
+        const Float3 point = *(Float3*)&positions.get(polygon.from_vertex + i);
+        const Float3 projectedPoint = Float3::ProjectOnPlane(point, normal);
+        const Float2 pointOnPlane = Float2(
+            projectedPoint.X * u.X + projectedPoint.Y * u.Y + projectedPoint.Z * u.Z,
+            projectedPoint.X * v.X + projectedPoint.Y * v.Y + projectedPoint.Z * v.Z);
+
+        points.Add(pointOnPlane);
+        indices.Add(i);
+    }
+
+    // Triangulate non-convex polygons using simple ear-clipping algorithm (https://nils-olovsson.se/articles/ear_clipping_triangulation/)
+    const int maxIterations = indices.Count() * 10; // Safe guard to prevent infinite loop
+    int index = 0;
+    while (indices.Count() > 3 && index < maxIterations)
+    {
+        const int i1 = index % indices.Count();
+        const int i2 = (index + 1) % indices.Count();
+        const int i3 = (index + 2) % indices.Count();
+        const Float2 p1 = points[indices[i1]];
+        const Float2 p2 = points[indices[i2]];
+        const Float2 p3 = points[indices[i3]];
+
+        // TODO: Skip triangles with very sharp angles?
+
+        // Skip reflex vertices
+        if (Float2::Cross(p2 - p1, p3 - p1) < 0.0f)
+        {
+            index++;
+            continue;
+        }
+
+        // The triangle is considered to be an "ear" when no other points reside inside the triangle
+        bool isEar = true;
+        for (int j = 0; j < indices.Count(); j++)
+        {
+            if (j == i1 || j == i2 || j == i3)
+                continue;
+            const Float2 candidate = points[indices[j]];
+            if (CollisionsHelper::IsPointInTriangle(candidate, p1, p2, p3))
+            {
+                isEar = false;
+                break;
+            }
+        }
+        if (!isEar)
+        {
+            index++;
+            continue;
+        }
+
+        // Add an ear and remove the tip point from evaluation
+        earIndices.Add(indices[i1]);
+        earIndices.Add(indices[i2]);
+        earIndices.Add(indices[i3]);
+        indices.RemoveAtKeepOrder(i2);
+    }
+
+    for (int i = 0; i < earIndices.Count(); i++)
+        triangulatedIndices[i] = polygon.from_vertex + (earIndices[i] % polygon.vertex_count);
+    triangulatedIndices[earIndices.Count() + 0] = polygon.from_vertex + (indices[0] % polygon.vertex_count);
+    triangulatedIndices[earIndices.Count() + 1] = polygon.from_vertex + (indices[1] % polygon.vertex_count);
+    triangulatedIndices[earIndices.Count() + 2] = polygon.from_vertex + (indices[2] % polygon.vertex_count);
+
+    return 3 * (polygon.vertex_count - 2);
+}
+
 bool ProcessMesh(ModelData& result, OpenFbxImporterData& data, const ofbx::Mesh* aMesh, MeshData& mesh, String& errorMsg, int partitionIndex)
 {
     PROFILE_CPU();
@@ -556,7 +702,7 @@ bool ProcessMesh(ModelData& result, OpenFbxImporterData& data, const ofbx::Mesh*
         int numVertsProcessed = 0;
         for (int i = 0; i < partition.polygon_count; i++)
         {
-            int numVerts = ofbx::triangulate(geometryData, partition.polygons[i], &triangulatedIndices[numVertsProcessed]);
+            int numVerts = Triangulate(geometryData, partition.polygons[i], &triangulatedIndices[numVertsProcessed]);
             for (int j = numVertsProcessed; j < numVertsProcessed + numVerts; j++)
                 mesh.Positions.Get()[j] = ToFloat3(positions.get(triangulatedIndices[j]));
             numVertsProcessed += numVerts;
