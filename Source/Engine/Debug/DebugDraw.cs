@@ -279,6 +279,64 @@ namespace FlaxEngine
         public static void DrawBox(OrientedBoundingBox box, Color color, float duration = 0.0f, bool depthTest = true)
         {
         }
+
+        /// <summary>
+        /// Draws the arc.
+        /// </summary>
+        /// <param name="position">The center position.</param>
+        /// <param name="orientation">The orientation.</param>
+        /// <param name="radius">The radius.</param>
+        /// <param name="angle">The angle (in radians) of the arc (arc is facing positive Z axis - forward). Use PI*2 for full disc (360 degrees).</param>
+        /// <param name="color">The color.</param>
+        /// <param name="duration">The duration (in seconds). Use 0 to draw it only once.</param>
+        /// <param name="depthTest">If set to <c>true</c> depth test will be performed, otherwise depth will be ignored.</param>
+        public static void DrawArc(Vector3 position, Quaternion orientation, float radius, float angle, Color color, float duration = 0.0f, bool depthTest = true)
+        {
+        }
+
+        /// <summary>
+        /// Draws the wireframe arc.
+        /// </summary>
+        /// <param name="position">The center position.</param>
+        /// <param name="orientation">The orientation.</param>
+        /// <param name="radius">The radius.</param>
+        /// <param name="angle">The angle (in radians) of the arc (arc is facing positive Z axis - forward). Use PI*2 for full disc (360 degrees).</param>
+        /// <param name="color">The color.</param>
+        /// <param name="duration">The duration (in seconds). Use 0 to draw it only once.</param>
+        /// <param name="depthTest">If set to <c>true</c> depth test will be performed, otherwise depth will be ignored.</param>
+        public static void DrawWireArc(Vector3 position, Quaternion orientation, float radius, float angle, Color color, float duration = 0.0f, bool depthTest = true)
+        {
+        }
+
+        /// <summary>
+        /// Draws the cone.
+        /// </summary>
+        /// <param name="position">The center position.</param>
+        /// <param name="orientation">The orientation.</param>
+        /// <param name="radius">The radius.</param>
+        /// <param name="angleXY">The angle (in radians) of the cone over the XY axis (cone forward is over X).</param>
+        /// <param name="angleXZ">The angle (in radians) of the cone over the XZ axis (cone forward is over X).</param>
+        /// <param name="color">The color.</param>
+        /// <param name="duration">The duration (in seconds). Use 0 to draw it only once.</param>
+        /// <param name="depthTest">If set to <c>true</c> depth test will be performed, otherwise depth will be ignored.</param>
+        public static void DrawCone(Vector3 position, Quaternion orientation, float radius, float angleXY, float angleXZ, Color color, float duration = 0.0f, bool depthTest = true)
+        {
+        }
+
+        /// <summary>
+        /// Draws the wireframe cone.
+        /// </summary>
+        /// <param name="position">The center position.</param>
+        /// <param name="orientation">The orientation.</param>
+        /// <param name="radius">The radius.</param>
+        /// <param name="angleXY">The angle (in radians) of the cone over the XY axis (cone forward is over X).</param>
+        /// <param name="angleXZ">The angle (in radians) of the cone over the XZ axis (cone forward is over X).</param>
+        /// <param name="color">The color.</param>
+        /// <param name="duration">The duration (in seconds). Use 0 to draw it only once.</param>
+        /// <param name="depthTest">If set to <c>true</c> depth test will be performed, otherwise depth will be ignored.</param>
+        public static void DrawWireCone(Vector3 position, Quaternion orientation, float radius, float angleXY, float angleXZ, Color color, float duration = 0.0f, bool depthTest = true)
+        {
+        }
     }
 }
 #endif
