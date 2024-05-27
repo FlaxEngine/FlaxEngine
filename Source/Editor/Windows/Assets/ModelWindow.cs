@@ -2,6 +2,7 @@
 
 using System.Collections.Generic;
 using System.Reflection;
+using System.Threading.Tasks;
 using FlaxEditor.Content;
 using FlaxEditor.Content.Import;
 using FlaxEditor.CustomEditors;
@@ -294,9 +295,17 @@ namespace FlaxEditor.Windows.Assets
                 private void OnRebuildSDF()
                 {
                     var proxy = (MeshesPropertiesProxy)Values[0];
-                    proxy.Asset.GenerateSDF(proxy.Window._importSettings.Settings.SDFResolution, _sdfModelLodIndex.Value, true, proxy.Window._backfacesThreshold);
-                    proxy.Window.MarkAsEdited();
-                    Presenter.BuildLayoutOnUpdate();
+                    proxy.Window.Enabled = false;
+                    Task.Run(() =>
+                    {
+                        proxy.Asset.GenerateSDF(proxy.Window._importSettings.Settings.SDFResolution, _sdfModelLodIndex.Value, true, proxy.Window._backfacesThreshold);
+                        FlaxEngine.Scripting.InvokeOnUpdate(() =>
+                        {
+                            proxy.Window.Enabled = true;
+                            proxy.Window.MarkAsEdited();
+                            Presenter.BuildLayoutOnUpdate();
+                        });
+                    });
                 }
 
                 private void OnRemoveSDF()
