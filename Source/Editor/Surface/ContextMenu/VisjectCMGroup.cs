@@ -88,7 +88,7 @@ namespace FlaxEditor.Surface.ContextMenu
         public void UpdateFilter(string filterText, Box selectedBox)
         {
             Profiler.BeginEvent("VisjectCMGroup.UpdateFilter");
-            
+
             // Check if a dot is inside the filter text and split the string accordingly.
             // Everything in front of the dot is for specifying a class/group name. And everything afterward is the actual item filter text
             if (!string.IsNullOrEmpty(filterText))
