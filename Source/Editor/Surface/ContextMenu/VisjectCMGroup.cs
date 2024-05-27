@@ -88,6 +88,25 @@ namespace FlaxEditor.Surface.ContextMenu
         public void UpdateFilter(string filterText, Box selectedBox)
         {
             Profiler.BeginEvent("VisjectCMGroup.UpdateFilter");
+            
+            // Check if a dot is inside the filter text and split the string accordingly.
+            // Everything in front of the dot is for specifying a class/group name. And everything afterward is the actual item filter text
+            if (!string.IsNullOrEmpty(filterText))
+            {
+                int dotIndex = filterText.IndexOf('.');
+                if (dotIndex != -1)
+                {
+                    // Early out and make the group invisible if it doesn't start with the specified string
+                    string filterGroupName = filterText.Substring(0, dotIndex);
+                    if (!Name.StartsWith(filterGroupName, StringComparison.InvariantCultureIgnoreCase))
+                    {
+                        Visible = false;
+                        Profiler.EndEvent();
+                        return;
+                    }
+                    filterText = filterText.Substring(dotIndex + 1);
+                }
+            }
 
             // Update items
             bool isAnyVisible = false;
@@ -177,6 +196,13 @@ namespace FlaxEditor.Surface.ContextMenu
                         SortScore = item.SortScore;
                 }
             }
+
+            if (selectedBox != null)
+            {
+                if (string.Equals(Name, selectedBox.CurrentType.Name, StringComparison.InvariantCultureIgnoreCase))
+                    SortScore += 10;
+            }
+
             SortChildren();
 
             Profiler.EndEvent();

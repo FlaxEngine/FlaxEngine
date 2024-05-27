@@ -307,7 +307,10 @@ namespace FlaxEditor.Surface.ContextMenu
                 if (!IsLayoutLocked)
                 {
                     group.UnlockChildrenRecursive();
-                    SortGroups();
+                    if(_contextSensitiveSearchEnabled && _selectedBox != null)
+                        UpdateFilters();
+                    else
+                        SortGroups();
                     if (ShowExpanded)
                         group.Open(false);
                     group.PerformLayout();
@@ -367,7 +370,10 @@ namespace FlaxEditor.Surface.ContextMenu
 
                 if (!isLayoutLocked)
                 {
-                    SortGroups();
+                    if(_contextSensitiveSearchEnabled && _selectedBox != null)
+                        UpdateFilters();
+                    else
+                        SortGroups();
                     Profiler.BeginEvent("Perform Layout");
                     UnlockChildrenRecursive();
                     foreach (var group in groups)
@@ -482,10 +488,11 @@ namespace FlaxEditor.Surface.ContextMenu
 
             // Update groups
             LockChildrenRecursive();
+            var contextSensitiveSelectedBox = _contextSensitiveSearchEnabled ? _selectedBox : null;
             for (int i = 0; i < _groups.Count; i++)
             {
-                _groups[i].UpdateFilter(_searchBox.Text, _contextSensitiveSearchEnabled ? _selectedBox : null);
-                _groups[i].UpdateItemSort(_selectedBox);
+                _groups[i].UpdateFilter(_searchBox.Text, contextSensitiveSelectedBox);
+                _groups[i].UpdateItemSort(contextSensitiveSelectedBox);
             }
             SortGroups();
             UnlockChildrenRecursive();
@@ -560,7 +567,10 @@ namespace FlaxEditor.Surface.ContextMenu
             }
             UnlockChildrenRecursive();
 
-            SortGroups();
+            if(_contextSensitiveSearchEnabled && _selectedBox != null)
+                UpdateFilters();
+            else
+                SortGroups();
             PerformLayout();
 
             Profiler.EndEvent();
