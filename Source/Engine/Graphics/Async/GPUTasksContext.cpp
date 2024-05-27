@@ -76,12 +76,18 @@ void GPUTasksContext::OnFrameBegin()
     for (int32 i = 0; i < _tasksDone.Count(); i++)
     {
         auto task = _tasksDone[i];
-        if (task->GetSyncPoint() <= _currentSyncPoint && task->GetState() != TaskState::Finished)
+        auto state = task->GetState();
+        if (task->GetSyncPoint() <= _currentSyncPoint && state != TaskState::Finished)
         {
             // TODO: add stats counter and count performed jobs, print to log on exit.
             task->Sync();
         }
-        if (task->GetState() == TaskState::Finished)
+        if (state == TaskState::Failed || state == TaskState::Canceled)
+        {
+            _tasksDone.RemoveAt(i);
+            i--;
+        }
+        if (state == TaskState::Finished)
         {
             _tasksDone.RemoveAt(i);
             i--;
