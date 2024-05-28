@@ -42,18 +42,18 @@ inline bool operator!=(const D3D12_INDEX_BUFFER_VIEW& l, const D3D12_INDEX_BUFFE
 // Ensure to match the indirect commands arguments layout
 static_assert(sizeof(GPUDispatchIndirectArgs) == sizeof(D3D12_DISPATCH_ARGUMENTS), "Wrong size of GPUDrawIndirectArgs.");
 static_assert(OFFSET_OF(GPUDispatchIndirectArgs, ThreadGroupCountX) == OFFSET_OF(D3D12_DISPATCH_ARGUMENTS, ThreadGroupCountX), "Wrong offset for GPUDrawIndirectArgs::ThreadGroupCountX");
-static_assert(OFFSET_OF(GPUDispatchIndirectArgs, ThreadGroupCountY) == OFFSET_OF(D3D12_DISPATCH_ARGUMENTS, ThreadGroupCountY),"Wrong offset for GPUDrawIndirectArgs::ThreadGroupCountY");
+static_assert(OFFSET_OF(GPUDispatchIndirectArgs, ThreadGroupCountY) == OFFSET_OF(D3D12_DISPATCH_ARGUMENTS, ThreadGroupCountY), "Wrong offset for GPUDrawIndirectArgs::ThreadGroupCountY");
 static_assert(OFFSET_OF(GPUDispatchIndirectArgs, ThreadGroupCountZ) == OFFSET_OF(D3D12_DISPATCH_ARGUMENTS, ThreadGroupCountZ), "Wrong offset for GPUDrawIndirectArgs::ThreadGroupCountZ");
 //
 static_assert(sizeof(GPUDrawIndirectArgs) == sizeof(D3D12_DRAW_ARGUMENTS), "Wrong size of GPUDrawIndirectArgs.");
 static_assert(OFFSET_OF(GPUDrawIndirectArgs, VerticesCount) == OFFSET_OF(D3D12_DRAW_ARGUMENTS, VertexCountPerInstance), "Wrong offset for GPUDrawIndirectArgs::VerticesCount");
-static_assert(OFFSET_OF(GPUDrawIndirectArgs, InstanceCount) == OFFSET_OF(D3D12_DRAW_ARGUMENTS, InstanceCount),"Wrong offset for GPUDrawIndirectArgs::InstanceCount");
+static_assert(OFFSET_OF(GPUDrawIndirectArgs, InstanceCount) == OFFSET_OF(D3D12_DRAW_ARGUMENTS, InstanceCount), "Wrong offset for GPUDrawIndirectArgs::InstanceCount");
 static_assert(OFFSET_OF(GPUDrawIndirectArgs, StartVertex) == OFFSET_OF(D3D12_DRAW_ARGUMENTS, StartVertexLocation), "Wrong offset for GPUDrawIndirectArgs::StartVertex");
 static_assert(OFFSET_OF(GPUDrawIndirectArgs, StartInstance) == OFFSET_OF(D3D12_DRAW_ARGUMENTS, StartInstanceLocation), "Wrong offset for GPUDrawIndirectArgs::StartInstance");
 //
 static_assert(sizeof(GPUDrawIndexedIndirectArgs) == sizeof(D3D12_DRAW_INDEXED_ARGUMENTS), "Wrong size of GPUDrawIndexedIndirectArgs.");
 static_assert(OFFSET_OF(GPUDrawIndexedIndirectArgs, IndicesCount) == OFFSET_OF(D3D12_DRAW_INDEXED_ARGUMENTS, IndexCountPerInstance), "Wrong offset for GPUDrawIndexedIndirectArgs::IndicesCount");
-static_assert(OFFSET_OF(GPUDrawIndexedIndirectArgs, InstanceCount) == OFFSET_OF(D3D12_DRAW_INDEXED_ARGUMENTS, InstanceCount),"Wrong offset for GPUDrawIndexedIndirectArgs::InstanceCount");
+static_assert(OFFSET_OF(GPUDrawIndexedIndirectArgs, InstanceCount) == OFFSET_OF(D3D12_DRAW_INDEXED_ARGUMENTS, InstanceCount), "Wrong offset for GPUDrawIndexedIndirectArgs::InstanceCount");
 static_assert(OFFSET_OF(GPUDrawIndexedIndirectArgs, StartIndex) == OFFSET_OF(D3D12_DRAW_INDEXED_ARGUMENTS, StartIndexLocation), "Wrong offset for GPUDrawIndexedIndirectArgs::StartIndex");
 static_assert(OFFSET_OF(GPUDrawIndexedIndirectArgs, StartVertex) == OFFSET_OF(D3D12_DRAW_INDEXED_ARGUMENTS, BaseVertexLocation), "Wrong offset for GPUDrawIndexedIndirectArgs::StartVertex");
 static_assert(OFFSET_OF(GPUDrawIndexedIndirectArgs, StartInstance) == OFFSET_OF(D3D12_DRAW_INDEXED_ARGUMENTS, StartInstanceLocation), "Wrong offset for GPUDrawIndexedIndirectArgs::StartInstance");
@@ -1259,8 +1259,23 @@ void GPUContextDX12::CopyTexture(GPUTexture* dstResource, uint32 dstSubresource,
     // Get destination copy location
     D3D12_TEXTURE_COPY_LOCATION dst;
     dst.pResource = dstTextureDX12->GetResource();
-    dst.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
-    dst.SubresourceIndex = dstSubresource;
+    if (dstTextureDX12->IsStaging())
+    {
+        const int32 mipLevel = (int32)dstSubresource % dstTextureDX12->MipLevels();
+        const int32 copyOffset = dstTextureDX12->ComputeBufferOffset((int32)dstSubresource, D3D12_TEXTURE_DATA_PITCH_ALIGNMENT, D3D12_TEXTURE_DATA_PLACEMENT_ALIGNMENT);
+        dst.Type = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
+        dst.PlacedFootprint.Offset = copyOffset;
+        dst.PlacedFootprint.Footprint.Width = dstTextureDX12->CalculateMipSize(dstTextureDX12->Width(), mipLevel);
+        dst.PlacedFootprint.Footprint.Height = dstTextureDX12->CalculateMipSize(dstTextureDX12->Height(), mipLevel);
+        dst.PlacedFootprint.Footprint.Depth = dstTextureDX12->CalculateMipSize(dstTextureDX12->Depth(), mipLevel);
+        dst.PlacedFootprint.Footprint.Format = RenderToolsDX::ToDxgiFormat(dstTextureDX12->Format());
+        dst.PlacedFootprint.Footprint.RowPitch = dstTextureDX12->ComputeRowPitch(mipLevel, D3D12_TEXTURE_DATA_PITCH_ALIGNMENT);
+    }
+    else
+    {
+        dst.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
+        dst.SubresourceIndex = dstSubresource;
+    }
 
     // Get source copy location
     D3D12_TEXTURE_COPY_LOCATION src;
@@ -1455,7 +1470,7 @@ void GPUContextDX12::ForceRebindDescriptors()
     _commandList->SetComputeRootSignature(_device->GetRootSignature());
 
     // Bind heaps
-    ID3D12DescriptorHeap* ppHeaps[] = {_device->RingHeap_CBV_SRV_UAV.GetHeap(), _device->RingHeap_Sampler.GetHeap()};
+    ID3D12DescriptorHeap* ppHeaps[] = { _device->RingHeap_CBV_SRV_UAV.GetHeap(), _device->RingHeap_Sampler.GetHeap() };
     _commandList->SetDescriptorHeaps(ARRAY_COUNT(ppHeaps), ppHeaps);
 }
 

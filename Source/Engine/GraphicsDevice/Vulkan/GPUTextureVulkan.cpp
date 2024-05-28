@@ -235,6 +235,7 @@ bool GPUTextureVulkan::OnInit()
             return true;
         }
         _memoryUsage = 1;
+        initResource(VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, _desc.MipLevels, _desc.ArraySize, false);
         return false;
     }
 
