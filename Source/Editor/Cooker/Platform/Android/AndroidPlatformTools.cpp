@@ -203,16 +203,16 @@ bool AndroidPlatformTools::OnPostProcess(CookingData& data)
     switch (defaultOrienation)
     {
     case AndroidPlatformSettings::ScreenOrientation::Portrait:
-        orientation = String("portrait");
+        orientation = String("userPortrait");
         break;
-    case AndroidPlatformSettings::ScreenOrientation::PortraitReverse:
-        orientation = String("reversePortrait");
+    case AndroidPlatformSettings::ScreenOrientation::Landscape:
+        orientation = String("userLandscape");
         break;
-    case AndroidPlatformSettings::ScreenOrientation::LandscapeRight:
-        orientation = String("landscape");
+    case AndroidPlatformSettings::ScreenOrientation::SensorPortrait:
+        orientation = String("sensorPortrait");
         break;
-    case AndroidPlatformSettings::ScreenOrientation::LandscapeLeft:
-        orientation = String("reverseLandscape");
+    case AndroidPlatformSettings::ScreenOrientation::SensorLandscape:
+        orientation = String("sensorLandscape");
         break;
     case AndroidPlatformSettings::ScreenOrientation::AutoRotation:
         orientation = String("fullSensor");
@@ -266,9 +266,33 @@ bool AndroidPlatformTools::OnPostProcess(CookingData& data)
         }
     }
 
+    String versionCode = platformSettings->VersionCode;
+    if (versionCode.IsEmpty())
+    {
+        LOG(Error, "AndroidSettings: Invalid version code");
+        return true;
+    }
+
+    String minimumSdk = platformSettings->MinimumAPILevel;
+    if (minimumSdk.IsEmpty())
+    {
+        LOG(Error, "AndroidSettings: Invalid minimum API level");
+        return true;
+    }
+
+    String targetSdk = platformSettings->TargetAPILevel;
+    if (targetSdk.IsEmpty())
+    {
+        LOG(Error, "AndroidSettings: Invalid target API level");
+        return true;
+    }
+
     // Format project template files
     const String buildGradlePath = data.OriginalOutputPath / TEXT("app/build.gradle");
     EditorUtilities::ReplaceInFile(buildGradlePath, TEXT("${PackageName}"), packageName);
+    EditorUtilities::ReplaceInFile(buildGradlePath, TEXT("${VersionCode}"), versionCode);
+    EditorUtilities::ReplaceInFile(buildGradlePath, TEXT("${MinimumSdk}"), minimumSdk);
+    EditorUtilities::ReplaceInFile(buildGradlePath, TEXT("${TargetSdk}"), targetSdk);
     EditorUtilities::ReplaceInFile(buildGradlePath, TEXT("${ProjectVersion}"), projectVersion);
     EditorUtilities::ReplaceInFile(buildGradlePath, TEXT("${PackageAbi}"), abi);
     const String manifestPath = data.OriginalOutputPath / TEXT("app/src/main/AndroidManifest.xml");
@@ -341,7 +365,7 @@ bool AndroidPlatformTools::OnPostProcess(CookingData& data)
         Platform::CreateProcess(procSettings);
     }
 #endif
-    const bool distributionPackage = buildSettings->ForDistribution;
+    const bool distributionPackage = buildSettings->ForDistribution || data.Configuration == BuildConfiguration::Release;
     {
         CreateProcessSettings procSettings;
         procSettings.FileName = String::Format(TEXT("\"{0}\" {1}"), data.OriginalOutputPath / gradlew, distributionPackage ? TEXT("assemble") : TEXT("assembleDebug"));

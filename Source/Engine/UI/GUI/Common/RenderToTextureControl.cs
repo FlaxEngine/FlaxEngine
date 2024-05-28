@@ -5,6 +5,7 @@ namespace FlaxEngine.GUI
     /// <summary>
     /// UI container control that can render children to texture and display pre-cached texture instead of drawing children every frame. It can be also used to render part of UI to texture and use it in material or shader.
     /// </summary>
+    [ActorToolbox("GUI")]
     public class RenderToTextureControl : ContainerControl
     {
         private bool _invalid, _redrawRegistered, _isDuringTextureDraw;

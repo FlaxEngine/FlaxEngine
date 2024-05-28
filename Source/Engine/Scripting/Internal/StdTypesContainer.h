@@ -45,6 +45,8 @@ public:
     MMethod* Json_SerializeDiff;
     MMethod* Json_Deserialize;
 
+    MClass* ManagedArrayClass;
+
 #if USE_EDITOR
     MClass* ExecuteInEditModeAttribute;
 #endif

@@ -18,6 +18,12 @@ namespace FlaxEngine
         }
 
         /// <summary>
+        /// Gets value indicating if the actor owning the script is in a scene.
+        /// </summary>
+        [HideInEditor, NoSerialize]
+        public bool HasScene => Actor?.HasScene ?? false; 
+
+        /// <summary>
         /// Gets or sets the world space transformation of the actors owning this script.
         /// </summary>
         [HideInEditor, NoSerialize, NoAnimate]

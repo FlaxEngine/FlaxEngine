@@ -770,13 +770,23 @@ void WindowsWindow::CheckForWindowResize()
     }
 }
 
-void WindowsWindow::UpdateCursor() const
+void WindowsWindow::UpdateCursor()
 {
     // Don't hide cursor when window is not focused
     if (_cursor == CursorType::Hidden && _focused)
     {
+        if (!_lastCursorHidden)
+        {
+            _lastCursorHidden = true;
+            ::ShowCursor(FALSE);
+        }
         ::SetCursor(nullptr);
         return;
+    }
+    else if (_lastCursorHidden)
+    {
+        _lastCursorHidden = false;
+        ::ShowCursor(TRUE);
     }
 
     int32 index = 0;

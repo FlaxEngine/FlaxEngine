@@ -6,6 +6,7 @@ namespace FlaxEngine.GUI
     /// A panel that evenly divides up available space between all of its children.
     /// </summary>
     /// <seealso cref="FlaxEngine.GUI.ContainerControl" />
+    [ActorToolbox("GUI")]
     public class UniformGridPanel : ContainerControl
     {
         private Margin _slotPadding;

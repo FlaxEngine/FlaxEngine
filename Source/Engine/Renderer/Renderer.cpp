@@ -334,6 +334,32 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext, RenderCont
         }
         setup.UseTemporalAAJitter = aaMode == AntialiasingMode::TemporalAntialiasing;
 
+        // Disable TAA jitter in debug modes
+        switch (renderContext.View.Mode)
+        {
+        case ViewMode::Unlit:
+        case ViewMode::Diffuse:
+        case ViewMode::Normals:
+        case ViewMode::Depth:
+        case ViewMode::Emissive:
+        case ViewMode::AmbientOcclusion:
+        case ViewMode::Metalness:
+        case ViewMode::Roughness:
+        case ViewMode::Specular:
+        case ViewMode::SpecularColor:
+        case ViewMode::SubsurfaceColor:
+        case ViewMode::ShadingModel:
+        case ViewMode::Reflections:
+        case ViewMode::GlobalSDF:
+        case ViewMode::GlobalSurfaceAtlas:
+        case ViewMode::LightmapUVsDensity:
+        case ViewMode::MaterialComplexity:
+        case ViewMode::Wireframe:
+        case ViewMode::NoPostFx:
+            setup.UseTemporalAAJitter = false;
+            break;
+        }
+
         // Customize setup (by postfx or custom gameplay effects)
         renderContext.Task->SetupRender(renderContext);
         for (PostProcessEffect* e : renderContext.List->PostFx)
@@ -500,8 +526,13 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext, RenderCont
         EyeAdaptationPass::Instance()->Render(renderContext, lightBuffer);
         PostProcessingPass::Instance()->Render(renderContext, lightBuffer, tempBuffer, colorGradingLUT);
         RenderTargetPool::Release(colorGradingLUT);
-        RenderTargetPool::Release(lightBuffer);
         context->ResetRenderTarget();
+        if (aaMode == AntialiasingMode::TemporalAntialiasing)
+        {
+            TAA::Instance()->Render(renderContext, tempBuffer, lightBuffer->View());
+            Swap(lightBuffer, tempBuffer);
+        }
+        RenderTargetPool::Release(lightBuffer);
         context->SetRenderTarget(task->GetOutputView());
         context->SetViewportAndScissors(task->GetOutputViewport());
         context->Draw(tempBuffer);

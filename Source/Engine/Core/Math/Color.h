@@ -126,9 +126,9 @@ public:
     }
 
     /// <summary>
-    /// Initializes from packed RGB value of the color and separate alpha channel value.
+    /// Initializes from packed RGB value (bottom bits contain Blue) of the color and separate alpha channel value.
     /// </summary>
-    /// <param name="rgb">The packed RGB value.</param>
+    /// <param name="rgb">The packed RGB value (bottom bits contain Blue).</param>
     /// <param name="a">The alpha channel.</param>
     /// <returns>The color.</returns>
     static Color FromRGB(uint32 rgb, float a = 1.0f)
@@ -137,22 +137,32 @@ public:
     }
 
     /// <summary>
-    /// Initializes from packed RGBA value.
+    /// Initializes from packed ARGB value (bottom bits contain Blue).
     /// </summary>
-    /// <param name="rgba">The packed RGBA value.</param>
+    /// <param name="argb">The packed ARGB value (bottom bits contain Blue).</param>
+    /// <returns>The color.</returns>
+    static Color FromARGB(uint32 argb)
+    {
+        return Color((float)((argb >> 16) & 0xff) / 255.0f,(float)((argb >> 8) & 0xff) / 255.0f, (float)((argb >> 0) & 0xff) / 255.0f, (float)((argb >> 24) & 0xff) / 255.0f);
+    }
+
+    /// <summary>
+    /// Initializes from packed RGBA value (bottom bits contain Alpha).
+    /// </summary>
+    /// <param name="rgba">The packed RGBA value (bottom bits contain Alpha).</param>
     /// <returns>The color.</returns>
     static Color FromRGBA(uint32 rgba)
     {
-        return Color(static_cast<float>(rgba >> 16 & 0xff) / 255.0f, static_cast<float>(rgba >> 8 & 0xff) / 255.0f, static_cast<float>(rgba & 0xff) / 255.0f, static_cast<float>(rgba >> 24 & 0xff) / 255.0f);
+        return Color((float)((rgba >> 24) & 0xff) / 255.0f,(float)((rgba >> 16) & 0xff) / 255.0f, (float)((rgba >> 8) & 0xff) / 255.0f, (float)((rgba >> 0) & 0xff) / 255.0f);
     }
 
-    static Color FromHex(const String& hexString)
+    static Color FromHex(const String& hex)
     {
         bool isValid;
-        return FromHex(hexString, isValid);
+        return FromHex(hex, isValid);
     }
 
-    static Color FromHex(const String& hexString, bool& isValid);
+    static Color FromHex(const String& hex, bool& isValid);
 
     /// <summary>
     /// Creates RGB color from Hue[0-360], Saturation[0-1] and Value[0-1].

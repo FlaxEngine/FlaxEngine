@@ -9,7 +9,7 @@ jobs:
 
   # Editor
   editor-mac:
-    name: Editor (Mac, Development x64)
+    name: Editor (Mac, Development ARM64)
     runs-on: "macos-latest"
     steps:
     - name: Checkout repo
@@ -30,11 +30,11 @@ jobs:
         git lfs pull
     - name: Build
       run: |
-        ./Development/Scripts/Mac/CallBuildTool.sh -build -log -printSDKs -dotnet=8 -arch=x64 -platform=Mac -configuration=Development -buildtargets=FlaxEditor
+        ./Development/Scripts/Mac/CallBuildTool.sh -build -log -printSDKs -dotnet=8 -arch=ARM64 -platform=Mac -configuration=Development -buildtargets=FlaxEditor
 
   # Game
   game-mac:
-    name: Game (Mac, Release x64)
+    name: Game (Mac, Release ARM64)
     runs-on: "macos-latest"
     steps:
     - name: Checkout repo
@@ -55,4 +55,4 @@ jobs:
         git lfs pull
     - name: Build
       run: |
-        ./Development/Scripts/Mac/CallBuildTool.sh -build -log -printSDKs -dotnet=8 -arch=x64 -platform=Mac -configuration=Release -buildtargets=FlaxGame
+        ./Development/Scripts/Mac/CallBuildTool.sh -build -log -printSDKs -dotnet=8 -arch=ARM64 -platform=Mac -configuration=Release -buildtargets=FlaxGame

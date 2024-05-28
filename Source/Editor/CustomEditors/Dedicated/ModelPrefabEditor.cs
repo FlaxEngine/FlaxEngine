@@ -45,6 +45,12 @@ public class ModelPrefabEditor : GenericEditor
                     break;
                 _prefabId = prefabObject.PrefabID;
             }
+            else
+            {
+                // The model was removed earlier
+                _prefabId = Guid.Empty;
+                break;
+            }
         }
 
         var button = layout.Button("Reimport", "Reimports the source asset as prefab.");

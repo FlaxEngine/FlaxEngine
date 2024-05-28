@@ -9,6 +9,7 @@ namespace FlaxEngine.GUI
     /// Dropdown menu control allows to choose one item from the provided collection of options.
     /// </summary>
     /// <seealso cref="FlaxEngine.GUI.ContainerControl" />
+    [ActorToolbox("GUI")]
     public class Dropdown : ContainerControl
     {
         /// <summary>

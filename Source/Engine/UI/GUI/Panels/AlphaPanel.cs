@@ -5,6 +5,7 @@ namespace FlaxEngine.GUI
     /// <summary>
     /// Changes alpha of all its children
     /// </summary>
+    [ActorToolbox("GUI")]
     public class AlphaPanel : ContainerControl
     {
         /// <summary>

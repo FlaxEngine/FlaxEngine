@@ -32,41 +32,39 @@ Color::Color(const Color32& color)
 {
 }
 
-Color Color::FromHex(const String& hexString, bool& isValid)
+Color Color::FromHex(const String& hex, bool& isValid)
 {
     int32 r, g, b, a = 255;
     isValid = true;
-
-    int32 startIndex = !hexString.IsEmpty() && hexString[0] == Char('#') ? 1 : 0;
-    if (hexString.Length() == 3 + startIndex)
+    int32 startIndex = !hex.IsEmpty() && hex[0] == Char('#') ? 1 : 0;
+    if (hex.Length() == 3 + startIndex)
     {
-        r = StringUtils::HexDigit(hexString[startIndex++]);
-        g = StringUtils::HexDigit(hexString[startIndex++]);
-        b = StringUtils::HexDigit(hexString[startIndex]);
+        r = StringUtils::HexDigit(hex[startIndex++]);
+        g = StringUtils::HexDigit(hex[startIndex++]);
+        b = StringUtils::HexDigit(hex[startIndex]);
 
         r = (r << 4) + r;
         g = (g << 4) + g;
         b = (b << 4) + b;
     }
-    else if (hexString.Length() == 6 + startIndex)
+    else if (hex.Length() == 6 + startIndex)
     {
-        r = (StringUtils::HexDigit(hexString[startIndex + 0]) << 4) + StringUtils::HexDigit(hexString[startIndex + 1]);
-        g = (StringUtils::HexDigit(hexString[startIndex + 2]) << 4) + StringUtils::HexDigit(hexString[startIndex + 3]);
-        b = (StringUtils::HexDigit(hexString[startIndex + 4]) << 4) + StringUtils::HexDigit(hexString[startIndex + 5]);
+        r = (StringUtils::HexDigit(hex[startIndex + 0]) << 4) + StringUtils::HexDigit(hex[startIndex + 1]);
+        g = (StringUtils::HexDigit(hex[startIndex + 2]) << 4) + StringUtils::HexDigit(hex[startIndex + 3]);
+        b = (StringUtils::HexDigit(hex[startIndex + 4]) << 4) + StringUtils::HexDigit(hex[startIndex + 5]);
     }
-    else if (hexString.Length() == 8 + startIndex)
+    else if (hex.Length() == 8 + startIndex)
     {
-        r = (StringUtils::HexDigit(hexString[startIndex + 0]) << 4) + StringUtils::HexDigit(hexString[startIndex + 1]);
-        g = (StringUtils::HexDigit(hexString[startIndex + 2]) << 4) + StringUtils::HexDigit(hexString[startIndex + 3]);
-        b = (StringUtils::HexDigit(hexString[startIndex + 4]) << 4) + StringUtils::HexDigit(hexString[startIndex + 5]);
-        a = (StringUtils::HexDigit(hexString[startIndex + 6]) << 4) + StringUtils::HexDigit(hexString[startIndex + 7]);
+        r = (StringUtils::HexDigit(hex[startIndex + 0]) << 4) + StringUtils::HexDigit(hex[startIndex + 1]);
+        g = (StringUtils::HexDigit(hex[startIndex + 2]) << 4) + StringUtils::HexDigit(hex[startIndex + 3]);
+        b = (StringUtils::HexDigit(hex[startIndex + 4]) << 4) + StringUtils::HexDigit(hex[startIndex + 5]);
+        a = (StringUtils::HexDigit(hex[startIndex + 6]) << 4) + StringUtils::HexDigit(hex[startIndex + 7]);
     }
     else
     {
         r = g = b = 0;
         isValid = false;
     }
-
     return FromBytes(r, g, b, a);
 }
 
@@ -122,8 +120,9 @@ String Color::ToHexString() const
     const byte r = static_cast<byte>(R * MAX_uint8);
     const byte g = static_cast<byte>(G * MAX_uint8);
     const byte b = static_cast<byte>(B * MAX_uint8);
+    const byte a = static_cast<byte>(A * MAX_uint8);
 
-    Char result[6];
+    Char result[8];
 
     result[0] = digits[r >> 4 & 0x0f];
     result[1] = digits[r & 0x0f];
@@ -134,7 +133,10 @@ String Color::ToHexString() const
     result[4] = digits[b >> 4 & 0x0f];
     result[5] = digits[b & 0x0f];
 
-    return String(result, 6);
+    result[6] = digits[a >> 4 & 0x0f];
+    result[7] = digits[a & 0x0f];
+
+    return String(result, 8);
 }
 
 bool Color::IsTransparent() const

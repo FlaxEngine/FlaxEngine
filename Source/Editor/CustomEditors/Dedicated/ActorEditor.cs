@@ -71,11 +71,24 @@ namespace FlaxEditor.CustomEditors.Dedicated
                         var panel = layout.CustomContainer<UniformGridPanel>();
                         panel.CustomControl.Height = 20.0f;
                         panel.CustomControl.SlotsVertically = 1;
-                        panel.CustomControl.SlotsHorizontally = 2;
+                        panel.CustomControl.SlotsHorizontally = 3;
 
                         // Selecting actor prefab asset
                         var selectPrefab = panel.Button("Select Prefab");
-                        selectPrefab.Button.Clicked += () => Editor.Instance.Windows.ContentWin.Select(prefab);
+                        selectPrefab.Button.Clicked += () =>
+                        {
+                            Editor.Instance.Windows.ContentWin.ClearItemsSearch();
+                            Editor.Instance.Windows.ContentWin.Select(prefab);
+                        };
+
+                        // Edit selected prefab asset
+                        var editPrefab = panel.Button("Edit Prefab");
+                        editPrefab.Button.Clicked += () =>
+                        {
+                            Editor.Instance.Windows.ContentWin.ClearItemsSearch();
+                            Editor.Instance.Windows.ContentWin.Select(prefab);
+                            Editor.Instance.Windows.ContentWin.Open(Editor.Instance.Windows.ContentWin.View.Selection[0]);
+                        };
 
                         // Viewing changes applied to this actor
                         var viewChanges = panel.Button("View Changes");
@@ -291,7 +304,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
             if (editor.ChildrenEditors.Count == 0 || (isRefEdited && editor is CollectionEditor))
                 result = CreateDiffNode(editor);
             bool isScriptEditorWithRefValue = editor is ScriptsEditor && editor.Values.HasReferenceValue;
-            bool isActorEditorInLevel = editor is ActorEditor && editor.Values[0] is Actor actor && actor.IsPrefabRoot && actor.Scene != null;
+            bool isActorEditorInLevel = editor is ActorEditor && editor.Values[0] is Actor actor && actor.IsPrefabRoot && actor.HasScene;
             for (int i = 0; i < editor.ChildrenEditors.Count; i++)
             {
                 var childEditor = editor.ChildrenEditors[i];

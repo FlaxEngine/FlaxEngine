@@ -400,7 +400,9 @@ public:
         uint32 HasKHRMaintenance1 : 1;
         uint32 HasKHRMaintenance2 : 1;
         uint32 HasMirrorClampToEdge : 1;
+#if VULKAN_USE_VALIDATION_CACHE
         uint32 HasEXTValidationCache : 1;
+#endif
     };
 
     static void GetInstanceLayersAndExtensions(Array<const char*>& outInstanceExtensions, Array<const char*>& outInstanceLayers, bool& outDebugUtils);
@@ -496,13 +498,11 @@ public:
     /// </summary>
     VkPipelineCache PipelineCache = VK_NULL_HANDLE;
 
-#if VK_EXT_validation_cache
-
+#if VULKAN_USE_VALIDATION_CACHE
     /// <summary>
     /// The optional validation cache.
     /// </summary>
     VkValidationCacheEXT ValidationCache = VK_NULL_HANDLE;
-
 #endif
 
     /// <summary>
@@ -584,12 +584,10 @@ public:
     bool SavePipelineCache();
 
 #if VK_EXT_validation_cache
-
     /// <summary>
     /// Saves the validation cache.
     /// </summary>
     bool SaveValidationCache();
-
 #endif
 
 private:

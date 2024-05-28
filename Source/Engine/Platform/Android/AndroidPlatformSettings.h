@@ -23,24 +23,24 @@ API_CLASS(sealed, Namespace="FlaxEditor.Content.Settings") class FLAXENGINE_API 
     API_ENUM() enum class FLAXENGINE_API ScreenOrientation
     {
         /// <summary>
-        /// "portrait" mode
+        /// "userPortrait" mode
         /// </summary>
         Portrait,
 
         /// <summary>
-        /// "reversePortrait" mode
+        /// "userLandscape" mode
         /// </summary>
-        PortraitReverse,
+        Landscape,
 
         /// <summary>
-        /// "landscape" mode
+        /// "sensorPortrait" mode
         /// </summary>
-        LandscapeRight,
+        SensorPortrait,
 
         /// <summary>
-        /// "reverseLandscape" mode
+        /// "sensorLandscape" mode
         /// </summary>
-        LandscapeLeft,
+        SensorLandscape,
 
         /// <summary>
         /// "fullSensor" mode
@@ -71,6 +71,24 @@ API_CLASS(sealed, Namespace="FlaxEditor.Content.Settings") class FLAXENGINE_API 
     /// </summary>
     API_FIELD(Attributes="EditorOrder(0), EditorDisplay(\"General\")")
     String PackageName = TEXT("com.${COMPANY_NAME}.${PROJECT_NAME}");
+
+    /// <summary>
+    /// The application version code (eg. 1, 12, 123).
+    /// </summary>
+    API_FIELD(Attributes="EditorOrder(10), EditorDisplay(\"General\")")
+    String VersionCode = TEXT("1");
+
+    /// <summary>
+    /// The minimum Android API level (eg. 20, 28, 34).
+    /// </summary>
+    API_FIELD(Attributes = "EditorOrder(20), EditorDisplay(\"General\")")
+    String MinimumAPILevel = TEXT("23");
+
+    /// <summary>
+    /// The target Android API level (eg. 20, 28, 34).
+    /// </summary>
+    API_FIELD(Attributes = "EditorOrder(30), EditorDisplay(\"General\")")
+    String TargetAPILevel = TEXT("33");
 
     /// <summary>
     /// The application permissions list (eg. android.media.action.IMAGE_CAPTURE). Added to the generated manifest file.

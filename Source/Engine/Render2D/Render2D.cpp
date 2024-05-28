@@ -1175,7 +1175,7 @@ void Render2D::DrawText(Font* font, const StringView& text, const Color& color, 
         drawCall.AsChar.Mat = nullptr;
     }
     Float2 pointer = location;
-    for (int32 currentIndex = 0; currentIndex <= text.Length(); currentIndex++)
+    for (int32 currentIndex = 0; currentIndex < text.Length(); currentIndex++)
     {
         // Cache current character
         const Char currentChar = text[currentIndex];

@@ -130,7 +130,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
             /// The keyframes.
             /// </summary>
             [EditorDisplay("Keyframes", EditorDisplayAttribute.InlineStyle), ExpandGroups]
-            [Collection(CanReorderItems = false, ReadOnly = true)]
+            [Collection(CanReorderItems = false, CanResize = true)]
             public List<KeyValuePair<string, object>> Keyframes;
 
             /// <inheritdoc />

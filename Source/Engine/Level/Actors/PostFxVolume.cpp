@@ -33,7 +33,7 @@ void PostFxVolume::Collect(RenderContext& renderContext)
         }
     }
 
-    if (weight > ZeroTolerance)
+    if (weight > ZeroTolerance && renderContext.View.RenderLayersMask.HasLayer(GetLayer()))
     {
         const float totalSizeSqrt = (_transform.Scale * _size).LengthSquared();
         renderContext.List->AddSettingsBlend((IPostFxSettingsProvider*)this, weight, _priority, totalSizeSqrt);

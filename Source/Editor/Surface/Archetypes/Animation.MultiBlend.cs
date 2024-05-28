@@ -186,6 +186,18 @@ namespace FlaxEditor.Surface.Archetypes
 
                 base.OnEndMouseCapture();
             }
+
+            /// <inheritdoc />
+            public override bool OnKeyDown(KeyboardKeys key)
+            {
+                switch (key)
+                {
+                case KeyboardKeys.Delete:
+                    _editor.SetAsset(_index, Guid.Empty);
+                    return true;
+                }
+                return base.OnKeyDown(key);
+            }
         }
 
         /// <summary>

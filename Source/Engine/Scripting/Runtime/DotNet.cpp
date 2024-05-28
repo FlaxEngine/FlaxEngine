@@ -402,8 +402,15 @@ MArray* MCore::Array::New(const MClass* elementKlass, int32 length)
 
 MClass* MCore::Array::GetClass(MClass* elementKlass)
 {
-    static void* GetArrayLengthPtr = GetStaticMethodPointer(TEXT("GetArrayTypeFromElementType"));
-    MType* typeHandle = (MType*)CallStaticMethod<void*, void*>(GetArrayLengthPtr, elementKlass->_handle);
+    static void* GetArrayTypeFromElementTypePtr = GetStaticMethodPointer(TEXT("GetArrayTypeFromElementType"));
+    MType* typeHandle = (MType*)CallStaticMethod<void*, void*>(GetArrayTypeFromElementTypePtr, elementKlass->_handle);
+    return GetOrCreateClass(typeHandle);
+}
+
+MClass* MCore::Array::GetArrayClass(const MArray* obj)
+{
+    static void* GetArrayTypeFromWrappedArrayPtr = GetStaticMethodPointer(TEXT("GetArrayTypeFromWrappedArray"));
+    MType* typeHandle = (MType*)CallStaticMethod<void*, void*>(GetArrayTypeFromWrappedArrayPtr, (void*)obj);
     return GetOrCreateClass(typeHandle);
 }
 

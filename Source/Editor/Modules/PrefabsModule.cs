@@ -202,6 +202,7 @@ namespace FlaxEditor.Modules
 
             var prefabId = ((ActorNode)selection[0]).Actor.PrefabID;
             var prefab = FlaxEngine.Content.LoadAsync<Prefab>(prefabId);
+            Editor.Windows.ContentWin.ClearItemsSearch();
             Editor.Windows.ContentWin.Select(prefab);
         }
 
@@ -227,7 +228,7 @@ namespace FlaxEditor.Modules
 
             // When applying changes to prefab from actor in level ignore it's root transformation (see ActorEditor.ProcessDiff)
             var originalTransform = instance.LocalTransform;
-            if (instance.IsPrefabRoot && instance.Scene != null)
+            if (instance.IsPrefabRoot && instance.HasScene)
                 instance.LocalTransform = prefab.GetDefaultInstance().Transform;
 
             // Call backend

@@ -470,6 +470,10 @@ namespace FlaxEditor.Windows
             IsMaximized = false;
             IsBorderless = false;
             Cursor = CursorType.Default;
+            Screen.CursorLock = CursorLockMode.None;
+            if (Screen.MainWindow.IsMouseTracking)
+                Screen.MainWindow.EndTrackingMouse();
+            RootControl.GameRoot.EndMouseCapture();
         }
 
         /// <inheritdoc />
@@ -478,7 +482,7 @@ namespace FlaxEditor.Windows
             base.OnMouseLeave();
 
             // Remove focus from game window when mouse moves out and the cursor is hidden during game
-            if ((IsFocused || ContainsFocus) && Parent != null && Editor.IsPlayMode && !Screen.CursorVisible)
+            if (ContainsFocus && Parent != null && Editor.IsPlayMode && !Screen.CursorVisible && Screen.CursorLock == CursorLockMode.None)
             {
                 Parent.Focus();
             }
@@ -856,7 +860,7 @@ namespace FlaxEditor.Windows
                 {
                     var alpha = Mathf.Saturate(-animTime / fadeOutTime);
                     var rect = new Rectangle(new Float2(6), Size - 12);
-                    var text = "Press Shift+F11 to unlock the mouse";
+                    var text = $"Press {Editor.Options.Options.Input.DebuggerUnlockMouse} to unlock the mouse";
                     Render2D.DrawText(style.FontSmall, text, rect + new Float2(1.0f), style.Background * alpha, TextAlignment.Near, TextAlignment.Far);
                     Render2D.DrawText(style.FontSmall, text, rect, style.Foreground * alpha, TextAlignment.Near, TextAlignment.Far);
                 }

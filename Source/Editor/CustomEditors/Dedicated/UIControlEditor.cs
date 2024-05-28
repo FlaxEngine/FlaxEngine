@@ -456,12 +456,55 @@ namespace FlaxEditor.CustomEditors.Dedicated
 
             for (int i = 0; i < layout.Children.Count; i++)
             {
-                if (layout.Children[i] is GroupElement group && group.Panel.HeaderText == "Transform")
+                if (layout.Children[i] is GroupElement group && group.Panel.HeaderText.Equals("Transform", StringComparison.Ordinal))
                 {
-                    VerticalPanelElement mainHor = VerticalPanelWithoutMargin(group);
-                    CreateTransformElements(mainHor, ValuesTypes);
-                    group.ContainerControl.ChangeChildIndex(mainHor.Control, 0);
+                    layout.Children.Remove(group);
+                    layout.ContainerControl.Children.Remove(group.Panel);
                     break;
+                }
+            }
+
+            // Setup transform
+            if (Presenter is LayoutElementsContainer l)
+            {
+                for (int i = 0; i < l.Children.Count; i++)
+                {
+                    if (l.Children[i] is GroupElement g && g.Panel.HeaderText.Equals("Transform", StringComparison.Ordinal))
+                    {
+                        l.Children.Remove(g);
+                        l.ContainerControl.Children.Remove(g.Panel);
+                        break;
+                    }
+                }
+
+                var transformGroup = l.Group("Transform");
+                VerticalPanelElement mainHor = VerticalPanelWithoutMargin(transformGroup);
+                CreateTransformElements(mainHor, ValuesTypes);
+
+                ScriptMemberInfo scaleInfo = ValuesTypes[0].GetProperty("Scale");
+                ItemInfo scaleItem = new ItemInfo(scaleInfo);
+                transformGroup.Property("Scale", scaleItem.GetValues(Values));
+
+                ScriptMemberInfo pivotInfo = ValuesTypes[0].GetProperty("Pivot");
+                ItemInfo pivotItem = new ItemInfo(pivotInfo);
+                transformGroup.Property("Pivot", pivotItem.GetValues(Values));
+
+                ScriptMemberInfo shearInfo = ValuesTypes[0].GetProperty("Shear");
+                ItemInfo shearItem = new ItemInfo(shearInfo);
+                transformGroup.Property("Shear", shearItem.GetValues(Values));
+
+                ScriptMemberInfo rotationInfo = ValuesTypes[0].GetProperty("Rotation");
+                ItemInfo rotationItem = new ItemInfo(rotationInfo);
+                transformGroup.Property("Rotation", rotationItem.GetValues(Values));
+
+                // Get position of general tab
+                for (int i = 0; i < l.Children.Count; i++)
+                {
+                    if (l.Children[i] is GroupElement g && g.Panel.HeaderText.Equals("General", StringComparison.Ordinal) && i + 1 <= l.Children.Count)
+                    {
+                        Presenter.ContainerControl.ChangeChildIndex(transformGroup.Control, i + 1);
+                        break;
+                    }
                 }
             }
         }
@@ -645,7 +688,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
         {
             var grid = UniformGridTwoByOne(el);
             grid.CustomControl.SlotPadding = new Margin(5, 5, 1, 1);
-            var label = grid.Label(text);
+            var label = grid.Label(text, TextAlignment.Far);
             var editor = grid.Object(values);
             if (editor is FloatEditor floatEditor && floatEditor.Element is FloatValueElement floatEditorElement)
             {

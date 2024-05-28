@@ -8,7 +8,7 @@
 /// <summary>
 /// Contains a single GUI control (on C# side).
 /// </summary>
-API_CLASS(Sealed, Attributes="ActorContextMenu(\"New/UI/UI Control\"), ActorToolbox(\"GUI\")")
+API_CLASS(Sealed, Attributes="ActorContextMenu(\"New/UI/UI Control\"), ActorToolbox(\"GUI\", \"Empty UIControl\")")
 class FLAXENGINE_API UIControl : public Actor
 {
     DECLARE_SCENE_OBJECT(UIControl);

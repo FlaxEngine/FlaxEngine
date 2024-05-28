@@ -131,7 +131,7 @@ namespace FlaxEditor.CustomEditors.Editors
             /// <inheritdoc />
             public override bool OnMouseDoubleClick(Float2 location, MouseButton button)
             {
-                if (button == MouseButton.Left)
+                if (button == MouseButton.Left && _editor._canEditKeys)
                 {
                     OnEditClicked(null);
                     return true;
@@ -189,6 +189,7 @@ namespace FlaxEditor.CustomEditors.Editors
             var collection = (CollectionAttribute)attributes?.FirstOrDefault(x => x is CollectionAttribute);
             if (collection != null)
             {
+                _canEditKeys &= collection.CanReorderItems;
                 _readOnly = collection.ReadOnly;
                 _notNullItems = collection.NotNullItems;
                 if (collection.BackgroundColor.HasValue)
@@ -196,6 +197,11 @@ namespace FlaxEditor.CustomEditors.Editors
                 overrideEditorType = TypeUtils.GetType(collection.OverrideEditorTypeName).Type;
                 spacing = collection.Spacing;
                 _displayType = collection.Display;
+            }
+            if (attributes != null && attributes.Any(x => x is ReadOnlyAttribute))
+            {
+                _readOnly = true;
+                _canEditKeys = false;
             }
 
             // Size
@@ -239,14 +245,6 @@ namespace FlaxEditor.CustomEditors.Editors
                 var keysEnumerable = ((IDictionary)Values[0]).Keys.OfType<object>();
                 var keys = keysEnumerable as object[] ?? keysEnumerable.ToArray();
                 var valuesType = new ScriptType(valueType);
-                
-                bool single = valuesType.IsPrimitive ||
-                              valuesType.Equals(new ScriptType(typeof(string))) ||
-                              valuesType.IsEnum ||
-                              (valuesType.GetFields().Length == 1 && valuesType.GetProperties().Length == 0) ||
-                              (valuesType.GetProperties().Length == 1 && valuesType.GetFields().Length == 0) ||
-                              valuesType.Equals(new ScriptType(typeof(JsonAsset))) ||
-                              valuesType.Equals(new ScriptType(typeof(SettingsBase)));
 
                 // Use separate layout cells for each collection items to improve layout updates for them in separation
                 var useSharedLayout = valueType.IsPrimitive || valueType.IsEnum;
@@ -263,6 +261,8 @@ namespace FlaxEditor.CustomEditors.Editors
                     var property = panel.AddPropertyItem(new DictionaryItemLabel(this, key));
                     var itemLayout = useSharedLayout ? (LayoutElementsContainer)property : property.VerticalPanel();
                     itemLayout.Object(new DictionaryValueContainer(valuesType, key, Values), overrideEditor);
+                    if (_readOnly && itemLayout.Children.Count > 0)
+                        GenericEditor.OnReadOnlyProperty(itemLayout);
                 }
             }
             _elementsCount = size;

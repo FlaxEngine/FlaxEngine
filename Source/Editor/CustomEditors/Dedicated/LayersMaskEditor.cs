@@ -1,5 +1,6 @@
 // Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
+using System.Collections.Generic;
 using FlaxEditor.Content.Settings;
 using FlaxEngine;
 using FlaxEngine.GUI;
@@ -12,7 +13,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
     [CustomEditor(typeof(LayersMask)), DefaultEditor]
     internal class LayersMaskEditor : CustomEditor
     {
-        private CheckBox[] _checkBoxes;
+        private List<CheckBox> _checkBoxes;
 
         /// <inheritdoc />
         public override void Initialize(LayoutElementsContainer layout)
@@ -24,16 +25,18 @@ namespace FlaxEditor.CustomEditors.Dedicated
                 return;
             }
 
-            _checkBoxes = new CheckBox[layers.Length];
+            _checkBoxes = new List<CheckBox>();
             for (int i = 0; i < layers.Length; i++)
             {
                 var layer = layers[i];
-                var property = layout.AddPropertyItem(layer);
+                if (string.IsNullOrEmpty(layer))
+                    continue;
+                var property = layout.AddPropertyItem($"{i}: {layer}");
                 var checkbox = property.Checkbox().CheckBox;
                 UpdateCheckbox(checkbox, i);
                 checkbox.Tag = i;
                 checkbox.StateChanged += OnCheckboxStateChanged;
-                _checkBoxes[i] = checkbox;
+                _checkBoxes.Add(checkbox);
             }
         }
 
@@ -50,9 +53,9 @@ namespace FlaxEditor.CustomEditors.Dedicated
         {
             if (_checkBoxes != null)
             {
-                for (int i = 0; i < _checkBoxes.Length; i++)
+                for (int i = 0; i < _checkBoxes.Count; i++)
                 {
-                    UpdateCheckbox(_checkBoxes[i], i);
+                    UpdateCheckbox(_checkBoxes[i], (int)_checkBoxes[i].Tag);
                 }
             }
 

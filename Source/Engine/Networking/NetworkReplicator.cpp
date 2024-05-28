@@ -1392,12 +1392,20 @@ void NetworkReplicator::SetObjectOwnership(ScriptingObject* obj, uint32 ownerCli
                 if (ownerClientId == NetworkManager::LocalClientId)
                 {
                     // Ensure local client owns that object actually
-                    CHECK(localRole == NetworkObjectRole::OwnedAuthoritative);
+                    if (localRole != NetworkObjectRole::OwnedAuthoritative)
+                    {
+                        LOG(Error, "Cannot change overship of object (Id={}) to the local client (Id={}) if the local role is not set to OwnedAuthoritative.", obj->GetID(), ownerClientId);
+                        return;
+                    }
                 }
                 else
                 {
                     // Ensure local client doesn't own that object since it's owned by other client
-                    CHECK(localRole != NetworkObjectRole::OwnedAuthoritative);
+                    if (localRole == NetworkObjectRole::OwnedAuthoritative)
+                    {
+                        LOG(Error, "Cannot change overship of object (Id={}) to the remote client (Id={}) if the local role is set to OwnedAuthoritative.", obj->GetID(), ownerClientId);
+                        return;
+                    }
                 }
 #endif
                 item.HasOwnership = true;
@@ -1421,7 +1429,13 @@ void NetworkReplicator::SetObjectOwnership(ScriptingObject* obj, uint32 ownerCli
             if (item.OwnerClientId != ownerClientId)
             {
                 // Change role locally
-                CHECK(localRole != NetworkObjectRole::OwnedAuthoritative);
+#if !BUILD_RELEASE
+                if (localRole == NetworkObjectRole::OwnedAuthoritative)
+                {
+                    LOG(Error, "Cannot change overship of object (Id={}) to the remote client (Id={}) if the local role is set to OwnedAuthoritative.", obj->GetID(), ownerClientId);
+                    return;
+                }
+#endif
                 if (Hierarchy && item.Role == NetworkObjectRole::OwnedAuthoritative)
                     Hierarchy->RemoveObject(obj);
                 item.OwnerClientId = ownerClientId;
@@ -1433,7 +1447,13 @@ void NetworkReplicator::SetObjectOwnership(ScriptingObject* obj, uint32 ownerCli
         else
         {
             // Allow to change local role of the object (except ownership)
-            CHECK(localRole != NetworkObjectRole::OwnedAuthoritative);
+#if !BUILD_RELEASE
+                if (localRole == NetworkObjectRole::OwnedAuthoritative)
+                {
+                    LOG(Error, "Cannot change overship of object (Id={}) to the remote client (Id={}) if the local role is set to OwnedAuthoritative.", obj->GetID(), ownerClientId);
+                    return;
+                }
+#endif
             if (Hierarchy && it->Item.Role == NetworkObjectRole::OwnedAuthoritative)
                 Hierarchy->RemoveObject(obj);
             item.Role = localRole;
@@ -2211,7 +2231,6 @@ void NetworkInternal::OnNetworkMessageObjectRpc(NetworkEvent& event, NetworkClie
         if (!obj)
             return;
 
-        
         // Validate RPC
         if (info->Server && NetworkManager::IsClient())
         {
@@ -2234,7 +2253,7 @@ void NetworkInternal::OnNetworkMessageObjectRpc(NetworkEvent& event, NetworkClie
         // Execute RPC
         info->Execute(obj, stream, info->Tag);
     }
-    else if(info->Channel != static_cast<uint8>(NetworkChannelType::Unreliable) && info->Channel != static_cast<uint8>(NetworkChannelType::UnreliableOrdered))
+    else if (info->Channel != static_cast<uint8>(NetworkChannelType::Unreliable) && info->Channel != static_cast<uint8>(NetworkChannelType::UnreliableOrdered))
     {
         NETWORK_REPLICATOR_LOG(Error, "[NetworkReplicator] Unknown object {} RPC {}::{}", msgData.ObjectId, String(msgData.RpcTypeName), String(msgData.RpcName));
     }

@@ -7,6 +7,7 @@ namespace FlaxEngine.GUI
     /// <summary>
     /// Button control
     /// </summary>
+    [ActorToolbox("GUI")]
     public class Button : ContainerControl
     {
         /// <summary>

@@ -87,8 +87,9 @@ public:
 
 protected:
     // State
-    int64 _refCount;
-    int64 _chunksLock;
+    int64 _refCount = 0;
+    int64 _chunksLock = 0;
+    int64 _files = 0;
     double _lastRefLostTime;
     CriticalSection _loadLocker;
 
@@ -97,7 +98,7 @@ protected:
     Array<FlaxChunk*> _chunks;
 
     // Metadata
-    uint32 _version;
+    uint32 _version = 0;
     String _path;
 
 protected:
@@ -415,7 +416,7 @@ public:
     /// <summary>
     /// Ticks this instance.
     /// </summary>
-    void Tick();
+    void Tick(double time);
 
 #if USE_EDITOR
     void OnRename(const StringView& newPath);

@@ -55,6 +55,11 @@ Tag Tags::Get(const StringView& tagName)
     return tag;
 }
 
+Tag Tags::Find(const StringView& tagName)
+{
+    return Tag(List.Find(tagName) + 1);
+}
+
 Array<Tag> Tags::GetSubTags(Tag parentTag)
 {
     Array<Tag> subTags;

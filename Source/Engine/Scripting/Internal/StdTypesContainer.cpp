@@ -40,6 +40,8 @@ void StdTypesContainer::Clear()
     Json_SerializeDiff = nullptr;
     Json_Deserialize = nullptr;
 
+    ManagedArrayClass = nullptr;
+
 #if USE_EDITOR
     ExecuteInEditModeAttribute = nullptr;
 #endif
@@ -87,6 +89,8 @@ bool StdTypesContainer::Gather()
     GET_METHOD(Json_Serialize, JSON, "Serialize", 2);
     GET_METHOD(Json_SerializeDiff, JSON, "SerializeDiff", 3);
     GET_METHOD(Json_Deserialize, JSON, "Deserialize", 3);
+
+    GET_CLASS(FlaxEngine, ManagedArrayClass, "FlaxEngine.Interop.ManagedArray");
 
 #if USE_EDITOR
     GET_CLASS(FlaxEngine, ExecuteInEditModeAttribute, "FlaxEngine.ExecuteInEditModeAttribute");

@@ -8,6 +8,7 @@ namespace FlaxEngine.GUI
     /// Panel UI control.
     /// </summary>
     /// <seealso cref="FlaxEngine.GUI.ScrollableControl" />
+    [ActorToolbox("GUI")]
     public class Panel : ScrollableControl
     {
         private bool _layoutChanged;
@@ -16,6 +17,9 @@ namespace FlaxEngine.GUI
         private ScrollBars _scrollBars;
         private float _scrollBarsSize = ScrollBar.DefaultSize;
         private Margin _scrollMargin;
+        private Color _scrollbarTrackColor;
+        private Color _scrollbarThumbColor;
+        private Color _scrollbarThumbSelectedColor;
 
         /// <summary>
         /// The cached scroll area bounds. Used to scroll contents of the panel control. Cached during performing layout.
@@ -48,7 +52,7 @@ namespace FlaxEngine.GUI
         /// <summary>
         /// Gets or sets the scroll bars usage by this panel.
         /// </summary>
-        [EditorOrder(0), Tooltip("The scroll bars usage.")]
+        [EditorDisplay("Scrollbar Style"), EditorOrder(1500), Tooltip("The scroll bars usage.")]
         public ScrollBars ScrollBars
         {
             get => _scrollBars;
@@ -72,6 +76,12 @@ namespace FlaxEngine.GUI
                         //VScrollBar.X += VScrollBar.Width;
                         VScrollBar.ValueChanged += () => SetViewOffset(Orientation.Vertical, VScrollBar.Value);
                     }
+                    if (VScrollBar != null)
+                    {
+                        VScrollBar.TrackColor = _scrollbarTrackColor;
+                        VScrollBar.ThumbColor = _scrollbarThumbColor;
+                        VScrollBar.ThumbSelectedColor = _scrollbarThumbSelectedColor;
+                    }
                 }
                 else if (VScrollBar != null)
                 {
@@ -93,6 +103,12 @@ namespace FlaxEngine.GUI
                         //HScrollBar.Offsets += new Margin(0, 0, HScrollBar.Height * 0.5f, 0);
                         HScrollBar.ValueChanged += () => SetViewOffset(Orientation.Horizontal, HScrollBar.Value);
                     }
+                    if (HScrollBar != null)
+                    {
+                        HScrollBar.TrackColor = _scrollbarTrackColor;
+                        HScrollBar.ThumbColor = _scrollbarThumbColor;
+                        HScrollBar.ThumbSelectedColor = _scrollbarThumbSelectedColor;
+                    }
                 }
                 else if (HScrollBar != null)
                 {
@@ -107,7 +123,7 @@ namespace FlaxEngine.GUI
         /// <summary>
         /// Gets or sets the size of the scroll bars.
         /// </summary>
-        [EditorOrder(5), Tooltip("Scroll bars size.")]
+        [EditorDisplay("Scrollbar Style"), EditorOrder(1501), Tooltip("Scroll bars size.")]
         public float ScrollBarsSize
         {
             get => _scrollBarsSize;
@@ -123,7 +139,7 @@ namespace FlaxEngine.GUI
         /// <summary>
         /// Gets or sets a value indicating whether always show scrollbars. Otherwise show them only if scrolling is available.
         /// </summary>
-        [EditorOrder(10), Tooltip("Whether always show scrollbars. Otherwise show them only if scrolling is available.")]
+        [EditorDisplay("Scrollbar Style"), EditorOrder(1502), Tooltip("Whether always show scrollbars. Otherwise show them only if scrolling is available.")]
         public bool AlwaysShowScrollbars
         {
             get => _alwaysShowScrollbars;
@@ -156,7 +172,7 @@ namespace FlaxEngine.GUI
         /// <summary>
         /// Gets or sets the scroll margin applies to the child controls area. Can be used to expand the scroll area bounds by adding a margin.
         /// </summary>
-        [EditorOrder(20), Tooltip("Scroll margin applies to the child controls area. Can be used to expand the scroll area bounds by adding a margin.")]
+        [EditorDisplay("Scrollbar Style"), EditorOrder(1503), Tooltip("Scroll margin applies to the child controls area. Can be used to expand the scroll area bounds by adding a margin.")]
         public Margin ScrollMargin
         {
             get => _scrollMargin;
@@ -167,6 +183,57 @@ namespace FlaxEngine.GUI
                     _scrollMargin = value;
                     PerformLayout();
                 }
+            }
+        }
+
+        /// <summary>
+        /// The color of the scroll bar track.
+        /// </summary>
+        [EditorDisplay("Scrollbar Style"), EditorOrder(1600), ExpandGroups]
+        public Color ScrollbarTrackColor
+        {
+            get => _scrollbarTrackColor;
+            set
+            {
+                _scrollbarTrackColor = value;
+                if (VScrollBar != null)
+                    VScrollBar.TrackColor = _scrollbarTrackColor;
+                if (HScrollBar != null)
+                    HScrollBar.TrackColor = _scrollbarTrackColor;
+            }
+        }
+
+        /// <summary>
+        /// The color of the scroll bar thumb.
+        /// </summary>
+        [EditorDisplay("Scrollbar Style"), EditorOrder(1601)]
+        public Color ScrollbarThumbColor
+        {
+            get => _scrollbarThumbColor;
+            set
+            {
+                _scrollbarThumbColor = value;
+                if (VScrollBar != null)
+                    VScrollBar.ThumbColor = _scrollbarThumbColor;
+                if (HScrollBar != null)
+                    HScrollBar.ThumbColor = _scrollbarThumbColor;
+            }
+        }
+
+        /// <summary>
+        /// The color of the scroll bar thumb when selected.
+        /// </summary>
+        [EditorDisplay("Scrollbar Style"), EditorOrder(1602)]
+        public Color ScrollbarThumbSelectedColor
+        {
+            get => _scrollbarThumbSelectedColor;
+            set
+            {
+                _scrollbarThumbSelectedColor = value;
+                if (VScrollBar != null)
+                    VScrollBar.ThumbSelectedColor = _scrollbarThumbSelectedColor;
+                if (HScrollBar != null)
+                    HScrollBar.ThumbSelectedColor = _scrollbarThumbSelectedColor;
             }
         }
 
@@ -186,6 +253,10 @@ namespace FlaxEngine.GUI
         public Panel(ScrollBars scrollBars, bool autoFocus = false)
         {
             AutoFocus = autoFocus;
+            var style = Style.Current;
+            _scrollbarTrackColor = style.BackgroundHighlighted;
+            _scrollbarThumbColor = style.BackgroundNormal;
+            _scrollbarThumbSelectedColor = style.BackgroundSelected;
             ScrollBars = scrollBars;
         }
 
@@ -291,10 +362,14 @@ namespace FlaxEngine.GUI
             if (base.OnMouseWheel(location, delta))
                 return true;
 
+            if (Input.GetKey(KeyboardKeys.Shift))
+            {
+                if (HScrollBar != null && HScrollBar.Enabled && HScrollBar.OnMouseWheel(HScrollBar.PointFromParent(ref location), delta))
+                    return true;
+            }
+
             // Roll back to scroll bars
             if (VScrollBar != null && VScrollBar.Enabled && VScrollBar.OnMouseWheel(VScrollBar.PointFromParent(ref location), delta))
-                return true;
-            if (HScrollBar != null && HScrollBar.Enabled && HScrollBar.OnMouseWheel(HScrollBar.PointFromParent(ref location), delta))
                 return true;
 
             // No event handled

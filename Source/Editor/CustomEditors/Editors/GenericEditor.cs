@@ -581,6 +581,43 @@ namespace FlaxEditor.CustomEditors.Editors
             return layout;
         }
 
+        internal static void OnReadOnlyProperty(LayoutElementsContainer itemLayout, int labelIndex = -1)
+        {
+            PropertiesListElement list = null;
+            int firstChildControlIndex = 0;
+            bool disableSingle = true;
+            var control = itemLayout.Children[itemLayout.Children.Count - 1];
+            if (control is GroupElement group && group.Children.Count > 0)
+            {
+                list = group.Children[0] as PropertiesListElement;
+                disableSingle = false; // Disable all nested editors
+            }
+            else if (control is PropertiesListElement list1 && labelIndex != -1)
+            {
+                list = list1;
+                firstChildControlIndex = list.Labels[labelIndex].FirstChildControlIndex;
+            }
+            else if (control?.Control != null)
+            {
+                control.Control.Enabled = false;
+            }
+
+            if (list != null)
+            {
+                // Disable controls added to the editor
+                var count = list.Properties.Children.Count;
+                for (int j = firstChildControlIndex; j < count; j++)
+                {
+                    var child = list.Properties.Children[j];
+                    if (disableSingle && child is PropertyNameLabel)
+                        break;
+
+                    if (child != null)
+                        child.Enabled = false;
+                }
+            }
+        }
+
         /// <summary>
         /// Evaluate the <see cref="VisibleIfAttribute"/> cache for a given property item.
         /// </summary>
@@ -660,35 +697,7 @@ namespace FlaxEditor.CustomEditors.Editors
 
             if (item.IsReadOnly && itemLayout.Children.Count > 0)
             {
-                PropertiesListElement list = null;
-                int firstChildControlIndex = 0;
-                bool disableSingle = true;
-                var control = itemLayout.Children[itemLayout.Children.Count - 1];
-                if (control is GroupElement group && group.Children.Count > 0)
-                {
-                    list = group.Children[0] as PropertiesListElement;
-                    disableSingle = false; // Disable all nested editors
-                }
-                else if (control is PropertiesListElement list1)
-                {
-                    list = list1;
-                    firstChildControlIndex = list.Labels[labelIndex].FirstChildControlIndex;
-                }
-
-                if (list != null)
-                {
-                    // Disable controls added to the editor
-                    var count = list.Properties.Children.Count;
-                    for (int j = firstChildControlIndex; j < count; j++)
-                    {
-                        var child = list.Properties.Children[j];
-                        if (disableSingle && child is PropertyNameLabel)
-                            break;
-
-                        if (child != null)
-                            child.Enabled = false;
-                    }
-                }
+                OnReadOnlyProperty(itemLayout, labelIndex);
             }
 
             EvaluateVisibleIf(itemLayout, item, labelIndex);

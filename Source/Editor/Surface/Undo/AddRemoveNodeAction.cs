@@ -66,6 +66,8 @@ namespace FlaxEditor.Surface.Undo
             // Initialize
             if (node.Values != null && node.Values.Length == _nodeValues.Length)
                 Array.Copy(_nodeValues, node.Values, _nodeValues.Length);
+            else if (_nodeValues != null && (node.Archetype.Flags & NodeFlags.VariableValuesSize) != 0)
+                node.Values = (object[])_nodeValues.Clone();
             else if (_nodeValues != null && _nodeValues.Length != 0)
                 throw new InvalidOperationException("Invalid node values.");
             node.Location = _nodeLocation;

@@ -2126,7 +2126,8 @@ void TerrainPatch::CreateCollision()
     void* scene = _terrain->GetPhysicsScene()->GetPhysicsScene();
     _physicsActor = PhysicsBackend::CreateRigidStaticActor(nullptr, terrainTransform.LocalToWorld(_offset), terrainTransform.Orientation, scene);
     PhysicsBackend::AttachShape(_physicsShape, _physicsActor);
-    PhysicsBackend::AddSceneActor(scene, _physicsActor);
+    if (_terrain->IsDuringPlay())
+        PhysicsBackend::AddSceneActor(scene, _physicsActor);
 }
 
 bool TerrainPatch::CreateHeightField()
@@ -2473,7 +2474,7 @@ void TerrainPatch::ExtractCollisionGeometry(Array<Float3>& vertexBuffer, Array<i
     if (_collisionVertices.IsEmpty())
     {
         // Prevent race conditions
-        ScopeLock lock(Level::ScenesLock);
+        ScopeLock sceneLock(Level::ScenesLock);
         if (_collisionVertices.IsEmpty())
         {
             const float size = _terrain->_chunkSize * TERRAIN_UNITS_PER_VERTEX * Terrain::Terrain::ChunksCountEdge;

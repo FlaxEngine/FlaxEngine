@@ -30,6 +30,12 @@ bool SceneAsset::IsInternalType() const
     return true;
 }
 
+void SceneNavigation::Clear()
+{
+    Volumes.Clear();
+    Actors.Clear();
+}
+
 BoundingBox SceneNavigation::GetNavigationBounds()
 {
     if (Volumes.IsEmpty())
@@ -372,6 +378,7 @@ void Scene::EndPlay()
     // Improve scene cleanup performance by removing all data from scene rendering and ticking containers
     Ticking.Clear();
     Rendering.Clear();
+    Navigation.Clear();
 
     // Base
     Actor::EndPlay();

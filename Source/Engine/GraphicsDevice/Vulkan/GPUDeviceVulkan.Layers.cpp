@@ -39,7 +39,7 @@ static const char* GInstanceExtensions[] =
     VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME,
     VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME,
 #endif
-#if VK_EXT_validation_cache
+#if VULKAN_USE_VALIDATION_CACHE
     VK_EXT_VALIDATION_CACHE_EXTENSION_NAME,
 #endif
 #if defined(VK_KHR_display) && 0
@@ -57,7 +57,7 @@ static const char* GDeviceExtensions[] =
 #if VK_KHR_maintenance1
     VK_KHR_MAINTENANCE1_EXTENSION_NAME,
 #endif
-#if VK_EXT_validation_cache
+#if VULKAN_USE_VALIDATION_CACHE
     VK_EXT_VALIDATION_CACHE_EXTENSION_NAME,
 #endif
 #if VK_KHR_sampler_mirror_clamp_to_edge
@@ -582,7 +582,7 @@ void GPUDeviceVulkan::ParseOptionalDeviceExtensions(const Array<const char*>& de
     OptionalDeviceExtensions.HasKHRMaintenance2 = RenderToolsVulkan::HasExtension(deviceExtensions, VK_KHR_MAINTENANCE2_EXTENSION_NAME);
 #endif
     OptionalDeviceExtensions.HasMirrorClampToEdge = RenderToolsVulkan::HasExtension(deviceExtensions, VK_KHR_SAMPLER_MIRROR_CLAMP_TO_EDGE_EXTENSION_NAME);
-#if VK_EXT_validation_cache
+#if VULKAN_USE_VALIDATION_CACHE
     OptionalDeviceExtensions.HasEXTValidationCache = RenderToolsVulkan::HasExtension(deviceExtensions, VK_EXT_VALIDATION_CACHE_EXTENSION_NAME);
 #endif
 }

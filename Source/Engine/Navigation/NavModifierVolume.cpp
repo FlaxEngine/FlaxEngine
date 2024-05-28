@@ -47,6 +47,20 @@ void NavModifierVolume::Deserialize(DeserializeStream& stream, ISerializeModifie
     DESERIALIZE(AreaName);
 }
 
+void NavModifierVolume::OnEnable()
+{
+    GetScene()->Navigation.Actors.Add(this);
+
+    BoxVolume::OnEnable();
+}
+
+void NavModifierVolume::OnDisable()
+{
+    BoxVolume::OnDisable();
+
+    GetScene()->Navigation.Actors.Remove(this);
+}
+
 void NavModifierVolume::OnBoundsChanged(const BoundingBox& prevBounds)
 {
 #if COMPILE_WITH_NAV_MESH_BUILDER

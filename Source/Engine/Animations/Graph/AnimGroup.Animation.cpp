@@ -102,8 +102,8 @@ void AnimGraphExecutor::ProcessAnimEvents(AnimGraphNode* node, bool loop, float 
             Swap(eventTimeMin, eventTimeMax);
         }
     }
-    const float eventTime = animPos / static_cast<float>(anim->Data.FramesPerSecond);
-    const float eventDeltaTime = (animPos - animPrevPos) / static_cast<float>(anim->Data.FramesPerSecond);
+    const float eventTime = (float)(animPos / anim->Data.FramesPerSecond);
+    const float eventDeltaTime = (float)((animPos - animPrevPos) / anim->Data.FramesPerSecond);
     for (const auto& track : anim->Events)
     {
         for (const auto& k : track.Second.GetKeyframes())
@@ -211,7 +211,7 @@ float GetAnimSamplePos(float length, Animation* anim, float pos, float speed)
     }
     if (animPos < 0)
         animPos = animLength + animPos;
-    animPos *= static_cast<float>(anim->Data.FramesPerSecond);
+    animPos = (float)(animPos * anim->Data.FramesPerSecond);
     return animPos;
 }
 
@@ -265,7 +265,7 @@ void AnimGraphExecutor::ProcessAnimation(AnimGraphImpulse* nodes, AnimGraphNode*
                 float nestedAnimPrevPos = animPrevPos - nestedAnim.Time;
                 const float nestedAnimLength = nestedAnim.Anim->GetLength();
                 const float nestedAnimSpeed = nestedAnim.Speed * speed;
-                const float frameRateMatchScale = nestedAnimSpeed / (float)anim->Data.FramesPerSecond;
+                const float frameRateMatchScale = (float)(nestedAnimSpeed / anim->Data.FramesPerSecond);
                 nestedAnimPos = nestedAnimPos * frameRateMatchScale;
                 nestedAnimPrevPos = nestedAnimPrevPos * frameRateMatchScale;
                 GetAnimSamplePos(nestedAnim.Loop, nestedAnimLength, nestedAnim.StartTime, nestedAnimPrevPos, nestedAnimPos, nestedAnimPos, nestedAnimPrevPos);
@@ -363,8 +363,7 @@ void AnimGraphExecutor::ProcessAnimation(AnimGraphImpulse* nodes, AnimGraphNode*
             // Check if animation looped
             if (animPos < animPrevPos)
             {
-                const float endPos = anim->GetLength() * static_cast<float>(anim->Data.FramesPerSecond);
-                const float timeToEnd = endPos - animPrevPos;
+                const float endPos = (float)(anim->GetLength() * anim->Data.FramesPerSecond);
 
                 Transform rootBegin = refPose;
                 rootChannel.Evaluate(0, &rootBegin, false);
@@ -372,16 +371,13 @@ void AnimGraphExecutor::ProcessAnimation(AnimGraphImpulse* nodes, AnimGraphNode*
                 Transform rootEnd = refPose;
                 rootChannel.Evaluate(endPos, &rootEnd, false);
 
-                //rootChannel.Evaluate(animPos - timeToEnd, &rootNow, true);
-
                 // Complex motion calculation to preserve the looped movement
                 // (end - before + now - begin)
                 // It sums the motion since the last update to anim end and since the start to now
                 if (motionPosition)
                     srcNode.Translation = (rootEnd.Translation - rootBefore.Translation + rootNode.Translation - rootBegin.Translation) * motionPositionMask;
                 if (motionRotation)
-                    srcNode.Orientation = rootEnd.Orientation * rootBefore.Orientation.Conjugated() * (rootNode.Orientation * rootBegin.Orientation.Conjugated());
-                //srcNode.Orientation = Quaternion::Identity;
+                    srcNode.Orientation = (rootBefore.Orientation.Conjugated() * rootEnd.Orientation) * (rootBegin.Orientation.Conjugated() * rootNode.Orientation);
             }
             else
             {
@@ -1165,21 +1161,21 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
                 const auto nodes = node->GetNodes(this);
                 const auto basePoseNodes = static_cast<AnimGraphImpulse*>(valueA.AsPointer);
                 const auto blendPoseNodes = static_cast<AnimGraphImpulse*>(valueB.AsPointer);
-                const auto& refrenceNodes = _graph.BaseModel.Get()->GetNodes();
-                Transform t, basePoseTransform, blendPoseTransform, refrenceTransform;
+                const auto& refNodes = _graph.BaseModel.Get()->GetNodes();
+                Transform t, basePoseTransform, blendPoseTransform, refTransform;
                 for (int32 i = 0; i < nodes->Nodes.Count(); i++)
                 {
                     basePoseTransform = basePoseNodes->Nodes[i];
                     blendPoseTransform = blendPoseNodes->Nodes[i];
-                    refrenceTransform = refrenceNodes[i].LocalTransform;
+                    refTransform = refNodes[i].LocalTransform;
 
-                    // base + (blend - refrence) = transform
-                    t.Translation = basePoseTransform.Translation + (blendPoseTransform.Translation - refrenceTransform.Translation);
-                    auto diff = Quaternion::Invert(refrenceTransform.Orientation) * blendPoseTransform.Orientation;
+                    // base + (blend - reference)
+                    t.Translation = basePoseTransform.Translation + (blendPoseTransform.Translation - refTransform.Translation);
+                    auto diff = Quaternion::Invert(refTransform.Orientation) * blendPoseTransform.Orientation;
                     t.Orientation = basePoseTransform.Orientation * diff;
-                    t.Scale = basePoseTransform.Scale + (blendPoseTransform.Scale - refrenceTransform.Scale);
+                    t.Scale = basePoseTransform.Scale + (blendPoseTransform.Scale - refTransform.Scale);
 
-                    //lerp base and transform
+                    // Lerp base and transform
                     Transform::Lerp(basePoseTransform, t, alpha, nodes->Nodes[i]);
                 }
                 Transform::Lerp(basePoseNodes->RootMotion, basePoseNodes->RootMotion + blendPoseNodes->RootMotion, alpha, nodes->RootMotion);

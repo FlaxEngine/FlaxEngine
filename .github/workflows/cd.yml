@@ -166,7 +166,7 @@ jobs:
         dotnet workload --info
     - name: Build
       run: |
-        ./PackageEditor.command -arch=x64 -platform=Mac -deployOutput=Output
+        ./PackageEditor.command -arch=ARM64 -platform=Mac -deployOutput=Output
     - name: Upload
       uses: actions/upload-artifact@v3
       with:
@@ -194,7 +194,7 @@ jobs:
         dotnet workload --info
     - name: Build
       run: |
-        ./PackagePlatforms.command -arch=x64 -platform=Mac -deployOutput=Output
+        ./PackagePlatforms.command -arch=ARM64 -platform=Mac -deployOutput=Output
     - name: Upload
       uses: actions/upload-artifact@v3
       with:

@@ -98,7 +98,7 @@ namespace Flax.Build.Bindings
             {
                 var result = NativeName;
                 if (Parent != null && !(Parent is FileInfo))
-                    result = Parent.FullNameNative + '_' + result;
+                    result = Parent.FullNameNative.Replace("::", "_") + '_' + result;
                 return result;
             }
         }

@@ -8,6 +8,7 @@ namespace FlaxEngine.GUI
     /// Progress bar control shows visual progress of the action or set of actions.
     /// </summary>
     /// <seealso cref="FlaxEngine.GUI.Control" />
+    [ActorToolbox("GUI")]
     public class ProgressBar : ContainerControl
     {
         /// <summary>

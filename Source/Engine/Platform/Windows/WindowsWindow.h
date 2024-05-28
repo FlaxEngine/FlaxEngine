@@ -28,6 +28,7 @@ private:
     bool _isSwitchingFullScreen = false;
     bool _trackingMouse = false;
     bool _clipCursorSet = false;
+    bool _lastCursorHidden = false;
     bool _isDuringMaximize = false;
     Windows::HANDLE _monitor = nullptr;
     Windows::LONG _clipCursorRect[4];
@@ -90,7 +91,7 @@ public:
 private:
 
     void CheckForWindowResize();
-    void UpdateCursor() const;
+    void UpdateCursor();
     void UpdateRegion();
 
 public:

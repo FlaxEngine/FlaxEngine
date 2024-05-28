@@ -939,7 +939,7 @@ void Particles::DrawParticles(RenderContext& renderContext, ParticleEffect* effe
     DrawCall drawCall;
     drawCall.PerInstanceRandom = effect->GetPerInstanceRandom();
     drawCall.ObjectPosition = effect->GetSphere().Center - view.Origin;
-    drawCall.ObjectRadius = effect->GetSphere().Radius;
+    drawCall.ObjectRadius = (float)effect->GetSphere().Radius;
 
     // Draw all emitters
     for (int32 emitterIndex = 0; emitterIndex < effect->Instance.Emitters.Count(); emitterIndex++)

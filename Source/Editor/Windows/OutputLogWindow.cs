@@ -281,7 +281,7 @@ namespace FlaxEditor.Windows
             if (IsLayoutLocked)
                 return;
 
-            _hScroll.Maximum = _output.TextSize.X;
+            _hScroll.Maximum = Mathf.Max(_output.TextSize.X, _hScroll.Minimum);
             _vScroll.Maximum = Mathf.Max(_output.TextSize.Y - _output.Height, _vScroll.Minimum);
         }
 
