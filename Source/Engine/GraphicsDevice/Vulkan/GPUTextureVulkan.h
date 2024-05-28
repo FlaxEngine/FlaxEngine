@@ -133,36 +133,30 @@ public:
     {
         return (GPUTextureView*)&_handlesPerSlice[arrayOrDepthIndex];
     }
-
     GPUTextureView* View(int32 arrayOrDepthIndex, int32 mipMapIndex) const override
     {
         return (GPUTextureView*)&_handlesPerMip[arrayOrDepthIndex][mipMapIndex];
     }
-
     GPUTextureView* ViewArray() const override
     {
         ASSERT(ArraySize() > 1);
         return (GPUTextureView*)&_handleArray;
     }
-
     GPUTextureView* ViewVolume() const override
     {
         ASSERT(IsVolume());
         return (GPUTextureView*)&_handleVolume;
     }
-
     GPUTextureView* ViewReadOnlyDepth() const override
     {
         ASSERT(_desc.Flags & GPUTextureFlags::ReadOnlyDepthView);
         return (GPUTextureView*)&_handleReadOnlyDepth;
     }
-
     void* GetNativePtr() const override
     {
         return (void*)_image;
     }
-
-    bool GetData(int32 arrayOrDepthSliceIndex, int32 mipMapIndex, TextureMipData& data, uint32 mipRowPitch) override;
+    bool GetData(int32 arrayIndex, int32 mipMapIndex, TextureMipData& data, uint32 mipRowPitch) override;
 
     // [ResourceOwnerVulkan]
     GPUResource* AsGPUResource() const override
