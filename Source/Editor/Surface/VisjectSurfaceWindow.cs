@@ -350,6 +350,116 @@ namespace FlaxEditor.Surface
         }
     }
 
+    sealed class ReorderParamAction : IUndoAction
+    {
+        /// <summary>
+        /// The window reference.
+        /// </summary>
+        public IVisjectSurfaceWindow Window;
+
+        /// <summary>
+        /// The parameters editor for this action.
+        /// </summary>
+        public ParametersEditor Editor;
+
+        /// <summary>
+        /// The old index the parameter was at.
+        /// </summary>
+        public int OldIndex;
+
+        /// <summary>
+        /// The new index the parameter will be at.
+        /// </summary>
+        public int NewIndex;
+
+        /// <inheritdoc />
+        public string ActionString => "Reorder Parameter";
+
+        /// <inheritdoc />
+        public void Dispose()
+        {
+            Window = null;
+            Editor = null;
+        }
+
+        public void Swap(int oldIdx, int newIdx)
+        {
+            if (oldIdx == newIdx)
+                return; // ?
+
+            if (newIdx > oldIdx)
+            {
+                for (int i = oldIdx; i < newIdx; i++)
+                {
+                    SurfaceParameter old = Window.VisjectSurface.Parameters[i + 1];
+                    Window.VisjectSurface.Parameters[i + 1] = Window.VisjectSurface.Parameters[i];
+                    Window.VisjectSurface.Parameters[i] = old;
+                }
+            }
+            else
+            {
+                for (int i = oldIdx; i > newIdx; i--)
+                {
+                    SurfaceParameter old = Window.VisjectSurface.Parameters[i - 1];
+                    Window.VisjectSurface.Parameters[i - 1] = Window.VisjectSurface.Parameters[i];
+                    Window.VisjectSurface.Parameters[i] = old;
+                }
+            }
+        }
+
+        /// <inheritdoc />
+        public void Do()
+        {
+            Swap(OldIndex, NewIndex);
+            Window.VisjectSurface.OnParamReordered();
+            //Editor.RebuildLayout();
+        }
+
+        /// <inheritdoc />
+        public void Undo()
+        {
+            Swap(NewIndex, OldIndex);
+            Window.VisjectSurface.OnParamReordered();
+            //Editor.RebuildLayout();
+        }
+    }
+
+    /// <summary>
+    /// Custom draggable property name label that handles reordering visject parameters.
+    /// </summary>
+    /// <seealso cref="FlaxEditor.CustomEditors.GUI.DraggablePropertyNameLabel" />
+    [HideInEditor]
+    public class ParameterPropertyNameLabel : DraggablePropertyNameLabel
+    {
+        public ParametersEditor Editor;
+        private IVisjectSurfaceWindow _window;
+
+        /// <inheritdoc />
+        public ParameterPropertyNameLabel(string name, ParametersEditor editor)
+        : base(name)
+        {
+            Editor = editor;
+            _window = Editor.Values[0] as IVisjectSurfaceWindow;
+        }
+
+        /// <inheritdoc />
+        public override bool OnMouseUp(Float2 location, MouseButton button)
+        {
+            if (button == MouseButton.Left)
+            {
+                ReorderParamAction action = new ReorderParamAction();
+                action.OldIndex = ((int)Tag);
+                action.NewIndex = ((int)Tag) + 1;
+                action.Window = _window;
+                action.Editor = Editor;
+                action.Do();
+                _window.Undo.AddAction(action);
+            }
+
+            return base.OnMouseUp(location, button);
+        }
+    }
+
     /// <summary>
     /// Custom editor for editing Visject Surface parameters collection.
     /// </summary>
@@ -431,10 +541,10 @@ namespace FlaxEditor.Surface
                  attributes
                 );
 
-                var propertyLabel = new DraggablePropertyNameLabel(name)
+                var propertyLabel = new ParameterPropertyNameLabel(name, this)
                 {
                     Tag = pIndex,
-                    Drag = OnDragParameter
+                    Drag = OnDragParameter,
                 };
                 if (!p.IsPublic)
                     propertyLabel.TextColor = propertyLabel.TextColor.RGBMultiplied(0.7f);

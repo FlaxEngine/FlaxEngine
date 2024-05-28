@@ -38,6 +38,9 @@ namespace FlaxEditor.CustomEditors.Editors
             /// </summary>
             public readonly int Index;
 
+            private Rectangle _arrangeButtonRect;
+            private bool _arrangeButtonInUse;
+
             /// <summary>
             /// Initializes a new instance of the <see cref="CollectionItemLabel"/> class.
             /// </summary>
@@ -50,7 +53,21 @@ namespace FlaxEditor.CustomEditors.Editors
                 Index = index;
 
                 SetupContextMenu += OnSetupContextMenu;
+                _arrangeButtonRect = new Rectangle(2, 3, 12, 12);
+
+                Margin m = Margin;
+                m.Left += 16;
+                Margin = m;
+
+                //SizeChanged += (control) => RecalculateArrangement();
+
+                //RecalculateArrangement();
             }
+
+            /*private void RecalculateArrangement()
+            {
+                _arrangeButtonRect.Size = Size;
+            }*/
 
             private void OnSetupContextMenu(PropertyNameLabel label, ContextMenu menu, CustomEditor linkedEditor)
             {
@@ -68,6 +85,135 @@ namespace FlaxEditor.CustomEditors.Editors
                 moveDownButton.Enabled = Index + 1 < Editor.Count;
 
                 menu.AddButton("Remove", OnRemoveClicked);
+            }
+
+            /// <inheritdoc />
+            public override void OnEndMouseCapture()
+            {
+                base.OnEndMouseCapture();
+
+                _arrangeButtonInUse = false;
+            }
+
+            /// <inheritdoc />
+            public override bool OnMouseDown(Float2 location, MouseButton button)
+            {
+                if (button == MouseButton.Left && _arrangeButtonRect.Contains(ref location))
+                {
+                    _arrangeButtonInUse = true;
+                    Focus();
+                    StartMouseCapture();
+                    return true;
+                }
+
+                return base.OnMouseDown(location, button);
+            }
+
+            public override void Draw()
+            {
+                base.Draw();
+                var style = FlaxEngine.GUI.Style.Current;
+
+                var mousePosition = PointFromScreen(Input.MouseScreenPosition);
+                var dragBarColor = _arrangeButtonRect.Contains(mousePosition) ? style.Foreground : style.ForegroundGrey;
+                Render2D.DrawSprite(FlaxEditor.Editor.Instance.Icons.DragBar12, _arrangeButtonRect, _arrangeButtonInUse ? Color.Orange : dragBarColor);
+                if (_arrangeButtonInUse && ArrangeAreaCheck(out _, out var arrangeTargetRect))
+                {
+                    Render2D.FillRectangle(arrangeTargetRect, style.Selection);
+                }
+            }
+
+            private bool ArrangeAreaCheck(out int index, out Rectangle rect)
+            {
+                var child = Editor.ChildrenEditors[0];
+                var container = child.Layout.ContainerControl;
+                var mousePosition = container.PointFromScreen(Input.MouseScreenPosition);
+                var barSidesExtend = 20.0f;
+                var barHeight = 5.0f;
+                var barCheckAreaHeight = 40.0f;
+                var pos = mousePosition.Y + barCheckAreaHeight * 0.5f;
+
+                for (int i = 0; i < container.Children.Count / 2; i++)
+                {
+                    var containerChild = container.Children[i * 2]; // times 2 to skip the value editor
+                    if (Mathf.IsInRange(pos, containerChild.Top, containerChild.Top + barCheckAreaHeight) || (i == 0 && pos < containerChild.Top))
+                    {
+                        index = i;
+                        var p1 = containerChild.UpperLeft;
+                        rect = new Rectangle(PointFromParent(p1) - new Float2(barSidesExtend * 0.5f, barHeight * 0.5f), Width + barSidesExtend, barHeight);
+                        return true;
+                    }
+                }
+
+                var p2 = container.Children[((container.Children.Count / 2) - 1) * 2].BottomLeft;
+                if (pos > p2.Y)
+                {
+                    index = (container.Children.Count / 2) - 1;
+                    rect = new Rectangle(PointFromParent(p2) - new Float2(barSidesExtend * 0.5f, barHeight * 0.5f), Width + barSidesExtend, barHeight);
+                    return true;
+                }
+
+                index = -1;
+                rect = Rectangle.Empty;
+                return false;
+            }
+
+            /// <inheritdoc />
+            public override bool OnMouseUp(Float2 location, MouseButton button)
+            {
+                if (button == MouseButton.Left && _arrangeButtonInUse)
+                {
+                    _arrangeButtonInUse = false;
+                    EndMouseCapture();
+                    if (ArrangeAreaCheck(out var index, out _))
+                    {
+                        Editor.Shift(Index, index);
+                    }
+
+/*                    if (ArrangeAreaCheck(out var index, out _))
+                    {
+                        var modules = Surface.Nodes.OfType<ParticleModuleNode>().Where(x => x.ModuleType == ModuleType).ToList();
+
+                        foreach (var module in modules)
+                        {
+                            Surface.Nodes.Remove(module);
+                        }
+
+                        int oldIndex = modules.IndexOf(this);
+                        modules.RemoveAt(oldIndex);
+                        if (index < 0 || index >= modules.Count)
+                            modules.Add(this);
+                        else
+                            modules.Insert(index, this);
+
+                        foreach (var module in modules)
+                        {
+                            Surface.Nodes.Add(module);
+                        }
+
+                        foreach (var module in modules)
+                        {
+                            module.IndexInParent = int.MaxValue;
+                        }
+
+                        ParticleSurface.ArrangeModulesNodes();
+                        Surface.MarkAsEdited();
+                    }*/
+                }
+
+                return base.OnMouseUp(location, button);
+            }
+
+            /// <inheritdoc />
+            public override void OnLostFocus()
+            {
+                if (_arrangeButtonInUse)
+                {
+                    _arrangeButtonInUse = false;
+                    EndMouseCapture();
+                }
+
+                base.OnLostFocus();
             }
 
             private void OnMoveUpClicked()
@@ -315,7 +461,6 @@ namespace FlaxEditor.CustomEditors.Editors
                               (elementType.GetProperties().Length == 1 && elementType.GetFields().Length == 0) ||
                               elementType.Equals(new ScriptType(typeof(JsonAsset))) ||
                               elementType.Equals(new ScriptType(typeof(SettingsBase)));
-
                 for (int i = 0; i < size; i++)
                 {
                     // Apply spacing
@@ -424,6 +569,39 @@ namespace FlaxEditor.CustomEditors.Editors
             var tmp = cloned[dstIndex];
             cloned[dstIndex] = cloned[srcIndex];
             cloned[srcIndex] = tmp;
+            SetValue(cloned);
+        }
+
+        /// <summary>
+        /// Shifts the specified item at the given index and moves it through the list to the other item. It supports undo.
+        /// </summary>
+        /// <param name="srcIndex">Index of the source item.</param>
+        /// <param name="dstIndex">Index of the destination to move to.</param>
+        private void Shift(int srcIndex, int dstIndex)
+        {
+            if (IsSetBlocked)
+                return;
+
+            var cloned = CloneValues();
+            if (dstIndex > srcIndex)
+            {
+                for (int i = srcIndex; i < dstIndex; i++)
+                {
+                    var tmp = cloned[i + 1];
+                    cloned[i + 1] = cloned[i];
+                    cloned[i] = tmp;
+                }
+            }
+            else
+            {
+                for (int i = srcIndex; i > dstIndex; i--)
+                {
+                    var tmp = cloned[i - 1];
+                    cloned[i - 1] = cloned[i];
+                    cloned[i] = tmp;
+                }
+            }
+            
             SetValue(cloned);
         }
 
