@@ -129,5 +129,19 @@ namespace FlaxEditor.Options
         [DefaultValue(50.0f), Limit(25.0f, 500.0f, 5.0f)]
         [EditorDisplay("Defaults"), EditorOrder(220), Tooltip("The default editor viewport grid scale.")]
         public float ViewportGridScale { get; set; } = 50.0f;
+
+        /// <summary>
+        /// Gets or sets the view distance you can see the grid.
+        /// </summary>
+        [DefaultValue(2500.0f)]
+        [EditorDisplay("Grid"), EditorOrder(300), Tooltip("The maximum distance you will be able to see the grid.")]
+        public float ViewportGridViewDistance { get; set; } = 2500.0f;
+
+        /// <summary>
+        /// Gets or sets the grid color.
+        /// </summary>
+        [DefaultValue(typeof(Color), "0.5,0.5,0.5")]
+        [EditorDisplay("Grid"), EditorOrder(310), Tooltip("The color for the viewport grid.")]
+        public Color ViewportGridColor { get; set; } = Color.Gray;
     }
 }

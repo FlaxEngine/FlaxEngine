@@ -2,6 +2,8 @@
 
 using System;
 using FlaxEngine;
+using System.Runtime.InteropServices;
+using static FlaxEditor.Surface.Archetypes.Animation.StateMachineTransition;
 
 namespace FlaxEditor.Gizmo
 {
@@ -15,13 +17,65 @@ namespace FlaxEditor.Gizmo
         [HideInEditor]
         private sealed class Renderer : PostProcessEffect
         {
+            [StructLayout(LayoutKind.Sequential)]
+            private struct Data
+            {
+                public Matrix WorldMatrix;
+                public Matrix ViewProjectionMatrix;
+                public Float4 GridColor;
+                public Float3 ViewPos;
+                public float Far;
+                public float GridSize;
+            }
+
+            private Float3[] _vertices =
+            {
+                new Float3(0, 0, 0),
+                new Float3(100, 0, 0),
+                new Float3(100, 100, 0),
+                new Float3(0, 100, 0),
+            };
+
+            private static readonly uint[] _triangles =
+            {
+                0, 2, 1, // Face front
+                1, 3, 0,
+            };
+
+            private GPUBuffer _vertexBuffer;
+            private GPUBuffer _indexBuffer;
+            private GPUPipelineState _psCustom;
+            private Shader _shader;
+
+            public Shader Shader
+            {
+                get => _shader;
+                set
+                {
+                    if (_shader != value)
+                    {
+                        _shader = value;
+                        ReleaseShader();
+                    }
+                }
+            }
+
             private IntPtr _debugDrawContext;
 
-            public Renderer()
+            public unsafe Renderer()
             {
                 Order = -100;
                 UseSingleTarget = true;
                 Location = PostProcessEffectLocation.BeforeForwardPass;
+
+                // Create index buffer for custom geometry drawing
+                _indexBuffer = new GPUBuffer();
+                fixed (uint* ptr = _triangles)
+                {
+                    var desc = GPUBufferDescription.Index(sizeof(uint), _triangles.Length, new IntPtr(ptr));
+                    _indexBuffer.Init(ref desc);
+                }
+                Shader = FlaxEngine.Content.LoadAsyncInternal<Shader>("Shaders/Grid");
             }
 
             ~Renderer()
@@ -31,75 +85,80 @@ namespace FlaxEditor.Gizmo
                     DebugDraw.FreeContext(_debugDrawContext);
                     _debugDrawContext = IntPtr.Zero;
                 }
+
+                ReleaseShader();
+                Destroy(ref _vertexBuffer);
+                Destroy(ref _indexBuffer);
             }
 
-            public override void Render(GPUContext context, ref RenderContext renderContext, GPUTexture input, GPUTexture output)
+            private void ReleaseShader()
+            {
+                // Release resources using shader
+                Destroy(ref _psCustom);
+            }
+
+            public override unsafe void Render(GPUContext context, ref RenderContext renderContext, GPUTexture input, GPUTexture output)
             {
                 Profiler.BeginEventGPU("Editor Grid");
 
-                if (_debugDrawContext == IntPtr.Zero)
-                    _debugDrawContext = DebugDraw.AllocateContext();
-                DebugDraw.SetContext(_debugDrawContext);
-                DebugDraw.UpdateContext(_debugDrawContext, 1.0f / Mathf.Max(Engine.FramesPerSecond, 1));
+                if (Shader == null) return;
 
-                var viewPos = (Vector3)renderContext.View.Position;
-                var plane = new Plane(Vector3.Zero, Vector3.UnitY);
-                var dst = CollisionsHelper.DistancePlanePoint(ref plane, ref viewPos);
+                // Here we perform custom rendering on top of the in-build drawing
+                Vector3 camPos = renderContext.View.WorldPosition;
+                float gridSize = renderContext.View.Far + 20000;
+                _vertices = new Float3[]
+                {
+                    new Float3(-gridSize + camPos.X, 0, -gridSize + camPos.Z),
+                    new Float3(gridSize + camPos.X, 0, gridSize + camPos.Z),
+                    new Float3(-gridSize + camPos.X, 0, gridSize + camPos.Z),
+                    new Float3(gridSize + camPos.X, 0, -gridSize + camPos.Z),
+                };
+
+                // Create vertex buffer for custom geometry drawing
+                _vertexBuffer = new GPUBuffer();
+                fixed (Float3* ptr = _vertices)
+                {
+                    var desc = GPUBufferDescription.Vertex(sizeof(Float3), _vertices.Length, new IntPtr(ptr));
+                    _vertexBuffer.Init(ref desc);
+                }
+
+                // Setup missing resources
+                if (!_psCustom)
+                {
+                    _psCustom = new GPUPipelineState();
+                    var desc = GPUPipelineState.Description.Default;
+                    desc.BlendMode = BlendingMode.AlphaBlend;
+                    desc.CullMode = CullMode.TwoSided;
+                    desc.VS = Shader.GPU.GetVS("VS_Custom");
+                    desc.PS = Shader.GPU.GetPS("PS_Custom");
+                    _psCustom.Init(ref desc);
+                }
 
                 var options = Editor.Instance.Options.Options;
-                float space = options.Viewport.ViewportGridScale, size;
-                if (dst <= 500.0f)
-                {
-                    size = 8000;
-                }
-                else if (dst <= 2000.0f)
-                {
-                    space *= 2;
-                    size = 8000;
-                }
-                else
-                {
-                    space *= 20;
-                    size = 100000;
-                }
 
-                float bigLineIntensity = 0.8f;
-                Color bigColor = Color.Gray * bigLineIntensity;
-                Color color = bigColor * 0.8f;
-                int count = (int)(size / space);
-                int midLine = count / 2;
-                int bigLinesMod = count / 8;
-
-                Vector3 start = new Vector3(0, 0, size * -0.5f);
-                Vector3 end = new Vector3(0, 0, size * 0.5f);
-
-                for (int i = 0; i <= count; i++)
+                // Set constant buffer data (memory copy is used under the hood to copy raw data from CPU to GPU memory)
+                var cb = Shader.GPU.GetCB(0);
+                if (cb != IntPtr.Zero)
                 {
-                    start.X = end.X = i * space + start.Z;
-                    Color lineColor = color;
-                    if (i == midLine)
-                        lineColor = Color.Blue * bigLineIntensity;
-                    else if (i % bigLinesMod == 0)
-                        lineColor = bigColor;
-                    DebugDraw.DrawLine(start, end, lineColor);
+                    var data = new Data();
+                    Matrix.Multiply(ref renderContext.View.View, ref renderContext.View.Projection, out var viewProjection);
+                    data.WorldMatrix = Matrix.Identity;
+                    Matrix.Transpose(ref viewProjection, out data.ViewProjectionMatrix);
+                    data.ViewPos = renderContext.View.WorldPosition;
+                    data.GridColor = options.Viewport.ViewportGridColor;
+                    data.Far = renderContext.View.Far;
+                    data.GridSize = options.Viewport.ViewportGridViewDistance;
+                    context.UpdateCB(cb, new IntPtr(&data));
                 }
 
-                start = new Vector3(size * -0.5f, 0, 0);
-                end = new Vector3(size * 0.5f, 0, 0);
-
-                for (int i = 0; i <= count; i++)
-                {
-                    start.Z = end.Z = i * space + start.X;
-                    Color lineColor = color;
-                    if (i == midLine)
-                        lineColor = Color.Red * bigLineIntensity;
-                    else if (i % bigLinesMod == 0)
-                        lineColor = bigColor;
-                    DebugDraw.DrawLine(start, end, lineColor);
-                }
-
-                DebugDraw.Draw(ref renderContext, input.View(), null, true);
-                DebugDraw.SetContext(IntPtr.Zero);
+                // // Draw geometry using custom Pixel Shader and Vertex Shader
+                context.BindCB(0, cb);
+                context.BindSR(0, input);
+                context.BindIB(_indexBuffer);
+                context.BindVB(new[] { _vertexBuffer });
+                context.SetState(_psCustom);
+                context.SetRenderTarget(input.View());
+                context.DrawIndexed((uint)_triangles.Length);
 
                 Profiler.EndEventGPU();
             }
