@@ -134,8 +134,8 @@ float4 GetColor(float3 pos, float scale)
     
     float4 color = grid * GridColor;
     
-    color = lerp(color, float4(1,0,0,1), l1);
-    color = lerp(color, float4(0,0,1,1), l2);
+    color = lerp(color, float4(1,0,0,1), l2);
+    color = lerp(color, float4(0,0,1,1), l1);
     
     color *= dist;
     
