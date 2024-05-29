@@ -572,9 +572,8 @@ bool ModelTool::GenerateModelSDF(Model* inputModel, ModelData* modelData, float 
                 const int32 yAddress = resolutionMip.X * y + zAddress;
                 for (int32 x = 0; x < resolutionMip.X; x++)
                 {
-                    // Linear box filter around the voxel
-                    // TODO: use min distance for nearby texels (texel distance + distance to texel)
-                    float distance = 0;
+                    // Min-filter around the voxel
+                    float distance = MAX_float;
                     for (int32 dz = 0; dz < 2; dz++)
                     {
                         const int32 dzAddress = (z * 2 + dz) * (resolution.Y * resolution.X);
@@ -585,11 +584,10 @@ bool ModelTool::GenerateModelSDF(Model* inputModel, ModelData* modelData, float 
                             {
                                 const int32 dxAddress = (x * 2 + dx) + dyAddress;
                                 const float d = formatRead((byte*)voxelsMipSrc + dxAddress * formatStride) * decodeMAD.X + decodeMAD.Y;
-                                distance += d;
+                                distance = Math::Min(distance, d);
                             }
                         }
                     }
-                    distance *= 1.0f / 8.0f;
 
                     const int32 xAddress = x + yAddress;
                     formatWrite((byte*)voxelsMip + xAddress * formatStride, distance * encodeMAD.X + encodeMAD.Y);

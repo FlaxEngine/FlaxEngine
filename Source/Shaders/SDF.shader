@@ -218,32 +218,6 @@ void CS_FloodFill(uint3 GroupId : SV_GroupID, uint GroupIndex : SV_GroupIndex)
         sdf = CombineSDF(sdf, voxelCoord + offset.xyy, nearbyDistance);
         sdf = CombineSDF(sdf, voxelCoord + offset.yxy, nearbyDistance);
         sdf = CombineSDF(sdf, voxelCoord + offset.yyx, nearbyDistance);
-#if 0
-        nearbyDistance = WorldUnitsPerVoxel * 1.41421f;
-        sdf = CombineSDF(sdf, voxelCoord + offset.xxy, nearbyDistance);
-        sdf = CombineSDF(sdf, voxelCoord + offset.xzy, nearbyDistance);
-        sdf = CombineSDF(sdf, voxelCoord + offset.zzy, nearbyDistance);
-        sdf = CombineSDF(sdf, voxelCoord + offset.zxy, nearbyDistance);
-        sdf = CombineSDF(sdf, voxelCoord + offset.xyx, nearbyDistance);
-        sdf = CombineSDF(sdf, voxelCoord + offset.xyz, nearbyDistance);
-        sdf = CombineSDF(sdf, voxelCoord + offset.zyz, nearbyDistance);
-        sdf = CombineSDF(sdf, voxelCoord + offset.zyx, nearbyDistance);
-        sdf = CombineSDF(sdf, voxelCoord + offset.yxx, nearbyDistance);
-        sdf = CombineSDF(sdf, voxelCoord + offset.yxz, nearbyDistance);
-        sdf = CombineSDF(sdf, voxelCoord + offset.yzz, nearbyDistance);
-        sdf = CombineSDF(sdf, voxelCoord + offset.yzx, nearbyDistance);
-#endif
-#if 0
-        nearbyDistance = WorldUnitsPerVoxel * 1.73205f;
-        sdf = CombineSDF(sdf, voxelCoord + offset.xxx, nearbyDistance);
-        sdf = CombineSDF(sdf, voxelCoord + offset.xxz, nearbyDistance);
-        sdf = CombineSDF(sdf, voxelCoord + offset.xzx, nearbyDistance);
-        sdf = CombineSDF(sdf, voxelCoord + offset.xzz, nearbyDistance);
-        sdf = CombineSDF(sdf, voxelCoord + offset.zxx, nearbyDistance);
-        sdf = CombineSDF(sdf, voxelCoord + offset.zxz, nearbyDistance);
-        sdf = CombineSDF(sdf, voxelCoord + offset.zzx, nearbyDistance);
-        sdf = CombineSDF(sdf, voxelCoord + offset.zzz, nearbyDistance);
-#endif
     }
 
     SDF[voxelIndex] = asuint(sdf);
