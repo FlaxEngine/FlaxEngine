@@ -84,6 +84,11 @@ public:
     /// </summary>
     Array<byte> CustomData;
 
+    /// <summary>
+    /// The external amount of the particles to spawn.
+    /// </summary>
+    int32 CustomSpawnCount = 0;
+
     struct
     {
         /// <summary>

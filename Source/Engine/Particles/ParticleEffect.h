@@ -351,6 +351,13 @@ public:
     API_FUNCTION() void UpdateSimulation(bool singleFrame = false);
 
     /// <summary>
+    /// Manually spawns additional particles into the simulation.
+    /// </summary>
+    /// <param name="count">Amount of particles to spawn.</param>
+    /// <param name="emitterTrackName">Name of the emitter track to spawn particles in. Empty if spawn particles into all tracks.</param>
+    API_FUNCTION() void SpawnParticles(int32 count, const StringView& emitterTrackName = String::Empty);
+
+    /// <summary>
     /// Plays the simulation.
     /// </summary>
     API_FUNCTION() void Play();

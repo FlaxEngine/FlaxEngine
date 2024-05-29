@@ -505,7 +505,8 @@ void ParticleEmitterGraphCPUExecutor::Update(ParticleEmitter* emitter, ParticleE
     }
 
     // Spawn particles
-    int32 spawnCount = 0;
+    int32 spawnCount = data.CustomSpawnCount;
+    data.CustomSpawnCount = 0;
     if (canSpawn)
     {
         PROFILE_CPU_NAMED("Spawn");
@@ -573,7 +574,8 @@ int32 ParticleEmitterGraphCPUExecutor::UpdateSpawn(ParticleEmitter* emitter, Par
     Init(emitter, effect, data, dt);
 
     // Spawn particles
-    int32 spawnCount = 0;
+    int32 spawnCount = data.CustomSpawnCount;
+    data.CustomSpawnCount = 0;
     for (int32 i = 0; i < _graph.SpawnModules.Count(); i++)
     {
         spawnCount += ProcessSpawnModule(i);
