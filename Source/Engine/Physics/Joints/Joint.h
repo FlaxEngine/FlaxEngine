@@ -11,14 +11,6 @@
 
 class IPhysicsActor;
 
-#define Export(...)
-#define Property
-#define Getter
-#define Setter
-#define EditorOrder(order)
-#define EditorDisplay(Category)
-#define VisibleIf(var,swich)
-
 /// <summary>
 /// A base class for all Joint types. Joints constrain how two rigidbodies move relative to one another (for example a door hinge).
 /// One of the bodies in the joint must always be movable (non-kinematic and non-static).
@@ -52,7 +44,7 @@ public:
     /// This is the relative pose which locates the joint frame relative to the actor.
     /// </summary>
     /// <param name="LocalPose">localPose the local pose for the actor this joint.</param>
-    API_PROPERTY(Attributes = "EditorOrder(1), EditorDisplay(\"Joint\"),VisibleIf(nameof(EnableAutoAnchor), true)")
+    API_PROPERTY(Attributes = "EditorOrder(1), EditorDisplay(\"Joint\"),VisibleIf(nameof(EnableAutoAnchor), false)")
     void SetLocalPoseActor0(const PhysicsTransform& LocalPose);
 
     /// <summary>

@@ -11,6 +11,28 @@
 struct RayCastHit;
 class RigidBody;
 
+/*note: DON'T REORDER ColliderAxis the CylinderCollider is casting enum to int*/
+
+/// <summary>
+/// Describes the orientaccion of collider
+/// </summary>
+API_ENUM() enum ColliderAxis
+{
+    /// <summary>
+    /// The x
+    /// </summary>
+    X = 0,
+    /// <summary>
+    /// The y
+    /// </summary>
+    Y = 1,
+    /// <summary>
+    /// The z
+    /// </summary>
+    Z = 2
+};
+
+
 /// <summary>
 /// A base class for all colliders.
 /// </summary>

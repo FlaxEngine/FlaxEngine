@@ -6,7 +6,37 @@ CylinderCollider::CylinderCollider(const SpawnParams& params)
     : Collider(params)
     , _radius(20.0f)
     , _height(100.0f)
+    , _margin(0)
+    , _axis(Y)
 {
+}
+
+void CylinderCollider::SetAxis(ColliderAxis value)
+{
+    if (value == _axis)
+        return;
+
+    //[todo] maybe log a warning ? in dev builds and not to any cheeks or clamping in release
+    auto SafeValue = Math::Clamp(_axis,X, Z); // if this gets out of range the physx will throw or crash :D
+
+    _axis = SafeValue;
+
+    UpdateGeometry();
+    UpdateBounds();
+}
+
+void CylinderCollider::SetMargin(float value)
+{
+    if (Math::NearEqual(value, _margin))
+        return;
+
+    //[todo] maybe log a warning ? in dev builds and not to any cheeks or clamping in release
+    auto SafeValue = Math::Clamp(value,0.0f, 10000.0f);// if this gets out of range the physx will throw or crash :D
+
+    _margin = SafeValue;
+
+    UpdateGeometry();
+    UpdateBounds();
 }
 
 void CylinderCollider::SetRadius(const float value)
@@ -14,7 +44,10 @@ void CylinderCollider::SetRadius(const float value)
     if (Math::NearEqual(value, _radius))
         return;
 
-    _radius = value;
+    //[todo] maybe log a warning ? in dev builds and not to any cheeks or clamping in release
+    auto SafeValue = Math::Clamp(value, 0.0001f, 100000.0f);// if this gets out of range the physx will throw or crash :D
+
+    _radius = SafeValue;
 
     UpdateGeometry();
     UpdateBounds();
@@ -25,7 +58,10 @@ void CylinderCollider::SetHeight(const float value)
     if (Math::NearEqual(value, _height))
         return;
 
-    _height = value;
+    //[todo] maybe log a warning ? in dev builds and not to any cheeks or clamping in release
+    auto SafeValue = Math::Clamp(value, 0.0001f, 100000.0f);// if this gets out of range the physx will throw or crash :D
+
+    _height = SafeValue;
 
     UpdateGeometry();
     UpdateBounds();
@@ -49,7 +85,13 @@ void CylinderCollider::DrawPhysicsDebug(RenderView& view)
     PhysicsBackend::GetShapePose(_shape, T.Translation, T.Orientation);
 
     Quaternion rotation;
-    Quaternion::Multiply(T.Orientation, Quaternion::Euler(0, 90, 0), rotation);
+    //[todo] use of the GetQuaternionOffset(),_radius,_height. is incorent in this place
+    //pull the axis value from back end some how
+
+    //[todo] show text the same joins show it, when actor transform and backend are off sync with back end
+    //in this place or in the base class
+
+    Quaternion::Multiply(T.Orientation, GetQuaternionOffset(), rotation);
     const float scaling = _cachedScale.GetAbsolute().MaxValue();
     const float minSize = 0.001f;
     const float radius = Math::Max(Math::Abs(_radius) * scaling, minSize);
@@ -65,7 +107,7 @@ void CylinderCollider::OnDebugDraw()
     if (DisplayCollider)
     {
         Quaternion rotation;
-        Quaternion::Multiply(_transform.Orientation, Quaternion::Euler(0, 90, 0), rotation);
+        Quaternion::Multiply(_transform.Orientation, GetQuaternionOffset(), rotation);
         const float scaling = _cachedScale.GetAbsolute().MaxValue();
         const float minSize = 0.001f;
         const float radius = Math::Max(Math::Abs(_radius) * scaling, minSize);
@@ -90,7 +132,7 @@ void CylinderCollider::OnDebugDraw()
 void CylinderCollider::OnDebugDrawSelected()
 {
     Quaternion rotation;
-    Quaternion::Multiply(_transform.Orientation, Quaternion::Euler(0, 90, 0), rotation);
+    Quaternion::Multiply(_transform.Orientation, GetQuaternionOffset(), rotation);
     const float scaling = _cachedScale.GetAbsolute().MaxValue();
     const float minSize = 0.001f;
     const float radius = Math::Max(Math::Abs(_radius) * scaling, minSize);
@@ -126,6 +168,24 @@ bool CylinderCollider::IntersectsItself(const Ray& ray, Real& distance, Vector3&
     return _orientedBox.Intersects(ray, distance, normal);
 }
 
+Quaternion CylinderCollider::GetQuaternionOffset()
+{
+    switch (GetAxis())
+    {
+    case ColliderAxis::X:
+        return Quaternion::Euler(0, 0, 0);
+    case ColliderAxis::Y:
+        return Quaternion::Euler(0, 0, 0);
+    case ColliderAxis::Z:
+        return Quaternion::Euler(0, 0, 0);
+    default:
+        break;
+    }
+    //just in case the axis are invalid
+    //[Todo] error here ? (dont use assert in this place we aren not allowing softlock's of editor or a game)
+    return Quaternion::Identity;
+}
+
 void CylinderCollider::UpdateBounds()
 {
     // Cache bounds
@@ -138,5 +198,5 @@ void CylinderCollider::UpdateBounds()
 
 void CylinderCollider::GetGeometry(CollisionShape& collision)
 {
-    collision.SetCylinder(_radius, _height);
+    collision.SetCylinder(_radius, _height,(int)_axis,_margin);
 }
