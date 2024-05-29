@@ -421,9 +421,9 @@ void RigidBody::OnDebugDrawSelected()
 {
     if (DisplayAttachedColliders)
     {
-        for (auto i = 0; i < AttachedColliders.Count(); i++)
+        for (auto i = 0; i < AttatchedColliders.Count(); i++)
         {
-            if (auto c = AttachedColliders[i])
+            if (auto c = AttatchedColliders[i])
             {
                 c->OnDebugDrawSelected();
             }

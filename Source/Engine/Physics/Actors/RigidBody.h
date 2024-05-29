@@ -42,7 +42,7 @@ protected:
 
     friend Collider;
     //API_FIELD(public,Attributes = "EditorOrder(100), DefaultValue(false), EditorDisplay(\"Rigid Body\"),RadyOnly")
-        Array<ScriptingObjectReference<Collider>> AttachedColliders;
+        Array<ScriptingObjectReference<Collider>> AttatchedColliders;
 public:
     /// <summary>
     /// Enables kinematic mode for the rigidbody. Kinematic rigidbodies are special dynamic actors that are not influenced by forces(such as gravity), and have no momentum. They are considered to have infinite mass and can push regular dynamic actors out of the way. Kinematics will not collide with static or other kinematic objects but are great for moving platforms or characters, where direct motion control is desired.
@@ -486,22 +486,22 @@ public:
     void UpdateScale();
 
     template<typename ColliderType = Collider, typename AllocationType = HeapAllocation>
-    void GetAttachedColliders(Array<ColliderType*, AllocationType>& result) const
+    void GetAttathedColliders(Array<ColliderType*, AllocationType>& result) const
     {
-        for (int32 i = 0; i < AttachedColliders.Count(); i++)
+        for (int32 i = 0; i < AttatchedColliders.Count(); i++)
         {
-            const auto collider = Cast<ColliderType>(AttachedColliders[i]);
+            const auto collider = Cast<ColliderType>(AttatchedColliders[i]);
             if (collider)
                 result.Add(collider);
         }
     }
 
     template<typename ColliderType = Collider>
-    ColliderType* GetAttachedCollidersOfType() const
+    ColliderType* GetAttathedColliderOfType() const
     {
-        for (auto i = 0; i < AttachedColliders.Count(); i++)
+        for (auto i = 0; i < AttatchedColliders.Count(); i++)
         {
-            const auto collider = Cast<ColliderType>(AttachedColliders[i]);
+            const auto collider = Cast<ColliderType>(AttatchedColliders[i]);
             if (collider) 
             {
                 return collider;
