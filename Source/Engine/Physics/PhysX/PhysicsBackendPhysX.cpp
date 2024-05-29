@@ -653,11 +653,7 @@ void GetShapeGeometry(const CollisionShape& shape, PxGeometryHolder& geometry)
         geometry.storeAny(PxHeightFieldGeometry((PxHeightField*)shape.HeightField.HeightField, PxMeshGeometryFlags(0), Math::Max(shape.HeightField.HeightScale, PX_MIN_HEIGHTFIELD_Y_SCALE), Math::Max(shape.HeightField.RowScale, PX_MIN_HEIGHTFIELD_XZ_SCALE), Math::Max(shape.HeightField.ColumnScale, PX_MIN_HEIGHTFIELD_XZ_SCALE)));
         break;
     case CollisionShape::Types::Cylinder:
-#if INDEVELOPMENT && EXPERIMENTAL
-        auto gCylinderCallbacks = new CylinderCallbacks(shape.Cylinder.Radius, shape.Cylinder.HalfHeight);
-#else
-        auto gCylinderCallbacks = new physx::PxCustomGeometryExt::CylinderCallbacks(shape.Cylinder.HalfHeight, shape.Cylinder.Radius);
-#endif
+        auto gCylinderCallbacks = new physx::PxCustomGeometryExt::CylinderCallbacks(shape.Cylinder.HalfHeight, shape.Cylinder.Radius, shape.Cylinder.Axis, shape.Cylinder.Margin);
         geometry.storeAny(PxCustomGeometry(*gCylinderCallbacks));
         break;
     }
