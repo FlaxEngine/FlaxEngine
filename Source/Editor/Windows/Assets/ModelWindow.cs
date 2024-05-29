@@ -298,11 +298,12 @@ namespace FlaxEditor.Windows.Assets
                     proxy.Window.Enabled = false;
                     Task.Run(() =>
                     {
-                        proxy.Asset.GenerateSDF(proxy.Window._importSettings.Settings.SDFResolution, _sdfModelLodIndex.Value, true, proxy.Window._backfacesThreshold);
+                        bool failed = proxy.Asset.GenerateSDF(proxy.Window._importSettings.Settings.SDFResolution, _sdfModelLodIndex.Value, true, proxy.Window._backfacesThreshold);
                         FlaxEngine.Scripting.InvokeOnUpdate(() =>
                         {
                             proxy.Window.Enabled = true;
-                            proxy.Window.MarkAsEdited();
+                            if (!failed)
+                                proxy.Window.MarkAsEdited();
                             Presenter.BuildLayoutOnUpdate();
                         });
                     });

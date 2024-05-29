@@ -650,7 +650,7 @@ bool Model::Save(bool withMeshDataFromGpu, const StringView& path)
 
 #endif
 
-bool Model::GenerateSDF(float resolutionScale, int32 lodIndex, bool cacheData, float backfacesThreshold)
+bool Model::GenerateSDF(float resolutionScale, int32 lodIndex, bool cacheData, float backfacesThreshold, bool useGPU)
 {
     if (EnableModelSDF == 2)
         return true; // Not supported
@@ -673,7 +673,10 @@ bool Model::GenerateSDF(float resolutionScale, int32 lodIndex, bool cacheData, f
 #else
     class MemoryWriteStream* outputStream = nullptr;
 #endif
-    if (ModelTool::GenerateModelSDF(this, nullptr, resolutionScale, lodIndex, &SDF, outputStream, GetPath(), backfacesThreshold))
+    Locker.Unlock();
+    const bool failed = ModelTool::GenerateModelSDF(this, nullptr, resolutionScale, lodIndex, &SDF, outputStream, GetPath(), backfacesThreshold, useGPU);
+    Locker.Lock();
+    if (failed)
         return true;
 
 #if USE_EDITOR

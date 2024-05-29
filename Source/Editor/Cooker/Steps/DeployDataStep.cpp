@@ -344,6 +344,7 @@ bool DeployDataStep::Perform(CookingData& data)
     data.AddRootEngineAsset(TEXT("Shaders/Sky"));
     data.AddRootEngineAsset(TEXT("Shaders/SSAO"));
     data.AddRootEngineAsset(TEXT("Shaders/SSR"));
+    data.AddRootEngineAsset(TEXT("Shaders/SDF"));
     data.AddRootEngineAsset(TEXT("Shaders/VolumetricFog"));
     data.AddRootEngineAsset(TEXT("Engine/DefaultMaterial"));
     data.AddRootEngineAsset(TEXT("Engine/DefaultDeformableMaterial"));

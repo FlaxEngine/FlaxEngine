@@ -93,7 +93,7 @@ public:
     /// <param name="asset">The asset to set.</param>
     AssetReference(T* asset)
     {
-        OnSet(asset);
+        OnSet((Asset*)asset);
     }
 
     /// <summary>
@@ -215,7 +215,7 @@ public:
     /// <param name="asset">The asset.</param>
     void Set(T* asset)
     {
-        OnSet(asset);
+        OnSet((Asset*)asset);
     }
 };
 
