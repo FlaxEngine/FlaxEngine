@@ -364,9 +364,12 @@ bool ModelTool::GenerateModelSDF(Model* inputModel, ModelData* modelData, float 
         bounds = modelData->LODs[lodIndex].GetBox();
     else
         return true;
-    Float3 size = bounds.GetSize();
     ModelBase::SDFData sdf;
     sdf.WorldUnitsPerVoxel = METERS_TO_UNITS(0.1f) / Math::Max(resolutionScale, 0.0001f); // 1 voxel per 10 centimeters
+    const float boundsMargin = sdf.WorldUnitsPerVoxel * 0.5f; // Add half-texel margin around the mesh
+    bounds.Minimum -= boundsMargin;
+    bounds.Maximum += boundsMargin;
+    const Float3 size = bounds.GetSize();
     Int3 resolution(Float3::Ceil(Float3::Clamp(size / sdf.WorldUnitsPerVoxel, 4, 256)));
     Float3 uvwToLocalMul = size;
     Float3 uvwToLocalAdd = bounds.Minimum;
