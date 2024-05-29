@@ -120,6 +120,10 @@ public:
         , _xyzToLocalMul(xyzToLocalMul)
         , _xyzToLocalAdd(xyzToLocalAdd)
     {
+#if GPU_ENABLE_RESOURCE_NAMING
+        _sdfSrc->SetName(TEXT("SDFSrc"));
+        _sdfDst->SetName(TEXT("SDFDst"));
+#endif
     }
 
     ~GPUModelSDFTask()
@@ -202,7 +206,12 @@ public:
                     desc = GPUBufferDescription::Raw(vb->GetSize(), GPUBufferFlags::ShaderResource);
                     // TODO: use transient buffer (single frame)
                     if (!vbTemp)
+                    {
                         vbTemp = GPUBuffer::New();
+#if GPU_ENABLE_RESOURCE_NAMING
+                        vbTemp->SetName(TEXT("SDFvb"));
+#endif
+                    }
                     vbTemp->Init(desc);
                     context->CopyBuffer(vbTemp, vb, desc.Size);
                     vb = vbTemp;
@@ -212,7 +221,12 @@ public:
                     desc = GPUBufferDescription::Raw(ib->GetSize(), GPUBufferFlags::ShaderResource);
                     // TODO: use transient buffer (single frame)
                     if (!ibTemp)
+                    {
                         ibTemp = GPUBuffer::New();
+#if GPU_ENABLE_RESOURCE_NAMING
+                        ibTemp->SetName(TEXT("SDFib"));
+#endif
+                    }
                     ibTemp->Init(desc);
                     context->CopyBuffer(ibTemp, ib, desc.Size);
                     ib = ibTemp;
@@ -230,6 +244,10 @@ public:
             const ModelLodData& lod = _modelData->LODs[Math::Clamp(_lodIndex, 0, _modelData->LODs.Count() - 1)];
             auto vb = GPUBuffer::New();
             auto ib = GPUBuffer::New();
+#if GPU_ENABLE_RESOURCE_NAMING
+            vb->SetName(TEXT("SDFvb"));
+            ib->SetName(TEXT("SDFib"));
+#endif
             for (int32 i = 0; i < lod.Meshes.Count(); i++)
             {
                 const MeshData* mesh = lod.Meshes[i];
@@ -294,6 +312,9 @@ public:
         auto sdfTextureDesc = GPUTextureDescription::New3D(_resolution.X, _resolution.Y, _resolution.Z, PixelFormat::R16_UNorm, GPUTextureFlags::UnorderedAccess | GPUTextureFlags::RenderTarget);
         // TODO: use transient texture (single frame)
         auto sdfTexture = GPUTexture::New();
+#if GPU_ENABLE_RESOURCE_NAMING
+        sdfTexture->SetName(TEXT("SDFTexture"));
+#endif
         sdfTexture->Init(sdfTextureDesc);
         context->BindUA(1, sdfTexture->ViewVolume());
         context->Dispatch(shader->GetCS("CS_Encode"), threadGroups.X, threadGroups.Y, threadGroups.Z);
@@ -397,7 +418,7 @@ bool ModelTool::GenerateModelSDF(Model* inputModel, ModelData* modelData, float 
             SAFE_DELETE_GPU_RESOURCE(outputSDF->Texture);
             return true;
         }
-#if !BUILD_RELEASE
+#if GPU_ENABLE_RESOURCE_NAMING
         outputSDF->Texture->SetName(TEXT("ModelSDF"));
 #endif
     }
@@ -432,6 +453,9 @@ bool ModelTool::GenerateModelSDF(Model* inputModel, ModelData* modelData, float 
 
         // TODO: skip using sdfResult and downloading SDF from GPU when updating virtual model
         auto sdfResult = GPUTexture::New();
+#if GPU_ENABLE_RESOURCE_NAMING
+        sdfResult->SetName(TEXT("SDFResult"));
+#endif
 
         // Run SDF generation via GPU async task
         ConditionVariable signal;
