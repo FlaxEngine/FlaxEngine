@@ -64,9 +64,8 @@ namespace FlaxEditor.Gizmo
 
             public unsafe Renderer()
             {
-                Order = -100;
                 UseSingleTarget = true;
-                Location = PostProcessEffectLocation.BeforeForwardPass;
+                Location = PostProcessEffectLocation.Default;
 
                 // Create index buffer for custom geometry drawing
                 _indexBuffer = new GPUBuffer();
@@ -123,7 +122,7 @@ namespace FlaxEditor.Gizmo
                 }
 
                 // Setup missing resources
-                if (!_psCustom)
+                if (_psCustom == null)
                 {
                     _psCustom = new GPUPipelineState();
                     var desc = GPUPipelineState.Description.Default;
@@ -148,16 +147,16 @@ namespace FlaxEditor.Gizmo
                     data.GridColor = options.Viewport.ViewportGridColor;
                     data.Far = renderContext.View.Far;
                     data.GridSize = options.Viewport.ViewportGridViewDistance;
+
                     context.UpdateCB(cb, new IntPtr(&data));
                 }
 
                 // // Draw geometry using custom Pixel Shader and Vertex Shader
                 context.BindCB(0, cb);
-                context.BindSR(0, input);
                 context.BindIB(_indexBuffer);
                 context.BindVB(new[] { _vertexBuffer });
                 context.SetState(_psCustom);
-                context.SetRenderTarget(input.View());
+                context.SetRenderTarget(renderContext.Buffers.DepthBuffer.View(), input.View());
                 context.DrawIndexed((uint)_triangles.Length);
 
                 Profiler.EndEventGPU();

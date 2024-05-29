@@ -1,18 +1,15 @@
-﻿#define NO_GBUFFER_SAMPLING
-#define USE_FORWARD true;
+﻿#define USE_FORWARD true;
 
 #include "./Flax/Common.hlsl"
 
 META_CB_BEGIN(0, Data)
 float4x4 WorldMatrix;
 float4x4 ViewProjectionMatrix;
+float4 GridColor;
 float3 ViewPos;
-float3 GridColor;
 float Far;
 float GridSize;
 META_CB_END
-
-Texture2D Input : register(t0);
 
 // Geometry data passed to the vertex shader
 struct ModelInput
@@ -24,19 +21,22 @@ struct ModelInput
 struct VertexOutput
 {
     float4 Position : SV_Position;
-    float3 WorldPosition : TEXCOORD0;
+    float2 TexCoord : TEXCOORD0;
+    float3 WorldPosition : TEXCOORD1;
 };
 
 // Interpolants passed to the pixel shader
 struct PixelInput
 {
     float4 Position : SV_Position;
-    float3 WorldPosition : TEXCOORD0;
+    noperspective float2 TexCoord : TEXCOORD0;
+    float3 WorldPosition : TEXCOORD1;
 };
 
 // Vertex shader function for custom geometry processing
 META_VS(true, FEATURE_LEVEL_ES2)
-META_VS_IN_ELEMENT(POSITION, 0, R32G32B32_FLOAT, 0, 0, PER_VERTEX, 0, true)
+META_VS_IN_ELEMENT(POSITION, 0, R32G32B32_FLOAT, 0, ALIGN, PER_VERTEX, 0, true)
+META_VS_IN_ELEMENT(TEXCOORD, 0, R16G16_FLOAT, 1, ALIGN, PER_VERTEX, 0, true)
 VertexOutput VS_Custom(ModelInput input)
 {
     VertexOutput output;
