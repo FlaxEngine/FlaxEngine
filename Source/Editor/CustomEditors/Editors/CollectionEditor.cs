@@ -55,19 +55,11 @@ namespace FlaxEditor.CustomEditors.Editors
                 SetupContextMenu += OnSetupContextMenu;
                 _arrangeButtonRect = new Rectangle(2, 3, 12, 12);
 
+                // Extend margin of the label to support a dragging handle.
                 Margin m = Margin;
                 m.Left += 16;
                 Margin = m;
-
-                //SizeChanged += (control) => RecalculateArrangement();
-
-                //RecalculateArrangement();
             }
-
-            /*private void RecalculateArrangement()
-            {
-                _arrangeButtonRect.Size = Size;
-            }*/
 
             private void OnSetupContextMenu(PropertyNameLabel label, ContextMenu menu, CustomEditor linkedEditor)
             {
@@ -96,20 +88,8 @@ namespace FlaxEditor.CustomEditors.Editors
                 _arrangeButtonInUse = false;
             }
 
+
             /// <inheritdoc />
-            public override bool OnMouseDown(Float2 location, MouseButton button)
-            {
-                if (button == MouseButton.Left && _arrangeButtonRect.Contains(ref location))
-                {
-                    _arrangeButtonInUse = true;
-                    Focus();
-                    StartMouseCapture();
-                    return true;
-                }
-
-                return base.OnMouseDown(location, button);
-            }
-
             public override void Draw()
             {
                 base.Draw();
@@ -160,6 +140,20 @@ namespace FlaxEditor.CustomEditors.Editors
             }
 
             /// <inheritdoc />
+            public override bool OnMouseDown(Float2 location, MouseButton button)
+            {
+                if (button == MouseButton.Left && _arrangeButtonRect.Contains(ref location))
+                {
+                    _arrangeButtonInUse = true;
+                    Focus();
+                    StartMouseCapture();
+                    return true;
+                }
+
+                return base.OnMouseDown(location, button);
+            }
+
+            /// <inheritdoc />
             public override bool OnMouseUp(Float2 location, MouseButton button)
             {
                 if (button == MouseButton.Left && _arrangeButtonInUse)
@@ -170,36 +164,6 @@ namespace FlaxEditor.CustomEditors.Editors
                     {
                         Editor.Shift(Index, index);
                     }
-
-/*                    if (ArrangeAreaCheck(out var index, out _))
-                    {
-                        var modules = Surface.Nodes.OfType<ParticleModuleNode>().Where(x => x.ModuleType == ModuleType).ToList();
-
-                        foreach (var module in modules)
-                        {
-                            Surface.Nodes.Remove(module);
-                        }
-
-                        int oldIndex = modules.IndexOf(this);
-                        modules.RemoveAt(oldIndex);
-                        if (index < 0 || index >= modules.Count)
-                            modules.Add(this);
-                        else
-                            modules.Insert(index, this);
-
-                        foreach (var module in modules)
-                        {
-                            Surface.Nodes.Add(module);
-                        }
-
-                        foreach (var module in modules)
-                        {
-                            module.IndexInParent = int.MaxValue;
-                        }
-
-                        ParticleSurface.ArrangeModulesNodes();
-                        Surface.MarkAsEdited();
-                    }*/
                 }
 
                 return base.OnMouseUp(location, button);

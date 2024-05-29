@@ -412,7 +412,6 @@ namespace FlaxEditor.Surface
         {
             Swap(OldIndex, NewIndex);
             Window.VisjectSurface.OnParamReordered();
-            //Editor.RebuildLayout();
         }
 
         /// <inheritdoc />
@@ -420,7 +419,6 @@ namespace FlaxEditor.Surface
         {
             Swap(NewIndex, OldIndex);
             Window.VisjectSurface.OnParamReordered();
-            //Editor.RebuildLayout();
         }
     }
 
@@ -434,22 +432,99 @@ namespace FlaxEditor.Surface
         public ParametersEditor Editor;
         private IVisjectSurfaceWindow _window;
 
+        private Rectangle _arrangeButtonRect;
+        private bool _arrangeButtonInUse;
+
         /// <inheritdoc />
         public ParameterPropertyNameLabel(string name, ParametersEditor editor)
         : base(name)
         {
             Editor = editor;
             _window = Editor.Values[0] as IVisjectSurfaceWindow;
+            _arrangeButtonRect = new Rectangle(2, 3, 12, 12);
+
+            // Extend margin of the label to support a dragging handle.
+            Margin m = Margin;
+            m.Left += 16;
+            Margin = m;
+        }
+
+        private bool ArrangeAreaCheck(out int index, out Rectangle rect)
+        {
+            var child = Editor.ChildrenEditors[0];
+            var container = child.Layout.ContainerControl;
+            var mousePosition = container.PointFromScreen(Input.MouseScreenPosition);
+            var barSidesExtend = 20.0f;
+            var barHeight = 5.0f;
+            var barCheckAreaHeight = 40.0f;
+            var pos = mousePosition.Y + barCheckAreaHeight * 0.5f;
+
+            for (int i = 0; i < container.Children.Count / 2; i++)
+            {
+                var containerChild = container.Children[i * 2]; // times 2 to skip the value editor
+                if (Mathf.IsInRange(pos, containerChild.Top, containerChild.Top + barCheckAreaHeight) || (i == 0 && pos < containerChild.Top))
+                {
+                    index = i;
+                    var p1 = containerChild.UpperLeft;
+                    rect = new Rectangle(PointFromParent(p1) - new Float2(barSidesExtend * 0.5f, barHeight * 0.5f), Width + barSidesExtend, barHeight);
+                    return true;
+                }
+            }
+
+            var p2 = container.Children[((container.Children.Count / 2) - 1) * 2].BottomLeft;
+            if (pos > p2.Y)
+            {
+                index = (container.Children.Count / 2) - 1;
+                rect = new Rectangle(PointFromParent(p2) - new Float2(barSidesExtend * 0.5f, barHeight * 0.5f), Width + barSidesExtend, barHeight);
+                return true;
+            }
+
+            index = -1;
+            rect = Rectangle.Empty;
+            return false;
+        }
+
+        /// <inheritdoc />
+        public override void Draw()
+        {
+            base.Draw();
+            var style = FlaxEngine.GUI.Style.Current;
+
+            var mousePosition = PointFromScreen(Input.MouseScreenPosition);
+            var dragBarColor = _arrangeButtonRect.Contains(mousePosition) ? style.Foreground : style.ForegroundGrey;
+            Render2D.DrawSprite(FlaxEditor.Editor.Instance.Icons.DragBar12, _arrangeButtonRect, _arrangeButtonInUse ? Color.Orange : dragBarColor);
+            if (_arrangeButtonInUse && ArrangeAreaCheck(out _, out var arrangeTargetRect))
+            {
+                Render2D.FillRectangle(arrangeTargetRect, style.Selection);
+            }
+        }
+
+        /// <inheritdoc />
+        public override bool OnMouseDown(Float2 location, MouseButton button)
+        {
+            if (button == MouseButton.Left && _arrangeButtonRect.Contains(ref location))
+            {
+                _arrangeButtonInUse = true;
+                Focus();
+                StartMouseCapture();
+                return true;
+            }
+
+            return base.OnMouseDown(location, button);
         }
 
         /// <inheritdoc />
         public override bool OnMouseUp(Float2 location, MouseButton button)
         {
-            if (button == MouseButton.Left)
+            if (button == MouseButton.Left && _arrangeButtonInUse)
             {
+                _arrangeButtonInUse = false;
+                EndMouseCapture();
+
+                ArrangeAreaCheck(out var index, out _);
                 ReorderParamAction action = new ReorderParamAction();
                 action.OldIndex = ((int)Tag);
-                action.NewIndex = ((int)Tag) + 1;
+                action.NewIndex = index;
                 action.Window = _window;
                 action.Editor = Editor;
                 action.Do();
@@ -457,6 +532,18 @@ namespace FlaxEditor.Surface
             }
 
             return base.OnMouseUp(location, button);
+        }
+
+        /// <inheritdoc />
+        public override void OnLostFocus()
+        {
+            if (_arrangeButtonInUse)
+            {
+                _arrangeButtonInUse = false;
+                EndMouseCapture();
+            }
+
+            base.OnLostFocus();
         }
     }
 
