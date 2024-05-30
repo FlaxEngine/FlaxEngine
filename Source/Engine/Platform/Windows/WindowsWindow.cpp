@@ -778,7 +778,16 @@ void WindowsWindow::UpdateCursor()
         if (!_lastCursorHidden)
         {
             _lastCursorHidden = true;
-            while(::ShowCursor(FALSE) >= 0);
+            while(::ShowCursor(FALSE) >= 0)
+            {
+                if (_cursorHiddenSafetyCount >= 100)
+                {
+                    LOG(Warning, "Cursor has failed to hide.");
+                    break;
+                }
+                _cursorHiddenSafetyCount += 1;
+            }
+            _cursorHiddenSafetyCount = 0;
         }
         ::SetCursor(nullptr);
         return;
@@ -786,7 +795,16 @@ void WindowsWindow::UpdateCursor()
     else if (_lastCursorHidden)
     {
         _lastCursorHidden = false;
-        while(::ShowCursor(TRUE) < 0);
+        while(::ShowCursor(TRUE) < 0)
+        {
+            if (_cursorHiddenSafetyCount >= 100)
+            {
+                LOG(Warning, "Cursor has failed to show.");
+                break;
+            }
+            _cursorHiddenSafetyCount += 1;
+        }
+        _cursorHiddenSafetyCount = 0;
     }
 
     int32 index = 0;
