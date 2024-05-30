@@ -228,7 +228,7 @@ namespace FlaxEditor.Surface
 
             // Draw icon
             bool hasConnections = box.HasAnyConnection;
-            float alpha = box.Enabled ? 1.0f : 0.6f;
+            float alpha = box.Enabled && box.IsActive ? 1.0f : 0.6f;
             Color color = box.CurrentTypeColor * alpha;
             var style = box.Surface.Style;
             SpriteHandle icon;

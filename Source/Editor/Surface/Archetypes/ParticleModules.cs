@@ -399,7 +399,7 @@ namespace FlaxEditor.Surface.Archetypes
             private void UpdateInputBox()
             {
                 var facingMode = (ParticleSpriteFacingMode)Values[2];
-                GetBox(0).Enabled = facingMode == ParticleSpriteFacingMode.CustomFacingVector || facingMode == ParticleSpriteFacingMode.FixedAxis;
+                GetBox(0).IsActive = facingMode == ParticleSpriteFacingMode.CustomFacingVector || facingMode == ParticleSpriteFacingMode.FixedAxis;
             }
         }
 
