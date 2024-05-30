@@ -19,7 +19,6 @@ private:
     float _radius;
     float _height;
     ColliderAxis _axis;
-    float _margin;
     OrientedBoundingBox _orientedBox;
 
 public:
@@ -36,20 +35,6 @@ public:
     /// Sets the Margin.
     /// </summary>
     API_PROPERTY() void SetAxis(ColliderAxis value);
-
-    /// <summary>
-    /// Gets the Margin.
-    /// </summary>
-    API_PROPERTY(Attributes = "EditorOrder(100), DefaultValue(20.0f), EditorDisplay(\"Collider\")")
-    FORCE_INLINE float GetMargin() const
-    {
-        return _margin;
-    }
-
-    /// <summary>
-    /// Sets the Margin.
-    /// </summary>
-    API_PROPERTY() void SetMargin(float value);
 
     /// <summary>
     /// Gets the radius of the cylinder, measured in the object's local space.
@@ -89,6 +74,7 @@ public:
     API_FUNCTION() Quaternion GetQuaternionOffset();
 protected:
     // [Collider]
+    void Internal_SetContactOffset(float value) override;
     void UpdateBounds() override;
     void GetGeometry(CollisionShape& collision) override;
 #if USE_EDITOR

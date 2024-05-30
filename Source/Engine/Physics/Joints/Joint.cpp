@@ -42,8 +42,9 @@ void Joint::SetLocalPoseActor0(const PhysicsTransform& LocalPose)
 {
     if (_joint)
     {
-        PhysicsBackend::SetJointLocalPose(_joint, 0, LocalPose); LocalPoseActor0 = LocalPose;
+        PhysicsBackend::SetJointLocalPose(_joint, 0, LocalPose);
     }
+    LocalPoseActor0 = LocalPose;
 }
 PhysicsTransform Joint::GetLocalPoseActor0() const
 {
@@ -51,7 +52,8 @@ PhysicsTransform Joint::GetLocalPoseActor0() const
 }
 void Joint::SetPoseActor0(const PhysicsTransform& InPhysicsTransform)
 {
-    auto& pt = Actor0 ? PhysicsTransform::WorldToLocal(Actor0->GetTransform(), InPhysicsTransform) : InPhysicsTransform; SetLocalPoseActor0(pt);
+    auto& pt = Actor0 ? PhysicsTransform::WorldToLocal(Actor0->GetTransform(), InPhysicsTransform) : InPhysicsTransform;
+    SetLocalPoseActor0(pt);
 }
 PhysicsTransform Joint::GetPoseActor0() const
 {
@@ -87,14 +89,16 @@ float Joint::GetInvInertiaScaleActor0() const
     if (_joint)
     {
         return PhysicsBackend::GetJointInvInertiaScale0(_joint);
-    } return 0;
+    }
+    return 0;
 }
-void Joint::SetLocalPoseActor1(const PhysicsTransform& LocalPose) 
+void Joint::SetLocalPoseActor1(const PhysicsTransform& LocalPose)
 {
     if (_joint)
     {
-        PhysicsBackend::SetJointLocalPose(_joint, 1, LocalPose); LocalPoseActor1 = LocalPose;
+        PhysicsBackend::SetJointLocalPose(_joint, 1, LocalPose);
     }
+    LocalPoseActor1 = LocalPose;
 }
 PhysicsTransform Joint::GetLocalPoseActor1() const
 {
@@ -102,7 +106,8 @@ PhysicsTransform Joint::GetLocalPoseActor1() const
 }
 void Joint::SetPoseActor1(const PhysicsTransform& InPhysicsTransform) 
 {
-    auto& pt = Actor1 ? PhysicsTransform::WorldToLocal(Actor1->GetTransform(), InPhysicsTransform) : InPhysicsTransform; SetLocalPoseActor1(pt);
+    auto& pt = Actor1 ? PhysicsTransform::WorldToLocal(Actor1->GetTransform(), InPhysicsTransform) : InPhysicsTransform;
+    SetLocalPoseActor1(pt);
 }
 PhysicsTransform Joint::GetPoseActor1() const 
 {
@@ -136,7 +141,8 @@ float Joint::GetInvInertiaScaleActor1() const
     if (_joint)
     {
         return PhysicsBackend::GetJointInvInertiaScale1(_joint);
-    } return 0;
+    }
+    return 0;
 }
 
 PhysicsTransform Joint::GetRelativeTransform() const

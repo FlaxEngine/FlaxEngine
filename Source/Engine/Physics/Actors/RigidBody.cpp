@@ -598,9 +598,12 @@ void RigidBody::OnTransformChanged()
         //[Note] the PhysicsBackend::SetRigidActorPose cant exist here
         //leaving this note as a reminder
         //it creates phantom forces on children RigidBody, clipping colliders thru the ground and more...
+        //but kinematic bodies need this so nothing is broken the set transform comps shall implement the flag for forcing a update
+        //insted of doing this always
 
-        //const bool kinematic = GetIsKinematic() && GetEnableSimulation();
-        //PhysicsBackend::SetRigidActorPose(_actor, _transform.Translation, _transform.Orientation, kinematic, true);
+        const bool kinematic = GetIsKinematic() && GetEnableSimulation();
+        if (kinematic)
+            PhysicsBackend::SetRigidActorPose(_actor, _transform.Translation, _transform.Orientation, kinematic, true);
         UpdateScale();
     }
 

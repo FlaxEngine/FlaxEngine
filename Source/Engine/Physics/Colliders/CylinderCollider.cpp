@@ -6,7 +6,6 @@ CylinderCollider::CylinderCollider(const SpawnParams& params)
     : Collider(params)
     , _radius(20.0f)
     , _height(100.0f)
-    , _margin(0)
     , _axis(Y)
 {
 }
@@ -16,24 +15,7 @@ void CylinderCollider::SetAxis(ColliderAxis value)
     if (value == _axis)
         return;
 
-    //[todo] maybe log a warning ? in dev builds and not to any cheeks or clamping in release
-    auto SafeValue = Math::Clamp(_axis,X, Z); // if this gets out of range the physx will throw or crash :D
-
-    _axis = SafeValue;
-
-    UpdateGeometry();
-    UpdateBounds();
-}
-
-void CylinderCollider::SetMargin(float value)
-{
-    if (Math::NearEqual(value, _margin))
-        return;
-
-    //[todo] maybe log a warning ? in dev builds and not to any cheeks or clamping in release
-    auto SafeValue = Math::Clamp(value,0.0f, 10000.0f);// if this gets out of range the physx will throw or crash :D
-
-    _margin = SafeValue;
+    _axis = value;
 
     UpdateGeometry();
     UpdateBounds();
@@ -173,17 +155,24 @@ Quaternion CylinderCollider::GetQuaternionOffset()
     switch (GetAxis())
     {
     case ColliderAxis::X:
-        return Quaternion::Euler(0, 0, 0);
+        return Quaternion::Euler(0, 0, 90);
     case ColliderAxis::Y:
         return Quaternion::Euler(0, 0, 0);
     case ColliderAxis::Z:
-        return Quaternion::Euler(0, 0, 0);
+        return Quaternion::Euler(90, 0, 0);
     default:
         break;
     }
     //just in case the axis are invalid
-    //[Todo] error here ? (dont use assert in this place we aren not allowing softlock's of editor or a game)
+    //[Todo] error here ? (dont use assert in this place,allowing for softlock's of editor or a game will be a bad)
     return Quaternion::Identity;
+}
+
+void CylinderCollider::Internal_SetContactOffset(float value)
+{
+    _contactOffset = value;
+    UpdateGeometry();
+    UpdateBounds();
 }
 
 void CylinderCollider::UpdateBounds()
@@ -198,5 +187,5 @@ void CylinderCollider::UpdateBounds()
 
 void CylinderCollider::GetGeometry(CollisionShape& collision)
 {
-    collision.SetCylinder(_radius, _height,(int)_axis,_margin);
+    collision.SetCylinder(_radius, _height,(int)_axis,_contactOffset);
 }
