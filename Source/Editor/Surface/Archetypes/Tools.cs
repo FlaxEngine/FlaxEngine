@@ -1032,7 +1032,8 @@ namespace FlaxEditor.Surface.Archetypes
             private Rectangle _localBounds;
             private InputBox _input;
             private OutputBox _output;
-            private bool _isMouseDown, _isConnecting;
+            private bool _isMouseDown, _isConnecting, _isMouseInConnectingBounds;
+            private const float ConnectingBounds = -12.0f;
 
             /// <inheritdoc />
             public RerouteNode(uint id, VisjectSurfaceContext context, NodeArchetype nodeArch, GroupArchetype groupArch)
@@ -1170,7 +1171,7 @@ namespace FlaxEditor.Surface.Archetypes
                 if (button == MouseButton.Left)
                 {
                     _isMouseDown = true;
-                    _isConnecting = _localBounds.MakeExpanded(-10.0f).Contains(ref location); // Inner area for connecting, outer area for moving
+                    _isConnecting = _isMouseInConnectingBounds;
                     if (_isConnecting)
                     {
                         Focus();
@@ -1189,12 +1190,22 @@ namespace FlaxEditor.Surface.Archetypes
                     if (Surface.CanEdit && _isConnecting)
                         Surface.ConnectingStart(this);
                 }
+
+                _isMouseInConnectingBounds = false;
+                Cursor = CursorType.Default;
+                
                 base.OnMouseLeave();
             }
 
             /// <inheritdoc />
             public override void OnMouseMove(Float2 location)
             {
+                _isMouseInConnectingBounds = IsMouseOver && _localBounds.MakeExpanded(ConnectingBounds).Contains(ref location); // Inner area for connecting, outer area for moving
+                if (!_isMouseInConnectingBounds && !_isMouseDown)
+                    Cursor = CursorType.SizeAll;
+                else
+                    Cursor = CursorType.Default;
+
                 Surface.ConnectingOver(this);
                 base.OnMouseMove(location);
             }
