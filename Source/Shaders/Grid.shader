@@ -1,4 +1,9 @@
-﻿#define USE_FORWARD true;
+﻿// Implementation based on:
+// "The Best Darn Grid Shader (Yet)", Medium, Oct 2023
+// Ben Golus
+// https://bgolus.medium.com/the-best-darn-grid-shader-yet-727f9278b9d8#3e73
+
+#define USE_FORWARD true;
 
 #include "./Flax/Common.hlsl"
 
