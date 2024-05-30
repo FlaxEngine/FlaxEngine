@@ -142,16 +142,16 @@ namespace FlaxEngine.GUI
                     {
                         if (y == 0)
                         {
-                            slotBounds.Height -= _slotSpacing.Y * 0.5f * slotsV;
+                            slotBounds.Height -= _slotSpacing.Y * 0.5f;
                         }
                         else if (y == slotsV - 1)
                         {
-                            slotBounds.Height -= _slotSpacing.Y * 0.5f * slotsV;
-                            slotBounds.Y += _slotSpacing.Y * 0.5f * slotsV;
+                            slotBounds.Height -= _slotSpacing.Y * 0.5f;
+                            slotBounds.Y += _slotSpacing.Y * 0.5f;
                         }
                         else
                         {
-                            slotBounds.Height -= _slotSpacing.Y * 0.5f * slotsV;
+                            slotBounds.Height -= _slotSpacing.Y;
                             slotBounds.Y += _slotSpacing.Y * 0.5f;
                         }
                     }
@@ -160,16 +160,16 @@ namespace FlaxEngine.GUI
                     {
                         if (x == 0)
                         {
-                            slotBounds.Width -= _slotSpacing.X * 0.5f * slotsH;
+                            slotBounds.Width -= _slotSpacing.X * 0.5f;
                         }
                         else if (x == slotsH - 1)
                         {
-                            slotBounds.Width -= _slotSpacing.X * 0.5f * slotsH;
-                            slotBounds.X += _slotSpacing.X * 0.5f * slotsH;
+                            slotBounds.Width -= _slotSpacing.X * 0.5f;
+                            slotBounds.X += _slotSpacing.X * 0.5f;
                         }
                         else
                         {
-                            slotBounds.Width -= _slotSpacing.X * 0.5f * slotsH;
+                            slotBounds.Width -= _slotSpacing.X;
                             slotBounds.X += _slotSpacing.X * 0.5f;
                         }
                     }
