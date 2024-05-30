@@ -216,6 +216,9 @@ namespace FlaxEditor.CustomEditors.Editors
 
             private bool _canReorder = true;
 
+            private Rectangle _arrangeButtonRect;
+            private bool _arrangeButtonInUse;
+
             public void Setup(CollectionEditor editor, int index, bool canReorder = true)
             {
                 HeaderHeight = 18;
@@ -233,8 +236,90 @@ namespace FlaxEditor.CustomEditors.Editors
                 MouseButtonRightClicked += OnMouseButtonRightClicked;
                 if (_canReorder)
                 {
-                    // TODO: Drag drop
+                    HeaderTextMargin = new Margin(18, 0, 0, 0);
+                    _arrangeButtonRect = new Rectangle(16, 3, 12, 12);
                 }
+            }
+
+            private bool ArrangeAreaCheck(out int index, out Rectangle rect)
+            {
+                var container = Parent;
+                var mousePosition = container.PointFromScreen(Input.MouseScreenPosition);
+                var barSidesExtend = 20.0f;
+                var barHeight = 5.0f;
+                var barCheckAreaHeight = 40.0f;
+                var pos = mousePosition.Y + barCheckAreaHeight * 0.5f;
+
+                for (int i = 0; i < (container.Children.Count + 1) / 2; i++) // Add 1 to pretend there is a spacer at the end.
+                {
+                    var containerChild = container.Children[i * 2]; // times 2 to skip the value editor
+                    if (Mathf.IsInRange(pos, containerChild.Top, containerChild.Top + barCheckAreaHeight) || (i == 0 && pos < containerChild.Top))
+                    {
+                        index = i;
+                        var p1 = containerChild.UpperLeft;
+                        rect = new Rectangle(PointFromParent(p1) - new Float2(barSidesExtend * 0.5f, barHeight * 0.5f), Width + barSidesExtend, barHeight);
+                        return true;
+                    }
+                }
+
+                var p2 = container.Children[container.Children.Count - 1].BottomLeft;
+                if (pos > p2.Y)
+                {
+                    index = ((container.Children.Count + 1) / 2) - 1;
+                    rect = new Rectangle(PointFromParent(p2) - new Float2(barSidesExtend * 0.5f, barHeight * 0.5f), Width + barSidesExtend, barHeight);
+                    return true;
+                }
+
+                index = -1;
+                rect = Rectangle.Empty;
+                return false;
+            }
+
+            public override void Draw()
+            {
+                base.Draw();
+                if (_canReorder)
+                {
+                    var style = FlaxEngine.GUI.Style.Current;
+
+                    var mousePosition = PointFromScreen(Input.MouseScreenPosition);
+                    var dragBarColor = _arrangeButtonRect.Contains(mousePosition) ? style.Foreground : style.ForegroundGrey;
+                    Render2D.DrawSprite(FlaxEditor.Editor.Instance.Icons.DragBar12, _arrangeButtonRect, _arrangeButtonInUse ? Color.Orange : dragBarColor);
+                    if (_arrangeButtonInUse && ArrangeAreaCheck(out _, out var arrangeTargetRect))
+                    {
+                        Render2D.FillRectangle(arrangeTargetRect, style.Selection);
+                    }
+                }
+            }
+
+            /// <inheritdoc />
+            public override bool OnMouseDown(Float2 location, MouseButton button)
+            {
+                if (button == MouseButton.Left && _arrangeButtonRect.Contains(ref location))
+                {
+                    _arrangeButtonInUse = true;
+                    Focus();
+                    StartMouseCapture();
+                    return true;
+                }
+
+                return base.OnMouseDown(location, button);
+            }
+
+            /// <inheritdoc />
+            public override bool OnMouseUp(Float2 location, MouseButton button)
+            {
+                if (button == MouseButton.Left && _arrangeButtonInUse)
+                {
+                    _arrangeButtonInUse = false;
+                    EndMouseCapture();
+                    if (ArrangeAreaCheck(out var index, out _))
+                    {
+                        Editor.Shift(Index, index);
+                    }
+                }
+
+                return base.OnMouseUp(location, button);
             }
 
             private void OnMouseButtonRightClicked(DropPanel panel, Float2 location)
