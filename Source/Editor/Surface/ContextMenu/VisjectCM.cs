@@ -307,7 +307,7 @@ namespace FlaxEditor.Surface.ContextMenu
                 if (!IsLayoutLocked)
                 {
                     group.UnlockChildrenRecursive();
-                    if(_contextSensitiveSearchEnabled && _selectedBox != null)
+                    if (_contextSensitiveSearchEnabled && _selectedBox != null)
                         UpdateFilters();
                     else
                         SortGroups();
@@ -370,7 +370,7 @@ namespace FlaxEditor.Surface.ContextMenu
 
                 if (!isLayoutLocked)
                 {
-                    if(_contextSensitiveSearchEnabled && _selectedBox != null)
+                    if (_contextSensitiveSearchEnabled && _selectedBox != null)
                         UpdateFilters();
                     else
                         SortGroups();
@@ -567,7 +567,7 @@ namespace FlaxEditor.Surface.ContextMenu
             }
             UnlockChildrenRecursive();
 
-            if(_contextSensitiveSearchEnabled && _selectedBox != null)
+            if (_contextSensitiveSearchEnabled && _selectedBox != null)
                 UpdateFilters();
             else
                 SortGroups();

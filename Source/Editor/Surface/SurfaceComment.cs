@@ -69,7 +69,7 @@ namespace FlaxEditor.Surface
         public SurfaceComment(uint id, VisjectSurfaceContext context, NodeArchetype nodeArch, GroupArchetype groupArch)
         : base(id, context, nodeArch, groupArch)
         {
-            _renameTextBox = new TextBox(false, 0,0, Width)
+            _renameTextBox = new TextBox(false, 0, 0, Width)
             {
                 Height = Constants.NodeHeaderSize,
                 Visible = false,
@@ -96,7 +96,7 @@ namespace FlaxEditor.Surface
                     IndexInParent = 0;
                 OrderValue = IndexInParent;
             }
-            else if(OrderValue != -1)
+            else if (OrderValue != -1)
             {
                 IndexInParent = OrderValue;
             }
@@ -110,7 +110,7 @@ namespace FlaxEditor.Surface
             // Randomize color
             Color = ColorValue = Color.FromHSV(new Random().NextFloat(0, 360), 0.7f, 0.25f, 0.8f);
 
-            if(OrderValue == -1)
+            if (OrderValue == -1)
                 OrderValue = Context.CommentCount - 1;
             IndexInParent = OrderValue;
         }
@@ -196,7 +196,7 @@ namespace FlaxEditor.Surface
 
             // Header
             Render2D.FillRectangle(_headerRect, headerColor);
-            if(!_isRenaming)
+            if (!_isRenaming)
                 Render2D.DrawText(style.FontLarge, Title, _headerRect, style.Foreground, TextAlignment.Center, TextAlignment.Center);
 
             // Close button
@@ -344,7 +344,7 @@ namespace FlaxEditor.Surface
 
         private void Rename(string newTitle)
         {
-            if(string.Equals(Title, newTitle, StringComparison.Ordinal))
+            if (string.Equals(Title, newTitle, StringComparison.Ordinal))
                 return;
 
             Title = TitleValue = newTitle;
@@ -361,7 +361,7 @@ namespace FlaxEditor.Surface
                 return true;
             }
 
-            if(key == KeyboardKeys.Escape)
+            if (key == KeyboardKeys.Escape)
             {
                 StopRenaming();
                 return true;
@@ -415,18 +415,18 @@ namespace FlaxEditor.Surface
             {
                 cmOrder.ContextMenu.AddButton("Bring Forward", () =>
                 {
-                    if(IndexInParent < Context.CommentCount-1) 
+                    if (IndexInParent < Context.CommentCount - 1)
                         IndexInParent++;
                     OrderValue = IndexInParent;
                 });
                 cmOrder.ContextMenu.AddButton("Bring to Front", () =>
                 {
-                    IndexInParent = Context.CommentCount-1;
+                    IndexInParent = Context.CommentCount - 1;
                     OrderValue = IndexInParent;
                 });
                 cmOrder.ContextMenu.AddButton("Send Backward", () =>
                 {
-                    if(IndexInParent > 0) 
+                    if (IndexInParent > 0)
                         IndexInParent--;
                     OrderValue = IndexInParent;
                 });

@@ -60,7 +60,7 @@ namespace FlaxEditor.Surface.Archetypes
             Op1(1, "Boolean NOT", "Negates the boolean value", new[] { "!", "~" }),
             Op2(2, "Boolean AND", "Performs a logical conjunction on two values", new[] { "&&" }),
             Op2(3, "Boolean OR", "Returns true if either (or both) of its operands is true", new[] { "||" }),
-            Op2(4, "Boolean XOR", "", new [] { "^" } ),
+            Op2(4, "Boolean XOR", "", new[] { "^" }),
             Op2(5, "Boolean NOR", ""),
             Op2(6, "Boolean NAND", ""),
         };
