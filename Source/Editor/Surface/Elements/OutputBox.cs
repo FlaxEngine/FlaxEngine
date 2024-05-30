@@ -3,6 +3,7 @@
 using FlaxEngine;
 using FlaxEngine.GUI;
 using System;
+using FlaxEditor.Options;
 
 namespace FlaxEditor.Surface.Elements
 {
@@ -57,8 +58,8 @@ namespace FlaxEditor.Surface.Elements
         private static void CalculateBezierControlPoints(Float2 start, Float2 end, out Float2 control1, out Float2 control2)
         {
             // Control points parameters
-            const float minControlLength = 100f;
-            const float maxControlLength = 150f;
+            const float minControlLength = 50f;
+            const float maxControlLength = 120f;
             var dst = (end - start).Length;
             var yDst = Mathf.Abs(start.Y - end.Y);
 
@@ -66,6 +67,7 @@ namespace FlaxEditor.Surface.Elements
             var minControlDst = dst * 0.5f;
             var maxControlDst = Mathf.Max(Mathf.Min(maxControlLength, dst), minControlLength);
             var controlDst = Mathf.Lerp(minControlDst, maxControlDst, Mathf.Clamp(yDst / minControlLength, 0f, 1f));
+            controlDst *= Editor.Instance.Options.Options.Interface.ConnectionCurvature;
 
             control1 = new Float2(start.X + controlDst, start.Y);
             control2 = new Float2(end.X - controlDst, end.Y);
