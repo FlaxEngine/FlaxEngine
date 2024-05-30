@@ -119,10 +119,8 @@ namespace FlaxEditor.GUI.Dialogs
             _onClosed = pickerClosed;
 
             // Get saved colors if they exist
-            if (Editor.Instance.ProjectCache.TryGetCustomData("ColorPickerSavedColors", out var savedColors))
-            {
+            if (Editor.Instance.ProjectCache.TryGetCustomData("ColorPickerSavedColors", out string savedColors))
                 _savedColors = JsonSerializer.Deserialize<List<Color>>(savedColors);
-            }
 
             // Selector
             _cSelector = new ColorSelectorWithSliders(180, 18)
