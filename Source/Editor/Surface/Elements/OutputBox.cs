@@ -152,7 +152,8 @@ namespace FlaxEditor.Surface.Elements
                 Box targetBox = Connections[i];
                 var endPos = targetBox.ConnectionOrigin;
                 var highlight = 1 + Mathf.Max(startHighlight, targetBox.ConnectionsHighlightIntensity);
-                var color = _currentTypeColor * highlight;
+                var alpha = targetBox.Enabled && targetBox.IsActive ? 1.0f : 0.6f;
+                var color = _currentTypeColor * highlight * alpha;
 
                 // TODO: Figure out how to only draw the topmost connection
                 if (IntersectsConnection(ref startPos, ref endPos, ref mousePosition, mouseOverDistance))
@@ -172,7 +173,9 @@ namespace FlaxEditor.Surface.Elements
             // Draw all the connections
             var startPos = ConnectionOrigin;
             var endPos = targetBox.ConnectionOrigin;
-            DrawConnection(Surface.Style, ref startPos, ref endPos, ref _currentTypeColor, 2.5f);
+            var alpha = targetBox.Enabled && targetBox.IsActive ? 1.0f : 0.6f;
+            var color = _currentTypeColor * alpha;
+            DrawConnection(Surface.Style, ref startPos, ref endPos, ref color, 2.5f);
         }
 
         /// <inheritdoc />
