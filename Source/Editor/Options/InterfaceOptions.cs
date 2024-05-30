@@ -312,6 +312,13 @@ namespace FlaxEditor.Options
         [EditorDisplay("Cook & Run"), EditorOrder(500)]
         public int NumberOfGameClientsToLaunch = 1;
 
+        /// <summary>
+        /// Gets or sets the visject connection curvature.
+        /// </summary>
+        [DefaultValue(1.0f), Range(0.0f, 2.0f)]
+        [EditorDisplay("Visject"), EditorOrder(550)]
+        public float ConnectionCurvature { get; set; } = 1.0f;
+
         private static FontAsset DefaultFont => FlaxEngine.Content.LoadAsyncInternal<FontAsset>(EditorAssets.PrimaryFont);
         private static FontAsset ConsoleFont => FlaxEngine.Content.LoadAsyncInternal<FontAsset>(EditorAssets.InconsolataRegularFont);
 
