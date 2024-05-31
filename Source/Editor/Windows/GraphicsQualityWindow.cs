@@ -168,7 +168,7 @@ namespace FlaxEditor.Windows
         /// <inheritdoc />
         public override void OnInit()
         {
-            if (Editor.ProjectCache.TryGetCustomData(_optionsName, out var options) && !string.IsNullOrEmpty(options))
+            if (Editor.ProjectCache.TryGetCustomData(_optionsName, out string options) && !string.IsNullOrEmpty(options))
             {
                 // Load cached settings
                 JsonSerializer.Deserialize(_viewModel, options);

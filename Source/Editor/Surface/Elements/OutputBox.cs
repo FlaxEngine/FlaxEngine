@@ -3,6 +3,7 @@
 using FlaxEngine;
 using FlaxEngine.GUI;
 using System;
+using FlaxEditor.Options;
 
 namespace FlaxEditor.Surface.Elements
 {
@@ -57,8 +58,8 @@ namespace FlaxEditor.Surface.Elements
         private static void CalculateBezierControlPoints(Float2 start, Float2 end, out Float2 control1, out Float2 control2)
         {
             // Control points parameters
-            const float minControlLength = 100f;
-            const float maxControlLength = 150f;
+            const float minControlLength = 50f;
+            const float maxControlLength = 120f;
             var dst = (end - start).Length;
             var yDst = Mathf.Abs(start.Y - end.Y);
 
@@ -66,6 +67,7 @@ namespace FlaxEditor.Surface.Elements
             var minControlDst = dst * 0.5f;
             var maxControlDst = Mathf.Max(Mathf.Min(maxControlLength, dst), minControlLength);
             var controlDst = Mathf.Lerp(minControlDst, maxControlDst, Mathf.Clamp(yDst / minControlLength, 0f, 1f));
+            controlDst *= Editor.Instance.Options.Options.Interface.ConnectionCurvature;
 
             control1 = new Float2(start.X + controlDst, start.Y);
             control2 = new Float2(end.X - controlDst, end.Y);
@@ -152,7 +154,8 @@ namespace FlaxEditor.Surface.Elements
                 Box targetBox = Connections[i];
                 var endPos = targetBox.ConnectionOrigin;
                 var highlight = 1 + Mathf.Max(startHighlight, targetBox.ConnectionsHighlightIntensity);
-                var color = _currentTypeColor * highlight;
+                var alpha = targetBox.Enabled && targetBox.IsActive ? 1.0f : 0.6f;
+                var color = _currentTypeColor * highlight * alpha;
 
                 // TODO: Figure out how to only draw the topmost connection
                 if (IntersectsConnection(ref startPos, ref endPos, ref mousePosition, mouseOverDistance))
@@ -172,7 +175,9 @@ namespace FlaxEditor.Surface.Elements
             // Draw all the connections
             var startPos = ConnectionOrigin;
             var endPos = targetBox.ConnectionOrigin;
-            DrawConnection(Surface.Style, ref startPos, ref endPos, ref _currentTypeColor, 2.5f);
+            var alpha = targetBox.Enabled && targetBox.IsActive ? 1.0f : 0.6f;
+            var color = _currentTypeColor * alpha;
+            DrawConnection(Surface.Style, ref startPos, ref endPos, ref color, 2.5f);
         }
 
         /// <inheritdoc />
