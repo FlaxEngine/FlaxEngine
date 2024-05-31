@@ -165,7 +165,7 @@ int32 FindVertex(const MeshData& mesh, int32 vertexIndex, int32 startIndex, int3
 
 #if USE_SPATIAL_SORT
     const Float3 vPosition = mesh.Positions[vertexIndex];
-    spatialSort.FindPositions(*(aiVector3D*)&vPosition, 1e-4f, spatialSortCache);
+    spatialSort.FindPositions(*(aiVector3D*)&vPosition, 1e-5f, spatialSortCache);
     if (spatialSortCache.empty())
         return INVALID_INDEX;
 
