@@ -6,6 +6,7 @@
 
 // Config
 #define SSAO_DEPTH_MIP_LEVELS 4 // <- must match shader define
+#define SSAO_DEPTH_MIPS_ENABLE_AT_QUALITY_PRESET (99) // <- must match shader define
 #define SSAO_DEPTH_FORMAT PixelFormat::R16_Float
 #define SSAO_AO_RESULT_FORMAT PixelFormat::R8G8_UNorm
 #define SSAO_MAX_BLUR_PASS_COUNT 6
