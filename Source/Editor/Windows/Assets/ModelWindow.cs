@@ -13,6 +13,7 @@ using FlaxEditor.Viewport.Cameras;
 using FlaxEditor.Viewport.Previews;
 using FlaxEngine;
 using FlaxEngine.GUI;
+using FlaxEngine.Json;
 using FlaxEngine.Tools;
 using FlaxEngine.Utilities;
 using Object = FlaxEngine.Object;
@@ -187,6 +188,7 @@ namespace FlaxEditor.Windows.Assets
                     // SDF
                     {
                         var group = layout.Group("SDF");
+                        var sdfOptions = proxy.Window._sdfOptions;
 
                         var sdf = proxy.Asset.SDF;
                         if (sdf.Texture != null)
@@ -207,20 +209,20 @@ namespace FlaxEditor.Windows.Assets
                         proxy.Window._importSettings.Settings.SDFResolution = sdf.ResolutionScale;
 
                         var gpu = group.Checkbox("Bake on GPU", "If checked, SDF generation will be calculated using GPU on Compute Shader, otherwise CPU will use Job System. GPU generation is fast but result in artifacts in various meshes (eg. foliage).");
-                        gpu.CheckBox.Checked = proxy.Window._gpuSDF;
+                        gpu.CheckBox.Checked = sdfOptions.GPU;
 
                         var backfacesThresholdProp = group.AddPropertyItem("Backfaces Threshold", "Custom threshold (in range 0-1) for adjusting mesh internals detection based on the percentage of test rays hit triangle backfaces. Use lower value for more dense mesh.");
                         var backfacesThreshold = backfacesThresholdProp.FloatValue();
                         var backfacesThresholdLabel = backfacesThresholdProp.Labels.Last();
                         backfacesThreshold.ValueBox.MinValue = 0.001f;
                         backfacesThreshold.ValueBox.MaxValue = 1.0f;
-                        backfacesThreshold.ValueBox.Value = proxy.Window._backfacesThreshold;
-                        backfacesThreshold.ValueBox.BoxValueChanged += b => { proxy.Window._backfacesThreshold = b.Value; };
+                        backfacesThreshold.ValueBox.Value = sdfOptions.BackfacesThreshold;
+                        backfacesThreshold.ValueBox.BoxValueChanged += b => { proxy.Window._sdfOptions.BackfacesThreshold = b.Value; };
 
                         // Toggle Backfaces Threshold visibility (CPU-only option)
                         gpu.CheckBox.StateChanged += c =>
                         {
-                            proxy.Window._gpuSDF = c.Checked;
+                            proxy.Window._sdfOptions.GPU = c.Checked;
                             backfacesThresholdLabel.Visible = !c.Checked;
                             backfacesThreshold.ValueBox.Visible = !c.Checked;
                         };
@@ -314,13 +316,17 @@ namespace FlaxEditor.Windows.Assets
                     proxy.Window.Enabled = false;
                     Task.Run(() =>
                     {
-                        bool failed = proxy.Asset.GenerateSDF(proxy.Window._importSettings.Settings.SDFResolution, _sdfModelLodIndex.Value, true, proxy.Window._backfacesThreshold, proxy.Window._gpuSDF);
+                        var sdfOptions = proxy.Window._sdfOptions;
+                        bool failed = proxy.Asset.GenerateSDF(proxy.Window._importSettings.Settings.SDFResolution, _sdfModelLodIndex.Value, true, sdfOptions.BackfacesThreshold, sdfOptions.GPU);
                         FlaxEngine.Scripting.InvokeOnUpdate(() =>
                         {
                             proxy.Window.Enabled = true;
                             if (!failed)
                                 proxy.Window.MarkAsEdited();
                             Presenter.BuildLayoutOnUpdate();
+
+                            // Save some SDF options locally in the project cache
+                            proxy.Window.Editor.ProjectCache.SetCustomData(JsonSerializer.GetStringID(proxy.Window.Item.ID) + ".SDF", JsonSerializer.Serialize(sdfOptions));
                         });
                     });
                 }
@@ -800,18 +806,33 @@ namespace FlaxEditor.Windows.Assets
             }
         }
 
+        private struct ModelSdfOptions
+        {
+            public bool GPU;
+            public float BackfacesThreshold;
+        }
+
         private readonly ModelPreview _preview;
         private StaticModel _highlightActor;
         private MeshDataCache _meshData;
         private ModelImportSettings _importSettings = new ModelImportSettings();
-        private float _backfacesThreshold = 0.6f;
-        private bool _gpuSDF = true;
+        private ModelSdfOptions _sdfOptions;
         private ToolStripButton _showCurrentLODButton;
 
         /// <inheritdoc />
         public ModelWindow(Editor editor, AssetItem item)
         : base(editor, item)
         {
+            // Try to restore SDF options from project cache (not saved in the asset)
+            if (Editor.ProjectCache.TryGetCustomData(JsonSerializer.GetStringID(Item.ID) + ".SDF", out string sdOptionsStr))
+                _sdfOptions = JsonSerializer.Deserialize<ModelSdfOptions>(sdOptionsStr);
+            else
+                _sdfOptions = new ModelSdfOptions
+                {
+                    GPU = true,
+                    BackfacesThreshold = 0.6f,
+                };
+
             // Toolstrip
             _toolstrip.AddSeparator();
             _showCurrentLODButton = (ToolStripButton)_toolstrip.AddButton(editor.Icons.Info64, () => _preview.ShowCurrentLOD = !_preview.ShowCurrentLOD).LinkTooltip("Show LOD statistics");
