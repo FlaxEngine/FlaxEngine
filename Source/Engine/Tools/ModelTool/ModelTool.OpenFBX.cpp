@@ -547,16 +547,16 @@ int Triangulate(const ofbx::GeometryData& geom, const ofbx::GeometryPartition::P
     }
 
     const ofbx::Vec3Attributes& positions = geom.getPositions();
-    Float3 normal = *(Float3*)&geom.getNormals().get(polygon.from_vertex);
+    Float3 normal = ToFloat3(geom.getNormals().get(polygon.from_vertex));
 
     // Check if the polygon is convex
     int lastSign = 0;
     bool isConvex = true;
     for (int i = 0; i < polygon.vertex_count; i++)
     {
-        Float3 v1 = *(Float3*)&positions.get(polygon.from_vertex + i);
-        Float3 v2 = *(Float3*)&positions.get(polygon.from_vertex + (i + 1) % polygon.vertex_count);
-        Float3 v3 = *(Float3*)&positions.get(polygon.from_vertex + (i + 2) % polygon.vertex_count);
+        Float3 v1 = ToFloat3(positions.get(polygon.from_vertex + i));
+        Float3 v2 = ToFloat3(positions.get(polygon.from_vertex + (i + 1) % polygon.vertex_count));
+        Float3 v3 = ToFloat3(positions.get(polygon.from_vertex + (i + 2) % polygon.vertex_count));
 
         // The winding order of all triangles must be same for polygon to be considered convex
         int sign;
@@ -603,7 +603,7 @@ int Triangulate(const ofbx::GeometryData& geom, const ofbx::GeometryPartition::P
     const Float3 v = Float3::Cross(normal, u).GetNormalized();
     for (int i = 0; i < polygon.vertex_count; i++)
     {
-        const Float3 point = *(Float3*)&positions.get(polygon.from_vertex + i);
+        const Float3 point = ToFloat3(positions.get(polygon.from_vertex + i));
         const Float3 projectedPoint = Float3::ProjectOnPlane(point, normal);
         const Float2 pointOnPlane = Float2(
             projectedPoint.X * u.X + projectedPoint.Y * u.Y + projectedPoint.Z * u.Z,
