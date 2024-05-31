@@ -1,8 +1,8 @@
 // Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
-#include "CylinderCollider.h"
+#include "ConeCollider.h"
 
-CylinderCollider::CylinderCollider(const SpawnParams& params)
+ConeCollider::ConeCollider(const SpawnParams& params)
     : Collider(params)
     , _radius(20.0f)
     , _height(100.0f)
@@ -10,7 +10,7 @@ CylinderCollider::CylinderCollider(const SpawnParams& params)
 {
 }
 
-void CylinderCollider::SetAxis(ColliderAxis value)
+void ConeCollider::SetAxis(ColliderAxis value)
 {
     if (value == _axis)
         return;
@@ -21,7 +21,7 @@ void CylinderCollider::SetAxis(ColliderAxis value)
     UpdateBounds();
 }
 
-void CylinderCollider::SetRadius(const float value)
+void ConeCollider::SetRadius(const float value)
 {
     if (Math::NearEqual(value, _radius))
         return;
@@ -35,7 +35,7 @@ void CylinderCollider::SetRadius(const float value)
     UpdateBounds();
 }
 
-void CylinderCollider::SetHeight(const float value)
+void ConeCollider::SetHeight(const float value)
 {
     if (Math::NearEqual(value, _height))
         return;
@@ -55,8 +55,25 @@ void CylinderCollider::SetHeight(const float value)
 #include "Engine/Graphics/RenderView.h"
 #include "Engine/Physics/Colliders/ColliderColorConfig.h"
 #include "Engine/Physics/PhysicsBackend.h"
+namespace 
+{
+    void DrawWireCone(const Vector3& position, const Quaternion& orientation, float radius, float height, const Color& color, float duration, bool depthTest)
+    {
+        auto up = orientation * Vector3::Up;
+        auto n = (up * (height * 0.5f));
+        auto top = position + n;
+        auto bottom = position - n;
+        auto right = orientation * Vector3(radius, 0, 0);
+        auto foroward = orientation * Vector3(0, 0, radius);
+        DebugDraw::DrawCircle(bottom, up, radius, color, duration, depthTest);
+        DebugDraw::DrawLine(top, bottom + right, color, duration, depthTest);
+        DebugDraw::DrawLine(top, bottom - right, color, duration, depthTest);
+        DebugDraw::DrawLine(top, bottom + foroward, color, duration, depthTest);
+        DebugDraw::DrawLine(top, bottom - foroward, color, duration, depthTest);
+    }
+}
 
-void CylinderCollider::DrawPhysicsDebug(RenderView& view)
+void ConeCollider::DrawPhysicsDebug(RenderView& view)
 {
     const BoundingSphere sphere(_sphere.Center - view.Origin, _sphere.Radius);
     if (!view.CullingFrustum.Intersects(sphere))
@@ -78,13 +95,16 @@ void CylinderCollider::DrawPhysicsDebug(RenderView& view)
     const float minSize = 0.001f;
     const float radius = Math::Max(Math::Abs(_radius) * scaling, minSize);
     const float height = Math::Max(Math::Abs(_height) * scaling, minSize);
-    if (view.Mode == ViewMode::PhysicsColliders && !GetIsTrigger())
-        DEBUG_DRAW_CYLINDER(T.LocalToWorld(_center), rotation, radius, height, _staticActor ? Color::CornflowerBlue : Color::Orchid, 0, true);
-    else
-       DEBUG_DRAW_WIRE_CYLINDER(T.LocalToWorld(_center), rotation, radius, height, Color::GreenYellow * 0.8f, 0, true);
+
+    //todo
+
+    //if (view.Mode == ViewMode::PhysicsColliders && !GetIsTrigger())
+    //    DEBUG_DRAW_CYLINDER(T.LocalToWorld(_center), rotation, radius, height, _staticActor ? Color::CornflowerBlue : Color::Orchid, 0, true);
+    //else
+    //   DEBUG_DRAW_WIRE_CYLINDER(T.LocalToWorld(_center), rotation, radius, height, Color::GreenYellow * 0.8f, 0, true);
 }
 
-void CylinderCollider::OnDebugDraw()
+void ConeCollider::OnDebugDraw()
 {
     if (DisplayCollider)
     {
@@ -95,15 +115,19 @@ void CylinderCollider::OnDebugDraw()
         const float radius = Math::Max(Math::Abs(_radius) * scaling, minSize);
         const float height = Math::Max(Math::Abs(_height) * scaling, minSize);
         const Vector3 position = _transform.LocalToWorld(_center);
+        const float angle = Math::Atan2(radius, height);
+
         if (GetIsTrigger())
         {
-            DEBUG_DRAW_WIRE_CYLINDER(position, rotation, radius, height, FlaxEngine::ColliderColors::TriggerColliderOutline, 0, false);
-            DEBUG_DRAW_CYLINDER(position, rotation, radius, height, FlaxEngine::ColliderColors::TriggerCollider, 0, true);
+            DrawWireCone(position, rotation, radius, height, FlaxEngine::ColliderColors::TriggerColliderOutline, 0, false);
+            //todo
+            //DEBUG_DRAW_CONE(position, rotation, radius, angle, angle, FlaxEngine::ColliderColors::TriggerCollider, 0, true);
         }
         else
         {
-            DEBUG_DRAW_WIRE_CYLINDER(position, rotation, radius, height, FlaxEngine::ColliderColors::NormalColliderOutline, 0, false);
-            DEBUG_DRAW_CYLINDER(position, rotation, radius, height, FlaxEngine::ColliderColors::NormalCollider, 0, true);
+            DrawWireCone(position, rotation, radius, height, FlaxEngine::ColliderColors::NormalColliderOutline, 0, false);
+            //todo
+            //DEBUG_DRAW_CONE(position, rotation, radius, angle, angle, FlaxEngine::ColliderColors::NormalCollider, 0, true);
         }
     }
 
@@ -111,7 +135,7 @@ void CylinderCollider::OnDebugDraw()
     Collider::OnDebugDraw();
 }
 
-void CylinderCollider::OnDebugDrawSelected()
+void ConeCollider::OnDebugDrawSelected()
 {
     Quaternion rotation;
     Quaternion::Multiply(_transform.Orientation, GetQuaternionOffset(), rotation);
@@ -123,20 +147,33 @@ void CylinderCollider::OnDebugDrawSelected()
 
     if (!DisplayCollider) 
     {
+        Quaternion rotation;
+        Quaternion::Multiply(_transform.Orientation, GetQuaternionOffset(), rotation);
+        const float scaling = _cachedScale.GetAbsolute().MaxValue();
+        const float minSize = 0.001f;
+        const float radius = Math::Max(Math::Abs(_radius) * scaling, minSize);
+        const float height = Math::Max(Math::Abs(_height) * scaling, minSize);
+        const Vector3 position = _transform.LocalToWorld(_center);
+        const float angle = Math::Atan2(radius, height);
+
+
         if (GetIsTrigger())
         {
-            DEBUG_DRAW_WIRE_CYLINDER(position, rotation, radius, height, FlaxEngine::ColliderColors::TriggerColliderOutline, 0, false);
-            DEBUG_DRAW_CYLINDER(position, rotation, radius, height, FlaxEngine::ColliderColors::TriggerCollider, 0, true);
+            DrawWireCone(position, rotation, radius, height, FlaxEngine::ColliderColors::TriggerColliderOutline, 0, false);
+            //todo
+            //DEBUG_DRAW_CONE(position, rotation, radius, angle, angle, FlaxEngine::ColliderColors::TriggerCollider, 0, true);
         }
         else
         {
-            DEBUG_DRAW_WIRE_CYLINDER(position, rotation, radius, height, FlaxEngine::ColliderColors::NormalColliderOutline, 0, false);
-            DEBUG_DRAW_CYLINDER(position, rotation, radius, height, FlaxEngine::ColliderColors::NormalCollider, 0, true);
+            DrawWireCone(position, rotation, radius, height, FlaxEngine::ColliderColors::NormalColliderOutline, 0, false);
+            //todo
+            //DEBUG_DRAW_CONE(position, rotation, radius, angle, angle, FlaxEngine::ColliderColors::NormalCollider, 0, true);
         }
     }
     if (_contactOffset > 0)
     {
-        DEBUG_DRAW_WIRE_CYLINDER(position, rotation, radius + _contactOffset, height, Color::Blue.AlphaMultiplied(0.2f), 0, false);
+        //todo
+        //DEBUG_DRAW_WIRE_CYLINDER(position, rotation, radius + _contactOffset, height, Color::Blue.AlphaMultiplied(0.2f), 0, false);
     }
 
     // Base
@@ -145,12 +182,12 @@ void CylinderCollider::OnDebugDrawSelected()
 
 #endif
 
-bool CylinderCollider::IntersectsItself(const Ray& ray, Real& distance, Vector3& normal)
+bool ConeCollider::IntersectsItself(const Ray& ray, Real& distance, Vector3& normal)
 {
     return _orientedBox.Intersects(ray, distance, normal);
 }
 
-Quaternion CylinderCollider::GetQuaternionOffset()
+Quaternion ConeCollider::GetQuaternionOffset()
 {
     switch (GetAxis())
     {
@@ -168,14 +205,14 @@ Quaternion CylinderCollider::GetQuaternionOffset()
     return Quaternion::Identity;
 }
 
-void CylinderCollider::Internal_SetContactOffset(float value)
+void ConeCollider::Internal_SetContactOffset(float value)
 {
     _contactOffset = value;
     UpdateGeometry();
     UpdateBounds();
 }
 
-void CylinderCollider::UpdateBounds()
+void ConeCollider::UpdateBounds()
 {
     // Cache bounds
     const float radiusTwice = _radius * 2.0f;
@@ -185,7 +222,7 @@ void CylinderCollider::UpdateBounds()
     BoundingSphere::FromBox(_box, _sphere);
 }
 
-void CylinderCollider::GetGeometry(CollisionShape& collision)
+void ConeCollider::GetGeometry(CollisionShape& collision)
 {
-    collision.SetCylinder(_radius, _height,(int)_axis,_contactOffset);
+    collision.SetCone(_radius, _height,(int)_axis,_contactOffset);
 }

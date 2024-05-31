@@ -634,6 +634,9 @@ void GetShapeGeometry(const CollisionShape& shape, PxGeometryHolder& geometry)
 {
     switch (shape.Type)
     {
+    case CollisionShape::Types::Plane:
+        geometry.storeAny(PxPlaneGeometry());
+        break;
     case CollisionShape::Types::Sphere:
         geometry.storeAny(PxSphereGeometry(shape.Sphere.Radius));
         break;
@@ -653,8 +656,10 @@ void GetShapeGeometry(const CollisionShape& shape, PxGeometryHolder& geometry)
         geometry.storeAny(PxHeightFieldGeometry((PxHeightField*)shape.HeightField.HeightField, PxMeshGeometryFlags(0), Math::Max(shape.HeightField.HeightScale, PX_MIN_HEIGHTFIELD_Y_SCALE), Math::Max(shape.HeightField.RowScale, PX_MIN_HEIGHTFIELD_XZ_SCALE), Math::Max(shape.HeightField.ColumnScale, PX_MIN_HEIGHTFIELD_XZ_SCALE)));
         break;
     case CollisionShape::Types::Cylinder:
-        auto gCylinderCallbacks = new physx::PxCustomGeometryExt::CylinderCallbacks(shape.Cylinder.HalfHeight, shape.Cylinder.Radius, shape.Cylinder.Axis, shape.Cylinder.Margin);
-        geometry.storeAny(PxCustomGeometry(*gCylinderCallbacks));
+        geometry.storeAny(PxCustomGeometry(*new physx::PxCustomGeometryExt::CylinderCallbacks(shape.Cylinder.HalfHeight, shape.Cylinder.Radius, shape.Cylinder.Axis, shape.Cylinder.Margin)));
+        break;
+    case CollisionShape::Types::Cone:
+        geometry.storeAny(PxCustomGeometry(*new physx::PxCustomGeometryExt::ConeCallbacks(shape.Cone.HalfHeight, shape.Cone.Radius, shape.Cone.Axis, shape.Cone.Margin)));
         break;
     }
 }
@@ -2718,6 +2723,9 @@ CollisionShape::Types PhysicsBackend::GetShapeType(void* shape)
     const PxCustomGeometry& customGeom1 = static_cast<const PxCustomGeometry&>(geom);
     switch (geom.getType())
     {
+    case PxGeometryType::ePLANE:
+        type = CollisionShape::Types::Plane;
+        break;
     case PxGeometryType::eSPHERE:
         type = CollisionShape::Types::Sphere;
         break;
@@ -2737,14 +2745,13 @@ CollisionShape::Types PhysicsBackend::GetShapeType(void* shape)
         type = CollisionShape::Types::HeightField;
         break;
     case PxGeometryType::eCUSTOM:
-#if INDEVELOPMENT && EXPERIMENTAL
-        if (customGeom1.getCustomType() == CylinderCallbacks::TYPE())
-        {
-#else
         if (customGeom1.getCustomType() == physx::PxCustomGeometryExt::CylinderCallbacks::TYPE())
         {
-#endif
             type = CollisionShape::Types::Cylinder;
+        }
+        if (customGeom1.getCustomType() == physx::PxCustomGeometryExt::ConeCallbacks::TYPE())
+        {
+            type = CollisionShape::Types::Cone;
         }
     default:
         break;

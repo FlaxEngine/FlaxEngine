@@ -181,6 +181,7 @@ struct FLAXENGINE_API CollisionShape
 {
     enum class Types : uint8
     {
+        Plane,
         Sphere,
         Box,
         Capsule,
@@ -188,6 +189,7 @@ struct FLAXENGINE_API CollisionShape
         TriangleMesh,
         HeightField,
         Cylinder,
+        Cone,
     };
 
     Types Type;
@@ -217,6 +219,14 @@ struct FLAXENGINE_API CollisionShape
             int Axis;
             float Margin;
         } Cylinder;
+
+        struct
+        {
+            float Radius;
+            float HalfHeight;
+            int Axis;
+            float Margin;
+        } Cone;
 
         struct
         {
@@ -267,6 +277,18 @@ struct FLAXENGINE_API CollisionShape
         Cylinder.HalfHeight = halfHeight;
         Cylinder.Margin = margin;
         Cylinder.Axis = axis;
+    }
+    void SetCone(float radius, float halfHeight, int axis, float margin)
+    {
+        Type = Types::Cone;
+        Cone.Radius = radius;
+        Cone.HalfHeight = halfHeight;
+        Cone.Margin = margin;
+        Cone.Axis = axis;
+    }
+    void SetPlane()
+    {
+        Type = Types::Plane;
     }
 
     void SetConvexMesh(void* contextMesh, float scale[3])
