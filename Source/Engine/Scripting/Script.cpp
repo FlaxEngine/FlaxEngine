@@ -313,7 +313,7 @@ void Script::EndPlay()
     Flags &= ~ObjectFlags::IsDuringPlay;
 
     // Cleanup managed object
-    DestroyManaged();
+    //DestroyManaged();
     if (IsRegistered())
         UnregisterObject();
 }
