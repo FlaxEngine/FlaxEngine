@@ -85,6 +85,12 @@ public:
     bool EnableGlobalSDF = false;
 
     /// <summary>
+    /// Draw distance of the Global SDF. Actual value can be large when using DDGI.
+    /// </summary>
+    API_FIELD(Attributes="EditorOrder(2001), EditorDisplay(\"Global SDF\"), Limit(1000), ValueCategory(Utils.ValueCategory.Distance)")
+    float GlobalSDFDistance = 15000.0f;
+
+    /// <summary>
     /// The Global SDF quality. Controls the volume texture resolution and amount of cascades to use.
     /// </summary>
     API_FIELD(Attributes="EditorOrder(2005), DefaultValue(Quality.High), EditorDisplay(\"Global SDF\")")

@@ -5,6 +5,7 @@
 #include "Engine/Core/Math/Vector3.h"
 #include "Engine/Core/Math/Matrix3x4.h"
 #include "Engine/Core/Collections/HashSet.h"
+#include "Engine/Core/Config/GraphicsSettings.h"
 #include "Engine/Engine/Engine.h"
 #include "Engine/Content/Content.h"
 #include "Engine/Graphics/GPUContext.h"
@@ -411,7 +412,10 @@ bool GlobalSignDistanceFieldPass::Render(RenderContext& renderContext, GPUContex
     }
     const int32 resolutionMip = Math::DivideAndRoundUp(resolution, GLOBAL_SDF_RASTERIZE_MIP_FACTOR);
     auto& giSettings = renderContext.List->Settings.GlobalIllumination;
-    const float distance = Math::Min(giSettings.Mode == GlobalIlluminationMode::DDGI ? giSettings.Distance : 15000.0f, renderContext.View.Far);
+    float distance = GraphicsSettings::Get()->GlobalSDFDistance;
+    if (giSettings.Mode == GlobalIlluminationMode::DDGI)
+        distance = Math::Max(distance, giSettings.Distance);
+    distance = Math::Min(distance, renderContext.View.Far);
     const float cascadesDistanceScales[] = { 1.0f, 2.5f, 5.0f, 10.0f };
     const float distanceExtent = distance / cascadesDistanceScales[cascadesCount - 1];
 
