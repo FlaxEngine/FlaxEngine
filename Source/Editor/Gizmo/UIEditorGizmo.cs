@@ -626,9 +626,6 @@ namespace FlaxEditor
                 var viewScale = ViewScale;
                 if (viewScale < 0.7f)
                     widgetSize *= viewScale;
-                var controlSize = control.Size.Absolute.MinValue / 50.0f;
-                if (controlSize < 1.0f)
-                    widgetSize *= Mathf.Clamp(controlSize + 0.1f, 0.1f, 1.0f);
                 var widgetHandleSize = new Float2(widgetSize);
                 DrawControlWidget(uiControl, ref ul, ref mousePos, ref widgetHandleSize, viewScale, new Float2(-1, -1), CursorType.SizeNWSE);
                 DrawControlWidget(uiControl, ref ur, ref mousePos, ref widgetHandleSize, viewScale, new Float2(1, -1), CursorType.SizeNESW);
@@ -647,7 +644,7 @@ namespace FlaxEditor
             }
         }
 
-        private void DrawControlWidget(UIControl uiControl, ref Float2 pos, ref Float2 mousePos, ref Float2 size,float scale, Float2 resizeAxis, CursorType cursor)
+        private void DrawControlWidget(UIControl uiControl, ref Float2 pos, ref Float2 mousePos, ref Float2 size, float scale, Float2 resizeAxis, CursorType cursor)
         {
             var style = Style.Current;
             var rect = new Rectangle((pos + resizeAxis * 10 * scale) - size * 0.5f, size);

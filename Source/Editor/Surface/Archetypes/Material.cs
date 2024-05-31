@@ -71,20 +71,20 @@ namespace FlaxEditor.Surface.Archetypes
                 // Layered material
                 if (GetBox(MaterialNodeBoxes.Layer).HasAnyConnection)
                 {
-                    GetBox(MaterialNodeBoxes.Color).Enabled = false;
-                    GetBox(MaterialNodeBoxes.Mask).Enabled = false;
-                    GetBox(MaterialNodeBoxes.Emissive).Enabled = false;
-                    GetBox(MaterialNodeBoxes.Metalness).Enabled = false;
-                    GetBox(MaterialNodeBoxes.Specular).Enabled = false;
-                    GetBox(MaterialNodeBoxes.Roughness).Enabled = false;
-                    GetBox(MaterialNodeBoxes.AmbientOcclusion).Enabled = false;
-                    GetBox(MaterialNodeBoxes.Normal).Enabled = false;
-                    GetBox(MaterialNodeBoxes.Opacity).Enabled = false;
-                    GetBox(MaterialNodeBoxes.Refraction).Enabled = false;
-                    GetBox(MaterialNodeBoxes.PositionOffset).Enabled = false;
-                    GetBox(MaterialNodeBoxes.TessellationMultiplier).Enabled = false;
-                    GetBox(MaterialNodeBoxes.WorldDisplacement).Enabled = false;
-                    GetBox(MaterialNodeBoxes.SubsurfaceColor).Enabled = false;
+                    GetBox(MaterialNodeBoxes.Color).IsActive = false;
+                    GetBox(MaterialNodeBoxes.Mask).IsActive = false;
+                    GetBox(MaterialNodeBoxes.Emissive).IsActive = false;
+                    GetBox(MaterialNodeBoxes.Metalness).IsActive = false;
+                    GetBox(MaterialNodeBoxes.Specular).IsActive = false;
+                    GetBox(MaterialNodeBoxes.Roughness).IsActive = false;
+                    GetBox(MaterialNodeBoxes.AmbientOcclusion).IsActive = false;
+                    GetBox(MaterialNodeBoxes.Normal).IsActive = false;
+                    GetBox(MaterialNodeBoxes.Opacity).IsActive = false;
+                    GetBox(MaterialNodeBoxes.Refraction).IsActive = false;
+                    GetBox(MaterialNodeBoxes.PositionOffset).IsActive = false;
+                    GetBox(MaterialNodeBoxes.TessellationMultiplier).IsActive = false;
+                    GetBox(MaterialNodeBoxes.WorldDisplacement).IsActive = false;
+                    GetBox(MaterialNodeBoxes.SubsurfaceColor).IsActive = false;
                     return;
                 }
 
@@ -102,94 +102,94 @@ namespace FlaxEditor.Surface.Archetypes
                     bool isNotUnlit = info.ShadingModel != MaterialShadingModel.Unlit;
                     bool withTess = info.TessellationMode != TessellationMethod.None;
 
-                    GetBox(MaterialNodeBoxes.Color).Enabled = isNotUnlit;
-                    GetBox(MaterialNodeBoxes.Mask).Enabled = true;
-                    GetBox(MaterialNodeBoxes.Emissive).Enabled = true;
-                    GetBox(MaterialNodeBoxes.Metalness).Enabled = isNotUnlit;
-                    GetBox(MaterialNodeBoxes.Specular).Enabled = isNotUnlit;
-                    GetBox(MaterialNodeBoxes.Roughness).Enabled = isNotUnlit;
-                    GetBox(MaterialNodeBoxes.AmbientOcclusion).Enabled = isNotUnlit;
-                    GetBox(MaterialNodeBoxes.Normal).Enabled = isNotUnlit;
-                    GetBox(MaterialNodeBoxes.Opacity).Enabled = info.ShadingModel == MaterialShadingModel.Subsurface || info.ShadingModel == MaterialShadingModel.Foliage || info.BlendMode != MaterialBlendMode.Opaque;
-                    GetBox(MaterialNodeBoxes.Refraction).Enabled = info.BlendMode != MaterialBlendMode.Opaque;
-                    GetBox(MaterialNodeBoxes.PositionOffset).Enabled = true;
-                    GetBox(MaterialNodeBoxes.TessellationMultiplier).Enabled = withTess;
-                    GetBox(MaterialNodeBoxes.WorldDisplacement).Enabled = withTess;
-                    GetBox(MaterialNodeBoxes.SubsurfaceColor).Enabled = info.ShadingModel == MaterialShadingModel.Subsurface || info.ShadingModel == MaterialShadingModel.Foliage;
+                    GetBox(MaterialNodeBoxes.Color).IsActive = isNotUnlit;
+                    GetBox(MaterialNodeBoxes.Mask).IsActive = true;
+                    GetBox(MaterialNodeBoxes.Emissive).IsActive = true;
+                    GetBox(MaterialNodeBoxes.Metalness).IsActive = isNotUnlit;
+                    GetBox(MaterialNodeBoxes.Specular).IsActive = isNotUnlit;
+                    GetBox(MaterialNodeBoxes.Roughness).IsActive = isNotUnlit;
+                    GetBox(MaterialNodeBoxes.AmbientOcclusion).IsActive = isNotUnlit;
+                    GetBox(MaterialNodeBoxes.Normal).IsActive = isNotUnlit;
+                    GetBox(MaterialNodeBoxes.Opacity).IsActive = info.ShadingModel == MaterialShadingModel.Subsurface || info.ShadingModel == MaterialShadingModel.Foliage || info.BlendMode != MaterialBlendMode.Opaque;
+                    GetBox(MaterialNodeBoxes.Refraction).IsActive = info.BlendMode != MaterialBlendMode.Opaque;
+                    GetBox(MaterialNodeBoxes.PositionOffset).IsActive = true;
+                    GetBox(MaterialNodeBoxes.TessellationMultiplier).IsActive = withTess;
+                    GetBox(MaterialNodeBoxes.WorldDisplacement).IsActive = withTess;
+                    GetBox(MaterialNodeBoxes.SubsurfaceColor).IsActive = info.ShadingModel == MaterialShadingModel.Subsurface || info.ShadingModel == MaterialShadingModel.Foliage;
                     break;
                 }
                 case MaterialDomain.PostProcess:
                 {
-                    GetBox(MaterialNodeBoxes.Color).Enabled = false;
-                    GetBox(MaterialNodeBoxes.Mask).Enabled = false;
-                    GetBox(MaterialNodeBoxes.Emissive).Enabled = true;
-                    GetBox(MaterialNodeBoxes.Metalness).Enabled = false;
-                    GetBox(MaterialNodeBoxes.Specular).Enabled = false;
-                    GetBox(MaterialNodeBoxes.Roughness).Enabled = false;
-                    GetBox(MaterialNodeBoxes.AmbientOcclusion).Enabled = false;
-                    GetBox(MaterialNodeBoxes.Normal).Enabled = false;
-                    GetBox(MaterialNodeBoxes.Opacity).Enabled = true;
-                    GetBox(MaterialNodeBoxes.Refraction).Enabled = false;
-                    GetBox(MaterialNodeBoxes.PositionOffset).Enabled = false;
-                    GetBox(MaterialNodeBoxes.TessellationMultiplier).Enabled = false;
-                    GetBox(MaterialNodeBoxes.WorldDisplacement).Enabled = false;
-                    GetBox(MaterialNodeBoxes.SubsurfaceColor).Enabled = false;
+                    GetBox(MaterialNodeBoxes.Color).IsActive = false;
+                    GetBox(MaterialNodeBoxes.Mask).IsActive = false;
+                    GetBox(MaterialNodeBoxes.Emissive).IsActive = true;
+                    GetBox(MaterialNodeBoxes.Metalness).IsActive = false;
+                    GetBox(MaterialNodeBoxes.Specular).IsActive = false;
+                    GetBox(MaterialNodeBoxes.Roughness).IsActive = false;
+                    GetBox(MaterialNodeBoxes.AmbientOcclusion).IsActive = false;
+                    GetBox(MaterialNodeBoxes.Normal).IsActive = false;
+                    GetBox(MaterialNodeBoxes.Opacity).IsActive = true;
+                    GetBox(MaterialNodeBoxes.Refraction).IsActive = false;
+                    GetBox(MaterialNodeBoxes.PositionOffset).IsActive = false;
+                    GetBox(MaterialNodeBoxes.TessellationMultiplier).IsActive = false;
+                    GetBox(MaterialNodeBoxes.WorldDisplacement).IsActive = false;
+                    GetBox(MaterialNodeBoxes.SubsurfaceColor).IsActive = false;
                     break;
                 }
                 case MaterialDomain.Decal:
                 {
                     var mode = info.DecalBlendingMode;
 
-                    GetBox(MaterialNodeBoxes.Color).Enabled = mode == MaterialDecalBlendingMode.Translucent || mode == MaterialDecalBlendingMode.Stain;
-                    GetBox(MaterialNodeBoxes.Mask).Enabled = true;
-                    GetBox(MaterialNodeBoxes.Emissive).Enabled = mode == MaterialDecalBlendingMode.Translucent || mode == MaterialDecalBlendingMode.Emissive;
-                    GetBox(MaterialNodeBoxes.Metalness).Enabled = mode == MaterialDecalBlendingMode.Translucent;
-                    GetBox(MaterialNodeBoxes.Specular).Enabled = mode == MaterialDecalBlendingMode.Translucent;
-                    GetBox(MaterialNodeBoxes.Roughness).Enabled = mode == MaterialDecalBlendingMode.Translucent;
-                    GetBox(MaterialNodeBoxes.AmbientOcclusion).Enabled = false;
-                    GetBox(MaterialNodeBoxes.Normal).Enabled = mode == MaterialDecalBlendingMode.Translucent || mode == MaterialDecalBlendingMode.Normal;
-                    GetBox(MaterialNodeBoxes.Opacity).Enabled = true;
-                    GetBox(MaterialNodeBoxes.Refraction).Enabled = false;
-                    GetBox(MaterialNodeBoxes.PositionOffset).Enabled = false;
-                    GetBox(MaterialNodeBoxes.TessellationMultiplier).Enabled = false;
-                    GetBox(MaterialNodeBoxes.WorldDisplacement).Enabled = false;
-                    GetBox(MaterialNodeBoxes.SubsurfaceColor).Enabled = false;
+                    GetBox(MaterialNodeBoxes.Color).IsActive = mode == MaterialDecalBlendingMode.Translucent || mode == MaterialDecalBlendingMode.Stain;
+                    GetBox(MaterialNodeBoxes.Mask).IsActive = true;
+                    GetBox(MaterialNodeBoxes.Emissive).IsActive = mode == MaterialDecalBlendingMode.Translucent || mode == MaterialDecalBlendingMode.Emissive;
+                    GetBox(MaterialNodeBoxes.Metalness).IsActive = mode == MaterialDecalBlendingMode.Translucent;
+                    GetBox(MaterialNodeBoxes.Specular).IsActive = mode == MaterialDecalBlendingMode.Translucent;
+                    GetBox(MaterialNodeBoxes.Roughness).IsActive = mode == MaterialDecalBlendingMode.Translucent;
+                    GetBox(MaterialNodeBoxes.AmbientOcclusion).IsActive = false;
+                    GetBox(MaterialNodeBoxes.Normal).IsActive = mode == MaterialDecalBlendingMode.Translucent || mode == MaterialDecalBlendingMode.Normal;
+                    GetBox(MaterialNodeBoxes.Opacity).IsActive = true;
+                    GetBox(MaterialNodeBoxes.Refraction).IsActive = false;
+                    GetBox(MaterialNodeBoxes.PositionOffset).IsActive = false;
+                    GetBox(MaterialNodeBoxes.TessellationMultiplier).IsActive = false;
+                    GetBox(MaterialNodeBoxes.WorldDisplacement).IsActive = false;
+                    GetBox(MaterialNodeBoxes.SubsurfaceColor).IsActive = false;
                     break;
                 }
                 case MaterialDomain.GUI:
                 {
-                    GetBox(MaterialNodeBoxes.Color).Enabled = false;
-                    GetBox(MaterialNodeBoxes.Mask).Enabled = true;
-                    GetBox(MaterialNodeBoxes.Emissive).Enabled = true;
-                    GetBox(MaterialNodeBoxes.Metalness).Enabled = false;
-                    GetBox(MaterialNodeBoxes.Specular).Enabled = false;
-                    GetBox(MaterialNodeBoxes.Roughness).Enabled = false;
-                    GetBox(MaterialNodeBoxes.AmbientOcclusion).Enabled = false;
-                    GetBox(MaterialNodeBoxes.Normal).Enabled = false;
-                    GetBox(MaterialNodeBoxes.Opacity).Enabled = true;
-                    GetBox(MaterialNodeBoxes.Refraction).Enabled = false;
-                    GetBox(MaterialNodeBoxes.PositionOffset).Enabled = false;
-                    GetBox(MaterialNodeBoxes.TessellationMultiplier).Enabled = false;
-                    GetBox(MaterialNodeBoxes.WorldDisplacement).Enabled = false;
-                    GetBox(MaterialNodeBoxes.SubsurfaceColor).Enabled = false;
+                    GetBox(MaterialNodeBoxes.Color).IsActive = false;
+                    GetBox(MaterialNodeBoxes.Mask).IsActive = true;
+                    GetBox(MaterialNodeBoxes.Emissive).IsActive = true;
+                    GetBox(MaterialNodeBoxes.Metalness).IsActive = false;
+                    GetBox(MaterialNodeBoxes.Specular).IsActive = false;
+                    GetBox(MaterialNodeBoxes.Roughness).IsActive = false;
+                    GetBox(MaterialNodeBoxes.AmbientOcclusion).IsActive = false;
+                    GetBox(MaterialNodeBoxes.Normal).IsActive = false;
+                    GetBox(MaterialNodeBoxes.Opacity).IsActive = true;
+                    GetBox(MaterialNodeBoxes.Refraction).IsActive = false;
+                    GetBox(MaterialNodeBoxes.PositionOffset).IsActive = false;
+                    GetBox(MaterialNodeBoxes.TessellationMultiplier).IsActive = false;
+                    GetBox(MaterialNodeBoxes.WorldDisplacement).IsActive = false;
+                    GetBox(MaterialNodeBoxes.SubsurfaceColor).IsActive = false;
                     break;
                 }
                 case MaterialDomain.VolumeParticle:
                 {
-                    GetBox(MaterialNodeBoxes.Color).Enabled = true;
-                    GetBox(MaterialNodeBoxes.Mask).Enabled = true;
-                    GetBox(MaterialNodeBoxes.Emissive).Enabled = true;
-                    GetBox(MaterialNodeBoxes.Metalness).Enabled = false;
-                    GetBox(MaterialNodeBoxes.Specular).Enabled = false;
-                    GetBox(MaterialNodeBoxes.Roughness).Enabled = false;
-                    GetBox(MaterialNodeBoxes.AmbientOcclusion).Enabled = false;
-                    GetBox(MaterialNodeBoxes.Normal).Enabled = false;
-                    GetBox(MaterialNodeBoxes.Opacity).Enabled = true;
-                    GetBox(MaterialNodeBoxes.Refraction).Enabled = false;
-                    GetBox(MaterialNodeBoxes.PositionOffset).Enabled = false;
-                    GetBox(MaterialNodeBoxes.TessellationMultiplier).Enabled = false;
-                    GetBox(MaterialNodeBoxes.WorldDisplacement).Enabled = false;
-                    GetBox(MaterialNodeBoxes.SubsurfaceColor).Enabled = false;
+                    GetBox(MaterialNodeBoxes.Color).IsActive = true;
+                    GetBox(MaterialNodeBoxes.Mask).IsActive = true;
+                    GetBox(MaterialNodeBoxes.Emissive).IsActive = true;
+                    GetBox(MaterialNodeBoxes.Metalness).IsActive = false;
+                    GetBox(MaterialNodeBoxes.Specular).IsActive = false;
+                    GetBox(MaterialNodeBoxes.Roughness).IsActive = false;
+                    GetBox(MaterialNodeBoxes.AmbientOcclusion).IsActive = false;
+                    GetBox(MaterialNodeBoxes.Normal).IsActive = false;
+                    GetBox(MaterialNodeBoxes.Opacity).IsActive = true;
+                    GetBox(MaterialNodeBoxes.Refraction).IsActive = false;
+                    GetBox(MaterialNodeBoxes.PositionOffset).IsActive = false;
+                    GetBox(MaterialNodeBoxes.TessellationMultiplier).IsActive = false;
+                    GetBox(MaterialNodeBoxes.WorldDisplacement).IsActive = false;
+                    GetBox(MaterialNodeBoxes.SubsurfaceColor).IsActive = false;
                     break;
                 }
                 default: throw new ArgumentOutOfRangeException();

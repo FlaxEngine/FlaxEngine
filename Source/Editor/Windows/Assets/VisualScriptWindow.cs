@@ -1027,7 +1027,7 @@ namespace FlaxEditor.Windows.Assets
             try
             {
                 // Try to restore the cached breakpoints from the last session
-                if (Editor.ProjectCache.TryGetCustomData(_asset.ScriptTypeName + ".Breakpoints", out var breakpointsData))
+                if (Editor.ProjectCache.TryGetCustomData(_asset.ScriptTypeName + ".Breakpoints", out string breakpointsData))
                 {
                     var data = JsonSerializer.Deserialize<BreakpointData[]>(breakpointsData);
                     if (data != null)
