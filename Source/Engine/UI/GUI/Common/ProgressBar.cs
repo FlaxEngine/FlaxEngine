@@ -220,7 +220,7 @@ namespace FlaxEngine.GUI
         {
             base.DrawSelf();
 
-            float progressNormalized = (_current - _minimum) / _maximum;
+            float progressNormalized = Mathf.InverseLerp(_minimum, _maximum, _current);
             if (progressNormalized > 0.001f)
             {
                 Rectangle barRect = new Rectangle(0, 0, Width * progressNormalized, Height);
