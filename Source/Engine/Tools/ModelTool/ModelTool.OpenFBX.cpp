@@ -417,7 +417,7 @@ void ProcessNodes(OpenFbxImporterData& data, const ofbx::Object* aNode, int32 pa
 Matrix GetOffsetMatrix(OpenFbxImporterData& data, const ofbx::Mesh* mesh, const ofbx::Object* node)
 {
 #if 1
-    auto* skin = mesh ? mesh->getGeometry()->getSkin() : nullptr;
+    auto* skin = mesh ? mesh->getSkin() : nullptr;
     if (skin)
     {
         for (int i = 0, c = skin->getClusterCount(); i < c; i++)
@@ -446,7 +446,7 @@ Matrix GetOffsetMatrix(OpenFbxImporterData& data, const ofbx::Mesh* mesh, const 
 
 bool IsMeshInvalid(const ofbx::Mesh* aMesh)
 {
-    return aMesh->getGeometry()->getGeometryData().getPositions().count == 0;
+    return aMesh->getGeometryData().getPositions().count == 0;
 }
 
 bool ImportBones(OpenFbxImporterData& data, String& errorMsg)
@@ -456,8 +456,7 @@ bool ImportBones(OpenFbxImporterData& data, String& errorMsg)
     for (int i = 0; i < meshCount; i++)
     {
         const auto aMesh = data.Scene->getMesh(i);
-        const auto aGeometry = aMesh->getGeometry();
-        const ofbx::Skin* skin = aGeometry->getSkin();
+        const ofbx::Skin* skin = aMesh->getSkin();
         if (skin == nullptr || IsMeshInvalid(aMesh))
             continue;
 
@@ -675,7 +674,6 @@ bool ProcessMesh(ModelData& result, OpenFbxImporterData& data, const ofbx::Mesh*
     PROFILE_CPU();
     mesh.Name = aMesh->name;
     ZoneText(*mesh.Name, mesh.Name.Length());
-    const ofbx::Geometry* aGeometry = aMesh->getGeometry();
     const ofbx::GeometryData& geometryData = aMesh->getGeometryData();
     const ofbx::GeometryPartition& partition = geometryData.getPartition(partitionIndex);
     const int vertexCount = partition.triangles_count * 3;
@@ -684,8 +682,8 @@ bool ProcessMesh(ModelData& result, OpenFbxImporterData& data, const ofbx::Mesh*
     const ofbx::Vec3Attributes& normals = geometryData.getNormals();
     const ofbx::Vec3Attributes& tangents = geometryData.getTangents();
     const ofbx::Vec4Attributes& colors = geometryData.getColors();
-    const ofbx::Skin* skin = aGeometry->getSkin();
-    const ofbx::BlendShape* blendShape = aGeometry->getBlendShape();
+    const ofbx::Skin* skin = aMesh->getSkin();
+    const ofbx::BlendShape* blendShape = aMesh->getBlendShape();
 
     static Array<int> triangulatedIndices;
     triangulatedIndices.Resize(vertexCount, false);
@@ -1062,7 +1060,6 @@ bool ImportMesh(ModelData& result, OpenFbxImporterData& data, const ofbx::Mesh* 
 bool ImportMesh(int32 index, ModelData& result, OpenFbxImporterData& data, String& errorMsg)
 {
     const auto aMesh = data.Scene->getMesh(index);
-    const auto aGeometry = aMesh->getGeometry();
     if (IsMeshInvalid(aMesh))
         return false;
 
