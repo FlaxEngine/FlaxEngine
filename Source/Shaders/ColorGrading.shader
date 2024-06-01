@@ -191,7 +191,9 @@ float3 TonemapACES(float3 linearColor)
 	return saturate(color);
 }
 
-#ifdef TONE_MAPPING_MODE_AGX
+#endif
+
+#ifdef TONE_MAPPING_MODE_NEUTRAL
 
 float3 agxAscCdl(float3 color, float3 slope, float3 offset, float3 power, float sat) {
     const float3 lw = float3(0.2126, 0.7152, 0.0722);
