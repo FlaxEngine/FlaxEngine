@@ -35,15 +35,17 @@ void DirectoryWatchCallback( ConstFSEventStreamRef StreamRef, void* FileWatcherP
             {
                 action = FileSystemAction::Create;
             }
-            
-            if (renamed || modified)
+            if (renamed)
             {
-                action = FileSystemAction::Delete;
+                action = FileSystemAction::Rename;
             }
-            
-            if (removed)
+            if (rmodified)
             {
                 action = FileSystemAction::Modify;
+            }
+            if (removed)
+            {
+                action = FileSystemAction::Delete;
             }
             
             const String resolvedPath = AppleUtils::ToString((CFStringRef)CFArrayGetValueAtIndex(EventPathArray,EventIndex));
