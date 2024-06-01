@@ -1121,7 +1121,7 @@ void ExtractKeyframeScale(const ofbx::Object* bone, ofbx::DVec3& trans, const Fr
     if (Math::IsZero(trans.x) && Math::IsZero(trans.y) && Math::IsZero(trans.z))
         trans = { 1.0, 1.0, 1.0 };
 
-    const Matrix frameTrans = ToMatrix(bone->evalLocal(localFrame.Translation, localFrame.Rotation, trans));
+    const Matrix frameTrans = ToMatrix(bone->evalLocal(localFrame.Translation, { 0.0, 0.0, 0.0 }, trans));
     keyframe = frameTrans.GetScaleVector();
 }
 
