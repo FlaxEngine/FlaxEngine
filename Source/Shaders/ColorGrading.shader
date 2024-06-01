@@ -238,9 +238,11 @@ float3 TonemapAGX(float3 linearColor)
             + 0.1191    * color
             - 0.00232;
 
-    color = agxAscCdl(color, float3(1.0, 1.0, 1.0), float3(0.0, 0.0, 0.0), float3(1.35, 1.35, 1.35), 1.4);
+    // color = agxAscCdl(color, float3(1.0, 1.0, 1.0), float3(0.0, 0.0, 0.0), float3(1.35, 1.35, 1.35), 1.4);
 
     color = mul(color, AgXOutsetMatrix);
+
+    color = pow(max(float3(0.0, 0.0, 0.0), color), float3(2.2, 2.2, 2.2));
 
     color = clamp(color, 0.0, 1.0);
 
