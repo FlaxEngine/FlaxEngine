@@ -273,7 +273,7 @@ AnimGraphParameter* AnimatedModel::GetParameter(const StringView& name)
     return nullptr;
 }
 
-Variant AnimatedModel::GetParameterValue(const StringView& name)
+const Variant& AnimatedModel::GetParameterValue(const StringView& name) const
 {
     CHECK_ANIM_GRAPH_PARAM_ACCESS_RESULT(Variant::Null);
     for (auto& param : GraphInstance.Parameters)
@@ -299,7 +299,7 @@ void AnimatedModel::SetParameterValue(const StringView& name, const Variant& val
     LOG(Warning, "Failed to set animated model '{0}' missing parameter '{1}'", ToString(), name);
 }
 
-Variant AnimatedModel::GetParameterValue(const Guid& id)
+const Variant& AnimatedModel::GetParameterValue(const Guid& id) const
 {
     CHECK_ANIM_GRAPH_PARAM_ACCESS_RESULT(Variant::Null);
     for (auto& param : GraphInstance.Parameters)

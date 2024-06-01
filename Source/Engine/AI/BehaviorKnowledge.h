@@ -101,7 +101,7 @@ public:
     /// </summary>
     /// <param name="type">The goal type.</param>
     /// <returns>The goal value or null if not found.</returns>
-    API_FUNCTION() Variant GetGoal(ScriptingTypeHandle type);
+    API_FUNCTION() const Variant& GetGoal(ScriptingTypeHandle type) const;
 
     /// <summary>
     /// Adds the goal to the knowledge. If goal of that type already exists then it's value is updated.
