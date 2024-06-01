@@ -71,7 +71,6 @@ namespace FlaxEditor.States
             {
                 // Skip compilation on startup
                 OnCompilationEnd(true);
-                Editor.EndInit();
             }
         }
 
