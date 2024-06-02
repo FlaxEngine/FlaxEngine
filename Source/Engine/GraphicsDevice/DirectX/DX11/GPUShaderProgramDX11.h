@@ -14,11 +14,9 @@ template<typename BaseType, typename BufferType>
 class GPUShaderProgramDX11 : public BaseType
 {
 protected:
-
     BufferType* _buffer;
 
 public:
-
     /// <summary>
     /// Initializes a new instance of the <see cref="GPUShaderProgramDX11"/> class.
     /// </summary>
@@ -28,6 +26,9 @@ public:
         : _buffer(buffer)
     {
         BaseType::Init(initializer);
+#if GPU_ENABLE_RESOURCE_NAMING
+        SetDebugObjectName(buffer, initializer.Name.Get(), initializer.Name.Length());
+#endif
     }
 
     /// <summary>
@@ -39,24 +40,20 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Gets DirectX 11 buffer handle.
     /// </summary>
-    /// <returns>The DirectX 11 buffer.</returns>
     FORCE_INLINE BufferType* GetBufferHandleDX11() const
     {
         return _buffer;
     }
 
 public:
-
     // [BaseType]
     uint32 GetBufferSize() const override
     {
         return 0;
     }
-
     void* GetBufferHandle() const override
     {
         return _buffer;
@@ -69,12 +66,10 @@ public:
 class GPUShaderProgramVSDX11 : public GPUShaderProgramDX11<GPUShaderProgramVS, ID3D11VertexShader>
 {
 private:
-
     byte _inputLayoutSize;
     ID3D11InputLayout* _inputLayout;
 
 public:
-
     /// <summary>
     /// Initializes a new instance of the <see cref="GPUShaderProgramVSDX11"/> class.
     /// </summary>
@@ -98,24 +93,20 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Gets the DirectX 11 input layout handle
     /// </summary>
-    /// <returns>DirectX 11 input layout</returns>
     FORCE_INLINE ID3D11InputLayout* GetInputLayoutDX11() const
     {
         return _inputLayout;
     }
 
 public:
-
     // [GPUShaderProgramDX11]
     void* GetInputLayout() const override
     {
         return (void*)_inputLayout;
     }
-
     byte GetInputLayoutSize() const override
     {
         return _inputLayoutSize;
@@ -129,7 +120,6 @@ public:
 class GPUShaderProgramHSDX11 : public GPUShaderProgramDX11<GPUShaderProgramHS, ID3D11HullShader>
 {
 public:
-
     /// <summary>
     /// Initializes a new instance of the <see cref="GPUShaderProgramHSDX11"/> class.
     /// </summary>
@@ -149,7 +139,6 @@ public:
 class GPUShaderProgramDSDX11 : public GPUShaderProgramDX11<GPUShaderProgramDS, ID3D11DomainShader>
 {
 public:
-
     /// <summary>
     /// Initializes a new instance of the <see cref="GPUShaderProgramDSDX11"/> class.
     /// </summary>
@@ -169,7 +158,6 @@ public:
 class GPUShaderProgramGSDX11 : public GPUShaderProgramDX11<GPUShaderProgramGS, ID3D11GeometryShader>
 {
 public:
-
     /// <summary>
     /// Initializes a new instance of the <see cref="GPUShaderProgramGSDX11"/> class.
     /// </summary>
@@ -188,7 +176,6 @@ public:
 class GPUShaderProgramPSDX11 : public GPUShaderProgramDX11<GPUShaderProgramPS, ID3D11PixelShader>
 {
 public:
-
     /// <summary>
     /// Initializes a new instance of the <see cref="GPUShaderProgramPSDX11"/> class.
     /// </summary>
@@ -206,7 +193,6 @@ public:
 class GPUShaderProgramCSDX11 : public GPUShaderProgramDX11<GPUShaderProgramCS, ID3D11ComputeShader>
 {
 public:
-
     /// <summary>
     /// Initializes a new instance of the <see cref="GPUShaderProgramCSDX11"/> class.
     /// </summary>
