@@ -337,10 +337,10 @@ void GenerateGTAOShadowsInternal(out float outShadowTerm, out float4 outEdges, o
 	float3 pixelNormal = LoadNormal(fullResCoord);
 
 	float deviceDepth = SampleDeviceDepth(normalizedScreenPos, 0.0);
-	const float gtaoRadius = 0.02;
-	const float gtaoThickness = 0.02;
+	const float gtaoRadius = 0.5;
+	const float gtaoThickness = 0.1;
 
-	float stepRadius = gtaoRadius / LinearizeZ(GetGBufferData(), deviceDepth);
+	float stepRadius = 60 * gtaoRadius / LinearizeZ(GetGBufferData(), deviceDepth);
 	stepRadius /= (float(GTAO_SAMPLE_COUNT) + 1.0f); // Divide by steps + 1 so that the farthest samples are not fully attenuated
     const float attenFactor = 2.0 / max(gtaoRadius * gtaoRadius, 0.001);
 
@@ -353,22 +353,22 @@ void GenerateGTAOShadowsInternal(out float outShadowTerm, out float4 outEdges, o
 	const float sinDeltaAngle = sin(deltaAngle), cosDeltaAngle = cos(deltaAngle);
 
 	// Slice direction, normalized to pixel size
-	float2 sliceDir = float2(1, 0) * HalfViewportPixelSize;
+	float2 sliceDir = float2(1, 0);
 
 	for(int slice = 0; slice < GTAO_SLICE_COUNT; slice++){
 		float2 bestAng = float2(-1.0, -1.0);
 
 		for(int samp = 1; samp <= GTAO_SAMPLE_COUNT; samp++){
-			float2 uvOffset = sliceDir * (stepRadius * samp);
+			float2 uvOffset = sliceDir * (stepRadius * samp) * HalfViewportPixelSize;
 			uvOffset.y *= -1;
-			float4 samplePos = normalizedScreenPos.xyxy + int4(uvOffset.xy, -uvOffset.xy);
+			float4 samplePos = normalizedScreenPos.xyxy + float4(uvOffset.xy, -uvOffset.xy);
 
 			float mipmap = 0;
 			if(samp == 2){
-				mipmap += 0;
+				mipmap += 1;
 			}
 			if(samp > 3){
-				mipmap += 0;
+				mipmap += 1;
 			}
 
 			float3 h1 = GetViewPos(GetGBufferData(), samplePos.xy, SampleDeviceDepth(samplePos.xy, mipmap)) - viewPos;
