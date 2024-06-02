@@ -936,6 +936,142 @@ namespace FlaxEditor.Surface.Archetypes
                     NodeElementArchetype.Factory.Output(0, string.Empty, typeof(float), 2),
                 }
             },
+            new NodeArchetype
+            {
+                TypeID = 43,
+                Title = "Rotate UV [Simple Rotator]",
+                Description = "Rotates 2d vector",
+                Flags = NodeFlags.MaterialGraph,
+                Size = new Float2(250, 40),
+                ConnectionsHints = ConnectionsHint.Vector,
+                DefaultValues =
+                [
+                    0.0f,
+                ],
+                Elements =
+                [
+                    NodeElementArchetype.Factory.Input(0, "Uvs", true, typeof(Float2), 0),
+                    NodeElementArchetype.Factory.Input(1, "Angle", true, typeof(float), 1,0),
+                    NodeElementArchetype.Factory.Output(0, string.Empty, typeof(Float2), 2),
+                ]
+            },
+            new NodeArchetype
+            {
+                TypeID = 44,
+                Title = "Cone Gradient",
+                Description = "",
+                Flags = NodeFlags.MaterialGraph,
+                Size = new Float2(175, 40),
+                ConnectionsHints = ConnectionsHint.Vector,
+                DefaultValues =
+                [
+                    0.0f,
+                ],
+                Elements =
+                [
+                    NodeElementArchetype.Factory.Input(0, "Uvs", true, typeof(Float2), 0),
+                    NodeElementArchetype.Factory.Input(1, "Angle", true, typeof(float), 1,0),
+                    NodeElementArchetype.Factory.Output(0, string.Empty, typeof(float), 2),
+                ]
+            },
+            new NodeArchetype
+            {
+                TypeID = 45,
+                Title = "Cycle Gradient",
+                Description = "2d verison of sphere mask",
+                Flags = NodeFlags.MaterialGraph,
+                Size = new Float2(175, 20),
+                ConnectionsHints = ConnectionsHint.Vector,
+                Elements =
+                [
+                    NodeElementArchetype.Factory.Input(0, "Uvs", true, typeof(Float2), 0),
+                    NodeElementArchetype.Factory.Output(0, string.Empty, typeof(float), 1),
+                ]
+            },
+            new NodeArchetype
+            {
+                TypeID = 46,
+                Title = "Falloff and Offset",
+                Description = "",
+                Flags = NodeFlags.MaterialGraph,
+                Size = new Float2(175, 60),
+                ConnectionsHints = ConnectionsHint.Numeric,
+                DefaultValues =
+                [
+                    0.0f,
+                    0.9f
+                ],
+                Elements =
+                [
+                    NodeElementArchetype.Factory.Input(0, "Value", true, typeof(float), 0),
+                    NodeElementArchetype.Factory.Input(1, "Offset", true, typeof(float), 1,0),
+                    NodeElementArchetype.Factory.Input(2, "Falloff", true, typeof(float), 2,1),
+                    NodeElementArchetype.Factory.Output(0, string.Empty, typeof(float), 3),
+                ]
+            },
+            new NodeArchetype
+            {
+                TypeID = 47,
+                Title = "Linear Gradient",
+                Description = "x = Gradient along X axis, y = Gradient along Y axis",
+                Flags = NodeFlags.MaterialGraph,
+                Size = new Float2(175, 60),
+                ConnectionsHints = ConnectionsHint.Vector,
+                DefaultValues =
+                [
+                    0.0f,
+                    false
+                ],
+                Elements =
+                [
+                    NodeElementArchetype.Factory.Input(0, "Uvs", true, typeof(Float2), 0),
+                    NodeElementArchetype.Factory.Input(1, "Angle", true, typeof(float), 1,0),
+                    NodeElementArchetype.Factory.Input(2, "Mirror", true, typeof(bool), 2,1),
+                    NodeElementArchetype.Factory.Output(0, string.Empty, typeof(Float2), 3),
+                ]
+            },
+            new NodeArchetype
+            {
+                TypeID = 48,
+                Title = "Radial Gradient",
+                Description = "",
+                Flags = NodeFlags.MaterialGraph,
+                Size = new Float2(175, 40),
+                ConnectionsHints = ConnectionsHint.Vector,
+                DefaultValues =
+                [
+                    0.0f,
+                ],
+                Elements = 
+                [
+                    NodeElementArchetype.Factory.Input(0, "Uvs", true, typeof(Float2), 0),
+                    NodeElementArchetype.Factory.Input(1, "Angle", true, typeof(float), 1,0),
+                    NodeElementArchetype.Factory.Output(0, string.Empty, typeof(float), 2),
+                ]
+            },
+            new NodeArchetype
+            {
+                TypeID = 49,
+                Title = "Ring Gradient",
+                Description = "x = InnerMask,y = OuterMask,z = Mask",
+                Flags = NodeFlags.MaterialGraph,
+                Size = new Float2(175, 80),
+                ConnectionsHints = ConnectionsHint.Vector,
+                DefaultValues =
+                [
+                    1.0f,
+                    0.8f,
+                    0.05f,
+                ],
+                Elements = 
+                [
+                    NodeElementArchetype.Factory.Input(0, "Uvs", true, typeof(Float2), 0),
+                    NodeElementArchetype.Factory.Input(1, "OuterBounds", true, typeof(float), 1,0),
+                    NodeElementArchetype.Factory.Input(2, "InnerBounds", true, typeof(float), 2,1),
+                    NodeElementArchetype.Factory.Input(3, "Falloff",     true, typeof(float), 3,2),
+                    NodeElementArchetype.Factory.Output(0, string.Empty, typeof(Float3), 4),
+                ]
+            },
         };
     }
 }
