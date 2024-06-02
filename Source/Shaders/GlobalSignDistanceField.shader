@@ -60,6 +60,14 @@ float CombineDistanceToSDF(float sdf, float distanceToSDF)
 	return sqrt(Square(max(sdf, 0)) + Square(distanceToSDF)); 
 }
 
+float CombineSDF(float oldSdf, float newSdf)
+{
+    // Use distance closer to 0
+    if (oldSdf < 0 && newSdf < 0)
+        return max(oldSdf, newSdf);
+    return min(oldSdf, newSdf);
+}
+
 #if defined(_CS_RasterizeModel) || defined(_CS_RasterizeHeightfield)
 
 RWTexture3D<float> GlobalSDFTex : register(u0);
@@ -127,7 +135,7 @@ void CS_RasterizeModel(uint3 DispatchThreadId : SV_DispatchThreadID)
 	{
 		ObjectRasterizeData objectData = ObjectsBuffer[Objects[i / 4][i % 4]];
 		float objectDistance = DistanceToModelSDF(minDistance, objectData, ObjectsTextures[i], voxelWorldPos);
-		minDistance = min(minDistance, objectDistance);
+		minDistance = CombineSDF(minDistance, objectDistance);
 	}
 	GlobalSDFTex[voxelCoord] = clamp(minDistance / MaxDistance, -1, 1);
 }
@@ -177,7 +185,7 @@ void CS_RasterizeHeightfield(uint3 DispatchThreadId : SV_DispatchThreadID)
 		float objectDistance = dot(heightfieldNormal, voxelWorldPos - heightfieldPosition);
 		if (objectDistance < thickness)
 			objectDistance = thickness - objectDistance;
-		minDistance = min(minDistance, objectDistance);
+		minDistance = CombineSDF(minDistance, objectDistance);
 	}
 	GlobalSDFTex[voxelCoord] = clamp(minDistance / MaxDistance, -1, 1);
 }
