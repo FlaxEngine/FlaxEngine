@@ -21,6 +21,7 @@
 #define DDGI_TRACE_RAYS_LIMIT 256 // Limit of rays per-probe (runtime value can be smaller)
 #define DDGI_PROBE_UPDATE_BORDERS_GROUP_SIZE 8
 #define DDGI_PROBE_CLASSIFY_GROUP_SIZE 32
+#define DDGI_PROBE_RELOCATE_ITERATIVE 0 // If true, probes relocation algorithm tries to move them in additive way, otherwise all nearby locations are checked to find the best position
 
 META_CB_BEGIN(0, Data0)
 DDGIData DDGI;
@@ -67,8 +68,6 @@ uint GetProbeRaysCount(DDGIData data, uint probeState)
 
 #ifdef _CS_Classify
 
-#define DDGI_PROBE_RELOCATE_ITERATIVE 0 // If true, probes relocation algorithm tries to move them in additive way, otherwise all nearby locations are checked to find the best position
-
 RWTexture2D<snorm float4> RWProbesData : register(u0);
 RWByteAddressBuffer RWActiveProbes : register(u1);
 
@@ -93,13 +92,29 @@ void CS_Classify(uint3 DispatchThreadId : SV_DispatchThreadID)
     probeIndex = GetDDGIScrollingProbeIndex(DDGI, CascadeIndex, probeCoords);
     int2 probeDataCoords = GetDDGIProbeTexelCoords(DDGI, CascadeIndex, probeIndex);
     float probesSpacing = DDGI.ProbesOriginAndSpacing[CascadeIndex].w;
+    float3 probeBasePosition = GetDDGIProbeWorldPosition(DDGI, CascadeIndex, probeCoords);
+
+    // Disable probes that are is in the range of higher-quality cascade
+    if (CascadeIndex > 0)
+    {
+        uint prevCascade = CascadeIndex - 1;
+        float prevProbesSpacing = DDGI.ProbesOriginAndSpacing[prevCascade].w;
+        float3 prevProbesOrigin = DDGI.ProbesScrollOffsets[prevCascade].xyz * prevProbesSpacing + DDGI.ProbesOriginAndSpacing[prevCascade].xyz;
+        float3 prevProbesExtent = (DDGI.ProbesCounts - 1) * (prevProbesSpacing * 0.5f);
+        float prevCascadeWeight = Min3(prevProbesExtent - abs(probeBasePosition - prevProbesOrigin));
+        if (prevCascadeWeight > 0.1f)
+        {
+            // Disable probe
+            RWProbesData[probeDataCoords] = EncodeDDGIProbeData(float3(0, 0, 0), DDGI_PROBE_STATE_INACTIVE);
+            return;
+        }
+    }
 
     // Load probe state and position
     float4 probeData = RWProbesData[probeDataCoords];
     uint probeState = DecodeDDGIProbeState(probeData);
     float3 probeOffset = probeData.xyz * probesSpacing; // Probe offset is [-1;1] within probes spacing
     float3 probeOffsetOld = probeOffset;
-    float3 probeBasePosition = GetDDGIProbeWorldPosition(DDGI, CascadeIndex, probeCoords);
     float3 probePosition = probeBasePosition;
 #if DDGI_PROBE_RELOCATE_ITERATIVE
     probePosition += probeOffset;

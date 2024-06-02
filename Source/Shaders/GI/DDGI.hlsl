@@ -136,43 +136,34 @@ float3 SampleDDGIIrradiance(DDGIData data, Texture2D<snorm float4> probesData, T
 {
     // Select the highest cascade that contains the sample location
     uint cascadeIndex = 0;
-    float4 probesDatas[8];
+    float probesSpacing = 0;
+    float3 probesOrigin = (float3)0, probesExtent = (float3)0;
     for (; cascadeIndex < data.CascadesCount; cascadeIndex++)
     {
-        float probesSpacing = data.ProbesOriginAndSpacing[cascadeIndex].w;
-        float3 probesOrigin = data.ProbesScrollOffsets[cascadeIndex].xyz * probesSpacing + data.ProbesOriginAndSpacing[cascadeIndex].xyz;
-        float3 probesExtent = (data.ProbesCounts - 1) * (probesSpacing * 0.5f);
+        probesSpacing = data.ProbesOriginAndSpacing[cascadeIndex].w;
+        probesOrigin = data.ProbesScrollOffsets[cascadeIndex].xyz * probesSpacing + data.ProbesOriginAndSpacing[cascadeIndex].xyz;
+        probesExtent = (data.ProbesCounts - 1) * (probesSpacing * 0.5f);
         float fadeDistance = probesSpacing * 0.5f;
         float cascadeWeight = saturate(Min3(probesExtent - abs(worldPosition - probesOrigin)) / fadeDistance);
         if (cascadeWeight > dither) // Use dither to make transition smoother
         {
-            // Load probes state for this cascade
-            uint activeCount = 0;
-            uint3 baseProbeCoords = clamp(uint3((worldPosition - probesOrigin + probesExtent) / probesSpacing), uint3(0, 0, 0), data.ProbesCounts - uint3(1, 1, 1));
-            UNROLL
-            for (uint i = 0; i < 8; i++)
-            {
-                uint3 probeCoordsOffset = uint3(i, i >> 1, i >> 2) & 1;
-                uint3 probeCoords = clamp(baseProbeCoords + probeCoordsOffset, uint3(0, 0, 0), data.ProbesCounts - uint3(1, 1, 1));
-                uint probeIndex = GetDDGIScrollingProbeIndex(data, cascadeIndex, probeCoords);
-                float4 probeData = LoadDDGIProbeData(data, probesData, cascadeIndex, probeIndex);
-                probesDatas[i] = probeData;
-                uint probeState = DecodeDDGIProbeState(probeData);
-                if (probeState != DDGI_PROBE_STATE_INACTIVE)
-                    activeCount++;
-            }
-
-            // Ensure there are some valid probes in this cascade
-            if (activeCount >= 3)
-                break;
+            break;
         }
     }
     if (cascadeIndex == data.CascadesCount)
         return data.FallbackIrradiance;
+    uint3 baseProbeCoords = clamp(uint3((worldPosition - probesOrigin + probesExtent) / probesSpacing), uint3(0, 0, 0), data.ProbesCounts - uint3(1, 1, 1));
 
-    float probesSpacing = data.ProbesOriginAndSpacing[cascadeIndex].w;
-    float3 probesOrigin = data.ProbesScrollOffsets[cascadeIndex].xyz * probesSpacing + data.ProbesOriginAndSpacing[cascadeIndex].xyz;
-    float3 probesExtent = (data.ProbesCounts - 1) * (probesSpacing * 0.5f);
+    // Load probes state for this cascade
+    float4 probesDatas[8];
+    UNROLL
+    for (uint i = 0; i < 8; i++)
+    {
+        uint3 probeCoordsOffset = uint3(i, i >> 1, i >> 2) & 1;
+        uint3 probeCoords = clamp(baseProbeCoords + probeCoordsOffset, uint3(0, 0, 0), data.ProbesCounts - uint3(1, 1, 1));
+        uint probeIndex = GetDDGIScrollingProbeIndex(data, cascadeIndex, probeCoords);
+        probesDatas[i] = LoadDDGIProbeData(data, probesData, cascadeIndex, probeIndex);
+    }
 
     // Bias the world-space position to reduce artifacts
     float3 viewDir = normalize(data.ViewPos - worldPosition);
@@ -180,7 +171,6 @@ float3 SampleDDGIIrradiance(DDGIData data, Texture2D<snorm float4> probesData, T
     float3 biasedWorldPosition = worldPosition + surfaceBias;
 
     // Get the grid coordinates of the probe nearest the biased world position
-    uint3 baseProbeCoords = clamp(uint3((worldPosition - probesOrigin + probesExtent) / probesSpacing), uint3(0, 0, 0), data.ProbesCounts - uint3(1, 1, 1));
     float3 baseProbeWorldPosition = GetDDGIProbeWorldPosition(data, cascadeIndex, baseProbeCoords);
     float3 biasAlpha = saturate((biasedWorldPosition - baseProbeWorldPosition) / probesSpacing);
 
