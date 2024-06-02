@@ -19,7 +19,7 @@
 #include "Engine/Level/Scene/Scene.h"
 #include "Engine/Level/Actors/StaticModel.h"
 
-PACK_STRUCT(struct alignas(GPU_SHADER_DATA_ALIGNMENT) LightmapUVsDensityMaterialShaderData {
+GPU_CB_STRUCT(LightmapUVsDensityMaterialShaderData {
     Matrix ViewProjectionMatrix;
     Matrix WorldMatrix;
     Rectangle LightmapArea;

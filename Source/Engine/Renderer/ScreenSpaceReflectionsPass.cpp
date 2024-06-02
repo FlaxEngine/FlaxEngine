@@ -17,15 +17,12 @@
 #include "Engine/Graphics/GPUContext.h"
 #include "Engine/Graphics/RenderTask.h"
 
-#define RESOLVE_PASS_OUTPUT_FORMAT PixelFormat::R16G16B16A16_Float
-
 // Shader input texture slots mapping
 #define TEXTURE0 4
 #define TEXTURE1 5
 #define TEXTURE2 6
 
-PACK_STRUCT(struct alignas(GPU_SHADER_DATA_ALIGNMENT) Data
-    {
+GPU_CB_STRUCT(Data {
     ShaderGBufferData GBuffer;
 
     float MaxColorMiplevel;
@@ -197,7 +194,7 @@ void ScreenSpaceReflectionsPass::Render(RenderContext& renderContext, GPUTexture
     tempDesc = GPUTextureDescription::New2D(traceWidth, traceHeight, PixelFormat::R16G16B16A16_Float);
     auto traceBuffer = RenderTargetPool::Get(tempDesc);
     RENDER_TARGET_POOL_SET_NAME(traceBuffer, "SSR.TraceBuffer");
-    tempDesc = GPUTextureDescription::New2D(resolveWidth, resolveHeight, RESOLVE_PASS_OUTPUT_FORMAT);
+    tempDesc = GPUTextureDescription::New2D(resolveWidth, resolveHeight, PixelFormat::R16G16B16A16_Float);
     auto resolveBuffer = RenderTargetPool::Get(tempDesc);
     RENDER_TARGET_POOL_SET_NAME(resolveBuffer, "SSR.ResolveBuffer");
 
@@ -253,7 +250,7 @@ void ScreenSpaceReflectionsPass::Render(RenderContext& renderContext, GPUTexture
             // Wrong size temporal buffer
             if (buffers->TemporalSSR)
                 RenderTargetPool::Release(buffers->TemporalSSR);
-            tempDesc = GPUTextureDescription::New2D(temporalWidth, temporalHeight, RESOLVE_PASS_OUTPUT_FORMAT);
+            tempDesc = GPUTextureDescription::New2D(temporalWidth, temporalHeight, PixelFormat::R16G16B16A16_Float);
             buffers->TemporalSSR = RenderTargetPool::Get(tempDesc);
             RENDER_TARGET_POOL_SET_NAME(buffers->TemporalSSR, "SSR.TemporalSSR");
         }
@@ -378,7 +375,7 @@ void ScreenSpaceReflectionsPass::Render(RenderContext& renderContext, GPUTexture
     GPUTexture* reflectionsBuffer = resolveBuffer;
     if (useTemporal)
     {
-        tempDesc = GPUTextureDescription::New2D(temporalWidth, temporalHeight, RESOLVE_PASS_OUTPUT_FORMAT);
+        tempDesc = GPUTextureDescription::New2D(temporalWidth, temporalHeight, PixelFormat::R16G16B16A16_Float);
         auto newTemporal = RenderTargetPool::Get(tempDesc);
         RENDER_TARGET_POOL_SET_NAME(newTemporal, "SSR.TemporalSSR");
         const auto oldTemporal = buffers->TemporalSSR;

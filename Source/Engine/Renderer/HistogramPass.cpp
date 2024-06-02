@@ -16,7 +16,7 @@
 #define THREADGROUP_SIZE_Y 16
 #define HISTOGRAM_SIZE 64
 
-PACK_STRUCT(struct alignas(GPU_SHADER_DATA_ALIGNMENT) HistogramData {
+GPU_CB_STRUCT(HistogramData {
     uint32 InputSizeX;
     uint32 InputSizeY;
     float HistogramMul;

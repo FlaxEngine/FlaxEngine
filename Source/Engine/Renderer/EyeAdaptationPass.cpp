@@ -16,7 +16,7 @@
 #include "Engine/Engine/Engine.h"
 #include "Engine/Engine/Time.h"
 
-PACK_STRUCT(struct alignas(GPU_SHADER_DATA_ALIGNMENT) EyeAdaptationData {
+GPU_CB_STRUCT(EyeAdaptationData {
     float MinBrightness;
     float MaxBrightness;
     float SpeedUp;

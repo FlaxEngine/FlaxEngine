@@ -13,8 +13,7 @@ class FLAXENGINE_API DynamicDiffuseGlobalIlluminationPass : public RendererPass<
 {
 public:
     // Constant buffer data for DDGI access on a GPU.
-    PACK_STRUCT(struct alignas(GPU_SHADER_DATA_ALIGNMENT) ConstantsData
-        {
+    GPU_CB_STRUCT(ConstantsData {
         Float4 ProbesOriginAndSpacing[4];
         Int4 ProbesScrollOffsets[4];
         uint32 ProbesCounts[3];

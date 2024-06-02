@@ -15,8 +15,7 @@ class SMAA : public RendererPass<SMAA>
 {
 private:
 
-    PACK_STRUCT(struct alignas(GPU_SHADER_DATA_ALIGNMENT) Data
-        {
+    GPU_CB_STRUCT(Data {
         Float4 RtSize;
         });
 

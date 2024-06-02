@@ -69,8 +69,7 @@ public:
     }
 };
 
-PACK_STRUCT(struct alignas(GPU_SHADER_DATA_ALIGNMENT) Data
-    {
+GPU_CB_STRUCT(Data {
     Float2 Dummy0;
     int32 CubeFace;
     float SourceMipIndex;

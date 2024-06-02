@@ -20,7 +20,7 @@ class AmbientOcclusionPass : public RendererPass<AmbientOcclusionPass>
 private:
 
     // Packed shader constant buffer structure (this MUST match shader code)
-    PACK_STRUCT(struct alignas(GPU_SHADER_DATA_ALIGNMENT) ASSAOConstants {
+    GPU_CB_STRUCT(ASSAOConstants {
         ShaderGBufferData GBuffer;
 
         Float2 ViewportPixelSize;

@@ -42,8 +42,7 @@
 #include "Engine/Debug/DebugDraw.h"
 #endif
 
-PACK_STRUCT(struct alignas(GPU_SHADER_DATA_ALIGNMENT) Data0
-    {
+GPU_CB_STRUCT(Data0 {
     Float3 ViewWorldPos;
     float ViewNearPlane;
     float SkyboxIntensity;

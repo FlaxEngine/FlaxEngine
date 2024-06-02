@@ -98,7 +98,7 @@
 
 #endif
 
-#define PACK_STRUCT(__Declaration__) PACK_BEGIN() __Declaration__ PACK_END()
+#define PACK_STRUCT(_declaration) PACK_BEGIN() _declaration PACK_END()
 
 // C++ 17
 #if __cplusplus >= 201703L

@@ -12,8 +12,7 @@ class FLAXENGINE_API GlobalSignDistanceFieldPass : public RendererPass<GlobalSig
 {
 public:
     // Constant buffer data for Global SDF access on a GPU.
-    PACK_STRUCT(struct alignas(GPU_SHADER_DATA_ALIGNMENT) ConstantsData
-        {
+    GPU_CB_STRUCT(ConstantsData {
         Float4 CascadePosDistance[4];
         Float4 CascadeVoxelSize;
         Float2 Padding;

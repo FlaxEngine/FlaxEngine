@@ -28,14 +28,14 @@ public:
 
 private:
 
-    PACK_STRUCT(struct alignas(GPU_SHADER_DATA_ALIGNMENT) SkyLightData {
+    GPU_CB_STRUCT(SkyLightData {
         Float3 MultiplyColor;
         float VolumetricScatteringIntensity;
         Float3 AdditiveColor;
         float Dummy0;
         });
 
-    PACK_STRUCT(struct alignas(GPU_SHADER_DATA_ALIGNMENT) Data {
+    GPU_CB_STRUCT(Data {
         ShaderGBufferData GBuffer;
 
         Float3 GlobalAlbedo;
@@ -67,7 +67,7 @@ private:
         DynamicDiffuseGlobalIlluminationPass::ConstantsData DDGI;
         });
 
-    PACK_STRUCT(struct alignas(GPU_SHADER_DATA_ALIGNMENT) PerLight {
+    GPU_CB_STRUCT(PerLight {
         Float2 SliceToDepth;
         int32 MinZ;
         float LocalLightScatteringIntensity;

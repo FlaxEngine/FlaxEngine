@@ -11,8 +11,7 @@
 /// <summary>
 /// Structure that contains information about GBuffer for shaders.
 /// </summary>
-PACK_STRUCT(struct alignas(GPU_SHADER_DATA_ALIGNMENT) ShaderGBufferData
-    {
+GPU_CB_STRUCT(ShaderGBufferData {
     Float4 ViewInfo;
     Float4 ScreenSize;
     Float3 ViewPos;
@@ -24,8 +23,7 @@ PACK_STRUCT(struct alignas(GPU_SHADER_DATA_ALIGNMENT) ShaderGBufferData
 /// <summary>
 /// Structure that contains information about exponential height fog for shaders.
 /// </summary>
-PACK_STRUCT(struct alignas(GPU_SHADER_DATA_ALIGNMENT) ShaderExponentialHeightFogData
-    {
+GPU_CB_STRUCT(ShaderExponentialHeightFogData {
     Float3 FogInscatteringColor;
     float FogMinOpacity;
 
@@ -49,8 +47,7 @@ PACK_STRUCT(struct alignas(GPU_SHADER_DATA_ALIGNMENT) ShaderExponentialHeightFog
 /// <summary>
 /// Structure that contains information about atmosphere fog for shaders.
 /// </summary>
-PACK_STRUCT(struct alignas(GPU_SHADER_DATA_ALIGNMENT) ShaderAtmosphericFogData
-    {
+GPU_CB_STRUCT(ShaderAtmosphericFogData {
     float AtmosphericFogDensityScale;
     float AtmosphericFogSunDiscScale;
     float AtmosphericFogDistanceScale;
@@ -71,7 +68,7 @@ PACK_STRUCT(struct alignas(GPU_SHADER_DATA_ALIGNMENT) ShaderAtmosphericFogData
 /// <summary>
 /// Structure that contains information about light for shaders.
 /// </summary>
-PACK_STRUCT(struct alignas(GPU_SHADER_DATA_ALIGNMENT) ShaderLightData {
+GPU_CB_STRUCT(ShaderLightData {
     Float2 SpotAngles;
     float SourceRadius;
     float SourceLength;
@@ -90,7 +87,7 @@ PACK_STRUCT(struct alignas(GPU_SHADER_DATA_ALIGNMENT) ShaderLightData {
 /// <summary>
 /// Packed env probe data
 /// </summary>
-PACK_STRUCT(struct alignas(GPU_SHADER_DATA_ALIGNMENT) ShaderEnvProbeData {
+GPU_CB_STRUCT(ShaderEnvProbeData {
     Float4 Data0; // x - Position.x,  y - Position.y,  z - Position.z,  w - unused
     Float4 Data1; // x - Radius    ,  y - 1 / Radius,  z - Brightness,  w - unused
     });

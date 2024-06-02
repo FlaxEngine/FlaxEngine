@@ -11,8 +11,7 @@ class FLAXENGINE_API GlobalSurfaceAtlasPass : public RendererPass<GlobalSurfaceA
 {
 public:
     // Constant buffer data for Global Surface Atlas access on a GPU.
-    PACK_STRUCT(struct alignas(GPU_SHADER_DATA_ALIGNMENT) ConstantsData
-        {
+    GPU_CB_STRUCT(ConstantsData {
         Float3 ViewPos;
         float Padding0;
         float Padding1;

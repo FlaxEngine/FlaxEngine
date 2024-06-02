@@ -61,8 +61,7 @@ protected:
     bool Run() override;
 };
 
-PACK_STRUCT(struct alignas(GPU_SHADER_DATA_ALIGNMENT) Data
-    {
+GPU_CB_STRUCT(Data {
     float First;
     float AtmosphereR;
     int AtmosphereLayer;

@@ -90,8 +90,7 @@ class GPUModelSDFTask : public GPUTask
     Float3 _xyzToLocalMul, _xyzToLocalAdd;
 
     const uint32 ThreadGroupSize = 64;
-    PACK_STRUCT(struct alignas(GPU_SHADER_DATA_ALIGNMENT) Data
-        {
+    GPU_CB_STRUCT(Data {
         Int3 Resolution;
         uint32 ResolutionSize;
         float MaxDistance;

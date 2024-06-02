@@ -85,3 +85,6 @@
 #undef GPU_ENABLE_ASSERTION
 #define GPU_ENABLE_ASSERTION 0
 #endif
+
+// Helper macro for defining shader structures wrappers in C++ that match HLSL constant buffers
+#define GPU_CB_STRUCT(_declaration) ALIGN_BEGIN(GPU_SHADER_DATA_ALIGNMENT) PACK_BEGIN() struct _declaration PACK_END() ALIGN_END(GPU_SHADER_DATA_ALIGNMENT)

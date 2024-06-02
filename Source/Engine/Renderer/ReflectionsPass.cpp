@@ -13,7 +13,7 @@
 #include "Engine/Graphics/RenderTargetPool.h"
 #include "Engine/Level/Actors/EnvironmentProbe.h"
 
-PACK_STRUCT(struct alignas(GPU_SHADER_DATA_ALIGNMENT) Data {
+GPU_CB_STRUCT(Data {
     ShaderEnvProbeData PData;
     Matrix WVP;
     ShaderGBufferData GBuffer;

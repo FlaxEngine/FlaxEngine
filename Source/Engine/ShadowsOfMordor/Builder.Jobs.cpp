@@ -23,7 +23,7 @@
 
 namespace ShadowsOfMordor
 {
-    PACK_STRUCT(struct alignas(GPU_SHADER_DATA_ALIGNMENT) ShaderData {
+    GPU_CB_STRUCT(ShaderData {
         Rectangle LightmapArea;
         Matrix WorldMatrix;
         Matrix ToTangentSpace;

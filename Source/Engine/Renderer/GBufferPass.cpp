@@ -21,7 +21,7 @@
 #include "Engine/Level/Actors/Decal.h"
 #include "Engine/Engine/Engine.h"
 
-PACK_STRUCT(struct alignas(GPU_SHADER_DATA_ALIGNMENT) GBufferPassData{
+GPU_CB_STRUCT(GBufferPassData {
     ShaderGBufferData GBuffer;
     Float3 Dummy0;
     int32 ViewMode;

@@ -12,8 +12,7 @@ class SkinnedModel;
 struct RenderContext;
 struct FloatR10G10B10A2;
 
-PACK_STRUCT(struct alignas(GPU_SHADER_DATA_ALIGNMENT) QuadShaderData
-    {
+GPU_CB_STRUCT(QuadShaderData {
     Float4 Color;
     });
 

@@ -41,8 +41,7 @@
 #define DDGI_PROBE_UPDATE_BORDERS_GROUP_SIZE 8
 #define DDGI_PROBE_CLASSIFY_GROUP_SIZE 32
 
-PACK_STRUCT(struct alignas(GPU_SHADER_DATA_ALIGNMENT) Data0
-    {
+GPU_CB_STRUCT(Data0 {
     DynamicDiffuseGlobalIlluminationPass::ConstantsData DDGI;
     GlobalSignDistanceFieldPass::ConstantsData GlobalSDF;
     GlobalSurfaceAtlasPass::ConstantsData GlobalSurfaceAtlas;
@@ -54,8 +53,7 @@ PACK_STRUCT(struct alignas(GPU_SHADER_DATA_ALIGNMENT) Data0
     Int4 ProbeScrollClears[4];
     });
 
-PACK_STRUCT(struct alignas(GPU_SHADER_DATA_ALIGNMENT) Data1
-    {
+GPU_CB_STRUCT(Data1 {
     // TODO: use push constants on Vulkan or root signature data on DX12 to reduce overhead of changing single DWORD
     Float2 Padding1;
     uint32 CascadeIndex;
