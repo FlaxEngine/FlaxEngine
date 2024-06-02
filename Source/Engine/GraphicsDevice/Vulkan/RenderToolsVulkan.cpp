@@ -8,7 +8,7 @@
 
 // @formatter:off
 
-VkFormat RenderToolsVulkan::PixelFormatToVkFormat[108] =
+VkFormat RenderToolsVulkan::PixelFormatToVkFormat[static_cast<int>(PixelFormat::MAX)] =
 {
     VK_FORMAT_UNDEFINED,
     VK_FORMAT_R32G32B32A32_SFLOAT,
