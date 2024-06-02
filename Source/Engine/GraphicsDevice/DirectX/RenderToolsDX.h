@@ -138,7 +138,7 @@ namespace RenderToolsDX
 
 #endif
 
-#if GPU_ENABLE_DIAGNOSTICS && GPU_ENABLE_RESOURCE_NAMING
+#if GPU_ENABLE_RESOURCE_NAMING
 
 // SetDebugObjectName - ANSI
 
