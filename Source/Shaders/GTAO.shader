@@ -336,6 +336,46 @@ void GenerateGTAOShadowsInternal(out float outShadowTerm, out float4 outEdges, o
 	int2 fullResCoord = SVPosui * 2 + PerPassFullResCoordOffset.xy;
 	float3 pixelNormal = LoadNormal(fullResCoord);
 
+	float pixZ, pixLZ, pixTZ, pixRZ, pixBZ;
+
+	float4 valuesUL = TextureGatherRed(g_DepthSource, SamplerPointWrap, SVPosRounded * HalfViewportPixelSize);
+	float4 valuesBR = TextureGatherRed(g_DepthSource, SamplerPointWrap, SVPosRounded * HalfViewportPixelSize, int2(1, 1));
+
+	// Get this pixel's viewspace depth
+	pixZ = valuesUL.y;
+	// Get left right top bottom neighbouring pixels for edge detection (gets compiled out on qualityLevel == 0)
+	pixLZ = valuesUL.x;
+	pixTZ = valuesUL.z;
+	pixRZ = valuesBR.z;
+	pixBZ = valuesBR.x;
+
+	// Edge mask for between this and left/right/top/bottom neighbour pixels - not used in quality level 0 so initialize to "no edge" (1 is no edge, 0 is edge)
+	float4 edgesLRTB = float4(1.0, 1.0, 1.0, 1.0);
+
+	if (qualityLevel >= SSAO_DEPTH_BASED_EDGES_ENABLE_AT_QUALITY_PRESET)
+	{
+		edgesLRTB = CalculateEdges(pixZ, pixLZ, pixRZ, pixTZ, pixBZ);
+	}
+
+	// Sharp normals also create edges - but this adds to the cost as well
+	if (qualityLevel >= SSAO_NORMAL_BASED_EDGES_ENABLE_AT_QUALITY_PRESET)
+	{
+		float3 neighbourNormalL = LoadNormal(fullResCoord, int2(-2, 0));
+		float3 neighbourNormalR = LoadNormal(fullResCoord, int2(2, 0));
+		float3 neighbourNormalT = LoadNormal(fullResCoord, int2(0, -2));
+		float3 neighbourNormalB = LoadNormal(fullResCoord, int2(0, 2));
+		
+		const float dotThreshold = SSAO_NORMAL_BASED_EDGES_DOT_THRESHOLD;
+		
+		float4 normalEdgesLRTB;
+		normalEdgesLRTB.x = saturate((dot(pixelNormal, neighbourNormalL) + dotThreshold));
+		normalEdgesLRTB.y = saturate((dot(pixelNormal, neighbourNormalR) + dotThreshold));
+		normalEdgesLRTB.z = saturate((dot(pixelNormal, neighbourNormalT) + dotThreshold));
+		normalEdgesLRTB.w = saturate((dot(pixelNormal, neighbourNormalB) + dotThreshold));
+		
+		edgesLRTB *= normalEdgesLRTB;
+	}
+
 	float deviceDepth = SampleDeviceDepth(normalizedScreenPos, 0.0);
 	const float gtaoRadius = 0.5;
 	const float gtaoThickness = 0.1;
@@ -433,7 +473,7 @@ void GenerateGTAOShadowsInternal(out float outShadowTerm, out float4 outEdges, o
     occlusion *= 2.0 / PI;
 
 	outShadowTerm = 1 - occlusion;
-	outEdges = float4(1.0, 1.0, 1.0, 1.0);
+	outEdges = edgesLRTB;
 	outWeight = 1;
 }
 
