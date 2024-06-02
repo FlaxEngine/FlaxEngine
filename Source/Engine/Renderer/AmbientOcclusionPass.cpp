@@ -77,7 +77,7 @@ bool AmbientOcclusionPass::Init()
     _psApplyHalf = GPUDevice::Instance->CreatePipelineState();
 
     // Load shader
-    _shader = Content::LoadAsyncInternal<Shader>(TEXT("Shaders/SSAO"));
+    _shader = Content::LoadAsyncInternal<Shader>(TEXT("Shaders/GTAO"));
     if (_shader == nullptr)
         return true;
 #if COMPILE_WITH_DEV_ENV
