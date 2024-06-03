@@ -66,7 +66,7 @@ public:
     /// </summary>
     /// <param name="name">The variable name.</param>
     /// <returns>The value.</returns>
-    API_FUNCTION() Variant GetValue(const StringView& name) const;
+    API_FUNCTION() const Variant& GetValue(const StringView& name) const;
 
     /// <summary>
     /// Sets the value of the global variable (it must be added first).

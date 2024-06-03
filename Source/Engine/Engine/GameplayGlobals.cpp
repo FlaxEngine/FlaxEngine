@@ -124,7 +124,7 @@ void GameplayGlobals::SetDefaultValues(const Dictionary<String, Variant>& values
     }
 }
 
-Variant GameplayGlobals::GetValue(const StringView& name) const
+const Variant& GameplayGlobals::GetValue(const StringView& name) const
 {
     ScopeLock lock(Locker);
     auto e = Variables.TryGet(name);
