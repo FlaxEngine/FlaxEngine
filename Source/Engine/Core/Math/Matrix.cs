@@ -2176,10 +2176,10 @@ namespace FlaxEngine
             result = Identity;
             result.M11 = 2.0f / (right - left);
             result.M22 = 2.0f / (top - bottom);
-            result.M33 = zRange;
+            result.M33 = -zRange;
             result.M41 = (left + right) / (left - right);
             result.M42 = (top + bottom) / (bottom - top);
-            result.M43 = -znear * zRange;
+            result.M43 = zfar * zRange;
         }
 
         /// <summary>
@@ -2238,14 +2238,14 @@ namespace FlaxEngine
         public static void PerspectiveFov(float fov, float aspect, float znear, float zfar, out Matrix result)
         {
             var yScale = (float)(1.0f / Math.Tan(fov * 0.5f));
-            var q = zfar / (zfar - znear);
+            var zRange = znear / (zfar - znear);
             result = new Matrix
             {
                 M11 = yScale / aspect,
                 M22 = yScale,
-                M33 = q,
+                M33 = -zRange,
                 M34 = 1.0f,
-                M43 = -q * znear,
+                M43 = zRange * zfar,
             };
         }
 
@@ -2275,16 +2275,16 @@ namespace FlaxEngine
         /// <param name="result">When the method completes, contains the created projection matrix.</param>
         public static void PerspectiveOffCenter(float left, float right, float bottom, float top, float znear, float zfar, out Matrix result)
         {
-            float zRange = zfar / (zfar - znear);
+            float zRange = znear / (zfar - znear);
             result = new Matrix
             {
                 M11 = 2.0f * znear / (right - left),
                 M22 = 2.0f * znear / (top - bottom),
                 M31 = (left + right) / (left - right),
                 M32 = (top + bottom) / (bottom - top),
-                M33 = zRange,
+                M33 = -zRange,
                 M34 = 1.0f,
-                M43 = -znear * zRange,
+                M43 = zfar * zRange,
             };
         }
 

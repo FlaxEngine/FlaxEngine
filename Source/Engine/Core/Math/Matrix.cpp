@@ -506,10 +506,10 @@ void Matrix::OrthoOffCenter(float left, float right, float bottom, float top, fl
     result = Identity;
     result.M11 = 2.0f / (right - left);
     result.M22 = 2.0f / (top - bottom);
-    result.M33 = zRange;
+    result.M33 = -zRange;
     result.M41 = (left + right) / (left - right);
     result.M42 = (top + bottom) / (bottom - top);
-    result.M43 = -zNear * zRange;
+    result.M43 = zFar * zRange;
 }
 
 void Matrix::PerspectiveFov(float fov, float aspect, float zNear, float zFar, Matrix& result)
@@ -525,16 +525,16 @@ void Matrix::PerspectiveFov(float fov, float aspect, float zNear, float zFar, Ma
 
 void Matrix::PerspectiveOffCenter(float left, float right, float bottom, float top, float zNear, float zFar, Matrix& result)
 {
-    const float zRange = zFar / (zFar - zNear);
+    const float zRange = zNear / (zFar - zNear);
 
     result = Zero;
     result.M11 = 2.0f * zNear / (right - left);
     result.M22 = 2.0f * zNear / (top - bottom);
     result.M31 = (left + right) / (left - right);
     result.M32 = (top + bottom) / (bottom - top);
-    result.M33 = zRange;
+    result.M33 = -zRange;
     result.M34 = 1.0f;
-    result.M43 = -zNear * zRange;
+    result.M43 = zFar * zRange;
 }
 
 void Matrix::RotationX(float angle, Matrix& result)
