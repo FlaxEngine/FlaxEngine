@@ -321,10 +321,11 @@ GPUDevice::GPUDevice(RendererType type, ShaderProfile profile)
     , _res(New<PrivateData>())
     , _resources(1024)
     , TotalGraphicsMemory(0)
+    , IsDebugToolAttached(false)
     , QuadShader(nullptr)
     , CurrentTask(nullptr)
 {
-    ASSERT(_rendererType != RendererType::Unknown);
+    ASSERT_LOW_LAYER(_rendererType != RendererType::Unknown);
 }
 
 GPUDevice::~GPUDevice()

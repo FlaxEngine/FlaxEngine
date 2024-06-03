@@ -304,6 +304,26 @@ bool GPUDeviceDX12::Init()
     }
     UpdateOutputs(adapter);
 
+    // Create DirectX device
+    VALIDATE_DIRECTX_CALL(D3D12CreateDevice(adapter, D3D_FEATURE_LEVEL_11_0, IID_PPV_ARGS(&_device)));
+
+#if PLATFORM_WINDOWS
+    // Detect RenderDoc usage (UUID {A7AA6116-9C8D-4BBA-9083-B4D816B71B78})
+    IUnknown* unknown = nullptr;
+    const GUID uuidRenderDoc = { 0xa7aa6116, 0x9c8d, 0x4bba, { 0x90, 0x83, 0xb4, 0xd8, 0x16, 0xb7, 0x1b, 0x78 } };
+    HRESULT hr = _device->QueryInterface(uuidRenderDoc, (void**)&unknown);
+    if (SUCCEEDED(hr) && unknown)
+    {
+        IsDebugToolAttached = true;
+        unknown->Release();
+    }
+    if (!IsDebugToolAttached && GetModuleHandleA("renderdoc.dll") != nullptr)
+    {
+        IsDebugToolAttached = true;
+    }
+#endif
+
+    // Check if can use screen tearing on a swapchain
     ComPtr<IDXGIFactory5> factory5;
     _factoryDXGI->QueryInterface(IID_PPV_ARGS(&factory5));
     if (factory5)
@@ -312,14 +332,11 @@ bool GPUDeviceDX12::Init()
         if (SUCCEEDED(factory5->CheckFeatureSupport(DXGI_FEATURE_PRESENT_ALLOW_TEARING, &allowTearing, sizeof(allowTearing)))
             && allowTearing
 #if PLATFORM_WINDOWS
-            && GetModuleHandleA("renderdoc.dll") == nullptr // Disable tearing with RenderDoc (prevents crashing)
+            && !IsDebugToolAttached // Disable tearing with RenderDoc (prevents crashing)
 #endif
         )
             AllowTearing = true;
     }
-
-    // Create DirectX device
-    VALIDATE_DIRECTX_CALL(D3D12CreateDevice(adapter, D3D_FEATURE_LEVEL_11_0, IID_PPV_ARGS(&_device)));
 
     // Debug Layer
 #if GPU_ENABLE_DIAGNOSTICS

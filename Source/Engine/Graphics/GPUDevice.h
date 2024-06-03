@@ -122,6 +122,11 @@ public:
     API_FIELD(ReadOnly) uint64 TotalGraphicsMemory;
 
     /// <summary>
+    /// Indicates that debug tool is profiling device (eg. RenderDoc).
+    /// </summary>
+    API_FIELD(ReadOnly) bool IsDebugToolAttached;
+
+    /// <summary>
     /// The GPU limits.
     /// </summary>
     API_FIELD(ReadOnly) GPULimits Limits;

@@ -286,22 +286,6 @@ bool GPUDeviceDX11::Init()
     }
     UpdateOutputs(adapter);
 
-    ComPtr<IDXGIFactory5> factory5;
-    _factoryDXGI->QueryInterface(IID_PPV_ARGS(&factory5));
-    if (factory5)
-    {
-        BOOL allowTearing;
-        if (SUCCEEDED(factory5->CheckFeatureSupport(DXGI_FEATURE_PRESENT_ALLOW_TEARING, &allowTearing, sizeof(allowTearing)))
-            && allowTearing
-#if PLATFORM_WINDOWS
-            && GetModuleHandleA("renderdoc.dll") == nullptr // Disable tearing with RenderDoc (prevents crashing)
-#endif
-        )
-        {
-            _allowTearing = true;
-        }
-    }
-
     // Get flags and device type base on current configuration
     uint32 flags = D3D11_CREATE_DEVICE_BGRA_SUPPORT;
 #if GPU_ENABLE_DIAGNOSTICS
@@ -313,12 +297,43 @@ bool GPUDeviceDX11::Init()
     D3D_FEATURE_LEVEL createdFeatureLevel = static_cast<D3D_FEATURE_LEVEL>(0);
     auto targetFeatureLevel = GetD3DFeatureLevel();
     VALIDATE_DIRECTX_CALL(D3D11CreateDevice(adapter, D3D_DRIVER_TYPE_UNKNOWN, NULL, flags, &targetFeatureLevel, 1, D3D11_SDK_VERSION, &_device, &createdFeatureLevel, &_imContext));
-
-    // Validate result
     ASSERT(_device);
     ASSERT(_imContext);
     ASSERT(createdFeatureLevel == targetFeatureLevel);
     _state = DeviceState::Created;
+
+#if PLATFORM_WINDOWS
+    // Detect RenderDoc usage (UUID {A7AA6116-9C8D-4BBA-9083-B4D816B71B78})
+    IUnknown* unknown = nullptr;
+    const GUID uuidRenderDoc = { 0xa7aa6116, 0x9c8d, 0x4bba, {0x90, 0x83, 0xb4, 0xd8, 0x16, 0xb7, 0x1b, 0x78}};
+    HRESULT hr = _device->QueryInterface(uuidRenderDoc, (void**)&unknown);
+    if(SUCCEEDED(hr) && unknown)
+    {
+        IsDebugToolAttached = true;
+        unknown->Release();
+    }
+    if (!IsDebugToolAttached && GetModuleHandleA("renderdoc.dll") != nullptr)
+    {
+        IsDebugToolAttached = true;
+    }
+#endif
+
+    // Check if can use screen tearing on a swapchain
+    ComPtr<IDXGIFactory5> factory5;
+    _factoryDXGI->QueryInterface(IID_PPV_ARGS(&factory5));
+    if (factory5)
+    {
+        BOOL allowTearing;
+        if (SUCCEEDED(factory5->CheckFeatureSupport(DXGI_FEATURE_PRESENT_ALLOW_TEARING, &allowTearing, sizeof(allowTearing)))
+            && allowTearing
+#if PLATFORM_WINDOWS
+            && !IsDebugToolAttached // Disable tearing with RenderDoc (prevents crashing)
+#endif
+        )
+        {
+            _allowTearing = true;
+        }
+    }
 
     // Init device limits
     {

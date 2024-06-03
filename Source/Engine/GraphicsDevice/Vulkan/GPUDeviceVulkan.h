@@ -187,8 +187,10 @@ struct RenderTargetLayoutVulkan
             uint32 WriteStencil : 1;
             uint32 BlendEnable : 1;
         };
+
         uint32 Flags;
     };
+
     MSAALevel MSAA;
     PixelFormat DepthFormat;
     PixelFormat RTVsFormats[GPU_MAX_RT_BINDED];
@@ -405,11 +407,12 @@ public:
 #endif
     };
 
-    static void GetInstanceLayersAndExtensions(Array<const char*>& outInstanceExtensions, Array<const char*>& outInstanceLayers, bool& outDebugUtils);
-    static void GetDeviceExtensionsAndLayers(VkPhysicalDevice gpu, Array<const char*>& outDeviceExtensions, Array<const char*>& outDeviceLayers);
-
-    void ParseOptionalDeviceExtensions(const Array<const char*>& deviceExtensions);
     static OptionalVulkanDeviceExtensions OptionalDeviceExtensions;
+
+private:
+    static void GetInstanceLayersAndExtensions(Array<const char*>& outInstanceExtensions, Array<const char*>& outInstanceLayers, bool& outDebugUtils);
+    void GetDeviceExtensionsAndLayers(VkPhysicalDevice gpu, Array<const char*>& outDeviceExtensions, Array<const char*>& outDeviceLayers);
+    static void ParseOptionalDeviceExtensions(const Array<const char*>& deviceExtensions);
 
 public:
     /// <summary>

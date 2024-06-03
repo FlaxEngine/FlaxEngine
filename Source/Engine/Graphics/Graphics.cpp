@@ -8,6 +8,7 @@
 #include "Engine/Core/Config/GraphicsSettings.h"
 #include "Engine/Engine/CommandLine.h"
 #include "Engine/Engine/EngineService.h"
+#include "Engine/Profiler/ProfilerGPU.h"
 #include "Engine/Render2D/Font.h"
 
 bool Graphics::UseVSync = false;
@@ -186,6 +187,13 @@ bool GraphicsService::Init()
     );
 
     // Initialize
+    if (device->IsDebugToolAttached)
+    {
+#if COMPILE_WITH_PROFILER
+        // Auto-enable GPU profiler
+        ProfilerGPU::Enabled = true;
+#endif
+    }
     if (device->LoadContent())
     {
         return true;
