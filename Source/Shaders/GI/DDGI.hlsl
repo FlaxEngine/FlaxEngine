@@ -154,17 +154,6 @@ float3 SampleDDGIIrradiance(DDGIData data, Texture2D<snorm float4> probesData, T
         return data.FallbackIrradiance;
     uint3 baseProbeCoords = clamp(uint3((worldPosition - probesOrigin + probesExtent) / probesSpacing), uint3(0, 0, 0), data.ProbesCounts - uint3(1, 1, 1));
 
-    // Load probes state for this cascade
-    float4 probesDatas[8];
-    UNROLL
-    for (uint i = 0; i < 8; i++)
-    {
-        uint3 probeCoordsOffset = uint3(i, i >> 1, i >> 2) & 1;
-        uint3 probeCoords = clamp(baseProbeCoords + probeCoordsOffset, uint3(0, 0, 0), data.ProbesCounts - uint3(1, 1, 1));
-        uint probeIndex = GetDDGIScrollingProbeIndex(data, cascadeIndex, probeCoords);
-        probesDatas[i] = LoadDDGIProbeData(data, probesData, cascadeIndex, probeIndex);
-    }
-
     // Bias the world-space position to reduce artifacts
     float3 viewDir = normalize(data.ViewPos - worldPosition);
     float3 surfaceBias = (worldNormal * 0.2f + viewDir * 0.8f) * (0.75f * probesSpacing * bias);
@@ -183,7 +172,7 @@ float3 SampleDDGIIrradiance(DDGIData data, Texture2D<snorm float4> probesData, T
         uint probeIndex = GetDDGIScrollingProbeIndex(data, cascadeIndex, probeCoords);
 
         // Load probe position and state
-        float4 probeData = probesDatas[i];
+        float4 probeData = LoadDDGIProbeData(data, probesData, cascadeIndex, probeIndex);
         uint probeState = DecodeDDGIProbeState(probeData);
         if (probeState == DDGI_PROBE_STATE_INACTIVE)
             continue;
