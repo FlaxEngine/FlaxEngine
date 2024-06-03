@@ -202,7 +202,7 @@ namespace FlaxEditor.Surface.Elements
 
                 // Increase thickness on impulse/ execution lines
                 if (targetBox.CurrentType.IsVoid)
-                    highlight += 1.25f;
+                    highlight *= 2;
                 
                 DrawConnection(style, ref startPos, ref endPos, ref color, highlight);
             }
