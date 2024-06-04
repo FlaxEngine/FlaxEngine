@@ -371,7 +371,6 @@ namespace FlaxEditor.GUI.Dialogs
             // Color difference
             var newRect = new Rectangle(_cOK.X - 3, _cHex.Bottom + PickerMargin, 130, 0);
             newRect.Size.Y = 50;
-            Render2D.FillRectangle(newRect, Color.White);
             var smallRectSize = 10;
             var numHor = Mathf.FloorToInt(newRect.Width / smallRectSize);
             var numVer = Mathf.FloorToInt(newRect.Height / smallRectSize);
