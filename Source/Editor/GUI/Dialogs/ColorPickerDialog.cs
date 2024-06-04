@@ -34,7 +34,10 @@ namespace FlaxEditor.GUI.Dialogs
         private const float ChannelTextWidth = 12.0f;
         private const float SavedColorButtonWidth = 20.0f;
         private const float SavedColorButtonHeight = 20.0f;
+        private const float ColorPreviewWidth = 120.0f;
+        private const float ColorPreviewHeight = 50.0f;
         private const float RGBAHexSeparator = 10.0f;
+        private const float OldNewColorPreviewDisplayRatio = 0.3335f;
 
         private Color _initialValue;
         private Color _value;
@@ -369,9 +372,15 @@ namespace FlaxEditor.GUI.Dialogs
             var hex = new Rectangle(_cHex.Left - 26, _cHex.Y, 10000, _cHex.Height);
             Render2D.DrawText(style.FontMedium, "Hex", hex, textColor, TextAlignment.Near, TextAlignment.Center);
 
-            // Color difference
-            var newRect = new Rectangle(_cOK.X - 3, _cHex.Bottom + PickerMargin, 130, 0);
-            newRect.Size.Y = 50;
+            // Old and New Color preview
+            var colorPickerYPosition = _cOK.Top - ColorPreviewHeight - PickerMargin;
+
+            var oldColorRect = new Rectangle(_cOK.X - 3, colorPickerYPosition, ColorPreviewWidth * OldNewColorPreviewDisplayRatio, 0);
+            oldColorRect.Size.Y = ColorPreviewHeight;
+
+            var newColorRect = new Rectangle(_cOK.X - 3 + oldColorRect.Size.X, colorPickerYPosition, ColorPreviewWidth * (1 - OldNewColorPreviewDisplayRatio), 0);
+            newColorRect.Size.Y = ColorPreviewHeight;
+
             var smallRectSize = 10;
             var numHor = Mathf.FloorToInt(newRect.Width / smallRectSize);
             var numVer = Mathf.FloorToInt(newRect.Height / smallRectSize);
@@ -387,7 +396,13 @@ namespace FlaxEditor.GUI.Dialogs
                     }
                 }
             }
-            Render2D.FillRectangle(newRect, _value);
+            Vector2 textOffset = new Vector2(0, -15);
+            Render2D.DrawText(style.FontMedium, "Old", Color.White, oldColorRect.UpperLeft + textOffset);
+            Render2D.DrawText(style.FontMedium, "New", Color.White, newColorRect.UpperLeft + textOffset);
+
+            Render2D.FillRectangle(oldColorRect, _initialValue);
+            Render2D.FillRectangle(newColorRect, _value);
+
         }
 
         /// <inheritdoc />
