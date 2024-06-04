@@ -348,7 +348,7 @@ namespace FlaxEditor.GUI.Dialogs
             rgbaR.Location.Y = _cAlpha.Y;
             Render2D.DrawText(style.FontMedium, "A", rgbaR, textColor, TextAlignment.Near, TextAlignment.Center);
 
-            // HSV left
+            // HSV letters (left)
             var hsvHl = new Rectangle(_cHue.Left - ChannelTextWidth, _cHue.Y, 10000, _cHue.Height);
             Render2D.DrawText(style.FontMedium, "H", hsvHl, textColor, TextAlignment.Near, TextAlignment.Center);
             hsvHl.Location.Y = _cSaturation.Y;
@@ -356,7 +356,7 @@ namespace FlaxEditor.GUI.Dialogs
             hsvHl.Location.Y = _cValue.Y;
             Render2D.DrawText(style.FontMedium, "V", hsvHl, textColor, TextAlignment.Near, TextAlignment.Center);
 
-            // HSV right
+            // HSV math symbols (right)
             var hsvHr = new Rectangle(_cHue.Right + 2, _cHue.Y, 10000, _cHue.Height);
             Render2D.DrawText(style.FontMedium, "°", hsvHr, textColor, TextAlignment.Near, TextAlignment.Center);
             hsvHr.Location.Y = _cSaturation.Y;
