@@ -46,6 +46,7 @@ void BoundingFrustum::SetMatrix(const Matrix& matrix)
     _pBottom.D = matrix.M44 + matrix.M42;
     _pBottom.Normalize();
 
+    // TODO: Fix this for reverse Z
     // Near plane
     _pNear.Normal.X = matrix.M13;
     _pNear.Normal.Y = matrix.M23;
