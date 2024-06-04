@@ -96,7 +96,7 @@ Texture2D Input1 : register(t1);
 // Converts z-buffer depth to linear view-space depth
 float LinearDepth(in float zBufferDepth)
 {
-	return ProjectionAB.y / (zBufferDepth - ProjectionAB.x);
+	return ProjectionAB.y / (zBufferDepth + ProjectionAB.x);
 }
 
 // Depth of Field depth blur generation (outputs linear depth + blur factor to R16G16 target)

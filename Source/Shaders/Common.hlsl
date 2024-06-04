@@ -135,7 +135,7 @@ SamplerComparisonState ShadowSamplerPCF : register(s5);
 // Structure that contains information about GBuffer
 struct GBufferData
 {
-    float4 ViewInfo; // x-1/Projection[0,0], y-1/Projection[1,1], z-(Far / (Far - Near), w-(-Far * Near) / (Far - Near) / Far)
+    float4 ViewInfo; // x-1/Projection[0,0], y-1/Projection[1,1], z-(Near / (Far - Near)), w-((Far * Near) / (Far - Near) / Far)
     float4 ScreenSize; // x-Width, y-Height, z-1/Width, w-1/Height
     float3 ViewPos; // view position (in world space)
     float ViewFar; // view far plane distance (in world space)

@@ -277,8 +277,8 @@ void DepthOfFieldPass::Render(RenderContext& renderContext, GPUTexture*& frame, 
         cbData.BokehTargetSize.Y = static_cast<float>(bokehTargetHeight);
 
         // TODO: use projection matrix instead of this far and near stuff?
-        cbData.ProjectionAB.X = farPlane / (farPlane - nearPlane);
-        cbData.ProjectionAB.Y = (-farPlane * nearPlane) / (farPlane - nearPlane);
+        cbData.ProjectionAB.X = nearPlane / (farPlane - nearPlane);
+        cbData.ProjectionAB.Y = (farPlane * nearPlane) / (farPlane - nearPlane);
 
         auto cb = shader->GetCB(0);
         context->UpdateCB(cb, &cbData);

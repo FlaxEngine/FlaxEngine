@@ -396,7 +396,7 @@ bool GBufferPass::IsDebugView(ViewMode mode)
 void GBufferPass::SetInputs(const RenderView& view, GBufferData& gBuffer)
 {
     // GBuffer params:
-    // ViewInfo             :  x-1/Projection[0,0]   y-1/Projection[1,1]   z-(Far / (Far - Near)   w-(-Far * Near) / (Far - Near) / Far)
+    // ViewInfo             :  x-1/Projection[0,0]   y-1/Projection[1,1]   z-(Near / (Far - Near))   w-((Far * Near) / (Far - Near))
     // ScreenSize           :  x-Width               y-Height              z-1 / Width             w-1 / Height
     // ViewPos,ViewFar      :  x,y,z - world space view position                                   w-Far
     // InvViewMatrix        :  inverse view matrix (4 rows by 4 columns)

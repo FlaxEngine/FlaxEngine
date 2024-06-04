@@ -27,13 +27,13 @@ Texture2D GBuffer3 : register(t4);
 // Linearize raw device depth
 float LinearizeZ(GBufferData gBuffer, float depth)
 {
-    return gBuffer.ViewInfo.w / ((1-depth) - gBuffer.ViewInfo.z);
+    return gBuffer.ViewInfo.w / (depth + gBuffer.ViewInfo.z);
 }
 
 // Convert linear depth to device depth
 float LinearZ2DeviceDepth(GBufferData gBuffer, float linearDepth)
 {
-    return 1 - ((gBuffer.ViewInfo.w / linearDepth) + gBuffer.ViewInfo.z);
+    return ((gBuffer.ViewInfo.w / linearDepth) - gBuffer.ViewInfo.z);
 }
 
 // Get view space position at given pixel coordinate with given device depth
