@@ -207,7 +207,7 @@ void PS_VolumetricFog(Quad_GS2PS input, out float4 VBufferA : SV_Target0, out fl
 	float2 volumeUV = (gridCoordinate.xy + cellOffset.xy) / GridSize.xy;
 	float zSlice = gridCoordinate.z + cellOffset.z;
 	float sceneDepth = (zSlice / GridSize.z) * VolumetricFogMaxDistance / ViewFar;
-	float deviceDepth = (ViewInfo.w / sceneDepth) - ViewInfo.z;
+	float deviceDepth = (ViewInfo.w / sceneDepth) + ViewInfo.z;
 	float4 clipPos = float4(volumeUV * float2(2.0, -2.0) + float2(-1.0, 1.0), deviceDepth, 1.0);
 	float4 wsPos = mul(clipPos, InverseViewProjectionMatrix);
 	float3 positionWS = wsPos.xyz / wsPos.w;
