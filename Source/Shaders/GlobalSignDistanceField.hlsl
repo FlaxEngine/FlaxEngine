@@ -223,26 +223,25 @@ GlobalSDFHit RayTraceGlobalSDF(const GlobalSDFData data, Texture3D<float> tex, T
         float4 cascadePosDistance = data.CascadePosDistance[cascade];
         float voxelSize = data.CascadeVoxelSize[cascade];
         float voxelExtent = voxelSize * 0.5f;
-        float3 worldPosition = trace.WorldPosition + trace.WorldDirection * (voxelSize * cascadeTraceStartBias);
+        float3 worldPosition = trace.WorldPosition + trace.WorldDirection * max(voxelSize * cascadeTraceStartBias, trace.MinDistance);
 
         // Hit the cascade bounds to find the intersection points
         float2 intersections = LineHitBox(worldPosition, traceEndPosition, cascadePosDistance.xyz - cascadePosDistance.www, cascadePosDistance.xyz + cascadePosDistance.www);
         intersections.xy *= traceMaxDistance;
         intersections.x = max(intersections.x, nextIntersectionStart);
-        float stepTime = intersections.x;
         if (intersections.x >= intersections.y)
         {
             // Skip the current cascade if the ray starts outside it
-            stepTime = intersections.y;
+            continue;
         }
-        else
-        {
-            // Skip the current cascade tracing on the next cascade
+
+        // Skip the current cascade tracing on the next cascade (if we're tracing from inside SDF volume)
+        if (intersections.x <= 0.0f)
             nextIntersectionStart = intersections.y;
-        }
 
         // Walk over the cascade SDF
         uint step = 0;
+        float stepTime = intersections.x;
         LOOP
         for (; step < 250 && stepTime < intersections.y; step++)
         {
