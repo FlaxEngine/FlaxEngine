@@ -34,6 +34,7 @@ namespace FlaxEditor.GUI.Dialogs
         private const float ChannelTextWidth = 12.0f;
         private const float SavedColorButtonWidth = 20.0f;
         private const float SavedColorButtonHeight = 20.0f;
+        private const float RGBAHexSeparator = 10.0f;
 
         private Color _initialValue;
         private Color _value;
@@ -184,7 +185,7 @@ namespace FlaxEditor.GUI.Dialogs
 
             // Hex
             const float hexTextBoxWidth = 80;
-            _cHex = new TextBox(false, Width - hexTextBoxWidth - PickerMargin, _cSelector.Bottom + PickerMargin, hexTextBoxWidth)
+            _cHex = new TextBox(false, Width - hexTextBoxWidth - PickerMargin, _cAlpha.Bottom + RGBAHexSeparator, hexTextBoxWidth)
             {
                 Parent = this
             };
