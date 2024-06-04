@@ -121,7 +121,7 @@ float4 PS_Lighting(AtlasVertexOutput input) : SV_Target
 	float tileDepth = SampleZ(atlasUV);
 	//float tileNear = -GLOBAL_SURFACE_ATLAS_TILE_PROJ_PLANE_OFFSET;
 	//float tileFar = tile.ViewBoundsSize.z + 2 * GLOBAL_SURFACE_ATLAS_TILE_PROJ_PLANE_OFFSET;
-	//gBufferData.ViewInfo.zw = float2(tileFar / (tileFar - tileNear), (-tileFar * tileNear) / (tileFar - tileNear) / tileFar);
+	//gBufferData.ViewInfo.zw = float2(tileNear / (tileFar - tileNear), (tileFar * tileNear) / (tileFar - tileNear) / tileFar);
 	//gBufferData.ViewInfo.zw = float2(1, 0);
 	//float tileLinearDepth = LinearizeZ(gBufferData, tileDepth);
 	float3 tileSpacePos = float3(input.TileUV.x - 0.5f, 0.5f - input.TileUV.y, tileDepth);

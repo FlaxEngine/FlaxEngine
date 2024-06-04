@@ -840,7 +840,7 @@ void ParticleEmitterGPUGenerator::ProcessModule(Node* node)
                 "			uint2 pixel = uv * ScreenSize.xy;\n"
 
                 "			float depth = {11}.Load(uint3(pixel, 0)).r;\n"
-                "			float linearDepth = ViewInfo.w / (depth - ViewInfo.z) * ViewFar;\n"
+                "			float linearDepth = ViewInfo.w / (depth + ViewInfo.z) * ViewFar;\n"
 
                 "			if (viewPos.z > linearDepth - {5} && viewPos.z < linearDepth + {5} + {10})\n"
                 "			{{\n"
