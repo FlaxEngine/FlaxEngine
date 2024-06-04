@@ -43,7 +43,7 @@ float4 PS(VS2PS input) : SV_Target
 	{
 		float sceneDepthDeviceZ = SceneDepthTexture.Load(int3(input.Position.xy, 0)).r;
 		float interpolatedDeviceZ = input.Position.z;
-		clip(sceneDepthDeviceZ - interpolatedDeviceZ);
+		clip(interpolatedDeviceZ - sceneDepthDeviceZ);
 	}
 #endif
 
