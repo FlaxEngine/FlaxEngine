@@ -383,6 +383,7 @@ namespace FlaxEditor.GUI.Dialogs
 
             // Draw checkerboard for background of color preview to help with transparency
             Render2D.FillRectangle(new Rectangle(_cOK.X - 3, colorPickerYPosition, ColorPreviewWidth, ColorPreviewHeight), Color.White);
+
             var smallRectSize = 10;
             var numHor = Mathf.FloorToInt(ColorPreviewWidth / smallRectSize);
             var numVer = Mathf.FloorToInt(oldColorRect.Height / smallRectSize);
@@ -405,6 +406,11 @@ namespace FlaxEditor.GUI.Dialogs
             Render2D.FillRectangle(oldColorRect, _initialValue);
             Render2D.FillRectangle(newColorRect, _value);
 
+            // Small separators between Old and New
+            Float2 separatorOffset = new Vector2(0, smallRectSize);
+            // TODO: Fix color to not be black but color picker background
+            Render2D.DrawLine(oldColorRect.UpperRight, oldColorRect.UpperRight + separatorOffset / 2, Color.Black, 2);
+            Render2D.DrawLine(oldColorRect.BottomRight, oldColorRect.BottomRight - separatorOffset / 2, Color.Black, 2);
         }
 
         /// <inheritdoc />
