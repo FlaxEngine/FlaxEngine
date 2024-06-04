@@ -185,7 +185,7 @@ bool TerrainMaterialShader::Load()
     psDesc.DepthClipEnable = false;
     psDesc.DepthWriteEnable = true;
     psDesc.DepthEnable = true;
-    psDesc.DepthFunc = ComparisonFunc::Less;
+    psDesc.DepthFunc = ComparisonFunc::Greater;
     psDesc.HS = nullptr;
     psDesc.DS = nullptr;
     // TODO: masked terrain materials (depth pass should clip holes)

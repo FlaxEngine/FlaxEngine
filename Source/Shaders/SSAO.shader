@@ -275,7 +275,7 @@ void PrepareDepthMip(const float4 inPos, int mipLevel, out float outD0, out floa
 	{
 		float4 depths = depthsArr[i];
 		
-		float closest = max(max(depths.x, depths.y), max(depths.z, depths.w));
+		float closest = min(min(depths.x, depths.y), min(depths.z, depths.w));
 		
 		CalculateRadiusParameters(abs(closest), 1.0, dummyUnused1, dummyUnused2, falloffCalcMulSq);
 		

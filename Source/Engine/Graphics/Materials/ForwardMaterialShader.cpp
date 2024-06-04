@@ -205,7 +205,7 @@ bool ForwardMaterialShader::Load()
     psDesc.DepthClipEnable = false;
     psDesc.DepthWriteEnable = true;
     psDesc.DepthEnable = true;
-    psDesc.DepthFunc = ComparisonFunc::Less;
+    psDesc.DepthFunc = ComparisonFunc::Greater;
     psDesc.HS = nullptr;
     psDesc.DS = nullptr;
     psDesc.VS = _shader->GetVS("VS");

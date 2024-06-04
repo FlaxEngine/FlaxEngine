@@ -44,7 +44,7 @@ float RayCastScreenSpaceShadow(GBufferData gBufferData, GBufferSample gBuffer, f
 		float3 rayUV = rayCS.xyz / rayCS.w;
 		rayUV.xy = rayUV.xy * float2(0.5, -0.5) + float2(0.5, 0.5);
 		float sceneDepth = SampleDepth(gBufferData, rayUV.xy) * gBufferData.ViewFar;
-		float rayDepth = LinearizeZ(rayUV.z) * gBufferData.ViewFar * 0.998;
+		float rayDepth = LinearizeZ(gBufferData, rayUV.z) * gBufferData.ViewFar * 0.998;
 		float surfaceThickness = 0.035f + rayDepth * rayLength;
 		float depthTestHardness = 0.005f;
 		float lightAmount = saturate((rayDepth - sceneDepth) / depthTestHardness) * saturate((sceneDepth + surfaceThickness - rayDepth) / depthTestHardness);
