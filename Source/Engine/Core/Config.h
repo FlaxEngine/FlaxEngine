@@ -41,6 +41,9 @@
 // Enable/disable assertion for Engine low layers
 #define ENABLE_ASSERTION_LOW_LAYERS ENABLE_ASSERTION && (BUILD_DEBUG || FLAX_TESTS)
 
+// Enable reverse z
+#define FLAX_REVERSE_Z 1
+
 // Scripting API defines (see C++ scripting documentation for more info)
 #define API_ENUM(...)
 #define API_CLASS(...)

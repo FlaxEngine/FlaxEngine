@@ -160,7 +160,7 @@ void MaterialGenerator::sampleSceneDepth(Node* caller, Value& value, Box* box)
 
 void MaterialGenerator::linearizeSceneDepth(Node* caller, const Value& depth, Value& value)
 {
-    value = writeLocal(VariantType::Float, String::Format(TEXT("ViewInfo.w / ({0}.x + ViewInfo.z)"), depth.Value), caller);
+    value = writeLocal(VariantType::Float, String::Format(TEXT("ViewInfo.w / ({0}.x - ViewInfo.z)"), depth.Value), caller);
 }
 
 void MaterialGenerator::ProcessGroupTextures(Box* box, Node* node, Value& value)

@@ -144,7 +144,7 @@ void ParticleEmitterGPUGenerator::sampleSceneDepth(Node* caller, Value& value, B
 
 void ParticleEmitterGPUGenerator::linearizeSceneDepth(Node* caller, const Value& depth, Value& value)
 {
-    value = writeLocal(VariantType::Float, String::Format(TEXT("ViewInfo.w / ({0}.x + ViewInfo.z)"), depth.Value), caller);
+    value = writeLocal(VariantType::Float, String::Format(TEXT("ViewInfo.w / ({0}.x - ViewInfo.z)"), depth.Value), caller);
 }
 
 void ParticleEmitterGPUGenerator::ProcessGroupTextures(Box* box, Node* node, Value& value)
