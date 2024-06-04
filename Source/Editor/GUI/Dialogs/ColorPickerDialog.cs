@@ -381,21 +381,23 @@ namespace FlaxEditor.GUI.Dialogs
             var newColorRect = new Rectangle(_cOK.X - 3 + oldColorRect.Size.X, colorPickerYPosition, ColorPreviewWidth * (1 - OldNewColorPreviewDisplayRatio), 0);
             newColorRect.Size.Y = ColorPreviewHeight;
 
+            // Draw checkerboard for background of color preview to help with transparency
+            Render2D.FillRectangle(new Rectangle(_cOK.X - 3, colorPickerYPosition, ColorPreviewWidth, ColorPreviewHeight), Color.White);
             var smallRectSize = 10;
-            var numHor = Mathf.FloorToInt(newRect.Width / smallRectSize);
-            var numVer = Mathf.FloorToInt(newRect.Height / smallRectSize);
-            // Draw checkerboard for background of color to help with transparency
+            var numHor = Mathf.FloorToInt(ColorPreviewWidth / smallRectSize);
+            var numVer = Mathf.FloorToInt(oldColorRect.Height / smallRectSize);
             for (int i = 0; i < numHor; i++)
             {
                 for (int j = 0; j < numVer; j++)
                 {
                     if ((i + j) % 2 == 0 )
                     {
-                        var rect = new Rectangle(newRect.X + smallRectSize * i, newRect.Y + smallRectSize * j, new Float2(smallRectSize));
+                        var rect = new Rectangle(oldColorRect.X + smallRectSize * i, oldColorRect.Y + smallRectSize * j, new Float2(smallRectSize));
                         Render2D.FillRectangle(rect, Color.Gray);
                     }
                 }
             }
+
             Vector2 textOffset = new Vector2(0, -15);
             Render2D.DrawText(style.FontMedium, "Old", Color.White, oldColorRect.UpperLeft + textOffset);
             Render2D.DrawText(style.FontMedium, "New", Color.White, newColorRect.UpperLeft + textOffset);
