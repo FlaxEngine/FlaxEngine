@@ -198,10 +198,12 @@ namespace FlaxEditor.Surface.Elements
 
                 // TODO: Figure out how to only draw the topmost connection
                 if (IntersectsConnection(ref startPos, ref endPos, ref mousePosition, mouseOverDistance))
-                {
                     highlight += DefaultConnectionThickness * 0.5f;
-                }
 
+                // Increase thickness on impulse/ execution lines
+                if (targetBox.CurrentType.IsVoid)
+                    highlight *= 2;
+                
                 DrawConnection(style, ref startPos, ref endPos, ref color, highlight);
             }
         }
