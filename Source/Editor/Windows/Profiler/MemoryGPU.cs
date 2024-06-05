@@ -145,6 +145,8 @@ namespace FlaxEditor.Windows.Profiler
 #endif
                         Type = gpuResource.ResourceType,
                     };
+                    if (resource.Name == null)
+                        resource.Name = string.Empty;
 
                     // Create tooltip
                     sb.Clear();
