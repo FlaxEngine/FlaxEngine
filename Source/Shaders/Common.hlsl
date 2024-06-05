@@ -53,6 +53,9 @@
 #define SHADING_MODEL_SUBSURFACE 2
 #define SHADING_MODEL_FOLIAGE 3
 
+// Didn't figure out how to pass compilation flags via C++, so hardcode it temporarily
+#define FLAX_REVERSE_Z 1
+
 // Detect feature level support
 #if FEATURE_LEVEL >= FEATURE_LEVEL_SM5
 #define CAN_USE_GATHER 1
@@ -135,7 +138,11 @@ SamplerComparisonState ShadowSamplerPCF : register(s5);
 // Structure that contains information about GBuffer
 struct GBufferData
 {
-    float4 ViewInfo; // x-1/Projection[0,0], y-1/Projection[1,1], z-(Near / (Far - Near)), w-((Far * Near) / (Far - Near) / Far)
+    // If reverse Z enabled:
+    // x-1/Projection[0,0], y-1/Projection[1,1], z-(-Near / (Far - Near)), w-((Far * Near) / (Far - Near) / Far)
+    // Otherwise: 
+    // x-1/Projection[0,0], y-1/Projection[1,1], z-(Far / (Far - Near)), w-(-(Far * Near) / (Far - Near) / Far)
+    float4 ViewInfo; 
     float4 ScreenSize; // x-Width, y-Height, z-1/Width, w-1/Height
     float3 ViewPos; // view position (in world space)
     float ViewFar; // view far plane distance (in world space)

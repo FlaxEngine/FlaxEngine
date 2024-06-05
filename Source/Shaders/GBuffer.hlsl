@@ -33,7 +33,7 @@ float LinearizeZ(GBufferData gBuffer, float depth)
 // Convert linear depth to device depth
 float LinearZ2DeviceDepth(GBufferData gBuffer, float linearDepth)
 {
-    return ((gBuffer.ViewInfo.w / linearDepth) + gBuffer.ViewInfo.z);
+    return (gBuffer.ViewInfo.w / linearDepth) + gBuffer.ViewInfo.z;
 }
 
 // Get view space position at given pixel coordinate with given device depth
