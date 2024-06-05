@@ -582,7 +582,7 @@ float SampleShadow(LightData light, LightShadowData shadow, Texture2D shadowMap,
     {
         float2 samplePos = shadowMapUVs + sideVector.xy * PCFDiscSamples[i].x + upVector.xy * PCFDiscSamples[i].y;
 #if FLAX_REVERSE_Z
-        result += shadowMap.SampleCmpLevelZero(ShadowSamplerPCF, samplePos, shadowPosition.z);
+        result += 1 - shadowMap.SampleCmpLevelZero(ShadowSamplerPCF, samplePos, shadowPosition.z);
 #else
         result += shadowMap.SampleCmpLevelZero(ShadowSamplerPCF, samplePos, shadowPosition.z);
 #endif
