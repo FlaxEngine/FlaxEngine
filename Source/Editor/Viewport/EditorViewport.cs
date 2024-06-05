@@ -1399,8 +1399,13 @@ namespace FlaxEditor.Viewport
             ivp.Invert();
 
             // Create near and far points, with device depth of 1 and 0 respectively
+#if FLAX_REVERSE_Z
             var nearPoint = new Vector3(mousePosition, 1.0f);
             var farPoint = new Vector3(mousePosition, 0.0f);
+#else
+            var nearPoint = new Vector3(mousePosition, 0.0f);
+            var farPoint = new Vector3(mousePosition, 1.0f);
+#endif
             viewport.Unproject(ref nearPoint, ref ivp, out nearPoint);
             viewport.Unproject(ref farPoint, ref ivp, out farPoint);
 

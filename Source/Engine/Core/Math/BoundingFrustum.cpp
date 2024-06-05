@@ -46,7 +46,21 @@ void BoundingFrustum::SetMatrix(const Matrix& matrix)
     _pBottom.D = matrix.M44 + matrix.M42;
     _pBottom.Normalize();
 
-    // TODO: Fix this for reverse Z
+#if FLAX_REVERSE_Z
+    // Far plane
+    _pFar.Normal.X = matrix.M13;
+    _pFar.Normal.Y = matrix.M23;
+    _pFar.Normal.Z = matrix.M33;
+    _pFar.D = matrix.M43;
+    _pFar.Normalize();
+
+    // Near plane
+    _pNear.Normal.X = matrix.M14 - matrix.M13;
+    _pNear.Normal.Y = matrix.M24 - matrix.M23;
+    _pNear.Normal.Z = matrix.M34 - matrix.M33;
+    _pNear.D = matrix.M44 - matrix.M43;
+    _pNear.Normalize();
+#else
     // Near plane
     _pNear.Normal.X = matrix.M13;
     _pNear.Normal.Y = matrix.M23;
@@ -60,6 +74,7 @@ void BoundingFrustum::SetMatrix(const Matrix& matrix)
     _pFar.Normal.Z = matrix.M34 - matrix.M33;
     _pFar.D = matrix.M44 - matrix.M43;
     _pFar.Normalize();
+#endif
 }
 
 Plane BoundingFrustum::GetPlane(int32 index) const

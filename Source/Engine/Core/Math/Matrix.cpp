@@ -40,15 +40,15 @@ float Matrix::GetDeterminant() const
     const float temp4 = M31 * M44 - M34 * M41;
     const float temp5 = M31 * M43 - M33 * M41;
     const float temp6 = M31 * M42 - M32 * M41;
-    return M11 * (M22 * temp1 - M23 * temp2 + M24 * temp3) - M12 * (M21 * temp1 -M23 * temp4 + M24 * temp5) + M13 * (M21 * temp2 - M22 * temp4 + M24 * temp6) - M14 * (M21 * temp3 - M22 * temp5 + M23 * temp6);
+    return M11 * (M22 * temp1 - M23 * temp2 + M24 * temp3) - M12 * (M21 * temp1 - M23 * temp4 + M24 * temp5) + M13 * (M21 * temp2 - M22 * temp4 + M24 * temp6) - M14 * (M21 * temp3 - M22 * temp5 + M23 * temp6);
 }
 
 float Matrix::RotDeterminant() const
 {
     return
-            Values[0][0] * (Values[1][1] * Values[2][2] - Values[1][2] * Values[2][1]) -
-            Values[1][0] * (Values[0][1] * Values[2][2] - Values[0][2] * Values[2][1]) +
-            Values[2][0] * (Values[0][1] * Values[1][2] - Values[0][2] * Values[1][1]);
+        Values[0][0] * (Values[1][1] * Values[2][2] - Values[1][2] * Values[2][1]) -
+        Values[1][0] * (Values[0][1] * Values[2][2] - Values[0][2] * Values[2][1]) +
+        Values[2][0] * (Values[0][1] * Values[1][2] - Values[0][2] * Values[1][1]);
 }
 
 void Matrix::NormalizeScale()
@@ -506,10 +506,15 @@ void Matrix::OrthoOffCenter(float left, float right, float bottom, float top, fl
     result = Identity;
     result.M11 = 2.0f / (right - left);
     result.M22 = 2.0f / (top - bottom);
-    result.M33 = -zRange;
     result.M41 = (left + right) / (left - right);
     result.M42 = (top + bottom) / (bottom - top);
+#if FLAX_REVERSE_Z
+    result.M33 = -zRange;
     result.M43 = zFar * zRange;
+#else
+    result.M33 = zRange;
+    result.M43 = -zNear * zRange;
+#endif
 }
 
 void Matrix::PerspectiveFov(float fov, float aspect, float zNear, float zFar, Matrix& result)
@@ -525,16 +530,21 @@ void Matrix::PerspectiveFov(float fov, float aspect, float zNear, float zFar, Ma
 
 void Matrix::PerspectiveOffCenter(float left, float right, float bottom, float top, float zNear, float zFar, Matrix& result)
 {
-    const float zRange = zNear / (zFar - zNear);
+    const float zRange = 1.0 / (zFar - zNear);
 
     result = Zero;
     result.M11 = 2.0f * zNear / (right - left);
     result.M22 = 2.0f * zNear / (top - bottom);
     result.M31 = (left + right) / (left - right);
     result.M32 = (top + bottom) / (bottom - top);
-    result.M33 = -zRange;
-    result.M34 = 1.0f;
-    result.M43 = zFar * zRange;
+    result.M34 = 1.0f;  
+#if FLAX_REVERSE_Z
+    result.M33 = -zNear * zRange;
+    result.M43 = zFar * zNear * zRange;
+#else
+    result.M33 = zFar * zRange;
+    result.M43 = -zFar * zNear * zRange;
+#endif
 }
 
 void Matrix::RotationX(float angle, Matrix& result)

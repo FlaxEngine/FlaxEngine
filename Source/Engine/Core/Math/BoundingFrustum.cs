@@ -230,6 +230,21 @@ namespace FlaxEngine
             bottom.D = matrix.M44 + matrix.M42;
             bottom.Normalize();
 
+#if FLAX_REVERSE_Z
+            // Far plane
+            far.Normal.X = matrix.M13;
+            far.Normal.Y = matrix.M23;
+            far.Normal.Z = matrix.M33;
+            far.D = matrix.M43;
+            far.Normalize();
+
+            // Near plane
+            near.Normal.X = matrix.M14 - matrix.M13;
+            near.Normal.Y = matrix.M24 - matrix.M23;
+            near.Normal.Z = matrix.M34 - matrix.M33;
+            near.D = matrix.M44 - matrix.M43;
+            near.Normalize();
+#else
             // Near plane
             near.Normal.X = matrix.M13;
             near.Normal.Y = matrix.M23;
@@ -243,6 +258,7 @@ namespace FlaxEngine
             far.Normal.Z = matrix.M34 - matrix.M33;
             far.D = matrix.M44 - matrix.M43;
             far.Normalize();
+#endif
         }
 
         private static Vector3 Get3PlanesInterPoint(ref Plane p1, ref Plane p2, ref Plane p3)

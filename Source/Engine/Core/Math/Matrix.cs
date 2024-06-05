@@ -519,22 +519,22 @@ namespace FlaxEngine
             {
                 switch (index)
                 {
-                case 0: return M11;
-                case 1: return M12;
-                case 2: return M13;
-                case 3: return M14;
-                case 4: return M21;
-                case 5: return M22;
-                case 6: return M23;
-                case 7: return M24;
-                case 8: return M31;
-                case 9: return M32;
-                case 10: return M33;
-                case 11: return M34;
-                case 12: return M41;
-                case 13: return M42;
-                case 14: return M43;
-                case 15: return M44;
+                    case 0: return M11;
+                    case 1: return M12;
+                    case 2: return M13;
+                    case 3: return M14;
+                    case 4: return M21;
+                    case 5: return M22;
+                    case 6: return M23;
+                    case 7: return M24;
+                    case 8: return M31;
+                    case 9: return M32;
+                    case 10: return M33;
+                    case 11: return M34;
+                    case 12: return M41;
+                    case 13: return M42;
+                    case 14: return M43;
+                    case 15: return M44;
                 }
                 throw new ArgumentOutOfRangeException(nameof(index), "Indices for Matrix run from 0 to 15, inclusive.");
             }
@@ -543,55 +543,55 @@ namespace FlaxEngine
             {
                 switch (index)
                 {
-                case 0:
-                    M11 = value;
-                    break;
-                case 1:
-                    M12 = value;
-                    break;
-                case 2:
-                    M13 = value;
-                    break;
-                case 3:
-                    M14 = value;
-                    break;
-                case 4:
-                    M21 = value;
-                    break;
-                case 5:
-                    M22 = value;
-                    break;
-                case 6:
-                    M23 = value;
-                    break;
-                case 7:
-                    M24 = value;
-                    break;
-                case 8:
-                    M31 = value;
-                    break;
-                case 9:
-                    M32 = value;
-                    break;
-                case 10:
-                    M33 = value;
-                    break;
-                case 11:
-                    M34 = value;
-                    break;
-                case 12:
-                    M41 = value;
-                    break;
-                case 13:
-                    M42 = value;
-                    break;
-                case 14:
-                    M43 = value;
-                    break;
-                case 15:
-                    M44 = value;
-                    break;
-                default: throw new ArgumentOutOfRangeException(nameof(index), "Indices for Matrix run from 0 to 15, inclusive.");
+                    case 0:
+                        M11 = value;
+                        break;
+                    case 1:
+                        M12 = value;
+                        break;
+                    case 2:
+                        M13 = value;
+                        break;
+                    case 3:
+                        M14 = value;
+                        break;
+                    case 4:
+                        M21 = value;
+                        break;
+                    case 5:
+                        M22 = value;
+                        break;
+                    case 6:
+                        M23 = value;
+                        break;
+                    case 7:
+                        M24 = value;
+                        break;
+                    case 8:
+                        M31 = value;
+                        break;
+                    case 9:
+                        M32 = value;
+                        break;
+                    case 10:
+                        M33 = value;
+                        break;
+                    case 11:
+                        M34 = value;
+                        break;
+                    case 12:
+                        M41 = value;
+                        break;
+                    case 13:
+                        M42 = value;
+                        break;
+                    case 14:
+                        M43 = value;
+                        break;
+                    case 15:
+                        M44 = value;
+                        break;
+                    default: throw new ArgumentOutOfRangeException(nameof(index), "Indices for Matrix run from 0 to 15, inclusive.");
                 }
             }
         }
@@ -2176,10 +2176,15 @@ namespace FlaxEngine
             result = Identity;
             result.M11 = 2.0f / (right - left);
             result.M22 = 2.0f / (top - bottom);
-            result.M33 = -zRange;
             result.M41 = (left + right) / (left - right);
             result.M42 = (top + bottom) / (bottom - top);
+#if FLAX_REVERSE_Z
+            result.M33 = -zRange;
             result.M43 = zfar * zRange;
+#else
+            result.M33 = zRange;
+            result.M43 = -znear * zRange;
+#endif
         }
 
         /// <summary>
@@ -2238,14 +2243,19 @@ namespace FlaxEngine
         public static void PerspectiveFov(float fov, float aspect, float znear, float zfar, out Matrix result)
         {
             var yScale = (float)(1.0f / Math.Tan(fov * 0.5f));
-            var zRange = znear / (zfar - znear);
+            var zRange = 1.0f / (zfar - znear);
             result = new Matrix
             {
                 M11 = yScale / aspect,
                 M22 = yScale,
-                M33 = -zRange,
                 M34 = 1.0f,
-                M43 = zRange * zfar,
+#if FLAX_REVERSE_Z
+                M33 = -znear * zRange,
+                M43 = znear * zfar * zRange,
+#else
+                M33 = zfar * zRange,
+                M43 = -znear * zfar * zRange,
+#endif
             };
         }
 
@@ -2275,16 +2285,21 @@ namespace FlaxEngine
         /// <param name="result">When the method completes, contains the created projection matrix.</param>
         public static void PerspectiveOffCenter(float left, float right, float bottom, float top, float znear, float zfar, out Matrix result)
         {
-            float zRange = znear / (zfar - znear);
+            float zRange = 1.0f / (zfar - znear);
             result = new Matrix
             {
                 M11 = 2.0f * znear / (right - left),
                 M22 = 2.0f * znear / (top - bottom),
                 M31 = (left + right) / (left - right),
                 M32 = (top + bottom) / (bottom - top),
-                M33 = -zRange,
                 M34 = 1.0f,
-                M43 = zfar * zRange,
+#if FLAX_REVERSE_Z
+                M33 = -znear * zRange,
+                M43 = znear * zfar * zRange,
+#else
+                M33 = zfar * zRange,
+                M43 = -znear * zfar * zRange,
+#endif
             };
         }
 
