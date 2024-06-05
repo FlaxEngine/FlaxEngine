@@ -4,20 +4,24 @@
 #define __COMMON__
 
 // Platform macros
-#if !defined(DIRECTX)
+#ifndef DIRECTX
 #define DIRECTX 0
 #endif
-#if !defined(OPENGL)
+#ifndef OPENGL
 #define OPENGL 0
 #endif
-#if !defined(VULKAN)
+#ifndef VULKAN
 #define VULKAN 0
 #endif
-#if defined(PLATFORM_PS4)
+#ifdef PLATFORM_PS4
 #include "./FlaxPlatforms/PS4/Shaders/PS4Common.hlsl"
 #endif
-#if defined(PLATFORM_PS5)
+#ifdef PLATFORM_PS5
 #include "./FlaxPlatforms/PS5/Shaders/PS5Common.hlsl"
+#endif
+
+#ifndef FLAX_REVERSE_Z
+#define FLAX_REVERSE_Z 0
 #endif
 
 // Feature levels
@@ -52,9 +56,6 @@
 #define SHADING_MODEL_LIT 1
 #define SHADING_MODEL_SUBSURFACE 2
 #define SHADING_MODEL_FOLIAGE 3
-
-// Didn't figure out how to pass compilation flags via C++, so hardcode it temporarily
-#define FLAX_REVERSE_Z 1
 
 // Detect feature level support
 #if FEATURE_LEVEL >= FEATURE_LEVEL_SM5
