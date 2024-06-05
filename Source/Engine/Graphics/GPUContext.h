@@ -198,7 +198,7 @@ public:
 #if FLAX_REVERSE_Z
         ClearDepthCustom(depthBuffer, 0.0f);
 #else
-        ClearDepthCustom(depthBuffer, 0.0f);
+        ClearDepthCustom(depthBuffer, 1.0f);
 #endif
 
     }
