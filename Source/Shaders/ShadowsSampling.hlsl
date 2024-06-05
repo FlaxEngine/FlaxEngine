@@ -134,7 +134,7 @@ float SampleShadowMapFixedSizePCF(Texture2DArray shadowMap, float2 shadowMapSize
                 // Revert the sign if reverse z is enabled, the same below
                 v1[(col + FS_2) / 2] = 1 - shadowMap.GatherCmp(ShadowSampler, baseUV, sceneDepth, int2(col, row));
 #else
-                v1[(col + FS_2) / 2] = 1 - shadowMap.GatherCmp(ShadowSampler, baseUV, sceneDepth, int2(col, row));
+                v1[(col + FS_2) / 2] = shadowMap.GatherCmp(ShadowSampler, baseUV, sceneDepth, int2(col, row));
 #endif
 
 #else
