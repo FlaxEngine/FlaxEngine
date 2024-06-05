@@ -48,7 +48,7 @@ public:
     {
     }
 
-    void ClearDepth(GPUTextureView* depthBuffer, float depthValue) override
+    void ClearDepthCustom(GPUTextureView* depthBuffer, float depthValue) override
     {
     }
 

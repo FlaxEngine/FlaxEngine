@@ -182,11 +182,26 @@ public:
     API_FUNCTION() virtual void Clear(GPUTextureView* rt, const Color& color) = 0;
 
     /// <summary>
-    /// Clears depth buffer.
+    /// Clears depth buffer with custom value.
     /// </summary>
     /// <param name="depthBuffer">The depth buffer to clear.</param>
     /// <param name="depthValue">The clear depth value.</param>
-    API_FUNCTION() virtual void ClearDepth(GPUTextureView* depthBuffer, float depthValue = 0.0f) = 0;
+    API_FUNCTION() virtual void ClearDepthCustom(GPUTextureView* depthBuffer, float depthValue) = 0;
+
+    /// <summary>
+    /// Clears depth buffer with default value.
+    /// </summary>
+    /// <param name="depthBuffer">The depth buffer to clear.</param>
+    /// <param name="depthValue">The clear depth value.</param>
+    API_FUNCTION() FORCE_INLINE void ClearDepth(GPUTextureView* depthBuffer) {
+
+#if FLAX_REVERSE_Z
+        ClearDepthCustom(depthBuffer, 0.0f);
+#else
+        ClearDepthCustom(depthBuffer, 0.0f);
+#endif
+
+    }
 
     /// <summary>
     /// Clears an unordered access buffer with a float value.
