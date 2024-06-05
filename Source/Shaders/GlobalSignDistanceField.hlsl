@@ -215,85 +215,87 @@ GlobalSDFHit RayTraceGlobalSDF(const GlobalSDFData data, Texture3D<float> tex, T
     hit.HitTime = -1.0f;
     float chunkSizeDistance = (float)GLOBAL_SDF_RASTERIZE_CHUNK_SIZE / data.Resolution; // Size of the chunk in SDF distance (0-1)
     float chunkMarginDistance = (float)GLOBAL_SDF_RASTERIZE_CHUNK_MARGIN / data.Resolution; // Size of the chunk margin in SDF distance (0-1)
-    float nextIntersectionStart = 0.0f;
+    float nextIntersectionStart = trace.MinDistance;
     float traceMaxDistance = min(trace.MaxDistance, data.CascadePosDistance[3].w * 2);
     float3 traceEndPosition = trace.WorldPosition + trace.WorldDirection * traceMaxDistance;
+    LOOP
     for (uint cascade = 0; cascade < data.CascadesCount && hit.HitTime < 0.0f; cascade++)
     {
         float4 cascadePosDistance = data.CascadePosDistance[cascade];
         float voxelSize = data.CascadeVoxelSize[cascade];
         float voxelExtent = voxelSize * 0.5f;
-        float3 worldPosition = trace.WorldPosition + trace.WorldDirection * max(voxelSize * cascadeTraceStartBias, trace.MinDistance);
+        float3 worldPosition = trace.WorldPosition;
+
+        // Skip until cascade that contains the start location
+        if (any(abs(worldPosition - cascadePosDistance.xyz) > cascadePosDistance.w))
+            continue;
 
         // Hit the cascade bounds to find the intersection points
+        float traceStartBias = voxelSize * cascadeTraceStartBias;
         float2 intersections = LineHitBox(worldPosition, traceEndPosition, cascadePosDistance.xyz - cascadePosDistance.www, cascadePosDistance.xyz + cascadePosDistance.www);
         intersections.xy *= traceMaxDistance;
+        intersections.x = max(intersections.x, traceStartBias);
         intersections.x = max(intersections.x, nextIntersectionStart);
-        if (intersections.x >= intersections.y)
+        if (intersections.x < intersections.y)
         {
-            // Skip the current cascade if the ray starts outside it
-            continue;
-        }
+            // Skip the current cascade tracing on the next cascade
+            nextIntersectionStart = max(nextIntersectionStart, intersections.y - voxelSize);
 
-        // Skip the current cascade tracing on the next cascade (if we're tracing from inside SDF volume)
-        if (intersections.x <= 0.0f)
-            nextIntersectionStart = intersections.y;
-
-        // Walk over the cascade SDF
-        uint step = 0;
-        float stepTime = intersections.x;
-        LOOP
-        for (; step < 250 && stepTime < intersections.y; step++)
-        {
-            float3 stepPosition = worldPosition + trace.WorldDirection * stepTime;
-
-            // Sample SDF
-            float cascadeMaxDistance;
-            float3 cascadeUV, textureUV;
-            GetGlobalSDFCascadeUV(data, cascade, stepPosition, cascadeMaxDistance, cascadeUV, textureUV);
-            float stepDistance = mip.SampleLevel(SamplerLinearClamp, textureUV, 0);
-            if (stepDistance < chunkSizeDistance)
+            // Walk over the cascade SDF
+            uint step = 0;
+            float stepTime = intersections.x;
+            LOOP
+            for (; step < 250 && stepTime < intersections.y && hit.HitTime < 0.0f; step++)
             {
-                float stepDistanceTex = tex.SampleLevel(SamplerLinearClamp, textureUV, 0);
-                if (stepDistanceTex < chunkMarginDistance * 2)
+                float3 stepPosition = worldPosition + trace.WorldDirection * stepTime;
+
+                // Sample SDF
+                float cascadeMaxDistance;
+                float3 cascadeUV, textureUV;
+                GetGlobalSDFCascadeUV(data, cascade, stepPosition, cascadeMaxDistance, cascadeUV, textureUV);
+                float stepDistance = mip.SampleLevel(SamplerLinearClamp, textureUV, 0);
+                if (stepDistance < chunkSizeDistance)
                 {
-                    stepDistance = stepDistanceTex;
+                    float stepDistanceTex = tex.SampleLevel(SamplerLinearClamp, textureUV, 0);
+                    if (stepDistanceTex < chunkMarginDistance * 2)
+                    {
+                        stepDistance = stepDistanceTex;
+                    }
                 }
-            }
-            else
-            {
-                // Assume no SDF nearby so perform a jump
-                stepDistance = chunkSizeDistance;
-            }
-            stepDistance *= cascadeMaxDistance;
-
-            // Detect surface hit
-            float minSurfaceThickness = voxelExtent * saturate(stepTime / voxelSize);
-            if (stepDistance < minSurfaceThickness)
-            {
-                // Surface hit
-                hit.HitTime = max(stepTime + stepDistance - minSurfaceThickness, 0.0f);
-                hit.HitCascade = cascade;
-                hit.HitSDF = stepDistance;
-                if (trace.NeedsHitNormal)
+                else
                 {
-                    // Calculate hit normal from SDF gradient
-                    float texelOffset = 1.0f / data.Resolution;
-                    float xp = tex.SampleLevel(SamplerLinearClamp, float3(textureUV.x + texelOffset, textureUV.y, textureUV.z), 0).x;
-                    float xn = tex.SampleLevel(SamplerLinearClamp, float3(textureUV.x - texelOffset, textureUV.y, textureUV.z), 0).x;
-                    float yp = tex.SampleLevel(SamplerLinearClamp, float3(textureUV.x, textureUV.y + texelOffset, textureUV.z), 0).x;
-                    float yn = tex.SampleLevel(SamplerLinearClamp, float3(textureUV.x, textureUV.y - texelOffset, textureUV.z), 0).x;
-                    float zp = tex.SampleLevel(SamplerLinearClamp, float3(textureUV.x, textureUV.y, textureUV.z + texelOffset), 0).x;
-                    float zn = tex.SampleLevel(SamplerLinearClamp, float3(textureUV.x, textureUV.y, textureUV.z - texelOffset), 0).x;
-                    hit.HitNormal = normalize(float3(xp - xn, yp - yn, zp - zn));
+                    // Assume no SDF nearby so perform a jump
+                    stepDistance = chunkSizeDistance;
                 }
-                break;
-            }
+                stepDistance *= cascadeMaxDistance;
 
-            // Move forward
-            stepTime += max(stepDistance * trace.StepScale, voxelSize);
+                // Detect surface hit
+                float minSurfaceThickness = voxelExtent * saturate(stepTime / voxelSize);
+                if (stepDistance < minSurfaceThickness)
+                {
+                    // Surface hit
+                    hit.HitTime = max(stepTime + stepDistance - minSurfaceThickness, 0.0f);
+                    hit.HitCascade = cascade;
+                    hit.HitSDF = stepDistance;
+                    if (trace.NeedsHitNormal)
+                    {
+                        // Calculate hit normal from SDF gradient
+                        float texelOffset = 1.0f / data.Resolution;
+                        float xp = tex.SampleLevel(SamplerLinearClamp, float3(textureUV.x + texelOffset, textureUV.y, textureUV.z), 0).x;
+                        float xn = tex.SampleLevel(SamplerLinearClamp, float3(textureUV.x - texelOffset, textureUV.y, textureUV.z), 0).x;
+                        float yp = tex.SampleLevel(SamplerLinearClamp, float3(textureUV.x, textureUV.y + texelOffset, textureUV.z), 0).x;
+                        float yn = tex.SampleLevel(SamplerLinearClamp, float3(textureUV.x, textureUV.y - texelOffset, textureUV.z), 0).x;
+                        float zp = tex.SampleLevel(SamplerLinearClamp, float3(textureUV.x, textureUV.y, textureUV.z + texelOffset), 0).x;
+                        float zn = tex.SampleLevel(SamplerLinearClamp, float3(textureUV.x, textureUV.y, textureUV.z - texelOffset), 0).x;
+                        hit.HitNormal = normalize(float3(xp - xn, yp - yn, zp - zn));
+                    }
+                }
+
+                // Move forward
+                stepTime += max(stepDistance * trace.StepScale, voxelSize);
+            }
+            hit.StepsCount += step;
         }
-        hit.StepsCount += step;
     }
     return hit;
 }
