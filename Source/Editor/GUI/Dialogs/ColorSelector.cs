@@ -172,8 +172,15 @@ namespace FlaxEditor.GUI.Dialogs
             float hAngle = hsv.X * Mathf.DegreesToRadians;
             float hRadius = hsv.Y * _wheelRect.Width * 0.5f;
             var hsPos = new Float2(hRadius * Mathf.Cos(hAngle), -hRadius * Mathf.Sin(hAngle));
-            const float wheelBoxSize = 4.0f;
-            Render2D.DrawRectangle(new Rectangle(hsPos - (wheelBoxSize * 0.5f) + _wheelRect.Center, new Float2(wheelBoxSize)), _isMouseDownWheel ? Color.Gray : Color.Black);
+            // Wheel selection box
+            Float2 selectionBoxSize = new Float2(_isMouseDownWheel ? wheelSelectionBoxEdgeLenght * 2 : wheelSelectionBoxEdgeLenght);
+            Rectangle selectionBoxFill = new Rectangle(hsPos - (selectionBoxSize * 0.5f) + _wheelRect.Center, selectionBoxSize);
+
+            Color rawWheelColor = Color.FromHSV(new Float3(Color.ToHSV().X, 1, 1));
+
+            Render2D.FillRectangle(selectionBoxFill, rawWheelColor);
+            Render2D.DrawRectangle(selectionBoxFill, Color.Black);
+
         }
 
         /// <inheritdoc />
