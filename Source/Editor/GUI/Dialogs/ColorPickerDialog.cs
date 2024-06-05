@@ -215,7 +215,7 @@ namespace FlaxEditor.GUI.Dialogs
 
             // Eyedropper button
             var style = Style.Current;
-            _cEyedropper = new Button(_cOK.X - EyedropperMargin, _cHex.Bottom + PickerMargin)
+            _cEyedropper = new Button(_cSelector.BottomLeft.X, _cSelector.BottomLeft.Y)
             {
                 TooltipText = "Eyedropper tool to pick a color directly from the screen",
                 BackgroundBrush = new SpriteBrush(Editor.Instance.Icons.Search32),
@@ -226,9 +226,8 @@ namespace FlaxEditor.GUI.Dialogs
                 Parent = this,
             };
             _cEyedropper.Clicked += OnEyedropStart;
-            _cEyedropper.Height = (_cValue.Bottom - _cEyedropper.Y) * 0.5f;
             _cEyedropper.Width = _cEyedropper.Height;
-            _cEyedropper.X -= _cEyedropper.Width;
+            _cEyedropper.Location = new Float2(_cEyedropper.Location.X, _cEyedropper.Location.Y - _cEyedropper.Height);
 
             // Set initial color
             SelectedColor = initialValue;
