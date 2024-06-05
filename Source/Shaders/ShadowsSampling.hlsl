@@ -560,7 +560,11 @@ float SampleShadow(LightData light, LightShadowData shadow, Texture2D shadowMap,
 #if FilterSizeSpot == 2
 
     // Use single hardware sample with filtering
+#if FLAX_REVERSE_Z
+    float result = 1 - shadowMap.SampleCmpLevelZero(ShadowSamplerPCF, shadowMapUVs, shadowPosition.z);
+#else
     float result = shadowMap.SampleCmpLevelZero(ShadowSamplerPCF, shadowMapUVs, shadowPosition.z);
+#endif
 
 #else
 
@@ -577,7 +581,11 @@ float SampleShadow(LightData light, LightShadowData shadow, Texture2D shadowMap,
     for(int i = 0; i < FilterSizeCube; i++)
     {
         float2 samplePos = shadowMapUVs + sideVector.xy * PCFDiscSamples[i].x + upVector.xy * PCFDiscSamples[i].y;
+#if FLAX_REVERSE_Z
         result += shadowMap.SampleCmpLevelZero(ShadowSamplerPCF, samplePos, shadowPosition.z);
+#else
+        result += shadowMap.SampleCmpLevelZero(ShadowSamplerPCF, samplePos, shadowPosition.z);
+#endif
     }
     result *= (1.0f / FilterSizeCube);
 
@@ -693,7 +701,11 @@ float SampleShadow(LightData light, LightShadowData shadow, TextureCube<float> s
 #if FilterSizeCube == 2
 
     // Use single hardware sample with filtering
+#if FLAX_REVERSE_Z
+    float result = 1 - shadowMap.SampleCmpLevelZero(ShadowSamplerPCF, toLight, shadowPosition.z);
+#else
     float result = shadowMap.SampleCmpLevelZero(ShadowSamplerPCF, toLight, shadowPosition.z);
+#endif
 
 #else
 
@@ -710,7 +722,11 @@ float SampleShadow(LightData light, LightShadowData shadow, TextureCube<float> s
     for (int i = 0; i < FilterSizeCube; i++)
     {
         float3 cubeSamplePos = toLight + sideVector * PCFDiscSamples[i].x + upVector * PCFDiscSamples[i].y;
+#if FLAX_REVERSE_Z
+        result += 1 - shadowMap.SampleCmpLevelZero(ShadowSamplerPCF, cubeSamplePos, shadowPosition.z);
+#else
         result += shadowMap.SampleCmpLevelZero(ShadowSamplerPCF, cubeSamplePos, shadowPosition.z);
+#endif
     }
     result *= (1.0f / FilterSizeCube);
 
