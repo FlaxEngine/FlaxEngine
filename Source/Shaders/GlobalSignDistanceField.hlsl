@@ -8,6 +8,7 @@
 #define GLOBAL_SDF_MIP_FLOODS 5
 #define GLOBAL_SDF_WORLD_SIZE 60000.0f
 #define GLOBAL_SDF_MIN_VALID 0.9f
+#define GLOBAL_SDF_CHUNK_MARGIN_SCALE 4.0f
 
 // Global SDF data for a constant buffer
 struct GlobalSDFData
@@ -124,7 +125,7 @@ float SampleGlobalSDF(const GlobalSDFData data, Texture3D<float> tex, Texture3D<
     if (distance <= 0.0f)
         return GLOBAL_SDF_WORLD_SIZE;
     float chunkSizeDistance = (float)GLOBAL_SDF_RASTERIZE_CHUNK_SIZE / data.Resolution; // Size of the chunk in SDF distance (0-1)
-    float chunkMarginDistance = (float)GLOBAL_SDF_RASTERIZE_CHUNK_MARGIN / data.Resolution; // Size of the chunk margin in SDF distance (0-1)
+    float chunkMarginDistance = GLOBAL_SDF_CHUNK_MARGIN_SCALE * (float)GLOBAL_SDF_RASTERIZE_CHUNK_MARGIN / data.Resolution; // Size of the chunk margin in SDF distance (0-1)
     for (uint cascade = 0; cascade < data.CascadesCount; cascade++)
     {
         float cascadeMaxDistance;
@@ -134,7 +135,7 @@ float SampleGlobalSDF(const GlobalSDFData data, Texture3D<float> tex, Texture3D<
         if (cascadeDistance < chunkSizeDistance && all(cascadeUV > 0) && all(cascadeUV < 1))
         {
             float cascadeDistanceTex = tex.SampleLevel(SamplerLinearClamp, textureUV, 0);
-            if (cascadeDistanceTex < chunkMarginDistance * 2)
+            if (cascadeDistanceTex < chunkMarginDistance)
                 cascadeDistance = cascadeDistanceTex;
             distance = cascadeDistance * cascadeMaxDistance;
             break;
@@ -181,7 +182,7 @@ float3 SampleGlobalSDFGradient(const GlobalSDFData data, Texture3D<float> tex, T
     if (data.CascadePosDistance[3].w <= 0.0f)
         return gradient;
     float chunkSizeDistance = (float)GLOBAL_SDF_RASTERIZE_CHUNK_SIZE / data.Resolution; // Size of the chunk in SDF distance (0-1)
-    float chunkMarginDistance = (float)GLOBAL_SDF_RASTERIZE_CHUNK_MARGIN / data.Resolution; // Size of the chunk margin in SDF distance (0-1)
+    float chunkMarginDistance = GLOBAL_SDF_CHUNK_MARGIN_SCALE * (float)GLOBAL_SDF_RASTERIZE_CHUNK_MARGIN / data.Resolution; // Size of the chunk margin in SDF distance (0-1)
     for (uint cascade = 0; cascade < data.CascadesCount; cascade++)
     {
         float cascadeMaxDistance;
@@ -191,7 +192,7 @@ float3 SampleGlobalSDFGradient(const GlobalSDFData data, Texture3D<float> tex, T
         if (cascadeDistance < chunkSizeDistance && all(cascadeUV > 0) && all(cascadeUV < 1))
         {
             float cascadeDistanceTex = tex.SampleLevel(SamplerLinearClamp, textureUV, 0);
-            if (cascadeDistanceTex < chunkMarginDistance * 2)
+            if (cascadeDistanceTex < chunkMarginDistance)
                 cascadeDistance = cascadeDistanceTex;
             float texelOffset = 1.0f / data.Resolution;
             float xp = tex.SampleLevel(SamplerLinearClamp, float3(textureUV.x + texelOffset, textureUV.y, textureUV.z), 0).x;
@@ -215,7 +216,7 @@ GlobalSDFHit RayTraceGlobalSDF(const GlobalSDFData data, Texture3D<float> tex, T
     GlobalSDFHit hit = (GlobalSDFHit)0;
     hit.HitTime = -1.0f;
     float chunkSizeDistance = (float)GLOBAL_SDF_RASTERIZE_CHUNK_SIZE / data.Resolution; // Size of the chunk in SDF distance (0-1)
-    float chunkMarginDistance = (float)GLOBAL_SDF_RASTERIZE_CHUNK_MARGIN / data.Resolution; // Size of the chunk margin in SDF distance (0-1)
+    float chunkMarginDistance = GLOBAL_SDF_CHUNK_MARGIN_SCALE * (float)GLOBAL_SDF_RASTERIZE_CHUNK_MARGIN / data.Resolution; // Size of the chunk margin in SDF distance (0-1)
     float nextIntersectionStart = trace.MinDistance;
     float traceMaxDistance = min(trace.MaxDistance, data.CascadePosDistance[3].w * 2);
     float3 traceEndPosition = trace.WorldPosition + trace.WorldDirection * traceMaxDistance;
@@ -258,10 +259,8 @@ GlobalSDFHit RayTraceGlobalSDF(const GlobalSDFData data, Texture3D<float> tex, T
                 if (stepDistance < chunkSizeDistance)
                 {
                     float stepDistanceTex = tex.SampleLevel(SamplerLinearClamp, textureUV, 0);
-                    if (stepDistanceTex < chunkMarginDistance * 2)
-                    {
+                    if (stepDistanceTex < chunkMarginDistance)
                         stepDistance = stepDistanceTex;
-                    }
                 }
                 else
                 {
