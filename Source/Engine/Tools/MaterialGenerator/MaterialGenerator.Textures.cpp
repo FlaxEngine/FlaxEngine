@@ -665,7 +665,7 @@ void MaterialGenerator::ProcessGroupTextures(Box* box, Node* node, Value& value)
     {
         auto param = findOrAddGlobalSDF();
         Value worldPosition = tryGetValue(node->GetBox(1), Value(VariantType::Float3, TEXT("input.WorldPosition.xyz"))).Cast(VariantType::Float3);
-        value = writeLocal(VariantType::Float, String::Format(TEXT("SampleGlobalSDF({0}, {0}_Tex, {1})"), param.ShaderName, worldPosition.Value), node);
+        value = writeLocal(VariantType::Float, String::Format(TEXT("SampleGlobalSDF({0}, {0}_Tex, {0}_Mip, {1})"), param.ShaderName, worldPosition.Value), node);
         _includes.Add(TEXT("./Flax/GlobalSignDistanceField.hlsl"));
         break;
     }
@@ -677,7 +677,7 @@ void MaterialGenerator::ProcessGroupTextures(Box* box, Node* node, Value& value)
         auto param = findOrAddGlobalSDF();
         Value worldPosition = tryGetValue(node->GetBox(1), Value(VariantType::Float3, TEXT("input.WorldPosition.xyz"))).Cast(VariantType::Float3);
         auto distance = writeLocal(VariantType::Float, node);
-        auto gradient = writeLocal(VariantType::Float3, String::Format(TEXT("SampleGlobalSDFGradient({0}, {0}_Tex, {1}, {2})"), param.ShaderName, worldPosition.Value, distance.Value), node);
+        auto gradient = writeLocal(VariantType::Float3, String::Format(TEXT("SampleGlobalSDFGradient({0}, {0}_Tex, {0}_Mip, {1}, {2})"), param.ShaderName, worldPosition.Value, distance.Value), node);
         _includes.Add(TEXT("./Flax/GlobalSignDistanceField.hlsl"));
         gradientBox->Cache = gradient;
         distanceBox->Cache = distance;

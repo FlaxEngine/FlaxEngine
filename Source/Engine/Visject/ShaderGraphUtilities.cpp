@@ -170,8 +170,9 @@ const Char* ShaderGraphUtilities::GenerateShaderResources(TextWriterUnicode& wri
             format = TEXT("Texture3D {0} : register(t{1});");
             break;
         case MaterialParameterType::GlobalSDF:
-            format = TEXT("Texture3D<float> {0}_Tex : register(t{1});");
+            format = TEXT("Texture3D<float> {0}_Tex : register(t{1});\nTexture3D<float> {0}_Mip : register(t{2});");
             zeroOffset = false;
+            registers = 2;
             break;
         }
         if (format)
@@ -179,7 +180,7 @@ const Char* ShaderGraphUtilities::GenerateShaderResources(TextWriterUnicode& wri
             if (zeroOffset)
                 param.Offset = 0;
             param.RegisterIndex = (byte)startRegister;
-            writer.WriteLine(format, param.ShaderName, startRegister);
+            writer.WriteLine(format, param.ShaderName, startRegister, startRegister + 1);
             startRegister += registers;
             if (param.RegisterIndex >= GPU_MAX_SR_BINDED)
             {

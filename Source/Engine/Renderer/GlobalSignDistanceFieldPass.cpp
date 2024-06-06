@@ -917,6 +917,7 @@ bool GlobalSignDistanceFieldPass::Render(RenderContext& renderContext, GPUContex
     }
     result.Constants.Resolution = (float)resolution;
     result.Constants.CascadesCount = cascadesCount;
+    result.Constants.Padding = Float2::Zero;
     sdfData.Result = result;
     return false;
 }

@@ -463,6 +463,7 @@ void MaterialParameter::Bind(BindMeta& meta) const
         if (GlobalSignDistanceFieldPass::Instance()->Get(meta.Buffers, bindingData))
             Platform::MemoryClear(&bindingData, sizeof(bindingData));
         meta.Context->BindSR(_registerIndex, bindingData.Texture ? bindingData.Texture->ViewVolume() : nullptr);
+        meta.Context->BindSR(_registerIndex + 1, bindingData.TextureMip ? bindingData.TextureMip->ViewVolume() : nullptr);
         *((GlobalSignDistanceFieldPass::ConstantsData*)(meta.Constants.Get() + _offset)) = bindingData.Constants;
         break;
     }
