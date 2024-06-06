@@ -176,7 +176,7 @@ namespace FlaxEditor.GUI.Dialogs
             Float2 selectionBoxSize = new Float2(_isMouseDownWheel ? wheelSelectionBoxEdgeLenght * 2 : wheelSelectionBoxEdgeLenght);
             Rectangle selectionBoxFill = new Rectangle(hsPos - (selectionBoxSize * 0.5f) + _wheelRect.Center, selectionBoxSize);
 
-            Color rawWheelColor = Color.FromHSV(new Float3(Color.ToHSV().X, 1, 1));
+            Color rawWheelColor = Color.FromHSV(new Float3(Color.ToHSV().X, Color.ToHSV().Y, 1));
 
             Render2D.FillRectangle(selectionBoxFill, rawWheelColor);
             Render2D.DrawRectangle(selectionBoxFill, Color.Black);
