@@ -188,13 +188,13 @@ namespace FlaxEngine
         {
             switch (index)
             {
-            case 0: return pLeft;
-            case 1: return pRight;
-            case 2: return pTop;
-            case 3: return pBottom;
-            case 4: return pNear;
-            case 5: return pFar;
-            default: return new Plane();
+                case 0: return pLeft;
+                case 1: return pRight;
+                case 2: return pTop;
+                case 3: return pBottom;
+                case 4: return pNear;
+                case 5: return pFar;
+                default: return new Plane();
             }
         }
 
@@ -230,21 +230,6 @@ namespace FlaxEngine
             bottom.D = matrix.M44 + matrix.M42;
             bottom.Normalize();
 
-#if FLAX_REVERSE_Z
-            // Far plane
-            far.Normal.X = matrix.M13;
-            far.Normal.Y = matrix.M23;
-            far.Normal.Z = matrix.M33;
-            far.D = matrix.M43;
-            far.Normalize();
-
-            // Near plane
-            near.Normal.X = matrix.M14 - matrix.M13;
-            near.Normal.Y = matrix.M24 - matrix.M23;
-            near.Normal.Z = matrix.M34 - matrix.M33;
-            near.D = matrix.M44 - matrix.M43;
-            near.Normalize();
-#else
             // Near plane
             near.Normal.X = matrix.M13;
             near.Normal.Y = matrix.M23;
@@ -258,6 +243,10 @@ namespace FlaxEngine
             far.Normal.Z = matrix.M34 - matrix.M33;
             far.D = matrix.M44 - matrix.M43;
             far.Normalize();
+
+#if FLAX_REVERSE_Z
+            // Swap far and near planes if reverse z
+            (near, far) = (far, near);
 #endif
         }
 
@@ -385,37 +374,37 @@ namespace FlaxEngine
             {
                 switch (i)
                 {
-                case 0:
-                    planeResult = pNear.Intersects(ref point);
-                    break;
-                case 1:
-                    planeResult = pFar.Intersects(ref point);
-                    break;
-                case 2:
-                    planeResult = pLeft.Intersects(ref point);
-                    break;
-                case 3:
-                    planeResult = pRight.Intersects(ref point);
-                    break;
-                case 4:
-                    planeResult = pTop.Intersects(ref point);
-                    break;
-                case 5:
-                    planeResult = pBottom.Intersects(ref point);
-                    break;
+                    case 0:
+                        planeResult = pNear.Intersects(ref point);
+                        break;
+                    case 1:
+                        planeResult = pFar.Intersects(ref point);
+                        break;
+                    case 2:
+                        planeResult = pLeft.Intersects(ref point);
+                        break;
+                    case 3:
+                        planeResult = pRight.Intersects(ref point);
+                        break;
+                    case 4:
+                        planeResult = pTop.Intersects(ref point);
+                        break;
+                    case 5:
+                        planeResult = pBottom.Intersects(ref point);
+                        break;
                 }
                 switch (planeResult)
                 {
-                case PlaneIntersectionType.Back: return ContainmentType.Disjoint;
-                case PlaneIntersectionType.Intersecting:
-                    result = PlaneIntersectionType.Intersecting;
-                    break;
+                    case PlaneIntersectionType.Back: return ContainmentType.Disjoint;
+                    case PlaneIntersectionType.Intersecting:
+                        result = PlaneIntersectionType.Intersecting;
+                        break;
                 }
             }
             switch (result)
             {
-            case PlaneIntersectionType.Intersecting: return ContainmentType.Intersects;
-            default: return ContainmentType.Contains;
+                case PlaneIntersectionType.Intersecting: return ContainmentType.Intersects;
+                default: return ContainmentType.Contains;
             }
         }
 
@@ -502,37 +491,37 @@ namespace FlaxEngine
             {
                 switch (i)
                 {
-                case 0:
-                    planeResult = pNear.Intersects(ref sphere);
-                    break;
-                case 1:
-                    planeResult = pFar.Intersects(ref sphere);
-                    break;
-                case 2:
-                    planeResult = pLeft.Intersects(ref sphere);
-                    break;
-                case 3:
-                    planeResult = pRight.Intersects(ref sphere);
-                    break;
-                case 4:
-                    planeResult = pTop.Intersects(ref sphere);
-                    break;
-                case 5:
-                    planeResult = pBottom.Intersects(ref sphere);
-                    break;
+                    case 0:
+                        planeResult = pNear.Intersects(ref sphere);
+                        break;
+                    case 1:
+                        planeResult = pFar.Intersects(ref sphere);
+                        break;
+                    case 2:
+                        planeResult = pLeft.Intersects(ref sphere);
+                        break;
+                    case 3:
+                        planeResult = pRight.Intersects(ref sphere);
+                        break;
+                    case 4:
+                        planeResult = pTop.Intersects(ref sphere);
+                        break;
+                    case 5:
+                        planeResult = pBottom.Intersects(ref sphere);
+                        break;
                 }
                 switch (planeResult)
                 {
-                case PlaneIntersectionType.Back: return ContainmentType.Disjoint;
-                case PlaneIntersectionType.Intersecting:
-                    result = PlaneIntersectionType.Intersecting;
-                    break;
+                    case PlaneIntersectionType.Back: return ContainmentType.Disjoint;
+                    case PlaneIntersectionType.Intersecting:
+                        result = PlaneIntersectionType.Intersecting;
+                        break;
                 }
             }
             switch (result)
             {
-            case PlaneIntersectionType.Intersecting: return ContainmentType.Intersects;
-            default: return ContainmentType.Contains;
+                case PlaneIntersectionType.Intersecting: return ContainmentType.Intersects;
+                default: return ContainmentType.Contains;
             }
         }
 
