@@ -34,7 +34,11 @@ MaterialInput VS(ModelInput_PosOnly input)
 	output.ScreenPos = output.Position;
 
 	// Place pixels on the far plane
-	output.Position = output.Position.xyzz;
+#if FLAX_REVERSE_Z
+	output.Position.z = 0;
+#else
+	output.Position.z = output.Position.w;
+#endif
 
 	return output;
 }
