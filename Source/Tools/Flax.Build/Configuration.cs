@@ -267,7 +267,7 @@ namespace Flax.Build
         /// <summary>
         /// 1 to use traditional z buffer, or reversed z will be adopted by default.
         /// </summary>
-        [CommandLine("useLargeWorlds", "1 to use traditional z buffer, or reversed z will be adopted by default.")]
+        [CommandLine("noReverseZ", "1 to use traditional z buffer, or reversed z will be adopted by default.")]
         public static bool NoReverseZ = false;
 
         /// <summary>
