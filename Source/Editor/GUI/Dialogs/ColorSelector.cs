@@ -146,6 +146,17 @@ namespace FlaxEditor.GUI.Dialogs
                 var color = Color.FromHSV(hsv);
                 color.A = _color.A;
                 Color = color;
+
+                // Clamp mouse position to circle
+                const float distanceOffset = 15f;
+
+                float centerMouseDistance = Float2.Distance(Root.MousePosition, _wheelRect.Center);
+                float wheelRadius = _wheelRect.Height * 0.5f + distanceOffset;
+                if (wheelRadius < centerMouseDistance)
+                {
+                    Float2 normalizedCenterMouseDirection = (Root.MousePosition - _wheelRect.Center).Normalized;
+                    Root.MousePosition = _wheelRect.Center + normalizedCenterMouseDirection * wheelRadius;
+                }
             }
         }
 
@@ -213,6 +224,8 @@ namespace FlaxEditor.GUI.Dialogs
                     _isMouseDownWheel = true;
                     StartMouseCapture();
                     SlidingStart?.Invoke();
+
+                    Cursor = CursorType.Hidden;
                 }
                 UpdateMouse(ref location);
             }
@@ -226,6 +239,8 @@ namespace FlaxEditor.GUI.Dialogs
         {
             if (button == MouseButton.Left && _isMouseDownWheel)
             {
+                Cursor = CursorType.Default;
+
                 EndMouseCapture();
                 EndSliding();
                 return true;
@@ -284,6 +299,9 @@ namespace FlaxEditor.GUI.Dialogs
                 hsv.Z = 1.0f - Mathf.Saturate((location.Y - _slider1Rect.Y) / _slider1Rect.Height);
 
                 Color = Color.FromHSV(hsv, _color.A);
+
+                // Clamp mouse cursor to stay in bounds of the slider
+                Root.MousePosition = ClampFloat2WithOffset(Root.MousePosition, _slider1Rect.UpperLeft, _slider1Rect.BottomRight);
             }
             else if (_isMouseDownSlider2)
             {
@@ -291,11 +309,28 @@ namespace FlaxEditor.GUI.Dialogs
                 color.A = 1.0f - Mathf.Saturate((location.Y - _slider2Rect.Y) / _slider2Rect.Height);
 
                 Color = color;
+
+                // Clamp mouse cursor to stay in bounds of the slider
+                Root.MousePosition = ClampFloat2WithOffset(Root.MousePosition, _slider2Rect.UpperLeft, _slider2Rect.BottomRight);
             }
             else
             {
                 base.UpdateMouse(ref location);
             }
+        }
+
+        private Float2 ClampFloat2WithOffset(Float2 value, Float2 min, Float2 max)
+        {
+            Float2 clampedValue;
+
+            // Add a small offset to prevent "value flickering" from clamping
+            Float2 clampMinMaxOffset = new Float2(10);
+            min -= clampMinMaxOffset;
+            max += clampMinMaxOffset;
+
+            Float2.Clamp(ref value, ref min, ref max, out clampedValue);
+
+            return clampedValue;
         }
 
         /// <inheritdoc />
@@ -345,12 +380,18 @@ namespace FlaxEditor.GUI.Dialogs
             if (button == MouseButton.Left && _slider1Rect.Contains(location))
             {
                 _isMouseDownSlider1 = true;
+
+                Cursor = CursorType.Hidden;
+
                 StartMouseCapture();
                 UpdateMouse(ref location);
             }
             if (button == MouseButton.Left && _slider2Rect.Contains(location))
             {
                 _isMouseDownSlider2 = true;
+
+                Cursor = CursorType.Hidden;
+
                 StartMouseCapture();
                 UpdateMouse(ref location);
             }
@@ -365,6 +406,9 @@ namespace FlaxEditor.GUI.Dialogs
             {
                 _isMouseDownSlider1 = false;
                 _isMouseDownSlider2 = false;
+
+                Cursor = CursorType.Default;
+
                 EndMouseCapture();
                 return true;
             }
