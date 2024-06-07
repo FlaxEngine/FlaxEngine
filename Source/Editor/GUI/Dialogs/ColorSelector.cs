@@ -183,9 +183,10 @@ namespace FlaxEditor.GUI.Dialogs
             float hAngle = hsv.X * Mathf.DegreesToRadians;
             float hRadius = hsv.Y * _wheelRect.Width * 0.5f;
             var hsPos = new Float2(hRadius * Mathf.Cos(hAngle), -hRadius * Mathf.Sin(hAngle));
-            const float wheelSelectionBoxEdgeLenght = 5f;
 
             // Wheel selection box
+            const float wheelSelectionBoxEdgeLenght = 5f;
+
             Float2 selectionBoxSize = new Float2(_isMouseDownWheel ? wheelSelectionBoxEdgeLenght * 2 : wheelSelectionBoxEdgeLenght);
             Rectangle selectionBoxFill = new Rectangle(hsPos - (selectionBoxSize * 0.5f) + _wheelRect.Center, selectionBoxSize);
             Rectangle selectionSecondOutline = new Rectangle(hsPos - ((selectionBoxSize - Float2.One) * 0.5f) + _wheelRect.Center, selectionBoxSize - Float2.One);
