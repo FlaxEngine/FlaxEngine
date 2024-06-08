@@ -188,6 +188,14 @@ namespace FlaxEditor.Surface
         }
 
         /// <inheritdoc />
+        protected override bool TryGetParameterSetterNodeArchetype(out ushort groupId, out NodeArchetype archetype)
+        {
+            groupId = 6;
+            archetype = Archetypes.Parameters.Nodes[3];
+            return true;
+        }
+
+        /// <inheritdoc />
         protected override void OnShowPrimaryMenu(VisjectCM activeCM, Float2 location, Box startBox)
         {
             // Update nodes for method overrides
