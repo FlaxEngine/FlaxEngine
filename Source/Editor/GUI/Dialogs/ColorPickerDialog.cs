@@ -38,6 +38,9 @@ namespace FlaxEditor.GUI.Dialogs
         private const float ColorPreviewHeight = 50.0f;
         private const float RGBAHexSeparator = 10.0f;
         private const float OldNewColorPreviewDisplayRatio = 0.3335f;
+        private const float ColorWheelSize = 180.0f;
+        private const float SaturationAlphaSlidersThickness = 20.0f;
+
 
         private Color _initialValue;
         private Color _value;
@@ -127,7 +130,7 @@ namespace FlaxEditor.GUI.Dialogs
                 _savedColors = JsonSerializer.Deserialize<List<Color>>(savedColors);
 
             // Selector
-            _cSelector = new ColorSelectorWithSliders(180, 18)
+            _cSelector = new ColorSelectorWithSliders(ColorWheelSize, SaturationAlphaSlidersThickness)
             {
                 Location = new Float2(PickerMargin, PickerMargin),
                 Parent = this
