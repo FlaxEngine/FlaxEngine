@@ -359,6 +359,8 @@ namespace FlaxEditor.GUI.Dialogs
             Render2D.DrawRectangle(valueSliderHandleRect, _isMouseDownValueSlider ? Color.White : Color.Gray);
 
             // Alpha slider
+            DrawAlphaGrid(_alphaSliderRect.Width / 2, ref _alphaSliderRect.Location, _alphaSliderRect.Width, _alphaSliderRect.Height);
+
             float alphaY = _alphaSliderRect.Height * (1 - _color.A);
             var alphaSliderHandleRect = new Rectangle(_alphaSliderRect.X - sliderKnobsWidth, _alphaSliderRect.Y + alphaY - sliderKnobsHeight / 2, _alphaSliderRect.Width + sliderKnobsWidth * 2, sliderKnobsHeight);
             var color = _color;
@@ -368,6 +370,26 @@ namespace FlaxEditor.GUI.Dialogs
             Render2D.DrawRectangle(alphaR, _isMouseDownSlider2 ? Color.White : Color.Gray);
             Render2D.FillRectangle(_alphaSliderRect, color, color, Color.Transparent, Color.Transparent);
             Render2D.DrawRectangle(alphaSliderHandleRect, _isMouseDownAlphaSlider ? Color.White : Color.Gray);
+        }
+
+        private static void DrawAlphaGrid(float gridElementSize, ref Float2 startingPosition, float width, float height)
+        {
+            Rectangle backgroundRectangle = new Rectangle(startingPosition, new Float2(width, height));
+            Render2D.FillRectangle(backgroundRectangle, Color.White);
+
+            var numHor = Mathf.FloorToInt(width / gridElementSize);
+            var numVer = Mathf.FloorToInt(height / gridElementSize);
+            for (int i = 0; i < numHor; i++)
+            {
+                for (int j = 0; j < numVer; j++)
+                {
+                    if ((i + j) % 2 == 0)
+                    {
+                        var rect = new Rectangle(startingPosition.X + gridElementSize * i, startingPosition.Y + gridElementSize * j, new Float2(gridElementSize));
+                        Render2D.FillRectangle(rect, Color.Gray);
+                    }
+                }
+            }
         }
 
         /// <inheritdoc />
