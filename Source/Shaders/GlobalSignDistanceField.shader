@@ -3,6 +3,7 @@
 #include "./Flax/Common.hlsl"
 #include "./Flax/Math.hlsl"
 #include "./Flax/GlobalSignDistanceField.hlsl"
+#include "./Flax/TerrainCommon.hlsl"
 
 #define GLOBAL_SDF_RASTERIZE_MODEL_MAX_COUNT 28
 #define GLOBAL_SDF_RASTERIZE_HEIGHTFIELD_MAX_COUNT 2
@@ -151,6 +152,9 @@ META_CS(true, FEATURE_LEVEL_SM5)
 [numthreads(GLOBAL_SDF_RASTERIZE_GROUP_SIZE, GLOBAL_SDF_RASTERIZE_GROUP_SIZE, GLOBAL_SDF_RASTERIZE_GROUP_SIZE)]
 void CS_RasterizeHeightfield(uint3 DispatchThreadId : SV_DispatchThreadID)
 {
+#if defined(PLATFORM_PS4) || defined(PLATFORM_PS5)
+    // TODO: fix shader compilation error
+#else
 	uint3 voxelCoord = ChunkCoord + DispatchThreadId;
 	float3 voxelWorldPos = voxelCoord * CascadeCoordToPosMul + CascadeCoordToPosAdd;
 	voxelCoord.x += CascadeIndex * CascadeResolution;
@@ -161,33 +165,47 @@ void CS_RasterizeHeightfield(uint3 DispatchThreadId : SV_DispatchThreadID)
 		ObjectRasterizeData objectData = ObjectsBuffer[Objects[i / 4][i % 4]];
 
 		// Convert voxel world-space position into heightfield local-space position and get heightfield UV
-		float3 volumePos = mul(float4(voxelWorldPos, 1), ToMatrix4x4(objectData.WorldToVolume)).xyz;
+		float4x4 worldToLocal = ToMatrix4x4(objectData.WorldToVolume);
+		float3 volumePos = mul(float4(voxelWorldPos, 1), worldToLocal).xyz;
 		float3 volumeUV = volumePos * objectData.VolumeToUVWMul + objectData.VolumeToUVWAdd;
 		float2 heightfieldUV = float2(volumeUV.x, volumeUV.z);
 
-		// Sample the heightfield
-#if defined(PLATFORM_PS4) || defined(PLATFORM_PS5)
-        float4 heightmapValue = 0; // TODO: fix shader compilation error
-#else
-		float4 heightmapValue = ObjectsTextures[i].SampleLevel(SamplerLinearClamp, heightfieldUV, objectData.MipOffset);
-#endif
-		bool isHole = (heightmapValue.b + heightmapValue.a) >= 1.9f;
-		if (isHole || any(heightfieldUV < 0.0f) || any(heightfieldUV > 1.0f))
-			continue;
-		float height = (float)((int)(heightmapValue.x * 255.0) + ((int)(heightmapValue.y * 255) << 8)) / 65535.0;
-		float2 positionXZ = volumePos.xz;
-		float3 position = float3(positionXZ.x, height, positionXZ.y);
-		float4x4 volumeToWorld = ToMatrix4x4(objectData.VolumeToWorld);
-		float3 heightfieldPosition = mul(float4(position, 1), volumeToWorld).xyz;
-		float3 heightfieldNormal = normalize(float3(volumeToWorld[0].y, volumeToWorld[1].y, volumeToWorld[2].y));
+        // Sample heightfield around the voxel location (heightmap uses point sampler)
+        Texture2D<float4> heightmap = ObjectsTextures[i];
+        float4 localToUV = float4(objectData.VolumeToUVWMul.xz, objectData.VolumeToUVWAdd.xz);
+        float3 n00, n10, n01, n11;
+        bool h00, h10, h01, h11;
+        float offset = CascadeVoxelSize * 2;
+        float3 p00 = SampleHeightmap(heightmap, volumePos + float3(-offset, 0, 0), localToUV, n00, h00, objectData.MipOffset);
+        float3 p10 = SampleHeightmap(heightmap, volumePos + float3(+offset, 0, 0), localToUV, n10, h10, objectData.MipOffset);
+        float3 p01 = SampleHeightmap(heightmap, volumePos + float3(0, 0, -offset), localToUV, n01, h01, objectData.MipOffset);
+        float3 p11 = SampleHeightmap(heightmap, volumePos + float3(0, 0, +offset), localToUV, n11, h11, objectData.MipOffset);
+
+        // Calculate average sample (linear interpolation)
+        float3 heightfieldPosition = (p00 + p10 + p01 + p11) * 0.25f;
+        float3 heightfieldNormal = (n00 + n10 + n01 + n11) * 0.25f;
+        heightfieldNormal = normalize(heightfieldNormal);
+        bool isHole = h00 || h10 || h01 || h11;
+
+        // Skip holes and pixels outside the heightfield
+	    if (isHole)
+		    continue;
+
+        // Transform to world-space
+	    float4x4 localToWorld = ToMatrix4x4(objectData.VolumeToWorld);
+	    heightfieldPosition = mul(float4(heightfieldPosition, 1), localToWorld).xyz;
+	    // TODO: rotate normal vector
+	    //heightfieldNormal = normalize(float3(localToWorld[0].y, localToWorld[1].y, localToWorld[2].y));
+	    //heightfieldNormal = float3(0, 1, 0);
 
 		// Calculate distance from voxel center to the heightfield
 		float objectDistance = dot(heightfieldNormal, voxelWorldPos - heightfieldPosition);
-		if (objectDistance < thickness)
+		if (objectDistance < thickness * 0.5f)
 			objectDistance = thickness - objectDistance;
 		minDistance = CombineSDF(minDistance, objectDistance);
 	}
 	GlobalSDFTex[voxelCoord] = clamp(minDistance / MaxDistance, -1, 1);
+#endif
 }
 
 #endif
