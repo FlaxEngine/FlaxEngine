@@ -345,17 +345,19 @@ namespace FlaxEditor.GUI.Dialogs
             var hs = hsv;
             hs.Z = 1.0f;
             Color hsC = Color.FromHSV(hs);
-            Render2D.DrawRectangle(_slider1Rect, _isMouseDownSlider1 ? style.BackgroundSelected : Color.Black);
-
-            // Alpha
-            var alphaR = new Rectangle(_slider2Rect.X - slidersOffset, _slider2Rect.Y + alphaY - slidersThickness / 2, _slider2Rect.Width + slidersOffset * 2, slidersThickness);
 
             const float sliderKnobsWidth = 3.0f;
             const float sliderKnobsHeight = 4.0f;
+
             // Value slider
             float valueY = _alphaSliderRect.Height * (1 - hsv.Z);
             var valueSliderHandleRect = new Rectangle(_valueSliderRect.X - sliderKnobsWidth, _valueSliderRect.Y + valueY - sliderKnobsHeight / 2, _valueSliderRect.Width + sliderKnobsWidth * 2, sliderKnobsHeight);
+
+            // TODO: Make this lerp the outline color to white instead of just abruptly showing it
+            Color valueSliderTopOutlineColor = hsv.X > 220 ? Color.White : Color.Transparent;
+
             Render2D.FillRectangle(_valueSliderRect, hsC, hsC, Color.Black, Color.Black);
+            Render2D.DrawRectangle(_valueSliderRect, valueSliderTopOutlineColor, valueSliderTopOutlineColor, Color.White, Color.White);
             Render2D.DrawRectangle(valueSliderHandleRect, _isMouseDownValueSlider ? Color.White : Color.Gray);
 
             // Alpha slider
@@ -364,11 +366,12 @@ namespace FlaxEditor.GUI.Dialogs
             float alphaY = _alphaSliderRect.Height * (1 - _color.A);
             var alphaSliderHandleRect = new Rectangle(_alphaSliderRect.X - sliderKnobsWidth, _alphaSliderRect.Y + alphaY - sliderKnobsHeight / 2, _alphaSliderRect.Width + sliderKnobsWidth * 2, sliderKnobsHeight);
             var color = _color;
+
+            Color alphaSliderTopOutlineColor = Color.FromHSV(0, 0, 1f - hsv.Z);
+
             color.A = 1; // Keep slider 2 fill rect from changing color alpha while selecting.
-            Render2D.FillRectangle(_slider2Rect, color, color, Color.Transparent, Color.Transparent);
-            Render2D.DrawRectangle(_slider2Rect, _isMouseDownSlider2 ? style.BackgroundSelected : Color.Black);
-            Render2D.DrawRectangle(alphaR, _isMouseDownSlider2 ? Color.White : Color.Gray);
             Render2D.FillRectangle(_alphaSliderRect, color, color, Color.Transparent, Color.Transparent);
+            Render2D.DrawRectangle(_alphaSliderRect, alphaSliderTopOutlineColor, alphaSliderTopOutlineColor, Color.Transparent, Color.Transparent);
             Render2D.DrawRectangle(alphaSliderHandleRect, _isMouseDownAlphaSlider ? Color.White : Color.Gray);
         }
 
