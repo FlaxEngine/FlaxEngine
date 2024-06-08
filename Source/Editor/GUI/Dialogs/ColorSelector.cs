@@ -320,7 +320,7 @@ namespace FlaxEditor.GUI.Dialogs
             }
         }
 
-        private Float2 ClampFloat2WithOffset(Float2 value, Float2 min, Float2 max)
+        private static Float2 ClampFloat2WithOffset(Float2 value, Float2 min, Float2 max)
         {
             Float2 clampedValue;
 
