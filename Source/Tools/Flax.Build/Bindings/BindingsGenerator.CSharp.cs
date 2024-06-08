@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 //#define AUTO_DOC_TOOLTIPS
+//#define MARSHALLER_FULL_NAME
 
 using System;
 using System.Collections.Generic;
@@ -966,7 +967,13 @@ namespace Flax.Build.Bindings
             if (!classInfo.IsStatic)
             {
                 marshallerName = classInfo.Name + "Marshaller";
+#if MARSHALLER_FULL_NAME
                 marshallerFullName = !string.IsNullOrEmpty(interopNamespace) ? $"{interopNamespace}.{marshallerName}" : marshallerName;
+#else
+                if (!string.IsNullOrEmpty(interopNamespace))
+                    CSharpUsedNamespaces.Add(interopNamespace);
+                marshallerFullName = marshallerName;
+#endif
                 contents.Append(indent).AppendLine($"[NativeMarshalling(typeof({marshallerFullName}))]");
             }
 #endif
@@ -1487,7 +1494,13 @@ namespace Flax.Build.Bindings
                 // NOTE: Permanent FlaxEngine.Object GCHandles must not be released when marshalling from native to managed.
 
                 string marshallerName = structureInfo.Name + "Marshaller";
+#if MARSHALLER_FULL_NAME
                 string marshallerFullName = !string.IsNullOrEmpty(interopNamespace) ? $"{interopNamespace}.{marshallerName}" : marshallerName;
+#else
+                if (!string.IsNullOrEmpty(interopNamespace))
+                    CSharpUsedNamespaces.Add(interopNamespace);
+                string marshallerFullName = marshallerName;
+#endif
                 structNativeMarshaling = $"[NativeMarshalling(typeof({marshallerFullName}))]";
 
                 var toManagedContent = GetStringBuilder();
