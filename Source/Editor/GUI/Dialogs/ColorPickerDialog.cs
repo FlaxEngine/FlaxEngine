@@ -410,9 +410,8 @@ namespace FlaxEditor.GUI.Dialogs
 
             // Small separators between Old and New
             Float2 separatorOffset = new Vector2(0, smallRectSize);
-            // TODO: Fix color to not be black but color picker background
-            Render2D.DrawLine(oldColorRect.UpperRight, oldColorRect.UpperRight + separatorOffset / 2, Color.Black, 2);
-            Render2D.DrawLine(oldColorRect.BottomRight, oldColorRect.BottomRight - separatorOffset / 2, Color.Black, 2);
+            Render2D.DrawLine(oldColorRect.UpperRight, oldColorRect.UpperRight + separatorOffset / 2, Style.Current.Background, 2);
+            Render2D.DrawLine(oldColorRect.BottomRight, oldColorRect.BottomRight - separatorOffset / 2, Style.Current.Background, 2);
         }
 
         /// <inheritdoc />
