@@ -135,6 +135,11 @@ namespace FlaxEditor.Surface
         public string SubTitle;
 
         /// <summary>
+        /// Node signature for tooltip and description purposes
+        /// </summary>
+        public string Signature;
+
+        /// <summary>
         /// Short node description.
         /// </summary>
         public string Description;
@@ -210,6 +215,7 @@ namespace FlaxEditor.Surface
                 Flags = Flags,
                 Title = Title,
                 SubTitle = SubTitle,
+                Signature = Signature,
                 Description = Description,
                 AlternativeTitles = (string[])AlternativeTitles?.Clone(),
                 Tag = Tag,

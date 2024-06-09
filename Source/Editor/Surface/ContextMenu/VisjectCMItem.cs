@@ -62,7 +62,7 @@ namespace FlaxEditor.Surface.ContextMenu
             Group = group;
             _groupArchetype = groupArchetype;
             _archetype = archetype;
-            TooltipText = _archetype.Description;
+            TooltipText = $"{_archetype.Signature}\n{_archetype.Description}";
         }
 
         /// <summary>
@@ -342,7 +342,7 @@ namespace FlaxEditor.Surface.ContextMenu
         public override void OnMouseEnter(Float2 location)
         {
             base.OnMouseEnter(location);
-            Group.ContextMenu.SetDescriptionText(_archetype.Description);
+            Group.ContextMenu.SetDescriptionText(_archetype.Signature, _archetype.Description);
         }
 
         /// <inheritdoc />

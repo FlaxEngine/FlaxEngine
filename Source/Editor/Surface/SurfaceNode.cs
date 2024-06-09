@@ -124,7 +124,7 @@ namespace FlaxEditor.Surface
             Archetype = nodeArch;
             GroupArchetype = groupArch;
             AutoFocus = false;
-            TooltipText = nodeArch.Description;
+            TooltipText = TooltipText = $"{nodeArch.Signature}\n{nodeArch.Description}";
             CullChildren = false;
             BackgroundColor = Style.Current.BackgroundNormal;
 

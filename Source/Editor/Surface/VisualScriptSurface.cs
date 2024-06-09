@@ -370,7 +370,8 @@ namespace FlaxEditor.Surface
                         node.DefaultValues[2] = parameters.Length;
                         node.Flags &= ~NodeFlags.NoSpawnViaGUI;
                         node.Title = SurfaceUtils.GetMethodDisplayName((string)node.DefaultValues[1]);
-                        node.Description = SurfaceUtils.GetVisualScriptMemberInfoDescription(member);
+                        node.Signature = SurfaceUtils.GetVisualScriptMemberInfoSignature(member);
+                        node.Description = SurfaceUtils.GetVisualScriptMemberShortDescription(member);
                         node.SubTitle = string.Format(" (in {0})", scriptTypeName);
                         node.Tag = member;
 
@@ -418,7 +419,8 @@ namespace FlaxEditor.Surface
                             node.DefaultValues[3] = member.IsStatic;
                             node.Flags &= ~NodeFlags.NoSpawnViaGUI;
                             node.Title = "Get " + name;
-                            node.Description = SurfaceUtils.GetVisualScriptMemberInfoDescription(member);
+                            node.Signature = SurfaceUtils.GetVisualScriptMemberInfoSignature(member);
+                            node.Description = SurfaceUtils.GetVisualScriptMemberShortDescription(member);
                             node.SubTitle = string.Format(" (in {0})", scriptTypeName);
 
                             // Create group archetype
@@ -452,7 +454,8 @@ namespace FlaxEditor.Surface
                             node.DefaultValues[3] = member.IsStatic;
                             node.Flags &= ~NodeFlags.NoSpawnViaGUI;
                             node.Title = "Set " + name;
-                            node.Description = SurfaceUtils.GetVisualScriptMemberInfoDescription(member);
+                            node.Signature = SurfaceUtils.GetVisualScriptMemberInfoSignature(member);
+                            node.Description = SurfaceUtils.GetVisualScriptMemberShortDescription(member);
                             node.SubTitle = string.Format(" (in {0})", scriptTypeName);
 
                             // Create group archetype
@@ -510,7 +513,8 @@ namespace FlaxEditor.Surface
                         bindNode.DefaultValues[1] = name;
                         bindNode.Flags &= ~NodeFlags.NoSpawnViaGUI;
                         bindNode.Title = "Bind " + name;
-                        bindNode.Description = SurfaceUtils.GetVisualScriptMemberInfoDescription(member);
+                        bindNode.Signature = SurfaceUtils.GetVisualScriptMemberInfoSignature(member);
+                        bindNode.Description = SurfaceUtils.GetVisualScriptMemberShortDescription(member);
                         bindNode.SubTitle = string.Format(" (in {0})", scriptTypeName);
                         ((IList<NodeArchetype>)group.Archetypes).Add(bindNode);
 
@@ -520,6 +524,7 @@ namespace FlaxEditor.Surface
                         unbindNode.DefaultValues[1] = name;
                         unbindNode.Flags &= ~NodeFlags.NoSpawnViaGUI;
                         unbindNode.Title = "Unbind " + name;
+                        unbindNode.Signature = bindNode.Signature;
                         unbindNode.Description = bindNode.Description;
                         unbindNode.SubTitle = bindNode.SubTitle;
                         ((IList<NodeArchetype>)group.Archetypes).Add(unbindNode);

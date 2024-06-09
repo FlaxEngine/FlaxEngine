@@ -52,8 +52,8 @@ namespace FlaxEditor.Surface.ContextMenu
         private NodeArchetype _parameterGetNodeArchetype;
         private NodeArchetype _parameterSetNodeArchetype;
         private bool _useDescriptionPanel;
-        private string _currentDescriptionText;
         private Panel _descriptionPanel;
+        private Label _descriptionSignatureLabel;
         private Label _descriptionLabel;
 
         /// <summary>
@@ -224,7 +224,20 @@ namespace FlaxEditor.Surface.ContextMenu
                 };
                 _descriptionPanel = descriptionPanel;
 
-                var descriptionLabel = new Label(8,8,Width-16,Height-16)
+                var signatureFontReference = new FontReference(Style.Current.FontLarge.Asset, 11);
+                var signatureLabel = new Label(8, 8, Width - 16, Height - 16)
+                {
+                    Parent = _descriptionPanel,
+                    HorizontalAlignment = TextAlignment.Near,
+                    VerticalAlignment = TextAlignment.Near,
+                    Wrapping = TextWrapping.WrapWords,
+                    Font = signatureFontReference,
+                    Bold = true,
+                    Italic = true,
+                };
+                _descriptionSignatureLabel = signatureLabel;
+                
+                var descriptionLabel = new Label(8, 40, Width - 16, Height - 16)
                 {
                     Parent = _descriptionPanel,
                     HorizontalAlignment = TextAlignment.Near,
@@ -581,12 +594,12 @@ namespace FlaxEditor.Surface.ContextMenu
                 _groups[i].Open(animate);
         }
 
-        public void SetDescriptionText(string text)
+        public void SetDescriptionText(string header, string text)
         {
             if(!_useDescriptionPanel)
                 return;
-            _currentDescriptionText = text;
-            _descriptionLabel.Text = _currentDescriptionText;
+            _descriptionSignatureLabel.Text = header;
+            _descriptionLabel.Text = text;
         }
 
         /// <summary>

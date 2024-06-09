@@ -440,11 +440,23 @@ namespace FlaxEditor.Surface
             return sb.ToString();
         }
 
-        internal static string GetVisualScriptMemberInfoDescription(ScriptMemberInfo member)
+        internal static string GetVisualScriptMemberInfoSignature(ScriptMemberInfo member, bool appendPropertyInfo = true)
         {
             var name = member.Name;
             var declaringType = member.DeclaringType;
             var valueType = member.ValueType;
+
+            // Getter/setter method of the property - we can return early here
+            bool isGetterOrSetter = name.StartsWith("get_") || name.StartsWith("set_");
+            if (member.IsMethod && isGetterOrSetter)
+            {
+                var flags = member.IsStatic ? BindingFlags.Public | BindingFlags.Static | BindingFlags.DeclaredOnly : BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly;
+                var property = declaringType.GetMembers(name.Substring(4), MemberTypes.Property, flags);
+                if (property != null && property.Length != 0)
+                {
+                    return GetVisualScriptMemberInfoDescription(property[0]);
+                }
+            }
 
             var sb = new StringBuilder();
             if (member.IsStatic)
@@ -456,34 +468,22 @@ namespace FlaxEditor.Surface
             sb.Append(declaringType.Name);
             sb.Append('.');
             sb.Append(name);
-            if (member.IsMethod)
+
+            // Is a method and not a property
+            if (member.IsMethod && !isGetterOrSetter)
             {
-                // Getter/setter method of the property
-                if (name.StartsWith("get_") || name.StartsWith("set_"))
+                sb.Append('(');
+                var parameters = member.GetParameters();
+                for (int i = 0; i < parameters.Length; i++)
                 {
-                    var flags = member.IsStatic ? BindingFlags.Public | BindingFlags.Static | BindingFlags.DeclaredOnly : BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly;
-                    var property = declaringType.GetMembers(name.Substring(4), MemberTypes.Property, flags);
-                    if (property != null && property.Length != 0)
-                    {
-                        return GetVisualScriptMemberInfoDescription(property[0]);
-                    }
+                    if (i != 0)
+                        sb.Append(", ");
+                    ref var param = ref parameters[i];
+                    param.ToString(sb);
                 }
-                // Method
-                else
-                {
-                    sb.Append('(');
-                    var parameters = member.GetParameters();
-                    for (int i = 0; i < parameters.Length; i++)
-                    {
-                        if (i != 0)
-                            sb.Append(", ");
-                        ref var param = ref parameters[i];
-                        param.ToString(sb);
-                    }
-                    sb.Append(')');
-                }
+                sb.Append(')');
             }
-            else if (member.IsProperty)
+            else if (member.IsProperty && appendPropertyInfo)
             {
                 sb.Append(' ');
                 sb.Append('{');
@@ -494,6 +494,19 @@ namespace FlaxEditor.Surface
                 sb.Append(' ');
                 sb.Append('}');
             }
+
+            return sb.ToString();
+        }
+
+        internal static string GetVisualScriptMemberShortDescription(ScriptMemberInfo member)
+        {
+            return Editor.Instance.CodeDocs.GetTooltip(member);
+        }
+
+        internal static string GetVisualScriptMemberInfoDescription(ScriptMemberInfo member)
+        {
+            var signature = GetVisualScriptMemberInfoSignature(member);
+            var sb = new StringBuilder(signature);
 
             // Tooltip
             var tooltip = Editor.Instance.CodeDocs.GetTooltip(member);
