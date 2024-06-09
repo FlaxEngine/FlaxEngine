@@ -225,7 +225,7 @@ namespace FlaxEditor.Surface.ContextMenu
                 _descriptionPanel = descriptionPanel;
 
                 var signatureFontReference = new FontReference(Style.Current.FontLarge.Asset, 11);
-                var signatureLabel = new Label(8, 8, Width - 16, Height - 16)
+                var signatureLabel = new Label(8, 12, Width - 16, Height - 16)
                 {
                     Parent = _descriptionPanel,
                     HorizontalAlignment = TextAlignment.Near,
