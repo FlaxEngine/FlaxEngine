@@ -175,6 +175,9 @@ namespace FlaxEditor.Surface
         public override bool CanSetParameters => true;
 
         /// <inheritdoc />
+        public override bool UseContextMenuDescriptionPanel => true;
+
+        /// <inheritdoc />
         public override bool CanUseNodeType(GroupArchetype groupArchetype, NodeArchetype nodeArchetype)
         {
             return (nodeArchetype.Flags & NodeFlags.VisualScriptGraph) != 0 && base.CanUseNodeType(groupArchetype, nodeArchetype);

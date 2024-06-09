@@ -51,6 +51,10 @@ namespace FlaxEditor.Surface.ContextMenu
         private Elements.Box _selectedBox;
         private NodeArchetype _parameterGetNodeArchetype;
         private NodeArchetype _parameterSetNodeArchetype;
+        private bool _useDescriptionPanel;
+        private string _currentDescriptionText;
+        private Panel _descriptionPanel;
+        private Label _descriptionLabel;
 
         /// <summary>
         /// The selected item
@@ -81,6 +85,11 @@ namespace FlaxEditor.Surface.ContextMenu
             /// True if surface parameters are not read-only and can be modified via setter node.
             /// </summary>
             public bool CanSetParameters;
+
+            /// <summary>
+            /// True if the surface should make use of a description panel drawn at the bottom of the context menu
+            /// </summary>
+            public bool UseDescriptionPanel;
 
             /// <summary>
             /// The groups archetypes. Cannot be null.
@@ -127,9 +136,11 @@ namespace FlaxEditor.Surface.ContextMenu
             _parameterGetNodeArchetype = info.ParameterGetNodeArchetype ?? Archetypes.Parameters.Nodes[0];
             if (info.CanSetParameters)
                 _parameterSetNodeArchetype = info.ParameterSetNodeArchetype ?? Archetypes.Parameters.Nodes[3];
+            _useDescriptionPanel = info.UseDescriptionPanel;
 
+            float descriptionHeight = 75;
             // Context menu dimensions
-            Size = new Float2(300, 400);
+            Size = new Float2(300, 400 + (_useDescriptionPanel ? descriptionHeight : 0));
 
             var headerPanel = new Panel(ScrollBars.None)
             {
@@ -187,7 +198,7 @@ namespace FlaxEditor.Surface.ContextMenu
             // Create first panel (for scrollbar)
             var panel1 = new Panel(ScrollBars.Vertical)
             {
-                Bounds = new Rectangle(0, _searchBox.Bottom + 1, Width, Height - _searchBox.Bottom - 2),
+                Bounds = new Rectangle(0, _searchBox.Bottom + 1, Width, Height - _searchBox.Bottom - (_useDescriptionPanel ? descriptionHeight : 0) - 2),
                 Parent = this
             };
 
@@ -201,6 +212,27 @@ namespace FlaxEditor.Surface.ContextMenu
                 IsScrollable = true,
             };
             _groupsPanel = panel2;
+
+            // Create description panel if enabled
+            if (_useDescriptionPanel)
+            {
+                var descriptionPanel = new Panel(ScrollBars.None)
+                {
+                    Parent = this,
+                    Bounds = new Rectangle(0, Height - descriptionHeight, Width, descriptionHeight),
+                    BackgroundColor = Style.Current.BackgroundNormal,
+                };
+                _descriptionPanel = descriptionPanel;
+
+                var descriptionLabel = new Label(8,8,Width-16,Height-16)
+                {
+                    Parent = _descriptionPanel,
+                    HorizontalAlignment = TextAlignment.Near,
+                    VerticalAlignment = TextAlignment.Near,
+                    Wrapping = TextWrapping.WrapWords,
+                };
+                _descriptionLabel = descriptionLabel;
+            }
 
             // Init groups
             var nodes = new List<NodeArchetype>();
@@ -547,6 +579,14 @@ namespace FlaxEditor.Surface.ContextMenu
         {
             for (int i = 0; i < _groups.Count; i++)
                 _groups[i].Open(animate);
+        }
+
+        public void SetDescriptionText(string text)
+        {
+            if(!_useDescriptionPanel)
+                return;
+            _currentDescriptionText = text;
+            _descriptionLabel.Text = _currentDescriptionText;
         }
 
         /// <summary>

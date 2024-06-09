@@ -339,6 +339,13 @@ namespace FlaxEditor.Surface.ContextMenu
         }
 
         /// <inheritdoc />
+        public override void OnMouseEnter(Float2 location)
+        {
+            base.OnMouseEnter(location);
+            Group.ContextMenu.SetDescriptionText(_archetype.Description);
+        }
+
+        /// <inheritdoc />
         public override void OnMouseLeave()
         {
             _isMouseDown = false;
