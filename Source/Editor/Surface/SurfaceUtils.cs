@@ -440,7 +440,7 @@ namespace FlaxEditor.Surface
             return sb.ToString();
         }
 
-        internal static string GetVisualScriptMemberInfoSignature(ScriptMemberInfo member, bool appendPropertyInfo = true)
+        internal static string GetVisualScriptMemberInfoSignature(ScriptMemberInfo member)
         {
             var name = member.Name;
             var declaringType = member.DeclaringType;
@@ -454,7 +454,7 @@ namespace FlaxEditor.Surface
                 var property = declaringType.GetMembers(name.Substring(4), MemberTypes.Property, flags);
                 if (property != null && property.Length != 0)
                 {
-                    return GetVisualScriptMemberInfoDescription(property[0]);
+                    return GetVisualScriptMemberInfoSignature(property[0]);
                 }
             }
 
@@ -483,7 +483,7 @@ namespace FlaxEditor.Surface
                 }
                 sb.Append(')');
             }
-            else if (member.IsProperty && appendPropertyInfo)
+            else if (member.IsProperty)
             {
                 sb.Append(' ');
                 sb.Append('{');
@@ -500,6 +500,21 @@ namespace FlaxEditor.Surface
 
         internal static string GetVisualScriptMemberShortDescription(ScriptMemberInfo member)
         {
+            var name = member.Name;
+            var declaringType = member.DeclaringType;
+
+            // Getter/setter method of the property - we can return early here
+            bool isGetterOrSetter = name.StartsWith("get_") || name.StartsWith("set_");
+            if (member.IsMethod && isGetterOrSetter)
+            {
+                var flags = member.IsStatic ? BindingFlags.Public | BindingFlags.Static | BindingFlags.DeclaredOnly : BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly;
+                var property = declaringType.GetMembers(name.Substring(4), MemberTypes.Property, flags);
+                if (property != null && property.Length != 0)
+                {
+                    return GetVisualScriptMemberShortDescription(property[0]);
+                }
+            }
+            
             return Editor.Instance.CodeDocs.GetTooltip(member);
         }
 

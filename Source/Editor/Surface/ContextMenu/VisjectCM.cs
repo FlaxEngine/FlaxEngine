@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using FlaxEditor.GUI.ContextMenu;
 using FlaxEditor.GUI.Input;
+using FlaxEditor.Scripting;
 using FlaxEngine;
 using FlaxEngine.GUI;
 using FlaxEngine.Utilities;
@@ -638,15 +639,27 @@ namespace FlaxEditor.Surface.ContextMenu
             }
             
             Profiler.BeginEvent("VisjectCM.SetDescriptionPanelArchetype");
-            
-            _descriptionSignatureLabel.Text = archetype.Signature;
+
+            if (archetype.Tag is ScriptMemberInfo memberInfo)
+            {
+                var name = memberInfo.Name;
+                if (memberInfo.IsMethod && memberInfo.Name.StartsWith("get_") || memberInfo.Name.StartsWith("set_"))
+                {
+                    name = memberInfo.Name.Substring(4);
+                }
+                
+                _descriptionSignatureLabel.Text = memberInfo.DeclaringType + "." + name;   
+            }
+            else
+                _descriptionSignatureLabel.Text = archetype.Signature;
+
             float panelHeight = _descriptionSignatureLabel.Height;
 
             _descriptionLabel.Y = _descriptionSignatureLabel.Bounds.Bottom + 6f;
             _descriptionLabel.Text = archetype.Description;
 
             panelHeight += _descriptionLabel.Height + 6f + 18f;
-            
+
             _descriptionPanel.Height = panelHeight;
             Height = 400 + Mathf.RoundToInt(_descriptionPanel.Height);
             UpdateWindowSize();
