@@ -219,7 +219,7 @@ namespace FlaxEditor.Surface.ContextMenu
             }
 
             // Check archetype synonyms
-            if (_archetype.AlternativeTitles!= null && _archetype.AlternativeTitles.Any(altTitle => QueryFilterHelper.Match(filterText, altTitle, out ranges)))
+            if (_archetype.AlternativeTitles != null && _archetype.AlternativeTitles.Any(altTitle => QueryFilterHelper.Match(filterText, altTitle, out ranges)))
             {
                 // Update highlights
                 if (_highlights == null)

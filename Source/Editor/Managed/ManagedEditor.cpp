@@ -223,6 +223,19 @@ void ManagedEditor::Init()
     {
         LOG(Info, "Loading managed assemblies (due to disabled compilation on startup)");
         Scripting::Load();
+
+        const auto endInitMethod = mclass->GetMethod("EndInit");
+        if (endInitMethod == nullptr)
+        {
+            LOG(Fatal, "Invalid Editor assembly! Missing EndInit method.");
+        }
+        endInitMethod->Invoke(instance, nullptr, &exception);
+        if (exception)
+        {
+            MException ex(exception);
+            ex.Log(LogType::Warning, TEXT("ManagedEditor::EndInit"));
+            LOG_STR(Fatal, TEXT("Failed to initialize editor during EndInit! ") + ex.Message);
+        }
     }
 
     // Call building if need to (based on CL)

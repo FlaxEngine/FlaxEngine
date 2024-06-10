@@ -137,19 +137,19 @@ namespace FlaxEditor.Viewport
             if (useProjectCache)
             {
                 // Initialize snapping enabled from cached values
-                if (editor.ProjectCache.TryGetCustomData("TranslateSnapState", out var cachedState))
-                    transformGizmo.TranslationSnapEnable = bool.Parse(cachedState);
-                if (editor.ProjectCache.TryGetCustomData("RotationSnapState", out cachedState))
-                    transformGizmo.RotationSnapEnabled = bool.Parse(cachedState);
-                if (editor.ProjectCache.TryGetCustomData("ScaleSnapState", out cachedState))
-                    transformGizmo.ScaleSnapEnabled = bool.Parse(cachedState);
-                if (editor.ProjectCache.TryGetCustomData("TranslateSnapValue", out cachedState))
-                    transformGizmo.TranslationSnapValue = float.Parse(cachedState);
-                if (editor.ProjectCache.TryGetCustomData("RotationSnapValue", out cachedState))
-                    transformGizmo.RotationSnapValue = float.Parse(cachedState);
-                if (editor.ProjectCache.TryGetCustomData("ScaleSnapValue", out cachedState))
-                    transformGizmo.ScaleSnapValue = float.Parse(cachedState);
-                if (editor.ProjectCache.TryGetCustomData("TransformSpaceState", out cachedState) && Enum.TryParse(cachedState, out TransformGizmoBase.TransformSpace space))
+                if (editor.ProjectCache.TryGetCustomData("TranslateSnapState", out bool cachedBool))
+                    transformGizmo.TranslationSnapEnable = cachedBool;
+                if (editor.ProjectCache.TryGetCustomData("RotationSnapState", out cachedBool))
+                    transformGizmo.RotationSnapEnabled = cachedBool;
+                if (editor.ProjectCache.TryGetCustomData("ScaleSnapState", out cachedBool))
+                    transformGizmo.ScaleSnapEnabled = cachedBool;
+                if (editor.ProjectCache.TryGetCustomData("TranslateSnapValue", out float cachedFloat))
+                    transformGizmo.TranslationSnapValue = cachedFloat;
+                if (editor.ProjectCache.TryGetCustomData("RotationSnapValue", out cachedFloat))
+                    transformGizmo.RotationSnapValue = cachedFloat;
+                if (editor.ProjectCache.TryGetCustomData("ScaleSnapValue", out cachedFloat))
+                    transformGizmo.ScaleSnapValue = cachedFloat;
+                if (editor.ProjectCache.TryGetCustomData("TransformSpaceState", out string cachedText) && Enum.TryParse(cachedText, out TransformGizmoBase.TransformSpace space))
                     transformGizmo.ActiveTransformSpace = space;
             }
 
@@ -181,7 +181,7 @@ namespace FlaxEditor.Viewport
             {
                 transformGizmo.ScaleSnapEnabled = !transformGizmo.ScaleSnapEnabled;
                 if (useProjectCache)
-                    editor.ProjectCache.SetCustomData("ScaleSnapState", transformGizmo.ScaleSnapEnabled.ToString());
+                    editor.ProjectCache.SetCustomData("ScaleSnapState", transformGizmo.ScaleSnapEnabled);
             };
             var scaleSnappingCM = new ContextMenu();
             var scaleSnapping = new ViewportWidgetButton(transformGizmo.ScaleSnapValue.ToString(), SpriteHandle.Invalid, scaleSnappingCM)
@@ -200,7 +200,7 @@ namespace FlaxEditor.Viewport
                 transformGizmo.ScaleSnapValue = v;
                 scaleSnapping.Text = v.ToString();
                 if (useProjectCache)
-                    editor.ProjectCache.SetCustomData("ScaleSnapValue", transformGizmo.ScaleSnapValue.ToString("N"));
+                    editor.ProjectCache.SetCustomData("ScaleSnapValue", transformGizmo.ScaleSnapValue);
             };
             scaleSnappingCM.VisibleChanged += control =>
             {
@@ -231,7 +231,7 @@ namespace FlaxEditor.Viewport
             {
                 transformGizmo.RotationSnapEnabled = !transformGizmo.RotationSnapEnabled;
                 if (useProjectCache)
-                    editor.ProjectCache.SetCustomData("RotationSnapState", transformGizmo.RotationSnapEnabled.ToString());
+                    editor.ProjectCache.SetCustomData("RotationSnapState", transformGizmo.RotationSnapEnabled);
             };
             var rotateSnappingCM = new ContextMenu();
             var rotateSnapping = new ViewportWidgetButton(transformGizmo.RotationSnapValue.ToString(), SpriteHandle.Invalid, rotateSnappingCM)
@@ -250,7 +250,7 @@ namespace FlaxEditor.Viewport
                 transformGizmo.RotationSnapValue = v;
                 rotateSnapping.Text = v.ToString();
                 if (useProjectCache)
-                    editor.ProjectCache.SetCustomData("RotationSnapValue", transformGizmo.RotationSnapValue.ToString("N"));
+                    editor.ProjectCache.SetCustomData("RotationSnapValue", transformGizmo.RotationSnapValue);
             };
             rotateSnappingCM.VisibleChanged += control =>
             {
@@ -281,7 +281,7 @@ namespace FlaxEditor.Viewport
             {
                 transformGizmo.TranslationSnapEnable = !transformGizmo.TranslationSnapEnable;
                 if (useProjectCache)
-                    editor.ProjectCache.SetCustomData("TranslateSnapState", transformGizmo.TranslationSnapEnable.ToString());
+                    editor.ProjectCache.SetCustomData("TranslateSnapState", transformGizmo.TranslationSnapEnable);
             };
             var translateSnappingCM = new ContextMenu();
             var translateSnapping = new ViewportWidgetButton(transformGizmo.TranslationSnapValue.ToString(), SpriteHandle.Invalid, translateSnappingCM)
@@ -307,7 +307,7 @@ namespace FlaxEditor.Viewport
                 else
                     translateSnapping.Text = v.ToString();
                 if (useProjectCache)
-                    editor.ProjectCache.SetCustomData("TranslateSnapValue", transformGizmo.TranslationSnapValue.ToString("N"));
+                    editor.ProjectCache.SetCustomData("TranslateSnapValue", transformGizmo.TranslationSnapValue);
             };
             translateSnappingCM.VisibleChanged += control =>
             {

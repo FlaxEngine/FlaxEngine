@@ -2,7 +2,9 @@
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
+using System.Runtime.CompilerServices;
 using FlaxEngine;
 
 namespace FlaxEditor.Modules
@@ -120,6 +122,30 @@ namespace FlaxEditor.Modules
         }
 
         /// <summary>
+        /// Tries to get the custom data by the key.
+        /// </summary>
+        /// <param name="key">The key.</param>
+        /// <param name="value">When this method returns, contains the value associated with the specified key, if the key is found; otherwise, the default value for the type of the <paramref name="value" /> parameter. This parameter is passed uninitialized.</param>
+        /// <returns>The custom data.</returns>
+        public bool TryGetCustomData(string key, out bool value)
+        {
+            value = false;
+            return _customData.TryGetValue(key, out var valueStr) && bool.TryParse(valueStr, out value);
+        }
+
+        /// <summary>
+        /// Tries to get the custom data by the key.
+        /// </summary>
+        /// <param name="key">The key.</param>
+        /// <param name="value">When this method returns, contains the value associated with the specified key, if the key is found; otherwise, the default value for the type of the <paramref name="value" /> parameter. This parameter is passed uninitialized.</param>
+        /// <returns>The custom data.</returns>
+        public bool TryGetCustomData(string key, out float value)
+        {
+            value = 0.0f;
+            return _customData.TryGetValue(key, out var valueStr) && float.TryParse(valueStr, out value);
+        }
+
+        /// <summary>
         /// Sets the custom data.
         /// </summary>
         /// <param name="key">The key.</param>
@@ -128,6 +154,28 @@ namespace FlaxEditor.Modules
         {
             _customData[key] = value;
             _isDirty = true;
+        }
+
+        /// <summary>
+        /// Sets the custom data.
+        /// </summary>
+        /// <param name="key">The key.</param>
+        /// <param name="value">The value.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void SetCustomData(string key, bool value)
+        {
+            SetCustomData(key, value.ToString());
+        }
+
+        /// <summary>
+        /// Sets the custom data.
+        /// </summary>
+        /// <param name="key">The key.</param>
+        /// <param name="value">The value.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void SetCustomData(string key, float value)
+        {
+            SetCustomData(key, value.ToString(CultureInfo.InvariantCulture));
         }
 
         /// <summary>

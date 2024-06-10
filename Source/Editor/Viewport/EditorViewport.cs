@@ -540,30 +540,30 @@ namespace FlaxEditor.Viewport
             }
 
             // Initialize camera values from cache
-            if (_editor.ProjectCache.TryGetCustomData("CameraMovementSpeedValue", out var cachedState))
-                MovementSpeed = float.Parse(cachedState);
-            if (_editor.ProjectCache.TryGetCustomData("CameraMinMovementSpeedValue", out cachedState))
-                _minMovementSpeed = float.Parse(cachedState);
-            if (_editor.ProjectCache.TryGetCustomData("CameraMaxMovementSpeedValue", out cachedState))
-                _maxMovementSpeed = float.Parse(cachedState);
-            if (_editor.ProjectCache.TryGetCustomData("UseCameraEasingState", out cachedState))
-                _useCameraEasing = bool.Parse(cachedState);
-            if (_editor.ProjectCache.TryGetCustomData("CameraPanningSpeedValue", out cachedState))
-                _panningSpeed = float.Parse(cachedState);
-            if (_editor.ProjectCache.TryGetCustomData("CameraInvertPanningState", out cachedState))
-                _invertPanning = bool.Parse(cachedState);
-            if (_editor.ProjectCache.TryGetCustomData("CameraRelativePanningState", out cachedState))
-                _relativePanning = bool.Parse(cachedState);
-            if (_editor.ProjectCache.TryGetCustomData("CameraOrthographicState", out cachedState))
-                _isOrtho = bool.Parse(cachedState);
-            if (_editor.ProjectCache.TryGetCustomData("CameraOrthographicSizeValue", out cachedState))
-                _orthoSize = float.Parse(cachedState);
-            if (_editor.ProjectCache.TryGetCustomData("CameraFieldOfViewValue", out cachedState))
-                _fieldOfView = float.Parse(cachedState);
-            if (_editor.ProjectCache.TryGetCustomData("CameraNearPlaneValue", out cachedState))
-                _nearPlane = float.Parse(cachedState);
-            if (_editor.ProjectCache.TryGetCustomData("CameraFarPlaneValue", out cachedState))
-                _farPlane = float.Parse(cachedState);
+            if (_editor.ProjectCache.TryGetCustomData("CameraMovementSpeedValue", out float cachedFloat))
+                MovementSpeed = cachedFloat;
+            if (_editor.ProjectCache.TryGetCustomData("CameraMinMovementSpeedValue", out cachedFloat))
+                _minMovementSpeed = cachedFloat;
+            if (_editor.ProjectCache.TryGetCustomData("CameraMaxMovementSpeedValue", out cachedFloat))
+                _maxMovementSpeed = cachedFloat;
+            if (_editor.ProjectCache.TryGetCustomData("UseCameraEasingState", out bool cachedBool))
+                _useCameraEasing = cachedBool;
+            if (_editor.ProjectCache.TryGetCustomData("CameraPanningSpeedValue", out cachedFloat))
+                _panningSpeed = cachedFloat;
+            if (_editor.ProjectCache.TryGetCustomData("CameraInvertPanningState", out cachedBool))
+                _invertPanning = cachedBool;
+            if (_editor.ProjectCache.TryGetCustomData("CameraRelativePanningState", out cachedBool))
+                _relativePanning = cachedBool;
+            if (_editor.ProjectCache.TryGetCustomData("CameraOrthographicState", out cachedBool))
+                _isOrtho = cachedBool;
+            if (_editor.ProjectCache.TryGetCustomData("CameraOrthographicSizeValue", out cachedFloat))
+                _orthoSize = cachedFloat;
+            if (_editor.ProjectCache.TryGetCustomData("CameraFieldOfViewValue", out cachedFloat))
+                _fieldOfView = cachedFloat;
+            if (_editor.ProjectCache.TryGetCustomData("CameraNearPlaneValue", out cachedFloat))
+                _nearPlane = cachedFloat;
+            if (_editor.ProjectCache.TryGetCustomData("CameraFarPlaneValue", out cachedFloat))
+                _farPlane = cachedFloat;
 
             OnCameraMovementProgressChanged();
 
@@ -1041,7 +1041,7 @@ namespace FlaxEditor.Viewport
             MovementSpeed = value;
 
             OnCameraMovementProgressChanged();
-            _editor.ProjectCache.SetCustomData("CameraMovementSpeedValue", _movementSpeed.ToString());
+            _editor.ProjectCache.SetCustomData("CameraMovementSpeedValue", _movementSpeed);
         }
 
         private void OnMinMovementSpeedChanged(FloatValueBox control)
@@ -1053,7 +1053,7 @@ namespace FlaxEditor.Viewport
                 MovementSpeed = value;
 
             OnCameraMovementProgressChanged();
-            _editor.ProjectCache.SetCustomData("CameraMinMovementSpeedValue", _minMovementSpeed.ToString());
+            _editor.ProjectCache.SetCustomData("CameraMinMovementSpeedValue", _minMovementSpeed);
         }
 
         private void OnMaxMovementSpeedChanged(FloatValueBox control)
@@ -1065,7 +1065,7 @@ namespace FlaxEditor.Viewport
                 MovementSpeed = value;
 
             OnCameraMovementProgressChanged();
-            _editor.ProjectCache.SetCustomData("CameraMaxMovementSpeedValue", _maxMovementSpeed.ToString());
+            _editor.ProjectCache.SetCustomData("CameraMaxMovementSpeedValue", _maxMovementSpeed);
         }
 
         private void OnCameraEasingToggled(Control control)
@@ -1073,25 +1073,25 @@ namespace FlaxEditor.Viewport
             _useCameraEasing = !_useCameraEasing;
 
             OnCameraMovementProgressChanged();
-            _editor.ProjectCache.SetCustomData("UseCameraEasingState", _useCameraEasing.ToString());
+            _editor.ProjectCache.SetCustomData("UseCameraEasingState", _useCameraEasing);
         }
 
         private void OnPanningSpeedChanged(FloatValueBox control)
         {
             _panningSpeed = control.Value;
-            _editor.ProjectCache.SetCustomData("CameraPanningSpeedValue", _panningSpeed.ToString());
+            _editor.ProjectCache.SetCustomData("CameraPanningSpeedValue", _panningSpeed);
         }
 
         private void OnRelativePanningToggled(Control control)
         {
             _relativePanning = !_relativePanning;
-            _editor.ProjectCache.SetCustomData("CameraRelativePanningState", _relativePanning.ToString());
+            _editor.ProjectCache.SetCustomData("CameraRelativePanningState", _relativePanning);
         }
 
         private void OnInvertPanningToggled(Control control)
         {
             _invertPanning = !_invertPanning;
-            _editor.ProjectCache.SetCustomData("CameraInvertPanningState", _invertPanning.ToString());
+            _editor.ProjectCache.SetCustomData("CameraInvertPanningState", _invertPanning);
         }
 
 
@@ -1104,7 +1104,7 @@ namespace FlaxEditor.Viewport
         private void OnFieldOfViewChanged(FloatValueBox control)
         {
             _fieldOfView = control.Value;
-            _editor.ProjectCache.SetCustomData("CameraFieldOfViewValue", _fieldOfView.ToString());
+            _editor.ProjectCache.SetCustomData("CameraFieldOfViewValue", _fieldOfView);
         }
 
         private void OnOrthographicModeToggled(Control control)
@@ -1120,25 +1120,25 @@ namespace FlaxEditor.Viewport
                 OrientViewport(ref orient);
             }
 
-            _editor.ProjectCache.SetCustomData("CameraOrthographicState", _isOrtho.ToString());
+            _editor.ProjectCache.SetCustomData("CameraOrthographicState", _isOrtho);
         }
 
         private void OnOrthographicSizeChanged(FloatValueBox control)
         {
             _orthoSize = control.Value;
-            _editor.ProjectCache.SetCustomData("CameraOrthographicSizeValue", _orthoSize.ToString());
+            _editor.ProjectCache.SetCustomData("CameraOrthographicSizeValue", _orthoSize);
         }
 
         private void OnNearPlaneChanged(FloatValueBox control)
         {
             _nearPlane = control.Value;
-            _editor.ProjectCache.SetCustomData("CameraNearPlaneValue", _nearPlane.ToString());
+            _editor.ProjectCache.SetCustomData("CameraNearPlaneValue", _nearPlane);
         }
 
         private void OnFarPlaneChanged(FloatValueBox control)
         {
             _farPlane = control.Value;
-            _editor.ProjectCache.SetCustomData("CameraFarPlaneValue", _farPlane.ToString());
+            _editor.ProjectCache.SetCustomData("CameraFarPlaneValue", _farPlane);
         }
 
         /// <summary>
@@ -1217,7 +1217,7 @@ namespace FlaxEditor.Viewport
 
             var speed = Mathf.Lerp(_minMovementSpeed, _maxMovementSpeed, progress);
             MovementSpeed = (float)Math.Round(speed, 3);
-            _editor.ProjectCache.SetCustomData("CameraMovementSpeedValue", _movementSpeed.ToString());
+            _editor.ProjectCache.SetCustomData("CameraMovementSpeedValue", _movementSpeed);
         }
 
         private void OnEditorOptionsChanged(EditorOptions options)

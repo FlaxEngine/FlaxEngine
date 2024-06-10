@@ -212,7 +212,7 @@ bool BehaviorKnowledge::HasGoal(ScriptingTypeHandle type) const
     return false;
 }
 
-Variant BehaviorKnowledge::GetGoal(ScriptingTypeHandle type)
+const Variant& BehaviorKnowledge::GetGoal(ScriptingTypeHandle type) const
 {
     for (const Variant& goal : Goals)
     {

@@ -1,6 +1,5 @@
 // Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
-using System.Collections.Generic;
 using System.ComponentModel;
 using FlaxEditor.CustomEditors;
 using FlaxEngine;
@@ -177,7 +176,7 @@ namespace FlaxEditor.Windows
         /// <inheritdoc />
         public override void OnInit()
         {
-            if (Editor.ProjectCache.TryGetCustomData(_optionsName, out var options) && !string.IsNullOrEmpty(options))
+            if (Editor.ProjectCache.TryGetCustomData(_optionsName, out string options) && !string.IsNullOrEmpty(options))
             {
                 // Load cached settings
                 JsonSerializer.Deserialize(_viewModel, options);

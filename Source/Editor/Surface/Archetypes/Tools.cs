@@ -1032,7 +1032,8 @@ namespace FlaxEditor.Surface.Archetypes
             private Rectangle _localBounds;
             private InputBox _input;
             private OutputBox _output;
-            private bool _isMouseDown, _isConnecting;
+            private bool _isMouseDown, _isConnecting, _isMouseInConnectingBounds;
+            private const float ConnectingBounds = -12.0f;
 
             /// <inheritdoc />
             public RerouteNode(uint id, VisjectSurfaceContext context, NodeArchetype nodeArch, GroupArchetype groupArch)
@@ -1170,7 +1171,7 @@ namespace FlaxEditor.Surface.Archetypes
                 if (button == MouseButton.Left)
                 {
                     _isMouseDown = true;
-                    _isConnecting = _localBounds.MakeExpanded(-10.0f).Contains(ref location); // Inner area for connecting, outer area for moving
+                    _isConnecting = _isMouseInConnectingBounds;
                     if (_isConnecting)
                     {
                         Focus();
@@ -1189,12 +1190,22 @@ namespace FlaxEditor.Surface.Archetypes
                     if (Surface.CanEdit && _isConnecting)
                         Surface.ConnectingStart(this);
                 }
+
+                _isMouseInConnectingBounds = false;
+                Cursor = CursorType.Default;
+
                 base.OnMouseLeave();
             }
 
             /// <inheritdoc />
             public override void OnMouseMove(Float2 location)
             {
+                _isMouseInConnectingBounds = IsMouseOver && _localBounds.MakeExpanded(ConnectingBounds).Contains(ref location); // Inner area for connecting, outer area for moving
+                if (!_isMouseInConnectingBounds && !_isMouseDown)
+                    Cursor = CursorType.SizeAll;
+                else
+                    Cursor = CursorType.Default;
+
                 Surface.ConnectingOver(this);
                 base.OnMouseMove(location);
             }
@@ -1255,7 +1266,7 @@ namespace FlaxEditor.Surface.Archetypes
             /// <inheritdoc />
             public void DrawConnectingLine(ref Float2 startPos, ref Float2 endPos, ref Color color)
             {
-                OutputBox.DrawConnection(Surface.Style, ref startPos, ref endPos, ref color, 2);
+                OutputBox.DrawConnection(Surface.Style, ref startPos, ref endPos, ref color, OutputBox.ConnectingConnectionThickness);
             }
 
             /// <inheritdoc />
@@ -1483,7 +1494,7 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 TypeID = 11,
                 Title = "Comment",
-                AlternativeTitles = new[] { "//" , "Group" },
+                AlternativeTitles = new[] { "//", "Group" },
                 TryParseText = (string filterText, out object[] data) =>
                 {
                     data = null;
@@ -1639,7 +1650,7 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 TypeID = 22,
                 Title = "As",
-                AlternativeTitles = new [] { "Cast" },
+                AlternativeTitles = new[] { "Cast" },
                 Create = (id, context, arch, groupArch) => new AsNode(id, context, arch, groupArch),
                 Description = "Casts the object to a different type. Returns null if cast fails.",
                 Flags = NodeFlags.VisualScriptGraph | NodeFlags.AnimGraph,
