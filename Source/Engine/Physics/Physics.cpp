@@ -81,7 +81,7 @@ void PhysicsSettings::Deserialize(DeserializeStream& stream, ISerializeModifier*
 PhysicalMaterial::~PhysicalMaterial()
 {
     if (_material)
-        PhysicsBackend::DestroyObject(_material);
+        PhysicsBackend::DestroyMaterial(_material);
 }
 
 bool PhysicsService::Init()

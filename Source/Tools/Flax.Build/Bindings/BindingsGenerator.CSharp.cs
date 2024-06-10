@@ -1669,7 +1669,7 @@ namespace Flax.Build.Bindings
                                 toManagedContent.AppendLine($"unmanaged.{fieldInfo.Name} != IntPtr.Zero ? NativeInterop.ConvertArray((Unsafe.As<ManagedArray>(ManagedHandle.FromIntPtr(unmanaged.{fieldInfo.Name}).Target)).ToSpan<{internalElementType}>(), {originalElementTypeMarshaller}.ToManaged) : null;");
                                 toNativeContent.AppendLine($"managed.{fieldInfo.Name}?.Length > 0 ? ManagedHandle.ToIntPtr(ManagedArray.WrapNewArray(NativeInterop.ConvertArray(managed.{fieldInfo.Name}, {originalElementTypeMarshaller}.ToNative)), GCHandleType.Weak) : IntPtr.Zero;");
                                 freeContents.AppendLine($"if (unmanaged.{fieldInfo.Name} != IntPtr.Zero) {{ ManagedHandle handle = ManagedHandle.FromIntPtr(unmanaged.{fieldInfo.Name}); Span<{internalElementType}> values = (Unsafe.As<ManagedArray>(handle.Target)).ToSpan<{internalElementType}>(); foreach (var value in values) {{ {originalElementTypeMarshaller}.Free(value); }} (Unsafe.As<ManagedArray>(handle.Target)).Free(); handle.Free(); }}");
-                                freeContents2.AppendLine($"if (unmanaged.{fieldInfo.Name} != IntPtr.Zero) {{ ManagedHandle handle = ManagedHandle.FromIntPtr(unmanaged.{fieldInfo.Name}); Span<{internalElementType}> values = (Unsafe.As<ManagedArray>(handle.Target)).ToSpan<{internalElementType}>(); foreach (var value in values) {{ {originalElementTypeMarshaller}.Free(value); }} (Unsafe.As<ManagedArray>(handle.Target)).Free(); handle.Free(); }}");
+                                freeContents2.AppendLine($"if (unmanaged.{fieldInfo.Name} != IntPtr.Zero) {{ ManagedHandle handle = ManagedHandle.FromIntPtr(unmanaged.{fieldInfo.Name}); Span<{internalElementType}> values = (Unsafe.As<ManagedArray>(handle.Target)).ToSpan<{internalElementType}>(); foreach (var value in values) {{ {originalElementTypeMarshaller}.NativeToManaged.Free(value); }} (Unsafe.As<ManagedArray>(handle.Target)).Free(); handle.Free(); }}");
                             }
                             else if (fieldInfo.Type.GenericArgs[0].IsObjectRef)
                             {
@@ -1720,7 +1720,7 @@ namespace Flax.Build.Bindings
                             toManagedContent.AppendLine($"{internalTypeMarshaller}.ToManaged(unmanaged.{fieldInfo.Name});");
                             toNativeContent.AppendLine($"{internalTypeMarshaller}.ToNative(managed.{fieldInfo.Name});");
                             freeContents.AppendLine($"{internalTypeMarshaller}.Free(unmanaged.{fieldInfo.Name});");
-                            freeContents2.AppendLine($"{internalTypeMarshaller}.Free(unmanaged.{fieldInfo.Name});");
+                            freeContents2.AppendLine($"{internalTypeMarshaller}.NativeToManaged.Free(unmanaged.{fieldInfo.Name});");
                         }
                         /*else if (originalType == "Guid")
                         {

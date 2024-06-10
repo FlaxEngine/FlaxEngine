@@ -41,6 +41,13 @@ namespace FlaxEditor.CustomEditors.Editors
             public override void Initialize(LayoutElementsContainer layout)
             {
                 base.Initialize(layout);
+                
+                if (XElement.ValueBox.Parent is UniformGridPanel ug)
+                {
+                    ug.Height += 2;
+                    ug.SlotSpacing = new Float2(4);
+                    ug.SlotPadding = new Margin(0, 0, 1, 1);
+                }
 
                 // Override colors
                 var back = FlaxEngine.GUI.Style.Current.TextBoxBackground;
@@ -66,6 +73,13 @@ namespace FlaxEditor.CustomEditors.Editors
             public override void Initialize(LayoutElementsContainer layout)
             {
                 base.Initialize(layout);
+                
+                if (XElement.ValueBox.Parent is UniformGridPanel ug)
+                {
+                    ug.Height += 2;
+                    ug.SlotSpacing = new Float2(4);
+                    ug.SlotPadding = new Margin(0, 0, 1, 1);
+                }
 
                 // Override colors
                 var back = FlaxEngine.GUI.Style.Current.TextBoxBackground;
@@ -121,6 +135,13 @@ namespace FlaxEditor.CustomEditors.Editors
                         else
                             menu.AddButton("Link", ToggleLink).LinkTooltip("Links scale components for uniform scaling");
                     };
+                }
+                
+                if (XElement.ValueBox.Parent is UniformGridPanel ug)
+                {
+                    ug.Height += 2;
+                    ug.SlotSpacing = new Float2(4);
+                    ug.SlotPadding = new Margin(0, 0, 1, 1);
                 }
 
                 // Override colors
