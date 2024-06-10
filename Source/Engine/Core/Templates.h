@@ -319,7 +319,6 @@ inline T&& Forward(typename TRemoveReference<T>::Type& t) noexcept
 template<typename T>
 inline T&& Forward(typename TRemoveReference<T>::Type&& t) noexcept
 {
-    static_assert(!TIsLValueReference<T>::Value, "Can not forward an rvalue as an lvalue.");
     return static_cast<T&&>(t);
 }
 

@@ -129,7 +129,12 @@ namespace FlaxEditor.Surface
         /// <param name="args">The drag drop arguments data.</param>
         protected virtual void HandleDragDropParameters(List<string> objects, DragDropEventArgs args)
         {
-            var arch = GetParameterGetterNodeArchetype(out var groupId);
+            // Try to get the setter node when holding the ALT key, otherwise get the getter node
+            if (!Input.GetKey(KeyboardKeys.Alt) || !TryGetParameterSetterNodeArchetype(out var groupId, out var arch))
+            {
+                arch = GetParameterGetterNodeArchetype(out groupId);
+            }
+
             for (int i = 0; i < objects.Count; i++)
             {
                 var parameter = GetParameter(objects[i]);
@@ -155,6 +160,19 @@ namespace FlaxEditor.Surface
         {
             groupId = 6;
             return Archetypes.Parameters.Nodes[0];
+        }
+
+        /// <summary>
+        /// Tries to get the parameter setter node archetype to use.
+        /// </summary>
+        /// <param name="groupId">The group ID.</param>
+        /// <param name="archetype">The node archetype.</param>
+        /// <returns>True if a setter node exists.</returns>
+        protected virtual bool TryGetParameterSetterNodeArchetype(out ushort groupId, out NodeArchetype archetype)
+        {
+            groupId = 0;
+            archetype = null;
+            return false;
         }
     }
 }

@@ -15,6 +15,26 @@ namespace FlaxEditor.Surface.Elements
     public class OutputBox : Box
     {
         /// <summary>
+        /// The default thickness of the connection line
+        /// </summary>
+        public const float DefaultConnectionThickness = 1.5f;
+
+        /// <summary>
+        /// The thickness of a highlighted connection line
+        /// </summary>
+        public const float ConnectingConnectionThickness = 2.5f;
+
+        /// <summary>
+        /// The thickness of the selected connection line
+        /// </summary>
+        public const float SelectedConnectionThickness = 3f;
+
+        /// <summary>
+        /// The offset between the connection line and the box
+        /// </summary>
+        public const float DefaultConnectionOffset = 24f;
+
+        /// <summary>
         /// Distance for the mouse to be considered above the connection
         /// </summary>
         public float MouseOverConnectionDistance => 100f / Surface.ViewScale;
@@ -33,7 +53,7 @@ namespace FlaxEditor.Surface.Elements
         /// <param name="end">The end location.</param>
         /// <param name="color">The connection color.</param>
         /// <param name="thickness">The connection thickness.</param>
-        public static void DrawConnection(SurfaceStyle style, ref Float2 start, ref Float2 end, ref Color color, float thickness = 1)
+        public static void DrawConnection(SurfaceStyle style, ref Float2 start, ref Float2 end, ref Color color, float thickness = DefaultConnectionThickness)
         {
             if (style.DrawConnection != null)
             {
@@ -41,11 +61,22 @@ namespace FlaxEditor.Surface.Elements
                 return;
             }
 
+            float connectionOffset = Mathf.Max(0f, DefaultConnectionOffset * (1 - Editor.Instance.Options.Options.Interface.ConnectionCurvature));
+            Float2 offsetStart = new Float2(start.X + connectionOffset, start.Y);
+            Float2 offsetEnd = new Float2(end.X - connectionOffset, end.Y);
+
             // Calculate control points
-            CalculateBezierControlPoints(start, end, out var control1, out var control2);
+            CalculateBezierControlPoints(offsetStart, offsetEnd, out var control1, out var control2);
+
+            // Draw offset lines only if necessary
+            if (connectionOffset >= float.Epsilon)
+            {
+                Render2D.DrawLine(start, offsetStart, color, thickness);
+                Render2D.DrawLine(offsetEnd, end, color, thickness);
+            }
 
             // Draw line
-            Render2D.DrawBezier(start, control1, control2, end, color, thickness);
+            Render2D.DrawBezier(offsetStart, control1, control2, offsetEnd, color, thickness);
 
             /*
             // Debug drawing control points
@@ -80,9 +111,10 @@ namespace FlaxEditor.Surface.Elements
         /// <param name="mousePosition">The mouse position</param>
         public bool IntersectsConnection(Box targetBox, ref Float2 mousePosition)
         {
-            var startPos = ConnectionOrigin;
-            var endPos = targetBox.ConnectionOrigin;
-            return IntersectsConnection(ref startPos, ref endPos, ref mousePosition, MouseOverConnectionDistance);
+            float connectionOffset = Mathf.Max(0f, DefaultConnectionOffset * (1 - Editor.Instance.Options.Options.Interface.ConnectionCurvature));
+            Float2 start = new Float2(ConnectionOrigin.X + connectionOffset, ConnectionOrigin.Y);
+            Float2 end = new Float2(targetBox.ConnectionOrigin.X - connectionOffset, targetBox.ConnectionOrigin.Y);
+            return IntersectsConnection(ref start, ref end, ref mousePosition, MouseOverConnectionDistance);
         }
 
         /// <summary>
@@ -102,22 +134,26 @@ namespace FlaxEditor.Surface.Elements
             if ((point.Y - (start.Y - offset)) * ((end.Y + offset) - point.Y) < 0)
                 return false;
 
-            float squaredDistance = distance;
-            CalculateBezierControlPoints(start, end, out var control1, out var control2);
+            float connectionOffset = Mathf.Max(0f, DefaultConnectionOffset * (1 - Editor.Instance.Options.Options.Interface.ConnectionCurvature));
+            Float2 offsetStart = new Float2(start.X + connectionOffset, start.Y);
+            Float2 offsetEnd = new Float2(end.X - connectionOffset, end.Y);
 
-            var d1 = control1 - start;
+            float squaredDistance = distance;
+            CalculateBezierControlPoints(offsetStart, offsetEnd, out var control1, out var control2);
+
+            var d1 = control1 - offsetStart;
             var d2 = control2 - control1;
-            var d3 = end - control2;
+            var d3 = offsetEnd - control2;
             float len = d1.Length + d2.Length + d3.Length;
             int segmentCount = Math.Min(Math.Max(Mathf.CeilToInt(len * 0.05f), 1), 100);
             float segmentCountInv = 1.0f / segmentCount;
 
-            Bezier(ref start, ref control1, ref control2, ref end, 0, out var p);
+            Bezier(ref offsetStart, ref control1, ref control2, ref offsetEnd, 0, out var p);
             for (int i = 1; i <= segmentCount; i++)
             {
                 var oldp = p;
                 float t = i * segmentCountInv;
-                Bezier(ref start, ref control1, ref control2, ref end, t, out p);
+                Bezier(ref offsetStart, ref control1, ref control2, ref offsetEnd, t, out p);
 
                 // Maybe it would be reasonable to return the point?
                 CollisionsHelper.ClosestPointPointLine(ref point, ref oldp, ref p, out var result);
@@ -153,16 +189,21 @@ namespace FlaxEditor.Surface.Elements
             {
                 Box targetBox = Connections[i];
                 var endPos = targetBox.ConnectionOrigin;
-                var highlight = 1 + Mathf.Max(startHighlight, targetBox.ConnectionsHighlightIntensity);
+                var highlight = DefaultConnectionThickness + Mathf.Max(startHighlight, targetBox.ConnectionsHighlightIntensity);
                 var alpha = targetBox.Enabled && targetBox.IsActive ? 1.0f : 0.6f;
-                var color = _currentTypeColor * highlight * alpha;
+
+                // We have to calculate an offset here to preserve the original color for when the default connection thickness is larger than 1
+                var highlightOffset = (highlight - (DefaultConnectionThickness - 1));
+                var color = _currentTypeColor * highlightOffset * alpha;
 
                 // TODO: Figure out how to only draw the topmost connection
                 if (IntersectsConnection(ref startPos, ref endPos, ref mousePosition, mouseOverDistance))
-                {
-                    highlight += 0.5f;
-                }
+                    highlight += DefaultConnectionThickness * 0.5f;
 
+                // Increase thickness on impulse/ execution lines
+                if (targetBox.CurrentType.IsVoid)
+                    highlight *= 2;
+                
                 DrawConnection(style, ref startPos, ref endPos, ref color, highlight);
             }
         }
@@ -177,7 +218,7 @@ namespace FlaxEditor.Surface.Elements
             var endPos = targetBox.ConnectionOrigin;
             var alpha = targetBox.Enabled && targetBox.IsActive ? 1.0f : 0.6f;
             var color = _currentTypeColor * alpha;
-            DrawConnection(Surface.Style, ref startPos, ref endPos, ref color, 2.5f);
+            DrawConnection(Surface.Style, ref startPos, ref endPos, ref color, SelectedConnectionThickness);
         }
 
         /// <inheritdoc />
