@@ -363,6 +363,8 @@ namespace FlaxEditor.GUI.Timeline.Tracks
         /// <inheritdoc />
         public override void OnDestroy()
         {
+            if (_previewValue != null)
+                Timeline.ShowPreviewValuesChanged -= OnTimelineShowPreviewValuesChanged;
             _previewValue = null;
             _rightKey = null;
             _addKey = null;
