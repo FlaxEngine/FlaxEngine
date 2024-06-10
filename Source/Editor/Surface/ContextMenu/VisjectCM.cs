@@ -138,9 +138,8 @@ namespace FlaxEditor.Surface.ContextMenu
                 _parameterSetNodeArchetype = info.ParameterSetNodeArchetype ?? Archetypes.Parameters.Nodes[3];
             _useDescriptionPanel = info.UseDescriptionPanel;
 
-            float descriptionHeight = 75;
             // Context menu dimensions
-            Size = new Float2(300, 400 + (_useDescriptionPanel ? descriptionHeight : 0));
+            Size = new Float2(300, 400);
 
             var headerPanel = new Panel(ScrollBars.None)
             {
@@ -152,7 +151,7 @@ namespace FlaxEditor.Surface.ContextMenu
             };
 
             // Title bar
-            var titleFontReference = new FontReference(Style.Current.FontLarge.Asset, 10);
+            var titleFontReference = new FontReference(Style.Current.FontMedium.Asset, 11);
             var titleLabel = new Label
             {
                 Width = Width * 0.5f - 8f,
@@ -198,7 +197,7 @@ namespace FlaxEditor.Surface.ContextMenu
             // Create first panel (for scrollbar)
             var panel1 = new Panel(ScrollBars.Vertical)
             {
-                Bounds = new Rectangle(0, _searchBox.Bottom + 1, Width, Height - _searchBox.Bottom - (_useDescriptionPanel ? descriptionHeight : 0) - 2),
+                Bounds = new Rectangle(0, _searchBox.Bottom + 1, Width, Height - _searchBox.Bottom - 2),
                 Parent = this
             };
 
@@ -219,13 +218,13 @@ namespace FlaxEditor.Surface.ContextMenu
                 var descriptionPanel = new Panel(ScrollBars.None)
                 {
                     Parent = this,
-                    Bounds = new Rectangle(0, Height - descriptionHeight, Width, descriptionHeight),
+                    Bounds = new Rectangle(0, Height, Width, 0),
                     BackgroundColor = Style.Current.BackgroundNormal,
                 };
                 _descriptionPanel = descriptionPanel;
 
-                var signatureFontReference = new FontReference(Style.Current.FontLarge.Asset, 11);
-                var signatureLabel = new Label(8, 12, Width - 16, Height - 16)
+                var signatureFontReference = new FontReference(Style.Current.FontMedium.Asset, 10);
+                var signatureLabel = new Label(8, 12, Width - 16, 0)
                 {
                     Parent = _descriptionPanel,
                     HorizontalAlignment = TextAlignment.Near,
@@ -234,16 +233,20 @@ namespace FlaxEditor.Surface.ContextMenu
                     Font = signatureFontReference,
                     Bold = true,
                     Italic = true,
+                    AutoHeight = true,
                 };
+                signatureLabel.SetAnchorPreset(AnchorPresets.TopLeft, true);
                 _descriptionSignatureLabel = signatureLabel;
                 
-                var descriptionLabel = new Label(8, 40, Width - 16, Height - 16)
+                var descriptionLabel = new Label(8, 0, Width - 16, 0)
                 {
                     Parent = _descriptionPanel,
                     HorizontalAlignment = TextAlignment.Near,
                     VerticalAlignment = TextAlignment.Near,
                     Wrapping = TextWrapping.WrapWords,
+                    AutoHeight = true,
                 };
+                descriptionLabel.SetAnchorPreset(AnchorPresets.TopLeft, true);
                 _descriptionLabel = descriptionLabel;
             }
 
@@ -598,8 +601,17 @@ namespace FlaxEditor.Surface.ContextMenu
         {
             if(!_useDescriptionPanel)
                 return;
+            
             _descriptionSignatureLabel.Text = header;
+            var panelHeight = _descriptionSignatureLabel.Height;
+
+            _descriptionLabel.Y = _descriptionSignatureLabel.Bounds.Bottom + 8f;
             _descriptionLabel.Text = text;
+
+            panelHeight += _descriptionLabel.Height + 8f + 24f;
+            _descriptionPanel.Height = panelHeight;
+            Size = new Float2(300, 400 + _descriptionPanel.Height);
+            UpdateWindowSize();
         }
 
         /// <summary>
