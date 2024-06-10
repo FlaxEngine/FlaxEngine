@@ -36,6 +36,12 @@ namespace FlaxEditor.Surface
         }
 
         /// <inheritdoc />
+        public void OnParamReordered()
+        {
+            MarkAsEdited();
+        }
+
+        /// <inheritdoc />
         public void OnParamCreated(SurfaceParameter param)
         {
             for (int i = 0; i < Nodes.Count; i++)
