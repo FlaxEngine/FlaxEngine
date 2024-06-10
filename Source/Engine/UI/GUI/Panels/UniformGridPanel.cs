@@ -11,6 +11,7 @@ namespace FlaxEngine.GUI
     {
         private Margin _slotPadding;
         private int _slotsV, _slotsH;
+        private Float2 _slotSpacing;
 
         /// <summary>
         /// Gets or sets the padding given to each slot.
@@ -63,10 +64,24 @@ namespace FlaxEngine.GUI
         }
 
         /// <summary>
+        /// Gets or sets grid slot spacing.
+        /// </summary>
+        [EditorOrder(30), Limit(0), Tooltip("The Grid slot spacing.")]
+        public Float2 SlotSpacing
+        {
+            get => _slotSpacing;
+            set
+            {
+                _slotSpacing = value;
+                PerformLayout();
+            }
+        }
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="UniformGridPanel"/> class.
         /// </summary>
         public UniformGridPanel()
-        : this(2)
+        : this(0)
         {
         }
 
@@ -74,10 +89,11 @@ namespace FlaxEngine.GUI
         /// Initializes a new instance of the <see cref="UniformGridPanel"/> class.
         /// </summary>
         /// <param name="slotPadding">The slot padding.</param>
-        public UniformGridPanel(float slotPadding = 2)
+        public UniformGridPanel(float slotPadding = 0)
         {
             AutoFocus = false;
             SlotPadding = new Margin(slotPadding);
+            SlotSpacing = new Float2(2);
             _slotsH = _slotsV = 5;
         }
 
@@ -121,6 +137,42 @@ namespace FlaxEngine.GUI
                 {
                     var slotBounds = new Rectangle(slotSize.X * x, slotSize.Y * y, slotSize.X, slotSize.Y);
                     _slotPadding.ShrinkRectangle(ref slotBounds);
+
+                    if (slotsV > 1)
+                    {
+                        if (y == 0)
+                        {
+                            slotBounds.Height -= _slotSpacing.Y * 0.5f;
+                        }
+                        else if (y == slotsV - 1)
+                        {
+                            slotBounds.Height -= _slotSpacing.Y * 0.5f;
+                            slotBounds.Y += _slotSpacing.Y * 0.5f;
+                        }
+                        else
+                        {
+                            slotBounds.Height -= _slotSpacing.Y;
+                            slotBounds.Y += _slotSpacing.Y * 0.5f;
+                        }
+                    }
+                   
+                    if (slotsH > 1)
+                    {
+                        if (x == 0)
+                        {
+                            slotBounds.Width -= _slotSpacing.X * 0.5f;
+                        }
+                        else if (x == slotsH - 1)
+                        {
+                            slotBounds.Width -= _slotSpacing.X * 0.5f;
+                            slotBounds.X += _slotSpacing.X * 0.5f;
+                        }
+                        else
+                        {
+                            slotBounds.Width -= _slotSpacing.X;
+                            slotBounds.X += _slotSpacing.X * 0.5f;
+                        }
+                    }
 
                     var c = _children[i++];
                     c.Bounds = slotBounds;
