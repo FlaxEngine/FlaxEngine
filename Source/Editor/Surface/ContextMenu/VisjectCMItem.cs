@@ -315,6 +315,14 @@ namespace FlaxEditor.Surface.ContextMenu
             }
         }
 
+        /// <summary>
+        /// Callback when selected by the visject CM
+        /// </summary>
+        public void OnSelect()
+        {
+            Group.ContextMenu.SetDescriptionPanelArchetype(_archetype);
+        }
+
         /// <inheritdoc />
         public override bool OnMouseDown(Float2 location, MouseButton button)
         {
@@ -342,7 +350,7 @@ namespace FlaxEditor.Surface.ContextMenu
         public override void OnMouseEnter(Float2 location)
         {
             base.OnMouseEnter(location);
-            Group.ContextMenu.SetDescriptionText(_archetype.Signature, _archetype.Description);
+            Group.ContextMenu.SetDescriptionPanelArchetype(_archetype);
         }
 
         /// <inheritdoc />

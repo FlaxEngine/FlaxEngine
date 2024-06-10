@@ -243,6 +243,7 @@ namespace FlaxEditor.Surface
                 ParametersGetter = () => Parameters,
                 CustomNodesGroup = GetCustomNodes(),
                 ParameterGetNodeArchetype = GetParameterGetterNodeArchetype(out _),
+                Style = Style,
             });
         }
 

@@ -51,15 +51,29 @@ namespace FlaxEditor.Surface.ContextMenu
         private Elements.Box _selectedBox;
         private NodeArchetype _parameterGetNodeArchetype;
         private NodeArchetype _parameterSetNodeArchetype;
-        private bool _useDescriptionPanel;
-        private Panel _descriptionPanel;
-        private Label _descriptionSignatureLabel;
-        private Label _descriptionLabel;
+
+        // Description panel elements
+        private readonly bool _useDescriptionPanel;
+        private readonly Panel _descriptionPanel;
+        private readonly Image _descriptionClassImage;
+        private readonly Label _descriptionSignatureLabel;
+        private readonly Label _descriptionLabel;
+
+
+        private VisjectCMItem _selectedItem;
 
         /// <summary>
         /// The selected item
         /// </summary>
-        public VisjectCMItem SelectedItem;
+        public VisjectCMItem SelectedItem
+        {
+            get => _selectedItem;
+            set
+            {
+                _selectedItem = value;
+                _selectedItem?.OnSelect();
+            }
+        }
 
         /// <summary>
         /// Event fired when any item in this popup menu gets clicked.
@@ -120,6 +134,11 @@ namespace FlaxEditor.Surface.ContextMenu
             /// The parameter setter node archetype to spawn when adding the parameter getter. Can be null.
             /// </summary>
             public NodeArchetype ParameterSetNodeArchetype;
+
+            /// <summary>
+            /// The surface style to use to draw images in the description panel
+            /// </summary>
+            public SurfaceStyle Style;
         }
 
         /// <summary>
@@ -151,7 +170,7 @@ namespace FlaxEditor.Surface.ContextMenu
             };
 
             // Title bar
-            var titleFontReference = new FontReference(Style.Current.FontMedium.Asset, 11);
+            var titleFontReference = new FontReference(Style.Current.FontLarge.Asset, 10);
             var titleLabel = new Label
             {
                 Width = Width * 0.5f - 8f,
@@ -200,7 +219,6 @@ namespace FlaxEditor.Surface.ContextMenu
                 Bounds = new Rectangle(0, _searchBox.Bottom + 1, Width, Height - _searchBox.Bottom - 2),
                 Parent = this
             };
-
             _panel1 = panel1;
 
             // Create second panel (for groups arrangement)
@@ -215,16 +233,25 @@ namespace FlaxEditor.Surface.ContextMenu
             // Create description panel if enabled
             if (_useDescriptionPanel)
             {
-                var descriptionPanel = new Panel(ScrollBars.None)
+                _descriptionPanel = new Panel(ScrollBars.None)
                 {
                     Parent = this,
                     Bounds = new Rectangle(0, Height, Width, 0),
                     BackgroundColor = Style.Current.BackgroundNormal,
                 };
-                _descriptionPanel = descriptionPanel;
 
-                var signatureFontReference = new FontReference(Style.Current.FontMedium.Asset, 10);
-                var signatureLabel = new Label(8, 12, Width - 16, 0)
+                var spriteHandle = info.Style.Icons.BoxClose;
+                _descriptionClassImage = new Image(8, 12, 20, 20)
+                {
+                    Parent = _descriptionPanel,
+                    Brush = new SpriteBrush(spriteHandle),
+                    Color = Color.Aqua,
+                    MouseOverColor = Color.Aqua,
+                    AutoFocus = false,
+                };
+                
+                var signatureFontReference = new FontReference(Style.Current.FontMedium.Asset, 9f);
+                _descriptionSignatureLabel = new Label(32, 8, Width - 40, 0)
                 {
                     Parent = _descriptionPanel,
                     HorizontalAlignment = TextAlignment.Near,
@@ -232,22 +259,20 @@ namespace FlaxEditor.Surface.ContextMenu
                     Wrapping = TextWrapping.WrapWords,
                     Font = signatureFontReference,
                     Bold = true,
-                    Italic = true,
                     AutoHeight = true,
                 };
-                signatureLabel.SetAnchorPreset(AnchorPresets.TopLeft, true);
-                _descriptionSignatureLabel = signatureLabel;
-                
-                var descriptionLabel = new Label(8, 0, Width - 16, 0)
+                _descriptionSignatureLabel.SetAnchorPreset(AnchorPresets.TopLeft, true);
+
+                _descriptionLabel = new Label(32, 0, Width - 40, 0)
                 {
                     Parent = _descriptionPanel,
                     HorizontalAlignment = TextAlignment.Near,
                     VerticalAlignment = TextAlignment.Near,
                     Wrapping = TextWrapping.WrapWords,
+                    Font = signatureFontReference,
                     AutoHeight = true,
                 };
-                descriptionLabel.SetAnchorPreset(AnchorPresets.TopLeft, true);
-                _descriptionLabel = descriptionLabel;
+                _descriptionLabel.SetAnchorPreset(AnchorPresets.TopLeft, true);
             }
 
             // Init groups
@@ -597,20 +622,44 @@ namespace FlaxEditor.Surface.ContextMenu
                 _groups[i].Open(animate);
         }
 
-        public void SetDescriptionText(string header, string text)
+        /// <summary>
+        /// Updates the description panel and shows information about the set archetype
+        /// </summary>
+        /// <param name="archetype">The node archetype</param>
+        public void SetDescriptionPanelArchetype(NodeArchetype archetype)
         {
             if(!_useDescriptionPanel)
                 return;
+
+            if (archetype == null)
+            {
+                HideDescriptionPanel();
+                return;
+            }
             
-            _descriptionSignatureLabel.Text = header;
-            var panelHeight = _descriptionSignatureLabel.Height;
+            Profiler.BeginEvent("VisjectCM.SetDescriptionPanelArchetype");
+            
+            _descriptionSignatureLabel.Text = archetype.Signature;
+            float panelHeight = _descriptionSignatureLabel.Height;
 
-            _descriptionLabel.Y = _descriptionSignatureLabel.Bounds.Bottom + 8f;
-            _descriptionLabel.Text = text;
+            _descriptionLabel.Y = _descriptionSignatureLabel.Bounds.Bottom + 6f;
+            _descriptionLabel.Text = archetype.Description;
 
-            panelHeight += _descriptionLabel.Height + 8f + 24f;
+            panelHeight += _descriptionLabel.Height + 6f + 18f;
+            
             _descriptionPanel.Height = panelHeight;
-            Size = new Float2(300, 400 + _descriptionPanel.Height);
+            Height = 400 + Mathf.RoundToInt(_descriptionPanel.Height);
+            UpdateWindowSize();
+
+            Profiler.EndEvent();
+        }
+
+        /// <summary>
+        /// Hides the description panel and resets the context menu to its original size
+        /// </summary>
+        public void HideDescriptionPanel()
+        {
+            Height = 400;
             UpdateWindowSize();
         }
 
