@@ -59,6 +59,7 @@ namespace FlaxEditor.Surface.ContextMenu
         private readonly Image _descriptionClassImage;
         private readonly Label _descriptionSignatureLabel;
         private readonly Label _descriptionLabel;
+        private readonly SurfaceStyle _surfaceStyle;
 
 
         private VisjectCMItem _selectedItem;
@@ -157,6 +158,7 @@ namespace FlaxEditor.Surface.ContextMenu
             if (info.CanSetParameters)
                 _parameterSetNodeArchetype = info.ParameterSetNodeArchetype ?? Archetypes.Parameters.Nodes[3];
             _useDescriptionPanel = info.UseDescriptionPanel;
+            _surfaceStyle = info.Style;
 
             // Context menu dimensions
             Size = new Float2(300, 400);
@@ -639,7 +641,8 @@ namespace FlaxEditor.Surface.ContextMenu
             }
             
             Profiler.BeginEvent("VisjectCM.SetDescriptionPanelArchetype");
-
+            
+            ScriptType declaringType;
             if (archetype.Tag is ScriptMemberInfo memberInfo)
             {
                 var name = memberInfo.Name;
@@ -647,12 +650,20 @@ namespace FlaxEditor.Surface.ContextMenu
                 {
                     name = memberInfo.Name.Substring(4);
                 }
-                
+
+                declaringType = memberInfo.DeclaringType;
                 _descriptionSignatureLabel.Text = memberInfo.DeclaringType + "." + name;   
             }
             else
+            {
                 _descriptionSignatureLabel.Text = archetype.Signature;
+                declaringType = archetype.DefaultType;
+            }
 
+            _surfaceStyle.GetConnectionColor(declaringType, archetype.ConnectionsHints, out var typeColor);
+            _descriptionClassImage.Color = typeColor;
+            _descriptionClassImage.MouseOverColor = typeColor;
+            
             float panelHeight = _descriptionSignatureLabel.Height;
 
             _descriptionLabel.Y = _descriptionSignatureLabel.Bounds.Bottom + 6f;
