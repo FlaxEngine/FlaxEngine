@@ -4474,6 +4474,16 @@ void PhysicsBackend::DestroyController(void* controller)
     controllerPhysX->release();
 }
 
+void PhysicsBackend::DestroyMaterial(void* material)
+{
+    ASSERT_LOW_LAYER(material);
+    auto materialPhysX = (PxMaterial*)material;
+    materialPhysX->userData = nullptr;
+    FlushLocker.Lock();
+    DeleteObjects.Add(materialPhysX);
+    FlushLocker.Unlock();
+}
+
 void PhysicsBackend::DestroyObject(void* object)
 {
     ASSERT_LOW_LAYER(object);
