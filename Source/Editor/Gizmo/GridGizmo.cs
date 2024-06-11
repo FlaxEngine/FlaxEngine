@@ -94,12 +94,13 @@ namespace FlaxEditor.Gizmo
 
                 // Update vertices of the plane
                 // TODO: perf this operation in a Vertex Shader
+                float y = 1.5f; // Add small bias to reduce Z-fighting with geometry at scene origin
                 var vertices = new Float3[]
                 {
-                    new Float3(-gridSize + camPos.X, 0, -gridSize + camPos.Z),
-                    new Float3(gridSize + camPos.X, 0, gridSize + camPos.Z),
-                    new Float3(-gridSize + camPos.X, 0, gridSize + camPos.Z),
-                    new Float3(gridSize + camPos.X, 0, -gridSize + camPos.Z),
+                    new Float3(-gridSize + camPos.X, y, -gridSize + camPos.Z),
+                    new Float3(gridSize + camPos.X, y, gridSize + camPos.Z),
+                    new Float3(-gridSize + camPos.X, y, gridSize + camPos.Z),
+                    new Float3(gridSize + camPos.X, y, -gridSize + camPos.Z),
                 };
                 fixed (Float3* ptr = vertices)
                 {
