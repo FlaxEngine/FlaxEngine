@@ -939,8 +939,8 @@ namespace FlaxEditor.Surface.Archetypes
             new NodeArchetype
             {
                 TypeID = 43,
-                Title = "Rotate UV [Simple Rotator]",
-                Description = "Rotates 2d vector",
+                Title = "Rotate UV",
+                Description = "Rotates 2D vector by given angle around (0,0) origin",
                 Flags = NodeFlags.MaterialGraph,
                 Size = new Float2(250, 40),
                 ConnectionsHints = ConnectionsHint.Vector,
@@ -950,8 +950,8 @@ namespace FlaxEditor.Surface.Archetypes
                 ],
                 Elements =
                 [
-                    NodeElementArchetype.Factory.Input(0, "Uvs", true, typeof(Float2), 0),
-                    NodeElementArchetype.Factory.Input(1, "Angle", true, typeof(float), 1,0),
+                    NodeElementArchetype.Factory.Input(0, "UV", true, typeof(Float2), 0),
+                    NodeElementArchetype.Factory.Input(1, "Angle", true, typeof(float), 1, 0),
                     NodeElementArchetype.Factory.Output(0, string.Empty, typeof(Float2), 2),
                 ]
             },
@@ -959,7 +959,7 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 TypeID = 44,
                 Title = "Cone Gradient",
-                Description = "",
+                Description = "Creates cone gradient around normalized UVs (range [-1; 1]), angle is in radians (range [0; TwoPi])",
                 Flags = NodeFlags.MaterialGraph,
                 Size = new Float2(175, 40),
                 ConnectionsHints = ConnectionsHint.Vector,
@@ -969,8 +969,8 @@ namespace FlaxEditor.Surface.Archetypes
                 ],
                 Elements =
                 [
-                    NodeElementArchetype.Factory.Input(0, "Uvs", true, typeof(Float2), 0),
-                    NodeElementArchetype.Factory.Input(1, "Angle", true, typeof(float), 1,0),
+                    NodeElementArchetype.Factory.Input(0, "UV", true, typeof(Float2), 0),
+                    NodeElementArchetype.Factory.Input(1, "Angle", true, typeof(float), 1, 0),
                     NodeElementArchetype.Factory.Output(0, string.Empty, typeof(float), 2),
                 ]
             },
@@ -978,13 +978,13 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 TypeID = 45,
                 Title = "Cycle Gradient",
-                Description = "2d verison of sphere mask",
+                Description = "Creates 2D sphere mask gradient around normalized UVs (range [-1; 1])",
                 Flags = NodeFlags.MaterialGraph,
                 Size = new Float2(175, 20),
                 ConnectionsHints = ConnectionsHint.Vector,
                 Elements =
                 [
-                    NodeElementArchetype.Factory.Input(0, "Uvs", true, typeof(Float2), 0),
+                    NodeElementArchetype.Factory.Input(0, "UV", true, typeof(Float2), 0),
                     NodeElementArchetype.Factory.Output(0, string.Empty, typeof(float), 1),
                 ]
             },
@@ -1004,8 +1004,8 @@ namespace FlaxEditor.Surface.Archetypes
                 Elements =
                 [
                     NodeElementArchetype.Factory.Input(0, "Value", true, typeof(float), 0),
-                    NodeElementArchetype.Factory.Input(1, "Offset", true, typeof(float), 1,0),
-                    NodeElementArchetype.Factory.Input(2, "Falloff", true, typeof(float), 2,1),
+                    NodeElementArchetype.Factory.Input(1, "Offset", true, typeof(float), 1, 0),
+                    NodeElementArchetype.Factory.Input(2, "Falloff", true, typeof(float), 2, 1),
                     NodeElementArchetype.Factory.Output(0, string.Empty, typeof(float), 3),
                 ]
             },
@@ -1024,9 +1024,9 @@ namespace FlaxEditor.Surface.Archetypes
                 ],
                 Elements =
                 [
-                    NodeElementArchetype.Factory.Input(0, "Uvs", true, typeof(Float2), 0),
-                    NodeElementArchetype.Factory.Input(1, "Angle", true, typeof(float), 1,0),
-                    NodeElementArchetype.Factory.Input(2, "Mirror", true, typeof(bool), 2,1),
+                    NodeElementArchetype.Factory.Input(0, "UV", true, typeof(Float2), 0),
+                    NodeElementArchetype.Factory.Input(1, "Angle", true, typeof(float), 1, 0),
+                    NodeElementArchetype.Factory.Input(2, "Mirror", true, typeof(bool), 2, 1),
                     NodeElementArchetype.Factory.Output(0, string.Empty, typeof(Float2), 3),
                 ]
             },
@@ -1042,10 +1042,10 @@ namespace FlaxEditor.Surface.Archetypes
                 [
                     0.0f,
                 ],
-                Elements = 
+                Elements =
                 [
-                    NodeElementArchetype.Factory.Input(0, "Uvs", true, typeof(Float2), 0),
-                    NodeElementArchetype.Factory.Input(1, "Angle", true, typeof(float), 1,0),
+                    NodeElementArchetype.Factory.Input(0, "UV", true, typeof(Float2), 0),
+                    NodeElementArchetype.Factory.Input(1, "Angle", true, typeof(float), 1, 0),
                     NodeElementArchetype.Factory.Output(0, string.Empty, typeof(float), 2),
                 ]
             },
@@ -1063,12 +1063,12 @@ namespace FlaxEditor.Surface.Archetypes
                     0.8f,
                     0.05f,
                 ],
-                Elements = 
+                Elements =
                 [
-                    NodeElementArchetype.Factory.Input(0, "Uvs", true, typeof(Float2), 0),
-                    NodeElementArchetype.Factory.Input(1, "OuterBounds", true, typeof(float), 1,0),
-                    NodeElementArchetype.Factory.Input(2, "InnerBounds", true, typeof(float), 2,1),
-                    NodeElementArchetype.Factory.Input(3, "Falloff",     true, typeof(float), 3,2),
+                    NodeElementArchetype.Factory.Input(0, "UV", true, typeof(Float2), 0),
+                    NodeElementArchetype.Factory.Input(1, "OuterBounds", true, typeof(float), 1, 0),
+                    NodeElementArchetype.Factory.Input(2, "InnerBounds", true, typeof(float), 2, 1),
+                    NodeElementArchetype.Factory.Input(3, "Falloff", true, typeof(float), 3, 2),
                     NodeElementArchetype.Factory.Output(0, string.Empty, typeof(Float3), 4),
                 ]
             },
