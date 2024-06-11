@@ -32,7 +32,7 @@ struct LogContextThreadData
 
     LogContextData Peek()
     {
-        return Count == 0 ? Ptr[Count] : LogContextData();
+        return Count > 0 ? Ptr[Count - 1] : LogContextData();
     }
 };
 
