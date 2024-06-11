@@ -62,7 +62,7 @@ namespace FlaxEditor.Gizmo
                 Profiler.BeginEventGPU("Editor Grid");
 
                 var options = Editor.Instance.Options.Options;
-                Vector3 camPos = renderContext.View.WorldPosition;
+                Float3 camPos = renderContext.View.WorldPosition;
                 float gridSize = renderContext.View.Far + 20000;
 
                 // Lazy-init resources
