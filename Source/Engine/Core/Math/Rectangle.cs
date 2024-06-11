@@ -82,6 +82,26 @@ namespace FlaxEngine
         /// <summary>
         /// Gets position of the bottom right corner of the rectangle
         /// </summary>
+        public Float2 LowerRight => Location + Size;
+
+        /// <summary>
+        /// Gets position of the bottom left corner of the rectangle
+        /// </summary>
+        public Float2 LowerLeft => new Float2(Location.X, Location.Y + Size.Y);
+
+        /// <summary>
+        /// Gets position of the upper left corner of the rectangle
+        /// </summary>
+        public Float2 TopLeft => Location;
+
+        /// <summary>
+        /// Gets position of the upper right corner of the rectangle
+        /// </summary>
+        public Float2 TopRight => new Float2(Location.X + Size.X, Location.Y);
+
+        /// <summary>
+        /// Gets position of the bottom right corner of the rectangle
+        /// </summary>
         public Float2 BottomRight => Location + Size;
 
         /// <summary>
