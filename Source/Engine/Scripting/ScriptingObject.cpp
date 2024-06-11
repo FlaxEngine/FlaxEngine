@@ -6,8 +6,8 @@
 #include "BinaryModule.h"
 #include "Engine/Level/Actor.h"
 #include "Engine/Core/Log.h"
+#include "Engine/Core/LogContext.h"
 #include "Engine/Core/Types/Pair.h"
-#include "Engine/Core/Types/LogContexts.h"
 #include "Engine/Utilities/StringConverter.h"
 #include "Engine/Content/Asset.h"
 #include "Engine/Content/Content.h"
@@ -727,7 +727,7 @@ DEFINE_INTERNAL_CALL(MObject*) ObjectInternal_FindObject(Guid* id, MTypeObject* 
         if (klass && !obj->Is(klass))
         {
             if (!skipLog)
-                LOG(Warning, "Found scripting object with ID={0} of type {1} that doesn't match type {2}. {3}", *id, String(obj->GetType().Fullname), String(klass->GetFullName()), LogContextFormatter::Format());
+                LOG(Warning, "Found scripting object with ID={0} of type {1} that doesn't match type {2}. {3}", *id, String(obj->GetType().Fullname), String(klass->GetFullName()), LogContext::GetInfo());
             return nullptr;
         }
         return obj->GetOrCreateManagedInstance();
@@ -736,7 +736,7 @@ DEFINE_INTERNAL_CALL(MObject*) ObjectInternal_FindObject(Guid* id, MTypeObject* 
     if (!skipLog)
     {
         if (klass)
-            LOG(Warning, "Unable to find scripting object with ID={0}. Required type {1}. {2}", *id, String(klass->GetFullName()), LogContextFormatter::Format());
+            LOG(Warning, "Unable to find scripting object with ID={0}. Required type {1}. {2}", *id, String(klass->GetFullName()), LogContext::GetInfo());
         else
             LOG(Warning, "Unable to find scripting object with ID={0}", *id);
     }
