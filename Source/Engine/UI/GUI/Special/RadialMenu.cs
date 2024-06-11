@@ -38,8 +38,7 @@ namespace FlaxEngine.GUI
                 if (_material == value)
                     return;
                 _material = value;
-                Object.DestroyNow(_materialInstance);
-                _materialInstance = null;
+                Object.Destroy(ref _materialInstance);
                 _materialIsDirty = true;
             }
         }
@@ -174,6 +173,7 @@ namespace FlaxEngine.GUI
                 ForegroundColor = style.BackgroundHighlighted;
                 SelectionColor = style.BackgroundSelected;
             }
+            _material = Content.LoadAsyncInternal<MaterialBase>("Engine/DefaultRadialMenu");
         }
 
         /// <summary>
