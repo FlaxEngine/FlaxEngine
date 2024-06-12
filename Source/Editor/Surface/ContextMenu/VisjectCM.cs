@@ -60,6 +60,8 @@ namespace FlaxEditor.Surface.ContextMenu
         private readonly Label _descriptionSignatureLabel;
         private readonly Label _descriptionLabel;
         private readonly SurfaceStyle _surfaceStyle;
+        private readonly VerticalPanel _descriptionInputPanel;
+        private readonly VerticalPanel _descriptionOutputPanel;
 
 
         private VisjectCMItem _selectedItem;
@@ -276,6 +278,22 @@ namespace FlaxEditor.Surface.ContextMenu
                     AutoHeight = true,
                 };
                 _descriptionLabel.SetAnchorPreset(AnchorPresets.TopLeft, true);
+
+                _descriptionInputPanel = new VerticalPanel()
+                {
+                    Parent = _descriptionPanel,
+                    Width = Width * 0.5f,
+                    AnchorPreset = AnchorPresets.TopLeft,
+                    AutoSize = true,
+                };
+                
+                _descriptionOutputPanel = new VerticalPanel()
+                {
+                    Parent = _descriptionPanel,
+                    X = Width * 0.5f,
+                    Width = Width * 0.5f,
+                    AutoSize = true,
+                };
             }
 
             // Init groups
@@ -643,6 +661,10 @@ namespace FlaxEditor.Surface.ContextMenu
             Profiler.BeginEvent("VisjectCM.SetDescriptionPanelArchetype");
             
             ScriptType declaringType;
+            
+            _descriptionInputPanel.RemoveChildren();
+            _descriptionOutputPanel.RemoveChildren();
+            
             if (archetype.Tag is ScriptMemberInfo memberInfo)
             {
                 var name = memberInfo.Name;
@@ -652,12 +674,80 @@ namespace FlaxEditor.Surface.ContextMenu
                 }
 
                 declaringType = memberInfo.DeclaringType;
-                _descriptionSignatureLabel.Text = memberInfo.DeclaringType + "." + name;   
+                _descriptionSignatureLabel.Text = memberInfo.DeclaringType + "." + name;
+                
+                if(!memberInfo.IsStatic)
+                    _descriptionInputPanel.AddChild(new Label(0,0,100, 16)
+                    {
+                        Text = $">Instance ({memberInfo.DeclaringType.Name})",
+                        HorizontalAlignment = TextAlignment.Near,
+                        VerticalAlignment = TextAlignment.Near,
+                        Wrapping = TextWrapping.NoWrap,
+                    }).SetAnchorPreset(AnchorPresets.TopLeft, true);
+
+                if (memberInfo.ValueType != ScriptType.Null || memberInfo.ValueType != ScriptType.Void)
+                {
+                    _descriptionOutputPanel.AddChild(new Label(0,0,100, 16)
+                    {
+                        Text = $">Return ({memberInfo.ValueType.Name})",
+                        HorizontalAlignment = TextAlignment.Near,
+                        VerticalAlignment = TextAlignment.Near,
+                        Wrapping = TextWrapping.NoWrap,
+                    }).SetAnchorPreset(AnchorPresets.TopLeft, true);
+                }
+                
+                for(int i = 0; i < memberInfo.ParametersCount; i++)
+                {
+                    var param = memberInfo.GetParameters()[i];
+                    if (param.IsOut)
+                    {
+                        _descriptionOutputPanel.AddChild(new Label(0,0,100, 16)
+                        {
+                            Text = $"{param.Name} ({param.Type.Name})",
+                            HorizontalAlignment = TextAlignment.Near,
+                            VerticalAlignment = TextAlignment.Near,
+                            Wrapping = TextWrapping.NoWrap,
+                        }).SetAnchorPreset(AnchorPresets.TopLeft, true);
+                        
+                        continue;
+                    }
+                    _descriptionInputPanel.AddChild(new Label(0,0,100, 16)
+                    {
+                        Text = $"{param.Name} ({param.Type.Name})",
+                        HorizontalAlignment = TextAlignment.Near,
+                        VerticalAlignment = TextAlignment.Near,
+                        Wrapping = TextWrapping.NoWrap,
+                    }).SetAnchorPreset(AnchorPresets.TopLeft, true);
+                }
             }
             else
             {
                 _descriptionSignatureLabel.Text = archetype.Signature;
                 declaringType = archetype.DefaultType;
+                
+                foreach (var element in archetype.Elements)
+                {
+                    if (element.Type == NodeElementType.Input)
+                    {
+                        _descriptionInputPanel.AddChild(new Label(0,0,100, 16)
+                        {
+                            Text = element.Text,
+                            HorizontalAlignment = TextAlignment.Near,
+                            VerticalAlignment = TextAlignment.Near,
+                            Wrapping = TextWrapping.NoWrap,
+                        }).SetAnchorPreset(AnchorPresets.TopLeft, true);
+                    }
+                    else if (element.Type == NodeElementType.Output)
+                    {
+                        _descriptionOutputPanel.AddChild(new Label(0,0,100, 16)
+                        {
+                            Text = element.Text,
+                            HorizontalAlignment = TextAlignment.Near,
+                            VerticalAlignment = TextAlignment.Near,
+                            Wrapping = TextWrapping.NoWrap,
+                        }).SetAnchorPreset(AnchorPresets.TopLeft, true);
+                    }
+                }
             }
 
             _surfaceStyle.GetConnectionColor(declaringType, archetype.ConnectionsHints, out var typeColor);
@@ -671,10 +761,16 @@ namespace FlaxEditor.Surface.ContextMenu
 
             panelHeight += _descriptionLabel.Height + 6f + 18f;
 
+            _descriptionInputPanel.Y = panelHeight;
+            _descriptionOutputPanel.Y = panelHeight;
+
+            panelHeight += Mathf.Max(_descriptionInputPanel.Height, _descriptionOutputPanel.Height);
             _descriptionPanel.Height = panelHeight;
             Height = 400 + Mathf.RoundToInt(_descriptionPanel.Height);
             UpdateWindowSize();
 
+            PerformLayout();
+            
             Profiler.EndEvent();
         }
 
