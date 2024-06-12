@@ -661,10 +661,12 @@ namespace FlaxEditor.Surface.ContextMenu
             Profiler.BeginEvent("VisjectCM.SetDescriptionPanelArchetype");
             
             ScriptType declaringType;
+            Color typeColor;
             
             _descriptionInputPanel.RemoveChildren();
             _descriptionOutputPanel.RemoveChildren();
             
+            var spriteHandle = _surfaceStyle.Icons.BoxOpen;
             if (archetype.Tag is ScriptMemberInfo memberInfo)
             {
                 var name = memberInfo.Name;
@@ -675,8 +677,17 @@ namespace FlaxEditor.Surface.ContextMenu
 
                 declaringType = memberInfo.DeclaringType;
                 _descriptionSignatureLabel.Text = memberInfo.DeclaringType + "." + name;
-                
-                if(!memberInfo.IsStatic)
+
+                if (!memberInfo.IsStatic)
+                {
+                    _surfaceStyle.GetConnectionColor(declaringType, archetype.ConnectionsHints, out typeColor);
+                    _descriptionInputPanel.AddChild(new Image(2, 0, 12, 12)
+                    {
+                        Brush = new SpriteBrush(spriteHandle),
+                        Color = typeColor,
+                        MouseOverColor = typeColor,
+                        AutoFocus = false,
+                    }).SetAnchorPreset(AnchorPresets.TopLeft, true);
                     _descriptionInputPanel.AddChild(new Label(0,0,100, 16)
                     {
                         Text = $">Instance ({memberInfo.DeclaringType.Name})",
@@ -684,9 +695,18 @@ namespace FlaxEditor.Surface.ContextMenu
                         VerticalAlignment = TextAlignment.Near,
                         Wrapping = TextWrapping.NoWrap,
                     }).SetAnchorPreset(AnchorPresets.TopLeft, true);
+                }
 
-                if (memberInfo.ValueType != ScriptType.Null || memberInfo.ValueType != ScriptType.Void)
+                if (memberInfo.ValueType != ScriptType.Null && memberInfo.ValueType != ScriptType.Void)
                 {
+                    _surfaceStyle.GetConnectionColor(memberInfo.ValueType, archetype.ConnectionsHints, out typeColor);
+                    _descriptionOutputPanel.AddChild(new Image(2, 0, 12, 12)
+                    {
+                        Brush = new SpriteBrush(spriteHandle),
+                        Color = typeColor,
+                        MouseOverColor = typeColor,
+                        AutoFocus = false,
+                    }).SetAnchorPreset(AnchorPresets.TopLeft, true);
                     _descriptionOutputPanel.AddChild(new Label(0,0,100, 16)
                     {
                         Text = $">Return ({memberInfo.ValueType.Name})",
@@ -699,9 +719,17 @@ namespace FlaxEditor.Surface.ContextMenu
                 for(int i = 0; i < memberInfo.ParametersCount; i++)
                 {
                     var param = memberInfo.GetParameters()[i];
+                    _surfaceStyle.GetConnectionColor(param.Type, archetype.ConnectionsHints, out typeColor);
                     if (param.IsOut)
                     {
-                        _descriptionOutputPanel.AddChild(new Label(0,0,100, 16)
+                        _descriptionOutputPanel.AddChild(new Image(2, 0, 12, 12)
+                        {
+                            Brush = new SpriteBrush(spriteHandle),
+                            Color = typeColor,
+                            MouseOverColor = typeColor,
+                            AutoFocus = false,
+                        }).SetAnchorPreset(AnchorPresets.TopLeft, true);
+                        _descriptionOutputPanel.AddChild(new Label(12,0,100, 16)
                         {
                             Text = $"{param.Name} ({param.Type.Name})",
                             HorizontalAlignment = TextAlignment.Near,
@@ -711,7 +739,15 @@ namespace FlaxEditor.Surface.ContextMenu
                         
                         continue;
                     }
-                    _descriptionInputPanel.AddChild(new Label(0,0,100, 16)
+                    
+                    _descriptionInputPanel.AddChild(new Image(2, 0, 12, 12)
+                    {
+                        Brush = new SpriteBrush(spriteHandle),
+                        Color = typeColor,
+                        MouseOverColor = typeColor,
+                        AutoFocus = false,
+                    }).SetAnchorPreset(AnchorPresets.TopLeft, true);
+                    _descriptionInputPanel.AddChild(new Label(12,0,100, 16)
                     {
                         Text = $"{param.Name} ({param.Type.Name})",
                         HorizontalAlignment = TextAlignment.Near,
@@ -750,7 +786,7 @@ namespace FlaxEditor.Surface.ContextMenu
                 }
             }
 
-            _surfaceStyle.GetConnectionColor(declaringType, archetype.ConnectionsHints, out var typeColor);
+            _surfaceStyle.GetConnectionColor(declaringType, archetype.ConnectionsHints, out typeColor);
             _descriptionClassImage.Color = typeColor;
             _descriptionClassImage.MouseOverColor = typeColor;
             
