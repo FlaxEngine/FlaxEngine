@@ -712,7 +712,7 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
 
         // Calculate optimal capacity for the objects buffer
         objectsBufferCapacity *= sizeof(uint32) * 2; // Convert to bytes and add safe margin
-        objectsBufferCapacity = Math::Clamp(Math::AlignUp<uint32>(objectsBufferCapacity, 4096u), 32u * 1024u, 1024u * 1024u); // Align up to 4kB, clamp 32kB - 1MB
+        objectsBufferCapacity = Math::Clamp(Math::AlignUp<uint32>(objectsBufferCapacity, 4096u), 32u * 1024u, 16 * 1024u * 1024u); // Align up to 4kB, clamp 32kB - 16MB
         surfaceAtlasData.CulledObjectsUsageHistory.Add(objectsBufferCapacity); // Record history
         objectsBufferCapacity = surfaceAtlasData.CulledObjectsUsageHistory.Maximum(); // Use biggest value from history
         if (surfaceAtlasData.CulledObjectsUsageHistory.Count() == surfaceAtlasData.CulledObjectsUsageHistory.Capacity())
