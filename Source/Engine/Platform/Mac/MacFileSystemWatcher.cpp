@@ -39,7 +39,7 @@ void DirectoryWatchCallback( ConstFSEventStreamRef StreamRef, void* FileWatcherP
             {
                 action = FileSystemAction::Rename;
             }
-            if (rmodified)
+            if (modified)
             {
                 action = FileSystemAction::Modify;
             }
