@@ -422,6 +422,7 @@ namespace FlaxEditor.Surface
                             node.Signature = SurfaceUtils.GetVisualScriptMemberInfoSignature(member);
                             node.Description = SurfaceUtils.GetVisualScriptMemberShortDescription(member);
                             node.SubTitle = string.Format(" (in {0})", scriptTypeName);
+                            node.Tag = member;
 
                             // Create group archetype
                             var groupKey = new KeyValuePair<string, ushort>(scriptTypeName, 16);
@@ -457,6 +458,7 @@ namespace FlaxEditor.Surface
                             node.Signature = SurfaceUtils.GetVisualScriptMemberInfoSignature(member);
                             node.Description = SurfaceUtils.GetVisualScriptMemberShortDescription(member);
                             node.SubTitle = string.Format(" (in {0})", scriptTypeName);
+                            node.Tag = member;
 
                             // Create group archetype
                             var groupKey = new KeyValuePair<string, ushort>(scriptTypeName, 16);
@@ -516,6 +518,7 @@ namespace FlaxEditor.Surface
                         bindNode.Signature = SurfaceUtils.GetVisualScriptMemberInfoSignature(member);
                         bindNode.Description = SurfaceUtils.GetVisualScriptMemberShortDescription(member);
                         bindNode.SubTitle = string.Format(" (in {0})", scriptTypeName);
+                        bindNode.Tag = member;
                         ((IList<NodeArchetype>)group.Archetypes).Add(bindNode);
 
                         // Add Unbind event node
@@ -527,6 +530,7 @@ namespace FlaxEditor.Surface
                         unbindNode.Signature = bindNode.Signature;
                         unbindNode.Description = bindNode.Description;
                         unbindNode.SubTitle = bindNode.SubTitle;
+                        unbindNode.Tag = member;
                         ((IList<NodeArchetype>)group.Archetypes).Add(unbindNode);
 
 #if DEBUG_EVENTS_SEARCHING

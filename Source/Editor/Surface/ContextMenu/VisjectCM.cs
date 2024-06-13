@@ -667,6 +667,7 @@ namespace FlaxEditor.Surface.ContextMenu
             _descriptionOutputPanel.RemoveChildren();
             
             var spriteHandle = _surfaceStyle.Icons.BoxOpen;
+            
             if (archetype.Tag is ScriptMemberInfo memberInfo)
             {
                 var name = memberInfo.Name;
@@ -681,39 +682,13 @@ namespace FlaxEditor.Surface.ContextMenu
                 if (!memberInfo.IsStatic)
                 {
                     _surfaceStyle.GetConnectionColor(declaringType, archetype.ConnectionsHints, out typeColor);
-                    _descriptionInputPanel.AddChild(new Image(2, 0, 12, 12)
-                    {
-                        Brush = new SpriteBrush(spriteHandle),
-                        Color = typeColor,
-                        MouseOverColor = typeColor,
-                        AutoFocus = false,
-                    }).SetAnchorPreset(AnchorPresets.TopLeft, true);
-                    _descriptionInputPanel.AddChild(new Label(0,0,100, 16)
-                    {
-                        Text = $">Instance ({memberInfo.DeclaringType.Name})",
-                        HorizontalAlignment = TextAlignment.Near,
-                        VerticalAlignment = TextAlignment.Near,
-                        Wrapping = TextWrapping.NoWrap,
-                    }).SetAnchorPreset(AnchorPresets.TopLeft, true);
+                    AddInputElement(spriteHandle, typeColor, $">Instance ({memberInfo.DeclaringType.Name})");
                 }
 
                 if (memberInfo.ValueType != ScriptType.Null && memberInfo.ValueType != ScriptType.Void)
                 {
                     _surfaceStyle.GetConnectionColor(memberInfo.ValueType, archetype.ConnectionsHints, out typeColor);
-                    _descriptionOutputPanel.AddChild(new Image(2, 0, 12, 12)
-                    {
-                        Brush = new SpriteBrush(spriteHandle),
-                        Color = typeColor,
-                        MouseOverColor = typeColor,
-                        AutoFocus = false,
-                    }).SetAnchorPreset(AnchorPresets.TopLeft, true);
-                    _descriptionOutputPanel.AddChild(new Label(0,0,100, 16)
-                    {
-                        Text = $">Return ({memberInfo.ValueType.Name})",
-                        HorizontalAlignment = TextAlignment.Near,
-                        VerticalAlignment = TextAlignment.Near,
-                        Wrapping = TextWrapping.NoWrap,
-                    }).SetAnchorPreset(AnchorPresets.TopLeft, true);
+                    AddOutputElement(spriteHandle, typeColor, $">Return ({memberInfo.ValueType.Name})");
                 }
                 
                 for(int i = 0; i < memberInfo.ParametersCount; i++)
@@ -722,38 +697,11 @@ namespace FlaxEditor.Surface.ContextMenu
                     _surfaceStyle.GetConnectionColor(param.Type, archetype.ConnectionsHints, out typeColor);
                     if (param.IsOut)
                     {
-                        _descriptionOutputPanel.AddChild(new Image(2, 0, 12, 12)
-                        {
-                            Brush = new SpriteBrush(spriteHandle),
-                            Color = typeColor,
-                            MouseOverColor = typeColor,
-                            AutoFocus = false,
-                        }).SetAnchorPreset(AnchorPresets.TopLeft, true);
-                        _descriptionOutputPanel.AddChild(new Label(12,0,100, 16)
-                        {
-                            Text = $"{param.Name} ({param.Type.Name})",
-                            HorizontalAlignment = TextAlignment.Near,
-                            VerticalAlignment = TextAlignment.Near,
-                            Wrapping = TextWrapping.NoWrap,
-                        }).SetAnchorPreset(AnchorPresets.TopLeft, true);
-                        
+                        AddOutputElement(spriteHandle, typeColor, $"{param.Name} ({param.Type.Name})");
                         continue;
                     }
-                    
-                    _descriptionInputPanel.AddChild(new Image(2, 0, 12, 12)
-                    {
-                        Brush = new SpriteBrush(spriteHandle),
-                        Color = typeColor,
-                        MouseOverColor = typeColor,
-                        AutoFocus = false,
-                    }).SetAnchorPreset(AnchorPresets.TopLeft, true);
-                    _descriptionInputPanel.AddChild(new Label(12,0,100, 16)
-                    {
-                        Text = $"{param.Name} ({param.Type.Name})",
-                        HorizontalAlignment = TextAlignment.Near,
-                        VerticalAlignment = TextAlignment.Near,
-                        Wrapping = TextWrapping.NoWrap,
-                    }).SetAnchorPreset(AnchorPresets.TopLeft, true);
+
+                    AddInputElement(spriteHandle, typeColor, $"{param.Name} ({param.Type.Name})");
                 }
             }
             else
@@ -761,27 +709,18 @@ namespace FlaxEditor.Surface.ContextMenu
                 _descriptionSignatureLabel.Text = archetype.Signature;
                 declaringType = archetype.DefaultType;
                 
+                Debug.Log(archetype.Elements);
                 foreach (var element in archetype.Elements)
                 {
                     if (element.Type == NodeElementType.Input)
                     {
-                        _descriptionInputPanel.AddChild(new Label(0,0,100, 16)
-                        {
-                            Text = element.Text,
-                            HorizontalAlignment = TextAlignment.Near,
-                            VerticalAlignment = TextAlignment.Near,
-                            Wrapping = TextWrapping.NoWrap,
-                        }).SetAnchorPreset(AnchorPresets.TopLeft, true);
+                        _surfaceStyle.GetConnectionColor(element.ConnectionsType, archetype.ConnectionsHints, out typeColor);
+                        AddInputElement(spriteHandle, typeColor, element.Text);
                     }
                     else if (element.Type == NodeElementType.Output)
                     {
-                        _descriptionOutputPanel.AddChild(new Label(0,0,100, 16)
-                        {
-                            Text = element.Text,
-                            HorizontalAlignment = TextAlignment.Near,
-                            VerticalAlignment = TextAlignment.Near,
-                            Wrapping = TextWrapping.NoWrap,
-                        }).SetAnchorPreset(AnchorPresets.TopLeft, true);
+                        _surfaceStyle.GetConnectionColor(element.ConnectionsType, archetype.ConnectionsHints, out typeColor);
+                        AddOutputElement(spriteHandle, typeColor, element.Text);
                     }
                 }
             }
@@ -810,6 +749,67 @@ namespace FlaxEditor.Surface.ContextMenu
             Profiler.EndEvent();
         }
 
+        private void AddInputElement(SpriteHandle sprite, Color typeColor, string text)
+        {
+            var elementPanel = new Panel()
+            {
+                Width = Width * 0.5f,
+                Height = 16,
+                Parent = _descriptionInputPanel,
+                AnchorPreset = AnchorPresets.TopLeft
+            };
+            
+            elementPanel.AddChild(new Image(2, 0, 12, 12)
+            {
+                Brush = new SpriteBrush(sprite),
+                Color = typeColor,
+                MouseOverColor = typeColor,
+                AutoFocus = false,
+            }).SetAnchorPreset(AnchorPresets.TopLeft, true);
+            
+            var elementText = new Label(16, 0, Width * 0.5f - 32, 16)
+            {
+                Text = text,
+                HorizontalAlignment = TextAlignment.Near,
+                VerticalAlignment = TextAlignment.Near,
+                Wrapping = TextWrapping.WrapWords,
+                AutoHeight = true,
+            };
+            elementText.SetAnchorPreset(AnchorPresets.TopLeft, true);
+            elementPanel.AddChild(elementText);
+            elementPanel.Height = elementText.Height;
+        }
+        
+        private void AddOutputElement(SpriteHandle sprite, Color typeColor, string text)
+        {
+            var elementPanel = new Panel()
+            {
+                Width = Width * 0.5f,
+                Height = 16,
+                Parent = _descriptionOutputPanel,
+                AnchorPreset = AnchorPresets.TopLeft
+            };
+            
+            elementPanel.AddChild(new Image(2, 0, 12, 12)
+            {
+                Brush = new SpriteBrush(sprite),
+                Color = typeColor,
+                MouseOverColor = typeColor,
+                AutoFocus = false,
+            }).SetAnchorPreset(AnchorPresets.TopLeft, true);
+            
+            var elementText = new Label(16, 0, Width * 0.5f - 32, 16)
+            {
+                Text = text,
+                HorizontalAlignment = TextAlignment.Near,
+                VerticalAlignment = TextAlignment.Near,
+                Wrapping = TextWrapping.NoWrap,
+            };
+            elementText.SetAnchorPreset(AnchorPresets.TopLeft, true);
+            elementPanel.AddChild(elementText);
+            elementPanel.Height = elementText.Height;
+        }
+        
         /// <summary>
         /// Hides the description panel and resets the context menu to its original size
         /// </summary>
