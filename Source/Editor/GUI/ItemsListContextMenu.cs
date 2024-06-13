@@ -23,6 +23,9 @@ namespace FlaxEditor.GUI
         [HideInEditor]
         public class Item : Control
         {
+            private bool _isStartsWithMatch;
+            private bool _isFullMatch;
+
             /// <summary>
             /// The is mouse down flag.
             /// </summary>
@@ -44,6 +47,11 @@ namespace FlaxEditor.GUI
             public string Category;
 
             /// <summary>
+            /// A computed score for the context menu order
+            /// </summary>
+            public float SortScore;
+
+            /// <summary>
             /// Occurs when items gets clicked by the user.
             /// </summary>
             public event Action<Item> Clicked;
@@ -62,43 +70,68 @@ namespace FlaxEditor.GUI
             }
 
             /// <summary>
+            /// Updates the <see cref="SortScore"/>
+            /// </summary>
+            public void UpdateScore()
+            {
+                SortScore = 0;
+
+                if (!Visible)
+                    return;
+
+                if (_highlights is { Count: > 0 })
+                    SortScore += 1;
+                if (_isStartsWithMatch)
+                    SortScore += 2;
+                if (_isFullMatch)
+                    SortScore += 5;
+            }
+
+            /// <summary>
             /// Updates the filter.
             /// </summary>
             /// <param name="filterText">The filter text.</param>
             public void UpdateFilter(string filterText)
             {
+                _isStartsWithMatch = _isFullMatch = false;
+
                 if (string.IsNullOrWhiteSpace(filterText))
                 {
                     // Clear filter
                     _highlights?.Clear();
                     Visible = true;
+                    return;
                 }
-                else
+
+                if (QueryFilterHelper.Match(filterText, Name, out var ranges))
                 {
-                    if (QueryFilterHelper.Match(filterText, Name, out var ranges))
-                    {
-                        // Update highlights
-                        if (_highlights == null)
-                            _highlights = new List<Rectangle>(ranges.Length);
-                        else
-                            _highlights.Clear();
-                        var style = Style.Current;
-                        var font = style.FontSmall;
-                        for (int i = 0; i < ranges.Length; i++)
-                        {
-                            var start = font.GetCharPosition(Name, ranges[i].StartIndex);
-                            var end = font.GetCharPosition(Name, ranges[i].EndIndex);
-                            _highlights.Add(new Rectangle(start.X + 2, 0, end.X - start.X, Height));
-                        }
-                        Visible = true;
-                    }
+                    // Update highlights
+                    if (_highlights == null)
+                        _highlights = new List<Rectangle>(ranges.Length);
                     else
+                        _highlights.Clear();
+                    var style = Style.Current;
+                    var font = style.FontSmall;
+                    for (int i = 0; i < ranges.Length; i++)
                     {
-                        // Hide
-                        _highlights?.Clear();
-                        Visible = false;
+                        var start = font.GetCharPosition(Name, ranges[i].StartIndex);
+                        var end = font.GetCharPosition(Name, ranges[i].EndIndex);
+                        _highlights.Add(new Rectangle(start.X + 2, 0, end.X - start.X, Height));
+
+                        if (ranges[i].StartIndex <= 0)
+                        {
+                            _isStartsWithMatch = true;
+                            if (ranges[i].Length == Name.Length)
+                                _isFullMatch = true;
+                        }
                     }
+                    Visible = true;
+                    return;
                 }
+
+                // Hide
+                _highlights?.Clear();
+                Visible = false;
             }
 
             /// <summary>
@@ -178,7 +211,14 @@ namespace FlaxEditor.GUI
             public override int Compare(Control other)
             {
                 if (other is Item otherItem)
-                    return string.Compare(Name, otherItem.Name, StringComparison.Ordinal);
+                {
+                    int order = -1 * SortScore.CompareTo(otherItem.SortScore);
+                    if (order == 0)
+                    {
+                        order = string.Compare(Name, otherItem.Name, StringComparison.Ordinal);
+                    }
+                    return order;
+                }
                 return base.Compare(other);
             }
         }
@@ -249,7 +289,10 @@ namespace FlaxEditor.GUI
             for (int i = 0; i < items.Count; i++)
             {
                 if (items[i] is Item item)
+                {
                     item.UpdateFilter(_searchBox.Text);
+                    item.UpdateScore();
+                }
             }
             if (_categoryPanels != null)
             {
@@ -262,6 +305,7 @@ namespace FlaxEditor.GUI
                         if (category.Children[j] is Item item2)
                         {
                             item2.UpdateFilter(_searchBox.Text);
+                            item2.UpdateScore();
                             anyVisible |= item2.Visible;
                         }
                     }
@@ -272,6 +316,8 @@ namespace FlaxEditor.GUI
                         category.Open(false);
                 }
             }
+
+            SortItems();
 
             UnlockChildrenRecursive();
             PerformLayout(true);

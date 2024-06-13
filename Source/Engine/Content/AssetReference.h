@@ -105,7 +105,7 @@ public:
         OnSet(other._asset);
     }
 
-    AssetReference(AssetReference&& other)
+    AssetReference(AssetReference&& other) noexcept
     {
         OnSet(other._asset);
         other.OnSet(nullptr);

@@ -91,14 +91,14 @@ Variant ParticleEffectParameter::GetDefaultValue() const
     return paramValue;
 }
 
-Variant ParticleEffectParameter::GetDefaultEmitterValue() const
+const Variant& ParticleEffectParameter::GetDefaultEmitterValue() const
 {
     CHECK_RETURN(IsValid(), Variant::False);
     const ParticleSystemParameter& param = _effect->ParticleSystem->Emitters[_emitterIndex]->Graph.Parameters[_paramIndex];
     return param.Value;
 }
 
-Variant ParticleEffectParameter::GetValue() const
+const Variant& ParticleEffectParameter::GetValue() const
 {
     CHECK_RETURN(IsValid(), Variant::False);
     const Variant& paramValue = _effect->Instance.Emitters[_emitterIndex].Parameters[_paramIndex];
@@ -205,7 +205,7 @@ ParticleEffectParameter* ParticleEffect::GetParameter(const StringView& emitterT
     return nullptr;
 }
 
-Variant ParticleEffect::GetParameterValue(const StringView& emitterTrackName, const StringView& paramName)
+const Variant& ParticleEffect::GetParameterValue(const StringView& emitterTrackName, const StringView& paramName)
 {
     const auto param = GetParameter(emitterTrackName, paramName);
     CHECK_RETURN(param, Variant::Null);
@@ -474,14 +474,20 @@ void ParticleEffect::Update()
 #if USE_EDITOR
 
 #include "Editor/Editor.h"
+#include "Editor/Managed/ManagedEditor.h"
 
 void ParticleEffect::UpdateExecuteInEditor()
 {
     // Auto-play in Editor
-    if (!Editor::IsPlayMode && !_isStopped)
+    if (!Editor::IsPlayMode && !_isStopped && IsLooping && PlayOnStart && Editor::Managed->ManagedEditorOptions.EnableParticlesPreview)
     {
         _isPlaying = true;
         Update();
+    }
+    else if (!Editor::IsPlayMode && _isPlaying)
+    {
+        _isPlaying = false;
+        ResetSimulation();
     }
 }
 

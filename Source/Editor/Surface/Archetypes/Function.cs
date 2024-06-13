@@ -2198,21 +2198,23 @@ namespace FlaxEditor.Surface.Archetypes
                 _combobox.ClearItems();
                 _tooltips.Clear();
                 _functionNodesIds.Clear();
-                var nodes = Surface.Nodes;
-                var count = _signature != null ? nodes.Count : 0;
-                for (int i = 0; i < count; i++)
+                if (Surface != null && _signature != null)
                 {
-                    if (nodes[i] is VisualScriptFunctionNode functionNode)
+                    var nodes = Surface.Nodes;
+                    for (int i = 0; i < nodes.Count; i++)
                     {
-                        // Get if function signature matches the event signature
-                        functionNode.GetSignature(out var functionSig);
-                        if (IsValidFunctionSignature(ref functionSig))
+                        if (nodes[i] is VisualScriptFunctionNode functionNode)
                         {
-                            if (functionNode.ID == handlerFunctionNodeId)
-                                toSelect = _functionNodesIds.Count;
-                            _functionNodesIds.Add(functionNode.ID);
-                            _tooltips.Add(functionNode.TooltipText);
-                            _combobox.AddItem(functionSig.ToString());
+                            // Get if function signature matches the event signature
+                            functionNode.GetSignature(out var functionSig);
+                            if (IsValidFunctionSignature(ref functionSig))
+                            {
+                                if (functionNode.ID == handlerFunctionNodeId)
+                                    toSelect = _functionNodesIds.Count;
+                                _functionNodesIds.Add(functionNode.ID);
+                                _tooltips.Add(functionNode.TooltipText);
+                                _combobox.AddItem(functionSig.ToString());
+                            }
                         }
                     }
                 }

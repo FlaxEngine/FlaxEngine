@@ -109,13 +109,13 @@ public:
     /// Gets the default value of the parameter (set in particle emitter asset).
     /// </summary>
     /// <returns>The default value.</returns>
-    API_PROPERTY() Variant GetDefaultEmitterValue() const;
+    API_PROPERTY() const Variant& GetDefaultEmitterValue() const;
 
     /// <summary>
     /// Gets the value of the parameter.
     /// </summary>
     /// <returns>The value.</returns>
-    API_PROPERTY() Variant GetValue() const;
+    API_PROPERTY() const Variant& GetValue() const;
 
     /// <summary>
     /// Sets the value of the parameter.
@@ -293,7 +293,7 @@ public:
     /// <param name="emitterTrackName">The emitter track name (in particle system asset).</param>
     /// <param name="paramName">The emitter parameter name (in particle emitter asset).</param>
     /// <returns>The value.</returns>
-    API_FUNCTION() Variant GetParameterValue(const StringView& emitterTrackName, const StringView& paramName);
+    API_FUNCTION() const Variant& GetParameterValue(const StringView& emitterTrackName, const StringView& paramName);
 
     /// <summary>
     /// Set the particle parameter value.

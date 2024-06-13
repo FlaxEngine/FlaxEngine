@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 //#define AUTO_DOC_TOOLTIPS
+//#define MARSHALLER_FULL_NAME
 
 using System;
 using System.Collections.Generic;
@@ -582,8 +583,13 @@ namespace Flax.Build.Bindings
                 returnMarshalType = "MarshalUsing(typeof(FlaxEngine.Interop.ManagedHandleMarshaller))";
             else if (FindApiTypeInfo(buildData, functionInfo.ReturnType, caller)?.IsInterface ?? false)
             {
+                var apiType = FindApiTypeInfo(buildData, functionInfo.ReturnType, caller);
+                var fullReturnValueType = returnValueType;
+                if (!string.IsNullOrEmpty(apiType?.Namespace))
+                    fullReturnValueType = $"{apiType.Namespace}.Interop.{returnValueType}";
+
                 // Interfaces are not supported by NativeMarshallingAttribute, marshal the parameter
-                returnMarshalType = $"MarshalUsing(typeof({returnValueType}Marshaller))";
+                returnMarshalType = $"MarshalUsing(typeof({fullReturnValueType}Marshaller))";
             }
             else if (functionInfo.ReturnType.Type == "MonoArray" || functionInfo.ReturnType.Type == "MArray")
                 returnMarshalType = "MarshalUsing(typeof(FlaxEngine.Interop.SystemArrayMarshaller))";
@@ -941,10 +947,11 @@ namespace Flax.Build.Bindings
             contents.AppendLine();
 
             // Namespace begin
+            string interopNamespace = "";
             if (!string.IsNullOrEmpty(classInfo.Namespace))
             {
-                contents.AppendFormat("namespace ");
-                contents.AppendLine(classInfo.Namespace);
+                interopNamespace = $"{classInfo.Namespace}.Interop";
+                contents.AppendLine($"namespace {classInfo.Namespace}");
                 contents.AppendLine("{");
                 indent += "    ";
             }
@@ -956,10 +963,18 @@ namespace Flax.Build.Bindings
             GenerateCSharpAttributes(buildData, contents, indent, classInfo, useUnmanaged);
 #if USE_NETCORE
             string marshallerName = "";
+            string marshallerFullName = "";
             if (!classInfo.IsStatic)
             {
                 marshallerName = classInfo.Name + "Marshaller";
-                contents.Append(indent).AppendLine($"[NativeMarshalling(typeof({marshallerName}))]");
+#if MARSHALLER_FULL_NAME
+                marshallerFullName = !string.IsNullOrEmpty(interopNamespace) ? $"{interopNamespace}.{marshallerName}" : marshallerName;
+#else
+                if (!string.IsNullOrEmpty(interopNamespace))
+                    CSharpUsedNamespaces.Add(interopNamespace);
+                marshallerFullName = marshallerName;
+#endif
+                contents.Append(indent).AppendLine($"[NativeMarshalling(typeof({marshallerFullName}))]");
             }
 #endif
             contents.Append(indent).Append(GenerateCSharpAccessLevel(classInfo.Access));
@@ -1384,6 +1399,13 @@ namespace Flax.Build.Bindings
 #if USE_NETCORE
             if (!string.IsNullOrEmpty(marshallerName))
             {
+                if (!string.IsNullOrEmpty(interopNamespace))
+                {
+                    contents.AppendLine("}");
+                    contents.AppendLine($"namespace {interopNamespace}");
+                    contents.AppendLine("{");
+                }
+
                 contents.AppendLine();
                 contents.AppendLine(string.Join("\n" + indent, (indent + $$"""
                 /// <summary>
@@ -1392,15 +1414,15 @@ namespace Flax.Build.Bindings
                 #if FLAX_EDITOR
                 [HideInEditor]
                 #endif
-                [CustomMarshaller(typeof({{classInfo.Name}}), MarshalMode.ManagedToUnmanagedIn, typeof({{marshallerName}}.ManagedToNative))]
-                [CustomMarshaller(typeof({{classInfo.Name}}), MarshalMode.UnmanagedToManagedOut, typeof({{marshallerName}}.ManagedToNative))]
-                [CustomMarshaller(typeof({{classInfo.Name}}), MarshalMode.ElementIn, typeof({{marshallerName}}.ManagedToNative))]
-                [CustomMarshaller(typeof({{classInfo.Name}}), MarshalMode.ManagedToUnmanagedOut, typeof({{marshallerName}}.NativeToManaged))]
-                [CustomMarshaller(typeof({{classInfo.Name}}), MarshalMode.UnmanagedToManagedIn, typeof({{marshallerName}}.NativeToManaged))]
-                [CustomMarshaller(typeof({{classInfo.Name}}), MarshalMode.ElementOut, typeof({{marshallerName}}.NativeToManaged))]
-                [CustomMarshaller(typeof({{classInfo.Name}}), MarshalMode.ManagedToUnmanagedRef, typeof({{marshallerName}}.Bidirectional))]
-                [CustomMarshaller(typeof({{classInfo.Name}}), MarshalMode.UnmanagedToManagedRef, typeof({{marshallerName}}.Bidirectional))]
-                [CustomMarshaller(typeof({{classInfo.Name}}), MarshalMode.ElementRef, typeof({{marshallerName}}))]
+                [CustomMarshaller(typeof({{classInfo.Name}}), MarshalMode.ManagedToUnmanagedIn, typeof({{marshallerFullName}}.ManagedToNative))]
+                [CustomMarshaller(typeof({{classInfo.Name}}), MarshalMode.UnmanagedToManagedOut, typeof({{marshallerFullName}}.ManagedToNative))]
+                [CustomMarshaller(typeof({{classInfo.Name}}), MarshalMode.ElementIn, typeof({{marshallerFullName}}.ManagedToNative))]
+                [CustomMarshaller(typeof({{classInfo.Name}}), MarshalMode.ManagedToUnmanagedOut, typeof({{marshallerFullName}}.NativeToManaged))]
+                [CustomMarshaller(typeof({{classInfo.Name}}), MarshalMode.UnmanagedToManagedIn, typeof({{marshallerFullName}}.NativeToManaged))]
+                [CustomMarshaller(typeof({{classInfo.Name}}), MarshalMode.ElementOut, typeof({{marshallerFullName}}.NativeToManaged))]
+                [CustomMarshaller(typeof({{classInfo.Name}}), MarshalMode.ManagedToUnmanagedRef, typeof({{marshallerFullName}}.Bidirectional))]
+                [CustomMarshaller(typeof({{classInfo.Name}}), MarshalMode.UnmanagedToManagedRef, typeof({{marshallerFullName}}.Bidirectional))]
+                [CustomMarshaller(typeof({{classInfo.Name}}), MarshalMode.ElementRef, typeof({{marshallerFullName}}))]
                 {{GenerateCSharpAccessLevel(classInfo.Access)}}static class {{marshallerName}}
                 {
                 #pragma warning disable 1591
@@ -1454,64 +1476,57 @@ namespace Flax.Build.Bindings
         {
             contents.AppendLine();
 
-            // Namespace begin
-            if (!string.IsNullOrEmpty(structureInfo.Namespace))
-            {
-                contents.AppendFormat("namespace ");
-                contents.AppendLine(structureInfo.Namespace);
-                contents.AppendLine("{");
-                indent += "    ";
-            }
 #if USE_NETCORE
             // Generate blittable structure
             string structNativeMarshaling = "";
             if (UseCustomMarshalling(buildData, structureInfo, structureInfo))
             {
+                // Namespace begin
+                string interopNamespace = "";
+                if (!string.IsNullOrEmpty(structureInfo.Namespace))
+                {
+                    interopNamespace = $"{structureInfo.Namespace}.Interop";
+                    contents.AppendLine($"namespace {interopNamespace}");
+                    contents.AppendLine("{");
+                    indent += "    ";
+                }
+
+                // NOTE: Permanent FlaxEngine.Object GCHandles must not be released when marshalling from native to managed.
+
                 string marshallerName = structureInfo.Name + "Marshaller";
-                structNativeMarshaling = $"[NativeMarshalling(typeof({marshallerName}))]";
-
-                contents.Append(indent).AppendLine($"/// <summary>");
-                contents.Append(indent).AppendLine($"/// Marshaller for type <see cref=\"{structureInfo.Name}\"/>.");
-                contents.Append(indent).AppendLine($"/// </summary>");
-                if (buildData.Target != null & buildData.Target.IsEditor)
-                    contents.Append(indent).AppendLine("[HideInEditor]");
-                contents.Append(indent).AppendLine($"[CustomMarshaller(typeof({structureInfo.Name}), MarshalMode.ManagedToUnmanagedIn, typeof({marshallerName}.ManagedToNative))]");
-                contents.Append(indent).AppendLine($"[CustomMarshaller(typeof({structureInfo.Name}), MarshalMode.UnmanagedToManagedOut, typeof({marshallerName}.ManagedToNative))]");
-                contents.Append(indent).AppendLine($"[CustomMarshaller(typeof({structureInfo.Name}), MarshalMode.ElementIn, typeof({marshallerName}.ManagedToNative))]");
-                contents.Append(indent).AppendLine($"[CustomMarshaller(typeof({structureInfo.Name}), MarshalMode.ManagedToUnmanagedOut, typeof({marshallerName}.NativeToManaged))]");
-                contents.Append(indent).AppendLine($"[CustomMarshaller(typeof({structureInfo.Name}), MarshalMode.UnmanagedToManagedIn, typeof({marshallerName}.NativeToManaged))]");
-                contents.Append(indent).AppendLine($"[CustomMarshaller(typeof({structureInfo.Name}), MarshalMode.ElementOut, typeof({marshallerName}.NativeToManaged))]");
-                contents.Append(indent).AppendLine($"[CustomMarshaller(typeof({structureInfo.Name}), MarshalMode.ManagedToUnmanagedRef, typeof({marshallerName}.Bidirectional))]");
-                contents.Append(indent).AppendLine($"[CustomMarshaller(typeof({structureInfo.Name}), MarshalMode.UnmanagedToManagedRef, typeof({marshallerName}.Bidirectional))]");
-                contents.Append(indent).AppendLine($"[CustomMarshaller(typeof({structureInfo.Name}), MarshalMode.ElementRef, typeof({marshallerName}))]");
-                contents.Append(indent).AppendLine($"{GenerateCSharpAccessLevel(structureInfo.Access)}static unsafe class {marshallerName}");
-                contents.Append(indent).AppendLine("{");
-                contents.AppendLine("#pragma warning disable 1591");
-
-                indent += "    ";
+#if MARSHALLER_FULL_NAME
+                string marshallerFullName = !string.IsNullOrEmpty(interopNamespace) ? $"{interopNamespace}.{marshallerName}" : marshallerName;
+#else
+                if (!string.IsNullOrEmpty(interopNamespace))
+                    CSharpUsedNamespaces.Add(interopNamespace);
+                string marshallerFullName = marshallerName;
+#endif
+                structNativeMarshaling = $"[NativeMarshalling(typeof({marshallerFullName}))]";
 
                 var toManagedContent = GetStringBuilder();
                 var toNativeContent = GetStringBuilder();
                 var freeContents = GetStringBuilder();
                 var freeContents2 = GetStringBuilder();
+                var structContents = GetStringBuilder();
 
                 {
                     // Native struct begin
                     // TODO: skip using this utility structure if the auto-generated C# struct is already the same as XXXInternal here below
+                    var structIndent = "";
                     if (buildData.Target != null & buildData.Target.IsEditor)
-                        contents.Append(indent).AppendLine("[HideInEditor]");
-                    contents.Append(indent).AppendLine("[StructLayout(LayoutKind.Sequential)]");
-                    contents.Append(indent).Append("public struct ").Append(structureInfo.Name).Append("Internal");
+                        structContents.Append(structIndent).AppendLine("[HideInEditor]");
+                    structContents.Append(structIndent).AppendLine("[StructLayout(LayoutKind.Sequential)]");
+                    structContents.Append(structIndent).Append("public struct ").Append(structureInfo.Name).Append("Internal");
                     if (structureInfo.BaseType != null && structureInfo.IsPod)
-                        contents.Append(" : ").Append(GenerateCSharpNativeToManaged(buildData, new TypeInfo { Type = structureInfo.BaseType.Name }, structureInfo));
-                    contents.AppendLine();
-                    contents.Append(indent + "{");
-                    indent += "    ";
+                        structContents.Append(" : ").Append(GenerateCSharpNativeToManaged(buildData, new TypeInfo { Type = structureInfo.BaseType.Name }, structureInfo));
+                    structContents.AppendLine();
+                    structContents.Append(structIndent + "{");
+                    structIndent += "    ";
 
                     toNativeContent.Append($"var unmanaged = new {structureInfo.Name}Internal();").AppendLine();
                     toManagedContent.Append($"var managed = new {structureInfo.Name}();").AppendLine();
 
-                    contents.AppendLine();
+                    structContents.AppendLine();
                     foreach (var fieldInfo in structureInfo.Fields)
                     {
                         if (fieldInfo.IsStatic || fieldInfo.IsConstexpr)
@@ -1528,7 +1543,7 @@ namespace Flax.Build.Bindings
                         else
                             originalType = type = GenerateCSharpNativeToManaged(buildData, fieldInfo.Type, structureInfo);
 
-                        contents.Append(indent).Append("public ");
+                        structContents.Append(structIndent).Append("public ");
 
                         var apiType = FindApiTypeInfo(buildData, fieldInfo.Type, structureInfo);
                         bool internalType = apiType is StructureInfo fieldStructureInfo && UseCustomMarshalling(buildData, fieldStructureInfo, structureInfo);
@@ -1540,7 +1555,7 @@ namespace Flax.Build.Bindings
                             if (GenerateCSharpUseFixedBuffer(originalType))
                             {
                                 // Use fixed statement with primitive types of buffers
-                                contents.Append($"fixed {originalType} {fieldInfo.Name}0[{fieldInfo.Type.ArraySize}];").AppendLine();
+                                structContents.Append($"fixed {originalType} {fieldInfo.Name}0[{fieldInfo.Type.ArraySize}];").AppendLine();
 
                                 // Copy fixed-size array
                                 toManagedContent.AppendLine($"FlaxEngine.Utils.MemoryCopy(new IntPtr(managed.{fieldInfo.Name}0), new IntPtr(unmanaged.{fieldInfo.Name}0), sizeof({originalType}) * {fieldInfo.Type.ArraySize}ul);");
@@ -1550,12 +1565,12 @@ namespace Flax.Build.Bindings
 #endif
                             {
                                 // Padding in structs for fixed-size array
-                                contents.Append(type).Append(' ').Append(fieldInfo.Name).Append("0;").AppendLine();
+                                structContents.Append(type).Append(' ').Append(fieldInfo.Name).Append("0;").AppendLine();
                                 for (int i = 1; i < fieldInfo.Type.ArraySize; i++)
                                 {
-                                    GenerateCSharpAttributes(buildData, contents, indent, structureInfo, fieldInfo, fieldInfo.IsStatic);
-                                    contents.Append(indent).Append("public ");
-                                    contents.Append(type).Append(' ').Append(fieldInfo.Name + i).Append(';').AppendLine();
+                                    GenerateCSharpAttributes(buildData, structContents, structIndent, structureInfo, fieldInfo, fieldInfo.IsStatic);
+                                    structContents.Append(structIndent).Append("public ");
+                                    structContents.Append(type).Append(' ').Append(fieldInfo.Name + i).Append(';').AppendLine();
                                 }
 
                                 // Copy fixed-size array item one-by-one
@@ -1601,8 +1616,7 @@ namespace Flax.Build.Bindings
                             }
                             //else if (type == "Guid")
                             //    type = "GuidNative";
-
-                            contents.Append(type).Append(' ').Append(fieldInfo.Name).Append(';').AppendLine();
+                            structContents.Append($"{type} {fieldInfo.Name};").Append(type == "IntPtr" ? $" // {originalType}" : "").AppendLine();
                         }
 
                         // Generate struct constructor/getter and deconstructor/setter function
@@ -1649,13 +1663,13 @@ namespace Flax.Build.Bindings
                             if (internalType)
                             {
                                 // Marshal blittable array elements back to original non-blittable elements
-                                string originalElementTypeMarshaller = $"{originalElementType}Marshaller";
+                                string originalElementTypeMarshaller = (!string.IsNullOrEmpty(apiType?.Namespace) ? $"{apiType?.Namespace}.Interop." : "") + $"{originalElementType}Marshaller";
                                 string originalElementTypeName = originalElementType.Substring(originalElementType.LastIndexOf('.') + 1); // Strip namespace
                                 string internalElementType = $"{originalElementTypeMarshaller}.{originalElementTypeName}Internal";
                                 toManagedContent.AppendLine($"unmanaged.{fieldInfo.Name} != IntPtr.Zero ? NativeInterop.ConvertArray((Unsafe.As<ManagedArray>(ManagedHandle.FromIntPtr(unmanaged.{fieldInfo.Name}).Target)).ToSpan<{internalElementType}>(), {originalElementTypeMarshaller}.ToManaged) : null;");
                                 toNativeContent.AppendLine($"managed.{fieldInfo.Name}?.Length > 0 ? ManagedHandle.ToIntPtr(ManagedArray.WrapNewArray(NativeInterop.ConvertArray(managed.{fieldInfo.Name}, {originalElementTypeMarshaller}.ToNative)), GCHandleType.Weak) : IntPtr.Zero;");
                                 freeContents.AppendLine($"if (unmanaged.{fieldInfo.Name} != IntPtr.Zero) {{ ManagedHandle handle = ManagedHandle.FromIntPtr(unmanaged.{fieldInfo.Name}); Span<{internalElementType}> values = (Unsafe.As<ManagedArray>(handle.Target)).ToSpan<{internalElementType}>(); foreach (var value in values) {{ {originalElementTypeMarshaller}.Free(value); }} (Unsafe.As<ManagedArray>(handle.Target)).Free(); handle.Free(); }}");
-                                freeContents2.AppendLine($"if (unmanaged.{fieldInfo.Name} != IntPtr.Zero) {{ ManagedHandle handle = ManagedHandle.FromIntPtr(unmanaged.{fieldInfo.Name}); Span<{internalElementType}> values = (Unsafe.As<ManagedArray>(handle.Target)).ToSpan<{internalElementType}>(); foreach (var value in values) {{ {originalElementTypeMarshaller}.Free(value); }} (Unsafe.As<ManagedArray>(handle.Target)).Free(); handle.Free(); }}");
+                                freeContents2.AppendLine($"if (unmanaged.{fieldInfo.Name} != IntPtr.Zero) {{ ManagedHandle handle = ManagedHandle.FromIntPtr(unmanaged.{fieldInfo.Name}); Span<{internalElementType}> values = (Unsafe.As<ManagedArray>(handle.Target)).ToSpan<{internalElementType}>(); foreach (var value in values) {{ {originalElementTypeMarshaller}.NativeToManaged.Free(value); }} (Unsafe.As<ManagedArray>(handle.Target)).Free(); handle.Free(); }}");
                             }
                             else if (fieldInfo.Type.GenericArgs[0].IsObjectRef)
                             {
@@ -1706,7 +1720,7 @@ namespace Flax.Build.Bindings
                             toManagedContent.AppendLine($"{internalTypeMarshaller}.ToManaged(unmanaged.{fieldInfo.Name});");
                             toNativeContent.AppendLine($"{internalTypeMarshaller}.ToNative(managed.{fieldInfo.Name});");
                             freeContents.AppendLine($"{internalTypeMarshaller}.Free(unmanaged.{fieldInfo.Name});");
-                            freeContents2.AppendLine($"{internalTypeMarshaller}.Free(unmanaged.{fieldInfo.Name});");
+                            freeContents2.AppendLine($"{internalTypeMarshaller}.NativeToManaged.Free(unmanaged.{fieldInfo.Name});");
                         }
                         /*else if (originalType == "Guid")
                         {
@@ -1721,73 +1735,109 @@ namespace Flax.Build.Bindings
                     }
 
                     // Native struct end
-                    indent = indent.Substring(0, indent.Length - 4);
-                    contents.AppendLine(indent + "}").AppendLine();
+                    structIndent = structIndent.Substring(0, structIndent.Length - 4);
+                    structContents.AppendLine(structIndent + "}").AppendLine();
 
                     toNativeContent.Append("return unmanaged;");
                     toManagedContent.Append("return managed;");
                 }
 
-                var indent2 = indent + "    ";
-                var indent3 = indent2 + "    ";
+                contents.AppendLine(string.Join("\n" + indent, (indent + $$"""
+                /// <summary>
+                /// Marshaller for type <see cref="{{structureInfo.Name}}"/>.
+                /// </summary>
+                {{InsertHideInEditorSection()}}
+                [CustomMarshaller(typeof({{structureInfo.Name}}), MarshalMode.ManagedToUnmanagedIn, typeof({{marshallerFullName}}.ManagedToNative))]
+                [CustomMarshaller(typeof({{structureInfo.Name}}), MarshalMode.UnmanagedToManagedOut, typeof({{marshallerFullName}}.ManagedToNative))]
+                [CustomMarshaller(typeof({{structureInfo.Name}}), MarshalMode.ElementIn, typeof({{marshallerFullName}}.ManagedToNative))]
+                [CustomMarshaller(typeof({{structureInfo.Name}}), MarshalMode.ManagedToUnmanagedOut, typeof({{marshallerFullName}}.NativeToManaged))]
+                [CustomMarshaller(typeof({{structureInfo.Name}}), MarshalMode.UnmanagedToManagedIn, typeof({{marshallerFullName}}.NativeToManaged))]
+                [CustomMarshaller(typeof({{structureInfo.Name}}), MarshalMode.ElementOut, typeof({{marshallerFullName}}.NativeToManaged))]
+                [CustomMarshaller(typeof({{structureInfo.Name}}), MarshalMode.ManagedToUnmanagedRef, typeof({{marshallerFullName}}.Bidirectional))]
+                [CustomMarshaller(typeof({{structureInfo.Name}}), MarshalMode.UnmanagedToManagedRef, typeof({{marshallerFullName}}.Bidirectional))]
+                [CustomMarshaller(typeof({{structureInfo.Name}}), MarshalMode.ElementRef, typeof({{marshallerFullName}}))]
+                {{GenerateCSharpAccessLevel(structureInfo.Access)}}static unsafe class {{marshallerName}}
+                {
+                #pragma warning disable 1591
+                    {{structContents.Replace("\n", "\n" + "    ").ToString().TrimEnd()}}
 
-                // NativeToManaged stateless shape
-                // NOTE: GCHandles of FlaxEngine.Object must not be released in this case
-                if (buildData.Target != null && buildData.Target.IsEditor)
-                    contents.Append(indent).AppendLine("[HideInEditor]");
-                contents.Append(indent).AppendLine("public static class NativeToManaged").Append(indent).AppendLine("{");
-                contents.Append(indent2).AppendLine($"public static {structureInfo.Name} ConvertToManaged({structureInfo.Name}Internal unmanaged) => {marshallerName}.ToManaged(unmanaged);");
-                contents.Append(indent2).AppendLine($"public static {structureInfo.Name}Internal ConvertToUnmanaged({structureInfo.Name} managed) => {marshallerName}.ToNative(managed);");
-                contents.Append(indent2).AppendLine($"public static void Free({structureInfo.Name}Internal unmanaged)");
-                contents.Append(indent2).AppendLine("{").Append(indent3).AppendLine(freeContents2.Replace("\n", "\n" + indent3).ToString().TrimEnd()).Append(indent2).AppendLine("}");
-                contents.Append(indent).AppendLine("}");
+                    {{InsertHideInEditorSection()}}
+                    public static class NativeToManaged
+                    {
+                        public static {{structureInfo.Name}} ConvertToManaged({{structureInfo.Name}}Internal unmanaged) => {{marshallerFullName}}.ToManaged(unmanaged);
+                        public static {{structureInfo.Name}}Internal ConvertToUnmanaged({{structureInfo.Name}} managed) => {{marshallerFullName}}.ToNative(managed);
+                        public static void Free({{structureInfo.Name}}Internal unmanaged)
+                        {
+                            {{freeContents2.Replace("\n", "\n" + "            ").ToString().TrimEnd()}}
+                        }
+                    }
+                    {{InsertHideInEditorSection()}}
+                    public static class ManagedToNative
+                    {
+                        public static {{structureInfo.Name}} ConvertToManaged({{structureInfo.Name}}Internal unmanaged) => {{marshallerFullName}}.ToManaged(unmanaged);
+                        public static {{structureInfo.Name}}Internal ConvertToUnmanaged({{structureInfo.Name}} managed) => {{marshallerFullName}}.ToNative(managed);
+                        public static void Free({{structureInfo.Name}}Internal unmanaged) => {{marshallerFullName}}.Free(unmanaged);
+                    }
+                    {{InsertHideInEditorSection()}}
+                    public struct Bidirectional
+                    {
+                        {{structureInfo.Name}} managed;
+                        {{structureInfo.Name}}Internal unmanaged;
+                        public void FromManaged({{structureInfo.Name}} managed) => this.managed = managed;
+                        public {{structureInfo.Name}}Internal ToUnmanaged() { unmanaged = {{marshallerFullName}}.ToNative(managed); return unmanaged; }
+                        //public void FromUnmanaged({{structureInfo.Name}}Internal unmanaged) { {{marshallerFullName}}.Free(this.unmanaged.Value); this.unmanaged = unmanaged; }
+                        public void FromUnmanaged({{structureInfo.Name}}Internal unmanaged) => this.unmanaged = unmanaged;
+                        public {{structureInfo.Name}} ToManaged() { managed = {{marshallerFullName}}.ToManaged(unmanaged); return managed; }
+                        public void Free() => NativeToManaged.Free(unmanaged);
+                    }
+                    internal static {{structureInfo.Name}} ConvertToManaged({{structureInfo.Name}}Internal unmanaged) => ToManaged(unmanaged);
+                    internal static {{structureInfo.Name}}Internal ConvertToUnmanaged({{structureInfo.Name}} managed) => ToNative(managed);
+                    internal static void Free({{structureInfo.Name}}Internal unmanaged)
+                    {
+                        {{freeContents.Replace("\n", "\n" + "        ").ToString().TrimEnd()}}
+                    }
 
-                // ManagedToNative stateless shape
-                if (buildData.Target != null && buildData.Target.IsEditor)
-                    contents.Append(indent).AppendLine("[HideInEditor]");
-                contents.Append(indent).AppendLine($"public static class ManagedToNative").Append(indent).AppendLine("{");
-                contents.Append(indent2).AppendLine($"public static {structureInfo.Name} ConvertToManaged({structureInfo.Name}Internal unmanaged) => {marshallerName}.ToManaged(unmanaged);");
-                contents.Append(indent2).AppendLine($"public static {structureInfo.Name}Internal ConvertToUnmanaged({structureInfo.Name} managed) => {marshallerName}.ToNative(managed);");
-                contents.Append(indent2).AppendLine($"public static void Free({structureInfo.Name}Internal unmanaged) => {marshallerName}.Free(unmanaged);");
-                contents.Append(indent).AppendLine("}");
+                    internal static {{structureInfo.Name}} ToManaged({{structureInfo.Name}}Internal unmanaged)
+                    {
+                        {{toManagedContent.Replace("\n", "\n" + "        ").ToString().TrimEnd()}}
+                    }
+                    internal static {{structureInfo.Name}}Internal ToNative({{structureInfo.Name}} managed)
+                    {
+                        {{toNativeContent.Replace("\n", "\n" + "        ").ToString().TrimEnd()}}
+                    }
+                #pragma warning restore 1591
+                }
+                """).Split(new char[] { '\n' })));
 
-                // Bidirectional stateful shape
-                // NOTE: GCHandles of FlaxEngine.Object must not be released unless they were allocated by this marshaller
-                if (buildData.Target != null && buildData.Target.IsEditor)
-                    contents.Append(indent).AppendLine("[HideInEditor]");
-                contents.Append(indent).AppendLine($"public struct Bidirectional").Append(indent).AppendLine("{");
-                contents.Append(indent2).AppendLine($"{structureInfo.Name} managed;");
-                contents.Append(indent2).AppendLine($"{structureInfo.Name}Internal unmanaged;");
-                contents.Append(indent2).AppendLine($"public void FromManaged({structureInfo.Name} managed) => this.managed = managed;");
-                contents.Append(indent2).AppendLine($"public {structureInfo.Name}Internal ToUnmanaged() {{ unmanaged = {marshallerName}.ToNative(managed); return unmanaged; }}");
-                //contents.Append(indent2).AppendLine($"public void FromUnmanaged({structureInfo.Name}Internal unmanaged) {{ {marshallerName}.Free(this.unmanaged.Value); this.unmanaged = unmanaged; }}");
-                contents.Append(indent2).AppendLine($"public void FromUnmanaged({structureInfo.Name}Internal unmanaged) => this.unmanaged = unmanaged;");
-                contents.Append(indent2).AppendLine($"public {structureInfo.Name} ToManaged() {{ managed = {marshallerName}.ToManaged(unmanaged); return managed; }}");
-                contents.Append(indent2).AppendLine($"public void Free() => NativeToManaged.Free(unmanaged);");
-                contents.Append(indent).AppendLine("}");
-
-                // Bidirectional stateless shape
-                contents.Append(indent).AppendLine($"internal static {structureInfo.Name} ConvertToManaged({structureInfo.Name}Internal unmanaged) => ToManaged(unmanaged);");
-                contents.Append(indent).AppendLine($"internal static {structureInfo.Name}Internal ConvertToUnmanaged({structureInfo.Name} managed) => ToNative(managed);");
-                contents.Append(indent).AppendLine($"internal static void Free({structureInfo.Name}Internal unmanaged)");
-                contents.Append(indent).AppendLine("{").Append(indent2).AppendLine(freeContents.Replace("\n", "\n" + indent2).ToString().TrimEnd()).Append(indent).AppendLine("}");
-
-                // Managed/native converters
-                contents.Append(indent).AppendLine($"internal static {structureInfo.Name} ToManaged({structureInfo.Name}Internal unmanaged)");
-                contents.Append(indent).AppendLine("{").Append(indent2).AppendLine(toManagedContent.Replace("\n", "\n" + indent2).ToString().TrimEnd()).Append(indent).AppendLine("}");
-                contents.Append(indent).AppendLine($"internal static {structureInfo.Name}Internal ToNative({structureInfo.Name} managed)");
-                contents.Append(indent).AppendLine("{").Append(indent2).AppendLine(toNativeContent.Replace("\n", "\n" + indent2).ToString().TrimEnd()).Append(indent).AppendLine("}");
-
-                contents.AppendLine("#pragma warning restore 1591");
-                indent = indent.Substring(0, indent.Length - 4);
-                contents.Append(indent).AppendLine("}").AppendLine();
+                string InsertHideInEditorSection()
+                {
+                    return (buildData.Target != null & buildData.Target.IsEditor) ? $$"""
+                        [HideInEditor]
+                        """ : "";
+                }
 
                 PutStringBuilder(toManagedContent);
                 PutStringBuilder(toNativeContent);
                 PutStringBuilder(freeContents);
                 PutStringBuilder(freeContents2);
+                PutStringBuilder(structContents);
+
+                // Namespace end
+                if (!string.IsNullOrEmpty(structureInfo.Namespace))
+                {
+                    contents.AppendLine("}");
+                    indent = indent.Substring(0, indent.Length - 4);
+                }
             }
 #endif
+            // Namespace begin
+            if (!string.IsNullOrEmpty(structureInfo.Namespace))
+            {
+                contents.AppendLine($"namespace {structureInfo.Namespace}");
+                contents.AppendLine("{");
+                indent += "    ";
+            }
+
             // Struct docs
             GenerateCSharpComment(contents, indent, structureInfo.Comment);
 
@@ -1979,8 +2029,7 @@ namespace Flax.Build.Bindings
             // Namespace begin
             if (!string.IsNullOrEmpty(enumInfo.Namespace))
             {
-                contents.AppendFormat("namespace ");
-                contents.AppendLine(enumInfo.Namespace);
+                contents.AppendLine($"namespace {enumInfo.Namespace}");
                 contents.AppendLine("{");
                 indent += "    ";
             }
@@ -2026,10 +2075,11 @@ namespace Flax.Build.Bindings
         {
             // Begin
             contents.AppendLine();
+            string interopNamespace = "";
             if (!string.IsNullOrEmpty(interfaceInfo.Namespace))
             {
-                contents.AppendFormat("namespace ");
-                contents.AppendLine(interfaceInfo.Namespace);
+                interopNamespace = $"{interfaceInfo.Namespace}.Interop";
+                contents.AppendLine($"namespace {interfaceInfo.Namespace}");
                 contents.AppendLine("{");
                 indent += "    ";
             }
@@ -2096,14 +2146,22 @@ namespace Flax.Build.Bindings
 
 #if USE_NETCORE
             {
+                if (!string.IsNullOrEmpty(interopNamespace))
+                {
+                    contents.AppendLine("}");
+                    contents.AppendLine($"namespace {interopNamespace}");
+                    contents.AppendLine("{");
+                }
+
                 string marshallerName = interfaceInfo.Name + "Marshaller";
+                string marshallerFullName = !string.IsNullOrEmpty(interopNamespace) ? $"{interopNamespace}.{marshallerName}" : marshallerName;
                 contents.AppendLine();
                 contents.Append(indent).AppendLine("/// <summary>");
                 contents.Append(indent).AppendLine($"/// Marshaller for type <see cref=\"{interfaceInfo.Name}\"/>.");
                 contents.Append(indent).AppendLine("/// </summary>");
                 if (buildData.Target != null & buildData.Target.IsEditor)
                     contents.Append(indent).AppendLine("[HideInEditor]");
-                contents.Append(indent).AppendLine($"[CustomMarshaller(typeof({interfaceInfo.Name}), MarshalMode.Default, typeof({marshallerName}))]");
+                contents.Append(indent).AppendLine($"[CustomMarshaller(typeof({interfaceInfo.Name}), MarshalMode.Default, typeof({marshallerFullName}))]");
                 contents.Append(indent).AppendLine($"public static class {marshallerName}");
                 contents.Append(indent).AppendLine("{");
                 contents.AppendLine("#pragma warning disable 1591");

@@ -1019,9 +1019,6 @@ namespace FlaxEngine.Interop
         {
 #if FLAX_EDITOR
             // Clear all caches which might hold references to assemblies in collectible ALC
-            typeCache.Clear();
-
-            // Release all references in collectible ALC
             cachedDelegatesCollectible.Clear();
             foreach (var pair in managedTypesCollectible)
                 pair.Value.handle.Free();

@@ -308,7 +308,7 @@ public:
     /// </summary>
     /// <param name="name">The parameter name.</param>
     /// <returns>The value.</returns>
-    API_FUNCTION() Variant GetParameterValue(const StringView& name);
+    API_FUNCTION() const Variant& GetParameterValue(const StringView& name) const;
 
     /// <summary>
     /// Sets the anim graph instance parameter value.
@@ -322,7 +322,7 @@ public:
     /// </summary>
     /// <param name="id">The parameter id.</param>
     /// <returns>The value.</returns>
-    API_FUNCTION() Variant GetParameterValue(const Guid& id);
+    API_FUNCTION() const Variant& GetParameterValue(const Guid& id) const;
 
     /// <summary>
     /// Sets the anim graph instance parameter value.
