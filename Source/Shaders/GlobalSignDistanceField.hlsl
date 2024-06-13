@@ -250,6 +250,7 @@ GlobalSDFHit RayTraceGlobalSDF(const GlobalSDFData data, Texture3D<float> tex, T
             for (; step < 250 && stepTime < intersections.y && hit.HitTime < 0.0f; step++)
             {
                 float3 stepPosition = worldPosition + trace.WorldDirection * stepTime;
+                float stepScale = trace.StepScale;
 
                 // Sample SDF
                 float cascadeMaxDistance;
@@ -260,7 +261,10 @@ GlobalSDFHit RayTraceGlobalSDF(const GlobalSDFData data, Texture3D<float> tex, T
                 {
                     float stepDistanceTex = tex.SampleLevel(SamplerLinearClamp, textureUV, 0);
                     if (stepDistanceTex < chunkMarginDistance)
+                    {
                         stepDistance = stepDistanceTex;
+                        stepScale *= 0.63f; // Perform smaller steps nearby geometry
+                    }
                 }
                 else
                 {
@@ -292,7 +296,7 @@ GlobalSDFHit RayTraceGlobalSDF(const GlobalSDFData data, Texture3D<float> tex, T
                 }
 
                 // Move forward
-                stepTime += max(stepDistance * trace.StepScale, voxelSize);
+                stepTime += max(stepDistance * stepScale, voxelSize);
             }
             hit.StepsCount += step;
         }
