@@ -67,14 +67,12 @@ public:
         Float3 ProbesOrigin;
         float ProbesSpacing = 0.0f;
         Int3 ProbeScrollOffsets;
-        Int3 ProbeScrollDirections;
         Int3 ProbeScrollClears;
 
         void Clear()
         {
             ProbesOrigin = Float3::Zero;
             ProbeScrollOffsets = Int3::Zero;
-            ProbeScrollDirections = Int3::Zero;
             ProbeScrollClears = Int3::Zero;
         }
     } Cascades[4];
@@ -400,6 +398,7 @@ bool DynamicDiffuseGlobalIlluminationPass::RenderInner(RenderContext& renderCont
     const uint64 cascadeFrequencies[] = { 2, 3, 5, 7 };
     //const uint64 cascadeFrequencies[] = { 1, 2, 3, 5 };
     //const uint64 cascadeFrequencies[] = { 1, 1, 1, 1 };
+    //const uint64 cascadeFrequencies[] = { 10, 10, 10, 10 };
     bool cascadeSkipUpdate[4];
     for (int32 cascadeIndex = 0; cascadeIndex < cascadesCount; cascadeIndex++)
     {
@@ -413,16 +412,6 @@ bool DynamicDiffuseGlobalIlluminationPass::RenderInner(RenderContext& renderCont
             continue;
         auto& cascade = ddgiData.Cascades[cascadeIndex];
 
-        // Reset the volume origin and scroll offsets for each axis once it overflows
-        for (int32 axis = 0; axis < 3; axis++)
-        {
-            if (cascade.ProbeScrollOffsets.Raw[axis] != 0 && (cascade.ProbeScrollOffsets.Raw[axis] % ddgiData.ProbeCounts.Raw[axis] == 0))
-            {
-                cascade.ProbesOrigin.Raw[axis] += (float)ddgiData.ProbeCounts.Raw[axis] * cascade.ProbesSpacing * (float)cascade.ProbeScrollDirections.Raw[axis];
-                cascade.ProbeScrollOffsets.Raw[axis] = 0;
-            }
-        }
-
         // Calculate the count of grid cells between the view origin and the scroll anchor
         const Float3 volumeOrigin = cascade.ProbesOrigin + Float3(cascade.ProbeScrollOffsets) * cascade.ProbesSpacing;
         const Float3 translation = viewOrigins[cascadeIndex] - volumeOrigin;
@@ -432,7 +421,24 @@ bool DynamicDiffuseGlobalIlluminationPass::RenderInner(RenderContext& renderCont
             const int32 scroll = value >= 0.0f ? (int32)Math::Floor(value) : (int32)Math::Ceil(value);
             cascade.ProbeScrollOffsets.Raw[axis] += scroll;
             cascade.ProbeScrollClears.Raw[axis] = scroll;
-            cascade.ProbeScrollDirections.Raw[axis] = translation.Raw[axis] >= 0.0f ? 1 : -1;
+        }
+
+        // Shift the volume origin based on scroll offsets for each axis once it overflows
+        for (int32 axis = 0; axis < 3; axis++)
+        {
+            // different volume scroll that preserves the scroll offset delta relative to the probe count
+            const int32 probeCount = ddgiData.ProbeCounts.Raw[axis];
+            int32& scrollOffset = cascade.ProbeScrollOffsets.Raw[axis];
+            while (scrollOffset >= probeCount)
+            {
+                cascade.ProbesOrigin.Raw[axis] += cascade.ProbesSpacing * probeCount;
+                scrollOffset -= probeCount;
+            }
+            while (scrollOffset <= -probeCount)
+            {
+                cascade.ProbesOrigin.Raw[axis] -= cascade.ProbesSpacing * probeCount;
+                scrollOffset += probeCount;
+            }
         }
     }
 

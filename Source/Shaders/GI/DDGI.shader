@@ -111,11 +111,28 @@ void CS_Classify(uint3 DispatchThreadId : SV_DispatchThreadID)
         }
     }
 
+    // Check if probe was scrolled
+    int3 probeScrollClears = ProbeScrollClears[CascadeIndex].xyz;
+    bool wasScrolled = false;
+    UNROLL
+    for (uint planeIndex = 0; planeIndex < 3; planeIndex++)
+    {
+        int probeCount = (int)DDGI.ProbesCounts[planeIndex];
+        int newCoord = (int)probeCoords[planeIndex] + probeScrollClears[planeIndex];
+        if (newCoord < 0 || newCoord >= probeCount)
+            wasScrolled = true;
+        newCoord = (int)probeCoords[planeIndex] - probeScrollClears[planeIndex];
+        if (newCoord < 0 || newCoord >= probeCount)
+            wasScrolled = true;
+    }
+
     // Load probe state and position
     float4 probeData = RWProbesData[probeDataCoords];
     uint probeState = DecodeDDGIProbeState(probeData);
     uint probeStateOld = probeState;
     float3 probeOffset = probeData.xyz * probesSpacing; // Probe offset is [-1;1] within probes spacing
+    if (wasScrolled || probeState == DDGI_PROBE_STATE_INACTIVE)
+        probeOffset = float3(0, 0, 0); // Clear offset for a new probe
     float3 probeOffsetOld = probeOffset;
     float3 probePosition = probeBasePosition + probeOffset;
 
@@ -205,18 +222,6 @@ void CS_Classify(uint3 DispatchThreadId : SV_DispatchThreadID)
                 probeState = DDGI_PROBE_STATE_INACTIVE;
 #endif
             }
-        }
-
-        // Check if probe was scrolled
-        int3 probeScrollClears = ProbeScrollClears[CascadeIndex].xyz;
-        bool wasScrolled = false;
-        UNROLL
-        for (uint planeIndex = 0; planeIndex < 3; planeIndex++)
-        {
-            int probeCount = (int)DDGI.ProbesCounts[planeIndex];
-            int newCord = (int)probeCoords[planeIndex] + probeScrollClears[planeIndex];
-            if (newCord < 0 || newCord >= probeCount)
-                wasScrolled = true;
         }
 
         // If probe was in a different location or was activated now then mark it as activated
@@ -468,8 +473,9 @@ void CS_UpdateProbes(uint3 GroupThreadId : SV_GroupThreadID, uint3 GroupId : SV_
 
     // Blend current value with the previous probe data
     float historyWeight = DDGI.ProbeHistoryWeight;
+    //historyWeight = 1.0f;
     //historyWeight = 0.0f;
-    if (ResetBlend || wasActivated || dot(previous, previous) == 0)
+    if (ResetBlend || wasActivated)
         historyWeight = 0.0f;
 #if DDGI_PROBE_UPDATE_MODE == 0
     result *= DDGI.IndirectLightingIntensity;
