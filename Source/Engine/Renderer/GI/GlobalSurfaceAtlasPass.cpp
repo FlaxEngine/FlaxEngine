@@ -109,6 +109,7 @@ class GlobalSurfaceAtlasCustomBuffer : public RenderBuffers::CustomBuffer, publi
 {
 public:
     int32 Resolution = 0;
+    int32 AtlasPixelsTotal = 0;
     int32 AtlasPixelsUsed = 0;
     uint64 LastFrameAtlasInsertFail = 0;
     uint64 LastFrameAtlasDefragmentation = 0;
@@ -394,6 +395,7 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
         INIT_ATLAS_TEXTURE(AtlasDepth, PixelFormat::D16_UNorm);
 #undef INIT_ATLAS_TEXTURE
         surfaceAtlasData.Resolution = resolution;
+        surfaceAtlasData.AtlasPixelsTotal = resolution * resolution;
         if (!surfaceAtlasData.ChunksBuffer)
         {
             surfaceAtlasData.ChunksBuffer = GPUDevice::Instance->CreateBuffer(TEXT("GlobalSurfaceAtlas.ChunksBuffer"));
@@ -409,7 +411,7 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
         constexpr float maxUsageToDefrag = 0.8f;
         if (currentFrame - surfaceAtlasData.LastFrameAtlasInsertFail < 10 &&
             currentFrame - surfaceAtlasData.LastFrameAtlasDefragmentation > 60 &&
-            (float)surfaceAtlasData.AtlasPixelsUsed / (resolution * resolution) < maxUsageToDefrag)
+            (float)surfaceAtlasData.AtlasPixelsUsed / surfaceAtlasData.AtlasPixelsTotal < maxUsageToDefrag)
         {
             surfaceAtlasData.ClearObjects();
         }
@@ -1231,7 +1233,10 @@ void GlobalSurfaceAtlasPass::RasterizeActor(Actor* actor, void* actorObject, con
         }
 
         // Insert tile into atlas
-        auto* tile = surfaceAtlasData.AtlasTiles->Insert(tileResolution, tileResolution, 0, &surfaceAtlasData, actorObject, tileIndex);
+        uint16 tilePixels = tileResolution * tileResolution;
+        GlobalSurfaceAtlasTile* tile = nullptr;
+        if (tilePixels <= surfaceAtlasData.AtlasPixelsTotal - surfaceAtlasData.AtlasPixelsUsed)
+            tile = surfaceAtlasData.AtlasTiles->Insert(tileResolution, tileResolution, 0, &surfaceAtlasData, actorObject, tileIndex);
         if (tile)
         {
             if (!object)
