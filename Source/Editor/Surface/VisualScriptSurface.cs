@@ -242,6 +242,7 @@ namespace FlaxEditor.Surface
                         node.DefaultValues[0] = name;
                         node.DefaultValues[1] = parameters.Length;
                         node.Title = "Override " + name;
+                        node.Tag = member;
                         nodes.Add(node);
                     }
                 }
