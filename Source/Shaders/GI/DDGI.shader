@@ -21,7 +21,8 @@
 #define DDGI_TRACE_RAYS_LIMIT 256 // Limit of rays per-probe (runtime value can be smaller)
 #define DDGI_PROBE_UPDATE_BORDERS_GROUP_SIZE 8
 #define DDGI_PROBE_CLASSIFY_GROUP_SIZE 32
-#define DDGI_PROBE_RELOCATE_ITERATIVE 0 // If true, probes relocation algorithm tries to move them in additive way, otherwise all nearby locations are checked to find the best position
+#define DDGI_PROBE_RELOCATE_ITERATIVE 1 // If true, probes relocation algorithm tries to move them in additive way, otherwise all nearby locations are checked to find the best position
+#define DDGI_PROBE_RELOCATE_FIND_BEST 1 // If true, probes relocation algorithm tries to move to the best matching location within nearby area
 
 META_CB_BEGIN(0, Data0)
 DDGIData DDGI;
@@ -113,12 +114,10 @@ void CS_Classify(uint3 DispatchThreadId : SV_DispatchThreadID)
     // Load probe state and position
     float4 probeData = RWProbesData[probeDataCoords];
     uint probeState = DecodeDDGIProbeState(probeData);
+    uint probeStateOld = probeState;
     float3 probeOffset = probeData.xyz * probesSpacing; // Probe offset is [-1;1] within probes spacing
     float3 probeOffsetOld = probeOffset;
-    float3 probePosition = probeBasePosition;
-#if DDGI_PROBE_RELOCATE_ITERATIVE
-    probePosition += probeOffset;
-#endif
+    float3 probePosition = probeBasePosition + probeOffset;
 
     // Use Global SDF to quickly get distance and direction to the scene geometry
 #if DDGI_PROBE_RELOCATE_ITERATIVE
@@ -128,10 +127,12 @@ void CS_Classify(uint3 DispatchThreadId : SV_DispatchThreadID)
     float sdf = SampleGlobalSDF(GlobalSDF, GlobalSDFTex, GlobalSDFMip, probePosition);
 #endif
     float sdfDst = abs(sdf);
-    float threshold = GlobalSDF.CascadeVoxelSize[CascadeIndex];
-    float distanceLimit = length(probesSpacing) * ProbesDistanceLimit;
-    float relocateLimit = length(probesSpacing) * 0.6f;
-    if (sdfDst > distanceLimit) // Probe is too far from geometry
+    const float ProbesDistanceLimits[4] = { 1.1f, 2.3f, 2.5f, 2.5f };
+    const float ProbesRelocateLimits[4] = { 0.4f, 0.5f, 0.6f, 0.7f };
+    float voxelLimit = GlobalSDF.CascadeVoxelSize[CascadeIndex];
+    float distanceLimit = length(probesSpacing) * ProbesDistanceLimits[CascadeIndex];
+    float relocateLimit = length(probesSpacing) * ProbesRelocateLimits[CascadeIndex];
+    if (sdfDst > distanceLimit + length(probeOffset)) // Probe is too far from geometry (or deep inside)
     {
         // Disable it
         probeOffset = float3(0, 0, 0);
@@ -139,64 +140,72 @@ void CS_Classify(uint3 DispatchThreadId : SV_DispatchThreadID)
     }
     else
     {
-#if DDGI_PROBE_RELOCATE_ITERATIVE
-        if (sdf < threshold) // Probe is inside geometry
+        // Relocate only if probe location is not good enough
+        probeState = DDGI_PROBE_STATE_ACTIVE;
+        if (sdf <= voxelLimit)
         {
-            if (sdfDst < relocateLimit)
+#if DDGI_PROBE_RELOCATE_ITERATIVE
             {
-                float3 offsetToAdd = sdfNormal * (sdf + threshold);
-                if (distance(probeOffset, offsetToAdd) < relocateLimit)
+                // Use SDF gradient to relocate probe away the surface
+                float iterativeRelocateSpeed = probeStateOld != DDGI_PROBE_STATE_ACTIVE ? 1.0f : 0.3f;
+                float3 offsetToSet = probeOffset + sdfNormal * ((sdf + voxelLimit) * iterativeRelocateSpeed);
+                if (length(offsetToSet) < relocateLimit)
                 {
                     // Relocate it
-                    probeOffset += offsetToAdd;
+                    probeOffset = offsetToSet;
                 }
+                else
+                {
+                    // Reset offset
+                    probeOffset = float3(0, 0, 0);
+                }
+
+                // Read SDF at the new position for additional check
+                probePosition = probeBasePosition + probeOffset;
+                sdf = SampleGlobalSDF(GlobalSDF, GlobalSDFTex, GlobalSDFMip, probePosition);
+                sdfDst = abs(sdf);
             }
-            else
-            {
-                // Reset relocation
-                probeOffset = float3(0, 0, 0);
-            }
-        }
-        else if (sdf > threshold * 4.0f) // Probe is far enough from any geometry
-        {
-            // Reset relocation
-            probeOffset = float3(0, 0, 0);
-        }
-
-        // Check if probe is relocated but the base location is fine
-        sdf = SampleGlobalSDF(GlobalSDF, GlobalSDFTex, probeBasePosition.xyz);
-        if (sdf > threshold)
-        {
-            // Reset relocation
-            probeOffset = float3(0, 0, 0);
-        }
-#else
-        // Sample Global SDF around the probe location
-        uint sdfCascade = GetGlobalSDFCascade(GlobalSDF, probePosition);
-        float4 CachedProbeOffsets[64];
-        // TODO: test performance diff when using shared memory and larger thread group (is it worth it?)
-        for (uint x = 0; x < 4; x++)
-        for (uint y = 0; y < 4; y++)
-        for (uint z = 0; z < 4; z++)
-        {
-            float3 offset = Remap(float3(x, y, z), 0, 3, -0.5f, 0.5f) * relocateLimit;
-            float offsetSdf = SampleGlobalSDFCascade(GlobalSDF, GlobalSDFTex, probeBasePosition + offset, sdfCascade);
-            CachedProbeOffsets[x * 16 + y * 4 + z] = float4(offset, offsetSdf);
-        }
-
-        // Select the best probe location around the base position
-        float4 bestOffset = CachedProbeOffsets[0];
-        for (uint i = 1; i < 64; i++)
-        {
-            if (CachedProbeOffsets[i].w > bestOffset.w)
-                bestOffset = CachedProbeOffsets[i];
-        }
-
-        // Relocate the probe to the best found location (or zero if nothing good found)
-        if (bestOffset.w <= threshold)
-            bestOffset.xyz = float3(0, 0, 0);
-        probeOffset = bestOffset.xyz;
+            if (sdf <= voxelLimit * 1.1f) // Add some safe-bias to reduce artifacts
 #endif
+            {
+#if DDGI_PROBE_RELOCATE_FIND_BEST
+                // Sample Global SDF around the probe base location
+                uint sdfCascade = GetGlobalSDFCascade(GlobalSDF, probeBasePosition);
+                float4 CachedProbeOffsets[64];
+                for (uint x = 0; x < 4; x++)
+                for (uint y = 0; y < 4; y++)
+                for (uint z = 0; z < 4; z++)
+                {
+                    float3 offset = Remap(float3(x, y, z), 0, 3, -0.707f, 0.707f) * relocateLimit;
+                    float offsetSdf = SampleGlobalSDFCascade(GlobalSDF, GlobalSDFTex, probeBasePosition + offset, sdfCascade);
+                    CachedProbeOffsets[x * 16 + y * 4 + z] = float4(offset, offsetSdf);
+                }
+
+                // Select the best probe location around the base position
+                float4 bestOffset = CachedProbeOffsets[0];
+                for (uint i = 1; i < 64; i++)
+                {
+                    if (CachedProbeOffsets[i].w > bestOffset.w)
+                        bestOffset = CachedProbeOffsets[i];
+                }
+                if (bestOffset.w <= voxelLimit)
+                {
+                    // Disable probe that is too close to the geometry
+                    probeOffset = float3(0, 0, 0);
+                    probeState = DDGI_PROBE_STATE_INACTIVE;
+                }
+                else
+                {
+                    // Relocate the probe to the best found location
+                    probeOffset = bestOffset.xyz;
+                }
+#elif DDGI_PROBE_RELOCATE_ITERATIVE
+                // Disable probe
+                probeOffset = float3(0, 0, 0);
+                probeState = DDGI_PROBE_STATE_INACTIVE;
+#endif
+            }
+        }
 
         // Check if probe was scrolled
         int3 probeScrollClears = ProbeScrollClears[CascadeIndex].xyz;
@@ -210,10 +219,11 @@ void CS_Classify(uint3 DispatchThreadId : SV_DispatchThreadID)
                 wasScrolled = true;
         }
 
-        // If probe was in different location or was inactive last frame then mark it as activated
-        bool wasInactive = probeState == DDGI_PROBE_STATE_INACTIVE;
+        // If probe was in a different location or was activated now then mark it as activated
+        bool wasActivated = probeStateOld == DDGI_PROBE_STATE_INACTIVE;
         bool wasRelocated = distance(probeOffset, probeOffsetOld) > 2.0f;
-        probeState = wasInactive || wasScrolled || wasRelocated ? DDGI_PROBE_STATE_ACTIVATED : DDGI_PROBE_STATE_ACTIVE;
+        if ((wasActivated || wasScrolled || wasRelocated) && probeState == DDGI_PROBE_STATE_ACTIVE)
+            probeState = DDGI_PROBE_STATE_ACTIVATED;
     }
 
     // Save probe state
@@ -302,12 +312,12 @@ void CS_TraceRays(uint3 DispatchThreadId : SV_DispatchThreadID)
     float4 radiance;
     if (hit.IsHit())
     {
-        if (hit.HitSDF <= 0.0f && hit.HitTime <= GlobalSDF.CascadeVoxelSize[0])
+        /*if (hit.HitSDF <= 0.0f && hit.HitTime <= GlobalSDF.CascadeVoxelSize[0])
         {
             // Ray starts inside geometry (mark as negative distance and reduce it's influence during irradiance blending)
             radiance = float4(0, 0, 0, hit.HitTime * -0.25f);
         }
-        else
+        else*/
         {
             // Sample Global Surface Atlas to get the lighting at the hit location
             float3 hitPosition = hit.GetHitPosition(trace);

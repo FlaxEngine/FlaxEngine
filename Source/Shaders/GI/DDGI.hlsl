@@ -208,7 +208,7 @@ float3 SampleDDGIIrradiance(DDGIData data, Texture2D<snorm float4> probesData, T
         // Adjust weight curve to inject a small portion of light
         const float minWeightThreshold = 0.2f;
         if (weight < minWeightThreshold)
-            weight *= Square(weight) * (1.0f / (minWeightThreshold * minWeightThreshold));
+            weight *= weight * weight * (1.0f / (minWeightThreshold * minWeightThreshold));
 
         // Calculate trilinear weights based on the distance to each probe to smoothly transition between grid of 8 probes
         float3 trilinear = lerp(1.0f - biasAlpha, biasAlpha, (float3)probeCoordsOffset);
@@ -244,7 +244,7 @@ float3 SampleDDGIIrradiance(DDGIData data, Texture2D<snorm float4> probesData, T
     if (irradiance.a > 0.0f)
     {
         // Normalize irradiance
-        irradiance.rgb *= 1.f / irradiance.a;
+        irradiance.rgb *= 1.0f / irradiance.a;
 #if DDGI_SRGB_BLENDING
         irradiance.rgb *= irradiance.rgb;
 #endif

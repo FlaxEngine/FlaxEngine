@@ -200,6 +200,7 @@ void CS_RasterizeHeightfield(uint3 DispatchThreadId : SV_DispatchThreadID)
 
 		// Calculate distance from voxel center to the heightfield
 		float objectDistance = dot(heightfieldNormal, voxelWorldPos - heightfieldPosition);
+        //objectDistance += (1.0f - saturate(dot(heightfieldNormal, float3(0, 1, 0)))) * -50.0f;
 		if (objectDistance < thickness * 0.5f)
 			objectDistance = thickness - objectDistance;
 		minDistance = CombineSDF(minDistance, objectDistance);
