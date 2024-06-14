@@ -8,6 +8,7 @@ using System.Reflection;
 using FlaxEditor.GUI.ContextMenu;
 using FlaxEditor.GUI.Input;
 using FlaxEditor.Scripting;
+using FlaxEditor.Surface.Archetypes;
 using FlaxEngine;
 using FlaxEngine.GUI;
 using FlaxEngine.Utilities;
@@ -702,7 +703,7 @@ namespace FlaxEditor.Surface.ContextMenu
                     _surfaceStyle.GetConnectionColor(param.Type, archetype.ConnectionsHints, out typeColor);
                     if (param.IsOut)
                     {
-                        AddOutputElement(spriteHandle, typeColor, $"{param.Name} ({param.Type.Name})");
+                        AddOutputElement(spriteHandle, typeColor, $">{param.Name} ({param.Type.Name})");
                         continue;
                     }
 
@@ -751,23 +752,48 @@ namespace FlaxEditor.Surface.ContextMenu
                     {
                         if (element.Type == NodeElementType.Input)
                         {
-                            _surfaceStyle.GetConnectionColor(element.ConnectionsType, archetype.ConnectionsHints, out typeColor);
-                            AddInputElement(spriteHandle, typeColor, $"{element.Text} ({element.Type.ToString()})");
+                            var connectionsType = element.ConnectionsType;
+                            _surfaceStyle.GetConnectionColor(connectionsType, archetype.ConnectionsHints, out typeColor);
+                                
+                            if (connectionsType == null)
+                            {
+                                if(archetype == Archetypes.Constants.Nodes[12])
+                                    AddInputElement(spriteHandle, typeColor, $"-{element.Text} ({ConnectionsHint.Array.ToString()})");
+                                else if (archetype == Archetypes.Constants.Nodes[13])
+                                    AddInputElement(spriteHandle, typeColor, $"-{element.Text} ({ConnectionsHint.Dictionary.ToString()})");
+                                else
+                                    AddInputElement(spriteHandle, typeColor, $"-{element.Text} ({archetype.ConnectionsHints.ToString()})");
+                                continue;
+                            }
+                            
+                            AddInputElement(spriteHandle, typeColor, $"{element.Text} ({element.ConnectionsType.Name})");
                         }
                         else if (element.Type == NodeElementType.Output)
                         {
                             // TODO: better check for enums
-                            switch (archetype.TypeID)
+                            if (archetype == Archetypes.Constants.Nodes[10])
                             {
-                            case 11: 
                                 var t = new ScriptType(archetype.DefaultValues[0].GetType());
                                 _surfaceStyle.GetConnectionColor(t, archetype.ConnectionsHints, out typeColor);
                                 AddOutputElement(spriteHandle, typeColor, $"{t.Name}");
-                                break;
-                            default: 
-                                _surfaceStyle.GetConnectionColor(element.ConnectionsType, archetype.ConnectionsHints, out typeColor);
-                                AddOutputElement(spriteHandle, typeColor, $"{element.Text} ({element.Type.ToString()})");   
-                                break;
+                            }
+                            else
+                            {
+                                var connectionsType = element.ConnectionsType;
+                                _surfaceStyle.GetConnectionColor(connectionsType, archetype.ConnectionsHints, out typeColor);
+                                
+                                if (connectionsType == null)
+                                {
+                                    if(archetype == Archetypes.Constants.Nodes[12])
+                                        AddOutputElement(spriteHandle, typeColor, $"-{element.Text} ({ConnectionsHint.Array.ToString()})");
+                                    else if (archetype == Archetypes.Constants.Nodes[13])
+                                        AddOutputElement(spriteHandle, typeColor, $"-{element.Text} ({ConnectionsHint.Dictionary.ToString()})");
+                                    else
+                                        AddOutputElement(spriteHandle, typeColor, $"-{element.Text} ({archetype.ConnectionsHints.ToString()})");
+                                    continue;
+                                }
+                                
+                                AddOutputElement(spriteHandle, typeColor, $"-{element.Text} ({connectionsType.Name})");   
                             }
                         }
                     }
