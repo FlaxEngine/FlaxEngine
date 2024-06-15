@@ -68,8 +68,8 @@ void WheeledVehicle::SetDriveControl(DriveControlSettings value)
     {
         // Apply only on changed value
         if (i > _driveControl.SteerVsSpeed.Count() - 1 ||
-            (Math::NotNearEqual(_driveControl.SteerVsSpeed[i].Speed, value.SteerVsSpeed[i].Speed) ||
-             Math::NotNearEqual(_driveControl.SteerVsSpeed[i].Steer, value.SteerVsSpeed[i].Steer)))
+            Math::NotNearEqual(_driveControl.SteerVsSpeed[i].Speed, value.SteerVsSpeed[i].Speed) ||
+             Math::NotNearEqual(_driveControl.SteerVsSpeed[i].Steer, value.SteerVsSpeed[i].Steer))
         {
             SteerControl& steerVsSpeed = value.SteerVsSpeed[i];
             steerVsSpeed.Steer = Math::Saturate(steerVsSpeed.Steer);
