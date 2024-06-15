@@ -663,13 +663,10 @@ namespace FlaxEditor.Surface.ContextMenu
             
             Profiler.BeginEvent("VisjectCM.SetDescriptionPanelArchetype");
             
-            ScriptType declaringType;
-            string elementName, elementTypeName;
-            
             _descriptionInputPanel.RemoveChildren();
             _descriptionOutputPanel.RemoveChildren();
             
-            
+            ScriptType declaringType;
             if (archetype.Tag is ScriptMemberInfo memberInfo)
             {
                 var name = memberInfo.Name;
@@ -710,24 +707,25 @@ namespace FlaxEditor.Surface.ContextMenu
                 declaringType = archetype.DefaultType;
 
                 // Special handling for Pack nodes
-                if (archetype == Packing.Nodes[6] || archetype == Packing.Nodes[13])
+                if (archetype.GetInputOutputDescription != null)
                 {
-                    bool isOutput = archetype == Packing.Nodes[6];
-                    var type = TypeUtils.GetType((string)archetype.DefaultValues[0]);
-                    AddInputOutputElement(archetype, type, isOutput, $"{type.Name}");
-                    
-                    var fields = type.GetMembers(BindingFlags.Public | BindingFlags.Instance).Where(x => x.IsField).ToArray();
-                    var fieldsLength = fields.Length;
-                    for (var i = 0; i < fieldsLength; i++)
+                    archetype.GetInputOutputDescription.Invoke(archetype, out (string, ScriptType)[] inputs, out (string, ScriptType)[] outputs);
+
+                    if (inputs != null)
                     {
-                        var field = fields[i];
-                        AddInputOutputElement(archetype, field.ValueType, !isOutput, $"{field.Name} ({field.ValueType.Name})");
+                        for (int i = 0; i < inputs.Length; i++)
+                        {
+                            AddInputOutputElement(archetype, inputs[i].Item2, false, $"{inputs[i].Item1} ({inputs[i].Item2.Name})");
+                        }   
                     }
-                }
-                else if (archetype == Archetypes.Constants.Nodes[10])
-                {
-                    var t = new ScriptType(archetype.DefaultValues[0].GetType());
-                    AddInputOutputElement(archetype, t, true, $"ENUM {t.Name}");
+
+                    if (outputs != null)
+                    {
+                        for (int i = 0; i < outputs.Length; i++)
+                        {
+                            AddInputOutputElement(archetype, outputs[i].Item2, true, $"{outputs[i].Item1} ({outputs[i].Item2.Name})");
+                        }   
+                    }
                 }
                 else
                 {
@@ -737,17 +735,9 @@ namespace FlaxEditor.Surface.ContextMenu
                         {
                             bool isOutput = element.Type == NodeElementType.Output;
                             if (element.ConnectionsType == null)
-                            {
-                                if(archetype == Archetypes.Constants.Nodes[12])
-                                    AddInputOutputElement(archetype, element.ConnectionsType, isOutput, $"-{element.Text} ({ConnectionsHint.Array.ToString()})");
-                                else if (archetype == Archetypes.Constants.Nodes[13])
-                                    AddInputOutputElement(archetype, element.ConnectionsType, isOutput, $"-{element.Text} ({ConnectionsHint.Dictionary.ToString()})");
-                                else
-                                    AddInputOutputElement(archetype, element.ConnectionsType, isOutput, $"-{element.Text} ({archetype.ConnectionsHints.ToString()})");
-                                continue;
-                            }
-                            
-                            AddInputOutputElement(archetype, element.ConnectionsType, isOutput, $"-{element.Text} ({element.ConnectionsType.Name})");
+                                AddInputOutputElement(archetype, element.ConnectionsType, isOutput, $"-{element.Text} ({archetype.ConnectionsHints.ToString()})");
+                            else
+                                AddInputOutputElement(archetype, element.ConnectionsType, isOutput, $"-{element.Text} ({element.ConnectionsType.Name})");   
                         }
                     }
                 }

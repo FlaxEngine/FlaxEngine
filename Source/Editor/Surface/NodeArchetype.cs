@@ -90,9 +90,14 @@ namespace FlaxEditor.Surface
         public delegate SurfaceNode CreateCustomNodeFunc(uint id, VisjectSurfaceContext context, NodeArchetype nodeArch, GroupArchetype groupArch);
 
         /// <summary>
-        /// Checks if the given type is compatible with the given node archetype. Used for custom nodes
+        /// Checks if the given type is compatible with the given node archetype. Used for custom nodes.
         /// </summary>
         public delegate bool IsCompatible(NodeArchetype nodeArch, ScriptType portType, ConnectionsHint hint, VisjectSurfaceContext context);
+
+        /// <summary>
+        /// Gets description of inputs and outputs of the archetype. Used for special cases for the description panel.
+        /// </summary>
+        public delegate void GetElementsDescriptionFunc(NodeArchetype nodeArch, out (string, ScriptType)[] inputs, out (string, ScriptType)[] outputs);
 
         /// <summary>
         /// Unique node type ID within a single group.
@@ -143,6 +148,11 @@ namespace FlaxEditor.Surface
         /// Short node description.
         /// </summary>
         public string Description;
+
+        /// <summary>
+        /// Custom function to get descriptions of input and output elements. Used for description panel (optional).
+        /// </summary>
+        public GetElementsDescriptionFunc GetInputOutputDescription;
 
         /// <summary>
         /// Alternative node titles.
@@ -217,6 +227,7 @@ namespace FlaxEditor.Surface
                 SubTitle = SubTitle,
                 Signature = Signature,
                 Description = Description,
+                GetInputOutputDescription = GetInputOutputDescription,
                 AlternativeTitles = (string[])AlternativeTitles?.Clone(),
                 Tag = Tag,
                 SortScore = SortScore,
