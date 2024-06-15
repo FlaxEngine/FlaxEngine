@@ -664,12 +664,11 @@ namespace FlaxEditor.Surface.ContextMenu
             Profiler.BeginEvent("VisjectCM.SetDescriptionPanelArchetype");
             
             ScriptType declaringType;
-            Color typeColor;
+            string elementName, elementTypeName;
             
             _descriptionInputPanel.RemoveChildren();
             _descriptionOutputPanel.RemoveChildren();
             
-            var spriteHandle = _surfaceStyle.Icons.BoxOpen;
             
             if (archetype.Tag is ScriptMemberInfo memberInfo)
             {
@@ -683,31 +682,26 @@ namespace FlaxEditor.Surface.ContextMenu
                 _descriptionSignatureLabel.Text = memberInfo.DeclaringType + "." + name;
 
                 if (!memberInfo.IsStatic)
-                {
-                    _surfaceStyle.GetConnectionColor(declaringType, archetype.ConnectionsHints, out typeColor);
-                    AddInputElement(spriteHandle, typeColor, $">Instance ({memberInfo.DeclaringType.Name})");
-                }
+                    AddInputOutputElement(archetype, declaringType, false, $">Instance ({memberInfo.DeclaringType.Name})");
 
                 if (memberInfo.ValueType != ScriptType.Null && memberInfo.ValueType != ScriptType.Void)
                 {
-                    _surfaceStyle.GetConnectionColor(memberInfo.ValueType, archetype.ConnectionsHints, out typeColor);
                     if (memberInfo.IsField && archetype.Title.StartsWith("Set "))
-                        AddInputElement(spriteHandle, typeColor, $"({memberInfo.ValueType.Name})");
+                        AddInputOutputElement(archetype, memberInfo.ValueType, false, $"({memberInfo.ValueType.Name})");
                     else
-                        AddOutputElement(spriteHandle, typeColor, $">Return ({memberInfo.ValueType.Name})");
+                        AddInputOutputElement(archetype, memberInfo.ValueType, true, $"Return ({memberInfo.ValueType.Name})");
                 }
                 
                 for(int i = 0; i < memberInfo.ParametersCount; i++)
                 {
                     var param = memberInfo.GetParameters()[i];
-                    _surfaceStyle.GetConnectionColor(param.Type, archetype.ConnectionsHints, out typeColor);
                     if (param.IsOut)
                     {
-                        AddOutputElement(spriteHandle, typeColor, $">{param.Name} ({param.Type.Name})");
+                        AddInputOutputElement(archetype, param.Type, true, $">{param.Name} ({param.Type.Name})");
                         continue;
                     }
 
-                    AddInputElement(spriteHandle, typeColor, $"{param.Name} ({param.Type.Name})");
+                    AddInputOutputElement(archetype, param.Type, false, $">{param.Name} ({param.Type.Name})");
                 }
             }
             else
@@ -716,93 +710,52 @@ namespace FlaxEditor.Surface.ContextMenu
                 declaringType = archetype.DefaultType;
 
                 // Special handling for Pack nodes
-                if (archetype.TypeID == 26)
+                if (archetype == Packing.Nodes[6] || archetype == Packing.Nodes[13])
                 {
-                    var outputType = TypeUtils.GetType((string)archetype.DefaultValues[0]);
-                    _surfaceStyle.GetConnectionColor(outputType, archetype.ConnectionsHints, out typeColor);
-                    AddOutputElement(spriteHandle, typeColor, $"{outputType.Name}");
+                    bool isOutput = archetype == Packing.Nodes[6];
+                    var type = TypeUtils.GetType((string)archetype.DefaultValues[0]);
+                    AddInputOutputElement(archetype, type, isOutput, $"{type.Name}");
                     
-                    var fields = outputType.GetMembers(BindingFlags.Public | BindingFlags.Instance).Where(x => x.IsField).ToArray();
+                    var fields = type.GetMembers(BindingFlags.Public | BindingFlags.Instance).Where(x => x.IsField).ToArray();
                     var fieldsLength = fields.Length;
                     for (var i = 0; i < fieldsLength; i++)
                     {
                         var field = fields[i];
-                        _surfaceStyle.GetConnectionColor(field.ValueType, archetype.ConnectionsHints, out typeColor);
-                        AddInputElement(spriteHandle, typeColor, $"{field.Name} ({field.ValueType.Name})");
+                        AddInputOutputElement(archetype, field.ValueType, !isOutput, $"{field.Name} ({field.ValueType.Name})");
                     }
                 }
-                else if (archetype.TypeID == 36)
+                else if (archetype == Archetypes.Constants.Nodes[10])
                 {
-                    var inputType = TypeUtils.GetType((string)archetype.DefaultValues[0]);
-                    _surfaceStyle.GetConnectionColor(inputType, archetype.ConnectionsHints, out typeColor);
-                    AddInputElement(spriteHandle, typeColor, $"{inputType.Name}");
-                    
-                    var fields = inputType.GetMembers(BindingFlags.Public | BindingFlags.Instance).Where(x => x.IsField).ToArray();
-                    var fieldsLength = fields.Length;
-                    for (var i = 0; i < fieldsLength; i++)
-                    {
-                        var field = fields[i];
-                        _surfaceStyle.GetConnectionColor(field.ValueType, archetype.ConnectionsHints, out typeColor);
-                        AddOutputElement(spriteHandle, typeColor, $"{field.Name} ({field.ValueType.Name})");
-                    }
+                    var t = new ScriptType(archetype.DefaultValues[0].GetType());
+                    AddInputOutputElement(archetype, t, true, $"ENUM {t.Name}");
                 }
                 else
                 {
                     foreach (var element in archetype.Elements)
                     {
-                        if (element.Type == NodeElementType.Input)
+                        if (element.Type is NodeElementType.Input or NodeElementType.Output)
                         {
-                            var connectionsType = element.ConnectionsType;
-                            _surfaceStyle.GetConnectionColor(connectionsType, archetype.ConnectionsHints, out typeColor);
-                                
-                            if (connectionsType == null)
+                            bool isOutput = element.Type == NodeElementType.Output;
+                            if (element.ConnectionsType == null)
                             {
                                 if(archetype == Archetypes.Constants.Nodes[12])
-                                    AddInputElement(spriteHandle, typeColor, $"-{element.Text} ({ConnectionsHint.Array.ToString()})");
+                                    AddInputOutputElement(archetype, element.ConnectionsType, isOutput, $"-{element.Text} ({ConnectionsHint.Array.ToString()})");
                                 else if (archetype == Archetypes.Constants.Nodes[13])
-                                    AddInputElement(spriteHandle, typeColor, $"-{element.Text} ({ConnectionsHint.Dictionary.ToString()})");
+                                    AddInputOutputElement(archetype, element.ConnectionsType, isOutput, $"-{element.Text} ({ConnectionsHint.Dictionary.ToString()})");
                                 else
-                                    AddInputElement(spriteHandle, typeColor, $"-{element.Text} ({archetype.ConnectionsHints.ToString()})");
+                                    AddInputOutputElement(archetype, element.ConnectionsType, isOutput, $"-{element.Text} ({archetype.ConnectionsHints.ToString()})");
                                 continue;
                             }
                             
-                            AddInputElement(spriteHandle, typeColor, $"{element.Text} ({element.ConnectionsType.Name})");
-                        }
-                        else if (element.Type == NodeElementType.Output)
-                        {
-                            // TODO: better check for enums
-                            if (archetype == Archetypes.Constants.Nodes[10])
-                            {
-                                var t = new ScriptType(archetype.DefaultValues[0].GetType());
-                                _surfaceStyle.GetConnectionColor(t, archetype.ConnectionsHints, out typeColor);
-                                AddOutputElement(spriteHandle, typeColor, $"{t.Name}");
-                            }
-                            else
-                            {
-                                var connectionsType = element.ConnectionsType;
-                                _surfaceStyle.GetConnectionColor(connectionsType, archetype.ConnectionsHints, out typeColor);
-                                
-                                if (connectionsType == null)
-                                {
-                                    if(archetype == Archetypes.Constants.Nodes[12])
-                                        AddOutputElement(spriteHandle, typeColor, $"-{element.Text} ({ConnectionsHint.Array.ToString()})");
-                                    else if (archetype == Archetypes.Constants.Nodes[13])
-                                        AddOutputElement(spriteHandle, typeColor, $"-{element.Text} ({ConnectionsHint.Dictionary.ToString()})");
-                                    else
-                                        AddOutputElement(spriteHandle, typeColor, $"-{element.Text} ({archetype.ConnectionsHints.ToString()})");
-                                    continue;
-                                }
-                                
-                                AddOutputElement(spriteHandle, typeColor, $"-{element.Text} ({connectionsType.Name})");   
-                            }
+                            AddInputOutputElement(archetype, element.ConnectionsType, isOutput, $"-{element.Text} ({element.ConnectionsType.Name})");
                         }
                     }
                 }
             }
 
-            _surfaceStyle.GetConnectionColor(declaringType, archetype.ConnectionsHints, out typeColor);
-            _descriptionClassImage.Color = typeColor;
-            _descriptionClassImage.MouseOverColor = typeColor;
+            _surfaceStyle.GetConnectionColor(declaringType, archetype.ConnectionsHints, out var declaringTypeColor);
+            _descriptionClassImage.Color = declaringTypeColor;
+            _descriptionClassImage.MouseOverColor = declaringTypeColor;
             
             float panelHeight = _descriptionSignatureLabel.Height;
 
@@ -824,16 +777,18 @@ namespace FlaxEditor.Surface.ContextMenu
             Profiler.EndEvent();
         }
 
-        private void AddInputElement(SpriteHandle sprite, Color typeColor, string text)
+        private void AddInputOutputElement(NodeArchetype nodeArchetype, ScriptType type, bool isOutput, string text)
         {
             var elementPanel = new Panel()
             {
+                Parent = isOutput ? _descriptionOutputPanel : _descriptionInputPanel,
                 Width = Width * 0.5f,
                 Height = 16,
-                Parent = _descriptionInputPanel,
                 AnchorPreset = AnchorPresets.TopLeft
             };
             
+            var sprite = _surfaceStyle.Icons.BoxOpen;
+            _surfaceStyle.GetConnectionColor(type, nodeArchetype.ConnectionsHints, out var typeColor);
             elementPanel.AddChild(new Image(2, 0, 12, 12)
             {
                 Brush = new SpriteBrush(sprite),
@@ -849,36 +804,6 @@ namespace FlaxEditor.Surface.ContextMenu
                 VerticalAlignment = TextAlignment.Near,
                 Wrapping = TextWrapping.WrapWords,
                 AutoHeight = true,
-            };
-            elementText.SetAnchorPreset(AnchorPresets.TopLeft, true);
-            elementPanel.AddChild(elementText);
-            elementPanel.Height = elementText.Height;
-        }
-        
-        private void AddOutputElement(SpriteHandle sprite, Color typeColor, string text)
-        {
-            var elementPanel = new Panel()
-            {
-                Width = Width * 0.5f,
-                Height = 16,
-                Parent = _descriptionOutputPanel,
-                AnchorPreset = AnchorPresets.TopLeft
-            };
-            
-            elementPanel.AddChild(new Image(2, 0, 12, 12)
-            {
-                Brush = new SpriteBrush(sprite),
-                Color = typeColor,
-                MouseOverColor = typeColor,
-                AutoFocus = false,
-            }).SetAnchorPreset(AnchorPresets.TopLeft, true);
-            
-            var elementText = new Label(16, 0, Width * 0.5f - 32, 16)
-            {
-                Text = text,
-                HorizontalAlignment = TextAlignment.Near,
-                VerticalAlignment = TextAlignment.Near,
-                Wrapping = TextWrapping.NoWrap,
             };
             elementText.SetAnchorPreset(AnchorPresets.TopLeft, true);
             elementPanel.AddChild(elementText);
