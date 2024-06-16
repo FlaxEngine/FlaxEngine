@@ -447,8 +447,7 @@ namespace FlaxEditor.Surface
             var valueType = member.ValueType;
 
             // Getter/setter method of the property - we can return early here
-            bool isGetterOrSetter = name.StartsWith("get_") || name.StartsWith("set_");
-            if (member.IsMethod && isGetterOrSetter)
+            if (member.IsMethod && (name.StartsWith("get_") || name.StartsWith("set_")))
             {
                 var flags = member.IsStatic ? BindingFlags.Public | BindingFlags.Static | BindingFlags.DeclaredOnly : BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly;
                 var property = declaringType.GetMembers(name.Substring(4), MemberTypes.Property, flags);
@@ -470,7 +469,7 @@ namespace FlaxEditor.Surface
             sb.Append(name);
 
             // Is a method and not a property
-            if (member.IsMethod && !isGetterOrSetter)
+            if (member.IsMethod)
             {
                 sb.Append('(');
                 var parameters = member.GetParameters();
@@ -504,8 +503,7 @@ namespace FlaxEditor.Surface
             var declaringType = member.DeclaringType;
 
             // Getter/setter method of the property - we can return early here
-            bool isGetterOrSetter = name.StartsWith("get_") || name.StartsWith("set_");
-            if (member.IsMethod && isGetterOrSetter)
+            if (member.IsMethod && (name.StartsWith("get_") || name.StartsWith("set_")))
             {
                 var flags = member.IsStatic ? BindingFlags.Public | BindingFlags.Static | BindingFlags.DeclaredOnly : BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly;
                 var property = declaringType.GetMembers(name.Substring(4), MemberTypes.Property, flags);
@@ -524,7 +522,7 @@ namespace FlaxEditor.Surface
             var sb = new StringBuilder(signature);
 
             // Tooltip
-            var tooltip = Editor.Instance.CodeDocs.GetTooltip(member);
+            var tooltip = GetVisualScriptMemberShortDescription(member);
             if (!string.IsNullOrEmpty(tooltip))
                 sb.Append("\n").Append(tooltip);
 

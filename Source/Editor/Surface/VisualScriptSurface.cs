@@ -238,7 +238,8 @@ namespace FlaxEditor.Surface
 
                         var node = (NodeArchetype)Archetypes.Function.Nodes[2].Clone();
                         node.Flags &= ~NodeFlags.NoSpawnViaGUI;
-                        node.Description = Editor.Instance.CodeDocs.GetTooltip(member);
+                        node.Signature = SurfaceUtils.GetVisualScriptMemberInfoSignature(member);
+                        node.Description = SurfaceUtils.GetVisualScriptMemberShortDescription(member);
                         node.DefaultValues[0] = name;
                         node.DefaultValues[1] = parameters.Length;
                         node.Title = "Override " + name;
@@ -280,6 +281,7 @@ namespace FlaxEditor.Surface
                 node.DefaultValues[0] = Activator.CreateInstance(scriptType.Type);
                 node.Flags &= ~NodeFlags.NoSpawnViaGUI;
                 node.Title = scriptTypeName;
+                node.Signature = scriptTypeName;
                 node.Description = Editor.Instance.CodeDocs.GetTooltip(scriptType);
 
                 // Create group archetype
@@ -330,6 +332,7 @@ namespace FlaxEditor.Surface
                 node.DefaultValues[0] = scriptTypeTypeName;
                 node.Flags &= ~NodeFlags.NoSpawnViaGUI;
                 node.Title = "Pack " + scriptTypeName;
+                node.Signature = "Pack " + scriptTypeName;
                 node.Description = tooltip;
                 ((IList<NodeArchetype>)group.Archetypes).Add(node);
 
@@ -338,6 +341,7 @@ namespace FlaxEditor.Surface
                 node.DefaultValues[0] = scriptTypeTypeName;
                 node.Flags &= ~NodeFlags.NoSpawnViaGUI;
                 node.Title = "Unpack " + scriptTypeName;
+                node.Signature = "Unpack " + scriptTypeName;
                 node.Description = tooltip;
                 ((IList<NodeArchetype>)group.Archetypes).Add(node);
             }

@@ -3,6 +3,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using FlaxEditor.Scripting;
 using FlaxEditor.Surface.Elements;
 using FlaxEditor.Utilities;
@@ -62,7 +63,7 @@ namespace FlaxEditor.Surface.ContextMenu
             Group = group;
             _groupArchetype = groupArchetype;
             _archetype = archetype;
-            TooltipText = $"{_archetype.Signature}\n{_archetype.Description}";
+            TooltipText = GetTooltip();
         }
 
         /// <summary>
@@ -321,6 +322,15 @@ namespace FlaxEditor.Surface.ContextMenu
         public void OnSelect()
         {
             Group.ContextMenu.SetDescriptionPanelArchetype(_archetype);
+        }
+
+        private string GetTooltip()
+        {
+            StringBuilder sb = new StringBuilder();
+            if (!string.IsNullOrEmpty(_archetype.Signature))
+                sb.Append(_archetype.Signature + "\n");
+            sb.Append(_archetype.Description);
+            return sb.ToString();
         }
 
         /// <inheritdoc />
