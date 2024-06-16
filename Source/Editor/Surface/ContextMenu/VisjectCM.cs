@@ -647,169 +647,6 @@ namespace FlaxEditor.Surface.ContextMenu
         }
 
         /// <summary>
-        /// Updates the description panel and shows information about the set archetype
-        /// </summary>
-        /// <param name="archetype">The node archetype</param>
-        public void SetDescriptionPanelArchetype(NodeArchetype archetype)
-        {
-            if(!_useDescriptionPanel)
-                return;
-
-            if (archetype == null)
-            {
-                HideDescriptionPanel();
-                return;
-            }
-            
-            Profiler.BeginEvent("VisjectCM.SetDescriptionPanelArchetype");
-            
-            _descriptionInputPanel.RemoveChildren();
-            _descriptionOutputPanel.RemoveChildren();
-            
-            ScriptType declaringType;
-            if (archetype.Tag is ScriptMemberInfo memberInfo)
-            {
-                var name = memberInfo.Name;
-                if (memberInfo.IsMethod && memberInfo.Name.StartsWith("get_") || memberInfo.Name.StartsWith("set_"))
-                {
-                    name = memberInfo.Name.Substring(4);
-                }
-
-                declaringType = memberInfo.DeclaringType;
-                _descriptionSignatureLabel.Text = memberInfo.DeclaringType + "." + name;
-
-                if (!memberInfo.IsStatic)
-                    AddInputOutputElement(archetype, declaringType, false, $">Instance ({memberInfo.DeclaringType.Name})");
-
-                if (memberInfo.ValueType != ScriptType.Null && memberInfo.ValueType != ScriptType.Void)
-                {
-                    if (memberInfo.IsField && archetype.Title.StartsWith("Set "))
-                        AddInputOutputElement(archetype, memberInfo.ValueType, false, $"({memberInfo.ValueType.Name})");
-                    else
-                        AddInputOutputElement(archetype, memberInfo.ValueType, true, $"Return ({memberInfo.ValueType.Name})");
-                }
-                
-                for(int i = 0; i < memberInfo.ParametersCount; i++)
-                {
-                    var param = memberInfo.GetParameters()[i];
-                    if (param.IsOut)
-                    {
-                        AddInputOutputElement(archetype, param.Type, true, $">{param.Name} ({param.Type.Name})");
-                        continue;
-                    }
-
-                    AddInputOutputElement(archetype, param.Type, false, $">{param.Name} ({param.Type.Name})");
-                }
-            }
-            else
-            {
-                _descriptionSignatureLabel.Text = archetype.Signature;
-                declaringType = archetype.DefaultType;
-
-                // Special handling for Pack nodes
-                if (archetype.GetInputOutputDescription != null)
-                {
-                    archetype.GetInputOutputDescription.Invoke(archetype, out (string, ScriptType)[] inputs, out (string, ScriptType)[] outputs);
-
-                    if (inputs != null)
-                    {
-                        for (int i = 0; i < inputs.Length; i++)
-                        {
-                            AddInputOutputElement(archetype, inputs[i].Item2, false, $"{inputs[i].Item1} ({inputs[i].Item2.Name})");
-                        }   
-                    }
-
-                    if (outputs != null)
-                    {
-                        for (int i = 0; i < outputs.Length; i++)
-                        {
-                            AddInputOutputElement(archetype, outputs[i].Item2, true, $"{outputs[i].Item1} ({outputs[i].Item2.Name})");
-                        }   
-                    }
-                }
-                else
-                {
-                    foreach (var element in archetype.Elements)
-                    {
-                        if (element.Type is NodeElementType.Input or NodeElementType.Output)
-                        {
-                            bool isOutput = element.Type == NodeElementType.Output;
-                            if (element.ConnectionsType == null)
-                                AddInputOutputElement(archetype, element.ConnectionsType, isOutput, $"-{element.Text} ({archetype.ConnectionsHints.ToString()})");
-                            else
-                                AddInputOutputElement(archetype, element.ConnectionsType, isOutput, $"-{element.Text} ({element.ConnectionsType.Name})");   
-                        }
-                    }
-                }
-            }
-
-            _surfaceStyle.GetConnectionColor(declaringType, archetype.ConnectionsHints, out var declaringTypeColor);
-            _descriptionClassImage.Color = declaringTypeColor;
-            _descriptionClassImage.MouseOverColor = declaringTypeColor;
-            
-            float panelHeight = _descriptionSignatureLabel.Height;
-
-            _descriptionLabel.Y = _descriptionSignatureLabel.Bounds.Bottom + 6f;
-            _descriptionLabel.Text = archetype.Description;
-
-            panelHeight += _descriptionLabel.Height + 6f + 18f;
-
-            _descriptionInputPanel.Y = panelHeight;
-            _descriptionOutputPanel.Y = panelHeight;
-
-            panelHeight += Mathf.Max(_descriptionInputPanel.Height, _descriptionOutputPanel.Height);
-            _descriptionPanel.Height = panelHeight;
-            Height = 400 + Mathf.RoundToInt(_descriptionPanel.Height);
-            UpdateWindowSize();
-
-            PerformLayout();
-            
-            Profiler.EndEvent();
-        }
-
-        private void AddInputOutputElement(NodeArchetype nodeArchetype, ScriptType type, bool isOutput, string text)
-        {
-            var elementPanel = new Panel()
-            {
-                Parent = isOutput ? _descriptionOutputPanel : _descriptionInputPanel,
-                Width = Width * 0.5f,
-                Height = 16,
-                AnchorPreset = AnchorPresets.TopLeft
-            };
-            
-            var sprite = _surfaceStyle.Icons.BoxOpen;
-            _surfaceStyle.GetConnectionColor(type, nodeArchetype.ConnectionsHints, out var typeColor);
-            elementPanel.AddChild(new Image(2, 0, 12, 12)
-            {
-                Brush = new SpriteBrush(sprite),
-                Color = typeColor,
-                MouseOverColor = typeColor,
-                AutoFocus = false,
-            }).SetAnchorPreset(AnchorPresets.TopLeft, true);
-            
-            var elementText = new Label(16, 0, Width * 0.5f - 32, 16)
-            {
-                Text = text,
-                HorizontalAlignment = TextAlignment.Near,
-                VerticalAlignment = TextAlignment.Near,
-                Wrapping = TextWrapping.WrapWords,
-                AutoHeight = true,
-            };
-            elementText.SetAnchorPreset(AnchorPresets.TopLeft, true);
-            elementPanel.AddChild(elementText);
-            elementPanel.Height = elementText.Height;
-        }
-        
-        /// <summary>
-        /// Hides the description panel and resets the context menu to its original size
-        /// </summary>
-        public void HideDescriptionPanel()
-        {
-            Height = 400;
-            UpdateWindowSize();
-        }
-
-        /// <summary>
         /// Resets the view.
         /// </summary>
         public void ResetView()
@@ -953,7 +790,173 @@ namespace FlaxEditor.Surface.ContextMenu
         {
             Focus(null);
 
+            if(_useDescriptionPanel)
+                HideDescriptionPanel();
+
             base.Hide();
+        }
+
+        /// <summary>
+        /// Updates the description panel and shows information about the set archetype
+        /// </summary>
+        /// <param name="archetype">The node archetype</param>
+        public void SetDescriptionPanelArchetype(NodeArchetype archetype)
+        {
+            if(!_useDescriptionPanel)
+                return;
+
+            if (archetype == null)
+            {
+                HideDescriptionPanel();
+                return;
+            }
+            
+            Profiler.BeginEvent("VisjectCM.SetDescriptionPanelArchetype");
+            
+            _descriptionInputPanel.RemoveChildren();
+            _descriptionOutputPanel.RemoveChildren();
+            
+            ScriptType declaringType;
+            if (archetype.Tag is ScriptMemberInfo memberInfo)
+            {
+                var name = memberInfo.Name;
+                if (memberInfo.IsMethod && memberInfo.Name.StartsWith("get_") || memberInfo.Name.StartsWith("set_"))
+                {
+                    name = memberInfo.Name.Substring(4);
+                }
+
+                declaringType = memberInfo.DeclaringType;
+                _descriptionSignatureLabel.Text = memberInfo.DeclaringType + "." + name;
+
+                if (!memberInfo.IsStatic)
+                    AddInputOutputElement(archetype, declaringType, false, $">Instance ({memberInfo.DeclaringType.Name})");
+
+                if (memberInfo.ValueType != ScriptType.Null && memberInfo.ValueType != ScriptType.Void)
+                {
+                    if (memberInfo.IsField && archetype.Title.StartsWith("Set "))
+                        AddInputOutputElement(archetype, memberInfo.ValueType, false, $"({memberInfo.ValueType.Name})");
+                    else
+                        AddInputOutputElement(archetype, memberInfo.ValueType, true, $"Return ({memberInfo.ValueType.Name})");
+                }
+                
+                for(int i = 0; i < memberInfo.ParametersCount; i++)
+                {
+                    var param = memberInfo.GetParameters()[i];
+                    if (param.IsOut)
+                    {
+                        AddInputOutputElement(archetype, param.Type, true, $">{param.Name} ({param.Type.Name})");
+                        continue;
+                    }
+
+                    AddInputOutputElement(archetype, param.Type, false, $">{param.Name} ({param.Type.Name})");
+                }
+            }
+            else
+            {
+                _descriptionSignatureLabel.Text = string.IsNullOrEmpty(archetype.Signature) ? archetype.Title : archetype.Signature;
+                declaringType = archetype.DefaultType;
+
+                // Special handling for Pack nodes
+                if (archetype.GetInputOutputDescription != null)
+                {
+                    archetype.GetInputOutputDescription.Invoke(archetype, out (string, ScriptType)[] inputs, out (string, ScriptType)[] outputs);
+
+                    if (inputs != null)
+                    {
+                        for (int i = 0; i < inputs.Length; i++)
+                        {
+                            AddInputOutputElement(archetype, inputs[i].Item2, false, $"{inputs[i].Item1} ({inputs[i].Item2.Name})");
+                        }   
+                    }
+
+                    if (outputs != null)
+                    {
+                        for (int i = 0; i < outputs.Length; i++)
+                        {
+                            AddInputOutputElement(archetype, outputs[i].Item2, true, $"{outputs[i].Item1} ({outputs[i].Item2.Name})");
+                        }   
+                    }
+                }
+                else
+                {
+                    foreach (var element in archetype.Elements)
+                    {
+                        if (element.Type is NodeElementType.Input or NodeElementType.Output)
+                        {
+                            bool isOutput = element.Type == NodeElementType.Output;
+                            if (element.ConnectionsType == null)
+                                AddInputOutputElement(archetype, element.ConnectionsType, isOutput, $"-{element.Text} ({archetype.ConnectionsHints.ToString()})");
+                            else
+                                AddInputOutputElement(archetype, element.ConnectionsType, isOutput, $"-{element.Text} ({element.ConnectionsType.Name})");   
+                        }
+                    }
+                }
+            }
+
+            _surfaceStyle.GetConnectionColor(declaringType, archetype.ConnectionsHints, out var declaringTypeColor);
+            _descriptionClassImage.Color = declaringTypeColor;
+            _descriptionClassImage.MouseOverColor = declaringTypeColor;
+            
+            float panelHeight = _descriptionSignatureLabel.Height;
+
+            _descriptionLabel.Y = _descriptionSignatureLabel.Bounds.Bottom + 6f;
+            _descriptionLabel.Text = archetype.Description;
+
+            panelHeight += _descriptionLabel.Height + 6f + 18f;
+
+            _descriptionInputPanel.Y = panelHeight;
+            _descriptionOutputPanel.Y = panelHeight;
+
+            panelHeight += Mathf.Max(_descriptionInputPanel.Height, _descriptionOutputPanel.Height);
+            _descriptionPanel.Height = panelHeight;
+            Height = 400 + Mathf.RoundToInt(_descriptionPanel.Height);
+            UpdateWindowSize();
+            
+            Profiler.EndEvent();
+        }
+
+        private void AddInputOutputElement(NodeArchetype nodeArchetype, ScriptType type, bool isOutput, string text)
+        {
+            var elementPanel = new Panel()
+            {
+                Parent = isOutput ? _descriptionOutputPanel : _descriptionInputPanel,
+                Width = Width * 0.5f,
+                Height = 16,
+                AnchorPreset = AnchorPresets.TopLeft
+            };
+            
+            var sprite = _surfaceStyle.Icons.BoxOpen;
+            _surfaceStyle.GetConnectionColor(type, nodeArchetype.ConnectionsHints, out var typeColor);
+            elementPanel.AddChild(new Image(2, 0, 12, 12)
+            {
+                Brush = new SpriteBrush(sprite),
+                Color = typeColor,
+                MouseOverColor = typeColor,
+                AutoFocus = false,
+            }).SetAnchorPreset(AnchorPresets.TopLeft, true);
+            
+            var elementText = new Label(16, 0, Width * 0.5f - 32, 16)
+            {
+                Text = text,
+                HorizontalAlignment = TextAlignment.Near,
+                VerticalAlignment = TextAlignment.Near,
+                Wrapping = TextWrapping.WrapWords,
+                AutoHeight = true,
+            };
+            elementText.SetAnchorPreset(AnchorPresets.TopLeft, true);
+            elementPanel.AddChild(elementText);
+            elementPanel.Height = elementText.Height;
+        }
+        
+        /// <summary>
+        /// Hides the description panel and resets the context menu to its original size
+        /// </summary>
+        public void HideDescriptionPanel()
+        {
+            _descriptionInputPanel.RemoveChildren();
+            _descriptionOutputPanel.RemoveChildren();
+            Height = 400;
+            UpdateWindowSize();
         }
 
         /// <inheritdoc />
