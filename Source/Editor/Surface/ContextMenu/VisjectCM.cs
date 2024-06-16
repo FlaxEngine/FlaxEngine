@@ -66,7 +66,6 @@ namespace FlaxEditor.Surface.ContextMenu
         private readonly VerticalPanel _descriptionInputPanel;
         private readonly VerticalPanel _descriptionOutputPanel;
 
-
         private VisjectCMItem _selectedItem;
 
         /// <summary>
@@ -75,7 +74,7 @@ namespace FlaxEditor.Surface.ContextMenu
         public VisjectCMItem SelectedItem
         {
             get => _selectedItem;
-            set
+            private set
             {
                 _selectedItem = value;
                 _selectedItem?.OnSelect();
@@ -166,7 +165,7 @@ namespace FlaxEditor.Surface.ContextMenu
             _surfaceStyle = info.Style;
 
             // Context menu dimensions
-            Size = new Float2(300, 400);
+            Size = new Float2(_useDescriptionPanel ? 350 : 300, 400);
 
             var headerPanel = new Panel(ScrollBars.None)
             {
@@ -253,11 +252,8 @@ namespace FlaxEditor.Surface.ContextMenu
                 {
                     Parent = _descriptionPanel,
                     Brush = new SpriteBrush(spriteHandle),
-                    Color = Color.Aqua,
-                    MouseOverColor = Color.Aqua,
-                    AutoFocus = false,
                 };
-                
+
                 var signatureFontReference = new FontReference(Style.Current.FontMedium.Asset, 9f);
                 _descriptionSignatureLabel = new Label(32, 8, Width - 40, 0)
                 {
@@ -285,16 +281,16 @@ namespace FlaxEditor.Surface.ContextMenu
                 _descriptionInputPanel = new VerticalPanel()
                 {
                     Parent = _descriptionPanel,
-                    Width = Width * 0.5f,
-                    AnchorPreset = AnchorPresets.TopLeft,
+                    X = 8,
+                    Width = Width * 0.5f - 16,
                     AutoSize = true,
                 };
-                
+
                 _descriptionOutputPanel = new VerticalPanel()
                 {
                     Parent = _descriptionPanel,
-                    X = Width * 0.5f,
-                    Width = Width * 0.5f,
+                    X = Width * 0.5f + 8,
+                    Width = Width * 0.5f - 16,
                     AutoSize = true,
                 };
             }
@@ -829,7 +825,7 @@ namespace FlaxEditor.Surface.ContextMenu
                 _descriptionSignatureLabel.Text = memberInfo.DeclaringType + "." + name;
 
                 if (!memberInfo.IsStatic)
-                    AddInputOutputElement(archetype, declaringType, false, $">Instance ({memberInfo.DeclaringType.Name})");
+                    AddInputOutputElement(archetype, declaringType, false, $"Instance ({memberInfo.DeclaringType.Name})");
 
                 if (memberInfo.ValueType != ScriptType.Null && memberInfo.ValueType != ScriptType.Void)
                 {
@@ -842,7 +838,7 @@ namespace FlaxEditor.Surface.ContextMenu
                 for(int i = 0; i < memberInfo.ParametersCount; i++)
                 {
                     var param = memberInfo.GetParameters()[i];
-                    AddInputOutputElement(archetype, param.Type, param.IsOut, $">{param.Name} ({param.Type.Name})");
+                    AddInputOutputElement(archetype, param.Type, param.IsOut, $"{param.Name} ({param.Type.Name})");
                 }
             }
             else
@@ -878,9 +874,9 @@ namespace FlaxEditor.Surface.ContextMenu
                         {
                             bool isOutput = element.Type == NodeElementType.Output;
                             if (element.ConnectionsType == null)
-                                AddInputOutputElement(archetype, element.ConnectionsType, isOutput, $"-{element.Text} ({archetype.ConnectionsHints.ToString()})");
+                                AddInputOutputElement(archetype, element.ConnectionsType, isOutput, $"{element.Text} ({archetype.ConnectionsHints.ToString()})");
                             else
-                                AddInputOutputElement(archetype, element.ConnectionsType, isOutput, $"-{element.Text} ({element.ConnectionsType.Name})");   
+                                AddInputOutputElement(archetype, element.ConnectionsType, isOutput, $"{element.Text} ({element.ConnectionsType.Name})");   
                         }
                     }
                 }
