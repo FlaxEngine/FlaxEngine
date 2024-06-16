@@ -842,13 +842,7 @@ namespace FlaxEditor.Surface.ContextMenu
                 for(int i = 0; i < memberInfo.ParametersCount; i++)
                 {
                     var param = memberInfo.GetParameters()[i];
-                    if (param.IsOut)
-                    {
-                        AddInputOutputElement(archetype, param.Type, true, $">{param.Name} ({param.Type.Name})");
-                        continue;
-                    }
-
-                    AddInputOutputElement(archetype, param.Type, false, $">{param.Name} ({param.Type.Name})");
+                    AddInputOutputElement(archetype, param.Type, param.IsOut, $">{param.Name} ({param.Type.Name})");
                 }
             }
             else
@@ -856,7 +850,6 @@ namespace FlaxEditor.Surface.ContextMenu
                 _descriptionSignatureLabel.Text = string.IsNullOrEmpty(archetype.Signature) ? archetype.Title : archetype.Signature;
                 declaringType = archetype.DefaultType;
 
-                // Special handling for Pack nodes
                 if (archetype.GetInputOutputDescription != null)
                 {
                     archetype.GetInputOutputDescription.Invoke(archetype, out (string, ScriptType)[] inputs, out (string, ScriptType)[] outputs);
@@ -866,7 +859,7 @@ namespace FlaxEditor.Surface.ContextMenu
                         for (int i = 0; i < inputs.Length; i++)
                         {
                             AddInputOutputElement(archetype, inputs[i].Item2, false, $"{inputs[i].Item1} ({inputs[i].Item2.Name})");
-                        }   
+                        }
                     }
 
                     if (outputs != null)
@@ -874,7 +867,7 @@ namespace FlaxEditor.Surface.ContextMenu
                         for (int i = 0; i < outputs.Length; i++)
                         {
                             AddInputOutputElement(archetype, outputs[i].Item2, true, $"{outputs[i].Item1} ({outputs[i].Item2.Name})");
-                        }   
+                        }
                     }
                 }
                 else
@@ -951,7 +944,7 @@ namespace FlaxEditor.Surface.ContextMenu
         /// <summary>
         /// Hides the description panel and resets the context menu to its original size
         /// </summary>
-        public void HideDescriptionPanel()
+        private void HideDescriptionPanel()
         {
             _descriptionInputPanel.RemoveChildren();
             _descriptionOutputPanel.RemoveChildren();
