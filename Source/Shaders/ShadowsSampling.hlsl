@@ -284,10 +284,6 @@ ShadowSample SampleDirectionalLightShadow(LightData light, Buffer<float4> shadow
 
     result.SurfaceShadow = PostProcessShadow(shadow, result.SurfaceShadow);
 
-    // Fix shadow intensity that got reduced by cascades sharpness stabilization (see above)
-    if (cascadeIndex != 0 && result.SurfaceShadow <= 0.1f)
-        result.SurfaceShadow += 0.01f;
-
     return result;
 }
 

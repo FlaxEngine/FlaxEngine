@@ -80,7 +80,7 @@ float CalculateSubsurfaceOcclusion(float opacity, float sceneDepth, float shadow
 float PostProcessShadow(ShadowData lightShadow, float shadow)
 {
     // Apply shadow fade and sharpness
-    shadow = saturate((shadow - 0.5) * lightShadow.Sharpness + 0.5);
+    shadow = saturate((shadow - 0.51f) * lightShadow.Sharpness + 0.5f);
     shadow = lerp(1.0f, shadow, lightShadow.Fade);
     return shadow;
 }
