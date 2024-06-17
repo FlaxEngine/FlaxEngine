@@ -5,6 +5,7 @@
 #include "Engine/Graphics/Textures/GPUTexture.h"
 #include "Engine/Renderer/RenderList.h"
 #include "Engine/Renderer/ShadowsPass.h"
+#include "Engine/Renderer/GlobalSignDistanceFieldPass.h"
 #if USE_EDITOR
 #include "Engine/Renderer/Lightmaps.h"
 #endif
@@ -22,6 +23,8 @@ void ForwardShadingFeature::Bind(MaterialShader::BindParameters& params, Span<by
     const int32 envProbeShaderRegisterIndex = srv + 0;
     const int32 skyLightShaderRegisterIndex = srv + 1;
     const int32 dirLightShaderRegisterIndex = srv + 2;
+    const int32 surfaceAtlasDepthShaderRegisterIndex = srv + 3;
+    const int32 surfaceAtlasTexShaderRegisterIndex = srv + 4;
     const bool canUseShadow = view.Pass != DrawPass::Depth;
 
     // Set fog input
@@ -95,6 +98,15 @@ void ForwardShadingFeature::Bind(MaterialShader::BindParameters& params, Span<by
     {
         data.EnvironmentProbe.Data1 = Float4::Zero;
         params.GPUContext->UnBindSR(envProbeShaderRegisterIndex);
+    }
+
+    // Bind sdf resources if using software reflections
+    if (!GlobalSignDistanceFieldPass::Instance()->Render(params.RenderContext, params.GPUContext, bindingDataSDF) &&
+        !GlobalSurfaceAtlasPass::Instance()->Render(params.RenderContext, params.GPUContext, bindingDataSurfaceAtlas))
+    {
+        useGlobalSurfaceAtlas = true;
+        data.GlobalSDF = bindingDataSDF.Constants;
+        data.GlobalSurfaceAtlas = bindingDataSurfaceAtlas.Constants;
     }
 
     // Set local lights

@@ -9,6 +9,10 @@
 #define MATERIAL_REFLECTIONS_SSR 1
 #if MATERIAL_REFLECTIONS == MATERIAL_REFLECTIONS_SSR
 #include "./Flax/SSR.hlsl"
+#if USE_GLOBAL_SURFACE_ATLAS
+#include "./Flax/GlobalSignDistanceField.hlsl"
+#include "./Flax/GI/GlobalSurfaceAtlas.hlsl"
+#endif
 #endif
 #endif
 #include "./Flax/Lighting.hlsl"
@@ -27,12 +31,23 @@ LightData LocalLights[MAX_LOCAL_LIGHTS];
 TextureCube EnvProbe : register(t__SRV__);
 TextureCube SkyLightTexture : register(t__SRV__);
 Texture2DArray DirectionalLightShadowMap : register(t__SRV__);
+#if USE_GLOBAL_SURFACE_ATLAS
+Texture3D<float> GlobalSDFTex : register(t__SRV__);
+Texture3D<float> GlobalSDFMip : register(t__SRV__);
+ByteAddressBuffer GlobalSurfaceAtlasChunks : register(t__SRV__);
+ByteAddressBuffer RWGlobalSurfaceAtlasCulledObjects : register(t__SRV__);
+Buffer<float4> GlobalSurfaceAtlasObjects : register(t__SRV__);
+Texture2D GlobalSurfaceAtlasDepth : register(t__SRV__);
+Texture2D GlobalSurfaceAtlasTex : register(t__SRV__);
+#endif
 @4// Forward Shading: Utilities
 DECLARE_LIGHTSHADOWDATA_ACCESS(DirectionalLightShadow);
 @5// Forward Shading: Shaders
 
 // Pixel Shader function for Forward Pass
 META_PS(USE_FORWARD, FEATURE_LEVEL_ES2)
+META_PERMUTATION_1(USE_GLOBAL_SURFACE_ATLAS=0)
+META_PERMUTATION_1(USE_GLOBAL_SURFACE_ATLAS=1)
 void PS_Forward(
 		in PixelInput input
 		,out float4 output : SV_Target0
@@ -125,6 +140,33 @@ void PS_Forward(
 		float3 screenColor = sceneColorTexture.SampleLevel(SamplerPointClamp, hit.xy, 0).rgb;
 		reflections = lerp(reflections, screenColor, hit.z);
 	}
+	
+	// Fallback to software tracing if possible
+#if USE_GLOBAL_SURFACE_ATLAS && CAN_USE_GLOBAL_SURFACE_ATLAS
+
+	// If hit.z >= 0.9f then skip sdf tracing
+	if (hit.z < 0.9f)
+	{
+		// Don't use temporal effect in forward pass
+		float3 reflectWS = ScreenSpaceReflectionDirection(screenUV, gBuffer, gBufferData.ViewPos);
+
+		GlobalSDFTrace sdfTrace;
+		float maxDistance = 100000;
+		float selfOcclusionBias = GlobalSDF.CascadeVoxelSize[0];
+		sdfTrace.Init(gBuffer.WorldPos + gBuffer.Normal * selfOcclusionBias, reflectWS, 0.0f, maxDistance);
+		GlobalSDFHit sdfHit = RayTraceGlobalSDF(GlobalSDF, GlobalSDFTex, GlobalSDFMip, sdfTrace);
+		if (sdfHit.IsHit())
+		{
+			float3 hitPosition = sdfHit.GetHitPosition(sdfTrace);
+			float surfaceThreshold = GetGlobalSurfaceAtlasThreshold(GlobalSDF, sdfHit);
+			float4 surfaceAtlas = SampleGlobalSurfaceAtlas(GlobalSurfaceAtlas, GlobalSurfaceAtlasChunks, RWGlobalSurfaceAtlasCulledObjects, GlobalSurfaceAtlasObjects, GlobalSurfaceAtlasDepth, GlobalSurfaceAtlasTex, hitPosition, -reflectWS, surfaceThreshold);
+			
+			float3 screenColor = sceneColorTexture.SampleLevel(SamplerPointClamp, hit.xy, 0).rgb;
+			reflections = lerp(surfaceAtlas, float4(screenColor, 1), hit.z);
+		}
+	}
+
+#endif
 #endif
 
 	light.rgb += reflections * GetReflectionSpecularLighting(ViewPos, gBuffer) * light.a;	
