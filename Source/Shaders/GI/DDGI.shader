@@ -19,6 +19,7 @@
 // This must match C++
 #define DDGI_TRACE_RAYS_PROBES_COUNT_LIMIT 4096 // Maximum amount of probes to update at once during rays tracing and blending
 #define DDGI_TRACE_RAYS_LIMIT 256 // Limit of rays per-probe (runtime value can be smaller)
+#define DDGI_TRACE_NEGATIVE 0 // If true, rays that start inside geometry will use negative distance to indicate backface hit
 #define DDGI_PROBE_UPDATE_BORDERS_GROUP_SIZE 8
 #define DDGI_PROBE_CLASSIFY_GROUP_SIZE 32
 #define DDGI_PROBE_RELOCATE_ITERATIVE 1 // If true, probes relocation algorithm tries to move them in additive way, otherwise all nearby locations are checked to find the best position
@@ -146,9 +147,9 @@ void CS_Classify(uint3 DispatchThreadId : SV_DispatchThreadID)
     float sdfDst = abs(sdf);
     const float ProbesDistanceLimits[4] = { 1.1f, 2.3f, 2.5f, 2.5f };
     const float ProbesRelocateLimits[4] = { 0.4f, 0.5f, 0.6f, 0.7f };
-    float voxelLimit = GlobalSDF.CascadeVoxelSize[CascadeIndex];
-    float distanceLimit = length(probesSpacing) * ProbesDistanceLimits[CascadeIndex];
-    float relocateLimit = length(probesSpacing) * ProbesRelocateLimits[CascadeIndex];
+    float voxelLimit = GlobalSDF.CascadeVoxelSize[CascadeIndex] * 0.8f;
+    float distanceLimit = probesSpacing * ProbesDistanceLimits[CascadeIndex];
+    float relocateLimit = probesSpacing * ProbesRelocateLimits[CascadeIndex];
     if (sdfDst > distanceLimit + length(probeOffset)) // Probe is too far from geometry (or deep inside)
     {
         // Disable it
@@ -317,12 +318,14 @@ void CS_TraceRays(uint3 DispatchThreadId : SV_DispatchThreadID)
     float4 radiance;
     if (hit.IsHit())
     {
-        /*if (hit.HitSDF <= 0.0f && hit.HitTime <= GlobalSDF.CascadeVoxelSize[0])
+#if DDGI_TRACE_NEGATIVE
+        if (hit.HitSDF <= 0.0f && hit.HitTime <= GlobalSDF.CascadeVoxelSize[0])
         {
             // Ray starts inside geometry (mark as negative distance and reduce it's influence during irradiance blending)
             radiance = float4(0, 0, 0, hit.HitTime * -0.25f);
         }
-        else*/
+        else
+#endif
         {
             // Sample Global Surface Atlas to get the lighting at the hit location
             float3 hitPosition = hit.GetHitPosition(trace);
@@ -393,7 +396,7 @@ void CS_UpdateProbes(uint3 GroupThreadId : SV_GroupThreadID, uint3 GroupId : SV_
     uint backfacesLimit = uint(probeRaysCount * 0.1f);
 #else
     float probesSpacing = DDGI.ProbesOriginAndSpacing[CascadeIndex].w;
-    float distanceLimit = length(probesSpacing) * 1.5f;
+    float distanceLimit = probesSpacing * 1.5f;
 #endif
 
     BRANCH
@@ -435,6 +438,7 @@ void CS_UpdateProbes(uint3 GroupThreadId : SV_GroupThreadID, uint3 GroupId : SV_
 
 #if DDGI_PROBE_UPDATE_MODE == 0
         float4 rayRadiance = CachedProbesTraceRadiance[rayIndex];
+#if DDGI_TRACE_NEGATIVE
         if (rayRadiance.w < 0.0f)
         {
             // Count backface hits
@@ -448,6 +452,7 @@ void CS_UpdateProbes(uint3 GroupThreadId : SV_GroupThreadID, uint3 GroupId : SV_
             }
             continue;
         }
+#endif
 
         // Add radiance (RGB) and weight (A)
         result += float4(rayRadiance.rgb * rayWeight, rayWeight);

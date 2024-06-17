@@ -148,13 +148,12 @@ float3 SampleDDGIIrradiance(DDGIData data, Texture2D<snorm float4> probesData, T
         float fadeDistance = probesSpacing * 0.5f;
         float cascadeWeight = saturate(Min3(probesExtent - abs(worldPosition - probesOrigin)) / fadeDistance);
         if (cascadeWeight > dither) // Use dither to make transition smoother
-        {
             break;
-        }
     }
     if (cascadeIndex == data.CascadesCount)
         return data.FallbackIrradiance;
-    uint3 baseProbeCoords = clamp(uint3((worldPosition - probesOrigin + probesExtent) / probesSpacing), uint3(0, 0, 0), data.ProbesCounts - uint3(1, 1, 1));
+    uint3 probeCoordsEnd = data.ProbesCounts - uint3(1, 1, 1);
+    uint3 baseProbeCoords = clamp(uint3((worldPosition - probesOrigin + probesExtent) / probesSpacing), uint3(0, 0, 0), probeCoordsEnd);
 
     // Bias the world-space position to reduce artifacts
     float3 viewDir = normalize(data.ViewPos - worldPosition);
@@ -167,17 +166,40 @@ float3 SampleDDGIIrradiance(DDGIData data, Texture2D<snorm float4> probesData, T
 
     // Loop over the closest probes to accumulate their contributions
     float4 irradiance = float4(0, 0, 0, 0);
+    const int3 SearchAxisMasks[3] = { int3(1, 0, 0), int3(0, 1, 0), int3(0, 0, 1) };
     for (uint i = 0; i < 8; i++)
     {
         uint3 probeCoordsOffset = uint3(i, i >> 1, i >> 2) & 1;
-        uint3 probeCoords = clamp(baseProbeCoords + probeCoordsOffset, uint3(0, 0, 0), data.ProbesCounts - uint3(1, 1, 1));
+        uint3 probeCoords = clamp(baseProbeCoords + probeCoordsOffset, uint3(0, 0, 0), probeCoordsEnd);
         uint probeIndex = GetDDGIScrollingProbeIndex(data, cascadeIndex, probeCoords);
 
         // Load probe position and state
         float4 probeData = LoadDDGIProbeData(data, probesData, cascadeIndex, probeIndex);
         uint probeState = DecodeDDGIProbeState(probeData);
         if (probeState == DDGI_PROBE_STATE_INACTIVE)
-            continue;
+        {
+            // Search nearby probes to find any nearby GI sample
+            for (int searchDistance = 1; searchDistance < 3 && probeState == DDGI_PROBE_STATE_INACTIVE; searchDistance++)
+            for (uint searchAxis = 0; searchAxis < 3; searchAxis++)
+            {
+                int searchAxisDir = probeCoordsOffset[searchAxis] ? 1 : -1;
+                int3 searchCoordsOffset = SearchAxisMasks[searchAxis] * searchAxisDir * searchDistance;
+                uint3 searchCoords = clamp((int3)probeCoords + searchCoordsOffset, int3(0, 0, 0), (int3)probeCoordsEnd);
+                uint searchIndex = GetDDGIScrollingProbeIndex(data, cascadeIndex, searchCoords);
+                float4 searchData = LoadDDGIProbeData(data, probesData, cascadeIndex, searchIndex);
+                uint searchState = DecodeDDGIProbeState(searchData);
+                if (searchState != DDGI_PROBE_STATE_INACTIVE)
+                {
+                    // Use nearby probe as a fallback (visibility test might ignore it but with smooth gradient)
+                    probeCoords = searchCoords;
+                    probeIndex = searchIndex;
+                    probeData = searchData;
+                    probeState = searchState;
+                    break;
+                }
+            }
+            if (probeState == DDGI_PROBE_STATE_INACTIVE) continue;
+        }
         float3 probeBasePosition = baseProbeWorldPosition + ((probeCoords - baseProbeCoords) * probesSpacing);
         float3 probePosition = probeBasePosition + probeData.xyz * probesSpacing; // Probe offset is [-1;1] within probes spacing
 
@@ -193,15 +215,13 @@ float3 SampleDDGIIrradiance(DDGIData data, Texture2D<snorm float4> probesData, T
         float2 octahedralCoords = GetOctahedralCoords(-biasedPosToProbe);
         float2 uv = GetDDGIProbeUV(data, cascadeIndex, probeIndex, octahedralCoords, DDGI_PROBE_RESOLUTION_DISTANCE);
         float2 probeDistance = probesDistance.SampleLevel(SamplerLinearClamp, uv, 0).rg * 2.0f;
-        float probeDistanceMean = probeDistance.x;
 
         // Visibility weight (Chebyshev)
-        if (biasedPosToProbeDist > probeDistanceMean)
+        if (biasedPosToProbeDist > probeDistance.x)
         {
-            float probeDistanceMean2 = probeDistance.y;
-            float probeDistanceVariance = abs(Square(probeDistanceMean) - probeDistanceMean2);
-            float chebyshevWeight = probeDistanceVariance / (probeDistanceVariance + Square(biasedPosToProbeDist - probeDistanceMean));
-            weight *= max(chebyshevWeight * chebyshevWeight * chebyshevWeight, 0.05f);
+            float variance = abs(Square(probeDistance.x) - probeDistance.y);
+            float visibilityWeight = variance / (variance + Square(biasedPosToProbeDist - probeDistance.x));
+            weight *= max(visibilityWeight * visibilityWeight * visibilityWeight, 0.05f);
         }
 
         // Avoid a weight of zero
@@ -209,8 +229,7 @@ float3 SampleDDGIIrradiance(DDGIData data, Texture2D<snorm float4> probesData, T
 
         // Adjust weight curve to inject a small portion of light
         const float minWeightThreshold = 0.2f;
-        if (weight < minWeightThreshold)
-            weight *= weight * weight * (1.0f / (minWeightThreshold * minWeightThreshold));
+        if (weight < minWeightThreshold) weight *= Square(weight) / Square(minWeightThreshold);
 
         // Calculate trilinear weights based on the distance to each probe to smoothly transition between grid of 8 probes
         float3 trilinear = lerp(1.0f - biasAlpha, biasAlpha, (float3)probeCoordsOffset);
@@ -246,7 +265,7 @@ float3 SampleDDGIIrradiance(DDGIData data, Texture2D<snorm float4> probesData, T
     if (irradiance.a > 0.0f)
     {
         // Normalize irradiance
-        irradiance.rgb *= 1.0f / irradiance.a;
+        irradiance.rgb /= irradiance.a;
 #if DDGI_SRGB_BLENDING
         irradiance.rgb *= irradiance.rgb;
 #endif

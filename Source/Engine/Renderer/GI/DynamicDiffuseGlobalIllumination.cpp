@@ -426,7 +426,6 @@ bool DynamicDiffuseGlobalIlluminationPass::RenderInner(RenderContext& renderCont
         // Shift the volume origin based on scroll offsets for each axis once it overflows
         for (int32 axis = 0; axis < 3; axis++)
         {
-            // different volume scroll that preserves the scroll offset delta relative to the probe count
             const int32 probeCount = ddgiData.ProbeCounts.Raw[axis];
             int32& scrollOffset = cascade.ProbeScrollOffsets.Raw[axis];
             while (scrollOffset >= probeCount)
