@@ -96,15 +96,20 @@ namespace FlaxEditor.Surface.ContextMenu
                 int dotIndex = filterText.IndexOf('.');
                 if (dotIndex != -1)
                 {
-                    // Early out and make the group invisible if it doesn't start with the specified string
                     string filterGroupName = filterText.Substring(0, dotIndex);
-                    if (!Name.StartsWith(filterGroupName, StringComparison.InvariantCultureIgnoreCase))
+
+                    // If the string in front of the dot has the length of 0 or doesn't start with a letter we skip the filtering to make spawning floats work
+                    if (filterGroupName.Length > 0 && char.IsLetter(filterGroupName[0]))
                     {
-                        Visible = false;
-                        Profiler.EndEvent();
-                        return;
+                        // Early out and make the group invisible if it doesn't start with the specified string
+                        if (!Name.StartsWith(filterGroupName, StringComparison.InvariantCultureIgnoreCase))
+                        {
+                            Visible = false;
+                            Profiler.EndEvent();
+                            return;
+                        }
+                        filterText = filterText.Substring(dotIndex + 1);
                     }
-                    filterText = filterText.Substring(dotIndex + 1);
                 }
             }
 
