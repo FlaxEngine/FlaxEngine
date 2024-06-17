@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Text;
 using System.Text.RegularExpressions;
 using System.Xml;
 using FlaxEditor.Scripting;
@@ -65,7 +66,7 @@ namespace FlaxEditor.Modules.SourceCodeEditing
                 {
                     var key = "T:" + GetXmlKey(type.Type.FullName);
                     if (xml.TryGetValue(key, out var xmlDoc))
-                        text += '\n' + xmlDoc;
+                        text += '\n' + FilterWhitespaces(xmlDoc);
                 }
             }
 
@@ -260,6 +261,27 @@ namespace FlaxEditor.Modules.SourceCodeEditing
         private static string GetXmlKey(string typeFullNameString)
         {
             return Regex.Replace(typeFullNameString, @"\[.*\]", string.Empty).Replace('+', '.');
+        }
+
+        private static string FilterWhitespaces(string str)
+        {
+            if (str.Contains("  ", StringComparison.Ordinal))
+            {
+                var sb = new StringBuilder();
+                var prev = str[0];
+                sb.Append(prev);
+                for (int i = 1; i < str.Length; i++)
+                {
+                    var c = str[i];
+                    if (prev != ' ' || c != ' ')
+                    {
+                        sb.Append(c);
+                    }
+                    prev = c;
+                }
+                str = sb.ToString();
+            }
+            return str;
         }
 
         private Dictionary<string, string> GetXmlDocs(Assembly assembly)

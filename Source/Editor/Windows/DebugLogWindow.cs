@@ -318,7 +318,6 @@ namespace FlaxEditor.Windows
         {
             Title = "Debug Log";
             Icon = IconInfo;
-            OnEditorOptionsChanged(Editor.Options.Options);
             FlaxEditor.Utilities.Utils.SetupCommonInputActions(this);
 
             // Toolstrip
@@ -327,14 +326,42 @@ namespace FlaxEditor.Windows
                 Parent = this,
             };
             toolstrip.AddButton("Clear", Clear).LinkTooltip("Clears all log entries");
-            _clearOnPlayButton = (ToolStripButton)toolstrip.AddButton("Clear on Play").SetAutoCheck(true).SetChecked(true).LinkTooltip("Clears all log entries on enter playmode");
-            _collapseLogsButton = (ToolStripButton)toolstrip.AddButton("Collapse").SetAutoCheck(true).SetChecked(true).LinkTooltip("Collapses similar logs.");
-            _pauseOnErrorButton = (ToolStripButton)toolstrip.AddButton("Pause on Error").SetAutoCheck(true).LinkTooltip("Performs auto pause on error");
+            _clearOnPlayButton = (ToolStripButton)toolstrip.AddButton("Clear on Play", () =>
+            {
+                editor.Options.Options.Interface.DebugLogClearOnPlay = _clearOnPlayButton.Checked;
+                editor.Options.Apply(editor.Options.Options);
+            }).SetAutoCheck(true).LinkTooltip("Clears all log entries on enter playmode");
+            _collapseLogsButton = (ToolStripButton)toolstrip.AddButton("Collapse", () =>
+            {
+                editor.Options.Options.Interface.DebugLogCollapse = _collapseLogsButton.Checked;
+                editor.Options.Apply(editor.Options.Options);
+            }).SetAutoCheck(true).LinkTooltip("Collapses similar logs.");
+            _pauseOnErrorButton = (ToolStripButton)toolstrip.AddButton("Pause on Error", () =>
+            {
+                editor.Options.Options.Interface.DebugLogPauseOnError = _pauseOnErrorButton.Checked;
+                editor.Options.Apply(editor.Options.Options);
+            }).SetAutoCheck(true).LinkTooltip("Performs auto pause on error");
             toolstrip.AddSeparator();
-            _groupButtons[0] = (ToolStripButton)toolstrip.AddButton(editor.Icons.Error32, () => UpdateLogTypeVisibility(LogGroup.Error, _groupButtons[0].Checked)).SetAutoCheck(true).SetChecked(true).LinkTooltip("Shows/hides error messages");
-            _groupButtons[1] = (ToolStripButton)toolstrip.AddButton(editor.Icons.Warning32, () => UpdateLogTypeVisibility(LogGroup.Warning, _groupButtons[1].Checked)).SetAutoCheck(true).SetChecked(true).LinkTooltip("Shows/hides warning messages");
-            _groupButtons[2] = (ToolStripButton)toolstrip.AddButton(editor.Icons.Info32, () => UpdateLogTypeVisibility(LogGroup.Info, _groupButtons[2].Checked)).SetAutoCheck(true).SetChecked(true).LinkTooltip("Shows/hides info messages");
+            _groupButtons[0] = (ToolStripButton)toolstrip.AddButton(editor.Icons.Error32, () =>
+            {
+                UpdateLogTypeVisibility(LogGroup.Error, _groupButtons[0].Checked);
+                editor.Options.Options.Interface.DebugLogShowErrorMessages = _groupButtons[0].Checked;
+                editor.Options.Apply(editor.Options.Options);
+            }).SetAutoCheck(true).LinkTooltip("Shows/hides error messages");
+            _groupButtons[1] = (ToolStripButton)toolstrip.AddButton(editor.Icons.Warning32, () =>
+            {
+                UpdateLogTypeVisibility(LogGroup.Warning, _groupButtons[1].Checked);
+                editor.Options.Options.Interface.DebugLogShowWarningMessages = _groupButtons[1].Checked;
+                editor.Options.Apply(editor.Options.Options);
+            }).SetAutoCheck(true).LinkTooltip("Shows/hides warning messages");
+            _groupButtons[2] = (ToolStripButton)toolstrip.AddButton(editor.Icons.Info32, () =>
+            {
+                UpdateLogTypeVisibility(LogGroup.Info, _groupButtons[2].Checked);
+                editor.Options.Options.Interface.DebugLogShowInfoMessages = _groupButtons[2].Checked;
+                editor.Options.Apply(editor.Options.Options);
+            }).SetAutoCheck(true).LinkTooltip("Shows/hides info messages");
             UpdateCount();
+            OnEditorOptionsChanged(Editor.Options.Options);
 
             // Split panel
             _split = new SplitPanel(Orientation.Vertical, ScrollBars.Vertical, ScrollBars.Both)
@@ -380,6 +407,12 @@ namespace FlaxEditor.Windows
         private void OnEditorOptionsChanged(EditorOptions options)
         {
             _timestampsFormats = options.Interface.DebugLogTimestampsFormat;
+            _clearOnPlayButton.Checked = options.Interface.DebugLogClearOnPlay;
+            _collapseLogsButton.Checked = options.Interface.DebugLogCollapse;
+            _pauseOnErrorButton.Checked = options.Interface.DebugLogPauseOnError;
+            _groupButtons[0].Checked = options.Interface.DebugLogShowErrorMessages;
+            _groupButtons[1].Checked = options.Interface.DebugLogShowWarningMessages;
+            _groupButtons[2].Checked = options.Interface.DebugLogShowInfoMessages;
         }
 
         /// <summary>

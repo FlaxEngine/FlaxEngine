@@ -100,6 +100,7 @@ namespace FlaxEngine.GUI
                 if (value > _maximum)
                     throw new ArgumentOutOfRangeException();
                 _minimum = value;
+                UpdateThumb();
                 if (Value < _minimum)
                     Value = _minimum;
             }
@@ -116,6 +117,7 @@ namespace FlaxEngine.GUI
                 if (value < _minimum)
                     throw new ArgumentOutOfRangeException();
                 _maximum = value;
+                UpdateThumb();
                 if (Value > _maximum)
                     Value = _maximum;
             }

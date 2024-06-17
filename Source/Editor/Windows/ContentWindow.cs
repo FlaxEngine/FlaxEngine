@@ -1068,7 +1068,7 @@ namespace FlaxEditor.Windows
             PerformLayout();
 
             // Load last viewed folder
-            if (Editor.ProjectCache.TryGetCustomData(ProjectDataLastViewedFolder, out var lastViewedFolder))
+            if (Editor.ProjectCache.TryGetCustomData(ProjectDataLastViewedFolder, out string lastViewedFolder))
             {
                 if (Editor.ContentDatabase.Find(lastViewedFolder) is ContentFolder folder)
                     _tree.Select(folder.Node);

@@ -306,7 +306,7 @@ HRESULT LoadFromEXRFile(const StringView& path, DirectX::ScratchImage& image)
             LOG_STR(Warning, String(err));
             FreeEXRErrorMessage(err);
         }
-        return S_FALSE;
+        return E_FAIL;
     }
 
     // Setup image
@@ -326,7 +326,7 @@ HRESULT LoadFromEXRFile(const StringView& path, DirectX::ScratchImage& image)
     return result;
 #else
     LOG(Warning, "EXR format is not supported.");
-    return S_FALSE;
+    return E_FAIL;
 #endif
 }
 

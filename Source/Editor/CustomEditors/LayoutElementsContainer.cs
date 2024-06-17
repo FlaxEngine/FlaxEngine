@@ -319,6 +319,8 @@ namespace FlaxEditor.CustomEditors
                 element.Label.Font = new FontReference(element.Label.Font.Font, header.FontSize);
             if (header.Color > 0)
                 element.Label.TextColor = Color.FromRGB(header.Color);
+            var size = element.Label.Font.GetFont().MeasureText(header.Text);
+            element.Label.Height = size.Y;
             return element;
         }
 

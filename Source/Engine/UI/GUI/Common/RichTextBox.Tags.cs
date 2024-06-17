@@ -48,8 +48,8 @@ namespace FlaxEngine.GUI
                 {
                     if (alphaText.Length == 3 && alphaText[0] == '#')
                         style.Color.A = ((StringUtils.HexDigit(alphaText[1]) << 4) + StringUtils.HexDigit(alphaText[2])) / 255.0f;
-                    else if (alphaText.Length > 1 && alphaText[alphaText.Length - 1] == '%')
-                        style.Color.A = float.Parse(alphaText.Substring(0, alphaText.Length - 1)) / 100.0f;
+                    else if (alphaText.Length > 1 && alphaText[alphaText.Length - 1] == '%' && float.TryParse(alphaText.Substring(0, alphaText.Length - 1), out var alpha))
+                        style.Color.A = alpha / 100.0f;
                 }
                 context.StyleStack.Push(style);
             }
@@ -297,8 +297,8 @@ namespace FlaxEngine.GUI
             {
                 if (float.TryParse(text, out var width))
                     output = width;
-                if (text.Length > 1 && text[text.Length - 1] == '%')
-                    output = input * float.Parse(text.Substring(0, text.Length - 1)) / 100.0f;
+                if (text.Length > 1 && text[text.Length - 1] == '%' && float.TryParse(text.Substring(0, text.Length - 1), out width))
+                    output = input * width / 100.0f;
                 used = true;
             }
             return used;
