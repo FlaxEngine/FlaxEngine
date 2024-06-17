@@ -1431,6 +1431,7 @@ namespace Flax.Build.Bindings
                 {{GenerateCSharpAccessLevel(classInfo.Access)}}static class {{marshallerName}}
                 {
                 #pragma warning disable 1591
+                #pragma warning disable 618
                 #if FLAX_EDITOR
                     [HideInEditor]
                 #endif
@@ -1467,6 +1468,7 @@ namespace Flax.Build.Bindings
 
                     internal static {{classInfo.Name}} ToManaged(IntPtr managed) => Unsafe.As<{{classInfo.Name}}>(ManagedHandleMarshaller.ToManaged(managed));
                     internal static IntPtr ToNative({{classInfo.Name}} managed) => ManagedHandleMarshaller.ToNative(managed);
+                #pragma warning restore 618
                 #pragma warning restore 1591
                 }
                 """).Split(new char[] { '\n' })));
@@ -1764,6 +1766,7 @@ namespace Flax.Build.Bindings
                 {{GenerateCSharpAccessLevel(structureInfo.Access)}}static unsafe class {{marshallerName}}
                 {
                 #pragma warning disable 1591
+                #pragma warning disable 618
                     {{structContents.Replace("\n", "\n" + "    ").ToString().TrimEnd()}}
 
                     {{InsertHideInEditorSection()}}
@@ -1810,6 +1813,7 @@ namespace Flax.Build.Bindings
                     {
                         {{toNativeContent.Replace("\n", "\n" + "        ").ToString().TrimEnd()}}
                     }
+                #pragma warning restore 618
                 #pragma warning restore 1591
                 }
                 """).Split(new char[] { '\n' })));
@@ -2170,8 +2174,10 @@ namespace Flax.Build.Bindings
                 contents.Append(indent).AppendLine($"public static class {marshallerName}");
                 contents.Append(indent).AppendLine("{");
                 contents.AppendLine("#pragma warning disable 1591");
+                contents.AppendLine("#pragma warning disable 618");
                 contents.Append(indent).Append("    ").AppendLine($"internal static {interfaceInfo.Name} ConvertToManaged(IntPtr unmanaged) => ({interfaceInfo.Name})ManagedHandleMarshaller.ConvertToManaged(unmanaged);");
                 contents.Append(indent).Append("    ").AppendLine($"internal static IntPtr ConvertToUnmanaged({interfaceInfo.Name} managed) => ManagedHandleMarshaller.ConvertToUnmanaged(managed);");
+                contents.AppendLine("#pragma warning restore 618");
                 contents.AppendLine("#pragma warning restore 1591");
                 contents.Append(indent).AppendLine("}");
             }
