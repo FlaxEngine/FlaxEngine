@@ -76,6 +76,11 @@ namespace FlaxEditor.Gizmo
         public bool ScaleSnapEnabled = false;
 
         /// <summary>
+        /// True if enable absolute grid snapping
+        /// </summary>
+        public bool AbsoluteSnapEnabled = false;
+
+        /// <summary>
         /// Translation snap value
         /// </summary>
         public float TranslationSnapValue = 10;
