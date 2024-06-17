@@ -343,10 +343,20 @@ namespace FlaxEditor.Gizmo
                     _hasAbsoluteSnapped = true;
 
                     Vector3 currentTranslationScale = isScaling ? GetSelectedTransform(0).Scale : GetSelectedTransform(0).Translation; 
-                    absoluteDelta = currentTranslationScale - new Vector3(
-                        Mathf.Round(currentTranslationScale.X / snapValue.X) * snapValue.X,
-                        Mathf.Round(currentTranslationScale.Y / snapValue.Y) * snapValue.Y,
-                        Mathf.Round(currentTranslationScale.Z / snapValue.Z) * snapValue.Z);
+                    if(LargeWorlds.Enable)
+                    {
+                        absoluteDelta = currentTranslationScale - new Vector3(
+                            Double.Round(currentTranslationScale.X / snapValue.X) * snapValue.X,
+                            Double.Round(currentTranslationScale.Y / snapValue.Y) * snapValue.Y,
+                            Double.Round(currentTranslationScale.Z / snapValue.Z) * snapValue.Z);
+                    }
+                    else
+                    {
+                        absoluteDelta = currentTranslationScale - new Vector3(
+                            Mathf.Round(currentTranslationScale.X / snapValue.X) * snapValue.X,
+                            Mathf.Round(currentTranslationScale.Y / snapValue.Y) * snapValue.Y,
+                            Mathf.Round(currentTranslationScale.Z / snapValue.Z) * snapValue.Z);
+                    }
                 }
 
                 delta = new Vector3(
