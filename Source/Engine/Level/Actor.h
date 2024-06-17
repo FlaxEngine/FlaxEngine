@@ -164,13 +164,13 @@ public:
     /// [Deprecated in v1.5]
     /// </summary>
     API_PROPERTY(Attributes="HideInEditor, NoSerialize, NoAnimate")
-    DEPRECATED const String& GetTag() const;
+    DEPRECATED("Use HasTag instead") const String& GetTag() const;
 
     /// <summary>
     /// Sets the name of the tag.
     /// [Deprecated in v1.5]
     /// </summary>
-    API_PROPERTY() DEPRECATED void SetTag(const StringView& value);
+    API_PROPERTY() DEPRECATED("Use AddTag instead") void SetTag(const StringView& value);
 
     /// <summary>
     /// Gets the actor name.

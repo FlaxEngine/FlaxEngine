@@ -829,7 +829,7 @@ namespace Flax.Build.Bindings
             }
         }
 
-        private static void GenerateCSharpAttributes(BuildData buildData, StringBuilder contents, string indent, ApiTypeInfo apiTypeInfo, string attributes = null, string[] comment = null, bool canUseTooltip = false, bool useUnmanaged = false, string defaultValue = null, bool isDeprecated = false, TypeInfo defaultValueType = null)
+        private static void GenerateCSharpAttributes(BuildData buildData, StringBuilder contents, string indent, ApiTypeInfo apiTypeInfo, string attributes = null, string[] comment = null, bool canUseTooltip = false, bool useUnmanaged = false, string defaultValue = null, string deprecatedMessage = null, TypeInfo defaultValueType = null)
         {
 #if AUTO_DOC_TOOLTIPS
             var writeTooltip = true;
@@ -853,10 +853,15 @@ namespace Flax.Build.Bindings
                 // Skip boilerplate code when using debugger
                 //contents.Append(indent).AppendLine("[System.Diagnostics.DebuggerStepThrough]");
             }
-            if (isDeprecated || apiTypeInfo.IsDeprecated)
+            if (deprecatedMessage != null || apiTypeInfo.IsDeprecated)
             {
                 // Deprecated type
-                contents.Append(indent).AppendLine("[Obsolete]");
+                if (!string.IsNullOrEmpty(apiTypeInfo.DeprecatedMessage))
+                    contents.Append(indent).AppendLine($"[Obsolete(\"{apiTypeInfo.DeprecatedMessage}\")]");
+                else if (!string.IsNullOrEmpty(deprecatedMessage))
+                    contents.Append(indent).AppendLine($"[Obsolete(\"{deprecatedMessage}\")]");
+                else
+                    contents.Append(indent).AppendLine("[Obsolete]");
             }
 
 #if AUTO_DOC_TOOLTIPS
@@ -901,12 +906,12 @@ namespace Flax.Build.Bindings
 
         private static void GenerateCSharpAttributes(BuildData buildData, StringBuilder contents, string indent, ApiTypeInfo apiTypeInfo, bool useUnmanaged, string defaultValue = null, TypeInfo defaultValueType = null)
         {
-            GenerateCSharpAttributes(buildData, contents, indent, apiTypeInfo, apiTypeInfo.Attributes, apiTypeInfo.Comment, true, useUnmanaged, defaultValue, false, defaultValueType);
+            GenerateCSharpAttributes(buildData, contents, indent, apiTypeInfo, apiTypeInfo.Attributes, apiTypeInfo.Comment, true, useUnmanaged, defaultValue, null, defaultValueType);
         }
 
         private static void GenerateCSharpAttributes(BuildData buildData, StringBuilder contents, string indent, ApiTypeInfo apiTypeInfo, MemberInfo memberInfo, bool useUnmanaged, string defaultValue = null, TypeInfo defaultValueType = null)
         {
-            GenerateCSharpAttributes(buildData, contents, indent, apiTypeInfo, memberInfo.Attributes, memberInfo.Comment, true, useUnmanaged, defaultValue, memberInfo.IsDeprecated, defaultValueType);
+            GenerateCSharpAttributes(buildData, contents, indent, apiTypeInfo, memberInfo.Attributes, memberInfo.Comment, true, useUnmanaged, defaultValue, memberInfo.DeprecatedMessage, defaultValueType);
         }
 
         private static bool GenerateCSharpStructureUseDefaultInitialize(BuildData buildData, StructureInfo structureInfo)

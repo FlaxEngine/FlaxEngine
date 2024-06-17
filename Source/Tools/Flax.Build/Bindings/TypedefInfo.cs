@@ -76,7 +76,7 @@ namespace Flax.Build.Bindings
                 if (Comment != null && Comment.Length != 0)
                     typedef.Comment = Comment;
                 typedef.IsInBuild |= IsInBuild;
-                typedef.IsDeprecated |= IsDeprecated;
+                typedef.DeprecatedMessage = DeprecatedMessage;
                 if (typedef is ClassStructInfo typedefClassStruct && typedefClassStruct.IsTemplate)
                 {
                     // Inflate template type
