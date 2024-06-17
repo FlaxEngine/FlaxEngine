@@ -338,7 +338,7 @@ namespace FlaxEditor.Gizmo
                 }
 
                 Vector3 absoluteDelta = Vector3.Zero;
-                if (!_hasAbsoluteSnapped && AbsoluteSnapEnabled)
+                if (!_hasAbsoluteSnapped && AbsoluteSnapEnabled && ActiveTransformSpace == TransformSpace.World)
                 {
                     _hasAbsoluteSnapped = true;
 
@@ -390,7 +390,7 @@ namespace FlaxEditor.Gizmo
                 float snapValue = RotationSnapValue * Mathf.DegreesToRadians;
 
                 float absoluteDelta = 0.0f;
-                if (!_hasAbsoluteSnapped && AbsoluteSnapEnabled)
+                if (!_hasAbsoluteSnapped && AbsoluteSnapEnabled && ActiveTransformSpace == TransformSpace.World)
                 {
                     _hasAbsoluteSnapped = true;
 
