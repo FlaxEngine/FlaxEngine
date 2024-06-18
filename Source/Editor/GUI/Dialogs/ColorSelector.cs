@@ -272,7 +272,9 @@ namespace FlaxEditor.GUI.Dialogs
     public class ColorSelectorWithSliders : ColorSelector
     {
         private Rectangle _valueSliderRect;
+        private Rectangle _valueSliderHitbox;
         private Rectangle _alphaSliderRect;
+        private Rectangle _alphaSliderHitbox;
         private bool _isMouseDownValueSlider;
         private bool _isMouseDownAlphaSlider;
 
@@ -286,8 +288,13 @@ namespace FlaxEditor.GUI.Dialogs
         {
             // Setup dimensions
             const float slidersMargin = 16.0f;
+            const float SliderHitboxExpansion = 12.0f;
+            
             _valueSliderRect = new Rectangle(wheelSize + slidersMargin, 0, slidersThickness, wheelSize);
+            _valueSliderHitbox = new Rectangle(_valueSliderRect.Location - SliderHitboxExpansion * 0.5f, _valueSliderRect.Size + SliderHitboxExpansion);
             _alphaSliderRect = new Rectangle(_valueSliderRect.Right + slidersMargin, _valueSliderRect.Y, slidersThickness, _valueSliderRect.Height);
+            _alphaSliderHitbox = new Rectangle(_alphaSliderRect.Location - SliderHitboxExpansion * 0.5f, _alphaSliderRect.Size + SliderHitboxExpansion);
+            
             Size = new Float2(_alphaSliderRect.Right, wheelSize);
         }
 
@@ -373,6 +380,9 @@ namespace FlaxEditor.GUI.Dialogs
             Render2D.FillRectangle(_alphaSliderRect, color, color, Color.Transparent, Color.Transparent);
             Render2D.DrawRectangle(_alphaSliderRect, alphaSliderTopOutlineColor, alphaSliderTopOutlineColor, Color.Transparent, Color.Transparent);
             Render2D.DrawRectangle(alphaSliderHandleRect, _isMouseDownAlphaSlider ? Color.White : Color.Gray);
+            // Hitbox debug
+            //Render2D.DrawRectangle(_valueSliderHitbox, Color.Green);
+            //Render2D.DrawRectangle(_alphaSliderHitbox, Color.Red);
         }
 
         private static void DrawAlphaGrid(float gridElementSize, ref Float2 startingPosition, float width, float height)
@@ -408,7 +418,7 @@ namespace FlaxEditor.GUI.Dialogs
         /// <inheritdoc />
         public override bool OnMouseDown(Float2 location, MouseButton button)
         {
-            if (button == MouseButton.Left && _valueSliderRect.Contains(location))
+            if (button == MouseButton.Left && _valueSliderHitbox.Contains(location))
             {
                 _isMouseDownValueSlider = true;
 
@@ -417,7 +427,7 @@ namespace FlaxEditor.GUI.Dialogs
                 StartMouseCapture();
                 UpdateMouse(ref location);
             }
-            if (button == MouseButton.Left && _alphaSliderRect.Contains(location))
+            if (button == MouseButton.Left && _alphaSliderHitbox.Contains(location))
             {
                 _isMouseDownAlphaSlider = true;
 
