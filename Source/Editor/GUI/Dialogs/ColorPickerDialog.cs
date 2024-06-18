@@ -41,6 +41,14 @@ namespace FlaxEditor.GUI.Dialogs
         private const float ColorWheelSize = 180.0f;
         private const float SaturationAlphaSlidersThickness = 20.0f;
 
+        private const float SmallMargin = 6.0f;
+        private const float MediumMargin = 15.0f;
+        private const float LargeMargin = 25.0f;
+      
+        private Margin _pickerMargin = new Margin(SmallMargin, SmallMargin, SmallMargin, SmallMargin);
+        private Margin _SliderMargin = new Margin(0, LargeMargin + MediumMargin, 0, SmallMargin);
+        private Margin _textBoxBlockMargin = new Margin(LargeMargin + 1.5f, SmallMargin + 1.5f, SmallMargin + 1.5f, SmallMargin + 1.5f);
+        private Margin _colorPreviewMargin = new Margin(0, LargeMargin, 0, 0);
 
         private Color _initialValue;
         private Color _value;
@@ -132,13 +140,13 @@ namespace FlaxEditor.GUI.Dialogs
             // Selector
             _cSelector = new ColorSelectorWithSliders(ColorWheelSize, SaturationAlphaSlidersThickness)
             {
-                Location = new Float2(PickerMargin, PickerMargin),
+                Location = new Float2(_pickerMargin.Left + _pickerMargin.Left, _pickerMargin.Top + _pickerMargin.Top),
                 Parent = this
             };
             _cSelector.ColorChanged += x => SelectedColor = x;
 
             // Red
-            _cRed = new FloatValueBox(0, _cSelector.Right + PickerMargin + RGBAMargin + ChannelTextWidth, PickerMargin, 100, 0, float.MaxValue, 0.001f)
+            _cRed = new FloatValueBox(0, _cSelector.Right + _SliderMargin.Right, _pickerMargin.Top + _pickerMargin.Top, 100, 0, float.MaxValue, 0.001f)
             {
                 Parent = this
             };
@@ -165,8 +173,16 @@ namespace FlaxEditor.GUI.Dialogs
             };
             _cAlpha.ValueChanged += OnRGBAChanged;
 
+            // Hex
+            const float hexTextBoxWidth = 80;
+            _cHex = new TextBox(false, _cRed.X + 20, _cAlpha.Bottom + _textBoxBlockMargin.Top, hexTextBoxWidth)
+            {
+                Parent = this
+            };
+            _cHex.EditEnd += OnHexChanged;
+
             // Hue
-            _cHue = new FloatValueBox(0, PickerMargin + HSVMargin + ChannelTextWidth, _cSelector.Bottom + PickerMargin, 100, 0, 360)
+            _cHue = new FloatValueBox(0, _cSelector.Right + _SliderMargin.Right, _cHex.Bottom + _textBoxBlockMargin.Top, 100)
             {
                 Parent = this
             };
@@ -186,17 +202,6 @@ namespace FlaxEditor.GUI.Dialogs
             };
             _cValue.ValueChanged += OnHSVChanged;
 
-            // Set valid dialog size based on UI content
-            _dialogSize = Size = new Float2(_cRed.Right + PickerMargin, 300);
-
-            // Hex
-            const float hexTextBoxWidth = 80;
-            _cHex = new TextBox(false, Width - hexTextBoxWidth - PickerMargin, _cAlpha.Bottom + RGBAHexSeparator, hexTextBoxWidth)
-            {
-                Parent = this
-            };
-            _cHex.EditEnd += OnHexChanged;
-
             // Cancel
             _cCancel = new Button(Width - ButtonsWidth - PickerMargin, Height - Button.DefaultHeight - PickerMargin, ButtonsWidth)
             {
@@ -212,6 +217,8 @@ namespace FlaxEditor.GUI.Dialogs
                 Parent = this
             };
             _cOK.Clicked += OnSubmit;
+            // Set valid dialog size based on UI content
+            _dialogSize = Size = new Float2(_cRed.Right + _pickerMargin.Right + 20, 300); // +20 to account for hsv math symbols
 
             // Create saved color buttons
             CreateAllSaveButtons();
@@ -374,17 +381,20 @@ namespace FlaxEditor.GUI.Dialogs
             var hex = new Rectangle(_cHex.Left - 26, _cHex.Y, 10000, _cHex.Height);
             Render2D.DrawText(style.FontMedium, "Hex", hex, textColor, TextAlignment.Near, TextAlignment.Center);
 
-            // Old and New Color preview
-            var colorPickerYPosition = _cOK.Top - ColorPreviewHeight - PickerMargin;
+            // Old and New color preview
+            float oldNewColorPreviewYPosition = _cValue.Bottom - _textBoxBlockMargin.Bottom + 50;
 
-            var oldColorRect = new Rectangle(_cOK.X - 3, colorPickerYPosition, ColorPreviewWidth * OldNewColorPreviewDisplayRatio, 0);
+            var oldColorRect = new Rectangle(Width - ColorPreviewWidth - _pickerMargin.Right - 20, oldNewColorPreviewYPosition, ColorPreviewWidth * OldNewColorPreviewDisplayRatio, 0);
             oldColorRect.Size.Y = ColorPreviewHeight;
 
-            var newColorRect = new Rectangle(_cOK.X - 3 + oldColorRect.Size.X, colorPickerYPosition, ColorPreviewWidth * (1 - OldNewColorPreviewDisplayRatio), 0);
+            var newColorRect = new Rectangle(oldColorRect.Right, oldNewColorPreviewYPosition, ColorPreviewWidth * (1 - OldNewColorPreviewDisplayRatio), 0);
             newColorRect.Size.Y = ColorPreviewHeight;
 
+            // Alpha grid background
+            var alphaBackground = new Rectangle(oldColorRect.Left, oldNewColorPreviewYPosition, ColorPreviewWidth, ColorPreviewHeight);
+
             // Draw checkerboard for background of color preview to help with transparency
-            Render2D.FillRectangle(new Rectangle(_cOK.X - 3, colorPickerYPosition, ColorPreviewWidth, ColorPreviewHeight), Color.White);
+            Render2D.FillRectangle(alphaBackground, Color.White);
 
             var smallRectSize = 10;
             var numHor = Mathf.FloorToInt(ColorPreviewWidth / smallRectSize);
@@ -393,7 +403,7 @@ namespace FlaxEditor.GUI.Dialogs
             {
                 for (int j = 0; j < numVer; j++)
                 {
-                    if ((i + j) % 2 == 0 )
+                    if ((i + j) % 2 == 0)
                     {
                         var rect = new Rectangle(oldColorRect.X + smallRectSize * i, oldColorRect.Y + smallRectSize * j, new Float2(smallRectSize));
                         Render2D.FillRectangle(rect, Color.Gray);
