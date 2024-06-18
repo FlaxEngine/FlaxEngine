@@ -327,9 +327,9 @@ namespace FlaxEditor.Surface.ContextMenu
         private string GetTooltip()
         {
             StringBuilder sb = new StringBuilder();
-            if (!string.IsNullOrEmpty(_archetype.Signature))
-                sb.Append(_archetype.Signature + "\n");
-            sb.Append(_archetype.Description);
+            sb.Append(string.IsNullOrEmpty(_archetype.Signature) ? _archetype.Title : _archetype.Signature);
+            if (!string.IsNullOrEmpty(_archetype.Description))
+                sb.Append("\n" + _archetype.Description);
             return sb.ToString();
         }
 

@@ -855,9 +855,9 @@ namespace FlaxEditor.Surface
         private string GetTooltip()
         {
             StringBuilder sb = new StringBuilder();
-            if (!string.IsNullOrEmpty(Archetype.Signature))
-                sb.Append(Archetype.Signature + "\n");
-            sb.Append(Archetype.Description);
+            sb.Append(string.IsNullOrEmpty(Archetype.Signature) ? Archetype.Title : Archetype.Signature);
+            if (!string.IsNullOrEmpty(Archetype.Description))
+                sb.Append("\n" + Archetype.Description);
             return sb.ToString();
         }
 
