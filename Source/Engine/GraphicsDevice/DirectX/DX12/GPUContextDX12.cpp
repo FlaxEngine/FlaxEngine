@@ -713,7 +713,7 @@ void GPUContextDX12::Clear(GPUTextureView* rt, const Color& color)
     }
 }
 
-void GPUContextDX12::ClearDepth(GPUTextureView* depthBuffer, float depthValue)
+void GPUContextDX12::ClearDepthCustom(GPUTextureView* depthBuffer, float depthValue)
 {
     auto depthBufferDX12 = static_cast<GPUTextureViewDX12*>(depthBuffer);
 
