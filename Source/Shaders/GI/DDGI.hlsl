@@ -139,14 +139,16 @@ float3 SampleDDGIIrradiance(DDGIData data, Texture2D<snorm float4> probesData, T
     // Select the highest cascade that contains the sample location
     uint cascadeIndex = 0;
     float probesSpacing = 0;
-    float3 probesOrigin = (float3)0, probesExtent = (float3)0;
+    float3 probesOrigin = (float3)0, probesExtent = (float3)0, biasedWorldPosition = (float3)0;
+    float3 viewDir = normalize(data.ViewPos - worldPosition);
     for (; cascadeIndex < data.CascadesCount; cascadeIndex++)
     {
         probesSpacing = data.ProbesOriginAndSpacing[cascadeIndex].w;
         probesOrigin = data.ProbesScrollOffsets[cascadeIndex].xyz * probesSpacing + data.ProbesOriginAndSpacing[cascadeIndex].xyz;
         probesExtent = (data.ProbesCounts - 1) * (probesSpacing * 0.5f);
+        biasedWorldPosition = worldPosition + (worldNormal * 0.2f + viewDir * 0.8f) * (0.75f * probesSpacing * bias);
         float fadeDistance = probesSpacing * 0.5f;
-        float cascadeWeight = saturate(Min3(probesExtent - abs(worldPosition - probesOrigin)) / fadeDistance);
+        float cascadeWeight = saturate(Min3(probesExtent - abs(biasedWorldPosition - probesOrigin)) / fadeDistance);
         if (cascadeWeight > dither) // Use dither to make transition smoother
             break;
     }
@@ -154,11 +156,6 @@ float3 SampleDDGIIrradiance(DDGIData data, Texture2D<snorm float4> probesData, T
         return data.FallbackIrradiance;
     uint3 probeCoordsEnd = data.ProbesCounts - uint3(1, 1, 1);
     uint3 baseProbeCoords = clamp(uint3((worldPosition - probesOrigin + probesExtent) / probesSpacing), uint3(0, 0, 0), probeCoordsEnd);
-
-    // Bias the world-space position to reduce artifacts
-    float3 viewDir = normalize(data.ViewPos - worldPosition);
-    float3 surfaceBias = (worldNormal * 0.2f + viewDir * 0.8f) * (0.75f * probesSpacing * bias);
-    float3 biasedWorldPosition = worldPosition + surfaceBias;
 
     // Get the grid coordinates of the probe nearest the biased world position
     float3 baseProbeWorldPosition = GetDDGIProbeWorldPosition(data, cascadeIndex, baseProbeCoords);
