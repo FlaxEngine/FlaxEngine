@@ -68,6 +68,7 @@ namespace FlaxEditor.GUI.Dialogs
         private FloatValueBox _cValue;
         private TextBox _cHex;
         private Button _cEyedropper;
+        private Button _cOldPreviewButton;
 
         private List<Color> _savedColors = new List<Color>();
         private List<Button> _savedColorButtons = new List<Button>();
@@ -377,6 +378,20 @@ namespace FlaxEditor.GUI.Dialogs
             var newColorRect = new Rectangle(oldColorRect.Right, oldNewColorPreviewYPosition, ColorPreviewWidth * (1 - OldNewColorPreviewDisplayRatio), 0);
             newColorRect.Size.Y = ColorPreviewHeight;
 
+            // Generate the button for right click detection here because we don't know position of oldColorRect before
+            _cOldPreviewButton = new Button(oldColorRect.Location, oldColorRect.Size)
+            {
+                TooltipText = "Right click to reset to previous color.",
+                Tag = "OldColorPreview",
+                BackgroundColor = Color.Transparent,
+                BackgroundColorHighlighted = Color.Transparent,
+                BackgroundColorSelected = Color.Transparent,
+                BorderColor = Color.Transparent,
+                BorderColorHighlighted = Color.Transparent,
+                BorderColorSelected = Color.Transparent,
+                Parent = this
+            };
+
             // Alpha grid background
             var alphaBackground = new Rectangle(oldColorRect.Left, oldNewColorPreviewYPosition, ColorPreviewWidth, ColorPreviewHeight);
 
@@ -445,21 +460,40 @@ namespace FlaxEditor.GUI.Dialogs
             }
 
             var child = GetChildAtRecursive(location);
-            if (button == MouseButton.Right && child is Button b && b.Tag is Color c)
+            if (button == MouseButton.Right && child is Button b)
             {
-                // Show menu
-                var menu = new ContextMenu.ContextMenu();
-                var replaceButton = menu.AddButton("Replace");
-                replaceButton.Clicked += () => OnSavedColorReplace(b);
-                var deleteButton = menu.AddButton("Delete");
-                deleteButton.Clicked += () => OnSavedColorDelete(b);
-                _disableEvents = true;
-                menu.Show(this, location);
-                menu.VisibleChanged += (c) => _disableEvents = false;
-                return true;
+                if (b.Tag is Color c)
+                {
+                    // Show menu
+                    var menu = new ContextMenu.ContextMenu();
+                    var replaceButton = menu.AddButton("Replace");
+                    replaceButton.Clicked += () => OnSavedColorReplace(b);
+                    var deleteButton = menu.AddButton("Delete");
+                    deleteButton.Clicked += () => OnSavedColorDelete(b);
+                    _disableEvents = true;
+                    menu.Show(this, location);
+                    menu.VisibleChanged += (c) => _disableEvents = false;
+                    return true;
+                }
+
+                if (b.Tag.ToString() == "OldColorPreview")
+                {
+                    var menu = new ContextMenu.ContextMenu();
+                    var resetButton = menu.AddButton("Reset");
+                    resetButton.Clicked += () => OnResetToOldPreviewPressed(b);
+                    _disableEvents = true;
+                    menu.Show(this, location);
+                    menu.VisibleChanged += (c) => _disableEvents = false;
+                    return true;
+                }
             }
 
             return false;
+        }
+
+        private void OnResetToOldPreviewPressed(Button button)
+        {
+            _cSelector.Color = _initialValue;
         }
 
         private void OnSavedColorReplace(Button button)
