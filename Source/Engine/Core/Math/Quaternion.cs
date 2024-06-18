@@ -1480,6 +1480,47 @@ namespace FlaxEngine
         }
 
         /// <summary>
+        /// Gets rotation from a normal in relation to a transform.<br/>
+        /// This function is especially useful for axis aligned faces,
+        /// and with <seealso cref="Physics.RayCast(Vector3, Vector3, out RayCastHit, float, uint, bool)"/>.
+        /// 
+        /// <example><para><b>Example code:</b></para>
+        /// <code>
+        /// <see langword="public" /> <see langword="class" /> GetRotationFromNormalExample : <see cref="Script"/><br/>
+        ///     <see langword="public" /> <see cref="Actor"/> RayOrgin;<br/>
+        ///     <see langword="public" /> <see cref="Actor"/> SomeObject;<br/>
+        ///     <see langword="public" /> <see langword="override" /> <see langword="void" /> <see cref="Script.OnFixedUpdate"/><br/>
+        ///     {<br/>
+        ///         <see langword="if" /> (<see cref="Physics"/>.RayCast(RayOrgin.Position, RayOrgin.Transform.Forward, out <see cref="RayCastHit"/> Hit)
+        ///         {<br/>
+        ///             <see cref="Vector3"/> position = Hit.Collider.Position;
+        ///             <see cref="Transform"/> transform = Hit.Collider.Transform;
+        ///             <see cref="Vector3"/> point = Hit.Point;
+        ///             <see cref="Vector3"/> normal = Hit.Normal;
+        ///             <see cref="Quaternion"/> rot = <see cref="Quaternion"/>.GetRotationFromNormal(normal,transform);
+        ///             SomeObject.Position = point;
+        ///             SomeObject.Orientation = rot;
+        ///         }
+        ///     }
+        /// }
+        /// </code>
+        /// </example>
+        /// </summary>
+        /// <param name="InNormal">The normal vector.</param>
+        /// <param name="InReferenceTransform">The reference transform.</param>
+        /// <returns>The rotation from the normal vector.</returns>
+        public static Quaternion GetRotationFromNormal(Vector3 InNormal, Transform InReferenceTransform)
+        {
+            Float3 up = InReferenceTransform.Up;
+            var dot = Vector3.Dot(InNormal, up);
+            if (Mathf.NearEqual(Math.Abs(dot), 1))
+            {
+                up = InReferenceTransform.Right;
+            }
+            return LookRotation(InNormal, up);
+        }
+
+        /// <summary>
         /// Adds two quaternions.
         /// </summary>
         /// <param name="left">The first quaternion to add.</param>
