@@ -228,6 +228,20 @@ void CS_Classify(uint3 DispatchThreadId : SV_DispatchThreadID)
         // If probe was in a different location or was activated now then mark it as activated
         bool wasActivated = probeStateOld == DDGI_PROBE_STATE_INACTIVE;
         bool wasRelocated = distance(probeOffset, probeOffsetOld) > 2.0f;
+#if DDGI_PROBE_RELOCATE_FIND_BEST || DDGI_PROBE_RELOCATE_ITERATIVE
+        if (wasRelocated && !wasActivated)
+        {
+            // If probe was relocated but the previous location is visible from the new one, then don't re-activate it for smoother blend
+            float3 diff = probeOffsetOld - probeOffset;
+            float diffLen = length(diff);
+            float3 diffDir = diff / diffLen;
+            GlobalSDFTrace trace;
+            trace.Init(probeBasePosition + probeOffset, diffDir, 0.0f, diffLen);
+            GlobalSDFHit hit = RayTraceGlobalSDF(GlobalSDF, GlobalSDFTex, GlobalSDFMip, trace);
+            if (!hit.IsHit())
+                wasRelocated = false;
+        }
+#endif
         if ((wasActivated || wasScrolled || wasRelocated) && probeState == DDGI_PROBE_STATE_ACTIVE)
             probeState = DDGI_PROBE_STATE_ACTIVATED;
     }
