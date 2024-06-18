@@ -52,6 +52,8 @@ namespace FlaxEditor.GUI.Dialogs
 
         private Color _initialValue;
         private Color _value;
+        private Color _cEyeDropperDefaultBackgroundColor;
+        private Color _cEyeDropperDefaultBorderColor;
         private bool _disableEvents;
         private bool _useDynamicEditing;
         private bool _activeEyedropper;
@@ -223,6 +225,8 @@ namespace FlaxEditor.GUI.Dialogs
                 BorderColorHighlighted = style.BorderSelected,
                 Parent = this,
             };
+            _cEyeDropperDefaultBackgroundColor = _cEyedropper.BackgroundColor;
+            _cEyeDropperDefaultBorderColor = _cEyedropper.BorderColor;
             _cEyedropper.Clicked += OnEyedropStart;
             _cEyedropper.Width = _cEyedropper.Height;
             _cEyedropper.Location = new Float2(_cEyedropper.Location.X, _cEyedropper.Location.Y - _cEyedropper.Height);
@@ -281,6 +285,11 @@ namespace FlaxEditor.GUI.Dialogs
             if (_activeEyedropper)
             {
                 _activeEyedropper = false;
+
+                // Reset colors
+                _cEyedropper.BackgroundColor = _cEyeDropperDefaultBackgroundColor;
+                _cEyedropper.BorderColor = _cEyeDropperDefaultBorderColor;
+
                 SelectedColor = colorPicked;
                 ScreenUtilities.PickColorDone -= OnColorPicked;
             }
@@ -289,6 +298,11 @@ namespace FlaxEditor.GUI.Dialogs
         private void OnEyedropStart()
         {
             _activeEyedropper = true;
+
+            // Provide some visual feedback that the eyedropper is active by changing colors
+            _cEyedropper.BackgroundColor = _cEyedropper.BackgroundColorSelected;
+            _cEyedropper.BorderColor = _cEyedropper.BorderColorSelected;
+
             ScreenUtilities.PickColor();
             ScreenUtilities.PickColorDone += OnColorPicked;
         }
