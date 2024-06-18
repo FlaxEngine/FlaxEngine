@@ -18,6 +18,7 @@
 #define DDGI_PROBE_STATE_ACTIVE 2
 #define DDGI_PROBE_RESOLUTION_IRRADIANCE 6 // Resolution (in texels) for probe irradiance data (excluding 1px padding on each side)
 #define DDGI_PROBE_RESOLUTION_DISTANCE 14 // Resolution (in texels) for probe distance data (excluding 1px padding on each side)
+#define DDGI_CASCADE_BLEND_SIZE 2.5f // Distance in probes over which cascades blending happens
 #define DDGI_SRGB_BLENDING 1 // Enables blending in sRGB color space, otherwise irradiance blending is done in linear space
 
 // DDGI data for a constant buffer
@@ -143,13 +144,21 @@ float3 SampleDDGIIrradiance(DDGIData data, Texture2D<snorm float4> probesData, T
     float3 viewDir = normalize(data.ViewPos - worldPosition);
     for (; cascadeIndex < data.CascadesCount; cascadeIndex++)
     {
+        // Get cascade data
         probesSpacing = data.ProbesOriginAndSpacing[cascadeIndex].w;
         probesOrigin = data.ProbesScrollOffsets[cascadeIndex].xyz * probesSpacing + data.ProbesOriginAndSpacing[cascadeIndex].xyz;
         probesExtent = (data.ProbesCounts - 1) * (probesSpacing * 0.5f);
-        biasedWorldPosition = worldPosition + (worldNormal * 0.2f + viewDir * 0.8f) * (0.75f * probesSpacing * bias);
-        float fadeDistance = probesSpacing * 0.5f;
-        float cascadeWeight = saturate(Min3(probesExtent - abs(biasedWorldPosition - probesOrigin)) / fadeDistance);
-        if (cascadeWeight > dither) // Use dither to make transition smoother
+
+        // Bias the world-space position to reduce artifacts
+        float3 surfaceBias = (worldNormal * 0.2f + viewDir * 0.8f) * (0.75f * probesSpacing * bias);
+        biasedWorldPosition = worldPosition + surfaceBias;
+
+        // Calculate cascade blending weight (use input bias to smooth transition)
+        float cascadeBlendSmooth = frac(max(distance(data.ViewPos, worldPosition) - probesExtent, 0) / probesSpacing) * 0.1f;
+        float3 cascadeBlendPoint = worldPosition - probesOrigin - cascadeBlendSmooth * probesSpacing;
+        float fadeDistance = probesSpacing * DDGI_CASCADE_BLEND_SIZE;
+        float cascadeWeight = saturate(Min3(probesExtent - abs(cascadeBlendPoint)) / fadeDistance);
+        if (cascadeWeight > dither)
             break;
     }
     if (cascadeIndex == data.CascadesCount)

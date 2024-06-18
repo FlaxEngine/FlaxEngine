@@ -102,7 +102,7 @@ void CS_Classify(uint3 DispatchThreadId : SV_DispatchThreadID)
         float prevProbesSpacing = DDGI.ProbesOriginAndSpacing[prevCascade].w;
         float3 prevProbesOrigin = DDGI.ProbesScrollOffsets[prevCascade].xyz * prevProbesSpacing + DDGI.ProbesOriginAndSpacing[prevCascade].xyz;
         float3 prevProbesExtent = (DDGI.ProbesCounts - 1) * (prevProbesSpacing * 0.5f);
-        prevProbesExtent -= probesSpacing; // Apply safe margin to allow probes on cascade edges
+        prevProbesExtent -= probesSpacing * ceil(DDGI_CASCADE_BLEND_SIZE); // Apply safe margin to allow probes on cascade edges
         float prevCascadeWeight = Min3(prevProbesExtent - abs(probeBasePosition - prevProbesOrigin));
         if (prevCascadeWeight > 0.1f)
         {
