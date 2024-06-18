@@ -74,6 +74,16 @@ namespace FlaxEditor.Content
         }
 
         /// <inheritdoc />
+        public override bool CanReimport(ContentItem item)
+        {
+            if (item is not PrefabItem prefabItem)
+                return base.CanReimport(item);
+
+            var prefab = FlaxEngine.Content.Load<Prefab>(prefabItem.ID);
+            return prefab.GetDefaultInstance().GetScript<ModelPrefab>() != null;
+        }
+
+        /// <inheritdoc />
         public override void Create(string outputPath, object arg)
         {
             bool resetTransform = false;
