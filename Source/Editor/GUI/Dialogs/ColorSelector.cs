@@ -325,7 +325,7 @@ namespace FlaxEditor.GUI.Dialogs
             Float2 clampedValue;
 
             // Add a small offset to prevent "value flickering" from clamping
-            Float2 clampMinMaxOffset = new Float2(10);
+            Float2 clampMinMaxOffset = new Float2(3, 12);
             min -= clampMinMaxOffset;
             max += clampMinMaxOffset;
 
