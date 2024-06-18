@@ -23,21 +23,60 @@ void SphereCollider::SetRadius(const float value)
 
 #include "Engine/Debug/DebugDraw.h"
 #include "Engine/Graphics/RenderView.h"
+#include "Engine/Physics/Colliders/ColliderColorConfig.h"
+#include "Engine/Physics/PhysicsBackend.h"
 
 void SphereCollider::DrawPhysicsDebug(RenderView& view)
 {
     const BoundingSphere sphere(_sphere.Center - view.Origin, _sphere.Radius);
     if (!view.CullingFrustum.Intersects(sphere))
         return;
+
+    Transform T{};
+    PhysicsBackend::GetShapePose(_shape, T.Translation, T.Orientation);
+    auto bb = BoundingSphere(T.Translation, _sphere.Radius);
+
     if (view.Mode == ViewMode::PhysicsColliders && !GetIsTrigger())
-        DEBUG_DRAW_SPHERE(_sphere, _staticActor ? Color::CornflowerBlue : Color::Orchid, 0, true);
+        DEBUG_DRAW_SPHERE(bb, _staticActor ? Color::CornflowerBlue : Color::Orchid, 0, true);
     else
-        DEBUG_DRAW_WIRE_SPHERE(_sphere, Color::GreenYellow * 0.8f, 0, true);
+        DEBUG_DRAW_WIRE_SPHERE(bb, Color::GreenYellow * 0.8f, 0, true);
+}
+void SphereCollider::OnDebugDraw()
+{
+    if (DisplayCollider)
+    {
+        if (GetIsTrigger())
+        {
+            DEBUG_DRAW_WIRE_SPHERE(_sphere, FlaxEngine::ColliderColors::TriggerColliderOutline, 0, false);
+            DEBUG_DRAW_SPHERE(_sphere, FlaxEngine::ColliderColors::TriggerCollider, 0, true);
+        }
+        else
+        {
+            DEBUG_DRAW_WIRE_SPHERE(_sphere, FlaxEngine::ColliderColors::NormalColliderOutline, 0, false);
+            DEBUG_DRAW_SPHERE(_sphere, FlaxEngine::ColliderColors::NormalCollider, 0, true);
+        }
+    }
+
+    // Base
+    Collider::OnDebugDraw();
+
 }
 
 void SphereCollider::OnDebugDrawSelected()
 {
-    DEBUG_DRAW_WIRE_SPHERE(_sphere, Color::GreenYellow, 0, false);
+    if (!DisplayCollider)
+    {
+        if (GetIsTrigger())
+        {
+            DEBUG_DRAW_WIRE_SPHERE(_sphere, FlaxEngine::ColliderColors::TriggerColliderOutline, 0, false);
+            DEBUG_DRAW_SPHERE(_sphere, FlaxEngine::ColliderColors::TriggerCollider, 0, true);
+        }
+        else
+        {
+            DEBUG_DRAW_WIRE_SPHERE(_sphere, FlaxEngine::ColliderColors::NormalColliderOutline, 0, false);
+            DEBUG_DRAW_SPHERE(_sphere, FlaxEngine::ColliderColors::NormalCollider, 0, true);
+        }
+    }
 
     if (_contactOffset > 0)
     {

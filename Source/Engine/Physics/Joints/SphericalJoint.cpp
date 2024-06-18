@@ -35,15 +35,18 @@ void SphericalJoint::SetLimit(const LimitConeRange& value)
 
 void SphericalJoint::OnDebugDrawSelected()
 {
-    const Vector3 source = GetPosition();
-    const Vector3 target = GetTargetPosition();
+    auto p0 = GetPoseActor0();
+    auto p1 = GetPoseActor1();
+
+    const Vector3 source = p0.Translation;
+    const Vector3 target = p1.Translation;
     const float size = 15.0f;
     const float arrowSize = size / 100.0f * 0.5f;
     const Color color = Color::Green.AlphaMultiplied(0.6f);
-    DEBUG_DRAW_WIRE_ARROW(source, GetOrientation(), arrowSize, arrowSize * 0.5f, Color::Red, 0, false);
+    DEBUG_DRAW_WIRE_ARROW(source, p0.Orientation, arrowSize, arrowSize * 0.5f, Color::Red, 0, false);
     if (EnumHasAnyFlags(_flags, SphericalJointFlag::Limit))
     {
-        DEBUG_DRAW_CONE(source, GetOrientation(), size, _limit.YLimitAngle * DegreesToRadians, _limit.ZLimitAngle * DegreesToRadians, color, 0, false);
+        DEBUG_DRAW_CONE(source, p0.Orientation, size, _limit.YLimitAngle * DegreesToRadians, _limit.ZLimitAngle * DegreesToRadians, color, 0, false);
     }
     else
     {
