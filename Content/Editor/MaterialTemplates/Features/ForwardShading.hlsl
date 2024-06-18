@@ -33,8 +33,6 @@ DECLARE_LIGHTSHADOWDATA_ACCESS(DirectionalLightShadow);
 
 // Pixel Shader function for Forward Pass
 META_PS(USE_FORWARD, FEATURE_LEVEL_ES2)
-META_PERMUTATION_1(USE_GLOBAL_SURFACE_ATLAS=0)
-META_PERMUTATION_1(USE_GLOBAL_SURFACE_ATLAS=1)
 void PS_Forward(
 		in PixelInput input
 		,out float4 output : SV_Target0
@@ -69,6 +67,7 @@ void PS_Forward(
 	gBuffer.Color = material.Color;
 	gBuffer.Specular = material.Specular;
 	gBuffer.AO = material.AO;
+	// gBuffer.ViewPos is the view position in WORLD SPACE
 	gBuffer.ViewPos = ViewPos;
 #if MATERIAL_SHADING_MODEL == SHADING_MODEL_SUBSURFACE
 	gBuffer.CustomData = float4(material.SubsurfaceColor, material.Opacity);
@@ -152,7 +151,6 @@ void PS_Forward(
 
 	// Add lighting (apply ambient occlusion)
 	output.rgb += light.rgb * gBuffer.AO;
-	output = 
 
 #endif
 

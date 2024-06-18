@@ -23,8 +23,6 @@ void ForwardShadingFeature::Bind(MaterialShader::BindParameters& params, Span<by
     const int32 envProbeShaderRegisterIndex = srv + 0;
     const int32 skyLightShaderRegisterIndex = srv + 1;
     const int32 dirLightShaderRegisterIndex = srv + 2;
-    const int32 surfaceAtlasDepthShaderRegisterIndex = srv + 3;
-    const int32 surfaceAtlasTexShaderRegisterIndex = srv + 4;
     const bool canUseShadow = view.Pass != DrawPass::Depth;
 
     // Set fog input
