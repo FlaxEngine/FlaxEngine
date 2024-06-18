@@ -15,6 +15,7 @@ RenderBuffers::RenderBuffers(const SpawnParams& params)
 {
 #define CREATE_TEXTURE(name) name = GPUDevice::Instance->CreateTexture(TEXT(#name)); _resources.Add(name)
     CREATE_TEXTURE(DepthBuffer);
+    CREATE_TEXTURE(CustomDepthBuffer);
     CREATE_TEXTURE(MotionVectors);
     CREATE_TEXTURE(GBuffer0);
     CREATE_TEXTURE(GBuffer1);
@@ -161,6 +162,9 @@ bool RenderBuffers::Init(int32 width, int32 height)
         desc.Flags |= GPUTextureFlags::ReadOnlyDepthView;
     result |= DepthBuffer->Init(desc);
 
+    // CustomDepthPass initializes the custom depth buffer as required.
+    CustomDepthBuffer->ReleaseGPU();
+
     // MotionBlurPass initializes MotionVectors texture if needed (lazy init - not every game needs it)
     MotionVectors->ReleaseGPU();
 
@@ -213,6 +217,10 @@ void RenderBuffers::Release()
     RenderTargetPool::Release(LocalShadowedLightScattering);
     LocalShadowedLightScattering = nullptr;
     LastFrameVolumetricFog = 0;
+
+    CustomDepthBuffer->ReleaseGPU();
+    CustomDepthClear = false;
+    LastFrameCustomDepth = 0;
 
 #define UPDATE_LAZY_KEEP_RT(name) \
 	RenderTargetPool::Release(name); \

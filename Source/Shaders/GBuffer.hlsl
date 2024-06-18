@@ -15,6 +15,7 @@ Texture2D Depth : register(t3);
 #if defined(USE_GBUFFER_CUSTOM_DATA)
 Texture2D GBuffer3 : register(t4);
 #endif
+Texture2D CustomDepth : register(t5);
 
 // GBuffer Layout:
 // GBuffer0 = [RGB] Color, [A] AO 

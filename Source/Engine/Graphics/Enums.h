@@ -746,6 +746,12 @@ API_ENUM(Attributes="Flags") enum class DrawPass : int32
     GlobalSurfaceAtlas = 1 << 6,
 
     /// <summary>
+    /// The custom depth rendering pass. Only certain models will be rendered to this depth.
+    /// </summary>
+    API_ENUM(Attributes="HideInEditor")
+    CustomDepth = 1 << 7,
+
+    /// <summary>
     /// The debug quad overdraw rendering (editor-only).
     /// </summary>
     API_ENUM(Attributes="HideInEditor")
@@ -761,7 +767,7 @@ API_ENUM(Attributes="Flags") enum class DrawPass : int32
     /// The all draw passes combined into a single mask.
     /// </summary>
     API_ENUM(Attributes="HideInEditor")
-    All = Depth | GBuffer | Forward | Distortion | MotionVectors | GlobalSDF | GlobalSurfaceAtlas,
+    All = Depth | GBuffer | Forward | Distortion | MotionVectors | GlobalSDF | GlobalSurfaceAtlas | CustomDepth,
 };
 
 DECLARE_ENUM_OPERATORS(DrawPass);
@@ -905,6 +911,11 @@ API_ENUM() enum class ViewMode
     /// Draw Global Illumination debug preview (eg. irradiance probes).
     /// </summary>
     GlobalIllumination = 26,
+
+    /// <summary>
+    /// Draw Custom Depth
+    /// </summary>
+    CustomDepth = 27,
 };
 
 /// <summary>
