@@ -698,7 +698,7 @@ namespace FlaxEditor.GUI.Tree
                 }
             }
 
-            // Show tree guide lines
+            // Show tree guidelines
             if (Editor.Instance.Options.Options.Interface.ShowTreeLines)
             {
                 TreeNode parentNode = Parent as TreeNode;
@@ -753,15 +753,16 @@ namespace FlaxEditor.GUI.Tree
             var children = _children;
             if (children.Count == 0)
                 return;
+            var last = children.Count - 1;
 
             if (CullChildren)
             {
                 Render2D.PeekClip(out var globalClipping);
                 Render2D.PeekTransform(out var globalTransform);
 
-                // Try to estimate the rough location of the first node, assuming the node height is constant
+                // Try to estimate the rough location of the first and the last nodes, assuming the node height is constant
                 var firstChildGlobalRect = GetChildGlobalRectangle(children[0], ref globalTransform);
-                var firstVisibleChild = Math.Clamp((int)Math.Floor((globalClipping.Y - firstChildGlobalRect.Top) / _headerHeight) + 1, 0, children.Count - 1);
+                var firstVisibleChild = Math.Clamp((int)Math.Floor((globalClipping.Top - firstChildGlobalRect.Top) / _headerHeight) + 1, 0, last);
                 if (GetChildGlobalRectangle(children[firstVisibleChild], ref globalTransform).Top > globalClipping.Top || !children[firstVisibleChild].Visible)
                 {
                     // Estimate overshoot, either it's partially visible or hidden in the tree
@@ -770,22 +771,29 @@ namespace FlaxEditor.GUI.Tree
                         var child = children[firstVisibleChild];
                         if (!child.Visible)
                             continue;
-
                         if (GetChildGlobalRectangle(child, ref globalTransform).Top < globalClipping.Top)
                             break;
                     }
                 }
+                var lastVisibleChild = Math.Clamp((int)Math.Ceiling((globalClipping.Bottom - firstChildGlobalRect.Top) / _headerHeight) + 1, firstVisibleChild, last);
+                if (GetChildGlobalRectangle(children[lastVisibleChild], ref globalTransform).Top < globalClipping.Bottom || !children[lastVisibleChild].Visible)
+                {
+                    // Estimate overshoot, either it's partially visible or hidden in the tree
+                    for (; lastVisibleChild < last; lastVisibleChild++)
+                    {
+                        var child = children[lastVisibleChild];
+                        if (!child.Visible)
+                            continue;
+                        if (GetChildGlobalRectangle(child, ref globalTransform).Top > globalClipping.Bottom)
+                            break;
+                    }
+                }
 
-                for (int i = firstVisibleChild; i < children.Count; i++)
+                for (int i = firstVisibleChild; i <= lastVisibleChild; i++)
                 {
                     var child = children[i];
                     if (!child.Visible)
                         continue;
-
-                    var childGlobalRect = GetChildGlobalRectangle(child, ref globalTransform);
-                    if (!globalClipping.Intersects(ref childGlobalRect))
-                        break;
-
                     Render2D.PushTransform(ref child._cachedTransform);
                     child.Draw();
                     Render2D.PopTransform();
@@ -799,7 +807,7 @@ namespace FlaxEditor.GUI.Tree
             }
             else
             {
-                for (int i = 0; i < children.Count; i++)
+                for (int i = 0; i <= last; i++)
                 {
                     var child = children[i];
                     if (child.Visible)
