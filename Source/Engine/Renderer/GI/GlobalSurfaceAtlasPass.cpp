@@ -719,6 +719,8 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
         objectsBufferCapacity = surfaceAtlasData.CulledObjectsUsageHistory.Maximum(); // Use biggest value from history
         if (surfaceAtlasData.CulledObjectsUsageHistory.Count() == surfaceAtlasData.CulledObjectsUsageHistory.Capacity())
             notReady = false; // Always ready when rendering for some time
+        else if (currentFrame != 0 && surfaceAtlasData.LastFrameAtlasDefragmentation == currentFrame)
+            notReady = false; // Always ready when did atlas defragmentation during this frame (prevent 1 black frame)
 
         // Allocate buffer for culled objects (estimated size)
         if (!surfaceAtlasData.CulledObjectsBuffer)
