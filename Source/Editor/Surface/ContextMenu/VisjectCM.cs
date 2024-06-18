@@ -897,8 +897,11 @@ namespace FlaxEditor.Surface.ContextMenu
             _descriptionOutputPanel.Y = panelHeight;
 
             panelHeight += Mathf.Max(_descriptionInputPanel.Height, _descriptionOutputPanel.Height);
-            _descriptionPanel.Height = panelHeight;
-            Height = 400 + Mathf.RoundToInt(_descriptionPanel.Height);
+            
+            // Forcing the description panel to at least have a height of 120 to not make the window size change too much in order to reduce jittering
+            // TODO: Remove the Mathf.Max and just set the height to panelHeight once the window jitter issue is fixed - Nils
+            _descriptionPanel.Height = Mathf.Max(120f, panelHeight);
+            Height = 400 + _descriptionPanel.Height;
             UpdateWindowSize();
             
             Profiler.EndEvent();
