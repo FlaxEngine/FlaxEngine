@@ -353,33 +353,47 @@ namespace FlaxEditor.GUI.Dialogs
             hs.Z = 1.0f;
             Color hsC = Color.FromHSV(hs);
 
-            const float sliderKnobsWidth = 3.0f;
-            const float sliderKnobsHeight = 4.0f;
+            const float knobWidthNormalExpansion = 5;
+            const float knobWidthDragExpansion = 8;
 
-            // Value slider
-            float valueY = _alphaSliderRect.Height * (1 - hsv.Z);
-            var valueSliderHandleRect = new Rectangle(_valueSliderRect.X - sliderKnobsWidth, _valueSliderRect.Y + valueY - sliderKnobsHeight / 2, _valueSliderRect.Width + sliderKnobsWidth * 2, sliderKnobsHeight);
+            // Generate value slider and knob
+            float valueKnobWidth = _isMouseDownValueSlider ? _valueSliderRect.Size.X + knobWidthDragExpansion : _valueSliderRect.Size.X + knobWidthNormalExpansion;
+            float valueKnobHeight = _isMouseDownValueSlider ? 7 : 4;
+            float valueKnobX = _isMouseDownValueSlider ? _valueSliderRect.X - knobWidthDragExpansion * 0.5f : _valueSliderRect.X - knobWidthNormalExpansion * 0.5f;
+            float valueKnobY = _valueSliderRect.Height * (1 - hsv.Z) - valueKnobHeight * 0.5f;
 
             // TODO: Make this lerp the outline color to white instead of just abruptly showing it
-            Color valueSliderTopOutlineColor = hsv.X > 220 ? Color.White : Color.Transparent;
+            Color valueSliderTopOutlineColor = hsv.X > 205 && hsv.Y > 0.65f ? Color.White : Color.Black;
+            Color valueKnobColor = Color.FromHSV(new Float3(0, 0, Mathf.Clamp(1f - hsv.Z, 0.45f, 1)));
+            
+            Rectangle valueKnob = new Rectangle(valueKnobX, valueKnobY, valueKnobWidth, valueKnobHeight);
 
+            // Generate alpha slider and knob
+            float alphaKnobWidth = _isMouseDownAlphaSlider ? _alphaSliderRect.Size.X + knobWidthDragExpansion : _alphaSliderRect.Size.X + knobWidthNormalExpansion;
+            float alphaKnobHeight = _isMouseDownAlphaSlider ? 7 : 4;
+            float alphaKnobX = _isMouseDownAlphaSlider ? _alphaSliderRect.X - knobWidthDragExpansion * 0.5f : _alphaSliderRect.X - knobWidthNormalExpansion * 0.5f;
+            float alphaKnobY = _alphaSliderRect.Height * (1 - _color.A) - alphaKnobHeight * 0.5f;
+
+            // Prevent alpha slider fill from being affected by alpha
+            var opaqueColor = _color;
+            opaqueColor.A = 1; 
+            
+            Color alphaSliderTopOutlineColor = hsv.X > 205 && hsv.Y > 0.65f || hsv.Z < 0.6f ? Color.White : Color.Black;
+            Color alphaKnobColor = Color.FromHSV(new Float3(0, 0, Mathf.Clamp(1f - hsv.Z, 0.35f, 1)));
+
+            Rectangle alphaKnob = new Rectangle(alphaKnobX, alphaKnobY, alphaKnobWidth, alphaKnobHeight);
+
+            // Render value slider and knob
             Render2D.FillRectangle(_valueSliderRect, hsC, hsC, Color.Black, Color.Black);
             Render2D.DrawRectangle(_valueSliderRect, valueSliderTopOutlineColor, valueSliderTopOutlineColor, Color.White, Color.White);
-            Render2D.DrawRectangle(valueSliderHandleRect, _isMouseDownValueSlider ? Color.White : Color.Gray);
+            Render2D.DrawRectangle(valueKnob, valueKnobColor, _isMouseDownValueSlider ? 3 : 2);
 
-            // Alpha slider
+            // Render alpha slider, grid and knob
             DrawAlphaGrid(_alphaSliderRect.Width / 2, ref _alphaSliderRect.Location, _alphaSliderRect.Width, _alphaSliderRect.Height);
-
-            float alphaY = _alphaSliderRect.Height * (1 - _color.A);
-            var alphaSliderHandleRect = new Rectangle(_alphaSliderRect.X - sliderKnobsWidth, _alphaSliderRect.Y + alphaY - sliderKnobsHeight / 2, _alphaSliderRect.Width + sliderKnobsWidth * 2, sliderKnobsHeight);
-            var color = _color;
-
-            Color alphaSliderTopOutlineColor = Color.FromHSV(0, 0, 1f - hsv.Z);
-
-            color.A = 1; // Keep slider 2 fill rect from changing color alpha while selecting.
-            Render2D.FillRectangle(_alphaSliderRect, color, color, Color.Transparent, Color.Transparent);
+            Render2D.FillRectangle(_alphaSliderRect, opaqueColor, opaqueColor, Color.Transparent, Color.Transparent);
             Render2D.DrawRectangle(_alphaSliderRect, alphaSliderTopOutlineColor, alphaSliderTopOutlineColor, Color.Transparent, Color.Transparent);
-            Render2D.DrawRectangle(alphaSliderHandleRect, _isMouseDownAlphaSlider ? Color.White : Color.Gray);
+            Render2D.DrawRectangle(alphaKnob, alphaKnobColor, _isMouseDownValueSlider ? 3 : 2);
+
             // Hitbox debug
             //Render2D.DrawRectangle(_valueSliderHitbox, Color.Green);
             //Render2D.DrawRectangle(_alphaSliderHitbox, Color.Red);
