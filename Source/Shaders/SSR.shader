@@ -151,7 +151,7 @@ float4 PS_RayTracePass(Quad_VS2PS input) : SV_Target0
         float4 surfaceAtlas = SampleGlobalSurfaceAtlas(GlobalSurfaceAtlas, GlobalSurfaceAtlasChunks, RWGlobalSurfaceAtlasCulledObjects, GlobalSurfaceAtlasObjects, GlobalSurfaceAtlasDepth, GlobalSurfaceAtlasTex, hitPosition, -reflectWS, surfaceThreshold);
         // Now the sdf reflection part is significantly darker than the screen space part
 		// TODO: Maybe multiply surfaceAtlas by a constant to make it brighter, adding 2* looks fine
-		result = lerp(2 * surfaceAtlas, float4(result.rgb, 1), result.a);
+		result = lerp(surfaceAtlas, float4(result.rgb, 1), result.a);
     }
 #endif
 

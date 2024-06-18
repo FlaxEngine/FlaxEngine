@@ -139,7 +139,7 @@ void PS_Forward(
 
 		if(TraceSDFSoftwareReflections(gBuffer, reflectWS, surfaceAtlas)){
 			float3 screenColor = sceneColorTexture.SampleLevel(SamplerPointClamp, hit.xy, 0).rgb;
-        	reflections = lerp(2 * surfaceAtlas, float4(screenColor, 1), hit.z);
+        	reflections = lerp(surfaceAtlas, float4(screenColor, 1), hit.z);
 		}
 	}
 
