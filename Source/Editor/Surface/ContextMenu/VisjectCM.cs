@@ -60,6 +60,7 @@ namespace FlaxEditor.Surface.ContextMenu
         private readonly bool _useDescriptionPanel;
         private bool _descriptionPanelVisible;
         private readonly Panel _descriptionPanel;
+        private readonly Panel _descriptionPanelSeparator;
         private readonly Image _descriptionClassImage;
         private readonly Label _descriptionSignatureLabel;
         private readonly Label _descriptionLabel;
@@ -278,6 +279,13 @@ namespace FlaxEditor.Surface.ContextMenu
                     AutoHeight = true,
                 };
                 _descriptionLabel.SetAnchorPreset(AnchorPresets.TopLeft, true);
+
+                _descriptionPanelSeparator = new Panel(ScrollBars.None)
+                {
+                    Parent = _descriptionPanel,
+                    Bounds = new Rectangle(8, Height, Width - 16, 2),
+                    BackgroundColor = Style.Current.BackgroundHighlighted,
+                };
 
                 _descriptionInputPanel = new VerticalPanel()
                 {
@@ -892,16 +900,18 @@ namespace FlaxEditor.Surface.ContextMenu
             _descriptionLabel.Y = _descriptionSignatureLabel.Bounds.Bottom + 6f;
             _descriptionLabel.Text = archetype.Description;
 
-            panelHeight += _descriptionLabel.Height + 6f + 18f;
+            _descriptionPanelSeparator.Y = _descriptionLabel.Bounds.Bottom + 8f;
+            
+            panelHeight += _descriptionLabel.Height + 32f;
 
             _descriptionInputPanel.Y = panelHeight;
             _descriptionOutputPanel.Y = panelHeight;
 
             panelHeight += Mathf.Max(_descriptionInputPanel.Height, _descriptionOutputPanel.Height);
             
-            // Forcing the description panel to at least have a height of 120 to not make the window size change too much in order to reduce jittering
+            // Forcing the description panel to at least have a minimum height to not make the window size change too much in order to reduce jittering
             // TODO: Remove the Mathf.Max and just set the height to panelHeight once the window jitter issue is fixed - Nils
-            _descriptionPanel.Height = Mathf.Max(120f, panelHeight);
+            _descriptionPanel.Height = Mathf.Max(135f, panelHeight);
             Height = 400 + _descriptionPanel.Height;
             UpdateWindowSize();
             _descriptionPanelVisible = true;
