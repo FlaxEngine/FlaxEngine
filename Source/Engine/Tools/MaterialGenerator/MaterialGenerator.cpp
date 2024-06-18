@@ -199,6 +199,8 @@ bool MaterialGenerator::Generate(WriteStream& source, MaterialInfo& materialInfo
         ADD_FEATURE(DistortionFeature);
         if (materialInfo.BlendMode != MaterialBlendMode::Opaque && EnumHasAnyFlags(materialInfo.FeaturesFlags, MaterialFeaturesFlags::GlobalIllumination))
         ADD_FEATURE(GlobalIlluminationFeature);
+        if (materialInfo.BlendMode != MaterialBlendMode::Opaque && EnumHasAnyFlags(materialInfo.FeaturesFlags, MaterialFeaturesFlags::ScreenSpaceReflections))
+        ADD_FEATURE(SDFReflectionsFeature);
         if (materialInfo.BlendMode != MaterialBlendMode::Opaque)
         ADD_FEATURE(ForwardShadingFeature);
         break;
