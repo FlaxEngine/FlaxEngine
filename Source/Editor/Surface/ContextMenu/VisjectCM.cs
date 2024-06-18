@@ -58,6 +58,7 @@ namespace FlaxEditor.Surface.ContextMenu
 
         // Description panel elements
         private readonly bool _useDescriptionPanel;
+        private bool _descriptionPanelVisible;
         private readonly Panel _descriptionPanel;
         private readonly Image _descriptionClassImage;
         private readonly Label _descriptionSignatureLabel;
@@ -801,7 +802,7 @@ namespace FlaxEditor.Surface.ContextMenu
             if(!_useDescriptionPanel)
                 return;
 
-            if (archetype == null)
+            if (archetype == null || !Editor.Instance.Options.Options.Interface.VisualScriptingDescriptionPanel)
             {
                 HideDescriptionPanel();
                 return;
@@ -903,6 +904,7 @@ namespace FlaxEditor.Surface.ContextMenu
             _descriptionPanel.Height = Mathf.Max(120f, panelHeight);
             Height = 400 + _descriptionPanel.Height;
             UpdateWindowSize();
+            _descriptionPanelVisible = true;
             
             Profiler.EndEvent();
         }
@@ -945,10 +947,14 @@ namespace FlaxEditor.Surface.ContextMenu
         /// </summary>
         private void HideDescriptionPanel()
         {
+            if(!_descriptionPanelVisible)
+                return;
+
             _descriptionInputPanel.RemoveChildren();
             _descriptionOutputPanel.RemoveChildren();
             Height = 400;
             UpdateWindowSize();
+            _descriptionPanelVisible = false;
         }
 
         /// <inheritdoc />

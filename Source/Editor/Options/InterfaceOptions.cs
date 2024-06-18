@@ -368,6 +368,13 @@ namespace FlaxEditor.Options
         [EditorDisplay("Visject"), EditorOrder(550)]
         public float ConnectionCurvature { get; set; } = 1.0f;
 
+        /// <summary>
+        /// Gets or sets the visject connection curvature.
+        /// </summary>
+        [DefaultValue(true)]
+        [EditorDisplay("Visject"), EditorOrder(550)]
+        public bool VisualScriptingDescriptionPanel { get; set; } = true;
+
         private static FontAsset DefaultFont => FlaxEngine.Content.LoadAsyncInternal<FontAsset>(EditorAssets.PrimaryFont);
         private static FontAsset ConsoleFont => FlaxEngine.Content.LoadAsyncInternal<FontAsset>(EditorAssets.InconsolataRegularFont);
 
