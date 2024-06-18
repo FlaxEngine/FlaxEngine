@@ -67,8 +67,6 @@ namespace FlaxEditor.GUI.Dialogs
         private FloatValueBox _cSaturation;
         private FloatValueBox _cValue;
         private TextBox _cHex;
-        private Button _cCancel;
-        private Button _cOK;
         private Button _cEyedropper;
 
         private List<Color> _savedColors = new List<Color>();
@@ -202,21 +200,10 @@ namespace FlaxEditor.GUI.Dialogs
             };
             _cValue.ValueChanged += OnHSVChanged;
 
-            // Cancel
-            _cCancel = new Button(Width - ButtonsWidth - PickerMargin, Height - Button.DefaultHeight - PickerMargin, ButtonsWidth)
             {
-                Text = "Cancel",
                 Parent = this
             };
-            _cCancel.Clicked += OnCancel;
 
-            // OK
-            _cOK = new Button(_cCancel.Left - ButtonsWidth - PickerMargin, _cCancel.Y, ButtonsWidth)
-            {
-                Text = "Ok",
-                Parent = this
-            };
-            _cOK.Clicked += OnSubmit;
             // Set valid dialog size based on UI content
             _dialogSize = Size = new Float2(_cRed.Right + _pickerMargin.Right + 20, 300); // +20 to account for hsv math symbols
 
@@ -568,29 +555,16 @@ namespace FlaxEditor.GUI.Dialogs
                 _onChanged?.Invoke(_value, false);
             }
 
+            // Ensure mouse cursor is reset to default
+            Cursor = CursorType.Default;
+
             base.OnSubmit();
-        }
-
-        /// <inheritdoc />
-        public override void OnCancel()
-        {
-            if (_disableEvents)
-                return;
-            _disableEvents = true;
-
-            // Restore color if modified
-            if (_useDynamicEditing && _initialValue != _value)
-            {
-                _onChanged?.Invoke(_initialValue, false);
-            }
-
-            base.OnCancel();
         }
 
         /// <inheritdoc />
         public override void OnDestroy()
         {
-            _onClosed?.Invoke();
+            OnSubmit();
 
             base.OnDestroy();
         }
@@ -598,7 +572,7 @@ namespace FlaxEditor.GUI.Dialogs
         /// <inheritdoc />
         public void ClosePicker()
         {
-            OnCancel();
+            OnSubmit();
         }
     }
 }
