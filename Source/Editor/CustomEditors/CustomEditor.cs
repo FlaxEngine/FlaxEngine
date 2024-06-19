@@ -111,6 +111,11 @@ namespace FlaxEditor.CustomEditors
         /// </summary>
         public PropertyNameLabel LinkedLabel;
 
+        /// <summary>
+        /// Gets the layout for this editor. Used to calculate bounds.
+        /// </summary>
+        public LayoutElementsContainer Layout => _layout;
+
         internal virtual void Initialize(CustomEditorPresenter presenter, LayoutElementsContainer layout, ValueContainer values)
         {
             _layout = layout;

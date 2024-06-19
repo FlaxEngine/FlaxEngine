@@ -314,6 +314,7 @@ public:
     static void DestroyShape(void* shape);
     static void DestroyJoint(void* joint);
     static void DestroyController(void* controller);
+    static void DestroyMaterial(void* material);
     static void DestroyObject(void* object);
     static void RemoveCollider(PhysicsColliderActor* collider);
     static void RemoveJoint(Joint* joint);

@@ -265,7 +265,7 @@ FORCE_INLINE Render2DVertex MakeVertex(const Float2& point, const Float2& uv, co
     {
         point,
         Half2(uv),
-        color,
+        color * TintLayersStack.Peek(),
         customData,
         mask,
     };

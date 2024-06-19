@@ -6,6 +6,7 @@
 #include "Engine/Content/Content.h"
 #include "Engine/Core/Cache.h"
 #include "Engine/Core/Log.h"
+#include "Engine/Core/LogContext.h"
 #include "Engine/Scripting/Scripting.h"
 #include "Engine/Serialization/JsonTools.h"
 #include "Engine/Serialization/ISerializeModifier.h"
@@ -247,6 +248,7 @@ void SceneObjectsFactory::Deserialize(Context& context, SceneObject* obj, ISeria
     CHECK(obj);
 #endif
     ISerializeModifier* modifier = context.GetModifier();
+    LogContextScope logContext(obj->GetID());
 
     // Check for prefab instance
     Guid prefabObjectId;

@@ -446,14 +446,20 @@ void ParticleEffect::Update()
 #if USE_EDITOR
 
 #include "Editor/Editor.h"
+#include "Editor/Managed/ManagedEditor.h"
 
 void ParticleEffect::UpdateExecuteInEditor()
 {
     // Auto-play in Editor
-    if (!Editor::IsPlayMode && !_isStopped)
+    if (!Editor::IsPlayMode && !_isStopped && IsLooping && PlayOnStart && Editor::Managed->ManagedEditorOptions.EnableParticlesPreview)
     {
         _isPlaying = true;
         Update();
+    }
+    else if (!Editor::IsPlayMode && _isPlaying)
+    {
+        _isPlaying = false;
+        ResetSimulation();
     }
 }
 

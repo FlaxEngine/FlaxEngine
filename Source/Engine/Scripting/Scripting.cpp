@@ -21,6 +21,7 @@
 #include "ManagedCLR/MCore.h"
 #include "ManagedCLR/MException.h"
 #include "Internal/StdTypesContainer.h"
+#include "Engine/Core/LogContext.h"
 #include "Engine/Core/ObjectsRemovalService.h"
 #include "Engine/Core/Types/TimeSpan.h"
 #include "Engine/Core/Types/Stopwatch.h"
@@ -880,7 +881,7 @@ ScriptingObject* Scripting::FindObject(Guid id, const MClass* type)
         // Check type
         if (!type || result->Is(type))
             return result;
-        LOG(Warning, "Found scripting object with ID={0} of type {1} that doesn't match type {2}.", id, String(result->GetType().Fullname), String(type->GetFullName()));
+        LOG(Warning, "Found scripting object with ID={0} of type {1} that doesn't match type {2}. {3}", id, String(result->GetType().Fullname), String(type->GetFullName()), LogContext::GetInfo());
         return nullptr;
     }
 
@@ -899,7 +900,7 @@ ScriptingObject* Scripting::FindObject(Guid id, const MClass* type)
             return asset;
     }
 
-    LOG(Warning, "Unable to find scripting object with ID={0}. Required type {1}.", id, String(type->GetFullName()));
+    LOG(Warning, "Unable to find scripting object with ID={0}. Required type {1}. {2}", id, String(type->GetFullName()), LogContext::GetInfo());
     return nullptr;
 }
 

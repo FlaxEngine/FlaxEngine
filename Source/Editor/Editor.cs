@@ -1364,6 +1364,7 @@ namespace FlaxEditor
             public byte AutoReloadScriptsOnMainWindowFocus;
             public byte ForceScriptCompilationOnStartup;
             public byte UseAssetImportPathRelative;
+            public byte EnableParticlesPreview;
             public byte AutoRebuildCSG;
             public float AutoRebuildCSGTimeoutMs;
             public byte AutoRebuildNavMesh;
