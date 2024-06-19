@@ -160,7 +160,7 @@ namespace FlaxEditor.Windows.Assets
                 var result = base.OnDragDrop(ref location, data);
                 if (result == DragDropEffect.None)
                 {
-                    _window._isDragging = true;
+                    _window._isDropping = true;
                     // Drag assets
                     if (_dragAssets != null && _dragAssets.HasValidDrag)
                     {
