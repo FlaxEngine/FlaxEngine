@@ -51,10 +51,11 @@ void ForwardMaterialShader::Bind(BindParameters& params)
     int32 srv = 2;
 
     // Setup features
-    if ((_info.FeaturesFlags & MaterialFeaturesFlags::GlobalIllumination) != MaterialFeaturesFlags::None)
+    if ((_info.FeaturesFlags & MaterialFeaturesFlags::GlobalIllumination) != MaterialFeaturesFlags::None) {
         GlobalIlluminationFeature::Bind(params, cb, srv);
-    if ((_info.FeaturesFlags & MaterialFeaturesFlags::ScreenSpaceReflections) != MaterialFeaturesFlags::None)
-        SDFReflectionsFeature::Bind(params, cb, srv);
+        if ((_info.FeaturesFlags & MaterialFeaturesFlags::ScreenSpaceReflections) != MaterialFeaturesFlags::None)
+            SDFReflectionsFeature::Bind(params, cb, srv);
+    }
     ForwardShadingFeature::Bind(params, cb, srv);
 
     // Setup parameters

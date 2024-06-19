@@ -67,8 +67,8 @@ void PS_Forward(
 	gBuffer.Color = material.Color;
 	gBuffer.Specular = material.Specular;
 	gBuffer.AO = material.AO;
-	// gBuffer.ViewPos is the view position in WORLD SPACE
-	gBuffer.ViewPos = ViewPos;
+	// gBuffer.ViewPos is the view space position of the pixel
+	gBuffer.ViewPos = mul(float4(materialInput.WorldPosition, 1), ViewMatrix).xyz;
 #if MATERIAL_SHADING_MODEL == SHADING_MODEL_SUBSURFACE
 	gBuffer.CustomData = float4(material.SubsurfaceColor, material.Opacity);
 #elif MATERIAL_SHADING_MODEL == SHADING_MODEL_FOLIAGE

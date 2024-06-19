@@ -20,7 +20,7 @@ Texture2D GlobalSurfaceAtlasTex : register(t__SRV__);
 bool TraceSDFSoftwareReflections(GBufferSample gBuffer, float3 reflectWS, out float4 surfaceAtlas)
 {
 	GlobalSDFTrace sdfTrace;
-    float maxDistance = 100000;
+    float maxDistance = GLOBAL_SDF_WORLD_SIZE;
     float selfOcclusionBias = GlobalSDF.CascadeVoxelSize[0];
     sdfTrace.Init(gBuffer.WorldPos + gBuffer.Normal * selfOcclusionBias, reflectWS, 0.0f, maxDistance);
     GlobalSDFHit sdfHit = RayTraceGlobalSDF(GlobalSDF, GlobalSDFTex, GlobalSDFMip, sdfTrace);
