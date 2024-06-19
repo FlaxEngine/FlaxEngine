@@ -402,7 +402,7 @@ bool DynamicDiffuseGlobalIlluminationPass::RenderInner(RenderContext& renderCont
     bool cascadeSkipUpdate[4];
     for (int32 cascadeIndex = 0; cascadeIndex < cascadesCount; cascadeIndex++)
     {
-        cascadeSkipUpdate[cascadeIndex] = !clear && (ddgiData.LastFrameUsed % cascadeFrequencies[cascadeIndex]) != 0;
+        cascadeSkipUpdate[cascadeIndex] = !clear && (ddgiData.LastFrameUsed % cascadeFrequencies[cascadeIndex]) != 0 && GPU_SPREAD_WORKLOAD;
     }
 
     // Compute scrolling (probes are placed around camera but are scrolling to increase stability during movement)

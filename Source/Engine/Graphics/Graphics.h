@@ -71,7 +71,20 @@ public:
 
 public:
     /// <summary>
+    /// Debug utility to toggle graphics workloads amortization over several frames by systems such as shadows mapping, global illumination or surface atlas. Can be used to test performance in the worst-case scenario (eg. camera-cut).
+    /// </summary>
+    API_FIELD() static bool SpreadWorkload;
+
+public:
+    /// <summary>
     /// Disposes the device.
     /// </summary>
     static void DisposeDevice();
 };
+
+// Skip disabling workload spreading in Release builds
+#if BUILD_RELEASE
+#define GPU_SPREAD_WORKLOAD true
+#else
+#define GPU_SPREAD_WORKLOAD Graphics::SpreadWorkload
+#endif

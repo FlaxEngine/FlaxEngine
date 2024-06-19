@@ -22,6 +22,7 @@ bool Graphics::AllowCSMBlending = false;
 Quality Graphics::GlobalSDFQuality = Quality::High;
 Quality Graphics::GIQuality = Quality::High;
 PostProcessSettings Graphics::PostProcessSettings;
+bool Graphics::SpreadWorkload = true;
 
 #if GRAPHICS_API_NULL
 extern GPUDevice* CreateGPUDeviceNull();

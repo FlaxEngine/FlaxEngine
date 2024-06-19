@@ -493,7 +493,7 @@ bool GlobalSignDistanceFieldPass::Render(RenderContext& renderContext, GPUContex
     // Rasterize world geometry into Global SDF
     renderContext.View.Pass = DrawPass::GlobalSDF;
     uint32 viewMask = renderContext.View.RenderLayersMask;
-    const bool useCache = !updated && !GLOBAL_SDF_DEBUG_FORCE_REDRAW;
+    const bool useCache = !updated && !GLOBAL_SDF_DEBUG_FORCE_REDRAW && GPU_SPREAD_WORKLOAD;
     static_assert(GLOBAL_SDF_RASTERIZE_CHUNK_SIZE % GLOBAL_SDF_RASTERIZE_GROUP_SIZE == 0, "Invalid chunk size for Global SDF rasterization group size.");
     const int32 rasterizeChunks = Math::CeilToInt((float)resolution / (float)GLOBAL_SDF_RASTERIZE_CHUNK_SIZE);
     auto& chunks = ChunksCache;

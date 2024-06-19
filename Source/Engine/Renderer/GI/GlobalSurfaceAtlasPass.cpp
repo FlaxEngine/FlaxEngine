@@ -13,6 +13,7 @@
 #include "Engine/Core/Config/GraphicsSettings.h"
 #include "Engine/Graphics/GPUContext.h"
 #include "Engine/Graphics/GPUDevice.h"
+#include "Engine/Graphics/Graphics.h"
 #include "Engine/Graphics/RenderTask.h"
 #include "Engine/Graphics/RenderBuffers.h"
 #include "Engine/Graphics/RenderTargetPool.h"
@@ -536,7 +537,7 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
         context->SetRenderTarget(depthBuffer, ToSpan(targetBuffers, ARRAY_COUNT(targetBuffers)));
         {
             PROFILE_GPU_CPU_NAMED("Clear");
-            if (noCache || GLOBAL_SURFACE_ATLAS_DEBUG_FORCE_REDRAW_TILES)
+            if (noCache || GLOBAL_SURFACE_ATLAS_DEBUG_FORCE_REDRAW_TILES || !GPU_SPREAD_WORKLOAD)
             {
                 // Full-atlas hardware clear
                 context->ClearDepth(depthBuffer);
@@ -1268,7 +1269,7 @@ void GlobalSurfaceAtlasPass::RasterizeActor(Actor* actor, void* actorObject, con
     object->Bounds = OrientedBoundingBox(localBounds);
     object->Bounds.Transform(localToWorld);
     object->Radius = (float)actorObjectBounds.Radius;
-    if (dirty || GLOBAL_SURFACE_ATLAS_DEBUG_FORCE_REDRAW_TILES)
+    if (dirty || GLOBAL_SURFACE_ATLAS_DEBUG_FORCE_REDRAW_TILES || !GPU_SPREAD_WORKLOAD)
     {
         object->LastFrameUpdated = surfaceAtlasData.CurrentFrame;
         object->LightingUpdateFrame = surfaceAtlasData.CurrentFrame;

@@ -231,6 +231,11 @@ struct ShadowAtlasLight
 
     float CalculateUpdateRateInv(const RenderLightData& light, float distanceFromView, bool& freezeUpdate) const
     {
+        if (!GPU_SPREAD_WORKLOAD)
+        {
+            freezeUpdate = false;
+            return 1.0f;
+        }
         const float shadowsUpdateRate = light.ShadowsUpdateRate;
         const float shadowsUpdateRateAtDistance = shadowsUpdateRate * light.ShadowsUpdateRateAtDistance;
         float updateRate = Math::Lerp(shadowsUpdateRate, shadowsUpdateRateAtDistance, Math::Saturate(distanceFromView / Distance));
