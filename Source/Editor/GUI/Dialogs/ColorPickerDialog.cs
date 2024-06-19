@@ -1,5 +1,6 @@
 // Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
+using FlaxEditor.GUI.ContextMenu;
 using FlaxEditor.GUI.Input;
 using FlaxEngine;
 using FlaxEngine.GUI;
@@ -61,6 +62,7 @@ namespace FlaxEditor.GUI.Dialogs
         private ColorValueBox.ColorPickerClosedEvent _onClosed;
 
         private ColorSelectorWithSliders _cSelector;
+        private Rectangle oldColorRect; // Needs to be defined here so that it can be accesed in OnMouseUp
         private FloatValueBox _cRed;
         private FloatValueBox _cGreen;
         private FloatValueBox _cBlue;
@@ -386,7 +388,7 @@ namespace FlaxEditor.GUI.Dialogs
             // Old and New color preview
             float oldNewColorPreviewYPosition = _cValue.Bottom - _textBoxBlockMargin.Bottom + 50;
 
-            var oldColorRect = new Rectangle(Width - ColorPreviewWidth - _pickerMargin.Right - 20, oldNewColorPreviewYPosition, ColorPreviewWidth * OldNewColorPreviewDisplayRatio, 0);
+            oldColorRect = new Rectangle(Width - ColorPreviewWidth - _pickerMargin.Right - 20, oldNewColorPreviewYPosition, ColorPreviewWidth * OldNewColorPreviewDisplayRatio, 0);
             oldColorRect.Size.Y = ColorPreviewHeight;
 
             var newColorRect = new Rectangle(oldColorRect.Right, oldNewColorPreviewYPosition, ColorPreviewWidth * (1 - OldNewColorPreviewDisplayRatio), 0);
@@ -474,27 +476,8 @@ namespace FlaxEditor.GUI.Dialogs
             }
 
             var child = GetChildAtRecursive(location);
-            if (button == MouseButton.Right && child is Button b)
+            if (button == MouseButton.Right && child is Button b && b.Tag is Color c)
             {
-                if (b.Tag is Color c)
-                {
-                    // Show menu
-                    var menu = new ContextMenu.ContextMenu();
-                    var replaceButton = menu.AddButton("Replace");
-                    replaceButton.Clicked += () => OnSavedColorReplace(b);
-                    var deleteButton = menu.AddButton("Delete");
-                    deleteButton.Clicked += () => OnSavedColorDelete(b);
-                    _disableEvents = true;
-                    menu.Show(this, location);
-                    menu.VisibleChanged += (c) => _disableEvents = false;
-                    return true;
-                }
-
-                if (b.Tag.ToString() == "OldColorPreview")
-                {
-                    var menu = new ContextMenu.ContextMenu();
-                    var resetButton = menu.AddButton("Reset");
-                    resetButton.Clicked += () => OnResetToOldPreviewPressed(b);
                     _disableEvents = true;
                     menu.Show(this, location);
                     menu.VisibleChanged += (c) => _disableEvents = false;
@@ -505,7 +488,7 @@ namespace FlaxEditor.GUI.Dialogs
             return false;
         }
 
-        private void OnResetToOldPreviewPressed(Button button)
+        private void OnResetToOldPreviewPressed(ContextMenuButton button)
         {
             _cSelector.Color = _initialValue;
         }
@@ -591,8 +574,19 @@ namespace FlaxEditor.GUI.Dialogs
         }
 
         /// <inheritdoc />
-        public override void OnSubmit()
+        public override void OnCancel()
         {
+            if (_disableEvents)
+                return;
+
+            OnSubmit();
+
+            base.OnCancel();
+        }
+
+        /// <inheritdoc />
+        public override void OnSubmit()
+        {     
             if (_disableEvents)
                 return;
             _disableEvents = true;
@@ -606,7 +600,7 @@ namespace FlaxEditor.GUI.Dialogs
             // Ensure mouse cursor is reset to default
             Cursor = CursorType.Default;
 
-            base.OnSubmit();
+            base.OnSubmit(); 
         }
 
         /// <inheritdoc />
