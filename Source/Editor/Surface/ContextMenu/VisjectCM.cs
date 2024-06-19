@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Text.RegularExpressions;
 using FlaxEditor.GUI.ContextMenu;
 using FlaxEditor.GUI.Input;
 using FlaxEditor.Scripting;
@@ -897,8 +898,17 @@ namespace FlaxEditor.Surface.ContextMenu
             
             float panelHeight = _descriptionSignatureLabel.Height;
 
-            _descriptionLabel.Y = _descriptionSignatureLabel.Bounds.Bottom + 6f;
-            _descriptionLabel.Text = archetype.Description;
+            if (string.IsNullOrEmpty(archetype.Description))
+            {
+                _descriptionSignatureLabel.Y = 15;
+                _descriptionLabel.Text = "";
+            }
+            else
+            {
+                _descriptionSignatureLabel.Y = 8;
+                _descriptionLabel.Y = _descriptionSignatureLabel.Bounds.Bottom + 6f;
+                _descriptionLabel.Text = Regex.Replace(archetype.Description, @"\s{2,}", "\n");
+            }
 
             _descriptionPanelSeparator.Y = _descriptionLabel.Bounds.Bottom + 8f;
             
@@ -938,7 +948,8 @@ namespace FlaxEditor.Surface.ContextMenu
                 MouseOverColor = typeColor,
                 AutoFocus = false,
             }).SetAnchorPreset(AnchorPresets.TopLeft, true);
-            
+
+            text = (char.ToUpper(text[0]) + text.Substring(1)).Replace("&", "");
             var elementText = new Label(16, 0, Width * 0.5f - 32, 16)
             {
                 Text = text,
