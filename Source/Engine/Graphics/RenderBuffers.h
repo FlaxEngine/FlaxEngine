@@ -100,9 +100,9 @@ public:
 
 public:
     /// <summary>
-    /// Prepares buffers for rendering a scene. Called before rendering so other parts can reuse calculated value.
+    /// Frees unused buffers to reduce memory usage for certain drawing effects that are state-dependant but unused for multiple frames.
     /// </summary>
-    void Prepare();
+    void ReleaseUnusedMemory();
 
     /// <summary>
     /// Requests the half-resolution depth to be prepared for the current frame.

@@ -34,7 +34,7 @@ RenderBuffers::~RenderBuffers()
     _resources.ClearDelete();
 }
 
-void RenderBuffers::Prepare()
+void RenderBuffers::ReleaseUnusedMemory()
 {
     // Auto release temporal buffer if not used for some time
     const uint64 frameIndex = Engine::FrameCount;
