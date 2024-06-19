@@ -51,7 +51,7 @@ namespace FlaxEditor.Surface
         {
             TypeID = originalNodeId,
             Title = "Missing Node :(",
-            Signature = ":(",
+            Signature = "Missing Node :(",
             Description = ":(",
             Flags = NodeFlags.AllGraphs,
             Size = new Float2(200, 70),

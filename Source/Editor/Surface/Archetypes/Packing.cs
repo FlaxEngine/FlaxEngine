@@ -248,17 +248,24 @@ namespace FlaxEditor.Surface.Archetypes
 
             internal static void GetInputOutputDescription(NodeArchetype nodeArch, out (string, ScriptType)[] inputs, out (string, ScriptType)[] outputs)
             {
-                var type = TypeUtils.GetType((string)nodeArch.DefaultValues[0]);
-                outputs = [(type.Name, type)];
-                    
-                var fields = type.GetMembers(BindingFlags.Public | BindingFlags.Instance).Where(x => x.IsField).ToArray();
-                var fieldsLength = fields.Length;
-                inputs = new (string, ScriptType)[fieldsLength];
-                for (var i = 0; i < fieldsLength; i++)
+                var typeName = (string)nodeArch.DefaultValues[0];
+                var type = TypeUtils.GetType(typeName);
+                if (type)
                 {
-                    var field = fields[i];
-                    inputs[i] = (field.Name, field.ValueType);
+                    var fields = type.GetMembers(BindingFlags.Public | BindingFlags.Instance).Where(x => x.IsField).ToArray();
+                    var fieldsLength = fields.Length;
+                    inputs = new (string, ScriptType)[fieldsLength];
+                    for (var i = 0; i < fieldsLength; i++)
+                    {
+                        var field = fields[i];
+                        inputs[i] = (field.Name, field.ValueType);
+                    }
+
+                    outputs = [(type.Name, type)];
                 }
+
+                inputs = null;
+                outputs = null;
             }
         }
 
@@ -301,17 +308,23 @@ namespace FlaxEditor.Surface.Archetypes
             
             internal static void GetInputOutputDescription(NodeArchetype nodeArch, out (string, ScriptType)[] inputs, out (string, ScriptType)[] outputs)
             {
-                var type = TypeUtils.GetType((string)nodeArch.DefaultValues[0]);
-                inputs = [(type.Name, type)];
-                    
-                var fields = type.GetMembers(BindingFlags.Public | BindingFlags.Instance).Where(x => x.IsField).ToArray();
-                var fieldsLength = fields.Length;
-                outputs = new (string, ScriptType)[fieldsLength];
-                for (var i = 0; i < fieldsLength; i++)
+                var typeName = (string)nodeArch.DefaultValues[0];
+                var type = TypeUtils.GetType(typeName);
+                if (type)
                 {
-                    var field = fields[i];
-                    outputs[i] = (field.Name, field.ValueType);
+                    inputs = [(type.Name, type)];
+
+                    var fields = type.GetMembers(BindingFlags.Public | BindingFlags.Instance).Where(x => x.IsField).ToArray();
+                    var fieldsLength = fields.Length;
+                    outputs = new (string, ScriptType)[fieldsLength];
+                    for (var i = 0; i < fieldsLength; i++)
+                    {
+                        var field = fields[i];
+                        outputs[i] = (field.Name, field.ValueType);
+                    }
                 }
+                inputs = null;
+                outputs = null;
             }
         }
 

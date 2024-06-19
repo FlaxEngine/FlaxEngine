@@ -7,8 +7,6 @@ using Real = System.Single;
 #endif
 
 using System;
-using System.Collections;
-using System.Collections.Generic;
 using System.Linq;
 using FlaxEditor.CustomEditors.Editors;
 using FlaxEditor.GUI;
@@ -468,7 +466,7 @@ namespace FlaxEditor.Surface.Archetypes
             internal static void GetInputOutputDescription(NodeArchetype nodeArch, out (string, ScriptType)[] inputs, out (string, ScriptType)[] outputs)
             {
                 inputs = null;
-                outputs = [("", new ScriptType(typeof(Dictionary<int, string>)))];
+                outputs = [("", new ScriptType(typeof(System.Collections.Generic.Dictionary<int, string>)))];
             }
         }
 

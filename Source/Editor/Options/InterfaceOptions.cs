@@ -372,7 +372,7 @@ namespace FlaxEditor.Options
         /// Gets or sets the visject connection curvature.
         /// </summary>
         [DefaultValue(true)]
-        [EditorDisplay("Visject"), EditorOrder(550)]
+        [EditorDisplay("Visject"), EditorOrder(550), Tooltip("Shows/hides the description panel in the visual scripting context menu.")]
         public bool VisualScriptingDescriptionPanel { get; set; } = true;
 
         private static FontAsset DefaultFont => FlaxEngine.Content.LoadAsyncInternal<FontAsset>(EditorAssets.PrimaryFont);

@@ -468,7 +468,6 @@ namespace FlaxEditor.Surface
             sb.Append('.');
             sb.Append(name);
 
-            // Is a method and not a property
             if (member.IsMethod)
             {
                 sb.Append('(');
@@ -512,7 +511,7 @@ namespace FlaxEditor.Surface
                     return GetVisualScriptMemberShortDescription(property[0]);
                 }
             }
-            
+
             return Editor.Instance.CodeDocs.GetTooltip(member);
         }
 

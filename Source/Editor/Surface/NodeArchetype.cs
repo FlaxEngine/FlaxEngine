@@ -97,7 +97,7 @@ namespace FlaxEditor.Surface
         /// <summary>
         /// Gets description of inputs and outputs of the archetype. Used for special cases for the description panel.
         /// </summary>
-        public delegate void GetElementsDescriptionFunc(NodeArchetype nodeArch, out (string, ScriptType)[] inputs, out (string, ScriptType)[] outputs);
+        public delegate void GetElementsDescriptionFunc(NodeArchetype nodeArch, out (string Name, ScriptType Type)[] inputs, out (string Name, ScriptType Type)[] outputs);
 
         /// <summary>
         /// Unique node type ID within a single group.

@@ -197,7 +197,6 @@ namespace FlaxEditor.Surface
                     {
                         Groups = StateMachineGroupArchetypes,
                         CanSpawnNode = (_, _) => true,
-                        Style = Style,
                     });
                     _cmStateMachineMenu.ShowExpanded = true;
                 }
@@ -215,7 +214,6 @@ namespace FlaxEditor.Surface
                         CanSpawnNode = CanUseNodeType,
                         ParametersGetter = null,
                         CustomNodesGroup = GetCustomNodes(),
-                        Style = Style,
                     });
                     _cmStateMachineTransitionMenu.AddGroup(StateMachineTransitionGroupArchetype, false);
                 }

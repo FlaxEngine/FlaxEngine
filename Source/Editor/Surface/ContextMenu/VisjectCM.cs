@@ -2,14 +2,11 @@
 
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using System.Reflection;
 using System.Text.RegularExpressions;
 using FlaxEditor.GUI.ContextMenu;
 using FlaxEditor.GUI.Input;
 using FlaxEditor.Scripting;
-using FlaxEditor.Surface.Archetypes;
 using FlaxEngine;
 using FlaxEngine.GUI;
 using FlaxEngine.Utilities;
@@ -62,13 +59,12 @@ namespace FlaxEditor.Surface.ContextMenu
         private bool _descriptionPanelVisible;
         private readonly Panel _descriptionPanel;
         private readonly Panel _descriptionPanelSeparator;
-        private readonly Image _descriptionClassImage;
+        private readonly Image _descriptionDeclaringClassImage;
         private readonly Label _descriptionSignatureLabel;
         private readonly Label _descriptionLabel;
-        private readonly SurfaceStyle _surfaceStyle;
         private readonly VerticalPanel _descriptionInputPanel;
         private readonly VerticalPanel _descriptionOutputPanel;
-
+        private readonly SurfaceStyle _surfaceStyle;
         private VisjectCMItem _selectedItem;
 
         /// <summary>
@@ -251,7 +247,7 @@ namespace FlaxEditor.Surface.ContextMenu
                 };
 
                 var spriteHandle = info.Style.Icons.BoxClose;
-                _descriptionClassImage = new Image(8, 12, 20, 20)
+                _descriptionDeclaringClassImage = new Image(8, 12, 20, 20)
                 {
                     Parent = _descriptionPanel,
                     Brush = new SpriteBrush(spriteHandle),
@@ -816,12 +812,12 @@ namespace FlaxEditor.Surface.ContextMenu
                 HideDescriptionPanel();
                 return;
             }
-            
+
             Profiler.BeginEvent("VisjectCM.SetDescriptionPanelArchetype");
-            
+
             _descriptionInputPanel.RemoveChildren();
             _descriptionOutputPanel.RemoveChildren();
-            
+
             ScriptType declaringType;
             if (archetype.Tag is ScriptMemberInfo memberInfo)
             {
@@ -844,7 +840,7 @@ namespace FlaxEditor.Surface.ContextMenu
                     else
                         AddInputOutputElement(archetype, memberInfo.ValueType, true, $"Return ({memberInfo.ValueType.Name})");
                 }
-                
+
                 for(int i = 0; i < memberInfo.ParametersCount; i++)
                 {
                     var param = memberInfo.GetParameters()[i];
@@ -858,13 +854,13 @@ namespace FlaxEditor.Surface.ContextMenu
 
                 if (archetype.GetInputOutputDescription != null)
                 {
-                    archetype.GetInputOutputDescription.Invoke(archetype, out (string, ScriptType)[] inputs, out (string, ScriptType)[] outputs);
+                    archetype.GetInputOutputDescription.Invoke(archetype, out (string Name, ScriptType Type)[] inputs, out (string Name, ScriptType Type)[] outputs);
 
                     if (inputs != null)
                     {
                         for (int i = 0; i < inputs.Length; i++)
                         {
-                            AddInputOutputElement(archetype, inputs[i].Item2, false, $"{inputs[i].Item1} ({inputs[i].Item2.Name})");
+                            AddInputOutputElement(archetype, inputs[i].Type, false, $"{inputs[i].Name} ({inputs[i].Type.Name})");
                         }
                     }
 
@@ -872,7 +868,7 @@ namespace FlaxEditor.Surface.ContextMenu
                     {
                         for (int i = 0; i < outputs.Length; i++)
                         {
-                            AddInputOutputElement(archetype, outputs[i].Item2, true, $"{outputs[i].Item1} ({outputs[i].Item2.Name})");
+                            AddInputOutputElement(archetype, outputs[i].Type, true, $"{outputs[i].Name} ({outputs[i].Type.Name})");
                         }
                     }
                 }
@@ -880,22 +876,22 @@ namespace FlaxEditor.Surface.ContextMenu
                 {
                     foreach (var element in archetype.Elements)
                     {
-                        if (element.Type is NodeElementType.Input or NodeElementType.Output)
-                        {
-                            bool isOutput = element.Type == NodeElementType.Output;
-                            if (element.ConnectionsType == null)
-                                AddInputOutputElement(archetype, element.ConnectionsType, isOutput, $"{element.Text} ({archetype.ConnectionsHints.ToString()})");
-                            else
-                                AddInputOutputElement(archetype, element.ConnectionsType, isOutput, $"{element.Text} ({element.ConnectionsType.Name})");   
-                        }
+                        if (element.Type is not (NodeElementType.Input or NodeElementType.Output))
+                            continue;
+
+                        bool isOutput = element.Type == NodeElementType.Output;
+                        if (element.ConnectionsType == null)
+                            AddInputOutputElement(archetype, element.ConnectionsType, isOutput, $"{element.Text} ({archetype.ConnectionsHints.ToString()})");
+                        else
+                            AddInputOutputElement(archetype, element.ConnectionsType, isOutput, $"{element.Text} ({element.ConnectionsType.Name})");
                     }
                 }
             }
 
             _surfaceStyle.GetConnectionColor(declaringType, archetype.ConnectionsHints, out var declaringTypeColor);
-            _descriptionClassImage.Color = declaringTypeColor;
-            _descriptionClassImage.MouseOverColor = declaringTypeColor;
-            
+            _descriptionDeclaringClassImage.Color = declaringTypeColor;
+            _descriptionDeclaringClassImage.MouseOverColor = declaringTypeColor;
+
             float panelHeight = _descriptionSignatureLabel.Height;
 
             if (string.IsNullOrEmpty(archetype.Description))
@@ -911,21 +907,21 @@ namespace FlaxEditor.Surface.ContextMenu
             }
 
             _descriptionPanelSeparator.Y = _descriptionLabel.Bounds.Bottom + 8f;
-            
+
             panelHeight += _descriptionLabel.Height + 32f;
 
             _descriptionInputPanel.Y = panelHeight;
             _descriptionOutputPanel.Y = panelHeight;
 
             panelHeight += Mathf.Max(_descriptionInputPanel.Height, _descriptionOutputPanel.Height);
-            
+
             // Forcing the description panel to at least have a minimum height to not make the window size change too much in order to reduce jittering
             // TODO: Remove the Mathf.Max and just set the height to panelHeight once the window jitter issue is fixed - Nils
             _descriptionPanel.Height = Mathf.Max(135f, panelHeight);
             Height = 400 + _descriptionPanel.Height;
             UpdateWindowSize();
             _descriptionPanelVisible = true;
-            
+
             Profiler.EndEvent();
         }
 
@@ -962,7 +958,7 @@ namespace FlaxEditor.Surface.ContextMenu
             elementPanel.AddChild(elementText);
             elementPanel.Height = elementText.Height;
         }
-        
+
         /// <summary>
         /// Hides the description panel and resets the context menu to its original size
         /// </summary>
