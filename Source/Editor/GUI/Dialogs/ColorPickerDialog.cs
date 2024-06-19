@@ -205,10 +205,6 @@ namespace FlaxEditor.GUI.Dialogs
             };
             _cValue.ValueChanged += OnHSVChanged;
 
-            {
-                Parent = this
-            };
-
             // Set valid dialog size based on UI content
             _dialogSize = Size = new Float2(_cRed.Right + _pickerMargin.Right + 20, 300); // +20 to account for hsv math symbols
 
