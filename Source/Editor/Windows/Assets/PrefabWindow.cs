@@ -42,6 +42,7 @@ namespace FlaxEditor.Windows.Assets
         private bool _liveReload = false;
         private bool _isUpdatingSelection, _isScriptsReloading;
         private DateTime _modifiedTime = DateTime.MinValue;
+        private bool _isDragging = false;
 
         /// <summary>
         /// Gets the prefab hierarchy tree control.
@@ -273,9 +274,14 @@ namespace FlaxEditor.Windows.Assets
                 return true;
             }
 
-            if (button == MouseButton.Left && _treePanel.ContainsPoint(ref location))
+            if (button == MouseButton.Left && _treePanel.ContainsPoint(ref location) && !_isDragging)
             {
                 _tree.Deselect();
+                return true;
+            }
+            if (_isDragging)
+            {
+                _isDragging = false;
                 return true;
             }
             return false;
