@@ -370,10 +370,7 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext, RenderCont
         for (PostProcessEffect* e : renderContext.List->PostFx)
             e->PreRender(context, renderContext);
     }
-
-    // Prepare
     renderContext.View.Prepare(renderContext);
-    renderContext.Buffers->Prepare();
 
     // Build batch of render contexts (main view and shadow projections)
     {
