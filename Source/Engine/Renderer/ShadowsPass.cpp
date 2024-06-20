@@ -39,12 +39,12 @@ GPU_CB_STRUCT(Data {
     float ContactShadowsLength;
     });
 
-struct ShadowsAtlasRectTile : RectPack<ShadowsAtlasRectTile, uint16>
+struct ShadowsAtlasRectTile : RectPackNode<uint16>
 {
     bool IsStatic;
 
     ShadowsAtlasRectTile(uint16 x, uint16 y, uint16 width, uint16 height)
-        : RectPack<ShadowsAtlasRectTile, uint16>(x, y, width, height)
+        : RectPackNode<uint16>(x, y, width, height)
     {
     }
 
@@ -75,23 +75,8 @@ struct ShadowAtlasLightTile
     bool HasStaticGeometry;
     Viewport CachedViewport; // The viewport used the last time to render shadow to the atlas
 
-    void FreeDynamic(ShadowsCustomBuffer* buffer)
-    {
-        if (RectTile)
-        {
-            RectTile->Free(buffer);
-            RectTile = nullptr;
-        }
-    }
-
-    void FreeStatic(ShadowsCustomBuffer* buffer)
-    {
-        if (StaticRectTile)
-        {
-            StaticRectTile->Free(buffer);
-            StaticRectTile = nullptr;
-        }
-    }
+    void FreeDynamic(ShadowsCustomBuffer* buffer);
+    void FreeStatic(ShadowsCustomBuffer* buffer);
 
     void Free(ShadowsCustomBuffer* buffer)
     {
@@ -315,8 +300,8 @@ public:
     GPUTexture* StaticShadowMapAtlas = nullptr;
     DynamicTypedBuffer ShadowsBuffer;
     GPUBufferView* ShadowsBufferView = nullptr;
-    ShadowsAtlasRectTile* AtlasTiles = nullptr; // TODO: optimize with a single allocation for atlas tiles
-    ShadowsAtlasRectTile* StaticAtlasTiles = nullptr; // TODO: optimize with a single allocation for atlas tiles
+    RectPackAtlas<ShadowsAtlasRectTile> Atlas;
+    RectPackAtlas<ShadowsAtlasRectTile> StaticAtlas;
     Dictionary<Guid, ShadowAtlasLight> Lights;
 
     ShadowsCustomBuffer()
@@ -335,7 +320,7 @@ public:
             for (int32 i = 0; i < atlasLight.TilesCount; i++)
                 atlasLight.Tiles[i].ClearDynamic();
         }
-        SAFE_DELETE(AtlasTiles);
+        Atlas.Clear();
         AtlasPixelsUsed = 0;
     }
 
@@ -349,7 +334,7 @@ public:
             for (int32 i = 0; i < atlasLight.TilesCount; i++)
                 atlasLight.Tiles[i].ClearDynamic();
         }
-        SAFE_DELETE(StaticAtlasTiles);
+        StaticAtlas.Clear();
         StaticAtlasPixelsUsed = 0;
     }
 
@@ -357,17 +342,17 @@ public:
     {
         Lights.Clear();
         StaticAtlasPixelsUsed = 0;
-        SAFE_DELETE(StaticAtlasTiles);
+        StaticAtlas.Clear();
         ClearDynamic();
         ViewOrigin = Vector3::Zero;
     }
 
     void InitStaticAtlas()
     {
-        if (StaticAtlasTiles)
-            return;
         const int32 atlasResolution = Resolution * 2;
-        StaticAtlasTiles = New<ShadowsAtlasRectTile>(0, 0, atlasResolution, atlasResolution);
+        if (StaticAtlas.Width == atlasResolution)
+            return;
+        StaticAtlas.Init(atlasResolution, atlasResolution);
         if (!StaticShadowMapAtlas)
             StaticShadowMapAtlas = GPUDevice::Instance->CreateTexture(TEXT("Static Shadow Map Atlas"));
         auto desc = ShadowMapAtlas->GetDescription();
@@ -447,6 +432,24 @@ void ShadowsAtlasRectTile::OnFree(ShadowsCustomBuffer* buffer)
         buffer->StaticAtlasPixelsUsed -= pixels;
     else
         buffer->AtlasPixelsUsed -= pixels;
+}
+
+void ShadowAtlasLightTile::FreeDynamic(ShadowsCustomBuffer* buffer)
+{
+    if (RectTile)
+    {
+        buffer->Atlas.Free(RectTile, buffer);
+        RectTile = nullptr;
+    }
+}
+
+void ShadowAtlasLightTile::FreeStatic(ShadowsCustomBuffer* buffer)
+{
+    if (StaticRectTile)
+    {
+        buffer->StaticAtlas.Free(StaticRectTile, buffer);
+        StaticRectTile = nullptr;
+    }
 }
 
 String ShadowsPass::ToString() const
@@ -679,7 +682,7 @@ bool ShadowsPass::SetupLight(ShadowsCustomBuffer& shadows, RenderContext& render
                 auto& tile = atlasLight.Tiles[tileIndex];
                 if (tile.StaticRectTile == nullptr)
                 {
-                    tile.StaticRectTile = shadows.StaticAtlasTiles->Insert(atlasLight.StaticResolution, atlasLight.StaticResolution, 0, &shadows, true);
+                    tile.StaticRectTile = shadows.StaticAtlas.Insert(atlasLight.StaticResolution, atlasLight.StaticResolution, 0, &shadows, true);
                     if (!tile.StaticRectTile)
                     {
                         // Failed to insert tile to switch back to the default rendering
@@ -1100,7 +1103,7 @@ void ShadowsPass::SetupShadows(RenderContext& renderContext, RenderContextBatch&
         shadows.Reset();
         shadows.ViewOrigin = renderContext.View.Origin;
     }
-    if (shadows.StaticAtlasTiles && (float)shadows.StaticAtlasPixelsUsed / (shadows.StaticAtlasTiles->Width * shadows.StaticAtlasTiles->Height) < SHADOWS_MAX_STATIC_ATLAS_CAPACITY_TO_DEFRAG)
+    if (shadows.StaticAtlas.Width != 0 && (float)shadows.StaticAtlasPixelsUsed / (shadows.StaticAtlas.Width * shadows.StaticAtlas.Height) < SHADOWS_MAX_STATIC_ATLAS_CAPACITY_TO_DEFRAG)
     {
         // Defragment static shadow atlas if it failed to insert any light but it's still should have space
         bool anyStaticFailed = false;
@@ -1117,8 +1120,8 @@ void ShadowsPass::SetupShadows(RenderContext& renderContext, RenderContextBatch&
             shadows.ClearStatic();
         }
     }
-    if (!shadows.AtlasTiles)
-        shadows.AtlasTiles = New<ShadowsAtlasRectTile>(0, 0, atlasResolution, atlasResolution);
+    if (!shadows.Atlas.IsInitialized())
+        shadows.Atlas.Init(atlasResolution, atlasResolution);
 
     // Update/add lights
     const int32 baseLightResolution = SHADOWS_BASE_LIGHT_RESOLUTION(atlasResolution);
@@ -1222,7 +1225,7 @@ RETRY_ATLAS_SETUP:
         bool failedToInsert = false;
         for (int32 tileIndex = 0; tileIndex < atlasLight.TilesNeeded; tileIndex++)
         {
-            auto rectTile = shadows.AtlasTiles->Insert(atlasLight.Resolution, atlasLight.Resolution, 0, &shadows, false);
+            auto rectTile = shadows.Atlas.Insert(atlasLight.Resolution, atlasLight.Resolution, 0, &shadows, false);
             if (!rectTile)
             {
                 // Free any previous tiles that were added
@@ -1249,7 +1252,6 @@ RETRY_ATLAS_SETUP:
 
             // Rebuild atlas
             shadows.ClearDynamic();
-            shadows.AtlasTiles = New<ShadowsAtlasRectTile>(0, 0, atlasResolution, atlasResolution);
             goto RETRY_ATLAS_SETUP;
         }
     }
@@ -1276,7 +1278,7 @@ RETRY_ATLAS_SETUP:
                 SetupLight(shadows, renderContext, renderContextBatch, *(RenderDirectionalLightData*)light, atlasLight);
         }
     }
-    if (shadows.StaticAtlasTiles)
+    if (shadows.StaticAtlas.IsInitialized())
     {
         // Register for active scenes changes to invalidate static shadows
         for (SceneRendering* scene : renderContext.List->Scenes)

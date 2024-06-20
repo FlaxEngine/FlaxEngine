@@ -64,7 +64,7 @@ PACK_STRUCT(struct AtlasTileVertex
     uint32 TileAddress;
     });
 
-struct GlobalSurfaceAtlasTile : RectPack<GlobalSurfaceAtlasTile, uint16>
+struct GlobalSurfaceAtlasTile : RectPackNode<uint16>
 {
     Float3 ViewDirection;
     Float3 ViewPosition;
@@ -74,7 +74,7 @@ struct GlobalSurfaceAtlasTile : RectPack<GlobalSurfaceAtlasTile, uint16>
     uint32 ObjectAddressOffset;
 
     GlobalSurfaceAtlasTile(uint16 x, uint16 y, uint16 width, uint16 height)
-        : RectPack<GlobalSurfaceAtlasTile, uint16>(x, y, width, height)
+        : RectPackNode<uint16>(x, y, width, height)
     {
     }
 
@@ -125,7 +125,7 @@ public:
     DynamicTypedBuffer ObjectsBuffer;
     int32 CulledObjectsCounterIndex = -1;
     GlobalSurfaceAtlasPass::BindingData Result;
-    GlobalSurfaceAtlasTile* AtlasTiles = nullptr; // TODO: optimize with a single allocation for atlas tiles
+    RectPackAtlas<GlobalSurfaceAtlasTile> Atlas;
     Dictionary<void*, GlobalSurfaceAtlasObject> Objects;
     Dictionary<Guid, GlobalSurfaceAtlasLight> Lights;
     SamplesBuffer<uint32, 30> CulledObjectsUsageHistory;
@@ -150,7 +150,7 @@ public:
         CulledObjectsUsageHistory.Clear();
         LastFrameAtlasDefragmentation = Engine::FrameCount;
         AtlasPixelsUsed = 0;
-        SAFE_DELETE(AtlasTiles);
+        Atlas.Clear();
         Objects.Clear();
         Lights.Clear();
     }
@@ -382,6 +382,7 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
     if (noCache)
     {
         surfaceAtlasData.Reset();
+        surfaceAtlasData.Atlas.Init(resolution, resolution);
 
         auto desc = GPUTextureDescription::New2D(resolution, resolution, PixelFormat::Unknown);
         uint64 memUsage = 0;
@@ -419,8 +420,6 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
     }
     for (SceneRendering* scene : renderContext.List->Scenes)
         surfaceAtlasData.ListenSceneRendering(scene);
-    if (!surfaceAtlasData.AtlasTiles)
-        surfaceAtlasData.AtlasTiles = New<GlobalSurfaceAtlasTile>(0, 0, resolution, resolution);
     if (!_vertexBuffer)
         _vertexBuffer = New<DynamicVertexBuffer>(0u, (uint32)sizeof(AtlasTileVertex), TEXT("GlobalSurfaceAtlas.VertexBuffer"));
 
@@ -504,7 +503,7 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
                 for (auto& tile : it->Value.Tiles)
                 {
                     if (tile)
-                        tile->Free(&surfaceAtlasData);
+                        surfaceAtlasData.Atlas.Free(tile, &surfaceAtlasData);
                 }
                 surfaceAtlasData.Objects.Remove(it);
             }
@@ -1076,8 +1075,6 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
         }
     }
 
-    // TODO: explore atlas tiles optimization with feedback from renderer (eg. when tile is sampled by GI/Reflections mark it as used, then sort tiles by importance and prioritize updates for ones frequently used)
-
 #undef WRITE_TILE
     context->ResetSR();
     context->ResetRenderTarget();
@@ -1209,7 +1206,7 @@ void GlobalSurfaceAtlasPass::RasterizeActor(Actor* actor, void* actorObject, con
             // Skip too small surfaces
             if (object && object->Tiles[tileIndex])
             {
-                object->Tiles[tileIndex]->Free(&surfaceAtlasData);
+                surfaceAtlasData.Atlas.Free(object->Tiles[tileIndex], &surfaceAtlasData);
                 object->Tiles[tileIndex] = nullptr;
             }
             continue;
@@ -1232,14 +1229,14 @@ void GlobalSurfaceAtlasPass::RasterizeActor(Actor* actor, void* actorObject, con
                 anyTile = true;
                 continue;
             }
-            object->Tiles[tileIndex]->Free(&surfaceAtlasData);
+            surfaceAtlasData.Atlas.Free(object->Tiles[tileIndex], &surfaceAtlasData);
         }
 
         // Insert tile into atlas
         uint16 tilePixels = tileResolution * tileResolution;
         GlobalSurfaceAtlasTile* tile = nullptr;
         if (tilePixels <= surfaceAtlasData.AtlasPixelsTotal - surfaceAtlasData.AtlasPixelsUsed)
-            tile = surfaceAtlasData.AtlasTiles->Insert(tileResolution, tileResolution, 0, &surfaceAtlasData, actorObject, tileIndex);
+            tile = surfaceAtlasData.Atlas.Insert(tileResolution, tileResolution, 0, &surfaceAtlasData, actorObject, tileIndex);
         if (tile)
         {
             if (!object)

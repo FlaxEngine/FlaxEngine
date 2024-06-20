@@ -11,10 +11,10 @@
 /// <summary>
 /// Contains information about single texture atlas slot.
 /// </summary>
-struct FontTextureAtlasSlot : RectPack<FontTextureAtlasSlot>
+struct FontTextureAtlasSlot : RectPackNode<>
 {
     FontTextureAtlasSlot(uint32 x, uint32 y, uint32 width, uint32 height)
-        : RectPack<FontTextureAtlasSlot>(x, y, width, height)
+        : RectPackNode<>(x, y, width, height)
     {
     }
 
@@ -35,11 +35,12 @@ private:
     {
         const byte* SrcData;
         uint8* DstData;
-        uint32 SrcRow;
-        uint32 DstRow;
-        uint32 RowWidth;
-        uint32 SrcTextureWidth;
-        uint32 DstTextureWidth;
+        int32 SrcRow;
+        int32 DstRow;
+        int32 RowWidth;
+        int32 SrcTextureWidth;
+        int32 DstTextureWidth;
+        uint32 Padding;
     };
 
 public:
@@ -74,7 +75,7 @@ private:
     uint32 _bytesPerPixel;
     PaddingStyle _paddingStyle;
     bool _isDirty;
-    FontTextureAtlasSlot* _root;
+    RectPackAtlas<FontTextureAtlasSlot> _atlas;
     Array<FontTextureAtlasSlot*> _freeSlots;
 
 public:
@@ -162,6 +163,13 @@ public:
     /// <summary>
     /// Invalidates the cached dynamic entry from the atlas.
     /// </summary>
+    /// <param name="slot">The slot to invalidate.</param>
+    /// <returns>True if slot has been freed, otherwise false.</returns>
+    bool Invalidate(const FontTextureAtlasSlot* slot);
+
+    /// <summary>
+    /// Invalidates the cached dynamic entry from the atlas.
+    /// </summary>
     /// <param name="x">The slot location (X coordinate in atlas pixels).</param>
     /// <param name="y">The slot location (Y coordinate in atlas pixels).</param>
     /// <param name="width">The slot width (size in atlas pixels).</param>
@@ -192,11 +200,6 @@ public:
     void Clear();
 
     /// <summary>
-    /// Disposed whole atlas data (texture, nodes etc.).
-    /// </summary>
-    void Dispose();
-
-    /// <summary>
     /// Flushes this atlas data to the GPU
     /// </summary>
     void Flush();
@@ -214,7 +217,6 @@ public:
 
 private:
 
-    FontTextureAtlasSlot* invalidate(FontTextureAtlasSlot* parent, uint32 x, uint32 y, uint32 width, uint32 height);
     void markAsDirty();
     void copyRow(const RowData& copyRowData) const;
     void zeroRow(const RowData& copyRowData) const;

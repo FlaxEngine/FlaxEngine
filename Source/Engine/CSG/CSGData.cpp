@@ -15,15 +15,10 @@ namespace CSG
 
     public:
 
-        struct Node : RectPack<Node, float>
+        struct Node : RectPackNode<float>
         {
-            Node(float xy, float wh)
-                : RectPack<Node, float>(xy, xy, wh, wh)
-            {
-            }
-
             Node(float x, float y, float width, float height)
-                : RectPack<Node, float>(x, y, width, height)
+                : RectPackNode<float>(x, y, width, height)
             {
             }
 
@@ -36,17 +31,17 @@ namespace CSG
 
     private:
 
-        Node _root;
+        RectPackAtlas<Node> _root;
         const float _atlasSize;
         const float _chartsPadding;
 
     public:
 
         LightmapUVsPacker(float atlasSize, float chartsPadding)
-            : _root(chartsPadding, atlasSize - chartsPadding)
-            , _atlasSize(atlasSize)
+            : _atlasSize(atlasSize)
             , _chartsPadding(chartsPadding)
         {
+            _root.Init(atlasSize, atlasSize, chartsPadding);
         }
 
         ~LightmapUVsPacker()

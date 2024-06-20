@@ -13,12 +13,12 @@ namespace ShadowsOfMordor
     {
     public:
 
-        struct Node : RectPack<Node>
+        struct Node : RectPackNode<int32>
         {
             Builder::LightmapUVsChart* Chart = nullptr;
 
-            Node(uint32 x, uint32 y, uint32 width, uint32 height)
-                : RectPack<Node>(x, y, width, height)
+            Node(int32 x, int32 y, int32 width, int32 height)
+                : RectPackNode<int32>(x, y, width, height)
             {
             }
 
@@ -32,7 +32,7 @@ namespace ShadowsOfMordor
 
     private:
 
-        Node _root;
+        RectPackAtlas<Node> _root;
         const LightmapSettings* _settings;
 
     public:
@@ -42,9 +42,9 @@ namespace ShadowsOfMordor
         /// </summary>
         /// <param name="settings">The settings.</param>
         AtlasChartsPacker(const LightmapSettings* settings)
-            : _root(settings->ChartsPadding, settings->ChartsPadding, (int32)settings->AtlasSize - settings->ChartsPadding, (int32)settings->AtlasSize - settings->ChartsPadding)
-            , _settings(settings)
+            : _settings(settings)
         {
+            _root.Init((int32)settings->AtlasSize, (int32)settings->AtlasSize, settings->ChartsPadding);
         }
 
         /// <summary>
