@@ -59,6 +59,7 @@ namespace Flax.Build.Bindings
             { "ManagedScriptingObject", "FlaxEngine.Object" },
             { "Variant", "object" },
             { "VariantType", "System.Type" },
+            { "BytesContainer", "byte[]" },
 
             // Mono types
             { "MonoObject", "object" },
@@ -1595,7 +1596,7 @@ namespace Flax.Build.Bindings
                                 type = "IntPtr";
                             else if (fieldInfo.Type.IsPtr && !originalType.EndsWith("*"))
                                 type = "IntPtr";
-                            else if (fieldInfo.Type.Type == "Array" || fieldInfo.Type.Type == "Span" || fieldInfo.Type.Type == "DataContainer" || fieldInfo.Type.Type == "BytesContainer")
+                            else if (fieldInfo.Type.Type == "Array" || fieldInfo.Type.Type == "Span" || fieldInfo.Type.Type == "DataContainer")
                             {
                                 type = "IntPtr";
                                 apiType = FindApiTypeInfo(buildData, fieldInfo.Type.GenericArgs[0], structureInfo);
@@ -1671,7 +1672,7 @@ namespace Flax.Build.Bindings
                                 freeContents.AppendLine($"if (unmanaged.{fieldInfo.Name} != IntPtr.Zero) {{ ManagedHandle handle = ManagedHandle.FromIntPtr(unmanaged.{fieldInfo.Name}); Span<{internalElementType}> values = (Unsafe.As<ManagedArray>(handle.Target)).ToSpan<{internalElementType}>(); foreach (var value in values) {{ {originalElementTypeMarshaller}.Free(value); }} (Unsafe.As<ManagedArray>(handle.Target)).Free(); handle.Free(); }}");
                                 freeContents2.AppendLine($"if (unmanaged.{fieldInfo.Name} != IntPtr.Zero) {{ ManagedHandle handle = ManagedHandle.FromIntPtr(unmanaged.{fieldInfo.Name}); Span<{internalElementType}> values = (Unsafe.As<ManagedArray>(handle.Target)).ToSpan<{internalElementType}>(); foreach (var value in values) {{ {originalElementTypeMarshaller}.NativeToManaged.Free(value); }} (Unsafe.As<ManagedArray>(handle.Target)).Free(); handle.Free(); }}");
                             }
-                            else if (fieldInfo.Type.GenericArgs[0].IsObjectRef)
+                            else if (fieldInfo.Type.GenericArgs != null && fieldInfo.Type.GenericArgs[0].IsObjectRef)
                             {
                                 // Array elements passed as GCHandles
                                 toManagedContent.AppendLine($"unmanaged.{fieldInfo.Name} != IntPtr.Zero ? NativeInterop.GCHandleArrayToManagedArray<{originalElementType}>(Unsafe.As<ManagedArray>(ManagedHandle.FromIntPtr(unmanaged.{fieldInfo.Name}).Target)) : null;");
@@ -1861,6 +1862,20 @@ namespace Flax.Build.Bindings
             foreach (var fieldInfo in structureInfo.Fields)
             {
                 contents.AppendLine();
+
+                // Generate a getter-property for accessing the BytesContainer as a Span
+                if (fieldInfo.Type.Type == "BytesContainer")
+                {
+                    // Fields of BytesContainer
+                    contents.Append(indent).AppendLine($"private IntPtr __{fieldInfo.Name}_Ptr;").AppendLine();
+                    contents.Append(indent).AppendLine($"private int __{fieldInfo.Name}_Length;").AppendLine();
+                    contents.Append(indent).AppendLine($"[MarshalAs(UnmanagedType.U1)] private bool __{fieldInfo.Name}_IsAllocated;").AppendLine();
+
+                    GenerateCSharpComment(contents, indent, fieldInfo.Comment);
+                    string spanType = fieldInfo.IsReadOnly ? "ReadOnlySpan<byte>" : "Span<byte>";
+                    contents.Append(indent).AppendLine($"{GenerateCSharpAccessLevel(fieldInfo.Access)}{spanType} {fieldInfo.Name} => new {spanType}(__{fieldInfo.Name}_Ptr.ToPointer(), __{fieldInfo.Name}_Length);").AppendLine();
+                    continue;
+                }
                 GenerateCSharpComment(contents, indent, fieldInfo.Comment);
                 GenerateCSharpAttributes(buildData, contents, indent, structureInfo, fieldInfo, fieldInfo.IsStatic, fieldInfo.DefaultValue, fieldInfo.Type);
 #if USE_NETCORE
