@@ -55,6 +55,12 @@ namespace FlaxEditor.Surface
         {
             _supportsImplicitCastFromObjectToBoolean = true;
             DragHandlers.Add(_dragActors = new DragActors(ValidateDragActor));
+            ScriptsBuilder.ScriptsReloadBegin += OnScriptsReloadBegin;
+        }
+
+        private void OnScriptsReloadBegin()
+        {
+            _nodesCache.Clear();
         }
 
         private bool ValidateDragActor(ActorNode actor)
@@ -604,6 +610,7 @@ namespace FlaxEditor.Surface
         {
             if (IsDisposing)
                 return;
+            ScriptsBuilder.ScriptsReloadBegin -= OnScriptsReloadBegin;
             _nodesCache.Wait();
 
             base.OnDestroy();
