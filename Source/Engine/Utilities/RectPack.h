@@ -5,10 +5,8 @@
 #include "Engine/Core/Templates.h"
 #include "Engine/Core/Collections/Array.h"
 #include "Engine/Core/Collections/ChunkedArray.h"
-#include "Engine/Core/Collections/Sorting.h"
 #include "Engine/Core/Types/BaseTypes.h"
 #include "Engine/Core/Memory/Memory.h"
-#include "Engine/Core/Math/Math.h"
 
 /// <summary>
 /// Implementation of the rectangles packing node into 2D atlas with padding. Uses simple space division via Binary Tree.
@@ -61,7 +59,6 @@ struct RectPackAtlas
 
 private:
     Array<NodeType*> FreeNodes;
-    bool FreeNodesDirty = false;
 
     struct SizeRect
     {
@@ -79,6 +76,36 @@ private:
         {
         }
     };
+
+    void AddFreeNode(NodeType* node)
+    {
+        // Use binary search to find the insert location (assumes that FreeNodes are always sorted)
+        int32 left = 0, right = FreeNodes.Count() - 1;
+        const uint32 nodeSize = (uint32)node->Width * (uint32)node->Height;
+        while (left <= right)
+        {
+            int32 mid = left + (right - left) / 2;
+            const NodeType* midNode = FreeNodes.Get()[mid];
+            const uint32 midSize = (uint32)midNode->Width * (uint32)midNode->Height;
+            if (nodeSize == midSize)
+            {
+                // Insert right after node of the same size
+                left = mid;
+                break;
+            }
+            if (nodeSize > midSize)
+            {
+                // Go to the left half (contains nodes with higher sizes)
+                right = mid - 1;
+            }
+            else
+            {
+                // Go to the right half (contains nodes with lower sizes)
+                left = mid + 1;
+            }
+        }
+        FreeNodes.Insert(left, node);
+    }
 
 public:
     FORCE_INLINE bool IsInitialized()
@@ -101,7 +128,6 @@ public:
         FreeNodes.Clear();
         Nodes.Add(NodeType(bordersPadding, bordersPadding, atlasWidth - bordersPadding * 2, atlasHeight - bordersPadding * 2));
         FreeNodes.Add(&Nodes[0]);
-        FreeNodesDirty = false;
     }
 
     /// <summary>
@@ -125,18 +151,12 @@ public:
     template<class... Args>
     NodeType* Insert(Size width, Size height, Size padding, Args&&... args)
     {
-        // Ensure that free nodes list can be iterated from smallest to biggest nodes for efficient packing
-        if (FreeNodesDirty)
-        {
-            FreeNodesDirty = false;
-            Sorting::QuickSortObj(FreeNodes.Get(), FreeNodes.Count());
-        }
-
         NodeType* result = nullptr;
         const Size paddedWidth = width + padding;
         const Size paddedHeight = height + padding;
 
         // Search free nodes from back to front and find the one that fits requested item size
+        // TODO: FreeNodes are sorted so use Binary Search to quickly find the first tile that might have enough space for insert
         for (int32 i = FreeNodes.Count() - 1; i >= 0; i--)
         {
             NodeType& freeNode = *FreeNodes.Get()[i];
@@ -170,10 +190,9 @@ public:
                 if (smaller.W * smaller.H > bigger.W * bigger.H)
                     Swap(bigger, smaller);
                 if (bigger.W * bigger.H > padding)
-                    FreeNodes.Add(Nodes.Add(NodeType(bigger.X, bigger.Y, bigger.W, bigger.H)));
+                    AddFreeNode(Nodes.Add(NodeType(bigger.X, bigger.Y, bigger.W, bigger.H)));
                 if (smaller.W * smaller.H > padding)
-                    FreeNodes.Add(Nodes.Add(NodeType(smaller.X, smaller.Y, smaller.W, smaller.H)));
-                FreeNodesDirty = true;
+                    AddFreeNode(Nodes.Add(NodeType(smaller.X, smaller.Y, smaller.W, smaller.H)));
 
                 // Shrink to the actual area
                 freeNode.Width = width;
@@ -182,10 +201,7 @@ public:
 
             // Insert into this node
             result = &freeNode;
-            if (FreeNodesDirty)
-                FreeNodes.RemoveAt(i);
-            else
-                FreeNodes.RemoveAtKeepOrder(i);
+            FreeNodes.RemoveAtKeepOrder(i);
             result->OnInsert(Forward<Args>(args)...);
             break;
         }
@@ -202,8 +218,7 @@ public:
     {
         ASSERT_LOW_LAYER(node);
         node->OnFree(Forward<Args>(args)...);
-        FreeNodes.Add(node);
-        FreeNodesDirty = true;
+        AddFreeNode(node);
     }
 };
 
@@ -309,8 +324,8 @@ struct DEPRECATED RectPack
         }
 
         // The width and height of the new child node
-        const SizeType remainingWidth = Math::Max<SizeType>(0, Width - paddedWidth);
-        const SizeType remainingHeight = Math::Max<SizeType>(0, Height - paddedHeight);
+        const SizeType remainingWidth = Width - paddedWidth;
+        const SizeType remainingHeight = Height - paddedHeight;
 
         // Split the remaining area around this slot into two children
         if (remainingHeight <= remainingWidth)
