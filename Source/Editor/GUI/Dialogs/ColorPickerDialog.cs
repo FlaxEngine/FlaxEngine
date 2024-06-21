@@ -474,11 +474,27 @@ namespace FlaxEditor.GUI.Dialogs
             var child = GetChildAtRecursive(location);
             if (button == MouseButton.Right && child is Button b && b.Tag is Color c)
             {
-                    _disableEvents = true;
-                    menu.Show(this, location);
-                    menu.VisibleChanged += (c) => _disableEvents = false;
-                    return true;
-                }
+                // Show menu
+                var menu = new ContextMenu.ContextMenu();
+                var replaceButton = menu.AddButton("Replace");
+                replaceButton.Clicked += () => OnSavedColorReplace(b);
+                var deleteButton = menu.AddButton("Delete");
+                deleteButton.Clicked += () => OnSavedColorDelete(b);
+                _disableEvents = true;
+                menu.Show(this, location);
+                menu.VisibleChanged += (c) => _disableEvents = false;
+                return true;
+            }
+
+            if (button == MouseButton.Right && oldColorRect.Contains(location))
+            {
+                var menu = new ContextMenu.ContextMenu();
+                var resetButton = menu.AddButton("Reset");
+                resetButton.Clicked += () => OnResetToOldPreviewPressed(resetButton);
+                _disableEvents = true;
+                menu.Show(this, location);
+                menu.VisibleChanged += (c) => _disableEvents = false;
+                return true;
             }
 
             return false;
