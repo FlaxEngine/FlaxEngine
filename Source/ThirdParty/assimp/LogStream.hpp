@@ -2,8 +2,7 @@
 Open Asset Import Library (assimp)
 ----------------------------------------------------------------------
 
-Copyright (c) 2006-2019, assimp team
-
+Copyright (c) 2006-2024, assimp team
 
 All rights reserved.
 
@@ -43,12 +42,17 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 /** @file LogStream.hpp
  *  @brief Abstract base class 'LogStream', representing an output log stream.
  */
+#pragma once
 #ifndef INCLUDED_AI_LOGSTREAM_H
 #define INCLUDED_AI_LOGSTREAM_H
 
+#ifdef __GNUC__
+#pragma GCC system_header
+#endif
+
 #include "types.h"
 
-namespace Assimp    {
+namespace Assimp {
 
 class IOSystem;
 
@@ -60,7 +64,7 @@ class IOSystem;
  *  are not enough for your purpose. */
 class ASSIMP_API LogStream
 #ifndef SWIG
-    : public Intern::AllocateFromAssimpHeap
+        : public Intern::AllocateFromAssimpHeap
 #endif
 {
 protected:
@@ -80,32 +84,25 @@ public:
      *  #DefaultLogger:set(). Usually you can *expect* that a log message
      *  is exactly one line and terminated with a single \n character.
      *  @param message Message to be written */
-    virtual void write(const char* message) = 0;
+    virtual void write(const char *message) = 0;
 
     // -------------------------------------------------------------------
     /** @brief Creates a default log stream
      *  @param streams Type of the default stream
      *  @param name For aiDefaultLogStream_FILE: name of the output file
      *  @param io For aiDefaultLogStream_FILE: IOSystem to be used to open the output
-     *   file. Pass NULL for the default implementation.
+     *   file. Pass nullptr for the default implementation.
      *  @return New LogStream instance.  */
-    static LogStream* createDefaultStream(aiDefaultLogStream stream,
-        const char* name = "AssimpLog.txt",
-        IOSystem* io = nullptr );
+    static LogStream *createDefaultStream(aiDefaultLogStream stream,
+            const char *name = "AssimpLog.txt",
+            IOSystem *io = nullptr);
 
 }; // !class LogStream
 
-inline
-LogStream::LogStream() AI_NO_EXCEPT {
-    // empty
-}
+inline LogStream::LogStream() AI_NO_EXCEPT = default;
 
-inline
-LogStream::~LogStream() {
-    // empty
-}
+inline LogStream::~LogStream() = default;
 
-// ------------------------------------------------------------------------------------
 } // Namespace Assimp
 
-#endif
+#endif // INCLUDED_AI_LOGSTREAM_H

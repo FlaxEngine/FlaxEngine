@@ -38,64 +38,55 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ---------------------------------------------------------------------------
 */
-/** @file color4.h
- *  @brief RGBA color structure, including operators when compiling in C++
- */
-#pragma once
-#ifndef AI_COLOR4D_H_INC
-#define AI_COLOR4D_H_INC
 
-#ifdef __GNUC__
-#   pragma GCC system_header
-#endif
+#pragma once
+#ifndef AI_BASE64_HPP_INC
+#define AI_BASE64_HPP_INC
 
 #include <assimp/defs.h>
 
-#ifdef __cplusplus
+#include <stdint.h>
+#include <vector>
+#include <string>
 
-// ----------------------------------------------------------------------------------
-/** Represents a color in Red-Green-Blue space including an
-*   alpha component. Color values range from 0 to 1. */
-// ----------------------------------------------------------------------------------
-template <typename TReal>
-class aiColor4t {
-public:
-    aiColor4t() AI_NO_EXCEPT : r(), g(), b(), a() {}
-    aiColor4t (TReal _r, TReal _g, TReal _b, TReal _a)
-        : r(_r), g(_g), b(_b), a(_a) {}
-    explicit aiColor4t (TReal _r) : r(_r), g(_r), b(_r), a(_r) {}
-    aiColor4t (const aiColor4t& o) = default;
+namespace Assimp {
+namespace Base64 {
 
-    // combined operators
-    const aiColor4t& operator += (const aiColor4t& o);
-    const aiColor4t& operator -= (const aiColor4t& o);
-    const aiColor4t& operator *= (TReal f);
-    const aiColor4t& operator /= (TReal f);
+/// @brief Will encode the given character buffer from UTF64 to ASCII
+/// @param in           The UTF-64 buffer.
+/// @param inLength     The size of the buffer
+/// @param out          The encoded ASCII string.
+ASSIMP_API void Encode(const uint8_t *in, size_t inLength, std::string &out);
 
-    // comparison
-    bool operator == (const aiColor4t& other) const;
-    bool operator != (const aiColor4t& other) const;
-    bool operator <  (const aiColor4t& other) const;
+/// @brief Will encode the given character buffer from UTF64 to ASCII.
+/// @param in   A vector, which contains the buffer for encoding.
+/// @param out  The encoded ASCII string.
+ASSIMP_API void Encode(const std::vector<uint8_t> &in, std::string &out);
 
-    // color tuple access, rgba order
-    inline TReal operator[](unsigned int i) const;
-    inline TReal& operator[](unsigned int i);
+/// @brief Will encode the given character buffer from UTF64 to ASCII.
+/// @param in   A vector, which contains the buffer for encoding.
+/// @return The encoded ASCII string.
+ASSIMP_API std::string Encode(const std::vector<uint8_t> &in);
 
-    /** check whether a color is (close to) black */
-    inline bool IsBlack() const;
+/// @brief Will decode the given character buffer from ASCII to UTF64.
+/// @param in           The ASCII buffer to decode.
+/// @param inLength     The size of the buffer.
+/// @param out          The decoded buffer.
+/// @return The new buffer size.
+ASSIMP_API size_t Decode(const char *in, size_t inLength, uint8_t *&out);
 
-    // Red, green, blue and alpha color values
-    TReal r, g, b, a;
-};  // !struct aiColor4D
+/// @brief Will decode the given character buffer from ASCII to UTF64.
+/// @param in   The ASCII buffer to decode as a std::string.
+/// @param out  The decoded buffer.
+/// @return The new buffer size.
+ASSIMP_API size_t Decode(const std::string &in, std::vector<uint8_t> &out);
 
-typedef aiColor4t<ai_real> aiColor4D;
+/// @brief Will decode the given character buffer from ASCII to UTF64.
+/// @param in   The ASCII string.
+/// @return The decoded buffer in a vector.
+ASSIMP_API std::vector<uint8_t> Decode(const std::string &in);
 
-#else
+} // namespace Base64
+} // namespace Assimp
 
-struct aiColor4D {
-    ai_real r, g, b, a;
-};
-
-#endif // __cplusplus
-
-#endif // AI_COLOR4D_H_INC
+#endif // AI_BASE64_HPP_INC

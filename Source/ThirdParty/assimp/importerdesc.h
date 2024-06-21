@@ -3,9 +3,7 @@
 Open Asset Import Library (assimp)
 ---------------------------------------------------------------------------
 
-Copyright (c) 2006-2019, assimp team
-
-
+Copyright (c) 2006-2024, assimp team
 
 All rights reserved.
 
@@ -48,11 +46,19 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef AI_IMPORTER_DESC_H_INC
 #define AI_IMPORTER_DESC_H_INC
 
+#ifdef __GNUC__
+#   pragma GCC system_header
+#endif
+
+#include <assimp/types.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /** Mixed set of flags for #aiImporterDesc, indicating some features
   *  common to many importers*/
-enum aiImporterFlags
-{
+enum aiImporterFlags {
     /** Indicates that there is a textual encoding of the
      *  file format; and that it is supported.*/
     aiImporterFlags_SupportTextFlavour = 0x1,
@@ -78,7 +84,6 @@ enum aiImporterFlags
     aiImporterFlags_Experimental = 0x10
 };
 
-
 /** Meta information about a particular importer. Importers need to fill
  *  this structure, but they can freely decide how talkative they are.
  *  A common use case for loader meta info is a user interface
@@ -87,19 +92,18 @@ enum aiImporterFlags
  *  as importers/exporters are added to Assimp, so it might be useful
  *  to have a common mechanism to query some rough importer
  *  characteristics. */
-struct aiImporterDesc
-{
+struct aiImporterDesc {
     /** Full name of the importer (i.e. Blender3D importer)*/
-    const char* mName;
+    const char *mName;
 
     /** Original author (left blank if unknown or whole assimp team) */
-    const char* mAuthor;
+    const char *mAuthor;
 
     /** Current maintainer, left blank if the author maintains */
-    const char* mMaintainer;
+    const char *mMaintainer;
 
     /** Implementation comments, i.e. unimplemented features*/
-    const char* mComments;
+    const char *mComments;
 
     /** These flags indicate some characteristics common to many
         importers. */
@@ -132,15 +136,19 @@ struct aiImporterDesc
         other methods to quickly reject files (i.e. magic
         words) so this does not mean that common or generic
         file extensions such as XML would be tediously slow. */
-    const char* mFileExtensions;
+    const char *mFileExtensions;
 };
 
 /** \brief  Returns the Importer description for a given extension.
 
-Will return a NULL-pointer if no assigned importer desc. was found for the given extension
+Will return a nullptr if no assigned importer desc. was found for the given extension
     \param  extension   [in] The extension to look for
     \return A pointer showing to the ImporterDesc, \see aiImporterDesc.
 */
-ASSIMP_API const C_STRUCT aiImporterDesc* aiGetImporterDesc( const char *extension );
+ASSIMP_API const C_STRUCT aiImporterDesc *aiGetImporterDesc(const char *extension);
+
+#ifdef __cplusplus
+} // end of extern "C"
+#endif
 
 #endif // AI_IMPORTER_DESC_H_INC

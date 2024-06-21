@@ -3,9 +3,7 @@
 Open Asset Import Library (assimp)
 ---------------------------------------------------------------------------
 
-Copyright (c) 2006-2019, assimp team
-
-
+Copyright (c) 2006-2024, assimp team
 
 All rights reserved.
 
@@ -50,6 +48,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef AI_DEFINES_H_INC
 #define AI_DEFINES_H_INC
 
+#ifdef __GNUC__
+#pragma GCC system_header
+#endif
+
 #include <assimp/config.h>
 
 //////////////////////////////////////////////////////////////////////////
@@ -74,22 +76,31 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //////////////////////////////////////////////////////////////////////////
 
 #ifndef ASSIMP_BUILD_NO_COMPRESSED_X
-#   define ASSIMP_BUILD_NEED_Z_INFLATE
+#define ASSIMP_BUILD_NEED_Z_INFLATE
 #endif
 
 #ifndef ASSIMP_BUILD_NO_COMPRESSED_BLEND
-#   define ASSIMP_BUILD_NEED_Z_INFLATE
+#define ASSIMP_BUILD_NEED_Z_INFLATE
 #endif
 
 #ifndef ASSIMP_BUILD_NO_COMPRESSED_IFC
-#   define ASSIMP_BUILD_NEED_Z_INFLATE
-#   define ASSIMP_BUILD_NEED_UNZIP
+#define ASSIMP_BUILD_NEED_Z_INFLATE
+#define ASSIMP_BUILD_NEED_UNZIP
 #endif
 
 #ifndef ASSIMP_BUILD_NO_Q3BSP_IMPORTER
-#   define ASSIMP_BUILD_NEED_Z_INFLATE
-#   define ASSIMP_BUILD_NEED_UNZIP
+#define ASSIMP_BUILD_NEED_Z_INFLATE
+#define ASSIMP_BUILD_NEED_UNZIP
 #endif
+
+// We need those constants, workaround for any platforms where nobody defined them yet
+#if (!defined SIZE_MAX)
+#define SIZE_MAX (~((size_t)0))
+#endif
+
+/*#if (!defined UINT_MAX)
+#define UINT_MAX (~((unsigned int)0))
+#endif*/
 
 //////////////////////////////////////////////////////////////////////////
 /* Define ASSIMP_BUILD_NO_XX_PROCESS to disable a specific
@@ -122,71 +133,79 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  * OPTIMIZEANIMS
  * OPTIMIZEGRAPH
  * GENENTITYMESHES
- * FIXTEXTUREPATHS */
+ * FIXTEXTUREPATHS
+ * GENBOUNDINGBOXES */
 //////////////////////////////////////////////////////////////////////////
 
-#ifdef _MSC_VER
-#   undef ASSIMP_API
+#ifdef _WIN32
+#undef ASSIMP_API
+//////////////////////////////////////////////////////////////////////////
+/* Define 'ASSIMP_BUILD_DLL_EXPORT' to build a DLL of the library */
+//////////////////////////////////////////////////////////////////////////
+#ifdef ASSIMP_BUILD_DLL_EXPORT
+#define ASSIMP_API __declspec(dllexport)
+#define ASSIMP_API_WINONLY __declspec(dllexport)
 
-    //////////////////////////////////////////////////////////////////////////
-    /* Define 'ASSIMP_BUILD_DLL_EXPORT' to build a DLL of the library */
-    //////////////////////////////////////////////////////////////////////////
-#   ifdef ASSIMP_BUILD_DLL_EXPORT
-#       define ASSIMP_API __declspec(dllexport)
-#       define ASSIMP_API_WINONLY __declspec(dllexport)
-#       pragma warning (disable : 4251)
-
-    //////////////////////////////////////////////////////////////////////////
-    /* Define 'ASSIMP_DLL' before including Assimp to link to ASSIMP in
+//////////////////////////////////////////////////////////////////////////
+/* Define 'ASSIMP_DLL' before including Assimp to link to ASSIMP in
      * an external DLL under Windows. Default is static linkage. */
-    //////////////////////////////////////////////////////////////////////////
-#   elif (defined ASSIMP_DLL)
-#       define ASSIMP_API __declspec(dllimport)
-#       define ASSIMP_API_WINONLY __declspec(dllimport)
-#   else
-#       define ASSIMP_API
-#       define ASSIMP_API_WINONLY
-#   endif
+//////////////////////////////////////////////////////////////////////////
+#elif (defined ASSIMP_DLL)
+#define ASSIMP_API __declspec(dllimport)
+#define ASSIMP_API_WINONLY __declspec(dllimport)
+#else
+#define ASSIMP_API
+#define ASSIMP_API_WINONLY
+#endif
+#elif defined(SWIG)
+/* Do nothing, the relevant defines are all in AssimpSwigPort.i */
+#else
+#define ASSIMP_API __attribute__((visibility("default")))
+#define ASSIMP_API_WINONLY
+#endif // _WIN32
 
-    /* Force the compiler to inline a function, if possible
-     */
-#   define AI_FORCE_INLINE __forceinline
+#ifdef _MSC_VER
+    #pragma warning(disable : 4521 4512 4714 4127 4351 4510)
+    #ifdef ASSIMP_BUILD_DLL_EXPORT
+        #pragma warning(disable : 4251)
+    #endif
+    /* Force the compiler to inline a function, if possible */
+    #define AI_FORCE_INLINE inline
 
     /* Tells the compiler that a function never returns. Used in code analysis
-     * to skip dead paths (e.g. after an assertion evaluated to false). */
-#   define AI_WONT_RETURN __declspec(noreturn)
-
+    * to skip dead paths (e.g. after an assertion evaluated to false). */
+    #define AI_WONT_RETURN __declspec(noreturn)
 #elif defined(SWIG)
-
-    /* Do nothing, the relevant defines are all in AssimpSwigPort.i */
-
+  /* Do nothing, the relevant defines are all in AssimpSwigPort.i */
 #else
-
-#   define AI_WONT_RETURN
-
-#   define ASSIMP_API __attribute__ ((visibility("default")))
-#   define ASSIMP_API_WINONLY
-#   define AI_FORCE_INLINE inline
+    #define AI_WONT_RETURN
+    #define AI_FORCE_INLINE inline
 #endif // (defined _MSC_VER)
 
 #ifdef __GNUC__
-#   define AI_WONT_RETURN_SUFFIX  __attribute__((noreturn))
+#   define AI_WONT_RETURN_SUFFIX __attribute__((noreturn))
+#elif _MSC_VER
+#if defined(__clang__)
+#   define AI_WONT_RETURN_SUFFIX __attribute__((noreturn))
+#else
+#   define AI_WONT_RETURN_SUFFIX
+#endif
 #else
 #   define AI_WONT_RETURN_SUFFIX
 #endif // (defined __clang__)
 
 #ifdef __cplusplus
-    /* No explicit 'struct' and 'enum' tags for C++, this keeps showing up
-     * in doxydocs.
-     */
-#   define C_STRUCT
-#   define C_ENUM
+/* No explicit 'struct' and 'enum' tags for C++, this keeps showing up
+ * in doxydocs.
+ */
+#define C_STRUCT
+#define C_ENUM
 #else
-    //////////////////////////////////////////////////////////////////////////
-    /* To build the documentation, make sure ASSIMP_DOXYGEN_BUILD
+//////////////////////////////////////////////////////////////////////////
+/* To build the documentation, make sure ASSIMP_DOXYGEN_BUILD
      * is defined by Doxygen's preprocessor. The corresponding
      * entries in the DOXYFILE are: */
-    //////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////
 #if 0
     ENABLE_PREPROCESSING   = YES
     MACRO_EXPANSION        = YES
@@ -198,106 +217,130 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     EXPAND_AS_DEFINED      = C_STRUCT C_ENUM
     SKIP_FUNCTION_MACROS   = YES
 #endif
-    //////////////////////////////////////////////////////////////////////////
-    /* Doxygen gets confused if we use c-struct typedefs to avoid
+//////////////////////////////////////////////////////////////////////////
+/* Doxygen gets confused if we use c-struct typedefs to avoid
      * the explicit 'struct' notation. This trick here has the same
      * effect as the TYPEDEF_HIDES_STRUCT option, but we don't need
      * to typedef all structs/enums. */
-     //////////////////////////////////////////////////////////////////////////
-#   if (defined ASSIMP_DOXYGEN_BUILD)
-#       define C_STRUCT
-#       define C_ENUM
-#   else
-#       define C_STRUCT struct
-#       define C_ENUM   enum
-#   endif
+//////////////////////////////////////////////////////////////////////////
+#if (defined ASSIMP_DOXYGEN_BUILD)
+#define C_STRUCT
+#define C_ENUM
+#else
+#define C_STRUCT struct
+#define C_ENUM enum
+#endif
 #endif
 
-#if (defined(__BORLANDC__) || defined (__BCPLUSPLUS__))
+#if (defined(__BORLANDC__) || defined(__BCPLUSPLUS__))
 #error Currently, Borland is unsupported. Feel free to port Assimp.
-
-// "W8059 Packgröße der Struktur geändert"
-
 #endif
 
-
-    //////////////////////////////////////////////////////////////////////////
-    /* Define ASSIMP_BUILD_SINGLETHREADED to compile assimp
+//////////////////////////////////////////////////////////////////////////
+/* Define ASSIMP_BUILD_SINGLETHREADED to compile assimp
      * without threading support. The library doesn't utilize
      * threads then and is itself not threadsafe. */
-    //////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////
 #ifndef ASSIMP_BUILD_SINGLETHREADED
-#   define ASSIMP_BUILD_SINGLETHREADED
+#define ASSIMP_BUILD_SINGLETHREADED
 #endif
 
-#if defined(_DEBUG) || ! defined(NDEBUG)
-#   define ASSIMP_BUILD_DEBUG
+#if defined(_DEBUG) || !defined(NDEBUG)
+#define ASSIMP_BUILD_DEBUG
 #endif
 
-    //////////////////////////////////////////////////////////////////////////
-    /* Define ASSIMP_DOUBLE_PRECISION to compile assimp
+//////////////////////////////////////////////////////////////////////////
+/* Define ASSIMP_DOUBLE_PRECISION to compile assimp
      * with double precision support (64-bit). */
-    //////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////
 
 #ifdef ASSIMP_DOUBLE_PRECISION
-    typedef double ai_real;
-    typedef signed long long int ai_int;
-    typedef unsigned long long int ai_uint;
+typedef double ai_real;
+typedef signed long long int ai_int;
+typedef unsigned long long int ai_uint;
+#ifndef ASSIMP_AI_REAL_TEXT_PRECISION
+#define ASSIMP_AI_REAL_TEXT_PRECISION 17
+#endif // ASSIMP_AI_REAL_TEXT_PRECISION
 #else // ASSIMP_DOUBLE_PRECISION
-    typedef float ai_real;
-    typedef signed int ai_int;
-    typedef unsigned int ai_uint;
+typedef float ai_real;
+typedef signed int ai_int;
+typedef unsigned int ai_uint;
+#ifndef ASSIMP_AI_REAL_TEXT_PRECISION
+#define ASSIMP_AI_REAL_TEXT_PRECISION 9
+#endif // ASSIMP_AI_REAL_TEXT_PRECISION
 #endif // ASSIMP_DOUBLE_PRECISION
 
-    //////////////////////////////////////////////////////////////////////////
-    /* Useful constants */
-    //////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////
+/* Useful constants */
+//////////////////////////////////////////////////////////////////////////
 
 /* This is PI. Hi PI. */
-#define AI_MATH_PI          (3.141592653589793238462643383279 )
-#define AI_MATH_TWO_PI      (AI_MATH_PI * 2.0)
-#define AI_MATH_HALF_PI     (AI_MATH_PI * 0.5)
+#define AI_MATH_PI (3.141592653589793238462643383279)
+#define AI_MATH_TWO_PI (AI_MATH_PI * 2.0)
+#define AI_MATH_HALF_PI (AI_MATH_PI * 0.5)
 
 /* And this is to avoid endless casts to float */
-#define AI_MATH_PI_F        (3.1415926538f)
-#define AI_MATH_TWO_PI_F    (AI_MATH_PI_F * 2.0f)
-#define AI_MATH_HALF_PI_F   (AI_MATH_PI_F * 0.5f)
+#define AI_MATH_PI_F (3.1415926538f)
+#define AI_MATH_TWO_PI_F (AI_MATH_PI_F * 2.0f)
+#define AI_MATH_HALF_PI_F (AI_MATH_PI_F * 0.5f)
 
 /* Tiny macro to convert from radians to degrees and back */
-#define AI_DEG_TO_RAD(x) ((x)*(ai_real)0.0174532925)
-#define AI_RAD_TO_DEG(x) ((x)*(ai_real)57.2957795)
+#define AI_DEG_TO_RAD(x) ((x) * (ai_real) 0.0174532925)
+#define AI_RAD_TO_DEG(x) ((x) * (ai_real) 57.2957795)
+
+/* Numerical limits */
+#ifdef __cplusplus
+constexpr ai_real ai_epsilon = (ai_real) 1e-6;
+#else
+#define ai_epsilon ((ai_real)1e-6)
+#endif
 
 /* Support for big-endian builds */
 #if defined(__BYTE_ORDER__)
-#   if (__BYTE_ORDER__ == __ORDER_BIG_ENDIAN__)
-#       if !defined(__BIG_ENDIAN__)
-#           define __BIG_ENDIAN__
-#       endif
-#   else /* little endian */
-#       if defined (__BIG_ENDIAN__)
-#           undef __BIG_ENDIAN__
-#       endif
-#   endif
+#if (__BYTE_ORDER__ == __ORDER_BIG_ENDIAN__)
+#if !defined(__BIG_ENDIAN__)
+#define __BIG_ENDIAN__
+#endif
+#else /* little endian */
+#if defined(__BIG_ENDIAN__)
+#undef __BIG_ENDIAN__
+#endif
+#endif
 #endif
 #if defined(__BIG_ENDIAN__)
-#   define AI_BUILD_BIG_ENDIAN
+#define AI_BUILD_BIG_ENDIAN
 #endif
 
-
-/* To avoid running out of memory
- * This can be adjusted for specific use cases
- * It's NOT a total limit, just a limit for individual allocations
+/**
+ *  To avoid running out of memory
+ *  This can be adjusted for specific use cases
+ *  It's NOT a total limit, just a limit for individual allocations
  */
 #define AI_MAX_ALLOC(type) ((256U * 1024 * 1024) / sizeof(type))
 
 #ifndef _MSC_VER
-#  define AI_NO_EXCEPT noexcept
+#if __cplusplus >= 201103L // C++11
+#define AI_NO_EXCEPT noexcept
 #else
-#  if (_MSC_VER == 1915 )
-#    define AI_NO_EXCEPT noexcept
-#  else
-#    define AI_NO_EXCEPT
-#  endif
+#define AI_NO_EXCEPT
 #endif
+#else
+#if (_MSC_VER >= 1915)
+#define AI_NO_EXCEPT noexcept
+#else
+#define AI_NO_EXCEPT
+#endif
+#endif // _MSC_VER
+
+/**
+ *  Helper macro to set a pointer to NULL in debug builds
+ */
+#if (defined ASSIMP_BUILD_DEBUG)
+#define AI_DEBUG_INVALIDATE_PTR(x) x = NULL;
+#else
+#define AI_DEBUG_INVALIDATE_PTR(x)
+#endif
+
+#define AI_COUNT_OF(X) (sizeof(X) / sizeof((X)[0]))
 
 #endif // !! AI_DEFINES_H_INC

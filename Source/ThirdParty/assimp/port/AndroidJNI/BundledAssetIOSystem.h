@@ -42,47 +42,52 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  * Aimed to ease the access to android assets */
 
 #if __ANDROID__ and __ANDROID_API__ > 9 and defined(AI_CONFIG_ANDROID_JNI_ASSIMP_MANAGER_SUPPORT)
-#ifndef AI_ANDROIDJNIIOSYSTEM_H_INC
-#define AI_ANDROIDJNIIOSYSTEM_H_INC
+#ifndef AI_BUNDLEDASSETIOSYSTEM_H_INC
+#define AI_BUNDLEDASSETIOSYSTEM_H_INC
+
+#include <android/asset_manager_jni.h>
 
 #include <assimp/DefaultIOSystem.h>
-#include <android/asset_manager.h>
-#include <android/asset_manager_jni.h>
-#include <android/native_activity.h>
+#include <assimp/IOStream.hpp>
 
-namespace Assimp	{
+namespace Assimp        {
 
-// ---------------------------------------------------------------------------
-/** Android extension to DefaultIOSystem using the standard C file functions */
-class ASSIMP_API AndroidJNIIOSystem : public DefaultIOSystem {
+class BundledAssetIOSystem : public Assimp::DefaultIOSystem {
+
 public:
-	/** Initialize android activity data */
-	std::string mApkWorkspacePath;
-	AAssetManager* mApkAssetManager;
+    AAssetManager* mApkAssetManager;
 
-	/// Constructor.
-	AndroidJNIIOSystem(ANativeActivity* activity);
+    BundledAssetIOSystem(JNIEnv* env, jobject assetManager) { mApkAssetManager = AAssetManager_fromJava(env, assetManager); }
+    ~BundledAssetIOSystem() {};
 
-    /// Class constructor with past and asset manager.
-	AndroidJNIIOSystem(const char *internalPath, AAssetManager* assetManager);
+    bool Exists( const char* pFile) const;
 
-	/// Destructor.
-	~AndroidJNIIOSystem();
+    Assimp::IOStream* Open( const char* pFile, const char* pMode = "rb");
 
-	/// Tests for the existence of a file at the given path.
-	bool Exists( const char* pFile) const;
+    void Close( Assimp::IOStream* pFile);
 
-	/// Opens a file at the given path, with given mode
-	IOStream* Open( const char* strFile, const char* strMode);
+private:
 
-	/// Inits Android extractor
-	void AndroidActivityInit(ANativeActivity* activity);
+    class AssetIOStream : public Assimp::IOStream {
+        AAsset * asset;
 
-	/// Extracts android asset
-	bool AndroidExtractAsset(std::string name);
+    public:
+        AssetIOStream(AAsset *asset) { this->asset = asset; };
+        ~AssetIOStream() { AAsset_close(asset); }
+
+        size_t Read(void* pvBuffer, size_t pSize, size_t pCount) { return AAsset_read(asset, pvBuffer, pSize * pCount);}
+        size_t Write(const void* pvBuffer, size_t pSize, size_t pCount) { return 0; };
+        aiReturn Seek(size_t pOffset, aiOrigin pOrigin) { return (AAsset_seek(asset, pOffset, pOrigin) >= 0 ? aiReturn_SUCCESS : aiReturn_FAILURE); }
+        size_t Tell() const { return(AAsset_getLength(asset) - AAsset_getRemainingLength(asset)); };
+        size_t FileSize() const  { return  AAsset_getLength(asset); }
+        void Flush() { }
+    };
+
 };
+
 
 } //!ns Assimp
 
-#endif //AI_ANDROIDJNIIOSYSTEM_H_INC
+#endif //AI_BUNDLEDASSETIOSYSTEM_H_INC
 #endif //__ANDROID__ and __ANDROID_API__ > 9 and defined(AI_CONFIG_ANDROID_JNI_ASSIMP_MANAGER_SUPPORT)
+

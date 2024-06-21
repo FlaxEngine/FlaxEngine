@@ -23,21 +23,20 @@
 #include <ThirdParty/assimp/LogStream.hpp>
 #include <ThirdParty/assimp/DefaultLogger.hpp>
 #include <ThirdParty/assimp/Logger.hpp>
-using namespace Assimp;
 
-class AssimpLogStream : public LogStream
+class AssimpLogStream : public Assimp::LogStream
 {
 public:
     AssimpLogStream()
     {
-        DefaultLogger::create("");
-        DefaultLogger::get()->attachStream(this);
+        Assimp::DefaultLogger::create("");
+        Assimp::DefaultLogger::get()->attachStream(this);
     }
 
     ~AssimpLogStream()
     {
-        DefaultLogger::get()->detatchStream(this);
-        DefaultLogger::kill();
+        Assimp::DefaultLogger::get()->detachStream(this);
+        Assimp::DefaultLogger::kill();
     }
 
     void write(const char* message) override
@@ -148,7 +147,7 @@ struct AssimpBone
 
 struct AssimpImporterData
 {
-    Importer AssimpImporter;
+    Assimp::Importer AssimpImporter;
     AssimpLogStream AssimpLogStream;
     const String Path;
     const aiScene* Scene = nullptr;

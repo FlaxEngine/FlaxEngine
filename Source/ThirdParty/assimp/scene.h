@@ -1,11 +1,9 @@
-﻿/*
+/*
 ---------------------------------------------------------------------------
 Open Asset Import Library (assimp)
 ---------------------------------------------------------------------------
 
-Copyright (c) 2006-2019, assimp team
-
-
+Copyright (c) 2006-2024, assimp team
 
 All rights reserved.
 
@@ -48,16 +46,21 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef AI_SCENE_H_INC
 #define AI_SCENE_H_INC
 
-#include "types.h"
-#include "texture.h"
-#include "mesh.h"
-#include "light.h"
-#include "camera.h"
-#include "material.h"
-#include "anim.h"
-#include "metadata.h"
+#ifdef __GNUC__
+#   pragma GCC system_header
+#endif
+
+#include <assimp/types.h>
+#include <assimp/texture.h>
+#include <assimp/mesh.h>
+#include <assimp/light.h>
+#include <assimp/camera.h>
+#include <assimp/material.h>
+#include <assimp/anim.h>
+#include <assimp/metadata.h>
 
 #ifdef __cplusplus
+#  include <cstdlib>
 extern "C" {
 #endif
 
@@ -67,7 +70,7 @@ extern "C" {
 #endif
 
 // -------------------------------------------------------------------------------
-/** 
+/**
  * A node in the imported hierarchy.
  *
  * Each node has name, a parent node (except for the root node),
@@ -76,8 +79,7 @@ extern "C" {
  * the imported scene does consist of only a single root node without children.
  */
 // -------------------------------------------------------------------------------
-struct ASSIMP_API aiNode
-{
+struct ASSIMP_API aiNode {
     /** The name of the node.
      *
      * The name might be empty (length of zero) but all nodes which
@@ -105,13 +107,13 @@ struct ASSIMP_API aiNode
     /** The transformation relative to the node's parent. */
     C_STRUCT aiMatrix4x4 mTransformation;
 
-    /** Parent node. NULL if this node is the root node. */
+    /** Parent node. nullptr if this node is the root node. */
     C_STRUCT aiNode* mParent;
 
     /** The number of child nodes of this node. */
     unsigned int mNumChildren;
 
-    /** The child nodes of this node. NULL if mNumChildren is 0. */
+    /** The child nodes of this node. nullptr if mNumChildren is 0. */
     C_STRUCT aiNode** mChildren;
 
     /** The number of meshes of this node. */
@@ -122,7 +124,7 @@ struct ASSIMP_API aiNode
       */
     unsigned int* mMeshes;
 
-    /** Metadata associated with this node or NULL if there is no metadata.
+    /** Metadata associated with this node or nullptr if there is no metadata.
       *  Whether any metadata is generated depends on the source file format. See the
       * @link importer_notes @endlink page for more information on every source file
       * format. Importers that don't document any metadata don't write any.
@@ -139,25 +141,28 @@ struct ASSIMP_API aiNode
     /** Destructor */
     ~aiNode();
 
-    /** Searches for a node with a specific name, beginning at this
+    /**
+     *  @brief Searches for a node with a specific name, beginning at this
      *  nodes. Normally you will call this method on the root node
      *  of the scene.
      *
      *  @param name Name to search for
-     *  @return NULL or a valid Node if the search was successful.
+     *  @return nullptr or a valid Node if the search was successful.
      */
-    inline 
-    const aiNode* FindNode(const aiString& name) const {
+    inline const aiNode* FindNode(const aiString& name) const {
         return FindNode(name.data);
     }
 
-    inline 
-    aiNode* FindNode(const aiString& name) {
+    inline aiNode* FindNode(const aiString& name) {
         return FindNode(name.data);
     }
 
+    /**
+     * @brief Will search for a node described by its name.
+     * @param[in] name  The name for the node to look for.
+     * @return Pointer showing to the node or nullptr if not found.
+     */
     const aiNode* FindNode(const char* name) const;
-
     aiNode* FindNode(const char* name);
 
     /**
@@ -238,8 +243,7 @@ struct ASSIMP_API aiNode
  *  delete a given scene on your own.
  */
 // -------------------------------------------------------------------------------
-struct aiScene
-{
+struct ASSIMP_API aiScene {
     /** Any combination of the AI_SCENE_FLAGS_XXX flags. By default
     * this value is 0, no flags are set. Most applications will
     * want to reject all scenes with the AI_SCENE_FLAGS_INCOMPLETE
@@ -330,51 +334,68 @@ struct aiScene
     /**
      *  @brief  The global metadata assigned to the scene itself.
      *
-     *  This data contains global metadata which belongs to the scene like 
-     *  unit-conversions, versions, vendors or other model-specific data. This 
+     *  This data contains global metadata which belongs to the scene like
+     *  unit-conversions, versions, vendors or other model-specific data. This
      *  can be used to store format-specific metadata as well.
      */
     C_STRUCT aiMetadata* mMetaData;
 
+    /** The name of the scene itself.
+     */
+    C_STRUCT aiString mName;
+
+    /**
+     *
+     */
+    unsigned int mNumSkeletons;
+
+    /**
+     *
+     */
+    C_STRUCT aiSkeleton **mSkeletons;
 
 #ifdef __cplusplus
 
-    //! Default constructor - set everything to 0/NULL
-    ASSIMP_API aiScene();
+    //! Default constructor - set everything to 0/nullptr
+    aiScene();
 
     //! Destructor
-    ASSIMP_API ~aiScene();
+    ~aiScene();
 
     //! Check whether the scene contains meshes
     //! Unless no special scene flags are set this will always be true.
-    inline bool HasMeshes() const { 
-        return mMeshes != NULL && mNumMeshes > 0; 
+    inline bool HasMeshes() const {
+        return mMeshes != nullptr && mNumMeshes > 0;
     }
 
     //! Check whether the scene contains materials
     //! Unless no special scene flags are set this will always be true.
-    inline bool HasMaterials() const { 
-        return mMaterials != NULL && mNumMaterials > 0; 
+    inline bool HasMaterials() const {
+        return mMaterials != nullptr && mNumMaterials > 0;
     }
 
     //! Check whether the scene contains lights
-    inline bool HasLights() const { 
-        return mLights != NULL && mNumLights > 0; 
+    inline bool HasLights() const {
+        return mLights != nullptr && mNumLights > 0;
     }
 
     //! Check whether the scene contains textures
     inline bool HasTextures() const {
-        return mTextures != NULL && mNumTextures > 0; 
+        return mTextures != nullptr && mNumTextures > 0;
     }
 
     //! Check whether the scene contains cameras
     inline bool HasCameras() const {
-        return mCameras != NULL && mNumCameras > 0; 
+        return mCameras != nullptr && mNumCameras > 0;
     }
 
     //! Check whether the scene contains animations
-    inline bool HasAnimations() const { 
-        return mAnimations != NULL && mNumAnimations > 0; 
+    inline bool HasAnimations() const {
+        return mAnimations != nullptr && mNumAnimations > 0;
+    }
+
+    bool hasSkeletons() const {
+        return mSkeletons != nullptr && mNumSkeletons > 0;
     }
 
     //! Returns a short filename from a full path
@@ -389,14 +410,35 @@ struct aiScene
 
     //! Returns an embedded texture
     const aiTexture* GetEmbeddedTexture(const char* filename) const {
+        return GetEmbeddedTextureAndIndex(filename).first;
+    }
+
+    //! Returns an embedded texture and its index
+    std::pair<const aiTexture*, int> GetEmbeddedTextureAndIndex(const char* filename) const {
+        if (nullptr==filename) {
+            return std::make_pair(nullptr, -1);
+        }
+        // lookup using texture ID (if referenced like: "*1", "*2", etc.)
+        if ('*' == *filename) {
+            int index = std::atoi(filename + 1);
+            if (0 > index || mNumTextures <= static_cast<unsigned>(index)) {
+                return std::make_pair(nullptr, -1);
+            }
+            return std::make_pair(mTextures[index], index);
+        }
+        // lookup using filename
         const char* shortFilename = GetShortFilename(filename);
+        if (nullptr == shortFilename) {
+            return std::make_pair(nullptr, -1);
+        }
+
         for (unsigned int i = 0; i < mNumTextures; i++) {
             const char* shortTextureFilename = GetShortFilename(mTextures[i]->mFilename.C_Str());
             if (strcmp(shortTextureFilename, shortFilename) == 0) {
-                return mTextures[i];
+                return std::make_pair(mTextures[i], static_cast<int>(i));
             }
         }
-        return nullptr;
+        return std::make_pair(nullptr, -1);
     }
 #endif // __cplusplus
 
@@ -410,7 +452,7 @@ struct aiScene
 };
 
 #ifdef __cplusplus
-} //! namespace Assimp
-#endif
+}
+#endif //! extern "C"
 
 #endif // AI_SCENE_H_INC
