@@ -41,6 +41,9 @@ namespace FlaxEditor.Surface.ContextMenu
         /// <returns>TThe list of surface parameters or null if failed (readonly).</returns>
         public delegate List<SurfaceParameter> ParameterGetterDelegate();
 
+        private const float DefaultWidth = 300;
+        private const float DefaultHeight = 400;
+
         private readonly List<VisjectCMGroup> _groups = new List<VisjectCMGroup>(16);
         private CheckBox _contextSensitiveToggle;
         private bool _contextSensitiveSearchEnabled = true;
@@ -164,7 +167,7 @@ namespace FlaxEditor.Surface.ContextMenu
             _surfaceStyle = info.Style;
 
             // Context menu dimensions
-            Size = new Float2(_useDescriptionPanel ? 350 : 300, 400);
+            Size = new Float2(_useDescriptionPanel ? DefaultWidth + 50f : DefaultWidth, DefaultHeight);
 
             var headerPanel = new Panel(ScrollBars.None)
             {
@@ -236,7 +239,7 @@ namespace FlaxEditor.Surface.ContextMenu
             };
             _groupsPanel = panel2;
 
-            // Create description panel if enabled
+            // Create description panel elements only when description panel is about to be used
             if (_useDescriptionPanel)
             {
                 _descriptionPanel = new Panel(ScrollBars.None)
@@ -246,21 +249,20 @@ namespace FlaxEditor.Surface.ContextMenu
                     BackgroundColor = Style.Current.BackgroundNormal,
                 };
 
-                var spriteHandle = info.Style.Icons.BoxClose;
                 _descriptionDeclaringClassImage = new Image(8, 12, 20, 20)
                 {
                     Parent = _descriptionPanel,
-                    Brush = new SpriteBrush(spriteHandle),
+                    Brush = new SpriteBrush(info.Style.Icons.BoxClose),
                 };
 
-                var signatureFontReference = new FontReference(Style.Current.FontMedium.Asset, 9f);
+                var descriptionFontReference = new FontReference(Style.Current.FontMedium.Asset, 9f);
                 _descriptionSignatureLabel = new Label(32, 8, Width - 40, 0)
                 {
                     Parent = _descriptionPanel,
                     HorizontalAlignment = TextAlignment.Near,
                     VerticalAlignment = TextAlignment.Near,
                     Wrapping = TextWrapping.WrapWords,
-                    Font = signatureFontReference,
+                    Font = descriptionFontReference,
                     Bold = true,
                     AutoHeight = true,
                 };
@@ -272,7 +274,7 @@ namespace FlaxEditor.Surface.ContextMenu
                     HorizontalAlignment = TextAlignment.Near,
                     VerticalAlignment = TextAlignment.Near,
                     Wrapping = TextWrapping.WrapWords,
-                    Font = signatureFontReference,
+                    Font = descriptionFontReference,
                     AutoHeight = true,
                 };
                 _descriptionLabel.SetAnchorPreset(AnchorPresets.TopLeft, true);
@@ -818,6 +820,7 @@ namespace FlaxEditor.Surface.ContextMenu
             _descriptionInputPanel.RemoveChildren();
             _descriptionOutputPanel.RemoveChildren();
 
+            // Fetch description and information from the memberInfo - mainly from nodes that got fetched asynchronously by the visual scripting editor
             ScriptType declaringType;
             if (archetype.Tag is ScriptMemberInfo memberInfo)
             {
@@ -830,11 +833,14 @@ namespace FlaxEditor.Surface.ContextMenu
                 declaringType = memberInfo.DeclaringType;
                 _descriptionSignatureLabel.Text = memberInfo.DeclaringType + "." + name;
 
+                // We have to add the Instance information manually for members that aren't static
                 if (!memberInfo.IsStatic)
                     AddInputOutputElement(archetype, declaringType, false, $"Instance ({memberInfo.DeclaringType.Name})");
 
+                // We also have to manually add the Return information as well.
                 if (memberInfo.ValueType != ScriptType.Null && memberInfo.ValueType != ScriptType.Void)
                 {
+                    // When a field has a setter we don't want it to show the input as a return output.
                     if (memberInfo.IsField && archetype.Title.StartsWith("Set "))
                         AddInputOutputElement(archetype, memberInfo.ValueType, false, $"({memberInfo.ValueType.Name})");
                     else
@@ -849,27 +855,24 @@ namespace FlaxEditor.Surface.ContextMenu
             }
             else
             {
+                // Try to fetch as many informations as possible from the predefined hardcoded nodes
                 _descriptionSignatureLabel.Text = string.IsNullOrEmpty(archetype.Signature) ? archetype.Title : archetype.Signature;
                 declaringType = archetype.DefaultType;
 
+                // Some nodes are more delicate. Like Arrays or Dictionaries. In this case we let them fetch the inputs/outputs for us.
+                // Otherwise, it is not possible to show a proper return type on some nodes.
                 if (archetype.GetInputOutputDescription != null)
                 {
-                    archetype.GetInputOutputDescription.Invoke(archetype, out (string Name, ScriptType Type)[] inputs, out (string Name, ScriptType Type)[] outputs);
+                    archetype.GetInputOutputDescription.Invoke(archetype, out var inputs, out var outputs);
 
-                    if (inputs != null)
+                    foreach (var input in inputs ?? [])
                     {
-                        for (int i = 0; i < inputs.Length; i++)
-                        {
-                            AddInputOutputElement(archetype, inputs[i].Type, false, $"{inputs[i].Name} ({inputs[i].Type.Name})");
-                        }
+                        AddInputOutputElement(archetype, input.Type, false, $"{input.Name} ({input.Type.Name})");
                     }
 
-                    if (outputs != null)
+                    foreach (var output in outputs ?? [])
                     {
-                        for (int i = 0; i < outputs.Length; i++)
-                        {
-                            AddInputOutputElement(archetype, outputs[i].Type, true, $"{outputs[i].Name} ({outputs[i].Type.Name})");
-                        }
+                        AddInputOutputElement(archetype, output.Type, true, $"{output.Name} ({output.Type.Name})");
                     }
                 }
                 else
@@ -879,21 +882,21 @@ namespace FlaxEditor.Surface.ContextMenu
                         if (element.Type is not (NodeElementType.Input or NodeElementType.Output))
                             continue;
 
-                        bool isOutput = element.Type == NodeElementType.Output;
-                        if (element.ConnectionsType == null)
-                            AddInputOutputElement(archetype, element.ConnectionsType, isOutput, $"{element.Text} ({archetype.ConnectionsHints.ToString()})");
-                        else
-                            AddInputOutputElement(archetype, element.ConnectionsType, isOutput, $"{element.Text} ({element.ConnectionsType.Name})");
+                        var typeText = element.ConnectionsType ? element.ConnectionsType.Name : archetype.ConnectionsHints.ToString(); 
+                        AddInputOutputElement(archetype, element.ConnectionsType, element.Type == NodeElementType.Output, $"{element.Text} ({typeText})");
                     }
                 }
             }
 
+            // Set declaring type icon color
             _surfaceStyle.GetConnectionColor(declaringType, archetype.ConnectionsHints, out var declaringTypeColor);
             _descriptionDeclaringClassImage.Color = declaringTypeColor;
             _descriptionDeclaringClassImage.MouseOverColor = declaringTypeColor;
 
+            // Calculate the description panel height. (I am doing this manually since working with autoSize on horizontal/vertical panels didn't work, especially with nesting - Nils)
             float panelHeight = _descriptionSignatureLabel.Height;
 
+            // If thee is no description we move the signature label down a bit to align it with the icon. Just a cosmetic check
             if (string.IsNullOrEmpty(archetype.Description))
             {
                 _descriptionSignatureLabel.Y = 15;
@@ -903,22 +906,21 @@ namespace FlaxEditor.Surface.ContextMenu
             {
                 _descriptionSignatureLabel.Y = 8;
                 _descriptionLabel.Y = _descriptionSignatureLabel.Bounds.Bottom + 6f;
+                // Replacing multiple whitespaces with a linebreak for better readability. (Mainly doing this because the ToolTip fetching system replaces linebreaks with whitespaces - Nils)
                 _descriptionLabel.Text = Regex.Replace(archetype.Description, @"\s{2,}", "\n");
             }
 
+            // Some padding and moving elements around
             _descriptionPanelSeparator.Y = _descriptionLabel.Bounds.Bottom + 8f;
-
             panelHeight += _descriptionLabel.Height + 32f;
-
             _descriptionInputPanel.Y = panelHeight;
             _descriptionOutputPanel.Y = panelHeight;
-
             panelHeight += Mathf.Max(_descriptionInputPanel.Height, _descriptionOutputPanel.Height);
 
             // Forcing the description panel to at least have a minimum height to not make the window size change too much in order to reduce jittering
             // TODO: Remove the Mathf.Max and just set the height to panelHeight once the window jitter issue is fixed - Nils
             _descriptionPanel.Height = Mathf.Max(135f, panelHeight);
-            Height = 400 + _descriptionPanel.Height;
+            Height = DefaultHeight + _descriptionPanel.Height;
             UpdateWindowSize();
             _descriptionPanelVisible = true;
 
@@ -927,6 +929,7 @@ namespace FlaxEditor.Surface.ContextMenu
 
         private void AddInputOutputElement(NodeArchetype nodeArchetype, ScriptType type, bool isOutput, string text)
         {
+            // Using a panel instead of a vertical panel because auto sizing is unreliable - so we are doing this manually here as well
             var elementPanel = new Panel()
             {
                 Parent = isOutput ? _descriptionOutputPanel : _descriptionInputPanel,
@@ -934,17 +937,17 @@ namespace FlaxEditor.Surface.ContextMenu
                 Height = 16,
                 AnchorPreset = AnchorPresets.TopLeft
             };
-            
-            var sprite = _surfaceStyle.Icons.BoxOpen;
+
             _surfaceStyle.GetConnectionColor(type, nodeArchetype.ConnectionsHints, out var typeColor);
             elementPanel.AddChild(new Image(2, 0, 12, 12)
             {
-                Brush = new SpriteBrush(sprite),
+                Brush = new SpriteBrush(_surfaceStyle.Icons.BoxOpen),
                 Color = typeColor,
                 MouseOverColor = typeColor,
                 AutoFocus = false,
             }).SetAnchorPreset(AnchorPresets.TopLeft, true);
 
+            // Forcing the first letter to be capital and removing the '&' char from pointer-references
             text = (char.ToUpper(text[0]) + text.Substring(1)).Replace("&", "");
             var elementText = new Label(16, 0, Width * 0.5f - 32, 16)
             {
@@ -969,7 +972,7 @@ namespace FlaxEditor.Surface.ContextMenu
 
             _descriptionInputPanel.RemoveChildren();
             _descriptionOutputPanel.RemoveChildren();
-            Height = 400;
+            Height = DefaultHeight;
             UpdateWindowSize();
             _descriptionPanelVisible = false;
         }
