@@ -919,7 +919,7 @@ namespace FlaxEditor.Surface.ContextMenu
 
             // Forcing the description panel to at least have a minimum height to not make the window size change too much in order to reduce jittering
             // TODO: Remove the Mathf.Max and just set the height to panelHeight once the window jitter issue is fixed - Nils
-            _descriptionPanel.Height = Mathf.Max(135f, panelHeight);
+            _descriptionPanel.Height = Mathf.Max(140f, panelHeight);
             Height = DefaultHeight + _descriptionPanel.Height;
             UpdateWindowSize();
             _descriptionPanelVisible = true;
