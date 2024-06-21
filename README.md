@@ -57,7 +57,7 @@ Follow the instructions below to compile and run the engine from source.
   * Ubuntu: `sudo apt-get install libx11-dev libxcursor-dev libxinerama-dev zlib1g-dev`
   * Arch: `sudo pacman -S base-devel libx11 libxcursor libxinerama zlib`
 * Install Clang compiler (version 6 or later):
-  * Ubuntu: `sudo apt-get install clang lldb lld`
+  * Ubuntu: `sudo apt-get install clang lldb lld libstdc++-13-dev`
   * Arch: `sudo pacman -S clang lldb lld`
 * Clone the repository (with LFS)
 * Run `./GenerateProjectFiles.sh`
