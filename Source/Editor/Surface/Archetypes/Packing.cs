@@ -262,6 +262,7 @@ namespace FlaxEditor.Surface.Archetypes
                     }
 
                     outputs = [(type.Name, type)];
+                    return;
                 }
 
                 inputs = null;
@@ -322,7 +323,9 @@ namespace FlaxEditor.Surface.Archetypes
                         var field = fields[i];
                         outputs[i] = (field.Name, field.ValueType);
                     }
+                    return;
                 }
+
                 inputs = null;
                 outputs = null;
             }
