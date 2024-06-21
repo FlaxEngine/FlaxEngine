@@ -43,8 +43,8 @@ struct ShadowsAtlasRectTile : RectPackNode<uint16>
 {
     bool IsStatic;
 
-    ShadowsAtlasRectTile(uint16 x, uint16 y, uint16 width, uint16 height)
-        : RectPackNode<uint16>(x, y, width, height)
+    ShadowsAtlasRectTile(Size x, Size y, Size width, Size height)
+        : RectPackNode(x, y, width, height)
     {
     }
 
@@ -682,7 +682,7 @@ bool ShadowsPass::SetupLight(ShadowsCustomBuffer& shadows, RenderContext& render
                 auto& tile = atlasLight.Tiles[tileIndex];
                 if (tile.StaticRectTile == nullptr)
                 {
-                    tile.StaticRectTile = shadows.StaticAtlas.Insert(atlasLight.StaticResolution, atlasLight.StaticResolution, 0, &shadows, true);
+                    tile.StaticRectTile = shadows.StaticAtlas.Insert(atlasLight.StaticResolution, atlasLight.StaticResolution, &shadows, true);
                     if (!tile.StaticRectTile)
                     {
                         // Failed to insert tile to switch back to the default rendering
@@ -1225,7 +1225,7 @@ RETRY_ATLAS_SETUP:
         bool failedToInsert = false;
         for (int32 tileIndex = 0; tileIndex < atlasLight.TilesNeeded; tileIndex++)
         {
-            auto rectTile = shadows.Atlas.Insert(atlasLight.Resolution, atlasLight.Resolution, 0, &shadows, false);
+            auto rectTile = shadows.Atlas.Insert(atlasLight.Resolution, atlasLight.Resolution, &shadows, false);
             if (!rectTile)
             {
                 // Free any previous tiles that were added

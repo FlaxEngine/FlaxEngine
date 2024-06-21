@@ -17,8 +17,8 @@ namespace CSG
 
         struct Node : RectPackNode<float>
         {
-            Node(float x, float y, float width, float height)
-                : RectPackNode<float>(x, y, width, height)
+            Node(Size x, Size y, Size width, Size height)
+                : RectPackNode(x, y, width, height)
             {
             }
 
@@ -50,7 +50,7 @@ namespace CSG
 
         Node* Insert(ChartType chart)
         {
-            return _root.Insert(chart->Size.X, chart->Size.Y, _chartsPadding, chart, _atlasSize);
+            return _root.Insert(chart->Size.X, chart->Size.Y, chart, _atlasSize);
         }
     };
 }

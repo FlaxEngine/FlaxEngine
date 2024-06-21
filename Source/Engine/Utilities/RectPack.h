@@ -31,12 +31,6 @@ struct RectPackNode
         , Height(height)
     {
     }
-
-    bool operator<(const RectPackNode& other) const
-    {
-        // Sort largest to smallest
-        return Width * Height > other.Width * other.Height;
-    }
 };
 
 /// <summary>
@@ -118,7 +112,7 @@ public:
     /// </summary>
     /// <param name="atlasWidth">The atlas width (in pixels).</param>
     /// <param name="atlasHeight">The atlas height (in pixels).</param>
-    /// <param name="bordersPadding">The atlas borders padding (in pixels).</param>
+    /// <param name="bordersPadding">The nodes padding (in pixels). Distance from node contents to atlas borders or other nodes.</param>
     void Init(Size atlasWidth, Size atlasHeight, Size bordersPadding = 0)
     {
         Width = atlasWidth;
@@ -126,7 +120,7 @@ public:
         BordersPadding = bordersPadding;
         Nodes.Clear();
         FreeNodes.Clear();
-        Nodes.Add(NodeType(bordersPadding, bordersPadding, atlasWidth - bordersPadding * 2, atlasHeight - bordersPadding * 2));
+        Nodes.Add(NodeType(bordersPadding, bordersPadding, atlasWidth - bordersPadding, atlasHeight - bordersPadding));
         FreeNodes.Add(&Nodes[0]);
     }
 
@@ -145,62 +139,61 @@ public:
     /// </summary>
     /// <param name="width">The node width (in pixels).</param>
     /// <param name="height">The node height (in pixels).</param>
-    /// <param name="padding">The node padding margin (in pixels) around its contents.</param>
     /// <param name="args">The additional arguments.</param>
     /// <returns>The node that contains inserted an item or null if failed to find a free space.</returns>
     template<class... Args>
-    NodeType* Insert(Size width, Size height, Size padding, Args&&... args)
+    NodeType* Insert(Size width, Size height, Args&&... args)
     {
         NodeType* result = nullptr;
-        const Size paddedWidth = width + padding;
-        const Size paddedHeight = height + padding;
+        const Size paddedWidth = width + BordersPadding;
+        const Size paddedHeight = height + BordersPadding;
 
         // Search free nodes from back to front and find the one that fits requested item size
         // TODO: FreeNodes are sorted so use Binary Search to quickly find the first tile that might have enough space for insert
         for (int32 i = FreeNodes.Count() - 1; i >= 0; i--)
         {
-            NodeType& freeNode = *FreeNodes.Get()[i];
-            if (paddedWidth > freeNode.Width || paddedHeight > freeNode.Height)
+            NodeType* freeNode = FreeNodes.Get()[i];
+            if (paddedWidth > freeNode->Width || paddedHeight > freeNode->Height)
             {
                 // Not enough space
                 continue;
             }
 
             // Check if there will be some remaining space left in this node
-            if (freeNode.Width != paddedWidth || freeNode.Height != paddedHeight)
+            if (freeNode->Width != width || freeNode->Height != height)
             {
                 // Subdivide this node into up to 2 additional nodes
-                const Size remainingWidth = freeNode.Width - paddedWidth;
-                const Size remainingHeight = freeNode.Height - paddedHeight;
+                const Size remainingWidth = freeNode->Width - paddedWidth;
+                const Size remainingHeight = freeNode->Height - paddedHeight;
 
                 // Split the remaining area around this node into two children
                 SizeRect bigger, smaller;
                 if (remainingHeight <= remainingWidth)
                 {
                     // Split vertically
-                    smaller = SizeRect(freeNode.X, freeNode.Y + paddedHeight, width, remainingHeight);
-                    bigger = SizeRect(freeNode.X + paddedWidth, freeNode.Y, remainingWidth, freeNode.Height);
+                    smaller = SizeRect(freeNode->X, freeNode->Y + paddedHeight, width, remainingHeight);
+                    bigger = SizeRect(freeNode->X + paddedWidth, freeNode->Y, remainingWidth, freeNode->Height);
                 }
                 else
                 {
                     // Split horizontally
-                    smaller = SizeRect(freeNode.X + paddedWidth, freeNode.Y, remainingWidth, height);
-                    bigger = SizeRect(freeNode.X, freeNode.Y + paddedHeight, freeNode.Width, remainingHeight);
+                    smaller = SizeRect(freeNode->X + paddedWidth, freeNode->Y, remainingWidth, height);
+                    bigger = SizeRect(freeNode->X, freeNode->Y + paddedHeight, freeNode->Width, remainingHeight);
                 }
                 if (smaller.W * smaller.H > bigger.W * bigger.H)
                     Swap(bigger, smaller);
-                if (bigger.W * bigger.H > padding)
+                if (bigger.W * bigger.H > BordersPadding)
                     AddFreeNode(Nodes.Add(NodeType(bigger.X, bigger.Y, bigger.W, bigger.H)));
-                if (smaller.W * smaller.H > padding)
+                if (smaller.W * smaller.H > BordersPadding)
                     AddFreeNode(Nodes.Add(NodeType(smaller.X, smaller.Y, smaller.W, smaller.H)));
 
                 // Shrink to the actual area
-                freeNode.Width = width;
-                freeNode.Height = height;
+                freeNode->Width = width;
+                freeNode->Height = height;
             }
 
             // Insert into this node
-            result = &freeNode;
+            result = freeNode;
             FreeNodes.RemoveAtKeepOrder(i);
             result->OnInsert(Forward<Args>(args)...);
             break;

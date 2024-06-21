@@ -36,7 +36,8 @@ void FontTextureAtlas::Init(uint32 width, uint32 height)
     // Setup
     _width = width;
     _height = height;
-    _atlas.Init(_width, _height, GetPaddingAmount());
+    const uint32 padding = GetPaddingAmount() * 2; // Double the padding so each slot has own border around it
+    _atlas.Init(_width, _height, padding);
     _isDirty = false;
 
     // Reserve upload data memory
@@ -44,9 +45,9 @@ void FontTextureAtlas::Init(uint32 width, uint32 height)
     Platform::MemoryClear(_data.Get(), _data.Capacity());
 }
 
-FontTextureAtlasSlot* FontTextureAtlas::AddEntry(uint32 targetWidth, uint32 targetHeight, const Array<byte>& data)
+FontTextureAtlasSlot* FontTextureAtlas::AddEntry(uint32 width, uint32 height, const Array<byte>& data)
 {
-    if (targetWidth == 0 || targetHeight == 0)
+    if (width == 0 || height == 0)
         return nullptr;
 
     // Try to find slot for the texture
@@ -54,7 +55,7 @@ FontTextureAtlasSlot* FontTextureAtlas::AddEntry(uint32 targetWidth, uint32 targ
     for (int32 i = 0; i < _freeSlots.Count(); i++)
     {
         FontTextureAtlasSlot* e = _freeSlots[i];
-        if (e->Width == targetWidth && e->Height == targetHeight)
+        if (e->Width == width && e->Height == height)
         {
             slot = e;
             _freeSlots.RemoveAt(i);
@@ -63,7 +64,7 @@ FontTextureAtlasSlot* FontTextureAtlas::AddEntry(uint32 targetWidth, uint32 targ
     }
     if (!slot)
     {
-        slot = _atlas.Insert(targetWidth, targetHeight, GetPaddingAmount());
+        slot = _atlas.Insert(width, height);
     }
 
     if (slot)
@@ -100,11 +101,10 @@ bool FontTextureAtlas::Invalidate(uint32 x, uint32 y, uint32 width, uint32 heigh
 void FontTextureAtlas::CopyDataIntoSlot(const FontTextureAtlasSlot* slot, const Array<byte>& data)
 {
     RowData rowData;
-    rowData.DstData = &_data[slot->Y * _width * _bytesPerPixel + slot->X * _bytesPerPixel];
+    rowData.DstData = _data.Get() + (slot->Y * _width + slot->X) * _bytesPerPixel;
     rowData.SrcData = data.Get();
-    rowData.DstTextureWidth = _width;
-    rowData.SrcTextureWidth = slot->Width;
-    rowData.RowWidth = slot->Width;
+    rowData.DstWidth = _width;
+    rowData.SrcWidth = slot->Width;
     rowData.Padding = GetPaddingAmount();
 
     // Start with padding
@@ -148,20 +148,20 @@ byte* FontTextureAtlas::GetSlotData(const FontTextureAtlasSlot* slot, uint32& wi
 
 void FontTextureAtlas::copyRow(const RowData& copyRowData) const
 {
-    const byte* srcData = (const byte*)((intptr)copyRowData.SrcData + (intptr)copyRowData.SrcRow * copyRowData.SrcTextureWidth * _bytesPerPixel);
-    byte* dstData = (byte*)((intptr)copyRowData.DstData + (intptr)copyRowData.DstRow * copyRowData.DstTextureWidth * _bytesPerPixel);
-    Platform::MemoryCopy(dstData, srcData, copyRowData.SrcTextureWidth * _bytesPerPixel);
+    const byte* srcData = (const byte*)((intptr)copyRowData.SrcData + (intptr)copyRowData.SrcRow * copyRowData.SrcWidth * _bytesPerPixel);
+    byte* dstData = (byte*)((intptr)copyRowData.DstData + (intptr)copyRowData.DstRow * copyRowData.DstWidth * _bytesPerPixel);
+    Platform::MemoryCopy(dstData, srcData, copyRowData.SrcWidth * _bytesPerPixel);
 
     if (copyRowData.Padding > 0)
     {
         const uint32 padSize = copyRowData.Padding * _bytesPerPixel;
-        byte* dstPaddingPixelLeft = (byte*)((intptr)copyRowData.DstData + (intptr)copyRowData.DstRow * copyRowData.DstTextureWidth * _bytesPerPixel - padSize);
-        byte* dstPaddingPixelRight = dstPaddingPixelLeft + copyRowData.RowWidth * _bytesPerPixel + padSize;
+        byte* dstPaddingPixelLeft = (byte*)((intptr)copyRowData.DstData + (intptr)copyRowData.DstRow * copyRowData.DstWidth * _bytesPerPixel - padSize);
+        byte* dstPaddingPixelRight = dstPaddingPixelLeft + copyRowData.SrcWidth * _bytesPerPixel + padSize;
         if (_paddingStyle == DilateBorder)
         {
             // Dilate left and right sides of the padded row
             const byte* firstPixel = srcData;
-            const byte* lastPixel = srcData + (copyRowData.SrcTextureWidth - 1) * _bytesPerPixel;
+            const byte* lastPixel = srcData + (copyRowData.SrcWidth - 1) * _bytesPerPixel;
             Platform::MemoryCopy(dstPaddingPixelLeft, firstPixel, padSize);
             Platform::MemoryCopy(dstPaddingPixelRight, lastPixel, padSize);
         }
@@ -176,8 +176,8 @@ void FontTextureAtlas::copyRow(const RowData& copyRowData) const
 
 void FontTextureAtlas::zeroRow(const RowData& copyRowData) const
 {
-    byte* dstData = (byte*)((intptr)copyRowData.DstData + (intptr)copyRowData.DstRow * copyRowData.DstTextureWidth * _bytesPerPixel);
-    uint32 dstSize = copyRowData.RowWidth * _bytesPerPixel;
+    byte* dstData = (byte*)((intptr)copyRowData.DstData + (intptr)copyRowData.DstRow * copyRowData.DstWidth * _bytesPerPixel);
+    uint32 dstSize = copyRowData.SrcWidth * _bytesPerPixel;
     if (copyRowData.Padding > 0)
     {
         // Extend clear by left and right borders of the padded row

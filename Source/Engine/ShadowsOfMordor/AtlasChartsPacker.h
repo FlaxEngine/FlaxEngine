@@ -17,8 +17,8 @@ namespace ShadowsOfMordor
         {
             Builder::LightmapUVsChart* Chart = nullptr;
 
-            Node(int32 x, int32 y, int32 width, int32 height)
-                : RectPackNode<int32>(x, y, width, height)
+            Node(Size x, Size y, Size width, Size height)
+                : RectPackNode(x, y, width, height)
             {
             }
 
@@ -63,7 +63,7 @@ namespace ShadowsOfMordor
         /// <returns></returns>
         Node* Insert(Builder::LightmapUVsChart* chart)
         {
-            return _root.Insert(chart->Width, chart->Height, _settings->ChartsPadding, chart, _settings);
+            return _root.Insert(chart->Width, chart->Height, chart, _settings);
         }
     };
 };

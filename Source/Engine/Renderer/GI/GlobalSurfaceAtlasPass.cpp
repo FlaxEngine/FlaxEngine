@@ -73,8 +73,8 @@ struct GlobalSurfaceAtlasTile : RectPackNode<uint16>
     uint32 Address;
     uint32 ObjectAddressOffset;
 
-    GlobalSurfaceAtlasTile(uint16 x, uint16 y, uint16 width, uint16 height)
-        : RectPackNode<uint16>(x, y, width, height)
+    GlobalSurfaceAtlasTile(Size x, Size y, Size width, Size height)
+        : RectPackNode(x, y, width, height)
     {
     }
 
@@ -1236,7 +1236,7 @@ void GlobalSurfaceAtlasPass::RasterizeActor(Actor* actor, void* actorObject, con
         uint16 tilePixels = tileResolution * tileResolution;
         GlobalSurfaceAtlasTile* tile = nullptr;
         if (tilePixels <= surfaceAtlasData.AtlasPixelsTotal - surfaceAtlasData.AtlasPixelsUsed)
-            tile = surfaceAtlasData.Atlas.Insert(tileResolution, tileResolution, 0, &surfaceAtlasData, actorObject, tileIndex);
+            tile = surfaceAtlasData.Atlas.Insert(tileResolution, tileResolution, &surfaceAtlasData, actorObject, tileIndex);
         if (tile)
         {
             if (!object)

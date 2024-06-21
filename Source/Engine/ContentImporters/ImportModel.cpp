@@ -72,8 +72,8 @@ void RepackMeshLightmapUVs(ModelData& data)
     // Build list of meshes with their area
     struct LightmapUVsPack : RectPackNode<float>
     {
-        LightmapUVsPack(float x, float y, float width, float height)
-            : RectPackNode<float>(x, y, width, height)
+        LightmapUVsPack(Size x, Size y, Size width, Size height)
+            : RectPackNode(x, y, width, height)
         {
         }
 
@@ -110,10 +110,10 @@ void RepackMeshLightmapUVs(ModelData& data)
             bool failed = false;
             const float chartsPadding = (4.0f / 256.0f) * atlasSize;
             RectPackAtlas<LightmapUVsPack> atlas;
-            atlas.Init(chartsPadding, chartsPadding);
+            atlas.Init(atlasSize, atlasSize, chartsPadding);
             for (auto& entry : entries)
             {
-                entry.Slot = atlas.Insert(entry.Size, entry.Size, chartsPadding);
+                entry.Slot = atlas.Insert(entry.Size, entry.Size);
                 if (entry.Slot == nullptr)
                 {
                     // Failed to insert surface, increase atlas size and try again

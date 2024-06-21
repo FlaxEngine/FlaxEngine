@@ -13,8 +13,8 @@
 /// </summary>
 struct FontTextureAtlasSlot : RectPackNode<>
 {
-    FontTextureAtlasSlot(uint32 x, uint32 y, uint32 width, uint32 height)
-        : RectPackNode<>(x, y, width, height)
+    FontTextureAtlasSlot(Size x, Size y, Size width, Size height)
+        : RectPackNode(x, y, width, height)
     {
     }
 
@@ -37,9 +37,8 @@ private:
         uint8* DstData;
         int32 SrcRow;
         int32 DstRow;
-        int32 RowWidth;
-        int32 SrcTextureWidth;
-        int32 DstTextureWidth;
+        int32 SrcWidth;
+        int32 DstWidth;
         uint32 Padding;
     };
 
@@ -154,11 +153,11 @@ public:
     /// <summary>
     /// Adds the new entry to the atlas
     /// </summary>
-    /// <param name="targetWidth">Width of the entry.</param>
-    /// <param name="targetHeight">Height of the entry.</param>
+    /// <param name="width">Width of the entry.</param>
+    /// <param name="height">Height of the entry.</param>
     /// <param name="data">The data.</param>
     /// <returns>The atlas slot occupied by the new entry.</returns>
-    FontTextureAtlasSlot* AddEntry(uint32 targetWidth, uint32 targetHeight, const Array<byte>& data);
+    FontTextureAtlasSlot* AddEntry(uint32 width, uint32 height, const Array<byte>& data);
 
     /// <summary>
     /// Invalidates the cached dynamic entry from the atlas.
