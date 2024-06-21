@@ -338,6 +338,11 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext, RenderCont
                     renderContext.List->Settings.AntiAliasing.Mode == AntialiasingMode::TemporalAntialiasing;
         }
         setup.UseTemporalAAJitter = aaMode == AntialiasingMode::TemporalAntialiasing;
+        setup.UseGlobalSurfaceAtlas = renderContext.View.Mode == ViewMode::GlobalSurfaceAtlas ||
+                (EnumHasAnyFlags(renderContext.View.Flags, ViewFlags::GI) && renderContext.List->Settings.GlobalIllumination.Mode == GlobalIlluminationMode::DDGI);
+        setup.UseGlobalSDF = (graphicsSettings->EnableGlobalSDF && EnumHasAnyFlags(view.Flags, ViewFlags::GlobalSDF)) ||
+                renderContext.View.Mode == ViewMode::GlobalSDF ||
+                setup.UseGlobalSurfaceAtlas;
 
         // Disable TAA jitter in debug modes
         switch (renderContext.View.Mode)
@@ -404,6 +409,8 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext, RenderCont
         JobSystem::SetJobStartingOnDispatch(false);
         task->OnCollectDrawCalls(renderContextBatch, SceneRendering::DrawCategory::SceneDraw);
         task->OnCollectDrawCalls(renderContextBatch, SceneRendering::DrawCategory::SceneDrawAsync);
+        if (setup.UseGlobalSurfaceAtlas)
+            GlobalSurfaceAtlasPass::Instance()->OnCollectDrawCalls(renderContextBatch);
 
         // Wait for async jobs to finish
         JobSystem::SetJobStartingOnDispatch(true);
@@ -456,7 +463,7 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext, RenderCont
 #endif
 
     // Global SDF rendering (can be used by materials later on)
-    if (graphicsSettings->EnableGlobalSDF && EnumHasAnyFlags(view.Flags, ViewFlags::GlobalSDF))
+    if (setup.UseGlobalSDF)
     {
         GlobalSignDistanceFieldPass::BindingData bindingData;
         GlobalSignDistanceFieldPass::Instance()->Render(renderContext, context, bindingData);

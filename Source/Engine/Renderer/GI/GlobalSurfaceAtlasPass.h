@@ -58,12 +58,16 @@ private:
     class GPUBuffer* _culledObjectsSizeBuffer = nullptr;
     class DynamicVertexBuffer* _vertexBuffer = nullptr;
     class GlobalSurfaceAtlasCustomBuffer* _surfaceAtlasData;
-    Array<void*> _dirtyObjectsBuffer;
     uint64 _culledObjectsSizeFrames[8];
-    Vector4 _cullingPosDistance;
     void* _currentActorObject;
 
 public:
+    /// <summary>
+    /// Calls drawing scene objects in async early in the frame.
+    /// </summary>
+    /// <param name="renderContextBatch">The rendering context batch.</param>
+    void OnCollectDrawCalls(RenderContextBatch& renderContextBatch);
+
     /// <summary>
     /// Renders the Global Surface Atlas.
     /// </summary>
@@ -82,11 +86,8 @@ public:
     void RenderDebug(RenderContext& renderContext, GPUContext* context, GPUTexture* output);
 
     // Gets the culling view position (xyz) and view distance (w)
-    void GetCullingData(Vector4& cullingPosDistance) const
-    {
-        cullingPosDistance = _cullingPosDistance;
-    }
-    
+    void GetCullingData(Vector4& cullingPosDistance) const;
+
     // Gets the current object of the actor that is drawn into atlas.
     void* GetCurrentActorObject() const
     {
