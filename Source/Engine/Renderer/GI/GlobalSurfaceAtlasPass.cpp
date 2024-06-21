@@ -268,7 +268,14 @@ public:
                 (float)AtlasPixelsUsed / AtlasPixelsTotal < maxUsageToDefrag)
             {
                 PROFILE_CPU_NAMED("Defragment Atlas");
-                ClearObjects();
+                LastFrameAtlasDefragmentation = Engine::FrameCount;
+                for (auto& e : Objects)
+                {
+                    auto& object = e.Value;
+                    Platform::MemoryClear(object.Tiles, sizeof(object.Tiles));
+                }
+                Atlas.Clear();
+                AtlasPixelsUsed = 0;
             }
         }
 
