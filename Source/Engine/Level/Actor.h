@@ -182,6 +182,11 @@ public:
     }
 
     /// <summary>
+    /// Sets the actor name without copying the string.
+    /// </summary>
+    API_FUNCTION() void SetName(String&& value);
+
+    /// <summary>
     /// Sets the actor name.
     /// </summary>
     /// <param name="value">The value to set.</param>
