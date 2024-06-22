@@ -200,16 +200,19 @@ int32 JobSystemThread::Run()
             data.Job(data.Index);
 
             // Move forward with the job queue
+            bool notifyWaiting = false;
             JobsLocker.Lock();
             JobContext& context = JobContexts.At(data.JobKey);
             if (Platform::InterlockedDecrement(&context.JobsLeft) <= 0)
             {
                 ASSERT_LOW_LAYER(context.JobsLeft <= 0);
                 JobContexts.Remove(data.JobKey);
+                notifyWaiting = true;
             }
             JobsLocker.Unlock();
 
-            WaitSignal.NotifyAll();
+            if (notifyWaiting)
+                WaitSignal.NotifyAll();
 
             data.Job.Unbind();
         }
