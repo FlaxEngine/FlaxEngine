@@ -543,7 +543,7 @@ void Actor::SetLayerRecursive(int32 layerIndex)
     OnLayerChanged();
 }
 
-void Actor::SetName(String&& value)
+void Actor::SetNameNoCopy(String&& value)
 {
     if (_name == value)
         return;
