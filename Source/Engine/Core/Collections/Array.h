@@ -579,7 +579,7 @@ public:
     /// Insert the given item at specified index with keeping items order.
     /// </summary>
     /// <param name="index">The zero-based index at which item should be inserted.</param>
-    /// <param name="item">The item to insert.</param>
+    /// <param name="item">The item to be inserted by copying.</param>
     void Insert(int32 index, const T& item)
     {
         ASSERT(index >= 0 && index <= _count);
@@ -590,6 +590,23 @@ public:
             data[i + 1] = data[i];
         _count++;
         data[index] = item;
+    }
+
+    /// <summary>
+    /// Insert the given item at specified index with keeping items order.
+    /// </summary>
+    /// <param name="index">The zero-based index at which item should be inserted.</param>
+    /// <param name="item">The item to inserted by moving.</param>
+    void Insert(int32 index, T&& item)
+    {
+        ASSERT(index >= 0 && index <= _count);
+        EnsureCapacity(_count + 1);
+        T* data = _allocation.Get();
+        Memory::ConstructItems(data + _count, 1);
+        for (int32 i = _count - 1; i >= index; i--)
+            data[i + 1] = MoveTemp(data[i]);
+        _count++;
+        data[index] = MoveTemp(item);
     }
 
     /// <summary>
@@ -772,9 +789,9 @@ public:
     /// <summary>
     /// Performs pop from stack operation (stack grows at the end of the collection).
     /// </summary>
-    T Pop()
+    FORCE_INLINE T Pop()
     {
-        T item(Last());
+        T item = MoveTemp(Last());
         RemoveLast();
         return item;
     }
@@ -808,13 +825,22 @@ public:
     }
 
     /// <summary>
+    /// Performs enqueue to queue operation (queue head is in the beginning of queue).
+    /// </summary>
+    /// <param name="item">The item to append.</param>
+    void Enqueue(T&& item)
+    {
+        Add(MoveTemp(item));
+    }
+
+    /// <summary>
     /// Performs dequeue from queue operation (queue head is in the beginning of queue).
     /// </summary>
     /// <returns>The item.</returns>
     T Dequeue()
     {
         ASSERT(HasItems());
-        T item(First());
+        T item = MoveTemp(_allocation.Get()[0]);
         RemoveAtKeepOrder(0);
         return item;
     }
