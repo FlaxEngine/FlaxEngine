@@ -25,7 +25,7 @@ const Char* SplashScreenQuotes[] =
     TEXT("Collecting crash data"),
 #if PLATFORM_WINDOWS
     TEXT("We're getting everything ready for you."),
-    TEXT("Deleting System33..."),
+    TEXT("Deleting System33"),
     TEXT("Asking Bill Gates for permission to launch."),
 #elif PLATFORM_LINUX
     TEXT("Try it on a Raspberry"),
@@ -37,7 +37,7 @@ const Char* SplashScreenQuotes[] =
     TEXT("don't compare Macbooks to oranges."),
     TEXT("Why does macbook heat up?\nBecause it doesn't have windows"),
     TEXT("Starting Direc... um, Vulkan renderer."),
-    TEXT("Contacting apple support..."),
+    TEXT("Contacting apple support"),
 #endif
     TEXT("Kappa!"),
     TEXT("How you doin'?"),
