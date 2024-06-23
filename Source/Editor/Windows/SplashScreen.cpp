@@ -25,14 +25,19 @@ const Char* SplashScreenQuotes[] =
     TEXT("Collecting crash data"),
 #if PLATFORM_WINDOWS
     TEXT("We're getting everything ready for you."),
+    TEXT("Deleting System33..."),
+    TEXT("Asking Bill Gates for permission to launch."),
 #elif PLATFORM_LINUX
     TEXT("Try it on a Raspberry"),
     TEXT("Trying to exit vim"),
     TEXT("Sudo flax --loadproject"),
+    TEXT("Running: \"sudo rm -rf\" :) "),
+    TEXT("Moving project to /dev/null"),
 #elif PLATFORM_MAC
     TEXT("don't compare Macbooks to oranges."),
     TEXT("Why does macbook heat up?\nBecause it doesn't have windows"),
     TEXT("Starting Direc... um, Vulkan renderer."),
+    TEXT("Contacting apple support..."),
 #endif
     TEXT("Kappa!"),
     TEXT("How you doin'?"),
@@ -135,6 +140,9 @@ const Char* SplashScreenQuotes[] =
     TEXT("Drum roll please"),
     TEXT("Good Luck Have Fun"),
     TEXT("GG Well Played"),
+    TEXT("Why did they name a town after a war against saws?")
+    TEXT("Join us at:\nhttps://discord.gg/flax"),
+    TEXT("BLAST OFF!"),
 };
 
 SplashScreen::~SplashScreen()
