@@ -7,30 +7,14 @@
 #include "Engine/Platform/ConditionVariable.h"
 #include "Engine/Core/Types/Span.h"
 #include "Engine/Core/Collections/Dictionary.h"
+#include "Engine/Core/Collections/RingBuffer.h"
 #include "Engine/Engine/EngineService.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #if USE_CSHARP
 #include "Engine/Scripting/ManagedCLR/MCore.h"
 #endif
 
-// Jobs storage perf info:
-// (500 jobs, i7 9th gen)
-// JOB_SYSTEM_USE_MUTEX=1, enqueue=130-280 cycles, dequeue=2-6 cycles
-// JOB_SYSTEM_USE_MUTEX=0, enqueue=300-700 cycles, dequeue=10-16 cycles
-// So using RingBuffer+Mutex+Signals is better than moodycamel::ConcurrentQueue
-
 #define JOB_SYSTEM_ENABLED 1
-#define JOB_SYSTEM_USE_MUTEX 1
-#define JOB_SYSTEM_USE_STATS 0
-
-#if JOB_SYSTEM_USE_STATS
-#include "Engine/Core/Log.h"
-#endif
-#if JOB_SYSTEM_USE_MUTEX
-#include "Engine/Core/Collections/RingBuffer.h"
-#else
-#include "ConcurrentQueue.h"
-#endif
 
 #if JOB_SYSTEM_ENABLED
 
@@ -107,15 +91,7 @@ namespace
     ConditionVariable WaitSignal;
     CriticalSection WaitMutex;
     CriticalSection JobsLocker;
-#if JOB_SYSTEM_USE_MUTEX
     RingBuffer<JobData> Jobs;
-#else
-    ConcurrentQueue<JobData> Jobs;
-#endif
-#if JOB_SYSTEM_USE_STATS
-    int64 DequeueCount = 0;
-    int64 DequeueSum = 0;
-#endif
 }
 
 bool JobSystemService::Init()
@@ -163,16 +139,9 @@ int32 JobSystemThread::Run()
     JobData data;
     Function<void(int32)> job;
     bool attachCSharpThread = true;
-#if !JOB_SYSTEM_USE_MUTEX
-    moodycamel::ConsumerToken consumerToken(Jobs);
-#endif
     while (Platform::AtomicRead(&ExitFlag) == 0)
     {
         // Try to get a job
-#if JOB_SYSTEM_USE_STATS
-        const auto start = Platform::GetTimeCycles();
-#endif
-#if JOB_SYSTEM_USE_MUTEX
         JobsLocker.Lock();
         if (Jobs.Count() != 0)
         {
@@ -182,17 +151,6 @@ int32 JobSystemThread::Run()
             job = context.Job;
         }
         JobsLocker.Unlock();
-#else
-        if (Jobs.try_dequeue(consumerToken, data))
-        {
-            const JobContext& context = ((const Dictionary<int64, JobContext>&)JobContexts).At(data.JobKey);
-            job = context.Job;
-        }
-#endif
-#if JOB_SYSTEM_USE_STATS
-        Platform::InterlockedIncrement(&DequeueCount);
-        Platform::InterlockedAdd(&DequeueSum, Platform::GetTimeCycles() - start);
-#endif
 
         if (job.IsBinded())
         {
@@ -224,11 +182,7 @@ int32 JobSystemThread::Run()
                         JobData dependantData;
                         dependantData.JobKey = dependant;
                         for (dependantData.Index = 0; dependantData.Index < dependantContext.JobsLeft; dependantData.Index++)
-#if JOB_SYSTEM_USE_MUTEX
                             Jobs.PushBack(dependantData);
-#else
-                            Jobs.enqueue(dependantData);
-#endif
                     }
                 }
 
@@ -280,9 +234,6 @@ int64 JobSystem::Dispatch(const Function<void(int32)>& job, int32 jobCount)
         return 0;
     PROFILE_CPU();
 #if JOB_SYSTEM_ENABLED
-#if JOB_SYSTEM_USE_STATS
-    const auto start = Platform::GetTimeCycles();
-#endif
     const auto label = Platform::InterlockedAdd(&JobLabel, (int64)jobCount) + jobCount;
 
     JobData data;
@@ -295,19 +246,9 @@ int64 JobSystem::Dispatch(const Function<void(int32)>& job, int32 jobCount)
 
     JobsLocker.Lock();
     JobContexts.Add(label, context);
-#if JOB_SYSTEM_USE_MUTEX
     for (data.Index = 0; data.Index < jobCount; data.Index++)
         Jobs.PushBack(data);
     JobsLocker.Unlock();
-#else
-    JobsLocker.Unlock();
-    for (data.Index = 0; data.Index < jobCount; data.Index++)
-        Jobs.enqueue(data);
-#endif
-
-#if JOB_SYSTEM_USE_STATS
-    LOG(Info, "Job enqueue time: {0} cycles", (int64)(Platform::GetTimeCycles() - start));
-#endif
 
     if (JobStartingOnDispatch)
     {
@@ -351,21 +292,12 @@ int64 JobSystem::Dispatch(const Function<void(int32)>& job, Span<int64> dependen
         }
     }
     JobContexts.Add(label, context);
-#if JOB_SYSTEM_USE_MUTEX
     if (context.DependenciesLeft == 0)
     {
         for (data.Index = 0; data.Index < jobCount; data.Index++)
             Jobs.PushBack(data);
     }
     JobsLocker.Unlock();
-#else
-    JobsLocker.Unlock();
-    if (dispatchNow)
-    {
-        for (data.Index = 0; data.Index < jobCount; data.Index++)
-            Jobs.enqueue(data);
-    }
-#endif
 
     if (context.DependenciesLeft == 0 && JobStartingOnDispatch)
     {
@@ -426,11 +358,6 @@ void JobSystem::Wait(int64 label)
         // Wake up any thread to prevent stalling in highly multi-threaded environment
         JobsSignal.NotifyOne();
     }
-
-#if JOB_SYSTEM_USE_STATS
-    LOG(Info, "Job average dequeue time: {0} cycles", DequeueSum / DequeueCount);
-    DequeueSum = DequeueCount = 0;
-#endif
 #endif
 }
 
@@ -438,16 +365,11 @@ void JobSystem::SetJobStartingOnDispatch(bool value)
 {
 #if JOB_SYSTEM_ENABLED
     JobStartingOnDispatch = value;
-
     if (value)
     {
-#if JOB_SYSTEM_USE_MUTEX
         JobsLocker.Lock();
         const int32 count = Jobs.Count();
         JobsLocker.Unlock();
-#else
-        const int32 count = Jobs.Count();
-#endif
         if (count == 1)
             JobsSignal.NotifyOne();
         else if (count != 0)
