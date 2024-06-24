@@ -841,7 +841,6 @@ namespace FlaxEditor.Modules
         {
             // Open project, then close it
             Editor.OpenProject(Editor.GameProject.ProjectPath);
-            Editor.Windows.MainWindow.Close(ClosingReason.User);
         }
 
         private void OnMenuFileShowHide(Control control)
