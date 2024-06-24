@@ -14,7 +14,6 @@
 #include "Engine/Content/Content.h"
 #include "Engine/Graphics/GPUContext.h"
 #include "Engine/Graphics/GPUDevice.h"
-#include "Engine/Graphics/Graphics.h"
 #include "Engine/Graphics/RenderTask.h"
 #include "Engine/Graphics/RenderBuffers.h"
 #include "Engine/Graphics/RenderTargetPool.h"
@@ -40,6 +39,8 @@
 #define GLOBAL_SURFACE_ATLAS_DEBUG_FORCE_REDRAW_TILES 0 // Forces to redraw all object tiles every frame
 #define GLOBAL_SURFACE_ATLAS_DEBUG_DRAW_OBJECTS 0 // Debug draws object bounds on redraw (and tile draw projection locations)
 #define GLOBAL_SURFACE_ATLAS_DEBUG_DRAW_CHUNKS 0 // Debug draws culled chunks bounds (non-empty)
+#define GLOBAL_SURFACE_ATLAS_MAX_NEW_OBJECTS_PER_FRAME 500 // Limits the amount of newly added objects to atlas per-frame to reduce hitches on 1st frame or camera-cut
+#define GLOBAL_SURFACE_ATLAS_DIRTY_FRAMES(flags) (EnumHasAnyFlags(flags, StaticFlags::Lightmap) ? 200 : 10) // Amount of frames after which update object (less frequent updates for static scenes)
 
 #if GLOBAL_SURFACE_ATLAS_DEBUG_DRAW_OBJECTS || GLOBAL_SURFACE_ATLAS_DEBUG_DRAW_CHUNKS
 #include "Engine/Debug/DebugDraw.h"
@@ -300,14 +301,14 @@ public:
 
         if (enableAsync)
         {
-            // Run in async via Job System
+            // Run sync actors drawing now or force in async (different drawing path doesn't interfere with normal scene drawing)
             Function<void(int32)> func;
-            func.Bind<GlobalSurfaceAtlasCustomBuffer, &GlobalSurfaceAtlasCustomBuffer::DrawActorsJob>(this);
+            func.Bind<GlobalSurfaceAtlasCustomBuffer, &GlobalSurfaceAtlasCustomBuffer::DrawActorsJobSync>(this);
             const int32 jobCount = Math::Max(JobSystem::GetThreadsCount() - 1, 1); // Leave 1 thread unused to not block the main-thread (jobs will overlap with rendering)
             AsyncDrawWaitLabels.Add(JobSystem::Dispatch(func, jobCount));
 
-            // Run sync actors drawing now or force in async (different drawing path doesn't interfere with normal scene drawing)
-            func.Bind<GlobalSurfaceAtlasCustomBuffer, &GlobalSurfaceAtlasCustomBuffer::DrawActorsJobSync>(this);
+            // Run in async via Job System
+            func.Bind<GlobalSurfaceAtlasCustomBuffer, &GlobalSurfaceAtlasCustomBuffer::DrawActorsJob>(this);
             AsyncDrawWaitLabels.Add(JobSystem::Dispatch(func, jobCount));
 
             // Run dependant job that will process objects data in async
@@ -797,7 +798,7 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
         context->SetRenderTarget(depthBuffer, ToSpan(targetBuffers, ARRAY_COUNT(targetBuffers)));
         {
             PROFILE_GPU_CPU_NAMED("Clear");
-            if (noCache || GLOBAL_SURFACE_ATLAS_DEBUG_FORCE_REDRAW_TILES || !GPU_SPREAD_WORKLOAD)
+            if (noCache || GLOBAL_SURFACE_ATLAS_DEBUG_FORCE_REDRAW_TILES)
             {
                 // Full-atlas hardware clear
                 context->ClearDepth(depthBuffer);
@@ -1086,7 +1087,7 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
         {
             GlobalSurfaceAtlasLight& lightData = surfaceAtlasData.Lights[light.ID];
             lightData.LastFrameUsed = currentFrame;
-            uint32 redrawFramesCount = EnumHasAnyFlags(light.StaticFlags, StaticFlags::Lightmap) ? 120 : 4;
+            uint32 redrawFramesCount = GLOBAL_SURFACE_ATLAS_DIRTY_FRAMES(light.StaticFlags);
             if (surfaceAtlasData.CurrentFrame - lightData.LastFrameUpdated < (redrawFramesCount + (light.ID.D & redrawFramesCount)))
                 continue;
             lightData.LastFrameUpdated = currentFrame;
@@ -1121,7 +1122,7 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
         {
             GlobalSurfaceAtlasLight& lightData = surfaceAtlasData.Lights[light.ID];
             lightData.LastFrameUsed = currentFrame;
-            uint32 redrawFramesCount = EnumHasAnyFlags(light.StaticFlags, StaticFlags::Lightmap) ? 120 : 4;
+            uint32 redrawFramesCount = GLOBAL_SURFACE_ATLAS_DIRTY_FRAMES(light.StaticFlags);
             if (surfaceAtlasData.CurrentFrame - lightData.LastFrameUpdated < (redrawFramesCount + (light.ID.D & redrawFramesCount)))
                 continue;
             lightData.LastFrameUpdated = currentFrame;
@@ -1143,7 +1144,7 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
         {
             GlobalSurfaceAtlasLight& lightData = surfaceAtlasData.Lights[light.ID];
             lightData.LastFrameUsed = currentFrame;
-            uint32 redrawFramesCount = EnumHasAnyFlags(light.StaticFlags, StaticFlags::Lightmap) ? 120 : 4;
+            uint32 redrawFramesCount = GLOBAL_SURFACE_ATLAS_DIRTY_FRAMES(light.StaticFlags);
             if (surfaceAtlasData.CurrentFrame - lightData.LastFrameUpdated < (redrawFramesCount + (light.ID.D & redrawFramesCount)))
                 continue;
             lightData.LastFrameUpdated = currentFrame;
@@ -1459,9 +1460,9 @@ void GlobalSurfaceAtlasPass::RasterizeActor(Actor* actor, void* actorObject, con
     const float distanceScale = Math::Lerp(1.0f, surfaceAtlasData.DistanceScaling, Math::InverseLerp(surfaceAtlasData.DistanceScalingStart, surfaceAtlasData.DistanceScalingEnd, (float)CollisionsHelper::DistanceSpherePoint(actorObjectBounds, surfaceAtlasData.ViewPosition)));
     const float tilesScale = surfaceAtlasData.TileTexelsPerWorldUnit * distanceScale * qualityScale;
     GlobalSurfaceAtlasObject* object = surfaceAtlasData.Objects.TryGet(actorObject);
-    if (!object && surfaceAtlasData.AsyncNewObjects.Count() >= 512)
+    if (!object && surfaceAtlasData.AsyncNewObjects.Count() >= GLOBAL_SURFACE_ATLAS_MAX_NEW_OBJECTS_PER_FRAME)
         return; // Reduce load on 1st frame and add more objects during next frames to balance performance
-    bool anyTile = false, dirty = GLOBAL_SURFACE_ATLAS_DEBUG_FORCE_REDRAW_TILES || !GPU_SPREAD_WORKLOAD;
+    bool anyTile = false, dirty = GLOBAL_SURFACE_ATLAS_DEBUG_FORCE_REDRAW_TILES;
     for (int32 tileIndex = 0; tileIndex < 6; tileIndex++)
     {
         if (((1 << tileIndex) & tilesMask) == 0)
@@ -1517,7 +1518,7 @@ void GlobalSurfaceAtlasPass::RasterizeActor(Actor* actor, void* actorObject, con
     if (object)
     {
         // Redraw objects from time-to-time (dynamic objects can be animated, static objects can have textures streamed)
-        uint32 redrawFramesCount = actor->HasStaticFlag(StaticFlags::Lightmap) ? 120 : 4;
+        uint32 redrawFramesCount = GLOBAL_SURFACE_ATLAS_DIRTY_FRAMES(actor->GetStaticFlags());
         if (surfaceAtlasData.CurrentFrame - object->LastFrameUpdated >= (redrawFramesCount + (actor->GetID().D & redrawFramesCount)))
             dirty = true;
 
@@ -1527,7 +1528,7 @@ void GlobalSurfaceAtlasPass::RasterizeActor(Actor* actor, void* actorObject, con
         object->Bounds = bounds;
         object->Position = (Float3)actorObjectBounds.Center; // TODO: large worlds
         object->Radius = (float)actorObjectBounds.Radius;
-        object->Dirty = dirty;
+        object->Dirty |= dirty;
         object->UseVisibility = useVisibility;
     }
     else
