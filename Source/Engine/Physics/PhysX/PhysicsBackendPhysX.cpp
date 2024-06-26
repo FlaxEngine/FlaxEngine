@@ -4476,6 +4476,8 @@ void PhysicsBackend::DestroyController(void* controller)
 
 void PhysicsBackend::DestroyMaterial(void* material)
 {
+    if (!PhysX)
+        return; // Skip when called by Content unload after Physics is disposed
     ASSERT_LOW_LAYER(material);
     auto materialPhysX = (PxMaterial*)material;
     materialPhysX->userData = nullptr;
@@ -4486,6 +4488,8 @@ void PhysicsBackend::DestroyMaterial(void* material)
 
 void PhysicsBackend::DestroyObject(void* object)
 {
+    if (!PhysX)
+        return; // Skip when called by Content unload after Physics is disposed
     ASSERT_LOW_LAYER(object);
     auto objectPhysX = (PxBase*)object;
     FlushLocker.Lock();
