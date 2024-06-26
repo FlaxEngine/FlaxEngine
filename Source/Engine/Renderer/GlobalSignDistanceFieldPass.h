@@ -39,20 +39,15 @@ private:
     GPUShaderProgramCS* _csGenerateMip = nullptr;
     GPUConstantBuffer* _cb0 = nullptr;
     GPUConstantBuffer* _cb1 = nullptr;
-
-    // Rasterization cache
     class DynamicStructuredBuffer* _objectsBuffer = nullptr;
-    Array<GPUTextureView*> _objectsTextures;
-    uint16 _objectsBufferCount;
-    int32 _cascadeIndex;
-    float _voxelSize, _chunkSize;
-    BoundingBox _cascadeBounds;
-    BoundingBox _cascadeCullingBounds;
-    class GlobalSignDistanceFieldCustomBuffer* _sdfData;
-    Vector3 _sdfDataOriginMin;
-    Vector3 _sdfDataOriginMax;
 
 public:
+    /// <summary>
+    /// Calls drawing scene objects in async early in the frame.
+    /// </summary>
+    /// <param name="renderContextBatch">The rendering context batch.</param>
+    void OnCollectDrawCalls(RenderContextBatch& renderContextBatch);
+
     /// <summary>
     /// Gets the Global SDF (only if enabled in Graphics Settings).
     /// </summary>
@@ -78,10 +73,7 @@ public:
     /// <param name="output">The output buffer.</param>
     void RenderDebug(RenderContext& renderContext, GPUContext* context, GPUTexture* output);
 
-    void GetCullingData(BoundingBox& bounds) const
-    {
-        bounds = _cascadeCullingBounds;
-    }
+    void GetCullingData(BoundingBox& bounds) const;
 
     // Rasterize Model SDF into the Global SDF. Call it from actor Draw() method during DrawPass::GlobalSDF.
     void RasterizeModelSDF(Actor* actor, const ModelBase::SDFData& sdf, const Transform& localToWorld, const BoundingBox& objectBounds);
