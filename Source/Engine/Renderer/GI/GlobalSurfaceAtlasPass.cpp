@@ -179,7 +179,7 @@ public:
 
     void ClearObjects()
     {
-        WaitForDrawActors();
+        WaitForDrawing();
         CulledObjectsCounterIndex = -1;
         CulledObjectsUsageHistory.Clear();
         LastFrameAtlasDefragmentation = Engine::FrameCount;
@@ -251,7 +251,7 @@ public:
         }
     }
 
-    void StartDrawActors(const RenderContext& renderContext, bool enableAsync = false)
+    void StartDrawing(const RenderContext& renderContext, bool enableAsync = false)
     {
         if (AsyncDrawWaitLabels.HasItems())
             return; // Already started earlier this frame
@@ -260,6 +260,7 @@ public:
         GetOptions(renderContext, resolution, distance);
         if (Resolution != resolution)
             return; // Not yet initialized
+        PROFILE_CPU();
         const auto currentFrame = Engine::FrameCount;
         {
             // Perform atlas defragmentation if needed
@@ -323,7 +324,7 @@ public:
         }
     }
 
-    void WaitForDrawActors()
+    void WaitForDrawing()
     {
         for (int64 label : AsyncDrawWaitLabels)
             JobSystem::Wait(label);
@@ -655,7 +656,7 @@ void GlobalSurfaceAtlasPass::Dispose()
 void GlobalSurfaceAtlasPass::OnCollectDrawCalls(RenderContextBatch& renderContextBatch)
 {
     // Check if Global Surface Atlas will be used this frame
-    PROFILE_GPU_CPU_NAMED("Global Surface Atlas");
+    PROFILE_CPU_NAMED("Global Surface Atlas");
     if (checkIfSkipPass())
         return;
     RenderContext& renderContext = renderContextBatch.GetMainContext();
@@ -668,7 +669,7 @@ void GlobalSurfaceAtlasPass::OnCollectDrawCalls(RenderContextBatch& renderContex
         return;
     auto& surfaceAtlasData = *renderContext.Buffers->GetCustomBuffer<GlobalSurfaceAtlasCustomBuffer>(TEXT("GlobalSurfaceAtlas"));
     _surfaceAtlasData = &surfaceAtlasData;
-    surfaceAtlasData.StartDrawActors(renderContext, renderContextBatch.EnableAsync);
+    surfaceAtlasData.StartDrawing(renderContext, renderContextBatch.EnableAsync);
 }
 
 bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* context, BindingData& result)
@@ -739,8 +740,8 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
 
     // Ensure that async objects drawing ended
     _surfaceAtlasData = &surfaceAtlasData;
-    surfaceAtlasData.StartDrawActors(renderContext); // (ignored if not started earlier this frame)
-    surfaceAtlasData.WaitForDrawActors();
+    surfaceAtlasData.StartDrawing(renderContext); // (ignored if not started earlier this frame)
+    surfaceAtlasData.WaitForDrawing();
 
     // Utility for writing into tiles vertex buffer
     const Float2 posToClipMul(2.0f * resolutionInv, -2.0f * resolutionInv);
