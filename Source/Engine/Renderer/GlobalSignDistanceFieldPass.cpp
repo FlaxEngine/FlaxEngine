@@ -300,10 +300,10 @@ public:
             FrameIndex = 0;
         AsyncRenderContext = renderContext;
         AsyncRenderContext.View.Pass = DrawPass::GlobalSDF;
-        const bool useCache = !reset && !GLOBAL_SDF_DEBUG_FORCE_REDRAW && GPU_SPREAD_WORKLOAD;
+        const bool useCache = !reset && !GLOBAL_SDF_DEBUG_FORCE_REDRAW;
         static_assert(GLOBAL_SDF_RASTERIZE_CHUNK_SIZE % GLOBAL_SDF_RASTERIZE_GROUP_SIZE == 0, "Invalid chunk size for Global SDF rasterization group size.");
         const int32 rasterizeChunks = Math::CeilToInt((float)resolution / (float)GLOBAL_SDF_RASTERIZE_CHUNK_SIZE);
-        const bool updateEveryFrame = false; // true if update all cascades every frame
+        const bool updateEveryFrame = !GPU_SPREAD_WORKLOAD; // true if update all cascades every frame
         const int32 maxCascadeUpdatesPerFrame = 1; // maximum cascades to update at a single frame
 
         // Rasterize world geometry into Global SDF
@@ -462,19 +462,19 @@ void GlobalSignDistanceFieldCustomBuffer::UpdateCascadeChunks(CascadeData& casca
             continue;
         if (e.Value.Dynamic)
         {
-            // Remove static chunk with dynamic objects
+            // Remove static chunk if it contains any dynamic object
             cascade.StaticChunks.Remove(e.Key);
         }
         else if (cascade.StaticChunks.Contains(e.Key))
         {
-            // Skip updating static chunk
+            // Remove chunk from update since it's static
             auto key = e.Key;
             while (cascade.Chunks.Remove(key))
                 key.NextLayer();
         }
         else
         {
-            // Add to cache (render now but skip next frame)
+            // Add to static cache (render now but skip next frame)
             cascade.StaticChunks.Add(e.Key);
         }
     }
@@ -823,7 +823,7 @@ bool GlobalSignDistanceFieldPass::Render(RenderContext& renderContext, GPUContex
         context->BindUA(0, textureView);
         context->BindCB(1, _cb1);
         constexpr int32 chunkDispatchGroups = GLOBAL_SDF_RASTERIZE_CHUNK_SIZE / GLOBAL_SDF_RASTERIZE_GROUP_SIZE;
-        bool anyChunkDispatch = false;
+        int32 chunkDispatches = 0;
         if (!reset)
         {
             PROFILE_GPU_CPU_NAMED("Clear Chunks");
@@ -838,9 +838,10 @@ bool GlobalSignDistanceFieldPass::Render(RenderContext& renderContext, GPUContex
                 data.ChunkCoord = key.Coord * GLOBAL_SDF_RASTERIZE_CHUNK_SIZE;
                 context->UpdateCB(_cb1, &data);
                 context->Dispatch(_csClearChunk, chunkDispatchGroups, chunkDispatchGroups, chunkDispatchGroups);
-                anyChunkDispatch = true;
+                chunkDispatches++;
                 // TODO: don't stall with UAV barrier on D3D12/Vulkan if UAVs don't change between dispatches
             }
+            ZoneValue(chunkDispatches);
         }
         {
             PROFILE_GPU_CPU_NAMED("Rasterize Chunks");
@@ -879,7 +880,7 @@ bool GlobalSignDistanceFieldPass::Render(RenderContext& renderContext, GPUContex
                 context->UpdateCB(_cb1, &data);
                 auto cs = data.ObjectsCount != 0 ? _csRasterizeModel0 : _csClearChunk; // Terrain-only chunk can be quickly cleared
                 context->Dispatch(cs, chunkDispatchGroups, chunkDispatchGroups, chunkDispatchGroups);
-                anyChunkDispatch = true;
+                chunkDispatches++;
                 // TODO: don't stall with UAV barrier on D3D12/Vulkan if UAVs don't change between dispatches (maybe cache per-shader write/read flags for all UAVs?)
 
                 if (chunk.HeightfieldsCount != 0)
@@ -896,6 +897,7 @@ bool GlobalSignDistanceFieldPass::Render(RenderContext& renderContext, GPUContex
                     data.ObjectsCount = chunk.HeightfieldsCount;
                     context->UpdateCB(_cb1, &data);
                     context->Dispatch(_csRasterizeHeightfield, chunkDispatchGroups, chunkDispatchGroups, chunkDispatchGroups);
+                    chunkDispatches++;
                 }
 
 #if GLOBAL_SDF_DEBUG_CHUNKS
@@ -940,6 +942,7 @@ bool GlobalSignDistanceFieldPass::Render(RenderContext& renderContext, GPUContex
                     data.ObjectsCount = chunk.ModelsCount;
                     context->UpdateCB(_cb1, &data);
                     context->Dispatch(_csRasterizeModel1, chunkDispatchGroups, chunkDispatchGroups, chunkDispatchGroups);
+                    chunkDispatches++;
                 }
 
                 if (chunk.HeightfieldsCount != 0)
@@ -956,13 +959,15 @@ bool GlobalSignDistanceFieldPass::Render(RenderContext& renderContext, GPUContex
                     data.ObjectsCount = chunk.HeightfieldsCount;
                     context->UpdateCB(_cb1, &data);
                     context->Dispatch(_csRasterizeHeightfield, chunkDispatchGroups, chunkDispatchGroups, chunkDispatchGroups);
+                    chunkDispatches++;
                 }
-                anyChunkDispatch = true;
             }
+
+            ZoneValue(chunkDispatches);
         }
 
         // Generate mip out of cascade (empty chunks have distance value 1 which is incorrect so mip will be used as a fallback - lower res)
-        if (reset || anyChunkDispatch)
+        if (reset || chunkDispatches != 0)
         {
             PROFILE_GPU_CPU_NAMED("Generate Mip");
             context->ResetUA();
