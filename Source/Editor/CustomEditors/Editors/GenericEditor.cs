@@ -474,32 +474,7 @@ namespace FlaxEditor.CustomEditors.Editors
             }
             if (layout.Editors.Count != 0)
             {
-                var sb = Clipboard.Text;
-                if (!string.IsNullOrEmpty(sb))
-                {
-                    try
-                    {
-                        var data = JsonSerializer.Deserialize<string[]>(sb);
-                        if (data == null || data.Length != layout.Editors.Count)
-                            return false;
-                        for (var i = 0; i < layout.Editors.Count; i++)
-                        {
-                            Clipboard.Text = data[i];
-                            if (!layout.Editors[i].CanPaste)
-                                return false;
-                        }
-                        return true;
-                    }
-                    catch
-                    {
-                        return false;
-                    }
-                    finally
-                    {
-                        Clipboard.Text = sb;
-                    }
-                }
-                return false;
+                return !string.IsNullOrEmpty(Clipboard.Text);
             }
             if (layout.Children.Any(x => x is LayoutElementsContainer))
             {
