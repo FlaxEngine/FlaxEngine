@@ -691,7 +691,7 @@ void RenderList::ExecuteDrawCalls(const RenderContext& renderContext, DrawCallsL
     // Prepare instance buffer
     if (useInstancing)
     {
-        // Prepare buffer memory
+        PROFILE_CPU_NAMED("Build Instancing");
         int32 instancedBatchesCount = 0;
         for (int32 i = 0; i < list.Batches.Count(); i++)
         {
@@ -705,49 +705,50 @@ void RenderList::ExecuteDrawCalls(const RenderContext& renderContext, DrawCallsL
             if (batch.Instances.Count() > 1)
                 instancedBatchesCount += batch.Instances.Count();
         }
-        if (instancedBatchesCount == 0)
+        if (instancedBatchesCount != 0)
         {
-            // Faster path if none of the draw batches requires instancing
-            useInstancing = false;
-            goto DRAW;
-        }
-        _instanceBuffer.Clear();
-        _instanceBuffer.Data.Resize(instancedBatchesCount * sizeof(InstanceData));
-        auto instanceData = (InstanceData*)_instanceBuffer.Data.Get();
+            _instanceBuffer.Clear();
+            _instanceBuffer.Data.Resize(instancedBatchesCount * sizeof(InstanceData));
+            auto instanceData = (InstanceData*)_instanceBuffer.Data.Get();
 
-        // Write to instance buffer
-        for (int32 i = 0; i < list.Batches.Count(); i++)
-        {
-            auto& batch = batchesData[i];
-            if (batch.BatchSize > 1)
+            // Write to instance buffer
+            for (int32 i = 0; i < list.Batches.Count(); i++)
             {
-                IMaterial::InstancingHandler handler;
-                drawCallsData[listData[batch.StartIndex]].Material->CanUseInstancing(handler);
-                for (int32 j = 0; j < batch.BatchSize; j++)
+                auto& batch = batchesData[i];
+                if (batch.BatchSize > 1)
                 {
-                    auto& drawCall = drawCallsData[listData[batch.StartIndex + j]];
-                    handler.WriteDrawCall(instanceData, drawCall);
-                    instanceData++;
+                    IMaterial::InstancingHandler handler;
+                    drawCallsData[listData[batch.StartIndex]].Material->CanUseInstancing(handler);
+                    for (int32 j = 0; j < batch.BatchSize; j++)
+                    {
+                        auto& drawCall = drawCallsData[listData[batch.StartIndex + j]];
+                        handler.WriteDrawCall(instanceData, drawCall);
+                        instanceData++;
+                    }
                 }
             }
-        }
-        for (int32 i = 0; i < list.PreBatchedDrawCalls.Count(); i++)
-        {
-            auto& batch = BatchedDrawCalls.Get()[list.PreBatchedDrawCalls.Get()[i]];
-            if (batch.Instances.Count() > 1)
+            for (int32 i = 0; i < list.PreBatchedDrawCalls.Count(); i++)
             {
-                Platform::MemoryCopy(instanceData, batch.Instances.Get(), batch.Instances.Count() * sizeof(InstanceData));
-                instanceData += batch.Instances.Count();
+                auto& batch = BatchedDrawCalls.Get()[list.PreBatchedDrawCalls.Get()[i]];
+                if (batch.Instances.Count() > 1)
+                {
+                    Platform::MemoryCopy(instanceData, batch.Instances.Get(), batch.Instances.Count() * sizeof(InstanceData));
+                    instanceData += batch.Instances.Count();
+                }
             }
-        }
 
-        // Upload data
-        _instanceBuffer.Flush(context);
+            // Upload data
+            _instanceBuffer.Flush(context);
+        }
+        else
+        {
+            // No batches so no instancing
+            useInstancing = false;
+        }
     }
 
-DRAW:
-
     // Execute draw calls
+    int32 draws = list.Batches.Count();
     MaterialBase::BindParameters bindParams(context, renderContext);
     bindParams.Input = input;
     bindParams.BindViewData();
@@ -856,6 +857,7 @@ DRAW:
                 }
             }
         }
+        draws += list.PreBatchedDrawCalls.Count();
     }
     else
     {
@@ -909,6 +911,7 @@ DRAW:
                 context->BindVB(ToSpan(drawCall.Geometry.VertexBuffers, 3), drawCall.Geometry.VertexBuffersOffsets);
                 context->DrawIndexedInstanced(drawCall.Draw.IndicesCount, drawCall.InstanceCount, 0, 0, drawCall.Draw.StartIndex);
             }
+            draws += batch.Instances.Count();
         }
         if (list.Batches.IsEmpty() && list.Indices.Count() != 0)
         {
@@ -931,8 +934,10 @@ DRAW:
                     context->DrawIndexedInstanced(drawCall.Draw.IndicesCount, drawCall.InstanceCount, 0, 0, drawCall.Draw.StartIndex);
                 }
             }
+            draws += list.Indices.Count();
         }
     }
+    ZoneValue(draws);
 }
 
 void SurfaceDrawCallHandler::GetHash(const DrawCall& drawCall, uint32& batchKey)
