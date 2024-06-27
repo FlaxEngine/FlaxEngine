@@ -22,7 +22,7 @@ namespace FlaxEditor.CustomEditors.Elements
         /// <summary>
         /// [Deprecated on 26.05.2022, expires on 26.05.2024]
         /// </summary>
-        [System.Obsolete("Deprecated in 1.4, use ValueBox instead")]
+        [System.Obsolete("Use ValueBox instead")]
         public FloatValueBox FloatValue => ValueBox;
 
         /// <summary>

@@ -64,7 +64,7 @@ public:
     /// [Deprecated in v1.9]
     /// </summary>
     API_FIELD(Attributes="EditorOrder(1320), DefaultValue(false), EditorDisplay(\"Quality\", \"Allow CSM Blending\")")
-    DEPRECATED bool AllowCSMBlending = false;
+    DEPRECATED() bool AllowCSMBlending = false;
 
     /// <summary>
     /// Default probes cubemap resolution (use for Environment Probes, can be overriden per-actor).

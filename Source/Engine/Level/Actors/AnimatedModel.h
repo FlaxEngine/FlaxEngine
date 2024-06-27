@@ -160,7 +160,7 @@ public:
     /// [Deprecated on 26.10.2022, expires on 26.10.2024]
     /// </summary>
     API_FIELD(Attributes="EditorOrder(110), DefaultValue(ShadowsCastingMode.All), EditorDisplay(\"Skinned Model\")")
-    DEPRECATED ShadowsCastingMode ShadowsMode = ShadowsCastingMode::All;
+    DEPRECATED() ShadowsCastingMode ShadowsMode = ShadowsCastingMode::All;
 
     /// <summary>
     /// The animation root motion apply target. If not specified the animated model will apply it itself.

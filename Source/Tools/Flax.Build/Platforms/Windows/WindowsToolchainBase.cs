@@ -617,6 +617,9 @@ namespace Flax.Build.Platforms
                         commonArgs.Add(string.Format("/FU\"{0}\\platform.winmd\"", dir));
                     }
                 }
+
+                // Preprocessor conformance mode
+                commonArgs.Add("/Zc:preprocessor");
             }
 
             // Add preprocessor definitions

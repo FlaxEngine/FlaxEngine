@@ -589,7 +589,13 @@ namespace Flax.Build.Bindings
                 token = context.Tokenizer.NextToken();
                 if (!desc.IsDeprecated && token.Value == "DEPRECATED")
                 {
-                    desc.IsDeprecated = true;
+                    token = context.Tokenizer.NextToken();
+                    string message = "";
+                    if (token.Type == TokenType.LeftParent)
+                        context.Tokenizer.SkipUntil(TokenType.RightParent, out message);
+                    else
+                        context.Tokenizer.PreviousToken();
+                    desc.DeprecatedMessage = message.Trim('"');
                 }
                 else
                 {
@@ -698,7 +704,13 @@ namespace Flax.Build.Bindings
                 token = context.Tokenizer.NextToken();
                 if (!desc.IsDeprecated && token.Value == "DEPRECATED")
                 {
-                    desc.IsDeprecated = true;
+                    token = context.Tokenizer.NextToken();
+                    string message = "";
+                    if (token.Type == TokenType.LeftParent)
+                        context.Tokenizer.SkipUntil(TokenType.RightParent, out message);
+                    else
+                        context.Tokenizer.PreviousToken();
+                    desc.DeprecatedMessage = message.Trim('"');
                 }
                 else
                 {
@@ -797,8 +809,14 @@ namespace Flax.Build.Bindings
                 }
                 else if (!desc.IsDeprecated && token.Value == "DEPRECATED")
                 {
-                    desc.IsDeprecated = true;
-                    context.Tokenizer.NextToken();
+                    token = context.Tokenizer.NextToken();
+                    string message = "";
+                    if (token.Type == TokenType.LeftParent)
+                    {
+                        context.Tokenizer.SkipUntil(TokenType.RightParent, out message);
+                        context.Tokenizer.NextToken();
+                    }
+                    desc.DeprecatedMessage = message.Trim('"');
                 }
                 else
                 {
@@ -960,7 +978,7 @@ namespace Flax.Build.Bindings
                 propertyInfo.Getter = functionInfo;
             else
                 propertyInfo.Setter = functionInfo;
-            propertyInfo.IsDeprecated |= functionInfo.IsDeprecated;
+            propertyInfo.DeprecatedMessage = functionInfo.DeprecatedMessage;
             propertyInfo.IsHidden |= functionInfo.IsHidden;
 
             if (propertyInfo.Getter != null && propertyInfo.Setter != null)
@@ -1025,7 +1043,13 @@ namespace Flax.Build.Bindings
                 token = context.Tokenizer.NextToken();
                 if (!desc.IsDeprecated && token.Value == "DEPRECATED")
                 {
-                    desc.IsDeprecated = true;
+                    token = context.Tokenizer.NextToken();
+                    string message = "";
+                    if (token.Type == TokenType.LeftParent)
+                        context.Tokenizer.SkipUntil(TokenType.RightParent, out message);
+                    else
+                        context.Tokenizer.PreviousToken();
+                    desc.DeprecatedMessage = message.Trim('"');
                 }
                 else
                 {
@@ -1300,8 +1324,14 @@ namespace Flax.Build.Bindings
                 }
                 else if (!desc.IsDeprecated && token.Value == "DEPRECATED")
                 {
-                    desc.IsDeprecated = true;
-                    context.Tokenizer.NextToken();
+                    token = context.Tokenizer.NextToken();
+                    string message = "";
+                    if (token.Type == TokenType.LeftParent)
+                    {
+                        context.Tokenizer.SkipUntil(TokenType.RightParent, out message);
+                        context.Tokenizer.NextToken();
+                    }
+                    desc.DeprecatedMessage = message.Trim('"');
                 }
                 else
                 {

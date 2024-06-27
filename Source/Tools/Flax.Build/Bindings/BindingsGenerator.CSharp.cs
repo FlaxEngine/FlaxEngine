@@ -829,7 +829,7 @@ namespace Flax.Build.Bindings
             }
         }
 
-        private static void GenerateCSharpAttributes(BuildData buildData, StringBuilder contents, string indent, ApiTypeInfo apiTypeInfo, string attributes = null, string[] comment = null, bool canUseTooltip = false, bool useUnmanaged = false, string defaultValue = null, bool isDeprecated = false, TypeInfo defaultValueType = null)
+        private static void GenerateCSharpAttributes(BuildData buildData, StringBuilder contents, string indent, ApiTypeInfo apiTypeInfo, string attributes = null, string[] comment = null, bool canUseTooltip = false, bool useUnmanaged = false, string defaultValue = null, string deprecatedMessage = null, TypeInfo defaultValueType = null)
         {
 #if AUTO_DOC_TOOLTIPS
             var writeTooltip = true;
@@ -853,10 +853,15 @@ namespace Flax.Build.Bindings
                 // Skip boilerplate code when using debugger
                 //contents.Append(indent).AppendLine("[System.Diagnostics.DebuggerStepThrough]");
             }
-            if (isDeprecated || apiTypeInfo.IsDeprecated)
+            if (deprecatedMessage != null || apiTypeInfo.IsDeprecated)
             {
                 // Deprecated type
-                contents.Append(indent).AppendLine("[Obsolete]");
+                if (!string.IsNullOrEmpty(apiTypeInfo.DeprecatedMessage))
+                    contents.Append(indent).AppendLine($"[Obsolete(\"{apiTypeInfo.DeprecatedMessage}\")]");
+                else if (!string.IsNullOrEmpty(deprecatedMessage))
+                    contents.Append(indent).AppendLine($"[Obsolete(\"{deprecatedMessage}\")]");
+                else
+                    contents.Append(indent).AppendLine("[Obsolete]");
             }
 
 #if AUTO_DOC_TOOLTIPS
@@ -901,12 +906,12 @@ namespace Flax.Build.Bindings
 
         private static void GenerateCSharpAttributes(BuildData buildData, StringBuilder contents, string indent, ApiTypeInfo apiTypeInfo, bool useUnmanaged, string defaultValue = null, TypeInfo defaultValueType = null)
         {
-            GenerateCSharpAttributes(buildData, contents, indent, apiTypeInfo, apiTypeInfo.Attributes, apiTypeInfo.Comment, true, useUnmanaged, defaultValue, false, defaultValueType);
+            GenerateCSharpAttributes(buildData, contents, indent, apiTypeInfo, apiTypeInfo.Attributes, apiTypeInfo.Comment, true, useUnmanaged, defaultValue, null, defaultValueType);
         }
 
         private static void GenerateCSharpAttributes(BuildData buildData, StringBuilder contents, string indent, ApiTypeInfo apiTypeInfo, MemberInfo memberInfo, bool useUnmanaged, string defaultValue = null, TypeInfo defaultValueType = null)
         {
-            GenerateCSharpAttributes(buildData, contents, indent, apiTypeInfo, memberInfo.Attributes, memberInfo.Comment, true, useUnmanaged, defaultValue, memberInfo.IsDeprecated, defaultValueType);
+            GenerateCSharpAttributes(buildData, contents, indent, apiTypeInfo, memberInfo.Attributes, memberInfo.Comment, true, useUnmanaged, defaultValue, memberInfo.DeprecatedMessage, defaultValueType);
         }
 
         private static bool GenerateCSharpStructureUseDefaultInitialize(BuildData buildData, StructureInfo structureInfo)
@@ -1426,6 +1431,7 @@ namespace Flax.Build.Bindings
                 {{GenerateCSharpAccessLevel(classInfo.Access)}}static class {{marshallerName}}
                 {
                 #pragma warning disable 1591
+                #pragma warning disable 618
                 #if FLAX_EDITOR
                     [HideInEditor]
                 #endif
@@ -1462,6 +1468,7 @@ namespace Flax.Build.Bindings
 
                     internal static {{classInfo.Name}} ToManaged(IntPtr managed) => Unsafe.As<{{classInfo.Name}}>(ManagedHandleMarshaller.ToManaged(managed));
                     internal static IntPtr ToNative({{classInfo.Name}} managed) => ManagedHandleMarshaller.ToNative(managed);
+                #pragma warning restore 618
                 #pragma warning restore 1591
                 }
                 """).Split(new char[] { '\n' })));
@@ -1759,6 +1766,7 @@ namespace Flax.Build.Bindings
                 {{GenerateCSharpAccessLevel(structureInfo.Access)}}static unsafe class {{marshallerName}}
                 {
                 #pragma warning disable 1591
+                #pragma warning disable 618
                     {{structContents.Replace("\n", "\n" + "    ").ToString().TrimEnd()}}
 
                     {{InsertHideInEditorSection()}}
@@ -1805,6 +1813,7 @@ namespace Flax.Build.Bindings
                     {
                         {{toNativeContent.Replace("\n", "\n" + "        ").ToString().TrimEnd()}}
                     }
+                #pragma warning restore 618
                 #pragma warning restore 1591
                 }
                 """).Split(new char[] { '\n' })));
@@ -2165,8 +2174,10 @@ namespace Flax.Build.Bindings
                 contents.Append(indent).AppendLine($"public static class {marshallerName}");
                 contents.Append(indent).AppendLine("{");
                 contents.AppendLine("#pragma warning disable 1591");
+                contents.AppendLine("#pragma warning disable 618");
                 contents.Append(indent).Append("    ").AppendLine($"internal static {interfaceInfo.Name} ConvertToManaged(IntPtr unmanaged) => ({interfaceInfo.Name})ManagedHandleMarshaller.ConvertToManaged(unmanaged);");
                 contents.Append(indent).Append("    ").AppendLine($"internal static IntPtr ConvertToUnmanaged({interfaceInfo.Name} managed) => ManagedHandleMarshaller.ConvertToUnmanaged(managed);");
+                contents.AppendLine("#pragma warning restore 618");
                 contents.AppendLine("#pragma warning restore 1591");
                 contents.Append(indent).AppendLine("}");
             }
