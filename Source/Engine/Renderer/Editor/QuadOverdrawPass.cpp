@@ -14,6 +14,7 @@
 #include "Engine/Graphics/RenderBuffers.h"
 #include "Engine/Graphics/RenderTargetPool.h"
 #include "Engine/Renderer/RenderList.h"
+#include "Engine/Graphics/RenderTools.h"
 
 void QuadOverdrawPass::Render(RenderContext& renderContext, GPUContext* context, GPUTextureView* lightBuffer)
 {
@@ -82,7 +83,7 @@ void QuadOverdrawPass::Render(RenderContext& renderContext, GPUContext* context,
         m1 *= m2;
         drawCall.World = m1;
         drawCall.ObjectPosition = drawCall.World.GetTranslation();
-        drawCall.WorldDeterminantSign = Math::FloatSelect(drawCall.World.RotDeterminant(), 1, -1);
+        drawCall.WorldDeterminantSign = RenderTools::GetWorldDeterminantSign(drawCall.World);
         skyMaterial->Bind(bindParams);
         skyModel->Render(context);
     }

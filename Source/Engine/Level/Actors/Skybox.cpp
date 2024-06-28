@@ -3,10 +3,11 @@
 #include "Skybox.h"
 #include "Engine/Core/Math/Color.h"
 #include "Engine/Core/Types/Variant.h"
-#include "Engine/Graphics/RenderView.h"
 #include "Engine/Renderer/RenderList.h"
 #include "Engine/Serialization/Serialization.h"
+#include "Engine/Graphics/RenderView.h"
 #include "Engine/Graphics/RenderTask.h"
+#include "Engine/Graphics/RenderTools.h"
 #include "Engine/Level/Scene/SceneRendering.h"
 #include "Engine/Content/Assets/Material.h"
 #include "Engine/Content/Content.h"
@@ -101,7 +102,7 @@ void Skybox::ApplySky(GPUContext* context, RenderContext& renderContext, const M
     drawCall.ObjectPosition = drawCall.World.GetTranslation();
     drawCall.ObjectRadius = (float)_sphere.Radius;
     drawCall.Surface.GeometrySize = _box.GetSize();
-    drawCall.WorldDeterminantSign = Math::FloatSelect(world.RotDeterminant(), 1, -1);
+    drawCall.WorldDeterminantSign = RenderTools::GetWorldDeterminantSign(drawCall.World);
     drawCall.PerInstanceRandom = GetPerInstanceRandom();
     MaterialBase::BindParameters bindParams(context, renderContext, drawCall);
     bindParams.BindViewData();

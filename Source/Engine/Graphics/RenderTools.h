@@ -29,6 +29,11 @@ public:
         return mipSlice + arraySlice * mipLevels;
     }
 
+    FORCE_INLINE static float GetWorldDeterminantSign(const Matrix& worldMatrix)
+    {
+        return Math::FloatSelect(worldMatrix.RotDeterminant(), 1, -1);
+    }
+
     /// <summary>
     /// Computes the feature level for the given shader profile.
     /// </summary>

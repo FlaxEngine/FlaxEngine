@@ -490,7 +490,6 @@ void Foliage::DrawType(RenderContext& renderContext, const FoliageType& type, Dr
         batch.DrawCall.World.SetRow4(Float4(firstInstance.InstanceOrigin, 1.0f));
         batch.DrawCall.Surface.PrevWorld = batch.DrawCall.World;
         batch.DrawCall.Surface.GeometrySize = mesh.GetBox().GetSize();
-        batch.DrawCall.Surface.Skinning = nullptr;
         batch.DrawCall.WorldDeterminantSign = 1;
 
         if (EnumHasAnyFlags(drawModes, DrawPass::Forward))

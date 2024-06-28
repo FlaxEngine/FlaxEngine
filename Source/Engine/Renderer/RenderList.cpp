@@ -691,7 +691,6 @@ void RenderList::ExecuteDrawCalls(const RenderContext& renderContext, DrawCallsL
     // Prepare instance buffer
     if (useInstancing)
     {
-        PROFILE_CPU_NAMED("Build Instancing");
         int32 instancedBatchesCount = 0;
         for (int32 i = 0; i < list.Batches.Count(); i++)
         {
@@ -707,6 +706,7 @@ void RenderList::ExecuteDrawCalls(const RenderContext& renderContext, DrawCallsL
         }
         if (instancedBatchesCount != 0)
         {
+            PROFILE_CPU_NAMED("Build Instancing");
             _instanceBuffer.Clear();
             _instanceBuffer.Data.Resize(instancedBatchesCount * sizeof(InstanceData));
             auto instanceData = (InstanceData*)_instanceBuffer.Data.Get();

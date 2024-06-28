@@ -9,6 +9,7 @@
 #include "Engine/Graphics/RenderTask.h"
 #include "Engine/Graphics/Textures/GPUTexture.h"
 #include "Engine/Renderer/RenderList.h"
+#include "Engine/Graphics/RenderTools.h"
 #include "Engine/Core/Math/OrientedBoundingBox.h"
 #include "Engine/Level/Scene/Scene.h"
 #if USE_EDITOR
@@ -121,7 +122,7 @@ void TerrainChunk::Draw(const RenderContext& renderContext) const
         drawCall.Terrain.Lightmap = nullptr;
         drawCall.Terrain.LightmapUVsArea = Rectangle::Empty;
     }
-    drawCall.WorldDeterminantSign = Math::FloatSelect(drawCall.World.RotDeterminant(), 1, -1);
+    drawCall.WorldDeterminantSign = RenderTools::GetWorldDeterminantSign(drawCall.World);
     drawCall.PerInstanceRandom = _perInstanceRandom;
 
     // Add half-texel offset for heightmap sampling in vertex shader
@@ -178,7 +179,7 @@ void TerrainChunk::Draw(const RenderContext& renderContext, MaterialBase* materi
         drawCall.Terrain.Lightmap = nullptr;
         drawCall.Terrain.LightmapUVsArea = Rectangle::Empty;
     }
-    drawCall.WorldDeterminantSign = Math::FloatSelect(drawCall.World.RotDeterminant(), 1, -1);
+    drawCall.WorldDeterminantSign = RenderTools::GetWorldDeterminantSign(drawCall.World);
     drawCall.PerInstanceRandom = _perInstanceRandom;
 
     // Add half-texel offset for heightmap sampling in vertex shader
