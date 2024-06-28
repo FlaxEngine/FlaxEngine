@@ -20,7 +20,7 @@
 #include "DeformableMaterialShader.h"
 #include "VolumeParticleMaterialShader.h"
 
-PACK_STRUCT(struct MaterialShaderDataPerView {
+GPU_CB_STRUCT(MaterialShaderDataPerView {
     Matrix ViewMatrix;
     Matrix ViewProjectionMatrix;
     Matrix PrevViewProjectionMatrix;
@@ -73,20 +73,20 @@ void IMaterial::BindParameters::BindViewData()
     }
 
     // Setup data
+    const auto& view = RenderContext.View;
     MaterialShaderDataPerView cb;
-    int aa1 = sizeof(MaterialShaderDataPerView);
-    Matrix::Transpose(RenderContext.View.Frustum.GetMatrix(), cb.ViewProjectionMatrix);
-    Matrix::Transpose(RenderContext.View.View, cb.ViewMatrix);
-    Matrix::Transpose(RenderContext.View.PrevViewProjection, cb.PrevViewProjectionMatrix);
-    Matrix::Transpose(RenderContext.View.MainViewProjection, cb.MainViewProjectionMatrix);
-    cb.MainScreenSize = RenderContext.View.MainScreenSize;
-    cb.ViewPos = RenderContext.View.Position;
-    cb.ViewFar = RenderContext.View.Far;
-    cb.ViewDir = RenderContext.View.Direction;
+    Matrix::Transpose(view.Frustum.GetMatrix(), cb.ViewProjectionMatrix);
+    Matrix::Transpose(view.View, cb.ViewMatrix);
+    Matrix::Transpose(view.PrevViewProjection, cb.PrevViewProjectionMatrix);
+    Matrix::Transpose(view.MainViewProjection, cb.MainViewProjectionMatrix);
+    cb.MainScreenSize = view.MainScreenSize;
+    cb.ViewPos = view.Position;
+    cb.ViewFar = view.Far;
+    cb.ViewDir = view.Direction;
     cb.TimeParam = TimeParam;
-    cb.ViewInfo = RenderContext.View.ViewInfo;
-    cb.ScreenSize = RenderContext.View.ScreenSize;
-    cb.TemporalAAJitter = RenderContext.View.TemporalAAJitter;
+    cb.ViewInfo = view.ViewInfo;
+    cb.ScreenSize = view.ScreenSize;
+    cb.TemporalAAJitter = view.TemporalAAJitter;
 
     // Update constants
     GPUContext->UpdateCB(PerViewConstants, &cb);
