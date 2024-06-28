@@ -409,6 +409,8 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext, RenderCont
         JobSystem::SetJobStartingOnDispatch(false);
         task->OnCollectDrawCalls(renderContextBatch, SceneRendering::DrawCategory::SceneDraw);
         task->OnCollectDrawCalls(renderContextBatch, SceneRendering::DrawCategory::SceneDrawAsync);
+        if (setup.UseGlobalSDF)
+            GlobalSignDistanceFieldPass::Instance()->OnCollectDrawCalls(renderContextBatch);
         if (setup.UseGlobalSurfaceAtlas)
             GlobalSurfaceAtlasPass::Instance()->OnCollectDrawCalls(renderContextBatch);
 

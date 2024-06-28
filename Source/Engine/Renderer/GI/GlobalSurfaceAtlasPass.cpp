@@ -14,7 +14,6 @@
 #include "Engine/Content/Content.h"
 #include "Engine/Graphics/GPUContext.h"
 #include "Engine/Graphics/GPUDevice.h"
-#include "Engine/Graphics/Graphics.h"
 #include "Engine/Graphics/RenderTask.h"
 #include "Engine/Graphics/RenderBuffers.h"
 #include "Engine/Graphics/RenderTargetPool.h"
@@ -40,6 +39,8 @@
 #define GLOBAL_SURFACE_ATLAS_DEBUG_FORCE_REDRAW_TILES 0 // Forces to redraw all object tiles every frame
 #define GLOBAL_SURFACE_ATLAS_DEBUG_DRAW_OBJECTS 0 // Debug draws object bounds on redraw (and tile draw projection locations)
 #define GLOBAL_SURFACE_ATLAS_DEBUG_DRAW_CHUNKS 0 // Debug draws culled chunks bounds (non-empty)
+#define GLOBAL_SURFACE_ATLAS_MAX_NEW_OBJECTS_PER_FRAME 500 // Limits the amount of newly added objects to atlas per-frame to reduce hitches on 1st frame or camera-cut
+#define GLOBAL_SURFACE_ATLAS_DIRTY_FRAMES(flags) (EnumHasAnyFlags(flags, StaticFlags::Lightmap) ? 200 : 10) // Amount of frames after which update object (less frequent updates for static scenes)
 
 #if GLOBAL_SURFACE_ATLAS_DEBUG_DRAW_OBJECTS || GLOBAL_SURFACE_ATLAS_DEBUG_DRAW_CHUNKS
 #include "Engine/Debug/DebugDraw.h"
@@ -131,6 +132,7 @@ class GlobalSurfaceAtlasCustomBuffer : public RenderBuffers::CustomBuffer, publi
 {
 public:
     int32 Resolution = 0;
+    float ResolutionInv;
     int32 AtlasPixelsTotal = 0;
     int32 AtlasPixelsUsed = 0;
     uint64 LastFrameAtlasInsertFail = 0;
@@ -155,7 +157,6 @@ public:
     Array<void*> DirtyObjectsBuffer;
     Vector4 CullingPosDistance;
     uint64 CurrentFrame;
-    float ResolutionInv;
     Float3 ViewPosition;
     float TileTexelsPerWorldUnit;
     float DistanceScalingStart;
@@ -164,7 +165,7 @@ public:
     float MinObjectRadius;
 
     // Async objects drawing cache
-    Array<int64, FixedAllocation<2>> AsyncDrawWaitLabels;
+    Array<int64, FixedAllocation<3>> AsyncDrawWaitLabels;
     RenderListBuffer<GlobalSurfaceAtlasTile*> AsyncFreeTiles;
     RenderListBuffer<GlobalSurfaceAtlasNewObject> AsyncNewObjects;
     RenderListBuffer<GlobalSurfaceAtlasNewTile> AsyncNewTiles;
@@ -178,7 +179,7 @@ public:
 
     void ClearObjects()
     {
-        WaitForDrawActors();
+        WaitForDrawing();
         CulledObjectsCounterIndex = -1;
         CulledObjectsUsageHistory.Clear();
         LastFrameAtlasDefragmentation = Engine::FrameCount;
@@ -250,16 +251,17 @@ public:
         }
     }
 
-    void StartDrawActors(const RenderContext& renderContext, bool enableAsync = false)
+    void StartDrawing(const RenderContext& renderContext, bool enableAsync = false)
     {
         if (AsyncDrawWaitLabels.HasItems())
             return; // Already started earlier this frame
         int32 resolution;
         float distance;
         GetOptions(renderContext, resolution, distance);
-        const float resolutionInv = 1.0f / (float)resolution;
+        if (Resolution != resolution)
+            return; // Not yet initialized
+        PROFILE_CPU();
         const auto currentFrame = Engine::FrameCount;
-        if (Resolution == resolution)
         {
             // Perform atlas defragmentation if needed
             constexpr float maxUsageToDefrag = 0.8f;
@@ -281,7 +283,6 @@ public:
 
         // Setup data for rendering
         CurrentFrame = currentFrame;
-        ResolutionInv = resolutionInv;
         ViewPosition = renderContext.View.Position;
         TileTexelsPerWorldUnit = 1.0f / METERS_TO_UNITS(0.1f); // Scales the tiles resolution
         DistanceScalingStart = METERS_TO_UNITS(20.0f); // Distance from camera at which the tiles resolution starts to be scaled down
@@ -301,42 +302,43 @@ public:
 
         if (enableAsync)
         {
-            // Run in async via Job System
+            // Run sync actors drawing now or force in async (different drawing path doesn't interfere with normal scene drawing)
             Function<void(int32)> func;
-            func.Bind<GlobalSurfaceAtlasCustomBuffer, &GlobalSurfaceAtlasCustomBuffer::DrawActorsJob>(this);
+            func.Bind<GlobalSurfaceAtlasCustomBuffer, &GlobalSurfaceAtlasCustomBuffer::DrawActorsJobSync>(this);
             const int32 jobCount = Math::Max(JobSystem::GetThreadsCount() - 1, 1); // Leave 1 thread unused to not block the main-thread (jobs will overlap with rendering)
             AsyncDrawWaitLabels.Add(JobSystem::Dispatch(func, jobCount));
 
-            // Run sync actors drawing now or force in async (different drawing path doesn't interfere with normal scene drawing)
-            func.Bind<GlobalSurfaceAtlasCustomBuffer, &GlobalSurfaceAtlasCustomBuffer::DrawActorsJobSync>(this);
+            // Run in async via Job System
+            func.Bind<GlobalSurfaceAtlasCustomBuffer, &GlobalSurfaceAtlasCustomBuffer::DrawActorsJob>(this);
             AsyncDrawWaitLabels.Add(JobSystem::Dispatch(func, jobCount));
+
+            // Run dependant job that will process objects data in async
+            func.Bind<GlobalSurfaceAtlasCustomBuffer, &GlobalSurfaceAtlasCustomBuffer::SetupJob>(this);
+            AsyncDrawWaitLabels.Add(JobSystem::Dispatch(func, ToSpan(AsyncDrawWaitLabels)));
         }
         else
         {
             DrawActorsJob(-1);
             DrawActorsJob(0);
+            SetupJob(0);
         }
     }
 
-    void WaitForDrawActors()
+    void WaitForDrawing()
     {
         for (int64 label : AsyncDrawWaitLabels)
             JobSystem::Wait(label);
         AsyncDrawWaitLabels.Clear();
     }
 
-    void PostDrawActors()
+    void FlushNewObjects()
     {
-        PROFILE_CPU_NAMED("Post Draw");
+        PROFILE_CPU_NAMED("Flush Atlas");
 
-        // Flush atlas tiles freeing
         for (auto* tile : AsyncFreeTiles)
-        {
             Atlas.Free(tile, this);
-        }
         AsyncFreeTiles.Clear();
 
-        // Flush new objects adding
         for (auto& newObject : AsyncNewObjects)
         {
             auto& object = Objects[newObject.ActorObject];
@@ -350,7 +352,6 @@ public:
         }
         AsyncNewObjects.Clear();
 
-        // Flush new tiles adding
         for (auto& newTile : AsyncNewTiles)
         {
             auto& object = Objects[newTile.ActorObject];
@@ -369,6 +370,114 @@ public:
             }
         }
         AsyncNewTiles.Clear();
+    }
+
+    void CompactObjects()
+    {
+        PROFILE_CPU_NAMED("Compact Objects");
+        for (auto it = Objects.Begin(); it.IsNotEnd(); ++it)
+        {
+            if (it->Value.LastFrameUsed != CurrentFrame)
+            {
+                for (auto& tile : it->Value.Tiles)
+                {
+                    if (tile)
+                        Atlas.Free(tile, this);
+                }
+                Objects.Remove(it);
+            }
+        }
+    }
+
+    void WriteObjects()
+    {
+        PROFILE_CPU_NAMED("Write Objects");
+        DirtyObjectsBuffer.Clear();
+        ObjectsBuffer.Clear();
+        for (auto& e : Objects)
+        {
+            auto& object = e.Value;
+            if (object.Dirty)
+            {
+                // Collect dirty objects
+                object.LastFrameUpdated = CurrentFrame;
+                object.LightingUpdateFrame = CurrentFrame;
+                DirtyObjectsBuffer.Add(e.Key);
+            }
+
+            Matrix3x3 worldToLocalRotation;
+            Matrix3x3::RotationQuaternion(object.Bounds.Transformation.Orientation.Conjugated(), worldToLocalRotation);
+            Float3 worldPosition = object.Bounds.Transformation.Translation;
+            Float3 worldExtents = object.Bounds.Extents * object.Bounds.Transformation.Scale;
+
+            // Write to objects buffer (this must match unpacking logic in HLSL)
+            uint32 objectAddress = ObjectsBuffer.Data.Count() / sizeof(Float4);
+            auto* objectData = ObjectsBuffer.WriteReserve<Float4>(GLOBAL_SURFACE_ATLAS_OBJECT_DATA_STRIDE);
+            objectData[0] = Float4(object.Position, object.Radius);
+            objectData[1] = Float4::Zero;
+            objectData[2] = Float4(worldToLocalRotation.M11, worldToLocalRotation.M12, worldToLocalRotation.M13, worldPosition.X);
+            objectData[3] = Float4(worldToLocalRotation.M21, worldToLocalRotation.M22, worldToLocalRotation.M23, worldPosition.Y);
+            objectData[4] = Float4(worldToLocalRotation.M31, worldToLocalRotation.M32, worldToLocalRotation.M33, worldPosition.Z);
+            objectData[5] = Float4(worldExtents, object.UseVisibility ? 1.0f : 0.0f);
+            auto tileOffsets = reinterpret_cast<uint16*>(&objectData[1]); // xyz used for tile offsets packed into uint16
+            auto objectDataSize = reinterpret_cast<uint32*>(&objectData[1].W); // w used for object size (count of Float4s for object+tiles)
+            *objectDataSize = GLOBAL_SURFACE_ATLAS_OBJECT_DATA_STRIDE;
+            for (int32 tileIndex = 0; tileIndex < 6; tileIndex++)
+            {
+                auto* tile = object.Tiles[tileIndex];
+                if (!tile)
+                    continue;
+                tile->ObjectAddressOffset = *objectDataSize;
+                tile->Address = objectAddress + tile->ObjectAddressOffset;
+                tileOffsets[tileIndex] = tile->ObjectAddressOffset;
+                *objectDataSize += GLOBAL_SURFACE_ATLAS_TILE_DATA_STRIDE;
+
+                // Setup view to render object from the side
+                Float3 xAxis, yAxis, zAxis = Float3::Zero;
+                zAxis.Raw[tileIndex / 2] = tileIndex & 1 ? 1.0f : -1.0f;
+                yAxis = tileIndex == 2 || tileIndex == 3 ? Float3::Right : Float3::Up;
+                Float3::Cross(yAxis, zAxis, xAxis);
+                Float3 localSpaceOffset = -zAxis * object.Bounds.Extents;
+                xAxis = object.Bounds.Transformation.LocalToWorldVector(xAxis);
+                yAxis = object.Bounds.Transformation.LocalToWorldVector(yAxis);
+                zAxis = object.Bounds.Transformation.LocalToWorldVector(zAxis);
+                xAxis.NormalizeFast();
+                yAxis.NormalizeFast();
+                zAxis.NormalizeFast();
+                tile->ViewPosition = object.Bounds.Transformation.LocalToWorld(localSpaceOffset);
+                tile->ViewDirection = zAxis;
+
+                // Create view matrix
+                tile->ViewMatrix.SetColumn1(Float4(xAxis, -Float3::Dot(xAxis, tile->ViewPosition)));
+                tile->ViewMatrix.SetColumn2(Float4(yAxis, -Float3::Dot(yAxis, tile->ViewPosition)));
+                tile->ViewMatrix.SetColumn3(Float4(zAxis, -Float3::Dot(zAxis, tile->ViewPosition)));
+                tile->ViewMatrix.SetColumn4(Float4(0, 0, 0, 1));
+
+                // Calculate object bounds size in the view
+                OrientedBoundingBox viewBounds(object.Bounds);
+                viewBounds.Transform(tile->ViewMatrix);
+                Float3 viewExtent = viewBounds.Transformation.LocalToWorldVector(viewBounds.Extents);
+                tile->ViewBoundsSize = viewExtent.GetAbsolute() * 2.0f;
+
+                // Per-tile data
+                const float tileWidth = (float)tile->Width - GLOBAL_SURFACE_ATLAS_TILE_PADDING;
+                const float tileHeight = (float)tile->Height - GLOBAL_SURFACE_ATLAS_TILE_PADDING;
+                auto* tileData = ObjectsBuffer.WriteReserve<Float4>(GLOBAL_SURFACE_ATLAS_TILE_DATA_STRIDE);
+                tileData[0] = Float4(tile->X, tile->Y, tileWidth, tileHeight) * ResolutionInv;
+                tileData[1] = Float4(tile->ViewMatrix.M11, tile->ViewMatrix.M12, tile->ViewMatrix.M13, tile->ViewMatrix.M41);
+                tileData[2] = Float4(tile->ViewMatrix.M21, tile->ViewMatrix.M22, tile->ViewMatrix.M23, tile->ViewMatrix.M42);
+                tileData[3] = Float4(tile->ViewMatrix.M31, tile->ViewMatrix.M32, tile->ViewMatrix.M33, tile->ViewMatrix.M43);
+                tileData[4] = Float4(tile->ViewBoundsSize, 0.0f); // w unused
+            }
+        }
+    }
+
+    void SetupJob(int32)
+    {
+        PROFILE_CPU();
+        FlushNewObjects();
+        CompactObjects();
+        WriteObjects();
     }
 
     // [ISceneRenderingListener]
@@ -550,7 +659,7 @@ void GlobalSurfaceAtlasPass::Dispose()
 void GlobalSurfaceAtlasPass::OnCollectDrawCalls(RenderContextBatch& renderContextBatch)
 {
     // Check if Global Surface Atlas will be used this frame
-    PROFILE_GPU_CPU_NAMED("Global Surface Atlas");
+    PROFILE_CPU_NAMED("Global Surface Atlas");
     if (checkIfSkipPass())
         return;
     RenderContext& renderContext = renderContextBatch.GetMainContext();
@@ -563,7 +672,7 @@ void GlobalSurfaceAtlasPass::OnCollectDrawCalls(RenderContextBatch& renderContex
         return;
     auto& surfaceAtlasData = *renderContext.Buffers->GetCustomBuffer<GlobalSurfaceAtlasCustomBuffer>(TEXT("GlobalSurfaceAtlas"));
     _surfaceAtlasData = &surfaceAtlasData;
-    surfaceAtlasData.StartDrawActors(renderContext, renderContextBatch.EnableAsync);
+    surfaceAtlasData.StartDrawing(renderContext, renderContextBatch.EnableAsync);
 }
 
 bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* context, BindingData& result)
@@ -589,10 +698,6 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
     }
     surfaceAtlasData.LastFrameUsed = currentFrame;
     PROFILE_GPU_CPU_NAMED("Global Surface Atlas");
-
-    // Start objects drawing (in case not et started earlier this frame)
-    _surfaceAtlasData = &surfaceAtlasData;
-    surfaceAtlasData.StartDrawActors(renderContext);
 
     // Setup options
     int32 resolution;
@@ -620,6 +725,7 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
         INIT_ATLAS_TEXTURE(AtlasDepth, PixelFormat::D16_UNorm);
 #undef INIT_ATLAS_TEXTURE
         surfaceAtlasData.Resolution = resolution;
+        surfaceAtlasData.ResolutionInv = resolutionInv;
         surfaceAtlasData.AtlasPixelsTotal = resolution * resolution;
         if (!surfaceAtlasData.ChunksBuffer)
         {
@@ -634,6 +740,11 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
         surfaceAtlasData.ListenSceneRendering(scene);
     if (!_vertexBuffer)
         _vertexBuffer = New<DynamicVertexBuffer>(0u, (uint32)sizeof(AtlasTileVertex), TEXT("GlobalSurfaceAtlas.VertexBuffer"));
+
+    // Ensure that async objects drawing ended
+    _surfaceAtlasData = &surfaceAtlasData;
+    surfaceAtlasData.StartDrawing(renderContext); // (ignored if not started earlier this frame)
+    surfaceAtlasData.WaitForDrawing();
 
     // Utility for writing into tiles vertex buffer
     const Float2 posToClipMul(2.0f * resolutionInv, -2.0f * resolutionInv);
@@ -665,110 +776,6 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
         context->BindVB(ToSpan(&vb, 1)); \
         context->DrawInstanced(_vertexBuffer->Data.Count() / sizeof(AtlasTileVertex), 1);
 
-    // Ensure that async objects drawing ended
-    surfaceAtlasData.WaitForDrawActors();
-    surfaceAtlasData.PostDrawActors();
-
-    // Remove unused objects
-    {
-        PROFILE_GPU_CPU_NAMED("Compact Objects");
-        for (auto it = surfaceAtlasData.Objects.Begin(); it.IsNotEnd(); ++it)
-        {
-            if (it->Value.LastFrameUsed != currentFrame)
-            {
-                for (auto& tile : it->Value.Tiles)
-                {
-                    if (tile)
-                        surfaceAtlasData.Atlas.Free(tile, &surfaceAtlasData);
-                }
-                surfaceAtlasData.Objects.Remove(it);
-            }
-        }
-    }
-
-    // Write objects to the data buffer
-    {
-        PROFILE_CPU_NAMED("Write Objects");
-        surfaceAtlasData.DirtyObjectsBuffer.Clear();
-        surfaceAtlasData.ObjectsBuffer.Clear();
-        for (auto& e : surfaceAtlasData.Objects)
-        {
-            auto& object = e.Value;
-            if (object.Dirty)
-            {
-                // Collect dirty objects
-                object.LastFrameUpdated = surfaceAtlasData.CurrentFrame;
-                object.LightingUpdateFrame = surfaceAtlasData.CurrentFrame;
-                surfaceAtlasData.DirtyObjectsBuffer.Add(e.Key);
-            }
-
-            Matrix3x3 worldToLocalRotation;
-            Matrix3x3::RotationQuaternion(object.Bounds.Transformation.Orientation.Conjugated(), worldToLocalRotation);
-            Float3 worldPosition = object.Bounds.Transformation.Translation;
-            Float3 worldExtents = object.Bounds.Extents * object.Bounds.Transformation.Scale;
-
-            // Write to objects buffer (this must match unpacking logic in HLSL)
-            uint32 objectAddress = surfaceAtlasData.ObjectsBuffer.Data.Count() / sizeof(Float4);
-            auto* objectData = surfaceAtlasData.ObjectsBuffer.WriteReserve<Float4>(GLOBAL_SURFACE_ATLAS_OBJECT_DATA_STRIDE);
-            objectData[0] = Float4(object.Position, object.Radius);
-            objectData[1] = Float4::Zero;
-            objectData[2] = Float4(worldToLocalRotation.M11, worldToLocalRotation.M12, worldToLocalRotation.M13, worldPosition.X);
-            objectData[3] = Float4(worldToLocalRotation.M21, worldToLocalRotation.M22, worldToLocalRotation.M23, worldPosition.Y);
-            objectData[4] = Float4(worldToLocalRotation.M31, worldToLocalRotation.M32, worldToLocalRotation.M33, worldPosition.Z);
-            objectData[5] = Float4(worldExtents, object.UseVisibility ? 1.0f : 0.0f);
-            auto tileOffsets = reinterpret_cast<uint16*>(&objectData[1]); // xyz used for tile offsets packed into uint16
-            auto objectDataSize = reinterpret_cast<uint32*>(&objectData[1].W); // w used for object size (count of Float4s for object+tiles)
-            *objectDataSize = GLOBAL_SURFACE_ATLAS_OBJECT_DATA_STRIDE;
-            for (int32 tileIndex = 0; tileIndex < 6; tileIndex++)
-            {
-                auto* tile = object.Tiles[tileIndex];
-                if (!tile)
-                    continue;
-                tile->ObjectAddressOffset = *objectDataSize;
-                tile->Address = objectAddress + tile->ObjectAddressOffset;
-                tileOffsets[tileIndex] = tile->ObjectAddressOffset;
-                *objectDataSize += GLOBAL_SURFACE_ATLAS_TILE_DATA_STRIDE;
-
-                // Setup view to render object from the side
-                Float3 xAxis, yAxis, zAxis = Float3::Zero;
-                zAxis.Raw[tileIndex / 2] = tileIndex & 1 ? 1.0f : -1.0f;
-                yAxis = tileIndex == 2 || tileIndex == 3 ? Float3::Right : Float3::Up;
-                Float3::Cross(yAxis, zAxis, xAxis);
-                Float3 localSpaceOffset = -zAxis * object.Bounds.Extents;
-                xAxis = object.Bounds.Transformation.LocalToWorldVector(xAxis);
-                yAxis = object.Bounds.Transformation.LocalToWorldVector(yAxis);
-                zAxis = object.Bounds.Transformation.LocalToWorldVector(zAxis);
-                xAxis.NormalizeFast();
-                yAxis.NormalizeFast();
-                zAxis.NormalizeFast();
-                tile->ViewPosition = object.Bounds.Transformation.LocalToWorld(localSpaceOffset);
-                tile->ViewDirection = zAxis;
-
-                // Create view matrix
-                tile->ViewMatrix.SetColumn1(Float4(xAxis, -Float3::Dot(xAxis, tile->ViewPosition)));
-                tile->ViewMatrix.SetColumn2(Float4(yAxis, -Float3::Dot(yAxis, tile->ViewPosition)));
-                tile->ViewMatrix.SetColumn3(Float4(zAxis, -Float3::Dot(zAxis, tile->ViewPosition)));
-                tile->ViewMatrix.SetColumn4(Float4(0, 0, 0, 1));
-
-                // Calculate object bounds size in the view
-                OrientedBoundingBox viewBounds(object.Bounds);
-                viewBounds.Transform(tile->ViewMatrix);
-                Float3 viewExtent = viewBounds.Transformation.LocalToWorldVector(viewBounds.Extents);
-                tile->ViewBoundsSize = viewExtent.GetAbsolute() * 2.0f;
-
-                // Per-tile data
-                const float tileWidth = (float)tile->Width - GLOBAL_SURFACE_ATLAS_TILE_PADDING;
-                const float tileHeight = (float)tile->Height - GLOBAL_SURFACE_ATLAS_TILE_PADDING;
-                auto* tileData = surfaceAtlasData.ObjectsBuffer.WriteReserve<Float4>(GLOBAL_SURFACE_ATLAS_TILE_DATA_STRIDE);
-                tileData[0] = Float4(tile->X, tile->Y, tileWidth, tileHeight) * surfaceAtlasData.ResolutionInv;
-                tileData[1] = Float4(tile->ViewMatrix.M11, tile->ViewMatrix.M12, tile->ViewMatrix.M13, tile->ViewMatrix.M41);
-                tileData[2] = Float4(tile->ViewMatrix.M21, tile->ViewMatrix.M22, tile->ViewMatrix.M23, tile->ViewMatrix.M42);
-                tileData[3] = Float4(tile->ViewMatrix.M31, tile->ViewMatrix.M32, tile->ViewMatrix.M33, tile->ViewMatrix.M43);
-                tileData[4] = Float4(tile->ViewBoundsSize, 0.0f); // w unused
-            }
-        }
-    }
-
     // Rasterize world geometry material properties into Global Surface Atlas
     if (surfaceAtlasData.DirtyObjectsBuffer.Count() != 0)
     {
@@ -795,7 +802,7 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
         context->SetRenderTarget(depthBuffer, ToSpan(targetBuffers, ARRAY_COUNT(targetBuffers)));
         {
             PROFILE_GPU_CPU_NAMED("Clear");
-            if (noCache || GLOBAL_SURFACE_ATLAS_DEBUG_FORCE_REDRAW_TILES || !GPU_SPREAD_WORKLOAD)
+            if (noCache || GLOBAL_SURFACE_ATLAS_DEBUG_FORCE_REDRAW_TILES)
             {
                 // Full-atlas hardware clear
                 context->ClearDepth(depthBuffer);
@@ -1084,7 +1091,7 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
         {
             GlobalSurfaceAtlasLight& lightData = surfaceAtlasData.Lights[light.ID];
             lightData.LastFrameUsed = currentFrame;
-            uint32 redrawFramesCount = EnumHasAnyFlags(light.StaticFlags, StaticFlags::Lightmap) ? 120 : 4;
+            uint32 redrawFramesCount = GLOBAL_SURFACE_ATLAS_DIRTY_FRAMES(light.StaticFlags);
             if (surfaceAtlasData.CurrentFrame - lightData.LastFrameUpdated < (redrawFramesCount + (light.ID.D & redrawFramesCount)))
                 continue;
             lightData.LastFrameUpdated = currentFrame;
@@ -1119,7 +1126,7 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
         {
             GlobalSurfaceAtlasLight& lightData = surfaceAtlasData.Lights[light.ID];
             lightData.LastFrameUsed = currentFrame;
-            uint32 redrawFramesCount = EnumHasAnyFlags(light.StaticFlags, StaticFlags::Lightmap) ? 120 : 4;
+            uint32 redrawFramesCount = GLOBAL_SURFACE_ATLAS_DIRTY_FRAMES(light.StaticFlags);
             if (surfaceAtlasData.CurrentFrame - lightData.LastFrameUpdated < (redrawFramesCount + (light.ID.D & redrawFramesCount)))
                 continue;
             lightData.LastFrameUpdated = currentFrame;
@@ -1141,7 +1148,7 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
         {
             GlobalSurfaceAtlasLight& lightData = surfaceAtlasData.Lights[light.ID];
             lightData.LastFrameUsed = currentFrame;
-            uint32 redrawFramesCount = EnumHasAnyFlags(light.StaticFlags, StaticFlags::Lightmap) ? 120 : 4;
+            uint32 redrawFramesCount = GLOBAL_SURFACE_ATLAS_DIRTY_FRAMES(light.StaticFlags);
             if (surfaceAtlasData.CurrentFrame - lightData.LastFrameUpdated < (redrawFramesCount + (light.ID.D & redrawFramesCount)))
                 continue;
             lightData.LastFrameUpdated = currentFrame;
@@ -1457,9 +1464,9 @@ void GlobalSurfaceAtlasPass::RasterizeActor(Actor* actor, void* actorObject, con
     const float distanceScale = Math::Lerp(1.0f, surfaceAtlasData.DistanceScaling, Math::InverseLerp(surfaceAtlasData.DistanceScalingStart, surfaceAtlasData.DistanceScalingEnd, (float)CollisionsHelper::DistanceSpherePoint(actorObjectBounds, surfaceAtlasData.ViewPosition)));
     const float tilesScale = surfaceAtlasData.TileTexelsPerWorldUnit * distanceScale * qualityScale;
     GlobalSurfaceAtlasObject* object = surfaceAtlasData.Objects.TryGet(actorObject);
-    if (!object && surfaceAtlasData.AsyncNewObjects.Count() >= 512)
+    if (!object && surfaceAtlasData.AsyncNewObjects.Count() >= GLOBAL_SURFACE_ATLAS_MAX_NEW_OBJECTS_PER_FRAME)
         return; // Reduce load on 1st frame and add more objects during next frames to balance performance
-    bool anyTile = false, dirty = GLOBAL_SURFACE_ATLAS_DEBUG_FORCE_REDRAW_TILES || !GPU_SPREAD_WORKLOAD;
+    bool anyTile = false, dirty = GLOBAL_SURFACE_ATLAS_DEBUG_FORCE_REDRAW_TILES;
     for (int32 tileIndex = 0; tileIndex < 6; tileIndex++)
     {
         if (((1 << tileIndex) & tilesMask) == 0)
@@ -1515,7 +1522,7 @@ void GlobalSurfaceAtlasPass::RasterizeActor(Actor* actor, void* actorObject, con
     if (object)
     {
         // Redraw objects from time-to-time (dynamic objects can be animated, static objects can have textures streamed)
-        uint32 redrawFramesCount = actor->HasStaticFlag(StaticFlags::Lightmap) ? 120 : 4;
+        uint32 redrawFramesCount = GLOBAL_SURFACE_ATLAS_DIRTY_FRAMES(actor->GetStaticFlags());
         if (surfaceAtlasData.CurrentFrame - object->LastFrameUpdated >= (redrawFramesCount + (actor->GetID().D & redrawFramesCount)))
             dirty = true;
 
@@ -1525,7 +1532,7 @@ void GlobalSurfaceAtlasPass::RasterizeActor(Actor* actor, void* actorObject, con
         object->Bounds = bounds;
         object->Position = (Float3)actorObjectBounds.Center; // TODO: large worlds
         object->Radius = (float)actorObjectBounds.Radius;
-        object->Dirty = dirty;
+        object->Dirty |= dirty;
         object->UseVisibility = useVisibility;
     }
     else

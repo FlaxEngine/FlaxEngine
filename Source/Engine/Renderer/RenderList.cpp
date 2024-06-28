@@ -30,13 +30,7 @@ namespace
     Array<DrawBatch> SortingBatches;
     Array<RenderList*> FreeRenderList;
 
-    struct MemPoolEntry
-    {
-        void* Ptr;
-        uintptr Size;
-    };
-
-    Array<MemPoolEntry> MemPool;
+    Array<Pair<void*, uintptr>> MemPool;
     CriticalSection MemPoolLocker;
 }
 
@@ -147,18 +141,16 @@ void* RendererAllocation::Allocate(uintptr size)
     MemPoolLocker.Lock();
     for (int32 i = 0; i < MemPool.Count(); i++)
     {
-        if (MemPool[i].Size == size)
+        if (MemPool.Get()[i].Second == size)
         {
-            result = MemPool[i].Ptr;
+            result = MemPool.Get()[i].First;
             MemPool.RemoveAt(i);
             break;
         }
     }
     MemPoolLocker.Unlock();
     if (!result)
-    {
         result = Platform::Allocate(size, 16);
-    }
     return result;
 }
 
@@ -201,7 +193,7 @@ void RenderList::CleanupCache()
     SortingIndices.Resize(0);
     FreeRenderList.ClearDelete();
     for (auto& e : MemPool)
-        Platform::Free(e.Ptr);
+        Platform::Free(e.First);
     MemPool.Clear();
 }
 
