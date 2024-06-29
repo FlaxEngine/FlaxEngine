@@ -449,14 +449,16 @@ struct PackedSortKey
 
         struct
         {
+            // Sorting order: By Sort Order -> By Material -> By Geometry -> By Distance
             uint32 DistanceKey;
+            uint8 DrawKey;
             uint16 BatchKey;
-            uint16 SortKey;
+            uint8 SortKey;
         };
     };
 };
 
-FORCE_INLINE void CalculateSortKey(const RenderContext& renderContext, DrawCall& drawCall, int16 sortOrder)
+FORCE_INLINE void CalculateSortKey(const RenderContext& renderContext, DrawCall& drawCall, int8 sortOrder)
 {
     const Float3 planeNormal = renderContext.View.Direction;
     const float planePoint = -Float3::Dot(planeNormal, renderContext.View.Position);
@@ -464,20 +466,33 @@ FORCE_INLINE void CalculateSortKey(const RenderContext& renderContext, DrawCall&
     PackedSortKey key;
     key.DistanceKey = RenderTools::ComputeDistanceSortKey(distance);
     uint32 batchKey = GetHash(drawCall.Material);
-    batchKey = (batchKey * 397) ^ GetHash(drawCall.Geometry.VertexBuffers[0]);
-    batchKey = (batchKey * 397) ^ GetHash(drawCall.Geometry.VertexBuffers[1]);
-    batchKey = (batchKey * 397) ^ GetHash(drawCall.Geometry.VertexBuffers[2]);
-    batchKey = (batchKey * 397) ^ GetHash(drawCall.Geometry.IndexBuffer);
     IMaterial::InstancingHandler handler;
     if (drawCall.Material->CanUseInstancing(handler))
         handler.GetHash(drawCall, batchKey);
-    batchKey += (int32)(471 * drawCall.WorldDeterminantSign);
-    key.SortKey = (uint16)(sortOrder - MIN_int16);
     key.BatchKey = (uint16)batchKey;
+    uint32 drawKey = (uint32)(471 * drawCall.WorldDeterminantSign);
+    drawKey = (drawKey * 397) ^ GetHash(drawCall.Geometry.VertexBuffers[0]);
+    drawKey = (drawKey * 397) ^ GetHash(drawCall.Geometry.VertexBuffers[1]);
+    drawKey = (drawKey * 397) ^ GetHash(drawCall.Geometry.VertexBuffers[2]);
+    drawKey = (drawKey * 397) ^ GetHash(drawCall.Geometry.IndexBuffer);
+    key.DrawKey = (uint8)drawKey;
+    key.SortKey = (uint8)(sortOrder - MIN_int8);
     drawCall.SortKey = key.Data;
 }
 
-void RenderList::AddDrawCall(const RenderContext& renderContext, DrawPass drawModes, StaticFlags staticFlags, DrawCall& drawCall, bool receivesDecals, int16 sortOrder)
+FORCE_INLINE bool CanBatchDrawCalls(const DrawCall& a, const DrawCall& b, DrawPass pass)
+{
+    IMaterial::InstancingHandler handlerA, handlerB;
+    return a.Material->CanUseInstancing(handlerA) &&
+            b.Material->CanUseInstancing(handlerB) &&
+            a.InstanceCount != 0 &&
+            b.InstanceCount != 0 &&
+            handlerA.CanBatch == handlerB.CanBatch &&
+            handlerA.CanBatch(a, b, pass) &&
+            a.WorldDeterminantSign * b.WorldDeterminantSign > 0;
+}
+
+void RenderList::AddDrawCall(const RenderContext& renderContext, DrawPass drawModes, StaticFlags staticFlags, DrawCall& drawCall, bool receivesDecals, int8 sortOrder)
 {
 #if ENABLE_ASSERTION_LOW_LAYERS
     // Ensure that draw modes are non-empty and in conjunction with material draw modes
@@ -515,7 +530,7 @@ void RenderList::AddDrawCall(const RenderContext& renderContext, DrawPass drawMo
     }
 }
 
-void RenderList::AddDrawCall(const RenderContextBatch& renderContextBatch, DrawPass drawModes, StaticFlags staticFlags, ShadowsCastingMode shadowsMode, const BoundingSphere& bounds, DrawCall& drawCall, bool receivesDecals, int16 sortOrder)
+void RenderList::AddDrawCall(const RenderContextBatch& renderContextBatch, DrawPass drawModes, StaticFlags staticFlags, ShadowsCastingMode shadowsMode, const BoundingSphere& bounds, DrawCall& drawCall, bool receivesDecals, int8 sortOrder)
 {
 #if ENABLE_ASSERTION_LOW_LAYERS
     // Ensure that draw modes are non-empty and in conjunction with material draw modes
@@ -571,19 +586,8 @@ void RenderList::AddDrawCall(const RenderContextBatch& renderContextBatch, DrawP
     }
 }
 
-namespace
 {
-    FORCE_INLINE bool CanBatchWith(const DrawCall& a, const DrawCall& b, DrawPass pass)
     {
-        IMaterial::InstancingHandler handlerA, handlerB;
-        return a.Material->CanUseInstancing(handlerA) &&
-                b.Material->CanUseInstancing(handlerB) &&
-                Platform::MemoryCompare(&a.Geometry, &b.Geometry, sizeof(a.Geometry)) == 0 &&
-                a.InstanceCount != 0 &&
-                b.InstanceCount != 0 &&
-                handlerA.CanBatch == handlerB.CanBatch &&
-                handlerA.CanBatch(a, b, pass) &&
-                a.WorldDeterminantSign * b.WorldDeterminantSign > 0;
     }
 }
 
@@ -639,11 +643,11 @@ void RenderList::SortDrawCalls(const RenderContext& renderContext, bool reverseD
         int32 batchSize = 1;
         int32 instanceCount = drawCall.InstanceCount;
 
-        // Check the following draw calls to merge them (using instancing)
+        // Check the following draw calls sequence to merge them
         for (int32 j = i + 1; j < listSize; j++)
         {
             const DrawCall& other = drawCallsData[listData[j]];
-            if (!CanBatchWith(drawCall, other, pass))
+            if (!CanBatchDrawCalls(drawCall, other, pass))
                 break;
             batchSize++;
             instanceCount += other.InstanceCount;
@@ -949,9 +953,7 @@ bool SurfaceDrawCallHandler::CanBatch(const DrawCall& a, const DrawCall& b, Draw
 {
     // TODO: find reason why batching static meshes with lightmap causes problems with sampling in shader (flickering when meshes in batch order gets changes due to async draw calls collection)
     if (a.Surface.Lightmap == nullptr && b.Surface.Lightmap == nullptr &&
-        //return a.Surface.Lightmap == b.Surface.Lightmap &&
-        a.Surface.Skinning == nullptr &&
-        b.Surface.Skinning == nullptr)
+        a.Surface.Skinning == nullptr && b.Surface.Skinning == nullptr)
     {
         if (a.Material != b.Material)
         {

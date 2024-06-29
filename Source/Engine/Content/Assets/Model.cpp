@@ -186,7 +186,7 @@ BoundingBox Model::GetBox(int32 lodIndex) const
     return LODs[lodIndex].GetBox();
 }
 
-void Model::Draw(const RenderContext& renderContext, MaterialBase* material, const Matrix& world, StaticFlags flags, bool receiveDecals, int16 sortOrder) const
+void Model::Draw(const RenderContext& renderContext, MaterialBase* material, const Matrix& world, StaticFlags flags, bool receiveDecals, int8 sortOrder) const
 {
     if (!CanBeRendered())
         return;

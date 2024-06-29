@@ -182,7 +182,7 @@ public:
     /// <param name="flags">The object static flags.</param>
     /// <param name="receiveDecals">True if rendered geometry can receive decals, otherwise false.</param>
     /// <param name="sortOrder">Object sorting key.</param>
-    API_FUNCTION() void Draw(API_PARAM(Ref) const RenderContext& renderContext, MaterialBase* material, API_PARAM(Ref) const Matrix& world, StaticFlags flags = StaticFlags::None, bool receiveDecals = true, int16 sortOrder = 0) const;
+    API_FUNCTION() void Draw(API_PARAM(Ref) const RenderContext& renderContext, MaterialBase* material, API_PARAM(Ref) const Matrix& world, StaticFlags flags = StaticFlags::None, bool receiveDecals = true, int8 sortOrder = 0) const;
 
     /// <summary>
     /// Draws the model.

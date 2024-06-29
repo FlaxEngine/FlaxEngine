@@ -92,7 +92,7 @@ int32 StaticModel::GetSortOrder() const
 
 void StaticModel::SetSortOrder(int32 value)
 {
-    _sortOrder = (int16)Math::Clamp<int32>(value, MIN_int16, MAX_int16);
+    _sortOrder = (int8)Math::Clamp<int32>(value, MIN_int8, MAX_int8);
 }
 
 bool StaticModel::HasLightmap() const

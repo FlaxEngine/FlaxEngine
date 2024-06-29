@@ -240,6 +240,6 @@ public:
         /// <summary>
         /// The object sorting key.
         /// </summary>
-        int16 SortOrder;
+        int8 SortOrder;
     };
 };

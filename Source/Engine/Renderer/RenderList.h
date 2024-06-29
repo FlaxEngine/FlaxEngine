@@ -502,7 +502,7 @@ public:
     /// <param name="drawCall">The draw call data.</param>
     /// <param name="receivesDecals">True if the rendered mesh can receive decals.</param>
     /// <param name="sortOrder">Object sorting key.</param>
-    void AddDrawCall(const RenderContext& renderContext, DrawPass drawModes, StaticFlags staticFlags, DrawCall& drawCall, bool receivesDecals = true, int16 sortOrder = 0);
+    void AddDrawCall(const RenderContext& renderContext, DrawPass drawModes, StaticFlags staticFlags, DrawCall& drawCall, bool receivesDecals = true, int8 sortOrder = 0);
 
     /// <summary>
     /// Adds the draw call to the draw lists and references it in other render contexts. Performs additional per-context frustum culling.
@@ -515,7 +515,7 @@ public:
     /// <param name="drawCall">The draw call data.</param>
     /// <param name="receivesDecals">True if the rendered mesh can receive decals.</param>
     /// <param name="sortOrder">Object sorting key.</param>
-    void AddDrawCall(const RenderContextBatch& renderContextBatch, DrawPass drawModes, StaticFlags staticFlags, ShadowsCastingMode shadowsMode, const BoundingSphere& bounds, DrawCall& drawCall, bool receivesDecals = true, int16 sortOrder = 0);
+    void AddDrawCall(const RenderContextBatch& renderContextBatch, DrawPass drawModes, StaticFlags staticFlags, ShadowsCastingMode shadowsMode, const BoundingSphere& bounds, DrawCall& drawCall, bool receivesDecals = true, int8 sortOrder = 0);
 
     /// <summary>
     /// Sorts the collected draw calls list.
