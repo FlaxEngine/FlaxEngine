@@ -259,8 +259,6 @@ protected:
     GPUDeviceVulkan* _device;
     VkQueryPool _handle;
 
-    volatile int32 _count;
-    const uint32 _capacity;
     const VkQueryType _type;
 #if VULKAN_RESET_QUERY_POOLS
     Array<Range> _resetRanges;
@@ -277,6 +275,7 @@ public:
     }
 
 #if VULKAN_RESET_QUERY_POOLS
+    bool ResetBeforeUse;
     void Reset(CmdBufferVulkan* cmdBuffer);
 #endif
 };
@@ -294,7 +293,7 @@ private:
 
 public:
     BufferedQueryPoolVulkan(GPUDeviceVulkan* device, int32 capacity, VkQueryType type);
-    bool AcquireQuery(uint32& resultIndex);
+    bool AcquireQuery(CmdBufferVulkan* cmdBuffer, uint32& resultIndex);
     void ReleaseQuery(uint32 queryIndex);
     void MarkQueryAsStarted(uint32 queryIndex);
     bool GetResults(GPUContextVulkan* context, uint32 index, uint64& result);
