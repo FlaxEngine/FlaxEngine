@@ -535,6 +535,9 @@ bool GlobalSurfaceAtlasPass::Init()
     // Check platform support
     const auto device = GPUDevice::Instance;
     _supported = device->GetFeatureLevel() >= FeatureLevel::SM5 && device->Limits.HasCompute && device->Limits.HasTypedUAVLoad;
+#if PLATFORM_APPLE_FAMILY
+    _supported = false; // Vulkan over Metal has some issues in complex scenes with DDGI
+#endif
     return false;
 }
 

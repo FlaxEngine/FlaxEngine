@@ -553,6 +553,7 @@ namespace Flax.Build.Projects.VisualStudioCode
                         {
                             var toolchain = platform.GetToolchain(architecture);
                             var targetBuildOptions = Builder.GetBuildOptions(target, platform, toolchain, architecture, configuration, Globals.Root);
+                            targetBuildOptions.Flags |= NativeCpp.BuildFlags.GenerateProject;
                             var modules = Builder.CollectModules(rules, platform, target, targetBuildOptions, toolchain, architecture, configuration);
                             foreach (var module in modules)
                             {
