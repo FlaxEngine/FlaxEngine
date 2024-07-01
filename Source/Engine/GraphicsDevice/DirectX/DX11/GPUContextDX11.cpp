@@ -487,20 +487,14 @@ void GPUContextDX11::ResolveMultisample(GPUTexture* sourceMultisampleTexture, GP
 void GPUContextDX11::DrawInstanced(uint32 verticesCount, uint32 instanceCount, int32 startInstance, int32 startVertex)
 {
     onDrawCall();
-    if (instanceCount > 1)
-        _context->DrawInstanced(verticesCount, instanceCount, startVertex, startInstance);
-    else
-        _context->Draw(verticesCount, startVertex);
+    _context->DrawInstanced(verticesCount, instanceCount, startVertex, startInstance);
     RENDER_STAT_DRAW_CALL(verticesCount * instanceCount, verticesCount * instanceCount / 3);
 }
 
 void GPUContextDX11::DrawIndexedInstanced(uint32 indicesCount, uint32 instanceCount, int32 startInstance, int32 startVertex, int32 startIndex)
 {
     onDrawCall();
-    if (instanceCount > 1)
-        _context->DrawIndexedInstanced(indicesCount, instanceCount, startIndex, startVertex, startInstance);
-    else
-        _context->DrawIndexed(indicesCount, startIndex, startVertex);
+    _context->DrawIndexedInstanced(indicesCount, instanceCount, startIndex, startVertex, startInstance);
     RENDER_STAT_DRAW_CALL(0, indicesCount / 3 * instanceCount);
 }
 

@@ -485,7 +485,7 @@ public:
     /// </summary>
     /// <param name="startVertex">A value added to each index before reading a vertex from the vertex buffer.</param>
     /// <param name="verticesCount">The vertices count.</param>
-    API_FUNCTION() FORCE_INLINE void Draw(uint32 startVertex, uint32 verticesCount)
+    API_FUNCTION() FORCE_INLINE void Draw(int32 startVertex, uint32 verticesCount)
     {
         DrawInstanced(verticesCount, 1, 0, startVertex);
     }
