@@ -48,7 +48,7 @@ DrawPass MaterialComplexityMaterialShader::WrapperShader::GetDrawModes() const
 
 void MaterialComplexityMaterialShader::WrapperShader::Bind(BindParameters& params)
 {
-    auto& drawCall = *params.FirstDrawCall;
+    auto& drawCall = *params.DrawCall;
 
     // Get original material from the draw call
     IMaterial* material = nullptr;

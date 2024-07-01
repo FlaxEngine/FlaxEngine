@@ -428,6 +428,9 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext, RenderCont
     // Sort draw calls
     {
         PROFILE_CPU_NAMED("Sort Draw Calls");
+        // TODO: run all of these functions in async via jobs
+        for (int32 i = 0; i < renderContextBatch.Contexts.Count(); i++)
+            renderContextBatch.Contexts[i].List->BuildObjectsBuffer();
         renderContext.List->SortDrawCalls(renderContext, false, DrawCallsListType::GBuffer);
         renderContext.List->SortDrawCalls(renderContext, false, DrawCallsListType::GBufferNoDecals);
         renderContext.List->SortDrawCalls(renderContext, true, DrawCallsListType::Forward);
@@ -439,6 +442,11 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext, RenderCont
             auto& shadowContext = renderContextBatch.Contexts.Get()[i];
             shadowContext.List->SortDrawCalls(shadowContext, false, DrawCallsListType::Depth, DrawPass::Depth);
             shadowContext.List->SortDrawCalls(shadowContext, false, shadowContext.List->ShadowDepthDrawCallsList, renderContext.List->DrawCalls, DrawPass::Depth);
+        }
+        {
+            PROFILE_CPU_NAMED("FlushObjectsBuffer");
+            for (int32 i = 0; i < renderContextBatch.Contexts.Count(); i++)
+                renderContextBatch.Contexts[i].List->ObjectBuffer.Flush(context);
         }
     }
 

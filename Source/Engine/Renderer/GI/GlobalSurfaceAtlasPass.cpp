@@ -849,6 +849,7 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
             // Clear draw calls list
             renderContextTiles.List->DrawCalls.Clear();
             renderContextTiles.List->BatchedDrawCalls.Clear();
+            renderContextTiles.List->ObjectBuffer.Clear();
             drawCallsListGBuffer.Indices.Clear();
             drawCallsListGBuffer.PreBatchedDrawCalls.Clear();
             drawCallsListGBufferNoDecals.Indices.Clear();

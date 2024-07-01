@@ -1390,7 +1390,7 @@ void ShadowsPass::RenderShadowMaps(RenderContextBatch& renderContextBatch)
                 if (!shadowContextStatic.List->DrawCallsLists[(int32)DrawCallsListType::Depth].IsEmpty() || !shadowContextStatic.List->ShadowDepthDrawCallsList.IsEmpty())
                 {
                     shadowContextStatic.List->ExecuteDrawCalls(shadowContextStatic, DrawCallsListType::Depth);
-                    shadowContextStatic.List->ExecuteDrawCalls(shadowContextStatic, shadowContextStatic.List->ShadowDepthDrawCallsList, renderContext.List->DrawCalls, nullptr);
+                    shadowContextStatic.List->ExecuteDrawCalls(shadowContextStatic, shadowContextStatic.List->ShadowDepthDrawCallsList, renderContext.List, nullptr);
                     tile.HasStaticGeometry = true;
                 }
             }
@@ -1452,7 +1452,7 @@ void ShadowsPass::RenderShadowMaps(RenderContextBatch& renderContextBatch)
             // Draw objects depth
             auto& shadowContext = renderContextBatch.Contexts[atlasLight.ContextIndex + contextIndex++];
             shadowContext.List->ExecuteDrawCalls(shadowContext, DrawCallsListType::Depth);
-            shadowContext.List->ExecuteDrawCalls(shadowContext, shadowContext.List->ShadowDepthDrawCallsList, renderContext.List->DrawCalls, nullptr);
+            shadowContext.List->ExecuteDrawCalls(shadowContext, shadowContext.List->ShadowDepthDrawCallsList, renderContext.List, nullptr);
             if (atlasLight.HasStaticShadowContext)
             {
                 auto& shadowContextStatic = renderContextBatch.Contexts[atlasLight.ContextIndex + contextIndex++];
@@ -1462,7 +1462,7 @@ void ShadowsPass::RenderShadowMaps(RenderContextBatch& renderContextBatch)
                     {
                         // Draw static objects directly to the shadow map
                         shadowContextStatic.List->ExecuteDrawCalls(shadowContextStatic, DrawCallsListType::Depth);
-                        shadowContextStatic.List->ExecuteDrawCalls(shadowContextStatic, shadowContextStatic.List->ShadowDepthDrawCallsList, renderContext.List->DrawCalls, nullptr);
+                        shadowContextStatic.List->ExecuteDrawCalls(shadowContextStatic, shadowContextStatic.List->ShadowDepthDrawCallsList, renderContext.List, nullptr);
                     }
                     tile.HasStaticGeometry = true;
                 }

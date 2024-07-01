@@ -38,31 +38,21 @@ GPU_CB_STRUCT(MaterialShaderDataPerView {
 IMaterial::BindParameters::BindParameters(::GPUContext* context, const ::RenderContext& renderContext)
     : GPUContext(context)
     , RenderContext(renderContext)
-    , FirstDrawCall(nullptr)
-    , DrawCallsCount(0)
     , TimeParam(Time::Draw.UnscaledTime.GetTotalSeconds())
 {
 }
 
-IMaterial::BindParameters::BindParameters(::GPUContext* context, const ::RenderContext& renderContext, const DrawCall& drawCall)
+IMaterial::BindParameters::BindParameters(::GPUContext* context, const ::RenderContext& renderContext, const ::DrawCall& drawCall, bool instanced)
     : GPUContext(context)
     , RenderContext(renderContext)
-    , FirstDrawCall(&drawCall)
-    , DrawCallsCount(1)
+    , DrawCall(&drawCall)
     , TimeParam(Time::Draw.UnscaledTime.GetTotalSeconds())
-{
-}
-
-IMaterial::BindParameters::BindParameters(::GPUContext* context, const ::RenderContext& renderContext, const DrawCall* firstDrawCall, int32 drawCallsCount)
-    : GPUContext(context)
-    , RenderContext(renderContext)
-    , FirstDrawCall(firstDrawCall)
-    , DrawCallsCount(drawCallsCount)
-    , TimeParam(Time::Draw.UnscaledTime.GetTotalSeconds())
+    , Instanced(instanced)
 {
 }
 
 GPUConstantBuffer* IMaterial::BindParameters::PerViewConstants = nullptr;
+GPUConstantBuffer* IMaterial::BindParameters::PerDrawConstants = nullptr;
 
 void IMaterial::BindParameters::BindViewData()
 {
@@ -70,6 +60,7 @@ void IMaterial::BindParameters::BindViewData()
     if (!PerViewConstants)
     {
         PerViewConstants = GPUDevice::Instance->CreateConstantBuffer(sizeof(MaterialShaderDataPerView), TEXT("PerViewConstants"));
+        PerDrawConstants = GPUDevice::Instance->CreateConstantBuffer(sizeof(MaterialShaderDataPerDraw), TEXT("PerDrawConstants"));
     }
 
     // Setup data

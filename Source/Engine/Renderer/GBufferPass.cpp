@@ -509,7 +509,7 @@ void GBufferPass::DrawDecals(RenderContext& renderContext, GPUTextureView* light
         drawCall.World = decal.World;
         decal.Material->Bind(bindParams);
         // TODO: use hardware instancing
-        context->DrawIndexedInstanced(drawCall.Draw.IndicesCount, 1, 0, 0, 0);
+        context->DrawIndexed(drawCall.Draw.IndicesCount);
     }
 
     context->ResetSR();

@@ -116,6 +116,7 @@ void Foliage::DrawInstance(RenderContext& renderContext, FoliageInstance& instan
             ASSERT_LOW_LAYER(key.Mat);
             e->DrawCall.Material = key.Mat;
             e->DrawCall.Surface.Lightmap = EnumHasAnyFlags(_staticFlags, StaticFlags::Lightmap) && _scene ? _scene->LightmapsData.GetReadyLightmap(key.Lightmap) : nullptr;
+            e->DrawCall.Surface.GeometrySize = key.Geo->GetBox().GetSize();
         }
 
         // Add instance to the draw batch
@@ -124,13 +125,8 @@ void Foliage::DrawInstance(RenderContext& renderContext, FoliageInstance& instan
         const Transform transform = _transform.LocalToWorld(instance.Transform);
         const Float3 translation = transform.Translation - renderContext.View.Origin;
         Matrix::Transformation(transform.Scale, transform.Orientation, translation, world);
-        instanceData.InstanceOrigin = Float3(world.M41, world.M42, world.M43);
-        instanceData.PerInstanceRandom = instance.Random;
-        instanceData.InstanceTransform1 = Float3(world.M11, world.M12, world.M13);
-        instanceData.LODDitherFactor = lodDitherFactor;
-        instanceData.InstanceTransform2 = Float3(world.M21, world.M22, world.M23);
-        instanceData.InstanceTransform3 = Float3(world.M31, world.M32, world.M33);
-        instanceData.InstanceLightmapArea = Half4(instance.Lightmap.UVsArea);
+        constexpr float worldDeterminantSign = 1.0f;
+        instanceData.Store(world, world, instance.Lightmap.UVsArea, drawCall.DrawCall.Surface.GeometrySize, instance.Random, worldDeterminantSign, lodDitherFactor);
     }
 }
 
@@ -456,6 +452,7 @@ void Foliage::DrawType(RenderContext& renderContext, const FoliageType& type, Dr
                 continue;
 
             drawCall.DrawCall.Material = material;
+            drawCall.DrawCall.Surface.GeometrySize = mesh.GetBox().GetSize();
         }
     }
 
@@ -479,18 +476,7 @@ void Foliage::DrawType(RenderContext& renderContext, const FoliageType& type, Dr
         mesh.GetDrawCallGeometry(batch.DrawCall);
         batch.DrawCall.InstanceCount = 1;
         auto& firstInstance = batch.Instances[0];
-        batch.DrawCall.ObjectPosition = firstInstance.InstanceOrigin;
-        batch.DrawCall.PerInstanceRandom = firstInstance.PerInstanceRandom;
-        auto lightmapArea = firstInstance.InstanceLightmapArea.ToFloat4();
-        batch.DrawCall.Surface.LightmapUVsArea = *(Rectangle*)&lightmapArea;
-        batch.DrawCall.Surface.LODDitherFactor = firstInstance.LODDitherFactor;
-        batch.DrawCall.World.SetRow1(Float4(firstInstance.InstanceTransform1, 0.0f));
-        batch.DrawCall.World.SetRow2(Float4(firstInstance.InstanceTransform2, 0.0f));
-        batch.DrawCall.World.SetRow3(Float4(firstInstance.InstanceTransform3, 0.0f));
-        batch.DrawCall.World.SetRow4(Float4(firstInstance.InstanceOrigin, 1.0f));
-        batch.DrawCall.Surface.PrevWorld = batch.DrawCall.World;
-        batch.DrawCall.Surface.GeometrySize = mesh.GetBox().GetSize();
-        batch.DrawCall.WorldDeterminantSign = 1;
+        firstInstance.Load(batch.DrawCall);
 
         if (EnumHasAnyFlags(drawModes, DrawPass::Forward))
         {
@@ -499,15 +485,7 @@ void Foliage::DrawType(RenderContext& renderContext, const FoliageType& type, Dr
             for (int32 j = 0; j < batch.Instances.Count(); j++)
             {
                 auto& instance = batch.Instances[j];
-                drawCall.ObjectPosition = instance.InstanceOrigin;
-                drawCall.PerInstanceRandom = instance.PerInstanceRandom;
-                lightmapArea = instance.InstanceLightmapArea.ToFloat4();
-                drawCall.Surface.LightmapUVsArea = *(Rectangle*)&lightmapArea;
-                drawCall.Surface.LODDitherFactor = instance.LODDitherFactor;
-                drawCall.World.SetRow1(Float4(instance.InstanceTransform1, 0.0f));
-                drawCall.World.SetRow2(Float4(instance.InstanceTransform2, 0.0f));
-                drawCall.World.SetRow3(Float4(instance.InstanceTransform3, 0.0f));
-                drawCall.World.SetRow4(Float4(instance.InstanceOrigin, 1.0f));
+                instance.Load(drawCall);
                 const int32 drawCallIndex = renderContext.List->DrawCalls.Add(drawCall);
                 renderContext.List->DrawCallsLists[(int32)DrawCallsListType::Forward].Indices.Add(drawCallIndex);
             }

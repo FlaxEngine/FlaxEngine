@@ -63,11 +63,6 @@ struct LightmapFeature : MaterialShaderFeature
 {
     enum { SRVs = 3 };
 
-    PACK_STRUCT(struct Data
-        {
-        Rectangle LightmapArea;
-        });
-
     static bool Bind(MaterialShader::BindParameters& params, Span<byte>& cb, int32& srv);
 #if USE_EDITOR
     static void Generate(GeneratorData& data);

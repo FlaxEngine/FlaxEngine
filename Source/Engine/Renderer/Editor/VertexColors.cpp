@@ -61,7 +61,7 @@ void VertexColorsMaterialShader::Bind(BindParameters& params)
 {
     // Prepare
     auto context = params.GPUContext;
-    auto& drawCall = *params.FirstDrawCall;
+    auto& drawCall = *params.DrawCall;
 
     // Setup
     auto shader = _shader->GetShader();

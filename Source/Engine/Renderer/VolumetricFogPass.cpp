@@ -408,7 +408,6 @@ void VolumetricFogPass::Render(RenderContext& renderContext)
             InitCircleBuffer();
 
         MaterialBase::BindParameters bindParams(context, renderContext);
-        bindParams.DrawCallsCount = 1;
         CustomData customData;
         customData.Shader = _shader->GetShader();
         customData.GridSize = cache.GridSize;
@@ -435,7 +434,7 @@ void VolumetricFogPass::Render(RenderContext& renderContext)
 
             // Setup material shader data
             customData.ParticleIndex = drawCall.Particle.VolumetricFog.ParticleIndex;
-            bindParams.FirstDrawCall = &drawCall;
+            bindParams.DrawCall = &drawCall;
             drawCall.Material->Bind(bindParams);
 
             // Setup volumetric shader data

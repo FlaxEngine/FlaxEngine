@@ -28,6 +28,7 @@ PACK_STRUCT(struct TerrainMaterialShaderData {
     Float4 NeighborLOD; // Per component LOD index for chunk neighbors ordered: top, left, right, bottom
     Float2 OffsetUV; // Offset applied to the texture coordinates (used to implement seamless UVs based on chunk location relative to terrain root)
     Float2 Dummy0;
+    Float4 LightmapArea;
     });
 
 DrawPass TerrainMaterialShader::GetDrawModes() const
@@ -45,7 +46,7 @@ void TerrainMaterialShader::Bind(BindParameters& params)
     // Prepare
     auto context = params.GPUContext;
     auto& view = params.RenderContext.View;
-    auto& drawCall = *params.FirstDrawCall;
+    auto& drawCall = *params.DrawCall;
     Span<byte> cb(_cbData.Get(), _cbData.Count());
     ASSERT_LOW_LAYER(cb.Length() >= sizeof(TerrainMaterialShaderData));
     auto materialData = reinterpret_cast<TerrainMaterialShaderData*>(cb.Get());
@@ -83,6 +84,7 @@ void TerrainMaterialShader::Bind(BindParameters& params)
         materialData->HeightmapUVScaleBias = drawCall.Terrain.HeightmapUVScaleBias;
         materialData->NeighborLOD = drawCall.Terrain.NeighborLOD;
         materialData->OffsetUV = drawCall.Terrain.OffsetUV;
+        materialData->LightmapArea = *(Float4*)&drawCall.Terrain.LightmapUVsArea;
     }
 
     // Bind terrain textures

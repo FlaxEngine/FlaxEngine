@@ -239,7 +239,8 @@ struct DrawBatch
 struct BatchedDrawCall
 {
     DrawCall DrawCall;
-    Array<struct InstanceData, RendererAllocation> Instances;
+    uint16 ObjectsStartIndex = 0; // Index of the instances start in the ObjectsBuffer (set internally).
+    Array<struct ShaderObjectData, RendererAllocation> Instances;
 };
 
 /// <summary>
@@ -413,6 +414,11 @@ public:
     /// </summary>
     Float3 FrustumCornersVs[8];
 
+    /// <summary>
+    /// Objects buffer that contains ShaderObjectData for each DrawCall.
+    /// </summary>
+    DynamicTypedBuffer ObjectBuffer;
+
 private:
     DynamicVertexBuffer _instanceBuffer;
 
@@ -518,6 +524,11 @@ public:
     void AddDrawCall(const RenderContextBatch& renderContextBatch, DrawPass drawModes, StaticFlags staticFlags, ShadowsCastingMode shadowsMode, const BoundingSphere& bounds, DrawCall& drawCall, bool receivesDecals = true, int8 sortOrder = 0);
 
     /// <summary>
+    /// Writes all draw calls into large objects buffer (used for random-access object data access on a GPU). Can be executed in async.
+    /// </summary>
+    void BuildObjectsBuffer();
+
+    /// <summary>
     /// Sorts the collected draw calls list.
     /// </summary>
     /// <param name="renderContext">The rendering context.</param>
@@ -549,7 +560,7 @@ public:
     /// <param name="input">The input scene color. It's optional and used in forward/postFx rendering.</param>
     API_FUNCTION() FORCE_INLINE void ExecuteDrawCalls(API_PARAM(Ref) const RenderContext& renderContext, DrawCallsListType listType, GPUTextureView* input = nullptr)
     {
-        ExecuteDrawCalls(renderContext, DrawCallsLists[(int32)listType], DrawCalls, input);
+        ExecuteDrawCalls(renderContext, DrawCallsLists[(int32)listType], this, input);
     }
 
     /// <summary>
@@ -560,7 +571,7 @@ public:
     /// <param name="input">The input scene color. It's optional and used in forward/postFx rendering.</param>
     FORCE_INLINE void ExecuteDrawCalls(const RenderContext& renderContext, DrawCallsList& list, GPUTextureView* input = nullptr)
     {
-        ExecuteDrawCalls(renderContext, list, DrawCalls, input);
+        ExecuteDrawCalls(renderContext, list, this, input);
     }
 
     /// <summary>
@@ -568,28 +579,43 @@ public:
     /// </summary>
     /// <param name="renderContext">The rendering context.</param>
     /// <param name="list">The collected draw calls indices list.</param>
-    /// <param name="drawCalls">The collected draw calls list.</param>
+    /// <param name="drawCallsList">The collected draw calls list owner.</param>
     /// <param name="input">The input scene color. It's optional and used in forward/postFx rendering.</param>
-    void ExecuteDrawCalls(const RenderContext& renderContext, DrawCallsList& list, const RenderListBuffer<DrawCall>& drawCalls, GPUTextureView* input);
+    void ExecuteDrawCalls(const RenderContext& renderContext, DrawCallsList& list, RenderList* drawCallsList, GPUTextureView* input);
 };
 
 /// <summary>
-/// Represents data per instance element used for instanced rendering.
+/// Represents a single object information for GPU rendering.
 /// </summary>
-PACK_STRUCT(struct FLAXENGINE_API InstanceData
+GPU_CB_STRUCT(ShaderObjectData
     {
-    Float3 InstanceOrigin;
-    float PerInstanceRandom;
-    Float3 InstanceTransform1;
-    float LODDitherFactor;
-    Float3 InstanceTransform2;
-    Float3 InstanceTransform3;
-    Half4 InstanceLightmapArea;
+    Float4 Raw[8];
+
+    void FLAXENGINE_API Store(const Matrix& worldMatrix, const Matrix& prevWorldMatrix, const Rectangle& lightmapUVsArea, const Float3& geometrySize, float perInstanceRandom = 0.0f, float worldDeterminantSign = 1.0f, float lodDitherFactor = 0.0f);
+    void FLAXENGINE_API Load(Matrix& worldMatrix, Matrix& prevWorldMatrix, Rectangle& lightmapUVsArea, Float3& geometrySize, float& perInstanceRandom, float& worldDeterminantSign, float& lodDitherFactor) const;
+
+    FORCE_INLINE void Store(const DrawCall& drawCall)
+    {
+    Store(drawCall.World, drawCall.Surface.PrevWorld, drawCall.Surface.LightmapUVsArea, drawCall.Surface.GeometrySize, drawCall.PerInstanceRandom, drawCall.WorldDeterminantSign, drawCall.Surface.LODDitherFactor);
+    }
+
+    FORCE_INLINE void Load(DrawCall& drawCall) const
+    {
+    Load(drawCall.World, drawCall.Surface.PrevWorld, drawCall.Surface.LightmapUVsArea, drawCall.Surface.GeometrySize, drawCall.PerInstanceRandom, drawCall.WorldDeterminantSign, drawCall.Surface.LODDitherFactor);
+    drawCall.ObjectPosition = drawCall.World.GetTranslation();
+    }
+    });
+
+/// <summary>
+/// Represents data passed to Vertex Shader used for instanced rendering (per-instance element).
+/// </summary>
+PACK_STRUCT(struct ShaderObjectDrawInstanceData
+    {
+    uint32 ObjectIndex;
     });
 
 struct SurfaceDrawCallHandler
 {
     static void GetHash(const DrawCall& drawCall, uint32& batchKey);
     static bool CanBatch(const DrawCall& a, const DrawCall& b, DrawPass pass);
-    static void WriteDrawCall(InstanceData* instanceData, const DrawCall& drawCall);
 };

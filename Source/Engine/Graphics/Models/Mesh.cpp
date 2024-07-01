@@ -382,7 +382,7 @@ void Mesh::Render(GPUContext* context) const
 
     context->BindVB(ToSpan((GPUBuffer**)_vertexBuffers, 3));
     context->BindIB(_indexBuffer);
-    context->DrawIndexedInstanced(_triangles * 3, 1, 0, 0, 0);
+    context->DrawIndexed(_triangles * 3);
 }
 
 void Mesh::Draw(const RenderContext& renderContext, MaterialBase* material, const Matrix& world, StaticFlags flags, bool receiveDecals, DrawPass drawModes, float perInstanceRandom, int8 sortOrder) const

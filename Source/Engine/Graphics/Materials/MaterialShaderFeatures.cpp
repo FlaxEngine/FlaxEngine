@@ -16,7 +16,7 @@ void ForwardShadingFeature::Bind(MaterialShader::BindParameters& params, Span<by
 {
     auto cache = params.RenderContext.List;
     auto& view = params.RenderContext.View;
-    auto& drawCall = *params.FirstDrawCall;
+    auto& drawCall = *params.DrawCall;
     auto& data = *(Data*)cb.Get();
     ASSERT_LOW_LAYER(cb.Length() >= sizeof(Data));
     const int32 envProbeShaderRegisterIndex = srv + 0;
@@ -118,8 +118,7 @@ void ForwardShadingFeature::Bind(MaterialShader::BindParameters& params, Span<by
 
 bool LightmapFeature::Bind(MaterialShader::BindParameters& params, Span<byte>& cb, int32& srv)
 {
-    auto& drawCall = *params.FirstDrawCall;
-    ASSERT_LOW_LAYER(cb.Length() >= sizeof(Data));
+    auto& drawCall = *params.DrawCall;
 
     const bool useLightmap = EnumHasAnyFlags(params.RenderContext.View.Flags, ViewFlags::GI)
 #if USE_EDITOR
@@ -134,13 +133,15 @@ bool LightmapFeature::Bind(MaterialShader::BindParameters& params, Span<byte>& c
         params.GPUContext->BindSR(srv + 0, lightmap0);
         params.GPUContext->BindSR(srv + 1, lightmap1);
         params.GPUContext->BindSR(srv + 2, lightmap2);
-
-        // Set lightmap data
-        auto& data = *(Data*)cb.Get();
-        data.LightmapArea = drawCall.Features.LightmapUVsArea;
+    }
+    else
+    {
+        // Free texture slots
+        params.GPUContext->UnBindSR(srv + 0);
+        params.GPUContext->UnBindSR(srv + 1);
+        params.GPUContext->UnBindSR(srv + 2);
     }
 
-    cb = Span<byte>(cb.Get() + sizeof(Data), cb.Length() - sizeof(Data));
     srv += SRVs;
     return useLightmap;
 }

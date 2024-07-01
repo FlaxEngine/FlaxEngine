@@ -28,6 +28,7 @@ float4 HeightmapUVScaleBias;
 float4 NeighborLOD;
 float2 OffsetUV;
 float2 Dummy0;
+float4 LightmapArea;
 @1META_CB_END
 
 // Terrain data
@@ -88,6 +89,7 @@ struct MaterialInput
 	float3 PreSkinnedPosition;
 	float3 PreSkinnedNormal;
 	float HolesMask;
+	ObjectData Object;
 #if USE_TERRAIN_LAYERS
 	float4 Layers[TERRAIN_LAYERS_DATA_SIZE];
 #endif
@@ -147,9 +149,23 @@ GeometryData InterpolateGeometry(GeometryData p0, float w0, GeometryData p1, flo
 
 #endif
 
+ObjectData GetObject()
+{
+    ObjectData object = (ObjectData)0;
+    object.WorldMatrix = ToMatrix4x4(WorldMatrix);
+    object.PrevWorldMatrix = object.WorldMatrix;
+    object.GeometrySize = float3(1, 1, 1);
+    object.PerInstanceRandom = PerInstanceRandom;
+    object.WorldDeterminantSign = WorldDeterminantSign;
+    object.LODDitherFactor = 0.0f;
+    object.LightmapArea = LightmapArea;
+    return object;
+}
+
 MaterialInput GetMaterialInput(PixelInput input)
 {
 	MaterialInput output = GetGeometryMaterialInput(input.Geometry);
+	output.Object = GetObject();
 	output.TwoSidedSign = WorldDeterminantSign * (input.IsFrontFace ? 1.0 : -1.0);
 	output.SvPosition = input.Position;
 #if USE_CUSTOM_VERTEX_INTERPOLATORS
@@ -396,6 +412,7 @@ VertexOutput VS(TerrainVertexInput input)
 	// Get material input params if need to evaluate any material property
 #if USE_POSITION_OFFSET || USE_TESSELLATION || USE_CUSTOM_VERTEX_INTERPOLATORS
 	MaterialInput materialInput = (MaterialInput)0;
+	materialInput.Object = GetObject();
 	materialInput.WorldPosition = output.Geometry.WorldPosition;
 	materialInput.TexCoord = output.Geometry.TexCoord;
 #if USE_LIGHTMAP

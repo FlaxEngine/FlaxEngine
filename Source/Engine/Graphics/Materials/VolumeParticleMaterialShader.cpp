@@ -37,7 +37,7 @@ void VolumeParticleMaterialShader::Bind(BindParameters& params)
     // Prepare
     auto context = params.GPUContext;
     const RenderView& view = params.RenderContext.View;
-    auto& drawCall = *params.FirstDrawCall;
+    auto& drawCall = *params.DrawCall;
     Span<byte> cb(_cbData.Get(), _cbData.Count());
     ASSERT_LOW_LAYER(cb.Length() >= sizeof(VolumeParticleMaterialShaderData));
     auto materialData = reinterpret_cast<VolumeParticleMaterialShaderData*>(cb.Get());
