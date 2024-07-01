@@ -459,8 +459,10 @@ void GPUContextDX12::flushCBs()
             const auto cb = _cbHandles[i];
             if (cb)
             {
-                ASSERT(cb->GPUAddress != 0);
-                _commandList->SetGraphicsRootConstantBufferView(DX12_ROOT_SIGNATURE_CB + i, cb->GPUAddress);
+                if (cb->GPUAddress != 0)
+                    _commandList->SetGraphicsRootConstantBufferView(DX12_ROOT_SIGNATURE_CB + i, cb->GPUAddress);
+                else
+                    _cbGraphicsDirtyFlag = true; // CB was binded but not yet assigned so stay in dirty state
             }
         }
     }
@@ -472,8 +474,10 @@ void GPUContextDX12::flushCBs()
             const auto cb = _cbHandles[i];
             if (cb)
             {
-                ASSERT(cb->GPUAddress != 0);
-                _commandList->SetComputeRootConstantBufferView(DX12_ROOT_SIGNATURE_CB + i, cb->GPUAddress);
+                if (cb->GPUAddress != 0)
+                    _commandList->SetComputeRootConstantBufferView(DX12_ROOT_SIGNATURE_CB + i, cb->GPUAddress);
+                else
+                    _cbComputeDirtyFlag = true; // CB was binded but not yet assigned so stay in dirty state
             }
         }
     }
