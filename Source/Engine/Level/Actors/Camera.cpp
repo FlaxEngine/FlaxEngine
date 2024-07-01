@@ -320,6 +320,7 @@ bool Camera::HasContentLoaded() const
 void Camera::Draw(RenderContext& renderContext)
 {
     if (EnumHasAnyFlags(renderContext.View.Flags, ViewFlags::EditorSprites)
+        && renderContext.View.CullingFrustum.Intersects(_previewModelBox)
         && _previewModel
         && _previewModel->IsLoaded())
     {
