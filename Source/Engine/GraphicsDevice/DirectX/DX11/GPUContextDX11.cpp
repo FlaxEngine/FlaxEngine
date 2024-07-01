@@ -583,6 +583,7 @@ void GPUContextDX11::SetState(GPUPipelineState* state)
         }
 
         // Per pipeline stage state caching
+        bool shaderEnabled = false;
         if (CurrentDepthStencilState != depthStencilState)
         {
             CurrentDepthStencilState = depthStencilState;
@@ -600,6 +601,7 @@ void GPUContextDX11::SetState(GPUPipelineState* state)
         }
         if (CurrentVS != vs)
         {
+            shaderEnabled |= CurrentVS == nullptr;
 #if DX11_CLEAR_SR_ON_STAGE_DISABLE
 			if (CurrentVS && !vs)
 			{
@@ -613,6 +615,7 @@ void GPUContextDX11::SetState(GPUPipelineState* state)
 #if GPU_ALLOW_TESSELLATION_SHADERS
         if (CurrentHS != hs)
         {
+            shaderEnabled |= CurrentHS == nullptr;
 #if DX11_CLEAR_SR_ON_STAGE_DISABLE
 			if (CurrentHS && !hs)
 			{
@@ -624,6 +627,7 @@ void GPUContextDX11::SetState(GPUPipelineState* state)
         }
         if (CurrentDS != ds)
         {
+            shaderEnabled |= CurrentDS == nullptr;
 #if DX11_CLEAR_SR_ON_STAGE_DISABLE
 			if (CurrentDS && !ds)
 			{
@@ -637,6 +641,7 @@ void GPUContextDX11::SetState(GPUPipelineState* state)
 #if GPU_ALLOW_GEOMETRY_SHADERS
         if (CurrentGS != gs)
         {
+            shaderEnabled |= CurrentGS == nullptr;
 #if DX11_CLEAR_SR_ON_STAGE_DISABLE
 			if (CurrentGS && !gs)
 			{
@@ -649,6 +654,7 @@ void GPUContextDX11::SetState(GPUPipelineState* state)
 #endif
         if (CurrentPS != ps)
         {
+            shaderEnabled |= CurrentPS == nullptr;
 #if DX11_CLEAR_SR_ON_STAGE_DISABLE
 			if (CurrentPS && !ps)
 			{
@@ -662,6 +668,13 @@ void GPUContextDX11::SetState(GPUPipelineState* state)
         {
             CurrentPrimitiveTopology = primitiveTopology;
             _context->IASetPrimitiveTopology(primitiveTopology);
+        }
+        if (shaderEnabled)
+        {
+            // Fix bug when binding constant buffer or texture, then binding PSO with tess and the drawing (data binded before tess shader is active was missing)
+            // TODO: use per-shader dirty flags
+            _cbDirtyFlag = true;
+            _srMaskDirtyGraphics = MAX_uint32;
         }
 
         RENDER_STAT_PS_STATE_CHANGE();
