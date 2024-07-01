@@ -56,6 +56,9 @@ public class FlaxEditor : EngineTarget
             case TargetArchitecture.x86:
                 options.OutputFolder = Path.Combine(options.WorkingDirectory, "Binaries", "Editor", "Win32", options.Configuration.ToString());
                 break;
+            case TargetArchitecture.ARM64:
+                options.OutputFolder = Path.Combine(options.WorkingDirectory, "Binaries", "Editor", "ARM64", options.Configuration.ToString());
+                break;
             default: throw new InvalidArchitectureException(options.Architecture, "Not supported Editor architecture.");
             }
             break;

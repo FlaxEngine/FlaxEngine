@@ -447,6 +447,7 @@ bool ProcessShaderBase(CookAssetsStep::AssetCookData& data, ShaderAssetBase* ass
 #if PLATFORM_TOOLS_WINDOWS
     case BuildPlatform::Windows32:
     case BuildPlatform::Windows64:
+    case BuildPlatform::WindowsARM64:
     {
         const char* platformDefineName = "PLATFORM_WINDOWS";
         const auto settings = WindowsPlatformSettings::Get();

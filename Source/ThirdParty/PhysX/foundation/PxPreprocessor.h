@@ -143,7 +143,7 @@ SIMD defines
 	#if defined(__i386__) || defined(_M_IX86) || defined(__x86_64__) || defined(_M_X64) || (defined (__EMSCRIPTEN__) && defined(__SSE2__))
 		#define PX_SSE2 1
 	#endif
-	#if defined(_M_ARM) || defined(__ARM_NEON__) || defined(__ARM_NEON)
+	#if defined(_M_ARM) || defined(__ARM_NEON__) || defined(__ARM_NEON) || defined(_M_ARM64)
 		#define PX_NEON 1
 	#endif
 	#if defined(_M_PPC) || defined(__CELLOS_LV2__)

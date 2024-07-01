@@ -31,6 +31,11 @@
 
 #include "foundation/PxVec3.h"
 
+#if PX_VC
+#pragma warning(push)
+#pragma warning(disable : 4324) // structure was padded due to alignment specifier
+#endif
+
 #if !PX_DOXYGEN
 namespace physx
 {
@@ -95,6 +100,10 @@ namespace physx
 
 #if !PX_DOXYGEN
 } // namespace physx
+#endif
+
+#if PX_VC
+#pragma warning(pop)
 #endif
 
 #endif

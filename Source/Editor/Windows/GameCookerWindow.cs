@@ -767,13 +767,6 @@ namespace FlaxEditor.Windows
                         Platform = BuildPlatform.Windows64,
                         Mode = BuildConfiguration.Development,
                     },
-                    new BuildTarget
-                    {
-                        Name = "Windows 32bit",
-                        Output = "Output\\Win32",
-                        Platform = BuildPlatform.Windows32,
-                        Mode = BuildConfiguration.Development,
-                    },
                 }
             };
             _data = presets;
@@ -793,9 +786,9 @@ namespace FlaxEditor.Windows
                 Array.Copy(_data[_selectedPresetIndex].Targets, targets, count);
             targets[count] = new BuildTarget
             {
-                Name = "Xbox One",
-                Output = "Output\\XboxOne",
-                Platform = BuildPlatform.XboxOne,
+                Name = "Windows 64bit",
+                Output = "Output\\Win64",
+                Platform = BuildPlatform.Windows64,
                 Mode = BuildConfiguration.Development,
             };
             _data[_selectedPresetIndex].Targets = targets;

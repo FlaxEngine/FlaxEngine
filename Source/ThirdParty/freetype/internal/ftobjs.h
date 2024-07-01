@@ -4,7 +4,7 @@
  *
  *   The FreeType private base classes (specification).
  *
- * Copyright (C) 1996-2019 by
+ * Copyright (C) 1996-2023 by
  * David Turner, Robert Wilhelm, and Werner Lemberg.
  *
  * This file is part of the FreeType project, and may only be used,
@@ -26,21 +26,21 @@
 #ifndef FTOBJS_H_
 #define FTOBJS_H_
 
-#include <ft2build.h>
-#include FT_RENDER_H
-#include FT_SIZES_H
-#include FT_LCD_FILTER_H
-#include FT_INTERNAL_MEMORY_H
-#include FT_INTERNAL_GLYPH_LOADER_H
-#include FT_INTERNAL_DRIVER_H
-#include FT_INTERNAL_AUTOHINT_H
-#include FT_INTERNAL_SERVICE_H
-#include FT_INTERNAL_CALC_H
+#include <freetype/ftrender.h>
+#include <freetype/ftsizes.h>
+#include <freetype/ftlcdfil.h>
+#include <freetype/internal/ftmemory.h>
+#include <freetype/internal/ftgloadr.h>
+#include <freetype/internal/ftdrv.h>
+#include <freetype/internal/autohint.h>
+#include <freetype/internal/ftserv.h>
+#include <freetype/internal/ftcalc.h>
 
 #ifdef FT_CONFIG_OPTION_INCREMENTAL
-#include FT_INCREMENTAL_H
+#include <freetype/ftincrem.h>
 #endif
 
+#include "compiler-macros.h"
 
 FT_BEGIN_HEADER
 
@@ -226,8 +226,8 @@ FT_BEGIN_HEADER
   } FT_CMap_ClassRec;
 
 
-#define FT_DECLARE_CMAP_CLASS( class_ )              \
-  FT_CALLBACK_TABLE const  FT_CMap_ClassRec class_;
+#define FT_DECLARE_CMAP_CLASS( class_ )            \
+  FT_CALLBACK_TABLE const FT_CMap_ClassRec  class_;
 
 #define FT_DEFINE_CMAP_CLASS(       \
           class_,                   \
@@ -278,14 +278,12 @@ FT_BEGIN_HEADER
 #ifdef FT_CONFIG_OPTION_SUBPIXEL_RENDERING
 
   typedef void  (*FT_Bitmap_LcdFilterFunc)( FT_Bitmap*      bitmap,
-                                            FT_Render_Mode  render_mode,
                                             FT_Byte*        weights );
 
 
   /* This is the default LCD filter, an in-place, 5-tap FIR filter. */
   FT_BASE( void )
   ft_lcd_filter_fir( FT_Bitmap*           bitmap,
-                     FT_Render_Mode       mode,
                      FT_LcdFiveTapFilter  weights );
 
 #endif /* FT_CONFIG_OPTION_SUBPIXEL_RENDERING */
@@ -420,7 +418,8 @@ FT_BEGIN_HEADER
    *     initializing the glyph slot.
    */
 
-#define FT_GLYPH_OWN_BITMAP  0x1U
+#define FT_GLYPH_OWN_BITMAP    0x1U
+#define FT_GLYPH_OWN_GZIP_SVG  0x2U
 
   typedef struct  FT_Slot_InternalRec_
   {
@@ -655,7 +654,7 @@ FT_BEGIN_HEADER
   FT_BASE( void )
   FT_Done_GlyphSlot( FT_GlyphSlot  slot );
 
- /* */
+  /* */
 
 #define FT_REQUEST_WIDTH( req )                                            \
           ( (req)->horiResolution                                          \
@@ -675,7 +674,7 @@ FT_BEGIN_HEADER
 
 
   /* Set the metrics according to a size request. */
-  FT_BASE( void )
+  FT_BASE( FT_Error )
   FT_Request_Metrics( FT_Face          face,
                       FT_Size_Request  req );
 
@@ -941,8 +940,8 @@ FT_BEGIN_HEADER
                                FT_UInt     buffer_max );
 
   typedef FT_UInt
-  (*FT_Face_GetGlyphNameIndexFunc)( FT_Face     face,
-                                    FT_String*  glyph_name );
+  (*FT_Face_GetGlyphNameIndexFunc)( FT_Face           face,
+                                    const FT_String*  glyph_name );
 
 
 #ifndef FT_CONFIG_OPTION_NO_DEFAULT_SYSTEM
@@ -1059,6 +1058,9 @@ FT_BEGIN_HEADER
    *   The struct will be allocated in the global scope (or the scope where
    *   the macro is used).
    */
+#define FT_DECLARE_GLYPH( class_ )                \
+  FT_CALLBACK_TABLE const FT_Glyph_Class  class_;
+
 #define FT_DEFINE_GLYPH(          \
           class_,                 \
           size_,                  \

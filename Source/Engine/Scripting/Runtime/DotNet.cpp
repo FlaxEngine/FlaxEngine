@@ -1777,13 +1777,18 @@ bool InitHostfxr()
             {
             case PlatformType::Windows:
             case PlatformType::UWP:
-                platformStr = PLATFORM_64BITS ? "Windows x64" : "Windows x86";
+                if (PLATFORM_ARCH == ArchitectureType::x64)
+                    platformStr = "Windows x64";
+                else if (PLATFORM_ARCH == ArchitectureType::ARM64)
+                    platformStr = "Windows ARM64";
+                else
+                    platformStr = "Windows x86";
                 break;
             case PlatformType::Linux:
-                platformStr = PLATFORM_ARCH_ARM64 ? "Linux Arm64" : PLATFORM_ARCH_ARM ? "Linux Arm32" : PLATFORM_64BITS ? "Linux x64" : "Linux x86";
+                platformStr = PLATFORM_ARCH_ARM64 ? "Linux ARM64" : PLATFORM_ARCH_ARM ? "Linux Arm32" : PLATFORM_64BITS ? "Linux x64" : "Linux x86";
                 break;
             case PlatformType::Mac:
-                platformStr = PLATFORM_ARCH_ARM || PLATFORM_ARCH_ARM64 ? "macOS Arm64" : PLATFORM_64BITS ? "macOS x64" : "macOS x86";
+                platformStr = PLATFORM_ARCH_ARM || PLATFORM_ARCH_ARM64 ? "macOS ARM64" : PLATFORM_64BITS ? "macOS x64" : "macOS x86";
                 break;
             default:;
                 platformStr = "";

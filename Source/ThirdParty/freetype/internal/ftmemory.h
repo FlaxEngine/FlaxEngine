@@ -4,7 +4,7 @@
  *
  *   The FreeType memory management macros (specification).
  *
- * Copyright (C) 1996-2019 by
+ * Copyright (C) 1996-2023 by
  * David Turner, Robert Wilhelm, and Werner Lemberg
  *
  * This file is part of the FreeType project, and may only be used,
@@ -22,8 +22,9 @@
 
 #include <ft2build.h>
 #include FT_CONFIG_CONFIG_H
-#include FT_TYPES_H
+#include <freetype/fttypes.h>
 
+#include "compiler-macros.h"
 
 FT_BEGIN_HEADER
 
@@ -57,6 +58,14 @@ FT_BEGIN_HEADER
   /*************************************************************************/
 
 
+  /* The calculation `NULL + n' is undefined in C.  Even if the resulting */
+  /* pointer doesn't get dereferenced, this causes warnings with          */
+  /* sanitizers.                                                          */
+  /*                                                                      */
+  /* We thus provide a macro that should be used if `base' can be NULL.   */
+#define FT_OFFSET( base, count )  ( (base) ? (base) + (count) : NULL )
+
+
   /*
    * C++ refuses to handle statements like p = (void*)anything, with `p' a
    * typed pointer.  Since we don't have a `typeof' operator in standard C++,
@@ -87,15 +96,15 @@ extern "C++"
 
 #ifdef FT_DEBUG_MEMORY
 
-  FT_BASE( const char* )  _ft_debug_file;
-  FT_BASE( long )         _ft_debug_lineno;
+  FT_BASE( const char* )  ft_debug_file_;
+  FT_BASE( long )         ft_debug_lineno_;
 
-#define FT_DEBUG_INNER( exp )  ( _ft_debug_file   = __FILE__, \
-                                 _ft_debug_lineno = __LINE__, \
+#define FT_DEBUG_INNER( exp )  ( ft_debug_file_   = __FILE__, \
+                                 ft_debug_lineno_ = __LINE__, \
                                  (exp) )
 
-#define FT_ASSIGNP_INNER( p, exp )  ( _ft_debug_file   = __FILE__, \
-                                      _ft_debug_lineno = __LINE__, \
+#define FT_ASSIGNP_INNER( p, exp )  ( ft_debug_file_   = __FILE__, \
+                                      ft_debug_lineno_ = __LINE__, \
                                       FT_ASSIGNP( p, exp ) )
 
 #else /* !FT_DEBUG_MEMORY */
@@ -153,10 +162,10 @@ extern "C++"
                                                (FT_Long)(size), \
                                                &error ) )
 
-#define FT_MEM_FREE( ptr )                \
-          FT_BEGIN_STMNT                  \
-            ft_mem_free( memory, (ptr) ); \
-            (ptr) = NULL;                 \
+#define FT_MEM_FREE( ptr )                                  \
+          FT_BEGIN_STMNT                                    \
+            FT_DEBUG_INNER( ft_mem_free( memory, (ptr) ) ); \
+            (ptr) = NULL;                                   \
           FT_END_STMNT
 
 #define FT_MEM_NEW( ptr )                        \
@@ -335,14 +344,13 @@ extern "C++"
 #define FT_RENEW_ARRAY( ptr, curcnt, newcnt )                           \
           FT_MEM_SET_ERROR( FT_MEM_RENEW_ARRAY( ptr, curcnt, newcnt ) )
 
-#define FT_QNEW( ptr )                           \
-          FT_MEM_SET_ERROR( FT_MEM_QNEW( ptr ) )
+#define FT_QNEW( ptr )  FT_MEM_SET_ERROR( FT_MEM_QNEW( ptr ) )
 
-#define FT_QNEW_ARRAY( ptr, count )                          \
-          FT_MEM_SET_ERROR( FT_MEM_NEW_ARRAY( ptr, count ) )
+#define FT_QNEW_ARRAY( ptr, count )                           \
+          FT_MEM_SET_ERROR( FT_MEM_QNEW_ARRAY( ptr, count ) )
 
-#define FT_QRENEW_ARRAY( ptr, curcnt, newcnt )                          \
-          FT_MEM_SET_ERROR( FT_MEM_RENEW_ARRAY( ptr, curcnt, newcnt ) )
+#define FT_QRENEW_ARRAY( ptr, curcnt, newcnt )                           \
+          FT_MEM_SET_ERROR( FT_MEM_QRENEW_ARRAY( ptr, curcnt, newcnt ) )
 
 
   FT_BASE( FT_Pointer )
@@ -380,8 +388,6 @@ extern "C++"
 
 #define FT_STRCPYN( dst, src, size )                                         \
           ft_mem_strcpyn( (char*)dst, (const char*)(src), (FT_ULong)(size) )
-
- /* */
 
 
 FT_END_HEADER

@@ -70,7 +70,7 @@ namespace Flax.Deps.Dependencies
 
             // Get the source
             if (!File.Exists(packagePath))
-                Downloader.DownloadFileFromUrlToPath("https://sourceforge.net/projects/freetype/files/freetype2/2.10.0/ft2100.zip/download", packagePath);
+                Downloader.DownloadFileFromUrlToPath("https://sourceforge.net/projects/freetype/files/freetype2/2.13.2/ft2132.zip/download", packagePath);
             using (ZipArchive archive = ZipFile.Open(packagePath, ZipArchiveMode.Read))
             {
                 var newRoot = Path.Combine(root, archive.Entries.First().FullName);
@@ -99,15 +99,22 @@ namespace Flax.Deps.Dependencies
                 {
                 case TargetPlatform.Windows:
                 {
-                    // Fix the MSVC project settings for Windows
-                    PatchWindowsTargetPlatformVersion(vcxprojPath, vcxprojContents, "8.1", "140");
+                    // Patch the RuntimeLibrary value
+                    File.WriteAllText(vcxprojPath, vcxprojContents);
 
-                    // Build for Win64
-                    Deploy.VCEnvironment.BuildSolution(vsSolutionPath, configurationMsvc, "x64");
-                    var depsFolder = GetThirdPartyFolder(options, platform, TargetArchitecture.x64);
-                    foreach (var filename in binariesToCopyMsvc)
-                        Utilities.FileCopy(Path.Combine(root, "objs", "x64", configurationMsvc, filename), Path.Combine(depsFolder, filename));
-
+                    // Build for Windows
+                    foreach (var architecture in new[] { TargetArchitecture.x64, TargetArchitecture.ARM64 })
+                    {
+                        Deploy.VCEnvironment.BuildSolution(vsSolutionPath, configurationMsvc, architecture.ToString(),
+                            new Dictionary<string, string>() {
+                                { "WindowsTargetPlatformVersion", "10.0" },
+                                { "PlatformToolset", "v143" },
+                                //{ "RuntimeLibrary", "MultiThreadedDLL" }
+                            });
+                        var depsFolder = GetThirdPartyFolder(options, platform, architecture);
+                        foreach (var filename in binariesToCopyMsvc)
+                            Utilities.FileCopy(Path.Combine(root, "objs", architecture.ToString(), configurationMsvc, filename), Path.Combine(depsFolder, filename));
+                    }
                     break;
                 }
                 case TargetPlatform.UWP:
@@ -286,18 +293,25 @@ namespace Flax.Deps.Dependencies
                 Utilities.FileCopy(src, dst);
             }
 
-            // Setup headers directory
-            SetupDirectory(dstIncludePath, true);
-
-            // Deploy header files and restore files
-            Utilities.DirectoryCopy(srcIncludePath, dstIncludePath, true, true);
-            Utilities.FileCopy(Path.Combine(root, "include", "ft2build.h"), Path.Combine(dstIncludePath, "ft2build.h"));
-            Utilities.FileCopy(Path.Combine(root, "docs", "LICENSE.TXT"), Path.Combine(dstIncludePath, "LICENSE.TXT"));
-            foreach (var filename in filesToKeep)
+            try
             {
-                var src = Path.Combine(options.IntermediateFolder, filename + ".tmp");
-                var dst = Path.Combine(dstIncludePath, filename);
-                Utilities.FileCopy(src, dst);
+                // Setup headers directory
+                SetupDirectory(dstIncludePath, true);
+
+                // Deploy header files and restore files
+                Utilities.DirectoryCopy(srcIncludePath, dstIncludePath, true, true);
+                Utilities.FileCopy(Path.Combine(root, "include", "ft2build.h"), Path.Combine(dstIncludePath, "ft2build.h"));
+                Utilities.FileCopy(Path.Combine(root, "LICENSE.TXT"), Path.Combine(dstIncludePath, "LICENSE.TXT"));
+                Utilities.FileCopy(Path.Combine(root, "docs", "FTL.TXT"), Path.Combine(dstIncludePath, "FTL.TXT"));
+            }
+            finally
+            {
+                foreach (var filename in filesToKeep)
+                {
+                    var src = Path.Combine(options.IntermediateFolder, filename + ".tmp");
+                    var dst = Path.Combine(dstIncludePath, filename);
+                    Utilities.FileCopy(src, dst);
+                }
             }
         }
     }

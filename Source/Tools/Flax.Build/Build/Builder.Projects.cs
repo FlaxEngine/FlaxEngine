@@ -125,9 +125,7 @@ namespace Flax.Build
                                 continue;
                             if (!platform.HasRequiredSDKsInstalled && (!projectInfo.IsCSharpOnlyProject || platform != Platform.BuildPlatform))
                                 continue;
-
-                            // Prevent generating configuration data for Windows x86
-                            if (architecture == TargetArchitecture.x86 && targetPlatform == TargetPlatform.Windows)
+                            if (!platform.CanBuildArchitecture(architecture))
                                 continue;
 
                             string configurationText = targetName + '.' + platformName + '.' + configurationName;

@@ -4,7 +4,7 @@
  *
  *   FreeType internal font driver interface (specification).
  *
- * Copyright (C) 1996-2019 by
+ * Copyright (C) 1996-2023 by
  * David Turner, Robert Wilhelm, and Werner Lemberg.
  *
  * This file is part of the FreeType project, and may only be used,
@@ -20,9 +20,9 @@
 #define FTDRV_H_
 
 
-#include <ft2build.h>
-#include FT_MODULE_H
+#include <freetype/ftmodapi.h>
 
+#include "compiler-macros.h"
 
 FT_BEGIN_HEADER
 
@@ -157,6 +157,7 @@ FT_BEGIN_HEADER
    *     A handle to a function used to select a new fixed size.  It is used
    *     only if @FT_FACE_FLAG_FIXED_SIZES is set.  Can be set to 0 if the
    *     scaling done in the base layer suffices.
+   *
    * @note:
    *   Most function pointers, with the exception of `load_glyph`, can be set
    *   to 0 to indicate a default behaviour.

@@ -1,5 +1,5 @@
-#ifndef __CURL_URLAPI_H
-#define __CURL_URLAPI_H
+#ifndef CURLINC_URLAPI_H
+#define CURLINC_URLAPI_H
 /***************************************************************************
  *                                  _   _ ____  _
  *  Project                     ___| | | |  _ \| |
@@ -7,11 +7,11 @@
  *                            | (__| |_| |  _ <| |___
  *                             \___|\___/|_| \_\_____|
  *
- * Copyright (C) 2018 - 2019, Daniel Stenberg, <daniel@haxx.se>, et al.
+ * Copyright (C) Daniel Stenberg, <daniel@haxx.se>, et al.
  *
  * This software is licensed as described in the file COPYING, which
  * you should have received as part of this distribution. The terms
- * are also available at https://curl.haxx.se/docs/copyright.html.
+ * are also available at https://curl.se/docs/copyright.html.
  *
  * You may opt to use, copy, modify, merge, publish, distribute and/or sell
  * copies of the Software, and permit persons to whom the Software is
@@ -19,6 +19,8 @@
  *
  * This software is distributed on an "AS IS" basis, WITHOUT WARRANTY OF ANY
  * KIND, either express or implied.
+ *
+ * SPDX-License-Identifier: curl
  *
  ***************************************************************************/
 
@@ -47,7 +49,21 @@ typedef enum {
   CURLUE_NO_HOST,             /* 14 */
   CURLUE_NO_PORT,             /* 15 */
   CURLUE_NO_QUERY,            /* 16 */
-  CURLUE_NO_FRAGMENT          /* 17 */
+  CURLUE_NO_FRAGMENT,         /* 17 */
+  CURLUE_NO_ZONEID,           /* 18 */
+  CURLUE_BAD_FILE_URL,        /* 19 */
+  CURLUE_BAD_FRAGMENT,        /* 20 */
+  CURLUE_BAD_HOSTNAME,        /* 21 */
+  CURLUE_BAD_IPV6,            /* 22 */
+  CURLUE_BAD_LOGIN,           /* 23 */
+  CURLUE_BAD_PASSWORD,        /* 24 */
+  CURLUE_BAD_PATH,            /* 25 */
+  CURLUE_BAD_QUERY,           /* 26 */
+  CURLUE_BAD_SCHEME,          /* 27 */
+  CURLUE_BAD_SLASHES,         /* 28 */
+  CURLUE_BAD_USER,            /* 29 */
+  CURLUE_LACKS_IDN,           /* 30 */
+  CURLUE_LAST
 } CURLUcode;
 
 typedef enum {
@@ -60,7 +76,8 @@ typedef enum {
   CURLUPART_PORT,
   CURLUPART_PATH,
   CURLUPART_QUERY,
-  CURLUPART_FRAGMENT
+  CURLUPART_FRAGMENT,
+  CURLUPART_ZONEID /* added in 7.65.0 */
 } CURLUPart;
 
 #define CURLU_DEFAULT_PORT (1<<0)       /* return default port number */
@@ -76,6 +93,10 @@ typedef enum {
 #define CURLU_URLENCODE (1<<7)          /* URL encode on set */
 #define CURLU_APPENDQUERY (1<<8)        /* append a form style part */
 #define CURLU_GUESS_SCHEME (1<<9)       /* legacy curl-style guessing */
+#define CURLU_NO_AUTHORITY (1<<10)      /* Allow empty authority when the
+                                           scheme is unknown. */
+#define CURLU_ALLOW_SPACE (1<<11)       /* Allow spaces in the URL */
+#define CURLU_PUNYCODE (1<<12)          /* get the host name in pynycode */
 
 typedef struct Curl_URL CURLU;
 
@@ -114,9 +135,15 @@ CURL_EXTERN CURLUcode curl_url_get(CURLU *handle, CURLUPart what,
 CURL_EXTERN CURLUcode curl_url_set(CURLU *handle, CURLUPart what,
                                    const char *part, unsigned int flags);
 
+/*
+ * curl_url_strerror() turns a CURLUcode value into the equivalent human
+ * readable error string.  This is useful for printing meaningful error
+ * messages.
+ */
+CURL_EXTERN const char *curl_url_strerror(CURLUcode);
 
 #ifdef __cplusplus
 } /* end of extern "C" */
 #endif
 
-#endif
+#endif /* CURLINC_URLAPI_H */

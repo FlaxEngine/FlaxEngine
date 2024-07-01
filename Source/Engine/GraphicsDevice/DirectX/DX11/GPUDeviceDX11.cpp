@@ -71,7 +71,28 @@ static bool TryCreateDevice(IDXGIAdapter* adapter, D3D_FEATURE_LEVEL maxFeatureL
         context->Release();
         return true;
     }
-
+#if GPU_ENABLE_DIAGNOSTICS
+    deviceFlags &= ~D3D11_CREATE_DEVICE_DEBUG;
+    if (SUCCEEDED(D3D11CreateDevice(
+        adapter,
+        D3D_DRIVER_TYPE_UNKNOWN,
+        NULL,
+        deviceFlags,
+        &featureLevels[levelIndex],
+        ARRAY_COUNT(featureLevels) - levelIndex,
+        D3D11_SDK_VERSION,
+        &device,
+        featureLevel,
+        &context
+    )))
+    {
+        LOG(Warning, "Direct3D SDK debug layers were requested, but not available.");
+        device->Release();
+        context->Release();
+        return true;
+    }
+#endif
+    
     return false;
 }
 
