@@ -425,29 +425,69 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext, RenderCont
 #endif
     }
 
-    // Sort draw calls
+    // Process draw calls (sorting, objects buffer building)
     {
-        PROFILE_CPU_NAMED("Sort Draw Calls");
-        // TODO: run all of these functions in async via jobs
-        for (int32 i = 0; i < renderContextBatch.Contexts.Count(); i++)
-            renderContextBatch.Contexts[i].List->BuildObjectsBuffer();
-        renderContext.List->SortDrawCalls(renderContext, false, DrawCallsListType::GBuffer);
-        renderContext.List->SortDrawCalls(renderContext, false, DrawCallsListType::GBufferNoDecals);
-        renderContext.List->SortDrawCalls(renderContext, true, DrawCallsListType::Forward);
-        renderContext.List->SortDrawCalls(renderContext, false, DrawCallsListType::Distortion);
-        if (setup.UseMotionVectors)
-            renderContext.List->SortDrawCalls(renderContext, false, DrawCallsListType::MotionVectors);
-        for (int32 i = 1; i < renderContextBatch.Contexts.Count(); i++)
+        PROFILE_CPU_NAMED("Process Draw Calls");
+
+        // Utility that handles async jobs for a specific rendering routines in async
+        struct DrawCallsProcessor
         {
-            auto& shadowContext = renderContextBatch.Contexts.Get()[i];
-            shadowContext.List->SortDrawCalls(shadowContext, false, DrawCallsListType::Depth, DrawPass::Depth);
-            shadowContext.List->SortDrawCalls(shadowContext, false, shadowContext.List->ShadowDepthDrawCallsList, renderContext.List->DrawCalls, DrawPass::Depth);
-        }
+            RenderContextBatch& RenderContextBatch;
+            Pair<DrawCallsListType, bool> MainContextSorting[5] =
+            {
+                // Draw List + Reverse Distance sorting
+                ToPair(DrawCallsListType::GBuffer, false),
+                ToPair(DrawCallsListType::GBufferNoDecals, false),
+                ToPair(DrawCallsListType::Forward, true),
+                ToPair(DrawCallsListType::Distortion, false),
+                ToPair(DrawCallsListType::MotionVectors, false),
+            };
+
+            void BuildObjectsBufferJob(int32 index)
+            {
+                RenderContextBatch.Contexts[index].List->BuildObjectsBuffer();
+            }
+
+            void SortDrawCallsJob(int32 index)
+            {
+                RenderContext& renderContext = RenderContextBatch.GetMainContext();
+                if (index < ARRAY_COUNT(MainContextSorting))
+                {
+                    // Main context sorting
+                    RenderSetup& setup = renderContext.List->Setup;
+                    auto sorting = MainContextSorting[index];
+                    if (sorting.First == DrawCallsListType::MotionVectors && !setup.UseMotionVectors)
+                        return;
+                    renderContext.List->SortDrawCalls(renderContext, sorting.Second, sorting.First);
+                }
+                else
+                {
+                    // Shadow context sorting
+                    auto& shadowContext = RenderContextBatch.Contexts[index - ARRAY_COUNT(MainContextSorting)];
+                    shadowContext.List->SortDrawCalls(shadowContext, false, DrawCallsListType::Depth, DrawPass::Depth);
+                    shadowContext.List->SortDrawCalls(shadowContext, false, shadowContext.List->ShadowDepthDrawCallsList, renderContext.List->DrawCalls, DrawPass::Depth);
+                }
+            }
+        } processor = { renderContextBatch };
+
+        // Dispatch async jobs
+        Function<void(int32)> func;
+        func.Bind<DrawCallsProcessor, &DrawCallsProcessor::BuildObjectsBufferJob>(&processor);
+        const int64 buildObjectsBufferJob = JobSystem::Dispatch(func, renderContextBatch.Contexts.Count());
+        func.Bind<DrawCallsProcessor, &DrawCallsProcessor::SortDrawCallsJob>(&processor);
+        const int64 sortDrawCallsJob = JobSystem::Dispatch(func, ARRAY_COUNT(DrawCallsProcessor::MainContextSorting) + renderContextBatch.Contexts.Count());
+
+        // Upload objects buffers to the GPU
+        JobSystem::Wait(buildObjectsBufferJob);
         {
             PROFILE_CPU_NAMED("FlushObjectsBuffer");
-            for (int32 i = 0; i < renderContextBatch.Contexts.Count(); i++)
-                renderContextBatch.Contexts[i].List->ObjectBuffer.Flush(context);
+            for (auto& e : renderContextBatch.Contexts)
+                e.List->ObjectBuffer.Flush(context);
         }
+
+        // Wait for async jobs to finish
+        // TODO: use per-pass wait labels (eg. don't wait for shadow pass draws sorting until ShadowPass needs it)       
+        JobSystem::Wait(sortDrawCallsJob);
     }
 
     // Get the light accumulation buffer

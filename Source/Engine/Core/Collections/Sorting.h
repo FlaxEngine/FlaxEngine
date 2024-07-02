@@ -325,8 +325,8 @@ public:
             Platform::Free(tmp);
     }
 
-    template<typename T, typename AllocationType = HeapAllocation>
-    FORCE_INLINE static void MergeSort(Array<T, AllocationType>& data, Array<T, AllocationType>* tmp = nullptr)
+    template<typename T, typename AllocationType = HeapAllocation, typename TempAllocationType = HeapAllocation>
+    FORCE_INLINE static void MergeSort(Array<T, AllocationType>& data, Array<T, TempAllocationType>* tmp = nullptr)
     {
         if (tmp)
             tmp->Resize(data.Count());

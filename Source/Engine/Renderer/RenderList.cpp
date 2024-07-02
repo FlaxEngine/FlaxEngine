@@ -26,12 +26,7 @@ static_assert(sizeof(ShaderObjectData) == sizeof(Float4) * ARRAY_COUNT(ShaderObj
 
 namespace
 {
-    // Cached data for the draw calls sorting
-    Array<uint64> SortingKeys[2];
-    Array<int32> SortingIndices;
-    Array<DrawBatch> SortingBatches;
     Array<RenderList*> FreeRenderList;
-
     Array<Pair<void*, uintptr>> MemPool;
     CriticalSection MemPoolLocker;
 }
@@ -199,12 +194,15 @@ void RendererAllocation::Free(void* ptr, uintptr size)
 
 RenderList* RenderList::GetFromPool()
 {
+    MemPoolLocker.Lock();
     if (FreeRenderList.HasItems())
     {
         const auto result = FreeRenderList.Last();
         FreeRenderList.RemoveLast();
+        MemPoolLocker.Unlock();
         return result;
     }
+    MemPoolLocker.Unlock();
 
     return New<RenderList>();
 }
@@ -213,10 +211,12 @@ void RenderList::ReturnToPool(RenderList* cache)
 {
     if (!cache)
         return;
+    cache->Clear();
 
+    MemPoolLocker.Lock();
     ASSERT(!FreeRenderList.Contains(cache));
     FreeRenderList.Add(cache);
-    cache->Clear();
+    MemPoolLocker.Unlock();
 }
 
 void RenderList::CleanupCache()
@@ -224,13 +224,12 @@ void RenderList::CleanupCache()
     // Don't call it during rendering (data may be already in use)
     ASSERT(GPUDevice::Instance == nullptr || GPUDevice::Instance->CurrentTask == nullptr);
 
-    SortingKeys[0].Resize(0);
-    SortingKeys[1].Resize(0);
-    SortingIndices.Resize(0);
+    MemPoolLocker.Lock();
     FreeRenderList.ClearDelete();
     for (auto& e : MemPool)
         Platform::Free(e.First);
     MemPool.Clear();
+    MemPoolLocker.Unlock();
 }
 
 bool RenderList::BlendableSettings::operator<(const BlendableSettings& other) const
@@ -648,12 +647,12 @@ void RenderList::SortDrawCalls(const RenderContext& renderContext, bool reverseD
     const int32 listSize = list.Indices.Count();
     ZoneValue(listSize);
 
-    // Peek shared memory
-#define PREPARE_CACHE(list) (list).Clear(); (list).Resize(listSize)
-    PREPARE_CACHE(SortingKeys[0]);
-    PREPARE_CACHE(SortingKeys[1]);
-    PREPARE_CACHE(SortingIndices);
-#undef PREPARE_CACHE
+    // Use shared memory from renderer allocator
+    Array<uint64, RendererAllocation> SortingKeys[2];
+    Array<int32, RendererAllocation> SortingIndices;
+    SortingKeys[0].Resize(listSize);
+    SortingKeys[1].Resize(listSize);
+    SortingIndices.Resize(listSize);
     uint64* sortedKeys = SortingKeys[0].Get();
 
     // Setup sort keys
@@ -726,7 +725,8 @@ void RenderList::SortDrawCalls(const RenderContext& renderContext, bool reverseD
     if (stable)
     {
         // Sort draw calls batches by depth
-        Sorting::MergeSort(list.Batches, &SortingBatches);
+        Array<DrawBatch, RendererAllocation> sortingBatches;
+        Sorting::MergeSort(list.Batches, &sortingBatches);
     }
 }
 
