@@ -182,6 +182,9 @@ namespace FlaxEditor.Modules
             var cam = scene.AddChild<Camera>();
             cam.Name = "Camera";
             cam.Position = new Vector3(0, 150, -300);
+            //
+            var audioListener = cam.AddChild<AudioListener>();
+            audioListener.Name = "Audio Listener";
 
             // Serialize
             var bytes = Level.SaveSceneToBytes(scene);
