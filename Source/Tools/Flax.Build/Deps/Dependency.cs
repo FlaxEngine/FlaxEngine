@@ -68,10 +68,14 @@ namespace Flax.Deps
         /// <param name="options">The options.</param>
         /// <param name="platform">The target platform.</param>
         /// <param name="architecture">The target architecture.</param>
+        /// <param name="createIfMissing">Auto-create directory if it's missing.</param>
         /// <returns>The absolute path to the deps folder for the given platform and architecture configuration.</returns>
-        public static string GetThirdPartyFolder(BuildOptions options, TargetPlatform platform, TargetArchitecture architecture)
+        public static string GetThirdPartyFolder(BuildOptions options, TargetPlatform platform, TargetArchitecture architecture, bool createIfMissing = true)
         {
-            return Path.Combine(options.PlatformsFolder, platform.ToString(), "Binaries", "ThirdParty", architecture.ToString());
+            var path = Path.Combine(options.PlatformsFolder, platform.ToString(), "Binaries", "ThirdParty", architecture.ToString());
+            if (createIfMissing && !Directory.Exists(path))
+                Directory.CreateDirectory(path);
+            return path;
         }
 
         /// <summary>

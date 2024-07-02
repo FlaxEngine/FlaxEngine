@@ -87,8 +87,7 @@ namespace Flax.Deps.Dependencies
             var globalConfig = string.Join(" ", configs);
 
             // Get the source
-            CloneGitRepoFast(root, "https://github.com/assimp/assimp.git");
-            GitCheckout(root, "master", "adff2f388a23f2192738470b094bb3197feb8ada");
+            CloneGitRepoSingleBranch(root, "https://github.com/assimp/assimp.git", "master", "10df90ec144179f97803a382e4f07c0570665864");
 
             foreach (var platform in options.Platforms)
             {
@@ -105,10 +104,9 @@ namespace Flax.Deps.Dependencies
 
                     // Build for Windows
                     File.Delete(Path.Combine(root, "CMakeCache.txt"));
-
                     foreach (var architecture in new[] { TargetArchitecture.x64, TargetArchitecture.ARM64 })
                     {
-                        var buildDir = Path.Combine(root, "build-" + architecture.ToString());
+                        var buildDir = Path.Combine(root, "build-" + architecture);
                         var solutionPath = Path.Combine(buildDir, "Assimp.sln");
                         SetupDirectory(buildDir, true);
                         RunCmake(root, platform, architecture, $"-B\"{buildDir}\" -DLIBRARY_SUFFIX=-vc140-md -DUSE_STATIC_CRT=OFF " + globalConfig);
