@@ -38,72 +38,56 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ---------------------------------------------------------------------------
 */
-/** @file vector2.h
- *  @brief 2D vector structure, including operators when compiling in C++
- */
+
+/** @file ZipArchiveIOSystem.h
+ *  @brief Implementation of IOSystem to read a ZIP file from another IOSystem
+*/
+
 #pragma once
-#ifndef AI_VECTOR2D_H_INC
-#define AI_VECTOR2D_H_INC
+#ifndef AI_ZIPARCHIVEIOSYSTEM_H_INC
+#define AI_ZIPARCHIVEIOSYSTEM_H_INC
 
 #ifdef __GNUC__
 #   pragma GCC system_header
 #endif
 
-#ifdef __cplusplus
-#   include <cmath>
-#else
-#   include <math.h>
-#endif
+#include <assimp/IOStream.hpp>
+#include <assimp/IOSystem.hpp>
+#include <zlib.h>
 
-#include "defs.h"
+namespace Assimp {
 
-// ----------------------------------------------------------------------------------
-/** Represents a two-dimensional vector.
- */
-
-#ifdef __cplusplus
-template <typename TReal>
-class aiVector2t {
+class ZipArchiveIOSystem : public IOSystem {
 public:
-    aiVector2t () : x(), y() {}
-    aiVector2t (TReal _x, TReal _y) : x(_x), y(_y) {}
-    explicit aiVector2t (TReal _xyz) : x(_xyz), y(_xyz) {}
-    aiVector2t (const aiVector2t& o) = default;
+    //! Open a Zip using the proffered IOSystem
+    ZipArchiveIOSystem(IOSystem* pIOHandler, const char *pFilename, const char* pMode = "r");
+    ZipArchiveIOSystem(IOSystem* pIOHandler, const std::string& rFilename, const char* pMode = "r");
+    virtual ~ZipArchiveIOSystem() override;
+    bool Exists(const char* pFilename) const override;
+    char getOsSeparator() const override;
+    IOStream* Open(const char* pFilename, const char* pMode = "rb") override;
+    void Close(IOStream* pFile) override;
 
-    void Set( TReal pX, TReal pY);
-    TReal SquareLength() const ;
-    TReal Length() const ;
-    aiVector2t& Normalize();
+    // Specific to ZIP
+    //! The file was opened and is a ZIP
+    bool isOpen() const;
 
-    const aiVector2t& operator += (const aiVector2t& o);
-    const aiVector2t& operator -= (const aiVector2t& o);
-    const aiVector2t& operator *= (TReal f);
-    const aiVector2t& operator /= (TReal f);
+    //! Get the list of all files with their simplified paths
+    //! Intended for use within Assimp library boundaries
+    void getFileList(std::vector<std::string>& rFileList) const;
 
-    TReal operator[](unsigned int i) const;
+    //! Get the list of all files with extension (must be lowercase)
+    //! Intended for use within Assimp library boundaries
+    void getFileListExtension(std::vector<std::string>& rFileList, const std::string& extension) const;
 
-    bool operator== (const aiVector2t& other) const;
-    bool operator!= (const aiVector2t& other) const;
+    static bool isZipArchive(IOSystem* pIOHandler, const char *pFilename);
+    static bool isZipArchive(IOSystem* pIOHandler, const std::string& rFilename);
 
-    bool Equal(const aiVector2t &other, TReal epsilon = ai_epsilon) const;
-
-    aiVector2t& operator= (TReal f);
-    const aiVector2t SymMul(const aiVector2t& o);
-
-    template <typename TOther>
-    operator aiVector2t<TOther> () const;
-
-    TReal x, y;
+private:
+    class Implement;
+    Implement *pImpl = nullptr;
 };
 
-typedef aiVector2t<ai_real> aiVector2D;
+} // Namespace Assimp
 
-#else
-
-struct aiVector2D {
-    ai_real x, y;
-};
-
-#endif // __cplusplus
-
-#endif // AI_VECTOR2D_H_INC
+#endif // AI_ZIPARCHIVEIOSYSTEM_H_INC

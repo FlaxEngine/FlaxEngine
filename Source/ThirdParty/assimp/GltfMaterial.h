@@ -38,72 +38,37 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ---------------------------------------------------------------------------
 */
-/** @file vector2.h
- *  @brief 2D vector structure, including operators when compiling in C++
+
+/** @file GltfMaterial.h
+ *  @brief glTF-specific material macros
+ *  These will be made generic at some future date
  */
-#pragma once
-#ifndef AI_VECTOR2D_H_INC
-#define AI_VECTOR2D_H_INC
+
+#ifndef AI_GLTFMATERIAL_H_INC
+#define AI_GLTFMATERIAL_H_INC
 
 #ifdef __GNUC__
 #   pragma GCC system_header
 #endif
 
-#ifdef __cplusplus
-#   include <cmath>
-#else
-#   include <math.h>
+#include <assimp/material.h>
+
+#define AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_METALLICROUGHNESS_TEXTURE aiTextureType_UNKNOWN, 0
+#define AI_MATKEY_GLTF_ALPHAMODE "$mat.gltf.alphaMode", 0, 0
+#define AI_MATKEY_GLTF_ALPHACUTOFF "$mat.gltf.alphaCutoff", 0, 0
+
+#define _AI_MATKEY_GLTF_MAPPINGNAME_BASE "$tex.mappingname"
+#define _AI_MATKEY_GLTF_MAPPINGID_BASE "$tex.mappingid"
+#define _AI_MATKEY_GLTF_MAPPINGFILTER_MAG_BASE "$tex.mappingfiltermag"
+#define _AI_MATKEY_GLTF_MAPPINGFILTER_MIN_BASE "$tex.mappingfiltermin"
+#define _AI_MATKEY_GLTF_SCALE_BASE "$tex.scale"
+#define _AI_MATKEY_GLTF_STRENGTH_BASE "$tex.strength"
+
+#define AI_MATKEY_GLTF_MAPPINGNAME(type, N) _AI_MATKEY_GLTF_MAPPINGNAME_BASE, type, N
+#define AI_MATKEY_GLTF_MAPPINGID(type, N) _AI_MATKEY_GLTF_MAPPINGID_BASE, type, N
+#define AI_MATKEY_GLTF_MAPPINGFILTER_MAG(type, N) _AI_MATKEY_GLTF_MAPPINGFILTER_MAG_BASE, type, N
+#define AI_MATKEY_GLTF_MAPPINGFILTER_MIN(type, N) _AI_MATKEY_GLTF_MAPPINGFILTER_MIN_BASE, type, N
+#define AI_MATKEY_GLTF_TEXTURE_SCALE(type, N) _AI_MATKEY_GLTF_SCALE_BASE, type, N
+#define AI_MATKEY_GLTF_TEXTURE_STRENGTH(type, N) _AI_MATKEY_GLTF_STRENGTH_BASE, type, N
+
 #endif
-
-#include "defs.h"
-
-// ----------------------------------------------------------------------------------
-/** Represents a two-dimensional vector.
- */
-
-#ifdef __cplusplus
-template <typename TReal>
-class aiVector2t {
-public:
-    aiVector2t () : x(), y() {}
-    aiVector2t (TReal _x, TReal _y) : x(_x), y(_y) {}
-    explicit aiVector2t (TReal _xyz) : x(_xyz), y(_xyz) {}
-    aiVector2t (const aiVector2t& o) = default;
-
-    void Set( TReal pX, TReal pY);
-    TReal SquareLength() const ;
-    TReal Length() const ;
-    aiVector2t& Normalize();
-
-    const aiVector2t& operator += (const aiVector2t& o);
-    const aiVector2t& operator -= (const aiVector2t& o);
-    const aiVector2t& operator *= (TReal f);
-    const aiVector2t& operator /= (TReal f);
-
-    TReal operator[](unsigned int i) const;
-
-    bool operator== (const aiVector2t& other) const;
-    bool operator!= (const aiVector2t& other) const;
-
-    bool Equal(const aiVector2t &other, TReal epsilon = ai_epsilon) const;
-
-    aiVector2t& operator= (TReal f);
-    const aiVector2t SymMul(const aiVector2t& o);
-
-    template <typename TOther>
-    operator aiVector2t<TOther> () const;
-
-    TReal x, y;
-};
-
-typedef aiVector2t<ai_real> aiVector2D;
-
-#else
-
-struct aiVector2D {
-    ai_real x, y;
-};
-
-#endif // __cplusplus
-
-#endif // AI_VECTOR2D_H_INC

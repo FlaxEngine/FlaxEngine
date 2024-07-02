@@ -2,8 +2,7 @@
 Open Asset Import Library (assimp)
 ----------------------------------------------------------------------
 
-Copyright (c) 2006-2019, assimp team
-
+Copyright (c) 2006-2024, assimp team
 
 All rights reserved.
 
@@ -40,22 +39,31 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ----------------------------------------------------------------------
 */
 
-/** @file Definition of the base class for all importer worker classes. */
+/// @file Definition of the base class for all importer worker classes.
+
+#pragma once
 #ifndef INCLUDED_AI_BASEIMPORTER_H
 #define INCLUDED_AI_BASEIMPORTER_H
 
+#ifdef __GNUC__
+#pragma GCC system_header
+#endif
+
 #include "Exceptional.h"
 
-#include <vector>
-#include <set>
 #include <assimp/types.h>
 #include <assimp/ProgressHandler.hpp>
+#include <exception>
+#include <set>
+#include <vector>
+#include <memory>
 
 struct aiScene;
 struct aiImporterDesc;
 
-namespace Assimp    {
+namespace Assimp {
 
+// Forward declarations
 class Importer;
 class IOSystem;
 class BaseProcess;
@@ -64,8 +72,10 @@ class IOStream;
 
 // utility to do char4 to uint32 in a portable manner
 #define AI_MAKE_MAGIC(string) ((uint32_t)((string[0] << 24) + \
-    (string[1] << 16) + (string[2] << 8) + string[3]))
+                                          (string[1] << 16) + (string[2] << 8) + string[3]))
 
+using UByteBuffer = std::vector<uint8_t>;
+using ByteBuffer = std::vector<int8_t>;
 
 // ---------------------------------------------------------------------------
 /** FOR IMPORTER PLUGINS ONLY: The BaseImporter defines a common interface
@@ -81,48 +91,41 @@ class ASSIMP_API BaseImporter {
     friend class Importer;
 
 public:
-
     /** Constructor to be privately used by #Importer */
     BaseImporter() AI_NO_EXCEPT;
 
     /** Destructor, private as well */
-    virtual ~BaseImporter();
+    virtual ~BaseImporter() = default;
 
     // -------------------------------------------------------------------
     /** Returns whether the class can handle the format of the given file.
      *
-     * The implementation should be as quick as possible. A check for
-     * the file extension is enough. If no suitable loader is found with
-     * this strategy, CanRead() is called again, the 'checkSig' parameter
-     * set to true this time. Now the implementation is expected to
-     * perform a full check of the file structure, possibly searching the
-     * first bytes of the file for magic identifiers or keywords.
+     * The implementation is expected to perform a full check of the file
+     * structure, possibly searching the first bytes of the file for magic
+     * identifiers or keywords.
      *
      * @param pFile Path and file name of the file to be examined.
      * @param pIOHandler The IO handler to use for accessing any file.
-     * @param checkSig Set to true if this method is called a second time.
-     *   This time, the implementation may take more time to examine the
-     *   contents of the file to be loaded for magic bytes, keywords, etc
-     *   to be able to load files with unknown/not existent file extensions.
-     * @return true if the class can read this file, false if not.
+     * @param checkSig Legacy; do not use.
+     * @return true if the class can read this file, false if not or if
+     * unsure.
      */
     virtual bool CanRead(
-        const std::string& pFile,
-        IOSystem* pIOHandler,
-        bool checkSig
-        ) const = 0;
+            const std::string &pFile,
+            IOSystem *pIOHandler,
+            bool checkSig) const = 0;
 
     // -------------------------------------------------------------------
     /** Imports the given file and returns the imported data.
      * If the import succeeds, ownership of the data is transferred to
-     * the caller. If the import fails, NULL is returned. The function
+     * the caller. If the import fails, nullptr is returned. The function
      * takes care that any partially constructed data is destroyed
      * beforehand.
      *
      * @param pImp #Importer object hosting this loader.
      * @param pFile Path of the file to be imported.
      * @param pIOHandler IO-Handler used to open this and possible other files.
-     * @return The imported data or NULL if failed. If it failed a
+     * @return The imported data or nullptr if failed. If it failed a
      * human-readable error description can be retrieved by calling
      * GetErrorText()
      *
@@ -131,19 +134,30 @@ public:
      * in InternReadFile(), this function will catch it and transform it into
      *  a suitable response to the caller.
      */
-    aiScene* ReadFile(
-        const Importer* pImp,
-        const std::string& pFile,
-        IOSystem* pIOHandler
-        );
+    aiScene *ReadFile(
+            Importer *pImp,
+            const std::string &pFile,
+            IOSystem *pIOHandler);
 
     // -------------------------------------------------------------------
     /** Returns the error description of the last error that occurred.
+     * If the error is due to a std::exception, this will return the message.
+     * Exceptions can also be accessed with GetException().
      * @return A description of the last error that occurred. An empty
      * string if there was no error.
      */
-    const std::string& GetErrorText() const {
+    const std::string &GetErrorText() const {
         return m_ErrorText;
+    }
+
+    // -------------------------------------------------------------------
+    /** Returns the exception of the last exception that occurred.
+     * Note: Exceptions are not the only source of error details, so GetErrorText
+     * should be consulted too.
+     * @return The last exception that occurred.
+     */
+    const std::exception_ptr& GetException() const {
+        return m_Exception;
     }
 
     // -------------------------------------------------------------------
@@ -153,22 +167,30 @@ public:
      * @param pImp Importer instance
      */
     virtual void SetupProperties(
-        const Importer* pImp
-        );
+            const Importer *pImp);
 
     // -------------------------------------------------------------------
     /** Called by #Importer::GetImporterInfo to get a description of
      *  some loader features. Importers must provide this information. */
-    virtual const aiImporterDesc* GetInfo() const = 0;
+    virtual const aiImporterDesc *GetInfo() const = 0;
+
+    /**
+     * Will be called only by scale process when scaling is requested.
+     */
+    void SetFileScale(double scale) {
+        fileScale = scale;
+    }
 
     // -------------------------------------------------------------------
     /** Called by #Importer::GetExtensionList for each loaded importer.
      *  Take the extension list contained in the structure returned by
      *  #GetInfo and insert all file extensions into the given set.
      *  @param extension set to collect file extensions in*/
-    void GetExtensionList(std::set<std::string>& extensions);
+    void GetExtensionList(std::set<std::string> &extensions);
 
 protected:
+    double importerScale = 1.0;
+    double fileScale = 1.0;
 
     // -------------------------------------------------------------------
     /** Imports the given file into the given scene structure. The
@@ -190,7 +212,7 @@ protected:
      * <li>aiAnimation::mDuration may be -1. Assimp determines the length
      *   of the animation automatically in this case as the length of
      *   the longest animation channel.</li>
-     * <li>aiMesh::mBitangents may be NULL if tangents and normals are
+     * <li>aiMesh::mBitangents may be nullptr if tangents and normals are
      *   given. In this case bitangents are computed as the cross product
      *   between normal and tangent.</li>
      * <li>There needn't be a material. If none is there a default material
@@ -211,17 +233,15 @@ protected:
      *
      * @param pFile Path of the file to be imported.
      * @param pScene The scene object to hold the imported data.
-     * NULL is not a valid parameter.
+     * nullptr is not a valid parameter.
      * @param pIOHandler The IO handler to use for any file access.
-     * NULL is not a valid parameter. */
+     * nullptr is not a valid parameter. */
     virtual void InternReadFile(
-        const std::string& pFile,
-        aiScene* pScene,
-        IOSystem* pIOHandler
-        ) = 0;
+            const std::string &pFile,
+            aiScene *pScene,
+            IOSystem *pIOHandler) = 0;
 
 public: // static utilities
-
     // -------------------------------------------------------------------
     /** A utility for CanRead().
      *
@@ -237,13 +257,13 @@ public: // static utilities
      *  @param searchBytes Number of bytes to be searched for the tokens.
      */
     static bool SearchFileHeaderForToken(
-        IOSystem* pIOSystem,
-        const std::string&  file,
-        const char** tokens,
-        unsigned int numTokens,
-        unsigned int searchBytes = 200,
-        bool tokensSol = false,
-        bool noAlphaBeforeTokens = false);
+            IOSystem *pIOSystem,
+            const std::string &file,
+            const char **tokens,
+            std::size_t numTokens,
+            unsigned int searchBytes = 200,
+            bool tokensSol = false,
+            bool noGraphBeforeTokens = false);
 
     // -------------------------------------------------------------------
     /** @brief Check whether a file has a specific file extension
@@ -253,19 +273,29 @@ public: // static utilities
      *  @param ext2 Optional third extension
      *  @note Case-insensitive
      */
-    static bool SimpleExtensionCheck (
-        const std::string& pFile,
-        const char* ext0,
-        const char* ext1 = NULL,
-        const char* ext2 = NULL);
+    static bool SimpleExtensionCheck(
+            const std::string &pFile,
+            const char *ext0,
+            const char *ext1 = nullptr,
+            const char *ext2 = nullptr);
+
+    // -------------------------------------------------------------------
+    /** @brief Check whether a file has one of the passed file extensions
+     *  @param pFile Input file
+     *  @param extensions Extensions to check for. Lowercase characters only, no dot!
+     *  @note Case-insensitive
+     */
+    static bool HasExtension(
+            const std::string &pFile,
+            const std::set<std::string> &extensions);
 
     // -------------------------------------------------------------------
     /** @brief Extract file extension from a string
      *  @param pFile Input file
      *  @return Extension without trailing dot, all lowercase
      */
-    static std::string GetExtension (
-        const std::string& pFile);
+    static std::string GetExtension(
+            const std::string &pFile);
 
     // -------------------------------------------------------------------
     /** @brief Check whether a file starts with one or more magic tokens
@@ -282,12 +312,12 @@ public: // static utilities
      *  tokens of size 2,4.
      */
     static bool CheckMagicToken(
-        IOSystem* pIOHandler,
-        const std::string& pFile,
-        const void* magic,
-        unsigned int num,
-        unsigned int offset = 0,
-        unsigned int size   = 4);
+            IOSystem *pIOHandler,
+            const std::string &pFile,
+            const void *magic,
+            std::size_t num,
+            unsigned int offset = 0,
+            unsigned int size = 4);
 
     // -------------------------------------------------------------------
     /** An utility for all text file loaders. It converts a file to our
@@ -296,7 +326,7 @@ public: // static utilities
      *  @param data File buffer to be converted to UTF8 data. The buffer
      *  is resized as appropriate. */
     static void ConvertToUTF8(
-        std::vector<char>& data);
+            std::vector<char> &data);
 
     // -------------------------------------------------------------------
     /** An utility for all text file loaders. It converts a file from our
@@ -305,13 +335,13 @@ public: // static utilities
      *  @param data File buffer to be converted from UTF8 to ISO-8859-1. The buffer
      *  is resized as appropriate. */
     static void ConvertUTF8toISO8859_1(
-        std::string& data);
+            std::string &data);
 
     // -------------------------------------------------------------------
     /// @brief  Enum to define, if empty files are ok or not.
-    enum TextFileMode { 
+    enum TextFileMode {
         ALLOW_EMPTY,
-        FORBID_EMPTY 
+        FORBID_EMPTY
     };
 
     // -------------------------------------------------------------------
@@ -324,22 +354,20 @@ public: // static utilities
      *   a binary 0.
      *  @param mode Whether it is OK to load empty text files. */
     static void TextFileToBuffer(
-        IOStream* stream,
-        std::vector<char>& data,
-        TextFileMode mode = FORBID_EMPTY);
+            IOStream *stream,
+            std::vector<char> &data,
+            TextFileMode mode = FORBID_EMPTY);
 
     // -------------------------------------------------------------------
     /** Utility function to move a std::vector into a aiScene array
     *  @param vec The vector to be moved
     *  @param out The output pointer to the allocated array.
     *  @param numOut The output count of elements copied. */
-    template<typename T>
-    AI_FORCE_INLINE
-    static void CopyVector(
-        std::vector<T>& vec,
-        T*& out,
-        unsigned int& outLength)
-    {
+    template <typename T>
+    AI_FORCE_INLINE static void CopyVector(
+            std::vector<T> &vec,
+            T *&out,
+            unsigned int &outLength) {
         outLength = unsigned(vec.size());
         if (outLength) {
             out = new T[outLength];
@@ -347,14 +375,36 @@ public: // static utilities
         }
     }
 
+    // -------------------------------------------------------------------
+    /** Utility function to move a std::vector of unique_ptrs into a aiScene array
+    *  @param vec The vector of unique_ptrs to be moved
+    *  @param out The output pointer to the allocated array.
+    *  @param numOut The output count of elements copied. */
+    template <typename T>
+    AI_FORCE_INLINE static void CopyVector(
+            std::vector<std::unique_ptr<T> > &vec,
+            T **&out,
+            unsigned int &outLength) {
+        outLength = unsigned(vec.size());
+        if (outLength) {
+            out = new T*[outLength];
+            T** outPtr = out;
+            std::for_each(vec.begin(), vec.end(), [&outPtr](std::unique_ptr<T>& uPtr){*outPtr = uPtr.release(); ++outPtr; });
+        }
+    }
+
+private:
+    /* Pushes state into importer for the importer scale */
+    void UpdateImporterScale(Importer *pImp);
+
 protected:
     /// Error description in case there was one.
     std::string m_ErrorText;
+    /// The exception, in case there was one.
+    std::exception_ptr m_Exception;
     /// Currently set progress handler.
-    ProgressHandler* m_progress;
+    ProgressHandler *m_progress;
 };
-
-
 
 } // end of namespace Assimp
 
