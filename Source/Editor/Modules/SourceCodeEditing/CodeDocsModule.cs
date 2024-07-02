@@ -316,7 +316,9 @@ namespace FlaxEditor.Modules.SourceCodeEditing
                                     var memberReader = xmlReader.ReadSubtree();
                                     if (memberReader.ReadToDescendant("summary"))
                                     {
-                                        result[rawName] = memberReader.ReadInnerXml().Replace('\n', ' ').Trim();
+                                        // Remove <see cref=""/> and replace them with the captured group (the content of the cref). Additionally, getting rid of prefixes
+                                        const string crefPattern = @"<see\s+cref=""(?:[A-Z]:FlaxEngine\.)?([^""]+)""\s*\/>";
+                                        result[rawName] = Regex.Replace(memberReader.ReadInnerXml(), crefPattern, "$1").Replace('\n', ' ').Trim();
                                     }
                                 }
                             }
