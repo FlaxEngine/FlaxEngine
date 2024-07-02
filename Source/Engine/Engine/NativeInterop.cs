@@ -118,6 +118,12 @@ namespace FlaxEngine.Interop
         }
 
 #if !USE_AOT
+        [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "__unmanagedPtr")]
+        extern static ref IntPtr GetUnmanagedPtrFieldReference(Object obj);
+
+        [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "__internalId")]
+        extern static ref Guid GetInternalIdFieldReference(Object obj);
+
         // Cache offsets to frequently accessed fields of FlaxEngine.Object
         private static int unmanagedPtrFieldOffset = IntPtr.Size + (Unsafe.Read<int>((typeof(FlaxEngine.Object).GetField("__unmanagedPtr", BindingFlags.Instance | BindingFlags.NonPublic).FieldHandle.Value + 4 + IntPtr.Size).ToPointer()) & 0xFFFFFF);
         private static int internalIdFieldOffset = IntPtr.Size + (Unsafe.Read<int>((typeof(FlaxEngine.Object).GetField("__internalId", BindingFlags.Instance | BindingFlags.NonPublic).FieldHandle.Value + 4 + IntPtr.Size).ToPointer()) & 0xFFFFFF);
@@ -126,18 +132,12 @@ namespace FlaxEngine.Interop
         internal static void ScriptingObjectSetInternalValues(ManagedHandle objectHandle, IntPtr unmanagedPtr, IntPtr idPtr)
         {
             object obj = objectHandle.Target;
-            if (obj is not Object)
+            if (obj is not Object scriptingObject)
                 return;
-            {
-                ref IntPtr fieldRef = ref FieldHelper.GetReferenceTypeFieldReference<IntPtr>(unmanagedPtrFieldOffset, ref obj);
-                fieldRef = unmanagedPtr;
-            }
+
+            GetUnmanagedPtrFieldReference(scriptingObject) = unmanagedPtr;
             if (idPtr != IntPtr.Zero)
-            {
-                ref Guid nativeId = ref Unsafe.AsRef<Guid>(idPtr.ToPointer());
-                ref Guid fieldRef = ref FieldHelper.GetReferenceTypeFieldReference<Guid>(internalIdFieldOffset, ref obj);
-                fieldRef = nativeId;
-            }
+                GetInternalIdFieldReference(scriptingObject) = Unsafe.AsRef<Guid>(idPtr.ToPointer());
         }
 
         [UnmanagedCallersOnly]
@@ -447,6 +447,8 @@ namespace FlaxEngine.Interop
                     field.SetValue(fieldOwner, fieldValue);
             }
 #else
+            // TODO: Use Flax.Build to generate UnsafeAccessor methods for scripting object fields, fallback to reflection for other types
+
             /// <summary>
             /// Returns a reference to the value of the field.
             /// </summary>
@@ -1418,19 +1420,11 @@ namespace FlaxEngine.Interop
             internal object CreateScriptingObject(IntPtr unmanagedPtr, IntPtr idPtr)
             {
                 object obj = RuntimeHelpers.GetUninitializedObject(wrappedType);
-                if (obj is Object)
+                if (obj is Object scriptingObject)
                 {
-                    // TODO: use UnsafeAccessorAttribute on .NET 8 and use this path on all platforms (including non-Desktop, see MCore::ScriptingObject::CreateScriptingObject)
-                    {
-                        ref IntPtr fieldRef = ref FieldHelper.GetReferenceTypeFieldReference<IntPtr>(unmanagedPtrFieldOffset, ref obj);
-                        fieldRef = unmanagedPtr;
-                    }
+                    GetUnmanagedPtrFieldReference(scriptingObject) = unmanagedPtr;
                     if (idPtr != IntPtr.Zero)
-                    {
-                        ref Guid nativeId = ref Unsafe.AsRef<Guid>(idPtr.ToPointer());
-                        ref Guid fieldRef = ref FieldHelper.GetReferenceTypeFieldReference<Guid>(internalIdFieldOffset, ref obj);
-                        fieldRef = nativeId;
-                    }
+                        GetInternalIdFieldReference(scriptingObject) = Unsafe.AsRef<Guid>(idPtr.ToPointer());
                 }
                 if (ctor != null)
                     ctor.Invoke(obj, null);
