@@ -3,9 +3,7 @@
 Open Asset Import Library (assimp)
 ---------------------------------------------------------------------------
 
-Copyright (c) 2006-2019, assimp team
-
-
+Copyright (c) 2006-2024, assimp team
 
 All rights reserved.
 
@@ -49,6 +47,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef AI_CAMERA_H_INC
 #define AI_CAMERA_H_INC
 
+#ifdef __GNUC__
+#pragma GCC system_header
+#endif
+
 #include "types.h"
 
 #ifdef __cplusplus
@@ -60,7 +62,7 @@ extern "C" {
  *
  * Cameras have a representation in the node graph and can be animated.
  * An important aspect is that the camera itself is also part of the
- * scenegraph. This means, any values such as the look-at vector are not
+ * scene-graph. This means, any values such as the look-at vector are not
  * *absolute*, they're <b>relative</b> to the coordinate system defined
  * by the node which corresponds to the camera. This allows for camera
  * animations. For static cameras parameters like the 'look-at' or 'up' vectors
@@ -98,8 +100,7 @@ extern "C" {
  * camera already look in the right direction.
  *
 */
-struct aiCamera
-{
+struct aiCamera {
     /** The name of the camera.
      *
      *  There must be a node in the scenegraph with the same name.
@@ -115,7 +116,6 @@ struct aiCamera
      */
     C_STRUCT aiVector3D mPosition;
 
-
     /** 'Up' - vector of the camera coordinate system relative to
      *  the coordinate space defined by the corresponding node.
      *
@@ -126,7 +126,6 @@ struct aiCamera
      */
     C_STRUCT aiVector3D mUp;
 
-
     /** 'LookAt' - vector of the camera coordinate system relative to
      *  the coordinate space defined by the corresponding node.
      *
@@ -136,8 +135,7 @@ struct aiCamera
      */
     C_STRUCT aiVector3D mLookAt;
 
-
-    /** Half horizontal field of view angle, in radians.
+    /** Horizontal field of view angle, in radians.
      *
      *  The field of view angle is the angle between the center
      *  line of the screen and the left or right border.
@@ -162,7 +160,6 @@ struct aiCamera
      */
     float mClipPlaneFar;
 
-
     /** Screen aspect ratio.
      *
      * This is the ration between the width and the height of the
@@ -172,28 +169,40 @@ struct aiCamera
      */
     float mAspect;
 
+    /** Half horizontal orthographic width, in scene units.
+     *
+     *  The orthographic width specifies the half width of the
+     *  orthographic view box. If non-zero the camera is
+     *  orthographic and the mAspect should define to the
+     *  ratio between the orthographic width and height
+     *  and mHorizontalFOV should be set to 0.
+     *  The default value is 0 (not orthographic).
+     */
+    float mOrthographicWidth;
 #ifdef __cplusplus
 
     aiCamera() AI_NO_EXCEPT
-        : mUp               (0.f,1.f,0.f)
-        , mLookAt           (0.f,0.f,1.f)
-        , mHorizontalFOV    (0.25f * (float)AI_MATH_PI)
-        , mClipPlaneNear    (0.1f)
-        , mClipPlaneFar     (1000.f)
-        , mAspect           (0.f)
-    {}
+            : mUp(0.f, 1.f, 0.f),
+              mLookAt(0.f, 0.f, 1.f),
+              mHorizontalFOV(0.25f * (float)AI_MATH_PI),
+              mClipPlaneNear(0.1f),
+              mClipPlaneFar(1000.f),
+              mAspect(0.f),
+              mOrthographicWidth(0.f) {}
 
     /** @brief Get a *right-handed* camera matrix from me
      *  @param out Camera matrix to be filled
      */
-    void GetCameraMatrix (aiMatrix4x4& out) const
-    {
+    void GetCameraMatrix(aiMatrix4x4 &out) const {
         /** todo: test ... should work, but i'm not absolutely sure */
 
         /** We don't know whether these vectors are already normalized ...*/
-        aiVector3D zaxis = mLookAt;     zaxis.Normalize();
-        aiVector3D yaxis = mUp;         yaxis.Normalize();
-        aiVector3D xaxis = mUp^mLookAt; xaxis.Normalize();
+        aiVector3D zaxis = mLookAt;
+        zaxis.Normalize();
+        aiVector3D yaxis = mUp;
+        yaxis.Normalize();
+        aiVector3D xaxis = mUp ^ mLookAt;
+        xaxis.Normalize();
 
         out.a4 = -(xaxis * mPosition);
         out.b4 = -(yaxis * mPosition);
@@ -217,7 +226,6 @@ struct aiCamera
 
 #endif
 };
-
 
 #ifdef __cplusplus
 }

@@ -3,9 +3,7 @@
 Open Asset Import Library (assimp)
 ---------------------------------------------------------------------------
 
-Copyright (c) 2006-2019, assimp team
-
-
+Copyright (c) 2006-2024, assimp team
 
 All rights reserved.
 
@@ -40,18 +38,37 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ---------------------------------------------------------------------------
 */
+
+/** @file ai_assert.h
+ *  @brief Declares the assimp-specific assertion handler.
+ */
+
 #pragma once
 #ifndef AI_ASSERT_H_INC
 #define AI_ASSERT_H_INC
 
-#ifdef ASSIMP_BUILD_DEBUG
-#   include <assert.h>
-#   define ai_assert(expression) assert( expression )
-#   define ai_assert_entry()     assert( false )
+#include <assimp/defs.h>
+
+#if defined(ASSIMP_BUILD_DEBUG)
+
+namespace Assimp {
+
+/// @brief Assert violation behavior can be customized: see AssertHandler.h.
+/// @param failedExpression     The expression to validate.
+/// @param file                 The file location
+/// @param line                 The line number
+ASSIMP_API void aiAssertViolation(const char* failedExpression, const char* file, int line);
+
+}
+#endif
+
+// Define assertion resolinig
+#if defined(ASSIMP_BUILD_DEBUG)
+#   define ai_assert(expression) (void)((!!(expression)) || (Assimp::aiAssertViolation(#expression, __FILE__, __LINE__), 0))
+#   define ai_assert_entry() ai_assert(false)
 #else
 #   define  ai_assert(expression)
-#   define  ai_assert_entry() 
+#   define  ai_assert_entry()
 #endif // ASSIMP_BUILD_DEBUG
 
 #endif // AI_ASSERT_H_INC
-

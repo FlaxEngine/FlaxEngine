@@ -2,7 +2,7 @@
 Open Asset Import Library (assimp)
 ----------------------------------------------------------------------
 
-Copyright (c) 2006-2019, assimp team
+Copyright (c) 2006-2024, assimp team
 
 
 All rights reserved.
@@ -45,8 +45,13 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *    to get rid of the boost::format dependency. Much slinker,
  *    basically just extends stringstream.
  */
+#pragma once
 #ifndef INCLUDED_TINY_FORMATTER_H
 #define INCLUDED_TINY_FORMATTER_H
+
+#ifdef __GNUC__
+#   pragma GCC system_header
+#endif
 
 #include <sstream>
 
@@ -65,24 +70,15 @@ namespace Formatter {
  *  @endcode */
 template < typename T,
     typename CharTraits = std::char_traits<T>,
-    typename Allocator  = std::allocator<T>
->
-class basic_formatter
-{
-
+    typename Allocator  = std::allocator<T> >
+class basic_formatter {
 public:
+    typedef class std::basic_string<T,CharTraits,Allocator> string;
+    typedef class std::basic_ostringstream<T,CharTraits,Allocator> stringstream;
 
-    typedef class std::basic_string<
-        T,CharTraits,Allocator
-    > string;
-
-    typedef class std::basic_ostringstream<
-        T,CharTraits,Allocator
-    > stringstream;
-
-public:
-
-    basic_formatter() {}
+    basic_formatter() {
+        // empty
+    }
 
     /* Allow basic_formatter<T>'s to be used almost interchangeably
      * with std::(w)string or const (w)char* arguments because the
@@ -92,6 +88,17 @@ public:
         underlying << sin;
     }
 
+    // Same problem as the copy constructor below, but with root cause is that stream move
+    // is not permitted on older GCC versions. Small performance impact on those platforms.
+#if defined(__GNUC__) && (__GNUC__ == 4 && __GNUC_MINOR__ <= 9)
+    basic_formatter(basic_formatter&& other) {
+        underlying << (string)other;
+    }
+#else
+    basic_formatter(basic_formatter&& other)
+        : underlying(std::move(other.underlying)) {
+    }
+#endif
 
     // The problem described here:
     // https://sourceforge.net/tracker/?func=detail&atid=1067632&aid=3358562&group_id=226462
@@ -104,27 +111,35 @@ public:
     }
 #endif
 
-
-public:
-
     operator string () const {
         return underlying.str();
     }
-
 
     /* note - this is declared const because binding temporaries does only
      * work for const references, so many function prototypes will
      * include const basic_formatter<T>& s but might still want to
      * modify the formatted string without the need for a full copy.*/
-    template <typename TToken>
-    const basic_formatter& operator << (const TToken& s) const {
+    template <typename TToken, typename std::enable_if<!std::is_base_of<std::exception, TToken>::value>::type * = nullptr>
+    const basic_formatter &operator<<(const TToken &s) const {
         underlying << s;
         return *this;
     }
 
-    template <typename TToken>
-    basic_formatter& operator << (const TToken& s) {
+    template <typename TToken, typename std::enable_if<std::is_base_of<std::exception, TToken>::value>::type * = nullptr>
+    const basic_formatter &operator<<(const TToken &s) const {
+        underlying << s.what();
+        return *this;
+    }
+
+    template <typename TToken, typename std::enable_if<!std::is_base_of<std::exception, TToken>::value>::type * = nullptr>
+    basic_formatter &operator<<(const TToken &s) {
         underlying << s;
+        return *this;
+    }
+
+    template <typename TToken, typename std::enable_if<std::is_base_of<std::exception, TToken>::value>::type * = nullptr>
+    basic_formatter &operator<<(const TToken &s) {
+        underlying << s.what();
         return *this;
     }
 
@@ -132,13 +147,13 @@ public:
     // comma operator overloaded as well, choose your preferred way.
     template <typename TToken>
     const basic_formatter& operator, (const TToken& s) const {
-        underlying << s;
+        *this << s;
         return *this;
     }
 
     template <typename TToken>
     basic_formatter& operator, (const TToken& s) {
-        underlying << s;
+        *this << s;
         return *this;
     }
 
@@ -146,7 +161,7 @@ public:
     // See https://sourceforge.net/projects/assimp/forums/forum/817654/topic/4372824
     template <typename TToken>
     basic_formatter& operator, (TToken& s) {
-        underlying << s;
+        *this << s;
         return *this;
     }
 

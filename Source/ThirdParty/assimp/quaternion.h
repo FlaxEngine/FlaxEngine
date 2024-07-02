@@ -2,8 +2,7 @@
 Open Asset Import Library (assimp)
 ----------------------------------------------------------------------
 
-Copyright (c) 2006-2019, assimp team
-
+Copyright (c) 2006-2024, assimp team
 
 All rights reserved.
 
@@ -36,7 +35,6 @@ DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
 THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
 ----------------------------------------------------------------------
 */
 
@@ -47,28 +45,37 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef AI_QUATERNION_H_INC
 #define AI_QUATERNION_H_INC
 
+#include <assimp/defs.h>
+
 #ifdef __cplusplus
 
-#include "defs.h"
+#ifdef __GNUC__
+#   pragma GCC system_header
+#endif
 
+// Forward declarations
 template <typename TReal> class aiVector3t;
 template <typename TReal> class aiMatrix3x3t;
+template <typename TReal> class aiMatrix4x4t;
 
 // ---------------------------------------------------------------------------
-/** Represents a quaternion in a 4D vector. */
+/**
+ *  @brief  This class represents a quaternion as a 4D vector.
+ */
 template <typename TReal>
-class aiQuaterniont
-{
+class aiQuaterniont {
 public:
     aiQuaterniont() AI_NO_EXCEPT : w(1.0), x(), y(), z() {}
     aiQuaterniont(TReal pw, TReal px, TReal py, TReal pz)
         : w(pw), x(px), y(py), z(pz) {}
 
-    /** Construct from rotation matrix. Result is undefined if the matrix is not orthonormal. */
+    /**
+     *  @brief  Construct from rotation matrix. Result is undefined if the matrix is not orthonormal.
+     */
     explicit aiQuaterniont( const aiMatrix3x3t<TReal>& pRotMatrix);
 
     /** Construct from euler angles */
-    aiQuaterniont( TReal rotx, TReal roty, TReal rotz);
+    aiQuaterniont( TReal roty, TReal rotz, TReal rotx);
 
     /** Construct from an axis-angle pair */
     aiQuaterniont( aiVector3t<TReal> axis, TReal angle);
@@ -79,30 +86,38 @@ public:
     /** Returns a matrix representation of the quaternion */
     aiMatrix3x3t<TReal> GetMatrix() const;
 
-public:
-
     bool operator== (const aiQuaterniont& o) const;
     bool operator!= (const aiQuaterniont& o) const;
 
-    bool Equal(const aiQuaterniont& o, TReal epsilon = 1e-6) const;
+    // transform vector by matrix
+    aiQuaterniont& operator *= (const aiMatrix4x4t<TReal>& mat);
 
-public:
+    bool Equal(const aiQuaterniont &o, TReal epsilon = ai_epsilon) const;
 
-    /** Normalize the quaternion */
+    /**
+     *  @brief  Will normalize the quaternion representation.
+     */
     aiQuaterniont& Normalize();
 
-    /** Compute quaternion conjugate */
-    aiQuaterniont& Conjugate ();
+    /**
+     *  @brief  Will compute the quaternion conjugate. The result will be stored in the instance.
+     */
+    aiQuaterniont& Conjugate();
 
-    /** Rotate a point by this quaternion */
-    aiVector3t<TReal> Rotate (const aiVector3t<TReal>& in);
+    /**
+     *  @brief  Rotate a point by this quaternion
+     */
+    aiVector3t<TReal> Rotate(const aiVector3t<TReal>& in) const;
 
-    /** Multiply two quaternions */
-    aiQuaterniont operator* (const aiQuaterniont& two) const;
+    /**
+     *  @brief Multiply two quaternions
+     *  @param  two   The other quaternion.
+     *  @return The result of the multiplication.
+     */
+    aiQuaterniont operator * (const aiQuaterniont& two) const;
 
-public:
-
-    /** Performs a spherical interpolation between two quaternions and writes the result into the third.
+    /**
+     * @brief Performs a spherical interpolation between two quaternions and writes the result into the third.
      * @param pOut Target object to received the interpolated rotation.
      * @param pStart Start rotation of the interpolation at factor == 0.
      * @param pEnd End rotation, factor == 1.
@@ -111,13 +126,11 @@ public:
     static void Interpolate( aiQuaterniont& pOut, const aiQuaterniont& pStart,
         const aiQuaterniont& pEnd, TReal pFactor);
 
-public:
-
     //! w,x,y,z components of the quaternion
     TReal w, x, y, z;
 } ;
 
-typedef aiQuaterniont<ai_real> aiQuaternion;
+using aiQuaternion = aiQuaterniont<ai_real>;
 
 #else
 
