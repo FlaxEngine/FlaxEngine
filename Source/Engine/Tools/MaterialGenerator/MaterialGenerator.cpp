@@ -197,8 +197,13 @@ bool MaterialGenerator::Generate(WriteStream& source, MaterialInfo& materialInfo
         ADD_FEATURE(DeferredShadingFeature);
         if (materialInfo.BlendMode != MaterialBlendMode::Opaque && (materialInfo.FeaturesFlags & MaterialFeaturesFlags::DisableDistortion) == MaterialFeaturesFlags::None)
         ADD_FEATURE(DistortionFeature);
-        if (materialInfo.BlendMode != MaterialBlendMode::Opaque && EnumHasAnyFlags(materialInfo.FeaturesFlags, MaterialFeaturesFlags::GlobalIllumination))
-        ADD_FEATURE(GlobalIlluminationFeature);
+        if (materialInfo.BlendMode != MaterialBlendMode::Opaque && EnumHasAnyFlags(materialInfo.FeaturesFlags, MaterialFeaturesFlags::GlobalIllumination)) {
+            ADD_FEATURE(GlobalIlluminationFeature);
+
+            // SDF Reflections is only valid when both GI and SSR is enabled
+            if (materialInfo.BlendMode != MaterialBlendMode::Opaque && EnumHasAnyFlags(materialInfo.FeaturesFlags, MaterialFeaturesFlags::ScreenSpaceReflections))
+            ADD_FEATURE(SDFReflectionsFeature);
+        }
         if (materialInfo.BlendMode != MaterialBlendMode::Opaque)
         ADD_FEATURE(ForwardShadingFeature);
         break;

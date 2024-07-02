@@ -133,13 +133,14 @@ float4 PS_RayTracePass(Quad_VS2PS input) : SV_Target0
             return result;
 	}
 
-    // Calculate reflection direction (the same TraceScreenSpaceReflection)
-    float3 reflectWS = ScreenSpaceReflectionDirection(input.TexCoord, gBuffer, gBufferData.ViewPos, TemporalEffect, TemporalTime, BRDFBias);
-
     // Fallback to Global SDF and Global Surface Atlas tracing
 #if USE_GLOBAL_SURFACE_ATLAS && CAN_USE_GLOBAL_SURFACE_ATLAS
+
+	// Calculate reflection direction (the same TraceScreenSpaceReflection)
+    float3 reflectWS = ScreenSpaceReflectionDirection(input.TexCoord, gBuffer, gBufferData.ViewPos, TemporalEffect, TemporalTime, BRDFBias);
+
     GlobalSDFTrace sdfTrace;
-    float maxDistance = 100000;
+    float maxDistance = GLOBAL_SDF_WORLD_SIZE;
     float selfOcclusionBias = GlobalSDF.CascadeVoxelSize[0];
     sdfTrace.Init(gBuffer.WorldPos + gBuffer.Normal * selfOcclusionBias, reflectWS, 0.0f, maxDistance);
     GlobalSDFHit sdfHit = RayTraceGlobalSDF(GlobalSDF, GlobalSDFTex, GlobalSDFMip, sdfTrace);
@@ -148,7 +149,9 @@ float4 PS_RayTracePass(Quad_VS2PS input) : SV_Target0
         float3 hitPosition = sdfHit.GetHitPosition(sdfTrace);
         float surfaceThreshold = GetGlobalSurfaceAtlasThreshold(GlobalSDF, sdfHit);
         float4 surfaceAtlas = SampleGlobalSurfaceAtlas(GlobalSurfaceAtlas, GlobalSurfaceAtlasChunks, RWGlobalSurfaceAtlasCulledObjects, GlobalSurfaceAtlasObjects, GlobalSurfaceAtlasDepth, GlobalSurfaceAtlasTex, hitPosition, -reflectWS, surfaceThreshold);
-        result = lerp(surfaceAtlas, float4(result.rgb, 1), result.a);
+        // Now the sdf reflection part is significantly darker than the screen space part
+		// TODO: Maybe multiply surfaceAtlas by a constant to make it brighter, adding 2* looks fine
+		result = lerp(surfaceAtlas, float4(result.rgb, 1), result.a);
     }
 #endif
 

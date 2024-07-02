@@ -6,6 +6,8 @@
 #include "Engine/Core/Math/Rectangle.h"
 #include "Engine/Core/Types/Span.h"
 #include "Engine/Renderer/GI/DynamicDiffuseGlobalIllumination.h"
+#include "Engine/Renderer/GlobalSignDistanceFieldPass.h"
+#include "Engine/Renderer/GI/GlobalSurfaceAtlasPass.h"
 
 // Material shader features are plugin-based functionalities that are reusable between different material domains.
 struct MaterialShaderFeature
@@ -84,6 +86,25 @@ struct GlobalIlluminationFeature : MaterialShaderFeature
         {
         DynamicDiffuseGlobalIlluminationPass::ConstantsData DDGI;
         });
+
+    static bool Bind(MaterialShader::BindParameters& params, Span<byte>& cb, int32& srv);
+#if USE_EDITOR
+    static void Generate(GeneratorData& data);
+#endif
+};
+
+// Material shader feature that adds SDF Reflections feature (software reflections). 
+struct SDFReflectionsFeature : MaterialShaderFeature
+{
+    enum { SRVs = 7 };
+
+    PACK_STRUCT(struct Data
+    {
+        GlobalSignDistanceFieldPass::ConstantsData GlobalSDF;
+        GlobalSurfaceAtlasPass::ConstantsData GlobalSurfaceAtlas;
+    });
+
+    
 
     static bool Bind(MaterialShader::BindParameters& params, Span<byte>& cb, int32& srv);
 #if USE_EDITOR
