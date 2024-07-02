@@ -182,6 +182,11 @@ public:
     }
 
     /// <summary>
+    /// Sets the actor name without copying the string.
+    /// </summary>
+    void SetNameNoCopy(String&& value);
+
+    /// <summary>
     /// Sets the actor name.
     /// </summary>
     /// <param name="value">The value to set.</param>
