@@ -30,7 +30,8 @@ DDGIData DDGI;
 GlobalSDFData GlobalSDF;
 GlobalSurfaceAtlasData GlobalSurfaceAtlas;
 GBufferData GBuffer;
-float2 Padding0;
+float Padding0;
+uint ProbesCount;
 float ResetBlend;
 float TemporalTime;
 int4 ProbeScrollClears[4];
@@ -86,8 +87,7 @@ META_CS(true, FEATURE_LEVEL_SM5)
 void CS_Classify(uint3 DispatchThreadId : SV_DispatchThreadID)
 {
     uint probeIndex = DispatchThreadId.x;
-    uint probesCount = DDGI.ProbesCounts.x * DDGI.ProbesCounts.y * DDGI.ProbesCounts.z;
-    if (probeIndex >= probesCount)
+    if (probeIndex >= ProbesCount)
         return;
     uint3 probeCoords = GetDDGIProbeCoords(DDGI, probeIndex);
     probeIndex = GetDDGIScrollingProbeIndex(DDGI, CascadeIndex, probeCoords);
@@ -271,7 +271,6 @@ META_CS(true, FEATURE_LEVEL_SM5)
 [numthreads(1, 1, 1)]
 void CS_UpdateProbesInitArgs()
 {
-    uint probesCount = DDGI.ProbesCounts.x * DDGI.ProbesCounts.y * DDGI.ProbesCounts.z;
     uint activeProbesCount = ActiveProbes.Load(0);
     uint arg = 0;
     for (uint probesOffset = 0; probesOffset < activeProbesCount; probesOffset += DDGI_TRACE_RAYS_PROBES_COUNT_LIMIT)

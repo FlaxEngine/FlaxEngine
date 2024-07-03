@@ -46,7 +46,8 @@ GPU_CB_STRUCT(Data0 {
     GlobalSignDistanceFieldPass::ConstantsData GlobalSDF;
     GlobalSurfaceAtlasPass::ConstantsData GlobalSurfaceAtlas;
     ShaderGBufferData GBuffer;
-    Float2 Padding0;
+    float Padding0;
+    uint32 ProbesCount;
     float ResetBlend;
     float TemporalTime;
     Int4 ProbeScrollClears[4];
@@ -475,6 +476,7 @@ bool DynamicDiffuseGlobalIlluminationPass::RenderInner(RenderContext& renderCont
         data.DDGI = ddgiData.Result.Constants;
         data.GlobalSDF = bindingDataSDF.Constants;
         data.GlobalSurfaceAtlas = bindingDataSurfaceAtlas.Constants;
+        data.ProbesCount = data.DDGI.ProbesCounts[0] * data.DDGI.ProbesCounts[1] * data.DDGI.ProbesCounts[2];
         data.ResetBlend = clear ? 1.0f : 0.0f;
         for (int32 cascadeIndex = 0; cascadeIndex < cascadesCount; cascadeIndex++)
         {
