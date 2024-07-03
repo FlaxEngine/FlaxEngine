@@ -216,10 +216,7 @@ namespace FlaxEditor.Content.GUI
                 new InputActionsContainer.Binding(options => options.Undo, () =>
                 {
                     if (_isCutting)
-                    {
-                        _isCutting = false;
                         UpdateContentItemCut(false);
-                    }
                 }),
                 new InputActionsContainer.Binding(options => options.Duplicate, Duplicate),
             });
