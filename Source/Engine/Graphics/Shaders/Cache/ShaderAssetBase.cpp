@@ -254,6 +254,10 @@ bool ShaderAssetBase::LoadShaderCache(ShaderCacheResult& result)
             options.GenerateDebugData = true;
             options.NoOptimize = true;
         }
+        else if (CommandLine::Options.ShaderProfile)
+        {
+            options.GenerateDebugData = true;
+        }
         auto& platformDefine = options.Macros.AddOne();
 #if PLATFORM_WINDOWS
         platformDefine.Name = "PLATFORM_WINDOWS";

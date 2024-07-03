@@ -188,11 +188,13 @@ bool ShaderCacheManagerService::Init()
         int32 MaterialGraphVersion = -1;
         int32 ParticleGraphVersion = -1;
         bool ShaderDebug;
+        bool ShaderProfile;
     };
     CacheVersion cacheVersion;
     const String cacheVerFile = rootDir / TEXT("CacheVersion");
 #if USE_EDITOR
     const bool shaderDebug = CommandLine::Options.ShaderDebug;
+    const bool shaderProfile = CommandLine::Options.ShaderProfile;
 #else
     const bool shaderDebug = false;
 #endif
@@ -209,6 +211,7 @@ bool ShaderCacheManagerService::Init()
         || cacheVersion.MaterialGraphVersion != MATERIAL_GRAPH_VERSION
         || cacheVersion.ParticleGraphVersion != PARTICLE_GPU_GRAPH_VERSION
         || cacheVersion.ShaderDebug != shaderDebug
+        || cacheVersion.ShaderProfile != shaderProfile
     )
     {
         LOG(Warning, "Shaders cache database is invalid. Performing reset.");
@@ -227,6 +230,7 @@ bool ShaderCacheManagerService::Init()
         cacheVersion.MaterialGraphVersion = MATERIAL_GRAPH_VERSION;
         cacheVersion.ParticleGraphVersion = PARTICLE_GPU_GRAPH_VERSION;
         cacheVersion.ShaderDebug = shaderDebug;
+        cacheVersion.ShaderProfile = shaderProfile;
         if (File::WriteAllBytes(cacheVerFile, (byte*)&cacheVersion, sizeof(cacheVersion)))
         {
             LOG(Error, "Failed to create the shaders cache database version file.");

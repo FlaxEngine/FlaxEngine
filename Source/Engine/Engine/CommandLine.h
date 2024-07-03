@@ -170,6 +170,11 @@ public:
         Nullable<bool> ShaderDebug;
 
         /// <summary>
+        /// -shaderprofile (enables debugging data generation for shaders but leaves shader compiler optimizations active for performance profiling)
+        /// </summary>
+        Nullable<bool> ShaderProfile;
+
+        /// <summary>
         /// -play !guid! ( Scene to play, can be empty to use default )
         /// </summary>
         Nullable<String> Play;
