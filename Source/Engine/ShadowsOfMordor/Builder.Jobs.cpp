@@ -344,6 +344,7 @@ void ShadowsOfMordor::Builder::onJobRender(GPUContext* context)
 #if COMPILE_WITH_PROFILER
         auto gpuProfilerEnabled = ProfilerGPU::Enabled;
         ProfilerGPU::Enabled = false;
+        ProfilerGPU::EventsEnabled = false;
 #endif
 
         // Render hemispheres
@@ -432,6 +433,7 @@ void ShadowsOfMordor::Builder::onJobRender(GPUContext* context)
         }
 #if COMPILE_WITH_PROFILER
         ProfilerGPU::Enabled = gpuProfilerEnabled;
+        ProfilerGPU::EventsEnabled = gpuProfilerEnabled;
 #endif
 
         // Report progress

@@ -188,11 +188,13 @@ bool GraphicsService::Init()
     );
 
     // Initialize
-    if (device->IsDebugToolAttached)
+    if (device->IsDebugToolAttached || 
+        CommandLine::Options.ShaderProfile || 
+        CommandLine::Options.ShaderDebug)
     {
 #if COMPILE_WITH_PROFILER
-        // Auto-enable GPU profiler
-        ProfilerGPU::Enabled = true;
+        // Auto-enable GPU events
+        ProfilerGPU::EventsEnabled = true;
 #endif
     }
     if (device->LoadContent())
