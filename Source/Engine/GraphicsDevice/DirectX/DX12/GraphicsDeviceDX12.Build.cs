@@ -12,7 +12,7 @@ public class GraphicsDeviceDX12 : GraphicsDeviceBaseModule
     /// <summary>
     /// Enables using PIX events to instrument game labeling regions of CPU or GPU work and marking important occurrences.
     /// </summary>
-    public bool UseWinPixEventRuntime = false;
+    public static bool EnableWinPixEventRuntime = true;
 
     /// <inheritdoc />
     public override void Setup(BuildOptions options)
@@ -34,7 +34,7 @@ public class GraphicsDeviceDX12 : GraphicsDeviceBaseModule
                 break;
         }
 
-        if (UseWinPixEventRuntime)
+        if (EnableWinPixEventRuntime && options.Configuration != TargetConfiguration.Release)
         {
             options.PrivateDefinitions.Add("USE_PIX");
             options.PrivateIncludePaths.Add(Path.Combine(Globals.EngineRoot, "Source/ThirdParty/WinPixEventRuntime"));
