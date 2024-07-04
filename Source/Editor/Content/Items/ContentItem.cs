@@ -182,6 +182,11 @@ namespace FlaxEditor.Content
         /// </summary>
         public const int DefaultHeight = (DefaultThumbnailSize + 2 * DefaultMarginSize + DefaultTextHeight);
 
+        /// <summary>
+        /// Whether the item is being but.
+        /// </summary>
+        public bool IsBeingCut;
+
         private ContentFolder _parentFolder;
 
         private bool _isMouseDown;
@@ -747,6 +752,12 @@ namespace FlaxEditor.Content
             Render2D.PushClip(ref textRect);
             Render2D.DrawText(style.FontMedium, ShowFileExtension || view.ShowFileExtensions ? FileName : ShortName, textRect, style.Foreground, nameAlignment, TextAlignment.Center, TextWrapping.WrapWords, 1f, 0.95f);
             Render2D.PopClip();
+
+            if (IsBeingCut)
+            {
+                var color = style.LightBackground.AlphaMultiplied(0.5f);
+                Render2D.FillRectangle(clientRect, color);
+            }
         }
 
         /// <inheritdoc />
