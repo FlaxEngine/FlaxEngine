@@ -136,7 +136,11 @@ void BoundingSphere::FromPoints(const Double3* points, int32 pointsCount, Boundi
 
 void BoundingSphere::FromBox(const BoundingBox& box, BoundingSphere& result)
 {
-    ASSERT(!box.Minimum.IsNanOrInfinity() && !box.Maximum.IsNanOrInfinity());
+    if (box.Minimum.IsNanOrInfinity() || box.Maximum.IsNanOrInfinity())
+    {
+        result = Empty;
+        return;
+    }
     const Real x = box.Maximum.X - box.Minimum.X;
     const Real y = box.Maximum.Y - box.Minimum.Y;
     const Real z = box.Maximum.Z - box.Minimum.Z;
