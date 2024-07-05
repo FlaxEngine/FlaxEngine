@@ -128,11 +128,9 @@ namespace FlaxEditor.Windows
                 else
                 {
                     cm.AddButton("Delete", () => Delete(item));
-
                     cm.AddSeparator();
-
                     cm.AddButton("Duplicate", _view.Duplicate);
-
+                    cm.AddButton("Cut", _view.Cut);
                     cm.AddButton("Copy", _view.Copy);
                 }
 

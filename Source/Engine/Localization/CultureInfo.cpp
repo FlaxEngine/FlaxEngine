@@ -74,6 +74,8 @@ CultureInfo::CultureInfo(int32 lcid)
     }
     if (!_data)
     {
+        _lcid = 127;
+        _lcidParent = 0;
         _englishName = TEXT("Invariant Culture");
         LOG(Error, "Unknown LCID {0} for CultureInfo", lcid);
     }

@@ -44,6 +44,8 @@ void AudioListener::OnEnable()
     else
     {
         ASSERT(!Audio::Listeners.Contains(this));
+        if (Audio::Listeners.Count() > 0)
+            LOG(Warning, "There is more than one Audio Listener active. Please make sure only exactly one is active at any given time.");
         Audio::Listeners.Add(this);
         AudioBackend::Listener::Reset();
         AudioBackend::Listener::TransformChanged(GetPosition(), GetOrientation());
