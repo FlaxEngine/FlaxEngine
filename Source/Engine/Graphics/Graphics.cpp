@@ -188,9 +188,14 @@ bool GraphicsService::Init()
     );
 
     // Initialize
-    if (device->IsDebugToolAttached || 
-        CommandLine::Options.ShaderProfile || 
-        CommandLine::Options.ShaderDebug)
+    if (device->IsDebugToolAttached
+#if USE_EDITOR || !BUILD_RELEASE
+        || CommandLine::Options.ShaderProfile
+#endif
+#if USE_EDITOR
+        || CommandLine::Options.ShaderDebug
+#endif
+        )
     {
 #if COMPILE_WITH_PROFILER
         // Auto-enable GPU events
