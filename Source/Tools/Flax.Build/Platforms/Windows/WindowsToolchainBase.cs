@@ -410,6 +410,16 @@ namespace Flax.Build.Platforms
             options.CompileEnv.PreprocessorDefinitions.Add("_WINDOWS");
             if (Architecture == TargetArchitecture.x64 || Architecture == TargetArchitecture.ARM64)
                 options.CompileEnv.PreprocessorDefinitions.Add("WIN64");
+
+            // Linker may need access to rc.exe for embedding manifests,
+            // inject the location into PATH of current process so linker can inherit it from it.
+            if (!string.IsNullOrEmpty(_resourceCompilerPath))
+            {
+                string binRootDir = Directory.GetParent(_resourceCompilerPath).FullName;
+                var path = Environment.GetEnvironmentVariable("PATH");
+                if (!string.IsNullOrEmpty(_resourceCompilerPath) && !path.Contains(binRootDir))
+                    Environment.SetEnvironmentVariable("PATH", path + ";" + binRootDir);
+            }
         }
 
         /// <summary>
@@ -846,8 +856,27 @@ namespace Flax.Build.Platforms
                 }
                 else
                 {
-                    // Don't create Side-by-Side Assembly Manifest
-                    args.Add("/MANIFEST:NO");
+                    // Embed Side-by-Side Assembly Manifest
+                    args.Add("/MANIFEST:EMBED");
+
+                    // Required manifest information for modern visual styles in Windows Common Controls
+                    switch (Architecture)
+                    {
+                    case TargetArchitecture.ARM:
+                        args.Add("\"/manifestdependency:type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='arm' publicKeyToken='6595b64144ccf1df' language='*'\"");
+                        break;
+                    case TargetArchitecture.ARM64:
+                        args.Add("\"/manifestdependency:type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='arm64' publicKeyToken='6595b64144ccf1df' language='*'\"");
+                        break;
+                    case TargetArchitecture.x86:
+                        args.Add("\"/manifestdependency:type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='' publicKeyToken='6595b64144ccf1df' language='*'\"");
+                        break;
+                    case TargetArchitecture.x64:
+                        args.Add("\"/manifestdependency:type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='amd64' publicKeyToken='6595b64144ccf1df' language='*'\"");
+                        break;
+                    default:
+                        break;
+                    }
 
                     // Fixed Base Address
                     args.Add("/FIXED:NO");
