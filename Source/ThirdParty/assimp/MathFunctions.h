@@ -3,7 +3,7 @@
 Open Asset Import Library (assimp)
 ---------------------------------------------------------------------------
 
-Copyright (c) 2006-2016, assimp team
+Copyright (c) 2006-2024, assimp team
 
 All rights reserved.
 
@@ -39,39 +39,67 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ---------------------------------------------------------------------------
 */
 
+#pragma once
+
+#ifdef __GNUC__
+#   pragma GCC system_header
+#endif
+
 /** @file  MathFunctions.h
- *  @brief Implementation of the math functions (gcd and lcm)
+*  @brief Implementation of math utility functions.
  *
- *  Copied from BoostWorkaround/math
- */
+*/
+
+#include <limits>
 
 namespace Assimp {
 namespace Math {
 
-// TODO: use binary GCD for unsigned integers ....
-template < typename IntegerType >
-IntegerType  gcd( IntegerType a, IntegerType b )
-{
+/// @brief  Will return the greatest common divisor.
+/// @param  a   [in] Value a.
+/// @param  b   [in] Value b.
+/// @return The greatest common divisor.
+template <typename IntegerType>
+inline IntegerType gcd( IntegerType a, IntegerType b ) {
 	const IntegerType zero = (IntegerType)0;
-	while ( true )
-	{
-		if ( a == zero )
+	while ( true ) {
+		if ( a == zero ) {
 			return b;
+        }
 		b %= a;
 
-		if ( b == zero )
+		if ( b == zero ) {
 			return a;
+        }
 		a %= b;
 	}
 }
 
+/// @brief  Will return the greatest common divisor.
+/// @param  a   [in] Value a.
+/// @param  b   [in] Value b.
+/// @return The greatest common divisor.
 template < typename IntegerType >
-IntegerType  lcm( IntegerType a, IntegerType b )
-{
+inline IntegerType lcm( IntegerType a, IntegerType b ) {
 	const IntegerType t = gcd (a,b);
-	if (!t)return t;
+	if (!t) {
+        return t;
+    }
 	return a / t * b;
 }
+/// @brief  Will return the smallest epsilon-value for the requested type.
+/// @return The numercical limit epsilon depending on its type.
+template<class T>
+inline T getEpsilon() {
+    return std::numeric_limits<T>::epsilon();
+}
 
+/// @brief  Will return the constant PI for the requested type.
+/// @return Pi
+template<class T>
+inline T aiPi() {
+    return static_cast<T>(3.14159265358979323846);
 }
-}
+
+} // namespace Math
+} // namespace Assimp

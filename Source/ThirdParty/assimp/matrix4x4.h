@@ -3,7 +3,7 @@
 Open Asset Import Library (assimp)
 ---------------------------------------------------------------------------
 
-Copyright (c) 2006-2019, assimp team
+Copyright (c) 2006-2024, assimp team
 
 
 
@@ -47,8 +47,13 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef AI_MATRIX4X4_H_INC
 #define AI_MATRIX4X4_H_INC
 
-#include "vector3.h"
-#include "defs.h"
+#ifdef __GNUC__
+#   pragma GCC system_header
+#endif
+
+#include <assimp/vector3.h>
+#include <assimp/defs.h>
+#include <assimp/config.h>
 
 #ifdef __cplusplus
 
@@ -66,8 +71,7 @@ template<typename TReal> class aiQuaterniont;
  *  defined thereby.
  */
 template<typename TReal>
-class aiMatrix4x4t
-{
+class aiMatrix4x4t {
 public:
 
     /** set to identity */
@@ -91,8 +95,6 @@ public:
     aiMatrix4x4t(const aiVector3t<TReal>& scaling, const aiQuaterniont<TReal>& rotation,
         const aiVector3t<TReal>& position);
 
-public:
-
     // array access operators
 	/** @fn TReal* operator[] (unsigned int p_iIndex)
 	 *  @param [in] p_iIndex - index of the row.
@@ -109,7 +111,7 @@ public:
     bool operator== (const aiMatrix4x4t& m) const;
     bool operator!= (const aiMatrix4x4t& m) const;
 
-    bool Equal(const aiMatrix4x4t& m, TReal epsilon = 1e-6) const;
+    bool Equal(const aiMatrix4x4t &m, TReal epsilon = ai_epsilon) const;
 
     // matrix multiplication.
     aiMatrix4x4t& operator *= (const aiMatrix4x4t& m);
@@ -119,8 +121,6 @@ public:
 
     template <typename TOther>
     operator aiMatrix4x4t<TOther> () const;
-
-public:
 
     // -------------------------------------------------------------------
     /** @brief Transpose the matrix */
@@ -137,9 +137,13 @@ public:
 
     // -------------------------------------------------------------------
     /** @brief Returns true of the matrix is the identity matrix.
+     *  @param epsilon Value of epsilon. Default value is 10e-3 for backward
+     *  compatibility with legacy code.
+     *  @return Returns true of the matrix is the identity matrix.
      *  The check is performed against a not so small epsilon.
      */
-    inline bool IsIdentity() const;
+    inline bool IsIdentity(const TReal
+            epsilon = AI_CONFIG_CHECK_IDENTITY_MATRIX_EPSILON_DEFAULT) const;
 
     // -------------------------------------------------------------------
     /** @brief Decompose a trafo matrix into its original components
@@ -182,7 +186,6 @@ public:
     void DecomposeNoScaling (aiQuaterniont<TReal>& rotation,
         aiVector3t<TReal>& position) const;
 
-
     // -------------------------------------------------------------------
     /** @brief Creates a trafo matrix from a set of euler angles
      *  @param x Rotation angle for the x-axis, in radians
@@ -192,7 +195,6 @@ public:
     aiMatrix4x4t& FromEulerAnglesXYZ(TReal x, TReal y, TReal z);
     aiMatrix4x4t& FromEulerAnglesXYZ(const aiVector3t<TReal>& blubb);
 
-public:
     // -------------------------------------------------------------------
     /** @brief Returns a rotation matrix for a rotation around the x axis
      *  @param a Rotation angle, in radians
@@ -233,7 +235,7 @@ public:
      *  @param out Receives the output matrix
      *  @return Reference to the output matrix
      */
-    static aiMatrix4x4t& Translation( const aiVector3t<TReal>& v, 
+    static aiMatrix4x4t& Translation( const aiVector3t<TReal>& v,
             aiMatrix4x4t& out);
 
     // -------------------------------------------------------------------
@@ -256,7 +258,6 @@ public:
     static aiMatrix4x4t& FromToMatrix(const aiVector3t<TReal>& from,
             const aiVector3t<TReal>& to, aiMatrix4x4t& out);
 
-public:
     TReal a1, a2, a3, a4;
     TReal b1, b2, b3, b4;
     TReal c1, c2, c3, c4;

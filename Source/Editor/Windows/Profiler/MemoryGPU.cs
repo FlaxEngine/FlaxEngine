@@ -39,11 +39,28 @@ namespace FlaxEditor.Windows.Profiler
         : base("GPU Memory")
         {
             // Layout
-            var panel = new Panel(ScrollBars.Vertical)
+            var mainPanel = new Panel(ScrollBars.None)
             {
                 AnchorPreset = AnchorPresets.StretchAll,
                 Offsets = Margin.Zero,
                 Parent = this,
+            };
+            
+            // Chart
+            _memoryUsageChart = new SingleChart
+            {
+                Title = "GPU Memory Usage",
+                AnchorPreset = AnchorPresets.HorizontalStretchTop,
+                FormatSample = v => Utilities.Utils.FormatBytesCount((int)v),
+                Parent = mainPanel,
+            };
+            _memoryUsageChart.SelectedSampleChanged += OnSelectedSampleChanged;
+
+            var panel = new Panel(ScrollBars.Vertical)
+            {
+                AnchorPreset = AnchorPresets.StretchAll,
+                Offsets = new Margin(0, 0, _memoryUsageChart.Height + 2, 0),
+                Parent = mainPanel,
             };
             var layout = new VerticalPanel
             {
@@ -52,15 +69,6 @@ namespace FlaxEditor.Windows.Profiler
                 IsScrollable = true,
                 Parent = panel,
             };
-
-            // Chart
-            _memoryUsageChart = new SingleChart
-            {
-                Title = "GPU Memory Usage",
-                FormatSample = v => Utilities.Utils.FormatBytesCount((int)v),
-                Parent = layout,
-            };
-            _memoryUsageChart.SelectedSampleChanged += OnSelectedSampleChanged;
 
             // Table
             var style = Style.Current;

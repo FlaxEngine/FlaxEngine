@@ -140,6 +140,7 @@ void Font::ProcessText(const StringView& text, Array<FontLineCache>& outputLines
     int32 lastWrapCharIndex = INVALID_INDEX;
     float lastWrapCharX = 0;
     bool lastMoveLine = false;
+    const Char compChar = TEXT('_');
 
     // Process each character to split text into single lines
     for (int32 currentIndex = 0; currentIndex < textLength;)
@@ -153,7 +154,7 @@ void Font::ProcessText(const StringView& text, Array<FontLineCache>& outputLines
         const bool isWhitespace = StringUtils::IsWhitespace(currentChar);
 
         // Check if character can wrap words
-        const bool isWrapChar = !StringUtils::IsAlnum(currentChar) || isWhitespace || StringUtils::IsUpper(currentChar);
+        const bool isWrapChar = (!StringUtils::IsAlnum(currentChar) && StringUtils::Compare(&currentChar, &compChar) == 0) || isWhitespace || StringUtils::IsUpper(currentChar);
         if (isWrapChar && currentIndex != 0)
         {
             lastWrapCharIndex = currentIndex;

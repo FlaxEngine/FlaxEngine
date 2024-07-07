@@ -2,8 +2,7 @@
 Open Asset Import Library (assimp)
 ----------------------------------------------------------------------
 
-Copyright (c) 2006-2019, assimp team
-
+Copyright (c) 2006-2024, assimp team
 
 All rights reserved.
 
@@ -42,8 +41,13 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /** Small helper classes to optimize finding vertices close to a given location
  */
+#pragma once
 #ifndef AI_D3DSSPATIALSORT_H_INC
 #define AI_D3DSSPATIALSORT_H_INC
+
+#ifdef __GNUC__
+#   pragma GCC system_header
+#endif
 
 #include <assimp/types.h>
 #include <vector>
@@ -58,10 +62,8 @@ namespace Assimp    {
  *  implementation to handle all details of its file format correctly.
  */
 // ----------------------------------------------------------------------------------
-class ASSIMP_API SGSpatialSort
-{
+class ASSIMP_API SGSpatialSort {
 public:
-
     SGSpatialSort();
 
     // -------------------------------------------------------------------
@@ -85,7 +87,7 @@ public:
     void Prepare();
 
     /** Destructor */
-    ~SGSpatialSort();
+    ~SGSpatialSort() = default;
 
     // -------------------------------------------------------------------
     /** Returns an iterator for all positions close to the given position.

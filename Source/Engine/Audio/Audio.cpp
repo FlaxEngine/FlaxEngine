@@ -158,6 +158,9 @@ void Audio::OnAddListener(AudioListener* listener)
         return;
     }
 
+    if (Audio::Listeners.Count() > 0)
+        LOG(Warning, "There is more than 1 Audio listener active. Please make sure only exactly one is active at any given time.");
+    
     Listeners.Add(listener);
     AudioBackend::Listener::OnAdd(listener);
 }
