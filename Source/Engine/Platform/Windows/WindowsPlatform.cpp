@@ -442,11 +442,12 @@ DialogResult MessageBox::Show(Window* parent, const StringView& text, const Stri
         flags |= MB_ICONHAND;
         break;
     case MessageBoxIcon::Information:
+    case MessageBoxIcon::Question:
         flags |= MB_ICONINFORMATION;
         break;
-    case MessageBoxIcon::Question:
-        flags |= MB_ICONQUESTION;
-        break;
+    //case MessageBoxIcon::Question:
+    //    flags |= MB_ICONQUESTION;
+    //    break;
     case MessageBoxIcon::Stop:
         flags |= MB_ICONSTOP;
         break;
