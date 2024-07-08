@@ -107,8 +107,14 @@ float4 PS_Lighting(AtlasVertexOutput input) : SV_Target
 	float2 atlasUV = input.TileUV * tile.AtlasRectUV.zw + tile.AtlasRectUV.xy;
 
 	// Load GBuffer sample from atlas
-	GBufferData gBufferData = (GBufferData)0;
-	GBufferSample gBuffer = SampleGBuffer(gBufferData, atlasUV);
+    float4 gBuffer0 = SAMPLE_RT(GBuffer0, atlasUV);
+    float4 gBuffer1 = SAMPLE_RT(GBuffer1, atlasUV);
+    GBufferSample gBuffer = (GBufferSample)0;
+    gBuffer.Normal = DecodeNormal(gBuffer1.rgb);
+    gBuffer.ShadingModel = (int)(gBuffer1.a * 3.999);
+    gBuffer.Color = gBuffer0.rgb;
+    gBuffer.Roughness = 1.0f;
+    gBuffer.AO = gBuffer0.a;
 	BRANCH
 	if (gBuffer.ShadingModel == SHADING_MODEL_UNLIT)
 	{
@@ -119,11 +125,6 @@ float4 PS_Lighting(AtlasVertexOutput input) : SV_Target
 
 	// Reconstruct world-space position manually (from uv+depth within a tile)
 	float tileDepth = SampleZ(atlasUV);
-	//float tileNear = -GLOBAL_SURFACE_ATLAS_TILE_PROJ_PLANE_OFFSET;
-	//float tileFar = tile.ViewBoundsSize.z + 2 * GLOBAL_SURFACE_ATLAS_TILE_PROJ_PLANE_OFFSET;
-	//gBufferData.ViewInfo.zw = float2(tileFar / (tileFar - tileNear), (-tileFar * tileNear) / (tileFar - tileNear) / tileFar);
-	//gBufferData.ViewInfo.zw = float2(1, 0);
-	//float tileLinearDepth = LinearizeZ(gBufferData, tileDepth);
 	float3 tileSpacePos = float3(input.TileUV.x - 0.5f, 0.5f - input.TileUV.y, tileDepth);
 	float3 gBufferTilePos = tileSpacePos * tile.ViewBoundsSize;
 	float4x4 tileLocalToWorld = Inverse(tile.WorldToLocal);

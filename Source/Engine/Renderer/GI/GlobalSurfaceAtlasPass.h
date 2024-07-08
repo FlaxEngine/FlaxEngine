@@ -30,10 +30,9 @@ public:
                 GPUTexture* AtlasDepth;
                 GPUTexture* AtlasGBuffer0;
                 GPUTexture* AtlasGBuffer1;
-                GPUTexture* AtlasGBuffer2;
                 GPUTexture* AtlasLighting;
             };
-            GPUTexture* Atlas[5];
+            GPUTexture* Atlas[4];
         };
         GPUBuffer* Chunks;
         GPUBuffer* CulledObjects;

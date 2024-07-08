@@ -141,7 +141,6 @@ public:
     GPUTexture* AtlasEmissive = nullptr;
     GPUTexture* AtlasGBuffer0 = nullptr;
     GPUTexture* AtlasGBuffer1 = nullptr;
-    GPUTexture* AtlasGBuffer2 = nullptr;
     GPUTexture* AtlasLighting = nullptr;
     GPUBuffer* ChunksBuffer = nullptr;
     GPUBuffer* CulledObjectsBuffer = nullptr;
@@ -195,7 +194,6 @@ public:
         RenderTargetPool::Release(AtlasEmissive);
         RenderTargetPool::Release(AtlasGBuffer0);
         RenderTargetPool::Release(AtlasGBuffer1);
-        RenderTargetPool::Release(AtlasGBuffer2);
         RenderTargetPool::Release(AtlasLighting);
         ClearObjects();
     }
@@ -719,7 +717,6 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
         INIT_ATLAS_TEXTURE(AtlasEmissive, PixelFormat::R11G11B10_Float);
         INIT_ATLAS_TEXTURE(AtlasGBuffer0, GBUFFER0_FORMAT);
         INIT_ATLAS_TEXTURE(AtlasGBuffer1, GBUFFER1_FORMAT);
-        INIT_ATLAS_TEXTURE(AtlasGBuffer2, GBUFFER2_FORMAT);
         INIT_ATLAS_TEXTURE(AtlasLighting, PixelFormat::R11G11B10_Float);
         desc.Flags = GPUTextureFlags::DepthStencil | GPUTextureFlags::ShaderResource;
         INIT_ATLAS_TEXTURE(AtlasDepth, PixelFormat::D16_UNorm);
@@ -792,12 +789,11 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
         renderContextTiles.View.Prepare(renderContextTiles);
 
         GPUTextureView* depthBuffer = surfaceAtlasData.AtlasDepth->View();
-        GPUTextureView* targetBuffers[4] =
+        GPUTextureView* targetBuffers[3] =
         {
             surfaceAtlasData.AtlasEmissive->View(),
             surfaceAtlasData.AtlasGBuffer0->View(),
             surfaceAtlasData.AtlasGBuffer1->View(),
-            surfaceAtlasData.AtlasGBuffer2->View(),
         };
         context->SetRenderTarget(depthBuffer, ToSpan(targetBuffers, ARRAY_COUNT(targetBuffers)));
         {
@@ -809,7 +805,6 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
                 context->Clear(targetBuffers[0], Color::Transparent);
                 context->Clear(targetBuffers[1], Color::Transparent);
                 context->Clear(targetBuffers[2], Color::Transparent);
-                context->Clear(targetBuffers[3], Color(1, 0, 0, 0));
             }
             else
             {
@@ -1060,8 +1055,7 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
     result.Atlas[0] = surfaceAtlasData.AtlasDepth;
     result.Atlas[1] = surfaceAtlasData.AtlasGBuffer0;
     result.Atlas[2] = surfaceAtlasData.AtlasGBuffer1;
-    result.Atlas[3] = surfaceAtlasData.AtlasGBuffer2;
-    result.Atlas[4] = surfaceAtlasData.AtlasLighting;
+    result.Atlas[3] = surfaceAtlasData.AtlasLighting;
     result.Chunks = surfaceAtlasData.ChunksBuffer;
     result.CulledObjects = surfaceAtlasData.CulledObjectsBuffer;
     result.Objects = surfaceAtlasData.ObjectsBuffer.GetBuffer();
@@ -1075,7 +1069,7 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
         context->SetRenderTarget(surfaceAtlasData.AtlasLighting->View());
         context->BindSR(0, surfaceAtlasData.AtlasGBuffer0->View());
         context->BindSR(1, surfaceAtlasData.AtlasGBuffer1->View());
-        context->BindSR(2, surfaceAtlasData.AtlasGBuffer2->View());
+        context->UnBindSR(2);
         context->BindSR(3, surfaceAtlasData.AtlasDepth->View());
         context->BindSR(4, surfaceAtlasData.ObjectsBuffer.GetBuffer()->View());
         context->BindSR(5, bindingDataSDF.Texture ? bindingDataSDF.Texture->ViewVolume() : nullptr);
@@ -1407,7 +1401,7 @@ void GlobalSurfaceAtlasPass::RenderDebug(RenderContext& renderContext, GPUContex
         // Full screen - direct light
         context->BindSR(5, bindingData.AtlasLighting->View());
         context->SetViewport(outputSize.X, outputSize.Y);
-        context->SetScissor(Rectangle(0, 0, outputSizeTwoThird.X, outputSize.Y));
+        context->SetScissor(Rectangle(0, 0, outputSize.X, outputSize.Y));
         context->DrawFullscreenTriangle();
 
         // Color Grading and Post-Processing to improve readability in bright/dark scenes
@@ -1440,14 +1434,9 @@ void GlobalSurfaceAtlasPass::RenderDebug(RenderContext& renderContext, GPUContex
         context->SetViewportAndScissors(Viewport(outputSizeTwoThird.X, 0, outputSizeThird.X, outputSizeThird.Y));
         context->DrawFullscreenTriangle();
 
-        // Bottom middle - normals
+        // Bottom right - normals
         context->SetState(_psDebug0);
         context->BindSR(5, bindingData.AtlasGBuffer1->View());
-        context->SetViewportAndScissors(Viewport(outputSizeTwoThird.X, outputSizeThird.Y, outputSizeThird.X, outputSizeThird.Y));
-        context->DrawFullscreenTriangle();
-
-        // Bottom right - roughness/metalness/ao
-        context->BindSR(5, bindingData.AtlasGBuffer2->View());
         context->SetViewportAndScissors(Viewport(outputSizeTwoThird.X, outputSizeTwoThird.Y, outputSizeThird.X, outputSizeThird.Y));
         context->DrawFullscreenTriangle();
     }
