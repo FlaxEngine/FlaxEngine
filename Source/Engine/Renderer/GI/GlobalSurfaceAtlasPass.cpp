@@ -8,6 +8,7 @@
 #include "../ShadowsPass.h"
 #include "Engine/Core/Math/Matrix3x3.h"
 #include "Engine/Core/Math/OrientedBoundingBox.h"
+#include "Engine/Core/Collections/Sorting.h"
 #include "Engine/Core/Config/GraphicsSettings.h"
 #include "Engine/Engine/Engine.h"
 #include "Engine/Engine/Units.h"
@@ -81,6 +82,11 @@ struct GlobalSurfaceAtlasNewTile
     void* ActorObject;
     uint16 TileIndex;
     uint16 TileResolution;
+
+    bool operator<(const GlobalSurfaceAtlasNewTile& other) const
+    {
+        return TileResolution > other.TileResolution;
+    }
 };
 
 struct GlobalSurfaceAtlasTile : RectPackNode<uint16>
@@ -349,6 +355,11 @@ public:
             object.Bounds = newObject.Bounds;
         }
         AsyncNewObjects.Clear();
+
+        // Sort tiles by size to reduce atlas fragmentation issue by inserting larger tiles first
+        Array<GlobalSurfaceAtlasNewTile, RendererAllocation> sortingTiles;
+        sortingTiles.Resize(AsyncNewTiles.Count());
+        Sorting::MergeSort(AsyncNewTiles.Get(), AsyncNewTiles.Count(), sortingTiles.Get());
 
         for (auto& newTile : AsyncNewTiles)
         {
