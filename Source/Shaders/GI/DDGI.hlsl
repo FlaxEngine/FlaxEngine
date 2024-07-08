@@ -154,7 +154,7 @@ float3 SampleDDGIIrradiance(DDGIData data, Texture2D<snorm float4> probesData, T
         biasedWorldPosition = worldPosition + surfaceBias;
 
         // Calculate cascade blending weight (use input bias to smooth transition)
-        float cascadeBlendSmooth = frac(max(distance(data.ViewPos, worldPosition) - probesExtent, 0) / probesSpacing) * 0.1f;
+        float cascadeBlendSmooth = frac(max(distance(data.ViewPos, worldPosition) - probesExtent.x, 0) / probesSpacing) * 0.1f;
         float3 cascadeBlendPoint = worldPosition - probesOrigin - cascadeBlendSmooth * probesSpacing;
         float fadeDistance = probesSpacing * DDGI_CASCADE_BLEND_SIZE;
         float cascadeWeight = saturate(Min3(probesExtent - abs(cascadeBlendPoint)) / fadeDistance);
