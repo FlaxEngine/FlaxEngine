@@ -21,7 +21,7 @@
 #include "Engine/Threading/JobSystem.h"
 
 // Some of those constants must match in shader
-#define GLOBAL_SDF_FORMAT PixelFormat::R16_Float
+#define GLOBAL_SDF_FORMAT PixelFormat::R8_SNorm
 #define GLOBAL_SDF_RASTERIZE_MODEL_MAX_COUNT 28 // The maximum amount of models to rasterize at once as a batch into Global SDF.
 #define GLOBAL_SDF_RASTERIZE_HEIGHTFIELD_MAX_COUNT 2 // The maximum amount of heightfields to store in a single chunk.
 #define GLOBAL_SDF_RASTERIZE_GROUP_SIZE 8
@@ -71,10 +71,13 @@ GPU_CB_STRUCT(ModelsRasterizeData {
     int32 CascadeMipResolution;
     int32 CascadeMipFactor;
     uint32 Objects[GLOBAL_SDF_RASTERIZE_MODEL_MAX_COUNT];
-    uint32 GenerateMipTexResolution;
-    uint32 GenerateMipCoordScale;
-    uint32 GenerateMipTexOffsetX;
-    uint32 GenerateMipMipOffsetX;
+    Float2 Padding10;
+    float MipMaxDistanceLoad;
+    float MipMaxDistanceStore;
+    uint32 MipTexResolution;
+    uint32 MipCoordScale;
+    uint32 MipTexOffsetX;
+    uint32 MipMipOffsetX;
     });
 
 struct RasterizeChunk
@@ -133,9 +136,11 @@ struct CascadeData
     bool Dirty;
     int32 Index;
     float ChunkSize;
-    float MaxDistance;
+    float MaxDistanceTex;
+    float MaxDistanceMip;
     Float3 Position;
     float VoxelSize;
+    float Extent;
     BoundingBox Bounds;
     BoundingBox CullingBounds;
     BoundingBox RasterizeBounds;
@@ -315,14 +320,14 @@ public:
             cascade.Dirty = !useCache || RenderTools::ShouldUpdateCascade(FrameIndex, cascadeIndex, cascadesCount, maxCascadeUpdatesPerFrame, updateEveryFrame);
             if (!cascade.Dirty)
                 continue;
-            const float cascadeDistance = distanceExtent * CascadesDistanceScales[cascadeIndex];
-            const float cascadeMaxDistance = cascadeDistance * 2;
-            const float cascadeVoxelSize = cascadeMaxDistance / (float)resolution;
+            const float cascadeExtent = distanceExtent * CascadesDistanceScales[cascadeIndex];
+            const float cascadeSize = cascadeExtent * 2;
+            const float cascadeVoxelSize = cascadeSize / (float)resolution;
             const float cascadeChunkSize = cascadeVoxelSize * GLOBAL_SDF_RASTERIZE_CHUNK_SIZE;
             static_assert(GLOBAL_SDF_RASTERIZE_CHUNK_SIZE % GLOBAL_SDF_RASTERIZE_MIP_FACTOR == 0, "Adjust chunk size to match the mip factor scale.");
             const Float3 center = Float3::Floor(viewPosition / cascadeChunkSize) * cascadeChunkSize;
             //const Float3 center = Float3::Zero;
-            BoundingBox cascadeBounds(center - cascadeDistance, center + cascadeDistance);
+            BoundingBox cascadeBounds(center - cascadeExtent, center + cascadeExtent);
 
             // Clear cascade before rasterization
             cascade.Chunks.Clear();
@@ -342,8 +347,12 @@ public:
             // Setup cascade info
             cascade.Position = center;
             cascade.VoxelSize = cascadeVoxelSize;
-            cascade.ChunkSize = cascadeVoxelSize * GLOBAL_SDF_RASTERIZE_CHUNK_SIZE;
-            cascade.MaxDistance = cascadeMaxDistance;
+            cascade.Extent = cascadeExtent;
+            cascade.ChunkSize = cascadeChunkSize;
+            cascade.MaxDistanceTex = cascadeChunkSize * 1.5f; // Encodes SDF distance to [-maxDst; +maxDst] to be packed as normalized value, limits the max SDF trace step distance
+            cascade.MaxDistanceMip = cascade.MaxDistanceTex * 2.0f; // Encode mip distance with less but covers larger area for faster jumps during tracing
+            cascade.MaxDistanceTex = Math::Min(cascade.MaxDistanceTex, cascadeSize);
+            cascade.MaxDistanceMip = Math::Min(cascade.MaxDistanceMip, cascadeSize);
             cascade.Bounds = cascadeBounds;
             cascade.RasterizeBounds = cascadeBounds;
             cascade.RasterizeBounds.Minimum += 0.1f; // Adjust to prevent overflowing chunk keys (cascade bounds are used for clamping object bounds)
@@ -814,7 +823,7 @@ bool GlobalSignDistanceFieldPass::Render(RenderContext& renderContext, GPUContex
         ModelsRasterizeData data;
         data.CascadeCoordToPosMul = (Float3)cascade.Bounds.GetSize() / (float)resolution;
         data.CascadeCoordToPosAdd = (Float3)cascade.Bounds.Minimum + cascade.VoxelSize * 0.5f;
-        data.MaxDistance = cascade.MaxDistance;
+        data.MaxDistance = cascade.MaxDistanceTex;
         data.CascadeResolution = resolution;
         data.CascadeMipResolution = resolutionMip;
         data.CascadeIndex = cascadeIndex;
@@ -986,17 +995,20 @@ bool GlobalSignDistanceFieldPass::Render(RenderContext& renderContext, GPUContex
             GPUTextureView* tmpMipView = tmpMip->ViewVolume();
 
             // Tex -> Mip
-            data.GenerateMipTexResolution = data.CascadeResolution;
-            data.GenerateMipCoordScale = data.CascadeMipFactor;
-            data.GenerateMipTexOffsetX = data.CascadeIndex * data.CascadeResolution;
-            data.GenerateMipMipOffsetX = data.CascadeIndex * data.CascadeMipResolution;
+            data.MipMaxDistanceLoad = cascade.MaxDistanceTex; // Decode tex distance within chunk (more precision, for detailed tracing nearby geometry)
+            data.MipMaxDistanceStore = cascade.MaxDistanceMip; // Encode mip distance within whole volume (less precision, for fast jumps over empty spaces)
+            data.MipTexResolution = data.CascadeResolution;
+            data.MipCoordScale = data.CascadeMipFactor;
+            data.MipTexOffsetX = data.CascadeIndex * data.CascadeResolution;
+            data.MipMipOffsetX = data.CascadeIndex * data.CascadeMipResolution;
             context->UpdateCB(_cb1, &data);
             context->BindSR(0, textureView);
             context->BindUA(0, textureMipView);
             context->Dispatch(_csGenerateMip, mipDispatchGroups, mipDispatchGroups, mipDispatchGroups);
 
-            data.GenerateMipTexResolution = data.CascadeMipResolution;
-            data.GenerateMipCoordScale = 1;
+            data.MipTexResolution = data.CascadeMipResolution;
+            data.MipCoordScale = 1;
+            data.MipMaxDistanceLoad = data.MipMaxDistanceStore;
             for (int32 i = 1; i < floodFillIterations; i++)
             {
                 context->ResetUA();
@@ -1005,16 +1017,16 @@ bool GlobalSignDistanceFieldPass::Render(RenderContext& renderContext, GPUContex
                     // Mip -> Tmp
                     context->BindSR(0, textureMipView);
                     context->BindUA(0, tmpMipView);
-                    data.GenerateMipTexOffsetX = data.CascadeIndex * data.CascadeMipResolution;
-                    data.GenerateMipMipOffsetX = 0;
+                    data.MipTexOffsetX = data.CascadeIndex * data.CascadeMipResolution;
+                    data.MipMipOffsetX = 0;
                 }
                 else
                 {
                     // Tmp -> Mip
                     context->BindSR(0, tmpMipView);
                     context->BindUA(0, textureMipView);
-                    data.GenerateMipTexOffsetX = 0;
-                    data.GenerateMipMipOffsetX = data.CascadeIndex * data.CascadeMipResolution;
+                    data.MipTexOffsetX = 0;
+                    data.MipMipOffsetX = data.CascadeIndex * data.CascadeMipResolution;
                 }
                 context->UpdateCB(_cb1, &data);
                 context->Dispatch(_csGenerateMip, mipDispatchGroups, mipDispatchGroups, mipDispatchGroups);
@@ -1038,17 +1050,17 @@ bool GlobalSignDistanceFieldPass::Render(RenderContext& renderContext, GPUContex
     for (int32 cascadeIndex = 0; cascadeIndex < cascadesCount; cascadeIndex++)
     {
         auto& cascade = sdfData.Cascades[cascadeIndex];
-        const float cascadeDistance = distanceExtent * sdfData.CascadesDistanceScales[cascadeIndex];
-        const float cascadeMaxDistance = cascadeDistance * 2;
-        const float cascadeVoxelSize = cascadeMaxDistance / (float)resolution;
-        const Float3 center = cascade.Position;
-        result.Constants.CascadePosDistance[cascadeIndex] = Vector4(center, cascadeDistance);
-        result.Constants.CascadeVoxelSize.Raw[cascadeIndex] = cascadeVoxelSize;
+        const float cascadeExtent = distanceExtent * sdfData.CascadesDistanceScales[cascadeIndex];
+        result.Constants.CascadePosDistance[cascadeIndex] = Vector4(cascade.Position, cascadeExtent);
+        result.Constants.CascadeVoxelSize.Raw[cascadeIndex] = cascade.VoxelSize;
+        result.Constants.CascadeMaxDistance.Raw[cascadeIndex] = cascade.MaxDistanceTex;
+        result.Constants.CascadeMaxDistanceMip.Raw[cascadeIndex] = cascade.MaxDistanceMip;
     }
     for (int32 cascadeIndex = cascadesCount; cascadeIndex < 4; cascadeIndex++)
     {
         result.Constants.CascadePosDistance[cascadeIndex] = result.Constants.CascadePosDistance[cascadesCount - 1];
         result.Constants.CascadeVoxelSize.Raw[cascadeIndex] = result.Constants.CascadeVoxelSize.Raw[cascadesCount - 1];
+        result.Constants.CascadeMaxDistance.Raw[cascadeIndex] = result.Constants.CascadeMaxDistance.Raw[cascadesCount - 1];
     }
     result.Constants.Resolution = (float)resolution;
     result.Constants.CascadesCount = cascadesCount;

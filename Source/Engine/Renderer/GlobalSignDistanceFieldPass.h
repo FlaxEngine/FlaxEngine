@@ -15,6 +15,8 @@ public:
     GPU_CB_STRUCT(ConstantsData {
         Float4 CascadePosDistance[4];
         Float4 CascadeVoxelSize;
+        Float4 CascadeMaxDistance;
+        Float4 CascadeMaxDistanceMip;
         Float2 Padding;
         uint32 CascadesCount;
         float Resolution;

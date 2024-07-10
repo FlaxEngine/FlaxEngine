@@ -91,8 +91,8 @@ Texture2D<snorm float4> ProbesData : register(t5);
 Texture2D<float4> ProbesDistance : register(t6);
 Texture2D<float4> ProbesIrradiance : register(t7);
 #else
-Texture3D<float> GlobalSDFTex : register(t5);
-Texture3D<float> GlobalSDFMip : register(t6);
+Texture3D<snorm float> GlobalSDFTex : register(t5);
+Texture3D<snorm float> GlobalSDFMip : register(t6);
 #endif
 
 // Pixel shader for Global Surface Atlas shading
@@ -289,8 +289,8 @@ void CS_CullObjects(uint3 DispatchThreadId : SV_DispatchThreadID)
 
 #ifdef _PS_Debug
 
-Texture3D<float> GlobalSDFTex : register(t0);
-Texture3D<float> GlobalSDFMip : register(t1);
+Texture3D<snorm float> GlobalSDFTex : register(t0);
+Texture3D<snorm float> GlobalSDFMip : register(t1);
 ByteAddressBuffer GlobalSurfaceAtlasChunks : register(t2);
 ByteAddressBuffer GlobalSurfaceAtlasCulledObjects : register(t3);
 Buffer<float4> GlobalSurfaceAtlasObjects : register(t4);

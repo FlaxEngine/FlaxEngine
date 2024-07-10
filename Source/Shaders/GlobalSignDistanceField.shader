@@ -43,10 +43,13 @@ float CascadeVoxelSize;
 int CascadeMipResolution;
 int CascadeMipFactor;
 uint4 Objects[GLOBAL_SDF_RASTERIZE_MODEL_MAX_COUNT / 4];
-uint GenerateMipTexResolution;
-uint GenerateMipCoordScale;
-uint GenerateMipTexOffsetX;
-uint GenerateMipMipOffsetX;
+float2 Padding20;
+float MipMaxDistanceLoad;
+float MipMaxDistanceStore;
+uint MipTexResolution;
+uint MipCoordScale;
+uint MipTexOffsetX;
+uint MipMipOffsetX;
 META_CB_END
 
 float CombineDistanceToSDF(float sdf, float distanceToSDF)
@@ -71,7 +74,7 @@ float CombineSDF(float oldSdf, float newSdf)
 
 #if defined(_CS_RasterizeModel) || defined(_CS_RasterizeHeightfield)
 
-RWTexture3D<float> GlobalSDFTex : register(u0);
+RWTexture3D<snorm float> GlobalSDFTex : register(u0);
 StructuredBuffer<ObjectRasterizeData> ObjectsBuffer : register(t0);
 
 #endif
@@ -213,7 +216,7 @@ void CS_RasterizeHeightfield(uint3 DispatchThreadId : SV_DispatchThreadID)
 
 #if defined(_CS_ClearChunk)
 
-RWTexture3D<float> GlobalSDFTex : register(u0);
+RWTexture3D<snorm float> GlobalSDFTex : register(u0);
 
 // Compute shader for clearing Global SDF chunk
 META_CS(true, FEATURE_LEVEL_SM5)
@@ -229,19 +232,21 @@ void CS_ClearChunk(uint3 DispatchThreadId : SV_DispatchThreadID)
 
 #if defined(_CS_GenerateMip)
 
-RWTexture3D<float> GlobalSDFMip : register(u0);
-Texture3D<float> GlobalSDFTex : register(t0);
+RWTexture3D<snorm float> GlobalSDFMip : register(u0);
+Texture3D<snorm float> GlobalSDFTex : register(t0);
 
 float SampleSDF(uint3 voxelCoordMip, int3 offset)
 {
 	// Sample SDF
-	voxelCoordMip = (uint3)clamp((int3)(voxelCoordMip * GenerateMipCoordScale) + offset, int3(0, 0, 0), (int3)(GenerateMipTexResolution - 1));
-	voxelCoordMip.x += GenerateMipTexOffsetX;
+	voxelCoordMip = (uint3)clamp((int3)(voxelCoordMip * MipCoordScale) + offset, int3(0, 0, 0), (int3)(MipTexResolution - 1));
+	voxelCoordMip.x += MipTexOffsetX;
 	float result = GlobalSDFTex[voxelCoordMip].r;
+    if (result >= GLOBAL_SDF_MIN_VALID)
+        return MipMaxDistanceStore; // No valid distance so use the limit
+    result *= MipMaxDistanceLoad; // Decode normalized distance to world-units
 
 	// Extend by distance to the sampled texel location
-	float distanceInWorldUnits = length((float3)offset) * (MaxDistance / (float)GenerateMipTexResolution);
-	float distanceToVoxel = distanceInWorldUnits / MaxDistance;
+	float distanceToVoxel = length((float3)offset) * CascadeVoxelSize * ((float)CascadeResolution / (float)MipTexResolution);
 	result = CombineDistanceToSDF(result, distanceToVoxel);
 
 	return result;
@@ -263,16 +268,16 @@ void CS_GenerateMip(uint3 DispatchThreadId : SV_DispatchThreadID)
 	minDistance = min(minDistance, SampleSDF(voxelCoordMip, int3(0, -1, 0)));
 	minDistance = min(minDistance, SampleSDF(voxelCoordMip, int3(0, 0, -1)));
 
-	voxelCoordMip.x += GenerateMipMipOffsetX;
-	GlobalSDFMip[voxelCoordMip] = minDistance;
+	voxelCoordMip.x += MipMipOffsetX;
+	GlobalSDFMip[voxelCoordMip] = clamp(minDistance / MipMaxDistanceStore, -1, 1);
 }
 
 #endif
 
 #ifdef _PS_Debug
 
-Texture3D<float> GlobalSDFTex : register(t0);
-Texture3D<float> GlobalSDFMip : register(t1);
+Texture3D<snorm float> GlobalSDFTex : register(t0);
+Texture3D<snorm float> GlobalSDFMip : register(t1);
 
 // Pixel shader for Global SDF debug drawing
 META_PS(true, FEATURE_LEVEL_SM5)

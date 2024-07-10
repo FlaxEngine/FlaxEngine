@@ -73,8 +73,8 @@ uint GetProbeRaysCount(DDGIData data, uint probeState)
 RWTexture2D<snorm float4> RWProbesData : register(u0);
 RWByteAddressBuffer RWActiveProbes : register(u1);
 
-Texture3D<float> GlobalSDFTex : register(t0);
-Texture3D<float> GlobalSDFMip : register(t1);
+Texture3D<snorm float> GlobalSDFTex : register(t0);
+Texture3D<snorm float> GlobalSDFMip : register(t1);
 
 float3 Remap(float3 value, float3 fromMin, float3 fromMax, float3 toMin, float3 toMax)
 {
@@ -288,8 +288,8 @@ void CS_UpdateProbesInitArgs()
 
 RWTexture2D<float4> RWProbesTrace : register(u0);
 
-Texture3D<float> GlobalSDFTex : register(t0);
-Texture3D<float> GlobalSDFMip : register(t1);
+Texture3D<snorm float> GlobalSDFTex : register(t0);
+Texture3D<snorm float> GlobalSDFMip : register(t1);
 ByteAddressBuffer GlobalSurfaceAtlasChunks : register(t2);
 ByteAddressBuffer RWGlobalSurfaceAtlasCulledObjects : register(t3);
 Buffer<float4> GlobalSurfaceAtlasObjects : register(t4);

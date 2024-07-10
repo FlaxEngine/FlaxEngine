@@ -51,8 +51,8 @@ Texture2D Texture0 : register(t4);
 Texture2D Texture1 : register(t5);
 Texture2D Texture2 : register(t6);
 #if USE_GLOBAL_SURFACE_ATLAS
-Texture3D<float> GlobalSDFTex : register(t7);
-Texture3D<float> GlobalSDFMip : register(t8);
+Texture3D<snorm float> GlobalSDFTex : register(t7);
+Texture3D<snorm float> GlobalSDFMip : register(t8);
 ByteAddressBuffer GlobalSurfaceAtlasChunks : register(t9);
 ByteAddressBuffer RWGlobalSurfaceAtlasCulledObjects : register(t10);
 Buffer<float4> GlobalSurfaceAtlasObjects : register(t11);
