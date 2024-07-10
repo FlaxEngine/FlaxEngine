@@ -13,6 +13,7 @@
 #include "Engine/Navigation/NavMeshBoundsVolume.h"
 #include "Engine/Navigation/NavMesh.h"
 #include "Engine/Profiler/ProfilerCPU.h"
+#include "Engine/Scripting/ManagedCLR/MClass.h"
 #include "Engine/Serialization/Serialization.h"
 #if USE_EDITOR
 #include "Engine/Engine/Globals.h"
@@ -102,6 +103,26 @@ void Scene::ClearLightmaps()
 void Scene::BuildCSG(float timeoutMs)
 {
     CSGData.BuildCSG(timeoutMs);
+}
+
+Array<Actor*> Scene::GetActors(const MClass* type, bool activeOnly)
+{
+    Array<Actor*> result;
+    CHECK_RETURN(type, result);
+    for (int32 i = 0; i < Children.Count(); i++)
+        GetActors(type, Children.Get()[i], activeOnly, result);
+    return result;
+}
+
+
+void Scene::GetActors(const MClass* type, Actor* actor, bool activeOnly, Array<Actor*>& result)
+{
+    if (activeOnly && !actor->GetIsActive())
+        return;
+    if (actor->GetClass()->IsSubClassOf(type))
+        result.Add(actor);
+    for (auto child : actor->Children)
+        GetActors(type, child, activeOnly, result);
 }
 
 #if USE_EDITOR

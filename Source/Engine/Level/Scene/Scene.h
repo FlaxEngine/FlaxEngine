@@ -81,6 +81,14 @@ public:
     /// <param name="timeoutMs">The timeout to wait before building CSG (in milliseconds).</param>
     API_FUNCTION() void BuildCSG(float timeoutMs = 50);
 
+    /// <summary>
+    /// Finds all the actors of the given type in the scene.
+    /// </summary>
+    /// <param name="type">Type of the actor to search for. Includes any actors derived from the type.</param>
+    /// <param name="activeOnly">Finds only active actors in the scene.</param>
+    /// <returns>Found actors list.</returns>
+    API_FUNCTION() Array<Actor*> GetActors(API_PARAM(Attributes="TypeReference(typeof(Actor))") const MClass* type, bool activeOnly = false);
+
 #if USE_EDITOR
 
     /// <summary>
@@ -113,6 +121,7 @@ private:
     void CreateCsgCollider();
     void CreateCsgModel();
     void OnCsgCollisionDataChanged();
+    void GetActors(const MClass* type, Actor* actor, bool activeOnly, Array<Actor*>& result);
     void OnCsgModelChanged();
 #if COMPILE_WITH_CSG_BUILDER
     void OnCSGBuildEnd();

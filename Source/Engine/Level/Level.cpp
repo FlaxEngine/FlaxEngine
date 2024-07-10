@@ -1076,6 +1076,13 @@ bool Level::loadScene(rapidjson_flax::Value& data, int32 engineBuild, Scene** ou
         Scenes.Add(scene);
         SceneBeginData beginData;
         scene->BeginPlay(&beginData);
+        Array<Actor*> sceneActors = scene->GetActors(Actor::GetStaticClass());
+        for (int i = 0; i < sceneActors.Count(); i++)
+        {
+            auto a = sceneActors[i];
+            if (!a->IsDuringPlay())
+                a->BeginPlay(&beginData);
+        }
         beginData.OnDone();
     }
 
