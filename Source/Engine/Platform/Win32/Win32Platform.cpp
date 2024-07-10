@@ -18,6 +18,7 @@
 #include <WinBase.h>
 #include <xmmintrin.h>
 #include <intrin.h>
+#include <timeapi.h>
 #pragma comment(lib, "Iphlpapi.lib")
 
 static_assert(sizeof(int32) == sizeof(long), "Invalid long size for Interlocked and Atomic operations in Win32Platform.");
@@ -66,6 +67,7 @@ bool Win32Platform::Init()
         return true;
 
     // Init timing
+    timeBeginPeriod(1);
     LARGE_INTEGER frequency;
     const auto freqResult = QueryPerformanceFrequency(&frequency);
     ASSERT(freqResult && frequency.QuadPart > 0);
@@ -220,6 +222,7 @@ bool Win32Platform::Init()
 void Win32Platform::Exit()
 {
     WSACleanup();
+    timeEndPeriod(1);
 }
 
 void Win32Platform::MemoryBarrier()
