@@ -22,7 +22,6 @@ public:
         float ProbeHistoryWeight;
         float RayMaxDistance;
         float IndirectLightingIntensity;
-        Float4 RaysRotation;
         Float3 ViewPos;
         uint32 RaysCount;
         Float3 FallbackIrradiance;

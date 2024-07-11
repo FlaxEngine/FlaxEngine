@@ -46,6 +46,7 @@ GPU_CB_STRUCT(Data0 {
     GlobalSignDistanceFieldPass::ConstantsData GlobalSDF;
     GlobalSurfaceAtlasPass::ConstantsData GlobalSurfaceAtlas;
     ShaderGBufferData GBuffer;
+    Float4 RaysRotation;
     float Padding0;
     uint32 ProbesCount;
     float ResetBlend;
@@ -379,7 +380,7 @@ bool DynamicDiffuseGlobalIlluminationPass::RenderInner(RenderContext& renderCont
         desc2 = GPUBufferDescription::Buffer(sizeof(GPUDispatchIndirectArgs) * Math::DivideAndRoundUp(probesCountCascade, DDGI_TRACE_RAYS_PROBES_COUNT_LIMIT), GPUBufferFlags::Argument | GPUBufferFlags::UnorderedAccess, PixelFormat::R32_UInt, nullptr, sizeof(uint32));
         INIT_BUFFER(UpdateProbesInitArgs, "DDGI.UpdateProbesInitArgs");
 #undef INIT_BUFFER
-        LOG(Info, "Dynamic Diffuse Global Illumination memory usage: {0} MB, probes: {1}", memUsage / 1024 / 1024, probesCountTotal);
+        LOG(Info, "Dynamic Diffuse Global Illumination probes: {0}, memory usage: {1} MB", probesCountTotal, memUsage / (1024 * 1024));
         clear = true;
     }
 #if COMPILE_WITH_DEV_ENV
@@ -465,14 +466,15 @@ bool DynamicDiffuseGlobalIlluminationPass::RenderInner(RenderContext& renderCont
         ddgiData.Result.ProbesDistance = ddgiData.ProbesDistance->View();
         ddgiData.Result.ProbesIrradiance = ddgiData.ProbesIrradiance->View();
 
+        Data0 data;
+
         // Compute random rotation matrix for probe rays orientation (randomized every frame)
         Matrix3x3 raysRotationMatrix;
         CalculateVolumeRandomRotation(raysRotationMatrix);
-        Quaternion& raysRotation = *(Quaternion*)&ddgiData.Result.Constants.RaysRotation;
+        Quaternion& raysRotation = *(Quaternion*)&data.RaysRotation;
         Quaternion::RotationMatrix(raysRotationMatrix, raysRotation);
         raysRotation.Conjugate();
 
-        Data0 data;
         data.DDGI = ddgiData.Result.Constants;
         data.GlobalSDF = bindingDataSDF.Constants;
         data.GlobalSurfaceAtlas = bindingDataSurfaceAtlas.Constants;
@@ -638,7 +640,6 @@ bool DynamicDiffuseGlobalIlluminationPass::Render(RenderContext& renderContext, 
     auto& ddgiData = *renderBuffers->GetCustomBuffer<DDGICustomBuffer>(TEXT("DDGI"));
     if (render && ddgiData.LastFrameUsed == Engine::FrameCount)
         render = false;
-
     PROFILE_GPU_CPU("Dynamic Diffuse Global Illumination");
 
     if (render)

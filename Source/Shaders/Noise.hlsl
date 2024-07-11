@@ -71,6 +71,24 @@ float2 rand2dTo2d(float2 value)
     );
 }
 
+float rand3dTo1d(float3 value, float3 dotDir = float3(12.9898, 78.233, 37.719))
+{
+    // https://www.ronja-tutorials.com/post/024-white-noise/
+    float3 smallValue = sin(value);
+    float random = dot(smallValue, dotDir);
+    return frac(sin(random) * 143758.5453);
+}
+
+float3 rand3dTo3d(float3 value)
+{
+    // https://www.ronja-tutorials.com/post/024-white-noise/
+    return float3(
+        rand3dTo1d(value, float3(12.989, 78.233, 37.719)),
+        rand3dTo1d(value, float3(39.346, 11.135, 83.155)),
+        rand3dTo1d(value, float3(73.156, 52.235, 09.151))
+    );
+}
+
 // Classic Perlin noise
 float PerlinNoise(float2 p)
 {

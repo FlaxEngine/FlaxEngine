@@ -32,7 +32,6 @@ struct DDGIData
     float ProbeHistoryWeight;
     float RayMaxDistance;
     float IndirectLightingIntensity;
-    float4 RaysRotation;
     float3 ViewPos;
     uint RaysCount;
     float3 FallbackIrradiance;

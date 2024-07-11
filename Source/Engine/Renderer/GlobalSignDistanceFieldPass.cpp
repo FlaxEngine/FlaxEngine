@@ -764,7 +764,7 @@ bool GlobalSignDistanceFieldPass::Render(RenderContext& renderContext, GPUContex
             }
         }
         uint64 memoryUsage = sdfData.Texture->GetMemoryUsage() + sdfData.TextureMip->GetMemoryUsage();
-        LOG(Info, "Global SDF memory usage: {0} MB", memoryUsage / 1024 / 1024);
+        LOG(Info, "Global SDF memory usage: {0} MB", memoryUsage / (1024 * 1024));
     }
     if (sdfData.Origin != renderContext.View.Origin)
     {

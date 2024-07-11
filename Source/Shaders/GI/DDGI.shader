@@ -11,6 +11,7 @@
 
 #include "./Flax/Common.hlsl"
 #include "./Flax/Math.hlsl"
+#include "./Flax/Noise.hlsl"
 #include "./Flax/Quaternion.hlsl"
 #include "./Flax/GlobalSignDistanceField.hlsl"
 #include "./Flax/GI/GlobalSurfaceAtlas.hlsl"
@@ -30,6 +31,7 @@ DDGIData DDGI;
 GlobalSDFData GlobalSDF;
 GlobalSurfaceAtlasData GlobalSurfaceAtlas;
 GBufferData GBuffer;
+float4 RaysRotation;
 float Padding0;
 uint ProbesCount;
 float ResetBlend;
@@ -55,10 +57,19 @@ float3 GetSphericalFibonacci(float sampleIndex, float samplesCount)
 }
 
 // Calculates a random normalized ray direction (based on the ray index and the current probes rotation phrase)
-float3 GetProbeRayDirection(DDGIData data, uint rayIndex)
+float3 GetProbeRayDirection(DDGIData data, uint rayIndex, uint raysCount, uint probeIndex, uint3 probeCoords)
 {
-    float3 direction = GetSphericalFibonacci((float)rayIndex, (float)data.RaysCount);
-    return normalize(QuaternionRotate(data.RaysRotation, direction));
+    float4 rotation = RaysRotation;
+
+    // Randomize rotation per-probe (otherwise all probes are in sync)
+    float3 probePos = (float3)probeCoords / (float3)data.ProbesCounts;
+    float3 randomAxis = normalize(Mod289(probePos));
+    float randomAngle = (float)probeIndex / (float)ProbesCount * (2.0f * PI);
+    rotation = QuaternionMultiply(rotation, QuaternionFromAxisAngle(randomAxis, randomAngle));
+
+    // Random rotation per-ray - relative to the per-frame rays rotation
+    float3 direction = GetSphericalFibonacci((float)rayIndex, (float)raysCount);
+    return normalize(QuaternionRotate(rotation, direction));
 }
 
 // Calculates amount of rays to allocate for a probe
@@ -299,7 +310,7 @@ Texture2D<snorm float4> ProbesData : register(t7);
 TextureCube Skybox : register(t8);
 ByteAddressBuffer ActiveProbes : register(t9);
 
-// Compute shader for tracing rays for probes using Global SDF and Global Surface Atlas.
+// Compute shader for tracing rays for probes using Global SDF and Global Surface Atlas (1 ray per-thread).
 META_CS(true, FEATURE_LEVEL_SM5)
 META_PERMUTATION_1(DDGI_TRACE_RAYS_COUNT=96)
 META_PERMUTATION_1(DDGI_TRACE_RAYS_COUNT=128)
@@ -320,7 +331,7 @@ void CS_TraceRays(uint3 DispatchThreadId : SV_DispatchThreadID)
     if (probeState == DDGI_PROBE_STATE_INACTIVE || rayIndex >= probeRaysCount)
         return; // Skip disabled probes or if current thread's ray is unused
     float3 probePosition = DecodeDDGIProbePosition(DDGI, probeData, CascadeIndex, probeIndex, probeCoords);
-    float3 probeRayDirection = GetProbeRayDirection(DDGI, rayIndex);
+    float3 probeRayDirection = GetProbeRayDirection(DDGI, rayIndex, probeRaysCount, probeIndex, probeCoords);
 
     // Trace ray with Global SDF
     GlobalSDFTrace trace;
@@ -428,7 +439,7 @@ void CS_UpdateProbes(uint3 GroupThreadId : SV_GroupThreadID, uint3 GroupId : SV_
             float rayDistance = ProbesTrace[uint2(rayIndex, GroupId.x)].w;
             CachedProbesTraceDistance[rayIndex] = min(abs(rayDistance), distanceLimit);
 #endif
-            CachedProbesTraceDirection[rayIndex] = GetProbeRayDirection(DDGI, rayIndex);
+            CachedProbesTraceDirection[rayIndex] = GetProbeRayDirection(DDGI, rayIndex, probeRaysCount, probeIndex, probeCoords);
         }
     }
     GroupMemoryBarrierWithGroupSync();

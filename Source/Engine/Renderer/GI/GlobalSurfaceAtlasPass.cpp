@@ -742,7 +742,7 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
                 return true;
             memUsage += surfaceAtlasData.ChunksBuffer->GetMemoryUsage();
         }
-        LOG(Info, "Global Surface Atlas resolution: {0}, memory usage: {1} MB", resolution, memUsage / 1024 / 1024);
+        LOG(Info, "Global Surface Atlas resolution: {0}, memory usage: {1} MB", resolution, memUsage / (1024 * 1024));
     }
     for (SceneRendering* scene : renderContext.List->Scenes)
         surfaceAtlasData.ListenSceneRendering(scene);
