@@ -931,6 +931,8 @@ void Particles::DrawParticles(RenderContext& renderContext, ParticleEffect* effe
         if (!buffer || (buffer->Mode == ParticlesSimulationMode::CPU && buffer->CPU.Count == 0))
             continue;
         auto emitter = buffer->Emitter;
+        if (!emitter || !emitter->IsLoaded())
+            continue;
 
         buffer->Emitter->GraphExecutorCPU.Draw(buffer->Emitter, effect, emitterData, renderContext, worlds[(int32)emitter->SimulationSpace]);
     }
@@ -949,6 +951,8 @@ void Particles::DrawParticles(RenderContext& renderContext, ParticleEffect* effe
         if (!buffer)
             continue;
         auto emitter = buffer->Emitter;
+        if (!emitter || !emitter->IsLoaded())
+            continue;
 
         drawCall.World = worlds[(int32)emitter->SimulationSpace];
         drawCall.WorldDeterminantSign = worldDeterminantSigns[(int32)emitter->SimulationSpace];
