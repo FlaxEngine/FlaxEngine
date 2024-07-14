@@ -106,7 +106,7 @@ WindowBase::WindowBase(const CreateWindowSettings& settings)
     if (settings.StartPosition == WindowStartPosition::CenterParent
         || settings.StartPosition == WindowStartPosition::CenterScreen)
     {
-        Rectangle parentBounds = Rectangle(Float2::Zero, Platform::GetDesktopSize());
+        Rectangle parentBounds = Platform::GetMonitorBounds(Float2::Minimum);
         if (settings.Parent != nullptr && settings.StartPosition == WindowStartPosition::CenterParent)
             parentBounds = settings.Parent->GetClientBounds();
 
