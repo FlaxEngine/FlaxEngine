@@ -18,7 +18,7 @@ namespace FlaxEditor.Content.Settings
         /// <summary>
         /// The layers names.
         /// </summary>
-        [EditorOrder(10), EditorDisplay("Layers", EditorDisplayAttribute.InlineStyle), Collection(CanResize = true, Display = CollectionAttribute.DisplayType.Inline)]
+        [EditorOrder(10), EditorDisplay("Layers", EditorDisplayAttribute.InlineStyle), Collection(CanResize = false, Display = CollectionAttribute.DisplayType.Inline)]
         public string[] Layers = new string[32];
 
         /// <summary>
