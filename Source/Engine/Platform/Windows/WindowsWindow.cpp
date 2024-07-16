@@ -775,37 +775,32 @@ void WindowsWindow::UpdateCursor()
     // Don't hide cursor when window is not focused
     if (_cursor == CursorType::Hidden && _focused)
     {
-        if (!_lastCursorHidden)
-        {
-            _lastCursorHidden = true;
-            while(::ShowCursor(FALSE) >= 0)
-            {
-                if (_cursorHiddenSafetyCount >= 100)
-                {
-                    LOG(Warning, "Cursor has failed to hide.");
-                    break;
-                }
-                _cursorHiddenSafetyCount += 1;
-            }
-            _cursorHiddenSafetyCount = 0;
-        }
-        ::SetCursor(nullptr);
-        return;
-    }
-    else if (_lastCursorHidden)
-    {
-        _lastCursorHidden = false;
-        while(::ShowCursor(TRUE) < 0)
+        while(::ShowCursor(FALSE) >= 0)
         {
             if (_cursorHiddenSafetyCount >= 100)
             {
-                LOG(Warning, "Cursor has failed to show.");
+                LOG(Warning, "Cursor has failed to hide.");
                 break;
             }
             _cursorHiddenSafetyCount += 1;
         }
         _cursorHiddenSafetyCount = 0;
+        
+        ::SetCursor(nullptr);
+        return;
     }
+    
+    // Make sure cursor is shown
+    while(::ShowCursor(TRUE) < 0)
+    {
+        if (_cursorHiddenSafetyCount >= 100)
+        {
+            LOG(Warning, "Cursor has failed to show.");
+            break;
+        }
+        _cursorHiddenSafetyCount += 1;
+    }
+    _cursorHiddenSafetyCount = 0;
 
     int32 index = 0;
     switch (_cursor)

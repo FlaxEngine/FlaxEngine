@@ -28,7 +28,6 @@ private:
     bool _isSwitchingFullScreen = false;
     bool _trackingMouse = false;
     bool _clipCursorSet = false;
-    bool _lastCursorHidden = false;
     int _cursorHiddenSafetyCount = 0;
     bool _isDuringMaximize = false;
     Windows::HANDLE _monitor = nullptr;
