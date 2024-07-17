@@ -619,6 +619,10 @@ void ShadowsPass::SetupRenderContext(RenderContext& renderContext, RenderContext
 
 void ShadowsPass::SetupLight(ShadowsCustomBuffer& shadows, RenderContext& renderContext, RenderContextBatch& renderContextBatch, RenderLightData& light, ShadowAtlasLight& atlasLight)
 {
+    // Initialize frame-data
+    atlasLight.ContextIndex = 0;
+    atlasLight.ContextCount = 0;
+
     // Copy light properties
     atlasLight.Sharpness = light.ShadowsSharpness;
     atlasLight.Fade = light.ShadowsStrength;
@@ -1354,7 +1358,7 @@ void ShadowsPass::RenderShadowMaps(RenderContextBatch& renderContextBatch)
         for (auto& e : shadows.Lights)
         {
             ShadowAtlasLight& atlasLight = e.Value;
-            if (atlasLight.StaticState != ShadowAtlasLight::UpdateStaticShadow || !atlasLight.HasStaticShadowContext)
+            if (atlasLight.StaticState != ShadowAtlasLight::UpdateStaticShadow || !atlasLight.HasStaticShadowContext || atlasLight.ContextCount == 0)
                 continue;
             int32 contextIndex = 0;
             for (int32 tileIndex = 0; tileIndex < atlasLight.TilesCount; tileIndex++)
@@ -1413,6 +1417,8 @@ void ShadowsPass::RenderShadowMaps(RenderContextBatch& renderContextBatch)
     for (auto& e : shadows.Lights)
     {
         ShadowAtlasLight& atlasLight = e.Value;
+        if (atlasLight.ContextCount == 0)
+            continue;
         int32 contextIndex = 0;
         for (int32 tileIndex = 0; tileIndex < atlasLight.TilesCount; tileIndex++)
         {
