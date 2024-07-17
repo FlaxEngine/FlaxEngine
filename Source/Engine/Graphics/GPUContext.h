@@ -197,14 +197,14 @@ public:
     API_FUNCTION() virtual void ClearUA(GPUBuffer* buf, const Float4& value) = 0;
 
     /// <summary>
-    /// Clears an unordered access buffer with a unsigned value.
+    /// Clears an unordered access buffer with an unsigned value.
     /// </summary>
     /// <param name="buf">The buffer to clear.</param>
     /// <param name="value">The clear value.</param>
     virtual void ClearUA(GPUBuffer* buf, const uint32 value[4]) = 0;
 
     /// <summary>
-    /// Clears an unordered access texture with a unsigned value.
+    /// Clears an unordered access texture with an unsigned value.
     /// </summary>
     /// <param name="texture">The texture to clear.</param>
     /// <param name="value">The clear value.</param>
