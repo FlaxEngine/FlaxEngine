@@ -666,6 +666,8 @@ PxFilterFlags FilterShader(
 {
     const bool maskTest = (filterData0.word0 & filterData1.word1) && (filterData1.word0 & filterData0.word1);
 
+    auto& settings = *PhysicsSettings::Get();
+
     // Let triggers through
     if (PxFilterObjectIsTrigger(attributes0) || PxFilterObjectIsTrigger(attributes1))
     {
@@ -697,6 +699,8 @@ PxFilterFlags FilterShader(
         pairFlags |= PxPairFlag::eNOTIFY_TOUCH_LOST;
         pairFlags |= PxPairFlag::ePOST_SOLVER_VELOCITY;
         pairFlags |= PxPairFlag::eNOTIFY_CONTACT_POINTS;
+        if (!settings.DisableCCD) 
+            pairFlags |= PxPairFlag::eDETECT_CCD_CONTACT;
         return PxFilterFlag::eDEFAULT;
     }
 
