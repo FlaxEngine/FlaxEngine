@@ -294,6 +294,10 @@ Quaternion Quaternion::FromDirection(const Float3& direction)
     {
         RotationAxis(Float3::Left, PI_OVER_2, orientation);
     }
+    else if (Float3::Dot(direction, Float3::Down) >= 0.999f)
+    {
+        RotationAxis(Float3::Right, PI_OVER_2, orientation);
+    }
     else
     {
         Float3 right, up;
