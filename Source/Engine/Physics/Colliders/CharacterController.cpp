@@ -19,6 +19,7 @@ CharacterController::CharacterController(const SpawnParams& params)
     , _minMoveDistance(0.0f)
     , _isUpdatingTransform(false)
     , _upDirection(Vector3::Up)
+    , _gravityDisplacement(Vector3::Zero)
     , _nonWalkableMode(NonWalkableModes::PreventClimbing)
     , _lastFlags(CollisionFlags::None)
 {
@@ -148,10 +149,16 @@ CharacterController::CollisionFlags CharacterController::GetFlags() const
 CharacterController::CollisionFlags CharacterController::SimpleMove(const Vector3& speed)
 {
     const float deltaTime = Time::GetCurrentSafe()->DeltaTime.GetTotalSeconds();
-    Vector3 displacement = speed;
-    displacement += GetPhysicsScene()->GetGravity() * deltaTime;
-    displacement *= deltaTime;
-    return Move(displacement);
+    Vector3 displacement = speed + _gravityDisplacement;
+    CollisionFlags result = Move(displacement * deltaTime);
+    if ((static_cast<int>(result) & static_cast<int>(CollisionFlags::Below)) != 0)
+    {
+        // Reset accumulated gravity acceleration when we touch the ground
+        _gravityDisplacement = Vector3::Zero;
+    }
+    else
+        _gravityDisplacement += GetPhysicsScene()->GetGravity() * deltaTime;
+    return result;
 }
 
 CharacterController::CollisionFlags CharacterController::Move(const Vector3& displacement)

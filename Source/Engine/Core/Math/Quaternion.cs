@@ -654,6 +654,10 @@ namespace FlaxEngine
             {
                 orientation = RotationAxis(Float3.Left, Mathf.PiOverTwo);
             }
+            else if (Float3.Dot(direction, Float3.Down) >= 0.999f)
+            {
+                orientation = RotationAxis(Float3.Right, Mathf.PiOverTwo);
+            }
             else
             {
                 var right = Float3.Cross(direction, Float3.Up);

@@ -103,9 +103,9 @@ namespace FlaxEditor.GUI
 
         private Rectangle Button1Rect => new Rectangle(Height + ButtonsOffset, 0, ButtonsSize, ButtonsSize);
 
-        private Rectangle Button2Rect => new Rectangle(Height + ButtonsOffset, ButtonsSize, ButtonsSize, ButtonsSize);
+        private Rectangle Button2Rect => new Rectangle(Height + ButtonsOffset, ButtonsSize + 2, ButtonsSize, ButtonsSize);
 
-        private Rectangle Button3Rect => new Rectangle(Height + ButtonsOffset, ButtonsSize * 2, ButtonsSize, ButtonsSize);
+        private Rectangle Button3Rect => new Rectangle(Height + ButtonsOffset, (ButtonsSize + 2) * 2, ButtonsSize, ButtonsSize);
 
         /// <inheritdoc />
         public override void Draw()
@@ -147,6 +147,13 @@ namespace FlaxEditor.GUI
                                       style.Foreground,
                                       TextAlignment.Near,
                                       TextAlignment.Center);
+                    Render2D.DrawText(
+                                      style.FontSmall,
+                                      $"{TypeUtils.GetTypeDisplayName(Validator.AssetType.Type)}",
+                                      new Rectangle(button1Rect.Right + 2, ButtonsSize + 2, sizeForTextLeft, ButtonsSize),
+                                      style.ForegroundGrey,
+                                      TextAlignment.Near,
+                                      TextAlignment.Center);
                 }
             }
             // Check if has no item but has an asset (eg. virtual asset)
@@ -169,6 +176,13 @@ namespace FlaxEditor.GUI
                                       style.Foreground,
                                       TextAlignment.Near,
                                       TextAlignment.Center);
+                    Render2D.DrawText(
+                                      style.FontSmall,
+                                      $"{TypeUtils.GetTypeDisplayName(Validator.AssetType.Type)}",
+                                      new Rectangle(button1Rect.Right + 2, ButtonsSize + 2, sizeForTextLeft, ButtonsSize),
+                                      style.ForegroundGrey,
+                                      TextAlignment.Near,
+                                      TextAlignment.Center);
                 }
             }
             else
@@ -176,6 +190,24 @@ namespace FlaxEditor.GUI
                 // No element selected
                 Render2D.FillRectangle(iconRect, style.BackgroundNormal);
                 Render2D.DrawText(style.FontMedium, "No asset\nselected", iconRect, Color.Orange, TextAlignment.Center, TextAlignment.Center, TextWrapping.NoWrap, 1.0f, Height / DefaultIconSize);
+                float sizeForTextLeft = Width - button1Rect.Right;
+                if (sizeForTextLeft > 30)
+                {
+                    Render2D.DrawText(
+                                      style.FontSmall,
+                                      $"None",
+                                      new Rectangle(button1Rect.Right + 2, 0, sizeForTextLeft, ButtonsSize),
+                                      style.Foreground,
+                                      TextAlignment.Near,
+                                      TextAlignment.Center);
+                    Render2D.DrawText(
+                                      style.FontSmall,
+                                      $"{TypeUtils.GetTypeDisplayName(Validator.AssetType.Type)}",
+                                      new Rectangle(button1Rect.Right + 2, ButtonsSize + 2, sizeForTextLeft, ButtonsSize),
+                                      style.ForegroundGrey,
+                                      TextAlignment.Near,
+                                      TextAlignment.Center);
+                }
             }
 
             // Check if drag is over

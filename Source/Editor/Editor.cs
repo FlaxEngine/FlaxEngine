@@ -248,6 +248,11 @@ namespace FlaxEditor
         /// </summary>
         public event Action PlayModeEnd;
 
+        /// <summary>
+        /// Fired on Editor update
+        /// </summary>
+        public event Action EditorUpdate;
+
         internal Editor()
         {
             Instance = this;
@@ -486,6 +491,8 @@ namespace FlaxEditor
                 {
                     StateMachine.CurrentState.UpdateFPS();
                 }
+                
+                EditorUpdate?.Invoke();
 
                 // Update modules
                 for (int i = 0; i < _modules.Count; i++)

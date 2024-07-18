@@ -342,9 +342,10 @@ namespace FlaxEditor.Modules
         {
             foreach (var contentItem in items)
             {
+                var name = contentItem.ShortName;
                 if (contentItem.IsAsset)
                 {
-                    if (nameRegex.Match(contentItem.ShortName).Success)
+                    if (nameRegex.Match(name).Success)
                     {
                         var asset = contentItem as AssetItem;
                         if (asset == null || !typeRegex.Match(asset.TypeName).Success)
@@ -358,7 +359,7 @@ namespace FlaxEditor.Modules
                             var splits = asset.TypeName.Split('.');
                             finalName = splits[splits.Length - 1];
                         }
-                        matches.Add(new SearchResult { Name = asset.ShortName, Type = finalName, Item = asset });
+                        matches.Add(new SearchResult { Name = name, Type = finalName, Item = asset });
                     }
                 }
                 else if (contentItem.IsFolder)
@@ -370,11 +371,12 @@ namespace FlaxEditor.Modules
                 }
                 else
                 {
-                    if (nameRegex.Match(contentItem.ShortName).Success && typeRegex.Match(contentItem.GetType().Name).Success)
+                    if (nameRegex.Match(name).Success && typeRegex.Match(contentItem.GetType().Name).Success)
                     {
                         string finalName = contentItem.GetType().Name.Replace("Item", "");
-
-                        matches.Add(new SearchResult { Name = contentItem.ShortName, Type = finalName, Item = contentItem });
+                        if (contentItem is ScriptItem)
+                            name = contentItem.FileName; // Show extension for scripts (esp. for .h and .cpp files of the same name)
+                        matches.Add(new SearchResult { Name = name, Type = finalName, Item = contentItem });
                     }
                 }
             }

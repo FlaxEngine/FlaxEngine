@@ -321,7 +321,12 @@ class CharacterControllerHitReportPhysX : public PxUserControllerHitReport
 {
     void onHit(const PxControllerHit& hit, Collision& c)
     {
-        ASSERT_LOW_LAYER(c.ThisActor && c.OtherActor);
+        if (c.ThisActor == nullptr || c.OtherActor == nullptr)
+        {
+            // One of the actors was deleted (eg. via RigidBody destroyed by gameplay) then skip processing this collision
+            return;
+        }
+
         c.Impulse = Vector3::Zero;
         c.ThisVelocity = P2C(hit.dir) * hit.length;
         c.OtherVelocity = Vector3::Zero;
@@ -564,6 +569,7 @@ namespace
     Array<PxBase*> DeleteObjects;
 
     bool _queriesHitTriggers = true;
+    bool _enableCCD = true;
     PhysicsCombineMode _frictionCombineMode = PhysicsCombineMode::Average;
     PhysicsCombineMode _restitutionCombineMode = PhysicsCombineMode::Average;
 
@@ -697,6 +703,8 @@ PxFilterFlags FilterShader(
         pairFlags |= PxPairFlag::eNOTIFY_TOUCH_LOST;
         pairFlags |= PxPairFlag::ePOST_SOLVER_VELOCITY;
         pairFlags |= PxPairFlag::eNOTIFY_CONTACT_POINTS;
+        if (_enableCCD)
+            pairFlags |= PxPairFlag::eDETECT_CCD_CONTACT;
         return PxFilterFlag::eDEFAULT;
     }
 
@@ -1220,6 +1228,7 @@ void PhysicsBackend::Shutdown()
 void PhysicsBackend::ApplySettings(const PhysicsSettings& settings)
 {
     _queriesHitTriggers = settings.QueriesHitTriggers;
+    _enableCCD = !settings.DisableCCD;
     _frictionCombineMode = settings.FrictionCombineMode;
     _restitutionCombineMode = settings.RestitutionCombineMode;
 
@@ -1256,6 +1265,8 @@ void* PhysicsBackend::CreateScene(const PhysicsSettings& settings)
     sceneDesc.simulationEventCallback = &scenePhysX->EventsCallback;
     sceneDesc.filterShader = FilterShader;
     sceneDesc.bounceThresholdVelocity = settings.BounceThresholdVelocity;
+    if (settings.EnableEnhancedDeterminism)
+        sceneDesc.flags |= PxSceneFlag::eENABLE_ENHANCED_DETERMINISM;
     switch (settings.SolverType)
     {
     case PhysicsSolverType::ProjectedGaussSeidelIterativeSolver:
