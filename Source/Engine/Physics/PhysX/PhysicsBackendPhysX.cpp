@@ -321,7 +321,12 @@ class CharacterControllerHitReportPhysX : public PxUserControllerHitReport
 {
     void onHit(const PxControllerHit& hit, Collision& c)
     {
-        ASSERT_LOW_LAYER(c.ThisActor && c.OtherActor);
+        if (c.ThisActor == nullptr || c.OtherActor == nullptr)
+        {
+            // One of the actors was deleted (eg. via RigidBody destroyed by gameplay) then skip processing this collision
+            return;
+        }
+
         c.Impulse = Vector3::Zero;
         c.ThisVelocity = P2C(hit.dir) * hit.length;
         c.OtherVelocity = Vector3::Zero;
