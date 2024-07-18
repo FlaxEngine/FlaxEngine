@@ -51,6 +51,7 @@ namespace FlaxEditor.GUI.Docking
         public DockWindow StartDragAsyncWindow;
 
         private Rectangle HeaderRectangle => new Rectangle(0, 0, Width, DockPanel.DefaultHeaderHeight);
+        private bool IsSingleFloatingWindow => _panel.TabsCount == 1 && _panel.IsFloating && _panel.ChildPanelsCount == 0;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="DockPanelProxy"/> class.
@@ -188,9 +189,9 @@ namespace FlaxEditor.GUI.Docking
             var tabsCount = _panel.TabsCount;
 
             // Return and don't draw tab if only 1 window and it is floating
-            if (_panel.IsFloating && tabsCount == 1 && _panel.ChildPanelsCount == 0)
+            if (IsSingleFloatingWindow)
                 return;
- 
+
             // Check if has only one window docked
             if (tabsCount == 1)
             {
@@ -325,6 +326,9 @@ namespace FlaxEditor.GUI.Docking
         /// <inheritdoc />
         public override bool OnMouseDoubleClick(Float2 location, MouseButton button)
         {
+            if (IsSingleFloatingWindow)
+                return base.OnMouseDoubleClick(location, button);
+
             // Maximize/restore on double click
             var tab = GetTabAtPos(location, out _);
             var rootWindow = tab?.RootWindow;
@@ -343,6 +347,8 @@ namespace FlaxEditor.GUI.Docking
         /// <inheritdoc />
         public override bool OnMouseDown(Float2 location, MouseButton button)
         {
+            if (IsSingleFloatingWindow)
+                return base.OnMouseDown(location, button);
             MouseDownWindow = GetTabAtPos(location, out IsMouseDownOverCross);
 
             // Check buttons
@@ -372,6 +378,9 @@ namespace FlaxEditor.GUI.Docking
         /// <inheritdoc />
         public override bool OnMouseUp(Float2 location, MouseButton button)
         {
+            if (IsSingleFloatingWindow)
+                return base.OnMouseUp(location, button);
+
             // Check tabs under mouse position at the beginning and at the end
             var tab = GetTabAtPos(location, out var overCross);
 
@@ -414,7 +423,7 @@ namespace FlaxEditor.GUI.Docking
         public override void OnMouseMove(Float2 location)
         {
             MousePosition = location;
-            if (IsMouseLeftButtonDown)
+            if (IsMouseLeftButtonDown && !IsSingleFloatingWindow)
             {
                 // Check if mouse is outside the header
                 if (!HeaderRectangle.Contains(location))
@@ -505,7 +514,7 @@ namespace FlaxEditor.GUI.Docking
         /// <inheritdoc />
         public override void GetDesireClientArea(out Rectangle rect)
         {
-            if (_panel.TabsCount == 1 && _panel.IsFloating && _panel.ChildPanelsCount == 0)
+            if (IsSingleFloatingWindow)
                 rect = new Rectangle(0, 0, Width, Height);
             else
                 rect = new Rectangle(0, DockPanel.DefaultHeaderHeight, Width, Height - DockPanel.DefaultHeaderHeight);
