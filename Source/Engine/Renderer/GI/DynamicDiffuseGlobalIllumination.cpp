@@ -40,6 +40,19 @@
 #define DDGI_PROBE_RESOLUTION_DISTANCE 14 // Resolution (in texels) for probe distance data (excluding 1px padding on each side)
 #define DDGI_PROBE_UPDATE_BORDERS_GROUP_SIZE 8
 #define DDGI_PROBE_CLASSIFY_GROUP_SIZE 32
+#define DDGI_DEBUG_STATS 0 // Enables additional GPU-driven stats for probe/rays count
+#define DDGI_DEBUG_INSTABILITY 0 // Enables additional probe irradiance instability debugging
+
+#if DDGI_DEBUG_STATS
+#include "Engine/Core/Collections/SamplesBuffer.h"
+#define DDGI_DEBUG_STATS_FRAMES 60
+
+struct StatsData
+{
+    uint32 RaysCount;
+    uint32 ProbesCount;
+};
+#endif
 
 GPU_CB_STRUCT(Data0 {
     DynamicDiffuseGlobalIlluminationPass::ConstantsData DDGI;
@@ -52,11 +65,13 @@ GPU_CB_STRUCT(Data0 {
     float ResetBlend;
     float TemporalTime;
     Int4 ProbeScrollClears[4];
+    Float3 ViewDir;
+    float Padding1;
     });
 
 GPU_CB_STRUCT(Data1 {
     // TODO: use push constants on Vulkan or root signature data on DX12 to reduce overhead of changing single DWORD
-    Float2 Padding1;
+    Float2 Padding2;
     uint32 CascadeIndex;
     uint32 ProbeIndexOffset;
     });
@@ -84,11 +99,21 @@ public:
     int32 ProbesCountTotal = 0;
     Int3 ProbeCounts = Int3::Zero;
     GPUTexture* ProbesTrace = nullptr; // Probes ray tracing: (RGB: hit radiance, A: hit distance)
-    GPUTexture* ProbesData = nullptr; // Probes data: (RGB: world-space offset, A: state/data)
+    GPUTexture* ProbesData = nullptr; // Probes data: (RGB: probe-space offset, A: state/data)
     GPUTexture* ProbesIrradiance = nullptr; // Probes irradiance (RGB: sRGB color)
     GPUTexture* ProbesDistance = nullptr; // Probes distance (R: mean distance, G: mean distance^2)
     GPUBuffer* ActiveProbes = nullptr; // List with indices of the active probes (built during probes classification to use indirect dispatches for probes updating), counter at 0
     GPUBuffer* UpdateProbesInitArgs = nullptr; // Indirect dispatch buffer for active-only probes updating (trace+blend)
+#if DDGI_DEBUG_STATS
+    GPUBuffer* StatsWrite = nullptr;
+    GPUBuffer* StatsRead = nullptr;
+    SamplesBuffer<uint32, DDGI_DEBUG_STATS_FRAMES> StatsProbes;
+    SamplesBuffer<uint32, DDGI_DEBUG_STATS_FRAMES> StatsRays;
+    uint32 StatsFrames = 0;
+#endif
+#if DDGI_DEBUG_INSTABILITY
+    GPUTexture* ProbesInstability = nullptr;
+#endif
     DynamicDiffuseGlobalIlluminationPass::BindingData Result;
 
     FORCE_INLINE void Release()
@@ -99,6 +124,16 @@ public:
         RenderTargetPool::Release(ProbesDistance);
         SAFE_DELETE_GPU_RESOURCE(ActiveProbes);
         SAFE_DELETE_GPU_RESOURCE(UpdateProbesInitArgs);
+#if DDGI_DEBUG_STATS
+        SAFE_DELETE_GPU_RESOURCE(StatsWrite);
+        SAFE_DELETE_GPU_RESOURCE(StatsRead);
+        StatsProbes.Clear();
+        StatsRays.Clear();
+        StatsFrames = 0;
+#endif
+#if DDGI_DEBUG_INSTABILITY
+        RenderTargetPool::Release(ProbesInstability);
+#endif
     }
 
     ~DDGICustomBuffer()
@@ -373,12 +408,21 @@ bool DynamicDiffuseGlobalIlluminationPass::RenderInner(RenderContext& renderCont
         INIT_TEXTURE(ProbesData, PixelFormat::R8G8B8A8_SNorm, probesCountTotalX, probesCountTotalY);
         INIT_TEXTURE(ProbesIrradiance, PixelFormat::R11G11B10_Float, probesCountTotalX * (DDGI_PROBE_RESOLUTION_IRRADIANCE + 2), probesCountTotalY * (DDGI_PROBE_RESOLUTION_IRRADIANCE + 2));
         INIT_TEXTURE(ProbesDistance, PixelFormat::R16G16_Float, probesCountTotalX * (DDGI_PROBE_RESOLUTION_DISTANCE + 2), probesCountTotalY * (DDGI_PROBE_RESOLUTION_DISTANCE + 2));
+#if DDGI_DEBUG_INSTABILITY
+        INIT_TEXTURE(ProbesInstability, PixelFormat::R16_Float, probesCountTotalX * (DDGI_PROBE_RESOLUTION_IRRADIANCE + 2), probesCountTotalY * (DDGI_PROBE_RESOLUTION_IRRADIANCE + 2));
+#endif
 #undef INIT_TEXTURE
 #define INIT_BUFFER(buffer, name) ddgiData.buffer = GPUDevice::Instance->CreateBuffer(TEXT(name)); if (!ddgiData.buffer || ddgiData.buffer->Init(desc2)) return true; memUsage += ddgiData.buffer->GetMemoryUsage();
         GPUBufferDescription desc2 = GPUBufferDescription::Raw((probesCountCascade + 1) * sizeof(uint32), GPUBufferFlags::ShaderResource | GPUBufferFlags::UnorderedAccess);
         INIT_BUFFER(ActiveProbes, "DDGI.ActiveProbes");
         desc2 = GPUBufferDescription::Buffer(sizeof(GPUDispatchIndirectArgs) * Math::DivideAndRoundUp(probesCountCascade, DDGI_TRACE_RAYS_PROBES_COUNT_LIMIT), GPUBufferFlags::Argument | GPUBufferFlags::UnorderedAccess, PixelFormat::R32_UInt, nullptr, sizeof(uint32));
         INIT_BUFFER(UpdateProbesInitArgs, "DDGI.UpdateProbesInitArgs");
+#if DDGI_DEBUG_STATS
+        desc2 = GPUBufferDescription::Raw(sizeof(StatsData), GPUBufferFlags::UnorderedAccess);
+        INIT_BUFFER(StatsWrite, "DDGI.StatsWrite");
+        desc2 = desc2.ToStagingReadback();
+        INIT_BUFFER(StatsRead, "DDGI.StatsRead");
+#endif
 #undef INIT_BUFFER
         LOG(Info, "Dynamic Diffuse Global Illumination probes: {0}, memory usage: {1} MB", probesCountTotal, memUsage / (1024 * 1024));
         clear = true;
@@ -393,6 +437,9 @@ bool DynamicDiffuseGlobalIlluminationPass::RenderInner(RenderContext& renderCont
         context->ClearUA(ddgiData.ProbesData, Float4::Zero);
         context->ClearUA(ddgiData.ProbesIrradiance, Float4::Zero);
         context->ClearUA(ddgiData.ProbesDistance, Float4::Zero);
+#if DDGI_DEBUG_INSTABILITY
+        context->ClearUA(ddgiData.ProbesInstability, Float4::Zero);
+#endif
     }
     ddgiData.LastFrameUsed = Engine::FrameCount;
 
@@ -486,6 +533,7 @@ bool DynamicDiffuseGlobalIlluminationPass::RenderInner(RenderContext& renderCont
             data.ProbeScrollClears[cascadeIndex] = Int4(cascade.ProbeScrollClears, 0);
         }
         data.TemporalTime = renderContext.List->Setup.UseTemporalAAJitter ? RenderTools::ComputeTemporalTime() : 0.0f;
+        data.ViewDir = renderContext.View.Direction;
         GBufferPass::SetInputs(renderContext.View, data.GBuffer);
         context->UpdateCB(_cb0, &data);
         context->BindCB(0, _cb0);
@@ -496,6 +544,10 @@ bool DynamicDiffuseGlobalIlluminationPass::RenderInner(RenderContext& renderCont
         PROFILE_GPU_CPU_NAMED("Probes Update");
         bool anyDirty = false;
         uint32 threadGroupsX, threadGroupsY;
+#if DDGI_DEBUG_STATS
+        uint32 zero[4] = {};
+        context->ClearUA(ddgiData.StatsWrite, zero);
+#endif
         for (int32 cascadeIndex = 0; cascadeIndex < cascadesCount; cascadeIndex++)
         {
             if (cascadeSkipUpdate[cascadeIndex])
@@ -556,6 +608,9 @@ bool DynamicDiffuseGlobalIlluminationPass::RenderInner(RenderContext& renderCont
                     context->BindSR(8, skybox);
                     context->BindSR(9, ddgiData.ActiveProbes->View());
                     context->BindUA(0, ddgiData.ProbesTrace->View());
+#if DDGI_DEBUG_STATS
+                    context->BindUA(1, ddgiData.StatsWrite->View());
+#endif
                     context->DispatchIndirect(_csTraceRays[(int32)Graphics::GIQuality], ddgiData.UpdateProbesInitArgs, arg);
                     context->ResetUA();
                     context->ResetSR();
@@ -564,13 +619,25 @@ bool DynamicDiffuseGlobalIlluminationPass::RenderInner(RenderContext& renderCont
                 // Update probes irradiance and distance textures (one thread-group per probe)
                 {
                     PROFILE_GPU_CPU_NAMED("Update Probes");
+
+                    // Distance
                     context->BindSR(0, ddgiData.Result.ProbesData);
                     context->BindSR(1, ddgiData.ProbesTrace->View());
                     context->BindSR(2, ddgiData.ActiveProbes->View());
-                    context->BindUA(0, ddgiData.Result.ProbesIrradiance);
-                    context->DispatchIndirect(_csUpdateProbesIrradiance, ddgiData.UpdateProbesInitArgs, arg);
                     context->BindUA(0, ddgiData.Result.ProbesDistance);
                     context->DispatchIndirect(_csUpdateProbesDistance, ddgiData.UpdateProbesInitArgs, arg);
+                    context->ResetUA();
+                    context->ResetSR();
+
+                    // Irradiance
+                    context->BindSR(1, ddgiData.ProbesTrace->View());
+                    context->BindSR(2, ddgiData.ActiveProbes->View());
+                    context->BindUA(0, ddgiData.Result.ProbesIrradiance);
+                    context->BindUA(1, ddgiData.Result.ProbesData);
+#if DDGI_DEBUG_INSTABILITY
+                    context->BindUA(2, ddgiData.ProbesInstability->View());
+#endif
+                    context->DispatchIndirect(_csUpdateProbesIrradiance, ddgiData.UpdateProbesInitArgs, arg);
                     context->ResetUA();
                     context->ResetSR();
                 }
@@ -578,6 +645,28 @@ bool DynamicDiffuseGlobalIlluminationPass::RenderInner(RenderContext& renderCont
                 arg += sizeof(GPUDispatchIndirectArgs);
             }
         }
+
+#if DDGI_DEBUG_STATS
+        // Update stats
+        {
+            StatsData stats;
+            if (void* mapped = ddgiData.StatsRead->Map(GPUResourceMapMode::Read))
+            {
+                Platform::MemoryCopy(&stats, mapped, sizeof(stats));
+                ddgiData.StatsRead->Unmap();
+                ddgiData.StatsProbes.Add(stats.ProbesCount);
+                ddgiData.StatsRays.Add(stats.RaysCount);
+            }
+            context->CopyBuffer(ddgiData.StatsRead, ddgiData.StatsWrite, sizeof(stats));
+            if (++ddgiData.StatsFrames >= DDGI_DEBUG_STATS_FRAMES)
+            {
+                ddgiData.StatsFrames = 0;
+                stats.ProbesCount = ddgiData.StatsProbes.Average();
+                stats.RaysCount = ddgiData.StatsRays.Average();
+                LOG(Info, "DDGI active probes: {}, traced rays: {} per frame, rays per probe: {}", stats.ProbesCount, stats.RaysCount, stats.ProbesCount > 0 ? stats.RaysCount / stats.ProbesCount : 0);
+            }
+        }
+#endif
 
         // Update probes border pixels
         if (anyDirty)
@@ -718,7 +807,11 @@ bool DynamicDiffuseGlobalIlluminationPass::Render(RenderContext& renderContext, 
             {
                 // Pass DDGI data to the material
                 _debugMaterial->SetParameterValue(TEXT("ProbesData"), Variant(ddgiData.ProbesData));
+#if DDGI_DEBUG_INSTABILITY
+                _debugMaterial->SetParameterValue(TEXT("ProbesIrradiance"), Variant(ddgiData.ProbesInstability));
+#else
                 _debugMaterial->SetParameterValue(TEXT("ProbesIrradiance"), Variant(ddgiData.ProbesIrradiance));
+#endif
                 _debugMaterial->SetParameterValue(TEXT("ProbesDistance"), Variant(ddgiData.ProbesDistance));
                 auto cb = _debugMaterial->GetShader()->GetCB(3);
                 if (cb)

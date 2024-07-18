@@ -20,11 +20,14 @@
 // This must match C++
 #define DDGI_TRACE_RAYS_PROBES_COUNT_LIMIT 4096 // Maximum amount of probes to update at once during rays tracing and blending
 #define DDGI_TRACE_RAYS_LIMIT 256 // Limit of rays per-probe (runtime value can be smaller)
+#define DDGI_TRACE_RAYS_MIN 16 // Minimum amount of rays to shoot for sleepy probes
 #define DDGI_TRACE_NEGATIVE 0 // If true, rays that start inside geometry will use negative distance to indicate backface hit
 #define DDGI_PROBE_UPDATE_BORDERS_GROUP_SIZE 8
 #define DDGI_PROBE_CLASSIFY_GROUP_SIZE 32
 #define DDGI_PROBE_RELOCATE_ITERATIVE 1 // If true, probes relocation algorithm tries to move them in additive way, otherwise all nearby locations are checked to find the best position
 #define DDGI_PROBE_RELOCATE_FIND_BEST 1 // If true, probes relocation algorithm tries to move to the best matching location within nearby area
+#define DDGI_DEBUG_STATS 0 // Enables additional GPU-driven stats for probe/rays count
+#define DDGI_DEBUG_INSTABILITY 0 // Enables additional probe irradiance instability debugging
 
 META_CB_BEGIN(0, Data0)
 DDGIData DDGI;
@@ -37,10 +40,12 @@ uint ProbesCount;
 float ResetBlend;
 float TemporalTime;
 int4 ProbeScrollClears[4];
+float3 ViewDir;
+float Padding1;
 META_CB_END
 
 META_CB_BEGIN(1, Data1)
-float2 Padding1;
+float2 Padding2;
 uint CascadeIndex;
 uint ProbeIndexOffset;
 META_CB_END
@@ -73,10 +78,11 @@ float3 GetProbeRayDirection(DDGIData data, uint rayIndex, uint raysCount, uint p
 }
 
 // Calculates amount of rays to allocate for a probe
-uint GetProbeRaysCount(DDGIData data, uint probeState)
+uint GetProbeRaysCount(DDGIData data, float probeAttention)
 {
-    // TODO: implement variable ray count based on probe location relative to the view frustum (use probe state for storage)
-    return data.RaysCount;
+    //return data.RaysCount;
+    probeAttention = saturate((probeAttention - DDGI_PROBE_ATTENTION_MIN) / (DDGI_PROBE_ATTENTION_MAX - DDGI_PROBE_ATTENTION_MIN));
+    return DDGI_TRACE_RAYS_MIN + (uint)max(probeAttention * (float)(data.RaysCount - DDGI_TRACE_RAYS_MIN), 0.0f);
 }
 
 #ifdef _CS_Classify
@@ -118,7 +124,7 @@ void CS_Classify(uint3 DispatchThreadId : SV_DispatchThreadID)
         if (prevCascadeWeight > 0.1f)
         {
             // Disable probe
-            RWProbesData[probeDataCoords] = EncodeDDGIProbeData(float3(0, 0, 0), DDGI_PROBE_STATE_INACTIVE);
+            RWProbesData[probeDataCoords] = EncodeDDGIProbeData(float3(0, 0, 0), DDGI_PROBE_STATE_INACTIVE, 0.0f);
             return;
         }
     }
@@ -140,11 +146,15 @@ void CS_Classify(uint3 DispatchThreadId : SV_DispatchThreadID)
 
     // Load probe state and position
     float4 probeData = RWProbesData[probeDataCoords];
+    float probeAttention = DecodeDDGIProbeAttention(probeData);
     uint probeState = DecodeDDGIProbeState(probeData);
     uint probeStateOld = probeState;
     float3 probeOffset = probeData.xyz * probesSpacing; // Probe offset is [-1;1] within probes spacing
     if (wasScrolled || probeState == DDGI_PROBE_STATE_INACTIVE)
+    {
         probeOffset = float3(0, 0, 0); // Clear offset for a new probe
+        probeAttention = 1.0f; // Wake-up
+    }
     float3 probeOffsetOld = probeOffset;
     float3 probePosition = probeBasePosition + probeOffset;
 
@@ -166,11 +176,24 @@ void CS_Classify(uint3 DispatchThreadId : SV_DispatchThreadID)
         // Disable it
         probeOffset = float3(0, 0, 0);
         probeState = DDGI_PROBE_STATE_INACTIVE;
+        probeAttention = 0.0f;
     }
     else
     {
-        // Relocate only if probe location is not good enough
+        // Apply distance/view heuristics to probe attention
         probeState = DDGI_PROBE_STATE_ACTIVE;
+        float3 viewToProbe = probePosition - GBuffer.ViewPos;
+        float distanceToProbe = length(viewToProbe);
+        viewToProbe /= distanceToProbe;
+        float probeViewDot = dot(viewToProbe, ViewDir);
+        probeAttention *= lerp(0.1f, 1.0f, saturate(probeViewDot)); // Reduce quality for probes behind the camera (or away from view dir)
+        probeAttention *= lerp(1.0f, 0.5f, saturate(sdfDst / voxelLimit)); // Reduce quality for probes far away from geometry
+        probeAttention += (1.0f - saturate(distanceToProbe / 1000.0f)) * 1.2f; // Boost quality for probes nearby view
+        //probeAttention = 0.0f; // Debug test lowest ray count
+        //probeAttention = 1.0f; // Debug test highest ray count
+        probeAttention = clamp(probeAttention, DDGI_PROBE_ATTENTION_MIN, DDGI_PROBE_ATTENTION_MAX);
+
+        // Relocate only if probe location is not good enough
         if (sdf <= voxelLimit)
         {
 #if DDGI_PROBE_RELOCATE_ITERATIVE
@@ -222,6 +245,7 @@ void CS_Classify(uint3 DispatchThreadId : SV_DispatchThreadID)
                     // Disable probe that is too close to the geometry
                     probeOffset = float3(0, 0, 0);
                     probeState = DDGI_PROBE_STATE_INACTIVE;
+                    probeAttention = 0.0f;
                 }
                 else
                 {
@@ -232,6 +256,7 @@ void CS_Classify(uint3 DispatchThreadId : SV_DispatchThreadID)
                 // Disable probe
                 probeOffset = float3(0, 0, 0);
                 probeState = DDGI_PROBE_STATE_INACTIVE;
+                probeAttention = 0.0f;
 #endif
             }
         }
@@ -254,12 +279,15 @@ void CS_Classify(uint3 DispatchThreadId : SV_DispatchThreadID)
         }
 #endif
         if ((wasActivated || wasScrolled || wasRelocated) && probeState == DDGI_PROBE_STATE_ACTIVE)
+        {
             probeState = DDGI_PROBE_STATE_ACTIVATED;
+            probeAttention = 1.0f;
+        }
     }
 
     // Save probe state
     probeOffset /= probesSpacing; // Move offset back to [-1;1] space
-    RWProbesData[probeDataCoords] = EncodeDDGIProbeData(probeOffset, probeState);
+    RWProbesData[probeDataCoords] = EncodeDDGIProbeData(probeOffset, probeState, probeAttention);
 
     // Collect active probes
     if (probeState != DDGI_PROBE_STATE_INACTIVE)
@@ -282,7 +310,7 @@ META_CS(true, FEATURE_LEVEL_SM5)
 [numthreads(1, 1, 1)]
 void CS_UpdateProbesInitArgs()
 {
-    uint activeProbesCount = ActiveProbes.Load(0);
+    uint activeProbesCount = ActiveProbes.Load(0); // Counter at 0
     uint arg = 0;
     for (uint probesOffset = 0; probesOffset < activeProbesCount; probesOffset += DDGI_TRACE_RAYS_PROBES_COUNT_LIMIT)
     {
@@ -298,6 +326,9 @@ void CS_UpdateProbesInitArgs()
 #ifdef _CS_TraceRays
 
 RWTexture2D<float4> RWProbesTrace : register(u0);
+#if DDGI_DEBUG_STATS
+RWByteAddressBuffer RWStats : register(u1);
+#endif
 
 Texture3D<snorm float> GlobalSDFTex : register(t0);
 Texture3D<snorm float> GlobalSDFMip : register(t1);
@@ -326,12 +357,14 @@ void CS_TraceRays(uint3 DispatchThreadId : SV_DispatchThreadID)
 
     // Load current probe state and position
     float4 probeData = LoadDDGIProbeData(DDGI, ProbesData, CascadeIndex, probeIndex);
+    float probeAttention = DecodeDDGIProbeAttention(probeData);
     uint probeState = DecodeDDGIProbeState(probeData);
-    uint probeRaysCount = GetProbeRaysCount(DDGI, probeState);
+    uint probeRaysCount = GetProbeRaysCount(DDGI, probeAttention);
     if (probeState == DDGI_PROBE_STATE_INACTIVE || rayIndex >= probeRaysCount)
         return; // Skip disabled probes or if current thread's ray is unused
     float3 probePosition = DecodeDDGIProbePosition(DDGI, probeData, CascadeIndex, probeIndex, probeCoords);
     float3 probeRayDirection = GetProbeRayDirection(DDGI, rayIndex, probeRaysCount, probeIndex, probeCoords);
+    // TODO: implement ray-guiding based on the probe irradiance (prioritize directions with high luminance)
 
     // Trace ray with Global SDF
     GlobalSDFTrace trace;
@@ -370,6 +403,14 @@ void CS_TraceRays(uint3 DispatchThreadId : SV_DispatchThreadID)
 
     // Write into probes trace results
     RWProbesTrace[uint2(rayIndex, DispatchThreadId.x)] = radiance;
+
+#if DDGI_DEBUG_STATS
+    // Update stats
+    uint tmp;
+    RWStats.InterlockedAdd(0, 1, tmp);
+    if (rayIndex == 0)
+        RWStats.InterlockedAdd(4, 1, tmp);
+#endif
 }
 
 #endif
@@ -380,6 +421,44 @@ void CS_TraceRays(uint3 DispatchThreadId : SV_DispatchThreadID)
 // Update irradiance
 #define DDGI_PROBE_RESOLUTION DDGI_PROBE_RESOLUTION_IRRADIANCE
 groupshared float4 CachedProbesTraceRadiance[DDGI_TRACE_RAYS_LIMIT];
+groupshared float OutputInstability[DDGI_PROBE_RESOLUTION * DDGI_PROBE_RESOLUTION];
+
+// Source: https://github.com/turanszkij/WickedEngine
+#define BorderOffsetsSize (4 * DDGI_PROBE_RESOLUTION + 4)
+static const uint4 BorderOffsets[BorderOffsetsSize] = {
+    uint4(6, 1, 1, 0),
+    uint4(5, 1, 2, 0),
+    uint4(4, 1, 3, 0),
+    uint4(3, 1, 4, 0),
+    uint4(2, 1, 5, 0),
+    uint4(1, 1, 6, 0),
+
+    uint4(6, 6, 1, 7),
+    uint4(5, 6, 2, 7),
+    uint4(4, 6, 3, 7),
+    uint4(3, 6, 4, 7),
+    uint4(2, 6, 5, 7),
+    uint4(1, 6, 6, 7),
+
+    uint4(1, 1, 0, 6),
+    uint4(1, 2, 0, 5),
+    uint4(1, 3, 0, 4),
+    uint4(1, 4, 0, 3),
+    uint4(1, 5, 0, 2),
+    uint4(1, 6, 0, 1),
+
+    uint4(6, 1, 7, 6),
+    uint4(6, 2, 7, 5),
+    uint4(6, 3, 7, 4),
+    uint4(6, 4, 7, 3),
+    uint4(6, 5, 7, 2),
+    uint4(6, 6, 7, 1),
+
+    uint4(1, 1, 7, 7),
+    uint4(6, 1, 0, 7),
+    uint4(1, 6, 7, 0),
+    uint4(6, 6, 0, 0),
+};
 #else
 // Update distance
 #define DDGI_PROBE_RESOLUTION DDGI_PROBE_RESOLUTION_DISTANCE
@@ -389,7 +468,14 @@ groupshared float CachedProbesTraceDistance[DDGI_TRACE_RAYS_LIMIT];
 groupshared float3 CachedProbesTraceDirection[DDGI_TRACE_RAYS_LIMIT];
 
 RWTexture2D<float4> RWOutput : register(u0);
+#if DDGI_PROBE_UPDATE_MODE == 0
+RWTexture2D<snorm float4> RWProbesData : register(u1);
+#if DDGI_DEBUG_INSTABILITY
+RWTexture2D<float> RWOutputInstability : register(u2);
+#endif
+#else
 Texture2D<snorm float4> ProbesData : register(t0);
+#endif
 Texture2D<float4> ProbesTrace : register(t1);
 ByteAddressBuffer ActiveProbes : register(t2);
 
@@ -407,13 +493,16 @@ void CS_UpdateProbes(uint3 GroupThreadId : SV_GroupThreadID, uint3 GroupId : SV_
     uint3 probeCoords = GetDDGIProbeCoords(DDGI, probeIndex);
     probeIndex = GetDDGIScrollingProbeIndex(DDGI, CascadeIndex, probeCoords);
 
-    // Skip disabled probes
-    bool skip = false;
+    // Load probe data
+#if DDGI_PROBE_UPDATE_MODE == 0
+    int2 probeDataCoords = GetDDGIProbeTexelCoords(DDGI, CascadeIndex, probeIndex);
+    float4 probeData = RWProbesData[probeDataCoords];
+#else
     float4 probeData = LoadDDGIProbeData(DDGI, ProbesData, CascadeIndex, probeIndex);
+#endif
+    float probeAttention = DecodeDDGIProbeAttention(probeData);
     uint probeState = DecodeDDGIProbeState(probeData);
-    uint probeRaysCount = GetProbeRaysCount(DDGI, probeState);
-    if (probeState == DDGI_PROBE_STATE_INACTIVE)
-        skip = true;
+    uint probeRaysCount = GetProbeRaysCount(DDGI, probeAttention);
 
 #if DDGI_PROBE_UPDATE_MODE == 0
     uint backfacesCount = 0;
@@ -423,30 +512,23 @@ void CS_UpdateProbes(uint3 GroupThreadId : SV_GroupThreadID, uint3 GroupId : SV_
     float distanceLimit = probesSpacing * 1.5f;
 #endif
 
-    BRANCH
-    if (!skip)
+    // Load trace rays results into shared memory to reuse across whole thread group (raysCount per thread)
+    uint raysCount = (uint)(ceil((float)probeRaysCount / (float)(DDGI_PROBE_RESOLUTION * DDGI_PROBE_RESOLUTION)));
+    uint raysStart = GroupIndex * raysCount;
+    raysCount = max(min(raysStart + raysCount, probeRaysCount), raysStart) - raysStart;
+    for (uint i = 0; i < raysCount; i++)
     {
-        // Load trace rays results into shared memory to reuse across whole thread group (raysCount per thread)
-        uint raysCount = (uint)(ceil((float)probeRaysCount / (float)(DDGI_PROBE_RESOLUTION * DDGI_PROBE_RESOLUTION)));
-        uint raysStart = GroupIndex * raysCount;
-        raysCount = max(min(raysStart + raysCount, probeRaysCount), raysStart) - raysStart;
-        for (uint i = 0; i < raysCount; i++)
-        {
-            uint rayIndex = raysStart + i;
+        uint rayIndex = raysStart + i;
 #if DDGI_PROBE_UPDATE_MODE == 0
-            CachedProbesTraceRadiance[rayIndex] = ProbesTrace[uint2(rayIndex, GroupId.x)];
+        CachedProbesTraceRadiance[rayIndex] = ProbesTrace[uint2(rayIndex, GroupId.x)];
 #else
-            float rayDistance = ProbesTrace[uint2(rayIndex, GroupId.x)].w;
-            CachedProbesTraceDistance[rayIndex] = min(abs(rayDistance), distanceLimit);
+        float rayDistance = ProbesTrace[uint2(rayIndex, GroupId.x)].w;
+        CachedProbesTraceDistance[rayIndex] = min(abs(rayDistance), distanceLimit);
 #endif
-            CachedProbesTraceDirection[rayIndex] = GetProbeRayDirection(DDGI, rayIndex, probeRaysCount, probeIndex, probeCoords);
-        }
+        CachedProbesTraceDirection[rayIndex] = GetProbeRayDirection(DDGI, rayIndex, probeRaysCount, probeIndex, probeCoords);
     }
     GroupMemoryBarrierWithGroupSync();
-    if (skip)
-        return;
     probeCoords = GetDDGIProbeCoords(DDGI, probeIndex);
-    uint2 outputCoords = GetDDGIProbeTexelCoords(DDGI, CascadeIndex, probeIndex) * (DDGI_PROBE_RESOLUTION + 2) + 1 + GroupThreadId.xy;
 
     // Calculate octahedral projection for probe (unwraps spherical projection into a square)
     float2 octahedralCoords = GetOctahedralCoords(GroupThreadId.xy, DDGI_PROBE_RESOLUTION);
@@ -495,30 +577,52 @@ void CS_UpdateProbes(uint3 GroupThreadId : SV_GroupThreadID, uint3 GroupId : SV_
     result.rgb *= 1.0f / (2.0f * max(result.a, epsilon));
 
     // Load current probe value
+    uint2 outputCoords = GetDDGIProbeTexelCoords(DDGI, CascadeIndex, probeIndex) * (DDGI_PROBE_RESOLUTION + 2) + 1 + GroupThreadId.xy;
     float3 previous = RWOutput[outputCoords].rgb;
-    bool wasActivated = probeState == DDGI_PROBE_STATE_ACTIVATED;
-    if (ResetBlend || wasActivated)
-        previous = float3(0, 0, 0);
+    bool wasActivated = probeState == DDGI_PROBE_STATE_ACTIVATED || ResetBlend;
+    if (wasActivated)
+        previous = result.rgb;
+
+#if DDGI_PROBE_UPDATE_MODE == 0
+    // Calculate instability of the irradiance
+    float previousLuma = Luminance(previous.rgb);
+    float resultLuma = Luminance(result.rgb);
+    float instability = abs(previousLuma - resultLuma) / previousLuma; // Percentage change in luminance of irradiance
+    instability = max(instability, Max3(abs(result.rgb - previous) / previous)); // Percentage of color delta change of irradiance
+    //instability *= saturate(result.a); // Reduce instability in areas with a small ray-coverage
+    //instability = pow(instability, 1.2f); // Increase contrast
+    instability *= 2.0f; // Make it stronger on scene changes
+    //instability = saturate(instability);
+    OutputInstability[GroupIndex] = instability;
+#if DDGI_DEBUG_INSTABILITY
+    RWOutputInstability[outputCoords] = instability;
+    //RWOutputInstability[outputCoords] = probeAttention; // Debug test probe attention visualization
+#endif
+#endif
 
     // Blend current value with the previous probe data
-    float historyWeight = DDGI.ProbeHistoryWeight;
-    //historyWeight = 1.0f;
-    //historyWeight = 0.0f;
-    if (ResetBlend || wasActivated)
-        historyWeight = 0.0f;
+    float historyWeightFast = DDGI.ProbeHistoryWeight;
+    float historyWeightSlow = 0.97f;
 #if DDGI_PROBE_UPDATE_MODE == 0
-    result *= DDGI.IndirectLightingIntensity;
-#if DDGI_SRGB_BLENDING
-    result.rgb = pow(result.rgb, 1.0f / DDGI.IrradianceGamma);
-#endif
     float3 irradianceDelta = result.rgb - previous;
     float irradianceDeltaMax = Max3(abs(irradianceDelta));
     float irradianceDeltaLen = length(irradianceDelta);
     if (irradianceDeltaMax > 0.5f)
     {
         // Reduce history weight after significant lighting change
-        historyWeight = historyWeight * 0.5f;
+        historyWeightFast *= 0.5f;
     }
+#endif
+    float historyWeight = lerp(historyWeightSlow, historyWeightFast, probeAttention * probeAttention * probeAttention);
+    //historyWeight = 1.0f; // Debug full-blend
+    //historyWeight = 0.0f; // Debug no-blend
+    if (wasActivated)
+        historyWeight = 0.0f;
+#if DDGI_PROBE_UPDATE_MODE == 0
+    result *= DDGI.IndirectLightingIntensity;
+#if DDGI_SRGB_BLENDING
+    result.rgb = pow(max(result.rgb, 0), 1.0f / DDGI.IrradianceGamma);
+#endif
     if (irradianceDeltaLen > 2.0f)
     {
         // Reduce flickering during rapid brightness changes
@@ -530,6 +634,45 @@ void CS_UpdateProbes(uint3 GroupThreadId : SV_GroupThreadID, uint3 GroupId : SV_
 #endif
 
     RWOutput[outputCoords] = result;
+
+#if DDGI_PROBE_UPDATE_MODE == 0
+    // The first thread updates the probe attention based on the instability of all texels
+	GroupMemoryBarrierWithGroupSync();
+    BRANCH
+    if (GroupIndex == 0 && probeState != DDGI_PROBE_STATE_INACTIVE)
+    {
+        // Calculate instability statistics for a whole probe
+        float instabilityAvg = 0;
+        for (uint i = 0; i < DDGI_PROBE_RESOLUTION * DDGI_PROBE_RESOLUTION; i++)
+            instabilityAvg += OutputInstability[i];
+        instabilityAvg *= 1.0f / float(DDGI_PROBE_RESOLUTION * DDGI_PROBE_RESOLUTION);
+        instabilityAvg = saturate(instabilityAvg);
+        instability = instabilityAvg;
+
+        // Calculate probe attention
+        float taregAttention = lerp(0.5f, DDGI_PROBE_ATTENTION_MAX, instability); // Use some base level
+        if (taregAttention >= probeAttention)
+            probeAttention = taregAttention; // Quick jump up
+        else
+            probeAttention = lerp(probeAttention, taregAttention, 0.2f); // Slow blend down
+        if (probeState == DDGI_PROBE_STATE_ACTIVATED)
+            probeAttention = DDGI_PROBE_ATTENTION_MAX;
+
+        // Update probe data for the next frame
+        probeState = DDGI_PROBE_STATE_ACTIVE;
+        RWProbesData[probeDataCoords] = EncodeDDGIProbeData(probeData.xyz, probeState, probeAttention);
+    }
+
+#if DDGI_DEBUG_INSTABILITY
+	// Copy border pixels
+    uint2 baseCoords = GetDDGIProbeTexelCoords(DDGI, CascadeIndex, probeIndex) * (DDGI_PROBE_RESOLUTION + 2);
+	for (uint borderIndex = GroupIndex; borderIndex < BorderOffsetsSize; borderIndex += DDGI_PROBE_RESOLUTION * DDGI_PROBE_RESOLUTION)
+	{
+        uint4 borderOffsets = BorderOffsets[borderIndex];
+		RWOutputInstability[baseCoords + borderOffsets.zw] = RWOutputInstability[baseCoords + borderOffsets.xy];
+	}
+#endif
+#endif
 }
 
 // Compute shader for updating probes irradiance or distance texture borders (fills gaps between probes to support bilinear filtering)

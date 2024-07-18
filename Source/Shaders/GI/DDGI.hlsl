@@ -16,6 +16,8 @@
 #define DDGI_PROBE_STATE_INACTIVE 0
 #define DDGI_PROBE_STATE_ACTIVATED 1
 #define DDGI_PROBE_STATE_ACTIVE 2
+#define DDGI_PROBE_ATTENTION_MIN 0.02f // Minimum probe attention value that still makes it active.
+#define DDGI_PROBE_ATTENTION_MAX 0.98f // Maximum probe attention value that still makes it active (but not activated which is 1.0f).
 #define DDGI_PROBE_RESOLUTION_IRRADIANCE 6 // Resolution (in texels) for probe irradiance data (excluding 1px padding on each side)
 #define DDGI_PROBE_RESOLUTION_DISTANCE 14 // Resolution (in texels) for probe distance data (excluding 1px padding on each side)
 #define DDGI_CASCADE_BLEND_SIZE 2.5f // Distance in probes over which cascades blending happens
@@ -99,15 +101,36 @@ float4 LoadDDGIProbeData(DDGIData data, Texture2D<snorm float4> probesData, uint
 }
 
 // Encodes probe probe data
-float4 EncodeDDGIProbeData(float3 probeOffset, uint probeState)
+float4 EncodeDDGIProbeData(float3 offset, uint state, float attention)
 {
-    return float4(probeOffset, (float)probeState * (1.0f / 8.0f));
+    // [0;1] -> [-1;1]
+    attention = saturate(attention) * 2.0f - 1.0f;
+    if (state == DDGI_PROBE_STATE_INACTIVE)
+        attention = -1.0f;
+    else if (state == DDGI_PROBE_STATE_ACTIVATED)
+        attention = 1.0f;
+    return float4(offset, attention);
+}
+
+// Decodes probe attention value from the encoded state
+float DecodeDDGIProbeAttention(float4 probeData)
+{
+    // [-1;1] -> [0;1]
+    if (probeData.w <= -1.0f)
+        return 0.0f;
+    if (probeData.w >= 1.0f)
+        return 1.0f;
+    return probeData.w * 0.5f + 0.5f;
 }
 
 // Decodes probe state from the encoded state
 uint DecodeDDGIProbeState(float4 probeData)
 {
-    return (uint)(probeData.w * 8.0f);
+    if (probeData.w <= -1.0f)
+        return DDGI_PROBE_STATE_INACTIVE;
+    if (probeData.w >= 1.0f)
+        return DDGI_PROBE_STATE_ACTIVATED;
+    return DDGI_PROBE_STATE_ACTIVE;
 }
 
 // Decodes probe world-space position (XYZ) from the encoded state
