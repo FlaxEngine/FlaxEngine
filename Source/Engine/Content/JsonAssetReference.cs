@@ -34,6 +34,15 @@ namespace FlaxEngine
         }
 
         /// <summary>
+        /// Gets the deserialized native object instance of the given type. Returns null if asset is not loaded or loaded object has different type.
+        /// </summary>
+        /// <returns>The asset instance object or null.</returns>
+        public U GetInstance<U>()
+        {
+            return Asset ? Asset.GetInstance<U>() : default(U);
+        }
+
+        /// <summary>
         /// Implicit cast operator.
         /// </summary>
         public static implicit operator JsonAsset(JsonAssetReference<T> value)
