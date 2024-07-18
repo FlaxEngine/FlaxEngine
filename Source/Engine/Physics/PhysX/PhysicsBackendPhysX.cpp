@@ -569,6 +569,7 @@ namespace
     Array<PxBase*> DeleteObjects;
 
     bool _queriesHitTriggers = true;
+    bool _enableCCD = true;
     PhysicsCombineMode _frictionCombineMode = PhysicsCombineMode::Average;
     PhysicsCombineMode _restitutionCombineMode = PhysicsCombineMode::Average;
 
@@ -702,6 +703,8 @@ PxFilterFlags FilterShader(
         pairFlags |= PxPairFlag::eNOTIFY_TOUCH_LOST;
         pairFlags |= PxPairFlag::ePOST_SOLVER_VELOCITY;
         pairFlags |= PxPairFlag::eNOTIFY_CONTACT_POINTS;
+        if (_enableCCD)
+            pairFlags |= PxPairFlag::eDETECT_CCD_CONTACT;
         return PxFilterFlag::eDEFAULT;
     }
 
@@ -1225,6 +1228,7 @@ void PhysicsBackend::Shutdown()
 void PhysicsBackend::ApplySettings(const PhysicsSettings& settings)
 {
     _queriesHitTriggers = settings.QueriesHitTriggers;
+    _enableCCD = !settings.DisableCCD;
     _frictionCombineMode = settings.FrictionCombineMode;
     _restitutionCombineMode = settings.RestitutionCombineMode;
 
