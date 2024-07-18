@@ -856,7 +856,6 @@ void ShadowsPass::SetupLight(ShadowsCustomBuffer& shadows, RenderContext& render
     }
 
     // Init shadow data
-    atlasLight.ContextIndex = renderContextBatch.Contexts.Count();
     if (atlasLight.ContextCount == 0)
         return;
     renderContextBatch.Contexts.AddDefault(atlasLight.ContextCount);
