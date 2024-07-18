@@ -390,7 +390,7 @@ namespace FlaxEditor.Surface.Archetypes
                     NodeElementArchetype.Factory.Output(0, "Gradient", typeof(Float3), 0),
                     NodeElementArchetype.Factory.Output(1, "Distance", typeof(float), 2),
                     NodeElementArchetype.Factory.Input(0, "World Position", true, typeof(Float3), 1),
-                    NodeElementArchetype.Factory.Input(1, "Start Cascade", true, typeof(int), 2, 0),
+                    NodeElementArchetype.Factory.Input(1, "Start Cascade", true, typeof(int), 3, 0),
                 }
             },
             new NodeArchetype

@@ -323,7 +323,7 @@ void ParticleEmitterGPUGenerator::ProcessGroupTextures(Box* box, Node* node, Val
         auto distanceBox = node->GetBox(2);
         auto param = findOrAddGlobalSDF();
         Value worldPosition = tryGetValue(node->GetBox(1), Value(VariantType::Float3, TEXT("input.WorldPosition.xyz"))).Cast(VariantType::Float3);
-        Value startCascade = tryGetValue(node->GetBox(2), 0, Value::Zero).Cast(VariantType::Uint);
+        Value startCascade = tryGetValue(node->GetBox(3), 0, Value::Zero).Cast(VariantType::Uint);
         auto distance = writeLocal(VariantType::Float, node);
         auto gradient = writeLocal(VariantType::Float3, String::Format(TEXT("SampleGlobalSDFGradient({0}, {0}_Tex, {0}_Mip, {1}, {2}, {3})"), param.ShaderName, worldPosition.Value, distance.Value, startCascade.Value), node);
         _includes.Add(TEXT("./Flax/GlobalSignDistanceField.hlsl"));
