@@ -187,6 +187,10 @@ namespace FlaxEditor.GUI.Docking
             var headerRect = HeaderRectangle;
             var tabsCount = _panel.TabsCount;
 
+            // Return and don't draw tab if only 1 window and it is floating
+            if (_panel.IsFloating && tabsCount == 1 && _panel.ChildPanelsCount == 0)
+                return;
+ 
             // Check if has only one window docked
             if (tabsCount == 1)
             {
@@ -501,7 +505,10 @@ namespace FlaxEditor.GUI.Docking
         /// <inheritdoc />
         public override void GetDesireClientArea(out Rectangle rect)
         {
-            rect = new Rectangle(0, DockPanel.DefaultHeaderHeight, Width, Height - DockPanel.DefaultHeaderHeight);
+            if (_panel.TabsCount == 1 && _panel.IsFloating && _panel.ChildPanelsCount == 0)
+                rect = new Rectangle(0, 0, Width, Height);
+            else
+                rect = new Rectangle(0, DockPanel.DefaultHeaderHeight, Width, Height - DockPanel.DefaultHeaderHeight);
         }
 
         private DragDropEffect TrySelectTabUnderLocation(ref Float2 location)
