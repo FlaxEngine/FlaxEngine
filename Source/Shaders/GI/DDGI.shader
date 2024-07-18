@@ -415,16 +415,22 @@ void CS_TraceRays(uint3 DispatchThreadId : SV_DispatchThreadID)
 
 #endif
 
-#if defined(_CS_UpdateProbes) || defined(_CS_UpdateBorders)
+#if defined(_CS_UpdateProbes)
 
 #if DDGI_PROBE_UPDATE_MODE == 0
 // Update irradiance
 #define DDGI_PROBE_RESOLUTION DDGI_PROBE_RESOLUTION_IRRADIANCE
 groupshared float4 CachedProbesTraceRadiance[DDGI_TRACE_RAYS_LIMIT];
 groupshared float OutputInstability[DDGI_PROBE_RESOLUTION * DDGI_PROBE_RESOLUTION];
+#else
+// Update distance
+#define DDGI_PROBE_RESOLUTION DDGI_PROBE_RESOLUTION_DISTANCE
+groupshared float CachedProbesTraceDistance[DDGI_TRACE_RAYS_LIMIT];
+#endif
 
 // Source: https://github.com/turanszkij/WickedEngine
 #define BorderOffsetsSize (4 * DDGI_PROBE_RESOLUTION + 4)
+#if DDGI_PROBE_RESOLUTION == 6
 static const uint4 BorderOffsets[BorderOffsetsSize] = {
     uint4(6, 1, 1, 0),
     uint4(5, 1, 2, 0),
@@ -457,12 +463,77 @@ static const uint4 BorderOffsets[BorderOffsetsSize] = {
     uint4(1, 1, 7, 7),
     uint4(6, 1, 0, 7),
     uint4(1, 6, 7, 0),
-    uint4(6, 6, 0, 0),
+    uint4(6, 6, 0, 0)
+};
+#elif DDGI_PROBE_RESOLUTION == 14
+static const uint4 BorderOffsets[BorderOffsetsSize] = {
+    uint4(14, 1, 1, 0),
+    uint4(13, 1, 2, 0),
+    uint4(12, 1, 3, 0),
+    uint4(11, 1, 4, 0),
+    uint4(10, 1, 5, 0),
+    uint4(9, 1, 6, 0),
+    uint4(8, 1, 7, 0),
+    uint4(7, 1, 8, 0),
+    uint4(6, 1, 9, 0),
+    uint4(5, 1, 10, 0),
+    uint4(4, 1, 11, 0),
+    uint4(3, 1, 12, 0),
+    uint4(2, 1, 13, 0),
+    uint4(1, 1, 14, 0),
+
+    uint4(14, 14, 1, 15),
+    uint4(13, 14, 2, 15),
+    uint4(12, 14, 3, 15),
+    uint4(11, 14, 4, 15),
+    uint4(10, 14, 5, 15),
+    uint4(9, 14, 6, 15),
+    uint4(8, 14, 7, 15),
+    uint4(7, 14, 8, 15),
+    uint4(6, 14, 9, 15),
+    uint4(5, 14, 10, 15),
+    uint4(4, 14, 11, 15),
+    uint4(3, 14, 12, 15),
+    uint4(2, 14, 13, 15),
+    uint4(1, 14, 14, 15),
+
+    uint4(1, 14, 0, 1),
+    uint4(1, 13, 0, 2),
+    uint4(1, 12, 0, 3),
+    uint4(1, 11, 0, 4),
+    uint4(1, 10, 0, 5),
+    uint4(1, 9, 0, 6),
+    uint4(1, 8, 0, 7),
+    uint4(1, 7, 0, 8),
+    uint4(1, 6, 0, 9),
+    uint4(1, 5, 0, 10),
+    uint4(1, 4, 0, 11),
+    uint4(1, 3, 0, 12),
+    uint4(1, 2, 0, 13),
+    uint4(1, 1, 0, 14),
+
+    uint4(14, 14, 15, 1),
+    uint4(14, 13, 15, 2),
+    uint4(14, 12, 15, 3),
+    uint4(14, 11, 15, 4),
+    uint4(14, 10, 15, 5),
+    uint4(14, 9, 15, 6),
+    uint4(14, 8, 15, 7),
+    uint4(14, 7, 15, 8),
+    uint4(14, 6, 15, 9),
+    uint4(14, 5, 15, 10),
+    uint4(14, 4, 15, 11),
+    uint4(14, 3, 15, 12),
+    uint4(14, 2, 15, 13),
+    uint4(14, 1, 15, 14),
+
+    uint4(14, 14, 0, 0),
+    uint4(1, 14, 15, 0),
+    uint4(14, 1, 0, 15),
+    uint4(1, 1, 15, 15)
 };
 #else
-// Update distance
-#define DDGI_PROBE_RESOLUTION DDGI_PROBE_RESOLUTION_DISTANCE
-groupshared float CachedProbesTraceDistance[DDGI_TRACE_RAYS_LIMIT];
+#error "Unsupported probe size for border values copy."
 #endif
 
 groupshared float3 CachedProbesTraceDirection[DDGI_TRACE_RAYS_LIMIT];
@@ -635,9 +706,11 @@ void CS_UpdateProbes(uint3 GroupThreadId : SV_GroupThreadID, uint3 GroupId : SV_
 
     RWOutput[outputCoords] = result;
 
+    GroupMemoryBarrierWithGroupSync();
+    uint2 baseCoords = GetDDGIProbeTexelCoords(DDGI, CascadeIndex, probeIndex) * (DDGI_PROBE_RESOLUTION + 2);
+
 #if DDGI_PROBE_UPDATE_MODE == 0
     // The first thread updates the probe attention based on the instability of all texels
-	GroupMemoryBarrierWithGroupSync();
     BRANCH
     if (GroupIndex == 0 && probeState != DDGI_PROBE_STATE_INACTIVE)
     {
@@ -665,7 +738,6 @@ void CS_UpdateProbes(uint3 GroupThreadId : SV_GroupThreadID, uint3 GroupId : SV_
 
 #if DDGI_DEBUG_INSTABILITY
 	// Copy border pixels
-    uint2 baseCoords = GetDDGIProbeTexelCoords(DDGI, CascadeIndex, probeIndex) * (DDGI_PROBE_RESOLUTION + 2);
 	for (uint borderIndex = GroupIndex; borderIndex < BorderOffsetsSize; borderIndex += DDGI_PROBE_RESOLUTION * DDGI_PROBE_RESOLUTION)
 	{
         uint4 borderOffsets = BorderOffsets[borderIndex];
@@ -673,73 +745,13 @@ void CS_UpdateProbes(uint3 GroupThreadId : SV_GroupThreadID, uint3 GroupId : SV_
 	}
 #endif
 #endif
-}
 
-// Compute shader for updating probes irradiance or distance texture borders (fills gaps between probes to support bilinear filtering)
-META_CS(true, FEATURE_LEVEL_SM5)
-META_PERMUTATION_2(DDGI_PROBE_UPDATE_MODE=0, BORDER_ROW=1)
-META_PERMUTATION_2(DDGI_PROBE_UPDATE_MODE=0, BORDER_ROW=0)
-META_PERMUTATION_2(DDGI_PROBE_UPDATE_MODE=1, BORDER_ROW=1)
-META_PERMUTATION_2(DDGI_PROBE_UPDATE_MODE=1, BORDER_ROW=0)
-[numthreads(DDGI_PROBE_UPDATE_BORDERS_GROUP_SIZE, DDGI_PROBE_UPDATE_BORDERS_GROUP_SIZE, 1)]
-void CS_UpdateBorders(uint3 DispatchThreadId : SV_DispatchThreadID)
-{
-#define COPY_PIXEL RWOutput[threadCoordinates] = RWOutput[copyCoordinates]
-#define COPY_PIXEL_DEBUG RWOutput[threadCoordinates] = float4(5, 0, 0, 1)
-
-    uint probeSideLength = DDGI_PROBE_RESOLUTION + 2;
-    uint probeSideLengthMinusOne = probeSideLength - 1;
-    uint2 copyCoordinates = uint2(0, 0);
-    uint2 threadCoordinates = DispatchThreadId.xy;
-#if BORDER_ROW
-    threadCoordinates.y *= probeSideLength;
-    uint corner = DispatchThreadId.x % probeSideLength;
-#else
-    threadCoordinates.x *= probeSideLength;
-    uint corner = threadCoordinates.y % probeSideLength;
-#endif
-    if (corner == 0 || corner == probeSideLengthMinusOne)
-    {
-#if !BORDER_ROW
-        // Left corner
-        copyCoordinates.x = threadCoordinates.x + DDGI_PROBE_RESOLUTION;
-        copyCoordinates.y = threadCoordinates.y - sign((int)corner - 1) * DDGI_PROBE_RESOLUTION;
-        COPY_PIXEL;
-
-        // Right corner
-        threadCoordinates.x += probeSideLengthMinusOne;
-        copyCoordinates.x = threadCoordinates.x - DDGI_PROBE_RESOLUTION;
-        COPY_PIXEL;
-#endif
-        return;
-    }
-
-#if BORDER_ROW
-    // Top row
-    uint probeStart = uint(threadCoordinates.x / probeSideLength) * probeSideLength;
-    uint offset = probeSideLengthMinusOne - (threadCoordinates.x % probeSideLength);
-    copyCoordinates = uint2(probeStart + offset, threadCoordinates.y + 1);
-#else
-    // Left column
-    uint probeStart = uint(threadCoordinates.y / probeSideLength) * probeSideLength;
-    uint offset = probeSideLengthMinusOne - (threadCoordinates.y % probeSideLength);
-    copyCoordinates = uint2(threadCoordinates.x + 1, probeStart + offset);
-#endif
-    COPY_PIXEL;
-
-#if BORDER_ROW
-    // Bottom row
-    threadCoordinates.y += probeSideLengthMinusOne;
-    copyCoordinates = uint2(probeStart + offset, threadCoordinates.y - 1);
-#else
-    // Right column
-    threadCoordinates.x += probeSideLengthMinusOne;
-    copyCoordinates = uint2(threadCoordinates.x - 1, probeStart + offset);
-#endif
-    COPY_PIXEL;
-
-#undef COPY_PIXEL
-#undef COPY_PIXEL_DEBUG
+    // Copy border pixels
+	for (uint borderIndex = GroupIndex; borderIndex < BorderOffsetsSize; borderIndex += DDGI_PROBE_RESOLUTION * DDGI_PROBE_RESOLUTION)
+	{
+        uint4 borderOffsets = BorderOffsets[borderIndex];
+		RWOutput[baseCoords + borderOffsets.zw] = RWOutput[baseCoords + borderOffsets.xy];
+	}
 }
 
 #endif

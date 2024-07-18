@@ -219,10 +219,6 @@ bool DynamicDiffuseGlobalIlluminationPass::setupResources()
     _csTraceRays[3] = shader->GetCS("CS_TraceRays", 3);
     _csUpdateProbesIrradiance = shader->GetCS("CS_UpdateProbes", 0);
     _csUpdateProbesDistance = shader->GetCS("CS_UpdateProbes", 1);
-    _csUpdateBordersIrradianceRow = shader->GetCS("CS_UpdateBorders", 0);
-    _csUpdateBordersIrradianceCollumn = shader->GetCS("CS_UpdateBorders", 1);
-    _csUpdateBordersDistanceRow = shader->GetCS("CS_UpdateBorders", 2);
-    _csUpdateBordersDistanceCollumn = shader->GetCS("CS_UpdateBorders", 3);
     auto device = GPUDevice::Instance;
     auto psDesc = GPUPipelineState::Description::DefaultFullscreenTriangle;
     if (!_psIndirectLighting)
@@ -250,10 +246,6 @@ void DynamicDiffuseGlobalIlluminationPass::OnShaderReloading(Asset* obj)
     _csTraceRays[3] = nullptr;
     _csUpdateProbesIrradiance = nullptr;
     _csUpdateProbesDistance = nullptr;
-    _csUpdateBordersIrradianceRow = nullptr;
-    _csUpdateBordersIrradianceCollumn = nullptr;
-    _csUpdateBordersDistanceRow = nullptr;
-    _csUpdateBordersDistanceCollumn = nullptr;
     SAFE_DELETE_GPU_RESOURCE(_psIndirectLighting);
     invalidateResources();
 }
@@ -542,7 +534,6 @@ bool DynamicDiffuseGlobalIlluminationPass::RenderInner(RenderContext& renderCont
     // Update probes
     {
         PROFILE_GPU_CPU_NAMED("Probes Update");
-        bool anyDirty = false;
         uint32 threadGroupsX, threadGroupsY;
 #if DDGI_DEBUG_STATS
         uint32 zero[4] = {};
@@ -552,7 +543,6 @@ bool DynamicDiffuseGlobalIlluminationPass::RenderInner(RenderContext& renderCont
         {
             if (cascadeSkipUpdate[cascadeIndex])
                 continue;
-            anyDirty = true;
 
             // Classify probes (activation/deactivation and relocation)
             {
@@ -667,33 +657,6 @@ bool DynamicDiffuseGlobalIlluminationPass::RenderInner(RenderContext& renderCont
             }
         }
 #endif
-
-        // Update probes border pixels
-        if (anyDirty)
-        {
-            PROFILE_GPU_CPU_NAMED("Update Borders");
-
-            // Irradiance
-            context->BindUA(0, ddgiData.Result.ProbesIrradiance);
-            threadGroupsX = Math::DivideAndRoundUp(probesCountTotalX * (DDGI_PROBE_RESOLUTION_IRRADIANCE + 2), DDGI_PROBE_UPDATE_BORDERS_GROUP_SIZE);
-            threadGroupsY = Math::DivideAndRoundUp(probesCountTotalY, DDGI_PROBE_UPDATE_BORDERS_GROUP_SIZE);
-            context->Dispatch(_csUpdateBordersIrradianceRow, threadGroupsX, threadGroupsY, 1);
-            threadGroupsX = Math::DivideAndRoundUp(probesCountTotalX, DDGI_PROBE_UPDATE_BORDERS_GROUP_SIZE);
-            threadGroupsY = Math::DivideAndRoundUp(probesCountTotalY * (DDGI_PROBE_RESOLUTION_IRRADIANCE + 2), DDGI_PROBE_UPDATE_BORDERS_GROUP_SIZE);
-            context->Dispatch(_csUpdateBordersIrradianceCollumn, threadGroupsX, threadGroupsY, 1);
-
-            // Distance
-            context->BindUA(0, ddgiData.Result.ProbesDistance);
-            threadGroupsX = Math::DivideAndRoundUp(probesCountTotalX * (DDGI_PROBE_RESOLUTION_DISTANCE + 2), DDGI_PROBE_UPDATE_BORDERS_GROUP_SIZE);
-            threadGroupsY = Math::DivideAndRoundUp(probesCountTotalY, DDGI_PROBE_UPDATE_BORDERS_GROUP_SIZE);
-            context->Dispatch(_csUpdateBordersDistanceRow, threadGroupsX, threadGroupsY, 1);
-            threadGroupsX = Math::DivideAndRoundUp(probesCountTotalX, DDGI_PROBE_UPDATE_BORDERS_GROUP_SIZE);
-            threadGroupsY = Math::DivideAndRoundUp(probesCountTotalY * (DDGI_PROBE_RESOLUTION_DISTANCE + 2), DDGI_PROBE_UPDATE_BORDERS_GROUP_SIZE);
-            context->Dispatch(_csUpdateBordersDistanceCollumn, threadGroupsX, threadGroupsY, 1);
-
-            context->ResetUA();
-            context->ResetSR();
-        }
     }
 
     return false;

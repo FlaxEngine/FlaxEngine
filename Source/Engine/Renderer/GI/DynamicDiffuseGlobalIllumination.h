@@ -47,10 +47,6 @@ private:
     GPUShaderProgramCS* _csTraceRays[4];
     GPUShaderProgramCS* _csUpdateProbesIrradiance;
     GPUShaderProgramCS* _csUpdateProbesDistance;
-    GPUShaderProgramCS* _csUpdateBordersIrradianceRow;
-    GPUShaderProgramCS* _csUpdateBordersIrradianceCollumn;
-    GPUShaderProgramCS* _csUpdateBordersDistanceRow;
-    GPUShaderProgramCS* _csUpdateBordersDistanceCollumn;
     GPUPipelineState* _psIndirectLighting;
 #if USE_EDITOR
     AssetReference<Model> _debugModel;
