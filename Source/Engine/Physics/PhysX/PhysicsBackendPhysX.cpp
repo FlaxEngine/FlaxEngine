@@ -1256,6 +1256,8 @@ void* PhysicsBackend::CreateScene(const PhysicsSettings& settings)
     sceneDesc.simulationEventCallback = &scenePhysX->EventsCallback;
     sceneDesc.filterShader = FilterShader;
     sceneDesc.bounceThresholdVelocity = settings.BounceThresholdVelocity;
+    if (settings.EnableEnhancedDeterminism)
+        sceneDesc.flags |= PxSceneFlag::eENABLE_ENHANCED_DETERMINISM;
     switch (settings.SolverType)
     {
     case PhysicsSolverType::ProjectedGaussSeidelIterativeSolver:
