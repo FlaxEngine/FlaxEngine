@@ -221,12 +221,16 @@ bool DynamicDiffuseGlobalIlluminationPass::setupResources()
     _csUpdateProbesDistance = shader->GetCS("CS_UpdateProbes", 1);
     auto device = GPUDevice::Instance;
     auto psDesc = GPUPipelineState::Description::DefaultFullscreenTriangle;
-    if (!_psIndirectLighting)
+    if (!_psIndirectLighting[0])
     {
-        _psIndirectLighting = device->CreatePipelineState();
+        _psIndirectLighting[0] = device->CreatePipelineState();
+        _psIndirectLighting[1] = device->CreatePipelineState();
         psDesc.PS = shader->GetPS("PS_IndirectLighting");
         psDesc.BlendMode = BlendingMode::Add;
-        if (_psIndirectLighting->Init(psDesc))
+        if (_psIndirectLighting[0]->Init(psDesc))
+            return true;
+        psDesc.PS = shader->GetPS("PS_IndirectLighting", 1);
+        if (_psIndirectLighting[1]->Init(psDesc))
             return true;
     }
 
@@ -246,7 +250,8 @@ void DynamicDiffuseGlobalIlluminationPass::OnShaderReloading(Asset* obj)
     _csTraceRays[3] = nullptr;
     _csUpdateProbesIrradiance = nullptr;
     _csUpdateProbesDistance = nullptr;
-    SAFE_DELETE_GPU_RESOURCE(_psIndirectLighting);
+    SAFE_DELETE_GPU_RESOURCE(_psIndirectLighting[0]);
+    SAFE_DELETE_GPU_RESOURCE(_psIndirectLighting[1]);
     invalidateResources();
 }
 
@@ -260,7 +265,8 @@ void DynamicDiffuseGlobalIlluminationPass::Dispose()
     _cb0 = nullptr;
     _cb1 = nullptr;
     _shader = nullptr;
-    SAFE_DELETE_GPU_RESOURCE(_psIndirectLighting);
+    SAFE_DELETE_GPU_RESOURCE(_psIndirectLighting[0]);
+    SAFE_DELETE_GPU_RESOURCE(_psIndirectLighting[1]);
 #if USE_EDITOR
     _debugModel = nullptr;
     _debugMaterial = nullptr;
@@ -534,7 +540,7 @@ bool DynamicDiffuseGlobalIlluminationPass::RenderInner(RenderContext& renderCont
     // Update probes
     {
         PROFILE_GPU_CPU_NAMED("Probes Update");
-        uint32 threadGroupsX, threadGroupsY;
+        uint32 threadGroupsX;
 #if DDGI_DEBUG_STATS
         uint32 zero[4] = {};
         context->ClearUA(ddgiData.StatsWrite, zero);
@@ -732,7 +738,7 @@ bool DynamicDiffuseGlobalIlluminationPass::Render(RenderContext& renderContext, 
         context->BindSR(6, ddgiData.Result.ProbesIrradiance);
         context->SetViewportAndScissors(renderContext.View.ScreenSize.X, renderContext.View.ScreenSize.Y);
         context->SetRenderTarget(lightBuffer);
-        context->SetState(_psIndirectLighting);
+        context->SetState(_psIndirectLighting[Graphics::GICascadesBlending ? 1 : 0]);
         context->DrawFullscreenTriangle();
     }
 

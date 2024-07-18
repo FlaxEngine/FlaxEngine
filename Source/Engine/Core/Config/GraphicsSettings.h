@@ -117,6 +117,12 @@ public:
     float GIProbesSpacing = 100;
 
     /// <summary>
+    /// Enables cascades splits blending for Global Illumination.
+    /// </summary>
+    API_FIELD(Attributes="EditorOrder(2125), DefaultValue(false), EditorDisplay(\"Global Illumination\", \"GI Cascades Blending\")")
+    bool GICascadesBlending = false;
+
+    /// <summary>
     /// The Global Surface Atlas resolution. Adjust it if atlas `flickers` due to overflow (eg. to 4096).
     /// </summary>
     API_FIELD(Attributes="EditorOrder(2130), Limit(256, 8192), EditorDisplay(\"Global Illumination\")")

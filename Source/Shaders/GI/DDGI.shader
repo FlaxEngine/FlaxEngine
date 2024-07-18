@@ -768,6 +768,8 @@ Texture2D<float4> ProbesIrradiance : register(t6);
 
 // Pixel shader for drawing indirect lighting in fullscreen
 META_PS(true, FEATURE_LEVEL_SM5)
+META_PERMUTATION_1(DDGI_CASCADE_BLEND_SMOOTH=0)
+META_PERMUTATION_1(DDGI_CASCADE_BLEND_SMOOTH=1)
 void PS_IndirectLighting(Quad_VS2PS input, out float4 output : SV_Target0)
 {
     output = 0;

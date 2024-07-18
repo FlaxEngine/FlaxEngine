@@ -47,7 +47,7 @@ private:
     GPUShaderProgramCS* _csTraceRays[4];
     GPUShaderProgramCS* _csUpdateProbesIrradiance;
     GPUShaderProgramCS* _csUpdateProbesDistance;
-    GPUPipelineState* _psIndirectLighting;
+    GPUPipelineState* _psIndirectLighting[2] = {};
 #if USE_EDITOR
     AssetReference<Model> _debugModel;
     AssetReference<MaterialBase> _debugMaterial;

@@ -21,8 +21,9 @@ Quality Graphics::ShadowMapsQuality = Quality::Medium;
 bool Graphics::AllowCSMBlending = false;
 Quality Graphics::GlobalSDFQuality = Quality::High;
 Quality Graphics::GIQuality = Quality::High;
+bool Graphics::GICascadesBlending = false;
 PostProcessSettings Graphics::PostProcessSettings;
-bool Graphics::SpreadWorkload = true;
+bool Graphics::SpreadWorkload = false;
 
 #if GRAPHICS_API_NULL
 extern GPUDevice* CreateGPUDeviceNull();
@@ -69,6 +70,7 @@ void GraphicsSettings::Apply()
     Graphics::ShadowMapsQuality = ShadowMapsQuality;
     Graphics::GlobalSDFQuality = GlobalSDFQuality;
     Graphics::GIQuality = GIQuality;
+    Graphics::GICascadesBlending = GICascadesBlending;
     Graphics::PostProcessSettings = ::PostProcessSettings();
     Graphics::PostProcessSettings.BlendWith(PostProcessSettings, 1.0f);
 #if !USE_EDITOR // OptionsModule handles fallback fonts in Editor
