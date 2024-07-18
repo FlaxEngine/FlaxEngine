@@ -126,12 +126,13 @@ float SampleGlobalSDF(const GlobalSDFData data, Texture3D<snorm float> tex, floa
 }
 
 // Samples the Global SDF and returns the distance to the closest surface (in world units) at the given world location.
-float SampleGlobalSDF(const GlobalSDFData data, Texture3D<snorm float> tex, Texture3D<snorm float> mip, float3 worldPosition)
+float SampleGlobalSDF(const GlobalSDFData data, Texture3D<snorm float> tex, Texture3D<snorm float> mip, float3 worldPosition, uint startCascade = 0)
 {
     float distance = data.CascadePosDistance[3].w * 2.0f;
     if (distance <= 0.0f)
         return GLOBAL_SDF_WORLD_SIZE;
-    for (uint cascade = 0; cascade < data.CascadesCount; cascade++)
+    startCascade = min(startCascade, data.CascadesCount - 1);
+    for (uint cascade = startCascade; cascade < data.CascadesCount; cascade++)
     {
         float3 cascadeUV, textureUV;
         GetGlobalSDFCascadeUV(data, cascade, worldPosition, cascadeUV, textureUV);
@@ -186,13 +187,14 @@ float3 SampleGlobalSDFGradient(const GlobalSDFData data, Texture3D<snorm float> 
 }
 
 // Samples the Global SDF and returns the gradient vector (derivative) at the given world location. Normalize it to get normal vector.
-float3 SampleGlobalSDFGradient(const GlobalSDFData data, Texture3D<snorm float> tex, Texture3D<snorm float> mip, float3 worldPosition, out float distance)
+float3 SampleGlobalSDFGradient(const GlobalSDFData data, Texture3D<snorm float> tex, Texture3D<snorm float> mip, float3 worldPosition, out float distance, uint startCascade = 0)
 {
     float3 gradient = float3(0, 0.00001f, 0);
     distance = GLOBAL_SDF_WORLD_SIZE;
     if (data.CascadePosDistance[3].w <= 0.0f)
         return gradient;
-    for (uint cascade = 0; cascade < data.CascadesCount; cascade++)
+    startCascade = min(startCascade, data.CascadesCount - 1);
+    for (uint cascade = startCascade; cascade < data.CascadesCount; cascade++)
     {
         float3 cascadeUV, textureUV;
         GetGlobalSDFCascadeUV(data, cascade, worldPosition, cascadeUV, textureUV);
