@@ -423,9 +423,12 @@ bool GPUDeviceDX12::Init()
         }
     }
 
-#if BUILD_DEBUG && false
+#if !BUILD_RELEASE
 	// Prevent the GPU from overclocking or under-clocking to get consistent timings
-	_device->SetStablePowerState(TRUE);
+    if (CommandLine::Options.ShaderProfile)
+    {
+	    _device->SetStablePowerState(TRUE);
+    }
 #endif
 
     // Setup resources
