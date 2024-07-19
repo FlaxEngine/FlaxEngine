@@ -1037,10 +1037,14 @@ bool Level::loadScene(rapidjson_flax::Value& data, int32 engineBuild, Scene** ou
     // Add injected children of scene (via OnSceneLoading) into sceneObjects to be initialized
     for (auto child : injectedSceneChildren)
     {
-        sceneObjects->Add(child);
-        if (!child->IsRegistered())
+        Array<SceneObject*> injectedSceneObjects;
+        injectedSceneObjects.Add(child);
+        SceneQuery::GetAllSceneObjects(child, injectedSceneObjects);
+        for (auto o : injectedSceneObjects)
         {
-            child->RegisterObject();
+            if (!o->IsRegistered())
+                o->RegisterObject();
+            sceneObjects->Add(o);
         }
     }
 
