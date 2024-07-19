@@ -1042,7 +1042,6 @@ bool Level::loadScene(rapidjson_flax::Value& data, int32 engineBuild, Scene** ou
         {
             child->RegisterObject();
         }
-        LOG(Warning, "{}", child->GetName());
     }
     sceneObjects->Resize(dataCount + injectedSceneChildren.Count());
 
