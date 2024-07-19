@@ -1043,7 +1043,6 @@ bool Level::loadScene(rapidjson_flax::Value& data, int32 engineBuild, Scene** ou
             child->RegisterObject();
         }
     }
-    sceneObjects->Resize(dataCount + injectedSceneChildren.Count());
 
     // Synchronize prefab instances (prefab may have objects removed or reordered so deserialized instances need to synchronize with it)
     // TODO: resave and force sync scenes during game cooking so this step could be skipped in game
@@ -1061,7 +1060,7 @@ bool Level::loadScene(rapidjson_flax::Value& data, int32 engineBuild, Scene** ou
         PROFILE_CPU_NAMED("Initialize");
 
         SceneObject** objects = sceneObjects->Get();
-        for (int32 i = 0; i < dataCount + injectedSceneChildren.Count(); i++)
+        for (int32 i = 0; i < sceneObjects->Count(); i++)
         {
             SceneObject* obj = objects[i];
             if (obj)
