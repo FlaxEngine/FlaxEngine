@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Xml;
 using FlaxEditor.Gizmo;
 using FlaxEditor.GUI;
@@ -33,6 +34,7 @@ namespace FlaxEditor.Windows
         private CursorLockMode _cursorLockMode = CursorLockMode.None;
 
         private float _toolStripHeight = 24;
+        private bool _showToolStrip = true;
         private ToolStripButton _viewportSettingsButton;
 
         // Viewport scaling variables
@@ -223,78 +225,17 @@ namespace FlaxEditor.Windows
             Editor.Options.OptionsChanged += OnOptionsChanged;
             OnOptionsChanged(Editor.Options.Options);
 
-            var style = Style.Current;
-            var styleSmallFont = style.FontSmall;
+            // Create toolstrip
+            if (_showToolStrip)
+                CreateOptionsToolStrip();
 
-            var toolStrip = new ToolStrip()
-            {
-                AnchorPreset = AnchorPresets.HorizontalStretchTop,
-                Height = _toolStripHeight,
-                Parent = this,
-            };
-            
-            // Setup toolstrip items
-            var focusLabel = new Label
-            {
-                Text = "Start Focused",
-                HorizontalAlignment = TextAlignment.Near,
-                Parent = toolStrip,
-            };
-            focusLabel.Width = styleSmallFont.MeasureText(focusLabel.Text).X + 2;
-            var focusCheckBox = new CheckBox
-            {
-                Checked = FocusOnPlay,
-                Parent = toolStrip
-            };
-            focusCheckBox.StateChanged += box => FocusOnPlay = box.Checked;
-
-            toolStrip.AddSeparator();
-
-            _viewportSettingsButton = toolStrip.AddButton("Viewport Settings", ShowViewportSettings);
-            
-            toolStrip.AddSeparator();
-            
-            var showGuiLabel = new Label
-            {
-                Text = "Show GUI",
-                HorizontalAlignment = TextAlignment.Near,
-                Parent = toolStrip,
-            };
-            showGuiLabel.Width = styleSmallFont.MeasureText(showGuiLabel.Text).X + 2;
-            var showGuiCheckBox = new CheckBox
-            {
-                Checked = ShowGUI,
-                Parent = toolStrip
-            };
-            showGuiCheckBox.StateChanged += box => ShowGUI = box.Checked;
-
-            toolStrip.AddSeparator();
-            
-            var showDebugDrawLabel = new Label
-            {
-                Text = "Show Debug Draw",
-                HorizontalAlignment = TextAlignment.Near,
-                Parent = toolStrip,
-            };
-            showDebugDrawLabel.Width = styleSmallFont.MeasureText(showDebugDrawLabel.Text).X + 2;
-            var showDebugDrawCheckBox = new CheckBox
-            {
-                Checked = ShowDebugDraw,
-                Parent = toolStrip
-            };
-            showDebugDrawCheckBox.StateChanged += box => ShowDebugDraw = box.Checked;
-
-            toolStrip.AddSeparator();
-
-            toolStrip.AddButton("Take Screenshot", TakeScreenshot);
-            
             var task = MainRenderTask.Instance;
             
             // Setup viewport
             _viewport = new RenderOutputControl(task)
             {
                 AnchorPreset = AnchorPresets.StretchAll,
-                Offsets = new Margin(0, 0, _toolStripHeight, 0),
+                Offsets = new Margin(0, 0, _showToolStrip ? _toolStripHeight : 0, 0),
                 AutoFocus = false,
                 Parent = this
             };
@@ -379,6 +320,74 @@ namespace FlaxEditor.Windows
                     return;
                 Editor.Instance.SceneEditing.Delete();
             });
+        }
+
+        private void CreateOptionsToolStrip()
+        {
+            var style = Style.Current;
+            var styleSmallFont = style.FontSmall;
+
+            var toolStrip = new ToolStrip()
+            {
+                AnchorPreset = AnchorPresets.HorizontalStretchTop,
+                Height = _toolStripHeight,
+                Parent = this,
+            };
+            
+            // Setup toolstrip items
+            var focusLabel = new Label
+            {
+                Text = "Start Focused",
+                HorizontalAlignment = TextAlignment.Near,
+                Parent = toolStrip,
+            };
+            focusLabel.Width = styleSmallFont.MeasureText(focusLabel.Text).X + 2;
+            var focusCheckBox = new CheckBox
+            {
+                Checked = FocusOnPlay,
+                Parent = toolStrip
+            };
+            focusCheckBox.StateChanged += box => FocusOnPlay = box.Checked;
+
+            toolStrip.AddSeparator();
+
+            _viewportSettingsButton = toolStrip.AddButton("Viewport Settings", ShowViewportSettings);
+            
+            toolStrip.AddSeparator();
+            
+            var showGuiLabel = new Label
+            {
+                Text = "Show GUI",
+                HorizontalAlignment = TextAlignment.Near,
+                Parent = toolStrip,
+            };
+            showGuiLabel.Width = styleSmallFont.MeasureText(showGuiLabel.Text).X + 2;
+            var showGuiCheckBox = new CheckBox
+            {
+                Checked = ShowGUI,
+                Parent = toolStrip
+            };
+            showGuiCheckBox.StateChanged += box => ShowGUI = box.Checked;
+
+            toolStrip.AddSeparator();
+            
+            var showDebugDrawLabel = new Label
+            {
+                Text = "Show Debug Draw",
+                HorizontalAlignment = TextAlignment.Near,
+                Parent = toolStrip,
+            };
+            showDebugDrawLabel.Width = styleSmallFont.MeasureText(showDebugDrawLabel.Text).X + 2;
+            var showDebugDrawCheckBox = new CheckBox
+            {
+                Checked = ShowDebugDraw,
+                Parent = toolStrip
+            };
+            showDebugDrawCheckBox.StateChanged += box => ShowDebugDraw = box.Checked;
+
+            toolStrip.AddSeparator();
+
+            toolStrip.AddButton("Take Screenshot", TakeScreenshot);
         }
 
         private void ShowViewportSettings()
@@ -513,8 +522,9 @@ namespace FlaxEditor.Windows
 
         private void ResizeViewport()
         {
+            var toolStripHeight = _showToolStrip ? _toolStripHeight : 0;
             if (!_freeAspect)
-                _windowAspectRatio = Width / (Height - _toolStripHeight);
+                _windowAspectRatio = Width / (Height - toolStripHeight);
             else
                 _windowAspectRatio = 1;
 
@@ -522,9 +532,9 @@ namespace FlaxEditor.Windows
             var scaleHeight = _windowAspectRatio / _viewportAspectRatio;
 
             if (scaleHeight < 1)
-                _viewport.Bounds = new Rectangle(0, (Height - _toolStripHeight) * (1 - scaleHeight) / 2 + _toolStripHeight, Width, (Height - _toolStripHeight) * scaleHeight);
+                _viewport.Bounds = new Rectangle(0, (Height - toolStripHeight) * (1 - scaleHeight) / 2 + toolStripHeight, Width, (Height - toolStripHeight) * scaleHeight);
             else
-                _viewport.Bounds = new Rectangle(Width * (1 - scaleWidth) / 2, _toolStripHeight, Width * scaleWidth, (Height - _toolStripHeight));
+                _viewport.Bounds = new Rectangle(Width * (1 - scaleWidth) / 2, toolStripHeight, Width * scaleWidth, (Height - toolStripHeight));
             _viewport.SyncBackbufferSize();
             PerformLayout();
         }
@@ -568,6 +578,23 @@ namespace FlaxEditor.Windows
         {
             CenterMouseOnFocus = options.Interface.CenterMouseOnGameWinFocus;
             FocusOnPlay = options.Interface.FocusGameWinOnPlay;
+
+            var lastToolStripShow = _showToolStrip;
+            _showToolStrip = options.Interface.ShowGameWindowOptionsToolbar;
+            if (lastToolStripShow != _showToolStrip)
+            {
+                if (_showToolStrip && Children.FirstOrDefault(x => x is ToolStrip) == null)
+                {
+                    CreateOptionsToolStrip();
+                }
+                else
+                {
+                    var toolStrip = Children.FirstOrDefault(x => x is ToolStrip);
+                    RemoveChild(toolStrip);
+                }
+                
+                ResizeViewport();
+            }
         }
 
         private void PlayingStateOnSceneDuplicating()
