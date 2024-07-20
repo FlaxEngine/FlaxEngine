@@ -21,7 +21,7 @@ namespace FlaxEngine
             AllowMinimize = true,
             AllowMaximize = true,
             AllowDragAndDrop = true,
-            IsRegularWindow = true,
+            Type = WindowType.Regular,
             HasSizingFrame = true,
             ShowAfterFirstPaint = true,
         };

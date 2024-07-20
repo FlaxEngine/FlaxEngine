@@ -441,7 +441,7 @@ namespace FlaxEditor.GUI.Docking
                     settings.AllowMinimize = false;
                     settings.HasBorder = false;
                     settings.HasSizingFrame = false;
-                    settings.IsRegularWindow = false;
+                    settings.Type = WindowType.Utility;
                     settings.SupportsTransparency = true;
                     settings.ShowInTaskbar = false;
                     settings.ShowAfterFirstPaint = false;
@@ -488,7 +488,7 @@ namespace FlaxEditor.GUI.Docking
                 settings.AllowMinimize = false;
                 settings.HasBorder = false;
                 settings.HasSizingFrame = false;
-                settings.IsRegularWindow = false;
+                settings.Type = WindowType.Utility;
                 settings.SupportsTransparency = true;
                 settings.ShowInTaskbar = false;
                 settings.ActivateWhenFirstShown = false;
