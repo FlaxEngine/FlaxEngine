@@ -165,7 +165,7 @@ void SplashScreen::Show()
     settings.AllowMaximize = false;
     settings.AllowDragAndDrop = false;
     settings.IsTopmost = false;
-    settings.IsRegularWindow = false;
+    settings.Type = WindowType::Utility;
     settings.HasSizingFrame = false;
     settings.ShowAfterFirstPaint = true;
     settings.StartPosition = WindowStartPosition::CenterScreen;
