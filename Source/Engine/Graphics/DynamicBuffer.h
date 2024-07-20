@@ -33,9 +33,9 @@ public:
 
 public:
     /// <summary>
-    /// True if buffer will be used once per-frame, otherwise it should support uploading data multiple times per-frame. If true 'GPUResourceUsage::Dynamic' will be used, otherwise 'GPUResourceUsage::Default'.
+    /// GPU usage of the resource. Use Dynamic for resources that can be updated multiple timers per-frame.
     /// </summary>
-    bool SingleFrame = false;
+    GPUResourceUsage Usage = GPUResourceUsage::Dynamic;
 
     /// <summary>
     /// The data container (raw bytes storage).

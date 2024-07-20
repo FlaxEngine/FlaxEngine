@@ -31,12 +31,12 @@ void DynamicBuffer::Flush(GPUContext* context)
     // Lazy-resize buffer
     if (_buffer == nullptr)
         _buffer = GPUDevice::Instance->CreateBuffer(_name);
-    if (_buffer->GetSize() < size)
+    if (_buffer->GetSize() < size || _buffer->GetDescription().Usage != Usage)
     {
         const int32 numElements = Math::AlignUp<int32>(static_cast<int32>((size / _stride) * 1.3f), 32);
         GPUBufferDescription desc;
         InitDesc(desc, numElements);
-        desc.Usage = SingleFrame ? GPUResourceUsage::Default : GPUResourceUsage::Dynamic;
+        desc.Usage = Usage;
         if (_buffer->Init(desc))
         {
             LOG(Fatal, "Cannot setup dynamic buffer '{0}'! Size: {1}", _name, Utilities::BytesToText(size));
@@ -81,7 +81,7 @@ DynamicStructuredBuffer::DynamicStructuredBuffer(uint32 initialCapacity, uint32 
     : DynamicBuffer(initialCapacity, stride, name)
     , _isUnorderedAccess(isUnorderedAccess)
 {
-    SingleFrame = true; // The most common use-case is just for a single upload of data prepared by CPU
+    Usage = GPUResourceUsage::Default; // The most common use-case is just for a single upload of data prepared by CPU
 }
 
 void DynamicStructuredBuffer::InitDesc(GPUBufferDescription& desc, int32 numElements)
@@ -94,7 +94,7 @@ DynamicTypedBuffer::DynamicTypedBuffer(uint32 initialCapacity, PixelFormat forma
     , _format(format)
     , _isUnorderedAccess(isUnorderedAccess)
 {
-    SingleFrame = true; // The most common use-case is just for a single upload of data prepared by CPU
+    Usage = GPUResourceUsage::Default; // The most common use-case is just for a single upload of data prepared by CPU
 }
 
 void DynamicTypedBuffer::InitDesc(GPUBufferDescription& desc, int32 numElements)
