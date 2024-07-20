@@ -235,76 +235,91 @@ bool Physics::LineCastAll(const Vector3& start, const Vector3& end, Array<RayCas
 
 bool Physics::RayCast(const Vector3& origin, const Vector3& direction, const float maxDistance, uint32 layerMask, bool hitTriggers)
 {
+    ASSERT(direction.IsNormalized());
     return DefaultScene->RayCast(origin, direction, maxDistance, layerMask, hitTriggers);
 }
 
 bool Physics::RayCast(const Vector3& origin, const Vector3& direction, RayCastHit& hitInfo, const float maxDistance, uint32 layerMask, bool hitTriggers)
 {
+    ASSERT(direction.IsNormalized());
     return DefaultScene->RayCast(origin, direction, hitInfo, maxDistance, layerMask, hitTriggers);
 }
 
 bool Physics::RayCastAll(const Vector3& origin, const Vector3& direction, Array<RayCastHit>& results, const float maxDistance, uint32 layerMask, bool hitTriggers)
 {
+    ASSERT(direction.IsNormalized());
     return DefaultScene->RayCastAll(origin, direction, results, maxDistance, layerMask, hitTriggers);
 }
 
 bool Physics::BoxCast(const Vector3& center, const Vector3& halfExtents, const Vector3& direction, const Quaternion& rotation, const float maxDistance, uint32 layerMask, bool hitTriggers)
 {
+    ASSERT(direction.IsNormalized());
     return DefaultScene->BoxCast(center, halfExtents, direction, rotation, maxDistance, layerMask, hitTriggers);
 }
 
 bool Physics::BoxCast(const Vector3& center, const Vector3& halfExtents, const Vector3& direction, RayCastHit& hitInfo, const Quaternion& rotation, const float maxDistance, uint32 layerMask, bool hitTriggers)
 {
+    ASSERT(direction.IsNormalized());
     return DefaultScene->BoxCast(center, halfExtents, direction, hitInfo, rotation, maxDistance, layerMask, hitTriggers);
 }
 
 bool Physics::BoxCastAll(const Vector3& center, const Vector3& halfExtents, const Vector3& direction, Array<RayCastHit>& results, const Quaternion& rotation, const float maxDistance, uint32 layerMask, bool hitTriggers)
 {
+    ASSERT(direction.IsNormalized());
     return DefaultScene->BoxCastAll(center, halfExtents, direction, results, rotation, maxDistance, layerMask, hitTriggers);
 }
 
 bool Physics::SphereCast(const Vector3& center, const float radius, const Vector3& direction, const float maxDistance, uint32 layerMask, bool hitTriggers)
 {
+    ASSERT(direction.IsNormalized());
     return DefaultScene->SphereCast(center, radius, direction, maxDistance, layerMask, hitTriggers);
 }
 
 bool Physics::SphereCast(const Vector3& center, const float radius, const Vector3& direction, RayCastHit& hitInfo, const float maxDistance, uint32 layerMask, bool hitTriggers)
 {
+    ASSERT(direction.IsNormalized());
     return DefaultScene->SphereCast(center, radius, direction, hitInfo, maxDistance, layerMask, hitTriggers);
 }
 
 bool Physics::SphereCastAll(const Vector3& center, const float radius, const Vector3& direction, Array<RayCastHit>& results, const float maxDistance, uint32 layerMask, bool hitTriggers)
 {
+    ASSERT(direction.IsNormalized());
     return DefaultScene->SphereCastAll(center, radius, direction, results, maxDistance, layerMask, hitTriggers);
 }
 
 bool Physics::CapsuleCast(const Vector3& center, const float radius, const float height, const Vector3& direction, const Quaternion& rotation, const float maxDistance, uint32 layerMask, bool hitTriggers)
 {
+    ASSERT(direction.IsNormalized());
     return DefaultScene->CapsuleCast(center, radius, height, direction, rotation, maxDistance, layerMask, hitTriggers);
 }
 
 bool Physics::CapsuleCast(const Vector3& center, const float radius, const float height, const Vector3& direction, RayCastHit& hitInfo, const Quaternion& rotation, const float maxDistance, uint32 layerMask, bool hitTriggers)
 {
+    ASSERT(direction.IsNormalized());
     return DefaultScene->CapsuleCast(center, radius, height, direction, hitInfo, rotation, maxDistance, layerMask, hitTriggers);
 }
 
 bool Physics::CapsuleCastAll(const Vector3& center, const float radius, const float height, const Vector3& direction, Array<RayCastHit>& results, const Quaternion& rotation, const float maxDistance, uint32 layerMask, bool hitTriggers)
 {
+    ASSERT(direction.IsNormalized());
     return DefaultScene->CapsuleCastAll(center, radius, height, direction, results, rotation, maxDistance, layerMask, hitTriggers);
 }
 
 bool Physics::ConvexCast(const Vector3& center, const CollisionData* convexMesh, const Vector3& scale, const Vector3& direction, const Quaternion& rotation, const float maxDistance, uint32 layerMask, bool hitTriggers)
 {
+    ASSERT(direction.IsNormalized());
     return DefaultScene->ConvexCast(center, convexMesh, scale, direction, rotation, maxDistance, layerMask, hitTriggers);
 }
 
 bool Physics::ConvexCast(const Vector3& center, const CollisionData* convexMesh, const Vector3& scale, const Vector3& direction, RayCastHit& hitInfo, const Quaternion& rotation, const float maxDistance, uint32 layerMask, bool hitTriggers)
 {
+    ASSERT(direction.IsNormalized());
     return DefaultScene->ConvexCast(center, convexMesh, scale, direction, hitInfo, rotation, maxDistance, layerMask, hitTriggers);
 }
 
 bool Physics::ConvexCastAll(const Vector3& center, const CollisionData* convexMesh, const Vector3& scale, const Vector3& direction, Array<RayCastHit>& results, const Quaternion& rotation, const float maxDistance, uint32 layerMask, bool hitTriggers)
 {
+    ASSERT(direction.IsNormalized());
     return DefaultScene->ConvexCastAll(center, convexMesh, scale, direction, results, rotation, maxDistance, layerMask, hitTriggers);
 }
 
@@ -505,76 +520,91 @@ bool PhysicsScene::LineCastAll(const Vector3& start, const Vector3& end, Array<R
 
 bool PhysicsScene::RayCast(const Vector3& origin, const Vector3& direction, const float maxDistance, uint32 layerMask, bool hitTriggers)
 {
+    ASSERT(direction.IsNormalized());
     return PhysicsBackend::RayCast(_scene, origin, direction, maxDistance, layerMask, hitTriggers);
 }
 
 bool PhysicsScene::RayCast(const Vector3& origin, const Vector3& direction, RayCastHit& hitInfo, const float maxDistance, uint32 layerMask, bool hitTriggers)
 {
+    ASSERT(direction.IsNormalized());
     return PhysicsBackend::RayCast(_scene, origin, direction, hitInfo, maxDistance, layerMask, hitTriggers);
 }
 
 bool PhysicsScene::RayCastAll(const Vector3& origin, const Vector3& direction, Array<RayCastHit>& results, const float maxDistance, uint32 layerMask, bool hitTriggers)
 {
+    ASSERT(direction.IsNormalized());
     return PhysicsBackend::RayCastAll(_scene, origin, direction, results, maxDistance, layerMask, hitTriggers);
 }
 
 bool PhysicsScene::BoxCast(const Vector3& center, const Vector3& halfExtents, const Vector3& direction, const Quaternion& rotation, const float maxDistance, uint32 layerMask, bool hitTriggers)
 {
+    ASSERT(direction.IsNormalized());
     return PhysicsBackend::BoxCast(_scene, center, halfExtents, direction, rotation, maxDistance, layerMask, hitTriggers);
 }
 
 bool PhysicsScene::BoxCast(const Vector3& center, const Vector3& halfExtents, const Vector3& direction, RayCastHit& hitInfo, const Quaternion& rotation, const float maxDistance, uint32 layerMask, bool hitTriggers)
 {
+    ASSERT(direction.IsNormalized());
     return PhysicsBackend::BoxCast(_scene, center, halfExtents, direction, hitInfo, rotation, maxDistance, layerMask, hitTriggers);
 }
 
 bool PhysicsScene::BoxCastAll(const Vector3& center, const Vector3& halfExtents, const Vector3& direction, Array<RayCastHit>& results, const Quaternion& rotation, const float maxDistance, uint32 layerMask, bool hitTriggers)
 {
+    ASSERT(direction.IsNormalized());
     return PhysicsBackend::BoxCastAll(_scene, center, halfExtents, direction, results, rotation, maxDistance, layerMask, hitTriggers);
 }
 
 bool PhysicsScene::SphereCast(const Vector3& center, const float radius, const Vector3& direction, const float maxDistance, uint32 layerMask, bool hitTriggers)
 {
+    ASSERT(direction.IsNormalized());
     return PhysicsBackend::SphereCast(_scene, center, radius, direction, maxDistance, layerMask, hitTriggers);
 }
 
 bool PhysicsScene::SphereCast(const Vector3& center, const float radius, const Vector3& direction, RayCastHit& hitInfo, const float maxDistance, uint32 layerMask, bool hitTriggers)
 {
+    ASSERT(direction.IsNormalized());
     return PhysicsBackend::SphereCast(_scene, center, radius, direction, hitInfo, maxDistance, layerMask, hitTriggers);
 }
 
 bool PhysicsScene::SphereCastAll(const Vector3& center, const float radius, const Vector3& direction, Array<RayCastHit>& results, const float maxDistance, uint32 layerMask, bool hitTriggers)
 {
+    ASSERT(direction.IsNormalized());
     return PhysicsBackend::SphereCastAll(_scene, center, radius, direction, results, maxDistance, layerMask, hitTriggers);
 }
 
 bool PhysicsScene::CapsuleCast(const Vector3& center, const float radius, const float height, const Vector3& direction, const Quaternion& rotation, const float maxDistance, uint32 layerMask, bool hitTriggers)
 {
+    ASSERT(direction.IsNormalized());
     return PhysicsBackend::CapsuleCast(_scene, center, radius, height, direction, rotation, maxDistance, layerMask, hitTriggers);
 }
 
 bool PhysicsScene::CapsuleCast(const Vector3& center, const float radius, const float height, const Vector3& direction, RayCastHit& hitInfo, const Quaternion& rotation, const float maxDistance, uint32 layerMask, bool hitTriggers)
 {
+    ASSERT(direction.IsNormalized());
     return PhysicsBackend::CapsuleCast(_scene, center, radius, height, direction, hitInfo, rotation, maxDistance, layerMask, hitTriggers);
 }
 
 bool PhysicsScene::CapsuleCastAll(const Vector3& center, const float radius, const float height, const Vector3& direction, Array<RayCastHit>& results, const Quaternion& rotation, const float maxDistance, uint32 layerMask, bool hitTriggers)
 {
+    ASSERT(direction.IsNormalized());
     return PhysicsBackend::CapsuleCastAll(_scene, center, radius, height, direction, results, rotation, maxDistance, layerMask, hitTriggers);
 }
 
 bool PhysicsScene::ConvexCast(const Vector3& center, const CollisionData* convexMesh, const Vector3& scale, const Vector3& direction, const Quaternion& rotation, const float maxDistance, uint32 layerMask, bool hitTriggers)
 {
+    ASSERT(direction.IsNormalized());
     return PhysicsBackend::ConvexCast(_scene, center, convexMesh, scale, direction, rotation, maxDistance, layerMask, hitTriggers);
 }
 
 bool PhysicsScene::ConvexCast(const Vector3& center, const CollisionData* convexMesh, const Vector3& scale, const Vector3& direction, RayCastHit& hitInfo, const Quaternion& rotation, const float maxDistance, uint32 layerMask, bool hitTriggers)
 {
+    ASSERT(direction.IsNormalized());
     return PhysicsBackend::ConvexCast(_scene, center, convexMesh, scale, direction, hitInfo, rotation, maxDistance, layerMask, hitTriggers);
 }
 
 bool PhysicsScene::ConvexCastAll(const Vector3& center, const CollisionData* convexMesh, const Vector3& scale, const Vector3& direction, Array<RayCastHit>& results, const Quaternion& rotation, const float maxDistance, uint32 layerMask, bool hitTriggers)
 {
+    ASSERT(direction.IsNormalized());
     return PhysicsBackend::ConvexCastAll(_scene, center, convexMesh, scale, direction, results, rotation, maxDistance, layerMask, hitTriggers);
 }
 
