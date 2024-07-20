@@ -218,7 +218,7 @@ namespace FlaxEditor.GUI.ContextMenu
             desc.AllowMaximize = false;
             desc.AllowDragAndDrop = false;
             desc.IsTopmost = true;
-            desc.IsRegularWindow = false;
+            desc.Type = WindowType.Utility;
             desc.HasSizingFrame = false;
             OnWindowCreating(ref desc);
             _window = Platform.CreateWindow(ref desc);
