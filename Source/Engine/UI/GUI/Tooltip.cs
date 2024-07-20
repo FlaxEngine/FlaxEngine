@@ -98,7 +98,7 @@ namespace FlaxEngine.GUI
             desc.AllowMaximize = false;
             desc.AllowDragAndDrop = false;
             desc.IsTopmost = true;
-            desc.IsRegularWindow = false;
+            desc.Type = WindowType.Tooltip;
             desc.HasSizingFrame = false;
             desc.ShowAfterFirstPaint = true;
             _window = Platform.CreateWindow(ref desc);
