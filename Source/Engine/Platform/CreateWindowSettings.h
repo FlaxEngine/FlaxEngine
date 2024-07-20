@@ -27,6 +27,32 @@ API_ENUM() enum class WindowStartPosition
 };
 
 /// <summary>
+/// Specifies the type of the window.
+/// </summary>
+API_ENUM() enum class WindowType
+{
+    /// <summary>
+    /// Regular window.
+    /// </summary>
+    Regular,
+
+    /// <summary>
+    /// Utility window.
+    /// </summary>
+    Utility,
+
+    /// <summary>
+    /// Tooltip window.
+    /// </summary>
+    Tooltip,
+
+    /// <summary>
+    /// Popup window.
+    /// </summary>
+    Popup,
+};
+
+/// <summary>
 /// Settings for new window.
 /// </summary>
 API_STRUCT(NoDefault) struct CreateWindowSettings
@@ -119,9 +145,15 @@ DECLARE_SCRIPTING_TYPE_MINIMAL(CreateWindowSettings);
     API_FIELD() bool IsTopmost = false;
 
     /// <summary>
-    /// True if it's a regular window, false for tooltips, contextmenu and other utility windows.
+    /// True if it's a regular window, false for tooltips, context menu and other utility windows.
     /// </summary>
-    API_FIELD() bool IsRegularWindow = true;
+    API_FIELD() DEPRECATED bool IsRegularWindow = true;
+
+    /// <summary>
+    /// The type of window. The type affects the behaviour of the window in system level.
+    /// Note: Tooltip and Popup windows require Parent to be set.
+    /// </summary>
+    API_FIELD() WindowType Type = WindowType::Regular;
 
     /// <summary>
     /// Enable/disable window sizing frame.

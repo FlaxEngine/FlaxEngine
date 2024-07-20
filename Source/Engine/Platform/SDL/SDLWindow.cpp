@@ -98,19 +98,44 @@ SDLWindow::SDLWindow(const CreateWindowSettings& settings)
     uint32 flags = 0;
     if (!_settings.HasBorder)
         flags |= SDL_WINDOW_BORDERLESS;
-    if (_settings.IsRegularWindow)
+    if (_settings.Type == WindowType::Regular)
         flags |= SDL_WINDOW_INPUT_FOCUS;
+    else if (_settings.Type == WindowType::Utility)
+        flags |= SDL_WINDOW_UTILITY;
+    else if (_settings.Type == WindowType::Tooltip)
+        flags |= SDL_WINDOW_TOOLTIP;
+    else if (_settings.Type == WindowType::Popup)
+        flags |= SDL_WINDOW_POPUP_MENU;
 
 
     if (!_settings.AllowInput)
         flags |= SDL_WINDOW_NOT_FOCUSABLE;
-    if (!_settings.ShowInTaskbar && _settings.IsRegularWindow)
-        flags |= SDL_WINDOW_UTILITY;
+    //if (!_settings.ShowInTaskbar && _settings.IsRegularWindow)
+    //flags |= SDL_WINDOW_UTILITY;
     if (_settings.ShowAfterFirstPaint)
         flags |= SDL_WINDOW_HIDDEN;
     if (_settings.HasSizingFrame)
         flags |= SDL_WINDOW_RESIZABLE;
     //flags |= SDL_WINDOW_HIGH_PIXEL_DENSITY;
+
+    if (_settings.Parent == nullptr && (_settings.Type == WindowType::Tooltip || _settings.Type == WindowType::Popup))
+    {
+        // Creating a popup window on some platforms brings the parent window on top.
+        // Use the currently focused window as the parent instead to avoid losing focus of it
+        WindowsManager::WindowsLocker.Lock();
+        for (auto win : WindowsManager::Windows)
+        {
+            if (win->IsFocused())
+            {
+                _settings.Parent = win;
+                break;
+            }
+        }
+        WindowsManager::WindowsLocker.Unlock();
+
+        if (_settings.Parent == nullptr)
+            _settings.Parent = Engine::MainWindow;
+    }
 
     // The SDL window position is always relative to the parent window
     if (_settings.Parent != nullptr)
@@ -671,7 +696,7 @@ void SDLWindow::Show()
         BringToFront();
     
     // Reused top-most windows (DockHintWindow) doesn't stay on top for some reason
-    if (_settings.IsTopmost)
+    if (_settings.IsTopmost && _settings.Type != WindowType::Tooltip)
         SDL_SetWindowAlwaysOnTop(_window, SDL_TRUE);
 
     if (_isTrackingMouse)

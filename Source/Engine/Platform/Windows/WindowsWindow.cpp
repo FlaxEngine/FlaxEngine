@@ -111,7 +111,7 @@ WindowsWindow::WindowsWindow(const CreateWindowSettings& settings)
         if (settings.IsRegularWindow)
             style |= WS_BORDER | WS_CAPTION | WS_DLGFRAME | WS_SYSMENU | WS_THICKFRAME | WS_GROUP;
 #elif WINDOWS_USE_NEWER_BORDER_LESS
-        if (settings.IsRegularWindow)
+        if (settings.Type == WindowType::Regular)
             style |= WS_THICKFRAME | WS_SYSMENU | WS_CAPTION;
 #endif
         exStyle |= WS_EX_WINDOWEDGE;
@@ -155,7 +155,7 @@ WindowsWindow::WindowsWindow(const CreateWindowSettings& settings)
 
 #if WINDOWS_USE_NEWER_BORDER_LESS
     // Enable shadow
-    if (_settings.IsRegularWindow && !_settings.HasBorder && IsCompositionEnabled())
+    if (settings.Type == WindowType::Regular && !_settings.HasBorder && IsCompositionEnabled())
     {
         const int margin[4] = { 1, 1, 1, 1 };
         ::DwmExtendFrameIntoClientArea(_handle, margin);
@@ -288,7 +288,7 @@ void WindowsWindow::SetBorderless(bool isBorderless, bool maximized)
         if (_settings.IsRegularWindow)
             style |= WS_BORDER | WS_CAPTION | WS_DLGFRAME | WS_SYSMENU | WS_THICKFRAME | WS_GROUP;
 #elif WINDOWS_USE_NEWER_BORDER_LESS
-        if (_settings.IsRegularWindow)
+        if (_settings.Type == WindowType::Regular)
             lStyle |= WS_THICKFRAME | WS_SYSMENU;
 #endif
 
@@ -364,7 +364,7 @@ void WindowsWindow::BringToFront(bool force)
 {
     ASSERT(HasHWND());
 
-    if (_settings.IsRegularWindow)
+    if (_settings.Type == WindowType::Regular)
     {
         if (IsIconic(_handle))
         {

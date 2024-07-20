@@ -82,7 +82,7 @@ namespace FlaxEditor.GUI.Docking
             settings.AllowMaximize = true;
             settings.AllowDragAndDrop = true;
             settings.IsTopmost = false;
-            settings.IsRegularWindow = true;
+            settings.Type = WindowType.Regular;
             settings.HasSizingFrame = true;
             settings.ShowAfterFirstPaint = false;
             settings.ShowInTaskbar = true;
