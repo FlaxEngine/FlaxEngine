@@ -413,27 +413,32 @@ namespace FlaxEditor.GUI.Dialogs
                 Parent = this
             };
 
-            // Alpha grid background
-            var alphaBackground = new Rectangle(oldColorRect.Left, oldNewColorPreviewYPosition, ColorPreviewWidth, ColorPreviewHeight);
+            const int smallRectSize = 10;
 
-            // Draw checkerboard for background of color preview to help with transparency
-            Render2D.FillRectangle(alphaBackground, Color.White);
-
-            var smallRectSize = 10;
-            var numHor = Mathf.FloorToInt(ColorPreviewWidth / smallRectSize);
-            var numVer = Mathf.FloorToInt(oldColorRect.Height / smallRectSize);
-            for (int i = 0; i < numHor; i++)
+            // Only generate and draw checkerboard if old or new color has transparency.
+            if (_initialValue.A < 1 || _value.A < 1)
             {
-                for (int j = 0; j < numVer; j++)
+                // Alpha grid background
+                var alphaBackground = new Rectangle(oldColorRect.Left, oldNewColorPreviewYPosition, ColorPreviewWidth, ColorPreviewHeight);
+
+                // Draw checkerboard for background of color preview to help with transparency
+                Render2D.FillRectangle(alphaBackground, Color.White);
+                
+                var numHor = Mathf.FloorToInt(ColorPreviewWidth / smallRectSize);
+                var numVer = Mathf.FloorToInt(oldColorRect.Height / smallRectSize);
+                for (int i = 0; i < numHor; i++)
                 {
-                    if ((i + j) % 2 == 0)
+                    for (int j = 0; j < numVer; j++)
                     {
-                        var rect = new Rectangle(oldColorRect.X + smallRectSize * i, oldColorRect.Y + smallRectSize * j, new Float2(smallRectSize));
-                        Render2D.FillRectangle(rect, Color.Gray);
+                        if ((i + j) % 2 == 0)
+                        {
+                            var rect = new Rectangle(oldColorRect.X + smallRectSize * i, oldColorRect.Y + smallRectSize * j, new Float2(smallRectSize));
+                            Render2D.FillRectangle(rect, Color.Gray);
+                        }
                     }
                 }
             }
-
+            
             Vector2 textOffset = new Vector2(0, -15);
             Render2D.DrawText(style.FontMedium, "Old", Color.White, oldColorRect.UpperLeft + textOffset);
             Render2D.DrawText(style.FontMedium, "New", Color.White, newColorRect.UpperLeft + textOffset);
