@@ -402,7 +402,7 @@ namespace FlaxEditor.GUI.Dialogs
             // Generate the button for right click detection here because we don't know position of oldColorRect before
             _cOldPreviewButton = new Button(oldColorRect.Location, oldColorRect.Size)
             {
-                TooltipText = "Right click to reset to previous color.",
+                TooltipText = "Right click to use this color.",
                 Tag = "OldColorPreview",
                 BackgroundColor = Color.Transparent,
                 BackgroundColorHighlighted = Color.Transparent,
@@ -498,8 +498,8 @@ namespace FlaxEditor.GUI.Dialogs
             if (button == MouseButton.Right && oldColorRect.Contains(location))
             {
                 var menu = new ContextMenu.ContextMenu();
-                var resetButton = menu.AddButton("Reset");
-                resetButton.Clicked += () => OnResetToOldPreviewPressed(resetButton);
+                var useButton = menu.AddButton("Use");
+                useButton.Clicked += () => OnResetToOldPreviewPressed(useButton);
                 _disableEvents = true;
                 menu.Show(this, location);
                 menu.VisibleChanged += (c) => _disableEvents = false;
