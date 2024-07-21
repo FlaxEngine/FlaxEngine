@@ -42,6 +42,8 @@ namespace FlaxEditor.GUI.Dialogs
         private const float ColorWheelSize = 180.0f;
         private const float SaturationAlphaSlidersThickness = 20.0f;
 
+        private const int maxSavedColorsAmount = 16; // Will begin new row when half is reached.
+
         private const float SmallMargin = 6.0f;
         private const float MediumMargin = 15.0f;
         private const float LargeMargin = 25.0f;
@@ -209,7 +211,7 @@ namespace FlaxEditor.GUI.Dialogs
             _dialogSize = Size = new Float2(_cRed.Right + _pickerMargin.Right + 20, 300); // +20 to account for hsv math symbols
 
             // Create saved color buttons
-            CreateAllSaveButtons();
+            CreateSavedColorButtons();
 
             // Eyedropper button
             var style = Style.Current;
@@ -236,8 +238,8 @@ namespace FlaxEditor.GUI.Dialogs
         private void OnSavedColorButtonClicked(Button button)
         {
             if (button.Tag == null)
-            {
-                // Prevent setting same color 2 times... because why...
+            { 
+                // Prevent setting same color 2 times... cause why...
                 foreach (var color in _savedColors)
                 {
                     if (color == _value)
@@ -245,7 +247,7 @@ namespace FlaxEditor.GUI.Dialogs
                         return;
                     }
                 }
-
+                
                 // Set color of button to current value;
                 button.BackgroundColor = _value;
                 button.BackgroundColorHighlighted = _value;
@@ -258,10 +260,17 @@ namespace FlaxEditor.GUI.Dialogs
                 var savedColors = JsonSerializer.Serialize(_savedColors, typeof(List<Color>));
                 Editor.Instance.ProjectCache.SetCustomData("ColorPickerSavedColors", savedColors);
 
+                float savedColorsYPosition = _cValue.Bottom - _textBoxBlockMargin.Bottom + 50;
+
                 // create new + button
-                if (_savedColorButtons.Count < 8)
+                if (_savedColorButtons.Count < maxSavedColorsAmount)
                 {
-                    var savedColorButton = new Button(PickerMargin * (_savedColorButtons.Count + 1) + SavedColorButtonWidth * _savedColorButtons.Count, Height - SavedColorButtonHeight - PickerMargin, SavedColorButtonWidth, SavedColorButtonHeight)
+                    bool savedGreaterThanHalfMax = _savedColors.Count + 1 > maxSavedColorsAmount / 2;
+
+                    float buttonYPosition = savedGreaterThanHalfMax ? savedColorsYPosition + SavedColorButtonHeight + SmallMargin : savedColorsYPosition;
+                    float buttonXPositionOffset = savedGreaterThanHalfMax ? (SavedColorButtonWidth + SmallMargin) * Mathf.Abs(maxSavedColorsAmount / 2 - _savedColors.Count) : (SavedColorButtonWidth + SmallMargin) * _savedColors.Count;
+
+                    var savedColorButton = new Button(_cSelector.Location.X + buttonXPositionOffset, buttonYPosition, SavedColorButtonWidth, SavedColorButtonHeight)
                     {
                         Text = "+",
                         Parent = this,
@@ -547,20 +556,27 @@ namespace FlaxEditor.GUI.Dialogs
             }
             _savedColorButtons.Clear();
 
-            CreateAllSaveButtons();
+            CreateSavedColorButtons();
 
             // Save new colors
             var savedColors = JsonSerializer.Serialize(_savedColors, typeof(List<Color>));
             Editor.Instance.ProjectCache.SetCustomData("ColorPickerSavedColors", savedColors);
         }
 
-        private void CreateAllSaveButtons()
+        private void CreateSavedColorButtons()
         {
+            float savedColorsYPosition = _cValue.Bottom - _textBoxBlockMargin.Bottom + 50;
+
             // Create saved color buttons
             for (int i = 0; i < _savedColors.Count; i++)
             {
-                var savedColor = _savedColors[i];
-                var savedColorButton = new Button(PickerMargin * (i + 1) + SavedColorButtonWidth * i, Height - SavedColorButtonHeight - PickerMargin, SavedColorButtonWidth, SavedColorButtonHeight)
+                bool savedGreaterThanHalfMax = i + 1 > maxSavedColorsAmount / 2;
+
+                float buttonYPosition = savedGreaterThanHalfMax ? savedColorsYPosition + SavedColorButtonHeight + SmallMargin : savedColorsYPosition;
+                float buttonXPositionOffset = savedGreaterThanHalfMax ? (SavedColorButtonWidth + SmallMargin) * Mathf.Abs(maxSavedColorsAmount / 2 - i) : (SavedColorButtonWidth + SmallMargin) * i;
+
+                var savedColor = _savedColors[i];           
+                var savedColorButton = new Button(_cSelector.Location.X + buttonXPositionOffset, buttonYPosition, SavedColorButtonWidth, SavedColorButtonHeight)
                 {
                     Parent = this,
                     Tag = savedColor,
@@ -571,9 +587,14 @@ namespace FlaxEditor.GUI.Dialogs
                 savedColorButton.ButtonClicked += (b) => OnSavedColorButtonClicked(b);
                 _savedColorButtons.Add(savedColorButton);
             }
-            if (_savedColors.Count < 8)
+            if (_savedColors.Count < maxSavedColorsAmount)
             {
-                var savedColorButton = new Button(PickerMargin * (_savedColors.Count + 1) + SavedColorButtonWidth * _savedColors.Count, Height - SavedColorButtonHeight - PickerMargin, SavedColorButtonWidth, SavedColorButtonHeight)
+                bool savedGreaterThanHalfMax = _savedColors.Count + 1 > maxSavedColorsAmount / 2;
+
+                float buttonYPosition = savedGreaterThanHalfMax ? savedColorsYPosition + SavedColorButtonHeight + SmallMargin : savedColorsYPosition;
+                float buttonXPositionOffset = savedGreaterThanHalfMax ? (SavedColorButtonWidth + SmallMargin) * Mathf.Abs(maxSavedColorsAmount / 2 - _savedColors.Count) : (SavedColorButtonWidth + SmallMargin) * _savedColors.Count;
+
+                var savedColorButton = new Button(_cSelector.Location.X + buttonXPositionOffset, buttonYPosition, SavedColorButtonWidth, SavedColorButtonHeight)
                 {
                     Text = "+",
                     Parent = this,
