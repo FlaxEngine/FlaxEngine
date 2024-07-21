@@ -418,7 +418,7 @@ namespace FlaxEditor.GUI.Dialogs
             // Only generate and draw checkerboard if old or new color has transparency.
             if (_initialValue.A < 1 || _value.A < 1)
             {
-                // Alpha grid background
+                // Checkerboard background
                 var alphaBackground = new Rectangle(oldColorRect.Left, oldNewColorPreviewYPosition, ColorPreviewWidth, ColorPreviewHeight);
 
                 // Draw checkerboard for background of color preview to help with transparency
