@@ -158,7 +158,7 @@ namespace Flax.Deps
         }
 
         /// <summary>
-        /// Clones the git repository from the remote url.
+        /// Clones the git repository from the remote url (shallow clone).
         /// </summary>
         /// <param name="path">The local path for close.</param>
         /// <param name="url">The remote url.</param>
@@ -169,6 +169,29 @@ namespace Flax.Deps
             if (!Directory.Exists(Path.Combine(path, ".git")))
             {
                 string cmdLine = string.Format("clone \"{0}\" \"{1}\" --depth 1", url, path);
+                if (args != null)
+                    cmdLine += " " + args;
+                if (submodules)
+                    cmdLine += " --recurse-submodules";
+
+                Utilities.Run("git", cmdLine, null, path, Utilities.RunOptions.DefaultTool);
+                if (submodules)
+                    Utilities.Run("git", "submodule update --init --recursive", null, path, Utilities.RunOptions.DefaultTool);
+            }
+        }
+
+        /// <summary>
+        /// Clones the git repository from the remote url.
+        /// </summary>
+        /// <param name="path">The local path for close.</param>
+        /// <param name="url">The remote url.</param>
+        /// <param name="args">The custom arguments to add to the clone command.</param>
+        /// <param name="submodules">True if initialize submodules of the repository (recursive).</param>
+        public static void CloneGitRepoFastSince(string path, string url, DateTime time, string args = null, bool submodules = false)
+        {
+            if (!Directory.Exists(Path.Combine(path, ".git")))
+            {
+                string cmdLine = string.Format("clone \"{0}\" \"{1}\" --shallow-since={2}", url, path, time.ToString("s"));
                 if (args != null)
                     cmdLine += " " + args;
                 if (submodules)
@@ -248,13 +271,31 @@ namespace Flax.Deps
         }
 
         /// <summary>
+        /// Resets to the specific commit, optionally fetching the commit from remote.
+        /// Note: Fetching requires server-side support, may not work with all servers.
+        /// </summary>
+        /// <param name="path">The local path that contains git repository.</param>
+        /// <param name="commit">The full hash of the commit.</param>
+        /// <param name="fetch">Fetch the commit from remote.</param>
+        public static void GitResetToCommit(string path, string commit, bool fetch = false)
+        {
+            if (fetch)
+            {
+                // This requires server-side configuration uploadpack.allowReachableSHA1InWant to be enabled
+                Utilities.Run("git", $"fetch --depth=1 \"{path}\" {commit}", null, path, Utilities.RunOptions.ConsoleLogOutput);
+            }
+            Utilities.Run("git", $"reset --hard {commit}", null, path, Utilities.RunOptions.DefaultTool);
+        }
+
+        /// <summary>
         /// Builds the cmake project.
         /// </summary>
         /// <param name="path">The path.</param>
+        /// <param name="config">The configuration preset.</param>
         /// <param name="envVars">Custom environment variables to pass to the child process.</param>
-        public static void BuildCmake(string path, Dictionary<string, string> envVars = null)
+        public static void BuildCmake(string path, string config = "Release", Dictionary<string, string> envVars = null)
         {
-            Utilities.Run("cmake", "--build .  --config Release", null, path, Utilities.RunOptions.DefaultTool, envVars);
+            Utilities.Run("cmake", $"--build .  --config {config}", null, path, Utilities.RunOptions.DefaultTool, envVars);
         }
 
         /// <summary>
