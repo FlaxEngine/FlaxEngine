@@ -63,6 +63,15 @@ namespace Flax.Deps
         public abstract void Build(BuildOptions options);
 
         /// <summary>
+        /// Logs build process start.
+        /// </summary>
+        /// <param name="platform">Target platform.</param>
+        protected void BuildStarted(TargetPlatform platform)
+        {
+            Log.Info($"Building {GetType().Name} for {platform}");
+        }
+
+        /// <summary>
         /// Gets the dependency third-party packages binaries folder.
         /// </summary>
         /// <param name="options">The options.</param>

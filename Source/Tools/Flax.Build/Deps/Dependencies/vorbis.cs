@@ -26,7 +26,6 @@ namespace Flax.Deps.Dependencies
                     return new[]
                     {
                         TargetPlatform.Windows,
-                        TargetPlatform.UWP,
                         TargetPlatform.XboxOne,
                         TargetPlatform.PS4,
                         TargetPlatform.PS5,
@@ -74,15 +73,18 @@ namespace Flax.Deps.Dependencies
             new Binary("libvorbis_static.lib", "libvorbis"),
             new Binary("libvorbisfile_static.lib", "libvorbisfile"),
         };
+
         private (string, string)[] vorbisBinariesToCopyWindowsCmake =
         {
             ("vorbis.lib", "libvorbis_static.lib"),
             ("vorbisfile.lib", "libvorbisfile_static.lib"),
         };
+
         private Binary[] oggBinariesToCopyWindows =
         {
             new Binary("libogg_static.lib", "ogg"),
         };
+
         private (string, string)[] oggBinariesToCopyWindowsCmake =
         {
             ("ogg.lib", "libogg_static.lib"),
@@ -198,27 +200,6 @@ namespace Flax.Deps.Dependencies
                 binariesToCopy.AddRange(vorbisBinariesToCopyWindows.Select(x => new Binary(x.Filename, Path.Combine(buildDir, x.SrcFolder, buildPlatform, configurationMsvc))));
                 break;
             }
-            case TargetPlatform.UWP:
-            {
-                buildDir = Path.Combine(rootMsvcLib, "win32", "VS2010");
-                vcxprojPaths = vcxprojPathsWindows;
-                PatchWindowsTargetPlatformVersion("10.0.17763.0", "v141");
-                switch (architecture)
-                {
-                case TargetArchitecture.x86:
-                    buildPlatform = "Win32";
-                    break;
-                case TargetArchitecture.x64:
-                    buildPlatform = "x64";
-                    break;
-                case TargetArchitecture.ARM:
-                    buildPlatform = "ARM";
-                    break;
-                default: throw new InvalidArchitectureException(architecture);
-                }
-                binariesToCopy.AddRange(vorbisBinariesToCopyWindows.Select(x => new Binary(x.Filename, Path.Combine(buildDir, x.SrcFolder, buildPlatform, configurationMsvc))));
-                break;
-            }
             case TargetPlatform.PS4:
             {
                 buildDir = Path.Combine(rootMsvcLib, "PS4");
@@ -234,7 +215,7 @@ namespace Flax.Deps.Dependencies
                 Utilities.DirectoryCopy(Path.Combine(GetBinariesFolder(options, platform), "Data", "vorbis"),
                                         buildDir, true, true);
                 Utilities.FileCopy(Path.Combine(GetBinariesFolder(options, platform), "Data", "ogg", "ogg", "config_types.h"),
-                                   Path.Combine(root, "..", "ogg", "include", "ogg", "config_types.h"));
+                                   Path.Combine(root, "libogg", "include", "ogg", "config_types.h"));
                 binariesToCopy.AddRange(binariesToCopyVorbis.Select(x => new Binary(x.Filename, Path.Combine(buildDir, x.SrcFolder, buildPlatform, configurationMsvc))));
                 break;
             }
@@ -255,7 +236,7 @@ namespace Flax.Deps.Dependencies
                                         buildDir, true, true);
                 Utilities.FileCopy(
                                    Path.Combine(GetBinariesFolder(options, platform), "Data", "ogg", "ogg", "config_types.h"),
-                                   Path.Combine(root, "..", "ogg", "include", "ogg", "config_types.h"));
+                                   Path.Combine(root, "libogg", "include", "ogg", "config_types.h"));
                 binariesToCopy.AddRange(binariesToCopyVorbis.Select(x => new Binary(x.Filename, Path.Combine(buildDir, x.SrcFolder, buildPlatform, configurationMsvc))));
                 break;
             }
@@ -263,14 +244,14 @@ namespace Flax.Deps.Dependencies
                 buildDir = Path.Combine(rootMsvcLib, "win32", "VS2010");
                 vcxprojPaths = vcxprojPathsWindows;
                 buildPlatform = "x64";
-                PatchWindowsTargetPlatformVersion("10.0.19041.0", "v142");
+                PatchWindowsTargetPlatformVersion("10.0", "v143");
                 binariesToCopy.AddRange(vorbisBinariesToCopyWindows.Select(x => new Binary(x.Filename, Path.Combine(buildDir, x.SrcFolder, buildPlatform, configurationMsvc))));
                 break;
             case TargetPlatform.XboxScarlett:
                 buildDir = Path.Combine(rootMsvcLib, "win32", "VS2010");
                 vcxprojPaths = vcxprojPathsWindows;
                 buildPlatform = "x64";
-                PatchWindowsTargetPlatformVersion("10.0.19041.0", "v142");
+                PatchWindowsTargetPlatformVersion("10.0", "v143");
                 binariesToCopy.AddRange(vorbisBinariesToCopyWindows.Select(x => new Binary(x.Filename, Path.Combine(buildDir, x.SrcFolder, buildPlatform, configurationMsvc))));
                 break;
             default: throw new InvalidPlatformException(platform);
@@ -307,11 +288,11 @@ namespace Flax.Deps.Dependencies
             case TargetPlatform.Linux:
                 ext = ".a";
                 break;
-            default:
-                throw new InvalidPlatformException(platform);
+            default: throw new InvalidPlatformException(platform);
             }
 
-            List<(string, string)> binariesToCopy = new List<(string, string)>();
+            var binariesToCopy = new List<(string, string)>();
+
             // Build ogg
             {
                 var solutionPath = Path.Combine(oggBuildDir, "ogg.sln");
@@ -356,6 +337,7 @@ namespace Flax.Deps.Dependencies
 
             foreach (var platform in options.Platforms)
             {
+                BuildStarted(platform);
                 switch (platform)
                 {
                 case TargetPlatform.Windows:

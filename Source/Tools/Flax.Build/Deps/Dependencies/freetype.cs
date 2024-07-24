@@ -26,7 +26,6 @@ namespace Flax.Deps.Dependencies
                     return new[]
                     {
                         TargetPlatform.Windows,
-                        TargetPlatform.UWP,
                         TargetPlatform.XboxOne,
                         TargetPlatform.PS4,
                         TargetPlatform.PS5,
@@ -48,14 +47,6 @@ namespace Flax.Deps.Dependencies
                 default: return new TargetPlatform[0];
                 }
             }
-        }
-
-        private void PatchWindowsTargetPlatformVersion(string vcxprojPath, string vcxprojContents, string windowsTargetPlatformVersion, string platformToolset)
-        {
-            // Fix the MSVC project settings for Windows
-            var contents = vcxprojContents.Replace("$(DefaultPlatformToolset)", string.Format("{0}", platformToolset));
-            contents = contents.Replace("</TargetName>", string.Format("</TargetName><WindowsTargetPlatformVersion>{0}</WindowsTargetPlatformVersion>", windowsTargetPlatformVersion));
-            File.WriteAllText(vcxprojPath, contents);
         }
 
         /// <inheritdoc />
@@ -92,9 +83,18 @@ namespace Flax.Deps.Dependencies
             var libraryFileName = "libfreetype.a";
             vcxprojContents = vcxprojContents.Replace("<RuntimeLibrary>MultiThreaded</RuntimeLibrary>", "<RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>");
             vcxprojContents = vcxprojContents.Replace("<RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>", "<RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>");
+            vcxprojContents = vcxprojContents.Replace("<<PlatformToolset>v142</PlatformToolset>", "<PlatformToolset>v143</PlatformToolset>");
+            Utilities.ReplaceInFile(Path.Combine(root, "include", "freetype", "config", "ftoption.h"), "#define FT_CONFIG_OPTION_ENVIRONMENT_PROPERTIES", "");
+            var msvcProps = new Dictionary<string, string>
+            {
+                { "WindowsTargetPlatformVersion", "10.0" },
+                { "PlatformToolset", "v143" },
+                //{ "RuntimeLibrary", "MultiThreadedDLL" }
+            };
 
             foreach (var platform in options.Platforms)
             {
+                BuildStarted(platform);
                 switch (platform)
                 {
                 case TargetPlatform.Windows:
@@ -105,29 +105,11 @@ namespace Flax.Deps.Dependencies
                     // Build for Windows
                     foreach (var architecture in new[] { TargetArchitecture.x64, TargetArchitecture.ARM64 })
                     {
-                        Deploy.VCEnvironment.BuildSolution(vsSolutionPath, configurationMsvc, architecture.ToString(),
-                            new Dictionary<string, string>() {
-                                { "WindowsTargetPlatformVersion", "10.0" },
-                                { "PlatformToolset", "v143" },
-                                //{ "RuntimeLibrary", "MultiThreadedDLL" }
-                            });
+                        Deploy.VCEnvironment.BuildSolution(vsSolutionPath, configurationMsvc, architecture.ToString(), msvcProps);
                         var depsFolder = GetThirdPartyFolder(options, platform, architecture);
                         foreach (var filename in binariesToCopyMsvc)
                             Utilities.FileCopy(Path.Combine(root, "objs", architecture.ToString(), configurationMsvc, filename), Path.Combine(depsFolder, filename));
                     }
-                    break;
-                }
-                case TargetPlatform.UWP:
-                {
-                    // Fix the MSVC project settings for UWP
-                    PatchWindowsTargetPlatformVersion(vcxprojPath, vcxprojContents, "10.0.17763.0", "v141");
-
-                    // Build for UWP x64
-                    Deploy.VCEnvironment.BuildSolution(vsSolutionPath, configurationMsvc, "x64");
-                    var depsFolder = GetThirdPartyFolder(options, platform, TargetArchitecture.x64);
-                    foreach (var filename in binariesToCopyMsvc)
-                        Utilities.FileCopy(Path.Combine(root, "objs", "x64", configurationMsvc, filename), Path.Combine(depsFolder, filename));
-
                     break;
                 }
                 case TargetPlatform.Linux:
@@ -198,11 +180,8 @@ namespace Flax.Deps.Dependencies
                 }
                 case TargetPlatform.XboxOne:
                 {
-                    // Fix the MSVC project settings for Xbox One
-                    PatchWindowsTargetPlatformVersion(vcxprojPath, vcxprojContents, "10.0.19041.0", "v142");
-
                     // Build for Xbox One x64
-                    Deploy.VCEnvironment.BuildSolution(vsSolutionPath, configurationMsvc, "x64");
+                    Deploy.VCEnvironment.BuildSolution(vsSolutionPath, configurationMsvc, "x64", msvcProps);
                     var depsFolder = GetThirdPartyFolder(options, platform, TargetArchitecture.x64);
                     foreach (var filename in binariesToCopyMsvc)
                         Utilities.FileCopy(Path.Combine(root, "objs", "x64", configurationMsvc, filename), Path.Combine(depsFolder, filename));
@@ -211,11 +190,8 @@ namespace Flax.Deps.Dependencies
                 }
                 case TargetPlatform.XboxScarlett:
                 {
-                    // Fix the MSVC project settings for Xbox Scarlett
-                    PatchWindowsTargetPlatformVersion(vcxprojPath, vcxprojContents, "10.0.19041.0", "v142");
-
                     // Build for Xbox Scarlett
-                    Deploy.VCEnvironment.BuildSolution(vsSolutionPath, configurationMsvc, "x64");
+                    Deploy.VCEnvironment.BuildSolution(vsSolutionPath, configurationMsvc, "x64", msvcProps);
                     var depsFolder = GetThirdPartyFolder(options, platform, TargetArchitecture.x64);
                     foreach (var filename in binariesToCopyMsvc)
                         Utilities.FileCopy(Path.Combine(root, "objs", "x64", configurationMsvc, filename), Path.Combine(depsFolder, filename));

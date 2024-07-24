@@ -153,7 +153,7 @@
 
 
 #define ft_strtol  strtol
-#define ft_getenv  getenv
+char* ft_getenv(const char* n);
 
 
   /**************************************************************************

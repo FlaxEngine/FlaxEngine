@@ -35,6 +35,7 @@ namespace Flax.Deps.Dependencies
         {
             foreach (var platform in options.Platforms)
             {
+                BuildStarted(platform);
                 switch (platform)
                 {
                 case TargetPlatform.Windows:

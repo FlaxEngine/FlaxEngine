@@ -160,6 +160,9 @@ bool DeployDataStep::Perform(CookingData& data)
                 }
                 else
                 {
+#if 1
+                    failed |= EditorUtilities::CopyDirectoryIfNewer(dstDotnet / TEXT("host/fxr") / version, srcDotnet / TEXT("host/fxr") / version, true);
+#else
                     // TODO: hostfxr for target platform should be copied from nuget package location: microsoft.netcore.app.runtime.<RID>/<VERSION>/runtimes/<RID>/native/hostfxr.dll
                     String dstHostfxr = dstDotnet / TEXT("host/fxr") / version;
                     if (!FileSystem::DirectoryExists(dstHostfxr))
@@ -174,6 +177,7 @@ bool DeployDataStep::Perform(CookingData& data)
                         failed |= FileSystem::CopyFile(dstHostfxr / TEXT("hostfxr.dylib"), depsRoot / TEXT("ThirdParty") / archName / TEXT("hostfxr.dylib"));
                     else
                         failed |= true;
+#endif
                     failed |= EditorUtilities::CopyDirectoryIfNewer(dstDotnet / TEXT("shared/Microsoft.NETCore.App") / version, srcDotnet / TEXT("shared/Microsoft.NETCore.App") / version, true);
                 }
                 if (failed)
