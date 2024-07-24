@@ -162,7 +162,6 @@ namespace Flax.Build.Projects.VisualStudio
             csProjectFileContent.AppendLine("");
 
             // Files and folders
-
             csProjectFileContent.AppendLine("  <ItemGroup>");
 
             var files = new List<string>();
@@ -214,23 +213,40 @@ namespace Flax.Build.Projects.VisualStudio
                 else
                     csProjectFileContent.AppendLine(string.Format("    <{0} Include=\"{1}\" />", fileType, projectPath));
             }
+            csProjectFileContent.AppendLine("  </ItemGroup>");
 
             if (project.GeneratedSourceFiles != null)
             {
-                foreach (var file in project.GeneratedSourceFiles)
+                foreach (var group in project.GeneratedSourceFiles.GroupBy(x => GetGroupingFromPath(x), y => y))
                 {
-                    string fileType;
-                    if (file.EndsWith(".cs", StringComparison.OrdinalIgnoreCase))
-                        fileType = "Compile";
-                    else
-                        fileType = "None";
+                    (string targetName, string platform, string arch, string configuration) = group.Key;
 
-                    var filePath = file.Replace('/', '\\');
-                    csProjectFileContent.AppendLine(string.Format("    <{0} Visible=\"false\" Include=\"{1}\" />", fileType, filePath));
+                    var targetConfiguration = project.Targets.First(x => x.Name == targetName).ConfigurationName;
+                    csProjectFileContent.AppendLine($"  <ItemGroup Condition=\" '$(Configuration)|$(Platform)' == '{targetConfiguration}.{platform}.{configuration}|{arch}' \" >");
+
+                    foreach (var file in group)
+                    {
+                        string fileType;
+                        if (file.EndsWith(".cs", StringComparison.OrdinalIgnoreCase))
+                            fileType = "Compile";
+                        else
+                            fileType = "None";
+
+                        var filePath = file.Replace('/', '\\');
+                        csProjectFileContent.AppendLine(string.Format("    <{0} Visible=\"false\" Include=\"{1}\" />", fileType, filePath));
+                    }
+
+                    csProjectFileContent.AppendLine("  </ItemGroup>");
+                }
+
+                (string target, string platform, string arch, string configuration) GetGroupingFromPath(string path)
+                {
+                    ReadOnlySpan<char> span = path.AsSpan();
+                    Span<Range> split = stackalloc Range[path.Count((c) => c == '/' || c == '\\')];
+                    var _ = MemoryExtensions.SplitAny(path, split, [ '/', '\\' ]);
+                    return (span[split[^5]].ToString(), span[split[^4]].ToString(), span[split[^3]].ToString(), span[split[^2]].ToString());
                 }
             }
-
-            csProjectFileContent.AppendLine("  </ItemGroup>");
 
             // End
 

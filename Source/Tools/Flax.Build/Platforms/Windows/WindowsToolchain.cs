@@ -74,6 +74,12 @@ namespace Flax.Build.Platforms
             options.LinkEnv.InputLibraries.Add("ole32.lib");
             options.LinkEnv.InputLibraries.Add("oleaut32.lib");
             options.LinkEnv.InputLibraries.Add("delayimp.lib");
+
+            if (options.Architecture == TargetArchitecture.ARM64)
+            {
+                options.CompileEnv.PreprocessorDefinitions.Add("USE_SOFT_INTRINSICS");
+                options.LinkEnv.InputLibraries.Add("softintrin.lib");
+            }
         }
 
         /// <inheritdoc />
