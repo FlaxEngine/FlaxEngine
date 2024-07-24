@@ -161,13 +161,13 @@ public:
     /// The model LOD bias. Default is 0. Applied to all the objects in the shadow maps render views. Can be used to improve shadows rendering performance or increase quality.
     /// [Deprecated on 26.10.2022, expires on 26.10.2024]
     /// </summary>
-    API_FIELD() DEPRECATED int32 ShadowModelLODBias = 0;
+    API_FIELD() DEPRECATED() int32 ShadowModelLODBias = 0;
 
     /// <summary>
     /// The model LOD distance scale factor. Default is 1. Applied to all the objects in the shadow maps render views. Higher values increase LODs quality. Can be used to improve shadows rendering performance or increase quality.
     /// [Deprecated on 26.10.2022, expires on 26.10.2024]
     /// </summary>
-    API_FIELD() DEPRECATED float ShadowModelLODDistanceFactor = 1.0f;
+    API_FIELD() DEPRECATED() float ShadowModelLODDistanceFactor = 1.0f;
 
     /// <summary>
     /// Temporal Anti-Aliasing jitter frame index.

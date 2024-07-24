@@ -481,7 +481,7 @@ public:
     /// <param name="translation">When the method completes, contains the translation component of the decomposed matrix.</param>
     /// <remarks>This method is designed to decompose an SRT transformation matrix only.</remarks>
     void Decompose(Float3& scale, Matrix3x3& rotation, Float3& translation) const;
-    DEPRECATED void Decompose(Float3& scale, Matrix& rotation, Float3& translation) const;
+    DEPRECATED("Use Decompose with 'Matrix3x3& rotation' parameter instead") void Decompose(Float3& scale, Matrix& rotation, Float3& translation) const;
 
 public:
     Matrix operator*(const float scale) const
