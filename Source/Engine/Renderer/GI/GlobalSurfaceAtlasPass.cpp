@@ -151,6 +151,7 @@ public:
     GPUBuffer* ChunksBuffer = nullptr;
     GPUBuffer* CulledObjectsBuffer = nullptr;
     DynamicTypedBuffer ObjectsBuffer;
+    DynamicTypedBuffer ObjectsListBuffer;
     int32 CulledObjectsCounterIndex = -1;
     GlobalSurfaceAtlasPass::BindingData Result;
     RectPackAtlas<GlobalSurfaceAtlasTile> Atlas;
@@ -179,6 +180,7 @@ public:
 
     GlobalSurfaceAtlasCustomBuffer()
         : ObjectsBuffer(256 * (GLOBAL_SURFACE_ATLAS_OBJECT_DATA_STRIDE + GLOBAL_SURFACE_ATLAS_TILE_DATA_STRIDE * 3 / 4), PixelFormat::R32G32B32A32_Float, false, TEXT("GlobalSurfaceAtlas.ObjectsBuffer"))
+        , ObjectsListBuffer(0, PixelFormat::R32_UInt, false, TEXT("GlobalSurfaceAtlas.ObjectsListBuffer"))
     {
     }
 
@@ -403,6 +405,8 @@ public:
         PROFILE_CPU_NAMED("Write Objects");
         DirtyObjectsBuffer.Clear();
         ObjectsBuffer.Clear();
+        ObjectsListBuffer.Clear();
+        ObjectsListBuffer.Data.EnsureCapacity(Objects.Count() * sizeof(uint32));
         for (auto& e : Objects)
         {
             auto& object = e.Value;
@@ -421,6 +425,7 @@ public:
 
             // Write to objects buffer (this must match unpacking logic in HLSL)
             uint32 objectAddress = ObjectsBuffer.Data.Count() / sizeof(Float4);
+            ObjectsListBuffer.Write(objectAddress);
             auto* objectData = ObjectsBuffer.WriteReserve<Float4>(GLOBAL_SURFACE_ATLAS_OBJECT_DATA_STRIDE);
             objectData[0] = Float4(object.Position, object.Radius);
             objectData[1] = Float4::Zero;
@@ -912,6 +917,7 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
     {
         PROFILE_GPU_CPU_NAMED("Update Objects");
         surfaceAtlasData.ObjectsBuffer.Flush(context);
+        surfaceAtlasData.ObjectsListBuffer.Flush(context);
     }
 
     // Init constants
@@ -924,7 +930,7 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
     bool notReady = false;
 
     // Cull objects into chunks (for faster Atlas sampling)
-    if (surfaceAtlasData.Objects.Count() != 0)
+    if (surfaceAtlasData.Objects.Count() != 0 && surfaceAtlasData.ChunksBuffer)
     {
         // Each chunk (ChunksBuffer) contains uint with address of the culled objects data start in CulledObjectsBuffer.
         // If chunk has address=0 then it's unused/empty.
@@ -935,55 +941,52 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
         uint32 objectsBufferCapacity = (uint32)((float)surfaceAtlasData.Objects.Count() * 1.3f);
 
         // Copy counter from ChunksBuffer into staging buffer to access current chunks memory usage to adapt dynamically to the scene complexity
-        if (surfaceAtlasData.ChunksBuffer)
+        if (!_culledObjectsSizeBuffer)
         {
-            if (!_culledObjectsSizeBuffer)
+            Platform::MemoryClear(_culledObjectsSizeFrames, sizeof(_culledObjectsSizeFrames));
+            _culledObjectsSizeBuffer = GPUDevice::Instance->CreateBuffer(TEXT("GlobalSurfaceAtlas.CulledObjectsSizeBuffer"));
+            const GPUBufferDescription desc = GPUBufferDescription::Buffer(ARRAY_COUNT(_culledObjectsSizeFrames) * sizeof(uint32), GPUBufferFlags::None, PixelFormat::R32_UInt, _culledObjectsSizeFrames, sizeof(uint32), GPUResourceUsage::StagingReadback);
+            if (_culledObjectsSizeBuffer->Init(desc))
+                return true;
+        }
+        if (surfaceAtlasData.CulledObjectsCounterIndex != -1)
+        {
+            // Get the last counter value (accept staging readback delay or not available data yet)
+            notReady = true;
+            auto data = (uint32*)_culledObjectsSizeBuffer->Map(GPUResourceMapMode::Read);
+            if (data)
             {
-                Platform::MemoryClear(_culledObjectsSizeFrames, sizeof(_culledObjectsSizeFrames));
-                _culledObjectsSizeBuffer = GPUDevice::Instance->CreateBuffer(TEXT("GlobalSurfaceAtlas.CulledObjectsSizeBuffer"));
-                const GPUBufferDescription desc = GPUBufferDescription::Buffer(ARRAY_COUNT(_culledObjectsSizeFrames) * sizeof(uint32), GPUBufferFlags::None, PixelFormat::R32_UInt, _culledObjectsSizeFrames, sizeof(uint32), GPUResourceUsage::StagingReadback);
-                if (_culledObjectsSizeBuffer->Init(desc))
-                    return true;
-            }
-            if (surfaceAtlasData.CulledObjectsCounterIndex != -1)
-            {
-                // Get the last counter value (accept staging readback delay or not available data yet)
-                notReady = true;
-                auto data = (uint32*)_culledObjectsSizeBuffer->Map(GPUResourceMapMode::Read);
-                if (data)
+                uint32 counter = data[surfaceAtlasData.CulledObjectsCounterIndex];
+                if (counter > 0)
                 {
-                    uint32 counter = data[surfaceAtlasData.CulledObjectsCounterIndex];
-                    if (counter > 0)
-                    {
-                        objectsBufferCapacity = counter;
-                        notReady = false;
-                    }
-                    _culledObjectsSizeBuffer->Unmap();
-                }
-
-                // Allow to be ready if the buffer was already used
-                if (notReady && surfaceAtlasData.CulledObjectsBuffer && surfaceAtlasData.CulledObjectsBuffer->IsAllocated())
+                    objectsBufferCapacity = counter;
                     notReady = false;
+                }
+                _culledObjectsSizeBuffer->Unmap();
             }
-            if (surfaceAtlasData.CulledObjectsCounterIndex == -1)
+
+            // Allow to be ready if the buffer was already used
+            if (notReady && surfaceAtlasData.CulledObjectsBuffer && surfaceAtlasData.CulledObjectsBuffer->IsAllocated())
+                notReady = false;
+        }
+        if (surfaceAtlasData.CulledObjectsCounterIndex == -1)
+        {
+            // Find a free timer slot
+            notReady = true;
+            for (int32 i = 0; i < ARRAY_COUNT(_culledObjectsSizeFrames); i++)
             {
-                // Find a free timer slot
-                notReady = true;
-                for (int32 i = 0; i < ARRAY_COUNT(_culledObjectsSizeFrames); i++)
+                if (currentFrame - _culledObjectsSizeFrames[i] > GPU_ASYNC_LATENCY)
                 {
-                    if (currentFrame - _culledObjectsSizeFrames[i] > GPU_ASYNC_LATENCY)
-                    {
-                        surfaceAtlasData.CulledObjectsCounterIndex = i;
-                        break;
-                    }
+                    surfaceAtlasData.CulledObjectsCounterIndex = i;
+                    break;
                 }
             }
-            if (surfaceAtlasData.CulledObjectsCounterIndex != -1 && surfaceAtlasData.CulledObjectsBuffer)
-            {
-                // Copy current counter value
-                _culledObjectsSizeFrames[surfaceAtlasData.CulledObjectsCounterIndex] = currentFrame;
-                context->CopyBuffer(_culledObjectsSizeBuffer, surfaceAtlasData.CulledObjectsBuffer, sizeof(uint32), surfaceAtlasData.CulledObjectsCounterIndex * sizeof(uint32), 0);
-            }
+        }
+        if (surfaceAtlasData.CulledObjectsCounterIndex != -1 && surfaceAtlasData.CulledObjectsBuffer)
+        {
+            // Copy current counter value
+            _culledObjectsSizeFrames[surfaceAtlasData.CulledObjectsCounterIndex] = currentFrame;
+            context->CopyBuffer(_culledObjectsSizeBuffer, surfaceAtlasData.CulledObjectsBuffer, sizeof(uint32), surfaceAtlasData.CulledObjectsCounterIndex * sizeof(uint32), 0);
         }
 
         // Calculate optimal capacity for the objects buffer
@@ -1024,6 +1027,7 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
         static_assert(GLOBAL_SURFACE_ATLAS_CHUNKS_RESOLUTION % GLOBAL_SURFACE_ATLAS_CHUNKS_GROUP_SIZE == 0, "Invalid chunks resolution/groups setting.");
         const int32 chunkDispatchGroups = GLOBAL_SURFACE_ATLAS_CHUNKS_RESOLUTION / GLOBAL_SURFACE_ATLAS_CHUNKS_GROUP_SIZE;
         context->BindSR(0, surfaceAtlasData.ObjectsBuffer.GetBuffer()->View());
+        context->BindSR(1, surfaceAtlasData.ObjectsListBuffer.GetBuffer()->View());
         context->BindUA(0, surfaceAtlasData.ChunksBuffer->View());
         context->BindUA(1, surfaceAtlasData.CulledObjectsBuffer->View());
         context->Dispatch(_csCullObjects, chunkDispatchGroups, chunkDispatchGroups, chunkDispatchGroups);
