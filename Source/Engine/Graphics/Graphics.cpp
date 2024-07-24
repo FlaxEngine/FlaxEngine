@@ -23,7 +23,7 @@ Quality Graphics::GlobalSDFQuality = Quality::High;
 Quality Graphics::GIQuality = Quality::High;
 bool Graphics::GICascadesBlending = false;
 PostProcessSettings Graphics::PostProcessSettings;
-bool Graphics::SpreadWorkload = false;
+bool Graphics::SpreadWorkload = true;
 
 #if GRAPHICS_API_NULL
 extern GPUDevice* CreateGPUDeviceNull();
