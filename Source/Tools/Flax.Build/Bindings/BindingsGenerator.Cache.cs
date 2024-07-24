@@ -19,7 +19,7 @@ namespace Flax.Build.Bindings
     partial class BindingsGenerator
     {
         private static readonly Dictionary<string, Type> TypeCache = new Dictionary<string, Type>();
-        private const int CacheVersion = 22;
+        private const int CacheVersion = 23;
 
         internal static void Write(BinaryWriter writer, string e)
         {

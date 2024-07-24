@@ -23,7 +23,7 @@ namespace FlaxEngine
         /// <param name="source">The source location.</param>
         /// <param name="destination">The destination location.</param>
         /// <param name="length">The length (amount of bytes to copy).</param>
-        [Obsolete("Use MemoryCopy with long length and source/destination swapped to match C++ API.")]
+        [Obsolete("Use MemoryCopy with long length and source/destination parameters swapped instead")]
         public static void MemoryCopy(IntPtr source, IntPtr destination, int length)
         {
             // [Deprecated on 30.05.2021, expires on 30.05.2022]
