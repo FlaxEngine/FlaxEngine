@@ -492,6 +492,7 @@ void ProbesRenderer::OnRender(RenderTask* task, GPUContext* context)
         // Render frame
         Renderer::Render(_task);
         context->ClearState();
+        _task->CameraCut();
 
         // Copy frame to cube face
         {

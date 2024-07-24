@@ -167,20 +167,20 @@ public:
     /// </summary>
     API_PROPERTY() void SetUseAlpha(bool value);
 
-    const CustomBuffer* FindCustomBuffer(const StringView& name) const;
+    const CustomBuffer* FindCustomBuffer(const StringView& name, bool withLinked = true) const;
 
     template<class T>
-    const T* FindCustomBuffer(const StringView& name) const
+    const T* FindCustomBuffer(const StringView& name, bool withLinked = true) const
     {
-        return (const T*)FindCustomBuffer(name);
+        return (const T*)FindCustomBuffer(name, withLinked);
     }
 
     template<class T>
-    T* GetCustomBuffer(const StringView& name)
+    T* GetCustomBuffer(const StringView& name, bool withLinked = true)
     {
-        if (LinkedCustomBuffers)
-            return LinkedCustomBuffers->GetCustomBuffer<T>(name);
-        CustomBuffer* result = (CustomBuffer*)FindCustomBuffer(name);
+        if (LinkedCustomBuffers && withLinked)
+            return LinkedCustomBuffers->GetCustomBuffer<T>(name, withLinked);
+        CustomBuffer* result = (CustomBuffer*)FindCustomBuffer(name, withLinked);
         if (!result)
         {
             result = New<T>();

@@ -1043,8 +1043,6 @@ void ShadowsPass::SetupShadows(RenderContext& renderContext, RenderContextBatch&
 
     // Early out and skip shadows setup if no lights is actively casting shadows
     // RenderBuffers will automatically free any old ShadowsCustomBuffer after a few frames if we don't update LastFrameUsed
-    if (_shadowMapFormat == PixelFormat::Unknown || checkIfSkipPass() || EnumHasNoneFlags(renderContext.View.Flags, ViewFlags::Shadows))
-        return;
     Array<RenderLightData*, RendererAllocation> shadowedLights;
     for (auto& light : renderContext.List->DirectionalLights)
     {
@@ -1061,12 +1059,25 @@ void ShadowsPass::SetupShadows(RenderContext& renderContext, RenderContextBatch&
         if (light.CanRenderShadow(renderContext.View))
             shadowedLights.Add(&light);
     }
-    if (shadowedLights.IsEmpty())
+    const auto currentFrame = Engine::FrameCount;
+    if (_shadowMapFormat == PixelFormat::Unknown ||
+        EnumHasNoneFlags(renderContext.View.Flags, ViewFlags::Shadows) || 
+        checkIfSkipPass() || 
+        shadowedLights.IsEmpty())
+    {
+        // Invalidate any existing custom buffer that could have been used by the same task (eg. when rendering 6 sides of env probe)
+        if (auto* old = (ShadowsCustomBuffer*)renderContext.Buffers->FindCustomBuffer<ShadowsCustomBuffer>(TEXT("Shadows"), false))
+        {
+            if (old->LastFrameUsed == currentFrame)
+                old->LastFrameUsed = 0;
+        }
         return;
+    }
 
     // Initialize shadow atlas
-    auto& shadows = *renderContext.Buffers->GetCustomBuffer<ShadowsCustomBuffer>(TEXT("Shadows"));
-    const auto currentFrame = Engine::FrameCount;
+    auto& shadows = *renderContext.Buffers->GetCustomBuffer<ShadowsCustomBuffer>(TEXT("Shadows"), false);
+    if (shadows.LastFrameUsed == currentFrame)
+        shadows.Reset();
     shadows.LastFrameUsed = currentFrame;
     shadows.MaxShadowsQuality = Math::Clamp(Math::Min<int32>((int32)Graphics::ShadowsQuality, (int32)renderContext.View.MaxShadowsQuality), 0, (int32)Quality::MAX - 1);
     shadows.EnableStaticShadows = !renderContext.View.IsOfflinePass && !renderContext.View.IsSingleFrame;
@@ -1337,7 +1348,7 @@ RETRY_ATLAS_SETUP:
 void ShadowsPass::RenderShadowMaps(RenderContextBatch& renderContextBatch)
 {
     const RenderContext& renderContext = renderContextBatch.GetMainContext();
-    const ShadowsCustomBuffer* shadowsPtr = renderContext.Buffers->FindCustomBuffer<ShadowsCustomBuffer>(TEXT("Shadows"));
+    const ShadowsCustomBuffer* shadowsPtr = renderContext.Buffers->FindCustomBuffer<ShadowsCustomBuffer>(TEXT("Shadows"), false);
     if (shadowsPtr == nullptr || shadowsPtr->Lights.IsEmpty() || shadowsPtr->LastFrameUsed != Engine::FrameCount)
         return;
     PROFILE_GPU_CPU("ShadowMaps");
@@ -1488,7 +1499,7 @@ void ShadowsPass::RenderShadowMask(RenderContextBatch& renderContextBatch, Rende
     PROFILE_GPU_CPU("Shadow");
     GPUContext* context = GPUDevice::Instance->GetMainContext();
     RenderContext& renderContext = renderContextBatch.GetMainContext();
-    const ShadowsCustomBuffer& shadows = *renderContext.Buffers->FindCustomBuffer<ShadowsCustomBuffer>(TEXT("Shadows"));
+    const ShadowsCustomBuffer& shadows = *renderContext.Buffers->FindCustomBuffer<ShadowsCustomBuffer>(TEXT("Shadows"), false);
     ASSERT(shadows.LastFrameUsed == Engine::FrameCount);
     auto& view = renderContext.View;
     auto shader = _shader->GetShader();
@@ -1559,7 +1570,7 @@ void ShadowsPass::RenderShadowMask(RenderContextBatch& renderContextBatch, Rende
 
 void ShadowsPass::GetShadowAtlas(const RenderBuffers* renderBuffers, GPUTexture*& shadowMapAtlas, GPUBufferView*& shadowsBuffer)
 {
-    const ShadowsCustomBuffer* shadowsPtr = renderBuffers->FindCustomBuffer<ShadowsCustomBuffer>(TEXT("Shadows"));
+    const ShadowsCustomBuffer* shadowsPtr = renderBuffers->FindCustomBuffer<ShadowsCustomBuffer>(TEXT("Shadows"), false);
     if (shadowsPtr && shadowsPtr->ShadowMapAtlas && shadowsPtr->LastFrameUsed == Engine::FrameCount)
     {
         shadowMapAtlas = shadowsPtr->ShadowMapAtlas;

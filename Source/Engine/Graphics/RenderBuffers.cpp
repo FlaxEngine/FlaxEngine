@@ -126,10 +126,10 @@ void RenderBuffers::SetUseAlpha(bool value)
     _useAlpha = value;
 }
 
-const RenderBuffers::CustomBuffer* RenderBuffers::FindCustomBuffer(const StringView& name) const
+const RenderBuffers::CustomBuffer* RenderBuffers::FindCustomBuffer(const StringView& name, bool withLinked) const
 {
-    if (LinkedCustomBuffers)
-        return LinkedCustomBuffers->FindCustomBuffer(name);
+    if (LinkedCustomBuffers && withLinked)
+        return LinkedCustomBuffers->FindCustomBuffer(name, withLinked);
     for (const CustomBuffer* e : CustomBuffers)
     {
         if (e->Name == name)
