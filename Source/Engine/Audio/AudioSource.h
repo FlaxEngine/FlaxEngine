@@ -273,7 +273,7 @@ public:
     /// Determines whether this audio source started playing audio via audio backend. After audio play it may wait for audio clip data to be loaded or streamed.
     /// [Deprecated in v1.9]
     /// </summary>
-    API_PROPERTY() DEPRECATED FORCE_INLINE bool IsActuallyPlayingSth() const
+    API_PROPERTY() DEPRECATED("Use IsActuallyPlaying instead.") FORCE_INLINE bool IsActuallyPlayingSth() const
     {
         return _isActuallyPlayingSth;
     }

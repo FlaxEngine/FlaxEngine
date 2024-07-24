@@ -221,7 +221,7 @@ public:
 /// </summary>
 /// <remarks>Implementation based on https://blackpawn.com/texts/lightmaps/default.html.</remarks>
 template<typename NodeType, typename SizeType = uint32>
-struct DEPRECATED RectPack
+struct DEPRECATED("Use RectPackNode and RectPackAtlas instead.") RectPack
 {
     // Left and Right slots allow to easily move around the atlas like in a tree structure.
     NodeType* Left;

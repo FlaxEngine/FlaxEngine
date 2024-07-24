@@ -184,8 +184,7 @@ public:
     /// <param name="assets">The output collection of the asset ids referenced by this asset.</param>
     /// <param name="files">The output list of file paths referenced by this asset. Files might come from project Content folder (relative path is preserved in cooked game), or external location (copied into Content root folder of cooked game).</param>
     virtual void GetReferences(Array<Guid, HeapAllocation>& assets, Array<String, HeapAllocation>& files) const;
-    
-    
+
     /// <summary>
     /// Gets the asset references. Supported only in Editor.
     /// [Deprecated in v1.9]
