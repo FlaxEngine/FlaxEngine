@@ -729,6 +729,10 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
         auto desc = GPUTextureDescription::New2D(resolution, resolution, PixelFormat::Unknown);
         uint64 memUsage = 0;
         // TODO: try using BC4/BC5/BC7 block compression for Surface Atlas (eg. for Tiles material properties)
+        // TODO: pre-multiply AO into Color of surface so AtlasGBuffer0 can be RGB only (useful for block compression)
+        // TODO: Emissive into Diffuse and compress via BC6H (then remove AtlasEmissive) - if len(Color) > 1 then pixel emits light, otherwise it's normal
+        // TODO: store Normals in tile local-space (xy only, z can be reconstructed), then block compress, if ShadingModel==SHADING_MODEL_UNLIT then write empty normal
+        // TODO: pack depth in 0-255 range and block compress (should be enough quality for per-object tile trace)
 #define INIT_ATLAS_TEXTURE(texture, format) desc.Format = format; surfaceAtlasData.texture = RenderTargetPool::Get(desc); if (!surfaceAtlasData.texture) return true; memUsage += surfaceAtlasData.texture->GetMemoryUsage(); RENDER_TARGET_POOL_SET_NAME(surfaceAtlasData.texture, "GlobalSurfaceAtlas." #texture);
         INIT_ATLAS_TEXTURE(AtlasEmissive, PixelFormat::R11G11B10_Float);
         INIT_ATLAS_TEXTURE(AtlasGBuffer0, GBUFFER0_FORMAT);
