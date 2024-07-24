@@ -1,5 +1,6 @@
 // Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
+using FlaxEditor.GUI.ContextMenu;
 using FlaxEditor.GUI.Input;
 using FlaxEngine;
 using FlaxEngine.GUI;
@@ -34,9 +35,28 @@ namespace FlaxEditor.GUI.Dialogs
         private const float ChannelTextWidth = 12.0f;
         private const float SavedColorButtonWidth = 20.0f;
         private const float SavedColorButtonHeight = 20.0f;
+        private const float ColorPreviewWidth = 120.0f;
+        private const float ColorPreviewHeight = 50.0f;
+        private const float RGBAHexSeparator = 10.0f;
+        private const float OldNewColorPreviewDisplayRatio = 0.3335f;
+        private const float ColorWheelSize = 180.0f;
+        private const float SaturationAlphaSlidersThickness = 20.0f;
+
+        private const int maxSavedColorsAmount = 16; // Will begin new row when half is reached.
+
+        private const float SmallMargin = 6.0f;
+        private const float MediumMargin = 15.0f;
+        private const float LargeMargin = 25.0f;
+      
+        private Margin _pickerMargin = new Margin(SmallMargin, SmallMargin, SmallMargin, SmallMargin);
+        private Margin _SliderMargin = new Margin(0, LargeMargin + MediumMargin, 0, SmallMargin);
+        private Margin _textBoxBlockMargin = new Margin(LargeMargin + 1.5f, SmallMargin + 1.5f, SmallMargin + 1.5f, SmallMargin + 1.5f);
+        private Margin _colorPreviewMargin = new Margin(0, LargeMargin, 0, 0);
 
         private Color _initialValue;
         private Color _value;
+        private Color _cEyeDropperDefaultBackgroundColor;
+        private Color _cEyeDropperDefaultBorderColor;
         private bool _disableEvents;
         private bool _useDynamicEditing;
         private bool _activeEyedropper;
@@ -44,6 +64,7 @@ namespace FlaxEditor.GUI.Dialogs
         private ColorValueBox.ColorPickerClosedEvent _onClosed;
 
         private ColorSelectorWithSliders _cSelector;
+        private Rectangle oldColorRect; // Needs to be defined here so that it can be accesed in OnMouseUp
         private FloatValueBox _cRed;
         private FloatValueBox _cGreen;
         private FloatValueBox _cBlue;
@@ -52,9 +73,8 @@ namespace FlaxEditor.GUI.Dialogs
         private FloatValueBox _cSaturation;
         private FloatValueBox _cValue;
         private TextBox _cHex;
-        private Button _cCancel;
-        private Button _cOK;
         private Button _cEyedropper;
+        private Button _cOldPreviewButton;
 
         private List<Color> _savedColors = new List<Color>();
         private List<Button> _savedColorButtons = new List<Button>();
@@ -123,15 +143,15 @@ namespace FlaxEditor.GUI.Dialogs
                 _savedColors = JsonSerializer.Deserialize<List<Color>>(savedColors);
 
             // Selector
-            _cSelector = new ColorSelectorWithSliders(180, 18)
+            _cSelector = new ColorSelectorWithSliders(ColorWheelSize, SaturationAlphaSlidersThickness)
             {
-                Location = new Float2(PickerMargin, PickerMargin),
+                Location = new Float2(_pickerMargin.Left + _pickerMargin.Left, _pickerMargin.Top + _pickerMargin.Top),
                 Parent = this
             };
             _cSelector.ColorChanged += x => SelectedColor = x;
 
             // Red
-            _cRed = new FloatValueBox(0, _cSelector.Right + PickerMargin + RGBAMargin + ChannelTextWidth, PickerMargin, 100, 0, float.MaxValue, 0.001f)
+            _cRed = new FloatValueBox(0, _cSelector.Right + _SliderMargin.Right, _pickerMargin.Top + _pickerMargin.Top, 100, 0, float.MaxValue, 0.001f)
             {
                 Parent = this
             };
@@ -158,8 +178,16 @@ namespace FlaxEditor.GUI.Dialogs
             };
             _cAlpha.ValueChanged += OnRGBAChanged;
 
+            // Hex
+            const float hexTextBoxWidth = 80;
+            _cHex = new TextBox(false, _cRed.X + 20, _cAlpha.Bottom + _textBoxBlockMargin.Top, hexTextBoxWidth)
+            {
+                Parent = this
+            };
+            _cHex.EditEnd += OnHexChanged;
+
             // Hue
-            _cHue = new FloatValueBox(0, PickerMargin + HSVMargin + ChannelTextWidth, _cSelector.Bottom + PickerMargin, 100, 0, 360)
+            _cHue = new FloatValueBox(0, _cSelector.Right + _SliderMargin.Right, _cHex.Bottom + _textBoxBlockMargin.Top, 100)
             {
                 Parent = this
             };
@@ -180,38 +208,14 @@ namespace FlaxEditor.GUI.Dialogs
             _cValue.ValueChanged += OnHSVChanged;
 
             // Set valid dialog size based on UI content
-            _dialogSize = Size = new Float2(_cRed.Right + PickerMargin, 300);
-
-            // Hex
-            const float hexTextBoxWidth = 80;
-            _cHex = new TextBox(false, Width - hexTextBoxWidth - PickerMargin, _cSelector.Bottom + PickerMargin, hexTextBoxWidth)
-            {
-                Parent = this
-            };
-            _cHex.EditEnd += OnHexChanged;
-
-            // Cancel
-            _cCancel = new Button(Width - ButtonsWidth - PickerMargin, Height - Button.DefaultHeight - PickerMargin, ButtonsWidth)
-            {
-                Text = "Cancel",
-                Parent = this
-            };
-            _cCancel.Clicked += OnCancel;
-
-            // OK
-            _cOK = new Button(_cCancel.Left - ButtonsWidth - PickerMargin, _cCancel.Y, ButtonsWidth)
-            {
-                Text = "Ok",
-                Parent = this
-            };
-            _cOK.Clicked += OnSubmit;
+            _dialogSize = Size = new Float2(_cRed.Right + _pickerMargin.Right + 20, 300); // +20 to account for hsv math symbols
 
             // Create saved color buttons
-            CreateAllSaveButtons();
+            CreateSavedColorButtons();
 
             // Eyedropper button
             var style = Style.Current;
-            _cEyedropper = new Button(_cOK.X - EyedropperMargin, _cHex.Bottom + PickerMargin)
+            _cEyedropper = new Button(_cSelector.BottomLeft.X, _cSelector.BottomLeft.Y)
             {
                 TooltipText = "Eyedropper tool to pick a color directly from the screen",
                 BackgroundBrush = new SpriteBrush(Editor.Instance.Icons.Search32),
@@ -221,10 +225,11 @@ namespace FlaxEditor.GUI.Dialogs
                 BorderColorHighlighted = style.BorderSelected,
                 Parent = this,
             };
+            _cEyeDropperDefaultBackgroundColor = _cEyedropper.BackgroundColor;
+            _cEyeDropperDefaultBorderColor = _cEyedropper.BorderColor;
             _cEyedropper.Clicked += OnEyedropStart;
-            _cEyedropper.Height = (_cValue.Bottom - _cEyedropper.Y) * 0.5f;
             _cEyedropper.Width = _cEyedropper.Height;
-            _cEyedropper.X -= _cEyedropper.Width;
+            _cEyedropper.Location = new Float2(_cEyedropper.Location.X, _cEyedropper.Location.Y - _cEyedropper.Height);
 
             // Set initial color
             SelectedColor = initialValue;
@@ -233,8 +238,8 @@ namespace FlaxEditor.GUI.Dialogs
         private void OnSavedColorButtonClicked(Button button)
         {
             if (button.Tag == null)
-            {
-                // Prevent setting same color 2 times... because why...
+            { 
+                // Prevent setting same color 2 times... cause why...
                 foreach (var color in _savedColors)
                 {
                     if (color == _value)
@@ -242,7 +247,7 @@ namespace FlaxEditor.GUI.Dialogs
                         return;
                     }
                 }
-
+                
                 // Set color of button to current value;
                 button.BackgroundColor = _value;
                 button.BackgroundColorHighlighted = _value;
@@ -255,10 +260,17 @@ namespace FlaxEditor.GUI.Dialogs
                 var savedColors = JsonSerializer.Serialize(_savedColors, typeof(List<Color>));
                 Editor.Instance.ProjectCache.SetCustomData("ColorPickerSavedColors", savedColors);
 
+                float savedColorsYPosition = _cValue.Bottom - _textBoxBlockMargin.Bottom + 50;
+
                 // create new + button
-                if (_savedColorButtons.Count < 8)
+                if (_savedColorButtons.Count < maxSavedColorsAmount)
                 {
-                    var savedColorButton = new Button(PickerMargin * (_savedColorButtons.Count + 1) + SavedColorButtonWidth * _savedColorButtons.Count, Height - SavedColorButtonHeight - PickerMargin, SavedColorButtonWidth, SavedColorButtonHeight)
+                    bool savedGreaterThanHalfMax = _savedColors.Count + 1 > maxSavedColorsAmount / 2;
+
+                    float buttonYPosition = savedGreaterThanHalfMax ? savedColorsYPosition + SavedColorButtonHeight + SmallMargin : savedColorsYPosition;
+                    float buttonXPositionOffset = savedGreaterThanHalfMax ? (SavedColorButtonWidth + SmallMargin) * Mathf.Abs(maxSavedColorsAmount / 2 - _savedColors.Count) : (SavedColorButtonWidth + SmallMargin) * _savedColors.Count;
+
+                    var savedColorButton = new Button(_cSelector.Location.X + buttonXPositionOffset, buttonYPosition, SavedColorButtonWidth, SavedColorButtonHeight)
                     {
                         Text = "+",
                         Parent = this,
@@ -280,6 +292,11 @@ namespace FlaxEditor.GUI.Dialogs
             if (_activeEyedropper)
             {
                 _activeEyedropper = false;
+
+                // Reset colors
+                _cEyedropper.BackgroundColor = _cEyeDropperDefaultBackgroundColor;
+                _cEyedropper.BorderColor = _cEyeDropperDefaultBorderColor;
+
                 SelectedColor = colorPicked;
                 ScreenUtilities.PickColorDone -= OnColorPicked;
             }
@@ -288,6 +305,11 @@ namespace FlaxEditor.GUI.Dialogs
         private void OnEyedropStart()
         {
             _activeEyedropper = true;
+
+            // Provide some visual feedback that the eyedropper is active by changing colors
+            _cEyedropper.BackgroundColor = _cEyedropper.BackgroundColorSelected;
+            _cEyedropper.BorderColor = _cEyedropper.BorderColorSelected;
+
             ScreenUtilities.PickColor();
             ScreenUtilities.PickColorDone += OnColorPicked;
         }
@@ -348,7 +370,7 @@ namespace FlaxEditor.GUI.Dialogs
             rgbaR.Location.Y = _cAlpha.Y;
             Render2D.DrawText(style.FontMedium, "A", rgbaR, textColor, TextAlignment.Near, TextAlignment.Center);
 
-            // HSV left
+            // HSV letters (left)
             var hsvHl = new Rectangle(_cHue.Left - ChannelTextWidth, _cHue.Y, 10000, _cHue.Height);
             Render2D.DrawText(style.FontMedium, "H", hsvHl, textColor, TextAlignment.Near, TextAlignment.Center);
             hsvHl.Location.Y = _cSaturation.Y;
@@ -356,7 +378,7 @@ namespace FlaxEditor.GUI.Dialogs
             hsvHl.Location.Y = _cValue.Y;
             Render2D.DrawText(style.FontMedium, "V", hsvHl, textColor, TextAlignment.Near, TextAlignment.Center);
 
-            // HSV right
+            // HSV math symbols (right)
             var hsvHr = new Rectangle(_cHue.Right + 2, _cHue.Y, 10000, _cHue.Height);
             Render2D.DrawText(style.FontMedium, "°", hsvHr, textColor, TextAlignment.Near, TextAlignment.Center);
             hsvHr.Location.Y = _cSaturation.Y;
@@ -368,26 +390,66 @@ namespace FlaxEditor.GUI.Dialogs
             var hex = new Rectangle(_cHex.Left - 26, _cHex.Y, 10000, _cHex.Height);
             Render2D.DrawText(style.FontMedium, "Hex", hex, textColor, TextAlignment.Near, TextAlignment.Center);
 
-            // Color difference
-            var newRect = new Rectangle(_cOK.X - 3, _cHex.Bottom + PickerMargin, 130, 0);
-            newRect.Size.Y = 50;
-            Render2D.FillRectangle(newRect, Color.White);
-            var smallRectSize = 10;
-            var numHor = Mathf.FloorToInt(newRect.Width / smallRectSize);
-            var numVer = Mathf.FloorToInt(newRect.Height / smallRectSize);
-            // Draw checkerboard for background of color to help with transparency
-            for (int i = 0; i < numHor; i++)
+            // Old and New color preview
+            float oldNewColorPreviewYPosition = _cValue.Bottom - _textBoxBlockMargin.Bottom + 50;
+
+            oldColorRect = new Rectangle(Width - ColorPreviewWidth - _pickerMargin.Right - 20, oldNewColorPreviewYPosition, ColorPreviewWidth * OldNewColorPreviewDisplayRatio, 0);
+            oldColorRect.Size.Y = ColorPreviewHeight;
+
+            var newColorRect = new Rectangle(oldColorRect.Right, oldNewColorPreviewYPosition, ColorPreviewWidth * (1 - OldNewColorPreviewDisplayRatio), 0);
+            newColorRect.Size.Y = ColorPreviewHeight;
+
+            // Generate the button for right click detection here because we don't know position of oldColorRect before
+            _cOldPreviewButton = new Button(oldColorRect.Location, oldColorRect.Size)
             {
-                for (int j = 0; j < numVer; j++)
+                TooltipText = "Right click to use this color.",
+                Tag = "OldColorPreview",
+                BackgroundColor = Color.Transparent,
+                BackgroundColorHighlighted = Color.Transparent,
+                BackgroundColorSelected = Color.Transparent,
+                BorderColor = Color.Transparent,
+                BorderColorHighlighted = Color.Transparent,
+                BorderColorSelected = Color.Transparent,
+                Parent = this
+            };
+
+            const int smallRectSize = 10;
+
+            // Only generate and draw checkerboard if old or new color has transparency.
+            if (_initialValue.A < 1 || _value.A < 1)
+            {
+                // Checkerboard background
+                var alphaBackground = new Rectangle(oldColorRect.Left, oldNewColorPreviewYPosition, ColorPreviewWidth, ColorPreviewHeight);
+
+                // Draw checkerboard for background of color preview to help with transparency
+                Render2D.FillRectangle(alphaBackground, Color.White);
+                
+                var numHor = Mathf.FloorToInt(ColorPreviewWidth / smallRectSize);
+                var numVer = Mathf.FloorToInt(oldColorRect.Height / smallRectSize);
+                for (int i = 0; i < numHor; i++)
                 {
-                    if ((i + j) % 2 == 0 )
+                    for (int j = 0; j < numVer; j++)
                     {
-                        var rect = new Rectangle(newRect.X + smallRectSize * i, newRect.Y + smallRectSize * j, new Float2(smallRectSize));
-                        Render2D.FillRectangle(rect, Color.Gray);
+                        if ((i + j) % 2 == 0)
+                        {
+                            var rect = new Rectangle(oldColorRect.X + smallRectSize * i, oldColorRect.Y + smallRectSize * j, new Float2(smallRectSize));
+                            Render2D.FillRectangle(rect, Color.Gray);
+                        }
                     }
                 }
             }
-            Render2D.FillRectangle(newRect, _value);
+            
+            Vector2 textOffset = new Vector2(0, -15);
+            Render2D.DrawText(style.FontMedium, "Old", Color.White, oldColorRect.UpperLeft + textOffset);
+            Render2D.DrawText(style.FontMedium, "New", Color.White, newColorRect.UpperLeft + textOffset);
+
+            Render2D.FillRectangle(oldColorRect, _initialValue);
+            Render2D.FillRectangle(newColorRect, _value);
+
+            // Small separators between Old and New
+            Float2 separatorOffset = new Vector2(0, smallRectSize);
+            Render2D.DrawLine(oldColorRect.UpperRight, oldColorRect.UpperRight + separatorOffset / 2, Style.Current.Background, 2);
+            Render2D.DrawLine(oldColorRect.BottomRight, oldColorRect.BottomRight - separatorOffset / 2, Style.Current.Background, 2);
         }
 
         /// <inheritdoc />
@@ -438,7 +500,23 @@ namespace FlaxEditor.GUI.Dialogs
                 return true;
             }
 
+            if (button == MouseButton.Right && oldColorRect.Contains(location))
+            {
+                var menu = new ContextMenu.ContextMenu();
+                var useButton = menu.AddButton("Use");
+                useButton.Clicked += () => OnResetToOldPreviewPressed(useButton);
+                _disableEvents = true;
+                menu.Show(this, location);
+                menu.VisibleChanged += (c) => _disableEvents = false;
+                return true;
+            }
+
             return false;
+        }
+
+        private void OnResetToOldPreviewPressed(ContextMenuButton button)
+        {
+            _cSelector.Color = _initialValue;
         }
 
         private void OnSavedColorReplace(Button button)
@@ -483,20 +561,27 @@ namespace FlaxEditor.GUI.Dialogs
             }
             _savedColorButtons.Clear();
 
-            CreateAllSaveButtons();
+            CreateSavedColorButtons();
 
             // Save new colors
             var savedColors = JsonSerializer.Serialize(_savedColors, typeof(List<Color>));
             Editor.Instance.ProjectCache.SetCustomData("ColorPickerSavedColors", savedColors);
         }
 
-        private void CreateAllSaveButtons()
+        private void CreateSavedColorButtons()
         {
+            float savedColorsYPosition = _cValue.Bottom - _textBoxBlockMargin.Bottom + 50;
+
             // Create saved color buttons
             for (int i = 0; i < _savedColors.Count; i++)
             {
-                var savedColor = _savedColors[i];
-                var savedColorButton = new Button(PickerMargin * (i + 1) + SavedColorButtonWidth * i, Height - SavedColorButtonHeight - PickerMargin, SavedColorButtonWidth, SavedColorButtonHeight)
+                bool savedGreaterThanHalfMax = i + 1 > maxSavedColorsAmount / 2;
+
+                float buttonYPosition = savedGreaterThanHalfMax ? savedColorsYPosition + SavedColorButtonHeight + SmallMargin : savedColorsYPosition;
+                float buttonXPositionOffset = savedGreaterThanHalfMax ? (SavedColorButtonWidth + SmallMargin) * Mathf.Abs(maxSavedColorsAmount / 2 - i) : (SavedColorButtonWidth + SmallMargin) * i;
+
+                var savedColor = _savedColors[i];           
+                var savedColorButton = new Button(_cSelector.Location.X + buttonXPositionOffset, buttonYPosition, SavedColorButtonWidth, SavedColorButtonHeight)
                 {
                     Parent = this,
                     Tag = savedColor,
@@ -507,9 +592,14 @@ namespace FlaxEditor.GUI.Dialogs
                 savedColorButton.ButtonClicked += (b) => OnSavedColorButtonClicked(b);
                 _savedColorButtons.Add(savedColorButton);
             }
-            if (_savedColors.Count < 8)
+            if (_savedColors.Count < maxSavedColorsAmount)
             {
-                var savedColorButton = new Button(PickerMargin * (_savedColors.Count + 1) + SavedColorButtonWidth * _savedColors.Count, Height - SavedColorButtonHeight - PickerMargin, SavedColorButtonWidth, SavedColorButtonHeight)
+                bool savedGreaterThanHalfMax = _savedColors.Count + 1 > maxSavedColorsAmount / 2;
+
+                float buttonYPosition = savedGreaterThanHalfMax ? savedColorsYPosition + SavedColorButtonHeight + SmallMargin : savedColorsYPosition;
+                float buttonXPositionOffset = savedGreaterThanHalfMax ? (SavedColorButtonWidth + SmallMargin) * Mathf.Abs(maxSavedColorsAmount / 2 - _savedColors.Count) : (SavedColorButtonWidth + SmallMargin) * _savedColors.Count;
+
+                var savedColorButton = new Button(_cSelector.Location.X + buttonXPositionOffset, buttonYPosition, SavedColorButtonWidth, SavedColorButtonHeight)
                 {
                     Text = "+",
                     Parent = this,
@@ -522,8 +612,19 @@ namespace FlaxEditor.GUI.Dialogs
         }
 
         /// <inheritdoc />
-        public override void OnSubmit()
+        public override void OnCancel()
         {
+            if (_disableEvents)
+                return;
+
+            OnSubmit();
+
+            base.OnCancel();
+        }
+
+        /// <inheritdoc />
+        public override void OnSubmit()
+        {     
             if (_disableEvents)
                 return;
             _disableEvents = true;
@@ -534,29 +635,16 @@ namespace FlaxEditor.GUI.Dialogs
                 _onChanged?.Invoke(_value, false);
             }
 
-            base.OnSubmit();
-        }
+            // Ensure mouse cursor is reset to default
+            Cursor = CursorType.Default;
 
-        /// <inheritdoc />
-        public override void OnCancel()
-        {
-            if (_disableEvents)
-                return;
-            _disableEvents = true;
-
-            // Restore color if modified
-            if (_useDynamicEditing && _initialValue != _value)
-            {
-                _onChanged?.Invoke(_initialValue, false);
-            }
-
-            base.OnCancel();
+            base.OnSubmit(); 
         }
 
         /// <inheritdoc />
         public override void OnDestroy()
         {
-            _onClosed?.Invoke();
+            OnSubmit();
 
             base.OnDestroy();
         }
@@ -564,7 +652,7 @@ namespace FlaxEditor.GUI.Dialogs
         /// <inheritdoc />
         public void ClosePicker()
         {
-            OnCancel();
+            OnSubmit();
         }
     }
 }
