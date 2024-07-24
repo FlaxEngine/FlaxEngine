@@ -324,6 +324,7 @@ namespace Flax.Deps.Dependencies
 
             foreach (var platform in options.Platforms)
             {
+                BuildStarted(platform);
                 var platformData = Path.Combine(GetBinariesFolder(options, platform), "Data", "nethost");
                 if (Directory.Exists(platformData))
                     Utilities.DirectoryCopy(platformData, root, true, true);

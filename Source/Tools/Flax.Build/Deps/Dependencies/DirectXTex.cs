@@ -22,7 +22,6 @@ namespace Flax.Deps.Dependencies
                     return new[]
                     {
                         TargetPlatform.Windows,
-                        TargetPlatform.UWP,
                         TargetPlatform.XboxOne,
                         TargetPlatform.XboxScarlett,
                     };
@@ -48,16 +47,20 @@ namespace Flax.Deps.Dependencies
 
             foreach (var platform in options.Platforms)
             {
+                BuildStarted(platform);
                 switch (platform)
                 {
                 case TargetPlatform.Windows:
                 {
-                    var solutionPath = Path.Combine(root, "DirectXTex_Desktop_2022.sln");
-                    var binFolder = Path.Combine(root, "DirectXTex", "Bin", "Desktop_2022");
-                    Deploy.VCEnvironment.BuildSolution(solutionPath, configuration, "x64");
-                    var depsFolder = GetThirdPartyFolder(options, platform, TargetArchitecture.x64);
-                    foreach (var file in outputFileNames)
-                        Utilities.FileCopy(Path.Combine(binFolder, "x64", configuration, file), Path.Combine(depsFolder, file));
+                    var solutionPath = Path.Combine(root, "DirectXTex_Desktop_2022_Win10.sln");
+                    var binFolder = Path.Combine(root, "DirectXTex", "Bin", "Desktop_2022_Win10");
+                    foreach (var architecture in new[] { TargetArchitecture.x64, TargetArchitecture.ARM64 })
+                    {
+                        Deploy.VCEnvironment.BuildSolution(solutionPath, configuration, architecture.ToString());
+                        var depsFolder = GetThirdPartyFolder(options, platform, architecture);
+                        foreach (var file in outputFileNames)
+                            Utilities.FileCopy(Path.Combine(binFolder, architecture.ToString(), configuration, file), Path.Combine(depsFolder, file));
+                    }
                     break;
                 }
                 case TargetPlatform.UWP:

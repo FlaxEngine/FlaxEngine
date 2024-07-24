@@ -159,10 +159,14 @@ bool Win32Platform::Init()
     CpuInfo.PageSize = siSysInfo.dwPageSize;
     CpuInfo.ClockSpeed = ClockFrequency;
     {
+#ifdef _M_ARM64
+        CpuInfo.CacheLineSize = 128;
+#else
         int args[4];
         __cpuid(args, 0x80000006);
         CpuInfo.CacheLineSize = args[2] & 0xFF;
         ASSERT(CpuInfo.CacheLineSize && Math::IsPowerOfTwo(CpuInfo.CacheLineSize));
+#endif
     }
 
     // Setup unique device ID
@@ -229,10 +233,12 @@ void Win32Platform::MemoryBarrier()
 {
     _ReadWriteBarrier();
 #if PLATFORM_64BITS
-#ifdef _AMD64_
+#if defined(_AMD64_)
     __faststorefence();
 #elif defined(_IA64_)
 	__mf();
+#elif defined(_ARM64_)
+    __dmb(_ARM64_BARRIER_ISH);
 #else
 #error "Invalid platform."
 #endif
@@ -246,7 +252,11 @@ void Win32Platform::MemoryBarrier()
 
 void Win32Platform::Prefetch(void const* ptr)
 {
+#if _M_ARM64
+    __prefetch((char const*)ptr);
+#else
     _mm_prefetch((char const*)ptr, _MM_HINT_T0);
+#endif
 }
 
 void* Win32Platform::Allocate(uint64 size, uint64 alignment)

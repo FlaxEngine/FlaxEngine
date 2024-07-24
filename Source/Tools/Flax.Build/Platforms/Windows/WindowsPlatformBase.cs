@@ -416,12 +416,16 @@ namespace Flax.Build.Platforms
         }
 
         /// <summary>
-        /// Gets the path to the 32-bit tool binaries.
+        /// Gets the path to the VC++ tool binaries for specified host and target architectures.
         /// </summary>
         /// <param name="toolset">The version of the toolset to use.</param>
-        /// <returns>The directory containing the 64-bit toolchain binaries.</returns>
-        public static string GetVCToolPath32(WindowsPlatformToolset toolset)
+        /// <param name="hostArchitecture">The host architecture for native binaries.</param>
+        /// <param name="architecture">The target architecture to build for.</param>
+        /// <returns>The directory containing the toolchain binaries.</returns>
+        public static string GetVCToolPath(WindowsPlatformToolset toolset, TargetArchitecture hostArchitecture, TargetArchitecture architecture)
         {
+            if (architecture == TargetArchitecture.AnyCPU)
+                architecture = hostArchitecture;
             var toolsets = GetToolsets();
             var vcToolChainDir = toolsets[toolset];
 
@@ -429,86 +433,44 @@ namespace Flax.Build.Platforms
             {
             case WindowsPlatformToolset.v140:
             {
-                string compilerPath = Path.Combine(vcToolChainDir, "bin", "cl.exe");
-                if (File.Exists(compilerPath))
+                if (hostArchitecture != TargetArchitecture.x86)
                 {
-                    return Path.GetDirectoryName(compilerPath);
-                }
+                    string nativeCompilerPath = Path.Combine(vcToolChainDir, "bin", "amd64", "cl.exe");
+                    if (File.Exists(nativeCompilerPath))
+                        return Path.GetDirectoryName(nativeCompilerPath);
 
-                throw new Exception(string.Format("No 32-bit compiler toolchain found in {0}", compilerPath));
+                    string crossCompilerPath = Path.Combine(vcToolChainDir, "bin", "x86_amd64", "cl.exe");
+                    if (File.Exists(crossCompilerPath))
+                        return Path.GetDirectoryName(crossCompilerPath);
+
+                    Log.Verbose(string.Format("No {0} host compiler toolchain found in {1} or {2}", hostArchitecture.ToString(), nativeCompilerPath, crossCompilerPath));
+                    return null;
+                }
+                else
+                {
+                    string compilerPath = Path.Combine(vcToolChainDir, "bin", "cl.exe");
+                    if (File.Exists(compilerPath))
+                        return Path.GetDirectoryName(compilerPath);
+                    Log.Verbose(string.Format("No {0} host compiler toolchain found in {1}", hostArchitecture.ToString()));
+                    return null;
+                }
             }
             case WindowsPlatformToolset.v141:
             case WindowsPlatformToolset.v142:
             case WindowsPlatformToolset.v143:
             case WindowsPlatformToolset.v144:
             {
-                /*
-                string crossCompilerPath = Path.Combine(vcToolChainDir, "bin", "HostX64", "x86", "cl.exe");
-                if (File.Exists(crossCompilerPath))
-                {
-                    return Path.GetDirectoryName(crossCompilerPath);
-                }
-                */
-
-                string nativeCompilerPath = Path.Combine(vcToolChainDir, "bin", "HostX86", "x86", "cl.exe");
+                string hostFolder = hostArchitecture == TargetArchitecture.x86 ? "HostX86" : $"Host{hostArchitecture.ToString().ToLower()}";
+                string nativeCompilerPath = Path.Combine(vcToolChainDir, "bin", hostFolder, architecture.ToString().ToLower(), "cl.exe");
                 if (File.Exists(nativeCompilerPath))
-                {
                     return Path.GetDirectoryName(nativeCompilerPath);
-                }
 
-                //throw new Exception(string.Format("No 32-bit compiler toolchain found in {0} or {1}", crossCompilerPath, nativeCompilerPath));
-                throw new Exception(string.Format("No 32-bit compiler toolchain found in {0}", nativeCompilerPath));
-            }
-            default: throw new ArgumentOutOfRangeException(nameof(toolset), toolset, null);
-            }
-        }
-
-        /// <summary>
-        /// Gets the path to the 64-bit tool binaries.
-        /// </summary>
-        /// <param name="toolset">The version of the toolset to use.</param>
-        /// <returns>The directory containing the 64-bit toolchain binaries.</returns>
-        public static string GetVCToolPath64(WindowsPlatformToolset toolset)
-        {
-            var toolsets = GetToolsets();
-            var vcToolChainDir = toolsets[toolset];
-
-            switch (toolset)
-            {
-            case WindowsPlatformToolset.v140:
-            {
-                string nativeCompilerPath = Path.Combine(vcToolChainDir, "bin", "amd64", "cl.exe");
-                if (File.Exists(nativeCompilerPath))
-                {
-                    return Path.GetDirectoryName(nativeCompilerPath);
-                }
-
-                string crossCompilerPath = Path.Combine(vcToolChainDir, "bin", "x86_amd64", "cl.exe");
+                string crossCompilerPath = Path.Combine(vcToolChainDir, "bin", hostFolder, architecture.ToString().ToLower(), "cl.exe");
                 if (File.Exists(crossCompilerPath))
-                {
                     return Path.GetDirectoryName(crossCompilerPath);
-                }
 
-                throw new Exception(string.Format("No 64-bit compiler toolchain found in {0} or {1}", nativeCompilerPath, crossCompilerPath));
-            }
-            case WindowsPlatformToolset.v141:
-            case WindowsPlatformToolset.v142:
-            case WindowsPlatformToolset.v143:
-            case WindowsPlatformToolset.v144:
-            {
-                string nativeCompilerPath = Path.Combine(vcToolChainDir, "bin", "HostX64", "x64", "cl.exe");
-                if (File.Exists(nativeCompilerPath))
-                {
-                    return Path.GetDirectoryName(nativeCompilerPath);
-                }
-
-                string crossCompilerPath = Path.Combine(vcToolChainDir, "bin", "HostX86", "x64", "cl.exe");
-                if (File.Exists(crossCompilerPath))
-                {
-                    return Path.GetDirectoryName(crossCompilerPath);
-                }
-
-                throw new Exception(string.Format("No 64-bit compiler toolchain found in {0} or {1}", nativeCompilerPath, crossCompilerPath));
+                Log.Verbose(string.Format("No {0} host compiler toolchain found in {1} or {2}", hostArchitecture.ToString(), nativeCompilerPath, crossCompilerPath));
+                return null;
             }
             default: throw new ArgumentOutOfRangeException(nameof(toolset), toolset, null);
             }

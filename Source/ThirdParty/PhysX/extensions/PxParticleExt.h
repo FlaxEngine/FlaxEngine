@@ -275,7 +275,9 @@ class PxParticleAttachmentBuffer : public PxUserAllocated
 	PxU32 mNumDeviceAttachments;
 	PxU32 mNumDeviceFilters;
 
+#if PX_SUPPORT_GPU_PHYSX
 	PxCudaContextManager* mCudaContextManager;
+#endif
 
 	PxParticleSystem& mParticleSystem;
 
