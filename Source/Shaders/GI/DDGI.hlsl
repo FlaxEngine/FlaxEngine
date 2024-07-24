@@ -322,9 +322,10 @@ float3 SampleDDGIIrradiance(DDGIData data, Texture2D<snorm float4> probesData, T
     // Sample cascade
     float3 result = SampleDDGIIrradianceCascade(data, probesData, probesDistance, probesIrradiance, worldPosition, worldNormal, cascadeIndex, probesOrigin, probesExtent, probesSpacing, biasedWorldPosition);
 
-#if DDGI_CASCADE_BLEND_SMOOTH
-    // Blend with the next cascade
+    // Blend with the next cascade (or fallback irradiance outside the volume)
     cascadeIndex++;
+#if DDGI_CASCADE_BLEND_SMOOTH
+    result *= cascadeWeight;
     if (cascadeIndex < data.CascadesCount && cascadeWeight < 0.99f)
     {
         probesSpacing = data.ProbesOriginAndSpacing[cascadeIndex].w;
@@ -332,7 +333,16 @@ float3 SampleDDGIIrradiance(DDGIData data, Texture2D<snorm float4> probesData, T
         probesExtent = (data.ProbesCounts - 1) * (probesSpacing * 0.5f);
         biasedWorldPosition = worldPosition + GetDDGISurfaceBias(viewDir, probesSpacing, worldNormal, bias);
         float3 resultNext = SampleDDGIIrradianceCascade(data, probesData, probesDistance, probesIrradiance, worldPosition, worldNormal, cascadeIndex, probesOrigin, probesExtent, probesSpacing, biasedWorldPosition);
-        result = lerp(resultNext, result, cascadeWeight);
+        result += resultNext * (1 - cascadeWeight);
+    }
+    else
+    {
+        result += data.FallbackIrradiance * (1 - cascadeWeight);
+    }
+#else
+    if (cascadeIndex == data.CascadesCount)
+    {
+        result += data.FallbackIrradiance * (1 - cascadeWeight);
     }
 #endif
 
