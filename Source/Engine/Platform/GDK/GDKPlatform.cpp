@@ -30,7 +30,6 @@ inline bool operator==(const APP_LOCAL_DEVICE_ID& l, const APP_LOCAL_DEVICE_ID& 
     return Platform::MemoryCompare(&l, &r, sizeof(APP_LOCAL_DEVICE_ID)) == 0;
 }
 
-const Char* GDKPlatform::ApplicationWindowClass = TEXT("FlaxWindow");
 void* GDKPlatform::Instance = nullptr;
 Delegate<> GDKPlatform::Suspended;
 Delegate<> GDKPlatform::Resumed;
@@ -316,7 +315,7 @@ void GDKPlatform::PreInit(void* hInstance)
     windowsClass.style = CS_HREDRAW | CS_VREDRAW;
     windowsClass.lpfnWndProc = WndProc;
     windowsClass.hInstance = (HINSTANCE)Instance;
-    windowsClass.lpszClassName = ApplicationWindowClass;
+    windowsClass.lpszClassName = ApplicationClassName;
     if (!RegisterClassW(&windowsClass))
     {
         Error(TEXT("Window class registration failed!"));
@@ -474,7 +473,7 @@ void GDKPlatform::Exit()
     if (PlmSignalResume)
         CloseHandle(PlmSignalResume);
 
-    UnregisterClassW(ApplicationWindowClass, nullptr);
+    UnregisterClassW(ApplicationClassName, nullptr);
 
     XGameRuntimeUninitialize();
 }
