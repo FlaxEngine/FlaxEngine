@@ -733,6 +733,25 @@ void MaterialGenerator::ProcessGroupTextures(Box* box, Node* node, Value& value)
         _writer.Write(*triplanarTexture);
         value = result;
     }
+    // Get Lightmap UV
+    case 18: 
+    {
+        auto output = writeLocal(Value::InitForZero(ValueType::Float2), node);
+        auto lightmapUV = String::Format(TEXT(
+            "{{\n"
+            "#if USE_LIGHTMAP\n"
+            "\t {0} = input.LightmapUV;\n"
+            "#else\n"
+            "\t {0} = float2(0,0);\n"
+            "#endif\n"
+            "}}\n"
+        ), output.Value);
+
+        _writer.Write(*lightmapUV);
+
+        value = output;
+        break;
+    }
     default:
         break;
     }

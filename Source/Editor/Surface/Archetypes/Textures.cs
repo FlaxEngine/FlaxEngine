@@ -434,6 +434,19 @@ namespace FlaxEditor.Surface.Archetypes
                     NodeElementArchetype.Factory.ComboBox(50, Surface.Constants.LayoutOffsetY * 4, 100, 0, typeof(CommonSamplerType))
                 }
             },
+            new NodeArchetype
+            {
+                TypeID = 18,
+                Title = "Lightmap UV",
+                AlternativeTitles = new string[] { "Lightmap TexCoord" }, 
+                Description = "Lightmap UVs",
+                Flags = NodeFlags.MaterialGraph,
+                Size = new Float2(110, 30),
+                Elements = new []
+                {
+                    NodeElementArchetype.Factory.Output(0, "UVs", typeof(Float2), 0)
+                }
+            }
         };
     }
 }
