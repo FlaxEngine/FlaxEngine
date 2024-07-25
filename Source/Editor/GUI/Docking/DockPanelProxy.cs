@@ -191,23 +191,49 @@ namespace FlaxEditor.GUI.Docking
             // Return and don't draw tab if only 1 window and it is floating
             if (IsSingleFloatingWindow)
                 return;
+            
+            // Draw background
+            Render2D.FillRectangle(headerRect, style.Background);
 
-            // Check if has only one window docked
-            if (tabsCount == 1)
+            // Render all tabs
+            float x = 0;
+            for (int i = 0; i < tabsCount; i++)
             {
-                var tab = _panel.GetTab(0);
+                // Cache data
+                var tab = _panel.GetTab(i);
+                var tabColor = Color.Black;
+                var titleSize = tab.TitleSize;
+                var iconWidth = tab.Icon.IsValid ? DockPanel.DefaultButtonsSize + DockPanel.DefaultLeftTextMargin : 0;
+                var width = titleSize.X + DockPanel.DefaultButtonsSize + 2 * DockPanel.DefaultButtonsMargin + DockPanel.DefaultLeftTextMargin + DockPanel.DefaultRightTextMargin + iconWidth;
+                var tabRect = new Rectangle(x, 0, width, DockPanel.DefaultHeaderHeight);
+                var isMouseOver = tabRect.Contains(MousePosition);
+                var isSelected = _panel.SelectedTab == tab;
 
-                // Draw header
-                bool isMouseOver = headerRect.Contains(MousePosition);
-                Render2D.FillRectangle(headerRect, containsFocus ? style.BackgroundSelected : isMouseOver ? style.BackgroundHighlighted : style.LightBackground);
-
-                float iconWidth = tab.Icon.IsValid ? DockPanel.DefaultButtonsSize + DockPanel.DefaultLeftTextMargin : 0;
+                // Check if tab is selected
+                if (isSelected)
+                {
+                    tabColor = containsFocus ? style.BackgroundSelected : style.BackgroundNormal;
+                    Render2D.FillRectangle(tabRect, tabColor);
+                }
+                // Check if mouse is over
+                else if (isMouseOver)
+                {
+                    tabColor = style.BackgroundHighlighted;
+                    Render2D.FillRectangle(tabRect, tabColor);
+                }
+                else
+                {
+                    tabColor = style.BackgroundNormal.AlphaMultiplied(0.5f);
+                    Render2D.FillRectangle(tabRect, tabColor);
+                }
+                Render2D.DrawLine(tabRect.BottomLeft - new Float2(0, 1), tabRect.UpperLeft, style.Background);
+                Render2D.DrawLine(tabRect.BottomRight - new Float2(0, 1), tabRect.UpperRight, style.Background);
 
                 if (tab.Icon.IsValid)
                 {
                     Render2D.DrawSprite(
                         tab.Icon,
-                        new Rectangle(DockPanel.DefaultLeftTextMargin, (DockPanel.DefaultHeaderHeight - DockPanel.DefaultButtonsSize) / 2, DockPanel.DefaultButtonsSize, DockPanel.DefaultButtonsSize),
+                        new Rectangle(x + DockPanel.DefaultLeftTextMargin, (DockPanel.DefaultHeaderHeight - DockPanel.DefaultButtonsSize) / 2, DockPanel.DefaultButtonsSize, DockPanel.DefaultButtonsSize),
                         style.Foreground);
 
                 }
@@ -216,91 +242,30 @@ namespace FlaxEditor.GUI.Docking
                 Render2D.DrawText(
                     style.FontMedium,
                     tab.Title,
-                    new Rectangle(DockPanel.DefaultLeftTextMargin + iconWidth, 0, Width - DockPanel.DefaultLeftTextMargin - DockPanel.DefaultButtonsSize - 2 * DockPanel.DefaultButtonsMargin, DockPanel.DefaultHeaderHeight),
+                    new Rectangle(x + DockPanel.DefaultLeftTextMargin + iconWidth + 2, 0, 10000, DockPanel.DefaultHeaderHeight),
                     style.Foreground,
                     TextAlignment.Near,
                     TextAlignment.Center);
 
                 // Draw cross
-                var crossRect = new Rectangle(Width - DockPanel.DefaultButtonsSize - DockPanel.DefaultButtonsMargin, (DockPanel.DefaultHeaderHeight - DockPanel.DefaultButtonsSize) / 2, DockPanel.DefaultButtonsSize, DockPanel.DefaultButtonsSize);
-                bool isMouseOverCross = isMouseOver && crossRect.Contains(MousePosition);
-                if (isMouseOverCross)
-                    Render2D.FillRectangle(crossRect, (containsFocus ? style.BackgroundSelected : style.LightBackground) * 1.3f);
-                Render2D.DrawSprite(style.Cross, crossRect, isMouseOverCross ? style.Foreground : style.ForegroundGrey);
-            }
-            else
-            {
-                // Draw background
-                Render2D.FillRectangle(headerRect, style.LightBackground);
-
-                // Render all tabs
-                float x = 0;
-                for (int i = 0; i < tabsCount; i++)
+                if (isSelected || isMouseOver)
                 {
-                    // Cache data
-                    var tab = _panel.GetTab(i);
-                    var tabColor = Color.Black;
-                    var titleSize = tab.TitleSize;
-                    var iconWidth = tab.Icon.IsValid ? DockPanel.DefaultButtonsSize + DockPanel.DefaultLeftTextMargin : 0;
-                    var width = titleSize.X + DockPanel.DefaultButtonsSize + 2 * DockPanel.DefaultButtonsMargin + DockPanel.DefaultLeftTextMargin + DockPanel.DefaultRightTextMargin + iconWidth;
-                    var tabRect = new Rectangle(x, 0, width, DockPanel.DefaultHeaderHeight);
-                    var isMouseOver = tabRect.Contains(MousePosition);
-                    var isSelected = _panel.SelectedTab == tab;
-
-                    // Check if tab is selected
-                    if (isSelected)
-                    {
-                        tabColor = containsFocus ? style.BackgroundSelected : style.BackgroundNormal;
-                        Render2D.FillRectangle(tabRect, tabColor);
-                    }
-                    // Check if mouse is over
-                    else if (isMouseOver)
-                    {
-                        tabColor = style.BackgroundHighlighted;
-                        Render2D.FillRectangle(tabRect, tabColor);
-                    }
-                    else
-                    {
-                        tabColor = style.BackgroundHighlighted;
-                        Render2D.DrawLine(tabRect.BottomLeft - new Float2(0, 1), tabRect.UpperLeft, tabColor);
-                        Render2D.DrawLine(tabRect.BottomRight - new Float2(0, 1), tabRect.UpperRight, tabColor);
-                    }
-
-                    if (tab.Icon.IsValid)
-                    {
-                        Render2D.DrawSprite(
-                            tab.Icon,
-                            new Rectangle(x + DockPanel.DefaultLeftTextMargin, (DockPanel.DefaultHeaderHeight - DockPanel.DefaultButtonsSize) / 2, DockPanel.DefaultButtonsSize, DockPanel.DefaultButtonsSize),
-                            style.Foreground);
-
-                    }
-
-                    // Draw text
-                    Render2D.DrawText(
-                        style.FontMedium,
-                        tab.Title,
-                        new Rectangle(x + DockPanel.DefaultLeftTextMargin + iconWidth, 0, 10000, DockPanel.DefaultHeaderHeight),
-                        style.Foreground,
-                        TextAlignment.Near,
-                        TextAlignment.Center);
-
-                    // Draw cross
-                    if (isSelected || isMouseOver)
-                    {
-                        var crossRect = new Rectangle(x + width - DockPanel.DefaultButtonsSize - DockPanel.DefaultButtonsMargin, (DockPanel.DefaultHeaderHeight - DockPanel.DefaultButtonsSize) / 2, DockPanel.DefaultButtonsSize, DockPanel.DefaultButtonsSize);
-                        bool isMouseOverCross = isMouseOver && crossRect.Contains(MousePosition);
-                        if (isMouseOverCross)
-                            Render2D.FillRectangle(crossRect, tabColor * 1.3f);
-                        Render2D.DrawSprite(style.Cross, crossRect, isMouseOverCross ? style.Foreground : style.ForegroundGrey);
-                    }
-
-                    // Move
-                    x += width;
+                    var crossRect = new Rectangle(x + width - DockPanel.DefaultButtonsSize - DockPanel.DefaultButtonsMargin, (DockPanel.DefaultHeaderHeight - DockPanel.DefaultButtonsSize) / 2, DockPanel.DefaultButtonsSize, DockPanel.DefaultButtonsSize);
+                    bool isMouseOverCross = isMouseOver && crossRect.Contains(MousePosition);
+                    if (isMouseOverCross)
+                        Render2D.FillRectangle(crossRect, tabColor * 1.3f);
+                    Render2D.DrawSprite(style.Cross, crossRect, isMouseOverCross ? style.Foreground : style.ForegroundGrey);
                 }
 
-                // Draw selected tab strip
-                Render2D.FillRectangle(new Rectangle(0, DockPanel.DefaultHeaderHeight - 2, Width, 2), containsFocus ? style.BackgroundSelected : style.BackgroundNormal);
+                // Move
+                x += width;
             }
+
+            // Draw selected tab strip
+            Render2D.FillRectangle(new Rectangle(0, DockPanel.DefaultHeaderHeight - 2, Width, 2), containsFocus ? style.BackgroundSelected : style.BackgroundNormal);
+            Render2D.DrawLine(UpperLeft + new Float2(1, 0), BottomLeft + new Float2(1, 0), style.BackgroundNormal);
+            Render2D.DrawLine(UpperRight + new Float2(0, DockPanel.DefaultHeaderHeight), BottomRight, style.BackgroundNormal);
+            Render2D.DrawLine(BottomLeft, BottomRight, style.BackgroundNormal);
         }
 
         /// <inheritdoc />

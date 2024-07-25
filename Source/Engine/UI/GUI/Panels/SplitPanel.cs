@@ -1,5 +1,7 @@
 // Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
+using FlaxEditor.GUI.Docking;
+
 namespace FlaxEngine.GUI
 {
     /// <summary>
@@ -144,7 +146,39 @@ namespace FlaxEngine.GUI
 
             // Draw splitter
             var style = Style.Current;
-            Render2D.FillRectangle(_splitterRect, _splitterClicked ? style.BackgroundSelected : _mouseOverSplitter ? style.BackgroundHighlighted : style.LightBackground);
+            Render2D.FillRectangle(_splitterRect, _splitterClicked ? style.BackgroundSelected : _mouseOverSplitter ? style.BackgroundHighlighted : style.Background);
+
+            if (Panel1.HasChildren)
+            {
+                if (Panel1.Children[0] is DockPanelProxy proxy || Panel1.Children[0] is DockPanel || Panel1.Children[0] is SplitPanel)
+                {
+                    // Draw Nothing
+                }
+                else
+                {
+                    Render2D.DrawRectangle(Panel1.Bounds, style.BackgroundNormal);
+                }
+            }
+            else
+            {
+                Render2D.DrawRectangle(Panel1.Bounds, style.BackgroundNormal);
+            }
+
+            if (Panel2.HasChildren)
+            {
+                if (Panel2.Children[0] is DockPanelProxy proxy || Panel2.Children[0] is DockPanel || Panel2.Children[0] is SplitPanel)
+                {
+                    // Draw Nothing
+                }
+                else
+                {
+                    Render2D.DrawRectangle(Panel2.Bounds, style.BackgroundNormal);
+                }
+            }
+            else
+            {
+                Render2D.DrawRectangle(Panel2.Bounds, style.BackgroundNormal);
+            }
         }
 
         /// <inheritdoc />
