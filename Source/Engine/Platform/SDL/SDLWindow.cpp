@@ -957,6 +957,10 @@ void SDLWindow::StartTrackingMouse(bool useMouseScreenOffset)
     {
         if (SDL_CaptureMouse(SDL_TRUE) != 0)
             LOG(Warning, "SDL_CaptureMouse: {0}", String(SDL_GetError()));
+
+        // For viewport camera mouse tracking we want to use relative mode for best precision
+        if (_cursor == CursorType::Hidden)
+            Input::Mouse->SetRelativeMode(true);
     }
 }
 
@@ -973,6 +977,7 @@ void SDLWindow::EndTrackingMouse()
         LOG(Warning, "SDL_CaptureMouse: {0}", String(SDL_GetError()));
 
     //SDL_SetWindowGrab(_window, SDL_FALSE);
+    Input::Mouse->SetRelativeMode(false);
 }
 
 void SDLWindow::StartClippingCursor(const Rectangle& bounds)
@@ -1038,9 +1043,14 @@ void SDLWindow::UpdateCursor() const
     if (_cursor == CursorType::Hidden)
     {
         SDL_HideCursor();
+
+        if (_isTrackingMouse)
+            Input::Mouse->SetRelativeMode(true);
         return;
     }
     SDL_ShowCursor();
+    //if (_isTrackingMouse)
+    //    Input::Mouse->SetRelativeMode(false);
     
     int32 index = SDL_SYSTEM_CURSOR_DEFAULT;
     switch (_cursor)
