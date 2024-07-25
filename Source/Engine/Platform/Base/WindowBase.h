@@ -593,6 +593,12 @@ public:
     void OnMouseMove(const Float2& mousePosition);
 
     /// <summary>
+    /// Event fired when mouse moves in relative mode.
+    /// </summary>
+    MouseDelegate MouseMoveRelative;
+    void OnMouseMoveRelative(const Float2& mousePositionRelative);
+
+    /// <summary>
     /// Event fired when mouse leaves window.
     /// </summary>
     Action MouseLeave;

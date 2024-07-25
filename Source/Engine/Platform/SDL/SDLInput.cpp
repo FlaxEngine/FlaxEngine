@@ -474,8 +474,16 @@ bool SDLInput::HandleEvent(SDLWindow* window, SDL_Event& event)
     {
     case SDL_EVENT_MOUSE_MOTION:
     {
-        const Float2 mousePos = window->ClientToScreen({ event.motion.x, event.motion.y });
-        Input::Mouse->OnMouseMove(mousePos, window);
+        if (Input::Mouse->IsRelative())
+        {
+            const Float2 mouseDelta(event.motion.xrel, event.motion.yrel);
+            Input::Mouse->OnMouseMoveRelative(mouseDelta, window);
+        }
+        else
+        {
+            const Float2 mousePos = window->ClientToScreen({ event.motion.x, event.motion.y });
+            Input::Mouse->OnMouseMove(mousePos, window);
+        }
         return true;
     }
     case SDL_EVENT_WINDOW_MOUSE_LEAVE:
@@ -486,7 +494,7 @@ bool SDLInput::HandleEvent(SDLWindow* window, SDL_Event& event)
     case SDL_EVENT_MOUSE_BUTTON_DOWN:
     case SDL_EVENT_MOUSE_BUTTON_UP:
     {
-        const Float2 mousePos = window->ClientToScreen({ event.button.x, event.button.y });
+        Float2 mousePos = window->ClientToScreen({ event.button.x, event.button.y });
         MouseButton button = MouseButton::None;
         if (event.button.button == SDL_BUTTON_LEFT)
             button = MouseButton::Left;
@@ -499,9 +507,16 @@ bool SDLInput::HandleEvent(SDLWindow* window, SDL_Event& event)
         else if (event.button.button == SDL_BUTTON_X2)
             button = MouseButton::Extended2;
 
+        if (Input::Mouse->IsRelative())
+        {
+            // Use the previous visible mouse position here, the event or global
+            // mouse position would cause input to trigger in other editor windows.
+            mousePos = SDLInputImpl::Mouse->GetMousePosition();
+        }
+
         if (event.button.state == SDL_RELEASED)
             Input::Mouse->OnMouseUp(mousePos, button, window);
-        // Prevent sending mouse down event when double-clicking
+        // Prevent sending multiple mouse down event when double-clicking UI elements
         else if (event.button.clicks % 2 == 1)
             Input::Mouse->OnMouseDown(mousePos, button, window);
         else
@@ -511,8 +526,15 @@ bool SDLInput::HandleEvent(SDLWindow* window, SDL_Event& event)
     }
     case SDL_EVENT_MOUSE_WHEEL:
     {
-        const Float2 mousePos = window->ClientToScreen({ event.wheel.mouse_x, event.wheel.mouse_y });
+        Float2 mousePos = window->ClientToScreen({ event.wheel.mouse_x, event.wheel.mouse_y });
         const float delta = event.wheel.y;
+
+        if (Input::Mouse->IsRelative())
+        {
+            // Use the previous visible mouse position here, the event or global
+            // mouse position would cause input to trigger in other editor windows.
+            mousePos = SDLInputImpl::Mouse->GetMousePosition();
+        }
 
         Input::Mouse->OnMouseWheel(mousePos, delta, window);
         return true;

@@ -616,7 +616,7 @@ void LinuxWindow::OnButtonPress(void* event)
 	}
 
 	// Handle double-click
-	if (buttonEvent->button == Button1)
+	if (buttonEvent->button == Button1 && !Input::Mouse->IsRelative())
 	{
 		if (
 			buttonEvent->time < (MouseLastButtonPressTime + MouseDoubleClickTime) &&

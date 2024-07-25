@@ -17,31 +17,37 @@ namespace FlaxEngine
         /// <summary>
         /// Perform window hit test delegate.
         /// </summary>
-        /// <param name="mouse">The mouse position. The coordinate is relative to the upper-left corner of the screen. Use <see cref="ScreenToClient"/> to convert position into client space coordinates.</param>
+        /// <param name="mousePosition">The mouse position. The coordinate is relative to the upper-left corner of the screen. Use <see cref="ScreenToClient"/> to convert position into client space coordinates.</param>
         /// <returns>Hit result.</returns>
-        public delegate WindowHitCodes HitTestDelegate(ref Float2 mouse);
+        public delegate WindowHitCodes HitTestDelegate(ref Float2 mousePosition);
 
         /// <summary>
         /// Perform mouse buttons action.
         /// </summary>
-        /// <param name="mouse">The mouse position.</param>
+        /// <param name="mousePosition">The mouse position.</param>
         /// <param name="button">The mouse buttons state.</param>
         /// <param name="handled">The flag that indicated that event has been handled by the custom code and should not be passed further. By default it is set to false.</param>
-        public delegate void MouseButtonDelegate(ref Float2 mouse, MouseButton button, ref bool handled);
+        public delegate void MouseButtonDelegate(ref Float2 mousePosition, MouseButton button, ref bool handled);
 
         /// <summary>
         /// Perform mouse move action.
         /// </summary>
-        /// <param name="mouse">The mouse position.</param>
-        public delegate void MouseMoveDelegate(ref Float2 mouse);
+        /// <param name="mousePosition">The mouse position.</param>
+        public delegate void MouseMoveDelegate(ref Float2 mousePosition);
+        
+        /// <summary>
+        /// Perform mouse move action in relative mode.
+        /// </summary>
+        /// <param name="mouseMotion">The relative mouse motion.</param>
+        public delegate void MouseMoveRelativeDelegate(ref Float2 mouseMotion);
 
         /// <summary>
         /// Perform mouse wheel action.
         /// </summary>
-        /// <param name="mouse">The mouse position.</param>
+        /// <param name="mousePosition">The mouse position.</param>
         /// <param name="delta">The mouse wheel move delta (can be positive or negative; normalized to [-1;1] range).</param>
         /// <param name="handled">The flag that indicated that event has been handled by the custom code and should not be passed further. By default it is set to false.</param>
-        public delegate void MouseWheelDelegate(ref Float2 mouse, float delta, ref bool handled);
+        public delegate void MouseWheelDelegate(ref Float2 mousePosition, float delta, ref bool handled);
 
         /// <summary>
         /// Perform touch action.
@@ -99,9 +105,14 @@ namespace FlaxEngine
         public event MouseWheelDelegate MouseWheel;
 
         /// <summary>
-        /// Event fired when mouse moves
+        /// Event fired when mouse moves.
         /// </summary>
         public event MouseMoveDelegate MouseMove;
+        
+        /// <summary>
+        /// Event fired when mouse moves in relative mode.
+        /// </summary>
+        public event MouseMoveRelativeDelegate MouseMoveRelative;
 
         /// <summary>
         /// Event fired when mouse leaves window.
@@ -272,6 +283,12 @@ namespace FlaxEngine
 
             MouseMove?.Invoke(ref pos);
             GUI.OnMouseMove(pos);
+        }
+        
+        internal void Internal_OnMouseMoveRelative(ref Float2 mouseMotion)
+        {
+            MouseMoveRelative?.Invoke(ref mouseMotion);
+            GUI.OnMouseMoveRelative(mouseMotion);
         }
 
         internal void Internal_OnMouseLeave()

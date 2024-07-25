@@ -257,6 +257,13 @@ void WindowBase::OnMouseMove(const Float2& mousePosition)
     INVOKE_EVENT_PARAMS_1(OnMouseMove, (void*)&mousePosition);
 }
 
+void WindowBase::OnMouseMoveRelative(const Float2& mousePositionRelative)
+{
+    PROFILE_CPU_NAMED("GUI.OnMouseMoveRelative");
+    MouseMoveRelative(mousePositionRelative);
+    INVOKE_EVENT_PARAMS_1(OnMouseMoveRelative, (void*)&mousePositionRelative);
+}
+
 void WindowBase::OnMouseLeave()
 {
     PROFILE_CPU_NAMED("GUI.OnMouseLeave");

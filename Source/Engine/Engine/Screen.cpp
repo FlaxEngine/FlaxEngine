@@ -106,13 +106,25 @@ void Screen::SetCursorVisible(const bool value)
 #else
 	const auto win = Engine::MainWindow;
 #endif
+    bool focused = false;
     if (win && Engine::HasGameViewportFocus())
     {
         win->SetCursor(value ? CursorType::Default : CursorType::Hidden);
+        focused = true;
     }
     else if (win)
         win->SetCursor(CursorType::Default);
     CursorVisible = value;
+
+    // Just enable relative mode when cursor is constrained and not visible
+    if (CursorLock != CursorLockMode::None && !CursorVisible && focused)
+    {
+        Input::Mouse->SetRelativeMode(true);
+    }
+    else if (CursorLock == CursorLockMode::None || CursorVisible || !focused)
+    {
+        Input::Mouse->SetRelativeMode(false);
+    }
 }
 
 CursorLockMode Screen::GetCursorLock()
@@ -141,6 +153,17 @@ void Screen::SetCursorLock(CursorLockMode mode)
         win->EndClippingCursor();
     }
     CursorLock = mode;
+
+    // Just enable relative mode when cursor is constrained and not visible
+    bool focused = win && Engine::HasGameViewportFocus();
+    if (CursorLock != CursorLockMode::None && !CursorVisible && focused)
+    {
+        Input::Mouse->SetRelativeMode(true);
+    }
+    else if (CursorLock == CursorLockMode::None || CursorVisible || !focused)
+    {
+        Input::Mouse->SetRelativeMode(false);
+    }
 }
 
 GameWindowMode Screen::GetGameWindowMode()

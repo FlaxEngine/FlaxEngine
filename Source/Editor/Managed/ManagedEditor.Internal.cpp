@@ -435,6 +435,9 @@ DEFINE_INTERNAL_CALL(void) EditorInternal_RunVisualScriptBreakpointLoopTick(floa
             case InputDevice::EventType::MouseMove:
                 window->OnMouseMove(window->ScreenToClient(e.MouseData.Position));
                 break;
+            case InputDevice::EventType::MouseMoveRelative:
+                window->OnMouseMoveRelative(e.MouseMovementData.PositionRelative);
+                break;
             case InputDevice::EventType::MouseLeave:
                 window->OnMouseLeave();
                 break;
