@@ -168,11 +168,18 @@ namespace FlaxEditor.Content
 
         private SpriteHandle _thumbnail;
 
+        /// <summary>
+        /// Default Constructor.
+        /// </summary>
         public SpawnableJsonAssetProxy()
         {
             _thumbnail = SpriteHandle.Invalid;
         }
         
+        /// <summary>
+        /// Constructor with overriden thumbnail.
+        /// </summary>
+        /// <param name="thumbnail">The thumbnail to use.</param>
         public SpawnableJsonAssetProxy(SpriteHandle thumbnail)
         {
             _thumbnail = thumbnail;
