@@ -146,10 +146,24 @@ namespace FlaxEditor.Windows
         private void Rename()
         {
             var selection = Editor.SceneEditing.Selection;
-            if (selection.Count != 0 && selection[0] is ActorNode actor)
+            var selectionCount = selection.Count;
+
+            // Show a window with options to rename multiple actors.
+            if (selectionCount > 1)
             {
-                if (selection.Count != 0)
-                    Editor.SceneEditing.Select(actor);
+                var selectedActors = new Actor[selectionCount];
+
+                for (int i = 0; i < selectionCount; i++)
+                    if (selection[i] is ActorNode actorNode)
+                        selectedActors[i] = actorNode.Actor;
+
+                RenameWindow.Show(selectedActors, Editor);
+                return;
+            }
+
+            if (selectionCount != 0 && selection[0] is ActorNode actor)
+            {
+                Editor.SceneEditing.Select(actor);
                 actor.TreeNode.StartRenaming(this, _sceneTreePanel);
             }
         }
