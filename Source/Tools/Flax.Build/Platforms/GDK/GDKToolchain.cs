@@ -55,7 +55,8 @@ namespace Flax.Build.Platforms
             var paths = Directory.GetDirectories(redistToolsPath, name.Substring(0, 2) + "*");
             if (paths.Length == 0)
                 throw new Exception($"Failed to find MSVC redistribute binaries for toolset '{Toolset}' inside folder '{toolsPath}'");
-            redistToolsPath = Path.Combine(paths[0], "x64", "Microsoft.VC" + (int)Toolset + ".CRT");
+            var crtToolset = Toolset > WindowsPlatformToolset.v143 ? WindowsPlatformToolset.v143 : Toolset;
+            redistToolsPath = Path.Combine(paths[0], "x64", "Microsoft.VC" + (int)crtToolset + ".CRT");
             redistToolsPath = Utilities.RemovePathRelativeParts(redistToolsPath);
             options.DependencyFiles.Add(Path.Combine(redistToolsPath, "concrt140.dll"));
             options.DependencyFiles.Add(Path.Combine(redistToolsPath, "msvcp140.dll"));

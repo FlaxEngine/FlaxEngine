@@ -34,7 +34,7 @@ public class GraphicsDeviceDX12 : GraphicsDeviceBaseModule
                 break;
         }
 
-        if (EnableWinPixEventRuntime && options.Configuration != TargetConfiguration.Release)
+        if (EnableWinPixEventRuntime && options.Configuration != TargetConfiguration.Release && options.Platform.Target == TargetPlatform.Windows)
         {
             options.PrivateDefinitions.Add("USE_PIX");
             options.PrivateIncludePaths.Add(Path.Combine(Globals.EngineRoot, "Source/ThirdParty/WinPixEventRuntime"));
