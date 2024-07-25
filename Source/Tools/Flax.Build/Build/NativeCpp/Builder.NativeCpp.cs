@@ -500,7 +500,7 @@ namespace Flax.Build
                     }
 
                     // Compile C++ file with binary module (only for first module in the binary module to prevent multiple implementations)
-                    if (buildData.BinaryModules.FirstOrDefault(x => x.Key == module.BinaryModuleName)?.First() == module)
+                    if (buildData.BinaryModules.FirstOrDefault(x => x.Key == module.BinaryModuleName)?.First(x => !(x is DepsModule || x is HeaderOnlyModule)) == module)
                     {
                         var project = GetModuleProject(module, buildData);
                         var binaryModuleSourcePath = Path.Combine(project.ProjectFolderPath, "Source", module.BinaryModuleName + ".Gen.cpp");
