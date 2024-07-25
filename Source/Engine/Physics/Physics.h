@@ -120,7 +120,7 @@ public:
     /// Performs a line between two points in the scene, returns all hitpoints infos.
     /// </summary>
     /// <param name="start">The origin of the ray.</param>
-    /// <param name="end">The normalized direction of the ray.</param>
+    /// <param name="end">The end position of the line.</param>
     /// <param name="results">The result hits. Valid only when method returns true.</param>
     /// <param name="layerMask">The layer mask used to filter the results.</param>
     /// <param name="hitTriggers">If set to <c>true</c> triggers will be hit, otherwise will skip them.</param>
