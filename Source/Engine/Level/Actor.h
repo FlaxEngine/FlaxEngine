@@ -182,15 +182,16 @@ public:
     }
 
     /// <summary>
-    /// Sets the actor name without copying the string.
+    /// Sets the actor name.
     /// </summary>
-    void SetNameNoCopy(String&& value);
+    /// <param name="value">The value to set.</param>
+    API_PROPERTY() void SetName(String&& value);
 
     /// <summary>
     /// Sets the actor name.
     /// </summary>
     /// <param name="value">The value to set.</param>
-    API_PROPERTY() void SetName(const StringView& value);
+    void SetName(const StringView& value);
 
 public:
     /// <summary>
