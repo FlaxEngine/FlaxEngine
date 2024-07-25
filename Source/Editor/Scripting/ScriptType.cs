@@ -51,12 +51,12 @@ namespace FlaxEditor.Scripting
                 int standardToken = _managed?.MetadataToken ?? _custom?.MetadataToken ?? 0;
                 if (_managed is PropertyInfo && _managed.DeclaringType != null)
                 {
-                    var field = _managed.DeclaringType.GetField(string.Format("<{0}>k__BackingField", Name), BindingFlags.Instance | BindingFlags.NonPublic);
-                    if (field == null || field.MetadataToken == 0)
+                    var backingField = _managed.DeclaringType.GetField(string.Format("<{0}>k__BackingField", Name), BindingFlags.Instance | BindingFlags.NonPublic);
+                    if (backingField == null || backingField.MetadataToken == 0)
                     {
                         return standardToken;
                     }
-                    return field.MetadataToken;
+                    return backingField.MetadataToken;
                 }
                 return standardToken;
             }
