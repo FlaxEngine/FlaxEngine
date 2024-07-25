@@ -45,6 +45,7 @@ static_assert(sizeof(double) == 8, "Invalid double type size.");
 static_assert((PLATFORM_THREADS_LIMIT & (PLATFORM_THREADS_LIMIT - 1)) == 0, "Threads limit must be power of two.");
 static_assert(PLATFORM_THREADS_LIMIT % 4 == 0, "Threads limit must be multiple of 4.");
 
+const Char* PlatformBase::ApplicationClassName = TEXT("FlaxWindow");
 float PlatformBase::CustomDpiScale = 1.0f;
 Array<User*, FixedAllocation<8>> PlatformBase::Users;
 Delegate<User*> PlatformBase::UserAdded;
