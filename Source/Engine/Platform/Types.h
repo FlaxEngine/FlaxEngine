@@ -18,10 +18,12 @@ class Win32Thread;
 typedef Win32Thread Thread;
 class WindowsClipboard;
 typedef WindowsClipboard Clipboard;
+#if !PLATFORM_SDL
 class WindowsPlatform;
 typedef WindowsPlatform Platform;
 class WindowsWindow;
 typedef WindowsWindow Window;
+#endif
 class Win32Network;
 typedef Win32Network Network;
 class UserBase;
@@ -68,12 +70,14 @@ class UnixFile;
 typedef UnixFile File;
 class LinuxThread;
 typedef LinuxThread Thread;
+#if !PLATFORM_SDL
 class LinuxClipboard;
 typedef LinuxClipboard Clipboard;
 class LinuxPlatform;
 typedef LinuxPlatform Platform;
 class LinuxWindow;
 typedef LinuxWindow Window;
+#endif
 class UnixNetwork;
 typedef UnixNetwork Network;
 class UserBase;
@@ -287,4 +291,15 @@ typedef UserBase User;
 
 #error Missing Types implementation!
 
+#endif
+
+#if PLATFORM_SDL
+#if PLATFORM_LINUX
+class SDLClipboard;
+typedef SDLClipboard Clipboard;
+#endif
+class SDLPlatform;
+typedef SDLPlatform Platform;
+class SDLWindow;
+typedef SDLWindow Window;
 #endif

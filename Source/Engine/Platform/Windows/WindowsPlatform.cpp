@@ -4,6 +4,8 @@
 
 #include "Engine/Platform/Platform.h"
 #include "Engine/Platform/Window.h"
+#include "Engine/Platform/Windows/WindowsInput.h"
+#include "Engine/Platform/Windows/WindowsWindow.h"
 #include "Engine/Platform/FileSystem.h"
 #include "Engine/Platform/CreateWindowSettings.h"
 #include "Engine/Platform/CreateProcessSettings.h"
@@ -255,6 +257,8 @@ void GetWindowsVersion(String& windowsName, int32& versionMajor, int32& versionM
     RegCloseKey(hKey);
 }
 
+#if !PLATFORM_SDL
+
 LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
     // Find window to process that message
@@ -271,6 +275,8 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
     // Default
     return DefWindowProc(hwnd, msg, wParam, lParam);
 }
+
+#endif
 
 long __stdcall WindowsPlatform::SehExceptionHandler(EXCEPTION_POINTERS* ep)
 {
@@ -518,6 +524,7 @@ void WindowsPlatform::PreInit(void* hInstance)
     // Disable the process from being showing "ghosted" while not responding messages during slow tasks
     DisableProcessWindowsGhosting();
 
+#if !PLATFORM_SDL
     // Register window class
     WNDCLASS windowsClass;
     Platform::MemoryClear(&windowsClass, sizeof(WNDCLASS));
@@ -532,6 +539,7 @@ void WindowsPlatform::PreInit(void* hInstance)
         Error(TEXT("Window class registration failed!"));
         exit(-1);
     }
+#endif
 
     // Init OLE
     if (OleInitialize(nullptr) != S_OK)
@@ -680,7 +688,9 @@ bool WindowsPlatform::Init()
     }
     OnPlatformUserAdd(New<User>(userName));
 
+#if !PLATFORM_SDL
     WindowsInput::Init();
+#endif
 
     return false;
 }
@@ -708,7 +718,9 @@ void WindowsPlatform::LogInfo()
 
 void WindowsPlatform::Tick()
 {
+#if !PLATFORM_SDL
     WindowsInput::Update();
+#endif
 
     // Check to see if any messages are waiting in the queue
     MSG msg;
@@ -739,8 +751,10 @@ void WindowsPlatform::Exit()
     DbgHelpUnlock();
 #endif
 
+#if !PLATFORM_SDL
     // Unregister app class
     UnregisterClassW(ApplicationClassName, nullptr);
+#endif
 
     Win32Platform::Exit();
 }
@@ -1185,10 +1199,14 @@ int32 WindowsPlatform::CreateProcess(CreateProcessSettings& settings)
     return result;
 }
 
+#if !PLATFORM_SDL
+
 Window* WindowsPlatform::CreateWindow(const CreateWindowSettings& settings)
 {
     return New<WindowsWindow>(settings);
 }
+
+#endif
 
 void* WindowsPlatform::LoadLibrary(const Char* filename)
 {
