@@ -42,7 +42,7 @@ namespace FlaxEditor.GUI
             Text = text;
 
             var style = Style.Current;
-#if PLATFORM_WINDOWS
+#if PLATFORM_WINDOWS || PLATFORM_SDL
             if (Editor.Instance.Options.Options.Interface.UseNativeWindowSystem)
             {
                 BackgroundColorMouseOver = style.BackgroundHighlighted;

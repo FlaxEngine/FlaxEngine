@@ -12,7 +12,7 @@ namespace FlaxEditor.GUI
     /// <seealso cref="FlaxEngine.GUI.ContainerControl" />
     public sealed class MainMenu : ContainerControl
     {
-#if PLATFORM_WINDOWS
+#if PLATFORM_WINDOWS || PLATFORM_SDL
         private bool _useCustomWindowSystem;
         private Image _icon;
         private Label _title;
@@ -67,7 +67,7 @@ namespace FlaxEditor.GUI
             AutoFocus = false;
             AnchorPreset = AnchorPresets.HorizontalStretchTop;
 
-#if PLATFORM_WINDOWS
+#if PLATFORM_WINDOWS || PLATFORM_SDL
             _useCustomWindowSystem = !Editor.Instance.Options.Options.Interface.UseNativeWindowSystem;
             if (_useCustomWindowSystem)
             {
@@ -166,7 +166,7 @@ namespace FlaxEditor.GUI
             }
         }
 
-#if PLATFORM_WINDOWS
+#if PLATFORM_WINDOWS || PLATFORM_SDL
         /// <inheritdoc />
         public override void Update(float deltaTime)
         {
@@ -291,7 +291,7 @@ namespace FlaxEditor.GUI
             if (base.OnMouseDoubleClick(location, button))
                 return true;
 
-#if PLATFORM_WINDOWS
+#if PLATFORM_WINDOWS || PLATFORM_SDL
             var child = GetChildAtRecursive(location);
             if (_useCustomWindowSystem && child is not Button && child is not MainMenuButton)
             {
@@ -321,7 +321,7 @@ namespace FlaxEditor.GUI
         {
             float x = 0;
 
-#if PLATFORM_WINDOWS
+#if PLATFORM_WINDOWS || PLATFORM_SDL
             if (_useCustomWindowSystem)
             {
                 // Icon
@@ -349,7 +349,7 @@ namespace FlaxEditor.GUI
                 }
             }
 
-#if PLATFORM_WINDOWS
+#if PLATFORM_WINDOWS || PLATFORM_SDL
             if (_useCustomWindowSystem)
             {
                 // Buttons
@@ -367,7 +367,7 @@ namespace FlaxEditor.GUI
 #endif
         }
 
-#if PLATFORM_WINDOWS
+#if PLATFORM_WINDOWS || PLATFORM_SDL
         /// <inheritdoc />
         public override void OnDestroy()
         {
