@@ -381,7 +381,7 @@ namespace FlaxEditor.Modules
             Editor.Options.OptionsChanged += OnOptionsChanged;
 
             // Add dummy control for drawing the main window borders if using a custom style
-#if PLATFORM_WINDOWS
+#if PLATFORM_WINDOWS || PLATFORM_SDL
             if (!Editor.Options.Options.Interface.UseNativeWindowSystem)
 #endif
             {
