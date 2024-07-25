@@ -89,6 +89,19 @@ public class Platform : EngineModule
             break;
         default: throw new InvalidPlatformException(options.Platform.Target);
         }
+
+        if (EngineConfiguration.WithSDL(options))
+        {
+            switch (options.Platform.Target)
+            {
+            case TargetPlatform.Windows:
+            case TargetPlatform.Linux:
+            case TargetPlatform.Mac:
+                options.PublicDependencies.Add("SDL");
+                options.SourcePaths.Add(Path.Combine(FolderPath, "SDL"));
+                break;
+            }
+        }
         if (options.Target.IsEditor)
         {
             // Include platform settings headers
