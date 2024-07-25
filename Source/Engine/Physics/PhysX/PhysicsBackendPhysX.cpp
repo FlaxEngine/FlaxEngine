@@ -1606,6 +1606,24 @@ PxMaterial* PhysicsBackendPhysX::GetDefaultMaterial()
     return DefaultMaterial;
 }
 
+void PhysicsBackendPhysX::SimulationStepDone(PxScene* scene, float dt)
+{
+#if WITH_VEHICLE
+    ScenePhysX* scenePhysX = nullptr;
+    for (auto e : Physics::Scenes)
+    {
+        if (((ScenePhysX*)e->GetPhysicsScene())->Scene == scene)
+        {
+            scenePhysX = (ScenePhysX*)e->GetPhysicsScene();
+            break;
+        }
+    }
+    if (!scenePhysX)
+        return;
+    scenePhysX->UpdateVehicles(dt);
+#endif
+}
+
 bool PhysicsBackend::Init()
 {
 #define CHECK_INIT(value, msg) if (!value) { LOG(Error, msg); return true; }
@@ -1894,10 +1912,6 @@ void PhysicsBackend::EndSimulateScene(void* scene)
         // Gather results (with waiting for the end)
         scenePhysX->Stepper.wait(scenePhysX->Scene);
     }
-
-#if WITH_VEHICLE
-    scenePhysX->UpdateVehicles(scenePhysX->LastDeltaTime);
-#endif
 
     {
         PROFILE_CPU_NAMED("Physics.FlushActiveTransforms");
