@@ -185,7 +185,13 @@ public:
     /// Sets the actor name.
     /// </summary>
     /// <param name="value">The value to set.</param>
-    API_PROPERTY() void SetName(const StringView& value);
+    API_PROPERTY() void SetName(String&& value);
+
+    /// <summary>
+    /// Sets the actor name.
+    /// </summary>
+    /// <param name="value">The value to set.</param>
+    void SetName(const StringView& value);
 
 public:
     /// <summary>
