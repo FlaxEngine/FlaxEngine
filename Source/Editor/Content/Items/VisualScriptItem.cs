@@ -100,12 +100,16 @@ namespace FlaxEditor.Content
         /// <inheritdoc />
         public object GetValue(object obj)
         {
+            if (!_type.Asset)
+                throw new TargetException("Missing Visual Script asset.");
             return _type.Asset.GetScriptInstanceParameterValue(_parameter.Name, (Object)obj);
         }
 
         /// <inheritdoc />
         public void SetValue(object obj, object value)
         {
+            if (!_type.Asset)
+                throw new TargetException("Missing Visual Script asset.");
             _type.Asset.SetScriptInstanceParameterValue(_parameter.Name, (Object)obj, value);
         }
     }
