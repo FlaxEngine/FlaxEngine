@@ -2,6 +2,10 @@
 
 #if PLATFORM_WINDOWS
 
+#if PLATFORM_SDL
+#include "Engine/Platform/SDL/SDLWindow.h"
+#endif
+
 #include "Engine/Platform/Windows/WindowsWindow.h"
 
 #if USE_EDITOR
@@ -596,7 +600,11 @@ DragDropEffect Window::DoDragDrop(const StringView& data)
     {
         ::POINT point;
         ::GetCursorPos(&point);
+#if PLATFORM_SDL
+        Input::Mouse->OnMouseUp(Float2((float)point.x, (float)point.y), MouseButton::Left, (Window*)this);
+#else
         Input::Mouse->OnMouseUp(Float2((float)point.x, (float)point.y), MouseButton::Left, this);
+#endif
     }
 
     return SUCCEEDED(result) ? dropEffectFromOleEnum(dwEffect) : DragDropEffect::None;
