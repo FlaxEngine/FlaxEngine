@@ -265,19 +265,38 @@ bool WindowsMouse::WndProc(Window* window, const UINT msg, WPARAM wParam, LPARAM
     }
     case WM_LBUTTONDBLCLK:
     {
-        OnMouseDoubleClick(mousePos, MouseButton::Left, window);
+        if (!Input::Mouse->IsRelative())
+            OnMouseDoubleClick(mousePos, MouseButton::Left, window);
+        else
+            OnMouseDown(mousePos, MouseButton::Left, window);
         result = true;
         break;
     }
     case WM_RBUTTONDBLCLK:
     {
-        OnMouseDoubleClick(mousePos, MouseButton::Right, window);
+        if (!Input::Mouse->IsRelative())
+            OnMouseDoubleClick(mousePos, MouseButton::Right, window);
+        else
+            OnMouseDown(mousePos, MouseButton::Right, window);
         result = true;
         break;
     }
     case WM_MBUTTONDBLCLK:
     {
-        OnMouseDoubleClick(mousePos, MouseButton::Middle, window);
+        if (!Input::Mouse->IsRelative())
+            OnMouseDoubleClick(mousePos, MouseButton::Middle, window);
+        else
+            OnMouseDown(mousePos, MouseButton::Middle, window);
+        result = true;
+        break;
+    }
+    case WM_XBUTTONDBLCLK:
+    {
+        const auto button = (HIWORD(wParam) & XBUTTON1) ? MouseButton::Extended1 : MouseButton::Extended2;
+        if (!Input::Mouse->IsRelative())
+            OnMouseDoubleClick(mousePos, button, window);
+        else
+            OnMouseDown(mousePos, button, window);
         result = true;
         break;
     }

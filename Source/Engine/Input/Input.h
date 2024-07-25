@@ -108,6 +108,11 @@ public:
     API_EVENT() static Delegate<const Float2&> MouseMove;
 
     /// <summary>
+    /// Event fired when mouse moves while in relative mode.
+    /// </summary>
+    API_EVENT() static Delegate<const Float2&> MouseMoveRelative;
+
+    /// <summary>
     /// Event fired when mouse leaves window.
     /// </summary>
     API_EVENT() static Action MouseLeave;
