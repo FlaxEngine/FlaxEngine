@@ -360,11 +360,36 @@ namespace FlaxEditor.Viewport
             };
             
             // Setup input actions
-            viewport.InputActions.Add(options => options.TranslateMode, () => transformGizmo.ActiveMode = TransformGizmoBase.Mode.Translate);
-            viewport.InputActions.Add(options => options.RotateMode, () => transformGizmo.ActiveMode = TransformGizmoBase.Mode.Rotate);
-            viewport.InputActions.Add(options => options.ScaleMode, () => transformGizmo.ActiveMode = TransformGizmoBase.Mode.Scale);
+            viewport.InputActions.Add(options => options.TranslateMode, () => 
+            {
+                viewport.GetInput(out var input);
+                if (input.IsMouseRightDown)
+                    return;
+                
+                transformGizmo.ActiveMode = TransformGizmoBase.Mode.Translate;
+            });
+            viewport.InputActions.Add(options => options.RotateMode, () => 
+            {
+                viewport.GetInput(out var input);
+                if (input.IsMouseRightDown)
+                    return;
+
+                transformGizmo.ActiveMode = TransformGizmoBase.Mode.Rotate;
+            });
+            viewport.InputActions.Add(options => options.ScaleMode, () =>
+            {
+                viewport.GetInput(out var input);
+                if (input.IsMouseRightDown)
+                    return;
+
+                transformGizmo.ActiveMode = TransformGizmoBase.Mode.Scale;
+            });
             viewport.InputActions.Add(options => options.ToggleTransformSpace, () =>
             {
+                viewport.GetInput(out var input);
+                if (input.IsMouseRightDown)
+                    return;
+
                 transformGizmo.ToggleTransformSpace();
                 if (useProjectCache)
                     editor.ProjectCache.SetCustomData("TransformSpaceState", transformGizmo.ActiveTransformSpace.ToString());
