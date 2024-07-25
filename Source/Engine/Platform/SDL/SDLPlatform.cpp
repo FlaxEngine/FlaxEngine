@@ -102,6 +102,8 @@ void SDLPlatform::LogInfo()
     LOG(Info, "Using SDL version {}.{}.{} ({}), runtime: {}.{}.{} ({})",
         SDL_VERSIONNUM_MAJOR(SDL_VERSION), SDL_VERSIONNUM_MINOR(SDL_VERSION), SDL_VERSIONNUM_MICRO(SDL_VERSION), String(SDL_REVISION),
         SDL_VERSIONNUM_MAJOR(runtimeVersion), SDL_VERSIONNUM_MINOR(runtimeVersion), SDL_VERSIONNUM_MICRO(runtimeVersion), String(SDL_GetRevision()));
+
+    LOG(Info, "SDL video driver: {}", String(SDL_GetCurrentVideoDriver()));
 }
 
 bool SDLPlatform::CheckWindowDragging(Window* window, WindowHitCodes hit)
