@@ -192,7 +192,7 @@ bool GPUSwapChainVulkan::CreateSwapChain(int32 width, int32 height)
     ASSERT_LOW_LAYER(_backBuffers.Count() == 0);
 
     // Create platform-dependent surface
-    VulkanPlatform::CreateSurface(windowHandle, GPUDeviceVulkan::Instance, &_surface);
+    VulkanPlatform::CreateSurface(_window, GPUDeviceVulkan::Instance, &_surface);
     if (_surface == VK_NULL_HANDLE)
     {
         LOG(Warning, "Failed to create Vulkan surface.");

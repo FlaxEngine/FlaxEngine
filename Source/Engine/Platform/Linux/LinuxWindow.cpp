@@ -1,6 +1,6 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
-#if PLATFORM_LINUX
+#if PLATFORM_LINUX && !PLATFORM_SDL
 
 #include "../Window.h"
 #include "Engine/Input/Input.h"

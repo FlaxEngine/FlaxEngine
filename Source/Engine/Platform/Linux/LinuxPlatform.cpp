@@ -97,7 +97,9 @@ X11::Cursor Cursors[(int32)CursorType::MAX];
 X11::XcursorImage* CursorsImg[(int32)CursorType::MAX];
 Dictionary<StringAnsi, X11::KeyCode> KeyNameMap;
 Array<KeyboardKeys> KeyCodeMap;
-Delegate<void*> LinuxPlatform::xEventRecieved;
+#if !PLATFORM_SDL
+Delegate<void*> LinuxPlatform::xEventReceived;
+#endif
 Window* MouseTrackingWindow = nullptr;
 
 // Message boxes configuration
@@ -367,6 +369,8 @@ static int X11_MessageBoxInitPositions(MessageBoxData* data)
 
 	return 0;
 }
+
+#if !PLATFORM_SDL
 
 // Create and set up X11 dialog box window
 static int X11_MessageBoxCreateWindow(MessageBoxData* data)
@@ -851,6 +855,7 @@ int X11ErrorHandler(X11::Display* display, X11::XErrorEvent* event)
 	LOG(Error, "X11 Error: {0}", String(buffer));
 	return 0;
 }
+#endif
 
 int32 CalculateDpi()
 {
@@ -1207,17 +1212,18 @@ public:
     }
 };
 
-struct Property
+/*struct Property
 {
 	unsigned char* data;
 	int format, nitems;
 	X11::Atom type;
-};
+};*/
 
 namespace Impl
 {
 	LinuxKeyboard* Keyboard;
 	LinuxMouse* Mouse;
+#if !PLATFORM_SDL
     StringAnsi ClipboardText;
 
     void ClipboardGetText(String& result, X11::Atom source, X11::Atom atom, X11::Window window)
@@ -1359,8 +1365,10 @@ namespace Impl
 		}
 		return results;
 	}
+#endif
 }
 
+#if !PLATFORM_SDL
 class LinuxDropFilesData : public IGuiData
 {
 public:
@@ -1398,7 +1406,7 @@ public:
     }
 };
 
-DragDropEffect LinuxWindow::DoDragDrop(const StringView& data)
+DragDropEffect Window::DoDragDrop(const StringView& data)
 {
     if (CommandLine::Options.Headless.IsTrue())
         return DragDropEffect::None;
@@ -1412,13 +1420,18 @@ DragDropEffect LinuxWindow::DoDragDrop(const StringView& data)
     StringAnsi dataAnsi(data);
     LinuxDropTextData dropData;
     dropData.Text = data;
+#if !PLATFORM_SDL
+    unsigned long mainWindow = _window;
+#else
+    unsigned long mainWindow = (unsigned long)_handle;
+#endif
 
     // Begin dragging
 	auto screen = X11::XDefaultScreen(xDisplay);
 	auto rootWindow = X11::XRootWindow(xDisplay, screen);
-    if (X11::XGrabPointer(xDisplay, _window, 1, Button1MotionMask | ButtonReleaseMask, GrabModeAsync, GrabModeAsync, rootWindow, cursorWrong, CurrentTime) != GrabSuccess)
+    if (X11::XGrabPointer(xDisplay, mainWindow, 1, Button1MotionMask | ButtonReleaseMask, GrabModeAsync, GrabModeAsync, rootWindow, cursorWrong, CurrentTime) != GrabSuccess)
 	    return DragDropEffect::None;
-    X11::XSetSelectionOwner(xDisplay, xAtomXdndSelection, _window, CurrentTime);
+    X11::XSetSelectionOwner(xDisplay, xAtomXdndSelection, mainWindow, CurrentTime);
 
     // Process events
     X11::XEvent event;
@@ -1526,7 +1539,7 @@ DragDropEffect LinuxWindow::DoDragDrop(const StringView& data)
                     m.window = previousWindow;
                     m.message_type = xAtomXdndLeave;
                     m.format = 32;
-                    m.data.l[0] = _window;
+                    m.data.l[0] = mainWindow;
                     m.data.l[1] = 0;
                     m.data.l[2] = 0;
                     m.data.l[3] = 0;
@@ -1555,7 +1568,7 @@ DragDropEffect LinuxWindow::DoDragDrop(const StringView& data)
                     m.window = window;
                     m.message_type = xAtomXdndEnter;
                     m.format = 32;
-                    m.data.l[0] = _window;
+                    m.data.l[0] = mainWindow;
                     m.data.l[1] = Math::Min(5, version) << 24  | (formats.Count() > 3);
                     m.data.l[2] = formats.Count() > 0 ? formats[0] : 0;
                     m.data.l[3] = formats.Count() > 1 ? formats[1] : 0;
@@ -1590,7 +1603,7 @@ DragDropEffect LinuxWindow::DoDragDrop(const StringView& data)
                     m.window = window;
                     m.message_type = xAtomXdndPosition;
                     m.format = 32;
-                    m.data.l[0] = _window;
+                    m.data.l[0] = mainWindow;
                     m.data.l[1] = 0;
                     m.data.l[2] = (x << 16) | y;
                     m.data.l[3] = CurrentTime;
@@ -1633,7 +1646,7 @@ DragDropEffect LinuxWindow::DoDragDrop(const StringView& data)
                     m.window = previousWindow;
                     m.message_type = xAtomXdndDrop;
                     m.format = 32;
-                    m.data.l[0] = _window;
+                    m.data.l[0] = mainWindow;
                     m.data.l[1] = 0;
                     m.data.l[2] = CurrentTime;
                     m.data.l[3] = 0;
@@ -1680,7 +1693,7 @@ DragDropEffect LinuxWindow::DoDragDrop(const StringView& data)
             m.window = previousWindow;
             m.message_type = xAtomXdndLeave;
             m.format = 32;
-            m.data.l[0] = _window;
+            m.data.l[0] = mainWindow;
             m.data.l[1] = 0;
             m.data.l[2] = 0;
             m.data.l[3] = 0;
@@ -1706,7 +1719,7 @@ void LinuxClipboard::SetText(const StringView& text)
 {
     if (CommandLine::Options.Headless.IsTrue())
         return;
-    auto mainWindow = (LinuxWindow*)Engine::MainWindow;
+    auto mainWindow = Engine::MainWindow;
     if (!mainWindow)
         return;
     X11::Window window = (X11::Window)mainWindow->GetNativePtr();
@@ -1729,7 +1742,7 @@ String LinuxClipboard::GetText()
     if (CommandLine::Options.Headless.IsTrue())
         return String::Empty;
     String result;
-    auto mainWindow = (LinuxWindow*)Engine::MainWindow;
+    auto mainWindow = Engine::MainWindow;
     if (!mainWindow)
         return result;
     X11::Window window = (X11::Window)mainWindow->GetNativePtr();
@@ -1758,9 +1771,11 @@ Array<String> LinuxClipboard::GetFiles()
     return Array<String>();
 }
 
+#endif
+
 void* LinuxPlatform::GetXDisplay()
 {
-	return xDisplay;
+    return xDisplay;
 }
 
 bool LinuxPlatform::CreateMutex(const Char* name)
@@ -2142,7 +2157,11 @@ bool LinuxPlatform::Init()
     // Skip setup if running in headless mode (X11 might not be available on servers)
     if (CommandLine::Options.Headless.IsTrue())
         return false;
-
+#if PLATFORM_SDL
+    xDisplay = X11::XOpenDisplay(nullptr);
+#endif
+    
+#if !PLATFORM_SDL
 	X11::XInitThreads();
 
 	xDisplay = X11::XOpenDisplay(nullptr);
@@ -2281,7 +2300,7 @@ bool LinuxPlatform::Init()
     Input::Mouse = Impl::Mouse = New<LinuxMouse>();
     Input::Keyboard = Impl::Keyboard = New<LinuxKeyboard>();
 	LinuxInput::Init();
-
+#endif
     return false;
 }
 
@@ -2291,6 +2310,7 @@ void LinuxPlatform::BeforeRun()
 
 void LinuxPlatform::Tick()
 {
+#if !PLATFORM_SDL
 	UnixPlatform::Tick();
 
 	LinuxInput::UpdateState();
@@ -2307,9 +2327,9 @@ void LinuxPlatform::Tick()
 			continue;
 
         // External event handling
-		xEventRecieved(&event);
+		xEventReceived(&event);
 
-		LinuxWindow* window;
+		Window* window;
 		switch (event.type)
 		{
 			case ClientMessage:
@@ -2641,6 +2661,7 @@ void LinuxPlatform::Tick()
 	}
 
 	//X11::XFlush(xDisplay);
+#endif
 }
 
 void LinuxPlatform::BeforeExit()
@@ -2649,6 +2670,7 @@ void LinuxPlatform::BeforeExit()
 
 void LinuxPlatform::Exit()
 {
+#if !PLATFORM_SDL
 	for (int32 i = 0; i < (int32)CursorType::MAX; i++)
 	{
 		if (Cursors[i])
@@ -2674,6 +2696,7 @@ void LinuxPlatform::Exit()
 		X11::XCloseDisplay(xDisplay);
 		xDisplay = nullptr;
 	}
+#endif
 }
 
 String LinuxPlatform::GetSystemName()
@@ -2913,7 +2936,11 @@ bool LinuxPlatform::SetWorkingDirectory(const String& path)
 
 Window* LinuxPlatform::CreateWindow(const CreateWindowSettings& settings)
 {
+#if PLATFORM_SDL
+    return New<SDLWindow>(settings);
+#else
     return New<LinuxWindow>(settings);
+#endif
 }
 
 extern char **environ;

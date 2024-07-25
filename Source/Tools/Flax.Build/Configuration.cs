@@ -276,6 +276,12 @@ namespace Flax.Build
         [CommandLine("useDotNet", "1 to enable .NET support in build, 0 to enable Mono support in build")]
         public static bool UseDotNet = true;
 
+        /// <summary>
+        /// True if SDL support should be enabled.
+        /// </summary>
+        [CommandLine("useSdl", "1 to enable SDL support in build")]
+        public static bool UseSDL = true;
+
         public static bool WithCSharp(NativeCpp.BuildOptions options)
         {
             return UseCSharp || options.Target.IsEditor;
@@ -290,6 +296,11 @@ namespace Flax.Build
         public static bool WithDotNet(NativeCpp.BuildOptions options)
         {
             return UseDotNet;
+        }
+
+        public static bool WithSDL(NativeCpp.BuildOptions options)
+        {
+            return UseSDL;
         }
     }
 }

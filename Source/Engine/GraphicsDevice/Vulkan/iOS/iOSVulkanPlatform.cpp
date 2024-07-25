@@ -5,6 +5,7 @@
 #include "iOSVulkanPlatform.h"
 #include "../RenderToolsVulkan.h"
 #include "Engine/Core/Delegate.h"
+#include "Engine/Platform/Window.h"
 #include <UIKit/UIKit.h>
 
 void iOSVulkanPlatform::GetInstanceExtensions(Array<const char*>& extensions, Array<const char*>& layers)
@@ -13,8 +14,9 @@ void iOSVulkanPlatform::GetInstanceExtensions(Array<const char*>& extensions, Ar
 	extensions.Add(VK_MVK_IOS_SURFACE_EXTENSION_NAME);
 }
 
-void iOSVulkanPlatform::CreateSurface(void* windowHandle, VkInstance instance, VkSurfaceKHR* surface)
+void iOSVulkanPlatform::CreateSurface(Window* window, VkInstance instance, VkSurfaceKHR* surface)
 {
+    void* windowHandle = window->GetNativePtr();
 	// Create surface on a main UI Thread
 	Function<void()> func = [&windowHandle, &instance, &surface]()
 	{

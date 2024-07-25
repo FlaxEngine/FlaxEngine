@@ -67,9 +67,7 @@ namespace FlaxEditor.GUI.Docking
             Proxy.Window.MouseUp += OnMouseUp;
             Proxy.Window.MouseMove += OnMouseMove;
             Proxy.Window.LostFocus += OnLostFocus;
-
-            // Start tracking mouse
-            Proxy.Window.StartTrackingMouse(false);
+            _toMove.Window.Window.MouseUp += OnMouseUp; // Intercept the drag release mouse event from source window
 
             // Update window GUI
             Proxy.Window.GUI.PerformLayout();
@@ -77,13 +75,16 @@ namespace FlaxEditor.GUI.Docking
             // Update rectangles
             UpdateRects();
 
-            // Hide base window
-            window.Hide();
-
             // Enable hit window presentation
             Proxy.Window.RenderingEnabled = true;
             Proxy.Window.Show();
             Proxy.Window.Focus();
+            
+            // Hide base window
+            window.Hide();
+            
+            // Start tracking mouse
+            Proxy.Window.StartTrackingMouse(false);
         }
 
         /// <summary>
@@ -101,6 +102,8 @@ namespace FlaxEditor.GUI.Docking
             Proxy.Window.MouseUp -= OnMouseUp;
             Proxy.Window.MouseMove -= OnMouseMove;
             Proxy.Window.LostFocus -= OnLostFocus;
+            if (_toMove?.Window?.Window)
+                _toMove.Window.Window.MouseUp -= OnMouseUp;
 
             // Hide the proxy
             Proxy.Hide();

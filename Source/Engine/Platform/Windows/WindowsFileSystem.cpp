@@ -2,6 +2,7 @@
 
 #if PLATFORM_WINDOWS
 
+#include "WindowsWindow.h"
 #include "WindowsFileSystem.h"
 #include "Engine/Platform/File.h"
 #include "Engine/Platform/Window.h"
@@ -317,7 +318,7 @@ bool WindowsFileSystem::ShowBrowseFolderDialog(Window* parentWindow, const Strin
         if (SUCCEEDED(SHCreateItemFromParsingName(initialDirectory.Get(), NULL, IID_PPV_ARGS(&defaultFolder))))
             fd->SetFolder(defaultFolder);
 
-        HWND hwndOwner = parentWindow ? parentWindow->GetHWND() : NULL;
+        HWND hwndOwner = parentWindow ? (HWND)parentWindow->GetNativePtr() : NULL;
         if (SUCCEEDED(fd->Show(hwndOwner)))
         {
             ComPtr<IShellItem> si;

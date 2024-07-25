@@ -1,6 +1,9 @@
-#if PLATFORM_WINDOWS
+#if PLATFORM_WINDOWS || PLATFORM_SDL
 #define USE_IS_FOREGROUND
 #else
+#endif
+#if PLATFORM_SDL
+#define USE_SDL_WORKAROUNDS
 #endif
 // Copyright (c) Wojciech Figat. All rights reserved.
 
@@ -121,7 +124,7 @@ namespace FlaxEditor.GUI.ContextMenu
         }
 
         /// <summary>
-        /// Shows the empty menu popup o na screen.
+        /// Shows the empty menu popup on a screen.
         /// </summary>
         /// <param name="control">The target control.</param>
         /// <param name="area">The target control area to cover.</param>
@@ -426,6 +429,11 @@ namespace FlaxEditor.GUI.ContextMenu
             }
         }
 
+#if USE_SDL_WORKAROUNDS
+        private void OnWindowGotFocus()
+        {
+        }
+#else
         private void OnWindowGotFocus()
         {
             var child = _childCM;
@@ -439,6 +447,7 @@ namespace FlaxEditor.GUI.ContextMenu
                 });
             }
         }
+#endif
 
         private void OnWindowLostFocus()
         {
@@ -537,7 +546,12 @@ namespace FlaxEditor.GUI.ContextMenu
             // Let root context menu to check if none of the popup windows
             if (_parentCM == null && UseVisibilityControl && !IsForeground)
             {
+#if USE_SDL_WORKAROUNDS
+                if (!IsMouseOver)
+                    Hide();
+#else
                 Hide();
+#endif
             }
         }
 #endif

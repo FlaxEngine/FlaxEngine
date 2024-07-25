@@ -6,6 +6,8 @@
 #include "Engine/Core/Types/Nullable.h"
 #include "Engine/Platform/Window.h"
 #include "Engine/Engine/EngineService.h"
+#include "Engine/Input/Input.h"
+#include "Engine/Input/Mouse.h"
 #if USE_EDITOR
 #include "Editor/Editor.h"
 #include "Editor/Managed/ManagedEditor.h"
@@ -13,10 +15,14 @@
 #include "Engine/Engine/Engine.h"
 #endif
 
-Nullable<bool> Fullscreen;
-Nullable<Float2> Size;
-bool CursorVisible = true;
-CursorLockMode CursorLock = CursorLockMode::None;
+namespace
+{
+    Nullable<bool> Fullscreen;
+    Nullable<Float2> Size;
+    bool CursorVisible = true;
+    CursorLockMode CursorLock = CursorLockMode::None;
+    bool LastGameViewportFocus = false;
+}
 
 class ScreenService : public EngineService
 {
@@ -104,6 +110,8 @@ void Screen::SetCursorVisible(const bool value)
     {
         win->SetCursor(value ? CursorType::Default : CursorType::Hidden);
     }
+    else if (win)
+        win->SetCursor(CursorType::Default);
     CursorVisible = value;
 }
 
@@ -190,7 +198,11 @@ void ScreenService::Update()
 {
 #if USE_EDITOR
     // Sync current cursor state in Editor (eg. when viewport focus can change)
-    Screen::SetCursorVisible(CursorVisible);
+    const auto win = Editor::Managed->GetGameWindow(true);
+    bool gameViewportFocus = win && Engine::HasGameViewportFocus();
+    if (gameViewportFocus != LastGameViewportFocus)
+        Screen::SetCursorVisible(CursorVisible);
+    LastGameViewportFocus = gameViewportFocus;
 #endif
 }
 
