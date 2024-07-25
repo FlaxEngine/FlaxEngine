@@ -120,7 +120,7 @@ WindowsWindow::WindowsWindow(const CreateWindowSettings& settings)
     // Creating the window
     _handle = CreateWindowExW(
         exStyle,
-        Platform::ApplicationWindowClass,
+        Platform::ApplicationClassName,
         settings.Title.GetText(),
         style,
         x,
