@@ -1275,6 +1275,12 @@ namespace FlaxEditor.Modules
                 }
                 _dirtyNodes.Clear();
             }
+
+            // Lazy-rebuilds
+            if (_rebuildFlag)
+            {
+                RebuildInternal();
+            }
         }
 
         /// <inheritdoc />
