@@ -1,6 +1,6 @@
 // Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
-#if PLATFORM_WINDOWS
+#if PLATFORM_WINDOWS && !PLATFORM_SDL
 
 #include "WindowsWindow.h"
 #include "WindowsPlatform.h"
@@ -1308,7 +1308,7 @@ LRESULT WindowsWindow::WndProc(UINT msg, WPARAM wParam, LPARAM lParam)
 
     if (_settings.AllowInput)
     {
-        if (WindowsInput::WndProc(this, msg, wParam, lParam))
+        if (WindowsInput::WndProc((Window*)this, msg, wParam, lParam))
             return true;
     }
 
