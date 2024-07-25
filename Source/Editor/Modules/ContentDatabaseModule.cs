@@ -737,7 +737,7 @@ namespace FlaxEditor.Modules
         {
             Proxy.Insert(0, proxy);
             if (rebuild)
-                Rebuild();
+                Rebuild(true);
         }
 
         /// <summary>
@@ -749,7 +749,7 @@ namespace FlaxEditor.Modules
         {
             Proxy.Remove(proxy);
             if (rebuild)
-                Rebuild();
+                Rebuild(true);
         }
 
         /// <summary>
@@ -1275,10 +1275,6 @@ namespace FlaxEditor.Modules
                 }
                 _dirtyNodes.Clear();
             }
-
-            // Lazy-rebuilds
-            if (_rebuildFlag)
-                RebuildInternal();
         }
 
         /// <inheritdoc />
