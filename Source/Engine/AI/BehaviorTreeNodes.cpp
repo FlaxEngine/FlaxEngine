@@ -140,7 +140,7 @@ void BehaviorTreeNode::Deserialize(DeserializeStream& stream, ISerializeModifier
 {
     SerializableScriptingObject::Deserialize(stream, modifier);
 
-    Name.Clear(); // Missing Name is assumes as unnamed node
+    Name.Clear(); // Missing Name is assumed as unnamed node
     DESERIALIZE(Name);
 }
 
@@ -197,7 +197,6 @@ BehaviorUpdateResult BehaviorTreeSequenceNode::Update(const BehaviorUpdateContex
         return BehaviorUpdateResult::Failed;
 
     auto result = Children[state->CurrentChildIndex]->InvokeUpdate(context);
-
     switch (result)
     {
     case BehaviorUpdateResult::Success:
@@ -232,7 +231,6 @@ BehaviorUpdateResult BehaviorTreeSelectorNode::Update(const BehaviorUpdateContex
         return BehaviorUpdateResult::Failed;
 
     auto result = Children[state->CurrentChildIndex]->InvokeUpdate(context);
-
     switch (result)
     {
     case BehaviorUpdateResult::Success:
