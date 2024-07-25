@@ -1,6 +1,6 @@
 // Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
-#if PLATFORM_WINDOWS
+#if PLATFORM_WINDOWS && !PLATFORM_SDL
 
 #include "WindowsInput.h"
 #include "WindowsWindow.h"
