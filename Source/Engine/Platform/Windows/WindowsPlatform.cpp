@@ -33,7 +33,6 @@
 #define CLR_EXCEPTION 0xE0434352
 #define VCPP_EXCEPTION 0xE06D7363
 
-const Char* WindowsPlatform::ApplicationWindowClass = TEXT("FlaxWindow");
 void* WindowsPlatform::Instance = nullptr;
 
 #if CRASH_LOG_ENABLE || TRACY_ENABLE
@@ -527,7 +526,7 @@ void WindowsPlatform::PreInit(void* hInstance)
     windowsClass.hInstance = (HINSTANCE)Instance;
     windowsClass.hIcon = LoadIconW(GetModuleHandle(nullptr), MAKEINTRESOURCE(IDR_MAINFRAME));
     windowsClass.hCursor = LoadCursor(nullptr, IDC_ARROW);
-    windowsClass.lpszClassName = ApplicationWindowClass;
+    windowsClass.lpszClassName = ApplicationClassName;
     if (!RegisterClassW(&windowsClass))
     {
         Error(TEXT("Window class registration failed!"));
@@ -741,7 +740,7 @@ void WindowsPlatform::Exit()
 #endif
 
     // Unregister app class
-    UnregisterClassW(ApplicationWindowClass, nullptr);
+    UnregisterClassW(ApplicationClassName, nullptr);
 
     Win32Platform::Exit();
 }
