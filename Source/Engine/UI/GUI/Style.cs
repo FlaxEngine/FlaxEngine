@@ -73,6 +73,12 @@ namespace FlaxEngine.GUI
         /// </summary>
         [EditorOrder(60)]
         public Color Background;
+        
+        /// <summary>
+        /// The back color.
+        /// </summary>
+        [EditorOrder(65)]
+        public Color BackColor;
 
         /// <summary>
         /// The light background color.

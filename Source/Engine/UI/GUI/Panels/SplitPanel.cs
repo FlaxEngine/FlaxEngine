@@ -17,6 +17,11 @@ namespace FlaxEngine.GUI
         public const int SplitterSize = 4;
 
         /// <summary>
+        /// The color of the splitter.
+        /// </summary>
+        public Color SplitterColor;
+
+        /// <summary>
         /// The splitter half size (in pixels).
         /// </summary>
         private const int SplitterSizeHalf = SplitterSize / 2;
@@ -99,6 +104,7 @@ namespace FlaxEngine.GUI
 
             Panel1.Parent = this;
             Panel2.Parent = this;
+            SplitterColor = Style.Current.BackColor;
 
             UpdateSplitRect();
         }
@@ -146,7 +152,7 @@ namespace FlaxEngine.GUI
 
             // Draw splitter
             var style = Style.Current;
-            Render2D.FillRectangle(_splitterRect, _splitterClicked ? style.BackgroundSelected : _mouseOverSplitter ? style.BackgroundHighlighted : style.Background);
+            Render2D.FillRectangle(_splitterRect, _splitterClicked ? style.BackgroundSelected : _mouseOverSplitter ? style.BackgroundHighlighted : SplitterColor);
 
             if (Panel1.HasChildren)
             {

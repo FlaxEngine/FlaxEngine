@@ -191,6 +191,12 @@ namespace FlaxEditor.GUI.Docking
             // Return and don't draw tab if only 1 window and it is floating
             if (IsSingleFloatingWindow)
                 return;
+
+            if (tabsCount == 0)
+            {
+                Render2D.FillRectangle(Bounds, style.BackColor);
+                return;
+            }
             
             // Draw background
             Render2D.FillRectangle(headerRect, style.Background);
@@ -258,7 +264,7 @@ namespace FlaxEditor.GUI.Docking
                 }
 
                 // Move
-                x += width;
+                x += width + 1;
             }
 
             // Draw selected tab strip
