@@ -305,6 +305,7 @@ class FLAXENGINE_API VisualScriptingBinaryModule : public BinaryModule
     friend VisualScript;
 private:
     StringAnsi _name;
+    Array<char*> _unloadedScriptTypeNames;
 
 public:
     /// <summary>
