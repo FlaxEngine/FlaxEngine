@@ -18,7 +18,7 @@ class iOSVulkanPlatform : public VulkanPlatformBase
 {
 public:
 	static void GetInstanceExtensions(Array<const char*>& extensions, Array<const char*>& layers);
-	static void CreateSurface(void* windowHandle, VkInstance instance, VkSurfaceKHR* outSurface);
+	static void CreateSurface(Window* window, VkInstance instance, VkSurfaceKHR* outSurface);
 };
 
 typedef iOSVulkanPlatform VulkanPlatform;

@@ -2,7 +2,7 @@
 
 #pragma once
 
-#if PLATFORM_WINDOWS
+#if PLATFORM_WINDOWS && !PLATFORM_SDL
 
 #include "Engine/Platform/Base/WindowBase.h"
 #include "Engine/Platform/Platform.h"
@@ -136,7 +136,7 @@ public:
     Windows::ULONG __stdcall AddRef() override;
     Windows::ULONG __stdcall Release() override;
 
-    // [IDropTarget]
+    // [Windows::IDropTarget]
     Windows::HRESULT __stdcall DragEnter(Windows::IDataObject* pDataObj, Windows::DWORD grfKeyState, Windows::POINTL pt, Windows::DWORD* pdwEffect) override;
     Windows::HRESULT __stdcall DragOver(Windows::DWORD grfKeyState, Windows::POINTL pt, Windows::DWORD* pdwEffect) override;
     Windows::HRESULT __stdcall DragLeave() override;

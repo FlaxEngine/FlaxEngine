@@ -13,6 +13,7 @@
   "Configuration": {
     "UseCSharp": true,
     "UseLargeWorlds": false,
-    "UseDotNet": true
+    "UseDotNet": true,
+    "UseSDL": true
   }
 }

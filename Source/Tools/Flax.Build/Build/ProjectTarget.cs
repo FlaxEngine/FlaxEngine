@@ -79,6 +79,11 @@ namespace Flax.Build
                 options.CompileEnv.PreprocessorDefinitions.Add("USE_LARGE_WORLDS");
                 options.ScriptingAPI.Defines.Add("USE_LARGE_WORLDS");
             }
+            if (EngineConfiguration.WithSDL(options))
+            {
+                options.CompileEnv.PreprocessorDefinitions.Add("PLATFORM_SDL");
+                options.ScriptingAPI.Defines.Add("PLATFORM_SDL");
+            }
 
             // Add include paths for this and all referenced projects sources
             foreach (var project in Project.GetAllProjects())
