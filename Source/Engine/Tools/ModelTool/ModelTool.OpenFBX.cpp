@@ -104,6 +104,10 @@ struct OpenFbxImporterData
     Array<const ofbx::Material*> Materials;
     Array<MaterialSlotEntry> ImportedMaterials;
 
+    Array<int> TriangulatedIndicesCache;
+    Array<Int4> BlendIndicesCache;
+    Array<Float4> BlendWeightsCache;
+
     OpenFbxImporterData(const String& path, const ModelTool::Options& options, ofbx::IScene* scene)
         : Scene(scene)
         , ScenePtr(scene)
@@ -685,10 +689,8 @@ bool ProcessMesh(ModelData& result, OpenFbxImporterData& data, const ofbx::Mesh*
     const ofbx::Skin* skin = aMesh->getSkin();
     const ofbx::BlendShape* blendShape = aMesh->getBlendShape();
 
-    static Array<int> triangulatedIndices;
+    auto& triangulatedIndices = data.TriangulatedIndicesCache;
     triangulatedIndices.Resize(vertexCount, false);
-    static Array<Int4> blendIndices;
-    static Array<Float4> blendWeights;
 
     // Properties
     const ofbx::Material* aMaterial = nullptr;
@@ -833,6 +835,8 @@ bool ProcessMesh(ModelData& result, OpenFbxImporterData& data, const ofbx::Mesh*
     // Blend Indices and Blend Weights
     if (skin && skin->getClusterCount() > 0 && EnumHasAnyFlags(data.Options.ImportTypes, ImportDataTypes::Skeleton))
     {
+        auto& blendIndices = data.BlendIndicesCache;
+        auto& blendWeights = data.BlendWeightsCache;
         blendIndices.Resize(positions.values_count, false);
         blendWeights.Resize(positions.values_count, false);
         blendIndices.SetAll(Int4::Zero);
@@ -1261,20 +1265,26 @@ bool ModelTool::ImportDataOpenFBX(const String& path, ModelData& data, Options& 
         errorMsg = TEXT("Cannot load file.");
         return true;
     }
-    ofbx::u16 loadFlags = 0;
+    ofbx::LoadFlags loadFlags = ofbx::LoadFlags::NONE;
     if (EnumHasAnyFlags(options.ImportTypes, ImportDataTypes::Geometry))
     {
         if (!options.ImportBlendShapes)
-            loadFlags |= (ofbx::u64)ofbx::LoadFlags::IGNORE_BLEND_SHAPES;
+            loadFlags |= ofbx::LoadFlags::IGNORE_BLEND_SHAPES;
     }
     else
     {
-        loadFlags |= (ofbx::u64)ofbx::LoadFlags::IGNORE_GEOMETRY | (ofbx::u64)ofbx::LoadFlags::IGNORE_BLEND_SHAPES;
+        loadFlags |= ofbx::LoadFlags::IGNORE_GEOMETRY | ofbx::LoadFlags::IGNORE_BLEND_SHAPES;
     }
+    if (EnumHasNoneFlags(options.ImportTypes, ImportDataTypes::Materials))
+        loadFlags |= ofbx::LoadFlags::IGNORE_MATERIALS;
+    if (EnumHasNoneFlags(options.ImportTypes, ImportDataTypes::Textures))
+        loadFlags |= ofbx::LoadFlags::IGNORE_TEXTURES;
+    if (EnumHasNoneFlags(options.ImportTypes, ImportDataTypes::Animations))
+        loadFlags |= ofbx::LoadFlags::IGNORE_ANIMATIONS;
     ofbx::IScene* scene;
     {
         PROFILE_CPU_NAMED("ofbx::load");
-        scene = ofbx::load(fileData.Get(), fileData.Count(), loadFlags);
+        scene = ofbx::load(fileData.Get(), fileData.Count(), (ofbx::u16)loadFlags);
     }
     if (!scene)
     {
