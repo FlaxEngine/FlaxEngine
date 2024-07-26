@@ -823,7 +823,7 @@ namespace FlaxEditor.Modules
             // Dock Panel
             MasterPanel.AnchorPreset = AnchorPresets.StretchAll;
             MasterPanel.Parent = mainWindow;
-            MasterPanel.Offsets = new Margin(0, 0, ToolStrip.Bottom, StatusBar.Height);
+            MasterPanel.Offsets = new Margin(0, 0, ToolStrip.Bottom + 3, StatusBar.Height);
         }
 
         private void OpenProject()

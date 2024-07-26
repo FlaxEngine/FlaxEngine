@@ -2,6 +2,7 @@
 
 using System.Collections.Generic;
 using FlaxEngine;
+using FlaxEngine.GUI;
 
 namespace FlaxEditor.GUI.Docking
 {
@@ -47,6 +48,13 @@ namespace FlaxEditor.GUI.Docking
         public MasterDockPanel()
         : base(null)
         {
+        }
+
+        /// <inheritdoc />
+        public override void Draw()
+        {
+            base.Draw();
+            Render2D.DrawLine(UpperLeft - new Float2(0, Offsets.Top), UpperRight - new Float2(0, Offsets.Top), Style.Current.BackColor, 3);
         }
 
         /// <summary>
