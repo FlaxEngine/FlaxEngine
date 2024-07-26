@@ -915,44 +915,46 @@ bool ProcessMesh(ModelData& result, OpenFbxImporterData& data, const ofbx::Mesh*
         {
             const ofbx::BlendShapeChannel* channel = blendShape->getBlendShapeChannel(channelIndex);
 
-            // Use last shape
+            // Use the last shape
             const int targetShapeCount = channel->getShapeCount();
             if (targetShapeCount == 0)
                 continue;
             const ofbx::Shape* shape = channel->getShape(targetShapeCount - 1);
-
-            if (shape->getVertexCount() != vertexCount)
+            const ofbx::Vec3* shapeVertices = shape->getVertices();
+            const ofbx::Vec3* shapeNormals = shape->getNormals();
+            const int* shapeIndices = shape->getIndices();
+            const int shapeVertexCount = shape->getVertexCount();
+            const int shapeIndexCount = shape->getIndexCount();
+            if (shapeVertexCount != shapeIndexCount)
             {
-                LOG(Error, "Blend shape '{0}' in mesh '{1}' has different amount of vertices ({2}) than mesh ({3})", String(shape->name), mesh.Name, shape->getVertexCount(), vertexCount);
+                LOG(Error, "Blend shape '{0}' in mesh '{1}' has different amount of vertices ({2}) and indices ({3})", String(shape->name), mesh.Name, shapeVertexCount, shapeIndexCount);
                 continue;
             }
 
             BlendShape& blendShapeData = mesh.BlendShapes.AddOne();
             blendShapeData.Name = shape->name;
             blendShapeData.Weight = channel->getShapeCount() > 1 ? (float)(channel->getDeformPercent() / 100.0) : 1.0f;
+            blendShapeData.Vertices.EnsureCapacity(shapeIndexCount);
 
-            blendShapeData.Vertices.Resize(vertexCount);
-            for (int32 i = 0; i < blendShapeData.Vertices.Count(); i++)
-                blendShapeData.Vertices.Get()[i].VertexIndex = i;
-
-            auto shapeVertices = shape->getVertices();
-            for (int32 i = 0; i < blendShapeData.Vertices.Count(); i++)
+            for (int32 i = 0; i < shapeIndexCount; i++)
             {
-                auto delta = ToFloat3(shapeVertices[i]) - mesh.Positions.Get()[i];
-                blendShapeData.Vertices.Get()[i].PositionDelta = delta;
-            }
-
-            auto shapeNormals = shape->getNormals();
-            for (int32 i = 0; i < blendShapeData.Vertices.Count(); i++)
-            {
-                auto delta = ToFloat3(shapeNormals[i]);
-                if (data.ConvertRH)
+		        int shapeIndex = shapeIndices[i];
+                Float3 positionDelta = ToFloat3(shapeVertices[i]);
+                Float3 normalDelta = shapeNormals ? ToFloat3(shapeNormals[i]) : Float3::Zero;
+                for (int32 vertexIndex = 0; vertexIndex < vertexCount; vertexIndex++)
                 {
-                    // Mirror normals along the Z axis
-                    delta.Z *= -1.0f;
+                    int sourceIndex = triangulatedIndices[vertexIndex];
+                    sourceIndex = positions.indices[sourceIndex];
+                    if (sourceIndex == shapeIndex)
+                    {
+                        // Add blend shape vertex
+                        BlendShapeVertex v;
+                        v.VertexIndex = vertexIndex;
+                        v.PositionDelta = positionDelta;
+                        v.NormalDelta = normalDelta;
+                        blendShapeData.Vertices.Add(v);
+                    }
                 }
-                delta = delta - mesh.Normals.Get()[i];
-                blendShapeData.Vertices.Get()[i].NormalDelta = delta;
             }
         }
     }
@@ -965,7 +967,10 @@ bool ProcessMesh(ModelData& result, OpenFbxImporterData& data, const ofbx::Mesh*
         for (auto& blendShapeData : mesh.BlendShapes)
         {
             for (auto& v : blendShapeData.Vertices)
+            {
                 v.PositionDelta.Z *= -1.0f;
+                v.NormalDelta.Z *= -1.0f;
+            }
         }
     }
 

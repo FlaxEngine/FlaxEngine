@@ -304,18 +304,15 @@ void MeshData::BuildIndexBuffer()
 
         dstBlendShape.Name = srcBlendShape.Name;
         dstBlendShape.Weight = srcBlendShape.Weight;
-        dstBlendShape.Vertices.Resize(newVertexCounter);
-        for (int32 i = 0, j = 0; i < srcBlendShape.Vertices.Count(); i++)
+        dstBlendShape.Vertices.EnsureCapacity(srcBlendShape.Vertices.Count());
+        for (int32 i = 0; i < srcBlendShape.Vertices.Count(); i++)
         {
-            const auto idx = mapping[i];
-            if (idx != INVALID_INDEX)
+            auto& v = srcBlendShape.Vertices[i];
+            int32 newVertexIndex = v.VertexIndex < (uint32)vertexCount ? mapping[v.VertexIndex] : INVALID_INDEX;
+            if (newVertexIndex != INVALID_INDEX)
             {
-                auto& v = srcBlendShape.Vertices[i];
-                ASSERT_LOW_LAYER(v.VertexIndex < (uint32)vertexCount);
-                ASSERT_LOW_LAYER(mapping[v.VertexIndex] != INVALID_INDEX);
-                v.VertexIndex = mapping[v.VertexIndex];
-                ASSERT_LOW_LAYER(v.VertexIndex < (uint32)newVertexCounter);
-                dstBlendShape.Vertices[j++] = v;
+                v.VertexIndex = newVertexIndex;
+                dstBlendShape.Vertices.Add(v);
             }
         }
     }
