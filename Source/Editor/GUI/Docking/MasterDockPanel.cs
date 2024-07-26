@@ -54,7 +54,8 @@ namespace FlaxEditor.GUI.Docking
         public override void Draw()
         {
             base.Draw();
-            Render2D.DrawLine(UpperLeft - new Float2(0, Offsets.Top), UpperRight - new Float2(0, Offsets.Top), Style.Current.BackColor, 3);
+            // Draw separator between main toolbar and master panel
+            Render2D.DrawLine(UpperLeft - new Float2(0, Offsets.Top), UpperRight - new Float2(0, Offsets.Top), Style.Current.BackgroundSeparator, 3);
         }
 
         /// <summary>

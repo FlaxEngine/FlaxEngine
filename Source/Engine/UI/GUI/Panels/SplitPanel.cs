@@ -104,7 +104,7 @@ namespace FlaxEngine.GUI
 
             Panel1.Parent = this;
             Panel2.Parent = this;
-            SplitterColor = Style.Current.BackColor;
+            SplitterColor = Style.Current.BackgroundSeparator;
 
             UpdateSplitRect();
         }

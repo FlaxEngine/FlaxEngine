@@ -194,7 +194,7 @@ namespace FlaxEditor.GUI.Docking
 
             if (tabsCount == 0)
             {
-                Render2D.FillRectangle(Bounds, style.BackColor);
+                Render2D.FillRectangle(Bounds, style.BackgroundSeparator);
                 return;
             }
             
