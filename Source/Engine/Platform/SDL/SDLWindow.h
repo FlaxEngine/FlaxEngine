@@ -8,6 +8,9 @@
 
 struct SDL_Window;
 union SDL_Event;
+#if PLATFORM_LINUX
+class MessageBox;
+#endif
 
 /// <summary>
 /// Implementation of the window class for SDL platform
@@ -20,7 +23,7 @@ class FLAXENGINE_API SDLWindow : public WindowBase
     friend SDLPlatform;
 #if PLATFORM_LINUX
     friend LinuxPlatform;
-    friend class LinuxWindow;
+    friend MessageBox;
 #endif
     
 private:
