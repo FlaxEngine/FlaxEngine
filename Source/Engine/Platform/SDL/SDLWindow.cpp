@@ -226,9 +226,9 @@ void* GetNativeWindowPointer(SDL_Window* window)
 #if PLATFORM_WINDOWS
     windowPtr = SDL_GetPointerProperty(props, SDL_PROP_WINDOW_WIN32_HWND_POINTER, nullptr);
 #elif PLATFORM_LINUX
-    windowPtr = GetWaylandSurfacePtr();
+    windowPtr = SDL_GetPointerProperty(SDL_GetWindowProperties(window), SDL_PROP_WINDOW_WAYLAND_SURFACE_POINTER, nullptr);
     if (windowPtr == nullptr)
-        windowPtr = (void*)GetX11WindowHandle();
+        windowPtr = (void*)SDL_GetNumberProperty(SDL_GetWindowProperties(window), SDL_PROP_WINDOW_X11_WINDOW_NUMBER, 0);
 #elif PLATFORM_MAC
     windowPtr = SDL_GetPointerProperty(props, SDL_PROP_WINDOW_COCOA_WINDOW_POINTER, nullptr);
 #elif PLATFORM_ANDROID
