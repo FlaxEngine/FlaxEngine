@@ -88,6 +88,12 @@ namespace FlaxEditor.GUI.Tabs
                 {
                     Render2D.FillRectangle(tabRect, style.BackgroundHighlighted);
                 }
+                else
+                {
+                    Render2D.FillRectangle(tabRect, style.BackgroundNormal.AlphaMultiplied(0.5f));
+                    Render2D.DrawLine(tabRect.UpperLeft, tabRect.BottomLeft, Tabs.TabStripColor);
+                    Render2D.DrawLine(tabRect.UpperRight, tabRect.BottomRight, Tabs.TabStripColor);
+                }
 
                 // Draw icon
                 if (Tab.Icon.IsValid)
@@ -131,12 +137,13 @@ namespace FlaxEditor.GUI.Tabs
                 // Arrange tab header controls
                 var pos = Float2.Zero;
                 var sizeMask = Tabs._orientation == Orientation.Horizontal ? Float2.UnitX : Float2.UnitY;
+                var offset = Tabs._orientation == Orientation.Horizontal ? Float2.UnitX : Float2.UnitY;
                 for (int i = 0; i < Children.Count; i++)
                 {
                     if (Children[i] is TabHeader tabHeader)
                     {
                         tabHeader.Location = pos;
-                        pos += tabHeader.Size * sizeMask;
+                        pos += (tabHeader.Size + offset) * sizeMask;
                     }
                 }
             }

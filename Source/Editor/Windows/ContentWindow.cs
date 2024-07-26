@@ -172,6 +172,7 @@ namespace FlaxEditor.Windows
             {
                 Parent = this,
             };
+            _toolStrip.BackgroundColor = Style.Current.BackgroundNormal;
             _importButton = (ToolStripButton)_toolStrip.AddButton(Editor.Icons.Import64, () => Editor.ContentImporting.ShowImportFileDialog(CurrentViewFolder)).LinkTooltip("Import content");
             _toolStrip.AddSeparator();
             _navigateBackwardButton = (ToolStripButton)_toolStrip.AddButton(Editor.Icons.Left64, NavigateBackward).LinkTooltip("Navigate backward");

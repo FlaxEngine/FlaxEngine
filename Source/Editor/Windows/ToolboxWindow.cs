@@ -429,6 +429,7 @@ namespace FlaxEditor.Windows
                 TabsSize = new Float2(tabSize, tabSize),
                 Parent = this
             };
+            TabsControl.TabStripColor = Style.Current.BackgroundNormal;
 
             TabsControl.AddTab(Spawn = new SpawnTab(Editor.Icons.Toolbox96, Editor));
             TabsControl.AddTab(VertexPaint = new VertexPaintingTab(Editor.Icons.Paint96, Editor));
