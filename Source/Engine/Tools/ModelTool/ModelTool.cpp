@@ -1035,6 +1035,7 @@ bool ModelTool::ImportModel(const String& path, ModelData& data, Options& option
                     if (min < 0 || max >= data.Skeleton.Bones.Count())
                     {
                         LOG(Warning, "Imported mesh \'{0}\' has invalid blend indices. It may result in invalid rendering.", mesh->Name);
+                        break;
                     }
                 }
 
@@ -1045,6 +1046,7 @@ bool ModelTool::ImportModel(const String& path, ModelData& data, Options& option
                     if (Math::Abs(sum - 1.0f) > ZeroTolerance)
                     {
                         LOG(Warning, "Imported mesh \'{0}\' has invalid blend weights. It may result in invalid rendering.", mesh->Name);
+                        break;
                     }
                 }
             }

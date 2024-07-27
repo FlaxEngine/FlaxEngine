@@ -939,8 +939,9 @@ bool ProcessMesh(ModelData& result, OpenFbxImporterData& data, const ofbx::Mesh*
             for (int32 i = 0; i < shapeIndexCount; i++)
             {
 		        int shapeIndex = shapeIndices[i];
-                Float3 positionDelta = ToFloat3(shapeVertices[i]);
-                Float3 normalDelta = shapeNormals ? ToFloat3(shapeNormals[i]) : Float3::Zero;
+                BlendShapeVertex v;
+                v.PositionDelta = ToFloat3(shapeVertices[i]);
+                v.NormalDelta = shapeNormals ? ToFloat3(shapeNormals[i]) : Float3::Zero;
                 for (int32 vertexIndex = 0; vertexIndex < vertexCount; vertexIndex++)
                 {
                     int sourceIndex = triangulatedIndices[vertexIndex];
@@ -948,10 +949,7 @@ bool ProcessMesh(ModelData& result, OpenFbxImporterData& data, const ofbx::Mesh*
                     if (sourceIndex == shapeIndex)
                     {
                         // Add blend shape vertex
-                        BlendShapeVertex v;
                         v.VertexIndex = vertexIndex;
-                        v.PositionDelta = positionDelta;
-                        v.NormalDelta = normalDelta;
                         blendShapeData.Vertices.Add(v);
                     }
                 }
