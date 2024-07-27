@@ -75,6 +75,7 @@ namespace FlaxEditor.Windows.Assets
         private bool _isRegisteredForScriptsReload;
         private Label _typeText;
         private ToolStripButton _optionsButton;
+        private ContextMenu _optionsCM;
 
         /// <summary>
         /// Gets the instance of the Json asset object that is being edited.
@@ -240,10 +241,13 @@ namespace FlaxEditor.Windows.Assets
 
         private void OpenOptionsContextMenu()
         {
-            var cm = new ContextMenu();
-            cm.AddButton("Copy type name", () => Clipboard.Text = Asset.DataTypeName);
-            cm.AddButton("Copy Asset data", () => Clipboard.Text = Asset.Data);
-            cm.AddButton("Paste Asset data", () =>
+            if (_optionsCM != null && _optionsCM.ContainsFocus)
+                return;
+            
+            _optionsCM = new ContextMenu();
+            _optionsCM.AddButton("Copy type name", () => Clipboard.Text = Asset.DataTypeName);
+            _optionsCM.AddButton("Copy Asset data", () => Clipboard.Text = Asset.Data);
+            _optionsCM.AddButton("Paste Asset data", () =>
             {
                 if (!string.IsNullOrEmpty(Clipboard.Text))
                 {
@@ -274,21 +278,21 @@ namespace FlaxEditor.Windows.Assets
                     }
                 }
             });
-            cm.Enabled = !string.IsNullOrEmpty(Clipboard.Text);
-            cm.AddSeparator();
+            _optionsCM.Enabled = !string.IsNullOrEmpty(Clipboard.Text);
+            _optionsCM.AddSeparator();
             if (_optionsButton.Tag is ContentItem item)
             {
-                cm.AddButton("Edit Asset code", () =>
+                _optionsCM.AddButton("Edit Asset code", () =>
                 {
                     Editor.Instance.ContentEditing.Open(item);
                 });
-                cm.AddButton("Show Asset code item in content window", () =>
+                _optionsCM.AddButton("Show Asset code item in content window", () =>
                 {
                     Editor.Instance.Windows.ContentWin.Select(item);
                 });
             }
             
-            cm.Show(_optionsButton, _optionsButton.PointFromScreen(Input.MouseScreenPosition));
+            _optionsCM.Show(_optionsButton, _optionsButton.PointFromScreen(Input.MouseScreenPosition));
         }
 
         /// <inheritdoc />
