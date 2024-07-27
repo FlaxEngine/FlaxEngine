@@ -7,6 +7,8 @@ using FlaxEditor.GUI;
 using FlaxEditor.GUI.ContextMenu;
 using FlaxEngine;
 using FlaxEngine.GUI;
+using FlaxEngine.Json;
+using FlaxEngine.Utilities;
 
 namespace FlaxEditor.Windows.Assets
 {
@@ -17,6 +19,53 @@ namespace FlaxEditor.Windows.Assets
     /// <seealso cref="FlaxEditor.Windows.Assets.AssetEditorWindow" />
     public sealed class JsonAssetWindow : AssetEditorWindowBase<JsonAsset>
     {
+        private class ObjectPasteUndo : IUndoAction
+        {
+            /// <inheritdoc />
+            public string ActionString => "Object Paste Undo";
+
+            private JsonAssetWindow _window;
+            private object _oldObject;
+            private object _newObject;
+
+            public ObjectPasteUndo(object oldObject, object newObject, JsonAssetWindow window)
+            {
+                _oldObject = oldObject;
+                _newObject = newObject;
+                _window = window;
+            }
+
+            /// <inheritdoc />
+            public void Dispose()
+            {
+                _oldObject = null;
+                _newObject = null;
+                _window = null;
+            }
+
+            /// <inheritdoc />
+            public void Do()
+            {
+                if (_newObject != null)
+                {
+                    _window._object = _newObject;
+                    _window.MarkAsEdited();
+                    _window._presenter.Select(_window._object);
+                }
+            }
+
+            /// <inheritdoc />
+            public void Undo()
+            {
+                if (_oldObject != null)
+                {
+                    _window._object = _oldObject;
+                    _window.MarkAsEdited();
+                    _window._presenter.Select(_window._object);
+                }
+            }
+        }
+        
         private readonly CustomEditorPresenter _presenter;
         private readonly ToolStripButton _saveButton;
         private readonly ToolStripButton _undoButton;
@@ -194,6 +243,38 @@ namespace FlaxEditor.Windows.Assets
             var cm = new ContextMenu();
             cm.AddButton("Copy type name", () => Clipboard.Text = Asset.DataTypeName);
             cm.AddButton("Copy Asset data", () => Clipboard.Text = Asset.Data);
+            cm.AddButton("Paste Asset data", () =>
+            {
+                if (!string.IsNullOrEmpty(Clipboard.Text))
+                {
+                    var dataTypeName = Asset.DataTypeName;
+                    var type = TypeUtils.GetType(dataTypeName);
+                    if (type != null)
+                    {
+                        try
+                        {
+                            var obj = Activator.CreateInstance(type.Type);
+                            var data = Clipboard.Text;
+                            JsonSerializer.Deserialize(obj, data);
+                            if (obj != null)
+                            {
+                                var undoAction = new ObjectPasteUndo(_object, obj, this);
+                                undoAction.Do();
+                                _undo.AddAction(undoAction);
+                            }
+                            else
+                            {
+                                Editor.LogWarning("Pasted data is not the correct data type or has incomplete data");
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            Editor.LogWarning("Pasted data is not the correct data type or has incomplete data");
+                        }
+                    }
+                }
+            });
+            cm.Enabled = !string.IsNullOrEmpty(Clipboard.Text);
             cm.AddSeparator();
             if (_optionsButton.Tag is ContentItem item)
             {
