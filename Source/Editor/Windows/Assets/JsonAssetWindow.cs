@@ -4,6 +4,7 @@ using System;
 using FlaxEditor.Content;
 using FlaxEditor.CustomEditors;
 using FlaxEditor.GUI;
+using FlaxEditor.GUI.ContextMenu;
 using FlaxEngine;
 using FlaxEngine.GUI;
 
@@ -24,6 +25,7 @@ namespace FlaxEditor.Windows.Assets
         private object _object;
         private bool _isRegisteredForScriptsReload;
         private Label _typeText;
+        private ToolStripButton _optionsButton;
 
         /// <summary>
         /// Gets the instance of the Json asset object that is being edited.
@@ -139,6 +141,29 @@ namespace FlaxEditor.Windows.Assets
 
             if (_typeText != null)
                 _typeText.Dispose();
+
+            // Get content item for options button
+            object buttonTag = null;
+            var allTypes = Editor.CodeEditing.All.Get();
+            foreach (var type in allTypes)
+            {
+                if (type.TypeName.Equals(Asset.DataTypeName, StringComparison.Ordinal))
+                {
+                    buttonTag = type.ContentItem;
+                    break;
+                }
+            }
+            
+            _optionsButton = new ToolStripButton(_toolstrip.ItemsHeight, ref Editor.Icons.Settings12)
+            {
+                AnchorPreset = AnchorPresets.TopRight,
+                Tag = buttonTag,
+                Parent = this,
+            };
+            _optionsButton.LocalX -= (_optionsButton.Width + 4);
+            _optionsButton.LocalY += (_toolstrip.Height - _optionsButton.Height) * 0.5f;
+            _optionsButton.Clicked += OpenOptionsContextMenu;
+
             var typeText = new ClickableLabel
             {
                 Text = $"{Asset.DataTypeName}",
@@ -147,9 +172,8 @@ namespace FlaxEditor.Windows.Assets
                 AutoWidth = true,
                 Parent = this,
             };
-            typeText.LocalX += -(typeText.Width + 4);
+            typeText.LocalX += -(typeText.Width + _optionsButton.Width + 8);
             typeText.LocalY += (_toolstrip.Height - typeText.Height) * 0.5f;
-            typeText.RightClick = () => Clipboard.Text = Asset.DataTypeName;
             _typeText = typeText;
 
             _undo.Clear();
@@ -163,6 +187,27 @@ namespace FlaxEditor.Windows.Assets
             }
 
             base.OnAssetLoaded();
+        }
+
+        private void OpenOptionsContextMenu()
+        {
+            var cm = new ContextMenu();
+            cm.AddButton("Copy type name", () => Clipboard.Text = Asset.DataTypeName);
+            cm.AddButton("Copy Asset data", () => Clipboard.Text = Asset.Data);
+            cm.AddSeparator();
+            if (_optionsButton.Tag is ContentItem item)
+            {
+                cm.AddButton("Edit Asset code", () =>
+                {
+                    Editor.Instance.ContentEditing.Open(item);
+                });
+                cm.AddButton("Show Asset code item in content window", () =>
+                {
+                    Editor.Instance.Windows.ContentWin.Select(item);
+                });
+            }
+            
+            cm.Show(_optionsButton, _optionsButton.PointFromScreen(Input.MouseScreenPosition));
         }
 
         /// <inheritdoc />
