@@ -32,7 +32,8 @@ private:
     Windows::ULONG _refCount;
 #endif
 #if PLATFORM_LINUX
-    bool _resizeDisabled, _focusOnMapped = false, _dragOver = false;
+    bool _dragOver;
+    bool _forcedFocus;
 #endif
     SDL_Window* _window;
     uint32 _windowId;

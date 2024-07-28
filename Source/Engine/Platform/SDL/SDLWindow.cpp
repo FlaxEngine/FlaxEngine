@@ -80,6 +80,10 @@ SDLWindow::SDLWindow(const CreateWindowSettings& settings)
     : WindowBase(settings)
     , _handle(nullptr)
     , _cachedClientRectangle(Rectangle())
+#if PLATFORM_LINUX
+    , _forcedFocus(false)
+    , _dragOver(false)
+#endif
 {
     int32 x = Math::TruncToInt(settings.Position.X);
     int32 y = Math::TruncToInt(settings.Position.Y);
@@ -91,31 +95,30 @@ SDLWindow::SDLWindow(const CreateWindowSettings& settings)
 
     if (SDLPlatform::UsesWayland())
     {
-        // The compositor seems to crash when something is rendered to the surface when window is hidden
+        // The compositor seems to crash when something is rendered to the hidden popup window surface
         _settings.ShowAfterFirstPaint = _showAfterFirstPaint = false;
     }
     
     uint32 flags = 0;
-    if (!_settings.HasBorder)
-        flags |= SDL_WINDOW_BORDERLESS;
-    if (_settings.Type == WindowType::Regular)
-        flags |= SDL_WINDOW_INPUT_FOCUS;
-    else if (_settings.Type == WindowType::Utility)
+    if (_settings.Type == WindowType::Utility)
         flags |= SDL_WINDOW_UTILITY;
     else if (_settings.Type == WindowType::Tooltip)
         flags |= SDL_WINDOW_TOOLTIP;
     else if (_settings.Type == WindowType::Popup)
         flags |= SDL_WINDOW_POPUP_MENU;
 
-
-    if (!_settings.AllowInput)
+    if (!_settings.HasBorder)
+        flags |= SDL_WINDOW_BORDERLESS;
+    if (_settings.AllowInput)
+        flags |= SDL_WINDOW_INPUT_FOCUS;
+    else
         flags |= SDL_WINDOW_NOT_FOCUSABLE;
-    //if (!_settings.ShowInTaskbar && _settings.IsRegularWindow)
-    //flags |= SDL_WINDOW_UTILITY;
     if (_settings.ShowAfterFirstPaint)
         flags |= SDL_WINDOW_HIDDEN;
     if (_settings.HasSizingFrame)
         flags |= SDL_WINDOW_RESIZABLE;
+    if (_settings.IsTopmost)
+        flags |= SDL_WINDOW_ALWAYS_ON_TOP;
     //flags |= SDL_WINDOW_HIGH_PIXEL_DENSITY;
 
     if (_settings.Parent == nullptr && (_settings.Type == WindowType::Tooltip || _settings.Type == WindowType::Popup))
@@ -127,7 +130,21 @@ SDLWindow::SDLWindow(const CreateWindowSettings& settings)
         {
             if (win->IsFocused())
             {
-                _settings.Parent = win;
+                if (win->_settings.Type == WindowType::Tooltip || win->_settings.Type == WindowType::Popup)
+                {
+                    auto focusedParent = win->_settings.Parent;
+                    while (focusedParent != nullptr)
+                    {
+                        if (focusedParent->_settings.Type != WindowType::Tooltip && focusedParent->_settings.Type != WindowType::Popup)
+                        {
+                            _settings.Parent = focusedParent;
+                            break;
+                        }
+                        focusedParent = focusedParent->_settings.Parent;
+                    }
+                }
+                else
+                    _settings.Parent = win;
                 break;
             }
         }
@@ -140,8 +157,9 @@ SDLWindow::SDLWindow(const CreateWindowSettings& settings)
     // The SDL window position is always relative to the parent window
     if (_settings.Parent != nullptr)
     {
-        x -= Math::TruncToInt(_settings.Parent->GetPosition().X);
-        y -= Math::TruncToInt(_settings.Parent->GetPosition().Y);
+        auto parentPosition = _settings.Parent->GetPosition();
+        x -= Math::TruncToInt(parentPosition.X);
+        y -= Math::TruncToInt(parentPosition.Y);
     }
 
     SDL_PropertiesID props = SDL_CreateProperties();
@@ -169,7 +187,16 @@ SDLWindow::SDLWindow(const CreateWindowSettings& settings)
     _windowId = SDL_GetWindowID(_window);
     _handle = GetNativeWindowPointer(_window);
     ASSERT(_handle != nullptr);
-    
+
+#if PLATFORM_LINUX
+    if (SDLPlatform::UsesWayland())
+    {
+        // Input focus is not set initially for Wayland windows, assume the window is focused until a focus event is received
+        if (_settings.AllowInput && (SDL_GetWindowFlags(_window) & SDL_WINDOW_INPUT_FOCUS) != 0)
+            _forcedFocus = (flags & SDL_WINDOW_INPUT_FOCUS) != 0;
+    }
+#endif
+
     SDL_DisplayID display = SDL_GetDisplayForWindow(_window);
     _dpiScale = SDL_GetDisplayContentScale(display);
     _dpi = (int)(_dpiScale * DefaultDPI);
@@ -215,7 +242,9 @@ SDLWindow::SDLWindow(const CreateWindowSettings& settings)
     lastEventWindow = this;
 
 #if PLATFORM_LINUX
-    SDLPlatform::InitPlatformX11(GetX11Display());
+    // Initialize using the shared Display instance from SDL
+    if (SDLPlatform::UsesX11() && SDLPlatform::GetXDisplay() == nullptr)
+        SDLPlatform::InitPlatformX11(GetX11Display());
 #endif
 }
 
@@ -557,6 +586,9 @@ void SDLWindow::HandleEvent(SDL_Event& event)
     }
     case SDL_EVENT_WINDOW_FOCUS_GAINED:
     {
+#if PLATFORM_LINUX
+        _forcedFocus = false;
+#endif
         OnGotFocus();
         SDL_StartTextInput(_window);
         const SDL_Rect* currentClippingRect = SDL_GetWindowMouseRect(_window);
@@ -569,6 +601,9 @@ void SDLWindow::HandleEvent(SDL_Event& event)
     }
     case SDL_EVENT_WINDOW_FOCUS_LOST:
     {
+#if PLATFORM_LINUX
+        _forcedFocus = false;
+#endif
         SDL_StopTextInput(_window);
         const SDL_Rect* currentClippingRect = SDL_GetWindowMouseRect(_window);
         if (currentClippingRect != nullptr)
@@ -782,8 +817,12 @@ bool SDLWindow::IsClosed() const
 
 bool SDLWindow::IsForegroundWindow() const
 {
+#if PLATFORM_LINUX
+    if (_forcedFocus)
+        return true;
+#endif
     SDL_WindowFlags flags = SDL_GetWindowFlags(_window);
-    return (flags & SDL_WINDOW_MOUSE_FOCUS) != 0 || (flags & SDL_WINDOW_INPUT_FOCUS) != 0;
+    return (flags & SDL_WINDOW_INPUT_FOCUS) != 0;
 }
 
 void SDLWindow::BringToFront(bool force)
@@ -898,6 +937,14 @@ Float2 SDLWindow::ClientToScreen(const Float2& clientPos) const
     int x, y;
     SDL_GetWindowPosition(_window, &x, &y);
 
+    SDLWindow* parent = (_settings.Type == WindowType::Tooltip || _settings.Type == WindowType::Popup) ? _settings.Parent : nullptr;
+    if (parent != nullptr)
+    {
+        Float2 parentPos = parent->ClientToScreen(Float2::Zero);
+        x += static_cast<int>(parentPos.X);
+        y += static_cast<int>(parentPos.Y);
+    }
+
     return clientPos + Float2(static_cast<float>(x), static_cast<float>(y));
 }
 
@@ -985,7 +1032,6 @@ void SDLWindow::EndTrackingMouse()
             LOG(Warning, "SDL_CaptureMouse: {0}", String(SDL_GetError()));
     }
 
-    //SDL_SetWindowGrab(_window, SDL_FALSE);
     Input::Mouse->SetRelativeMode(false);
 }
 
