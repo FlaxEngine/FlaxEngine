@@ -475,7 +475,15 @@ DialogResult MessageBox::Show(Window* parent, const StringView& text, const Stri
     int result = -1;
     if (SDL_ShowMessageBox(&data, &result) != 0)
     {
-        LOG(Error, "Failed to show message box: {0}", String(SDL_GetError()));
+#if PLATFORM_LINUX
+        // Fallback to native messagebox implementation in case some system fonts are missing
+        if (SDLPlatform::UsesX11())
+        {
+            LOG(Warning, "Failed to show SDL message box: {0}", String(SDL_GetError()));
+            return ShowFallback(parent, text, caption, buttons, icon);
+        }
+#endif
+        LOG(Error, "Failed to show SDL message box: {0}", String(SDL_GetError()));
         return DialogResult::Abort;
     }
     if (result < 0)
