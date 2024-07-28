@@ -944,6 +944,12 @@ void DebugDraw::DrawActors(Actor** selectedActors, int32 selectedActorsCount, bo
     }
 }
 
+void DebugDraw::DrawActorsTree(Actor* actor)
+{
+    Function<bool(Actor*)> function = &DrawActorsTreeWalk;
+    actor->TreeExecute(function);
+}
+
 void DebugDraw::DrawAxisFromDirection(const Vector3& origin, const Vector3& direction, float size, float duration, bool depthTest)
 {
     ASSERT(direction.IsNormalized());
