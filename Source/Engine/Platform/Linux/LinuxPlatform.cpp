@@ -366,8 +366,6 @@ static int X11_MessageBoxInitPositions(MessageBoxData* data)
 	return 0;
 }
 
-#if !PLATFORM_SDL
-
 // Create and set up X11 dialog box window
 static int X11_MessageBoxCreateWindow(MessageBoxData* data)
 {
@@ -655,7 +653,11 @@ static int X11_MessageBoxLoop(MessageBoxData* data)
 	return 0;
 }
 
+#if !PLATFORM_SDL
 DialogResult MessageBox::Show(Window* parent, const StringView& text, const StringView& caption, MessageBoxButtons buttons, MessageBoxIcon icon)
+#else
+DialogResult MessageBox::ShowFallback(Window* parent, const StringView& text, const StringView& caption, MessageBoxButtons buttons, MessageBoxIcon icon)
+#endif
 {
     if (CommandLine::Options.Headless)
         return DialogResult::None;
@@ -842,6 +844,8 @@ DialogResult MessageBox::Show(Window* parent, const StringView& text, const Stri
 	return data.resultButtonIndex == -1 ? DialogResult::None : data.buttons[data.resultButtonIndex].result;
 }
 
+#if !PLATFORM_SDL
+
 int X11ErrorHandler(X11::Display* display, X11::XErrorEvent* event)
 {
     if (event->error_code == 5)
@@ -851,6 +855,7 @@ int X11ErrorHandler(X11::Display* display, X11::XErrorEvent* event)
 	LOG(Error, "X11 Error: {0}", String(buffer));
 	return 0;
 }
+
 #endif
 
 int32 CalculateDpi()
