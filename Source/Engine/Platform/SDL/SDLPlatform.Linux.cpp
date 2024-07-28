@@ -254,7 +254,7 @@ DragDropEffect Window::DoDragDrop(const StringView& data)
 DragDropEffect Window::DoDragDropWayland(const StringView& data)
 {
     // TODO: Wayland
-    ASSERT(false);
+    LOG(Warning, "Wayland Drag and drop is not implemented yet.");
     return DragDropEffect::None;
 }
 
@@ -598,7 +598,7 @@ void SDLClipboard::SetText(const StringView& text)
     }
     else
     {
-        ASSERT(false); // TODO: Wayland
+        LOG(Warning, "Wayland clipboard support is not implemented yet."); // TODO: Wayland
     }
 }
 
@@ -636,7 +636,7 @@ String SDLClipboard::GetText()
     }
     else
     {
-        ASSERT(false); // TODO: Wayland
+        LOG(Warning, "Wayland clipboard is not implemented yet."); // TODO: Wayland
     }
 }
 
