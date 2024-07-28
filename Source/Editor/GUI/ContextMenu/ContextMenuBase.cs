@@ -218,12 +218,19 @@ namespace FlaxEditor.GUI.ContextMenu
             desc.AllowMaximize = false;
             desc.AllowDragAndDrop = false;
             desc.IsTopmost = true;
-            desc.Type = WindowType.Utility;
+            desc.Type = WindowType.Popup;
+            //desc.Parent = parentWin.Window;
             desc.HasSizingFrame = false;
             OnWindowCreating(ref desc);
             _window = Platform.CreateWindow(ref desc);
             _window.GotFocus += OnWindowGotFocus;
             _window.LostFocus += OnWindowLostFocus;
+
+#if USE_IS_FOREGROUND && USE_SDL_WORKAROUNDS
+            // The focus between popup and parent windows doesn't change, force hide the popup when clicked on parent
+            parentWin.Window.MouseDown += OnWindowMouseDown;
+            _window.Closed += () => parentWin.Window.MouseDown -= OnWindowMouseDown;
+#endif
 
             // Attach to the window
             _parentCM = parent as ContextMenuBase;
@@ -382,6 +389,12 @@ namespace FlaxEditor.GUI.ContextMenu
 #if USE_SDL_WORKAROUNDS
         private void OnWindowGotFocus()
         {
+        }
+        
+        private void OnWindowMouseDown(ref Float2 mousePosition, MouseButton button, ref bool handled)
+        {
+            // The user clicked outside the popup window
+            Hide();
         }
 #else
         private void OnWindowGotFocus()
