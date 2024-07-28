@@ -702,7 +702,10 @@ void SDLWindow::Show()
     if (_isTrackingMouse)
     {
         if (SDL_CaptureMouse(SDL_TRUE) != 0)
-            LOG(Warning, "Show SDL_CaptureMouse: {0}", String(SDL_GetError()));
+        {
+            if (!SDLPlatform::UsesWayland()) // Suppress "That operation is not supported" errors
+                LOG(Warning, "SDL_CaptureMouse: {0}", String(SDL_GetError()));
+        }
     }
 
     WindowBase::Show();
@@ -956,7 +959,10 @@ void SDLWindow::StartTrackingMouse(bool useMouseScreenOffset)
     if (_visible)
     {
         if (SDL_CaptureMouse(SDL_TRUE) != 0)
-            LOG(Warning, "SDL_CaptureMouse: {0}", String(SDL_GetError()));
+        {
+            if (!SDLPlatform::UsesWayland()) // Suppress "That operation is not supported" errors
+                LOG(Warning, "SDL_CaptureMouse: {0}", String(SDL_GetError()));
+        }
 
         // For viewport camera mouse tracking we want to use relative mode for best precision
         if (_cursor == CursorType::Hidden)
@@ -974,7 +980,10 @@ void SDLWindow::EndTrackingMouse()
     _isVerticalFlippingMouse = false;
 
     if (SDL_CaptureMouse(SDL_FALSE) != 0)
-        LOG(Warning, "SDL_CaptureMouse: {0}", String(SDL_GetError()));
+    {
+        if (!SDLPlatform::UsesWayland()) // Suppress "That operation is not supported" errors
+            LOG(Warning, "SDL_CaptureMouse: {0}", String(SDL_GetError()));
+    }
 
     //SDL_SetWindowGrab(_window, SDL_FALSE);
     Input::Mouse->SetRelativeMode(false);
