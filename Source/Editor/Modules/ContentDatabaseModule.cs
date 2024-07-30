@@ -90,6 +90,7 @@ namespace FlaxEditor.Modules
             FlaxEngine.Json.JsonSerializer.Settings.Converters.Add(new AssetItemConverter());
 
             ScriptsBuilder.ScriptsReloadBegin += OnScriptsReloadBegin;
+            ScriptsBuilder.ScriptsReloadEnd += OnScriptsReloadEnd;
         }
 
         private void OnContentAssetDisposing(Asset asset)
@@ -1179,8 +1180,6 @@ namespace FlaxEditor.Modules
                 LoadProjects(Game.Project);
             }
 
-            RebuildInternal();
-
             Editor.ContentImporting.ImportFileEnd += (obj, failed) =>
             {
                 var path = obj.ResultUrl;
@@ -1301,6 +1300,11 @@ namespace FlaxEditor.Modules
 
             _isDuringFastSetup = false;
             _enableEvents = enabledEvents;
+        }
+
+        private void OnScriptsReloadEnd()
+        {
+            RebuildInternal();
         }
 
         /// <inheritdoc />
