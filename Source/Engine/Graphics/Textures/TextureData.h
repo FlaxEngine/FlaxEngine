@@ -10,13 +10,21 @@
 /// <summary>
 /// Single texture mip map entry data.
 /// </summary>
-class FLAXENGINE_API TextureMipData
+API_STRUCT() struct FLAXENGINE_API TextureMipData
 {
+    DECLARE_SCRIPTING_TYPE_MINIMAL(TextureMipData);
 public:
-    uint32 RowPitch;
-    uint32 DepthPitch;
-    uint32 Lines;
-    BytesContainer Data;
+    // The row pitch.
+    API_FIELD() uint32 RowPitch;
+
+    // The depth pitch.
+    API_FIELD() uint32 DepthPitch;
+
+    // The number of lines.
+    API_FIELD() uint32 Lines;
+
+    // The data.
+    API_FIELD(ReadOnly) BytesContainer Data;
 
     TextureMipData();
     TextureMipData(const TextureMipData& other);
@@ -40,22 +48,39 @@ public:
     }
 };
 
+template<>
+struct TIsPODType<TextureMipData>
+{
+    enum { Value = true };
+};
+
+/// <summary>
+/// Single entry of the texture array. Contains collection of mip maps.
+/// </summary>
+API_STRUCT(NoDefault) struct FLAXENGINE_API TextureDataArrayEntry
+{
+    DECLARE_SCRIPTING_TYPE_MINIMAL(TextureDataArrayEntry);
+
+    /// <summary>
+    /// The mip maps collection.
+    /// </summary>
+    API_FIELD(ReadOnly) Array<TextureMipData, FixedAllocation<GPU_MAX_TEXTURE_MIP_LEVELS>> Mips;
+};
+
+template<>
+struct TIsPODType<TextureDataArrayEntry>
+{
+    enum { Value = false };
+};
+
 /// <summary>
 /// Texture data container (used to keep data downloaded from the GPU).
 /// </summary>
-class FLAXENGINE_API TextureData
+API_STRUCT() struct FLAXENGINE_API TextureData
 {
+    DECLARE_SCRIPTING_TYPE_MINIMAL(TextureData);
 public:
-    /// <summary>
-    /// Single entry of the texture array. Contains collection of mip maps.
-    /// </summary>
-    struct FLAXENGINE_API ArrayEntry
-    {
-        /// <summary>
-        /// The mip maps collection.
-        /// </summary>
-        Array<TextureMipData, FixedAllocation<GPU_MAX_TEXTURE_MIP_LEVELS>> Mips;
-    };
+    
 
 public:
     /// <summary>
@@ -76,27 +101,27 @@ public:
     /// <summary>
     /// Top level texture width (in pixels).
     /// </summary>
-    int32 Width = 0;
+    API_FIELD() int32 Width = 0;
 
     /// <summary>
     /// Top level texture height (in pixels).
     /// </summary>
-    int32 Height = 0;
+    API_FIELD() int32 Height = 0;
 
     /// <summary>
     /// Top level texture depth (in pixels).
     /// </summary>
-    int32 Depth = 0;
+    API_FIELD() int32 Depth = 0;
 
     /// <summary>
     /// The texture data format.
     /// </summary>
-    PixelFormat Format = PixelFormat::Unknown;
+    API_FIELD() PixelFormat Format = PixelFormat::Unknown;
 
     /// <summary>
     /// The items collection (depth slices or array slices).
     /// </summary>
-    Array<ArrayEntry, InlinedAllocation<6>> Items;
+    API_FIELD() Array<TextureDataArrayEntry, InlinedAllocation<6>> Items;
 
 public:
     /// <summary>
@@ -144,4 +169,10 @@ public:
     {
         Items.Resize(0, false);
     }
+};
+
+template<>
+struct TIsPODType<TextureData>
+{
+    enum { Value = false };
 };
