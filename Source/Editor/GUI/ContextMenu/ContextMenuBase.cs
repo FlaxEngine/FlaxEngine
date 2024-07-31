@@ -219,7 +219,7 @@ namespace FlaxEditor.GUI.ContextMenu
             desc.AllowDragAndDrop = false;
             desc.IsTopmost = true;
             desc.Type = WindowType.Popup;
-            //desc.Parent = parentWin.Window;
+            desc.Parent = parentWin.Window;
             desc.HasSizingFrame = false;
             OnWindowCreating(ref desc);
             _window = Platform.CreateWindow(ref desc);
