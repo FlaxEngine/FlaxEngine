@@ -61,7 +61,7 @@ namespace FlaxEditor.Modules
         public event Action WorkspaceModified;
 
         /// <summary>
-        /// Occurs when workspace has will be rebuilt.
+        /// Occurs when workspace will be rebuilt.
         /// </summary>
         public event Action WorkspaceRebuilding;
 
@@ -89,7 +89,7 @@ namespace FlaxEditor.Modules
             // Register AssetItems serialization helper (serialize ref ID only)
             FlaxEngine.Json.JsonSerializer.Settings.Converters.Add(new AssetItemConverter());
 
-            ScriptsBuilder.ScriptsReloadBegin += OnScriptsReloadBegin;
+            ScriptsBuilder.ScriptsReload += OnScriptsReload;
             ScriptsBuilder.ScriptsReloadEnd += OnScriptsReloadEnd;
         }
 
@@ -1314,7 +1314,7 @@ namespace FlaxEditor.Modules
             }
         }
 
-        private void OnScriptsReloadBegin()
+        private void OnScriptsReload()
         {
             var enabledEvents = _enableEvents;
             _enableEvents = false;
@@ -1387,7 +1387,8 @@ namespace FlaxEditor.Modules
         public override void OnExit()
         {
             FlaxEngine.Content.AssetDisposing -= OnContentAssetDisposing;
-            ScriptsBuilder.ScriptsReloadBegin -= OnScriptsReloadBegin;
+            ScriptsBuilder.ScriptsReload -= OnScriptsReload;
+            ScriptsBuilder.ScriptsReloadEnd -= OnScriptsReloadEnd;
 
             // Disable events
             _enableEvents = false;
