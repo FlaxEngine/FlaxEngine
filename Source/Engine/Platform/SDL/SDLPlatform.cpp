@@ -111,34 +111,7 @@ bool SDLPlatform::CheckWindowDragging(Window* window, WindowHitCodes hit)
     bool handled = false;
     window->OnLeftButtonHit(hit, handled);
     if (handled)
-    {
         DraggedWindowId = window->_windowId;
-        LOG(Info, "Dragging: {}", window->_settings.Title);
-
-        String dockHintWindow("DockHint.Window");
-        Window* window = nullptr;
-        WindowsManager::WindowsLocker.Lock();
-        for (int32 i = 0; i < WindowsManager::Windows.Count(); i++)
-        {
-            if (WindowsManager::Windows[i]->_title.Compare(dockHintWindow) == 0)
-                //if (WindowsManager::Windows[i]->_windowId == DraggedWindowId)
-            {
-                window = WindowsManager::Windows[i];
-                break;
-            }
-        }
-        WindowsManager::WindowsLocker.Unlock();
-
-        Float2 mousePos;
-        auto buttons = SDL_GetGlobalMouseState(&mousePos.X, &mousePos.Y);
-        if (window != nullptr)
-        {
-            /*int top, left, bottom, right;
-            SDL_GetWindowBordersSize(window->_window, &top, &left, &bottom, &right);
-            mousePos += Float2(left, -top);
-            Input::Mouse->OnMouseDown(mousePos, MouseButton::Left, window);*/
-        }
-    }
     return handled;
 }
 
@@ -203,20 +176,16 @@ void SDLPlatform::Tick()
 
     SDL_PumpEvents();
     SDL_Event events[32];
-    int count;
-    while ((count = SDL_PeepEvents(events, SDL_arraysize(events), SDL_GETEVENT, SDL_EVENT_FIRST, SDL_EVENT_LAST)))
+    int count = SDL_PeepEvents(events, SDL_arraysize(events), SDL_GETEVENT, SDL_EVENT_FIRST, SDL_EVENT_LAST);
+    for (int i = 0; i < count; ++i)
     {
-        for (int i = 0; i < count; ++i)
-        {
-            SDLWindow* window = SDLWindow::GetWindowFromEvent(events[i]);
-            if (window)
-                window->HandleEvent(events[i]);
-            else if (events[i].type >= SDL_EVENT_JOYSTICK_AXIS_MOTION && events[i].type <= SDL_EVENT_GAMEPAD_STEAM_HANDLE_UPDATED)
-                SDLInput::HandleEvent(nullptr, events[i]);
-            else
-                SDLPlatform::HandleEvent(events[i]);
-        }
-        SDL_PumpEvents();
+        SDLWindow* window = SDLWindow::GetWindowFromEvent(events[i]);
+        if (window)
+            window->HandleEvent(events[i]);
+        else if (events[i].type >= SDL_EVENT_JOYSTICK_AXIS_MOTION && events[i].type <= SDL_EVENT_GAMEPAD_STEAM_HANDLE_UPDATED)
+            SDLInput::HandleEvent(nullptr, events[i]);
+        else
+            SDLPlatform::HandleEvent(events[i]);
     }
 }
 
