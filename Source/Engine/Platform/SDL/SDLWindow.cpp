@@ -99,7 +99,7 @@ SDLWindow::SDLWindow(const CreateWindowSettings& settings)
         _settings.ShowAfterFirstPaint = _showAfterFirstPaint = false;
     }
     
-    uint32 flags = 0;
+    uint32 flags = SDL_WINDOW_HIDDEN;
     if (_settings.Type == WindowType::Utility)
         flags |= SDL_WINDOW_UTILITY;
     else if (_settings.Type == WindowType::Tooltip)
@@ -113,12 +113,12 @@ SDLWindow::SDLWindow(const CreateWindowSettings& settings)
         flags |= SDL_WINDOW_INPUT_FOCUS;
     else
         flags |= SDL_WINDOW_NOT_FOCUSABLE;
-    if (_settings.ShowAfterFirstPaint)
-        flags |= SDL_WINDOW_HIDDEN;
     if (_settings.HasSizingFrame)
         flags |= SDL_WINDOW_RESIZABLE;
     if (_settings.IsTopmost)
         flags |= SDL_WINDOW_ALWAYS_ON_TOP;
+    if (_settings.SupportsTransparency)
+        flags |= SDL_WINDOW_TRANSPARENT;
     //flags |= SDL_WINDOW_HIGH_PIXEL_DENSITY;
 
     if (_settings.Parent == nullptr && (_settings.Type == WindowType::Tooltip || _settings.Type == WindowType::Popup))
@@ -316,8 +316,6 @@ SDL_HitTestResult OnWindowHitTest(SDL_Window* win, const SDL_Point* area, void* 
 
     Float2 clientPosition = Float2(static_cast<float>(area->x), static_cast<float>(area->y));
     Float2 screenPosition = window->ClientToScreen(clientPosition);
-
-    //auto clientBounds = window->GetClientBounds();
 
     WindowHitCodes hit = WindowHitCodes::Client;
     bool handled = false;
