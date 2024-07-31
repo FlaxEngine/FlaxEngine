@@ -128,14 +128,14 @@ SDLWindow::SDLWindow(const CreateWindowSettings& settings)
         WindowsManager::WindowsLocker.Lock();
         for (auto win : WindowsManager::Windows)
         {
-            if (win->IsFocused())
+            if (win->IsForegroundWindow())
             {
                 if (win->_settings.Type == WindowType::Tooltip || win->_settings.Type == WindowType::Popup)
                 {
                     auto focusedParent = win->_settings.Parent;
                     while (focusedParent != nullptr)
                     {
-                        if (focusedParent->_settings.Type != WindowType::Tooltip && focusedParent->_settings.Type != WindowType::Popup)
+                        if (focusedParent->_settings.Parent == nullptr)
                         {
                             _settings.Parent = focusedParent;
                             break;
@@ -157,7 +157,7 @@ SDLWindow::SDLWindow(const CreateWindowSettings& settings)
     // The SDL window position is always relative to the parent window
     if (_settings.Parent != nullptr)
     {
-        auto parentPosition = _settings.Parent->GetPosition();
+        auto parentPosition = _settings.Parent->ClientToScreen(Float2::Zero);
         x -= Math::TruncToInt(parentPosition.X);
         y -= Math::TruncToInt(parentPosition.Y);
     }
@@ -169,16 +169,13 @@ SDLWindow::SDLWindow(const CreateWindowSettings& settings)
     SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_Y_NUMBER, y);
     SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_WIDTH_NUMBER, windowWidth);
     SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_HEIGHT_NUMBER, windowHeight);
+    SDL_SetBooleanProperty(props, SDL_PROP_WINDOW_CREATE_EXTERNAL_GRAPHICS_CONTEXT_BOOLEAN, SDL_TRUE);
     if ((flags & SDL_WINDOW_TOOLTIP) != 0)
-    {
         SDL_SetBooleanProperty(props, SDL_PROP_WINDOW_CREATE_TOOLTIP_BOOLEAN, SDL_TRUE);
-        SDL_SetPointerProperty(props, SDL_PROP_WINDOW_CREATE_PARENT_POINTER, _settings.Parent->_window);
-    }
     else if ((flags & SDL_WINDOW_POPUP_MENU) != 0)
-    {
         SDL_SetBooleanProperty(props, SDL_PROP_WINDOW_CREATE_MENU_BOOLEAN, SDL_TRUE);
+    if (_settings.Parent != nullptr)
         SDL_SetPointerProperty(props, SDL_PROP_WINDOW_CREATE_PARENT_POINTER, _settings.Parent->_window);
-    }
 
     _window = SDL_CreateWindowWithProperties(props);
     if (_window == nullptr)
@@ -841,27 +838,28 @@ void SDLWindow::SetClientBounds(const Rectangle& clientArea)
 
 void SDLWindow::SetPosition(const Float2& position)
 {
-    int top, left, bottom, right;
-    SDL_GetWindowBordersSize(_window, &top, &left, &bottom, &right);
+    Int2 topLeftBorder;
+    SDL_GetWindowBordersSize(_window, &topLeftBorder.Y, &topLeftBorder.X, nullptr, nullptr);
 
     // The position is relative to the parent window
-    Float2 newPosition = position;
-    SDLWindow* parent = (_settings.Type == WindowType::Tooltip || _settings.Type == WindowType::Popup) ? _settings.Parent : nullptr;
-    if (parent != nullptr)
-        newPosition -= parent->GetClientPosition();
+    Int2 relativePosition(static_cast<int>(position.X), static_cast<int>(position.Y));
+    relativePosition += topLeftBorder;
 
-    SDL_SetWindowPosition(_window, static_cast<int>(newPosition.X) + left, static_cast<int>(newPosition.Y) + top);
+    SDLWindow* parent = (_settings.Type == WindowType::Tooltip || _settings.Type == WindowType::Popup) ? _settings.Parent : nullptr;
+    while (parent != nullptr)
+    {
+        Int2 parentPosition;
+        SDL_GetWindowPosition(parent->_window, &parentPosition.X, &parentPosition.Y);
+        relativePosition -= parentPosition;
+        parent = parent->_settings.Parent;
+    }
+
+    SDL_SetWindowPosition(_window, relativePosition.X, relativePosition.Y);
 }
 
 void SDLWindow::SetClientPosition(const Float2& position)
 {
-    // The position is relative to the parent window
-    Float2 newPosition = position;
-    SDLWindow* parent = (_settings.Type == WindowType::Tooltip || _settings.Type == WindowType::Popup) ? _settings.Parent : nullptr;
-    if (parent != nullptr)
-        newPosition -= parent->GetClientPosition();
-
-    SDL_SetWindowPosition(_window, static_cast<int>(newPosition.X), static_cast<int>(newPosition.Y));
+    SDL_SetWindowPosition(_window, static_cast<int>(position.X), static_cast<int>(position.Y));
 }
 
 void SDLWindow::SetIsFullscreen(bool isFullscreen)
@@ -878,16 +876,23 @@ void SDLWindow::SetIsFullscreen(bool isFullscreen)
 
 Float2 SDLWindow::GetPosition() const
 {
-    int top, left, bottom, right;
-    SDL_GetWindowBordersSize(_window, &top, &left, &bottom, &right);
+    Int2 topLeftBorder;
+    SDL_GetWindowBordersSize(_window, &topLeftBorder.Y, &topLeftBorder.X, nullptr, nullptr);
 
     // The position is relative to the parent window
-    Float2 newPosition = GetClientPosition();
-    SDLWindow* parent = (_settings.Type == WindowType::Tooltip || _settings.Type == WindowType::Popup) ? _settings.Parent : nullptr;
-    if (parent != nullptr)
-        newPosition += parent->GetClientPosition();
+    Int2 position;
+    SDL_GetWindowPosition(_window, &position.X, &position.Y);
+    position -= topLeftBorder;
 
-    return newPosition - Float2(static_cast<float>(left), static_cast<float>(top));
+    SDLWindow* parent = (_settings.Type == WindowType::Tooltip || _settings.Type == WindowType::Popup) ? _settings.Parent : nullptr;
+    while (parent != nullptr)
+    {
+        Int2 parentPosition;
+        SDL_GetWindowPosition(parent->_window, &parentPosition.X, &parentPosition.Y);
+        position += parentPosition;
+        parent = parent->_settings.Parent;
+    }
+    return Float2(static_cast<float>(position.X), static_cast<float>(position.Y));
 }
 
 Float2 SDLWindow::GetSize() const
@@ -910,42 +915,38 @@ Float2 SDLWindow::GetClientSize() const
 
 Float2 SDLWindow::ScreenToClient(const Float2& screenPos) const
 {
-#if PLATFORM_LINUX
-    auto res1 = screenPos - GetPosition();
-    auto res1b = screenPos - GetClientPosition();
+    // The position is relative to the parent window
+    Int2 position;
+    SDL_GetWindowPosition(_window, &position.X, &position.Y);
 
-    X11::Display* display = (X11::Display*)GetX11Display();
-    if (display)
+    SDLWindow* parent = (_settings.Type == WindowType::Tooltip || _settings.Type == WindowType::Popup) ? _settings.Parent : nullptr;
+    while (parent != nullptr)
     {
-        X11::Window window =  (X11::Window)GetX11WindowHandle();
-        if (!display)
-            return screenPos;
-        int32 x, y;
-        X11::Window child;
-        X11::XTranslateCoordinates(display, X11_DefaultRootWindow(display), window, (int32)screenPos.X, (int32)screenPos.Y, &x, &y, &child);
-    
-        auto res2 = Float2((float)x, (float)y);
-        if (Float2::DistanceSquared(res1b, res2) > 1)
-            res1 = res1;
+        Int2 parentPosition;
+        SDL_GetWindowPosition(parent->_window, &parentPosition.X, &parentPosition.Y);
+        position += parentPosition;
+        parent = parent->_settings.Parent;
     }
-#endif
-    return screenPos - GetClientPosition();
+    
+    return screenPos - Float2(static_cast<float>(position.X), static_cast<float>(position.Y));
 }
 
 Float2 SDLWindow::ClientToScreen(const Float2& clientPos) const
 {
-    int x, y;
-    SDL_GetWindowPosition(_window, &x, &y);
+    // The position is relative to the parent window
+    Int2 position;
+    SDL_GetWindowPosition(_window, &position.X, &position.Y);
 
     SDLWindow* parent = (_settings.Type == WindowType::Tooltip || _settings.Type == WindowType::Popup) ? _settings.Parent : nullptr;
-    if (parent != nullptr)
+    while (parent != nullptr)
     {
-        Float2 parentPos = parent->ClientToScreen(Float2::Zero);
-        x += static_cast<int>(parentPos.X);
-        y += static_cast<int>(parentPos.Y);
+        Int2 parentPosition;
+        SDL_GetWindowPosition(parent->_window, &parentPosition.X, &parentPosition.Y);
+        position += parentPosition;
+        parent = parent->_settings.Parent;
     }
 
-    return clientPos + Float2(static_cast<float>(x), static_cast<float>(y));
+    return clientPos + Float2(static_cast<float>(position.X), static_cast<float>(position.Y));
 }
 
 void SDLWindow::FlashWindow()
