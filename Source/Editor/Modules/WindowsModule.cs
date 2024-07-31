@@ -1004,6 +1004,11 @@ namespace FlaxEditor.Modules
                     Editor.LogWarning(string.Format("Failed to restore window {0} (assembly: {1})", winData.TypeName, winData.AssemblyName));
                 }
             }
+
+            // Restored windows stole the focus from Editor
+            if (_restoreWindows.Count > 0)
+                Editor.Instance.Windows.MainWindow.Focus();
+
             _restoreWindows.Clear();
         }
 
