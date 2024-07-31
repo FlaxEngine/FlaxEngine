@@ -51,7 +51,7 @@ namespace FlaxEditor.Modules
             public Float2 FloatSize;
             public Float2 FloatPosition;
 
-            public AssetItem Item;
+            public Guid AssetItemID;
 
             // Constructor, to allow for default values
             public WindowRestoreData()
@@ -808,11 +808,11 @@ namespace FlaxEditor.Modules
             Level.SceneSaving += OnSceneSaving;
             Level.SceneUnloaded += OnSceneUnloaded;
             Level.SceneUnloading += OnSceneUnloading;
-            ScriptsBuilder.ScriptsReloadEnd += OnScriptsReloadEnd;
+            Editor.ContentDatabase.WorkspaceRebuilt += OnWorkspaceRebuilt;
             Editor.StateMachine.StateChanged += OnEditorStateChanged;
         }
 
-        internal void AddToRestore(PrefabWindow win)
+        internal void AddToRestore(AssetEditorWindow win)
         {
             var type = win.GetType();
             var winData = new WindowRestoreData();
@@ -858,7 +858,7 @@ namespace FlaxEditor.Modules
             }
             winData.AssemblyName = type.Assembly.GetName().Name;
             winData.TypeName = type.FullName;
-            winData.Item = win.Item;
+            winData.AssetItemID = win.Item.ID;
             _restoreWindows.Add(winData);
         }
 
@@ -907,7 +907,7 @@ namespace FlaxEditor.Modules
             _restoreWindows.Add(winData);
         }
 
-        private void OnScriptsReloadEnd()
+        private void OnWorkspaceRebuilt()
         {
             // Go in reverse order to create floating Prefab windows first before docked windows
             for (int i = _restoreWindows.Count - 1; i >= 0; i--)
@@ -924,9 +924,11 @@ namespace FlaxEditor.Modules
                     if (type == null)
                         continue;
 
-                    if (type == typeof(PrefabWindow))
+                    if (type.IsAssignableTo(typeof(AssetEditorWindow)))
                     {
-                        var win = new PrefabWindow(Editor.Instance, winData.Item);
+                        var ctor = type.GetConstructor(new Type[] { typeof(Editor), typeof(AssetItem) });
+                        var assetItem = Editor.ContentDatabase.FindAsset(winData.AssetItemID);
+                        var win = (AssetEditorWindow)ctor.Invoke(new object[] { Editor.Instance, assetItem });
                         win.Show(winData.DockState, winData.DockState != DockState.Float ? winData.DockedTo : null, winData.SelectOnShow, winData.SplitterValue);
                         if (winData.DockState == DockState.Float)
                         {
@@ -1157,7 +1159,7 @@ namespace FlaxEditor.Modules
             Level.SceneSaving -= OnSceneSaving;
             Level.SceneUnloaded -= OnSceneUnloaded;
             Level.SceneUnloading -= OnSceneUnloading;
-            ScriptsBuilder.ScriptsReloadEnd -= OnScriptsReloadEnd;
+            Editor.ContentDatabase.WorkspaceRebuilt -= OnWorkspaceRebuilt;
             Editor.StateMachine.StateChanged -= OnEditorStateChanged;
 
             // Close main window

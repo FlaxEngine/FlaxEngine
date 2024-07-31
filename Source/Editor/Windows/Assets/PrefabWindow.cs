@@ -286,8 +286,10 @@ namespace FlaxEditor.Windows.Assets
             return false;
         }
 
-        private void OnScriptsReloadBegin()
+        /// <inheritdoc />
+        protected override void OnScriptsReloadBegin()
         {
+            base.OnScriptsReloadBegin();
             _isScriptsReloading = true;
 
             if (_asset == null || !_asset.IsLoaded)
@@ -308,11 +310,6 @@ namespace FlaxEditor.Windows.Assets
                 {
                     Save();
                 }
-            }
-
-            if (!IsHidden)
-            {
-                Editor.Instance.Windows.AddToRestore(this);
             }
 
             // Cleanup

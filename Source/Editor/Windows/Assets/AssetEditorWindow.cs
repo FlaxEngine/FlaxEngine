@@ -58,6 +58,8 @@ namespace FlaxEditor.Windows.Assets
             InputActions.Add(options => options.Save, Save);
 
             UpdateTitle();
+
+            ScriptsBuilder.ScriptsReloadBegin += OnScriptsReloadBegin;
         }
 
         /// <summary>
@@ -151,6 +153,8 @@ namespace FlaxEditor.Windows.Assets
         /// <inheritdoc />
         public override void OnDestroy()
         {
+            ScriptsBuilder.ScriptsReloadBegin -= OnScriptsReloadBegin;
+
             if (_item != null)
             {
                 // Ensure to remove linkage to the item
@@ -158,6 +162,15 @@ namespace FlaxEditor.Windows.Assets
             }
 
             base.OnDestroy();
+        }
+
+        /// <inheritdoc />
+        protected virtual void OnScriptsReloadBegin()
+        {
+            if (!IsHidden)
+            {
+                Editor.Instance.Windows.AddToRestore(this);
+            }
         }
 
         #region IEditable Implementation
