@@ -195,14 +195,15 @@ int32 AudioStreamingHandler::CalculateResidency(StreamableResource* resource, fl
         if (src->Clip == clip && src->GetState() != AudioSource::States::Stopped)
         {
             // Stream the current and the next chunk if could be used in a while
-            const int32 chunk = src->_streamingFirstChunk;
-            ASSERT(Math::IsInRange(chunk, 0, chunksCount));
-            chunksMask[chunk] = true;
-            
             const float StreamingDstSec = 2.0f; // TODO: make it configurable via StreamingSettings
-            if (chunk + 1 < chunksCount && src->GetTime() + StreamingDstSec >= clip->GetBufferStartTime(src->_streamingFirstChunk))
+            const int32 firstChunk = src->_streamingFirstChunk;
+            const int32 nextChunk = (firstChunk + 1) % chunksCount;
+            ASSERT(Math::IsInRange(firstChunk, 0, chunksCount));
+            chunksMask[firstChunk] = true;
+
+            if (firstChunk != nextChunk && src->GetTime() + StreamingDstSec >= clip->GetBufferStartTime(firstChunk))
             {
-                chunksMask[chunk + 1] = true;
+                chunksMask[nextChunk] = true;
             }
         }
     }
