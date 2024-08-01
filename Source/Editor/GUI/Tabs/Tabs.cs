@@ -59,7 +59,7 @@ namespace FlaxEditor.GUI.Tabs
 
                 var style = Style.Current;
                 var enabled = EnabledInHierarchy && Tab.EnabledInHierarchy;
-                var tabRect = new Rectangle(Float2.Zero, Size);
+                var tabRect = (Tabs._orientation == Orientation.Horizontal && Tabs.ShowTopLine) ? new Rectangle(new Float2(0, 4), new Float2(Size.X, Size.Y - 4)) : new Rectangle(Float2.Zero, Size);
                 var textOffset = Tabs._orientation == Orientation.Horizontal ? 0 : 8;
 
                 // Draw bar
@@ -147,6 +147,18 @@ namespace FlaxEditor.GUI.Tabs
                     }
                 }
             }
+
+            /// <inheritdoc />
+            public override void Draw()
+            {
+                base.Draw();
+                
+                // Draw line above tabs
+                if (Tabs._orientation == Orientation.Horizontal && Tabs.ShowTopLine)
+                {
+                    Render2D.FillRectangle(new Rectangle(Float2.Zero, Width, 4), Style.Current.BackgroundSeparator);
+                }
+            }
         }
 
         /// <summary>
@@ -168,6 +180,11 @@ namespace FlaxEditor.GUI.Tabs
         /// The orientation.
         /// </summary>
         protected Orientation _orientation;
+
+        /// <summary>
+        /// Whether to show a top line or not.
+        /// </summary>
+        public bool ShowTopLine = true;
 
         /// <summary>
         /// Gets the size of the tabs.

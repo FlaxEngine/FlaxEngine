@@ -126,6 +126,7 @@ namespace FlaxEditor.Windows.Assets
             _properties = new PropertiesProxy();
 
             // Preview properties editor
+            _tabs.ShowTopLine = false;
             _previewTab = new Tab("Preview");
             _previewTab.Presenter.Select(new PreviewProxy
             {
