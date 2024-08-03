@@ -78,6 +78,12 @@ public:
     bool UseHDRProbes = false;
 
     /// <summary>
+    /// If checked, enables custom depth rendering. This can be used in materials.
+    /// </summary>
+    API_FIELD(Attributes = "EditorOrder(1600), EditorDisplay(\"Custom Depth\")")
+    bool EnableCustomDepth = false;
+
+    /// <summary>
     /// If checked, enables Global SDF rendering. This can be used in materials, shaders, and particles.
     /// </summary>
     API_FIELD(Attributes="EditorOrder(2000), EditorDisplay(\"Global SDF\")")

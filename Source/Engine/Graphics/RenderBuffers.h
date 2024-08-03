@@ -89,6 +89,10 @@ public:
     GPUTexture* TemporalAA = nullptr;
     uint64 LastFrameTemporalAA = 0;
 
+    // Custom Depth State
+    bool CustomDepthClear = false;
+    uint64 LastFrameCustomDepth = 0;
+
     // Maps the custom buffer type into the object that holds the state.
     Array<CustomBuffer*, HeapAllocation> CustomBuffers;
 
@@ -199,6 +203,11 @@ public:
     /// Gets the depth buffer render target allocated within this render buffers collection (read only).
     /// </summary>
     API_FIELD(ReadOnly) GPUTexture* DepthBuffer;
+
+    /// <summary>
+    /// Gets the custom depth buffer render target allocated within this render buffers collection (read only).
+    /// </summary>
+    API_FIELD(ReadOnly) GPUTexture* CustomDepthBuffer;
 
     /// <summary>
     /// Gets the motion vectors render target allocated within this render buffers collection (read only).

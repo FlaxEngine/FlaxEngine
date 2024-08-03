@@ -17,6 +17,8 @@ private:
         PipelineStateCache DefaultLightmap;
         PipelineStateCache Depth;
         PipelineStateCache DepthSkinned;
+        PipelineStateCache CustomDepth;
+        PipelineStateCache CustomDepthSkinned;
         PipelineStateCache MotionVectors;
         PipelineStateCache MotionVectorsSkinned;
         PipelineStateCache MotionVectorsSkinnedPerBone;
@@ -37,6 +39,8 @@ private:
                 return useLightmap ? &DefaultLightmap : (useSkinning ? &DefaultSkinned : &Default);
             case DrawPass::MotionVectors:
                 return useSkinning ? (perBoneMotionBlur ? &MotionVectorsSkinnedPerBone : &MotionVectorsSkinned) : &MotionVectors;
+            case DrawPass::CustomDepth:
+                return useSkinning ? &CustomDepthSkinned : &CustomDepth;
 #if USE_EDITOR
             case DrawPass::QuadOverdraw:
                 return useSkinning ? &QuadOverdrawSkinned : &QuadOverdraw;
@@ -53,6 +57,7 @@ private:
             DefaultLightmap.Release();
             Depth.Release();
             DepthSkinned.Release();
+            CustomDepth.Release();
             MotionVectors.Release();
             MotionVectorsSkinned.Release();
 #if USE_EDITOR
