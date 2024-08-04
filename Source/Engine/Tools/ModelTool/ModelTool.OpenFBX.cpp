@@ -870,7 +870,7 @@ bool ProcessMesh(ModelData& result, OpenFbxImporterData& data, const ofbx::Mesh*
             {
                 int vtxIndex = clusterIndices[j];
                 float vtxWeight = (float)clusterWeights[j];
-                if (vtxWeight <= 0 || vtxIndex < 0 || vtxIndex >= vertexCount)
+                if (vtxWeight <= 0 || vtxIndex < 0 || vtxIndex >= positions.values_count)
                     continue;
                 Int4& indices = blendIndices.Get()[vtxIndex];
                 Float4& weights = blendWeights.Get()[vtxIndex];
@@ -898,10 +898,11 @@ bool ProcessMesh(ModelData& result, OpenFbxImporterData& data, const ofbx::Mesh*
         // Remap blend values to triangulated data
         mesh.BlendIndices.Resize(vertexCount, false);
         mesh.BlendWeights.Resize(vertexCount, false);
-        for (int i = 0; i < triangulatedIndices.Count(); i++)
+        for (int i = 0; i < vertexCount; i++)
         {
-            mesh.BlendIndices.Get()[i] = blendIndices[positions.indices[triangulatedIndices[i]]];
-            mesh.BlendWeights.Get()[i] = blendWeights[positions.indices[triangulatedIndices[i]]];
+            const int idx = positions.indices[triangulatedIndices[i]];
+            mesh.BlendIndices.Get()[i] = blendIndices[idx];
+            mesh.BlendWeights.Get()[i] = blendWeights[idx];
         }
 
         mesh.NormalizeBlendWeights();
@@ -944,8 +945,7 @@ bool ProcessMesh(ModelData& result, OpenFbxImporterData& data, const ofbx::Mesh*
                 v.NormalDelta = shapeNormals ? ToFloat3(shapeNormals[i]) : Float3::Zero;
                 for (int32 vertexIndex = 0; vertexIndex < vertexCount; vertexIndex++)
                 {
-                    int sourceIndex = triangulatedIndices[vertexIndex];
-                    sourceIndex = positions.indices[sourceIndex];
+                    int sourceIndex = positions.indices[triangulatedIndices[vertexIndex]];
                     if (sourceIndex == shapeIndex)
                     {
                         // Add blend shape vertex
