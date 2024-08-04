@@ -14,6 +14,11 @@
 #include "Engine/Platform/File.h"
 
 #define OPEN_FBX_CONVERT_SPACE 1
+#if BUILD_DEBUG
+#define OPEN_FBX_GET_CACHE_LIST(arrayName, varName, size) data.arrayName.Resize(size, false); auto& varName = data.arrayName
+#else
+#define OPEN_FBX_GET_CACHE_LIST(arrayName, varName, size) data.arrayName.Resize(size, false); auto* varName = data.arrayName.Get()
+#endif
 
 // Import OpenFBX library
 // Source: https://github.com/nem0/OpenFBX
@@ -107,6 +112,9 @@ struct OpenFbxImporterData
     Array<int> TriangulatedIndicesCache;
     Array<Int4> BlendIndicesCache;
     Array<Float4> BlendWeightsCache;
+    Array<Float2> TriangulatePointsCache;
+    Array<int> TriangulateIndicesCache;
+    Array<int> TriangulateEarIndicesCache;
 
     OpenFbxImporterData(const String& path, const ModelTool::Options& options, ofbx::IScene* scene)
         : Scene(scene)
@@ -528,7 +536,7 @@ bool ImportBones(OpenFbxImporterData& data, String& errorMsg)
     return false;
 }
 
-int Triangulate(const ofbx::GeometryData& geom, const ofbx::GeometryPartition::Polygon& polygon, int* triangulatedIndices)
+int Triangulate(OpenFbxImporterData& data, const ofbx::GeometryData& geom, const ofbx::GeometryPartition::Polygon& polygon, int* triangulatedIndices)
 {
     if (polygon.vertex_count < 3)
         return 0;
@@ -592,9 +600,9 @@ int Triangulate(const ofbx::GeometryData& geom, const ofbx::GeometryPartition::P
     }
 
     // Setup arrays for temporary data (TODO: maybe double-linked list is more optimal?)
-    static Array<Float2> points;
-    static Array<int> indices;
-    static Array<int> earIndices;
+    auto& points = data.TriangulatePointsCache;
+    auto& indices = data.TriangulateIndicesCache;
+    auto& earIndices = data.TriangulateEarIndicesCache;
     points.Clear();
     indices.Clear();
     earIndices.Clear();
@@ -688,9 +696,7 @@ bool ProcessMesh(ModelData& result, OpenFbxImporterData& data, const ofbx::Mesh*
     const ofbx::Vec4Attributes& colors = geometryData.getColors();
     const ofbx::Skin* skin = aMesh->getSkin();
     const ofbx::BlendShape* blendShape = aMesh->getBlendShape();
-
-    auto& triangulatedIndices = data.TriangulatedIndicesCache;
-    triangulatedIndices.Resize(vertexCount, false);
+    OPEN_FBX_GET_CACHE_LIST(TriangulatedIndicesCache, triangulatedIndices, vertexCount);
 
     // Properties
     const ofbx::Material* aMaterial = nullptr;
@@ -704,7 +710,7 @@ bool ProcessMesh(ModelData& result, OpenFbxImporterData& data, const ofbx::Mesh*
         int numIndicesTotal = 0;
         for (int i = 0; i < partition.polygon_count; i++)
         {
-            int numIndices = Triangulate(geometryData, partition.polygons[i], &triangulatedIndices[numIndicesTotal]);
+            int numIndices = Triangulate(data, geometryData, partition.polygons[i], &triangulatedIndices[numIndicesTotal]);
             for (int j = numIndicesTotal; j < numIndicesTotal + numIndices; j++)
                 mesh.Positions.Get()[j] = ToFloat3(positions.get(triangulatedIndices[j]));
             numIndicesTotal += numIndices;
@@ -835,12 +841,10 @@ bool ProcessMesh(ModelData& result, OpenFbxImporterData& data, const ofbx::Mesh*
     // Blend Indices and Blend Weights
     if (skin && skin->getClusterCount() > 0 && EnumHasAnyFlags(data.Options.ImportTypes, ImportDataTypes::Skeleton))
     {
-        auto& blendIndices = data.BlendIndicesCache;
-        auto& blendWeights = data.BlendWeightsCache;
-        blendIndices.Resize(positions.values_count, false);
-        blendWeights.Resize(positions.values_count, false);
-        blendIndices.SetAll(Int4::Zero);
-        blendWeights.SetAll(Float4::Zero);
+        OPEN_FBX_GET_CACHE_LIST(BlendIndicesCache, blendIndices, positions.values_count);
+        OPEN_FBX_GET_CACHE_LIST(BlendWeightsCache, blendWeights, positions.values_count);
+        data.BlendIndicesCache.SetAll(Int4::Zero);
+        data.BlendWeightsCache.SetAll(Float4::Zero);
 
         for (int clusterIndex = 0, clusterCount = skin->getClusterCount(); clusterIndex < clusterCount; clusterIndex++)
         {
