@@ -1217,12 +1217,14 @@ public:
     }
 };
 
-/*struct Property
+#if !PLATFORM_SDL
+struct Property
 {
-	unsigned char* data;
-	int format, nitems;
-	X11::Atom type;
-};*/
+    unsigned char* data;
+    int format, nitems;
+    X11::Atom type;
+};
+#endif
 
 namespace Impl
 {
