@@ -14,7 +14,6 @@ struct GBufferSample
     float Metalness;
     float3 Color;
     float Specular;
-    // View space position of pixel, DIFFERENT FROM GBufferData.ViewPos
     float3 ViewPos;
     float AO;
     int ShadingModel;

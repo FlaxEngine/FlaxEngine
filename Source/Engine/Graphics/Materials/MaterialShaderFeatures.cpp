@@ -132,13 +132,13 @@ bool LightmapFeature::Bind(MaterialShader::BindParameters& params, Span<byte>& c
 
     const bool useLightmap = EnumHasAnyFlags(params.RenderContext.View.Flags, ViewFlags::GI)
 #if USE_EDITOR
-        && EnableLightmapsUsage
+            && EnableLightmapsUsage
 #endif
-        && drawCall.Surface.Lightmap != nullptr;
+            && drawCall.Surface.Lightmap != nullptr;
     if (useLightmap)
     {
         // Bind lightmap textures
-        GPUTexture* lightmap0, * lightmap1, * lightmap2;
+        GPUTexture *lightmap0, *lightmap1, *lightmap2;
         drawCall.Features.Lightmap->GetTextures(&lightmap0, &lightmap1, &lightmap2);
         params.GPUContext->BindSR(srv + 0, lightmap0);
         params.GPUContext->BindSR(srv + 1, lightmap1);
@@ -210,16 +210,14 @@ bool SDFReflectionsFeature::Bind(MaterialShader::BindParameters& params, Span<by
         {
             GlobalSignDistanceFieldPass::BindingData bindingDataSDF;
             GlobalSurfaceAtlasPass::BindingData bindingDataSurfaceAtlas;
-
             if (!GlobalSignDistanceFieldPass::Instance()->Get(params.RenderContext.Buffers, bindingDataSDF) &&
                 !GlobalSurfaceAtlasPass::Instance()->Get(params.RenderContext.Buffers, bindingDataSurfaceAtlas))
             {
                 useSDFReflections = true;
 
-                // Bind DDGI data
+                // Bind SDF and Surface Atlas data
                 data.GlobalSDF = bindingDataSDF.Constants;
                 data.GlobalSurfaceAtlas = bindingDataSurfaceAtlas.Constants;
-
                 params.GPUContext->BindSR(srv + 0, bindingDataSDF.Texture ? bindingDataSDF.Texture->ViewVolume() : nullptr);
                 params.GPUContext->BindSR(srv + 1, bindingDataSDF.TextureMip ? bindingDataSDF.TextureMip->ViewVolume() : nullptr);
                 params.GPUContext->BindSR(srv + 2, bindingDataSurfaceAtlas.Chunks ? bindingDataSurfaceAtlas.Chunks->View() : nullptr);
@@ -232,11 +230,10 @@ bool SDFReflectionsFeature::Bind(MaterialShader::BindParameters& params, Span<by
         }
         }
     }
-
     if (!useSDFReflections)
     {
-        data.GlobalSDF.CascadesCount = 0;
         // Unbind SRVs to prevent issues
+        data.GlobalSDF.CascadesCount = 0;
         params.GPUContext->UnBindSR(srv + 0);
         params.GPUContext->UnBindSR(srv + 1);
         params.GPUContext->UnBindSR(srv + 2);

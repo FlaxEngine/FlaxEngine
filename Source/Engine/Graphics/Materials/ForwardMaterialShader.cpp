@@ -51,7 +51,8 @@ void ForwardMaterialShader::Bind(BindParameters& params)
     int32 srv = 2;
 
     // Setup features
-    if ((_info.FeaturesFlags & MaterialFeaturesFlags::GlobalIllumination) != MaterialFeaturesFlags::None) {
+    if ((_info.FeaturesFlags & MaterialFeaturesFlags::GlobalIllumination) != MaterialFeaturesFlags::None)
+    {
         GlobalIlluminationFeature::Bind(params, cb, srv);
         if ((_info.FeaturesFlags & MaterialFeaturesFlags::ScreenSpaceReflections) != MaterialFeaturesFlags::None)
             SDFReflectionsFeature::Bind(params, cb, srv);
@@ -181,7 +182,6 @@ bool ForwardMaterialShader::Load()
     psDesc.VS = _shader->GetVS("VS");
     if (psDesc.VS == nullptr)
         return true;
-
     psDesc.PS = _shader->GetPS("PS_Forward");
     psDesc.DepthWriteEnable = false;
     psDesc.BlendMode = BlendingMode::AlphaBlend;

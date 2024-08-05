@@ -29,10 +29,8 @@ bool TraceSDFSoftwareReflections(GBufferSample gBuffer, float3 reflectWS, out fl
         float3 hitPosition = sdfHit.GetHitPosition(sdfTrace);
         float surfaceThreshold = GetGlobalSurfaceAtlasThreshold(GlobalSDF, sdfHit);
         surfaceAtlas = SampleGlobalSurfaceAtlas(GlobalSurfaceAtlas, GlobalSurfaceAtlasChunks, RWGlobalSurfaceAtlasCulledObjects, GlobalSurfaceAtlasObjects, GlobalSurfaceAtlasDepth, GlobalSurfaceAtlasTex, hitPosition, -reflectWS, surfaceThreshold);
-        
         return true;
     }
-
     return false;
 }
 
