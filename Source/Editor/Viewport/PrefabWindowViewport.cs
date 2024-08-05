@@ -99,6 +99,16 @@ namespace FlaxEditor.Viewport
             ShowEditorPrimitives = true;
             Gizmos = new GizmosCollection(this);
 
+            _gridGizmo = new GridGizmo(this);
+            var showGridButton = ViewWidgetShowMenu.AddButton("Grid");
+            showGridButton.Clicked += () =>
+            {
+                _gridGizmo.Enabled = !_gridGizmo.Enabled;
+                showGridButton.Checked = _gridGizmo.Enabled;
+            };
+            showGridButton.Checked = true;
+            showGridButton.CloseMenuOnClick = false;
+
             // Prepare rendering task
             Task.ActorsSource = ActorsSources.CustomActors;
             Task.ViewFlags = ViewFlags.DefaultEditor;
@@ -266,6 +276,8 @@ namespace FlaxEditor.Viewport
 
         /// <inheritdoc />
         public GizmosCollection Gizmos { get; }
+
+        private GridGizmo _gridGizmo;
 
         /// <inheritdoc />
         public SceneRenderTask RenderTask => Task;
