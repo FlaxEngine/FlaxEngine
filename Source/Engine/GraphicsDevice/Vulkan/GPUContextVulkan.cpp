@@ -797,7 +797,7 @@ void GPUContextVulkan::Clear(GPUTextureView* rt, const Color& color)
     }
 }
 
-void GPUContextVulkan::ClearDepth(GPUTextureView* depthBuffer, float depthValue)
+void GPUContextVulkan::ClearDepthCustom(GPUTextureView* depthBuffer, float depthValue)
 {
     const auto rtVulkan = static_cast<GPUTextureViewVulkan*>(depthBuffer);
 
