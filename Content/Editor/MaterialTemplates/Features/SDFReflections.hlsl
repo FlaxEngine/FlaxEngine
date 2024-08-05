@@ -9,8 +9,8 @@
 GlobalSDFData GlobalSDF;
 GlobalSurfaceAtlasData GlobalSurfaceAtlas;
 @3// SDF Reflections: Resources
-Texture3D<float> GlobalSDFTex : register(t__SRV__);
-Texture3D<float> GlobalSDFMip : register(t__SRV__);
+Texture3D<snorm float> GlobalSDFTex : register(t__SRV__);
+Texture3D<snorm float> GlobalSDFMip : register(t__SRV__);
 ByteAddressBuffer GlobalSurfaceAtlasChunks : register(t__SRV__);
 ByteAddressBuffer RWGlobalSurfaceAtlasCulledObjects : register(t__SRV__);
 Buffer<float4> GlobalSurfaceAtlasObjects : register(t__SRV__);
