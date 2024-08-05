@@ -184,30 +184,103 @@ namespace FlaxEditor.SceneGraph.GUI
             }
             else
             {
-                var text = Text;
-                if (QueryFilterHelper.Match(filterText, text, out QueryFilterHelper.Range[] ranges))
+                var splitFilter = filterText.Split(',');
+                var hasAllFilters = true;
+                foreach (var filter in splitFilter)
                 {
-                    // Update highlights
-                    if (_highlights == null)
-                        _highlights = new List<Rectangle>(ranges.Length);
-                    else
-                        _highlights.Clear();
-                    var font = Style.Current.FontSmall;
-                    var textRect = TextRect;
-                    for (int i = 0; i < ranges.Length; i++)
+                    if (string.IsNullOrEmpty(filter))
+                        continue;
+                    var trimmedFilter = filter.Trim();
+                    var hasFilter = false;
+                    
+                    // Check if script
+                    if (trimmedFilter.Contains("s:", StringComparison.OrdinalIgnoreCase))
                     {
-                        var start = font.GetCharPosition(text, ranges[i].StartIndex);
-                        var end = font.GetCharPosition(text, ranges[i].EndIndex);
-                        _highlights.Add(new Rectangle(start.X + textRect.X, textRect.Y, end.X - start.X, textRect.Height));
+                        // Check for any scripts
+                        if (trimmedFilter.Equals("s:", StringComparison.OrdinalIgnoreCase))
+                        {
+                            if (Actor != null)
+                            {
+                                if (Actor.ScriptsCount > 0)
+                                {
+                                    hasFilter = true;
+                                }
+                            }
+                        }
+                        else
+                        {
+                            var scriptText = trimmedFilter.Replace("s:", "", StringComparison.OrdinalIgnoreCase).Trim();
+                            var scriptFound = false;
+                            if (Actor != null)
+                            {
+                                foreach (var script in Actor.Scripts)
+                                {
+                                    var name = TypeUtils.GetTypeDisplayName(script.GetType());
+                                    var nameNoSpaces = name.Replace(" ", "");
+                                    if (name.Contains(scriptText, StringComparison.OrdinalIgnoreCase) || nameNoSpaces.Contains(scriptText, StringComparison.OrdinalIgnoreCase))
+                                    {
+                                        scriptFound = true;
+                                        break;
+                                    }
+                                }
+                            }
+
+                            hasFilter = scriptFound;
+                        }
                     }
-                    isThisVisible = true;
+                    // Check for actor type
+                    else if (trimmedFilter.Contains("a:", StringComparison.OrdinalIgnoreCase))
+                    {
+                        if (trimmedFilter.Equals("a:", StringComparison.OrdinalIgnoreCase))
+                        {
+                            if (Actor != null)
+                                hasFilter = true;
+                        }
+                        else
+                        {
+                            if (Actor !=null)
+                            {
+                                var actorTypeText = trimmedFilter.Replace("a:", "", StringComparison.OrdinalIgnoreCase).Trim();
+                                var name = TypeUtils.GetTypeDisplayName(Actor.GetType());
+                                var nameNoSpaces = name.Replace(" ", "");
+                                if (name.Contains(actorTypeText, StringComparison.OrdinalIgnoreCase) || nameNoSpaces.Contains(actorTypeText, StringComparison.OrdinalIgnoreCase))
+                                    hasFilter = true;
+                            }
+                        }
+                    }
+                    // Match text
+                    else
+                    {
+                        var text = Text;
+                        if (QueryFilterHelper.Match(trimmedFilter, text, out QueryFilterHelper.Range[] ranges))
+                        {
+                            // Update highlights
+                            if (_highlights == null)
+                                _highlights = new List<Rectangle>(ranges.Length);
+                            else
+                                _highlights.Clear();
+                            var font = Style.Current.FontSmall;
+                            var textRect = TextRect;
+                            for (int i = 0; i < ranges.Length; i++)
+                            {
+                                var start = font.GetCharPosition(text, ranges[i].StartIndex);
+                                var end = font.GetCharPosition(text, ranges[i].EndIndex);
+                                _highlights.Add(new Rectangle(start.X + textRect.X, textRect.Y, end.X - start.X, textRect.Height));
+                            }
+                            hasFilter = true;
+                        }
+                    }
+                    
+                    if (!hasFilter)
+                    {
+                        hasAllFilters = false;
+                        break;
+                    }
                 }
-                else
-                {
-                    // Hide
+
+                isThisVisible = hasAllFilters;
+                if (!hasAllFilters)
                     _highlights?.Clear();
-                    isThisVisible = false;
-                }
             }
 
             // Update children
