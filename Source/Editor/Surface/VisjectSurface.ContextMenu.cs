@@ -237,11 +237,13 @@ namespace FlaxEditor.Surface
             return new VisjectCM(new VisjectCM.InitInfo
             {
                 CanSetParameters = CanSetParameters,
+                UseDescriptionPanel = UseContextMenuDescriptionPanel,
                 Groups = NodeArchetypes,
                 CanSpawnNode = CanUseNodeType,
                 ParametersGetter = () => Parameters,
                 CustomNodesGroup = GetCustomNodes(),
                 ParameterGetNodeArchetype = GetParameterGetterNodeArchetype(out _),
+                Style = Style,
             });
         }
 
