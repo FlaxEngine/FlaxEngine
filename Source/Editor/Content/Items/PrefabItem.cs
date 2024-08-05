@@ -42,6 +42,32 @@ namespace FlaxEditor.Content
         /// <inheritdoc />
         public override SpriteHandle DefaultThumbnail => SpriteHandle.Invalid;
 
+        private string _cachedTypeDescription = null;
+
+        /// <inheritdoc />
+        public override string TypeDescription
+        {
+            get
+            {
+                if (_cachedTypeDescription != null)
+                    return _cachedTypeDescription;
+
+                Prefab prefab = FlaxEngine.Content.LoadAsync<Prefab>(ID);
+                if (prefab.WaitForLoaded(5000))
+                {
+                    _cachedTypeDescription = "Prefab";
+                }
+
+                Actor root = prefab.GetDefaultInstance();
+                if (root is UIControl or UICanvas)
+                    _cachedTypeDescription = "Widget";
+                else
+                    _cachedTypeDescription = "Prefab";
+
+                return _cachedTypeDescription;
+            }
+        }
+
         /// <inheritdoc />
         public override bool IsOfType(Type type)
         {

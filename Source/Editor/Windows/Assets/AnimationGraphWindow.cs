@@ -295,6 +295,15 @@ namespace FlaxEditor.Windows.Assets
             base.SetParameter(index, value);
         }
 
+        /// <summary>
+        /// Sets the base model of the animation graph this window is editing.
+        /// </summary>
+        /// <param name="baseModel">The new base model.</param>
+        public void SetBaseModel(SkinnedModel baseModel)
+        {
+            _properties.BaseModel = baseModel;
+        }
+
         /// <inheritdoc />
         protected override void UnlinkItem()
         {
