@@ -794,7 +794,7 @@ namespace FlaxEditor.Surface.ContextMenu
         {
             Focus(null);
 
-            if(_useDescriptionPanel)
+            if (_useDescriptionPanel)
                 HideDescriptionPanel();
 
             base.Hide();
@@ -806,7 +806,7 @@ namespace FlaxEditor.Surface.ContextMenu
         /// <param name="archetype">The node archetype</param>
         public void SetDescriptionPanelArchetype(NodeArchetype archetype)
         {
-            if(!_useDescriptionPanel)
+            if (!_useDescriptionPanel)
                 return;
 
             if (archetype == null || !Editor.Instance.Options.Options.Interface.VisualScriptingDescriptionPanel)
@@ -847,7 +847,7 @@ namespace FlaxEditor.Surface.ContextMenu
                         AddInputOutputElement(archetype, memberInfo.ValueType, true, $"Return ({memberInfo.ValueType.Name})");
                 }
 
-                for(int i = 0; i < memberInfo.ParametersCount; i++)
+                for (int i = 0; i < memberInfo.ParametersCount; i++)
                 {
                     var param = memberInfo.GetParameters()[i];
                     AddInputOutputElement(archetype, param.Type, param.IsOut, $"{param.Name} ({param.Type.Name})");
@@ -882,7 +882,7 @@ namespace FlaxEditor.Surface.ContextMenu
                         if (element.Type is not (NodeElementType.Input or NodeElementType.Output))
                             continue;
 
-                        var typeText = element.ConnectionsType ? element.ConnectionsType.Name : archetype.ConnectionsHints.ToString(); 
+                        var typeText = element.ConnectionsType ? element.ConnectionsType.Name : archetype.ConnectionsHints.ToString();
                         AddInputOutputElement(archetype, element.ConnectionsType, element.Type == NodeElementType.Output, $"{element.Text} ({typeText})");
                     }
                 }
@@ -967,7 +967,7 @@ namespace FlaxEditor.Surface.ContextMenu
         /// </summary>
         private void HideDescriptionPanel()
         {
-            if(!_descriptionPanelVisible)
+            if (!_descriptionPanelVisible)
                 return;
 
             _descriptionInputPanel.RemoveChildren();
