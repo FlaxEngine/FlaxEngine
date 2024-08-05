@@ -876,8 +876,8 @@ bool ProcessMesh(ModelData& result, OpenFbxImporterData& data, const ofbx::Mesh*
                 float vtxWeight = (float)clusterWeights[j];
                 if (vtxWeight <= 0 || vtxIndex < 0 || vtxIndex >= positions.values_count)
                     continue;
-                Int4& indices = blendIndices.Get()[vtxIndex];
-                Float4& weights = blendWeights.Get()[vtxIndex];
+                Int4& indices = blendIndices[vtxIndex];
+                Float4& weights = blendWeights[vtxIndex];
 
                 for (int32 k = 0; k < 4; k++)
                 {
