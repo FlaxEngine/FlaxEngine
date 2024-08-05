@@ -338,6 +338,7 @@ void AudioSource::PlayInternal()
     AudioBackend::Source::Play(this);
 
     _isActuallyPlayingSth = true;
+    _startingToPlay = true;
 }
 
 #if USE_EDITOR
@@ -417,6 +418,23 @@ void AudioSource::Update()
     if (_velocity != prevVelocity)
     {
         AudioBackend::Source::VelocityChanged(this);
+    }
+
+    if (!UseStreaming() && GetTime() == GetStartTime() && _isActuallyPlayingSth && !_startingToPlay)
+    {
+        if (GetIsLooping())
+        {
+            Stop();
+            Play();
+        }
+        else
+        {
+            Stop();
+        }
+    }
+    if (_startingToPlay)
+    {
+        _startingToPlay = false;
     }
 
     // Skip other update logic if it's not valid streamable source
