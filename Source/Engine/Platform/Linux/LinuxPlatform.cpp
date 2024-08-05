@@ -2923,7 +2923,7 @@ int32 LinuxPlatform::CreateProcess(CreateProcessSettings& settings)
         LOG(Info, "Working directory: {0}", settings.WorkingDirectory);
     }
     const bool captureStdOut = settings.LogOutput || settings.SaveOutput;
-    const String cmdLine = settings.FileName + TEXT(" ") + settings.Arguments;
+    const String cmdLine = String::Format(TEXT("\"{0}\" {1}"), settings.FileName, settings.Arguments);
 
 	int fildes[2];
 	int32 returnCode = 0;
