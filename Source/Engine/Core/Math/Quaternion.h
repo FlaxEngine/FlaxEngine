@@ -107,7 +107,7 @@ public:
     /// </summary>
     bool IsNormalized() const
     {
-        return Math::IsOne(X * X + Y * Y + Z * Z + W * W);
+        return Math::Abs((X * X + Y * Y + Z * Z + W * W) - 1.0f) < 1e-4f;
     }
 
     /// <summary>

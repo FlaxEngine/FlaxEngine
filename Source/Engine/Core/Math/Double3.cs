@@ -234,7 +234,7 @@ namespace FlaxEngine
         /// <summary>
         /// Gets a value indicting whether this instance is normalized.
         /// </summary>
-        public bool IsNormalized => Mathd.IsOne(X * X + Y * Y + Z * Z);
+        public bool IsNormalized => Mathd.Abs((X * X + Y * Y + Z * Z) - 1.0f) < 1e-4f;
 
         /// <summary>
         /// Gets the normalized vector. Returned vector has length equal 1.
