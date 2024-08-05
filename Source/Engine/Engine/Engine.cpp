@@ -195,6 +195,12 @@ int32 Engine::Main(const Char* cmdLine)
         // Use the same time for all ticks to improve synchronization
         const double time = Platform::GetTimeSeconds();
 
+        // Update application (will gather data and other platform related events)
+        {
+            PROFILE_CPU_NAMED("Platform.Tick");
+            Platform::Tick();
+        }
+        
         // Update game logic
         if (Time::OnBeginUpdate(time))
         {
@@ -301,12 +307,6 @@ void Engine::OnUpdate()
     PROFILE_CPU_NAMED("Update");
 
     UpdateCount++;
-
-    // Update application (will gather data and other platform related events)
-    {
-        PROFILE_CPU_NAMED("Platform.Tick");
-        Platform::Tick();
-    }
 
     const auto mainWindow = MainWindow;
 
