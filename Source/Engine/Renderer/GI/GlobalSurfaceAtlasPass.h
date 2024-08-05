@@ -62,6 +62,14 @@ private:
 
 public:
     /// <summary>
+    /// Gets the Global Surface Atlas (only if enabled in Graphics Settings).
+    /// </summary>
+    /// <param name="buffers">The rendering context buffers.</param>
+    /// <param name="result">The result Global Surface Atlas data for binding to the shaders.</param>
+    /// <returns>True if there is no valid Global Surface Atlas rendered during this frame, otherwise false.</returns>
+    bool Get(const RenderBuffers* buffers, BindingData& result);
+
+    /// <summary>
     /// Calls drawing scene objects in async early in the frame.
     /// </summary>
     /// <param name="renderContextBatch">The rendering context batch.</param>

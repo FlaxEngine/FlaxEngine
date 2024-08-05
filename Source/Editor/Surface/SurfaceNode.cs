@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Text;
 using FlaxEditor.Scripting;
 using FlaxEditor.Surface.Elements;
 using FlaxEditor.Surface.Undo;
@@ -124,7 +125,7 @@ namespace FlaxEditor.Surface
             Archetype = nodeArch;
             GroupArchetype = groupArch;
             AutoFocus = false;
-            TooltipText = nodeArch.Description;
+            TooltipText = GetTooltip();
             CullChildren = false;
             BackgroundColor = Style.Current.BackgroundNormal;
 
@@ -849,6 +850,15 @@ namespace FlaxEditor.Surface
                     }
                 }
             }
+        }
+
+        private string GetTooltip()
+        {
+            StringBuilder sb = new StringBuilder();
+            sb.Append(string.IsNullOrEmpty(Archetype.Signature) ? Archetype.Title : Archetype.Signature);
+            if (!string.IsNullOrEmpty(Archetype.Description))
+                sb.Append("\n" + Archetype.Description);
+            return sb.ToString();
         }
 
         /// <inheritdoc />

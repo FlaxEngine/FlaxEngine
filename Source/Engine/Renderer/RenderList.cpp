@@ -386,6 +386,7 @@ void RenderList::RunCustomPostFxPass(GPUContext* context, RenderContext& renderC
                 Swap(input, output);
             }
             context->ResetRenderTarget();
+            context->ResetSR();
         }
     }
 }

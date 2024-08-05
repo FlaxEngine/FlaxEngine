@@ -105,7 +105,7 @@ public:
     // Gets a value indicting whether this instance is normalized.
     bool IsNormalized() const
     {
-        return Math::IsOne(X * X + Y * Y);
+        return Math::Abs((X * X + Y * Y) - 1.0f) < 1e-4f;
     }
 
     // Gets a value indicting whether this vector is zero.
