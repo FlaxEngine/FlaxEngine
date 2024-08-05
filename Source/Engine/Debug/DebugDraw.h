@@ -68,6 +68,12 @@ API_CLASS(Static) class FLAXENGINE_API DebugDraw
     API_FUNCTION() static void DrawActors(Actor** selectedActors, int32 selectedActorsCount, bool drawScenes);
 
     /// <summary>
+    /// Draws the debug shapes for the given actor and the actor's children
+    /// </summary>
+    /// /// <param name="actor">The actor to start drawing at.</param>
+    API_FUNCTION() static void DrawActorsTree(Actor* actor);
+
+    /// <summary>
     /// Draws the lines axis from direction.
     /// </summary>
     /// <param name="origin">The origin of the line.</param>
