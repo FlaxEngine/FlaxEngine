@@ -1349,31 +1349,31 @@ bool ModelTool::ImportModel(const String& path, ModelData& data, Options& option
                 mesh->BlendIndices.SetAll(indices);
                 mesh->BlendWeights.SetAll(weights);
             }
-#if BUILD_DEBUG
             else
             {
                 auto& indices = mesh->BlendIndices;
                 for (int32 j = 0; j < indices.Count(); j++)
                 {
-                    const int32 min = indices[j].MinValue();
-                    const int32 max = indices[j].MaxValue();
+                    const Int4 ij = indices.Get()[j];
+                    const int32 min = ij.MinValue();
+                    const int32 max = ij.MaxValue();
                     if (min < 0 || max >= data.Skeleton.Bones.Count())
                     {
                         LOG(Warning, "Imported mesh \'{0}\' has invalid blend indices. It may result in invalid rendering.", mesh->Name);
+                        break;
                     }
                 }
-
                 auto& weights = mesh->BlendWeights;
                 for (int32 j = 0; j < weights.Count(); j++)
                 {
-                    const float sum = weights[j].SumValues();
+                    const float sum = weights.Get()[j].SumValues();
                     if (Math::Abs(sum - 1.0f) > ZeroTolerance)
                     {
                         LOG(Warning, "Imported mesh \'{0}\' has invalid blend weights. It may result in invalid rendering.", mesh->Name);
+                        break;
                     }
                 }
             }
-#endif
         }
     }
     if (EnumHasAnyFlags(options.ImportTypes, ImportDataTypes::Animations))

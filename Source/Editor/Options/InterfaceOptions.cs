@@ -190,6 +190,13 @@ namespace FlaxEditor.Options
         public FlaxEngine.GUI.Orientation ContentWindowOrientation { get; set; } = FlaxEngine.GUI.Orientation.Horizontal;
 
         /// <summary>
+        /// If checked, color pickers will always modify the color unless 'Cancel' if pressed, otherwise color won't change unless 'Ok' is pressed.
+        /// </summary>
+        [DefaultValue(true)]
+        [EditorDisplay("Interface"), EditorOrder(290)]
+        public bool AutoAcceptColorPickerChange { get; set; } = true;
+
+        /// <summary>
         /// Gets or sets the formatting option for numeric values in the editor.
         /// </summary>
         [DefaultValue(ValueFormattingType.None)]

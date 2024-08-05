@@ -27,6 +27,11 @@ Cloth::Cloth(const SpawnParams& params)
     _drawCategory = SceneRendering::SceneDrawAsync;
 }
 
+void* Cloth::GetPhysicsCloth() const
+{
+    return _cloth;
+}
+
 ModelInstanceActor::MeshReference Cloth::GetMesh() const
 {
     auto value = _mesh;

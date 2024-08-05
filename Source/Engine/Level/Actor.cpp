@@ -543,6 +543,15 @@ void Actor::SetLayerRecursive(int32 layerIndex)
     OnLayerChanged();
 }
 
+void Actor::SetName(String&& value)
+{
+    if (_name == value)
+        return;
+    _name = MoveTemp(value);
+    if (GetScene())
+        Level::callActorEvent(Level::ActorEventType::OnActorNameChanged, this, nullptr);
+}
+
 void Actor::SetName(const StringView& value)
 {
     if (_name == value)

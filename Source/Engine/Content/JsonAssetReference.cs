@@ -12,6 +12,7 @@ namespace FlaxEngine
 #if FLAX_EDITOR
     [CustomEditor(typeof(FlaxEditor.CustomEditors.Editors.AssetRefEditor))]
 #endif
+    [Newtonsoft.Json.JsonConverter(typeof(Json.JsonAssetReferenceConverter))]
     public struct JsonAssetReference<T> : IComparable, IComparable<JsonAssetReference<T>>, IEquatable<JsonAssetReference<T>>
     {
         /// <summary>

@@ -850,11 +850,7 @@ namespace FlaxEngine.Interop
         {
             object fieldOwner = fieldOwnerHandle.Target;
             FieldHolder field = Unsafe.As<FieldHolder>(fieldHandle.Target);
-            object value = null;
-            if (field.field.FieldType.IsValueType)
-                value = Marshal.PtrToStructure(valuePtr, field.field.FieldType);
-            else if (valuePtr != IntPtr.Zero)
-                value = ManagedHandle.FromIntPtr(valuePtr).Target;
+            object value = MarshalToManaged(valuePtr, field.field.FieldType);
             field.field.SetValue(fieldOwner, value);
         }
 

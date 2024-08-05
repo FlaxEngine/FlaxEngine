@@ -190,15 +190,7 @@ namespace FlaxEditor.Surface
             if (data == null || data.Length < 2)
                 return false;
 
-            try
-            {
-                var model = JsonConvert.DeserializeObject<DataModel>(data);
-                return model?.Nodes != null && model.Nodes.Length != 0;
-            }
-            catch (Exception)
-            {
-                return false;
-            }
+            return true;
         }
 
         /// <summary>
@@ -215,7 +207,15 @@ namespace FlaxEditor.Surface
             try
             {
                 // Load Mr Json
-                var model = FlaxEngine.Json.JsonSerializer.Deserialize<DataModel>(data);
+                DataModel model;
+                try
+                {
+                    model = FlaxEngine.Json.JsonSerializer.Deserialize<DataModel>(data);
+                }
+                catch
+                {
+                    return;
+                }
                 if (model.Nodes == null)
                     model.Nodes = new DataModelNode[0];
 

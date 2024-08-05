@@ -1963,6 +1963,7 @@ bool TerrainPatch::UpdateCollision()
 
 bool TerrainPatch::RayCast(const Vector3& origin, const Vector3& direction, float& resultHitDistance, float maxDistance) const
 {
+    ASSERT(direction.IsNormalized());
     if (_physicsShape == nullptr)
         return false;
     Vector3 shapePos;
@@ -1973,6 +1974,7 @@ bool TerrainPatch::RayCast(const Vector3& origin, const Vector3& direction, floa
 
 bool TerrainPatch::RayCast(const Vector3& origin, const Vector3& direction, float& resultHitDistance, Vector3& resultHitNormal, float maxDistance) const
 {
+    ASSERT(direction.IsNormalized());
     if (_physicsShape == nullptr)
         return false;
     Vector3 shapePos;
@@ -1990,6 +1992,7 @@ bool TerrainPatch::RayCast(const Vector3& origin, const Vector3& direction, floa
 
 bool TerrainPatch::RayCast(const Vector3& origin, const Vector3& direction, float& resultHitDistance, TerrainChunk*& resultChunk, float maxDistance) const
 {
+    ASSERT(direction.IsNormalized());
     if (_physicsShape == nullptr)
         return false;
     Vector3 shapePos;
@@ -2027,6 +2030,7 @@ bool TerrainPatch::RayCast(const Vector3& origin, const Vector3& direction, floa
 
 bool TerrainPatch::RayCast(const Vector3& origin, const Vector3& direction, RayCastHit& hitInfo, float maxDistance) const
 {
+    ASSERT(direction.IsNormalized());
     if (_physicsShape == nullptr)
         return false;
     Vector3 shapePos;

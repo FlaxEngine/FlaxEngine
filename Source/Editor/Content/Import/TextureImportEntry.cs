@@ -58,10 +58,10 @@ namespace FlaxEngine.Tools
                     FieldInfo[] fields = typeof(CustomMaxSizes).GetFields();
                     for (int i = 0; i < fields.Length; i++)
                     {
-                        var field = fields[i];
-                        if (field.Name.Equals("value__"))
+                        var @field = fields[i];
+                        if (@field.Name.Equals("value__"))
                             continue;
-                        if (value == (int)field.GetRawConstantValue())
+                        if (value == (int)@field.GetRawConstantValue())
                             return (CustomMaxSizes)value;
                     }
                     return CustomMaxSizes._8192;

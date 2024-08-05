@@ -1522,12 +1522,16 @@ void VisualScript::unload(bool isReloading)
     if (_scriptingTypeHandle)
     {
         VisualScriptingBinaryModule::Locker.Lock();
-        auto& type = VisualScriptingModule.Types[_scriptingTypeHandle.TypeIndex];
+        ScriptingType& type = VisualScriptingModule.Types[_scriptingTypeHandle.TypeIndex];
         if (type.Script.DefaultInstance)
         {
             Delete(type.Script.DefaultInstance);
             type.Script.DefaultInstance = nullptr;
         }
+        char* typeName = (char*)Allocator::Allocate(sizeof(_typenameChars));
+        Platform::MemoryCopy(typeName, _typenameChars, sizeof(_typenameChars));
+        ((StringAnsiView&)type.Fullname) = StringAnsiView(typeName, 32);
+        VisualScriptingModule._unloadedScriptTypeNames.Add(typeName);
         VisualScriptingModule.TypeNameToTypeIndex.RemoveValue(_scriptingTypeHandle.TypeIndex);
         VisualScriptingModule.Scripts[_scriptingTypeHandle.TypeIndex] = nullptr;
         _scriptingTypeHandleCached = _scriptingTypeHandle;
@@ -1653,6 +1657,8 @@ VisualScriptingBinaryModule::VisualScriptingBinaryModule()
 ScriptingObject* VisualScriptingBinaryModule::VisualScriptObjectSpawn(const ScriptingObjectSpawnParams& params)
 {
     // Create native object (base type can be C++ or C#)
+    if (params.Type.Module == nullptr)
+        return nullptr;
     ScriptingType& visualScriptType = (ScriptingType&)params.Type.GetType();
     ScriptingTypeHandle baseTypeHandle = visualScriptType.GetBaseType();
     const ScriptingType* baseTypePtr = &baseTypeHandle.GetType();
@@ -1663,9 +1669,7 @@ ScriptingObject* VisualScriptingBinaryModule::VisualScriptObjectSpawn(const Scri
     }
     ScriptingObject* object = baseTypePtr->Script.Spawn(params);
     if (!object)
-    {
         return nullptr;
-    }
 
     // Beware! Hacking vtables incoming! Undefined behaviors exploits! Low-level programming!
     visualScriptType.HackObjectVTable(object, baseTypeHandle, 1);
@@ -2060,6 +2064,11 @@ void VisualScriptingBinaryModule::Destroy(bool isReloading)
         return;
 
     BinaryModule::Destroy(isReloading);
+
+    // Free cached script typenames table
+    for (char* str : _unloadedScriptTypeNames)
+        Allocator::Free(str);
+    _unloadedScriptTypeNames.Clear();
 }
 
 ScriptingTypeHandle VisualScript::GetScriptingType()
