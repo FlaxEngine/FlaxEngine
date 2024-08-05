@@ -20,8 +20,8 @@ private:
     GPUPipelineStatePermutationsPs<4> _psLightPointInverted;
     GPUPipelineStatePermutationsPs<4> _psLightSpotNormal;
     GPUPipelineStatePermutationsPs<4> _psLightSpotInverted;
-    GPUPipelineState* _psLightSkyNormal = nullptr;
-    GPUPipelineState* _psLightSkyInverted = nullptr;
+    GPUPipelineStatePermutationsPs<2> _psLightSkyNormal;
+    GPUPipelineStatePermutationsPs<2> _psLightSkyInverted;
     GPUPipelineState* _psClearDiffuse = nullptr;
     AssetReference<Model> _sphereModel;
     PixelFormat _shadowMaskFormat;
@@ -44,8 +44,8 @@ private:
         _psLightPointInverted.Release();
         _psLightSpotNormal.Release();
         _psLightSpotInverted.Release();
-        _psLightSkyNormal->ReleaseGPU();
-        _psLightSkyInverted->ReleaseGPU();
+        _psLightSkyNormal.Release();
+        _psLightSkyInverted.Release();
         invalidateResources();
     }
 #endif
