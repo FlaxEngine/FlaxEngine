@@ -67,6 +67,7 @@ void PS_Forward(
 	gBuffer.Color = material.Color;
 	gBuffer.Specular = material.Specular;
 	gBuffer.AO = material.AO;
+	// gBuffer.ViewPos is the view space position of the pixel
 	gBuffer.ViewPos = mul(float4(materialInput.WorldPosition, 1), ViewMatrix).xyz;
 #if MATERIAL_SHADING_MODEL == SHADING_MODEL_SUBSURFACE
 	gBuffer.CustomData = float4(material.SubsurfaceColor, material.Opacity);
@@ -125,6 +126,24 @@ void PS_Forward(
 		float3 screenColor = sceneColorTexture.SampleLevel(SamplerPointClamp, hit.xy, 0).rgb;
 		reflections = lerp(reflections, screenColor, hit.z);
 	}
+	
+	// Fallback to software tracing if possible
+#if USE_GLOBAL_SURFACE_ATLAS && CAN_USE_GLOBAL_SURFACE_ATLAS
+
+	// If hit.z >= 0.9f then skip sdf tracing
+	if (hit.z < 0.9f)
+	{
+		// Don't use temporal effect in forward pass
+		float3 reflectWS = ScreenSpaceReflectionDirection(screenUV, gBuffer, ViewPos);
+		float4 surfaceAtlas;
+
+		if(TraceSDFSoftwareReflections(gBuffer, reflectWS, surfaceAtlas)){
+			float3 screenColor = sceneColorTexture.SampleLevel(SamplerPointClamp, hit.xy, 0).rgb;
+        	reflections = lerp(surfaceAtlas, float4(screenColor, 1), hit.z);
+		}
+	}
+
+#endif
 #endif
 
 	light.rgb += reflections * GetReflectionSpecularLighting(ViewPos, gBuffer) * light.a;	
