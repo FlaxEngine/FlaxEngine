@@ -427,6 +427,7 @@ namespace FlaxEditor.Windows
                 AnchorPreset = AnchorPresets.StretchAll,
                 Offsets = Margin.Zero,
                 TabsSize = new Float2(tabSize, tabSize),
+                ShowTopLine = false,
                 Parent = this
             };
             TabsControl.TabStripColor = Style.Current.BackgroundNormal;
