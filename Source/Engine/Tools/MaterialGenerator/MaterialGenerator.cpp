@@ -188,40 +188,46 @@ bool MaterialGenerator::Generate(WriteStream& source, MaterialInfo& materialInfo
     {
     case MaterialDomain::Surface:
         if (materialInfo.TessellationMode != TessellationMethod::None)
-        ADD_FEATURE(TessellationFeature);
+            ADD_FEATURE(TessellationFeature);
         if (materialInfo.BlendMode == MaterialBlendMode::Opaque)
-        ADD_FEATURE(MotionVectorsFeature);
+            ADD_FEATURE(MotionVectorsFeature);
         if (materialInfo.BlendMode == MaterialBlendMode::Opaque)
-        ADD_FEATURE(LightmapFeature);
+            ADD_FEATURE(LightmapFeature);
         if (materialInfo.BlendMode == MaterialBlendMode::Opaque)
-        ADD_FEATURE(DeferredShadingFeature);
+            ADD_FEATURE(DeferredShadingFeature);
         if (materialInfo.BlendMode != MaterialBlendMode::Opaque && (materialInfo.FeaturesFlags & MaterialFeaturesFlags::DisableDistortion) == MaterialFeaturesFlags::None)
-        ADD_FEATURE(DistortionFeature);
+            ADD_FEATURE(DistortionFeature);
         if (materialInfo.BlendMode != MaterialBlendMode::Opaque && EnumHasAnyFlags(materialInfo.FeaturesFlags, MaterialFeaturesFlags::GlobalIllumination))
-        ADD_FEATURE(GlobalIlluminationFeature);
+        {
+            ADD_FEATURE(GlobalIlluminationFeature);
+
+            // SDF Reflections is only valid when both GI and SSR is enabled
+            if (materialInfo.BlendMode != MaterialBlendMode::Opaque && EnumHasAnyFlags(materialInfo.FeaturesFlags, MaterialFeaturesFlags::ScreenSpaceReflections))
+                ADD_FEATURE(SDFReflectionsFeature);
+        }
         if (materialInfo.BlendMode != MaterialBlendMode::Opaque)
-        ADD_FEATURE(ForwardShadingFeature);
+            ADD_FEATURE(ForwardShadingFeature);
         break;
     case MaterialDomain::Terrain:
         if (materialInfo.TessellationMode != TessellationMethod::None)
-        ADD_FEATURE(TessellationFeature);
+            ADD_FEATURE(TessellationFeature);
         ADD_FEATURE(LightmapFeature);
         ADD_FEATURE(DeferredShadingFeature);
         break;
     case MaterialDomain::Particle:
         if (materialInfo.BlendMode != MaterialBlendMode::Opaque && (materialInfo.FeaturesFlags & MaterialFeaturesFlags::DisableDistortion) == MaterialFeaturesFlags::None)
-        ADD_FEATURE(DistortionFeature);
+            ADD_FEATURE(DistortionFeature);
         if (materialInfo.BlendMode != MaterialBlendMode::Opaque && EnumHasAnyFlags(materialInfo.FeaturesFlags, MaterialFeaturesFlags::GlobalIllumination))
-        ADD_FEATURE(GlobalIlluminationFeature);
+            ADD_FEATURE(GlobalIlluminationFeature);
         ADD_FEATURE(ForwardShadingFeature);
         break;
     case MaterialDomain::Deformable:
         if (materialInfo.TessellationMode != TessellationMethod::None)
-        ADD_FEATURE(TessellationFeature);
+            ADD_FEATURE(TessellationFeature);
         if (materialInfo.BlendMode == MaterialBlendMode::Opaque)
-        ADD_FEATURE(DeferredShadingFeature);
+            ADD_FEATURE(DeferredShadingFeature);
         if (materialInfo.BlendMode != MaterialBlendMode::Opaque)
-        ADD_FEATURE(ForwardShadingFeature);
+            ADD_FEATURE(ForwardShadingFeature);
         break;
     default:
         break;
@@ -708,7 +714,7 @@ void MaterialGenerator::ProcessGroupMath(Box* box, Node* node, Value& value)
 {
     switch (node->TypeID)
     {
-        // Vector Transform
+    // Vector Transform
     case 30:
     {
         // Get input vector

@@ -125,6 +125,20 @@ void PS_Forward(
 		float3 screenColor = sceneColorTexture.SampleLevel(SamplerPointClamp, hit.xy, 0).rgb;
 		reflections = lerp(reflections, screenColor, hit.z);
 	}
+
+	// Fallback to software tracing if possible
+#if USE_GLOBAL_SURFACE_ATLAS && CAN_USE_GLOBAL_SURFACE_ATLAS
+	if (hit.z < REFLECTIONS_HIT_THRESHOLD)
+	{
+		float3 reflectWS = ScreenSpaceReflectionDirection(screenUV, gBuffer, ViewPos);
+		float4 surfaceAtlas;
+		if (TraceSDFSoftwareReflections(gBuffer, reflectWS, surfaceAtlas))
+		{
+			float3 screenColor = sceneColorTexture.SampleLevel(SamplerPointClamp, hit.xy, 0).rgb;
+        	reflections = lerp(surfaceAtlas, float4(screenColor, 1), hit.z);
+		}
+	}
+#endif
 #endif
 
 	light.rgb += reflections * GetReflectionSpecularLighting(ViewPos, gBuffer) * light.a;	

@@ -5,6 +5,7 @@
 #include "Engine/Graphics/Textures/GPUTexture.h"
 #include "Engine/Renderer/RenderList.h"
 #include "Engine/Renderer/ShadowsPass.h"
+#include "Engine/Renderer/GlobalSignDistanceFieldPass.h"
 #if USE_EDITOR
 #include "Engine/Renderer/Lightmaps.h"
 #endif
@@ -195,6 +196,58 @@ bool GlobalIlluminationFeature::Bind(MaterialShader::BindParameters& params, Spa
     return useGI;
 }
 
+bool SDFReflectionsFeature::Bind(MaterialShader::BindParameters& params, Span<byte>& cb, int32& srv)
+{
+    auto& data = *(Data*)cb.Get();
+    ASSERT_LOW_LAYER(cb.Length() >= sizeof(Data));
+
+    bool useSDFReflections = false;
+    if (EnumHasAnyFlags(params.RenderContext.View.Flags, ViewFlags::Reflections))
+    {
+        switch (params.RenderContext.List->Settings.ScreenSpaceReflections.TraceMode)
+        {
+        case ReflectionsTraceMode::SoftwareTracing:
+        {
+            GlobalSignDistanceFieldPass::BindingData bindingDataSDF;
+            GlobalSurfaceAtlasPass::BindingData bindingDataSurfaceAtlas;
+            if (!GlobalSignDistanceFieldPass::Instance()->Get(params.RenderContext.Buffers, bindingDataSDF) &&
+                !GlobalSurfaceAtlasPass::Instance()->Get(params.RenderContext.Buffers, bindingDataSurfaceAtlas))
+            {
+                useSDFReflections = true;
+
+                // Bind SDF and Surface Atlas data
+                data.GlobalSDF = bindingDataSDF.Constants;
+                data.GlobalSurfaceAtlas = bindingDataSurfaceAtlas.Constants;
+                params.GPUContext->BindSR(srv + 0, bindingDataSDF.Texture ? bindingDataSDF.Texture->ViewVolume() : nullptr);
+                params.GPUContext->BindSR(srv + 1, bindingDataSDF.TextureMip ? bindingDataSDF.TextureMip->ViewVolume() : nullptr);
+                params.GPUContext->BindSR(srv + 2, bindingDataSurfaceAtlas.Chunks ? bindingDataSurfaceAtlas.Chunks->View() : nullptr);
+                params.GPUContext->BindSR(srv + 3, bindingDataSurfaceAtlas.CulledObjects ? bindingDataSurfaceAtlas.CulledObjects->View() : nullptr);
+                params.GPUContext->BindSR(srv + 4, bindingDataSurfaceAtlas.Objects ? bindingDataSurfaceAtlas.Objects->View() : nullptr);
+                params.GPUContext->BindSR(srv + 5, bindingDataSurfaceAtlas.AtlasDepth->View());
+                params.GPUContext->BindSR(srv + 6, bindingDataSurfaceAtlas.AtlasLighting->View());
+            }
+            break;
+        }
+        }
+    }
+    if (!useSDFReflections)
+    {
+        // Unbind SRVs to prevent issues
+        data.GlobalSDF.CascadesCount = 0;
+        params.GPUContext->UnBindSR(srv + 0);
+        params.GPUContext->UnBindSR(srv + 1);
+        params.GPUContext->UnBindSR(srv + 2);
+        params.GPUContext->UnBindSR(srv + 3);
+        params.GPUContext->UnBindSR(srv + 4);
+        params.GPUContext->UnBindSR(srv + 5);
+        params.GPUContext->UnBindSR(srv + 6);
+    }
+
+    cb = Span<byte>(cb.Get() + sizeof(Data), cb.Length() - sizeof(Data));
+    srv += SRVs;
+    return useSDFReflections;
+}
+
 #if USE_EDITOR
 
 void ForwardShadingFeature::Generate(GeneratorData& data)
@@ -220,6 +273,11 @@ void LightmapFeature::Generate(GeneratorData& data)
 void GlobalIlluminationFeature::Generate(GeneratorData& data)
 {
     data.Template = TEXT("Features/GlobalIllumination.hlsl");
+}
+
+void SDFReflectionsFeature::Generate(GeneratorData& data)
+{
+    data.Template = TEXT("Features/SDFReflections.hlsl");
 }
 
 void DistortionFeature::Generate(GeneratorData& data)

@@ -360,6 +360,17 @@ void GlobalSurfaceAtlasPass::Dispose()
     _shader = nullptr;
 }
 
+bool GlobalSurfaceAtlasPass::Get(const RenderBuffers* buffers, BindingData& result)
+{
+    auto* surfaceAtlasData = buffers ? buffers->FindCustomBuffer<GlobalSurfaceAtlasCustomBuffer>(TEXT("GlobalSurfaceAtlas")) : nullptr;
+    if (surfaceAtlasData && surfaceAtlasData->LastFrameUsed + 1 >= Engine::FrameCount) // Allow to use Surface Atlas from the previous frame (not used currently)
+    {
+        result = surfaceAtlasData->Result;
+        return false;
+    }
+    return true;
+}
+
 bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* context, BindingData& result)
 {
     // Skip if not supported
