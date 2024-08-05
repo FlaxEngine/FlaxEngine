@@ -1,6 +1,6 @@
 // Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
-#if PLATFORM_LINUX
+#if PLATFORM_LINUX && !PLATFORM_SDL
 
 #include "../Window.h"
 #include "Engine/Input/Input.h"
@@ -617,7 +617,7 @@ void LinuxWindow::OnButtonPress(void* event)
 	}
 
 	// Handle double-click
-	if (buttonEvent->button == Button1)
+	if (buttonEvent->button == Button1 && !Input::Mouse->IsRelative())
 	{
 		if (
 			buttonEvent->time < (MouseLastButtonPressTime + MouseDoubleClickTime) &&

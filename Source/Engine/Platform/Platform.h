@@ -8,7 +8,9 @@
 #include "Types.h"
 #include "Defines.h"
 
-#if PLATFORM_WINDOWS
+#if PLATFORM_SDL
+#include "SDL/SDLPlatform.h"
+#elif PLATFORM_WINDOWS
 #include "Windows/WindowsPlatform.h"
 #elif PLATFORM_UWP
 #include "UWP/UWPPlatform.h"

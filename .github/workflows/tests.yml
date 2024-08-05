@@ -31,7 +31,7 @@ jobs:
         sudo rm -f /etc/apt/sources.list.d/*
         sudo cp -f .github/workflows/build_linux_sources.list /etc/apt/sources.list
         sudo apt-get update
-        sudo apt-get install libx11-dev libxcursor-dev libxinerama-dev build-essential gettext libtool libtool-bin libpulse-dev libasound2-dev libjack-dev portaudio19-dev
+        sudo apt-get install libx11-dev libxcursor-dev libxinerama-dev build-essential gettext libtool libtool-bin libpulse-dev libasound2-dev libjack-dev portaudio19-dev libwayland-dev
     - name: Build
       run: |
         ./GenerateProjectFiles.sh -vs2022 -log -verbose -printSDKs -dotnet=8
