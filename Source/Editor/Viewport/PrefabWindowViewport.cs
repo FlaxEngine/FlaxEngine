@@ -623,6 +623,14 @@ namespace FlaxEditor.Viewport
                     DebugDraw.DrawActors(new IntPtr(actors), _debugDrawData.ActorsCount, false);
                 }
             }
+            
+            // Debug draw all actors in prefab
+            foreach (var child in SceneGraphRoot.ChildNodes)
+            {
+                if (child is not ActorNode actorNode)
+                    continue;
+                DebugDraw.DrawActorsTree(actorNode.Actor);
+            }
         }
     }
 }
