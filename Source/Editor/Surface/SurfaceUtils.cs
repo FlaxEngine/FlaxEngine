@@ -72,7 +72,12 @@ namespace FlaxEditor.Surface
                 }
 
                 // By name
-                return string.Compare(x.DisplayName, y.DisplayName, StringComparison.InvariantCulture);
+                if (Editor.Instance.Options.Options.General.ScriptMembersOrder == GeneralOptions.MembersOrder.Alphabetical)
+                {
+                    return string.Compare(x.DisplayName, y.DisplayName, StringComparison.InvariantCulture);
+                }
+                // Keep same order
+                return 0;
             }
         }
 
@@ -248,9 +253,7 @@ namespace FlaxEditor.Surface
                 data[i] = new GraphParameterData(null, parameter.Name, parameter.IsPublic, ToType(parameter.ParameterType), attributes, parameter);
                 i++;
             }
-            if (Editor.Instance.Options.Options.General.ScriptMembersOrder == GeneralOptions.MembersOrder.Alphabetical)
-                Array.Sort(data, GraphParameterData.Compare);
-
+            Array.Sort(data, GraphParameterData.Compare);
             return data;
         }
 
