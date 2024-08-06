@@ -8,6 +8,7 @@ using System.Reflection;
 using System.Text;
 using FlaxEditor.CustomEditors;
 using FlaxEditor.CustomEditors.Elements;
+using FlaxEditor.Options;
 using FlaxEditor.Scripting;
 using FlaxEditor.Utilities;
 using FlaxEngine.Utilities;
@@ -71,7 +72,12 @@ namespace FlaxEditor.Surface
                 }
 
                 // By name
-                return string.Compare(x.DisplayName, y.DisplayName, StringComparison.InvariantCulture);
+                if (Editor.Instance.Options.Options.General.ScriptMembersOrder == GeneralOptions.MembersOrder.Alphabetical)
+                {
+                    return string.Compare(x.DisplayName, y.DisplayName, StringComparison.InvariantCulture);
+                }
+                // Keep same order
+                return 0;
             }
         }
 
