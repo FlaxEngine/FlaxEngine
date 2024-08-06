@@ -8,6 +8,7 @@ using System.Reflection;
 using System.Text;
 using FlaxEditor.CustomEditors;
 using FlaxEditor.CustomEditors.Elements;
+using FlaxEditor.Options;
 using FlaxEditor.Scripting;
 using FlaxEditor.Utilities;
 using FlaxEngine.Utilities;
@@ -247,7 +248,9 @@ namespace FlaxEditor.Surface
                 data[i] = new GraphParameterData(null, parameter.Name, parameter.IsPublic, ToType(parameter.ParameterType), attributes, parameter);
                 i++;
             }
-            Array.Sort(data, GraphParameterData.Compare);
+            if (Editor.Instance.Options.Options.General.ScriptMembersOrder == GeneralOptions.MembersOrder.Alphabetical)
+                Array.Sort(data, GraphParameterData.Compare);
+
             return data;
         }
 
