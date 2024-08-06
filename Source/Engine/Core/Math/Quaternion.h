@@ -660,6 +660,17 @@ public:
     // @param roll The roll of rotation (in radians)
     // @param result When the method completes, contains the newly created quaternion
     static void RotationYawPitchRoll(float yaw, float pitch, float roll, Quaternion& result);
+
+
+    /// <summary>
+    /// Gets rotation from a normal in relation to a transform.<br/>
+    /// This function is especially useful for axis aligned faces,
+    /// and with <seealso cref="Physics::RayCast"/>.
+    /// </summary>
+    /// <param name="InNormal">The normal vector.</param>
+    /// <param name="InReferenceTransform">The reference transform.</param>
+    /// <returns>The rotation from the normal vector.</returns>
+    static Quaternion GetRotationFromNormal(const Vector3& InNormal, const Transform& InReferenceTransform);
 };
 
 /// <summary>

@@ -1672,7 +1672,7 @@ namespace FlaxEngine
         }
 
         /// <summary>
-        /// Snaps the input position into the grid.
+        /// Snaps the input position onto the grid.
         /// </summary>
         /// <param name="pos">The position to snap.</param>
         /// <param name="gridSize">The size of the grid.</param>
@@ -1683,6 +1683,168 @@ namespace FlaxEngine
             pos.Y = Mathr.Ceil((pos.Y - (gridSize.Y * 0.5f)) / gridSize.Y) * gridSize.Y;
             pos.Z = Mathr.Ceil((pos.Z - (gridSize.Z * 0.5f)) / gridSize.Z) * gridSize.Z;
             return pos;
+        }
+
+        /// <summary>
+        /// Snaps the <paramref name="InPoint"/> onto the rotated grid.<br/>
+        /// For world aligned grid snapping use <b><see cref="SnapToGrid"/></b> instead.
+        /// <example><para><b>Example code:</b></para>
+        /// <code>
+        /// <see langword="public" /> <see langword="class" /> SnapToRotatedGridExample : <see cref="Script"/><br/>
+        ///     <see langword="public" /> <see cref="Vector3"/> GridSize = <see cref="Vector3.One"/> * 20.0f;<br/>
+        ///     <see langword="public" /> <see cref="Actor"/> RayOrgin;<br/>
+        ///     <see langword="public" /> <see cref="Actor"/> SomeObject;<br/>
+        ///     <see langword="public" /> <see langword="override" /> <see langword="void" /> <see cref="Script.OnFixedUpdate"/><br/>
+        ///     {<br/>
+        ///         <see langword="if" /> (<see cref="Physics"/>.RayCast(RayOrgin.Position, RayOrgin.Transform.Forward, out <see cref="RayCastHit"/> Hit)
+        ///         {<br/>
+        ///             <see cref="Vector3"/> position = Hit.Collider.Position;
+        ///             <see cref="FlaxEngine.Transform"/> transform = Hit.Collider.Transform;
+        ///             <see cref="Vector3"/> point = Hit.Point;
+        ///             <see cref="Vector3"/> normal = Hit.Normal;
+        ///             //Get rotation from normal relative to collider transform
+        ///             <see cref="Quaternion"/> rot = <see cref="Quaternion"/>.GetRotacionFromNormal(normal,transform);
+        ///             point = <see cref="Vector3"/>.SnapToRotatedGrid(point,position,rot,GridSize);
+        ///             SomeObject.Position = point;
+        ///         }
+        ///     }
+        /// }
+        /// </code>
+        /// </example>
+        /// </summary>
+        /// <param name="InPoint">The position to snap.</param>
+        /// <param name="InCenterPoint">The center point.</param>
+        /// <param name="InOrientation">The rotation of the grid.</param>
+        /// <param name="InGridSize">The size of the grid.</param>
+        /// <returns>The position snapped to the grid.</returns>
+        public static Vector3 SnapToRotatedGrid(Vector3 InPoint, Vector3 InCenterPoint, Quaternion InOrientation, Vector3 InGridSize)
+        {
+            Vector3 p = (InPoint - InCenterPoint) * InOrientation.Conjugated();
+            return (SnapToGrid(p, InGridSize) * InOrientation) + InCenterPoint;
+        }
+        /// <summary>
+        /// The same as <see cref="SnapToRotatedGrid"/> but with local offset applied after point is snapped.
+        /// <example><para><b>Example code:</b></para>
+        /// <code>
+        /// <see langword="public" /> <see langword="class" /> SnapToRotatedGridWithOffsetExample : <see cref="Script"/><br/>
+        ///     <see langword="public" /> <see cref="Vector3"/> Offset = new Vector3(0, 0, 50f);<br/>
+        ///     <see langword="public" /> <see cref="Vector3"/> GridSize = <see cref="Vector3.One"/> * 20.0f;<br/>
+        ///     <see langword="public" /> <see cref="Actor"/> RayOrgin;<br/>
+        ///     <see langword="public" /> <see cref="Actor"/> SomeObject;<br/>
+        ///     <see langword="public" /> <see langword="override" /> <see langword="void" /> <see cref="Script.OnFixedUpdate"/><br/>
+        ///     {<br/>
+        ///         <see langword="if" /> (<see cref="Physics"/>.RayCast(RayOrgin.Position, RayOrgin.Transform.Forward, out <see cref="RayCastHit"/> Hit)
+        ///         {<br/>
+        ///             <see cref="Vector3"/> position = Hit.Collider.Position;
+        ///             <see cref="FlaxEngine.Transform"/> transform = Hit.Collider.Transform;
+        ///             <see cref="Vector3"/> point = Hit.Point;
+        ///             <see cref="Vector3"/> normal = Hit.Normal;
+        ///             <see cref="Quaternion"/> rot = <see cref="Quaternion"/>.GetRotationFromNormal(normal,transform);
+        ///             point = <see cref="Vector3"/>.SnapToRotatedGridWithOffset(point,position,Offset,rot,GridSize);
+        ///             SomeObject.Position = point;
+        ///         }
+        ///     }
+        /// }
+        /// </code>
+        /// </example>
+        /// </summary>
+        /// <param name="InPoint">The position to snap.</param>
+        /// <param name="InCenterPoint">The center point.</param>
+        /// <param name="InOrientation">The rotation of the grid.</param>
+        /// <param name="InGridSize">The size of the grid.</param>
+        /// <param name="InOffset">The local grid offset to apply after snapping.</param>
+        /// <returns>The position snapped to the grid, with offset applied.</returns>
+        public static Vector3 SnapToRotatedGridWithOffset(Vector3 InPoint, Vector3 InCenterPoint, Vector3 InOffset, Quaternion InOrientation, Vector3 InGridSize)
+        {
+            return ((SnapToGrid((InPoint - InCenterPoint) * InOrientation.Conjugated(), InGridSize) + InOffset) * InOrientation) + InCenterPoint;
+        }
+
+        /// <summary>
+        /// Gets the closest vector id to <see langword="this" />
+        /// </summary>
+        /// <param name="InArray"></param>
+        /// <param name="Tolerance"></param>
+        /// <returns>index or -1 if all vectors in array are outside of <paramref name="Tolerance"/></returns>
+        public int GetClosest(ref Vector3[] InArray, Real Tolerance)
+        {
+            Vector3 self = this;
+            int FinalID = -1;
+            for (int i = 0; i < InArray.Length; i++)
+            {
+                if (Distance(self, InArray[i]) <= Tolerance)
+                {
+                    FinalID = i;
+                    self = InArray[i];
+                }
+            }
+            return FinalID;
+        }
+
+        /// <summary>
+        /// Gets the closest vector id to <see langword="this" />
+        /// </summary>
+        /// <param name="InList"></param>
+        /// <param name="Tolerance"></param>
+        /// <returns>index or -1 if all vectors in array are outside of <paramref name="Tolerance"/></returns>
+        public int GetClosest(ref System.Collections.Generic.List<Vector3> InList, Real Tolerance)
+        {
+            Vector3 self = this;
+            int FinalID = -1;
+            for (int i = 0; i < InList.Count; i++)
+            {
+                if (Distance(self, InList[i]) <= Tolerance)
+                {
+                    FinalID = i;
+                    self = InList[i];
+                }
+            }
+            return FinalID;
+        }
+
+        /// <summary>
+        /// Gets the closest vector to <see langword="this" />
+        /// </summary>
+        /// <param name="InArray"></param>
+        /// <param name="OutDistance"></param>
+        /// <param name="OutVector"></param>
+        public void GetClosest(ref Vector3[] InArray, ref Vector3 OutVector, ref Real OutDistance)
+        {
+            Vector3 self = this;
+            Real LastDistance = Real.MaxValue;
+            for (int i = 0; i < InArray.Length; i++)
+            {
+                var d = Distance(self, InArray[i]);
+                if (d <= LastDistance)
+                {
+                    self = InArray[i];
+                    LastDistance = d;
+                }
+            }
+            OutDistance = LastDistance;
+            OutVector = self;
+        }
+
+        /// <summary>
+        /// Gets the closest vector to <see langword="this" />
+        /// </summary>
+        /// <param name="InList"></param>
+        /// <param name="OutDistance"></param>
+        /// <param name="OutVector"></param>
+        public void GetClosest(ref System.Collections.Generic.List<Vector3> InList, ref Vector3 OutVector, ref Real OutDistance)
+        {
+            Vector3 self = this;
+            Real LastDistance = Real.MaxValue;
+            for (int i = 0; i < InList.Count; i++)
+            {
+                var d = Distance(self, InList[i]);
+                if (d <= LastDistance)
+                {
+                    self = InList[i];
+                    LastDistance = d;
+                }
+            }
+            OutDistance = LastDistance;
+            OutVector = self;
         }
 
         /// <summary>

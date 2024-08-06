@@ -927,6 +927,36 @@ public:
     /// <param name="to">The second vector.</param>
     /// <returns>The angle (in radians).</returns>
     static FLAXENGINE_API T Angle(const Vector3Base& from, const Vector3Base& to);
+
+    /// <summary>
+    /// Snaps the input position onto the grid.
+    /// </summary>
+    /// <param name="pos">The position to snap.</param>
+    /// <param name="gridSize">The size of the grid.</param>
+    /// <returns>The position snapped to the grid.</returns>
+    static FLAXENGINE_API Vector3Base SnapToGrid(const Vector3Base& pos, const Vector3Base& gridSize);
+
+    /// <summary>
+    /// Snaps the <paramref name="InPoint"/> onto the rotated grid.<br/>
+    /// For world aligned grid snapping use <b><see cref="SnapToGrid"/></b> instead.
+    /// </summary>
+    /// <param name="InPoint">The position to snap.</param>
+    /// <param name="InCenterPoint">The center point.</param>
+    /// <param name="InOrientation">The rotation of the grid.</param>
+    /// <param name="InGridSize">The size of the grid.</param>
+    /// <returns>The position snapped to the grid.</returns>
+    static FLAXENGINE_API Vector3Base SnapToRotatedGrid(const Vector3Base& InPoint, const Vector3Base& InCenterPoint, const Quaternion& InOrientation, const Vector3Base& InGridSize);
+
+    /// <summary>
+    /// The same as <see cref="SnapToRotatedGrid"/> but with local offset applied after point is snapped.
+    /// </summary>
+    /// <param name="InPoint">The position to snap.</param>
+    /// <param name="InCenterPoint">The center point.</param>
+    /// <param name="InOrientation">The rotation of the grid.</param>
+    /// <param name="InGridSize">The size of the grid.</param>
+    /// <param name="InOffset">The local grid offset to apply after snapping.</param>
+    /// <returns>The position snapped to the grid, with offset applied.</returns>
+    static FLAXENGINE_API Vector3Base SnapToRotatedGridWithOffset(const Vector3Base& InPoint, const Vector3Base& InCenterPoint, const Vector3Base& InOffset, const Quaternion& InOrientation, const Vector3Base& InGridSize);
 };
 
 template<typename T>
