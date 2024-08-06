@@ -1036,6 +1036,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
         protected override void Deinitialize()
         {
             _scriptToggles = null;
+            _scripts.Clear();
 
             base.Deinitialize();
         }

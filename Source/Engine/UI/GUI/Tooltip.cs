@@ -115,6 +115,7 @@ namespace FlaxEngine.GUI
             // Unlink
             IsLayoutLocked = true;
             Parent = null;
+            _showTarget = null;
 
             // Close window
             if (_window)
