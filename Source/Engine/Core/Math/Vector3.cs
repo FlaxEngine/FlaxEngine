@@ -1737,7 +1737,7 @@ namespace FlaxEngine
         {
             return new Vector3(-value.X, -value.Y, -value.Z);
         }
-
+        
         /// <summary>
         /// Transforms a vector by the given rotation.
         /// </summary>

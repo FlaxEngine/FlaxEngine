@@ -382,9 +382,7 @@ void BehaviorTreeMoveToNode::GetAgentSize(Actor* agent, float& outRadius, float&
     if (const auto* rigidBody = Cast<RigidBody>(agent))
     {
         // Rigid Body with a single Capsule collider (directed Up)
-        Array<Collider*, InlinedAllocation<16>> colliders;
-        rigidBody->GetColliders(colliders);
-        const auto* capsuleCollider = colliders.Count() == 1 ? (CapsuleCollider*)colliders[0] : nullptr;
+        const auto* capsuleCollider = rigidBody->GetAttachedColliderOfType<CapsuleCollider>();
         if (capsuleCollider && (capsuleCollider->GetLocalOrientation() == Quaternion::Euler(0, 0, 90) || capsuleCollider->GetLocalOrientation() == Quaternion::Euler(0, 0, -90)))
         {
             outRadius = capsuleCollider->GetRadius();
