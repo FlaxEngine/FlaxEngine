@@ -167,7 +167,7 @@ namespace Flax.Build.Bindings
                     foreach (var vectorType in CSharpVectorTypes)
                     {
                         if (value.Length > vectorType.Length + 4 && value.StartsWith(vectorType) && value[vectorType.Length] == '(')
-                            return $"typeof({vectorType}), \"{value.Substring(vectorType.Length + 1, value.Length - vectorType.Length - 2).Replace(".f", "").Replace("f", "")}\"";
+                            return $"typeof({vectorType}), \"{value.Substring(vectorType.Length + 1, value.Length - vectorType.Length - 2).Replace(".f", ".0").Replace("f", "")}\"";
                     }
 
                     return null;
