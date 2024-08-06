@@ -12,6 +12,7 @@ using FlaxEditor.Viewport.Previews;
 using FlaxEditor.Windows.Assets;
 using FlaxEngine;
 using FlaxEngine.GUI;
+using Utils = FlaxEditor.Utilities.Utils;
 
 namespace FlaxEditor.Viewport
 {
@@ -624,12 +625,37 @@ namespace FlaxEditor.Viewport
                 }
             }
             
-            // Debug draw all actors in prefab
+            // Debug draw all actors in prefab and collect actors
+            List<Actor> pActors = new List<Actor>();
             foreach (var child in SceneGraphRoot.ChildNodes)
             {
                 if (child is not ActorNode actorNode)
                     continue;
-                DebugDraw.DrawActorsTree(actorNode.Actor);
+                var actor = actorNode.Actor;
+                Utils.GetActorsTree(pActors, actor);
+                DebugDraw.DrawActorsTree(actor);
+            }
+            
+            // Draw physics debug
+            if ((Task.ViewFlags & ViewFlags.PhysicsDebug) != 0)
+            {
+                foreach (var actor in pActors)
+                {
+                    if (actor is Collider c && c.IsActiveInHierarchy)
+                    {
+                        DebugDraw.DrawColliderDebugPhysics(c, renderContext.View);
+                    }
+                }
+            }
+            
+            // Draw lights debug
+            if ((Task.ViewFlags & ViewFlags.LightsDebug) != 0)
+            {
+                foreach (var actor in pActors)
+                {
+                    if (actor is Light l && l.IsActiveInHierarchy)
+                        DebugDraw.DrawLightDebug(l, renderContext.View);
+                }
             }
         }
     }
