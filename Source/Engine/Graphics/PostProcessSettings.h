@@ -52,6 +52,11 @@ API_ENUM() enum class ToneMappingMode
     /// The ACES Filmic reference tonemapper (approximation).
     /// </summary>
     ACES = 2,
+
+    /// <summary>
+    /// The AGX tonemapper.
+    /// </summary>
+    AGX = 3,
 };
 
 /// <summary>
