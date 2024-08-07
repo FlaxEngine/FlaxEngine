@@ -271,7 +271,7 @@ namespace FlaxEngine
             var style = new Style
             {
                 Background = Color.FromBgra(0xFF1C1C1C),
-                BackgroundSeparator = Color.Black,
+                BackgroundSeparator = Color.FromHex("#121212FF"),
                 LightBackground = Color.FromBgra(0xFF2D2D30),
                 Foreground = Color.FromBgra(0xFFFFFFFF),
                 ForegroundGrey = Color.FromBgra(0xFFA9A9B3),
