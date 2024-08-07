@@ -22,7 +22,7 @@
 #define SHADOWS_POSITION_ERROR METERS_TO_UNITS(0.1f)
 #define SHADOWS_ROTATION_ERROR 0.9999f
 #define SHADOWS_MAX_TILES 6
-#define SHADOWS_MIN_RESOLUTION 16
+#define SHADOWS_MIN_RESOLUTION 32
 #define SHADOWS_MAX_STATIC_ATLAS_CAPACITY_TO_DEFRAG 0.7f
 #define SHADOWS_BASE_LIGHT_RESOLUTION(atlasResolution) atlasResolution / MAX_CSM_CASCADES // Allow to store 4 CSM cascades in a single row in all cases
 #define NormalOffsetScaleTweak METERS_TO_UNITS(1)
@@ -55,11 +55,11 @@ struct ShadowsAtlasRectTile : RectPackNode<uint16>
 uint16 QuantizeResolution(float input)
 {
     uint16 output = Math::FloorToInt(input);
-    uint16 alignment = 16;
+    uint16 alignment = 32;
     if (output >= 512)
-        alignment = 64;
+        alignment = 128;
     else if (output >= 256)
-        alignment = 32;
+        alignment = 64;
     output = Math::AlignDown<uint16>(output, alignment);
     return output;
 }
