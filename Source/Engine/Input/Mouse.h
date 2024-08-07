@@ -136,7 +136,8 @@ public:
     /// The cursor will be hidden while in relative mode.
     /// </summary>
     /// <param name="relativeMode">The new relative mode state.</param>
-    virtual void SetRelativeMode(bool relativeMode)
+    /// <param name="window">The window.</param>
+    virtual void SetRelativeMode(bool relativeMode, Window* window)
     {
         _relativeMode = relativeMode;
     }

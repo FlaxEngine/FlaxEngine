@@ -224,9 +224,6 @@ extern SDL_DECLSPEC SDL_bool SDLCALL SDL_PenConnected(SDL_PenID instance_id);
 /**
  * Retrieves a human-readable description for a SDL_PenID.
  *
- * This returns temporary memory which will be automatically freed later, and
- * can be claimed with SDL_ClaimTemporaryMemory().
- *
  * \param instance_id the pen to query.
  * \returns a string that contains the name of the pen, intended for human
  *          consumption. The string might or might not be localised, depending

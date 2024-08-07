@@ -149,19 +149,17 @@ typedef enum SDL_SensorType
  * \param count a pointer filled in with the number of sensors returned, may
  *              be NULL.
  * \returns a 0 terminated array of sensor instance IDs or NULL on failure;
- *          call SDL_GetError() for more information.
+ *          call SDL_GetError() for more information. This should be freed
+ *          with SDL_free() when it is no longer needed.
  *
  * \since This function is available since SDL 3.0.0.
  */
-extern SDL_DECLSPEC const SDL_SensorID * SDLCALL SDL_GetSensors(int *count);
+extern SDL_DECLSPEC SDL_SensorID * SDLCALL SDL_GetSensors(int *count);
 
 /**
  * Get the implementation dependent name of a sensor.
  *
  * This can be called before any sensors are opened.
- *
- * This returns temporary memory which will be automatically freed later, and
- * can be claimed with SDL_ClaimTemporaryMemory().
  *
  * \param instance_id the sensor instance ID.
  * \returns the sensor name, or NULL if `instance_id` is not valid.
@@ -231,9 +229,6 @@ extern SDL_DECLSPEC SDL_PropertiesID SDLCALL SDL_GetSensorProperties(SDL_Sensor 
 
 /**
  * Get the implementation dependent name of a sensor.
- *
- * This returns temporary memory which will be automatically freed later, and
- * can be claimed with SDL_ClaimTemporaryMemory().
  *
  * \param sensor the SDL_Sensor object.
  * \returns the sensor name or NULL on failure; call SDL_GetError() for more
