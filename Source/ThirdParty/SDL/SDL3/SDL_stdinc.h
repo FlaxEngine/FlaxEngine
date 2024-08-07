@@ -91,8 +91,9 @@ void *alloca(size_t);
 /**
  * The number of elements in an array.
  *
- * NOTE: This macro double-evaluates the argument, so you should never have
- * side effects in the parameter.
+ * This macro looks like it double-evaluates the argument, but it does so
+ * inside of `sizeof`, so there are no side-effects here, as expressions do
+ * not actually run any code in these cases.
  *
  * \since This macro is available since SDL 3.0.0.
  */
@@ -664,6 +665,7 @@ extern SDL_DECLSPEC int SDLCALL SDL_GetNumAllocations(void);
 
 extern SDL_DECLSPEC const char * SDLCALL SDL_getenv(const char *name);
 extern SDL_DECLSPEC int SDLCALL SDL_setenv(const char *name, const char *value, int overwrite);
+extern SDL_DECLSPEC int SDLCALL SDL_unsetenv(const char *name);
 
 typedef int (SDLCALL *SDL_CompareCallback)(const void *a, const void *b);
 extern SDL_DECLSPEC void SDLCALL SDL_qsort(void *base, size_t nmemb, size_t size, SDL_CompareCallback compare);
@@ -2962,8 +2964,9 @@ size_t wcslcat(wchar_t *dst, const wchar_t *src, size_t size);
 
 /* Starting LLVM 16, the analyser errors out if these functions do not have
    their prototype defined (clang-diagnostic-implicit-function-declaration) */
-#include <stdlib.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <strings.h>
 
 #define SDL_malloc malloc
 #define SDL_calloc calloc

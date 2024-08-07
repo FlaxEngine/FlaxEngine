@@ -378,16 +378,18 @@ extern SDL_DECLSPEC void * SDLCALL SDL_GetPointerProperty(SDL_PropertiesID props
 /**
  * Get a string property from a group of properties.
  *
- * This returns temporary memory which will be automatically freed later, and
- * can be claimed with SDL_ClaimTemporaryMemory().
- *
  * \param props the properties to query.
  * \param name the name of the property to query.
  * \param default_value the default value of the property.
  * \returns the value of the property, or `default_value` if it is not set or
  *          not a string property.
  *
- * \threadsafety It is safe to call this function from any thread.
+ * \threadsafety It is safe to call this function from any thread, although
+ *               the data returned is not protected and could potentially be
+ *               freed if you call SDL_SetStringProperty() or
+ *               SDL_ClearProperty() on these properties from another thread.
+ *               If you need to avoid this, use SDL_LockProperties() and
+ *               SDL_UnlockProperties().
  *
  * \since This function is available since SDL 3.0.0.
  *

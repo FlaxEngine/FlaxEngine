@@ -73,28 +73,23 @@ extern SDL_DECLSPEC SDL_bool SDLCALL SDL_HasKeyboard(void);
  * power buttons, etc. You should wait for input from a device before you
  * consider it actively in use.
  *
- * This returns temporary memory which will be automatically freed later, and
- * can be claimed with SDL_ClaimTemporaryMemory().
- *
  * \param count a pointer filled in with the number of keyboards returned, may
  *              be NULL.
  * \returns a 0 terminated array of keyboards instance IDs or NULL on failure;
- *          call SDL_GetError() for more information.
+ *          call SDL_GetError() for more information. This should be freed
+ *          with SDL_free() when it is no longer needed.
  *
  * \since This function is available since SDL 3.0.0.
  *
  * \sa SDL_GetKeyboardNameForID
  * \sa SDL_HasKeyboard
  */
-extern SDL_DECLSPEC const SDL_KeyboardID * SDLCALL SDL_GetKeyboards(int *count);
+extern SDL_DECLSPEC SDL_KeyboardID * SDLCALL SDL_GetKeyboards(int *count);
 
 /**
  * Get the name of a keyboard.
  *
  * This function returns "" if the keyboard doesn't have a name.
- *
- * This returns temporary memory which will be automatically freed later, and
- * can be claimed with SDL_ClaimTemporaryMemory().
  *
  * \param instance_id the keyboard instance ID.
  * \returns the name of the selected keyboard or NULL on failure; call
@@ -190,60 +185,26 @@ extern SDL_DECLSPEC SDL_Keymod SDLCALL SDL_GetModState(void);
 extern SDL_DECLSPEC void SDLCALL SDL_SetModState(SDL_Keymod modstate);
 
 /**
- * Get the key code corresponding to the given scancode according to a default
- * en_US keyboard layout.
- *
- * See SDL_Keycode for details.
- *
- * \param scancode the desired SDL_Scancode to query.
- * \param modstate the modifier state to use when translating the scancode to
- *                 a keycode.
- * \returns the SDL_Keycode that corresponds to the given SDL_Scancode.
- *
- * \since This function is available since SDL 3.0.0.
- *
- * \sa SDL_GetKeyName
- * \sa SDL_GetScancodeFromKey
- */
-extern SDL_DECLSPEC SDL_Keycode SDLCALL SDL_GetDefaultKeyFromScancode(SDL_Scancode scancode, SDL_Keymod modstate);
-
-/**
  * Get the key code corresponding to the given scancode according to the
  * current keyboard layout.
  *
- * See SDL_Keycode for details.
+ * If you want to get the keycode as it would be delivered in key events,
+ * including options specified in SDL_HINT_KEYCODE_OPTIONS, then you should
+ * pass `key_event` as SDL_TRUE. Otherwise this function simply translates the
+ * scancode based on the given modifier state.
  *
  * \param scancode the desired SDL_Scancode to query.
  * \param modstate the modifier state to use when translating the scancode to
  *                 a keycode.
+ * \param key_event SDL_TRUE if the keycode will be used in key events.
  * \returns the SDL_Keycode that corresponds to the given SDL_Scancode.
  *
  * \since This function is available since SDL 3.0.0.
  *
- * \sa SDL_GetDefaultKeyFromScancode
  * \sa SDL_GetKeyName
  * \sa SDL_GetScancodeFromKey
  */
-extern SDL_DECLSPEC SDL_Keycode SDLCALL SDL_GetKeyFromScancode(SDL_Scancode scancode, SDL_Keymod modstate);
-
-/**
- * Get the scancode corresponding to the given key code according to a default
- * en_US keyboard layout.
- *
- * Note that there may be multiple scancode+modifier states that can generate
- * this keycode, this will just return the first one found.
- *
- * \param key the desired SDL_Keycode to query.
- * \param modstate a pointer to the modifier state that would be used when the
- *                 scancode generates this key, may be NULL.
- * \returns the SDL_Scancode that corresponds to the given SDL_Keycode.
- *
- * \since This function is available since SDL 3.0.0.
- *
- * \sa SDL_GetScancodeFromKey
- * \sa SDL_GetScancodeName
- */
-extern SDL_DECLSPEC SDL_Scancode SDLCALL SDL_GetDefaultScancodeFromKey(SDL_Keycode key, SDL_Keymod *modstate);
+extern SDL_DECLSPEC SDL_Keycode SDLCALL SDL_GetKeyFromScancode(SDL_Scancode scancode, SDL_Keymod modstate, SDL_bool key_event);
 
 /**
  * Get the scancode corresponding to the given key code according to the
@@ -259,7 +220,6 @@ extern SDL_DECLSPEC SDL_Scancode SDLCALL SDL_GetDefaultScancodeFromKey(SDL_Keyco
  *
  * \since This function is available since SDL 3.0.0.
  *
- * \sa SDL_GetDefaultScancodeFromKey
  * \sa SDL_GetKeyFromScancode
  * \sa SDL_GetScancodeName
  */
@@ -283,9 +243,6 @@ extern SDL_DECLSPEC int SDLCALL SDL_SetScancodeName(SDL_Scancode scancode, const
 
 /**
  * Get a human-readable name for a scancode.
- *
- * This returns temporary memory which will be automatically freed later, and
- * can be claimed with SDL_ClaimTemporaryMemory().
  *
  * **Warning**: The returned name is by design not stable across platforms,
  * e.g. the name for `SDL_SCANCODE_LGUI` is "Left GUI" under Linux but "Left
@@ -326,13 +283,7 @@ extern SDL_DECLSPEC SDL_Scancode SDLCALL SDL_GetScancodeFromName(const char *nam
 /**
  * Get a human-readable name for a key.
  *
- * Both lowercase and uppercase alphabetic keycodes have uppercase names, e.g.
- * SDL_Keycode 'a' and 'A' both have the name "A".
- *
  * If the key doesn't have a name, this function returns an empty string ("").
- *
- * This returns temporary memory which will be automatically freed later, and
- * can be claimed with SDL_ClaimTemporaryMemory().
  *
  * \param key the desired SDL_Keycode to query.
  * \returns a UTF-8 encoded string of the key name.
@@ -378,10 +329,109 @@ extern SDL_DECLSPEC SDL_Keycode SDLCALL SDL_GetKeyFromName(const char *name);
  * \since This function is available since SDL 3.0.0.
  *
  * \sa SDL_SetTextInputArea
+ * \sa SDL_StartTextInputWithProperties
  * \sa SDL_StopTextInput
  * \sa SDL_TextInputActive
  */
 extern SDL_DECLSPEC int SDLCALL SDL_StartTextInput(SDL_Window *window);
+
+/**
+ * Text input type.
+ *
+ * These are the valid values for SDL_PROP_TEXTINPUT_TYPE_NUMBER. Not every
+ * value is valid on every platform, but where a value isn't supported, a
+ * reasonable fallback will be used.
+ *
+ * \since This enum is available since SDL 3.0.0.
+ *
+ * \sa SDL_StartTextInputWithProperties
+ */
+typedef enum SDL_TextInputType
+{
+    SDL_TEXTINPUT_TYPE_TEXT,                        /**< The input is text */
+    SDL_TEXTINPUT_TYPE_TEXT_NAME,                   /**< The input is a person's name */
+    SDL_TEXTINPUT_TYPE_TEXT_EMAIL,                  /**< The input is an e-mail address */
+    SDL_TEXTINPUT_TYPE_TEXT_USERNAME,               /**< The input is a username */
+    SDL_TEXTINPUT_TYPE_TEXT_PASSWORD_HIDDEN,        /**< The input is a secure password that is hidden */
+    SDL_TEXTINPUT_TYPE_TEXT_PASSWORD_VISIBLE,       /**< The input is a secure password that is visible */
+    SDL_TEXTINPUT_TYPE_NUMBER,                      /**< The input is a number */
+    SDL_TEXTINPUT_TYPE_NUMBER_PASSWORD_HIDDEN,      /**< The input is a secure PIN that is hidden */
+    SDL_TEXTINPUT_TYPE_NUMBER_PASSWORD_VISIBLE      /**< The input is a secure PIN that is visible */
+} SDL_TextInputType;
+
+/**
+ * Auto capitalization type.
+ *
+ * These are the valid values for
+ * SDL_PROP_TEXTINPUT_AUTOCAPITALIZATION_NUMBER. Not every value is valid on
+ * every platform, but where a value isn't supported, a reasonable fallback
+ * will be used.
+ *
+ * \since This enum is available since SDL 3.0.0.
+ *
+ * \sa SDL_StartTextInputWithProperties
+ */
+typedef enum SDL_Capitalization
+{
+    SDL_CAPITALIZE_NONE,        /**< No auto-capitalization will be done */
+    SDL_CAPITALIZE_SENTENCES,   /**< The first letter of sentences will be capitalized */
+    SDL_CAPITALIZE_WORDS,       /**< The first letter of words will be capitalized */
+    SDL_CAPITALIZE_LETTERS      /**< All letters will be capitalized */
+} SDL_Capitalization;
+
+/**
+ * Start accepting Unicode text input events in a window, with properties
+ * describing the input.
+ *
+ * This function will enable text input (SDL_EVENT_TEXT_INPUT and
+ * SDL_EVENT_TEXT_EDITING events) in the specified window. Please use this
+ * function paired with SDL_StopTextInput().
+ *
+ * Text input events are not received by default.
+ *
+ * On some platforms using this function shows the screen keyboard.
+ *
+ * These are the supported properties:
+ *
+ * - `SDL_PROP_TEXTINPUT_TYPE_NUMBER` - an SDL_TextInputType value that
+ *   describes text being input, defaults to SDL_TEXTINPUT_TYPE_TEXT.
+ * - `SDL_PROP_TEXTINPUT_CAPITALIZATION_NUMBER` - an SDL_Capitalization value
+ *   that describes how text should be capitalized, defaults to
+ *   SDL_CAPITALIZE_SENTENCES for normal text entry, SDL_CAPITALIZE_WORDS for
+ *   SDL_TEXTINPUT_TYPE_TEXT_NAME, and SDL_CAPITALIZE_NONE for e-mail
+ *   addresses, usernames, and passwords.
+ * - `SDL_PROP_TEXTINPUT_AUTOCORRECT_BOOLEAN` - true to enable auto completion
+ *   and auto correction, defaults to SDL_TRUE.
+ * - `SDL_PROP_TEXTINPUT_MULTILINE_BOOLEAN` - true if multiple lines of text
+ *   are allowed. This defaults to SDL_TRUE if SDL_HINT_RETURN_KEY_HIDES_IME
+ *   is "0" or is not set, and defaults to SDL_FALSE if
+ *   SDL_HINT_RETURN_KEY_HIDES_IME is "1".
+ *
+ * On Android you can directly specify the input type:
+ *
+ * - `SDL_PROP_TEXTINPUT_ANDROID_INPUTTYPE_NUMBER` - the text input type to
+ *   use, overriding other properties. This is documented at
+ *   https://developer.android.com/reference/android/text/InputType
+ *
+ * \param window the window to enable text input.
+ * \param props the properties to use.
+ * \returns 0 on success or a negative error code on failure; call
+ *          SDL_GetError() for more information.
+ *
+ * \since This function is available since SDL 3.0.0.
+ *
+ * \sa SDL_SetTextInputArea
+ * \sa SDL_StartTextInput
+ * \sa SDL_StopTextInput
+ * \sa SDL_TextInputActive
+ */
+extern SDL_DECLSPEC int SDLCALL SDL_StartTextInputWithProperties(SDL_Window *window, SDL_PropertiesID props);
+
+#define SDL_PROP_TEXTINPUT_TYPE_NUMBER                  "SDL.textinput.type"
+#define SDL_PROP_TEXTINPUT_CAPITALIZATION_NUMBER        "SDL.textinput.capitalization"
+#define SDL_PROP_TEXTINPUT_AUTOCORRECT_BOOLEAN          "SDL.textinput.autocorrect"
+#define SDL_PROP_TEXTINPUT_MULTILINE_BOOLEAN            "SDL.textinput.multiline"
+#define SDL_PROP_TEXTINPUT_ANDROID_INPUTTYPE_NUMBER     "SDL.textinput.android.inputtype"
 
 /**
  * Check whether or not Unicode text input events are enabled for a window.
