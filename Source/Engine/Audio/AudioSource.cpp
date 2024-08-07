@@ -432,6 +432,8 @@ void AudioSource::Update()
             Stop();
         }
     }
+
+    // Reset starting to play value
     if (_startingToPlay)
     {
         _startingToPlay = false;
