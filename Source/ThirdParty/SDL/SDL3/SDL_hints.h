@@ -103,21 +103,6 @@ extern "C" {
 #define SDL_HINT_ANDROID_BLOCK_ON_PAUSE "SDL_ANDROID_BLOCK_ON_PAUSE"
 
 /**
- * A variable to control whether SDL will pause audio in background.
- *
- * The variable can be set to the following values:
- *
- * - "0": Not paused, requires that SDL_HINT_ANDROID_BLOCK_ON_PAUSE be set to
- *   "0"
- * - "1": Paused. (default)
- *
- * This hint should be set before SDL is initialized.
- *
- * \since This hint is available since SDL 3.0.0.
- */
-#define SDL_HINT_ANDROID_BLOCK_ON_PAUSE_PAUSEAUDIO "SDL_ANDROID_BLOCK_ON_PAUSE_PAUSEAUDIO"
-
-/**
  * A variable to control whether we trap the Android back button to handle it
  * manually.
  *
@@ -147,43 +132,8 @@ extern "C" {
  * together, as well as match applications with associated desktop settings
  * and icons.
  *
- * On Wayland this corresponds to the "app ID" window property and on X11 this
- * corresponds to the WM_CLASS property. Windows inherit the value of this
- * hint at creation time. Changing this hint after a window has been created
- * will not change the app ID or class of existing windows.
- *
- * For *nix platforms, this string should be formatted in reverse-DNS notation
- * and follow some basic rules to be valid:
- *
- * - The application ID must be composed of two or more elements separated by
- *   a period (.) character.
- * - Each element must contain one or more of the alphanumeric characters
- *   (A-Z, a-z, 0-9) plus underscore (_) and hyphen (-) and must not start
- *   with a digit. Note that hyphens, while technically allowed, should not be
- *   used if possible, as they are not supported by all components that use
- *   the ID, such as D-Bus. For maximum compatibility, replace hyphens with an
- *   underscore.
- * - The empty string is not a valid element (ie: your application ID may not
- *   start or end with a period and it is not valid to have two periods in a
- *   row).
- * - The entire ID must be less than 255 characters in length.
- *
- * Examples of valid app ID strings:
- *
- * - org.MyOrg.MyApp
- * - com.your_company.your_app
- *
- * Desktops such as GNOME and KDE require that the app ID string matches your
- * application's .desktop file name (e.g. if the app ID string is
- * 'org.MyOrg.MyApp', your application's .desktop file should be named
- * 'org.MyOrg.MyApp.desktop').
- *
- * If you plan to package your application in a container such as Flatpak, the
- * app ID should match the name of your Flatpak container as well.
- *
- * If not set, SDL will attempt to use the application executable name. If the
- * executable name cannot be retrieved, the generic string "SDL_App" will be
- * used.
+ * This will override SDL_PROP_APP_METADATA_IDENTIFIER_STRING, if set by the
+ * application.
  *
  * This hint should be set before SDL is initialized.
  *
@@ -192,7 +142,7 @@ extern "C" {
 #define SDL_HINT_APP_ID      "SDL_APP_ID"
 
 /**
- * Specify an application name.
+ * A variable setting the application name.
  *
  * This hint lets you specify the application name sent to the OS when
  * required. For example, this will often appear in volume control applets for
@@ -200,12 +150,8 @@ extern "C" {
  * screensaver. You should use a string that describes your program ("My Game
  * 2: The Revenge")
  *
- * Setting this to "" or leaving it unset will have SDL use a reasonable
- * default: probably the application's name or "SDL Application" if SDL
- * doesn't have any better information.
- *
- * Note that, for audio streams, this can be overridden with
- * SDL_HINT_AUDIO_DEVICE_APP_NAME.
+ * This will override SDL_PROP_APP_METADATA_NAME_STRING, if set by the
+ * application.
  *
  * This hint should be set before SDL is initialized.
  *
@@ -252,6 +198,20 @@ extern "C" {
 #define SDL_HINT_APPLE_TV_REMOTE_ALLOW_ROTATION "SDL_APPLE_TV_REMOTE_ALLOW_ROTATION"
 
 /**
+ * Specify the default ALSA audio device name.
+ *
+ * This variable is a specific audio device to open when the "default" audio
+ * device is used. By default if 4 channel audio is requested, the
+ * "plug:surround40" device will be opened and if 6 channel audio is requested
+ * the "plug:surround51" device will be opened.
+ *
+ * This hint should be set before an audio device is opened.
+ *
+ * \since This hint is available since SDL 3.0.0.
+ */
+#define SDL_HINT_AUDIO_ALSA_DEFAULT_DEVICE "SDL_AUDIO_ALSA_DEFAULT_DEVICE"
+
+/**
  * A variable controlling the audio category on iOS and macOS.
  *
  * The variable can be set to the following values:
@@ -270,27 +230,17 @@ extern "C" {
 #define SDL_HINT_AUDIO_CATEGORY   "SDL_AUDIO_CATEGORY"
 
 /**
- * Specify an application name for an audio device.
+ * A variable controlling the default audio channel count.
  *
- * Some audio backends (such as PulseAudio) allow you to describe your audio
- * stream. Among other things, this description might show up in a system
- * control panel that lets the user adjust the volume on specific audio
- * streams instead of using one giant master volume slider.
- *
- * This hints lets you transmit that information to the OS. The contents of
- * this hint are used while opening an audio device. You should use a string
- * that describes your program ("My Game 2: The Revenge")
- *
- * Setting this to "" or leaving it unset will have SDL use a reasonable
- * default: this will be the name set with SDL_HINT_APP_NAME, if that hint is
- * set. Otherwise, it'll probably the application's name or "SDL Application"
- * if SDL doesn't have any better information.
+ * If the application doesn't specify the audio channel count when opening the
+ * device, this hint can be used to specify a default channel count that will
+ * be used. This defaults to "1" for recording and "2" for playback devices.
  *
  * This hint should be set before an audio device is opened.
  *
  * \since This hint is available since SDL 3.0.0.
  */
-#define SDL_HINT_AUDIO_DEVICE_APP_NAME "SDL_AUDIO_DEVICE_APP_NAME"
+#define SDL_HINT_AUDIO_CHANNELS "SDL_AUDIO_CHANNELS"
 
 /**
  * Specify an application icon name for an audio device.
@@ -391,6 +341,41 @@ extern "C" {
 #define SDL_HINT_AUDIO_DEVICE_STREAM_ROLE "SDL_AUDIO_DEVICE_STREAM_ROLE"
 
 /**
+ * Specify the input file when recording audio using the disk audio driver.
+ *
+ * This defaults to "sdlaudio-in.raw"
+ *
+ * This hint should be set before an audio device is opened.
+ *
+ * \since This hint is available since SDL 3.0.0.
+ */
+#define SDL_HINT_AUDIO_DISK_INPUT_FILE "SDL_AUDIO_DISK_INPUT_FILE"
+
+/**
+ * Specify the output file when playing audio using the disk audio driver.
+ *
+ * This defaults to "sdlaudio.raw"
+ *
+ * This hint should be set before an audio device is opened.
+ *
+ * \since This hint is available since SDL 3.0.0.
+ */
+#define SDL_HINT_AUDIO_DISK_OUTPUT_FILE "SDL_AUDIO_DISK_OUTPUT_FILE"
+
+/**
+ * A variable controlling the audio rate when using the disk audio driver.
+ *
+ * The disk audio driver normally simulates real-time for the audio rate that
+ * was specified, but you can use this variable to adjust this rate higher or
+ * lower down to 0. The default value is "1.0".
+ *
+ * This hint should be set before an audio device is opened.
+ *
+ * \since This hint is available since SDL 3.0.0.
+ */
+#define SDL_HINT_AUDIO_DISK_TIMESCALE "SDL_AUDIO_DISK_TIMESCALE"
+
+/**
  * A variable that specifies an audio backend to use.
  *
  * By default, SDL will try all available audio backends in a reasonable order
@@ -403,6 +388,54 @@ extern "C" {
  * \since This hint is available since SDL 3.0.0.
  */
 #define SDL_HINT_AUDIO_DRIVER "SDL_AUDIO_DRIVER"
+
+/**
+ * A variable controlling the audio rate when using the dummy audio driver.
+ *
+ * The dummy audio driver normally simulates real-time for the audio rate that
+ * was specified, but you can use this variable to adjust this rate higher or
+ * lower down to 0. The default value is "1.0".
+ *
+ * This hint should be set before an audio device is opened.
+ *
+ * \since This hint is available since SDL 3.0.0.
+ */
+#define SDL_HINT_AUDIO_DUMMY_TIMESCALE "SDL_AUDIO_DUMMY_TIMESCALE"
+
+/**
+ * A variable controlling the default audio format.
+ *
+ * If the application doesn't specify the audio format when opening the
+ * device, this hint can be used to specify a default format that will be
+ * used.
+ *
+ * The variable can be set to the following values: - "U8": Unsigned 8-bit
+ * audio - "S8": Signed 8-bit audio - "S16LE": Signed 16-bit little-endian
+ * audio - "S16BE": Signed 16-bit big-endian audio - "S16": Signed 16-bit
+ * native-endian audio (default) - "S32LE": Signed 32-bit little-endian audio
+ * - "S32BE": Signed 32-bit big-endian audio - "S32": Signed 32-bit
+ * native-endian audio - "F32LE": Floating point little-endian audio -
+ * "F32BE": Floating point big-endian audio - "F32": Floating point
+ * native-endian audio
+ *
+ * This hint should be set before an audio device is opened.
+ *
+ * \since This hint is available since SDL 3.0.0.
+ */
+#define SDL_HINT_AUDIO_FORMAT "SDL_AUDIO_FORMAT"
+
+/**
+ * A variable controlling the default audio frequency.
+ *
+ * If the application doesn't specify the audio frequency when opening the
+ * device, this hint can be used to specify a default frequency that will be
+ * used. This defaults to "44100".
+ *
+ * This hint should be set before an audio device is opened.
+ *
+ * \since This hint is available since SDL 3.0.0.
+ */
+#define SDL_HINT_AUDIO_FREQUENCY "SDL_AUDIO_FREQUENCY"
 
 /**
  * A variable that causes SDL to not ignore audio "monitors".
@@ -662,6 +695,23 @@ extern "C" {
 #define SDL_HINT_ENABLE_SCREEN_KEYBOARD "SDL_ENABLE_SCREEN_KEYBOARD"
 
 /**
+ * A variable containing a list of evdev devices to use if udev is not
+ * available.
+ *
+ * The list of devices is in the form:
+ *
+ * deviceclass:path[,deviceclass:path[,...]]
+ *
+ * where device class is an integer representing the SDL_UDEV_deviceclass and
+ * path is the full path to the event device.
+ *
+ * This hint should be set before SDL is initialized.
+ *
+ * \since This hint is available since SDL 3.0.0.
+ */
+#define SDL_HINT_EVDEV_DEVICES "SDL_EVDEV_DEVICES"
+
+/**
  * A variable controlling verbosity of the logging of SDL events pushed onto
  * the internal queue.
  *
@@ -905,6 +955,56 @@ extern "C" {
  * \since This hint is available since SDL 3.0.0.
  */
 #define SDL_HINT_GDK_TEXTINPUT_TITLE "SDL_GDK_TEXTINPUT_TITLE"
+
+/**
+ * A variable to control whether HIDAPI uses libusb for device access.
+ *
+ * By default libusb will only be used for a few devices that require direct
+ * USB access, and this can be controlled with
+ * SDL_HINT_HIDAPI_LIBUSB_WHITELIST.
+ *
+ * The variable can be set to the following values:
+ *
+ * - "0": HIDAPI will not use libusb for device access.
+ * - "1": HIDAPI will use libusb for device access if available. (default)
+ *
+ * This hint should be set before SDL is initialized.
+ *
+ * \since This hint is available since SDL 3.0.0.
+ */
+#define SDL_HINT_HIDAPI_LIBUSB "SDL_HIDAPI_LIBUSB"
+
+/**
+ * A variable to control whether HIDAPI uses libusb only for whitelisted
+ * devices.
+ *
+ * By default libusb will only be used for a few devices that require direct
+ * USB access.
+ *
+ * The variable can be set to the following values:
+ *
+ * - "0": HIDAPI will use libusb for all device access.
+ * - "1": HIDAPI will use libusb only for whitelisted devices. (default)
+ *
+ * This hint should be set before SDL is initialized.
+ *
+ * \since This hint is available since SDL 3.0.0.
+ */
+#define SDL_HINT_HIDAPI_LIBUSB_WHITELIST "SDL_HIDAPI_LIBUSB_WHITELIST"
+
+/**
+ * A variable to control whether HIDAPI uses udev for device detection.
+ *
+ * The variable can be set to the following values:
+ *
+ * - "0": HIDAPI will poll for device changes.
+ * - "1": HIDAPI will use udev for device detection. (default)
+ *
+ * This hint should be set before SDL is initialized.
+ *
+ * \since This hint is available since SDL 3.0.0.
+ */
+#define SDL_HINT_HIDAPI_UDEV "SDL_HIDAPI_UDEV"
 
 /**
  * A variable to control whether SDL_hid_enumerate() enumerates all HID
@@ -2012,7 +2112,7 @@ extern "C" {
  *   layout. e.g. pressing the key associated with SDL_SCANCODE_A on a Russian
  *   keyboard would yield 'a' instead of 'ф'.
  *
- * The default value for this hint is "french_numbers"
+ * The default value for this hint is "french_numbers,latin_letters"
  *
  * Some platforms like Emscripten only provide modified keycodes and the
  * options are not used.
@@ -2206,6 +2306,38 @@ extern "C" {
 #define SDL_HINT_MOUSE_DOUBLE_CLICK_TIME    "SDL_MOUSE_DOUBLE_CLICK_TIME"
 
 /**
+ * A variable controlling whether warping a hidden mouse cursor will activate
+ * relative mouse mode.
+ *
+ * When this hint is set and the mouse cursor is hidden, SDL will emulate
+ * mouse warps using relative mouse mode. This can provide smoother and more
+ * reliable mouse motion for some older games, which continuously calculate
+ * the distance travelled by the mouse pointer and warp it back to the center
+ * of the window, rather than using relative mouse motion.
+ *
+ * Note that relative mouse mode may have different mouse acceleration
+ * behavior than pointer warps.
+ *
+ * If your game or application needs to warp the mouse cursor while hidden for
+ * other purposes, such as drawing a software cursor, it should disable this
+ * hint.
+ *
+ * The variable can be set to the following values:
+ *
+ * - "0": Attempts to warp the mouse will always be made.
+ * - "1": Some mouse warps will be emulated by forcing relative mouse mode.
+ *   (default)
+ *
+ * If not set, this is automatically enabled unless an application uses
+ * relative mouse mode directly.
+ *
+ * This hint can be set anytime.
+ *
+ * \since This hint is available since SDL 3.0.0.
+ */
+#define SDL_HINT_MOUSE_EMULATE_WARP_WITH_RELATIVE "SDL_MOUSE_EMULATE_WARP_WITH_RELATIVE"
+
+/**
  * Allow mouse click events when clicking to focus an SDL window.
  *
  * The variable can be set to the following values:
@@ -2366,6 +2498,24 @@ extern "C" {
 #define SDL_HINT_MOUSE_TOUCH_EVENTS    "SDL_MOUSE_TOUCH_EVENTS"
 
 /**
+ * A variable controlling whether the keyboard should be muted on the console.
+ *
+ * Normally the keyboard is muted while SDL applications are running so that
+ * keyboard input doesn't show up as key strokes on the console. This hint
+ * allows you to turn that off for debugging purposes.
+ *
+ * The variable can be set to the following values:
+ *
+ * - "0": Allow keystrokes to go through to the console.
+ * - "1": Mute keyboard input so it doesn't show up on the console. (default)
+ *
+ * This hint should be set before SDL is initialized.
+ *
+ * \since This hint is available since SDL 3.0.0.
+ */
+#define SDL_HINT_MUTE_CONSOLE_KEYBOARD "SDL_MUTE_CONSOLE_KEYBOARD"
+
+/**
  * Tell SDL not to catch the SIGINT or SIGTERM signals on POSIX platforms.
  *
  * The variable can be set to the following values:
@@ -2379,6 +2529,16 @@ extern "C" {
  * \since This hint is available since SDL 3.0.0.
  */
 #define SDL_HINT_NO_SIGNAL_HANDLERS   "SDL_NO_SIGNAL_HANDLERS"
+
+/**
+ * Specify the OpenGL library to load.
+ *
+ * This hint should be set before creating an OpenGL window or creating an
+ * OpenGL context.
+ *
+ * \since This hint is available since SDL 3.0.0.
+ */
+#define SDL_HINT_OPENGL_LIBRARY "SDL_OPENGL_LIBRARY"
 
 /**
  * A variable controlling what driver to use for OpenGL ES contexts.
@@ -2664,6 +2824,8 @@ extern "C" {
 /**
  * A variable to control whether the return key on the soft keyboard should
  * hide the soft keyboard on Android and iOS.
+ *
+ * This hint sets the default value of SDL_PROP_TEXTINPUT_MULTILINE_BOOLEAN.
  *
  * The variable can be set to the following values:
  *
@@ -2971,6 +3133,19 @@ extern "C" {
 #define SDL_HINT_VIDEO_DRIVER "SDL_VIDEO_DRIVER"
 
 /**
+ * A variable controlling whether the dummy video driver saves output frames.
+ *
+ * - "0": Video frames are not saved to disk. (default)
+ * - "1": Video frames are saved to files in the format "SDL_windowX-Y.bmp",
+ *   where X is the window ID, and Y is the frame number.
+ *
+ * This hint can be set anytime.
+ *
+ * \since This hint is available since SDL 3.0.0.
+ */
+#define SDL_HINT_VIDEO_DUMMY_SAVE_FRAMES "SDL_VIDEO_DUMMY_SAVE_FRAMES"
+
+/**
  * If eglGetPlatformDisplay fails, fall back to calling eglGetDisplay.
  *
  * The variable can be set to one of the following values:
@@ -3035,6 +3210,23 @@ extern "C" {
 #define SDL_HINT_VIDEO_MINIMIZE_ON_FOCUS_LOSS   "SDL_VIDEO_MINIMIZE_ON_FOCUS_LOSS"
 
 /**
+ * A variable controlling whether the offscreen video driver saves output
+ * frames.
+ *
+ * This only saves frames that are generated using software rendering, not
+ * accelerated OpenGL rendering.
+ *
+ * - "0": Video frames are not saved to disk. (default)
+ * - "1": Video frames are saved to files in the format "SDL_windowX-Y.bmp",
+ *   where X is the window ID, and Y is the frame number.
+ *
+ * This hint can be set anytime.
+ *
+ * \since This hint is available since SDL 3.0.0.
+ */
+#define SDL_HINT_VIDEO_OFFSCREEN_SAVE_FRAMES "SDL_VIDEO_OFFSCREEN_SAVE_FRAMES"
+
+/**
  * A variable controlling whether all window operations will block until
  * complete.
  *
@@ -3077,34 +3269,6 @@ extern "C" {
  * \since This hint is available since SDL 3.0.0.
  */
 #define SDL_HINT_VIDEO_WAYLAND_ALLOW_LIBDECOR "SDL_VIDEO_WAYLAND_ALLOW_LIBDECOR"
-
-/**
- * Enable or disable hidden mouse pointer warp emulation, needed by some older
- * games.
- *
- * Wayland requires the pointer confinement protocol to warp the mouse, but
- * that is just a hint that the compositor is free to ignore, and warping the
- * the pointer to or from regions outside of the focused window is prohibited.
- * When this hint is set and the pointer is hidden, SDL will emulate mouse
- * warps using relative mouse mode. This is required for some older games
- * (such as Source engine games), which warp the mouse to the centre of the
- * screen rather than using relative mouse motion. Note that relative mouse
- * mode may have different mouse acceleration behaviour than pointer warps.
- *
- * The variable can be set to the following values:
- *
- * - "0": Attempts to warp the mouse will be made, if the appropriate protocol
- *   is available.
- * - "1": Some mouse warps will be emulated by forcing relative mouse mode.
- *
- * If not set, this is automatically enabled unless an application uses
- * relative mouse mode directly.
- *
- * This hint can be set anytime.
- *
- * \since This hint is available since SDL 3.0.0.
- */
-#define SDL_HINT_VIDEO_WAYLAND_EMULATE_MOUSE_WARP "SDL_VIDEO_WAYLAND_EMULATE_MOUSE_WARP"
 
 /**
  * A variable controlling whether video mode emulation is enabled under
@@ -3262,6 +3426,20 @@ extern "C" {
 #define SDL_HINT_VIDEO_X11_NET_WM_PING      "SDL_VIDEO_X11_NET_WM_PING"
 
 /**
+ * A variable controlling whether SDL uses DirectColor visuals.
+ *
+ * The variable can be set to the following values:
+ *
+ * - "0": Disable DirectColor visuals.
+ * - "1": Enable DirectColor visuals. (default)
+ *
+ * This hint should be set before initializing the video subsystem.
+ *
+ * \since This hint is available since SDL 3.0.0.
+ */
+#define SDL_HINT_VIDEO_X11_NODIRECTCOLOR "SDL_VIDEO_X11_NODIRECTCOLOR"
+
+/**
  * A variable forcing the content scaling factor for X11 displays.
  *
  * The variable can be set to a floating point value in the range 1.0-10.0f
@@ -3271,6 +3449,15 @@ extern "C" {
  * \since This hint is available since SDL 3.0.0.
  */
 #define SDL_HINT_VIDEO_X11_SCALING_FACTOR      "SDL_VIDEO_X11_SCALING_FACTOR"
+
+/**
+ * A variable forcing the visual ID used for X11 display modes.
+ *
+ * This hint should be set before initializing the video subsystem.
+ *
+ * \since This hint is available since SDL 3.0.0.
+ */
+#define SDL_HINT_VIDEO_X11_VISUALID "SDL_VIDEO_X11_VISUALID"
 
 /**
  * A variable forcing the visual ID chosen for new X11 windows.
@@ -3296,6 +3483,90 @@ extern "C" {
 #define SDL_HINT_VIDEO_X11_XRANDR           "SDL_VIDEO_X11_XRANDR"
 
 /**
+ * A variable controlling whether touch should be enabled on the back panel of
+ * the PlayStation Vita.
+ *
+ * The variable can be set to the following values:
+ *
+ * - "0": Disable touch on the back panel.
+ * - "1": Enable touch on the back panel. (default)
+ *
+ * This hint should be set before SDL is initialized.
+ *
+ * \since This hint is available since SDL 3.0.0.
+ */
+#define SDL_HINT_VITA_ENABLE_BACK_TOUCH "SDL_VITA_ENABLE_BACK_TOUCH"
+
+/**
+ * A variable controlling whether touch should be enabled on the front panel
+ * of the PlayStation Vita.
+ *
+ * The variable can be set to the following values:
+ *
+ * - "0": Disable touch on the front panel.
+ * - "1": Enable touch on the front panel. (default)
+ *
+ * This hint should be set before SDL is initialized.
+ *
+ * \since This hint is available since SDL 3.0.0.
+ */
+#define SDL_HINT_VITA_ENABLE_FRONT_TOUCH "SDL_VITA_ENABLE_FRONT_TOUCH"
+
+/**
+ * A variable controlling the module path on the PlayStation Vita.
+ *
+ * This hint defaults to "app0:module"
+ *
+ * This hint should be set before SDL is initialized.
+ *
+ * \since This hint is available since SDL 3.0.0.
+ */
+#define SDL_HINT_VITA_MODULE_PATH "SDL_VITA_MODULE_PATH"
+
+/**
+ * A variable controlling whether to perform PVR initialization on the
+ * PlayStation Vita.
+ *
+ * - "0": Skip PVR initialization.
+ * - "1": Perform the normal PVR initialization. (default)
+ *
+ * This hint should be set before SDL is initialized.
+ *
+ * \since This hint is available since SDL 3.0.0.
+ */
+#define SDL_HINT_VITA_PVR_INIT "SDL_VITA_PVR_INIT"
+
+/**
+ * A variable overriding the resolution reported on the PlayStation Vita.
+ *
+ * The variable can be set to the following values:
+ *
+ * - "544": 544p (default)
+ * - "720": 725p for PSTV
+ * - "1080": 1088i for PSTV
+ *
+ * This hint should be set before SDL is initialized.
+ *
+ * \since This hint is available since SDL 3.0.0.
+ */
+#define SDL_HINT_VITA_RESOLUTION "SDL_VITA_RESOLUTION"
+
+/**
+ * A variable controlling whether OpenGL should be used instead of OpenGL ES
+ * on the PlayStation Vita.
+ *
+ * The variable can be set to the following values:
+ *
+ * - "0": Use OpenGL ES. (default)
+ * - "1": Use OpenGL.
+ *
+ * This hint should be set before SDL is initialized.
+ *
+ * \since This hint is available since SDL 3.0.0.
+ */
+#define SDL_HINT_VITA_PVR_OPENGL "SDL_VITA_PVR_OPENGL"
+
+/**
  * A variable controlling which touchpad should generate synthetic mouse
  * events.
  *
@@ -3310,6 +3581,27 @@ extern "C" {
  * \since This hint is available since SDL 3.0.0.
  */
 #define SDL_HINT_VITA_TOUCH_MOUSE_DEVICE    "SDL_VITA_TOUCH_MOUSE_DEVICE"
+
+/**
+ * A variable overriding the display index used in SDL_Vulkan_CreateSurface()
+ *
+ * The display index starts at 0, which is the default.
+ *
+ * This hint should be set before calling SDL_Vulkan_CreateSurface()
+ *
+ * \since This hint is available since SDL 3.0.0.
+ */
+#define SDL_HINT_VULKAN_DISPLAY "SDL_VULKAN_DISPLAY"
+
+/**
+ * Specify the Vulkan library to load.
+ *
+ * This hint should be set before creating a Vulkan window or calling
+ * SDL_Vulkan_LoadLibrary().
+ *
+ * \since This hint is available since SDL 3.0.0.
+ */
+#define SDL_HINT_VULKAN_LIBRARY "SDL_VULKAN_LIBRARY"
 
 /**
  * A variable controlling how the fact chunk affects the loading of a WAVE
@@ -3344,6 +3636,18 @@ extern "C" {
 #define SDL_HINT_WAVE_FACT_CHUNK   "SDL_WAVE_FACT_CHUNK"
 
 /**
+ * A variable controlling the maximum number of chunks in a WAVE file.
+ *
+ * This sets an upper bound on the number of chunks in a WAVE file to avoid
+ * wasting time on malformed or corrupt WAVE files. This defaults to "10000".
+ *
+ * This hint should be set before calling SDL_LoadWAV() or SDL_LoadWAV_IO()
+ *
+ * \since This hint is available since SDL 3.0.0.
+ */
+#define SDL_HINT_WAVE_CHUNK_LIMIT   "SDL_WAVE_CHUNK_LIMIT"
+
+/**
  * A variable controlling how the size of the RIFF chunk affects the loading
  * of a WAVE file.
  *
@@ -3354,7 +3658,7 @@ extern "C" {
  * Note that files that have trailing data unrelated to the WAVE file or
  * corrupt files may slow down the loading process without a reliable
  * boundary. By default, SDL stops after 10000 chunks to prevent wasting time.
- * Use the environment variable SDL_WAVE_CHUNK_LIMIT to adjust this value.
+ * Use SDL_HINT_WAVE_CHUNK_LIMIT to adjust this value.
  *
  * The variable can be set to the following values:
  *
@@ -3532,27 +3836,6 @@ extern "C" {
  * \since This hint is available since SDL 3.0.0.
  */
 #define SDL_HINT_WINDOWS_RAW_KEYBOARD   "SDL_WINDOWS_RAW_KEYBOARD"
-
-/**
- * A variable controlling whether SDL uses Critical Sections for mutexes on
- * Windows.
- *
- * On Windows 7 and newer, Slim Reader/Writer Locks are available. They offer
- * better performance, allocate no kernel resources and use less memory. SDL
- * will fall back to Critical Sections on older OS versions or if forced to by
- * this hint.
- *
- * The variable can be set to the following values:
- *
- * - "0": Use SRW Locks when available, otherwise fall back to Critical
- *   Sections. (default)
- * - "1": Force the use of Critical Sections in all cases.
- *
- * This hint should be set before SDL is initialized.
- *
- * \since This hint is available since SDL 3.0.0.
- */
-#define SDL_HINT_WINDOWS_FORCE_MUTEX_CRITICAL_SECTIONS "SDL_WINDOWS_FORCE_MUTEX_CRITICAL_SECTIONS"
 
 /**
  * A variable controlling whether SDL uses Kernel Semaphores on Windows.
@@ -3781,6 +4064,17 @@ extern "C" {
 #define SDL_HINT_X11_WINDOW_TYPE "SDL_X11_WINDOW_TYPE"
 
 /**
+ * Specify the XCB library to load for the X11 driver.
+ *
+ * This defaults to "libX11-xcb.so"
+ *
+ * This hint should be set before initializing the video subsystem.
+ *
+ * \since This hint is available since SDL 3.0.0.
+ */
+#define SDL_HINT_X11_XCB_LIBRARY "SDL_X11_XCB_LIBRARY"
+
+/**
  * A variable controlling whether XInput should be used for controller
  * handling.
  *
@@ -3818,7 +4112,10 @@ typedef enum SDL_HintPriority
  * \param name the hint to set.
  * \param value the value of the hint variable.
  * \param priority the SDL_HintPriority level for the hint.
- * \returns SDL_TRUE if the hint was set, SDL_FALSE otherwise.
+ * \returns 0 on success or a negative error code on failure; call
+ *          SDL_GetError() for more information.
+ *
+ * \threadsafety It is safe to call this function from any thread.
  *
  * \since This function is available since SDL 3.0.0.
  *
@@ -3826,9 +4123,9 @@ typedef enum SDL_HintPriority
  * \sa SDL_ResetHint
  * \sa SDL_SetHint
  */
-extern SDL_DECLSPEC SDL_bool SDLCALL SDL_SetHintWithPriority(const char *name,
-                                                         const char *value,
-                                                         SDL_HintPriority priority);
+extern SDL_DECLSPEC int SDLCALL SDL_SetHintWithPriority(const char *name,
+                                                        const char *value,
+                                                        SDL_HintPriority priority);
 
 /**
  * Set a hint with normal priority.
@@ -3839,7 +4136,10 @@ extern SDL_DECLSPEC SDL_bool SDLCALL SDL_SetHintWithPriority(const char *name,
  *
  * \param name the hint to set.
  * \param value the value of the hint variable.
- * \returns SDL_TRUE if the hint was set, SDL_FALSE otherwise.
+ * \returns 0 on success or a negative error code on failure; call
+ *          SDL_GetError() for more information.
+ *
+ * \threadsafety It is safe to call this function from any thread.
  *
  * \since This function is available since SDL 3.0.0.
  *
@@ -3847,8 +4147,7 @@ extern SDL_DECLSPEC SDL_bool SDLCALL SDL_SetHintWithPriority(const char *name,
  * \sa SDL_ResetHint
  * \sa SDL_SetHintWithPriority
  */
-extern SDL_DECLSPEC SDL_bool SDLCALL SDL_SetHint(const char *name,
-                                             const char *value);
+extern SDL_DECLSPEC int SDLCALL SDL_SetHint(const char *name, const char *value);
 
 /**
  * Reset a hint to the default value.
@@ -3858,14 +4157,17 @@ extern SDL_DECLSPEC SDL_bool SDLCALL SDL_SetHint(const char *name,
  * change.
  *
  * \param name the hint to set.
- * \returns SDL_TRUE if the hint was set, SDL_FALSE otherwise.
+ * \returns 0 on success or a negative error code on failure; call
+ *          SDL_GetError() for more information.
+ *
+ * \threadsafety It is safe to call this function from any thread.
  *
  * \since This function is available since SDL 3.0.0.
  *
  * \sa SDL_SetHint
  * \sa SDL_ResetHints
  */
-extern SDL_DECLSPEC SDL_bool SDLCALL SDL_ResetHint(const char *name);
+extern SDL_DECLSPEC int SDLCALL SDL_ResetHint(const char *name);
 
 /**
  * Reset all hints to the default values.
@@ -3873,6 +4175,8 @@ extern SDL_DECLSPEC SDL_bool SDLCALL SDL_ResetHint(const char *name);
  * This will reset all hints to the value of the associated environment
  * variable, or NULL if the environment isn't set. Callbacks will be called
  * normally with this change.
+ *
+ * \threadsafety It is safe to call this function from any thread.
  *
  * \since This function is available since SDL 3.0.0.
  *
@@ -3883,11 +4187,15 @@ extern SDL_DECLSPEC void SDLCALL SDL_ResetHints(void);
 /**
  * Get the value of a hint.
  *
- * This returns temporary memory which will be automatically freed later, and
- * can be claimed with SDL_ClaimTemporaryMemory().
- *
  * \param name the hint to query.
  * \returns the string value of a hint or NULL if the hint isn't set.
+ *
+ * \threadsafety It is safe to call this function from any thread, however the
+ *               return value only remains valid until the hint is changed; if
+ *               another thread might do so, the app should supply locks
+ *               and/or make a copy of the string. Note that using a hint
+ *               callback instead is always thread-safe, as SDL holds a lock
+ *               on the thread subsystem during the callback.
  *
  * \since This function is available since SDL 3.0.0.
  *
@@ -3904,6 +4212,8 @@ extern SDL_DECLSPEC const char * SDLCALL SDL_GetHint(const char *name);
  * \returns the boolean value of a hint or the provided default value if the
  *          hint does not exist.
  *
+ * \threadsafety It is safe to call this function from any thread.
+ *
  * \since This function is available since SDL 3.0.0.
  *
  * \sa SDL_GetHint
@@ -3912,37 +4222,48 @@ extern SDL_DECLSPEC const char * SDLCALL SDL_GetHint(const char *name);
 extern SDL_DECLSPEC SDL_bool SDLCALL SDL_GetHintBoolean(const char *name, SDL_bool default_value);
 
 /**
- * Type definition of the hint callback function.
+ * A callback used to send notifications of hint value changes.
+ *
+ * This is called an initial time during SDL_AddHintCallback with the hint's
+ * current value, and then again each time the hint's value changes.
  *
  * \param userdata what was passed as `userdata` to SDL_AddHintCallback().
  * \param name what was passed as `name` to SDL_AddHintCallback().
  * \param oldValue the previous hint value.
  * \param newValue the new value hint is to be set to.
  *
+ * \threadsafety This callback is fired from whatever thread is setting a new
+ *               hint value. SDL holds a lock on the hint subsystem when
+ *               calling this callback.
+ *
  * \since This datatype is available since SDL 3.0.0.
+ *
+ * \sa SDL_AddHintCallback
  */
 typedef void (SDLCALL *SDL_HintCallback)(void *userdata, const char *name, const char *oldValue, const char *newValue);
 
 /**
  * Add a function to watch a particular hint.
  *
+ * The callback function is called _during_ this function, to provide it an
+ * initial value, and again each time the hint's value changes.
+ *
  * \param name the hint to watch.
- * \param callback an SDL_HintCallback function that will be called when the
+ * \param callback An SDL_HintCallback function that will be called when the
  *                 hint value changes.
  * \param userdata a pointer to pass to the callback function.
  * \returns 0 on success or a negative error code on failure; call
  *          SDL_GetError() for more information.
  *
- * \threadsafety It is **NOT** safe to call this function from two threads at
- *               once.
+ * \threadsafety It is safe to call this function from any thread.
  *
  * \since This function is available since SDL 3.0.0.
  *
  * \sa SDL_DelHintCallback
  */
 extern SDL_DECLSPEC int SDLCALL SDL_AddHintCallback(const char *name,
-                                                SDL_HintCallback callback,
-                                                void *userdata);
+                                                    SDL_HintCallback callback,
+                                                    void *userdata);
 
 /**
  * Remove a function watching a particular hint.
@@ -3952,13 +4273,15 @@ extern SDL_DECLSPEC int SDLCALL SDL_AddHintCallback(const char *name,
  *                 hint value changes.
  * \param userdata a pointer being passed to the callback function.
  *
+ * \threadsafety It is safe to call this function from any thread.
+ *
  * \since This function is available since SDL 3.0.0.
  *
  * \sa SDL_AddHintCallback
  */
 extern SDL_DECLSPEC void SDLCALL SDL_DelHintCallback(const char *name,
-                                                 SDL_HintCallback callback,
-                                                 void *userdata);
+                                                     SDL_HintCallback callback,
+                                                     void *userdata);
 
 /* Ends C function definitions when using C++ */
 #ifdef __cplusplus
