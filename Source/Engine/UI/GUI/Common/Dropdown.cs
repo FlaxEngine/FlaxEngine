@@ -23,7 +23,7 @@ namespace FlaxEngine.GUI
             /// Occurs when popup lost focus.
             /// </summary>
             public Action LostFocus;
-            
+
             /// <summary>
             /// The selected control. Used to scroll to the control on popup creation.
             /// </summary>
@@ -38,7 +38,7 @@ namespace FlaxEngine.GUI
             public override void OnEndContainsFocus()
             {
                 base.OnEndContainsFocus();
-                
+
                 // Dont lose focus when using panel. Does prevent LostFocus even from being called if clicking inside of the panel.
                 if (MainPanel != null && MainPanel.IsMouseOver && !MainPanel.ContainsFocus)
                 {
@@ -489,12 +489,14 @@ namespace FlaxEngine.GUI
                 BorderColor = BorderColorHighlighted,
                 Width = 4.0f,
                 AnchorPreset = AnchorPresets.StretchAll,
+                Offsets = Margin.Zero,
                 Parent = popup,
             };
 
             var itemsHeight = 20.0f;
             var itemsMargin = 20.0f;
-            // Scale height and margive with text height if needed
+
+            // Scale height and margin with text height if needed
             var textHeight = Font.GetFont().Height;
             if (textHeight > itemsHeight)
             {
@@ -509,6 +511,7 @@ namespace FlaxEngine.GUI
                 itemsWidth = Mathf.Max(itemsWidth, itemsMargin + 4 + font.MeasureText(_items[i]).X);
             }
             */
+
             var itemsWidth = Width;
             var height = container.Margin.Height;
 
@@ -612,14 +615,14 @@ namespace FlaxEngine.GUI
         {
             // Find canvas scalar and set as root if it exists.
             ContainerControl c = Parent;
-            while(c.Parent != Root && c.Parent != null)
+            while (c.Parent != Root && c.Parent != null)
             {
                 c = c.Parent;
                 if (c is CanvasScaler scalar)
                     break;
             }
             var root = c is CanvasScaler ? c : Root;
-            
+
             if (_items.Count == 0 || root == null)
                 return;
 
@@ -770,14 +773,14 @@ namespace FlaxEngine.GUI
         {
             if (base.OnMouseDoubleClick(location, button))
                 return true;
-            
+
             if (_touchDown && button == MouseButton.Left)
             {
                 _touchDown = false;
                 ShowPopup();
                 return true;
             }
-            
+
             if (button == MouseButton.Left)
             {
                 _touchDown = true;
