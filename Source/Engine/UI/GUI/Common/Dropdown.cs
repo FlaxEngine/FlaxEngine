@@ -207,7 +207,7 @@ namespace FlaxEngine.GUI
         /// <summary>
         /// Gets or sets the items collection.
         /// </summary>
-        [EditorOrder(1), Tooltip("The items collection.")]
+        [EditorOrder(1)]
         public List<LocalizedString> Items
         {
             get => _items;
@@ -220,7 +220,7 @@ namespace FlaxEngine.GUI
         [HideInEditor, NoSerialize]
         public string SelectedItem
         {
-            get => _selectedIndex != -1 ? _items[_selectedIndex].ToString() : string.Empty;
+            get => _selectedIndex > -1 && _selectedIndex < _items.Count ? _items[_selectedIndex].ToString() : string.Empty;
             set => SelectedIndex = _items.IndexOf(value);
         }
 
@@ -230,7 +230,7 @@ namespace FlaxEngine.GUI
         [HideInEditor, NoSerialize]
         public LocalizedString SelectedItemLocalized
         {
-            get => _selectedIndex != -1 ? _items[_selectedIndex] : LocalizedString.Empty;
+            get => _selectedIndex > -1 && _selectedIndex < _items.Count ? _items[_selectedIndex] : LocalizedString.Empty;
             set => SelectedIndex = _items.IndexOf(value);
         }
 
@@ -253,16 +253,21 @@ namespace FlaxEngine.GUI
         }
 
         /// <summary>
-        /// Gets or sets whether to show all of the items.
+        /// Gets or sets whether to show all the items in the dropdown.
         /// </summary>
-        [EditorOrder(3), Tooltip("Whether to show all of the items in the drop down.")]
+        [EditorOrder(3)]
         public bool ShowAllItems { get; set; } = true;
 
         /// <summary>
         /// Gets or sets the maximum number of items to show at once. Only used if ShowAllItems is false.
         /// </summary>
-        [EditorOrder(4), VisibleIf(nameof(ShowAllItems), true), Limit(1), Tooltip("The number of items to show in the drop down.")]
+        [EditorOrder(4), VisibleIf(nameof(ShowAllItems), true), Limit(1)]
         public int ShowMaxItemsCount { get; set; } = 5;
+
+        /// <summary>
+        /// Event fired when selected item gets changed.
+        /// </summary>
+        public event Action SelectedItemChanged;
 
         /// <summary>
         /// Event fired when selected index gets changed.
@@ -277,20 +282,38 @@ namespace FlaxEngine.GUI
         /// <summary>
         /// Gets or sets the font used to draw text.
         /// </summary>
-        [EditorDisplay("Text Style"), EditorOrder(2021)]
+        [EditorDisplay("Text Style"), EditorOrder(2020)]
         public FontReference Font { get; set; }
 
         /// <summary>
         /// Gets or sets the custom material used to render the text. It must has domain set to GUI and have a public texture parameter named Font used to sample font atlas texture with font characters data.
         /// </summary>
-        [EditorDisplay("Text Style"), EditorOrder(2022), Tooltip("Custom material used to render the text. It must has domain set to GUI and have a public texture parameter named Font used to sample font atlas texture with font characters data.")]
+        [EditorDisplay("Text Style"), EditorOrder(2021)]
         public MaterialBase FontMaterial { get; set; }
+
+        /// <summary>
+        /// Gets or sets the custom text format for selected item displaying. Can be used to prefix or/and postfix actual selected value within the drowpdown control text where '{0}' is used to insert selected value text. Example: 'Selected: {0}'. Leave empty if unussed.
+        /// </summary>
+        [EditorDisplay("Text Style"), EditorOrder(2022)]
+        public LocalizedString TextFormat { get; set; }
 
         /// <summary>
         /// Gets or sets the color of the text.
         /// </summary>
-        [EditorDisplay("Text Style"), EditorOrder(2020), ExpandGroups]
+        [EditorDisplay("Text Style"), EditorOrder(2023), ExpandGroups]
         public Color TextColor { get; set; }
+
+        /// <summary>
+        /// Gets or sets the horizontal text alignment within the control bounds.
+        /// </summary>
+        [EditorDisplay("Text Style"), EditorOrder(2027)]
+        public TextAlignment HorizontalAlignment { get; set; } = TextAlignment.Near;
+
+        /// <summary>
+        /// Gets or sets the vertical text alignment within the control bounds.
+        /// </summary>
+        [EditorDisplay("Text Style"), EditorOrder(2028)]
+        public TextAlignment VerticalAlignment { get; set; } = TextAlignment.Center;
 
         /// <summary>
         /// Gets or sets the color of the border.
@@ -319,7 +342,7 @@ namespace FlaxEngine.GUI
         /// <summary>
         /// Gets or sets the border color when dropdown is highlighted.
         /// </summary>
-        [EditorDisplay("Border Style"), EditorOrder(2011)]
+        [EditorDisplay("Border Style"), EditorOrder(2013)]
         public Color BorderColorHighlighted { get; set; }
 
         /// <summary>
@@ -420,6 +443,7 @@ namespace FlaxEngine.GUI
         protected virtual void OnSelectedIndexChanged()
         {
             SelectedIndexChanged?.Invoke(this);
+            SelectedItemChanged?.Invoke();
         }
 
         /// <summary>
@@ -506,7 +530,8 @@ namespace FlaxEngine.GUI
                     Font = Font,
                     TextColor = Color.White * 0.9f,
                     TextColorHighlighted = Color.White,
-                    HorizontalAlignment = TextAlignment.Near,
+                    HorizontalAlignment = HorizontalAlignment,
+                    VerticalAlignment = VerticalAlignment,
                     Text = _items[i],
                     Parent = item,
                     Tag = i,
@@ -681,7 +706,11 @@ namespace FlaxEngine.GUI
                 var textRect = new Rectangle(margin, 0, clientRect.Width - boxSize - 2.0f * margin, clientRect.Height);
                 Render2D.PushClip(textRect);
                 var textColor = TextColor;
-                Render2D.DrawText(Font.GetFont(), FontMaterial, _items[_selectedIndex], textRect, enabled ? textColor : textColor * 0.5f, TextAlignment.Near, TextAlignment.Center);
+                string text = _items[_selectedIndex];
+                string format = TextFormat != null ? TextFormat : null;
+                if (!string.IsNullOrEmpty(format))
+                    text = string.Format(format, text);
+                Render2D.DrawText(Font.GetFont(), FontMaterial, text, textRect, enabled ? textColor : textColor * 0.5f, HorizontalAlignment, VerticalAlignment);
                 Render2D.PopClip();
             }
 
