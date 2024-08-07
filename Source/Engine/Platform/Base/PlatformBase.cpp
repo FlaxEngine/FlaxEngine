@@ -271,6 +271,7 @@ void PlatformBase::Fatal(const Char* msg, void* context)
     Globals::FatalErrorOccurred = true;
     Globals::IsRequestingExit = true;
     Globals::ExitCode = -1;
+    Engine::RequestingExit();
 
     // Collect crash info (platform-dependant implementation that might collect stack trace and/or create memory dump)
     {

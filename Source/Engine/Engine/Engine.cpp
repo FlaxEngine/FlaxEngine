@@ -70,6 +70,7 @@ Action Engine::LateFixedUpdate;
 Action Engine::Draw;
 Action Engine::Pause;
 Action Engine::Unpause;
+Action Engine::RequestingExit;
 Window* Engine::MainWindow = nullptr;
 
 int32 Engine::Main(const Char* cmdLine)
@@ -259,10 +260,12 @@ void Engine::RequestExit(int32 exitCode)
     {
         Globals::IsRequestingExit = true;
         Globals::ExitCode = exitCode;
+        RequestingExit();
     }
 #else
     Globals::IsRequestingExit = true;
     Globals::ExitCode = exitCode;
+    RequestingExit();
 #endif
 }
 
