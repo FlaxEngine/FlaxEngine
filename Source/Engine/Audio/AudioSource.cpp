@@ -420,7 +420,7 @@ void AudioSource::Update()
         AudioBackend::Source::VelocityChanged(this);
     }
 
-    if (!UseStreaming() && GetTime() == GetStartTime() && _isActuallyPlayingSth && !_startingToPlay)
+    if (!UseStreaming() && Math::NearEqual(GetTime(), GetStartTime()) && _isActuallyPlayingSth && !_startingToPlay)
     {
         if (GetIsLooping())
         {
