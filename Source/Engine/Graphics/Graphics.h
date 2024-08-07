@@ -49,6 +49,11 @@ public:
     API_FIELD() static Quality ShadowMapsQuality;
 
     /// <summary>
+    /// The global scale for all shadow maps update rate. Can be used to slow down shadows rendering frequency on lower quality settings or low-end platforms. Default 1.
+    /// </summary>
+    API_FIELD() static float ShadowUpdateRate;
+
+    /// <summary>
     /// Enables cascades splits blending for directional light shadows.
     /// [Deprecated in v1.9]
     /// </summary>

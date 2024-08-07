@@ -224,7 +224,7 @@ struct ShadowAtlasLight
         const float shadowsUpdateRate = light.ShadowsUpdateRate;
         const float shadowsUpdateRateAtDistance = shadowsUpdateRate * light.ShadowsUpdateRateAtDistance;
         float updateRate = Math::Lerp(shadowsUpdateRate, shadowsUpdateRateAtDistance, Math::Saturate(distanceFromView / Distance));
-        // TODO: add global shadows update rate scale to be adjusted per-platform
+        updateRate *= Graphics::ShadowUpdateRate;
         freezeUpdate = updateRate <= ZeroTolerance;
         if (freezeUpdate)
             return 0.0f;

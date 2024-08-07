@@ -18,6 +18,7 @@ Quality Graphics::SSAOQuality = Quality::Medium;
 Quality Graphics::VolumetricFogQuality = Quality::High;
 Quality Graphics::ShadowsQuality = Quality::Medium;
 Quality Graphics::ShadowMapsQuality = Quality::Medium;
+float Graphics::ShadowUpdateRate = 1.0f;
 bool Graphics::AllowCSMBlending = false;
 Quality Graphics::GlobalSDFQuality = Quality::High;
 Quality Graphics::GIQuality = Quality::High;
