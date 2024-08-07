@@ -68,9 +68,6 @@ extern "C" {
  * The returned path is guaranteed to end with a path separator ('\\' on
  * Windows, '/' on most other platforms).
  *
- * This returns temporary memory which will be automatically freed later, and
- * can be claimed with SDL_ClaimTemporaryMemory().
- *
  * \returns an absolute path in UTF-8 encoding to the application data
  *          directory. NULL will be returned on error or when the platform
  *          doesn't implement this functionality, call SDL_GetError() for more
@@ -124,20 +121,18 @@ extern SDL_DECLSPEC const char * SDLCALL SDL_GetBasePath(void);
  * The returned path is guaranteed to end with a path separator ('\\' on
  * Windows, '/' on most other platforms).
  *
- * This returns temporary memory which will be automatically freed later, and
- * can be claimed with SDL_ClaimTemporaryMemory().
- *
  * \param org the name of your organization.
  * \param app the name of your application.
  * \returns a UTF-8 string of the user directory in platform-dependent
  *          notation. NULL if there's a problem (creating directory failed,
- *          etc.).
+ *          etc.). This should be freed with SDL_free() when it is no longer
+ *          needed.
  *
  * \since This function is available since SDL 3.0.0.
  *
  * \sa SDL_GetBasePath
  */
-extern SDL_DECLSPEC const char * SDLCALL SDL_GetPrefPath(const char *org, const char *app);
+extern SDL_DECLSPEC char * SDLCALL SDL_GetPrefPath(const char *org, const char *app);
 
 /**
  * The type of the OS-provided default folder for a specific purpose.
@@ -224,9 +219,6 @@ typedef enum SDL_Folder
  *
  * The returned path is guaranteed to end with a path separator ('\\' on
  * Windows, '/' on most other platforms).
- *
- * This returns temporary memory which will be automatically freed later, and
- * can be claimed with SDL_ClaimTemporaryMemory().
  *
  * If NULL is returned, the error may be obtained with SDL_GetError().
  *
@@ -369,9 +361,6 @@ extern SDL_DECLSPEC int SDLCALL SDL_GetPathInfo(const char *path, SDL_PathInfo *
  * convenience, but if `count` is non-NULL, on return it will contain the
  * number of items in the array, not counting the NULL terminator.
  *
- * This returns temporary memory which will be automatically freed later, and
- * can be claimed with SDL_ClaimTemporaryMemory().
- *
  * \param path the path of the directory to enumerate.
  * \param pattern the pattern that files in the directory must match. Can be
  *                NULL.
@@ -379,13 +368,14 @@ extern SDL_DECLSPEC int SDLCALL SDL_GetPathInfo(const char *path, SDL_PathInfo *
  * \param count on return, will be set to the number of items in the returned
  *              array. Can be NULL.
  * \returns an array of strings on success or NULL on failure; call
- *          SDL_GetError() for more information.
+ *          SDL_GetError() for more information. This is a single allocation
+ *          that should be freed with SDL_free() when it is no longer needed.
  *
  * \threadsafety It is safe to call this function from any thread.
  *
  * \since This function is available since SDL 3.0.0.
  */
-extern SDL_DECLSPEC const char * const * SDLCALL SDL_GlobDirectory(const char *path, const char *pattern, SDL_GlobFlags flags, int *count);
+extern SDL_DECLSPEC char ** SDLCALL SDL_GlobDirectory(const char *path, const char *pattern, SDL_GlobFlags flags, int *count);
 
 /* Ends C function definitions when using C++ */
 #ifdef __cplusplus
