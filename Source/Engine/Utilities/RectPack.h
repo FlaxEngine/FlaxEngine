@@ -135,6 +135,18 @@ public:
     }
 
     /// <summary>
+    /// Clears and resets atlas back to the initial state.
+    /// </summary>
+    void Reset()
+    {
+        Width = 0;
+        Height = 0;
+        BordersPadding = 0;
+        Nodes.Clear();
+        FreeNodes.Clear();
+    }
+
+    /// <summary>
     /// Tries to insert a node into the atlas using rectangle pack algorithm.
     /// </summary>
     /// <param name="width">The node width (in pixels).</param>

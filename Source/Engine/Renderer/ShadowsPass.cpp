@@ -341,10 +341,8 @@ public:
     void Reset()
     {
         Lights.Clear();
-        StaticAtlasPixelsUsed = 0;
-        StaticAtlas.Clear();
         ClearDynamic();
-        ViewOrigin = Vector3::Zero;
+        ClearStatic();
     }
 
     void InitStaticAtlas()
@@ -1102,6 +1100,8 @@ void ShadowsPass::SetupShadows(RenderContext& renderContext, RenderContextBatch&
     if (shadows.Resolution != atlasResolution)
     {
         shadows.Reset();
+        shadows.Atlas.Reset();
+        shadows.StaticAtlas.Reset();
         auto desc = GPUTextureDescription::New2D(atlasResolution, atlasResolution, _shadowMapFormat, GPUTextureFlags::ShaderResource | GPUTextureFlags::DepthStencil);
         if (shadows.ShadowMapAtlas->Init(desc))
         {
@@ -1110,6 +1110,7 @@ void ShadowsPass::SetupShadows(RenderContext& renderContext, RenderContextBatch&
         }
         shadows.ClearShadowMapAtlas = true;
         shadows.Resolution = atlasResolution;
+        shadows.ViewOrigin = renderContext.View.Origin;
     }
     if (renderContext.View.Origin != shadows.ViewOrigin)
     {
