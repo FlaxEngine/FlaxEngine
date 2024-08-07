@@ -400,9 +400,6 @@ extern SDL_DECLSPEC int SDLCALL SDL_GetNumAudioDrivers(void);
  * "coreaudio" or "wasapi". These never have Unicode characters, and are not
  * meant to be proper names.
  *
- * This returns temporary memory which will be automatically freed later, and
- * can be claimed with SDL_ClaimTemporaryMemory().
- *
  * \param index the index of the audio driver; the value ranges from 0 to
  *              SDL_GetNumAudioDrivers() - 1.
  * \returns the name of the audio driver at the requested index, or NULL if an
@@ -423,9 +420,6 @@ extern SDL_DECLSPEC const char * SDLCALL SDL_GetAudioDriver(int index);
  * The names of drivers are all simple, low-ASCII identifiers, like "alsa",
  * "coreaudio" or "wasapi". These never have Unicode characters, and are not
  * meant to be proper names.
- *
- * This returns temporary memory which will be automatically freed later, and
- * can be claimed with SDL_ClaimTemporaryMemory().
  *
  * \returns the name of the current audio driver or NULL if no driver has been
  *          initialized.
@@ -450,13 +444,11 @@ extern SDL_DECLSPEC const char * SDLCALL SDL_GetCurrentAudioDriver(void);
  * If this function returns NULL, to signify an error, `*count` will be set to
  * zero.
  *
- * This returns temporary memory which will be automatically freed later, and
- * can be claimed with SDL_ClaimTemporaryMemory().
- *
  * \param count a pointer filled in with the number of devices returned, may
  *              be NULL.
  * \returns a 0 terminated array of device instance IDs or NULL on error; call
- *          SDL_GetError() for more information.
+ *          SDL_GetError() for more information. This should be freed with
+ *          SDL_free() when it is no longer needed.
  *
  * \threadsafety It is safe to call this function from any thread.
  *
@@ -465,7 +457,7 @@ extern SDL_DECLSPEC const char * SDLCALL SDL_GetCurrentAudioDriver(void);
  * \sa SDL_OpenAudioDevice
  * \sa SDL_GetAudioRecordingDevices
  */
-extern SDL_DECLSPEC const SDL_AudioDeviceID * SDLCALL SDL_GetAudioPlaybackDevices(int *count);
+extern SDL_DECLSPEC SDL_AudioDeviceID * SDLCALL SDL_GetAudioPlaybackDevices(int *count);
 
 /**
  * Get a list of currently-connected audio recording devices.
@@ -481,13 +473,11 @@ extern SDL_DECLSPEC const SDL_AudioDeviceID * SDLCALL SDL_GetAudioPlaybackDevice
  * If this function returns NULL, to signify an error, `*count` will be set to
  * zero.
  *
- * This returns temporary memory which will be automatically freed later, and
- * can be claimed with SDL_ClaimTemporaryMemory().
- *
  * \param count a pointer filled in with the number of devices returned, may
  *              be NULL.
  * \returns a 0 terminated array of device instance IDs, or NULL on failure;
- *          call SDL_GetError() for more information.
+ *          call SDL_GetError() for more information. This should be freed
+ *          with SDL_free() when it is no longer needed.
  *
  * \threadsafety It is safe to call this function from any thread.
  *
@@ -496,13 +486,10 @@ extern SDL_DECLSPEC const SDL_AudioDeviceID * SDLCALL SDL_GetAudioPlaybackDevice
  * \sa SDL_OpenAudioDevice
  * \sa SDL_GetAudioPlaybackDevices
  */
-extern SDL_DECLSPEC const SDL_AudioDeviceID * SDLCALL SDL_GetAudioRecordingDevices(int *count);
+extern SDL_DECLSPEC SDL_AudioDeviceID * SDLCALL SDL_GetAudioRecordingDevices(int *count);
 
 /**
  * Get the human-readable name of a specific audio device.
- *
- * This returns temporary memory which will be automatically freed later, and
- * can be claimed with SDL_ClaimTemporaryMemory().
  *
  * \param devid the instance ID of the device to query.
  * \returns the name of the audio device, or NULL on failure; call
@@ -562,13 +549,11 @@ extern SDL_DECLSPEC int SDLCALL SDL_GetAudioDeviceFormat(SDL_AudioDeviceID devid
  * Audio devices usually have no remapping applied. This is represented by
  * returning NULL, and does not signify an error.
  *
- * This returns temporary memory which will be automatically freed later, and
- * can be claimed with SDL_ClaimTemporaryMemory().
- *
  * \param devid the instance ID of the device to query.
  * \param count On output, set to number of channels in the map. Can be NULL.
  * \returns an array of the current channel mapping, with as many elements as
- *          the current output spec's channels, or NULL if default.
+ *          the current output spec's channels, or NULL if default. This
+ *          should be freed with SDL_free() when it is no longer needed.
  *
  * \threadsafety It is safe to call this function from any thread.
  *
@@ -576,7 +561,7 @@ extern SDL_DECLSPEC int SDLCALL SDL_GetAudioDeviceFormat(SDL_AudioDeviceID devid
  *
  * \sa SDL_SetAudioStreamInputChannelMap
  */
-extern SDL_DECLSPEC const int * SDLCALL SDL_GetAudioDeviceChannelMap(SDL_AudioDeviceID devid, int *count);
+extern SDL_DECLSPEC int * SDLCALL SDL_GetAudioDeviceChannelMap(SDL_AudioDeviceID devid, int *count);
 
 /**
  * Open a specific audio device.
@@ -836,7 +821,7 @@ extern SDL_DECLSPEC void SDLCALL SDL_CloseAudioDevice(SDL_AudioDeviceID devid);
  * stream's format at any time.
  *
  * \param devid an audio device to bind a stream to.
- * \param streams an array of audio streams to unbind.
+ * \param streams an array of audio streams to bind.
  * \param num_streams number streams listed in the `streams` array.
  * \returns 0 on success or a negative error code on failure; call
  *          SDL_GetError() for more information.
@@ -1113,13 +1098,11 @@ extern SDL_DECLSPEC int SDLCALL SDL_SetAudioStreamGain(SDL_AudioStream *stream, 
  * Audio streams default to no remapping applied. This is represented by
  * returning NULL, and does not signify an error.
  *
- * This returns temporary memory which will be automatically freed later, and
- * can be claimed with SDL_ClaimTemporaryMemory().
- *
  * \param stream the SDL_AudioStream to query.
  * \param count On output, set to number of channels in the map. Can be NULL.
  * \returns an array of the current channel mapping, with as many elements as
- *          the current output spec's channels, or NULL if default.
+ *          the current output spec's channels, or NULL if default. This
+ *          should be freed with SDL_free() when it is no longer needed.
  *
  * \threadsafety It is safe to call this function from any thread, as it holds
  *               a stream-specific mutex while running.
@@ -1128,7 +1111,7 @@ extern SDL_DECLSPEC int SDLCALL SDL_SetAudioStreamGain(SDL_AudioStream *stream, 
  *
  * \sa SDL_SetAudioStreamInputChannelMap
  */
-extern SDL_DECLSPEC const int * SDLCALL SDL_GetAudioStreamInputChannelMap(SDL_AudioStream *stream, int *count);
+extern SDL_DECLSPEC int * SDLCALL SDL_GetAudioStreamInputChannelMap(SDL_AudioStream *stream, int *count);
 
 /**
  * Get the current output channel map of an audio stream.
@@ -1139,13 +1122,11 @@ extern SDL_DECLSPEC const int * SDLCALL SDL_GetAudioStreamInputChannelMap(SDL_Au
  * Audio streams default to no remapping applied. This is represented by
  * returning NULL, and does not signify an error.
  *
- * This returns temporary memory which will be automatically freed later, and
- * can be claimed with SDL_ClaimTemporaryMemory().
- *
  * \param stream the SDL_AudioStream to query.
  * \param count On output, set to number of channels in the map. Can be NULL.
  * \returns an array of the current channel mapping, with as many elements as
- *          the current output spec's channels, or NULL if default.
+ *          the current output spec's channels, or NULL if default. This
+ *          should be freed with SDL_free() when it is no longer needed.
  *
  * \threadsafety It is safe to call this function from any thread, as it holds
  *               a stream-specific mutex while running.
@@ -1154,7 +1135,7 @@ extern SDL_DECLSPEC const int * SDLCALL SDL_GetAudioStreamInputChannelMap(SDL_Au
  *
  * \sa SDL_SetAudioStreamInputChannelMap
  */
-extern SDL_DECLSPEC const int * SDLCALL SDL_GetAudioStreamOutputChannelMap(SDL_AudioStream *stream, int *count);
+extern SDL_DECLSPEC int * SDLCALL SDL_GetAudioStreamOutputChannelMap(SDL_AudioStream *stream, int *count);
 
 /**
  * Set the current input channel map of an audio stream.

@@ -62,18 +62,16 @@ extern SDL_DECLSPEC int SDLCALL SDL_SetClipboardText(const char *text);
  * This functions returns empty string if there was not enough memory left for
  * a copy of the clipboard's content.
  *
- * This returns temporary memory which will be automatically freed later, and
- * can be claimed with SDL_ClaimTemporaryMemory().
- *
  * \returns the clipboard text on success or an empty string on failure; call
- *          SDL_GetError() for more information.
+ *          SDL_GetError() for more information. This should be freed with
+ *          SDL_free() when it is no longer needed.
  *
  * \since This function is available since SDL 3.0.0.
  *
  * \sa SDL_HasClipboardText
  * \sa SDL_SetClipboardText
  */
-extern SDL_DECLSPEC const char * SDLCALL SDL_GetClipboardText(void);
+extern SDL_DECLSPEC char * SDLCALL SDL_GetClipboardText(void);
 
 /**
  * Query whether the clipboard exists and contains a non-empty text string.
@@ -107,18 +105,16 @@ extern SDL_DECLSPEC int SDLCALL SDL_SetPrimarySelectionText(const char *text);
  * This functions returns empty string if there was not enough memory left for
  * a copy of the primary selection's content.
  *
- * This returns temporary memory which will be automatically freed later, and
- * can be claimed with SDL_ClaimTemporaryMemory().
- *
  * \returns the primary selection text on success or an empty string on
- *          failure; call SDL_GetError() for more information.
+ *          failure; call SDL_GetError() for more information. This should be
+ *          freed with SDL_free() when it is no longer needed.
  *
  * \since This function is available since SDL 3.0.0.
  *
  * \sa SDL_HasPrimarySelectionText
  * \sa SDL_SetPrimarySelectionText
  */
-extern SDL_DECLSPEC const char * SDLCALL SDL_GetPrimarySelectionText(void);
+extern SDL_DECLSPEC char * SDLCALL SDL_GetPrimarySelectionText(void);
 
 /**
  * Query whether the primary selection exists and contains a non-empty text
@@ -221,17 +217,15 @@ extern SDL_DECLSPEC int SDLCALL SDL_ClearClipboardData(void);
  * \param mime_type the mime type to read from the clipboard.
  * \param size a pointer filled in with the length of the returned data.
  * \returns the retrieved data buffer or NULL on failure; call SDL_GetError()
- *          for more information.
- *
- *          This returns temporary memory which will be automatically freed
- *          later, and can be claimed with SDL_ClaimTemporaryMemory().
+ *          for more information. This should be freed with SDL_free() when it
+ *          is no longer needed.
  *
  * \since This function is available since SDL 3.0.0.
  *
  * \sa SDL_HasClipboardData
  * \sa SDL_SetClipboardData
  */
-extern SDL_DECLSPEC const void * SDLCALL SDL_GetClipboardData(const char *mime_type, size_t *size);
+extern SDL_DECLSPEC void * SDLCALL SDL_GetClipboardData(const char *mime_type, size_t *size);
 
 /**
  * Query whether there is data in the clipboard for the provided mime type.

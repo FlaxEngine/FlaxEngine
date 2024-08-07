@@ -21,6 +21,7 @@ class FLAXENGINE_API SDLWindow : public WindowBase
 #endif
 {
     friend SDLPlatform;
+    friend class SDLMouse;
 #if PLATFORM_LINUX
     friend LinuxPlatform;
     friend MessageBox;
@@ -55,10 +56,10 @@ public:
 private:
 
     static SDLWindow* GetWindowFromEvent(const SDL_Event& event);
-    static SDLWindow* GetWindowWithId(uint32 windowId);
+    static SDLWindow* GetWindowWithSDLWindow(SDL_Window* window);
     void HandleEvent(SDL_Event& event);
     void CheckForWindowResize();
-    void UpdateCursor() const;
+    void UpdateCursor();
 
 #if PLATFORM_LINUX
     DragDropEffect DoDragDropWayland(const StringView& data);

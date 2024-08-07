@@ -45,6 +45,7 @@
  *    SDL_HapticID *haptics = SDL_GetHaptics(NULL);
  *    if (haptics) {
  *        haptic = SDL_OpenHaptic(haptics[0]);
+ *        SDL_free(haptics);
  *    }
  *    if (haptic == NULL)
  *       return -1;
@@ -931,27 +932,22 @@ typedef Uint32 SDL_HapticID;
 /**
  * Get a list of currently connected haptic devices.
  *
- * This returns temporary memory which will be automatically freed later, and
- * can be claimed with SDL_ClaimTemporaryMemory().
- *
  * \param count a pointer filled in with the number of haptic devices
  *              returned, may be NULL.
  * \returns a 0 terminated array of haptic device instance IDs or NULL on
- *          failure; call SDL_GetError() for more information.
+ *          failure; call SDL_GetError() for more information. This should be
+ *          freed with SDL_free() when it is no longer needed.
  *
  * \since This function is available since SDL 3.0.0.
  *
  * \sa SDL_OpenHaptic
  */
-extern SDL_DECLSPEC const SDL_HapticID * SDLCALL SDL_GetHaptics(int *count);
+extern SDL_DECLSPEC SDL_HapticID * SDLCALL SDL_GetHaptics(int *count);
 
 /**
  * Get the implementation dependent name of a haptic device.
  *
  * This can be called before any haptic devices are opened.
- *
- * This returns temporary memory which will be automatically freed later, and
- * can be claimed with SDL_ClaimTemporaryMemory().
  *
  * \param instance_id the haptic device instance ID.
  * \returns the name of the selected haptic device. If no name can be found,
@@ -1015,9 +1011,6 @@ extern SDL_DECLSPEC SDL_HapticID SDLCALL SDL_GetHapticID(SDL_Haptic *haptic);
 
 /**
  * Get the implementation dependent name of a haptic device.
- *
- * This returns temporary memory which will be automatically freed later, and
- * can be claimed with SDL_ClaimTemporaryMemory().
  *
  * \param haptic the SDL_Haptic obtained from SDL_OpenJoystick().
  * \returns the name of the selected haptic device. If no name can be found,

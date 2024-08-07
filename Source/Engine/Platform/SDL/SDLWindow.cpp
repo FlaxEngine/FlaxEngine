@@ -34,7 +34,12 @@
 #endif
 
 #define DefaultDPI 96
-SDLWindow* lastEventWindow = nullptr;
+
+namespace
+{
+    SDLWindow* LastEventWindow = nullptr;
+    static SDL_Cursor* Cursors[SDL_NUM_SYSTEM_CURSORS] = { nullptr };
+}
 
 void* GetNativeWindowPointer(SDL_Window* window);
 SDL_HitTestResult OnWindowHitTest(SDL_Window* win, const SDL_Point* area, void* data);
@@ -236,7 +241,7 @@ SDLWindow::SDLWindow(const CreateWindowSettings& settings)
     }
 #endif
 
-    lastEventWindow = this;
+    LastEventWindow = this;
 
 #if PLATFORM_LINUX
     // Initialize using the shared Display instance from SDL
@@ -293,8 +298,8 @@ void* SDLWindow::GetX11Display() const
 
 SDLWindow::~SDLWindow()
 {
-    if (lastEventWindow == this)
-        lastEventWindow = nullptr;
+    if (LastEventWindow == this)
+        LastEventWindow = nullptr;
 
     if (_window == nullptr)
         return;
@@ -374,47 +379,20 @@ SDL_HitTestResult OnWindowHitTest(SDL_Window* win, const SDL_Point* area, void* 
 
 SDLWindow* SDLWindow::GetWindowFromEvent(const SDL_Event& event)
 {
-    SDL_WindowID windowId;
-    if (event.type >= SDL_EVENT_WINDOW_FIRST && event.type <= SDL_EVENT_WINDOW_LAST)
-        windowId = event.window.windowID;
-    else if (event.type == SDL_EVENT_KEY_DOWN || event.type == SDL_EVENT_KEY_UP)
-        windowId = event.key.windowID;
-    else if (event.type == SDL_EVENT_TEXT_EDITING)
-        windowId = event.edit.windowID;
-    else if (event.type == SDL_EVENT_TEXT_INPUT)
-        windowId = event.text.windowID;
-    else if (event.type == SDL_EVENT_MOUSE_MOTION)
-        windowId = event.motion.windowID;
-    else if (event.type == SDL_EVENT_MOUSE_BUTTON_DOWN || event.type == SDL_EVENT_MOUSE_BUTTON_UP)
-        windowId = event.button.windowID;
-    else if (event.type == SDL_EVENT_MOUSE_WHEEL)
-        windowId = event.wheel.windowID;
-    else if (event.type == SDL_EVENT_FINGER_MOTION || event.type == SDL_EVENT_FINGER_DOWN || event.type == SDL_EVENT_FINGER_UP)
-        windowId = event.tfinger.windowID;
-    else if (event.type == SDL_EVENT_PEN_DOWN || event.type == SDL_EVENT_PEN_UP)
-        windowId = event.ptip.windowID;
-    else if (event.type == SDL_EVENT_PEN_MOTION)
-        windowId = event.pmotion.windowID;
-    else if (event.type == SDL_EVENT_PEN_BUTTON_DOWN || event.type == SDL_EVENT_PEN_BUTTON_UP)
-        windowId = event.pbutton.windowID;
-    else if (event.type == SDL_EVENT_DROP_BEGIN || event.type == SDL_EVENT_DROP_FILE || event.type == SDL_EVENT_DROP_TEXT || event.type == SDL_EVENT_DROP_COMPLETE || event.type == SDL_EVENT_DROP_POSITION)
-        windowId = event.drop.windowID;
-    else if (event.type >= SDL_EVENT_USER && event.type <= SDL_EVENT_LAST)
-        windowId = event.user.windowID;
-    else
+    SDL_Window* window = SDL_GetWindowFromEvent(&event);
+    if (window == nullptr)
         return nullptr;
-
-    if (lastEventWindow == nullptr || windowId != lastEventWindow->_windowId)
-        lastEventWindow = GetWindowWithId(windowId);
-    return lastEventWindow;
+    if (LastEventWindow == nullptr || window != LastEventWindow->_window)
+        LastEventWindow = GetWindowWithSDLWindow(window);
+    return LastEventWindow;
 }
 
-SDLWindow* SDLWindow::GetWindowWithId(uint32 windowId)
+SDLWindow* SDLWindow::GetWindowWithSDLWindow(SDL_Window* window)
 {
     WindowsManager::WindowsLocker.Lock();
     for (auto win : WindowsManager::Windows)
     {
-        if (win->_windowId == windowId)
+        if (win->_window == window)
             return win;
     }
     WindowsManager::WindowsLocker.Unlock();
@@ -426,7 +404,6 @@ void SDLWindow::HandleEvent(SDL_Event& event)
     if (_isClosing)
         return;
 
-    // NOTE: Update window handling in SDLWindow::GetWindowFromEvent when any new events are added here
     switch (event.type)
     {
     case SDL_EVENT_WINDOW_EXPOSED:
@@ -1012,7 +989,7 @@ void SDLWindow::StartTrackingMouse(bool useMouseScreenOffset)
 
         // For viewport camera mouse tracking we want to use relative mode for best precision
         if (_cursor == CursorType::Hidden)
-            Input::Mouse->SetRelativeMode(true);
+            Input::Mouse->SetRelativeMode(true, this);
     }
 }
 
@@ -1031,7 +1008,7 @@ void SDLWindow::EndTrackingMouse()
             LOG(Warning, "SDL_CaptureMouse: {0}", String(SDL_GetError()));
     }
 
-    Input::Mouse->SetRelativeMode(false);
+    Input::Mouse->SetRelativeMode(false, this);
 }
 
 void SDLWindow::StartClippingCursor(const Rectangle& bounds)
@@ -1090,21 +1067,19 @@ void SDLWindow::CheckForWindowResize()
         OnResize(width, height);
 }
 
-void SDLWindow::UpdateCursor() const
+void SDLWindow::UpdateCursor()
 {
-    static SDL_Cursor* cursors[SDL_NUM_SYSTEM_CURSORS] = { nullptr };
-
     if (_cursor == CursorType::Hidden)
     {
         SDL_HideCursor();
 
         if (_isTrackingMouse)
-            Input::Mouse->SetRelativeMode(true);
+            Input::Mouse->SetRelativeMode(true, this);
         return;
     }
     SDL_ShowCursor();
     //if (_isTrackingMouse)
-    //    Input::Mouse->SetRelativeMode(false);
+    //    Input::Mouse->SetRelativeMode(false, this);
     
     int32 index = SDL_SYSTEM_CURSOR_DEFAULT;
     switch (_cursor)
@@ -1147,9 +1122,9 @@ void SDLWindow::UpdateCursor() const
         break;
     }
 
-    if (cursors[index] == nullptr)
-        cursors[index] = SDL_CreateSystemCursor(static_cast<SDL_SystemCursor>(index));
-    SDL_SetCursor(cursors[index]);
+    if (Cursors[index] == nullptr)
+        Cursors[index] = SDL_CreateSystemCursor(static_cast<SDL_SystemCursor>(index));
+    SDL_SetCursor(Cursors[index]);
 }
 
 #endif

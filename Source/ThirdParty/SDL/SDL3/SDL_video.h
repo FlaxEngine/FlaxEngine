@@ -155,7 +155,8 @@ typedef Uint64 SDL_WindowFlags;
 #define SDL_WINDOW_MODAL                SDL_UINT64_C(0x0000000000001000)    /**< window is modal */
 #define SDL_WINDOW_HIGH_PIXEL_DENSITY   SDL_UINT64_C(0x0000000000002000)    /**< window uses high pixel density back buffer if possible */
 #define SDL_WINDOW_MOUSE_CAPTURE        SDL_UINT64_C(0x0000000000004000)    /**< window has mouse captured (unrelated to MOUSE_GRABBED) */
-#define SDL_WINDOW_ALWAYS_ON_TOP        SDL_UINT64_C(0x0000000000008000)    /**< window should always be above others */
+#define SDL_WINDOW_MOUSE_RELATIVE_MODE  SDL_UINT64_C(0x0000000000008000)    /**< window has relative mode enabled */
+#define SDL_WINDOW_ALWAYS_ON_TOP        SDL_UINT64_C(0x0000000000010000)    /**< window should always be above others */
 #define SDL_WINDOW_UTILITY              SDL_UINT64_C(0x0000000000020000)    /**< window should be treated as a utility window, not showing in the task bar and window list */
 #define SDL_WINDOW_TOOLTIP              SDL_UINT64_C(0x0000000000040000)    /**< window should be treated as a tooltip and does not get mouse or keyboard focus, requires a parent window */
 #define SDL_WINDOW_POPUP_MENU           SDL_UINT64_C(0x0000000000080000)    /**< window should be treated as a popup menu, requires a parent window */
@@ -349,9 +350,6 @@ extern SDL_DECLSPEC int SDLCALL SDL_GetNumVideoDrivers(void);
  * "x11" or "windows". These never have Unicode characters, and are not meant
  * to be proper names.
  *
- * This returns temporary memory which will be automatically freed later, and
- * can be claimed with SDL_ClaimTemporaryMemory().
- *
  * \param index the index of a video driver.
  * \returns the name of the video driver with the given **index**.
  *
@@ -367,9 +365,6 @@ extern SDL_DECLSPEC const char * SDLCALL SDL_GetVideoDriver(int index);
  * The names of drivers are all simple, low-ASCII identifiers, like "cocoa",
  * "x11" or "windows". These never have Unicode characters, and are not meant
  * to be proper names.
- *
- * This returns temporary memory which will be automatically freed later, and
- * can be claimed with SDL_ClaimTemporaryMemory().
  *
  * \returns the name of the current video driver or NULL if no driver has been
  *          initialized.
@@ -393,17 +388,15 @@ extern SDL_DECLSPEC SDL_SystemTheme SDLCALL SDL_GetSystemTheme(void);
 /**
  * Get a list of currently connected displays.
  *
- * This returns temporary memory which will be automatically freed later, and
- * can be claimed with SDL_ClaimTemporaryMemory().
- *
  * \param count a pointer filled in with the number of displays returned, may
  *              be NULL.
  * \returns a 0 terminated array of display instance IDs or NULL on failure;
- *          call SDL_GetError() for more information.
+ *          call SDL_GetError() for more information. This should be freed
+ *          with SDL_free() when it is no longer needed.
  *
  * \since This function is available since SDL 3.0.0.
  */
-extern SDL_DECLSPEC const SDL_DisplayID * SDLCALL SDL_GetDisplays(int *count);
+extern SDL_DECLSPEC SDL_DisplayID * SDLCALL SDL_GetDisplays(int *count);
 
 /**
  * Return the primary display.
@@ -448,9 +441,6 @@ extern SDL_DECLSPEC SDL_PropertiesID SDLCALL SDL_GetDisplayProperties(SDL_Displa
 
 /**
  * Get the name of a display in UTF-8 encoding.
- *
- * This returns temporary memory which will be automatically freed later, and
- * can be claimed with SDL_ClaimTemporaryMemory().
  *
  * \param displayID the instance ID of the display to query.
  * \returns the name of a display or NULL on failure; call SDL_GetError() for
@@ -559,20 +549,19 @@ extern SDL_DECLSPEC float SDLCALL SDL_GetDisplayContentScale(SDL_DisplayID displ
  * - refresh rate -> highest to lowest
  * - pixel density -> lowest to highest
  *
- * This returns temporary memory which will be automatically freed later, and
- * can be claimed with SDL_ClaimTemporaryMemory().
- *
  * \param displayID the instance ID of the display to query.
  * \param count a pointer filled in with the number of display modes returned,
  *              may be NULL.
  * \returns a NULL terminated array of display mode pointers or NULL on
- *          failure; call SDL_GetError() for more information.
+ *          failure; call SDL_GetError() for more information. This is a
+ *          single allocation that should be freed with SDL_free() when it is
+ *          no longer needed.
  *
  * \since This function is available since SDL 3.0.0.
  *
  * \sa SDL_GetDisplays
  */
-extern SDL_DECLSPEC const SDL_DisplayMode * const * SDLCALL SDL_GetFullscreenDisplayModes(SDL_DisplayID displayID, int *count);
+extern SDL_DECLSPEC SDL_DisplayMode ** SDLCALL SDL_GetFullscreenDisplayModes(SDL_DisplayID displayID, int *count);
 
 /**
  * Get the closest match to the requested display mode.
@@ -591,16 +580,17 @@ extern SDL_DECLSPEC const SDL_DisplayMode * const * SDLCALL SDL_GetFullscreenDis
  *                     for the desktop refresh rate.
  * \param include_high_density_modes boolean to include high density modes in
  *                                   the search.
- * \returns a pointer to the closest display mode equal to or larger than the
- *          desired mode, or NULL on failure; call SDL_GetError() for more
- *          information.
+ * \param mode a pointer filled in with the closest display mode equal to or
+ *             larger than the desired mode.
+ * \returns 0 on success or a negative error code on failure; call
+ *          SDL_GetError() for more information.
  *
  * \since This function is available since SDL 3.0.0.
  *
  * \sa SDL_GetDisplays
  * \sa SDL_GetFullscreenDisplayModes
  */
-extern SDL_DECLSPEC const SDL_DisplayMode * SDLCALL SDL_GetClosestFullscreenDisplayMode(SDL_DisplayID displayID, int w, int h, float refresh_rate, SDL_bool include_high_density_modes);
+extern SDL_DECLSPEC int SDLCALL SDL_GetClosestFullscreenDisplayMode(SDL_DisplayID displayID, int w, int h, float refresh_rate, SDL_bool include_high_density_modes, SDL_DisplayMode *mode);
 
 /**
  * Get information about the desktop's display mode.
@@ -773,17 +763,15 @@ extern SDL_DECLSPEC const SDL_DisplayMode * SDLCALL SDL_GetWindowFullscreenMode(
 /**
  * Get the raw ICC profile data for the screen the window is currently on.
  *
- * This returns temporary memory which will be automatically freed later, and
- * can be claimed with SDL_ClaimTemporaryMemory().
- *
  * \param window the window to query.
  * \param size the size of the ICC profile.
  * \returns the raw ICC profile data on success or NULL on failure; call
- *          SDL_GetError() for more information.
+ *          SDL_GetError() for more information. This should be freed with
+ *          SDL_free() when it is no longer needed.
  *
  * \since This function is available since SDL 3.0.0.
  */
-extern SDL_DECLSPEC const void * SDLCALL SDL_GetWindowICCProfile(SDL_Window *window, size_t *size);
+extern SDL_DECLSPEC void * SDLCALL SDL_GetWindowICCProfile(SDL_Window *window, size_t *size);
 
 /**
  * Get the pixel format associated with the window.
@@ -800,17 +788,16 @@ extern SDL_DECLSPEC SDL_PixelFormat SDLCALL SDL_GetWindowPixelFormat(SDL_Window 
 /**
  * Get a list of valid windows.
  *
- * This returns temporary memory which will be automatically freed later, and
- * can be claimed with SDL_ClaimTemporaryMemory().
- *
  * \param count a pointer filled in with the number of windows returned, may
  *              be NULL.
  * \returns a NULL terminated array of SDL_Window pointers or NULL on failure;
- *          call SDL_GetError() for more information.
+ *          call SDL_GetError() for more information. This is a single
+ *          allocation that should be freed with SDL_free() when it is no
+ *          longer needed.
  *
  * \since This function is available since SDL 3.0.0.
  */
-extern SDL_DECLSPEC SDL_Window * const * SDLCALL SDL_GetWindows(int *count);
+extern SDL_DECLSPEC SDL_Window ** SDLCALL SDL_GetWindows(int *count);
 
 /**
  * Create a window with the specified dimensions and flags.
@@ -1335,9 +1322,6 @@ extern SDL_DECLSPEC int SDLCALL SDL_SetWindowTitle(SDL_Window *window, const cha
 /**
  * Get the title of a window.
  *
- * This returns temporary memory which will be automatically freed later, and
- * can be claimed with SDL_ClaimTemporaryMemory().
- *
  * \param window the window to query.
  * \returns the title of the window in UTF-8 format or "" if there is no
  *          title.
@@ -1350,6 +1334,15 @@ extern SDL_DECLSPEC const char * SDLCALL SDL_GetWindowTitle(SDL_Window *window);
 
 /**
  * Set the icon for a window.
+ *
+ * If this function is passed a surface with alternate representations, the
+ * surface will be interpreted as the content to be used for 100% display
+ * scale, and the alternate representations will be used for high DPI
+ * situations. For example, if the original surface is 32x32, then on a 2x
+ * macOS display or 200% display scale on Windows, a 64x64 version of the
+ * image will be used, if available. If a matching version of the image isn't
+ * available, the closest size image will be scaled to the appropriate size
+ * and be used instead.
  *
  * \param window the window to change.
  * \param icon an SDL_Surface structure containing the icon for the window.
@@ -1479,6 +1472,26 @@ extern SDL_DECLSPEC int SDLCALL SDL_SetWindowSize(SDL_Window *window, int w, int
  * \sa SDL_SetWindowSize
  */
 extern SDL_DECLSPEC int SDLCALL SDL_GetWindowSize(SDL_Window *window, int *w, int *h);
+
+/**
+ * Get the safe area for this window.
+ *
+ * Some devices have portions of the screen which are partially obscured or
+ * not interactive, possibly due to on-screen controls, curved edges, camera
+ * notches, TV overscan, etc. This function provides the area of the window
+ * which is safe to have interactible content. You should continue rendering
+ * into the rest of the window, but it should not contain visually important
+ * or interactible content.
+ *
+ * \param window the window to query.
+ * \param rect a pointer filled in with the client area that is safe for
+ *             interactive content.
+ * \returns 0 on success or a negative error code on failure; call
+ *          SDL_GetError() for more information.
+ *
+ * \since This function is available since SDL 3.0.0.
+ */
+extern SDL_DECLSPEC int SDLCALL SDL_GetWindowSafeArea(SDL_Window *window, SDL_Rect *rect);
 
 /**
  * Request that the aspect ratio of a window's client area be set.
@@ -2522,7 +2535,7 @@ extern SDL_DECLSPEC SDL_FunctionPointer SDLCALL SDL_GL_GetProcAddress(const char
  *
  * \since This function is available since SDL 3.0.0.
  *
- * \sa SDL_GL_GetCurrentEGLDisplay
+ * \sa SDL_EGL_GetCurrentDisplay
  */
 extern SDL_DECLSPEC SDL_FunctionPointer SDLCALL SDL_EGL_GetProcAddress(const char *proc);
 
@@ -2671,7 +2684,7 @@ extern SDL_DECLSPEC SDL_GLContext SDLCALL SDL_GL_GetCurrentContext(void);
  *
  * \since This function is available since SDL 3.0.0.
  */
-extern SDL_DECLSPEC SDL_EGLDisplay SDLCALL SDL_EGL_GetCurrentEGLDisplay(void);
+extern SDL_DECLSPEC SDL_EGLDisplay SDLCALL SDL_EGL_GetCurrentDisplay(void);
 
 /**
  * Get the currently active EGL config.
@@ -2681,7 +2694,7 @@ extern SDL_DECLSPEC SDL_EGLDisplay SDLCALL SDL_EGL_GetCurrentEGLDisplay(void);
  *
  * \since This function is available since SDL 3.0.0.
  */
-extern SDL_DECLSPEC SDL_EGLConfig SDLCALL SDL_EGL_GetCurrentEGLConfig(void);
+extern SDL_DECLSPEC SDL_EGLConfig SDLCALL SDL_EGL_GetCurrentConfig(void);
 
 /**
  * Get the EGL surface associated with the window.
@@ -2692,7 +2705,7 @@ extern SDL_DECLSPEC SDL_EGLConfig SDLCALL SDL_EGL_GetCurrentEGLConfig(void);
  *
  * \since This function is available since SDL 3.0.0.
  */
-extern SDL_DECLSPEC SDL_EGLSurface SDLCALL SDL_EGL_GetWindowEGLSurface(SDL_Window *window);
+extern SDL_DECLSPEC SDL_EGLSurface SDLCALL SDL_EGL_GetWindowSurface(SDL_Window *window);
 
 /**
  * Sets the callbacks for defining custom EGLAttrib arrays for EGL
@@ -2716,7 +2729,7 @@ extern SDL_DECLSPEC SDL_EGLSurface SDLCALL SDL_EGL_GetWindowEGLSurface(SDL_Windo
  *
  * \since This function is available since SDL 3.0.0.
  */
-extern SDL_DECLSPEC void SDLCALL SDL_EGL_SetEGLAttributeCallbacks(SDL_EGLAttribArrayCallback platformAttribCallback,
+extern SDL_DECLSPEC void SDLCALL SDL_EGL_SetAttributeCallbacks(SDL_EGLAttribArrayCallback platformAttribCallback,
                                                               SDL_EGLIntArrayCallback surfaceAttribCallback,
                                                               SDL_EGLIntArrayCallback contextAttribCallback);
 

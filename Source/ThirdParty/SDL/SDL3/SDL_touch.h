@@ -59,7 +59,7 @@ typedef enum SDL_TouchDeviceType
  *
  * \since This struct is available since SDL 3.0.0.
  *
- * \sa SDL_GetTouchFinger
+ * \sa SDL_GetTouchFingers
  */
 typedef struct SDL_Finger
 {
@@ -83,23 +83,18 @@ typedef struct SDL_Finger
  * Therefore the returned list might be empty, although devices are available.
  * After using all devices at least once the number will be correct.
  *
- * This returns temporary memory which will be automatically freed later, and
- * can be claimed with SDL_ClaimTemporaryMemory().
- *
  * \param count a pointer filled in with the number of devices returned, may
  *              be NULL.
  * \returns a 0 terminated array of touch device IDs or NULL on failure; call
- *          SDL_GetError() for more information.
+ *          SDL_GetError() for more information. This should be freed with
+ *          SDL_free() when it is no longer needed.
  *
  * \since This function is available since SDL 3.0.0.
  */
-extern SDL_DECLSPEC const SDL_TouchID * SDLCALL SDL_GetTouchDevices(int *count);
+extern SDL_DECLSPEC SDL_TouchID * SDLCALL SDL_GetTouchDevices(int *count);
 
 /**
  * Get the touch device name as reported from the driver.
- *
- * This returns temporary memory which will be automatically freed later, and
- * can be claimed with SDL_ClaimTemporaryMemory().
  *
  * \param touchID the touch device instance ID.
  * \returns touch device name, or NULL on failure; call SDL_GetError() for
@@ -122,18 +117,17 @@ extern SDL_DECLSPEC SDL_TouchDeviceType SDLCALL SDL_GetTouchDeviceType(SDL_Touch
 /**
  * Get a list of active fingers for a given touch device.
  *
- * This returns temporary memory which will be automatically freed later, and
- * can be claimed with SDL_ClaimTemporaryMemory().
- *
  * \param touchID the ID of a touch device.
  * \param count a pointer filled in with the number of fingers returned, can
  *              be NULL.
  * \returns a NULL terminated array of SDL_Finger pointers or NULL on failure;
- *          call SDL_GetError() for more information.
+ *          call SDL_GetError() for more information. This is a single
+ *          allocation that should be freed with SDL_free() when it is no
+ *          longer needed.
  *
  * \since This function is available since SDL 3.0.0.
  */
-extern SDL_DECLSPEC const SDL_Finger * const * SDLCALL SDL_GetTouchFingers(SDL_TouchID touchID, int *count);
+extern SDL_DECLSPEC SDL_Finger ** SDLCALL SDL_GetTouchFingers(SDL_TouchID touchID, int *count);
 
 /* Ends C function definitions when using C++ */
 #ifdef __cplusplus

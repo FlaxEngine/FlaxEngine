@@ -119,11 +119,11 @@ void Screen::SetCursorVisible(const bool value)
     // Just enable relative mode when cursor is constrained and not visible
     if (CursorLock != CursorLockMode::None && !CursorVisible && focused)
     {
-        Input::Mouse->SetRelativeMode(true);
+        Input::Mouse->SetRelativeMode(true, win);
     }
     else if (CursorLock == CursorLockMode::None || CursorVisible || !focused)
     {
-        Input::Mouse->SetRelativeMode(false);
+        Input::Mouse->SetRelativeMode(false, win);
     }
 }
 
@@ -158,11 +158,11 @@ void Screen::SetCursorLock(CursorLockMode mode)
     bool focused = win && Engine::HasGameViewportFocus();
     if (CursorLock != CursorLockMode::None && !CursorVisible && focused)
     {
-        Input::Mouse->SetRelativeMode(true);
+        Input::Mouse->SetRelativeMode(true, win);
     }
     else if (CursorLock == CursorLockMode::None || CursorVisible || !focused)
     {
-        Input::Mouse->SetRelativeMode(false);
+        Input::Mouse->SetRelativeMode(false, win);
     }
 }
 
