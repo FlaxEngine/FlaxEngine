@@ -27,7 +27,7 @@ namespace FlaxEngine.GUI
             /// <summary>
             /// The selected control. Used to scroll to the control on popup creation.
             /// </summary>
-            public ContainerControl SelectedControl = null;
+            public Control SelectedControl = null;
 
             /// <summary>
             /// The main panel used to hold the items.
@@ -460,37 +460,22 @@ namespace FlaxEngine.GUI
         /// </summary>
         protected virtual DropdownRoot CreatePopup()
         {
-            // TODO: support using templates for the items collection container panel
+            // Create popup
+            var popup = CreatePopupRoot();
+            if (popup == null)
+                throw new NullReferenceException("Missing popup.");
+            if (popup.MainPanel == null)
+                throw new NullReferenceException("Missing popup MainPanel.");
+            CreatePopupBackground(popup);
 
-            var popup = new DropdownRoot();
-
-            // TODO: support item templates
-
-            var panel = new Panel
-            {
-                AnchorPreset = AnchorPresets.StretchAll,
-                BackgroundColor = BackgroundColor,
-                ScrollBars = ScrollBars.Vertical,
-                AutoFocus = true,
-                Parent = popup,
-            };
-            popup.MainPanel = panel;
-
-            var container = new VerticalPanel
+            // Create items container
+            var itemContainer = new VerticalPanel
             {
                 AnchorPreset = AnchorPresets.StretchAll,
                 BackgroundColor = Color.Transparent,
                 IsScrollable = true,
                 AutoSize = true,
-                Parent = panel,
-            };
-            var border = new Border
-            {
-                BorderColor = BorderColorHighlighted,
-                Width = 4.0f,
-                AnchorPreset = AnchorPresets.StretchAll,
-                Offsets = Margin.Zero,
-                Parent = popup,
+                Parent = popup.MainPanel,
             };
 
             var itemsHeight = 20.0f;
@@ -513,67 +498,120 @@ namespace FlaxEngine.GUI
             */
 
             var itemsWidth = Width;
-            var height = container.Margin.Height;
+            var height = itemContainer.Margin.Height;
 
             for (int i = 0; i < _items.Count; i++)
             {
-                var item = new ContainerControl
-                {
-                    AutoFocus = false,
-                    Height = itemsHeight,
-                    Width = itemsWidth,
-                    Parent = container,
-                };
-
-                var label = new DropdownLabel
-                {
-                    AutoFocus = true,
-                    X = itemsMargin,
-                    Size = new Float2(itemsWidth - itemsMargin, itemsHeight),
-                    Font = Font,
-                    TextColor = Color.White * 0.9f,
-                    TextColorHighlighted = Color.White,
-                    HorizontalAlignment = HorizontalAlignment,
-                    VerticalAlignment = VerticalAlignment,
-                    Text = _items[i],
-                    Parent = item,
-                    Tag = i,
-                };
-                label.ItemClicked += c =>
-                {
-                    OnItemClicked((int)c.Tag);
-                    DestroyPopup();
-                };
+                var item = CreatePopupItem(i, new Float2(itemsWidth, itemsHeight), itemsMargin);
+                item.Parent = itemContainer;
                 height += itemsHeight;
                 if (i != 0)
-                    height += container.Spacing;
-
+                    height += itemContainer.Spacing;
                 if (_selectedIndex == i)
-                {
-                    var icon = new Image
-                    {
-                        Brush = CheckedImage,
-                        Size = new Float2(itemsMargin, itemsHeight),
-                        Margin = new Margin(4.0f, 6.0f, 4.0f, 4.0f),
-                        //AnchorPreset = AnchorPresets.VerticalStretchLeft,
-                        Parent = item,
-                    };
                     popup.SelectedControl = item;
-                }
             }
 
             if (ShowAllItems || _items.Count < ShowMaxItemsCount)
             {
                 popup.Size = new Float2(itemsWidth, height);
-                panel.Size = popup.Size;
+                popup.MainPanel.Size = popup.Size;
             }
             else
             {
-                popup.Size = new Float2(itemsWidth, (itemsHeight + container.Spacing) * ShowMaxItemsCount);
-                panel.Size = popup.Size;
+                popup.Size = new Float2(itemsWidth, (itemsHeight + itemContainer.Spacing) * ShowMaxItemsCount);
+                popup.MainPanel.Size = popup.Size;
             }
 
             return popup;
+        }
+
+        /// <summary>
+        /// Creates the popup root. Called by default implementation of <see cref="CreatePopup"/> and allows to customize popup base.
+        /// </summary>
+        /// <returns>Custom popup root control.</returns>
+        protected virtual DropdownRoot CreatePopupRoot()
+        {
+            var popup = new DropdownRoot();
+
+            var panel = new Panel
+            {
+                AnchorPreset = AnchorPresets.StretchAll,
+                BackgroundColor = BackgroundColor,
+                ScrollBars = ScrollBars.Vertical,
+                AutoFocus = true,
+                Parent = popup,
+            };
+            popup.MainPanel = panel;
+
+            return popup;
+        }
+
+        /// <summary>
+        /// Creates the popup background. Called by default implementation of <see cref="CreatePopup"/> and allows to customize popup background by adding controls to it.
+        /// </summary>
+        /// <param name="popup">The popup control where background controls can be added.</param>
+        protected virtual void CreatePopupBackground(DropdownRoot popup)
+        {
+            // Default background outline
+            var border = new Border
+            {
+                BorderColor = BorderColorHighlighted,
+                Width = 4.0f,
+                AnchorPreset = AnchorPresets.StretchAll,
+                Offsets = Margin.Zero,
+                Parent = popup,
+            };
+        }
+
+        /// <summary>
+        /// Creates the popup item. Called by default implementation of <see cref="CreatePopup"/> and allows to customize popup item.
+        /// </summary>
+        /// <param name="i">The item index.</param>
+        /// <param name="size">The item control size</param>
+        /// <param name="margin">The item control left-side margin</param>
+        /// <returns>Custom popup item control.</returns>
+        protected virtual Control CreatePopupItem(int i, Float2 size, float margin)
+        {
+            // Default item with label
+            var item = new ContainerControl
+            {
+                AutoFocus = false,
+                Size = size,
+            };
+            var label = new DropdownLabel
+            {
+                AutoFocus = true,
+                X = margin,
+                Size = new Float2(size.X - margin, size.Y),
+                Font = Font,
+                TextColor = Color.White * 0.9f,
+                TextColorHighlighted = Color.White,
+                HorizontalAlignment = HorizontalAlignment,
+                VerticalAlignment = VerticalAlignment,
+                Text = _items[i],
+                Parent = item,
+                Tag = i,
+            };
+            label.ItemClicked += c =>
+            {
+                OnItemClicked((int)c.Tag);
+                DestroyPopup();
+            };
+
+            if (_selectedIndex == i)
+            {
+                // Add icon to the selected item
+                var icon = new Image
+                {
+                    Brush = CheckedImage,
+                    Size = new Float2(margin, size.Y),
+                    Margin = new Margin(4.0f, 6.0f, 4.0f, 4.0f),
+                    //AnchorPreset = AnchorPresets.VerticalStretchLeft,
+                    Parent = item,
+                };
+            }
+
+            return item;
         }
 
         /// <summary>
