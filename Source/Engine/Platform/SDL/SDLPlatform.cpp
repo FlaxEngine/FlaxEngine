@@ -276,6 +276,7 @@ Rectangle SDLPlatform::GetVirtualDesktopBounds()
         SDL_GetDisplayBounds(display, &rect);
         bounds = Rectangle::Union(bounds, Rectangle(static_cast<float>(rect.x), static_cast<float>(rect.y), static_cast<float>(rect.w), static_cast<float>(rect.h)));
     }
+    SDL_free((void*)displays);
     return bounds;
 }
 
