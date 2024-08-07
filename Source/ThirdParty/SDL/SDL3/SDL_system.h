@@ -320,6 +320,7 @@ extern SDL_DECLSPEC void * SDLCALL SDL_GetAndroidActivity(void);
 /**
  * Query Android API level of the current device.
  *
+ * - API level 35: Android 15 (VANILLA_ICE_CREAM)
  * - API level 34: Android 14 (UPSIDE_DOWN_CAKE)
  * - API level 33: Android 13 (TIRAMISU)
  * - API level 32: Android 12L (S_V2)
@@ -410,9 +411,6 @@ extern SDL_DECLSPEC void SDLCALL SDL_SendAndroidBackButton(void);
  *
  * https://developer.android.com/reference/android/content/Context#getFilesDir()
  *
- * This returns temporary memory which will be automatically freed later, and
- * can be claimed with SDL_ClaimTemporaryMemory().
- *
  * \returns the path used for internal storage or NULL on failure; call
  *          SDL_GetError() for more information.
  *
@@ -452,9 +450,6 @@ extern SDL_DECLSPEC Uint32 SDLCALL SDL_GetAndroidExternalStorageState(void);
  *
  * https://developer.android.com/reference/android/content/Context#getExternalFilesDir()
  *
- * This returns temporary memory which will be automatically freed later, and
- * can be claimed with SDL_ClaimTemporaryMemory().
- *
  * \returns the path used for external storage for this application on success
  *          or NULL on failure; call SDL_GetError() for more information.
  *
@@ -475,9 +470,6 @@ extern SDL_DECLSPEC const char * SDLCALL SDL_GetAndroidExternalStoragePath(void)
  * This is a C wrapper over `android.content.Context.getCacheDir()`:
  *
  * https://developer.android.com/reference/android/content/Context#getCacheDir()
- *
- * This returns temporary memory which will be automatically freed later, and
- * can be claimed with SDL_ClaimTemporaryMemory().
  *
  * \returns the path used for caches for this application on success or NULL
  *          on failure; call SDL_GetError() for more information.
@@ -631,9 +623,6 @@ typedef enum SDL_WinRT_DeviceFamily
  *
  * https://msdn.microsoft.com/en-us/library/windows/apps/hh464917.aspx
  *
- * This returns temporary memory which will be automatically freed later, and
- * can be claimed with SDL_ClaimTemporaryMemory().
- *
  * \param pathType the type of path to retrieve, one of SDL_WinRT_Path.
  * \returns a UTF-8 string (8-bit, multi-byte) containing the path, or NULL if
  *          the path is not available for any reason; call SDL_GetError() for
@@ -716,7 +705,7 @@ extern SDL_DECLSPEC void SDLCALL SDL_OnApplicationDidReceiveMemoryWarning(void);
  *
  * \since This function is available since SDL 3.0.0.
  */
-extern SDL_DECLSPEC void SDLCALL SDL_OnApplicationWillResignActive(void);
+extern SDL_DECLSPEC void SDLCALL SDL_OnApplicationWillEnterBackground(void);
 
 /**
  * Let iOS apps with external event handling report
@@ -767,7 +756,7 @@ extern SDL_DECLSPEC void SDLCALL SDL_OnApplicationWillEnterForeground(void);
  *
  * \since This function is available since SDL 3.0.0.
  */
-extern SDL_DECLSPEC void SDLCALL SDL_OnApplicationDidBecomeActive(void);
+extern SDL_DECLSPEC void SDLCALL SDL_OnApplicationDidEnterForeground(void);
 
 #ifdef SDL_PLATFORM_IOS
 

@@ -377,7 +377,7 @@ public:
         OnMouseMoved(newPosition);
     }
 
-    void SetRelativeMode(bool relativeMode) final override
+    void SetRelativeMode(bool relativeMode, Window* window) final override
     {
         if (relativeMode == _relativeMode)
             return;
@@ -385,15 +385,12 @@ public:
         if (relativeMode)
             SDL_GetGlobalMouseState(&oldPosition.X, &oldPosition.Y);
 
-        Mouse::SetRelativeMode(relativeMode);
-        if (SDL_SetRelativeMouseMode(relativeMode ? SDL_TRUE : SDL_FALSE) != 0)
+        Mouse::SetRelativeMode(relativeMode, window);
+        if (SDL_SetWindowRelativeMouseMode(static_cast<SDLWindow*>(window)->_window, relativeMode ? SDL_TRUE : SDL_FALSE) != 0)
             LOG(Error, "Failed to set mouse relative mode: {0}", String(SDL_GetError()));
 
         if (!relativeMode)
-        {
-            SDL_WarpMouseGlobal(oldPosition.X, oldPosition.Y);
-            OnMouseMoved(oldPosition);
-        }
+            SetMousePosition(oldPosition);
     }
 };
 
