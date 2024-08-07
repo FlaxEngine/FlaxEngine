@@ -63,6 +63,18 @@ namespace FlaxEngine.GUI
         public Color TextColor;
 
         /// <summary>
+        /// Gets or sets the horizontal text alignment within the control bounds.
+        /// </summary>
+        [EditorDisplay("Text Style"), EditorOrder(2027)]
+        public TextAlignment HorizontalAlignment { get; set; } = TextAlignment.Center;
+
+        /// <summary>
+        /// Gets or sets the vertical text alignment within the control bounds.
+        /// </summary>
+        [EditorDisplay("Text Style"), EditorOrder(2028)]
+        public TextAlignment VerticalAlignment { get; set; } = TextAlignment.Center;
+
+        /// <summary>
         /// Gets or sets the brush used for background drawing.
         /// </summary>
         [EditorDisplay("Background Style"), EditorOrder(1999), Tooltip("The brush used for background drawing."), ExpandGroups]
@@ -262,7 +274,7 @@ namespace FlaxEngine.GUI
                 Render2D.DrawRectangle(clientRect, borderColor, BorderThickness);
 
             // Draw text
-            Render2D.DrawText(_font?.GetFont(), TextMaterial, _text, clientRect, textColor, TextAlignment.Center, TextAlignment.Center);
+            Render2D.DrawText(_font?.GetFont(), TextMaterial, _text, clientRect, textColor, HorizontalAlignment, VerticalAlignment);
         }
 
         /// <inheritdoc />
