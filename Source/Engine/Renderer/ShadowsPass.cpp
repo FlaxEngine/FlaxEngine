@@ -859,6 +859,18 @@ void ShadowsPass::SetupLight(ShadowsCustomBuffer& shadows, RenderContext& render
     renderContextBatch.Contexts.AddDefault(atlasLight.ContextCount);
     atlasLight.Cache.Set(renderContext.View, light, atlasLight.CascadeSplits);
 
+    // Calculate view frustum corners (un-jittered) in view-space
+    Float3 frustumCorners[8];
+    {
+        BoundingFrustum stableViewFrustum;
+        Matrix m;
+        Matrix::Multiply(renderContext.View.View, renderContext.View.NonJitteredProjection, m);
+        stableViewFrustum.SetMatrix(m);
+        stableViewFrustum.GetCorners(frustumCorners);
+    }
+    for (int32 i = 0; i < 8; i++)
+        Float3::Transform(frustumCorners[i], renderContext.View.View, frustumCorners[i]);
+
     // Create the different view and projection matrices for each split
     float splitMinRatio = 0;
     float splitMaxRatio = (minDistance - view.Near) / viewRange;
@@ -878,10 +890,9 @@ void ShadowsPass::SetupLight(ShadowsCustomBuffer& shadows, RenderContext& render
         for (int32 j = 0; j < 4; j++)
         {
             float overlapWithPrevSplit = 0.1f * (splitMinRatio - oldSplitMinRatio); // CSM blending overlap
-            const RenderList* mainCache = renderContext.List;
-            const auto frustumRangeVS = mainCache->FrustumCornersVs[j + 4] - mainCache->FrustumCornersVs[j];
-            frustumCornersVs[j] = mainCache->FrustumCornersVs[j] + frustumRangeVS * (splitMinRatio - overlapWithPrevSplit);
-            frustumCornersVs[j + 4] = mainCache->FrustumCornersVs[j] + frustumRangeVS * splitMaxRatio;
+            const auto frustumRangeVS = frustumCorners[j + 4] - frustumCorners[j];
+            frustumCornersVs[j] = frustumCorners[j] + frustumRangeVS * (splitMinRatio - overlapWithPrevSplit);
+            frustumCornersVs[j + 4] = frustumCorners[j] + frustumRangeVS * splitMaxRatio;
         }
 
         // Transform the frustum from camera view space to world-space
