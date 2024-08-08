@@ -637,6 +637,7 @@ String SDLClipboard::GetText()
     else
     {
         LOG(Warning, "Wayland clipboard is not implemented yet."); // TODO: Wayland
+        return String::Empty;
     }
 }
 
