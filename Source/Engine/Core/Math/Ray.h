@@ -46,7 +46,7 @@ public:
         : Position(position)
         , Direction(direction)
     {
-        ASSERT(Direction.IsNormalized());
+        CHECK_DEBUG(Direction.IsNormalized());
     }
 
 public:

@@ -57,6 +57,7 @@ using Real = System.Single;
 using System;
 using System.Globalization;
 using System.Runtime.CompilerServices;
+using FlaxEngine.Assertions;
 
 namespace FlaxEngine
 {
@@ -77,6 +78,7 @@ namespace FlaxEngine
         {
             Position = position;
             Direction = direction;
+            Assert.IsTrue(Direction.IsNormalized, "The Ray Direction was not normalized");
         }
 
         /// <summary>
