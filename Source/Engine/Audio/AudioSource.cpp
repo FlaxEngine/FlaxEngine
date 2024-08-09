@@ -420,7 +420,15 @@ void AudioSource::Update()
         AudioBackend::Source::VelocityChanged(this);
     }
 
-    if (!UseStreaming() && Math::NearEqual(GetTime(), GetStartTime()) && _isActuallyPlayingSth && !_startingToPlay)
+    // Reset starting to play value once time is greater than zero
+    if (_startingToPlay && GetTime() > 0.0f)
+    {
+        _startingToPlay = false;
+    }
+
+    int32 queuedBuffers;
+    AudioBackend::Source::GetQueuedBuffersCount(this, queuedBuffers);
+    if (!UseStreaming() && Math::NearEqual(GetTime(), 0.0f) && queuedBuffers > 0 && _isActuallyPlayingSth && !_startingToPlay)
     {
         if (GetIsLooping())
         {
@@ -431,12 +439,6 @@ void AudioSource::Update()
         {
             Stop();
         }
-    }
-
-    // Reset starting to play value
-    if (_startingToPlay)
-    {
-        _startingToPlay = false;
     }
 
     // Skip other update logic if it's not valid streamable source
