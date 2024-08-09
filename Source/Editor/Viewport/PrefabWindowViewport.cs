@@ -627,7 +627,7 @@ namespace FlaxEditor.Viewport
             // Debug draw all actors in prefab
             foreach (var child in SceneGraphRoot.ChildNodes)
             {
-                if (child is not ActorNode actorNode)
+                if (child is not ActorNode actorNode || !actorNode.Actor)
                     continue;
                 DebugDraw.DrawActorsTree(actorNode.Actor);
             }
