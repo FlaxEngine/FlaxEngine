@@ -506,7 +506,7 @@ void AnimatedModel::StopSlotAnimation(const StringView& slotName, Animation* ani
     {
         if (slot.Animation == anim && slot.Name == slotName)
         {
-            slot.Animation = nullptr;
+            //slot.Animation = nullptr;
             slot.Reset = true;
             break;
         }
