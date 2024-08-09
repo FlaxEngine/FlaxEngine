@@ -28,6 +28,11 @@ public:
     /// <param name="baseMaterial">The base material.</param>
     API_PROPERTY() void SetBaseMaterial(MaterialBase* baseMaterial);
 
+    /// <summary>
+    /// Resets all parameters back to the base material (including disabling parameter overrides).
+    /// </summary>
+    API_FUNCTION() void ResetParameters();
+
 #if USE_EDITOR
 
     /// <summary>

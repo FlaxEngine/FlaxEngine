@@ -291,6 +291,14 @@ void MaterialInstance::SetBaseMaterial(MaterialBase* baseMaterial)
     }
 }
 
+void MaterialInstance::ResetParameters()
+{
+    for (auto& param : Params)
+    {
+        param.SetIsOverride(false);
+    }
+}
+
 #if USE_EDITOR
 
 bool MaterialInstance::Save(const StringView& path)
