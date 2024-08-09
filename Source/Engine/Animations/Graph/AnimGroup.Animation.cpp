@@ -2294,8 +2294,11 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
             Animation* sAnim = nullptr;
             for (int32 i = 0; i < slots.Count(); i++)
             {
+                if (bucket.Index == i)
+                    continue;
+
                 auto& s = slots[i];
-                if (s.Animation && s.Name == slotName && s.Animation != slot.Animation)
+                if (s.Animation && s.Name == slotName)
                 {
                     sAnim = s.Animation;
                 }
