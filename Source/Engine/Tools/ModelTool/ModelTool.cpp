@@ -1071,6 +1071,7 @@ void TrySetupMaterialParameter(MaterialInstance* instance, Span<const Char*> par
             if (StringUtils::CompareIgnoreCase(name, param.GetName().Get()) != 0)
                 continue;
             param.SetValue(value);
+            param.SetIsOverride(true);
             return;
         }
     }
@@ -1490,14 +1491,26 @@ bool ModelTool::ImportModel(const String& path, ModelData& data, Options& option
             if (auto* materialInstance = Content::Load<MaterialInstance>(assetPath))
             {
                 materialInstance->SetBaseMaterial(options.InstanceToImportAs);
+                materialInstance->ResetParameters();
 
                 // Customize base material based on imported material (blind guess based on the common names used in materials)
-                const Char* diffuseColorNames[] = { TEXT("color"), TEXT("col"), TEXT("diffuse"), TEXT("basecolor"), TEXT("base color") };
-                TrySetupMaterialParameter(materialInstance, ToSpan(diffuseColorNames, ARRAY_COUNT(diffuseColorNames)), material.Diffuse.Color, MaterialParameterType::Color);
-                const Char* emissiveColorNames[] = { TEXT("emissive"), TEXT("emission"), TEXT("light") };
-                TrySetupMaterialParameter(materialInstance, ToSpan(emissiveColorNames, ARRAY_COUNT(emissiveColorNames)), material.Emissive.Color, MaterialParameterType::Color);
-                const Char* opacityValueNames[] = { TEXT("opacity"), TEXT("alpha") };
-                TrySetupMaterialParameter(materialInstance, ToSpan(opacityValueNames, ARRAY_COUNT(opacityValueNames)), material.Opacity.Value, MaterialParameterType::Float);
+                Texture* tex;
+#define TRY_SETUP_TEXTURE_PARAM(component, names, type) if (material.component.TextureIndex != -1 && ((tex = Content::LoadAsync<Texture>(data.Textures[material.component.TextureIndex].AssetID)))) TrySetupMaterialParameter(materialInstance, ToSpan(names, ARRAY_COUNT(names)), tex, MaterialParameterType::type);
+                const Char* diffuseNames[] = { TEXT("color"), TEXT("col"), TEXT("diffuse"), TEXT("basecolor"), TEXT("base color"), TEXT("tint") };
+                TrySetupMaterialParameter(materialInstance, ToSpan(diffuseNames, ARRAY_COUNT(diffuseNames)), material.Diffuse.Color, MaterialParameterType::Color);
+                TRY_SETUP_TEXTURE_PARAM(Diffuse, diffuseNames, Texture);
+                const Char* normalMapNames[] = { TEXT("normals"), TEXT("normalmap"), TEXT("normal map"), TEXT("normal") };
+                TRY_SETUP_TEXTURE_PARAM(Normals, normalMapNames, NormalMap);
+                const Char* emissiveNames[] = { TEXT("emissive"), TEXT("emission"), TEXT("light"), TEXT("glow") };
+                TrySetupMaterialParameter(materialInstance, ToSpan(emissiveNames, ARRAY_COUNT(emissiveNames)), material.Emissive.Color, MaterialParameterType::Color);
+                TRY_SETUP_TEXTURE_PARAM(Emissive, emissiveNames, Texture);
+                const Char* opacityNames[] = { TEXT("opacity"), TEXT("alpha") };
+                TrySetupMaterialParameter(materialInstance, ToSpan(opacityNames, ARRAY_COUNT(opacityNames)), material.Opacity.Value, MaterialParameterType::Float);
+                TRY_SETUP_TEXTURE_PARAM(Opacity, opacityNames, Texture);
+                const Char* roughnessNames[] = { TEXT("roughness"), TEXT("rough") };
+                TrySetupMaterialParameter(materialInstance, ToSpan(roughnessNames, ARRAY_COUNT(roughnessNames)), material.Roughness.Value, MaterialParameterType::Float);
+                TRY_SETUP_TEXTURE_PARAM(Roughness, roughnessNames, Texture);
+#undef TRY_SETUP_TEXTURE_PARAM
 
                 materialInstance->Save();
             }
