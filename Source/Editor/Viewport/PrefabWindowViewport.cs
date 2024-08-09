@@ -632,7 +632,7 @@ namespace FlaxEditor.Viewport
             _debugDrawActors.Clear();
             foreach (var child in SceneGraphRoot.ChildNodes)
             {
-                if (child is not ActorNode actorNode)
+                if (child is not ActorNode actorNode || !actorNode.Actor)
                     continue;
                 var actor = actorNode.Actor;
                 if (collectActors)
