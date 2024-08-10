@@ -682,7 +682,11 @@ bool Model::GenerateSDF(float resolutionScale, int32 lodIndex, bool cacheData, f
 #if USE_EDITOR
     // Set asset data
     if (cacheData)
-        GetOrCreateChunk(15)->Data.Copy(sdfStream.GetHandle(), sdfStream.GetPosition());
+    {
+        auto chunk = GetOrCreateChunk(15);
+        chunk->Data.Copy(sdfStream.GetHandle(), sdfStream.GetPosition());
+        chunk->Flags |= FlaxChunkFlags::KeepInMemory; // Prevent GC-ing chunk data so it will be properly saved
+    }
 #endif
 
     return false;
