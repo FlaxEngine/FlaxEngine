@@ -20,7 +20,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
             // Show instanced parameters to view/edit at runtime
             if (Values.IsSingleObject && Editor.Instance.StateMachine.IsPlayMode)
             {
-                var group = layout.Group("Parameters");
+                var group = SurfaceUtils.InitGraphParametersGroup(layout);
                 group.Panel.Open(false);
                 group.Panel.IndexInParent -= 2;
 

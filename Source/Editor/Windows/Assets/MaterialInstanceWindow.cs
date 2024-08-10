@@ -261,7 +261,7 @@ namespace FlaxEditor.Windows.Assets
                     removeButton.Clicked += OnOverrideAll;
                 }
 
-                var parametersGroup = layout.Group("Parameters");
+                var parametersGroup = SurfaceUtils.InitGraphParametersGroup(layout);
                 var baseMaterial = materialInstance.BaseMaterial;
                 var material = baseMaterial;
                 if (material)

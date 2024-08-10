@@ -533,6 +533,15 @@ namespace FlaxEditor.CustomEditors.Editors
             _groupsPool.Add(groups);
         }
 
+        internal static GroupElement OnGroup(LayoutElementsContainer layout, string name)
+        {
+            // Add new group
+            var group = layout.Group(name);
+            group.Panel.Tag = group;
+            group.Panel.MouseButtonRightClicked += OnGroupPanelMouseButtonRightClicked;
+            return group;
+        }
+
         internal static LayoutElementsContainer OnGroup(LayoutElementsContainer layout, EditorDisplayAttribute display)
         {
             if (display?.Group != null)

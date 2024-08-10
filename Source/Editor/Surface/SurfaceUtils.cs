@@ -100,6 +100,11 @@ namespace FlaxEditor.Surface
             }
         }
 
+        internal static GroupElement InitGraphParametersGroup(LayoutElementsContainer layout)
+        {
+            return CustomEditors.Editors.GenericEditor.OnGroup(layout, "Parameters");
+        }
+
         internal static GraphParameterData[] InitGraphParameters(IEnumerable<MaterialParameter> parameters, Material material)
         {
             int count = parameters.Count();
