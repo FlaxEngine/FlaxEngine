@@ -203,7 +203,7 @@ RWByteAddressBuffer RWGlobalSurfaceAtlasCulledObjects : register(u1);
 Buffer<float4> GlobalSurfaceAtlasObjects : register(t0);
 Buffer<uint> GlobalSurfaceAtlasObjectsList : register(t1);
 
-#define GLOBAL_SURFACE_ATLAS_SHARED_CULL_SIZE 255 // Limit of objects that can be culled for a whole group of 4x4x4 threads (64 chunks)
+#define GLOBAL_SURFACE_ATLAS_SHARED_CULL_SIZE 511 // Limit of objects that can be culled for a whole group of 4x4x4 threads (64 chunks)
 
 groupshared uint SharedCulledObjectsCount;
 groupshared uint SharedCulledObjects[GLOBAL_SURFACE_ATLAS_SHARED_CULL_SIZE];
