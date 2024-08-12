@@ -94,6 +94,11 @@ bool Skybox::IsDynamicSky() const
     return !IsStatic();
 }
 
+float Skybox::GetIndirectLightingIntensity() const
+{
+    return 1.0f;
+}
+
 void Skybox::ApplySky(GPUContext* context, RenderContext& renderContext, const Matrix& world)
 {
     // Prepare mock draw call data

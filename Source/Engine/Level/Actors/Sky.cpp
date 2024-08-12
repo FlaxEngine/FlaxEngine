@@ -16,6 +16,9 @@
 #include "Engine/Graphics/Shaders/GPUShader.h"
 #include "Engine/Serialization/Serialization.h"
 #include "Engine/Level/Scene/SceneRendering.h"
+#if USE_EDITOR
+#include "Engine/Renderer/Lightmaps.h"
+#endif
 
 GPU_CB_STRUCT(Data {
     Matrix WVP;
@@ -66,6 +69,10 @@ void Sky::InitConfig(ShaderAtmosphericFogData& config) const
 
     config.AtmosphericFogSunPower = SunPower;
     config.AtmosphericFogDensityOffset = 0.0f;
+#if USE_EDITOR
+    if (IsRunningRadiancePass)
+    config.AtmosphericFogSunPower *= IndirectLightingIntensity;
+#endif
 
     if (SunLight)
     {
@@ -140,6 +147,7 @@ void Sky::Serialize(SerializeStream& stream, const void* otherObj)
     SERIALIZE_MEMBER(Sun, SunLight);
     SERIALIZE(SunDiscScale);
     SERIALIZE(SunPower);
+    SERIALIZE(IndirectLightingIntensity);
 }
 
 void Sky::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)
@@ -150,6 +158,7 @@ void Sky::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)
     DESERIALIZE_MEMBER(Sun, SunLight);
     DESERIALIZE(SunDiscScale);
     DESERIALIZE(SunPower);
+    DESERIALIZE(IndirectLightingIntensity);
 }
 
 bool Sky::HasContentLoaded() const
@@ -202,6 +211,11 @@ void Sky::DrawFog(GPUContext* context, RenderContext& renderContext, GPUTextureV
 bool Sky::IsDynamicSky() const
 {
     return !IsStatic() || (SunLight && !SunLight->IsStatic());
+}
+
+float Sky::GetIndirectLightingIntensity() const
+{
+    return IndirectLightingIntensity;
 }
 
 void Sky::ApplySky(GPUContext* context, RenderContext& renderContext, const Matrix& world)

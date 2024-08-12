@@ -60,7 +60,7 @@ GPU_CB_STRUCT(Data0 {
     GlobalSurfaceAtlasPass::ConstantsData GlobalSurfaceAtlas;
     ShaderGBufferData GBuffer;
     Float4 RaysRotation;
-    float Padding0;
+    float SkyboxIntensity;
     uint32 ProbesCount;
     float ResetBlend;
     float TemporalTime;
@@ -533,6 +533,7 @@ bool DynamicDiffuseGlobalIlluminationPass::RenderInner(RenderContext& renderCont
         }
         data.TemporalTime = renderContext.List->Setup.UseTemporalAAJitter ? RenderTools::ComputeTemporalTime() : 0.0f;
         data.ViewDir = renderContext.View.Direction;
+        data.SkyboxIntensity = renderContext.List->Sky ? renderContext.List->Sky->GetIndirectLightingIntensity() : 1.0f;
         GBufferPass::SetInputs(renderContext.View, data.GBuffer);
         context->UpdateCB(_cb0, &data);
         context->BindCB(0, _cb0);

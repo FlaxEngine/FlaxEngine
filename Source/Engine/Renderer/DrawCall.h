@@ -40,6 +40,8 @@ public:
     /// </summary>
     virtual bool IsDynamicSky() const = 0;
 
+    virtual float GetIndirectLightingIntensity() const = 0;
+
     /// <summary>
     /// Apply sky material/shader state to the GPU pipeline with custom parameters set (render to GBuffer).
     /// </summary>

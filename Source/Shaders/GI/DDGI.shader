@@ -35,7 +35,7 @@ GlobalSDFData GlobalSDF;
 GlobalSurfaceAtlasData GlobalSurfaceAtlas;
 GBufferData GBuffer;
 float4 RaysRotation;
-float Padding0;
+float SkyboxIntensity;
 uint ProbesCount;
 float ResetBlend;
 float TemporalTime;
@@ -397,7 +397,7 @@ void CS_TraceRays(uint3 DispatchThreadId : SV_DispatchThreadID)
     else
     {
         // Ray hits sky
-        radiance.rgb = Skybox.SampleLevel(SamplerLinearClamp, probeRayDirection, 0).rgb;
+        radiance.rgb = Skybox.SampleLevel(SamplerLinearClamp, probeRayDirection, 0).rgb * SkyboxIntensity;
         radiance.a = 1e27f; // Sky is the limit
     }
 
