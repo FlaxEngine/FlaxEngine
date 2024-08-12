@@ -29,7 +29,7 @@ public:
     float Brightness = 3.14f;
 
     /// <summary>
-    /// Controls light visibility range. The distance at which the light becomes completely faded. Use a value of 0 to always draw light.
+    /// Controls light visibility range. The distance at which the light becomes completely faded (blend happens on the last 10% of that range). Use a value of 0 to always draw light.
     /// </summary>
     API_FIELD(Attributes="EditorOrder(35), Limit(0, float.MaxValue, 10.0f), EditorDisplay(\"Light\")")
     float ViewDistance = 0.0f;
@@ -55,6 +55,19 @@ public:
 protected:
     // Adjust the light brightness used during rendering (called by light types inside SetupLightData callback)
     void AdjustBrightness(const RenderView& view, float& brightness) const;
+
+    FORCE_INLINE bool CheckViewDistance(const Float3& viewPosition, const Float3& viewOrigin, Float3& position, float& brightness) const
+    {
+        position = _transform.Translation - viewOrigin;
+        if (ViewDistance > ZeroTolerance)
+        {
+            const float dst2 = Vector3::DistanceSquared(viewPosition, position);
+            const float dst = Math::Sqrt(dst2);
+            brightness *= Math::Remap(dst, 0.9f * ViewDistance, ViewDistance, 1.0f, 0.0f);
+            return dst < ViewDistance;
+        }
+        return true;
+    }
 
 public:
     // [Actor]

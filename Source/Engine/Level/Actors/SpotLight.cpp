@@ -130,7 +130,7 @@ void SpotLight::Draw(RenderContext& renderContext)
 {
     float brightness = ComputeBrightness();
     AdjustBrightness(renderContext.View, brightness);
-    const Float3 position = GetPosition() - renderContext.View.Origin;
+    Float3 position;
     const float radius = GetScaledRadius();
     const float outerConeAngle = GetOuterConeAngle();
     if (EnumHasAnyFlags(renderContext.View.Flags, ViewFlags::SpotLights)
@@ -138,7 +138,7 @@ void SpotLight::Draw(RenderContext& renderContext)
         && brightness > ZeroTolerance
         && radius > ZeroTolerance
         && outerConeAngle > ZeroTolerance
-        && (ViewDistance < ZeroTolerance || Vector3::DistanceSquared(renderContext.View.Position, position) < ViewDistance * ViewDistance))
+        && CheckViewDistance(renderContext.View.Position, renderContext.View.Origin, position, brightness))
     {
         RenderSpotLightData data;
         data.Position = position;

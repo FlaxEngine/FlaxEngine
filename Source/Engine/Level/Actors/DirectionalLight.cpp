@@ -18,11 +18,11 @@ void DirectionalLight::Draw(RenderContext& renderContext)
 {
     float brightness = Brightness;
     AdjustBrightness(renderContext.View, brightness);
-    const Float3 position = GetPosition() - renderContext.View.Origin;
+    Float3 position;
     if (Brightness > ZeroTolerance
         && EnumHasAnyFlags(renderContext.View.Flags, ViewFlags::DirectionalLights)
         && EnumHasAnyFlags(renderContext.View.Pass, DrawPass::GBuffer)
-        && (ViewDistance < ZeroTolerance || Float3::DistanceSquared(renderContext.View.Position, position) < ViewDistance * ViewDistance))
+        && CheckViewDistance(renderContext.View.Position, renderContext.View.Origin, position, brightness))
     {
         RenderDirectionalLightData data;
         data.Position = position;
