@@ -1088,7 +1088,7 @@ bool FlaxStorage::LoadAssetHeader(const Entry& e, AssetInitData& data)
         {
             int32 chunkIndex;
             stream->ReadInt32(&chunkIndex);
-            if (chunkIndex >= _chunks.Count())
+            if (chunkIndex < -1 || chunkIndex >= _chunks.Count())
             {
                 LOG(Warning, "Invalid chunks mapping.");
                 return true;
@@ -1145,7 +1145,7 @@ bool FlaxStorage::LoadAssetHeader(const Entry& e, AssetInitData& data)
         {
             int32 chunkIndex;
             stream->ReadInt32(&chunkIndex);
-            if (chunkIndex >= _chunks.Count())
+            if (chunkIndex < -1 || chunkIndex >= _chunks.Count())
             {
                 LOG(Warning, "Invalid chunks mapping.");
                 return true;
@@ -1200,7 +1200,7 @@ bool FlaxStorage::LoadAssetHeader(const Entry& e, AssetInitData& data)
         {
             int32 chunkIndex;
             stream->ReadInt32(&chunkIndex);
-            if (chunkIndex >= _chunks.Count())
+            if (chunkIndex < -1 || chunkIndex >= _chunks.Count())
             {
                 LOG(Warning, "Invalid chunks mapping.");
                 return true;
