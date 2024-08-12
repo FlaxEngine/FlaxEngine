@@ -102,8 +102,22 @@ namespace Flax.Build.Bindings
 
         private static string GenerateCSharpDefaultValueNativeToManaged(BuildData buildData, string value, ApiTypeInfo caller, TypeInfo valueType = null, bool attribute = false, string managedType = null)
         {
+            ApiTypeInfo apiType = null;
             if (string.IsNullOrEmpty(value))
+            {
+                if (attribute && valueType != null && !valueType.IsArray)
+                {
+                    //if (valueType.Type == "")
+                    //ScriptingObjectReference
+                    apiType = FindApiTypeInfo(buildData, valueType, caller);
+
+                    // Object reference
+                    if (apiType != null && apiType.IsScriptingObject)
+                        return "null";
+                }
+
                 return null;
+            }
 
             // Special case for Engine TEXT macro
             if (value.StartsWith("TEXT(\"") && value.EndsWith("\")"))
@@ -150,7 +164,6 @@ namespace Flax.Build.Bindings
 
             value = value.Replace("::", ".");
             var dot = value.LastIndexOf('.');
-            ApiTypeInfo apiType = null;
             if (dot != -1)
             {
                 var type = new TypeInfo(value.Substring(0, dot));
