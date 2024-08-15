@@ -63,6 +63,7 @@ namespace FlaxEditor.Viewport
         private UpdateDelegate _update;
 
         private readonly ViewportDebugDrawData _debugDrawData = new ViewportDebugDrawData(32);
+        private readonly List<Actor> _debugDrawActors = new List<Actor>();
         private PrefabSpritesRenderer _spritesRenderer;
         private IntPtr _tempDebugDrawContext;
 
@@ -624,22 +625,25 @@ namespace FlaxEditor.Viewport
                     DebugDraw.DrawActors(new IntPtr(actors), _debugDrawData.ActorsCount, false);
                 }
             }
-            
+
             // Debug draw all actors in prefab and collect actors
-            List<Actor> pActors = new List<Actor>();
+            var viewFlags = Task.ViewFlags;
+            var collectActors = (viewFlags & ViewFlags.PhysicsDebug) != 0 || (viewFlags & ViewFlags.LightsDebug) != 0;
+            _debugDrawActors.Clear();
             foreach (var child in SceneGraphRoot.ChildNodes)
             {
                 if (child is not ActorNode actorNode)
                     continue;
                 var actor = actorNode.Actor;
-                Utils.GetActorsTree(pActors, actor);
+                if (collectActors)
+                    Utils.GetActorsTree(_debugDrawActors, actor);
                 DebugDraw.DrawActorsTree(actor);
             }
-            
+
             // Draw physics debug
-            if ((Task.ViewFlags & ViewFlags.PhysicsDebug) != 0)
+            if ((viewFlags & ViewFlags.PhysicsDebug) != 0)
             {
-                foreach (var actor in pActors)
+                foreach (var actor in _debugDrawActors)
                 {
                     if (actor is Collider c && c.IsActiveInHierarchy)
                     {
@@ -647,16 +651,18 @@ namespace FlaxEditor.Viewport
                     }
                 }
             }
-            
+
             // Draw lights debug
-            if ((Task.ViewFlags & ViewFlags.LightsDebug) != 0)
+            if ((viewFlags & ViewFlags.LightsDebug) != 0)
             {
-                foreach (var actor in pActors)
+                foreach (var actor in _debugDrawActors)
                 {
                     if (actor is Light l && l.IsActiveInHierarchy)
                         DebugDraw.DrawLightDebug(l, renderContext.View);
                 }
             }
+
+            _debugDrawActors.Clear();
         }
     }
 }
