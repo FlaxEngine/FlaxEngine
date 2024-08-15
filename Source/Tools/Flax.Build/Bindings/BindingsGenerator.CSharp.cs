@@ -142,6 +142,7 @@ namespace Flax.Build.Bindings
             // Numbers
             if (float.TryParse(value, out _) || (value[value.Length - 1] == 'f' && float.TryParse(value.Substring(0, value.Length - 1), out _)))
             {
+                value = value.Replace(".f", ".0f");
                 // If the value type is different than the value (eg. value is int but the field is float) then cast it for the [DefaultValue] attribute
                 if (valueType != null && attribute)
                     return $"({GenerateCSharpNativeToManaged(buildData, valueType, caller)}){value}";
@@ -166,7 +167,7 @@ namespace Flax.Build.Bindings
                     foreach (var vectorType in CSharpVectorTypes)
                     {
                         if (value.Length > vectorType.Length + 4 && value.StartsWith(vectorType) && value[vectorType.Length] == '(')
-                            return $"typeof({vectorType}), \"{value.Substring(vectorType.Length + 1, value.Length - vectorType.Length - 2).Replace("f", "")}\"";
+                            return $"typeof({vectorType}), \"{value.Substring(vectorType.Length + 1, value.Length - vectorType.Length - 2).Replace(".f", ".0").Replace("f", "")}\"";
                     }
 
                     return null;
