@@ -2,7 +2,6 @@
 
 #pragma once
 
-#include "Engine/Core/Delegate.h"
 #include "Engine/Scripting/ScriptingType.h"
 #include "Engine/Input/Enums.h"
 
