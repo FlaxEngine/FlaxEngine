@@ -113,6 +113,7 @@ namespace FlaxEditor.Tools.Terrain
             }
 
             _createTerrainButton.Clicked += OnCreateNewTerrainClicked;
+            OnSelectionChanged();
         }
 
         private void OnSceneLoaded(Scene arg1, Guid arg2)
@@ -159,6 +160,7 @@ namespace FlaxEditor.Tools.Terrain
             }
 
             _noTerrainPanel.Visible = terrain == null;
+            _modes.Visible = !_noTerrainPanel.Visible;
         }
 
         private void InitSculptMode()
