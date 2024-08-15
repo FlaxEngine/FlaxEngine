@@ -27,6 +27,8 @@
 #include "Engine/Render2D/FontAsset.h"
 #if USE_EDITOR
 #include "Editor/Editor.h"
+#include "Engine/Level/Actors/Light.h"
+#include "Engine/Physics/Colliders/Collider.h"
 #endif
 
 // Debug draw service configuration
@@ -950,6 +952,23 @@ void DebugDraw::DrawActorsTree(Actor* actor)
     actor->TreeExecute(function);
 }
 
+#if USE_EDITOR
+void DebugDraw::DrawColliderDebugPhysics(Collider* collider, RenderView& view)
+{
+    if (!collider)
+        return;
+
+    collider->DrawPhysicsDebug(view);
+}
+
+void DebugDraw::DrawLightDebug(Light* light, RenderView& view)
+{
+    if (!light)
+        return;
+
+    light->DrawLightsDebug(view);
+}
+#endif
 void DebugDraw::DrawAxisFromDirection(const Vector3& origin, const Vector3& direction, float size, float duration, bool depthTest)
 {
     CHECK_DEBUG(direction.IsNormalized());
