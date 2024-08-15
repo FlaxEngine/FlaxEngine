@@ -324,14 +324,13 @@ public:
     {
         if (length <= 0)
             return;
-        if (Base::Length() == 0)
+        auto prev = Base::_data;
+        const auto prevLength = Base::_length;
+        if (prevLength == 0 || prev == nullptr)
         {
             Copy(data, length);
             return;
         }
-
-        auto prev = Base::_data;
-        const auto prevLength = Base::_length;
 
         Base::_length = prevLength + length;
         Base::_data = (T*)Allocator::Allocate(Base::_length * sizeof(T));

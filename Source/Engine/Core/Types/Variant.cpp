@@ -2702,8 +2702,8 @@ void Variant::SetAsset(Asset* asset)
         SetType(VariantType(VariantType::Asset));
     if (AsAsset)
     {
-        asset->OnUnloaded.Unbind<Variant, &Variant::OnAssetUnloaded>(this);
-        asset->RemoveReference();
+        AsAsset->OnUnloaded.Unbind<Variant, &Variant::OnAssetUnloaded>(this);
+        AsAsset->RemoveReference();
     }
     AsAsset = asset;
     if (asset)

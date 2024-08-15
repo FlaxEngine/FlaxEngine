@@ -492,7 +492,7 @@ namespace FlaxEditor.Surface
                     Focus();
                     return true;
                 }
-                if (_rightMouseDown || (_middleMouseDown && _middleMouseDown))
+                if (_rightMouseDown || _middleMouseDown)
                 {
                     // Start navigating
                     StartMouseCapture();
