@@ -25,6 +25,9 @@ namespace FlaxEditor.Surface
         public FlaxEditor.Surface.Archetypes.Particles.ParticleEmitterNode RootNode => _rootNode;
 
         /// <inheritdoc />
+        public override bool UseContextMenuDescriptionPanel => true;
+
+        /// <inheritdoc />
         public ParticleEmitterSurface(IVisjectSurfaceOwner owner, Action onSave, FlaxEditor.Undo undo)
         : base(owner, onSave, undo)
         {
