@@ -426,6 +426,7 @@ void SceneObjectsFactory::SetupPrefabInstances(Context& context, const PrefabSyn
     PROFILE_CPU_NAMED("SetupPrefabInstances");
     const int32 count = data.Data.Size();
     ASSERT(count <= data.SceneObjects.Count());
+    Dictionary<Guid, Guid> parentIdsLookup;
     for (int32 i = 0; i < count; i++)
     {
         const auto& stream = data.Data[i];
@@ -435,14 +436,19 @@ void SceneObjectsFactory::SetupPrefabInstances(Context& context, const PrefabSyn
         if (!JsonTools::GetGuidIfValid(prefabId, stream, "PrefabID"))
             continue;
         Guid parentId = JsonTools::GetGuid(stream, "ParentID");
-        for (int32 j = i - 1; j >= 0; j--)
+        if (!parentIdsLookup.TryGet(parentId, parentId))
         {
-            // Find ID of the parent to this object (use data in json for relationship)
-            if (parentId == JsonTools::GetGuid(data.Data[j], "ID") && data.SceneObjects[j])
+            Guid parentIdKep = parentId;
+            for (int32 j = i - 1; j >= 0; j--)
             {
-                parentId = data.SceneObjects[j]->GetID();
-                break;
+                // Find ID of the parent to this object (use data in json for relationship)
+                if (parentId == JsonTools::GetGuid(data.Data[j], "ID") && data.SceneObjects[j])
+                {
+                    parentId = data.SceneObjects[j]->GetID();
+                    break;
+                }
             }
+            parentIdsLookup.Add(parentIdKep, parentId);
         }
         const SceneObject* obj = data.SceneObjects[i];
         const Guid id = obj ? obj->GetID() : JsonTools::GetGuid(stream, "ID");
