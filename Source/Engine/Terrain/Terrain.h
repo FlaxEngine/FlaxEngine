@@ -130,7 +130,7 @@ public:
     }
 
     /// <summary>
-    /// Gets the terrain LODs distribution parameter. Adjusts terrain chunks transitions distances. Use lower value to increase terrain quality or higher value to increase performance. Default value is 0.75.
+    /// Gets the terrain LODs distribution parameter. Adjusts terrain chunks transitions distances. Use lower value to increase terrain quality or higher value to increase performance.
     /// </summary>
     API_PROPERTY(Attributes="EditorOrder(70), DefaultValue(0.6f), Limit(0, 5, 0.01f), EditorDisplay(\"Terrain\", \"LOD Distribution\")")
     FORCE_INLINE float GetLODDistribution() const
@@ -139,7 +139,7 @@ public:
     }
 
     /// <summary>
-    /// Sets the terrain LODs distribution parameter. Adjusts terrain chunks transitions distances. Use lower value to increase terrain quality or higher value to increase performance. Default value is 0.75.
+    /// Sets the terrain LODs distribution parameter. Adjusts terrain chunks transitions distances. Use lower value to increase terrain quality or higher value to increase performance.
     /// </summary>
     API_PROPERTY() void SetLODDistribution(float value);
 
