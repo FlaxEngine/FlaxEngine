@@ -773,7 +773,7 @@ namespace FlaxEngine
         }
 
 #if FLAX_EDITOR
-        internal void OnActiveInTreeChanged()
+        internal void ActiveInTreeChanged()
         {
             if (RenderMode == CanvasRenderMode.ScreenSpace && _editorRoot != null && _guiRoot != null)
             {
