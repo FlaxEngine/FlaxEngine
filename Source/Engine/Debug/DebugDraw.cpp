@@ -952,7 +952,7 @@ void DebugDraw::DrawActorsTree(Actor* actor)
 
 void DebugDraw::DrawAxisFromDirection(const Vector3& origin, const Vector3& direction, float size, float duration, bool depthTest)
 {
-    ASSERT(direction.IsNormalized());
+    CHECK_DEBUG(direction.IsNormalized());
     const auto rot = Quaternion::FromDirection(direction);
     const Vector3 up = (rot * Vector3::Up);
     const Vector3 forward = (rot * Vector3::Forward);
@@ -978,7 +978,7 @@ void DebugDraw::DrawRay(const Vector3& origin, const Vector3& direction, const C
 
 void DebugDraw::DrawRay(const Vector3& origin, const Vector3& direction, const Color& color, float length, float duration, bool depthTest)
 {
-    ASSERT(direction.IsNormalized());
+    CHECK_DEBUG(direction.IsNormalized());
     if (isnan(length) || isinf(length))
         return;
     DrawLine(origin, origin + (direction * length), color, duration, depthTest);
