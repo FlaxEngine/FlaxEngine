@@ -996,37 +996,37 @@ public:
     /// <summary>
     /// Called when actor parent gets changed.
     /// </summary>
-    virtual void OnParentChanged();
+    API_FUNCTION() virtual void OnParentChanged();
 
     /// <summary>
     /// Called when actor transform gets changed.
     /// </summary>
-    virtual void OnTransformChanged();
+    API_FUNCTION() virtual void OnTransformChanged();
 
     /// <summary>
     /// Called when actor active state gets changed.
     /// </summary>
-    virtual void OnActiveChanged();
+    API_FUNCTION() virtual void OnActiveChanged();
 
     /// <summary>
     /// Called when actor active in tree state gets changed.
     /// </summary>
-    virtual void OnActiveInTreeChanged();
+    API_FUNCTION() virtual void OnActiveInTreeChanged();
 
     /// <summary>
     /// Called when order in parent children array gets changed.
     /// </summary>
-    virtual void OnOrderInParentChanged();
+    API_FUNCTION() virtual void OnOrderInParentChanged();
 
     /// <summary>
     /// Called when actor static flag gets changed.
     /// </summary>
-    virtual void OnStaticFlagsChanged();
+    API_FUNCTION() virtual void OnStaticFlagsChanged();
 
     /// <summary>
     /// Called when layer gets changed.
     /// </summary>
-    virtual void OnLayerChanged();
+    API_FUNCTION() virtual void OnLayerChanged();
 
     /// <summary>
     /// Called when adding object to the game.
