@@ -140,9 +140,8 @@ float4 PS_RayTracePass(Quad_VS2PS input) : SV_Target0
 
     GlobalSDFTrace sdfTrace;
     float maxDistance = GLOBAL_SDF_WORLD_SIZE;
-    float selfOcclusionBias = GlobalSDF.CascadeVoxelSize[0];
-    sdfTrace.Init(gBuffer.WorldPos + gBuffer.Normal * selfOcclusionBias, reflectWS, 0.0f, maxDistance);
-    GlobalSDFHit sdfHit = RayTraceGlobalSDF(GlobalSDF, GlobalSDFTex, GlobalSDFMip, sdfTrace);
+    sdfTrace.Init(gBuffer.WorldPos, reflectWS, 0.0f, maxDistance);
+    GlobalSDFHit sdfHit = RayTraceGlobalSDF(GlobalSDF, GlobalSDFTex, GlobalSDFMip, sdfTrace, 2.0f);
     if (sdfHit.IsHit())
     {
         float3 hitPosition = sdfHit.GetHitPosition(sdfTrace);
