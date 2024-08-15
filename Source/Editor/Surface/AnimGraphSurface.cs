@@ -89,6 +89,9 @@ namespace FlaxEditor.Surface
 
         private static NodesCache _nodesCache = new NodesCache(IterateNodesCache);
 
+        /// <inheritdoc />
+        public override bool UseContextMenuDescriptionPanel => true;
+
         /// <summary>
         /// The state machine editing context menu.
         /// </summary>
