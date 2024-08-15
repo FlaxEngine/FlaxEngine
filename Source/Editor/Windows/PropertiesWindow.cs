@@ -21,7 +21,7 @@ namespace FlaxEditor.Windows
     {
         private IEnumerable<object> undoRecordObjects;
 
-        private readonly Dictionary<string, string> _actorScrollValues = new Dictionary<string, string>();
+        private readonly Dictionary<Guid, float> _actorScrollValues = new Dictionary<Guid, float>();
 
         /// <inheritdoc />
         public override bool UseLayoutData => true;
@@ -63,7 +63,6 @@ namespace FlaxEditor.Windows
 
             VScrollBar.ValueChanged += OnScrollValueChanged;
             Editor.SceneEditing.SelectionChanged += OnSelectionChanged;
-            Editor.Scene.ActorRemoved += OnActorRemoved;
         }
 
         /// <inheritdoc />
@@ -75,11 +74,6 @@ namespace FlaxEditor.Windows
             if (Level.ScenesCount > 1)
                 return;
             _actorScrollValues.Clear();
-        }
-
-        private void OnActorRemoved(ActorNode node)
-        {
-            _actorScrollValues.Remove(node.ID.ToString());
         }
 
         private void OnScrollValueChanged()
@@ -100,7 +94,7 @@ namespace FlaxEditor.Windows
                 }
             }
             
-            _actorScrollValues[Editor.SceneEditing.Selection[0].ID.ToString()] = VScrollBar.TargetValue.ToString("0");
+            _actorScrollValues[Editor.SceneEditing.Selection[0].ID] = VScrollBar.TargetValue;
         }
 
         private IEnumerable<object> GetUndoObjects(CustomEditorPresenter customEditorPresenter)
@@ -121,12 +115,7 @@ namespace FlaxEditor.Windows
 
             // Set scroll value of window if it exists
             if (Editor.SceneEditing.SelectionCount == 1)
-            {
-                if (_actorScrollValues.TryGetValue(Editor.SceneEditing.Selection[0].ID.ToString(), out var outValue))
-                    VScrollBar.TargetValue = Convert.ToSingle(outValue);
-                else
-                    VScrollBar.TargetValue = 0;
-            }
+                VScrollBar.TargetValue = _actorScrollValues.GetValueOrDefault(Editor.SceneEditing.Selection[0].ID, 0);
         }
 
         /// <inheritdoc />
