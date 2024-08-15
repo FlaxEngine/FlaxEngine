@@ -426,18 +426,21 @@ void AudioSource::Update()
         _startingToPlay = false;
     }
 
-    int32 queuedBuffers;
-    AudioBackend::Source::GetQueuedBuffersCount(this, queuedBuffers);
-    if (!UseStreaming() && Math::NearEqual(GetTime(), 0.0f) && queuedBuffers > 0 && _isActuallyPlayingSth && !_startingToPlay)
+    if (!UseStreaming() && Math::NearEqual(GetTime(), 0.0f) && _isActuallyPlayingSth && !_startingToPlay)
     {
-        if (GetIsLooping())
+        int32 queuedBuffers;
+        AudioBackend::Source::GetQueuedBuffersCount(this, queuedBuffers);
+        if (queuedBuffers)
         {
-            Stop();
-            Play();
-        }
-        else
-        {
-            Stop();
+            if (GetIsLooping())
+            {
+                Stop();
+                Play();
+            }
+            else
+            {
+                Stop();
+            }
         }
     }
 
