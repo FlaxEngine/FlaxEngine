@@ -143,9 +143,11 @@ namespace FlaxEngine.GUI
                 if (!Mathf.NearEqual(value, _value))
                 {
                     _value = value;
-                    if (!UseSmoothing)
+                    if (!UseSmoothing || _firstUpdate)
                     {
                         _current = _value;
+                        if (_firstUpdate)
+                            _firstUpdate = false;
                     }
                 }
             }
@@ -205,7 +207,7 @@ namespace FlaxEngine.GUI
                 {
                     // Lerp or not if running slow
                     bool isDeltaSlow = deltaTime > (1 / 20.0f);
-                    if (!isDeltaSlow && UseSmoothing && !_firstUpdate)
+                    if (!isDeltaSlow && UseSmoothing)
                         value = Mathf.Lerp(_current, _value, Mathf.Saturate(deltaTime * 5.0f * SmoothingScale));
                     _current = value;
                 }
@@ -216,9 +218,6 @@ namespace FlaxEngine.GUI
             }
 
             base.Update(deltaTime);
-
-            if (_firstUpdate)
-                _firstUpdate = false;
         }
 
         /// <inheritdoc />
