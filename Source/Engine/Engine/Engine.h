@@ -79,6 +79,11 @@ public:
     /// </summary>
     static Action Unpause;
 
+    /// <summary>
+    /// Event called when the engine is requesting exit.
+    /// </summary>
+    API_EVENT() static Action RequestingExit;
+
 public:
 
     /// <summary>

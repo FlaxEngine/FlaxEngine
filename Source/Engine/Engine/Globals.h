@@ -59,8 +59,18 @@ DECLARE_SCRIPTING_TYPE_NO_SPAWN(Globals);
     // True if fatal error occurred (engine is exiting)
     static bool FatalErrorOccurred;
 
-    // True if engine need to be closed
+    // True if engine needs to be closed
     static bool IsRequestingExit;
+
+    /// <summary>
+    /// True if engine needs to be closed
+    /// </summary>
+    API_PROPERTY() FORCE_INLINE static bool GetIsRequestingExit() { return IsRequestingExit; }
+
+    /// <summary>
+    /// True if fatal error occurred (engine is exiting)
+    /// </summary>
+    API_PROPERTY() FORCE_INLINE static bool GetFatalErrorOccurred() { return FatalErrorOccurred; }
 
     // Exit code
     static int32 ExitCode;

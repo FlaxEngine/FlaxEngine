@@ -662,13 +662,13 @@ bool FlaxStorage::LoadAssetChunk(FlaxChunk* chunk)
                 if (!failed)
                 {
                     stream->SetPosition(chunk->LocationInFile.Address);
+                    if (!stream->HasError())
+                        break;
                 }
-                if (!stream->HasError())
-                    break;
             }
         }
 
-        if (stream->HasError())
+        if (!stream || stream->HasError())
         {
             failed = true;
             UnlockChunks();

@@ -196,6 +196,7 @@ bool AudioService::Init()
 
     LOG(Info, "Audio system initialization... (backend: {0})", AudioBackend::Name());
 
+    EnableHRTF = settings->EnableHRTF;
     if (AudioBackend::Init())
     {
         LOG(Warning, "Failed to initialize audio backend.");

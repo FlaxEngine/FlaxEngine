@@ -56,6 +56,7 @@ private:
     bool _allowSpatialization;
 
     bool _isActuallyPlayingSth = false;
+    bool _startingToPlay = false;
     bool _needToUpdateStreamingBuffers = false;
     States _state = States::Stopped;
 

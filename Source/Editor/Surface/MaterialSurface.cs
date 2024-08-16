@@ -26,6 +26,9 @@ namespace FlaxEditor.Surface
         public override bool CanLivePreviewValueChanges => false;
 
         /// <inheritdoc />
+        public override bool UseContextMenuDescriptionPanel => true;
+
+        /// <inheritdoc />
         public override string GetTypeName(ScriptType type)
         {
             if (type.Type == typeof(void))

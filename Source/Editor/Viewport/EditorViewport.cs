@@ -1612,7 +1612,7 @@ namespace FlaxEditor.Viewport
                     _input.IsPanning = !isAltDown && mbDown && !rbDown;
                     _input.IsRotating = !isAltDown && !mbDown && rbDown;
                     _input.IsMoving = !isAltDown && mbDown && rbDown;
-                    _input.IsZooming = wheelInUse && !_input.IsShiftDown;
+                    _input.IsZooming = wheelInUse && !(_input.IsShiftDown || (!ContainsFocus && FlaxEngine.Input.GetKey(KeyboardKeys.Shift)));
                     _input.IsOrbiting = isAltDown && lbDown && !mbDown && !rbDown;
 
                     // Control move speed with RMB+Wheel
