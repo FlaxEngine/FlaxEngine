@@ -404,7 +404,7 @@ void AudioSource::Update()
     if (!UseStreaming() && Math::NearEqual(GetTime(), 0.0f) && _isActuallyPlayingSth && !_startingToPlay)
     {
         int32 queuedBuffers;
-        AudioBackend::Source::GetQueuedBuffersCount(this, queuedBuffers);
+        AudioBackend::Source::GetQueuedBuffersCount(SourceID, queuedBuffers);
         if (queuedBuffers)
         {
             if (GetIsLooping())
