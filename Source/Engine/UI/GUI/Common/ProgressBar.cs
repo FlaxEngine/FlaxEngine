@@ -169,6 +169,9 @@ namespace FlaxEngine.GUI
         [EditorDisplay("Bar Style"), EditorOrder(2012), Tooltip("The brush used for progress bar drawing.")]
         public IBrush BarBrush { get; set; }
 
+        // Used to remove initial lerp from the value on play.
+        private bool _firstUpdate = true;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="ProgressBar"/> class.
         /// </summary>
@@ -202,7 +205,7 @@ namespace FlaxEngine.GUI
                 {
                     // Lerp or not if running slow
                     bool isDeltaSlow = deltaTime > (1 / 20.0f);
-                    if (!isDeltaSlow && UseSmoothing)
+                    if (!isDeltaSlow && UseSmoothing && !_firstUpdate)
                         value = Mathf.Lerp(_current, _value, Mathf.Saturate(deltaTime * 5.0f * SmoothingScale));
                     _current = value;
                 }
@@ -213,6 +216,9 @@ namespace FlaxEngine.GUI
             }
 
             base.Update(deltaTime);
+
+            if (_firstUpdate)
+                _firstUpdate = false;
         }
 
         /// <inheritdoc />
