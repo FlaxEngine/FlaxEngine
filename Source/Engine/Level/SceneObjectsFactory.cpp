@@ -719,26 +719,21 @@ void SceneObjectsFactory::SynchronizePrefabInstances(Context& context, PrefabSyn
 
 void SceneObjectsFactory::SynchronizeNewPrefabInstances(Context& context, PrefabSyncData& data, Prefab* prefab, Actor* actor, const Guid& actorPrefabObjectId, int32 i, const ISerializable::DeserializeStream& stream)
 {
-    // Check for RemovedObjects list
+    // Use cached acceleration structure for prefab hierarchy validation
+    const auto* hierarchy = prefab->ObjectsHierarchyCache.TryGet(actorPrefabObjectId);
+    if (!hierarchy)
+        return;
+    const Guid actorId = actor->GetID();
     const auto removedObjects = SERIALIZE_FIND_MEMBER(stream, "RemovedObjects");
-
-    // Check if the given actor has new children or scripts added (inside the prefab that it uses)
-    // TODO: consider caching prefab objects structure maybe to boost this logic?
-    for (auto it = prefab->ObjectsDataCache.Begin(); it.IsNotEnd(); ++it)
+    for (const Guid& prefabObjectId : *hierarchy)
     {
-        // Use only objects that are linked to the current actor
-        const Guid parentId = JsonTools::GetGuid(*it->Value, "ParentID");
-        if (parentId != actorPrefabObjectId)
-            continue;
-
         // Skip if object was marked to be removed per instance
-        const Guid prefabObjectId = JsonTools::GetGuid(*it->Value, "ID");
         if (removedObjects != stream.MemberEnd())
         {
             auto& list = removedObjects->value;
-            const int32 size = static_cast<int32>(list.Size());
+            const rapidjson::SizeType size = list.Size();
             bool removed = false;
-            for (int32 j = 0; j < size; j++)
+            for (rapidjson::SizeType j = 0; j < size; j++)
             {
                 if (JsonTools::GetGuid(list[j]) == prefabObjectId)
                 {
@@ -754,10 +749,19 @@ void SceneObjectsFactory::SynchronizeNewPrefabInstances(Context& context, Prefab
         bool spawned = false;
         int32 childSearchStart = i + 1; // Objects are serialized with parent followed by its children
         int32 instanceIndex = -1;
-        if (context.ObjectToInstance.TryGet(actor->GetID(), instanceIndex) && context.Instances[instanceIndex].Prefab == prefab)
+        if (context.ObjectToInstance.TryGet(actorId, instanceIndex) && context.Instances[instanceIndex].Prefab == prefab)
         {
+            // Quickly check if that object exists
+            auto& prefabInstance = context.Instances[instanceIndex];
+            Guid id;
+            int32 idInstanceIndex;
+            if (prefabInstance.IdsMapping.TryGet(prefabObjectId, id) && 
+                context.ObjectToInstance.TryGet(id, idInstanceIndex) && 
+                idInstanceIndex == instanceIndex)
+                continue;
+
             // Start searching from the beginning of that prefab instance (eg. in case prefab objects were reordered)
-            childSearchStart = Math::Min(childSearchStart, context.Instances[instanceIndex].StatIndex);
+            childSearchStart = Math::Min(childSearchStart, prefabInstance.StatIndex);
         }
         for (int32 j = childSearchStart; j < data.InitialCount; j++)
         {
@@ -773,7 +777,7 @@ void SceneObjectsFactory::SynchronizeNewPrefabInstances(Context& context, Prefab
 
         // Map prefab object ID to this actor's prefab instance so the new objects gets added to it
         context.SetupIdsMapping(actor, data.Modifier);
-        data.Modifier->IdsMapping[actorPrefabObjectId] = actor->GetID();
+        data.Modifier->IdsMapping[actorPrefabObjectId] = actorId;
         Scripting::ObjectsLookupIdMapping.Set(&data.Modifier->IdsMapping);
 
         // Create instance (including all children)
