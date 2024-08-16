@@ -1,5 +1,7 @@
 // Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
+using System;
+using FlaxEditor.CustomEditors.Elements;
 using FlaxEditor.Surface;
 using FlaxEngine;
 
@@ -31,6 +33,22 @@ namespace FlaxEditor.CustomEditors.Dedicated
                                                     (instance, parameter, tag) => ((AnimatedModel)instance).GetParameterValue(parameter.Identifier),
                                                     (instance, value, parameter, tag) => ((AnimatedModel)instance).SetParameterValue(parameter.Identifier, value),
                                                     Values);
+            }
+        }
+
+        /// <inheritdoc />
+        public override void Refresh()
+        {
+            base.Refresh();
+
+            // Check if parameters group is still showing if not in play mode and hide it.
+            if (!Editor.Instance.StateMachine.IsPlayMode)
+            {
+                var group = Layout.Children.Find(x => x is GroupElement g && g.Panel.HeaderText.Equals("Parameters", StringComparison.Ordinal));
+                if (group != null)
+                {
+                    RebuildLayout();
+                }
             }
         }
     }
