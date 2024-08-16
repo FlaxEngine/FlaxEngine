@@ -51,7 +51,9 @@ namespace FlaxEditor.Windows.Profiler
             {
                 Title = "GPU Memory Usage",
                 AnchorPreset = AnchorPresets.HorizontalStretchTop,
-                FormatSample = v => Utilities.Utils.FormatBytesCount((int)v),
+                Offsets = Margin.Zero,
+                Height = SingleChart.DefaultHeight,
+                FormatSample = v => Utilities.Utils.FormatBytesCount((ulong)v),
                 Parent = mainPanel,
             };
             _memoryUsageChart.SelectedSampleChanged += OnSelectedSampleChanged;
