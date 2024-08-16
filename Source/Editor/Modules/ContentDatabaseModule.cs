@@ -735,6 +735,8 @@ namespace FlaxEditor.Modules
         /// <param name="rebuild">Should rebuild entire database after addition.</param>
         public void AddProxy(ContentProxy proxy, bool rebuild = false)
         {
+            if (Proxy.Find(x => x.GetType().ToString().Equals(proxy.GetType().ToString(), StringComparison.Ordinal)) != null)
+                return;
             Proxy.Insert(0, proxy);
             if (rebuild)
                 Rebuild(true);
