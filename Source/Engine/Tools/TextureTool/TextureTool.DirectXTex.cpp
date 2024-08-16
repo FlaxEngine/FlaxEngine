@@ -50,6 +50,39 @@ namespace
         return static_cast<DXGI_FORMAT>(format);
     }
 
+    FORCE_INLINE DXGI_FORMAT ToDecompressFormat(const DXGI_FORMAT format)
+    {
+        switch (format)
+        {
+        case DXGI_FORMAT_BC1_TYPELESS:
+        case DXGI_FORMAT_BC2_TYPELESS:
+        case DXGI_FORMAT_BC3_TYPELESS:
+            return DXGI_FORMAT_R8G8B8A8_TYPELESS;
+        case DXGI_FORMAT_BC1_UNORM:
+        case DXGI_FORMAT_BC2_UNORM:
+        case DXGI_FORMAT_BC3_UNORM:
+            return DXGI_FORMAT_R8G8B8A8_UNORM;
+        case DXGI_FORMAT_BC1_UNORM_SRGB:
+        case DXGI_FORMAT_BC2_UNORM_SRGB:
+        case DXGI_FORMAT_BC3_UNORM_SRGB:
+            return DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
+        case DXGI_FORMAT_BC4_TYPELESS:
+            return DXGI_FORMAT_R8_TYPELESS;
+        case DXGI_FORMAT_BC4_UNORM:
+            return DXGI_FORMAT_R8_UNORM;
+        case DXGI_FORMAT_BC4_SNORM:
+            return DXGI_FORMAT_R8_SNORM;
+        case DXGI_FORMAT_BC5_TYPELESS:
+            return DXGI_FORMAT_R8G8_TYPELESS;
+        case DXGI_FORMAT_BC5_UNORM:
+            return DXGI_FORMAT_R8G8_UNORM;
+        case DXGI_FORMAT_BC5_SNORM:
+            return DXGI_FORMAT_R8G8_SNORM;
+        default:
+            return DXGI_FORMAT_R16G16B16A16_FLOAT;
+        }
+    }
+
     HRESULT Compress(const DirectX::Image* srcImages, size_t nimages, const DirectX::TexMetadata& metadata, DXGI_FORMAT format, DirectX::TEX_COMPRESS_FLAGS compress, float threshold, DirectX::ScratchImage& cImages)
     {
 #if USE_EDITOR
@@ -627,8 +660,6 @@ bool TextureTool::ImportTextureDirectXTex(ImageType type, const StringView& path
     int32 height = Math::Clamp(options.Resize ? options.SizeY : static_cast<int32>(sourceHeight * options.Scale), 1, options.MaxSize);
     if (sourceWidth != width || sourceHeight != height)
     {
-        auto& tmpImg = GET_TMP_IMG();
-
         // During resizing we need to keep texture aspect ratio
         const bool keepAspectRatio = false; // TODO: expose as import option
         if (keepAspectRatio)
@@ -642,15 +673,27 @@ bool TextureTool::ImportTextureDirectXTex(ImageType type, const StringView& path
 
         // Resize source texture
         LOG(Info, "Resizing texture from {0}x{1} to {2}x{3}.", sourceWidth, sourceHeight, width, height);
-        result = DirectX::Resize(*currentImage->GetImages(), width, height, DirectX::TEX_FILTER_LINEAR | DirectX::TEX_FILTER_SEPARATE_ALPHA, tmpImg);
-        if (FAILED(result))
+        if (DirectX::IsCompressed(currentImage->GetMetadata().format))
         {
-            errorMsg = String::Format(TEXT("Cannot resize texture, error: {0:x}"), static_cast<uint32>(result));
-            return true;
+            auto& tmpImg = GET_TMP_IMG();
+            result = Decompress(currentImage->GetImages(), currentImage->GetImageCount(), currentImage->GetMetadata(), ToDecompressFormat(currentImage->GetMetadata().format), tmpImg);
+            if (FAILED(result))
+            {
+                errorMsg = String::Format(TEXT("Cannot decompress texture, error: {0:x}"), static_cast<uint32>(result));
+                return true;
+            }
+            SET_CURRENT_IMG(tmpImg);
         }
-
-        // Use converted image
-        SET_CURRENT_IMG(tmpImg);
+        {
+            auto& tmpImg = GET_TMP_IMG();
+            result = DirectX::Resize(*currentImage->GetImages(), width, height, DirectX::TEX_FILTER_LINEAR | DirectX::TEX_FILTER_SEPARATE_ALPHA, tmpImg);
+            if (FAILED(result))
+            {
+                errorMsg = String::Format(TEXT("Cannot resize texture, error: {0:x}"), static_cast<uint32>(result));
+                return true;
+            }
+            SET_CURRENT_IMG(tmpImg);
+        }
     }
 
     // Cache data
@@ -704,7 +747,7 @@ bool TextureTool::ImportTextureDirectXTex(ImageType type, const StringView& path
     if (!keepAsIs && DirectX::IsCompressed(sourceDxgiFormat))
     {
         auto& tmpImg = GET_TMP_IMG();
-        sourceDxgiFormat = DXGI_FORMAT_R16G16B16A16_FLOAT;
+        sourceDxgiFormat = ToDecompressFormat(sourceDxgiFormat);
         result = Decompress(currentImage->GetImages(), currentImage->GetImageCount(), currentImage->GetMetadata(), sourceDxgiFormat, tmpImg);
         if (FAILED(result))
         {
