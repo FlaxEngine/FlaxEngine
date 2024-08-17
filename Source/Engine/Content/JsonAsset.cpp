@@ -110,13 +110,13 @@ uint64 JsonAssetBase::GetMemoryUsage() const
 
 #if USE_EDITOR
 
-void FindIds(ISerializable::DeserializeStream& node, Array<Guid>& output, Array<String>& files)
+void FindIds(ISerializable::DeserializeStream& node, Array<Guid>& output, Array<String>& files, rapidjson_flax::Value* nodeName = nullptr)
 {
     if (node.IsObject())
     {
         for (auto i = node.MemberBegin(); i != node.MemberEnd(); ++i)
         {
-            FindIds(i->value, output, files);
+            FindIds(i->value, output, files, &i->name);
         }
     }
     else if (node.IsArray())
@@ -138,7 +138,8 @@ void FindIds(ISerializable::DeserializeStream& node, Array<Guid>& output, Array<
                 return;
             }
         }
-        if (node.GetStringLength() < 512)
+        if (node.GetStringLength() < 512 &&
+            (!nodeName || nodeName->GetStringAnsiView() != "ImportPath")) // Ignore path in ImportPath from ModelPrefab (TODO: resave prefabs/scenes before cooking to get rid of editor-only data)
         {
             // Try to detect file paths
             String path = node.GetText();
