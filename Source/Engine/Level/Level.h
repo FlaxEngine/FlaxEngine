@@ -123,6 +123,7 @@ public:
     /// <returns>The scene object (loaded).</returns>
     API_FUNCTION() static Scene* GetScene(int32 index)
     {
+        CHECK_RETURN(index < GetScenesCount(), nullptr);
         return Scenes[index];
     }
 
