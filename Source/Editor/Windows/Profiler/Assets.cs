@@ -52,7 +52,7 @@ namespace FlaxEditor.Windows.Profiler
                 AnchorPreset = AnchorPresets.HorizontalStretchTop,
                 Offsets = Margin.Zero,
                 Height = SingleChart.DefaultHeight,
-                FormatSample = v => Utilities.Utils.FormatBytesCount((int)v),
+                FormatSample = v => Utilities.Utils.FormatBytesCount((ulong)v),
                 Parent = mainPanel,
             };
             _memoryUsageChart.SelectedSampleChanged += OnSelectedSampleChanged;

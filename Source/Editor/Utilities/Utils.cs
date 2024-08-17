@@ -146,19 +146,14 @@ namespace FlaxEditor.Utilities
 
         /// <summary>
         /// Formats the amount of bytes to get a human-readable data size in bytes with abbreviation. Eg. 32 kB
+        /// [Deprecated in v1.9]
         /// </summary>
         /// <param name="bytes">The bytes.</param>
         /// <returns>The formatted amount of bytes.</returns>
+        [Obsolete("Use FormatBytesCount with ulong instead")]
         public static string FormatBytesCount(int bytes)
         {
-            int order = 0;
-            while (bytes >= 1024 && order < MemorySizePostfixes.Length - 1)
-            {
-                order++;
-                bytes /= 1024;
-            }
-
-            return string.Format("{0:0.##} {1}", bytes, MemorySizePostfixes[order]);
+            return FormatBytesCount((ulong)bytes);
         }
 
         /// <summary>
@@ -169,12 +164,15 @@ namespace FlaxEditor.Utilities
         public static string FormatBytesCount(ulong bytes)
         {
             int order = 0;
+            ulong bytesPrev = bytes;
             while (bytes >= 1024 && order < MemorySizePostfixes.Length - 1)
             {
+                bytesPrev = bytes;
                 order++;
                 bytes /= 1024;
             }
-
+            if (order >= 3) // GB or higher use up to 2 decimal places for more precision
+                return string.Format("{0:0.##} {1}", FlaxEngine.Utils.RoundTo2DecimalPlaces(bytesPrev / 1024.0f), MemorySizePostfixes[order]);
             return string.Format("{0:0.##} {1}", bytes, MemorySizePostfixes[order]);
         }
 

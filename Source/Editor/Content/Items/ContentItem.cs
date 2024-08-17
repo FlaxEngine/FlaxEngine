@@ -388,7 +388,7 @@ namespace FlaxEditor.Content
         {
             sb.Append("Type: ").Append(TypeDescription).AppendLine();
             if (File.Exists(Path))
-                sb.Append("Size: ").Append(Utilities.Utils.FormatBytesCount((int)new FileInfo(Path).Length)).AppendLine();
+                sb.Append("Size: ").Append(Utilities.Utils.FormatBytesCount((ulong)new FileInfo(Path).Length)).AppendLine();
             sb.Append("Path: ").Append(Utilities.Utils.GetAssetNamePathWithExt(Path)).AppendLine();
         }
 
