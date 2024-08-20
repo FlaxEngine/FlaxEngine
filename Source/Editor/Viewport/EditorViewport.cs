@@ -1385,15 +1385,32 @@ namespace FlaxEditor.Viewport
         /// <summary>
         /// Converts the mouse position to the ray (in world space of the viewport).
         /// </summary>
-        /// <param name="mousePosition">The mouse position.</param>
+        /// <param name="mousePosition">The mouse position (in UI space of the viewport [0; Size]).</param>
         /// <returns>The result ray.</returns>
         public Ray ConvertMouseToRay(ref Float2 mousePosition)
         {
-            // Prepare
             var viewport = new FlaxEngine.Viewport(0, 0, Width, Height);
-            CreateProjectionMatrix(out var p);
+            if (viewport.Width < Mathf.Epsilon || viewport.Height < Mathf.Epsilon)
+                return ViewRay;
+
             Vector3 viewOrigin = Task.View.Origin;
             Float3 position = ViewPosition - viewOrigin;
+
+            // Use different logic in orthographic projection
+            if (_isOrtho)
+            {
+                var screenPosition = new Float2(mousePosition.X / viewport.Width - 0.5f, -mousePosition.Y / viewport.Height + 0.5f);
+                var orientation = ViewOrientation;
+                var direction = Float3.Forward * orientation;
+                var rayOrigin = new Vector3(screenPosition.X * viewport.Width * _orthoSize, screenPosition.Y * viewport.Height * _orthoSize, 0);
+                rayOrigin = position + Vector3.Transform(rayOrigin, orientation);
+                rayOrigin += direction * _nearPlane;
+                rayOrigin += viewOrigin;
+                return new Ray(rayOrigin, direction);
+            }
+
+            // Create view frustum
+            CreateProjectionMatrix(out var p);
             CreateViewMatrix(position, out var v);
             Matrix.Multiply(ref v, ref p, out var ivp);
             ivp.Invert();
@@ -1404,11 +1421,7 @@ namespace FlaxEditor.Viewport
             viewport.Unproject(ref nearPoint, ref ivp, out nearPoint);
             viewport.Unproject(ref farPoint, ref ivp, out farPoint);
 
-            // Create direction vector
-            Vector3 direction = farPoint - nearPoint;
-            direction.Normalize();
-
-            return new Ray(nearPoint + viewOrigin, direction);
+            return new Ray(nearPoint + viewOrigin, Vector3.Normalize(farPoint - nearPoint));
         }
 
         /// <summary>

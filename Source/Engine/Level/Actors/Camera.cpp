@@ -191,39 +191,35 @@ Ray Camera::ConvertMouseToRay(const Float2& mousePosition) const
 
 Ray Camera::ConvertMouseToRay(const Float2& mousePosition, const Viewport& viewport) const
 {
-#if 1
-    // Gather camera properties
+    Vector3 position = GetPosition();
+    if (viewport.Width < ZeroTolerance || viewport.Height < ZeroTolerance)
+        return Ray(position, GetDirection());
+
+    // Use different logic in orthographic projection
+    if (!_usePerspective)
+    {
+        Float2 screenPosition(mousePosition.X / viewport.Width - 0.5f, -mousePosition.Y / viewport.Height + 0.5f);
+        Quaternion orientation = GetOrientation();
+        Float3 direction = orientation * Float3::Forward;
+        Vector3 rayOrigin(screenPosition.X * viewport.Width * _orthoScale, screenPosition.Y * viewport.Height * _orthoScale, 0);
+        rayOrigin = position + Vector3::Transform(rayOrigin, orientation);
+        rayOrigin += direction * _near;
+        return Ray(rayOrigin, direction);
+    }
+
+    // Create view frustum
     Matrix v, p, ivp;
     GetMatrices(v, p, viewport);
     Matrix::Multiply(v, p, ivp);
     ivp.Invert();
 
     // Create near and far points
-    Vector3 nearPoint(mousePosition, 0.0f);
-    Vector3 farPoint(mousePosition, 1.0f);
+    Vector3 nearPoint(mousePosition, _near);
+    Vector3 farPoint(mousePosition, _far);
     viewport.Unproject(nearPoint, ivp, nearPoint);
     viewport.Unproject(farPoint, ivp, farPoint);
 
-    // Create direction vector
-    Vector3 direction = farPoint - nearPoint;
-    direction.Normalize();
-
-    return Ray(nearPoint, direction);
-#else
-    // Create near and far points
-    Vector3 nearPoint, farPoint;
-    Matrix ivp;
-    _frustum.GetInvMatrix(&ivp);
-    viewport.Unproject(Vector3(mousePosition, 0.0f), ivp, nearPoint);
-    viewport.Unproject(Vector3(mousePosition, 1.0f), ivp, farPoint);
-
-    // Create direction vector
-    Vector3 direction = farPoint - nearPoint;
-    direction.Normalize();
-
-    // Return result
-    return Ray(nearPoint, direction);
-#endif
+    return Ray(nearPoint, Vector3::Normalize(farPoint - nearPoint));
 }
 
 Viewport Camera::GetViewport() const
