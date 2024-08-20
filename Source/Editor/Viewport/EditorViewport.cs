@@ -111,6 +111,9 @@ namespace FlaxEditor.Viewport
                 IsMouseRightDown = useMouse && window.GetMouseButton(MouseButton.Right);
                 IsMouseMiddleDown = useMouse && window.GetMouseButton(MouseButton.Middle);
                 IsMouseLeftDown = useMouse && window.GetMouseButton(MouseButton.Left);
+
+                if (WasAltDownBefore && !IsMouseLeftDown && !IsAltDown)
+                    WasAltDownBefore = false;
             }
 
             /// <summary>
