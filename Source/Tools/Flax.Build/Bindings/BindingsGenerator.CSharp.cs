@@ -2062,6 +2062,9 @@ namespace Flax.Build.Bindings
                 contents.Append(indent).Append(entryInfo.Name);
                 if (!string.IsNullOrEmpty(entryInfo.Value))
                 {
+                    if (usedMax)
+                        usedMax = false;
+
                     string value;
                     if (enumInfo.UnderlyingType != null)
                     {
@@ -2075,6 +2078,7 @@ namespace Flax.Build.Bindings
                     }
                     contents.Append(" = ").Append(value);
                 }
+                // Handle case of next value after Max value being zero if a value is not defined.
                 else if (string.IsNullOrEmpty(entryInfo.Value) && usedMax)
                 {
                     contents.Append(" = ").Append('0');
