@@ -1720,6 +1720,8 @@ namespace FlaxEditor.Viewport
                 // Update
                 moveDelta *= dt * (60.0f * 4.0f);
                 mouseDelta *= 0.1833f * MouseSpeed * _mouseSensitivity;
+                if (options.Viewport.InvertMouseYAxisRotation)
+                    mouseDelta *= new Float2(1, -1);
                 UpdateView(dt, ref moveDelta, ref mouseDelta, out var centerMouse);
 
                 // Move mouse back to the root position
