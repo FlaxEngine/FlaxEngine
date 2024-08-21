@@ -270,7 +270,7 @@ namespace FlaxEditor.CustomEditors
                     object val = _valueToSet;
                     _hasValueDirty = false;
                     _valueToSet = null;
-                    
+
                     // Assign value
                     if (val is IList l && l.Count == _values.Count)
                     {
