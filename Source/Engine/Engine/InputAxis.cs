@@ -60,6 +60,7 @@ namespace FlaxEngine
         ~InputAxis()
         {
             Input.AxisValueChanged -= Handler;
+            ValueChanged = null;
         }
 
         /// <summary>
@@ -68,6 +69,7 @@ namespace FlaxEngine
         public void Dispose()
         {
             Input.AxisValueChanged -= Handler;
+            ValueChanged = null;
             GC.SuppressFinalize(this);
         }
 
