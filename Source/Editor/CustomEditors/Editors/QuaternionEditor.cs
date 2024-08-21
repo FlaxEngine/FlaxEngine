@@ -61,6 +61,7 @@ namespace FlaxEditor.CustomEditors.Editors
                 _slidingEnded = true;
                 ClearToken();
             };
+            _defaultSlidingSpeed = XElement.ValueBox.SlideSpeed;
 
             YElement = grid.FloatValue();
             YElement.ValueBox.Category = Utils.ValueCategory.Angle;
@@ -270,7 +271,7 @@ namespace FlaxEditor.CustomEditors.Editors
                 Float3 average = Float3.Zero;
                 for (int i = 0; i < Values.Count; i++)
                 {
-                    var value = (Quaternion)Values[0];
+                    var value = (Quaternion)Values[i];
                     var euler = value.EulerAngles;
                     
                     average += euler;
@@ -337,6 +338,13 @@ namespace FlaxEditor.CustomEditors.Editors
                 XElement.ValueBox.Value = euler.X;
                 YElement.ValueBox.Value = euler.Y;
                 ZElement.ValueBox.Value = euler.Z;
+                
+                if (!Mathf.NearEqual(XElement.ValueBox.SlideSpeed, _defaultSlidingSpeed))
+                    XElement.ValueBox.SlideSpeed = _defaultSlidingSpeed;
+                if (!Mathf.NearEqual(YElement.ValueBox.SlideSpeed, _defaultSlidingSpeed))
+                    YElement.ValueBox.SlideSpeed = _defaultSlidingSpeed;
+                if (!Mathf.NearEqual(ZElement.ValueBox.SlideSpeed, _defaultSlidingSpeed))
+                    ZElement.ValueBox.SlideSpeed = _defaultSlidingSpeed;
             }
         }
     }

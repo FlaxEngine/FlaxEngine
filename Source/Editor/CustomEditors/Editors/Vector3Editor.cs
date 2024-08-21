@@ -444,17 +444,11 @@ namespace FlaxEditor.CustomEditors.Editors
                 ZElement.ValueBox.Value = value.Z;
 
                 if (!Mathf.NearEqual(XElement.ValueBox.SlideSpeed, _defaultSlidingSpeed))
-                {
                     XElement.ValueBox.SlideSpeed = _defaultSlidingSpeed;
-                }
                 if (!Mathf.NearEqual(YElement.ValueBox.SlideSpeed, _defaultSlidingSpeed))
-                {
                     YElement.ValueBox.SlideSpeed = _defaultSlidingSpeed;
-                }
                 if (!Mathf.NearEqual(ZElement.ValueBox.SlideSpeed, _defaultSlidingSpeed))
-                {
                     ZElement.ValueBox.SlideSpeed = _defaultSlidingSpeed;
-                }
             }
         }
     }
