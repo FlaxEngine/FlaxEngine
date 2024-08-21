@@ -44,6 +44,7 @@ private:
     float _customAspectRatio;
     float _near;
     float _far;
+    float _orthoSize;
     float _orthoScale;
 
 #if USE_EDITOR
@@ -88,7 +89,7 @@ public:
     /// <summary>
     /// Gets the custom aspect ratio. 0 if not use custom value.
     /// </summary>
-    API_PROPERTY(Attributes="EditorOrder(50), DefaultValue(0.0f), Limit(0, 10, 0.01f), EditorDisplay(\"Camera\"), VisibleIf(nameof(UsePerspective))")
+    API_PROPERTY(Attributes="EditorOrder(50), DefaultValue(0.0f), Limit(0, 10, 0.01f), EditorDisplay(\"Camera\")")
     float GetCustomAspectRatio() const;
 
     /// <summary>
@@ -117,6 +118,17 @@ public:
     /// Sets camera's far plane distance.
     /// </summary>
     API_PROPERTY() void SetFarPlane(float value);
+
+    /// <summary>
+    /// Gets the orthographic projection view height (width is based on the aspect ratio). Use `0` for size to be based on the viewport size.
+    /// </summary>
+    API_PROPERTY(Attributes="EditorOrder(59), DefaultValue(0.0f), Limit(0.0f), EditorDisplay(\"Camera\"), VisibleIf(nameof(UsePerspective), true)")
+    float GetOrthographicSize() const;
+
+    /// <summary>
+    /// Sets the orthographic projection view height (width is based on the aspect ratio). Use `0` for size to be based on the viewport size.
+    /// </summary>
+    API_PROPERTY() void SetOrthographicSize(float value);
 
     /// <summary>
     /// Gets the orthographic projection scale.

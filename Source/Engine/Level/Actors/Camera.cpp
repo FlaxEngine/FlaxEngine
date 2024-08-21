@@ -39,6 +39,7 @@ Camera::Camera(const SpawnParams& params)
     , _customAspectRatio(0.0f)
     , _near(10.0f)
     , _far(40000.0f)
+    , _orthoSize(0.0f)
     , _orthoScale(1.0f)
 {
 #if USE_EDITOR
@@ -116,6 +117,21 @@ void Camera::SetFarPlane(float value)
     if (Math::NotNearEqual(_far, value))
     {
         _far = value;
+        UpdateCache();
+    }
+}
+
+float Camera::GetOrthographicSize() const
+{
+    return _orthoSize;
+}
+
+void Camera::SetOrthographicSize(float value)
+{
+    value = Math::Clamp(value, 0.0f, 1000000.0f);
+    if (Math::NotNearEqual(_orthoSize, value))
+    {
+        _orthoSize = value;
         UpdateCache();
     }
 }
@@ -201,7 +217,9 @@ Ray Camera::ConvertMouseToRay(const Float2& mousePosition, const Viewport& viewp
         Float2 screenPosition(mousePosition.X / viewport.Width - 0.5f, -mousePosition.Y / viewport.Height + 0.5f);
         Quaternion orientation = GetOrientation();
         Float3 direction = orientation * Float3::Forward;
-        Vector3 rayOrigin(screenPosition.X * viewport.Width * _orthoScale, screenPosition.Y * viewport.Height * _orthoScale, 0);
+        const float orthoSize = (_orthoSize > 0.0f ? _orthoSize : viewport.Height) * _orthoScale;
+        const float aspect = _customAspectRatio <= 0.0f ? viewport.GetAspectRatio() : _customAspectRatio;
+        Vector3 rayOrigin(screenPosition.X * orthoSize * aspect, screenPosition.Y * orthoSize, 0);
         rayOrigin = position + Vector3::Transform(rayOrigin, orientation);
         rayOrigin += direction * _near;
         return Ray(rayOrigin, direction);
@@ -260,14 +278,15 @@ void Camera::GetMatrices(Matrix& view, Matrix& projection, const Viewport& viewp
 void Camera::GetMatrices(Matrix& view, Matrix& projection, const Viewport& viewport, const Vector3& origin) const
 {
     // Create projection matrix
+    const float aspect = _customAspectRatio <= 0.0f ? viewport.GetAspectRatio() : _customAspectRatio;
     if (_usePerspective)
     {
-        const float aspect = _customAspectRatio <= 0.0f ? viewport.GetAspectRatio() : _customAspectRatio;
         Matrix::PerspectiveFov(_fov * DegreesToRadians, aspect, _near, _far, projection);
     }
     else
     {
-        Matrix::Ortho(viewport.Width * _orthoScale, viewport.Height * _orthoScale, _near, _far, projection);
+        const float orthoSize = (_orthoSize > 0.0f ? _orthoSize : viewport.Height) * _orthoScale;
+        Matrix::Ortho(orthoSize * aspect, orthoSize, _near, _far, projection);
     }
 
     // Create view matrix
