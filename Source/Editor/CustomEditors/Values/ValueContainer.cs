@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
@@ -379,10 +380,21 @@ namespace FlaxEditor.CustomEditors
             if (instanceValues.Count != Count)
                 throw new ArgumentException();
 
-            for (int i = 0; i < Count; i++)
+            if (value is IList l && l.Count == Count)
             {
-                Info.SetValue(instanceValues[i], value);
-                this[i] = Info.GetValue(instanceValues[i]);
+                for (int i = 0; i < Count; i++)
+                {
+                    Info.SetValue(instanceValues[i], l[i]);
+                    this[i] = Info.GetValue(instanceValues[i]);
+                }
+            }
+            else
+            {
+                for (int i = 0; i < Count; i++)
+                {
+                    Info.SetValue(instanceValues[i], value);
+                    this[i] = Info.GetValue(instanceValues[i]);
+                }
             }
         }
 
