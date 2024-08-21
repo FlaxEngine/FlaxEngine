@@ -396,6 +396,7 @@ void AudioClip::unload(bool isReloading)
     }
 
     StopStreaming();
+    CancelStreamingTasks();
     StreamingQueue.Clear();
     if (hasAnyBuffer && AudioBackend::Instance)
     {
