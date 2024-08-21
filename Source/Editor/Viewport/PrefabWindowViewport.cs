@@ -627,8 +627,8 @@ namespace FlaxEditor.Viewport
             }
 
             // Debug draw all actors in prefab and collect actors
-            var viewFlags = Task.ViewFlags;
-            var collectActors = (viewFlags & ViewFlags.PhysicsDebug) != 0 || (viewFlags & ViewFlags.LightsDebug) != 0;
+            var view = Task.View;
+            var collectActors = (view.Flags & ViewFlags.PhysicsDebug) != 0 || view.Mode == ViewMode.PhysicsColliders || (view.Flags & ViewFlags.LightsDebug) != 0;
             _debugDrawActors.Clear();
             foreach (var child in SceneGraphRoot.ChildNodes)
             {
@@ -641,19 +641,17 @@ namespace FlaxEditor.Viewport
             }
 
             // Draw physics debug
-            if ((viewFlags & ViewFlags.PhysicsDebug) != 0)
+            if ((view.Flags & ViewFlags.PhysicsDebug) != 0 || view.Mode == ViewMode.PhysicsColliders)
             {
                 foreach (var actor in _debugDrawActors)
                 {
                     if (actor is Collider c && c.IsActiveInHierarchy)
-                    {
                         DebugDraw.DrawColliderDebugPhysics(c, renderContext.View);
-                    }
                 }
             }
 
             // Draw lights debug
-            if ((viewFlags & ViewFlags.LightsDebug) != 0)
+            if ((view.Flags & ViewFlags.LightsDebug) != 0)
             {
                 foreach (var actor in _debugDrawActors)
                 {

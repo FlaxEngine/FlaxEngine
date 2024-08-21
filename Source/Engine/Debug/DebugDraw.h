@@ -75,6 +75,7 @@ API_CLASS(Static) class FLAXENGINE_API DebugDraw
     /// </summary>
     /// <param name="actor">The actor to start drawing at.</param>
     API_FUNCTION() static void DrawActorsTree(Actor* actor);
+
 #if USE_EDITOR
     /// <summary>
     /// Draws the physics debug shapes for the given collider. Editor Only
@@ -90,6 +91,7 @@ API_CLASS(Static) class FLAXENGINE_API DebugDraw
     /// <param name="view">The render view to draw in.</param>
     API_FUNCTION() static void DrawLightDebug(Light* light, RenderView& view);
 #endif
+
     /// <summary>
     /// Draws the lines axis from direction.
     /// </summary>
