@@ -251,34 +251,13 @@ namespace FlaxEditor.CustomEditors.Editors
                     for (int i = 0; i < Values.Count; i++)
                     {
                         var v = Values[i];
-                        switch (_valueChanged)
-                        {
-                        case ValueChanged.X:
-                            if (v is Vector3 asVector3)
-                                v = asVector3 + new Vector3(newValue.X, 0, 0);
-                            else if (v is Float3 asFloat3)
-                                v = asFloat3 + new Float3(newValue.X, 0, 0);
-                            else if (v is Double3 asDouble3)
-                                v = asDouble3 + new Double3(newValue.X, 0, 0);
-                            break;
-                        case ValueChanged.Y:
-                            if (v is Vector3 asVector3y)
-                                v = asVector3y + new Vector3(0, newValue.Y, 0);
-                            else if (v is Float3 asFloat3y)
-                                v = asFloat3y + new Float3(0, newValue.Y, 0);
-                            else if (v is Double3 asDouble3y)
-                                v = asDouble3y + new Double3(0, newValue.Y, 0);
-                            break;
-                        case ValueChanged.Z:
-                            if (v is Vector3 asVector3z)
-                                v = asVector3z + new Vector3(0, 0, newValue.Z);
-                            else if (v is Float3 asFloat3z)
-                                v = asFloat3z + new Float3(0, 0, newValue.Z);
-                            else if (v is Double3 asDouble3z)
-                                v = asDouble3z + new Double3(0, 0, newValue.Z);
-                            break;
-                        }
-                        
+                        if (v is Vector3 asVector3)
+                            v = asVector3 + new Vector3(_valueChanged == ValueChanged.X ? newValue.X : 0, _valueChanged == ValueChanged.Y ? newValue.Y : 0, _valueChanged == ValueChanged.Z ? newValue.Z : 0);
+                        else if (v is Float3 asFloat3)
+                            v = asFloat3 + new Float3(_valueChanged == ValueChanged.X ? newValue.X : 0, _valueChanged == ValueChanged.Y ? newValue.Y : 0, _valueChanged == ValueChanged.Z ? newValue.Z : 0);
+                        else if (v is Double3 asDouble3)
+                            v = asDouble3 + new Double3(_valueChanged == ValueChanged.X ? newValue.X : 0, _valueChanged == ValueChanged.Y ? newValue.Y : 0, _valueChanged == ValueChanged.Z ? newValue.Z : 0);
+
                         newObjects[i] = v;
                     }
 
@@ -292,34 +271,13 @@ namespace FlaxEditor.CustomEditors.Editors
                     for (int i = 0; i < Values.Count; i++)
                     {
                         object v = Values[i];
-                        switch (_valueChanged)
-                        {
-                        case ValueChanged.X:
-                            if (v is Vector3 vx3)
-                                v = new Vector3(xValue, vx3.Y, vx3.Z);
-                            else if (v is Float3 fx3)
-                                v = new Float3(xValue, fx3.Y, fx3.Z);
-                            else if (v is Double3 dx3)
-                                v = new Double3(xValue, dx3.Y, dx3.Z);
-                            break;
-                        case ValueChanged.Y:
-                            if (v is Vector3 vy3)
-                                v = new Vector3(vy3.X, yValue, vy3.Z);
-                            else if (v is Float3 fy3)
-                                v = new Float3(fy3.X, yValue, fy3.Z);
-                            else if (v is Double3 dy3)
-                                v = new Double3(dy3.X, yValue, dy3.Z);
-                            break;
-                        case ValueChanged.Z:
-                            if (v is Vector3 vz3)
-                                v = new Vector3(vz3.X, vz3.Y, zValue);
-                            else if (v is Float3 fz3)
-                                v = new Float3(fz3.X, fz3.Y, zValue);
-                            else if (v is Double3 dz3)
-                                v = new Double3(dz3.X, dz3.Y, zValue);
-                            break;
-                        }
-                        
+                        if (v is Vector3 asVector3)
+                            v = new Vector3(_valueChanged == ValueChanged.X ? xValue : asVector3.X, _valueChanged == ValueChanged.Y ? yValue : asVector3.Y, _valueChanged == ValueChanged.Z ? zValue : asVector3.Z);
+                        else if (v is Float3 asFloat3)
+                            v = new Float3(_valueChanged == ValueChanged.X ? xValue : asFloat3.X, _valueChanged == ValueChanged.Y ? yValue : asFloat3.Y, _valueChanged == ValueChanged.Z ? zValue : asFloat3.Z);
+                        else if (v is Double3 asDouble3)
+                            v = new Double3(_valueChanged == ValueChanged.X ? xValue : asDouble3.X, _valueChanged == ValueChanged.Y ? yValue : asDouble3.Y, _valueChanged == ValueChanged.Z ? zValue : asDouble3.Z);
+
                         newObjects[i] = v;
                     }
                 }
@@ -620,33 +578,12 @@ namespace FlaxEditor.CustomEditors.Editors
                     for (int i = 0; i < Values.Count; i++)
                     {
                         var v = Values[i];
-                        switch (_valueChanged)
-                        {
-                        case ValueChanged.X:
-                            if (v is Vector3 asVector3)
-                                v = asVector3 + new Vector3(newValue.X, 0, 0);
-                            else if (v is Float3 asFloat3)
-                                v = asFloat3 + new Float3((float)newValue.X, 0, 0);
-                            else if (v is Double3 asDouble3)
-                                v = asDouble3 + new Double3(newValue.X, 0, 0);
-                            break;
-                        case ValueChanged.Y:
-                            if (v is Vector3 asVector3y)
-                                v = asVector3y + new Vector3(0, newValue.Y, 0);
-                            else if (v is Float3 asFloat3y)
-                                v = asFloat3y + new Float3(0, (float)newValue.Y, 0);
-                            else if (v is Double3 asDouble3y)
-                                v = asDouble3y + new Double3(0, newValue.Y, 0);
-                            break;
-                        case ValueChanged.Z:
-                            if (v is Vector3 asVector3z)
-                                v = asVector3z + new Vector3(0, 0, newValue.Z);
-                            else if (v is Float3 asFloat3z)
-                                v = asFloat3z + new Float3(0, 0, (float)newValue.Z);
-                            else if (v is Double3 asDouble3z)
-                                v = asDouble3z + new Double3(0, 0, newValue.Z);
-                            break;
-                        }
+                        if (v is Vector3 asVector3)
+                            v = asVector3 + new Vector3(_valueChanged == ValueChanged.X ? newValue.X : 0, _valueChanged == ValueChanged.Y ? newValue.Y : 0, _valueChanged == ValueChanged.Z ? newValue.Z : 0);
+                        else if (v is Float3 asFloat3)
+                            v = asFloat3 + new Float3(_valueChanged == ValueChanged.X ? (float)newValue.X : 0, _valueChanged == ValueChanged.Y ? (float)newValue.Y : 0, _valueChanged == ValueChanged.Z ? (float)newValue.Z : 0);
+                        else if (v is Double3 asDouble3)
+                            v = asDouble3 + new Double3(_valueChanged == ValueChanged.X ? newValue.X : 0, _valueChanged == ValueChanged.Y ? newValue.Y : 0, _valueChanged == ValueChanged.Z ? newValue.Z : 0);
                         
                         newObjects[i] = v;
                     }
@@ -661,33 +598,12 @@ namespace FlaxEditor.CustomEditors.Editors
                     for (int i = 0; i < Values.Count; i++)
                     {
                         object v = Values[i];
-                        switch (_valueChanged)
-                        {
-                        case ValueChanged.X:
-                            if (v is Vector3 vx3)
-                                v = new Vector3(xValue, vx3.Y, vx3.Z);
-                            else if (v is Float3 fx3)
-                                v = new Float3((float)xValue, fx3.Y, fx3.Z);
-                            else if (v is Double3 dx3)
-                                v = new Double3(xValue, dx3.Y, dx3.Z);
-                            break;
-                        case ValueChanged.Y:
-                            if (v is Vector3 vy3)
-                                v = new Vector3(vy3.X, yValue, vy3.Z);
-                            else if (v is Float3 fy3)
-                                v = new Float3(fy3.X, (float)yValue, fy3.Z);
-                            else if (v is Double3 dy3)
-                                v = new Double3(dy3.X, yValue, dy3.Z);
-                            break;
-                        case ValueChanged.Z:
-                            if (v is Vector3 vz3)
-                                v = new Vector3(vz3.X, vz3.Y, zValue);
-                            else if (v is Float3 fz3)
-                                v = new Float3(fz3.X, fz3.Y, (float)zValue);
-                            else if (v is Double3 dz3)
-                                v = new Double3(dz3.X, dz3.Y, zValue);
-                            break;
-                        }
+                        if (v is Vector3 asVector3)
+                            v = new Vector3(_valueChanged == ValueChanged.X ? xValue : asVector3.X, _valueChanged == ValueChanged.Y ? yValue : asVector3.Y, _valueChanged == ValueChanged.Z ? zValue : asVector3.Z);
+                        else if (v is Float3 asFloat3)
+                            v = new Float3(_valueChanged == ValueChanged.X ? (float)xValue : asFloat3.X, _valueChanged == ValueChanged.Y ? (float)yValue : asFloat3.Y, _valueChanged == ValueChanged.Z ? (float)zValue : asFloat3.Z);
+                        else if (v is Double3 asDouble3)
+                            v = new Double3(_valueChanged == ValueChanged.X ? xValue : asDouble3.X, _valueChanged == ValueChanged.Y ? yValue : asDouble3.Y, _valueChanged == ValueChanged.Z ? zValue : asDouble3.Z);
                         
                         newObjects[i] = v;
                     }

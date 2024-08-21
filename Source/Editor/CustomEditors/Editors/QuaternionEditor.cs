@@ -156,31 +156,10 @@ namespace FlaxEditor.CustomEditors.Editors
                     for (int i = 0; i < Values.Count; i++)
                     {
                         var v = Values[i];
-                        switch (_valueChanged)
-                        {
-                        case ValueChanged.X:
-                        {
-                            var val = (Quaternion)v;
-                            Quaternion.Euler(newValue.X, 0, 0, out Quaternion qVal);
-                            v = val * qVal;
-                            break;
-                        }
-                        case ValueChanged.Y:
-                        {
-                            var val = (Quaternion)v;
-                            Quaternion.Euler(0, newValue.Y, 0, out Quaternion qVal);
-                            v = val * qVal;
-                            break;
-                        }
-                        case ValueChanged.Z:
-                        {
-                            var val = (Quaternion)v;
-                            Quaternion.Euler(0, 0, newValue.Z, out Quaternion qVal);
-                            v = val * qVal;
-                            break;
-                        }
-                        }
-                        
+                        var val = (Quaternion)v;
+                        Quaternion.Euler(_valueChanged == ValueChanged.X ? newValue.X : 0, _valueChanged == ValueChanged.Y ? newValue.Y : 0, _valueChanged == ValueChanged.Z ? newValue.Z : 0, out Quaternion qVal);
+                        v = val * qVal;
+
                         newObjects[i] = v;
                     }
 
@@ -193,34 +172,11 @@ namespace FlaxEditor.CustomEditors.Editors
                     for (int i = 0; i < Values.Count; i++)
                     {
                         object v = Values[i];
-                        switch (_valueChanged)
-                        {
-                        case ValueChanged.X:
-                        {
-                            var val = (Quaternion)v;
-                            var euler = val.EulerAngles;
-                            Quaternion.Euler(xValue, euler.Y, euler.Z, out Quaternion qVal);
-                            v = qVal;
-                            break;
-                        }
-                        case ValueChanged.Y:
-                        {
-                            var val = (Quaternion)v;
-                            var euler = val.EulerAngles;
-                            Quaternion.Euler(euler.X, yValue, euler.Z, out Quaternion qVal);
-                            v = qVal;
-                            break;
-                        }
-                        case ValueChanged.Z:
-                        {
-                            var val = (Quaternion)v;
-                            var euler = val.EulerAngles;
-                            Quaternion.Euler(euler.X, euler.Y, zValue, out Quaternion qVal);
-                            v = qVal;
-                            break;
-                        }
-                        }
-                        
+                        var val = (Quaternion)v;
+                        var euler = val.EulerAngles;
+                        Quaternion.Euler(_valueChanged == ValueChanged.X ? xValue : euler.X, _valueChanged == ValueChanged.Y ? yValue : euler.Y, _valueChanged == ValueChanged.Z ? zValue : euler.Z, out Quaternion qVal);
+                        v = val * qVal;
+
                         newObjects[i] = v;
                     }
                 }
