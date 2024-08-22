@@ -289,9 +289,9 @@ void DrawEmitterCPU(RenderContext& renderContext, ParticleBuffer* buffer, DrawCa
     // Check if need to setup ribbon modules
     int32 ribbonModuleIndex = 0;
     int32 ribbonModulesDrawIndicesPos = 0;
-    int32 ribbonModulesDrawIndicesStart[PARTICLE_EMITTER_MAX_RIBBONS];
-    int32 ribbonModulesDrawIndicesCount[PARTICLE_EMITTER_MAX_RIBBONS];
-    int32 ribbonModulesSegmentCount[PARTICLE_EMITTER_MAX_RIBBONS];
+    int32 ribbonModulesDrawIndicesStart[PARTICLE_EMITTER_MAX_RIBBONS] = {};
+    int32 ribbonModulesDrawIndicesCount[PARTICLE_EMITTER_MAX_RIBBONS] = {};
+    int32 ribbonModulesSegmentCount[PARTICLE_EMITTER_MAX_RIBBONS] = {};
     if (emitter->Graph.RibbonRenderingModules.HasItems())
     {
         // Prepare ribbon data

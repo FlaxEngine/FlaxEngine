@@ -1027,6 +1027,13 @@ public:
             return *this;
         }
 
+        Iterator& operator=(Iterator&& v)
+        {
+            _array = v._array;
+            _index = v._index;
+            return *this;
+        }
+
         Iterator& operator++()
         {
             if (_index != _array->_count)

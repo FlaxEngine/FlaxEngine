@@ -338,7 +338,7 @@ public:
         Platform::MemoryCopy(Base::_data, prev, prevLength * sizeof(T));
         Platform::MemoryCopy(Base::_data + prevLength * sizeof(T), data, length * sizeof(T));
 
-        if (_isAllocated && prev)
+        if (_isAllocated)
             Allocator::Free(prev);
         _isAllocated = true;
     }

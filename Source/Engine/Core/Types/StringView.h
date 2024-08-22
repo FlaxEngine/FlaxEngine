@@ -28,6 +28,12 @@ protected:
     {
     }
 
+    StringViewBase(const StringViewBase& other)
+        : _data(other._data)
+        , _length(other._length)
+    {
+    }
+
 public:
     typedef T CharType;
 
