@@ -137,9 +137,10 @@ void Foliage::DrawInstance(RenderContext& renderContext, FoliageInstance& instan
 void Foliage::DrawCluster(RenderContext& renderContext, FoliageCluster* cluster, const FoliageType& type, DrawCallsList* drawCallsLists, BatchedDrawCalls& result) const
 {
     // Skip clusters that around too far from view
-    const Vector3 viewOrigin = renderContext.View.Origin;
-    if (Float3::Distance(renderContext.View.Position, cluster->TotalBoundsSphere.Center - viewOrigin) - (float)cluster->TotalBoundsSphere.Radius > cluster->MaxCullDistance)
+    const auto lodView = (renderContext.LodProxyView ? renderContext.LodProxyView : &renderContext.View);
+    if (Float3::Distance(lodView->Position, cluster->TotalBoundsSphere.Center - lodView->Origin) - (float)cluster->TotalBoundsSphere.Radius > cluster->MaxCullDistance)
         return;
+    const Vector3 viewOrigin = renderContext.View.Origin;
 
     //DebugDraw::DrawBox(cluster->Bounds, Color::Red);
 
@@ -172,7 +173,7 @@ void Foliage::DrawCluster(RenderContext& renderContext, FoliageCluster* cluster,
             auto& instance = *cluster->Instances.Get()[i];
             BoundingSphere sphere = instance.Bounds;
             sphere.Center -= viewOrigin;
-            if (Float3::Distance(renderContext.View.Position, sphere.Center) - (float)sphere.Radius < instance.CullDistance &&
+            if (Float3::Distance(lodView->Position, sphere.Center) - (float)sphere.Radius < instance.CullDistance &&
                 renderContext.View.CullingFrustum.Intersects(sphere))
             {
                 const auto modelFrame = instance.DrawState.PrevFrame + 1;
@@ -266,9 +267,10 @@ void Foliage::DrawCluster(RenderContext& renderContext, FoliageCluster* cluster,
 void Foliage::DrawCluster(RenderContext& renderContext, FoliageCluster* cluster, Mesh::DrawInfo& draw)
 {
     // Skip clusters that around too far from view
-    const Vector3 viewOrigin = renderContext.View.Origin;
-    if (Float3::Distance(renderContext.View.Position, cluster->TotalBoundsSphere.Center - viewOrigin) - (float)cluster->TotalBoundsSphere.Radius > cluster->MaxCullDistance)
+    const auto lodView = (renderContext.LodProxyView ? renderContext.LodProxyView : &renderContext.View);
+    if (Float3::Distance(lodView->Position, cluster->TotalBoundsSphere.Center - lodView->Origin) - (float)cluster->TotalBoundsSphere.Radius > cluster->MaxCullDistance)
         return;
+    const Vector3 viewOrigin = renderContext.View.Origin;
 
     //DebugDraw::DrawBox(cluster->Bounds, Color::Red);
 
@@ -304,7 +306,7 @@ void Foliage::DrawCluster(RenderContext& renderContext, FoliageCluster* cluster,
 
             // Check if can draw this instance
             if (type._canDraw &&
-                Float3::Distance(renderContext.View.Position, sphere.Center) - (float)sphere.Radius < instance.CullDistance &&
+                Float3::Distance(lodView->Position, sphere.Center) - (float)sphere.Radius < instance.CullDistance &&
                 renderContext.View.CullingFrustum.Intersects(sphere))
             {
                 Matrix world;
