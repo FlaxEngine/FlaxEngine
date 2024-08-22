@@ -1018,9 +1018,11 @@ bool SurfaceDrawCallHandler::CanBatch(const DrawCall& a, const DrawCall& b, Draw
             // Batch simple materials during depth-only drawing (when using default vertex shader and no pixel shader)
             if (pass == DrawPass::Depth)
             {
+                const MaterialInfo& aInfo = a.Material->GetInfo();
+                const MaterialInfo& bInfo = b.Material->GetInfo();
                 constexpr MaterialUsageFlags complexUsageFlags = MaterialUsageFlags::UseMask | MaterialUsageFlags::UsePositionOffset | MaterialUsageFlags::UseDisplacement;
-                const bool aIsSimple = EnumHasNoneFlags(a.Material->GetInfo().UsageFlags, complexUsageFlags);
-                const bool bIsSimple = EnumHasNoneFlags(b.Material->GetInfo().UsageFlags, complexUsageFlags);
+                const bool aIsSimple = EnumHasNoneFlags(aInfo.UsageFlags, complexUsageFlags) && aInfo.BlendMode == MaterialBlendMode::Opaque;
+                const bool bIsSimple = EnumHasNoneFlags(bInfo.UsageFlags, complexUsageFlags) && aInfo.BlendMode == MaterialBlendMode::Opaque;
                 return aIsSimple && bIsSimple;
             }
             return false;
