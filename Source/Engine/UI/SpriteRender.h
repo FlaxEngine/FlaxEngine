@@ -92,7 +92,8 @@ public:
 
 private:
     void OnMaterialLoaded();
-    void SetImage();
+    void SetImageParam();
+    void SetColorParam();
 
 public:
     // [Actor]

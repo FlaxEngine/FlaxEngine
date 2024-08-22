@@ -24,6 +24,13 @@ namespace FlaxEditor.Options
         [DefaultValue(1.0f), Limit(0.01f, 100.0f)]
         [EditorDisplay("General"), EditorOrder(101), Tooltip("The mouse wheel sensitivity applied to zoom in orthographic mode.")]
         public float MouseWheelSensitivity { get; set; } = 1.0f;
+        
+        /// <summary>
+        /// Gets or sets whether to invert the Y rotation of the mouse in the editor viewport.
+        /// </summary>
+        [DefaultValue(false)]
+        [EditorDisplay("General"), EditorOrder(102), Tooltip("Whether to invert the Y rotation of the mouse in the editor viewport.")]
+        public bool InvertMouseYAxisRotation { get; set; } = false;
 
         /// <summary>
         /// Gets or sets the total amount of steps the camera needs to go from minimum to maximum speed.

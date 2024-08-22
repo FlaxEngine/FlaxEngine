@@ -143,9 +143,11 @@ namespace FlaxEngine.GUI
                 if (!Mathf.NearEqual(value, _value))
                 {
                     _value = value;
-                    if (!UseSmoothing)
+                    if (!UseSmoothing || _firstUpdate)
                     {
                         _current = _value;
+                        if (_firstUpdate)
+                            _firstUpdate = false;
                     }
                 }
             }
@@ -168,6 +170,9 @@ namespace FlaxEngine.GUI
         /// </summary>
         [EditorDisplay("Bar Style"), EditorOrder(2012), Tooltip("The brush used for progress bar drawing.")]
         public IBrush BarBrush { get; set; }
+
+        // Used to remove initial lerp from the value on play.
+        private bool _firstUpdate = true;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ProgressBar"/> class.

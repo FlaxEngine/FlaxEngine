@@ -88,6 +88,18 @@ API_STRUCT() struct AxisConfig
     KeyboardKeys NegativeButton;
 
     /// <summary>
+    /// The button to be pressed for movement in positive direction. Use <see cref="GamepadButton.None"/> to ignore it.
+    /// </summary>
+    API_FIELD(Attributes="EditorOrder(45)")
+    GamepadButton GamepadPositiveButton;
+
+    /// <summary>
+    /// The button to be pressed for movement in negative direction. Use <see cref="GamepadButton.None"/> to ignore it.
+    /// </summary>
+    API_FIELD(Attributes="EditorOrder(46)")
+    GamepadButton GamepadNegativeButton;
+
+    /// <summary>
     /// Any positive or negative values that are less than this number will register as zero. Useful for gamepads to specify the deadzone.
     /// </summary>
     API_FIELD(Attributes="EditorOrder(50)")

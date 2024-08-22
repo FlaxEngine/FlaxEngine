@@ -1,5 +1,7 @@
 // Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
+using System;
+using FlaxEditor.CustomEditors.Elements;
 using FlaxEditor.Surface;
 using FlaxEngine;
 
@@ -12,6 +14,8 @@ namespace FlaxEditor.CustomEditors.Dedicated
     [CustomEditor(typeof(AnimatedModel)), DefaultEditor]
     public class AnimatedModelEditor : ActorEditor
     {
+        private bool _parametersAdded = false;
+
         /// <inheritdoc />
         public override void Initialize(LayoutElementsContainer layout)
         {
@@ -31,6 +35,24 @@ namespace FlaxEditor.CustomEditors.Dedicated
                                                     (instance, parameter, tag) => ((AnimatedModel)instance).GetParameterValue(parameter.Identifier),
                                                     (instance, value, parameter, tag) => ((AnimatedModel)instance).SetParameterValue(parameter.Identifier, value),
                                                     Values);
+                _parametersAdded = true;
+            }
+        }
+
+        /// <inheritdoc />
+        public override void Refresh()
+        {
+            base.Refresh();
+
+            // Check if parameters group is still showing if not in play mode and hide it.
+            if (!Editor.Instance.StateMachine.IsPlayMode && _parametersAdded)
+            {
+                var group = Layout.Children.Find(x => x is GroupElement g && g.Panel.HeaderText.Equals("Parameters", StringComparison.Ordinal));
+                if (group != null)
+                {
+                    RebuildLayout();
+                    _parametersAdded = false;
+                }
             }
         }
     }

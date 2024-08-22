@@ -70,6 +70,10 @@ namespace FlaxEngine
         ~InputEvent()
         {
             Input.ActionTriggered -= Handler;
+            Triggered = null;
+            Pressed = null;
+            Pressing = null;
+            Released = null;
         }
 
         private void Handler(string name, InputActionState state)
@@ -100,6 +104,10 @@ namespace FlaxEngine
         public void Dispose()
         {
             Input.ActionTriggered -= Handler;
+            Triggered = null;
+            Pressed = null;
+            Pressing = null;
+            Released = null;
             GC.SuppressFinalize(this);
         }
 

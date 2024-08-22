@@ -157,6 +157,8 @@ void InputSettings::Deserialize(DeserializeStream& stream, ISerializeModifier* m
                 config.Gamepad = JsonTools::GetEnum(v, "Gamepad", InputGamepadIndex::All);
                 config.PositiveButton = JsonTools::GetEnum(v, "PositiveButton", KeyboardKeys::None);
                 config.NegativeButton = JsonTools::GetEnum(v, "NegativeButton", KeyboardKeys::None);
+                config.GamepadPositiveButton = JsonTools::GetEnum(v, "GamepadPositiveButton", GamepadButton::None);
+                config.GamepadNegativeButton = JsonTools::GetEnum(v, "GamepadNegativeButton", GamepadButton::None);
                 config.DeadZone = JsonTools::GetFloat(v, "DeadZone", 0.1f);
                 config.Sensitivity = JsonTools::GetFloat(v, "Sensitivity", 0.4f);
                 config.Gravity = JsonTools::GetFloat(v, "Gravity", 1.0f);
@@ -873,8 +875,8 @@ void InputService::Update()
         const AxisData& data = Axes[name];
 
         // Get key raw value
-        const bool isPositiveKey = Input::GetKey(config.PositiveButton);
-        const bool isNegativeKey = Input::GetKey(config.NegativeButton);
+        const bool isPositiveKey = Input::GetKey(config.PositiveButton) || Input::GetGamepadButton(config.Gamepad, config.GamepadPositiveButton);
+        const bool isNegativeKey = Input::GetKey(config.NegativeButton) || Input::GetGamepadButton(config.Gamepad, config.GamepadNegativeButton);
         float keyRawValue = 0;
         if (isPositiveKey && !isNegativeKey)
         {

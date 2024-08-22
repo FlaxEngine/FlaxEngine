@@ -178,6 +178,8 @@ namespace FlaxEditor.CustomEditors.Editors
                             return 1;
                         if (Info.MetadataToken < other.Info.MetadataToken)
                             return -1;
+                        // Keep declaration order if same metadata token.
+                        return 0;
                     }
 
                     // By name

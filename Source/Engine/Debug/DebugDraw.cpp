@@ -788,7 +788,7 @@ void DebugDraw::Draw(RenderContext& renderContext, GPUTextureView* target, GPUTe
     Matrix vp;
     Matrix::Multiply(view.View, view.Projection, vp);
     Matrix::Transpose(vp, data.ViewProjection);
-    data.ClipPosZBias = -0.2f; // Reduce Z-fighting artifacts (eg. editor grid)
+    data.ClipPosZBias = view.IsPerspectiveProjection() ? -0.2f : 0.0f; // Reduce Z-fighting artifacts (eg. editor grid)
     data.EnableDepthTest = enableDepthTest;
     context->UpdateCB(cb, &data);
     context->BindCB(0, cb);
@@ -953,11 +953,11 @@ void DebugDraw::DrawActorsTree(Actor* actor)
 }
 
 #if USE_EDITOR
+
 void DebugDraw::DrawColliderDebugPhysics(Collider* collider, RenderView& view)
 {
     if (!collider)
         return;
-
     collider->DrawPhysicsDebug(view);
 }
 
@@ -965,10 +965,11 @@ void DebugDraw::DrawLightDebug(Light* light, RenderView& view)
 {
     if (!light)
         return;
-
     light->DrawLightsDebug(view);
 }
+
 #endif
+
 void DebugDraw::DrawAxisFromDirection(const Vector3& origin, const Vector3& direction, float size, float duration, bool depthTest)
 {
     CHECK_DEBUG(direction.IsNormalized());

@@ -2064,13 +2064,18 @@ namespace Flax.Build.Bindings
             GenerateCSharpAttributes(buildData, contents, indent, enumInfo, true);
             contents.Append(indent).Append(GenerateCSharpAccessLevel(enumInfo.Access));
             contents.Append("enum ").Append(enumInfo.Name);
+            string managedType = string.Empty;
             if (enumInfo.UnderlyingType != null)
-                contents.Append(" : ").Append(GenerateCSharpNativeToManaged(buildData, enumInfo.UnderlyingType, enumInfo));
+            {
+                managedType = GenerateCSharpNativeToManaged(buildData, enumInfo.UnderlyingType, enumInfo);
+                contents.Append(" : ").Append(managedType);
+            }
             contents.AppendLine();
             contents.Append(indent + "{");
             indent += "    ";
 
             // Entries
+            bool usedMax = false;
             foreach (var entryInfo in enumInfo.Entries)
             {
                 contents.AppendLine();
@@ -2078,7 +2083,29 @@ namespace Flax.Build.Bindings
                 GenerateCSharpAttributes(buildData, contents, indent, enumInfo, entryInfo.Attributes, entryInfo.Comment, true, false);
                 contents.Append(indent).Append(entryInfo.Name);
                 if (!string.IsNullOrEmpty(entryInfo.Value))
-                    contents.Append(" = ").Append(entryInfo.Value);
+                {
+                    if (usedMax)
+                        usedMax = false;
+
+                    string value;
+                    if (enumInfo.UnderlyingType != null)
+                    {
+                        value = GenerateCSharpDefaultValueNativeToManaged(buildData, entryInfo.Value, enumInfo, enumInfo.UnderlyingType, false, managedType);
+                        if (value.Contains($"{managedType}.MaxValue", StringComparison.Ordinal))
+                            usedMax = true;
+                    }
+                    else
+                    {
+                        value = entryInfo.Value;
+                    }
+                    contents.Append(" = ").Append(value);
+                }
+                // Handle case of next value after Max value being zero if a value is not defined.
+                else if (string.IsNullOrEmpty(entryInfo.Value) && usedMax)
+                {
+                    contents.Append(" = ").Append('0');
+                    usedMax = false;
+                }
                 contents.Append(',');
                 contents.AppendLine();
             }
