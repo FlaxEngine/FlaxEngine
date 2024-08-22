@@ -113,6 +113,11 @@ TerrainPatch::~TerrainPatch()
 #endif
 }
 
+RawDataAsset* TerrainPatch::GetHeightfield() const
+{
+    return _heightfield.Get();
+}
+
 void TerrainPatch::RemoveLightmap()
 {
     for (auto& chunk : Chunks)
@@ -1215,7 +1220,8 @@ Color32* TerrainPatch::GetSplatMapData(int32 index)
 void TerrainPatch::ClearSplatMapCache()
 {
     PROFILE_CPU_NAMED("Terrain.ClearSplatMapCache");
-    _cachedSplatMap->Clear();
+    if (_cachedSplatMap)
+        _cachedSplatMap->Clear();
 }
 
 void TerrainPatch::ClearCache()

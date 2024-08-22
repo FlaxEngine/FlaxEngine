@@ -602,3 +602,13 @@ bool ManagedEditor::CreateAsset(const String& tag, String outputPath)
     FileSystem::NormalizePath(outputPath);
     return AssetsImportingManager::Create(tag, outputPath);
 }
+
+Array<Guid> ManagedEditor::GetAssetReferences(const Guid& assetId)
+{
+    Array<Guid> result;
+    if (auto* asset = Content::Load<Asset>(assetId))
+    {
+        asset->GetReferences(result);
+    }
+    return result;
+}

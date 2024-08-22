@@ -40,6 +40,12 @@ struct FLAXENGINE_API ScriptingTypeHandle
     {
     }
 
+    FORCE_INLINE ScriptingTypeHandle(ScriptingTypeHandle&& other)
+        : Module(other.Module)
+        , TypeIndex(other.TypeIndex)
+    {
+    }
+
     ScriptingTypeHandle(const ScriptingTypeInitializer& initializer);
 
     FORCE_INLINE operator bool() const

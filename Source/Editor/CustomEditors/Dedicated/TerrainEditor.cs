@@ -1,5 +1,6 @@
 // Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
+using FlaxEditor.Utilities;
 using FlaxEngine;
 
 namespace FlaxEditor.CustomEditors.Dedicated
@@ -29,8 +30,8 @@ namespace FlaxEditor.CustomEditors.Dedicated
                                             chunkSize,
                                             1.0f / (resolution.X + 1e-9f),
                                             1.0f / (resolution.Z + 1e-9f),
-                                            totalSize.X * 0.00001f,
-                                            totalSize.Z * 0.00001f
+                                            totalSize.X / Units.Meters2Units * 0.001f,
+                                            totalSize.Z / Units.Meters2Units * 0.001f
                 );
                 var label = layout.Label(text);
                 label.Label.AutoHeight = true;
