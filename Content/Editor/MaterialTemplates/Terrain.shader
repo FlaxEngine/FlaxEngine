@@ -162,6 +162,8 @@ ObjectData GetObject()
     return object;
 }
 
+#define LoadObjectFromCB(var) var = GetObject()
+
 MaterialInput GetMaterialInput(PixelInput input)
 {
 	MaterialInput output = GetGeometryMaterialInput(input.Geometry);

@@ -1049,6 +1049,8 @@ ShaderGenerator::Value ShaderGenerator::eatBox(Node* caller, Box* box)
 
 ShaderGenerator::Value ShaderGenerator::tryGetValue(Box* box, int32 defaultValueBoxIndex, const Value& defaultValue)
 {
+    if (!box)
+        return defaultValue;
     const auto parentNode = box->GetParent<Node>();
     if (box->HasConnection())
         return eatBox(parentNode, box->FirstConnection());
