@@ -72,7 +72,6 @@ private:
     Vector3 _boundsExtent;
     Float3 _cachedScale;
     Array<TerrainPatch*, InlinedAllocation<64>> _patches;
-    Array<TerrainChunk*> _drawChunks;
     Array<JsonAssetReference<PhysicalMaterial>, FixedAllocation<8>> _physicalMaterials;
 
 public:
@@ -424,9 +423,12 @@ private:
 #if TERRAIN_USE_PHYSICS_DEBUG
     void DrawPhysicsDebug(RenderView& view);
 #endif
+    bool DrawSetup(RenderContext& renderContext);
+    void DrawImpl(RenderContext& renderContext, HashSet<TerrainChunk*, class RendererAllocation>& drawnChunks);
 
 public:
     // [PhysicsColliderActor]
+    void Draw(RenderContextBatch& renderContextBatch) override;
     void Draw(RenderContext& renderContext) override;
 #if USE_EDITOR
     void OnDebugDrawSelected() override;
