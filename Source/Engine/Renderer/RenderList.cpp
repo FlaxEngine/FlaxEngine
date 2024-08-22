@@ -485,6 +485,8 @@ struct PackedSortKey
     {
         uint64 Data;
 
+        PACK_BEGIN()
+
         struct
         {
             // Sorting order: By Sort Order -> By Material -> By Geometry -> By Distance
@@ -492,7 +494,7 @@ struct PackedSortKey
             uint8 DrawKey;
             uint16 BatchKey;
             uint8 SortKey;
-        };
+        } PACK_END();
     };
 };
 
@@ -665,7 +667,7 @@ void RenderList::SortDrawCalls(const RenderContext& renderContext, bool reverseD
             PackedSortKey key;
             key.Data = drawCall.SortKey;
             key.DistanceKey ^= MAX_uint32; // Reverse depth
-            key.SortKey ^= MAX_uint16; // Reverse sort order
+            key.SortKey ^= MAX_uint8; // Reverse sort order
             sortedKeys[i] = key.Data;
         }
     }
