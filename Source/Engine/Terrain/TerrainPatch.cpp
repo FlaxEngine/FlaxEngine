@@ -113,6 +113,11 @@ TerrainPatch::~TerrainPatch()
 #endif
 }
 
+RawDataAsset* TerrainPatch::GetHeightfield() const
+{
+    return _heightfield.Get();
+}
+
 void TerrainPatch::RemoveLightmap()
 {
     for (auto& chunk : Chunks)
