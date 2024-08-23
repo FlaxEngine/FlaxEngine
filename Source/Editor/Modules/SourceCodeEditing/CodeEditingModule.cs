@@ -382,7 +382,7 @@ namespace FlaxEditor.Modules.SourceCodeEditing
 
             // Get editor target and target files and add module
             var files = Directory.GetFiles(path);
-            var targetModuleText = $"Modules.Add(\"{moduleName}\");\n        ";
+            var targetModuleText = $"Modules.Add(nameof({moduleName}));\n        ";
             foreach (var file in files)
             {
                 if (!file.Contains(".Build.cs", StringComparison.OrdinalIgnoreCase))
