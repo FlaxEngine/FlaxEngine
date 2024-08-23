@@ -261,7 +261,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
                 if (!file.Contains("GameProjectTarget"))
                     continue; // Skip 
 
-                if (file.Contains("Modules.Add(\"Game\")"))
+                if (file.Contains("Modules.Add(\"Game\")") || file.Contains("Modules.Add(nameof(Game))"))
                 {
                     // Assume Game represents the main game module
                     moduleName = "Game";
