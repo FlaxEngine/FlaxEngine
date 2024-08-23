@@ -476,7 +476,7 @@ int32 Editor::LoadProduct()
                                              "        base.Init();\n"
                                              "\n"
                                              "        // Reference the modules for game\n"
-                                             "        Modules.Add(\"Game\");\n"
+                                             "        Modules.Add(nameof(Game));\n"
                                              "    }\n"
                                              "}\n"), Encoding::UTF8);
         failed |= File::WriteAllText(projectPath / TEXT("Source/GameEditorTarget.Build.cs"),TEXT(
@@ -490,7 +490,7 @@ int32 Editor::LoadProduct()
                                          "        base.Init();\n"
                                          "\n"
                                          "        // Reference the modules for editor\n"
-                                         "        Modules.Add(\"Game\");\n"
+                                         "        Modules.Add(nameof(Game));\n"
                                          "    }\n"
                                          "}\n"), Encoding::UTF8);
         failed |= File::WriteAllText(projectPath / TEXT("Source/Game/Game.Build.cs"),TEXT(
