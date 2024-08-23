@@ -9,10 +9,12 @@ using FlaxEditor.CustomEditors;
 using FlaxEditor.CustomEditors.Editors;
 using FlaxEditor.CustomEditors.GUI;
 using FlaxEditor.GUI;
+using FlaxEditor.GUI.ContextMenu;
 using FlaxEditor.Surface;
 using FlaxEditor.Viewport.Previews;
 using FlaxEngine;
 using FlaxEngine.GUI;
+using FlaxEngine.Utilities;
 
 namespace FlaxEditor.Windows.Assets
 {
@@ -247,21 +249,9 @@ namespace FlaxEditor.Windows.Assets
                 if (parameters.Length == 0)
                     return;
 
-                // Utility buttons
-                {
-                    var buttons = layout.CustomContainer<UniformGridPanel>();
-                    var gridControl = buttons.CustomControl;
-                    gridControl.ClipChildren = false;
-                    gridControl.Height = Button.DefaultHeight;
-                    gridControl.SlotsHorizontally = 2;
-                    gridControl.SlotsVertically = 1;
-                    var rebuildButton = buttons.Button("Remove overrides", "Unchecks all overrides for parameters.").Button;
-                    rebuildButton.Clicked += OnRemoveOverrides;
-                    var removeButton = buttons.Button("Override all", "Checks all parameters overrides.").Button;
-                    removeButton.Clicked += OnOverrideAll;
-                }
-
                 var parametersGroup = layout.Group("Parameters");
+                var settingButton = parametersGroup.AddSettingsButton();
+                settingButton.Clicked += (image, button) => OnSettingsButtonClicked(image, button, proxy.Window);
                 var baseMaterial = materialInstance.BaseMaterial;
                 var material = baseMaterial;
                 if (material)
@@ -322,6 +312,19 @@ namespace FlaxEditor.Windows.Assets
                                                         };
                                                         itemLayout.Property(label, valueContainer, null, e.Tooltip?.Text);
                                                     });
+            }
+            
+             private void OnSettingsButtonClicked(Image image, MouseButton mouseButton, MaterialInstanceWindow window)
+            {
+                if (mouseButton != MouseButton.Left)
+                    return;
+
+                var cm = new ContextMenu();
+                if (window != null)
+                    cm.AddButton("Revert All Parameters", window.OnRevertAllParameters).TooltipText = "Reverts all the overridden parameters to the default values.";
+                cm.AddButton("Override All Parameters", OnOverrideAll).TooltipText = "Checks all parameters overrides.";
+                cm.AddButton("Remove Parameter Overrides", OnRemoveOverrides).TooltipText = "Unchecks all overrides for parameters.";
+                cm.Show(image, image.Size);
             }
 
             private void OnRemoveOverrides()
