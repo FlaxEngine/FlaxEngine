@@ -442,31 +442,38 @@ namespace FlaxEditor.Modules.SourceCodeEditing
                 // Search target files for module name and remove it
                 foreach (var file in sourceFiles)
                 {
-                    if (!file.Contains(".Build.cs", StringComparison.OrdinalIgnoreCase))
-                        continue;
-                    var targetText = File.ReadAllText(file);
-
-                    // Skip game project if it is suppose to be an editor module
-                    if (editorModule && targetText.Contains("GameProjectTarget", StringComparison.Ordinal))
-                        continue;
-
-                    var newText = targetText;
-                    bool removedModuleText = false;
-                    if (targetText.Contains($"Modules.Add(\"{className}\")"))
+                    string fileName = Path.GetFileName(file);
+                    if (file.Contains(".Build.cs", StringComparison.OrdinalIgnoreCase))
                     {
-                        newText = newText.Replace($"Modules.Add(\"{className}\")\n", "").Replace($"Modules.Add(\"{className}\")", "");
-                        removedModuleText = true;
+                        var targetText = File.ReadAllText(file);
+
+                        // Skip game project if it is suppose to be an editor module
+                        if (editorModule && targetText.Contains("GameProjectTarget", StringComparison.Ordinal))
+                            continue;
+
+                        var newText = targetText;
+                        bool removedModuleText = false;
+                        if (targetText.Contains($"Modules.Add(\"{className}\")"))
+                        {
+                            newText = newText.Replace($"Modules.Add(\"{className}\")\n", "").Replace($"Modules.Add(\"{className}\")", "");
+                            removedModuleText = true;
+                        }
+
+                        if (targetText.Contains($"Modules.Add(nameof({className}))"))
+                        {
+                            newText = newText.Replace($"Modules.Add(nameof({className}))\n", "").Replace($"Modules.Add(nameof({className}))", "");
+                            removedModuleText = true;
+                        }
+                        if (removedModuleText)
+                        {
+                            File.WriteAllText(file, newText);
+                            Editor.Log($"Removed Module: {className} from {file}");
+                        }
                     }
-
-                    if (targetText.Contains($"Modules.Add(nameof({className}))"))
+                    // remove Generated module files
+                    else if (fileName.Contains($"{className}.csproj", StringComparison.OrdinalIgnoreCase) || fileName.Contains($"{className}.Gen.cs", StringComparison.OrdinalIgnoreCase))
                     {
-                        newText = newText.Replace($"Modules.Add(nameof({className}))\n", "").Replace($"Modules.Add(nameof({className}))", "");
-                        removedModuleText = true;
-                    }
-                    if (removedModuleText)
-                    {
-                        File.WriteAllText(file, newText);
-                        Editor.Log($"Removed Module: {className} from {file}");
+                        File.Delete(file);
                     }
                 }
             }
