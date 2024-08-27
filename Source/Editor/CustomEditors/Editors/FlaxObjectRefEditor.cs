@@ -208,7 +208,9 @@ namespace FlaxEditor.CustomEditors.Editors
             else
             {
                 // Draw info
+                Render2D.PushClip(nameRect);
                 Render2D.DrawText(style.FontMedium, Type != null ? $"None ({Utilities.Utils.GetPropertyNameUI(Type.ToString())})" : "-", nameRect, isEnabled ? style.ForegroundGrey : style.ForegroundGrey.AlphaMultiplied(0.75f), TextAlignment.Near, TextAlignment.Center);
+                Render2D.PopClip();
             }
 
             // Draw picker button
