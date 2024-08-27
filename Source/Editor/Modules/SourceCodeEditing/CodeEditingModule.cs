@@ -470,7 +470,7 @@ namespace FlaxEditor.Modules.SourceCodeEditing
                             Editor.Log($"Removed Module: {className} from {file}");
                         }
                     }
-                    // remove Generated module files
+                    // Remove Generated module files
                     else if (fileName.Contains($"{className}.csproj", StringComparison.OrdinalIgnoreCase) || fileName.Contains($"{className}.Gen.cs", StringComparison.OrdinalIgnoreCase))
                     {
                         File.Delete(file);
