@@ -453,15 +453,15 @@ namespace FlaxEditor.Modules.SourceCodeEditing
 
                         var newText = targetText;
                         bool removedModuleText = false;
-                        if (targetText.Contains($"Modules.Add(\"{className}\")"))
+                        if (targetText.Contains($"Modules.Add(\"{className}\")", StringComparison.Ordinal))
                         {
-                            newText = newText.Replace($"Modules.Add(\"{className}\")\n", "").Replace($"Modules.Add(\"{className}\")", "");
+                            newText = newText.Replace($"Modules.Add(\"{className}\")\n", "", StringComparison.Ordinal).Replace($"Modules.Add(\"{className}\")", "", StringComparison.Ordinal);
                             removedModuleText = true;
                         }
 
-                        if (targetText.Contains($"Modules.Add(nameof({className}))"))
+                        if (targetText.Contains($"Modules.Add(nameof({className}))", StringComparison.Ordinal))
                         {
-                            newText = newText.Replace($"Modules.Add(nameof({className}))\n", "").Replace($"Modules.Add(nameof({className}))", "");
+                            newText = newText.Replace($"Modules.Add(nameof({className}))\n", "", StringComparison.Ordinal).Replace($"Modules.Add(nameof({className}))", "", StringComparison.Ordinal);
                             removedModuleText = true;
                         }
                         if (removedModuleText)
@@ -471,10 +471,10 @@ namespace FlaxEditor.Modules.SourceCodeEditing
                         }
                     }
                     // Remove Generated module files
-                    else if (fileName.Equals($"{className}.csproj", StringComparison.OrdinalIgnoreCase) || 
-                             fileName.Equals($"{className}.Gen.cs", StringComparison.OrdinalIgnoreCase) ||
-                             fileName.Equals($"{className}.Gen.cpp", StringComparison.OrdinalIgnoreCase) ||
-                             fileName.Equals($"{className}.Gen.h", StringComparison.OrdinalIgnoreCase))
+                    else if (fileName.Equals($"{className}.csproj", StringComparison.Ordinal) || 
+                             fileName.Equals($"{className}.Gen.cs", StringComparison.Ordinal) ||
+                             fileName.Equals($"{className}.Gen.cpp", StringComparison.Ordinal) ||
+                             fileName.Equals($"{className}.Gen.h", StringComparison.Ordinal))
                     {
                         File.Delete(file);
                         Editor.Log($"Deleted generated modules file for module: {className}. File path {file}");
