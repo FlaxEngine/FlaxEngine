@@ -477,6 +477,7 @@ namespace FlaxEditor.Modules.SourceCodeEditing
                              fileName.Equals($"{className}.Gen.h", StringComparison.OrdinalIgnoreCase))
                     {
                         File.Delete(file);
+                        Editor.Log($"Deleted generated modules file for module: {className}. File path {file}");
                     }
                 }
             }
