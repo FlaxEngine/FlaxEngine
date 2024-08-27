@@ -404,6 +404,74 @@ namespace FlaxEditor.Modules.SourceCodeEditing
             }
         }
 
+        internal void RemoveModule(string path)
+        {
+            if (!File.Exists(path))
+                return;
+
+            // Read text, figure out if it is an editor module or game module
+            var editorModule = false;
+            var moduleTextIndex = -1;
+            var fileText = File.ReadAllText(path);
+            if (fileText.Contains("GameModule", StringComparison.Ordinal))
+            {
+                moduleTextIndex = fileText.IndexOf("GameModule", StringComparison.Ordinal);
+            }
+            else if (fileText.Contains("GameEditorModule", StringComparison.Ordinal))
+            {
+                moduleTextIndex = fileText.IndexOf("GameEditorModule", StringComparison.Ordinal);
+                editorModule = true;
+            }
+            else
+            {
+                // If it does not contain a module, then this could be target file and not a module file
+                return;
+            }
+
+            // Get module name
+            var classTextIndex = fileText.IndexOf("class ", StringComparison.Ordinal);
+            var className = fileText.Substring(classTextIndex, moduleTextIndex - classTextIndex).Replace("class ", "").Replace(":", "").Trim();
+            Editor.Log($"Removing Module: {className}");
+
+            // Find target files
+            // Assume Target files are in the source directory that is up 2 levels
+            var sourceDirectoryInfo = Directory.GetParent(path)?.Parent;
+            if (sourceDirectoryInfo != null)
+            {
+                var sourceFiles = Directory.GetFiles(sourceDirectoryInfo.FullName);
+                // Search target files for module name and remove it
+                foreach (var file in sourceFiles)
+                {
+                    if (!file.Contains(".Build.cs", StringComparison.OrdinalIgnoreCase))
+                        continue;
+                    var targetText = File.ReadAllText(file);
+
+                    // Skip game project if it is suppose to be an editor module
+                    if (editorModule && targetText.Contains("GameProjectTarget", StringComparison.Ordinal))
+                        continue;
+
+                    var newText = targetText;
+                    bool removedModuleText = false;
+                    if (targetText.Contains($"Modules.Add(\"{className}\")"))
+                    {
+                        newText = newText.Replace($"Modules.Add(\"{className}\")\n", "").Replace($"Modules.Add(\"{className}\")", "");
+                        removedModuleText = true;
+                    }
+
+                    if (targetText.Contains($"Modules.Add(nameof({className}))"))
+                    {
+                        newText = newText.Replace($"Modules.Add(nameof({className}))\n", "").Replace($"Modules.Add(nameof({className}))", "");
+                        removedModuleText = true;
+                    }
+                    if (removedModuleText)
+                    {
+                        File.WriteAllText(file, newText);
+                        Editor.Log($"Removed Module: {className} from {file}");
+                    }
+                }
+            }
+        }
+
         /// <inheritdoc />
         public override void OnUpdate()
         {
