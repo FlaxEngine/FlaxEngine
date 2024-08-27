@@ -471,7 +471,10 @@ namespace FlaxEditor.Modules.SourceCodeEditing
                         }
                     }
                     // Remove Generated module files
-                    else if (fileName.Contains($"{className}.csproj", StringComparison.OrdinalIgnoreCase) || fileName.Contains($"{className}.Gen.cs", StringComparison.OrdinalIgnoreCase))
+                    else if (fileName.Equals($"{className}.csproj", StringComparison.OrdinalIgnoreCase) || 
+                             fileName.Equals($"{className}.Gen.cs", StringComparison.OrdinalIgnoreCase) ||
+                             fileName.Equals($"{className}.Gen.cpp", StringComparison.OrdinalIgnoreCase) ||
+                             fileName.Equals($"{className}.Gen.h", StringComparison.OrdinalIgnoreCase))
                     {
                         File.Delete(file);
                     }
