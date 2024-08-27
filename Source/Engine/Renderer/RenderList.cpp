@@ -489,10 +489,10 @@ struct PackedSortKey
 
         struct
         {
-            // Sorting order: By Sort Order -> By Material -> By Geometry -> By Distance
-            uint32 DistanceKey;
+            // Sorting order: By Sort Order -> By Distance -> By Material -> By Geometry
             uint8 DrawKey;
             uint16 BatchKey;
+            uint32 DistanceKey;
             uint8 SortKey;
         } PACK_END();
     };
