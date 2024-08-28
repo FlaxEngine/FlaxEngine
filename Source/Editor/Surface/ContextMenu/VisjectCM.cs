@@ -875,7 +875,7 @@ namespace FlaxEditor.Surface.ContextMenu
                         AddInputOutputElement(archetype, output.Type, true, $"{output.Name} ({output.Type.Name})");
                     }
                 }
-                else
+                else if (archetype.Elements != null) // Skip if no Elements (ex: Comment node)
                 {
                     foreach (var element in archetype.Elements)
                     {
