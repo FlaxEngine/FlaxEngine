@@ -226,7 +226,7 @@ bool Editor::CheckProjectUpgrade()
                                "        base.Init();\n"
                                "\n"
                                "        // Reference the modules for game\n"
-                               "        Modules.Add(\"{0}\");\n"
+                               "        Modules.Add(nameof({0}));\n"
                                "    }}\n"
                                "}}\n"
                            ), codeName), Encoding::UTF8);
@@ -242,7 +242,7 @@ bool Editor::CheckProjectUpgrade()
                                "        base.Init();\n"
                                "\n"
                                "        // Reference the modules for editor\n"
-                               "        Modules.Add(\"{0}\");\n"
+                               "        Modules.Add(nameof({0}));\n"
                                "{1}"
                                "    }}\n"
                                "}}\n"
@@ -476,7 +476,7 @@ int32 Editor::LoadProduct()
                                              "        base.Init();\n"
                                              "\n"
                                              "        // Reference the modules for game\n"
-                                             "        Modules.Add(\"Game\");\n"
+                                             "        Modules.Add(nameof(Game));\n"
                                              "    }\n"
                                              "}\n"), Encoding::UTF8);
         failed |= File::WriteAllText(projectPath / TEXT("Source/GameEditorTarget.Build.cs"),TEXT(
@@ -490,7 +490,7 @@ int32 Editor::LoadProduct()
                                          "        base.Init();\n"
                                          "\n"
                                          "        // Reference the modules for editor\n"
-                                         "        Modules.Add(\"Game\");\n"
+                                         "        Modules.Add(nameof(Game));\n"
                                          "    }\n"
                                          "}\n"), Encoding::UTF8);
         failed |= File::WriteAllText(projectPath / TEXT("Source/Game/Game.Build.cs"),TEXT(
