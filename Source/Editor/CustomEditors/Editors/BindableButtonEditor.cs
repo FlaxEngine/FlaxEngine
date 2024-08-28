@@ -1,3 +1,4 @@
+using FlaxEditor.CustomEditors.Elements;
 using FlaxEditor.GUI;
 using FlaxEngine;
 using FlaxEngine.GUI;
@@ -39,20 +40,27 @@ namespace FlaxEditor.CustomEditors.Editors
         public override void Initialize(LayoutElementsContainer layout)
         {
             Window = layout.Control.RootWindow.Window;
+            var panelElement = layout.CustomContainer<Panel>();
+            var panel = panelElement.ContainerControl as Panel;
 
-            var panel = layout.CustomContainer<UniformGridPanel>();
-            panel.CustomControl.SlotsHorizontally = 2;
-            panel.CustomControl.SlotsVertically = 1;
-
-            var button = panel.Button("Listen", "Press to listen for input events");
+            var button = panelElement.Button("Listen", "Press to listen for input events");
             _button = button.Button;
+            _button.Width = FlaxEngine.GUI.Style.Current.FontMedium.MeasureText("Listening...").X + 8;
+            _button.Height = ComboBox.DefaultHeight;
             _button.Clicked += OnButtonClicked;
             ResetButton();
 
-            var padding = panel.CustomControl.SlotPadding;
-            panel.CustomControl.Height = ComboBox.DefaultHeight + padding.Height;
+            panel.Height = ComboBox.DefaultHeight;
 
-            base.Initialize(panel);
+            base.Initialize(panelElement);
+
+            if (panelElement.Children.Find(x => x is EnumElement) is EnumElement comboBoxElement)
+            {
+                var comboBox = comboBoxElement.ComboBox;
+                comboBox.AnchorPreset = AnchorPresets.StretchAll;
+                comboBox.Offsets = new Margin(0, _button.Width + 2, 0, 0);
+                comboBox.LocalX += _button.Width + 2;
+            }
         }
 
         /// <inheritdoc />
