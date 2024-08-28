@@ -1503,6 +1503,8 @@ NetworkStream* NetworkReplicator::BeginInvokeRPC()
 
 bool NetworkReplicator::EndInvokeRPC(ScriptingObject* obj, const ScriptingTypeHandle& type, const StringAnsiView& name, NetworkStream* argsStream, Span<uint32> targetIds)
 {
+    if (targetIds.IsValid() && targetIds.Length() == 0)
+        return true; // Target list is provided, but it's empty so nobody will get this RPC
     Scripting::ObjectsLookupIdMapping.Set(nullptr);
     const NetworkRpcInfo* info = NetworkRpcInfo::RPCsTable.TryGet(NetworkRpcName(type, name));
     if (!info || !obj || NetworkManager::IsOffline())
