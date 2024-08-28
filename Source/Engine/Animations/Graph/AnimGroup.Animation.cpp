@@ -1421,6 +1421,7 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
             const auto cData = node->Values[4 + c * 2].AsFloat4();
 
             // Get triangle coords
+            byte anims[3] = { a, b, c };
             Float2 points[3] = {
                 Float2(aData.X, aData.Y),
                 Float2(bData.X, bData.Y),
@@ -1534,18 +1535,11 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
                     bestPoint = closest;
                     hasBest = true;
 
-                    float d = Float2::Distance(s[0], s[1]);
-                    if (Math::IsZero(d))
-                    {
-                        bestWeight = 0;
-                    }
-                    else
-                    {
-                        bestWeight = Float2::Distance(s[0], closest) / d;
-                    }
-
-                    bestAnims[0] = j;
-                    bestAnims[1] = (j + 1) % 3;
+                    const float d = Float2::Distance(s[0], s[1]);
+                    bestWeight = d < ANIM_GRAPH_BLEND_THRESHOLD ? 0 : Float2::Distance(s[0], closest) / d;
+                    
+                    bestAnims[0] = anims[j];
+                    bestAnims[1] = anims[(j + 1) % 3];
                 }
             }
         }
