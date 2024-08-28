@@ -455,13 +455,13 @@ namespace FlaxEditor.Modules.SourceCodeEditing
                         bool removedModuleText = false;
                         if (targetText.Contains($"Modules.Add(\"{className}\")", StringComparison.Ordinal))
                         {
-                            newText = newText.Replace($"Modules.Add(\"{className}\")\n", "", StringComparison.Ordinal).Replace($"Modules.Add(\"{className}\")", "", StringComparison.Ordinal);
+                            newText = newText.Replace($"Modules.Add(\"{className}\");\n", "", StringComparison.Ordinal).Replace($"Modules.Add(\"{className}\");", "", StringComparison.Ordinal);
                             removedModuleText = true;
                         }
 
                         if (targetText.Contains($"Modules.Add(nameof({className}))", StringComparison.Ordinal))
                         {
-                            newText = newText.Replace($"Modules.Add(nameof({className}))\n", "", StringComparison.Ordinal).Replace($"Modules.Add(nameof({className}))", "", StringComparison.Ordinal);
+                            newText = newText.Replace($"Modules.Add(nameof({className}));\n", "", StringComparison.Ordinal).Replace($"Modules.Add(nameof({className}));", "", StringComparison.Ordinal);
                             removedModuleText = true;
                         }
                         if (removedModuleText)
