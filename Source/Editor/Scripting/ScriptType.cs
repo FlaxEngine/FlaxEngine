@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -671,6 +672,18 @@ namespace FlaxEditor.Scripting
         /// <param name="value">The new member value.</param>
         public void SetValue(object obj, object value)
         {
+            // Perform automatic conversion if type supports it
+            var type = ValueType.Type;
+            var valueType = value?.GetType();
+            if (valueType != null && type != null && valueType != type)
+            {
+                var converter = TypeDescriptor.GetConverter(type);
+                if (converter.CanConvertTo(type))
+                    value = converter.ConvertTo(value, type);
+                else if (converter.CanConvertFrom(valueType))
+                    value = converter.ConvertFrom(null, null, value);
+            }
+
             if (_managed is PropertyInfo propertyInfo)
                 propertyInfo.SetValue(obj, value);
             else if (_managed is FieldInfo fieldInfo)
