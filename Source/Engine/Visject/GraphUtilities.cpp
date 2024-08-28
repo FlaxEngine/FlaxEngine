@@ -409,8 +409,23 @@ void GraphUtilities::ApplySomeMathHere(Variant& v, Variant& a, Variant& b, MathO
     case VariantType::Uint:
         v.AsUint = (uint32)op((float)a.AsUint, (float)b.AsUint);
         break;
+    case VariantType::Int64:
+        v.AsUint = (int64)op((float)a.AsInt64, (float)b.AsInt64);
+        break;
+    case VariantType::Uint64:
+        v.AsUint = (uint64)op((float)a.AsUint64, (float)b.AsUint64);
+        break;
+    case VariantType::Int16:
+        v.AsUint = (int16)op((float)a.AsInt16, (float)b.AsInt16);
+        break;
+    case VariantType::Uint16:
+        v.AsUint = (uint16)op((float)a.AsUint16, (float)b.AsUint16);
+        break;
     case VariantType::Float:
         v.AsFloat = op(a.AsFloat, b.AsFloat);
+        break;
+    case VariantType::Double:
+        v.AsDouble = op((float)a.AsDouble, (float)b.AsDouble);
         break;
     case VariantType::Float2:
     {
