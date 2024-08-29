@@ -6,6 +6,7 @@ using FlaxEditor.Content;
 using FlaxEditor.Content.Import;
 using FlaxEditor.CustomEditors;
 using FlaxEditor.CustomEditors.Editors;
+using FlaxEditor.CustomEditors.Elements;
 using FlaxEditor.GUI;
 using FlaxEditor.GUI.ContextMenu;
 using FlaxEditor.Scripting;
@@ -133,8 +134,19 @@ namespace FlaxEditor.Windows.Assets
                             group.Panel.Tag = i;
                             group.Panel.MouseButtonRightClicked += OnGroupPanelMouseButtonRightClicked;
                             group.Object(new ListValueContainer(elementType, i, Values));
+
+                            var stringNameElement = group.Editors[0].ChildrenEditors.Find(x => x is StringEditor).Layout.Children.Find(x => x is TextBoxElement) as TextBoxElement;
+                            if (stringNameElement != null)
+                            {
+                                stringNameElement.TextBox.TextBoxEditEnd += (textbox) => OnNameChanged(group.Panel, (TextBox)textbox);
+                            }
                         }
                     }
+                }
+
+                private void OnNameChanged(DropPanel panel, TextBox textbox)
+                {
+                    panel.HeaderText = textbox.Text;
                 }
 
                 private void OnGroupPanelMouseButtonRightClicked(DropPanel groupPanel, Float2 location)
