@@ -1053,14 +1053,16 @@ bool ModelTool::ImportModel(const String& path, ModelData& data, Options& option
     }
     if (EnumHasAnyFlags(options.ImportTypes, ImportDataTypes::Animations))
     {
+        int32 index = 0;
         for (auto& animation : data.Animations)
         {
-            LOG(Info, "Imported animation '{}' has {} channels, duration: {} frames, frames per second: {}", animation.Name, animation.Channels.Count(), animation.Duration, animation.FramesPerSecond);
+            LOG(Info, "Imported animation '{}' at index {} has {} channels, duration: {} frames ({} seconds), frames per second: {}", animation.Name, index, animation.Channels.Count(), animation.Duration, animation.GetLength(), animation.FramesPerSecond);
             if (animation.Duration <= ZeroTolerance || animation.FramesPerSecond <= ZeroTolerance)
             {
                 errorMsg = TEXT("Invalid animation duration.");
                 return true;
             }
+            index++;
         }
     }
     switch (options.Type)
