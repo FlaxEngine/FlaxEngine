@@ -22,6 +22,7 @@
 #include "VolumetricFogPass.h"
 #include "HistogramPass.h"
 #include "AtmospherePreCompute.h"
+#include "ContrastAdaptiveSharpeningPass.h"
 #include "GlobalSignDistanceFieldPass.h"
 #include "GI/GlobalSurfaceAtlasPass.h"
 #include "GI/DynamicDiffuseGlobalIllumination.h"
@@ -126,21 +127,47 @@ void RendererService::Dispose()
 void RenderAntiAliasingPass(RenderContext& renderContext, GPUTexture* input, GPUTextureView* output, const Viewport& outputViewport)
 {
     auto context = GPUDevice::Instance->GetMainContext();
-    context->SetViewportAndScissors(outputViewport);
     const auto aaMode = renderContext.List->Settings.AntiAliasing.Mode;
-    if (aaMode == AntialiasingMode::FastApproximateAntialiasing)
+    if (ContrastAdaptiveSharpeningPass::Instance()->CanRender(renderContext))
     {
-        FXAA::Instance()->Render(renderContext, input, output);
-    }
-    else if (aaMode == AntialiasingMode::SubpixelMorphologicalAntialiasing)
-    {
-        SMAA::Instance()->Render(renderContext, input, output);
+        if (aaMode == AntialiasingMode::FastApproximateAntialiasing ||
+            aaMode == AntialiasingMode::SubpixelMorphologicalAntialiasing)
+        {
+            // AA -> CAS -> Output
+            auto tmpImage = RenderTargetPool::Get(input->GetDescription());
+            RENDER_TARGET_POOL_SET_NAME(tmpImage, "TmpImage");
+            context->SetViewportAndScissors((float)input->Width(), (float)input->Height());
+            if (aaMode == AntialiasingMode::FastApproximateAntialiasing)
+                FXAA::Instance()->Render(renderContext, input, tmpImage->View());
+            else
+                SMAA::Instance()->Render(renderContext, input, tmpImage->View());
+            context->ResetSR();
+            context->ResetRenderTarget();
+            context->SetViewportAndScissors(outputViewport);
+            ContrastAdaptiveSharpeningPass::Instance()->Render(renderContext, tmpImage, output);
+            RenderTargetPool::Release(tmpImage);
+        }
+        else
+        {
+            // CAS -> Output
+            context->SetViewportAndScissors(outputViewport);
+            ContrastAdaptiveSharpeningPass::Instance()->Render(renderContext, input, output);
+        }
     }
     else
     {
-        PROFILE_GPU("Copy frame");
-        context->SetRenderTarget(output);
-        context->Draw(input);
+        // AA -> Output
+        context->SetViewportAndScissors(outputViewport);
+        if (aaMode == AntialiasingMode::FastApproximateAntialiasing)
+            FXAA::Instance()->Render(renderContext, input, output);
+        else if (aaMode == AntialiasingMode::SubpixelMorphologicalAntialiasing)
+            SMAA::Instance()->Render(renderContext, input, output);
+        else
+        {
+            PROFILE_GPU("Copy frame");
+            context->SetRenderTarget(output);
+            context->Draw(input);
+        }
     }
 }
 

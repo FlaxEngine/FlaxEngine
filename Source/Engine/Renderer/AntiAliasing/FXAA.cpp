@@ -65,10 +65,10 @@ void FXAA::Dispose()
 void FXAA::Render(RenderContext& renderContext, GPUTexture* input, GPUTextureView* output)
 {
     auto context = GPUDevice::Instance->GetMainContext();
+    context->SetRenderTarget(output);
     if (checkIfSkipPass())
     {
         // Resources are missing. Do not perform rendering, just copy input frame.
-        context->SetRenderTarget(output);
         context->Draw(input);
         return;
     }
@@ -83,7 +83,6 @@ void FXAA::Render(RenderContext& renderContext, GPUTexture* input, GPUTextureVie
     context->BindSR(0, input);
 
     // Render
-    context->SetRenderTarget(output);
     const auto qualityLevel = Math::Clamp(static_cast<int32>(Graphics::AAQuality), 0, static_cast<int32>(Quality::MAX) - 1);
     context->SetState(_psFXAA.Get(qualityLevel));
     context->DrawFullscreenTriangle();
