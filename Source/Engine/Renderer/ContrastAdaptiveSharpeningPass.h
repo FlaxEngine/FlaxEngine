@@ -11,7 +11,6 @@
 class ContrastAdaptiveSharpeningPass : public RendererPass<ContrastAdaptiveSharpeningPass>
 {
 private:
-    bool _loadShader = true;
     AssetReference<Shader> _shader;
     GPUPipelineState* _psCAS = nullptr;
 
