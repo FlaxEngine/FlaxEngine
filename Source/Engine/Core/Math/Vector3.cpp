@@ -324,6 +324,20 @@ float Float3::Angle(const Float3& from, const Float3& to)
     return Math::Acos(dot);
 }
 
+template<>
+Float3 Float3::SnapToGrid(const Float3& pos, const Float3& gridSize)
+{
+    return Float3(Math::Ceil((pos.X - (gridSize.X * 0.5f)) / gridSize.X) * gridSize.X,
+                  Math::Ceil((pos.Y - (gridSize.Y * 0.5f)) / gridSize.Y) * gridSize.Y,
+                  Math::Ceil((pos.Z - (gridSize.Z * 0.5f)) / gridSize.Z) * gridSize.Z);
+}
+
+template<>
+Float3 Float3::SnapToGrid(const Float3& point, const Float3& gridSize, const Quaternion& gridOrientation, const Float3& gridOrigin, const Float3& offset)
+{
+    return (gridOrientation * (gridOrientation.Conjugated() * SnapToGrid(point - gridOrigin, gridSize) + offset)) + gridOrigin;
+}
+
 // Double
 
 static_assert(sizeof(Double3) == 24, "Invalid Double3 type size.");
@@ -638,6 +652,20 @@ double Double3::Angle(const Double3& from, const Double3& to)
     return Math::Acos(dot);
 }
 
+template<>
+Double3 Double3::SnapToGrid(const Double3& pos, const Double3& gridSize)
+{
+    return Double3(Math::Ceil((pos.X - (gridSize.X * 0.5)) / gridSize.X) * gridSize.X,
+                   Math::Ceil((pos.Y - (gridSize.Y * 0.5)) / gridSize.Y) * gridSize.Y,
+                   Math::Ceil((pos.Z - (gridSize.Z * 0.5)) / gridSize.Z) * gridSize.Z);
+}
+
+template<>
+Double3 Double3::SnapToGrid(const Double3& point, const Double3& gridSize, const Quaternion& gridOrientation, const Double3& gridOrigin, const Double3& offset)
+{
+    return (gridOrientation * (gridOrientation.Conjugated() * SnapToGrid(point - gridOrigin, gridSize) + offset)) + gridOrigin;
+}
+
 // Int
 
 static_assert(sizeof(Int3) == 12, "Invalid Int3 type size.");
@@ -851,4 +879,18 @@ template<>
 int32 Int3::Angle(const Int3& from, const Int3& to)
 {
     return 0;
+}
+
+template<>
+Int3 Int3::SnapToGrid(const Int3& pos, const Int3& gridSize)
+{
+    return Int3(((pos.X - (gridSize.X / 2)) / gridSize.X) * gridSize.X,
+                ((pos.Y - (gridSize.Y / 2)) / gridSize.Y) * gridSize.Y,
+                ((pos.Z - (gridSize.Z / 2)) / gridSize.Z) * gridSize.Z);
+}
+
+template<>
+Int3 Int3::SnapToGrid(const Int3& point, const Int3& gridSize, const Quaternion& gridOrientation, const Int3& gridOrigin, const Int3& offset)
+{
+    return (gridOrientation * (gridOrientation.Conjugated() * SnapToGrid(point - gridOrigin, gridSize) + offset)) + gridOrigin;
 }

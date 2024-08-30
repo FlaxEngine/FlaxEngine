@@ -7,6 +7,7 @@
 #include "Matrix3x3.h"
 #include "Math.h"
 #include "../Types/String.h"
+#include "Engine/Core/Math/Transform.h"
 
 Quaternion Quaternion::Zero(0, 0, 0, 0);
 Quaternion Quaternion::One(1, 1, 1, 1);
@@ -536,4 +537,15 @@ void Quaternion::RotationYawPitchRoll(float yaw, float pitch, float roll, Quater
     result.X = cosYawOver2 * sinPitchOver2 * cosRollOver2 + sinYawOver2 * cosPitchOver2 * sinRollOver2;
     result.Y = sinYawOver2 * cosPitchOver2 * cosRollOver2 - cosYawOver2 * sinPitchOver2 * sinRollOver2;
     result.Z = cosYawOver2 * cosPitchOver2 * sinRollOver2 - sinYawOver2 * sinPitchOver2 * cosRollOver2;
+}
+
+Quaternion Quaternion::GetRotationFromNormal(const Vector3& normal, const Transform& reference)
+{
+    Float3 up = reference.GetUp();
+    const float dot = Vector3::Dot(normal, up);
+    if (Math::NearEqual(Math::Abs(dot), 1))
+    {
+        up = reference.GetRight();
+    }
+    return Quaternion::LookRotation(normal, up);
 }
