@@ -213,13 +213,13 @@ protected:
         const int32 dstMips = dstTexture->MipLevels();
         GPUTexture* srcTexture = _streamingTexture->GetTexture();
         const int32 srcMips = srcTexture->MipLevels();
+        const int32 srcMissingMips = srcMips - srcTexture->ResidentMipLevels();;
         const int32 mipCount = Math::Min(dstMips, srcMips);
-        ASSERT(mipCount > 0);
-        for (int32 mipIndex = 0; mipIndex < mipCount; mipIndex++)
+        for (int32 mipIndex = srcMissingMips; mipIndex < mipCount; mipIndex++)
         {
             context->GPU->CopySubresource(dstTexture, dstMips - mipIndex - 1, srcTexture, srcMips - mipIndex - 1);
         }
-        _uploadedMipCount = mipCount;
+        _uploadedMipCount = mipCount - srcMissingMips;
 
         return Result::Ok;
     }
