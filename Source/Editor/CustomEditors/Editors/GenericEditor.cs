@@ -560,19 +560,19 @@ namespace FlaxEditor.CustomEditors.Editors
 
         internal static void OnReadOnlyProperty(LayoutElementsContainer itemLayout, int labelIndex = -1)
         {
-            PropertiesListElement list = null;
+            PropertiesList list = null;
             int firstChildControlIndex = 0;
             bool disableSingle = true;
             var control = itemLayout.Children[itemLayout.Children.Count - 1];
             if (control is GroupElement group && group.Children.Count > 0)
             {
-                list = group.Children[0] as PropertiesListElement;
+                list = (group.Children[0] as PropertiesListElement)?.Properties;
                 disableSingle = false; // Disable all nested editors
             }
             else if (control is PropertiesListElement list1 && labelIndex != -1)
             {
-                list = list1;
-                firstChildControlIndex = list.Labels[labelIndex].FirstChildControlIndex;
+                list = list1.Labels[labelIndex].FirstChildControlContainer ?? list1.Properties;
+                firstChildControlIndex = list1.Labels[labelIndex].FirstChildControlIndex;
             }
             else if (control?.Control != null)
             {
@@ -582,10 +582,10 @@ namespace FlaxEditor.CustomEditors.Editors
             if (list != null)
             {
                 // Disable controls added to the editor
-                var count = list.Properties.Children.Count;
+                var count = list.Children.Count;
                 for (int j = firstChildControlIndex; j < count; j++)
                 {
-                    var child = list.Properties.Children[j];
+                    var child = list.Children[j];
                     if (disableSingle && child is PropertyNameLabel)
                         break;
 

@@ -666,7 +666,20 @@ namespace FlaxEditor.CustomEditors
             }
 
             var property = AddPropertyItem(name, tooltip);
-            return property.Object(values, editor);
+            int start = property.Properties.Children.Count;
+            var result = property.Object(values, editor);
+
+            // Special case when properties list is nested into another properties list (eg. array of structures or LocalizedString editor)
+            if (this is PropertiesListElement thisPropertiesList &&
+                editor.ParentEditor != null &&
+                editor.ParentEditor.LinkedLabel != null &&
+                editor.ParentEditor.LinkedLabel.FirstChildControlContainer == null)
+            {
+                editor.ParentEditor.LinkedLabel.FirstChildControlIndex = start;
+                editor.ParentEditor.LinkedLabel.FirstChildControlContainer = property.Properties;
+            }
+
+            return result;
         }
 
         /// <summary>

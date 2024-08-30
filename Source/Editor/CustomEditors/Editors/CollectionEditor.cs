@@ -53,7 +53,7 @@ namespace FlaxEditor.CustomEditors.Editors
                 Index = index;
 
                 SetupContextMenu += OnSetupContextMenu;
-                _arrangeButtonRect = new Rectangle(2, 3, 12, 12);
+                _arrangeButtonRect = new Rectangle(2, 4, 12, 12);
 
                 // Extend margin of the label to support a dragging handle.
                 Margin m = Margin;
@@ -75,7 +75,7 @@ namespace FlaxEditor.CustomEditors.Editors
 
                 b = menu.AddButton("Move down", OnMoveDownClicked);
                 b.Enabled = Index + 1 < Editor.Count && !Editor._readOnly;
-                
+
                 b = menu.AddButton("Remove", OnRemoveClicked);
                 b.Enabled = !Editor._readOnly;
             }
@@ -88,13 +88,12 @@ namespace FlaxEditor.CustomEditors.Editors
                 _arrangeButtonInUse = false;
             }
 
-
             /// <inheritdoc />
             public override void Draw()
             {
                 base.Draw();
-                var style = FlaxEngine.GUI.Style.Current;
 
+                var style = FlaxEngine.GUI.Style.Current;
                 var mousePosition = PointFromScreen(Input.MouseScreenPosition);
                 var dragBarColor = _arrangeButtonRect.Contains(mousePosition) ? style.Foreground : style.ForegroundGrey;
                 Render2D.DrawSprite(FlaxEditor.Editor.Instance.Icons.DragBar12, _arrangeButtonRect, _arrangeButtonInUse ? Color.Orange : dragBarColor);
@@ -102,6 +101,14 @@ namespace FlaxEditor.CustomEditors.Editors
                 {
                     Render2D.FillRectangle(arrangeTargetRect, style.Selection);
                 }
+            }
+
+            /// <inheritdoc />
+            protected override void OnSizeChanged()
+            {
+                base.OnSizeChanged();
+
+                _arrangeButtonRect.Y = (Height - _arrangeButtonRect.Height) * 0.5f;
             }
 
             private bool ArrangeAreaCheck(out int index, out Rectangle rect)
@@ -278,10 +285,10 @@ namespace FlaxEditor.CustomEditors.Editors
             public override void Draw()
             {
                 base.Draw();
+
                 if (_canReorder)
                 {
                     var style = FlaxEngine.GUI.Style.Current;
-
                     var mousePosition = PointFromScreen(Input.MouseScreenPosition);
                     var dragBarColor = _arrangeButtonRect.Contains(mousePosition) ? style.Foreground : style.ForegroundGrey;
                     Render2D.DrawSprite(FlaxEditor.Editor.Instance.Icons.DragBar12, _arrangeButtonRect, _arrangeButtonInUse ? Color.Orange : dragBarColor);
@@ -519,6 +526,7 @@ namespace FlaxEditor.CustomEditors.Editors
                               (elementType.GetProperties().Length == 1 && elementType.GetFields().Length == 0) ||
                               elementType.Equals(new ScriptType(typeof(JsonAsset))) ||
                               elementType.Equals(new ScriptType(typeof(SettingsBase)));
+                bool prevWasNestedPropertiesList = false;
                 for (int i = 0; i < size; i++)
                 {
                     // Apply spacing
@@ -538,6 +546,7 @@ namespace FlaxEditor.CustomEditors.Editors
                         itemLabel.LinkedEditor = itemLayout.Object(new ListValueContainer(elementType, i, Values, attributes), overrideEditor);
                         if (_readOnly && itemLayout.Children.Count > 0)
                             GenericEditor.OnReadOnlyProperty(itemLayout);
+                        prevWasNestedPropertiesList = false;
                     }
                     else if (_displayType == CollectionAttribute.DisplayType.Header || (_displayType == CollectionAttribute.DisplayType.Default && !single))
                     {
@@ -547,6 +556,7 @@ namespace FlaxEditor.CustomEditors.Editors
                         cdp.CustomControl.LinkedEditor = itemLayout.Object(new ListValueContainer(elementType, i, Values, attributes), overrideEditor);
                         if (_readOnly && itemLayout.Children.Count > 0)
                             GenericEditor.OnReadOnlyProperty(itemLayout);
+                        prevWasNestedPropertiesList = false;
                     }
                 }
             }
@@ -663,7 +673,7 @@ namespace FlaxEditor.CustomEditors.Editors
                     cloned[i] = tmp;
                 }
             }
-            
+
             SetValue(cloned);
         }
 
