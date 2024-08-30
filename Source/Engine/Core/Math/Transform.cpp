@@ -253,26 +253,8 @@ void Transform::Lerp(const Transform& t1, const Transform& t2, float amount, Tra
     Float3::Lerp(t1.Scale, t2.Scale, amount, result.Scale);
 }
 
-inline Transform Transform::AlignRotationToNormalAndSnapToGrid(const Vector3& InPoint, const Vector3& InNormal, float InNormalOffset, const Transform& InRelativeTo, const Float3& InReturnScale, const Vector3& InGridSize)
+Transform Transform::AlignRotationToNormalAndSnapToGrid(const Vector3& point, const Vector3& normal, const Vector3& normalOffset, const Transform& relativeTo, const Vector3& gridSize, const Float3& scale)
 {
-    Quaternion rot = Quaternion::GetRotationFromNormal(InNormal, InRelativeTo);
-    return Transform(Vector3::SnapToRotatedGridWithOffset(InPoint, InRelativeTo.Translation, Vector3(0, 0, InNormalOffset), rot, InGridSize), rot, InReturnScale);
-}
-
-inline Transform Transform::AlignRotationToNormalAndSnapToGrid(const Vector3& InPoint, const Vector3& InNormal, float InNormalOffset, const Transform& InRelativeTo, const Vector3& InGridSize)
-{
-    Quaternion rot = Quaternion::GetRotationFromNormal(InNormal, InRelativeTo);
-    return Transform(Vector3::SnapToRotatedGridWithOffset(InPoint, InRelativeTo.Translation, Vector3(0, 0, InNormalOffset), rot, InGridSize), rot, Float3::One);
-}
-
-inline Transform Transform::AlignRotationToNormalAndSnapToGrid(const Vector3& InPoint, const Vector3& InNormal, const Vector3& InNormalOffset, const Transform& InRelativeTo, const Float3& InReturnScale, const Vector3& InGridSize)
-{
-    Quaternion rot = Quaternion::GetRotationFromNormal(InNormal, InRelativeTo);
-    return Transform(Vector3::SnapToRotatedGridWithOffset(InPoint, InRelativeTo.Translation, InNormalOffset, rot, InGridSize), rot, InReturnScale);
-}
-
-inline Transform Transform::AlignRotationToNormalAndSnapToGrid(const Vector3& InPoint, const Vector3& InNormal, const Vector3& InNormalOffset, const Transform& InRelativeTo, const Vector3& InGridSize)
-{
-    Quaternion rot = Quaternion::GetRotationFromNormal(InNormal, InRelativeTo);
-    return Transform(Vector3::SnapToRotatedGridWithOffset(InPoint, InRelativeTo.Translation, InNormalOffset, rot, InGridSize), rot, Float3::One);
+    Quaternion rot = Quaternion::GetRotationFromNormal(normal, relativeTo);
+    return Transform(Vector3::SnapToGrid(point, gridSize, rot, relativeTo.Translation, normalOffset), rot, scale);
 }

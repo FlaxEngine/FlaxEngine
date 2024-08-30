@@ -1491,16 +1491,16 @@ namespace FlaxEngine
         /// <example><para><b>Example code:</b></para>
         /// <code>
         /// <see langword="public" /> <see langword="class" /> GetRotationFromNormalExample : <see cref="Script"/><br/>
-        ///     <see langword="public" /> <see cref="Actor"/> RayOrgin;<br/>
+        ///     <see langword="public" /> <see cref="Actor"/> RayOrigin;<br/>
         ///     <see langword="public" /> <see cref="Actor"/> SomeObject;<br/>
         ///     <see langword="public" /> <see langword="override" /> <see langword="void" /> <see cref="Script.OnFixedUpdate"/><br/>
         ///     {<br/>
-        ///         <see langword="if" /> (<see cref="Physics"/>.RayCast(RayOrgin.Position, RayOrgin.Transform.Forward, out <see cref="RayCastHit"/> Hit)
+        ///         <see langword="if" /> (<see cref="Physics"/>.RayCast(RayOrigin.Position, RayOrigin.Transform.Forward, out <see cref="RayCastHit"/> hit)
         ///         {<br/>
-        ///             <see cref="Vector3"/> position = Hit.Collider.Position;
-        ///             <see cref="Transform"/> transform = Hit.Collider.Transform;
-        ///             <see cref="Vector3"/> point = Hit.Point;
-        ///             <see cref="Vector3"/> normal = Hit.Normal;
+        ///             <see cref="Vector3"/> position = hit.Collider.Position;
+        ///             <see cref="Transform"/> transform = hit.Collider.Transform;
+        ///             <see cref="Vector3"/> point = hit.Point;
+        ///             <see cref="Vector3"/> normal = hit.Normal;
         ///             <see cref="Quaternion"/> rot = <see cref="Quaternion"/>.GetRotationFromNormal(normal,transform);
         ///             SomeObject.Position = point;
         ///             SomeObject.Orientation = rot;
@@ -1510,18 +1510,16 @@ namespace FlaxEngine
         /// </code>
         /// </example>
         /// </summary>
-        /// <param name="InNormal">The normal vector.</param>
-        /// <param name="InReferenceTransform">The reference transform.</param>
+        /// <param name="normal">The normal vector.</param>
+        /// <param name="reference">The reference transform.</param>
         /// <returns>The rotation from the normal vector.</returns>
-        public static Quaternion GetRotationFromNormal(Vector3 InNormal, Transform InReferenceTransform)
+        public static Quaternion GetRotationFromNormal(Vector3 normal, Transform reference)
         {
-            Float3 up = InReferenceTransform.Up;
-            var dot = Vector3.Dot(InNormal, up);
+            Float3 up = reference.Up;
+            var dot = Vector3.Dot(normal, up);
             if (Mathf.NearEqual(Math.Abs(dot), 1))
-            {
-                up = InReferenceTransform.Right;
-            }
-            return LookRotation(InNormal, up);
+                up = reference.Right;
+            return LookRotation(normal, up);
         }
 
         /// <summary>

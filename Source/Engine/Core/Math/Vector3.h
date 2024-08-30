@@ -937,26 +937,15 @@ public:
     static FLAXENGINE_API Vector3Base SnapToGrid(const Vector3Base& pos, const Vector3Base& gridSize);
 
     /// <summary>
-    /// Snaps the <paramref name="InPoint"/> onto the rotated grid.<br/>
-    /// For world aligned grid snapping use <b><see cref="SnapToGrid"/></b> instead.
+    /// Snaps the <paramref name="point"/> onto the rotated grid. For world aligned grid snapping use <b><see cref="SnapToGrid"/></b> instead.
     /// </summary>
-    /// <param name="InPoint">The position to snap.</param>
-    /// <param name="InCenterPoint">The center point.</param>
-    /// <param name="InOrientation">The rotation of the grid.</param>
-    /// <param name="InGridSize">The size of the grid.</param>
+    /// <param name="point">The position to snap.</param>
+    /// <param name="gridSize">The size of the grid.</param>
+    /// <param name="gridOrigin">The center point of the grid.</param>
+    /// <param name="gridOrientation">The rotation of the grid.</param>
+    /// <param name="offset">The local position offset applied to the snapped position before grid rotation.</param>
     /// <returns>The position snapped to the grid.</returns>
-    static FLAXENGINE_API Vector3Base SnapToRotatedGrid(const Vector3Base& InPoint, const Vector3Base& InCenterPoint, const Quaternion& InOrientation, const Vector3Base& InGridSize);
-
-    /// <summary>
-    /// The same as <see cref="SnapToRotatedGrid"/> but with local offset applied after point is snapped.
-    /// </summary>
-    /// <param name="InPoint">The position to snap.</param>
-    /// <param name="InCenterPoint">The center point.</param>
-    /// <param name="InOrientation">The rotation of the grid.</param>
-    /// <param name="InGridSize">The size of the grid.</param>
-    /// <param name="InOffset">The local grid offset to apply after snapping.</param>
-    /// <returns>The position snapped to the grid, with offset applied.</returns>
-    static FLAXENGINE_API Vector3Base SnapToRotatedGridWithOffset(const Vector3Base& InPoint, const Vector3Base& InCenterPoint, const Vector3Base& InOffset, const Quaternion& InOrientation, const Vector3Base& InGridSize);
+    static FLAXENGINE_API Vector3Base SnapToGrid(const Vector3Base& point, const Vector3Base& gridSize, const Quaternion& gridOrientation, const Vector3Base& gridOrigin = Zero, const Vector3Base& offset = Zero);
 };
 
 template<typename T>
