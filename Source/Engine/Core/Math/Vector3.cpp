@@ -324,6 +324,26 @@ float Float3::Angle(const Float3& from, const Float3& to)
     return Math::Acos(dot);
 }
 
+template<>
+Float3 Float3::SnapToGrid(const Float3& pos, const Float3& gridSize)
+{
+    return Float3(Math::Ceil((pos.X - (gridSize.X * 0.5f)) / gridSize.X) * gridSize.X,
+        Math::Ceil((pos.Y - (gridSize.Y * 0.5f)) / gridSize.Y) * gridSize.Y,
+        Math::Ceil((pos.Z - (gridSize.Z * 0.5f)) / gridSize.Z) * gridSize.Z);
+}
+
+template<>
+Float3 Float3::SnapToRotatedGridWithOffset(const Float3& InPoint, const Float3& InCenterPoint, const Float3& InOffset, const Quaternion& InOrientation, const Float3& InGridSize)
+{
+    return (InOrientation * (InOrientation.Conjugated() * Float3::SnapToGrid((InPoint - InCenterPoint), InGridSize) + InOffset)) + InCenterPoint;
+}
+
+template<>
+Float3 Float3::SnapToRotatedGrid(const Float3& InPoint, const Float3& InCenterPoint, const Quaternion& InOrientation, const Float3& InGridSize)
+{
+    return (InOrientation * InOrientation.Conjugated() * Float3::SnapToGrid((InPoint - InCenterPoint), InGridSize)) + InCenterPoint;
+}
+
 // Double
 
 static_assert(sizeof(Double3) == 24, "Invalid Double3 type size.");
@@ -638,6 +658,26 @@ double Double3::Angle(const Double3& from, const Double3& to)
     return Math::Acos(dot);
 }
 
+template<>
+Double3 Double3::SnapToGrid(const Double3& pos, const Double3& gridSize)
+{
+    return Double3(Math::Ceil((pos.X - (gridSize.X * 0.5f)) / gridSize.X) * gridSize.X,
+        Math::Ceil((pos.Y - (gridSize.Y * 0.5f)) / gridSize.Y) * gridSize.Y,
+        Math::Ceil((pos.Z - (gridSize.Z * 0.5f)) / gridSize.Z) * gridSize.Z);
+}
+
+template<>
+Double3 Double3::SnapToRotatedGridWithOffset(const Double3& InPoint, const Double3& InCenterPoint, const Double3& InOffset, const Quaternion& InOrientation, const Double3& InGridSize)
+{
+    return (InOrientation * (InOrientation.Conjugated() * Float3::SnapToGrid((InPoint - InCenterPoint), InGridSize) + InOffset)) + InCenterPoint;
+}
+
+template<>
+Double3 Double3::SnapToRotatedGrid(const Double3& InPoint, const Double3& InCenterPoint, const Quaternion& InOrientation, const Double3& InGridSize)
+{
+    return (InOrientation * InOrientation.Conjugated() * Float3::SnapToGrid((InPoint - InCenterPoint), InGridSize)) + InCenterPoint;
+}
+
 // Int
 
 static_assert(sizeof(Int3) == 12, "Invalid Int3 type size.");
@@ -851,4 +891,24 @@ template<>
 int32 Int3::Angle(const Int3& from, const Int3& to)
 {
     return 0;
+}
+
+template<>
+Int3 Int3::SnapToGrid(const Int3& pos, const Int3& gridSize)
+{
+    return Double3(Math::Ceil((pos.X - (gridSize.X * 0.5f)) / gridSize.X) * gridSize.X,
+        Math::Ceil((pos.Y - (gridSize.Y * 0.5f)) / gridSize.Y) * gridSize.Y,
+        Math::Ceil((pos.Z - (gridSize.Z * 0.5f)) / gridSize.Z) * gridSize.Z);
+}
+
+template<>
+Int3 Int3::SnapToRotatedGridWithOffset(const Int3& InPoint, const Int3& InCenterPoint, const Int3& InOffset, const Quaternion& InOrientation, const Int3& InGridSize)
+{
+    return (InOrientation * (InOrientation.Conjugated() * Int3::SnapToGrid((InPoint - InCenterPoint), InGridSize) + InOffset)) + InCenterPoint;
+}
+
+template<>
+Int3 Int3::SnapToRotatedGrid(const Int3& InPoint, const Int3& InCenterPoint, const Quaternion& InOrientation, const Int3& InGridSize)
+{
+    return (InOrientation * InOrientation.Conjugated() * Int3::SnapToGrid((InPoint - InCenterPoint), InGridSize)) + InCenterPoint;
 }
