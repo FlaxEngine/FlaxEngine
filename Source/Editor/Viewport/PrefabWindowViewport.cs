@@ -635,6 +635,8 @@ namespace FlaxEditor.Viewport
                 if (child is not ActorNode actorNode)
                     continue;
                 var actor = actorNode.Actor;
+                if (!actor)
+                    continue;
                 if (collectActors)
                     Utils.GetActorsTree(_debugDrawActors, actor);
                 DebugDraw.DrawActorsTree(actor);
