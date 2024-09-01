@@ -198,12 +198,11 @@ namespace FlaxEditor.Modules
         }
         /// <summary>
         /// Gets the virtual proxy object from given path.
-        /// <br></br>use case if the asset u trying to display is not a flax asset but u like to add custom functionality
-        /// <br></br>to context menu,or display it the asset
+        /// <br></br>Useful if the asset that needs to be displayed is not a Flax asset but needs custom functionality.
         /// </summary>
         /// <param name="path">The asset path.</param>
-        /// <returns>Asset proxy or null if cannot find.</returns>
-        public AssetProxy GetAssetVirtuallProxy(string path)
+        /// <returns>Asset proxy or null if not found.</returns>
+        public AssetProxy GetAssetVirtualProxy(string path)
         {
             for (int i = 0; i < Proxy.Count; i++)
             {
@@ -1019,7 +1018,7 @@ namespace FlaxEditor.Modules
                     }
                     if (item == null)
                     {
-                        var proxy = GetAssetVirtuallProxy(path);
+                        var proxy = GetAssetVirtualProxy(path);
                         item = proxy?.ConstructItem(path, assetInfo.TypeName, ref assetInfo.ID);
                         if (item == null)
                         {
