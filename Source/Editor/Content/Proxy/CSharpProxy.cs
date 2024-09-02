@@ -30,7 +30,7 @@ namespace FlaxEditor.Content
         /// </summary>
         /// <param name="path">The path to the template</param>
         protected abstract void GetTemplatePath(out string path);
-        
+
         /// <inheritdoc />
         public override void Create(string outputPath, object arg)
         {
@@ -61,7 +61,7 @@ namespace FlaxEditor.Content
 
         /// <inheritdoc />
         public override string FileExtension => "cs";
-        
+
         /// <inheritdoc />
         public override Color AccentColor => Color.FromRGB(0x1c9c2b);
     }
