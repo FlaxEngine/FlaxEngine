@@ -417,6 +417,14 @@ namespace FlaxEditor.Modules.SourceCodeEditing
             {
                 moduleTextIndex = fileText.IndexOf("GameModule", StringComparison.Ordinal);
             }
+            else if (fileText.Contains("ThirdPartyModule", StringComparison.Ordinal))
+            {
+                moduleTextIndex = fileText.IndexOf("ThirdPartyModule", StringComparison.Ordinal);
+            }
+            else if (fileText.Contains("DepsModule", StringComparison.Ordinal))
+            {
+                moduleTextIndex = fileText.IndexOf("DepsModule", StringComparison.Ordinal);
+            }
             else if (fileText.Contains("GameEditorModule", StringComparison.Ordinal))
             {
                 moduleTextIndex = fileText.IndexOf("GameEditorModule", StringComparison.Ordinal);
