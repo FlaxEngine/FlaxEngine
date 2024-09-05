@@ -924,6 +924,19 @@ namespace FlaxEngine.GUI
             return newLineLoc;
         }
 
+        private int FindNextLineBegin()
+        {
+            int caretPos = CaretPosition;
+            if (caretPos + 2 > TextLength)
+                return TextLength;
+            int newLineLoc = _text.IndexOf('\n', caretPos + 2);
+            if (newLineLoc == -1)
+                newLineLoc = TextLength;
+            else
+                newLineLoc++;
+            return newLineLoc;
+        }
+
         private int FindLineDownChar(int index)
         {
             if (!IsMultiline)
@@ -1491,8 +1504,13 @@ namespace FlaxEngine.GUI
                 return true;
             case KeyboardKeys.End:
             {
+                // Select text from the current cursor point to the beginning of a new line
+                if (shiftDown && _selectionStart != -1)
+                    SetSelection(_selectionStart, FindNextLineBegin());
                 // Move caret after last character
-                SetSelection(TextLength);
+                else
+                    SetSelection(TextLength);
+                
                 return true;
             }
             case KeyboardKeys.Tab:
