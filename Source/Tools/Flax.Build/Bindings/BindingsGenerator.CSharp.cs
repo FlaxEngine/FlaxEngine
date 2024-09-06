@@ -530,7 +530,7 @@ namespace Flax.Build.Bindings
 
                     // interface
                     if (apiType.IsInterface)
-                        return string.Format("FlaxEngine.Object.GetUnmanagedInterface({{0}}, typeof({0}))", apiType.FullNameManaged);
+                        return string.Format("FlaxEngine.Object.GetUnmanagedInterface({{0}}, typeof({0}))", apiType.Name);
                 }
 
                 // Object reference property
@@ -590,7 +590,7 @@ namespace Flax.Build.Bindings
                     fullReturnValueType = $"{apiType.Namespace}.Interop.{returnValueType}";
 
                 // Interfaces are not supported by NativeMarshallingAttribute, marshal the parameter
-                returnMarshalType = $"MarshalUsing(typeof({fullReturnValueType}Marshaller))";
+                returnMarshalType = $"MarshalUsing(typeof({returnValueType}Marshaller))";
             }
             else if (functionInfo.ReturnType.Type == "MonoArray" || functionInfo.ReturnType.Type == "MArray")
                 returnMarshalType = "MarshalUsing(typeof(FlaxEngine.Interop.SystemArrayMarshaller))";
@@ -2189,7 +2189,7 @@ namespace Flax.Build.Bindings
                 contents.Append(indent).AppendLine("/// </summary>");
                 if (buildData.Target != null & buildData.Target.IsEditor)
                     contents.Append(indent).AppendLine("[HideInEditor]");
-                contents.Append(indent).AppendLine($"[CustomMarshaller(typeof({interfaceInfo.Name}), MarshalMode.Default, typeof({marshallerFullName}))]");
+                contents.Append(indent).AppendLine($"[CustomMarshaller(typeof({interfaceInfo.Name}), MarshalMode.Default, typeof({marshallerName}))]");
                 contents.Append(indent).AppendLine($"public static class {marshallerName}");
                 contents.Append(indent).AppendLine("{");
                 contents.AppendLine("#pragma warning disable 1591");
