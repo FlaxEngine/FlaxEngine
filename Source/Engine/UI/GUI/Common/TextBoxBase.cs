@@ -1436,6 +1436,30 @@ namespace FlaxEngine.GUI
 
                 return true;
             }
+            case KeyboardKeys.PageDown:
+            {
+                if (IsScrollable && IsMultiline)
+                {
+                    var location = GetCharPosition(_selectionStart, out var height);
+                    var sizeHeight = Size.Y / height;
+                    location.Y += height * (int)sizeHeight;
+                    TargetViewOffset = Vector2.Clamp(new Float2(0, location.Y), Float2.Zero, TextSize - new Float2(0, Size.Y));
+                    SetSelection(HitTestText(location));
+                }
+                return true;
+            }
+            case KeyboardKeys.PageUp:
+            {
+                if (IsScrollable && IsMultiline)
+                {
+                    var location = GetCharPosition(_selectionStart, out var height);
+                    var sizeHeight =  Size.Y / height;
+                    location.Y -= height * (int)sizeHeight;
+                    TargetViewOffset = Vector2.Clamp(new Float2(0, location.Y), Float2.Zero, TextSize - new Float2(0, Size.Y));
+                    SetSelection(HitTestText(location));
+                }
+                return true;
+            }
             case KeyboardKeys.Delete:
             {
                 if (IsReadOnly)
