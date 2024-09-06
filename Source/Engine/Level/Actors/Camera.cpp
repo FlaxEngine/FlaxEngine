@@ -303,6 +303,7 @@ void Camera::GetMatrices(Matrix& view, Matrix& projection, const Viewport& viewp
 void Camera::OnPreviewModelLoaded()
 {
     _previewModelBuffer.Setup(_previewModel.Get());
+    _previewModelBuffer.At(0).ReceiveDecals = false;
 
     UpdateCache();
 }
