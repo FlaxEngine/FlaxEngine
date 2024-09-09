@@ -357,6 +357,10 @@ void StaticModel::Draw(RenderContext& renderContext)
     draw.ForcedLOD = _forcedLod;
     draw.SortOrder = _sortOrder;
     draw.VertexColors = _vertexColorsCount ? _vertexColorsBuffer : nullptr;
+#if USE_EDITOR
+    if (HasStaticFlag(StaticFlags::Lightmap))
+        draw.LightmapScale = _scaleInLightmap;
+#endif
 
     Model->Draw(renderContext, draw);
 
@@ -391,6 +395,10 @@ void StaticModel::Draw(RenderContextBatch& renderContextBatch)
     draw.ForcedLOD = _forcedLod;
     draw.SortOrder = _sortOrder;
     draw.VertexColors = _vertexColorsCount ? _vertexColorsBuffer : nullptr;
+#if USE_EDITOR
+    if (HasStaticFlag(StaticFlags::Lightmap))
+        draw.LightmapScale = _scaleInLightmap;
+#endif
 
     Model->Draw(renderContextBatch, draw);
 

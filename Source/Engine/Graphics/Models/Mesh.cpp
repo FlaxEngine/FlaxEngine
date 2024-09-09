@@ -485,6 +485,8 @@ void Mesh::Draw(const RenderContext& renderContext, const DrawInfo& info, float 
     const ViewMode viewMode = renderContext.View.Mode;
     if (viewMode == ViewMode::LightmapUVsDensity || viewMode == ViewMode::LODPreview)
         GBufferPass::AddIndexBufferToModelLOD(_indexBuffer, &((Model*)_model)->LODs[_lodIndex]);
+    if (viewMode == ViewMode::LightmapUVsDensity)
+        drawCall.Surface.LODDitherFactor = info.LightmapScale; // See LightmapUVsDensityMaterialShader
 #endif
 
     // Push draw call to the render list
@@ -547,6 +549,8 @@ void Mesh::Draw(const RenderContextBatch& renderContextBatch, const DrawInfo& in
     const ViewMode viewMode = renderContextBatch.GetMainContext().View.Mode;
     if (viewMode == ViewMode::LightmapUVsDensity || viewMode == ViewMode::LODPreview)
         GBufferPass::AddIndexBufferToModelLOD(_indexBuffer, &((Model*)_model)->LODs[_lodIndex]);
+    if (viewMode == ViewMode::LightmapUVsDensity)
+        drawCall.Surface.LODDitherFactor = info.LightmapScale; // See LightmapUVsDensityMaterialShader
 #endif
 
     // Push draw call to the render lists

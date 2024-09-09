@@ -123,6 +123,10 @@ void TerrainChunk::Draw(const RenderContext& renderContext) const
     }
     drawCall.WorldDeterminantSign = Math::FloatSelect(drawCall.World.RotDeterminant(), 1, -1);
     drawCall.PerInstanceRandom = _perInstanceRandom;
+#if USE_EDITOR
+    if (renderContext.View.Mode == ViewMode::LightmapUVsDensity)
+        drawCall.Surface.LODDitherFactor = 1.0f; // See LightmapUVsDensityMaterialShader
+#endif
 
     // Add half-texel offset for heightmap sampling in vertex shader
     //const float lodHeightmapSize = Math::Max(1, drawCall.TerrainData.Heightmap->Width() >> lod);
@@ -180,6 +184,10 @@ void TerrainChunk::Draw(const RenderContext& renderContext, MaterialBase* materi
     }
     drawCall.WorldDeterminantSign = Math::FloatSelect(drawCall.World.RotDeterminant(), 1, -1);
     drawCall.PerInstanceRandom = _perInstanceRandom;
+#if USE_EDITOR
+    if (renderContext.View.Mode == ViewMode::LightmapUVsDensity)
+        drawCall.Surface.LODDitherFactor = 1.0f; // See LightmapUVsDensityMaterialShader
+#endif
 
     // Add half-texel offset for heightmap sampling in vertex shader
     //const float lodHeightmapSize = Math::Max(1, drawCall.TerrainData.Heightmap->Width() >> lod);
