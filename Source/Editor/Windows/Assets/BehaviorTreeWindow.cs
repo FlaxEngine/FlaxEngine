@@ -430,8 +430,7 @@ namespace FlaxEditor.Windows.Assets
 
         private bool SaveSurface()
         {
-            _surface.Save();
-            return false;
+            return _surface.Save();
         }
 
         private void SetCanEdit(bool canEdit)

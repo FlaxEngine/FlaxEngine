@@ -976,10 +976,12 @@ namespace FlaxEditor.Surface
             else
                 Array.Copy(values, Values, values.Length);
             OnValuesChanged();
-            Surface.MarkAsEdited(graphEdited);
 
             if (Surface != null)
+            {
+                Surface.MarkAsEdited(graphEdited);
                 Surface.AddBatchedUndoAction(new EditNodeValuesAction(this, before, graphEdited));
+            }
 
             _isDuringValuesEditing = false;
         }

@@ -1202,7 +1202,8 @@ namespace FlaxEditor.Windows.Assets
 
         private bool SaveSurface()
         {
-            _surface.Save();
+            if (_surface.Save())
+                return true;
 
             // Reselect actors to prevent issues after Visual Script properties were modified
             Editor.Windows.PropertiesWin.Presenter.BuildLayoutOnUpdate();

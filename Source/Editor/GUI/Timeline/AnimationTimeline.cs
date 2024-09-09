@@ -130,9 +130,9 @@ namespace FlaxEditor.GUI.Timeline
         public override void OnPlay()
         {
             var time = CurrentTime;
-            _preview.Play();
             if (_preview != null)
             {
+                _preview.Play();
                 Editor.Internal_SetAnimationTime(Object.GetUnmanagedPtr(_preview.PreviewActor), time);
             }
 
