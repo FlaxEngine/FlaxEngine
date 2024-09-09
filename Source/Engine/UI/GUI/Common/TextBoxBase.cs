@@ -924,6 +924,19 @@ namespace FlaxEngine.GUI
             return newLineLoc;
         }
 
+        private int FindNextLineBegin()
+        {
+            int caretPos = CaretPosition;
+            if (caretPos + 2 > TextLength)
+                return TextLength;
+            int newLineLoc = _text.IndexOf('\n', caretPos + 2);
+            if (newLineLoc == -1)
+                newLineLoc = TextLength;
+            else
+                newLineLoc++;
+            return newLineLoc;
+        }
+
         private int FindLineDownChar(int index)
         {
             if (!IsMultiline)
@@ -1423,6 +1436,30 @@ namespace FlaxEngine.GUI
 
                 return true;
             }
+            case KeyboardKeys.PageDown:
+            {
+                if (IsScrollable && IsMultiline)
+                {
+                    var location = GetCharPosition(_selectionStart, out var height);
+                    var sizeHeight = Size.Y / height;
+                    location.Y += height * (int)sizeHeight;
+                    TargetViewOffset = Vector2.Clamp(new Float2(0, location.Y), Float2.Zero, TextSize - new Float2(0, Size.Y));
+                    SetSelection(HitTestText(location));
+                }
+                return true;
+            }
+            case KeyboardKeys.PageUp:
+            {
+                if (IsScrollable && IsMultiline)
+                {
+                    var location = GetCharPosition(_selectionStart, out var height);
+                    var sizeHeight =  Size.Y / height;
+                    location.Y -= height * (int)sizeHeight;
+                    TargetViewOffset = Vector2.Clamp(new Float2(0, location.Y), Float2.Zero, TextSize - new Float2(0, Size.Y));
+                    SetSelection(HitTestText(location));
+                }
+                return true;
+            }
             case KeyboardKeys.Delete:
             {
                 if (IsReadOnly)
@@ -1491,8 +1528,13 @@ namespace FlaxEngine.GUI
                 return true;
             case KeyboardKeys.End:
             {
+                // Select text from the current cursor point to the beginning of a new line
+                if (shiftDown && _selectionStart != -1)
+                    SetSelection(_selectionStart, FindNextLineBegin());
                 // Move caret after last character
-                SetSelection(TextLength);
+                else
+                    SetSelection(TextLength);
+                
                 return true;
             }
             case KeyboardKeys.Tab:
