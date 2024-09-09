@@ -150,35 +150,30 @@ float Spline::GetSplineLength() const
 {
     float sum = 0.0f;
     constexpr int32 slices = 20;
-    constexpr float step = 1.0f / (float)slices;
-    Vector3 prevPoint = Vector3::Zero;
-    if (Curve.GetKeyframes().Count() != 0)
-    {
-        const auto& a = Curve[0];
-        prevPoint = a.Value.Translation * _transform.Scale;
-    }
+    constexpr float step = 1.0f / (float)(slices - 1);
+    const Vector3 scale = _transform.Scale;
     for (int32 i = 1; i < Curve.GetKeyframes().Count(); i++)
     {
         const auto& a = Curve[i - 1];
         const auto& b = Curve[i];
+        Vector3 prevPoint = a.Value.Translation * scale;
 
         const float length = Math::Abs(b.Time - a.Time);
         Vector3 leftTangent, rightTangent;
         AnimationUtils::GetTangent(a.Value.Translation, a.TangentOut.Translation, length, leftTangent);
         AnimationUtils::GetTangent(b.Value.Translation, b.TangentIn.Translation, length, rightTangent);
 
-        // TODO: implement sth more analytical than brute-force solution
-        for (int32 slice = 0; slice < slices; slice++)
+        for (int32 slice = 1; slice < slices; slice++)
         {
             const float t = (float)slice * step;
             Vector3 pos;
             AnimationUtils::Bezier(a.Value.Translation, leftTangent, rightTangent, b.Value.Translation, t, pos);
-            pos *= _transform.Scale;
-            sum += (float)Vector3::DistanceSquared(pos, prevPoint);
+            pos *= scale;
+            sum += (float)Vector3::Distance(pos, prevPoint);
             prevPoint = pos;
         }
     }
-    return Math::Sqrt(sum);
+    return sum;
 }
 
 float Spline::GetSplineSegmentLength(int32 index) const
@@ -188,28 +183,28 @@ float Spline::GetSplineSegmentLength(int32 index) const
     CHECK_RETURN(index > 0 && index < GetSplinePointsCount(), 0.0f);
     float sum = 0.0f;
     constexpr int32 slices = 20;
-    constexpr float step = 1.0f / (float)slices;
+    constexpr float step = 1.0f / (float)(slices - 1);
     const auto& a = Curve[index - 1];
     const auto& b = Curve[index];
-    Vector3 startPoint = a.Value.Translation * _transform.Scale;
+    const Vector3 scale = _transform.Scale;
+    Vector3 prevPoint = a.Value.Translation * scale;
     {
         const float length = Math::Abs(b.Time - a.Time);
         Vector3 leftTangent, rightTangent;
         AnimationUtils::GetTangent(a.Value.Translation, a.TangentOut.Translation, length, leftTangent);
         AnimationUtils::GetTangent(b.Value.Translation, b.TangentIn.Translation, length, rightTangent);
 
-        // TODO: implement sth more analytical than brute-force solution
-        for (int32 slice = 0; slice < slices; slice++)
+        for (int32 slice = 1; slice < slices; slice++)
         {
             const float t = (float)slice * step;
             Vector3 pos;
             AnimationUtils::Bezier(a.Value.Translation, leftTangent, rightTangent, b.Value.Translation, t, pos);
-            pos *= _transform.Scale;
-            sum += (float)Vector3::DistanceSquared(pos, startPoint);
-            startPoint = pos;
+            pos *= scale;
+            sum += (float)Vector3::Distance(pos, prevPoint);
+            prevPoint = pos;
         }
     }
-    return Math::Sqrt(sum);
+    return sum;
 }
 
 float Spline::GetSplineTime(int32 index) const
