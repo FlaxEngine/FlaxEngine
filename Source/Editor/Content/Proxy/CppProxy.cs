@@ -11,7 +11,7 @@ namespace FlaxEditor.Content
     /// <summary>
     /// Context proxy object for C++ files.
     /// </summary>
-    /// <seealso cref="FlaxEditor.Content.CSharpScriptProxy" />
+    /// <seealso cref="FlaxEditor.Content.ScriptProxy" />
     public abstract class CppProxy : ScriptProxy
     {
         /// <summary>
@@ -74,7 +74,7 @@ namespace FlaxEditor.Content
     /// <summary>
     /// Context proxy object for C++ script files.
     /// </summary>
-    /// <seealso cref="FlaxEditor.Content.CSharpScriptProxy" />
+    /// <seealso cref="FlaxEditor.Content.CppProxy" />
     [ContentContextMenu("New/C++/C++ Script")]
     public class CppScriptProxy : CppProxy
     {
@@ -98,7 +98,7 @@ namespace FlaxEditor.Content
     /// <summary>
     /// Context proxy object for C++ Json Asset files.
     /// </summary>
-    /// <seealso cref="FlaxEditor.Content.CSharpScriptProxy" />
+    /// <seealso cref="FlaxEditor.Content.CppProxy" />
     [ContentContextMenu("New/C++/C++ Function Library")]
     public class CppStaticClassProxy : CppProxy
     {
@@ -116,7 +116,7 @@ namespace FlaxEditor.Content
     /// <summary>
     /// Context proxy object for C++ Json Asset files.
     /// </summary>
-    /// <seealso cref="FlaxEditor.Content.CSharpScriptProxy" />
+    /// <seealso cref="FlaxEditor.Content.CppProxy" />
     [ContentContextMenu("New/C++/C++ Json Asset")]
     public class CppAssetProxy : CppProxy
     {
