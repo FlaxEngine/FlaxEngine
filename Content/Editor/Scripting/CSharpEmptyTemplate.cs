@@ -3,4 +3,3 @@ using System.Collections.Generic;
 using FlaxEngine;
 
 namespace %namespace%;
-
