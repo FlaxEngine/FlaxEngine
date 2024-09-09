@@ -256,7 +256,7 @@ namespace FlaxEditor.CustomEditors.GUI
                     var firstChild = label.FirstChildControlContainer.Children[label.FirstChildControlIndex];
                     yStarts[i] = firstChild.PointToParent(this, Float2.Zero).Y;
                     if (i == count - 1)
-                        yStarts[i + 1] = firstChild.PointToParent(this, firstChild.Size).Y;
+                        yStarts[i + 1] = firstChild.Parent.Bottom;
                 }
                 else
                 {
