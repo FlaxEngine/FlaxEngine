@@ -898,6 +898,29 @@ namespace Flax.Build.Bindings
                 if (defaultValue != null)
                     contents.Append(indent).Append("[DefaultValue(").Append(defaultValue).Append(")]").AppendLine();
             }
+            
+            // Check if array has fixed allocation and add in MaxCount Collection attribute if a Collection attribute does not already exist.
+            if (defaultValueType != null && (string.IsNullOrEmpty(attributes) || !attributes.Contains("Collection", StringComparison.Ordinal)))
+            {
+                // Array or Span or DataContainer
+#if USE_NETCORE
+                if ((defaultValueType.Type == "Array" || defaultValueType.Type == "Span" || defaultValueType.Type == "DataContainer" || defaultValueType.Type == "MonoArray" || defaultValueType.Type == "MArray") && defaultValueType.GenericArgs != null)
+#else
+                if ((defaultValueType.Type == "Array" || defaultValueType.Type == "Span" || defaultValueType.Type == "DataContainer") && defaultValueType.GenericArgs != null)
+#endif
+                {
+                    if (defaultValueType.GenericArgs.Count > 1)
+                    {
+                        if (defaultValueType.GenericArgs[1].Type.Contains("FixedAllocation", StringComparison.Ordinal))
+                        {
+                            if (int.TryParse(defaultValueType.GenericArgs[1].GenericArgs[0].ToString(), out int allocation))
+                            {
+                                contents.Append(indent).Append($"[Collection(MaxCount={allocation.ToString()})]").AppendLine();
+                            }
+                        }
+                    }
+                }
+            }
         }
 
         private static void GenerateCSharpAttributes(BuildData buildData, StringBuilder contents, string indent, ApiTypeInfo apiTypeInfo, bool useUnmanaged, string defaultValue = null, TypeInfo defaultValueType = null)
