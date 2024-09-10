@@ -911,9 +911,10 @@ namespace Flax.Build.Bindings
                 {
                     if (defaultValueType.GenericArgs.Count > 1)
                     {
-                        if (defaultValueType.GenericArgs[1].Type.Contains("FixedAllocation", StringComparison.Ordinal))
+                        var allocationArg = defaultValueType.GenericArgs[1];
+                        if (allocationArg.Type.Contains("FixedAllocation", StringComparison.Ordinal) && allocationArg.GenericArgs.Count > 0)
                         {
-                            if (int.TryParse(defaultValueType.GenericArgs[1].GenericArgs[0].ToString(), out int allocation))
+                            if (int.TryParse(allocationArg.GenericArgs[0].ToString(), out int allocation))
                             {
                                 contents.Append(indent).Append($"[Collection(MaxCount={allocation.ToString()})]").AppendLine();
                             }
