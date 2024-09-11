@@ -703,6 +703,10 @@ namespace FlaxEditor.Modules
             }
             else
             {
+                // Try to remove module if build.cs file is being deleted
+                if (item.Path.Contains(".Build.cs", StringComparison.Ordinal) && item.ItemType == ContentItemType.Script)
+                    Editor.Instance.CodeEditing.RemoveModule(item.Path);
+
                 // Check if it's an asset
                 if (item.IsAsset)
                 {
