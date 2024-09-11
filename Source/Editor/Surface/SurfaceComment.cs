@@ -1,7 +1,6 @@
 // Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 using System;
-using FlaxEditor.GUI;
 using FlaxEditor.GUI.ContextMenu;
 using FlaxEditor.GUI.Input;
 using FlaxEngine;
@@ -86,7 +85,10 @@ namespace FlaxEditor.Surface
             // Read node data
             Title = TitleValue;
             Color = ColorValue;
-            Size = SizeValue;
+            var size = SizeValue;
+            if (Surface.GridSnappingEnabled)
+                size = Surface.SnapToGrid(size, true);
+            Size = size;
 
             // Order
             // Backwards compatibility - When opening with an older version send the old comments to the back
@@ -299,7 +301,10 @@ namespace FlaxEditor.Surface
             if (_isResizing)
             {
                 // Update size
-                Size = Float2.Max(location, new Float2(140.0f, _headerRect.Bottom));
+                var size = Float2.Max(location, new Float2(140.0f, _headerRect.Bottom));
+                if (Surface.GridSnappingEnabled)
+                    size = Surface.SnapToGrid(size, true);
+                Size = size;
             }
             else
             {

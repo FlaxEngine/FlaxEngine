@@ -167,6 +167,15 @@ namespace FlaxEditor.Surface
             if (Surface == null)
                 return;
 
+            // Snap bounds (with ceil) when using grid snapping
+            if (Surface.GridSnappingEnabled)
+            {
+                var size = Surface.SnapToGrid(new Float2(width, height), true);
+                width = size.X;
+                height = size.Y;
+            }
+
+            // Arrange output boxes on the right edge
             for (int i = 0; i < Elements.Count; i++)
             {
                 if (Elements[i] is OutputBox box)
@@ -175,6 +184,7 @@ namespace FlaxEditor.Surface
                 }
             }
 
+            // Resize
             Size = CalculateNodeSize(width, height);
         }
 
