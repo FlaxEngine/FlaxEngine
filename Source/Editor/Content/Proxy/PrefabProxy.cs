@@ -1,7 +1,6 @@
 // Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 using System;
-using System.IO;
 using FlaxEditor.Content.Create;
 using FlaxEditor.Content.Thumbnails;
 using FlaxEditor.Viewport.Previews;
@@ -9,7 +8,6 @@ using FlaxEditor.Windows;
 using FlaxEditor.Windows.Assets;
 using FlaxEngine;
 using FlaxEngine.GUI;
-using Object = FlaxEngine.Object;
 
 namespace FlaxEditor.Content
 {
@@ -87,6 +85,7 @@ namespace FlaxEditor.Content
         /// <inheritdoc />
         public override void Create(string outputPath, object arg)
         {
+            bool resetTransform = false;
             var transform = Transform.Identity;
             if (!(arg is Actor actor))
             {
@@ -96,12 +95,14 @@ namespace FlaxEditor.Content
             else if (actor.HasScene)
             {
                 // Create prefab with identity transform so the actor instance on a level will have it customized
+                resetTransform = true;
                 transform = actor.LocalTransform;
                 actor.LocalTransform = Transform.Identity;
             }
 
             PrefabManager.CreatePrefab(actor, outputPath, true);
-            actor.LocalTransform = transform;
+            if (resetTransform)
+                actor.LocalTransform = transform;
         }
 
         /// <inheritdoc />

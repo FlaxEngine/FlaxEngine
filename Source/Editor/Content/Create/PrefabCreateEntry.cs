@@ -49,12 +49,8 @@ namespace FlaxEditor.Content.Create
         /// <inheritdoc />
         public override bool Create()
         {
-            if (_options.RootActorType == null)
-                _options.RootActorType = typeof(EmptyActor);
-
-            ScriptType actorType = new ScriptType(_options.RootActorType);
-
-            Actor actor = null;
+            var actorType = new ScriptType(_options.RootActorType ?? typeof(EmptyActor));
+            Actor actor;
             try
             {
                 actor = actorType.CreateInstance() as Actor;
@@ -102,7 +98,7 @@ namespace FlaxEditor.Content.Create
             /// The mode used to initialize the widget.
             /// </summary>
             [Tooltip("Whether to initialize the widget with a canvas or a control.")]
-            public WidgetMode WidgetInitializationMode = WidgetMode.Canvas;
+            public WidgetMode WidgetInitializationMode = WidgetMode.Control;
 
             bool ShowRoot => WidgetInitializationMode == WidgetMode.Control;
 
@@ -111,7 +107,7 @@ namespace FlaxEditor.Content.Create
             /// </summary>
             [TypeReference(typeof(Control), nameof(IsValid))]
             [Tooltip("The control type of the root of the new Widget's root control."), VisibleIf(nameof(ShowRoot))]
-            public Type RootControlType = typeof(Panel);
+            public Type RootControlType = typeof(Button);
 
             private static bool IsValid(Type type)
             {
@@ -140,12 +136,8 @@ namespace FlaxEditor.Content.Create
 
             if (_options.WidgetInitializationMode == Options.WidgetMode.Control)
             {
-                if (_options.RootControlType == null)
-                    _options.RootControlType = typeof(Control);
-
-                ScriptType controlType = new ScriptType(_options.RootControlType);
-
-                Control control = null;
+                var controlType = new ScriptType(_options.RootControlType ?? typeof(Control));
+                Control control;
                 try
                 {
                     control = controlType.CreateInstance() as Control;
@@ -157,10 +149,11 @@ namespace FlaxEditor.Content.Create
                     return true;
                 }
 
-                UIControl newControl = new UIControl();
-                newControl.Control = control;
-
-                actor = newControl;
+                actor = new UIControl
+                {
+                    Control = control,
+                    Name = controlType.Name
+                };
             }
             else if (_options.WidgetInitializationMode == Options.WidgetMode.Canvas)
             {
@@ -172,7 +165,6 @@ namespace FlaxEditor.Content.Create
                 Editor.LogError("Failed to create widget. Final actor was null.");
                 return true;
             }
-
             Object.Destroy(actor, 20.0f);
 
             return PrefabManager.CreatePrefab(actor, ResultUrl, true);

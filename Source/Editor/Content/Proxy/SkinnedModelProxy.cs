@@ -71,13 +71,15 @@ namespace FlaxEditor.Content
 
         private static void OnAnimationGraphCreated(ContentItem item, BinaryAssetItem skinnedModelItem)
         {
-            var skinnedModel = FlaxEngine.Content.LoadAsync<SkinnedModel>(skinnedModelItem.ID);
-            if (skinnedModel == null || skinnedModel.WaitForLoaded())
+            var skinnedModel = FlaxEngine.Content.Load<SkinnedModel>(skinnedModelItem.ID);
+            if (skinnedModel == null)
             {
                 Editor.LogError("Failed to load base skinned model.");
+                return;
             }
 
             // Hack the animation graph window to modify the base model of the animation graph.
+            // TODO: implement it without window logic (load AnimGraphSurface and set AnimationGraphWindow.BaseModelId to model)
             AnimationGraphWindow win = new AnimationGraphWindow(Editor.Instance, item as AssetItem);
             win.Show();
 
