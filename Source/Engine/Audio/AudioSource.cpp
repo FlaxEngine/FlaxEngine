@@ -453,23 +453,23 @@ void AudioSource::Update()
     // Handle streaming buffers queue submit (ensure that clip has loaded the first chunk with audio data)
     if (_needToUpdateStreamingBuffers && clip->Buffers[_streamingFirstChunk] != AUDIO_BUFFER_ID_INVALID)
     {
+        // Clear flag
+        _needToUpdateStreamingBuffers = false;
+
         // Get buffers in a queue count
         int32 numQueuedBuffers;
         AudioBackend::Source::GetQueuedBuffersCount(this, numQueuedBuffers);
 
-        // Queue missing buffers
+        // Queue missing buffers, make sure there is at least two buffers in queue to avoid gaps in playback
         uint32 bufferId;
-        if (numQueuedBuffers < 1 && (bufferId = clip->Buffers[_streamingFirstChunk]) != AUDIO_BUFFER_ID_INVALID)
+        for (int i = numQueuedBuffers; i < 2; i++)
         {
-            AudioBackend::Source::QueueBuffer(this, bufferId);
+            int bufferIndex = (_streamingFirstChunk + i) % clip->Buffers.Count();
+            if ((bufferId = clip->Buffers[bufferIndex]) != AUDIO_BUFFER_ID_INVALID)
+                AudioBackend::Source::QueueBuffer(this, bufferId);
+            else
+                _needToUpdateStreamingBuffers = true; // The buffer has not been streamed yet, try again later
         }
-        if (numQueuedBuffers < 2 && _streamingFirstChunk + 1 < clip->Buffers.Count() && (bufferId = clip->Buffers[_streamingFirstChunk + 1]) != AUDIO_BUFFER_ID_INVALID)
-        {
-            AudioBackend::Source::QueueBuffer(this, bufferId);
-        }
-
-        // Clear flag
-        _needToUpdateStreamingBuffers = false;
 
         // Play it if need to
         if (!_isActuallyPlayingSth)
@@ -494,18 +494,25 @@ void AudioSource::Update()
             // Move the chunk pointer (AudioStreamingHandler will request new chunks streaming)
             _streamingFirstChunk += numProcessedBuffers;
 
+            if (GetIsLooping())
+            {
+                int32 numQueuedBuffers;
+                AudioBackend::Source::GetQueuedBuffersCount(this, numQueuedBuffers);
+                if (numQueuedBuffers < 1)
+                {
+                    // Audio engine unexpectedly stopped playing the clip after queue emptied, restart the clip
+                    _isActuallyPlayingSth = false;
+                }
+            }
+
             // Check if reached the end
             if (_streamingFirstChunk >= clip->Buffers.Count())
             {
                 // Loop over the clip or end play
                 if (GetIsLooping())
                 {
-                    // Move to the begin
+                    // Move to the beginning
                     _streamingFirstChunk = 0;
-
-                    // Stop audio and request buffers re-sync and then play continue
-                    Stop();
-                    Play();
                 }
                 else
                 {

@@ -686,8 +686,6 @@ void AudioBackendXAudio2::Source_DequeueProcessedBuffers(AudioSource* source)
     auto aSource = XAudio2::GetSource(source);
     if (aSource && aSource->Voice)
     {
-        const HRESULT hr = aSource->Voice->FlushSourceBuffers();
-        XAUDIO2_CHECK_ERROR(FlushSourceBuffers);
         aSource->BuffersProcessed = 0;
     }
 }
