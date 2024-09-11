@@ -172,13 +172,8 @@ namespace FlaxEditor.Windows.Assets
             _knowledgePropertiesEditor.Panel.Parent = _split2.Panel2;
 
             // Toolstrip
-            _saveButton = (ToolStripButton)_toolstrip.AddButton(Editor.Icons.Save64, Save).LinkTooltip("Save");
+            SurfaceUtils.PerformCommonSetup(this, _toolstrip, _surface, out _saveButton, out _undoButton, out _redoButton);
             _toolstrip.AddSeparator();
-            _undoButton = (ToolStripButton)_toolstrip.AddButton(Editor.Icons.Undo64, _undo.PerformUndo).LinkTooltip($"Undo ({inputOptions.Undo})");
-            _redoButton = (ToolStripButton)_toolstrip.AddButton(Editor.Icons.Redo64, _undo.PerformRedo).LinkTooltip($"Redo ({inputOptions.Redo})");
-            _toolstrip.AddSeparator();
-            _toolstrip.AddButton(Editor.Icons.Search64, Editor.ContentFinding.ShowSearch).LinkTooltip($"Open content search tool ({inputOptions.Search})");
-            _toolstrip.AddButton(editor.Icons.CenterView64, _surface.ShowWholeGraph).LinkTooltip("Show whole graph");
             _toolstrip.AddButton(editor.Icons.Docs64, () => Platform.OpenUrl(Utilities.Constants.DocsUrl + "manual/scripting/ai/behavior-trees/index.html")).LinkTooltip("See documentation to learn more");
 
             // Debug behavior picker
@@ -205,11 +200,6 @@ namespace FlaxEditor.Windows.Assets
             behaviorPickerContainer.Parent = _toolstrip;
             _behaviorPicker.CheckValid = OnBehaviorPickerCheckValid;
             _behaviorPicker.ValueChanged += OnBehaviorPickerValueChanged;
-
-            // Setup input actions
-            InputActions.Add(options => options.Undo, _undo.PerformUndo);
-            InputActions.Add(options => options.Redo, _undo.PerformRedo);
-            InputActions.Add(options => options.Search, Editor.ContentFinding.ShowSearch);
 
             SetCanEdit(!Editor.IsPlayMode);
             ScriptsBuilder.ScriptsReloadBegin += OnScriptsReloadBegin;

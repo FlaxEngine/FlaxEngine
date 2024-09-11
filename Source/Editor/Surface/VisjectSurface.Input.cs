@@ -192,26 +192,19 @@ namespace FlaxEditor.Surface
         }
 
         /// <summary>
-        /// Round a visject coordinate point to the grid.
+        /// Snaps a coordinate point to the grid.
         /// </summary>
         /// <param name="point">The point to be rounded.</param>
         /// <param name="ceil">Round to ceiling instead?</param>
-        /// <returns></returns>
-        public static Float2 RoundToGrid(Float2 point, bool ceil = false)
+        /// <returns>Rounded coordinate.</returns>
+        public Float2 SnapToGrid(Float2 point, bool ceil = false)
         {
-            Func<float, float> round = x =>
-            {
-                double pointGridUnits = Math.Abs((double)x) / GridSize;
-                pointGridUnits = ceil ? Math.Ceiling(pointGridUnits) : Math.Floor(pointGridUnits);
-
-                return (float)Math.CopySign(pointGridUnits * GridSize, x);
-            };
-
-            Float2 pointToRound = point;
-            pointToRound.X = round(pointToRound.X);
-            pointToRound.Y = round(pointToRound.Y);
-
-            return pointToRound;
+            float gridSize = GridSnappingSize;
+            Float2 snapped = point.Absolute / gridSize;
+            snapped = ceil ? Float2.Ceil(snapped) : Float2.Floor(snapped);
+            snapped.X = (float)Math.CopySign(snapped.X * gridSize, point.X);
+            snapped.Y = (float)Math.CopySign(snapped.Y * gridSize, point.Y);
+            return snapped;
         }
 
         /// <inheritdoc />
@@ -281,7 +274,8 @@ namespace FlaxEditor.Surface
                 // Moving
                 else if (_isMovingSelection)
                 {
-                    if (!GridSnappingEnabled)
+                    var gridSnap = GridSnappingEnabled;
+                    if (!gridSnap)
                         _gridRoundingDelta = Float2.Zero; // Reset in case user toggled option between frames.
 
                     // Calculate delta (apply view offset)
@@ -291,25 +285,23 @@ namespace FlaxEditor.Surface
                     var deltaLengthSquared = delta.LengthSquared;
 
                     delta /= _targetScale;
-                    if ((!GridSnappingEnabled || Math.Abs(delta.X) >= GridSize || (Math.Abs(delta.Y) >= GridSize))
+                    if ((!gridSnap || Mathf.Abs(delta.X) >= GridSnappingSize || (Mathf.Abs(delta.Y) >= GridSnappingSize))
                         && deltaLengthSquared > 0.01f)
                     {
-                        if (GridSnappingEnabled)
+                        if (gridSnap)
                         {
                             Float2 unroundedDelta = delta;
-
-                            delta = RoundToGrid(unroundedDelta);
+                            delta = SnapToGrid(unroundedDelta);
                             _gridRoundingDelta = (unroundedDelta - delta) * _targetScale; // Standardize unit of the rounding delta, in case user zooms between node movements.
                         }
 
                         foreach (var node in _movingNodes)
                         {
-                            if (GridSnappingEnabled)
+                            if (gridSnap)
                             {
                                 Float2 unroundedLocation = node.Location;
-                                node.Location = RoundToGrid(unroundedLocation);
+                                node.Location = SnapToGrid(unroundedLocation);
                             }
-
                             node.Location += delta;
                         }
 

@@ -891,10 +891,21 @@ namespace FlaxEditor.Surface
         /// </summary>
         protected Tabs _tabs;
 
-        private readonly ToolStripButton _saveButton;
-        private readonly ToolStripButton _undoButton;
-        private readonly ToolStripButton _redoButton;
-        private readonly ToolStripButton _gridSnapButton;
+        /// <summary>
+        /// Save button on a toolstrip.
+        /// </summary>
+        protected ToolStripButton _saveButton;
+
+        /// <summary>
+        /// Undo button on a toolstrip.
+        /// </summary>
+        protected ToolStripButton _undoButton;
+
+        /// <summary>
+        /// Redo button on a toolstrip.
+        /// </summary>
+        protected ToolStripButton _redoButton;
+
         private bool _showWholeGraphOnLoad = true;
 
         /// <summary>
@@ -951,8 +962,6 @@ namespace FlaxEditor.Surface
         protected VisjectSurfaceWindow(Editor editor, AssetItem item, bool useTabs = false)
         : base(editor, item)
         {
-            var inputOptions = Editor.Options.Options.Input;
-
             // Undo
             _undo = new FlaxEditor.Undo();
             _undo.UndoDone += OnUndoRedo;
@@ -999,10 +1008,6 @@ namespace FlaxEditor.Surface
                 _propertiesEditor.Panel.Parent = _split2.Panel2;
             }
             _propertiesEditor.Modified += OnPropertyEdited;
-
-            SurfaceUtils.VisjectCommonToolstripSetup(editor, _toolstrip, _undo,
-                Save, ShowWholeGraph, ToggleGridSnap, InputActions,
-                out _saveButton, out _undoButton, out _redoButton, out _gridSnapButton);
         }
 
         private void OnUndoRedo(IUndoAction action)
@@ -1039,11 +1044,6 @@ namespace FlaxEditor.Surface
         public void ShowWholeGraph()
         {
             _surface.ShowWholeGraph();
-        }
-
-        private void ToggleGridSnap()
-        {
-            SurfaceUtils.ToggleSurfaceGridSnap(_surface, _gridSnapButton);
         }
 
         /// <summary>

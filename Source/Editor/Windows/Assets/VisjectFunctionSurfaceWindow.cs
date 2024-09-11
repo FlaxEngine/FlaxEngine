@@ -30,7 +30,6 @@ namespace FlaxEditor.Windows.Assets
         private readonly ToolStripButton _saveButton;
         private readonly ToolStripButton _undoButton;
         private readonly ToolStripButton _redoButton;
-        private readonly ToolStripButton _gridSnapButton;
         private bool _showWholeGraphOnLoad = true;
 
         /// <summary>
@@ -71,9 +70,7 @@ namespace FlaxEditor.Windows.Assets
             _undo.ActionDone += OnUndoRedo;
 
             // Toolstrip
-            SurfaceUtils.VisjectCommonToolstripSetup(editor, _toolstrip, _undo,
-                Save, ShowWholeGraph, ToggleGridSnap, InputActions,
-                out _saveButton, out _undoButton, out _redoButton, out _gridSnapButton);
+            SurfaceUtils.PerformCommonSetup(this, _toolstrip, _surface, out _saveButton, out _undoButton, out _redoButton);
 
             // Panel
             _panel = new Panel(ScrollBars.None)
@@ -96,11 +93,6 @@ namespace FlaxEditor.Windows.Assets
         public void ShowWholeGraph()
         {
             _surface.ShowWholeGraph();
-        }
-
-        private void ToggleGridSnap()
-        {
-            SurfaceUtils.ToggleSurfaceGridSnap(_surface, _gridSnapButton);
         }
 
         /// <summary>

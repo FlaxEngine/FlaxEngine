@@ -2,7 +2,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
@@ -10,12 +9,9 @@ using FlaxEditor.CustomEditors;
 using FlaxEditor.CustomEditors.Elements;
 using FlaxEditor.Options;
 using FlaxEditor.Scripting;
-using FlaxEditor.Utilities;
 using FlaxEngine.Utilities;
 using FlaxEngine;
 using FlaxEditor.GUI;
-using FlaxEngine.GUI;
-using FlaxEditor.Options;
 
 namespace FlaxEditor.Surface
 {
@@ -560,41 +556,32 @@ namespace FlaxEditor.Surface
             return AreScriptTypesEqualInner(left, right) || AreScriptTypesEqualInner(right, left);
         }
 
-        // This might not be the greatest place to put this but I couldn't find anything better yet.
-        public static void VisjectCommonToolstripSetup(Editor editor, ToolStrip toolStrip, FlaxEditor.Undo undo,
-            Action save, Action showWholeGraph, Action toggleGridSnap, InputActionsContainer actionsContainer,
-            out ToolStripButton saveButton, out ToolStripButton undoButton, out ToolStripButton redoButton, out ToolStripButton gridSnapButton)
+        internal static void PerformCommonSetup(Windows.Assets.AssetEditorWindow window, ToolStrip toolStrip, VisjectSurface surface,
+                                                out ToolStripButton saveButton, out ToolStripButton undoButton, out ToolStripButton redoButton)
         {
+            var editor = window.Editor;
+            var interfaceOptions = editor.Options.Options.Interface;
             var inputOptions = editor.Options.Options.Input;
+            var undo = surface.Undo;
 
             // Toolstrip
-            saveButton = (ToolStripButton)toolStrip.AddButton(editor.Icons.Save64, save).LinkTooltip("Save");
+            saveButton = (ToolStripButton)toolStrip.AddButton(editor.Icons.Save64, window.Save).LinkTooltip("Save");
             toolStrip.AddSeparator();
             undoButton = (ToolStripButton)toolStrip.AddButton(editor.Icons.Undo64, undo.PerformUndo).LinkTooltip($"Undo ({inputOptions.Undo})");
             redoButton = (ToolStripButton)toolStrip.AddButton(editor.Icons.Redo64, undo.PerformRedo).LinkTooltip($"Redo ({inputOptions.Redo})");
             toolStrip.AddSeparator();
             toolStrip.AddButton(editor.Icons.Search64, editor.ContentFinding.ShowSearch).LinkTooltip($"Open content search tool ({inputOptions.Search})");
-            toolStrip.AddButton(editor.Icons.CenterView64, showWholeGraph).LinkTooltip("Show whole graph");
-            gridSnapButton = (ToolStripButton)toolStrip.AddButton(editor.Icons.Stop64, toggleGridSnap).LinkTooltip("Toggle grid snapping for nodes.");
-            gridSnapButton.BackgroundColor = Style.Current.Background; // Default color for grid snap button.
+            toolStrip.AddButton(editor.Icons.CenterView64, surface.ShowWholeGraph).LinkTooltip("Show whole graph");
+            var gridSnapButton = toolStrip.AddButton(editor.Icons.Grid32, surface.ToggleGridSnapping);
+            gridSnapButton.LinkTooltip("Toggle grid snapping for nodes.");
+            gridSnapButton.AutoCheck = true;
+            gridSnapButton.Checked = surface.GridSnappingEnabled = interfaceOptions.SurfaceGridSnapping;
+            surface.GridSnappingSize = interfaceOptions.SurfaceGridSnappingSize;
 
             // Setup input actions
-            actionsContainer.Add(options => options.Undo, undo.PerformUndo);
-            actionsContainer.Add(options => options.Redo, undo.PerformRedo);
-            actionsContainer.Add(options => options.Search, editor.ContentFinding.ShowSearch);
-        }
-
-        public static void ToggleSurfaceGridSnap(VisjectSurface surface, ToolStripButton gridSnapButton)
-        {
-            surface.GridSnappingEnabled = !surface.GridSnappingEnabled;
-            if (surface.GridSnappingEnabled)
-            {
-                gridSnapButton.BackgroundColor = Style.Current.BackgroundSelected;
-            }
-            else
-            {
-                gridSnapButton.BackgroundColor = Style.Current.Background;
-            }
+            window.InputActions.Add(options => options.Undo, undo.PerformUndo);
+            window.InputActions.Add(options => options.Redo, undo.PerformRedo);
+            window.InputActions.Add(options => options.Search, editor.ContentFinding.ShowSearch);
         }
     }
 }
