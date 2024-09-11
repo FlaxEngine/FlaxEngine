@@ -891,9 +891,21 @@ namespace FlaxEditor.Surface
         /// </summary>
         protected Tabs _tabs;
 
-        private readonly ToolStripButton _saveButton;
-        private readonly ToolStripButton _undoButton;
-        private readonly ToolStripButton _redoButton;
+        /// <summary>
+        /// Save button on a toolstrip.
+        /// </summary>
+        protected ToolStripButton _saveButton;
+
+        /// <summary>
+        /// Undo button on a toolstrip.
+        /// </summary>
+        protected ToolStripButton _undoButton;
+
+        /// <summary>
+        /// Redo button on a toolstrip.
+        /// </summary>
+        protected ToolStripButton _redoButton;
+
         private bool _showWholeGraphOnLoad = true;
 
         /// <summary>
@@ -950,8 +962,6 @@ namespace FlaxEditor.Surface
         protected VisjectSurfaceWindow(Editor editor, AssetItem item, bool useTabs = false)
         : base(editor, item)
         {
-            var inputOptions = Editor.Options.Options.Input;
-
             // Undo
             _undo = new FlaxEditor.Undo();
             _undo.UndoDone += OnUndoRedo;
@@ -998,20 +1008,6 @@ namespace FlaxEditor.Surface
                 _propertiesEditor.Panel.Parent = _split2.Panel2;
             }
             _propertiesEditor.Modified += OnPropertyEdited;
-
-            // Toolstrip
-            _saveButton = (ToolStripButton)_toolstrip.AddButton(Editor.Icons.Save64, Save).LinkTooltip("Save");
-            _toolstrip.AddSeparator();
-            _undoButton = (ToolStripButton)_toolstrip.AddButton(Editor.Icons.Undo64, _undo.PerformUndo).LinkTooltip($"Undo ({inputOptions.Undo})");
-            _redoButton = (ToolStripButton)_toolstrip.AddButton(Editor.Icons.Redo64, _undo.PerformRedo).LinkTooltip($"Redo ({inputOptions.Redo})");
-            _toolstrip.AddSeparator();
-            _toolstrip.AddButton(Editor.Icons.Search64, Editor.ContentFinding.ShowSearch).LinkTooltip($"Open content search tool ({inputOptions.Search})");
-            _toolstrip.AddButton(editor.Icons.CenterView64, ShowWholeGraph).LinkTooltip("Show whole graph");
-
-            // Setup input actions
-            InputActions.Add(options => options.Undo, _undo.PerformUndo);
-            InputActions.Add(options => options.Redo, _undo.PerformRedo);
-            InputActions.Add(options => options.Search, Editor.ContentFinding.ShowSearch);
         }
 
         private void OnUndoRedo(IUndoAction action)

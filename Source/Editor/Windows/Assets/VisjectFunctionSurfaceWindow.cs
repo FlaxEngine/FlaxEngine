@@ -70,13 +70,7 @@ namespace FlaxEditor.Windows.Assets
             _undo.ActionDone += OnUndoRedo;
 
             // Toolstrip
-            _saveButton = (ToolStripButton)_toolstrip.AddButton(Editor.Icons.Save64, Save).LinkTooltip("Save");
-            _toolstrip.AddSeparator();
-            _undoButton = (ToolStripButton)_toolstrip.AddButton(Editor.Icons.Undo64, _undo.PerformUndo).LinkTooltip($"Undo ({inputOptions.Undo})");
-            _redoButton = (ToolStripButton)_toolstrip.AddButton(Editor.Icons.Redo64, _undo.PerformRedo).LinkTooltip($"Redo ({inputOptions.Redo})");
-            _toolstrip.AddSeparator();
-            _toolstrip.AddButton(Editor.Icons.Search64, Editor.ContentFinding.ShowSearch).LinkTooltip($"Open content search tool ({inputOptions.Search})");
-            _toolstrip.AddButton(editor.Icons.CenterView64, ShowWholeGraph).LinkTooltip("Show whole graph");
+            SurfaceUtils.PerformCommonSetup(this, _toolstrip, _surface, out _saveButton, out _undoButton, out _redoButton);
 
             // Panel
             _panel = new Panel(ScrollBars.None)
@@ -85,11 +79,6 @@ namespace FlaxEditor.Windows.Assets
                 Offsets = new Margin(0, 0, _toolstrip.Bottom, 0),
                 Parent = this
             };
-
-            // Setup input actions
-            InputActions.Add(options => options.Undo, _undo.PerformUndo);
-            InputActions.Add(options => options.Redo, _undo.PerformRedo);
-            InputActions.Add(options => options.Search, Editor.ContentFinding.ShowSearch);
         }
 
         private void OnUndoRedo(IUndoAction action)
