@@ -809,7 +809,7 @@ namespace FlaxEditor.Surface.ContextMenu
             if (!_useDescriptionPanel)
                 return;
 
-            if (archetype == null || !Editor.Instance.Options.Options.Interface.VisualScriptingDescriptionPanel)
+            if (archetype == null || !Editor.Instance.Options.Options.Interface.NodeDescriptionPanel)
             {
                 HideDescriptionPanel();
                 return;
