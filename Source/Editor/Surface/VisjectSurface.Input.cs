@@ -1,5 +1,6 @@
 // Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using FlaxEditor.Options;
@@ -24,6 +25,7 @@ namespace FlaxEditor.Surface
 
         private string _currentInputText = string.Empty;
         private Float2 _movingNodesDelta;
+        private Float2 _gridRoundingDelta;
         private HashSet<SurfaceNode> _movingNodes;
         private readonly Stack<InputBracket> _inputBrackets = new Stack<InputBracket>();
 
@@ -189,6 +191,29 @@ namespace FlaxEditor.Surface
             }
         }
 
+        /// <summary>
+        /// Round a visject coordinate point to the grid.
+        /// </summary>
+        /// <param name="point">The point to be rounded.</param>
+        /// <param name="ceil">Round to ceiling instead?</param>
+        /// <returns></returns>
+        public static Float2 RoundToGrid(Float2 point, bool ceil = false)
+        {
+            Func<float, float> round = x =>
+            {
+                double pointGridUnits = Math.Abs((double)x) / GridSize;
+                pointGridUnits = ceil ? Math.Ceiling(pointGridUnits) : Math.Floor(pointGridUnits);
+
+                return (float)Math.CopySign(pointGridUnits * GridSize, x);
+            };
+
+            Float2 pointToRound = point;
+            pointToRound.X = round(pointToRound.X);
+            pointToRound.Y = round(pointToRound.Y);
+
+            return pointToRound;
+        }
+
         /// <inheritdoc />
         public override void OnMouseEnter(Float2 location)
         {
@@ -256,18 +281,40 @@ namespace FlaxEditor.Surface
                 // Moving
                 else if (_isMovingSelection)
                 {
+                    if (!GridSnappingEnabled)
+                        _gridRoundingDelta = Float2.Zero; // Reset in case user toggled option between frames.
+
                     // Calculate delta (apply view offset)
                     var viewDelta = _rootControl.Location - _movingSelectionViewPos;
                     _movingSelectionViewPos = _rootControl.Location;
-                    var delta = location - _leftMouseDownPos - viewDelta;
-                    if (delta.LengthSquared > 0.01f)
+                    var delta = location - _leftMouseDownPos - viewDelta + _gridRoundingDelta;
+                    var deltaLengthSquared = delta.LengthSquared;
+
+                    delta /= _targetScale;
+                    if ((!GridSnappingEnabled || Math.Abs(delta.X) >= GridSize || (Math.Abs(delta.Y) >= GridSize))
+                        && deltaLengthSquared > 0.01f)
                     {
-                        // Move selected nodes
-                        delta /= _targetScale;
+                        if (GridSnappingEnabled)
+                        {
+                            Float2 unroundedDelta = delta;
+
+                            delta = RoundToGrid(unroundedDelta);
+                            _gridRoundingDelta = (unroundedDelta - delta) * _targetScale; // Standardize unit of the rounding delta, in case user zooms between node movements.
+                        }
+
                         foreach (var node in _movingNodes)
+                        {
+                            if (GridSnappingEnabled)
+                            {
+                                Float2 unroundedLocation = node.Location;
+                                node.Location = RoundToGrid(unroundedLocation);
+                            }
+
                             node.Location += delta;
+                        }
+
                         _leftMouseDownPos = location;
-                        _movingNodesDelta += delta;
+                        _movingNodesDelta += delta; // TODO: Figure out how to handle undo for differing values of _gridRoundingDelta between selected nodes. For now it will be a small error in undo.
                         if (_movingNodes.Count > 0)
                         {
                             Cursor = CursorType.SizeAll;

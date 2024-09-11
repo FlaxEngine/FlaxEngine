@@ -109,6 +109,7 @@ namespace FlaxEditor.Surface
         /// </summary>
         public CreateCustomNodeFunc Create;
 
+        private Float2 _size;
         /// <summary>
         /// Function for asynchronously loaded nodes to check if input ports are compatible, for filtering.
         /// </summary>
@@ -122,7 +123,17 @@ namespace FlaxEditor.Surface
         /// <summary>
         /// Default initial size of the node.
         /// </summary>
-        public Float2 Size;
+        public Float2 Size
+        {
+            get
+            {
+                return _size;
+            }
+            set
+            {
+                _size = VisjectSurface.RoundToGrid(value, true);
+            }
+        }
 
         /// <summary>
         /// Custom set of flags.
