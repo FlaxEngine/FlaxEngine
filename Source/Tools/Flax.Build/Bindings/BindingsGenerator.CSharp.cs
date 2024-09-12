@@ -1116,6 +1116,8 @@ namespace Flax.Build.Bindings
                 contents.Append(indent).Append('}').AppendLine();
 
                 contents.AppendLine();
+                if (buildData.Configuration != TargetConfiguration.Release)
+                    contents.Append(indent).Append("[System.Diagnostics.DebuggerBrowsable(global::System.Diagnostics.DebuggerBrowsableState.Never)]").AppendLine();
                 contents.Append(indent).Append("private ");
                 if (eventInfo.IsStatic)
                     contents.Append("static ");
