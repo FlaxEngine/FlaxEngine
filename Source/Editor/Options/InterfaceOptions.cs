@@ -376,11 +376,11 @@ namespace FlaxEditor.Options
         public float ConnectionCurvature { get; set; } = 1.0f;
 
         /// <summary>
-        /// Gets or sets the visject connection curvature.
+        /// Gets or sets a value that indicates wether the context menu description panel is shown or not.
         /// </summary>
         [DefaultValue(true)]
-        [EditorDisplay("Visject"), EditorOrder(550), Tooltip("Shows/hides the description panel in the visual scripting context menu.")]
-        public bool VisualScriptingDescriptionPanel { get; set; } = true;
+        [EditorDisplay("Visject"), EditorOrder(550), Tooltip("Shows/hides the description panel in visual scripting context menu.")]
+        public bool NodeDescriptionPanel { get; set; } = true;
 
         /// <summary>
         /// Gets or sets the surface grid snapping option.
