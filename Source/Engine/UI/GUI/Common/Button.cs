@@ -63,12 +63,6 @@ namespace FlaxEngine.GUI
         public Color TextColor;
 
         /// <summary>
-        /// Gets or sets the brush used for background drawing.
-        /// </summary>
-        [EditorDisplay("Background Style"), EditorOrder(1999), Tooltip("The brush used for background drawing."), ExpandGroups]
-        public IBrush BackgroundBrush { get; set; }
-
-        /// <summary>
         /// Gets or sets the background color when button is highlighted.
         /// </summary>
         [EditorDisplay("Background Style"), EditorOrder(2001)]
