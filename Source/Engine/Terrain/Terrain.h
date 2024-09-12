@@ -211,6 +211,7 @@ public:
 
     /// <summary>
     /// Sets the physical materials used to define the terrain collider physical properties.
+    /// [Deprecated on 16.02.2024, expires on 16.02.2026]
     /// </summary>
     DEPRECATED API_PROPERTY()
     void SetPhysicalMaterial(const JsonAssetReference<PhysicalMaterial>& value)
