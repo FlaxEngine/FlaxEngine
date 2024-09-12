@@ -39,11 +39,13 @@ public:
 
     FORCE_INLINE GPUPipelineState* Get(int index) const
     {
+        ASSERT_LOW_LAYER(index >= 0 && index < Size);
         return States[index];
     }
 
     FORCE_INLINE GPUPipelineState*& operator[](int32 index)
     {
+        ASSERT_LOW_LAYER(index >= 0 && index < Size);
         return States[index];
     }
 
@@ -129,6 +131,7 @@ public:
 public:
     FORCE_INLINE GPUShaderProgramCS* Get(const int index) const
     {
+        ASSERT_LOW_LAYER(index >= 0 && index < Size);
         return Shaders[index];
     }
 
