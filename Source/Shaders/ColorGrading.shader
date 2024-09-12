@@ -193,9 +193,10 @@ float3 TonemapACES(float3 linearColor)
 
 #endif
 
-#ifdef TONE_MAPPING_MODE_NEUTRAL
+#ifdef TONE_MAPPING_MODE_AGX
 
-float3 agxAscCdl(float3 color, float3 slope, float3 offset, float3 power, float sat) {
+float3 agxAscCdl(float3 color, float3 slope, float3 offset, float3 power, float sat)
+{
     const float3 lw = float3(0.2126, 0.7152, 0.0722);
     float luma = dot(color, lw);
     float3 c = pow(color * slope + offset, power);
@@ -209,27 +210,23 @@ float3 TonemapAGX(float3 linearColor)
         0.0951, 0.7612, 0.0768,
         0.0483, 0.1014, 0.8113
     };
-
     static const float3x3 AgXOutsetMatrix = {
         1.1271, -0.1413, -0.1413,
         -0.1106, 1.1578, -0.1106,
         -0.0165, -0.0165, 1.2519
     };
-
     static const float AgxMinEv = -12.47393;
     static const float AgxMaxEv = 4.026069;
 
-	float3 color = linearColor;
+    float3 color = linearColor;
     color = mul(color, AgXInsetMatrix);
     color = max(color, 1e-10);
     color = clamp(log2(color), AgxMinEv, AgxMaxEv);
     color = (color - AgxMinEv) / (AgxMaxEv - AgxMinEv);
-
-    color = clamp(color, 0.0, 1.0);
+    color = saturate(color);
 
     float3 x2 = color * color;
     float3 x4 = x2 * x2;    
-
     color = + 15.5      * x4 * x2
             - 40.14     * x4 * color
             + 31.96     * x4
@@ -239,14 +236,10 @@ float3 TonemapAGX(float3 linearColor)
             - 0.00232;
 
     // color = agxAscCdl(color, float3(1.0, 1.0, 1.0), float3(0.0, 0.0, 0.0), float3(1.35, 1.35, 1.35), 1.4);
-
     color = mul(color, AgXOutsetMatrix);
-
     color = pow(max(float3(0.0, 0.0, 0.0), color), float3(2.2, 2.2, 2.2));
-
-    color = clamp(color, 0.0, 1.0);
-
-	return color;
+    color = saturate(color);
+    return color;
 }
 
 #endif
