@@ -245,16 +245,25 @@ namespace FlaxEditor.CustomEditors.GUI
             for (int i = 0; i < count; i++)
             {
                 var label = _element.Labels[i];
+                var container = label.FirstChildControlContainer ?? this;
 
                 if (label.FirstChildControlIndex < 0)
                     yStarts[i] = 0;
-                else if (_children.Count <= label.FirstChildControlIndex)
+                else if (container.ChildrenCount <= label.FirstChildControlIndex)
                     yStarts[i] = y;
+                else if (label.FirstChildControlContainer != null)
+                {
+                    var firstChild = label.FirstChildControlContainer.Children[label.FirstChildControlIndex];
+                    yStarts[i] = firstChild.PointToParent(this, Float2.Zero).Y;
+                    if (i == count - 1)
+                        yStarts[i + 1] = firstChild.Parent.Bottom;
+                }
                 else
                 {
-                    yStarts[i] = _children[label.FirstChildControlIndex].Top;
+                    var firstChild = _children[label.FirstChildControlIndex];
+                    yStarts[i] = firstChild.Top;
                     if (i == count - 1)
-                        yStarts[i + 1] = _children[label.FirstChildControlIndex].Bottom;
+                        yStarts[i + 1] = firstChild.Bottom;
                 }
                    
             }

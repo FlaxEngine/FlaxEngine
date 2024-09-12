@@ -66,12 +66,14 @@ bool GPUParticles::Init(ParticleEmitter* owner, MemoryReadStream& shaderCacheStr
         LOG(Warning, "Missing valid GPU particles constant buffer.");
         return true;
     }
-    if (cb0->GetSize() < sizeof(GPUParticlesData))
+    const int32 cbSize = cb0->GetSize();
+    if (cbSize < sizeof(GPUParticlesData))
     {
-        LOG(Warning, "Invalid size GPU particles constant buffer. required {0} bytes but got {1}", sizeof(GPUParticlesData), cb0->GetSize());
+        LOG(Warning, "Invalid size GPU particles constant buffer. required {0} bytes but got {1}", sizeof(GPUParticlesData), cbSize);
         return true;
     }
-    _cbData.Resize(cb0->GetSize());
+    _cbData.Resize(cbSize);
+    Platform::MemoryClear(_cbData.Get(), cbSize);
 
     // Load material parameters
     if (_params.Load(materialParamsStream))

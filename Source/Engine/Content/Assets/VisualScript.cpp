@@ -1471,7 +1471,8 @@ Asset::LoadResult VisualScript::load()
                 for (int32 i = 0; i < count; i++)
                 {
                     const int32 oldIndex = _oldParamsLayout.Find(Graph.Parameters[i].Identifier);
-                    instanceParams[i] = oldIndex != -1 ? valuesCache[oldIndex] : Graph.Parameters[i].Value;
+                    const bool useOldValue = oldIndex != -1 && valuesCache[oldIndex] != _oldParamsValues[i];
+                    instanceParams[i] = useOldValue ? valuesCache[oldIndex] : Graph.Parameters[i].Value;
                 }
             }
         }
@@ -1486,6 +1487,8 @@ Asset::LoadResult VisualScript::load()
                     instanceParams[i] = Graph.Parameters[i].Value;
             }
         }
+        _oldParamsLayout.Clear();
+        _oldParamsValues.Clear();
     }
 #endif
 
@@ -1499,15 +1502,18 @@ void VisualScript::unload(bool isReloading)
     {
         // Cache existing instanced parameters IDs to restore values after asset reload (params order might be changed but the IDs are stable)
         _oldParamsLayout.Resize(Graph.Parameters.Count());
+        _oldParamsValues.Resize(Graph.Parameters.Count());
         for (int32 i = 0; i < Graph.Parameters.Count(); i++)
         {
             auto& param = Graph.Parameters[i];
             _oldParamsLayout[i] = param.Identifier;
+            _oldParamsValues[i] = param.Value;
         }
     }
     else
     {
         _oldParamsLayout.Clear();
+        _oldParamsValues.Clear();
     }
 #else
     _instances.Clear();

@@ -257,8 +257,9 @@ namespace FlaxEditor.Windows.Assets
             };
 
             // Toolstrip
-            _toolstrip.AddSeparator();
+            SurfaceUtils.PerformCommonSetup(this, _toolstrip, _surface, out _saveButton, out _undoButton, out _redoButton);
             _toolstrip.AddButton(editor.Icons.Code64, ShowSourceCode).LinkTooltip("Show generated shader source code");
+            _toolstrip.AddSeparator();
             _toolstrip.AddButton(editor.Icons.Docs64, () => Platform.OpenUrl(Utilities.Constants.DocsUrl + "manual/graphics/materials/index.html")).LinkTooltip("See documentation to learn more");
         }
 

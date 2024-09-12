@@ -272,11 +272,13 @@ DEFINE_INTERNAL_CALL(MString*) EditorInternal_GetShaderAssetSourceCode(BinaryAss
     obj->GetChunkData(SHADER_FILE_CHUNK_SOURCE, data);
     auto source = data.Get<char>();
     auto sourceLength = data.Length();
+    if (sourceLength <= 0)
+        return MCore::String::GetEmpty();
     Encryption::DecryptBytes(data.Get(), data.Length());
     source[sourceLength - 1] = 0;
 
     // Get source and encrypt it back
-    const StringAnsiView srcData((const char*)data.Get(), data.Length());
+    const StringAnsiView srcData(source, sourceLength);
     const auto str = MUtils::ToString(srcData);
     Encryption::EncryptBytes(data.Get(), data.Length());
 

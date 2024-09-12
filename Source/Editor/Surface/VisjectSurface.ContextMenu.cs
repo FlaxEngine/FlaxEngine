@@ -326,7 +326,7 @@ namespace FlaxEditor.Surface
             _cmCopyButton = menu.AddButton("Copy", Copy);
             menu.AddButton("Paste", Paste).Enabled = CanEdit && CanPaste();
             _cmDuplicateButton = menu.AddButton("Duplicate", Duplicate);
-            _cmDuplicateButton.Enabled = CanEdit;
+            _cmDuplicateButton.Enabled = CanEdit && selection.Any(node => (node.Archetype.Flags & NodeFlags.NoSpawnViaPaste) == 0);
             var canRemove = CanEdit && selection.All(node => (node.Archetype.Flags & NodeFlags.NoRemove) == 0);
             menu.AddButton("Cut", Cut).Enabled = canRemove;
             menu.AddButton("Delete", Delete).Enabled = canRemove;

@@ -382,7 +382,7 @@ namespace FlaxEditor.Modules.SourceCodeEditing
 
             // Get editor target and target files and add module
             var files = Directory.GetFiles(path);
-            var targetModuleText = $"Modules.Add(\"{moduleName}\");\n        ";
+            var targetModuleText = $"Modules.Add(nameof({moduleName}));\n        ";
             foreach (var file in files)
             {
                 if (!file.Contains(".Build.cs", StringComparison.OrdinalIgnoreCase))
@@ -400,6 +400,93 @@ namespace FlaxEditor.Modules.SourceCodeEditing
                     var newText = targetText.Insert(index, targetModuleText);
                     File.WriteAllText(file, newText);
                     Editor.Log($"Module added to Target: {file}");
+                }
+            }
+        }
+
+        internal void RemoveModule(string path)
+        {
+            if (!File.Exists(path))
+                return;
+
+            // Read text, figure out if it is an editor module or game module
+            var editorModule = false;
+            var moduleTextIndex = -1;
+            var fileText = File.ReadAllText(path);
+            if (fileText.Contains("GameModule", StringComparison.Ordinal))
+            {
+                moduleTextIndex = fileText.IndexOf("GameModule", StringComparison.Ordinal);
+            }
+            else if (fileText.Contains("ThirdPartyModule", StringComparison.Ordinal))
+            {
+                moduleTextIndex = fileText.IndexOf("ThirdPartyModule", StringComparison.Ordinal);
+            }
+            else if (fileText.Contains("DepsModule", StringComparison.Ordinal))
+            {
+                moduleTextIndex = fileText.IndexOf("DepsModule", StringComparison.Ordinal);
+            }
+            else if (fileText.Contains("GameEditorModule", StringComparison.Ordinal))
+            {
+                moduleTextIndex = fileText.IndexOf("GameEditorModule", StringComparison.Ordinal);
+                editorModule = true;
+            }
+            else
+            {
+                // If it does not contain a module, then this could be target file and not a module file
+                return;
+            }
+
+            // Get module name
+            var classTextIndex = fileText.IndexOf("class ", StringComparison.Ordinal);
+            var className = fileText.Substring(classTextIndex, moduleTextIndex - classTextIndex).Replace("class ", "").Replace(":", "").Trim();
+            Editor.Log($"Removing Module: {className}");
+
+            // Find target files
+            // Assume Target files are in the source directory that is up 2 levels
+            var sourceDirectoryInfo = Directory.GetParent(path)?.Parent;
+            if (sourceDirectoryInfo != null)
+            {
+                var sourceFiles = Directory.GetFiles(sourceDirectoryInfo.FullName);
+                // Search target files for module name and remove it
+                foreach (var file in sourceFiles)
+                {
+                    string fileName = Path.GetFileName(file);
+                    if (file.Contains(".Build.cs", StringComparison.OrdinalIgnoreCase))
+                    {
+                        var targetText = File.ReadAllText(file);
+
+                        // Skip game project if it is suppose to be an editor module
+                        if (editorModule && targetText.Contains("GameProjectTarget", StringComparison.Ordinal))
+                            continue;
+
+                        var newText = targetText;
+                        bool removedModuleText = false;
+                        if (targetText.Contains($"Modules.Add(\"{className}\")", StringComparison.Ordinal))
+                        {
+                            newText = newText.Replace($"Modules.Add(\"{className}\");\n", "", StringComparison.Ordinal).Replace($"Modules.Add(\"{className}\");", "", StringComparison.Ordinal);
+                            removedModuleText = true;
+                        }
+
+                        if (targetText.Contains($"Modules.Add(nameof({className}))", StringComparison.Ordinal))
+                        {
+                            newText = newText.Replace($"Modules.Add(nameof({className}));\n", "", StringComparison.Ordinal).Replace($"Modules.Add(nameof({className}));", "", StringComparison.Ordinal);
+                            removedModuleText = true;
+                        }
+                        if (removedModuleText)
+                        {
+                            File.WriteAllText(file, newText);
+                            Editor.Log($"Removed Module: {className} from {file}");
+                        }
+                    }
+                    // Remove Generated module files
+                    else if (fileName.Equals($"{className}.csproj", StringComparison.Ordinal) || 
+                             fileName.Equals($"{className}.Gen.cs", StringComparison.Ordinal) ||
+                             fileName.Equals($"{className}.Gen.cpp", StringComparison.Ordinal) ||
+                             fileName.Equals($"{className}.Gen.h", StringComparison.Ordinal))
+                    {
+                        File.Delete(file);
+                        Editor.Log($"Deleted generated modules file for module: {className}. File path {file}");
+                    }
                 }
             }
         }

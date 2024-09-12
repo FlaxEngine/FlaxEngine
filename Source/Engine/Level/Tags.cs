@@ -7,9 +7,7 @@ using System.Runtime.CompilerServices;
 
 namespace FlaxEngine
 {
-#if FLAX_EDITOR
     [TypeConverter(typeof(TypeConverters.TagConverter))]
-#endif
     partial struct Tag : IEquatable<Tag>, IEquatable<string>, IComparable, IComparable<Tag>, IComparable<string>
     {
         /// <summary>
@@ -254,7 +252,6 @@ namespace FlaxEngine
     }
 }
 
-#if FLAX_EDITOR
 namespace FlaxEngine.TypeConverters
 {
     internal class TagConverter : TypeConverter
@@ -291,4 +288,3 @@ namespace FlaxEngine.TypeConverters
         }
     }
 }
-#endif

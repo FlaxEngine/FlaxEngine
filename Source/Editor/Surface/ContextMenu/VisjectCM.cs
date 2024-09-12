@@ -809,7 +809,7 @@ namespace FlaxEditor.Surface.ContextMenu
             if (!_useDescriptionPanel)
                 return;
 
-            if (archetype == null || !Editor.Instance.Options.Options.Interface.VisualScriptingDescriptionPanel)
+            if (archetype == null || !Editor.Instance.Options.Options.Interface.NodeDescriptionPanel)
             {
                 HideDescriptionPanel();
                 return;
@@ -875,7 +875,7 @@ namespace FlaxEditor.Surface.ContextMenu
                         AddInputOutputElement(archetype, output.Type, true, $"{output.Name} ({output.Type.Name})");
                     }
                 }
-                else
+                else if (archetype.Elements != null) // Skip if no Elements (ex: Comment node)
                 {
                     foreach (var element in archetype.Elements)
                     {

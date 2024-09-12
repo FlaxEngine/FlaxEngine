@@ -543,7 +543,7 @@ namespace Flax.Build.Bindings
 
                     // interface
                     if (apiType.IsInterface)
-                        return string.Format("FlaxEngine.Object.GetUnmanagedInterface({{0}}, typeof({0}))", apiType.FullNameManaged);
+                        return string.Format("FlaxEngine.Object.GetUnmanagedInterface({{0}}, typeof({0}))", apiType.Name);
                 }
 
                 // Object reference property
@@ -603,7 +603,7 @@ namespace Flax.Build.Bindings
                     fullReturnValueType = $"{apiType.Namespace}.Interop.{returnValueType}";
 
                 // Interfaces are not supported by NativeMarshallingAttribute, marshal the parameter
-                returnMarshalType = $"MarshalUsing(typeof({fullReturnValueType}Marshaller))";
+                returnMarshalType = $"MarshalUsing(typeof({returnValueType}Marshaller))";
             }
             else if (functionInfo.ReturnType.Type == "MonoArray" || functionInfo.ReturnType.Type == "MArray")
                 returnMarshalType = "MarshalUsing(typeof(FlaxEngine.Interop.SystemArrayMarshaller))";
@@ -916,6 +916,30 @@ namespace Flax.Build.Bindings
                 if (defaultValue != null)
                     contents.Append(indent).Append("[DefaultValue(").Append(defaultValue).Append(")]").AppendLine();
             }
+            
+            // Check if array has fixed allocation and add in MaxCount Collection attribute if a Collection attribute does not already exist.
+            if (defaultValueType != null && (string.IsNullOrEmpty(attributes) || !attributes.Contains("Collection", StringComparison.Ordinal)))
+            {
+                // Array or Span or DataContainer
+#if USE_NETCORE
+                if ((defaultValueType.Type == "Array" || defaultValueType.Type == "Span" || defaultValueType.Type == "DataContainer" || defaultValueType.Type == "MonoArray" || defaultValueType.Type == "MArray") && defaultValueType.GenericArgs != null)
+#else
+                if ((defaultValueType.Type == "Array" || defaultValueType.Type == "Span" || defaultValueType.Type == "DataContainer") && defaultValueType.GenericArgs != null)
+#endif
+                {
+                    if (defaultValueType.GenericArgs.Count > 1)
+                    {
+                        var allocationArg = defaultValueType.GenericArgs[1];
+                        if (allocationArg.Type.Contains("FixedAllocation", StringComparison.Ordinal) && allocationArg.GenericArgs.Count > 0)
+                        {
+                            if (int.TryParse(allocationArg.GenericArgs[0].ToString(), out int allocation))
+                            {
+                                contents.Append(indent).Append($"[Collection(MaxCount={allocation.ToString()})]").AppendLine();
+                            }
+                        }
+                    }
+                }
+            }
         }
 
         private static void GenerateCSharpAttributes(BuildData buildData, StringBuilder contents, string indent, ApiTypeInfo apiTypeInfo, bool useUnmanaged, string defaultValue = null, TypeInfo defaultValueType = null)
@@ -1110,6 +1134,8 @@ namespace Flax.Build.Bindings
                 contents.Append(indent).Append('}').AppendLine();
 
                 contents.AppendLine();
+                if (buildData.Configuration != TargetConfiguration.Release)
+                    contents.Append(indent).Append("[System.Diagnostics.DebuggerBrowsable(global::System.Diagnostics.DebuggerBrowsableState.Never)]").AppendLine();
                 contents.Append(indent).Append("private ");
                 if (eventInfo.IsStatic)
                     contents.Append("static ");
@@ -2211,7 +2237,7 @@ namespace Flax.Build.Bindings
                 contents.Append(indent).AppendLine("/// </summary>");
                 if (buildData.Target != null & buildData.Target.IsEditor)
                     contents.Append(indent).AppendLine("[HideInEditor]");
-                contents.Append(indent).AppendLine($"[CustomMarshaller(typeof({interfaceInfo.Name}), MarshalMode.Default, typeof({marshallerFullName}))]");
+                contents.Append(indent).AppendLine($"[CustomMarshaller(typeof({interfaceInfo.Name}), MarshalMode.Default, typeof({marshallerName}))]");
                 contents.Append(indent).AppendLine($"public static class {marshallerName}");
                 contents.Append(indent).AppendLine("{");
                 contents.AppendLine("#pragma warning disable 1591");

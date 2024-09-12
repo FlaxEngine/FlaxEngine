@@ -291,6 +291,20 @@ public:
         return result;
     }
 
+    /// <summary>
+    /// Combines the functions: <br/>
+    /// <see cref="SnapToGrid"/>,<br/>
+    /// <see cref="GetRotationFromNormal"/>.
+    /// </summary>
+    /// <param name="point">The position to snap.</param>
+    /// <param name="gridSize">The size of the grid.</param>
+    /// <param name="normalOffset">The local grid offset to apply after snapping.</param>
+    /// <param name="normal">The normal vector.</param>
+    /// <param name="relativeTo">The relative transform.</param>
+    /// <param name="scale">The scale to apply to the transform.</param>
+    /// <returns>The rotated and snapped transform.</returns>
+    static Transform AlignRotationToNormalAndSnapToGrid(const Vector3& point, const Vector3& normal, const Vector3& normalOffset, const Transform& relativeTo, const Vector3& gridSize, const Float3& scale = Float3::One);
+
 public:
     FORCE_INLINE Transform operator*(const Transform& other) const
     {

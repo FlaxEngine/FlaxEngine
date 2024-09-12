@@ -27,32 +27,18 @@ struct AxisEvaluation
 
 struct ActionData
 {
-    bool Active;
-    uint64 FrameIndex;
-    InputActionState State;
-
-    ActionData()
-    {
-        Active = false;
-        FrameIndex = 0;
-        State = InputActionState::Waiting;
-    }
+    bool Active = false;
+    uint64 FrameIndex = 0;
+    InputActionState State = InputActionState::Waiting;
 };
 
 struct AxisData
 {
-    float Value;
-    float ValueRaw;
-    float PrevKeyValue;
-    uint64 FrameIndex;
-
-    AxisData()
-    {
-        Value = 0.0f;
-        ValueRaw = 0.0f;
-        PrevKeyValue = 0.0f;
-        FrameIndex = 0;
-    }
+    float Value = 0.0f;
+    float ValueRaw = 0.0f;
+    float PrevValue = 0.0f;
+    float PrevKeyValue = 0.0f;
+    uint64 FrameIndex = 0;
 };
 
 namespace InputImpl
@@ -990,6 +976,7 @@ void InputService::Update()
 
         // Setup axis data
         data.PrevKeyValue = e.PrevKeyValue;
+        data.PrevValue = data.Value;
         data.ValueRaw = e.RawValue;
         data.Value = e.Value;
 
@@ -1025,7 +1012,7 @@ void InputService::Update()
     {
         for (auto i = Axes.Begin(); i.IsNotEnd(); ++i)
         {
-            if (Math::NotNearEqual(i->Value.Value, i->Value.PrevKeyValue))
+            if (Math::NotNearEqual(i->Value.Value, i->Value.PrevValue))
             {
                 Input::AxisValueChanged(i->Key);
             }

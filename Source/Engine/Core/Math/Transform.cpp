@@ -252,3 +252,9 @@ void Transform::Lerp(const Transform& t1, const Transform& t2, float amount, Tra
     Quaternion::Slerp(t1.Orientation, t2.Orientation, amount, result.Orientation);
     Float3::Lerp(t1.Scale, t2.Scale, amount, result.Scale);
 }
+
+Transform Transform::AlignRotationToNormalAndSnapToGrid(const Vector3& point, const Vector3& normal, const Vector3& normalOffset, const Transform& relativeTo, const Vector3& gridSize, const Float3& scale)
+{
+    Quaternion rot = Quaternion::GetRotationFromNormal(normal, relativeTo);
+    return Transform(Vector3::SnapToGrid(point, gridSize, rot, relativeTo.Translation, normalOffset), rot, scale);
+}

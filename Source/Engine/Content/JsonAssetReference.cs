@@ -1,6 +1,10 @@
 // Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 using System;
+#if FLAX_EDITOR
+using System.ComponentModel;
+using System.Globalization;
+#endif
 using System.Runtime.CompilerServices;
 
 namespace FlaxEngine
@@ -11,6 +15,7 @@ namespace FlaxEngine
     /// <typeparam name="T">Type of the asset instance type.</typeparam>
 #if FLAX_EDITOR
     [CustomEditor(typeof(FlaxEditor.CustomEditors.Editors.AssetRefEditor))]
+    [TypeConverter(typeof(TypeConverters.JsonAssetReferenceConverter))]
 #endif
     [Newtonsoft.Json.JsonConverter(typeof(Json.JsonAssetReferenceConverter))]
     public struct JsonAssetReference<T> : IComparable, IComparable<JsonAssetReference<T>>, IEquatable<JsonAssetReference<T>>
@@ -125,7 +130,7 @@ namespace FlaxEngine
         /// <inheritdoc />
         public override string ToString()
         {
-            return Asset?.ToString();
+            return Asset?.ToString() ?? "null";
         }
 
         /// <inheritdoc />
@@ -141,3 +146,33 @@ namespace FlaxEngine
         }
     }
 }
+
+#if FLAX_EDITOR
+namespace FlaxEngine.TypeConverters
+{
+    internal class JsonAssetReferenceConverter : TypeConverter
+    {
+        /// <inheritdoc />
+        public override object ConvertTo(ITypeDescriptorContext context, CultureInfo culture, object value, Type destinationType)
+        {
+            if (value is string valueStr)
+            {
+                var result = Activator.CreateInstance(destinationType);
+                Json.JsonSerializer.ParseID(valueStr, out var id);
+                var asset = Content.LoadAsync<JsonAsset>(id);
+                destinationType.GetField("Asset").SetValue(result, asset);
+                return result;
+            }
+            return base.ConvertTo(context, culture, value, destinationType);
+        }
+
+        /// <inheritdoc />
+        public override bool CanConvertTo(ITypeDescriptorContext context, Type destinationType)
+        {
+            if (destinationType.Name.StartsWith("JsonAssetReference", StringComparison.Ordinal))
+                return true;
+            return base.CanConvertTo(context, destinationType);
+        }
+    }
+}
+#endif

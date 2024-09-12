@@ -154,6 +154,7 @@ private:
     Array<Field, InlinedAllocation<32>> _fields;
 #if USE_EDITOR
     Array<Guid> _oldParamsLayout;
+    Array<Variant> _oldParamsValues;
 #endif
 
 public:

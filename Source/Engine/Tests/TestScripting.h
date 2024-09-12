@@ -8,6 +8,21 @@
 #include "Engine/Scripting/ScriptingObject.h"
 #include "Engine/Scripting/SerializableScriptingObject.h"
 
+// Test interface (name conflict with namespace)
+API_INTERFACE(Namespace="Foo") class FLAXENGINE_API IFoo
+{
+    DECLARE_SCRIPTING_TYPE_MINIMAL(IFoo);
+};
+
+// Test class (name conflict with namespace)
+API_CLASS(Namespace="Foo") class FLAXENGINE_API Foo : public ScriptingObject
+{
+    DECLARE_SCRIPTING_TYPE(Foo);
+
+    // Test field.
+    API_FIELD() IFoo* FooInterface;
+};
+
 // Test compilation with nested types.
 API_CLASS() class TestNesting : public SerializableScriptingObject
 {

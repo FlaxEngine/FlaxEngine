@@ -927,6 +927,25 @@ public:
     /// <param name="to">The second vector.</param>
     /// <returns>The angle (in radians).</returns>
     static FLAXENGINE_API T Angle(const Vector3Base& from, const Vector3Base& to);
+
+    /// <summary>
+    /// Snaps the input position onto the grid.
+    /// </summary>
+    /// <param name="pos">The position to snap.</param>
+    /// <param name="gridSize">The size of the grid.</param>
+    /// <returns>The position snapped to the grid.</returns>
+    static FLAXENGINE_API Vector3Base SnapToGrid(const Vector3Base& pos, const Vector3Base& gridSize);
+
+    /// <summary>
+    /// Snaps the <paramref name="point"/> onto the rotated grid. For world aligned grid snapping use <b><see cref="SnapToGrid"/></b> instead.
+    /// </summary>
+    /// <param name="point">The position to snap.</param>
+    /// <param name="gridSize">The size of the grid.</param>
+    /// <param name="gridOrigin">The center point of the grid.</param>
+    /// <param name="gridOrientation">The rotation of the grid.</param>
+    /// <param name="offset">The local position offset applied to the snapped position before grid rotation.</param>
+    /// <returns>The position snapped to the grid.</returns>
+    static FLAXENGINE_API Vector3Base SnapToGrid(const Vector3Base& point, const Vector3Base& gridSize, const Quaternion& gridOrientation, const Vector3Base& gridOrigin = Zero, const Vector3Base& offset = Zero);
 };
 
 template<typename T>

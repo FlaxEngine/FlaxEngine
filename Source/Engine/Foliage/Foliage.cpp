@@ -479,6 +479,10 @@ void Foliage::DrawType(RenderContext& renderContext, const FoliageType& type, Dr
         batch.DrawCall.InstanceCount = 1;
         auto& firstInstance = batch.Instances[0];
         firstInstance.Load(batch.DrawCall);
+#if USE_EDITOR
+        if (renderContext.View.Mode == ViewMode::LightmapUVsDensity)
+            batch.DrawCall.Surface.LODDitherFactor = type.ScaleInLightmap; // See LightmapUVsDensityMaterialShader
+#endif
 
         if (EnumHasAnyFlags(drawModes, DrawPass::Forward))
         {

@@ -1428,6 +1428,26 @@ namespace FlaxEditor.Viewport
         }
 
         /// <summary>
+        /// Projects the point from 3D world-space to viewport coordinates.
+        /// </summary>
+        /// <param name="worldSpaceLocation">The input world-space location (XYZ in world).</param>
+        /// <param name="viewportSpaceLocation">The output viewport window coordinates (XY in screen pixels).</param>
+        public void ProjectPoint(Vector3 worldSpaceLocation, out Float2 viewportSpaceLocation)
+        {
+            viewportSpaceLocation = Float2.Minimum;
+            var viewport = new FlaxEngine.Viewport(0, 0, Width, Height);
+            if (viewport.Width < Mathf.Epsilon || viewport.Height < Mathf.Epsilon)
+                return;
+            Vector3 viewOrigin = Task.View.Origin;
+            Float3 position = ViewPosition - viewOrigin;
+            CreateProjectionMatrix(out var p);
+            CreateViewMatrix(position, out var v);
+            Matrix.Multiply(ref v, ref p, out var vp);
+            viewport.Project(ref worldSpaceLocation, ref vp, out var projected);
+            viewportSpaceLocation = new Float2((float)projected.X, (float)projected.Y);
+        }
+
+        /// <summary>
         /// Called when mouse control begins.
         /// </summary>
         /// <param name="win">The parent window.</param>

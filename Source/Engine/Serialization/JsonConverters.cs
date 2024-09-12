@@ -479,7 +479,7 @@ namespace FlaxEngine.Json
         /// <inheritdoc />
         public override bool CanConvert(Type objectType)
         {
-            return objectType.Name.StartsWith("JsonAssetReference");
+            return objectType.Name.StartsWith("JsonAssetReference", StringComparison.Ordinal);
         }
     }
 

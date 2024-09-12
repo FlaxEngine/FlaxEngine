@@ -866,6 +866,16 @@ namespace FlaxEngine
         }
 
         /// <summary>
+        /// Returns the vector with components containing the smallest integer smaller to or equal to the original value.
+        /// </summary>
+        /// <param name="v">The value.</param>
+        /// <returns>The result.</returns>
+        public static Float2 Floor(Float2 v)
+        {
+            return new Float2(Mathf.Floor(v.X), Mathf.Floor(v.Y));
+        }
+
+        /// <summary>
         /// Breaks the components of the vector into an integral and a fractional part. Returns vector made of fractional parts.
         /// </summary>
         /// <param name="v">The value.</param>

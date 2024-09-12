@@ -242,8 +242,11 @@ namespace FlaxEditor.Windows.Assets
 
         private void OpenOptionsContextMenu()
         {
-            if (_optionsCM != null && _optionsCM.ContainsFocus)
-                return;
+            if (_optionsCM != null)
+            {
+                _optionsCM.Hide();
+                _optionsCM.Dispose();
+            }
             
             _optionsCM = new ContextMenu();
             _optionsCM.AddButton("Copy type name", () => Clipboard.Text = Asset.DataTypeName);

@@ -639,7 +639,17 @@ CreateAssetResult ImportModel::CreateAnimation(CreateAssetContext& context, Mode
 
     // Save animation data
     MemoryWriteStream stream(8182);
-    const int32 animIndex = options && options->ObjectIndex != -1 ? options->ObjectIndex : 0; // Single animation per asset
+    int32 animIndex = options ? options->ObjectIndex : -1; // Single animation per asset
+    if (animIndex == -1)
+    {
+        // Pick the longest animation by default (eg. to skip ref pose anim if exported as the first one)
+        animIndex = 0;
+        for (int32 i = 1; i < modelData.Animations.Count(); i++)
+        {
+            if (modelData.Animations[i].GetLength() > modelData.Animations[animIndex].GetLength())
+                animIndex = i;
+        }
+    }
     if (modelData.Pack2AnimationHeader(&stream, animIndex))
         return CreateAssetResult::Error;
     if (context.AllocateChunk(0))

@@ -9,25 +9,27 @@ using FlaxEngine;
 namespace FlaxEditor.Content
 {
     /// <summary>
-    /// Context proxy object for C# script files.
+    /// Proxy object for C# files
     /// </summary>
-    /// <seealso cref="FlaxEditor.Content.CSharpScriptProxy" />
-    [ContentContextMenu("New/C# Script")]
-    public class CSharpScriptProxy : ScriptProxy
+    /// /// <seealso cref="FlaxEditor.Content.ScriptProxy" />
+    public abstract class CSharpProxy : ScriptProxy
     {
         /// <summary>
         /// The script files extension filter.
         /// </summary>
-        public static readonly string ExtensionFiler = "*.cs";
-
-        /// <inheritdoc />
-        public override string Name => "C# Script";
+        public static readonly string ExtensionFilter = "*.cs";
 
         /// <inheritdoc />
         public override bool IsProxyFor(ContentItem item)
         {
             return item is CSharpScriptItem;
         }
+
+        /// <summary>
+        /// Gets the path for the C# template.
+        /// </summary>
+        /// <param name="path">The path to the template</param>
+        protected abstract void GetTemplatePath(out string path);
 
         /// <inheritdoc />
         public override ContentItem ConstructItem(string path)
@@ -39,7 +41,7 @@ namespace FlaxEditor.Content
         public override void Create(string outputPath, object arg)
         {
             // Load template
-            var templatePath = StringUtils.CombinePaths(Globals.EngineContentFolder, "Editor/Scripting/ScriptTemplate.cs");
+            GetTemplatePath(out var templatePath);
             var scriptTemplate = File.ReadAllText(templatePath);
 
             // Find the module that this script is being added (based on the path)
@@ -68,5 +70,39 @@ namespace FlaxEditor.Content
 
         /// <inheritdoc />
         public override Color AccentColor => Color.FromRGB(0x1c9c2b);
+    }
+    
+    /// <summary>
+    /// Context proxy object for C# script files.
+    /// </summary>
+    /// <seealso cref="FlaxEditor.Content.CSharpProxy" />
+    [ContentContextMenu("New/C#/C# Script")]
+    public class CSharpScriptProxy : CSharpProxy
+    {
+        /// <inheritdoc />
+        public override string Name => "C# Script";
+
+        /// <inheritdoc />
+        protected override void GetTemplatePath(out string path)
+        {
+            path = StringUtils.CombinePaths(Globals.EngineContentFolder, "Editor/Scripting/ScriptTemplate.cs");
+        }
+    }
+    
+    /// <summary>
+    /// Context proxy object for empty C# files.
+    /// </summary>
+    /// <seealso cref="FlaxEditor.Content.CSharpProxy" />
+    [ContentContextMenu("New/C#/C# Empty File")]
+    public class CSharpEmptyProxy : CSharpProxy
+    {
+        /// <inheritdoc />
+        public override string Name => "C# Empty File";
+
+        /// <inheritdoc />
+        protected override void GetTemplatePath(out string path)
+        {
+            path = StringUtils.CombinePaths(Globals.EngineContentFolder, "Editor/Scripting/CSharpEmptyTemplate.cs");
+        }
     }
 }

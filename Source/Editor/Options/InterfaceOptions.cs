@@ -376,11 +376,25 @@ namespace FlaxEditor.Options
         public float ConnectionCurvature { get; set; } = 1.0f;
 
         /// <summary>
-        /// Gets or sets the visject connection curvature.
+        /// Gets or sets a value that indicates wether the context menu description panel is shown or not.
         /// </summary>
         [DefaultValue(true)]
-        [EditorDisplay("Visject"), EditorOrder(550), Tooltip("Shows/hides the description panel in the visual scripting context menu.")]
-        public bool VisualScriptingDescriptionPanel { get; set; } = true;
+        [EditorDisplay("Visject"), EditorOrder(550), Tooltip("Shows/hides the description panel in visual scripting context menu.")]
+        public bool NodeDescriptionPanel { get; set; } = true;
+
+        /// <summary>
+        /// Gets or sets the surface grid snapping option.
+        /// </summary>
+        [DefaultValue(false)]
+        [EditorDisplay("Visject", "Grid Snapping"), EditorOrder(551), Tooltip("Toggles grid snapping when moving nodes.")]
+        public bool SurfaceGridSnapping { get; set; } = false;
+
+        /// <summary>
+        /// Gets or sets the surface grid snapping option.
+        /// </summary>
+        [DefaultValue(20.0f)]
+        [EditorDisplay("Visject", "Grid Snapping Size"), EditorOrder(551), Tooltip("Defines the size of the grid for nodes snapping."), VisibleIf(nameof(SurfaceGridSnapping))]
+        public float SurfaceGridSnappingSize { get; set; } = 20.0f;
 
         private static FontAsset DefaultFont => FlaxEngine.Content.LoadAsyncInternal<FontAsset>(EditorAssets.PrimaryFont);
         private static FontAsset ConsoleFont => FlaxEngine.Content.LoadAsyncInternal<FontAsset>(EditorAssets.InconsolataRegularFont);

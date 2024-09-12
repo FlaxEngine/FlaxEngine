@@ -241,5 +241,9 @@ public:
         /// The object sorting key.
         /// </summary>
         int8 SortOrder;
+
+#if USE_EDITOR
+        float LightmapScale = -1.0f;
+#endif
     };
 };

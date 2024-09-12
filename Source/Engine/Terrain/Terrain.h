@@ -187,7 +187,7 @@ public:
     /// <summary>
     /// Gets the list with physical materials used to define the terrain collider physical properties - each for terrain layer (layer index matches index in this array).
     /// </summary>
-    API_PROPERTY(Attributes="EditorOrder(520), EditorDisplay(\"Collision\"), Collection(MinCount = 8, MaxCount = 8)")
+    API_PROPERTY(Attributes="EditorOrder(520), EditorDisplay(\"Collision\"), Collection(MinCount=8, MaxCount=8)")
     FORCE_INLINE const Array<JsonAssetReference<PhysicalMaterial>, FixedAllocation<8>>& GetPhysicalMaterials() const
     {
         return _physicalMaterials;
@@ -198,6 +198,27 @@ public:
     /// </summary>
     API_PROPERTY()
     void SetPhysicalMaterials(const Array<JsonAssetReference<PhysicalMaterial>, FixedAllocation<8>>& value);
+
+    /// <summary>
+    /// Gets the physical material used to define the terrain collider physical properties.
+    /// [Deprecated on 16.02.2024, expires on 16.02.2026]
+    /// </summary>
+    API_PROPERTY(Attributes="HideInEditor, NoSerialize")
+    DEPRECATED("Use PhysicalMaterials instead.") FORCE_INLINE JsonAssetReference<PhysicalMaterial>& GetPhysicalMaterial()
+    {
+        return _physicalMaterials[0];
+    }
+
+    /// <summary>
+    /// Sets the physical materials used to define the terrain collider physical properties.
+    /// [Deprecated on 16.02.2024, expires on 16.02.2026]
+    /// </summary>
+    DEPRECATED("Use PhysicalMaterials instead.") API_PROPERTY()
+    void SetPhysicalMaterial(const JsonAssetReference<PhysicalMaterial>& value)
+    {
+        for (auto& e : _physicalMaterials)
+            e = value;
+    }
 
     /// <summary>
     /// Gets the terrain Level Of Detail count.

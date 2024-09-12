@@ -17,7 +17,7 @@ namespace FlaxEditor.Surface
     public class MaterialSurface : VisjectSurface
     {
         /// <inheritdoc />
-        public MaterialSurface(IVisjectSurfaceOwner owner, Action onSave, FlaxEditor.Undo undo)
+        public MaterialSurface(IVisjectSurfaceOwner owner, Action onSave = null, FlaxEditor.Undo undo = null)
         : base(owner, onSave, undo)
         {
         }

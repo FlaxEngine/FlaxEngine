@@ -644,20 +644,12 @@ void MaterialGenerator::ProcessGroupTextures(Box* box, Node* node, Value& value)
     // Flipbook
     case 10:
     {
-        // Get input values
         auto uv = Value::Cast(tryGetValue(node->GetBox(0), getUVs), VariantType::Float2);
         auto frame = Value::Cast(tryGetValue(node->GetBox(1), node->Values[0]), VariantType::Float);
         auto framesXY = Value::Cast(tryGetValue(node->GetBox(2), node->Values[1]), VariantType::Float2);
         auto invertX = Value::Cast(tryGetValue(node->GetBox(3), node->Values[2]), VariantType::Float);
         auto invertY = Value::Cast(tryGetValue(node->GetBox(4), node->Values[3]), VariantType::Float);
-
-        // Write operations
-        auto framesCount = writeLocal(VariantType::Float, String::Format(TEXT("{0}.x * {1}.y"), framesXY.Value, framesXY.Value), node);
-        frame = writeLocal(VariantType::Float, String::Format(TEXT("fmod(floor({0}), {1})"), frame.Value, framesCount.Value), node);
-        auto framesXYInv = writeOperation2(node, Value::One.AsFloat2(), framesXY, '/');
-        auto frameY = writeLocal(VariantType::Float, String::Format(TEXT("abs({0} * {1}.y - (floor({2} * {3}.x) + {0} * 1))"), invertY.Value, framesXY.Value, frame.Value, framesXYInv.Value), node);
-        auto frameX = writeLocal(VariantType::Float, String::Format(TEXT("abs({0} * {1}.x - (({2} - {1}.x * floor({2} * {3}.x)) + {0} * 1))"), invertX.Value, framesXY.Value, frame.Value, framesXYInv.Value), node);
-        value = writeLocal(VariantType::Float2, String::Format(TEXT("({3} + float2({0}, {1})) * {2}"), frameX.Value, frameY.Value, framesXYInv.Value, uv.Value), node);
+        value = writeLocal(VariantType::Float2, String::Format(TEXT("Flipbook({0}, {1}, {2}, float2({3}, {4}))"), uv.Value, frame.Value, framesXY.Value, invertX.Value, invertY.Value), node);
         break;
     }
     // Sample Global SDF

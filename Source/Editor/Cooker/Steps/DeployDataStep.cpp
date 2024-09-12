@@ -289,6 +289,17 @@ bool DeployDataStep::Perform(CookingData& data)
             }
         }
 
+        // Remove any leftover files copied from .NET SDK that are not needed by the engine runtime
+        {
+            Array<String> files;
+            FileSystem::DirectoryGetFiles(files, dstDotnet, TEXT("*.exe"));
+            for (const String& file : files)
+            {
+                LOG(Info, "Removing '{}'", FileSystem::ConvertAbsolutePathToRelative(dstDotnet, file));
+                FileSystem::DeleteFile(file);
+            }
+        }
+
         // Optimize deployed C# class library (remove DLLs unused by scripts)
         if (aotMode == DotNetAOTModes::None && buildSettings.SkipUnusedDotnetLibsPackaging)
         {
