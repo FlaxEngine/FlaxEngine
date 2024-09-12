@@ -140,12 +140,12 @@ namespace FlaxEditor.Surface
                 var searchStartTime = DateTime.Now;
 #endif
 
-                foreach (var scriptType in Editor.Instance.CodeEditing.All.Get())
+                foreach (var scriptType in Editor.Instance.CodeEditing.AllWithStd.Get())
                 {
-                    if (!SurfaceUtils.IsValidVisualScriptType(scriptType))
-                        continue;
-
-                    _iterator(scriptType, _cache, _version);
+                    if (SurfaceUtils.IsValidVisualScriptType(scriptType))
+                    {
+                        _iterator(scriptType, _cache, _version);
+                    }
                 }
 
                 // Add group to context menu (on a main thread)

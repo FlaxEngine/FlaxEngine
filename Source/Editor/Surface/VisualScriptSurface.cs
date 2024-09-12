@@ -17,7 +17,6 @@ using FlaxEditor.Surface.Elements;
 using FlaxEngine;
 using FlaxEngine.GUI;
 using FlaxEngine.Utilities;
-using Object = FlaxEngine.Object;
 
 namespace FlaxEditor.Surface
 {
