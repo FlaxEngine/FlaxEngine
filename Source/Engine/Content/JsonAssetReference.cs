@@ -130,7 +130,7 @@ namespace FlaxEngine
         /// <inheritdoc />
         public override string ToString()
         {
-            return Asset?.ToString();
+            return Asset?.ToString() ?? "null";
         }
 
         /// <inheritdoc />
