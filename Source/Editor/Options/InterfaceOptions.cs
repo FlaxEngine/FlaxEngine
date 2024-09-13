@@ -341,7 +341,7 @@ namespace FlaxEditor.Options
         public bool OutputLogScrollToBottom { get; set; } = true;
 
         /// <summary>
-        /// Gets or sets the value for automatic scroll to bottom in the output log on entering Play Mode.
+        /// Gets or sets the value for automatic scroll to bottom in the output log on play mode start.
         /// </summary>
         [DefaultValue(false)]
         [EditorDisplay("Output Log", "Scroll to bottom on On Play "), EditorOrder(470), Tooltip("Scroll the output log view to bottom automatically when Play Mode is entered.")]

@@ -7,6 +7,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Xml;
+using FlaxEditor.CustomEditors.Dedicated;
 using FlaxEditor.GUI.ContextMenu;
 using FlaxEditor.GUI.Input;
 using FlaxEditor.Options;
@@ -214,7 +215,9 @@ namespace FlaxEditor.Windows
             // Setup editor options
             Editor.Options.OptionsChanged += OnEditorOptionsChanged;
             OnEditorOptionsChanged(Editor.Options.Options);
-            
+
+            Editor.PlayModeBeginning += OnPlayModeBeginning;
+
             _output.InputActions.Add(options => options.Search, () => _searchBox.Focus());
             InputActions.Add(options => options.Search, () => _searchBox.Focus());
 
@@ -285,6 +288,12 @@ namespace FlaxEditor.Windows
             _vScroll.Maximum = Mathf.Max(_output.TextSize.Y - _output.Height, _vScroll.Minimum);
 
             if (Editor.Instance.Options.Options.Interface.OutputLogScrollToBottom)
+                _vScroll.TargetValue = _vScroll.Maximum;
+        }
+
+        private void OnPlayModeBeginning()
+        {
+            if (Editor.Instance.Options.Options.Interface.OutputLogBeginPlayScrollToBottom)
                 _vScroll.TargetValue = _vScroll.Maximum;
         }
 
