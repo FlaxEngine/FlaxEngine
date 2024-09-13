@@ -463,8 +463,11 @@ namespace FlaxEditor.Windows
         {
             base.OnSizeChanged();
 
-            // Update scroll range
-            OnOutputTextChanged();
+            if (_hScroll == null || _vScroll == null || _output == null)
+                return;
+
+            _hScroll.Maximum = Mathf.Max(_output.TextSize.X, _hScroll.Minimum);
+            _vScroll.Maximum = Mathf.Max(_output.TextSize.Y - _output.Height, _vScroll.Minimum);
         }
 
         /// <inheritdoc />
