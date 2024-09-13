@@ -209,6 +209,7 @@ namespace FlaxEditor.Windows
             _contextMenu.AddButton("Copy selection", _output.Copy);
             _contextMenu.AddButton("Select All", _output.SelectAll);
             _contextMenu.AddButton(Utilities.Constants.ShowInExplorer, () => FileSystem.ShowFileExplorer(Path.Combine(Globals.ProjectFolder, "Logs")));
+            //aasdasd
             _contextMenu.AddButton("Scroll to bottom", () => { _vScroll.TargetValue = _vScroll.Maximum; }).Icon = Editor.Icons.ArrowDown12;
 
             // Setup editor options
@@ -283,6 +284,9 @@ namespace FlaxEditor.Windows
 
             _hScroll.Maximum = Mathf.Max(_output.TextSize.X, _hScroll.Minimum);
             _vScroll.Maximum = Mathf.Max(_output.TextSize.Y - _output.Height, _vScroll.Minimum);
+
+            if (Editor.Instance.Options.Options.Interface.OutputLogScrollToBottom)
+                _vScroll.TargetValue = _vScroll.Maximum;
         }
 
         private void OnEditorOptionsChanged(EditorOptions options)
@@ -609,7 +613,7 @@ namespace FlaxEditor.Windows
                 var isBottomScroll = _vScroll.Value >= _vScroll.Maximum - 20.0f || wasEmpty;
                 _output.Text = _textBuffer.ToString();
                 _textBufferCount = _entries.Count;
-                if (!_vScroll.IsThumbClicked)
+                if (!_vScroll.IsThumbClicked && !Editor.Instance.Options.Options.Interface.OutputLogScrollToBottom)
                     _vScroll.TargetValue = isBottomScroll ? _vScroll.Maximum : cachedScrollValue;
                 _output.SelectionRange = cachedSelection;
             }
