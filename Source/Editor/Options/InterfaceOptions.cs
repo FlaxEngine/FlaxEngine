@@ -211,10 +211,10 @@ namespace FlaxEditor.Options
         public bool SeparateValueAndUnit { get; set; }
 
         /// <summary>
-        /// Gets or sets the option to put a space between numbers and units for unit formatting.
+        /// Gets or sets tree line visibility.
         /// </summary>
         [DefaultValue(true)]
-        [EditorDisplay("Interface"), EditorOrder(320)]
+        [EditorDisplay("Interface"), EditorOrder(320), Tooltip("Toggles tree line visibility in places like the Scene or Content Panel.")]
         public bool ShowTreeLines { get; set; } = true;
 
         /// <summary>
@@ -369,7 +369,7 @@ namespace FlaxEditor.Options
         public int NumberOfGameClientsToLaunch = 1;
 
         /// <summary>
-        /// Gets or sets the visject connection curvature.
+        /// Gets or sets the curvature of the line connecting to connected visject nodes.
         /// </summary>
         [DefaultValue(1.0f), Range(0.0f, 2.0f)]
         [EditorDisplay("Visject"), EditorOrder(550)]
