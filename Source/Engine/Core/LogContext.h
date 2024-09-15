@@ -9,7 +9,7 @@ class String;
 struct Guid;
 
 /// <summary>
-/// Log context data structure. Contains different kinds of context data for different situtations.
+/// Log context data structure. Contains different kinds of context data for different situations.
 /// </summary>
 API_STRUCT(NoDefault) struct FLAXENGINE_API LogContextData
 {
@@ -54,10 +54,10 @@ API_CLASS(Static) class FLAXENGINE_API LogContext
     API_FUNCTION() static LogContextData Get();
 
     /// <summary>
-    /// Returns a string which represents the current log context on the stack.
+    /// Prints the current log context to the log. Does nothing it 
     /// </summary>
-    /// <returns>The formatted string representing the current log context.</returns>
-    API_FUNCTION() static String GetInfo();
+    /// <param name="verbosity">The verbosity of the log.</param>
+    API_FUNCTION() static void Print(enum class LogType verbosity);
 };
 
 /// <summary>

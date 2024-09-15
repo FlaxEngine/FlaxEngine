@@ -7,6 +7,7 @@
 #include "Loading/ContentLoadingManager.h"
 #include "Loading/Tasks/LoadAssetTask.h"
 #include "Engine/Core/Log.h"
+#include "Engine/Core/LogContext.h"
 #include "Engine/Engine/Engine.h"
 #include "Engine/Threading/Threading.h"
 #include "Engine/Profiler/ProfilerCPU.h"
@@ -587,9 +588,10 @@ bool Asset::IsInternalType() const
 
 bool Asset::onLoad(LoadAssetTask* task)
 {
-    if (task->Asset.Get() != this || Platform::AtomicRead(&_loadingTask) == 0)
     // It may fail when task is cancelled and new one was created later (don't crash but just end with an error)
+    if (task->Asset.Get() != this || Platform::AtomicRead(&_loadingTask) == 0)
         return true;
+    LogContextScope logContext(GetID());
 
     Locker.Lock();
 
