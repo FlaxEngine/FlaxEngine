@@ -35,6 +35,14 @@ namespace FlaxEditor.Surface
             Archetypes = new List<NodeArchetype>(),
         };
 
+        private static readonly string[] _blacklistedTypeNames =
+        {
+            "Newtonsoft.Json.",
+            "System.Array",
+            "System.Linq.Expressions.",
+            "System.Reflection.",
+        };
+
         private static NodesCache _nodesCache = new NodesCache(IterateNodesCache);
         private DragActors _dragActors;
 
@@ -268,8 +276,11 @@ namespace FlaxEditor.Surface
         {
             // Skip Newtonsoft.Json stuff
             var scriptTypeTypeName = scriptType.TypeName;
-            if (scriptTypeTypeName.StartsWith("Newtonsoft.Json."))
-                return;
+            for (var i = 0; i < _blacklistedTypeNames.Length; i++)
+            {
+                if (scriptTypeTypeName.StartsWith(_blacklistedTypeNames[i]))
+                    return;
+            }
             var scriptTypeName = scriptType.Name;
 
             // Enum
