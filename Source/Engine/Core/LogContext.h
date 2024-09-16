@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "Engine/Core/Log.h"
 #include "Engine/Core/Config.h"
 #include "Engine/Scripting/ScriptingType.h"
 
@@ -57,7 +58,7 @@ API_CLASS(Static) class FLAXENGINE_API LogContext
     /// Prints the current log context to the log. Does nothing it 
     /// </summary>
     /// <param name="verbosity">The verbosity of the log.</param>
-    API_FUNCTION() static void Print(enum class LogType verbosity);
+    API_FUNCTION() static void Print(LogType verbosity);
 };
 
 /// <summary>
