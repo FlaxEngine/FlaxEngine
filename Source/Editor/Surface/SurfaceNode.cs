@@ -1116,7 +1116,8 @@ namespace FlaxEditor.Surface
             // Secondary Context Menu
             if (button == MouseButton.Right)
             {
-                if (mouseDownMousePosition != Input.Mouse.Position)
+                float distance = Float2.Distance(mouseDownMousePosition, Input.Mouse.Position);
+                if (distance > 2.5f)
                     return true;
 
                 if (!IsSelected)
