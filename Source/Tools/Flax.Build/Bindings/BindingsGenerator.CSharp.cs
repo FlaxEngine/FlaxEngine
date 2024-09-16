@@ -1459,8 +1459,8 @@ namespace Flax.Build.Bindings
                     public static class NativeToManaged
                     {
                         public static {{classInfo.Name}} ConvertToManaged(IntPtr unmanaged) => Unsafe.As<{{classInfo.Name}}>(ManagedHandleMarshaller.NativeToManaged.ConvertToManaged(unmanaged));
-                        public static IntPtr ConvertToUnmanaged({{classInfo.Name}} managed) => ManagedHandleMarshaller.ManagedToNative.ConvertToUnmanaged(managed);
-                        public static void Free(IntPtr unmanaged) => ManagedHandleMarshaller.NativeToManaged.Free(unmanaged);
+                        public static IntPtr ConvertToUnmanaged({{classInfo.Name}} managed) => managed != null ? ManagedHandle.ToIntPtr(managed, GCHandleType.Weak) : IntPtr.Zero;
+                        public static void Free(IntPtr unmanaged) {}
                     }
                 #if FLAX_EDITOR
                     [HideInEditor]
@@ -1468,8 +1468,8 @@ namespace Flax.Build.Bindings
                     public static class ManagedToNative
                     {
                         public static {{classInfo.Name}} ConvertToManaged(IntPtr unmanaged) => Unsafe.As<{{classInfo.Name}}>(ManagedHandleMarshaller.NativeToManaged.ConvertToManaged(unmanaged));
-                        public static IntPtr ConvertToUnmanaged({{classInfo.Name}} managed) => ManagedHandleMarshaller.ManagedToNative.ConvertToUnmanaged(managed);
-                        public static void Free(IntPtr unmanaged) => ManagedHandleMarshaller.ManagedToNative.Free(unmanaged);
+                        public static IntPtr ConvertToUnmanaged({{classInfo.Name}} managed) => managed != null ? ManagedHandle.ToIntPtr(managed, GCHandleType.Weak) : IntPtr.Zero;
+                        public static void Free(IntPtr unmanaged) {}
                     }
                 #if FLAX_EDITOR
                     [HideInEditor]
