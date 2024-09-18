@@ -42,6 +42,7 @@ namespace FlaxEngine.GUI
         private bool _autoFitText;
         private Float2 _textSize;
         private Float2 _autoFitTextRange = new Float2(0.1f, 100.0f);
+        private Margin _margin;
 
         /// <summary>
         /// The font.
@@ -58,8 +59,11 @@ namespace FlaxEngine.GUI
             set
             {
                 _text = value;
-                _textSize = Float2.Zero;
-                PerformLayout();
+                if (_autoWidth || _autoHeight || _autoFitText)
+                {
+                    _textSize = Float2.Zero;
+                    PerformLayout();
+                }
             }
         }
 
@@ -145,7 +149,18 @@ namespace FlaxEngine.GUI
         /// Gets or sets the margin for the text within the control bounds.
         /// </summary>
         [EditorOrder(70), Tooltip("The margin for the text within the control bounds.")]
-        public Margin Margin { get; set; }
+        public Margin Margin
+        {
+            get => _margin;
+            set
+            {
+                _margin = value;
+                if (_autoWidth || _autoHeight)
+                {
+                    PerformLayout();
+                }
+            }
+        }
 
         /// <summary>
         /// Gets or sets a value indicating whether clip text during rendering.
@@ -219,13 +234,8 @@ namespace FlaxEngine.GUI
         /// Initializes a new instance of the <see cref="Label"/> class.
         /// </summary>
         public Label()
-        : base(0, 0, 100, 20)
+        : this(0, 0, 100, 20)
         {
-            AutoFocus = false;
-            var style = Style.Current;
-            Font = new FontReference(style.FontMedium);
-            TextColor = style.Foreground;
-            TextColorHighlighted = style.Foreground;
         }
 
         /// <inheritdoc />
@@ -234,9 +244,12 @@ namespace FlaxEngine.GUI
         {
             AutoFocus = false;
             var style = Style.Current;
-            Font = new FontReference(style.FontMedium);
-            TextColor = style.Foreground;
-            TextColorHighlighted = style.Foreground;
+            if (style != null)
+            {
+                Font = new FontReference(style.FontMedium);
+                TextColor = style.Foreground;
+                TextColorHighlighted = style.Foreground;
+            }
         }
 
         /// <inheritdoc />
@@ -244,31 +257,24 @@ namespace FlaxEngine.GUI
         {
             base.DrawSelf();
 
-            var rect = new Rectangle(new Float2(Margin.Left, Margin.Top), Size - Margin.Size);
-
             if (ClipText)
                 Render2D.PushClip(new Rectangle(Float2.Zero, Size));
 
+            var rect = new Rectangle(new Float2(Margin.Left, Margin.Top), Size - Margin.Size);
             var color = IsMouseOver || IsNavFocused ? TextColorHighlighted : TextColor;
-
             if (!EnabledInHierarchy)
                 color *= 0.6f;
-
             var scale = 1.0f;
             var hAlignment = HorizontalAlignment;
             var wAlignment = VerticalAlignment;
-            if (_autoFitText)
+            if (_autoFitText && !_textSize.IsZero)
             {
-                if (!_textSize.IsZero)
-                {
-                    scale = (rect.Size / _textSize).MinValue;
-                    scale = Mathf.Clamp(scale, _autoFitTextRange.X, _autoFitTextRange.Y);
-                }
+                scale = (rect.Size / _textSize).MinValue;
+                scale = Mathf.Clamp(scale, _autoFitTextRange.X, _autoFitTextRange.Y);
             }
 
             Font font = GetFont();
             var text = ConvertedText();
-
             Render2D.DrawText(font, Material, text, rect, color, hAlignment, wAlignment, Wrapping, BaseLinesGapScale, scale);
 
             if (ClipText)
