@@ -42,6 +42,7 @@ namespace FlaxEngine.GUI
             float top = _margin.Top;
             float bottom = _margin.Bottom;
             float w = Width - _margin.Width;
+            float maxWidth = w;
             bool hasAnyTop = false, hasAnyBottom = false;
             for (int i = 0; i < _children.Count; i++)
             {
@@ -62,6 +63,7 @@ namespace FlaxEngine.GUI
                         c.Bounds = new Rectangle(_margin.Left + _offset.X, Height - bottom + _offset.Y, cw, h);
                         hasAnyBottom = true;
                     }
+                    maxWidth = Mathf.Max(maxWidth, cw);
                 }
             }
             if (hasAnyTop)
@@ -71,7 +73,13 @@ namespace FlaxEngine.GUI
 
             // Update size
             if (_autoSize)
-                Height = top + bottom;
+            {
+                var size = Size;
+                size.Y = top + bottom;
+                if (!ControlChildSize)
+                    size.X = maxWidth;
+                Size = size;
+            }
         }
     }
 }
