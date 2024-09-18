@@ -22,6 +22,8 @@ namespace FlaxEngine.GUI
             base.PerformLayoutBeforeChildren();
 
             // Pre-set height of all controls
+            if (!ControlChildSize)
+                return;
             float h = Height - _margin.Height;
             for (int i = 0; i < _children.Count; i++)
             {
@@ -47,16 +49,17 @@ namespace FlaxEngine.GUI
                 if (c.Visible)
                 {
                     var w = c.Width;
+                    var ch = ControlChildSize ? h : c.Height;
                     if (Mathf.IsZero(c.AnchorMin.X) && Mathf.IsZero(c.AnchorMax.X))
                     {
-                        c.Bounds = new Rectangle(left + _offset.X, _margin.Top + _offset.Y, w, h);
+                        c.Bounds = new Rectangle(left + _offset.X, _margin.Top + _offset.Y, w, ch);
                         left = c.Right + _spacing;
                         hasAnyLeft = true;
                     }
                     else if (Mathf.IsOne(c.AnchorMin.X) && Mathf.IsOne(c.AnchorMax.X))
                     {
                         right += w + _spacing;
-                        c.Bounds = new Rectangle(Width - right + _offset.X, _margin.Top + _offset.Y, w, h);
+                        c.Bounds = new Rectangle(Width - right + _offset.X, _margin.Top + _offset.Y, w, ch);
                         hasAnyRight = true;
                     }
                 }
