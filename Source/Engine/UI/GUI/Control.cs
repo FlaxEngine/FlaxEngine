@@ -639,6 +639,18 @@ namespace FlaxEngine.GUI
             case NavDirection.Down: return NavTargetDown;
             case NavDirection.Left: return NavTargetLeft;
             case NavDirection.Right: return NavTargetRight;
+            case NavDirection.Next:
+                if (NavTargetRight != null)
+                    return NavTargetRight;
+                if (NavTargetDown != null)
+                    return NavTargetDown;
+                return null;
+            case NavDirection.Previous:
+                if (NavTargetLeft != null)
+                    return NavTargetLeft;
+                if (NavTargetUp != null)
+                    return NavTargetUp;
+                return null;
             default: return null;
             }
         }
