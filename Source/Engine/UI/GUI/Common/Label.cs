@@ -57,12 +57,9 @@ namespace FlaxEngine.GUI
             get => _text;
             set
             {
-                if (_text != value)
-                {
-                    _text = value;
-                    _textSize = Float2.Zero;
-                    PerformLayout();
-                }
+                _text = value;
+                _textSize = Float2.Zero;
+                PerformLayout();
             }
         }
 
@@ -129,15 +126,11 @@ namespace FlaxEngine.GUI
             get => _font;
             set
             {
-                if (_font != value)
+                _font = value;
+                if (_autoWidth || _autoHeight || _autoFitText)
                 {
-                    _font = value;
-
-                    if (_autoWidth || _autoHeight || _autoFitText)
-                    {
-                        _textSize = Float2.Zero;
-                        PerformLayout();
-                    }
+                    _textSize = Float2.Zero;
+                    PerformLayout();
                 }
             }
         }
@@ -161,9 +154,9 @@ namespace FlaxEngine.GUI
         public bool ClipText { get; set; }
 
         /// <summary>
-        /// Gets or sets a value indicating whether set automatic width based on text contents.
+        /// Gets or sets a value indicating whether set automatic width based on text contents. Control size is modified relative to the Pivot.
         /// </summary>
-        [EditorOrder(85), DefaultValue(false), Tooltip("If checked, the control width will be based on text contents.")]
+        [EditorOrder(85), DefaultValue(false), Tooltip("If checked, the control width will be based on text contents. Control size is modified relative to the Pivot.")]
         public bool AutoWidth
         {
             get => _autoWidth;
@@ -178,9 +171,9 @@ namespace FlaxEngine.GUI
         }
 
         /// <summary>
-        /// Gets or sets a value indicating whether set automatic height based on text contents.
+        /// Gets or sets a value indicating whether set automatic height based on text contents. Control size is modified relative to the Pivot.
         /// </summary>
-        [EditorOrder(90), DefaultValue(false), Tooltip("If checked, the control height will be based on text contents.")]
+        [EditorOrder(90), DefaultValue(false), Tooltip("If checked, the control height will be based on text contents. Control size is modified relative to the Pivot.")]
         public bool AutoHeight
         {
             get => _autoHeight;
@@ -336,7 +329,9 @@ namespace FlaxEngine.GUI
                             size.X = _textSize.X + Margin.Width;
                         if (_autoHeight)
                             size.Y = _textSize.Y + Margin.Height;
+                        var pivotRelative = PivotRelative;
                         Size = size;
+                        PivotRelative = pivotRelative;
                     }
                 }
             }

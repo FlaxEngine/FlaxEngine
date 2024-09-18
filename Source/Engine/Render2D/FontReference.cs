@@ -90,7 +90,7 @@ namespace FlaxEngine
         /// <summary>
         /// The size of the font characters.
         /// </summary>
-        [EditorOrder(10), Limit(1, 500, 0.1f), Tooltip("The size of the font characters.")]
+        [EditorOrder(10), Limit(1, 500, 0.5f), Tooltip("The size of the font characters.")]
         public float Size
         {
             get => _size;

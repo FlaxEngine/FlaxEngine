@@ -296,6 +296,16 @@ namespace FlaxEditor.CustomEditors
             _values.Set(_parent.Values, value);
         }
 
+        private bool SyncParent()
+        {
+            // TODO: add attribute for types that want to sync their contents with a parent
+            var type = Values.Type.Type;
+            if (type == typeof(LocalizedString) ||
+                type == typeof(FontReference))
+                return true;
+            return _parent != null && !(_parent is SyncPointEditor);
+        }
+
         internal virtual void RefreshInternal()
         {
             if (_values == null)
@@ -317,7 +327,7 @@ namespace FlaxEditor.CustomEditors
 
                     // Propagate values up (eg. when member of structure gets modified, also structure should be updated as a part of the other object)
                     var obj = _parent;
-                    while (obj._parent != null && !(obj._parent is SyncPointEditor))
+                    while (obj.SyncParent())
                     {
                         obj.Values.Set(obj._parent.Values, obj.Values);
                         obj = obj._parent;
