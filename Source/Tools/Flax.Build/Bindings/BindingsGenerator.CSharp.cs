@@ -1542,7 +1542,7 @@ namespace Flax.Build.Bindings
                     var structIndent = "";
                     if (buildData.Target != null & buildData.Target.IsEditor)
                         structContents.Append(structIndent).AppendLine("[HideInEditor]");
-                    structContents.Append(structIndent).AppendLine("[StructLayout(LayoutKind.Sequential)]");
+                    structContents.Append(structIndent).AppendLine("[StructLayout(LayoutKind.Sequential, Pack = 2)]");
                     structContents.Append(structIndent).Append("public struct ").Append(structureInfo.Name).Append("Internal");
                     if (structureInfo.BaseType != null && structureInfo.IsPod)
                         structContents.Append(" : ").Append(GenerateCSharpNativeToManaged(buildData, new TypeInfo { Type = structureInfo.BaseType.Name }, structureInfo));
