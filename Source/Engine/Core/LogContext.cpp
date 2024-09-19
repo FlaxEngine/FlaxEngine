@@ -9,6 +9,7 @@
 #include "Engine/Scripting/Scripting.h"
 #include "Engine/Scripting/Script.h"
 #include "Engine/Content/Asset.h"
+#include "Engine/Content/Content.h"
 #include "Engine/Level/Actor.h"
 #include "Engine/Threading/ThreadLocal.h"
 
@@ -82,6 +83,10 @@ void LogContext::Print(LogType verbosity)
                 {
                     msg.AppendFormat(TEXT("object {} ({})"), String(typeName), context.ObjectID);
                 }
+            }
+            else if (Asset* asset = Content::GetAsset(context.ObjectID))
+            {
+                msg.AppendFormat(TEXT("asset '{}' ({}, {})"), asset->GetPath(), asset->GetTypeName(), context.ObjectID);
             }
             else
             {
