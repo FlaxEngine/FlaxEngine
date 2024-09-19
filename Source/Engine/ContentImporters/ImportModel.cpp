@@ -5,6 +5,7 @@
 #if COMPILE_WITH_ASSETS_IMPORTER
 
 #include "Engine/Core/Log.h"
+#include "Engine/Core/Cache.h"
 #include "Engine/Core/Collections/Sorting.h"
 #include "Engine/Core/Collections/ArrayExtensions.h"
 #include "Engine/Serialization/MemoryWriteStream.h"
@@ -765,6 +766,7 @@ CreateAssetResult ImportModel::CreatePrefab(CreateAssetContext& context, ModelDa
         // Link with object from prefab (if reimporting)
         if (prefab)
         {
+            rapidjson_flax::StringBuffer buffer;
             for (Actor* a : nodeActors)
             {
                 for (const auto& i : prefab->ObjectsCache)
@@ -774,6 +776,32 @@ CreateAssetResult ImportModel::CreatePrefab(CreateAssetContext& context, ModelDa
                     auto* o = (Actor*)i.Value;
                     if (o->GetName() != a->GetName()) // Name match
                         continue;
+
+                    // Preserve local changes made in the prefab
+                    {
+                        // Serialize
+                        buffer.Clear();
+                        CompactJsonWriter writer(buffer);
+                        writer.StartObject();
+                        const void* defaultInstance = o->GetType().GetDefaultInstance();
+                        o->Serialize(writer, defaultInstance);
+                        writer.EndObject();
+
+                        // Parse json
+                        rapidjson_flax::Document document;
+                        document.Parse(buffer.GetString(), buffer.GetSize());
+
+                        // Strip unwanted data
+                        document.RemoveMember("ID");
+                        document.RemoveMember("ParentID");
+                        document.RemoveMember("PrefabID");
+                        document.RemoveMember("PrefabObjectID");
+                        document.RemoveMember("Name");
+
+                        // Deserialize object
+                        auto modifier = Cache::ISerializeModifier.Get();
+                        a->Deserialize(document, &*modifier);
+                    }
 
                     // Mark as this object already exists in prefab so will be preserved when updating it
                     a->LinkPrefab(o->GetPrefabID(), o->GetPrefabObjectID());
