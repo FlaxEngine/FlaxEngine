@@ -33,6 +33,7 @@ DECLARE_GBUFFERDATA_ACCESS(GBuffer)
 #define View_Mode_MotionVectors 15
 #define View_Mode_SubsurfaceColor 16
 #define View_Mode_Unlit 17
+#define View_Mode_Custom_Depth 27
 
 float3 GetShadingModelColor(GBufferSample gBuffer)
 {
@@ -58,6 +59,7 @@ float4 PS_DebugView(Quad_VS2PS input) : SV_Target
 		case View_Mode_Diffuse: result = gBuffer.Color; break;
 		case View_Mode_Normals: result = gBuffer.Normal * 0.5 + 0.5; break;
 		case View_Mode_Depth: result = gBuffer.ViewPos.z / GBuffer.ViewFar; break;
+		case View_Mode_Custom_Depth: result = CustomDepth.Sample(SamplerLinearClamp, input.TexCoord).r; break;
 		case View_Mode_AmbientOcclusion: result = gBuffer.AO; break;
 		case View_Mode_Metalness: result = gBuffer.Metalness; break;
 		case View_Mode_Rougness: result = gBuffer.Roughness; break;

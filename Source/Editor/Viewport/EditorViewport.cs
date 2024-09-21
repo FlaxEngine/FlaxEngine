@@ -1955,6 +1955,7 @@ namespace FlaxEditor.Viewport
             new ViewModeOptions(ViewMode.LightBuffer, "Light Buffer"),
             new ViewModeOptions(ViewMode.Reflections, "Reflections Buffer"),
             new ViewModeOptions(ViewMode.Depth, "Depth Buffer"),
+            new ViewModeOptions(ViewMode.CustomDepth, "Custom Depth Buffer"),
             new ViewModeOptions("GBuffer", new[]
             {
                 new ViewModeOptions(ViewMode.Diffuse, "Diffuse"),
@@ -2001,8 +2002,17 @@ namespace FlaxEditor.Viewport
             var ccm = (ContextMenu)cm;
             foreach (var e in ccm.Items)
             {
-                if (e is ContextMenuButton b && b.Tag is ViewMode v)
-                    b.Icon = Task.ViewMode == v ? Style.Current.CheckBoxTick : SpriteHandle.Invalid;
+                if (e is not ContextMenuButton b)
+                    continue;
+
+                if (b.Tag is not ViewMode v)
+                    continue;
+
+                b.Icon = Task.ViewMode == v ? Style.Current.CheckBoxTick : SpriteHandle.Invalid;
+
+                // Special cases for conditional debug modes
+                if (v == ViewMode.CustomDepth)
+                    b.Visible = GameSettings.Load<GraphicsSettings>().EnableCustomDepth;
             }
         }
 

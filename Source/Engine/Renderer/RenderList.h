@@ -196,6 +196,11 @@ API_ENUM() enum class DrawCallsListType
     /// </summary>
     MotionVectors,
 
+    /// <summary>
+    /// Custom depth buffer rendering.
+    /// </summary>
+    CustomDepth,
+
     MAX,
 };
 

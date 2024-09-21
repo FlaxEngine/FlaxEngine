@@ -349,7 +349,7 @@ void StaticModel::Draw(RenderContext& renderContext)
     draw.Lightmap = _scene ? _scene->LightmapsData.GetReadyLightmap(Lightmap.TextureIndex) : nullptr;
     draw.LightmapUVs = &Lightmap.UVsArea;
     draw.Flags = _staticFlags;
-    draw.DrawModes = DrawModes;
+    draw.DrawModes = DrawModes | (GetDrawCustomDepth() ? DrawPass::CustomDepth : DrawPass::None);
     draw.Bounds = _sphere;
     draw.Bounds.Center -= renderContext.View.Origin;
     draw.PerInstanceRandom = GetPerInstanceRandom();
@@ -387,7 +387,7 @@ void StaticModel::Draw(RenderContextBatch& renderContextBatch)
     draw.Lightmap = _scene ? _scene->LightmapsData.GetReadyLightmap(Lightmap.TextureIndex) : nullptr;
     draw.LightmapUVs = &Lightmap.UVsArea;
     draw.Flags = _staticFlags;
-    draw.DrawModes = DrawModes;
+    draw.DrawModes = DrawModes | (GetDrawCustomDepth() ? DrawPass::CustomDepth : DrawPass::None);
     draw.Bounds = _sphere;
     draw.Bounds.Center -= renderContext.View.Origin;
     draw.PerInstanceRandom = GetPerInstanceRandom();

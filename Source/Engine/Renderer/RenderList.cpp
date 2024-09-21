@@ -489,6 +489,10 @@ void RenderList::AddDrawCall(const RenderContext& renderContext, DrawPass drawMo
     {
         DrawCallsLists[(int32)DrawCallsListType::MotionVectors].Indices.Add(index);
     }
+    if ((drawModes & DrawPass::CustomDepth) != DrawPass::None)
+    {
+        DrawCallsLists[(int32)DrawCallsListType::CustomDepth].Indices.Add(index);
+    }
 }
 
 void RenderList::AddDrawCall(const RenderContextBatch& renderContextBatch, DrawPass drawModes, StaticFlags staticFlags, ShadowsCastingMode shadowsMode, const BoundingSphere& bounds, DrawCall& drawCall, bool receivesDecals, int16 sortOrder)
@@ -531,6 +535,10 @@ void RenderList::AddDrawCall(const RenderContextBatch& renderContextBatch, DrawP
         if ((drawModes & DrawPass::MotionVectors) != DrawPass::None && (staticFlags & StaticFlags::Transform) == StaticFlags::None)
         {
             DrawCallsLists[(int32)DrawCallsListType::MotionVectors].Indices.Add(index);
+        }
+        if ((drawModes & DrawPass::CustomDepth) != DrawPass::None)
+        {
+            DrawCallsLists[(int32)DrawCallsListType::CustomDepth].Indices.Add(index);
         }
     }
     for (int32 i = 1; i < renderContextBatch.Contexts.Count(); i++)
@@ -649,7 +657,7 @@ void RenderList::SortDrawCalls(const RenderContext& renderContext, bool reverseD
 
 FORCE_INLINE bool CanUseInstancing(DrawPass pass)
 {
-    return pass == DrawPass::GBuffer || pass == DrawPass::Depth;
+    return pass == DrawPass::GBuffer || pass == DrawPass::Depth || pass == DrawPass::CustomDepth;
 }
 
 void RenderList::ExecuteDrawCalls(const RenderContext& renderContext, DrawCallsList& list, const RenderListBuffer<DrawCall>& drawCalls, GPUTextureView* input)

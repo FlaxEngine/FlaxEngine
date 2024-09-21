@@ -28,7 +28,7 @@ PACK_STRUCT(struct DeferredMaterialShaderData {
 
 DrawPass DeferredMaterialShader::GetDrawModes() const
 {
-    return DrawPass::Depth | DrawPass::GBuffer | DrawPass::GlobalSurfaceAtlas | DrawPass::MotionVectors | DrawPass::QuadOverdraw;
+    return DrawPass::Depth | DrawPass::CustomDepth | DrawPass::GBuffer | DrawPass::GlobalSurfaceAtlas | DrawPass::MotionVectors | DrawPass::QuadOverdraw;
 }
 
 bool DeferredMaterialShader::CanUseLightmap() const
@@ -233,12 +233,15 @@ bool DeferredMaterialShader::Load()
         psDesc.PS = nullptr;
     }
     _cache.Depth.Init(psDesc);
+    _cache.CustomDepth.Init(psDesc);
     psDesc.VS = instancedDepthPassVS;
     _cacheInstanced.Depth.Init(psDesc);
+    _cacheInstanced.CustomDepth.Init(psDesc);
 
     // Depth Pass with skinning
     psDesc.VS = _shader->GetVS("VS_Skinned");
     _cache.DepthSkinned.Init(psDesc);
+    _cache.CustomDepthSkinned.Init(psDesc);
 
     return failed;
 }
