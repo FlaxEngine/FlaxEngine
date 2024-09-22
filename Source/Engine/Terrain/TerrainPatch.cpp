@@ -1220,8 +1220,8 @@ Color32* TerrainPatch::GetSplatMapData(int32 index)
 void TerrainPatch::ClearSplatMapCache()
 {
     PROFILE_CPU_NAMED("Terrain.ClearSplatMapCache");
-    if (_cachedSplatMap)
-        _cachedSplatMap->Clear();
+    for (int32 i = 0; i < TERRAIN_MAX_SPLATMAPS_COUNT; i++)
+        _cachedSplatMap[i].Clear();
 }
 
 void TerrainPatch::ClearCache()
