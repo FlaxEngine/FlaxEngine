@@ -14,6 +14,11 @@ namespace FlaxEditor.GUI.Docking
     {
         private DockPanel _panel;
         private double _dragEnterTime = -1;
+    #if PLATFORM_WINDOWS
+        private const bool HideTabForSingleTab = true;
+    #else
+        private const bool HideTabForSingleTab = false;
+    #endif
 
         /// <summary>
         /// The is mouse down flag (left button).
@@ -51,7 +56,7 @@ namespace FlaxEditor.GUI.Docking
         public DockWindow StartDragAsyncWindow;
 
         private Rectangle HeaderRectangle => new Rectangle(0, 0, Width, DockPanel.DefaultHeaderHeight);
-        private bool IsSingleFloatingWindow => _panel.TabsCount == 1 && _panel.IsFloating && _panel.ChildPanelsCount == 0;
+        private bool IsSingleFloatingWindow => HideTabForSingleTab && _panel.TabsCount == 1 && _panel.IsFloating && _panel.ChildPanelsCount == 0;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="DockPanelProxy"/> class.
