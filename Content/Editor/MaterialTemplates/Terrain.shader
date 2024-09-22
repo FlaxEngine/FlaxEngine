@@ -3,6 +3,7 @@
 
 #define MATERIAL 1
 #define USE_PER_VIEW_CONSTANTS 1
+#define LoadObjectFromCB(var) var = GetObject()
 @3
 // Enables/disables smooth terrain chunks LOD transitions (with morphing higher LOD near edges to the lower LOD in the neighbour)
 #define USE_SMOOTH_LOD_TRANSITION 1
@@ -161,8 +162,6 @@ ObjectData GetObject()
     object.LightmapArea = LightmapArea;
     return object;
 }
-
-#define LoadObjectFromCB(var) var = GetObject()
 
 MaterialInput GetMaterialInput(PixelInput input)
 {

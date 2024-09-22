@@ -119,6 +119,7 @@ ObjectData LoadObject(Buffer<float4> objectsBuffer, uint objectIndex)
     return object;
 }
 
+#ifndef LoadObjectFromCB
 // Loads the object data from the constant buffer into the variable
 #define LoadObjectFromCB(var) \
     var = (ObjectData)0; \
@@ -129,6 +130,7 @@ ObjectData LoadObject(Buffer<float4> objectsBuffer, uint objectIndex)
     var.WorldDeterminantSign = WorldDeterminantSign; \
     var.LODDitherFactor = LODDitherFactor; \
     var.LightmapArea = LightmapArea;
+#endif
 
 // Material properties
 struct Material
