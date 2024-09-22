@@ -610,7 +610,8 @@ Array<Guid> ManagedEditor::GetAssetReferences(const Guid& assetId)
     Array<Guid> result;
     if (auto* asset = Content::Load<Asset>(assetId))
     {
-        asset->GetReferences(result);
+        Array<String> files;
+        asset->GetReferences(result, files);
     }
     return result;
 }
