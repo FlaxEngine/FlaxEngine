@@ -1119,9 +1119,9 @@ const Array<MClass*>& MClass::GetInterfaces() const
     return _interfaces;
 }
 
-bool MClass::HasAttribute(const MClass* monoClass) const
+bool MClass::HasAttribute(const MClass* klass) const
 {
-    return GetCustomAttribute(this, monoClass) != nullptr;
+    return GetCustomAttribute(this, klass) != nullptr;
 }
 
 bool MClass::HasAttribute() const
@@ -1129,9 +1129,9 @@ bool MClass::HasAttribute() const
     return !GetAttributes().IsEmpty();
 }
 
-MObject* MClass::GetAttribute(const MClass* monoClass) const
+MObject* MClass::GetAttribute(const MClass* klass) const
 {
-    return (MObject*)GetCustomAttribute(this, monoClass);
+    return (MObject*)GetCustomAttribute(this, klass);
 }
 
 const Array<MObject*>& MClass::GetAttributes() const
@@ -1185,7 +1185,7 @@ MMethod* MEvent::GetRemoveMethod() const
     return nullptr; // TODO: implement MEvent in .NET
 }
 
-bool MEvent::HasAttribute(MClass* monoClass) const
+bool MEvent::HasAttribute(const MClass* klass) const
 {
     return false; // TODO: implement MEvent in .NET
 }
@@ -1195,7 +1195,7 @@ bool MEvent::HasAttribute() const
     return false; // TODO: implement MEvent in .NET
 }
 
-MObject* MEvent::GetAttribute(MClass* monoClass) const
+MObject* MEvent::GetAttribute(const MClass* klass) const
 {
     return nullptr; // TODO: implement MEvent in .NET
 }
@@ -1307,7 +1307,7 @@ void MField::SetValue(MObject* instance, void* value) const
     CallStaticMethod<void, void*, void*, void*>(FieldSetValuePtr, instance, _handle, value);
 }
 
-bool MField::HasAttribute(MClass* monoClass) const
+bool MField::HasAttribute(const MClass* klass) const
 {
     // TODO: implement MField attributes in .NET
     return false;
@@ -1319,7 +1319,7 @@ bool MField::HasAttribute() const
     return false;
 }
 
-MObject* MField::GetAttribute(MClass* monoClass) const
+MObject* MField::GetAttribute(const MClass* klass) const
 {
     // TODO: implement MField attributes in .NET
     return nullptr;
@@ -1469,7 +1469,7 @@ bool MMethod::GetParameterIsOut(int32 paramIdx) const
     return CallStaticMethod<bool, void*, int>(GetMethodParameterIsOutPtr, _handle, paramIdx);
 }
 
-bool MMethod::HasAttribute(MClass* monoClass) const
+bool MMethod::HasAttribute(const MClass* klass) const
 {
     // TODO: implement MMethod attributes in .NET
     return false;
@@ -1481,7 +1481,7 @@ bool MMethod::HasAttribute() const
     return false;
 }
 
-MObject* MMethod::GetAttribute(MClass* monoClass) const
+MObject* MMethod::GetAttribute(const MClass* klass) const
 {
     // TODO: implement MMethod attributes in .NET
     return nullptr;
@@ -1546,7 +1546,7 @@ void MProperty::SetValue(MObject* instance, void* value, MObject** exception) co
     _setMethod->Invoke(instance, params, exception);
 }
 
-bool MProperty::HasAttribute(MClass* monoClass) const
+bool MProperty::HasAttribute(const MClass* klass) const
 {
     // TODO: implement MProperty attributes in .NET
     return false;
@@ -1558,7 +1558,7 @@ bool MProperty::HasAttribute() const
     return false;
 }
 
-MObject* MProperty::GetAttribute(MClass* monoClass) const
+MObject* MProperty::GetAttribute(const MClass* klass) const
 {
     // TODO: implement MProperty attributes in .NET
     return nullptr;
