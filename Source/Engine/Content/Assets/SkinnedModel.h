@@ -11,7 +11,7 @@
 class StreamSkinnedModelLODTask;
 
 /// <summary>
-/// Skinned model asset that contains model object made of meshes that can be rendered on the GPU using skeleton bones skinning.
+/// An asset that stores skinned model data, which can have animations applied to it.
 /// </summary>
 API_CLASS(NoSpawn) class FLAXENGINE_API SkinnedModel : public ModelBase
 {
