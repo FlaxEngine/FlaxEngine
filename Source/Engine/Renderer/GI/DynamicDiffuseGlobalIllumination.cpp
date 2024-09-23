@@ -757,43 +757,51 @@ bool DynamicDiffuseGlobalIlluminationPass::Render(RenderContext& renderContext, 
         if (_debugModel && _debugModel->IsLoaded() && _debugModel->CanBeRendered() && _debugMaterial && _debugMaterial->IsLoaded())
         {
             RenderContext debugRenderContext(renderContext);
-            debugRenderContext.List = RenderList::GetFromPool();
-            debugRenderContext.View.Pass = DrawPass::GBuffer;
-            debugRenderContext.View.Prepare(debugRenderContext);
             Matrix world;
             Matrix::Scaling(Float3(0.2f), world);
             const Mesh& debugMesh = _debugModel->LODs[0].Meshes[0];
-            for (int32 probeIndex = 0; probeIndex < ddgiData.ProbesCountTotal; probeIndex++)
-                debugMesh.Draw(debugRenderContext, _debugMaterial, world, StaticFlags::None, true, DrawPass::GBuffer, (float)probeIndex);
-            debugRenderContext.List->SortDrawCalls(debugRenderContext, false, DrawCallsListType::GBuffer);
-            context->SetViewportAndScissors(debugRenderContext.View.ScreenSize.X, debugRenderContext.View.ScreenSize.Y);
-            GPUTextureView* targetBuffers[5] =
+            constexpr int32 maxProbesPerDrawing = 32 * 1024;
+            int32 probesDrawingStart = 0;
+            while (probesDrawingStart < ddgiData.ProbesCountTotal)
             {
-                lightBuffer,
-                renderContext.Buffers->GBuffer0->View(),
-                renderContext.Buffers->GBuffer1->View(),
-                renderContext.Buffers->GBuffer2->View(),
-                renderContext.Buffers->GBuffer3->View(),
-            };
-            context->SetRenderTarget(*renderContext.Buffers->DepthBuffer, ToSpan(targetBuffers, ARRAY_COUNT(targetBuffers)));
-            {
-                // Pass DDGI data to the material
-                _debugMaterial->SetParameterValue(TEXT("ProbesData"), Variant(ddgiData.ProbesData));
-#if DDGI_DEBUG_INSTABILITY
-                _debugMaterial->SetParameterValue(TEXT("ProbesIrradiance"), Variant(ddgiData.ProbesInstability));
-#else
-                _debugMaterial->SetParameterValue(TEXT("ProbesIrradiance"), Variant(ddgiData.ProbesIrradiance));
-#endif
-                _debugMaterial->SetParameterValue(TEXT("ProbesDistance"), Variant(ddgiData.ProbesDistance));
-                auto cb = _debugMaterial->GetShader()->GetCB(3);
-                if (cb)
+                debugRenderContext.List = RenderList::GetFromPool();
+                debugRenderContext.View.Pass = DrawPass::GBuffer;
+                debugRenderContext.View.Prepare(debugRenderContext);
+                // TODO: refactor this into BatchedDrawCalls for faster draw calls processing
+                const int32 probesDrawingEnd = Math::Min(probesDrawingStart + maxProbesPerDrawing, ddgiData.ProbesCountTotal);
+                for (int32 probeIndex = probesDrawingStart; probeIndex < probesDrawingEnd; probeIndex++)
+                    debugMesh.Draw(debugRenderContext, _debugMaterial, world, StaticFlags::None, true, DrawPass::GBuffer, (float)probeIndex);
+                debugRenderContext.List->SortDrawCalls(debugRenderContext, false, DrawCallsListType::GBuffer);
+                context->SetViewportAndScissors(debugRenderContext.View.ScreenSize.X, debugRenderContext.View.ScreenSize.Y);
+                GPUTextureView* targetBuffers[5] =
                 {
-                    context->UpdateCB(cb, &ddgiData.Result.Constants);
-                    context->BindCB(3, cb);
+                    lightBuffer,
+                    renderContext.Buffers->GBuffer0->View(),
+                    renderContext.Buffers->GBuffer1->View(),
+                    renderContext.Buffers->GBuffer2->View(),
+                    renderContext.Buffers->GBuffer3->View(),
+                };
+                context->SetRenderTarget(*renderContext.Buffers->DepthBuffer, ToSpan(targetBuffers, ARRAY_COUNT(targetBuffers)));
+                {
+                    // Pass DDGI data to the material
+                    _debugMaterial->SetParameterValue(TEXT("ProbesData"), Variant(ddgiData.ProbesData));
+    #if DDGI_DEBUG_INSTABILITY
+                    _debugMaterial->SetParameterValue(TEXT("ProbesIrradiance"), Variant(ddgiData.ProbesInstability));
+    #else
+                    _debugMaterial->SetParameterValue(TEXT("ProbesIrradiance"), Variant(ddgiData.ProbesIrradiance));
+    #endif
+                    _debugMaterial->SetParameterValue(TEXT("ProbesDistance"), Variant(ddgiData.ProbesDistance));
+                    auto cb = _debugMaterial->GetShader()->GetCB(3);
+                    if (cb)
+                    {
+                        context->UpdateCB(cb, &ddgiData.Result.Constants);
+                        context->BindCB(3, cb);
+                    }
                 }
+                debugRenderContext.List->ExecuteDrawCalls(debugRenderContext, DrawCallsListType::GBuffer);
+                RenderList::ReturnToPool(debugRenderContext.List);
+                probesDrawingStart = probesDrawingEnd;
             }
-            debugRenderContext.List->ExecuteDrawCalls(debugRenderContext, DrawCallsListType::GBuffer);
-            RenderList::ReturnToPool(debugRenderContext.List);
         }
     }
 #endif
