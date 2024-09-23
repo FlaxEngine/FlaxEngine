@@ -1092,7 +1092,17 @@ bool Level::loadScene(rapidjson_flax::Value& data, int32 engineBuild, Scene** ou
         ScopeLock lock(ScenesLock);
         Scenes.Add(scene);
         SceneBeginData beginData;
-        scene->BeginPlay(&beginData);
+        SceneObject** objects = sceneObjects->Get();
+        for (int32 i = 0; i < sceneObjects->Count(); i++)
+        {
+            SceneObject* obj = objects[i];
+            if (obj)
+            {
+                Actor* actor = dynamic_cast<Actor*>(obj);
+                if (actor)
+                    actor->BeginPlay(&beginData);
+            }
+        }
         beginData.OnDone();
     }
 

@@ -884,14 +884,6 @@ void Actor::BeginPlay(SceneBeginData* data)
             e->BeginPlay(data);
     }
 
-    // Update children
-    for (int32 i = 0; i < Children.Count(); i++)
-    {
-        auto e = Children.Get()[i];
-        if (!e->IsDuringPlay())
-            e->BeginPlay(data);
-    }
-
     // Fire events for scripting
     if (IsActiveInHierarchy() && GetScene() && !_isEnabled)
     {
