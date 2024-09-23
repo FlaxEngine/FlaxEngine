@@ -109,6 +109,8 @@ namespace FlaxEngine
         public static T[] GetScripts<T>() where T : Script
         {
             var scripts = GetScripts(typeof(T));
+            if (typeof(T) == typeof(Script))
+                return (T[])scripts;
             if (scripts.Length == 0)
                 return Array.Empty<T>();
             var result = new T[scripts.Length];
@@ -126,6 +128,8 @@ namespace FlaxEngine
         public static T[] GetActors<T>(bool activeOnly = false) where T : Actor
         {
             var actors = GetActors(typeof(T), activeOnly);
+            if (typeof(T) == typeof(Actor))
+                return (T[])actors;
             if (actors.Length == 0)
                 return Array.Empty<T>();
             var result = new T[actors.Length];
