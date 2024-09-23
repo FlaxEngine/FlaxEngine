@@ -5,7 +5,6 @@ using System.IO;
 using FlaxEditor.Content;
 using FlaxEditor.GUI.Drag;
 using FlaxEditor.Scripting;
-using FlaxEditor.Utilities;
 using FlaxEngine;
 using FlaxEngine.GUI;
 using FlaxEngine.Utilities;
@@ -151,7 +150,7 @@ namespace FlaxEditor.GUI
                                       TextAlignment.Center);
                     Render2D.DrawText(
                                       style.FontSmall,
-                                      $"{TypeUtils.GetTypeDisplayName(Validator.AssetType.Type)}",
+                                      $"{Validator.AssetType.Type.GetTypeDisplayName()}",
                                       new Rectangle(button1Rect.Right + 2, ButtonsSize + 2, sizeForTextLeft, ButtonsSize),
                                       style.ForegroundGrey,
                                       TextAlignment.Near,
@@ -180,7 +179,7 @@ namespace FlaxEditor.GUI
                                       TextAlignment.Center);
                     Render2D.DrawText(
                                       style.FontSmall,
-                                      $"{TypeUtils.GetTypeDisplayName(Validator.AssetType.Type)}",
+                                      $"{Validator.AssetType.Type.GetTypeDisplayName()}",
                                       new Rectangle(button1Rect.Right + 2, ButtonsSize + 2, sizeForTextLeft, ButtonsSize),
                                       style.ForegroundGrey,
                                       TextAlignment.Near,
@@ -204,7 +203,7 @@ namespace FlaxEditor.GUI
                                       TextAlignment.Center);
                     Render2D.DrawText(
                                       style.FontSmall,
-                                      $"{TypeUtils.GetTypeDisplayName(Validator.AssetType.Type)}",
+                                      $"{Validator.AssetType.Type.GetTypeDisplayName()}",
                                       new Rectangle(button1Rect.Right + 2, ButtonsSize + 2, sizeForTextLeft, ButtonsSize),
                                       style.ForegroundGrey,
                                       TextAlignment.Near,

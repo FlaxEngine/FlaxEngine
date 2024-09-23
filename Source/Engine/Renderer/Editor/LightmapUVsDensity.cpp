@@ -18,7 +18,7 @@
 #include "Engine/Level/Scene/Scene.h"
 #include "Engine/Level/Actors/StaticModel.h"
 
-PACK_STRUCT(struct LightmapUVsDensityMaterialShaderData {
+GPU_CB_STRUCT(LightmapUVsDensityMaterialShaderData {
     Matrix ViewProjectionMatrix;
     Matrix WorldMatrix;
     Rectangle LightmapArea;
@@ -73,7 +73,7 @@ void LightmapUVsDensityMaterialShader::Bind(BindParameters& params)
 {
     // Prepare
     auto context = params.GPUContext;
-    auto& drawCall = *params.FirstDrawCall;
+    auto& drawCall = *params.DrawCall;
 
     // Setup
     auto shader = _shader->GetShader();

@@ -1074,9 +1074,12 @@ void Actor::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)
     // StaticFlags update - added StaticFlags::Navigation
     // [Deprecated on 17.05.2020, expires on 17.05.2021]
     if (modifier->EngineBuild < 6178 && (int32)_staticFlags == (1 + 2 + 4))
-    {
         _staticFlags |= StaticFlags::Navigation;
-    }
+
+    // StaticFlags update - added StaticFlags::Shadow
+    // [Deprecated on 17.05.2020, expires on 17.05.2021]
+    if (modifier->EngineBuild < 6601 && (int32)_staticFlags == (1 + 2 + 4 + 8))
+        _staticFlags |= StaticFlags::Shadow;
 
     const auto tag = stream.FindMember("Tag");
     if (tag != stream.MemberEnd())

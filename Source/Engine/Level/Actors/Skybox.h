@@ -70,6 +70,7 @@ public:
 
     // [ISkyRenderer]
     bool IsDynamicSky() const override;
+    float GetIndirectLightingIntensity() const override;
     void ApplySky(GPUContext* context, RenderContext& renderContext, const Matrix& world) override;
 
 protected:

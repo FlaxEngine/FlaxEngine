@@ -42,7 +42,6 @@ public:
     /// <summary>
     /// Gets graphics device handle
     /// </summary>
-    /// <returns>Graphics device</returns>
     FORCE_INLINE GPUDevice* GetDevice() const
     {
         return GPU->GetDevice();
@@ -51,7 +50,6 @@ public:
     /// <summary>
     /// Gets current synchronization point of that context (CPU position, GPU has some latency)
     /// </summary>
-    /// <returns>Context sync point</returns>
     FORCE_INLINE GPUSyncPoint GetCurrentSyncPoint() const
     {
         return _currentSyncPoint;
@@ -60,7 +58,6 @@ public:
     /// <summary>
     /// Gets total amount of tasks done by this context
     /// </summary>
-    /// <returns>Done tasks count</returns>
     FORCE_INLINE int32 GetTotalTasksDoneCount() const
     {
         return _totalTasksDoneCount;

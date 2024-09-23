@@ -132,3 +132,36 @@ public:
         this->_static = text;
     }
 };
+
+template<typename CharType = Char>
+class StringAsTerminated
+{
+protected:
+    const CharType* _static = nullptr;
+    CharType* _dynamic = nullptr;
+
+public:
+    StringAsTerminated(const CharType* str, int32 length)
+    {
+        if (length != 0 && str[length] == 0) // Unsafe to access out of bounds...
+        {
+            _static = str;
+        }
+        else
+        {
+            _dynamic = (CharType*)Allocator::Allocate((length + 1) * sizeof(CharType));
+            Platform::MemoryCopy(_dynamic, str, length * sizeof(CharType));
+            _dynamic[length] = 0;
+        }
+    }
+
+    ~StringAsTerminated()
+    {
+        Allocator::Free(_dynamic);
+    }
+
+    operator const CharType*() const
+    {
+        return _static ? _static : _dynamic;
+    }
+};

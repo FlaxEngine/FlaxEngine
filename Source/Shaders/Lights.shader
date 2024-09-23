@@ -60,8 +60,7 @@ void PS_Directional(Quad_VS2PS input, out float4 output : SV_Target0)
 
 	// Sample shadow mask
 	float4 shadowMask = 1;
-	BRANCH
-	if (Light.CastShadows > 0)
+	if (Light.ShadowsBufferAddress != 0)
 	{
 		shadowMask = SAMPLE_RT(Shadow, input.TexCoord);
 	}
@@ -97,8 +96,7 @@ void PS_Point(Model_VS2PS input, out float4 output : SV_Target0)
 
 	// Sample shadow mask
 	float4 shadowMask = 1;
-	BRANCH
-	if (Light.CastShadows > 0)
+	if (Light.ShadowsBufferAddress != 0)
 	{
 		shadowMask = SAMPLE_RT(Shadow, uv);
 	}
@@ -139,8 +137,7 @@ void PS_Spot(Model_VS2PS input, out float4 output : SV_Target0)
 
 	// Sample shadow mask
 	float4 shadowMask = 1;
-	BRANCH
-	if (Light.CastShadows > 0)
+	if (Light.ShadowsBufferAddress != 0)
 	{
 		shadowMask = SAMPLE_RT(Shadow, uv);
 	}

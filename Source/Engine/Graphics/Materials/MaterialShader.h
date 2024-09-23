@@ -10,12 +10,18 @@
 /// <summary>
 /// Current materials shader version.
 /// </summary>
-#define MATERIAL_GRAPH_VERSION 163
+#define MATERIAL_GRAPH_VERSION 169
 
 class Material;
 class GPUShader;
 class GPUConstantBuffer;
 class MemoryReadStream;
+
+// Draw pipeline constant buffer (with per-draw constants at slot 2)
+GPU_CB_STRUCT(MaterialShaderDataPerDraw {
+    Float3 DrawPadding;
+    uint32 DrawObjectIndex;
+    });
 
 /// <summary>
 /// Represents material shader that can be used to render objects, visuals or effects. Contains a dedicated shader.

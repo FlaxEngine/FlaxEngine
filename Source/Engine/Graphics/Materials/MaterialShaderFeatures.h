@@ -25,18 +25,17 @@ struct ForwardShadingFeature : MaterialShaderFeature
 {
     enum { MaxLocalLights = 4 };
 
-    enum { SRVs = 3 };
+    enum { SRVs = 4 };
 
     PACK_STRUCT(struct Data
         {
-        LightData DirectionalLight;
-        LightShadowData DirectionalLightShadow;
-        LightData SkyLight;
-        ProbeData EnvironmentProbe;
-        ExponentialHeightFogData ExponentialHeightFog;
+        ShaderLightData DirectionalLight;
+        ShaderLightData SkyLight;
+        ShaderEnvProbeData EnvironmentProbe;
+        ShaderExponentialHeightFogData ExponentialHeightFog;
         Float3 Dummy2;
         uint32 LocalLightsCount;
-        LightData LocalLights[MaxLocalLights];
+        ShaderLightData LocalLights[MaxLocalLights];
         });
 
     static void Bind(MaterialShader::BindParameters& params, Span<byte>& cb, int32& srv);
@@ -65,11 +64,6 @@ struct TessellationFeature : MaterialShaderFeature
 struct LightmapFeature : MaterialShaderFeature
 {
     enum { SRVs = 3 };
-
-    PACK_STRUCT(struct Data
-        {
-        Rectangle LightmapArea;
-        });
 
     static bool Bind(MaterialShader::BindParameters& params, Span<byte>& cb, int32& srv);
 #if USE_EDITOR

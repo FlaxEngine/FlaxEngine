@@ -40,6 +40,16 @@ namespace FlaxEditor.Content
         }
 
         /// <summary>
+        /// Constructs the item for the file.
+        /// </summary>
+        /// <param name="path">The file path.</param>
+        /// <returns>Created item or null.</returns>
+        public virtual ContentItem ConstructItem(string path)
+        {
+            return null;
+        }
+
+        /// <summary>
         /// Gets a value indicating whether this proxy if for assets.
         /// </summary>
         public virtual bool IsAsset => false;

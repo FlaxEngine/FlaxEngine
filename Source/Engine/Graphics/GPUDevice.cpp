@@ -296,6 +296,8 @@ struct GPUDevice::PrivateData
     AssetReference<Shader> QuadShader;
     GPUPipelineState* PS_CopyLinear = nullptr;
     GPUPipelineState* PS_Clear = nullptr;
+    GPUPipelineState* PS_DecodeYUY2 = nullptr;
+    GPUPipelineState* PS_DecodeNV12 = nullptr;
     GPUBuffer* FullscreenTriangleVB = nullptr;
     AssetReference<Material> DefaultMaterial;
     SoftAssetReference<Material> DefaultDeformableMaterial;
@@ -319,10 +321,11 @@ GPUDevice::GPUDevice(RendererType type, ShaderProfile profile)
     , _res(New<PrivateData>())
     , _resources(1024)
     , TotalGraphicsMemory(0)
+    , IsDebugToolAttached(false)
     , QuadShader(nullptr)
     , CurrentTask(nullptr)
 {
-    ASSERT(_rendererType != RendererType::Unknown);
+    ASSERT_LOW_LAYER(_rendererType != RendererType::Unknown);
 }
 
 GPUDevice::~GPUDevice()
@@ -489,6 +492,7 @@ void GPUDevice::preDispose()
     _res->DefaultBlackTexture = nullptr;
     SAFE_DELETE_GPU_RESOURCE(_res->PS_CopyLinear);
     SAFE_DELETE_GPU_RESOURCE(_res->PS_Clear);
+    SAFE_DELETE_GPU_RESOURCE(_res->PS_DecodeYUY2);
     SAFE_DELETE_GPU_RESOURCE(_res->FullscreenTriangleVB);
 
     Locker.Unlock();
@@ -699,6 +703,30 @@ GPUPipelineState* GPUDevice::GetCopyLinearPS() const
 GPUPipelineState* GPUDevice::GetClearPS() const
 {
     return _res->PS_Clear;
+}
+
+GPUPipelineState* GPUDevice::GetDecodeYUY2PS() const
+{
+    if (_res->PS_DecodeYUY2 == nullptr)
+    {
+        auto psDesc = GPUPipelineState::Description::DefaultFullscreenTriangle;
+        psDesc.PS = QuadShader->GetPS("PS_DecodeYUY2");
+        _res->PS_DecodeYUY2 = const_cast<GPUDevice*>(this)->CreatePipelineState();
+        _res->PS_DecodeYUY2->Init(psDesc);
+    }
+    return _res->PS_DecodeYUY2;
+}
+
+GPUPipelineState* GPUDevice::GetDecodeNV12PS() const
+{
+    if (_res->PS_DecodeNV12 == nullptr)
+    {
+        auto psDesc = GPUPipelineState::Description::DefaultFullscreenTriangle;
+        psDesc.PS = QuadShader->GetPS("PS_DecodeNV12");
+        _res->PS_DecodeNV12 = const_cast<GPUDevice*>(this)->CreatePipelineState();
+        _res->PS_DecodeNV12->Init(psDesc);
+    }
+    return _res->PS_DecodeNV12;
 }
 
 GPUBuffer* GPUDevice::GetFullscreenTriangleVB() const

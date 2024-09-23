@@ -33,8 +33,13 @@ struct TessalationDSToPS
 MaterialInput GetMaterialInput(TessalationDSToPS input)
 {
 	MaterialInput output = GetGeometryMaterialInput(input.Geometry);
+#if USE_PER_DRAW_CONSTANTS
+	output.Object = LoadObject(ObjectsBuffer, input.Geometry.ObjectIndex);
+#else
+	LoadObjectFromCB(output.Object);
+#endif
 	output.SvPosition = input.Position;
-	output.TwoSidedSign = WorldDeterminantSign;
+	output.TwoSidedSign = output.Object.WorldDeterminantSign;
 #if USE_CUSTOM_VERTEX_INTERPOLATORS
 	output.CustomVSToPS = input.CustomVSToPS;
 #endif

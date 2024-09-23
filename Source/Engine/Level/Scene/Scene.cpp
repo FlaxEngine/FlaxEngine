@@ -133,7 +133,8 @@ Array<Guid> Scene::GetAssetReferences() const
     const auto asset = Content::Load<SceneAsset>(GetID());
     if (asset)
     {
-        asset->GetReferences(result);
+        Array<String> files;
+        asset->GetReferences(result, files);
     }
     else
     {

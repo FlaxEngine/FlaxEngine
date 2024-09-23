@@ -4,6 +4,7 @@
 #include "Engine/Platform/FileSystem.h"
 #include "Engine/Graphics/RenderView.h"
 #include "Engine/Graphics/RenderTask.h"
+#include "Engine/Graphics/GPUContext.h"
 #include "Engine/Graphics/Textures/GPUTexture.h"
 #include "Engine/Graphics/Textures/TextureData.h"
 #include "Engine/Renderer/RenderList.h"
@@ -12,7 +13,7 @@
 #include "Engine/Content/Content.h"
 #include "Engine/ContentExporters/AssetExporters.h"
 #include "Engine/ContentImporters/AssetsImportingManager.h"
-#include "Engine/Graphics/GPUContext.h"
+#include "Engine/Graphics/RenderTools.h"
 #include "Engine/Serialization/Serialization.h"
 #include "Engine/Level/Scene/Scene.h"
 
@@ -59,13 +60,6 @@ GPUTexture* EnvironmentProbe::GetProbe() const
 bool EnvironmentProbe::IsUsingCustomProbe() const
 {
     return _isUsingCustomProbe;
-}
-
-void EnvironmentProbe::SetupProbeData(const RenderContext& renderContext, ProbeData* data) const
-{
-    const float radius = GetScaledRadius();
-    data->Data0 = Float4(GetPosition() - renderContext.View.Origin, 0);
-    data->Data1 = Float4(radius, 1.0f / radius, Brightness, 0);
 }
 
 CubeTexture* EnvironmentProbe::GetCustomProbe() const
@@ -181,11 +175,29 @@ void EnvironmentProbe::Draw(RenderContext& renderContext)
         EnumHasAnyFlags(renderContext.View.Flags, ViewFlags::Reflections) &&
         EnumHasAnyFlags(renderContext.View.Pass, DrawPass::GBuffer))
     {
+        // Size culling
+        const Float3 position = _sphere.Center - renderContext.View.Origin;
+        const float radius = GetScaledRadius();
+        const float drawMinScreenSize = 0.02f;
+        const auto lodView = (renderContext.LodProxyView ? renderContext.LodProxyView : &renderContext.View);
+        const float screenRadiusSquared = RenderTools::ComputeBoundsScreenRadiusSquared(position, radius, *lodView) * renderContext.View.ModelLODDistanceFactorSqrt;
+        if (Math::Square(drawMinScreenSize * 0.5f) > screenRadiusSquared)
+            return;
+
+        // Realtime probe update
         if (UpdateMode == ProbeUpdateMode::Realtime)
             ProbesRenderer::Bake(this, 0.0f);
-        if ((_probe != nullptr && _probe->IsLoaded()) || _probeTexture != nullptr)
+
+        GPUTexture* texture = GetProbe();
+        if (texture)
         {
-            renderContext.List->EnvironmentProbes.Add(this);
+            RenderEnvironmentProbeData data;
+            data.Texture = texture;
+            data.Position = position;
+            data.Radius = radius;
+            data.Brightness = Brightness;
+            data.HashID = GetHash(_id);
+            renderContext.List->EnvironmentProbes.Add(data);
         }
     }
 }

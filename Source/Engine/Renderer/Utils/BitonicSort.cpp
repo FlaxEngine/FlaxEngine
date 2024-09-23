@@ -15,7 +15,7 @@ struct Item
     uint32 Value;
 };
 
-PACK_STRUCT(struct Data {
+GPU_CB_STRUCT(Data {
     Item NullItem;
     uint32 CounterOffset;
     uint32 MaxIterations;

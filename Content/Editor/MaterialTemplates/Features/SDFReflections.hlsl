@@ -9,8 +9,8 @@
 GlobalSDFData GlobalSDF;
 GlobalSurfaceAtlasData GlobalSurfaceAtlas;
 @3// SDF Reflections: Resources
-Texture3D<float> GlobalSDFTex : register(t__SRV__);
-Texture3D<float> GlobalSDFMip : register(t__SRV__);
+Texture3D<snorm float> GlobalSDFTex : register(t__SRV__);
+Texture3D<snorm float> GlobalSDFMip : register(t__SRV__);
 ByteAddressBuffer GlobalSurfaceAtlasChunks : register(t__SRV__);
 ByteAddressBuffer RWGlobalSurfaceAtlasCulledObjects : register(t__SRV__);
 Buffer<float4> GlobalSurfaceAtlasObjects : register(t__SRV__);
@@ -21,9 +21,8 @@ bool TraceSDFSoftwareReflections(GBufferSample gBuffer, float3 reflectWS, out fl
 {
 	GlobalSDFTrace sdfTrace;
     float maxDistance = GLOBAL_SDF_WORLD_SIZE;
-    float selfOcclusionBias = GlobalSDF.CascadeVoxelSize[0];
-    sdfTrace.Init(gBuffer.WorldPos + gBuffer.Normal * selfOcclusionBias, reflectWS, 0.0f, maxDistance);
-    GlobalSDFHit sdfHit = RayTraceGlobalSDF(GlobalSDF, GlobalSDFTex, GlobalSDFMip, sdfTrace);
+    sdfTrace.Init(gBuffer.WorldPos, reflectWS, 0.0f, maxDistance);
+    GlobalSDFHit sdfHit = RayTraceGlobalSDF(GlobalSDF, GlobalSDFTex, GlobalSDFMip, sdfTrace, 2.0f);
     if (sdfHit.IsHit())
     {
         float3 hitPosition = sdfHit.GetHitPosition(sdfTrace);

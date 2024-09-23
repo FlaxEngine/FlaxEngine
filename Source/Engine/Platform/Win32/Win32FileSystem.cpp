@@ -8,16 +8,12 @@
 #include "Engine/Core/Types/StringView.h"
 #include "Engine/Core/Math/Math.h"
 #include "Engine/Core/Collections/Array.h"
+#include "Engine/Utilities/StringConverter.h"
 #include "IncludeWindowsHeaders.h"
 
 const DateTime WindowsEpoch(1970, 1, 1);
 
-#define WIN32_INIT_BUFFER(path, buffer) \
-    Char buffer[MAX_PATH]; \
-    if (path.Length() > MAX_PATH) \
-        return true; \
-    Platform::MemoryCopy(buffer, path.Get(), path.Length() * sizeof(Char)); \
-    buffer[path.Length()] = 0
+#define WIN32_INIT_BUFFER(path, buffer) StringAsTerminated<> buffer(path.Get(), path.Length())
 
 bool Win32FileSystem::CreateDirectory(const StringView& path)
 {

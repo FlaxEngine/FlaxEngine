@@ -363,7 +363,7 @@ API_STRUCT() struct FLAXENGINE_API GlobalIlluminationSettings : ISerializable
     float BounceIntensity = 1.0f;
 
     /// <summary>
-    /// Defines how quickly GI blends between the the current frame and the history buffer. Lower values update GI faster, but with more jittering and noise. If the camera in your game doesn't move much, we recommend values closer to 1.
+    /// Defines how quickly GI blends between the current frame and the history buffer. Lower values update GI faster, but with more jittering and noise. If the camera in your game doesn't move much, we recommend values closer to 1.
     /// </summary>
     API_FIELD(Attributes="EditorOrder(20), Limit(0, 1), PostProcessSetting((int)GlobalIlluminationSettingsOverride.TemporalResponse)")
     float TemporalResponse = 0.9f;
@@ -1864,9 +1864,29 @@ API_ENUM(Attributes="Flags") enum class AntiAliasingSettingsOverride : int32
     TAA_MotionBlending = 1 << 4,
 
     /// <summary>
+    /// Overrides <see cref="AntiAliasingSettings.CAS_SharpeningAmount"/> property.
+    /// </summary>
+    CAS_SharpeningAmount = 1 << 5,
+
+    /// <summary>
+    /// Overrides <see cref="AntiAliasingSettings.CAS_EdgeSharpening"/> property.
+    /// </summary>
+    CAS_EdgeSharpening = 1 << 6,
+
+    /// <summary>
+    /// Overrides <see cref="AntiAliasingSettings.CAS_MinEdgeThreshold"/> property.
+    /// </summary>
+    CAS_MinEdgeThreshold = 1 << 7,
+
+    /// <summary>
+    /// Overrides <see cref="AntiAliasingSettings.CAS_OverBlurLimit"/> property.
+    /// </summary>
+    CAS_OverBlurLimit = 1 << 8,
+
+    /// <summary>
     /// All properties.
     /// </summary>
-    All = Mode | TAA_JitterSpread | TAA_Sharpness | TAA_StationaryBlending | TAA_MotionBlending,
+    All = Mode | TAA_JitterSpread | TAA_Sharpness | TAA_StationaryBlending | TAA_MotionBlending | CAS_SharpeningAmount | CAS_EdgeSharpening | CAS_MinEdgeThreshold | CAS_OverBlurLimit,
 };
 
 /// <summary>
@@ -1913,6 +1933,30 @@ API_STRUCT() struct FLAXENGINE_API AntiAliasingSettings : ISerializable
     /// </summary>
     API_FIELD(Attributes="Limit(0, 0.99f, 0.001f), EditorOrder(4), PostProcessSetting((int)AntiAliasingSettingsOverride.TAA_MotionBlending), EditorDisplay(null, \"TAA Motion Blending\"), VisibleIf(nameof(ShowTAASettings))")
     float TAA_MotionBlending = 0.85f;
+
+    /// <summary>
+    /// The sharpening strength for the Contrast Adaptive Sharpening (CAS) pass. Ignored when using TAA that contains own contrast filter.
+    /// </summary>
+    API_FIELD(Attributes = "Limit(0, 10f, 0.001f), EditorOrder(10), PostProcessSetting((int)AntiAliasingSettingsOverride.CAS_SharpeningAmount), EditorDisplay(null, \"CAS Sharpening Amount\"), VisibleIf(nameof(ShowTAASettings), true)")
+    float CAS_SharpeningAmount = 0.0f;
+
+    /// <summary>
+    /// The edge sharpening strength for the Contrast Adaptive Sharpening (CAS) pass. Ignored when using TAA that contains own contrast filter.
+    /// </summary>
+    API_FIELD(Attributes = "Limit(0, 10f, 0.001f), EditorOrder(11), PostProcessSetting((int)AntiAliasingSettingsOverride.CAS_EdgeSharpening), EditorDisplay(null, \"CAS Edge Sharpening\"), VisibleIf(nameof(ShowTAASettings), true)")
+    float CAS_EdgeSharpening = 0.5f;
+
+    /// <summary>
+    /// The minimum edge threshold for the Contrast Adaptive Sharpening (CAS) pass. Ignored when using TAA that contains own contrast filter.
+    /// </summary>
+    API_FIELD(Attributes = "Limit(0, 10f, 0.001f), EditorOrder(12), PostProcessSetting((int)AntiAliasingSettingsOverride.CAS_MinEdgeThreshold), EditorDisplay(null, \"CAS Min Edge Threshold\"), VisibleIf(nameof(ShowTAASettings), true)")
+    float CAS_MinEdgeThreshold = 0.03f;
+
+    /// <summary>
+    /// The over-blur limit for the Contrast Adaptive Sharpening (CAS) pass. Ignored when using TAA that contains own contrast filter.
+    /// </summary>
+    API_FIELD(Attributes = "Limit(0, 100f, 0.001f), EditorOrder(13), PostProcessSetting((int)AntiAliasingSettingsOverride.CAS_OverBlurLimit), EditorDisplay(null, \"CAS Over-blur Limit\"), VisibleIf(nameof(ShowTAASettings), true)")
+    float CAS_OverBlurLimit = 1.0f;
 
 public:
     /// <summary>

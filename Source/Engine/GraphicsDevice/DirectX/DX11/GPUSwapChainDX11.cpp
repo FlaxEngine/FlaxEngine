@@ -261,11 +261,7 @@ bool GPUSwapChainDX11::Resize(int32 width, int32 height)
 
     _width = width;
     _height = height;
-#if PLATFORM_WINDOWS
-    _memoryUsage = RenderTools::CalculateTextureMemoryUsage(RenderToolsDX::ToPixelFormat(swapChainDesc.BufferDesc.Format), _width, _height, 1) * swapChainDesc.BufferCount;
-#else
-    _memoryUsage = RenderTools::CalculateTextureMemoryUsage(RenderToolsDX::ToPixelFormat(swapChainDesc.Format), _width, _height, 1) * swapChainDesc.BufferCount;
-#endif
+    _memoryUsage = RenderTools::CalculateTextureMemoryUsage(_format, _width, _height, 1) * swapChainDesc.BufferCount;
 
     getBackBuffer();
 

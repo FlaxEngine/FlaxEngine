@@ -12,7 +12,7 @@
 #include "Engine/Graphics/RenderTask.h"
 #include "Engine/Renderer/DrawCall.h"
 
-PACK_STRUCT(struct VertexColorsMaterialShaderData {
+GPU_CB_STRUCT(VertexColorsMaterialShaderData {
     Matrix ViewProjectionMatrix;
     Matrix WorldMatrix;
     });
@@ -61,7 +61,7 @@ void VertexColorsMaterialShader::Bind(BindParameters& params)
 {
     // Prepare
     auto context = params.GPUContext;
-    auto& drawCall = *params.FirstDrawCall;
+    auto& drawCall = *params.DrawCall;
 
     // Setup
     auto shader = _shader->GetShader();

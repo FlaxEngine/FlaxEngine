@@ -69,20 +69,26 @@ void Decal::OnLayerChanged()
 
 void Decal::Draw(RenderContext& renderContext)
 {
+    MaterialBase* material = Material;
     if (EnumHasAnyFlags(renderContext.View.Flags, ViewFlags::Decals) &&
         EnumHasAnyFlags(renderContext.View.Pass, DrawPass::GBuffer) &&
-        Material &&
-        Material->IsLoaded() &&
-        Material->IsDecal())
+        material &&
+        material->IsLoaded() &&
+        material->IsDecal())
     {
+        // Check if decal is being culled
         const auto lodView = (renderContext.LodProxyView ? renderContext.LodProxyView : &renderContext.View);
         const float screenRadiusSquared = RenderTools::ComputeBoundsScreenRadiusSquared(_sphere.Center - renderContext.View.Origin, (float)_sphere.Radius, *lodView) * renderContext.View.ModelLODDistanceFactorSqrt;
-
-        // Check if decal is being culled
         if (Math::Square(DrawMinScreenSize * 0.5f) > screenRadiusSquared)
             return;
 
-        renderContext.List->Decals.Add(this);
+        RenderDecalData data;
+        Transform transform = GetTransform();
+        transform.Scale *= _size;
+        renderContext.View.GetWorldMatrix(transform, data.World);
+        data.SortOrder = SortOrder;
+        data.Material = material;
+        renderContext.List->Decals.Add(data);
     }
 }
 

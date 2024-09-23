@@ -481,7 +481,7 @@ public:
     /// <param name="translation">When the method completes, contains the translation component of the decomposed matrix.</param>
     /// <remarks>This method is designed to decompose an SRT transformation matrix only.</remarks>
     void Decompose(Float3& scale, Matrix3x3& rotation, Float3& translation) const;
-    DEPRECATED void Decompose(Float3& scale, Matrix& rotation, Float3& translation) const;
+    DEPRECATED("Use Decompose with 'Matrix3x3& rotation' parameter instead") void Decompose(Float3& scale, Matrix& rotation, Float3& translation) const;
 
 public:
     Matrix operator*(const float scale) const
@@ -890,7 +890,7 @@ public:
     /// <param name="translation">The translation.</param>
     /// <param name="rotation">Angle of rotation in radians. Angles are measured clockwise when looking along the rotation axis toward the origin.</param>
     /// <param name="scaling">The scaling.</param>
-    /// <param name="result">When the method completes, contains the created rotation matrix.</param>
+    /// <param name="result">When the method completes, contains the created transformation matrix.</param>
     static void Transformation(const Float3& scaling, const Quaternion& rotation, const Float3& translation, Matrix& result);
 
     // Creates a 3D affine transformation matrix.

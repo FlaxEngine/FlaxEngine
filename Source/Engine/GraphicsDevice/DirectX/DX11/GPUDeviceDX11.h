@@ -24,20 +24,20 @@ class GPUDeviceDX11 : public GPUDeviceDX
 private:
 
     // Private Stuff
-    ID3D11Device* _device;
-    ID3D11DeviceContext* _imContext;
+    ID3D11Device* _device = nullptr;
+    ID3D11DeviceContext* _imContext = nullptr;
     IDXGIFactory* _factoryDXGI;
 
-    GPUContextDX11* _mainContext;
+    GPUContextDX11* _mainContext = nullptr;
     bool _allowTearing = false;
 
     // Static Samplers
-    ID3D11SamplerState* _samplerLinearClamp;
-    ID3D11SamplerState* _samplerPointClamp;
-    ID3D11SamplerState* _samplerLinearWrap;
-    ID3D11SamplerState* _samplerPointWrap;
-    ID3D11SamplerState* _samplerShadow;
-    ID3D11SamplerState* _samplerShadowPCF;
+    ID3D11SamplerState* _samplerLinearClamp = nullptr;
+    ID3D11SamplerState* _samplerPointClamp = nullptr;
+    ID3D11SamplerState* _samplerLinearWrap = nullptr;
+    ID3D11SamplerState* _samplerPointWrap = nullptr;
+    ID3D11SamplerState* _samplerShadow = nullptr;
+    ID3D11SamplerState* _samplerShadowLinear = nullptr;
 
     // Shared data for pipeline states
     CriticalSection BlendStatesWriteLocker;

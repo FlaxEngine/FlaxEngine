@@ -240,7 +240,7 @@ public:
         /// <summary>
         /// The object sorting key.
         /// </summary>
-        int16 SortOrder;
+        int8 SortOrder;
 
 #if USE_EDITOR
         float LightmapScale = -1.0f;

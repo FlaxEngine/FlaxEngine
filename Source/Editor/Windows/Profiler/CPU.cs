@@ -69,6 +69,8 @@ namespace FlaxEditor.Windows.Profiler
             {
                 Title = "Update",
                 AnchorPreset = AnchorPresets.HorizontalStretchTop,
+                Offsets = Margin.Zero,
+                Height = SingleChart.DefaultHeight,
                 FormatSample = v => (Mathf.RoundToInt(v * 10.0f) / 10.0f) + " ms",
                 Parent = mainPanel,
             };
@@ -173,7 +175,7 @@ namespace FlaxEditor.Windows.Profiler
 
         private string FormatCellBytes(object x)
         {
-            return Utilities.Utils.FormatBytesCount((int)x);
+            return Utilities.Utils.FormatBytesCount((ulong)x);
         }
 
         /// <inheritdoc />

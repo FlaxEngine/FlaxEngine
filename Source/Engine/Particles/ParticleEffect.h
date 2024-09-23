@@ -255,10 +255,10 @@ public:
     DrawPass DrawModes = DrawPass::Default;
 
     /// <summary>
-    /// The object sort order key used when sorting drawable objects during rendering. Use lower values to draw object before others, higher values are rendered later (on top). Can be use to control transparency drawing.
+    /// The object sort order key used when sorting drawable objects during rendering. Use lower values to draw object before others, higher values are rendered later (on top). Can be used to control transparency drawing.
     /// </summary>
     API_FIELD(Attributes="EditorDisplay(\"Particle Effect\"), EditorOrder(80), DefaultValue(0)")
-    int16 SortOrder = 0;
+    int8 SortOrder = 0;
 
 public:
     /// <summary>
@@ -349,6 +349,13 @@ public:
     /// </summary>
     /// <param name="singleFrame">True if update animation by a single frame only (time time since last engine update), otherwise will update simulation with delta time since last update.</param>
     API_FUNCTION() void UpdateSimulation(bool singleFrame = false);
+
+    /// <summary>
+    /// Manually spawns additional particles into the simulation.
+    /// </summary>
+    /// <param name="count">Amount of particles to spawn.</param>
+    /// <param name="emitterTrackName">Name of the emitter track to spawn particles in. Empty if spawn particles into all tracks.</param>
+    API_FUNCTION() void SpawnParticles(int32 count, const StringView& emitterTrackName = String::Empty);
 
     /// <summary>
     /// Plays the simulation.

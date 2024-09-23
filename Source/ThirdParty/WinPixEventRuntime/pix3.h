@@ -18,7 +18,7 @@
 #endif
 
 #if !defined(USE_PIX_SUPPORTED_ARCHITECTURE)
-#if defined(_M_X64) || defined(USE_PIX_ON_ALL_ARCHITECTURES) || defined(_M_ARM64)
+#if defined(_M_X64) || defined(USE_PIX_ON_ALL_ARCHITECTURES) || defined(_M_ARM64) || defined(_M_ARM64EC)
 #define USE_PIX_SUPPORTED_ARCHITECTURE
 #endif
 #endif

@@ -249,7 +249,7 @@ namespace FlaxEditor.Windows.Assets
                 if (parameters.Length == 0)
                     return;
 
-                var parametersGroup = layout.Group("Parameters");
+                var parametersGroup = SurfaceUtils.InitGraphParametersGroup(layout);
                 var settingButton = parametersGroup.AddSettingsButton();
                 settingButton.Clicked += (image, button) => OnSettingsButtonClicked(image, button, proxy.Window);
                 var baseMaterial = materialInstance.BaseMaterial;

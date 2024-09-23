@@ -182,7 +182,7 @@ public:
     /// <param name="flags">The object static flags.</param>
     /// <param name="receiveDecals">True if rendered geometry can receive decals, otherwise false.</param>
     /// <param name="sortOrder">Object sorting key.</param>
-    API_FUNCTION() void Draw(API_PARAM(Ref) const RenderContext& renderContext, MaterialBase* material, API_PARAM(Ref) const Matrix& world, StaticFlags flags = StaticFlags::None, bool receiveDecals = true, int16 sortOrder = 0) const;
+    API_FUNCTION() void Draw(API_PARAM(Ref) const RenderContext& renderContext, MaterialBase* material, API_PARAM(Ref) const Matrix& world, StaticFlags flags = StaticFlags::None, bool receiveDecals = true, int8 sortOrder = 0) const;
 
     /// <summary>
     /// Draws the model.
@@ -227,8 +227,9 @@ public:
     /// <param name="lodIndex">The index of the LOD to use for the SDF building.</param>
     /// <param name="cacheData">If true, the generated SDF texture data will be cached on CPU (in asset chunk storage) to allow saving it later, otherwise it will be runtime for GPU-only. Ignored for virtual assets or in build.</param>
     /// <param name="backfacesThreshold">Custom threshold (in range 0-1) for adjusting mesh internals detection based on the percentage of test rays hit triangle backfaces. Use lower value for more dense mesh.</param>
+    /// <param name="useGPU">Enables using GPU for SDF generation, otherwise CPU will be used (async via Job System).</param>
     /// <returns>True if failed, otherwise false.</returns>
-    API_FUNCTION() bool GenerateSDF(float resolutionScale = 1.0f, int32 lodIndex = 6, bool cacheData = true, float backfacesThreshold = 0.6f);
+    API_FUNCTION() bool GenerateSDF(float resolutionScale = 1.0f, int32 lodIndex = 6, bool cacheData = true, float backfacesThreshold = 0.6f, bool useGPU = true);
 
     /// <summary>
     /// Sets set SDF data (releases the current one).
@@ -251,7 +252,7 @@ public:
     void InitAsVirtual() override;
     void CancelStreaming() override;
 #if USE_EDITOR
-    void GetReferences(Array<Guid>& output) const override;
+    void GetReferences(Array<Guid>& assets, Array<String>& files) const override;
 #endif
 
     // [StreamableResource]

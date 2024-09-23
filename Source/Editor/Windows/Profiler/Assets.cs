@@ -50,7 +50,9 @@ namespace FlaxEditor.Windows.Profiler
             {
                 Title = "Assets Memory Usage (CPU)",
                 AnchorPreset = AnchorPresets.HorizontalStretchTop,
-                FormatSample = v => Utilities.Utils.FormatBytesCount((int)v),
+                Offsets = Margin.Zero,
+                Height = SingleChart.DefaultHeight,
+                FormatSample = v => Utilities.Utils.FormatBytesCount((ulong)v),
                 Parent = mainPanel,
             };
             _memoryUsageChart.SelectedSampleChanged += OnSelectedSampleChanged;

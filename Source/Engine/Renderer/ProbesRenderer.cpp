@@ -69,8 +69,7 @@ public:
     }
 };
 
-PACK_STRUCT(struct Data
-    {
+GPU_CB_STRUCT(Data {
     Float2 Dummy0;
     int32 CubeFace;
     float SourceMipIndex;
@@ -273,7 +272,7 @@ bool ProbesRenderer::Init()
     view.Mode = ViewMode::NoPostFx;
     view.IsOfflinePass = true;
     view.IsSingleFrame = true;
-    view.StaticFlagsMask = StaticFlags::ReflectionProbe;
+    view.StaticFlagsMask = view.StaticFlagsCompare = StaticFlags::ReflectionProbe;
     view.MaxShadowsQuality = Quality::Low;
     task->IsCameraCut = true;
     task->Resize(probeResolution, probeResolution);
@@ -502,6 +501,7 @@ void ProbesRenderer::OnRender(RenderTask* task, GPUContext* context)
         // Render frame
         Renderer::Render(_task);
         context->ClearState();
+        _task->CameraCut();
 
         // Copy frame to cube face
         {

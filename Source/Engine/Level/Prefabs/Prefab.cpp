@@ -148,6 +148,10 @@ Asset::LoadResult Prefab::loadAsset()
         ObjectsDataCache.Add(objectId, &objData);
         ObjectsCount++;
 
+        Guid parentID;
+        if (JsonTools::GetGuidIfValid(parentID, objData, "ParentID"))
+            ObjectsHierarchyCache[parentID].Add(objectId);
+
         Guid prefabId = JsonTools::GetGuid(objData, "PrefabID");
         if (prefabId.IsValid() && !NestedPrefabs.Contains(prefabId))
         {
@@ -186,6 +190,8 @@ void Prefab::unload(bool isReloading)
     NestedPrefabs.Resize(0);
     ObjectsDataCache.Clear();
     ObjectsDataCache.SetCapacity(0);
+    ObjectsHierarchyCache.Clear();
+    ObjectsHierarchyCache.SetCapacity(0);
     ObjectsCache.Clear();
     ObjectsCache.SetCapacity(0);
     if (_defaultInstance)

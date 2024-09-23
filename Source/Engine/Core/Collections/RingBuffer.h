@@ -5,6 +5,7 @@
 #include "Engine/Platform/Platform.h"
 #include "Engine/Core/Memory/Memory.h"
 #include "Engine/Core/Memory/Allocation.h"
+#include "Engine/Core/Math/Math.h"
 
 /// <summary>
 /// Template for ring buffer with variable capacity.
@@ -97,5 +98,11 @@ public:
     {
         Memory::DestructItems(Get() + Math::Min(_front, _back), _count);
         _front = _back = _count = 0;
+    }
+
+    void Release()
+    {
+        Clear();
+        _allocation.Free();
     }
 };

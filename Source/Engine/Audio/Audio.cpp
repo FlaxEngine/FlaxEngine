@@ -148,47 +148,6 @@ void Audio::SetEnableHRTF(bool value)
     AudioBackend::Listener::ReinitializeAll();
 }
 
-void Audio::OnAddListener(AudioListener* listener)
-{
-    ASSERT(!Listeners.Contains(listener));
-
-    if (Listeners.Count() >= AUDIO_MAX_LISTENERS)
-    {
-        LOG(Error, "Unsupported amount of the audio listeners!");
-        return;
-    }
-
-    if (Audio::Listeners.Count() > 0)
-        LOG(Warning, "There is more than 1 Audio listener active. Please make sure only exactly one is active at any given time.");
-    
-    Listeners.Add(listener);
-    AudioBackend::Listener::OnAdd(listener);
-}
-
-void Audio::OnRemoveListener(AudioListener* listener)
-{
-    if (!Listeners.Remove(listener))
-    {
-        AudioBackend::Listener::OnRemove(listener);
-    }
-}
-
-void Audio::OnAddSource(AudioSource* source)
-{
-    ASSERT(!Sources.Contains(source));
-
-    Sources.Add(source);
-    AudioBackend::Source::OnAdd(source);
-}
-
-void Audio::OnRemoveSource(AudioSource* source)
-{
-    if (!Sources.Remove(source))
-    {
-        AudioBackend::Source::OnRemove(source);
-    }
-}
-
 bool AudioService::Init()
 {
     PROFILE_CPU_NAMED("Audio.Init");

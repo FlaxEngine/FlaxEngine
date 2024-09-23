@@ -537,6 +537,14 @@ void Asset::CancelStreaming()
 
 #if USE_EDITOR
 
+void Asset::GetReferences(Array<Guid>& assets, Array<String>& files) const
+{
+    // Fallback to the old API
+PRAGMA_DISABLE_DEPRECATION_WARNINGS;
+    GetReferences(assets);
+PRAGMA_ENABLE_DEPRECATION_WARNINGS;
+}
+
 void Asset::GetReferences(Array<Guid>& output) const
 {
     // No refs by default
@@ -545,7 +553,8 @@ void Asset::GetReferences(Array<Guid>& output) const
 Array<Guid> Asset::GetReferences() const
 {
     Array<Guid> result;
-    GetReferences(result);
+    Array<String> files;
+    GetReferences(result, files);
     return result;
 }
 

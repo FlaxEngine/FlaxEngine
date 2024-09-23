@@ -212,12 +212,12 @@ void SceneRendering::DrawActorsJob(int32)
     PROFILE_CPU();
     auto& mainContext = _drawBatch->GetMainContext();
     const auto& view = mainContext.View;
-    if (view.IsOfflinePass)
+    if (view.StaticFlagsMask != StaticFlags::None)
     {
-        // Offline pass with additional static flags culling
+        // Static-flags culling
         FOR_EACH_BATCH_ACTOR
             e.Bounds.Center -= view.Origin;
-            if (CHECK_ACTOR && (e.Actor->GetStaticFlags() & view.StaticFlagsMask) != StaticFlags::None)
+            if (CHECK_ACTOR && (e.Actor->GetStaticFlags() & view.StaticFlagsMask) == view.StaticFlagsCompare)
             {
                 DRAW_ACTOR(*_drawBatch);
             }

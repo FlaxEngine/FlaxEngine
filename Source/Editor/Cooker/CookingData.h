@@ -134,6 +134,12 @@ API_ENUM() enum class BuildPlatform
     /// </summary>
     API_ENUM(Attributes="EditorDisplay(null, \"iOS ARM64\")")
     iOSARM64 = 14,
+
+    /// <summary>
+    /// Windows (ARM64)
+    /// </summary>
+    API_ENUM(Attributes = "EditorDisplay(null, \"Windows ARM64\")")
+    WindowsARM64 = 15,
 };
 
 /// <summary>
@@ -285,24 +291,22 @@ public:
         /// <summary>
         /// The total assets amount in the build.
         /// </summary>
-        int32 TotalAssets;
+        int32 TotalAssets = 0;
 
         /// <summary>
         /// The cooked assets (TotalAssets - CookedAssets is amount of reused cached assets).
         /// </summary>
-        int32 CookedAssets;
+        int32 CookedAssets = 0;
 
         /// <summary>
-        /// The final output content size in MB.
+        /// The final output content size (in bytes).
         /// </summary>
-        int32 ContentSizeMB;
+        uint64 ContentSize = 0;
 
         /// <summary>
         /// The asset type stats. Key is the asset typename, value is the stats container.
         /// </summary>
         Dictionary<String, AssetTypeStatistics> AssetStats;
-
-        Statistics();
     };
 
     /// <summary>
@@ -327,6 +331,11 @@ public:
     /// The final assets collection to include in build (valid only after CollectAssetsStep).
     /// </summary>
     HashSet<Guid> Assets;
+
+    /// <summary>
+    /// The final files collection to include in build (valid only after CollectAssetsStep).
+    /// </summary>
+    HashSet<String> Files;
 
     struct BinaryModuleInfo
     {

@@ -127,7 +127,7 @@ PACK_STRUCT(struct Vertex {
     Color32 Color;
     });
 
-PACK_STRUCT(struct Data {
+GPU_CB_STRUCT(Data {
     Matrix ViewProjection;
     Float2 Padding;
     float ClipPosZBias;

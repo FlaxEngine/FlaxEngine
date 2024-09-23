@@ -319,7 +319,7 @@ namespace FlaxEditor.Windows.Profiler
 
         private static string FormatCellBytes(object x)
         {
-            return Utilities.Utils.FormatBytesCount((int)x);
+            return Utilities.Utils.FormatBytesCount((ulong)x);
         }
 
         private static int SortRows(Control x, Control y)

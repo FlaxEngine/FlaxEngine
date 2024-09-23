@@ -129,12 +129,9 @@ namespace FlaxEditor.Modules
                 for (int i = 0; i < Proxy.Count; i++)
                 {
                     if (Proxy[i].IsProxyFor(item))
-                    {
                         return Proxy[i];
-                    }
                 }
             }
-
             return null;
         }
 
@@ -147,11 +144,8 @@ namespace FlaxEditor.Modules
             for (int i = 0; i < Proxy.Count; i++)
             {
                 if (Proxy[i].IsProxyFor<T>())
-                {
                     return Proxy[i];
-                }
             }
-
             return null;
         }
 
@@ -164,17 +158,12 @@ namespace FlaxEditor.Modules
         {
             if (string.IsNullOrEmpty(extension))
                 throw new ArgumentNullException();
-
             extension = StringUtils.NormalizeExtension(extension);
-
             for (int i = 0; i < Proxy.Count; i++)
             {
-                if (Proxy[i].FileExtension == extension)
-                {
+                if (string.Equals(Proxy[i].FileExtension, extension, StringComparison.Ordinal))
                     return Proxy[i];
-                }
             }
-
             return null;
         }
 
@@ -189,29 +178,23 @@ namespace FlaxEditor.Modules
             for (int i = 0; i < Proxy.Count; i++)
             {
                 if (Proxy[i] is AssetProxy proxy && proxy.AcceptsAsset(typeName, path))
-                {
                     return proxy;
-                }
             }
-
             return null;
         }
+
         /// <summary>
         /// Gets the virtual proxy object from given path.
-        /// <br></br>Useful if the asset that needs to be displayed is not a Flax asset but needs custom functionality.
         /// </summary>
         /// <param name="path">The asset path.</param>
-        /// <returns>Asset proxy or null if not found.</returns>
+        /// <returns>Asset proxy or null if cannot find.</returns>
         public AssetProxy GetAssetVirtualProxy(string path)
         {
             for (int i = 0; i < Proxy.Count; i++)
             {
                 if (Proxy[i] is AssetProxy proxy && proxy.IsVirtualProxy() && path.EndsWith(proxy.FileExtension, StringComparison.OrdinalIgnoreCase))
-                {
                     return proxy;
-                }
             }
-
             return null;
         }
 
@@ -1026,7 +1009,9 @@ namespace FlaxEditor.Modules
                         item = proxy?.ConstructItem(path, assetInfo.TypeName, ref assetInfo.ID);
                         if (item == null)
                         {
-                            item = new FileItem(path);
+                            item = GetProxy(Path.GetExtension(path))?.ConstructItem(path);
+                            if (item == null)
+                                item = new FileItem(path);
                         }
                     }
 
@@ -1113,6 +1098,7 @@ namespace FlaxEditor.Modules
             Proxy.Add(new VisualScriptProxy());
             Proxy.Add(new BehaviorTreeProxy());
             Proxy.Add(new LocalizedStringTableProxy());
+            Proxy.Add(new VideoProxy("mp4"));
             Proxy.Add(new WidgetProxy());
             Proxy.Add(new FileProxy());
             Proxy.Add(new SpawnableJsonAssetProxy<PhysicalMaterial>());

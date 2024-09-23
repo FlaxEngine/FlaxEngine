@@ -37,6 +37,8 @@ namespace FlaxEditor.Windows.Profiler
             {
                 Title = "Draw (CPU)",
                 AnchorPreset = AnchorPresets.HorizontalStretchTop,
+                Offsets = Margin.Zero,
+                Height = SingleChart.DefaultHeight,
                 FormatSample = v => (Mathf.RoundToInt(v * 10.0f) / 10.0f) + " ms",
                 Parent = mainPanel,
             };

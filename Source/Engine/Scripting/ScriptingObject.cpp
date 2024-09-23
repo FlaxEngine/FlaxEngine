@@ -261,7 +261,11 @@ ScriptingObject* ScriptingObject::ToNative(MObject* obj)
 bool ScriptingObject::Is(const ScriptingTypeHandle& type) const
 {
     CHECK_RETURN(type, false);
+#if SCRIPTING_OBJECT_CAST_WITH_CSHARP
     return _type == type || CanCast(GetClass(), type.GetType().ManagedClass);
+#else
+    return CanCast(GetTypeHandle(), type);
+#endif
 }
 
 void ScriptingObject::ChangeID(const Guid& newId)
@@ -422,10 +426,16 @@ void ScriptingObject::UnregisterObject()
 
 bool ScriptingObject::CanCast(const ScriptingTypeHandle& from, const ScriptingTypeHandle& to)
 {
+    if (from == to)
+        return true;
     if (!from && !to)
         return true;
     CHECK_RETURN(from && to, false);
+#if SCRIPTING_OBJECT_CAST_WITH_CSHARP
     return CanCast(from.GetType().ManagedClass, to.GetType().ManagedClass);
+#else
+    return to.IsAssignableFrom(from);
+#endif
 }
 
 bool ScriptingObject::CanCast(const MClass* from, const MClass* to)

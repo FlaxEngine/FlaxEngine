@@ -200,6 +200,16 @@ static bool ListContains(const Array<const char*>& list, const char* name)
     return false;
 }
 
+static bool ListContains(const Array<StringAnsi>& list, const char* name)
+{
+    for (const StringAnsi& element : list)
+    {
+        if (element == name)
+            return true;
+    }
+    return false;
+}
+
 void GPUDeviceVulkan::GetInstanceLayersAndExtensions(Array<const char*>& outInstanceExtensions, Array<const char*>& outInstanceLayers, bool& outDebugUtils)
 {
     VkResult result;
@@ -473,6 +483,10 @@ void GPUDeviceVulkan::GetDeviceExtensionsAndLayers(VkPhysicalDevice gpu, Array<c
     }
 
     // Add device layers for debugging
+    if (ListContains(foundUniqueExtensions, "VK_EXT_tooling_info"))
+    {
+        IsDebugToolAttached = true;
+    }
 #if VULKAN_USE_DEBUG_LAYER
     bool hasKhronosStandardValidationLayer = false, hasLunargStandardValidationLayer = false;
 #if VULKAN_USE_KHRONOS_STANDARD_VALIDATION

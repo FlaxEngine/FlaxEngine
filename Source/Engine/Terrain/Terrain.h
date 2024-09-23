@@ -204,7 +204,7 @@ public:
     /// [Deprecated on 16.02.2024, expires on 16.02.2026]
     /// </summary>
     API_PROPERTY(Attributes="HideInEditor, NoSerialize")
-    DEPRECATED FORCE_INLINE JsonAssetReference<PhysicalMaterial>& GetPhysicalMaterial()
+    DEPRECATED("Use PhysicalMaterials instead.") FORCE_INLINE JsonAssetReference<PhysicalMaterial>& GetPhysicalMaterial()
     {
         return _physicalMaterials[0];
     }
@@ -213,7 +213,7 @@ public:
     /// Sets the physical materials used to define the terrain collider physical properties.
     /// [Deprecated on 16.02.2024, expires on 16.02.2026]
     /// </summary>
-    DEPRECATED API_PROPERTY()
+    DEPRECATED("Use PhysicalMaterials instead.") API_PROPERTY()
     void SetPhysicalMaterial(const JsonAssetReference<PhysicalMaterial>& value)
     {
         for (auto& e : _physicalMaterials)

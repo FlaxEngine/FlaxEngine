@@ -859,6 +859,15 @@ void Terrain::OnDisable()
 #if TERRAIN_USE_PHYSICS_DEBUG
     GetSceneRendering()->RemovePhysicsDebug<Terrain, &Terrain::DrawPhysicsDebug>(this);
 #endif
+    void* scene = GetPhysicsScene()->GetPhysicsScene();
+    for (int32 i = 0; i < _patches.Count(); i++)
+    {
+        auto patch = _patches[i];
+        if (patch->_physicsActor)
+        {
+            PhysicsBackend::RemoveSceneActor(scene, patch->_physicsActor);
+        }
+    }
 
     // Base
     Actor::OnDisable();

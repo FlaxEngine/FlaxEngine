@@ -281,6 +281,34 @@ void ParticleEffect::UpdateSimulation(bool singleFrame)
     Particles::UpdateEffect(this);
 }
 
+void ParticleEffect::SpawnParticles(int32 count, const StringView& emitterTrackName)
+{
+    auto system = ParticleSystem.Get();
+    if (!system)
+        return;
+    if (emitterTrackName.IsEmpty())
+    {
+        for (auto& e : Instance.Emitters)
+            e.CustomSpawnCount += count;
+    }
+    else
+    {
+        for (int32 i = 0; i < system->Tracks.Count(); i++)
+        {
+            auto& track = system->Tracks[i];
+            if (track.Type == ParticleSystem::Track::Types::Emitter && track.Name == emitterTrackName)
+            {
+                const int32 emitterIndex = track.AsEmitter.Index;
+                if (Instance.Emitters.IsValidIndex(emitterIndex))
+                {
+                    Instance.Emitters.Get()[emitterIndex].CustomSpawnCount += count;
+                    break;
+                }
+            }
+        }
+    }
+}
+
 void ParticleEffect::Play()
 {
     _isPlaying = true;

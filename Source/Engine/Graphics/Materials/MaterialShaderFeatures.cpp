@@ -17,12 +17,13 @@ void ForwardShadingFeature::Bind(MaterialShader::BindParameters& params, Span<by
 {
     auto cache = params.RenderContext.List;
     auto& view = params.RenderContext.View;
-    auto& drawCall = *params.FirstDrawCall;
+    auto& drawCall = *params.DrawCall;
     auto& data = *(Data*)cb.Get();
     ASSERT_LOW_LAYER(cb.Length() >= sizeof(Data));
     const int32 envProbeShaderRegisterIndex = srv + 0;
     const int32 skyLightShaderRegisterIndex = srv + 1;
-    const int32 dirLightShaderRegisterIndex = srv + 2;
+    const int32 shadowsBufferRegisterIndex = srv + 2;
+    const int32 shadowMapShaderRegisterIndex = srv + 3;
     const bool canUseShadow = view.Pass != DrawPass::Depth;
 
     // Set fog input
@@ -40,31 +41,26 @@ void ForwardShadingFeature::Bind(MaterialShader::BindParameters& params, Span<by
     if (cache->DirectionalLights.HasItems())
     {
         const auto& dirLight = cache->DirectionalLights.First();
-        const auto shadowPass = ShadowsPass::Instance();
-        const bool useShadow = shadowPass->LastDirLightIndex == 0 && canUseShadow;
-        if (useShadow)
-        {
-            data.DirectionalLightShadow = shadowPass->LastDirLight;
-            params.GPUContext->BindSR(dirLightShaderRegisterIndex, shadowPass->LastDirLightShadowMap);
-        }
-        else
-        {
-            params.GPUContext->UnBindSR(dirLightShaderRegisterIndex);
-        }
-        dirLight.SetupLightData(&data.DirectionalLight, useShadow);
+        GPUTexture* shadowMapAtlas;
+        GPUBufferView* shadowsBuffer;
+        ShadowsPass::GetShadowAtlas(params.RenderContext.Buffers, shadowMapAtlas, shadowsBuffer);
+        const bool useShadow = shadowMapAtlas && canUseShadow && dirLight.HasShadow;
+        dirLight.SetShaderData(data.DirectionalLight, useShadow);
+        params.GPUContext->BindSR(shadowsBufferRegisterIndex, shadowsBuffer);
+        params.GPUContext->BindSR(shadowMapShaderRegisterIndex, shadowMapAtlas);
     }
     else
     {
-        data.DirectionalLight.Color = Float3::Zero;
-        data.DirectionalLight.CastShadows = 0.0f;
-        params.GPUContext->UnBindSR(dirLightShaderRegisterIndex);
+        Platform::MemoryClear(&data.DirectionalLight, sizeof(data.DirectionalLight));
+        params.GPUContext->UnBindSR(shadowsBufferRegisterIndex);
+        params.GPUContext->UnBindSR(shadowMapShaderRegisterIndex);
     }
 
     // Set sky light
     if (cache->SkyLights.HasItems())
     {
         auto& skyLight = cache->SkyLights.First();
-        skyLight.SetupLightData(&data.SkyLight, false);
+        skyLight.SetShaderData(data.SkyLight, false);
         const auto texture = skyLight.Image ? skyLight.Image->GetTexture() : nullptr;
         params.GPUContext->BindSR(skyLightShaderRegisterIndex, GET_TEXTURE_VIEW_SAFE(texture));
     }
@@ -75,24 +71,21 @@ void ForwardShadingFeature::Bind(MaterialShader::BindParameters& params, Span<by
     }
 
     // Set reflection probe data
-    EnvironmentProbe* probe = nullptr;
+    bool noEnvProbe = true;
     // TODO: optimize env probe searching for a transparent material - use spatial cache for renderer to find it
-    const BoundingSphere objectBoundsWorld(drawCall.ObjectPosition + view.Origin, drawCall.ObjectRadius);
+    const BoundingSphere objectBounds(drawCall.ObjectPosition, drawCall.ObjectRadius);
     for (int32 i = 0; i < cache->EnvironmentProbes.Count(); i++)
     {
-        const auto p = cache->EnvironmentProbes[i];
-        if (CollisionsHelper::SphereIntersectsSphere(objectBoundsWorld, p->GetSphere()))
+        const RenderEnvironmentProbeData& probe = cache->EnvironmentProbes.Get()[i];
+        if (objectBounds.Intersects(BoundingSphere(probe.Position, probe.Radius)))
         {
-            probe = p;
+            noEnvProbe = false;
+            probe.SetShaderData(data.EnvironmentProbe);
+            params.GPUContext->BindSR(envProbeShaderRegisterIndex, probe.Texture);
             break;
         }
     }
-    if (probe && probe->GetProbe())
-    {
-        probe->SetupProbeData(params.RenderContext, &data.EnvironmentProbe);
-        params.GPUContext->BindSR(envProbeShaderRegisterIndex, probe->GetProbe());
-    }
-    else
+    if (noEnvProbe)
     {
         data.EnvironmentProbe.Data1 = Float4::Zero;
         params.GPUContext->UnBindSR(envProbeShaderRegisterIndex);
@@ -100,23 +93,22 @@ void ForwardShadingFeature::Bind(MaterialShader::BindParameters& params, Span<by
 
     // Set local lights
     data.LocalLightsCount = 0;
-    const BoundingSphere objectBounds(drawCall.ObjectPosition, drawCall.ObjectRadius);
     // TODO: optimize lights searching for a transparent material - use spatial cache for renderer to find it
     for (int32 i = 0; i < cache->PointLights.Count() && data.LocalLightsCount < MaxLocalLights; i++)
     {
         const auto& light = cache->PointLights[i];
-        if (CollisionsHelper::SphereIntersectsSphere(objectBounds, BoundingSphere(light.Position, light.Radius)))
+        if (objectBounds.Intersects(BoundingSphere(light.Position, light.Radius)))
         {
-            light.SetupLightData(&data.LocalLights[data.LocalLightsCount], false);
+            light.SetShaderData(data.LocalLights[data.LocalLightsCount], false);
             data.LocalLightsCount++;
         }
     }
     for (int32 i = 0; i < cache->SpotLights.Count() && data.LocalLightsCount < MaxLocalLights; i++)
     {
         const auto& light = cache->SpotLights[i];
-        if (CollisionsHelper::SphereIntersectsSphere(objectBounds, BoundingSphere(light.Position, light.Radius)))
+        if (objectBounds.Intersects(BoundingSphere(light.Position, light.Radius)))
         {
-            light.SetupLightData(&data.LocalLights[data.LocalLightsCount], false);
+            light.SetShaderData(data.LocalLights[data.LocalLightsCount], false);
             data.LocalLightsCount++;
         }
     }
@@ -127,8 +119,7 @@ void ForwardShadingFeature::Bind(MaterialShader::BindParameters& params, Span<by
 
 bool LightmapFeature::Bind(MaterialShader::BindParameters& params, Span<byte>& cb, int32& srv)
 {
-    auto& drawCall = *params.FirstDrawCall;
-    ASSERT_LOW_LAYER(cb.Length() >= sizeof(Data));
+    auto& drawCall = *params.DrawCall;
 
     const bool useLightmap = EnumHasAnyFlags(params.RenderContext.View.Flags, ViewFlags::GI)
 #if USE_EDITOR
@@ -143,13 +134,15 @@ bool LightmapFeature::Bind(MaterialShader::BindParameters& params, Span<byte>& c
         params.GPUContext->BindSR(srv + 0, lightmap0);
         params.GPUContext->BindSR(srv + 1, lightmap1);
         params.GPUContext->BindSR(srv + 2, lightmap2);
-
-        // Set lightmap data
-        auto& data = *(Data*)cb.Get();
-        data.LightmapArea = drawCall.Features.LightmapUVsArea;
+    }
+    else
+    {
+        // Free texture slots
+        params.GPUContext->UnBindSR(srv + 0);
+        params.GPUContext->UnBindSR(srv + 1);
+        params.GPUContext->UnBindSR(srv + 2);
     }
 
-    cb = Span<byte>(cb.Get() + sizeof(Data), cb.Length() - sizeof(Data));
     srv += SRVs;
     return useLightmap;
 }

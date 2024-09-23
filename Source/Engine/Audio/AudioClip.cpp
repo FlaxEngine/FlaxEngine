@@ -31,16 +31,16 @@ bool AudioClip::StreamingTask::Run()
     for (int32 i = 0; i < queue.Count(); i++)
     {
         const auto idx = queue[i];
-        uint32& bufferId = clip->Buffers[idx];
-        if (bufferId == AUDIO_BUFFER_ID_INVALID)
+        uint32& bufferID = clip->Buffers[idx];
+        if (bufferID == 0)
         {
-            bufferId = AudioBackend::Buffer::Create();
+            bufferID = AudioBackend::Buffer::Create();
         }
         else
         {
             // Release unused data
-            AudioBackend::Buffer::Delete(bufferId);
-            bufferId = AUDIO_BUFFER_ID_INVALID;
+            AudioBackend::Buffer::Delete(bufferID);
+            bufferID = 0;
         }
     }
 
@@ -267,7 +267,7 @@ Task* AudioClip::CreateStreamingTask(int32 residency)
     for (int32 i = 0; i < StreamingQueue.Count(); i++)
     {
         const int32 idx = StreamingQueue[i];
-        if (Buffers[idx] == AUDIO_BUFFER_ID_INVALID)
+        if (Buffers[idx] == 0)
         {
             const auto task = (Task*)RequestChunkDataAsync(idx);
             if (task)
@@ -383,8 +383,8 @@ Asset::LoadResult AudioClip::load()
 void AudioClip::unload(bool isReloading)
 {
     bool hasAnyBuffer = false;
-    for (const AUDIO_BUFFER_ID_TYPE bufferId : Buffers)
-        hasAnyBuffer |= bufferId != AUDIO_BUFFER_ID_INVALID;
+    for (const uint32 bufferID : Buffers)
+        hasAnyBuffer |= bufferID != 0;
 
     // Stop any audio sources that are using this clip right now
     // TODO: find better way to collect audio sources using audio clip and impl it for AudioStreamingHandler too
@@ -400,10 +400,10 @@ void AudioClip::unload(bool isReloading)
     StreamingQueue.Clear();
     if (hasAnyBuffer && AudioBackend::Instance)
     {
-        for (AUDIO_BUFFER_ID_TYPE bufferId : Buffers)
+        for (uint32 bufferID : Buffers)
         {
-            if (bufferId != AUDIO_BUFFER_ID_INVALID)
-                AudioBackend::Buffer::Delete(bufferId);
+            if (bufferID != 0)
+                AudioBackend::Buffer::Delete(bufferID);
         }
     }
     Buffers.Clear();
@@ -414,8 +414,8 @@ void AudioClip::unload(bool isReloading)
 bool AudioClip::WriteBuffer(int32 chunkIndex)
 {
     // Ignore if buffer is not created
-    const uint32 bufferId = Buffers[chunkIndex];
-    if (bufferId == AUDIO_BUFFER_ID_INVALID)
+    const uint32 bufferID = Buffers[chunkIndex];
+    if (bufferID == 0)
         return false;
 
     // Ensure audio backend exists
@@ -476,6 +476,6 @@ bool AudioClip::WriteBuffer(int32 chunkIndex)
     }
 
     // Write samples to the audio buffer
-    AudioBackend::Buffer::Write(bufferId, data.Get(), info);
+    AudioBackend::Buffer::Write(bufferID, data.Get(), info);
     return false;
 }

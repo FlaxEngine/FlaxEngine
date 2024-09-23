@@ -104,6 +104,11 @@ namespace FlaxEditor.Surface
             }
         }
 
+        internal static GroupElement InitGraphParametersGroup(LayoutElementsContainer layout)
+        {
+            return CustomEditors.Editors.GenericEditor.OnGroup(layout, "Parameters");
+        }
+
         private sealed class DummyMaterialSurfaceOwner : IVisjectSurfaceOwner
         {
             public Asset SurfaceAsset => null;

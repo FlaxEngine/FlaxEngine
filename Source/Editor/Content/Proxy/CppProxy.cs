@@ -88,6 +88,12 @@ namespace FlaxEditor.Content
         }
 
         /// <inheritdoc />
+        public override ContentItem ConstructItem(string path)
+        {
+            return new CppScriptItem(path);
+        }
+
+        /// <inheritdoc />
         protected override void GetTemplatePaths(out string headerTemplate, out string sourceTemplate)
         {
             headerTemplate = StringUtils.CombinePaths(Globals.EngineContentFolder, "Editor/Scripting/ScriptTemplate.h");

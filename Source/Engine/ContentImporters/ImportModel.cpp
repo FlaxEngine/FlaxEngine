@@ -71,10 +71,10 @@ void RepackMeshLightmapUVs(ModelData& data)
     auto& lod = data.LODs[lodIndex];
 
     // Build list of meshes with their area
-    struct LightmapUVsPack : RectPack<LightmapUVsPack, float>
+    struct LightmapUVsPack : RectPackNode<float>
     {
-        LightmapUVsPack(float x, float y, float width, float height)
-            : RectPack<LightmapUVsPack, float>(x, y, width, height)
+        LightmapUVsPack(Size x, Size y, Size width, Size height)
+            : RectPackNode(x, y, width, height)
         {
         }
 
@@ -110,10 +110,11 @@ void RepackMeshLightmapUVs(ModelData& data)
         {
             bool failed = false;
             const float chartsPadding = (4.0f / 256.0f) * atlasSize;
-            LightmapUVsPack root(chartsPadding, chartsPadding, atlasSize - chartsPadding, atlasSize - chartsPadding);
+            RectPackAtlas<LightmapUVsPack> atlas;
+            atlas.Init(atlasSize, atlasSize, chartsPadding);
             for (auto& entry : entries)
             {
-                entry.Slot = root.Insert(entry.Size, entry.Size, chartsPadding);
+                entry.Slot = atlas.Insert(entry.Size, entry.Size);
                 if (entry.Slot == nullptr)
                 {
                     // Failed to insert surface, increase atlas size and try again
@@ -130,7 +131,7 @@ void RepackMeshLightmapUVs(ModelData& data)
                 for (const auto& entry : entries)
                 {
                     Float2 uvOffset(entry.Slot->X * atlasSizeInv, entry.Slot->Y * atlasSizeInv);
-                    Float2 uvScale((entry.Slot->Width - chartsPadding) * atlasSizeInv, (entry.Slot->Height - chartsPadding) * atlasSizeInv);
+                    Float2 uvScale(entry.Slot->Width * atlasSizeInv, entry.Slot->Height * atlasSizeInv);
                     // TODO: SIMD
                     for (auto& uv : entry.Mesh->LightmapUVs)
                     {

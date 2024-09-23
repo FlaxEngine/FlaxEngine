@@ -122,6 +122,11 @@ public:
     API_FIELD(ReadOnly) uint64 TotalGraphicsMemory;
 
     /// <summary>
+    /// Indicates that debug tool is profiling device (eg. RenderDoc).
+    /// </summary>
+    API_FIELD(ReadOnly) bool IsDebugToolAttached;
+
+    /// <summary>
     /// The GPU limits.
     /// </summary>
     API_FIELD(ReadOnly) GPULimits Limits;
@@ -269,6 +274,16 @@ public:
     /// Gets the shader pipeline state object for solid-color texture clear.
     /// </summary>
     GPUPipelineState* GetClearPS() const;
+
+    /// <summary>
+    /// Gets the shader pipeline state object for YUY2 frame decoding to RGBA.
+    /// </summary>
+    GPUPipelineState* GetDecodeYUY2PS() const;
+
+    /// <summary>
+    /// Gets the shader pipeline state object for NV12 frame decoding to RGBA.
+    /// </summary>
+    GPUPipelineState* GetDecodeNV12PS() const;
 
     /// <summary>
     /// Gets the fullscreen-triangle vertex buffer.

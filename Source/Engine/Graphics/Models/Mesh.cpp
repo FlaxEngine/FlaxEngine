@@ -382,10 +382,10 @@ void Mesh::Render(GPUContext* context) const
 
     context->BindVB(ToSpan((GPUBuffer**)_vertexBuffers, 3));
     context->BindIB(_indexBuffer);
-    context->DrawIndexedInstanced(_triangles * 3, 1, 0, 0, 0);
+    context->DrawIndexed(_triangles * 3);
 }
 
-void Mesh::Draw(const RenderContext& renderContext, MaterialBase* material, const Matrix& world, StaticFlags flags, bool receiveDecals, DrawPass drawModes, float perInstanceRandom, int16 sortOrder) const
+void Mesh::Draw(const RenderContext& renderContext, MaterialBase* material, const Matrix& world, StaticFlags flags, bool receiveDecals, DrawPass drawModes, float perInstanceRandom, int8 sortOrder) const
 {
     if (!material || !material->IsSurface() || !IsInitialized())
         return;
@@ -407,11 +407,7 @@ void Mesh::Draw(const RenderContext& renderContext, MaterialBase* material, cons
     drawCall.ObjectRadius = (float)_sphere.Radius * drawCall.World.GetScaleVector().GetAbsolute().MaxValue();
     drawCall.Surface.GeometrySize = _box.GetSize();
     drawCall.Surface.PrevWorld = world;
-    drawCall.Surface.Lightmap = nullptr;
-    drawCall.Surface.LightmapUVsArea = Rectangle::Empty;
-    drawCall.Surface.Skinning = nullptr;
-    drawCall.Surface.LODDitherFactor = 0.0f;
-    drawCall.WorldDeterminantSign = Math::FloatSelect(world.RotDeterminant(), 1, -1);
+    drawCall.WorldDeterminantSign = RenderTools::GetWorldDeterminantSign(drawCall.World);
     drawCall.PerInstanceRandom = perInstanceRandom;
 #if USE_EDITOR
     const ViewMode viewMode = renderContext.View.Mode;
@@ -477,9 +473,8 @@ void Mesh::Draw(const RenderContext& renderContext, const DrawInfo& info, float 
     drawCall.Surface.PrevWorld = info.DrawState->PrevWorld;
     drawCall.Surface.Lightmap = (info.Flags & StaticFlags::Lightmap) != StaticFlags::None ? info.Lightmap : nullptr;
     drawCall.Surface.LightmapUVsArea = info.LightmapUVs ? *info.LightmapUVs : Rectangle::Empty;
-    drawCall.Surface.Skinning = nullptr;
     drawCall.Surface.LODDitherFactor = lodDitherFactor;
-    drawCall.WorldDeterminantSign = Math::FloatSelect(drawCall.World.RotDeterminant(), 1, -1);
+    drawCall.WorldDeterminantSign = RenderTools::GetWorldDeterminantSign(drawCall.World);
     drawCall.PerInstanceRandom = info.PerInstanceRandom;
 #if USE_EDITOR
     const ViewMode viewMode = renderContext.View.Mode;
@@ -541,9 +536,8 @@ void Mesh::Draw(const RenderContextBatch& renderContextBatch, const DrawInfo& in
     drawCall.Surface.PrevWorld = info.DrawState->PrevWorld;
     drawCall.Surface.Lightmap = (info.Flags & StaticFlags::Lightmap) != StaticFlags::None ? info.Lightmap : nullptr;
     drawCall.Surface.LightmapUVsArea = info.LightmapUVs ? *info.LightmapUVs : Rectangle::Empty;
-    drawCall.Surface.Skinning = nullptr;
     drawCall.Surface.LODDitherFactor = lodDitherFactor;
-    drawCall.WorldDeterminantSign = Math::FloatSelect(drawCall.World.RotDeterminant(), 1, -1);
+    drawCall.WorldDeterminantSign = RenderTools::GetWorldDeterminantSign(drawCall.World);
     drawCall.PerInstanceRandom = info.PerInstanceRandom;
 #if USE_EDITOR
     const ViewMode viewMode = renderContextBatch.GetMainContext().View.Mode;

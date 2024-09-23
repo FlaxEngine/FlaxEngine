@@ -123,13 +123,11 @@ bool MaterialInstance::IsMaterialInstance() const
 
 #if USE_EDITOR
 
-void MaterialInstance::GetReferences(Array<Guid>& output) const
+void MaterialInstance::GetReferences(Array<Guid>& assets, Array<String>& files) const
 {
-    // Base
-    MaterialBase::GetReferences(output);
-
+    MaterialBase::GetReferences(assets, files);
     if (_baseMaterial)
-        output.Add(_baseMaterial->GetID());
+        assets.Add(_baseMaterial->GetID());
 }
 
 #endif

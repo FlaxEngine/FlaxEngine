@@ -943,7 +943,8 @@ bool FlaxStorage::Create(WriteStream* stream, const AssetInitData* data, int32 d
     {
         FlaxChunk* chunk = chunks[i];
         stream->WriteBytes(&chunk->LocationInFile, sizeof(chunk->LocationInFile));
-        stream->WriteInt32((int32)chunk->Flags);
+        FlaxChunkFlags flags = chunk->Flags & ~(FlaxChunkFlags::KeepInMemory); // Skip saving runtime-only flags
+        stream->WriteInt32((int32)flags);
     }
 
 #if ASSETS_LOADING_EXTRA_VERIFICATION
@@ -1087,7 +1088,7 @@ bool FlaxStorage::LoadAssetHeader(const Entry& e, AssetInitData& data)
         {
             int32 chunkIndex;
             stream->ReadInt32(&chunkIndex);
-            if (chunkIndex >= _chunks.Count())
+            if (chunkIndex < -1 || chunkIndex >= _chunks.Count())
             {
                 LOG(Warning, "Invalid chunks mapping.");
                 return true;
@@ -1144,7 +1145,7 @@ bool FlaxStorage::LoadAssetHeader(const Entry& e, AssetInitData& data)
         {
             int32 chunkIndex;
             stream->ReadInt32(&chunkIndex);
-            if (chunkIndex >= _chunks.Count())
+            if (chunkIndex < -1 || chunkIndex >= _chunks.Count())
             {
                 LOG(Warning, "Invalid chunks mapping.");
                 return true;
@@ -1199,7 +1200,7 @@ bool FlaxStorage::LoadAssetHeader(const Entry& e, AssetInitData& data)
         {
             int32 chunkIndex;
             stream->ReadInt32(&chunkIndex);
-            if (chunkIndex >= _chunks.Count())
+            if (chunkIndex < -1 || chunkIndex >= _chunks.Count())
             {
                 LOG(Warning, "Invalid chunks mapping.");
                 return true;
@@ -1410,7 +1411,7 @@ void FlaxStorage::Tick(double time)
     {
         auto chunk = _chunks.Get()[i];
         const bool wasUsed = (time - chunk->LastAccessTime) < unusedDataChunksLifetime;
-        if (!wasUsed && chunk->IsLoaded())
+        if (!wasUsed && chunk->IsLoaded() && EnumHasNoneFlags(chunk->Flags, FlaxChunkFlags::KeepInMemory))
         {
             chunk->Unload();
         }

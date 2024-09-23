@@ -121,7 +121,7 @@ API_CLASS(Static) class FLAXENGINE_API DebugDraw
     /// <param name="color">The color.</param>
     /// <param name="duration">The duration (in seconds). Use 0 to draw it only once.</param>
     /// <param name="depthTest">If set to <c>true</c> depth test will be performed, otherwise depth will be ignored.</param>
-    API_FUNCTION() DEPRECATED static void DrawRay(const Vector3& origin, const Vector3& direction, const Color& color = Color::White, float duration = 0.0f, bool depthTest = true);
+    API_FUNCTION() DEPRECATED("Use DrawRay with length parameter instead") static void DrawRay(const Vector3& origin, const Vector3& direction, const Color& color, float duration, bool depthTest);
 
     /// <summary>
     /// Draws the line in a direction.

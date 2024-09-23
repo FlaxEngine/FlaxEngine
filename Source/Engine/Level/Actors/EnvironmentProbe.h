@@ -91,13 +91,6 @@ public:
     API_PROPERTY() bool IsUsingCustomProbe() const;
 
     /// <summary>
-    /// Setup probe data structure
-    /// </summary>
-    /// <param name="renderContext">Rendering context</param>
-    /// <param name="data">Packed probe data to set</param>
-    void SetupProbeData(const RenderContext& renderContext, struct ProbeData* data) const;
-
-    /// <summary>
     /// Gets the custom probe (null if using baked one or none).
     /// </summary>
     API_PROPERTY(Attributes="EditorOrder(40), DefaultValue(null), EditorDisplay(\"Probe\")")

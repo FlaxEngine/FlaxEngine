@@ -94,7 +94,10 @@ namespace FlaxEditor.Content
             _preview.Model = (Model)request.Asset;
             _preview.Parent = guiRoot;
             _preview.SyncBackbufferSize();
-            _preview.ViewportCamera.SetArcBallView(_preview.Model.GetBox());
+            var bounds = _preview.Model.GetBox();
+            var maxSize = Math.Max(0.001f, (float)bounds.Size.MaxValue);
+            _preview.ViewportCamera.SetArcBallView(bounds);
+            _preview.FarPlane = Mathf.Max(1000.0f, maxSize * 2 + 100.0f);
 
             _preview.Task.OnDraw();
         }

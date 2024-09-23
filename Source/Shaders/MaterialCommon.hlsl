@@ -58,6 +58,9 @@
 #ifndef USE_PER_VIEW_CONSTANTS
 #define USE_PER_VIEW_CONSTANTS 0
 #endif
+#ifndef USE_PER_DRAW_CONSTANTS
+#define USE_PER_DRAW_CONSTANTS 0
+#endif
 #ifndef MATERIAL_TESSELLATION
 #define MATERIAL_TESSELLATION MATERIAL_TESSELLATION_NONE
 #endif
@@ -66,6 +69,67 @@
 #endif
 #ifndef PER_BONE_MOTION_BLUR
 #define PER_BONE_MOTION_BLUR 0
+#endif
+
+// Object properties
+struct ObjectData
+{
+    float4x4 WorldMatrix;
+    float4x4 PrevWorldMatrix;
+    float3 GeometrySize;
+    float WorldDeterminantSign;
+    float LODDitherFactor;
+    float PerInstanceRandom;
+    float4 LightmapArea;
+};
+
+float2 UnpackHalf2(uint xy)
+{
+    return float2(f16tof32(xy & 0xffff), f16tof32(xy >> 16));
+}
+
+// Loads the object data from the global buffer
+ObjectData LoadObject(Buffer<float4> objectsBuffer, uint objectIndex)
+{
+    // This must match ShaderObjectData::Store
+    objectIndex *= 8;
+    ObjectData object = (ObjectData)0;
+    float4 vector0 = objectsBuffer.Load(objectIndex + 0);
+    float4 vector1 = objectsBuffer.Load(objectIndex + 1);
+    float4 vector2 = objectsBuffer.Load(objectIndex + 2);
+    float4 vector3 = objectsBuffer.Load(objectIndex + 3);
+    float4 vector4 = objectsBuffer.Load(objectIndex + 4);
+    float4 vector5 = objectsBuffer.Load(objectIndex + 5);
+    float4 vector6 = objectsBuffer.Load(objectIndex + 6);
+    float4 vector7 = objectsBuffer.Load(objectIndex + 7);
+    object.WorldMatrix[0] = float4(vector0.xyz, 0.0f);
+    object.WorldMatrix[1] = float4(vector1.xyz, 0.0f);
+    object.WorldMatrix[2] = float4(vector2.xyz, 0.0f);
+    object.WorldMatrix[3] = float4(vector0.w, vector1.w, vector2.w, 1.0f);
+    object.PrevWorldMatrix[0] = float4(vector3.xyz, 0.0f);
+    object.PrevWorldMatrix[1] = float4(vector4.xyz, 0.0f);
+    object.PrevWorldMatrix[2] = float4(vector5.xyz, 0.0f);
+    object.PrevWorldMatrix[3] = float4(vector3.w, vector4.w, vector5.w, 1.0f);
+    object.GeometrySize = vector6.xyz;
+    object.PerInstanceRandom = vector6.w;
+    object.WorldDeterminantSign = vector7.x;
+    object.LODDitherFactor = vector7.y;
+    object.LightmapArea.xy = UnpackHalf2(asuint(vector7.z));
+    object.LightmapArea.zw = UnpackHalf2(asuint(vector7.w));
+    return object;
+}
+
+#ifndef LoadObjectFromCB
+// Loads the object data from the constant buffer into the variable
+#define LoadObjectFromCB(var) \
+    var = (ObjectData)0; \
+    var.WorldMatrix = ToMatrix4x4(WorldMatrix); \
+    var.PrevWorldMatrix = ToMatrix4x4(PrevWorldMatrix); \
+    var.GeometrySize = GeometrySize; \
+    var.PerInstanceRandom = PerInstanceRandom; \
+    var.WorldDeterminantSign = WorldDeterminantSign; \
+    var.LODDitherFactor = LODDitherFactor; \
+    var.LightmapArea = LightmapArea;
 #endif
 
 // Material properties
@@ -110,6 +174,15 @@ cbuffer ViewData : register(b1)
 };
 #endif
 
+// Draw pipeline constant buffer (with per-draw constants at slot 2)
+#if USE_PER_DRAW_CONSTANTS
+cbuffer DrawData : register(b2)
+{
+    float3 DrawPadding;
+    uint DrawObjectIndex;
+};
+#endif
+
 struct ModelInput
 {
     float3 Position : POSITION;
@@ -118,14 +191,10 @@ struct ModelInput
     float4 Tangent : TANGENT;
     float2 LightmapUV : TEXCOORD1;
 #if USE_VERTEX_COLOR
-	half4 Color       : COLOR;
+	half4 Color : COLOR;
 #endif
 #if USE_INSTANCING
-	float4 InstanceOrigin      : ATTRIBUTE0; // .w contains PerInstanceRandom
-	float4 InstanceTransform1  : ATTRIBUTE1; // .w contains LODDitherFactor
-	float3 InstanceTransform2  : ATTRIBUTE2;
-	float3 InstanceTransform3  : ATTRIBUTE3;
-	half4 InstanceLightmapArea : ATTRIBUTE4;
+	uint ObjectIndex : ATTRIBUTE0;
 #endif
 };
 
@@ -133,11 +202,7 @@ struct ModelInput_PosOnly
 {
     float3 Position : POSITION;
 #if USE_INSTANCING
-	float4 InstanceOrigin      : ATTRIBUTE0; // .w contains PerInstanceRandom
-	float4 InstanceTransform1  : ATTRIBUTE1; // .w contains LODDitherFactor
-	float3 InstanceTransform2  : ATTRIBUTE2;
-	float3 InstanceTransform3  : ATTRIBUTE3;
-	half4 InstanceLightmapArea : ATTRIBUTE4;
+	uint ObjectIndex : ATTRIBUTE0;
 #endif
 };
 
@@ -149,13 +214,6 @@ struct ModelInput_Skinned
     float4 Tangent : TANGENT;
     uint4 BlendIndices : BLENDINDICES;
     float4 BlendWeights : BLENDWEIGHT;
-#if USE_INSTANCING
-	float4 InstanceOrigin      : ATTRIBUTE0; // .w contains PerInstanceRandom
-	float4 InstanceTransform1  : ATTRIBUTE1; // .w contains LODDitherFactor
-	float3 InstanceTransform2  : ATTRIBUTE2;
-	float3 InstanceTransform3  : ATTRIBUTE3;
-	half4 InstanceLightmapArea : ATTRIBUTE4;
-#endif
 };
 
 struct Model_VS2PS

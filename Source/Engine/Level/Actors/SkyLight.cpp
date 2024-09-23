@@ -11,6 +11,7 @@
 #include "Engine/Content/Content.h"
 #include "Engine/Serialization/Serialization.h"
 #include "Engine/ContentImporters/AssetsImportingManager.h"
+#include "Engine/Graphics/RenderTools.h"
 #include "Engine/Level/Scene/Scene.h"
 
 SkyLight::SkyLight(const SpawnParams& params)
@@ -113,18 +114,18 @@ void SkyLight::Draw(RenderContext& renderContext)
         && brightness > ZeroTolerance
         && (ViewDistance < ZeroTolerance || Vector3::DistanceSquared(renderContext.View.Position, position) < ViewDistance * ViewDistance))
     {
-        RendererSkyLightData data;
+        RenderSkyLightData data;
         data.Position = position;
         data.Color = Color.ToFloat3() * (Color.A * brightness);
         data.VolumetricScatteringIntensity = VolumetricScatteringIntensity;
         data.CastVolumetricShadow = CastVolumetricShadow;
-        data.RenderedVolumetricFog = 0;
         data.AdditiveColor = AdditiveColor.ToFloat3() * (AdditiveColor.A * brightness);
         data.IndirectLightingIntensity = IndirectLightingIntensity;
         data.Radius = GetScaledRadius();
         data.Image = GetSource();
         data.StaticFlags = GetStaticFlags();
         data.ID = GetID();
+        data.ScreenSize = Math::Min(1.0f, Math::Sqrt(RenderTools::ComputeBoundsScreenRadiusSquared(position, (float)_sphere.Radius, renderContext.View)));
         renderContext.List->SkyLights.Add(data);
     }
 }

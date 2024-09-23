@@ -17,6 +17,7 @@
 #include "Engine/Content/Assets/MaterialInstance.h"
 #include "Engine/Content/Content.h"
 #include "Engine/Core/Types/Variant.h"
+#include "Engine/Graphics/RenderTools.h"
 #include "Engine/Localization/Localization.h"
 #if USE_EDITOR
 #include "Editor/Editor.h"
@@ -369,11 +370,7 @@ void TextRender::Draw(RenderContext& renderContext)
         drawCall.ObjectRadius = (float)_sphere.Radius;
         drawCall.Surface.GeometrySize = _localBox.GetSize();
         drawCall.Surface.PrevWorld = _drawState.PrevWorld;
-        drawCall.Surface.Lightmap = nullptr;
-        drawCall.Surface.LightmapUVsArea = Rectangle::Empty;
-        drawCall.Surface.Skinning = nullptr;
-        drawCall.Surface.LODDitherFactor = 0.0f;
-        drawCall.WorldDeterminantSign = Math::FloatSelect(world.RotDeterminant(), 1, -1);
+        drawCall.WorldDeterminantSign = RenderTools::GetWorldDeterminantSign(drawCall.World);
         drawCall.PerInstanceRandom = GetPerInstanceRandom();
         drawCall.Geometry.IndexBuffer = _ib.GetBuffer();
         drawCall.Geometry.VertexBuffers[0] = _vb0.GetBuffer();
