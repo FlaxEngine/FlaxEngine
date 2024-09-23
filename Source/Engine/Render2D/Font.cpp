@@ -402,7 +402,19 @@ Float2 Font::GetCharPosition(const StringView& text, int32 index, const TextLayo
 {
     // Check if there is no need to do anything
     if (text.IsEmpty())
-        return layout.Bounds.Location;
+    {
+        Float2 location = layout.Bounds.Location;
+        if (layout.VerticalAlignment == TextAlignment::Center)
+            location.Y += layout.Bounds.Size.Y * 0.5f - static_cast<float>(_height) * 0.5f;
+        else if (layout.VerticalAlignment == TextAlignment::Far)
+            location.Y += layout.Bounds.Size.Y - static_cast<float>(_height) * 0.5f;
+
+        if (layout.HorizontalAlignment == TextAlignment::Center)
+            location.X += layout.Bounds.Size.X * 0.5f;
+        else if (layout.HorizontalAlignment == TextAlignment::Far)
+            location.X += layout.Bounds.Size.X;
+        return location;
+    }
 
     // Process text
     Array<FontLineCache> lines;
