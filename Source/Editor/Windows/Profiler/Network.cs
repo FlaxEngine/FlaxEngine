@@ -146,11 +146,10 @@ namespace FlaxEditor.Windows.Profiler
                 avgStats.TotalDataSent += e.TotalDataSent;
                 avgStats.TotalDataReceived += e.TotalDataReceived;
             }
-            avgStats.TotalDataSent /= (uint)_stats.Count;
-            avgStats.TotalDataReceived /= (uint)_stats.Count;
+            //avgStats.TotalDataSent /= (uint)_stats.Count;
+            //avgStats.TotalDataReceived /= (uint)_stats.Count;
             _dataSentRateChart.AddSample(avgStats.TotalDataSent);
             _dataReceivedRateChart.AddSample(avgStats.TotalDataReceived);
-
 
             // Gather network events
             var events = ProfilingTools.EventsNetwork;
@@ -319,7 +318,7 @@ namespace FlaxEditor.Windows.Profiler
 
         private static string FormatCellBytes(object x)
         {
-            return Utilities.Utils.FormatBytesCount((ulong)x);
+            return Utilities.Utils.FormatBytesCount((ulong)(int)x);
         }
 
         private static int SortRows(Control x, Control y)
