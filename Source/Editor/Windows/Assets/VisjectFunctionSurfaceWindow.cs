@@ -27,9 +27,21 @@ namespace FlaxEditor.Windows.Assets
         /// </summary>
         protected readonly Panel _panel;
 
-        private readonly ToolStripButton _saveButton;
-        private readonly ToolStripButton _undoButton;
-        private readonly ToolStripButton _redoButton;
+        /// <summary>
+        /// Save button.
+        /// </summary>
+        protected ToolStripButton _saveButton;
+
+        /// <summary>
+        /// Undo button.
+        /// </summary>
+        protected ToolStripButton _undoButton;
+
+        /// <summary>
+        /// Redo button.
+        /// </summary>
+        protected ToolStripButton _redoButton;
+
         private bool _showWholeGraphOnLoad = true;
 
         /// <summary>
@@ -61,16 +73,11 @@ namespace FlaxEditor.Windows.Assets
         protected VisjectFunctionSurfaceWindow(Editor editor, AssetItem item)
         : base(editor, item)
         {
-            var inputOptions = Editor.Options.Options.Input;
-
             // Undo
             _undo = new Undo();
             _undo.UndoDone += OnUndoRedo;
             _undo.RedoDone += OnUndoRedo;
             _undo.ActionDone += OnUndoRedo;
-
-            // Toolstrip
-            SurfaceUtils.PerformCommonSetup(this, _toolstrip, _surface, out _saveButton, out _undoButton, out _redoButton);
 
             // Panel
             _panel = new Panel(ScrollBars.None)

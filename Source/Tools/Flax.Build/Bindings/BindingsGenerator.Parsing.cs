@@ -242,6 +242,11 @@ namespace Flax.Build.Bindings
             }
 
             // Forward type
+            if (token.Value == "enum")
+            {
+                context.Tokenizer.SkipUntil(TokenType.Identifier);
+                token = context.Tokenizer.CurrentToken;
+            }
             if (token.Value == "class")
             {
                 context.Tokenizer.SkipUntil(TokenType.Identifier);

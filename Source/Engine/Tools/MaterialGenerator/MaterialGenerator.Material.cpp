@@ -183,11 +183,15 @@ void MaterialGenerator::ProcessGroupMaterial(Box* box, Node* node, Value& value)
         break;
     // Pre-skinned Local Position
     case 13:
-        value = _treeType == MaterialTreeType::VertexShader ? Value(VariantType::Float3, TEXT("input.PreSkinnedPosition")) : Value::Zero;
+        value = Value(VariantType::Float3, TEXT("input.PreSkinnedPosition"));
+        if (_treeType != MaterialTreeType::VertexShader)
+            value = VsToPs(node, box).AsFloat3();
         break;
     // Pre-skinned Local Normal
     case 14:
-        value = _treeType == MaterialTreeType::VertexShader ? Value(VariantType::Float3, TEXT("input.PreSkinnedNormal")) : Value::Zero;
+        value = Value(VariantType::Float3, TEXT("input.PreSkinnedNormal"));
+        if (_treeType != MaterialTreeType::VertexShader)
+            value = VsToPs(node, box).AsFloat3();
         break;
     // Depth
     case 15:
@@ -211,38 +215,8 @@ void MaterialGenerator::ProcessGroupMaterial(Box* box, Node* node, Value& value)
         break;
     // Interpolate VS To PS
     case 20:
-    {
-        const auto input = node->GetBox(0);
-
-        // If used in VS then pass the value from the input box
-        if (_treeType == MaterialTreeType::VertexShader)
-        {
-            value = tryGetValue(input, Value::Zero).AsFloat4();
-            break;
-        }
-
-        // Check if can use more interpolants
-        if (_vsToPsInterpolants.Count() == 16)
-        {
-            OnError(node, box, TEXT("Too many VS to PS interpolants used."));
-            value = Value::Zero;
-            break;
-        }
-
-        // Check if can use interpolants
-        const auto layer = GetRootLayer();
-        if (!layer || layer->Domain == MaterialDomain::Decal || layer->Domain == MaterialDomain::PostProcess)
-        {
-            OnError(node, box, TEXT("VS to PS interpolants are not supported in Decal or Post Process materials."));
-            value = Value::Zero;
-            break;
-        }
-
-        // Indicate the interpolator slot usage
-        value = Value(VariantType::Float4, String::Format(TEXT("input.CustomVSToPS[{0}]"), _vsToPsInterpolants.Count()));
-        _vsToPsInterpolants.Add(input);
+        value = VsToPs(node, node->GetBox(0));
         break;
-    }
     // Terrain Holes Mask
     case 21:
     {

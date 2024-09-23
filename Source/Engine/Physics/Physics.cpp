@@ -494,28 +494,28 @@ void PhysicsScene::CollectResults()
 bool PhysicsScene::LineCast(const Vector3& start, const Vector3& end, uint32 layerMask, bool hitTriggers)
 {
     Vector3 directionToEnd = end - start;
-    const float distanceToEnd = directionToEnd.Length();
+    const Real distanceToEnd = directionToEnd.Length();
     if (distanceToEnd >= ZeroTolerance)
         directionToEnd /= distanceToEnd;
-    return PhysicsBackend::RayCast(_scene, start, directionToEnd, distanceToEnd, layerMask, hitTriggers);
+    return PhysicsBackend::RayCast(_scene, start, directionToEnd, (float)distanceToEnd, layerMask, hitTriggers);
 }
 
 bool PhysicsScene::LineCast(const Vector3& start, const Vector3& end, RayCastHit& hitInfo, uint32 layerMask, bool hitTriggers)
 {
     Vector3 directionToEnd = end - start;
-    const float distanceToEnd = directionToEnd.Length();
+    const Real distanceToEnd = directionToEnd.Length();
     if (distanceToEnd >= ZeroTolerance)
         directionToEnd /= distanceToEnd;
-    return PhysicsBackend::RayCast(_scene, start, directionToEnd, hitInfo, distanceToEnd, layerMask, hitTriggers);
+    return PhysicsBackend::RayCast(_scene, start, directionToEnd, hitInfo, (float)distanceToEnd, layerMask, hitTriggers);
 }
 
 bool PhysicsScene::LineCastAll(const Vector3& start, const Vector3& end, Array<RayCastHit>& results, uint32 layerMask, bool hitTriggers)
 {
     Vector3 directionToEnd = end - start;
-    const float distanceToEnd = directionToEnd.Length();
+    const Real distanceToEnd = directionToEnd.Length();
     if (distanceToEnd >= ZeroTolerance)
         directionToEnd /= distanceToEnd;
-    return PhysicsBackend::RayCastAll(_scene, start, directionToEnd, results, distanceToEnd, layerMask, hitTriggers);
+    return PhysicsBackend::RayCastAll(_scene, start, directionToEnd, results, (float)distanceToEnd, layerMask, hitTriggers);
 }
 
 bool PhysicsScene::RayCast(const Vector3& origin, const Vector3& direction, const float maxDistance, uint32 layerMask, bool hitTriggers)

@@ -339,11 +339,10 @@ int32 Font::HitTestText(const StringView& text, const Float2& location, const Te
     float baseLinesDistance = static_cast<float>(_height) * layout.BaseLinesGapScale * scale;
 
     // Offset position to match lines origin space
-    Float2 rootOffset = layout.Bounds.Location + lines.First().Location;
-    Float2 testPoint = location - rootOffset;
+    Float2 testPoint = location - layout.Bounds.Location;
 
     // Get line which may intersect with the position (it's possible because lines have fixed height)
-    int32 lineIndex = Math::Clamp(Math::FloorToInt(testPoint.Y / baseLinesDistance), 0, lines.Count() - 1);
+    int32 lineIndex = Math::Clamp(Math::FloorToInt((testPoint.Y - lines.First().Location.Y) / baseLinesDistance), 0, lines.Count() - 1);
     const FontLineCache& line = lines[lineIndex];
     float x = line.Location.X;
 
@@ -411,7 +410,6 @@ Float2 Font::GetCharPosition(const StringView& text, int32 index, const TextLayo
     ASSERT(lines.HasItems());
     float scale = layout.Scale / FontManager::FontScale;
     float baseLinesDistance = static_cast<float>(_height) * layout.BaseLinesGapScale * scale;
-    Float2 rootOffset = layout.Bounds.Location + lines.First().Location;
 
     // Find line with that position
     FontCharacterEntry previous;
@@ -423,7 +421,7 @@ Float2 Font::GetCharPosition(const StringView& text, int32 index, const TextLayo
         // Check if desire position is somewhere inside characters in line range
         if (Math::IsInRange(index, line.FirstCharIndex, line.LastCharIndex))
         {
-            float x = line.Location.X;
+            Float2 charPos = line.Location;
 
             // Check all characters in the line
             for (int32 currentIndex = line.FirstCharIndex; currentIndex < index; currentIndex++)
@@ -436,21 +434,21 @@ Float2 Font::GetCharPosition(const StringView& text, int32 index, const TextLayo
                 // Apply kerning
                 if (!isWhitespace && previous.IsValid)
                 {
-                    x += entry.Font->GetKerning(previous.Character, entry.Character);
+                    charPos.X += entry.Font->GetKerning(previous.Character, entry.Character);
                 }
                 previous = entry;
 
                 // Move
-                x += entry.AdvanceX * scale;
+                charPos.X += entry.AdvanceX * scale;
             }
 
             // Upper left corner of the character
-            return rootOffset + Float2(x, static_cast<float>(lineIndex * baseLinesDistance));
+            return layout.Bounds.Location + charPos;
         }
     }
 
     // Position after last character in the last line
-    return rootOffset + Float2(lines.Last().Size.X, static_cast<float>((lines.Count() - 1) * baseLinesDistance));
+    return layout.Bounds.Location + lines.Last().Location + Float2(lines.Last().Size.X, 0.0f);
 }
 
 void Font::FlushFaceSize() const

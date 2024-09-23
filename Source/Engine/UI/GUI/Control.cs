@@ -81,6 +81,7 @@ namespace FlaxEngine.GUI
         // Style
 
         private Color _backgroundColor = Color.Transparent;
+        private IBrush _backgroundBrush = null;
 
         // Tooltip
 
@@ -172,6 +173,25 @@ namespace FlaxEngine.GUI
         {
             get => _backgroundColor;
             set => _backgroundColor = value;
+        }
+
+        /// <summary>
+        /// Gets or sets control background brush used to fill the contents. Uses Background Color property as tint color.
+        /// </summary>
+        [EditorDisplay("Background Style"), EditorOrder(2001)]
+        public IBrush BackgroundBrush
+        {
+            get => _backgroundBrush;
+            set
+            {
+                _backgroundBrush = value;
+
+#if FLAX_EDITOR
+                // Auto-reset background color so brush is visible as it uses it for tint
+                if (value != null && _backgroundColor == Color.Transparent && FlaxEditor.CustomEditors.CustomEditor.IsSettingValue)
+                    _backgroundColor = Color.White;
+#endif
+            }
         }
 
         /// <summary>
@@ -416,9 +436,14 @@ namespace FlaxEngine.GUI
         public virtual void Draw()
         {
             // Paint Background
-            if (_backgroundColor.A > 0.0f)
+            var rect = new Rectangle(Float2.Zero, _bounds.Size);
+            if (BackgroundBrush != null)
             {
-                Render2D.FillRectangle(new Rectangle(Float2.Zero, Size), _backgroundColor);
+                BackgroundBrush.Draw(rect, _backgroundColor);
+            }
+            else if (_backgroundColor.A > 0.0f)
+            {
+                Render2D.FillRectangle(rect, _backgroundColor);
             }
         }
 
@@ -614,6 +639,18 @@ namespace FlaxEngine.GUI
             case NavDirection.Down: return NavTargetDown;
             case NavDirection.Left: return NavTargetLeft;
             case NavDirection.Right: return NavTargetRight;
+            case NavDirection.Next:
+                if (NavTargetRight != null)
+                    return NavTargetRight;
+                if (NavTargetDown != null)
+                    return NavTargetDown;
+                return null;
+            case NavDirection.Previous:
+                if (NavTargetLeft != null)
+                    return NavTargetLeft;
+                if (NavTargetUp != null)
+                    return NavTargetUp;
+                return null;
             default: return null;
             }
         }

@@ -17,7 +17,6 @@ using FlaxEditor.Surface.Elements;
 using FlaxEngine;
 using FlaxEngine.GUI;
 using FlaxEngine.Utilities;
-using Object = FlaxEngine.Object;
 
 namespace FlaxEditor.Surface
 {
@@ -34,6 +33,14 @@ namespace FlaxEditor.Surface
             Name = "Method Overrides",
             Color = new Color(109, 160, 24),
             Archetypes = new List<NodeArchetype>(),
+        };
+
+        private static readonly string[] _blacklistedTypeNames =
+        {
+            "Newtonsoft.Json.",
+            "System.Array",
+            "System.Linq.Expressions.",
+            "System.Reflection.",
         };
 
         private static NodesCache _nodesCache = new NodesCache(IterateNodesCache);
@@ -269,8 +276,11 @@ namespace FlaxEditor.Surface
         {
             // Skip Newtonsoft.Json stuff
             var scriptTypeTypeName = scriptType.TypeName;
-            if (scriptTypeTypeName.StartsWith("Newtonsoft.Json."))
-                return;
+            for (var i = 0; i < _blacklistedTypeNames.Length; i++)
+            {
+                if (scriptTypeTypeName.StartsWith(_blacklistedTypeNames[i]))
+                    return;
+            }
             var scriptTypeName = scriptType.Name;
 
             // Enum

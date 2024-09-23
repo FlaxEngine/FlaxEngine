@@ -542,10 +542,8 @@ void Quaternion::RotationYawPitchRoll(float yaw, float pitch, float roll, Quater
 Quaternion Quaternion::GetRotationFromNormal(const Vector3& normal, const Transform& reference)
 {
     Float3 up = reference.GetUp();
-    const float dot = Vector3::Dot(normal, up);
+    const Real dot = Vector3::Dot(normal, up);
     if (Math::NearEqual(Math::Abs(dot), 1))
-    {
         up = reference.GetRight();
-    }
     return Quaternion::LookRotation(normal, up);
 }

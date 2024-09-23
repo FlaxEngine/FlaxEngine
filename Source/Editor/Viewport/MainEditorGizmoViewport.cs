@@ -221,7 +221,7 @@ namespace FlaxEditor.Viewport
             editor.SceneEditing.SelectionChanged += OnSelectionChanged;
 
             // Gizmo widgets
-            AddGizmoViewportWidgets(this, TransformGizmo);
+            AddGizmoViewportWidgets(this, TransformGizmo, true);
 
             // Show grid widget
             _showGridButton = ViewWidgetShowMenu.AddButton("Grid", () => Grid.Enabled = !Grid.Enabled);
