@@ -330,7 +330,7 @@ bool LinuxFileSystem::GetChildDirectories(Array<String>& results, const String& 
         // Determinate a full path of an entry
         char fullPath[256];
         ASSERT(pathLength + strlen(entry->d_name) < ARRAY_COUNT(fullPath));
-        strcpy(fullPath, path);
+        strcpy(fullPath, pathStr);
         strcat(fullPath, "/");
         strcat(fullPath, entry->d_name);
 
