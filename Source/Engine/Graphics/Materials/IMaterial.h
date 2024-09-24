@@ -166,6 +166,8 @@ public:
 
         // Binds the shared per-view constant buffer at slot 1 (see ViewData in MaterialCommon.hlsl)
         void BindViewData();
+        // Binds the shared per-draw constant buffer at slot 2 (see DrawData in MaterialCommon.hlsl)
+        void BindDrawData();
     };
 
     /// <summary>

@@ -84,6 +84,27 @@ void IMaterial::BindParameters::BindViewData()
     GPUContext->BindCB(1, PerViewConstants);
 }
 
+void IMaterial::BindParameters::BindDrawData()
+{
+    // Write draw call to the object buffer
+    auto& objectBuffer = RenderContext.List->TempObjectBuffer;
+    objectBuffer.Clear();
+    ShaderObjectData objData;
+    objData.Store(*DrawCall);
+    objectBuffer.Write(objData);
+    objectBuffer.Flush(GPUContext);
+    ObjectBuffer = objectBuffer.GetBuffer()->View();
+
+    // Setup data
+    MaterialShaderDataPerDraw perDraw;
+    perDraw.DrawPadding = Float3::Zero;
+    perDraw.DrawObjectIndex = 0;
+
+    // Update constants
+    GPUContext->UpdateCB(PerDrawConstants, &perDraw);
+    GPUContext->BindCB(2, PerDrawConstants);
+}
+
 GPUPipelineState* MaterialShader::PipelineStateCache::InitPS(CullMode mode, bool wireframe)
 {
     Desc.CullMode = mode;

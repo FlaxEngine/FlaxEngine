@@ -419,6 +419,11 @@ public:
     /// </summary>
     DynamicTypedBuffer ObjectBuffer;
 
+    /// <summary>
+    /// Temporary objects buffer that contains ShaderObjectData for each DrawCall reused during scene rendering (eg. by skybox).
+    /// </summary>
+    DynamicTypedBuffer TempObjectBuffer;
+
 private:
     DynamicVertexBuffer _instanceBuffer;
 

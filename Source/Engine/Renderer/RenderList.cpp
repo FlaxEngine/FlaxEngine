@@ -443,6 +443,7 @@ RenderList::RenderList(const SpawnParams& params)
     , Fog(nullptr)
     , Blendable(32)
     , ObjectBuffer(0, PixelFormat::R32G32B32A32_Float, false, TEXT("Object Bufffer"))
+    , TempObjectBuffer(0, PixelFormat::R32G32B32A32_Float, false, TEXT("Object Bufffer"))
     , _instanceBuffer(0, sizeof(ShaderObjectDrawInstanceData), TEXT("Instance Buffer"))
 {
 }
@@ -477,6 +478,7 @@ void RenderList::Clear()
     Blendable.Clear();
     _instanceBuffer.Clear();
     ObjectBuffer.Clear();
+    TempObjectBuffer.Clear();
 }
 
 struct PackedSortKey
