@@ -156,12 +156,12 @@ bool DeployDataStep::Perform(CookingData& data)
                 FileSystem::CopyFile(dstDotnet / TEXT("THIRD-PARTY-NOTICES.TXT"), srcDotnet / TEXT("THIRD-PARTY-NOTICES.TXT"));
                 if (usAOT)
                 {
-                    failed |= EditorUtilities::CopyDirectoryIfNewer(dstDotnet, srcDotnet / TEXT("shared/Microsoft.NETCore.App") / version, true);
+                    failed |= EditorUtilities::CopyDirectoryIfNewer(dstDotnet, srcDotnet / TEXT("shared/Microsoft.NETCore.App") / version);
                 }
                 else
                 {
 #if 1
-                    failed |= EditorUtilities::CopyDirectoryIfNewer(dstDotnet / TEXT("host/fxr") / version, srcDotnet / TEXT("host/fxr") / version, true);
+                    failed |= EditorUtilities::CopyDirectoryIfNewer(dstDotnet / TEXT("host/fxr") / version, srcDotnet / TEXT("host/fxr") / version);
 #else
                     // TODO: hostfxr for target platform should be copied from nuget package location: microsoft.netcore.app.runtime.<RID>/<VERSION>/runtimes/<RID>/native/hostfxr.dll
                     String dstHostfxr = dstDotnet / TEXT("host/fxr") / version;
@@ -330,7 +330,7 @@ bool DeployDataStep::Perform(CookingData& data)
             data.Error(TEXT("Missing Mono runtime data files."));
             return true;
         }
-        if (FileSystem::CopyDirectory(dstMono, srcMono, true))
+        if (FileSystem::CopyDirectory(dstMono, srcMono))
         {
             data.Error(TEXT("Failed to copy Mono runtime data files."));
             return true;
@@ -416,7 +416,7 @@ bool DeployDataStep::Perform(CookingData& data)
     for (auto& e : buildSettings.AdditionalAssetFolders)
     {
         String path = FileSystem::ConvertRelativePathToAbsolute(Globals::ProjectFolder, e);
-        if (FileSystem::DirectoryGetFiles(files, path, TEXT("*"), DirectorySearchOption::AllDirectories))
+        if (FileSystem::DirectoryGetFiles(files, path))
         {
             data.Error(TEXT("Failed to find additional assets to deploy."));
             return true;

@@ -380,7 +380,7 @@ bool ModelTool::GenerateModelSDF(Model* inputModel, ModelData* modelData, float 
     sdf.ResolutionScale = resolutionScale;
     sdf.LOD = lodIndex;
     const int32 maxMips = 3;
-    const int32 mipCount = Math::Min(MipLevelsCount(resolution.X, resolution.Y, resolution.Z, true), maxMips);
+    const int32 mipCount = Math::Min(MipLevelsCount(resolution.X, resolution.Y, resolution.Z), maxMips);
     PixelFormat format = PixelFormat::R16_UNorm;
     int32 formatStride = 2;
     float formatMaxValue = MAX_uint16;

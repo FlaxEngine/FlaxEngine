@@ -1067,7 +1067,7 @@ bool findAsset(const Guid& id, const String& directory, Array<String>& tmpCache,
 {
     // Get all asset files
     tmpCache.Clear();
-    if (FileSystem::DirectoryGetFiles(tmpCache, directory, TEXT("*"), DirectorySearchOption::AllDirectories))
+    if (FileSystem::DirectoryGetFiles(tmpCache, directory))
     {
         if (FileSystem::DirectoryExists(directory))
             LOG(Error, "Cannot query files in folder '{0}'.", directory);

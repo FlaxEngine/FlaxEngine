@@ -79,5 +79,5 @@ public:
     static bool ReplaceInFile(const StringView& file, const Dictionary<String, String, HeapAllocation>& replaceMap);
 
     static bool CopyFileIfNewer(const StringView& dst, const StringView& src);
-    static bool CopyDirectoryIfNewer(const StringView& dst, const StringView& src, bool withSubDirectories);
+    static bool CopyDirectoryIfNewer(const StringView& dst, const StringView& src, bool withSubDirectories = true);
 };

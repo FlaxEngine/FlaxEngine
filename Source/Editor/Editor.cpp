@@ -141,7 +141,7 @@ bool Editor::CheckProjectUpgrade()
         FileSystem::DeleteDirectory(tempSourceSetup);
         FileSystem::CreateDirectory(tempSourceSetup);
         Array<String> files;
-        FileSystem::DirectoryGetFiles(files, sourceFolder, TEXT("*"), DirectorySearchOption::AllDirectories);
+        FileSystem::DirectoryGetFiles(files, sourceFolder);
         bool useEditorModule = false;
         for (auto& file : files)
         {
@@ -159,7 +159,7 @@ bool Editor::CheckProjectUpgrade()
             FileSystem::CopyFile(tempSourceFile, file);
         }
         FileSystem::DeleteDirectory(sourceFolder);
-        FileSystem::CopyDirectory(sourceFolder, tempSourceSetup, true);
+        FileSystem::CopyDirectory(sourceFolder, tempSourceSetup);
         FileSystem::DeleteDirectory(tempSourceSetup);
 
         // Generate module files
@@ -364,7 +364,7 @@ bool Editor::BackupProject()
     LOG(Info, "Backup project to \"{0}\"", dstPath);
 
     // Copy everything
-    return FileSystem::CopyDirectory(dstPath, Globals::ProjectFolder, true);
+    return FileSystem::CopyDirectory(dstPath, Globals::ProjectFolder);
 }
 
 int32 Editor::LoadProduct()

@@ -123,7 +123,7 @@ bool UWPPlatformTools::OnDeployBinaries(CookingData& data)
     const auto srcAssetsPath = uwpDataPath / TEXT("Assets");
     if (!FileSystem::DirectoryExists(dstAssetsPath))
     {
-        if (FileSystem::CopyDirectory(dstAssetsPath, srcAssetsPath, true))
+        if (FileSystem::CopyDirectory(dstAssetsPath, srcAssetsPath))
         {
             data.Error(TEXT("Failed to copy Assets directory."));
             return true;
