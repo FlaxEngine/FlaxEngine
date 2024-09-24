@@ -292,7 +292,6 @@ namespace FlaxEngine.GUI
                 float alpha = Mathf.Saturate(Mathf.Cos(_animateTime * CaretFlashSpeed) * 0.5f + 0.7f);
                 alpha = alpha * alpha * alpha * alpha * alpha * alpha;
                 Render2D.FillRectangle(CaretBounds, CaretColor * alpha);
-                
             }
 
             // Restore rendering state
