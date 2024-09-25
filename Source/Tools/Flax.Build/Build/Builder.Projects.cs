@@ -50,6 +50,9 @@ namespace Flax.Build
                         var platform = Platform.BuildPlatform;
                         var architecture = TargetArchitecture.AnyCPU;
                         var architectureName = "AnyCPU";
+
+                        if (!platform.CanBuildArchitecture(architecture))
+                            continue;
                         var toolchain = platform.TryGetToolchain(architecture);
 
                         var configuration = TargetConfiguration.Debug;

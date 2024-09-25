@@ -433,7 +433,12 @@ namespace Flax.Build.Platforms
             {
             case WindowsPlatformToolset.v140:
             {
-                if (hostArchitecture != TargetArchitecture.x86)
+                if (architecture == TargetArchitecture.ARM64)
+                {
+                    Log.Verbose(string.Format("Unsupported {0} architecture for v140 toolset", hostArchitecture.ToString()));
+                    return null;
+                }
+                else if (hostArchitecture == TargetArchitecture.x64)
                 {
                     string nativeCompilerPath = Path.Combine(vcToolChainDir, "bin", "amd64", "cl.exe");
                     if (File.Exists(nativeCompilerPath))
@@ -446,12 +451,17 @@ namespace Flax.Build.Platforms
                     Log.Verbose(string.Format("No {0} host compiler toolchain found in {1} or {2}", hostArchitecture.ToString(), nativeCompilerPath, crossCompilerPath));
                     return null;
                 }
-                else
+                else if (hostArchitecture == TargetArchitecture.x86)
                 {
                     string compilerPath = Path.Combine(vcToolChainDir, "bin", "cl.exe");
                     if (File.Exists(compilerPath))
                         return Path.GetDirectoryName(compilerPath);
-                    Log.Verbose(string.Format("No {0} host compiler toolchain found in {1}", hostArchitecture.ToString()));
+                    Log.Verbose(string.Format("No {0} host compiler toolchain found in {1}", hostArchitecture.ToString(), compilerPath));
+                    return null;
+                }
+                else
+                {
+                    Log.Verbose(string.Format("Unsupported {0} host compiler for v140 toolset", hostArchitecture.ToString()));
                     return null;
                 }
             }
