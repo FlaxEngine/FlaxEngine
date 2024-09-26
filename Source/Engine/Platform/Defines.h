@@ -228,6 +228,7 @@ API_ENUM() enum class ArchitectureType
 #if defined(_M_PPC) || defined(__CELLOS_LV2__)
 #define PLATFORM_SIMD_VMX 1
 #endif
+#define PLATFORM_SIMD (PLATFORM_SIMD_SSE2 || PLATFORM_SIMD_SSE3 || PLATFORM_SIMD_SSE4 || PLATFORM_SIMD_NEON || PLATFORM_SIMD_VMX)
 
 // Unicode text macro
 #if !defined(TEXT)
