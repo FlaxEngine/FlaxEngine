@@ -1,6 +1,8 @@
 // Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 using System;
+using FlaxEditor.Windows;
+using FlaxEditor.Windows.Assets;
 using FlaxEngine;
 using FlaxEngine.GUI;
 using FlaxEngine.Utilities;
@@ -66,18 +68,26 @@ namespace FlaxEditor.GUI
         private IsValidDelegate _isValid;
         private Action<Script> _selected;
 
-        private ScriptSearchPopup(IsValidDelegate isValid, Action<Script> selected)
+        private ScriptSearchPopup(IsValidDelegate isValid, Action<Script> selected, CustomEditors.IPresenterOwner context)
         {
             _isValid = isValid;
             _selected = selected;
 
             ItemClicked += OnItemClicked;
 
-            // TODO: use async thread to search scenes
-            for (int i = 0; i < Level.ScenesCount; i++)
+            if (context is PropertiesWindow propertiesWindow || context == null)
             {
-                Find(Level.GetScene(i));
+                // TODO: use async thread to search scenes
+                for (int i = 0; i < Level.ScenesCount; i++)
+                {
+                    Find(Level.GetScene(i));
+                }
             }
+            else if (context is PrefabWindow prefabWindow)
+            {
+                Find(prefabWindow.Graph.MainActor);
+            }
+
             SortItems();
         }
 
@@ -113,10 +123,11 @@ namespace FlaxEditor.GUI
         /// <param name="showTargetLocation">The show target location.</param>
         /// <param name="isValid">Event called to check if a given script item is valid to be used.</param>
         /// <param name="selected">Event called on script item pick.</param>
+        /// <param name="context">The presenter owner context (i.e. PrefabWindow, PropertiesWindow).</param>
         /// <returns>The dialog.</returns>
-        public static ScriptSearchPopup Show(Control showTarget, Float2 showTargetLocation, IsValidDelegate isValid, Action<Script> selected)
+        public static ScriptSearchPopup Show(Control showTarget, Float2 showTargetLocation, IsValidDelegate isValid, Action<Script> selected, CustomEditors.IPresenterOwner context)
         {
-            var popup = new ScriptSearchPopup(isValid, selected);
+            var popup = new ScriptSearchPopup(isValid, selected, context);
             popup.Show(showTarget, showTargetLocation);
             return popup;
         }

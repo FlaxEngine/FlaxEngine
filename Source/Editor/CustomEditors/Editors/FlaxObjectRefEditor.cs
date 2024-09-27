@@ -39,6 +39,11 @@ namespace FlaxEditor.CustomEditors.Editors
         private DragHandlers _dragHandlers;
 
         /// <summary>
+        /// The presenter using this control.
+        /// </summary>
+        public IPresenterOwner PresenterContext;
+
+        /// <summary>
         /// Gets or sets the allowed objects type (given type and all sub classes). Must be <see cref="Object"/> type of any subclass.
         /// </summary>
         public ScriptType Type
@@ -152,7 +157,7 @@ namespace FlaxEditor.CustomEditors.Editors
                     Value = actor;
                     RootWindow.Focus();
                     Focus();
-                });
+                }, PresenterContext);
             }
             else
             {
@@ -161,7 +166,7 @@ namespace FlaxEditor.CustomEditors.Editors
                     Value = script;
                     RootWindow.Focus();
                     Focus();
-                });
+                }, PresenterContext);
             }
         }
 
@@ -491,6 +496,7 @@ namespace FlaxEditor.CustomEditors.Editors
             if (!HasDifferentTypes)
             {
                 _element = layout.Custom<FlaxObjectRefPickerControl>();
+                _element.CustomControl.PresenterContext = Presenter.Owner;
                 _element.CustomControl.Type = Values.Type.Type != typeof(object) || Values[0] == null ? Values.Type : TypeUtils.GetObjectType(Values[0]);
                 _element.CustomControl.ValueChanged += () => SetValue(_element.CustomControl.Value);
             }
