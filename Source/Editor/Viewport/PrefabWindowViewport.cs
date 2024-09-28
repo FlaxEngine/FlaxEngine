@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using FlaxEditor.Content;
 using FlaxEditor.Gizmo;
@@ -12,6 +13,7 @@ using FlaxEditor.Viewport.Previews;
 using FlaxEditor.Windows.Assets;
 using FlaxEngine;
 using FlaxEngine.GUI;
+using Object = FlaxEngine.Object;
 using Utils = FlaxEditor.Utilities.Utils;
 
 namespace FlaxEditor.Viewport
@@ -66,6 +68,7 @@ namespace FlaxEditor.Viewport
         private readonly List<Actor> _debugDrawActors = new List<Actor>();
         private PrefabSpritesRenderer _spritesRenderer;
         private IntPtr _tempDebugDrawContext;
+        private TransformGizmoBase.TransformGizmoEditorRenderer _transformGizmoEditorRenderer;
 
         private bool _hasUILinkedCached;
         private PrefabUIEditorRoot _uiRoot;
@@ -132,6 +135,10 @@ namespace FlaxEditor.Viewport
             TransformGizmo.ApplyTransformation += ApplyTransform;
             TransformGizmo.Duplicate += _window.Duplicate;
             Gizmos.Active = TransformGizmo;
+
+            _transformGizmoEditorRenderer = Object.New<TransformGizmoBase.TransformGizmoEditorRenderer>();
+            _transformGizmoEditorRenderer.Gizmo = TransformGizmo;
+            Task.AddCustomPostFx(_transformGizmoEditorRenderer);
 
             // Use custom root for UI controls
             _uiRoot = new PrefabUIEditorRoot(this);
@@ -246,6 +253,12 @@ namespace FlaxEditor.Viewport
                 if (_spritesRenderer && _spritesRenderer.CanRender())
                 {
                     _spritesRenderer.Render(context, ref renderContext, task.Output, task.Output);
+                }
+                
+                // Render transform gizmo
+                if (_transformGizmoEditorRenderer && _transformGizmoEditorRenderer.CanRender())
+                {
+                    _transformGizmoEditorRenderer.Render(context, ref renderContext, task.Output, task.Output);
                 }
 
                 // Render selection outline
@@ -586,8 +599,15 @@ namespace FlaxEditor.Viewport
                 DebugDraw.FreeContext(_tempDebugDrawContext);
                 _tempDebugDrawContext = IntPtr.Zero;
             }
+            if (Task)
+            {
+                Task.RemoveCustomPostFx(SelectionOutline);
+                Task.RemoveCustomPostFx(_spritesRenderer);
+                Task.RemoveCustomPostFx(_transformGizmoEditorRenderer);
+            }
             FlaxEngine.Object.Destroy(ref SelectionOutline);
             FlaxEngine.Object.Destroy(ref _spritesRenderer);
+            FlaxEngine.Object.Destroy(ref _transformGizmoEditorRenderer);
 
             base.OnDestroy();
         }
@@ -598,6 +618,8 @@ namespace FlaxEditor.Viewport
             // Draw gizmos
             for (int i = 0; i < Gizmos.Count; i++)
             {
+                if (Gizmos[i] == TransformGizmo)
+                    continue;
                 Gizmos[i].Draw(ref renderContext);
             }
 

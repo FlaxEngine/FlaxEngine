@@ -134,6 +134,11 @@ namespace FlaxEditor.Viewport
         public EditorPrimitives EditorPrimitives;
 
         /// <summary>
+        /// The Transform gizmo editor postFx.
+        /// </summary>
+        public TransformGizmoBase.TransformGizmoEditorRenderer TransformGizmoEditorRenderer;
+
+        /// <summary>
         /// Gets or sets a value indicating whether draw <see cref="DebugDraw"/> shapes.
         /// </summary>
         public bool DrawDebugDraw = true;
@@ -213,6 +218,10 @@ namespace FlaxEditor.Viewport
             TransformGizmo.ApplyTransformation += ApplyTransform;
             TransformGizmo.Duplicate += _editor.SceneEditing.Duplicate;
             Gizmos.Active = TransformGizmo;
+
+            TransformGizmoEditorRenderer = Object.New<TransformGizmoBase.TransformGizmoEditorRenderer>();
+            TransformGizmoEditorRenderer.Gizmo = TransformGizmo;
+            Task.AddCustomPostFx(TransformGizmoEditorRenderer);
 
             // Add grid
             Grid = new GridGizmo(this);
@@ -365,6 +374,8 @@ namespace FlaxEditor.Viewport
             // Draw gizmos
             for (int i = 0; i < Gizmos.Count; i++)
             {
+                if (Gizmos[i] == TransformGizmo)
+                    continue;
                 Gizmos[i].Draw(ref renderContext);
             }
 
@@ -402,6 +413,12 @@ namespace FlaxEditor.Viewport
                 if (EditorPrimitives && EditorPrimitives.CanRender())
                 {
                     EditorPrimitives.Render(context, ref renderContext, task.Output, task.Output);
+                }
+
+                // Render transform gizmo
+                if (TransformGizmoEditorRenderer && TransformGizmoEditorRenderer.CanRender())
+                {
+                    TransformGizmoEditorRenderer.Render(context, ref renderContext, task.Output, task.Output);
                 }
 
                 // Render editor sprites
@@ -730,11 +747,13 @@ namespace FlaxEditor.Viewport
                 Task.RemoveCustomPostFx(EditorPrimitives);
                 Task.RemoveCustomPostFx(_editorSpritesRenderer);
                 Task.RemoveCustomPostFx(_customSelectionOutline);
+                Task.RemoveCustomPostFx(TransformGizmoEditorRenderer);
             }
             Object.Destroy(ref SelectionOutline);
             Object.Destroy(ref EditorPrimitives);
             Object.Destroy(ref _editorSpritesRenderer);
             Object.Destroy(ref _customSelectionOutline);
+            Object.Destroy(ref TransformGizmoEditorRenderer);
         }
     }
 }
