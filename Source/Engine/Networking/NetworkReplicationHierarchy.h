@@ -209,6 +209,13 @@ API_CLASS(Abstract, Namespace = "FlaxEngine.Networking") class FLAXENGINE_API Ne
     API_FUNCTION() virtual bool GetObject(ScriptingObject* obj, NetworkReplicationHierarchyObject& result);
 
     /// <summary>
+    /// Sets object properties in the hierarchy. Can be used to modify replication settings at runtime.
+    /// </summary>
+    /// <param name="value">The object data to update.</param>
+    /// <returns>True on successful update, otherwise false (eg, if specific object has not been added to this node).</returns>
+    API_FUNCTION() virtual bool SetObject(const NetworkReplicationHierarchyObject& value);
+
+    /// <summary>
     /// Force replicates the object during the next update. Resets any internal tracking state to force the synchronization.
     /// </summary>
     /// <param name="obj">The object to update.</param>
