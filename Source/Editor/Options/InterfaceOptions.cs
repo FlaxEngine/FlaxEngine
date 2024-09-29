@@ -167,6 +167,13 @@ namespace FlaxEditor.Options
         [DefaultValue(false)]
         [EditorDisplay("Interface", "Center Mouse On Game Window Focus"), EditorOrder(100), Tooltip("Determines whether center mouse position on window focus in play mode. Helps when working with games that lock mouse cursor.")]
         public bool CenterMouseOnGameWinFocus { get; set; } = false;
+        
+        /// <summary>
+        /// Gets or sets a value indicating whether the toolbar for the Game Window options is shown.
+        /// </summary>
+        [DefaultValue(true)]
+        [EditorDisplay("Interface", "Show Game Window Options Toolbar"), EditorOrder(100), Tooltip("Determines whether the toolbar for the Game Window options is shown.")]
+        public bool ShowGameWindowOptionsToolbar { get; set; } = true;
 
         /// <summary>
         /// Gets or sets the method window opening.

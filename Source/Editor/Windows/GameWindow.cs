@@ -2,8 +2,10 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Xml;
 using FlaxEditor.Gizmo;
+using FlaxEditor.GUI;
 using FlaxEditor.GUI.ContextMenu;
 using FlaxEditor.GUI.Input;
 using FlaxEditor.Options;
@@ -30,6 +32,10 @@ namespace FlaxEditor.Windows
         private GUI.Docking.DockState _maximizeRestoreDockState;
         private GUI.Docking.DockPanel _maximizeRestoreDockTo;
         private CursorLockMode _cursorLockMode = CursorLockMode.None;
+
+        private float _toolStripHeight = 24;
+        private bool _showToolStrip = true;
+        private ToolStripButton _viewportSettingsButton;
 
         // Viewport scaling variables
         private List<ViewportScaleOptions> _defaultViewportScaling = new List<ViewportScaleOptions>();
@@ -214,14 +220,22 @@ namespace FlaxEditor.Windows
         {
             Title = "Game";
             AutoFocus = true;
+            
+            // Link editor options
+            Editor.Options.OptionsChanged += OnOptionsChanged;
+            OnOptionsChanged(Editor.Options.Options);
+
+            // Create toolstrip
+            if (_showToolStrip)
+                CreateOptionsToolStrip();
 
             var task = MainRenderTask.Instance;
-
+            
             // Setup viewport
             _viewport = new RenderOutputControl(task)
             {
                 AnchorPreset = AnchorPresets.StretchAll,
-                Offsets = Margin.Zero,
+                Offsets = new Margin(0, 0, _showToolStrip ? _toolStripHeight : 0, 0),
                 AutoFocus = false,
                 Parent = this
             };
@@ -238,10 +252,6 @@ namespace FlaxEditor.Windows
 
             Editor.StateMachine.PlayingState.SceneDuplicating += PlayingStateOnSceneDuplicating;
             Editor.StateMachine.PlayingState.SceneRestored += PlayingStateOnSceneRestored;
-
-            // Link editor options
-            Editor.Options.OptionsChanged += OnOptionsChanged;
-            OnOptionsChanged(Editor.Options.Options);
 
             InputActions.Add(options => options.TakeScreenshot, () => Screenshot.Capture(string.Empty));
             InputActions.Add(options => options.DebuggerUnlockMouse, UnlockMouseInPlay);
@@ -312,6 +322,150 @@ namespace FlaxEditor.Windows
             });
         }
 
+        private void CreateOptionsToolStrip()
+        {
+            var style = Style.Current;
+            var styleSmallFont = style.FontSmall;
+
+            var toolStrip = new ToolStrip()
+            {
+                AnchorPreset = AnchorPresets.HorizontalStretchTop,
+                Height = _toolStripHeight,
+                Parent = this,
+            };
+            
+            // Setup toolstrip items
+            var focusLabel = new Label
+            {
+                Text = "Start Focused",
+                HorizontalAlignment = TextAlignment.Near,
+                Parent = toolStrip,
+            };
+            focusLabel.Width = styleSmallFont.MeasureText(focusLabel.Text).X + 2;
+            var focusCheckBox = new CheckBox
+            {
+                Checked = FocusOnPlay,
+                Parent = toolStrip
+            };
+            focusCheckBox.StateChanged += box => FocusOnPlay = box.Checked;
+
+            toolStrip.AddSeparator();
+
+            _viewportSettingsButton = toolStrip.AddButton("Viewport Settings", ShowViewportSettings);
+            
+            toolStrip.AddSeparator();
+            
+            var showGuiLabel = new Label
+            {
+                Text = "Show GUI",
+                HorizontalAlignment = TextAlignment.Near,
+                Parent = toolStrip,
+            };
+            showGuiLabel.Width = styleSmallFont.MeasureText(showGuiLabel.Text).X + 2;
+            var showGuiCheckBox = new CheckBox
+            {
+                Checked = ShowGUI,
+                Parent = toolStrip
+            };
+            showGuiCheckBox.StateChanged += box => ShowGUI = box.Checked;
+
+            toolStrip.AddSeparator();
+            
+            var showDebugDrawLabel = new Label
+            {
+                Text = "Show Debug Draw",
+                HorizontalAlignment = TextAlignment.Near,
+                Parent = toolStrip,
+            };
+            showDebugDrawLabel.Width = styleSmallFont.MeasureText(showDebugDrawLabel.Text).X + 2;
+            var showDebugDrawCheckBox = new CheckBox
+            {
+                Checked = ShowDebugDraw,
+                Parent = toolStrip
+            };
+            showDebugDrawCheckBox.StateChanged += box => ShowDebugDraw = box.Checked;
+
+            toolStrip.AddSeparator();
+
+            toolStrip.AddButton("Take Screenshot", TakeScreenshot);
+        }
+
+        private void ShowViewportSettings()
+        {
+            var cm = new ContextMenu();
+            cm.MinimumWidth = 200;
+            // Viewport Brightness
+            {
+                var brightness = cm.AddButton("Viewport Brightness");
+                brightness.CloseMenuOnClick = false;
+                var brightnessValue = new FloatValueBox(_viewport.Brightness, 140, 2, 50.0f, 0.001f, 10.0f, 0.001f)
+                {
+                    Parent = brightness
+                };
+                brightnessValue.ValueChanged += () => _viewport.Brightness = brightnessValue.Value;
+            }
+
+            // Viewport Resolution
+            {
+                var resolution = cm.AddButton("Viewport Resolution");
+                resolution.CloseMenuOnClick = false;
+                var resolutionValue = new FloatValueBox(_viewport.ResolutionScale, 140, 2, 50.0f, 0.1f, 4.0f, 0.001f)
+                {
+                    Parent = resolution
+                };
+                resolutionValue.ValueChanged += () => _viewport.ResolutionScale = resolutionValue.Value;
+            }
+
+            // Viewport aspect ratio
+            {
+                // Create default scaling options if they dont exist from deserialization.
+                if (_defaultViewportScaling.Count == 0)
+                {
+                    _defaultViewportScaling.Add(new ViewportScaleOptions
+                    {
+                        Label = "Free Aspect",
+                        ScaleType = ViewportScaleType.Aspect,
+                        Size = new Int2(1, 1),
+                        Active = true,
+                    });
+                    _defaultViewportScaling.Add(new ViewportScaleOptions
+                    {
+                        Label = "16:9 Aspect",
+                        ScaleType = ViewportScaleType.Aspect,
+                        Size = new Int2(16, 9),
+                        Active = false,
+                    });
+                    _defaultViewportScaling.Add(new ViewportScaleOptions
+                    {
+                        Label = "16:10 Aspect",
+                        ScaleType = ViewportScaleType.Aspect,
+                        Size = new Int2(16, 10),
+                        Active = false,
+                    });
+                    _defaultViewportScaling.Add(new ViewportScaleOptions
+                    {
+                        Label = "1920x1080 Resolution",
+                        ScaleType = ViewportScaleType.Resolution,
+                        Size = new Int2(1920, 1080),
+                        Active = false,
+                    });
+                    _defaultViewportScaling.Add(new ViewportScaleOptions
+                    {
+                        Label = "2560x1440 Resolution",
+                        ScaleType = ViewportScaleType.Resolution,
+                        Size = new Int2(2560, 1440),
+                        Active = false,
+                    });
+                }
+
+                var vsMenu = cm.AddChildMenu("Viewport Size").ContextMenu;
+
+                CreateViewportSizingContextMenu(vsMenu);
+            }
+                
+            cm.Show(_viewportSettingsButton, _viewportSettingsButton.PointFromScreen(Input.MouseScreenPosition));
+        }
+
         private void ChangeViewportRatio(ViewportScaleOptions v)
         {
             if (v == null)
@@ -368,26 +522,19 @@ namespace FlaxEditor.Windows
 
         private void ResizeViewport()
         {
+            var toolStripHeight = _showToolStrip ? _toolStripHeight : 0;
             if (!_freeAspect)
-            {
-                _windowAspectRatio = Width / Height;
-            }
+                _windowAspectRatio = Width / (Height - toolStripHeight);
             else
-            {
                 _windowAspectRatio = 1;
-            }
 
             var scaleWidth = _viewportAspectRatio / _windowAspectRatio;
             var scaleHeight = _windowAspectRatio / _viewportAspectRatio;
 
             if (scaleHeight < 1)
-            {
-                _viewport.Bounds = new Rectangle(0, Height * (1 - scaleHeight) / 2, Width, Height * scaleHeight);
-            }
+                _viewport.Bounds = new Rectangle(0, (Height - toolStripHeight) * (1 - scaleHeight) / 2 + toolStripHeight, Width, (Height - toolStripHeight) * scaleHeight);
             else
-            {
-                _viewport.Bounds = new Rectangle(Width * (1 - scaleWidth) / 2, 0, Width * scaleWidth, Height);
-            }
+                _viewport.Bounds = new Rectangle(Width * (1 - scaleWidth) / 2, toolStripHeight, Width * scaleWidth, (Height - toolStripHeight));
             _viewport.SyncBackbufferSize();
             PerformLayout();
         }
@@ -431,6 +578,23 @@ namespace FlaxEditor.Windows
         {
             CenterMouseOnFocus = options.Interface.CenterMouseOnGameWinFocus;
             FocusOnPlay = options.Interface.FocusGameWinOnPlay;
+
+            var lastToolStripShow = _showToolStrip;
+            _showToolStrip = options.Interface.ShowGameWindowOptionsToolbar;
+            if (lastToolStripShow != _showToolStrip)
+            {
+                if (_showToolStrip && Children.FirstOrDefault(x => x is ToolStrip) == null)
+                {
+                    CreateOptionsToolStrip();
+                }
+                else
+                {
+                    var toolStrip = Children.FirstOrDefault(x => x is ToolStrip);
+                    RemoveChild(toolStrip);
+                }
+                
+                ResizeViewport();
+            }
         }
 
         private void PlayingStateOnSceneDuplicating()
@@ -486,118 +650,6 @@ namespace FlaxEditor.Windows
             {
                 Parent.Focus();
             }
-        }
-
-        /// <inheritdoc />
-        public override void OnShowContextMenu(ContextMenu menu)
-        {
-            base.OnShowContextMenu(menu);
-
-            // Focus on play
-            {
-                var focus = menu.AddButton("Start Focused");
-                focus.CloseMenuOnClick = false;
-                var checkbox = new CheckBox(140, 2, FocusOnPlay) { Parent = focus };
-                checkbox.StateChanged += state => FocusOnPlay = state.Checked;
-            }
-
-            menu.AddSeparator();
-
-            // Viewport Brightness
-            {
-                var brightness = menu.AddButton("Viewport Brightness");
-                brightness.CloseMenuOnClick = false;
-                var brightnessValue = new FloatValueBox(_viewport.Brightness, 140, 2, 50.0f, 0.001f, 10.0f, 0.001f)
-                {
-                    Parent = brightness
-                };
-                brightnessValue.ValueChanged += () => _viewport.Brightness = brightnessValue.Value;
-            }
-
-            // Viewport Resolution
-            {
-                var resolution = menu.AddButton("Viewport Resolution");
-                resolution.CloseMenuOnClick = false;
-                var resolutionValue = new FloatValueBox(_viewport.ResolutionScale, 140, 2, 50.0f, 0.1f, 4.0f, 0.001f)
-                {
-                    Parent = resolution
-                };
-                resolutionValue.ValueChanged += () => _viewport.ResolutionScale = resolutionValue.Value;
-            }
-
-            // Viewport aspect ratio
-            {
-                // Create default scaling options if they dont exist from deserialization.
-                if (_defaultViewportScaling.Count == 0)
-                {
-                    _defaultViewportScaling.Add(new ViewportScaleOptions
-                    {
-                        Label = "Free Aspect",
-                        ScaleType = ViewportScaleType.Aspect,
-                        Size = new Int2(1, 1),
-                        Active = true,
-                    });
-                    _defaultViewportScaling.Add(new ViewportScaleOptions
-                    {
-                        Label = "16:9 Aspect",
-                        ScaleType = ViewportScaleType.Aspect,
-                        Size = new Int2(16, 9),
-                        Active = false,
-                    });
-                    _defaultViewportScaling.Add(new ViewportScaleOptions
-                    {
-                        Label = "16:10 Aspect",
-                        ScaleType = ViewportScaleType.Aspect,
-                        Size = new Int2(16, 10),
-                        Active = false,
-                    });
-                    _defaultViewportScaling.Add(new ViewportScaleOptions
-                    {
-                        Label = "1920x1080 Resolution",
-                        ScaleType = ViewportScaleType.Resolution,
-                        Size = new Int2(1920, 1080),
-                        Active = false,
-                    });
-                    _defaultViewportScaling.Add(new ViewportScaleOptions
-                    {
-                        Label = "2560x1440 Resolution",
-                        ScaleType = ViewportScaleType.Resolution,
-                        Size = new Int2(2560, 1440),
-                        Active = false,
-                    });
-                }
-
-                var vsMenu = menu.AddChildMenu("Viewport Size").ContextMenu;
-
-                CreateViewportSizingContextMenu(vsMenu);
-            }
-
-            // Take Screenshot
-            {
-                var takeScreenshot = menu.AddButton("Take Screenshot");
-                takeScreenshot.Clicked += TakeScreenshot;
-            }
-
-            menu.AddSeparator();
-
-            // Show GUI
-            {
-                var button = menu.AddButton("Show GUI");
-                button.CloseMenuOnClick = false;
-                var checkbox = new CheckBox(140, 2, ShowGUI) { Parent = button };
-                checkbox.StateChanged += x => ShowGUI = x.Checked;
-            }
-
-            // Show Debug Draw
-            {
-                var button = menu.AddButton("Show Debug Draw");
-                button.CloseMenuOnClick = false;
-                var checkbox = new CheckBox(140, 2, ShowDebugDraw) { Parent = button };
-                checkbox.StateChanged += x => ShowDebugDraw = x.Checked;
-            }
-
-            menu.MinimumWidth = 200;
-            menu.AddSeparator();
         }
 
         private void CreateViewportSizingContextMenu(ContextMenu vsMenu)
