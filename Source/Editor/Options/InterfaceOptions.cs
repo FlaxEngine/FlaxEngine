@@ -337,8 +337,15 @@ namespace FlaxEditor.Options
         /// Gets or sets the value for automatic scroll to bottom in output log.
         /// </summary>
         [DefaultValue(true)]
-        [EditorDisplay("Output Log", "Scroll to bottom"), EditorOrder(470), Tooltip("Scroll the output log view to bottom automatically after new lines are added.")]
+        [EditorDisplay("Output Log", "Scroll to bottom on new line"), EditorOrder(470), Tooltip("Scroll the output log view to bottom automatically after new lines are added.")]
         public bool OutputLogScrollToBottom { get; set; } = true;
+
+        /// <summary>
+        /// Gets or sets the value for automatic scroll to bottom in the output log on play mode start.
+        /// </summary>
+        [DefaultValue(false)]
+        [EditorDisplay("Output Log", "Scroll to bottom on On Play "), EditorOrder(470), Tooltip("Scroll the output log view to bottom automatically when Play Mode is entered.")]
+        public bool OutputLogBeginPlayScrollToBottom { get; set; } = false;
 
         /// <summary>
         /// Gets or sets a value indicating whether auto-focus game window on play mode start.
