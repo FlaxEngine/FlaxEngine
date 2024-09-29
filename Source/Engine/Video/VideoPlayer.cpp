@@ -152,6 +152,18 @@ int32 VideoPlayer::GetFramesCount() const
     return _player.FramesCount;
 }
 
+#if USE_EDITOR
+#include "Engine/Debug/DebugDraw.h"
+
+void VideoPlayer::OnDebugDrawSelected()
+{
+    // Draw influence range
+    if (_isSpatial)
+        DEBUG_DRAW_WIRE_SPHERE(BoundingSphere(_transform.Translation, _minDistance), Color::CornflowerBlue, 0, true);
+    Actor::OnDebugDrawSelected();
+}
+#endif
+
 bool VideoPlayer::IntersectsItself(const Ray& ray, Real& distance, Vector3& normal)
 {
     return false;
