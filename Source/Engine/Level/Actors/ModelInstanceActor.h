@@ -142,6 +142,7 @@ protected:
 public:
     // [Actor]
     void OnLayerChanged() override;
+    void OnStaticFlagsChanged() override;
     void OnTransformChanged() override;
 
 protected:

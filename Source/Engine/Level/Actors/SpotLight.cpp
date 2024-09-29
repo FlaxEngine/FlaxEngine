@@ -115,7 +115,7 @@ void SpotLight::UpdateBounds()
     BoundingBox::FromSphere(_sphere, _box);
 
     if (_sceneRenderingKey != -1)
-        GetSceneRendering()->UpdateActor(this, _sceneRenderingKey);
+        GetSceneRendering()->UpdateActor(this, _sceneRenderingKey, ISceneRenderingListener::Bounds);
 }
 
 void SpotLight::OnTransformChanged()

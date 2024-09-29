@@ -162,7 +162,7 @@ void SceneRendering::AddActor(Actor* a, int32& key)
         listener->OnSceneRenderingAddActor(a);
 }
 
-void SceneRendering::UpdateActor(Actor* a, int32& key)
+void SceneRendering::UpdateActor(Actor* a, int32& key, ISceneRenderingListener::UpdateFlags flags)
 {
     const int32 category = a->_drawCategory;
     ScopeLock lock(Locker);
@@ -173,9 +173,11 @@ void SceneRendering::UpdateActor(Actor* a, int32& key)
     if (e.Actor == a)
     {
         for (auto* listener : _listeners)
-            listener->OnSceneRenderingUpdateActor(a, e.Bounds);
-        e.LayerMask = a->GetLayerMask();
-        e.Bounds = a->GetSphere();
+            listener->OnSceneRenderingUpdateActor(a, e.Bounds, flags);
+        if (flags & ISceneRenderingListener::Layer)
+            e.LayerMask = a->GetLayerMask();
+        if (flags & ISceneRenderingListener::Bounds)
+            e.Bounds = a->GetSphere();
     }
 }
 
