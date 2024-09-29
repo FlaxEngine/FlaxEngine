@@ -223,7 +223,7 @@ namespace FlaxEditor.GUI
             }
         }
 
-        private readonly TextBox _searchBox;
+        private readonly SearchBox _searchBox;
         private readonly Panel _scrollPanel;
         private List<DropPanel> _categoryPanels;
         private bool _waitingForInput;
@@ -260,6 +260,7 @@ namespace FlaxEditor.GUI
                 Width = Width - 3,
             };
             _searchBox.TextChanged += OnSearchFilterChanged;
+            _searchBox.ClearSearchButton.Clicked += () => PerformLayout();
 
             // Panel with scrollbar
             _scrollPanel = new Panel(ScrollBars.Vertical)
