@@ -76,7 +76,7 @@ bool NetworkReplicationNode::GetObject(ScriptingObject* obj, NetworkReplicationH
 
 bool NetworkReplicationNode::SetObject(const NetworkReplicationHierarchyObject& value)
 {
-    const int32 index = Objects.Find(value.Object);
+    const int32 index = Objects.Find(value.Object.Get());
     if (index != -1)
     {
         Objects[index] = value;
