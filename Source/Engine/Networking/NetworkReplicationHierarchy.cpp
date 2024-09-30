@@ -223,11 +223,17 @@ bool NetworkReplicationGridNode::GetObject(ScriptingObject* obj, NetworkReplicat
     {
         return false;
     }
-    if (_children[coord].Node->GetObject(obj, result))
+    return _children[coord].Node->GetObject(obj, result);
+}
+
+bool NetworkReplicationGridNode::SetObject(const NetworkReplicationHierarchyObject& value)
+{
+    Int3 coord;
+    if (!_objectToCell.TryGet(value.Object.Get(), coord))
     {
-        return true;
+        return false;
     }
-    return false;
+    return _children[coord].Node->SetObject(value);
 }
 
 bool NetworkReplicationGridNode::DirtyObject(ScriptingObject* obj)
