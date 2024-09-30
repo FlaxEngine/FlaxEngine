@@ -100,6 +100,22 @@ Float3 Quaternion::operator*(const Float3& vector) const
     return Float3::Transform(vector, *this);
 }
 
+void Quaternion::Add(const Quaternion& left, const Quaternion& right, Quaternion& result)
+{
+    result.X = left.X + right.X;
+    result.Y = left.Y + right.Y;
+    result.Z = left.Z + right.Z;
+    result.W = left.W + right.W;
+}
+
+void Quaternion::Subtract(const Quaternion& left, const Quaternion& right, Quaternion& result)
+{
+    result.X = left.X - right.X;
+    result.Y = left.Y - right.Y;
+    result.Z = left.Z - right.Z;
+    result.W = left.W - right.W;
+}
+
 void Quaternion::Multiply(const Quaternion& left, const Quaternion& right, Quaternion& result)
 {
     const float a = left.Y * right.Z - left.Z * right.Y;
@@ -110,6 +126,14 @@ void Quaternion::Multiply(const Quaternion& left, const Quaternion& right, Quate
     result.Y = left.Y * right.W + right.Y * left.W + b;
     result.Z = left.Z * right.W + right.Z * left.W + c;
     result.W = left.W * right.W - d;
+}
+
+void Quaternion::Negate(const Quaternion& value, Quaternion& result)
+{
+    result.X = -value.X;
+    result.Y = -value.Y;
+    result.Z = -value.Z;
+    result.W = -value.W;
 }
 
 void Quaternion::Lerp(const Quaternion& start, const Quaternion& end, float amount, Quaternion& result)
@@ -542,10 +566,8 @@ void Quaternion::RotationYawPitchRoll(float yaw, float pitch, float roll, Quater
 Quaternion Quaternion::GetRotationFromNormal(const Vector3& normal, const Transform& reference)
 {
     Float3 up = reference.GetUp();
-    const float dot = Vector3::Dot(normal, up);
+    const Real dot = Vector3::Dot(normal, up);
     if (Math::NearEqual(Math::Abs(dot), 1))
-    {
         up = reference.GetRight();
-    }
     return Quaternion::LookRotation(normal, up);
 }

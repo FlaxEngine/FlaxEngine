@@ -737,7 +737,10 @@ DEFINE_INTERNAL_CALL(MObject*) ObjectInternal_FindObject(Guid* id, MTypeObject* 
         if (klass && !obj->Is(klass))
         {
             if (!skipLog)
-                LOG(Warning, "Found scripting object with ID={0} of type {1} that doesn't match type {2}. {3}", *id, String(obj->GetType().Fullname), String(klass->GetFullName()), LogContext::GetInfo());
+            {
+                LOG(Warning, "Found scripting object with ID={0} of type {1} that doesn't match type {2}", *id, String(obj->GetType().Fullname), String(klass->GetFullName()));
+                LogContext::Print(LogType::Warning);
+            }
             return nullptr;
         }
         return obj->GetOrCreateManagedInstance();
@@ -746,9 +749,10 @@ DEFINE_INTERNAL_CALL(MObject*) ObjectInternal_FindObject(Guid* id, MTypeObject* 
     if (!skipLog)
     {
         if (klass)
-            LOG(Warning, "Unable to find scripting object with ID={0}. Required type {1}. {2}", *id, String(klass->GetFullName()), LogContext::GetInfo());
+            LOG(Warning, "Unable to find scripting object with ID={0} of type {1}", *id, String(klass->GetFullName()));
         else
             LOG(Warning, "Unable to find scripting object with ID={0}", *id);
+        LogContext::Print(LogType::Warning);
     }
     return nullptr;
 }

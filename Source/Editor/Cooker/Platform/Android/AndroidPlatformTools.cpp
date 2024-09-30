@@ -229,7 +229,7 @@ bool AndroidPlatformTools::OnPostProcess(CookingData& data)
     }
 
     // Copy fresh Gradle project template
-    if (FileSystem::CopyDirectory(data.OriginalOutputPath, platformDataPath / TEXT("Project"), true))
+    if (FileSystem::CopyDirectory(data.OriginalOutputPath, platformDataPath / TEXT("Project")))
     {
         LOG(Error, "Failed to deploy Gradle project to {0} from {1}", data.OriginalOutputPath, platformDataPath);
         return true;

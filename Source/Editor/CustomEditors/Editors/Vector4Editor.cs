@@ -89,7 +89,7 @@ namespace FlaxEditor.CustomEditors.Editors
 
         private void OnValueChanged()
         {
-            if (IsSetBlocked)
+            if (IsSetBlocked || Values == null)
                 return;
 
             var isSliding = XElement.IsSliding || YElement.IsSliding || ZElement.IsSliding || WElement.IsSliding;
@@ -200,7 +200,7 @@ namespace FlaxEditor.CustomEditors.Editors
 
         private void OnValueChanged()
         {
-            if (IsSetBlocked)
+            if (IsSetBlocked || Values == null)
                 return;
 
             var isSliding = XElement.IsSliding || YElement.IsSliding || ZElement.IsSliding || WElement.IsSliding;
@@ -311,7 +311,7 @@ namespace FlaxEditor.CustomEditors.Editors
 
         private void OnValueChanged()
         {
-            if (IsSetBlocked)
+            if (IsSetBlocked || Values == null)
                 return;
 
             var isSliding = XElement.IsSliding || YElement.IsSliding || ZElement.IsSliding || WElement.IsSliding;

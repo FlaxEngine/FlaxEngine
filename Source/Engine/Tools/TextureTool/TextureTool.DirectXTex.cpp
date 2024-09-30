@@ -710,7 +710,7 @@ bool TextureTool::ImportTextureDirectXTex(ImageType type, const StringView& path
     bool hasSourceMipLevels = isPowerOfTwo && sourceMipLevels > 1;
     bool useMipLevels = isPowerOfTwo && (options.GenerateMipMaps || hasSourceMipLevels) && (width > 1 || height > 1);
     int32 arraySize = (int32)currentImage->GetMetadata().arraySize;
-    int32 mipLevels = MipLevelsCount(width, height, useMipLevels);
+    int32 mipLevels = useMipLevels ? MipLevelsCount(width, height) : 1;
     if (useMipLevels && !options.GenerateMipMaps && mipLevels != sourceMipLevels)
     {
         errorMsg = String::Format(TEXT("Imported texture has not full mip chain, loaded mips count: {0}, expected: {1}"), sourceMipLevels, mipLevels);

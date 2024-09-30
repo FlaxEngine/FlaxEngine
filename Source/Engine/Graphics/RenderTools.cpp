@@ -600,31 +600,19 @@ void RenderTools::ComputeSphereModelDrawMatrix(const RenderView& view, const Flo
     resultIsViewInside = Float3::DistanceSquared(view.Position, position) < Math::Square(radius * 1.1f); // Manually tweaked bias
 }
 
-int32 MipLevelsCount(int32 width, bool useMipLevels)
+int32 MipLevelsCount(int32 width)
 {
-    if (!useMipLevels)
-        return 1;
-
     int32 result = 1;
     while (width > 1)
     {
         width >>= 1;
         result++;
     }
-
     return result;
 }
 
-int32 MipLevelsCount(int32 width, int32 height, bool useMipLevels)
+int32 MipLevelsCount(int32 width, int32 height)
 {
-    // Check if use mip maps
-    if (!useMipLevels)
-    {
-        // No mipmaps chain, only single mip map
-        return 1;
-    }
-
-    // Count mip maps
     int32 result = 1;
     while (width > 1 || height > 1)
     {
@@ -637,11 +625,8 @@ int32 MipLevelsCount(int32 width, int32 height, bool useMipLevels)
     return result;
 }
 
-int32 MipLevelsCount(int32 width, int32 height, int32 depth, bool useMipLevels)
+int32 MipLevelsCount(int32 width, int32 height, int32 depth)
 {
-    if (!useMipLevels)
-        return 1;
-
     int32 result = 1;
     while (width > 1 || height > 1 || depth > 1)
     {
@@ -653,7 +638,6 @@ int32 MipLevelsCount(int32 width, int32 height, int32 depth, bool useMipLevels)
             depth >>= 1;
         result++;
     }
-
     return result;
 }
 

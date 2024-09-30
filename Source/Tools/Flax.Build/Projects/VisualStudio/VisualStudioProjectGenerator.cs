@@ -434,7 +434,7 @@ namespace Flax.Build.Projects.VisualStudio
 
                 // Collect all unique configurations
                 var configurations = new HashSet<SolutionConfiguration>();
-                var mainArchitectures = solution.MainProject.Targets.SelectMany(x => x.Architectures).Distinct().ToArray();
+                var mainArchitectures = solution.MainProject?.Targets?.SelectMany(x => x.Architectures).Distinct().ToArray();
                 foreach (var project in projects)
                 {
                     if (project.Configurations == null || project.Configurations.Count == 0)
@@ -447,7 +447,7 @@ namespace Flax.Build.Projects.VisualStudio
                     foreach (var configuration in project.Configurations)
                     {
                         // Skip architectures which are not included in the game project
-                        if (!mainArchitectures.Contains(configuration.Architecture))
+                        if (mainArchitectures != null && !mainArchitectures.Contains(configuration.Architecture))
                             continue;
 
                         configurations.Add(new SolutionConfiguration(configuration));
@@ -726,6 +726,8 @@ namespace Flax.Build.Projects.VisualStudio
 
                 void AppendBuildToolCommands(StringBuilder str, string extraArgs)
                 {
+                    if (solution.MainProject == null)
+                        return;
                     foreach (var configuration in solution.MainProject.Configurations)
                     {
                         var cmdLine = string.Format("\"{0}\" -log -mutex -workspace=\"{1}\" -arch={2} -configuration={3} -platform={4} -buildTargets={5}",

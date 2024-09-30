@@ -841,10 +841,11 @@ void Render2D::PushClip(const Rectangle& clipRect)
 {
     RENDER2D_CHECK_RENDERING_STATE;
 
+    const auto& mask = ClipLayersStack.Peek();
     RotatedRectangle clipRectTransformed;
     ApplyTransform(clipRect, clipRectTransformed);
-    const Rectangle bounds = Rectangle::Shared(clipRectTransformed.ToBoundingRect(), ClipLayersStack.Peek().Bounds);
-    ClipLayersStack.Push({ clipRectTransformed, bounds });
+    const Rectangle bounds = Rectangle::Shared(clipRectTransformed.ToBoundingRect(), mask.Bounds);
+    ClipLayersStack.Push({ RotatedRectangle::Shared(clipRectTransformed, mask.Bounds), bounds });
 
     OnClipScissors();
 }

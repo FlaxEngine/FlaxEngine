@@ -448,6 +448,8 @@ namespace FlaxEditor.Surface
                 sb.Append("virtual ");
             sb.Append(valueType.Name);
             sb.Append(' ');
+            if (member.IsMethod)
+                sb.Append(member.DeclaringType.Namespace).Append('.');
             sb.Append(declaringType.Name);
             sb.Append('.');
             sb.Append(name);

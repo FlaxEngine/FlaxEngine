@@ -1302,6 +1302,15 @@ bool NetworkReplicator::HasObject(const ScriptingObject* obj)
     return false;
 }
 
+void NetworkReplicator::MapObjectId(Guid& objectId)
+{
+    if (!IdsRemappingTable.TryGet(objectId, objectId))
+    {
+        // Try inverse mapping
+        IdsRemappingTable.KeyOf(objectId, &objectId);
+    }
+}
+
 ScriptingObject* NetworkReplicator::ResolveForeignObject(Guid objectId)
 {
     if (const auto& object = ResolveObject(objectId))

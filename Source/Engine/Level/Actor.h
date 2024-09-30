@@ -852,7 +852,7 @@ public:
     API_FUNCTION() bool HasActorInChildren(Actor* a) const;
 
     /// <summary>
-    /// Determines if there is an intersection between the current object and a Ray.
+    /// Determines if there is an intersection between the current object and a ray.
     /// </summary>
     /// <param name="ray">The ray to test.</param>
     /// <param name="distance">When the method completes, contains the distance of the intersection (if any valid).</param>
@@ -879,7 +879,7 @@ public:
     /// Rotates actor to orient it towards the specified world position with upwards direction.
     /// </summary>
     /// <param name="worldPos">The world position to orient towards.</param>
-    /// <param name="worldUp">The up direction that Constrains y axis orientation to a plane this vector lies on. This rule might be broken if forward and up direction are nearly parallel.</param>
+    /// <param name="worldUp">The up direction that constrains up axis orientation to a plane this vector lies on. This rule might be broken if forward and up direction are nearly parallel.</param>
     API_FUNCTION() void LookAt(const Vector3& worldPos, const Vector3& worldUp);
 
     /// <summary>

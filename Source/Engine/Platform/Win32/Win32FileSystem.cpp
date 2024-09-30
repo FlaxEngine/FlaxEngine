@@ -129,11 +129,11 @@ bool Win32FileSystem::DirectoryGetFiles(Array<String>& results, const String& pa
     return getFilesFromDirectoryAll(results, path, searchPattern);
 }
 
-bool Win32FileSystem::GetChildDirectories(Array<String>& results, const String& directory)
+bool Win32FileSystem::GetChildDirectories(Array<String>& results, const String& path)
 {
     // Try to find first file
     WIN32_FIND_DATA info;
-    String pattern = directory / TEXT('*');
+    String pattern = path / TEXT('*');
     const HANDLE handle = FindFirstFileW(*pattern, &info);
     if (INVALID_HANDLE_VALUE == handle)
     {
@@ -151,7 +151,7 @@ bool Win32FileSystem::GetChildDirectories(Array<String>& results, const String& 
         if (info.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
         {
             // Add directory
-            results.Add(directory / info.cFileName);
+            results.Add(path / info.cFileName);
         }
     } while (FindNextFileW(handle, &info) != 0);
     FindClose(handle);

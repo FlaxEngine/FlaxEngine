@@ -580,7 +580,7 @@ namespace FlaxEngine
         public static float AngleBetween(Quaternion a, Quaternion b)
         {
             float num = Dot(a, b);
-            return num > 0.9999999f ? 0 : Mathf.Acos(Mathf.Min(Mathf.Abs(num), 1f)) * 2f * 57.29578f;
+            return num > Tolerance ? 0 : Mathf.Acos(Mathf.Min(Mathf.Abs(num), 1f)) * 2f * 57.29578f;
         }
 
         /// <summary>
@@ -1602,7 +1602,7 @@ namespace FlaxEngine
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator ==(Quaternion left, Quaternion right)
         {
-            return Dot(ref left, ref right) > 0.9999999f;
+            return Dot(ref left, ref right) > Tolerance;
         }
 
         /// <summary>
@@ -1614,7 +1614,7 @@ namespace FlaxEngine
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator !=(Quaternion left, Quaternion right)
         {
-            return Dot(ref left, ref right) <= 0.9999999f;
+            return Dot(ref left, ref right) <= Tolerance;
         }
 
         /// <summary>
@@ -1714,7 +1714,7 @@ namespace FlaxEngine
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Equals(ref Quaternion other)
         {
-            //return Dot(ref this, ref other) > 0.9999999f;
+            //return Dot(ref this, ref other) > Tolerance;
             return Mathf.NearEqual(other.X, X) && Mathf.NearEqual(other.Y, Y) && Mathf.NearEqual(other.Z, Z) && Mathf.NearEqual(other.W, W);
         }
 

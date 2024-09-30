@@ -136,23 +136,11 @@ public:
     static void ComputeSphereModelDrawMatrix(const RenderView& view, const Float3& position, float radius, Matrix& resultWorld, bool& resultIsViewInside);
 };
 
-// Calculate mip levels count for a texture 1D
-// @param width Most detailed mip width
-// @param useMipLevels True if use mip levels, otherwise false (use only 1 mip)
-// @returns Mip levels count
-extern int32 MipLevelsCount(int32 width, bool useMipLevels = true);
+// Calculates mip levels count for a texture 1D.
+extern int32 MipLevelsCount(int32 width);
 
-// Calculate mip levels count for a texture 2D
-// @param width Most detailed mip width
-// @param height Most detailed mip height
-// @param useMipLevels True if use mip levels, otherwise false (use only 1 mip)
-// @returns Mip levels count
-extern int32 MipLevelsCount(int32 width, int32 height, bool useMipLevels = true);
+// Calculates mip levels count for a texture 2D.
+extern int32 MipLevelsCount(int32 width, int32 height);
 
-// Calculate mip levels count for a texture 3D
-// @param width Most detailed mip width
-// @param height Most detailed mip height
-// @param depth Most detailed mip depths
-// @param useMipLevels True if use mip levels, otherwise false (use only 1 mip)
-// @returns Mip levels count
-extern int32 MipLevelsCount(int32 width, int32 height, int32 depth, bool useMipLevels = true);
+// Calculates mip levels count for a texture 3D.
+extern int32 MipLevelsCount(int32 width, int32 height, int32 depth);

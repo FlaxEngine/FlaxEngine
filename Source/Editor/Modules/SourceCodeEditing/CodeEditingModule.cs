@@ -155,6 +155,11 @@ namespace FlaxEditor.Modules.SourceCodeEditing
         /// </summary>
         public readonly CachedTypesCollection All = new CachedAllTypesCollection(8096, ScriptType.Null, type => true, HasAssemblyValidAnyTypes);
 
+        /// <summary> 
+        /// The all types collection from all assemblies (including C# system libraries).
+        /// </summary>
+        public readonly CachedTypesCollection AllWithStd = new CachedTypesCollection(8096, ScriptType.Null, type => true, assembly => true);
+
         /// <summary>
         /// The all valid types collection for the Visual Script property types (includes basic types like int/float, structures, object references).
         /// </summary>
@@ -574,21 +579,17 @@ namespace FlaxEditor.Modules.SourceCodeEditing
         private static bool HasAssemblyValidAnyTypes(Assembly assembly)
         {
             var codeBase = Utils.GetAssemblyLocation(assembly);
+            if (string.IsNullOrEmpty(codeBase))
+                return true;
 #if USE_NETCORE
             if (assembly.ManifestModule.FullyQualifiedName == "<In Memory Module>")
                 return false;
-
-            if (string.IsNullOrEmpty(codeBase))
-                return true;
 
             // Skip runtime related assemblies
             string repositoryUrl = assembly.GetCustomAttributes<AssemblyMetadataAttribute>().FirstOrDefault(x => x.Key == "RepositoryUrl")?.Value ?? "";
             if (repositoryUrl != "https://github.com/dotnet/runtime")
                 return true;
 #else
-            if (string.IsNullOrEmpty(codeBase))
-                return true;
-
             // Skip assemblies from in-build Mono directory
             if (!codeBase.Contains("/Mono/lib/mono/"))
                 return true;
