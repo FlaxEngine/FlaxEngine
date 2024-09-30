@@ -381,6 +381,9 @@ public:
     // Frees the object or data owned by this Variant container (eg. structure or object).
     void DeleteValue();
 
+    // Parses the text into the Variant value. Allows to specify explicit value type.
+    static Variant Parse(const StringView& text, const VariantType& type = VariantType());
+
     FORCE_INLINE Variant Cast(const VariantType& to) const
     {
         return Cast(*this, to);
