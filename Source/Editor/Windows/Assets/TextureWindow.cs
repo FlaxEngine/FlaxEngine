@@ -27,7 +27,7 @@ namespace FlaxEditor.Windows.Assets
         public class PropertiesProxyBase
         {
             internal TextureWindow _window;
-            
+
             /// <summary>
             /// Gathers parameters from the specified texture.
             /// </summary>
@@ -37,7 +37,7 @@ namespace FlaxEditor.Windows.Assets
                 // Link
                 _window = window;
             }
-            
+
             /// <summary>
             /// Clears temporary data.
             /// </summary>
@@ -83,7 +83,7 @@ namespace FlaxEditor.Windows.Assets
                 }
             }
         }
-        
+
         /// <summary>
         /// The texture import properties proxy object.
         /// </summary>
@@ -129,7 +129,7 @@ namespace FlaxEditor.Windows.Assets
             public void DiscardChanges()
             {
             }
-            
+
             private sealed class ProxyEditor : GenericEditor
             {
                 public override void Initialize(LayoutElementsContainer layout)
@@ -151,7 +151,7 @@ namespace FlaxEditor.Windows.Assets
             /// The presenter to use in the tab.
             /// </summary>
             public CustomEditorPresenter Presenter;
-            
+
             /// <summary>
             /// The proxy to use in the tab.
             /// </summary>
@@ -214,6 +214,8 @@ namespace FlaxEditor.Windows.Assets
         public TextureWindow(Editor editor, AssetItem item)
         : base(editor, item)
         {
+            var inputOptions = Editor.Options.Options.Input;
+
             // Split Panel
             _split = new SplitPanel(Orientation.Horizontal, ScrollBars.None, ScrollBars.Vertical)
             {
@@ -228,7 +230,7 @@ namespace FlaxEditor.Windows.Assets
             {
                 Parent = _split.Panel1
             };
-            
+
             // Properties tabs
             _tabs = new()
             {
@@ -244,7 +246,7 @@ namespace FlaxEditor.Windows.Assets
             _tabs.AddTab(new ImportTab(this));
 
             // Toolstrip
-            _saveButton = (ToolStripButton)_toolstrip.AddButton(Editor.Icons.Save64, Save).LinkTooltip("Save");
+            _saveButton = (ToolStripButton)_toolstrip.AddButton(Editor.Icons.Save64, Save).LinkTooltip("Save", ref inputOptions.Save);
             _toolstrip.AddButton(Editor.Icons.Import64, () => Editor.ContentImporting.Reimport((BinaryAssetItem)Item)).LinkTooltip("Reimport");
             _toolstrip.AddSeparator();
             _toolstrip.AddButton(Editor.Icons.CenterView64, _preview.CenterView).LinkTooltip("Center view");
