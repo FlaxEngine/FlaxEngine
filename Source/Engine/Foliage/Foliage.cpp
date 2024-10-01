@@ -986,6 +986,12 @@ void Foliage::UpdateCullDistance()
 #endif
 }
 
+void Foliage::RemoveAllInstances()
+{
+    Instances.Clear();
+    RebuildClusters();
+}
+
 static float GlobalDensityScale = 1.0f;
 
 float Foliage::GetGlobalDensityScale()
