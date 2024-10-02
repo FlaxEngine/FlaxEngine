@@ -80,7 +80,7 @@ public:
     /// <summary>
     /// Gets the joint mode flags. Controls joint behaviour.
     /// </summary>
-    API_PROPERTY(Attributes="EditorOrder(100), DefaultValue(HingeJointFlag.Limit | HingeJointFlag.Drive)")
+    API_PROPERTY(Attributes="EditorOrder(100), EditorDisplay(\"Joint\"), DefaultValue(HingeJointFlag.Limit | HingeJointFlag.Drive)")
     FORCE_INLINE HingeJointFlag GetFlags() const
     {
         return _flags;
