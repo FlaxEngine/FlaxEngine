@@ -157,7 +157,7 @@ private:
     GPUTextureView* GetLocalShadowedLightScattering(RenderContext& renderContext, GPUContext* context, VolumetricFogOptions& options) const;
     void InitCircleBuffer();
     template<typename T>
-    void RenderRadialLight(RenderContext& renderContext, GPUContext* context, RenderView& view, VolumetricFogOptions& options, T& light, PerLight& perLight, GPUConstantBuffer* cb1);
+    void RenderRadialLight(RenderContext& renderContext, GPUContext* context, RenderView& view, VolumetricFogOptions& options, T& light, PerLight& perLight, GPUConstantBuffer* cb2);
 #if COMPILE_WITH_DEV_ENV
     void OnShaderReloading(Asset* obj)
     {

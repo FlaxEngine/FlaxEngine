@@ -132,7 +132,7 @@ namespace FlaxEditor.Surface
         public virtual void OnSurfaceLoaded(SurfaceNodeActions action)
         {
             // Snap bounds (with ceil) when using grid snapping
-            if (Surface.GridSnappingEnabled)
+            if (Surface != null && Surface.GridSnappingEnabled)
             {
                 var bounds = Bounds;
                 bounds.Location = Surface.SnapToGrid(bounds.Location, false);

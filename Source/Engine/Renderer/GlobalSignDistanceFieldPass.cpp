@@ -399,7 +399,7 @@ public:
         }
     }
 
-    void OnSceneRenderingUpdateActor(Actor* a, const BoundingSphere& prevBounds) override
+    void OnSceneRenderingUpdateActor(Actor* a, const BoundingSphere& prevBounds, UpdateFlags flags) override
     {
         if (GLOBAL_SDF_ACTOR_IS_STATIC(a) && ObjectTypes.Contains(a->GetTypeHandle()))
         {

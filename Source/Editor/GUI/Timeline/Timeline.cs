@@ -1288,10 +1288,7 @@ namespace FlaxEditor.GUI.Timeline
         public virtual void AddTrack(Track track, bool withUndo = true)
         {
             // Ensure name is unique
-            int idx = 1;
-            var name = track.Name;
-            while (!IsTrackNameValid(track.Name))
-                track.Name = string.Format("{0} {1}", name, idx++);
+            track.Name = GetValidTrackName(track.Name);
 
             // Add it to the timeline
             _tracks.Add(track);
@@ -1843,11 +1840,7 @@ namespace FlaxEditor.GUI.Timeline
         /// <returns>The track name.</returns>
         public string GetValidTrackName(string name)
         {
-            string newName = name;
-            int count = 0;
-            while (!IsTrackNameValid(newName))
-                newName = string.Format("{0} {1}", name, count++);
-            return newName;
+            return Utilities.Utils.IncrementNameNumber(name, IsTrackNameValid);
         }
 
         /// <summary>

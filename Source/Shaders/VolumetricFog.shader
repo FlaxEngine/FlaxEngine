@@ -60,7 +60,7 @@ SkyLightData SkyLight;
 DDGIData DDGI;
 META_CB_END
 
-META_CB_BEGIN(1, PerLight)
+META_CB_BEGIN(2, PerLight)
 float2 SliceToDepth;
 int MinZ;
 float LocalLightScatteringIntensity;

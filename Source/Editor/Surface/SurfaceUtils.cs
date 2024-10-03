@@ -572,12 +572,12 @@ namespace FlaxEditor.Surface
             var undo = surface.Undo;
 
             // Toolstrip
-            saveButton = (ToolStripButton)toolStrip.AddButton(editor.Icons.Save64, window.Save).LinkTooltip("Save");
+            saveButton = toolStrip.AddButton(editor.Icons.Save64, window.Save).LinkTooltip("Save", ref inputOptions.Save);
             toolStrip.AddSeparator();
-            undoButton = (ToolStripButton)toolStrip.AddButton(editor.Icons.Undo64, undo.PerformUndo).LinkTooltip($"Undo ({inputOptions.Undo})");
-            redoButton = (ToolStripButton)toolStrip.AddButton(editor.Icons.Redo64, undo.PerformRedo).LinkTooltip($"Redo ({inputOptions.Redo})");
+            undoButton = toolStrip.AddButton(editor.Icons.Undo64, undo.PerformUndo).LinkTooltip("Undo", ref inputOptions.Undo);
+            redoButton = toolStrip.AddButton(editor.Icons.Redo64, undo.PerformRedo).LinkTooltip("Redo", ref inputOptions.Redo);
             toolStrip.AddSeparator();
-            toolStrip.AddButton(editor.Icons.Search64, editor.ContentFinding.ShowSearch).LinkTooltip($"Open content search tool ({inputOptions.Search})");
+            toolStrip.AddButton(editor.Icons.Search64, editor.ContentFinding.ShowSearch).LinkTooltip("Open content search tool",  ref inputOptions.Search);
             toolStrip.AddButton(editor.Icons.CenterView64, surface.ShowWholeGraph).LinkTooltip("Show whole graph");
             var gridSnapButton = toolStrip.AddButton(editor.Icons.Grid32, surface.ToggleGridSnapping);
             gridSnapButton.LinkTooltip("Toggle grid snapping for nodes.");

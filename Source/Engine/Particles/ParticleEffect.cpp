@@ -589,7 +589,7 @@ void ParticleEffect::OnDebugDrawSelected()
 void ParticleEffect::OnLayerChanged()
 {
     if (_sceneRenderingKey != -1)
-        GetSceneRendering()->UpdateActor(this, _sceneRenderingKey);
+        GetSceneRendering()->UpdateActor(this, _sceneRenderingKey, ISceneRenderingListener::Layer);
 }
 
 void ParticleEffect::Serialize(SerializeStream& stream, const void* otherObj)

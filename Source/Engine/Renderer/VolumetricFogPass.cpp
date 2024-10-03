@@ -60,9 +60,10 @@ bool VolumetricFogPass::setupResources()
         REPORT_INVALID_SHADER_PASS_CB_SIZE(shader, 0, Data);
         return true;
     }
-    if (shader->GetCB(1)->GetSize() != sizeof(PerLight))
+    // CB1 is used for per-draw info (ObjectIndex)
+    if (shader->GetCB(2)->GetSize() != sizeof(PerLight))
     {
-        REPORT_INVALID_SHADER_PASS_CB_SIZE(shader, 1, PerLight);
+        REPORT_INVALID_SHADER_PASS_CB_SIZE(shader, 2, PerLight);
         return true;
     }
 
@@ -254,7 +255,7 @@ GPUTextureView* VolumetricFogPass::GetLocalShadowedLightScattering(RenderContext
 }
 
 template<typename T>
-void VolumetricFogPass::RenderRadialLight(RenderContext& renderContext, GPUContext* context, RenderView& view, VolumetricFogOptions& options, T& light, PerLight& perLight, GPUConstantBuffer* cb1)
+void VolumetricFogPass::RenderRadialLight(RenderContext& renderContext, GPUContext* context, RenderView& view, VolumetricFogOptions& options, T& light, PerLight& perLight, GPUConstantBuffer* cb2)
 {
     const Float3 center = light.Position;
     const float radius = light.Radius;
@@ -281,8 +282,8 @@ void VolumetricFogPass::RenderRadialLight(RenderContext& renderContext, GPUConte
     light.SetShaderData(perLight.LocalLight, withShadow);
 
     // Upload data
-    context->UpdateCB(cb1, &perLight);
-    context->BindCB(1, cb1);
+    context->UpdateCB(cb2, &perLight);
+    context->BindCB(2, cb2);
 
     // Ensure to have valid buffers created
     if (_vbCircleRasterize == nullptr || _ibCircleRasterize == nullptr)
@@ -414,6 +415,8 @@ void VolumetricFogPass::Render(RenderContext& renderContext)
         customData.VolumetricFogMaxDistance = cache.Data.VolumetricFogMaxDistance;
         bindParams.CustomData = &customData;
         bindParams.BindViewData();
+        bindParams.DrawCall = &renderContext.List->VolumetricFogParticles.First();
+        bindParams.BindDrawData();
 
         for (auto& drawCall : renderContext.List->VolumetricFogParticles)
         {
@@ -439,7 +442,7 @@ void VolumetricFogPass::Render(RenderContext& renderContext)
 
             // Setup volumetric shader data
             PerLight perLight;
-            auto cb1 = _shader->GetShader()->GetCB(1);
+            auto cb2 = _shader->GetShader()->GetCB(2);
             perLight.SliceToDepth.X = cache.Data.GridSize.Z;
             perLight.SliceToDepth.Y = cache.Data.VolumetricFogMaxDistance;
             perLight.MinZ = volumeZBoundsMin;
@@ -447,8 +450,8 @@ void VolumetricFogPass::Render(RenderContext& renderContext)
             Matrix::Transpose(renderContext.View.Projection, perLight.ViewToVolumeClip);
 
             // Upload data
-            context->UpdateCB(cb1, &perLight);
-            context->BindCB(1, cb1);
+            context->UpdateCB(cb2, &perLight);
+            context->BindCB(2, cb2);
 
             // Call rendering to the volume
             const int32 instanceCount = volumeZBoundsMax - volumeZBoundsMin;
@@ -495,7 +498,7 @@ void VolumetricFogPass::Render(RenderContext& renderContext)
             PerLight perLight;
             perLight.SliceToDepth.X = cache.Data.GridSize.Z;
             perLight.SliceToDepth.Y = cache.Data.VolumetricFogMaxDistance;
-            auto cb1 = _shader->GetShader()->GetCB(1);
+            auto cb2 = _shader->GetShader()->GetCB(2);
 
             // Bind the output
             context->SetRenderTarget(localShadowedLightScattering);
@@ -505,12 +508,12 @@ void VolumetricFogPass::Render(RenderContext& renderContext)
             context->BindSR(0, shadowMap);
             context->BindSR(1, shadowsBuffer);
             for (int32 i = 0; i < pointLights.Count(); i++)
-                RenderRadialLight(renderContext, context, view, options, renderContext.List->PointLights[pointLights[i]], perLight, cb1);
+                RenderRadialLight(renderContext, context, view, options, renderContext.List->PointLights[pointLights[i]], perLight, cb2);
             for (int32 i = 0; i < spotLights.Count(); i++)
-                RenderRadialLight(renderContext, context, view, options, renderContext.List->SpotLights[spotLights[i]], perLight, cb1);
+                RenderRadialLight(renderContext, context, view, options, renderContext.List->SpotLights[spotLights[i]], perLight, cb2);
 
             // Cleanup
-            context->UnBindCB(1);
+            context->UnBindCB(2);
             context->ResetRenderTarget();
             context->FlushState();
         }

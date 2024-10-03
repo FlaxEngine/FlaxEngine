@@ -388,7 +388,7 @@ const Array<MProperty*>& MClass::GetProperties() const
     return _properties;
 }
 
-bool MClass::HasAttribute(const MClass* monoClass) const
+bool MClass::HasAttribute(const MClass* klass) const
 {
     return false;
 }
@@ -398,7 +398,7 @@ bool MClass::HasAttribute() const
     return false;
 }
 
-MObject* MClass::GetAttribute(const MClass* monoClass) const
+MObject* MClass::GetAttribute(const MClass* klass) const
 {
     return nullptr;
 }
@@ -430,7 +430,7 @@ MMethod* MEvent::GetRemoveMethod() const
     return _removeMethod;
 }
 
-bool MEvent::HasAttribute(MClass* monoClass) const
+bool MEvent::HasAttribute(const MClass* klass) const
 {
     return false;
 }
@@ -440,7 +440,7 @@ bool MEvent::HasAttribute() const
     return false;
 }
 
-MObject* MEvent::GetAttribute(MClass* monoClass) const
+MObject* MEvent::GetAttribute(const MClass* klass) const
 {
     return nullptr;
 }
@@ -482,7 +482,7 @@ void MField::SetValue(MObject* instance, void* value) const
 {
 }
 
-bool MField::HasAttribute(MClass* monoClass) const
+bool MField::HasAttribute(const MClass* klass) const
 {
     return false;
 }
@@ -492,7 +492,7 @@ bool MField::HasAttribute() const
     return false;
 }
 
-MObject* MField::GetAttribute(MClass* monoClass) const
+MObject* MField::GetAttribute(const MClass* klass) const
 {
     return nullptr;
 }
@@ -537,7 +537,7 @@ bool MMethod::GetParameterIsOut(int32 paramIdx) const
     return false;
 }
 
-bool MMethod::HasAttribute(MClass* monoClass) const
+bool MMethod::HasAttribute(const MClass* klass) const
 {
     return false;
 }
@@ -547,7 +547,7 @@ bool MMethod::HasAttribute() const
     return false;
 }
 
-MObject* MMethod::GetAttribute(MClass* monoClass) const
+MObject* MMethod::GetAttribute(const MClass* klass) const
 {
     return nullptr;
 }
@@ -584,7 +584,7 @@ void MProperty::SetValue(MObject* instance, void* value, MObject** exception) co
 {
 }
 
-bool MProperty::HasAttribute(MClass* monoClass) const
+bool MProperty::HasAttribute(const MClass* klass) const
 {
     return false;
 }
@@ -594,7 +594,7 @@ bool MProperty::HasAttribute() const
     return false;
 }
 
-MObject* MProperty::GetAttribute(MClass* monoClass) const
+MObject* MProperty::GetAttribute(const MClass* klass) const
 {
     return nullptr;
 }

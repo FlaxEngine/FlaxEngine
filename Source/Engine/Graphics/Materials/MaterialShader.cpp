@@ -87,6 +87,7 @@ void IMaterial::BindParameters::BindViewData()
 void IMaterial::BindParameters::BindDrawData()
 {
     // Write draw call to the object buffer
+    ASSERT(DrawCall);
     auto& objectBuffer = RenderContext.List->TempObjectBuffer;
     objectBuffer.Clear();
     ShaderObjectData objData;

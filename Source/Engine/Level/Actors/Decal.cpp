@@ -64,7 +64,7 @@ BoundingBox Decal::GetEditorBox() const
 void Decal::OnLayerChanged()
 {
     if (_sceneRenderingKey != -1)
-        GetSceneRendering()->UpdateActor(this, _sceneRenderingKey);
+        GetSceneRendering()->UpdateActor(this, _sceneRenderingKey, ISceneRenderingListener::Layer);
 }
 
 void Decal::Draw(RenderContext& renderContext)

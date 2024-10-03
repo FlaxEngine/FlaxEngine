@@ -74,6 +74,17 @@ bool NetworkReplicationNode::GetObject(ScriptingObject* obj, NetworkReplicationH
     return false;
 }
 
+bool NetworkReplicationNode::SetObject(const NetworkReplicationHierarchyObject& value)
+{
+    const int32 index = Objects.Find(value.Object.Get());
+    if (index != -1)
+    {
+        Objects[index] = value;
+        return true;
+    }
+    return false;
+}
+
 bool NetworkReplicationNode::DirtyObject(ScriptingObject* obj)
 {
     const int32 index = Objects.Find(obj);
@@ -212,11 +223,17 @@ bool NetworkReplicationGridNode::GetObject(ScriptingObject* obj, NetworkReplicat
     {
         return false;
     }
-    if (_children[coord].Node->GetObject(obj, result))
+    return _children[coord].Node->GetObject(obj, result);
+}
+
+bool NetworkReplicationGridNode::SetObject(const NetworkReplicationHierarchyObject& value)
+{
+    Int3 coord;
+    if (!_objectToCell.TryGet(value.Object.Get(), coord))
     {
-        return true;
+        return false;
     }
-    return false;
+    return _children[coord].Node->SetObject(value);
 }
 
 bool NetworkReplicationGridNode::DirtyObject(ScriptingObject* obj)

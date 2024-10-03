@@ -499,7 +499,7 @@ public:
     {
     }
 
-    void OnSceneRenderingUpdateActor(Actor* a, const BoundingSphere& prevBounds) override
+    void OnSceneRenderingUpdateActor(Actor* a, const BoundingSphere& prevBounds, UpdateFlags flags) override
     {
         // Dirty static objects to redraw when changed (eg. material modification)
         if (a->HasStaticFlag(StaticFlags::Lightmap))

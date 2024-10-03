@@ -9,7 +9,7 @@
 /// <summary>
 /// Graphics device manager that creates, manages and releases graphics device and related objects.
 /// </summary>
-API_CLASS(Static) class FLAXENGINE_API Graphics
+API_CLASS(Static, Attributes="DebugCommand") class FLAXENGINE_API Graphics
 {
     DECLARE_SCRIPTING_TYPE_NO_SPAWN(Graphics);
 public:
