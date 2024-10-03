@@ -227,7 +227,7 @@ bool DeleteUnixPathTree(const char* path)
         // Determinate a full path of an entry
         char full_path[256];
         ASSERT(pathLength + strlen(entry->d_name) < ARRAY_COUNT(full_path));
-        strcpy(full_path, path);
+        strcpy(full_path, pathStr);
         strcat(full_path, "/");
         strcat(full_path, entry->d_name);
 
