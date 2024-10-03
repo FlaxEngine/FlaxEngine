@@ -1000,11 +1000,12 @@ const Array<MMethod*>& MClass::GetMethods() const
     int methodsCount;
     static void* GetClassMethodsPtr = GetStaticMethodPointer(TEXT("GetClassMethods"));
     CallStaticMethod<void, void*, NativeMethodDefinitions**, int*>(GetClassMethodsPtr, _handle, &methods, &methodsCount);
+    _methods.Resize(methodsCount);
     for (int32 i = 0; i < methodsCount; i++)
     {
         NativeMethodDefinitions& definition = methods[i];
         MMethod* method = New<MMethod>(const_cast<MClass*>(this), StringAnsi(definition.name), definition.handle, definition.numParameters, definition.methodAttributes);
-        _methods.Add(method);
+        _methods[i] = method;
         MCore::GC::FreeMemory((void*)definition.name);
     }
     MCore::GC::FreeMemory(methods);
@@ -1036,11 +1037,12 @@ const Array<MField*>& MClass::GetFields() const
     int numFields;
     static void* GetClassFieldsPtr = GetStaticMethodPointer(TEXT("GetClassFields"));
     CallStaticMethod<void, void*, NativeFieldDefinitions**, int*>(GetClassFieldsPtr, _handle, &fields, &numFields);
+    _fields.Resize(numFields);
     for (int32 i = 0; i < numFields; i++)
     {
         NativeFieldDefinitions& definition = fields[i];
         MField* field = New<MField>(const_cast<MClass*>(this), definition.fieldHandle, definition.name, definition.fieldType, definition.fieldOffset, definition.fieldAttributes);
-        _fields.Add(field);
+        _fields[i] = field;
         MCore::GC::FreeMemory((void*)definition.name);
     }
     MCore::GC::FreeMemory(fields);
@@ -1083,11 +1085,12 @@ const Array<MProperty*>& MClass::GetProperties() const
     int numProperties;
     static void* GetClassPropertiesPtr = GetStaticMethodPointer(TEXT("GetClassProperties"));
     CallStaticMethod<void, void*, NativePropertyDefinitions**, int*>(GetClassPropertiesPtr, _handle, &foundProperties, &numProperties);
+    _properties.Resize(numProperties);
     for (int i = 0; i < numProperties; i++)
     {
         const NativePropertyDefinitions& definition = foundProperties[i];
         MProperty* property = New<MProperty>(const_cast<MClass*>(this), definition.name, definition.getterHandle, definition.setterHandle, definition.getterAttributes, definition.setterAttributes);
-        _properties.Add(property);
+        _properties[i] = property;
         MCore::GC::FreeMemory((void*)definition.name);
     }
     MCore::GC::FreeMemory(foundProperties);
@@ -1108,10 +1111,11 @@ const Array<MClass*>& MClass::GetInterfaces() const
     int numInterfaces;
     static void* GetClassInterfacesPtr = GetStaticMethodPointer(TEXT("GetClassInterfaces"));
     CallStaticMethod<void, void*, MType***, int*>(GetClassInterfacesPtr, _handle, &foundInterfaceTypes, &numInterfaces);
+    _interfaces.Resize(numInterfaces);
     for (int32 i = 0; i < numInterfaces; i++)
     {
         MClass* interfaceClass = GetOrCreateClass(foundInterfaceTypes[i]);
-        _interfaces.Add(interfaceClass);
+        _interfaces[i] = interfaceClass;
     }
     MCore::GC::FreeMemory(foundInterfaceTypes);
 
@@ -1504,7 +1508,7 @@ MProperty::MProperty(MClass* parentClass, const char* name, void* getterHandle, 
 {
     _hasGetMethod = getterHandle != nullptr;
     if (_hasGetMethod)
-        _getMethod = New<MMethod>(parentClass, StringAnsi("get_" + _name), getterHandle, 1, getterAttributes);
+        _getMethod = New<MMethod>(parentClass, StringAnsi("get_" + _name), getterHandle, 0, getterAttributes);
     else
         _getMethod = nullptr;
     _hasSetMethod = setterHandle != nullptr;
