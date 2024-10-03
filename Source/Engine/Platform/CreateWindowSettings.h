@@ -147,7 +147,7 @@ DECLARE_SCRIPTING_TYPE_MINIMAL(CreateWindowSettings);
     /// <summary>
     /// True if it's a regular window, false for tooltips, context menu and other utility windows.
     /// </summary>
-    API_FIELD() DEPRECATED bool IsRegularWindow = true;
+    API_FIELD() DEPRECATED("Use Type instead") bool IsRegularWindow = true;
 
     /// <summary>
     /// The type of window. The type affects the behaviour of the window in system level.
