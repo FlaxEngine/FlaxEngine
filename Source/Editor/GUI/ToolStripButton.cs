@@ -107,6 +107,21 @@ namespace FlaxEditor.GUI
             return this;
         }
 
+        /// <summary>
+        /// Links the tooltip with input binding info.
+        /// </summary>
+        /// <param name="text">The text.</param>
+        /// <param name="inputBinding">The input key binding.</param>
+        /// <returns>This tooltip.</returns>
+        public ToolStripButton LinkTooltip(string text, ref Options.InputBinding inputBinding)
+        {
+            var input = inputBinding.ToString();
+            if (input.Length != 0)
+                text = $"{text} ({input})";
+            LinkTooltip(text);
+            return this;
+        }
+
         /// <inheritdoc />
         public override void Draw()
         {

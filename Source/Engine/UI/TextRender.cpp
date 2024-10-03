@@ -415,7 +415,7 @@ void TextRender::OnDebugDrawSelected()
 void TextRender::OnLayerChanged()
 {
     if (_sceneRenderingKey != -1)
-        GetSceneRendering()->UpdateActor(this, _sceneRenderingKey);
+        GetSceneRendering()->UpdateActor(this, _sceneRenderingKey, ISceneRenderingListener::Layer);
 }
 
 bool TextRender::IntersectsItself(const Ray& ray, Real& distance, Vector3& normal)

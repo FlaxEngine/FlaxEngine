@@ -186,7 +186,7 @@ void SpriteRender::Deserialize(DeserializeStream& stream, ISerializeModifier* mo
 void SpriteRender::OnLayerChanged()
 {
     if (_sceneRenderingKey != -1)
-        GetSceneRendering()->UpdateActor(this, _sceneRenderingKey);
+        GetSceneRendering()->UpdateActor(this, _sceneRenderingKey, ISceneRenderingListener::Layer);
 }
 
 void SpriteRender::OnEndPlay()

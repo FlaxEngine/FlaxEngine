@@ -444,7 +444,6 @@ BehaviorUpdateResult BehaviorTreeMoveToNode::Update(const BehaviorUpdateContext&
         else
             goalLocation = TargetLocation.Get(context.Knowledge);
         repath |= Vector3::Distance(goalLocation, state->GoalLocation) > TargetGoalUpdateTolerance;
-        state->GoalLocation = goalLocation;
     }
 
     if (repath)
@@ -490,6 +489,7 @@ BehaviorUpdateResult BehaviorTreeMoveToNode::Update(const BehaviorUpdateContext&
         state->HasPath = true;
         state->TargetPathIndex = 1;
         state->Result = BehaviorUpdateResult::Running;
+        state->GoalLocation = goalLocation;
 
         // TODO: add path debugging in Editor (eg. via BT window)
 

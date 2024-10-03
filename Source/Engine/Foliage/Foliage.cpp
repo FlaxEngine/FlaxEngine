@@ -775,7 +775,7 @@ void Foliage::OnFoliageTypeModelLoaded(int32 index)
         }
         BoundingSphere::FromBox(_box, _sphere);
         if (_sceneRenderingKey != -1)
-            GetSceneRendering()->UpdateActor(this, _sceneRenderingKey);
+            GetSceneRendering()->UpdateActor(this, _sceneRenderingKey, ISceneRenderingListener::Bounds);
     }
     {
         PROFILE_CPU_NAMED("Create Clusters");
@@ -912,7 +912,7 @@ void Foliage::RebuildClusters()
         _box = totalBounds;
         BoundingSphere::FromBox(_box, _sphere);
         if (_sceneRenderingKey != -1)
-            GetSceneRendering()->UpdateActor(this, _sceneRenderingKey);
+            GetSceneRendering()->UpdateActor(this, _sceneRenderingKey, ISceneRenderingListener::Bounds);
     }
 
     // Insert all instances to the clusters
@@ -984,6 +984,12 @@ void Foliage::UpdateCullDistance()
         }
     }
 #endif
+}
+
+void Foliage::RemoveAllInstances()
+{
+    Instances.Clear();
+    RebuildClusters();
 }
 
 static float GlobalDensityScale = 1.0f;
@@ -1441,7 +1447,7 @@ void Foliage::Deserialize(DeserializeStream& stream, ISerializeModifier* modifie
 void Foliage::OnLayerChanged()
 {
     if (_sceneRenderingKey != -1)
-        GetSceneRendering()->UpdateActor(this, _sceneRenderingKey);
+        GetSceneRendering()->UpdateActor(this, _sceneRenderingKey, ISceneRenderingListener::Layer);
 }
 
 void Foliage::OnEnable()
