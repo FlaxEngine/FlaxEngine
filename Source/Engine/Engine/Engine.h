@@ -97,7 +97,7 @@ public:
     /// Exits the engine.
     /// </summary>
     /// <param name="exitCode">The exit code.</param>
-    static void Exit(int32 exitCode = -1);
+    API_FUNCTION(Attributes="DebugCommand") static void Exit(int32 exitCode = -1);
 
     /// <summary>
     /// Requests normal engine exit.
