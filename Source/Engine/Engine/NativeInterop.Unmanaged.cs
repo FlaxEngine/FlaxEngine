@@ -319,14 +319,15 @@ namespace FlaxEngine.Interop
             var arr = (NativeMethodDefinitions*)NativeAlloc(methods.Count, Unsafe.SizeOf<NativeMethodDefinitions>());
             for (int i = 0; i < methods.Count; i++)
             {
+                var method = methods[i];
                 IntPtr ptr = IntPtr.Add(new IntPtr(arr), Unsafe.SizeOf<NativeMethodDefinitions>() * i);
                 var classMethod = new NativeMethodDefinitions
                 {
-                    name = NativeAllocStringAnsi(methods[i].Name),
-                    numParameters = methods[i].GetParameters().Length,
-                    methodAttributes = (uint)methods[i].Attributes,
+                    name = NativeAllocStringAnsi(method.Name),
+                    numParameters = method.GetParameters().Length,
+                    methodAttributes = (uint)method.Attributes,
                 };
-                classMethod.typeHandle = GetMethodGCHandle(methods[i]);
+                classMethod.typeHandle = GetMethodGCHandle(method);
                 Unsafe.Write(ptr.ToPointer(), classMethod);
             }
             *classMethods = arr;
@@ -377,14 +378,15 @@ namespace FlaxEngine.Interop
             var arr = (NativePropertyDefinitions*)NativeAlloc(properties.Length, Unsafe.SizeOf<NativePropertyDefinitions>());
             for (int i = 0; i < properties.Length; i++)
             {
+                var property = properties[i];
                 IntPtr ptr = IntPtr.Add(new IntPtr(arr), Unsafe.SizeOf<NativePropertyDefinitions>() * i);
 
-                var getterMethod = properties[i].GetGetMethod(true);
-                var setterMethod = properties[i].GetSetMethod(true);
+                var getterMethod = property.GetGetMethod(true);
+                var setterMethod = property.GetSetMethod(true);
 
                 var classProperty = new NativePropertyDefinitions
                 {
-                    name = NativeAllocStringAnsi(properties[i].Name),
+                    name = NativeAllocStringAnsi(property.Name),
                 };
                 if (getterMethod != null)
                 {
