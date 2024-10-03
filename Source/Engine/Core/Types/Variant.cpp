@@ -2740,12 +2740,12 @@ String Variant::ToString() const
                 const auto items = typeHandle.GetType().Enum.Items;
                 for (int32 i = 0; items[i].Name; i++)
                 {
-                    if (items[i].Value == AsUint)
+                    if (items[i].Value == AsUint64)
                         return String(items[i].Name);
                 }
             }
         }
-        return StringUtils::ToString(AsUint);
+        return StringUtils::ToString(AsUint64);
     case VariantType::Int64:
         return StringUtils::ToString(AsInt64);
     case VariantType::Uint64:
@@ -3098,7 +3098,27 @@ Variant Variant::Parse(const StringView& text, const VariantType& type)
             break;
         case VariantType::Uint64:
         case VariantType::Enum:
-            StringUtils::Parse(text.Get(), &result.AsUint64);
+            if (!StringUtils::Parse(text.Get(), &result.AsUint64))
+            {
+            }
+            else if (type.TypeName)
+            {
+                const ScriptingTypeHandle typeHandle = Scripting::FindScriptingType(StringAnsiView(type.TypeName));
+                if (typeHandle && typeHandle.GetType().Type == ScriptingTypes::Enum)
+                {
+                    const auto items = typeHandle.GetType().Enum.Items;
+                    StringAsANSI<32> textAnsi(text.Get(), text.Length());
+                    StringAnsiView textAnsiView(textAnsi.Get());
+                    for (int32 i = 0; items[i].Name; i++)
+                    {
+                        if (textAnsiView == items[i].Name)
+                        {
+                            result.AsUint64 = items[i].Value;
+                            break;
+                        }
+                    }
+                }
+            }
             break;
         case VariantType::Float:
             StringUtils::Parse(text.Get(), &result.AsFloat);
