@@ -3082,23 +3082,23 @@ Variant Variant::Parse(const StringView& text, const VariantType& type)
                 result.AsBool = true;
             break;
         case VariantType::Int16:
-            StringUtils::Parse(text.Get(), &result.AsInt16);
+            StringUtils::Parse(text.Get(), text.Length(), &result.AsInt16);
             break;
         case VariantType::Uint16:
-            StringUtils::Parse(text.Get(), &result.AsUint16);
+            StringUtils::Parse(text.Get(), text.Length(), &result.AsUint16);
             break;
         case VariantType::Int:
-            StringUtils::Parse(text.Get(), &result.AsInt);
+            StringUtils::Parse(text.Get(), text.Length(), &result.AsInt);
             break;
         case VariantType::Uint:
-            StringUtils::Parse(text.Get(), &result.AsUint);
+            StringUtils::Parse(text.Get(), text.Length(), &result.AsUint);
             break;
         case VariantType::Int64:
-            StringUtils::Parse(text.Get(), &result.AsInt64);
+            StringUtils::Parse(text.Get(), text.Length(), &result.AsInt64);
             break;
         case VariantType::Uint64:
         case VariantType::Enum:
-            if (!StringUtils::Parse(text.Get(), &result.AsUint64))
+            if (!StringUtils::Parse(text.Get(), text.Length(), &result.AsUint64))
             {
             }
             else if (type.TypeName)
