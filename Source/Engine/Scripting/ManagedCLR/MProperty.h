@@ -16,6 +16,8 @@ class FLAXENGINE_API MProperty
 protected:
 #if USE_MONO
     MonoProperty* _monoProperty;
+#elif USE_NETCORE
+    void* _handle;
 #endif
 
     mutable MMethod* _getMethod;
@@ -34,7 +36,7 @@ public:
 #if USE_MONO
     explicit MProperty(MonoProperty* monoProperty, const char* name, MClass* parentClass);
 #elif USE_NETCORE
-    MProperty(MClass* parentClass, const char* name, void* getterHandle, void* setterHandle, MMethodAttributes getterAttributes, MMethodAttributes setterAttributes);
+    MProperty(MClass* parentClass, const char* name, void* handle, void* getterHandle, void* setterHandle, MMethodAttributes getterAttributes, MMethodAttributes setterAttributes);
 #endif
 
     /// <summary>
