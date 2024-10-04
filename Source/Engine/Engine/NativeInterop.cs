@@ -38,11 +38,13 @@ namespace FlaxEngine.Interop
         private static ConcurrentDictionary<IntPtr, Delegate> cachedDelegates = new();
         private static Dictionary<Type, (TypeHolder typeHolder, ManagedHandle handle)> managedTypes = new(new TypeComparer());
         private static List<ManagedHandle> fieldHandleCache = new();
+        private static List<ManagedHandle> propertyHandleCache = new();
 #if FLAX_EDITOR
         private static List<ManagedHandle> methodHandlesCollectible = new();
         private static ConcurrentDictionary<IntPtr, Delegate> cachedDelegatesCollectible = new();
         private static Dictionary<Type, (TypeHolder typeHolder, ManagedHandle handle)> managedTypesCollectible = new(new TypeComparer());
         private static List<ManagedHandle> fieldHandleCacheCollectible = new();
+        private static List<ManagedHandle> propertyHandleCacheCollectible = new();
 #endif
         private static Dictionary<object, ManagedHandle> classAttributesCacheCollectible = new();
         private static Dictionary<Assembly, ManagedHandle> assemblyHandles = new();

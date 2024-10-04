@@ -211,7 +211,25 @@ MClass* GetClass(MType* typeHandle);
 MClass* GetOrCreateClass(MType* typeHandle);
 MType* GetObjectType(MObject* obj);
 
-void* GetCustomAttribute(const MClass* klass, const MClass* attributeClass);
+void* GetCustomAttribute(const Array<MObject*>& attributes, const MClass* attributeClass)
+{
+    for (MObject* attr : attributes)
+    {
+        MClass* attrClass = MCore::Object::GetClass(attr);
+        if (attrClass == attributeClass)
+            return attr;
+    }
+    return nullptr;
+}
+
+void GetCustomAttributes(Array<MObject*>& result, void* handle, void* getAttributesFunc)
+{
+    MObject** attributes;
+    int numAttributes;
+    CallStaticMethod<void, void*, MObject***, int*>(getAttributesFunc, handle, &attributes, &numAttributes);
+    result.Set(attributes, numAttributes);
+    MCore::GC::FreeMemory(attributes);
+}
 
 // Structures used to pass information from runtime, must match with the structures in managed side
 struct NativeClassDefinitions
@@ -244,6 +262,7 @@ struct NativeFieldDefinitions
 struct NativePropertyDefinitions
 {
     const char* name;
+    void* propertyHandle;
     void* getterHandle;
     void* setterHandle;
     MMethodAttributes getterAttributes;
@@ -1089,7 +1108,7 @@ const Array<MProperty*>& MClass::GetProperties() const
     for (int i = 0; i < numProperties; i++)
     {
         const NativePropertyDefinitions& definition = foundProperties[i];
-        MProperty* property = New<MProperty>(const_cast<MClass*>(this), definition.name, definition.getterHandle, definition.setterHandle, definition.getterAttributes, definition.setterAttributes);
+        MProperty* property = New<MProperty>(const_cast<MClass*>(this), definition.name, definition.propertyHandle, definition.getterHandle, definition.setterHandle, definition.getterAttributes, definition.setterAttributes);
         _properties[i] = property;
         MCore::GC::FreeMemory((void*)definition.name);
     }
@@ -1125,7 +1144,7 @@ const Array<MClass*>& MClass::GetInterfaces() const
 
 bool MClass::HasAttribute(const MClass* klass) const
 {
-    return GetCustomAttribute(this, klass) != nullptr;
+    return GetCustomAttribute(GetAttributes(), klass) != nullptr;
 }
 
 bool MClass::HasAttribute() const
@@ -1135,7 +1154,7 @@ bool MClass::HasAttribute() const
 
 MObject* MClass::GetAttribute(const MClass* klass) const
 {
-    return (MObject*)GetCustomAttribute(this, klass);
+    return (MObject*)GetCustomAttribute(GetAttributes(), klass);
 }
 
 const Array<MObject*>& MClass::GetAttributes() const
@@ -1145,14 +1164,8 @@ const Array<MObject*>& MClass::GetAttributes() const
     ScopeLock lock(BinaryModule::Locker);
     if (_hasCachedAttributes)
         return _attributes;
-
-    MObject** attributes;
-    int numAttributes;
     static void* GetClassAttributesPtr = GetStaticMethodPointer(TEXT("GetClassAttributes"));
-    CallStaticMethod<void, void*, MObject***, int*>(GetClassAttributesPtr, _handle, &attributes, &numAttributes);
-    _attributes.Set(attributes, numAttributes);
-    MCore::GC::FreeMemory(attributes);
-
+    GetCustomAttributes(_attributes, _handle, GetClassAttributesPtr);
     _hasCachedAttributes = true;
     return _attributes;
 }
@@ -1191,17 +1204,17 @@ MMethod* MEvent::GetRemoveMethod() const
 
 bool MEvent::HasAttribute(const MClass* klass) const
 {
-    return false; // TODO: implement MEvent in .NET
+    return GetCustomAttribute(GetAttributes(), klass) != nullptr;
 }
 
 bool MEvent::HasAttribute() const
 {
-    return false; // TODO: implement MEvent in .NET
+    return !GetAttributes().IsEmpty();
 }
 
 MObject* MEvent::GetAttribute(const MClass* klass) const
 {
-    return nullptr; // TODO: implement MEvent in .NET
+    return (MObject*)GetCustomAttribute(GetAttributes(), klass);
 }
 
 const Array<MObject*>& MEvent::GetAttributes() const
@@ -1313,29 +1326,29 @@ void MField::SetValue(MObject* instance, void* value) const
 
 bool MField::HasAttribute(const MClass* klass) const
 {
-    // TODO: implement MField attributes in .NET
-    return false;
+    return GetCustomAttribute(GetAttributes(), klass) != nullptr;
 }
 
 bool MField::HasAttribute() const
 {
-    // TODO: implement MField attributes in .NET
-    return false;
+    return !GetAttributes().IsEmpty();
 }
 
 MObject* MField::GetAttribute(const MClass* klass) const
 {
-    // TODO: implement MField attributes in .NET
-    return nullptr;
+    return (MObject*)GetCustomAttribute(GetAttributes(), klass);
 }
 
 const Array<MObject*>& MField::GetAttributes() const
 {
     if (_hasCachedAttributes)
         return _attributes;
+    ScopeLock lock(BinaryModule::Locker);
+    if (_hasCachedAttributes)
+        return _attributes;
+    static void* GetFieldAttributesPtr = GetStaticMethodPointer(TEXT("GetFieldAttributes"));
+    GetCustomAttributes(_attributes, _handle, GetFieldAttributesPtr);
     _hasCachedAttributes = true;
-
-    // TODO: implement MField attributes in .NET
     return _attributes;
 }
 
@@ -1475,35 +1488,36 @@ bool MMethod::GetParameterIsOut(int32 paramIdx) const
 
 bool MMethod::HasAttribute(const MClass* klass) const
 {
-    // TODO: implement MMethod attributes in .NET
-    return false;
+    return GetCustomAttribute(GetAttributes(), klass) != nullptr;
 }
 
 bool MMethod::HasAttribute() const
 {
-    // TODO: implement MMethod attributes in .NET
-    return false;
+    return !GetAttributes().IsEmpty();
 }
 
 MObject* MMethod::GetAttribute(const MClass* klass) const
 {
-    // TODO: implement MMethod attributes in .NET
-    return nullptr;
+    return (MObject*)GetCustomAttribute(GetAttributes(), klass);
 }
 
 const Array<MObject*>& MMethod::GetAttributes() const
 {
     if (_hasCachedAttributes)
         return _attributes;
+    ScopeLock lock(BinaryModule::Locker);
+    if (_hasCachedAttributes)
+        return _attributes;
+    static void* GetMethodAttributesPtr = GetStaticMethodPointer(TEXT("GetMethodAttributes"));
+    GetCustomAttributes(_attributes, _handle, GetMethodAttributesPtr);
     _hasCachedAttributes = true;
-
-    // TODO: implement MMethod attributes in .NET
     return _attributes;
 }
 
-MProperty::MProperty(MClass* parentClass, const char* name, void* getterHandle, void* setterHandle, MMethodAttributes getterAttributes, MMethodAttributes setterAttributes)
+MProperty::MProperty(MClass* parentClass, const char* name, void* handle, void* getterHandle, void* setterHandle, MMethodAttributes getterAttributes, MMethodAttributes setterAttributes)
     : _parentClass(parentClass)
     , _name(name)
+    , _handle(handle)
     , _hasCachedAttributes(false)
 {
     _hasGetMethod = getterHandle != nullptr;
@@ -1552,29 +1566,29 @@ void MProperty::SetValue(MObject* instance, void* value, MObject** exception) co
 
 bool MProperty::HasAttribute(const MClass* klass) const
 {
-    // TODO: implement MProperty attributes in .NET
-    return false;
+    return GetCustomAttribute(GetAttributes(), klass) != nullptr;
 }
 
 bool MProperty::HasAttribute() const
 {
-    // TODO: implement MProperty attributes in .NET
-    return false;
+    return !GetAttributes().IsEmpty();
 }
 
 MObject* MProperty::GetAttribute(const MClass* klass) const
 {
-    // TODO: implement MProperty attributes in .NET
-    return nullptr;
+    return (MObject*)GetCustomAttribute(GetAttributes(), klass);
 }
 
 const Array<MObject*>& MProperty::GetAttributes() const
 {
     if (_hasCachedAttributes)
         return _attributes;
+    ScopeLock lock(BinaryModule::Locker);
+    if (_hasCachedAttributes)
+        return _attributes;
+    static void* GetPropertyAttributesPtr = GetStaticMethodPointer(TEXT("GetPropertyAttributes"));
+    GetCustomAttributes(_attributes, _handle, GetPropertyAttributesPtr);
     _hasCachedAttributes = true;
-
-    // TODO: implement MProperty attributes in .NET
     return _attributes;
 }
 
@@ -1635,18 +1649,6 @@ MType* GetObjectType(MObject* obj)
     static void* GetObjectTypePtr = GetStaticMethodPointer(TEXT("GetObjectType"));
     void* typeHandle = CallStaticMethod<void*, void*>(GetObjectTypePtr, obj);
     return (MType*)typeHandle;
-}
-
-void* GetCustomAttribute(const MClass* klass, const MClass* attributeClass)
-{
-    const Array<MObject*>& attributes = klass->GetAttributes();
-    for (MObject* attr : attributes)
-    {
-        MClass* attrClass = MCore::Object::GetClass(attr);
-        if (attrClass == attributeClass)
-            return attr;
-    }
-    return nullptr;
 }
 
 #if DOTNET_HOST_CORECLR

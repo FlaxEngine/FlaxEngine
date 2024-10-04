@@ -49,6 +49,7 @@ namespace FlaxEngine.Interop
     internal struct NativePropertyDefinitions
     {
         internal IntPtr name;
+        internal ManagedHandle propertyHandle;
         internal ManagedHandle getterHandle;
         internal ManagedHandle setterHandle;
         internal uint getterAttributes;
@@ -379,6 +380,17 @@ namespace FlaxEngine.Interop
             for (int i = 0; i < properties.Length; i++)
             {
                 var property = properties[i];
+
+                ManagedHandle propertyHandle = ManagedHandle.Alloc(property);
+#if FLAX_EDITOR
+                if (type.IsCollectible)
+                    propertyHandleCacheCollectible.Add(propertyHandle);
+                else
+#endif
+                {
+                    propertyHandleCache.Add(propertyHandle);
+                }
+
                 IntPtr ptr = IntPtr.Add(new IntPtr(arr), Unsafe.SizeOf<NativePropertyDefinitions>() * i);
 
                 var getterMethod = property.GetGetMethod(true);
@@ -387,6 +399,7 @@ namespace FlaxEngine.Interop
                 var classProperty = new NativePropertyDefinitions
                 {
                     name = NativeAllocStringAnsi(property.Name),
+                    propertyHandle = propertyHandle,
                 };
                 if (getterMethod != null)
                 {
@@ -404,12 +417,8 @@ namespace FlaxEngine.Interop
             *classPropertiesCount = properties.Length;
         }
 
-        [UnmanagedCallersOnly]
-        internal static void GetClassAttributes(ManagedHandle typeHandle, ManagedHandle** classAttributes, int* classAttributesCount)
+        internal static void GetAttributes(object[] attributeValues, ManagedHandle** classAttributes, int* classAttributesCount)
         {
-            Type type = Unsafe.As<TypeHolder>(typeHandle.Target);
-            object[] attributeValues = type.GetCustomAttributes(false);
-
             ManagedHandle* arr = (ManagedHandle*)NativeAlloc(attributeValues.Length, Unsafe.SizeOf<ManagedHandle>());
             for (int i = 0; i < attributeValues.Length; i++)
             {
@@ -422,6 +431,38 @@ namespace FlaxEngine.Interop
             }
             *classAttributes = arr;
             *classAttributesCount = attributeValues.Length;
+        }
+
+        [UnmanagedCallersOnly]
+        internal static void GetClassAttributes(ManagedHandle typeHandle, ManagedHandle** classAttributes, int* classAttributesCount)
+        {
+            Type type = Unsafe.As<TypeHolder>(typeHandle.Target);
+            object[] attributeValues = type.GetCustomAttributes(false);
+            GetAttributes(attributeValues, classAttributes, classAttributesCount);
+        }
+
+        [UnmanagedCallersOnly]
+        internal static void GetMethodAttributes(ManagedHandle methodHandle, ManagedHandle** classAttributes, int* classAttributesCount)
+        {
+            MethodHolder methodHolder = Unsafe.As<MethodHolder>(methodHandle.Target);
+            object[] attributeValues = methodHolder.method.GetCustomAttributes(false);
+            GetAttributes(attributeValues, classAttributes, classAttributesCount);
+        }
+
+        [UnmanagedCallersOnly]
+        internal static void GetFieldAttributes(ManagedHandle fieldHandle, ManagedHandle** classAttributes, int* classAttributesCount)
+        {
+            FieldHolder field = Unsafe.As<FieldHolder>(fieldHandle.Target);
+            object[] attributeValues = field.field.GetCustomAttributes(false);
+            GetAttributes(attributeValues, classAttributes, classAttributesCount);
+        }
+
+        [UnmanagedCallersOnly]
+        internal static void GetPropertyAttributes(ManagedHandle propertyHandle, ManagedHandle** classAttributes, int* classAttributesCount)
+        {
+            PropertyInfo property = Unsafe.As<PropertyInfo>(propertyHandle.Target);
+            object[] attributeValues = property.GetCustomAttributes(false);
+            GetAttributes(attributeValues, classAttributes, classAttributesCount);
         }
 
         [UnmanagedCallersOnly]
@@ -1027,6 +1068,9 @@ namespace FlaxEngine.Interop
             foreach (var handle in fieldHandleCacheCollectible)
                 handle.Free();
             fieldHandleCacheCollectible.Clear();
+            foreach (var handle in propertyHandleCacheCollectible)
+                handle.Free();
+            propertyHandleCacheCollectible.Clear();
 
             _typeSizeCache.Clear();
 
