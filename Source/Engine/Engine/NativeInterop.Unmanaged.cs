@@ -891,7 +891,7 @@ namespace FlaxEngine.Interop
         [UnmanagedCallersOnly]
         internal static void FieldSetValue(ManagedHandle fieldOwnerHandle, ManagedHandle fieldHandle, IntPtr valuePtr)
         {
-            object fieldOwner = fieldOwnerHandle.Target;
+            object fieldOwner = fieldOwnerHandle.IsAllocated ? fieldOwnerHandle.Target : null;
             FieldHolder field = Unsafe.As<FieldHolder>(fieldHandle.Target);
             object value = MarshalToManaged(valuePtr, field.field.FieldType);
             field.field.SetValue(fieldOwner, value);
