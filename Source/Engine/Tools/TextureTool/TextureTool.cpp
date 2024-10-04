@@ -76,6 +76,9 @@ void TextureTool::Options::Serialize(SerializeStream& stream, const void* otherO
     stream.JKEY("InvertGreenChannel");
     stream.Bool(InvertGreenChannel);
 
+    stream.JKEY("ReconstructZChannel");
+    stream.Bool(ReconstructZChannel);
+
     stream.JKEY("Resize");
     stream.Bool(Resize);
 
@@ -134,6 +137,7 @@ void TextureTool::Options::Deserialize(DeserializeStream& stream, ISerializeModi
     GenerateMipMaps = JsonTools::GetBool(stream, "GenerateMipMaps", GenerateMipMaps);
     FlipY = JsonTools::GetBool(stream, "FlipY", FlipY);
     InvertGreenChannel = JsonTools::GetBool(stream, "InvertGreenChannel", InvertGreenChannel);
+    ReconstructZChannel = JsonTools::GetBool(stream, "ReconstructZChannel", ReconstructZChannel);
     Resize = JsonTools::GetBool(stream, "Resize", Resize);
     PreserveAlphaCoverage = JsonTools::GetBool(stream, "PreserveAlphaCoverage", PreserveAlphaCoverage);
     PreserveAlphaCoverageReference = JsonTools::GetFloat(stream, "PreserveAlphaCoverageReference", PreserveAlphaCoverageReference);
