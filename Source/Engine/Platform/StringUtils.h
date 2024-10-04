@@ -197,30 +197,6 @@ public:
 
     // Parses text to unsigned integer value. Returns true if failed to convert the value.
     template<typename CharType>
-    static bool ParseHex(const CharType* str, uint32* result)
-    {
-        uint32 sum = 0;
-        const CharType* p = str;
-        if (*p == '0' && *(p + 1) == 'x')
-            p += 2;
-        while (*p)
-        {
-            int32 c = *p - '0';
-            if (c < 0 || c > 9)
-            {
-                c = ToLower(*p) - 'a' + 10;
-                if (c < 10 || c > 15)
-                    return true;
-            }
-            sum = 16 * sum + c;
-            p++;
-        }
-        *result = sum;
-        return false;
-    }
-
-    // Parses text to unsigned integer value. Returns true if failed to convert the value.
-    template<typename CharType>
     static bool ParseHex(const CharType* str, int32 length, uint32* result)
     {
         uint32 sum = 0;
@@ -244,28 +220,18 @@ public:
         return false;
     }
 
-    // Parses text to scalar integer value. Returns true if failed to convert the value.
-    template<typename T, typename U>
-    static bool Parse(const T* str, U* result)
+    // Parses text to unsigned integer value. Returns true if failed to convert the value.
+    template<typename CharType>
+    static bool ParseHex(const CharType* str, uint32* result)
     {
-        U sum = 0;
-        const T* p = str;
-        while (*p)
-        {
-            int32 c = *p++ - 48;
-            if (c < 0 || c > 9)
-                return true;
-            sum = 10 * sum + c;
-        }
-        *result = sum;
-        return false;
+        return ParseHex(str, Length(str), result);
     }
 
-    // Parses text to scalar integer value. Returns true if failed to convert the value.
-    template<typename T, typename U>
-    static bool Parse(const T* str, uint32 length, U* result)
+    // Parses text to the unsigned integer value. Returns true if failed to convert the value.
+    template<typename T>
+    static bool Parse(const T* str, int32 length, uint64* result)
     {
-        U sum = 0;
+        int64 sum = 0;
         const T* p = str;
         while (length--)
         {
@@ -276,6 +242,86 @@ public:
         }
         *result = sum;
         return false;
+    }
+    template<typename T>
+    static bool Parse(const T* str, uint32 length, uint32* result)
+    {
+        uint64 tmp;
+        const bool b = Parse(str, length, &tmp);
+        *result = (uint32)tmp;
+        return b;
+    }
+    template<typename T>
+    static bool Parse(const T* str, uint32 length, uint16* result)
+    {
+        uint64 tmp;
+        const bool b = Parse(str, length, &tmp);
+        *result = (uint16)tmp;
+        return b;
+    }
+    template<typename T>
+    static bool Parse(const T* str, uint32 length, uint8* result)
+    {
+        uint64 tmp;
+        const bool b = Parse(str, length, &tmp);
+        *result = (uint8)tmp;
+        return b;
+    }
+    
+    // Parses text to the integer value. Returns true if failed to convert the value.
+    template<typename T>
+    static bool Parse(const T* str, int32 length, int64* result)
+    {
+        int64 sum = 0;
+        const T* p = str;
+        bool negate = false;
+        while (length--)
+        {
+            int32 c = *p++ - 48;
+            if (c == -3)
+            {
+                negate = true;
+                continue;
+            }
+            if (c < 0 || c > 9)
+                return true;
+            sum = 10 * sum + c;
+        }
+        if (negate)
+            sum = -sum;
+        *result = sum;
+        return false;
+    }
+    template<typename T>
+    static bool Parse(const T* str, uint32 length, int32* result)
+    {
+        int64 tmp;
+        const bool b = Parse(str, length, &tmp);
+        *result = (int32)tmp;
+        return b;
+    }
+    template<typename T>
+    static bool Parse(const T* str, uint32 length, int16* result)
+    {
+        int64 tmp;
+        const bool b = Parse(str, length, &tmp);
+        *result = (int16)tmp;
+        return b;
+    }
+    template<typename T>
+    static bool Parse(const T* str, uint32 length, int8* result)
+    {
+        int64 tmp;
+        const bool b = Parse(str, length, &tmp);
+        *result = (int8)tmp;
+        return b;
+    }
+
+    // Parses text to scalar integer value. Returns true if failed to convert the value.
+    template<typename T, typename U>
+    static bool Parse(const T* str, U* result)
+    {
+        return Parse(str, Length(str), result);
     }
 
     // Parses text to the scalar value. Returns true if failed to convert the value.
