@@ -61,7 +61,7 @@ API_CLASS(Namespace="FlaxEngine.Tools", Static) class FLAXENGINE_API TextureTool
         API_FIELD(Attributes = "EditorOrder(71)")
         bool InvertGreenChannel = false;
 
-        // True if to invert the green channel on a normal map. Good for OpenGL to DirectX conversion.
+        // Rebuild Z (blue) channel assuming X/Y are normals.
         API_FIELD(Attributes = "EditorOrder(72)")
         bool ReconstructZChannel = false;
 
