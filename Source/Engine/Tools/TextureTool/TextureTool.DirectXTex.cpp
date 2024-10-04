@@ -829,6 +829,43 @@ bool TextureTool::ImportTextureDirectXTex(ImageType type, const StringView& path
         SET_CURRENT_IMG(timage);
     }
 
+    // Reconstruct Z Channel
+    if (!keepAsIs & options.ReconstructZChannel)
+    {
+        auto& timage = GET_TMP_IMG();
+        bool isunorm = (DirectX::FormatDataType(currentImage->GetMetadata().format) == DirectX::FORMAT_TYPE_UNORM) != 0;
+        result = TransformImage(currentImage->GetImages(), currentImage->GetImageCount(), currentImage->GetMetadata(),
+            [&](DirectX::XMVECTOR* outPixels, const DirectX::XMVECTOR* inPixels, size_t w, size_t y)
+            {
+                static const DirectX::XMVECTORU32 s_selectz = { { { DirectX::XM_SELECT_0, DirectX::XM_SELECT_0, DirectX::XM_SELECT_1, DirectX::XM_SELECT_0 } } };
+
+                UNREFERENCED_PARAMETER(y);
+
+                for (size_t j = 0; j < w; ++j)
+                {
+                    const DirectX::XMVECTOR value = inPixels[j];
+                    DirectX::XMVECTOR z;
+                    if (isunorm)
+                    {
+                        DirectX::XMVECTOR x2 = DirectX::XMVectorMultiplyAdd(value, DirectX::g_XMTwo, DirectX::g_XMNegativeOne);
+                        x2 = DirectX::XMVectorSqrt(DirectX::XMVectorSubtract(DirectX::g_XMOne, DirectX::XMVector2Dot(x2, x2)));
+                        z = DirectX::XMVectorMultiplyAdd(x2, DirectX::g_XMOneHalf, DirectX::g_XMOneHalf);
+                    }
+                    else
+                    {
+                        z = DirectX::XMVectorSqrt(DirectX::XMVectorSubtract(DirectX::g_XMOne, DirectX::XMVector2Dot(value, value)));
+                    }
+                    outPixels[j] = XMVectorSelect(value, z, s_selectz);
+                }
+            }, timage);
+        if (FAILED(result))
+        {
+            errorMsg = String::Format(TEXT("Cannot reconstruct z channel in texture, error: {0:x}"), static_cast<uint32>(result));
+            return true;
+        }
+        SET_CURRENT_IMG(timage);
+    }
+
     // Generate mip maps chain
     if (!keepAsIs && useMipLevels && options.GenerateMipMaps)
     {
