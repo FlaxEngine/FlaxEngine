@@ -280,11 +280,16 @@ namespace FlaxEngine.GUI
                 GetNearestTextBlock(end, out TextBlock endTextBlock, !movingBack);
 
                 snappedStart = startTextBlock.Range.Contains(start) ? start : (movingBack ? startTextBlock.Range.EndIndex - 1 : startTextBlock.Range.StartIndex);
-
                 snappedEnd = endTextBlock.Range.Contains(end) ? end : (movingBack ? endTextBlock.Range.EndIndex - 1 : endTextBlock.Range.StartIndex);
 
                 snappedStart = movingBack ? Math.Min(start, snappedStart) : Math.Max(start, snappedStart);
                 snappedEnd = movingBack ? Math.Min(end, snappedEnd) : Math.Max(end, snappedEnd);
+
+                // Don't snap if selection is right in the end of the text
+                if (start == _text.Length)
+                    snappedStart = _text.Length;
+                if (end == _text.Length)
+                    snappedEnd = _text.Length;
             }
 
             base.SetSelection(snappedStart, snappedEnd, withScroll);
