@@ -5,20 +5,20 @@
 #include "Engine/Platform/Platform.h"
 
 /// <summary>
-/// Represents a value type that can be assigned null. A nullable type can represent the correct range of values for its underlying value type, plus an additional null value.
+/// Wrapper for a value type that can be assigned null, controlling the lifetime of the wrapped value.
 /// </summary>
 template<typename T>
 struct Nullable
 {
 private:
-    union // Prevents default construction of T
+    union
     {
         T _value;
     };
     bool _hasValue;
 
     /// <summary>
-    /// Ensures that the lifetime of the wrapped value ends correctly. This method is called when the state of the wrapper is no more needed.
+    /// Ends the lifetime of the wrapped value by calling its destructor, if the lifetime has not ended yet. Otherwise, does nothing.
     /// </summary>
     FORCE_INLINE void KillOld()
     {
@@ -30,7 +30,7 @@ private:
 
 public:
     /// <summary>
-    /// Initializes a new instance of the <see cref="NullableBase{T}"/> struct with a null value.
+    /// Initializes <see cref="Nullable{T}"/> by setting the wrapped value to null.
     /// </summary>
     Nullable()
         : _hasValue(false)
@@ -44,9 +44,9 @@ public:
     }
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="NullableBase{T}"/> struct by copying the value.
+    /// Initializes <see cref="Nullable{T}"/> by copying the wrapped value.
     /// </summary>
-    /// <NullableBase name="value">The initial wrapped value.</param>
+    /// <NullableBase name="value">The initial wrapped value to be copied.</param>
     Nullable(const T& value)
         : _value(value)
         , _hasValue(true)
@@ -54,9 +54,9 @@ public:
     }
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="NullableBase{T}"/> struct by moving the value.
+    /// Initializes <see cref="Nullable{T}"/> by moving the wrapped value.
     /// </summary>
-    /// <NullableBase name="value">The initial wrapped value.</param>
+    /// <NullableBase name="value">The initial wrapped value to be moved.</param>
     Nullable(T&& value) noexcept
         : _value(MoveTemp(value))
         , _hasValue(true)
@@ -64,7 +64,7 @@ public:
     }
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="NullableBase{T}"/> struct by copying the value from another instance.
+    /// Initializes <see cref="Nullable{T}"/> by copying another <see cref="Nullable{T}"/>.
     /// </summary>
     /// <param name="other">The wrapped value to be copied.</param>
     Nullable(const Nullable& other)
@@ -74,7 +74,7 @@ public:
     }
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="NullableBase{T}"/> struct by moving the value from another instance.
+    /// Initializes <see cref="Nullable{T}"/> by moving another <see cref="Nullable{T}"/>.
     /// </summary>
     /// <param name="other">The wrapped value to be moved.</param>
     Nullable(Nullable&& other) noexcept
@@ -89,6 +89,9 @@ public:
         other.Reset();
     }
 
+    /// <summary>
+    /// Reassigns the wrapped value by copying.
+    /// </summary>
     auto operator=(const T& value) -> Nullable&
     {
         KillOld();
@@ -99,6 +102,9 @@ public:
         return *this;
     }
 
+    /// <summary>
+    /// Reassigns the wrapped value by moving.
+    /// </summary>
     auto operator=(T&& value) noexcept -> Nullable&
     {
         KillOld();
@@ -109,6 +115,9 @@ public:
         return *this;
     }
 
+    /// <summary>
+    /// Reassigns the wrapped value by copying another <see cref="Nullable{T}"/>.
+    /// </summary>
     auto operator=(const Nullable& other) -> Nullable&
     {
         KillOld();
@@ -122,6 +131,9 @@ public:
         return *this;
     }
 
+    /// <summary>
+    /// Reassigns the wrapped value by moving another <see cref="Nullable{T}"/>.
+    /// </summary>
     auto operator=(Nullable&& other) noexcept -> Nullable&
     {
         if (this == &other)
@@ -143,7 +155,7 @@ public:
     }
 
     /// <summary>
-    /// Gets a value indicating whether the current NullableBase{T} object has a valid value of its underlying type.
+    /// Checks if wrapped object has a valid value.
     /// </summary>
     /// <returns><c>true</c> if this object has a valid value; otherwise, <c>false</c>.</returns>
     FORCE_INLINE bool HasValue() const
@@ -152,9 +164,9 @@ public:
     }
 
     /// <summary>
-    /// Gets the value of the current NullableBase{T} object if it has been assigned a valid underlying value.
+    /// Gets a const reference to the wrapped value. If the value is not valid, the behavior is undefined.
     /// </summary>
-    /// <returns>The value.</returns>
+    /// <returns>Reference to the wrapped value.</returns>
     FORCE_INLINE const T& GetValue() const
     {
         ASSERT(_hasValue);
@@ -162,29 +174,36 @@ public:
     }
 
     /// <summary>
-    /// Gets a reference to the value of the current NullableBase{T} object.
-    /// If is assumed that the value is valid, otherwise the behavior is undefined.
+    /// Gets a reference to the wrapped value. If the value is not valid, the behavior is undefined.
+    /// This method can be used to reassign the wrapped value.
     /// </summary>
-    /// <remarks>In the past, this value returned a copy of the stored value. Be careful.</remarks>
-    /// <returns>Reference to the value.</returns>
+    /// <returns>Reference to the wrapped value.</returns>
     FORCE_INLINE T& GetValue()
     {
         ASSERT(_hasValue);
         return _value;
     }
 
+    /// <summary>
+    /// Gets a const reference to the wrapped value or a default value if the value is not valid.
+    /// </summary>
+    /// <returns>Reference to the wrapped value or the default value.</returns>
     FORCE_INLINE const T& GetValueOr(const T& defaultValue) const
     {
         return _hasValue ? _value : defaultValue;
     }
 
+    /// <summary>
+    /// Gets an instance of the wrapped value or a default value based on r-value reference, if the wrapped value is not valid.
+    /// </summary>
+    /// <returns>Copy of the wrapped value or the default value.</returns>
     FORCE_INLINE T GetValueOr(T&& defaultValue) const noexcept
     {
         return _hasValue ? _value : defaultValue;
     }
 
     /// <summary>
-    /// Sets the wrapped value.
+    /// Sets the wrapped value by copying.
     /// </summary>
     /// <param name="value">The value to be copied.</param>
     FORCE_INLINE void SetValue(const T& value)
@@ -199,7 +218,7 @@ public:
     }
 
     /// <summary>
-    /// Sets the wrapped value.
+    /// Sets the wrapped value by moving.
     /// </summary>
     /// <param name="value">The value to be moved.</param>
     FORCE_INLINE void SetValue(T&& value) noexcept
@@ -210,18 +229,10 @@ public:
         _hasValue = true; // Set the flag AFTER the value is moved.
     }
 
-    FORCE_INLINE bool TrySet(T&& value) noexcept
-    {
-        if (_hasValue)
-        {
-            return false;
-        }
-
-        new (&_value) T(MoveTemp(value)); // Placement new (move constructor)
-        _hasValue = true; // Set the flag AFTER the value is moved.
-        return true;
-    }
-
+    /// <summary>
+    /// If the wrapped value is not valid, sets it by copying. Otherwise, does nothing.
+    /// </summary>
+    /// <returns>True if the wrapped value was changed, otherwise false.</returns>
     FORCE_INLINE bool TrySet(const T& value)
     {
         if (_hasValue)
@@ -235,7 +246,23 @@ public:
     }
 
     /// <summary>
-    /// Resets the value.
+    /// If the wrapped value is not valid, sets it by moving. Otherwise, does nothing.
+    /// </summary>
+    /// <returns>True if the wrapped value was changed, otherwise false.</returns>
+    FORCE_INLINE bool TrySet(T&& value) noexcept
+    {
+        if (_hasValue)
+        {
+            return false;
+        }
+
+        new (&_value) T(MoveTemp(value)); // Placement new (move constructor)
+        _hasValue = true; // Set the flag AFTER the value is moved.
+        return true;
+    }
+
+    /// <summary>
+    /// Disposes the wrapped value and sets the wrapped value to null. If the wrapped value is not valid, does nothing.
     /// </summary>
     FORCE_INLINE void Reset()
     {
@@ -244,8 +271,9 @@ public:
     }
 
     /// <summary>
-    /// Moves the value from the current NullableBase{T} object and resets it.
+    /// Moves the wrapped value to the output parameter and sets the wrapped value to null. If the wrapped value is not valid, the behavior is undefined.
     /// </summary>
+    /// <param name="value">The output parameter that will receive the wrapped value.</param>
     FORCE_INLINE void GetAndReset(T& value)
     {
         ASSERT(_hasValue);
@@ -254,10 +282,10 @@ public:
     }
 
     /// <summary>
-    /// Indicates whether the current NullableBase{T} object is equal to a specified object.
+    /// Indicates whether this instance is equal to other one.
     /// </summary>
     /// <param name="other">The other object.</param>
-    /// <returns>True if both values are equal.</returns>
+    /// <returns><c>true</c> if both values are equal.</returns>
     FORCE_INLINE bool operator==(const Nullable& other) const
     {
         if (other._hasValue != _hasValue)
@@ -269,20 +297,19 @@ public:
     }
 
     /// <summary>
-    /// Indicates whether the current NullableBase{T} object is not equal to a specified object.
+    /// Indicates whether this instance is NOT equal to other one.
     /// </summary>
     /// <param name="other">The other object.</param>
-    /// <returns>True if both values are not equal.</returns>
+    /// <returns><c>true</c> if both values are not equal.</returns>
     FORCE_INLINE bool operator!=(const Nullable& other) const
     {
         return !operator==(other);
     }
 
     /// <summary>
-    /// Explicit conversion to boolean value.
+    /// Explicit conversion to boolean value. Allows to check if the wrapped value is valid in if-statements without casting.
     /// </summary>
-    /// <returns>True if this object has a valid value, otherwise false</returns>
-    /// <remarks>Hint: If-statements are able to use explicit cast implicitly (sic).</remarks>
+    /// <returns><c>true</c> if this object has a valid value, otherwise false</returns>
     FORCE_INLINE explicit operator bool() const
     {
         return _hasValue;
@@ -290,69 +317,107 @@ public:
 };
 
 /// <summary>
-/// Nullable value container that contains a boolean value or null.
+/// Specialization of <see cref="Nullable{T}"/> for <see cref="bool"/> type.
 /// </summary>
 template<>
 struct Nullable<bool>
 {
 private:
+    /// <summary>
+    /// Underlying value of the nullable boolean. Uses only one byte to optimize memory usage.
+    /// </summary>
     enum class Value : uint8
     {
-        False = 0,
-        True = 1,
-        Null = 2,
+        Null,
+        False,
+        True,
     };
 
     Value _value = Value::Null;
 
 public:
+    /// <summary>
+    /// Initializes nullable boolean by setting the wrapped value to null.
+    /// </summary>
     Nullable() = default;
 
     ~Nullable() = default;
 
-
+    /// <summary>
+    /// Initializes nullable boolean by moving another nullable boolean.
+    /// </summary>
     Nullable(Nullable&& value) = default;
 
+    /// <summary>
+    /// Initializes nullable boolean by copying another nullable boolean.
+    /// </summary>
     Nullable(const Nullable& value) = default;
 
+    /// <summary>
+    /// Initializes nullable boolean by implicitly casting a boolean value.
+    /// </summary>
     Nullable(const bool value) noexcept
     {
         _value = value ? Value::True : Value::False;
     }
 
 
+    /// <summary>
+    /// Reassigns the wrapped value by implicitly casting a boolean value.
+    /// </summary>
     auto operator=(const bool value) noexcept -> Nullable&
     {
         _value = value ? Value::True : Value::False;
         return *this;
     }
 
+    /// <summary>
+    /// Reassigns the wrapped value by copying another nullable boolean.
+    /// </summary>
     auto operator=(const Nullable& value) -> Nullable& = default;
 
+    /// <summary>
+    /// Reassigns the wrapped value by moving another nullable boolean.
+    /// </summary>
     auto operator=(Nullable&& value) -> Nullable& = default;
 
 
+    /// <summary>
+    /// Checks if wrapped bool has a valid value.
+    /// </summary>
     FORCE_INLINE bool HasValue() const noexcept
     {
         return _value != Value::Null;
     }
 
+    /// <summary>
+    /// Gets the wrapped boolean value. If the value is not valid, the behavior is undefined.
+    /// </summary>
     FORCE_INLINE bool GetValue() const
     {
         ASSERT(_value != Value::Null);
         return _value == Value::True;
     }
 
+    /// <summary>
+    /// Gets the wrapped boolean value. If the value is not valid, returns the default value.
+    /// </summary>
     FORCE_INLINE bool GetValueOr(const bool defaultValue) const noexcept
     {
         return _value == Value::Null ? defaultValue : _value == Value::True;
     }
 
+    /// <summary>
+    /// Sets the wrapped value to a valid boolean.
+    /// </summary>
     FORCE_INLINE void SetValue(const bool value) noexcept
     {
         _value = value ? Value::True : Value::False;
     }
 
+    /// <summary>
+    /// If the wrapped value is not valid, sets it to a valid boolean.
+    /// </summary>
     FORCE_INLINE bool TrySet(const bool value) noexcept
     {
         if (_value != Value::Null)
@@ -364,11 +429,17 @@ public:
         return true;
     }
 
+    /// <summary>
+    /// Sets the wrapped bool to null.
+    /// </summary>
     FORCE_INLINE void Reset() noexcept
     {
         _value = Value::Null;
     }
 
+    /// <summary>
+    /// Moves the wrapped value to the output parameter and sets the wrapped value to null. If the wrapped value is not valid, the behavior is undefined.
+    /// </summary>
     FORCE_INLINE void GetAndReset(bool& value) noexcept
     {
         ASSERT(_value != Value::Null);
@@ -378,27 +449,26 @@ public:
 
 
     /// <summary>
-    /// Gets a value indicating whether the current Nullable{T} object has a valid value and it's set to true.
+    /// Checks if the current object has a valid value and it's set to <c>true</c>. If the value is <c>false</c> or not valid, the method returns <c>false</c>.
     /// </summary>
-    /// <returns><c>true</c> if this object has a valid value set to true; otherwise, <c>false</c>.</returns>
     FORCE_INLINE bool IsTrue() const
     {
         return _value == Value::True;
     }
 
     /// <summary>
-    /// Gets a value indicating whether the current Nullable{T} object has a valid value and it's set to false.
+    /// Checks if the current object has a valid value and it's set to <c>false</c>. If the value is <c>true</c> or not valid, the method returns <c>false</c>.
     /// </summary>
-    /// <returns><c>true</c> if this object has a valid value set to false; otherwise, <c>false</c>.</returns>
     FORCE_INLINE bool IsFalse() const
     {
         return _value == Value::False;
     }
 
     /// <summary>
-    /// Getting if provoke unacceptably ambiguous code. For template meta-programming use explicit HasValue() instead.
+    /// Deletes implicit conversion to bool to prevent ambiguous code.
     /// </summary>
+    /// <remarks>
+    /// Implicit cast from nullable bool to a bool produces unacceptably ambiguous code. For template meta-programming use explicit <c>HasValue</c> instead.
+    /// </remarks>
     explicit operator bool() const = delete;
-
-    // Note: Even though IsTrue and IsFalse have been added for convenience, but they may be used for performance reasons.
 };
