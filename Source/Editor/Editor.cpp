@@ -403,7 +403,7 @@ int32 Editor::LoadProduct()
     }
 
     // Create new project option
-    if (CommandLine::Options.NewProject)
+    if (CommandLine::Options.NewProject.IsTrue())
     {
         Array<String> projectFiles;
         FileSystem::DirectoryGetFiles(projectFiles, projectPath, TEXT("*.flaxproj"), DirectorySearchOption::TopDirectoryOnly);
@@ -428,7 +428,7 @@ int32 Editor::LoadProduct()
             }
         }
     }
-    if (CommandLine::Options.NewProject)
+    if (CommandLine::Options.NewProject.IsTrue())
     {
         if (projectPath.IsEmpty())
             projectPath = Platform::GetWorkingDirectory();
@@ -529,7 +529,7 @@ int32 Editor::LoadProduct()
     if (projectPath.IsEmpty())
     {
 #if PLATFORM_HAS_HEADLESS_MODE
-        if (CommandLine::Options.Headless)
+        if (CommandLine::Options.Headless.IsTrue())
         {
             Platform::Fatal(TEXT("Missing project path."));
             return -1;
@@ -657,7 +657,7 @@ Window* Editor::CreateMainWindow()
 bool Editor::Init()
 {
     // Scripts project files generation from command line
-    if (CommandLine::Options.GenProjectFiles)
+    if (CommandLine::Options.GenProjectFiles.IsTrue())
     {
         const String customArgs = TEXT("-verbose -log -logfile=\"Cache/Intermediate/ProjectFileLog.txt\"");
         const bool failed = ScriptsBuilder::GenerateProject(customArgs);
