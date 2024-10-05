@@ -79,12 +79,11 @@ public:
     /// <param name="other">The wrapped value to be moved.</param>
     Nullable(Nullable&& other) noexcept
     {
-        _hasValue = other._hasValue;
-
-        if (_hasValue)
+        if (other._hasValue)
         {
             new (&_value) T(MoveTemp(other._value)); // Placement new (move constructor)
         }
+        _hasValue = other._hasValue;
 
         other.Reset();
     }
@@ -194,10 +193,10 @@ public:
     }
 
     /// <summary>
-    /// Gets an instance of the wrapped value or a default value based on r-value reference, if the wrapped value is not valid.
+    /// Gets a mutable reference to the wrapped value or a default value if the value is not valid.
     /// </summary>
-    /// <returns>Copy of the wrapped value or the default value.</returns>
-    FORCE_INLINE T GetValueOr(T&& defaultValue) const noexcept
+    /// <returns>Reference to the wrapped value or the default value.</returns>
+    FORCE_INLINE T& GetValueOr(T& defaultValue) const
     {
         return _hasValue ? _value : defaultValue;
     }
@@ -266,8 +265,8 @@ public:
     /// </summary>
     FORCE_INLINE void Reset()
     {
+        _hasValue = false; // Reset the flag BEFORE the value is (potentially) destructed.
         KillOld();
-        _hasValue = false; // Reset the flag AFTER the value is (potentially) destructed.
     }
 
     /// <summary>
