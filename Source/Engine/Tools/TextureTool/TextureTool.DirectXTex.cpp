@@ -727,7 +727,8 @@ bool TextureTool::ImportTextureDirectXTex(ImageType type, const StringView& path
     }
 
     bool keepAsIs = false;
-    if (!options.FlipY && 
+    if (!options.FlipY &&
+        !options.FlipX &&
         !options.InvertGreenChannel &&
         !options.ReconstructZChannel &&
         options.Compress && 
@@ -788,11 +789,25 @@ bool TextureTool::ImportTextureDirectXTex(ImageType type, const StringView& path
         SET_CURRENT_IMG(tmpImg);
     }
 
-    // Check flip/rotate source image
+    // Check flip/rotate Y source image
     if (!keepAsIs && options.FlipY)
     {
         auto& tmpImg = GET_TMP_IMG();
         DirectX::TEX_FR_FLAGS flags = DirectX::TEX_FR_FLIP_VERTICAL;
+        result = FlipRotate(currentImage->GetImages(), currentImage->GetImageCount(), currentImage->GetMetadata(), flags, tmpImg);
+        if (FAILED(result))
+        {
+            errorMsg = String::Format(TEXT("Cannot rotate/flip texture, error: {0:x}"), static_cast<uint32>(result));
+            return true;
+        }
+        SET_CURRENT_IMG(tmpImg);
+    }
+
+    // Check flip/rotate X source image
+    if (!keepAsIs && options.FlipX)
+    {
+        auto& tmpImg = GET_TMP_IMG();
+        DirectX::TEX_FR_FLAGS flags = DirectX::TEX_FR_FLIP_HORIZONTAL;
         result = FlipRotate(currentImage->GetImages(), currentImage->GetImageCount(), currentImage->GetMetadata(), flags, tmpImg);
         if (FAILED(result))
         {

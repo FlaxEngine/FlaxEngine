@@ -73,6 +73,9 @@ void TextureTool::Options::Serialize(SerializeStream& stream, const void* otherO
     stream.JKEY("FlipY");
     stream.Bool(FlipY);
 
+    stream.JKEY("FlipX");
+    stream.Bool(FlipX);
+
     stream.JKEY("InvertGreenChannel");
     stream.Bool(InvertGreenChannel);
 
@@ -139,6 +142,7 @@ void TextureTool::Options::Deserialize(DeserializeStream& stream, ISerializeModi
     sRGB = JsonTools::GetBool(stream, "sRGB", sRGB);
     GenerateMipMaps = JsonTools::GetBool(stream, "GenerateMipMaps", GenerateMipMaps);
     FlipY = JsonTools::GetBool(stream, "FlipY", FlipY);
+    FlipX = JsonTools::GetBool(stream, "FlipX", FlipX);
     InvertGreenChannel = JsonTools::GetBool(stream, "InvertGreenChannel", InvertGreenChannel);
     ReconstructZChannel = JsonTools::GetBool(stream, "ReconstructZChannel", ReconstructZChannel);
     Resize = JsonTools::GetBool(stream, "Resize", Resize);
