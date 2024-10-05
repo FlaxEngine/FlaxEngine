@@ -661,7 +661,7 @@ bool TextureTool::ImportTextureDirectXTex(ImageType type, const StringView& path
     if (sourceWidth != width || sourceHeight != height)
     {
         // During resizing we need to keep texture aspect ratio
-        const bool keepAspectRatio = false; // TODO: expose as import option
+        const bool keepAspectRatio = options.KeepAspectRatio;
         if (keepAspectRatio)
         {
             const float aspectRatio = static_cast<float>(sourceWidth) / sourceHeight;
@@ -727,8 +727,10 @@ bool TextureTool::ImportTextureDirectXTex(ImageType type, const StringView& path
     }
 
     bool keepAsIs = false;
-    if (!options.FlipY && 
-        !options.InvertGreenChannel && 
+    if (!options.FlipY &&
+        !options.FlipX &&
+        !options.InvertGreenChannel &&
+        !options.ReconstructZChannel &&
         options.Compress && 
         type == ImageType::DDS && 
         mipLevels == sourceMipLevels && 
@@ -787,11 +789,25 @@ bool TextureTool::ImportTextureDirectXTex(ImageType type, const StringView& path
         SET_CURRENT_IMG(tmpImg);
     }
 
-    // Check flip/rotate source image
+    // Check flip/rotate Y source image
     if (!keepAsIs && options.FlipY)
     {
         auto& tmpImg = GET_TMP_IMG();
         DirectX::TEX_FR_FLAGS flags = DirectX::TEX_FR_FLIP_VERTICAL;
+        result = FlipRotate(currentImage->GetImages(), currentImage->GetImageCount(), currentImage->GetMetadata(), flags, tmpImg);
+        if (FAILED(result))
+        {
+            errorMsg = String::Format(TEXT("Cannot rotate/flip texture, error: {0:x}"), static_cast<uint32>(result));
+            return true;
+        }
+        SET_CURRENT_IMG(tmpImg);
+    }
+
+    // Check flip/rotate X source image
+    if (!keepAsIs && options.FlipX)
+    {
+        auto& tmpImg = GET_TMP_IMG();
+        DirectX::TEX_FR_FLAGS flags = DirectX::TEX_FR_FLIP_HORIZONTAL;
         result = FlipRotate(currentImage->GetImages(), currentImage->GetImageCount(), currentImage->GetMetadata(), flags, tmpImg);
         if (FAILED(result))
         {
@@ -833,7 +849,7 @@ bool TextureTool::ImportTextureDirectXTex(ImageType type, const StringView& path
     if (!keepAsIs & options.ReconstructZChannel)
     {
         auto& timage = GET_TMP_IMG();
-        bool isunorm = (DirectX::FormatDataType(currentImage->GetMetadata().format) == DirectX::FORMAT_TYPE_UNORM) != 0;
+        bool isunorm = (DirectX::FormatDataType(sourceDxgiFormat) == DirectX::FORMAT_TYPE_UNORM) != 0;
         result = TransformImage(currentImage->GetImages(), currentImage->GetImageCount(), currentImage->GetMetadata(),
             [&](DirectX::XMVECTOR* outPixels, const DirectX::XMVECTOR* inPixels, size_t w, size_t y)
             {
@@ -855,7 +871,7 @@ bool TextureTool::ImportTextureDirectXTex(ImageType type, const StringView& path
                     {
                         z = DirectX::XMVectorSqrt(DirectX::XMVectorSubtract(DirectX::g_XMOne, DirectX::XMVector2Dot(value, value)));
                     }
-                    outPixels[j] = XMVectorSelect(value, z, s_selectz);
+                    outPixels[j] = DirectX::XMVectorSelect(value, z, s_selectz);
                 }
             }, timage);
         if (FAILED(result))
