@@ -80,6 +80,7 @@ public:
     Nullable(Nullable&& other) noexcept
     {
         _hasValue = other._hasValue;
+
         if (_hasValue)
         {
             new (&_value) T(MoveTemp(other._value)); // Placement new (move constructor)
@@ -112,31 +113,35 @@ public:
     {
         KillOld();
 
-        _hasValue = other._hasValue;
-        if (_hasValue)
+        if (other._hasValue)
         {
             new (&_value) T(other._value); // Placement new (copy constructor)
         }
+        _hasValue = other._hasValue; // Set the flag AFTER the value is copied.
 
         return *this;
     }
 
     auto operator=(Nullable&& other) noexcept -> Nullable&
     {
+        if (this == &other)
+        {
+            return *this;
+        }
+
         KillOld();
 
-        _hasValue = other._hasValue;
         if (_hasValue)
         {
             new (&_value) T(MoveTemp(other._value)); // Placement new (move constructor)
 
             other.Reset();
         }
+        _hasValue = other._hasValue; // Set the flag AFTER the value is moved.
 
         return *this;
     }
 
-public:
     /// <summary>
     /// Gets a value indicating whether the current NullableBase{T} object has a valid value of its underlying type.
     /// </summary>
@@ -168,6 +173,16 @@ public:
         return _value;
     }
 
+    FORCE_INLINE const T& GetValueOr(const T& defaultValue) const
+    {
+        return _hasValue ? _value : defaultValue;
+    }
+
+    FORCE_INLINE T GetValueOr(T&& defaultValue) const noexcept
+    {
+        return _hasValue ? _value : defaultValue;
+    }
+
     /// <summary>
     /// Sets the wrapped value.
     /// </summary>
@@ -180,7 +195,7 @@ public:
         }
 
         new (&_value) T(value); // Placement new (copy constructor)
-        _hasValue = true;
+        _hasValue = true; // Set the flag AFTER the value is copied.
     }
 
     /// <summary>
@@ -192,7 +207,31 @@ public:
         KillOld();
 
         new (&_value) T(MoveTemp(value)); // Placement new (move constructor)
-        _hasValue = true;
+        _hasValue = true; // Set the flag AFTER the value is moved.
+    }
+
+    FORCE_INLINE bool TrySet(T&& value) noexcept
+    {
+        if (_hasValue)
+        {
+            return false;
+        }
+
+        new (&_value) T(MoveTemp(value)); // Placement new (move constructor)
+        _hasValue = true; // Set the flag AFTER the value is moved.
+        return true;
+    }
+
+    FORCE_INLINE bool TrySet(const T& value)
+    {
+        if (_hasValue)
+        {
+            return false;
+        }
+
+        new (&_value) T(value); // Placement new (copy constructor)
+        _hasValue = true; // Set the flag AFTER the value is copied.
+        return true;
     }
 
     /// <summary>
@@ -201,7 +240,7 @@ public:
     FORCE_INLINE void Reset()
     {
         KillOld();
-        _hasValue = false;
+        _hasValue = false; // Reset the flag AFTER the value is (potentially) destructed.
     }
 
     /// <summary>
@@ -211,11 +250,9 @@ public:
     {
         ASSERT(_hasValue);
         value = MoveTemp(_value);
-        _value.~T(); // Move is not destructive.
-        _hasValue = false;
+        Reset();
     }
 
-public:
     /// <summary>
     /// Indicates whether the current NullableBase{T} object is equal to a specified object.
     /// </summary>
@@ -306,9 +343,25 @@ public:
         return _value == Value::True;
     }
 
+    FORCE_INLINE bool GetValueOr(const bool defaultValue) const noexcept
+    {
+        return _value == Value::Null ? defaultValue : _value == Value::True;
+    }
+
     FORCE_INLINE void SetValue(const bool value) noexcept
     {
         _value = value ? Value::True : Value::False;
+    }
+
+    FORCE_INLINE bool TrySet(const bool value) noexcept
+    {
+        if (_value != Value::Null)
+        {
+            return false;
+        }
+
+        _value = value ? Value::True : Value::False;
+        return true;
     }
 
     FORCE_INLINE void Reset() noexcept
