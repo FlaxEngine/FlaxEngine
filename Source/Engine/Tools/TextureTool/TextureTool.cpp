@@ -82,6 +82,9 @@ void TextureTool::Options::Serialize(SerializeStream& stream, const void* otherO
     stream.JKEY("Resize");
     stream.Bool(Resize);
 
+    stream.JKEY("KeepAspectRatio");
+    stream.Bool(KeepAspectRatio);
+
     stream.JKEY("PreserveAlphaCoverage");
     stream.Bool(PreserveAlphaCoverage);
 
@@ -139,6 +142,7 @@ void TextureTool::Options::Deserialize(DeserializeStream& stream, ISerializeModi
     InvertGreenChannel = JsonTools::GetBool(stream, "InvertGreenChannel", InvertGreenChannel);
     ReconstructZChannel = JsonTools::GetBool(stream, "ReconstructZChannel", ReconstructZChannel);
     Resize = JsonTools::GetBool(stream, "Resize", Resize);
+    KeepAspectRatio = JsonTools::GetBool(stream, "KeepAspectRatio", KeepAspectRatio);
     PreserveAlphaCoverage = JsonTools::GetBool(stream, "PreserveAlphaCoverage", PreserveAlphaCoverage);
     PreserveAlphaCoverageReference = JsonTools::GetFloat(stream, "PreserveAlphaCoverageReference", PreserveAlphaCoverageReference);
     TextureGroup = JsonTools::GetInt(stream, "TextureGroup", TextureGroup);

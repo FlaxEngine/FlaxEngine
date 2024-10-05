@@ -661,7 +661,7 @@ bool TextureTool::ImportTextureDirectXTex(ImageType type, const StringView& path
     if (sourceWidth != width || sourceHeight != height)
     {
         // During resizing we need to keep texture aspect ratio
-        const bool keepAspectRatio = false; // TODO: expose as import option
+        const bool keepAspectRatio = options.KeepAspectRatio;
         if (keepAspectRatio)
         {
             const float aspectRatio = static_cast<float>(sourceWidth) / sourceHeight;
@@ -728,7 +728,8 @@ bool TextureTool::ImportTextureDirectXTex(ImageType type, const StringView& path
 
     bool keepAsIs = false;
     if (!options.FlipY && 
-        !options.InvertGreenChannel && 
+        !options.InvertGreenChannel &&
+        !options.ReconstructZChannel &&
         options.Compress && 
         type == ImageType::DDS && 
         mipLevels == sourceMipLevels && 
@@ -833,7 +834,7 @@ bool TextureTool::ImportTextureDirectXTex(ImageType type, const StringView& path
     if (!keepAsIs & options.ReconstructZChannel)
     {
         auto& timage = GET_TMP_IMG();
-        bool isunorm = (DirectX::FormatDataType(currentImage->GetMetadata().format) == DirectX::FORMAT_TYPE_UNORM) != 0;
+        bool isunorm = (DirectX::FormatDataType(sourceDxgiFormat) == DirectX::FORMAT_TYPE_UNORM) != 0;
         result = TransformImage(currentImage->GetImages(), currentImage->GetImageCount(), currentImage->GetMetadata(),
             [&](DirectX::XMVECTOR* outPixels, const DirectX::XMVECTOR* inPixels, size_t w, size_t y)
             {
@@ -855,7 +856,7 @@ bool TextureTool::ImportTextureDirectXTex(ImageType type, const StringView& path
                     {
                         z = DirectX::XMVectorSqrt(DirectX::XMVectorSubtract(DirectX::g_XMOne, DirectX::XMVector2Dot(value, value)));
                     }
-                    outPixels[j] = XMVectorSelect(value, z, s_selectz);
+                    outPixels[j] = DirectX::XMVectorSelect(value, z, s_selectz);
                 }
             }, timage);
         if (FAILED(result))

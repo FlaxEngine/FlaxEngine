@@ -77,6 +77,10 @@ API_CLASS(Namespace="FlaxEngine.Tools", Static) class FLAXENGINE_API TextureTool
         API_FIELD(Attributes="EditorOrder(100)")
         bool Resize = false;
 
+        // Keeps the aspect ratio when resizing.
+        API_FIELD(Attributes="EditorOrder(101), VisibleIf(nameof(Resize))")
+        bool KeepAspectRatio = false;
+
         // The width of the imported texture. If Resize property is set to true then texture will be resized during the import to this value during the import, otherwise it will be ignored.
         API_FIELD(Attributes="HideInEditor")
         int32 SizeX = 1024;
