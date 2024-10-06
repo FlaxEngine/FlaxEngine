@@ -539,17 +539,17 @@ bool TextureTool::ImportTextureStb(ImageType type, const StringView& path, Textu
     if (options.FlipX)
     {
         // TODO: impl this
-        LOG(Warning "Option 'Flip X' is not supported");
+        LOG(Warning, "Option 'Flip X' is not supported");
     }
     if (options.InvertGreenChannel)
     {
         // TODO: impl this
-        LOG(Warning "Option 'Invert Green Channel' is not supported");
+        LOG(Warning, "Option 'Invert Green Channel' is not supported");
     }
     if (options.ReconstructZChannel)
     {
         // TODO: impl this
-        LOG(Warning "Option 'Reconstruct Z Channel' is not supported");
+        LOG(Warning, "Option 'Reconstruct Z Channel' is not supported");
     }
 
     // Generate mip maps chain
