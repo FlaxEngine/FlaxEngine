@@ -115,6 +115,9 @@ public:
 public:
     // Gets the string length. Returns 0 if str is null.
     static int32 Length(const Char* str);
+#if PLATFORM_TEXT_IS_CHAR16
+    static int32 Length(const wchar_t* str);
+#endif
 
     // Gets the string length. Returns 0 if str is null.
     static int32 Length(const char* str);
@@ -224,7 +227,7 @@ public:
     template<typename T>
     static bool ParseHex(const T* str, uint32* result)
     {
-        return StringUtils::ParseHex(str, StringUtils::Length((const T*)str), result);
+        return StringUtils::ParseHex(str, StringUtils::Length(str), result);
     }
 
     // Parses text to the unsigned integer value. Returns true if failed to convert the value.
@@ -321,7 +324,7 @@ public:
     template<typename T, typename U>
     static bool Parse(const T* str, U* result)
     {
-        return StringUtils::Parse((const T*)str, StringUtils::Length((const T*)str), (U*)result);
+        return StringUtils::Parse(str, StringUtils::Length(str), result);
     }
 
     // Parses text to the scalar value. Returns true if failed to convert the value.
