@@ -1222,11 +1222,11 @@ GPUDevice* GPUDeviceVulkan::Create()
         return nullptr;
     }
     uint32 vendorId = 0;
-    if (CommandLine::Options.NVIDIA)
+    if (CommandLine::Options.NVIDIA.IsTrue())
         vendorId = GPU_VENDOR_ID_NVIDIA;
-    else if (CommandLine::Options.AMD)
+    else if (CommandLine::Options.AMD.IsTrue())
         vendorId = GPU_VENDOR_ID_AMD;
-    else if (CommandLine::Options.Intel)
+    else if (CommandLine::Options.Intel.IsTrue())
         vendorId = GPU_VENDOR_ID_INTEL;
     if (vendorId != 0)
     {
