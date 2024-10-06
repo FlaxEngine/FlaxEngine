@@ -331,6 +331,26 @@ public:
     {
         return _hasValue;
     }
+
+
+    /// <summary>
+    /// Matches the wrapped value with a handler for the value or a handler for the null value.
+    /// </summary>
+    /// <param name="valueHandler">Value visitor handling valid nullable value.</param>
+    /// <param name="nullHandler">Null visitor handling invalid nullable value.</param>
+    /// <returns>Result of the call of one of handlers. Handlers must share the same result type.</returns>
+    template<typename ValueVisitor, typename NullVisitor>
+    FORCE_INLINE auto Match(ValueVisitor valueHandler, NullVisitor nullHandler) const
+    {
+        if (_hasValue)
+        {
+            return valueHandler(_value);
+        }
+        else
+        {
+            return nullHandler();
+        }
+    }
 };
 
 /// <summary>
