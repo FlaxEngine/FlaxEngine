@@ -15,21 +15,6 @@ constexpr char DirectorySeparatorChar = '\\';
 constexpr char AltDirectorySeparatorChar = '/';
 constexpr char VolumeSeparatorChar = ':';
 
-#if PLATFORM_TEXT_IS_CHAR16
-
-int32 StringUtils::Length(const wchar_t* str)
-{
-    int32 result = 0;
-    if (str)
-    {
-        while (*str)
-            str++;
-    }
-    return result;
-}
-
-#endif
-
 const Char* StringUtils::FindIgnoreCase(const Char* str, const Char* toFind)
 {
     if (toFind == nullptr || str == nullptr)

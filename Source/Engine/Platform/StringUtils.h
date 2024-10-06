@@ -115,9 +115,6 @@ public:
 public:
     // Gets the string length. Returns 0 if str is null.
     static int32 Length(const Char* str);
-#if PLATFORM_TEXT_IS_CHAR16
-    static int32 Length(const wchar_t* str);
-#endif
 
     // Gets the string length. Returns 0 if str is null.
     static int32 Length(const char* str);
