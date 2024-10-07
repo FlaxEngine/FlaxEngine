@@ -7,7 +7,7 @@ TEST_CASE("Nullable")
 {
     SECTION("Trivial Type")
     {
-	    Nullable<int> a;
+        Nullable<int> a;
 
         REQUIRE(a.HasValue() == false);
         REQUIRE(a.GetValueOr(2) == 2);
@@ -25,130 +25,139 @@ TEST_CASE("Nullable")
 
     SECTION("Move-Only Type")
     {
-	    struct MoveOnly
-		{
-			MoveOnly() = default;
+        struct MoveOnly
+        {
+            MoveOnly()  = default;
             ~MoveOnly() = default;
 
-			MoveOnly(const MoveOnly&) = delete;
-			MoveOnly(MoveOnly&&) = default;
+            MoveOnly(const MoveOnly&) = delete;
+            MoveOnly(MoveOnly&&)      = default;
 
-			// MoveOnly& operator=(const MoveOnly&) = delete;
-			// MoveOnly& operator=(MoveOnly&&) = default;
-		};
+            MoveOnly& operator=(const MoveOnly&) = delete;
+            MoveOnly& operator=(MoveOnly&&)      = default;
+        };
 
-		Nullable<MoveOnly> a;
+        Nullable<MoveOnly> a;
 
-		REQUIRE(a.HasValue() == false);
+        REQUIRE(a.HasValue() == false);
 
-		a = MoveOnly();
+        a = MoveOnly();
 
-		REQUIRE(a.HasValue() == true);
+        REQUIRE(a.HasValue() == true);
     }
 
     SECTION("Bool Type")
     {
-        
-	    Nullable<bool> a;
+        Nullable<bool> a;
 
-		REQUIRE(a.HasValue() == false);
-		REQUIRE(a.GetValueOr(true) == true);
+        REQUIRE(a.HasValue() == false);
+        REQUIRE(a.GetValueOr(true) == true);
         REQUIRE(a.IsTrue() == false);
         REQUIRE(a.IsFalse() == false);
 
-		a = false;
+        a = false;
 
-		REQUIRE(a.HasValue() == true);
-		REQUIRE(a.GetValue() == false);
-		REQUIRE(a.GetValueOr(true) == false);
+        REQUIRE(a.HasValue() == true);
+        REQUIRE(a.GetValue() == false);
+        REQUIRE(a.GetValueOr(true) == false);
 
-		REQUIRE(a.IsTrue() == false);
-		REQUIRE(a.IsFalse() == true);
+        REQUIRE(a.IsTrue() == false);
+        REQUIRE(a.IsFalse() == true);
 
         a = true;
 
         REQUIRE(a.IsTrue() == true);
         REQUIRE(a.IsFalse() == false);
 
-		a.Reset();
+        a.Reset();
 
-		REQUIRE(a.HasValue() == false);
+        REQUIRE(a.HasValue() == false);
     }
 
     SECTION("Lifetime (No Construction)")
     {
-	    struct DoNotConstruct
-	    {
-		    DoNotConstruct() { FAIL("DoNotConstruct must not be constructed."); }
-	    };
+        struct DoNotConstruct
+        {
+            DoNotConstruct() { FAIL("DoNotConstruct must not be constructed."); }
+        };
 
         Nullable<DoNotConstruct> a;
-
         a.Reset();
     }
 
     SECTION("Lifetime")
-	{
-	    int constructed = 0, destructed = 0;
-
+    {
         struct Lifetime
-		{
-			int& constructed;
-			int& destructed;
+        {
+            int* _constructed;
+            int* _destructed;
 
-			Lifetime(int& constructed, int& destructed)
-				: constructed(constructed)
-				, destructed(destructed)
-			{
-				constructed++;
-			}
+            Lifetime(int* constructed, int* destructed)
+                : _constructed(constructed)
+                , _destructed(destructed)
+            {
+                ++(*_constructed);
+            }
 
-			Lifetime(const Lifetime& other)
-				: constructed(other.constructed)
-				, destructed(other.destructed)
-			{
-				constructed++;
-			}
+            Lifetime(Lifetime&& other) noexcept
+                : _constructed(other._constructed)
+                , _destructed(other._destructed)
+            {
+                ++(*_constructed);
+            }
 
-			~Lifetime()
-			{
-				destructed++;
-			}
-		};
+            Lifetime() = delete;
+            Lifetime& operator=(const Lifetime&) = delete;
+            Lifetime& operator=(Lifetime&&) = delete;
 
-		{
-			Nullable<Lifetime> a = Lifetime(constructed, destructed);
+            ~Lifetime()
+            {
+                ++(*_destructed);
+            }
+        };
 
-			REQUIRE(constructed == 1);
-			REQUIRE(destructed == 0);
+        int constructed = 0, destructed = 0;
+        REQUIRE(constructed == destructed);
 
-			a.Reset();
+        {
 
-			REQUIRE(constructed == 1);
-			REQUIRE(destructed == 1);
-		}
+            Nullable<Lifetime> a = Lifetime(&constructed, &destructed);
+            REQUIRE(a.HasValue());
+            REQUIRE(constructed == destructed + 1);
 
-	    {
-		    Nullable<Lifetime> a = Lifetime(constructed, destructed);
-	    }
+            a.Reset();
+            REQUIRE(!a.HasValue());
+            REQUIRE(constructed == destructed);
+        }
+        REQUIRE(constructed == destructed);
 
-		REQUIRE(constructed == 2);
-		REQUIRE(destructed == 2);
-	}
+        {
+            Nullable<Lifetime> b = Lifetime(&constructed, &destructed);
+            REQUIRE(constructed == destructed + 1);
+        }
+        REQUIRE(constructed == destructed);
+
+        {
+            Nullable<Lifetime> c = Lifetime(&constructed, &destructed);
+            Nullable<Lifetime> d = MoveTemp(c);
+            REQUIRE(constructed == destructed + 1);
+        }
+        REQUIRE(constructed == destructed);
+    }
 
     SECTION("Matching")
     {
-	    Nullable<int> a;
-		Nullable<int> b = 2;
+        Nullable<int> a;
+        Nullable<int> b = 2;
 
         a.Match(
-            [](int value) { FAIL("Null nullable must not match value handler."); },
-			[]() {}
+            [](int) { FAIL("Null nullable must not match value handler."); },
+            []() {}
         );
 
         b.Match(
-			[](int value) {},
+            [](int) {},
             []() { FAIL("Nullable with valid value must not match null handler."); }
-		);
+        );
     }
 };
