@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "Engine/Core/Templates.h"
 #include "Engine/Platform/Platform.h"
 
 /// <summary>
