@@ -35,11 +35,6 @@ private:
         }
     }
 
-    /// <summary>
-    /// <c>true</c> if the wrapped type is copy constructible.
-    /// </summary>
-    constexpr static bool IsCopyConstructible = TIsCopyConstructible<T>::Value;
-
 public:
     /// <summary>
     /// Initializes <see cref="Nullable{T}"/> by setting the wrapped value to null.
@@ -60,7 +55,7 @@ public:
     /// Initializes <see cref="Nullable{T}"/> by copying the wrapped value.
     /// </summary>
     /// <NullableBase name="value">The initial wrapped value to be copied.</param>
-    template<typename U = T, typename = typename TEnableIf<IsCopyConstructible>::Type>
+    template<typename U = T, typename = typename TEnableIf<TIsCopyConstructible<U>::Value>::Type>
     Nullable(const T& value)
         : _value(value)
         , _hasValue(true)
@@ -81,7 +76,7 @@ public:
     /// Initializes <see cref="Nullable{T}"/> by copying another <see cref="Nullable{T}"/>.
     /// </summary>
     /// <param name="other">The wrapped value to be copied.</param>
-    template<typename U = T, typename = typename TEnableIf<IsCopyConstructible>::Type>
+    template<typename U = T, typename = typename TEnableIf<TIsCopyConstructible<U>::Value>::Type>
     Nullable(const Nullable& other)
         : _value(other._value)
         , _hasValue(other._hasValue)
@@ -106,7 +101,7 @@ public:
     /// <summary>
     /// Reassigns the wrapped value by copying.
     /// </summary>
-    template<typename U = T, typename = typename TEnableIf<IsCopyConstructible>::Type>
+    template<typename U = T, typename = typename TEnableIf<TIsCopyConstructible<U>::Value>::Type>
     auto operator=(const T& value) -> Nullable&
     {
         KillOld();
@@ -133,7 +128,7 @@ public:
     /// <summary>
     /// Reassigns the wrapped value by copying another <see cref="Nullable{T}"/>.
     /// </summary>
-    template<typename U = T, typename = typename TEnableIf<IsCopyConstructible>::Type>
+    template<typename U = T, typename = typename TEnableIf<TIsCopyConstructible<U>::Value>::Type>
     auto operator=(const Nullable& other) -> Nullable&
     {
         KillOld();
@@ -222,7 +217,7 @@ public:
     /// Sets the wrapped value by copying.
     /// </summary>
     /// <param name="value">The value to be copied.</param>
-    template<typename U = T, typename = typename TEnableIf<IsCopyConstructible>::Type>
+    template<typename U = T, typename = typename TEnableIf<TIsCopyConstructible<U>::Value>::Type>
     FORCE_INLINE void SetValue(const T& value)
     {
         if (_hasValue)
@@ -250,7 +245,7 @@ public:
     /// If the wrapped value is not valid, sets it by copying. Otherwise, does nothing.
     /// </summary>
     /// <returns>True if the wrapped value was changed, otherwise false.</returns>
-    template<typename U = T, typename = typename TEnableIf<IsCopyConstructible>::Type>
+    template<typename U = T, typename = typename TEnableIf<TIsCopyConstructible<U>::Value>::Type>
     FORCE_INLINE bool TrySet(const T& value)
     {
         if (_hasValue)
