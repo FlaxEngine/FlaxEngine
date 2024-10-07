@@ -139,6 +139,8 @@ namespace FlaxEditor.GUI.Docking
         /// <inheritdoc />
         protected override void OnLastTabRemoved()
         {
+            if (ChildPanelsCount > 0)
+                return;
             // Close window
             _window?.Close();
         }
