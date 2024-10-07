@@ -386,7 +386,7 @@ public:
             SDL_GetGlobalMouseState(&oldPosition.X, &oldPosition.Y);
 
         Mouse::SetRelativeMode(relativeMode, window);
-        if (SDL_SetWindowRelativeMouseMode(static_cast<SDLWindow*>(window)->_window, relativeMode ? SDL_TRUE : SDL_FALSE) != 0)
+        if (!SDL_SetWindowRelativeMouseMode(static_cast<SDLWindow*>(window)->_window, relativeMode))
             LOG(Error, "Failed to set mouse relative mode: {0}", String(SDL_GetError()));
 
         if (!relativeMode)
@@ -438,7 +438,7 @@ public:
 
     void OnAxisMotion(SDL_GamepadAxis axis, int16 value);
 
-    void OnButtonState(SDL_GamepadButton axis, uint8 state);
+    void OnButtonState(SDL_GamepadButton axis, bool pressed);
 
     // [Gamepad]
     void SetVibration(const GamepadVibrationState& state) override;
@@ -512,7 +512,7 @@ bool SDLInput::HandleEvent(SDLWindow* window, SDL_Event& event)
             mousePos = SDLInputImpl::Mouse->GetMousePosition();
         }
 
-        if (event.button.state == SDL_RELEASED)
+        if (!event.button.down)
             Input::Mouse->OnMouseUp(mousePos, button, window);
         // Prevent sending multiple mouse down event when double-clicking UI elements
         else if (event.button.clicks % 2 == 1)
@@ -543,7 +543,7 @@ bool SDLInput::HandleEvent(SDLWindow* window, SDL_Event& event)
         // TODO: scancode support
         KeyboardKeys key = SDL_TO_FLAX_KEYS_MAP[event.key.scancode];
         //event.key.mod
-        if (event.key.state == SDL_RELEASED)
+        if (!event.key.down)
             Input::Keyboard->OnKeyUp(key, window);
         else
             Input::Keyboard->OnKeyDown(key, window);
@@ -577,7 +577,7 @@ bool SDLInput::HandleEvent(SDLWindow* window, SDL_Event& event)
     {
         SDLGamepad* gamepad = SDLGamepad::GetGamepadById(event.gbutton.which);
         SDL_GamepadButton button = (SDL_GamepadButton)event.gbutton.button;
-        gamepad->OnButtonState(button, event.gbutton.state);
+        gamepad->OnButtonState(button, event.gbutton.down);
 
         LOG(Info, "SDL_EVENT_GAMEPAD_BUTTON_");
         break;
@@ -731,51 +731,51 @@ void SDLGamepad::OnAxisMotion(SDL_GamepadAxis sdlAxis, int16 value)
     _state.Axis[(int32)axis] = valueNormalized;
 }
 
-void SDLGamepad::OnButtonState(SDL_GamepadButton sdlButton, uint8 state)
+void SDLGamepad::OnButtonState(SDL_GamepadButton sdlButton, bool pressed)
 {
     switch (sdlButton)
     {
     case SDL_GamepadButton::SDL_GAMEPAD_BUTTON_SOUTH:
-        _state.Buttons[(int32)GamepadButton::A] = state == SDL_PRESSED;
+        _state.Buttons[(int32)GamepadButton::A] = pressed;
         break;
     case SDL_GamepadButton::SDL_GAMEPAD_BUTTON_EAST:
-        _state.Buttons[(int32)GamepadButton::B] = state == SDL_PRESSED;
+        _state.Buttons[(int32)GamepadButton::B] = pressed;
         break;
     case SDL_GamepadButton::SDL_GAMEPAD_BUTTON_WEST:
-        _state.Buttons[(int32)GamepadButton::X] = state == SDL_PRESSED;
+        _state.Buttons[(int32)GamepadButton::X] = pressed;
         break;
     case SDL_GamepadButton::SDL_GAMEPAD_BUTTON_NORTH:
-        _state.Buttons[(int32)GamepadButton::Y] = state == SDL_PRESSED;
+        _state.Buttons[(int32)GamepadButton::Y] = pressed;
         break;
     case SDL_GamepadButton::SDL_GAMEPAD_BUTTON_LEFT_SHOULDER:
-        _state.Buttons[(int32)GamepadButton::LeftShoulder] = state == SDL_PRESSED;
+        _state.Buttons[(int32)GamepadButton::LeftShoulder] = pressed;
         break;
     case SDL_GamepadButton::SDL_GAMEPAD_BUTTON_RIGHT_SHOULDER:
-        _state.Buttons[(int32)GamepadButton::RightShoulder] = state == SDL_PRESSED;
+        _state.Buttons[(int32)GamepadButton::RightShoulder] = pressed;
         break;
     case SDL_GamepadButton::SDL_GAMEPAD_BUTTON_BACK:
-        _state.Buttons[(int32)GamepadButton::Back] = state == SDL_PRESSED;
+        _state.Buttons[(int32)GamepadButton::Back] = pressed;
         break;
     case SDL_GamepadButton::SDL_GAMEPAD_BUTTON_START:
-        _state.Buttons[(int32)GamepadButton::Start] = state == SDL_PRESSED;
+        _state.Buttons[(int32)GamepadButton::Start] = pressed;
         break;
     case SDL_GamepadButton::SDL_GAMEPAD_BUTTON_LEFT_STICK:
-        _state.Buttons[(int32)GamepadButton::LeftThumb] = state == SDL_PRESSED;
+        _state.Buttons[(int32)GamepadButton::LeftThumb] = pressed;
         break;
     case SDL_GamepadButton::SDL_GAMEPAD_BUTTON_RIGHT_STICK:
-        _state.Buttons[(int32)GamepadButton::RightThumb] = state == SDL_PRESSED;
+        _state.Buttons[(int32)GamepadButton::RightThumb] = pressed;
         break;
     case SDL_GamepadButton::SDL_GAMEPAD_BUTTON_DPAD_UP:
-        _state.Buttons[(int32)GamepadButton::DPadUp] = state == SDL_PRESSED;
+        _state.Buttons[(int32)GamepadButton::DPadUp] = pressed;
         break;
     case SDL_GamepadButton::SDL_GAMEPAD_BUTTON_DPAD_DOWN:
-        _state.Buttons[(int32)GamepadButton::DPadDown] = state == SDL_PRESSED;
+        _state.Buttons[(int32)GamepadButton::DPadDown] = pressed;
         break;
     case SDL_GamepadButton::SDL_GAMEPAD_BUTTON_DPAD_LEFT:
-        _state.Buttons[(int32)GamepadButton::DPadLeft] = state == SDL_PRESSED;
+        _state.Buttons[(int32)GamepadButton::DPadLeft] = pressed;
         break;
     case SDL_GamepadButton::SDL_GAMEPAD_BUTTON_DPAD_RIGHT:
-        _state.Buttons[(int32)GamepadButton::DPadRight] = state == SDL_PRESSED;
+        _state.Buttons[(int32)GamepadButton::DPadRight] = pressed;
         break;
     }
 }

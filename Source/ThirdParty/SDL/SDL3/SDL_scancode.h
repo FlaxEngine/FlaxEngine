@@ -1,6 +1,6 @@
 /*
   Simple DirectMedia Layer
-  Copyright (C) 1997-2024 Sam Lantinga <slouken@libsdl.org>
+  Copyright (C) 1997-2025 Sam Lantinga <slouken@libsdl.org>
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages
@@ -23,6 +23,11 @@
  * # CategoryScancode
  *
  * Defines keyboard scancodes.
+ *
+ * Please refer to the Best Keyboard Practices document for details on what
+ * this information means and how best to use it.
+ *
+ * https://wiki.libsdl.org/SDL3/BestKeyboardPractices
  */
 
 #ifndef SDL_scancode_h_
@@ -42,7 +47,7 @@
  * The values in this enumeration are based on the USB usage page standard:
  * https://usb.org/sites/default/files/hut1_5.pdf
  *
- * \since This enum is available since SDL 3.0.0.
+ * \since This enum is available since SDL 3.2.0.
  */
 typedef enum SDL_Scancode
 {
@@ -417,8 +422,8 @@ typedef enum SDL_Scancode
 
     SDL_SCANCODE_RESERVED = 400,    /**< 400-500 reserved for dynamic keycodes */
 
-    SDL_NUM_SCANCODES = 512 /**< not a key, just marks the number of scancodes
-                                 for array bounds */
+    SDL_SCANCODE_COUNT = 512 /**< not a key, just marks the number of scancodes for array bounds */
+
 } SDL_Scancode;
 
 #endif /* SDL_scancode_h_ */
