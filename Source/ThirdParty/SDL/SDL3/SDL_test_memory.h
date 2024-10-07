@@ -1,6 +1,6 @@
 /*
   Simple DirectMedia Layer
-  Copyright (C) 1997-2024 Sam Lantinga <slouken@libsdl.org>
+  Copyright (C) 1997-2025 Sam Lantinga <slouken@libsdl.org>
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages
@@ -20,8 +20,6 @@
 */
 
 /**
- *  \file SDL_test_memory.h
- *
  *  Memory tracking related functions of SDL test framework.
  *
  *  This code is a part of the SDL test library, not the main SDL library.
@@ -30,34 +28,34 @@
 #ifndef SDL_test_memory_h_
 #define SDL_test_memory_h_
 
+#include <SDL3/SDL_stdinc.h>
+
 #include <SDL3/SDL_begin_code.h>
 /* Set up for C function definitions, even when using C++ */
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-
 /**
  * Start tracking SDL memory allocations
  *
  * \note This should be called before any other SDL functions for complete tracking coverage
  */
-void SDLTest_TrackAllocations(void);
+void SDLCALL SDLTest_TrackAllocations(void);
 
 /**
  * Fill allocations with random data
  *
  * \note This implicitly calls SDLTest_TrackAllocations()
  */
-void SDLTest_RandFillAllocations();
+void SDLCALL SDLTest_RandFillAllocations(void);
 
 /**
  * Print a log of any outstanding allocations
  *
  * \note This can be called after SDL_Quit()
  */
-void SDLTest_LogAllocations(void);
-
+void SDLCALL SDLTest_LogAllocations(void);
 
 /* Ends C function definitions when using C++ */
 #ifdef __cplusplus

@@ -47,9 +47,9 @@ private:
 #endif
     static bool HandleEvent(SDL_Event& event);
 #if PLATFORM_WINDOWS
-    static int __cdecl EventMessageHook(void* userdata, MSG* msg);
+    static bool __cdecl EventMessageHook(void* userdata, MSG* msg);
 #elif PLATFORM_LINUX
-    static int __cdecl X11EventHook(void *userdata, _XEvent *xevent);
+    static bool __cdecl X11EventHook(void *userdata, _XEvent *xevent);
 #endif
 
 public:
