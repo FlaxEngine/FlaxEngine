@@ -1,6 +1,6 @@
 /*
   Simple DirectMedia Layer
-  Copyright (C) 1997-2024 Sam Lantinga <slouken@libsdl.org>
+  Copyright (C) 1997-2025 Sam Lantinga <slouken@libsdl.org>
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages
@@ -26,6 +26,14 @@
  *
  * System-dependent library loading routines.
  *
+ * Shared objects are code that is programmatically loadable at runtime.
+ * Windows calls these "DLLs", Linux calls them "shared libraries", etc.
+ *
+ * To use them, build such a library, then call SDL_LoadObject() on it. Once
+ * loaded, you can use SDL_LoadFunction() on that object to find the address
+ * of its exported symbols. When done with the object, call SDL_UnloadObject()
+ * to dispose of it.
+ *
  * Some things to keep in mind:
  *
  * - These functions only work on C function names. Other languages may have
@@ -38,6 +46,11 @@
  *   not defined whether or not it goes into the global symbol namespace for
  *   the application. If it does and it conflicts with symbols in your code or
  *   other shared libraries, you will not get the results you expect. :)
+ * - Once a library is unloaded, all pointers into it obtained through
+ *   SDL_LoadFunction() become invalid, even if the library is later reloaded.
+ *   Don't unload a library if you plan to use these pointers in the future.
+ *   Notably: beware of giving one of these pointers to atexit(), since it may
+ *   call that pointer after the library unloads.
  */
 
 #ifndef SDL_loadso_h_
@@ -53,18 +66,31 @@ extern "C" {
 #endif
 
 /**
+ * An opaque datatype that represents a loaded shared object.
+ *
+ * \since This datatype is available since SDL 3.2.0.
+ *
+ * \sa SDL_LoadObject
+ * \sa SDL_LoadFunction
+ * \sa SDL_UnloadObject
+ */
+typedef struct SDL_SharedObject SDL_SharedObject;
+
+/**
  * Dynamically load a shared object.
  *
  * \param sofile a system-dependent name of the object file.
  * \returns an opaque pointer to the object handle or NULL on failure; call
  *          SDL_GetError() for more information.
  *
- * \since This function is available since SDL 3.0.0.
+ * \threadsafety It is safe to call this function from any thread.
+ *
+ * \since This function is available since SDL 3.2.0.
  *
  * \sa SDL_LoadFunction
  * \sa SDL_UnloadObject
  */
-extern SDL_DECLSPEC void * SDLCALL SDL_LoadObject(const char *sofile);
+extern SDL_DECLSPEC SDL_SharedObject * SDLCALL SDL_LoadObject(const char *sofile);
 
 /**
  * Look up the address of the named function in a shared object.
@@ -86,22 +112,29 @@ extern SDL_DECLSPEC void * SDLCALL SDL_LoadObject(const char *sofile);
  * \returns a pointer to the function or NULL on failure; call SDL_GetError()
  *          for more information.
  *
- * \since This function is available since SDL 3.0.0.
+ * \threadsafety It is safe to call this function from any thread.
+ *
+ * \since This function is available since SDL 3.2.0.
  *
  * \sa SDL_LoadObject
  */
-extern SDL_DECLSPEC SDL_FunctionPointer SDLCALL SDL_LoadFunction(void *handle, const char *name);
+extern SDL_DECLSPEC SDL_FunctionPointer SDLCALL SDL_LoadFunction(SDL_SharedObject *handle, const char *name);
 
 /**
  * Unload a shared object from memory.
  *
+ * Note that any pointers from this object looked up through
+ * SDL_LoadFunction() will no longer be valid.
+ *
  * \param handle a valid shared object handle returned by SDL_LoadObject().
  *
- * \since This function is available since SDL 3.0.0.
+ * \threadsafety It is safe to call this function from any thread.
+ *
+ * \since This function is available since SDL 3.2.0.
  *
  * \sa SDL_LoadObject
  */
-extern SDL_DECLSPEC void SDLCALL SDL_UnloadObject(void *handle);
+extern SDL_DECLSPEC void SDLCALL SDL_UnloadObject(SDL_SharedObject *handle);
 
 /* Ends C function definitions when using C++ */
 #ifdef __cplusplus
