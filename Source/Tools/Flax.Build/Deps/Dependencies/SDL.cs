@@ -73,7 +73,7 @@ namespace Flax.Deps.Dependencies
                 "-DSDL_SNDIO=OFF",
                 "-DSDL_PULSEAUDIO=OFF",
                 "-DSDL_ALSA=OFF",
-                "-DSDL_WASAPI=OFF",
+                "-DSDL_GPU=OFF",
             };
             var filesToKeep = new[]
             {
@@ -88,8 +88,8 @@ namespace Flax.Deps.Dependencies
                 Path.Combine(root, "include", "SDL3"),
             };
 
-            CloneGitRepoFastSince(root, "https://github.com/libsdl-org/SDL.git", new DateTime(2024, 8, 5));
-            GitResetToCommit(root, "627cb8acd09e6cbf8362d808634a26f37382c73d");
+            CloneGitRepoFast(root, "https://github.com/libsdl-org/SDL");
+            GitResetToCommit(root, "535d80badefc83c5c527ec5748f2a20d6a9310fe");  // 3.2.0
 
             foreach (var platform in options.Platforms)
             {
@@ -134,7 +134,7 @@ namespace Flax.Deps.Dependencies
                         directoriesToCopy.Add(Path.Combine(buildDir, "include", "SDL3"));
 
                         int concurrency = Math.Min(Math.Max(1, (int)(Environment.ProcessorCount * Configuration.ConcurrencyProcessorScale)), Configuration.MaxConcurrency);
-                        RunCmake(root, platform, architecture, $"-B\"{buildDir}\" -DCMAKE_BUILD_TYPE=DEBUG -DSDL_SHARED={(!buildStatic ? "ON" : "OFF")} -DSDL_STATIC={(buildStatic ? "ON" : "OFF")} -DCMAKE_POSITION_INDEPENDENT_CODE=ON " + string.Join(" ", configs));
+                        RunCmake(root, platform, architecture, $"-B\"{buildDir}\" -DCMAKE_BUILD_TYPE={configuration} -DCMAKE_INSTALL_PREFIX=\"{buildDir}\" -DSDL_SHARED={(!buildStatic ? "ON" : "OFF")} -DSDL_STATIC={(buildStatic ? "ON" : "OFF")} -DCMAKE_POSITION_INDEPENDENT_CODE=ON " + string.Join(" ", configs));
                         BuildCmake(buildDir, configuration, new Dictionary<string, string>() { {"CMAKE_BUILD_PARALLEL_LEVEL", concurrency.ToString()} });
 
                         // Copy binaries

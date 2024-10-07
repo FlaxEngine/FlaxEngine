@@ -185,6 +185,7 @@ namespace Flax.Deps
         /// </summary>
         /// <param name="path">The local path for close.</param>
         /// <param name="url">The remote url.</param>
+        /// <param name="time">The time after history is included in the local repository.</param>
         /// <param name="args">The custom arguments to add to the clone command.</param>
         /// <param name="submodules">True if initialize submodules of the repository (recursive).</param>
         public static void CloneGitRepoFastSince(string path, string url, DateTime time, string args = null, bool submodules = false)

@@ -38,7 +38,7 @@
 namespace
 {
     SDLWindow* LastEventWindow = nullptr;
-    static SDL_Cursor* Cursors[SDL_NUM_SYSTEM_CURSORS] = { nullptr };
+    static SDL_Cursor* Cursors[SDL_SYSTEM_CURSOR_COUNT] = { nullptr };
 }
 
 void* GetNativeWindowPointer(SDL_Window* window);
@@ -168,17 +168,17 @@ SDLWindow::SDLWindow(const CreateWindowSettings& settings)
     }
 
     SDL_PropertiesID props = SDL_CreateProperties();
-    SDL_SetNumberProperty(props, "flags", flags);
+    SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_FLAGS_NUMBER, flags);
     SDL_SetStringProperty(props, SDL_PROP_WINDOW_CREATE_TITLE_STRING, settings.Title.ToStringAnsi().Get());
     SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_X_NUMBER, x);
     SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_Y_NUMBER, y);
     SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_WIDTH_NUMBER, windowWidth);
     SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_HEIGHT_NUMBER, windowHeight);
-    SDL_SetBooleanProperty(props, SDL_PROP_WINDOW_CREATE_EXTERNAL_GRAPHICS_CONTEXT_BOOLEAN, SDL_TRUE);
+    SDL_SetBooleanProperty(props, SDL_PROP_WINDOW_CREATE_EXTERNAL_GRAPHICS_CONTEXT_BOOLEAN, true);
     if ((flags & SDL_WINDOW_TOOLTIP) != 0)
-        SDL_SetBooleanProperty(props, SDL_PROP_WINDOW_CREATE_TOOLTIP_BOOLEAN, SDL_TRUE);
+        SDL_SetBooleanProperty(props, SDL_PROP_WINDOW_CREATE_TOOLTIP_BOOLEAN, true);
     else if ((flags & SDL_WINDOW_POPUP_MENU) != 0)
-        SDL_SetBooleanProperty(props, SDL_PROP_WINDOW_CREATE_MENU_BOOLEAN, SDL_TRUE);
+        SDL_SetBooleanProperty(props, SDL_PROP_WINDOW_CREATE_MENU_BOOLEAN, true);
     if (_settings.Parent != nullptr)
         SDL_SetPointerProperty(props, SDL_PROP_WINDOW_CREATE_PARENT_POINTER, _settings.Parent->_window);
 
@@ -509,7 +509,7 @@ void SDLWindow::HandleEvent(SDL_Event& event)
             if (pos.X < rect.x || pos.Y < rect.y || size.X > rect.w || size.Y > rect.h)
             {
                 // Disable resizable flag so SDL updates the client rectangle to expected values during WM_NCCALCSIZE
-                SDL_SetWindowResizable(_window, SDL_FALSE);
+                SDL_SetWindowResizable(_window, false);
                 SDL_MaximizeWindow(_window);
 
                 // Set the internal floating window rectangle to expected position
@@ -520,7 +520,7 @@ void SDLWindow::HandleEvent(SDL_Event& event)
                 SDL_PumpEvents();
 
                 // Restore previous values
-                SDL_SetWindowResizable(_window, SDL_TRUE);
+                SDL_SetWindowResizable(_window, true);
                 SetClientBounds(_cachedClientRectangle);
             }
         }
@@ -704,11 +704,11 @@ void SDLWindow::Show()
     
     // Reused top-most windows (DockHintWindow) doesn't stay on top for some reason
     if (_settings.IsTopmost && _settings.Type != WindowType::Tooltip)
-        SDL_SetWindowAlwaysOnTop(_window, SDL_TRUE);
+        SDL_SetWindowAlwaysOnTop(_window, true);
 
     if (_isTrackingMouse)
     {
-        if (SDL_CaptureMouse(SDL_TRUE) != 0)
+        if (!SDL_CaptureMouse(true))
         {
             if (!SDLPlatform::UsesWayland()) // Suppress "That operation is not supported" errors
                 LOG(Warning, "SDL_CaptureMouse: {0}", String(SDL_GetError()));
@@ -759,7 +759,7 @@ void SDLWindow::SetBorderless(bool isBorderless, bool maximized)
 
     if (isBorderless)
     {
-        SDL_SetWindowBordered(_window, !isBorderless ? SDL_TRUE : SDL_FALSE);
+        SDL_SetWindowBordered(_window, !isBorderless ? true : false);
         if (maximized)
             SDL_MaximizeWindow(_window);
         else
@@ -767,7 +767,7 @@ void SDLWindow::SetBorderless(bool isBorderless, bool maximized)
     }
     else
     {
-        SDL_SetWindowBordered(_window, !isBorderless ? SDL_TRUE : SDL_FALSE);
+        SDL_SetWindowBordered(_window, !isBorderless ? true : false);
         if (maximized)
             SDL_MaximizeWindow(_window);
         else
@@ -839,11 +839,11 @@ void SDLWindow::SetClientPosition(const Float2& position)
 
 void SDLWindow::SetIsFullscreen(bool isFullscreen)
 {
-    SDL_SetWindowFullscreen(_window, isFullscreen ? SDL_TRUE : SDL_FALSE);
+    SDL_SetWindowFullscreen(_window, isFullscreen ? true : false);
     if (!isFullscreen)
     {
         // The window is set to always-on-top for some reason when leaving fullscreen
-        SDL_SetWindowAlwaysOnTop(_window, SDL_FALSE);
+        SDL_SetWindowAlwaysOnTop(_window, false);
     }
 
     WindowBase::SetIsFullscreen(isFullscreen);
@@ -981,7 +981,7 @@ void SDLWindow::StartTrackingMouse(bool useMouseScreenOffset)
 
     if (_visible)
     {
-        if (SDL_CaptureMouse(SDL_TRUE) != 0)
+        if (!SDL_CaptureMouse(true))
         {
             if (!SDLPlatform::UsesWayland()) // Suppress "That operation is not supported" errors
                 LOG(Warning, "SDL_CaptureMouse: {0}", String(SDL_GetError()));
@@ -1002,7 +1002,7 @@ void SDLWindow::EndTrackingMouse()
     _isHorizontalFlippingMouse = false;
     _isVerticalFlippingMouse = false;
 
-    if (SDL_CaptureMouse(SDL_FALSE) != 0)
+    if (!SDL_CaptureMouse(false))
     {
         if (!SDLPlatform::UsesWayland()) // Suppress "That operation is not supported" errors
             LOG(Warning, "SDL_CaptureMouse: {0}", String(SDL_GetError()));

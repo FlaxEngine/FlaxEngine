@@ -70,16 +70,16 @@ bool SDLPlatform::Init()
     SDL_SetHint(SDL_HINT_WINDOWS_RAW_KEYBOARD, "1");
 
     // Disable SDL clipboard support
-    SDL_SetEventEnabled(SDL_EVENT_CLIPBOARD_UPDATE, SDL_FALSE);
+    SDL_SetEventEnabled(SDL_EVENT_CLIPBOARD_UPDATE, false);
 
     // Disable SDL drag and drop support
-    SDL_SetEventEnabled(SDL_EVENT_DROP_FILE, SDL_FALSE);
-    SDL_SetEventEnabled(SDL_EVENT_DROP_TEXT, SDL_FALSE);
-    SDL_SetEventEnabled(SDL_EVENT_DROP_BEGIN, SDL_FALSE);
-    SDL_SetEventEnabled(SDL_EVENT_DROP_COMPLETE, SDL_FALSE);
-    SDL_SetEventEnabled(SDL_EVENT_DROP_POSITION, SDL_FALSE);
+    SDL_SetEventEnabled(SDL_EVENT_DROP_FILE, false);
+    SDL_SetEventEnabled(SDL_EVENT_DROP_TEXT, false);
+    SDL_SetEventEnabled(SDL_EVENT_DROP_BEGIN, false);
+    SDL_SetEventEnabled(SDL_EVENT_DROP_COMPLETE, false);
+    SDL_SetEventEnabled(SDL_EVENT_DROP_POSITION, false);
 
-    if (SDL_InitSubSystem(SDL_INIT_VIDEO | SDL_INIT_GAMEPAD) < 0)
+    if (!SDL_InitSubSystem(SDL_INIT_VIDEO | SDL_INIT_GAMEPAD))
         Platform::Fatal(String::Format(TEXT("Failed to initialize SDL: {0}."), String(SDL_GetError())));
 
     if (InitPlatform())
@@ -123,7 +123,7 @@ void SDLPlatform::Tick()
     {
         Float2 mousePos;
         auto buttons = SDL_GetGlobalMouseState(&mousePos.X, &mousePos.Y);
-        if (!(buttons & SDL_BUTTON(SDL_BUTTON_LEFT)))
+        if (!(buttons & SDL_BUTTON_MASK(SDL_BUTTON_LEFT)))
         {
             Window* window = nullptr;
             WindowsManager::WindowsLocker.Lock();
@@ -443,7 +443,7 @@ DialogResult MessageBox::Show(Window* parent, const StringView& text, const Stri
     data.buttons = dataButtons;
 
     int result = -1;
-    if (SDL_ShowMessageBox(&data, &result) != 0)
+    if (!SDL_ShowMessageBox(&data, &result))
     {
 #if PLATFORM_LINUX
         // Fallback to native messagebox implementation in case some system fonts are missing

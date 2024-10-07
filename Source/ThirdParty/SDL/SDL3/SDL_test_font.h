@@ -1,6 +1,6 @@
 /*
   Simple DirectMedia Layer
-  Copyright (C) 1997-2024 Sam Lantinga <slouken@libsdl.org>
+  Copyright (C) 1997-2025 Sam Lantinga <slouken@libsdl.org>
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages
@@ -20,8 +20,6 @@
 */
 
 /*
- *  \file SDL_test_font.h
- *
  *  Font related functions of SDL test framework.
  *
  *  This code is a part of the SDL test library, not the main SDL library.
@@ -29,6 +27,10 @@
 
 #ifndef SDL_test_font_h_
 #define SDL_test_font_h_
+
+#include <SDL3/SDL_stdinc.h>
+#include <SDL3/SDL_rect.h>
+#include <SDL3/SDL_render.h>
 
 #include <SDL3/SDL_begin_code.h>
 /* Set up for C function definitions, even when using C++ */
@@ -50,9 +52,9 @@ extern int FONT_CHARACTER_SIZE;
  *  \param y The Y coordinate of the upper left corner of the character.
  *  \param c The character to draw.
  *
- *  \returns 0 on success, -1 on failure.
+ *  \returns true on success, false on failure.
  */
-int SDLTest_DrawCharacter(SDL_Renderer *renderer, float x, float y, Uint32 c);
+bool SDLCALL SDLTest_DrawCharacter(SDL_Renderer *renderer, float x, float y, Uint32 c);
 
 /*
  *  Draw a UTF-8 string in the currently set font.
@@ -64,9 +66,9 @@ int SDLTest_DrawCharacter(SDL_Renderer *renderer, float x, float y, Uint32 c);
  *  \param y The Y coordinate of the upper left corner of the string.
  *  \param s The string to draw.
  *
- *  \returns 0 on success, -1 on failure.
+ *  \returns true on success, false on failure.
  */
-int SDLTest_DrawString(SDL_Renderer *renderer, float x, float y, const char *s);
+bool SDLCALL SDLTest_DrawString(SDL_Renderer *renderer, float x, float y, const char *s);
 
 /*
  *  Data used for multi-line text output
@@ -89,9 +91,9 @@ typedef struct SDLTest_TextWindow
  *
  *  \returns the new window, or NULL on failure.
  *
- *  \since This function is available since SDL 3.0.0.
+ *  \since This function is available since SDL 3.2.0.
  */
-SDLTest_TextWindow *SDLTest_TextWindowCreate(float x, float y, float w, float h);
+SDLTest_TextWindow * SDLCALL SDLTest_TextWindowCreate(float x, float y, float w, float h);
 
 /*
  *  Display a multi-line text output window
@@ -101,9 +103,9 @@ SDLTest_TextWindow *SDLTest_TextWindowCreate(float x, float y, float w, float h)
  *  \param textwin The text output window
  *  \param renderer The renderer to use for display
  *
- *  \since This function is available since SDL 3.0.0.
+ *  \since This function is available since SDL 3.2.0.
  */
-void SDLTest_TextWindowDisplay(SDLTest_TextWindow *textwin, SDL_Renderer *renderer);
+void SDLCALL SDLTest_TextWindowDisplay(SDLTest_TextWindow *textwin, SDL_Renderer *renderer);
 
 /*
  *  Add text to a multi-line text output window
@@ -116,9 +118,9 @@ void SDLTest_TextWindowDisplay(SDLTest_TextWindow *textwin, SDL_Renderer *render
  *  \param fmt A printf() style format string
  *  \param ...  additional parameters matching % tokens in the `fmt` string, if any
  *
- *  \since This function is available since SDL 3.0.0.
+ *  \since This function is available since SDL 3.2.0.
  */
-void SDLTest_TextWindowAddText(SDLTest_TextWindow *textwin, SDL_PRINTF_FORMAT_STRING const char *fmt, ...) SDL_PRINTF_VARARG_FUNC(2);
+void SDLCALL SDLTest_TextWindowAddText(SDLTest_TextWindow *textwin, SDL_PRINTF_FORMAT_STRING const char *fmt, ...) SDL_PRINTF_VARARG_FUNC(2);
 
 /*
  *  Add text to a multi-line text output window
@@ -131,32 +133,32 @@ void SDLTest_TextWindowAddText(SDLTest_TextWindow *textwin, SDL_PRINTF_FORMAT_ST
  *  \param text The text to add to the window
  *  \param len The length, in bytes, of the text to add to the window
  *
- *  \since This function is available since SDL 3.0.0.
+ *  \since This function is available since SDL 3.2.0.
  */
-void SDLTest_TextWindowAddTextWithLength(SDLTest_TextWindow *textwin, const char *text, size_t len);
+void SDLCALL SDLTest_TextWindowAddTextWithLength(SDLTest_TextWindow *textwin, const char *text, size_t len);
 
 /*
  *  Clear the text in a multi-line text output window
  *
  *  \param textwin The text output window
  *
- *  \since This function is available since SDL 3.0.0.
+ *  \since This function is available since SDL 3.2.0.
  */
-void SDLTest_TextWindowClear(SDLTest_TextWindow *textwin);
+void SDLCALL SDLTest_TextWindowClear(SDLTest_TextWindow *textwin);
 
 /*
  *  Free the storage associated with a multi-line text output window
  *
  *  \param textwin The text output window
  *
- *  \since This function is available since SDL 3.0.0.
+ *  \since This function is available since SDL 3.2.0.
  */
-void SDLTest_TextWindowDestroy(SDLTest_TextWindow *textwin);
+void SDLCALL SDLTest_TextWindowDestroy(SDLTest_TextWindow *textwin);
 
 /*
  *  Cleanup textures used by font drawing functions.
  */
-void SDLTest_CleanupTextDrawing(void);
+void SDLCALL SDLTest_CleanupTextDrawing(void);
 
 /* Ends C function definitions when using C++ */
 #ifdef __cplusplus

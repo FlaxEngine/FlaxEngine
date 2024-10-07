@@ -13,7 +13,7 @@
 #include <SDL3/SDL_system.h>
 
 // The events for releasing the mouse during window dragging are missing, handle the mouse release event here
-SDL_bool SDLCALL SDLPlatform::EventMessageHook(void* userdata, MSG* msg)
+bool SDLCALL SDLPlatform::EventMessageHook(void* userdata, MSG* msg)
 {
 #define GET_WINDOW_WITH_HWND(window, hwnd) \
     do { \
@@ -38,9 +38,9 @@ SDL_bool SDLCALL SDLPlatform::EventMessageHook(void* userdata, MSG* msg)
         
         auto hit = static_cast<WindowHitCodes>(msg->wParam);
         if (SDLPlatform::CheckWindowDragging(window, hit))
-            return SDL_FALSE;
+            return false;
     }
-    return SDL_TRUE;
+    return true;
 #undef GET_WINDOW_WITH_HWND
 }
 

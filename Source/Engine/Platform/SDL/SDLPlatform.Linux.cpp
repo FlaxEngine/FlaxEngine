@@ -651,7 +651,7 @@ Array<String> SDLClipboard::GetFiles()
     return Array<String>();
 }
 
-SDL_bool SDLCALL SDLPlatform::X11EventHook(void *userdata, _XEvent *xevent)
+bool SDLCALL SDLPlatform::X11EventHook(void *userdata, _XEvent *xevent)
 {
     const X11::XEvent& event = *(X11::XEvent*)xevent;
     Window* window;
@@ -677,7 +677,7 @@ SDL_bool SDLCALL SDLPlatform::X11EventHook(void *userdata, _XEvent *xevent)
             {
                 xDnDRequested = Impl::SelectTargetFromAtoms(xDisplay, targetTypeFiles, event.xclient.data.l[2], event.xclient.data.l[3], event.xclient.data.l[4]);
             }
-            return SDL_FALSE;
+            return false;
         }
         else if ((uint32)event.xclient.message_type == (uint32)xAtomXdndPosition)
         {
@@ -712,7 +712,7 @@ SDL_bool SDLCALL SDLPlatform::X11EventHook(void *userdata, _XEvent *xevent)
                     window->OnDragEnter(&dropData, xDndPos, xDndResult);
                 }
             }
-            return SDL_FALSE;
+            return false;
         }
         else if ((uint32)event.xclient.message_type == (uint32)xAtomXdndLeave)
         {
@@ -722,7 +722,7 @@ SDL_bool SDLCALL SDLPlatform::X11EventHook(void *userdata, _XEvent *xevent)
                 window->_dragOver = false;
                 window->OnDragLeave();
             }
-            return SDL_FALSE;
+            return false;
         }
         else if ((uint32)event.xclient.message_type == (uint32)xAtomXdndDrop)
         {
@@ -749,7 +749,7 @@ SDL_bool SDLCALL SDLPlatform::X11EventHook(void *userdata, _XEvent *xevent)
                 m.data.l[2] = 0;
                 X11::XSendEvent(xDisplay, event.xclient.data.l[0], 0, NoEventMask, (X11::XEvent*)&m);
             }
-            return SDL_FALSE;
+            return false;
         }
     }
     else if (event.type == SelectionNotify)
@@ -787,14 +787,14 @@ SDL_bool SDLCALL SDLPlatform::X11EventHook(void *userdata, _XEvent *xevent)
             m.data.l[1] = 1;
             m.data.l[2] = xAtomXdndActionCopy;
             XSendEvent(xDisplay, xDndSourceWindow, 0, NoEventMask, (X11::XEvent*)&m);
-            return SDL_FALSE;
+            return false;
         }
-        return SDL_FALSE;
+        return false;
     }
     else if (event.type == SelectionRequest)
     {
         if (event.xselectionrequest.selection != xAtomClipboard)
-            return SDL_FALSE;
+            return false;
         
         const X11::XSelectionRequestEvent* xsr = &event.xselectionrequest;
         X11::XSelectionEvent ev = { 0 };
@@ -822,13 +822,13 @@ SDL_bool SDLCALL SDLPlatform::X11EventHook(void *userdata, _XEvent *xevent)
             ev.property = 0;
         if ((result & 2) == 0)
             X11::XSendEvent(xDisplay, ev.requestor, 0, 0, (X11::XEvent*)&ev);
-        return SDL_FALSE;
+        return false;
     }
     else if (event.type == SelectionClear)
-        return SDL_FALSE;
+        return false;
     else if (event.type == XFixesSelectionNotifyEvent)
-        return SDL_FALSE;
-    return SDL_TRUE;
+        return false;
+    return true;
 }
 
 int X11ErrorHandler(X11::Display* display, X11::XErrorEvent* event)
