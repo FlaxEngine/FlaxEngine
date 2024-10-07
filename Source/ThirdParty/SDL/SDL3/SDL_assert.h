@@ -1,6 +1,6 @@
 /*
   Simple DirectMedia Layer
-  Copyright (C) 1997-2024 Sam Lantinga <slouken@libsdl.org>
+  Copyright (C) 1997-2025 Sam Lantinga <slouken@libsdl.org>
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages
@@ -51,9 +51,14 @@
  * - It provides statistics and data on all failed assertions to the app.
  * - It allows the default assertion handler to be controlled with environment
  *   variables, in case an automated script needs to control it.
+ * - It can be used as an aid to Clang's static analysis; it will treat SDL
+ *   assertions as universally true (under the assumption that you are serious
+ *   about the asserted claims and that your debug builds will detect when
+ *   these claims were wrong). This can help the analyzer avoid false
+ *   positives.
  *
- * To use it: do a debug build and just sprinkle around tests to check your
- * code!
+ * To use it: compile a debug build and just sprinkle around tests to check
+ * your code!
  */
 
 #ifndef SDL_assert_h_
@@ -84,7 +89,7 @@ extern "C" {
  * - 3: Paranoid settings: All SDL assertion macros enabled, including
  *   SDL_assert_paranoid.
  *
- * \since This macro is available since SDL 3.0.0.
+ * \since This macro is available since SDL 3.2.0.
  */
 #define SDL_ASSERT_LEVEL SomeNumberBasedOnVariousFactors
 
@@ -113,24 +118,27 @@ extern "C" {
  *
  * If the program is not running under a debugger, SDL_TriggerBreakpoint will
  * likely terminate the app, possibly without warning. If the current platform
- * isn't supported (SDL doesn't know how to trigger a breakpoint), this macro
- * does nothing.
+ * isn't supported, this macro is left undefined.
  *
- * \threadsafety It is safe to call this function from any thread.
+ * \threadsafety It is safe to call this macro from any thread.
  *
- * \since This macro is available since SDL 3.0.0.
+ * \since This macro is available since SDL 3.2.0.
  */
 #define SDL_TriggerBreakpoint() TriggerABreakpointInAPlatformSpecificManner
 
-#elif defined(_MSC_VER)
+#elif defined(_MSC_VER) && _MSC_VER >= 1310
     /* Don't include intrin.h here because it contains C++ code */
     extern void __cdecl __debugbreak(void);
     #define SDL_TriggerBreakpoint() __debugbreak()
+#elif defined(_MSC_VER) && defined(_M_IX86)
+    #define SDL_TriggerBreakpoint() { _asm { int 0x03 }  }
 #elif defined(ANDROID)
     #include <assert.h>
     #define SDL_TriggerBreakpoint() assert(0)
 #elif SDL_HAS_BUILTIN(__builtin_debugtrap)
     #define SDL_TriggerBreakpoint() __builtin_debugtrap()
+#elif SDL_HAS_BUILTIN(__builtin_trap)
+    #define SDL_TriggerBreakpoint() __builtin_trap()
 #elif (defined(__GNUC__) || defined(__clang__)) && (defined(__i386__) || defined(__x86_64__))
     #define SDL_TriggerBreakpoint() __asm__ __volatile__ ( "int $3\n\t" )
 #elif (defined(__GNUC__) || defined(__clang__)) && defined(__riscv)
@@ -147,18 +155,40 @@ extern "C" {
     #include <signal.h>
     #define SDL_TriggerBreakpoint() raise(SIGTRAP)
 #else
-    /* How do we trigger breakpoints on this platform? */
-    #define SDL_TriggerBreakpoint()
+    /* SDL_TriggerBreakpoint is intentionally left undefined on unknown platforms. */
 #endif
 
-#if defined(__STDC_VERSION__) && (__STDC_VERSION__ >= 199901L) /* C99 supports __func__ as a standard. */
+#ifdef SDL_WIKI_DOCUMENTATION_SECTION
+
+/**
+ * A macro that reports the current function being compiled.
+ *
+ * If SDL can't figure how the compiler reports this, it will use "???".
+ *
+ * \since This macro is available since SDL 3.2.0.
+ */
+#define SDL_FUNCTION __FUNCTION__
+
+#elif defined(__STDC_VERSION__) && (__STDC_VERSION__ >= 199901L) /* C99 supports __func__ as a standard. */
 #   define SDL_FUNCTION __func__
 #elif ((defined(__GNUC__) && (__GNUC__ >= 2)) || defined(_MSC_VER) || defined (__WATCOMC__))
 #   define SDL_FUNCTION __FUNCTION__
 #else
 #   define SDL_FUNCTION "???"
 #endif
+
+/**
+ * A macro that reports the current file being compiled.
+ *
+ * \since This macro is available since SDL 3.2.0.
+ */
 #define SDL_FILE    __FILE__
+
+/**
+ * A macro that reports the current line number of the file being compiled.
+ *
+ * \since This macro is available since SDL 3.2.0.
+ */
 #define SDL_LINE    __LINE__
 
 /*
@@ -176,14 +206,50 @@ This also solves the problem of...
 disable assertions.
 */
 
+#ifdef SDL_WIKI_DOCUMENTATION_SECTION
+
+/**
+ * A macro for wrapping code in `do {} while (0);` without compiler warnings.
+ *
+ * Visual Studio with really aggressive warnings enabled needs this to avoid
+ * compiler complaints.
+ *
+ * the `do {} while (0);` trick is useful for wrapping code in a macro that
+ * may or may not be a single statement, to avoid various C language
+ * accidents.
+ *
+ * To use:
+ *
+ * ```c
+ * do { SomethingOnce(); } while (SDL_NULL_WHILE_LOOP_CONDITION (0));
+ * ```
+ *
+ * \since This macro is available since SDL 3.2.0.
+ */
+#define SDL_NULL_WHILE_LOOP_CONDITION (0)
+
+#elif defined(_MSC_VER)  /* Avoid /W4 warnings. */
 /* "while (0,0)" fools Microsoft's compiler's /W4 warning level into thinking
     this condition isn't constant. And looks like an owl's face! */
-#ifdef _MSC_VER  /* stupid /W4 warnings. */
 #define SDL_NULL_WHILE_LOOP_CONDITION (0,0)
 #else
 #define SDL_NULL_WHILE_LOOP_CONDITION (0)
 #endif
 
+/**
+ * The macro used when an assertion is disabled.
+ *
+ * This isn't for direct use by apps, but this is the code that is inserted
+ * when an SDL_assert is disabled (perhaps in a release build).
+ *
+ * The code does nothing, but wraps `condition` in a sizeof operator, which
+ * generates no code and has no side effects, but avoid compiler warnings
+ * about unused variables.
+ *
+ * \param condition the condition to assert (but not actually run here).
+ *
+ * \since This macro is available since SDL 3.2.0.
+ */
 #define SDL_disabled_assert(condition) \
     do { (void) sizeof ((condition)); } while (SDL_NULL_WHILE_LOOP_CONDITION)
 
@@ -198,7 +264,7 @@ disable assertions.
  * condition, try to break in a debugger, kill the program, or ignore the
  * problem).
  *
- * \since This enum is available since SDL 3.0.0.
+ * \since This enum is available since SDL 3.2.0.
  */
 typedef enum SDL_AssertState
 {
@@ -216,11 +282,11 @@ typedef enum SDL_AssertState
  * used by the assertion handler, then added to the assertion report. This is
  * returned as a linked list from SDL_GetAssertionReport().
  *
- * \since This struct is available since SDL 3.0.0.
+ * \since This struct is available since SDL 3.2.0.
  */
 typedef struct SDL_AssertData
 {
-    SDL_bool always_ignore;  /**< SDL_TRUE if app should always continue when assertion is triggered. */
+    bool always_ignore;  /**< true if app should always continue when assertion is triggered. */
     unsigned int trigger_count; /**< Number of times this assertion has been triggered. */
     const char *condition;  /**< A string of this assert's test code. */
     const char *filename;  /**< The source file where this assert lives. */
@@ -232,7 +298,7 @@ typedef struct SDL_AssertData
 /**
  * Never call this directly.
  *
- * Use the SDL_assert* macros instead.
+ * Use the SDL_assert macros instead.
  *
  * \param data assert data structure.
  * \param func function name.
@@ -240,29 +306,57 @@ typedef struct SDL_AssertData
  * \param line line number.
  * \returns assert state.
  *
- * \since This function is available since SDL 3.0.0.
+ * \threadsafety It is safe to call this function from any thread.
+ *
+ * \since This function is available since SDL 3.2.0.
  */
 extern SDL_DECLSPEC SDL_AssertState SDLCALL SDL_ReportAssertion(SDL_AssertData *data,
                                                             const char *func,
                                                             const char *file, int line) SDL_ANALYZER_NORETURN;
 
-/* Define the trigger breakpoint call used in asserts */
-#ifndef SDL_AssertBreakpoint
-#if defined(ANDROID) && defined(assert)
-/* Define this as empty in case assert() is defined as SDL_assert */
-#define SDL_AssertBreakpoint()
-#else
+
+#ifdef SDL_WIKI_DOCUMENTATION_SECTION
+
+/**
+ * The macro used when an assertion triggers a breakpoint.
+ *
+ * This isn't for direct use by apps; use SDL_assert or SDL_TriggerBreakpoint
+ * instead.
+ *
+ * \since This macro is available since SDL 3.2.0.
+ */
 #define SDL_AssertBreakpoint() SDL_TriggerBreakpoint()
-#endif
+
+#elif !defined(SDL_AssertBreakpoint)
+#  if defined(ANDROID) && defined(assert)
+     /* Define this as empty in case assert() is defined as SDL_assert */
+#    define SDL_AssertBreakpoint()
+#  else
+#    define SDL_AssertBreakpoint() SDL_TriggerBreakpoint()
+#  endif
 #endif /* !SDL_AssertBreakpoint */
 
-/* the do {} while(0) avoids dangling else problems:
-    if (x) SDL_assert(y); else blah();
-       ... without the do/while, the "else" could attach to this macro's "if".
-   We try to handle just the minimum we need here in a macro...the loop,
-   the static vars, and break points. The heavy lifting is handled in
-   SDL_ReportAssertion(), in SDL_assert.c.
-*/
+/**
+ * The macro used when an assertion is enabled.
+ *
+ * This isn't for direct use by apps, but this is the code that is inserted
+ * when an SDL_assert is enabled.
+ *
+ * The `do {} while(0)` avoids dangling else problems:
+ *
+ * ```c
+ * if (x) SDL_assert(y); else blah();
+ * ```
+ *
+ * ... without the do/while, the "else" could attach to this macro's "if". We
+ * try to handle just the minimum we need here in a macro...the loop, the
+ * static vars, and break points. The heavy lifting is handled in
+ * SDL_ReportAssertion().
+ *
+ * \param condition the condition to assert.
+ *
+ * \since This macro is available since SDL 3.2.0.
+ */
 #define SDL_enabled_assert(condition) \
     do { \
         while ( !(condition) ) { \
@@ -303,12 +397,11 @@ extern SDL_DECLSPEC SDL_AssertState SDLCALL SDL_ReportAssertion(SDL_AssertData *
  * "break" so that your debugger takes control as soon as assert is triggered,
  * instead of risking a bad UI interaction (deadlock, etc) in the application.
  *
- * Note that SDL_ASSERT is an _environment variable_ and not an SDL hint!
- * Please refer to your platform's documentation for how to set it!
- *
  * \param condition boolean value to test.
  *
- * \since This macro is available since SDL 3.0.0.
+ * \threadsafety It is safe to call this macro from any thread.
+ *
+ * \since This macro is available since SDL 3.2.0.
  */
 #define SDL_assert(condition) if (assertion_enabled && (condition)) { trigger_assertion; }
 
@@ -335,13 +428,13 @@ extern SDL_DECLSPEC SDL_AssertState SDLCALL SDL_ReportAssertion(SDL_AssertData *
  * an assertion in a background thread, it might be desirable to set this to
  * "break" so that your debugger takes control as soon as assert is triggered,
  * instead of risking a bad UI interaction (deadlock, etc) in the application.
- *
- * Note that SDL_ASSERT is an _environment variable_ and not an SDL hint!
- * Please refer to your platform's documentation for how to set it!
+ * *
  *
  * \param condition boolean value to test.
  *
- * \since This macro is available since SDL 3.0.0.
+ * \threadsafety It is safe to call this macro from any thread.
+ *
+ * \since This macro is available since SDL 3.2.0.
  */
 #define SDL_assert_release(condition) SDL_disabled_assert(condition)
 
@@ -366,18 +459,16 @@ extern SDL_DECLSPEC SDL_AssertState SDLCALL SDL_ReportAssertion(SDL_AssertData *
  * "break" so that your debugger takes control as soon as assert is triggered,
  * instead of risking a bad UI interaction (deadlock, etc) in the application.
  *
- * Note that SDL_ASSERT is an _environment variable_ and not an SDL hint!
- * Please refer to your platform's documentation for how to set it!
- *
  * \param condition boolean value to test.
  *
- * \since This macro is available since SDL 3.0.0.
+ * \threadsafety It is safe to call this macro from any thread.
+ *
+ * \since This macro is available since SDL 3.2.0.
  */
 #define SDL_assert_paranoid(condition) SDL_disabled_assert(condition)
-#endif
 
 /* Enable various levels of assertions. */
-#if SDL_ASSERT_LEVEL == 0   /* assertions disabled */
+#elif SDL_ASSERT_LEVEL == 0   /* assertions disabled */
 #   define SDL_assert(condition) SDL_disabled_assert(condition)
 #   define SDL_assert_release(condition) SDL_disabled_assert(condition)
 #   define SDL_assert_paranoid(condition) SDL_disabled_assert(condition)
@@ -398,7 +489,7 @@ extern SDL_DECLSPEC SDL_AssertState SDLCALL SDL_ReportAssertion(SDL_AssertData *
 #endif
 
 /**
- * An assertion test that always performed.
+ * An assertion test that is always performed.
  *
  * This macro is always enabled no matter what SDL_ASSERT_LEVEL is set to. You
  * almost never want to use this, as it could trigger on an end-user's system,
@@ -412,12 +503,11 @@ extern SDL_DECLSPEC SDL_AssertState SDLCALL SDL_ReportAssertion(SDL_AssertData *
  * "break" so that your debugger takes control as soon as assert is triggered,
  * instead of risking a bad UI interaction (deadlock, etc) in the application.
  *
- * Note that SDL_ASSERT is an _environment variable_ and not an SDL hint!
- * Please refer to your platform's documentation for how to set it!
- *
  * \param condition boolean value to test.
  *
- * \since This macro is available since SDL 3.0.0.
+ * \threadsafety It is safe to call this macro from any thread.
+ *
+ * \since This macro is available since SDL 3.2.0.
  */
 #define SDL_assert_always(condition) SDL_enabled_assert(condition)
 
@@ -430,7 +520,10 @@ extern SDL_DECLSPEC SDL_AssertState SDLCALL SDL_ReportAssertion(SDL_AssertData *
  * \param userdata what was passed as `userdata` to SDL_SetAssertionHandler().
  * \returns an SDL_AssertState value indicating how to handle the failure.
  *
- * \since This datatype is available since SDL 3.0.0.
+ * \threadsafety This callback may be called from any thread that triggers an
+ *               assert at any time.
+ *
+ * \since This datatype is available since SDL 3.2.0.
  */
 typedef SDL_AssertState (SDLCALL *SDL_AssertionHandler)(
                                  const SDL_AssertData *data, void *userdata);
@@ -452,7 +545,9 @@ typedef SDL_AssertState (SDLCALL *SDL_AssertionHandler)(
  *                fails or NULL for the default handler.
  * \param userdata a pointer that is passed to `handler`.
  *
- * \since This function is available since SDL 3.0.0.
+ * \threadsafety It is safe to call this function from any thread.
+ *
+ * \since This function is available since SDL 3.2.0.
  *
  * \sa SDL_GetAssertionHandler
  */
@@ -471,7 +566,9 @@ extern SDL_DECLSPEC void SDLCALL SDL_SetAssertionHandler(
  * \returns the default SDL_AssertionHandler that is called when an assert
  *          triggers.
  *
- * \since This function is available since SDL 3.0.0.
+ * \threadsafety It is safe to call this function from any thread.
+ *
+ * \since This function is available since SDL 3.2.0.
  *
  * \sa SDL_GetAssertionHandler
  */
@@ -494,7 +591,9 @@ extern SDL_DECLSPEC SDL_AssertionHandler SDLCALL SDL_GetDefaultAssertionHandler(
  *                  was passed to SDL_SetAssertionHandler().
  * \returns the SDL_AssertionHandler that is called when an assert triggers.
  *
- * \since This function is available since SDL 3.0.0.
+ * \threadsafety It is safe to call this function from any thread.
+ *
+ * \since This function is available since SDL 3.2.0.
  *
  * \sa SDL_SetAssertionHandler
  */
@@ -520,9 +619,15 @@ extern SDL_DECLSPEC SDL_AssertionHandler SDLCALL SDL_GetAssertionHandler(void **
  * ```
  *
  * \returns a list of all failed assertions or NULL if the list is empty. This
- *          memory should not be modified or freed by the application.
+ *          memory should not be modified or freed by the application. This
+ *          pointer remains valid until the next call to SDL_Quit() or
+ *          SDL_ResetAssertionReport().
  *
- * \since This function is available since SDL 3.0.0.
+ * \threadsafety This function is not thread safe. Other threads calling
+ *               SDL_ResetAssertionReport() simultaneously, may render the
+ *               returned pointer invalid.
+ *
+ * \since This function is available since SDL 3.2.0.
  *
  * \sa SDL_ResetAssertionReport
  */
@@ -536,7 +641,11 @@ extern SDL_DECLSPEC const SDL_AssertData * SDLCALL SDL_GetAssertionReport(void);
  * no items. In addition, any previously-triggered assertions will be reset to
  * a trigger_count of zero, and their always_ignore state will be false.
  *
- * \since This function is available since SDL 3.0.0.
+ * \threadsafety This function is not thread safe. Other threads triggering an
+ *               assertion, or simultaneously calling this function may cause
+ *               memory leaks or crashes.
+ *
+ * \since This function is available since SDL 3.2.0.
  *
  * \sa SDL_GetAssertionReport
  */
