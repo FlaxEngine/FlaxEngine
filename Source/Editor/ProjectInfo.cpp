@@ -60,14 +60,13 @@ Vector3 GetVector3FromXml(const xml_node& parent, const PUGIXML_CHAR* name, cons
         if (x && y && z)
         {
             XmlCharAsChar xs(x), ys(y), zs(z);
-            Vector3 v;
+            Float3 v;
             if (!StringUtils::Parse(xs.Str, &v.X) && !StringUtils::Parse(ys.Str, &v.Y) && !StringUtils::Parse(zs.Str, &v.Z))
             {
-                return v;
+                return (Vector3)v;
             }
         }
     }
-
     return defaultValue;
 }
 
