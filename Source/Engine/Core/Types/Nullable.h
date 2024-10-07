@@ -24,17 +24,6 @@ private:
     };
     bool _hasValue;
 
-    /// <summary>
-    /// Ends the lifetime of the wrapped value by calling its destructor, if the lifetime has not ended yet. Otherwise, does nothing.
-    /// </summary>
-    FORCE_INLINE void KillOld()
-    {
-        if (_hasValue)
-        {
-            _value.~T();
-        }
-    }
-
 public:
     /// <summary>
     /// Initializes <see cref="Nullable{T}"/> by setting the wrapped value to null.
@@ -48,7 +37,10 @@ public:
 
     ~Nullable()
     {
-        KillOld();
+        if (_hasValue)
+        {
+            _value.~T();
+        }
     }
 
     /// <summary>
@@ -104,7 +96,10 @@ public:
     template<typename U = T, typename = typename TEnableIf<TIsCopyConstructible<U>::Value>::Type>
     auto operator=(const T& value) -> Nullable&
     {
-        KillOld();
+        if (_hasValue)
+        {
+            _value.~T();
+        }
 
         new (&_value) T(value); // Placement new (copy constructor)
         _hasValue = true;
@@ -117,7 +112,10 @@ public:
     /// </summary>
     auto operator=(T&& value) noexcept -> Nullable&
     {
-        KillOld();
+        if (_hasValue)
+        {
+            _value.~T();
+        }
 
         new (&_value) T(MoveTemp(value)); // Placement new (move constructor)
         _hasValue = true;
@@ -131,12 +129,16 @@ public:
     template<typename U = T, typename = typename TEnableIf<TIsCopyConstructible<U>::Value>::Type>
     auto operator=(const Nullable& other) -> Nullable&
     {
-        KillOld();
+        if (_hasValue)
+        {
+            _value.~T();
+        }
 
         if (other._hasValue)
         {
             new (&_value) T(other._value); // Placement new (copy constructor)
         }
+
         _hasValue = other._hasValue; // Set the flag AFTER the value is copied.
 
         return *this;
@@ -152,14 +154,19 @@ public:
             return *this;
         }
 
-        KillOld();
-
         if (_hasValue)
+        {
+            _value.~T();
+        }
+
+        if (other._hasValue)
         {
             new (&_value) T(MoveTemp(other._value)); // Placement new (move constructor)
 
-            other.Reset();
+            other._value.~T(); // Kill the old value in the source object.
+            other._hasValue = false;
         }
+
         _hasValue = other._hasValue; // Set the flag AFTER the value is moved.
 
         return *this;
@@ -235,7 +242,10 @@ public:
     /// <param name="value">The value to be moved.</param>
     FORCE_INLINE void SetValue(T&& value) noexcept
     {
-        KillOld();
+        if (_hasValue)
+        {
+            _value.~T();
+        }
 
         new (&_value) T(MoveTemp(value)); // Placement new (move constructor)
         _hasValue = true; // Set the flag AFTER the value is moved.
@@ -279,8 +289,13 @@ public:
     /// </summary>
     FORCE_INLINE void Reset()
     {
+        if (!_hasValue)
+        {
+            return;
+        }
+
         _hasValue = false; // Reset the flag BEFORE the value is (potentially) destructed.
-        KillOld();
+        _value.~T();
     }
 
     /// <summary>
