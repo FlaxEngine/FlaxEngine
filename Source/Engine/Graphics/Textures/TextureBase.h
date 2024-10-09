@@ -5,8 +5,8 @@
 #include "Engine/Content/BinaryAsset.h"
 #include "StreamingTexture.h"
 
-class TextureData;
-class TextureMipData;
+struct TextureData;
+struct TextureMipData;
 
 /// <summary>
 /// Base class for <see cref="Texture"/>, <see cref="SpriteAtlas"/>, <see cref="IESProfile"/> and other assets that can contain texture data.
