@@ -9,6 +9,7 @@ using FlaxEditor.CustomEditors.Elements;
 using FlaxEditor.GUI;
 using FlaxEditor.GUI.ContextMenu;
 using FlaxEditor.GUI.Tree;
+using FlaxEditor.Modules;
 using FlaxEditor.Scripting;
 using FlaxEditor.Windows;
 using FlaxEditor.Windows.Assets;
@@ -87,9 +88,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
                             var editPrefab = panel.Button("Edit Prefab");
                             editPrefab.Button.Clicked += () =>
                             {
-                                Editor.Instance.Windows.ContentWin.ClearItemsSearch();
-                                Editor.Instance.Windows.ContentWin.Select(prefab);
-                                Editor.Instance.Windows.ContentWin.Open(Editor.Instance.Windows.ContentWin.View.Selection[0]);
+                                Editor.Instance.Windows.ContentWin.Open(Editor.Instance.ContentDatabase.FindAsset(prefab.ID));
                             };
 
                             // Viewing changes applied to this actor
