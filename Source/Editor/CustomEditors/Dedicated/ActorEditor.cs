@@ -86,10 +86,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
 
                             // Edit selected prefab asset
                             var editPrefab = panel.Button("Edit Prefab");
-                            editPrefab.Button.Clicked += () =>
-                            {
-                                Editor.Instance.Windows.ContentWin.Open(Editor.Instance.ContentDatabase.FindAsset(prefab.ID));
-                            };
+                            editPrefab.Button.Clicked += () => Editor.Instance.Windows.ContentWin.Open(Editor.Instance.ContentDatabase.FindAsset(prefab.ID));
 
                             // Viewing changes applied to this actor
                             var viewChanges = panel.Button("View Changes");
