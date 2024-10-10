@@ -124,8 +124,9 @@ namespace Flax.Deps.Dependencies
                 {
                     var envVars = new Dictionary<string, string>
                     {
-                        { "CC", "clang-7" },
-                        { "CC_FOR_BUILD", "clang-7" }
+                        { "CC", "clang-13" },
+                        { "CC_FOR_BUILD", "clang-13" },
+                        { "CXX", "clang++-13" },
                     };
 
                     // Build for Linux
