@@ -950,7 +950,7 @@ namespace FlaxEditor.Modules
             MainWindow = null;
 
             // Capture project icon screenshot (not in play mode and if editor was used for some time)
-            if (!Editor.StateMachine.IsPlayMode && Time.TimeSinceStartup >= 5.0f)
+            if (!Editor.StateMachine.IsPlayMode && Time.TimeSinceStartup >= 5.0f && GPUDevice.Instance?.RendererType != RendererType.Null)
             {
                 Editor.Log("Capture project icon screenshot");
                 _projectIconScreenshotTimeout = Time.TimeSinceStartup + 0.8f; // wait 800ms for a screenshot task
