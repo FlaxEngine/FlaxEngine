@@ -28,7 +28,6 @@ jobs:
         git lfs pull
     - name: Install dependencies
       run: |
-        sudo apt-get update
         sudo apt-get install libx11-dev libxcursor-dev libxinerama-dev build-essential gettext libtool libtool-bin libpulse-dev libasound2-dev libjack-dev portaudio19-dev
     - name: Build
       run: |
