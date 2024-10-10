@@ -47,6 +47,16 @@ float4 UniformSampleSphere(float2 e)
     return float4(h, pdf);
 }
 
+// Construct a matrix to align the up direction of a hemisphere to the provided vector
+float3x3 MakeRotationMatrix(float3 z){
+    const float3 ref = abs(dot(z, float3(0, 1, 0))) > 0.99f ? float3(0, 0, 1) : float3(0, 1, 0);
+
+    const float3 x = normalize(cross(ref, z));
+    const float3 y = cross(z, x);
+
+    return float3x3(x, y, z);
+}
+
 float4 UniformSampleHemisphere(float2 e)
 {
     float phi = 2 * PI * e.x;
