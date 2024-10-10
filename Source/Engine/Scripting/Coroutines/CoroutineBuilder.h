@@ -75,20 +75,18 @@ API_CLASS(Sealed) class FLAXENGINE_API CoroutineBuilder final : public Scripting
     {
         // No std::variant in Cpp 14 :( Need to implement it manually.
 
-        union StepData 
+        union 
         {
-            struct DummyType {} dummy{};
+            RunnableReference   _runnable;
+            PredicateReference  _predicate;
 
-            RunnableReference   runnable;
-            PredicateReference  predicate;
-
-            int32               framesDelay;
-            float               secondsDelay;
+            int32               _framesDelay;
+            float               _secondsDelay;
         };
 
-        StepData _data;
         StepType _type;
 
+    public:
         explicit Step();
         explicit Step(RunnableReference runnable);
         explicit Step(int32 framesDelay);
@@ -98,10 +96,20 @@ API_CLASS(Sealed) class FLAXENGINE_API CoroutineBuilder final : public Scripting
         Step(const Step& other);
         Step(Step&& other) noexcept;
 
+    private:
+        void Clear();
+
+    public:
+        ~Step();
+
         auto operator=(const Step& other) -> Step&;
         auto operator=(Step&& other) noexcept -> Step&;
 
-        ~Step();
+
+        FORCE_INLINE StepType GetType() const
+        {
+            return _type;
+        }
     };
 
 private:
