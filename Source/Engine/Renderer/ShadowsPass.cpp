@@ -532,7 +532,11 @@ bool ShadowsPass::setupResources()
         psDesc.CullMode = CullMode::Normal;
         if (_psShadowPoint.Create(psDesc, shader, "PS_PointLight"))
             return true;
+#if FLAX_REVERSE_Z
+        psDesc.DepthFunc = ComparisonFunc::Less;
+#else
         psDesc.DepthFunc = ComparisonFunc::Greater;
+#endif
         psDesc.CullMode = CullMode::Inverted;
         if (_psShadowPointInside.Create(psDesc, shader, "PS_PointLight"))
             return true;
@@ -546,7 +550,11 @@ bool ShadowsPass::setupResources()
         psDesc.CullMode = CullMode::Normal;
         if (_psShadowSpot.Create(psDesc, shader, "PS_SpotLight"))
             return true;
+#if FLAX_REVERSE_Z
+        psDesc.DepthFunc = ComparisonFunc::Less;
+#else
         psDesc.DepthFunc = ComparisonFunc::Greater;
+#endif
         psDesc.CullMode = CullMode::Inverted;
         if (_psShadowSpotInside.Create(psDesc, shader, "PS_SpotLight"))
             return true;
