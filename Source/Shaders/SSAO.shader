@@ -18,10 +18,12 @@
 
 #define NO_GBUFFER_SAMPLING
 
+#include "./Flax/Math.hlsl"
 #include "./Flax/Common.hlsl"
 #include "./Flax/Gather.hlsl"
 #include "./Flax/GBuffer.hlsl"
 
+#define GTAO_SLICE_COUNT 8
 #define SSAO_DEPTH_MIP_LEVELS 4 // <- must match C++ define
 
 // Progressive poisson-like pattern; x, y are in [-1, 1] range, .z is length(float2(x,y)), .w is log2(z)
@@ -411,6 +413,132 @@ void SSAOTap(const int qualityLevel, inout float obscuranceSum, inout float weig
 	SSAOTapInner(qualityLevel, obscuranceSum, weightSum, samplingMirroredUV, mipLevel, pixCenterPos, negViewspaceDir, pixelNormal, falloffCalcMulSq, weightMod, tapIndex * 2 + 1);
 }
 
+void ASSAOImpl(const int numberOfTaps, const int qualityLevel, inout float obscuranceSum, inout float weightSum, const float2x2 rotScale, const float3 pixCenterPos, float3 pixelNormal, const float2 normalizedScreenPos, const float mipOffset, const float falloffCalcMulSq, float weightMod){
+	// Used to tilt the second set of samples so that the disk is effectively rotated by the normal
+	// effective at removing one set of artifacts, but too expensive for lower quality settings
+	float2 normXY = float2(pixelNormal.x, pixelNormal.y);
+	float normXYLength = length(normXY);
+	normXY /= float2(normXYLength, -normXYLength);
+	normXYLength *= SSAO_TILT_SAMPLES_AMOUNT;
+	
+	const float3 negViewspaceDir = -normalize(pixCenterPos);
+	
+	// UNROLL // <- doesn't seem to help on any platform, although the compilers seem to unroll anyway if const number of tap used!
+	for (int i = 0; i < numberOfTaps; i++)
+	{
+		SSAOTap(qualityLevel, obscuranceSum, weightSum, i, rotScale, pixCenterPos, negViewspaceDir, pixelNormal, normalizedScreenPos, mipOffset, falloffCalcMulSq, 1.0, normXY, normXYLength);
+	}
+}
+
+float2 SearchForLargestAngleDual(const int numberOfTaps, const int qualityLevel, const float2 sliceDir, const float3 viewDir, const float3 pixCenterPos, const float2 normalizedScreenPos, const float mipOffset){
+	const float pixelRadius = 100;
+    const float thickness = 5;
+	const float attenFactor = 1;
+	const float initialOffset = 1;
+	
+	float2 bestAng = float2(-1, -1);
+
+	// UNROLL
+	for(uint i = 0; i < numberOfTaps; i++)
+    {
+        float fi = (float)i;
+        float s = (fi + initialOffset) / (numberOfTaps + 1);
+        float2 sampleOffset = sliceDir * max(pixelRadius * s * s, fi + 1);
+
+        float2 uvOffset = HalfViewportPixelSize * sampleOffset;
+        uvOffset.y *= -1;
+        float4 sampleUV = normalizedScreenPos.xyxy + float4(uvOffset.xy, -uvOffset.xy);
+
+		// TODO: Calculate mip in terms of distance instead of hardcoding
+		float mipLevel = 0;
+
+        // Positive direction
+		float2 sceneDepths;
+        sceneDepths.x = g_ViewspaceDepthSource.SampleLevel(SamplerPointClamp, sampleUV.xy, mipLevel).x;
+        sceneDepths.y = g_ViewspaceDepthSource.SampleLevel(SamplerPointClamp, sampleUV.zw, mipLevel).x;
+
+        float3 h = NDCToViewspace(sampleUV.xy, sceneDepths.x).xyz; - pixCenterPos;
+        float lenSq = dot(h, h);
+        float ooLen = rsqrt(lenSq + 0.0001);
+        float ang = dot(h, viewDir) * ooLen;
+
+        float falloff = saturate(lenSq * attenFactor);  
+        ang = lerp(ang, bestAng.x, falloff);
+
+        bestAng.x = (ang > bestAng.x) ? ang : lerp(ang, bestAng.x, thickness);  
+
+        // Negative direction
+        h = NDCToViewspace(sampleUV.zw, sceneDepths.y).xyz; - pixCenterPos;
+        lenSq = dot(h, h);
+        ooLen = rsqrt(lenSq + 0.0001);
+        ang = dot(h, viewDir) * ooLen;
+
+        falloff = saturate(lenSq * attenFactor);  
+        ang = lerp(ang, bestAng.y, falloff);
+
+        bestAng.y = (ang > bestAng.y) ? ang : lerp(ang, bestAng.y, thickness);
+    }
+
+    bestAng.x = AcosFast(clamp(bestAng.x, -1.0,  1.0));
+    bestAng.y = AcosFast(clamp(bestAng.y, -1.0,  1.0));
+
+	return bestAng;
+}
+
+float ComputeInnerIntegral(float2 angles, const float2 sliceDir, const float3 viewDir, const float3 normalVS)
+{
+    // Given the angles found in the search plane we need to project the View Space Normal onto the plane defined by the search axis and the View Direction and perform the inner integrate
+    float3 planeNormal = normalize(cross(float3(sliceDir.xy, 0), viewDir));
+    float3 perp = cross(viewDir, planeNormal);
+    float3 projNormal = normalVS - planeNormal * dot(normalVS, planeNormal);
+
+    float lenProjNormal = length(projNormal) + 0.000001f;
+    float recipMag = 1.0f / (lenProjNormal);
+
+    float cosAng = dot(projNormal, perp) * recipMag;    
+    float gamma = AcosFast(cosAng) - PI_HALF;                
+    float cosGamma = dot(projNormal, viewDir) * recipMag;
+    float sinGamma = cosAng * -2.0f;                    
+
+    // clamp to normal hemisphere 
+    angles.x = gamma + max(-angles.x - gamma, -PI_HALF);
+    angles.y = gamma + min( angles.y - gamma,  PI_HALF);
+
+    float ao = (lenProjNormal * 0.25 * 
+                        ((angles.x * sinGamma + cosGamma - cos((2.0 * angles.x) - gamma)) +
+                            (angles.y * sinGamma + cosGamma - cos((2.0 * angles.y) - gamma))));
+    return ao;
+}
+
+void GTAOImpl(const int numberOfTaps, const int qualityLevel, inout float obscuranceSum, inout float weightSum, const float3 pixCenterPos, float3 pixelNormal, const float2 normalizedScreenPos, const float mipOffset, float weightMod){	
+	const float3 viewDir = normalize(pixCenterPos);
+	const float deltaAngle = PI / GTAO_SLICE_COUNT;
+	const float sinDeltaAngle = sin(deltaAngle), cosDeltaAngle = cos(deltaAngle);
+    
+	// Slice direction, always normalized
+	float2 sliceDir = float2(1, 0);
+	float visibilitySum = 0;
+
+	for(int slice = 0; slice < GTAO_SLICE_COUNT; slice++){
+		float2 bestAng = SearchForLargestAngleDual(numberOfTaps, qualityLevel, sliceDir, viewDir, pixCenterPos, normalizedScreenPos, mipOffset);
+		float visibility = ComputeInnerIntegral(bestAng, sliceDir, viewDir, pixelNormal);
+
+		visibilitySum += visibility;
+
+		// Unreal speedup
+    	float2 tmpDir = sliceDir;
+		sliceDir.x = tmpDir.x * cosDeltaAngle - tmpDir.y * sinDeltaAngle;
+		sliceDir.y = tmpDir.x * sinDeltaAngle + tmpDir.y * cosDeltaAngle;
+	}
+	
+	// From Unreal
+	visibilitySum *= 2.0 / PI;
+	
+	// Obscurance = 1 - Visibility
+	obscuranceSum += (float)GTAO_SLICE_COUNT - visibilitySum;
+	weightSum += (float)GTAO_SLICE_COUNT;
+}
+
 // This function is designed to only work with half/half depth at the moment - there's a couple of hardcoded paths that expect pixel/texel size, so it will not work for full res
 void GenerateSSAOShadowsInternal(out float outShadowTerm, out float4 outEdges, out float outWeight, const float2 SVPos/*, const float2 normalizedScreenPos*/, int qualityLevel)
 {
@@ -442,6 +570,7 @@ void GenerateSSAOShadowsInternal(out float outShadowTerm, out float4 outEdges, o
 	pixBZ = valuesBR.x;
 	
 	float2 normalizedScreenPos = SVPosRounded * Viewport2xPixelSize + Viewport2xPixelSize_x_025;
+	// Viewspace pos of the pixel center
 	float3 pixCenterPos = NDCToViewspace(normalizedScreenPos, pixZ); // g
 	
 	// Load this pixel's viewspace normal
@@ -534,21 +663,9 @@ void GenerateSSAOShadowsInternal(out float outShadowTerm, out float4 outEdges, o
 	const float globalMipOffset = SSAO_DEPTH_MIPS_GLOBAL_OFFSET;
 	float mipOffset = (qualityLevel < SSAO_DEPTH_MIPS_ENABLE_AT_QUALITY_PRESET) ? (0) : (log2(pixLookupRadiusMod) + globalMipOffset);
 	
-	// Used to tilt the second set of samples so that the disk is effectively rotated by the normal
-	// effective at removing one set of artifacts, but too expensive for lower quality settings
-	float2 normXY = float2(pixelNormal.x, pixelNormal.y);
-	float normXYLength = length(normXY);
-	normXY /= float2(normXYLength, -normXYLength);
-	normXYLength *= SSAO_TILT_SAMPLES_AMOUNT;
-	
-	const float3 negViewspaceDir = -normalize(pixCenterPos);
-	
-	// UNROLL // <- doesn't seem to help on any platform, although the compilers seem to unroll anyway if const number of tap used!
-	for (int i = 0; i < numberOfTaps; i++)
-	{
-		SSAOTap(qualityLevel, obscuranceSum, weightSum, i, rotScale, pixCenterPos, negViewspaceDir, pixelNormal, normalizedScreenPos, mipOffset, falloffCalcMulSq, 1.0, normXY, normXYLength);
-	}
-	
+	// ASSAOImpl(numberOfTaps, qualityLevel, obscuranceSum, weightSum, rotScale, pixCenterPos, pixelNormal, normalizedScreenPos, mipOffset, falloffCalcMulSq, 1.0);
+	GTAOImpl(numberOfTaps, qualityLevel, obscuranceSum, weightSum, pixCenterPos, pixelNormal, normalizedScreenPos, mipOffset, 1.0);
+
 	// Calculate weighted average
 	float obscurance = obscuranceSum / weightSum;
 	
