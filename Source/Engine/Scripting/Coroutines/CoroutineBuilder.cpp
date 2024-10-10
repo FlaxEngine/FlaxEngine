@@ -209,3 +209,33 @@ auto CoroutineBuilder::Step::operator=(Step&& other) noexcept -> Step&
 
     return *this;
 }
+
+
+CoroutineBuilder::StepType CoroutineBuilder::Step::GetType() const
+{
+    return _type;
+}
+
+auto CoroutineBuilder::Step::GetRunnable() const -> const RunnableReference&
+{
+    ASSERT(_type == StepType::Run);
+    return _runnable;
+}
+
+auto CoroutineBuilder::Step::GetPredicate() const -> const PredicateReference&
+{
+    ASSERT(_type == StepType::WaitUntil);
+    return _predicate;
+}
+
+auto CoroutineBuilder::Step::GetFramesDelay() const -> int32
+{
+    ASSERT(_type == StepType::WaitFrames);
+    return _framesDelay;
+}
+
+auto CoroutineBuilder::Step::GetSecondsDelay() const -> float
+{
+    ASSERT(_type == StepType::WaitSeconds);
+    return _secondsDelay;
+}

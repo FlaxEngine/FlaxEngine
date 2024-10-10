@@ -104,11 +104,11 @@ API_CLASS(Sealed) class FLAXENGINE_API CoroutineBuilder final : public Scripting
         auto operator=(const Step& other) -> Step&;
         auto operator=(Step&& other) noexcept -> Step&;
 
-
-        FORCE_INLINE StepType GetType() const
-        {
-            return _type;
-        }
+        auto GetType()         const -> StepType;
+        auto GetRunnable()     const -> const RunnableReference&;
+        auto GetPredicate()    const -> const PredicateReference&;
+        auto GetFramesDelay()  const -> int32;
+        auto GetSecondsDelay() const -> float;
     };
 
 private:
