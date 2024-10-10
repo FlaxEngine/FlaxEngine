@@ -87,11 +87,10 @@ API_CLASS(Sealed) class FLAXENGINE_API CoroutineBuilder final : public Scripting
         StepType _type;
 
     public:
-        explicit Step();
-        explicit Step(RunnableReference runnable);
+        explicit Step(RunnableReference&& runnable);
         explicit Step(int32 framesDelay);
         explicit Step(float secondsDelay);
-        explicit Step(PredicateReference predicate);
+        explicit Step(PredicateReference&& predicate);
 
         Step(const Step& other);
         Step(Step&& other) noexcept;

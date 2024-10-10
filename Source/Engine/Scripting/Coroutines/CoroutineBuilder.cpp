@@ -5,52 +5,51 @@
 
 ScriptingObjectReference<CoroutineBuilder> CoroutineBuilder::ThenRun(ScriptingObjectReference<CoroutineRunnable> runnable)
 {
-    return this; //TODO(mtszkarbowiak) Implement running a coroutine.
+    _steps.Add(Step{ MoveTemp(runnable) });
+    return this;
 }
 
 ScriptingObjectReference<CoroutineBuilder> CoroutineBuilder::ThenWaitSeconds(const float seconds)
 {
-    return this; //TODO(mtszkarbowiak) Implement waiting for seconds.
+    _steps.Add(Step{ seconds });
+    return this;
 }
 
-ScriptingObjectReference<CoroutineBuilder> CoroutineBuilder::ThenWaitFrames(int32 frames)
+ScriptingObjectReference<CoroutineBuilder> CoroutineBuilder::ThenWaitFrames(const int32 frames)
 {
-    return this; //TODO(mtszkarbowiak) Implement waiting for frames.
+    _steps.Add(Step{ frames });
+    return this;
 }
 
 ScriptingObjectReference<CoroutineBuilder> CoroutineBuilder::ThenWaitUntil(ScriptingObjectReference<CoroutinePredicate> predicate)
 {
-    return this; //TODO(mtszkarbowiak) Implement waiting until predicate.
+    _steps.Add(Step{ MoveTemp(predicate) });
+    return this;
 }
 
 
-CoroutineBuilder::Step::Step()
-    : _type{ StepType::None }
+CoroutineBuilder::Step::Step(RunnableReference&& runnable)
+    : _runnable{ MoveTemp(runnable) }
+    , _type{ StepType::Run }
 {
-}
-
-CoroutineBuilder::Step::Step(RunnableReference runnable)
-    : _type{ StepType::Run }
-{
-    _runnable = MoveTemp(runnable);
 }
 
 CoroutineBuilder::Step::Step(const int32 framesDelay)
-    : _type{ StepType::WaitFrames }
+    : _framesDelay{ framesDelay }
+    , _type{ StepType::WaitFrames }
 {
-    _framesDelay = framesDelay;
 }
 
 CoroutineBuilder::Step::Step(const float secondsDelay)
-    : _type{ StepType::WaitSeconds }
+    : _secondsDelay{ secondsDelay }
+    , _type{ StepType::WaitSeconds }
 {
-    _secondsDelay = secondsDelay;
 }
 
-CoroutineBuilder::Step::Step(PredicateReference predicate)
-    : _type{ StepType::WaitUntil }
+CoroutineBuilder::Step::Step(PredicateReference&& predicate)
+    : _predicate{ MoveTemp(predicate) }
+    , _type{ StepType::WaitUntil }
 {
-    _predicate = MoveTemp(predicate);
 }
 
 
