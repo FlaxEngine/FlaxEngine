@@ -37,7 +37,6 @@ public class assimp : DepsModule
         case TargetPlatform.Linux:
         case TargetPlatform.Mac:
             options.OutputFiles.Add(Path.Combine(depsRoot, "libassimp.a"));
-            options.OutputFiles.Add(Path.Combine(depsRoot, "libIrrXML.a"));
             break;
         default: throw new InvalidPlatformException(options.Platform.Target);
         }

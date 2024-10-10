@@ -136,12 +136,12 @@ namespace Flax.Deps.Dependencies
                     // Build for Mac
                     foreach (var architecture in new[] { TargetArchitecture.x64, TargetArchitecture.ARM64 })
                     {
+                        Utilities.Run("make", "clean", null, root, Utilities.RunOptions.ThrowExceptionOnError);
                         RunCmake(root, platform, architecture, " -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF " + globalConfig);
                         Utilities.Run("make", null, null, root, Utilities.RunOptions.ThrowExceptionOnError);
                         configHeaderFilePath = Path.Combine(root, "include", "assimp", "config.h");
                         var depsFolder = GetThirdPartyFolder(options, platform, architecture);
                         Utilities.FileCopy(Path.Combine(root, "lib", "libassimp.a"), Path.Combine(depsFolder, "libassimp.a"));
-                        Utilities.FileCopy(Path.Combine(root, "lib", "libIrrXML.a"), Path.Combine(depsFolder, "libIrrXML.a"));
                     }
                     break;
                 }
