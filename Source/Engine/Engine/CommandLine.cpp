@@ -145,9 +145,7 @@ bool CommandLine::Parse(const Char* cmdLine)
     PARSE_BOOL_SWITCH("-monolog ", MonoLog);
     PARSE_BOOL_SWITCH("-mute ", Mute);
     PARSE_BOOL_SWITCH("-lowdpi ", LowDPI);
-
 #if USE_EDITOR
-
     PARSE_BOOL_SWITCH("-clearcache ", ClearCache);
     PARSE_BOOL_SWITCH("-clearcooker ", ClearCookerCache);
     PARSE_ARG_SWITCH("-project ", Project);
@@ -157,7 +155,9 @@ bool CommandLine::Parse(const Char* cmdLine)
     PARSE_BOOL_SWITCH("-skipcompile ", SkipCompile);
     PARSE_BOOL_SWITCH("-shaderdebug ", ShaderDebug);
     PARSE_ARG_OPT_SWITCH("-play ", Play);
-
+#endif
+#if USE_EDITOR || !BUILD_RELEASE
+    PARSE_BOOL_SWITCH("-shaderprofile ", ShaderProfile);
 #endif
 
     return false;

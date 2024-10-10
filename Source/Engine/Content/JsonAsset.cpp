@@ -3,6 +3,7 @@
 #include "JsonAsset.h"
 #if USE_EDITOR
 #include "Engine/Platform/File.h"
+#include "Engine/Platform/FileSystem.h"
 #include "Engine/Core/Types/DataContainer.h"
 #include "Engine/Level/Level.h"
 #else
@@ -109,41 +110,55 @@ uint64 JsonAssetBase::GetMemoryUsage() const
 
 #if USE_EDITOR
 
-void FindIds(ISerializable::DeserializeStream& node, Array<Guid>& output)
+void FindIds(ISerializable::DeserializeStream& node, Array<Guid>& output, Array<String>& files, rapidjson_flax::Value* nodeName = nullptr)
 {
     if (node.IsObject())
     {
         for (auto i = node.MemberBegin(); i != node.MemberEnd(); ++i)
         {
-            FindIds(i->value, output);
+            FindIds(i->value, output, files, &i->name);
         }
     }
     else if (node.IsArray())
     {
         for (rapidjson::SizeType i = 0; i < node.Size(); i++)
         {
-            FindIds(node[i], output);
+            FindIds(node[i], output, files);
         }
     }
-    else if (node.IsString())
+    else if (node.IsString() && node.GetStringLength() != 0)
     {
         if (node.GetStringLength() == 32)
         {
             // Try parse as Guid in format `N` (32 hex chars)
             Guid id;
             if (!Guid::Parse(node.GetStringAnsiView(), id))
+            {
                 output.Add(id);
+                return;
+            }
+        }
+        if (node.GetStringLength() < 512 &&
+            (!nodeName || nodeName->GetStringAnsiView() != "ImportPath")) // Ignore path in ImportPath from ModelPrefab (TODO: resave prefabs/scenes before cooking to get rid of editor-only data)
+        {
+            // Try to detect file paths
+            String path = node.GetText();
+            if (FileSystem::FileExists(path))
+            {
+                files.Add(MoveTemp(path));
+            }
         }
     }
 }
 
-void JsonAssetBase::GetReferences(const StringAnsiView& json, Array<Guid>& output)
+void JsonAssetBase::GetReferences(const StringAnsiView& json, Array<Guid>& assets)
 {
     ISerializable::SerializeDocument document;
     document.Parse(json.Get(), json.Length());
     if (document.HasParseError())
         return;
-    FindIds(document, output);
+    Array<String> files;
+    FindIds(document, assets, files);
 }
 
 bool JsonAssetBase::Save(const StringView& path) const
@@ -207,7 +222,7 @@ bool JsonAssetBase::Save(JsonWriter& writer) const
     return false;
 }
 
-void JsonAssetBase::GetReferences(Array<Guid>& output) const
+void JsonAssetBase::GetReferences(Array<Guid>& assets, Array<String>& files) const
 {
     if (Data == nullptr)
         return;
@@ -219,7 +234,7 @@ void JsonAssetBase::GetReferences(Array<Guid>& output) const
     // It produces many invalid ids (like refs to scene objects).
     // But it's super fast, super low-memory and doesn't involve any advanced systems integration.
 
-    FindIds(*Data, output);
+    FindIds(*Data, assets, files);
 }
 
 #endif

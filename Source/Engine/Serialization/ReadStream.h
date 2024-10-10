@@ -22,8 +22,6 @@ public:
     virtual void ReadBytes(void* data, uint32 bytes) = 0;
 
 public:
-    // Reads byte from the stream
-    // @returns Single byte
     byte ReadByte()
     {
         byte data;
@@ -31,7 +29,6 @@ public:
         return data;
     }
 
-    // Reads bool from the stream
     bool ReadBool()
     {
         byte data;
@@ -39,8 +36,6 @@ public:
         return data != 0;
     }
 
-    // Reads char from the stream
-    // @param data Data to read
     char ReadChar()
     {
         char data;
@@ -53,78 +48,56 @@ public:
         ReadBytes(data, sizeof(byte));
     }
 
-    // Reads Char from the stream
-    // @param data Data to read
     FORCE_INLINE void ReadChar(Char* data)
     {
         ReadBytes(data, sizeof(Char));
     }
 
-    // Reads uint8 from the stream
-    // @param data Data to read
     FORCE_INLINE void ReadUint8(uint8* data)
     {
         ReadBytes(data, sizeof(uint8));
     }
 
-    // Reads int8 from the stream
-    // @param data Data to read
     FORCE_INLINE void ReadInt8(int8* data)
     {
         ReadBytes(data, sizeof(int8));
     }
 
-    // Reads uint16 from the stream
-    // @param data Data to read
     FORCE_INLINE void ReadUint16(uint16* data)
     {
         ReadBytes(data, sizeof(uint16));
     }
 
-    // Reads int16 from the stream
-    // @param data Data to read
     FORCE_INLINE void ReadInt16(int16* data)
     {
         ReadBytes(data, sizeof(int16));
     }
 
-    // Reads uint32 from the stream
-    // @param data Data to read
     FORCE_INLINE void ReadUint32(uint32* data)
     {
         ReadBytes(data, sizeof(uint32));
     }
 
-    // Reads int32 from the stream
-    // @param data Data to read
     FORCE_INLINE void ReadInt32(int32* data)
     {
         ReadBytes(data, sizeof(int32));
     }
 
-    // Reads uint64 from the stream
-    // @param data Data to read
     FORCE_INLINE void ReadUint64(uint64* data)
     {
         ReadBytes(data, sizeof(uint64));
     }
 
-    // Reads int64 from the stream
-    // @param data Data to read
     FORCE_INLINE void ReadInt64(int64* data)
     {
         ReadBytes(data, sizeof(int64));
     }
 
-    // Reads float from the stream
-    // @param data Data to read
     FORCE_INLINE void ReadFloat(float* data)
     {
         ReadBytes(data, sizeof(float));
     }
 
-    // Reads double from the stream
-    // @param data Data to read
     FORCE_INLINE void ReadDouble(double* data)
     {
         ReadBytes(data, sizeof(double));
@@ -160,6 +133,7 @@ public:
         Read(ptr);
         v = ptr;
     }
+
     template<typename T>
     FORCE_INLINE void Read(SoftObjectReference<T>& v)
     {
@@ -167,6 +141,7 @@ public:
         ReadBytes(id, sizeof(id));
         v.Set(*(Guid*)id);
     }
+
     template<typename T>
     FORCE_INLINE void Read(AssetReference<T>& v)
     {
@@ -174,6 +149,7 @@ public:
         ReadBytes(id, sizeof(id));
         v = (T*)::LoadAsset(*(Guid*)id, T::TypeInitializer);
     }
+
     template<typename T>
     FORCE_INLINE void Read(WeakAssetReference<T>& v)
     {
@@ -181,6 +157,7 @@ public:
         ReadBytes(id, sizeof(id));
         v = (T*)::LoadAsset(*(Guid*)id, T::TypeInitializer);
     }
+
     template<typename T>
     FORCE_INLINE void Read(SoftAssetReference<T>& v)
     {
@@ -240,38 +217,30 @@ public:
 public:
     // Reads StringAnsi from the stream
     /// [Deprecated on 11.10.2022, expires on 11.10.2024]
-    // @param data Data to read
     void ReadStringAnsi(StringAnsi* data);
 
     // Reads StringAnsi from the stream with a key
     /// [Deprecated on 11.10.2022, expires on 11.10.2024]
-    // @param data Data to read
     void ReadStringAnsi(StringAnsi* data, int8 lock);
 
     // Reads String from the stream
     /// [Deprecated on 11.10.2022, expires on 11.10.2024]
-    // @param data Data to read
     void ReadString(String* data);
 
     // Reads String from the stream
     /// [Deprecated on 11.10.2022, expires on 11.10.2024]
-    // @param data Data to read
-    // @param lock Characters pass in the stream
     void ReadString(String* data, int16 lock);
 
     // Reads CommonValue from the stream
     /// [Deprecated on 11.10.2022, expires on 11.10.2024]
-    // @param data Data to read
     void ReadCommonValue(CommonValue* data);
 
     // Reads VariantType from the stream
     /// [Deprecated on 11.10.2022, expires on 11.10.2024]
-    // @param data Data to read
     void ReadVariantType(VariantType* data);
 
     // Reads Variant from the stream
     /// [Deprecated on 11.10.2022, expires on 11.10.2024]
-    // @param data Data to read
     void ReadVariant(Variant* data);
 
     /// <summary>

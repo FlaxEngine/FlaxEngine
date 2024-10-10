@@ -281,6 +281,34 @@ void ParticleEffect::UpdateSimulation(bool singleFrame)
     Particles::UpdateEffect(this);
 }
 
+void ParticleEffect::SpawnParticles(int32 count, const StringView& emitterTrackName)
+{
+    auto system = ParticleSystem.Get();
+    if (!system)
+        return;
+    if (emitterTrackName.IsEmpty())
+    {
+        for (auto& e : Instance.Emitters)
+            e.CustomSpawnCount += count;
+    }
+    else
+    {
+        for (int32 i = 0; i < system->Tracks.Count(); i++)
+        {
+            auto& track = system->Tracks[i];
+            if (track.Type == ParticleSystem::Track::Types::Emitter && track.Name == emitterTrackName)
+            {
+                const int32 emitterIndex = track.AsEmitter.Index;
+                if (Instance.Emitters.IsValidIndex(emitterIndex))
+                {
+                    Instance.Emitters.Get()[emitterIndex].CustomSpawnCount += count;
+                    break;
+                }
+            }
+        }
+    }
+}
+
 void ParticleEffect::Play()
 {
     _isPlaying = true;
@@ -446,14 +474,20 @@ void ParticleEffect::Update()
 #if USE_EDITOR
 
 #include "Editor/Editor.h"
+#include "Editor/Managed/ManagedEditor.h"
 
 void ParticleEffect::UpdateExecuteInEditor()
 {
     // Auto-play in Editor
-    if (!Editor::IsPlayMode && !_isStopped)
+    if (!Editor::IsPlayMode && !_isStopped && IsLooping && PlayOnStart && Editor::Managed->ManagedEditorOptions.EnableParticlesPreview)
     {
         _isPlaying = true;
         Update();
+    }
+    else if (!Editor::IsPlayMode && _isPlaying)
+    {
+        _isPlaying = false;
+        ResetSimulation();
     }
 }
 
@@ -555,7 +589,7 @@ void ParticleEffect::OnDebugDrawSelected()
 void ParticleEffect::OnLayerChanged()
 {
     if (_sceneRenderingKey != -1)
-        GetSceneRendering()->UpdateActor(this, _sceneRenderingKey);
+        GetSceneRendering()->UpdateActor(this, _sceneRenderingKey, ISceneRenderingListener::Layer);
 }
 
 void ParticleEffect::Serialize(SerializeStream& stream, const void* otherObj)

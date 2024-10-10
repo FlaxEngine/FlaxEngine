@@ -32,6 +32,7 @@ namespace FlaxEditor.Windows.Assets
             _surface.ContextChanged += OnSurfaceContextChanged;
 
             // Toolstrip
+            SurfaceUtils.PerformCommonSetup(this, _toolstrip, _surface, out _saveButton, out _undoButton, out _redoButton);
             _toolstrip.AddSeparator();
             _toolstrip.AddButton(editor.Icons.Docs64, () => Platform.OpenUrl(Utilities.Constants.DocsUrl + "manual/animation/anim-graph/index.html")).LinkTooltip("See documentation to learn more");
 

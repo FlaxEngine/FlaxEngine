@@ -21,11 +21,25 @@ namespace FlaxEditor.Content
         }
 
         /// <inheritdoc />
+        public override ContentItem ConstructItem(string path)
+        {
+            return new FileItem(path);
+        }
+
+        /// <inheritdoc />
         public override string FileExtension => string.Empty;
 
         /// <inheritdoc />
         public override EditorWindow Open(Editor editor, ContentItem item)
         {
+#if PLATFORM_WINDOWS
+            CreateProcessSettings settings = new CreateProcessSettings
+            {
+                ShellExecute = true,
+                FileName = item.Path
+            };
+            Platform.CreateProcess(ref settings);
+#endif
             return null;
         }
 

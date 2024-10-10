@@ -120,7 +120,7 @@ void GPUContextDX11::FrameBegin()
         _device->_samplerLinearWrap,
         _device->_samplerPointWrap,
         _device->_samplerShadow,
-        _device->_samplerShadowPCF
+        _device->_samplerShadowLinear
     };
     _context->VSSetSamplers(0, ARRAY_COUNT(samplers), samplers);
 #if GPU_ALLOW_TESSELLATION_SHADERS
@@ -159,21 +159,19 @@ bool GPUContextDX11::IsDepthBufferBinded()
 void GPUContextDX11::Clear(GPUTextureView* rt, const Color& color)
 {
     auto rtDX11 = static_cast<GPUTextureViewDX11*>(rt);
-
     if (rtDX11)
     {
         _context->ClearRenderTargetView(rtDX11->RTV(), color.Raw);
     }
 }
 
-void GPUContextDX11::ClearDepthCustom(GPUTextureView* depthBuffer, float depthValue)
+void GPUContextDX11::ClearDepthCustom(GPUTextureView* depthBuffer, float depthValue, uint8 stencilValue)
 {
     auto depthBufferDX11 = static_cast<GPUTextureViewDX11*>(depthBuffer);
-
     if (depthBufferDX11)
     {
         ASSERT(depthBufferDX11->DSV());
-        _context->ClearDepthStencilView(depthBufferDX11->DSV(), D3D11_CLEAR_DEPTH, depthValue, 0xff);
+        _context->ClearDepthStencilView(depthBufferDX11->DSV(), D3D11_CLEAR_DEPTH, depthValue, stencilValue);
     }
 }
 
@@ -489,20 +487,14 @@ void GPUContextDX11::ResolveMultisample(GPUTexture* sourceMultisampleTexture, GP
 void GPUContextDX11::DrawInstanced(uint32 verticesCount, uint32 instanceCount, int32 startInstance, int32 startVertex)
 {
     onDrawCall();
-    if (instanceCount > 1)
-        _context->DrawInstanced(verticesCount, instanceCount, startVertex, startInstance);
-    else
-        _context->Draw(verticesCount, startVertex);
+    _context->DrawInstanced(verticesCount, instanceCount, startVertex, startInstance);
     RENDER_STAT_DRAW_CALL(verticesCount * instanceCount, verticesCount * instanceCount / 3);
 }
 
 void GPUContextDX11::DrawIndexedInstanced(uint32 indicesCount, uint32 instanceCount, int32 startInstance, int32 startVertex, int32 startIndex)
 {
     onDrawCall();
-    if (instanceCount > 1)
-        _context->DrawIndexedInstanced(indicesCount, instanceCount, startIndex, startVertex, startInstance);
-    else
-        _context->DrawIndexed(indicesCount, startIndex, startVertex);
+    _context->DrawIndexedInstanced(indicesCount, instanceCount, startIndex, startVertex, startInstance);
     RENDER_STAT_DRAW_CALL(0, indicesCount / 3 * instanceCount);
 }
 
@@ -591,6 +583,7 @@ void GPUContextDX11::SetState(GPUPipelineState* state)
         }
 
         // Per pipeline stage state caching
+        bool shaderEnabled = false;
         if (CurrentDepthStencilState != depthStencilState)
         {
             CurrentDepthStencilState = depthStencilState;
@@ -608,6 +601,7 @@ void GPUContextDX11::SetState(GPUPipelineState* state)
         }
         if (CurrentVS != vs)
         {
+            shaderEnabled |= CurrentVS == nullptr;
 #if DX11_CLEAR_SR_ON_STAGE_DISABLE
 			if (CurrentVS && !vs)
 			{
@@ -621,6 +615,7 @@ void GPUContextDX11::SetState(GPUPipelineState* state)
 #if GPU_ALLOW_TESSELLATION_SHADERS
         if (CurrentHS != hs)
         {
+            shaderEnabled |= CurrentHS == nullptr;
 #if DX11_CLEAR_SR_ON_STAGE_DISABLE
 			if (CurrentHS && !hs)
 			{
@@ -632,6 +627,7 @@ void GPUContextDX11::SetState(GPUPipelineState* state)
         }
         if (CurrentDS != ds)
         {
+            shaderEnabled |= CurrentDS == nullptr;
 #if DX11_CLEAR_SR_ON_STAGE_DISABLE
 			if (CurrentDS && !ds)
 			{
@@ -645,6 +641,7 @@ void GPUContextDX11::SetState(GPUPipelineState* state)
 #if GPU_ALLOW_GEOMETRY_SHADERS
         if (CurrentGS != gs)
         {
+            shaderEnabled |= CurrentGS == nullptr;
 #if DX11_CLEAR_SR_ON_STAGE_DISABLE
 			if (CurrentGS && !gs)
 			{
@@ -657,6 +654,7 @@ void GPUContextDX11::SetState(GPUPipelineState* state)
 #endif
         if (CurrentPS != ps)
         {
+            shaderEnabled |= CurrentPS == nullptr;
 #if DX11_CLEAR_SR_ON_STAGE_DISABLE
 			if (CurrentPS && !ps)
 			{
@@ -670,6 +668,13 @@ void GPUContextDX11::SetState(GPUPipelineState* state)
         {
             CurrentPrimitiveTopology = primitiveTopology;
             _context->IASetPrimitiveTopology(primitiveTopology);
+        }
+        if (shaderEnabled)
+        {
+            // Fix bug when binding constant buffer or texture, then binding PSO with tess and the drawing (data binded before tess shader is active was missing)
+            // TODO: use per-shader dirty flags
+            _cbDirtyFlag = true;
+            _srMaskDirtyGraphics = MAX_uint32;
         }
 
         RENDER_STAT_PS_STATE_CHANGE();

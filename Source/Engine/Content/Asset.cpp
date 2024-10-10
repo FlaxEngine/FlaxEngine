@@ -7,6 +7,7 @@
 #include "Loading/ContentLoadingManager.h"
 #include "Loading/Tasks/LoadAssetTask.h"
 #include "Engine/Core/Log.h"
+#include "Engine/Core/LogContext.h"
 #include "Engine/Engine/Engine.h"
 #include "Engine/Threading/Threading.h"
 #include "Engine/Profiler/ProfilerCPU.h"
@@ -536,6 +537,14 @@ void Asset::CancelStreaming()
 
 #if USE_EDITOR
 
+void Asset::GetReferences(Array<Guid>& assets, Array<String>& files) const
+{
+    // Fallback to the old API
+PRAGMA_DISABLE_DEPRECATION_WARNINGS;
+    GetReferences(assets);
+PRAGMA_ENABLE_DEPRECATION_WARNINGS;
+}
+
 void Asset::GetReferences(Array<Guid>& output) const
 {
     // No refs by default
@@ -544,7 +553,8 @@ void Asset::GetReferences(Array<Guid>& output) const
 Array<Guid> Asset::GetReferences() const
 {
     Array<Guid> result;
-    GetReferences(result);
+    Array<String> files;
+    GetReferences(result, files);
     return result;
 }
 
@@ -587,9 +597,10 @@ bool Asset::IsInternalType() const
 
 bool Asset::onLoad(LoadAssetTask* task)
 {
-    if (task->Asset.Get() != this || Platform::AtomicRead(&_loadingTask) == 0)
     // It may fail when task is cancelled and new one was created later (don't crash but just end with an error)
+    if (task->Asset.Get() != this || Platform::AtomicRead(&_loadingTask) == 0)
         return true;
+    LogContextScope logContext(GetID());
 
     Locker.Lock();
 

@@ -23,6 +23,7 @@ namespace FlaxEditor.Surface.Archetypes
         private readonly bool _is2D;
         private Float2 _rangeX, _rangeY;
         private Float2 _debugPos = Float2.Minimum;
+        private float _debugScale = 1.0f;
         private readonly List<BlendPoint> _blendPoints = new List<BlendPoint>();
 
         /// <summary>
@@ -445,6 +446,7 @@ namespace FlaxEditor.Surface.Archetypes
             // Debug current playback position
             if (((AnimGraphSurface)_node.Surface).TryGetTraceEvent(_node, out var traceEvent))
             {
+                var prev = _debugPos;
                 if (_is2D)
                 {
                     unsafe
@@ -456,10 +458,17 @@ namespace FlaxEditor.Surface.Archetypes
                 }
                 else
                     _debugPos = new Float2(traceEvent.Value, 0.0f);
+
+                // Scale debug pointer when it moves to make it more visible when investigating blending
+                const float debugMaxSize = 2.0f;
+                float debugScale = Mathf.Saturate(Float2.Distance(ref _debugPos, ref prev) / new Float2(_rangeX.Absolute.ValuesSum, _rangeY.Absolute.ValuesSum).Length * 100.0f) * debugMaxSize + 1.0f;
+                float debugBlendSpeed = _debugScale <= debugScale ? 4.0f : 1.0f;
+                _debugScale = Mathf.Lerp(_debugScale, debugScale, deltaTime * debugBlendSpeed);
             }
             else
             {
                 _debugPos = Float2.Minimum;
+                _debugScale = 1.0f;
             }
 
             base.Update(deltaTime);
@@ -606,7 +615,7 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 // Draw dot with outline
                 var icon = Editor.Instance.Icons.VisjectBoxOpen32;
-                var size = BlendPoint.DefaultSize;
+                var size = BlendPoint.DefaultSize * _debugScale;
                 var debugPos = BlendSpacePosToBlendPointPos(_debugPos);
                 var debugRect = new Rectangle(debugPos + new Float2(size * -0.5f) + size * 0.5f, new Float2(size));
                 var outline = Color.Black; // Shadow

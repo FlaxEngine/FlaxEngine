@@ -77,7 +77,7 @@ namespace FlaxEngine.GUI
         /// </summary>
         public void Hide()
         {
-            _window.Show();
+            _window.Hide();
         }
 
         /// <summary>

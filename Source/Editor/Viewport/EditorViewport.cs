@@ -111,6 +111,9 @@ namespace FlaxEditor.Viewport
                 IsMouseRightDown = useMouse && window.GetMouseButton(MouseButton.Right);
                 IsMouseMiddleDown = useMouse && window.GetMouseButton(MouseButton.Middle);
                 IsMouseLeftDown = useMouse && window.GetMouseButton(MouseButton.Left);
+
+                if (WasAltDownBefore && !IsMouseLeftDown && !IsAltDown)
+                    WasAltDownBefore = false;
             }
 
             /// <summary>
@@ -1385,15 +1388,32 @@ namespace FlaxEditor.Viewport
         /// <summary>
         /// Converts the mouse position to the ray (in world space of the viewport).
         /// </summary>
-        /// <param name="mousePosition">The mouse position.</param>
+        /// <param name="mousePosition">The mouse position (in UI space of the viewport [0; Size]).</param>
         /// <returns>The result ray.</returns>
         public Ray ConvertMouseToRay(ref Float2 mousePosition)
         {
-            // Prepare
             var viewport = new FlaxEngine.Viewport(0, 0, Width, Height);
-            CreateProjectionMatrix(out var p);
+            if (viewport.Width < Mathf.Epsilon || viewport.Height < Mathf.Epsilon)
+                return ViewRay;
+
             Vector3 viewOrigin = Task.View.Origin;
             Float3 position = ViewPosition - viewOrigin;
+
+            // Use different logic in orthographic projection
+            if (_isOrtho)
+            {
+                var screenPosition = new Float2(mousePosition.X / viewport.Width - 0.5f, -mousePosition.Y / viewport.Height + 0.5f);
+                var orientation = ViewOrientation;
+                var direction = Float3.Forward * orientation;
+                var rayOrigin = new Vector3(screenPosition.X * viewport.Width * _orthoSize, screenPosition.Y * viewport.Height * _orthoSize, 0);
+                rayOrigin = position + Vector3.Transform(rayOrigin, orientation);
+                rayOrigin += direction * _nearPlane;
+                rayOrigin += viewOrigin;
+                return new Ray(rayOrigin, direction);
+            }
+
+            // Create view frustum
+            CreateProjectionMatrix(out var p);
             CreateViewMatrix(position, out var v);
             Matrix.Multiply(ref v, ref p, out var ivp);
             ivp.Invert();
@@ -1409,11 +1429,27 @@ namespace FlaxEditor.Viewport
             viewport.Unproject(ref nearPoint, ref ivp, out nearPoint);
             viewport.Unproject(ref farPoint, ref ivp, out farPoint);
 
-            // Create direction vector
-            Vector3 direction = farPoint - nearPoint;
-            direction.Normalize();
+            return new Ray(nearPoint + viewOrigin, Vector3.Normalize(farPoint - nearPoint));
+        }
 
-            return new Ray(nearPoint + viewOrigin, direction);
+        /// <summary>
+        /// Projects the point from 3D world-space to viewport coordinates.
+        /// </summary>
+        /// <param name="worldSpaceLocation">The input world-space location (XYZ in world).</param>
+        /// <param name="viewportSpaceLocation">The output viewport window coordinates (XY in screen pixels).</param>
+        public void ProjectPoint(Vector3 worldSpaceLocation, out Float2 viewportSpaceLocation)
+        {
+            viewportSpaceLocation = Float2.Minimum;
+            var viewport = new FlaxEngine.Viewport(0, 0, Width, Height);
+            if (viewport.Width < Mathf.Epsilon || viewport.Height < Mathf.Epsilon)
+                return;
+            Vector3 viewOrigin = Task.View.Origin;
+            Float3 position = ViewPosition - viewOrigin;
+            CreateProjectionMatrix(out var p);
+            CreateViewMatrix(position, out var v);
+            Matrix.Multiply(ref v, ref p, out var vp);
+            viewport.Project(ref worldSpaceLocation, ref vp, out var projected);
+            viewportSpaceLocation = new Float2((float)projected.X, (float)projected.Y);
         }
 
         /// <summary>
@@ -1617,7 +1653,7 @@ namespace FlaxEditor.Viewport
                     _input.IsPanning = !isAltDown && mbDown && !rbDown;
                     _input.IsRotating = !isAltDown && !mbDown && rbDown;
                     _input.IsMoving = !isAltDown && mbDown && rbDown;
-                    _input.IsZooming = wheelInUse && !_input.IsShiftDown;
+                    _input.IsZooming = wheelInUse && !(_input.IsShiftDown || (!ContainsFocus && FlaxEngine.Input.GetKey(KeyboardKeys.Shift)));
                     _input.IsOrbiting = isAltDown && lbDown && !mbDown && !rbDown;
 
                     // Control move speed with RMB+Wheel
@@ -1709,6 +1745,8 @@ namespace FlaxEditor.Viewport
                 // Update
                 moveDelta *= dt * (60.0f * 4.0f);
                 mouseDelta *= 0.1833f * MouseSpeed * _mouseSensitivity;
+                if (options.Viewport.InvertMouseYAxisRotation)
+                    mouseDelta *= new Float2(1, -1);
                 UpdateView(dt, ref moveDelta, ref mouseDelta, out var centerMouse);
 
                 // Move mouse back to the root position

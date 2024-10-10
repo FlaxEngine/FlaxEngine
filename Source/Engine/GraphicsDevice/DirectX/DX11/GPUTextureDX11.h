@@ -176,7 +176,6 @@ public:
 class GPUTextureDX11 : public GPUResourceDX11<GPUTexture>
 {
 private:
-
     ID3D11Resource* _resource = nullptr;
 
     GPUTextureViewDX11 _handleArray;
@@ -191,7 +190,6 @@ private:
     DXGI_FORMAT _dxgiFormatUAV;
 
 public:
-
     /// <summary>
     /// Initializes a new instance of the <see cref="GPUTextureDX11"/> class.
     /// </summary>
@@ -203,18 +201,15 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Gets DX11 texture resource.
     /// </summary>
-    /// <returns>DX11 texture resource.</returns>
     FORCE_INLINE ID3D11Resource* GetResource() const
     {
         return _resource;
     }
 
 private:
-
     void initHandles();
 
     ID3D11Texture2D* GetTexture2D() const
@@ -222,7 +217,6 @@ private:
         ASSERT(_desc.Dimensions == TextureDimensions::Texture || _desc.Dimensions == TextureDimensions::CubeTexture);
         return (ID3D11Texture2D*)_resource;
     }
-
     ID3D11Texture3D* GetTexture3D() const
     {
         ASSERT(_desc.Dimensions == TextureDimensions::VolumeTexture);
@@ -230,42 +224,35 @@ private:
     }
 
 public:
-
     // [GPUTexture]
     GPUTextureView* View(int32 arrayOrDepthIndex) const override
     {
         return (GPUTextureView*)&_handlesPerSlice[arrayOrDepthIndex];
     }
-
     GPUTextureView* View(int32 arrayOrDepthIndex, int32 mipMapIndex) const override
     {
         return (GPUTextureView*)&_handlesPerMip[arrayOrDepthIndex][mipMapIndex];
     }
-
     GPUTextureView* ViewArray() const override
     {
         ASSERT(ArraySize() > 1);
         return (GPUTextureView*)&_handleArray;
     }
-
     GPUTextureView* ViewVolume() const override
     {
         ASSERT(IsVolume());
         return (GPUTextureView*)&_handleVolume;
     }
-
     GPUTextureView* ViewReadOnlyDepth() const override
     {
         ASSERT(_desc.Flags & GPUTextureFlags::ReadOnlyDepthView);
         return (GPUTextureView*)&_handleReadOnlyDepth;
     }
-
     void* GetNativePtr() const override
     {
         return static_cast<void*>(_resource);
     }
-
-    bool GetData(int32 arrayOrDepthSliceIndex, int32 mipMapIndex, TextureMipData& data, uint32 mipRowPitch) override;
+    bool GetData(int32 arrayIndex, int32 mipMapIndex, TextureMipData& data, uint32 mipRowPitch) override;
 
     // [GPUResourceDX11]
     ID3D11Resource* GetResource() override
@@ -274,7 +261,6 @@ public:
     }
 
 protected:
-
     // [GPUTexture]
     bool OnInit() override;
     void OnResidentMipsChanged() override;

@@ -150,6 +150,12 @@ public:
     }
 
     /// <summary>
+    /// Gets the heightfield collision data asset.
+    /// </summary>
+    /// <returns>The heightfield data asset.</returns>
+    API_PROPERTY() RawDataAsset* GetHeightfield() const;
+
+    /// <summary>
     /// Gets the splatmap assigned to this patch.
     /// </summary>
     /// <param name="index">The zero-based index of the splatmap.</param>

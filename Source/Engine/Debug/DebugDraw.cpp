@@ -27,6 +27,8 @@
 #include "Engine/Render2D/FontAsset.h"
 #if USE_EDITOR
 #include "Editor/Editor.h"
+#include "Engine/Level/Actors/Light.h"
+#include "Engine/Physics/Colliders/Collider.h"
 #endif
 
 // Debug draw service configuration
@@ -125,7 +127,7 @@ PACK_STRUCT(struct Vertex {
     Color32 Color;
     });
 
-PACK_STRUCT(struct Data {
+GPU_CB_STRUCT(Data {
     Matrix ViewProjection;
     Float2 Padding;
     float ClipPosZBias;
@@ -786,7 +788,7 @@ void DebugDraw::Draw(RenderContext& renderContext, GPUTextureView* target, GPUTe
     Matrix vp;
     Matrix::Multiply(view.View, view.Projection, vp);
     Matrix::Transpose(vp, data.ViewProjection);
-    data.ClipPosZBias = -0.2f; // Reduce Z-fighting artifacts (eg. editor grid)
+    data.ClipPosZBias = view.IsPerspectiveProjection() ? -0.2f : 0.0f; // Reduce Z-fighting artifacts (eg. editor grid)
     data.EnableDepthTest = enableDepthTest;
     context->UpdateCB(cb, &data);
     context->BindCB(0, cb);
@@ -944,9 +946,34 @@ void DebugDraw::DrawActors(Actor** selectedActors, int32 selectedActorsCount, bo
     }
 }
 
+void DebugDraw::DrawActorsTree(Actor* actor)
+{
+    Function<bool(Actor*)> function = &DrawActorsTreeWalk;
+    actor->TreeExecute(function);
+}
+
+#if USE_EDITOR
+
+void DebugDraw::DrawColliderDebugPhysics(Collider* collider, RenderView& view)
+{
+    if (!collider)
+        return;
+    collider->DrawPhysicsDebug(view);
+}
+
+void DebugDraw::DrawLightDebug(Light* light, RenderView& view)
+{
+    if (!light)
+        return;
+    light->DrawLightsDebug(view);
+}
+
+#endif
+
 void DebugDraw::DrawAxisFromDirection(const Vector3& origin, const Vector3& direction, float size, float duration, bool depthTest)
 {
-    const auto rot = Quaternion::FromDirection(direction.GetNormalized());
+    CHECK_DEBUG(direction.IsNormalized());
+    const auto rot = Quaternion::FromDirection(direction);
     const Vector3 up = (rot * Vector3::Up);
     const Vector3 forward = (rot * Vector3::Forward);
     const Vector3 right = (rot * Vector3::Right);
@@ -971,16 +998,17 @@ void DebugDraw::DrawRay(const Vector3& origin, const Vector3& direction, const C
 
 void DebugDraw::DrawRay(const Vector3& origin, const Vector3& direction, const Color& color, float length, float duration, bool depthTest)
 {
+    CHECK_DEBUG(direction.IsNormalized());
     if (isnan(length) || isinf(length))
         return;
-    DrawLine(origin, origin + (direction.GetNormalized() * length), color, duration, depthTest);
+    DrawLine(origin, origin + (direction * length), color, duration, depthTest);
 }
 
 void DebugDraw::DrawRay(const Ray& ray, const Color& color, float length, float duration, bool depthTest)
 {
     if (isnan(length) || isinf(length))
         return;
-    DrawLine(ray.Position, ray.Position + (ray.Direction.GetNormalized() * length), color, duration, depthTest);
+    DrawLine(ray.Position, ray.Position + (ray.Direction * length), color, duration, depthTest);
 }
 
 void DebugDraw::DrawLine(const Vector3& start, const Vector3& end, const Color& color, float duration, bool depthTest)

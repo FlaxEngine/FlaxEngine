@@ -186,21 +186,19 @@ public:
     /// </summary>
     /// <param name="depthBuffer">The depth buffer to clear.</param>
     /// <param name="depthValue">The clear depth value.</param>
-    API_FUNCTION() virtual void ClearDepthCustom(GPUTextureView* depthBuffer, float depthValue) = 0;
+    API_FUNCTION() virtual void ClearDepthCustom(GPUTextureView* depthBuffer, float depthValue, uint8 stencilValue = 0) = 0;
 
     /// <summary>
-    /// Clears depth buffer with default value.
+    /// Clears depth buffer with default value, inorder to handle different default depth values for normal and reversed z.
     /// </summary>
     /// <param name="depthBuffer">The depth buffer to clear.</param>
     /// <param name="depthValue">The clear depth value.</param>
-    API_FUNCTION() FORCE_INLINE void ClearDepth(GPUTextureView* depthBuffer) {
-
+    API_FUNCTION() FORCE_INLINE void ClearDepth(GPUTextureView* depthBuffer, uint8 stencilValue = 0) {
 #if FLAX_REVERSE_Z
-        ClearDepthCustom(depthBuffer, 0.0f);
+        ClearDepthCustom(depthBuffer, 0.0f, stencilValue);
 #else
-        ClearDepthCustom(depthBuffer, 1.0f);
+        ClearDepthCustom(depthBuffer, 1.0f, stencilValue);
 #endif
-
     }
 
     /// <summary>
@@ -211,14 +209,14 @@ public:
     API_FUNCTION() virtual void ClearUA(GPUBuffer* buf, const Float4& value) = 0;
 
     /// <summary>
-    /// Clears an unordered access buffer with a unsigned value.
+    /// Clears an unordered access buffer with an unsigned value.
     /// </summary>
     /// <param name="buf">The buffer to clear.</param>
     /// <param name="value">The clear value.</param>
     virtual void ClearUA(GPUBuffer* buf, const uint32 value[4]) = 0;
 
     /// <summary>
-    /// Clears an unordered access texture with a unsigned value.
+    /// Clears an unordered access texture with an unsigned value.
     /// </summary>
     /// <param name="texture">The texture to clear.</param>
     /// <param name="value">The clear value.</param>
@@ -499,7 +497,7 @@ public:
     /// </summary>
     /// <param name="startVertex">A value added to each index before reading a vertex from the vertex buffer.</param>
     /// <param name="verticesCount">The vertices count.</param>
-    API_FUNCTION() FORCE_INLINE void Draw(uint32 startVertex, uint32 verticesCount)
+    API_FUNCTION() FORCE_INLINE void Draw(int32 startVertex, uint32 verticesCount)
     {
         DrawInstanced(verticesCount, 1, 0, startVertex);
     }

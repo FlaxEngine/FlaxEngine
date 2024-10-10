@@ -5,7 +5,7 @@
 #include "Engine/Content/Content.h"
 #include "Engine/Graphics/GPUContext.h"
 
-PACK_STRUCT(struct Data {
+GPU_CB_STRUCT(Data {
     Float2 TexelSize;
     Float2 Padding;
     });

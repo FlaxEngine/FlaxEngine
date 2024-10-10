@@ -186,7 +186,7 @@ BoundingBox Model::GetBox(int32 lodIndex) const
     return LODs[lodIndex].GetBox();
 }
 
-void Model::Draw(const RenderContext& renderContext, MaterialBase* material, const Matrix& world, StaticFlags flags, bool receiveDecals, int16 sortOrder) const
+void Model::Draw(const RenderContext& renderContext, MaterialBase* material, const Matrix& world, StaticFlags flags, bool receiveDecals, int8 sortOrder) const
 {
     if (!CanBeRendered())
         return;
@@ -650,7 +650,7 @@ bool Model::Save(bool withMeshDataFromGpu, const StringView& path)
 
 #endif
 
-bool Model::GenerateSDF(float resolutionScale, int32 lodIndex, bool cacheData, float backfacesThreshold)
+bool Model::GenerateSDF(float resolutionScale, int32 lodIndex, bool cacheData, float backfacesThreshold, bool useGPU)
 {
     if (EnableModelSDF == 2)
         return true; // Not supported
@@ -673,13 +673,20 @@ bool Model::GenerateSDF(float resolutionScale, int32 lodIndex, bool cacheData, f
 #else
     class MemoryWriteStream* outputStream = nullptr;
 #endif
-    if (ModelTool::GenerateModelSDF(this, nullptr, resolutionScale, lodIndex, &SDF, outputStream, GetPath(), backfacesThreshold))
+    Locker.Unlock();
+    const bool failed = ModelTool::GenerateModelSDF(this, nullptr, resolutionScale, lodIndex, &SDF, outputStream, GetPath(), backfacesThreshold, useGPU);
+    Locker.Lock();
+    if (failed)
         return true;
 
 #if USE_EDITOR
     // Set asset data
     if (cacheData)
-        GetOrCreateChunk(15)->Data.Copy(sdfStream.GetHandle(), sdfStream.GetPosition());
+    {
+        auto chunk = GetOrCreateChunk(15);
+        chunk->Data.Copy(sdfStream.GetHandle(), sdfStream.GetPosition());
+        chunk->Flags |= FlaxChunkFlags::KeepInMemory; // Prevent GC-ing chunk data so it will be properly saved
+    }
 #endif
 
     return false;
@@ -788,15 +795,13 @@ void Model::CancelStreaming()
 
 #if USE_EDITOR
 
-void Model::GetReferences(Array<Guid>& output) const
+void Model::GetReferences(Array<Guid>& assets, Array<String>& files) const
 {
     // Base
-    BinaryAsset::GetReferences(output);
+    BinaryAsset::GetReferences(assets, files);
 
     for (int32 i = 0; i < MaterialSlots.Count(); i++)
-    {
-        output.Add(MaterialSlots[i].Material.GetID());
-    }
+        assets.Add(MaterialSlots[i].Material.GetID());
 }
 
 #endif

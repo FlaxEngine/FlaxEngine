@@ -12,15 +12,17 @@ namespace FlaxEditor.Gizmo
     [HideInEditor]
     public abstract class GizmoBase
     {
+        private IGizmoOwner _owner;
+
         /// <summary>
         /// Gets the gizmo owner.
         /// </summary>
-        public IGizmoOwner Owner { get; }
+        public IGizmoOwner Owner => _owner;
 
         /// <summary>
         /// Gets a value indicating whether this gizmo is active.
         /// </summary>
-        public bool IsActive => Owner.Gizmos.Active == this;
+        public bool IsActive => _owner.Gizmos.Active == this;
 
         /// <summary>
         /// Gets a value indicating whether this gizmo is using mouse currently (eg. user moving objects).
@@ -39,8 +41,8 @@ namespace FlaxEditor.Gizmo
         protected GizmoBase(IGizmoOwner owner)
         {
             // Link
-            Owner = owner;
-            Owner.Gizmos.Add(this);
+            _owner = owner;
+            _owner.Gizmos.Add(this);
         }
 
         /// <summary>
@@ -93,6 +95,26 @@ namespace FlaxEditor.Gizmo
         /// <param name="renderContext">The rendering context.</param>
         public virtual void Draw(ref RenderContext renderContext)
         {
+        }
+
+        /// <summary>
+        /// Activates thi gizmo mode.
+        /// </summary>
+        public void Activate()
+        {
+            _owner.Gizmos.Active = this;
+        }
+
+        /// <summary>
+        /// Removes the gizmo from the owner.
+        /// </summary>
+        public void Destroy()
+        {
+            if (_owner != null)
+            {
+                _owner.Gizmos.Remove(this);
+                _owner = null;
+            }
         }
     }
 }

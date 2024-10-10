@@ -234,6 +234,11 @@ namespace FlaxEngine.GUI
                 if (_bounds.Size.Equals(ref value))
                     return;
                 var bounds = new Rectangle(_bounds.Location, value);
+                if (_pivotRelativeSizing)
+                {
+                    var delta = _bounds.Size - value;
+                    bounds.Location += delta * Pivot;
+                }
                 SetBounds(ref bounds);
             }
         }
@@ -566,7 +571,7 @@ namespace FlaxEngine.GUI
         }
 
         /// <summary>
-        /// Sets the anchor preset for the control. Can be use to auto-place the control for a given preset or can preserve the current control bounds.
+        /// Sets the anchor preset for the control. Can be used to auto-place the control for a given preset or can preserve the current control bounds.
         /// </summary>
         /// <param name="anchorPreset">The anchor preset to set.</param>
         /// <param name="preserveBounds">True if preserve current control bounds, otherwise will align control position accordingly to the anchor location.</param>

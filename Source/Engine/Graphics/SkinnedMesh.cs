@@ -216,7 +216,7 @@ namespace FlaxEngine
         /// <param name="normals">The normal vectors (per vertex).</param>
         /// <param name="tangents">The normal vectors (per vertex). Use null to compute them from normal vectors.</param>
         /// <param name="uv">The texture coordinates (per vertex).</param>
-        [Obsolete("Deprecated in 1.4, use overload with Float3 and Float2 parameters")]
+        [Obsolete("Use UpdateMesh with Float3 and Float2 parameters instead")]
         public void UpdateMesh(Vector3[] vertices, int[] triangles, Int4[] blendIndices, Vector4[] blendWeights, Vector3[] normals = null, Vector3[] tangents = null, Vector2[] uv = null)
         {
             UpdateMesh(Utils.ConvertCollection(vertices), triangles, blendIndices, Utils.ConvertCollection(blendWeights), Utils.ConvertCollection(normals), Utils.ConvertCollection(tangents), Utils.ConvertCollection(uv));
@@ -235,7 +235,7 @@ namespace FlaxEngine
         /// <param name="normals">The normal vectors (per vertex).</param>
         /// <param name="tangents">The normal vectors (per vertex). Use null to compute them from normal vectors.</param>
         /// <param name="uv">The texture coordinates (per vertex).</param>
-        [Obsolete("Deprecated in 1.4, use overload with Float3 and Float2 parameters")]
+        [Obsolete("Use UpdateMesh with Float3 and Float2 parameters instead")]
         public void UpdateMesh(Vector3[] vertices, uint[] triangles, Int4[] blendIndices, Vector4[] blendWeights, Vector3[] normals = null, Vector3[] tangents = null, Vector2[] uv = null)
         {
             UpdateMesh(Utils.ConvertCollection(vertices), triangles, blendIndices, Utils.ConvertCollection(blendWeights), Utils.ConvertCollection(normals), Utils.ConvertCollection(tangents), Utils.ConvertCollection(uv));
@@ -254,7 +254,7 @@ namespace FlaxEngine
         /// <param name="normals">The normal vectors (per vertex).</param>
         /// <param name="tangents">The tangent vectors (per vertex). Use null to compute them from normal vectors.</param>
         /// <param name="uv">The texture coordinates (per vertex).</param>
-        [Obsolete("Deprecated in 1.4, use overload with Float3 and Float2 parameters")]
+        [Obsolete("Use UpdateMesh with Float3 and Float2 parameters instead")]
         public void UpdateMesh(Vector3[] vertices, ushort[] triangles, Int4[] blendIndices, Vector4[] blendWeights, Vector3[] normals = null, Vector3[] tangents = null, Vector2[] uv = null)
         {
             UpdateMesh(Utils.ConvertCollection(vertices), triangles, blendIndices, Utils.ConvertCollection(blendWeights), Utils.ConvertCollection(normals), Utils.ConvertCollection(tangents), Utils.ConvertCollection(uv));

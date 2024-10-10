@@ -52,7 +52,7 @@ void Terrain::UpdateBounds()
     }
     BoundingSphere::FromBox(_box, _sphere);
     if (_sceneRenderingKey != -1)
-        GetSceneRendering()->UpdateActor(this, _sceneRenderingKey);
+        GetSceneRendering()->UpdateActor(this, _sceneRenderingKey, ISceneRenderingListener::Bounds);
 }
 
 void Terrain::CacheNeighbors()
@@ -291,7 +291,7 @@ void Terrain::SetPhysicalMaterials(const Array<JsonAssetReference<PhysicalMateri
     _physicalMaterials = value;
     _physicalMaterials.Resize(8);
     JsonAsset* materials[8];
-    for (int32 i = 0;i<8;i++)
+    for (int32 i = 0; i < 8; i++)
         materials[i] = _physicalMaterials[i];
     for (int32 pathIndex = 0; pathIndex < _patches.Count(); pathIndex++)
     {
@@ -509,16 +509,39 @@ void Terrain::RemovePatch(const Int2& patchCoord)
 
 #endif
 
+void Terrain::Draw(RenderContextBatch& renderContextBatch)
+{
+    PROFILE_CPU();
+    if (DrawSetup(renderContextBatch.GetMainContext()))
+        return;
+    HashSet<TerrainChunk*, RendererAllocation> drawnChunks;
+    for (RenderContext& renderContext : renderContextBatch.Contexts)
+    {
+        const DrawPass drawModes = DrawModes & renderContext.View.Pass;
+        if (drawModes == DrawPass::None)
+            continue;
+        DrawImpl(renderContext, drawnChunks);
+    }
+}
+
 void Terrain::Draw(RenderContext& renderContext)
 {
     const DrawPass drawModes = DrawModes & renderContext.View.Pass;
     if (drawModes == DrawPass::None)
         return;
     PROFILE_CPU();
-    if (renderContext.View.Pass == DrawPass::GlobalSDF)
+    if (DrawSetup(renderContext))
+        return;
+    HashSet<TerrainChunk*, RendererAllocation> drawnChunks;
+    DrawImpl(renderContext, drawnChunks);
+}
+
+bool Terrain::DrawSetup(RenderContext& renderContext)
+{
+    // Special drawing modes
+    const DrawPass drawModes = DrawModes & renderContext.View.Pass;
+    if (drawModes == DrawPass::GlobalSDF)
     {
-        if ((DrawModes & DrawPass::GlobalSDF) == DrawPass::None)
-            return;
         const float chunkSize = TERRAIN_UNITS_PER_VERTEX * (float)_chunkSize;
         const float posToUV = 0.25f / chunkSize;
         Float4 localToUV(posToUV, posToUV, 0.0f, 0.0f);
@@ -533,12 +556,10 @@ void Terrain::Draw(RenderContext& renderContext)
             patchTransform = _transform.LocalToWorld(patchTransform);
             GlobalSignDistanceFieldPass::Instance()->RasterizeHeightfield(this, patch->Heightmap->GetTexture(), patchTransform, patch->_bounds, localToUV);
         }
-        return;
+        return true;
     }
-    if (renderContext.View.Pass == DrawPass::GlobalSurfaceAtlas)
+    if (drawModes == DrawPass::GlobalSurfaceAtlas)
     {
-        if ((DrawModes & DrawPass::GlobalSurfaceAtlas) == DrawPass::None)
-            return;
         for (TerrainPatch* patch : _patches)
         {
             if (!patch->Heightmap)
@@ -556,11 +577,27 @@ void Terrain::Draw(RenderContext& renderContext)
                 GlobalSurfaceAtlasPass::Instance()->RasterizeActor(this, chunk, chunkSphere, chunk->GetTransform(), localBounds, 1 << 2, false);
             }
         }
-        return;
+        return true;
     }
 
+    // Reset cached LOD for chunks (prevent LOD transition from invisible chunks)
+    for (int32 patchIndex = 0; patchIndex < _patches.Count(); patchIndex++)
+    {
+        const auto patch = _patches[patchIndex];
+        for (int32 chunkIndex = 0; chunkIndex < Terrain::ChunksCount; chunkIndex++)
+        {
+            auto chunk = &patch->Chunks[chunkIndex];
+            chunk->_cachedDrawLOD = 0;
+        }
+    }
+
+    return false;
+}
+
+void Terrain::DrawImpl(RenderContext& renderContext, HashSet<TerrainChunk*, RendererAllocation>& drawnChunks)
+{
     // Collect chunks to render and calculate LOD/material for them (required to be done before to gather NeighborLOD)
-    _drawChunks.Clear();
+    Array<TerrainChunk*, RendererAllocation> drawChunks;
 
     // Frustum vs Box culling for patches
     const BoundingFrustum frustum = renderContext.View.CullingFrustum;
@@ -579,33 +616,24 @@ void Terrain::Draw(RenderContext& renderContext)
             for (int32 chunkIndex = 0; chunkIndex < Terrain::ChunksCount; chunkIndex++)
             {
                 auto chunk = &patch->Chunks[chunkIndex];
-                chunk->_cachedDrawLOD = 0;
                 bounds = BoundingBox(chunk->_bounds.Minimum - origin, chunk->_bounds.Maximum - origin);
                 if (renderContext.View.IsCullingDisabled || frustum.Intersects(bounds))
                 {
-                    if (chunk->PrepareDraw(renderContext))
-                    {
-                        // Add chunk for drawing
-                        _drawChunks.Add(chunk);
-                    }
+                    if (!drawnChunks.Contains(chunk) && !chunk->PrepareDraw(renderContext))
+                        continue;
+
+                    // Add chunk for drawing
+                    drawChunks.Add(chunk);
+                    drawnChunks.Add(chunk);
                 }
-            }
-        }
-        else
-        {
-            // Reset cached LOD for chunks (prevent LOD transition from invisible chunks)
-            for (int32 chunkIndex = 0; chunkIndex < Terrain::ChunksCount; chunkIndex++)
-            {
-                auto chunk = &patch->Chunks[chunkIndex];
-                chunk->_cachedDrawLOD = 0;
             }
         }
     }
 
     // Draw all visible chunks
-    for (int32 i = 0; i < _drawChunks.Count(); i++)
+    for (int32 i = 0; i < drawChunks.Count(); i++)
     {
-        _drawChunks.Get()[i]->Draw(renderContext);
+        drawChunks.Get()[i]->Draw(renderContext);
     }
 }
 
@@ -831,6 +859,15 @@ void Terrain::OnDisable()
 #if TERRAIN_USE_PHYSICS_DEBUG
     GetSceneRendering()->RemovePhysicsDebug<Terrain, &Terrain::DrawPhysicsDebug>(this);
 #endif
+    void* scene = GetPhysicsScene()->GetPhysicsScene();
+    for (int32 i = 0; i < _patches.Count(); i++)
+    {
+        auto patch = _patches[i];
+        if (patch->_physicsActor)
+        {
+            PhysicsBackend::RemoveSceneActor(scene, patch->_physicsActor);
+        }
+    }
 
     // Base
     Actor::OnDisable();
@@ -868,7 +905,7 @@ void Terrain::OnLayerChanged()
 
     UpdateLayerBits();
     if (_sceneRenderingKey != -1)
-        GetSceneRendering()->UpdateActor(this, _sceneRenderingKey);
+        GetSceneRendering()->UpdateActor(this, _sceneRenderingKey, ISceneRenderingListener::Layer);
 }
 
 void Terrain::OnActiveInTreeChanged()

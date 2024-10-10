@@ -40,7 +40,6 @@ public class Editor : EditorModule
         options.ScriptingAPI.SystemReferences.Add("System.Xml");
         options.ScriptingAPI.SystemReferences.Add("System.Xml.ReaderWriter");
         options.ScriptingAPI.SystemReferences.Add("System.Text.RegularExpressions");
-        options.ScriptingAPI.SystemReferences.Add("System.ComponentModel.TypeConverter");
         options.ScriptingAPI.SystemReferences.Add("System.IO.Compression.ZipFile");
 
         // Enable optimizations for Editor, disable this for debugging the editor

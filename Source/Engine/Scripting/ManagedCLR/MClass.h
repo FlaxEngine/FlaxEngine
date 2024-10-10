@@ -305,9 +305,9 @@ public:
     /// <summary>
     /// Checks if class has an attribute of the specified type.
     /// </summary>
-    /// <param name="monoClass">The attribute class to check.</param>
+    /// <param name="klass">The attribute class to check.</param>
     /// <returns>True if has attribute of that class type, otherwise false.</returns>
-    bool HasAttribute(const MClass* monoClass) const;
+    bool HasAttribute(const MClass* klass) const;
 
     /// <summary>
     /// Checks if class has an attribute of any type.
@@ -318,9 +318,9 @@ public:
     /// <summary>
     /// Returns an instance of an attribute of the specified type. Returns null if the class doesn't have such an attribute.
     /// </summary>
-    /// <param name="monoClass">The attribute class to take.</param>
+    /// <param name="klass">The attribute class to take.</param>
     /// <returns>The attribute object.</returns>
-    MObject* GetAttribute(const MClass* monoClass) const;
+    MObject* GetAttribute(const MClass* klass) const;
 
     /// <summary>
     /// Returns an instance of all attributes connected with given class. Returns null if the class doesn't have any attributes.

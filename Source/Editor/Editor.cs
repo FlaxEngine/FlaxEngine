@@ -7,6 +7,7 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
+using System.Threading.Tasks;
 using FlaxEditor.Content;
 using FlaxEditor.Content.Settings;
 using FlaxEditor.Content.Thumbnails;
@@ -247,6 +248,11 @@ namespace FlaxEditor
         /// </summary>
         public event Action PlayModeEnd;
 
+        /// <summary>
+        /// Fired on Editor update
+        /// </summary>
+        public event Action EditorUpdate;
+
         internal Editor()
         {
             Instance = this;
@@ -485,6 +491,8 @@ namespace FlaxEditor
                 {
                     StateMachine.CurrentState.UpdateFPS();
                 }
+                
+                EditorUpdate?.Invoke();
 
                 // Update modules
                 for (int i = 0; i < _modules.Count; i++)
@@ -849,7 +857,7 @@ namespace FlaxEditor
         /// New asset types allowed to create.
         /// [Deprecated in v1.8]
         /// </summary>
-        [Obsolete("Use CreateAsset with named tag.")]
+        [Obsolete("Use CreateAsset with named tag instead")]
         public enum NewAssetType
         {
             /// <summary>
@@ -1030,7 +1038,7 @@ namespace FlaxEditor
         /// </summary>
         /// <param name="type">New asset type.</param>
         /// <param name="outputPath">Output asset path.</param>
-        [Obsolete("Use CreateAsset with named tag.")]
+        [Obsolete("Use CreateAsset with named tag instead")]
         public static bool CreateAsset(NewAssetType type, string outputPath)
         {
             // [Deprecated on 18.02.2024, expires on 18.02.2025]
@@ -1338,19 +1346,32 @@ namespace FlaxEditor
         /// </summary>
         public void BuildAllMeshesSDF()
         {
-            // TODO: async maybe with progress reporting?
+            var models = new List<Model>();
             Scene.ExecuteOnGraph(node =>
             {
                 if (node is StaticModelNode staticModelNode && staticModelNode.Actor is StaticModel staticModel)
                 {
-                    if (staticModel.DrawModes.HasFlag(DrawPass.GlobalSDF) && staticModel.Model != null && !staticModel.Model.IsVirtual && staticModel.Model.SDF.Texture == null)
+                    var model = staticModel.Model;
+                    if (staticModel.DrawModes.HasFlag(DrawPass.GlobalSDF) &&
+                        model != null &&
+                        !models.Contains(model) &&
+                        !model.IsVirtual &&
+                        model.SDF.Texture == null)
                     {
-                        Log("Generating SDF for " + staticModel.Model);
-                        if (!staticModel.Model.GenerateSDF())
-                            staticModel.Model.Save();
+                        models.Add(model);
                     }
                 }
                 return true;
+            });
+            Task.Run(() =>
+            {
+                for (int i = 0; i < models.Count; i++)
+                {
+                    var model = models[i];
+                    Log($"[{i}/{models.Count}] Generating SDF for {model}");
+                    if (!model.GenerateSDF())
+                        model.Save();
+                }
             });
         }
 
@@ -1364,6 +1385,7 @@ namespace FlaxEditor
             public byte AutoReloadScriptsOnMainWindowFocus;
             public byte ForceScriptCompilationOnStartup;
             public byte UseAssetImportPathRelative;
+            public byte EnableParticlesPreview;
             public byte AutoRebuildCSG;
             public float AutoRebuildCSGTimeoutMs;
             public byte AutoRebuildNavMesh;

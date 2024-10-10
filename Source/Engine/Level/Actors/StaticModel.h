@@ -22,7 +22,7 @@ private:
     char _forcedLod;
     bool _vertexColorsDirty;
     byte _vertexColorsCount;
-    int16 _sortOrder;
+    int8 _sortOrder;
     Array<Color32> _vertexColorsData[MODEL_MAX_LODS];
     GPUBuffer* _vertexColorsBuffer[MODEL_MAX_LODS];
     Model* _residencyChangedModel = nullptr;
@@ -97,13 +97,13 @@ public:
     API_PROPERTY() void SetForcedLOD(int32 value);
 
     /// <summary>
-    /// Gets the model sort order key used when sorting drawable objects during rendering. Use lower values to draw object before others, higher values are rendered later (on top). Can be use to control transparency drawing.
+    /// Gets the model sort order key used when sorting drawable objects during rendering. Use lower values to draw object before others, higher values are rendered later (on top). Can be used to control transparency drawing.
     /// </summary>
     API_PROPERTY(Attributes="EditorOrder(60), DefaultValue(0), EditorDisplay(\"Model\")")
     int32 GetSortOrder() const;
 
     /// <summary>
-    /// Sets the model sort order key used when sorting drawable objects during rendering. Use lower values to draw object before others, higher values are rendered later (on top). Can be use to control transparency drawing.
+    /// Sets the model sort order key used when sorting drawable objects during rendering. Use lower values to draw object before others, higher values are rendered later (on top). Can be used to control transparency drawing.
     /// </summary>
     API_PROPERTY() void SetSortOrder(int32 value);
 

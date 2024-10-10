@@ -135,12 +135,17 @@ public:
     API_FIELD() static bool Enabled;
 
     /// <summary>
+    /// True if GPU events are enabled (see GPUContext::EventBegin), otherwise false. Cannot be changed during rendering.
+    /// </summary>
+    API_FIELD() static bool EventsEnabled;
+
+    /// <summary>
     /// The current frame buffer to collect events.
     /// </summary>
     static int32 CurrentBuffer;
 
     /// <summary>
-    /// The events buffers (one per frame).
+    /// The event buffers (one per frame).
     /// </summary>
     static EventBuffer Buffers[PROFILER_GPU_EVENTS_FRAMES];
 

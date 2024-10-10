@@ -260,7 +260,7 @@ namespace Flax.Build
                 options.CompileEnv.DebugInformation = true;
                 options.CompileEnv.RuntimeChecks = true;
                 options.CompileEnv.StringPooling = false;
-                options.CompileEnv.IntrinsicFunctions = false;
+                options.CompileEnv.IntrinsicFunctions = true;
                 options.CompileEnv.BufferSecurityCheck = true;
                 options.CompileEnv.Inlining = false;
                 options.CompileEnv.WholeProgramOptimization = false;

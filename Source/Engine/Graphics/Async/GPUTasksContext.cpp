@@ -34,8 +34,11 @@ GPUTasksContext::~GPUTasksContext()
     for (int32 i = 0; i < tasks.Count(); i++)
     {
         auto task = tasks[i];
-        LOG(Warning, "{0} has been canceled before a sync", task->ToString());
-        tasks[i]->CancelSync();
+        if (task->GetSyncPoint() <= _currentSyncPoint && task->GetState() != TaskState::Finished)
+        {
+            LOG(Warning, "{0} has been canceled before a sync", task->ToString());
+            task->CancelSync();
+        }
     }
 
 #if GPU_TASKS_USE_DEDICATED_CONTEXT
@@ -70,16 +73,22 @@ void GPUTasksContext::OnFrameBegin()
     ++_currentSyncPoint;
 
     // Try to flush done jobs
-    auto currentSyncPointGPU = _currentSyncPoint - GPU_ASYNC_LATENCY;
     for (int32 i = 0; i < _tasksDone.Count(); i++)
     {
-        if (_tasksDone[i]->GetSyncPoint() <= currentSyncPointGPU)
+        auto task = _tasksDone[i];
+        auto state = task->GetState();
+        if (task->GetSyncPoint() <= _currentSyncPoint && state != TaskState::Finished)
         {
             // TODO: add stats counter and count performed jobs, print to log on exit.
-
-            auto job = _tasksDone[i];
-            job->Sync();
-
+            task->Sync();
+        }
+        if (state == TaskState::Failed || state == TaskState::Canceled)
+        {
+            _tasksDone.RemoveAt(i);
+            i--;
+        }
+        if (state == TaskState::Finished)
+        {
             _tasksDone.RemoveAt(i);
             i--;
             _totalTasksDoneCount++;

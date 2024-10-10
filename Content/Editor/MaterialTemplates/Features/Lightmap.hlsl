@@ -4,7 +4,6 @@
 #define CAN_USE_LIGHTMAP 1
 @1// Lightmap: Includes
 @2// Lightmap: Constants
-float4 LightmapArea;
 @3// Lightmap: Resources
 #if USE_LIGHTMAP
 // Irradiance and directionality prebaked lightmaps

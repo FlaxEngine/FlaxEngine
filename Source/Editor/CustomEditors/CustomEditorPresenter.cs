@@ -93,6 +93,9 @@ namespace FlaxEditor.CustomEditors
                 catch (Exception ex)
                 {
                     FlaxEditor.Editor.LogWarning(ex);
+
+                    // Refresh layout on errors to reduce lgo spam
+                    _presenter.BuildLayout();
                 }
 
                 base.Update(deltaTime);
@@ -397,6 +400,7 @@ namespace FlaxEditor.CustomEditors
             Panel.DisposeChildren();
 
             ClearLayout();
+            _buildOnUpdate = false;
             Editor.Setup(this);
 
             Panel.IsLayoutLocked = false;
@@ -484,7 +488,6 @@ namespace FlaxEditor.CustomEditors
         {
             if (_buildOnUpdate)
             {
-                _buildOnUpdate = false;
                 BuildLayout();
             }
 

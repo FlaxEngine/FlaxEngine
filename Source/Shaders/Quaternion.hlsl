@@ -15,4 +15,9 @@ float3 QuaternionRotate(float4 q, float3 v)
     return (v * (q.w * q.w - b2) + b * (dot(v, b) * 2.f) + cross(b, v) * (q.w * 2.f));
 }
 
+float4 QuaternionFromAxisAngle(float3 axis, float angle)
+{
+    return float4(axis * sin(angle * 0.5f), cos(angle * 0.5f));
+}
+
 #endif

@@ -232,12 +232,12 @@ void BehaviorTree::OnScriptsReloadEnd()
     Graph.Setup(this);
 }
 
-void BehaviorTree::GetReferences(Array<Guid>& output) const
+void BehaviorTree::GetReferences(Array<Guid>& assets, Array<String>& files) const
 {
     // Base
-    BinaryAsset::GetReferences(output);
+    BinaryAsset::GetReferences(assets, files);
 
-    Graph.GetReferences(output);
+    Graph.GetReferences(assets);
 
     // Extract refs from serialized nodes data
     for (const BehaviorTreeGraphNode& n : Graph.Nodes)
@@ -246,7 +246,7 @@ void BehaviorTree::GetReferences(Array<Guid>& output) const
             continue;
         const Variant& data = n.Values[1];
         if (data.Type == VariantType::Blob)
-            JsonAssetBase::GetReferences(StringAnsiView((char*)data.AsBlob.Data, data.AsBlob.Length), output);
+            JsonAssetBase::GetReferences(StringAnsiView((char*)data.AsBlob.Data, data.AsBlob.Length), assets);
     }
 }
 

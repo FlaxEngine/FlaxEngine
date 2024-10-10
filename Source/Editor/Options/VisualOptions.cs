@@ -59,5 +59,12 @@ namespace FlaxEditor.Options
         [DefaultValue(true)]
         [EditorDisplay("Quality", "Enable MSAA For Debug Draw"), EditorOrder(500), Tooltip("Determines whether enable MSAA for DebugDraw primitives rendering. Helps with pixel aliasing but reduces performance.")]
         public bool EnableMSAAForDebugDraw { get; set; } = true;
+
+        /// <summary>
+        /// Gets or sets a value indicating whether show looping particle effects in Editor viewport to simulate in-game look.
+        /// </summary>
+        [DefaultValue(true)]
+        [EditorDisplay("Preview"), EditorOrder(1000)]
+        public bool EnableParticlesPreview { get; set; } = true;
     }
 }

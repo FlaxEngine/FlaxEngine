@@ -18,6 +18,7 @@ public:
     static PxCooking* GetCooking();
 #endif
     static PxMaterial* GetDefaultMaterial();
+    static void SimulationStepDone(PxScene* scene, float dt);
 };
 
 #endif

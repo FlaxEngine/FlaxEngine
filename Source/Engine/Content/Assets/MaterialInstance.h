@@ -28,6 +28,11 @@ public:
     /// <param name="baseMaterial">The base material.</param>
     API_PROPERTY() void SetBaseMaterial(MaterialBase* baseMaterial);
 
+    /// <summary>
+    /// Resets all parameters back to the base material (including disabling parameter overrides).
+    /// </summary>
+    API_FUNCTION() void ResetParameters();
+
 #if USE_EDITOR
 
     /// <summary>
@@ -50,7 +55,7 @@ public:
     // [MaterialBase]
     bool IsMaterialInstance() const override;
 #if USE_EDITOR
-    void GetReferences(Array<Guid>& output) const override;
+    void GetReferences(Array<Guid>& assets, Array<String>& files) const override;
 #endif
 
     // [IMaterial]

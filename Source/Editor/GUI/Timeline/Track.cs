@@ -854,11 +854,9 @@ namespace FlaxEditor.GUI.Timeline
         /// <param name="name">The base name.</param>
         public void Rename(string name)
         {
-            string newName = name;
-            int count = 0;
-            while (_timeline != null && !_timeline.IsTrackNameValid(newName))
-                newName = string.Format("{0} {1}", name, count++);
-            OnRename(newName);
+            if (_timeline != null)
+                name = _timeline.GetValidTrackName(name);
+            OnRename(name);
         }
 
         /// <summary>

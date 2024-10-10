@@ -465,7 +465,7 @@ namespace FlaxEngine
         /// <summary>
         /// A single keyframe that can be injected into linear curve.
         /// </summary>
-        [StructLayout(LayoutKind.Sequential)]
+        [StructLayout(LayoutKind.Sequential, Pack = 2)]
         public struct Keyframe : IComparable, IComparable<Keyframe>
         {
             /// <summary>
@@ -720,7 +720,7 @@ namespace FlaxEngine
         /// <summary>
         /// A single keyframe that can be injected into Bezier curve.
         /// </summary>
-        [StructLayout(LayoutKind.Sequential)]
+        [StructLayout(LayoutKind.Sequential, Pack = 2)]
         public struct Keyframe : IComparable, IComparable<Keyframe>
         {
             /// <summary>

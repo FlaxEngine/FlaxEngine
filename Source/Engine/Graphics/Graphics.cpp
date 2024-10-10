@@ -8,6 +8,7 @@
 #include "Engine/Core/Config/GraphicsSettings.h"
 #include "Engine/Engine/CommandLine.h"
 #include "Engine/Engine/EngineService.h"
+#include "Engine/Profiler/ProfilerGPU.h"
 #include "Engine/Render2D/Font.h"
 
 bool Graphics::UseVSync = false;
@@ -17,10 +18,13 @@ Quality Graphics::SSAOQuality = Quality::Medium;
 Quality Graphics::VolumetricFogQuality = Quality::High;
 Quality Graphics::ShadowsQuality = Quality::Medium;
 Quality Graphics::ShadowMapsQuality = Quality::Medium;
+float Graphics::ShadowUpdateRate = 1.0f;
 bool Graphics::AllowCSMBlending = false;
 Quality Graphics::GlobalSDFQuality = Quality::High;
 Quality Graphics::GIQuality = Quality::High;
+bool Graphics::GICascadesBlending = false;
 PostProcessSettings Graphics::PostProcessSettings;
+bool Graphics::SpreadWorkload = true;
 
 #if GRAPHICS_API_NULL
 extern GPUDevice* CreateGPUDeviceNull();
@@ -65,9 +69,9 @@ void GraphicsSettings::Apply()
     Graphics::VolumetricFogQuality = VolumetricFogQuality;
     Graphics::ShadowsQuality = ShadowsQuality;
     Graphics::ShadowMapsQuality = ShadowMapsQuality;
-    Graphics::AllowCSMBlending = AllowCSMBlending;
     Graphics::GlobalSDFQuality = GlobalSDFQuality;
     Graphics::GIQuality = GIQuality;
+    Graphics::GICascadesBlending = GICascadesBlending;
     Graphics::PostProcessSettings = ::PostProcessSettings();
     Graphics::PostProcessSettings.BlendWith(PostProcessSettings, 1.0f);
 #if !USE_EDITOR // OptionsModule handles fallback fonts in Editor
@@ -187,6 +191,20 @@ bool GraphicsService::Init()
     );
 
     // Initialize
+    if (device->IsDebugToolAttached
+#if USE_EDITOR || !BUILD_RELEASE
+        || CommandLine::Options.ShaderProfile
+#endif
+#if USE_EDITOR
+        || CommandLine::Options.ShaderDebug
+#endif
+        )
+    {
+#if COMPILE_WITH_PROFILER
+        // Auto-enable GPU events
+        ProfilerGPU::EventsEnabled = true;
+#endif
+    }
     if (device->LoadContent())
     {
         return true;

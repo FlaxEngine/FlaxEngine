@@ -529,15 +529,15 @@ public:
     /// Gets the asset references.
     /// </summary>
     /// </remarks>
-    /// <param name="output">The output collection of the asset ids referenced by this object.</param>
-    virtual void GetReferences(Array<Guid>& output) const
+    /// <param name="assets">The output collection of the asset ids referenced by this object.</param>
+    virtual void GetReferences(Array<Guid>& assets) const
     {
         for (int32 i = 0; i < Parameters.Count(); i++)
         {
             const auto& p = Parameters[i];
             const Guid id = (Guid)p.Value;
             if (id.IsValid())
-                output.Add(id);
+                assets.Add(id);
         }
 
         for (int32 i = 0; i < Nodes.Count(); i++)
@@ -547,7 +547,7 @@ public:
             {
                 const Guid id = (Guid)n.Values[j];
                 if (id.IsValid())
-                    output.Add(id);
+                    assets.Add(id);
             }
         }
     }

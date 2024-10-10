@@ -58,6 +58,7 @@ Return the index of the highest set bit. Undefined for zero arg.
 */
 PX_INLINE uint32_t PxHighestSetBitUnsafe(uint32_t v)
 {
+
 	return uint32_t(31 - __builtin_clz(v));
 }
 

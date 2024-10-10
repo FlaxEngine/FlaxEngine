@@ -26,14 +26,12 @@ void PS_GBuffer(
 	)
 {
 	Light = float4(0, 0, 0, 1);
-	
+	MaterialInput materialInput = GetMaterialInput(input);
 #if USE_DITHERED_LOD_TRANSITION
-	// LOD masking
-	ClipLODTransition(input);
+	ClipLODTransition(materialInput);
 #endif
 
 	// Get material parameters
-	MaterialInput materialInput = GetMaterialInput(input);
 	Material material = GetMaterialPS(materialInput);
 
 	// Masking

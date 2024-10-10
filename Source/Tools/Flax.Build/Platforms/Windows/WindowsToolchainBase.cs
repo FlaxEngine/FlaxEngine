@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Xml;
 using Flax.Build.Graph;
@@ -133,16 +134,14 @@ namespace Flax.Build.Platforms
                 throw new Exception(string.Format("Missing SDK {0} for platform Windows", SDK));
 
             // Get the tools paths
-            string vcToolPath;
-            if (Architecture == TargetArchitecture.x64)
-                vcToolPath = WindowsPlatformBase.GetVCToolPath64(Toolset);
-            else
-                vcToolPath = WindowsPlatformBase.GetVCToolPath32(Toolset);
-            _vcToolPath = vcToolPath;
-            _compilerPath = Path.Combine(vcToolPath, "cl.exe");
-            _linkerPath = Path.Combine(vcToolPath, "link.exe");
-            _libToolPath = Path.Combine(vcToolPath, "lib.exe");
-            _xdcmakePath = Path.Combine(vcToolPath, "xdcmake.exe");
+            var hostArchitecture = Platform.BuildTargetArchitecture;
+            _vcToolPath = WindowsPlatformBase.GetVCToolPath(Toolset, hostArchitecture, Architecture);
+            if (string.IsNullOrEmpty(_vcToolPath))
+                throw new Exception(string.Format("No {0} host compiler tools found for target architecture {1}", hostArchitecture, Architecture));
+            _compilerPath = Path.Combine(_vcToolPath, "cl.exe");
+            _linkerPath = Path.Combine(_vcToolPath, "link.exe");
+            _libToolPath = Path.Combine(_vcToolPath, "lib.exe");
+            _xdcmakePath = Path.Combine(_vcToolPath, "xdcmake.exe");
 
             // Add Visual C++ toolset include and library paths
             var vcToolChainDir = toolsets[Toolset];
@@ -166,7 +165,7 @@ namespace Flax.Build.Platforms
                 case TargetArchitecture.x64:
                     SystemLibraryPaths.Add(Path.Combine(vcToolChainDir, "lib", "amd64"));
                     break;
-                default: throw new InvalidArchitectureException(architecture);
+                default: throw new InvalidArchitectureException(Architecture);
                 }
 
                 // When using Visual Studio 2015 toolset and using pre-Windows 10 SDK, find a Windows 10 SDK and add the UCRT include paths
@@ -198,7 +197,7 @@ namespace Flax.Build.Platforms
                     case TargetArchitecture.x64:
                         SystemLibraryPaths.Add(Path.Combine(libraryRootDir, "ucrt", "x64"));
                         break;
-                    default: throw new InvalidArchitectureException(architecture);
+                    default: throw new InvalidArchitectureException(Architecture);
                     }
                 }
                 break;
@@ -223,7 +222,7 @@ namespace Flax.Build.Platforms
                 case TargetArchitecture.x64:
                     SystemLibraryPaths.Add(Path.Combine(vcToolChainDir, "lib", "x64"));
                     break;
-                default: throw new InvalidArchitectureException(architecture);
+                default: throw new InvalidArchitectureException(Architecture);
                 }
                 break;
             }
@@ -274,7 +273,7 @@ namespace Flax.Build.Platforms
                     _makepriPath = Path.Combine(binRootDir, "makepri.exe");
                     break;
                 }
-                default: throw new InvalidArchitectureException(architecture);
+                default: throw new InvalidArchitectureException(Architecture);
                 }
                 break;
             }
@@ -290,6 +289,7 @@ namespace Flax.Build.Platforms
             case WindowsPlatformSDK.v10_0_20348_0:
             case WindowsPlatformSDK.v10_0_22000_0:
             case WindowsPlatformSDK.v10_0_22621_0:
+            case WindowsPlatformSDK.v10_0_26100_0:
             {
                 var sdkVersionName = WindowsPlatformBase.GetSDKVersion(SDK).ToString();
                 string includeRootDir = Path.Combine(windowsSdkDir, "include", sdkVersionName);
@@ -312,13 +312,16 @@ namespace Flax.Build.Platforms
                 {
                     SystemLibraryPaths.Add(Path.Combine(libraryRootDir, "ucrt", "arm64"));
                     SystemLibraryPaths.Add(Path.Combine(libraryRootDir, "um", "arm64"));
+                    var binRootDir = Path.Combine(windowsSdkDir, "bin", sdkVersionName, hostArchitecture.ToString().ToLower());
+                    _resourceCompilerPath = Path.Combine(binRootDir, "rc.exe");
+                    _makepriPath = Path.Combine(binRootDir, "makepri.exe");
                     break;
                 }
                 case TargetArchitecture.x86:
                 {
                     SystemLibraryPaths.Add(Path.Combine(libraryRootDir, "ucrt", "x86"));
                     SystemLibraryPaths.Add(Path.Combine(libraryRootDir, "um", "x86"));
-                    var binRootDir = Path.Combine(windowsSdkDir, "bin", sdkVersionName, "x86");
+                    var binRootDir = Path.Combine(windowsSdkDir, "bin", sdkVersionName, hostArchitecture.ToString().ToLower());
                     _resourceCompilerPath = Path.Combine(binRootDir, "rc.exe");
                     _makepriPath = Path.Combine(binRootDir, "makepri.exe");
                     break;
@@ -327,12 +330,12 @@ namespace Flax.Build.Platforms
                 {
                     SystemLibraryPaths.Add(Path.Combine(libraryRootDir, "ucrt", "x64"));
                     SystemLibraryPaths.Add(Path.Combine(libraryRootDir, "um", "x64"));
-                    var binRootDir = Path.Combine(windowsSdkDir, "bin", sdkVersionName, "x64");
+                    var binRootDir = Path.Combine(windowsSdkDir, "bin", sdkVersionName, hostArchitecture.ToString().ToLower());
                     _resourceCompilerPath = Path.Combine(binRootDir, "rc.exe");
                     _makepriPath = Path.Combine(binRootDir, "makepri.exe");
                     break;
                 }
-                default: throw new InvalidArchitectureException(architecture);
+                default: throw new InvalidArchitectureException(Architecture);
                 }
                 break;
             }
@@ -405,7 +408,7 @@ namespace Flax.Build.Platforms
             options.CompileEnv.PreprocessorDefinitions.Add("_CRT_SECURE_NO_DEPRECATE");
             options.CompileEnv.PreprocessorDefinitions.Add("_CRT_SECURE_NO_WARNINGS");
             options.CompileEnv.PreprocessorDefinitions.Add("_WINDOWS");
-            if (Architecture == TargetArchitecture.x64)
+            if (Architecture == TargetArchitecture.x64 || Architecture == TargetArchitecture.ARM64)
                 options.CompileEnv.PreprocessorDefinitions.Add("WIN64");
         }
 
@@ -511,16 +514,13 @@ namespace Flax.Build.Platforms
                     commonArgs.Add("/Os");
                 if (compileEnvironment.Optimization)
                 {
-                    // Enable Most Speed Optimizations
-                    // Commented out due to /Og causing slow build times without /GL in development builds
-                    //commonArgs.Add("/Ox");
-
                     // Generate Intrinsic Functions
                     commonArgs.Add("/Oi");
 
                     // Frame-Pointer Omission
                     commonArgs.Add("/Oy");
 
+                    // Only use /Ox with /GL to prevent too long build times
                     if (compileEnvironment.WholeProgramOptimization)
                     {
                         // Enable Most Speed Optimizations
@@ -528,6 +528,12 @@ namespace Flax.Build.Platforms
 
                         // Whole Program Optimization
                         commonArgs.Add("/GL");
+                    }
+                    else
+                    {
+                        // Enable SEE2 and other code optimizations but without breaking incremental linking
+                        //commonArgs.Add("/Og"); // Results in D9035 warning
+                        commonArgs.Add("/O2");
                     }
                 }
                 else
@@ -614,6 +620,9 @@ namespace Flax.Build.Platforms
                         commonArgs.Add(string.Format("/FU\"{0}\\platform.winmd\"", dir));
                     }
                 }
+
+                // Preprocessor conformance mode
+                commonArgs.Add("/Zc:preprocessor");
             }
 
             // Add preprocessor definitions
@@ -787,8 +796,10 @@ namespace Flax.Build.Platforms
                     args.Add("/MACHINE:x64");
                     break;
                 case TargetArchitecture.ARM:
-                case TargetArchitecture.ARM64:
                     args.Add("/MACHINE:ARM");
+                    break;
+                case TargetArchitecture.ARM64:
+                    args.Add("/MACHINE:ARM64");
                     break;
                 default: throw new InvalidArchitectureException(Architecture);
                 }
@@ -889,7 +900,7 @@ namespace Flax.Build.Platforms
                     }
 
                     // Link Incrementally
-                    if (linkEnvironment.UseIncrementalLinking)
+                    if (linkEnvironment.UseIncrementalLinking && !linkEnvironment.LinkTimeCodeGeneration)
                     {
                         args.Add("/INCREMENTAL");
                     }

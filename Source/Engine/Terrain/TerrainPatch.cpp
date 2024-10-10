@@ -113,6 +113,11 @@ TerrainPatch::~TerrainPatch()
 #endif
 }
 
+RawDataAsset* TerrainPatch::GetHeightfield() const
+{
+    return _heightfield.Get();
+}
+
 void TerrainPatch::RemoveLightmap()
 {
     for (auto& chunk : Chunks)
@@ -1215,7 +1220,8 @@ Color32* TerrainPatch::GetSplatMapData(int32 index)
 void TerrainPatch::ClearSplatMapCache()
 {
     PROFILE_CPU_NAMED("Terrain.ClearSplatMapCache");
-    _cachedSplatMap->Clear();
+    for (int32 i = 0; i < TERRAIN_MAX_SPLATMAPS_COUNT; i++)
+        _cachedSplatMap[i].Clear();
 }
 
 void TerrainPatch::ClearCache()
@@ -1963,6 +1969,7 @@ bool TerrainPatch::UpdateCollision()
 
 bool TerrainPatch::RayCast(const Vector3& origin, const Vector3& direction, float& resultHitDistance, float maxDistance) const
 {
+    CHECK_RETURN_DEBUG(direction.IsNormalized(), false);
     if (_physicsShape == nullptr)
         return false;
     Vector3 shapePos;
@@ -1973,6 +1980,7 @@ bool TerrainPatch::RayCast(const Vector3& origin, const Vector3& direction, floa
 
 bool TerrainPatch::RayCast(const Vector3& origin, const Vector3& direction, float& resultHitDistance, Vector3& resultHitNormal, float maxDistance) const
 {
+    CHECK_RETURN_DEBUG(direction.IsNormalized(), false);
     if (_physicsShape == nullptr)
         return false;
     Vector3 shapePos;
@@ -1990,6 +1998,7 @@ bool TerrainPatch::RayCast(const Vector3& origin, const Vector3& direction, floa
 
 bool TerrainPatch::RayCast(const Vector3& origin, const Vector3& direction, float& resultHitDistance, TerrainChunk*& resultChunk, float maxDistance) const
 {
+    CHECK_RETURN_DEBUG(direction.IsNormalized(), false);
     if (_physicsShape == nullptr)
         return false;
     Vector3 shapePos;
@@ -2027,6 +2036,7 @@ bool TerrainPatch::RayCast(const Vector3& origin, const Vector3& direction, floa
 
 bool TerrainPatch::RayCast(const Vector3& origin, const Vector3& direction, RayCastHit& hitInfo, float maxDistance) const
 {
+    CHECK_RETURN_DEBUG(direction.IsNormalized(), false);
     if (_physicsShape == nullptr)
         return false;
     Vector3 shapePos;

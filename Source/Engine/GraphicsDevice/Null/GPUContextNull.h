@@ -48,7 +48,7 @@ public:
     {
     }
 
-    void ClearDepthCustom(GPUTextureView* depthBuffer, float depthValue) override
+    void ClearDepthCustom(GPUTextureView* depthBuffer, float depthValue, uint8 stencilValue) override
     {
     }
 

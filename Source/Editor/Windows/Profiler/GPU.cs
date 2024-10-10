@@ -25,11 +25,40 @@ namespace FlaxEditor.Windows.Profiler
         : base("GPU")
         {
             // Layout
-            var panel = new Panel(ScrollBars.Vertical)
+            var mainPanel = new Panel(ScrollBars.None)
             {
                 AnchorPreset = AnchorPresets.StretchAll,
                 Offsets = Margin.Zero,
                 Parent = this,
+            };
+            
+            // Chart
+            _drawTimeCPU = new SingleChart
+            {
+                Title = "Draw (CPU)",
+                AnchorPreset = AnchorPresets.HorizontalStretchTop,
+                Offsets = Margin.Zero,
+                Height = SingleChart.DefaultHeight,
+                FormatSample = v => (Mathf.RoundToInt(v * 10.0f) / 10.0f) + " ms",
+                Parent = mainPanel,
+            };
+            _drawTimeCPU.SelectedSampleChanged += OnSelectedSampleChanged;
+            
+            _drawTimeGPU = new SingleChart
+            {
+                Title = "Draw (GPU)",
+                AnchorPreset = AnchorPresets.HorizontalStretchTop,
+                Offsets = new Margin(0, 0, _drawTimeCPU.Height + 2, 0),
+                FormatSample = v => (Mathf.RoundToInt(v * 10.0f) / 10.0f) + " ms",
+                Parent = mainPanel,
+            };
+            _drawTimeGPU.SelectedSampleChanged += OnSelectedSampleChanged;
+            
+            var panel = new Panel(ScrollBars.Vertical)
+            {
+                AnchorPreset = AnchorPresets.StretchAll,
+                Offsets = new Margin(0, 0, _drawTimeCPU.Height + _drawTimeGPU.Height + 4, 0),
+                Parent = mainPanel,
             };
             var layout = new VerticalPanel
             {
@@ -38,22 +67,6 @@ namespace FlaxEditor.Windows.Profiler
                 IsScrollable = true,
                 Parent = panel,
             };
-
-            // Chart
-            _drawTimeCPU = new SingleChart
-            {
-                Title = "Draw (CPU)",
-                FormatSample = v => (Mathf.RoundToInt(v * 10.0f) / 10.0f) + " ms",
-                Parent = layout,
-            };
-            _drawTimeCPU.SelectedSampleChanged += OnSelectedSampleChanged;
-            _drawTimeGPU = new SingleChart
-            {
-                Title = "Draw (GPU)",
-                FormatSample = v => (Mathf.RoundToInt(v * 10.0f) / 10.0f) + " ms",
-                Parent = layout,
-            };
-            _drawTimeGPU.SelectedSampleChanged += OnSelectedSampleChanged;
 
             // Timeline
             _timeline = new Timeline

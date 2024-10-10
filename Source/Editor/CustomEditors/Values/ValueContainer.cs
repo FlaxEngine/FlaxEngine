@@ -140,6 +140,11 @@ namespace FlaxEditor.CustomEditors
         public bool IsArray => Type != ScriptType.Null && Type.IsArray;
 
         /// <summary>
+        /// True if member or type has <see cref="System.ObsoleteAttribute"/> that marks it as obsolete.
+        /// </summary>
+        public bool IsObsolete { get; }
+
+        /// <summary>
         /// Gets the values types array (without duplicates).
         /// </summary>
         public ScriptType[] ValuesTypes
@@ -160,6 +165,7 @@ namespace FlaxEditor.CustomEditors
         {
             Info = info;
             Type = Info.ValueType;
+            IsObsolete = Info.HasAttribute(typeof(ObsoleteAttribute), true);
         }
 
         /// <summary>

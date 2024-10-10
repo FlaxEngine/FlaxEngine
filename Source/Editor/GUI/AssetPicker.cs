@@ -5,7 +5,6 @@ using System.IO;
 using FlaxEditor.Content;
 using FlaxEditor.GUI.Drag;
 using FlaxEditor.Scripting;
-using FlaxEditor.Utilities;
 using FlaxEngine;
 using FlaxEngine.GUI;
 using FlaxEngine.Utilities;
@@ -105,9 +104,9 @@ namespace FlaxEditor.GUI
 
         private Rectangle Button1Rect => new Rectangle(Height + ButtonsOffset, 0, ButtonsSize, ButtonsSize);
 
-        private Rectangle Button2Rect => new Rectangle(Height + ButtonsOffset, ButtonsSize, ButtonsSize, ButtonsSize);
+        private Rectangle Button2Rect => new Rectangle(Height + ButtonsOffset, ButtonsSize + 2, ButtonsSize, ButtonsSize);
 
-        private Rectangle Button3Rect => new Rectangle(Height + ButtonsOffset, ButtonsSize * 2, ButtonsSize, ButtonsSize);
+        private Rectangle Button3Rect => new Rectangle(Height + ButtonsOffset, (ButtonsSize + 2) * 2, ButtonsSize, ButtonsSize);
 
         /// <inheritdoc />
         public override void Draw()
@@ -149,6 +148,13 @@ namespace FlaxEditor.GUI
                                       style.Foreground,
                                       TextAlignment.Near,
                                       TextAlignment.Center);
+                    Render2D.DrawText(
+                                      style.FontSmall,
+                                      $"{Validator.AssetType.Type.GetTypeDisplayName()}",
+                                      new Rectangle(button1Rect.Right + 2, ButtonsSize + 2, sizeForTextLeft, ButtonsSize),
+                                      style.ForegroundGrey,
+                                      TextAlignment.Near,
+                                      TextAlignment.Center);
                 }
             }
             // Check if has no item but has an asset (eg. virtual asset)
@@ -171,6 +177,13 @@ namespace FlaxEditor.GUI
                                       style.Foreground,
                                       TextAlignment.Near,
                                       TextAlignment.Center);
+                    Render2D.DrawText(
+                                      style.FontSmall,
+                                      $"{Validator.AssetType.Type.GetTypeDisplayName()}",
+                                      new Rectangle(button1Rect.Right + 2, ButtonsSize + 2, sizeForTextLeft, ButtonsSize),
+                                      style.ForegroundGrey,
+                                      TextAlignment.Near,
+                                      TextAlignment.Center);
                 }
             }
             else
@@ -178,6 +191,24 @@ namespace FlaxEditor.GUI
                 // No element selected
                 Render2D.FillRectangle(iconRect, style.BackgroundNormal);
                 Render2D.DrawText(style.FontMedium, "No asset\nselected", iconRect, Color.Orange, TextAlignment.Center, TextAlignment.Center, TextWrapping.NoWrap, 1.0f, Height / DefaultIconSize);
+                float sizeForTextLeft = Width - button1Rect.Right;
+                if (sizeForTextLeft > 30)
+                {
+                    Render2D.DrawText(
+                                      style.FontSmall,
+                                      $"None",
+                                      new Rectangle(button1Rect.Right + 2, 0, sizeForTextLeft, ButtonsSize),
+                                      style.Foreground,
+                                      TextAlignment.Near,
+                                      TextAlignment.Center);
+                    Render2D.DrawText(
+                                      style.FontSmall,
+                                      $"{Validator.AssetType.Type.GetTypeDisplayName()}",
+                                      new Rectangle(button1Rect.Right + 2, ButtonsSize + 2, sizeForTextLeft, ButtonsSize),
+                                      style.ForegroundGrey,
+                                      TextAlignment.Near,
+                                      TextAlignment.Center);
+                }
             }
 
             // Check if drag is over
@@ -186,6 +217,13 @@ namespace FlaxEditor.GUI
                 var bounds = new Rectangle(Float2.Zero, Size);
                 Render2D.FillRectangle(bounds, style.Selection);
                 Render2D.DrawRectangle(bounds, style.SelectionBorder);
+            }
+
+            // Navigation focus highlight
+            if (IsNavFocused)
+            {
+                var bounds = new Rectangle(Float2.Zero, Size);
+                Render2D.DrawRectangle(bounds, style.BackgroundSelected);
             }
         }
 
@@ -255,35 +293,7 @@ namespace FlaxEditor.GUI
                 else if (Button1Rect.Contains(location))
                 {
                     Focus();
-                    if (Validator.AssetType != ScriptType.Null)
-                    {
-                        // Show asset picker popup
-                        var popup = AssetSearchPopup.Show(this, Button1Rect.BottomLeft, Validator.IsValid, item =>
-                        {
-                            Validator.SelectedItem = item;
-                            RootWindow.Focus();
-                            Focus();
-                        });
-                        if (Validator.SelectedAsset != null)
-                        {
-                            var selectedAssetName = Path.GetFileNameWithoutExtension(Validator.SelectedAsset.Path);
-                            popup.ScrollToAndHighlightItemByName(selectedAssetName);
-                        }
-                    }
-                    else
-                    {
-                        // Show content item picker popup
-                        var popup = ContentSearchPopup.Show(this, Button1Rect.BottomLeft, Validator.IsValid, item =>
-                        {
-                            Validator.SelectedItem = item;
-                            RootWindow.Focus();
-                            Focus();
-                        });
-                        if (Validator.SelectedItem != null)
-                        {
-                            popup.ScrollToAndHighlightItemByName(Validator.SelectedItem.ShortName);
-                        }
-                    }
+                    OnSubmit();
                 }
                 else if (Validator.SelectedAsset != null || Validator.SelectedItem != null)
                 {
@@ -380,6 +390,42 @@ namespace FlaxEditor.GUI
             _dragOverElement.OnDragDrop();
 
             return DragDropEffect.Move;
+        }
+
+        /// <inheritdoc />
+        public override void OnSubmit()
+        {
+            base.OnSubmit();
+
+            if (Validator.AssetType != ScriptType.Null)
+            {
+                // Show asset picker popup
+                var popup = AssetSearchPopup.Show(this, Button1Rect.BottomLeft, Validator.IsValid, item =>
+                {
+                    Validator.SelectedItem = item;
+                    RootWindow.Focus();
+                    Focus();
+                });
+                if (Validator.SelectedAsset != null)
+                {
+                    var selectedAssetName = Path.GetFileNameWithoutExtension(Validator.SelectedAsset.Path);
+                    popup.ScrollToAndHighlightItemByName(selectedAssetName);
+                }
+            }
+            else
+            {
+                // Show content item picker popup
+                var popup = ContentSearchPopup.Show(this, Button1Rect.BottomLeft, Validator.IsValid, item =>
+                {
+                    Validator.SelectedItem = item;
+                    RootWindow.Focus();
+                    Focus();
+                });
+                if (Validator.SelectedItem != null)
+                {
+                    popup.ScrollToAndHighlightItemByName(Validator.SelectedItem.ShortName);
+                }
+            }
         }
     }
 }

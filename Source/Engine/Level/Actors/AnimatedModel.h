@@ -150,17 +150,17 @@ public:
     DrawPass DrawModes = DrawPass::Default;
 
     /// <summary>
-    /// The object sort order key used when sorting drawable objects during rendering. Use lower values to draw object before others, higher values are rendered later (on top). Can be use to control transparency drawing.
+    /// The object sort order key used when sorting drawable objects during rendering. Use lower values to draw object before others, higher values are rendered later (on top). Can be used to control transparency drawing.
     /// </summary>
     API_FIELD(Attributes="EditorDisplay(\"Skinned Model\"), EditorOrder(110), DefaultValue(0)")
-    int16 SortOrder = 0;
+    int8 SortOrder = 0;
 
     /// <summary>
     /// The shadows casting mode.
     /// [Deprecated on 26.10.2022, expires on 26.10.2024]
     /// </summary>
     API_FIELD(Attributes="EditorOrder(110), DefaultValue(ShadowsCastingMode.All), EditorDisplay(\"Skinned Model\")")
-    DEPRECATED ShadowsCastingMode ShadowsMode = ShadowsCastingMode::All;
+    DEPRECATED() ShadowsCastingMode ShadowsMode = ShadowsCastingMode::All;
 
     /// <summary>
     /// The animation root motion apply target. If not specified the animated model will apply it itself.

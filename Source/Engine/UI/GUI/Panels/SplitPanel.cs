@@ -130,6 +130,7 @@ namespace FlaxEngine.GUI
             {
                 // Clear flag
                 _splitterClicked = false;
+                PerformLayout();
 
                 // End capturing mouse
                 EndMouseCapture();

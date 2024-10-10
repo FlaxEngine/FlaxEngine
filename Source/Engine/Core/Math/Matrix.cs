@@ -825,7 +825,7 @@ namespace FlaxEngine
         /// <param name="rotation">When the method completes, contains the rotation component of the decomposed matrix.</param>
         /// <param name="translation">When the method completes, contains the translation component of the decomposed matrix.</param>
         /// <remarks>This method is designed to decompose an SRT transformation matrix only.</remarks>
-        [Obsolete("Deprecated in v1.8")]
+        [Obsolete("Use Decompose with 'out Matrix3x3 rotation' parameter instead")]
         public void Decompose(out Float3 scale, out Matrix rotation, out Float3 translation)
         {
             Decompose(out scale, out Matrix3x3 r, out translation);

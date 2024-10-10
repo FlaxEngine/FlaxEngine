@@ -43,6 +43,7 @@ namespace Flax.Build
             options.ScriptingAPI.Defines.Add("FLAX");
             options.ScriptingAPI.Defines.Add("FLAX_ASSERTIONS");
             options.ScriptingAPI.FileReferences.Add(Utilities.RemovePathRelativeParts(Path.Combine(Globals.EngineRoot, "Source", "Platforms", "DotNet", "Newtonsoft.Json.dll")));
+            options.ScriptingAPI.SystemReferences.Add("System.ComponentModel.TypeConverter");
         }
     }
 }

@@ -156,7 +156,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Title = "Lerp",
                 Description = "Performs a linear interpolation",
                 Flags = NodeFlags.AllGraphs,
-                Size = new Float2(110, 60),
+                Size = new Float2(150, 60),
                 ConnectionsHints = ConnectionsHint.Numeric,
                 IndependentBoxes = new[] { 0, 1 },
                 DependentBoxes = new[] { 3 },

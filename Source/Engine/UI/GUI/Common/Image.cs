@@ -135,5 +135,14 @@ namespace FlaxEngine.GUI
 
             return false;
         }
+
+        /// <inheritdoc />
+        public override void OnSubmit()
+        {
+            base.OnSubmit();
+
+            // Execute default user interaction via mouse click
+            Clicked?.Invoke(this, MouseButton.Left);
+        }
     }
 }

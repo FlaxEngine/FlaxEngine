@@ -138,18 +138,17 @@ namespace FlaxEditor.Gizmo
 
         private void UpdateGizmoPosition()
         {
+            var position = Vector3.Zero;
+
             // Get gizmo pivot
             switch (_activePivotType)
             {
             case PivotType.ObjectCenter:
                 if (SelectionCount > 0)
-                    Position = GetSelectedTransform(0).Translation;
+                    position = GetSelectedTransform(0).Translation;
                 break;
             case PivotType.SelectionCenter:
-                Position = GetSelectionCenter();
-                break;
-            case PivotType.WorldOrigin:
-                Position = Vector3.Zero;
+                position = GetSelectionCenter();
                 break;
             }
 
@@ -157,11 +156,13 @@ namespace FlaxEditor.Gizmo
             if (_vertexSnapObject != null)
             {
                 Vector3 vertexSnapPoint = _vertexSnapObject.Transform.LocalToWorld(_vertexSnapPoint);
-                Position += vertexSnapPoint - Position;
+                position += vertexSnapPoint - position;
             }
 
             // Apply current movement
-            Position += _translationDelta;
+            position += _translationDelta;
+
+            Position = position;
         }
 
         private void UpdateMatrices()
@@ -213,10 +214,11 @@ namespace FlaxEditor.Gizmo
             ray.Position = Vector3.Transform(ray.Position, invRotationMatrix);
             Vector3.TransformNormal(ref ray.Direction, ref invRotationMatrix, out ray.Direction);
 
-            var planeXY = new Plane(Vector3.Backward, Vector3.Transform(Position, invRotationMatrix).Z);
-            var planeYZ = new Plane(Vector3.Left, Vector3.Transform(Position, invRotationMatrix).X);
-            var planeZX = new Plane(Vector3.Down, Vector3.Transform(Position, invRotationMatrix).Y);
-            var dir = Vector3.Normalize(ray.Position - Position);
+            var position = Position;
+            var planeXY = new Plane(Vector3.Backward, Vector3.Transform(position, invRotationMatrix).Z);
+            var planeYZ = new Plane(Vector3.Left, Vector3.Transform(position, invRotationMatrix).X);
+            var planeZX = new Plane(Vector3.Down, Vector3.Transform(position, invRotationMatrix).Y);
+            var dir = Vector3.Normalize(ray.Position - position);
             var planeDotXY = Mathf.Abs(Vector3.Dot(planeXY.Normal, dir));
             var planeDotYZ = Mathf.Abs(Vector3.Dot(planeYZ.Normal, dir));
             var planeDotZX = Mathf.Abs(Vector3.Dot(planeZX.Normal, dir));
@@ -229,8 +231,8 @@ namespace FlaxEditor.Gizmo
                 var plane = planeDotXY > planeDotZX ? planeXY : planeZX;
                 if (ray.Intersects(ref plane, out intersection))
                 {
-                    _intersectPosition = ray.Position + ray.Direction * intersection;
-                    if (_lastIntersectionPosition != Vector3.Zero)
+                    _intersectPosition = ray.GetPoint(intersection);
+                    if (!_lastIntersectionPosition.IsZero)
                         _tDelta = _intersectPosition - _lastIntersectionPosition;
                     delta = new Vector3(_tDelta.X, 0, 0);
                 }
@@ -241,8 +243,8 @@ namespace FlaxEditor.Gizmo
                 var plane = planeDotXY > planeDotYZ ? planeXY : planeYZ;
                 if (ray.Intersects(ref plane, out intersection))
                 {
-                    _intersectPosition = ray.Position + ray.Direction * intersection;
-                    if (_lastIntersectionPosition != Vector3.Zero)
+                    _intersectPosition = ray.GetPoint(intersection);
+                    if (!_lastIntersectionPosition.IsZero)
                         _tDelta = _intersectPosition - _lastIntersectionPosition;
                     delta = new Vector3(0, _tDelta.Y, 0);
                 }
@@ -253,8 +255,8 @@ namespace FlaxEditor.Gizmo
                 var plane = planeDotZX > planeDotYZ ? planeZX : planeYZ;
                 if (ray.Intersects(ref plane, out intersection))
                 {
-                    _intersectPosition = ray.Position + ray.Direction * intersection;
-                    if (_lastIntersectionPosition != Vector3.Zero)
+                    _intersectPosition = ray.GetPoint(intersection);
+                    if (!_lastIntersectionPosition.IsZero)
                         _tDelta = _intersectPosition - _lastIntersectionPosition;
                     delta = new Vector3(0, 0, _tDelta.Z);
                 }
@@ -264,8 +266,8 @@ namespace FlaxEditor.Gizmo
             {
                 if (ray.Intersects(ref planeYZ, out intersection))
                 {
-                    _intersectPosition = ray.Position + ray.Direction * intersection;
-                    if (_lastIntersectionPosition != Vector3.Zero)
+                    _intersectPosition = ray.GetPoint(intersection);
+                    if (!_lastIntersectionPosition.IsZero)
                         _tDelta = _intersectPosition - _lastIntersectionPosition;
                     delta = new Vector3(0, _tDelta.Y, _tDelta.Z);
                 }
@@ -275,8 +277,8 @@ namespace FlaxEditor.Gizmo
             {
                 if (ray.Intersects(ref planeXY, out intersection))
                 {
-                    _intersectPosition = ray.Position + ray.Direction * intersection;
-                    if (_lastIntersectionPosition != Vector3.Zero)
+                    _intersectPosition = ray.GetPoint(intersection);
+                    if (!_lastIntersectionPosition.IsZero)
                         _tDelta = _intersectPosition - _lastIntersectionPosition;
                     delta = new Vector3(_tDelta.X, _tDelta.Y, 0);
                 }
@@ -286,8 +288,8 @@ namespace FlaxEditor.Gizmo
             {
                 if (ray.Intersects(ref planeZX, out intersection))
                 {
-                    _intersectPosition = ray.Position + ray.Direction * intersection;
-                    if (_lastIntersectionPosition != Vector3.Zero)
+                    _intersectPosition = ray.GetPoint(intersection);
+                    if (!_lastIntersectionPosition.IsZero)
                         _tDelta = _intersectPosition - _lastIntersectionPosition;
                     delta = new Vector3(_tDelta.X, 0, _tDelta.Z);
                 }
@@ -299,8 +301,8 @@ namespace FlaxEditor.Gizmo
                 var plane = new Plane(-Vector3.Normalize(gizmoToView), gizmoToView.Length);
                 if (ray.Intersects(ref plane, out intersection))
                 {
-                    _intersectPosition = ray.Position + ray.Direction * intersection;
-                    if (_lastIntersectionPosition != Vector3.Zero)
+                    _intersectPosition = ray.GetPoint(intersection);
+                    if (!_lastIntersectionPosition.IsZero)
                         _tDelta = _intersectPosition - _lastIntersectionPosition;
                 }
                 delta = _tDelta;
@@ -412,10 +414,8 @@ namespace FlaxEditor.Gizmo
         public override void Update(float dt)
         {
             LastDelta = Transform.Identity;
-
             if (!IsActive)
                 return;
-
             bool isLeftBtnDown = Owner.IsLeftMouseButtonDown;
 
             // Snap to ground
@@ -516,6 +516,7 @@ namespace FlaxEditor.Gizmo
                 {
                     // Clear cache
                     _accMoveDelta = Vector3.Zero;
+                    _lastIntersectionPosition = _intersectPosition = Vector3.Zero;
                     EndTransforming();
                 }
             }

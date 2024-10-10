@@ -27,6 +27,7 @@ API_CLASS(Namespace="FlaxEditor", Name="Editor", NoSpawn, NoConstructor) class M
         byte AutoReloadScriptsOnMainWindowFocus = 1;
         byte ForceScriptCompilationOnStartup = 1;
         byte UseAssetImportPathRelative = 1;
+        byte EnableParticlesPreview = 1;
         byte AutoRebuildCSG = 1;
         float AutoRebuildCSGTimeoutMs = 50;
         byte AutoRebuildNavMesh = 1;
@@ -216,6 +217,13 @@ public:
     /// <param name="tag">New asset type.</param>
     /// <param name="outputPath">Output asset path.</param>
     API_FUNCTION() static bool CreateAsset(const String& tag, String outputPath);
+
+    /// <summary>
+    /// Gets a list of asset references of a given asset.
+    /// </summary>
+    /// <param name="assetId">The asset ID.</param>
+    /// <returns>List of referenced assets.</returns>
+    API_FUNCTION() static Array<Guid> GetAssetReferences(const Guid& assetId);
 
 public:
     API_STRUCT(Internal, NoDefault) struct VisualScriptStackFrame

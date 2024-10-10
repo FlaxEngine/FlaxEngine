@@ -1290,6 +1290,18 @@ namespace FlaxEditor.GUI
         }
 
         /// <inheritdoc />
+        public override void SetKeyframeValue(int index, object value, object tangentIn, object tangentOut)
+        {
+            var k = _keyframes[index];
+            k.Value = (T)value;
+            _keyframes[index] = k;
+
+            UpdateKeyframes();
+            UpdateTooltips();
+            OnEdited();
+        }
+
+        /// <inheritdoc />
         public override Float2 GetKeyframePoint(int index, int component)
         {
             var k = _keyframes[index];
@@ -2004,6 +2016,20 @@ namespace FlaxEditor.GUI
         {
             var k = _keyframes[index];
             k.Value = (T)value;
+            _keyframes[index] = k;
+
+            UpdateKeyframes();
+            UpdateTooltips();
+            OnEdited();
+        }
+
+        /// <inheritdoc />
+        public override void SetKeyframeValue(int index, object value, object tangentIn, object tangentOut)
+        {
+            var k = _keyframes[index];
+            k.Value = (T)value;
+            k.TangentIn = (T)tangentIn;
+            k.TangentOut = (T)tangentOut;
             _keyframes[index] = k;
 
             UpdateKeyframes();

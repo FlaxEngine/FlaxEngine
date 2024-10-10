@@ -58,7 +58,7 @@ public:
         }
 
         template<typename ItemType>
-        FORCE_INLINE void Occupy(ItemType& item)
+        FORCE_INLINE void Occupy(ItemType&& item)
         {
             Memory::MoveItems(&Item, &item, 1);
             _state = Occupied;
@@ -323,6 +323,13 @@ public:
         }
 
         Iterator& operator=(const Iterator& v)
+        {
+            _collection = v._collection;
+            _index = v._index;
+            return *this;
+        }
+
+        Iterator& operator=(Iterator&& v)
         {
             _collection = v._collection;
             _index = v._index;

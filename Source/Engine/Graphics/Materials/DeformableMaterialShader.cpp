@@ -37,7 +37,7 @@ void DeformableMaterialShader::Bind(BindParameters& params)
     // Prepare
     auto context = params.GPUContext;
     auto& view = params.RenderContext.View;
-    auto& drawCall = *params.FirstDrawCall;
+    auto& drawCall = *params.DrawCall;
     Span<byte> cb(_cbData.Get(), _cbData.Count());
     ASSERT_LOW_LAYER(cb.Length() >= sizeof(DeformableMaterialShaderData));
     auto materialData = reinterpret_cast<DeformableMaterialShaderData*>(cb.Get());

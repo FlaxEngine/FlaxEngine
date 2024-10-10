@@ -506,7 +506,7 @@ void AnimatedModel::StopSlotAnimation(const StringView& slotName, Animation* ani
     {
         if (slot.Animation == anim && slot.Name == slotName)
         {
-            slot.Animation = nullptr;
+            //slot.Animation = nullptr; // TODO: make an immediate version of this method and set the animation to nullptr.
             slot.Reset = true;
             break;
         }
@@ -758,7 +758,7 @@ void AnimatedModel::UpdateBounds()
     }
     BoundingSphere::FromBox(_box, _sphere);
     if (_sceneRenderingKey != -1)
-        GetSceneRendering()->UpdateActor(this, _sceneRenderingKey);
+        GetSceneRendering()->UpdateActor(this, _sceneRenderingKey, ISceneRenderingListener::Bounds);
 }
 
 void AnimatedModel::UpdateSockets()

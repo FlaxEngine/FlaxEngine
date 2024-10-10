@@ -187,8 +187,10 @@ struct RenderTargetLayoutVulkan
             uint32 WriteStencil : 1;
             uint32 BlendEnable : 1;
         };
+
         uint32 Flags;
     };
+
     MSAALevel MSAA;
     PixelFormat DepthFormat;
     PixelFormat RTVsFormats[GPU_MAX_RT_BINDED];
@@ -257,8 +259,6 @@ protected:
     GPUDeviceVulkan* _device;
     VkQueryPool _handle;
 
-    volatile int32 _count;
-    const uint32 _capacity;
     const VkQueryType _type;
 #if VULKAN_RESET_QUERY_POOLS
     Array<Range> _resetRanges;
@@ -275,6 +275,7 @@ public:
     }
 
 #if VULKAN_RESET_QUERY_POOLS
+    bool ResetBeforeUse;
     void Reset(CmdBufferVulkan* cmdBuffer);
 #endif
 };
@@ -292,7 +293,7 @@ private:
 
 public:
     BufferedQueryPoolVulkan(GPUDeviceVulkan* device, int32 capacity, VkQueryType type);
-    bool AcquireQuery(uint32& resultIndex);
+    bool AcquireQuery(CmdBufferVulkan* cmdBuffer, uint32& resultIndex);
     void ReleaseQuery(uint32 queryIndex);
     void MarkQueryAsStarted(uint32 queryIndex);
     bool GetResults(GPUContextVulkan* context, uint32 index, uint64& result);
@@ -405,11 +406,12 @@ public:
 #endif
     };
 
-    static void GetInstanceLayersAndExtensions(Array<const char*>& outInstanceExtensions, Array<const char*>& outInstanceLayers, bool& outDebugUtils);
-    static void GetDeviceExtensionsAndLayers(VkPhysicalDevice gpu, Array<const char*>& outDeviceExtensions, Array<const char*>& outDeviceLayers);
-
-    void ParseOptionalDeviceExtensions(const Array<const char*>& deviceExtensions);
     static OptionalVulkanDeviceExtensions OptionalDeviceExtensions;
+
+private:
+    static void GetInstanceLayersAndExtensions(Array<const char*>& outInstanceExtensions, Array<const char*>& outInstanceLayers, bool& outDebugUtils);
+    void GetDeviceExtensionsAndLayers(VkPhysicalDevice gpu, Array<const char*>& outDeviceExtensions, Array<const char*>& outDeviceLayers);
+    static void ParseOptionalDeviceExtensions(const Array<const char*>& deviceExtensions);
 
 public:
     /// <summary>

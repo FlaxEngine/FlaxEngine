@@ -148,44 +148,6 @@ void Audio::SetEnableHRTF(bool value)
     AudioBackend::Listener::ReinitializeAll();
 }
 
-void Audio::OnAddListener(AudioListener* listener)
-{
-    ASSERT(!Listeners.Contains(listener));
-
-    if (Listeners.Count() >= AUDIO_MAX_LISTENERS)
-    {
-        LOG(Error, "Unsupported amount of the audio listeners!");
-        return;
-    }
-
-    Listeners.Add(listener);
-    AudioBackend::Listener::OnAdd(listener);
-}
-
-void Audio::OnRemoveListener(AudioListener* listener)
-{
-    if (!Listeners.Remove(listener))
-    {
-        AudioBackend::Listener::OnRemove(listener);
-    }
-}
-
-void Audio::OnAddSource(AudioSource* source)
-{
-    ASSERT(!Sources.Contains(source));
-
-    Sources.Add(source);
-    AudioBackend::Source::OnAdd(source);
-}
-
-void Audio::OnRemoveSource(AudioSource* source)
-{
-    if (!Sources.Remove(source))
-    {
-        AudioBackend::Source::OnRemove(source);
-    }
-}
-
 bool AudioService::Init()
 {
     PROFILE_CPU_NAMED("Audio.Init");
@@ -234,6 +196,7 @@ bool AudioService::Init()
 
     LOG(Info, "Audio system initialization... (backend: {0})", AudioBackend::Name());
 
+    EnableHRTF = settings->EnableHRTF;
     if (AudioBackend::Init())
     {
         LOG(Warning, "Failed to initialize audio backend.");

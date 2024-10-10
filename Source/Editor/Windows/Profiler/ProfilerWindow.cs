@@ -92,7 +92,7 @@ namespace FlaxEditor.Windows.Profiler
                 Parent = this,
             };
             _liveRecordingButton = toolstrip.AddButton(editor.Icons.Play64);
-            _liveRecordingButton.LinkTooltip("Live profiling events recording");
+            //_liveRecordingButton.LinkTooltip("Live profiling events recording");
             _liveRecordingButton.AutoCheck = true;
             _liveRecordingButton.Clicked += OnLiveRecordingChanged;
             _clearButton = toolstrip.AddButton(editor.Icons.Rotate32, Clear);

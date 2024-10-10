@@ -50,7 +50,6 @@ namespace FlaxEditor.CustomEditors.Editors
                     return;
                 }
             }
-            if (_element == null)
             {
                 // Use int value editor
                 var element = layout.IntegerValue();

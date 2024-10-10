@@ -64,7 +64,7 @@ private:
 public:
     // [BinaryAsset]
 #if USE_EDITOR
-    void GetReferences(Array<Guid>& output) const override;
+    void GetReferences(Array<Guid>& assets, Array<String>& files) const override;
 #endif
 
 protected:

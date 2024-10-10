@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Text;
 using FlaxEditor.Scripting;
 using FlaxEditor.Surface.Elements;
 using FlaxEditor.Surface.Undo;
@@ -124,7 +125,7 @@ namespace FlaxEditor.Surface
             Archetype = nodeArch;
             GroupArchetype = groupArch;
             AutoFocus = false;
-            TooltipText = nodeArch.Description;
+            TooltipText = GetTooltip();
             CullChildren = false;
             BackgroundColor = Style.Current.BackgroundNormal;
 
@@ -166,6 +167,15 @@ namespace FlaxEditor.Surface
             if (Surface == null)
                 return;
 
+            // Snap bounds (with ceil) when using grid snapping
+            if (Surface.GridSnappingEnabled)
+            {
+                var size = Surface.SnapToGrid(new Float2(width, height), true);
+                width = size.X;
+                height = size.Y;
+            }
+
+            // Arrange output boxes on the right edge
             for (int i = 0; i < Elements.Count; i++)
             {
                 if (Elements[i] is OutputBox box)
@@ -174,6 +184,7 @@ namespace FlaxEditor.Surface
                 }
             }
 
+            // Resize
             Size = CalculateNodeSize(width, height);
         }
 
@@ -851,6 +862,15 @@ namespace FlaxEditor.Surface
             }
         }
 
+        private string GetTooltip()
+        {
+            StringBuilder sb = new StringBuilder();
+            sb.Append(string.IsNullOrEmpty(Archetype.Signature) ? Archetype.Title : Archetype.Signature);
+            if (!string.IsNullOrEmpty(Archetype.Description))
+                sb.Append("\n" + Archetype.Description);
+            return sb.ToString();
+        }
+
         /// <inheritdoc />
         protected override bool ShowTooltip => base.ShowTooltip && _headerRect.Contains(ref _mousePosition) && !Surface.IsLeftMouseButtonDown && !Surface.IsRightMouseButtonDown && !Surface.IsPrimaryMenuOpened;
 
@@ -966,10 +986,12 @@ namespace FlaxEditor.Surface
             else
                 Array.Copy(values, Values, values.Length);
             OnValuesChanged();
-            Surface.MarkAsEdited(graphEdited);
 
             if (Surface != null)
+            {
+                Surface.MarkAsEdited(graphEdited);
                 Surface.AddBatchedUndoAction(new EditNodeValuesAction(this, before, graphEdited));
+            }
 
             _isDuringValuesEditing = false;
         }

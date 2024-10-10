@@ -183,11 +183,15 @@ void MaterialGenerator::ProcessGroupMaterial(Box* box, Node* node, Value& value)
         break;
     // Pre-skinned Local Position
     case 13:
-        value = _treeType == MaterialTreeType::VertexShader ? Value(VariantType::Float3, TEXT("input.PreSkinnedPosition")) : Value::Zero;
+        value = Value(VariantType::Float3, TEXT("input.PreSkinnedPosition"));
+        if (_treeType != MaterialTreeType::VertexShader)
+            value = VsToPs(node, box).AsFloat3();
         break;
     // Pre-skinned Local Normal
     case 14:
-        value = _treeType == MaterialTreeType::VertexShader ? Value(VariantType::Float3, TEXT("input.PreSkinnedNormal")) : Value::Zero;
+        value = Value(VariantType::Float3, TEXT("input.PreSkinnedNormal"));
+        if (_treeType != MaterialTreeType::VertexShader)
+            value = VsToPs(node, box).AsFloat3();
         break;
     // Depth
     case 15:
@@ -211,38 +215,8 @@ void MaterialGenerator::ProcessGroupMaterial(Box* box, Node* node, Value& value)
         break;
     // Interpolate VS To PS
     case 20:
-    {
-        const auto input = node->GetBox(0);
-
-        // If used in VS then pass the value from the input box
-        if (_treeType == MaterialTreeType::VertexShader)
-        {
-            value = tryGetValue(input, Value::Zero).AsFloat4();
-            break;
-        }
-
-        // Check if can use more interpolants
-        if (_vsToPsInterpolants.Count() == 16)
-        {
-            OnError(node, box, TEXT("Too many VS to PS interpolants used."));
-            value = Value::Zero;
-            break;
-        }
-
-        // Check if can use interpolants
-        const auto layer = GetRootLayer();
-        if (!layer || layer->Domain == MaterialDomain::Decal || layer->Domain == MaterialDomain::PostProcess)
-        {
-            OnError(node, box, TEXT("VS to PS interpolants are not supported in Decal or Post Process materials."));
-            value = Value::Zero;
-            break;
-        }
-
-        // Indicate the interpolator slot usage
-        value = Value(VariantType::Float4, String::Format(TEXT("input.CustomVSToPS[{0}]"), _vsToPsInterpolants.Count()));
-        _vsToPsInterpolants.Add(input);
+        value = VsToPs(node, node->GetBox(0));
         break;
-    }
     // Terrain Holes Mask
     case 21:
     {
@@ -568,6 +542,106 @@ void MaterialGenerator::ProcessGroupMaterial(Box* box, Node* node, Value& value)
 
         // Do the inverse interpolation and saturate it
         value = writeLocal(ValueType::Float, String::Format(TEXT("saturate((({0} - {1}) / ({2} - {1})))"), gradient.Value, lowerEdge.Value, upperEdge.Value), node);
+    }
+    // Rotate UV [Rotator Simple]
+    case 43:
+    {
+        //cosine = cos(rotation);
+        //sine = sin(rotation);
+        //float2 out = float2(cosine * uv.x + sine * uv.y,cosine * uv.y - sine * uv.x);
+        const auto uv = tryGetValue(node->GetBox(0), getUVs).AsFloat2();
+        const auto rotationAngle = tryGetValue(node->GetBox(1), node->Values[0].AsFloat).AsFloat();
+        auto c = writeLocal(ValueType::Float, String::Format(TEXT("cos({0})"), rotationAngle.Value), node);
+        auto s = writeLocal(ValueType::Float, String::Format(TEXT("sin({0})"), rotationAngle.Value), node);
+        value = writeLocal(ValueType::Float2, String::Format(TEXT("float2({1} * {0}.x + {2} * {0}.y, {1} * {0}.y - {2} * {0}.x)"), uv.Value, c.Value, s.Value), node);
+        break;
+    }
+    // Cone Gradient
+    case 44:
+    {
+        //float gradient = angle - abs(atan2(uv.x,uv.y));
+        const auto uv = tryGetValue(node->GetBox(0), getUVs).AsFloat2();
+        const auto rotationAngle = tryGetValue(node->GetBox(1), node->Values[0].AsFloat).AsFloat();
+        value = writeLocal(ValueType::Float, String::Format(TEXT("{1} - abs(atan2({0}.x, {0}.y))"), uv.Value, rotationAngle.Value), node);
+        break;
+    }
+    // Cycle Gradient
+    case 45:
+    {
+        //float gradient = 1 - length(uv * 2);
+        const auto uv = tryGetValue(node->GetBox(0), getUVs).AsFloat2();
+        value = writeLocal(ValueType::Float, String::Format(TEXT("1 - length({0} * 2.0)"), uv.Value), node);
+        break;
+    }
+    // Falloff and Offset
+    case 46:
+    {
+        //float out = clamp((((Value - (1 - Offset)) + Falloff) / Falloff),0,1)
+        const auto in = tryGetValue(node->GetBox(0), ShaderGraphValue::Zero);
+        const auto graphValue = tryGetValue(node->GetBox(1), node->Values[0].AsFloat);
+        const auto falloff = tryGetValue(node->GetBox(2), node->Values[1].AsFloat);
+        value = writeLocal(ValueType::Float, String::Format(TEXT("saturate(((({0} - (1.0 - {1})) + {2}) / {2}))"), in.Value, graphValue.Value, falloff.Value), node);
+        break;
+    }
+    // Linear Gradient
+    case 47:
+    {
+        // float2 uv = Input0.xy;
+        // float r = Input0.z;
+        // float2 A = 1.0 - float2(cos(r) * uv.x + sin(r) * uv.y, cos(r) * uv.y - sin(r) * uv.x);
+        // float2 out  = float2(Mirror ? abs(A.x < 1.0 ? (A.x - 0.5) * 2 : (2 - ((A.x - 0.5) * 2)) * -1) : A.x < 1.0 ? (A.x - 0.5) * 2 : 1,Mirror ? abs(A.y < 1.0 ? (A.y - 0.5) * 2 : (2 - ((A.y - 0.5) * 2)) * -1) : A.y < 1.0 ? (A.y - 0.5) * 2 : 1);
+
+        const auto uv = tryGetValue(node->GetBox(0), getUVs).AsFloat2();
+        const auto rotationAngle = tryGetValue(node->GetBox(1), node->Values[0].AsFloat).AsFloat();
+        const auto mirror = tryGetValue(node->GetBox(2), node->Values[1].AsBool).AsBool();
+
+        auto c = writeLocal(ValueType::Float, String::Format(TEXT("cos({0})"), rotationAngle.Value), node);
+        auto s = writeLocal(ValueType::Float, String::Format(TEXT("sin({0})"), rotationAngle.Value), node);
+        auto a = writeLocal(ValueType::Float2, String::Format(TEXT("1.0 - float2({1} * {0}.x + {2} * {0}.y, {1} * {0}.y - {2} * {0}.x)"), uv.Value, c.Value, s.Value), node);
+        value = writeLocal(
+            ValueType::Float2, String::Format(TEXT
+                (
+                    "float2({0} ? abs({1}.x < 1.0 ? ({1}.x - 0.5) * 2 : (2 - (({1}.x - 0.5) * 2)) * -1) : {1}.x < 1.0 ? ({1}.x - 0.5) * 2 : 1,{0} ? abs({1}.y < 1.0 ? ({1}.y - 0.5) * 2 : (2 - (({1}.y - 0.5) * 2)) * -1) : {1}.y < 1.0 ? ({1}.y - 0.5) * 2 : 1)"
+                ), mirror.Value, a.Value),
+            node);
+        break;
+    }
+    // Radial Gradient
+    case 48:
+    {
+        //float gradient = clamp(atan2(uv.x,uv.y) - angle,0.0,1.0);
+        const auto uv = tryGetValue(node->GetBox(0), getUVs).AsFloat2();
+        const auto rotationAngle = tryGetValue(node->GetBox(1), node->Values[0].AsFloat).AsFloat();
+        value = writeLocal(ValueType::Float, String::Format(TEXT("saturate(atan2({0}.x, {0}.y) - {1})"), uv.Value, rotationAngle.Value), node);
+        break;
+    }
+    // Ring Gradient
+    case 49:
+    {
+        // Nodes:
+        // float c = CycleGradient(uv)
+        // float InnerMask = FalloffAndOffset(c,(OuterBounds - Falloff),Falloff)
+        // float OuterMask = FalloffAndOffset(1-c,1-InnerBounds,Falloff)
+        // float Mask      = OuterMask * InnerMask;
+
+        // TODO: check if there is some useless operators
+
+        //expanded
+        //float cycleGradient  = 1 - length(uv * 2);
+        //float InnerMask      = clamp((((c - (1 - (OuterBounds - Falloff))) + Falloff) / Falloff),0,1)
+        //float OuterMask      = clamp(((((1-c) - (1 - (1-InnerBounds))) + Falloff) / Falloff),0,1)
+        //float Mask           = OuterMask * InnerMask;
+
+        const auto uv = tryGetValue(node->GetBox(0), getUVs).AsFloat2();
+        const auto outerBounds = tryGetValue(node->GetBox(1), node->Values[0].AsFloat).AsFloat();
+        const auto innerBounds = tryGetValue(node->GetBox(2), node->Values[1].AsFloat).AsFloat();
+        const auto falloff = tryGetValue(node->GetBox(3), node->Values[2].AsFloat).AsFloat();
+        auto c = writeLocal(ValueType::Float, String::Format(TEXT("1 - length({0} * 2.0)"), uv.Value), node);
+        auto innerMask = writeLocal(ValueType::Float, String::Format(TEXT("saturate(((({0} - (1.0 - ({1} - {2}))) + {2}) / {2}))"), c.Value, outerBounds.Value, falloff.Value), node);
+        auto outerMask = writeLocal(ValueType::Float, String::Format(TEXT("saturate(((((1.0 - {0}) - (1.0 - (1.0 - {1}))) + {2}) / {2}))"), c.Value, innerBounds.Value, falloff.Value), node);
+        auto mask = writeLocal(ValueType::Float, String::Format(TEXT("{0} * {1}"), innerMask.Value, outerMask.Value), node);
+        value = writeLocal(ValueType::Float3, String::Format(TEXT("float3({0}, {1}, {2})"), innerMask.Value, outerMask.Value, mask.Value), node);
+        break;
     }
     default:
         break;

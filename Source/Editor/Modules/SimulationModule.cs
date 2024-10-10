@@ -145,6 +145,10 @@ namespace FlaxEditor.Modules
                 return;
             }
 
+            // Save any modified scenes to prevent loosing local changes
+            if (Editor.Scene.IsEdited())
+                Level.SaveAllScenes();
+
             // Load scenes after entering the play mode
             _scenesToReload = new Guid[Level.ScenesCount];
             for (int i = 0; i < _scenesToReload.Length; i++)

@@ -94,8 +94,8 @@ namespace FlaxEngine
                 throw new ArgumentOutOfRangeException(nameof(values), "There must be sixteen and only four input values for Matrix2x2.");
             M11 = values[0];
             M12 = values[1];
-            M21 = values[3];
-            M22 = values[4];
+            M21 = values[2];
+            M22 = values[3];
         }
 
         /// <summary>

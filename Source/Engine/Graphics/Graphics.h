@@ -49,9 +49,15 @@ public:
     API_FIELD() static Quality ShadowMapsQuality;
 
     /// <summary>
-    /// Enables cascades splits blending for directional light shadows.
+    /// The global scale for all shadow maps update rate. Can be used to slow down shadows rendering frequency on lower quality settings or low-end platforms. Default 1.
     /// </summary>
-    API_FIELD() static bool AllowCSMBlending;
+    API_FIELD() static float ShadowUpdateRate;
+
+    /// <summary>
+    /// Enables cascades splits blending for directional light shadows.
+    /// [Deprecated in v1.9]
+    /// </summary>
+    API_FIELD() DEPRECATED() static bool AllowCSMBlending;
 
     /// <summary>
     /// The Global SDF quality. Controls the volume texture resolution and amount of cascades to use.
@@ -64,9 +70,20 @@ public:
     API_FIELD() static Quality GIQuality;
 
     /// <summary>
+    /// Enables cascades splits blending for Global Illumination.
+    /// </summary>
+    API_FIELD() static bool GICascadesBlending;
+
+    /// <summary>
     /// The default Post Process settings. Can be overriden by PostFxVolume on a level locally, per camera or for a whole map.
     /// </summary>
     API_FIELD() static PostProcessSettings PostProcessSettings;
+
+public:
+    /// <summary>
+    /// Debug utility to toggle graphics workloads amortization over several frames by systems such as shadows mapping, global illumination or surface atlas. Can be used to test performance in the worst-case scenario (eg. camera-cut).
+    /// </summary>
+    API_FIELD() static bool SpreadWorkload;
 
 public:
     /// <summary>
@@ -74,3 +91,10 @@ public:
     /// </summary>
     static void DisposeDevice();
 };
+
+// Skip disabling workload spreading in Release builds
+#if BUILD_RELEASE
+#define GPU_SPREAD_WORKLOAD true
+#else
+#define GPU_SPREAD_WORKLOAD Graphics::SpreadWorkload
+#endif

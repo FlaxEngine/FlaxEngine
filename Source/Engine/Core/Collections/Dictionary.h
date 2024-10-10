@@ -348,6 +348,13 @@ public:
             return *this;
         }
 
+        Iterator& operator=(Iterator&& v)
+        {
+            _collection = v._collection;
+            _index = v._index;
+            return *this;
+        }
+
         Iterator& operator++()
         {
             const int32 capacity = _collection->_size;

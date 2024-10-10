@@ -28,7 +28,7 @@ namespace FlaxEngine
         /// <summary>
         /// Occurs when event is triggered (e.g. user pressed a key). Called before scripts update.
         /// </summary>
-        [System.Obsolete("Depreciated in 1.7, use Pressed Action.")]
+        [System.Obsolete("Use Pressed instead")]
         public event Action Triggered;
 
         /// <summary>
@@ -70,6 +70,10 @@ namespace FlaxEngine
         ~InputEvent()
         {
             Input.ActionTriggered -= Handler;
+            Triggered = null;
+            Pressed = null;
+            Pressing = null;
+            Released = null;
         }
 
         private void Handler(string name, InputActionState state)
@@ -100,6 +104,10 @@ namespace FlaxEngine
         public void Dispose()
         {
             Input.ActionTriggered -= Handler;
+            Triggered = null;
+            Pressed = null;
+            Pressing = null;
+            Released = null;
             GC.SuppressFinalize(this);
         }
 

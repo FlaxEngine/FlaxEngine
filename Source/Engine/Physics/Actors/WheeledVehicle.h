@@ -13,6 +13,7 @@
 API_CLASS(Attributes="ActorContextMenu(\"New/Physics/Wheeled Vehicle\"), ActorToolbox(\"Physics\")") class FLAXENGINE_API WheeledVehicle : public RigidBody
 {
     friend class PhysicsBackend;
+    friend struct ScenePhysX;
     DECLARE_SCENE_OBJECT(WheeledVehicle);
 
     /// <summary>

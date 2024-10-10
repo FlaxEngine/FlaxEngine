@@ -118,7 +118,7 @@ public:
     /// <summary>
     /// Tries to find a method in a given scripting type by the method name and parameters count.
     /// </summary>
-    /// <remarks>If the the type contains more than one method of the given name and parameters count the returned value can be non-deterministic (one of the matching methods).</remarks>
+    /// <remarks>If the type contains more than one method of the given name and parameters count the returned value can be non-deterministic (one of the matching methods).</remarks>
     /// <param name="typeHandle">The type to find method inside it.</param>
     /// <param name="name">The method name.</param>
     /// <param name="numParams">The method parameters count.</param>
@@ -182,7 +182,7 @@ public:
     /// Gets the value of a given scripting field.
     /// </summary>
     /// <param name="field">The field.</param>
-    /// <param name="instance">The object instance to get it's member field. Unused for static fields.</param>
+    /// <param name="instance">The object instance to get its member field. Unused for static fields.</param>
     /// <param name="result">The output field value.</param>
     /// <returns>True if failed, otherwise false.</returns>
     virtual bool GetFieldValue(void* field, const Variant& instance, Variant& result)
@@ -194,7 +194,7 @@ public:
     /// Sets the value of a given scripting field.
     /// </summary>
     /// <param name="field">The field.</param>
-    /// <param name="instance">The object instance to set it's member field. Unused for static fields.</param>
+    /// <param name="instance">The object instance to set its member field. Unused for static fields.</param>
     /// <param name="value">The field value to assign.</param>
     /// <returns>True if failed, otherwise false.</returns>
     virtual bool SetFieldValue(void* field, const Variant& instance, Variant& value)
@@ -242,7 +242,7 @@ public:
     /// <summary>
     /// Unloads the module (native library and C# assembly and any other scripting data). Unregisters the module.
     /// </summary>
-    /// <param name="isReloading">If true module is during reloading and should force release the runtime data. Used for C# assembly to cleanup it's runtime data in Mono (or other scripting runtime).</param>
+    /// <param name="isReloading">If true module is during reloading and should force release the runtime data. Used for C# assembly to clean up it's runtime data in Mono (or other scripting runtime).</param>
     virtual void Destroy(bool isReloading);
 };
 

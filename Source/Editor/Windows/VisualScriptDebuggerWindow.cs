@@ -409,7 +409,7 @@ namespace FlaxEditor.Windows
             _debugToolstripControls = new[]
             {
                 toolstrip.AddSeparator(),
-                toolstrip.AddButton(editor.Icons.Play64, OnDebuggerContinue).LinkTooltip($"Continue ({inputOptions.DebuggerContinue})"),
+                toolstrip.AddButton(editor.Icons.Play64, OnDebuggerContinue).LinkTooltip("Continue", ref inputOptions.DebuggerContinue),
                 toolstrip.AddButton(editor.Icons.Search64, OnDebuggerNavigateToCurrentNode).LinkTooltip("Navigate to the current stack trace node"),
                 toolstrip.AddButton(editor.Icons.Stop64, OnDebuggerStop).LinkTooltip("Stop debugging"),
             };
