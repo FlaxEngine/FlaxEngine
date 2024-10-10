@@ -224,6 +224,7 @@ void ProfilingTools::SetEnabled(bool enabled)
 {
     ProfilerCPU::Enabled = enabled;
     ProfilerGPU::Enabled = enabled;
+    ProfilerGPU::EventsEnabled = enabled;
     NetworkInternal::EnableProfiling = enabled;
 }
 

@@ -25,7 +25,7 @@ public:
     Action ParamsChanged;
 
     /// <summary>
-    /// Returns true if material is an material instance.
+    /// Returns true if material is a material instance.
     /// </summary>
     virtual bool IsMaterialInstance() const = 0;
 
@@ -77,12 +77,6 @@ public:
 public:
     // [BinaryAsset]
 #if USE_EDITOR
-    void GetReferences(Array<Guid>& output) const override
-    {
-        // Base
-        BinaryAsset::GetReferences(output);
-
-        Params.GetReferences(output);
-    }
+    void GetReferences(Array<Guid>& assets, Array<String>& files) const override;
 #endif
 };

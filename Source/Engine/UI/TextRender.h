@@ -111,10 +111,10 @@ public:
     ShadowsCastingMode ShadowsMode = ShadowsCastingMode::All;
 
     /// <summary>
-    /// The object sort order key used when sorting drawable objects during rendering. Use lower values to draw object before others, higher values are rendered later (on top). Can be use to control transparency drawing.
+    /// The object sort order key used when sorting drawable objects during rendering. Use lower values to draw object before others, higher values are rendered later (on top). Can be used to control transparency drawing.
     /// </summary>
     API_FIELD(Attributes="EditorOrder(85), DefaultValue(0), EditorDisplay(\"Text\")")
-    int16 SortOrder = 0;
+    int8 SortOrder = 0;
 
     /// <summary>
     /// Gets the layout options. Layout is defined in local space of the object (on XY plane).

@@ -97,6 +97,9 @@ namespace FlaxEditor.Windows.Assets
             [EditorDisplay(null, "1920x1080 (Full HD)")]
             _1920x1080,
 
+            [EditorDisplay(null, "2560x1440 (2K)")]
+            _2560x1440,
+
             [EditorDisplay(null, "3840x2160 (4K)")]
             _3840x2160,
 
@@ -173,6 +176,7 @@ namespace FlaxEditor.Windows.Assets
                 case ResolutionModes._640x480: return new Int2(640, 480);
                 case ResolutionModes._1280x720: return new Int2(1280, 720);
                 case ResolutionModes._1920x1080: return new Int2(1920, 1080);
+                case ResolutionModes._2560x1440: return new Int2(2560, 1440);
                 case ResolutionModes._3840x2160: return new Int2(3840, 2160);
                 case ResolutionModes._7680x4320: return new Int2(7680, 4320);
                 case ResolutionModes.Custom: return new Int2(Width, Height);
@@ -456,8 +460,12 @@ namespace FlaxEditor.Windows.Assets
                 _window.Editor.StateMachine.CurrentState.UpdateFPS();
                 for (int i = 0; i < _stagingTextures.Length; i++)
                 {
-                    _stagingTextures[i].Texture.ReleaseGPU();
-                    Object.Destroy(ref _stagingTextures[i].Texture);
+                    var texture = _stagingTextures[i].Texture;
+                    if (texture)
+                    {
+                        texture.ReleaseGPU();
+                        Object.Destroy(ref texture);
+                    }
                 }
                 if (_progress != null)
                 {
@@ -652,10 +660,10 @@ namespace FlaxEditor.Windows.Assets
             _timeline.SetNoTracksText("Loading...");
 
             // Toolstrip
-            _saveButton = (ToolStripButton)_toolstrip.AddButton(Editor.Icons.Save64, Save).LinkTooltip("Save");
+            _saveButton = _toolstrip.AddButton(Editor.Icons.Save64, Save).LinkTooltip("Save", ref inputOptions.Save);
             _toolstrip.AddSeparator();
-            _undoButton = (ToolStripButton)_toolstrip.AddButton(Editor.Icons.Undo64, _undo.PerformUndo).LinkTooltip($"Undo ({inputOptions.Undo})");
-            _redoButton = (ToolStripButton)_toolstrip.AddButton(Editor.Icons.Redo64, _undo.PerformRedo).LinkTooltip($"Redo ({inputOptions.Redo})");
+            _undoButton = _toolstrip.AddButton(Editor.Icons.Undo64, _undo.PerformUndo).LinkTooltip("Undo", ref inputOptions.Undo);
+            _redoButton = _toolstrip.AddButton(Editor.Icons.Redo64, _undo.PerformRedo).LinkTooltip("Redo", ref inputOptions.Redo);
             _toolstrip.AddSeparator();
             _previewButton = (ToolStripButton)_toolstrip.AddButton(Editor.Icons.Refresh64, OnPreviewButtonClicked).SetAutoCheck(true).LinkTooltip("If checked, enables live-preview of the animation on a scene while editing");
             _renderButton = (ToolStripButton)_toolstrip.AddButton(Editor.Icons.Build64, OnRenderButtonClicked).LinkTooltip("Open the scene animation rendering utility...");

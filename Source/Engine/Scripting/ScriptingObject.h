@@ -7,6 +7,8 @@
 #include "Engine/Core/Delegate.h"
 #include "ManagedCLR/MTypes.h"
 
+#define SCRIPTING_OBJECT_CAST_WITH_CSHARP (USE_CSHARP)
+
 /// <summary>
 /// Represents object from unmanaged memory that can use accessed via scripting.
 /// </summary>
@@ -156,7 +158,11 @@ public:
     template<typename T>
     static T* Cast(ScriptingObject* obj)
     {
+#if SCRIPTING_OBJECT_CAST_WITH_CSHARP
         return obj && CanCast(obj->GetClass(), T::GetStaticClass()) ? static_cast<T*>(obj) : nullptr;
+#else
+        return obj && CanCast(obj->GetTypeHandle(), T::TypeInitializer) ? static_cast<T*>(obj) : nullptr;
+#endif
     }
 
     bool Is(const ScriptingTypeHandle& type) const;
@@ -169,7 +175,11 @@ public:
     template<typename T>
     bool Is() const
     {
+#if SCRIPTING_OBJECT_CAST_WITH_CSHARP
         return CanCast(GetClass(), T::GetStaticClass());
+#else
+        return CanCast(GetTypeHandle(), T::TypeInitializer);
+#endif
     }
 
 public:

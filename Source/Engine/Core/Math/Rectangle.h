@@ -33,20 +33,24 @@ public:
     /// </summary>
     Rectangle() = default;
 
-    // Init
-    // @param x Rectangle location X coordinate
-    // @param y Rectangle location Y coordinate
-    // @param width Rectangle width
-    // @param height Rectangle height
+    /// <summary>
+    /// Initializes a new instance of the <see cref="Rectangle"/> struct.
+    /// </summary>
+    /// <param name="x">The X coordinate of the upper left corner.</param>
+    /// <param name="y">The Y coordinate of the upper left corner.</param>
+    /// <param name="width">The width.</param>
+    /// <param name="height">The height.</param>
     Rectangle(float x, float y, float width, float height)
         : Location(x, y)
         , Size(width, height)
     {
     }
 
-    // Init
-    // @param location Rectangle location point
-    // @param width Rectangle size
+    /// <summary>
+    /// Initializes a new instance of the <see cref="Rectangle"/> struct.
+    /// </summary>
+    /// <param name="location">The location of the upper left corner.</param>
+    /// <param name="size">The size.</param>
     Rectangle(const Float2& location, const Float2& size)
         : Location(location)
         , Size(size)
@@ -57,99 +61,114 @@ public:
     String ToString() const;
 
 public:
-    // Returns width of the rectangle
+    // Gets width of the rectangle.
     float GetWidth() const
     {
         return Size.X;
     }
 
-    // Returns height of the rectangle
+    // Gets height of the rectangle.
     float GetHeight() const
     {
         return Size.Y;
     }
 
-    // Gets Y coordinate of the top edge of the rectangle
+    // Gets Y coordinate of the top edge of the rectangle.
     float GetY() const
     {
         return Location.Y;
     }
 
-    // Gets Y coordinate of the top edge of the rectangle
+    // Gets Y coordinate of the top edge of the rectangle.
     float GetTop() const
     {
         return Location.Y;
     }
 
-    // Gets Y coordinate of the bottom edge of the rectangle
+    // Gets Y coordinate of the bottom edge of the rectangle.
     float GetBottom() const
     {
         return Location.Y + Size.Y;
     }
 
-    // Gets X coordinate of the left edge of the rectangle
+    // Gets X coordinate of the left edge of the rectangle.
     float GetX() const
     {
         return Location.X;
     }
 
-    // Gets X coordinate of the left edge of the rectangle
+    // Gets X coordinate of the left edge of the rectangle.
     float GetLeft() const
     {
         return Location.X;
     }
 
-    // Gets X coordinate of the right edge of the rectangle
+    // Gets X coordinate of the right edge of the rectangle.
     float GetRight() const
     {
         return Location.X + Size.X;
     }
 
-    // Gets position of the upper left corner of the rectangle
+    // Gets position of the upper left corner of the rectangle.
     Float2 GetUpperLeft() const
     {
         return Location;
     }
 
-    // Gets position of the upper right corner of the rectangle
+    // Gets position of the upper right corner of the rectangle.
     Float2 GetUpperRight() const
     {
         return Location + Float2(Size.X, 0);
     }
 
-    // Gets position of the bottom right corner of the rectangle
+    // Gets position of the bottom right corner of the rectangle.
+    Float2 GetLowerRight() const
+    {
+        return Location + Size;
+    }
+
+    // Gets position of the bottom left corner of the rectangle.
+    Float2 GetLowerLeft() const
+    {
+        return Location + Float2(0, Size.Y);
+    }
+
+    // Gets position of the upper left corner of the rectangle.
+    Float2 GetTopLeft() const
+    {
+        return Location;
+    }
+
+    // Gets position of the upper right corner of the rectangle.
+    Float2 GetTopRight() const
+    {
+        return Location + Float2(Size.X, 0);
+    }
+
+    // Gets position of the bottom right corner of the rectangle.
     Float2 GetBottomRight() const
     {
         return Location + Size;
     }
 
-    // Gets position of the bottom left corner of the rectangle
+    // Gets position of the bottom left corner of the rectangle.
     Float2 GetBottomLeft() const
     {
         return Location + Float2(0, Size.Y);
     }
 
-    /// <summary>
-    /// Gets center position of the rectangle
-    /// </summary>
-    /// <returns>Center point</returns>
+    // Gets center position of the rectangle.
     Float2 GetCenter() const
     {
         return Location + Size * 0.5f;
     }
 
 public:
-    // Offset rectangle Location point
-    // @param v Offset to add
-    // @returns Result rectangle
     Rectangle operator+(const Float2& v) const
     {
         return Rectangle(Location + v, Size);
     }
 
-    // Offset rectangle Location point
-    // @param v Offset to subtract
-    // @returns Result rectangle
     Rectangle operator-(const Float2& v) const
     {
         return Rectangle(Location - v, Size);
@@ -212,81 +231,51 @@ public:
     }
 
 public:
-    // Checks if rectangle contains given point
-    // @param location Point location to check
-    // @returns True if point is inside rectangle's area
+    // Checks if rectangle contains given point.
     bool Contains(const Float2& location) const;
 
-    // Determines whether this rectangle entirely contains a specified rectangle
-    // @param value The rectangle to evaluate
-    // @returns True if this rectangle entirely contains the specified rectangle, or false if not
+    // Determines whether this rectangle entirely contains a specified rectangle.
     bool Contains(const Rectangle& value) const;
 
-    // Determines whether a specified rectangle intersects with this rectangle
-    // @ value The rectangle to evaluate
-    // @returns True if the specified rectangle intersects with this one, otherwise false
+    // Determines whether a specified rectangle intersects with this rectangle.
     bool Intersects(const Rectangle& value) const;
 
 public:
-    // Offset rectangle position
-    // @param x X coordinate offset
-    // @param y Y coordinate offset
+    // Offsets rectangle position.
     void Offset(float x, float y);
 
-    // Offset rectangle position
-    // @param offset X and Y coordinate offset
+    // Offsets rectangle position.
     void Offset(const Float2& offset);
 
-    // Make offseted rectangle
-    // @param offset X and Y coordinate offset
-    // @returns Offseted rectangle
+    // Make offseted rectangle.
     Rectangle MakeOffsetted(const Float2& offset) const;
 
-public:
-    // Expand rectangle area in all directions by given amount
-    // @param toExpand Amount of units to expand a rectangle
+    // Expands rectangle area in all directions by given amount.
     void Expand(float toExpand);
 
-    // Make expanded rectangle area in all directions by given amount
-    // @param toExpand Amount of units to expand a rectangle
-    // @returns Expanded rectangle
+    // Makes expanded rectangle area in all directions by given amount.
     Rectangle MakeExpanded(float toExpand) const;
 
-public:
-    // Scale rectangle area in all directions by given amount
-    // @param scale Scale value to expand a rectangle
+    // Scale rectangle area in all directions by given amount.
     void Scale(float scale);
 
-    // Make scaled rectangle area in all directions by given amount
-    // @param scale Scale value to expand a rectangle
-    // @returns Scaled rectangle
+    // Makes scaled rectangle area in all directions by given amount.
     Rectangle MakeScaled(float scale) const;
 
 public:
-    // Calculates a rectangle that contains the union of rectangle and the arbitrary point
-    // @param a The rectangle
-    // @param b The point
-    // @returns Rectangle that contains both rectangle and the point
+    // Calculates a rectangle that contains the union of rectangle and the arbitrary point.
     static Rectangle Union(const Rectangle& a, const Float2& b);
 
-    // Calculates a rectangle that contains the union of a and b rectangles
-    // @param a First rectangle
-    // @param b Second rectangle
-    // @returns Rectangle that contains both a and b rectangles
+    // Calculates a rectangle that contains the union of a and b rectangles.
     static Rectangle Union(const Rectangle& a, const Rectangle& b);
 
-    // Calculates a rectangle that contains the shared part of a and b rectangles
-    // @param a First rectangle
-    // @param b Second rectangle
-    // @returns Rectangle that contains shared part of a and b rectangles
+    // Calculates a rectangle that contains the shared part of a and b rectangles.
     static Rectangle Shared(const Rectangle& a, const Rectangle& b);
 
-    // Create rectangle from two points
-    // @param p1 First point
-    // @param p2 Second point
-    // @returns Rectangle that contains both p1 and p2
+    // Creates rectangle from two points.
     static Rectangle FromPoints(const Float2& p1, const Float2& p2);
 
+    // Creates rectangle from list of points.
     static Rectangle FromPoints(const Float2* points, int32 pointsCount);
 };
 

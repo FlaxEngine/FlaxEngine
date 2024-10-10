@@ -463,6 +463,7 @@ void MaterialParameter::Bind(BindMeta& meta) const
         if (GlobalSignDistanceFieldPass::Instance()->Get(meta.Buffers, bindingData))
             Platform::MemoryClear(&bindingData, sizeof(bindingData));
         meta.Context->BindSR(_registerIndex, bindingData.Texture ? bindingData.Texture->ViewVolume() : nullptr);
+        meta.Context->BindSR(_registerIndex + 1, bindingData.TextureMip ? bindingData.TextureMip->ViewVolume() : nullptr);
         *((GlobalSignDistanceFieldPass::ConstantsData*)(meta.Constants.Get() + _offset)) = bindingData.Constants;
         break;
     }
@@ -1042,12 +1043,12 @@ void MaterialParams::Save(BytesContainer& data, const Array<SerializedMaterialPa
 
 #if USE_EDITOR
 
-void MaterialParams::GetReferences(Array<Guid>& output) const
+void MaterialParams::GetReferences(Array<Guid>& assets) const
 {
     for (int32 i = 0; i < Count(); i++)
     {
         if (At(i)._asAsset)
-            output.Add(At(i)._asAsset->GetID());
+            assets.Add(At(i)._asAsset->GetID());
     }
 }
 

@@ -337,14 +337,12 @@ namespace FlaxEditor.GUI.ContextMenu
         /// <summary>
         /// Adds the separator.
         /// </summary>
-        /// <returns>Created context menu item control.</returns>
-        public ContextMenuSeparator AddSeparator()
+        public void AddSeparator()
         {
             var item = new ContextMenuSeparator(this)
             {
                 Parent = _panel
             };
-            return item;
         }
 
         /// <summary>

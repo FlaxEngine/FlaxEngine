@@ -177,6 +177,8 @@ public:
 #  elif defined _WIN32
 #    ifdef TRACY_TIMER_QPC
         return GetTimeQpc();
+#    elif defined(_M_ARM64)
+        if( HardwareSupportsInvariantTSC() ) return int64_t( _ReadStatusReg(ARM64_PMCCNTR_EL0) );
 #    else
         if( HardwareSupportsInvariantTSC() ) return int64_t( __rdtsc() );
 #    endif

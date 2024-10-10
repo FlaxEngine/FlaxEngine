@@ -57,8 +57,9 @@ namespace FlaxEditor.States
             {
                 // Generate project files when Cache is missing or was cleared previously
                 var projectFolderPath = Editor.GameProject?.ProjectFolderPath;
-                if (!Directory.Exists(Path.Combine(projectFolderPath, "Cache", "Intermediate")) ||
-                    !Directory.Exists(Path.Combine(projectFolderPath, "Cache", "Projects")))
+                if (!string.IsNullOrEmpty(projectFolderPath) &&
+                    (!Directory.Exists(Path.Combine(projectFolderPath, "Cache", "Intermediate")) ||
+                     !Directory.Exists(Path.Combine(projectFolderPath, "Cache", "Projects"))))
                 {
                     var customArgs = Editor.CodeEditing.SelectedEditor?.GenerateProjectCustomArgs;
                     ScriptsBuilder.GenerateProject(customArgs);
@@ -71,7 +72,6 @@ namespace FlaxEditor.States
             {
                 // Skip compilation on startup
                 OnCompilationEnd(true);
-                Editor.EndInit();
             }
         }
 

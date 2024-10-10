@@ -2449,7 +2449,9 @@ void Variant::SetType(const VariantType& type)
     case VariantType::Structure:
         AllocStructure();
         break;
-    default: ;
+    default:
+        AsUint64 = 0;
+        break;
     }
 }
 
@@ -2702,8 +2704,8 @@ void Variant::SetAsset(Asset* asset)
         SetType(VariantType(VariantType::Asset));
     if (AsAsset)
     {
-        asset->OnUnloaded.Unbind<Variant, &Variant::OnAssetUnloaded>(this);
-        asset->RemoveReference();
+        AsAsset->OnUnloaded.Unbind<Variant, &Variant::OnAssetUnloaded>(this);
+        AsAsset->RemoveReference();
     }
     AsAsset = asset;
     if (asset)
@@ -2738,12 +2740,12 @@ String Variant::ToString() const
                 const auto items = typeHandle.GetType().Enum.Items;
                 for (int32 i = 0; items[i].Name; i++)
                 {
-                    if (items[i].Value == AsUint)
+                    if (items[i].Value == AsUint64)
                         return String(items[i].Name);
                 }
             }
         }
-        return StringUtils::ToString(AsUint);
+        return StringUtils::ToString(AsUint64);
     case VariantType::Int64:
         return StringUtils::ToString(AsInt64);
     case VariantType::Uint64:
@@ -3063,6 +3065,89 @@ void Variant::DeleteValue()
 
     // Go back to null
     SetType(VariantType(VariantType::Null));
+}
+
+Variant Variant::Parse(const StringView& text, const VariantType& type)
+{
+    Variant result;
+    result.SetType(type);
+    if (text.IsEmpty())
+        return result;
+    if (type != VariantType())
+    {
+        switch (type.Type)
+        {
+        case VariantType::Bool:
+            if (text == TEXT("1") || text.Compare(StringView(TEXT("true"), 4), StringSearchCase::IgnoreCase) == 0)
+                result.AsBool = true;
+            break;
+        case VariantType::Int16:
+            StringUtils::Parse(text.Get(), text.Length(), &result.AsInt16);
+            break;
+        case VariantType::Uint16:
+            StringUtils::Parse(text.Get(), text.Length(), &result.AsUint16);
+            break;
+        case VariantType::Int:
+            StringUtils::Parse(text.Get(), text.Length(), &result.AsInt);
+            break;
+        case VariantType::Uint:
+            StringUtils::Parse(text.Get(), text.Length(), &result.AsUint);
+            break;
+        case VariantType::Int64:
+            StringUtils::Parse(text.Get(), text.Length(), &result.AsInt64);
+            break;
+        case VariantType::Uint64:
+        case VariantType::Enum:
+            if (!StringUtils::Parse(text.Get(), text.Length(), &result.AsUint64))
+            {
+            }
+            else if (type.TypeName)
+            {
+                const ScriptingTypeHandle typeHandle = Scripting::FindScriptingType(StringAnsiView(type.TypeName));
+                if (typeHandle && typeHandle.GetType().Type == ScriptingTypes::Enum)
+                {
+                    const auto items = typeHandle.GetType().Enum.Items;
+                    StringAsANSI<32> textAnsi(text.Get(), text.Length());
+                    StringAnsiView textAnsiView(textAnsi.Get());
+                    for (int32 i = 0; items[i].Name; i++)
+                    {
+                        if (textAnsiView == items[i].Name)
+                        {
+                            result.AsUint64 = items[i].Value;
+                            break;
+                        }
+                    }
+                }
+            }
+            break;
+        case VariantType::Float:
+            StringUtils::Parse(text.Get(), &result.AsFloat);
+            break;
+        case VariantType::Double:
+            StringUtils::Parse(text.Get(), &result.AsFloat);
+            result.AsDouble = (float)result.AsFloat;
+            break;
+        case VariantType::String:
+            result.SetString(text);
+        default:
+            break;
+        }
+    }
+    else
+    {
+        // Parse as number
+        int32 valueInt;
+        if (!StringUtils::Parse(text.Get(), text.Length(), &valueInt))
+        {
+            result = valueInt;
+        }
+        else
+        {
+            // Fallback to string
+            result.SetString(text);
+        }
+    }
+    return result;
 }
 
 bool Variant::CanCast(const Variant& v, const VariantType& to)

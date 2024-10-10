@@ -5,6 +5,7 @@
 #if COMPILE_WITH_ASSETS_IMPORTER
 
 #include "Engine/Core/Log.h"
+#include "Engine/Core/Cache.h"
 #include "Engine/Core/Collections/Sorting.h"
 #include "Engine/Core/Collections/ArrayExtensions.h"
 #include "Engine/Serialization/MemoryWriteStream.h"
@@ -70,10 +71,10 @@ void RepackMeshLightmapUVs(ModelData& data)
     auto& lod = data.LODs[lodIndex];
 
     // Build list of meshes with their area
-    struct LightmapUVsPack : RectPack<LightmapUVsPack, float>
+    struct LightmapUVsPack : RectPackNode<float>
     {
-        LightmapUVsPack(float x, float y, float width, float height)
-            : RectPack<LightmapUVsPack, float>(x, y, width, height)
+        LightmapUVsPack(Size x, Size y, Size width, Size height)
+            : RectPackNode(x, y, width, height)
         {
         }
 
@@ -109,10 +110,11 @@ void RepackMeshLightmapUVs(ModelData& data)
         {
             bool failed = false;
             const float chartsPadding = (4.0f / 256.0f) * atlasSize;
-            LightmapUVsPack root(chartsPadding, chartsPadding, atlasSize - chartsPadding, atlasSize - chartsPadding);
+            RectPackAtlas<LightmapUVsPack> atlas;
+            atlas.Init(atlasSize, atlasSize, chartsPadding);
             for (auto& entry : entries)
             {
-                entry.Slot = root.Insert(entry.Size, entry.Size, chartsPadding);
+                entry.Slot = atlas.Insert(entry.Size, entry.Size);
                 if (entry.Slot == nullptr)
                 {
                     // Failed to insert surface, increase atlas size and try again
@@ -129,7 +131,7 @@ void RepackMeshLightmapUVs(ModelData& data)
                 for (const auto& entry : entries)
                 {
                     Float2 uvOffset(entry.Slot->X * atlasSizeInv, entry.Slot->Y * atlasSizeInv);
-                    Float2 uvScale((entry.Slot->Width - chartsPadding) * atlasSizeInv, (entry.Slot->Height - chartsPadding) * atlasSizeInv);
+                    Float2 uvScale(entry.Slot->Width * atlasSizeInv, entry.Slot->Height * atlasSizeInv);
                     // TODO: SIMD
                     for (auto& uv : entry.Mesh->LightmapUVs)
                     {
@@ -638,7 +640,17 @@ CreateAssetResult ImportModel::CreateAnimation(CreateAssetContext& context, Mode
 
     // Save animation data
     MemoryWriteStream stream(8182);
-    const int32 animIndex = options && options->ObjectIndex != -1 ? options->ObjectIndex : 0; // Single animation per asset
+    int32 animIndex = options ? options->ObjectIndex : -1; // Single animation per asset
+    if (animIndex == -1)
+    {
+        // Pick the longest animation by default (eg. to skip ref pose anim if exported as the first one)
+        animIndex = 0;
+        for (int32 i = 1; i < modelData.Animations.Count(); i++)
+        {
+            if (modelData.Animations[i].GetLength() > modelData.Animations[animIndex].GetLength())
+                animIndex = i;
+        }
+    }
     if (modelData.Pack2AnimationHeader(&stream, animIndex))
         return CreateAssetResult::Error;
     if (context.AllocateChunk(0))
@@ -755,6 +767,7 @@ CreateAssetResult ImportModel::CreatePrefab(CreateAssetContext& context, ModelDa
         // Link with object from prefab (if reimporting)
         if (prefab)
         {
+            rapidjson_flax::StringBuffer buffer;
             for (Actor* a : nodeActors)
             {
                 for (const auto& i : prefab->ObjectsCache)
@@ -764,6 +777,32 @@ CreateAssetResult ImportModel::CreatePrefab(CreateAssetContext& context, ModelDa
                     auto* o = (Actor*)i.Value;
                     if (o->GetName() != a->GetName()) // Name match
                         continue;
+
+                    // Preserve local changes made in the prefab
+                    {
+                        // Serialize
+                        buffer.Clear();
+                        CompactJsonWriter writer(buffer);
+                        writer.StartObject();
+                        const void* defaultInstance = o->GetType().GetDefaultInstance();
+                        o->Serialize(writer, defaultInstance);
+                        writer.EndObject();
+
+                        // Parse json
+                        rapidjson_flax::Document document;
+                        document.Parse(buffer.GetString(), buffer.GetSize());
+
+                        // Strip unwanted data
+                        document.RemoveMember("ID");
+                        document.RemoveMember("ParentID");
+                        document.RemoveMember("PrefabID");
+                        document.RemoveMember("PrefabObjectID");
+                        document.RemoveMember("Name");
+
+                        // Deserialize object
+                        auto modifier = Cache::ISerializeModifier.Get();
+                        a->Deserialize(document, &*modifier);
+                    }
 
                     // Mark as this object already exists in prefab so will be preserved when updating it
                     a->LinkPrefab(o->GetPrefabID(), o->GetPrefabObjectID());

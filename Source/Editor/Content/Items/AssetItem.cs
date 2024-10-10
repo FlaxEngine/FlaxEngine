@@ -80,7 +80,7 @@ namespace FlaxEditor.Content
                 // Translate asset type name
                 var typeName = TypeName;
                 string[] typeNamespaces = typeName.Split('.');
-                if (typeNamespaces.Length != 0 && typeNamespaces.Length != 0)
+                if (typeNamespaces.Length != 0 && typeNamespaces[typeNamespaces.Length - 1].Length != 0)
                 {
                     typeName = Utilities.Utils.GetPropertyNameUI(typeNamespaces[typeNamespaces.Length - 1]);
                 }

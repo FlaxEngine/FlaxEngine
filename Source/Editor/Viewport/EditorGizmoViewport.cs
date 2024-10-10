@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using FlaxEditor.Gizmo;
 using FlaxEditor.GUI.ContextMenu;
+using FlaxEditor.GUI.Input;
 using FlaxEditor.SceneGraph;
 using FlaxEditor.Viewport.Cameras;
 using FlaxEditor.Viewport.Widgets;
@@ -298,9 +299,33 @@ namespace FlaxEditor.Viewport
             }
             var buttonBB = translateSnappingCM.AddButton("Bounding Box").LinkTooltip("Snaps the selection based on it's bounding volume");
             buttonBB.Tag = -1.0f;
-            translateSnappingCM.ButtonClicked += button =>
+            var buttonCustom = translateSnappingCM.AddButton("Custom");
+            buttonCustom.LinkTooltip("Custom grid size");
+            const float defaultCustomTranslateSnappingValue = 250.0f;
+            float customTranslateSnappingValue = transformGizmo.TranslationSnapValue;
+            if (customTranslateSnappingValue < 0.0f)
+                customTranslateSnappingValue = defaultCustomTranslateSnappingValue;
+            foreach (var v in TranslateSnapValues)
             {
-                var v = (float)button.Tag;
+                if (Mathf.Abs(transformGizmo.TranslationSnapValue - v) < 0.001f)
+                {
+                    customTranslateSnappingValue = defaultCustomTranslateSnappingValue;
+                    break;
+                }
+            }
+            buttonCustom.Tag = customTranslateSnappingValue;
+            var customValue = new FloatValueBox(customTranslateSnappingValue, Style.Current.FontMedium.MeasureText(buttonCustom.Text).X + 5, 2, 70.0f, 0.001f, float.MaxValue, 0.1f)
+            {
+                Parent = buttonCustom
+            };
+            customValue.ValueChanged += () =>
+            {
+                buttonCustom.Tag = customValue.Value;
+                buttonCustom.Click();
+            };
+            translateSnappingCM.ButtonClicked += b =>
+            {
+                var v = (float)b.Tag;
                 transformGizmo.TranslationSnapValue = v;
                 if (v < 0.0f)
                     translateSnapping.Text = "Bounding Box";
@@ -360,11 +385,36 @@ namespace FlaxEditor.Viewport
             };
             
             // Setup input actions
-            viewport.InputActions.Add(options => options.TranslateMode, () => transformGizmo.ActiveMode = TransformGizmoBase.Mode.Translate);
-            viewport.InputActions.Add(options => options.RotateMode, () => transformGizmo.ActiveMode = TransformGizmoBase.Mode.Rotate);
-            viewport.InputActions.Add(options => options.ScaleMode, () => transformGizmo.ActiveMode = TransformGizmoBase.Mode.Scale);
+            viewport.InputActions.Add(options => options.TranslateMode, () => 
+            {
+                viewport.GetInput(out var input);
+                if (input.IsMouseRightDown)
+                    return;
+                
+                transformGizmo.ActiveMode = TransformGizmoBase.Mode.Translate;
+            });
+            viewport.InputActions.Add(options => options.RotateMode, () => 
+            {
+                viewport.GetInput(out var input);
+                if (input.IsMouseRightDown)
+                    return;
+
+                transformGizmo.ActiveMode = TransformGizmoBase.Mode.Rotate;
+            });
+            viewport.InputActions.Add(options => options.ScaleMode, () =>
+            {
+                viewport.GetInput(out var input);
+                if (input.IsMouseRightDown)
+                    return;
+
+                transformGizmo.ActiveMode = TransformGizmoBase.Mode.Scale;
+            });
             viewport.InputActions.Add(options => options.ToggleTransformSpace, () =>
             {
+                viewport.GetInput(out var input);
+                if (input.IsMouseRightDown)
+                    return;
+
                 transformGizmo.ToggleTransformSpace();
                 if (useProjectCache)
                     editor.ProjectCache.SetCustomData("TransformSpaceState", transformGizmo.ActiveTransformSpace.ToString());

@@ -186,7 +186,7 @@ public:
     {
         return (void*)_resource;
     }
-    bool GetData(int32 arrayOrDepthSliceIndex, int32 mipMapIndex, TextureMipData& data, uint32 mipRowPitch) override;
+    bool GetData(int32 arrayIndex, int32 mipMapIndex, TextureMipData& data, uint32 mipRowPitch) override;
 
     // [ResourceOwnerDX12]
     GPUResource* AsGPUResource() const override

@@ -80,6 +80,7 @@ namespace FlaxEditor.Windows.Assets
             private AnimationWindow Window;
             private Animation Asset;
             private ModelImportSettings ImportSettings = new ModelImportSettings();
+            private bool EnablePreviewModelCache = true;
 
             [EditorDisplay("Preview"), NoSerialize, AssetReference(true), Tooltip("The skinned model to preview the animation playback.")]
             public SkinnedModel PreviewModel
@@ -134,6 +135,15 @@ namespace FlaxEditor.Windows.Assets
                         value.WaitForLoaded(500);
                         Window._preview.ViewportCamera.SetArcBallView(Window._preview.PreviewActor.Sphere);
                     }
+
+                    if (EnablePreviewModelCache)
+                    {
+                        var customDataName = Window.GetPreviewModelCacheName();
+                        if (value)
+                            Window.Editor.ProjectCache.SetCustomData(customDataName, value.ID.ToString());
+                        else
+                            Window.Editor.ProjectCache.RemoveCustomData(customDataName);
+                    }
                 }
             }
 
@@ -142,6 +152,7 @@ namespace FlaxEditor.Windows.Assets
                 // Link
                 Window = window;
                 Asset = window.Asset;
+                EnablePreviewModelCache = true;
 
                 // Try to restore target asset import options (useful for fast reimport)
                 Editor.TryRestoreImportOptions(ref ImportSettings.Settings, window.Item.Path);
@@ -150,6 +161,7 @@ namespace FlaxEditor.Windows.Assets
             public void OnClean()
             {
                 // Unlink
+                EnablePreviewModelCache = false;
                 PreviewModel = null;
                 Window = null;
                 Asset = null;
@@ -181,7 +193,7 @@ namespace FlaxEditor.Windows.Assets
                         group.Label("Frames: " + info.FramesCount);
                         group.Label("Channels: " + info.ChannelsCount);
                         group.Label("Keyframes: " + info.KeyframesCount);
-                        group.Label("Memory Usage: " + Utilities.Utils.FormatBytesCount(info.MemoryUsage));
+                        group.Label("Memory Usage: " + Utilities.Utils.FormatBytesCount((ulong)info.MemoryUsage));
                     }
 
                     base.Initialize(layout);
@@ -269,10 +281,10 @@ namespace FlaxEditor.Windows.Assets
             _propertiesPresenter.Select(_properties);
 
             // Toolstrip
-            _saveButton = (ToolStripButton)_toolstrip.AddButton(Editor.Icons.Save64, Save).LinkTooltip("Save");
+            _saveButton = _toolstrip.AddButton(Editor.Icons.Save64, Save).LinkTooltip("Save", ref inputOptions.Save);
             _toolstrip.AddSeparator();
-            _undoButton = (ToolStripButton)_toolstrip.AddButton(Editor.Icons.Undo64, _undo.PerformUndo).LinkTooltip($"Undo ({inputOptions.Undo})");
-            _redoButton = (ToolStripButton)_toolstrip.AddButton(Editor.Icons.Redo64, _undo.PerformRedo).LinkTooltip($"Redo ({inputOptions.Redo})");
+            _undoButton = _toolstrip.AddButton(Editor.Icons.Undo64, _undo.PerformUndo).LinkTooltip("Undo", ref inputOptions.Undo);
+            _redoButton = _toolstrip.AddButton(Editor.Icons.Redo64, _undo.PerformRedo).LinkTooltip("Redo", ref inputOptions.Redo);
             _toolstrip.AddSeparator();
             _toolstrip.AddButton(editor.Icons.Docs64, () => Platform.OpenUrl(Utilities.Constants.DocsUrl + "manual/animation/animation/index.html")).LinkTooltip("See documentation to learn more");
 
@@ -287,12 +299,23 @@ namespace FlaxEditor.Windows.Assets
             UpdateToolstrip();
         }
 
+        private string GetPreviewModelCacheName()
+        {
+            return _asset.ID + ".PreviewModel";
+        }
+
         /// <inheritdoc />
         protected override void OnAssetLoaded()
         {
             _properties.OnLoad(this);
             _propertiesPresenter.BuildLayout();
             ClearEditedFlag();
+            if (!_initialPreviewModel && 
+                Editor.ProjectCache.TryGetCustomData(GetPreviewModelCacheName(), out string str) && 
+                Guid.TryParse(str, out var id))
+            {
+                _initialPreviewModel = FlaxEngine.Content.LoadAsync<SkinnedModel>(id);
+            }
             if (_initialPreviewModel)
             {
                 _properties.PreviewModel = _initialPreviewModel;

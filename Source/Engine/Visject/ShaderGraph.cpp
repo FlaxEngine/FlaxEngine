@@ -1049,6 +1049,8 @@ ShaderGenerator::Value ShaderGenerator::eatBox(Node* caller, Box* box)
 
 ShaderGenerator::Value ShaderGenerator::tryGetValue(Box* box, int32 defaultValueBoxIndex, const Value& defaultValue)
 {
+    if (!box)
+        return defaultValue;
     const auto parentNode = box->GetParent<Node>();
     if (box->HasConnection())
         return eatBox(parentNode, box->FirstConnection());
@@ -1206,11 +1208,8 @@ SerializedMaterialParam* ShaderGenerator::findParam(const String& shaderName)
     {
         SerializedMaterialParam& param = _parameters[i];
         if (param.ShaderName == shaderName)
-        {
             return &param;
-        }
     }
-
     return nullptr;
 }
 
@@ -1235,9 +1234,7 @@ SerializedMaterialParam ShaderGenerator::findOrAddTexture(const Guid& id)
     {
         SerializedMaterialParam& param = _parameters[i];
         if (!param.IsPublic && param.Type == MaterialParameterType::Texture && param.AsGuid == id)
-        {
             return param;
-        }
     }
 
     // Create
@@ -1259,9 +1256,7 @@ SerializedMaterialParam ShaderGenerator::findOrAddNormalMap(const Guid& id)
     {
         SerializedMaterialParam& param = _parameters[i];
         if (!param.IsPublic && param.Type == MaterialParameterType::NormalMap && param.AsGuid == id)
-        {
             return param;
-        }
     }
 
     // Create
@@ -1283,9 +1278,7 @@ SerializedMaterialParam ShaderGenerator::findOrAddCubeTexture(const Guid& id)
     {
         SerializedMaterialParam& param = _parameters[i];
         if (!param.IsPublic && param.Type == MaterialParameterType::CubeTexture && param.AsGuid == id)
-        {
             return param;
-        }
     }
 
     // Create
@@ -1309,9 +1302,7 @@ SerializedMaterialParam ShaderGenerator::findOrAddSceneTexture(MaterialSceneText
     {
         SerializedMaterialParam& param = _parameters[i];
         if (!param.IsPublic && param.Type == MaterialParameterType::SceneTexture && param.AsInteger == asInt)
-        {
             return param;
-        }
     }
 
     // Create
@@ -1333,9 +1324,7 @@ SerializedMaterialParam& ShaderGenerator::findOrAddTextureGroupSampler(int32 ind
     {
         SerializedMaterialParam& param = _parameters[i];
         if (!param.IsPublic && param.Type == MaterialParameterType::TextureGroupSampler && param.AsInteger == index)
-        {
             return param;
-        }
     }
 
     // Create

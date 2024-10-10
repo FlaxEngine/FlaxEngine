@@ -457,7 +457,7 @@ bool ShadowsOfMordor::Builder::initResources()
     view.IsOfflinePass = true;
     view.Near = HEMISPHERES_NEAR_PLANE;
     view.Far = HEMISPHERES_FAR_PLANE;
-    view.StaticFlagsMask = StaticFlags::Lightmap;
+    view.StaticFlagsMask = view.StaticFlagsCompare = StaticFlags::Lightmap;
     view.MaxShadowsQuality = Quality::Low;
     _task->Resize(HEMISPHERES_RESOLUTION, HEMISPHERES_RESOLUTION);
 

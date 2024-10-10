@@ -49,6 +49,7 @@ namespace FlaxEngine.Interop
     internal struct NativePropertyDefinitions
     {
         internal IntPtr name;
+        internal ManagedHandle propertyHandle;
         internal ManagedHandle getterHandle;
         internal ManagedHandle setterHandle;
         internal uint getterAttributes;
@@ -319,14 +320,15 @@ namespace FlaxEngine.Interop
             var arr = (NativeMethodDefinitions*)NativeAlloc(methods.Count, Unsafe.SizeOf<NativeMethodDefinitions>());
             for (int i = 0; i < methods.Count; i++)
             {
+                var method = methods[i];
                 IntPtr ptr = IntPtr.Add(new IntPtr(arr), Unsafe.SizeOf<NativeMethodDefinitions>() * i);
                 var classMethod = new NativeMethodDefinitions
                 {
-                    name = NativeAllocStringAnsi(methods[i].Name),
-                    numParameters = methods[i].GetParameters().Length,
-                    methodAttributes = (uint)methods[i].Attributes,
+                    name = NativeAllocStringAnsi(method.Name),
+                    numParameters = method.GetParameters().Length,
+                    methodAttributes = (uint)method.Attributes,
                 };
-                classMethod.typeHandle = GetMethodGCHandle(methods[i]);
+                classMethod.typeHandle = GetMethodGCHandle(method);
                 Unsafe.Write(ptr.ToPointer(), classMethod);
             }
             *classMethods = arr;
@@ -377,14 +379,27 @@ namespace FlaxEngine.Interop
             var arr = (NativePropertyDefinitions*)NativeAlloc(properties.Length, Unsafe.SizeOf<NativePropertyDefinitions>());
             for (int i = 0; i < properties.Length; i++)
             {
+                var property = properties[i];
+
+                ManagedHandle propertyHandle = ManagedHandle.Alloc(property);
+#if FLAX_EDITOR
+                if (type.IsCollectible)
+                    propertyHandleCacheCollectible.Add(propertyHandle);
+                else
+#endif
+                {
+                    propertyHandleCache.Add(propertyHandle);
+                }
+
                 IntPtr ptr = IntPtr.Add(new IntPtr(arr), Unsafe.SizeOf<NativePropertyDefinitions>() * i);
 
-                var getterMethod = properties[i].GetGetMethod(true);
-                var setterMethod = properties[i].GetSetMethod(true);
+                var getterMethod = property.GetGetMethod(true);
+                var setterMethod = property.GetSetMethod(true);
 
                 var classProperty = new NativePropertyDefinitions
                 {
-                    name = NativeAllocStringAnsi(properties[i].Name),
+                    name = NativeAllocStringAnsi(property.Name),
+                    propertyHandle = propertyHandle,
                 };
                 if (getterMethod != null)
                 {
@@ -402,12 +417,8 @@ namespace FlaxEngine.Interop
             *classPropertiesCount = properties.Length;
         }
 
-        [UnmanagedCallersOnly]
-        internal static void GetClassAttributes(ManagedHandle typeHandle, ManagedHandle** classAttributes, int* classAttributesCount)
+        internal static void GetAttributes(object[] attributeValues, ManagedHandle** classAttributes, int* classAttributesCount)
         {
-            Type type = Unsafe.As<TypeHolder>(typeHandle.Target);
-            object[] attributeValues = type.GetCustomAttributes(false);
-
             ManagedHandle* arr = (ManagedHandle*)NativeAlloc(attributeValues.Length, Unsafe.SizeOf<ManagedHandle>());
             for (int i = 0; i < attributeValues.Length; i++)
             {
@@ -420,6 +431,38 @@ namespace FlaxEngine.Interop
             }
             *classAttributes = arr;
             *classAttributesCount = attributeValues.Length;
+        }
+
+        [UnmanagedCallersOnly]
+        internal static void GetClassAttributes(ManagedHandle typeHandle, ManagedHandle** classAttributes, int* classAttributesCount)
+        {
+            Type type = Unsafe.As<TypeHolder>(typeHandle.Target);
+            object[] attributeValues = type.GetCustomAttributes(false);
+            GetAttributes(attributeValues, classAttributes, classAttributesCount);
+        }
+
+        [UnmanagedCallersOnly]
+        internal static void GetMethodAttributes(ManagedHandle methodHandle, ManagedHandle** classAttributes, int* classAttributesCount)
+        {
+            MethodHolder methodHolder = Unsafe.As<MethodHolder>(methodHandle.Target);
+            object[] attributeValues = methodHolder.method.GetCustomAttributes(false);
+            GetAttributes(attributeValues, classAttributes, classAttributesCount);
+        }
+
+        [UnmanagedCallersOnly]
+        internal static void GetFieldAttributes(ManagedHandle fieldHandle, ManagedHandle** classAttributes, int* classAttributesCount)
+        {
+            FieldHolder field = Unsafe.As<FieldHolder>(fieldHandle.Target);
+            object[] attributeValues = field.field.GetCustomAttributes(false);
+            GetAttributes(attributeValues, classAttributes, classAttributesCount);
+        }
+
+        [UnmanagedCallersOnly]
+        internal static void GetPropertyAttributes(ManagedHandle propertyHandle, ManagedHandle** classAttributes, int* classAttributesCount)
+        {
+            PropertyInfo property = Unsafe.As<PropertyInfo>(propertyHandle.Target);
+            object[] attributeValues = property.GetCustomAttributes(false);
+            GetAttributes(attributeValues, classAttributes, classAttributesCount);
         }
 
         [UnmanagedCallersOnly]
@@ -848,13 +891,9 @@ namespace FlaxEngine.Interop
         [UnmanagedCallersOnly]
         internal static void FieldSetValue(ManagedHandle fieldOwnerHandle, ManagedHandle fieldHandle, IntPtr valuePtr)
         {
-            object fieldOwner = fieldOwnerHandle.Target;
+            object fieldOwner = fieldOwnerHandle.IsAllocated ? fieldOwnerHandle.Target : null;
             FieldHolder field = Unsafe.As<FieldHolder>(fieldHandle.Target);
-            object value = null;
-            if (field.field.FieldType.IsValueType)
-                value = Marshal.PtrToStructure(valuePtr, field.field.FieldType);
-            else if (valuePtr != IntPtr.Zero)
-                value = ManagedHandle.FromIntPtr(valuePtr).Target;
+            object value = MarshalToManaged(valuePtr, field.field.FieldType);
             field.field.SetValue(fieldOwner, value);
         }
 
@@ -1019,9 +1058,6 @@ namespace FlaxEngine.Interop
         {
 #if FLAX_EDITOR
             // Clear all caches which might hold references to assemblies in collectible ALC
-            typeCache.Clear();
-
-            // Release all references in collectible ALC
             cachedDelegatesCollectible.Clear();
             foreach (var pair in managedTypesCollectible)
                 pair.Value.handle.Free();
@@ -1032,6 +1068,9 @@ namespace FlaxEngine.Interop
             foreach (var handle in fieldHandleCacheCollectible)
                 handle.Free();
             fieldHandleCacheCollectible.Clear();
+            foreach (var handle in propertyHandleCacheCollectible)
+                handle.Free();
+            propertyHandleCacheCollectible.Clear();
 
             _typeSizeCache.Clear();
 

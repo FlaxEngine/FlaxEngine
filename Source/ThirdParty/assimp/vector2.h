@@ -3,9 +3,7 @@
 Open Asset Import Library (assimp)
 ---------------------------------------------------------------------------
 
-Copyright (c) 2006-2019, assimp team
-
-
+Copyright (c) 2006-2024, assimp team
 
 All rights reserved.
 
@@ -47,6 +45,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef AI_VECTOR2D_H_INC
 #define AI_VECTOR2D_H_INC
 
+#ifdef __GNUC__
+#   pragma GCC system_header
+#endif
+
 #ifdef __cplusplus
 #   include <cmath>
 #else
@@ -83,7 +85,7 @@ public:
     bool operator== (const aiVector2t& other) const;
     bool operator!= (const aiVector2t& other) const;
 
-    bool Equal(const aiVector2t& other, TReal epsilon = 1e-6) const;
+    bool Equal(const aiVector2t &other, TReal epsilon = ai_epsilon) const;
 
     aiVector2t& operator= (TReal f);
     const aiVector2t SymMul(const aiVector2t& o);

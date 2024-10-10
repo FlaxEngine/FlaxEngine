@@ -753,7 +753,7 @@ public:
     /// <param name="hiddenWindow">True if start process with hidden window</param>
     /// <param name="waitForEnd">True if wait for process competition</param>
     /// <returns>Retrieves the termination status of the specified process. Valid only if processed ended.</returns>
-    API_FUNCTION() DEPRECATED static int32 StartProcess(const StringView& filename, const StringView& args, const StringView& workingDir, bool hiddenWindow = false, bool waitForEnd = false);
+    API_FUNCTION() DEPRECATED("Use CreateProcess instead") static int32 StartProcess(const StringView& filename, const StringView& args, const StringView& workingDir, bool hiddenWindow = false, bool waitForEnd = false);
 
     /// <summary>
     /// Starts a new process (runs commandline). Waits for it's end and captures its output.
@@ -763,7 +763,7 @@ public:
     /// <param name="workingDir">The custom path of the working directory.</param>
     /// <param name="hiddenWindow">True if start process with hidden window.</param>
     /// <returns>Retrieves the termination status of the specified process. Valid only if processed ended.</returns>
-    API_FUNCTION() DEPRECATED static int32 RunProcess(const StringView& cmdLine, const StringView& workingDir, bool hiddenWindow = true);
+    API_FUNCTION() DEPRECATED("Use CreateProcess instead") static int32 RunProcess(const StringView& cmdLine, const StringView& workingDir, bool hiddenWindow = true);
 
     /// <summary>
     /// Starts a new process (runs commandline). Waits for it's end and captures its output.
@@ -774,7 +774,7 @@ public:
     /// <param name="environment">The process environment variables. If null the current process environment is used.</param>
     /// <param name="hiddenWindow">True if start process with hidden window.</param>
     /// <returns>Retrieves the termination status of the specified process. Valid only if processed ended.</returns>
-    API_FUNCTION() DEPRECATED static int32 RunProcess(const StringView& cmdLine, const StringView& workingDir, const Dictionary<String, String, HeapAllocation>& environment, bool hiddenWindow = true);
+    API_FUNCTION() DEPRECATED("Use CreateProcess instead") static int32 RunProcess(const StringView& cmdLine, const StringView& workingDir, const Dictionary<String, String, HeapAllocation>& environment, bool hiddenWindow = true);
 
     /// <summary>
     /// Creates a new process.

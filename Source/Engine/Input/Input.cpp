@@ -27,32 +27,18 @@ struct AxisEvaluation
 
 struct ActionData
 {
-    bool Active;
-    uint64 FrameIndex;
-    InputActionState State;
-
-    ActionData()
-    {
-        Active = false;
-        FrameIndex = 0;
-        State = InputActionState::Waiting;
-    }
+    bool Active = false;
+    uint64 FrameIndex = 0;
+    InputActionState State = InputActionState::Waiting;
 };
 
 struct AxisData
 {
-    float Value;
-    float ValueRaw;
-    float PrevKeyValue;
-    uint64 FrameIndex;
-
-    AxisData()
-    {
-        Value = 0.0f;
-        ValueRaw = 0.0f;
-        PrevKeyValue = 0.0f;
-        FrameIndex = 0;
-    }
+    float Value = 0.0f;
+    float ValueRaw = 0.0f;
+    float PrevValue = 0.0f;
+    float PrevKeyValue = 0.0f;
+    uint64 FrameIndex = 0;
 };
 
 namespace InputImpl
@@ -157,6 +143,8 @@ void InputSettings::Deserialize(DeserializeStream& stream, ISerializeModifier* m
                 config.Gamepad = JsonTools::GetEnum(v, "Gamepad", InputGamepadIndex::All);
                 config.PositiveButton = JsonTools::GetEnum(v, "PositiveButton", KeyboardKeys::None);
                 config.NegativeButton = JsonTools::GetEnum(v, "NegativeButton", KeyboardKeys::None);
+                config.GamepadPositiveButton = JsonTools::GetEnum(v, "GamepadPositiveButton", GamepadButton::None);
+                config.GamepadNegativeButton = JsonTools::GetEnum(v, "GamepadNegativeButton", GamepadButton::None);
                 config.DeadZone = JsonTools::GetFloat(v, "DeadZone", 0.1f);
                 config.Sensitivity = JsonTools::GetFloat(v, "Sensitivity", 0.4f);
                 config.Gravity = JsonTools::GetFloat(v, "Gravity", 1.0f);
@@ -873,8 +861,8 @@ void InputService::Update()
         const AxisData& data = Axes[name];
 
         // Get key raw value
-        const bool isPositiveKey = Input::GetKey(config.PositiveButton);
-        const bool isNegativeKey = Input::GetKey(config.NegativeButton);
+        const bool isPositiveKey = Input::GetKey(config.PositiveButton) || Input::GetGamepadButton(config.Gamepad, config.GamepadPositiveButton);
+        const bool isNegativeKey = Input::GetKey(config.NegativeButton) || Input::GetGamepadButton(config.Gamepad, config.GamepadNegativeButton);
         float keyRawValue = 0;
         if (isPositiveKey && !isNegativeKey)
         {
@@ -988,6 +976,7 @@ void InputService::Update()
 
         // Setup axis data
         data.PrevKeyValue = e.PrevKeyValue;
+        data.PrevValue = data.Value;
         data.ValueRaw = e.RawValue;
         data.Value = e.Value;
 
@@ -1023,7 +1012,7 @@ void InputService::Update()
     {
         for (auto i = Axes.Begin(); i.IsNotEnd(); ++i)
         {
-            if (Math::NotNearEqual(i->Value.Value, i->Value.PrevKeyValue))
+            if (Math::NotNearEqual(i->Value.Value, i->Value.PrevValue))
             {
                 Input::AxisValueChanged(i->Key);
             }

@@ -111,6 +111,11 @@ namespace FlaxEditor.CustomEditors
         /// </summary>
         public PropertyNameLabel LinkedLabel;
 
+        /// <summary>
+        /// Gets the layout for this editor. Used to calculate bounds.
+        /// </summary>
+        public LayoutElementsContainer Layout => _layout;
+
         internal virtual void Initialize(CustomEditorPresenter presenter, LayoutElementsContainer layout, ValueContainer values)
         {
             _layout = layout;
@@ -291,6 +296,16 @@ namespace FlaxEditor.CustomEditors
             _values.Set(_parent.Values, value);
         }
 
+        private bool SyncParent()
+        {
+            // TODO: add attribute for types that want to sync their contents with a parent
+            var type = Values.Type.Type;
+            if (type == typeof(LocalizedString) ||
+                type == typeof(FontReference))
+                return true;
+            return _parent != null && !(_parent is SyncPointEditor);
+        }
+
         internal virtual void RefreshInternal()
         {
             if (_values == null)
@@ -312,7 +327,7 @@ namespace FlaxEditor.CustomEditors
 
                     // Propagate values up (eg. when member of structure gets modified, also structure should be updated as a part of the other object)
                     var obj = _parent;
-                    while (obj._parent != null && !(obj._parent is SyncPointEditor))
+                    while (obj.SyncParent())
                     {
                         obj.Values.Set(obj._parent.Values, obj.Values);
                         obj = obj._parent;
@@ -377,6 +392,10 @@ namespace FlaxEditor.CustomEditors
                 else if (Values.HasDefaultValue && CanRevertDefaultValue)
                     color = Color.Yellow * 0.8f;
                 LinkedLabel.HighlightStripColor = color;
+
+                // Grey out deprecated members
+                if (Values.IsObsolete)
+                    LinkedLabel.TextColor = LinkedLabel.TextColorHighlighted = FlaxEngine.GUI.Style.Current.ForegroundGrey;
             }
         }
 
@@ -659,7 +678,7 @@ namespace FlaxEditor.CustomEditors
                 }
             }
 
-            if (obj == null || Values.Type.IsInstanceOfType(obj))
+            if ((obj == null && !Values.Type.IsValueType) || Values.Type.IsInstanceOfType(obj))
             {
                 result = obj;
                 return true;
@@ -671,20 +690,7 @@ namespace FlaxEditor.CustomEditors
         /// <summary>
         /// Gets a value indicating whether can paste value from the system clipboard to the property value container.
         /// </summary>
-        public bool CanPaste
-        {
-            get
-            {
-                try
-                {
-                    return GetClipboardObject(out _, false);
-                }
-                catch
-                {
-                    return false;
-                }
-            }
-        }
+        public bool CanPaste => !string.IsNullOrEmpty(Clipboard.Text);
 
         /// <summary>
         /// Sets the value from the system clipboard.

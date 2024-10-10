@@ -17,8 +17,8 @@
 #include "Engine/Graphics/Shaders/GPUShader.h"
 #include "Engine/Engine/Time.h"
 
-PACK_STRUCT(struct Data {
-    GBufferData GBuffer;
+GPU_CB_STRUCT(Data {
+    ShaderGBufferData GBuffer;
     Matrix CurrentVP;
     Matrix PreviousVP;
     Float4 TemporalAAJitter;

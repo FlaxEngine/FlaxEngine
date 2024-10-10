@@ -3,7 +3,7 @@
 Open Asset Import Library (assimp)
 ---------------------------------------------------------------------------
 
-Copyright (c) 2006-2019, assimp team
+Copyright (c) 2006-2024, assimp team
 
 
 
@@ -48,11 +48,27 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef AI_QUATERNION_INL_INC
 #define AI_QUATERNION_INL_INC
 
+#ifdef __GNUC__
+#   pragma GCC system_header
+#endif
+
 #ifdef __cplusplus
-#include "quaternion.h"
+#include <assimp/quaternion.h>
 
 #include <cmath>
 
+// ------------------------------------------------------------------------------------------------
+/** Transformation of a quaternion by a 4x4 matrix */
+template <typename TReal>
+AI_FORCE_INLINE
+aiQuaterniont<TReal> operator * (const aiMatrix4x4t<TReal>& pMatrix, const aiQuaterniont<TReal>& pQuaternion) {
+    aiQuaterniont<TReal> res;
+    res.x = pMatrix.a1 * pQuaternion.x + pMatrix.a2 * pQuaternion.y + pMatrix.a3 * pQuaternion.z + pMatrix.a4 * pQuaternion.w;
+    res.y = pMatrix.b1 * pQuaternion.x + pMatrix.b2 * pQuaternion.y + pMatrix.b3 * pQuaternion.z + pMatrix.b4 * pQuaternion.w;
+    res.z = pMatrix.c1 * pQuaternion.x + pMatrix.c2 * pQuaternion.y + pMatrix.c3 * pQuaternion.z + pMatrix.c4 * pQuaternion.w;
+    res.w = pMatrix.d1 * pQuaternion.x + pMatrix.d2 * pQuaternion.y + pMatrix.d3 * pQuaternion.z + pMatrix.d4 * pQuaternion.w;
+    return res;
+}
 // ---------------------------------------------------------------------------
 template<typename TReal>
 bool aiQuaterniont<TReal>::operator== (const aiQuaterniont& o) const
@@ -66,6 +82,14 @@ bool aiQuaterniont<TReal>::operator!= (const aiQuaterniont& o) const
 {
     return !(*this == o);
 }
+
+// ------------------------------------------------------------------------------------------------
+template <typename TReal>
+AI_FORCE_INLINE
+aiQuaterniont<TReal>& aiQuaterniont<TReal>::operator *= (const aiMatrix4x4t<TReal>& mat){
+    return (*this = mat * (*this));
+}
+// ------------------------------------------------------------------------------------------------
 
 // ---------------------------------------------------------------------------
 template<typename TReal>
@@ -213,7 +237,8 @@ inline void aiQuaterniont<TReal>::Interpolate( aiQuaterniont& pOut, const aiQuat
 
     // Calculate coefficients
     TReal sclp, sclq;
-    if( (static_cast<TReal>(1.0) - cosom) > static_cast<TReal>(0.0001)) // 0.0001 -> some epsillon
+
+    if ((static_cast<TReal>(1.0) - cosom) > ai_epsilon) // 0.0001 -> some epsillon
     {
         // Standard case (slerp)
         TReal omega, sinom;
@@ -273,7 +298,7 @@ inline aiQuaterniont<TReal>& aiQuaterniont<TReal>::Conjugate ()
 
 // ---------------------------------------------------------------------------
 template<typename TReal>
-inline aiVector3t<TReal> aiQuaterniont<TReal>::Rotate (const aiVector3t<TReal>& v)
+inline aiVector3t<TReal> aiQuaterniont<TReal>::Rotate (const aiVector3t<TReal>& v) const
 {
     aiQuaterniont q2(0.f,v.x,v.y,v.z), q = *this, qinv = q;
     qinv.Conjugate();

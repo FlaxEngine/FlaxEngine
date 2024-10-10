@@ -7,9 +7,6 @@
 #include "Quaternion.h"
 #include "../Types/String.h"
 
-const Real Plane::DistanceEpsilon = 0.0001f;
-const Real Plane::NormalEpsilon = 1.0f / 65535.0f;
-
 Plane::Plane(const Vector3& point1, const Vector3& point2, const Vector3& point3)
 {
     Vector3 cross;

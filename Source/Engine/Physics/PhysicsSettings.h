@@ -95,9 +95,15 @@ public:
     PhysicsBroadPhaseType BroadPhaseType = PhysicsBroadPhaseType::ParallelAutomaticBoxPruning;
 
     /// <summary>
+    /// Enables enhanced determinism in the simulation. This has a performance impact.
+    /// </summary>
+    API_FIELD(Attributes="EditorOrder(71), EditorDisplay(\"Simulation\")")
+    bool EnableEnhancedDeterminism = false;
+
+    /// <summary>
     /// The solver type to use in the simulation.
     /// </summary>
-    API_FIELD(Attributes="EditorOrder(72), EditorDisplay(\"Simulation\")")
+    API_FIELD(Attributes="EditorOrder(73), EditorDisplay(\"Simulation\")")
     PhysicsSolverType SolverType = PhysicsSolverType::ProjectedGaussSeidelIterativeSolver;
 
     /// <summary>

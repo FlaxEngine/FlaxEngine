@@ -160,16 +160,23 @@ namespace FlaxEditor.Windows.Assets
                 var result = base.OnDragDrop(ref location, data);
                 if (result == DragDropEffect.None)
                 {
+                    _window._isDropping = true;
                     // Drag assets
                     if (_dragAssets != null && _dragAssets.HasValidDrag)
                     {
+                        List<SceneGraphNode> graphNodes = new List<SceneGraphNode>();
                         for (int i = 0; i < _dragAssets.Objects.Count; i++)
                         {
                             var item = _dragAssets.Objects[i];
                             var actor = item.OnEditorDrop(this);
                             actor.Name = item.ShortName;
                             _window.Spawn(actor);
+                            var graphNode = _window.Graph.Root.Find(actor);;
+                            if (graphNode != null)
+                                graphNodes.Add(graphNode);
                         }
+                        if (graphNodes.Count > 0)
+                            _window.Select(graphNodes);
                         result = DragDropEffect.Move;
                     }
                     // Drag actor type
@@ -213,6 +220,7 @@ namespace FlaxEditor.Windows.Assets
                     // Drag script item
                     else if (_dragScriptItems != null && _dragScriptItems.HasValidDrag)
                     {
+                        List<SceneGraphNode> graphNodes = new List<SceneGraphNode>();
                         for (int i = 0; i < _dragScriptItems.Objects.Count; i++)
                         {
                             var item = _dragScriptItems.Objects[i];
@@ -227,8 +235,13 @@ namespace FlaxEditor.Windows.Assets
                                 }
                                 actor.Name = actorType.Name;
                                 _window.Spawn(actor);
+                                var graphNode = _window.Graph.Root.Find(actor);;
+                                if (graphNode != null)
+                                    graphNodes.Add(graphNode);
                             }
                         }
+                        if (graphNodes.Count > 0)
+                            _window.Select(graphNodes);
                         result = DragDropEffect.Move;
                     }
                     _dragHandlers.OnDragDrop(null);

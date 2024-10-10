@@ -750,7 +750,7 @@ namespace FlaxEngine.GUI
             {
                 if (base.IsTouchOver)
                     return true;
-                for (int i = 0; i < _children.Count && _children.Count > 0; i++)
+                for (int i = 0; i < _children.Count; i++)
                 {
                     if (_children[i].IsTouchOver)
                         return true;
@@ -960,7 +960,7 @@ namespace FlaxEngine.GUI
         public override void OnMouseLeave()
         {
             // Check all children collisions with mouse and fire events for them
-            for (int i = 0; i < _children.Count && _children.Count > 0; i++)
+            for (int i = 0; i < _children.Count; i++)
             {
                 var child = _children[i];
                 if (child.Visible && child.Enabled && child.IsMouseOver)
@@ -1063,7 +1063,7 @@ namespace FlaxEngine.GUI
             if (base.IsTouchPointerOver(pointerId))
                 return true;
 
-            for (int i = 0; i < _children.Count && _children.Count > 0; i++)
+            for (int i = 0; i < _children.Count; i++)
             {
                 if (_children[i].IsTouchPointerOver(pointerId))
                     return true;
@@ -1168,7 +1168,7 @@ namespace FlaxEngine.GUI
         /// <inheritdoc />
         public override void OnTouchLeave(int pointerId)
         {
-            for (int i = 0; i < _children.Count && _children.Count > 0; i++)
+            for (int i = 0; i < _children.Count; i++)
             {
                 var child = _children[i];
                 if (child.Visible && child.Enabled && child.IsTouchPointerOver(pointerId))
@@ -1183,7 +1183,7 @@ namespace FlaxEngine.GUI
         /// <inheritdoc />
         public override bool OnCharInput(char c)
         {
-            for (int i = 0; i < _children.Count && _children.Count > 0; i++)
+            for (int i = 0; i < _children.Count; i++)
             {
                 var child = _children[i];
                 if (child.Enabled && child.ContainsFocus)
@@ -1197,7 +1197,7 @@ namespace FlaxEngine.GUI
         /// <inheritdoc />
         public override bool OnKeyDown(KeyboardKeys key)
         {
-            for (int i = 0; i < _children.Count && _children.Count > 0; i++)
+            for (int i = 0; i < _children.Count; i++)
             {
                 var child = _children[i];
                 if (child.Enabled && child.ContainsFocus)
@@ -1211,7 +1211,7 @@ namespace FlaxEngine.GUI
         /// <inheritdoc />
         public override void OnKeyUp(KeyboardKeys key)
         {
-            for (int i = 0; i < _children.Count && _children.Count > 0; i++)
+            for (int i = 0; i < _children.Count; i++)
             {
                 var child = _children[i];
                 if (child.Enabled && child.ContainsFocus)
@@ -1294,7 +1294,7 @@ namespace FlaxEngine.GUI
             base.OnDragLeave();
 
             // Check all children collisions with mouse and fire events for them
-            for (int i = 0; i < _children.Count && _children.Count > 0; i++)
+            for (int i = 0; i < _children.Count; i++)
             {
                 var child = _children[i];
                 if (child.IsDragOver)

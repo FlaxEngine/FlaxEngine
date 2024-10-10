@@ -161,7 +161,7 @@ void Particles::OnEffectDestroy(ParticleEffect* effect)
 
 typedef Array<int32, FixedAllocation<PARTICLE_EMITTER_MAX_MODULES>> RenderModulesIndices;
 
-void DrawEmitterCPU(RenderContext& renderContext, ParticleBuffer* buffer, DrawCall& drawCall, DrawPass drawModes, StaticFlags staticFlags, ParticleEmitterInstance& emitterData, const RenderModulesIndices& renderModulesIndices, int16 sortOrder)
+void DrawEmitterCPU(RenderContext& renderContext, ParticleBuffer* buffer, DrawCall& drawCall, DrawPass drawModes, StaticFlags staticFlags, ParticleEmitterInstance& emitterData, const RenderModulesIndices& renderModulesIndices, int8 sortOrder)
 {
     // Skip if CPU buffer is empty
     if (buffer->CPU.Count == 0)
@@ -289,9 +289,9 @@ void DrawEmitterCPU(RenderContext& renderContext, ParticleBuffer* buffer, DrawCa
     // Check if need to setup ribbon modules
     int32 ribbonModuleIndex = 0;
     int32 ribbonModulesDrawIndicesPos = 0;
-    int32 ribbonModulesDrawIndicesStart[PARTICLE_EMITTER_MAX_RIBBONS];
-    int32 ribbonModulesDrawIndicesCount[PARTICLE_EMITTER_MAX_RIBBONS];
-    int32 ribbonModulesSegmentCount[PARTICLE_EMITTER_MAX_RIBBONS];
+    int32 ribbonModulesDrawIndicesStart[PARTICLE_EMITTER_MAX_RIBBONS] = {};
+    int32 ribbonModulesDrawIndicesCount[PARTICLE_EMITTER_MAX_RIBBONS] = {};
+    int32 ribbonModulesSegmentCount[PARTICLE_EMITTER_MAX_RIBBONS] = {};
     if (emitter->Graph.RibbonRenderingModules.HasItems())
     {
         // Prepare ribbon data
@@ -569,7 +569,7 @@ void DrawEmitterCPU(RenderContext& renderContext, ParticleBuffer* buffer, DrawCa
 
 #if COMPILE_WITH_GPU_PARTICLES
 
-PACK_STRUCT(struct GPUParticlesSortingData {
+GPU_CB_STRUCT(GPUParticlesSortingData {
     Float3 ViewPosition;
     uint32 ParticleCounterOffset;
     uint32 ParticleStride;
@@ -598,7 +598,7 @@ void CleanupGPUParticlesSorting()
     GPUParticlesSorting = nullptr;
 }
 
-void DrawEmitterGPU(RenderContext& renderContext, ParticleBuffer* buffer, DrawCall& drawCall, DrawPass drawModes, StaticFlags staticFlags, ParticleEmitterInstance& emitterData, const RenderModulesIndices& renderModulesIndices, int16 sortOrder)
+void DrawEmitterGPU(RenderContext& renderContext, ParticleBuffer* buffer, DrawCall& drawCall, DrawPass drawModes, StaticFlags staticFlags, ParticleEmitterInstance& emitterData, const RenderModulesIndices& renderModulesIndices, int8 sortOrder)
 {
     const auto context = GPUDevice::Instance->GetMainContext();
     auto emitter = buffer->Emitter;
@@ -921,7 +921,7 @@ void Particles::DrawParticles(RenderContext& renderContext, ParticleEffect* effe
     worldDeterminantSigns[0] = Math::FloatSelect(worlds[0].RotDeterminant(), 1, -1);
     worldDeterminantSigns[1] = Math::FloatSelect(worlds[1].RotDeterminant(), 1, -1);
     const StaticFlags staticFlags = effect->GetStaticFlags();
-    const int16 sortOrder = effect->SortOrder;
+    const int8 sortOrder = effect->SortOrder;
 
     // Draw lights
     for (int32 emitterIndex = 0; emitterIndex < effect->Instance.Emitters.Count(); emitterIndex++)
@@ -931,6 +931,8 @@ void Particles::DrawParticles(RenderContext& renderContext, ParticleEffect* effe
         if (!buffer || (buffer->Mode == ParticlesSimulationMode::CPU && buffer->CPU.Count == 0))
             continue;
         auto emitter = buffer->Emitter;
+        if (!emitter || !emitter->IsLoaded())
+            continue;
 
         buffer->Emitter->GraphExecutorCPU.Draw(buffer->Emitter, effect, emitterData, renderContext, worlds[(int32)emitter->SimulationSpace]);
     }
@@ -949,6 +951,8 @@ void Particles::DrawParticles(RenderContext& renderContext, ParticleEffect* effe
         if (!buffer)
             continue;
         auto emitter = buffer->Emitter;
+        if (!emitter || !emitter->IsLoaded())
+            continue;
 
         drawCall.World = worlds[(int32)emitter->SimulationSpace];
         drawCall.WorldDeterminantSign = worldDeterminantSigns[(int32)emitter->SimulationSpace];

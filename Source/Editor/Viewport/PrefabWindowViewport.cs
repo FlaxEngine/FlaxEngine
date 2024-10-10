@@ -12,6 +12,7 @@ using FlaxEditor.Viewport.Previews;
 using FlaxEditor.Windows.Assets;
 using FlaxEngine;
 using FlaxEngine.GUI;
+using Utils = FlaxEditor.Utilities.Utils;
 
 namespace FlaxEditor.Viewport
 {
@@ -62,6 +63,7 @@ namespace FlaxEditor.Viewport
         private UpdateDelegate _update;
 
         private readonly ViewportDebugDrawData _debugDrawData = new ViewportDebugDrawData(32);
+        private readonly List<Actor> _debugDrawActors = new List<Actor>();
         private PrefabSpritesRenderer _spritesRenderer;
         private IntPtr _tempDebugDrawContext;
 
@@ -98,6 +100,16 @@ namespace FlaxEditor.Viewport
             ShowDebugDraw = true;
             ShowEditorPrimitives = true;
             Gizmos = new GizmosCollection(this);
+
+            _gridGizmo = new GridGizmo(this);
+            var showGridButton = ViewWidgetShowMenu.AddButton("Grid");
+            showGridButton.Clicked += () =>
+            {
+                _gridGizmo.Enabled = !_gridGizmo.Enabled;
+                showGridButton.Checked = _gridGizmo.Enabled;
+            };
+            showGridButton.Checked = true;
+            showGridButton.CloseMenuOnClick = false;
 
             // Prepare rendering task
             Task.ActorsSource = ActorsSources.CustomActors;
@@ -266,6 +278,8 @@ namespace FlaxEditor.Viewport
 
         /// <inheritdoc />
         public GizmosCollection Gizmos { get; }
+
+        private GridGizmo _gridGizmo;
 
         /// <inheritdoc />
         public SceneRenderTask RenderTask => Task;
@@ -611,6 +625,42 @@ namespace FlaxEditor.Viewport
                     DebugDraw.DrawActors(new IntPtr(actors), _debugDrawData.ActorsCount, false);
                 }
             }
+
+            // Debug draw all actors in prefab and collect actors
+            var view = Task.View;
+            var collectActors = (view.Flags & ViewFlags.PhysicsDebug) != 0 || view.Mode == ViewMode.PhysicsColliders || (view.Flags & ViewFlags.LightsDebug) != 0;
+            _debugDrawActors.Clear();
+            foreach (var child in SceneGraphRoot.ChildNodes)
+            {
+                if (child is not ActorNode actorNode || !actorNode.Actor)
+                    continue;
+                var actor = actorNode.Actor;
+                if (collectActors)
+                    Utils.GetActorsTree(_debugDrawActors, actor);
+                DebugDraw.DrawActorsTree(actor);
+            }
+
+            // Draw physics debug
+            if ((view.Flags & ViewFlags.PhysicsDebug) != 0 || view.Mode == ViewMode.PhysicsColliders)
+            {
+                foreach (var actor in _debugDrawActors)
+                {
+                    if (actor is Collider c && c.IsActiveInHierarchy)
+                        DebugDraw.DrawColliderDebugPhysics(c, renderContext.View);
+                }
+            }
+
+            // Draw lights debug
+            if ((view.Flags & ViewFlags.LightsDebug) != 0)
+            {
+                foreach (var actor in _debugDrawActors)
+                {
+                    if (actor is Light l && l.IsActiveInHierarchy)
+                        DebugDraw.DrawLightDebug(l, renderContext.View);
+                }
+            }
+
+            _debugDrawActors.Clear();
         }
     }
 }

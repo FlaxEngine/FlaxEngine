@@ -50,6 +50,39 @@ namespace
         return static_cast<DXGI_FORMAT>(format);
     }
 
+    FORCE_INLINE DXGI_FORMAT ToDecompressFormat(const DXGI_FORMAT format)
+    {
+        switch (format)
+        {
+        case DXGI_FORMAT_BC1_TYPELESS:
+        case DXGI_FORMAT_BC2_TYPELESS:
+        case DXGI_FORMAT_BC3_TYPELESS:
+            return DXGI_FORMAT_R8G8B8A8_TYPELESS;
+        case DXGI_FORMAT_BC1_UNORM:
+        case DXGI_FORMAT_BC2_UNORM:
+        case DXGI_FORMAT_BC3_UNORM:
+            return DXGI_FORMAT_R8G8B8A8_UNORM;
+        case DXGI_FORMAT_BC1_UNORM_SRGB:
+        case DXGI_FORMAT_BC2_UNORM_SRGB:
+        case DXGI_FORMAT_BC3_UNORM_SRGB:
+            return DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
+        case DXGI_FORMAT_BC4_TYPELESS:
+            return DXGI_FORMAT_R8_TYPELESS;
+        case DXGI_FORMAT_BC4_UNORM:
+            return DXGI_FORMAT_R8_UNORM;
+        case DXGI_FORMAT_BC4_SNORM:
+            return DXGI_FORMAT_R8_SNORM;
+        case DXGI_FORMAT_BC5_TYPELESS:
+            return DXGI_FORMAT_R8G8_TYPELESS;
+        case DXGI_FORMAT_BC5_UNORM:
+            return DXGI_FORMAT_R8G8_UNORM;
+        case DXGI_FORMAT_BC5_SNORM:
+            return DXGI_FORMAT_R8G8_SNORM;
+        default:
+            return DXGI_FORMAT_R16G16B16A16_FLOAT;
+        }
+    }
+
     HRESULT Compress(const DirectX::Image* srcImages, size_t nimages, const DirectX::TexMetadata& metadata, DXGI_FORMAT format, DirectX::TEX_COMPRESS_FLAGS compress, float threshold, DirectX::ScratchImage& cImages)
     {
 #if USE_EDITOR
@@ -306,7 +339,7 @@ HRESULT LoadFromEXRFile(const StringView& path, DirectX::ScratchImage& image)
             LOG_STR(Warning, String(err));
             FreeEXRErrorMessage(err);
         }
-        return S_FALSE;
+        return E_FAIL;
     }
 
     // Setup image
@@ -326,7 +359,7 @@ HRESULT LoadFromEXRFile(const StringView& path, DirectX::ScratchImage& image)
     return result;
 #else
     LOG(Warning, "EXR format is not supported.");
-    return S_FALSE;
+    return E_FAIL;
 #endif
 }
 
@@ -627,10 +660,8 @@ bool TextureTool::ImportTextureDirectXTex(ImageType type, const StringView& path
     int32 height = Math::Clamp(options.Resize ? options.SizeY : static_cast<int32>(sourceHeight * options.Scale), 1, options.MaxSize);
     if (sourceWidth != width || sourceHeight != height)
     {
-        auto& tmpImg = GET_TMP_IMG();
-
         // During resizing we need to keep texture aspect ratio
-        const bool keepAspectRatio = false; // TODO: expose as import option
+        const bool keepAspectRatio = options.KeepAspectRatio;
         if (keepAspectRatio)
         {
             const float aspectRatio = static_cast<float>(sourceWidth) / sourceHeight;
@@ -642,15 +673,27 @@ bool TextureTool::ImportTextureDirectXTex(ImageType type, const StringView& path
 
         // Resize source texture
         LOG(Info, "Resizing texture from {0}x{1} to {2}x{3}.", sourceWidth, sourceHeight, width, height);
-        result = DirectX::Resize(*currentImage->GetImages(), width, height, DirectX::TEX_FILTER_LINEAR | DirectX::TEX_FILTER_SEPARATE_ALPHA, tmpImg);
-        if (FAILED(result))
+        if (DirectX::IsCompressed(currentImage->GetMetadata().format))
         {
-            errorMsg = String::Format(TEXT("Cannot resize texture, error: {0:x}"), static_cast<uint32>(result));
-            return true;
+            auto& tmpImg = GET_TMP_IMG();
+            result = Decompress(currentImage->GetImages(), currentImage->GetImageCount(), currentImage->GetMetadata(), ToDecompressFormat(currentImage->GetMetadata().format), tmpImg);
+            if (FAILED(result))
+            {
+                errorMsg = String::Format(TEXT("Cannot decompress texture, error: {0:x}"), static_cast<uint32>(result));
+                return true;
+            }
+            SET_CURRENT_IMG(tmpImg);
         }
-
-        // Use converted image
-        SET_CURRENT_IMG(tmpImg);
+        {
+            auto& tmpImg = GET_TMP_IMG();
+            result = DirectX::Resize(*currentImage->GetImages(), width, height, DirectX::TEX_FILTER_LINEAR | DirectX::TEX_FILTER_SEPARATE_ALPHA, tmpImg);
+            if (FAILED(result))
+            {
+                errorMsg = String::Format(TEXT("Cannot resize texture, error: {0:x}"), static_cast<uint32>(result));
+                return true;
+            }
+            SET_CURRENT_IMG(tmpImg);
+        }
     }
 
     // Cache data
@@ -667,7 +710,7 @@ bool TextureTool::ImportTextureDirectXTex(ImageType type, const StringView& path
     bool hasSourceMipLevels = isPowerOfTwo && sourceMipLevels > 1;
     bool useMipLevels = isPowerOfTwo && (options.GenerateMipMaps || hasSourceMipLevels) && (width > 1 || height > 1);
     int32 arraySize = (int32)currentImage->GetMetadata().arraySize;
-    int32 mipLevels = MipLevelsCount(width, height, useMipLevels);
+    int32 mipLevels = useMipLevels ? MipLevelsCount(width, height) : 1;
     if (useMipLevels && !options.GenerateMipMaps && mipLevels != sourceMipLevels)
     {
         errorMsg = String::Format(TEXT("Imported texture has not full mip chain, loaded mips count: {0}, expected: {1}"), sourceMipLevels, mipLevels);
@@ -684,8 +727,10 @@ bool TextureTool::ImportTextureDirectXTex(ImageType type, const StringView& path
     }
 
     bool keepAsIs = false;
-    if (!options.FlipY && 
-        !options.InvertGreenChannel && 
+    if (!options.FlipY &&
+        !options.FlipX &&
+        !options.InvertGreenChannel &&
+        !options.ReconstructZChannel &&
         options.Compress && 
         type == ImageType::DDS && 
         mipLevels == sourceMipLevels && 
@@ -704,7 +749,7 @@ bool TextureTool::ImportTextureDirectXTex(ImageType type, const StringView& path
     if (!keepAsIs && DirectX::IsCompressed(sourceDxgiFormat))
     {
         auto& tmpImg = GET_TMP_IMG();
-        sourceDxgiFormat = DXGI_FORMAT_R16G16B16A16_FLOAT;
+        sourceDxgiFormat = ToDecompressFormat(sourceDxgiFormat);
         result = Decompress(currentImage->GetImages(), currentImage->GetImageCount(), currentImage->GetMetadata(), sourceDxgiFormat, tmpImg);
         if (FAILED(result))
         {
@@ -744,11 +789,25 @@ bool TextureTool::ImportTextureDirectXTex(ImageType type, const StringView& path
         SET_CURRENT_IMG(tmpImg);
     }
 
-    // Check flip/rotate source image
+    // Check flip/rotate Y source image
     if (!keepAsIs && options.FlipY)
     {
         auto& tmpImg = GET_TMP_IMG();
         DirectX::TEX_FR_FLAGS flags = DirectX::TEX_FR_FLIP_VERTICAL;
+        result = FlipRotate(currentImage->GetImages(), currentImage->GetImageCount(), currentImage->GetMetadata(), flags, tmpImg);
+        if (FAILED(result))
+        {
+            errorMsg = String::Format(TEXT("Cannot rotate/flip texture, error: {0:x}"), static_cast<uint32>(result));
+            return true;
+        }
+        SET_CURRENT_IMG(tmpImg);
+    }
+
+    // Check flip/rotate X source image
+    if (!keepAsIs && options.FlipX)
+    {
+        auto& tmpImg = GET_TMP_IMG();
+        DirectX::TEX_FR_FLAGS flags = DirectX::TEX_FR_FLIP_HORIZONTAL;
         result = FlipRotate(currentImage->GetImages(), currentImage->GetImageCount(), currentImage->GetMetadata(), flags, tmpImg);
         if (FAILED(result))
         {
@@ -781,6 +840,43 @@ bool TextureTool::ImportTextureDirectXTex(ImageType type, const StringView& path
         if (FAILED(result))
         {
             errorMsg = String::Format(TEXT("Cannot invert green channel in texture, error: {0:x}"), static_cast<uint32>(result));
+            return true;
+        }
+        SET_CURRENT_IMG(timage);
+    }
+
+    // Reconstruct Z Channel
+    if (!keepAsIs & options.ReconstructZChannel)
+    {
+        auto& timage = GET_TMP_IMG();
+        bool isunorm = (DirectX::FormatDataType(sourceDxgiFormat) == DirectX::FORMAT_TYPE_UNORM) != 0;
+        result = TransformImage(currentImage->GetImages(), currentImage->GetImageCount(), currentImage->GetMetadata(),
+            [&](DirectX::XMVECTOR* outPixels, const DirectX::XMVECTOR* inPixels, size_t w, size_t y)
+            {
+                static const DirectX::XMVECTORU32 s_selectz = { { { DirectX::XM_SELECT_0, DirectX::XM_SELECT_0, DirectX::XM_SELECT_1, DirectX::XM_SELECT_0 } } };
+
+                UNREFERENCED_PARAMETER(y);
+
+                for (size_t j = 0; j < w; ++j)
+                {
+                    const DirectX::XMVECTOR value = inPixels[j];
+                    DirectX::XMVECTOR z;
+                    if (isunorm)
+                    {
+                        DirectX::XMVECTOR x2 = DirectX::XMVectorMultiplyAdd(value, DirectX::g_XMTwo, DirectX::g_XMNegativeOne);
+                        x2 = DirectX::XMVectorSqrt(DirectX::XMVectorSubtract(DirectX::g_XMOne, DirectX::XMVector2Dot(x2, x2)));
+                        z = DirectX::XMVectorMultiplyAdd(x2, DirectX::g_XMOneHalf, DirectX::g_XMOneHalf);
+                    }
+                    else
+                    {
+                        z = DirectX::XMVectorSqrt(DirectX::XMVectorSubtract(DirectX::g_XMOne, DirectX::XMVector2Dot(value, value)));
+                    }
+                    outPixels[j] = DirectX::XMVectorSelect(value, z, s_selectz);
+                }
+            }, timage);
+        if (FAILED(result))
+        {
+            errorMsg = String::Format(TEXT("Cannot reconstruct z channel in texture, error: {0:x}"), static_cast<uint32>(result));
             return true;
         }
         SET_CURRENT_IMG(timage);

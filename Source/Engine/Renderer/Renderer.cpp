@@ -22,6 +22,7 @@
 #include "VolumetricFogPass.h"
 #include "HistogramPass.h"
 #include "AtmospherePreCompute.h"
+#include "ContrastAdaptiveSharpeningPass.h"
 #include "GlobalSignDistanceFieldPass.h"
 #include "GI/GlobalSurfaceAtlasPass.h"
 #include "GI/DynamicDiffuseGlobalIllumination.h"
@@ -126,21 +127,47 @@ void RendererService::Dispose()
 void RenderAntiAliasingPass(RenderContext& renderContext, GPUTexture* input, GPUTextureView* output, const Viewport& outputViewport)
 {
     auto context = GPUDevice::Instance->GetMainContext();
-    context->SetViewportAndScissors(outputViewport);
     const auto aaMode = renderContext.List->Settings.AntiAliasing.Mode;
-    if (aaMode == AntialiasingMode::FastApproximateAntialiasing)
+    if (ContrastAdaptiveSharpeningPass::Instance()->CanRender(renderContext))
     {
-        FXAA::Instance()->Render(renderContext, input, output);
-    }
-    else if (aaMode == AntialiasingMode::SubpixelMorphologicalAntialiasing)
-    {
-        SMAA::Instance()->Render(renderContext, input, output);
+        if (aaMode == AntialiasingMode::FastApproximateAntialiasing ||
+            aaMode == AntialiasingMode::SubpixelMorphologicalAntialiasing)
+        {
+            // AA -> CAS -> Output
+            auto tmpImage = RenderTargetPool::Get(input->GetDescription());
+            RENDER_TARGET_POOL_SET_NAME(tmpImage, "TmpImage");
+            context->SetViewportAndScissors((float)input->Width(), (float)input->Height());
+            if (aaMode == AntialiasingMode::FastApproximateAntialiasing)
+                FXAA::Instance()->Render(renderContext, input, tmpImage->View());
+            else
+                SMAA::Instance()->Render(renderContext, input, tmpImage->View());
+            context->ResetSR();
+            context->ResetRenderTarget();
+            context->SetViewportAndScissors(outputViewport);
+            ContrastAdaptiveSharpeningPass::Instance()->Render(renderContext, tmpImage, output);
+            RenderTargetPool::Release(tmpImage);
+        }
+        else
+        {
+            // CAS -> Output
+            context->SetViewportAndScissors(outputViewport);
+            ContrastAdaptiveSharpeningPass::Instance()->Render(renderContext, input, output);
+        }
     }
     else
     {
-        PROFILE_GPU("Copy frame");
-        context->SetRenderTarget(output);
-        context->Draw(input);
+        // AA -> Output
+        context->SetViewportAndScissors(outputViewport);
+        if (aaMode == AntialiasingMode::FastApproximateAntialiasing)
+            FXAA::Instance()->Render(renderContext, input, output);
+        else if (aaMode == AntialiasingMode::SubpixelMorphologicalAntialiasing)
+            SMAA::Instance()->Render(renderContext, input, output);
+        else
+        {
+            PROFILE_GPU("Copy frame");
+            context->SetRenderTarget(output);
+            context->Draw(input);
+        }
     }
 }
 
@@ -179,6 +206,11 @@ void Renderer::Render(SceneRenderTask* task)
     renderContext.List = RenderList::GetFromPool();
     RenderContextBatch renderContextBatch(task);
     renderContextBatch.Contexts.Add(renderContext);
+
+    // Pre-init render view cache early in case it's used in PreRender drawing
+    Float4 jitter = renderContext.View.TemporalAAJitter; // Preserve temporal jitter value (PrepareCache modifies it)
+    renderContext.View.PrepareCache(renderContext, viewport.Width, viewport.Height, Float2::Zero);
+    renderContext.View.TemporalAAJitter = jitter;
 
 #if USE_EDITOR
     // Turn on low quality rendering during baking lightmaps (leave more GPU power for baking)
@@ -239,7 +271,7 @@ void Renderer::DrawSceneDepth(GPUContext* context, SceneRenderTask* task, GPUTex
     DrawActors(renderContext, customActors);
 
     // Sort draw calls
-    renderContext.List->SortDrawCalls(renderContext, false, DrawCallsListType::Depth);
+    renderContext.List->SortDrawCalls(renderContext, false, DrawCallsListType::Depth, DrawPass::Depth);
 
     // Execute draw calls
     const float width = (float)output->Width();
@@ -333,6 +365,11 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext, RenderCont
                     renderContext.List->Settings.AntiAliasing.Mode == AntialiasingMode::TemporalAntialiasing;
         }
         setup.UseTemporalAAJitter = aaMode == AntialiasingMode::TemporalAntialiasing;
+        setup.UseGlobalSurfaceAtlas = renderContext.View.Mode == ViewMode::GlobalSurfaceAtlas ||
+                (EnumHasAnyFlags(renderContext.View.Flags, ViewFlags::GI) && renderContext.List->Settings.GlobalIllumination.Mode == GlobalIlluminationMode::DDGI);
+        setup.UseGlobalSDF = (graphicsSettings->EnableGlobalSDF && EnumHasAnyFlags(view.Flags, ViewFlags::GlobalSDF)) ||
+                renderContext.View.Mode == ViewMode::GlobalSDF ||
+                setup.UseGlobalSurfaceAtlas;
 
         // Disable TAA jitter in debug modes
         switch (renderContext.View.Mode)
@@ -365,11 +402,7 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext, RenderCont
         for (PostProcessEffect* e : renderContext.List->PostFx)
             e->PreRender(context, renderContext);
     }
-
-    // Prepare
     renderContext.View.Prepare(renderContext);
-    renderContext.Buffers->Prepare();
-    ShadowsPass::Instance()->Prepare();
 
     // Build batch of render contexts (main view and shadow projections)
     {
@@ -392,6 +425,7 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext, RenderCont
             drawShadows = false;
             break;
         }
+        LightPass::Instance()->SetupLights(renderContext, renderContextBatch);
         if (drawShadows)
             ShadowsPass::Instance()->SetupShadows(renderContext, renderContextBatch);
 #if USE_EDITOR
@@ -402,6 +436,10 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext, RenderCont
         JobSystem::SetJobStartingOnDispatch(false);
         task->OnCollectDrawCalls(renderContextBatch, SceneRendering::DrawCategory::SceneDraw);
         task->OnCollectDrawCalls(renderContextBatch, SceneRendering::DrawCategory::SceneDrawAsync);
+        if (setup.UseGlobalSDF)
+            GlobalSignDistanceFieldPass::Instance()->OnCollectDrawCalls(renderContextBatch);
+        if (setup.UseGlobalSurfaceAtlas)
+            GlobalSurfaceAtlasPass::Instance()->OnCollectDrawCalls(renderContextBatch);
 
         // Wait for async jobs to finish
         JobSystem::SetJobStartingOnDispatch(true);
@@ -414,21 +452,69 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext, RenderCont
 #endif
     }
 
-    // Sort draw calls
+    // Process draw calls (sorting, objects buffer building)
     {
-        PROFILE_CPU_NAMED("Sort Draw Calls");
-        renderContext.List->SortDrawCalls(renderContext, false, DrawCallsListType::GBuffer);
-        renderContext.List->SortDrawCalls(renderContext, false, DrawCallsListType::GBufferNoDecals);
-        renderContext.List->SortDrawCalls(renderContext, true, DrawCallsListType::Forward);
-        renderContext.List->SortDrawCalls(renderContext, false, DrawCallsListType::Distortion);
-        if (setup.UseMotionVectors)
-            renderContext.List->SortDrawCalls(renderContext, false, DrawCallsListType::MotionVectors);
-        for (int32 i = 1; i < renderContextBatch.Contexts.Count(); i++)
+        PROFILE_CPU_NAMED("Process Draw Calls");
+
+        // Utility that handles async jobs for a specific rendering routines in async
+        struct DrawCallsProcessor
         {
-            auto& shadowContext = renderContextBatch.Contexts[i];
-            shadowContext.List->SortDrawCalls(shadowContext, false, DrawCallsListType::Depth);
-            shadowContext.List->SortDrawCalls(shadowContext, false, shadowContext.List->ShadowDepthDrawCallsList, renderContext.List->DrawCalls);
+            RenderContextBatch& RenderContextBatch;
+            Pair<DrawCallsListType, bool> MainContextSorting[5] =
+            {
+                // Draw List + Reverse Distance sorting
+                ToPair(DrawCallsListType::GBuffer, false),
+                ToPair(DrawCallsListType::GBufferNoDecals, false),
+                ToPair(DrawCallsListType::Forward, true),
+                ToPair(DrawCallsListType::Distortion, false),
+                ToPair(DrawCallsListType::MotionVectors, false),
+            };
+
+            void BuildObjectsBufferJob(int32 index)
+            {
+                RenderContextBatch.Contexts[index].List->BuildObjectsBuffer();
+            }
+
+            void SortDrawCallsJob(int32 index)
+            {
+                RenderContext& renderContext = RenderContextBatch.GetMainContext();
+                if (index < ARRAY_COUNT(MainContextSorting))
+                {
+                    // Main context sorting
+                    RenderSetup& setup = renderContext.List->Setup;
+                    auto sorting = MainContextSorting[index];
+                    if (sorting.First == DrawCallsListType::MotionVectors && !setup.UseMotionVectors)
+                        return;
+                    renderContext.List->SortDrawCalls(renderContext, sorting.Second, sorting.First);
+                }
+                else
+                {
+                    // Shadow context sorting
+                    auto& shadowContext = RenderContextBatch.Contexts[index - ARRAY_COUNT(MainContextSorting)];
+                    shadowContext.List->SortDrawCalls(shadowContext, false, DrawCallsListType::Depth, DrawPass::Depth);
+                    shadowContext.List->SortDrawCalls(shadowContext, false, shadowContext.List->ShadowDepthDrawCallsList, renderContext.List->DrawCalls, DrawPass::Depth);
+                }
+            }
+        } processor = { renderContextBatch };
+
+        // Dispatch async jobs
+        Function<void(int32)> func;
+        func.Bind<DrawCallsProcessor, &DrawCallsProcessor::BuildObjectsBufferJob>(&processor);
+        const int64 buildObjectsBufferJob = JobSystem::Dispatch(func, renderContextBatch.Contexts.Count());
+        func.Bind<DrawCallsProcessor, &DrawCallsProcessor::SortDrawCallsJob>(&processor);
+        const int64 sortDrawCallsJob = JobSystem::Dispatch(func, ARRAY_COUNT(DrawCallsProcessor::MainContextSorting) + renderContextBatch.Contexts.Count());
+
+        // Upload objects buffers to the GPU
+        JobSystem::Wait(buildObjectsBufferJob);
+        {
+            PROFILE_CPU_NAMED("FlushObjectsBuffer");
+            for (auto& e : renderContextBatch.Contexts)
+                e.List->ObjectBuffer.Flush(context);
         }
+
+        // Wait for async jobs to finish
+        // TODO: use per-pass wait labels (eg. don't wait for shadow pass draws sorting until ShadowPass needs it)       
+        JobSystem::Wait(sortDrawCallsJob);
     }
 
     // Get the light accumulation buffer
@@ -454,7 +540,7 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext, RenderCont
 #endif
 
     // Global SDF rendering (can be used by materials later on)
-    if (graphicsSettings->EnableGlobalSDF && EnumHasAnyFlags(view.Flags, ViewFlags::GlobalSDF))
+    if (setup.UseGlobalSDF)
     {
         GlobalSignDistanceFieldPass::BindingData bindingData;
         GlobalSignDistanceFieldPass::Instance()->Render(renderContext, context, bindingData);
@@ -508,7 +594,8 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext, RenderCont
 
     // Render lighting
     renderContextBatch.GetMainContext() = renderContext; // Sync render context in batch with the current value
-    LightPass::Instance()->RenderLight(renderContextBatch, *lightBuffer);
+    ShadowsPass::Instance()->RenderShadowMaps(renderContextBatch);
+    LightPass::Instance()->RenderLights(renderContextBatch, *lightBuffer);
     if (EnumHasAnyFlags(renderContext.View.Flags, ViewFlags::GI))
     {
         switch (renderContext.List->Settings.GlobalIllumination.Mode)

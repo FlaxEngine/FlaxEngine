@@ -228,12 +228,22 @@ namespace FlaxEditor.Modules
                         new SearchResult { Name = item.ShortName, Type = assetItem.TypeName, Item = item }
                     };
                 }
-                var actor = FlaxEngine.Object.Find<Actor>(ref id);
+                var actor = FlaxEngine.Object.Find<Actor>(ref id, true);
                 if (actor != null)
                 {
                     return new List<SearchResult>
                     {
                         new SearchResult { Name = actor.Name, Type = actor.TypeName, Item = actor }
+                    };
+                }
+                var script = FlaxEngine.Object.Find<Script>(ref id, true);
+                if (script != null && script.Actor != null)
+                {
+                    string actorPathStart = $"{script.Actor.Name}/";
+
+                    return new List<SearchResult>
+                    {
+                        new SearchResult { Name = $"{actorPathStart}{script.TypeName}", Type = script.TypeName, Item = script }
                     };
                 }
             }
@@ -332,9 +342,10 @@ namespace FlaxEditor.Modules
         {
             foreach (var contentItem in items)
             {
+                var name = contentItem.ShortName;
                 if (contentItem.IsAsset)
                 {
-                    if (nameRegex.Match(contentItem.ShortName).Success)
+                    if (nameRegex.Match(name).Success)
                     {
                         var asset = contentItem as AssetItem;
                         if (asset == null || !typeRegex.Match(asset.TypeName).Success)
@@ -348,7 +359,7 @@ namespace FlaxEditor.Modules
                             var splits = asset.TypeName.Split('.');
                             finalName = splits[splits.Length - 1];
                         }
-                        matches.Add(new SearchResult { Name = asset.ShortName, Type = finalName, Item = asset });
+                        matches.Add(new SearchResult { Name = name, Type = finalName, Item = asset });
                     }
                 }
                 else if (contentItem.IsFolder)
@@ -360,11 +371,12 @@ namespace FlaxEditor.Modules
                 }
                 else
                 {
-                    if (nameRegex.Match(contentItem.ShortName).Success && typeRegex.Match(contentItem.GetType().Name).Success)
+                    if (nameRegex.Match(name).Success && typeRegex.Match(contentItem.GetType().Name).Success)
                     {
                         string finalName = contentItem.GetType().Name.Replace("Item", "");
-
-                        matches.Add(new SearchResult { Name = contentItem.ShortName, Type = finalName, Item = contentItem });
+                        if (contentItem is ScriptItem)
+                            name = contentItem.FileName; // Show extension for scripts (esp. for .h and .cpp files of the same name)
+                        matches.Add(new SearchResult { Name = name, Type = finalName, Item = contentItem });
                     }
                 }
             }
@@ -387,6 +399,13 @@ namespace FlaxEditor.Modules
             case Actor actor:
                 Editor.Instance.SceneEditing.Select(actor);
                 Editor.Instance.Windows.EditWin.Viewport.FocusSelection();
+                break;
+            case Script script:
+                if (script.Actor != null)
+                {
+                    Editor.Instance.SceneEditing.Select(script.Actor);
+                    Editor.Instance.Windows.EditWin.Viewport.FocusSelection();
+                }
                 break;
             }
         }

@@ -192,15 +192,10 @@ void MaterialGenerator::prepareLayer(MaterialLayer* layer, bool allowVisiblePara
 
         // For all not root layers (sub-layers) we won't to change theirs ID in order to prevent duplicated ID)
         m.SrcId = param->Identifier;
-        if (isRooLayer)
+        m.DstId = param->Identifier;
+        if (!isRooLayer)
         {
-            // Use the same ID (so we can edit it)
-            m.DstId = param->Identifier;
-        }
-        else
-        {
-            // Generate new ID
-            m.DstId = param->Identifier;
+            // Generate new ID (stable permutation based on the original ID)
             m.DstId.A += _parameters.Count() * 17 + 13;
         }
         layer->ParamIdsMappings.Add(m);

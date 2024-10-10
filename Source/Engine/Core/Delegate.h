@@ -138,7 +138,7 @@ public:
     /// <summary>
     /// Binds a static function.
     /// </summary>
-    template<ReturnType (*Method)(Params...)>
+    template<ReturnType(*Method)(Params...)>
     void Bind()
     {
         if (_lambda)
@@ -288,6 +288,7 @@ protected:
     // Single allocation for list of binded functions. Thread-safe access via atomic operations. Removing binded function simply clears the entry to handle function unregister during invocation.
     intptr volatile _ptr = 0;
     intptr volatile _size = 0;
+    typedef void (*StubSignature)(void*, Params...);
 #else
     struct Data
     {
@@ -297,7 +298,6 @@ protected:
     // Holds pointer to Data with Functions and Locker. Thread-safe access via atomic operations.
     intptr volatile _data = 0;
 #endif
-    typedef void (*StubSignature)(void*, Params...);
 
 public:
     Delegate()
@@ -811,7 +811,7 @@ public:
             auto function = (StubSignature)Platform::AtomicRead((intptr volatile*)&bindings->_function);
             auto callee = (void*)Platform::AtomicRead((intptr volatile*)&bindings->_callee);
             if (function != nullptr && function == (StubSignature)Platform::AtomicRead((intptr volatile*)&bindings->_function))
-                function(callee, Forward<Params>(params)...);
+                function(callee, params...);
             ++bindings;
         }
 #else
@@ -823,7 +823,7 @@ public:
         {
             const FunctionType& item = i->Item;
             ASSERT_LOW_LAYER(item._function);
-            item._function(item._callee, Forward<Params>(params)...);
+            item._function(item._callee, params...);
         }
 #endif
     }

@@ -21,14 +21,18 @@
 
 #include "../rapidjson.h"
 
-#if defined(_MSC_VER) && defined(_M_AMD64)
+#if defined(_MSC_VER) && (defined(_M_AMD64) || defined(_M_ARM64))
 #if _MSC_VER <= 1900
 #include <intrin.h>
 #else
 #include <intrin0.h>
 #endif
 #pragma intrinsic(_BitScanReverse64)
+#if defined(_M_ARM64)
+#pragma intrinsic(__umulh)
+#else
 #pragma intrinsic(_umul128)
+#endif
 #endif
 
 RAPIDJSON_NAMESPACE_BEGIN

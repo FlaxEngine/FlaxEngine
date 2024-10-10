@@ -738,7 +738,7 @@ namespace FlaxEditor.Surface.Elements
         /// <inheritdoc />
         public void DrawConnectingLine(ref Float2 startPos, ref Float2 endPos, ref Color color)
         {
-            OutputBox.DrawConnection(Surface.Style, ref startPos, ref endPos, ref color, 2);
+            OutputBox.DrawConnection(Surface.Style, ref startPos, ref endPos, ref color, OutputBox.ConnectingConnectionThickness);
         }
 
         /// <inheritdoc />

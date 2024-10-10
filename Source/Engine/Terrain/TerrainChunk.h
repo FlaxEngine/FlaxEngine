@@ -34,9 +34,9 @@ private:
     float _perInstanceRandom;
     float _yOffset, _yHeight;
 
-    TerrainChunk* _neighbors[4];
-    byte _cachedDrawLOD;
-    IMaterial* _cachedDrawMaterial;
+    TerrainChunk* _neighbors[4] = {};
+    byte _cachedDrawLOD = 0;
+    IMaterial* _cachedDrawMaterial = nullptr;
 
     void Init(TerrainPatch* patch, uint16 x, uint16 z);
 

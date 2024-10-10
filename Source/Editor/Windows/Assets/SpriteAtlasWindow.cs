@@ -6,6 +6,7 @@ using FlaxEditor.Content;
 using FlaxEditor.Content.Import;
 using FlaxEditor.CustomEditors;
 using FlaxEditor.CustomEditors.Editors;
+using FlaxEditor.CustomEditors.Elements;
 using FlaxEditor.GUI;
 using FlaxEditor.GUI.ContextMenu;
 using FlaxEditor.Scripting;
@@ -133,19 +134,56 @@ namespace FlaxEditor.Windows.Assets
                             group.Panel.Tag = i;
                             group.Panel.MouseButtonRightClicked += OnGroupPanelMouseButtonRightClicked;
                             group.Object(new ListValueContainer(elementType, i, Values));
+
+                            var stringNameElement = group.Editors[0].ChildrenEditors.Find(x => x is StringEditor).Layout.Children.Find(x => x is TextBoxElement) as TextBoxElement;
+                            if (stringNameElement != null)
+                            {
+                                stringNameElement.TextBox.TextBoxEditEnd += (textbox) => OnNameChanged(group.Panel, (TextBox)textbox);
+                            }
                         }
                     }
+                }
+
+                private void OnNameChanged(DropPanel panel, TextBox textbox)
+                {
+                    panel.HeaderText = textbox.Text;
                 }
 
                 private void OnGroupPanelMouseButtonRightClicked(DropPanel groupPanel, Float2 location)
                 {
                     var menu = new ContextMenu();
 
+                    var copySprite = menu.AddButton("Copy sprite");
+                    copySprite.Tag = groupPanel.Tag;
+                    copySprite.ButtonClicked += OnCopySpriteClicked;
+
+                    var pasteSprite = menu.AddButton("Paste sprite");
+                    pasteSprite.Tag = groupPanel.Tag;
+                    pasteSprite.ButtonClicked += OnPasteSpriteClicked;
+
                     var deleteSprite = menu.AddButton("Delete sprite");
                     deleteSprite.Tag = groupPanel.Tag;
                     deleteSprite.ButtonClicked += OnDeleteSpriteClicked;
 
                     menu.Show(groupPanel, location);
+                }
+
+                private void OnCopySpriteClicked(ContextMenuButton button)
+                {
+                    var window = ((PropertiesProxy)ParentEditor.Values[0])._window;
+                    var index = (int)button.Tag;
+                    var sprite = window.Asset.GetSprite(index);
+                    Clipboard.Text = FlaxEngine.Json.JsonSerializer.Serialize(sprite, typeof(Sprite));
+                }
+
+                private void OnPasteSpriteClicked(ContextMenuButton button)
+                {
+                    var window = ((PropertiesProxy)ParentEditor.Values[0])._window;
+                    var index = (int)button.Tag;
+                    var sprite = window.Asset.GetSprite(index);
+                    var pasted = FlaxEngine.Json.JsonSerializer.Deserialize<Sprite>(Clipboard.Text);
+                    sprite.Area = pasted.Area;
+                    window.Asset.SetSprite(index, ref sprite);
                 }
 
                 private void OnDeleteSpriteClicked(ContextMenuButton button)
@@ -235,6 +273,8 @@ namespace FlaxEditor.Windows.Assets
         public SpriteAtlasWindow(Editor editor, AssetItem item)
         : base(editor, item)
         {
+            var inputOptions = Editor.Options.Options.Input;
+
             // Split Panel
             _split = new SplitPanel(Orientation.Horizontal, ScrollBars.None, ScrollBars.Vertical)
             {
@@ -258,7 +298,7 @@ namespace FlaxEditor.Windows.Assets
             _propertiesEditor.Modified += MarkAsEdited;
 
             // Toolstrip
-            _saveButton = (ToolStripButton)_toolstrip.AddButton(editor.Icons.Save64, Save).LinkTooltip("Save");
+            _saveButton = _toolstrip.AddButton(editor.Icons.Save64, Save).LinkTooltip("Save", ref inputOptions.Save);
             _toolstrip.AddButton(editor.Icons.Import64, () => Editor.ContentImporting.Reimport((BinaryAssetItem)Item)).LinkTooltip("Reimport");
             _toolstrip.AddSeparator();
             _toolstrip.AddButton(editor.Icons.AddFile64, () =>

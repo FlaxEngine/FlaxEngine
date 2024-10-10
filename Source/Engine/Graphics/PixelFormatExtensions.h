@@ -103,20 +103,6 @@ public:
     API_FUNCTION() static bool IsCompressedASTC(PixelFormat format);
 
     /// <summary>
-    /// Determines whether the specified <see cref="PixelFormat"/> is packed.
-    /// </summary>
-    /// <param name="format">The Pixel Format.</param>
-    /// <returns><c>true</c> if the specified <see cref="PixelFormat"/> is packed; otherwise, <c>false</c>.</returns>
-    API_FUNCTION() static bool IsPacked(PixelFormat format);
-
-    /// <summary>
-    /// Determines whether the specified <see cref="PixelFormat"/> is planar.
-    /// </summary>
-    /// <param name="format">The Pixel Format.</param>
-    /// <returns><c>true</c> if the specified <see cref="PixelFormat"/> is planar; otherwise, <c>false</c>.</returns>
-    API_FUNCTION() static bool IsPlanar(PixelFormat format);
-
-    /// <summary>
     /// Determines whether the specified <see cref="PixelFormat"/> is video.
     /// </summary>
     /// <param name="format">The <see cref="PixelFormat"/>.</param>

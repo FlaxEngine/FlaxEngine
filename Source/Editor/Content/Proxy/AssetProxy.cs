@@ -30,9 +30,7 @@ namespace FlaxEditor.Content
         /// <summary>
         /// Determines whether [is virtual proxy].
         /// </summary>
-        /// <returns>
-        ///   <c>true</c> if [is virtual proxy]; otherwise, <c>false</c>.
-        /// </returns>
+        /// <returns><c>true</c> if [is virtual proxy]; otherwise, <c>false</c>.</returns>
         public bool IsVirtualProxy()
         {
             return IsVirtual && CanExport == false;

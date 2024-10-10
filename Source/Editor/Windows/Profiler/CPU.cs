@@ -57,12 +57,32 @@ namespace FlaxEditor.Windows.Profiler
         : base("CPU")
         {
             // Layout
-            var panel = new Panel(ScrollBars.Vertical)
+            var mainPanel = new Panel(ScrollBars.None)
             {
                 AnchorPreset = AnchorPresets.StretchAll,
                 Offsets = Margin.Zero,
                 Parent = this,
             };
+            
+            // Chart
+            _mainChart = new SingleChart
+            {
+                Title = "Update",
+                AnchorPreset = AnchorPresets.HorizontalStretchTop,
+                Offsets = Margin.Zero,
+                Height = SingleChart.DefaultHeight,
+                FormatSample = v => (Mathf.RoundToInt(v * 10.0f) / 10.0f) + " ms",
+                Parent = mainPanel,
+            };
+            _mainChart.SelectedSampleChanged += OnSelectedSampleChanged;
+            
+            var panel = new Panel(ScrollBars.Vertical)
+            {
+                AnchorPreset = AnchorPresets.StretchAll,
+                Offsets = new Margin(0, 0, _mainChart.Height + 2, 0),
+                Parent = mainPanel,
+            };
+            //panel.Y = _mainChart.Height + 2;
             var layout = new VerticalPanel
             {
                 AnchorPreset = AnchorPresets.HorizontalStretchTop,
@@ -70,16 +90,7 @@ namespace FlaxEditor.Windows.Profiler
                 IsScrollable = true,
                 Parent = panel,
             };
-
-            // Chart
-            _mainChart = new SingleChart
-            {
-                Title = "Update",
-                FormatSample = v => (Mathf.RoundToInt(v * 10.0f) / 10.0f) + " ms",
-                Parent = layout,
-            };
-            _mainChart.SelectedSampleChanged += OnSelectedSampleChanged;
-
+            
             // Timeline
             _timeline = new Timeline
             {
@@ -164,7 +175,7 @@ namespace FlaxEditor.Windows.Profiler
 
         private string FormatCellBytes(object x)
         {
-            return Utilities.Utils.FormatBytesCount((int)x);
+            return Utilities.Utils.FormatBytesCount((ulong)x);
         }
 
         /// <inheritdoc />

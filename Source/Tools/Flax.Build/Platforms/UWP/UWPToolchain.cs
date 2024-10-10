@@ -77,6 +77,7 @@ namespace Flax.Build.Platforms
             options.CompileEnv.PreprocessorDefinitions.Add("_WINRT_DLL");
             options.CompileEnv.PreprocessorDefinitions.Add("_WINDLL");
             options.CompileEnv.PreprocessorDefinitions.Add("__WRL_NO_DEFAULT_LIB__");
+            options.CompileEnv.PreprocessorDefinitions.Add("WINVER=0x0A00");
 
             options.LinkEnv.InputLibraries.Add("WindowsApp.lib");
         }

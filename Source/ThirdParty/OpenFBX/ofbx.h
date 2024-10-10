@@ -8,11 +8,11 @@ namespace ofbx
 typedef unsigned char u8;
 typedef unsigned short u16;
 typedef unsigned int u32;
-#ifdef _WIN32
-	typedef long long i64;	
-	typedef unsigned long long u64;	
-#else	
-	typedef long i64;	
+#if defined(_WIN32) || defined(__ANDROID__)
+	typedef long long i64;
+	typedef unsigned long long u64;
+#else
+	typedef long i64;
 	typedef unsigned long u64;
 #endif
 
@@ -21,46 +21,70 @@ static_assert(sizeof(u32) == 4, "u32 is not 4 bytes");
 static_assert(sizeof(u64) == 8, "u64 is not 8 bytes");
 static_assert(sizeof(i64) == 8, "i64 is not 8 bytes");
 
+typedef decltype(sizeof(0)) usize;
 
 using JobFunction = void (*)(void*);
 using JobProcessor = void (*)(JobFunction, void*, void*, u32, u32);
 
-enum class LoadFlags : u64 {
-	TRIANGULATE = 1 << 0,
+// Ignoring certain nodes will only stop them from being processed not tokenised (i.e. they will still be in the tree)
+enum class LoadFlags : u16
+{
+	NONE = 0,
+	UNUSED = 1 << 0, // can be reused
 	IGNORE_GEOMETRY = 1 << 1,
 	IGNORE_BLEND_SHAPES = 1 << 2,
+	IGNORE_CAMERAS = 1 << 3,
+	IGNORE_LIGHTS = 1 << 4,
+	IGNORE_TEXTURES = 1 << 5,
+	IGNORE_SKIN = 1 << 6,
+	IGNORE_BONES = 1 << 7,
+	IGNORE_PIVOTS = 1 << 8,
+	IGNORE_ANIMATIONS = 1 << 9,
+	IGNORE_MATERIALS = 1 << 10,
+	IGNORE_POSES = 1 << 11,
+	IGNORE_VIDEOS = 1 << 12,
+	IGNORE_LIMBS = 1 << 13,
+	IGNORE_MESHES = 1 << 14,
+	IGNORE_MODELS = 1 << 15,
 };
 
-
-struct Vec2
+constexpr LoadFlags operator|(LoadFlags lhs, LoadFlags rhs)
 {
-	double x, y;
-};
+	return static_cast<LoadFlags>(static_cast<u16>(lhs) | static_cast<u16>(rhs));
+}
 
-
-struct Vec3
+inline LoadFlags& operator|=(LoadFlags& lhs, LoadFlags rhs)
 {
-	double x, y, z;
-};
+	return lhs = lhs | rhs;
+}
 
+struct DVec2 { double x, y; };
+struct DVec3 { double x, y, z; };
+struct DVec4 { double x, y, z, w; };
+struct DMatrix { double m[16]; /* last 4 are translation */ };
+struct DQuat{ double x, y, z, w; };
 
-struct Vec4
-{
-	double x, y, z, w;
-};
+struct FVec2 { float x, y; };
+struct FVec3 { float x, y, z; };
+struct FVec4 { float x, y, z, w; };
+struct FMatrix { float m[16]; };
+struct FQuat{ float x, y, z, w; };
 
-
-struct Matrix
-{
-	double m[16]; // last 4 are translation
-};
-
-
-struct Quat
-{
-	double x, y, z, w;
-};
-
+#ifndef OFBX_DOUBLE_PRECISION
+	// use floats for vertices, normals, uvs, ...
+	using Vec2 = FVec2;
+	using Vec3 = FVec3;
+	using Vec4 = FVec4;
+	using Matrix = FMatrix;
+	using Quat = FQuat;
+#else
+	// use doubles for vertices, normals, uvs, ...
+	using Vec2 = DVec2;
+	using Vec3 = DVec3;
+	using Vec4 = DVec4;
+	using Matrix = DMatrix;
+	using Quat = DQuat;
+#endif
 
 struct Color
 {
@@ -81,9 +105,10 @@ struct DataView
 	i64 toI64() const;
 	int toInt() const;
 	u32 toU32() const;
+	bool toBool() const;
 	double toDouble() const;
 	float toFloat() const;
-	
+
 	template <int N>
 	void toString(char(&out)[N]) const
 	{
@@ -113,7 +138,8 @@ struct IElementProperty
 		ARRAY_INT = 'i',
 		ARRAY_LONG = 'l',
 		ARRAY_FLOAT = 'f',
-		BINARY = 'R'
+		BINARY = 'R',
+		NONE = ' '
 	};
 	virtual ~IElementProperty() {}
 	virtual Type getType() const = 0;
@@ -168,6 +194,8 @@ struct Object
 		TEXTURE,
 		LIMB_NODE,
 		NULL_NODE,
+		CAMERA,
+		LIGHT,
 		NODE_ATTRIBUTE,
 		CLUSTER,
 		SKIN,
@@ -189,22 +217,22 @@ struct Object
 	Object* resolveObjectLink(int idx) const;
 	Object* resolveObjectLink(Type type, const char* property, int idx) const;
 	Object* resolveObjectLinkReverse(Type type) const;
-	Object* getParent() const;
+	Object* getParent() const { return parent; }
 
 	RotationOrder getRotationOrder() const;
-	Vec3 getRotationOffset() const;
-	Vec3 getRotationPivot() const;
-	Vec3 getPostRotation() const;
-	Vec3 getScalingOffset() const;
-	Vec3 getScalingPivot() const;
-	Vec3 getPreRotation() const;
-	Vec3 getLocalTranslation() const;
-	Vec3 getLocalRotation() const;
-	Vec3 getLocalScaling() const;
-	Matrix getGlobalTransform() const;
-	Matrix getLocalTransform() const;
-	Matrix evalLocal(const Vec3& translation, const Vec3& rotation) const;
-	Matrix evalLocal(const Vec3& translation, const Vec3& rotation, const Vec3& scaling) const;
+	DVec3 getRotationOffset() const;
+	DVec3 getRotationPivot() const;
+	DVec3 getPostRotation() const;
+	DVec3 getScalingOffset() const;
+	DVec3 getScalingPivot() const;
+	DVec3 getPreRotation() const;
+	DVec3 getLocalTranslation() const;
+	DVec3 getLocalRotation() const;
+	DVec3 getLocalScaling() const;
+	DMatrix getGlobalTransform() const;
+	DMatrix getLocalTransform() const;
+	DMatrix evalLocal(const DVec3& translation, const DVec3& rotation) const;
+	DMatrix evalLocal(const DVec3& translation, const DVec3& rotation, const DVec3& scaling) const;
 	bool isNode() const { return is_node; }
 
 
@@ -214,11 +242,14 @@ struct Object
 	}
 
 	u64 id;
+	u32 depth = 0xffFFffFF;
+	Object* parent = nullptr;
 	char name[128];
 	const IElement& element;
 	const Object* node_attribute;
 
 protected:
+	friend struct Scene;
 	bool is_node;
 	const Scene& scene;
 };
@@ -228,7 +259,7 @@ struct Pose : Object {
 	static const Type s_type = Type::POSE;
 	Pose(const Scene& _scene, const IElement& _element);
 
-	virtual Matrix getMatrix() const = 0;
+	virtual DMatrix getMatrix() const = 0;
 	virtual const Object* getNode() const = 0;
 };
 
@@ -255,6 +286,124 @@ struct Texture : Object
 	virtual DataView getEmbeddedData() const = 0;
 };
 
+struct Light : Object
+{
+public:
+	enum class LightType
+	{
+		POINT,
+		DIRECTIONAL,
+		SPOT,
+		AREA,
+		VOLUME,
+		COUNT
+	};
+
+	enum class DecayType
+	{
+		NO_DECAY,
+		LINEAR,
+		QUADRATIC,
+		CUBIC,
+		COUNT
+	};
+
+	Light(const Scene& _scene, const IElement& _element)
+		: Object(_scene, _element)
+	{
+		// Initialize the light properties here
+	}
+
+	// Light type
+	virtual LightType getLightType() const = 0;
+
+	// Light properties
+	virtual bool doesCastLight() const = 0;
+	virtual bool doesDrawVolumetricLight() const = 0;
+	virtual bool doesDrawGroundProjection() const = 0;
+	virtual bool doesDrawFrontFacingVolumetricLight() const = 0;
+	virtual Color getColor() const = 0;
+	virtual double getIntensity() const = 0;
+	virtual double getInnerAngle() const = 0;
+	virtual double getOuterAngle() const = 0;
+	virtual double getFog() const = 0;
+	virtual DecayType getDecayType() const = 0;
+	virtual double getDecayStart() const = 0;
+
+	// Near attenuation
+	virtual bool doesEnableNearAttenuation() const = 0;
+	virtual double getNearAttenuationStart() const = 0;
+	virtual double getNearAttenuationEnd() const = 0;
+
+	// Far attenuation
+	virtual bool doesEnableFarAttenuation() const = 0;
+	virtual double getFarAttenuationStart() const = 0;
+	virtual double getFarAttenuationEnd() const = 0;
+
+	// Shadows
+	virtual const Texture* getShadowTexture() const = 0;
+	virtual bool doesCastShadows() const = 0;
+	virtual Color getShadowColor() const = 0;
+};
+
+struct Camera : Object
+{
+	enum class ProjectionType
+	{
+		PERSPECTIVE,
+		ORTHOGRAPHIC,
+		COUNT
+	};
+
+	enum class ApertureMode // Used to determine how to calculate the FOV
+	{
+		HORIZANDVERT,
+		HORIZONTAL,
+		VERTICAL,
+		FOCALLENGTH,
+		COUNT
+	};
+
+	enum class GateFit
+	{
+		NONE,
+		VERTICAL,
+		HORIZONTAL,
+		FILL,
+		OVERSCAN,
+		STRETCH,
+		COUNT
+	};
+
+	static const Type s_type = Type::CAMERA;
+
+	Camera(const Scene& _scene, const IElement& _element)
+		: Object(_scene, _element)
+	{
+	}
+
+	virtual Type getType() const { return Type::CAMERA; }
+	virtual ProjectionType getProjectionType() const = 0;
+	virtual ApertureMode getApertureMode() const = 0;
+
+	virtual double getFilmHeight() const = 0;
+	virtual double getFilmWidth() const = 0;
+
+	virtual double getAspectHeight() const = 0;
+	virtual double getAspectWidth() const = 0;
+
+	virtual double getNearPlane() const = 0;
+	virtual double getFarPlane() const = 0;
+	virtual bool doesAutoComputeClipPanes() const = 0;
+
+	virtual GateFit getGateFit() const = 0;
+	virtual double getFilmAspectRatio() const = 0;
+	virtual double getFocalLength() const = 0;
+	virtual double getFocusDistance() const = 0;
+
+	virtual DVec3 getBackgroundColor() const = 0;
+	virtual DVec3 getInterestPosition() const = 0;
+};
 
 struct Material : Object
 {
@@ -291,8 +440,8 @@ struct Cluster : Object
 	virtual int getIndicesCount() const = 0;
 	virtual const double* getWeights() const = 0;
 	virtual int getWeightsCount() const = 0;
-	virtual Matrix getTransformMatrix() const = 0;
-	virtual Matrix getTransformLinkMatrix() const = 0;
+	virtual DMatrix getTransformMatrix() const = 0;
+	virtual DMatrix getTransformLinkMatrix() const = 0;
 	virtual const Object* getLink() const = 0;
 };
 
@@ -341,26 +490,74 @@ struct NodeAttribute : Object
 };
 
 
-struct Geometry : Object
-{
+struct Vec2Attributes {
+	const Vec2* values = nullptr;
+	const int* indices = nullptr;
+	int count = 0;
+
+	Vec2Attributes() {}
+	Vec2Attributes(const Vec2* v, const int* i, int c) : values(v), indices(i), count(c) {}
+
+	Vec2 get(int i) const { return indices ? values[indices[i]] : values[i]; }
+};
+
+struct Vec3Attributes {
+	const Vec3* values = nullptr;
+	const int* indices = nullptr;
+	int count = 0;
+	int values_count = 0;
+
+	Vec3Attributes() {}
+	Vec3Attributes(const Vec3* v, const int* i, int c, int vc) : values(v), indices(i), count(c), values_count(vc) {}
+
+	Vec3 get(int i) const { return indices ? values[indices[i]] : values[i]; }
+};
+
+struct Vec4Attributes {
+	const Vec4* values = nullptr;
+	const int* indices = nullptr;
+	int count = 0;
+
+	Vec4Attributes() {}
+	Vec4Attributes(const Vec4* v, const int* i, int c) : values(v), indices(i), count(c) {}
+
+	Vec4 get(int i) const { return indices ? values[indices[i]] : values[i]; }
+};
+
+// subset of polygons with same material
+struct GeometryPartition {
+	struct Polygon {
+		const int from_vertex; // index into VecNAttributes::indices
+		const int vertex_count;
+	};
+	const Polygon* polygons;
+	const int polygon_count;
+	const int max_polygon_triangles; // max triangles in single polygon, can be used for preallocation
+	const int triangles_count; // number of triangles after polygon triangulation, can be used for preallocation
+};
+
+struct GeometryData {
+	virtual ~GeometryData() {}
+	
+	virtual Vec3Attributes getPositions() const = 0;
+	virtual Vec3Attributes getNormals() const = 0;
+	virtual Vec2Attributes getUVs(int index = 0) const = 0;
+	virtual Vec4Attributes getColors() const = 0;
+	virtual Vec3Attributes getTangents() const = 0;
+	virtual int getPartitionCount() const = 0;
+	virtual GeometryPartition getPartition(int partition_index) const = 0;
+};
+
+
+struct Geometry : Object {
 	static const Type s_type = Type::GEOMETRY;
 	static const int s_uvs_max = 4;
 
 	Geometry(const Scene& _scene, const IElement& _element);
 
-	virtual const Vec3* getVertices() const = 0;
-	virtual int getVertexCount() const = 0;
-
-	virtual const int* getFaceIndices() const = 0;
-	virtual int getIndexCount() const = 0;
-
-	virtual const Vec3* getNormals() const = 0;
-	virtual const Vec2* getUVs(int index = 0) const = 0;
-	virtual const Vec4* getColors() const = 0;
-	virtual const Vec3* getTangents() const = 0;
+	virtual const GeometryData& getGeometryData() const = 0;
 	virtual const Skin* getSkin() const = 0;
 	virtual const BlendShape* getBlendShape() const = 0;
-	virtual const int* getMaterials() const = 0;
 };
 
 
@@ -373,21 +570,27 @@ struct Shape : Object
 	virtual const Vec3* getVertices() const = 0;
 	virtual int getVertexCount() const = 0;
 
+	virtual const int* getIndices() const = 0;
+	virtual int getIndexCount() const = 0;
+
 	virtual const Vec3* getNormals() const = 0;
 };
 
 
-struct Mesh : Object
-{
+struct Mesh : Object {
 	static const Type s_type = Type::MESH;
 
 	Mesh(const Scene& _scene, const IElement& _element);
 
 	virtual const Pose* getPose() const = 0;
 	virtual const Geometry* getGeometry() const = 0;
-	virtual Matrix getGeometricMatrix() const = 0;
+	virtual DMatrix getGeometricMatrix() const = 0;
 	virtual const Material* getMaterial(int idx) const = 0;
 	virtual int getMaterialCount() const = 0;
+	// this will use data from `Geometry` if available and from `Mesh` otherwise
+	virtual const GeometryData& getGeometryData() const = 0;
+	virtual const Skin* getSkin() const = 0;
+	virtual const BlendShape* getBlendShape() const = 0;
 };
 
 
@@ -429,8 +632,9 @@ struct AnimationCurveNode : Object
 
 	AnimationCurveNode(const Scene& _scene, const IElement& _element);
 
+	virtual DataView getBoneLinkProperty() const = 0;
 	virtual const AnimationCurve* getCurve(int idx) const = 0; 
-	virtual Vec3 getNodeLocalTransform(double time) const = 0;
+	virtual DVec3 getNodeLocalTransform(double time) const = 0;
 	virtual const Object* getBone() const = 0;
 };
 
@@ -494,9 +698,11 @@ enum FrameRate
 
 struct GlobalSettings
 {
-	UpVector UpAxis = UpVector_AxisX;
+	UpVector UpAxis = UpVector_AxisY;
 	int UpAxisSign = 1;
-	FrontVector FrontAxis = FrontVector_ParityOdd;
+	// this seems to be 1-2 in Autodesk (odd/even parity), and 0-2 in Blender (axis as in UpAxis)
+	// I recommend to ignore FrontAxis and use just UpVector
+	int FrontAxis = 1; 
 	int FrontAxisSign = 1;
 	CoordSystem CoordAxis = CoordSystem_RightHanded;
 	int CoordAxisSign = 1;
@@ -522,30 +728,102 @@ struct GlobalInfo
 struct IScene
 {
 	virtual void destroy() = 0;
+
+	// Root Node
 	virtual const IElement* getRootElement() const = 0;
 	virtual const Object* getRoot() const = 0;
-	virtual const TakeInfo* getTakeInfo(const char* name) const = 0;
+
+	// Meshes
 	virtual int getMeshCount() const = 0;
-	virtual float getSceneFrameRate() const = 0;
-	virtual const GlobalInfo* getGlobalInfo() const = 0;
-	virtual const GlobalSettings* getGlobalSettings() const = 0;
 	virtual const Mesh* getMesh(int index) const = 0;
+
+	// Geometry
+	virtual int getGeometryCount() const = 0;
+	virtual const Geometry* getGeometry(int index) const = 0;
+
+	// Animations
 	virtual int getAnimationStackCount() const = 0;
 	virtual const AnimationStack* getAnimationStack(int index) const = 0;
+
+	// Cameras
+	virtual int getCameraCount() const = 0;
+	virtual const Camera* getCamera(int index) const = 0;
+
+	// Lights
+	virtual int getLightCount() const = 0;
+	virtual const Light* getLight(int index) const = 0;
+
+	// Scene Objects (Everything in scene)
 	virtual const Object* const* getAllObjects() const = 0;
 	virtual int getAllObjectCount() const = 0;
+
+	// Embedded files/Data
 	virtual int getEmbeddedDataCount() const = 0;
 	virtual DataView getEmbeddedData(int index) const = 0;
 	virtual DataView getEmbeddedFilename(int index) const = 0;
+	virtual bool isEmbeddedBase64(int index) const = 0;
+	// data are encoded in returned property and all ->next properties
+	virtual const IElementProperty* getEmbeddedBase64Data(int index) const = 0;
+
+	// Scene Misc
+	virtual const TakeInfo* getTakeInfo(const char* name) const = 0;
+	virtual float getSceneFrameRate() const = 0;
+	virtual const GlobalSettings* getGlobalSettings() const = 0;
+	virtual const GlobalInfo* getGlobalInfo() const = 0;
 
 	virtual ~IScene() {}
 };
 
 
-IScene* load(const u8* data, int size, u64 flags, JobProcessor job_processor = nullptr, void* job_user_ptr = nullptr);
+IScene* load(const u8* data, usize size, u16 flags, JobProcessor job_processor = nullptr, void* job_user_ptr = nullptr);
 const char* getError();
 double fbxTimeToSeconds(i64 value);
 i64 secondsToFbxTime(double value);
 
+// TODO nonconvex
+inline u32 triangulate(const GeometryData& geom, const GeometryPartition::Polygon& polygon, int* tri_indices) {
+	if (polygon.vertex_count < 3) return 0;
+	if (polygon.vertex_count == 3) {
+		tri_indices[0] = polygon.from_vertex;
+		tri_indices[1] = polygon.from_vertex + 1;
+		tri_indices[2] = polygon.from_vertex + 2;
+		return 3;
+	}
+	else if (polygon.vertex_count == 4) {
+		tri_indices[0] = polygon.from_vertex + 0;
+		tri_indices[1] = polygon.from_vertex + 1;
+		tri_indices[2] = polygon.from_vertex + 2;
+
+		tri_indices[3] = polygon.from_vertex + 0;
+		tri_indices[4] = polygon.from_vertex + 2;
+		tri_indices[5] = polygon.from_vertex + 3;
+		return 6;
+	}
+	
+	for (int tri = 0; tri < polygon.vertex_count - 2; ++tri) {
+		tri_indices[tri * 3 + 0] = polygon.from_vertex;
+		tri_indices[tri * 3 + 1] = polygon.from_vertex + 1 + tri;
+		tri_indices[tri * 3 + 2] = polygon.from_vertex + 2 + tri;
+	}
+	return 3 * (polygon.vertex_count - 2);
+}
+
 
 } // namespace ofbx
+
+#ifdef OFBX_DEFAULT_DELETER
+#include <memory>
+
+template <> struct ::std::default_delete<ofbx::IScene>
+{
+	default_delete() = default;
+	template <class U> constexpr default_delete(default_delete<U>) noexcept {}
+	void operator()(ofbx::IScene* scene) const noexcept
+	{
+		if (scene)
+		{
+			scene->destroy();
+		}
+	}
+};
+#endif

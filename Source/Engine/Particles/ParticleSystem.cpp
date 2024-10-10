@@ -181,19 +181,19 @@ void ParticleSystem::InitAsVirtual()
 
 #if USE_EDITOR
 
-void ParticleSystem::GetReferences(Array<Guid>& output) const
+void ParticleSystem::GetReferences(Array<Guid>& assets, Array<String>& files) const
 {
     // Base
-    BinaryAsset::GetReferences(output);
+    BinaryAsset::GetReferences(assets, files);
 
     for (int32 i = 0; i < Emitters.Count(); i++)
-        output.Add(Emitters[i].GetID());
+        assets.Add(Emitters[i].GetID());
 
     for (auto i = EmittersParametersOverrides.Begin(); i.IsNotEnd(); ++i)
     {
         const auto id = (Guid)i->Value;
         if (id.IsValid())
-            output.Add(id);
+            assets.Add(id);
     }
 }
 

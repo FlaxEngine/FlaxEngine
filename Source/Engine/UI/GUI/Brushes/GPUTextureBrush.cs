@@ -17,7 +17,7 @@ namespace FlaxEngine.GUI
         /// <summary>
         /// The texture sampling filter mode.
         /// </summary>
-        [ExpandGroups, Tooltip("The texture sampling filter mode.")]
+        [ExpandGroups]
         public BrushFilter Filter = BrushFilter.Linear;
 
         /// <summary>
@@ -37,7 +37,7 @@ namespace FlaxEngine.GUI
         }
 
         /// <inheritdoc />
-        public Float2 Size => Texture != null ? Texture.Size : Float2.Zero;
+        public Float2 Size => Texture != null ? Texture.Size : Float2.One;
 
         /// <inheritdoc />
         public void Draw(Rectangle rect, Color color)

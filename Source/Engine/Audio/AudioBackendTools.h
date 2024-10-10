@@ -21,6 +21,13 @@ public:
         Vector3 Velocity;
         Vector3 Position;
         Quaternion Orientation;
+
+        void Reset()
+        {
+            Velocity = Vector3::Zero;
+            Position = Vector3::Zero;
+            Orientation = Quaternion::Identity;
+        }
     };
 
     struct Source
@@ -153,18 +160,8 @@ public:
             break;
         case 2:
         default: // TODO: implement multi-channel support (eg. 5.1, 7.1)
-            if (sourceChannels == 1)
-            {
-                outputMatrix[0] = channels[FrontLeft];
-                outputMatrix[1] = channels[FrontRight];
-            }
-            else if (sourceChannels == 2)
-            {
-                outputMatrix[0] = channels[FrontLeft];
-                outputMatrix[1] = 0.0f;
-                outputMatrix[2] = 0.0f;
-                outputMatrix[3] = channels[FrontRight];
-            }
+            outputMatrix[0] = channels[FrontLeft];
+            outputMatrix[sourceChannels + 1] = channels[FrontRight];
             break;
         }
     }

@@ -92,7 +92,7 @@ int32 StaticModel::GetSortOrder() const
 
 void StaticModel::SetSortOrder(int32 value)
 {
-    _sortOrder = (int16)Math::Clamp<int32>(value, MIN_int16, MAX_int16);
+    _sortOrder = (int8)Math::Clamp<int32>(value, MIN_int8, MAX_int8);
 }
 
 bool StaticModel::HasLightmap() const
@@ -283,7 +283,7 @@ void StaticModel::UpdateBounds()
     }
     BoundingSphere::FromBox(_box, _sphere);
     if (_sceneRenderingKey != -1)
-        GetSceneRendering()->UpdateActor(this, _sceneRenderingKey);
+        GetSceneRendering()->UpdateActor(this, _sceneRenderingKey, ISceneRenderingListener::Bounds);
 }
 
 void StaticModel::FlushVertexColors()
@@ -324,13 +324,13 @@ void StaticModel::Draw(RenderContext& renderContext)
         return;
     if (renderContext.View.Pass == DrawPass::GlobalSDF)
     {
-        if (EnumHasAnyFlags(DrawModes, DrawPass::GlobalSDF))
+        if (EnumHasAnyFlags(DrawModes, DrawPass::GlobalSDF) && Model->SDF.Texture)
             GlobalSignDistanceFieldPass::Instance()->RasterizeModelSDF(this, Model->SDF, _transform, _box);
         return;
     }
     if (renderContext.View.Pass == DrawPass::GlobalSurfaceAtlas)
     {
-        if (EnumHasAnyFlags(DrawModes, DrawPass::GlobalSurfaceAtlas))
+        if (EnumHasAnyFlags(DrawModes, DrawPass::GlobalSurfaceAtlas) && Model->SDF.Texture)
             GlobalSurfaceAtlasPass::Instance()->RasterizeActor(this, this, _sphere, _transform, Model->LODs.Last().GetBox());
         return;
     }
@@ -357,6 +357,10 @@ void StaticModel::Draw(RenderContext& renderContext)
     draw.ForcedLOD = _forcedLod;
     draw.SortOrder = _sortOrder;
     draw.VertexColors = _vertexColorsCount ? _vertexColorsBuffer : nullptr;
+#if USE_EDITOR
+    if (HasStaticFlag(StaticFlags::Lightmap))
+        draw.LightmapScale = _scaleInLightmap;
+#endif
 
     Model->Draw(renderContext, draw);
 
@@ -391,6 +395,10 @@ void StaticModel::Draw(RenderContextBatch& renderContextBatch)
     draw.ForcedLOD = _forcedLod;
     draw.SortOrder = _sortOrder;
     draw.VertexColors = _vertexColorsCount ? _vertexColorsBuffer : nullptr;
+#if USE_EDITOR
+    if (HasStaticFlag(StaticFlags::Lightmap))
+        draw.LightmapScale = _scaleInLightmap;
+#endif
 
     Model->Draw(renderContextBatch, draw);
 

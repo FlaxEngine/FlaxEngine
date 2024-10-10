@@ -26,6 +26,7 @@ void ParticleEmitterInstance::ClearState()
     Time = 0;
     SpawnModulesData.Clear();
     CustomData.Clear();
+    CustomSpawnCount = 0;
 #if COMPILE_WITH_GPU_PARTICLES
     GPU.DeltaTime = 0.0f;
     GPU.SpawnCount = 0;

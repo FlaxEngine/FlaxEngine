@@ -12,12 +12,7 @@
 class FLAXENGINE_API UWPFileSystem : public Win32FileSystem
 {
 public:
-
-    /// <summary>
-    /// Gets the special folder path.
-    /// </summary>
-    /// <param name="type">The folder type.</param>
-    /// <param name="result">The result full path.</param>
+    // [FileSystemBase]
     static void GetSpecialFolderPath(const SpecialFolder type, String& result);
 };
 

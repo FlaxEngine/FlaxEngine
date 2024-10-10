@@ -52,11 +52,11 @@
 // True if enable downscaling when rendering blur
 const bool DownsampleForBlur = false;
 
-PACK_STRUCT(struct Data {
+GPU_CB_STRUCT(Data {
     Matrix ViewProjection;
     });
 
-PACK_STRUCT(struct BlurData {
+GPU_CB_STRUCT(BlurData {
     Float2 InvBufferSize;
     uint32 SampleCount;
     float Dummy0;
@@ -265,7 +265,7 @@ FORCE_INLINE Render2DVertex MakeVertex(const Float2& point, const Float2& uv, co
     {
         point,
         Half2(uv),
-        color,
+        color * TintLayersStack.Peek(),
         customData,
         mask,
     };
@@ -481,7 +481,7 @@ bool CachedPSO::Init(GPUShader* shader, bool useDepth)
 
     // Create pipeline states
     GPUPipelineState::Description desc = GPUPipelineState::Description::DefaultFullscreenTriangle;
-    desc.DepthEnable = desc.DepthWriteEnable = useDepth;
+    desc.DepthEnable = useDepth;
     desc.DepthWriteEnable = false;
     desc.DepthClipEnable = false;
     desc.VS = shader->GetVS("VS");
@@ -841,10 +841,11 @@ void Render2D::PushClip(const Rectangle& clipRect)
 {
     RENDER2D_CHECK_RENDERING_STATE;
 
+    const auto& mask = ClipLayersStack.Peek();
     RotatedRectangle clipRectTransformed;
     ApplyTransform(clipRect, clipRectTransformed);
-    const Rectangle bounds = Rectangle::Shared(clipRectTransformed.ToBoundingRect(), ClipLayersStack.Peek().Bounds);
-    ClipLayersStack.Push({ clipRectTransformed, bounds });
+    const Rectangle bounds = Rectangle::Shared(clipRectTransformed.ToBoundingRect(), mask.Bounds);
+    ClipLayersStack.Push({ RotatedRectangle::Shared(clipRectTransformed, mask.Bounds), bounds });
 
     OnClipScissors();
 }

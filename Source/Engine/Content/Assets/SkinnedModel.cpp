@@ -974,15 +974,13 @@ void SkinnedModel::CancelStreaming()
 
 #if USE_EDITOR
 
-void SkinnedModel::GetReferences(Array<Guid>& output) const
+void SkinnedModel::GetReferences(Array<Guid>& assets, Array<String>& files) const
 {
     // Base
-    BinaryAsset::GetReferences(output);
+    BinaryAsset::GetReferences(assets, files);
 
     for (int32 i = 0; i < MaterialSlots.Count(); i++)
-    {
-        output.Add(MaterialSlots[i].Material.GetID());
-    }
+        assets.Add(MaterialSlots[i].Material.GetID());
 }
 
 #endif

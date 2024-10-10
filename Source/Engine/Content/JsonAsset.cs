@@ -15,6 +15,17 @@ namespace FlaxEngine
         public object Instance => _instance ?? (_instance = CreateInstance());
 
         /// <summary>
+        /// Gets the instance of the serialized object from the json data. Cached internally.
+        /// </summary>
+        /// <returns>The asset instance object or null.</returns>
+        public T GetInstance<T>()
+        {
+            if (Instance is T instance)
+                return instance;
+            return default;
+        }
+
+        /// <summary>
         /// Creates a new instance of the serialized object from the json asset data.
         /// </summary>
         /// <remarks>Use <see cref="Instance"/> to get cached object.</remarks>

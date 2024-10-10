@@ -5,7 +5,9 @@
 #include "AudioBackendOAL.h"
 #include "Engine/Platform/StringUtils.h"
 #include "Engine/Core/Log.h"
+#include "Engine/Core/Collections/Dictionary.h"
 #include "Engine/Tools/AudioTool/AudioTool.h"
+#include "Engine/Engine/Units.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Audio/Audio.h"
 #include "Engine/Audio/AudioListener.h"
@@ -19,12 +21,9 @@
 #include <OpenAL/alc.h>
 #include <OpenAL/alext.h>
 
-#define ALC_MULTIPLE_LISTENERS 0
-
-#define FLAX_COORD_SCALE 0.01f // units are meters
-#define FLAX_DST_TO_OAL(x) x * FLAX_COORD_SCALE
-#define FLAX_POS_TO_OAL(vec) ((ALfloat)vec.X * -FLAX_COORD_SCALE), ((ALfloat)vec.Y * FLAX_COORD_SCALE), ((ALfloat)vec.Z * FLAX_COORD_SCALE)
-#define FLAX_VEL_TO_OAL(vec) ((ALfloat)vec.X * -(FLAX_COORD_SCALE*FLAX_COORD_SCALE)), ((ALfloat)vec.Y * (FLAX_COORD_SCALE*FLAX_COORD_SCALE)), ((ALfloat)vec.Z * (FLAX_COORD_SCALE*FLAX_COORD_SCALE))
+#define FLAX_DST_TO_OAL(x) x * UNITS_TO_METERS_SCALE
+#define FLAX_POS_TO_OAL(vec) ((ALfloat)vec.X * -UNITS_TO_METERS_SCALE), ((ALfloat)vec.Y * UNITS_TO_METERS_SCALE), ((ALfloat)vec.Z * UNITS_TO_METERS_SCALE)
+#define FLAX_VEL_TO_OAL(vec) ((ALfloat)vec.X * -(UNITS_TO_METERS_SCALE*UNITS_TO_METERS_SCALE)), ((ALfloat)vec.Y * (UNITS_TO_METERS_SCALE*UNITS_TO_METERS_SCALE)), ((ALfloat)vec.Z * (UNITS_TO_METERS_SCALE*UNITS_TO_METERS_SCALE))
 #if BUILD_RELEASE
 #define ALC_CHECK_ERROR(method)
 #else
@@ -39,155 +38,96 @@
     }
 #endif
 
-#if ALC_MULTIPLE_LISTENERS
-#define ALC_FOR_EACH_CONTEXT() \
-    for (int32 i = 0; i < Contexts.Count(); i++)
-    { \
-        if (Contexts.Count() > 1) \
-            alcMakeContextCurrent(Contexts[i]);
-#define ALC_GET_DEFAULT_CONTEXT() \
-    if (Contexts.Count() > 1) \
-        alcMakeContextCurrent(Contexts[0]);
-#define ALC_GET_LISTENER_CONTEXT(listener) \
-    if (Contexts.Count() > 1) \
-        alcMakeContextCurrent(ALC::GetContext(listener)));
-#else
-#define ALC_FOR_EACH_CONTEXT() { int32 i = 0;
-#define ALC_GET_DEFAULT_CONTEXT()
-#define ALC_GET_LISTENER_CONTEXT(listener)
-#endif
-
 namespace ALC
 {
     ALCdevice* Device = nullptr;
-    Array<ALCcontext*, FixedAllocation<AUDIO_MAX_LISTENERS>> Contexts;
+    ALCcontext* Context = nullptr;
     AudioBackend::FeatureFlags Features = AudioBackend::FeatureFlags::None;
+    CriticalSection Locker;
+    Dictionary<uint32, AudioDataInfo> SourceIDtoFormat;
 
     bool IsExtensionSupported(const char* extension)
     {
         if (Device == nullptr)
             return false;
-
         const int32 length = StringUtils::Length(extension);
         if ((length > 2) && (StringUtils::Compare(extension, "ALC", 3) == 0))
             return alcIsExtensionPresent(Device, extension) != AL_FALSE;
         return alIsExtensionPresent(extension) != AL_FALSE;
     }
 
-    ALCcontext* GetContext(const class AudioListener* listener)
+    void ClearContext()
     {
-#if ALC_MULTIPLE_LISTENERS
-        const auto& listeners = Audio::Listeners;
-        if (listeners.HasItems())
+        if (Context)
         {
-            ASSERT(listeners.Count() == Contexts.Count());
-
-            const int32 numContexts = Contexts.Count();
-            ALC_FOR_EACH_CONTEXT()
-            {
-                if (listeners[i] == listener)
-                    return Contexts[i];
-            }
+            alcMakeContextCurrent(nullptr);
+            alcDestroyContext(Context);
+            Context = nullptr;
         }
-        ASSERT(Contexts.HasItems());
-#else
-        ASSERT(Contexts.Count() == 1);
-#endif
-        return Contexts[0];
-    }
-
-    FORCE_INLINE const Array<ALCcontext*, FixedAllocation<AUDIO_MAX_LISTENERS>>& GetContexts()
-    {
-        return Contexts;
-    }
-
-    void ClearContexts()
-    {
-        alcMakeContextCurrent(nullptr);
-
-        for (ALCcontext* context : Contexts)
-            alcDestroyContext(context);
-        Contexts.Clear();
     }
 
     namespace Listener
     {
-        void Rebuild(AudioListener* listener)
+        void Rebuild(const AudioListener* listener)
         {
-            AudioBackend::Listener::TransformChanged(listener);
-
-            const Float3 velocity = listener->GetVelocity();
-            alListener3f(AL_VELOCITY, FLAX_VEL_TO_OAL(velocity));
-            alListenerf(AL_GAIN, Audio::GetVolume());
+            AudioBackend::Listener::Reset();
+            AudioBackend::Listener::TransformChanged(listener->GetPosition(), listener->GetOrientation());
+            AudioBackend::Listener::VelocityChanged(listener->GetVelocity());
         }
     }
 
     namespace Source
     {
-        void Rebuild(AudioSource* source)
+        void Rebuild(uint32& sourceID, const Vector3& position, const Quaternion& orientation, float volume, float pitch, float pan, bool loop, bool spatial, float attenuation, float minDistance, float doppler)
         {
-            ASSERT(source->SourceIDs.IsEmpty());
-            const bool is3D = source->Is3D();
-            const bool loop = source->GetIsLooping() && !source->UseStreaming();
+            ASSERT_LOW_LAYER(sourceID == 0);
+            alGenSources(1, &sourceID);
+            ASSERT_LOW_LAYER(sourceID != 0);
 
-            ALC_FOR_EACH_CONTEXT()
-                uint32 sourceID = 0;
-                alGenSources(1, &sourceID);
-
-                source->SourceIDs.Add(sourceID);
-            }
-
-            ALC_FOR_EACH_CONTEXT()
-                const uint32 sourceID = source->SourceIDs[i];
-
-                alSourcef(sourceID, AL_GAIN, source->GetVolume());
-                alSourcef(sourceID, AL_PITCH, source->GetPitch());
-                alSourcef(sourceID, AL_SEC_OFFSET, 0.0f);
-                alSourcei(sourceID, AL_LOOPING, loop);
-                alSourcei(sourceID, AL_SOURCE_RELATIVE, !is3D);
-                alSourcei(sourceID, AL_BUFFER, 0);
-                if (is3D)
-                {
+            alSourcef(sourceID, AL_GAIN, volume);
+            alSourcef(sourceID, AL_PITCH, pitch);
+            alSourcef(sourceID, AL_SEC_OFFSET, 0.0f);
+            alSourcei(sourceID, AL_LOOPING, loop);
+            alSourcei(sourceID, AL_SOURCE_RELATIVE, !spatial);
+            alSourcei(sourceID, AL_BUFFER, 0);
+            if (spatial)
+            {
 #ifdef AL_SOFT_source_spatialize
-                    alSourcei(sourceID, AL_SOURCE_SPATIALIZE_SOFT, AL_TRUE);
+                alSourcei(sourceID, AL_SOURCE_SPATIALIZE_SOFT, AL_TRUE);
 #endif
-                    alSourcef(sourceID, AL_ROLLOFF_FACTOR, source->GetAttenuation());
-                    alSourcef(sourceID, AL_DOPPLER_FACTOR, source->GetDopplerFactor());
-                    alSourcef(sourceID, AL_REFERENCE_DISTANCE, FLAX_DST_TO_OAL(source->GetMinDistance()));
-                    alSource3f(sourceID, AL_POSITION, FLAX_POS_TO_OAL(source->GetPosition()));
-                    alSource3f(sourceID, AL_VELOCITY, FLAX_VEL_TO_OAL(source->GetVelocity()));
-                }
-                else
-                {
-                    alSourcef(sourceID, AL_ROLLOFF_FACTOR, 0.0f);
-                    alSourcef(sourceID, AL_DOPPLER_FACTOR, 1.0f);
-                    alSourcef(sourceID, AL_REFERENCE_DISTANCE, 0.0f);
-                    alSource3f(sourceID, AL_POSITION, 0.0f, 0.0f, 0.0f);
-                    alSource3f(sourceID, AL_VELOCITY, 0.0f, 0.0f, 0.0f);
-                }
-#ifdef AL_EXT_STEREO_ANGLES
-                const float panAngle = source->GetPan() * PI_HALF;
-                const ALfloat panAngles[2] = { (ALfloat)(PI / 6.0 - panAngle), (ALfloat)(-PI / 6.0 - panAngle) }; // Angles are specified counter-clockwise in radians
-                alSourcefv(sourceID, AL_STEREO_ANGLES, panAngles);
-#endif
+                alSourcef(sourceID, AL_ROLLOFF_FACTOR, attenuation);
+                alSourcef(sourceID, AL_DOPPLER_FACTOR, doppler);
+                alSourcef(sourceID, AL_REFERENCE_DISTANCE, FLAX_DST_TO_OAL(minDistance));
+                alSource3f(sourceID, AL_POSITION, FLAX_POS_TO_OAL(position));
+                alSource3f(sourceID, AL_VELOCITY, FLAX_VEL_TO_OAL(Vector3::Zero));
             }
-
-            // Restore state after Cleanup
-            source->Restore();
+            else
+            {
+                alSourcef(sourceID, AL_ROLLOFF_FACTOR, 0.0f);
+                alSourcef(sourceID, AL_DOPPLER_FACTOR, 1.0f);
+                alSourcef(sourceID, AL_REFERENCE_DISTANCE, 0.0f);
+                alSource3f(sourceID, AL_POSITION, 0.0f, 0.0f, 0.0f);
+                alSource3f(sourceID, AL_VELOCITY, 0.0f, 0.0f, 0.0f);
+            }
+#ifdef AL_EXT_STEREO_ANGLES
+            const float panAngle = pan * PI_HALF;
+            const ALfloat panAngles[2] = { (ALfloat)(PI / 6.0 - panAngle), (ALfloat)(-PI / 6.0 - panAngle) }; // Angles are specified counter-clockwise in radians
+            alSourcefv(sourceID, AL_STEREO_ANGLES, panAngles);
+#endif
         }
     }
 
-    void RebuildContexts(bool isChangingDevice)
+    struct AudioSourceState
+    {
+        AudioSource::States State;
+        float Time;
+    };
+
+    void RebuildContext(const Array<AudioSourceState>& states)
     {
         LOG(Info, "Rebuilding audio contexts");
 
-        if (!isChangingDevice)
-        {
-            for (AudioSource* source : Audio::Sources)
-                source->Cleanup();
-        }
-
-        ClearContexts();
+        ClearContext();
 
         if (Device == nullptr)
             return;
@@ -200,29 +140,45 @@ namespace ALC
             attrList = attrsHrtf;
         }
 
-#if ALC_MULTIPLE_LISTENERS
-        const int32 numListeners = Audio::Listeners.Count();
-        const int32 numContexts = numListeners > 1 ? numListeners : 1;
-        Contexts.Resize(numContexts);
-
-        ALC_FOR_EACH_CONTEXT()
-            ALCcontext* context = alcCreateContext(Device, attrList);
-            Contexts[i] = context;
-        }
-#else
-        Contexts.Resize(1);
-        Contexts[0] = alcCreateContext(Device, attrList);
-#endif
-
-        // If only one context is available keep it active as an optimization.
-        // Audio listeners and sources will avoid excessive context switching in such case.
-        alcMakeContextCurrent(Contexts[0]);
+        Context = alcCreateContext(Device, attrList);
+        alcMakeContextCurrent(Context);
 
         for (AudioListener* listener : Audio::Listeners)
             Listener::Rebuild(listener);
 
-        for (AudioSource* source : Audio::Sources)
-            Source::Rebuild(source);
+        for (int32 i = 0; i < states.Count(); i++)
+        {
+            AudioSource* source = Audio::Sources[i];
+            Source::Rebuild(source->SourceID, source->GetPosition(), source->GetOrientation(), source->GetVolume(), source->GetPitch(), source->GetPan(), source->GetIsLooping() && !source->UseStreaming(), source->Is3D(), source->GetAttenuation(), source->GetMinDistance(), source->GetDopplerFactor());
+
+            if (states.HasItems())
+            {
+                // Restore playback state
+                auto& state = states[i];
+                if (state.State != AudioSource::States::Stopped)
+                    source->Play();
+                if (state.State == AudioSource::States::Paused)
+                    source->Pause();
+                if (state.State != AudioSource::States::Stopped)
+                    source->SetTime(state.Time);
+            }
+        }
+    }
+
+    void RebuildContext(bool isChangingDevice)
+    {
+        Array<AudioSourceState> states;
+        if (!isChangingDevice)
+        {
+            states.EnsureCapacity(Audio::Sources.Count());
+            for (AudioSource* source : Audio::Sources)
+            {
+                states.Add({ source->GetState(), source->GetTime() });
+                source->Stop();
+            }
+        }
+
+        RebuildContext(states);
     }
 }
 
@@ -313,308 +269,212 @@ const Char* GetOpenALErrorString(int error)
     return TEXT("???");
 }
 
-void AudioBackendOAL::Listener_OnAdd(AudioListener* listener)
+void AudioBackendOAL::Listener_Reset()
 {
-#if ALC_MULTIPLE_LISTENERS
-    ALC::RebuildContexts(false);
-#else
-    AudioBackend::Listener::TransformChanged(listener);
     alListenerf(AL_GAIN, Audio::GetVolume());
-#endif
 }
 
-void AudioBackendOAL::Listener_OnRemove(AudioListener* listener)
+void AudioBackendOAL::Listener_VelocityChanged(const Vector3& velocity)
 {
-#if ALC_MULTIPLE_LISTENERS
-    ALC::RebuildContexts(false);
-#endif
-}
-
-void AudioBackendOAL::Listener_VelocityChanged(AudioListener* listener)
-{
-    ALC_GET_LISTENER_CONTEXT(listener)
-
-    const Float3 velocity = listener->GetVelocity();
     alListener3f(AL_VELOCITY, FLAX_VEL_TO_OAL(velocity));
 }
 
-void AudioBackendOAL::Listener_TransformChanged(AudioListener* listener)
+void AudioBackendOAL::Listener_TransformChanged(const Vector3& position, const Quaternion& orientation)
 {
-    ALC_GET_LISTENER_CONTEXT(listener)
-
-    const Float3 position = listener->GetPosition();
-    const Quaternion orientation = listener->GetOrientation();
     const Float3 flipX(-1, 1, 1);
     const Float3 alOrientation[2] =
     {
-        // Forward
         orientation * Float3::Forward * flipX,
-        // Up
         orientation * Float3::Up * flipX
     };
-
     alListenerfv(AL_ORIENTATION, (float*)alOrientation);
     alListener3f(AL_POSITION, FLAX_POS_TO_OAL(position));
 }
 
 void AudioBackendOAL::Listener_ReinitializeAll()
 {
-    ALC::RebuildContexts(false);
+    ALC::RebuildContext(false);
 }
 
-void AudioBackendOAL::Source_OnAdd(AudioSource* source)
+uint32 AudioBackendOAL::Source_Add(const AudioDataInfo& format, const Vector3& position, const Quaternion& orientation, float volume, float pitch, float pan, bool loop, bool spatial, float attenuation, float minDistance, float doppler)
 {
-    ALC::Source::Rebuild(source);
+    uint32 sourceID = 0;
+    ALC::Source::Rebuild(sourceID, position, orientation, volume, pitch, pan, loop, spatial, attenuation, minDistance, doppler);
+
+    // Cache audio data format assigned on source (used in Source_GetCurrentBufferTime)
+    ALC::Locker.Lock();
+    ALC::SourceIDtoFormat[sourceID] = format;
+    ALC::Locker.Unlock();
+
+    return sourceID;
 }
 
-void AudioBackendOAL::Source_OnRemove(AudioSource* source)
+void AudioBackendOAL::Source_Remove(uint32 sourceID)
 {
-    source->Cleanup();
+    alSourcei(sourceID, AL_BUFFER, 0);
+    ALC_CHECK_ERROR(alSourcei);
+    alDeleteSources(1, &sourceID);
+    ALC_CHECK_ERROR(alDeleteSources);
+
+    ALC::Locker.Lock();
+    ALC::SourceIDtoFormat.Remove(sourceID);
+    ALC::Locker.Unlock();
 }
 
-void AudioBackendOAL::Source_VelocityChanged(AudioSource* source)
+void AudioBackendOAL::Source_VelocityChanged(uint32 sourceID, const Vector3& velocity)
 {
-    if (!source->Is3D())
-        return;
-    ALC_FOR_EACH_CONTEXT()
-        const uint32 sourceID = source->SourceIDs[i];
-        alSource3f(sourceID, AL_VELOCITY, FLAX_VEL_TO_OAL(source->GetVelocity()));
-    }
+    alSource3f(sourceID, AL_VELOCITY, FLAX_VEL_TO_OAL(velocity));
 }
 
-void AudioBackendOAL::Source_TransformChanged(AudioSource* source)
+void AudioBackendOAL::Source_TransformChanged(uint32 sourceID, const Vector3& position, const Quaternion& orientation)
 {
-    if (!source->Is3D())
-        return;
-    ALC_FOR_EACH_CONTEXT()
-        const uint32 sourceID = source->SourceIDs[i];
-        alSource3f(sourceID, AL_POSITION, FLAX_POS_TO_OAL(source->GetPosition()));
-    }
+    alSource3f(sourceID, AL_POSITION, FLAX_POS_TO_OAL(position));
 }
 
-void AudioBackendOAL::Source_VolumeChanged(AudioSource* source)
+void AudioBackendOAL::Source_VolumeChanged(uint32 sourceID, float volume)
 {
-    ALC_FOR_EACH_CONTEXT()
-        const uint32 sourceID = source->SourceIDs[i];
-        alSourcef(sourceID, AL_GAIN, source->GetVolume());
-    }
+    alSourcef(sourceID, AL_GAIN, volume);
 }
 
-void AudioBackendOAL::Source_PitchChanged(AudioSource* source)
+void AudioBackendOAL::Source_PitchChanged(uint32 sourceID, float pitch)
 {
-    ALC_FOR_EACH_CONTEXT()
-        const uint32 sourceID = source->SourceIDs[i];
-        alSourcef(sourceID, AL_PITCH, source->GetPitch());
-    }
+    alSourcef(sourceID, AL_PITCH, pitch);
 }
 
-void AudioBackendOAL::Source_PanChanged(AudioSource* source)
+void AudioBackendOAL::Source_PanChanged(uint32 sourceID, float pan)
 {
 #ifdef AL_EXT_STEREO_ANGLES
-    const float panAngle = source->GetPan() * PI_HALF;
+    const float panAngle = pan * PI_HALF;
     const ALfloat panAngles[2] = { (ALfloat)(PI / 6.0 - panAngle), (ALfloat)(-PI / 6.0 - panAngle) }; // Angles are specified counter-clockwise in radians
-    ALC_FOR_EACH_CONTEXT()
-        const uint32 sourceID = source->SourceIDs[i];
-        alSourcefv(sourceID, AL_STEREO_ANGLES, panAngles);
-    }
+    alSourcefv(sourceID, AL_STEREO_ANGLES, panAngles);
 #endif
 }
 
-void AudioBackendOAL::Source_IsLoopingChanged(AudioSource* source)
+void AudioBackendOAL::Source_IsLoopingChanged(uint32 sourceID, bool loop)
 {
-    const bool loop = source->GetIsLooping() && !source->UseStreaming();
-    ALC_FOR_EACH_CONTEXT()
-        const uint32 sourceID = source->SourceIDs[i];
-        alSourcei(sourceID, AL_LOOPING, loop);
-    }
+    alSourcei(sourceID, AL_LOOPING, loop);
 }
 
-void AudioBackendOAL::Source_SpatialSetupChanged(AudioSource* source)
+void AudioBackendOAL::Source_SpatialSetupChanged(uint32 sourceID, bool spatial, float attenuation, float minDistance, float doppler)
 {
-    const bool is3D = source->Is3D();
-    ALC_FOR_EACH_CONTEXT()
-        const uint32 sourceID = source->SourceIDs[i];
-        alSourcei(sourceID, AL_SOURCE_RELATIVE, !is3D);
-        if (is3D)
-        {
+    alSourcei(sourceID, AL_SOURCE_RELATIVE, !spatial);
+    if (spatial)
+    {
 #ifdef AL_SOFT_source_spatialize
-            alSourcei(sourceID, AL_SOURCE_SPATIALIZE_SOFT, AL_TRUE);
+        alSourcei(sourceID, AL_SOURCE_SPATIALIZE_SOFT, AL_TRUE);
 #endif
-            alSourcef(sourceID, AL_ROLLOFF_FACTOR, source->GetAttenuation());
-            alSourcef(sourceID, AL_DOPPLER_FACTOR, source->GetDopplerFactor());
-            alSourcef(sourceID, AL_REFERENCE_DISTANCE, FLAX_DST_TO_OAL(source->GetMinDistance()));
-        }
-        else
-        {
-            alSourcef(sourceID, AL_ROLLOFF_FACTOR, 0.0f);
-            alSourcef(sourceID, AL_DOPPLER_FACTOR, 1.0f);
-            alSourcef(sourceID, AL_REFERENCE_DISTANCE, 0.0f);
-        }
+        alSourcef(sourceID, AL_ROLLOFF_FACTOR, attenuation);
+        alSourcef(sourceID, AL_DOPPLER_FACTOR, doppler);
+        alSourcef(sourceID, AL_REFERENCE_DISTANCE, FLAX_DST_TO_OAL(minDistance));
+    }
+    else
+    {
+        alSourcef(sourceID, AL_ROLLOFF_FACTOR, 0.0f);
+        alSourcef(sourceID, AL_DOPPLER_FACTOR, 1.0f);
+        alSourcef(sourceID, AL_REFERENCE_DISTANCE, 0.0f);
     }
 }
 
-void AudioBackendOAL::Source_ClipLoaded(AudioSource* source)
+void AudioBackendOAL::Source_Play(uint32 sourceID)
 {
-    if (source->SourceIDs.Count() < ALC::Contexts.Count())
-        return;
-    const auto clip = source->Clip.Get();
-    const bool is3D = source->Is3D();
-    const bool loop = source->GetIsLooping() && !clip->IsStreamable();
-
-    ALC_FOR_EACH_CONTEXT()
-        const uint32 sourceID = source->SourceIDs[i];
-        alSourcei(sourceID, AL_SOURCE_RELATIVE, !is3D);
-        alSourcei(sourceID, AL_LOOPING, loop);
-    }
+    alSourcePlay(sourceID);
+    ALC_CHECK_ERROR(alSourcePlay);
 }
 
-void AudioBackendOAL::Source_Cleanup(AudioSource* source)
+void AudioBackendOAL::Source_Pause(uint32 sourceID)
 {
-    ALC_FOR_EACH_CONTEXT()
-        const uint32 sourceID = source->SourceIDs[i];
-        alSourcei(sourceID, AL_BUFFER, 0);
-        ALC_CHECK_ERROR(alSourcei);
-        alDeleteSources(1, &sourceID);
-        ALC_CHECK_ERROR(alDeleteSources);
-    }
+    alSourcePause(sourceID);
+    ALC_CHECK_ERROR(alSourcePause);
 }
 
-void AudioBackendOAL::Source_Play(AudioSource* source)
+void AudioBackendOAL::Source_Stop(uint32 sourceID)
 {
-    ALC_FOR_EACH_CONTEXT()
-        const uint32 sourceID = source->SourceIDs[i];
+    // Stop and rewind
+    alSourceRewind(sourceID);
+    ALC_CHECK_ERROR(alSourceRewind);
+    alSourcef(sourceID, AL_SEC_OFFSET, 0.0f);
 
-        // Play
-        alSourcePlay(sourceID);
-        ALC_CHECK_ERROR(alSourcePlay);
-    }
+    // Unset streaming buffers
+    alSourcei(sourceID, AL_BUFFER, 0);
+    ALC_CHECK_ERROR(alSourcei);
 }
 
-void AudioBackendOAL::Source_Pause(AudioSource* source)
+void AudioBackendOAL::Source_SetCurrentBufferTime(uint32 sourceID, float value)
 {
-    ALC_FOR_EACH_CONTEXT()
-        const uint32 sourceID = source->SourceIDs[i];
-
-        // Pause
-        alSourcePause(sourceID);
-        ALC_CHECK_ERROR(alSourcePause);
-    }
+    alSourcef(sourceID, AL_SEC_OFFSET, value);
 }
 
-void AudioBackendOAL::Source_Stop(AudioSource* source)
+float AudioBackendOAL::Source_GetCurrentBufferTime(uint32 sourceID)
 {
-    ALC_FOR_EACH_CONTEXT()
-        const uint32 sourceID = source->SourceIDs[i];
-
-        // Stop and rewind
-        alSourceRewind(sourceID);
-        ALC_CHECK_ERROR(alSourceRewind);
-        alSourcef(sourceID, AL_SEC_OFFSET, 0.0f);
-
-        // Unset streaming buffers
-        alSourcei(sourceID, AL_BUFFER, 0);
-        ALC_CHECK_ERROR(alSourcei);
-    }
-}
-
-void AudioBackendOAL::Source_SetCurrentBufferTime(AudioSource* source, float value)
-{
-    ALC_FOR_EACH_CONTEXT()
-        const uint32 sourceID = source->SourceIDs[i];
-
-        alSourcef(sourceID, AL_SEC_OFFSET, value);
-    }
-}
-
-float AudioBackendOAL::Source_GetCurrentBufferTime(const AudioSource* source)
-{
-    ALC_GET_DEFAULT_CONTEXT()
-
 #if 0
     float time;
-    alGetSourcef(source->SourceIDs[0], AL_SEC_OFFSET, &time);
+    alGetSourcef(sourceID, AL_SEC_OFFSET, &time);
 #else
-    ASSERT(source->Clip && source->Clip->IsLoaded());
-    const AudioDataInfo& clipInfo = source->Clip->AudioHeader.Info;
+    ALC::Locker.Lock();
+    AudioDataInfo clipInfo = ALC::SourceIDtoFormat[sourceID];
+    ALC::Locker.Unlock();
     ALint samplesPlayed;
-    alGetSourcei(source->SourceIDs[0], AL_SAMPLE_OFFSET, &samplesPlayed);
+    alGetSourcei(sourceID, AL_SAMPLE_OFFSET, &samplesPlayed);
     const uint32 totalSamples = clipInfo.NumSamples / clipInfo.NumChannels;
-    const float time = (samplesPlayed % totalSamples) / static_cast<float>(Math::Max(1U, clipInfo.SampleRate));
+    if (totalSamples > 0)
+        samplesPlayed %= totalSamples;
+    const float time = samplesPlayed / static_cast<float>(Math::Max(1U, clipInfo.SampleRate));
 #endif
-
     return time;
 }
 
-void AudioBackendOAL::Source_SetNonStreamingBuffer(AudioSource* source)
+void AudioBackendOAL::Source_SetNonStreamingBuffer(uint32 sourceID, uint32 bufferID)
 {
-    const uint32 bufferId = source->Clip->Buffers[0];
-    ALC_FOR_EACH_CONTEXT()
-        const uint32 sourceID = source->SourceIDs[i];
-
-        alSourcei(sourceID, AL_BUFFER, bufferId);
-        ALC_CHECK_ERROR(alSourcei);
-    }
+    alSourcei(sourceID, AL_BUFFER, bufferID);
+    ALC_CHECK_ERROR(alSourcei);
 }
 
-void AudioBackendOAL::Source_GetProcessedBuffersCount(AudioSource* source, int32& processedBuffersCount)
+void AudioBackendOAL::Source_GetProcessedBuffersCount(uint32 sourceID, int32& processedBuffersCount)
 {
-    ALC_GET_DEFAULT_CONTEXT()
-
     // Check the first context only
-    const uint32 sourceID = source->SourceIDs[0];
     alGetSourcei(sourceID, AL_BUFFERS_PROCESSED, &processedBuffersCount);
     ALC_CHECK_ERROR(alGetSourcei);
 }
 
-void AudioBackendOAL::Source_GetQueuedBuffersCount(AudioSource* source, int32& queuedBuffersCount)
+void AudioBackendOAL::Source_GetQueuedBuffersCount(uint32 sourceID, int32& queuedBuffersCount)
 {
-    ALC_GET_DEFAULT_CONTEXT()
-
     // Check the first context only
-    const uint32 sourceID = source->SourceIDs[0];
     alGetSourcei(sourceID, AL_BUFFERS_QUEUED, &queuedBuffersCount);
     ALC_CHECK_ERROR(alGetSourcei);
 }
 
-void AudioBackendOAL::Source_QueueBuffer(AudioSource* source, uint32 bufferId)
+void AudioBackendOAL::Source_QueueBuffer(uint32 sourceID, uint32 bufferID)
 {
-    ALC_FOR_EACH_CONTEXT()
-        const uint32 sourceID = source->SourceIDs[i];
-
-        // Queue new buffer
-        alSourceQueueBuffers(sourceID, 1, &bufferId);
-        ALC_CHECK_ERROR(alSourceQueueBuffers);
-    }
+    // Queue new buffer
+    alSourceQueueBuffers(sourceID, 1, &bufferID);
+    ALC_CHECK_ERROR(alSourceQueueBuffers);
 }
 
-void AudioBackendOAL::Source_DequeueProcessedBuffers(AudioSource* source)
+void AudioBackendOAL::Source_DequeueProcessedBuffers(uint32 sourceID)
 {
-    ALuint buffers[AUDIO_MAX_SOURCE_BUFFERS];
-    ALC_FOR_EACH_CONTEXT()
-        const uint32 sourceID = source->SourceIDs[i];
-
-        int32 numProcessedBuffers;
-        alGetSourcei(sourceID, AL_BUFFERS_PROCESSED, &numProcessedBuffers);
-        alSourceUnqueueBuffers(sourceID, numProcessedBuffers, buffers);
-        ALC_CHECK_ERROR(alSourceUnqueueBuffers);
-    }
+    int32 numProcessedBuffers;
+    alGetSourcei(sourceID, AL_BUFFERS_PROCESSED, &numProcessedBuffers);
+    Array<ALuint, InlinedAllocation<AUDIO_MAX_SOURCE_BUFFERS>> buffers;
+    buffers.Resize(numProcessedBuffers);
+    alSourceUnqueueBuffers(sourceID, numProcessedBuffers, buffers.Get());
+    ALC_CHECK_ERROR(alSourceUnqueueBuffers);
 }
 
 uint32 AudioBackendOAL::Buffer_Create()
 {
-    uint32 bufferId;
-    alGenBuffers(1, &bufferId);
+    uint32 bufferID;
+    alGenBuffers(1, &bufferID);
     ALC_CHECK_ERROR(alGenBuffers);
-    return bufferId;
+    return bufferID;
 }
 
-void AudioBackendOAL::Buffer_Delete(uint32 bufferId)
+void AudioBackendOAL::Buffer_Delete(uint32 bufferID)
 {
-    alDeleteBuffers(1, &bufferId);
+    alDeleteBuffers(1, &bufferID);
     ALC_CHECK_ERROR(alDeleteBuffers);
 }
 
-void AudioBackendOAL::Buffer_Write(uint32 bufferId, byte* samples, const AudioDataInfo& info)
+void AudioBackendOAL::Buffer_Write(uint32 bufferID, byte* samples, const AudioDataInfo& info)
 {
     PROFILE_CPU();
 
@@ -633,19 +493,19 @@ void AudioBackendOAL::Buffer_Write(uint32 bufferId, byte* samples, const AudioDa
                 AudioTool::ConvertToFloat(samples, info.BitDepth, sampleBufferFloat, info.NumSamples);
 
                 format = GetOpenALBufferFormat(info.NumChannels, 32);
-                alBufferData(bufferId, format, sampleBufferFloat, bufferSize, info.SampleRate);
+                alBufferData(bufferID, format, sampleBufferFloat, bufferSize, info.SampleRate);
                 ALC_CHECK_ERROR(alBufferData);
                 Allocator::Free(sampleBufferFloat);
             }
             else
             {
-                LOG(Warning, "OpenAL doesn't support bit depth larger than 16. Your audio data will be truncated.");
+                LOG(Warning, "OpenAL doesn't support bit depth larger than 16. Audio data will be truncated.");
                 const uint32 bufferSize = info.NumSamples * 2;
                 byte* sampleBuffer16 = (byte*)Allocator::Allocate(bufferSize);
                 AudioTool::ConvertBitDepth(samples, info.BitDepth, sampleBuffer16, 16, info.NumSamples);
 
                 format = GetOpenALBufferFormat(info.NumChannels, 16);
-                alBufferData(bufferId, format, sampleBuffer16, bufferSize, info.SampleRate);
+                alBufferData(bufferID, format, sampleBuffer16, bufferSize, info.SampleRate);
                 ALC_CHECK_ERROR(alBufferData);
                 Allocator::Free(sampleBuffer16);
             }
@@ -658,13 +518,13 @@ void AudioBackendOAL::Buffer_Write(uint32 bufferId, byte* samples, const AudioDa
             for (uint32 i = 0; i < info.NumSamples; i++)
                 sampleBuffer[i] = ((int8*)samples)[i] + 128;
 
-            alBufferData(bufferId, format, sampleBuffer, bufferSize, info.SampleRate);
+            alBufferData(bufferID, format, sampleBuffer, bufferSize, info.SampleRate);
             ALC_CHECK_ERROR(alBufferData);
             Allocator::Free(sampleBuffer);
         }
         else if (format)
         {
-            alBufferData(bufferId, format, samples, info.NumSamples * (info.BitDepth / 8), info.SampleRate);
+            alBufferData(bufferID, format, samples, info.NumSamples * (info.BitDepth / 8), info.SampleRate);
             ALC_CHECK_ERROR(alBufferData);
         }
     }
@@ -681,7 +541,7 @@ void AudioBackendOAL::Buffer_Write(uint32 bufferId, byte* samples, const AudioDa
             AudioTool::ConvertBitDepth(samples, info.BitDepth, sampleBuffer32, 32, info.NumSamples);
 
             format = GetOpenALBufferFormat(info.NumChannels, 32);
-            alBufferData(bufferId, format, sampleBuffer32, bufferSize, info.SampleRate);
+            alBufferData(bufferID, format, sampleBuffer32, bufferSize, info.SampleRate);
             ALC_CHECK_ERROR(alBufferData);
 
             Allocator::Free(sampleBuffer32);
@@ -696,14 +556,14 @@ void AudioBackendOAL::Buffer_Write(uint32 bufferId, byte* samples, const AudioDa
                 sampleBuffer[i] = ((int8*)samples)[i] + 128;
 
             format = GetOpenALBufferFormat(info.NumChannels, 16);
-            alBufferData(bufferId, format, sampleBuffer, bufferSize, info.SampleRate);
+            alBufferData(bufferID, format, sampleBuffer, bufferSize, info.SampleRate);
             ALC_CHECK_ERROR(alBufferData);
 
             Allocator::Free(sampleBuffer);
         }
         else if (format)
         {
-            alBufferData(bufferId, format, samples, info.NumSamples * (info.BitDepth / 8), info.SampleRate);
+            alBufferData(bufferID, format, samples, info.NumSamples * (info.BitDepth / 8), info.SampleRate);
             ALC_CHECK_ERROR(alBufferData);
         }
     }
@@ -727,9 +587,19 @@ AudioBackend::FeatureFlags AudioBackendOAL::Base_Features()
 void AudioBackendOAL::Base_OnActiveDeviceChanged()
 {
     // Cleanup
+    Array<ALC::AudioSourceState> states;
+    states.EnsureCapacity(Audio::Sources.Count());
     for (AudioSource* source : Audio::Sources)
-        source->Cleanup();
-    ALC::ClearContexts();
+    {
+        states.Add({ source->GetState(), source->GetTime() });
+        source->Stop();
+        if (source->SourceID)
+        {
+            Source_Remove(source->SourceID);
+            source->SourceID = 0;
+        }
+    }
+    ALC::ClearContext();
     if (ALC::Device != nullptr)
     {
         alcCloseDevice(ALC::Device);
@@ -746,7 +616,7 @@ void AudioBackendOAL::Base_OnActiveDeviceChanged()
     }
 
     // Setup
-    ALC::RebuildContexts(true);
+    ALC::RebuildContext(states);
 }
 
 void AudioBackendOAL::Base_SetDopplerFactor(float value)
@@ -756,9 +626,7 @@ void AudioBackendOAL::Base_SetDopplerFactor(float value)
 
 void AudioBackendOAL::Base_SetVolume(float value)
 {
-    ALC_FOR_EACH_CONTEXT()
-        alListenerf(AL_GAIN, value);
-    }
+    alListenerf(AL_GAIN, value);
 }
 
 bool AudioBackendOAL::Base_Init()
@@ -862,7 +730,7 @@ bool AudioBackendOAL::Base_Init()
     int32 clampedIndex = Math::Clamp(activeDeviceIndex, -1, Audio::Devices.Count() - 1);
     if (clampedIndex == Audio::GetActiveDeviceIndex())
     {
-        ALC::RebuildContexts(true);
+        ALC::RebuildContext(true);
     }
     Audio::SetActiveDeviceIndex(activeDeviceIndex);
 #ifdef AL_SOFT_source_spatialize

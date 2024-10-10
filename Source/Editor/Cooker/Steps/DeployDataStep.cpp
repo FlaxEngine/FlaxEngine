@@ -73,6 +73,7 @@ bool DeployDataStep::Perform(CookingData& data)
             {
             case BuildPlatform::Windows32:
             case BuildPlatform::Windows64:
+            case BuildPlatform::WindowsARM64:
                 canUseSystemDotnet = PLATFORM_TYPE == PlatformType::Windows;
                 break;
             case BuildPlatform::LinuxX64:
@@ -155,11 +156,28 @@ bool DeployDataStep::Perform(CookingData& data)
                 FileSystem::CopyFile(dstDotnet / TEXT("THIRD-PARTY-NOTICES.TXT"), srcDotnet / TEXT("THIRD-PARTY-NOTICES.TXT"));
                 if (usAOT)
                 {
-                    failed |= EditorUtilities::CopyDirectoryIfNewer(dstDotnet, srcDotnet / TEXT("shared/Microsoft.NETCore.App") / version, true);
+                    failed |= EditorUtilities::CopyDirectoryIfNewer(dstDotnet, srcDotnet / TEXT("shared/Microsoft.NETCore.App") / version);
                 }
                 else
                 {
-                    failed |= EditorUtilities::CopyDirectoryIfNewer(dstDotnet / TEXT("host/fxr") / version, srcDotnet / TEXT("host/fxr") / version, true);
+#if 1
+                    failed |= EditorUtilities::CopyDirectoryIfNewer(dstDotnet / TEXT("host/fxr") / version, srcDotnet / TEXT("host/fxr") / version);
+#else
+                    // TODO: hostfxr for target platform should be copied from nuget package location: microsoft.netcore.app.runtime.<RID>/<VERSION>/runtimes/<RID>/native/hostfxr.dll
+                    String dstHostfxr = dstDotnet / TEXT("host/fxr") / version;
+                    if (!FileSystem::DirectoryExists(dstHostfxr))
+                        FileSystem::CreateDirectory(dstHostfxr);
+                    const Char *platformName, *archName;
+                    data.GetBuildPlatformName(platformName, archName);
+                    if (data.Platform == BuildPlatform::Windows64 || data.Platform == BuildPlatform::WindowsARM64 || data.Platform == BuildPlatform::Windows32)
+                        failed |= FileSystem::CopyFile(dstHostfxr / TEXT("hostfxr.dll"), depsRoot / TEXT("ThirdParty") / archName / TEXT("hostfxr.dll"));
+                    else if (data.Platform == BuildPlatform::LinuxX64)
+                        failed |= FileSystem::CopyFile(dstHostfxr / TEXT("hostfxr.so"), depsRoot / TEXT("ThirdParty") / archName / TEXT("hostfxr.so"));
+                    else if (data.Platform == BuildPlatform::MacOSx64 || data.Platform == BuildPlatform::MacOSARM64)
+                        failed |= FileSystem::CopyFile(dstHostfxr / TEXT("hostfxr.dylib"), depsRoot / TEXT("ThirdParty") / archName / TEXT("hostfxr.dylib"));
+                    else
+                        failed |= true;
+#endif
                     failed |= EditorUtilities::CopyDirectoryIfNewer(dstDotnet / TEXT("shared/Microsoft.NETCore.App") / version, srcDotnet / TEXT("shared/Microsoft.NETCore.App") / version, true);
                 }
                 if (failed)
@@ -271,6 +289,17 @@ bool DeployDataStep::Perform(CookingData& data)
             }
         }
 
+        // Remove any leftover files copied from .NET SDK that are not needed by the engine runtime
+        {
+            Array<String> files;
+            FileSystem::DirectoryGetFiles(files, dstDotnet, TEXT("*.exe"));
+            for (const String& file : files)
+            {
+                LOG(Info, "Removing '{}'", FileSystem::ConvertAbsolutePathToRelative(dstDotnet, file));
+                FileSystem::DeleteFile(file);
+            }
+        }
+
         // Optimize deployed C# class library (remove DLLs unused by scripts)
         if (aotMode == DotNetAOTModes::None && buildSettings.SkipUnusedDotnetLibsPackaging)
         {
@@ -301,7 +330,7 @@ bool DeployDataStep::Perform(CookingData& data)
             data.Error(TEXT("Missing Mono runtime data files."));
             return true;
         }
-        if (FileSystem::CopyDirectory(dstMono, srcMono, true))
+        if (FileSystem::CopyDirectory(dstMono, srcMono))
         {
             data.Error(TEXT("Failed to copy Mono runtime data files."));
             return true;
@@ -344,6 +373,7 @@ bool DeployDataStep::Perform(CookingData& data)
     data.AddRootEngineAsset(TEXT("Shaders/Sky"));
     data.AddRootEngineAsset(TEXT("Shaders/SSAO"));
     data.AddRootEngineAsset(TEXT("Shaders/SSR"));
+    data.AddRootEngineAsset(TEXT("Shaders/SDF"));
     data.AddRootEngineAsset(TEXT("Shaders/VolumetricFog"));
     data.AddRootEngineAsset(TEXT("Engine/DefaultMaterial"));
     data.AddRootEngineAsset(TEXT("Engine/DefaultDeformableMaterial"));
@@ -386,7 +416,7 @@ bool DeployDataStep::Perform(CookingData& data)
     for (auto& e : buildSettings.AdditionalAssetFolders)
     {
         String path = FileSystem::ConvertRelativePathToAbsolute(Globals::ProjectFolder, e);
-        if (FileSystem::DirectoryGetFiles(files, path, TEXT("*"), DirectorySearchOption::AllDirectories))
+        if (FileSystem::DirectoryGetFiles(files, path))
         {
             data.Error(TEXT("Failed to find additional assets to deploy."));
             return true;

@@ -44,6 +44,7 @@ namespace Flax.Deps.Dependencies
         {
             var root = options.IntermediateFolder;
             var moduleFilename = "assimp.Build.cs";
+            string configHeaderFilePath = null;
             var configs = new string[]
             {
                 "-DASSIMP_NO_EXPORT=ON",
@@ -86,31 +87,35 @@ namespace Flax.Deps.Dependencies
             var globalConfig = string.Join(" ", configs);
 
             // Get the source
-            CloneGitRepo(root, "https://github.com/FlaxEngine/assimp.git");
-            GitCheckout(root, "master", "5c900d689a5db5637b98f665fc1e9e9c9ed416b9");
+            CloneGitRepoSingleBranch(root, "https://github.com/assimp/assimp.git", "master", "10df90ec144179f97803a382e4f07c0570665864");
 
             foreach (var platform in options.Platforms)
             {
+                BuildStarted(platform);
                 switch (platform)
                 {
                 case TargetPlatform.Windows:
                 {
-                    var solutionPath = Path.Combine(root, "Assimp.sln");
                     var configuration = "Release";
                     var binariesWin = new[]
                     {
-                        Path.Combine(root, "bin", configuration, "assimp-vc140-md.dll"),
-                        Path.Combine(root, "lib", configuration, "assimp-vc140-md.lib"),
+                        Path.Combine("bin", configuration, "assimp-vc140-md.dll"),
+                        Path.Combine("lib", configuration, "assimp-vc140-md.lib"),
                     };
 
-                    // Build for Win64
+                    // Build for Windows
                     File.Delete(Path.Combine(root, "CMakeCache.txt"));
-                    RunCmake(root, platform, TargetArchitecture.x64);
-                    Deploy.VCEnvironment.BuildSolution(solutionPath, configuration, "x64");
-                    var depsFolder = GetThirdPartyFolder(options, platform, TargetArchitecture.x64);
-                    foreach (var file in binariesWin)
+                    foreach (var architecture in new[] { TargetArchitecture.x64, TargetArchitecture.ARM64 })
                     {
-                        Utilities.FileCopy(file, Path.Combine(depsFolder, Path.GetFileName(file)));
+                        var buildDir = Path.Combine(root, "build-" + architecture);
+                        var solutionPath = Path.Combine(buildDir, "Assimp.sln");
+                        SetupDirectory(buildDir, true);
+                        RunCmake(root, platform, architecture, $"-B\"{buildDir}\" -DLIBRARY_SUFFIX=-vc140-md -DUSE_STATIC_CRT=OFF " + globalConfig);
+                        Deploy.VCEnvironment.BuildSolution(solutionPath, configuration, architecture.ToString());
+                        configHeaderFilePath = Path.Combine(buildDir, "include", "assimp", "config.h");
+                        var depsFolder = GetThirdPartyFolder(options, platform, architecture);
+                        foreach (var file in binariesWin)
+                            Utilities.FileCopy(Path.Combine(buildDir, file), Path.Combine(depsFolder, Path.GetFileName(file)));
                     }
 
                     break;
@@ -120,6 +125,7 @@ namespace Flax.Deps.Dependencies
                     // Build for Linux
                     RunCmake(root, platform, TargetArchitecture.x64, " -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF " + globalConfig);
                     Utilities.Run("make", null, null, root, Utilities.RunOptions.ThrowExceptionOnError);
+                    configHeaderFilePath = Path.Combine(root, "include", "assimp", "config.h");
                     var depsFolder = GetThirdPartyFolder(options, platform, TargetArchitecture.x64);
                     Utilities.FileCopy(Path.Combine(root, "lib", "libassimp.a"), Path.Combine(depsFolder, "libassimp.a"));
                     Utilities.FileCopy(Path.Combine(root, "lib", "libIrrXML.a"), Path.Combine(depsFolder, "libIrrXML.a"));
@@ -132,6 +138,7 @@ namespace Flax.Deps.Dependencies
                     {
                         RunCmake(root, platform, architecture, " -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF " + globalConfig);
                         Utilities.Run("make", null, null, root, Utilities.RunOptions.ThrowExceptionOnError);
+                        configHeaderFilePath = Path.Combine(root, "include", "assimp", "config.h");
                         var depsFolder = GetThirdPartyFolder(options, platform, architecture);
                         Utilities.FileCopy(Path.Combine(root, "lib", "libassimp.a"), Path.Combine(depsFolder, "libassimp.a"));
                         Utilities.FileCopy(Path.Combine(root, "lib", "libIrrXML.a"), Path.Combine(depsFolder, "libIrrXML.a"));
@@ -151,6 +158,7 @@ namespace Flax.Deps.Dependencies
             Utilities.FileCopy(moduleFileBackup, moduleFile);
             Utilities.DirectoryCopy(srcIncludePath, dstIncludePath, true, true);
             Utilities.FileCopy(Path.Combine(root, "LICENSE"), Path.Combine(dstIncludePath, "LICENSE"));
+            Utilities.FileCopy(configHeaderFilePath, Path.Combine(dstIncludePath, "config.h"));
         }
     }
 }

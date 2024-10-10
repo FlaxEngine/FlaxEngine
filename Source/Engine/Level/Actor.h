@@ -164,13 +164,13 @@ public:
     /// [Deprecated in v1.5]
     /// </summary>
     API_PROPERTY(Attributes="HideInEditor, NoSerialize, NoAnimate")
-    DEPRECATED const String& GetTag() const;
+    DEPRECATED("Use HasTag instead") const String& GetTag() const;
 
     /// <summary>
     /// Sets the name of the tag.
     /// [Deprecated in v1.5]
     /// </summary>
-    API_PROPERTY() DEPRECATED void SetTag(const StringView& value);
+    API_PROPERTY() DEPRECATED("Use AddTag instead") void SetTag(const StringView& value);
 
     /// <summary>
     /// Gets the actor name.
@@ -185,7 +185,13 @@ public:
     /// Sets the actor name.
     /// </summary>
     /// <param name="value">The value to set.</param>
-    API_PROPERTY() void SetName(const StringView& value);
+    API_PROPERTY() void SetName(String&& value);
+
+    /// <summary>
+    /// Sets the actor name.
+    /// </summary>
+    /// <param name="value">The value to set.</param>
+    void SetName(const StringView& value);
 
 public:
     /// <summary>
@@ -846,7 +852,7 @@ public:
     API_FUNCTION() bool HasActorInChildren(Actor* a) const;
 
     /// <summary>
-    /// Determines if there is an intersection between the current object and a Ray.
+    /// Determines if there is an intersection between the current object and a ray.
     /// </summary>
     /// <param name="ray">The ray to test.</param>
     /// <param name="distance">When the method completes, contains the distance of the intersection (if any valid).</param>
@@ -873,7 +879,7 @@ public:
     /// Rotates actor to orient it towards the specified world position with upwards direction.
     /// </summary>
     /// <param name="worldPos">The world position to orient towards.</param>
-    /// <param name="worldUp">The up direction that Constrains y axis orientation to a plane this vector lies on. This rule might be broken if forward and up direction are nearly parallel.</param>
+    /// <param name="worldUp">The up direction that constrains up axis orientation to a plane this vector lies on. This rule might be broken if forward and up direction are nearly parallel.</param>
     API_FUNCTION() void LookAt(const Vector3& worldPos, const Vector3& worldUp);
 
     /// <summary>
@@ -990,37 +996,37 @@ public:
     /// <summary>
     /// Called when actor parent gets changed.
     /// </summary>
-    virtual void OnParentChanged();
+    API_FUNCTION() virtual void OnParentChanged();
 
     /// <summary>
     /// Called when actor transform gets changed.
     /// </summary>
-    virtual void OnTransformChanged();
+    API_FUNCTION() virtual void OnTransformChanged();
 
     /// <summary>
     /// Called when actor active state gets changed.
     /// </summary>
-    virtual void OnActiveChanged();
+    API_FUNCTION() virtual void OnActiveChanged();
 
     /// <summary>
     /// Called when actor active in tree state gets changed.
     /// </summary>
-    virtual void OnActiveInTreeChanged();
+    API_FUNCTION() virtual void OnActiveInTreeChanged();
 
     /// <summary>
     /// Called when order in parent children array gets changed.
     /// </summary>
-    virtual void OnOrderInParentChanged();
+    API_FUNCTION() virtual void OnOrderInParentChanged();
 
     /// <summary>
     /// Called when actor static flag gets changed.
     /// </summary>
-    virtual void OnStaticFlagsChanged();
+    API_FUNCTION() virtual void OnStaticFlagsChanged();
 
     /// <summary>
     /// Called when layer gets changed.
     /// </summary>
-    virtual void OnLayerChanged();
+    API_FUNCTION() virtual void OnLayerChanged();
 
     /// <summary>
     /// Called when adding object to the game.

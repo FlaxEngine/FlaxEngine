@@ -128,11 +128,9 @@ namespace FlaxEditor.Windows
                 else
                 {
                     cm.AddButton("Delete", () => Delete(item));
-
                     cm.AddSeparator();
-
                     cm.AddButton("Duplicate", _view.Duplicate);
-
+                    cm.AddButton("Cut", _view.Cut);
                     cm.AddButton("Copy", _view.Copy);
                 }
 
@@ -311,6 +309,23 @@ namespace FlaxEditor.Windows
             {
                 if (selection[i] is BinaryAssetItem binaryAssetItem)
                     Editor.ContentImporting.Reimport(binaryAssetItem);
+                else if (selection[i] is PrefabItem prefabItem)
+                {
+                    var prefab = FlaxEngine.Content.Load<Prefab>(prefabItem.ID);
+                    var modelPrefab = prefab.GetDefaultInstance().GetScript<ModelPrefab>();
+                    if (!modelPrefab)
+                        continue;
+                    var importPath = modelPrefab.ImportPath;
+                    var editor = Editor.Instance;
+                    if (editor.ContentImporting.GetReimportPath("Model Prefab", ref importPath))
+                        continue;
+                    var folder = editor.ContentDatabase.Find(Path.GetDirectoryName(prefab.Path)) as ContentFolder;
+                    if (folder == null)
+                        continue;
+                    var importOptions = modelPrefab.ImportOptions;
+                    importOptions.Type = FlaxEngine.Tools.ModelTool.ModelType.Prefab;
+                    editor.ContentImporting.Import(importPath, folder, true, importOptions);
+                }
             }
         }
 

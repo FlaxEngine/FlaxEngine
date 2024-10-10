@@ -219,7 +219,7 @@ Asset::LoadResult ParticleEmitter::load()
         ClearDependencies();
         for (const auto& node : Graph.Nodes)
         {
-            if (node.Type == GRAPH_NODE_MAKE_TYPE(14, 300))
+            if (node.Type == GRAPH_NODE_MAKE_TYPE(14, 300) && node.Assets.Count() > 0)
             {
                 const auto function = node.Assets[0].As<ParticleEmitterFunction>();
                 if (function)
