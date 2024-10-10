@@ -11,11 +11,25 @@
 #endif
 
 #if FEATURE_LEVEL >= FEATURE_LEVEL_SM5
+
+#if FLAX_REVERSE_Z
+#define SAMPLE_SHADOW_MAP(shadowMap, shadowUV, sceneDepth) (1 - shadowMap.SampleCmpLevelZero(ShadowSamplerLinear, shadowUV, sceneDepth))
+#define SAMPLE_SHADOW_MAP_OFFSET(shadowMap, shadowUV, texelOffset, sceneDepth) (1 - shadowMap.SampleCmpLevelZero(ShadowSamplerLinear, shadowUV, sceneDepth, texelOffset))
+#else
 #define SAMPLE_SHADOW_MAP(shadowMap, shadowUV, sceneDepth) shadowMap.SampleCmpLevelZero(ShadowSamplerLinear, shadowUV, sceneDepth)
 #define SAMPLE_SHADOW_MAP_OFFSET(shadowMap, shadowUV, texelOffset, sceneDepth) shadowMap.SampleCmpLevelZero(ShadowSamplerLinear, shadowUV, sceneDepth, texelOffset)
+#endif
+
+#else
+
+#if FLAX_REVERSE_Z
+#define SAMPLE_SHADOW_MAP(shadowMap, shadowUV, sceneDepth) (sceneDepth > shadowMap.SampleLevel(SamplerLinearClamp, shadowUV, 0).r)
+#define SAMPLE_SHADOW_MAP_OFFSET(shadowMap, shadowUV, texelOffset, sceneDepth) (sceneDepth > shadowMap.SampleLevel(SamplerLinearClamp, shadowUV, 0, texelOffset).r)
 #else
 #define SAMPLE_SHADOW_MAP(shadowMap, shadowUV, sceneDepth) (sceneDepth < shadowMap.SampleLevel(SamplerLinearClamp, shadowUV, 0).r)
 #define SAMPLE_SHADOW_MAP_OFFSET(shadowMap, shadowUV, texelOffset, sceneDepth) (sceneDepth < shadowMap.SampleLevel(SamplerLinearClamp, shadowUV, 0, texelOffset).r)
+#endif
+
 #endif
 
 float4 GetShadowMask(ShadowSample shadow)
@@ -43,7 +57,11 @@ float2 GetLightShadowAtlasUV(ShadowData shadow, ShadowTileData shadowTile, float
 {
     // Project into shadow space (WorldToShadow is pre-multiplied to convert Clip Space to UV Space)
     shadowPosition = mul(float4(samplePosition, 1.0f), shadowTile.WorldToShadow);
+#if FLAX_REVERSE_Z
+    shadowPosition.z += shadow.Bias;
+#else
     shadowPosition.z -= shadow.Bias;
+#endif
     shadowPosition.xyz /= shadowPosition.w;
 
     // UV Space -> Atlas Tile UV Space

@@ -1413,7 +1413,11 @@ void ShadowsPass::RenderShadowMaps(RenderContextBatch& renderContextBatch)
                 if (!shadows.ClearStaticShadowMapAtlas)
                 {
                     // Color.r is used by PS_DepthClear in Quad shader to clear depth
+#if FLAX_REVERSE_Z
+                    quadShaderData.Color = Float4::Zero;
+#else
                     quadShaderData.Color = Float4::One;
+#endif
                     context->UpdateCB(quadShaderCB, &quadShaderData);
                     context->BindCB(0, quadShaderCB);
 
@@ -1480,7 +1484,11 @@ void ShadowsPass::RenderShadowMaps(RenderContextBatch& renderContextBatch)
             else if (!shadows.ClearShadowMapAtlas)
             {
                 // Color.r is used by PS_DepthClear in Quad shader to clear depth
+#if FLAX_REVERSE_Z
+                quadShaderData.Color = Float4::Zero;
+#else
                 quadShaderData.Color = Float4::One;
+#endif
                 context->UpdateCB(quadShaderCB, &quadShaderData);
                 context->BindCB(0, quadShaderCB);
 
