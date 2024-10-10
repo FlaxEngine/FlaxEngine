@@ -23,6 +23,30 @@ public class TestCoroutines
                 .ThenRun(CoroutineSuspensionPointIndex.Update, () => { })
             );
     }
+
+    [Test]
+    public void TestCoroutineSwitching()
+    {
+        CoroutineExecutor executor = new();
+
+        var coroutineA = new CoroutineBuilder()
+            .ThenRun(CoroutineSuspensionPointIndex.Update, () => { })
+            .ThenWaitSeconds(1.0f)
+            .ThenRun(CoroutineSuspensionPointIndex.Update, () => { })
+            .ThenWaitFrames(1)
+            .ThenRun(CoroutineSuspensionPointIndex.Update, () => { });
+
+        executor.Execute(coroutineA);
+           
+        var coroutineB = new CoroutineBuilder()
+            .ThenRun(CoroutineSuspensionPointIndex.Update, () => { })
+            .ThenWaitSeconds(1.0f)
+            .ThenRun(CoroutineSuspensionPointIndex.Update, () => { })
+            .ThenWaitFrames(1)
+            .ThenRun(CoroutineSuspensionPointIndex.Update, () => { });
+
+        executor.Execute(coroutineB);
+    }
 }
 
 #endif
