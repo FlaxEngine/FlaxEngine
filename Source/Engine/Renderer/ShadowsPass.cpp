@@ -330,6 +330,7 @@ public:
         for (auto it = Lights.Begin(); it.IsNotEnd(); ++it)
         {
             auto& atlasLight = it->Value;
+            atlasLight.StaticState = ShadowAtlasLight::Unused;
             atlasLight.Cache.StaticValid = false;
             for (int32 i = 0; i < atlasLight.TilesCount; i++)
                 atlasLight.Tiles[i].ClearDynamic();
@@ -370,7 +371,8 @@ public:
         for (auto& e : Lights)
         {
             auto& atlasLight = e.Value;
-            if (atlasLight.StaticState == ShadowAtlasLight::CopyStaticShadow && atlasLight.Bounds.Intersects(bounds))
+            if ((atlasLight.StaticState == ShadowAtlasLight::CopyStaticShadow || atlasLight.StaticState == ShadowAtlasLight::NoStaticGeometry) 
+                && atlasLight.Bounds.Intersects(bounds))
             {
                 // Invalidate static shadow
                 atlasLight.Cache.StaticValid = false;
@@ -719,8 +721,14 @@ bool ShadowsPass::SetupLight(ShadowsCustomBuffer& shadows, RenderContext& render
     }
     switch (atlasLight.StaticState)
     {
-    case ShadowAtlasLight::CopyStaticShadow:
     case ShadowAtlasLight::NoStaticGeometry:
+        // Light was modified so attempt to find the static shadow again
+        if (!atlasLight.Cache.StaticValid && atlasLight.HasStaticShadowContext)
+        {
+            atlasLight.StaticState = ShadowAtlasLight::WaitForGeometryCheck;
+            break;
+        }
+    case ShadowAtlasLight::CopyStaticShadow:
     case ShadowAtlasLight::FailedToInsertTiles:
         // Skip collecting static draws
         atlasLight.HasStaticShadowContext = false;
@@ -728,7 +736,7 @@ bool ShadowsPass::SetupLight(ShadowsCustomBuffer& shadows, RenderContext& render
     }
     if (atlasLight.HasStaticShadowContext)
     {
-        // If rendering finds any static draws then it's set to true
+        // If rendering finds any static draws then it will be set to true
         for (auto& tile : atlasLight.Tiles)
             tile.HasStaticGeometry = false;
     }
@@ -1367,7 +1375,7 @@ void ShadowsPass::RenderShadowMaps(RenderContextBatch& renderContextBatch)
     const ShadowsCustomBuffer* shadowsPtr = renderContext.Buffers->FindCustomBuffer<ShadowsCustomBuffer>(TEXT("Shadows"), false);
     if (shadowsPtr == nullptr || shadowsPtr->Lights.IsEmpty() || shadowsPtr->LastFrameUsed != Engine::FrameCount)
         return;
-    PROFILE_GPU_CPU("ShadowMaps");
+    PROFILE_GPU_CPU("Shadow Maps");
     const ShadowsCustomBuffer& shadows = *shadowsPtr;
     GPUContext* context = GPUDevice::Instance->GetMainContext();
     context->ResetSR();
@@ -1384,9 +1392,29 @@ void ShadowsPass::RenderShadowMaps(RenderContextBatch& renderContextBatch)
         for (auto& e : shadows.Lights)
         {
             ShadowAtlasLight& atlasLight = e.Value;
-            if (atlasLight.StaticState != ShadowAtlasLight::UpdateStaticShadow || !atlasLight.HasStaticShadowContext || atlasLight.ContextCount == 0)
+            if (!atlasLight.HasStaticShadowContext || atlasLight.ContextCount == 0)
                 continue;
             int32 contextIndex = 0;
+
+            if (atlasLight.StaticState == ShadowAtlasLight::WaitForGeometryCheck)
+            {
+                // Check for any static geometry to use in static shadow map
+                for (int32 tileIndex = 0; tileIndex < atlasLight.TilesCount; tileIndex++)
+                {
+                    ShadowAtlasLightTile& tile = atlasLight.Tiles[tileIndex];
+                    contextIndex++; // Skip dynamic context
+                    auto& shadowContextStatic = renderContextBatch.Contexts[atlasLight.ContextIndex + contextIndex++];
+                    if (!shadowContextStatic.List->DrawCallsLists[(int32)DrawCallsListType::Depth].IsEmpty() || !shadowContextStatic.List->ShadowDepthDrawCallsList.IsEmpty())
+                    {
+                        tile.HasStaticGeometry = true;
+                    }
+                }
+            }
+
+            if (atlasLight.StaticState != ShadowAtlasLight::UpdateStaticShadow)
+                continue;
+
+            contextIndex = 0;
             for (int32 tileIndex = 0; tileIndex < atlasLight.TilesCount; tileIndex++)
             {
                 ShadowAtlasLightTile& tile = atlasLight.Tiles[tileIndex];
