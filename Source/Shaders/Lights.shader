@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #define USE_GBUFFER_CUSTOM_DATA
+#define SDF_SKYLIGHT_SHADOW_RAYS_COUNT 40
 
 #include "./Flax/Common.hlsl"
 #include "./Flax/MaterialCommon.hlsl"
@@ -8,6 +9,9 @@
 #include "./Flax/IESProfile.hlsl"
 #include "./Flax/GBuffer.hlsl"
 #include "./Flax/Lighting.hlsl"
+#include "./Flax/GlobalSignDistanceField.hlsl"
+#include "./Flax/MonteCarlo.hlsl"
+#include "./Flax/Random.hlsl"
 
 // Per light data
 META_CB_BEGIN(0, PerLight)
@@ -18,7 +22,9 @@ META_CB_END
 // Per frame data
 META_CB_BEGIN(1, PerFrame)
 GBufferData GBuffer;
+GlobalSDFData GlobalSDF;
 META_CB_END
+
 
 DECLARE_GBUFFERDATA_ACCESS(GBuffer)
 
@@ -26,6 +32,11 @@ DECLARE_GBUFFERDATA_ACCESS(GBuffer)
 Texture2D Shadow : register(t5);
 Texture2D IESTexture : register(t6);
 TextureCube CubeImage : register(t7);
+
+#if USE_SDF_SKYLIGHT_SHADOWS
+Texture3D<float> GlobalSDFTex : register(t8);
+Texture3D<float> GlobalSDFMip : register(t9);
+#endif
 
 // Vertex Shader for models rendering
 META_VS(true, FEATURE_LEVEL_ES2)
@@ -153,6 +164,8 @@ void PS_Spot(Model_VS2PS input, out float4 output : SV_Target0)
 
 // Pixel shader for sky light rendering
 META_PS(true, FEATURE_LEVEL_ES2)
+META_PERMUTATION_1(USE_SDF_SKYLIGHT_SHADOWS = 0)
+META_PERMUTATION_1(USE_SDF_SKYLIGHT_SHADOWS = 1)
 float4 PS_Sky(Model_VS2PS input) : SV_Target0
 {
 	float4 output = 0;
@@ -169,6 +182,33 @@ float4 PS_Sky(Model_VS2PS input) : SV_Target0
 	{
 		output = GetSkyLightLighting(Light, gBuffer, CubeImage);
 	}
+
+	// SDF soft-shadows implementation reference: https://iquilezles.org/articles/rmshadows/
+#if USE_SDF_SKYLIGHT_SHADOWS
+	// Matrix used to sample directions from the hemisphere around the normal
+	float3x3 rotMat = MakeRotationMatrix(gBuffer.Normal);
+	float maxDistance = 100;
+	float selfOcclusionBias = GlobalSDF.CascadeVoxelSize[0];
+	float totalVis = 0;
+	for (int i = 0; i < SDF_SKYLIGHT_SHADOW_RAYS_COUNT; i++){
+#if SDF_SKYLIGHT_SHADOW_RAYS_COUNT <= 1
+		// Trace along the normal
+		float3 dir = gBuffer.Normal;
+#else
+		// Trace along a random direction on the hemisphere
+		float3 dir = mul(CosineSampleHemisphere(RandN2(uv)).xyz, rotMat);
+#endif
+		GlobalSDFTrace sdfTrace;
+		sdfTrace.Init(gBuffer.WorldPos + gBuffer.Normal * selfOcclusionBias, dir, 0.0f, maxDistance);
+		GlobalSDFHit sdfHit = RayTraceGlobalSDF(GlobalSDF, GlobalSDFTex, GlobalSDFMip, sdfTrace);
+		// Assume that the gbuffer normal is normalized, so that hit time is hit distance
+		float hitDistance = sdfHit.HitTime >= 0 ? sdfHit.HitTime : maxDistance;
+		totalVis += hitDistance / maxDistance;
+	}
+    
+	// TODO: use a AO factor to replace hardcoded `3`
+	output *= min(3 * totalVis / SDF_SKYLIGHT_SHADOW_RAYS_COUNT, 1);
+#endif
 
 	return output;
 }
