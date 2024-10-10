@@ -161,11 +161,11 @@ GPUDevice* GPUDeviceDX12::Create()
     }
     GPUAdapterDX selectedAdapter = adapters[selectedAdapterIndex];
     uint32 vendorId = 0;
-    if (CommandLine::Options.NVIDIA)
+    if (CommandLine::Options.NVIDIA.IsTrue())
         vendorId = GPU_VENDOR_ID_NVIDIA;
-    else if (CommandLine::Options.AMD)
+    else if (CommandLine::Options.AMD.IsTrue())
         vendorId = GPU_VENDOR_ID_AMD;
-    else if (CommandLine::Options.Intel)
+    else if (CommandLine::Options.Intel.IsTrue())
         vendorId = GPU_VENDOR_ID_INTEL;
     if (vendorId != 0)
     {
@@ -425,7 +425,7 @@ bool GPUDeviceDX12::Init()
 
 #if !BUILD_RELEASE
 	// Prevent the GPU from overclocking or under-clocking to get consistent timings
-    if (CommandLine::Options.ShaderProfile)
+    if (CommandLine::Options.ShaderProfile.IsTrue())
     {
 	    _device->SetStablePowerState(TRUE);
     }
