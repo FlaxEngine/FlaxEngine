@@ -200,6 +200,10 @@ bool GraphicsService::Init()
 #endif
         )
     {
+#if !USE_EDITOR && BUILD_RELEASE
+        // Block graphics debugging to protect contents
+        Platform::Fatal(TEXT("Graphics debugger attached."));
+#endif
 #if COMPILE_WITH_PROFILER
         // Auto-enable GPU events
         ProfilerGPU::EventsEnabled = true;
