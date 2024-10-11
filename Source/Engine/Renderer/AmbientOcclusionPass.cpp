@@ -280,7 +280,7 @@ void AmbientOcclusionPass::Render(RenderContext& renderContext)
         auto gtaoCB = _shader->GetShader()->GetCB(GTAO_CONSTANTS_BUFFER_SLOT);
 
         GTAOConstants gtaoConstants = {
-            0.5, 1, 200
+            0.5, 100, 1
         };
 
         context->UpdateCB(gtaoCB, &gtaoConstants);
@@ -422,9 +422,9 @@ void AmbientOcclusionPass::UpdateCB(const RenderContext& renderContext, GPUConte
     }
 
     // Update buffer
-    const auto cb1 = _shader->GetShader()->GetCB(SSAO_CONSTANTS_BUFFER_SLOT);
-    context->UpdateCB(cb1, &_constantsBufferData);
-    context->BindCB(SSAO_CONSTANTS_BUFFER_SLOT, cb1);
+    const auto cb = _shader->GetShader()->GetCB(SSAO_CONSTANTS_BUFFER_SLOT);
+    context->UpdateCB(cb, &_constantsBufferData);
+    context->BindCB(SSAO_CONSTANTS_BUFFER_SLOT, cb);
 }
 
 void AmbientOcclusionPass::PrepareDepths(const RenderContext& renderContext)
