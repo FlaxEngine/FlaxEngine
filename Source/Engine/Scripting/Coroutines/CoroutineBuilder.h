@@ -36,7 +36,7 @@ API_CLASS(Sealed) class FLAXENGINE_API CoroutinePredicate final : public Scripti
     CoroutineSuspensionPointIndex ExecutionPoint = CoroutineSuspensionPointIndex::Update;
 
     API_EVENT()
-    Delegate<bool()> OnCheck;
+    Delegate<bool&> OnCheck;
 };
 
 /// <summary>
