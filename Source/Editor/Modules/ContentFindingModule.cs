@@ -192,7 +192,7 @@ namespace FlaxEditor.Modules
         /// Removes a quick action by name.
         /// </summary>
         /// <param name="name">The action's name.</param>
-        /// <returns>True when it succeed, false if there is no Quick Action with this name.</returns>
+        /// <returns>True when it succeeds, false if there is no Quick Action with this name.</returns>
         public bool RemoveQuickAction(string name)
         {
             if (_quickActions == null)
@@ -286,6 +286,16 @@ namespace FlaxEditor.Modules
                         matches.Add(new SearchResult { Name = action.Name, Type = "Quick Action", Item = action });
                 }
                 Profiler.EndEvent();
+            }
+
+            // Editor window
+            foreach (var window in Editor.Windows.Windows)
+            {
+                if (window is Windows.Assets.AssetEditorWindow)
+                    continue;
+                var windowName = window.Title + " (window)";
+                if (nameRegex.Match(windowName).Success)
+                    matches.Add(new SearchResult { Name = windowName, Type = "Window", Item = window });
             }
 
             Profiler.EndEvent();
@@ -406,6 +416,9 @@ namespace FlaxEditor.Modules
                     Editor.Instance.SceneEditing.Select(script.Actor);
                     Editor.Instance.Windows.EditWin.Viewport.FocusSelection();
                 }
+                break;
+            case Windows.EditorWindow window:
+                window.FocusOrShow();
                 break;
             }
         }
