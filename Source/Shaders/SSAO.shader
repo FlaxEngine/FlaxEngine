@@ -23,7 +23,8 @@
 #include "./Flax/Gather.hlsl"
 #include "./Flax/GBuffer.hlsl"
 
-#define GTAO_SLICE_COUNT 8
+#define GTAO_SLICE_COUNT 4
+#define GTAO_MAX_PIXEL_SCREEN_RADIUS 256.0f
 #define SSAO_DEPTH_MIP_LEVELS 4 // <- must match C++ define
 
 // Progressive poisson-like pattern; x, y are in [-1, 1] range, .z is length(float2(x,y)), .w is log2(z)
@@ -430,11 +431,14 @@ void ASSAOImpl(const int numberOfTaps, const int qualityLevel, inout float obscu
 	}
 }
 
-float2 SearchForLargestAngleDual(const int numberOfTaps, const int qualityLevel, const float2 sliceDir, const float3 viewDir, const float3 pixCenterPos, const float2 normalizedScreenPos, const float mipOffset){
-	const float pixelRadius = 100;
-    const float thickness = 5;
-	const float attenFactor = 1;
+float2 SearchForLargestAngleDual(const int numberOfTaps, const int qualityLevel, const float2 sliceDir, const float3 viewDir, const float3 pixCenterPos, const float2 normalizedScreenPos){
+	const float worldRadius = 200;
+	
+	const float pixelRadius = max(min(worldRadius / pixCenterPos.z, GTAO_MAX_PIXEL_SCREEN_RADIUS), (float)numberOfTaps);
+    const float thickness = 0.5;
+	const float attenFactor = 2.0 / (worldRadius * worldRadius);
 	const float initialOffset = 1;
+	const float stepRadius = pixelRadius / ((float)numberOfTaps + 1);
 	
 	float2 bestAng = float2(-1, -1);
 
@@ -442,22 +446,26 @@ float2 SearchForLargestAngleDual(const int numberOfTaps, const int qualityLevel,
 	for(uint i = 0; i < numberOfTaps; i++)
     {
         float fi = (float)i;
-        float s = (fi + initialOffset) / (numberOfTaps + 1);
-        float2 sampleOffset = sliceDir * max(pixelRadius * s * s, fi + 1);
+        float2 sampleOffset = sliceDir * max(stepRadius * (fi + initialOffset), fi + 1);
 
-        float2 uvOffset = HalfViewportPixelSize * sampleOffset;
+        float2 uvOffset = sampleOffset;
         uvOffset.y *= -1;
         float4 sampleUV = normalizedScreenPos.xyxy + float4(uvOffset.xy, -uvOffset.xy);
 
-		// TODO: Calculate mip in terms of distance instead of hardcoding
 		float mipLevel = 0;
+		if(i == 2){
+			mipLevel += 1;
+		}
+		if(i > 3){
+			mipLevel += 2;
+		}
 
         // Positive direction
 		float2 sceneDepths;
         sceneDepths.x = g_ViewspaceDepthSource.SampleLevel(SamplerPointClamp, sampleUV.xy, mipLevel).x;
         sceneDepths.y = g_ViewspaceDepthSource.SampleLevel(SamplerPointClamp, sampleUV.zw, mipLevel).x;
 
-        float3 h = NDCToViewspace(sampleUV.xy, sceneDepths.x).xyz; - pixCenterPos;
+        float3 h = NDCToViewspace(sampleUV.xy, sceneDepths.x).xyz - pixCenterPos;
         float lenSq = dot(h, h);
         float ooLen = rsqrt(lenSq + 0.0001);
         float ang = dot(h, viewDir) * ooLen;
@@ -468,7 +476,7 @@ float2 SearchForLargestAngleDual(const int numberOfTaps, const int qualityLevel,
         bestAng.x = (ang > bestAng.x) ? ang : lerp(ang, bestAng.x, thickness);  
 
         // Negative direction
-        h = NDCToViewspace(sampleUV.zw, sceneDepths.y).xyz; - pixCenterPos;
+        h = NDCToViewspace(sampleUV.zw, sceneDepths.y).xyz - pixCenterPos;
         lenSq = dot(h, h);
         ooLen = rsqrt(lenSq + 0.0001);
         ang = dot(h, viewDir) * ooLen;
@@ -479,8 +487,8 @@ float2 SearchForLargestAngleDual(const int numberOfTaps, const int qualityLevel,
         bestAng.y = (ang > bestAng.y) ? ang : lerp(ang, bestAng.y, thickness);
     }
 
-    bestAng.x = AcosFast(clamp(bestAng.x, -1.0,  1.0));
-    bestAng.y = AcosFast(clamp(bestAng.y, -1.0,  1.0));
+    bestAng.x = AcosFast(clamp(bestAng.x, -1.0, 1.0));
+    bestAng.y = AcosFast(clamp(bestAng.y, -1.0, 1.0));
 
 	return bestAng;
 }
@@ -510,7 +518,7 @@ float ComputeInnerIntegral(float2 angles, const float2 sliceDir, const float3 vi
     return ao;
 }
 
-void GTAOImpl(const int numberOfTaps, const int qualityLevel, inout float obscuranceSum, inout float weightSum, const float3 pixCenterPos, float3 pixelNormal, const float2 normalizedScreenPos, const float mipOffset, float weightMod){	
+void GTAOImpl(const int numberOfTaps, const int qualityLevel, inout float obscuranceSum, inout float weightSum, const float3 pixCenterPos, float3 pixelNormal, const float2 normalizedScreenPos, float weightMod){	
 	const float3 viewDir = normalize(pixCenterPos);
 	const float deltaAngle = PI / GTAO_SLICE_COUNT;
 	const float sinDeltaAngle = sin(deltaAngle), cosDeltaAngle = cos(deltaAngle);
@@ -520,7 +528,7 @@ void GTAOImpl(const int numberOfTaps, const int qualityLevel, inout float obscur
 	float visibilitySum = 0;
 
 	for(int slice = 0; slice < GTAO_SLICE_COUNT; slice++){
-		float2 bestAng = SearchForLargestAngleDual(numberOfTaps, qualityLevel, sliceDir, viewDir, pixCenterPos, normalizedScreenPos, mipOffset);
+		float2 bestAng = SearchForLargestAngleDual(numberOfTaps, qualityLevel, sliceDir, viewDir, pixCenterPos, normalizedScreenPos);
 		float visibility = ComputeInnerIntegral(bestAng, sliceDir, viewDir, pixelNormal);
 
 		visibilitySum += visibility;
@@ -535,8 +543,8 @@ void GTAOImpl(const int numberOfTaps, const int qualityLevel, inout float obscur
 	visibilitySum *= 2.0 / PI;
 	
 	// Obscurance = 1 - Visibility
-	obscuranceSum += (float)GTAO_SLICE_COUNT - visibilitySum;
-	weightSum += (float)GTAO_SLICE_COUNT;
+	obscuranceSum += visibilitySum;
+	weightSum += (float)GTAO_SLICE_COUNT * 3;
 }
 
 // This function is designed to only work with half/half depth at the moment - there's a couple of hardcoded paths that expect pixel/texel size, so it will not work for full res
@@ -664,7 +672,7 @@ void GenerateSSAOShadowsInternal(out float outShadowTerm, out float4 outEdges, o
 	float mipOffset = (qualityLevel < SSAO_DEPTH_MIPS_ENABLE_AT_QUALITY_PRESET) ? (0) : (log2(pixLookupRadiusMod) + globalMipOffset);
 	
 	// ASSAOImpl(numberOfTaps, qualityLevel, obscuranceSum, weightSum, rotScale, pixCenterPos, pixelNormal, normalizedScreenPos, mipOffset, falloffCalcMulSq, 1.0);
-	GTAOImpl(numberOfTaps, qualityLevel, obscuranceSum, weightSum, pixCenterPos, pixelNormal, normalizedScreenPos, mipOffset, 1.0);
+	GTAOImpl(numberOfTaps, qualityLevel, obscuranceSum, weightSum, pixCenterPos, pixelNormal, normalizedScreenPos, 1.0);
 
 	// Calculate weighted average
 	float obscurance = obscuranceSum / weightSum;

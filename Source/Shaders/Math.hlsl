@@ -224,8 +224,9 @@ float4 ClampedPow(float4 x, float4 y)
 // [Eberly2014] GPGPU Programming for Games and Science
 float AcosFast(float x)
 {
-    float res = -0.156583 * abs(x) + PI_HALF;
-    res *= sqrt(1.0 - abs(x));
+    float absX = abs(x);
+    float res = -0.156583 * absX + PI_HALF;
+    res *= sqrt(1.0 - absX);
     return x >= 0 ? res : PI - res;
 }
 
