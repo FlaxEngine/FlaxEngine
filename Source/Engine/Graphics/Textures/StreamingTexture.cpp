@@ -4,7 +4,6 @@
 #include "Engine/Core/Log.h"
 #include "Engine/Threading/Threading.h"
 #include "Engine/Streaming/StreamingGroup.h"
-#include "Engine/Content/Loading/ContentLoadingManager.h"
 #include "Engine/Graphics/PixelFormatExtensions.h"
 #include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Graphics/RenderTools.h"

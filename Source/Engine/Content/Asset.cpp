@@ -4,16 +4,12 @@
 #include "Content.h"
 #include "SoftAssetReference.h"
 #include "Cache/AssetsCache.h"
-#include "Loading/ContentLoadingManager.h"
 #include "Loading/Tasks/LoadAssetTask.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Core/LogContext.h"
-#include "Engine/Engine/Engine.h"
-#include "Engine/Threading/Threading.h"
 #include "Engine/Profiler/ProfilerCPU.h"
-#include "Engine/Threading/MainThreadTask.h"
-#include "Engine/Threading/ConcurrentTaskQueue.h"
 #include "Engine/Scripting/ManagedCLR/MCore.h"
+#include "Engine/Threading/MainThreadTask.h"
 
 AssetReferenceBase::~AssetReferenceBase()
 {
@@ -377,11 +373,6 @@ void Asset::Reload()
     }
 }
 
-namespace ContentLoadingManagerImpl
-{
-    extern ConcurrentTaskQueue<ContentLoadTask> Tasks;
-};
-
 bool Asset::WaitForLoaded(double timeoutInMilliseconds) const
 {
     // This function is used many time when some parts of the engine need to wait for asset loading end (it may fail but has to end).
@@ -430,80 +421,7 @@ bool Asset::WaitForLoaded(double timeoutInMilliseconds) const
 
     PROFILE_CPU();
 
-    // Check if call is made from the Loading Thread and task has not been taken yet
-    auto thread = ContentLoadingManager::GetCurrentLoadThread();
-    if (thread != nullptr)
-    {
-        // Note: to reproduce this case just include material into material (use layering).
-        // So during loading first material it will wait for child materials loaded calling this function
-
-        const double timeoutInSeconds = timeoutInMilliseconds * 0.001;
-        const double startTime = Platform::GetTimeSeconds();
-        Task* task = loadingTask;
-        Array<ContentLoadTask*, InlinedAllocation<64>> localQueue;
-#define CHECK_CONDITIONS() (!Engine::ShouldExit() && (timeoutInSeconds <= 0.0 || Platform::GetTimeSeconds() - startTime < timeoutInSeconds))
-        do
-        {
-            // Try to execute content tasks
-            while (task->IsQueued() && CHECK_CONDITIONS())
-            {
-                // Dequeue task from the loading queue
-                ContentLoadTask* tmp;
-                if (ContentLoadingManagerImpl::Tasks.try_dequeue(tmp))
-                {
-                    if (tmp == task)
-                    {
-                        if (localQueue.Count() != 0)
-                        {
-                            // Put back queued tasks
-                            ContentLoadingManagerImpl::Tasks.enqueue_bulk(localQueue.Get(), localQueue.Count());
-                            localQueue.Clear();
-                        }
-
-                        thread->Run(tmp);
-                    }
-                    else
-                    {
-                        localQueue.Add(tmp);
-                    }
-                }
-                else
-                {
-                    // No task in queue but it's queued so other thread could have stolen it into own local queue
-                    break;
-                }
-            }
-            if (localQueue.Count() != 0)
-            {
-                // Put back queued tasks
-                ContentLoadingManagerImpl::Tasks.enqueue_bulk(localQueue.Get(), localQueue.Count());
-                localQueue.Clear();
-            }
-
-            // Check if task is done
-            if (task->IsEnded())
-            {
-                // If was fine then wait for the next task
-                if (task->IsFinished())
-                {
-                    task = task->GetContinueWithTask();
-                    if (!task)
-                        break;
-                }
-                else
-                {
-                    // Failed or cancelled so this wait also fails
-                    break;
-                }
-            }
-        } while (CHECK_CONDITIONS());
-#undef CHECK_CONDITIONS
-    }
-    else
-    {
-        // Wait for task end
-        loadingTask->Wait(timeoutInMilliseconds);
-    }
+    Content::WaitForTask(loadingTask, timeoutInMilliseconds);
 
     // If running on a main thread we can flush asset `Loaded` event
     if (IsInMainThread() && IsLoaded())

@@ -974,6 +974,7 @@ Asset::LoadResult Model::load()
     auto chunk15 = GetChunk(15);
     if (chunk15 && chunk15->IsLoaded() && EnableModelSDF == 1)
     {
+        PROFILE_CPU_NAMED("SDF");
         MemoryReadStream sdfStream(chunk15->Get(), chunk15->Size());
         int32 version;
         sdfStream.ReadInt32(&version);

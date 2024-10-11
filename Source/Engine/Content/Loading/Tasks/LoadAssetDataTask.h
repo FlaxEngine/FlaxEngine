@@ -67,6 +67,7 @@ protected:
 #if TRACY_ENABLE
                     ZoneScoped;
                     ZoneName(*name, name.Length());
+                    ZoneValue(chunk->LocationInFile.Size / 1024); // Size in kB
 #endif
                     if (ref->Storage->LoadAssetChunk(chunk))
                     {
