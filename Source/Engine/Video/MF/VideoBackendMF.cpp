@@ -397,6 +397,7 @@ namespace MF
                 // Loop
                 playerMF.Time.Ticks %= player.Duration.Ticks;
                 playerMF.Seek = 1;
+                player.PlayAudio();
             }
             else
             {

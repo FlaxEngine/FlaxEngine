@@ -52,7 +52,7 @@ public:
     /// <summary>
     /// Gets the joint mode flags. Controls joint behaviour.
     /// </summary>
-    API_PROPERTY(Attributes="EditorOrder(100), DefaultValue(DistanceJointFlag.MinDistance | DistanceJointFlag.MaxDistance)")
+    API_PROPERTY(Attributes="EditorOrder(100), EditorDisplay(\"Joint\"), DefaultValue(DistanceJointFlag.MinDistance | DistanceJointFlag.MaxDistance)")
     FORCE_INLINE DistanceJointFlag GetFlags() const
     {
         return _flags;

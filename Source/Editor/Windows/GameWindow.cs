@@ -553,14 +553,14 @@ namespace FlaxEditor.Windows
                     });
                     _defaultViewportScaling.Add(new ViewportScaleOptions
                     {
-                        Label = "1920x1080 Resolution",
+                        Label = "1920x1080 Resolution (Full HD)",
                         ScaleType = ViewportScaleType.Resolution,
                         Size = new Int2(1920, 1080),
                         Active = false,
                     });
                     _defaultViewportScaling.Add(new ViewportScaleOptions
                     {
-                        Label = "2560x1440 Resolution",
+                        Label = "2560x1440 Resolution (2K)",
                         ScaleType = ViewportScaleType.Resolution,
                         Size = new Int2(2560, 1440),
                         Active = false,

@@ -61,6 +61,51 @@ namespace FlaxEngine.GUI
         }
 
         /// <summary>
+        /// Gets the text block or the nearest text block of the character at the given index.
+        /// </summary>
+        /// <param name="index">The character index.</param>
+        /// <param name="result">The result text block descriptor.</param>
+        /// <param name="snapToNext">If true, the when the index is between two text blocks, it will return the next block.</param>
+        /// <returns>True if a text block is found, otherwise false.</returns>
+        public bool GetNearestTextBlock(int index, out TextBlock result, bool snapToNext = false)
+        {
+            var textBlocksSpan = CollectionsMarshal.AsSpan(_textBlocks);
+            int blockCount = _textBlocks.Count;
+
+            for (int i = 0; i < blockCount; i++)
+            {
+                ref TextBlock currentBlock = ref textBlocksSpan[i];
+
+                if (currentBlock.Range.Contains(index))
+                {
+                    result = currentBlock;
+                    return true;
+                }
+
+                if (i < blockCount - 1)
+                {
+                    ref TextBlock nextBlock = ref textBlocksSpan[i + 1];
+                    if (index >= currentBlock.Range.EndIndex && index < nextBlock.Range.StartIndex)
+                    {
+                        result = snapToNext ? nextBlock : currentBlock;
+                        return true;
+                    }
+                }
+            }
+
+            // Handle case when index is outside all text ranges
+            if (index >= 0 && blockCount > 0)
+            {
+                result = (index <= textBlocksSpan[0].Range.StartIndex) ? textBlocksSpan[0] : textBlocksSpan[blockCount - 1];
+                return true;
+            }
+
+            // If no text block is found
+            result = new TextBlock();
+            return false;
+        }
+
+        /// <summary>
         /// Updates the text blocks.
         /// </summary>
         public virtual void UpdateTextBlocks()
@@ -222,6 +267,35 @@ namespace FlaxEngine.GUI
         }
 
         /// <inheritdoc />
+        protected override void SetSelection(int start, int end, bool withScroll = true)
+        {
+            int snappedStart = start;
+            int snappedEnd = end;
+
+            if (start != -1 && end != -1)
+            {
+                bool movingBack = (_selectionStart != -1 && _selectionEnd != -1) && (end < _selectionEnd || start < _selectionStart);
+
+                GetNearestTextBlock(start, out TextBlock startTextBlock, !movingBack);
+                GetNearestTextBlock(end, out TextBlock endTextBlock, !movingBack);
+
+                snappedStart = startTextBlock.Range.Contains(start) ? start : (movingBack ? startTextBlock.Range.EndIndex - 1 : startTextBlock.Range.StartIndex);
+                snappedEnd = endTextBlock.Range.Contains(end) ? end : (movingBack ? endTextBlock.Range.EndIndex - 1 : endTextBlock.Range.StartIndex);
+
+                snappedStart = movingBack ? Math.Min(start, snappedStart) : Math.Max(start, snappedStart);
+                snappedEnd = movingBack ? Math.Min(end, snappedEnd) : Math.Max(end, snappedEnd);
+
+                // Don't snap if selection is right in the end of the text
+                if (start == _text.Length)
+                    snappedStart = _text.Length;
+                if (end == _text.Length)
+                    snappedEnd = _text.Length;
+            }
+
+            base.SetSelection(snappedStart, snappedEnd, withScroll);
+        }
+
+        /// <inheritdoc />
         public override void DrawSelf()
         {
             // Cache data
@@ -289,8 +363,8 @@ namespace FlaxEngine.GUI
                 // Selection
                 if (hasSelection && textBlock.Style.BackgroundSelectedBrush != null && textBlock.Range.Intersect(ref selection))
                 {
-                    var leftEdge = selection.StartIndex <= textBlock.Range.StartIndex ? textBlock.Bounds.UpperLeft : font.GetCharPosition(_text, selection.StartIndex);
-                    var rightEdge = selection.EndIndex >= textBlock.Range.EndIndex ? textBlock.Bounds.UpperRight : font.GetCharPosition(_text, selection.EndIndex);
+                    var leftEdge = selection.StartIndex <= textBlock.Range.StartIndex ? textBlock.Bounds.UpperLeft : GetCharPosition(selection.StartIndex, out _);
+                    var rightEdge = selection.EndIndex >= textBlock.Range.EndIndex ? textBlock.Bounds.UpperRight : GetCharPosition(selection.EndIndex, out _);
                     float height = font.Height;
                     float alpha = Mathf.Min(1.0f, Mathf.Cos(_animateTime * BackgroundSelectedFlashSpeed) * 0.5f + 1.3f);
                     alpha *= alpha;

@@ -196,12 +196,12 @@ public:
     static int32 HexDigit(Char c);
 
     // Parses text to unsigned integer value. Returns true if failed to convert the value.
-    template<typename CharType>
-    static bool ParseHex(const CharType* str, int32 length, uint32* result)
+    template<typename T>
+    static bool ParseHex(const T* str, int32 length, uint32* result)
     {
         uint32 sum = 0;
-        const CharType* p = str;
-        const CharType* end = str + length;
+        const T* p = str;
+        const T* end = str + length;
         if (*p == '0' && *(p + 1) == 'x')
             p += 2;
         while (*p && p < end)
@@ -221,10 +221,10 @@ public:
     }
 
     // Parses text to unsigned integer value. Returns true if failed to convert the value.
-    template<typename CharType>
-    static bool ParseHex(const CharType* str, uint32* result)
+    template<typename T>
+    static bool ParseHex(const T* str, uint32* result)
     {
-        return ParseHex(str, Length(str), result);
+        return StringUtils::ParseHex(str, StringUtils::Length(str), result);
     }
 
     // Parses text to the unsigned integer value. Returns true if failed to convert the value.
@@ -247,7 +247,7 @@ public:
     static bool Parse(const T* str, uint32 length, uint32* result)
     {
         uint64 tmp;
-        const bool b = Parse(str, length, &tmp);
+        const bool b = StringUtils::Parse(str, length, &tmp);
         *result = (uint32)tmp;
         return b;
     }
@@ -255,7 +255,7 @@ public:
     static bool Parse(const T* str, uint32 length, uint16* result)
     {
         uint64 tmp;
-        const bool b = Parse(str, length, &tmp);
+        const bool b = StringUtils::Parse(str, length, &tmp);
         *result = (uint16)tmp;
         return b;
     }
@@ -263,7 +263,7 @@ public:
     static bool Parse(const T* str, uint32 length, uint8* result)
     {
         uint64 tmp;
-        const bool b = Parse(str, length, &tmp);
+        const bool b = StringUtils::Parse(str, length, &tmp);
         *result = (uint8)tmp;
         return b;
     }
@@ -296,7 +296,7 @@ public:
     static bool Parse(const T* str, uint32 length, int32* result)
     {
         int64 tmp;
-        const bool b = Parse(str, length, &tmp);
+        const bool b = StringUtils::Parse(str, length, &tmp);
         *result = (int32)tmp;
         return b;
     }
@@ -304,7 +304,7 @@ public:
     static bool Parse(const T* str, uint32 length, int16* result)
     {
         int64 tmp;
-        const bool b = Parse(str, length, &tmp);
+        const bool b = StringUtils::Parse(str, length, &tmp);
         *result = (int16)tmp;
         return b;
     }
@@ -312,7 +312,7 @@ public:
     static bool Parse(const T* str, uint32 length, int8* result)
     {
         int64 tmp;
-        const bool b = Parse(str, length, &tmp);
+        const bool b = StringUtils::Parse(str, length, &tmp);
         *result = (int8)tmp;
         return b;
     }
@@ -321,7 +321,7 @@ public:
     template<typename T, typename U>
     static bool Parse(const T* str, U* result)
     {
-        return Parse(str, Length(str), result);
+        return StringUtils::Parse(str, StringUtils::Length(str), result);
     }
 
     // Parses text to the scalar value. Returns true if failed to convert the value.

@@ -1,11 +1,12 @@
 // Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 using System;
+using FlaxEngine;
 using FlaxEditor.Content;
+using FlaxEditor.Gizmo;
 using FlaxEditor.GUI.Drag;
 using FlaxEditor.GUI.Timeline.Tracks;
 using FlaxEditor.SceneGraph;
-using FlaxEngine;
 
 namespace FlaxEditor.GUI.Timeline
 {
@@ -25,6 +26,7 @@ namespace FlaxEditor.GUI.Timeline
         }
 
         private SceneAnimationPlayer _player;
+        private EditCurveTrackGizmo _curveTrackGizmo;
         private bool _showSelected3dTrack = true;
         internal Guid _id;
 
@@ -239,6 +241,19 @@ namespace FlaxEditor.GUI.Timeline
             }
         }
 
+        private void SelectKeyframeGizmo(CurvePropertyTrack track, int keyframe, int item)
+        {
+            var mainGizmo = Editor.Instance.MainTransformGizmo;
+            if (!mainGizmo.IsActive)
+                return; // Skip when using vertex painting or terrain or foliage tools
+            if (_curveTrackGizmo == null)
+            {
+                _curveTrackGizmo = new EditCurveTrackGizmo(mainGizmo.Owner, this);
+            }
+            _curveTrackGizmo.SelectKeyframe(track, keyframe, item);
+            _curveTrackGizmo.Activate();
+        }
+
         /// <inheritdoc />
         public override void OnPlay()
         {
@@ -289,8 +304,17 @@ namespace FlaxEditor.GUI.Timeline
             UpdatePlaybackState();
 
             // Draw all selected 3D position tracks as Bezier curve in editor viewport
-            if (ShowSelected3dTrack)
+            if (!VisibleInHierarchy || !EnabledInHierarchy)
             {
+                // Disable curve transform gizmo to normal gizmo
+                if (_curveTrackGizmo != null && _curveTrackGizmo.IsActive)
+                    _curveTrackGizmo.Owner.Gizmos.Get<TransformGizmo>().Activate();
+            }
+            else if (ShowSelected3dTrack)
+            {
+                bool select = FlaxEngine.Input.GetMouseButtonDown(MouseButton.Left);
+                Ray selectRay = Editor.Instance.MainTransformGizmo.Owner.MouseRay;
+                const float coveredAlpha = 0.1f;
                 foreach (var track in SelectedTracks)
                 {
                     if (
@@ -302,31 +326,44 @@ namespace FlaxEditor.GUI.Timeline
                     {
                         var curve = (BezierCurveEditor<Vector3>)curveTrack.Curve;
                         var keyframes = curve.Keyframes;
+                        var selectedKeyframe = _curveTrackGizmo?.Keyframe ?? -1;
+                        var selectedItem = _curveTrackGizmo?.Item ?? -1;
                         for (var i = 0; i < keyframes.Count; i++)
                         {
                             var k = keyframes[i];
 
-                            DebugDraw.DrawSphere(new BoundingSphere(k.Value, 10.0f), Color.Red);
-                            DebugDraw.DrawSphere(new BoundingSphere(k.Value, 9.5f), new Color(1, 0, 0, 0.1f), 0, false);
+                            var selected = selectedKeyframe == i && selectedItem == 0;
+                            var sphere = new BoundingSphere(k.Value, EditCurveTrackGizmo.KeyframeSize);
+                            DebugDraw.DrawSphere(sphere, selected ? Color.Yellow : Color.Red);
+                            sphere.Radius *= 0.95f;
+                            DebugDraw.DrawSphere(sphere, new Color(1, 0, 0, coveredAlpha), 0, false);
+                            if (select && sphere.Intersects(ref selectRay))
+                                SelectKeyframeGizmo(curveTrack, i, 0);
 
                             if (!k.TangentIn.IsZero)
                             {
+                                selected = selectedKeyframe == i && selectedItem == 1;
                                 var t = k.Value + k.TangentIn;
                                 DebugDraw.DrawLine(k.Value, t, Color.Yellow);
-                                DebugDraw.DrawLine(k.Value, t, Color.Yellow.AlphaMultiplied(0.1f), 0, false);
-                                var box = BoundingBox.FromSphere(new BoundingSphere(t, 6.0f));
-                                DebugDraw.DrawBox(box, Color.AliceBlue);
-                                DebugDraw.DrawBox(box, Color.AliceBlue.AlphaMultiplied(0.1f), 0, false);
+                                DebugDraw.DrawLine(k.Value, t, Color.Yellow.AlphaMultiplied(coveredAlpha), 0, false);
+                                var box = BoundingBox.FromSphere(new BoundingSphere(t, EditCurveTrackGizmo.TangentSize));
+                                DebugDraw.DrawBox(box, selected ? Color.Yellow : Color.AliceBlue);
+                                DebugDraw.DrawBox(box, Color.AliceBlue.AlphaMultiplied(coveredAlpha), 0, false);
+                                if (select && box.Intersects(ref selectRay))
+                                    SelectKeyframeGizmo(curveTrack, i, 2);
                             }
 
                             if (!k.TangentOut.IsZero)
                             {
+                                selected = selectedKeyframe == i && selectedItem == 2;
                                 var t = k.Value + k.TangentOut;
                                 DebugDraw.DrawLine(k.Value, t, Color.Yellow);
-                                DebugDraw.DrawLine(k.Value, t, Color.Yellow.AlphaMultiplied(0.1f), 0, false);
-                                var box = BoundingBox.FromSphere(new BoundingSphere(t, 6.0f));
-                                DebugDraw.DrawBox(box, Color.AliceBlue);
-                                DebugDraw.DrawBox(box, Color.AliceBlue.AlphaMultiplied(0.1f), 0, false);
+                                DebugDraw.DrawLine(k.Value, t, Color.Yellow.AlphaMultiplied(coveredAlpha), 0, false);
+                                var box = BoundingBox.FromSphere(new BoundingSphere(t, EditCurveTrackGizmo.TangentSize));
+                                DebugDraw.DrawBox(box, selected ? Color.Yellow : Color.AliceBlue);
+                                DebugDraw.DrawBox(box, Color.AliceBlue.AlphaMultiplied(coveredAlpha), 0, false);
+                                if (select && box.Intersects(ref selectRay))
+                                    SelectKeyframeGizmo(curveTrack, i, 2);
                             }
 
                             if (i != 0)
@@ -339,6 +376,18 @@ namespace FlaxEditor.GUI.Timeline
                     }
                 }
             }
+        }
+
+        /// <inheritdoc />
+        public override void OnDestroy()
+        {
+            if (_curveTrackGizmo != null)
+            {
+                _curveTrackGizmo.Destroy();
+                _curveTrackGizmo = null;
+            }
+
+            base.OnDestroy();
         }
 
         /// <inheritdoc />
