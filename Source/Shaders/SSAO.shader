@@ -23,7 +23,7 @@
 #include "./Flax/Gather.hlsl"
 #include "./Flax/GBuffer.hlsl"
 
-#define GTAO_SLICE_COUNT 4
+#define SSAO_USE_GTAO 1
 #define GTAO_MAX_PIXEL_SCREEN_RADIUS 256.0f
 #define SSAO_DEPTH_MIP_LEVELS 4 // <- must match C++ define
 
@@ -43,7 +43,9 @@ static const float4 g_samplePatternMain[INTELSSAO_MAIN_DISK_SAMPLE_COUNT] =
 
 // These values can be changed with no changes required elsewhere;
 // The actual number of texture samples is two times this value (each "tap" has two symmetrical depth texture samples)
-static const uint g_numTaps[4] = { 3, 5, 8, 12 };
+static const uint g_assaoNumTaps[4] = { 3, 5, 8, 12 };
+static const uint g_gtaoNumTaps[4] = { 1, 2, 3, 4 };
+static const uint g_gtaoNumSlices[4] = { 2, 4, 5, 6 };
 
 //
 // Optional parts that can be enabled for a required quality preset level and above (0 == Low, 1 == Medium, 2 == High, 3 == Highest)
@@ -108,6 +110,15 @@ float4x4 ViewMatrix;
 
 META_CB_END
 
+#if SSAO_USE_GTAO
+META_CB_BEGIN(0, GTAOData)
+float GTAOThickness;
+float WorldRadius;
+// 1 / tan(0.5*Fov)
+float InvTanHalfFov;
+META_CB_END
+#endif
+
 DECLARE_GBUFFERDATA_ACCESS(GBuffer)
 
 // Shader Resources
@@ -163,11 +174,22 @@ float2 ScreenSpaceToClipSpacePositionXY(float2 screenPos)
 	return screenPos * Viewport2xPixelSize.xy - float2(1.0f, 1.0f);
 }
 
-float3 NDCToViewspace(float2 pos, float viewspaceDepth)
+// Get vector (viewspace x, viewspace y, linear z) from ndc pos and linear depth
+float3 NDCToViewspace(float2 pos, float linearDepth)
 {
 	GBufferData gBufferData = GetGBufferData();
-	float deviceDepth = LinearZ2DeviceDepth(gBufferData, viewspaceDepth / gBufferData.ViewFar);
+	float deviceDepth = LinearZ2DeviceDepth(gBufferData, linearDepth / gBufferData.ViewFar);
 	float4 clipPos = float4(pos * float2(2.0, -2.0) + float2(-1.0, 1.0), deviceDepth, 1.0);
+	float4 viewPos = mul(clipPos, gBufferData.InvProjectionMatrix);
+	return viewPos.xyz / viewPos.w;
+}
+
+// Get viewspace position of pixel from ndc pos and linear depth
+float3 GetViewspacePos(float2 ndcPos, float linearDepth)
+{
+	GBufferData gBufferData = GetGBufferData();
+	float deviceDepth = LinearZ2DeviceDepth(gBufferData, linearDepth);
+	float4 clipPos = float4(ndcPos * float2(2.0, -2.0) + float2(-1.0, 1.0), deviceDepth, 1.0);
 	float4 viewPos = mul(clipPos, gBufferData.InvProjectionMatrix);
 	return viewPos.xyz / viewPos.w;
 }
@@ -414,7 +436,9 @@ void SSAOTap(const int qualityLevel, inout float obscuranceSum, inout float weig
 	SSAOTapInner(qualityLevel, obscuranceSum, weightSum, samplingMirroredUV, mipLevel, pixCenterPos, negViewspaceDir, pixelNormal, falloffCalcMulSq, weightMod, tapIndex * 2 + 1);
 }
 
-void ASSAOImpl(const int numberOfTaps, const int qualityLevel, inout float obscuranceSum, inout float weightSum, const float2x2 rotScale, const float3 pixCenterPos, float3 pixelNormal, const float2 normalizedScreenPos, const float mipOffset, const float falloffCalcMulSq, float weightMod){
+void ASSAOImpl(const int qualityLevel, inout float obscuranceSum, inout float weightSum, const float2x2 rotScale, const float3 pixCenterPos, float3 pixelNormal, const float2 normalizedScreenPos, const float mipOffset, const float falloffCalcMulSq, float weightMod){
+	const int numberOfTaps = g_assaoNumTaps[qualityLevel];
+	
 	// Used to tilt the second set of samples so that the disk is effectively rotated by the normal
 	// effective at removing one set of artifacts, but too expensive for lower quality settings
 	float2 normXY = float2(pixelNormal.x, pixelNormal.y);
@@ -429,26 +453,33 @@ void ASSAOImpl(const int numberOfTaps, const int qualityLevel, inout float obscu
 	{
 		SSAOTap(qualityLevel, obscuranceSum, weightSum, i, rotScale, pixCenterPos, negViewspaceDir, pixelNormal, normalizedScreenPos, mipOffset, falloffCalcMulSq, 1.0, normXY, normXYLength);
 	}
+
+	// Strength, only applicable to ASSAO, GTAO doesn't need this
+	obscuranceSum *= EffectShadowStrength;
 }
 
-float2 SearchForLargestAngleDual(const int numberOfTaps, const int qualityLevel, const float2 sliceDir, const float3 viewDir, const float3 pixCenterPos, const float2 normalizedScreenPos){
-	const float worldRadius = 200;
+// Multi-bounce approximating, reserved for future use
+float MultiBounce(float ao, float3 albedo)
+{
+    float3 a = 2.0404 * albedo - 0.3324;
+    float3 b = -4.7951 * albedo + 0.6417;
+    float3 c = 2.7552 * albedo + 0.6903;
+
+    return max(ao, ((ao * a + b) * ao + c) * ao);
+}
+
+float2 SearchForLargestAngleDual(const int numberOfTaps, const float adjustedWorldRadius, const float attenFactor, const float2 sliceDir, const float3 viewDir, const float3 positionVS, const float2 normalizedScreenPos){
+	const float pixelRadius = max(min(adjustedWorldRadius / positionVS.z, GTAO_MAX_PIXEL_SCREEN_RADIUS), (float)numberOfTaps);
 	
-	const float pixelRadius = max(min(worldRadius / pixCenterPos.z, GTAO_MAX_PIXEL_SCREEN_RADIUS), (float)numberOfTaps);
-    const float thickness = 0.5;
-	const float attenFactor = 2.0 / (worldRadius * worldRadius);
-	const float initialOffset = 1;
 	const float stepRadius = pixelRadius / ((float)numberOfTaps + 1);
 	
 	float2 bestAng = float2(-1, -1);
 
 	// UNROLL
-	for(uint i = 0; i < numberOfTaps; i++)
+	for(int i = 1; i <= numberOfTaps; i++)
     {
         float fi = (float)i;
-        float2 sampleOffset = sliceDir * max(stepRadius * (fi + initialOffset), fi + 1);
-
-        float2 uvOffset = sampleOffset;
+        float2 uvOffset = sliceDir * max(stepRadius * (fi + 1), fi + 1) * HalfViewportPixelSize;
         uvOffset.y *= -1;
         float4 sampleUV = normalizedScreenPos.xyxy + float4(uvOffset.xy, -uvOffset.xy);
 
@@ -465,7 +496,7 @@ float2 SearchForLargestAngleDual(const int numberOfTaps, const int qualityLevel,
         sceneDepths.x = g_ViewspaceDepthSource.SampleLevel(SamplerPointClamp, sampleUV.xy, mipLevel).x;
         sceneDepths.y = g_ViewspaceDepthSource.SampleLevel(SamplerPointClamp, sampleUV.zw, mipLevel).x;
 
-        float3 h = NDCToViewspace(sampleUV.xy, sceneDepths.x).xyz - pixCenterPos;
+        float3 h = GetViewspacePos(sampleUV.xy, sceneDepths.x).xyz - positionVS;
         float lenSq = dot(h, h);
         float ooLen = rsqrt(lenSq + 0.0001);
         float ang = dot(h, viewDir) * ooLen;
@@ -473,10 +504,10 @@ float2 SearchForLargestAngleDual(const int numberOfTaps, const int qualityLevel,
         float falloff = saturate(lenSq * attenFactor);  
         ang = lerp(ang, bestAng.x, falloff);
 
-        bestAng.x = (ang > bestAng.x) ? ang : lerp(ang, bestAng.x, thickness);  
+        bestAng.x = (ang > bestAng.x) ? ang : lerp(ang, bestAng.x, GTAOThickness);  
 
         // Negative direction
-        h = NDCToViewspace(sampleUV.zw, sceneDepths.y).xyz - pixCenterPos;
+        h = GetViewspacePos(sampleUV.zw, sceneDepths.y).xyz - positionVS;
         lenSq = dot(h, h);
         ooLen = rsqrt(lenSq + 0.0001);
         ang = dot(h, viewDir) * ooLen;
@@ -484,7 +515,7 @@ float2 SearchForLargestAngleDual(const int numberOfTaps, const int qualityLevel,
         falloff = saturate(lenSq * attenFactor);  
         ang = lerp(ang, bestAng.y, falloff);
 
-        bestAng.y = (ang > bestAng.y) ? ang : lerp(ang, bestAng.y, thickness);
+        bestAng.y = (ang > bestAng.y) ? ang : lerp(ang, bestAng.y, GTAOThickness);
     }
 
     bestAng.x = AcosFast(clamp(bestAng.x, -1.0, 1.0));
@@ -501,7 +532,7 @@ float ComputeInnerIntegral(float2 angles, const float2 sliceDir, const float3 vi
     float3 projNormal = normalVS - planeNormal * dot(normalVS, planeNormal);
 
     float lenProjNormal = length(projNormal) + 0.000001f;
-    float recipMag = 1.0f / (lenProjNormal);
+    float recipMag = 1.0f / lenProjNormal;
 
     float cosAng = dot(projNormal, perp) * recipMag;    
     float gamma = AcosFast(cosAng) - PI_HALF;                
@@ -518,19 +549,23 @@ float ComputeInnerIntegral(float2 angles, const float2 sliceDir, const float3 vi
     return ao;
 }
 
-void GTAOImpl(const int numberOfTaps, const int qualityLevel, inout float obscuranceSum, inout float weightSum, const float3 pixCenterPos, float3 pixelNormal, const float2 normalizedScreenPos, float weightMod){	
-	const float3 viewDir = normalize(pixCenterPos);
-	const float deltaAngle = PI / GTAO_SLICE_COUNT;
+void GTAOImpl(const int qualityLevel, inout float obscuranceSum, inout float weightSum, const float3 positionVS, float3 pixelNormal, const float2 normalizedScreenPos, float weightMod){	
+	const int numberOfTaps = g_gtaoNumTaps[qualityLevel];
+	const int numberOfSlices = g_gtaoNumSlices[qualityLevel];
+	const float adjustedWorldRadius = InvTanHalfFov * WorldRadius;
+	const float attenFactor = 2.0 / (WorldRadius * WorldRadius);
+	
+	const float3 viewDir = normalize(-positionVS);
+	const float deltaAngle = PI / numberOfSlices;
 	const float sinDeltaAngle = sin(deltaAngle), cosDeltaAngle = cos(deltaAngle);
     
 	// Slice direction, always normalized
 	float2 sliceDir = float2(1, 0);
 	float visibilitySum = 0;
 
-	for(int slice = 0; slice < GTAO_SLICE_COUNT; slice++){
-		float2 bestAng = SearchForLargestAngleDual(numberOfTaps, qualityLevel, sliceDir, viewDir, pixCenterPos, normalizedScreenPos);
+	for(int slice = 0; slice < numberOfSlices; slice++){
+		float2 bestAng = SearchForLargestAngleDual(numberOfTaps, adjustedWorldRadius, attenFactor, sliceDir, viewDir, positionVS, normalizedScreenPos);
 		float visibility = ComputeInnerIntegral(bestAng, sliceDir, viewDir, pixelNormal);
-
 		visibilitySum += visibility;
 
 		// Unreal speedup
@@ -543,8 +578,8 @@ void GTAOImpl(const int numberOfTaps, const int qualityLevel, inout float obscur
 	visibilitySum *= 2.0 / PI;
 	
 	// Obscurance = 1 - Visibility
-	obscuranceSum += visibilitySum;
-	weightSum += (float)GTAO_SLICE_COUNT * 3;
+	obscuranceSum += (float)numberOfSlices - visibilitySum;
+	weightSum += (float)numberOfSlices;
 }
 
 // This function is designed to only work with half/half depth at the moment - there's a couple of hardcoded paths that expect pixel/texel size, so it will not work for full res
@@ -553,7 +588,6 @@ void GenerateSSAOShadowsInternal(out float outShadowTerm, out float4 outEdges, o
 	float2 SVPosRounded = trunc(SVPos);
 	uint2 SVPosui = uint2(SVPosRounded); // same as uint2(SVPos)
 	
-	const int numberOfTaps = g_numTaps[qualityLevel];
 	float pixZ, pixLZ, pixTZ, pixRZ, pixBZ;
 
 	float4 valuesUL = TextureGatherRed(g_ViewspaceDepthSource, SamplerPointWrap, SVPosRounded * HalfViewportPixelSize);
@@ -578,7 +612,7 @@ void GenerateSSAOShadowsInternal(out float outShadowTerm, out float4 outEdges, o
 	pixBZ = valuesBR.x;
 	
 	float2 normalizedScreenPos = SVPosRounded * Viewport2xPixelSize + Viewport2xPixelSize_x_025;
-	// Viewspace pos of the pixel center
+	// Viewspace pos of the pixel center, with 01 linear depth
 	float3 pixCenterPos = NDCToViewspace(normalizedScreenPos, pixZ); // g
 	
 	// Load this pixel's viewspace normal
@@ -668,11 +702,18 @@ void GenerateSSAOShadowsInternal(out float outShadowTerm, out float4 outEdges, o
 		edgesLRTB *= normalEdgesLRTB;
 	}
 	
+#if SSAO_USE_GTAO
+	// GTAO
+	float3 positionVS = GetViewspacePos(normalizedScreenPos, pixZ);
+
+	GTAOImpl(qualityLevel, obscuranceSum, weightSum, positionVS, pixelNormal, normalizedScreenPos, 1.0);
+#else
+	// ASSAO
 	const float globalMipOffset = SSAO_DEPTH_MIPS_GLOBAL_OFFSET;
 	float mipOffset = (qualityLevel < SSAO_DEPTH_MIPS_ENABLE_AT_QUALITY_PRESET) ? (0) : (log2(pixLookupRadiusMod) + globalMipOffset);
 	
-	// ASSAOImpl(numberOfTaps, qualityLevel, obscuranceSum, weightSum, rotScale, pixCenterPos, pixelNormal, normalizedScreenPos, mipOffset, falloffCalcMulSq, 1.0);
-	GTAOImpl(numberOfTaps, qualityLevel, obscuranceSum, weightSum, pixCenterPos, pixelNormal, normalizedScreenPos, 1.0);
+	ASSAOImpl(qualityLevel, obscuranceSum, weightSum, rotScale, pixCenterPos, pixelNormal, normalizedScreenPos, mipOffset, falloffCalcMulSq, 1.0);
+#endif
 
 	// Calculate weighted average
 	float obscurance = obscuranceSum / weightSum;
@@ -700,15 +741,12 @@ void GenerateSSAOShadowsInternal(out float outShadowTerm, out float4 outEdges, o
 	// Same as a bove, but a lot more conservative version
 	//fadeOut *= saturate(dot(edgesLRTB, float4(0.9, 0.9, 0.9, 0.9)) - 2.6);
 	
-	// Strength
-	obscurance *= EffectShadowStrength;
-	
 	// Clamp
 	obscurance = min(obscurance, 0.98f);
-	
+
 	// Apply fadeout
 	obscurance *= fadeOut;
-	
+
 	// Conceptually switch to occlusion with the meaning being visibility (grows with visibility, occlusion == 1 implies full visibility), to be in line with what is more commonly used.
 	float occlusion = 1.0 - obscurance;
 	
