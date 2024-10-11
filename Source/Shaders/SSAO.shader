@@ -23,7 +23,6 @@
 #include "./Flax/Gather.hlsl"
 #include "./Flax/GBuffer.hlsl"
 
-#define SSAO_USE_GTAO 1
 #define GTAO_MAX_PIXEL_SCREEN_RADIUS 256.0f
 #define SSAO_DEPTH_MIP_LEVELS 4 // <- must match C++ define
 
@@ -107,17 +106,14 @@ float DetailAOStrength;
 float4 PatternRotScaleMatrices[5];
 
 float4x4 ViewMatrix;
-
 META_CB_END
 
-#if SSAO_USE_GTAO
-META_CB_BEGIN(0, GTAOData)
+META_CB_BEGIN(1, GTAOData)
 float GTAOThickness;
 float WorldRadius;
 // 1 / tan(0.5*Fov)
 float InvTanHalfFov;
 META_CB_END
-#endif
 
 DECLARE_GBUFFERDATA_ACCESS(GBuffer)
 
@@ -459,7 +455,7 @@ void ASSAOImpl(const int qualityLevel, inout float obscuranceSum, inout float we
 }
 
 // Multi-bounce approximating, reserved for future use
-float MultiBounce(float ao, float3 albedo)
+float3 MultiBounce(float ao, float3 albedo)
 {
     float3 a = 2.0404 * albedo - 0.3324;
     float3 b = -4.7951 * albedo + 0.6417;
@@ -761,6 +757,8 @@ void GenerateSSAOShadowsInternal(out float outShadowTerm, out float4 outEdges, o
 }
 
 META_PS(true, FEATURE_LEVEL_ES2)
+META_PERMUTATION_1(SSAO_USE_GTAO=0)
+META_PERMUTATION_1(SSAO_USE_GTAO=1)
 void PS_GenerateQ0(in float4 inPos : SV_POSITION/*, in float2 inUV : TEXCOORD0*/, out float2 out0 : SV_Target0)
 {
 	float outShadowTerm;
@@ -772,6 +770,8 @@ void PS_GenerateQ0(in float4 inPos : SV_POSITION/*, in float2 inUV : TEXCOORD0*/
 }
 
 META_PS(true, FEATURE_LEVEL_ES2)
+META_PERMUTATION_1(SSAO_USE_GTAO=0)
+META_PERMUTATION_1(SSAO_USE_GTAO=1)
 void PS_GenerateQ1(in float4 inPos : SV_POSITION/*, in float2 inUV : TEXCOORD0*/, out float2 out0 : SV_Target0)
 {
 	float outShadowTerm;
@@ -783,6 +783,8 @@ void PS_GenerateQ1(in float4 inPos : SV_POSITION/*, in float2 inUV : TEXCOORD0*/
 }
 
 META_PS(true, FEATURE_LEVEL_ES2)
+META_PERMUTATION_1(SSAO_USE_GTAO=0)
+META_PERMUTATION_1(SSAO_USE_GTAO=1)
 void PS_GenerateQ2(in float4 inPos : SV_POSITION/*, in float2 inUV : TEXCOORD0*/, out float2 out0 : SV_Target0)
 {
 	float outShadowTerm;
@@ -794,6 +796,8 @@ void PS_GenerateQ2(in float4 inPos : SV_POSITION/*, in float2 inUV : TEXCOORD0*/
 }
 
 META_PS(true, FEATURE_LEVEL_ES2)
+META_PERMUTATION_1(SSAO_USE_GTAO=0)
+META_PERMUTATION_1(SSAO_USE_GTAO=1)
 void PS_GenerateQ3(in float4 inPos : SV_POSITION/*, in float2 inUV : TEXCOORD0*/, out float2 out0 : SV_Target0)
 {
 	float outShadowTerm;

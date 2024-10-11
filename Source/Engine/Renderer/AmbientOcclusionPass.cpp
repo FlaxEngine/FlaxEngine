@@ -35,6 +35,7 @@ static_assert(SSAO_MAX_BLUR_PASS_COUNT >= 0, "Invalid maximum amount of SSAO blu
 
 // Shader Resource slots mapping (must match shader source)
 #define SSAO_CONSTANTS_BUFFER_SLOT 0
+#define GTAO_CONSTANTS_BUFFER_SLOT 1
 #define SSAO_TEXTURE_SLOT0 0
 #define SSAO_TEXTURE_SLOT1 1
 #define SSAO_TEXTURE_SLOT2 2
@@ -69,7 +70,7 @@ bool AmbientOcclusionPass::Init()
     for (int32 i = 0; i < ARRAY_COUNT(_psPrepareDepthMip); i++)
         _psPrepareDepthMip[i] = GPUDevice::Instance->CreatePipelineState();
     for (int32 i = 0; i < ARRAY_COUNT(_psGenerate); i++)
-        _psGenerate[i] = GPUDevice::Instance->CreatePipelineState();
+        _psGenerate[i].CreatePipelineStates();
     _psSmartBlur = GPUDevice::Instance->CreatePipelineState();
     _psSmartBlurWide = GPUDevice::Instance->CreatePipelineState();
     _psNonSmartBlur = GPUDevice::Instance->CreatePipelineState();
@@ -133,12 +134,12 @@ bool AmbientOcclusionPass::setupResources()
     // AO Generate
     for (int32 i = 0; i < ARRAY_COUNT(_psGenerate); i++)
     {
-        if (!_psGenerate[i]->IsValid())
+        if (!_psGenerate[i].IsValid())
         {
             const auto str = String::Format(TEXT("PS_GenerateQ{0}"), i);
             const StringAsANSI<50> strAnsi(*str, str.Length());
             psDesc.PS = shader->GetPS(strAnsi.Get());
-            if (_psGenerate[i]->Init(psDesc))
+            if (_psGenerate[i].Create(psDesc, shader, strAnsi.Get()))
                 return true;
         }
     }
@@ -189,7 +190,8 @@ void AmbientOcclusionPass::Dispose()
     SAFE_DELETE_GPU_RESOURCE(_psPrepareDepths);
     SAFE_DELETE_GPU_RESOURCE(_psPrepareDepthsHalf);
     SAFE_DELETE_GPU_RESOURCES(_psPrepareDepthMip);
-    SAFE_DELETE_GPU_RESOURCES(_psGenerate);
+    for (int32 i = 0; i < ARRAY_COUNT(_psGenerate); i++)
+        _psGenerate[i].Release();
     SAFE_DELETE_GPU_RESOURCE(_psSmartBlur);
     SAFE_DELETE_GPU_RESOURCE(_psSmartBlurWide);
     SAFE_DELETE_GPU_RESOURCE(_psNonSmartBlur);
@@ -215,6 +217,7 @@ void AmbientOcclusionPass::Render(RenderContext& renderContext)
     PROFILE_GPU_CPU("Ambient Occlusion");
 
     settings = ASSAO_Settings();
+    settings.Method = static_cast<int>(aoSettings.Method);
     settings.Radius = aoSettings.Radius * 0.006f;
     settings.ShadowMultiplier = aoSettings.Intensity;
     settings.ShadowPower = aoSettings.Power;
@@ -269,9 +272,20 @@ void AmbientOcclusionPass::Render(RenderContext& renderContext)
     // Request temporary buffers
     InitRTs(renderContext);
 
-    // Update and bind constant buffer
+    // Update and bind SSAO constant buffer
     UpdateCB(renderContext, context, 0);
-    context->BindCB(SSAO_CONSTANTS_BUFFER_SLOT, _shader->GetShader()->GetCB(SSAO_CONSTANTS_BUFFER_SLOT));
+
+    // Bind GTAO constant buffer if needed
+    if (aoSettings.Method == SSAOMethod::GTAO) {
+        auto gtaoCB = _shader->GetShader()->GetCB(GTAO_CONSTANTS_BUFFER_SLOT);
+
+        GTAOConstants gtaoConstants = {
+            0.5, 1, 200
+        };
+
+        context->UpdateCB(gtaoCB, &gtaoConstants);
+        context->BindCB(GTAO_CONSTANTS_BUFFER_SLOT, gtaoCB);
+    }
 
     // Generate depths
     PrepareDepths(renderContext);
@@ -408,9 +422,9 @@ void AmbientOcclusionPass::UpdateCB(const RenderContext& renderContext, GPUConte
     }
 
     // Update buffer
-    const auto cb = _shader->GetShader()->GetCB(SSAO_CONSTANTS_BUFFER_SLOT);
-    context->UpdateCB(cb, &_constantsBufferData);
-    context->BindCB(SSAO_CONSTANTS_BUFFER_SLOT, cb);
+    const auto cb1 = _shader->GetShader()->GetCB(SSAO_CONSTANTS_BUFFER_SLOT);
+    context->UpdateCB(cb1, &_constantsBufferData);
+    context->BindCB(SSAO_CONSTANTS_BUFFER_SLOT, cb1);
 }
 
 void AmbientOcclusionPass::PrepareDepths(const RenderContext& renderContext)
@@ -527,7 +541,7 @@ void AmbientOcclusionPass::GenerateSSAO(const RenderContext& renderContext)
             context->SetRenderTarget(rts);
             context->BindSR(SSAO_TEXTURE_SLOT0, m_halfDepths[pass]);
             context->BindSR(SSAO_TEXTURE_SLOT1, normalMapSRV);
-            context->SetState(_psGenerate[settings.QualityLevel]);
+            context->SetState(_psGenerate[settings.QualityLevel].Get(settings.Method));
             context->DrawFullscreenTriangle();
             context->ResetRenderTarget();
         }

@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "Engine/Graphics/GPUPipelineStatePermutations.h"
 #include "RendererPass.h"
 
 // Config
@@ -54,9 +55,17 @@ private:
         Matrix ViewMatrix;
         });
 
+    GPU_CB_STRUCT(GTAOConstants {
+        float GTAOThickness;
+        float WorldRadius;
+        // 1 / tan(0.5*Fov)
+        float InvTanHalfFov;
+        });
+
     // Effect visual settings
     struct ASSAO_Settings
     {
+        int Method; // The SSAO algorithm to use, see enum [SSAOMethod]
         float Radius; // [0.0,  ~ ] World (view) space size of the occlusion sphere.
         float ShadowMultiplier; // [0.0, 5.0] Effect strength linear multiplier
         float ShadowPower; // [0.5, 5.0] Effect strength pow modifier
@@ -80,7 +89,7 @@ private:
     GPUPipelineState* _psPrepareDepths;
     GPUPipelineState* _psPrepareDepthsHalf;
     GPUPipelineState* _psPrepareDepthMip[SSAO_DEPTH_MIP_LEVELS - 1];
-    GPUPipelineState* _psGenerate[4];
+    GPUPipelineStatePermutationsPs<2> _psGenerate[4];
     GPUPipelineState* _psSmartBlur;
     GPUPipelineState* _psSmartBlurWide;
     GPUPipelineState* _psNonSmartBlur;
@@ -131,7 +140,7 @@ private:
         for (int32 i = 0; i < ARRAY_COUNT(_psPrepareDepthMip); i++)
             _psPrepareDepthMip[i]->ReleaseGPU();
         for (int32 i = 0; i < ARRAY_COUNT(_psGenerate); i++)
-            _psGenerate[i]->ReleaseGPU();
+            _psGenerate[i].Release();
         _psSmartBlur->ReleaseGPU();
         _psSmartBlurWide->ReleaseGPU();
         _psNonSmartBlur->ReleaseGPU();
