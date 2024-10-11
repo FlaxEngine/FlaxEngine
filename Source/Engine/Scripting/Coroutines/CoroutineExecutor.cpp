@@ -2,6 +2,8 @@
 
 #include "CoroutineExecutor.h"
 
+#include "Engine/Debug/DebugLog.h"
+
 
 void CoroutineExecutor::ExecuteOnce(ScriptingObjectReference<CoroutineBuilder> builder)
 {
@@ -11,6 +13,15 @@ void CoroutineExecutor::ExecuteOnce(ScriptingObjectReference<CoroutineBuilder> b
 
 void CoroutineExecutor::ExecuteRepeats(ScriptingObjectReference<CoroutineBuilder> builder, const int32 repeats)
 {
+    if (repeats <= 0) 
+    {
+        DebugLog::LogError(String::Format(
+            TEXT("Coroutine must not be dispatched non-positive number of times! Call to repeat {} times will be ignored."), 
+            repeats
+        ));
+        return;
+    }
+
     Execution execution{ MoveTemp(builder), repeats };
     _executions.Add(MoveTemp(execution));
 }
