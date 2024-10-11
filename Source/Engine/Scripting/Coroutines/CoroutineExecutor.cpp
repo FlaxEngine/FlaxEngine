@@ -16,7 +16,7 @@ void CoroutineExecutor::Continue(const CoroutineSuspensionPointIndex point)
     for (int32 i = 0; i < _executions.Count();)
     {
         Execution& execution  = _executions[i];
-        const bool reachedEnd = execution.ContinueCoroutine(point, delta);
+        const bool reachedEnd = execution.ContinueCoroutine(point, delta); //TODO(mtszkarbowiak) Support for looped coroutines.
 
         if (reachedEnd)
         {

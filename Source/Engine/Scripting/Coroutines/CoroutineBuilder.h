@@ -18,9 +18,20 @@ API_CLASS(Sealed) class FLAXENGINE_API CoroutineRunnable final : public Scriptin
 {
     DECLARE_SCRIPTING_TYPE_WITH_CONSTRUCTOR_IMPL(CoroutineRunnable, ScriptingObject);
 
+    /// <summary>
+    /// Suspension point at which the runnable action is executed.
+    /// </summary>
+    /// <remarks>
+    /// The execution point must never precede the suspension point of previous steps.
+    /// Wait for one frame or reorder the steps if the execution point is earlier.
+    /// </remarks>
     API_FIELD()
     CoroutineSuspensionPointIndex ExecutionPoint = CoroutineSuspensionPointIndex::Update;
-    
+
+
+    /// <summary>
+    /// Action to be executed at the suspension point.
+    /// </summary>
     API_EVENT()
     Action OnRun;
 };
@@ -32,11 +43,22 @@ API_CLASS(Sealed) class FLAXENGINE_API CoroutinePredicate final : public Scripti
 {
     DECLARE_SCRIPTING_TYPE_WITH_CONSTRUCTOR_IMPL(CoroutinePredicate, ScriptingObject);
 
+    /// <summary>
+    /// Suspension point at which the predicate is checked.
+    /// </summary>
     API_FIELD()
     CoroutineSuspensionPointIndex ExecutionPoint = CoroutineSuspensionPointIndex::Update;
 
+    /// <summary>
+    /// Predicate checking if the coroutine may continue.
+    /// </summary>
+    /// <remarks>
+    /// This even uses a reference to the boolean value to set the value due to limitations of the scripting system.
+    /// </remarks>
     API_EVENT()
     Delegate<bool&> OnCheck;
+
+    //TODO Consider making OnCheck protected and expose subscription method to avoid direct access to the event.
 };
 
 /// <summary>

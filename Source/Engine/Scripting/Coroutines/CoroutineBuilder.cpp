@@ -28,6 +28,8 @@ ScriptingObjectReference<CoroutineBuilder> CoroutineBuilder::ThenWaitUntil(Scrip
 }
 
 
+// Step is a type union initialized using specific constructor argument type. Be careful not to trigger implicit type conversion.
+
 CoroutineBuilder::Step::Step(RunnableReference&& runnable)
     : _runnable{ MoveTemp(runnable) }
     , _type{ StepType::Run }
