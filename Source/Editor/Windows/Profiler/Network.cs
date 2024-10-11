@@ -220,7 +220,7 @@ namespace FlaxEditor.Windows.Profiler
 
                         var table = isRpc ? _tableRpc : _tableRep;
                         row.Width = table.Width;
-                        row.BackgroundColor = rowCount[isRpc ? 0 : 1] % 2 == 0 ? rowColor2 : Color.Transparent;
+                        row.BackgroundColor = rowCount[isRpc ? 0 : 1] % 2 == 1 ? rowColor2 : Color.Transparent;
                         row.Parent = table;
                         if (isRpc)
                             rowCount.X++;

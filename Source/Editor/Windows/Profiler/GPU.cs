@@ -384,7 +384,7 @@ namespace FlaxEditor.Windows.Profiler
                 row.Depth = e.Depth;
                 row.Width = _table.Width;
                 row.Visible = e.Depth < 3;
-                row.BackgroundColor = i % 2 == 0 ? rowColor2 : Color.Transparent;
+                row.BackgroundColor = i % 2 == 1 ? rowColor2 : Color.Transparent;
                 row.Parent = _table;
             }
         }

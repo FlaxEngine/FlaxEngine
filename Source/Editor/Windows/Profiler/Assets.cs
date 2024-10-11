@@ -266,7 +266,7 @@ namespace FlaxEditor.Windows.Profiler
 
                 // Add row to the table
                 row.Width = _table.Width;
-                row.BackgroundColor = rowIndex % 2 == 0 ? rowColor2 : Color.Transparent;
+                row.BackgroundColor = rowIndex % 2 == 1 ? rowColor2 : Color.Transparent;
                 row.Parent = _table;
                 rowIndex++;
             }
