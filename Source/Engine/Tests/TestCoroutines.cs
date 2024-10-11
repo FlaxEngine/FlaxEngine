@@ -14,7 +14,7 @@ public class TestCoroutines
     public void TestCoroutineBuilder()
     {
         CoroutineExecutor executor = new();
-        executor.Execute(
+        executor.ExecuteOnce(
             new CoroutineBuilder()
                 .ThenRun(CoroutineSuspensionPointIndex.Update, () => { })
                 .ThenWaitSeconds(1.0f)
@@ -36,7 +36,7 @@ public class TestCoroutines
             .ThenWaitFrames(1)
             .ThenRun(CoroutineSuspensionPointIndex.Update, () => { });
 
-        executor.Execute(coroutineA);
+        executor.ExecuteOnce(coroutineA);
            
         var coroutineB = new CoroutineBuilder()
             .ThenRun(CoroutineSuspensionPointIndex.Update, () => { })
@@ -45,7 +45,7 @@ public class TestCoroutines
             .ThenWaitFrames(1)
             .ThenRun(CoroutineSuspensionPointIndex.Update, () => { });
 
-        executor.Execute(coroutineB);
+        executor.ExecuteOnce(coroutineB);
     }
 }
 

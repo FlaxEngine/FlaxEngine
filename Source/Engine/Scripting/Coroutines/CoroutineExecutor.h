@@ -12,10 +12,23 @@ API_CLASS(Sealed) class FLAXENGINE_API CoroutineExecutor final : public Scriptin
     DECLARE_SCRIPTING_TYPE_WITH_CONSTRUCTOR_IMPL(CoroutineExecutor, ScriptingObject);
 
     /// <summary>
-    /// Adds a coroutine to the executor to be executed.
+    /// Adds a coroutine to the executor to be executed once.
     /// </summary>
     API_FUNCTION()
-    void Execute(ScriptingObjectReference<CoroutineBuilder> builder);
+    void ExecuteOnce(ScriptingObjectReference<CoroutineBuilder> builder);
+
+    /// <summary>
+    /// Adds a coroutine to the executor to be executed multiple times.
+    /// </summary>
+    API_FUNCTION()
+    void ExecuteRepeats(ScriptingObjectReference<CoroutineBuilder> builder, int32 repeats);
+
+    /// <summary>
+    /// Adds a coroutine to the executor to be executed indefinitely.
+    /// </summary>
+    API_FUNCTION()
+    void ExecuteLooped(ScriptingObjectReference<CoroutineBuilder> builder);
+
 
     /// <summary>
     /// Continues the execution of all coroutines at the given suspension point.
@@ -37,13 +50,17 @@ private:
     {
         BuilderReference _builder;
         int32            _stepIndex;
+        int32            _repeats;
 
     public:
+        constexpr static int32 InfiniteRepeats = -1; //TODO Use Nullable instead of sentinel when PR #2969 is merged.
+
         Execution() = delete;
 
-        explicit Execution(BuilderReference&& builder)
+        explicit Execution(BuilderReference&& builder, const int32 repeats = 1)
             : _builder{ builder }
             , _stepIndex{ 0 }
+            , _repeats{ repeats }
         {
         }
 

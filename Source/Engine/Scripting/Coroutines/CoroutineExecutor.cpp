@@ -3,11 +3,24 @@
 #include "CoroutineExecutor.h"
 
 
-void CoroutineExecutor::Execute(ScriptingObjectReference<CoroutineBuilder> builder)
+void CoroutineExecutor::ExecuteOnce(ScriptingObjectReference<CoroutineBuilder> builder)
 {
     Execution execution{ MoveTemp(builder) };
     _executions.Add(MoveTemp(execution));
 }
+
+void CoroutineExecutor::ExecuteRepeats(ScriptingObjectReference<CoroutineBuilder> builder, const int32 repeats)
+{
+    Execution execution{ MoveTemp(builder), repeats };
+    _executions.Add(MoveTemp(execution));
+}
+
+void CoroutineExecutor::ExecuteLooped(ScriptingObjectReference<CoroutineBuilder> builder)
+{
+    Execution execution{ MoveTemp(builder), Execution::InfiniteRepeats };
+    _executions.Add(MoveTemp(execution));
+}
+
 
 void CoroutineExecutor::Continue(const CoroutineSuspensionPointIndex point)
 {
@@ -16,7 +29,7 @@ void CoroutineExecutor::Continue(const CoroutineSuspensionPointIndex point)
     for (int32 i = 0; i < _executions.Count();)
     {
         Execution& execution  = _executions[i];
-        const bool reachedEnd = execution.ContinueCoroutine(point, delta); //TODO(mtszkarbowiak) Support for looped coroutines.
+        const bool reachedEnd = execution.ContinueCoroutine(point, delta);
 
         if (reachedEnd)
         {
@@ -50,6 +63,20 @@ bool CoroutineExecutor::Execution::ContinueCoroutine(
         ++_stepIndex;
     }
 
+    if (_repeats == InfiniteRepeats)
+    {
+        _stepIndex = 0;
+        return false; // The coroutine should be executed indefinitely.
+    }
+
+    if (_repeats > 1)
+    {
+        --_repeats;
+        _stepIndex = 0;
+        return false; // The coroutine should be executed again
+    }
+
+    ASSERT(_repeats == 1);
     return true; // The coroutine reached the end of the steps.
 }
 
