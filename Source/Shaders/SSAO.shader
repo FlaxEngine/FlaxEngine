@@ -23,7 +23,6 @@
 #include "./Flax/Gather.hlsl"
 #include "./Flax/GBuffer.hlsl"
 
-#define GTAO_MAX_PIXEL_SCREEN_RADIUS 256.0f
 #define SSAO_DEPTH_MIP_LEVELS 4 // <- must match C++ define
 
 // Progressive poisson-like pattern; x, y are in [-1, 1] range, .z is length(float2(x,y)), .w is log2(z)
@@ -45,6 +44,10 @@ static const float4 g_samplePatternMain[INTELSSAO_MAIN_DISK_SAMPLE_COUNT] =
 static const uint g_assaoNumTaps[4] = { 3, 5, 8, 12 };
 static const uint g_gtaoNumTaps[4] = { 1, 2, 3, 4 };
 static const uint g_gtaoNumSlices[4] = { 2, 4, 5, 6 };
+
+#define GTAO_MAX_PIXEL_SCREEN_RADIUS 256.0f
+// Push small occlusion values towards 0
+#define GTAO_OCCLUSION_THRESHOLD    0.25f
 
 //
 // Optional parts that can be enabled for a required quality preset level and above (0 == Low, 1 == Medium, 2 == High, 3 == Highest)
@@ -103,11 +106,10 @@ float NegRecEffectRadius;               // -1.0 / EffectRadius
 float InvSharpness;
 float DetailAOStrength;
 
-// GTAO Constants
-float GTAOThickness;
-// GTAO Radius adjusted by FOV scale
-float GTAOAdjustedRadius;
+float GTAOThickness;  
+float GTAOAdjustedRadius;  // GTAO Radius adjusted by FOV scale
 float GTAOAttenFactor;
+float GTAOReserved;
 
 float4 PatternRotScaleMatrices[5];
 float4x4 ViewMatrix;
@@ -448,7 +450,7 @@ void ASSAOImpl(const int qualityLevel, inout float obscuranceSum, inout float we
 		SSAOTap(qualityLevel, obscuranceSum, weightSum, i, rotScale, pixCenterPos, negViewspaceDir, pixelNormal, normalizedScreenPos, mipOffset, falloffCalcMulSq, 1.0, normXY, normXYLength);
 	}
 
-	// Strength, only applicable to ASSAO, GTAO doesn't need this
+	// Strength
 	obscuranceSum *= EffectShadowStrength;
 }
 
@@ -462,8 +464,8 @@ float3 MultiBounce(float ao, float3 albedo)
     return max(ao, ((ao * a + b) * ao + c) * ao);
 }
 
-float2 SearchForLargestAngleDual(const int numberOfTaps, const float adjustedWorldRadius, const float attenFactor, const float2 sliceDir, const float3 viewDir, const float3 positionVS, const float2 normalizedScreenPos){
-	const float pixelRadius = max(min(adjustedWorldRadius / positionVS.z, GTAO_MAX_PIXEL_SCREEN_RADIUS), (float)numberOfTaps);
+float2 SearchForLargestAngleDual(const int numberOfTaps, const float2 sliceDir, const float3 viewDir, const float3 positionVS, const float2 normalizedScreenPos){
+	const float pixelRadius = max(min(GTAOAdjustedRadius / positionVS.z, GTAO_MAX_PIXEL_SCREEN_RADIUS), (float)numberOfTaps);
 	
 	const float stepRadius = pixelRadius / ((float)numberOfTaps + 1);
 	
@@ -495,7 +497,7 @@ float2 SearchForLargestAngleDual(const int numberOfTaps, const float adjustedWor
         float ooLen = rsqrt(lenSq + 0.0001);
         float ang = dot(h, viewDir) * ooLen;
 
-        float falloff = saturate(lenSq * attenFactor);  
+        float falloff = saturate(lenSq * GTAOAttenFactor);  
         ang = lerp(ang, bestAng.x, falloff);
 
         bestAng.x = (ang > bestAng.x) ? ang : lerp(ang, bestAng.x, GTAOThickness);  
@@ -506,7 +508,7 @@ float2 SearchForLargestAngleDual(const int numberOfTaps, const float adjustedWor
         ooLen = rsqrt(lenSq + 0.0001);
         ang = dot(h, viewDir) * ooLen;
 
-        falloff = saturate(lenSq * attenFactor);  
+        falloff = saturate(lenSq * GTAOAttenFactor);  
         ang = lerp(ang, bestAng.y, falloff);
 
         bestAng.y = (ang > bestAng.y) ? ang : lerp(ang, bestAng.y, GTAOThickness);
@@ -553,25 +555,23 @@ void GTAOImpl(const int qualityLevel, inout float obscuranceSum, inout float wei
     
 	// Slice direction, always normalized
 	float2 sliceDir = float2(1, 0);
-	float visibilitySum = 0;
 
+	const float PI_2 = 2.0 / PI;
 	for(int slice = 0; slice < numberOfSlices; slice++){
-		float2 bestAng = SearchForLargestAngleDual(numberOfTaps, GTAOAdjustedRadius, GTAOAttenFactor, sliceDir, viewDir, positionVS, normalizedScreenPos);
+		float2 bestAng = SearchForLargestAngleDual(numberOfTaps, sliceDir, viewDir, positionVS, normalizedScreenPos);
 		float visibility = ComputeInnerIntegral(bestAng, sliceDir, viewDir, pixelNormal);
-		visibilitySum += visibility;
+		// Obscurance = 1 - Visibility
+		obscuranceSum += 1.0 - min(1.0, PI_2 * (visibility + GTAO_OCCLUSION_THRESHOLD));
+		weightSum += 1.0;
 
 		// Unreal speedup
     	float2 tmpDir = sliceDir;
 		sliceDir.x = tmpDir.x * cosDeltaAngle - tmpDir.y * sinDeltaAngle;
 		sliceDir.y = tmpDir.x * sinDeltaAngle + tmpDir.y * cosDeltaAngle;
 	}
-	
-	// From Unreal
-	visibilitySum *= 2.0 / PI;
-	
-	// Obscurance = 1 - Visibility
-	obscuranceSum += (float)numberOfSlices - visibilitySum;
-	weightSum += (float)numberOfSlices;
+
+	// Strength, coeficient is to make SSAO and GTAO look roughly equally bright under same strength
+	obscuranceSum *= 0.25 * EffectShadowStrength;
 }
 
 // This function is designed to only work with half/half depth at the moment - there's a couple of hardcoded paths that expect pixel/texel size, so it will not work for full res

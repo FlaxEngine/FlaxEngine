@@ -21,7 +21,7 @@ class AmbientOcclusionPass : public RendererPass<AmbientOcclusionPass>
 private:
 
     // Packed shader constant buffer structure (this MUST match shader code)
-    GPU_CB_STRUCT(ASSAOConstants {
+    GPU_CB_STRUCT(SSAOConstants {
         ShaderGBufferData GBuffer;
 
         Float2 ViewportPixelSize;
@@ -54,7 +54,10 @@ private:
         float GTAOThickness;
         float GTAOAdjustedRadius;
         float GTAOAttenFactor;
+        // Reserved for 32-byte alignment
+        float GTAOReserved;
 
+        // MUST BE 32-aligned
         Float4 PatternRotScaleMatrices[5];
         Matrix ViewMatrix;
         });
@@ -106,7 +109,7 @@ private:
     float m_sizeY;
     float m_halfSizeX;
     float m_halfSizeY;
-    ASSAOConstants _constantsBufferData;
+    SSAOConstants _constantsBufferData;
     SSAO_Settings settings;
 
 public:

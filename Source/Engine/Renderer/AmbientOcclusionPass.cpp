@@ -97,9 +97,9 @@ bool AmbientOcclusionPass::setupResources()
     const auto shader = _shader->GetShader();
 
     // Validate shader constant buffer size
-    if (shader->GetCB(0)->GetSize() != sizeof(ASSAOConstants))
+    if (shader->GetCB(0)->GetSize() != sizeof(SSAOConstants))
     {
-        REPORT_INVALID_SHADER_PASS_CB_SIZE(shader, 0, ASSAOConstants);
+        REPORT_INVALID_SHADER_PASS_CB_SIZE(shader, 0, SSAOConstants);
         return true;
     }
 
