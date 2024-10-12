@@ -557,6 +557,7 @@ void GTAOImpl(const int qualityLevel, inout float obscuranceSum, inout float wei
 	// Slice direction, always normalized
 	float2 sliceDir = float2(1, 0);
 
+	// Norm coeficient used in the original paper and the Unreal implementation, however it makes the scene look dark, so we comment it out now
 	const float PI_2 = 2.0 / PI;
 	for(int slice = 0; slice < numberOfSlices; slice++){
 		float2 bestAng = SearchForLargestAngleDual(numberOfTaps, sliceDir, viewDir, positionVS, normalizedScreenPos);
@@ -565,7 +566,7 @@ void GTAOImpl(const int qualityLevel, inout float obscuranceSum, inout float wei
 		visibility = MultiBounce(visibility, float3(1, 1, 1));
 #endif
 		// Obscurance = 1 - Visibility
-		obscuranceSum += 1.0 - min(1.0, PI_2 * visibility);
+		obscuranceSum += 1.0 - min(1.0, /* PI_2* */ visibility);
 		weightSum += 1.0;
 
 		// Unreal speedup
