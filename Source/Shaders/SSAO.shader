@@ -29,25 +29,23 @@
 #define INTELSSAO_MAIN_DISK_SAMPLE_COUNT (32)
 static const float4 g_samplePatternMain[INTELSSAO_MAIN_DISK_SAMPLE_COUNT] =
 {
-    float4( 0.78488064,  0.56661671,  1.500000, -0.126083),    float4( 0.26022232, -0.29575172,  1.500000, -1.064030),    float4( 0.10459357,  0.08372527,  1.110000, -2.730563),    float4(-0.68286800,  0.04963045,  1.090000, -0.498827),
-    float4(-0.13570161, -0.64190155,  1.250000, -0.532765),    float4(-0.26193795, -0.08205118,  0.670000, -1.783245),    float4(-0.61177456,  0.66664219,  0.710000, -0.044234),    float4( 0.43675563,  0.25119025,  0.610000, -1.167283),
-    float4( 0.07884444,  0.86618668,  0.640000, -0.459002),    float4(-0.12790935, -0.29869005,  0.600000, -1.729424),    float4(-0.04031125,  0.02413622,  0.600000, -4.792042),    float4( 0.16201244, -0.52851415,  0.790000, -1.067055),
-    float4(-0.70991218,  0.47301072,  0.640000, -0.335236),    float4( 0.03277707, -0.22349690,  0.600000, -1.982384),    float4( 0.68921727,  0.36800742,  0.630000, -0.266718),    float4( 0.29251814,  0.37775412,  0.610000, -1.422520),
-    float4(-0.12224089,  0.96582592,  0.600000, -0.426142),    float4( 0.11071457, -0.16131058,  0.600000, -2.165947),    float4( 0.46562141, -0.59747696,  0.600000, -0.189760),    float4(-0.51548797,  0.11804193,  0.600000, -1.246800),
-    float4( 0.89141309, -0.42090443,  0.600000,  0.028192),    float4(-0.32402530, -0.01591529,  0.600000, -1.543018),    float4( 0.60771245,  0.41635221,  0.600000, -0.605411),    float4( 0.02379565, -0.08239821,  0.600000, -3.809046),
-    float4( 0.48951152, -0.23657045,  0.600000, -1.189011),    float4(-0.17611565, -0.81696892,  0.600000, -0.513724),    float4(-0.33930185, -0.20732205,  0.600000, -1.698047),    float4(-0.91974425,  0.05403209,  0.600000,  0.062246),
-    float4(-0.15064627, -0.14949332,  0.600000, -1.896062),    float4( 0.53180975, -0.35210401,  0.600000, -0.758838),    float4( 0.41487166,  0.81442589,  0.600000, -0.505648),    float4(-0.24106961, -0.32721516,  0.600000, -1.665244)
+	float4( 0.78488064,  0.56661671,  1.500000, -0.126083),    float4( 0.26022232, -0.29575172,  1.500000, -1.064030),    float4( 0.10459357,  0.08372527,  1.110000, -2.730563),    float4(-0.68286800,  0.04963045,  1.090000, -0.498827),
+	float4(-0.13570161, -0.64190155,  1.250000, -0.532765),    float4(-0.26193795, -0.08205118,  0.670000, -1.783245),    float4(-0.61177456,  0.66664219,  0.710000, -0.044234),    float4( 0.43675563,  0.25119025,  0.610000, -1.167283),
+	float4( 0.07884444,  0.86618668,  0.640000, -0.459002),    float4(-0.12790935, -0.29869005,  0.600000, -1.729424),    float4(-0.04031125,  0.02413622,  0.600000, -4.792042),    float4( 0.16201244, -0.52851415,  0.790000, -1.067055),
+	float4(-0.70991218,  0.47301072,  0.640000, -0.335236),    float4( 0.03277707, -0.22349690,  0.600000, -1.982384),    float4( 0.68921727,  0.36800742,  0.630000, -0.266718),    float4( 0.29251814,  0.37775412,  0.610000, -1.422520),
+	float4(-0.12224089,  0.96582592,  0.600000, -0.426142),    float4( 0.11071457, -0.16131058,  0.600000, -2.165947),    float4( 0.46562141, -0.59747696,  0.600000, -0.189760),    float4(-0.51548797,  0.11804193,  0.600000, -1.246800),
+	float4( 0.89141309, -0.42090443,  0.600000,  0.028192),    float4(-0.32402530, -0.01591529,  0.600000, -1.543018),    float4( 0.60771245,  0.41635221,  0.600000, -0.605411),    float4( 0.02379565, -0.08239821,  0.600000, -3.809046),
+	float4( 0.48951152, -0.23657045,  0.600000, -1.189011),    float4(-0.17611565, -0.81696892,  0.600000, -0.513724),    float4(-0.33930185, -0.20732205,  0.600000, -1.698047),    float4(-0.91974425,  0.05403209,  0.600000,  0.062246),
+	float4(-0.15064627, -0.14949332,  0.600000, -1.896062),    float4( 0.53180975, -0.35210401,  0.600000, -0.758838),    float4( 0.41487166,  0.81442589,  0.600000, -0.505648),    float4(-0.24106961, -0.32721516,  0.600000, -1.665244)
 };
 
 // These values can be changed with no changes required elsewhere;
 // The actual number of texture samples is two times this value (each "tap" has two symmetrical depth texture samples)
 static const uint g_assaoNumTaps[4] = { 3, 5, 8, 12 };
-static const uint g_gtaoNumTaps[4] = { 1, 2, 3, 4 };
+static const uint g_gtaoNumTaps[4] = { 2, 3, 5, 8 };
 static const uint g_gtaoNumSlices[4] = { 2, 4, 5, 6 };
 
 #define GTAO_MAX_PIXEL_SCREEN_RADIUS 256.0f
-// Push small occlusion values towards 0
-#define GTAO_OCCLUSION_THRESHOLD    0.25f
 
 //
 // Optional parts that can be enabled for a required quality preset level and above (0 == Low, 1 == Medium, 2 == High, 3 == Highest)
@@ -454,14 +452,16 @@ void ASSAOImpl(const int qualityLevel, inout float obscuranceSum, inout float we
 	obscuranceSum *= EffectShadowStrength;
 }
 
-// Multi-bounce approximating, reserved for future use
-float3 MultiBounce(float ao, float3 albedo)
+// SIGGRAPH 2016: Practical Realtime Strategies for Accurate Indirect Occlusion
+// Multi-bounce approximating
+float MultiBounce(float ao, float3 albedo)
 {
-    float3 a = 2.0404 * albedo - 0.3324;
-    float3 b = -4.7951 * albedo + 0.6417;
-    float3 c = 2.7552 * albedo + 0.6903;
+	float3 a = 2.0404 * albedo - 0.3324;
+	float3 b = -4.7951 * albedo + 0.6417;
+	float3 c = 2.7552 * albedo + 0.6903;
 
-    return max(ao, ((ao * a + b) * ao + c) * ao);
+	// Implicitly truncating the input vector
+	return max(ao, ((ao * a + b) * ao + c) * ao);
 }
 
 float2 SearchForLargestAngleDual(const int numberOfTaps, const float2 sliceDir, const float3 viewDir, const float3 positionVS, const float2 normalizedScreenPos){
@@ -473,11 +473,11 @@ float2 SearchForLargestAngleDual(const int numberOfTaps, const float2 sliceDir, 
 
 	// UNROLL
 	for(int i = 1; i <= numberOfTaps; i++)
-    {
-        float fi = (float)i;
-        float2 uvOffset = sliceDir * max(stepRadius * (fi + 1), fi + 1) * HalfViewportPixelSize;
-        uvOffset.y *= -1;
-        float4 sampleUV = normalizedScreenPos.xyxy + float4(uvOffset.xy, -uvOffset.xy);
+	{
+		float fi = (float)i;
+		float2 uvOffset = sliceDir * max(stepRadius * (fi + 1), fi + 1) * HalfViewportPixelSize;
+		uvOffset.y *= -1;
+		float4 sampleUV = normalizedScreenPos.xyxy + float4(uvOffset.xy, -uvOffset.xy);
 
 		float mipLevel = 0;
 		if(i == 2){
@@ -487,62 +487,62 @@ float2 SearchForLargestAngleDual(const int numberOfTaps, const float2 sliceDir, 
 			mipLevel += 2;
 		}
 
-        // Positive direction
+		// Positive direction
 		float2 sceneDepths;
-        sceneDepths.x = g_ViewspaceDepthSource.SampleLevel(SamplerPointClamp, sampleUV.xy, mipLevel).x;
-        sceneDepths.y = g_ViewspaceDepthSource.SampleLevel(SamplerPointClamp, sampleUV.zw, mipLevel).x;
+		sceneDepths.x = g_ViewspaceDepthSource.SampleLevel(SamplerPointClamp, sampleUV.xy, mipLevel).x;
+		sceneDepths.y = g_ViewspaceDepthSource.SampleLevel(SamplerPointClamp, sampleUV.zw, mipLevel).x;
 
-        float3 h = GetViewspacePos(sampleUV.xy, sceneDepths.x).xyz - positionVS;
-        float lenSq = dot(h, h);
-        float ooLen = rsqrt(lenSq + 0.0001);
-        float ang = dot(h, viewDir) * ooLen;
+		float3 h = GetViewspacePos(sampleUV.xy, sceneDepths.x).xyz - positionVS;
+		float lenSq = dot(h, h);
+		float ooLen = rsqrt(lenSq + 0.0001);
+		float ang = dot(h, viewDir) * ooLen;
 
-        float falloff = saturate(lenSq * GTAOAttenFactor);  
-        ang = lerp(ang, bestAng.x, falloff);
+		float falloff = saturate(lenSq * GTAOAttenFactor);  
+		ang = lerp(ang, bestAng.x, falloff);
 
-        bestAng.x = (ang > bestAng.x) ? ang : lerp(ang, bestAng.x, GTAOThickness);  
+		bestAng.x = (ang > bestAng.x) ? ang : lerp(ang, bestAng.x, GTAOThickness);  
 
-        // Negative direction
-        h = GetViewspacePos(sampleUV.zw, sceneDepths.y).xyz - positionVS;
-        lenSq = dot(h, h);
-        ooLen = rsqrt(lenSq + 0.0001);
-        ang = dot(h, viewDir) * ooLen;
+		// Negative direction
+		h = GetViewspacePos(sampleUV.zw, sceneDepths.y).xyz - positionVS;
+		lenSq = dot(h, h);
+		ooLen = rsqrt(lenSq + 0.0001);
+		ang = dot(h, viewDir) * ooLen;
 
-        falloff = saturate(lenSq * GTAOAttenFactor);  
-        ang = lerp(ang, bestAng.y, falloff);
+		falloff = saturate(lenSq * GTAOAttenFactor);  
+		ang = lerp(ang, bestAng.y, falloff);
 
-        bestAng.y = (ang > bestAng.y) ? ang : lerp(ang, bestAng.y, GTAOThickness);
-    }
+		bestAng.y = (ang > bestAng.y) ? ang : lerp(ang, bestAng.y, GTAOThickness);
+	}
 
-    bestAng.x = AcosFast(clamp(bestAng.x, -1.0, 1.0));
-    bestAng.y = AcosFast(clamp(bestAng.y, -1.0, 1.0));
+	bestAng.x = AcosFast(clamp(bestAng.x, -1.0, 1.0));
+	bestAng.y = AcosFast(clamp(bestAng.y, -1.0, 1.0));
 
 	return bestAng;
 }
 
 float ComputeInnerIntegral(float2 angles, const float2 sliceDir, const float3 viewDir, const float3 normalVS)
 {
-    // Given the angles found in the search plane we need to project the View Space Normal onto the plane defined by the search axis and the View Direction and perform the inner integrate
-    float3 planeNormal = normalize(cross(float3(sliceDir.xy, 0), viewDir));
-    float3 perp = cross(viewDir, planeNormal);
-    float3 projNormal = normalVS - planeNormal * dot(normalVS, planeNormal);
+	// Given the angles found in the search plane we need to project the View Space Normal onto the plane defined by the search axis and the View Direction and perform the inner integrate
+	float3 planeNormal = normalize(cross(float3(sliceDir.xy, 0), viewDir));
+	float3 perp = cross(viewDir, planeNormal);
+	float3 projNormal = normalVS - planeNormal * dot(normalVS, planeNormal);
 
-    float lenProjNormal = length(projNormal) + 0.000001f;
-    float recipMag = 1.0f / lenProjNormal;
+	float lenProjNormal = length(projNormal) + 0.000001f;
+	float recipMag = 1.0f / lenProjNormal;
 
-    float cosAng = dot(projNormal, perp) * recipMag;    
-    float gamma = AcosFast(cosAng) - PI_HALF;                
-    float cosGamma = dot(projNormal, viewDir) * recipMag;
-    float sinGamma = cosAng * -2.0f;                    
+	float cosAng = dot(projNormal, perp) * recipMag;    
+	float gamma = AcosFast(cosAng) - PI_HALF;                
+	float cosGamma = dot(projNormal, viewDir) * recipMag;
+	float sinGamma = cosAng * -2.0f;                    
 
-    // clamp to normal hemisphere 
-    angles.x = gamma + max(-angles.x - gamma, -PI_HALF);
-    angles.y = gamma + min( angles.y - gamma,  PI_HALF);
+	// clamp to normal hemisphere 
+	angles.x = gamma + max(-angles.x - gamma, -PI_HALF);
+	angles.y = gamma + min( angles.y - gamma,  PI_HALF);
 
-    float ao = (lenProjNormal * 0.25 * 
-                        ((angles.x * sinGamma + cosGamma - cos((2.0 * angles.x) - gamma)) +
-                            (angles.y * sinGamma + cosGamma - cos((2.0 * angles.y) - gamma))));
-    return ao;
+	float ao = (lenProjNormal * 0.25 * 
+						((angles.x * sinGamma + cosGamma - cos((2.0 * angles.x) - gamma)) +
+							(angles.y * sinGamma + cosGamma - cos((2.0 * angles.y) - gamma))));
+	return ao;
 }
 
 void GTAOImpl(const int qualityLevel, inout float obscuranceSum, inout float weightSum, const float3 positionVS, float3 pixelNormal, const float2 normalizedScreenPos, float weightMod){	
@@ -552,7 +552,7 @@ void GTAOImpl(const int qualityLevel, inout float obscuranceSum, inout float wei
 	const float3 viewDir = normalize(-positionVS);
 	const float deltaAngle = PI / numberOfSlices;
 	const float sinDeltaAngle = sin(deltaAngle), cosDeltaAngle = cos(deltaAngle);
-    
+	
 	// Slice direction, always normalized
 	float2 sliceDir = float2(1, 0);
 
@@ -560,12 +560,13 @@ void GTAOImpl(const int qualityLevel, inout float obscuranceSum, inout float wei
 	for(int slice = 0; slice < numberOfSlices; slice++){
 		float2 bestAng = SearchForLargestAngleDual(numberOfTaps, sliceDir, viewDir, positionVS, normalizedScreenPos);
 		float visibility = ComputeInnerIntegral(bestAng, sliceDir, viewDir, pixelNormal);
+		visibility = MultiBounce(visibility, float3(1, 1, 1));
 		// Obscurance = 1 - Visibility
-		obscuranceSum += 1.0 - min(1.0, PI_2 * (visibility + GTAO_OCCLUSION_THRESHOLD));
+		obscuranceSum += 1.0 - min(1.0, PI_2 * visibility);
 		weightSum += 1.0;
 
 		// Unreal speedup
-    	float2 tmpDir = sliceDir;
+		float2 tmpDir = sliceDir;
 		sliceDir.x = tmpDir.x * cosDeltaAngle - tmpDir.y * sinDeltaAngle;
 		sliceDir.y = tmpDir.x * sinDeltaAngle + tmpDir.y * cosDeltaAngle;
 	}
