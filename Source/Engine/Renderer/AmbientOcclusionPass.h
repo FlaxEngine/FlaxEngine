@@ -50,20 +50,17 @@ private:
         float InvSharpness;
         float DetailAOStrength;
 
-        Float4 PatternRotScaleMatrices[5];
+        // GTAO Constants
+        float GTAOThickness;
+        float GTAOAdjustedRadius;
+        float GTAOAttenFactor;
 
+        Float4 PatternRotScaleMatrices[5];
         Matrix ViewMatrix;
         });
 
-    GPU_CB_STRUCT(GTAOConstants {
-        float GTAOThickness;
-        float WorldRadius;
-        // 1 / tan(0.5*Fov)
-        float InvTanHalfFov;
-        });
-
     // Effect visual settings
-    struct ASSAO_Settings
+    struct SSAO_Settings
     {
         int Method; // The SSAO algorithm to use, see enum [SSAOMethod]
         float Radius; // [0.0,  ~ ] World (view) space size of the occlusion sphere.
@@ -77,8 +74,10 @@ private:
         float Sharpness; // [0.0, 1.0] (How much to bleed over edges; 1: not at all, 0.5: half-half; 0.0: completely ignore edges)
         float DetailShadowStrength; // [0.0, 5.0] Used for high-res detail AO using neighboring depth pixels: adds a lot of detail but also reduces temporal stability (adds aliasing).
         bool SkipHalfPixels; // [true/false] Use half of the pixels (checkerboard pattern)
-
-        ASSAO_Settings();
+        float GTAORadius; // [0.0,  ~ ] The radius of GTAO effect in world space units. 
+        float GTAOThickness; // [0.0, 1.0] How thick is the GTAO effect, only applicable to GTAO
+        
+        SSAO_Settings();
     };
 
 private:
@@ -108,7 +107,7 @@ private:
     float m_halfSizeX;
     float m_halfSizeY;
     ASSAOConstants _constantsBufferData;
-    ASSAO_Settings settings;
+    SSAO_Settings settings;
 
 public:
 

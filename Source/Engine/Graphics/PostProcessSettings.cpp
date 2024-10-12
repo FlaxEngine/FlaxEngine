@@ -17,17 +17,20 @@ void AmbientOcclusionSettings::BlendWith(AmbientOcclusionSettings& other, float 
     const bool isHalf = weight >= 0.5f;
 
     BLEND_BOOL(Enabled);
+    BLEND_ENUM(Method);
     BLEND_FLOAT(Intensity);
     BLEND_FLOAT(Power);
     BLEND_FLOAT(Radius);
     BLEND_FLOAT(FadeOutDistance);
     BLEND_FLOAT(FadeDistance);
+    BLEND_FLOAT(GTAORadius);
+    BLEND_FLOAT(GTAOThickness);
 }
 
 void GlobalIlluminationSettings::BlendWith(GlobalIlluminationSettings& other, float weight)
 {
     const bool isHalf = weight >= 0.5f;
-    BLEND_BOOL(Mode);
+    BLEND_ENUM(Mode);
     BLEND_FLOAT(Intensity);
     BLEND_FLOAT(BounceIntensity);
     BLEND_FLOAT(TemporalResponse);

@@ -14,7 +14,7 @@
 #include "Engine/Graphics/RenderBuffers.h"
 #include "Engine/Utilities/StringConverter.h"
 
-AmbientOcclusionPass::ASSAO_Settings::ASSAO_Settings()
+AmbientOcclusionPass::SSAO_Settings::SSAO_Settings()
 {
     Radius = 1.2f;
     ShadowMultiplier = 1.0f;
@@ -35,7 +35,6 @@ static_assert(SSAO_MAX_BLUR_PASS_COUNT >= 0, "Invalid maximum amount of SSAO blu
 
 // Shader Resource slots mapping (must match shader source)
 #define SSAO_CONSTANTS_BUFFER_SLOT 0
-#define GTAO_CONSTANTS_BUFFER_SLOT 1
 #define SSAO_TEXTURE_SLOT0 0
 #define SSAO_TEXTURE_SLOT1 1
 #define SSAO_TEXTURE_SLOT2 2
@@ -216,13 +215,15 @@ void AmbientOcclusionPass::Render(RenderContext& renderContext)
         return;
     PROFILE_GPU_CPU("Ambient Occlusion");
 
-    settings = ASSAO_Settings();
+    settings = SSAO_Settings();
     settings.Method = static_cast<int>(aoSettings.Method);
     settings.Radius = aoSettings.Radius * 0.006f;
     settings.ShadowMultiplier = aoSettings.Intensity;
     settings.ShadowPower = aoSettings.Power;
     settings.FadeOutTo = aoSettings.FadeOutDistance;
     settings.FadeOutFrom = aoSettings.FadeOutDistance - aoSettings.FadeDistance;
+    settings.GTAORadius = aoSettings.GTAORadius;
+    settings.GTAOThickness = aoSettings.GTAOThickness;
 
     // expose param for HorizonAngleThreshold ?
     // expose param for Sharpness ?
@@ -274,19 +275,7 @@ void AmbientOcclusionPass::Render(RenderContext& renderContext)
 
     // Update and bind SSAO constant buffer
     UpdateCB(renderContext, context, 0);
-
-    // Bind GTAO constant buffer if needed
-    if (aoSettings.Method == SSAOMethod::GTAO) {
-        auto gtaoCB = _shader->GetShader()->GetCB(GTAO_CONSTANTS_BUFFER_SLOT);
-
-        GTAOConstants gtaoConstants = {
-            0.5, 100, 1
-        };
-
-        context->UpdateCB(gtaoCB, &gtaoConstants);
-        context->BindCB(GTAO_CONSTANTS_BUFFER_SLOT, gtaoCB);
-    }
-
+    
     // Generate depths
     PrepareDepths(renderContext);
 
@@ -362,7 +351,7 @@ void AmbientOcclusionPass::UpdateCB(const RenderContext& renderContext, GPUConte
     _constantsBufferData.Viewport2xPixelSize = Float2(_constantsBufferData.ViewportPixelSize.X * 2.0f, _constantsBufferData.ViewportPixelSize.Y * 2.0f);
     _constantsBufferData.Viewport2xPixelSize_x_025 = Float2(_constantsBufferData.Viewport2xPixelSize.X * 0.25f, _constantsBufferData.Viewport2xPixelSize.Y * 0.25f);
 
-    const float tanHalfFOVY = 1.0f / proj.Values[1][1];
+    const float invTanHalfFOVY = view.IsPerspectiveProjection() ? proj.Values[1][1] : 1.0f;
 
     _constantsBufferData.EffectRadius = Math::Clamp(settings.Radius / farPlane * 10000.0f, 0.0f, 100000.0f);
     _constantsBufferData.EffectShadowStrength = Math::Clamp(settings.ShadowMultiplier * 4.3f, 0.0f, 10.0f);
@@ -390,9 +379,16 @@ void AmbientOcclusionPass::UpdateCB(const RenderContext& renderContext, GPUConte
         //_constantsBufferData.EffectShadowStrength *= 0.9f;
         effectSamplingRadiusNearLimit *= 1.50f;
     }
-    effectSamplingRadiusNearLimit /= tanHalfFOVY; // to keep the effect same regardless of FOV
+    effectSamplingRadiusNearLimit *= invTanHalfFOVY; // to keep the effect same regardless of FOV
     if (settings.SkipHalfPixels)
         _constantsBufferData.EffectRadius *= 0.8f;
+
+    // Bind GTAO constants if needed
+    if (settings.Method == static_cast<int>(SSAOMethod::GTAO)) {
+        _constantsBufferData.GTAOThickness = settings.GTAOThickness;
+        _constantsBufferData.GTAOAttenFactor = 2.0f / (settings.GTAORadius * settings.GTAORadius);
+        _constantsBufferData.GTAOAdjustedRadius = settings.GTAORadius * invTanHalfFOVY;
+    }
 
     _constantsBufferData.EffectSamplingRadiusNearLimitRec = 1.0f / effectSamplingRadiusNearLimit;
 

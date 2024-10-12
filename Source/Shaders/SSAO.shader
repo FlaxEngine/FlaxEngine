@@ -103,16 +103,14 @@ float NegRecEffectRadius;               // -1.0 / EffectRadius
 float InvSharpness;
 float DetailAOStrength;
 
-float4 PatternRotScaleMatrices[5];
-
-float4x4 ViewMatrix;
-META_CB_END
-
-META_CB_BEGIN(1, GTAOData)
+// GTAO Constants
 float GTAOThickness;
-float WorldRadius;
-// 1 / tan(0.5*Fov)
-float InvTanHalfFov;
+// GTAO Radius adjusted by FOV scale
+float GTAOAdjustedRadius;
+float GTAOAttenFactor;
+
+float4 PatternRotScaleMatrices[5];
+float4x4 ViewMatrix;
 META_CB_END
 
 DECLARE_GBUFFERDATA_ACCESS(GBuffer)
@@ -548,8 +546,6 @@ float ComputeInnerIntegral(float2 angles, const float2 sliceDir, const float3 vi
 void GTAOImpl(const int qualityLevel, inout float obscuranceSum, inout float weightSum, const float3 positionVS, float3 pixelNormal, const float2 normalizedScreenPos, float weightMod){	
 	const int numberOfTaps = g_gtaoNumTaps[qualityLevel];
 	const int numberOfSlices = g_gtaoNumSlices[qualityLevel];
-	const float adjustedWorldRadius = InvTanHalfFov * WorldRadius;
-	const float attenFactor = 2.0 / (WorldRadius * WorldRadius);
 	
 	const float3 viewDir = normalize(-positionVS);
 	const float deltaAngle = PI / numberOfSlices;
@@ -560,7 +556,7 @@ void GTAOImpl(const int qualityLevel, inout float obscuranceSum, inout float wei
 	float visibilitySum = 0;
 
 	for(int slice = 0; slice < numberOfSlices; slice++){
-		float2 bestAng = SearchForLargestAngleDual(numberOfTaps, adjustedWorldRadius, attenFactor, sliceDir, viewDir, positionVS, normalizedScreenPos);
+		float2 bestAng = SearchForLargestAngleDual(numberOfTaps, GTAOAdjustedRadius, GTAOAttenFactor, sliceDir, viewDir, positionVS, normalizedScreenPos);
 		float visibility = ComputeInnerIntegral(bestAng, sliceDir, viewDir, pixelNormal);
 		visibilitySum += visibility;
 
