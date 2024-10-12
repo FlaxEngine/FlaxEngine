@@ -14,7 +14,7 @@ class Engine;
 class RenderTask;
 class SceneRenderTask;
 class GPUSwapChain;
-class TextureData;
+struct TextureData;
 class IGuiData;
 
 /// <summary>

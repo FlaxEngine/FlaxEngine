@@ -97,6 +97,6 @@ public:
 
 private:
 #if USE_EDITOR
-    bool OnInitLightmap(class TextureData& image);
+    bool OnInitLightmap(struct TextureData& image);
 #endif
 };
