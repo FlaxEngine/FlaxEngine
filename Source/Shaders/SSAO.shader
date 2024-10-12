@@ -24,6 +24,7 @@
 #include "./Flax/GBuffer.hlsl"
 
 #define SSAO_DEPTH_MIP_LEVELS 4 // <- must match C++ define
+#define GTAO_USE_MULTIBOUNCE  1
 
 // Progressive poisson-like pattern; x, y are in [-1, 1] range, .z is length(float2(x,y)), .w is log2(z)
 #define INTELSSAO_MAIN_DISK_SAMPLE_COUNT (32)
@@ -560,7 +561,9 @@ void GTAOImpl(const int qualityLevel, inout float obscuranceSum, inout float wei
 	for(int slice = 0; slice < numberOfSlices; slice++){
 		float2 bestAng = SearchForLargestAngleDual(numberOfTaps, sliceDir, viewDir, positionVS, normalizedScreenPos);
 		float visibility = ComputeInnerIntegral(bestAng, sliceDir, viewDir, pixelNormal);
+#if GTAO_USE_MULTIBOUNCE
 		visibility = MultiBounce(visibility, float3(1, 1, 1));
+#endif
 		// Obscurance = 1 - Visibility
 		obscuranceSum += 1.0 - min(1.0, PI_2 * visibility);
 		weightSum += 1.0;
