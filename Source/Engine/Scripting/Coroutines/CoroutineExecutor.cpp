@@ -68,7 +68,7 @@ bool CoroutineExecutor::Execution::ContinueCoroutine(
     {
         const Step& step = _builder->GetSteps()[_stepIndex];
 
-        if (!TryMakeStep(step, point, delta))
+        if (!TryMakeStep(step, point, delta, this->_accumulator))
             return false; // The coroutine is waiting for the next frame or seconds.
 
         ++_stepIndex;
@@ -94,7 +94,8 @@ bool CoroutineExecutor::Execution::ContinueCoroutine(
 bool CoroutineExecutor::Execution::TryMakeStep(
     const CoroutineBuilder::Step&       step, 
     const CoroutineSuspensionPointIndex point,
-    const Delta&                        delta
+    const Delta&                        delta,
+    Delta&                              accumulator
 )
 {
     switch (step.GetType())
@@ -113,17 +114,29 @@ bool CoroutineExecutor::Execution::TryMakeStep(
 
         case StepType::WaitSeconds:
         {
-            if (step.GetSecondsDelay() > delta.time)
+            //TODO(mtszkarbowiak) Add protectors against checking for time at incorrect points.
+            // Currently accumulation happens at all points, but it should be done only at the Update point (or other points if needed).
+
+            accumulator.time += delta.time;
+
+            if (step.GetSecondsDelay() > accumulator.time)
                 return false;
 
+            accumulator.time = 0.0f; // Reset the time accumulator.
             return true;
         }
 
         case StepType::WaitFrames:
         {
-            if (step.GetFramesDelay() > delta.frames)
+            //TODO(mtszkarbowiak) Add protectors against checking for time at incorrect points.
+            // Currently accumulation happens at all points, but it should be done only at the Update point (or other points if needed).
+
+            accumulator.frames += delta.frames;
+
+            if (step.GetFramesDelay() > accumulator.frames)
                 return false;
 
+            accumulator.frames = 0; // Reset the frames accumulator.
             return true;
         }
 

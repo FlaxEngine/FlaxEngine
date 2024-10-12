@@ -49,6 +49,7 @@ private:
     class Execution final
     {
         BuilderReference _builder;
+        Delta            _accumulator;
         int32            _stepIndex;
         int32            _repeats;
 
@@ -59,6 +60,7 @@ private:
 
         explicit Execution(BuilderReference&& builder, const int32 repeats = 1)
             : _builder{ builder }
+            , _accumulator{ 0.0f, 0 }
             , _stepIndex{ 0 }
             , _repeats{ repeats }
         {
@@ -73,7 +75,12 @@ private:
         bool ContinueCoroutine(CoroutineSuspensionPointIndex point, const Delta& delta);
 
     private:
-        static bool TryMakeStep(const CoroutineBuilder::Step& step, CoroutineSuspensionPointIndex point, const Delta& delta);
+        static bool TryMakeStep(
+            const CoroutineBuilder::Step& step, 
+            CoroutineSuspensionPointIndex point,
+            const Delta& delta,
+            Delta&       accumulator
+        );
     };
 
     Array<Execution> _executions;
