@@ -36,6 +36,12 @@ CoroutineBuilder::Step::Step(RunnableReference&& runnable)
 {
 }
 
+CoroutineBuilder::Step::Step(const CoroutineSuspendPoint suspensionPoint)
+    : _suspensionPoint{ suspensionPoint }
+    , _type{ StepType::WaitSuspensionPoint }
+{
+}
+
 CoroutineBuilder::Step::Step(const int32 framesDelay)
     : _framesDelay{ framesDelay }
     , _type{ StepType::WaitFrames }
@@ -78,6 +84,10 @@ CoroutineBuilder::Step::Step(const Step& other)
             new (&_predicate) PredicateReference(other._predicate);
         break;
 
+        case StepType::WaitSuspensionPoint:
+            _suspensionPoint = other._suspensionPoint;
+        break;
+
         case StepType::None: CRASH;
         default:             break;
     }
@@ -104,6 +114,10 @@ CoroutineBuilder::Step::Step(Step&& other) noexcept
 
         case StepType::WaitUntil:
             new (&_predicate) PredicateReference(MoveTemp(other._predicate));
+        break;
+
+        case StepType::WaitSuspensionPoint:
+            _suspensionPoint = other._suspensionPoint;
         break;
 
         case StepType::None: CRASH;
@@ -169,6 +183,10 @@ auto CoroutineBuilder::Step::operator=(const Step& other) -> Step&
             new (&_predicate) PredicateReference(other._predicate);
         break;
 
+        case StepType::WaitSuspensionPoint:
+            _suspensionPoint = other._suspensionPoint;
+        break;
+
         case StepType::None: CRASH;
         default:             break;
     }
@@ -203,6 +221,10 @@ auto CoroutineBuilder::Step::operator=(Step&& other) noexcept -> Step&
 
         case StepType::WaitUntil:
             new (&_predicate) PredicateReference(MoveTemp(other._predicate));
+        break;
+
+        case StepType::WaitSuspensionPoint:
+            _suspensionPoint = other._suspensionPoint;
         break;
 
         case StepType::None: CRASH;
@@ -240,4 +262,10 @@ auto CoroutineBuilder::Step::GetSecondsDelay() const -> float
 {
     ASSERT(_type == StepType::WaitSeconds);
     return _secondsDelay;
+}
+
+auto CoroutineBuilder::Step::GetSuspensionPoint() const -> CoroutineSuspendPoint
+{
+    ASSERT(_type == StepType::WaitSuspensionPoint);
+    return _suspensionPoint;
 }

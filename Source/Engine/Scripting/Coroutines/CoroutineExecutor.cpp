@@ -114,6 +114,14 @@ bool CoroutineExecutor::Execution::TryMakeStep(
             return true;
         }
 
+        case StepType::WaitSuspensionPoint:
+        {
+            if (step.GetSuspensionPoint() != point)
+                return false;
+
+            return true;
+        }
+
         case StepType::WaitSeconds:
         {
             if (point != DeltaAccumulationPoint)
@@ -156,6 +164,7 @@ bool CoroutineExecutor::Execution::TryMakeStep(
             return true;
         }
 
+        case StepType::None:
         default:
         {
             CRASH;

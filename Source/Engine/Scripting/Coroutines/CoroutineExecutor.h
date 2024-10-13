@@ -59,7 +59,7 @@ private:
         Execution() = delete;
 
         explicit Execution(BuilderReference&& builder, const int32 repeats = 1)
-            : _builder{ builder }
+            : _builder{ MoveTemp(builder) }
             , _accumulator{ 0.0f, 0 }
             , _stepIndex{ 0 }
             , _repeats{ repeats }

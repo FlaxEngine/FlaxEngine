@@ -87,6 +87,7 @@ API_CLASS(Sealed) class FLAXENGINE_API CoroutineBuilder final : public Scripting
     {
         None,
         Run,
+        WaitSuspensionPoint,
         WaitSeconds,
         WaitFrames,
         WaitUntil,
@@ -98,17 +99,19 @@ API_CLASS(Sealed) class FLAXENGINE_API CoroutineBuilder final : public Scripting
 
         union 
         {
-            RunnableReference   _runnable;
-            PredicateReference  _predicate;
+            RunnableReference     _runnable;
+            PredicateReference    _predicate;
 
-            int32               _framesDelay;
-            float               _secondsDelay;
+            int32                 _framesDelay;
+            float                 _secondsDelay;
+            CoroutineSuspendPoint _suspensionPoint;
         };
 
         StepType _type;
 
     public:
         explicit Step(RunnableReference&& runnable);
+        explicit Step(CoroutineSuspendPoint suspensionPoint);
         explicit Step(int32 framesDelay);
         explicit Step(float secondsDelay);
         explicit Step(PredicateReference&& predicate);
@@ -125,11 +128,12 @@ API_CLASS(Sealed) class FLAXENGINE_API CoroutineBuilder final : public Scripting
         auto operator=(const Step& other) -> Step&;
         auto operator=(Step&& other) noexcept -> Step&;
 
-        auto GetType()         const -> StepType;
-        auto GetRunnable()     const -> const RunnableReference&;
-        auto GetPredicate()    const -> const PredicateReference&;
-        auto GetFramesDelay()  const -> int32;
-        auto GetSecondsDelay() const -> float;
+        auto GetType()            const -> StepType;
+        auto GetRunnable()        const -> const RunnableReference&;
+        auto GetPredicate()       const -> const PredicateReference&;
+        auto GetFramesDelay()     const -> int32;
+        auto GetSecondsDelay()    const -> float;
+        auto GetSuspensionPoint() const -> CoroutineSuspendPoint;
     };
 
 private:
