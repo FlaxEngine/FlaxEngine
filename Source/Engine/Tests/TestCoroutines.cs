@@ -10,6 +10,8 @@ namespace FlaxEngine.Tests;
 [TestFixture]
 public class TestCoroutines
 {
+    class BoxedInt { public int Value; }
+
     [Test]
     public void TestCoroutineBuilder()
     {
@@ -47,6 +49,37 @@ public class TestCoroutines
 
         executor.ExecuteOnce(coroutineB);
     }
+
+    [Test]
+    public void TestCoroutineTimeAccumulation()
+    {
+        BoxedInt          counter  = new();
+        CoroutineExecutor executor = new();
+
+        var coroutine = new CoroutineBuilder()
+            .ThenRun(CoroutineSuspendPoint.Update, () => { counter.Value++; })
+            .ThenWaitSeconds(1.0f)
+            .ThenRun(CoroutineSuspendPoint.Update, () => { counter.Value++; })
+            .ThenWaitFrames(3)
+            .ThenRun(CoroutineSuspendPoint.Update, () => { counter.Value++; });
+
+        executor.ExecuteOnce(coroutine);
+
+        Assert.AreEqual(0, counter.Value);
+        executor.Continue(CoroutineSuspendPoint.Update, 0.0f); // Total 0.0s
+        Assert.AreEqual(1, counter.Value);
+        executor.Continue(CoroutineSuspendPoint.Update, 0.3f); // Total 0.3s
+        Assert.AreEqual(1, counter.Value);
+        executor.Continue(CoroutineSuspendPoint.Update, 0.3f); // Total 0.6s
+        Assert.AreEqual(1, counter.Value);
+        executor.Continue(CoroutineSuspendPoint.Update, 0.3f); // Total 0.9s
+        Assert.AreEqual(1, counter.Value);
+        executor.Continue(CoroutineSuspendPoint.Update, 0.3f); // Total 1.2s
+        Assert.AreEqual(2, counter.Value);
+    }
+
+    //TODO Test waiting for a suspension point.
+    //TODO Test waiting for a condition.
 }
 
 #endif
