@@ -33,8 +33,14 @@ API_CLASS(Sealed) class FLAXENGINE_API CoroutineExecutor final : public Scriptin
     /// <summary>
     /// Continues the execution of all coroutines at the given suspension point.
     /// </summary>
+    /// <param name="point"> Game loop suspension point for the coroutines to try to continue execution. </param>
+    /// <param name="deltaTime">
+    /// Total time passed since the last Update event.
+    /// Warning: Do not use fixed-delta, because only delta time is used for the coroutines to accumulate time.
+    /// </param>
+    /// <remarks> Manually calling this method may cause undefined behaviors. It is exposed for the engine internals. </remarks>
     API_FUNCTION()
-    void Continue(CoroutineSuspendPoint point);
+    void Continue(CoroutineSuspendPoint point, float deltaTime);
 
 
 private:

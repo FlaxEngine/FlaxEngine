@@ -37,9 +37,11 @@ void CoroutineExecutor::ExecuteLooped(ScriptingObjectReference<CoroutineBuilder>
 }
 
 
-void CoroutineExecutor::Continue(const CoroutineSuspendPoint point)
+void CoroutineExecutor::Continue(
+    const CoroutineSuspendPoint point, 
+    const float deltaTime)
 {
-    const Delta delta{ 0.0f, 1 }; //TODO(mtszkarbowiak) Implement delta time and frames.
+    const Delta delta{ deltaTime, 1 };
 
     for (int32 i = 0; i < _executions.Count();)
     {
@@ -96,10 +98,10 @@ bool CoroutineExecutor::Execution::ContinueCoroutine(
 }
 
 bool CoroutineExecutor::Execution::TryMakeStep(
-    const CoroutineBuilder::Step&       step, 
-    const CoroutineSuspendPoint point,
-    const Delta&                        delta,
-    Delta&                              accumulator
+    const CoroutineBuilder::Step& step, 
+    const CoroutineSuspendPoint   point,
+    const Delta&                  delta,
+    Delta&                        accumulator
 )
 {
     switch (step.GetType())
