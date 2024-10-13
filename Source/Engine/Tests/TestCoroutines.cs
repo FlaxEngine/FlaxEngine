@@ -16,11 +16,11 @@ public class TestCoroutines
         CoroutineExecutor executor = new();
         executor.ExecuteOnce(
             new CoroutineBuilder()
-                .ThenRun(CoroutineSuspensionPointIndex.Update, () => { })
+                .ThenRun(CoroutineSuspendPoint.Update, () => { })
                 .ThenWaitSeconds(1.0f)
-                .ThenRun(CoroutineSuspensionPointIndex.Update, () => { })
+                .ThenRun(CoroutineSuspendPoint.Update, () => { })
                 .ThenWaitFrames(1)
-                .ThenRun(CoroutineSuspensionPointIndex.Update, () => { })
+                .ThenRun(CoroutineSuspendPoint.Update, () => { })
             );
     }
 
@@ -30,20 +30,20 @@ public class TestCoroutines
         CoroutineExecutor executor = new();
 
         var coroutineA = new CoroutineBuilder()
-            .ThenRun(CoroutineSuspensionPointIndex.Update, () => { })
+            .ThenRun(CoroutineSuspendPoint.Update, () => { })
             .ThenWaitSeconds(1.0f)
-            .ThenRun(CoroutineSuspensionPointIndex.Update, () => { })
+            .ThenRun(CoroutineSuspendPoint.Update, () => { })
             .ThenWaitFrames(1)
-            .ThenRun(CoroutineSuspensionPointIndex.Update, () => { });
+            .ThenRun(CoroutineSuspendPoint.Update, () => { });
 
         executor.ExecuteOnce(coroutineA);
            
         var coroutineB = new CoroutineBuilder()
-            .ThenRun(CoroutineSuspensionPointIndex.Update, () => { })
+            .ThenRun(CoroutineSuspendPoint.Update, () => { })
             .ThenWaitSeconds(1.0f)
-            .ThenRun(CoroutineSuspensionPointIndex.Update, () => { })
+            .ThenRun(CoroutineSuspendPoint.Update, () => { })
             .ThenWaitFrames(1)
-            .ThenRun(CoroutineSuspensionPointIndex.Update, () => { });
+            .ThenRun(CoroutineSuspendPoint.Update, () => { });
 
         executor.ExecuteOnce(coroutineB);
     }

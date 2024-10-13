@@ -34,7 +34,7 @@ API_CLASS(Sealed) class FLAXENGINE_API CoroutineExecutor final : public Scriptin
     /// Continues the execution of all coroutines at the given suspension point.
     /// </summary>
     API_FUNCTION()
-    void Continue(CoroutineSuspensionPointIndex point);
+    void Continue(CoroutineSuspendPoint point);
 
 
 private:
@@ -72,12 +72,12 @@ private:
         /// <returns>
         /// <c>true</c> if the coroutine should be removed from the executor, because it reached the end of the steps; otherwise, <c>false</c>.
         /// </returns>
-        bool ContinueCoroutine(CoroutineSuspensionPointIndex point, const Delta& delta);
+        bool ContinueCoroutine(CoroutineSuspendPoint point, const Delta& delta);
 
     private:
         static bool TryMakeStep(
             const CoroutineBuilder::Step& step, 
-            CoroutineSuspensionPointIndex point,
+            CoroutineSuspendPoint point,
             const Delta& delta,
             Delta&       accumulator
         );

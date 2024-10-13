@@ -33,7 +33,7 @@ void CoroutineExecutor::ExecuteLooped(ScriptingObjectReference<CoroutineBuilder>
 }
 
 
-void CoroutineExecutor::Continue(const CoroutineSuspensionPointIndex point)
+void CoroutineExecutor::Continue(const CoroutineSuspendPoint point)
 {
     const Delta delta{ 0.0f, 1 }; //TODO(mtszkarbowiak) Implement delta time and frames.
 
@@ -60,7 +60,7 @@ using StepType = CoroutineBuilder::StepType;
 
 
 bool CoroutineExecutor::Execution::ContinueCoroutine(
-    const CoroutineSuspensionPointIndex point, 
+    const CoroutineSuspendPoint point, 
     const Delta& delta
 )
 {
@@ -93,7 +93,7 @@ bool CoroutineExecutor::Execution::ContinueCoroutine(
 
 bool CoroutineExecutor::Execution::TryMakeStep(
     const CoroutineBuilder::Step&       step, 
-    const CoroutineSuspensionPointIndex point,
+    const CoroutineSuspendPoint point,
     const Delta&                        delta,
     Delta&                              accumulator
 )

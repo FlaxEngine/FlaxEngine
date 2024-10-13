@@ -2,8 +2,7 @@
 
 #pragma once
 
-#include "CoroutineSuspensionPointIndex.h"
-#include "CoroutineSuspensionPointsFlags.h"
+#include "CoroutineSuspendPoint.h"
 #include "Engine/Core/Types/BaseTypes.h"
 #include "Engine/Core/Types/Variant.h"
 #include "Engine/Core/Collections/Array.h"
@@ -26,7 +25,7 @@ API_CLASS(Sealed) class FLAXENGINE_API CoroutineRunnable final : public Scriptin
     /// Wait for one frame or reorder the steps if the execution point is earlier.
     /// </remarks>
     API_FIELD()
-    CoroutineSuspensionPointIndex ExecutionPoint = CoroutineSuspensionPointIndex::Update;
+    CoroutineSuspendPoint ExecutionPoint = CoroutineSuspendPoint::Update;
 
 
     /// <summary>
@@ -47,7 +46,7 @@ API_CLASS(Sealed) class FLAXENGINE_API CoroutinePredicate final : public Scripti
     /// Suspension point at which the predicate is checked.
     /// </summary>
     API_FIELD()
-    CoroutineSuspensionPointIndex ExecutionPoint = CoroutineSuspensionPointIndex::Update;
+    CoroutineSuspendPoint ExecutionPoint = CoroutineSuspendPoint::Update;
 
     /// <summary>
     /// Predicate checking if the coroutine may continue.

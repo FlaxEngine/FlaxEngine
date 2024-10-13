@@ -8,7 +8,7 @@ namespace FlaxEngine
     {
         public static CoroutineBuilder ThenRun(
             this CoroutineBuilder builder,
-            CoroutineSuspensionPointIndex executionPoint,
+            CoroutineSuspendPoint executionPoint,
             Action run)
         {
             CoroutineRunnable runnable = new()
