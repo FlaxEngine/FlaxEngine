@@ -5,6 +5,10 @@
 #include "Engine/Debug/DebugLog.h"
 
 
+// Universal shared point for all coroutines to accumulate any kind of time.
+// Update is used, because it is the only point that is guaranteed to be called exactly once every frame.
+constexpr static CoroutineSuspendPoint DeltaAccumulationPoint = CoroutineSuspendPoint::Update;
+
 void CoroutineExecutor::ExecuteOnce(ScriptingObjectReference<CoroutineBuilder> builder)
 {
     Execution execution{ MoveTemp(builder) };
@@ -102,20 +106,18 @@ bool CoroutineExecutor::Execution::TryMakeStep(
     {
         case StepType::Run:
         {
-            const auto& runnable = step.GetRunnable();
-
-            if (runnable->ExecutionPoint != point)
+            if (step.GetRunnable()->ExecutionPoint != point)
                 return false;
 
-            runnable->OnRun();
+            step.GetRunnable()->OnRun();
 
             return true;
         }
 
         case StepType::WaitSeconds:
         {
-            //TODO(mtszkarbowiak) Add protectors against checking for time at incorrect points.
-            // Currently accumulation happens at all points, but it should be done only at the Update point (or other points if needed).
+            if (point != DeltaAccumulationPoint)
+                return false;
 
             accumulator.time += delta.time;
 
@@ -128,8 +130,8 @@ bool CoroutineExecutor::Execution::TryMakeStep(
 
         case StepType::WaitFrames:
         {
-            //TODO(mtszkarbowiak) Add protectors against checking for time at incorrect points.
-            // Currently accumulation happens at all points, but it should be done only at the Update point (or other points if needed).
+            if (point != DeltaAccumulationPoint)
+                return false;
 
             accumulator.frames += delta.frames;
 
@@ -158,5 +160,7 @@ bool CoroutineExecutor::Execution::TryMakeStep(
         {
             CRASH;
         }
+
+        //TODO Optimize filtering accumulation steps by caching the expected suspend point. (Or filtering it by bit-field)
     }
 };
