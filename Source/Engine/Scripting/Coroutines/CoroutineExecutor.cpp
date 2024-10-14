@@ -16,8 +16,8 @@ ScriptingObjectReference<CoroutineHandle> CoroutineExecutor::ExecuteOnce(Scripti
     _executions.Add(MoveTemp(execution));
 
     ScriptingObjectReference<CoroutineHandle> handle = NewObject<CoroutineHandle>();
-    handle->ID       = id;
-    handle->Executor = ScriptingObjectReference<CoroutineExecutor>{ this };
+    handle->ExecutionID = id;
+    handle->Executor    = ScriptingObjectReference<CoroutineExecutor>{ this };
     return handle;
 }
 
@@ -37,8 +37,8 @@ ScriptingObjectReference<CoroutineHandle> CoroutineExecutor::ExecuteRepeats(Scri
     _executions.Add(MoveTemp(execution));
 
     ScriptingObjectReference<CoroutineHandle> handle = NewObject<CoroutineHandle>();
-    handle->ID       = id;
-    handle->Executor = ScriptingObjectReference<CoroutineExecutor>{ this };
+    handle->ExecutionID = id;
+    handle->Executor    = ScriptingObjectReference<CoroutineExecutor>{ this };
     return handle;
 }
 
@@ -49,8 +49,8 @@ ScriptingObjectReference<CoroutineHandle> CoroutineExecutor::ExecuteLooped(Scrip
     _executions.Add(MoveTemp(execution));
 
     ScriptingObjectReference<CoroutineHandle> handle = NewObject<CoroutineHandle>();
-    handle->ID       = id;
-    handle->Executor = ScriptingObjectReference<CoroutineExecutor>{ this };
+    handle->ExecutionID = id;
+    handle->Executor    = ScriptingObjectReference<CoroutineExecutor>{ this };
     return handle;
 }
 

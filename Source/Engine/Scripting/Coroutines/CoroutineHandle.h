@@ -14,20 +14,34 @@ API_CLASS(Sealed) class FLAXENGINE_API CoroutineHandle final : public ScriptingO
 {
     DECLARE_SCRIPTING_TYPE_WITH_CONSTRUCTOR_IMPL(CoroutineHandle, ScriptingObject);
 
-
+    /// <summary>
+    /// Requests the origin executor to cancel the coroutine.
+    /// </summary>
     API_FUNCTION()
     bool Cancel();
-    
+
+    /// <summary>
+    /// Requests the origin executor to pause the coroutine.
+    /// </summary>
     API_FUNCTION()
     bool Pause();
-    
+
+    /// <summary>
+    /// Requests the origin executor to resume the coroutine.
+    /// </summary>
     API_FUNCTION()
     bool Resume();
 
 
+    /// <summary>
+    /// Unique identifier of the coroutine execution instance.
+    /// </summary>
     API_FIELD(ReadOnly)
-    uint64 ID = 0;
+    uint64 ExecutionID = 0;
 
+    /// <summary>
+    /// The executor that is responsible for the coroutine.
+    /// </summary>
     API_FIELD(ReadOnly)
     ScriptingObjectReference<class CoroutineExecutor> Executor;
 };
