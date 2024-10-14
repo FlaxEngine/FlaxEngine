@@ -30,9 +30,6 @@ API_CLASS(Sealed) class FLAXENGINE_API CoroutineExecutor final : public Scriptin
     API_FUNCTION()
     ScriptingObjectReference<CoroutineHandle> ExecuteLooped(ScriptingObjectReference<CoroutineBuilder> builder);
 
-    //TODO Add coroutine execution handle to allow for manual cancellation of the coroutine.
-    //TODO Maybe it would be beneficial to also add pausing and resuming coroutines.
-
 
     /// <summary>
     /// Continues the execution of all coroutines at the given suspension point.
