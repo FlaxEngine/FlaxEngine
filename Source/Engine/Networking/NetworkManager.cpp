@@ -10,12 +10,13 @@
 #include "FlaxEngine.Gen.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Collections/Array.h"
+#include "Engine/Core/Collections/Dictionary.h"
 #include "Engine/Engine/EngineService.h"
 #include "Engine/Engine/Time.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Scripting/Scripting.h"
 
-#define NETWORK_PROTOCOL_VERSION 3
+#define NETWORK_PROTOCOL_VERSION 4
 
 float NetworkManager::NetworkFPS = 60.0f;
 NetworkPeer* NetworkManager::Peer = nullptr;
