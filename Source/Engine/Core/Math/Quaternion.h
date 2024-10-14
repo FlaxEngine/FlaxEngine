@@ -19,7 +19,7 @@ API_STRUCT() struct FLAXENGINE_API Quaternion
     /// <summary>
     /// Equality tolerance factor used when comparing quaternions via dot operation.
     /// </summary>
-    API_FIELD() static constexpr Real Tolerance = 0.9999999f;
+    API_FIELD() static constexpr Real Tolerance = 0.999999f;
 
 public:
     union
@@ -358,7 +358,7 @@ public:
     /// <returns><c>true</c> if the specified <see cref="Quaternion" /> isn't equal to this instance; otherwise, <c>false</c>.</returns>
     FORCE_INLINE bool operator!=(const Quaternion& other) const
     {
-        return !(*this == other);
+        return Dot(*this, other) < Tolerance;
     }
 
 public:
