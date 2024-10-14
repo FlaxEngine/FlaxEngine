@@ -12,6 +12,7 @@ enum class NetworkMessageIDs : uint8
     None = 0,
     Handshake,
     HandshakeReply,
+    Key,
     ObjectReplicate,
     ObjectReplicatePart,
     ObjectSpawn,
