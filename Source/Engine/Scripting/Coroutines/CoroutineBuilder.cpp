@@ -27,6 +27,21 @@ ScriptingObjectReference<CoroutineBuilder> CoroutineBuilder::ThenWaitUntil(Scrip
     return this;
 }
 
+ScriptingObjectReference<CoroutineBuilder> CoroutineBuilder::ThenRunFunc(Function<void()> runnable)
+{
+    ScriptingObjectReference<CoroutineRunnable> runnableReference = NewObject<CoroutineRunnable>();
+    runnableReference->OnRun.Bind(runnable);
+    _steps.Add(Step{ MoveTemp(runnableReference) });
+    return this;
+}
+
+ScriptingObjectReference<CoroutineBuilder> CoroutineBuilder::ThenWaitUntilFunc(Function<void(bool&)> predicate)
+{
+    ScriptingObjectReference<CoroutinePredicate> predicateReference = NewObject<CoroutinePredicate>();
+    predicateReference->OnCheck.Bind(predicate);
+    _steps.Add(Step{ MoveTemp(predicateReference) });
+    return this;
+}
 
 // Step is a type union initialized using specific constructor argument type. Be careful not to trigger implicit type conversion.
 
