@@ -22,5 +22,21 @@ namespace FlaxEngine
 
             return builder;
         }
+
+        public static CoroutineBuilder ThenWaitUntil(
+            this CoroutineBuilder builder,
+            Func<bool> condition)
+        {
+            CoroutinePredicate predicate = new()
+            {
+                ExecutionPoint = CoroutineSuspendPoint.Update,
+            };
+
+            predicate.OnCheck += (ref bool result) => result = condition();
+
+            builder.ThenWaitUntil(predicate);
+
+            return builder;
+        }
     }
 }

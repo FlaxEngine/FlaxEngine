@@ -78,8 +78,55 @@ public class TestCoroutines
         Assert.AreEqual(2, counter.Value);
     }
 
-    //TODO Test waiting for a suspension point.
-    //TODO Test waiting for a condition.
+    [Test]
+    public void TestCoroutineWaitForSuspensionPoint()
+    {
+        BoxedInt counter = new();
+        CoroutineExecutor executor = new();
+
+        var coroutine = new CoroutineBuilder()
+            .ThenRun(CoroutineSuspendPoint.Update, () => { counter.Value++; })
+            .ThenRun(CoroutineSuspendPoint.FixedUpdate, () => { counter.Value++; })
+            .ThenRun(CoroutineSuspendPoint.Update, () => { counter.Value++; });
+
+        executor.ExecuteOnce(coroutine);
+
+        Assert.AreEqual(0, counter.Value);
+        executor.Continue(CoroutineSuspendPoint.Update, 0.0f);
+        executor.Continue(CoroutineSuspendPoint.Update, 0.0f);
+        Assert.AreEqual(1, counter.Value);
+        executor.Continue(CoroutineSuspendPoint.FixedUpdate, 0.0f);
+        executor.Continue(CoroutineSuspendPoint.FixedUpdate, 0.0f);
+        executor.Continue(CoroutineSuspendPoint.FixedUpdate, 0.0f);
+        Assert.AreEqual(2, counter.Value);
+        executor.Continue(CoroutineSuspendPoint.Update, 0.0f);
+        executor.Continue(CoroutineSuspendPoint.Update, 0.0f);
+        Assert.AreEqual(3, counter.Value);
+    }
+
+    [Test]
+    public void TestCoroutineWaitForCondition()
+    {
+        BoxedInt counter = new();
+        BoxedInt signal = new();
+        CoroutineExecutor executor = new();
+
+        var coroutine = new CoroutineBuilder()
+            .ThenRun(CoroutineSuspendPoint.Update, () => { counter.Value++; })
+            .ThenWaitUntil(() => signal.Value == 1)
+            .ThenRun(CoroutineSuspendPoint.Update, () => { counter.Value++; });
+
+        executor.ExecuteOnce(coroutine);
+
+        Assert.AreEqual(0, counter.Value);
+        executor.Continue(CoroutineSuspendPoint.Update, 0.0f);
+        Assert.AreEqual(1, counter.Value);
+        executor.Continue(CoroutineSuspendPoint.Update, 0.0f);
+        Assert.AreEqual(1, counter.Value);
+        signal.Value = 1;
+        executor.Continue(CoroutineSuspendPoint.Update, 0.0f);
+        Assert.AreEqual(2, counter.Value);
+    }
 }
 
 #endif
