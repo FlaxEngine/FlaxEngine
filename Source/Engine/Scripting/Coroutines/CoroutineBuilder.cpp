@@ -234,6 +234,8 @@ auto CoroutineBuilder::Step::operator=(Step&& other) noexcept -> Step&
     return *this;
 }
 
+//TODO(mtszkarbowiak) Use EmplaceMove and EmplaceCopy instead of explicit constructor calls.
+
 
 CoroutineBuilder::StepType CoroutineBuilder::Step::GetType() const
 {

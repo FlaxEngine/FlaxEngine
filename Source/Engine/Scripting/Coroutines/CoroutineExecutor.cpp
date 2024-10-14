@@ -9,6 +9,7 @@
 // Update is used, because it is the only point that is guaranteed to be called exactly once every frame.
 constexpr static CoroutineSuspendPoint DeltaAccumulationPoint = CoroutineSuspendPoint::Update;
 
+
 ScriptingObjectReference<CoroutineHandle> CoroutineExecutor::ExecuteOnce(ScriptingObjectReference<CoroutineBuilder> builder)
 {
     const ExecutionID id = _uuidGenerator.Generate();

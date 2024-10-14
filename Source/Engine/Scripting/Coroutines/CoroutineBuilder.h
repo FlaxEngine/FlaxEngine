@@ -27,6 +27,8 @@ API_CLASS(Sealed) class FLAXENGINE_API CoroutineRunnable final : public Scriptin
     API_FIELD()
     CoroutineSuspendPoint ExecutionPoint = CoroutineSuspendPoint::Update;
 
+    //TODO(mtszkarbowiak) Remove waiting for execution point from the coroutine runnable.
+
 
     /// <summary>
     /// Action to be executed at the suspension point.
@@ -48,6 +50,8 @@ API_CLASS(Sealed) class FLAXENGINE_API CoroutinePredicate final : public Scripti
     API_FIELD()
     CoroutineSuspendPoint ExecutionPoint = CoroutineSuspendPoint::Update;
 
+    //TODO(mtszkarbowiak) Remove waiting for execution point from the coroutine predicate.
+
     /// <summary>
     /// Predicate checking if the coroutine may continue.
     /// </summary>
@@ -57,7 +61,7 @@ API_CLASS(Sealed) class FLAXENGINE_API CoroutinePredicate final : public Scripti
     API_EVENT()
     Delegate<bool&> OnCheck;
 
-    //TODO Consider making OnCheck protected and expose subscription method to avoid direct access to the event.
+    //TODO(mtszkarbowiak) Consider making OnCheck protected and expose subscription method to avoid direct access to the event.
 };
 
 /// <summary>
@@ -67,15 +71,19 @@ API_CLASS(Sealed) class FLAXENGINE_API CoroutineBuilder final : public Scripting
 {
     DECLARE_SCRIPTING_TYPE_WITH_CONSTRUCTOR_IMPL(CoroutineBuilder, ScriptingObject);
 
+    /// <summary> Executes the code. </summary>
     API_FUNCTION()
     ScriptingObjectReference<CoroutineBuilder> ThenRun(ScriptingObjectReference<CoroutineRunnable> runnable);
 
+    /// <summary> Suspends the coroutine for the given number of seconds. </summary>
     API_FUNCTION()
     ScriptingObjectReference<CoroutineBuilder> ThenWaitSeconds(float seconds);
 
+    /// <summary> Suspends the coroutine for the given number of frames. </summary>
     API_FUNCTION()
     ScriptingObjectReference<CoroutineBuilder> ThenWaitFrames(int32 frames);
 
+    /// <summary> Suspends the coroutine until the predicate is true. </summary>
     API_FUNCTION()
     ScriptingObjectReference<CoroutineBuilder> ThenWaitUntil(ScriptingObjectReference<CoroutinePredicate> predicate);
 
