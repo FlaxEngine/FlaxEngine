@@ -230,6 +230,12 @@ namespace FlaxEditor.Windows.Profiler
         /// <inheritdoc />
         public override void OnUpdate()
         {
+            for (int i = 0; i < _tabs.ChildrenCount; i++)
+            {
+                if (_tabs.Children[i] is ProfilerMode mode)
+                    mode.UpdateStats();
+            }
+
             if (LiveRecording)
             {
                 FlaxEngine.Profiler.BeginEvent("ProfilerWindow.OnUpdate");

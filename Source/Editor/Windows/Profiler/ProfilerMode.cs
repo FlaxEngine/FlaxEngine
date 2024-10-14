@@ -121,6 +121,13 @@ namespace FlaxEditor.Windows.Profiler
         }
 
         /// <summary>
+        /// Tick called before updating any modes display. Can be used to update per-frame statistics data.
+        /// </summary>
+        public virtual void UpdateStats()
+        {
+        }
+
+        /// <summary>
         /// Updates the mode view. Called after init and on selected frame changed.
         /// </summary>
         /// <param name="selectedFrame">The selected frame index.</param>
