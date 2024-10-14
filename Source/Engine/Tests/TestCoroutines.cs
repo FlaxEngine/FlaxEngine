@@ -16,7 +16,7 @@ public class TestCoroutines
     public void TestCoroutineBuilder()
     {
         CoroutineExecutor executor = new();
-        executor.ExecuteOnce(
+        var handle = executor.ExecuteOnce(
             new CoroutineBuilder()
                 .ThenRun(CoroutineSuspendPoint.Update, () => { })
                 .ThenWaitSeconds(1.0f)
@@ -24,6 +24,8 @@ public class TestCoroutines
                 .ThenWaitFrames(1)
                 .ThenRun(CoroutineSuspendPoint.Update, () => { })
             );
+
+        Assert.IsNotNull(handle);
     }
 
     [Test]
@@ -38,8 +40,9 @@ public class TestCoroutines
             .ThenWaitFrames(1)
             .ThenRun(CoroutineSuspendPoint.Update, () => { });
 
-        executor.ExecuteOnce(coroutineA);
-           
+        var handle1 = executor.ExecuteOnce(coroutineA);
+        Assert.IsNotNull(handle1);
+
         var coroutineB = new CoroutineBuilder()
             .ThenRun(CoroutineSuspendPoint.Update, () => { })
             .ThenWaitSeconds(1.0f)
@@ -47,7 +50,8 @@ public class TestCoroutines
             .ThenWaitFrames(1)
             .ThenRun(CoroutineSuspendPoint.Update, () => { });
 
-        executor.ExecuteOnce(coroutineB);
+        var handle2 = executor.ExecuteOnce(coroutineB);
+        Assert.IsNotNull(handle2);
     }
 
     [Test]
@@ -63,7 +67,8 @@ public class TestCoroutines
             .ThenWaitFrames(3)
             .ThenRun(CoroutineSuspendPoint.Update, () => { counter.Value++; });
 
-        executor.ExecuteOnce(coroutine);
+        var handle = executor.ExecuteOnce(coroutine);
+        Assert.IsNotNull(handle);
 
         Assert.AreEqual(0, counter.Value);
         executor.Continue(CoroutineSuspendPoint.Update, 0.0f); // Total 0.0s
@@ -89,7 +94,8 @@ public class TestCoroutines
             .ThenRun(CoroutineSuspendPoint.FixedUpdate, () => { counter.Value++; })
             .ThenRun(CoroutineSuspendPoint.Update, () => { counter.Value++; });
 
-        executor.ExecuteOnce(coroutine);
+        var handle = executor.ExecuteOnce(coroutine);
+        Assert.IsNotNull(handle);
 
         Assert.AreEqual(0, counter.Value);
         executor.Continue(CoroutineSuspendPoint.Update, 0.0f);
@@ -116,7 +122,8 @@ public class TestCoroutines
             .ThenWaitUntil(() => signal.Value == 1)
             .ThenRun(CoroutineSuspendPoint.Update, () => { counter.Value++; });
 
-        executor.ExecuteOnce(coroutine);
+        var handle = executor.ExecuteOnce(coroutine);
+        Assert.IsNotNull(handle);
 
         Assert.AreEqual(0, counter.Value);
         executor.Continue(CoroutineSuspendPoint.Update, 0.0f);
