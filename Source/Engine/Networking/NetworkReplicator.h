@@ -28,7 +28,7 @@ API_ENUM(Namespace="FlaxEngine.Networking") enum class NetworkObjectRole : byte
 /// <summary>
 /// High-level networking replication system for game objects.
 /// </summary>
-API_CLASS(static, Namespace = "FlaxEngine.Networking") class FLAXENGINE_API NetworkReplicator
+API_CLASS(static, Namespace="FlaxEngine.Networking") class FLAXENGINE_API NetworkReplicator
 {
     DECLARE_SCRIPTING_TYPE_MINIMAL(NetworkReplicator);
     friend class NetworkReplicatorInternal;
@@ -39,7 +39,7 @@ public:
     /// <summary>
     /// Enables verbose logging of the networking runtime. Can be used to debug problems of missing RPC invoke or object replication issues.
     /// </summary>
-    API_FIELD() static bool EnableLog;
+    API_FIELD(Attributes="DebugCommand") static bool EnableLog;
 #endif
 
     /// <summary>

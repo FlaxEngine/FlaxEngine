@@ -11,7 +11,7 @@ class INetworkSerializable;
 /// <summary>
 /// Objects and values serialization stream for sending data over network. Uses memory buffer for both read and write operations.
 /// </summary>
-API_CLASS(sealed, Namespace = "FlaxEngine.Networking") class FLAXENGINE_API NetworkStream final : public ScriptingObject, public ReadStream, public WriteStream
+API_CLASS(sealed, Namespace="FlaxEngine.Networking") class FLAXENGINE_API NetworkStream final : public ScriptingObject, public ReadStream, public WriteStream
 {
     DECLARE_SCRIPTING_TYPE(NetworkStream);
 private:
