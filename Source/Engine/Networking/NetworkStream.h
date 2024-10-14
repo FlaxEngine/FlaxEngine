@@ -72,10 +72,12 @@ public:
     using ReadStream::Read;
     void Read(INetworkSerializable& obj);
     void Read(INetworkSerializable* obj);
+    void Read(Quaternion& data);
 
     using WriteStream::Write;
     void Write(INetworkSerializable& obj);
     void Write(INetworkSerializable* obj);
+    void Write(const Quaternion& data);
 
 public:
     // [Stream]
