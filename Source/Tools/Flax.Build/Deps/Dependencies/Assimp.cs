@@ -1,6 +1,6 @@
 // Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
-using System;
+using System.Collections.Generic;
 using System.IO;
 using Flax.Build;
 
@@ -122,13 +122,19 @@ namespace Flax.Deps.Dependencies
                 }
                 case TargetPlatform.Linux:
                 {
+                    var envVars = new Dictionary<string, string>
+                    {
+                        { "CC", "clang-13" },
+                        { "CC_FOR_BUILD", "clang-13" },
+                        { "CXX", "clang++-13" },
+                    };
+
                     // Build for Linux
-                    RunCmake(root, platform, TargetArchitecture.x64, " -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF " + globalConfig);
-                    Utilities.Run("make", null, null, root, Utilities.RunOptions.ThrowExceptionOnError);
+                    RunCmake(root, platform, TargetArchitecture.x64, " -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF " + globalConfig, envVars);
+                    Utilities.Run("make", null, null, root, Utilities.RunOptions.ThrowExceptionOnError, envVars);
                     configHeaderFilePath = Path.Combine(root, "include", "assimp", "config.h");
                     var depsFolder = GetThirdPartyFolder(options, platform, TargetArchitecture.x64);
                     Utilities.FileCopy(Path.Combine(root, "lib", "libassimp.a"), Path.Combine(depsFolder, "libassimp.a"));
-                    Utilities.FileCopy(Path.Combine(root, "lib", "libIrrXML.a"), Path.Combine(depsFolder, "libIrrXML.a"));
                     break;
                 }
                 case TargetPlatform.Mac:
@@ -141,7 +147,7 @@ namespace Flax.Deps.Dependencies
                         configHeaderFilePath = Path.Combine(root, "include", "assimp", "config.h");
                         var depsFolder = GetThirdPartyFolder(options, platform, architecture);
                         Utilities.FileCopy(Path.Combine(root, "lib", "libassimp.a"), Path.Combine(depsFolder, "libassimp.a"));
-                        Utilities.FileCopy(Path.Combine(root, "lib", "libIrrXML.a"), Path.Combine(depsFolder, "libIrrXML.a"));
+                        Utilities.Run("make", "clean", null, root, Utilities.RunOptions.ThrowExceptionOnError);
                     }
                     break;
                 }
