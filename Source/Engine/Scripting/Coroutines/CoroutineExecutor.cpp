@@ -9,13 +9,18 @@
 // Update is used, because it is the only point that is guaranteed to be called exactly once every frame.
 constexpr static CoroutineSuspendPoint DeltaAccumulationPoint = CoroutineSuspendPoint::Update;
 
-void CoroutineExecutor::ExecuteOnce(ScriptingObjectReference<CoroutineBuilder> builder)
+ScriptingObjectReference<CoroutineHandle> CoroutineExecutor::ExecuteOnce(ScriptingObjectReference<CoroutineBuilder> builder)
 {
-    Execution execution{ MoveTemp(builder) };
+    const ExecutionID id = _uuidGenerator.Generate();
+    Execution execution{ MoveTemp(builder), id };
     _executions.Add(MoveTemp(execution));
+
+    ScriptingObjectReference<CoroutineHandle> handle = NewObject<CoroutineHandle>();
+    handle->ID = id;
+    return handle;
 }
 
-void CoroutineExecutor::ExecuteRepeats(ScriptingObjectReference<CoroutineBuilder> builder, const int32 repeats)
+ScriptingObjectReference<CoroutineHandle> CoroutineExecutor::ExecuteRepeats(ScriptingObjectReference<CoroutineBuilder> builder, const int32 repeats)
 {
     if (repeats <= 0) 
     {
@@ -23,17 +28,27 @@ void CoroutineExecutor::ExecuteRepeats(ScriptingObjectReference<CoroutineBuilder
             TEXT("Coroutine must not be dispatched non-positive number of times! Call to repeat {} times will be ignored."), 
             repeats
         ));
-        return;
+        return nullptr;
     }
 
-    Execution execution{ MoveTemp(builder), repeats };
+    const ExecutionID id = _uuidGenerator.Generate();
+    Execution execution{ MoveTemp(builder), id, repeats };
     _executions.Add(MoveTemp(execution));
+
+    ScriptingObjectReference<CoroutineHandle> handle = NewObject<CoroutineHandle>();
+    handle->ID = id;
+    return handle;
 }
 
-void CoroutineExecutor::ExecuteLooped(ScriptingObjectReference<CoroutineBuilder> builder)
+ScriptingObjectReference<CoroutineHandle> CoroutineExecutor::ExecuteLooped(ScriptingObjectReference<CoroutineBuilder> builder)
 {
-    Execution execution{ MoveTemp(builder), Execution::InfiniteRepeats };
+    const ExecutionID id = _uuidGenerator.Generate();
+    Execution execution{ MoveTemp(builder), id, Execution::InfiniteRepeats };
     _executions.Add(MoveTemp(execution));
+
+    ScriptingObjectReference<CoroutineHandle> handle = NewObject<CoroutineHandle>();
+    handle->ID = id;
+    return handle;
 }
 
 
@@ -60,6 +75,10 @@ void CoroutineExecutor::Continue(
     }
 }
 
+int32 CoroutineExecutor::GetCoroutinesCount() const
+{
+    return _executions.Count();
+}
 
 using Step     = CoroutineBuilder::Step;
 using StepType = CoroutineBuilder::StepType;

@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoroutineBuilder.h"
+#include "CoroutineHandle.h"
 
 /// <summary>
 /// Utility class that can track and execute coroutines' stages using incoming events.
@@ -15,19 +16,19 @@ API_CLASS(Sealed) class FLAXENGINE_API CoroutineExecutor final : public Scriptin
     /// Adds a coroutine to the executor to be executed once.
     /// </summary>
     API_FUNCTION()
-    void ExecuteOnce(ScriptingObjectReference<CoroutineBuilder> builder);
+    ScriptingObjectReference<CoroutineHandle> ExecuteOnce(ScriptingObjectReference<CoroutineBuilder> builder);
 
     /// <summary>
     /// Adds a coroutine to the executor to be executed multiple times.
     /// </summary>
     API_FUNCTION()
-    void ExecuteRepeats(ScriptingObjectReference<CoroutineBuilder> builder, int32 repeats);
+    ScriptingObjectReference<CoroutineHandle> ExecuteRepeats(ScriptingObjectReference<CoroutineBuilder> builder, int32 repeats);
 
     /// <summary>
     /// Adds a coroutine to the executor to be executed indefinitely.
     /// </summary>
     API_FUNCTION()
-    void ExecuteLooped(ScriptingObjectReference<CoroutineBuilder> builder);
+    ScriptingObjectReference<CoroutineHandle> ExecuteLooped(ScriptingObjectReference<CoroutineBuilder> builder);
 
     //TODO Add coroutine execution handle to allow for manual cancellation of the coroutine.
     //TODO Maybe it would be beneficial to also add pausing and resuming coroutines.
@@ -45,6 +46,13 @@ API_CLASS(Sealed) class FLAXENGINE_API CoroutineExecutor final : public Scriptin
     API_FUNCTION()
     void Continue(CoroutineSuspendPoint point, float deltaTime);
 
+    /// <summary>
+    /// Returns the number of coroutines currently being executed.
+    /// </summary>
+    API_FUNCTION()
+    int32 GetCoroutinesCount() const;
+
+    using ExecutionID = uint64;
 
 private:
     using BuilderReference = ScriptingObjectReference<CoroutineBuilder>;
@@ -59,6 +67,7 @@ private:
     {
         BuilderReference _builder;
         Delta            _accumulator;
+        ExecutionID      _id;
         int32            _stepIndex;
         int32            _repeats;
 
@@ -67,9 +76,13 @@ private:
 
         Execution() = delete;
 
-        explicit Execution(BuilderReference&& builder, const int32 repeats = 1)
-            : _builder{ MoveTemp(builder) }
+        explicit Execution(
+            BuilderReference&& builder,
+            const ExecutionID id,
+            const int32 repeats = 1
+        )   : _builder{ MoveTemp(builder) }
             , _accumulator{ 0.0f, 0 }
+            , _id{ id }
             , _stepIndex{ 0 }
             , _repeats{ repeats }
         {
@@ -92,5 +105,18 @@ private:
         );
     };
 
+
     Array<Execution> _executions;
+
+    class UuidGenerator final
+    {
+        ExecutionID _id{};
+
+    public:
+        ExecutionID Generate()
+        {
+            return _id++;
+        }
+    }
+    _uuidGenerator;
 };
