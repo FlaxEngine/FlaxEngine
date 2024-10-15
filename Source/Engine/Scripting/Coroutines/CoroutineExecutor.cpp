@@ -213,7 +213,8 @@ bool CoroutineExecutor::Execution::TryMakeStep(
             CRASH;
         }
 
-        //TODO Optimize filtering accumulation steps by caching the expected suspend point. (Or filtering it by bit-field)
+        //TODO(mtszkarbowiak) Fix accumulator leakage to next steps. BUG!
+        //TODO(mtszkarbowiak) Optimize filtering accumulation steps by caching the expected suspend point. (Or filtering it by bit-field)
     }
 }
 

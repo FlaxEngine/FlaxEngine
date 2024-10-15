@@ -6,11 +6,9 @@
 namespace 
 {
     using ExecutorReference = ScriptingObjectReference<CoroutineExecutor>;
-    using BuilderReference  = ScriptingObjectReference<CoroutineBuilder>;
     using HandleReference   = ScriptingObjectReference<CoroutineHandle>;
 
     ExecutorReference NewCoroutineExecutor() { return ScriptingObject::NewObject<CoroutineExecutor>(); }
-    BuilderReference  NewCoroutineBuilder()  { return ScriptingObject::NewObject<CoroutineBuilder>();  }
 }
 
 TEST_CASE("CoroutinesBuilder")
@@ -77,7 +75,9 @@ TEST_CASE("CoroutineTimeAccumulation")
     CHECK(result == 2);
     executor->Continue(CoroutineSuspendPoint::Update, 0.0f); // 2nd frame
     CHECK(result == 2);
-    executor->Continue(CoroutineSuspendPoint::Update, 0.0f); // 3rd frame (end of 3 frame wait, 3rd func exec)
+    executor->Continue(CoroutineSuspendPoint::Update, 0.0f); // 3rd frame
+    CHECK(result == 2);
+    executor->Continue(CoroutineSuspendPoint::Update, 0.0f); // 4th frame (end of 3 frame wait, 3rd func exec)
     CHECK(result == 3);
 }
 
@@ -113,4 +113,93 @@ TEST_CASE("CoroutineWaitUntil")
 
     executor->Continue(CoroutineSuspendPoint::Update, 0.0f); // after signal (wait until hit, 2nd func exec)
     CHECK(result == 2);
+}
+
+TEST_CASE("CoroutineExecuteRepeating")
+{
+    int result = 0;
+
+    constexpr int32 repeats = 3;
+    const ExecutorReference executor = NewCoroutineExecutor();
+    const HandleReference handle = executor->ExecuteRepeats(
+        ScriptingObject::NewObject<CoroutineBuilder>()
+            ->ThenRunFunc([&result] { ++result; })
+            ->ThenWaitFrames(0),
+        repeats
+    );
+
+    for (int32 i = 0; i < repeats; ++i)
+    {
+        CHECK(result == i);
+        executor->Continue(CoroutineSuspendPoint::Update, 0.0f); // n-th call (wait, func exec)
+        CHECK(result == i + 1);
+    }
+
+    //TODO(mtszkarbowiak) Add check if the handle is still running. (Expected no)
+}
+
+TEST_CASE("CoroutineExecuteLoop")
+{
+    int result = 0;
+
+    const ExecutorReference executor = NewCoroutineExecutor();
+    const HandleReference handle = executor->ExecuteLooped(
+        ScriptingObject::NewObject<CoroutineBuilder>()
+            ->ThenRunFunc([&result]{  ++result; })
+            ->ThenWaitFrames(0)
+    );
+
+    executor->Continue(CoroutineSuspendPoint::Update, 0.0f); // 1st call (wait, func exec)
+    executor->Continue(CoroutineSuspendPoint::Update, 0.0f); // 2nd call (wait, func exec)
+    executor->Continue(CoroutineSuspendPoint::Update, 0.0f); // 3rd call (wait, func exec)
+
+    CHECK(result == 3);
+
+    //TODO(mtszkarbowiak) Add check if the handle is still running. (Expected yes)
+}
+
+TEST_CASE("CoroutineHandle")
+{
+    int result = 0;
+    const ExecutorReference executor = NewCoroutineExecutor();
+
+    HandleReference handle = executor->ExecuteOnce(
+        ScriptingObject::NewObject<CoroutineBuilder>()
+            ->ThenRunFunc([&result]() -> void { ++result;  })
+            ->ThenWaitFrames(0) // r = 1
+            ->ThenRunFunc([&result]() -> void { ++result; })
+            ->ThenWaitFrames(0) // r = 2
+            ->ThenRunFunc([&result]() -> void { ++result; })
+    );
+
+    CHECK(result == 0);
+    executor->Continue(CoroutineSuspendPoint::Update, 0.0f); // 1st call (func exec)
+    CHECK(result == 1);
+
+    const bool paused0 = handle->Pause();
+    CHECK(paused0);
+    const bool paused1 = handle->Pause();
+    CHECK(!paused1);
+
+    CHECK(result == 1);
+    executor->Continue(CoroutineSuspendPoint::Update, 0.0f); // 2nd call (wait, func exec)
+    CHECK(result == 1);
+
+    const bool resumed0 = handle->Resume();
+    CHECK(resumed0);
+    const bool resumed1 = handle->Resume();
+    CHECK(!resumed1);
+
+    CHECK(result == 1);
+    executor->Continue(CoroutineSuspendPoint::Update, 0.0f); // 2nd call (wait, func exec)
+    CHECK(result == 2);
+
+    CHECK(executor->GetCoroutinesCount() == 1);
+
+    const bool canceled0 = handle->Cancel();
+    CHECK(canceled0);
+    const bool canceled1 = handle->Cancel();
+    CHECK(!canceled1);
+
+    CHECK(executor->GetCoroutinesCount() == 0);
 }
