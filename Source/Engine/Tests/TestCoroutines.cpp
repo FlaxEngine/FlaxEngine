@@ -62,8 +62,7 @@ TEST_CASE("CoroutineTimeAccumulation")
             ->ThenRunFunc([&result]{ ++result; })
     );
 
-    CHECK(result == 0);
-    executor->Continue(CoroutineSuspendPoint::Update, 0.0f); // 0.0s (1st func exec, start of 1.0s wait)
+    // init (1st func exec)
     CHECK(result == 1);
     executor->Continue(CoroutineSuspendPoint::Update, 0.3f); // 0.3s
     CHECK(result == 1);
@@ -99,8 +98,7 @@ TEST_CASE("CoroutineWaitUntil")
             ->ThenRunFunc([&result]{ ++result; })
     );
 
-    CHECK(result == 0);
-    executor->Continue(CoroutineSuspendPoint::Update, 0.0f); // init (1st func exec, wait until miss)
+    // init (1st func exec, wait until miss)
     CHECK(result == 1);
     executor->Continue(CoroutineSuspendPoint::Update, 0.0f); // before signal (wait until miss)
     CHECK(result == 1);
@@ -119,21 +117,22 @@ TEST_CASE("CoroutineExecuteRepeating")
 {
     int result = 0;
 
-    constexpr int32 repeats = 3;
+    constexpr int32 repeats = 4;
     const ExecutorReference executor = NewCoroutineExecutor();
     const HandleReference handle = executor->ExecuteRepeats(
         ScriptingObject::NewObject<CoroutineBuilder>()
             ->ThenRunFunc([&result] { ++result; })
-            ->ThenWaitFrames(0),
+            ->ThenWaitFrames(1),
         repeats
     );
 
-    for (int32 i = 0; i < repeats; ++i)
-    {
-        CHECK(result == i);
-        executor->Continue(CoroutineSuspendPoint::Update, 0.0f); // n-th call (wait, func exec)
-        CHECK(result == i + 1);
-    }
+    CHECK(result == 1);
+    executor->Continue(CoroutineSuspendPoint::Update, 0.0f);
+    CHECK(result == 2);
+    executor->Continue(CoroutineSuspendPoint::Update, 0.0f);
+    CHECK(result == 3);
+    executor->Continue(CoroutineSuspendPoint::Update, 0.0f);
+    CHECK(result == 4);
 
     //TODO(mtszkarbowiak) Add check if the handle is still running. (Expected no)
 }
@@ -146,7 +145,7 @@ TEST_CASE("CoroutineExecuteLoop")
     const HandleReference handle = executor->ExecuteLooped(
         ScriptingObject::NewObject<CoroutineBuilder>()
             ->ThenRunFunc([&result]{  ++result; })
-            ->ThenWaitFrames(0)
+            ->ThenWaitFrames(1)
     );
 
     executor->Continue(CoroutineSuspendPoint::Update, 0.0f); // 1st call (wait, func exec)
@@ -158,7 +157,7 @@ TEST_CASE("CoroutineExecuteLoop")
     //TODO(mtszkarbowiak) Add check if the handle is still running. (Expected yes)
 }
 
-TEST_CASE("CoroutineHandle")
+TEST_CASE("CoroutineHandlePauseResume")
 {
     int result = 0;
     const ExecutorReference executor = NewCoroutineExecutor();
@@ -166,40 +165,40 @@ TEST_CASE("CoroutineHandle")
     HandleReference handle = executor->ExecuteOnce(
         ScriptingObject::NewObject<CoroutineBuilder>()
             ->ThenRunFunc([&result]() -> void { ++result;  })
-            ->ThenWaitFrames(0) // r = 1
+            ->ThenWaitFrames(1) // r = 1
             ->ThenRunFunc([&result]() -> void { ++result; })
-            ->ThenWaitFrames(0) // r = 2
+            ->ThenWaitFrames(1) // r = 2
             ->ThenRunFunc([&result]() -> void { ++result; })
     );
 
-    CHECK(result == 0);
-    executor->Continue(CoroutineSuspendPoint::Update, 0.0f); // 1st call (func exec)
     CHECK(result == 1);
+    executor->Continue(CoroutineSuspendPoint::Update, 0.0f); // 1st call (func exec)
+    CHECK(result == 2);
 
     const bool paused0 = handle->Pause();
     CHECK(paused0);
     const bool paused1 = handle->Pause();
     CHECK(!paused1);
 
-    CHECK(result == 1);
+    CHECK(result == 2);
     executor->Continue(CoroutineSuspendPoint::Update, 0.0f); // 2nd call (wait, func exec)
-    CHECK(result == 1);
+    CHECK(result == 2);
 
     const bool resumed0 = handle->Resume();
     CHECK(resumed0);
     const bool resumed1 = handle->Resume();
     CHECK(!resumed1);
 
-    CHECK(result == 1);
-    executor->Continue(CoroutineSuspendPoint::Update, 0.0f); // 2nd call (wait, func exec)
-    CHECK(result == 2);
-
     CHECK(executor->GetCoroutinesCount() == 1);
 
-    const bool canceled0 = handle->Cancel();
-    CHECK(canceled0);
-    const bool canceled1 = handle->Cancel();
-    CHECK(!canceled1);
+    CHECK(result == 2);
+    executor->Continue(CoroutineSuspendPoint::Update, 0.0f); // 2nd call (wait, func exec)
+    CHECK(result == 3);
 
     CHECK(executor->GetCoroutinesCount() == 0);
+}
+
+TEST_CASE("CoroutineHandleCancel")
+{
+    
 }

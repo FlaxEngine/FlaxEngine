@@ -14,6 +14,7 @@ ScriptingObjectReference<CoroutineHandle> CoroutineExecutor::ExecuteOnce(Scripti
 {
     const ExecutionID id = _uuidGenerator.Generate();
     Execution execution{ MoveTemp(builder), id };
+    execution.ContinueCoroutine(CoroutineSuspendPoint::Update, Delta{ 0.0f, 0 });
     _executions.Add(MoveTemp(execution));
 
     ScriptingObjectReference<CoroutineHandle> handle = NewObject<CoroutineHandle>();
@@ -35,6 +36,7 @@ ScriptingObjectReference<CoroutineHandle> CoroutineExecutor::ExecuteRepeats(Scri
 
     const ExecutionID id = _uuidGenerator.Generate();
     Execution execution{ MoveTemp(builder), id, repeats };
+    execution.ContinueCoroutine(CoroutineSuspendPoint::Update, Delta{ 0.0f, 0 });
     _executions.Add(MoveTemp(execution));
 
     ScriptingObjectReference<CoroutineHandle> handle = NewObject<CoroutineHandle>();
@@ -47,6 +49,7 @@ ScriptingObjectReference<CoroutineHandle> CoroutineExecutor::ExecuteLooped(Scrip
 {
     const ExecutionID id = _uuidGenerator.Generate();
     Execution execution{ MoveTemp(builder), id, Execution::InfiniteRepeats };
+    execution.ContinueCoroutine(CoroutineSuspendPoint::Update, Delta{ 0.0f, 0 });
     _executions.Add(MoveTemp(execution));
 
     ScriptingObjectReference<CoroutineHandle> handle = NewObject<CoroutineHandle>();
@@ -110,11 +113,13 @@ bool CoroutineExecutor::Execution::ContinueCoroutine(
     if (_isPaused)
         return false;
 
+    Delta deltaCopy = delta;
+
     while (_stepIndex < _builder->GetSteps().Count())
     {
         const Step& step = _builder->GetSteps()[_stepIndex];
 
-        if (!TryMakeStep(step, point, delta, this->_accumulator))
+        if (!TryMakeStep(step, point, deltaCopy, this->_accumulator))
             return false; // The coroutine is waiting for the next frame or seconds.
 
         ++_stepIndex;
@@ -155,7 +160,7 @@ void CoroutineExecutor::Execution::SetPaused(const bool value)
 bool CoroutineExecutor::Execution::TryMakeStep(
     const CoroutineBuilder::Step& step, 
     const CoroutineSuspendPoint   point,
-    const Delta&                  delta,
+    Delta&                        delta,
     Delta&                        accumulator
 )
 {
@@ -177,12 +182,15 @@ bool CoroutineExecutor::Execution::TryMakeStep(
             if (point != DeltaAccumulationPoint)
                 return false;
 
+            // Transfer delta time to the accumulator.
             accumulator.time += delta.time;
+            delta.time = 0.0f;
+            delta.frames = 0;
 
-            if (step.GetSecondsDelay() >= accumulator.time)
+            if (step.GetSecondsDelay() > accumulator.time)
                 return false;
 
-            accumulator.time = 0.0f; // Reset the time accumulator.
+            accumulator.time -= step.GetSecondsDelay(); // Subtract the delay to prevent leakage.
             return true;
         }
 
@@ -191,12 +199,15 @@ bool CoroutineExecutor::Execution::TryMakeStep(
             if (point != DeltaAccumulationPoint)
                 return false;
 
+            // Transfer delta frames to the accumulator.
             accumulator.frames += delta.frames;
+            delta.frames = 0;
+            delta.time = 0.0f;
 
-            if (step.GetFramesDelay() >= accumulator.frames)
+            if (step.GetFramesDelay() > accumulator.frames)
                 return false;
 
-            accumulator.frames = 0; // Reset the frames accumulator.
+            accumulator.frames -= step.GetFramesDelay(); // Subtract the delay to prevent leakage.
             return true;
         }
 

@@ -97,7 +97,7 @@ private:
         static bool TryMakeStep(
             const CoroutineBuilder::Step& step, 
             CoroutineSuspendPoint point,
-            const Delta& delta,
+            Delta& delta,
             Delta&       accumulator
         );
     };
