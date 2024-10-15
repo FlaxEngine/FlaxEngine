@@ -98,6 +98,7 @@ CoroutineExecutor::Execution::Execution(
     , _id{ id }
     , _stepIndex{ 0 }
     , _repeats{ repeats }
+    , _isPaused{ false }
 {
 }
 
@@ -178,7 +179,7 @@ bool CoroutineExecutor::Execution::TryMakeStep(
 
             accumulator.time += delta.time;
 
-            if (step.GetSecondsDelay() > accumulator.time)
+            if (step.GetSecondsDelay() >= accumulator.time)
                 return false;
 
             accumulator.time = 0.0f; // Reset the time accumulator.
@@ -192,7 +193,7 @@ bool CoroutineExecutor::Execution::TryMakeStep(
 
             accumulator.frames += delta.frames;
 
-            if (step.GetFramesDelay() > accumulator.frames)
+            if (step.GetFramesDelay() >= accumulator.frames)
                 return false;
 
             accumulator.frames = 0; // Reset the frames accumulator.
@@ -246,8 +247,9 @@ bool CoroutineExecutor::Pause(CoroutineHandle& handle)
         if (_executions[i].GetID() != handle.ExecutionID)
             continue;
 
+        const bool wasPaused = _executions[i].IsPaused();
         _executions[i].SetPaused(true);
-        return true;
+        return !wasPaused;
     }
 
     return false;
@@ -262,8 +264,9 @@ bool CoroutineExecutor::Resume(CoroutineHandle& handle)
         if (_executions[i].GetID() != handle.ExecutionID)
             continue;
 
+        const bool wasPaused = _executions[i].IsPaused();
         _executions[i].SetPaused(false);
-        return true;
+        return wasPaused;
     }
 
     return false;
