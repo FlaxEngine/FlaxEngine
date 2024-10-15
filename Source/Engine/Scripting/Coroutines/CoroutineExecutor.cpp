@@ -87,6 +87,17 @@ int32 CoroutineExecutor::GetCoroutinesCount() const
 using Step     = CoroutineBuilder::Step;
 using StepType = CoroutineBuilder::StepType;
 
+CoroutineExecutor::Execution::Execution(
+    BuilderReference&& builder, 
+    const ExecutionID  id, 
+    const int32        repeats
+)   : _builder{ MoveTemp(builder) }
+    , _accumulator{ 0.0f, 0 }
+    , _id{ id }
+    , _stepIndex{ 0 }
+    , _repeats{ repeats }
+{
+}
 
 bool CoroutineExecutor::Execution::ContinueCoroutine(
     const CoroutineSuspendPoint point, 

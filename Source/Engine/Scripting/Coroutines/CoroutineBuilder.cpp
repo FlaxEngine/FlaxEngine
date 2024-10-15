@@ -27,7 +27,7 @@ ScriptingObjectReference<CoroutineBuilder> CoroutineBuilder::ThenWaitUntil(Scrip
     return this;
 }
 
-ScriptingObjectReference<CoroutineBuilder> CoroutineBuilder::ThenRunFunc(Function<void()> runnable)
+ScriptingObjectReference<CoroutineBuilder> CoroutineBuilder::ThenRunFunc(const Function<void()>& runnable)
 {
     ScriptingObjectReference<CoroutineRunnable> runnableReference = NewObject<CoroutineRunnable>();
     runnableReference->OnRun.Bind(runnable);
@@ -35,7 +35,7 @@ ScriptingObjectReference<CoroutineBuilder> CoroutineBuilder::ThenRunFunc(Functio
     return this;
 }
 
-ScriptingObjectReference<CoroutineBuilder> CoroutineBuilder::ThenWaitUntilFunc(Function<void(bool&)> predicate)
+ScriptingObjectReference<CoroutineBuilder> CoroutineBuilder::ThenWaitUntilFunc(const Function<void(bool&)>& predicate)
 {
     ScriptingObjectReference<CoroutinePredicate> predicateReference = NewObject<CoroutinePredicate>();
     predicateReference->OnCheck.Bind(predicate);

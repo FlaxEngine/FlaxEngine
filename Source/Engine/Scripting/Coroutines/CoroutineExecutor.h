@@ -75,15 +75,9 @@ private:
 
         explicit Execution(
             BuilderReference&& builder,
-            const ExecutionID id,
-            const int32 repeats = 1
-        )   : _builder{ MoveTemp(builder) }
-            , _accumulator{ 0.0f, 0 }
-            , _id{ id }
-            , _stepIndex{ 0 }
-            , _repeats{ repeats }
-        {
-        }
+            ExecutionID        id,
+            int32              repeats = 1
+        );
 
         /// <summary>
         /// Executes the next step of the coroutines.
@@ -92,6 +86,11 @@ private:
         /// <c>true</c> if the coroutine should be removed from the executor, because it reached the end of the steps; otherwise, <c>false</c>.
         /// </returns>
         bool ContinueCoroutine(CoroutineSuspendPoint point, const Delta& delta);
+
+        ExecutionID GetID() const
+        {
+            return _id;
+        }
 
     private:
         static bool TryMakeStep(

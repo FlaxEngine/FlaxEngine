@@ -70,10 +70,10 @@ API_CLASS(Sealed) class FLAXENGINE_API CoroutineBuilder final : public Scripting
 
 
     /// <summary> QOL wrapper for running runnable action in native scripts. </summary>
-    ScriptingObjectReference<CoroutineBuilder> ThenRunFunc(Function<void()> runnable);
+    ScriptingObjectReference<CoroutineBuilder> ThenRunFunc(const Function<void()>& runnable);
 
     /// <summary> QOL wrapper for waiting until predicate in native scripts. </summary>
-    ScriptingObjectReference<CoroutineBuilder> ThenWaitUntilFunc(Function<void(bool&)> predicate);
+    ScriptingObjectReference<CoroutineBuilder> ThenWaitUntilFunc(const Function<void(bool&)>& predicate);
 
 
     using RunnableReference  = ScriptingObjectReference<CoroutineRunnable>;
