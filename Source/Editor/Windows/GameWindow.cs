@@ -596,6 +596,13 @@ namespace FlaxEditor.Windows
                 checkbox.StateChanged += x => ShowDebugDraw = x.Checked;
             }
 
+            // Debug Draw Clear
+            {
+                var button = menu.AddButton("Clear Debug Draw");
+                button.CloseMenuOnClick = false;
+                button.Clicked += () => DebugDraw.Clear();
+            }
+
             menu.MinimumWidth = 200;
             menu.AddSeparator();
         }
