@@ -131,11 +131,7 @@ bool CoroutineExecutor::Execution::TryMakeStep(
     {
         case StepType::Run:
         {
-            if (step.GetRunnable()->ExecutionPoint != point)
-                return false;
-
             step.GetRunnable()->OnRun();
-
             return true;
         }
 
@@ -174,12 +170,8 @@ bool CoroutineExecutor::Execution::TryMakeStep(
 
         case StepType::WaitUntil:
         {
-            if (step.GetPredicate()->ExecutionPoint != point)
-                return false;
-
             bool result = false;
             step.GetPredicate()->OnCheck(result);
-
             return result;
         }
 

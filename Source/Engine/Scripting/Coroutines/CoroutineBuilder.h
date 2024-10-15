@@ -11,57 +11,38 @@
 
 
 /// <summary>
-/// Wrapper for a coroutine step with instructions to be executed at the given suspension point.
+/// Stores code to be executed once previous step is completed.
 /// </summary>
+/// <remarks>
+/// This class is used due to limitations of Flax API.
+/// </remarks>
 API_CLASS(Sealed) class FLAXENGINE_API CoroutineRunnable final : public ScriptingObject
 {
     DECLARE_SCRIPTING_TYPE_WITH_CONSTRUCTOR_IMPL(CoroutineRunnable, ScriptingObject);
 
-    /// <summary>
-    /// Suspension point at which the runnable action is executed.
-    /// </summary>
-    /// <remarks>
-    /// The execution point must never precede the suspension point of previous steps.
-    /// Wait for one frame or reorder the steps if the execution point is earlier.
-    /// </remarks>
-    API_FIELD()
-    CoroutineSuspendPoint ExecutionPoint = CoroutineSuspendPoint::Update;
-
-    //TODO(mtszkarbowiak) Remove waiting for execution point from the coroutine runnable.
-
-
-    /// <summary>
-    /// Action to be executed at the suspension point.
-    /// </summary>
+    /// <summary> Action to be executed. </summary>
     API_EVENT()
     Action OnRun;
 };
 
 /// <summary>
-/// Wrapper for a coroutine check if the coroutine may continue execution at the given suspension point.
+/// Stores a predicate to be checked before the coroutine may continue execution.
 /// </summary>
+/// <remarks>
+/// This class is used due to limitations of Flax API.
+/// </remarks>
 API_CLASS(Sealed) class FLAXENGINE_API CoroutinePredicate final : public ScriptingObject
 {
     DECLARE_SCRIPTING_TYPE_WITH_CONSTRUCTOR_IMPL(CoroutinePredicate, ScriptingObject);
 
     /// <summary>
-    /// Suspension point at which the predicate is checked.
-    /// </summary>
-    API_FIELD()
-    CoroutineSuspendPoint ExecutionPoint = CoroutineSuspendPoint::Update;
-
-    //TODO(mtszkarbowiak) Remove waiting for execution point from the coroutine predicate.
-
-    /// <summary>
-    /// Predicate checking if the coroutine may continue.
+    /// Predicate to be checked. Default value is <c>false</c>.
     /// </summary>
     /// <remarks>
-    /// This even uses a reference to the boolean value to set the value due to limitations of the scripting system.
+    /// It uses a reference to a boolean due to limitations of Flax API.
     /// </remarks>
     API_EVENT()
     Delegate<bool&> OnCheck;
-
-    //TODO(mtszkarbowiak) Consider making OnCheck protected and expose subscription method to avoid direct access to the event.
 };
 
 /// <summary>

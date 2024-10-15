@@ -10,18 +10,13 @@ namespace FlaxEngine
     public static class CoroutineExtensions
     {
         /// <summary>
-        /// Wraps the arguments for <seealso cref="CoroutineBuilder.ThenRun(CoroutineRunnable)"/>.
+        /// Invokes <seealso cref="CoroutineBuilder.ThenRun(CoroutineRunnable)"/> with object created using the provided action.
         /// </summary>
         public static CoroutineBuilder ThenRun(
             this CoroutineBuilder builder,
-            CoroutineSuspendPoint executionPoint,
             Action run)
         {
-            CoroutineRunnable runnable = new()
-            {
-                ExecutionPoint = executionPoint
-            };
-
+            CoroutineRunnable runnable = new();
             runnable.OnRun += run;
 
             builder.ThenRun(runnable);
@@ -30,17 +25,13 @@ namespace FlaxEngine
         }
 
         /// <summary>
-        /// Wraps the arguments for <seealso cref="CoroutineBuilder.ThenWaitUntil(CoroutinePredicate)"/>.
+        /// Invokes <seealso cref="CoroutineBuilder.ThenWaitUntil(CoroutinePredicate)"/> with object created using the provided condition.
         /// </summary>
         public static CoroutineBuilder ThenWaitUntil(
             this CoroutineBuilder builder,
             Func<bool> condition)
         {
-            CoroutinePredicate predicate = new()
-            {
-                ExecutionPoint = CoroutineSuspendPoint.Update,
-            };
-
+            CoroutinePredicate predicate = new();
             predicate.OnCheck += (ref bool result) => result = condition();
 
             builder.ThenWaitUntil(predicate);
