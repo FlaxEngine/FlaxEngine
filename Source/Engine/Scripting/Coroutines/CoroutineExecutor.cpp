@@ -141,10 +141,7 @@ bool CoroutineExecutor::Execution::TryMakeStep(
 
         case StepType::WaitSuspensionPoint:
         {
-            if (step.GetSuspensionPoint() != point)
-                return false;
-
-            return true;
+            return step.GetSuspensionPoint() == point;
         }
 
         case StepType::WaitSeconds:
@@ -180,13 +177,10 @@ bool CoroutineExecutor::Execution::TryMakeStep(
             if (step.GetPredicate()->ExecutionPoint != point)
                 return false;
 
-            bool result;
+            bool result = false;
             step.GetPredicate()->OnCheck(result);
 
-            if (result)
-                return false;
-
-            return true;
+            return result;
         }
 
         case StepType::None:
