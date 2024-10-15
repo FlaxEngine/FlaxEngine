@@ -126,10 +126,27 @@ struct NetworkReplicatedObject
     DataContainer<uint32> TargetClientIds;
     INetworkObject* AsNetworkObject;
 
+    struct
+    {
+        NetworkClientsMask Mask;
+        BytesContainer Data;
+
+        void Clear()
+        {
+            Mask = NetworkClientsMask();
+            Data.Release();
+        }
+    } RepCache;
+
     NetworkReplicatedObject()
     {
         Spawned = 0;
         Synced = 0;
+    }
+
+    void Dirty()
+    {
+        RepCache.Mask = NetworkClientsMask();
     }
 
     bool operator==(const NetworkReplicatedObject& other) const
@@ -684,6 +701,7 @@ void FindObjectsForSpawn(SpawnGroup& group, ChunkedArray<SpawnItem, 256>& spawnI
 
 FORCE_INLINE void DirtyObjectImpl(NetworkReplicatedObject& item, ScriptingObject* obj)
 {
+    item.Dirty();
     if (Hierarchy)
         Hierarchy->DirtyObject(obj);
 }
@@ -787,6 +805,7 @@ void InvokeObjectSpawn(const NetworkMessageObjectSpawn& msgData, const Guid& pre
             {
                 // Server always knows the best so update ownership of the existing object
                 item.OwnerClientId = msgData.OwnerClientId;
+                item.RepCache.Clear();
                 if (item.Role == NetworkObjectRole::OwnedAuthoritative)
                 {
                     if (Hierarchy)
@@ -1442,6 +1461,7 @@ void NetworkReplicator::SetObjectOwnership(ScriptingObject* obj, uint32 ownerCli
                 item.OwnerClientId = ownerClientId;
                 item.LastOwnerFrame = 1;
                 item.Role = localRole;
+                item.RepCache.Clear();
                 SendObjectRoleMessage(item);
             }
         }
@@ -1449,11 +1469,11 @@ void NetworkReplicator::SetObjectOwnership(ScriptingObject* obj, uint32 ownerCli
         {
             // Allow to change local role of the object (except ownership)
 #if !BUILD_RELEASE
-                if (localRole == NetworkObjectRole::OwnedAuthoritative)
-                {
-                    LOG(Error, "Cannot change ownership of object (Id={}) to the remote client (Id={}) if the local role is set to OwnedAuthoritative.", obj->GetID(), ownerClientId);
-                    return;
-                }
+            if (localRole == NetworkObjectRole::OwnedAuthoritative)
+            {
+                LOG(Error, "Cannot change ownership of object (Id={}) to the remote client (Id={}) if the local role is set to OwnedAuthoritative.", obj->GetID(), ownerClientId);
+                return;
+            }
 #endif
             if (Hierarchy && it->Item.Role == NetworkObjectRole::OwnedAuthoritative)
                 Hierarchy->RemoveObject(obj);
@@ -1864,10 +1884,28 @@ void NetworkInternal::NetworkReplicatorUpdate()
                 //NETWORK_REPLICATOR_LOG(Error, "[NetworkReplicator] Cannot serialize object {} of type {} (missing serialization logic)", item.ToString(), obj->GetType().ToString());
                 continue;
             }
+            const uint32 size = stream->GetPosition();
+            if (size > MAX_uint16)
+            {
+                LOG(Error, "Too much data for object {} replication ({} bytes provided while limit is {}).", item.ToString(), size, MAX_uint16);
+                continue;
+            }
+
+#if USE_NETWORK_REPLICATOR_CACHE
+            // Process replication cache to skip sending object data if it didn't change
+            if (item.RepCache.Data.Length() == size &&
+                item.RepCache.Mask == e.TargetClients &&
+                Platform::MemoryCompare(item.RepCache.Data.Get(), stream->GetBuffer(), size) == 0)
+            {
+                continue;
+            }
+            item.RepCache.Mask = e.TargetClients;
+            item.RepCache.Data.Copy(stream->GetBuffer(), size);
+#endif
+            // TODO: use Unreliable for dynamic objects that are replicated every frame? (eg. player state)
+            constexpr NetworkChannelType repChannel = NetworkChannelType::Reliable;
 
             // Send object to clients
-            const uint32 size = stream->GetPosition();
-            ASSERT(size <= MAX_uint16);
             NetworkMessageObjectReplicate msgData;
             msgData.OwnerFrame = NetworkManager::Frame;
             Guid objectId = item.ObjectId, parentId = item.ParentId;
@@ -1908,9 +1946,9 @@ void NetworkInternal::NetworkReplicatorUpdate()
             msg.WriteBytes(stream->GetBuffer(), msgDataSize);
             uint32 dataSize = msgDataSize, messageSize = msg.Length;
             if (isClient)
-                peer->EndSendMessage(NetworkChannelType::Unreliable, msg);
+                peer->EndSendMessage(repChannel, msg);
             else
-                peer->EndSendMessage(NetworkChannelType::Unreliable, msg, CachedTargets);
+                peer->EndSendMessage(repChannel, msg, CachedTargets);
 
             // Send all other parts
             for (uint32 partIndex = 1; partIndex < partsCount; partIndex++)
@@ -1929,9 +1967,9 @@ void NetworkInternal::NetworkReplicatorUpdate()
                 dataSize += msgDataPart.PartSize;
                 dataStart += msgDataPart.PartSize;
                 if (isClient)
-                    peer->EndSendMessage(NetworkChannelType::Unreliable, msg);
+                    peer->EndSendMessage(repChannel, msg);
                 else
-                    peer->EndSendMessage(NetworkChannelType::Unreliable, msg, CachedTargets);
+                    peer->EndSendMessage(repChannel, msg, CachedTargets);
             }
             ASSERT_LOW_LAYER(dataStart == size);
 

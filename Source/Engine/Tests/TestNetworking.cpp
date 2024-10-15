@@ -37,7 +37,6 @@ TEST_CASE("Networking")
                     }
                 }
             }
-            int dataSizeInkB = writeStream->GetPosition() / 1024; // 4291 -> 1869
             readStream->Initialize(writeStream->GetBuffer(), writeStream->GetPosition());
             for (int32 x = 0; x <= QuatRes; x++)
             {

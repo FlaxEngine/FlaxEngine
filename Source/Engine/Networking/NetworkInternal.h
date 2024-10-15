@@ -7,6 +7,15 @@
 #include "Engine/Core/Collections/Dictionary.h"
 #endif
 
+// Internal version number of networking implementation. Updated once engine changes serialization or connection rules.
+#define NETWORK_PROTOCOL_VERSION 4
+
+// Enables encoding object ids and typenames via uint32 keys rather than full data send.
+#define USE_NETWORK_KEYS 1
+
+// Cached replication messages if contents didn't change
+#define USE_NETWORK_REPLICATOR_CACHE 1
+
 enum class NetworkMessageIDs : uint8
 {
     None = 0,

@@ -16,8 +16,6 @@
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Scripting/Scripting.h"
 
-#define NETWORK_PROTOCOL_VERSION 4
-
 float NetworkManager::NetworkFPS = 60.0f;
 NetworkPeer* NetworkManager::Peer = nullptr;
 NetworkManagerMode NetworkManager::Mode = NetworkManagerMode::Offline;
@@ -140,6 +138,7 @@ FORCE_INLINE bool IsNetworkKeyValid(uint32 index)
 
 void NetworkMessage::WriteNetworkId(const Guid& id)
 {
+#if USE_NETWORK_KEYS
     ScopeLock lock(Keys.Lock);
     uint32 index = MAX_uint32;
     bool hasIndex = Keys.LookupId.TryGet(id, index);
@@ -158,10 +157,14 @@ void NetworkMessage::WriteNetworkId(const Guid& id)
             Keys.PendingIds.Add(id, NetworkKey(id));
         }
     }
+#else
+    WriteBytes((const uint8*)&id, sizeof(Guid));
+#endif
 }
 
 void NetworkMessage::ReadNetworkId(Guid& id)
 {
+#if USE_NETWORK_KEYS
     ScopeLock lock(Keys.Lock);
     uint32 index = ReadUInt32();
     if (index != MAX_uint32)
@@ -193,10 +196,14 @@ void NetworkMessage::ReadNetworkId(Guid& id)
             Keys.PendingIds.Add(id, NetworkKey(id));
         }
     }
+#else
+    ReadBytes((uint8*)&id, sizeof(Guid));
+#endif
 }
 
 void NetworkMessage::WriteNetworkName(const StringAnsiView& name)
 {
+#if USE_NETWORK_KEYS
     ScopeLock lock(Keys.Lock);
     uint32 index = MAX_uint32;
     bool hasIndex = Keys.LookupName.TryGet(name, index);
@@ -216,10 +223,14 @@ void NetworkMessage::WriteNetworkName(const StringAnsiView& name)
             Keys.PendingNames.Add(newName, NetworkKey(newName));
         }
     }
+#else
+    WriteStringAnsi(name);
+#endif
 }
 
 void NetworkMessage::ReadNetworkName(StringAnsiView& name)
 {
+#if USE_NETWORK_KEYS
     ScopeLock lock(Keys.Lock);
     uint32 index = ReadUInt32();
     if (index != MAX_uint32)
@@ -252,6 +263,9 @@ void NetworkMessage::ReadNetworkName(StringAnsiView& name)
             Keys.PendingNames.Add(newName, NetworkKey(newName));
         }
     }
+#else
+    name = ReadStringAnsi();
+#endif
 }
 
 void OnNetworkMessageHandshake(NetworkEvent& event, NetworkClient* client, NetworkPeer* peer)
