@@ -3,6 +3,7 @@
 #include "NetworkStream.h"
 #include "INetworkSerializable.h"
 #include "Engine/Core/Math/Quaternion.h"
+#include "Engine/Core/Math/Transform.h"
 
 // Quaternion quantized for optimized network data size.
 struct NetworkQuaternion
@@ -151,6 +152,20 @@ void NetworkStream::Read(Quaternion& data)
     NetworkQuaternion::Read(this, data);
 }
 
+void NetworkStream::Read(Transform& data)
+{
+    struct NonQuantized
+    {
+        Vector3 Pos;
+        Float3 Scale;
+    };
+    NonQuantized nonQuantized;
+    ReadBytes(&nonQuantized, sizeof(nonQuantized));
+    NetworkQuaternion::Read(this, data.Orientation);
+    data.Translation = nonQuantized.Pos;
+    data.Scale = nonQuantized.Scale;
+}
+
 void NetworkStream::Write(INetworkSerializable& obj)
 {
     obj.Serialize(this);
@@ -164,6 +179,19 @@ void NetworkStream::Write(INetworkSerializable* obj)
 void NetworkStream::Write(const Quaternion& data)
 {
     NetworkQuaternion::Write(this, data);
+}
+
+void NetworkStream::Write(const Transform& data)
+{
+    struct NonQuantized
+    {
+        Vector3 Pos;
+        Float3 Scale;
+    };
+    // TODO: quantize transform (at least scale)
+    NonQuantized nonQuantized = { data.Translation, data.Scale };
+    WriteBytes(&nonQuantized, sizeof(nonQuantized));
+    NetworkQuaternion::Write(this, data.Orientation);
 }
 
 void NetworkStream::Flush()
