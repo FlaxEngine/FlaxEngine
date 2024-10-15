@@ -1395,7 +1395,7 @@ void NetworkReplicator::SetObjectOwnership(ScriptingObject* obj, uint32 ownerCli
                     // Ensure local client owns that object actually
                     if (localRole != NetworkObjectRole::OwnedAuthoritative)
                     {
-                        LOG(Error, "Cannot change overship of object (Id={}) to the local client (Id={}) if the local role is not set to OwnedAuthoritative.", obj->GetID(), ownerClientId);
+                        LOG(Error, "Cannot change ownership of object (Id={}) to the local client (Id={}) if the local role is not set to OwnedAuthoritative.", obj->GetID(), ownerClientId);
                         return;
                     }
                 }
@@ -1404,7 +1404,7 @@ void NetworkReplicator::SetObjectOwnership(ScriptingObject* obj, uint32 ownerCli
                     // Ensure local client doesn't own that object since it's owned by other client
                     if (localRole == NetworkObjectRole::OwnedAuthoritative)
                     {
-                        LOG(Error, "Cannot change overship of object (Id={}) to the remote client (Id={}) if the local role is set to OwnedAuthoritative.", obj->GetID(), ownerClientId);
+                        LOG(Error, "Cannot change ownership of object (Id={}) to the remote client (Id={}) if the local role is set to OwnedAuthoritative.", obj->GetID(), ownerClientId);
                         return;
                     }
                 }
@@ -1433,7 +1433,7 @@ void NetworkReplicator::SetObjectOwnership(ScriptingObject* obj, uint32 ownerCli
 #if !BUILD_RELEASE
                 if (localRole == NetworkObjectRole::OwnedAuthoritative)
                 {
-                    LOG(Error, "Cannot change overship of object (Id={}) to the remote client (Id={}) if the local role is set to OwnedAuthoritative.", obj->GetID(), ownerClientId);
+                    LOG(Error, "Cannot change ownership of object (Id={}) to the remote client (Id={}) if the local role is set to OwnedAuthoritative.", obj->GetID(), ownerClientId);
                     return;
                 }
 #endif
@@ -1451,7 +1451,7 @@ void NetworkReplicator::SetObjectOwnership(ScriptingObject* obj, uint32 ownerCli
 #if !BUILD_RELEASE
                 if (localRole == NetworkObjectRole::OwnedAuthoritative)
                 {
-                    LOG(Error, "Cannot change overship of object (Id={}) to the remote client (Id={}) if the local role is set to OwnedAuthoritative.", obj->GetID(), ownerClientId);
+                    LOG(Error, "Cannot change ownership of object (Id={}) to the remote client (Id={}) if the local role is set to OwnedAuthoritative.", obj->GetID(), ownerClientId);
                     return;
                 }
 #endif
