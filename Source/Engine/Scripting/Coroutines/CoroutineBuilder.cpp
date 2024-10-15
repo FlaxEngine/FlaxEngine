@@ -77,67 +77,19 @@ CoroutineBuilder::Step::Step(PredicateReference&& predicate)
 
 
 CoroutineBuilder::Step::Step(const Step& other)
-    : _type{ other._type }
+    : _type{ StepType::None } // Temp value
 {
-    ASSERT(_type != StepType::None);
+    ASSERT(other._type != StepType::None);
 
-    switch (_type)
-    {
-        case StepType::Run:
-            new (&_runnable) RunnableReference(other._runnable);
-        break;
-
-        case StepType::WaitFrames:
-            _framesDelay = other._framesDelay;
-        break;
-
-        case StepType::WaitSeconds:
-            _secondsDelay = other._secondsDelay;
-        break;
-
-        case StepType::WaitUntil:
-            new (&_predicate) PredicateReference(other._predicate);
-        break;
-
-        case StepType::WaitSuspensionPoint:
-            _suspensionPoint = other._suspensionPoint;
-        break;
-
-        case StepType::None: CRASH;
-        default:             break;
-    }
+    EmplaceCopy(other);
 }
 
 CoroutineBuilder::Step::Step(Step&& other) noexcept
-    : _type{ other._type }
+    : _type{ StepType::None } // Temp value
 {
-    ASSERT(_type != StepType::None);
+    ASSERT(other._type != StepType::None);
 
-    switch (_type)
-    {
-        case StepType::Run:
-            new (&_runnable) RunnableReference(MoveTemp(other._runnable));
-        break;
-
-        case StepType::WaitFrames:
-            _framesDelay = other._framesDelay;
-        break;
-
-        case StepType::WaitSeconds:
-            _secondsDelay = other._secondsDelay;
-        break;
-
-        case StepType::WaitUntil:
-            new (&_predicate) PredicateReference(MoveTemp(other._predicate));
-        break;
-
-        case StepType::WaitSuspensionPoint:
-            _suspensionPoint = other._suspensionPoint;
-        break;
-
-        case StepType::None: CRASH;
-        default:             break;
-    }
+    EmplaceMove(MoveTemp(other));
 }
 
 void CoroutineBuilder::Step::Clear()
@@ -156,31 +108,18 @@ void CoroutineBuilder::Step::Clear()
         case StepType::None:
         case StepType::WaitFrames:
         case StepType::WaitSeconds:
+        case StepType::WaitSuspensionPoint:
         default: break;
     }
 
     _type = StepType::None;
 }
 
-CoroutineBuilder::Step::~Step()
+void CoroutineBuilder::Step::EmplaceCopy(const Step& other)
 {
-    Clear();
-
     ASSERT(_type == StepType::None);
-}
-
-auto CoroutineBuilder::Step::operator=(const Step& other) -> Step&
-{
-    if (this == &other)
-    {
-        return *this;
-    }
-
-    Clear();
-
     _type = other._type;
-
-    switch (_type)
+    switch (other._type)
     {
         case StepType::Run:
             new (&_runnable) RunnableReference(other._runnable);
@@ -205,22 +144,13 @@ auto CoroutineBuilder::Step::operator=(const Step& other) -> Step&
         case StepType::None: CRASH;
         default:             break;
     }
-
-    return *this;
 }
 
-auto CoroutineBuilder::Step::operator=(Step&& other) noexcept -> Step&
+void CoroutineBuilder::Step::EmplaceMove(Step&& other) noexcept
 {
-    if (this == &other)
-    {
-        return *this;
-    }
-
-    Clear();
-
+    ASSERT(_type == StepType::None);
     _type = other._type;
-
-    switch (_type)
+    switch (other._type)
     {
         case StepType::Run:
             new (&_runnable) RunnableReference(MoveTemp(other._runnable));
@@ -245,11 +175,38 @@ auto CoroutineBuilder::Step::operator=(Step&& other) noexcept -> Step&
         case StepType::None: CRASH;
         default:             break;
     }
+}
+
+CoroutineBuilder::Step::~Step()
+{
+    Clear();
+
+    ASSERT(_type == StepType::None);
+}
+
+auto CoroutineBuilder::Step::operator=(const Step& other) -> Step&
+{
+    if (this == &other)
+        return *this;
+
+    Clear();
+
+    EmplaceCopy(other);
 
     return *this;
 }
 
-//TODO(mtszkarbowiak) Use EmplaceMove and EmplaceCopy instead of explicit constructor calls.
+auto CoroutineBuilder::Step::operator=(Step&& other) noexcept -> Step&
+{
+    if (this == &other)
+        return *this;
+
+    Clear();
+
+    EmplaceMove(MoveTemp(other));
+
+    return *this;
+}
 
 
 CoroutineBuilder::StepType CoroutineBuilder::Step::GetType() const

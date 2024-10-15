@@ -136,6 +136,8 @@ API_CLASS(Sealed) class FLAXENGINE_API CoroutineBuilder final : public Scripting
 
     private:
         void Clear();
+        void EmplaceCopy(const Step& other);
+        void EmplaceMove(Step&& other) noexcept;
 
     public:
         ~Step();
