@@ -3,7 +3,7 @@
 #include "CoroutineExecutor.h"
 
 #include "Engine/Debug/DebugLog.h"
-
+#include "Engine/Profiler/ProfilerCPU.h"
 
 // Universal shared point for all coroutines to accumulate any kind of time.
 // Update is used, because it is the only point that is guaranteed to be called exactly once every frame.
@@ -60,6 +60,8 @@ void CoroutineExecutor::Continue(
     const CoroutineSuspendPoint point, 
     const float deltaTime)
 {
+    PROFILE_CPU();
+
     const Delta delta{ deltaTime, 1 };
 
     for (int32 i = 0; i < _executions.Count();)
@@ -104,6 +106,9 @@ bool CoroutineExecutor::Execution::ContinueCoroutine(
     const Delta& delta
 )
 {
+    if (_isPaused)
+        return false;
+
     while (_stepIndex < _builder->GetSteps().Count())
     {
         const Step& step = _builder->GetSteps()[_stepIndex];
@@ -129,6 +134,21 @@ bool CoroutineExecutor::Execution::ContinueCoroutine(
 
     ASSERT(_repeats == 1);
     return true; // The coroutine reached the end of the steps.
+}
+
+CoroutineExecutor::ExecutionID CoroutineExecutor::Execution::GetID() const
+{
+    return _id;
+}
+
+bool CoroutineExecutor::Execution::IsPaused() const
+{
+    return _isPaused;
+}
+
+void CoroutineExecutor::Execution::SetPaused(const bool value)
+{
+    _isPaused = value;
 }
 
 bool CoroutineExecutor::Execution::TryMakeStep(
@@ -194,4 +214,57 @@ bool CoroutineExecutor::Execution::TryMakeStep(
 
         //TODO Optimize filtering accumulation steps by caching the expected suspend point. (Or filtering it by bit-field)
     }
+}
+
+// Cancel, Pause and Resume currently have O(n) based on the number of coroutines.
+// Subject to change if the number of coroutines becomes a bottleneck.
+
+bool CoroutineExecutor::Cancel(CoroutineHandle& handle)
+{
+    PROFILE_CPU();
+
+    for (int32 i = 0; i < _executions.Count(); i++)
+    {
+        if (_executions[i].GetID() != handle.ExecutionID)
+            continue;
+
+        _executions.RemoveAt(i);
+        handle.Executor = nullptr;
+
+        return true;
+    }
+
+    return false;
+}
+
+bool CoroutineExecutor::Pause(CoroutineHandle& handle)
+{
+    PROFILE_CPU();
+
+    for (int32 i = 0; i < _executions.Count(); i++)
+    {
+        if (_executions[i].GetID() != handle.ExecutionID)
+            continue;
+
+        _executions[i].SetPaused(true);
+        return true;
+    }
+
+    return false;
+}
+
+bool CoroutineExecutor::Resume(CoroutineHandle& handle)
+{
+    PROFILE_CPU();
+
+    for (int32 i = 0; i < _executions.Count(); i++)
+    {
+        if (_executions[i].GetID() != handle.ExecutionID)
+            continue;
+
+        _executions[i].SetPaused(false);
+        return true;
+    }
+
+    return false;
 };

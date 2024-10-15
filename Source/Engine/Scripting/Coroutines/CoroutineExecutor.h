@@ -67,6 +67,7 @@ private:
         ExecutionID      _id;
         int32            _stepIndex;
         int32            _repeats;
+        bool             _isPaused;
 
     public:
         constexpr static int32 InfiniteRepeats = -1; //TODO Use Nullable instead of sentinel when PR #2969 is merged.
@@ -87,10 +88,10 @@ private:
         /// </returns>
         bool ContinueCoroutine(CoroutineSuspendPoint point, const Delta& delta);
 
-        ExecutionID GetID() const
-        {
-            return _id;
-        }
+        auto GetID()    const -> ExecutionID;
+        auto IsPaused() const -> bool;
+
+        void SetPaused(bool value);
 
     private:
         static bool TryMakeStep(
@@ -115,4 +116,11 @@ private:
         }
     }
     _uuidGenerator;
+
+public:
+    bool Cancel(CoroutineHandle& handle);
+
+    bool Pause(CoroutineHandle& handle);
+
+    bool Resume(CoroutineHandle& handle);
 };
