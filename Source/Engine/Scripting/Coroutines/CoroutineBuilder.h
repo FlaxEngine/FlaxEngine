@@ -56,11 +56,21 @@ API_CLASS(Sealed) class FLAXENGINE_API CoroutineBuilder final : public Scripting
     API_FUNCTION()
     ScriptingObjectReference<CoroutineBuilder> ThenRun(ScriptingObjectReference<CoroutineRunnable> runnable);
 
-    /// <summary> Suspends the coroutine for the given number of seconds. </summary>
+    /// <summary>
+    /// Suspends the coroutine for the given number of seconds.
+    /// </summary>
+    /// <param name="seconds">
+    /// Minimal number of seconds to wait.
+    /// 0 is a valid value where the coroutine will be resumed on the closest time accumulation point.
+    /// </param>
     API_FUNCTION()
     ScriptingObjectReference<CoroutineBuilder> ThenWaitSeconds(float seconds);
 
     /// <summary> Suspends the coroutine for the given number of frames. </summary>
+    /// <param name="frames">
+    /// Minimal number of <b>full</b> frames to wait.
+    /// 0 is a valid value where the coroutine will be resumed on the closest frame accumulation point.
+    /// </param>
     API_FUNCTION()
     ScriptingObjectReference<CoroutineBuilder> ThenWaitFrames(int32 frames);
 
