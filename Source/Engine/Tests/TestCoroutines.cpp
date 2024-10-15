@@ -148,11 +148,15 @@ TEST_CASE("CoroutineExecuteLoop")
             ->ThenWaitFrames(1)
     );
 
+    // 1
     executor->Continue(CoroutineSuspendPoint::Update, 0.0f); // 1st call (wait, func exec)
+    // 2
     executor->Continue(CoroutineSuspendPoint::Update, 0.0f); // 2nd call (wait, func exec)
+    // 3
     executor->Continue(CoroutineSuspendPoint::Update, 0.0f); // 3rd call (wait, func exec)
+    // 4
 
-    CHECK(result == 3);
+    CHECK(result == 4);
 
     //TODO(mtszkarbowiak) Add check if the handle is still running. (Expected yes)
 }

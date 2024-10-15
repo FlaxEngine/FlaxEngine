@@ -115,30 +115,24 @@ bool CoroutineExecutor::Execution::ContinueCoroutine(
 
     Delta deltaCopy = delta;
 
-    while (_stepIndex < _builder->GetSteps().Count())
+    while (_repeats > 0 || _repeats == InfiniteRepeats)
     {
-        const Step& step = _builder->GetSteps()[_stepIndex];
+        while (_stepIndex < _builder->GetSteps().Count())
+        {
+            const Step& step = _builder->GetSteps()[_stepIndex];
 
-        if (!TryMakeStep(step, point, deltaCopy, this->_accumulator))
-            return false; // The coroutine is waiting for the next frame or seconds.
+            if (!TryMakeStep(step, point, deltaCopy, this->_accumulator))
+                return false; // The coroutine is waiting for the next frame or seconds.
 
-        ++_stepIndex;
-    }
+            ++_stepIndex;
+        }
 
-    if (_repeats == InfiniteRepeats)
-    {
         _stepIndex = 0;
-        return false; // The coroutine should be executed indefinitely.
+
+        if (_repeats != InfiniteRepeats)
+            --_repeats;
     }
 
-    if (_repeats > 1)
-    {
-        --_repeats;
-        _stepIndex = 0;
-        return false; // The coroutine should be executed again
-    }
-
-    ASSERT(_repeats == 1);
     return true; // The coroutine reached the end of the steps.
 }
 
@@ -182,15 +176,14 @@ bool CoroutineExecutor::Execution::TryMakeStep(
             if (point != DeltaAccumulationPoint)
                 return false;
 
-            // Transfer delta time to the accumulator.
-            accumulator.time += delta.time;
-            delta.time = 0.0f;
-            delta.frames = 0;
+            accumulator.time += delta.time;        // Transfer delta time to the accumulator.
+            delta = Delta{ 0.0f, 0 }; // Reset the delta time after transferring it to the accumulator.
 
-            if (step.GetSecondsDelay() > accumulator.time)
+            const float secondsDelay = step.GetSecondsDelay();
+            if (secondsDelay > accumulator.time)
                 return false;
 
-            accumulator.time -= step.GetSecondsDelay(); // Subtract the delay to prevent leakage.
+            accumulator.time -= secondsDelay;
             return true;
         }
 
@@ -199,15 +192,14 @@ bool CoroutineExecutor::Execution::TryMakeStep(
             if (point != DeltaAccumulationPoint)
                 return false;
 
-            // Transfer delta frames to the accumulator.
-            accumulator.frames += delta.frames;
-            delta.frames = 0;
-            delta.time = 0.0f;
+            accumulator.frames += delta.frames;    // Transfer delta frames to the accumulator.
+            delta = Delta{ 0.0f, 0 }; // Reset the delta frames after transferring it to the accumulator.
 
-            if (step.GetFramesDelay() > accumulator.frames)
+            const int32 framesDelay = step.GetFramesDelay();
+            if (framesDelay > accumulator.frames)
                 return false;
 
-            accumulator.frames -= step.GetFramesDelay(); // Subtract the delay to prevent leakage.
+            accumulator.frames -= framesDelay;
             return true;
         }
 
@@ -224,7 +216,6 @@ bool CoroutineExecutor::Execution::TryMakeStep(
             CRASH;
         }
 
-        //TODO(mtszkarbowiak) Fix accumulator leakage to next steps. BUG!
         //TODO(mtszkarbowiak) Optimize filtering accumulation steps by caching the expected suspend point. (Or filtering it by bit-field)
     }
 }
