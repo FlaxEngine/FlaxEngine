@@ -282,7 +282,7 @@ namespace FlaxEngine.GUI
             {
                 var layout = TextLayoutOptions.Default;
                 layout.Bounds = new Rectangle(0, 0, MaxWidth, 10000000);
-                layout.HorizontalAlignment = TextAlignment.Near;
+                layout.HorizontalAlignment = TextAlignment.Center;
                 layout.VerticalAlignment = TextAlignment.Center;
                 layout.TextWrapping = TextWrapping.WrapWords;
                 var items = style.FontMedium.ProcessText(_currentText, ref layout);
