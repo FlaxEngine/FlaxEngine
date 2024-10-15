@@ -1,5 +1,7 @@
 // Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
+using FlaxEditor;
+using FlaxEditor.Options;
 using System;
 
 namespace FlaxEngine.GUI
@@ -236,7 +238,22 @@ namespace FlaxEngine.GUI
 
             // Padding for text
             var textRect = GetClientArea();
-            textRect.X += 5;
+
+            float textX = 0;
+            switch (Editor.Instance.Options.Options.Interface.TooltipTextAlignment)
+            {
+                case TextAlignment.Near:
+                    textX = 15;
+                    break;
+                case TextAlignment.Center:
+                    textX = 5;
+                    break;
+                case TextAlignment.Far:
+                    textX = -5;
+                    break;
+            }
+
+            textRect.X += textX;
             textRect.Width -= 10;
 
             // Tooltip text
@@ -245,7 +262,7 @@ namespace FlaxEngine.GUI
                               _currentText,
                               textRect,
                               style.Foreground,
-                              TextAlignment.Center,
+                              Editor.Instance.Options.Options.Interface.TooltipTextAlignment,
                               TextAlignment.Center,
                               TextWrapping.WrapWords
                              );
@@ -265,7 +282,7 @@ namespace FlaxEngine.GUI
             {
                 var layout = TextLayoutOptions.Default;
                 layout.Bounds = new Rectangle(0, 0, MaxWidth, 10000000);
-                layout.HorizontalAlignment = TextAlignment.Center;
+                layout.HorizontalAlignment = TextAlignment.Near;
                 layout.VerticalAlignment = TextAlignment.Center;
                 layout.TextWrapping = TextWrapping.WrapWords;
                 var items = style.FontMedium.ProcessText(_currentText, ref layout);
