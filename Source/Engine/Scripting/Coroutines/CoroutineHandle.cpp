@@ -3,20 +3,52 @@
 #include "CoroutineHandle.h"
 #include "CoroutineExecutor.h"
 
+bool CoroutineHandle::HasFinished() const
+{
+    if (Executor == nullptr)
+    {
+        return true;
+    }
+
+    return Executor->HasFinished(*this);
+}
+
+bool CoroutineHandle::IsPaused() const
+{
+    if (Executor == nullptr)
+    {
+        return false;
+    }
+
+    return Executor->IsPaused(*this);
+}
+
 bool CoroutineHandle::Cancel()
 {
-    CHECK_RETURN(Executor != nullptr, false);
+    if (Executor == nullptr)
+    {
+        return false;
+    }
+
     return Executor->Cancel(*this);
 }
 
 bool CoroutineHandle::Pause()
 {
-    CHECK_RETURN(Executor != nullptr, false);
+    if (Executor == nullptr)
+    {
+        return false;
+    }
+
     return Executor->Pause(*this);
 }
 
 bool CoroutineHandle::Resume()
 {
-    CHECK_RETURN(Executor != nullptr, false);
+    if (Executor == nullptr)
+    {
+        return false;
+    }
+
     return Executor->Resume(*this);
 }

@@ -118,6 +118,11 @@ private:
     _uuidGenerator;
 
 public:
+    bool HasFinished(const CoroutineHandle& handle) const;
+
+    bool IsPaused(const CoroutineHandle& handle) const;
+
+
     bool Cancel(CoroutineHandle& handle);
 
     bool Pause(CoroutineHandle& handle);

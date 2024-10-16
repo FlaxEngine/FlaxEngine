@@ -115,6 +115,9 @@ bool CoroutineExecutor::Execution::ContinueCoroutine(
 
     Delta deltaCopy = delta;
 
+    ASSERT(_builder->GetSteps().Count() > 0); // Coroutines must have at least one step.
+    ASSERT(_repeats != 0); // Coroutines must have at least one repeat.
+
     while (_repeats > 0 || _repeats == InfiniteRepeats)
     {
         while (_stepIndex < _builder->GetSteps().Count())
@@ -223,6 +226,32 @@ bool CoroutineExecutor::Execution::TryMakeStep(
 // Cancel, Pause and Resume currently have O(n) based on the number of coroutines.
 // Subject to change if the number of coroutines becomes a bottleneck.
 
+bool CoroutineExecutor::HasFinished(const CoroutineHandle& handle) const
+{
+    PROFILE_CPU();
+
+    for (const Execution& execution : _executions)
+    {
+        if (execution.GetID() == handle.ExecutionID)
+            return false;
+    }
+
+    return true;
+}
+
+bool CoroutineExecutor::IsPaused(const CoroutineHandle& handle) const
+{
+    PROFILE_CPU();
+
+    for (const Execution& execution : _executions)
+    {
+        if (execution.GetID() == handle.ExecutionID)
+            return execution.IsPaused();
+    }
+
+    return false;
+}
+
 bool CoroutineExecutor::Cancel(CoroutineHandle& handle)
 {
     PROFILE_CPU();
@@ -233,7 +262,7 @@ bool CoroutineExecutor::Cancel(CoroutineHandle& handle)
             continue;
 
         _executions.RemoveAt(i);
-        handle.Executor = nullptr;
+        handle.Executor = nullptr; // Nullify the reference to remove circular dependency.
 
         return true;
     }
